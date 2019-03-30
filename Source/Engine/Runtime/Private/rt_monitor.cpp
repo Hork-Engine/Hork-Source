@@ -1,0 +1,193 @@
+/*
+
+Angie Engine Source Code
+
+MIT License
+
+Copyright (C) 2017-2019 Alexander Samusev.
+
+This file is part of the Angie Engine Source Code.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
+#include "rt_monitor.h"
+#include "rt_event.h"
+
+#include <GLFW/glfw3.h>
+
+static FPhysicalMonitorArray PhysicalMonitors;
+static FPhysicalMonitor * PrimaryMonitor = nullptr;
+
+static void RegisterMonitor( GLFWmonitor * _Monitor );
+static void UnregisterMonitor( GLFWmonitor * _Monitor );
+
+void rt_InitializePhysicalMonitors() {
+    int monitorsCount = 0;
+    GLFWmonitor ** monitors;
+
+    monitors = glfwGetMonitors( &monitorsCount );
+    for ( int i = 0; i < monitorsCount; i++ ) {
+        RegisterMonitor( monitors[i] );
+    }
+
+    glfwSetMonitorCallback( []( GLFWmonitor * _Monitor, int _ConnectStatus ) {
+        if ( _ConnectStatus == GLFW_CONNECTED ) {
+            RegisterMonitor( _Monitor );
+        } else {
+            UnregisterMonitor( _Monitor );
+        }
+    } );
+}
+
+static void UpdatePrimaryMonitor() {
+    GLFWmonitor * monitor = glfwGetPrimaryMonitor();
+    if ( !monitor ) {
+        return;
+    }
+    int primaryMonitorHandle = (size_t)glfwGetMonitorUserPointer( monitor );
+    if ( primaryMonitorHandle == -1 ) {
+        return;
+    }
+    PrimaryMonitor = PhysicalMonitors[ primaryMonitorHandle ];
+}
+
+static void RegisterMonitor( GLFWmonitor * _Monitor ) {
+    int videoModesCount = 0;
+    const GLFWvidmode * videoModesGLFW = glfwGetVideoModes( _Monitor, &videoModesCount );
+
+    if ( videoModesCount == 0 ) {
+        glfwSetMonitorUserPointer( _Monitor, ( void * )( size_t )-1 );
+        return;
+    }
+
+    int physMonitorSizeOf = sizeof( FPhysicalMonitor ) + sizeof( FMonitorVideoMode ) * (videoModesCount - 1);
+    FPhysicalMonitor * physMonitor = (FPhysicalMonitor *)GMainMemoryZone.AllocCleared( physMonitorSizeOf, 1 );
+
+    PhysicalMonitors.Append( physMonitor );
+
+    int handle = PhysicalMonitors.Length() - 1;
+    glfwSetMonitorUserPointer( _Monitor, ( void * )( size_t )handle );
+
+    FString::CopySafe( physMonitor->MonitorName, sizeof( physMonitor->MonitorName ), glfwGetMonitorName( _Monitor ) );
+    glfwGetMonitorPos( _Monitor, &physMonitor->PositionX, &physMonitor->PositionY );
+    glfwGetMonitorPhysicalSize( _Monitor, &physMonitor->PhysicalWidthMM, &physMonitor->PhysicalHeightMM );
+    physMonitor->Internal.Pointer = _Monitor;
+    physMonitor->VideoModesCount = videoModesCount;
+
+    for ( int mode = 0; mode < videoModesCount; mode++ ) {
+        FMonitorVideoMode * dst = &physMonitor->VideoModes[mode];
+        const GLFWvidmode * src = &videoModesGLFW[mode];
+        dst->Width = src->width;
+        dst->Height = src->height;
+        dst->RedBits = src->redBits;
+        dst->GreenBits = src->greenBits;
+        dst->BlueBits = src->blueBits;
+        dst->RefreshRate = src->refreshRate;
+    }
+
+    const GLFWgammaramp * gammaRamp = glfwGetGammaRamp( _Monitor );
+    AN_Assert( gammaRamp && gammaRamp->size <= GAMMA_RAMP_SIZE );
+    memcpy( &physMonitor->Internal.InitialGammaRamp[0], gammaRamp->red, gammaRamp->size * sizeof( unsigned short ) );
+    memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size], gammaRamp->green, gammaRamp->size * sizeof( unsigned short ) );
+    memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size * 2], gammaRamp->blue, gammaRamp->size * sizeof( unsigned short ) );
+    memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * gammaRamp->size * 3 );
+    physMonitor->GammaRampSize = gammaRamp->size;
+    physMonitor->Internal.bGammaRampDirty = false;
+
+    UpdatePrimaryMonitor();
+
+    FEvent * event = rt_SendEvent();
+    event->Type = ET_MonitorConnectionEvent;
+    event->TimeStamp = GRuntime.SysSeconds_d();   // in seconds
+    event->Data.MonitorConnectionEvent.Handle = handle;
+    event->Data.MonitorConnectionEvent.bConnected = true;
+
+    GLogger.Printf( "Monitor connected: %s\n", glfwGetMonitorName( _Monitor ) );
+}
+
+static void UnregisterMonitor( GLFWmonitor * _Monitor ) {
+    int handle = (size_t)glfwGetMonitorUserPointer( _Monitor );
+    if ( handle == -1 ) {
+        return;
+    }
+
+    FPhysicalMonitor * physMonitor = PhysicalMonitors[ handle ];
+
+    physMonitor->Internal.Pointer = nullptr;
+
+    UpdatePrimaryMonitor();
+
+    FEvent * event = rt_SendEvent();
+    event->Type = ET_MonitorConnectionEvent;
+    event->TimeStamp = GRuntime.SysSeconds_d();   // in seconds
+    event->Data.MonitorConnectionEvent.Handle = handle;
+    event->Data.MonitorConnectionEvent.bConnected = false;
+
+    GLogger.Printf( "Monitor disconnected %s\n", glfwGetMonitorName( _Monitor ) );
+}
+
+void rt_DeinitializePhysicalMonitors() {
+    glfwSetMonitorCallback( nullptr );
+
+    for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
+        GMainMemoryZone.Dealloc( physMonitor );
+    }
+    PhysicalMonitors.Free();
+}
+
+static void UpdateMonitorGamma( FPhysicalMonitor * _PhysMonitor ) {
+    GLFWgammaramp ramp;
+    ramp.size = _PhysMonitor->GammaRampSize;
+    ramp.red = _PhysMonitor->Internal.GammaRamp;
+    ramp.green = ramp.red + ramp.size;
+    ramp.blue = ramp.green + ramp.size;
+    glfwSetGammaRamp( ( GLFWmonitor * )_PhysMonitor->Internal.Pointer, &ramp );
+    _PhysMonitor->Internal.bGammaRampDirty = false;
+}
+
+void rt_UpdatePhysicalMonitors() {
+    for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
+        if ( !physMonitor->Internal.Pointer ) {
+            // not connected
+            continue;
+        }
+        if ( physMonitor->Internal.bGammaRampDirty ) {
+            UpdateMonitorGamma( physMonitor );
+        }
+    }
+}
+
+FPhysicalMonitor * rt_FindMonitor( const char * _MonitorName ) {
+    for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
+        if ( !FString::Cmp( physMonitor->MonitorName, _MonitorName ) ) {
+            return physMonitor;
+        }
+    }
+    return nullptr;
+}
+
+FPhysicalMonitorArray const & rt_GetPhysicalMonitors() {
+    return PhysicalMonitors;
+}
+
+FPhysicalMonitor * rt_GetPrimaryMonitor() {
+    return PrimaryMonitor;
+}
