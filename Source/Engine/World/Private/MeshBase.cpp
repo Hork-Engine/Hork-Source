@@ -28,41 +28,18 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#include <Engine/World/Public/MeshBase.h>
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+AN_CLASS_META_NO_ATTRIBS( FMeshBase )
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
-
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
-
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
+FMeshBase::FMeshBase() {
+    Bounds.Clear();
 }
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
+FMeshBase::~FMeshBase() {
+
 }
 
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
-
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
-
-    Mesh->SetScale( Float3(14,1,14) );
-}
-
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
-
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
+void FMeshBase::SetBounds( BvAxisAlignedBox const & _Bounds ) {
+    Bounds = _Bounds;
 }

@@ -28,41 +28,16 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#include <Engine/World/Public/Pawn.h>
+#include <Engine/World/Public/InputComponent.h>
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+AN_CLASS_META_NO_ATTRIBS( FPawn )
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
-
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
-
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
+FPawn::FPawn() {
 }
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
+void FPawn::BeginPlay() {
 }
 
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
-
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
-
-    Mesh->SetScale( Float3(14,1,14) );
-}
-
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
-
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
+void FPawn::EndPlay() {
 }

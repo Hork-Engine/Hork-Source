@@ -28,41 +28,39 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#pragma once
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include "BaseObject.h"
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
+struct CacheEntry {
+    FBaseObject * Object;
+    FString Path;
+};
 
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
+class FResourceManager/* : public FBaseObject*/ {
+    //AN_CLASS( FResourceManager, FBaseObject )
+    AN_SINGLETON( FResourceManager )
 
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
-}
+public:
+    void Initialize();
+    void Deinitialize();
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
+    FBaseObject * FindCachedResource( FClassMeta const & _ClassMeta, const char * _Path, bool & _bMetadataMismatch, int & _Hash );
+    FBaseObject * LoadResource( FClassMeta const & _ClassMeta, const char * _Path );
 
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
+private:
+    TVector< CacheEntry > ResourceCache;
+    THash<> ResourceHash;
+};
 
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
+extern FResourceManager & GResourceManager;
 
-    Mesh->SetScale( Float3(14,1,14) );
-}
+/*
 
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
+Helpers
 
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
+*/
+template< typename T >
+T * LoadResource( const char * _Path ) {
+    return static_cast< T * >( GResourceManager.LoadResource( T::ClassMeta(), _Path ) );
 }

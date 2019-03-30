@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/Mesh/Shape.h>
+#include <Engine/World/Public/Shape.h>
 
 AN_BEGIN_CLASS_META( FQuakeModel )
 AN_END_CLASS_META()

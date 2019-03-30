@@ -28,41 +28,29 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#pragma once
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include <Engine/Core/Public/BaseTypes.h>
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
+struct ImFont;
+struct FKeyEvent;
+struct FCharEvent;
+struct FMouseWheelEvent;
+class FCanvas;
 
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
+class FConsole {
+    AN_SINGLETON( FConsole )
 
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
-}
+public:
+    void Clear();
+    bool IsActive() const;
+    void Resize( int _VidWidth );
+    void Print( const char * _Text );
+    void WidePrint( FWideChar const * _Text );
+    void KeyEvent( FKeyEvent const & _Event );
+    void CharEvent( FCharEvent const & _Event );
+    void MouseWheelEvent( FMouseWheelEvent const & _Event );
+    void Draw( FCanvas * _Canvas, float _TimeStep );
+};
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
-
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
-
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
-
-    Mesh->SetScale( Float3(14,1,14) );
-}
-
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
-
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
-}
+extern FConsole & GConsole;

@@ -28,41 +28,43 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#pragma once
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include "Actor.h"
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
+class FPawn;
+class FPlayerController;
+class FCanvas;
+struct ImFont;
 
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
+class FHUD : public FActor {
+    AN_ACTOR( FHUD, FActor )
 
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
-}
+    friend class FPlayerController;
+public:
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
+    void Draw( FCanvas * _Canvas, int _X, int _Y, int _W, int _H );
 
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
+    void DrawText( ImFont * _Font, int x, int y, int32_t color, const char * _Text );
 
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
+    int GetViewportX() const { return ViewportX; }
+    int GetViewportY() const { return ViewportY; }
+    int GetViewportW() const { return ViewportW; }
+    int GetViewportH() const { return ViewportH; }
 
-    Mesh->SetScale( Float3(14,1,14) );
-}
+protected:
+    FHUD();
 
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
+    virtual void DrawHUD();
 
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
-}
+    // Read only
+    FCanvas * Canvas;
+    int ViewportX;
+    int ViewportY;
+    int ViewportW;
+    int ViewportH;
+
+private:
+    FPlayerController * OwnerPlayer;
+    FPawn * OwnerPawn;
+};

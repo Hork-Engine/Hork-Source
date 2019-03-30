@@ -28,41 +28,55 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#pragma once
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include <Engine/World/Public/BaseObject.h>
+#include <Engine/World/Public/RenderFrontend.h>
+#include <Engine/World/Public/Texture.h>
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
+class ANGIE_API FMaterial : public FBaseObject, public IRenderProxyOwner {
+    AN_CLASS( FMaterial, FBaseObject )
 
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
+public:
+    //void LoadObject( const char * _Path ) override;
 
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
-}
+    void Initialize( FMaterialBuildData const * _Data );
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
+    EMaterialType GetType() const { return Type; }
 
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
+    FRenderProxy_Material * GetRenderProxy() { return RenderProxy; }
 
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
+protected:
+    FMaterial();
+    ~FMaterial();
 
-    Mesh->SetScale( Float3(14,1,14) );
-}
+    // IRenderProxyOwner interface
+    void OnLost() override { /* ... */ }
 
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
+private:
+    FRenderProxy_Material * RenderProxy;
+    EMaterialType Type;
+};
 
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
-}
+class FMaterialInstance : public FBaseObject {
+    AN_CLASS( FMaterialInstance, FBaseObject )
+
+    friend class FRenderFrontend;
+
+public:
+
+    TRefHolder< FMaterial > Material;
+
+    void SetTexture( int _TextureSlot, FTexture * _Texture );
+
+protected:
+
+    FMaterialInstance() {}
+    ~FMaterialInstance() {}
+
+private:
+    TRefHolder< FTexture > Textures[MAX_MATERIAL_TEXTURES];
+
+    int VisMarker;
+    FMaterialInstanceFrameData * FrameData;
+};

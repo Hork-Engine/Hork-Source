@@ -28,41 +28,36 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#pragma once
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include "Actor.h"
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
+class FInputComponent;
 
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
+/*
 
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
-}
+FPawn
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
+Base class for players and monsters
 
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
+*/
+class ANGIE_API FPawn : public FActor {
+    AN_ACTOR( FPawn, FActor )
 
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
+    friend class FPlayerController; 
 
-    Mesh->SetScale( Float3(14,1,14) );
-}
+public:
 
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
+    bool bGodMode;
 
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
-}
+protected:
+
+    FPawn();
+
+    void BeginPlay() override;
+    void EndPlay() override;
+
+    // Override this function to setup input component
+    virtual void SetupPlayerInputComponent( FInputComponent * _Input ) {}
+
+};

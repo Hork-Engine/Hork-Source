@@ -46,9 +46,7 @@ struct FGUID {
         Hi = Lo = 0;
     }
 
-    void Generate() {
-        GenerateGUID( *this );
-    }
+    void Generate();
 
     bool operator==( FGUID const & _Other ) const {
         return Hi == _Other.Hi && Lo == _Other.Lo;
@@ -100,5 +98,3 @@ struct FGUID {
         _Stream.Read( Lo );
     }
 };
-
-void GenerateGUID( FGUID & _GUID );

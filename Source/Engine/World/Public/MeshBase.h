@@ -28,41 +28,23 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#pragma once
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include <Engine/World/Public/BaseObject.h>
+#include <Engine/World/Public/RenderFrontend.h>
+#include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
+class ANGIE_API FMeshBase : public FBaseObject {
+    AN_CLASS( FMeshBase, FBaseObject )
 
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
+public:
 
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
-}
+    void SetBounds( BvAxisAlignedBox const & _Bounds );
+    BvAxisAlignedBox const & GetBounds() const { return Bounds; }
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
+protected:
+    FMeshBase();
+    ~FMeshBase();
 
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
-
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
-
-    Mesh->SetScale( Float3(14,1,14) );
-}
-
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
-
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
-}
+    BvAxisAlignedBox Bounds;
+};

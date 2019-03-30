@@ -36,7 +36,7 @@ SOFTWARE.
 #include <Engine/Runtime/Public/EntryDecl.h>
 #include <Engine/World/Public/GameMaster.h>
 #include <Engine/World/Public/Canvas.h>
-#include <Engine/World/Public/Material/MaterialAssembly.h>
+#include <Engine/World/Public/MaterialAssembly.h>
 
 AN_CLASS_META_NO_ATTRIBS( FGameModule )
 

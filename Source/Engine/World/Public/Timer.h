@@ -28,41 +28,50 @@ SOFTWARE.
 
 */
 
-#include "GroundActor.h"
+#pragma once
 
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include <Engine/Core/Public/BaseTypes.h>
 
-AN_BEGIN_CLASS_META( FGroundActor )
-AN_END_CLASS_META()
+class ANGIE_API FTimer final {
+    AN_FORBID_COPY( FTimer )
 
-FGroundActor::FGroundActor() {
-    Mesh = CreateComponent< FStaticMeshComponent >( "Mesh" );
-    RootComponent = Mesh;
+    friend class FWorld;
+    friend class FActor;
 
-    //Mesh->SetMesh( LoadResource< FStaticMesh >( "*plane*" ) );
-    //Mesh->SetMaterialInstance( LoadResource< FTexture >( "rock2.png" ) );
-}
+public:
+    float FirstDelay = 0;
+    float SleepDelay = 0;
+    float PulseTime = 0;
+    bool bPaused = false;
+    bool bTickEvenWhenPaused = false;
+    int MaxPulses = 0;
 
-void FGroundActor::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
+    FTimer() {}
+    void Restart();
+    void Stop();
+    bool IsStopped() const;
 
-void FGroundActor::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
+    template< typename T >
+    void SetCallback( T * _Object, void (T::*_Method)() ) {
+        SetCallback( { _Object, _Method } );
+    }
 
-void FGroundActor::BeginPlay() {
-    Super::BeginPlay();
+    void SetCallback( TCallback< void() > const & _Callback ) {
+        Callback = _Callback;
+    }
 
-    Mesh->SetScale( Float3(14,1,14) );
-}
+    float GetElapsedTime() const { return ElapsedTime; }
+    int GetPulseIndex() const { return NumPulses - 1; }
 
-void FGroundActor::EndPlay() {
-    Super::EndPlay();
-}
+private:
+    int State = 0;
+    int NumPulses = 0;
+    float ElapsedTime = 0;
+    TCallback< void() > Callback;
+    FTimer * P;         // List inside actor
+    FTimer * Next;      // List inside world
+    FTimer * Prev;      // List inside world
 
-void FGroundActor::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
-}
+    void Tick( float _TimeStep );
+    void Trigger();
+};

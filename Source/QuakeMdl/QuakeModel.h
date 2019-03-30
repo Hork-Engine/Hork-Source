@@ -31,9 +31,9 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Public/BaseObject.h>
-#include <Engine/World/Public/Mesh/Texture.h>
+#include <Engine/World/Public/Texture.h>
 #include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/Mesh/StaticMesh.h>
+#include <Engine/World/Public/StaticMesh.h>
 #include <Engine/World/Public/Level.h>
 
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
