@@ -1,6 +1,6 @@
-#pragma once
+п»ї#pragma once
 
-// Зная направление бинормали ее можно расчитать по формуле: binormal = cross( normal, tangent ) * handedness.
+// Р—РЅР°СЏ РЅР°РїСЂР°РІР»РµРЅРёРµ Р±РёРЅРѕСЂРјР°Р»Рё РµРµ РјРѕР¶РЅРѕ СЂР°СЃС‡РёС‚Р°С‚СЊ РїРѕ С„РѕСЂРјСѓР»Рµ: binormal = cross( normal, tangent ) * handedness.
 AN_FORCEINLINE float CalcHandedness( const Float3 & _Tangent, const Float3 & _Binormal, const Float3 & _Normal ) {
     return ( _Normal.Cross( _Tangent ).Dot( _Binormal ) < 0.0f ) ? -1.0f : 1.0f;
 }

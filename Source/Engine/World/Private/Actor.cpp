@@ -347,3 +347,9 @@ void FActor::RegisterTimer( FTimer * _Timer ) {
     Timers = _Timer;
     ParentWorld->RegisterTimer( _Timer );
 }
+
+void FActor::DebugDraw( FDebugDraw * _DebugDraw ) {
+    for ( FActorComponent * component : Components ) {
+        component->DebugDraw( _DebugDraw );
+    }
+}

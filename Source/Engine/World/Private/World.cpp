@@ -461,28 +461,29 @@ void FWorld::GenerateDebugDrawGeometry( FDebugDraw * _DebugDraw ) {
 
     _DebugDraw->SetDepthTest( true );
 
-    for ( FStaticMeshComponent * component = StaticMeshList
-          ; component ; component = component->NextWorldMesh() ) {
+    //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_STATIC_BOUNDS ) {
+        for ( FStaticMeshComponent * component = StaticMeshList
+              ; component ; component = component->NextWorldMesh() ) {
 
-        _DebugDraw->DrawAABB( component->GetWorldBounds() );
+            _DebugDraw->DrawAABB( component->GetWorldBounds() );
+        }
+    //}
+
+    for ( FActor * actor : Actors ) {
+        actor->DebugDraw( _DebugDraw );
     }
 
     //TPodArray< FMeshVertex > Vertices;
     //TPodArray< unsigned int > Indices;
     //BvAxisAlignedBox  Bounds;
     //FCylinderShape::CreateMesh( Vertices, Indices, Bounds, 10, 20, 1, 16 );
-
-    
-    _DebugDraw->SetColor( 0,1,0,0.1f);
+    //_DebugDraw->SetColor( 0,1,0,0.1f);
     //_DebugDraw->DrawTriangleSoup( &Vertices.ToPtr()->Position, Vertices.Length(), sizeof(FMeshVertex), Indices.ToPtr(), Indices.Length() );
-
-    _DebugDraw->SetColor( 1,1,0,0.1f);
+    //_DebugDraw->SetColor( 1,1,0,0.1f);
     //_DebugDraw->DrawPoints( &Vertices.ToPtr()->Position, Vertices.Length(), sizeof(FMeshVertex) );
     //_DebugDraw->DrawCircleFilled( Float3(0), Float3(0,1,0), 10.0f );
-
-    _DebugDraw->SetColor( 0,0,1,1);
+    //_DebugDraw->SetColor( 0,0,1,1);
     //_DebugDraw->DrawCylinder( Float3(0), Float3x3::Identity(), 10, 20 );
-
     //_DebugDraw->SetColor( 1,0,0,1);
     //_DebugDraw->DrawDottedLine( Float3(0,0,0), Float3(100,0,0), 1.0f );
     //_DebugDraw->SetColor( 0,1,0,1);

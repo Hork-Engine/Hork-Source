@@ -43,6 +43,8 @@ enum EVSDPass {
     VSD_PASS_DEFAULT    = VSD_PASS_PORTALS | VSD_PASS_BOUNDS,
 };
 
+class FCameraComponent;
+
 /*
 
 FStaticMeshComponent
@@ -53,16 +55,16 @@ class ANGIE_API FStaticMeshComponent : public FMeshComponent {
 
     friend class FWorld;
 public:
-    int VisMarker;
-    int VSDPasses = VSD_PASS_DEFAULT;
-    int LightmapBlock;
-    Float4 LightmapOffset;
-    TRefHolder< FLightmapUV > LightmapUVChannel;
-    TRefHolder< FVertexLight > VertexLightChannel;
-    bool bUseDynamicRange;
-    unsigned int DynamicRangeIndexCount;
-    unsigned int DynamicRangeStartIndexLocation;
-    int DynamicRangeBaseVertexLocation;
+    int             VisMarker;
+    int             VSDPasses = VSD_PASS_DEFAULT;
+    int             LightmapBlock;
+    Float4          LightmapOffset;
+    TRefHolder< FLightmapUV >   LightmapUVChannel;
+    TRefHolder< FVertexLight >  VertexLightChannel;
+    bool            bUseDynamicRange;
+    unsigned int    DynamicRangeIndexCount;
+    unsigned int    DynamicRangeStartIndexLocation;
+    int             DynamicRangeBaseVertexLocation;
 
     void SetMesh( FIndexedMesh * _Mesh );
     void SetMeshSubpart( FIndexedMeshSubpart * _Subpart );
@@ -73,7 +75,7 @@ public:
     FStaticMeshComponent * NextWorldMesh() { return Next; }
     FStaticMeshComponent * PrevWorldMesh() { return Prev; }
 
-    virtual void OnCustomVisibleStep( class FCameraComponent * _Camera, bool & _OutVisibleFlag ) {}
+    virtual void OnCustomVisibleStep( FCameraComponent * _Camera, bool & _OutVisibleFlag ) {}
 
 protected:
     FStaticMeshComponent();
@@ -87,9 +89,6 @@ protected:
     // [Actor friend, overridable]
     void EndPlay() override;
 
-    // [Actor friend, overridable]
-    void TickComponent( float _TimeStep ) override;
-
     void OnUpdateWorldBounds() override;
 
 private:
@@ -99,93 +98,3 @@ private:
     TRefHolder< FIndexedMesh > Mesh;
     TRefHolder< FIndexedMeshSubpart > Subpart;   
 };
-
-
-#if 0
-class PrimitiveComponent : public FSceneComponent {
-    AN_COMPONENT( PrimitiveComponent, FSceneComponent )
-
-public:
-
-    FPrimitiveSceneProxy * SceneProxy;
-
-    // todo: graphical representation of some kind (e.g a mesh or particle system),
-    // many physics and collision settings
-};
-
-AN_CLASS_META_NO_ATTRIBS( PrimitiveComponent )
-
-// Capsule collider
-class CapsuleComponent : public PrimitiveComponent {
-    AN_COMPONENT( CapsuleComponent, FSceneComponent )
-
-public:
-};
-
-AN_CLASS_META_NO_ATTRIBS( CapsuleComponent )
-
-class StaticMeshComponent : public PrimitiveComponent {
-    AN_COMPONENT( StaticMeshComponent, PrimitiveComponent )
-
-public:
-};
-
-AN_CLASS_META_NO_ATTRIBS( StaticMeshComponent )
-
-class SkeletalMeshComponent : public PrimitiveComponent {
-    AN_COMPONENT( SkeletalMeshComponent, PrimitiveComponent )
-
-public:
-};
-
-AN_CLASS_META_NO_ATTRIBS( SkeletalMeshComponent )
-#endif
-
-
-
-
-
-#include "BaseObject.h"
-
-/*
-
-FResource
-
-Base class for all resources
-
-*/
-//class ANGIE_API FResource : public FBaseObject {
-//    AN_CLASS( FResource, FBaseObject )
-
-//public:
-//    FResource() {}
-
-//    TPodArray< FMeshVertex > Vertices;
-//    TPodArray< unsigned int > Indices;
-//    BvAxisAlignedBox Bounds;
-//    bool bDirty;
-
-////    void SetVertices( FMeshVertex const * _Vertices, int _VerticesCount );
-////    void SetIndices( unsigned int * _Indices, int _IndicesCount );
-////    void SetBounds( BvAxisAlignedBox const & _Bounds );
-////    void ComputeBounds();
-
-////    FMeshVertex * MapVertices();
-////    void UnmapVertices();
-
-//    FString const & GetName();
-
-//private:
-//    FString Name;
-//};
-
-
-//template< typename T >
-//class FResourceFinder {
-//public:
-//    FResourceFinder( const char * _Path ) {}
-
-//    FString Path;
-//    int Hash;
-//    T * Resource;
-//};

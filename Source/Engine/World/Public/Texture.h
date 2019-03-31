@@ -85,6 +85,9 @@ public:
     void InitializeCubemap( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength = 1 );
     void InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
 
+    // Create texture from string (*white* *black* *normal* *cubemap*)
+    void InitializeInternalTexture( const char * _Name );
+
     ETexturePixelFormat GetPixelFormat() const;
     int GetDimensionCount() const;
     int GetWidth() const;
@@ -92,7 +95,6 @@ public:
     int GetDepth() const;
     int GetNumLods() const;
     bool IsCubemap() const;
-    int GetByteLength() const;
     int GetNumComponents() const;
     bool IsCompressed() const;
     bool IsSRGB() const;

@@ -41,6 +41,7 @@ private:
 
 class FWorld;
 class FActor;
+class FDebugDraw;
 
 /*
 
@@ -107,6 +108,8 @@ protected:
 
     // [Actor friend, overridable]
     virtual void TickComponent( float _TimeStep ) {}
+
+    virtual void DebugDraw( FDebugDraw * _DebugDraw ) {}
 
 private:
 

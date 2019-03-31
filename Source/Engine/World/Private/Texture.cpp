@@ -43,29 +43,6 @@ FTexture::~FTexture() {
     RenderProxy->KillProxy();
 }
 
-//void FTexture::LoadObject( const char * _Path ) {
-
-//    if ( MapFlags ) {
-//        GLogger.Printf( "FTexture::LoadObject: missing Unmap()\n" );
-//        return;
-//    }
-
-//    ResourcePath = _Path;
-
-//    AddToLoadList();
-
-//    if ( _Path[0] == '*' ) {
-//        CreateInternalImage( _Path );
-//        return;
-//    }
-
-//    // TODO: load from file
-
-//    FImage image;
-//    image.LoadRawImage( _Path, true, true );
-//    FromImage( image );
-//}
-
 static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelFormat & _PixelFormat ) {
     if ( _Image.bHDRI ) {
 
@@ -374,6 +351,84 @@ void FTexture::InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, i
     RenderProxy->MarkUpdated();
 }
 
+void FTexture::InitializeInternalTexture( const char * _Name ) {
+    if ( !FString::Cmp( _Name, "*white*" ) ) {
+        // White texture
+
+        byte data[ 1 * 1 * 3 ];
+        memset( data, 0xff, sizeof( data ) );
+
+        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        void * pixels = WriteTextureData( 0, 0, 0, 1, 1, 0 );
+        if ( pixels ) {
+            memcpy( pixels, data, 3 );
+        }
+        return;
+    }
+
+    if ( !FString::Cmp( _Name, "*black*" ) ) {
+        // Black texture
+
+        byte data[ 1 * 1 * 3 ];
+        memset( data, 0x0, sizeof( data ) );
+
+        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        void * pixels = WriteTextureData( 0, 0, 0, 1, 1, 0 );
+        if ( pixels ) {
+            memcpy( pixels, data, 3 );
+        }
+        return;
+    }
+
+    if ( !FString::Cmp( _Name, "*normal*" ) ) {
+        // Normal texture
+
+        byte data[ 1 * 1 * 3 ];
+        data[ 0 ] = 255; // z
+        data[ 1 ] = 127; // y
+        data[ 2 ] = 127; // x
+
+        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        void * pixels = WriteTextureData( 0, 0, 0, 1, 1, 0 );
+        if ( pixels ) {
+            memcpy( pixels, data, 3 );
+        }
+        return;
+    }
+
+    if ( !FString::Cmp( _Name, "*cubemap*" ) ) {
+        // Cubemap texture
+
+        const Float3 dirs[6] = {
+            Float3(1,0,0),
+            Float3(-1,0,0),
+            Float3(0,1,0),
+            Float3(0,-1,0),
+            Float3(0,0,1),
+            Float3(0,0,-1)
+        };
+
+        byte data[ 6 ][ 3 ];
+        for ( int i = 0 ; i < 6 ; i++ ) {
+            data[i][0] = ( dirs[i].Z + 1.0f ) * 127.5f;
+            data[i][1] = ( dirs[i].Y + 1.0f ) * 127.5f;
+            data[i][2] = ( dirs[i].X + 1.0f ) * 127.5f;
+        }
+
+        InitializeCubemap( TEXTURE_PF_BGR8, 1, 1 );
+
+        for ( int face = 0 ; face < 6 ; face++ ) {
+            void * pixels = WriteTextureData( 0, 0, face, 1, 1, 0 );
+            if ( pixels ) {
+                memcpy( pixels, data[face], 3 );
+            }
+        }
+        return;
+    }
+
+    GLogger.Printf( "Unknown internal texture %s\n", _Name );
+}
+
 void * FTexture::WriteTextureData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod ) {
     if ( !Width ) {
         GLogger.Printf( "FTexture::WriteTextureData: texture is not initialized\n" );
@@ -541,76 +596,6 @@ size_t FTexture::TextureByteLengthRect( ETexturePixelFormat _PixelFormat, int _N
     }
 }
 
-#if 0
-void FTexture::CreateInternalImage( const char * _Name ) {
-
-    if ( !FString::Cmp( _Name, "*white*" ) ) {
-
-        // White texture
-
-        byte data[ 1 * 1 * 3 ];
-        memset( data, 0xff, sizeof( data ) );
-
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1, 1, false, data );
-
-        return;
-    }
-
-    if ( !FString::Cmp( _Name, "*black*" ) ) {
-
-        // Black texture
-
-        byte data[ 1 * 1 * 3 ];
-        memset( data, 0x0, sizeof( data ) );
-
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1, 1, false, data );
-
-        return;
-    }
-
-    if ( !FString::Cmp( _Name, "*normal*" ) ) {
-
-        // Normal texture
-
-        byte data[ 1 * 1 * 3 ];
-        data[ 0 ] = 255; // z
-        data[ 1 ] = 127; // y
-        data[ 2 ] = 127; // x
-
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1, 1, false, data );
-
-        return;
-    }
-
-    if ( !FString::Cmp( _Name, "*cubemap*" ) ) {
-
-        // Cubemap texture
-
-        const Float3 dirs[6] = {
-            Float3(1,0,0),
-            Float3(-1,0,0),
-            Float3(0,1,0),
-            Float3(0,-1,0),
-            Float3(0,0,1),
-            Float3(0,0,-1)
-        };
-
-        byte data[ 6 ][ 3 ];
-        for ( int i = 0 ; i < 6 ; i++ ) {
-            data[i][0] = ( dirs[i].Z + 1.0f ) * 127.5f;
-            data[i][1] = ( dirs[i].Y + 1.0f ) * 127.5f;
-            data[i][2] = ( dirs[i].X + 1.0f ) * 127.5f;
-        }
-
-        InitializeCubemap( TEXTURE_PF_BGR8, 1, 1, 1, false, &data[0][0] );
-
-        return;
-    }
-
-    GLogger.Printf( "Unknown internal texture %s\n", _Name );
-}
-#endif
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Image
@@ -718,7 +703,6 @@ bool FImage::LoadRawImage( FFileStream & _Stream, bool _SRGB, bool _GenerateMipm
     }
 
     if ( _GenerateMipmaps ) {
-
         FSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = data;
@@ -787,7 +771,6 @@ bool FImage::LoadRawImageHDRI( FFileStream & _Stream, bool _HalfFloat, bool _Gen
     }
 
     if ( _GenerateMipmaps ) {
-
         FSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = data;
@@ -864,7 +847,6 @@ AN_FORCEINLINE byte ConvertToSRGB_UB( const float & _lRGB ) {
 
 // TODO: Add other mipmap filters
 static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth, int _NewHeight, int _NumChannels, int _AlphaChannel, bool _LinearSpace, const byte * _SrcData, byte * _DstData ) {
-
     int Bpp = _NumChannels;
 
     if ( _CurWidth == _NewWidth && _CurHeight == _NewHeight ) {
@@ -953,7 +935,6 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
 }
 
 static void DownscaleSimpleAverageHDRI( int _CurWidth, int _CurHeight, int _NewWidth, int _NewHeight, int _NumChannels, const float * _SrcData, float * _DstData ) {
-
     int Bpp = _NumChannels;
 
     if ( _CurWidth == _NewWidth && _CurHeight == _NewHeight ) {
@@ -1039,7 +1020,6 @@ static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHe
 }
 
 static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int ImageHeight, int _NumChannels, float * _Dest ) {
-
     memcpy( _Dest, ImageData, ImageWidth * ImageHeight * _NumChannels * sizeof( float ) );
 
     int MemoryOffset = ImageWidth * ImageHeight * _NumChannels;
@@ -1068,7 +1048,6 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
 }
 
 void FSoftwareMipmapGenerator::ComputeRequiredMemorySize( int & _RequiredMemory, int & _NumLods ) const {
-
     _RequiredMemory = 0;
     _NumLods = 0;
 

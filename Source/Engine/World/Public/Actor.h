@@ -174,6 +174,8 @@ protected:
     // [World friend, overridable]
     virtual void Tick( float _TimeStep ) {}
 
+    virtual void DebugDraw( FDebugDraw * _DebugDraw );
+
 private:
 
     //void Destroy() override final;
