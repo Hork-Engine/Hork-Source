@@ -1,6 +1,6 @@
 #cmake_minimum_required(VERSION 3.8)
 
-set( PROJECT QuakeMdl )
+set( PROJECT Quake1 )
 
 file( GLOB Code *.h *.cpp )
 file( GLOB Resources res/Angie.rc res/icon1.ico res/resource.h )

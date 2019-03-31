@@ -528,9 +528,9 @@ message( "========== TOOLCHAIN ==========" )
 #########################################################################################
 # SAMPLES
 message( "========== SAMPLES ==========" )
-add_subdirectory( QuakeMdl )
-set_target_properties( QuakeMdl PROPERTIES FOLDER "Samples" )
-add_subdirectory( Quake3 )
+add_subdirectory( Samples/Quake1 )
+set_target_properties( Quake1 PROPERTIES FOLDER "Samples" )
+add_subdirectory( Samples/Quake3 )
 set_target_properties( Quake3 PROPERTIES FOLDER "Samples" )
 #add_subdirectory( Samples/ClusteredTest )
 #set_target_properties( ClusteredTest PROPERTIES FOLDER "Samples" )

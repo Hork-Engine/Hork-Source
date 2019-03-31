@@ -14,7 +14,7 @@ AN_FORCEINLINE void CalcTangentSpace( FMeshVertex * _VertexArray, unsigned int _
     Float3 binormal, tangent;
 
     TPodArray< Float3 > Binormals;
-    Binormals.Resize( _NumVerts );
+    Binormals.ResizeInvalidate( _NumVerts );
 
     for ( int i = 0 ; i < _NumVerts ; i++ ) {
         _VertexArray[ i ].Tangent = Float3( 0 );
@@ -69,8 +69,8 @@ struct FBoxShape {
             1 + 8 * 2,0 + 8 * 2,5 + 8 * 2,5 + 8 * 2,4 + 8 * 2,1 + 8 * 2,	// bottom face
         };
 
-        _Vertices.Resize( 24 );
-        _Indices.Resize( 36 );
+        _Vertices.ResizeInvalidate( 24 );
+        _Indices.ResizeInvalidate( 36 );
 
         memcpy( _Indices.ToPtr(), indices, sizeof( indices ) );
 
@@ -197,8 +197,8 @@ struct FSphereShape {
         const float RadHeight = _Radius;
         unsigned int Quad[ 4 ];
 
-        _Vertices.Resize( ( _VDiv + 1 )*( _HDiv + 1 ) );
-        _Indices.Resize( _VDiv * _HDiv * 6 );
+        _Vertices.ResizeInvalidate( ( _VDiv + 1 )*( _HDiv + 1 ) );
+        _Indices.ResizeInvalidate( _VDiv * _HDiv * 6 );
 
         _Bounds.Mins.X = _Bounds.Mins.Y = _Bounds.Mins.Z = -_Radius;
         _Bounds.Maxs.X = _Bounds.Maxs.Y = _Bounds.Maxs.Z = _Radius;
@@ -255,8 +255,8 @@ struct FSphereShape {
 
 struct FPlaneShape {
     static void CreateMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
-        _Vertices.Resize( 4 );
-        _Indices.Resize( 6 );
+        _Vertices.ResizeInvalidate( 4 );
+        _Indices.ResizeInvalidate( 6 );
 
         float HalfWidth = _Width * 0.5f;
         float HalfHeight = _Height * 0.5f;
@@ -293,8 +293,8 @@ struct FCylinderShape {
         const float InvRadius = 1.0f / _Radius;
         unsigned int Quad[ 4 ];        
 
-        _Vertices.Resize( 6 * ( _VDiv + 1 ) );
-        _Indices.Resize( 3 * _VDiv * 6 );
+        _Vertices.ResizeInvalidate( 6 * ( _VDiv + 1 ) );
+        _Indices.ResizeInvalidate( 3 * _VDiv * 6 );
 
         _Bounds.Mins.X = -RadWidth;
         _Bounds.Mins.Z = -RadWidth;

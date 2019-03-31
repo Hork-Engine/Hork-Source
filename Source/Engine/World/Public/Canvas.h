@@ -61,12 +61,15 @@ enum EDrawCornerFlags {
 };
 
 class FCanvas {
+    AN_FORBID_COPY( FCanvas )
 
     friend class FRenderFrontend;
 
 public:
     int Width;
     int Height;
+
+    FCanvas() {}
 
     void Initialize();
     void Deinitialize();
