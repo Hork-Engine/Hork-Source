@@ -44,7 +44,7 @@ AN_CLASS_META_NO_ATTRIBS( FSponzaModel )
 
 void FSponzaModel::OnGameStart() {
 
-    GGameMaster.bAllowConsole = false;
+    GGameMaster.bAllowConsole = true;
     //GGameMaster.MouseSensitivity = 0.15f;
     GGameMaster.MouseSensitivity = 0.3f;
     //GGameMaster.SetRenderFeatures( VSync_Fixed );
