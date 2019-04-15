@@ -215,11 +215,11 @@ SOFTWARE.
         }
     }
 
-    void FSkeletonData::Clear() {
+    void FSkeletonAsset::Clear() {
         Joints.Clear();
     }
 
-    void FSkeletonData::Read( FFileStream & f ) {
+    void FSkeletonAsset::Read( FFileStream & f ) {
         char buf[1024];
         char * s;
 
@@ -250,14 +250,14 @@ SOFTWARE.
         }
     }
 
-    void FSkeletonData::Write( FFileStream & f ) {
+    void FSkeletonAsset::Write( FFileStream & f ) {
         f.Printf( "joints %d\n", Joints.Length() );
         for ( FJoint & joint : Joints ) {
             f.Printf( "\"%s\" %d %s\n", joint.Name, joint.Parent, joint.JointOffsetMatrix.ToString().ToConstChar() );
         }
     }
 
-    void FSkeletalAnimationData::Clear() {
+    void FSkeletalAnimationAsset::Clear() {
         FrameDelta = 0;
         FrameCount = 0;
         AnimatedJoints.Clear();
@@ -265,7 +265,7 @@ SOFTWARE.
         Bounds.Clear();
     }
 
-    void FSkeletalAnimationData::Read( FFileStream & f ) {
+    void FSkeletalAnimationAsset::Read( FFileStream & f ) {
         char buf[1024];
         char * s;
 
@@ -309,7 +309,9 @@ SOFTWARE.
                 for ( int i = 0 ; i < FrameCount ; i++ ) {
                     BvAxisAlignedBox & bv = Bounds[i];
 
-                    sscanf( s, "( %f %f %f ) ( %f %f %f )",
+                    f.Gets( buf, sizeof( buf ) );
+
+                    sscanf( buf, "( %f %f %f ) ( %f %f %f )",
                             &bv.Mins.X.Value, &bv.Mins.Y.Value, &bv.Mins.Z.Value,
                             &bv.Maxs.X.Value, &bv.Maxs.Y.Value, &bv.Maxs.Z.Value );
                 }
@@ -319,7 +321,7 @@ SOFTWARE.
         }
     }
 
-    void FSkeletalAnimationData::Write( FFileStream & f ) {
+    void FSkeletalAnimationAsset::Write( FFileStream & f ) {
         f.Printf( "animation \"%s\" %f %d\n", Name.ToConstChar(), FrameDelta, FrameCount );
         f.Printf( "anim_joints %d\n", AnimatedJoints.Length() );
         for ( FJointAnimation & janim : AnimatedJoints ) {

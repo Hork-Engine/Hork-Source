@@ -65,7 +65,7 @@ struct FMeshAsset {
     void Write( FFileStream & f );
 };
 
-struct FSkeletonData {
+struct FSkeletonAsset {
     TPodArray< FJoint > Joints;
 
     void Clear();
@@ -73,7 +73,7 @@ struct FSkeletonData {
     void Write( FFileStream & f );
 };
 
-struct FSkeletalAnimationData {
+struct FSkeletalAnimationAsset {
     float FrameDelta;       // fixed time delta between frames
     int FrameCount;         // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
     TPodArray< FJointAnimation > AnimatedJoints;

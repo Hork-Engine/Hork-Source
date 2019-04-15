@@ -499,11 +499,11 @@ void FWorld::DrawDebug( FDebugDraw * _DebugDraw ) {
 
     _DebugDraw->SetColor(1,1,1,1);
     //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_STATIC_BOUNDS ) {
-//        for ( FMeshComponent * component = MeshList
-//              ; component ; component = component->GetNextMesh() ) {
+        for ( FMeshComponent * component = MeshList
+              ; component ; component = component->GetNextMesh() ) {
 
-//            _DebugDraw->DrawAABB( component->GetWorldBounds() );
-//        }
+            _DebugDraw->DrawAABB( component->GetWorldBounds() );
+        }
     //}
 
     for ( FActor * actor : Actors ) {

@@ -609,24 +609,24 @@ void FSkinnedComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
 //    }
 
     // Draw skeleton
-//    if ( Skeleton ) {
-//        _DebugDraw->SetColor( 1,0,0,1 );
-//        _DebugDraw->SetDepthTest( false );
-//        TPodArray< FJoint > const & joints = Skeleton->GetJoints();
-//        for ( int i = 0 ; i < joints.Length() ; i++ ) {
-//            FJoint const & joint = joints[i];
+    if ( Skeleton ) {
+        _DebugDraw->SetColor( 1,0,0,1 );
+        _DebugDraw->SetDepthTest( false );
+        TPodArray< FJoint > const & joints = Skeleton->GetJoints();
+        for ( int i = 0 ; i < joints.Length() ; i++ ) {
+            FJoint const & joint = joints[i];
 
-//            Float3x4 t = GetWorldTransformMatrix() * GetJointTransform( i );
-//            Float3 v1 = t.DecomposeTranslation();
+            Float3x4 t = GetWorldTransformMatrix() * GetJointTransform( i );
+            Float3 v1 = t.DecomposeTranslation();
 
-//            _DebugDraw->DrawOrientedBox( v1, t.DecomposeRotation(), Float3(0.01f) );
+            _DebugDraw->DrawOrientedBox( v1, t.DecomposeRotation(), Float3(0.01f) );
 
-//            if ( joint.Parent >= 0 ) {
-//                Float3 v0 = ( GetWorldTransformMatrix() * GetJointTransform( joint.Parent ) ).DecomposeTranslation();
-//                _DebugDraw->DrawLine( v0, v1 );
-//            }
-//        }
-//    }
+            if ( joint.Parent >= 0 ) {
+                Float3 v0 = ( GetWorldTransformMatrix() * GetJointTransform( joint.Parent ) ).DecomposeTranslation();
+                _DebugDraw->DrawLine( v0, v1 );
+            }
+        }
+    }
 }
 
 /*
