@@ -22,6 +22,15 @@ public:
     void operator/=( const Float & _Scale );
     void operator*=( const Float & _Scale );
 
+    BvAxisAlignedBox operator/( const Float & _Scale ) const {
+        float invScale = 1.0f / _Scale;
+        return BvAxisAlignedBox( Mins * invScale, Maxs * invScale );
+    }
+
+    BvAxisAlignedBox operator*( const Float & _Scale ) const {
+        return BvAxisAlignedBox( Mins * _Scale, Maxs * _Scale );
+    }
+
     void operator+=( const Float3 & _Vec );
     void operator-=( const Float3 & _Vec );
 

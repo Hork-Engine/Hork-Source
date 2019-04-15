@@ -227,7 +227,7 @@ int FFileStream::Impl_Read( void * _Buffer, int _Length ) {
                 if ( ferror( ( FILE * )FileHandle ) ) {
                     GLogger.Printf( "FFileStream::Read: read error %s\n", FileName.ToConstChar() );
                 } else if ( feof( ( FILE * )FileHandle ) ) {
-                    GLogger.Printf( "FFileStream::Read: unexpected end of file %s\n", FileName.ToConstChar() );
+                    //GLogger.Printf( "FFileStream::Read: unexpected end of file %s\n", FileName.ToConstChar() );
                 }
                 bytesCount = _Length - bytesCount;
                 return bytesCount;
@@ -377,7 +377,7 @@ bool FMemoryStream::OpenRead( const char * _FileName, const byte * _MemoryBuffer
 bool FMemoryStream::OpenRead( const char * _FileName, FArchive & _Archive ) {
     Close();
 
-    if ( !_Archive.ReadFile( _FileName, &MemoryBuffer, &MemoryBufferLength ) ) {
+    if ( !_Archive.ReadFileToZoneMemory( _FileName, &MemoryBuffer, &MemoryBufferLength ) ) {
         return false;
     }
 
@@ -435,7 +435,7 @@ int FMemoryStream::Impl_Read( void * _Buffer, int _Length ) {
     int bytesCount = _Length;
     if ( MemoryBufferOffset + _Length > MemoryBufferLength ) {
         bytesCount = MemoryBufferLength - MemoryBufferOffset;
-        GLogger.Printf( "FFileStream::Read: unexpected end of file %s\n", FileName.ToConstChar() );
+        //GLogger.Printf( "FFileStream::Read: unexpected end of file %s\n", FileName.ToConstChar() );
     }
 
     if ( bytesCount > 0 ) {
@@ -636,7 +636,7 @@ bool FArchive::GetCurrentFileInfo( char * _FileName, size_t _SizeofFileName ) {
     return Handle ? unzGetCurrentFileInfo( Handle, NULL, _FileName, _SizeofFileName, NULL, 0, NULL, 0 ) == UNZ_OK : false;
 }
 
-bool FArchive::ReadFile( const char * _FileName, byte ** _MemoryBuffer, int * _MemoryBufferLength ) {
+bool FArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _MemoryBufferLength ) {
     int Result = Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) : UNZ_BADZIPFILE;
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Couldn't open file %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
@@ -684,6 +684,55 @@ bool FArchive::ReadFile( const char * _FileName, byte ** _MemoryBuffer, int * _M
     return true;
 }
 
+bool FArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuffer, int * _MemoryBufferLength, int * _HunkMark ) {
+    int Result = Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) : UNZ_BADZIPFILE;
+    if ( Result != UNZ_OK ) {
+        GLogger.Printf( "Couldn't open file %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
+        return false;
+    }
+
+    unz_file_info FileInfo;
+
+    Result = unzGetCurrentFileInfo( Handle, &FileInfo, NULL, 0, NULL, 0, NULL, 0 );
+    if ( Result != UNZ_OK ) {
+        GLogger.Printf( "Failed to read file info %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
+        return false;
+    }
+
+    Result = unzOpenCurrentFile( Handle );
+    if ( Result != UNZ_OK ) {
+        GLogger.Printf( "Failed to open file %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
+        return false;
+    }
+
+    *_HunkMark = GMainHunkMemory.SetHunkMark();
+
+    void * data = GMainHunkMemory.HunkMemory( FileInfo.uncompressed_size, 1 );
+    Result = unzReadCurrentFile( Handle, data, FileInfo.uncompressed_size );
+    if ( (uLong)Result != FileInfo.uncompressed_size ) {
+        GLogger.Printf( "Couldn't read file %s complete from archive: ", _FileName );
+        if ( Result == 0 ) {
+            GLogger.Print( "the end of file was reached\n" );
+        } else {
+            GLogger.Printf( "%s\n", GetUnzipErrorStr( Result ) );
+        }
+        GMainHunkMemory.ClearToMark( *_HunkMark );
+        unzCloseCurrentFile( Handle );
+        return false;
+    }
+
+    Result = unzCloseCurrentFile( Handle );
+    if ( Result != UNZ_OK ) {
+        GLogger.Printf( "Error during reading file %s (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
+        GMainHunkMemory.ClearToMark( *_HunkMark );
+        return false;
+    }
+
+    *_MemoryBuffer = ( byte * )data;
+    *_MemoryBufferLength = FileInfo.uncompressed_size;
+
+    return true;
+}
 
 #if 0
 class ANGIE_API FProgressCopyFile {

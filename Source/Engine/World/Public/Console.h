@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include <Engine/Core/Public/BaseTypes.h>
 
-struct ImFont;
 struct FKeyEvent;
 struct FCharEvent;
 struct FMouseWheelEvent;
@@ -51,6 +50,8 @@ public:
     void CharEvent( FCharEvent const & _Event );
     void MouseWheelEvent( FMouseWheelEvent const & _Event );
     void Draw( FCanvas * _Canvas, float _TimeStep );
+    void WriteStoryLines();
+    void ReadStoryLines();
 };
 
 extern FConsole & GConsole;

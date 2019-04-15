@@ -68,7 +68,7 @@ int64_t rt_SysStartSeconds;
 int64_t rt_SysStartMilliseconds;
 int64_t rt_SysStartMicroseconds;
 FAtomicBool rt_Terminate( false );
-FRenderFrame rt_FrameData[2];
+FRenderFrame rt_FrameData[ 2 ];
 FSyncEvent rt_SwapFrameEvent;
 FSyncEvent rt_FrameReadyEvent;
 int rt_ReadFrameIndex = 0;
@@ -82,7 +82,7 @@ FCreateGameModuleCallback CreateGameModuleCallback;
 
 int rt_CheckArg( const char * _Arg ) {
     for ( int i = 0 ; i < rt_NumArguments ; i++ ) {
-        if ( !FString::Icmp( rt_Arguments[i], _Arg ) ) {
+        if ( !FString::Icmp( rt_Arguments[ i ], _Arg ) ) {
             return i;
         }
     }
@@ -108,18 +108,57 @@ static FMemoryInfo GetPhysMemoryInfo() {
     long long TotalPages = sysconf( _SC_PHYS_PAGES );
     long long AvailPages = sysconf( _SC_AVPHYS_PAGES );
     long long PageSize = sysconf( _SC_PAGE_SIZE );
-    info.TotalAvailableMegabytes = (TotalPages * PageSize) >> 20;
-    info.CurrentAvailableMegabytes = (AvailPages * PageSize) >> 20;
+    info.TotalAvailableMegabytes = ( TotalPages * PageSize ) >> 20;
+    info.CurrentAvailableMegabytes = ( AvailPages * PageSize ) >> 20;
 #else
     #warning "GetPhysMemoryInfo not implemented under current platform"
 #endif
     return info;
 }
 
+volatile int MemoryChecksum;
+static void * MemoryHeap;
+
+static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize ) {
+    byte * p = ( byte * )_MemoryPointer;
+    //for ( int n = 0 ; n < 4 ; n++ ) {
+        for ( int m = 0 ; m < ( _MemorySize - 16 * 0x1000 ) ; m += 4 ) {
+            MemoryChecksum += *( int32_t * )&p[ m ];
+            MemoryChecksum += *( int32_t * )&p[ m + 16 * 0x1000 ];
+        }
+    //}
+
+    //int j = _MemorySize >> 2;
+    //for ( int i = 0 ; i < j ; i += 64 ) {
+    //    MemoryChecksum += ( ( int32_t * )_MemoryPointer )[ i ];
+    //}
+}
+
 static void InitializeMemory() {
-    const int ZoneSizeInMegabytes = 256;//8;
-    const int HunkSizeInMegabytes = 16;
-    const int FrameMemorySizeInMegabytes = 128;
+    const size_t ZoneSizeInMegabytes = 256;//8;
+    const size_t HunkSizeInMegabytes = 16;
+    const size_t FrameMemorySizeInMegabytes = 256;//128;
+
+    const size_t TotalMemorySizeInBytes = ( ZoneSizeInMegabytes + HunkSizeInMegabytes + FrameMemorySizeInMegabytes ) << 20;
+
+#ifdef AN_OS_WIN32
+    if ( !SetProcessWorkingSetSize( GetCurrentProcess(), TotalMemorySizeInBytes, 1024 << 20 ) ) {
+        GLogger.Printf( "Failed on SetProcessWorkingSetSize\n" );
+    }
+#endif
+
+    int pageSize;
+#ifdef AN_OS_WIN32
+    SYSTEM_INFO systemInfo;
+    GetSystemInfo( &systemInfo );
+    pageSize = systemInfo.dwPageSize;
+#elif defined AN_OS_LINUX
+    pageSize = sysconf( _SC_PAGE_SIZE );
+#else
+    #warning "GetPageSize not implemented under current platform"
+#endif
+
+    GLogger.Printf( "Memory page size: %d bytes\n", pageSize );
 
     FMemoryInfo physMemoryInfo = GetPhysMemoryInfo();
     if ( physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0 ) {
@@ -129,30 +168,37 @@ static void InitializeMemory() {
 
     GLogger.Printf( "Zone memory size: %d Megs\n"
                     "Hunk memory size: %d Megs\n"
-                    "Frame memory size: %d Megs\n", ZoneSizeInMegabytes, HunkSizeInMegabytes, FrameMemorySizeInMegabytes );
+                    "Frame memory size: %d Megs\n",
+                    ZoneSizeInMegabytes, HunkSizeInMegabytes, FrameMemorySizeInMegabytes );
 
     GMainHeapMemory.Initialize();
 
-    void * ZoneMemory = GMainHeapMemory.HeapAllocCleared( ZoneSizeInMegabytes << 20, 16 );
+    MemoryHeap = GMainHeapMemory.HeapAllocCleared( TotalMemorySizeInBytes, 16 );
+
+    //TouchMemoryPages( MemoryHeap, TotalMemorySizeInBytes );
+
+    void * ZoneMemory = MemoryHeap;
     GMainMemoryZone.Initialize( ZoneMemory, ZoneSizeInMegabytes );
 
-    void * HunkMemory = GMainHeapMemory.HeapAllocCleared( HunkSizeInMegabytes << 20, 16 );
+    void * HunkMemory = ( byte * )MemoryHeap + ( ZoneSizeInMegabytes << 20 );
     GMainHunkMemory.Initialize( HunkMemory, HunkSizeInMegabytes );
 
-    rt_FrameMemoryAddress = GMainHeapMemory.HeapAllocCleared( FrameMemorySizeInMegabytes << 20, 16 );
+    rt_FrameMemoryAddress = ( byte * )MemoryHeap + ( ( ZoneSizeInMegabytes + HunkSizeInMegabytes ) << 20 );
     rt_FrameMemorySize = FrameMemorySizeInMegabytes << 20;
 }
 
 static void DeinitializeMemory() {
-    void * ZoneMemory = GMainMemoryZone.GetZoneMemoryAddress();
+    //void * ZoneMemory = GMainMemoryZone.GetZoneMemoryAddress();
     GMainMemoryZone.Deinitialize();
 
-    void * HunkMemory = GMainHunkMemory.GetHunkMemoryAddress();
+    //void * HunkMemory = GMainHunkMemory.GetHunkMemoryAddress();
     GMainHunkMemory.Deinitialize();
 
-    GMainHeapMemory.HeapFree( rt_FrameMemoryAddress );
-    GMainHeapMemory.HeapFree( ZoneMemory );
-    GMainHeapMemory.HeapFree( HunkMemory );
+    //GMainHeapMemory.HeapFree( rt_FrameMemoryAddress );
+    //GMainHeapMemory.HeapFree( ZoneMemory );
+    //GMainHeapMemory.HeapFree( HunkMemory );
+
+    GMainHeapMemory.HeapFree( MemoryHeap );
 
     GMainHeapMemory.Deinitialize();
 }
@@ -210,7 +256,7 @@ static int ProcessAttribute = 0;
 
 static void InitializeProcess() {
     setlocale( LC_ALL, "C" );
-    srand( (unsigned)time(NULL) );
+    srand( ( unsigned )time( NULL ) );
 
 #if defined( AN_OS_WIN32 )
     SetErrorMode( SEM_FAILCRITICALERRORS );
@@ -222,7 +268,7 @@ static void InitializeProcess() {
 
     rt_Executable = nullptr;
     while ( 1 ) {
-        rt_Executable = (char *)realloc( rt_Executable, curLen + 1 );
+        rt_Executable = ( char * )realloc( rt_Executable, curLen + 1 );
         len = GetModuleFileNameA( NULL, rt_Executable, curLen );
         if ( len < curLen && len != 0 ) {
             break;
@@ -235,7 +281,7 @@ static void InitializeProcess() {
             break;
         }
     }
-    rt_Executable[len] = 0;
+    rt_Executable[ len ] = 0;
 
     FString::UpdateSeparator( rt_Executable );
 
@@ -255,7 +301,7 @@ static void InitializeProcess() {
 
     rt_Executable = nullptr;
     while ( 1 ) {
-        rt_Executable = (char *)realloc( rt_Executable, curLen + 1 );
+        rt_Executable = ( char * )realloc( rt_Executable, curLen + 1 );
         len = readlink( "/proc/self/exe", rt_Executable, curLen );
         if ( len == -1 ) {
             CriticalError( "InitializeProcess: Failed on readlink\n" );
@@ -267,7 +313,7 @@ static void InitializeProcess() {
         }
         curLen <<= 1;
     }
-    rt_Executable[len] = 0;
+    rt_Executable[ len ] = 0;
 
     uint32_t appHash = FCore::SDBMHash( rt_Executable, len );
     int f = open( FString::Fmt( "/tmp/angie_%u.pid", appHash ), O_RDWR | O_CREAT, 0666 );
@@ -361,7 +407,7 @@ static void RuntimeUpdate( FEventQueue & _RuntimeEvents, FEventQueue & _GameEven
     glfwPollEvents();
 
     if ( testInput.Load() ) {
-        testInput.Store(false);
+        testInput.Store( false );
 
         FEvent * testEvent;
 
@@ -421,7 +467,7 @@ static void RuntimeMainLoop() {
     FRenderFrame * frameData;
 
     for ( int i = 0 ; i < 2 ; i++ ) {
-        frameData = &rt_FrameData[i];
+        frameData = &rt_FrameData[ i ];
         frameData->RenderProxyUploadHead = nullptr;
         frameData->RenderProxyUploadTail = nullptr;
         frameData->RenderProxyFree = nullptr;
@@ -429,16 +475,16 @@ static void RuntimeMainLoop() {
         frameData->DrawListTail = nullptr;
     }
 
-    rt_FrameData[rt_DrawFrameIndex].FrameMemoryUsed = 0;
-    rt_FrameData[rt_DrawFrameIndex].FrameMemorySize = rt_FrameMemorySize;
-    rt_FrameData[rt_DrawFrameIndex].pFrameMemory = rt_FrameMemoryAddress;
+    rt_FrameData[ rt_DrawFrameIndex ].FrameMemoryUsed = 0;
+    rt_FrameData[ rt_DrawFrameIndex ].FrameMemorySize = rt_FrameMemorySize;
+    rt_FrameData[ rt_DrawFrameIndex ].pFrameMemory = rt_FrameMemoryAddress;
 
-    rt_FrameData[rt_ReadFrameIndex].FrameMemoryUsed = 0;
-    rt_FrameData[rt_ReadFrameIndex].FrameMemorySize = 0;
-    rt_FrameData[rt_ReadFrameIndex].pFrameMemory = nullptr;
+    rt_FrameData[ rt_ReadFrameIndex ].FrameMemoryUsed = 0;
+    rt_FrameData[ rt_ReadFrameIndex ].FrameMemorySize = 0;
+    rt_FrameData[ rt_ReadFrameIndex ].pFrameMemory = nullptr;
 
     // Pump initial events
-    frameData = &rt_FrameData[rt_ReadFrameIndex];
+    frameData = &rt_FrameData[ rt_ReadFrameIndex ];
     RuntimeUpdate( frameData->RuntimeEvents, frameData->GameEvents );
 
     GameThread.Routine = _GameThreadMain;
@@ -465,21 +511,35 @@ static void RuntimeMainLoop() {
 
         if ( !timedOut ) {
 
-            frameData = &rt_FrameData[rt_ReadFrameIndex];
+            if ( rt_ReadFrameIndex & 1 ) {
+                // Don't render frame with old input data. TODO: disable frontend rendering for this frame!
+                frameData = &rt_FrameData[ rt_ReadFrameIndex ];
+                GRenderBackend->CleanupFrame( frameData );
+                RuntimeUpdate( frameData->RuntimeEvents, frameData->GameEvents );
+                rt_FrameReadyEvent.Signal();
+            } else {
+                frameData = &rt_FrameData[ rt_ReadFrameIndex ];
 
-            frameData->RenderTimeDelta = GRuntime.SysMicroseconds();
+                //frameData->RenderTimeDelta = GRuntime.SysMicroseconds();
 
-            GRenderBackend->CleanupFrame( frameData );
+                GRenderBackend->CleanupFrame( frameData );
+                GRenderBackend->RenderFrame( frameData );
 
-            RuntimeUpdate( frameData->RuntimeEvents, frameData->GameEvents );
+                //frameData->RenderTimeDelta = GRuntime.SysMicroseconds() - frameData->RenderTimeDelta;
 
-            GRenderBackend->RenderFrame( frameData );
+                // TODO: test test test !!!
+                if ( 1 ) {
+                    GRenderBackend->SwapBuffers();
 
-            frameData->RenderTimeDelta = GRuntime.SysMicroseconds() - frameData->RenderTimeDelta;
+                    RuntimeUpdate( frameData->RuntimeEvents, frameData->GameEvents );
+                    rt_FrameReadyEvent.Signal();
+                } else {
+                    RuntimeUpdate( frameData->RuntimeEvents, frameData->GameEvents );
+                    rt_FrameReadyEvent.Signal();
 
-            rt_FrameReadyEvent.Signal();
-
-            GRenderBackend->SwapBuffers();
+                    GRenderBackend->SwapBuffers();
+                }
+            }
 
             rt_StalledTime = 0;
 
@@ -501,7 +561,7 @@ static void RuntimeMainLoop() {
     // Game thread is stopped at this moment
 
     for ( int i = 0 ; i < 2 ; i++ ) {
-        frameData = &rt_FrameData[i];
+        frameData = &rt_FrameData[ i ];
 
         GRenderBackend->CleanupFrame( frameData );
 
@@ -517,9 +577,9 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
     rt_SysStartMicroseconds = StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count();
     rt_SysStartMilliseconds = rt_SysStartMicroseconds * 0.001;
     rt_SysStartSeconds = rt_SysStartMicroseconds * 0.000001;
-    
+
     //SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_HIGHEST );
- 
+
     if ( SetCriticalMark() ) {
         // Critical error was emitted by this thread
         EmergencyExit();
@@ -559,8 +619,7 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
     GLogger.Printf( "Working directory: %s\n", rt_WorkingDir.ToConstChar() );
     GLogger.Printf( "Executable: %s\n", rt_Executable );
 
-    glfwSetErrorCallback( []( int _ErrorCode, const char * _UnicodeMessage )
-    {
+    glfwSetErrorCallback( []( int _ErrorCode, const char * _UnicodeMessage ) {
         GLogger.Printf( "Error: %d : %s\n", _ErrorCode, _UnicodeMessage );
     } );
 
@@ -575,7 +634,7 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
     }
 
     int jobManagerThreadCount = FThread::NumHardwareThreads ? FMath::Min( FThread::NumHardwareThreads, GAsyncJobManager.MAX_WORKER_THREADS )
-                                                   : GAsyncJobManager.MAX_WORKER_THREADS;
+        : GAsyncJobManager.MAX_WORKER_THREADS;
     GAsyncJobManager.Initialize( jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS );
 
     GRenderFrontendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_FRONTEND_JOB_LIST );
@@ -647,7 +706,7 @@ static void AllocCommandLineArgs( char * _Buffer, int * _NumArguments, char *** 
     }
 
     if ( count > 0 ) {
-        args = (char **)calloc( count, sizeof( char * ) );
+        args = ( char ** )calloc( count, sizeof( char * ) );
 
         s = _Buffer;
         count = 0;
@@ -658,7 +717,7 @@ static void AllocCommandLineArgs( char * _Buffer, int * _NumArguments, char *** 
             }
             if ( *s ) {
                 bool q = false;
-                args[count] = s;
+                args[ count ] = s;
                 while ( *s ) {
                     if ( *s == '\"' ) {
                         q = !q;
@@ -666,11 +725,11 @@ static void AllocCommandLineArgs( char * _Buffer, int * _NumArguments, char *** 
                             s++;
                             break;
                         } else {
-                            args[count] = ++s;
+                            args[ count ] = ++s;
                             continue;
                         }
                     }
-                    if ( !q && ( ( *s <= 32 && *s > 0 ) || *s > 126) ) {
+                    if ( !q && ( ( *s <= 32 && *s > 0 ) || *s > 126 ) ) {
                         break;
                     }
                     s++;
@@ -705,7 +764,7 @@ ANGIE_API void Runtime( const char * _CommandLine, FCreateGameModuleCallback _Cr
         return;
     }
     // Fix executable path separator
-    FString::UpdateSeparator( rt_Arguments[0] );
+    FString::UpdateSeparator( rt_Arguments[ 0 ] );
     Runtime( _CreateGameModule );
     FreeCommandLineArgs( rt_Arguments );
 }
@@ -723,7 +782,7 @@ ANGIE_API void Runtime( int _Argc, char ** _Argv, FCreateGameModuleCallback _Cre
         return;
     }
     // Fix executable path separator
-    FString::UpdateSeparator( rt_Arguments[0] );
+    FString::UpdateSeparator( rt_Arguments[ 0 ] );
     Runtime( _CreateGameModule );
 }
 
@@ -732,8 +791,7 @@ BOOL WINAPI DllMain(
     _In_ HINSTANCE hinstDLL,
     _In_ DWORD     fdwReason,
     _In_ LPVOID    lpvReserved
-)
-{
+) {
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 
     return TRUE;

@@ -380,6 +380,20 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         return;
     }
 
+    if ( !FString::Cmp( _Name, "*gray*" ) ) {
+        // Black texture
+
+        byte data[ 1 * 1 * 3 ];
+        memset( data, 127, sizeof( data ) );
+
+        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        void * pixels = WriteTextureData( 0, 0, 0, 1, 1, 0 );
+        if ( pixels ) {
+            memcpy( pixels, data, 3 );
+        }
+        return;
+    }
+
     if ( !FString::Cmp( _Name, "*normal*" ) ) {
         // Normal texture
 
@@ -652,6 +666,25 @@ static int Stbi_Eof( void *user ) {
     return stream.Eof();
 }
 
+static int Stbi_Read_Mem( void *user, char *data, int size ) {
+    FMemoryStream & stream = *( FMemoryStream * )user;
+
+    stream.Read( data, size );
+    return stream.GetReadBytesCount();
+}
+
+static void Stbi_Skip_Mem( void *user, int n ) {
+    FMemoryStream & stream = *( FMemoryStream * )user;
+
+    stream.SeekCur( n );
+}
+
+static int Stbi_Eof_Mem( void *user ) {
+    FMemoryStream & stream = *( FMemoryStream * )user;
+
+    return stream.Eof();
+}
+
 bool FImage::LoadRawImage( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
     FFileStream stream;
 
@@ -662,10 +695,10 @@ bool FImage::LoadRawImage( const char * _Path, bool _SRGB, bool _GenerateMipmaps
     return LoadRawImage( stream, _SRGB, _GenerateMipmaps, _NumDesiredChannels );
 }
 
-bool FImage::LoadRawImage( FFileStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+static bool LoadRawImage( const char * _Name, FImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
     AN_Assert( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
 
-    Free();
+    _Image.Free();
 
     if ( _SRGB ) {
         if ( _NumDesiredChannels == 1 ) {
@@ -675,29 +708,23 @@ bool FImage::LoadRawImage( FFileStream & _Stream, bool _SRGB, bool _GenerateMipm
         }
     }
 
-    const stbi_io_callbacks callbacks = {
-        Stbi_Read,
-        Stbi_Skip,
-        Stbi_Eof
-    };
-
-    stbi_uc * data = stbi_load_from_callbacks( &callbacks, &_Stream, &Width, &Height, &NumChannels, _NumDesiredChannels );
+    stbi_uc * data = stbi_load_from_callbacks( _Callbacks, _User, &_Image.Width, &_Image.Height, &_Image.NumChannels, _NumDesiredChannels );
     if ( !data ) {
-        GLogger.Printf( "FImage::LoadRawImage: couldn't load %s\n", _Stream.GetFileName() );
+        GLogger.Printf( "FImage::LoadRawImage: couldn't load %s\n", _Name );
         return false;
     }
-    bHDRI = false;
-    bLinearSpace = !_SRGB;
-    bHalf = false;
-    NumLods = 1;
+    _Image.bHDRI = false;
+    _Image.bLinearSpace = !_SRGB;
+    _Image.bHalf = false;
+    _Image.NumLods = 1;
     if ( _NumDesiredChannels > 0 ) {
-        NumChannels = _NumDesiredChannels;
+        _Image.NumChannels = _NumDesiredChannels;
     }
 
-    if ( NumChannels > 2 ) {
+    if ( _Image.NumChannels > 2 ) {
         // swap r & b channels to store image as BGR
-        int count = Width * Height * NumChannels;
-        for ( int i = 0 ; i < count ; i += NumChannels ) {
+        int count = _Image.Width * _Image.Height * _Image.NumChannels;
+        for ( int i = 0 ; i < count ; i += _Image.NumChannels ) {
             std::swap( data[i], data[i+2] );
         }
     }
@@ -706,25 +733,116 @@ bool FImage::LoadRawImage( FFileStream & _Stream, bool _SRGB, bool _GenerateMipm
         FSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = data;
-        mipmapGen.Width = Width;
-        mipmapGen.Height = Height;
-        mipmapGen.NumChannels = NumChannels;
-        mipmapGen.bLinearSpace = bLinearSpace;
+        mipmapGen.Width = _Image.Width;
+        mipmapGen.Height = _Image.Height;
+        mipmapGen.NumChannels = _Image.NumChannels;
+        mipmapGen.bLinearSpace = _Image.bLinearSpace;
         mipmapGen.bHDRI = false;
 
         int requiredMemorySize;
-        mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, NumLods );
+        mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, _Image.NumLods );
 
-        pRawData = AllocateBufferData( requiredMemorySize );
+        _Image.pRawData = AllocateBufferData( requiredMemorySize );
 
-        mipmapGen.GenerateMipmaps( pRawData );
+        mipmapGen.GenerateMipmaps( _Image.pRawData );
 
         DeallocateBufferData( data );
     } else {
-        pRawData = data;
+        _Image.pRawData = data;
     }
 
     return true;
+}
+
+static bool LoadRawImageHDRI( const char * _Name, FImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+    AN_Assert( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
+
+    _Image.Free();
+
+    float * data = stbi_loadf_from_callbacks( _Callbacks, _User, &_Image.Width, &_Image.Height, &_Image.NumChannels, _NumDesiredChannels );
+    if ( !data ) {
+        GLogger.Printf( "FImage::LoadRawImageHDRI: couldn't load %s\n", _Name );
+        return false;
+    }
+    _Image.bHDRI = true;
+    _Image.bLinearSpace = true;
+    _Image.bHalf = _HalfFloat;
+    _Image.NumLods = 1;
+
+    if ( _NumDesiredChannels > 0 ) {
+        _Image.NumChannels = _NumDesiredChannels;
+    }
+
+    if ( _Image.NumChannels > 2 ) {
+        // swap r & b channels to store image as BGR
+        int count = _Image.Width * _Image.Height * _Image.NumChannels;
+        for ( int i = 0 ; i < count ; i += _Image.NumChannels ) {
+            std::swap( data[i], data[i+2] );
+        }
+    }
+
+    if ( _GenerateMipmaps ) {
+        FSoftwareMipmapGenerator mipmapGen;
+
+        mipmapGen.SourceImage = data;
+        mipmapGen.Width = _Image.Width;
+        mipmapGen.Height = _Image.Height;
+        mipmapGen.NumChannels = _Image.NumChannels;
+        mipmapGen.bLinearSpace = _Image.bLinearSpace;
+        mipmapGen.bHDRI = true;
+
+        int requiredMemorySize;
+        mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, _Image.NumLods );
+
+        void * tmp = AllocateBufferData( requiredMemorySize );
+
+        mipmapGen.GenerateMipmaps( tmp );
+
+        DeallocateBufferData( data );
+        data = ( float * )tmp;
+    }
+
+    if ( _HalfFloat ) {
+        int imageSize = 0;
+        for ( int i = 0 ; ; i++ ) {
+            int w = FMath::Max( 1, _Image.Width >> i );
+            int h = FMath::Max( 1, _Image.Height >> i );
+            imageSize += w * h;
+            if ( w == 1 && h == 1 ) {
+                break;
+            }
+        }
+        imageSize *= _Image.NumChannels;
+
+        uint16_t * tmp = ( uint16_t * )AllocateBufferData( imageSize * sizeof( uint16_t ) );
+        Float::FloatToHalf( data, tmp, imageSize );
+        DeallocateBufferData( data );
+        data = ( float * )tmp;
+    }
+
+    _Image.pRawData = data;
+
+    return true;
+}
+
+bool FImage::LoadRawImage( FFileStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+    const stbi_io_callbacks callbacks = {
+        Stbi_Read,
+        Stbi_Skip,
+        Stbi_Eof
+    };
+
+    return ::LoadRawImage( _Stream.GetFileName(), *this, &callbacks, &_Stream, _SRGB, _GenerateMipmaps, _NumDesiredChannels );
+}
+
+bool FImage::LoadRawImage( FMemoryStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+    const stbi_io_callbacks callbacks = {
+        Stbi_Read_Mem,
+        Stbi_Skip_Mem,
+        Stbi_Eof_Mem
+    };
+
+    return ::LoadRawImage( _Stream.GetFileName(), *this, &callbacks, &_Stream, _SRGB, _GenerateMipmaps, _NumDesiredChannels );
 }
 
 bool FImage::LoadRawImageHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
@@ -738,80 +856,23 @@ bool FImage::LoadRawImageHDRI( const char * _Path, bool _HalfFloat, bool _Genera
 }
 
 bool FImage::LoadRawImageHDRI( FFileStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
-    AN_Assert( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
-
-    Free();
-
     const stbi_io_callbacks callbacks = {
         Stbi_Read,
         Stbi_Skip,
         Stbi_Eof
     };
 
-    float * data = stbi_loadf_from_callbacks( &callbacks, &_Stream, &Width, &Height, &NumChannels, _NumDesiredChannels );
-    if ( !data ) {
-        GLogger.Printf( "FImage::LoadRawImageHDRI: couldn't load %s\n", _Stream.GetFileName() );
-        return false;
-    }
-    bHDRI = true;
-    bLinearSpace = true;
-    bHalf = _HalfFloat;
-    NumLods = 1;
+    return ::LoadRawImageHDRI( _Stream.GetFileName(), *this, &callbacks, &_Stream, _HalfFloat, _GenerateMipmaps, _NumDesiredChannels );
+}
 
-    if ( _NumDesiredChannels > 0 ) {
-        NumChannels = _NumDesiredChannels;
-    }
+bool FImage::LoadRawImageHDRI( FMemoryStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+    const stbi_io_callbacks callbacks = {
+        Stbi_Read_Mem,
+        Stbi_Skip_Mem,
+        Stbi_Eof_Mem
+    };
 
-    if ( NumChannels > 2 ) {
-        // swap r & b channels to store image as BGR
-        int count = Width * Height * NumChannels;
-        for ( int i = 0 ; i < count ; i += NumChannels ) {
-            std::swap( data[i], data[i+2] );
-        }
-    }
-
-    if ( _GenerateMipmaps ) {
-        FSoftwareMipmapGenerator mipmapGen;
-
-        mipmapGen.SourceImage = data;
-        mipmapGen.Width = Width;
-        mipmapGen.Height = Height;
-        mipmapGen.NumChannels = NumChannels;
-        mipmapGen.bLinearSpace = bLinearSpace;
-        mipmapGen.bHDRI = true;
-
-        int requiredMemorySize;
-        mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, NumLods );
-
-        void * tmp = AllocateBufferData( requiredMemorySize );
-
-        mipmapGen.GenerateMipmaps( tmp );
-
-        DeallocateBufferData( data );
-        data = ( float * )tmp;
-    }
-
-    if ( _HalfFloat ) {
-        int imageSize = 0;
-        for ( int i = 0 ; ; i++ ) {
-            int w = FMath::Max( 1, Width >> i );
-            int h = FMath::Max( 1, Height >> i );
-            imageSize += w * h;
-            if ( w == 1 && h == 1 ) {
-                break;
-            }
-        }
-        imageSize *= NumChannels;
-
-        uint16_t * tmp = ( uint16_t * )AllocateBufferData( imageSize * sizeof( uint16_t ) );
-        Float::FloatToHalf( data, tmp, imageSize );
-        DeallocateBufferData( data );
-        data = ( float * )tmp;
-    }
-
-    pRawData = data;
-
-    return true;
+    return ::LoadRawImageHDRI( _Stream.GetFileName(), *this, &callbacks, &_Stream, _HalfFloat, _GenerateMipmaps, _NumDesiredChannels );
 }
 
 void FImage::Free() {

@@ -30,24 +30,31 @@ SOFTWARE.
 
 #pragma once
 
-#include "MeshBase.h"
+#include "BaseObject.h"
 #include "Shape.h"
+#include "MaterialAssembly.h"
 
 class FIndexedMesh;
 
+/*
+
+FIndexedMeshSubpart
+
+Part of indexed mesh (submesh / element)
+
+*/
 class FIndexedMeshSubpart : public FBaseObject {
     AN_CLASS( FIndexedMeshSubpart, FBaseObject )
 
     friend class FIndexedMesh;
 
 public:
-    int FirstVertex;
-    int VertexCount;
+    int BaseVertex;
     int FirstIndex;
     int IndexCount;
 
     BvAxisAlignedBox BoundingBox;
-    //TRefHolder< FMaterialInstance > Material;
+    TRefHolder< FMaterialInstance > MaterialInstance;
 
     FIndexedMesh * GetParent() { return ParentMesh; }
 
@@ -57,9 +64,16 @@ protected:
 
 private:
     FIndexedMesh * ParentMesh;
-    int IndexInArrayOfSubparts = -1;
+    //int IndexInArrayOfSubparts = -1;
 };
 
+/*
+
+FLightmapUV
+
+Lightmap UV channel
+
+*/
 class FLightmapUV : public FBaseObject, public IRenderProxyOwner {
     AN_CLASS( FLightmapUV, FBaseObject )
 
@@ -87,8 +101,16 @@ private:
     int IndexInArrayOfUVs = -1;
 
     int VertexCount;
+    bool bDynamicStorage;
 };
 
+/*
+
+FVertexLight
+
+Vertex light channel
+
+*/
 class FVertexLight : public FBaseObject, public IRenderProxyOwner {
     AN_CLASS( FVertexLight, FBaseObject )
 
@@ -116,12 +138,20 @@ private:
     int IndexInArrayOfChannels = -1;
 
     int VertexCount;
+    bool bDynamicStorage;
 };
 
 using FLightmapUVChannels = TPodArray< FLightmapUV *, 1 >;
 using FVertexLightChannels = TPodArray< FVertexLight *, 1 >;
 using FIndexedMeshSubpartArray = TPodArray< FIndexedMeshSubpart *, 1 >;
 
+/*
+
+FIndexedMesh
+
+Triangulated 3d surface with indexed vertices
+
+*/
 class FIndexedMesh : public FBaseObject, public IRenderProxyOwner {
     AN_CLASS( FIndexedMesh, FBaseObject )
 
@@ -131,7 +161,7 @@ class FIndexedMesh : public FBaseObject, public IRenderProxyOwner {
 
 public:
     // Allocate mesh
-    void Initialize( int _NumVertices, int _NumIndices );
+    void Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false, bool _DynamicStorage = false );
 
     // Allocate mesh and create base shape
     template< typename _Shape, class... _Valty >
@@ -140,11 +170,14 @@ public:
     // Create mesh from string (*box* *sphere* *cylinder* *plane*)
     void InitializeInternalMesh( const char * _Name );
 
-    // Create mesh part
-    FIndexedMeshSubpart * CreateSubpart( FString const & _Name, int _FirstVertex, int _VertexCount, int _FirstIndex, int _IndexCount );
+    // Skinned mesh have 4 weights for each vertex
+    bool IsSkinned() const { return bSkinnedMesh; }
 
-    // Get persistent subpart
-    FIndexedMeshSubpart * GetPersistentSubpart() { return Subparts[0]; }
+    // Dynamic storage is the mesh that updates every or almost every frame
+    bool IsDynamicStorage() const { return bDynamicStorage; }
+
+    // Get mesh part
+    FIndexedMeshSubpart * GetSubpart( int _SubpartIndex );
 
     // Create lightmap channel to store lighmap UVs
     FLightmapUV * CreateLightmapUVChannel();
@@ -173,6 +206,12 @@ public:
     // Write vertices at location and send them to GPU
     bool WriteVertexData( FMeshVertex const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
+    // Write joint weights at location and send them to GPU
+    FMeshVertexJoint * WriteJointWeights( int _VerticesCount, int _StartVertexLocation );
+
+    // Write joint weights at location and send them to GPU
+    bool WriteJointWeights( FMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation );
+
     // Write indices at location and send them to GPU
     unsigned int * WriteIndexData( int _IndexCount, int _StartIndexLocation );
 
@@ -196,16 +235,21 @@ private:
     FVertexLightChannels VertexLightChannels;
     int VertexCount;
     int IndexCount;
+    bool bSkinnedMesh;
+    bool bDynamicStorage;
 };
 
 template< typename _Shape, class... _Valty >
 void FIndexedMesh::InitializeShape( _Valty &&... _Val ) {
     TPodArray< FMeshVertex > vertices;
     TPodArray< unsigned int > indices;
+    BvAxisAlignedBox bounds;
 
-    _Shape::CreateMesh( vertices, indices, GetPersistentSubpart()->BoundingBox, std::forward< _Valty >( _Val )... );
+    _Shape::CreateMesh( vertices, indices, bounds, std::forward< _Valty >( _Val )... );
 
-    Initialize( vertices.Length(), indices.Length() );
+    Initialize( vertices.Length(), indices.Length(), 1 );
     WriteVertexData( vertices.ToPtr(), vertices.Length(), 0 );
     WriteIndexData( indices.ToPtr(), indices.Length(), 0 );
+
+    Subparts[0]->BoundingBox = bounds;
 }

@@ -32,7 +32,8 @@ SOFTWARE.
 #include <Engine/World/Public/Actor.h>
 #include <Engine/World/Public/ActorComponent.h>
 #include <Engine/World/Public/SceneComponent.h>
-#include <Engine/World/Public/StaticMeshComponent.h>
+#include <Engine/World/Public/MeshComponent.h>
+#include <Engine/World/Public/SkeletalAnimation.h>
 #include <Engine/World/Public/GameMaster.h>
 #include <Engine/World/Public/Timer.h>
 #include <Engine/Core/Public/Logger.h>
@@ -49,6 +50,11 @@ void FActorSpawnParameters::SetTemplate( FActor const * _Template ) {
 
 FWorld::FWorld() {
     PersistentLevel = NewObject< FLevel >();
+    PersistentLevel->AddRef();
+    PersistentLevel->OwnerWorld = this;
+    PersistentLevel->bIsPersistent = true;
+    PersistentLevel->IndexInArrayOfLevels = ArrayOfLevels.Length();
+    ArrayOfLevels.Append( PersistentLevel );
 }
 
 void FWorld::Destroy() {
@@ -63,6 +69,17 @@ void FWorld::Destroy() {
 
     DestroyActors();
     KickoffPendingKillObjects();
+
+    // Remove all levels from world including persistent level
+    for ( FLevel * level : ArrayOfLevels ) {
+        if ( !level->bIsPersistent ) {
+            level->OnRemoveLevelFromWorld();
+        }
+        level->IndexInArrayOfLevels = -1;
+        level->OwnerWorld = nullptr;
+        level->RemoveRef();
+    }
+    ArrayOfLevels.Clear();
 
     EndPlay();
 }
@@ -198,6 +215,7 @@ FActor * FWorld::LoadActor( FDocument const & _Document, int _FieldsHead, FLevel
 }
 
 FString FWorld::GenerateActorUniqueName( const char * _Name ) {
+    // TODO: optimize!
     if ( !FindActor( _Name ) ) {
         return _Name;
     }
@@ -212,6 +230,7 @@ FString FWorld::GenerateActorUniqueName( const char * _Name ) {
 }
 
 FActor * FWorld::FindActor( const char * _UniqueName ) {
+    // TODO: Use hash!
     for ( FActor * actor : Actors ) {
         if ( !actor->GetName().Icmp( _UniqueName ) ) {
             return actor;
@@ -372,17 +391,78 @@ int FWorld::Serialize( FDocument & _Doc ) {
     return object;
 }
 
-void FWorld::RegisterStaticMesh( FStaticMeshComponent * _StaticMesh ) {
-    if ( IntrusiveIsInList( _StaticMesh, Next, Prev, StaticMeshList, StaticMeshListTail ) ) {
+void FWorld::AddLevel( FLevel * _Level ) {
+    if ( _Level->IsPersistentLevel() ) {
+        GLogger.Printf( "FWorld::AddLevel: Can't add persistent level\n" );
+        return;
+    }
+
+    if ( _Level->OwnerWorld == this ) {
+        // Already in world
+        return;
+    }
+
+    if ( _Level->OwnerWorld ) {
+        _Level->OwnerWorld->RemoveLevel( _Level );
+    }
+
+    _Level->OwnerWorld = this;
+    _Level->IndexInArrayOfLevels = ArrayOfLevels.Length();
+    _Level->AddRef();
+    _Level->OnAddLevelToWorld();
+    ArrayOfLevels.Append( _Level );
+}
+
+void FWorld::RemoveLevel( FLevel * _Level ) {
+    if ( !_Level ) {
+        return;
+    }
+
+    if ( _Level->IsPersistentLevel() ) {
+        GLogger.Printf( "FWorld::AddLevel: Can't remove persistent level\n" );
+        return;
+    }
+
+    if ( _Level->OwnerWorld != this ) {
+        GLogger.Printf( "FWorld::AddLevel: level is not in world\n" );
+        return;
+    }
+
+    _Level->OnRemoveLevelFromWorld();
+
+    ArrayOfLevels[ _Level->IndexInArrayOfLevels ] = ArrayOfLevels[ ArrayOfLevels.Length() - 1 ];
+    ArrayOfLevels[ _Level->IndexInArrayOfLevels ]->IndexInArrayOfLevels = _Level->IndexInArrayOfLevels;
+    ArrayOfLevels.RemoveLast();
+
+    _Level->OwnerWorld = nullptr;
+    _Level->IndexInArrayOfLevels = -1;
+    _Level->RemoveRef();
+}
+
+void FWorld::RegisterMesh( FMeshComponent * _Mesh ) {
+    if ( IntrusiveIsInList( _Mesh, Next, Prev, MeshList, MeshListTail ) ) {
         AN_Assert( 0 );
         return;
     }
 
-    IntrusiveAddToList( _StaticMesh, Next, Prev, StaticMeshList, StaticMeshListTail );
+    IntrusiveAddToList( _Mesh, Next, Prev, MeshList, MeshListTail );
 }
 
-void FWorld::UnregisterStaticMesh( FStaticMeshComponent * _StaticMesh ) {
-    IntrusiveRemoveFromList( _StaticMesh, Next, Prev, StaticMeshList, StaticMeshListTail );
+void FWorld::UnregisterMesh( FMeshComponent * _Mesh ) {
+    IntrusiveRemoveFromList( _Mesh, Next, Prev, MeshList, MeshListTail );
+}
+
+void FWorld::RegisterSkinnedMesh( FSkinnedComponent * _Skeleton ) {
+    if ( IntrusiveIsInList( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail ) ) {
+        AN_Assert( 0 );
+        return;
+    }
+
+    IntrusiveAddToList( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+}
+
+void FWorld::UnregisterSkinnedMesh( FSkinnedComponent * _Skeleton ) {
+    IntrusiveRemoveFromList( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
 
 void FWorld::RegisterTimer( FTimer * _Timer ) {
@@ -398,79 +478,36 @@ void FWorld::UnregisterTimer( FTimer * _Timer ) {
     IntrusiveRemoveFromList( _Timer, Next, Prev, TimerList, TimerListTail );
 }
 
-void FWorld::UpdateDrawSurfAreas( FDrawSurf * _Surf ) {
-//    const BvAxisAlignedBox & Bounds = _Surf->GetWorldBounds();
-//    int NumAreas = Areas.Length();
-//    FSpatialAreaComponent * Area;
+void FWorld::DrawDebug( FDebugDraw * _DebugDraw ) {
 
-//    // Remove drawsurf from any areas
-//    RemoveDrawSurfFromAreas( _Surf );
+    if ( DebugDrawFrame == GGameMaster.GetFrameNumber() ) {
+        // Debug commands was already generated for this frame
+        return;
+    }
 
-//    // TODO: optimize it!
-//    for ( int i = 0 ; i < NumAreas ; i++ ) {
-//        Area = Areas[i];
-
-//        if ( FMath::Intersects( Area->Bounds, Bounds ) ) {
-//            Area->Movables.Append( _Surf );
-//            FAreaLink & InArea = _Surf->InArea.Append();
-//            InArea.AreaNum = i;
-//            InArea.Index = Area->Movables.Length() - 1;
-//        }
-//    }
-}
-
-void FWorld::RemoveDrawSurfFromAreas( FDrawSurf * _Surf ) {
-//#ifdef AN_DEBUG
-//    int NumAreas = Areas.Length();
-//#endif
-//    FSpatialAreaComponent * Area;
-
-//    // Remove renderables from any areas
-//    for ( int i = 0 ; i < _Surf->InArea.Length() ; i++ ) {
-//        FAreaLink & InArea = _Surf->InArea[ i ];
-
-//        AN_Assert( InArea.AreaNum < NumAreas );
-//        Area = Areas[ InArea.AreaNum ];
-
-//        AN_Assert( Area->Movables[ InArea.Index ] == _Surf );
-
-//        // Swap with last array element
-//        Area->Movables.RemoveSwap( InArea.Index );
-
-//        // Update swapped movable index
-//        if ( InArea.Index < Area->Movables.Length() ) {
-//            FDrawSurf * Movable = Area->Movables[ InArea.Index ];
-//            for ( int j = 0 ; j < Movable->InArea.Length() ; j++ ) {
-//                if ( Movable->InArea[ j ].AreaNum == InArea.AreaNum ) {
-//                    Movable->InArea[ j ].Index = InArea.Index;
-
-//                    AN_Assert( Area->Movables[ Movable->InArea[ j ].Index ] == Movable );
-//                    break;
-//                }
-//            }
-//        }
-//    }
-//    _Surf->InArea.Clear();
-}
-
-void FWorld::GenerateDebugDrawGeometry( FDebugDraw * _DebugDraw ) {
+    DebugDrawFrame = GGameMaster.GetFrameNumber();
 
     FirstDebugDrawCommand = _DebugDraw->CommandsCount();
 
     _DebugDraw->SplitCommands();
 
+    for ( FLevel * level : ArrayOfLevels ) {
+        level->DrawDebug( _DebugDraw );
+    }
+
     _DebugDraw->SetDepthTest( true );
 
+    _DebugDraw->SetColor(1,1,1,1);
     //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_STATIC_BOUNDS ) {
-        for ( FStaticMeshComponent * component = StaticMeshList
-              ; component ; component = component->NextWorldMesh() ) {
+//        for ( FMeshComponent * component = MeshList
+//              ; component ; component = component->GetNextMesh() ) {
 
-            _DebugDraw->DrawAABB( component->GetWorldBounds() );
-        }
+//            _DebugDraw->DrawAABB( component->GetWorldBounds() );
+//        }
     //}
 
     for ( FActor * actor : Actors ) {
-        actor->DebugDraw( _DebugDraw );
+        actor->DrawDebug( _DebugDraw );
     }
 
     //TPodArray< FMeshVertex > Vertices;

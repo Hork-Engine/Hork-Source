@@ -271,7 +271,7 @@ void FDebugDraw::DrawConvexPoly( Float3 const * _Points, int _NumPoints, bool _T
     }
 
     if ( _TwoSided ) {
-        for ( int i = numTriangles-1 ; i >= 0 ; i++ ) {
+        for ( int i = numTriangles-1 ; i >= 0 ; i-- ) {
             *indices++ = FirstVertex + 0;
             *indices++ = FirstVertex + i + 2;
             *indices++ = FirstVertex + i + 1;
@@ -314,7 +314,7 @@ void FDebugDraw::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, int _
 
     if ( _TwoSided ) {
         _Indices += _NumIndices;
-        for ( int i = _NumIndices-1 ; i >= 0 ; i++ ) {
+        for ( int i = _NumIndices-1 ; i >= 0 ; i-- ) {
             *indices++ = FirstVertex + *--_Indices;
         }
     }

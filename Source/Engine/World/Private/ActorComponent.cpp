@@ -45,6 +45,11 @@ FWorld * FActorComponent::GetWorld() const {
     return ParentActor->GetWorld();
 }
 
+FLevel * FActorComponent::GetLevel() const {
+    AN_Assert( ParentActor != nullptr );
+    return ParentActor->GetLevel();
+}
+
 void FActorComponent::SetName( FString const & _Name ) {
     if ( !ParentActor ) {
         // In constructor

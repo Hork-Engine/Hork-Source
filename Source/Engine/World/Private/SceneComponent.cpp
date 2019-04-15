@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/World/Public/SceneComponent.h>
+#include <Engine/World/Public/SkeletalAnimation.h>
 #include <Engine/World/Public/Actor.h>
 #include <Engine/World/Public/World.h>
 #include <Engine/Core/Public/Logger.h>
@@ -57,7 +58,19 @@ void FSceneComponent::EndPlay() {
     }
 }
 
-void FSceneComponent::AttachTo( FSceneComponent * _Parent, bool _KeepWorldTransform ) {
+void FSceneComponent::AttachTo( FSceneComponent * _Parent, const char * _Socket, bool _KeepWorldTransform ) {
+    _AttachTo( _Parent, _KeepWorldTransform );
+
+    if ( _Socket && AttachParent ) {
+        int socketIndex = AttachParent->FindSocket( _Socket );
+        if ( SocketIndex != socketIndex ) {
+            SocketIndex = socketIndex;
+            MarkTransformDirty();
+        }
+    }
+}
+
+void FSceneComponent::_AttachTo( FSceneComponent * _Parent, bool _KeepWorldTransform ) {
     if ( AttachParent == _Parent ) {
         // Already attached
         return;
@@ -134,6 +147,7 @@ void FSceneComponent::Detach( bool _KeepWorldTransform ) {
     }
     GLogger.Printf( "%s detached from %s\n", FinalClassName(), AttachParent->FinalClassName() );
     AttachParent = nullptr;
+    SocketIndex = -1;
     MarkTransformDirty();
 }
 
@@ -178,22 +192,14 @@ FSceneComponent * FSceneComponent::FindChild( const char * _UniqueName, bool _Re
     return nullptr;
 }
 
-void FSceneComponent::AttachToJoint( int _JointIndex ) {
-    _JointIndex = _JointIndex + 1;
-
-    if ( JointIndex != _JointIndex ) {
-        JointIndex = _JointIndex;
-
-        MarkTransformDirty();
+int FSceneComponent::FindSocket( const char * _Name ) const {
+    for ( int socketIndex = 0 ; socketIndex < Sockets.Length() ; socketIndex++ ) {
+        if ( !Sockets[socketIndex].SocketDef->GetName().Icmp( _Name ) ) {
+            return socketIndex;
+        }
     }
-}
-
-void FSceneComponent::DetachFromJoint() {
-    if ( JointIndex > 0 ) {
-        JointIndex = 0;
-
-        MarkTransformDirty();
-    }
+    GLogger.Printf( "Socket not found %s\n", _Name );
+    return -1;
 }
 
 void FSceneComponent::MarkTransformDirty() {
@@ -245,14 +251,14 @@ void FSceneComponent::MarkTransformDirty() {
     }
 }
 
-void FSceneComponent::SetPosition( const Float3 & _Position ) {
+void FSceneComponent::SetPosition( Float3 const & _Position ) {
 
     Position = _Position;
 
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetPosition( const float & _X, const float & _Y, const float & _Z ) {
+void FSceneComponent::SetPosition( float const & _X, float const & _Y, float const & _Z ) {
 
     Position.X = _X;
     Position.Y = _Y;
@@ -261,33 +267,33 @@ void FSceneComponent::SetPosition( const float & _X, const float & _Y, const flo
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetRotation( const Quat & _Rotation ) {
+void FSceneComponent::SetRotation( Quat const & _Rotation ) {
 
     Rotation = _Rotation;
 
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetAngles( const Angl & _Angles ) {
+void FSceneComponent::SetAngles( Angl const & _Angles ) {
     Rotation = _Angles.ToQuat();
 
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetAngles( const float & _Pitch, const float & _Yaw, const float & _Roll ) {
+void FSceneComponent::SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll ) {
     Rotation = Angl( _Pitch, _Yaw, _Roll ).ToQuat();
 
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetScale( const Float3 & _Scale ) {
+void FSceneComponent::SetScale( Float3 const & _Scale ) {
 
     Scale = _Scale;
 
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetScale( const float & _X, const float & _Y, const float & _Z ) {
+void FSceneComponent::SetScale( float const & _X, float const & _Y, float const & _Z ) {
 
     Scale.X = _X;
     Scale.Y = _Y;
@@ -296,14 +302,14 @@ void FSceneComponent::SetScale( const float & _X, const float & _Y, const float 
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetScale( const float & _ScaleXYZ ) {
+void FSceneComponent::SetScale( float const & _ScaleXYZ ) {
 
     Scale.X = Scale.Y = Scale.Z = _ScaleXYZ;
 
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetTransform( const Float3 & _Position, const Quat & _Rotation ) {
+void FSceneComponent::SetTransform( Float3 const & _Position, Quat const & _Rotation ) {
 
     Position = _Position;
     Rotation = _Rotation;
@@ -311,7 +317,7 @@ void FSceneComponent::SetTransform( const Float3 & _Position, const Quat & _Rota
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetTransform( const Float3 & _Position, const Quat & _Rotation, const Float3 & _Scale ) {
+void FSceneComponent::SetTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale ) {
 
     Position = _Position;
     Rotation = _Rotation;
@@ -320,11 +326,11 @@ void FSceneComponent::SetTransform( const Float3 & _Position, const Quat & _Rota
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetTransform( const FTransform & _Transform ) {
+void FSceneComponent::SetTransform( FTransform const & _Transform ) {
     SetTransform( _Transform.Position, _Transform.Rotation, _Transform.Scale );
 }
 
-void FSceneComponent::SetTransform( const FSceneComponent * _Transform ) {
+void FSceneComponent::SetTransform( FSceneComponent const * _Transform ) {
 
     Position = _Transform->Position;
     Rotation = _Transform->Rotation;
@@ -333,7 +339,7 @@ void FSceneComponent::SetTransform( const FSceneComponent * _Transform ) {
     MarkTransformDirty();
 }
 
-void FSceneComponent::SetWorldPosition( const Float3 & _Position ) {
+void FSceneComponent::SetWorldPosition( Float3 const & _Position ) {
     if ( AttachParent ) {
         Float3x4 ParentTransformInverse = AttachParent->ComputeWorldTransformInverse();
 
@@ -343,23 +349,23 @@ void FSceneComponent::SetWorldPosition( const Float3 & _Position ) {
     }
 }
 
-void FSceneComponent::SetWorldPosition( const float & _X, const float & _Y, const float & _Z ) {
+void FSceneComponent::SetWorldPosition( float const & _X, float const & _Y, float const & _Z ) {
     SetWorldPosition( Float3( _X, _Y, _Z ) );
 }
 
-void FSceneComponent::SetWorldRotation( const Quat & _Rotation ) {
+void FSceneComponent::SetWorldRotation( Quat const & _Rotation ) {
     SetRotation( AttachParent ? AttachParent->ComputeWorldRotationInverse() * _Rotation : _Rotation );
 }
 
-void FSceneComponent::SetWorldScale( const Float3 & _Scale ) {
+void FSceneComponent::SetWorldScale( Float3 const & _Scale ) {
     SetScale( AttachParent ? _Scale / AttachParent->GetWorldScale() : _Scale );
 }
 
-void FSceneComponent::SetWorldScale( const float & _X, const float & _Y, const float & _Z ) {
+void FSceneComponent::SetWorldScale( float const & _X, float const & _Y, float const & _Z ) {
     SetWorldScale( Float3( _X, _Y, _Z ) );
 }
 
-void FSceneComponent::SetWorldTransform( const Float3 & _Position, const Quat & _Rotation ) {
+void FSceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & _Rotation ) {
 
     if ( AttachParent ) {
         Float3x4 ParentTransformInverse = AttachParent->ComputeWorldTransformInverse();
@@ -375,7 +381,7 @@ void FSceneComponent::SetWorldTransform( const Float3 & _Position, const Quat & 
 
 }
 
-void FSceneComponent::SetWorldTransform( const Float3 & _Position, const Quat & _Rotation, const Float3 & _Scale ) {
+void FSceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale ) {
 
     if ( AttachParent ) {
         Float3x4 ParentTransformInverse = AttachParent->ComputeWorldTransformInverse();
@@ -393,11 +399,11 @@ void FSceneComponent::SetWorldTransform( const Float3 & _Position, const Quat & 
 
 }
 
-void FSceneComponent::SetWorldTransform( const FTransform & _Transform ) {
+void FSceneComponent::SetWorldTransform( FTransform const & _Transform ) {
     SetWorldTransform( _Transform.Position, _Transform.Rotation, _Transform.Scale );
 }
 
-const Float3 & FSceneComponent::GetPosition() const {
+Float3 const & FSceneComponent::GetPosition() const {
 
     return Position;
 
@@ -653,7 +659,7 @@ void FSceneComponent::GetWorldVectors( Float3 * _Right, Float3 * _Up, Float3 * _
     }
 }
 
-const Float3 & FSceneComponent::GetScale() const {
+Float3 const & FSceneComponent::GetScale() const {
 
     return Scale;
 
@@ -668,7 +674,7 @@ Float3 FSceneComponent::GetWorldPosition() const {
     return WorldTransformMatrix.DecomposeTranslation();
 }
 
-const Quat & FSceneComponent::GetWorldRotation() const {
+Quat const & FSceneComponent::GetWorldRotation() const {
 
     if ( bTransformDirty ) {
         ComputeWorldTransform();
@@ -686,7 +692,7 @@ Float3 FSceneComponent::GetWorldScale() const {
     return WorldTransformMatrix.DecomposeScale();
 }
 
-const Float3x4 & FSceneComponent::GetWorldTransformMatrix() const {
+Float3x4 const & FSceneComponent::GetWorldTransformMatrix() const {
 
     if ( bTransformDirty ) {
         ComputeWorldTransform();
@@ -696,19 +702,6 @@ const Float3x4 & FSceneComponent::GetWorldTransformMatrix() const {
 }
 
 void FSceneComponent::ComputeTransformMatrix( Float3x4 & _LocalTransformMatrix ) const {
-#if 0
-// TODO:
-    if ( JointIndex > 0 && Parent ) {
-
-        FSkinnedMeshComponent * SkeletalMesh = Parent->GetComponent< FSkinnedMeshComponent >();
-
-        if ( SkeletalMesh && JointIndex-1 < SkeletalMesh->NumJoints ) {
-            _LocalTransformMatrix = SkeletalMesh->JointTransforms[ JointIndex-1 ];
-            return;
-        }
-    }
-#endif
-
     _LocalTransformMatrix.Compose( Position, Rotation.ToMatrix(), Scale );
 }
 
@@ -719,11 +712,23 @@ void FSceneComponent::ComputeWorldTransform() const {
     ComputeTransformMatrix( LocalTransformMatrix );
 
     if ( AttachParent ) {
-        const Float3x4 & ParentWorldTransform = AttachParent->GetWorldTransformMatrix();
 
-        WorldTransformMatrix = ParentWorldTransform * LocalTransformMatrix;
+        Float3x4 const & ParentWorldTransform = AttachParent->GetWorldTransformMatrix();
 
-        WorldRotation = AttachParent->GetWorldRotation() * Rotation;
+        if ( SocketIndex >= 0 && SocketIndex < AttachParent->Sockets.Length() ) {
+            FSocket * Socket = &AttachParent->Sockets[SocketIndex];
+
+            Float3x4 const & JointTransform = Socket->Parent->GetJointTransform( Socket->SocketDef->JointIndex );
+
+            Quat JointRotation;
+            JointRotation.FromMatrix( JointTransform.DecomposeRotation() );
+
+            WorldTransformMatrix = ParentWorldTransform * JointTransform * LocalTransformMatrix;
+            WorldRotation = AttachParent->GetWorldRotation() * JointRotation * Rotation;
+        } else {
+            WorldTransformMatrix = ParentWorldTransform * LocalTransformMatrix;
+            WorldRotation = AttachParent->GetWorldRotation() * Rotation;
+        }
 
     } else {
         WorldTransformMatrix = LocalTransformMatrix;
@@ -734,7 +739,7 @@ void FSceneComponent::ComputeWorldTransform() const {
 }
 
 Float3x4 FSceneComponent::ComputeWorldTransformInverse() const {
-    const Float3x4 & WorldTransform = GetWorldTransformMatrix();
+    Float3x4 const & WorldTransform = GetWorldTransformMatrix();
 
     return WorldTransform.Inversed();
 }
@@ -743,9 +748,9 @@ Quat FSceneComponent::ComputeWorldRotationInverse() const {
     return GetWorldRotation().Inversed();
 }
 
-Float3 FSceneComponent::RayToObjectSpaceCoord2D( const Float3 & _RayStart, const Float3 & _RayDir ) const {
+Float3 FSceneComponent::RayToObjectSpaceCoord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const {
     // Convert ray to object space
-    //const Float3x4 & WorldTransform = GetWorldTransformMatrix();
+    //Float3x4 const & WorldTransform = GetWorldTransformMatrix();
     Float3x4 WorldTransformInverse = ComputeWorldTransformInverse();
     RayF ObjectSpaceRay;
     ObjectSpaceRay.Start = WorldTransformInverse * _RayStart;
@@ -766,16 +771,16 @@ Float3 FSceneComponent::RayToObjectSpaceCoord2D( const Float3 & _RayStart, const
     return ObjectSpaceCoord;
 }
 
-Float2 FSceneComponent::RayToWorldCooord2D( const Float3 & _RayStart, const Float3 & _RayDir ) const {
+Float2 FSceneComponent::RayToWorldCooord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const {
     return Float2( _RayToWorldCooord2D( _RayStart, _RayDir ) );
 }
 
-Float3 FSceneComponent::_RayToWorldCooord2D( const Float3 & _RayStart, const Float3 & _RayDir ) const {
+Float3 FSceneComponent::_RayToWorldCooord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const {
     // Retrieve plane intersection coord in object space
     Float3 ObjectSpaceCoord = RayToObjectSpaceCoord2D( _RayStart, _RayDir );
 
     // Convert object space coord to world space
-    const Float3x4 WorldTransform = GetWorldTransformMatrix();
+    Float3x4 const WorldTransform = GetWorldTransformMatrix();
     Float3 WorldSpaceCoord = WorldTransform * ObjectSpaceCoord;
 
     return WorldSpaceCoord;
@@ -808,7 +813,7 @@ void FSceneComponent::TurnDownFPS( float _DeltaAngleRad ) {
     TurnUpFPS( -_DeltaAngleRad );
 }
 
-void FSceneComponent::TurnAroundAxis( float _DeltaAngleRad, const Float3 & _NormalizedAxis ) {
+void FSceneComponent::TurnAroundAxis( float _DeltaAngleRad, Float3 const & _NormalizedAxis ) {
     float s, c;
 
     FMath::RadSinCos( _DeltaAngleRad * 0.5f, s, c );
@@ -818,7 +823,7 @@ void FSceneComponent::TurnAroundAxis( float _DeltaAngleRad, const Float3 & _Norm
     MarkTransformDirty();
 }
 
-void FSceneComponent::TurnAroundVector( float _DeltaAngleRad, const Float3 & _Vector ) {
+void FSceneComponent::TurnAroundVector( float _DeltaAngleRad, Float3 const & _Vector ) {
     TurnAroundAxis( _DeltaAngleRad, _Vector.Normalized() );
 }
 

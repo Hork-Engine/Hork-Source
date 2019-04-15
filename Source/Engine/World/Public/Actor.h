@@ -35,8 +35,11 @@ SOFTWARE.
 
 class FWorld;
 class FSceneComponent;
-class FTimer;
 class FCameraComponent;
+class FActorComponent;
+class FTimer;
+
+using FArrayOfActorComponents = TPodArray< FActorComponent *, 8 >;
 
 #define AN_ACTOR( _Class, _SuperClass ) \
     AN_FACTORY_CLASS( FActor::Factory(), _Class, _SuperClass ) \
@@ -44,7 +47,7 @@ protected: \
     ~_Class() {} \
 private:
 
-class FActorComponent;
+
 
 /*
 
@@ -114,7 +117,7 @@ public:
     }
 
     // Get all actor components
-    TPodArray< FActorComponent * > const & GetComponents() const { return Components; }
+    FArrayOfActorComponents const & GetComponents() const { return Components; }
 
     // Serialize actor to document data
     int Serialize( FDocument & _Doc ) override;
@@ -127,14 +130,6 @@ public:
 
     void RegisterTimer( FTimer * _Timer );
 
-#if 0
-    void AddTickPrerequisiteActor( FActor * _Actor );
-    void AddTickPrerequisiteComponent( FActorComponent * _Component );
-    void SetActorTickEnabled( bool _Enabled );
-    void RegisterActorTickFunction( FTickFunction & _TickFunction );
-    PrimaryTick PrimaryActorTick;
-#endif
-
     // Root component, keeps component hierarchy and transform for the actor
     FSceneComponent * RootComponent;
 
@@ -146,57 +141,34 @@ public:
 
 protected:
 
-    // [World friend]
     FActor();
 
-    // [World friend, overridable]
-    //virtual void PostActorCreated() {}
-
-    // [local, overridable]
-    //virtual void OnContruction( FTransform const & _Transform ) {}
-
-    // [local, overridable]
     virtual void PreInitializeComponents() {}
 
-    // [local, overridable]
     virtual void PostInitializeComponents() {}
 
-    // [World friend, overridable]
     virtual void BeginPlay() {}
 
-    // [World friend, overridable]
     // Called only from Destroy() method
     virtual void EndPlay() {}
 
-    // [World friend, overridable]
     virtual void OnActorSpawned( FActor * _SpawnedActor ) {}
 
-    // [World friend, overridable]
     virtual void Tick( float _TimeStep ) {}
 
-    virtual void DebugDraw( FDebugDraw * _DebugDraw );
+    virtual void DrawDebug( FDebugDraw * _DebugDraw );
 
 private:
 
-    //void Destroy() override final;
-
-    // [World friend]
     void PostSpawnInitialize( FTransform const & _SpawnTransform );
 
-    // [World friend]
-    //bool ExecuteContruction( FTransform const & _Transform );
-
-    // [World friend]
     void PostActorConstruction();
 
-    // [local]
     void InitializeComponents();
 
-    // [World friend]
     // Called only from SpawnActor
     void BeginPlayComponents();
 
-    // [World friend]
     void TickComponents( float _TimeStep );
 
     void DestroyComponents();
@@ -210,8 +182,7 @@ private:
     FGUID GUID;
 
     // All actor components
-    // [ActorComponent friend]
-    TPodArray< FActorComponent * > Components;
+    FArrayOfActorComponents Components;
 
     // Index in world array of actors
     int IndexInWorldArrayOfActors = -1;
@@ -221,6 +192,7 @@ private:
 
     FWorld * ParentWorld;
     TRefHolder< FLevel > Level;
+    TRefHolder< FActor > Attach;
     bool bPendingKill;
     bool bDuringConstruction = true;
     FActor * NextPendingKillActor;
@@ -229,42 +201,6 @@ private:
 
     FTimer * Timers;
 };
-
-#if 0
-enum ETickGroup {
-    TG_PrePhysics,
-    TG_DuringPhysics,
-    TG_PostPhysics,
-    TG_PostUpdateWork
-};
-
-struct FPrimaryTick {
-    bool bCanEverTick;
-    bool bTickEvenWhenPaused;
-    ETickGroup TickGroup;
-};
-
-class FActor;
-class FActorComponent;
-
-struct FTickFunction {
-    bool bTickEvenWhenPaused;
-    ETickGroup TickGroup;
-    void AddTickPrerequisite( FActor * _Actor );
-    void AddTickPrerequisite( FActorComponent * _ActorComponent );
-    TCallback< void( float ) > ExecuteTick;
-};
-
-class FActorRenderState {
-public:
-
-    bool bDirty;
-};
-
-class FActorPhysicsState {
-public:
-};
-#endif
 
 class ANGIE_API FViewActor : public FActor {
     AN_ACTOR( FViewActor, FActor )

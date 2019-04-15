@@ -2285,6 +2285,10 @@ AN_FORCEINLINE void DegSinCos( const Float & _Deg, Float & _Sin, Float & _Cos ) 
     RadSinCos( Radians( _Deg ), _Sin, _Cos );
 }
 
+AN_INLINE float GreaterCommonDivisor( float m, float n ) {
+    return ( m < 0.0001f ) ? n : GreaterCommonDivisor( std::fmod( n, m ), m );
+}
+
 }
 
 // Column-major matrix 2x2

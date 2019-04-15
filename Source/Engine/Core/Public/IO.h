@@ -68,7 +68,10 @@ public:
     bool GetCurrentFileInfo( char * _FileName, size_t _SizeofFileName );
 
     // Read file to memory
-    bool ReadFile( const char * _FileName, byte ** _MemoryBuffer, int * _MemoryBufferLength );
+    bool ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _MemoryBufferLength );
+
+    // Read file to memory
+    bool ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuffer, int * _MemoryBufferLength, int * _HunkMark );
 
 private:
     void * Handle;
@@ -176,6 +179,15 @@ public:
 
     bool Eof() {
         return static_cast< Derived * >( this )->Impl_Eof();
+    }
+
+    void Printf( const char * _Format, ... ) {
+        extern  thread_local char LogBuffer[16384]; // Use existing log buffer
+        va_list VaList;
+        va_start( VaList, _Format );
+        int len = FString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+        va_end( VaList );
+        Write( LogBuffer, len );
     }
 
     FStreamBase & operator<<( const FString & _Str ) {
@@ -335,9 +347,10 @@ FMemoryStream
 Read/Write to memory
 
 */
-class ANGIE_API FMemoryStream final : public FStreamBase< FFileStream > {
+class ANGIE_API FMemoryStream final : public FStreamBase< FMemoryStream > {
     AN_FORBID_COPY( FMemoryStream )
 
+    friend class FStreamBase< FMemoryStream >;
 public:
     FMemoryStream();
     ~FMemoryStream();

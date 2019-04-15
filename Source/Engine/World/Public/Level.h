@@ -33,12 +33,15 @@ SOFTWARE.
 #include "BaseObject.h"
 
 #include <Engine/Core/Public/BV/Frustum.h>
-#include <Engine/World/Public/RenderableComponent.h>
+#include <Engine/Core/Public/ConvexHull.h>
+#include <Engine/World/Public/DrawSurf.h>
 #include <Engine/Runtime/Public/RenderBackend.h>
 
 //class FWorld;
 class FActor;
 class FTexture;
+class FLevel;
+class FAreaPortal;
 
 class FBinarySpacePlane : public PlaneF {
 public:
@@ -67,6 +70,13 @@ public:
 };
 
 #define MAX_SURFACE_LIGHTMAPS 4
+
+enum ESurfaceType {
+    SURF_UNKNOWN,
+    SURF_PLANAR,
+    SURF_TRISOUP,
+    //SURF_BEZIER_PATCH
+};
 
 class FSurfaceDef {
 public:
@@ -132,6 +142,93 @@ private:
     FFrustum const * Frustum;
 };
 
+class FLevelArea : public FBaseObject {
+    AN_CLASS( FLevelArea, FBaseObject )
+
+    friend class FLevel;
+
+public:
+
+    FAreaPortal const * GetPortals() const { return PortalList; }
+
+    TPodArray< FDrawSurf * > const & GetSurfs() const { return Movables; }
+
+protected:
+    FLevelArea() {}
+    ~FLevelArea() {}
+
+private:
+    // Area property
+    Float3 Position;
+
+    // Area property
+    Float3 Extents;
+
+    // Area property
+    Float3 ReferencePoint;
+
+    // Owner
+    FLevel * ParentLevel;
+
+    // Surfaces in area
+    TPodArray< FDrawSurf * > Movables;
+    //TPodArray< FLightComponent * > Lights;
+    //TPodArray< FEnvCaptureComponent * > EnvCaptures;
+
+    // Linked portals
+    FAreaPortal * PortalList;
+
+    // Area bounding box
+    BvAxisAlignedBox Bounds;
+};
+
+class FLevelPortal : public FBaseObject {
+    AN_CLASS( FLevelPortal, FBaseObject )
+
+    friend class FLevel;
+
+public:
+
+    // Vis marker. Set by render frontend.
+    mutable int VisMark;
+
+protected:
+    FLevelPortal() {}
+
+    ~FLevelPortal() {
+        FConvexHull::Destroy( Hull );
+    }
+
+private:
+    // Owner
+    FLevel * ParentLevel;
+
+    // Linked areas
+    TRefHolder< FLevelArea > Area1;
+    TRefHolder< FLevelArea > Area2;
+
+    // Portal to areas
+    FAreaPortal * Portals[2];
+
+    // Portal hull
+    FConvexHull * Hull;
+
+    // Portal plane
+    PlaneF Plane;
+
+    // Blocking bits for doors (TODO)
+    //int BlockingBits;
+};
+
+class FAreaPortal {
+public:
+    FLevelArea * ToArea;
+    FConvexHull * Hull;
+    PlaneF Plane;
+    FAreaPortal * Next; // Next portal inside area
+    FLevelPortal * Owner;
+};
+
 /*
 
 FLevel
@@ -143,10 +240,20 @@ class ANGIE_API FLevel : public FBaseObject {
     AN_CLASS( FLevel, FBaseObject )
 
     friend class FWorld;
+    friend class FRenderFrontend;
 
 public:
+    bool IsPersistentLevel() const { return bIsPersistent; }
+
+    FWorld * GetOwnerWorld() const { return OwnerWorld; }
 
     TPodArray< FActor * > const & GetActors() const { return Actors; }
+
+    TPodArray< FLevelArea * > const & GetAreas() const { return Areas; }
+
+    BvAxisAlignedBox const & GetLevelBounds() const { return LevelBounds; }
+
+    int FindArea( Float3 const & _Position );
 
     // Destroy all actors in level
     void DestroyActors();
@@ -156,15 +263,42 @@ public:
     void SetLightData( const byte * _Data, int _Size );
     /*const */byte * GetLightData() /*const */{ return LightData; }
 
+    FLevelArea * CreateArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
+    FLevelPortal * CreatePortal( Float3 const * _HullPoints, int _NumHullPoints, FLevelArea * _Area1, FLevelArea * _Area2 );
+    void DestroyPortalTree();
+
+    void BuildPortals();
+
+    void DrawDebug( FDebugDraw * _DebugDraw );
+
     TPodArray< FTexture * > Lightmaps;
 
 protected:
-    FLevel() {}
+    FLevel();
     ~FLevel();
 
 private:
+    void OnAddLevelToWorld();
+    void OnRemoveLevelFromWorld();
 
+    void AddSurfaces();
+    void RemoveSurfaces();
+
+    void PurgePortals();
+
+    void AddSurfaceAreas( FDrawSurf * _Surf );
+    void AddSurfaceToArea( int _AreaNum, FDrawSurf * _Surf );
+
+    void RemoveSurfaceAreas( FDrawSurf * _Surf );
+
+    FWorld * OwnerWorld;
+    int IndexInArrayOfLevels = -1;
+    bool bIsPersistent;
     TPodArray< FActor * > Actors;
-    byte *                LightData;
-    //FWorld * World;
+    TPodArray< FLevelArea * > Areas;
+    TRefHolder< FLevelArea > OutdoorArea;
+    TPodArray< FLevelPortal * > Portals;
+    TPodArray< FAreaPortal > AreaPortals;
+    byte * LightData;
+    BvAxisAlignedBox LevelBounds;
 };

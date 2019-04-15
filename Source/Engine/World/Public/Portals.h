@@ -28,3 +28,16 @@ SOFTWARE.
 
 */
 
+#pragma once
+
+//#include <Engine/World/Public/World.h>
+//#include <Engine/Core/Public/ConvexHull.h>
+
+//class FSpatialAreaComponent;
+//class FLevelPortal;
+
+
+
+
+
+

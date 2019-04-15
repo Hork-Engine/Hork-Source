@@ -1,7 +1,6 @@
 #include <Engine/World/Public/MeshComponent.h>
-//#include <Engine/Renderer/Public/MaterialResource.h>
-//#include <Engine/Renderer/Public/TextureResource.h>
-//#include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/World/Public/Actor.h>
+#include <Engine/World/Public/World.h>
 
 AN_CLASS_META_NO_ATTRIBS( FMeshComponent )
 
@@ -16,110 +15,115 @@ AN_CLASS_META_NO_ATTRIBS( FMeshComponent )
 //AN_SCENE_COMPONENT_END_DECL
 
 FMeshComponent::FMeshComponent() {
-    RenderPassMask = LIGHT_PASS | SHADOW_PASS;
-    StencilValue = 0;
+    bLightPass = true;
+    //bMaterialShadowPass = true;
+    //SurfaceType = SURF_TRISOUP;
+    LightmapOffset.Z = LightmapOffset.W = 1;
     //bShadowReceive = true;
 }
 
-#if 0
-void FMeshComponent::SetResource( FResource * _Resource ) {
-    if ( !_Resource ) {
+void FMeshComponent::InitializeComponent() {
+    Super::InitializeComponent();
+
+    FWorld * world = GetParentActor()->GetWorld();
+
+    world->RegisterMesh( this );
+}
+
+void FMeshComponent::BeginPlay() {
+    Super::BeginPlay();
+}
+
+void FMeshComponent::EndPlay() {
+    Super::EndPlay();
+
+    FWorld * world = GetParentActor()->GetWorld();
+
+//    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+//        subpart->RemoveRef();
+//    }
+
+//    Subparts.Clear();
+
+    ClearMaterials();
+
+    world->UnregisterMesh( this );
+}
+
+void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
+    if ( Mesh == _Mesh ) {
         return;
     }
-    if ( _Resource->GetFinalClassId() == FMaterialInstance::GetClassId() ) {
-        SetMaterialInstance( static_cast< FMaterialInstance * >( _Resource ) );
-    } else {
-        Super::SetResource( _Resource );
+
+    Mesh = _Mesh;
+
+    Bounds.Clear();
+
+    //ClearMaterials();
+
+    if ( _Mesh ) {
+        for ( int i = 0 ; i < _Mesh->GetSubparts().Length() ; i++ ) {
+            Bounds.AddAABB( _Mesh->GetSubpart(i)->BoundingBox );
+
+            //SetMaterialInstance( i, _Mesh->GetSubpart(i)->MaterialInstance );
+        }
+    }
+
+    // Mark to update world bounds
+    MarkWorldBoundsDirty();
+}
+
+void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance ) {
+    AN_Assert( _SubpartIndex >= 0 );
+
+    if ( _SubpartIndex >= Materials.Length() ) {
+
+        if ( _Instance ) {
+            int n = Materials.Length();
+
+            Materials.Resize( n + _SubpartIndex + 1 );
+            for ( ; n < Materials.Length() ; n++ ) {
+                Materials[n] = nullptr;
+            }
+            Materials[_SubpartIndex] = _Instance;
+            _Instance->AddRef();
+        }
+
+        return;
+    }
+
+    if ( Materials[_SubpartIndex] ) {
+        Materials[_SubpartIndex]->RemoveRef();
+    }
+    Materials[_SubpartIndex] = _Instance;
+    if ( _Instance ) {
+        _Instance->AddRef();
     }
 }
 
-FResource * FMeshComponent::GetResource( const char * _AttributeName ) {
-    if ( !FString::CmpCase( _AttributeName, "Material Instance" ) ) {
-        return MaterialInstance;
+void FMeshComponent::ClearMaterials() {
+    for ( FMaterialInstance * material : Materials ) {
+        if ( material ) {
+            material->RemoveRef();
+        }
     }
-    return Super::GetResource( _AttributeName );
+    Materials.Clear();
 }
 
-void FMeshComponent::SetMaterialInstance( const char * _ResourceName ) {
-    if ( _ResourceName && *_ResourceName ) {
-        FMaterialInstance * ResourceMaterial = GResourceManager->GetResource< FMaterialInstance >( _ResourceName );
-        SetMaterialInstance( ResourceMaterial );
-    } else {
-        SetMaterialInstance( ( FMaterialInstance *)0 );
+FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) const {
+    if ( _SubpartIndex < 0 || _SubpartIndex >= Materials.Length() ) {
+        return nullptr;
     }
-}
-
-void FMeshComponent::SetMaterialInstance( FMaterialInstance * _Instance ) {
-    MaterialInstance = _Instance;
-}
-
-FMaterialInstance * FMeshComponent::GetMaterialInstance() {
-    return MaterialInstance;
-}
-#endif
-void FMeshComponent::EnableShadowCast( bool _ShadowCast ) {
-    if ( _ShadowCast ) {
-        RenderPassMask |= SHADOW_PASS;
-    } else {
-        RenderPassMask &= ~SHADOW_PASS;
-    }
-}
-
-bool FMeshComponent::IsShadowCastEnabled() const {
-    return !!(RenderPassMask & SHADOW_PASS);
-}
-
-void FMeshComponent::EnableLightPass( bool _LightPass ) {
-    if ( _LightPass ) {
-        RenderPassMask |= LIGHT_PASS;
-    } else {
-        RenderPassMask &= ~LIGHT_PASS;
-    }
-}
-
-bool FMeshComponent::IsLightPassEnabled() const {
-    return !!(RenderPassMask & LIGHT_PASS);
-}
-
-void FMeshComponent::EnableMaterialShadowPass( bool _MaterialShadowPass ) {
-    if ( _MaterialShadowPass ) {
-        RenderPassMask |= MATERIAL_SHADOW_PASS;
-    } else {
-        RenderPassMask &= ~MATERIAL_SHADOW_PASS;
-    }
-}
-
-bool FMeshComponent::IsMaterialShadowPassEnabled() const {
-    return !!(RenderPassMask & MATERIAL_SHADOW_PASS);
-}
-
-void FMeshComponent::EnableCustomDepthStencilPass( bool _CustomDepthStencilPass ) {
-    if ( _CustomDepthStencilPass ) {
-        RenderPassMask |= CUSTOM_DEPTHSTENCIL_PASS;
-    } else {
-        RenderPassMask &= ~CUSTOM_DEPTHSTENCIL_PASS;
-    }
-}
-
-bool FMeshComponent::IsCustomDepthStencilPassEnabled() const {
-    return !!(RenderPassMask & CUSTOM_DEPTHSTENCIL_PASS);
-}
-
-void FMeshComponent::SetCustomDepthStencilValue( byte _StencilValue ) {
-    StencilValue = _StencilValue;
-}
-
-byte FMeshComponent::GetCustomDepthStencilValue() const {
-    return StencilValue;
+    return Materials[_SubpartIndex];
 }
 
 /*
 
 
 
-// Пересечение луча и меша
-// Если есть пересечение, то возвращает длину луча до ближайшей точки пересечения.
-// Если пересечения нет, то возвращает значение < 0.
+// РџРµСЂРµСЃРµС‡РµРЅРёРµ Р»СѓС‡Р° Рё РјРµС€Р°
+// Р•СЃР»Рё РµСЃС‚СЊ РїРµСЂРµСЃРµС‡РµРЅРёРµ, С‚Рѕ РІРѕР·РІСЂР°С‰Р°РµС‚ РґР»РёРЅСѓ Р»СѓС‡Р° РґРѕ Р±Р»РёР¶Р°Р№С€РµР№ С‚РѕС‡РєРё РїРµСЂРµСЃРµС‡РµРЅРёСЏ.
+// Р•СЃР»Рё РїРµСЂРµСЃРµС‡РµРЅРёСЏ РЅРµС‚, С‚Рѕ РІРѕР·РІСЂР°С‰Р°РµС‚ Р·РЅР°С‡РµРЅРёРµ < 0.
 float Intersect( const Float3 & _RayStart,
                                const Float3 & _RayDir,
                                const Float3 & _ObjectOrigin,
@@ -175,8 +179,8 @@ float Intersect( const Float3 & _RayStart,
     return intersected ? dist : -1.0f;
 }
 
-// Пересечение луча и меша
-// Возвращает есть пересечение или нет, работает быстрее, чем Intersect
+// РџРµСЂРµСЃРµС‡РµРЅРёРµ Р»СѓС‡Р° Рё РјРµС€Р°
+// Р’РѕР·РІСЂР°С‰Р°РµС‚ РµСЃС‚СЊ РїРµСЂРµСЃРµС‡РµРЅРёРµ РёР»Рё РЅРµС‚, СЂР°Р±РѕС‚Р°РµС‚ Р±С‹СЃС‚СЂРµРµ, С‡РµРј Intersect
 bool HasIntersection( const Float3 & _RayStart,
                                     const Float3 & _RayDir,
                                     const Float3 & _ObjectOrigin,

@@ -33,6 +33,13 @@ SOFTWARE.
 #include <Engine/World/Public/BaseObject.h>
 #include <Engine/World/Public/RenderFrontend.h>
 
+/*
+
+FSoftwareMipmapGenerator
+
+Software mipmap generator
+
+*/
 struct FSoftwareMipmapGenerator {
     void * SourceImage;
     int Width;
@@ -45,6 +52,13 @@ struct FSoftwareMipmapGenerator {
     void GenerateMipmaps( void * _Data );
 };
 
+/*
+
+FImage
+
+Image loader
+
+*/
 class ANGIE_API FImage {
 public:
     void * pRawData;
@@ -62,14 +76,23 @@ public:
     // Load image as byte*
     bool LoadRawImage( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
     bool LoadRawImage( FFileStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+    bool LoadRawImage( FMemoryStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
 
     // Load image as float* in linear space
     bool LoadRawImageHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
     bool LoadRawImageHDRI( FFileStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+    bool LoadRawImageHDRI( FMemoryStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
 
     void Free();
 };
 
+/*
+
+FTexture
+
+Textures are used for materials
+
+*/
 class ANGIE_API FTexture : public FBaseObject, public IRenderProxyOwner {
     AN_CLASS( FTexture, FBaseObject )
 
@@ -85,7 +108,7 @@ public:
     void InitializeCubemap( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength = 1 );
     void InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
 
-    // Create texture from string (*white* *black* *normal* *cubemap*)
+    // Create texture from string (*white* *black* *gray* *normal* *cubemap*)
     void InitializeInternalTexture( const char * _Name );
 
     ETexturePixelFormat GetPixelFormat() const;
@@ -121,8 +144,6 @@ protected:
     void OnLost() override { /* ... */ }
 
 private:
-    //void CreateInternalImage( const char * _Name );
-
     FRenderProxy_Texture * RenderProxy;
     int TextureType;
     ETexturePixelFormat PixelFormat;

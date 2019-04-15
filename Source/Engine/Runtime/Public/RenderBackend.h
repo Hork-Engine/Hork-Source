@@ -59,6 +59,11 @@ struct FMeshVertexLight {
     static FMeshVertexLight Lerp( FMeshVertexLight const & _Vertex1, FMeshVertexLight const & _Vertex2, float _Value = 0.5f );
 };
 
+struct FMeshVertexJoint {
+    byte   JointIndices[4];
+    byte   JointWeights[4];
+};
+
 struct FDrawVert {
     Float2  Position;
     Float2  TexCoord;
@@ -329,10 +334,10 @@ public:
 };
 
 enum ERenderProxyType {
-    RENDER_PROXY_MESH,
     RENDER_PROXY_INDEXED_MESH,
     RENDER_PROXY_LIGHTMAP_UV_CHANNEL,
     RENDER_PROXY_VERTEX_LIGHT_CHANNEL,
+    RENDER_PROXY_SKELETON,
     RENDER_PROXY_TEXTURE,
     RENDER_PROXY_MATERIAL
 };
@@ -396,6 +401,14 @@ struct FVertexChunk {
     FMeshVertex Vertices[1];
 };
 
+struct FVertexJointChunk {
+    FVertexJointChunk * Next;
+    FVertexJointChunk * Prev;
+    int StartVertexLocation;
+    int VerticesCount;
+    FMeshVertexJoint Vertices[1];
+};
+
 struct FIndexChunk {
     FIndexChunk * Next;
     FIndexChunk * Prev;
@@ -420,6 +433,14 @@ struct FVertexLightChunk {
     FMeshVertexLight Vertices[1];
 };
 
+struct FJointTransformChunk {
+    FJointTransformChunk * Next;
+    FJointTransformChunk * Prev;
+    int StartJointLocation;
+    int JointsCount;
+    Float3x4 Transforms[1];
+};
+
 struct FTextureChunk {
     FTextureChunk * Next;
     FTextureChunk * Prev;
@@ -442,16 +463,17 @@ public:
         int VerticesCount;
         int IndicesCount;
 
-        int VertexType;
         int IndexType;
+
+        bool bSkinnedMesh;
+        bool bDynamicStorage;
 
         FVertexChunk * VertexChunks;
         FVertexChunk * VertexChunksTail;
-        int VertexMapRange[2];  // min, max
-
+        FVertexJointChunk * VertexJointChunks;
+        FVertexJointChunk * VertexJointChunksTail;
         FIndexChunk * IndexChunks;
         FIndexChunk * IndexChunksTail;
-        int IndexMapRange[2];   // min, max
 
         bool bReallocated;
     };
@@ -459,7 +481,7 @@ public:
     FrameData Data[2];
 
     // Accessed only by render thread:
-    enum { MAX_HANDLES = 2 };
+    enum { MAX_HANDLES = 3 };
     size_t Handles[MAX_HANDLES];
     int VertexCount;
     int IndexCount;
@@ -478,10 +500,10 @@ class FRenderProxy_LightmapUVChannel : public FRenderProxy {
 public:
     struct FrameData {
         int VerticesCount;
+        bool bDynamicStorage;
 
         FLightmapChunk * Chunks;
         FLightmapChunk * ChunksTail;
-        int VertexMapRange[2];  // min, max
 
         bool bReallocated;
     };
@@ -505,10 +527,10 @@ class FRenderProxy_VertexLightChannel : public FRenderProxy {
 public:
     struct FrameData {
         int VerticesCount;
+        bool bDynamicStorage;
 
         FVertexLightChunk * Chunks;
         FVertexLightChunk * ChunksTail;
-        int VertexMapRange[2];  // min, max
 
         bool bReallocated;
     };
@@ -522,6 +544,32 @@ public:
 protected:
     FRenderProxy_VertexLightChannel();
     ~FRenderProxy_VertexLightChannel();
+};
+
+class FRenderProxy_Skeleton : public FRenderProxy {
+    AN_FORBID_COPY( FRenderProxy_Skeleton )
+
+    friend class FRenderProxy;
+
+public:
+    struct FrameData {
+        int JointsCount;
+
+        FJointTransformChunk * Chunks;
+        FJointTransformChunk * ChunksTail;
+
+        bool bReallocated;
+    };
+
+    FrameData Data[2];
+
+    // Accessed only by render thread:
+    size_t Handle;
+    int JointsCount;
+
+protected:
+    FRenderProxy_Skeleton();
+    ~FRenderProxy_Skeleton();
 };
 
 class FRenderProxy_Texture : public FRenderProxy {
@@ -558,31 +606,67 @@ protected:
 
 enum EMaterialType {
     MATERIAL_TYPE_UNLIT,
-    MATERIAL_TYPE_LIGHTMAP,
-    MATERIAL_TYPE_VERTEX_LIGHT,
     MATERIAL_TYPE_PBR,
     MATERIAL_TYPE_HUD
 };
 
-enum { MAX_MATERIAL_TEXTURES = 16 };
+enum EMaterialFacing {
+    MATERIAL_FACE_FRONT,
+    MATERIAL_FACE_BACK,
+    MATERIAL_FACE_FRONT_AND_BACK
+};
+
+enum {
+    MAX_MATERIAL_TEXTURES = 15
+};
 
 struct FMaterialBuildData {
+    // Size of allocated memory for this structure (in bytes)
     int Size;
 
+    // Material type
     EMaterialType Type;
 
+    // Facing
+    EMaterialFacing Facing;
+
+    // Lightmap binding unit
+    int LightmapSlot;
+
+    // Have texture fetching in vertex stage. This flag allow renderer to optimize sampler/texture bindings
+    // during rendering.
+    bool bVertexTextureFetch;
+
+    // Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
+    // during rendering.
+    bool bNoVertexDeform;
+
+    // TODO:
+    // Surface specific for tricks with depth buffer
+    //enum ESurfaceSpecific {
+    //    SURF_SPEC_COMMON,
+    //    SURF_SPEC_WEAPON,
+    //    SURF_SPEC_SKY
+    //};
+    //ESurfaceSpecific SurfaceSpecific;
+
+    // Vertex source code lump
     int VertexSourceOffset;
     int VertexSourceLength;
 
+    // Fragment source code lump
     int FragmentSourceOffset;
     int FragmentSourceLength;
 
+    // Geometry source code lump
     int GeometrySourceOffset;
     int GeometrySourceLength;
 
+    // Material samplers
     FSamplerDesc Samplers[MAX_MATERIAL_TEXTURES];
     int NumSamplers;
 
+    // Shader source code
     char ShaderData[1];
 };
 
@@ -598,22 +682,48 @@ public:
     enum {
         MAX_SAMPLER_HANDLES = MAX_MATERIAL_TEXTURES,
 
-        PIPELINE_COLOR_PASS = 0,
-        PIPELINE_DEPTH_PASS = 1,
-        PIPELINE_WIREFRAME_PASS = 2,
+        PIPELINE_PBR_DEPTH_PASS = 0,
+        PIPELINE_PBR_DEPTH_PASS_SKINNED,
+        PIPELINE_PBR_WIREFRAME_PASS,
+        PIPELINE_PBR_WIREFRAME_PASS_SKINNED,
+        PIPELINE_PBR_COLOR_PASS_SIMPLE,
+        PIPELINE_PBR_COLOR_PASS_SKINNED,
+        PIPELINE_PBR_COLOR_PASS_LIGHTMAP,
+        PIPELINE_PBR_COLOR_PASS_VERTEX_LIGHT,        
+        PIPELINE_PBR_MAX_HANDLES,
 
-        // TODO:
-        //PIPELINE_COLOR_PASS_SKINNED,
-        //PIPELINE_DEPTH_PASS_SKINNED,
-        //PIPELINE_WIREFRAME_PASS_SKINNED,
+        PIPELINE_UNLIT_DEPTH_PASS = 0,
+        PIPELINE_UNLIT_DEPTH_PASS_SKINNED,
+        PIPELINE_UNLIT_WIREFRAME_PASS,
+        PIPELINE_UNLIT_WIREFRAME_PASS_SKINNED,
+        PIPELINE_UNLIT_COLOR_PASS_SIMPLE,
+        PIPELINE_UNLIT_COLOR_PASS_SKINNED,        
+        PIPELINE_UNLIT_MAX_HANDLES,
 
-        MAX_PIPELINE_HANDLES = 3
+        PIPELINE_HUD_COLOR_PASS_SIMPLE = 0,
+        PIPELINE_HUD_MAX_HANDLES,
+
+        PIPELINE_MAX_HANDLES = ( PIPELINE_PBR_MAX_HANDLES > PIPELINE_UNLIT_MAX_HANDLES )
+                                ? PIPELINE_PBR_MAX_HANDLES
+                                : ( PIPELINE_UNLIT_MAX_HANDLES > PIPELINE_HUD_MAX_HANDLES )
+                                ? PIPELINE_UNLIT_MAX_HANDLES
+                                : PIPELINE_HUD_MAX_HANDLES
+                                //std::max( std::max( PIPELINE_PBR_MAX_HANDLES, PIPELINE_UNLIT_MAX_HANDLES ), PIPELINE_HUD_MAX_HANDLES )
+
     };
-    size_t Samplers[MAX_SAMPLER_HANDLES];
-    size_t Pipelines[MAX_PIPELINE_HANDLES];
-    int NumSamplers;
-    int NumPipelines;
+
     EMaterialType MaterialType;
+
+    size_t  Samplers[MAX_SAMPLER_HANDLES];
+    int     NumSamplers;
+
+    size_t  Pipelines[PIPELINE_MAX_HANDLES];
+    int     NumPipelines;
+
+    int     LightmapSlot;
+
+    bool    bVertexTextureFetch;
+    bool    bNoVertexDeform;
 
 protected:
     FRenderProxy_Material();
@@ -714,19 +824,17 @@ using FArrayOfDebugDrawCmds = TPodArray< FDebugDrawCmd >;
 struct FRenderInstance {
     FRenderProxy_Material *             Material;
     FMaterialInstanceFrameData *        MaterialInstance;
-    FRenderProxy *                      MeshRenderProxy;
+    FRenderProxy_IndexedMesh *          MeshRenderProxy;
+    FRenderProxy_Skeleton *             Skeleton;
     FRenderProxy_VertexLightChannel *   VertexLightChannel;
     FRenderProxy_LightmapUVChannel *    LightmapUVChannel;
     FRenderProxy_Texture *              Lightmap;
     Float4                              LightmapOffset;
     Float4x4                            Matrix;
-    // for indexed mesh
+    Float3x3                            ModelNormalToViewSpace;
     unsigned int                        IndexCount;
     unsigned int                        StartIndexLocation;
     int                                 BaseVertexLocation;
-    // for non-indexed mesh
-    //unsigned int                        VertexCount;
-    //unsigned int                        StartVertexLocation;
 };
 
 struct FRenderView {
@@ -801,7 +909,7 @@ struct FRenderFrame {
     FEventQueue RuntimeEvents;  // runtime write, game read
     FEventQueue GameEvents;     // runtime read, game write
 
-    int64_t RenderTimeDelta;
+    //int64_t RenderTimeDelta;
 
     void * AllocFrameData( size_t _BytesCount );
 };

@@ -43,7 +43,8 @@ public:
     Float3 BackgroundColor = Float3( 0.3f, 0.3f, 0.8f );
     bool bClearBackground = true;
     bool bWireframe;
-    bool bDebugDraw = true;
+    bool bDrawDebug;
+    int RenderingLayers = ~0;
 
 private:
     FRenderingParameters() {}

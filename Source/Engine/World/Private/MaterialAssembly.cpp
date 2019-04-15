@@ -139,6 +139,8 @@ void FMaterialBuildContext::SetStage( EMaterialStage _Stage ) {
     VariableName = 0;
     Stage = _Stage;
     SourceCode.Clear();
+    bHasTextures = false;
+    MaxTextureSlot = -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -417,9 +419,9 @@ void FMaterialStageBlock::Compute( FMaterialBuildContext & _Context ) {
 
         FString const & nsvName = nsv->Expression;
 
-        if ( _Context.GetMaterialPass() != MATERIAL_COLOR_PASS ) {
-            _Context.SourceCode += FString( AssemblyTypeStr[nsv->Type] ) + " ";
-        }
+//        if ( _Context.GetMaterialPass() != MATERIAL_PASS_COLOR ) {
+//            _Context.SourceCode += FString( AssemblyTypeStr[nsv->Type] ) + " ";
+//        }
 
         if ( connection && nsv->ConnectedBlock()->Build( _Context ) ) {
 
@@ -484,26 +486,36 @@ FMaterialVertexStage::~FMaterialVertexStage() {
 
 void FMaterialVertexStage::Compute( FMaterialBuildContext & _Context ) {
 
-    Super::Compute( _Context );
+    if ( _Context.GetMaterialPass() == MATERIAL_PASS_COLOR ) {
+
+        // Super class adds nsv_ definition. Currently nsv_ variables supported only for MATERIAL_PASS_COLOR.
+        Super::Compute( _Context );
+    }
 
     FAssemblyBlockOutput * positionCon = Position->GetConnection();
 
     bool bValid = true;
 
+    bNoVertexDeform = true;
+
     if ( positionCon && Position->ConnectedBlock()->Build( _Context ) ) {
+
+        if ( positionCon->Expression != "GetVertexPosition()" ) {
+            bNoVertexDeform = false;
+        }
 
         switch( positionCon->Type ) {
         case AT_Float1:
-            _Context.SourceCode += "gl_Position = vec4(" + positionCon->Expression + ", 0.0, 0.0, 1.0 );\n";
+            _Context.SourceCode += "gl_Position = ProjectTranslateViewMatrix * vec4(" + positionCon->Expression + ", 0.0, 0.0, 1.0 );\n";
             break;
         case AT_Float2:
-            _Context.SourceCode += "gl_Position = vec4(" + positionCon->Expression + ", 0.0, 1.0 );\n";
+            _Context.SourceCode += "gl_Position = ProjectTranslateViewMatrix * vec4(" + positionCon->Expression + ", 0.0, 1.0 );\n";
             break;
         case AT_Float3:
-            _Context.SourceCode += "gl_Position = vec4(" + positionCon->Expression + ", 1.0 );\n";
+            _Context.SourceCode += "gl_Position = ProjectTranslateViewMatrix * vec4(" + positionCon->Expression + ", 1.0 );\n";
             break;
         case AT_Float4:
-            _Context.SourceCode += "gl_Position = " + positionCon->Expression + ";\n";
+            _Context.SourceCode += "gl_Position = ProjectTranslateViewMatrix * (" + positionCon->Expression + ");\n";
             break;
         default:
             bValid = false;
@@ -515,9 +527,9 @@ void FMaterialVertexStage::Compute( FMaterialBuildContext & _Context ) {
     }
 
     if ( !bValid ) {
-        GLogger.Printf( "%s: Invalid input type\n", Name.ToConstChar() );
+        //GLogger.Printf( "%s: Invalid input type\n", Name.ToConstChar() );
 
-        _Context.SourceCode += "gl_Position = vec4(1);\n";
+        _Context.SourceCode += "gl_Position = ProjectTranslateViewMatrix * vec4( GetVertexPosition(), 1.0 );\n";
     }
 }
 
@@ -1244,6 +1256,10 @@ FMaterialTextureSlotBlock::FMaterialTextureSlotBlock() {
 void FMaterialTextureSlotBlock::Compute( FMaterialBuildContext & _Context ) {
     if ( GetSlotIndex() >= 0 ) {
         Value->Expression = "tslot_" + UInt( GetSlotIndex() ).ToString();
+
+        _Context.bHasTextures = true;
+        _Context.MaxTextureSlot = FMath::Max( _Context.MaxTextureSlot, GetSlotIndex() );
+
     } else {
         Value->Expression.Clear();
     }
@@ -1342,7 +1358,7 @@ void FMaterialSamplerBlock::Compute( FMaterialBuildContext & _Context ) {
     if ( texSlotCon ) {
 
         FAssemblyBlock * block = TextureSlot->ConnectedBlock();
-        if ( block->FinalClassId() == FMaterialTextureSlotBlock::ClassId() ) {
+        if ( block->FinalClassId() == FMaterialTextureSlotBlock::ClassId() && block->Build( _Context ) ) {
 
             FMaterialTextureSlotBlock * texSlot = static_cast< FMaterialTextureSlotBlock * >( block );
 
@@ -1459,7 +1475,7 @@ void FMaterialNormalSamplerBlock::Compute( FMaterialBuildContext & _Context ) {
     if ( texSlotCon ) {
 
         FAssemblyBlock * block = TextureSlot->ConnectedBlock();
-        if ( block->FinalClassId() == FMaterialTextureSlotBlock::ClassId() ) {
+        if ( block->FinalClassId() == FMaterialTextureSlotBlock::ClassId() && block->Build( _Context ) ) {
 
             FMaterialTextureSlotBlock * texSlot = static_cast< FMaterialTextureSlotBlock * >( block );
 
@@ -1565,7 +1581,7 @@ FMaterialInPositionBlock::FMaterialInPositionBlock() {
     Stages = VERTEX_STAGE_BIT;
 
     Value = NewOutput( "Value", AT_Unknown );
-    Value->Expression = "InPosition";
+    //Value->Expression = "InPosition";
 }
 
 void FMaterialInPositionBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1575,6 +1591,8 @@ void FMaterialInPositionBlock::Compute( FMaterialBuildContext & _Context ) {
     } else {
         Value->Type = AT_Float3;
     }
+
+    _Context.GenerateSourceCode( Value, "GetVertexPosition()", false );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1731,6 +1749,28 @@ void FMaterialCondLessBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+AN_CLASS_META_NO_ATTRIBS( FMaterialAtmosphereBlock )
+
+FMaterialAtmosphereBlock::FMaterialAtmosphereBlock() {
+    Name = "Atmosphere Scattering";
+    Stages = ANY_STAGE_BIT;
+
+    Dir = NewInput( "Dir" );
+    Result = NewOutput( "Result", AT_Float4 );
+}
+
+void FMaterialAtmosphereBlock::Compute( FMaterialBuildContext & _Context ) {
+    FAssemblyBlockOutput * dirConnection = Dir->GetConnection();
+
+    if ( dirConnection && Dir->ConnectedBlock()->Build( _Context ) ) {
+        _Context.GenerateSourceCode( Result, "vec4( atmosphere( normalize(" + dirConnection->Expression + "), normalize(vec3(0.5,0.5,-1)) ), 1.0 )", false );
+    } else {
+        Result->Expression = "vec4( 0.0 )";
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 AN_CLASS_META_NO_ATTRIBS( FMaterialBuilder )
 
 FMaterialBuilder::FMaterialBuilder() {
@@ -1744,7 +1784,7 @@ FMaterialBuilder::~FMaterialBuilder() {
 }
 
 void FMaterialBuilder::RegisterTextureSlot( FMaterialTextureSlotBlock * _Slot ) {
-    if ( TextureSlots.Length() >= MAX_MATERIAL_TEXTURES - 1 ) { // -1 for slot reserved for lightmap
+    if ( TextureSlots.Length() >= MAX_MATERIAL_TEXTURES ) { // -1 for slot reserved for lightmap
         GLogger.Printf( "FMaterialBuilder::RegisterTextureSlot: MAX_MATERIAL_TEXTURES hit\n");
         return;
     }
@@ -1753,17 +1793,16 @@ void FMaterialBuilder::RegisterTextureSlot( FMaterialTextureSlotBlock * _Slot ) 
     TextureSlots.Append( _Slot );
 }
 
-FString FMaterialBuilder::SamplersString() const {
+FString FMaterialBuilder::SamplersString( int _MaxtextureSlot ) const {
     FString s;
     FString bindingStr;
 
     for ( FMaterialTextureSlotBlock * slot : TextureSlots ) {
-
-        bindingStr = UInt(slot->GetSlotIndex()).ToString();
-
-        s += "layout( binding = " + bindingStr + " ) uniform " + GetShaderType( slot->TextureType ) + " tslot_" + bindingStr + ";\n";
+        if ( slot->GetSlotIndex() <= _MaxtextureSlot ) {
+            bindingStr = UInt(slot->GetSlotIndex()).ToString();
+            s += "layout( binding = " + bindingStr + " ) uniform " + GetShaderType( slot->TextureType ) + " tslot_" + bindingStr + ";\n";
+        }
     }
-
     return s;
 }
 
@@ -1924,128 +1963,399 @@ static void GenerateBuiltinSource( FString & _BuiltIn ) {
     }
 }
 
+static const char * AtmosphereShader = AN_STRINGIFY(
+//
+// Atmosphere scattering
+// based on https://github.com/wwwtyro/glsl-atmosphere in public domain
+// Very slow for realtime, but can by used to generate skybox
+\n#define iSteps 16\n
+\n#define jSteps 8\n
+
+\n#define PI          3.1415926\n
+
+vec2 rsi(vec3 r0, vec3 rd, float sr) {
+    // ray-sphere intersection that assumes
+    // the sphere is centered at the origin.
+    // No intersection when result.x > result.y
+    float a = dot(rd, rd);
+    float b = 2.0 * dot(rd, r0);
+    float c = dot(r0, r0) - (sr * sr);
+    float d = (b*b) - 4.0*a*c;
+    if (d < 0.0) return vec2(1e5,-1e5);
+    return vec2(
+        (-b - sqrt(d))/(2.0*a),
+        (-b + sqrt(d))/(2.0*a)
+    );
+}
+
+vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAtmos, vec3 kRlh, float kMie, float shRlh, float shMie, float g) {
+    // Calculate the step size of the primary ray.
+    vec2 p = rsi(r0, r, rAtmos);
+    if (p.x > p.y) return vec3(0,0,0);
+    p.y = min(p.y, rsi(r0, r, rPlanet).x);
+    float iStepSize = (p.y - p.x) / float(iSteps);
+
+    // Initialize the primary ray time.
+    float iTime = 0.0;
+
+    // Initialize accumulators for Rayleigh and Mie scattering.
+    vec3 totalRlh = vec3(0,0,0);
+    vec3 totalMie = vec3(0,0,0);
+
+    // Initialize optical depth accumulators for the primary ray.
+    float iOdRlh = 0.0;
+    float iOdMie = 0.0;
+
+    // Calculate the Rayleigh and Mie phases.
+    float mu = dot(r, pSun);
+    float mumu = mu * mu;
+    float gg = g * g;
+    float pRlh = 3.0 / (16.0 * PI) * (1.0 + mumu);
+    float pMie = 3.0 / (8.0 * PI) * ((1.0 - gg) * (mumu + 1.0)) / (pow(1.0 + gg - 2.0 * mu * g, 1.5) * (2.0 + gg));
+
+    // Sample the primary ray.
+    for (int i = 0; i < iSteps; i++) {
+
+        // Calculate the primary ray sample position.
+        vec3 iPos = r0 + r * (iTime + iStepSize * 0.5);
+
+        // Calculate the height of the sample.
+        float iHeight = length(iPos) - rPlanet;
+
+        // Calculate the optical depth of the Rayleigh and Mie scattering for this step.
+        float odStepRlh = exp(-iHeight / shRlh) * iStepSize;
+        float odStepMie = exp(-iHeight / shMie) * iStepSize;
+
+        // Accumulate optical depth.
+        iOdRlh += odStepRlh;
+        iOdMie += odStepMie;
+
+        // Calculate the step size of the secondary ray.
+        float jStepSize = rsi(iPos, pSun, rAtmos).y / float(jSteps);
+
+        // Initialize the secondary ray time.
+        float jTime = 0.0;
+
+        // Initialize optical depth accumulators for the secondary ray.
+        float jOdRlh = 0.0;
+        float jOdMie = 0.0;
+
+        // Sample the secondary ray.
+        for (int j = 0; j < jSteps; j++) {
+
+            // Calculate the secondary ray sample position.
+            vec3 jPos = iPos + pSun * (jTime + jStepSize * 0.5);
+
+            // Calculate the height of the sample.
+            float jHeight = length(jPos) - rPlanet;
+
+            // Accumulate the optical depth.
+            jOdRlh += exp(-jHeight / shRlh) * jStepSize;
+            jOdMie += exp(-jHeight / shMie) * jStepSize;
+
+            // Increment the secondary ray time.
+            jTime += jStepSize;
+        }
+
+        // Calculate attenuation.
+        vec3 attn = exp(-(kMie * (iOdMie + jOdMie) + kRlh * (iOdRlh + jOdRlh)));
+
+        // Accumulate scattering.
+        totalRlh += odStepRlh * attn;
+        totalMie += odStepMie * attn;
+
+        // Increment the primary ray time.
+        iTime += iStepSize;
+
+    }
+
+    // Calculate and return the final color.
+    return iSun * (pRlh * kRlh * totalRlh + pMie * kMie * totalMie);
+}
+
+vec3 atmosphere( in vec3 _RayDirNormalized, in vec3 _SunPosNormalized ) {
+
+                return _RayDirNormalized*0.5+0.5;
+//    return atmosphere(
+//        _RayDirNormalized,              // normalized ray direction
+//        vec3(0,6372e3,0),               // ray origin
+//        _SunPosNormalized,              // position of the sun
+//        22.0,                           // intensity of the sun
+//        6371e3,                         // radius of the planet in meters
+//        6471e3,                         // radius of the atmosphere in meters
+//        vec3(5.5e-6, 13.0e-6, 22.4e-6), // Rayleigh scattering coefficient
+//        21e-6,                          // Mie scattering coefficient
+//        8e3,                            // Rayleigh scale height
+//        1.2e3,                          // Mie scale height
+//        0.758                           // Mie preferred scattering direction
+//    );
+}\n
+
+);
+
 FMaterial * FMaterialBuilder::Build() {
     FString VertexSrc;
     FString FragmentSrc;
     FString GeometrySrc;
     FMaterialBuildContext context;
+    bool bHasTextures[MATERIAL_PASS_MAX];
+    bool bVertexTextureFetch = false;
+    int lightmapSlot = 0;
+    int maxTextureSlot = -1;
+    bool bNoVertexDeform = true;
 
-    FString samplersStr = SamplersString();
-    FString uniformStr =
-            "layout( binding = 0, std140 ) uniform UniformBuffer0\n"
-            "{\n"
-            "    vec4 Timers;\n"
-            "    vec4 ViewPostion;\n"
-            "};\n"
-            "layout( binding = 1, std140 ) uniform UniformBuffer1\n"
-            "{\n"
-            "    mat4 ProjectTranslateViewMatrix;\n"
-            "    vec4 LightmapOffset;\n"
-            "};\n";
-    FString perVertexOut =
+    memset( bHasTextures, 0, sizeof( bHasTextures ) );
+
+    FString prebuildVertexShader =
+        "#ifdef SKINNED_MESH\n"
+        "    const vec4 SrcPosition = vec4( InPosition, 1.0 );\n"
+
+        "    const vec4\n"
+        "    JointTransform0 = Transform[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]\n"
+        "                    + Transform[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]\n"
+        "                    + Transform[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]\n"
+        "                    + Transform[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];\n"
+        "    const vec4\n"
+        "    JointTransform1 = Transform[ InJointIndices[0] * 3 + 1 ] * InJointWeights[0]\n"
+        "                    + Transform[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]\n"
+        "                    + Transform[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]\n"
+        "                    + Transform[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];\n"
+        "    const vec4\n"
+        "    JointTransform2 = Transform[ InJointIndices[0] * 3 + 2 ] * InJointWeights[0]\n"
+        "                    + Transform[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]\n"
+        "                    + Transform[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]\n"
+        "                    + Transform[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];\n"
+
+        "    vec3 Position;\n"
+        "    Position.x = dot( JointTransform0, SrcPosition );\n"
+        "    Position.y = dot( JointTransform1, SrcPosition );\n"
+        "    Position.z = dot( JointTransform2, SrcPosition );\n"
+        "    #define GetVertexPosition() Position\n"
+        "#else\n"
+        "    #define GetVertexPosition() InPosition\n"
+        "#endif\n";
+
+    FString prebuildVertexShaderColorPass =
+        "#ifndef UNLIT\n"
+        "#ifdef SKINNED_MESH\n"
+        "    vec4 Normal;\n"
+
+             // Normal in model space
+        "    Normal.x = dot( vec3(JointTransform0), InNormal );\n"
+        "    Normal.y = dot( vec3(JointTransform1), InNormal );\n"
+        "    Normal.z = dot( vec3(JointTransform2), InNormal );\n"
+
+             // Transform normal from model space to viewspace
+        "    VS_N.x = dot( ModelNormalToViewSpace0, Normal );\n"
+        "    VS_N.y = dot( ModelNormalToViewSpace1, Normal );\n"
+        "    VS_N.z = dot( ModelNormalToViewSpace2, Normal );\n"
+        "    VS_N = normalize( VS_N );\n"
+
+             // Tangent in model space
+        "    Normal.x = dot( vec3(JointTransform0), InTangent.xyz );\n"
+        "    Normal.y = dot( vec3(JointTransform1), InTangent.xyz );\n"
+        "    Normal.z = dot( vec3(JointTransform2), InTangent.xyz );\n"
+
+             // Transform tangent from model space to viewspace
+        "    VS_T.x = dot( ModelNormalToViewSpace0, Normal );\n"
+        "    VS_T.y = dot( ModelNormalToViewSpace1, Normal );\n"
+        "    VS_T.z = dot( ModelNormalToViewSpace2, Normal );\n"
+        "    VS_T = normalize( VS_T );\n"
+
+             // Compute binormal in viewspace
+        "    VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;\n"// * ( handedness - 1.0 );
+
+        "#else\n"
+
+             // Transform normal from model space to viewspace
+        "    VS_N.x = dot( ModelNormalToViewSpace0, vec4( InNormal, 0.0 ) );\n"
+        "    VS_N.y = dot( ModelNormalToViewSpace1, vec4( InNormal, 0.0 ) );\n"
+        "    VS_N.z = dot( ModelNormalToViewSpace2, vec4( InNormal, 0.0 ) );\n"
+
+             // Transform tangent from model space to viewspace
+        "    VS_T.x = dot( ModelNormalToViewSpace0, InTangent );\n"
+        "    VS_T.y = dot( ModelNormalToViewSpace1, InTangent );\n"
+        "    VS_T.z = dot( ModelNormalToViewSpace2, InTangent );\n"
+
+             // Compute binormal in viewspace
+        "    VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;\n"// * ( handedness - 1.0 );
+
+        "#endif\n"
+        "#endif\n";
+
+    GenerateBuiltinSource( VertexSrc );
+    GenerateBuiltinSource( FragmentSrc );
+
+    FragmentSrc += AtmosphereShader;
+
+    VertexSrc +=
             "out gl_PerVertex\n"
             "{\n"
             "    vec4 gl_Position;\n"
 //          "    float gl_PointSize;\n"
 //          "    float gl_ClipDistance[];\n"
-            "};\n";
+            "};\n"
 
-    GenerateBuiltinSource( VertexSrc );
-    GenerateBuiltinSource( FragmentSrc );
+            "#ifdef SKINNED_MESH\n"
+            "layout( binding = 2, std140 ) uniform JointTransforms\n"
+            "{\n"
+            "    vec4 Transform[ 256 * 3 ];\n"   // MAX_JOINTS = 256
+            "};\n"
+            "#endif\n";
 
     // Create depth pass
-    context.Reset( MaterialType, MATERIAL_DEPTH_PASS );
+    context.Reset( MaterialType, MATERIAL_PASS_DEPTH );
     {
         // Depth pass. Vertex stage
         context.SetStage( VERTEX_STAGE );
         VertexStage->ResetConnections( context );
         VertexStage->TouchConnections( context );
         VertexStage->Build( context );
-        VertexSrc += "#ifdef MATERIAL_DEPTH_PASS\n";
-        VertexSrc += perVertexOut;
-        VertexSrc += uniformStr;
-        VertexSrc += samplersStr;
+        VertexSrc += "#ifdef MATERIAL_PASS_DEPTH\n";
+        VertexSrc += SamplersString( context.MaxTextureSlot );
         VertexSrc += "void main() {\n";
+        VertexSrc += prebuildVertexShader;
         VertexSrc += context.SourceCode + "}\n";
         VertexSrc += "#endif\n";
+
+        bHasTextures[ MATERIAL_PASS_DEPTH ] = context.bHasTextures;
+        maxTextureSlot = FMath::Max( maxTextureSlot, context.MaxTextureSlot );
+
+        bVertexTextureFetch |= context.bHasTextures;
+
+        // TODO: Для MATERIAL_PASS_DEPTH и MATERIAL_PASS_WIREFRAME проверить:
+        // если нет никакой деформации вершины, то использовать шейдер/пайплайн по умолчанию
+        // для данного прохода. Это необходимо для оптимизации количества переключения пайплайнов.
     }
 
     // Create color pass
-    context.Reset( MaterialType, MATERIAL_COLOR_PASS );
+    context.Reset( MaterialType, MATERIAL_PASS_COLOR );
     {
         // Color pass. Vertex stage
         context.SetStage( VERTEX_STAGE );
         VertexStage->ResetConnections( context );
         VertexStage->TouchConnections( context );
         VertexStage->Build( context );
-        UInt bakedLightLocation = VertexStage->NumNextStageVariables();
-        VertexSrc += "#ifdef MATERIAL_COLOR_PASS\n";
-        VertexSrc += perVertexOut;
-        VertexSrc += uniformStr;
-        VertexSrc += samplersStr;
+
+        bNoVertexDeform = VertexStage->bNoVertexDeform;
+
+        bHasTextures[ MATERIAL_PASS_COLOR ] |= context.bHasTextures;
+        maxTextureSlot = FMath::Max( maxTextureSlot, context.MaxTextureSlot );
+
+        bVertexTextureFetch |= context.bHasTextures;
+
+        int locationIndex = VertexStage->NumNextStageVariables();
+
+        UInt bakedLightLocation = locationIndex++;
+        UInt tangentLocation = locationIndex++;
+        UInt binormalLocation = locationIndex++;
+        UInt normalLocation = locationIndex++;
+
+        VertexSrc += "#ifdef MATERIAL_PASS_COLOR\n";
+        VertexSrc += SamplersString( context.MaxTextureSlot );
         VertexSrc += VertexStage->NSV_OutputSection();
-        if ( MaterialType == MATERIAL_TYPE_LIGHTMAP ) {
-            VertexSrc += "layout( location = " + bakedLightLocation.ToString() + " ) out vec2 VS_LightmapTexCoord;\n";
-        } else if ( MaterialType == MATERIAL_TYPE_VERTEX_LIGHT ) {
-            VertexSrc += "layout( location = " + bakedLightLocation.ToString() + " ) out vec3 VS_VertexLight;\n";
-        }
-        VertexSrc += "void main() {\n";
-        if ( MaterialType == MATERIAL_TYPE_LIGHTMAP ) {
-            VertexSrc += "VS_LightmapTexCoord = InLightmapTexCoord * LightmapOffset.zw + LightmapOffset.xy;\n";
-        } else  if ( MaterialType == MATERIAL_TYPE_VERTEX_LIGHT ) {
-            VertexSrc += "VS_VertexLight = pow( InVertexLight.xyz, vec3(2.2) ) * (4.0*InVertexLight.w);\n";
-        }
-        VertexSrc += context.SourceCode + "}\n";
-        VertexSrc += "#endif\n";
+        VertexSrc += "#ifdef USE_LIGHTMAP\n"
+                     "layout( location = " + bakedLightLocation.ToString() + " ) out vec2 VS_LightmapTexCoord;\n"
+                     "#endif\n"
+                     "#ifdef USE_VERTEX_LIGHT\n"
+                     "layout( location = " + bakedLightLocation.ToString() + " ) out vec3 VS_VertexLight;\n"
+                     "#endif\n"
+                     "#ifndef UNLIT\n"
+                     "layout( location = " + tangentLocation.ToString() + " ) out vec3 VS_T;\n"
+                     "layout( location = " + binormalLocation.ToString() + " ) out vec3 VS_B;\n"
+                     "layout( location = " + normalLocation.ToString() + " ) out vec3 VS_N;\n"
+                     "#endif\n"  // UNLIT
+                     "void main() {\n"
+                     + prebuildVertexShader
+                     + prebuildVertexShaderColorPass +
+                     "#ifdef USE_LIGHTMAP\n"
+                     "    VS_LightmapTexCoord = InLightmapTexCoord * LightmapOffset.zw + LightmapOffset.xy;\n"
+                     "#endif\n"
+                     "#ifdef USE_VERTEX_LIGHT\n"
+                     "    VS_VertexLight = pow( InVertexLight.xyz, vec3(2.2) ) * (4.0*InVertexLight.w);\n"
+                     "#endif\n"
+                     + context.SourceCode +
+                     "}\n"
+                     "#endif\n";
 
         // Color pass. Fragment stage
         context.SetStage( FRAGMENT_STAGE );
         FragmentStage->ResetConnections( context );
         FragmentStage->TouchConnections( context );
         FragmentStage->Build( context );
-        FragmentSrc += "#ifdef MATERIAL_COLOR_PASS\n";
-        FragmentSrc += "layout( location = 0 ) out vec4 FS_FragColor;\n";
-        FragmentSrc += uniformStr;
-        FragmentSrc += samplersStr;
-        FragmentSrc += VertexStage->NSV_InputSection();
-        if ( MaterialType == MATERIAL_TYPE_LIGHTMAP ) {
-            int lightmapSlot = TextureSlots.Length();
-            FragmentSrc += "layout( binding = " + Int(lightmapSlot).ToString() + " ) uniform sampler2D tslot_lightmap;\n";
-            FragmentSrc += "layout( location = " + bakedLightLocation.ToString() + " ) in vec2 VS_LightmapTexCoord;\n";
-        } else  if ( MaterialType == MATERIAL_TYPE_VERTEX_LIGHT ) {
-            FragmentSrc += "layout( location = " + bakedLightLocation.ToString() + " ) in vec3 VS_VertexLight;\n";
-        }
-        FragmentSrc += "void main() {\n";
-        FragmentSrc += context.SourceCode;
-        if ( MaterialType == MATERIAL_TYPE_LIGHTMAP ) {
-            //FragmentSrc += "FS_FragColor = FS_FragColor * pow( texture( tslot_lightmap, VS_LightmapTexCoord ).r, 2.2 );\n";
-            FragmentSrc += "FS_FragColor = FS_FragColor * vec4(texture( tslot_lightmap, VS_LightmapTexCoord ).rgb,1.0);\n";
-        } else if ( MaterialType == MATERIAL_TYPE_VERTEX_LIGHT ) {
-            FragmentSrc += "FS_FragColor = FS_FragColor * vec4(VS_VertexLight,1.0);\n";
-        }
-        //FragmentSrc += "FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );\n";
-        FragmentSrc += "}\n";
-        FragmentSrc += "#endif\n";
+
+        bHasTextures[ MATERIAL_PASS_COLOR ] |= context.bHasTextures;
+        maxTextureSlot = FMath::Max( maxTextureSlot, context.MaxTextureSlot );
+
+        lightmapSlot = context.MaxTextureSlot + 1;
+
+        FragmentSrc += "#ifdef MATERIAL_PASS_COLOR\n"
+                       "layout( location = 0 ) out vec4 FS_FragColor;\n"
+                       + SamplersString( context.MaxTextureSlot )
+                       + VertexStage->NSV_InputSection() +
+                       "#ifdef USE_LIGHTMAP\n"
+                       "layout( binding = " + Int(lightmapSlot).ToString() + " ) uniform sampler2D tslot_lightmap;\n"
+                       "layout( location = " + bakedLightLocation.ToString() + " ) in vec2 VS_LightmapTexCoord;\n"
+                       "#endif\n"
+                       "#ifdef USE_VERTEX_LIGHT\n"
+                       "layout( location = " + bakedLightLocation.ToString() + " ) in vec3 VS_VertexLight;\n"
+                       "#endif\n"
+                       "#ifndef UNLIT\n"
+                       "layout( location = " + tangentLocation.ToString() + " ) in vec3 VS_T;\n"
+                       "layout( location = " + binormalLocation.ToString() + " ) in vec3 VS_B;\n"
+                       "layout( location = " + normalLocation.ToString() + " ) in vec3 VS_N;\n"
+                       "#endif\n"  // UNLIT
+                       "void main() {\n"
+                       + context.SourceCode +
+                       "#ifdef USE_LIGHTMAP\n"
+                       //"FS_FragColor = FS_FragColor * pow( texture( tslot_lightmap, VS_LightmapTexCoord ).r, 2.2 );\n"
+                       "FS_FragColor = FS_FragColor * vec4(texture( tslot_lightmap, VS_LightmapTexCoord ).rgb,1.0);\n"
+                       "#endif\n"
+                       "#ifdef USE_VERTEX_LIGHT\n"
+                       "FS_FragColor = FS_FragColor * vec4(VS_VertexLight,1.0);\n"
+                       "#endif\n"
+
+// input lag test
+//"float t=FS_FragColor.r;"
+//"for (int i=0;i<3000;i++) t+=sin(t)+cos(t);\n"
+//"FS_FragColor.a *= t;\n"
+
+                       // Normal debugging
+                       //"#ifndef UNLIT\n"
+                       //"FS_FragColor = vec4(VS_N,1.0);\n"
+                       //"#endif\n"
+
+                       // Manual SRGB conversion
+                       //"FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );\n"
+
+                       "}\n"
+                       "#endif\n";
     }
 
     // Create wireframe pass
-    context.Reset( MaterialType, MATERIAL_WIREFRAME_PASS );
+    context.Reset( MaterialType, MATERIAL_PASS_WIREFRAME );
     {
         // Wireframe pass. Vertex stage
         context.SetStage( VERTEX_STAGE );
         VertexStage->ResetConnections( context );
         VertexStage->TouchConnections( context );
         VertexStage->Build( context );
-        VertexSrc += "#ifdef MATERIAL_WIREFRAME_PASS\n";
-        VertexSrc += perVertexOut;
-        VertexSrc += uniformStr;
-        VertexSrc += samplersStr;
+
+        bHasTextures[ MATERIAL_PASS_WIREFRAME ] = context.bHasTextures;
+        maxTextureSlot = FMath::Max( maxTextureSlot, context.MaxTextureSlot );
+
+        bVertexTextureFetch |= context.bHasTextures;
+
+        VertexSrc += "#ifdef MATERIAL_PASS_WIREFRAME\n";
+        VertexSrc += SamplersString( context.MaxTextureSlot );
         VertexSrc += "void main() {\n";
-        VertexSrc += context.SourceCode + "}\n";
-        VertexSrc += "#endif\n";
+        VertexSrc += prebuildVertexShader;
+        VertexSrc += context.SourceCode;
+        VertexSrc += "}\n"
+                     "#endif\n";
 
         // Wireframe pass. Geometry stage
-        GeometrySrc += "#ifdef MATERIAL_WIREFRAME_PASS\n"
+        GeometrySrc += "#ifdef MATERIAL_PASS_WIREFRAME\n"
                        "in gl_PerVertex {\n"
                        "    vec4 gl_Position;\n"
 //                       "    float gl_PointSize;\n"
@@ -2074,7 +2384,7 @@ FMaterial * FMaterialBuilder::Build() {
                        "#endif\n";
 
         // Wireframe pass. Fragment stage
-        FragmentSrc += "#ifdef MATERIAL_WIREFRAME_PASS\n"
+        FragmentSrc += "#ifdef MATERIAL_PASS_WIREFRAME\n"
                        "layout( location = 0 ) out vec4 FS_FragColor;\n"
                        "layout( location = 0 ) in vec3 GS_Barycentric;\n"
                        "void main() {\n"
@@ -2087,9 +2397,9 @@ FMaterial * FMaterialBuilder::Build() {
                        "#endif\n";
     }
 
-    //GLogger.Print( "=== vertex ===\n" );
-    //GLogger.Print( VertexSrc.ToConstChar() );
-    //GLogger.Print( "==============\n" );
+    GLogger.Print( "=== vertex ===\n" );
+    GLogger.Print( VertexSrc.ToConstChar() );
+    GLogger.Print( "==============\n" );
     //GLogger.Print( "=== fragment ===\n" );
     //GLogger.Print( FragmentSrc.ToConstChar() );
     //GLogger.Print( "==============\n" );
@@ -2108,8 +2418,13 @@ FMaterial * FMaterialBuilder::Build() {
 
     buildData->Size = size;
     buildData->Type = MaterialType;
+    buildData->Facing = MaterialFacing;
+    buildData->LightmapSlot = lightmapSlot;
+    buildData->bVertexTextureFetch = bVertexTextureFetch;
+    buildData->bNoVertexDeform = bNoVertexDeform;
+    //AN_Assert(bNoVertexDeform);
 
-    buildData->NumSamplers = TextureSlots.Length();
+    buildData->NumSamplers = maxTextureSlot + 1;
 
     for ( int i = 0 ; i < buildData->NumSamplers ; i++ ) {
         FSamplerDesc & desc = buildData->Samplers[i];
@@ -2124,22 +2439,6 @@ FMaterial * FMaterialBuilder::Build() {
         desc.Anisotropy = textureSlot->Anisotropy;
         desc.MinLod = textureSlot->MinLod;
         desc.MaxLod = textureSlot->MaxLod;
-    }
-
-    if ( MaterialType == MATERIAL_TYPE_LIGHTMAP ) {
-        FSamplerDesc & desc = buildData->Samplers[buildData->NumSamplers];
-
-        desc.TextureType = TEXTURE_2D;
-        desc.Filter = TEXTURE_FILTER_LINEAR;
-        desc.AddressU = TEXTURE_SAMPLER_WRAP;
-        desc.AddressV = TEXTURE_SAMPLER_WRAP;
-        desc.AddressW = TEXTURE_SAMPLER_WRAP;
-        desc.MipLODBias = 0;
-        desc.Anisotropy = 16;
-        desc.MinLod = -1000;
-        desc.MaxLod = 1000;
-
-        buildData->NumSamplers++;
     }
 
     int offset = 0;

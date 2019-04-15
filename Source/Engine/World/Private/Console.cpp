@@ -300,22 +300,30 @@ void FConsole::WidePrint( FWideChar const * _Text ) {
 template< int RESULT_CAPACITY >
 static void EncodeUtf8( FWideChar const * s, FWideChar const * end, TPodArray< char, RESULT_CAPACITY > & _Result ) {
     char utf[4];
-    while ( s < end ) {
+    while ( *s && s < end ) {
         int byteLen = FCore::EncodeUTF8Char( *s++, utf );
         for ( int i = 0 ; i < byteLen ; i++ ) {
             _Result.Append( utf[i] );
         }
     }
-    _Result.Append( '\n' );
     _Result.Append( '\0' );
 }
 
 static void CopyStoryLine( FWideChar const * _StoryLine ) {
     CmdLineLength = 0;
-    while ( *_StoryLine ) {
+    while ( *_StoryLine && CmdLineLength < MAX_CMD_LINE_CHARS ) {
         CmdLine[ CmdLineLength++ ] = *_StoryLine++;
     }
     CmdLinePos = CmdLineLength;
+}
+
+static void AddStoryLine( FWideChar * _Text, int _Length ) {
+    FWideChar * storyLine = StoryLines[NumStoryLines++ & ( MAX_STORY_LINES - 1 )];
+    memcpy( storyLine, _Text, sizeof( _Text[0] ) * FMath::Min( _Length, MAX_CMD_LINE_CHARS ) );
+    if ( _Length < MAX_CMD_LINE_CHARS ) {
+        storyLine[_Length] = 0;
+    }
+    CurStoryLine = NumStoryLines;
 }
 
 static void InsertClipboardText() {
@@ -444,21 +452,16 @@ void FConsole::KeyEvent( FKeyEvent const & _Event ) {
             }
             break;
         case KEY_ENTER: {
-            TPodArray< char, MAX_CMD_LINE_CHARS * 3 + 2 > result;   // In worst case FWideChar transforms to 3 bytes,
-                                                                    // two additional bytes are reserved for trailing '\n\0'
+            TPodArray< char, MAX_CMD_LINE_CHARS * 3 + 1 > result;   // In worst case FWideChar transforms to 3 bytes,
+                                                                    // one additional byte is reserved for trailing '\0'
 
             EncodeUtf8( CmdLine, CmdLine + CmdLineLength, result );
 
             if ( CmdLineLength > 0 ) {
-                FWideChar * storyLine = StoryLines[NumStoryLines++ & ( MAX_STORY_LINES - 1 )];
-                memcpy( storyLine, CmdLine, sizeof( CmdLine[0] ) * CmdLineLength );
-                if ( CmdLineLength < MAX_CMD_LINE_CHARS ) {
-                    storyLine[CmdLineLength] = 0;
-                }
-                CurStoryLine = NumStoryLines;
+                AddStoryLine( CmdLine, CmdLineLength );
             }
 
-            GLogger.Print( result.ToPtr() );
+            GLogger.Printf( "%s\n", result.ToPtr() );
 
             CmdLineLength = 0;
             CmdLinePos = 0;
@@ -644,4 +647,59 @@ void FConsole::Draw( FCanvas * _Canvas, float _TimeStep ) {
     }
 
     ConSync.EndScope();
+}
+
+void FConsole::WriteStoryLines() {
+    if ( !NumStoryLines ) {
+        return;
+    }
+
+    FFileStream f;
+    if ( !f.OpenWrite( "console_story.txt" ) ) {
+        GLogger.Printf( "Failed to write console story\n" );
+        return;
+    }
+
+    TPodArray< char, MAX_CMD_LINE_CHARS * 3 + 1 > result;   // In worst case FWideChar transforms to 3 bytes,
+                                                            // one additional byte is reserved for trailing '\0'
+
+    int numLines = FMath::Min( MAX_STORY_LINES, NumStoryLines );
+
+    for ( int i = 0 ; i < numLines ; i++ ) {
+        int n = ( NumStoryLines - numLines + i ) & ( MAX_STORY_LINES - 1 );
+        EncodeUtf8( StoryLines[n], StoryLines[n] + MAX_CMD_LINE_CHARS, result );
+        f.Printf( "%s\n", result.ToPtr() );
+        result.Clear();
+    }
+}
+
+void FConsole::ReadStoryLines() {
+    FWideChar wideStr[ MAX_CMD_LINE_CHARS ];
+    int wideStrLength;
+    char buf[ MAX_CMD_LINE_CHARS * 3 + 2 ]; // In worst case FWideChar transforms to 3 bytes,
+                                            // two additional bytes are reserved for trailing '\n\0'
+
+    FFileStream f;
+    if ( !f.OpenRead( "console_story.txt" ) ) {
+        return;
+    }
+
+    NumStoryLines = 0;
+    while ( NumStoryLines < MAX_STORY_LINES && f.Gets( buf, sizeof( buf ) ) ) {
+        wideStrLength = 0;
+
+        const char * s = buf;
+        while ( *s && *s != '\n' && wideStrLength < MAX_CMD_LINE_CHARS ) {
+            int byteLen = FCore::DecodeUTF8WChar( s, wideStr[wideStrLength] );
+            if ( !byteLen ) {
+                break;
+            }
+            s += byteLen;
+            wideStrLength++;
+        }
+
+        if ( wideStrLength > 0 ) {
+            AddStoryLine( wideStr, wideStrLength );
+        }
+    }
 }

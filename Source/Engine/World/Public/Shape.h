@@ -1,6 +1,9 @@
 ﻿#pragma once
 
-// Зная направление бинормали ее можно расчитать по формуле: binormal = cross( normal, tangent ) * handedness.
+#include <Engine/Runtime/Public/RenderBackend.h>
+#include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
+
+// binormal = cross( normal, tangent ) * handedness
 AN_FORCEINLINE float CalcHandedness( const Float3 & _Tangent, const Float3 & _Binormal, const Float3 & _Normal ) {
     return ( _Normal.Cross( _Tangent ).Dot( _Binormal ) < 0.0f ) ? -1.0f : 1.0f;
 }

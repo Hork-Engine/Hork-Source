@@ -41,7 +41,7 @@ SOFTWARE.
 
 FLogger GLogger;
 
-thread_local static char LogBuffer[16384];
+thread_local char LogBuffer[16384];
 
 void FLogger::Critical( const char * _Format, ... ) {
     va_list VaList;

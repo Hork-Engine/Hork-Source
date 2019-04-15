@@ -35,6 +35,9 @@ SOFTWARE.
 
 class FActor;
 class FActorComponent;
+class FDrawSurf;
+class FMeshComponent;
+class FSkinnedComponent;
 class FTimer;
 class FDebugDraw;
 
@@ -90,8 +93,6 @@ protected: \
     ~_Class() {} \
 private:
 
-
-class FDrawSurf;
 
 /*
 
@@ -165,16 +166,28 @@ public:
     // Destroy all actors in world
     void DestroyActors();
 
+    // Add level to world
+    void AddLevel( FLevel * _Level );
+
+    // Remove level from world
+    void RemoveLevel( FLevel * _Level );
+
+    FLevel * GetPersistentLevel() { return PersistentLevel; }
+
+    TPodArray< FLevel * > const & GetArrayOfLevels() const { return ArrayOfLevels; }
+
     FString GenerateActorUniqueName( const char * _Name );
 
     float GetWorldLocalTime() const { return WorldLocalTime; }
     float GetWorldPlayTime() const { return WorldPlayTime; }
 
-    void RegisterStaticMesh( class FStaticMeshComponent * _StaticMesh );
-    void UnregisterStaticMesh( class FStaticMeshComponent * _StaticMesh );
+    void RegisterMesh( FMeshComponent * _Mesh );
+    void UnregisterMesh( FMeshComponent * _Mesh );
 
-    void UpdateDrawSurfAreas( FDrawSurf * _Surf );
-    void RemoveDrawSurfFromAreas( FDrawSurf * _Surf );
+    void RegisterSkinnedMesh( FSkinnedComponent * _Skeleton );
+    void UnregisterSkinnedMesh( FSkinnedComponent * _Skeleton );
+
+    FMeshComponent * GetMeshList() { return MeshList; }
 
     //bool bTickEvenWhenPaused;
 
@@ -198,14 +211,16 @@ private:
 
     void KickoffPendingKillObjects();
 
-    void GenerateDebugDrawGeometry( FDebugDraw * _DebugDraw );
+    void DrawDebug( FDebugDraw * _DebugDraw );
     int GetFirstDebugDrawCommand() const { return FirstDebugDrawCommand; }
     int GetDebugDrawCommandCount() const { return DebugDrawCommandCount; }
 
     TPodArray< FActor * > Actors;
 
-    class FStaticMeshComponent * StaticMeshList; // FRenderFrontend friend
-    class FStaticMeshComponent * StaticMeshListTail;
+    FMeshComponent * MeshList; // FRenderFrontend friend
+    FMeshComponent * MeshListTail;
+    FSkinnedComponent * SkinnedMeshList;
+    FSkinnedComponent * SkinnedMeshListTail;
 
     float WorldLocalTime;
     float WorldPlayTime;
@@ -216,6 +231,7 @@ private:
     int VisFrame;
     int FirstDebugDrawCommand;
     int DebugDrawCommandCount;
+    int DebugDrawFrame;
 
     int IndexInGameArrayOfWorlds = -1; // friend FGameMaster
 
@@ -227,6 +243,7 @@ private:
     FWorld * NextPendingKillWorld;
 
     TRefHolder< FLevel > PersistentLevel;
+    TPodArray< FLevel * > ArrayOfLevels;
 };
 
 

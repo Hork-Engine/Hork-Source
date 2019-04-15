@@ -61,9 +61,10 @@ enum EMaterialStageBit {
 };
 
 enum EMaterialPass {
-    MATERIAL_COLOR_PASS,
-    MATERIAL_DEPTH_PASS,
-    MATERIAL_WIREFRAME_PASS
+    MATERIAL_PASS_COLOR,
+    MATERIAL_PASS_DEPTH,
+    MATERIAL_PASS_WIREFRAME,
+    MATERIAL_PASS_MAX
 };
 
 class FAssemblyBlockOutput;
@@ -71,6 +72,8 @@ class FAssemblyBlockOutput;
 class FMaterialBuildContext {
 public:
     mutable FString SourceCode;
+    bool bHasTextures;
+    int MaxTextureSlot;
 
     void Reset( EMaterialType _Type, EMaterialPass _Pass ) { ++BuildSerial; MaterialType = _Type; MaterialPass = _Pass; }
     int GetBuildSerial() const { return BuildSerial; }
@@ -219,6 +222,8 @@ class FMaterialVertexStage : public FMaterialStageBlock {
 
 public:
     FAssemblyBlockInput * Position;
+
+    bool bNoVertexDeform;
 
 protected:
     FMaterialVertexStage();
@@ -719,15 +724,29 @@ protected:
     void Compute( FMaterialBuildContext & _Context ) override;
 };
 
+class FMaterialAtmosphereBlock : public FAssemblyBlock {
+    AN_CLASS( FMaterialAtmosphereBlock, FAssemblyBlock )
+
+public:
+    FAssemblyBlockInput * Dir;
+    FAssemblyBlockOutput * Result;
+
+protected:
+    FMaterialAtmosphereBlock();
+
+    void Compute( FMaterialBuildContext & _Context ) override;
+};
+
 // TODO: add greater, lequal, gequal, equal, not equal
 
 class FMaterialBuilder : public FBaseObject {
     AN_CLASS( FMaterialBuilder, FBaseObject )
 
 public:
-    TRefHolder< FMaterialStageBlock > VertexStage;
-    TRefHolder< FMaterialStageBlock > FragmentStage;
+    TRefHolder< FMaterialVertexStage > VertexStage;
+    TRefHolder< FMaterialFragmentStage > FragmentStage;
     EMaterialType MaterialType;
+    EMaterialFacing MaterialFacing = MATERIAL_FACE_FRONT;
 
     void RegisterTextureSlot( FMaterialTextureSlotBlock * _Slot );
 
@@ -739,7 +758,7 @@ protected:
     FMaterialBuilder();
     ~FMaterialBuilder();
 
-    FString SamplersString() const;
+    FString SamplersString( int _MaxTextureSlot ) const;
 };
 
 class FMaterialProject : public FBaseObject {

@@ -98,7 +98,8 @@ class ANGIE_API FGameMaster {
 public:
     bool bQuitOnEscape = true;
     bool bToggleFullscreenAltEnter = true;
-    int GameHertz = 120;//30;//120;//60;
+    bool bAllowConsole = true;
+    int GameHertz = 120;//30;//60;
     float MouseSensitivity = 1.0f;
 
     // Spawn a new world
@@ -123,6 +124,9 @@ public:
 
     // Destroy all existing worlds
     void DestroyWorlds();
+
+    // Get all worlds
+    TPodArray< FWorld * > const & GetWorlds() const { return Worlds; }
 
     // Get current tick number
     int GetTickNumber() const { return TickNumber; }

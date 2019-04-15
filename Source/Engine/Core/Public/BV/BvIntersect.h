@@ -11,13 +11,13 @@ namespace FMath {
 // TODO: Optimize
 
 // Sphere - Sphere
-AN_FORCEINLINE bool Intersects( const BvSphere & _S1, const BvSphere & _S2 ) {
+AN_FORCEINLINE bool Intersects( BvSphere const & _S1, BvSphere const & _S2 ) {
     const Float R = _S1.Radius + _S2.Radius;
     return _S2.Center.DistSqr( _S1.Center ) <= R * R;
 }
 
 // AABB - AABB
-AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB1, const BvAxisAlignedBox & _AABB2 ) {
+AN_FORCEINLINE bool Intersects( BvAxisAlignedBox const & _AABB1, BvAxisAlignedBox const & _AABB2 ) {
     if ( _AABB1.Maxs[0] < _AABB2.Mins[0] || _AABB1.Mins[0] > _AABB2.Maxs[0] ) return false;
     if ( _AABB1.Maxs[1] < _AABB2.Mins[1] || _AABB1.Mins[1] > _AABB2.Maxs[1] ) return false;
     if ( _AABB1.Maxs[2] < _AABB2.Mins[2] || _AABB1.Mins[2] > _AABB2.Maxs[2] ) return false;
@@ -25,7 +25,7 @@ AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB1, const BvAxisAli
 }
 
 // AABB - Sphere
-AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const BvSphere & _Sphere ) {
+AN_FORCEINLINE bool Intersects( BvAxisAlignedBox const & _AABB, BvSphere const & _Sphere ) {
 #if 0
     float d = 0, dist;
 
@@ -58,7 +58,7 @@ AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const BvSphere &
 }
 
 // AABB - Ray
-//AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const RaySegment & _Ray ) {
+//AN_FORCEINLINE bool Intersects( BvAxisAlignedBox const & _AABB, RaySegment const & _Ray ) {
 //    // Code based on http://gdlinks.hut.ru/cdfaq/aabb.shtml
 
 //    const Float3 rayVec = _Ray.end - _Ray.Start;
@@ -105,7 +105,7 @@ AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const BvSphere &
 //}
 
 // AABB - Ray
-AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const Float3 & _RayStart, const Float3 & _InvRayDir, float & _Min, float & _Max ) {
+AN_FORCEINLINE bool Intersects( BvAxisAlignedBox const & _AABB, Float3 const & _RayStart, Float3 const & _InvRayDir, float & _Min, float & _Max ) {
     float Lo = _InvRayDir.X*(_AABB.Mins.X - _RayStart.X);
     float Hi = _InvRayDir.X*(_AABB.Maxs.X - _RayStart.X);
     _Min = FMath::Min(Lo, Hi);
@@ -125,7 +125,7 @@ AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const Float3 & _
 }
 
 // AABB - Ray
-AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const Float3 & _RayStart, const Float3 & _InvRayDir ) {
+AN_FORCEINLINE bool Intersects( BvAxisAlignedBox const & _AABB, Float3 const & _RayStart, Float3 const & _InvRayDir ) {
     float Min, Max, Lo, Hi;
 
     Lo = _InvRayDir.X*(_AABB.Mins.X - _RayStart.X);
@@ -147,7 +147,7 @@ AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const Float3 & _
 }
 
 // OBB - OBB
-AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB1, const BvOrientedBox & _OBB2 ) {
+AN_FORCEINLINE bool Intersects( BvOrientedBox const & _OBB1, BvOrientedBox const & _OBB2 ) {
     // Code based on http://gdlinks.hut.ru/cdfaq/obb.shtml
 
     const Float3x3 A = _OBB1.Orient.Transposed();
@@ -238,7 +238,7 @@ AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB1, const BvOrientedBox
 }
 
 // AABB - OBB
-AN_FORCEINLINE bool Intersects( const Float3 & _AABBCenter, const Float3 & _AABBHalfSize, const BvOrientedBox & _OBB ) {
+AN_FORCEINLINE bool Intersects( Float3 const & _AABBCenter, Float3 const & _AABBHalfSize, BvOrientedBox const & _OBB ) {
     //смещение в мировой системе координат
     const Float3 T = _OBB.Center - _AABBCenter;
 
@@ -321,12 +321,12 @@ AN_FORCEINLINE bool Intersects( const Float3 & _AABBCenter, const Float3 & _AABB
 }
 
 // AABB - OBB
-AN_FORCEINLINE bool Intersects( const BvAxisAlignedBox & _AABB, const BvOrientedBox & _OBB ) {
+AN_FORCEINLINE bool Intersects( BvAxisAlignedBox const & _AABB, BvOrientedBox const & _OBB ) {
     return Intersects( _AABB.Center(), _AABB.HalfSize(), _OBB );
 }
 
 // OBB - Sphere
-AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB, const BvSphere & s ) {
+AN_FORCEINLINE bool Intersects( BvOrientedBox const & _OBB, BvSphere const & s ) {
     AN_UNUSED( _OBB );AN_UNUSED( s );
     AN_ASSERT( 0, "Not implemented yet" );
     // TODO: ...
@@ -334,7 +334,7 @@ AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB, const BvSphere & s )
 }
 
 // OBB - Ray
-//AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB, const RaySegment & _Ray ) {
+//AN_FORCEINLINE bool Intersects( BvOrientedBox const & _OBB, RaySegment const & _Ray ) {
 //    // Трансформируем отрезок в систему координат OBB
 
 //    //смещение в мировой системе координат
@@ -389,7 +389,7 @@ AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB, const BvSphere & s )
 //    return true;
 //}
 
-AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB, const RayF & _Ray, float & _Min, float & _Max ) {
+AN_FORCEINLINE bool Intersects( BvOrientedBox const & _OBB, RayF const & _Ray, float & _Min, float & _Max ) {
     const Float3 RayStart = _OBB.Orient * ( _Ray.Start - _OBB.Center ) + _OBB.Center;
     const Float3 RayDir = _OBB.Orient * _Ray.Dir;
 
@@ -419,7 +419,7 @@ AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB, const RayF & _Ray, f
 }
 
 // OBB - Triangle
-AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB, const Float3 & _TrianglePoint1, const Float3 & _TrianglePoint2, const Float3 & _TrianglePoint3 ) {
+AN_FORCEINLINE bool Intersects( BvOrientedBox const & _OBB, Float3 const & _TrianglePoint1, Float3 const & _TrianglePoint2, Float3 const & _TrianglePoint3 ) {
 
     // Code based on http://gdlinks.hut.ru/cdfaq/obb.shtml
 
@@ -549,7 +549,7 @@ AN_FORCEINLINE bool Intersects( const BvOrientedBox & _OBB, const Float3 & _Tria
 }
 
 // Определение попадания 2D точки в полигон
-AN_FORCEINLINE bool PointInPoly( const Float2 * _Points, int _NumPoints, const Float & _PX, const Float & _PY ) {
+AN_FORCEINLINE bool PointInPoly( Float2 const * _Points, int _NumPoints, Float const & _PX, Float const & _PY ) {
     int i, j, count = 0;
 	
     for ( i = 0, j = _NumPoints - 1; i < _NumPoints; j = i++ ) {
@@ -562,12 +562,12 @@ AN_FORCEINLINE bool PointInPoly( const Float2 * _Points, int _NumPoints, const F
     return count & 1;
 }
 
-AN_FORCEINLINE bool PointInPoly( const Float2 * _Points, int _NumPoints, const Float2 & _Point ) {
+AN_FORCEINLINE bool PointInPoly( Float2 const * _Points, int _NumPoints, Float2 const & _Point ) {
     return PointInPoly( _Points, _NumPoints, _Point.X, _Point.Y );
 }
 
 // Sphere - Segment
-AN_FORCEINLINE bool Intersects( const BvSphere & _Sphere, const SegmentF & _Segment ) {
+AN_FORCEINLINE bool Intersects( BvSphere const & _Sphere, SegmentF const & _Segment ) {
     const Float3 s = _Segment.Start - _Sphere.Center;
     const Float3 e = _Segment.End - _Sphere.Center;
     Float3 r = e - s;
@@ -588,7 +588,7 @@ AN_FORCEINLINE bool Intersects( const BvSphere & _Sphere, const SegmentF & _Segm
 }
 
 // Sphere - Ray
-AN_FORCEINLINE bool Intersects( const BvSphere & _Sphere, const RayF & _Ray, Float & _Distance ) {
+AN_FORCEINLINE bool Intersects( BvSphere const & _Sphere, RayF const & _Ray, Float & _Distance ) {
     const Float3 k = _Ray.Start - _Sphere.Center;
     const Float b = k.Dot( _Ray.Dir );
 
@@ -606,7 +606,7 @@ AN_FORCEINLINE bool Intersects( const BvSphere & _Sphere, const RayF & _Ray, Flo
 }
 
 // Sphere - Ray
-AN_FORCEINLINE bool Intersects( const BvSphere _Sphere, const RayF & _Ray, Float & _Distance1, Float & _Distance2 ) {
+AN_FORCEINLINE bool Intersects( BvSphere const & _Sphere, RayF const & _Ray, Float & _Distance1, Float & _Distance2 ) {
     const Float3 k = _Ray.Start - _Sphere.Center;
     const Float b = k.Dot( _Ray.Dir );
     Float a = _Ray.Dir.LengthSqr();
@@ -623,7 +623,7 @@ AN_FORCEINLINE bool Intersects( const BvSphere _Sphere, const RayF & _Ray, Float
 
 // Ray - Plane
 // _Dist - расстояние от начала луча до плоскости в направлении луча
-AN_FORCEINLINE bool Intersects( const PlaneF & _Plane, const RayF & _Ray, Float & _Dist ) {
+AN_FORCEINLINE bool Intersects( PlaneF const & _Plane, RayF const & _Ray, Float & _Dist ) {
     const Float d2 = _Plane.Normal.Dot( _Ray.Dir );
     if ( d2 == 0.0f ) {
         // ray is parallel to plane
@@ -636,7 +636,7 @@ AN_FORCEINLINE bool Intersects( const PlaneF & _Plane, const RayF & _Ray, Float 
 
 // Segment - Plane
 // _Dist - расстояние от начала луча до плоскости в направлении луча
-AN_FORCEINLINE bool Intersects( const PlaneF & _Plane, const SegmentF & _Segment, Float & _Dist ) {
+AN_FORCEINLINE bool Intersects( PlaneF const & _Plane, SegmentF const & _Segment, Float & _Dist ) {
     const Float3 Dir = _Segment.End - _Segment.Start;
     const Float Length = Dir.Length();
     if ( Length.CompareEps( 0.0f, 0.00001f ) ) {
@@ -653,7 +653,7 @@ AN_FORCEINLINE bool Intersects( const PlaneF & _Plane, const SegmentF & _Segment
 }
 
 // Ray - Elipsoid
-AN_FORCEINLINE bool RayNearIntersectElipsoid( const RayF & _Ray, const Float & _Radius, const Float & _MParam, const Float & _NParam, Float & _Dist ) {
+AN_FORCEINLINE bool RayNearIntersectElipsoid( RayF const & _Ray, Float const & _Radius, Float const & _MParam, Float const & _NParam, Float & _Dist ) {
     const Float a = _Ray.Dir.X*_Ray.Dir.X + _MParam*_Ray.Dir.Y*_Ray.Dir.Y + _NParam*_Ray.Dir.Z*_Ray.Dir.Z;
     const Float b = 2.0f*(_Ray.Start.X*_Ray.Dir.X + _MParam*_Ray.Start.Y*_Ray.Dir.Y + _NParam*_Ray.Start.Z*_Ray.Dir.Z);
     const Float c = _Ray.Start.X*_Ray.Start.X + _MParam*_Ray.Start.Y*_Ray.Start.Y + _NParam*_Ray.Start.Z*_Ray.Start.Z - _Radius*_Radius;
@@ -666,7 +666,7 @@ AN_FORCEINLINE bool RayNearIntersectElipsoid( const RayF & _Ray, const Float & _
 }
 
 // Ray - Elipsoid
-AN_FORCEINLINE bool RayFarIntersectElipsoid( const RayF & _Ray, const Float & _Radius, const Float & _MParam, const Float & _NParam, Float & _Dist ) {
+AN_FORCEINLINE bool RayFarIntersectElipsoid( RayF const & _Ray, Float const & _Radius, Float const & _MParam, Float const & _NParam, Float & _Dist ) {
     const Float a = _Ray.Dir.X*_Ray.Dir.X + _MParam*_Ray.Dir.Y*_Ray.Dir.Y + _NParam*_Ray.Dir.Z*_Ray.Dir.Z;
     const Float b = 2.0f*(_Ray.Start.X*_Ray.Dir.X + _MParam*_Ray.Start.Y*_Ray.Dir.Y + _NParam*_Ray.Start.Z*_Ray.Dir.Z);
     const Float c = _Ray.Start.X*_Ray.Start.X + _MParam*_Ray.Start.Y*_Ray.Start.Y + _NParam*_Ray.Start.Z*_Ray.Start.Z - _Radius*_Radius;
@@ -679,7 +679,7 @@ AN_FORCEINLINE bool RayFarIntersectElipsoid( const RayF & _Ray, const Float & _R
 }
 
 // Square of shortest distance between Point and Segment
-AN_FORCEINLINE Float ShortestDistanceSqr( const Float3 & _Point, const Float3 & _Start, const Float3 & _End ) {
+AN_FORCEINLINE Float ShortestDistanceSqr( Float3 const & _Point, Float3 const & _Start, Float3 const & _End ) {
     const Float3 dir = _End - _Start;
     const Float3 v = _Point - _Start;
 
@@ -697,7 +697,7 @@ AN_FORCEINLINE Float ShortestDistanceSqr( const Float3 & _Point, const Float3 & 
 }
 
 // Square of distance between Point and Segment
-AN_FORCEINLINE bool DistanceSqr( const Float3 & _Point, const Float3 & _Start, const Float3 & _End, Float & _Dist ) {
+AN_FORCEINLINE bool DistanceSqr( Float3 const & _Point, Float3 const & _Start, Float3 const & _End, Float & _Dist ) {
     const Float3 dir = _End - _Start;
     const Float3 v = _Point - _Start;
 
@@ -717,7 +717,7 @@ AN_FORCEINLINE bool DistanceSqr( const Float3 & _Point, const Float3 & _Start, c
 }
 
 // Check Point on Segment
-AN_FORCEINLINE bool IsPointOnSegment( const Float3 & _Point, const Float3 & _Start, const Float3 & _End, Float _Epsilon ) {
+AN_FORCEINLINE bool IsPointOnSegment( Float3 const & _Point, Float3 const & _Start, Float3 const & _End, Float _Epsilon ) {
     const Float3 dir = _End - _Start;
     const Float3 v = _Point - _Start;
 
@@ -735,7 +735,7 @@ AN_FORCEINLINE bool IsPointOnSegment( const Float3 & _Point, const Float3 & _Sta
 }
 
 // Square of distance between Point and Segment (2D)
-AN_FORCEINLINE Float ShortestDistanceSqr( const Float2 & _Point, const Float2 & _Start, const Float2 & _End ) {
+AN_FORCEINLINE Float ShortestDistanceSqr( Float2 const & _Point, Float2 const & _Start, Float2 const & _End ) {
     const Float2 dir = _End - _Start;
     const Float2 v = _Point - _Start;
 
@@ -753,7 +753,7 @@ AN_FORCEINLINE Float ShortestDistanceSqr( const Float2 & _Point, const Float2 & 
 }
 
 // Square of distance between Point and Segment (2D)
-AN_FORCEINLINE bool DistanceSqr( const Float2 & _Point, const Float2 & _Start, const Float2 & _End, Float & _Dist ) {
+AN_FORCEINLINE bool DistanceSqr( Float2 const & _Point, Float2 const & _Start, Float2 const & _End, Float & _Dist ) {
     const Float2 dir = _End - _Start;
     const Float2 v = _Point - _Start;
 
@@ -773,7 +773,7 @@ AN_FORCEINLINE bool DistanceSqr( const Float2 & _Point, const Float2 & _Start, c
 }
 
 // Check Point on Segment (2D)
-AN_FORCEINLINE bool IsPointOnSegment( const Float2 & _Point, const Float2 & _Start, const Float2 & _End, Float _Epsilon ) {
+AN_FORCEINLINE bool IsPointOnSegment( Float2 const & _Point, Float2 const & _Start, Float2 const & _End, Float _Epsilon ) {
     const Float2 dir = _End - _Start;
     const Float2 v = _Point - _Start;
 

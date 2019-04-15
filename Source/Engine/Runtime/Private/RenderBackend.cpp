@@ -232,6 +232,14 @@ FRenderProxy_VertexLightChannel::~FRenderProxy_VertexLightChannel() {
 
 }
 
+FRenderProxy_Skeleton::FRenderProxy_Skeleton() {
+    Type = RENDER_PROXY_SKELETON;
+}
+
+FRenderProxy_Skeleton::~FRenderProxy_Skeleton() {
+
+}
+
 FRenderProxy_Texture::FRenderProxy_Texture() {
     Type = RENDER_PROXY_TEXTURE;
 }
@@ -250,7 +258,7 @@ FRenderProxy_Material::~FRenderProxy_Material() {
 
 void * FRenderFrame::AllocFrameData( size_t _BytesCount ) {
     if ( FrameMemoryUsed + _BytesCount > FrameMemorySize ) {
-        GLogger.Printf( "AllocFrameData: failed on allocation of %u bytes (available %u, total %u)\n", _BytesCount, FrameMemoryUsed, FrameMemorySize );
+        GLogger.Printf( "AllocFrameData: failed on allocation of %u bytes (available %u, total %u)\n", _BytesCount, FrameMemorySize - FrameMemoryUsed, FrameMemorySize );
         return nullptr;
     }
 

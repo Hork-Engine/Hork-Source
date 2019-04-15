@@ -36,6 +36,14 @@ class FSceneComponent;
 
 using FArrayOfChildComponents = TPodArray< FSceneComponent *, 8 >;
 
+
+class FSkinnedComponent;
+class FSocketDef;
+struct FSocket {
+    FSocketDef * SocketDef;
+    FSkinnedComponent * Parent;
+};
+
 /*
 
 FSceneComponent
@@ -48,7 +56,7 @@ class ANGIE_API FSceneComponent : public FActorComponent {
 
 public:
     // Attach to parent component
-    void AttachTo( FSceneComponent * _Parent, bool _KeepWorldTransform = false );
+    void AttachTo( FSceneComponent * _Parent, const char * _Socket = nullptr, bool _KeepWorldTransform = false );
 
     // Detach from parent component
     void Detach( bool _KeepWorldTransform = false );
@@ -68,17 +76,14 @@ public:
     // Get reference to array of child components
     FArrayOfChildComponents const & GetChilds() const { return Childs; }
 
-    // Attach to joint of skeletal component
-    void AttachToJoint( int _JointIndex );
+    // Get socket index by name
+    int FindSocket( const char * _Name ) const;
 
-    // Detach from joint
-    void DetachFromJoint();
+    // Get attached socket
+    int GetAttachedSocket() const { return SocketIndex; }
 
-    // Get attached joint
-    int GetJoint() const { return JointIndex - 1; }
-
-    // Is component attached to joint
-    bool IsAttachedToJoint() const { return JointIndex > 0; }
+    // Is component attached to socket
+    bool IsAttachedToSocket() const { return SocketIndex >= 0; }
 
     // Set node local position
     void SetPosition( Float3 const & _Position );
@@ -230,7 +235,12 @@ protected:
 
     virtual void OnTransformDirty() {}
 
+    using FArrayOfSockets = TPodArray< FSocket, 1 >;
+    FArrayOfSockets Sockets;
+
 private:
+
+    void _AttachTo( FSceneComponent * _Parent, bool _KeepWorldTransform );
 
     void ComputeWorldTransform() const;
 
@@ -242,6 +252,6 @@ private:
     mutable bool bTransformDirty;
     FArrayOfChildComponents Childs;
     FSceneComponent * AttachParent;
-    int JointIndex;
-    bool bIgnoreLocalTransform;
+    int SocketIndex;
+    //bool bIgnoreLocalTransform;
 };

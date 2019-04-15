@@ -278,7 +278,9 @@ void FGameMaster::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
 
     //ImguiContext->OnKeyEvent( _Event );
 
-    GConsole.KeyEvent( _Event );
+    if ( GConsole.IsActive() || bAllowConsole ) {
+        GConsole.KeyEvent( _Event );
+    }
     if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
         return;
     }
@@ -732,6 +734,8 @@ void FGameMaster::Run() {
         return;
     }
 
+    GConsole.ReadStoryLines();
+
     InitializeFactories();
 
     FGarbageCollector::Initialize();
@@ -866,7 +870,7 @@ void FGameMaster::Run() {
 
         // Limit frame rate to game hertz
 //        if ( residualTime < tickTimeMicro ) {
-//            GLogger.Printf( "Still waiting for %d microseconds\n", tickTimeMicro - residualTime );
+////            GLogger.Printf( "Still waiting for %d microseconds\n", tickTimeMicro - residualTime );
 //            GRuntime.WaitMicroseconds( tickTimeMicro - residualTime );
 //            residualTime = tickTimeMicro;
 //            frameDuration = GRuntime.SysMicroseconds() - FrameTimeStamp;
@@ -896,6 +900,8 @@ void FGameMaster::Run() {
     FGarbageCollector::Deinitialize();
 
     DeinitializeFactories();
+
+    GConsole.WriteStoryLines();
 
     GRuntime.Terminate();
 }
@@ -946,17 +952,20 @@ void FGameMaster::DrawCanvas() {
 
         Float2 pos( 8, 8 );
         const float y_step = 22;
-        const int numLines = 6;
+        const int numLines = 8;
 
         pos.Y = GCanvas.Height - numLines * y_step;
 
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Zone memory usage: %f / %d MB", GMainMemoryZone.GetTotalMemoryUsage()/1024.0f, GMainMemoryZone.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Hunk memory usage: %f / %d MB", GMainHunkMemory.GetTotalMemoryUsage()/1024.0f, GMainHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frame memory usage: %f / %d MB", FrameMemoryUsed/1024.0f, FrameMemorySize>>20 ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Heap memory usage: %f", GMainHeapMemory.GetTotalMemoryUsage()/1024.0f
-        - GMainMemoryZone.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 128*1024.0f ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Visible instances: %d", frameData->Instances.Length() ) );
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Zone memory usage: %f KB / %d MB", GMainMemoryZone.GetTotalMemoryUsage()/1024.0f, GMainMemoryZone.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Hunk memory usage: %f KB / %d MB", GMainHunkMemory.GetTotalMemoryUsage()/1024.0f, GMainHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frame memory usage: %f KB / %d MB", FrameMemoryUsed/1024.0f, FrameMemorySize>>20 ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Heap memory usage: %f KB", GMainHeapMemory.GetTotalMemoryUsage()/1024.0f
+        /*- GMainMemoryZone.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Visible instances: %d", frameData->Instances.Length() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Polycount: %d", GRenderFrontend.GetPolyCount() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frontend time: %d msec", GRenderFrontend.GetFrontendTime() ) );
+        
     }
 
     GCanvas.End();

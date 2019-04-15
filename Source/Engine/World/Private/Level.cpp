@@ -32,14 +32,32 @@ SOFTWARE.
 #include <Engine/World/Public/Level.h>
 #include <Engine/World/Public/Actor.h>
 #include <Engine/World/Public/Texture.h>
+#include <Engine/Core/Public/BV/BvIntersect.h>
 
-AN_BEGIN_CLASS_META( FLevel )
-AN_END_CLASS_META()
+AN_CLASS_META_NO_ATTRIBS( FLevel )
+AN_CLASS_META_NO_ATTRIBS( FLevelArea )
+AN_CLASS_META_NO_ATTRIBS( FLevelPortal )
+
+// TODO: Octree, KD-tree, BSP-tree, AABB-tree/sBVH-tree or something like that
+
+FLevel::FLevel() {
+    LevelBounds.Clear();
+
+    OutdoorArea = NewObject< FLevelArea >();
+    OutdoorArea->Extents = Float3( CONVEX_HULL_MAX_BOUNDS * 2 );
+    OutdoorArea->ParentLevel = this;
+    OutdoorArea->Bounds.Mins = -OutdoorArea->Extents * 0.5f;
+    OutdoorArea->Bounds.Maxs = OutdoorArea->Extents * 0.5f;
+}
 
 FLevel::~FLevel() {
     ClearLightmaps();
 
     DeallocateBufferData( LightData );
+
+    DestroyActors();
+
+    DestroyPortalTree();
 
 //    BSP.Planes.Free();
 //    BSP.Nodes.Free();
@@ -130,7 +148,7 @@ FEmptyVisData::FEmptyVisData() {
     memset( Data, 0xff, sizeof( Data ) );
 }
 
-static FEmptyVisData EmptyVis; // TODO: èçáàâèòüñÿ îò ýòîãî!
+static FEmptyVisData EmptyVis;
 
 byte const * FBinarySpaceData::DecompressVisdata( byte const * _Data ) {
     static byte Decompressed[ MAX_MAP_LEAFS / 8 ];
@@ -455,4 +473,281 @@ void FBinarySpaceData::Traverse_r( int _NodeIndex, int _CullBits ) {
         }
         mark++;
     }
+}
+
+void FLevel::OnAddLevelToWorld() {
+    RemoveSurfaces();
+    AddSurfaces();
+}
+
+void FLevel::OnRemoveLevelFromWorld() {
+    RemoveSurfaces();
+}
+
+FLevelArea * FLevel::CreateArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
+    FLevelArea * area = NewObject< FLevelArea >();
+    area->AddRef();
+    area->Position = _Position;
+    area->Extents = _Extents;
+    area->ReferencePoint = _ReferencePoint;
+    area->ParentLevel = this;
+    Areas.Append( area );
+    return area;
+}
+
+FLevelPortal * FLevel::CreatePortal( Float3 const * _HullPoints, int _NumHullPoints, FLevelArea * _Area1, FLevelArea * _Area2 ) {
+    if ( _Area1 == _Area2 ) {
+        return nullptr;
+    }
+
+    FLevelPortal * portal = NewObject< FLevelPortal >();
+    portal->AddRef();
+    portal->Hull = FConvexHull::CreateFromPoints( _HullPoints, _NumHullPoints );
+    portal->Plane = portal->Hull->CalcPlane();
+    portal->Area1 = _Area1 ? _Area1 : OutdoorArea;
+    portal->Area2 = _Area2 ? _Area2 : OutdoorArea;
+    portal->ParentLevel = this;
+    Portals.Append( portal );
+    return portal;
+}
+
+void FLevel::DestroyPortalTree() {
+    PurgePortals();
+
+    for ( FLevelArea * area : Areas ) {
+        area->RemoveRef();
+    }
+
+    Areas.Clear();
+
+    for ( FLevelPortal * portal : Portals ) {
+        portal->RemoveRef();
+    }
+
+    Portals.Clear();
+
+    LevelBounds.Clear();
+}
+
+#include <Engine/World/Public/World.h>
+#include <Engine/World/Public/MeshComponent.h>
+void FLevel::AddSurfaces() {
+    FWorld * world = GetOwnerWorld();
+
+    for ( FMeshComponent * mesh = world->GetMeshList() ; mesh ; mesh = mesh->GetNextMesh() ) {
+
+        // TODO: if ( !mesh->IsMarkedDirtyArea() )
+        AddSurfaceAreas( mesh );
+    }
+}
+
+void FLevel::RemoveSurfaces() {
+    for ( FLevelArea * area : Areas ) {
+        while ( !area->Movables.IsEmpty() ) {
+            RemoveSurfaceAreas( area->Movables[0] );
+        }
+    }
+
+    while ( !OutdoorArea->Movables.IsEmpty() ) {
+        RemoveSurfaceAreas( OutdoorArea->Movables[0] );
+    }
+}
+
+void FLevel::PurgePortals() {
+    RemoveSurfaces();
+
+    for ( FAreaPortal & areaPortal : AreaPortals ) {
+        FConvexHull::Destroy( areaPortal.Hull );
+    }
+
+    AreaPortals.Clear();
+}
+
+void FLevel::BuildPortals() {
+
+    PurgePortals();
+
+    LevelBounds.Clear();
+
+    Float3 halfExtents;
+    for ( FLevelArea * area : Areas ) {
+        // Update area bounds
+        halfExtents = area->Extents * 0.5f;
+        for ( int i = 0 ; i < 3 ; i++ ) {
+            area->Bounds.Mins[i] = area->Position[i] - halfExtents[i];
+            area->Bounds.Maxs[i] = area->Position[i] + halfExtents[i];
+        }
+
+        LevelBounds.AddAABB( area->Bounds );
+
+        // Clear area portals
+        area->PortalList = NULL;
+    }
+
+    AreaPortals.ResizeInvalidate( Portals.Length() << 1 );
+
+    int areaPortalId = 0;
+
+    for ( FLevelPortal * portal : Portals ) {
+        FLevelArea * a1 = portal->Area1;
+        FLevelArea * a2 = portal->Area2;
+
+        if ( a1 == OutdoorArea ) {
+            std::swap( a1, a2 );
+        }
+
+        // Check area position relative to portal plane
+        EPlaneSide offset = portal->Plane.SideOffset( a1->ReferencePoint, 0.0f );
+
+        // If area position is on back side of plane, then reverse hull vertices and plane
+        int id = offset == EPlaneSide::Back ? 1 : 0;
+
+        FAreaPortal * areaPortal;
+
+        areaPortal = &AreaPortals[ areaPortalId++ ];
+        portal->Portals[id] = areaPortal;
+        areaPortal->ToArea = a2;
+        if ( id & 1 ) {
+            areaPortal->Hull = portal->Hull->Reversed();
+            areaPortal->Plane = -portal->Plane;
+        } else {
+            areaPortal->Hull = portal->Hull->Duplicate();
+            areaPortal->Plane = portal->Plane;
+        }
+        areaPortal->Next = a1->PortalList;
+        areaPortal->Owner = portal;
+        a1->PortalList = areaPortal;
+
+        id = ( id + 1 ) & 1;
+
+        areaPortal = &AreaPortals[ areaPortalId++ ];
+        portal->Portals[id] = areaPortal;
+        areaPortal->ToArea = a1;
+        if ( id & 1 ) {
+            areaPortal->Hull = portal->Hull->Reversed();
+            areaPortal->Plane = -portal->Plane;
+        } else {
+            areaPortal->Hull = portal->Hull->Duplicate();
+            areaPortal->Plane = portal->Plane;
+        }
+        areaPortal->Next = a2->PortalList;
+        areaPortal->Owner = portal;
+        a2->PortalList = areaPortal;
+    }
+
+    AddSurfaces();
+}
+
+void FLevel::AddSurfaceToArea( int _AreaNum, FDrawSurf * _Surf ) {
+    FLevelArea * area = _AreaNum >= 0 ? Areas[_AreaNum] : OutdoorArea;
+
+    area->Movables.Append( _Surf );
+    FAreaLink & areaLink = _Surf->InArea.Append();
+    areaLink.AreaNum = _AreaNum;
+    areaLink.Index = area->Movables.Length() - 1;
+    areaLink.Level = this;
+}
+
+void FLevel::AddSurfaceAreas( FDrawSurf * _Surf ) {
+    BvAxisAlignedBox const & bounds = _Surf->GetWorldBounds();
+    int numAreas = Areas.Length();
+    FLevelArea * area;
+
+    if ( _Surf->IsOutdoorSurface() ) {
+        // add to outdoor
+        AddSurfaceToArea( -1, _Surf );
+        return;
+    }
+
+    bool bHaveIntersection = false;
+    if ( FMath::Intersects( LevelBounds, bounds ) ) {
+        // TODO: optimize it!
+        for ( int i = 0 ; i < numAreas ; i++ ) {
+            area = Areas[i];
+
+            if ( FMath::Intersects( area->Bounds, bounds ) ) {
+                AddSurfaceToArea( i, _Surf );
+
+                bHaveIntersection = true;
+            }
+        }
+    }
+
+    if ( !bHaveIntersection ) {
+        AddSurfaceToArea( -1, _Surf );
+    }
+}
+
+void FLevel::RemoveSurfaceAreas( FDrawSurf * _Surf ) {
+    FLevelArea * area;
+
+    // Remove renderables from any areas
+    for ( int i = 0 ; i < _Surf->InArea.Length() ; ) {
+        FAreaLink & InArea = _Surf->InArea[ i ];
+
+        if ( InArea.Level != this ) {
+            i++;
+            continue;
+        }
+
+        AN_Assert( InArea.AreaNum < InArea.Level->Areas.Length() );
+        area = InArea.AreaNum >= 0 ? InArea.Level->Areas[ InArea.AreaNum ] : OutdoorArea;
+
+        AN_Assert( area->Movables[ InArea.Index ] == _Surf );
+
+        // Swap with last array element
+        area->Movables.RemoveSwap( InArea.Index );
+
+        // Update swapped movable index
+        if ( InArea.Index < area->Movables.Length() ) {
+            FDrawSurf * surf = area->Movables[ InArea.Index ];
+            for ( int j = 0 ; j < surf->InArea.Length() ; j++ ) {
+                if ( surf->InArea[ j ].Level == this && surf->InArea[ j ].AreaNum == InArea.AreaNum ) {
+                    surf->InArea[ j ].Index = InArea.Index;
+
+                    AN_Assert( area->Movables[ surf->InArea[ j ].Index ] == surf );
+                    break;
+                }
+            }
+        }
+
+        _Surf->InArea.RemoveSwap(i);
+    }
+}
+
+void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
+    _DebugDraw->SetDepthTest( false );
+
+    _DebugDraw->SetColor(0,1,0,1);
+    for ( FLevelArea * area : Areas ) {
+        _DebugDraw->DrawAABB( area->Bounds );
+    }
+
+    _DebugDraw->SetColor(1,0,0,1);
+    for ( FLevelPortal * portal : Portals ) {
+        _DebugDraw->DrawLine( portal->Hull->Points, portal->Hull->NumPoints, true );
+    }
+
+    //_DebugDraw->DrawAABB( LevelBounds );
+}
+
+int FLevel::FindArea( Float3 const & _Position ) {
+    // TODO: ... binary tree
+
+    if ( Areas.Length() == 0 ) {
+        return -1;
+    }
+
+    for ( int i = 0 ; i < Areas.Length() ; i++ ) {
+        if (    _Position.X >= Areas[i]->Bounds.Mins.X
+             && _Position.Y >= Areas[i]->Bounds.Mins.Y
+             && _Position.Z >= Areas[i]->Bounds.Mins.Z
+             && _Position.X <  Areas[i]->Bounds.Maxs.X
+             && _Position.Y <  Areas[i]->Bounds.Maxs.Y
+             && _Position.Z <  Areas[i]->Bounds.Maxs.Z ) {
+            return i;
+        }
+    }
+
+    return -1;
 }

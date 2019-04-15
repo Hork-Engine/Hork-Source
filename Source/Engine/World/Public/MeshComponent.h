@@ -30,70 +30,137 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderableComponent.h"
-#include <Engine/World/Public/Texture.h>
-#include <Engine/World/Public/Material.h>
+#include "DrawSurf.h"
+#include "Texture.h"
+#include "Material.h"
+#include "IndexedMesh.h"
 
-//enum EMeshTopology {
-//    T_TRIANGLES
-//};
+class FCameraComponent;
 
+enum EVSDPass {
+    VSD_PASS_IGNORE     = 0,
+    VSD_PASS_ALL        = ~0,
+    VSD_PASS_PORTALS    = 1,
+    VSD_FACE_CULL       = 2,
+    VSD_PASS_BOUNDS     = 4,
+    VSD_PASS_CUSTOM_VISIBLE_STEP = 8,
+    VSD_PASS_VIS_MARKER = 16,
+    VSD_PASS_DEFAULT    = VSD_PASS_PORTALS | VSD_PASS_BOUNDS,
+};
+
+/*
+
+FMeshComponent
+
+Mesh component without skinning
+
+*/
 class ANGIE_API FMeshComponent : public FDrawSurf {
     AN_COMPONENT( FMeshComponent, FDrawSurf )
 
+    friend class FWorld;
+
 public:
-#if 0
-    void SetMaterialInstance( const char * _ResourceName );
-    void SetMaterialInstance( FMaterialInstance * _Instance );
-    FMaterialInstance * GetMaterialInstance();
-#endif
+    // Visible surface determination alogrithm
+    int             VSDPasses = VSD_PASS_DEFAULT;
 
-    void SetMaterialInstance( FMaterialInstance * _Instance ) { MaterialInstance = _Instance; }
+    // Marker for VSD_PASS_VIS_MARKER
+    int             VisMarker;
 
-    FMaterial * GetMaterial() const { return MaterialInstance ? MaterialInstance->Material.Object : nullptr; }
-    FMaterialInstance * GetMaterialInstance() const { return MaterialInstance; }
+    // Lightmap atlas index
+    int             LightmapBlock;
 
-    void EnableShadowCast( bool _ShadowCast );
-    bool IsShadowCastEnabled() const;
+    // Lighmap channel UV offset and scale
+    Float4          LightmapOffset;
 
-    // Shadow receiving is managed by material
-    //void SetShadowReceive( bool _ShadowReceive );
-    //bool GetShadowReceive() const;
+    // Lightmap UV channel
+    TRefHolder< FLightmapUV >   LightmapUVChannel;
 
-    // Render on main pass
-    void EnableLightPass( bool _LightPass );
-    bool IsLightPassEnabled() const;
+    // Baked vertex light channel
+    TRefHolder< FVertexLight >  VertexLightChannel;
+
+    // Force using dynamic range
+    bool            bUseDynamicRange;
+
+    // Dynamic range property
+    unsigned int    DynamicRangeIndexCount;
+
+    // Dynamic range property
+    unsigned int    DynamicRangeStartIndexLocation;
+
+    // Dynamic range property
+    int             DynamicRangeBaseVertexLocation;
+
+    // Flipbook animation page offset
+    unsigned int    SubpartBaseVertexOffset;
+
+    // Render during light pass
+    bool            bLightPass;
+
+    // Cast shadow
+    bool            bShadowCast;
+
+    // Receive shadow
+    //bool            bShadowReceive;
 
     // Use specific shadow pass from material
-    void EnableMaterialShadowPass( bool _MaterialShadowPass );
-    bool IsMaterialShadowPassEnabled() const;
+    //bool            bMaterialShadowPass;
 
-    // Render mesh to custom depth-stencil buffer
-    // Render target must have custom depth-stencil buffer enabled
-    void EnableCustomDepthStencilPass( bool _CustomDepthStencilPass );
-    bool IsCustomDepthStencilPassEnabled() const;
+    // Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled
+    bool            bCustomDepthStencilPass;
 
-    // Custom Depth-Stencil Value
-    void SetCustomDepthStencilValue( byte _StencilValue );
-    byte GetCustomDepthStencilValue() const;
+    // Custom depth stencil value for the mesh
+    byte            CustomDepthStencilValue;
+
+    // Force ignoring component position/rotation/scale. FIXME: move this to super class SceneComponent?
+    bool            bNoTransform;
+
+    // Internal. Used by frontend to filter rendered meshes.
+    int             RenderMark;
+
+    // Used for VSD_FACE_CULL
+    PlaneF          FacePlane;
+
+    // Set indexed mesh for the component
+    void SetMesh( FIndexedMesh * _Mesh );
+
+    // Get indexed mesh
+    FIndexedMesh * GetMesh() const { return Mesh; }
+
+    // Set material instance for subpart of the mesh
+    void SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance );
+
+    // Get material instance of subpart of the mesh
+    FMaterialInstance * GetMaterialInstance( int _SubpartIndex ) const;
+
+    // Set material instance for subpart of the mesh
+    void SetMaterialInstance( FMaterialInstance * _Instance ) { SetMaterialInstance( 0, _Instance ); }
+
+    // Get material instance of subpart of the mesh
+    FMaterialInstance * GetMaterialInstance() const { return GetMaterialInstance( 0 ); }
+
+    void ClearMaterials();
+
+    // Iterate meshes in parent world
+    FMeshComponent * GetNextMesh() { return Next; }
+    FMeshComponent * GetPrevMesh() { return Prev; }
+
+    // Used for VSD_PASS_CUSTOM_VISIBLE_STEP algorithm
+    virtual void OnCustomVisibleStep( FCameraComponent * _Camera, bool & _OutVisibleFlag ) {}
 
 protected:
     FMeshComponent();
-#if 0
-    void SetResource( FResource * _Resource ) override;
-    FResource * GetResource( const char * _AttributeName ) override;
-#endif
-private:
-    TRefHolder< FMaterialInstance > MaterialInstance;
 
-    enum ERenderPassBits {
-        LIGHT_PASS                  = AN_BIT(0),
-        SHADOW_PASS                 = AN_BIT(1),
-        MATERIAL_SHADOW_PASS        = AN_BIT(2),
-        CUSTOM_DEPTHSTENCIL_PASS    = AN_BIT(3),
-    };
-    
-    int RenderPassMask;
-    byte StencilValue;
-    //bool bShadowReceive;
+    void InitializeComponent() override;
+    void BeginPlay() override;
+    void EndPlay() override;
+
+private:
+    FMeshComponent * Next;
+    FMeshComponent * Prev;
+
+    TRefHolder< FIndexedMesh > Mesh;
+    TPodArray< FMaterialInstance *, 1 > Materials;
+
+
 };

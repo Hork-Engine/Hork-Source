@@ -38,11 +38,15 @@ class FRenderingSurface;
 class FRenderingParameters;
 class FMaterialInstance;
 class FCameraComponent;
+class FMeshComponent;
 class FPlayerController;
 class FHUD;
 class FWorld;
+class FLevel;
+class FLevelArea;
 class FFrustum;
 class FCanvas;
+class FConvexHull;
 
 class FRenderFrontend {
     AN_SINGLETON( FRenderFrontend )
@@ -57,26 +61,35 @@ public:
 
     void BuildFrameData( FCanvas * _Convas );
 
-    int64_t RenderTimeDelta() const { return GRuntime.GetFrameData()->RenderTimeDelta; }
+    //int64_t RenderTimeDelta() const { return GRuntime.GetFrameData()->RenderTimeDelta; }
+
+    int GetPolyCount() const { return PolyCount; }
+    int GetFrontendTime() const { return FrontendTime; }
 
 private:
     void WriteDrawList( FCanvas * _Canvas );
-    //void MarkSurfacesForRendering();
-    //bool RenderSurface( FRenderingSurface * _Surface );
-    //void RenderSurfaces();
     void RenderView( int _Index );
-    void WriteStaticMeshInstances();
+    void AddInstances();
+    void CullLevelInstances( FLevel * _Level );
+    void FlowThroughPortals_r( FLevelArea * _Area );
+    void AddSurface( FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
     void UpdateMaterialInstanceFrameData( FMaterialInstance * _Instance );
+    void UpdateSurfaceAreas();
+    
 
     FRenderFrame * CurFrameData;
     FRenderView * RV;
+    FRenderingParameters * RP;
     FCameraComponent * Camera;
     FFrustum const * Frustum;
     FWorld * World;
     FDebugDraw DebugDraw;
     int VisMarker = 0;
-    //ImDrawListSharedData DrawListShared;
-    //ImDrawList DrawList;
+    int PolyCount = 0;
+    int FrontendTime = 0;
+    Float3 ViewOrigin;
+    int ViewArea;
+    FConvexHull * Polygon[ 2 ];
 };
 
 extern FRenderFrontend & GRenderFrontend;

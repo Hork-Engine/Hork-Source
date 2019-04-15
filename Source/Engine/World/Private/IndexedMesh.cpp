@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/StaticMesh.h>
+#include <Engine/World/Public/IndexedMesh.h>
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
@@ -37,23 +37,19 @@ AN_CLASS_META_NO_ATTRIBS( FIndexedMeshSubpart )
 AN_CLASS_META_NO_ATTRIBS( FLightmapUV )
 AN_CLASS_META_NO_ATTRIBS( FVertexLight )
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 FIndexedMesh::FIndexedMesh() {
     RenderProxy = FRenderProxy::NewProxy< FRenderProxy_IndexedMesh >();
     RenderProxy->SetOwner( this );
-
-    FIndexedMeshSubpart * persistentSubpart = CreateSubpart( "Persistent", 0, 0, 0, 0 );
-    persistentSubpart->AddRef();
 }
 
 FIndexedMesh::~FIndexedMesh() {
     RenderProxy->KillProxy();
 
-    FIndexedMeshSubpart * persistentSubpart = Subparts[0];
-    persistentSubpart->RemoveRef();
-
     for ( FIndexedMeshSubpart * subpart : Subparts ) {
         subpart->ParentMesh = nullptr;
-        subpart->IndexInArrayOfSubparts = -1;
+        subpart->RemoveRef();
     }
 
     for ( FLightmapUV * channel : LightmapUVs ) {
@@ -67,46 +63,28 @@ FIndexedMesh::~FIndexedMesh() {
     }
 }
 
-void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices ) {
-    if ( VertexCount == _NumVertices && IndexCount == _NumIndices ) {
+void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh, bool _DynamicStorage ) {
+    if ( VertexCount == _NumVertices && IndexCount == _NumIndices && bSkinnedMesh == _SkinnedMesh && bDynamicStorage == _DynamicStorage ) {
         return;
     }
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
-
     VertexCount = _NumVertices;
     IndexCount = _NumIndices;
+    bSkinnedMesh = _SkinnedMesh;
+    bDynamicStorage = _DynamicStorage;
 
-    FIndexedMeshSubpart * persistentSubpart = Subparts[0];
-    persistentSubpart->VertexCount = VertexCount;
-    persistentSubpart->IndexCount = IndexCount;
-
+    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
     data.VerticesCount = _NumVertices;
     data.IndicesCount = _NumIndices;
-
-    data.VertexType = VERT_MESHVERTEX;
+    data.bSkinnedMesh = bSkinnedMesh;
+    data.bDynamicStorage = bDynamicStorage;
     data.IndexType = INDEX_UINT32;
-
-    if ( data.VertexChunks ) {
-        data.VertexMapRange[1] = FMath::Min( data.VertexMapRange[1], _NumVertices );
-
-        if ( data.VertexMapRange[0] >= data.VertexMapRange[1] ) {
-            data.VertexChunks = nullptr;
-        }
-    }
-
-    if ( data.IndexChunks ) {
-        data.IndexMapRange[1] = FMath::Min( data.IndexMapRange[1], _NumIndices );
-
-        if ( data.IndexMapRange[0] >= data.IndexMapRange[1] ) {
-            data.IndexChunks = nullptr;
-        }
-    }
-
+    data.VertexChunks = nullptr;
+    data.VertexJointChunks = nullptr;
+    data.IndexChunks = nullptr;
     data.bReallocated = true;
-
     RenderProxy->MarkUpdated();
 
     for ( FLightmapUV * channel : LightmapUVs ) {
@@ -115,6 +93,30 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices ) {
 
     for ( FVertexLight * channel : VertexLightChannels ) {
         channel->OnInitialize( _NumVertices );
+    }
+
+    if ( _NumSubparts <= 0 ) {
+        _NumSubparts = 1;
+    }
+
+    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->ParentMesh = nullptr;
+        subpart->RemoveRef();
+    }
+
+    Subparts.ResizeInvalidate( _NumSubparts );
+    for ( int i = 0 ; i < _NumSubparts ; i++ ) {
+        FIndexedMeshSubpart * subpart = NewObject< FIndexedMeshSubpart >();
+        subpart->AddRef();
+        subpart->ParentMesh = this;
+        Subparts[i] = subpart;
+    }
+
+    if ( _NumSubparts == 1 ) {
+        FIndexedMeshSubpart * subpart = Subparts[0];
+        subpart->BaseVertex = 0;
+        subpart->FirstIndex = 0;
+        subpart->IndexCount = IndexCount;
     }
 }
 
@@ -144,21 +146,11 @@ FVertexLight * FIndexedMesh::CreateVertexLightChannel() {
     return channel;
 }
 
-FIndexedMeshSubpart * FIndexedMesh::CreateSubpart( FString const & _Name, int _FirstVertex, int _VertexCount, int _FirstIndex, int _IndexCount ) {
-    FIndexedMeshSubpart * subpart = NewObject< FIndexedMeshSubpart >();
-
-    subpart->SetName( _Name );
-    subpart->FirstVertex = _FirstVertex;
-    subpart->VertexCount = _VertexCount;
-    subpart->FirstIndex = _FirstIndex;
-    subpart->IndexCount = _IndexCount;
-
-    subpart->ParentMesh = this;
-    subpart->IndexInArrayOfSubparts = Subparts.Length();
-
-    Subparts.Append( subpart );
-
-    return subpart;
+FIndexedMeshSubpart * FIndexedMesh::GetSubpart( int _SubpartIndex ) {
+    if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Length() ) {
+        return nullptr;
+    }
+    return Subparts[ _SubpartIndex ];
 }
 
 FMeshVertex * FIndexedMesh::WriteVertexData( int _VerticesCount, int _StartVertexLocation ) {
@@ -171,6 +163,9 @@ FMeshVertex * FIndexedMesh::WriteVertexData( int _VerticesCount, int _StartVerte
 
     FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
 
+    data.bSkinnedMesh = bSkinnedMesh;
+    data.bDynamicStorage = bDynamicStorage;
+
     FVertexChunk * chunk = ( FVertexChunk * )frameData->AllocFrameData( sizeof( FVertexChunk ) + sizeof( FMeshVertex ) * ( _VerticesCount - 1 ) );
     if ( !chunk ) {
         return nullptr;
@@ -178,16 +173,6 @@ FMeshVertex * FIndexedMesh::WriteVertexData( int _VerticesCount, int _StartVerte
 
     chunk->VerticesCount = _VerticesCount;
     chunk->StartVertexLocation = _StartVertexLocation;
-
-    data.VertexType = VERT_MESHVERTEX;
-
-    if ( !data.VertexChunks ) {
-        data.VertexMapRange[0] = _StartVertexLocation;
-        data.VertexMapRange[1] = _StartVertexLocation + _VerticesCount;
-    } else {
-        data.VertexMapRange[0] = FMath::Min( data.VertexMapRange[0], _StartVertexLocation );
-        data.VertexMapRange[1] = FMath::Max( data.VertexMapRange[1], _StartVertexLocation + _VerticesCount );
-    }
 
     IntrusiveAddToList( chunk, Next, Prev, data.VertexChunks, data.VertexChunksTail );
 
@@ -206,6 +191,49 @@ bool FIndexedMesh::WriteVertexData( FMeshVertex const * _Vertices, int _Vertices
     return true;
 }
 
+FMeshVertexJoint * FIndexedMesh::WriteJointWeights( int _VerticesCount, int _StartVertexLocation ) {
+    if ( !bSkinnedMesh ) {
+        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n" );
+        return nullptr;
+    }
+
+    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
+        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Referencing outside of buffer\n" );
+        return nullptr;
+    }
+
+    FRenderFrame * frameData = GRuntime.GetFrameData();
+
+    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+
+    data.bSkinnedMesh = bSkinnedMesh;
+    data.bDynamicStorage = bDynamicStorage;
+
+    FVertexJointChunk * chunk = ( FVertexJointChunk * )frameData->AllocFrameData( sizeof( FVertexJointChunk ) + sizeof( FMeshVertexJoint ) * ( _VerticesCount - 1 ) );
+    if ( !chunk ) {
+        return nullptr;
+    }
+
+    chunk->VerticesCount = _VerticesCount;
+    chunk->StartVertexLocation = _StartVertexLocation;
+
+    IntrusiveAddToList( chunk, Next, Prev, data.VertexJointChunks, data.VertexJointChunksTail );
+
+    RenderProxy->MarkUpdated();
+
+    return &chunk->Vertices[0];
+}
+
+bool FIndexedMesh::WriteJointWeights( FMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+    FMeshVertexJoint * pVerts = WriteJointWeights( _VerticesCount, _StartVertexLocation );
+    if ( !pVerts ) {
+        return false;
+    }
+
+    memcpy( pVerts, _Vertices, _VerticesCount * sizeof( FMeshVertexJoint ) );
+    return true;
+}
+
 unsigned int * FIndexedMesh::WriteIndexData( int _IndexCount, int _StartIndexLocation ) {
     if ( !_IndexCount || _StartIndexLocation + _IndexCount > IndexCount ) {
         GLogger.Printf( "FIndexedMesh::WriteIndexData: Referencing outside of buffer\n" );
@@ -216,6 +244,10 @@ unsigned int * FIndexedMesh::WriteIndexData( int _IndexCount, int _StartIndexLoc
 
     FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
 
+    data.bSkinnedMesh = bSkinnedMesh;
+    data.bDynamicStorage = bDynamicStorage;
+    data.IndexType = INDEX_UINT32;
+
     FIndexChunk * chunk = ( FIndexChunk * )frameData->AllocFrameData( sizeof( FIndexChunk ) + sizeof( unsigned int ) * ( _IndexCount - 1 ) );
     if ( !chunk ) {
         return nullptr;
@@ -225,16 +257,6 @@ unsigned int * FIndexedMesh::WriteIndexData( int _IndexCount, int _StartIndexLoc
     chunk->StartIndexLocation = _StartIndexLocation;
 
     IntrusiveAddToList( chunk, Next, Prev, data.IndexChunks, data.IndexChunksTail );
-
-    data.IndexType = INDEX_UINT32;
-
-    if ( !data.IndexChunks ) {
-        data.IndexMapRange[0] = _StartIndexLocation;
-        data.IndexMapRange[1] = _StartIndexLocation + _IndexCount;
-    } else {
-        data.IndexMapRange[0] = FMath::Min( data.IndexMapRange[0], _StartIndexLocation );
-        data.IndexMapRange[1] = FMath::Max( data.IndexMapRange[1], _StartIndexLocation + _IndexCount );
-    }
 
     RenderProxy->MarkUpdated();
 
@@ -276,19 +298,16 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     GLogger.Printf( "Unknown internal mesh %s\n", _Name );
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 FIndexedMeshSubpart::FIndexedMeshSubpart() {
     BoundingBox.Clear();
 }
 
 FIndexedMeshSubpart::~FIndexedMeshSubpart() {
-    if ( ParentMesh ) {
-        ParentMesh->Subparts[ IndexInArrayOfSubparts ] = ParentMesh->Subparts[ ParentMesh->Subparts.Length() - 1 ];
-        ParentMesh->Subparts[ IndexInArrayOfSubparts ]->IndexInArrayOfSubparts = IndexInArrayOfSubparts;
-        IndexInArrayOfSubparts = -1;
-        ParentMesh->Subparts.RemoveLast();
-    }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FLightmapUV::FLightmapUV() {
     RenderProxy = FRenderProxy::NewProxy< FRenderProxy_LightmapUVChannel >();
@@ -307,7 +326,7 @@ FLightmapUV::~FLightmapUV() {
 }
 
 void FLightmapUV::OnInitialize( int _NumVertices ) {
-    if ( VertexCount == _NumVertices ) {
+    if ( VertexCount == _NumVertices && bDynamicStorage == ParentMesh->bDynamicStorage ) {
         return;
     }
 
@@ -316,17 +335,11 @@ void FLightmapUV::OnInitialize( int _NumVertices ) {
     FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
 
     VertexCount = _NumVertices;
+    bDynamicStorage = ParentMesh->bDynamicStorage;
 
     data.VerticesCount = _NumVertices;
-
-    if ( data.Chunks ) {
-        data.VertexMapRange[1] = FMath::Min( data.VertexMapRange[1], _NumVertices );
-
-        if ( data.VertexMapRange[0] >= data.VertexMapRange[1] ) {
-            data.Chunks = nullptr;
-        }
-    }
-
+    data.bDynamicStorage = bDynamicStorage;
+    data.Chunks = nullptr;
     data.bReallocated = true;
 
     RenderProxy->MarkUpdated();
@@ -342,6 +355,8 @@ FMeshLightmapUV * FLightmapUV::WriteVertexData( int _VerticesCount, int _StartVe
 
     FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
 
+    data.bDynamicStorage = bDynamicStorage;
+
     FLightmapChunk * chunk = ( FLightmapChunk * )frameData->AllocFrameData( sizeof( FLightmapChunk ) + sizeof( FMeshLightmapUV ) * ( _VerticesCount - 1 ) );
     if ( !chunk ) {
         return nullptr;
@@ -349,14 +364,6 @@ FMeshLightmapUV * FLightmapUV::WriteVertexData( int _VerticesCount, int _StartVe
 
     chunk->VerticesCount = _VerticesCount;
     chunk->StartVertexLocation = _StartVertexLocation;
-
-    if ( !data.Chunks ) {
-        data.VertexMapRange[0] = _StartVertexLocation;
-        data.VertexMapRange[1] = _StartVertexLocation + _VerticesCount;
-    } else {
-        data.VertexMapRange[0] = FMath::Min( data.VertexMapRange[0], _StartVertexLocation );
-        data.VertexMapRange[1] = FMath::Max( data.VertexMapRange[1], _StartVertexLocation + _VerticesCount );
-    }
 
     IntrusiveAddToList( chunk, Next, Prev, data.Chunks, data.ChunksTail );
 
@@ -375,6 +382,8 @@ bool FLightmapUV::WriteVertexData( FMeshLightmapUV const * _Vertices, int _Verti
     return true;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 FVertexLight::FVertexLight() {
     RenderProxy = FRenderProxy::NewProxy< FRenderProxy_VertexLightChannel >();
     RenderProxy->SetOwner( this );
@@ -392,7 +401,7 @@ FVertexLight::~FVertexLight() {
 }
 
 void FVertexLight::OnInitialize( int _NumVertices ) {
-    if ( VertexCount == _NumVertices ) {
+    if ( VertexCount == _NumVertices && bDynamicStorage == ParentMesh->bDynamicStorage ) {
         return;
     }
 
@@ -401,17 +410,11 @@ void FVertexLight::OnInitialize( int _NumVertices ) {
     FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
 
     VertexCount = _NumVertices;
+    bDynamicStorage = ParentMesh->bDynamicStorage;
 
     data.VerticesCount = _NumVertices;
-
-    if ( data.Chunks ) {
-        data.VertexMapRange[1] = FMath::Min( data.VertexMapRange[1], _NumVertices );
-
-        if ( data.VertexMapRange[0] >= data.VertexMapRange[1] ) {
-            data.Chunks = nullptr;
-        }
-    }
-
+    data.bDynamicStorage = bDynamicStorage;
+    data.Chunks = nullptr;
     data.bReallocated = true;
 
     RenderProxy->MarkUpdated();
@@ -427,6 +430,8 @@ FMeshVertexLight * FVertexLight::WriteVertexData( int _VerticesCount, int _Start
 
     FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
 
+    data.bDynamicStorage = bDynamicStorage;
+
     FVertexLightChunk * chunk = ( FVertexLightChunk * )frameData->AllocFrameData( sizeof( FVertexLightChunk ) + sizeof( FMeshVertexLight ) * ( _VerticesCount - 1 ) );
     if ( !chunk ) {
         return nullptr;
@@ -434,14 +439,6 @@ FMeshVertexLight * FVertexLight::WriteVertexData( int _VerticesCount, int _Start
 
     chunk->VerticesCount = _VerticesCount;
     chunk->StartVertexLocation = _StartVertexLocation;
-
-    if ( !data.Chunks ) {
-        data.VertexMapRange[0] = _StartVertexLocation;
-        data.VertexMapRange[1] = _StartVertexLocation + _VerticesCount;
-    } else {
-        data.VertexMapRange[0] = FMath::Min( data.VertexMapRange[0], _StartVertexLocation );
-        data.VertexMapRange[1] = FMath::Max( data.VertexMapRange[1], _StartVertexLocation + _VerticesCount );
-    }
 
     IntrusiveAddToList( chunk, Next, Prev, data.Chunks, data.ChunksTail );
 
@@ -459,110 +456,3 @@ bool FVertexLight::WriteVertexData( FMeshVertexLight const * _Vertices, int _Ver
     memcpy( pVerts, _Vertices, _VerticesCount * sizeof( FMeshVertexLight ) );
     return true;
 }
-
-
-
-
-
-
-#if 0
-AN_CLASS_META_NO_ATTRIBS( FStaticMesh )
-
-FStaticMesh::FStaticMesh() {
-}
-
-FStaticMesh::~FStaticMesh() {
-    AN_Assert( !bMapped );
-
-    GRenderFrontend.DestroyVertexCache( VertexCache );
-
-    RemoveFromLoadList();
-}
-
-void FStaticMesh::LoadObject( const char * _Path ) {
-
-    if ( bMapped ) {
-        GLogger.Printf( "FStaticMesh::LoadObject: missing Unmap()\n" );
-        return;
-    }
-
-    ResourcePath = _Path;
-
-    AddToLoadList();
-
-    if ( _Path[0] == '*' ) {
-        CreateInternalMesh( _Path );
-        return;
-    }
-
-    // TODO: load from file
-
-    // For test:
-    InitializeShape< FBoxShape >( Float3( 1.0f ), 1.0f );
-}
-
-void FStaticMesh::ComputeBounds() {
-    if ( !VertexCache ) {
-        GLogger.Printf( "FStaticMesh::ComputeBounds: mesh has no data\n" );
-        return;
-    }
-    ComputeBounds( ( FMeshVertex * )VertexCache->IndexedMesh.pVertices, VertexCache->IndexedMesh.NumVertices );
-}
-
-void FStaticMesh::ComputeBounds( const FMeshVertex * _Vertices, int _NumVertices ) {
-    Bounds.Clear();
-    for ( const FMeshVertex * pVertex = _Vertices, *pLast = _Vertices + _NumVertices ; pVertex < pLast ; pVertex++ ) {
-        Bounds.AddPoint( pVertex->Position );
-    }
-}
-
-
-
-#if 0
-void FStaticMesh::Map( FMeshVertex const **_Vertices,
-                       int & _VerticesCount,
-                       unsigned int const **_Indices,
-                       int & _IndicesCount ) {
-
-    if ( !VertexCache ) {
-        GLogger.Printf( "FStaticMesh::Map: mesh has no data\n" );
-
-        *_Vertices = nullptr;
-        *_Indices = nullptr;
-        _VerticesCount = 0;
-        _IndicesCount = 0;
-
-        return;
-    }
-
-    if ( bMapped ) {
-        GLogger.Printf( "FStaticMesh::Map: already mapped\n" );
-    }
-
-    *_Vertices = ( FMeshVertex * )VertexCache->IndexedMesh.pVertices;
-    *_Indices = ( unsigned int * )VertexCache->IndexedMesh.pIndices;
-
-    _VerticesCount = VertexCache->IndexedMesh.NumVertices;
-    _IndicesCount = VertexCache->IndexedMesh.NumIndices;
-
-    bMapped = true;
-}
-
-void FStaticMesh::Unmap() {
-    if ( !bMapped ) {
-        GLogger.Printf( "FStaticMesh::Unmap: already unmapped\n" );
-        return;
-    }
-
-    bMapped = false;
-}
-#endif
-
-int FStaticMesh::GetVerticesCount() const {
-    return VertexCache ? VertexCache->IndexedMesh.NumVertices : 0;
-}
-
-int FStaticMesh::GetIndicesCount() const {
-    return VertexCache ? VertexCache->IndexedMesh.NumIndices : 0;
-}
-#endif

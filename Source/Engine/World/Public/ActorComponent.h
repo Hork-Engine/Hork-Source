@@ -33,15 +33,17 @@ SOFTWARE.
 #include "BaseObject.h"
 #include <Engine/Core/Public/Guid.h>
 
+class FWorld;
+class FLevel;
+class FActor;
+class FDebugDraw;
+
 #define AN_COMPONENT( _Class, _SuperClass ) \
     AN_FACTORY_CLASS( FActorComponent::Factory(), _Class, _SuperClass ) \
 protected: \
     ~_Class() {} \
 private:
 
-class FWorld;
-class FActor;
-class FDebugDraw;
 
 /*
 
@@ -69,6 +71,9 @@ public:
     // Component parent actor
     FActor * GetParentActor() const { return ParentActor; }
 
+    // Component parent level
+    FLevel * GetLevel() const;
+
     // Get world
     FWorld * GetWorld() const;
 
@@ -84,32 +89,23 @@ public:
     // Register component to initialize it at runtime
     void RegisterComponent();
 
-//    void AddTickPrerequisiteActor( Actor * _Actor );
-//    void AddTickPrerequisiteComponent( FActorComponent * _Component );
-//    void SetComponentTickEnabled( bool _Enabled );
-//    void RegisterComponentTickFunction( FTickFunction & _TickFunction );
-//    PrimaryTick PrimaryComponentTick;
-
     bool bCanEverTick;
 
 protected:
 
     FActorComponent();
 
-    // [called from Actor's InitializeComponents(), overridable]
+    // Called from Actor's InitializeComponents()
     virtual void InitializeComponent() {}
 
-    // [Actor friend, overridable]
     virtual void BeginPlay() {}
 
-    // [Actor friend, overridable]
     // Called only from Destroy() method
     virtual void EndPlay() {}
 
-    // [Actor friend, overridable]
     virtual void TickComponent( float _TimeStep ) {}
 
-    virtual void DebugDraw( FDebugDraw * _DebugDraw ) {}
+    virtual void DrawDebug( FDebugDraw * _DebugDraw ) {}
 
 private:
 
@@ -117,12 +113,8 @@ private:
 
     FGUID GUID;
 
-    // [Actor friend]
     FActor * ParentActor;
-//    ActorRenderState * RenderState;
-//    ActorPhysicsState * PhysicsState;
 
-    // [World friend]
     bool bPendingKill;
     bool bCreatedDuringConstruction;
     FActorComponent * NextPendingKillComponent;

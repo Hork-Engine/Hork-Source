@@ -41,9 +41,12 @@ AN_END_CLASS_META()
 
 AN_CLASS_META_NO_ATTRIBS( FViewActor )
 
+static UInt UniqueName = 0;
+
 FActor::FActor() {
     GUID.Generate();
-    Name = "Actor";
+    Name = "Actor" + UniqueName.ToString();
+    UniqueName++;
 }
 
 void FActor::SetName( FString const & _Name ) {
@@ -348,8 +351,8 @@ void FActor::RegisterTimer( FTimer * _Timer ) {
     ParentWorld->RegisterTimer( _Timer );
 }
 
-void FActor::DebugDraw( FDebugDraw * _DebugDraw ) {
+void FActor::DrawDebug( FDebugDraw * _DebugDraw ) {
     for ( FActorComponent * component : Components ) {
-        component->DebugDraw( _DebugDraw );
+        component->DrawDebug( _DebugDraw );
     }
 }

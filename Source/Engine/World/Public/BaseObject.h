@@ -71,6 +71,8 @@ public:
 
     FString const & GetName() const { return Name; }
 
+    const char * GetNameConstChar() const { return Name.ToConstChar(); }
+
     virtual const char * GetResourcePath() const { return ""; }
 
     // Get total existing objects
