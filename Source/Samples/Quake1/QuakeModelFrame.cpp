@@ -251,8 +251,6 @@ void FQuakeModelFrame::DecompressFrame( int _FrameIndex0, int _FrameIndex1, floa
     QCompressedVertex * compressedVertA = frame0.Vertices + poseNumA * verticesCount;
     QCompressedVertex * compressedVertB = frame1.Vertices + poseNumB * verticesCount;
 
-    //FrameBounds.Clear();
-
     Float3 const & scale = Model->Scale;
     Float3 const & translate = Model->Translate;
 
@@ -268,11 +266,7 @@ void FQuakeModelFrame::DecompressFrame( int _FrameIndex0, int _FrameIndex1, floa
         pVertices->TexCoord = Model->Texcoords[ i ];
 
         // TODO: calc tangent space?
-
-        //FrameBounds.AddPoint( pVertices->Position );
     }
-
-    //UpdateBounds();
 }
 
 void FQuakeModelFrame::DecompressFrame( int _FrameIndex ) {
@@ -292,8 +286,6 @@ void FQuakeModelFrame::DecompressFrame( int _FrameIndex ) {
 
     QCompressedVertex * compressedVert = frame.Vertices + ( PoseNum % frame.NumPoses ) * Model->VerticesCount;
 
-    //FrameBounds.Clear();
-
     for ( int i = 0 ; i < Model->VerticesCount ; i++, pVertices++, compressedVert++ ) {
         pVertices->Position[0] = Model->Scale[0] * ( float )compressedVert->Position[0] + Model->Translate[0];
         pVertices->Position[1] = Model->Scale[1] * ( float )compressedVert->Position[1] + Model->Translate[1];
@@ -304,8 +296,6 @@ void FQuakeModelFrame::DecompressFrame( int _FrameIndex ) {
         pVertices->TexCoord = Model->Texcoords[i];
 
         // TODO: calc tangent space?
-
-        //FrameBounds.AddPoint( pVertices->Position );
     }
 }
 
@@ -317,7 +307,7 @@ void FQuakeModelFrame::SetModel( FQuakeModel * _Model ) {
     bDirty = true;
 
     if ( Model ) {
-        Mesh->Initialize( Model->VerticesCount, Model->Indices.Length() );
+        Mesh->Initialize( Model->VerticesCount, Model->Indices.Length(), 1, false, true );
         Mesh->WriteIndexData( Model->Indices.ToPtr(), Model->Indices.Length(), 0 );
     }
 
@@ -360,28 +350,28 @@ void FQuakeModelFrame::UpdateBounds() {
     // Get nearest bounding box
     QFrame & frame = Model->Frames[ ( Lerp < 0.5f ? Frames[0] : Frames[1] ) % Model->Frames.Length() ];
 
-    FrameBounds.Mins[0] = Model->Scale[0] * ( float )frame.Mins.Position[0] + Model->Translate[0];
-    FrameBounds.Mins[1] = Model->Scale[1] * ( float )frame.Mins.Position[1] + Model->Translate[1];
-    FrameBounds.Mins[2] = Model->Scale[2] * ( float )frame.Mins.Position[2] + Model->Translate[2];
+    Bounds.Mins[0] = Model->Scale[0] * ( float )frame.Mins.Position[0] + Model->Translate[0];
+    Bounds.Mins[1] = Model->Scale[1] * ( float )frame.Mins.Position[1] + Model->Translate[1];
+    Bounds.Mins[2] = Model->Scale[2] * ( float )frame.Mins.Position[2] + Model->Translate[2];
 
-    FrameBounds.Maxs[0] = Model->Scale[0] * ( float )frame.Maxs.Position[0] + Model->Translate[0];
-    FrameBounds.Maxs[1] = Model->Scale[1] * ( float )frame.Maxs.Position[1] + Model->Translate[1];
-    FrameBounds.Maxs[2] = Model->Scale[2] * ( float )frame.Maxs.Position[2] + Model->Translate[2];
+    Bounds.Maxs[0] = Model->Scale[0] * ( float )frame.Maxs.Position[0] + Model->Translate[0];
+    Bounds.Maxs[1] = Model->Scale[1] * ( float )frame.Maxs.Position[1] + Model->Translate[1];
+    Bounds.Maxs[2] = Model->Scale[2] * ( float )frame.Maxs.Position[2] + Model->Translate[2];
 #else
     // Get lerped bounding box
     QFrame & frame0 = Model->Frames[ Frames[0] % Model->Frames.Length() ];
     QFrame & frame1 = Model->Frames[ Frames[1] % Model->Frames.Length() ];
 
-    FrameBounds.Mins[0] = Model->Scale[0] * Float( frame0.Mins.Position[0] ).Lerp( frame1.Mins.Position[0], Lerp ) + Model->Translate[0];
-    FrameBounds.Mins[1] = Model->Scale[1] * Float( frame0.Mins.Position[1] ).Lerp( frame1.Mins.Position[1], Lerp ) + Model->Translate[1];
-    FrameBounds.Mins[2] = Model->Scale[2] * Float( frame0.Mins.Position[2] ).Lerp( frame1.Mins.Position[2], Lerp ) + Model->Translate[2];
+    Bounds.Mins[0] = Model->Scale[0] * Float( frame0.Mins.Position[0] ).Lerp( frame1.Mins.Position[0], Lerp ) + Model->Translate[0];
+    Bounds.Mins[1] = Model->Scale[1] * Float( frame0.Mins.Position[1] ).Lerp( frame1.Mins.Position[1], Lerp ) + Model->Translate[1];
+    Bounds.Mins[2] = Model->Scale[2] * Float( frame0.Mins.Position[2] ).Lerp( frame1.Mins.Position[2], Lerp ) + Model->Translate[2];
 
-    FrameBounds.Maxs[0] = Model->Scale[0] * Float( frame0.Maxs.Position[0] ).Lerp( frame1.Maxs.Position[0], Lerp ) + Model->Translate[0];
-    FrameBounds.Maxs[1] = Model->Scale[1] * Float( frame0.Maxs.Position[1] ).Lerp( frame1.Maxs.Position[1], Lerp ) + Model->Translate[1];
-    FrameBounds.Maxs[2] = Model->Scale[2] * Float( frame0.Maxs.Position[2] ).Lerp( frame1.Maxs.Position[2], Lerp ) + Model->Translate[2];
+    Bounds.Maxs[0] = Model->Scale[0] * Float( frame0.Maxs.Position[0] ).Lerp( frame1.Maxs.Position[0], Lerp ) + Model->Translate[0];
+    Bounds.Maxs[1] = Model->Scale[1] * Float( frame0.Maxs.Position[1] ).Lerp( frame1.Maxs.Position[1], Lerp ) + Model->Translate[1];
+    Bounds.Maxs[2] = Model->Scale[2] * Float( frame0.Maxs.Position[2] ).Lerp( frame1.Maxs.Position[2], Lerp ) + Model->Translate[2];
 #endif
 
-    SetBounds( FrameBounds );
+    MarkWorldBoundsDirty();
 }
 
 void FQuakeModelFrame::OnCustomVisibleStep( FCameraComponent * _Camera, bool & _OutVisibleFlag ) {

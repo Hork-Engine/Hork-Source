@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Engine/World/Public/BaseObject.h>
 #include <Engine/World/Public/Texture.h>
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include <Engine/World/Public/MeshComponent.h>
+#include <Engine/World/Public/IndexedMesh.h>
 #include <Engine/World/Public/Level.h>
 
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
@@ -99,6 +99,7 @@ class FQuakeBSP : public FBaseObject {
     AN_CLASS( FQuakeBSP, FBaseObject )
 
 public:
+    FString PackName;
     TPodArray< FTexture * >   Textures;
     TPodArray< QLightmapGroup > LightmapGroups;
 
@@ -125,7 +126,7 @@ private:
     void ReadNodes( FLevel * _Level, const byte * _Data, QBSPEntry const & _Entry );
     void SetParent_r( FLevel * _Level, FBinarySpaceNode * _Node, FBinarySpaceNode * _Parent );
     int GetLightmapGroup( int _TextureIndex, int _LightmapBlock );
-    FTexture * LoadTexture( const char * _FileName );
+    FTexture * LoadTexture( FArchive & _Pack, const char * _FileName );
     FTexture * LoadSky();
 
     // Temporary data. Used for loading.

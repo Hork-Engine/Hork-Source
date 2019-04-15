@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "Player.h"
+#include "Game.h"
 
 #include <Engine/World/Public/CameraComponent.h>
 #include <Engine/World/Public/InputComponent.h>
@@ -39,6 +40,35 @@ AN_END_CLASS_META()
 FPlayer::FPlayer() {
     Camera = CreateComponent< FCameraComponent >( "Camera" );
     RootComponent = Camera;
+
+    // Animation single frame holder
+    WeaponModel = CreateComponent< FQuakeModelFrame >( "Frame" );
+
+    //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_axe.mdl");
+    //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_shot.mdl");
+    //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_shot2.mdl");
+    //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_nail.mdl");
+    //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_nail2.mdl");
+    //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_rock.mdl");
+    FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_rock2.mdl");
+    //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_light.mdl");
+
+    WeaponModel->SetModel( model );
+
+    WeaponFramesCount = model ? model->Frames.Length() : 0;
+
+    FMaterialInstance * matInst = NewObject< FMaterialInstance >();
+    matInst->Material = GGameModule->SkinMaterial;
+
+    WeaponModel->SetMaterialInstance( matInst );
+
+    if ( model && !model->Skins.IsEmpty() ) {
+        // Set random skin (just for fun)
+        matInst->SetTexture( 0, model->Skins[rand()%model->Skins.Length()].Texture );
+    }
+
+    WeaponModel->AttachTo( RootComponent );
+    WeaponModel->SetAngles(0,180,0);
 
     bCanEverTick = true;
 }
@@ -113,6 +143,18 @@ void FPlayer::Tick( float _TimeStep ) {
 
         MoveVector.Clear();
     }
+
+
+    //if ( WeaponFramesCount > 0 ) {
+    //    int keyFrame = AnimationTime.Floor();
+    //    float lerp = AnimationTime.Fract();
+
+    //    WeaponModel->SetFrame( keyFrame % WeaponFramesCount, ( keyFrame + 1 ) % WeaponFramesCount, lerp );
+    //}
+
+    //constexpr float ANIMATION_SPEED = 10.0f; // frames per second
+
+    //AnimationTime += _TimeStep * ANIMATION_SPEED;
 }
 
 void FPlayer::MoveForward( float _Value ) {
@@ -144,9 +186,16 @@ void FPlayer::TurnUp( float _Value ) {
 }
 
 void FPlayer::SpeedPress() {
-    bSpeed = true;
+    extern FAtomicBool GSyncFrame;
+    GSyncFrame.Store( !GSyncFrame.Load() );
+    if ( GSyncFrame.Load() ) {
+        GLogger.Printf( "Sync frame ON\n" );
+    } else {
+        GLogger.Printf( "Sync frame OFF\n" );
+    }
+    //bSpeed = true;
 }
 
 void FPlayer::SpeedRelease() {
-    bSpeed = false;
+    //bSpeed = false;
 }

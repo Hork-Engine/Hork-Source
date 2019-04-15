@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Engine/World/Public/BaseObject.h>
 #include <Engine/World/Public/Texture.h>
-#include <Engine/World/Public/StaticMeshComponent.h>
-#include <Engine/World/Public/StaticMesh.h>
+#include <Engine/World/Public/MeshComponent.h>
+#include <Engine/World/Public/IndexedMesh.h>
 #include <Engine/World/Public/Level.h>
 
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>

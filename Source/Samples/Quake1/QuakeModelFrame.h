@@ -34,12 +34,10 @@ SOFTWARE.
 
 #include "QuakeModel.h"
 
-class FQuakeModelFrame : public FStaticMeshComponent {
-    AN_COMPONENT( FQuakeModelFrame, FStaticMeshComponent )
+class FQuakeModelFrame : public FMeshComponent {
+    AN_COMPONENT( FQuakeModelFrame, FMeshComponent )
 
 public:
-    BvAxisAlignedBox FrameBounds;
-
     void SetModel( FQuakeModel * _Model );
     void SetFrame( int _FrameIndex0, int _FrameIndex1, float _Lerp );
     void SetPose( int _PoseNum );

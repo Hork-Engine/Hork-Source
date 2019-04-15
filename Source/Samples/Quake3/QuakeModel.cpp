@@ -479,10 +479,16 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
 }
 #endif
 
-FTexture * FQuakeBSP::LoadTexture( const char * _FileName ) {
+FTexture * FQuakeBSP::LoadTexture( FArchive & _Pack, const char * _FileName ) {
+    FMemoryStream stream;
+
+    if ( !stream.OpenRead( _FileName, _Pack ) ) {
+        return nullptr;
+    }
+
     FImage img;
 
-    if ( !img.LoadRawImage( _FileName, true, true ) ) {
+    if ( !img.LoadRawImage( stream, true, true ) ) {
         return nullptr;
     }
 
@@ -698,6 +704,10 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
     QShader * Shaders = (QShader *)( _Data + _ShaderEntry.offset );
     int NumShaders = _ShaderEntry.size / sizeof( QShader );
 
+    FArchive pack;
+
+    pack.Open( PackName.ToConstChar() );
+
     FTexture * defaultTexture = NewObject< FTexture >();
     defaultTexture->SetName( "default" );
 #if 0
@@ -735,11 +745,14 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
             || strstr( Shaders[i].shader, "sky" ) ) {
             Textures[i] = skyTexture;
         } else {
-            Textures[i] = LoadTexture( ( FString( (const char*)Shaders[i].shader ) + ".jpg" ).ToConstChar() );
+            Textures[i] = LoadTexture( pack, ( FString( (const char*)Shaders[i].shader ) + ".jpg" ).ToConstChar() );
             if ( !Textures[i] ) {
-                Textures[i] = LoadTexture( ( FString( (const char*)Shaders[i].shader ) + ".tga" ).ToConstChar() );
+                Textures[i] = LoadTexture( pack, ( FString( (const char*)Shaders[i].shader ) + ".tga" ).ToConstChar() );
                 if ( !Textures[i] ) {
-                    Textures[i] = defaultTexture;
+                    Textures[i] = LoadTexture( pack, ( FString( (const char*)Shaders[i].shader ) + ".png" ).ToConstChar() );
+                    if ( !Textures[i] ) {
+                        Textures[i] = defaultTexture;
+                    }
                 }
             }
         }
@@ -762,7 +775,7 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
         pOutputVert->Normal = pInputVert->Normal;
 
         pOutputLM->TexCoord = pInputVert->LightmapTexCoord;
-        pOutputVL->VertexLight = pInputVert->Color;
+        pOutputVL->VertexLight = pInputVert->Color | 0xff000000;
 
         ConvertFromQuakeCoord( pOutputVert->Position );
         ConvertFromQuakeNormal( pOutputVert->Normal );
@@ -770,26 +783,18 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
     QFace * pInputFace = Faces;
 
-    BSP.Indices.ResizeInvalidate( NumIndices );
-    memcpy( BSP.Indices.ToPtr(), Indices, NumIndices*sizeof(unsigned int) );
-    //BSP.Indices.Reserve( NumIndices );
+    //BSP.Indices.ResizeInvalidate( NumIndices );
+    //memcpy( BSP.Indices.ToPtr(), Indices, NumIndices*sizeof(unsigned int) );
+    BSP.Indices.Reserve( NumIndices );
     for ( int SurfNum = 0 ; SurfNum < NumFaces ; SurfNum++, pInputFace++ ) {
-    //    if ( pInputFace->surfaceType == SURFTYPE_PLANAR || pInputFace->surfaceType == SURFTYPE_MESH ) {
-    //        int FirstIndex = BSP.Indices.Length();//pInputFace->firstIndex;
+        int FirstIndex = BSP.Indices.Length();
 
-    //        pInputFace->patchWidth = FirstIndex; // HACK: keep original first index for planar and mesh surfaces in patchWidth
-
-    //        //pInputFace->firstIndex = BSP.Indices.Length();
-
-    //        for ( int i = 0 ; i < pInputFace->numIndexes ; i++ ) {
-    //            int v = FirstIndex + i;
-    //            BSP.Indices.Append( /*pInputFace->firstVert + */Indices[ v ] );
-    //        }
-    //        BSP.Indices.Reverse( FirstIndex, FirstIndex + pInputFace->numIndexes );
-    //    }
         if ( pInputFace->numIndexes > 0 ) {
-            BSP.Indices.Reverse( pInputFace->firstIndex, pInputFace->firstIndex + pInputFace->numIndexes );
+            for ( int i = 0 ; i < pInputFace->numIndexes ; i++ ) {
+                BSP.Indices.Append( Indices[ pInputFace->firstIndex + pInputFace->numIndexes - i - 1 ] );
+            }
         }
+        pInputFace->firstIndex = FirstIndex;
     }
 
     BSP.Surfaces.Resize( NumFaces );

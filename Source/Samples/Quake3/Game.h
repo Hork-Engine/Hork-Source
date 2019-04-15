@@ -51,7 +51,6 @@ public:
     TActorSpawnParameters< FPlayer > PlayerSpawnParameters;
     TRefHolder< FLevel > Level;
     TRefHolder< FMaterial > WallMaterial;
-    TRefHolder< FMaterial > WallVertexLightMaterial;
     TRefHolder< FMaterial > WaterMaterial;
     TRefHolder< FMaterial > SkyMaterial;
     TRefHolder< FMaterial > SkyboxMaterial;
@@ -68,7 +67,7 @@ public:
     void OnPostGameTick( float _TimeStep ) override;
     void DrawCanvas( FCanvas * _Canvas ) override;
 
-    bool LoadQuakeMap( const char * _MapName );
+    bool LoadQuakeMap( const char * _PackName, const char * _MapName );
 
 private:
     void InitializeQuakeGame();

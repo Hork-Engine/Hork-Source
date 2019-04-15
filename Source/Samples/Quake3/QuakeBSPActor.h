@@ -56,7 +56,7 @@ private:
     TRefHolder< FIndexedMesh > Mesh;
     TRefHolder< FLightmapUV > LightmapUV;
     TRefHolder< FVertexLight > VertexLightChannel;
-    TPodArray< FStaticMeshComponent * > SurfacePool;
+    TPodArray< FMeshComponent * > SurfacePool;
     TPodArray< FMeshVertex > Vertices;
     TPodArray< FMeshLightmapUV > LightmapVerts;
     TPodArray< FMeshVertexLight > VertexLight;

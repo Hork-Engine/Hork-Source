@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Public/Pawn.h>
+#include "QuakeModelFrame.h"
 
 class FCameraComponent;
 
@@ -63,4 +64,7 @@ private:
     Angl Angles;
     Float3 MoveVector;
     bool bSpeed;
+    FQuakeModelFrame * WeaponModel;
+    int WeaponFramesCount;
+    Float AnimationTime;
 };

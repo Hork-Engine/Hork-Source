@@ -54,7 +54,7 @@ private:
     FBinarySpaceData * BSP;
     TRefHolder< FIndexedMesh > Mesh;
     TRefHolder< FLightmapUV > LightmapUV;
-    TPodArray< FStaticMeshComponent * > SurfacePool;
+    TPodArray< FMeshComponent * > SurfacePool;
     TPodArray< FMeshVertex > Vertices;
     TPodArray< FMeshLightmapUV > LightmapVerts;
     TPodArray< unsigned int > Indices;

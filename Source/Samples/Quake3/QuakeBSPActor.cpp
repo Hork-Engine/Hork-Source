@@ -50,7 +50,7 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
 
     BSP = &Model->BSP;
 
-    for ( FStaticMeshComponent * surf : SurfacePool ) {
+    for ( FMeshComponent * surf : SurfacePool ) {
         surf->Destroy();
     }
 
@@ -60,7 +60,7 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
     VertexLight.ResizeInvalidate( BSP->Vertices.Length() + MAX_SUBDIV_VERTS );
     Indices.ResizeInvalidate( BSP->Indices.Length() + MAX_SUBDIV_INDICES );
 
-    Mesh->Initialize( Vertices.Length(), Indices.Length() );
+    Mesh->Initialize( Vertices.Length(), Indices.Length(), 1, false, true );
 
     LightmapUV = Mesh->CreateLightmapUVChannel();
     VertexLightChannel = Mesh->CreateVertexLightChannel();
@@ -68,13 +68,14 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
     for ( int i = 0 ; i < SurfacePool.Length() ; i++ ) {
         QLightmapGroup * lightmapGroup = &Model->LightmapGroups[i];
 
-        FStaticMeshComponent * surf = CreateComponent< FStaticMeshComponent >( FString::Fmt( "bsp_surf%d", i ) );
+        FMeshComponent * surf = CreateComponent< FMeshComponent >( FString::Fmt( "bsp_surf%d", i ) );
         surf->SetMesh( Mesh );
         surf->RegisterComponent();
         surf->VSDPasses = VSD_PASS_VIS_MARKER;
         surf->LightmapUVChannel = LightmapUV;
         surf->VertexLightChannel = VertexLightChannel;
         surf->bUseDynamicRange = true;
+        surf->bNoTransform = true;
         SurfacePool[i] = surf;
 
         FMaterialInstance * materialInstance = NewObject< FMaterialInstance >();
@@ -86,42 +87,13 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
             materialInstance->Material = GGameModule->SkyMaterial;
         } else {
 
-                if ( lightmapGroup->LightmapBlock < 0 ) {
-                    materialInstance->Material = GGameModule->WallVertexLightMaterial;
-                } else {
-                    materialInstance->Material = GGameModule->WallMaterial;
-                }
-            
+            materialInstance->Material = GGameModule->WallMaterial;
 
             surf->LightmapBlock = lightmapGroup->LightmapBlock;
         }
-//        } else if ( name[ 0 ] == '*' ) {
-//            materialInstance->Material = GGameModule->WaterMaterial;
-//        } else {
-            
-//        }
 
         surf->SetMaterialInstance( materialInstance );
     }
-
-//    CubemapTex = NewObject<FTexture>();
-//    const Float3 dirs[6] = {
-//        Float3(1,0,0),
-//        Float3(-1,0,0),
-//        Float3(0,1,0),
-//        Float3(0,-1,0),
-//        Float3(0,0,1),
-//        Float3(0,0,-1)
-//    };
-
-//    CubemapTex->InitializeCubemap( TEXTURE_PF_BGR8, 1, 1 );
-
-//    for ( int i = 0 ; i < 6 ; i++ ) {
-//        byte * data = (byte*)CubemapTex->WriteTextureData( 0,0,i,1,1,0 );
-//        data[0] = ( dirs[i].Z + 1.0f ) * 127.5f;
-//        data[1] = ( dirs[i].Y + 1.0f ) * 127.5f;
-//        data[2] = ( dirs[i].X + 1.0f ) * 127.5f;
-//    }
 }
 
 void FQuakeBSPActor::OnView( FCameraComponent * _Camera ) {
@@ -224,7 +196,7 @@ void FQuakeBSPActor::AddSurface( int _NumIndices, int _FirstIndex, int _GroupInd
         return;
     }
 
-    FStaticMeshComponent * surf = SurfacePool[_GroupIndex];
+    FMeshComponent * surf = SurfacePool[_GroupIndex];
     FMaterialInstance * matInst = surf->GetMaterialInstance();
 
     FTexture * texture = Model->Textures[ Model->LightmapGroups[ _GroupIndex ].TextureIndex ];

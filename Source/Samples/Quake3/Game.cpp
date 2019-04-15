@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "Game.h"
-#include "MyWorld.h"
 #include "MyPlayerController.h"
 #include <Engine/Runtime/Public/EntryDecl.h>
 #include <Engine/World/Public/GameMaster.h>
@@ -59,7 +58,6 @@ void FGameModule::OnGameStart() {
     InitializeQuakeGame();
 
     CreateWallMaterial();
-    CreateWallVertexLightMaterial();
     CreateWaterMaterial();
     CreateSkyMaterial();
     CreateSkyboxMaterial();
@@ -68,11 +66,22 @@ void FGameModule::OnGameStart() {
 
     SpawnWorld();
 
-    //LoadQuakeMap( "maps/q3ctf3.bsp" );
-    //LoadQuakeMap( "maps/q3dm5.bsp" );
-    //LoadQuakeMap( "maps/q3ctf3.bsp" );
-    //LoadQuakeMap( "maps/q3dm14.bsp" );
-    LoadQuakeMap( "maps/q3tourney3.bsp" );
+    LoadQuakeMap( "pak0.pk3", "maps/q3ctf3.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3dm5.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3ctf2.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3dm14.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3tourney3.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3dm1.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3dm6.bsp" );
+    //LoadQuakeMap( "E:/Games/Quake III Arena/missionpack/pak0.pk3", "maps/mpterra2.bsp" );
+    //LoadQuakeMap( "E:/Games/Quake III Arena/missionpack/pak0.pk3", "maps/mpterra1.bsp" );
+    //LoadQuakeMap( "E:/Games/Quake III Arena/baseq3/pak6.pk3", "maps/pro-q3tourney2.bsp" );
+    //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/overkill.bsp" );
+    //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/elder.bsp" );
+    //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/asylum.bsp" );
+    //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/gospelcrossings.bsp" );
+    //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/aerowalk.bsp" );
+    //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/warehouse.bsp" );
 }
 
 void FGameModule::OnGameEnd() {
@@ -115,8 +124,8 @@ void FGameModule::SetInputMappings() {
 void FGameModule::SpawnWorld() {
 
     // Spawn world
-    TWorldSpawnParameters< FMyWorld > WorldSpawnParameters;
-    World = GGameMaster.SpawnWorld< FMyWorld >( WorldSpawnParameters );
+    TWorldSpawnParameters< FWorld > WorldSpawnParameters;
+    World = GGameMaster.SpawnWorld< FWorld >( WorldSpawnParameters );
 
     // Spawn player controller
     PlayerController = World->SpawnActor< FMyPlayerController >();
@@ -137,29 +146,28 @@ void FGameModule::SpawnWorld() {
 //        monster->SetModel( model );
 //    }
 
-bool FGameModule::LoadQuakeMap( const char * _MapName ) {
+bool FGameModule::LoadQuakeMap( const char * _PackName, const char * _MapName ) {
 
     FArchive pack;
 
     byte * buffer;
     int size;
 
-    if ( !pack.Open( "pak0.pk3" ) ) {
+    if ( !pack.Open( _PackName ) ) {
         return false;
     }
 
-    if ( !pack.ReadFile( _MapName, &buffer, &size ) ) {
+    if ( !pack.ReadFileToZoneMemory( _MapName, &buffer, &size ) ) {
         return false;
     }
 
     FQuakeBSP * model = NewObject< FQuakeBSP >();
+    model->PackName = _PackName; // for texture loading
     model->FromData( Level, buffer );
 
     GMainMemoryZone.Dealloc( buffer );
 
     Level->DestroyActors();
-
-
 
 //    // Spawn map monsters
 //    for ( QEntity & ent : model->Entities ) {
@@ -200,130 +208,17 @@ bool FGameModule::LoadQuakeMap( const char * _MapName ) {
     PlayerController->SetViewCamera( player->Camera );
     PlayerController->AddViewActor( BSPActor );
 
-
-//    World->SpawnActor< FGroundActor >( Float3( 0,0,0 ), Quat::Identity(), Level );
-//    World->SpawnActor< FSkyboxActor >( Level );
-
     return true;
 }
-#if 0
-void FGameModule::CreateWaterMaterial() {
-    const char * vertexSourceCode = AN_STRINGIFY(
 
-            out gl_PerVertex
-            {
-                vec4 gl_Position;
-//                float gl_PointSize;
-//                float gl_ClipDistance[];
-            };
-
-            layout( location = 0 ) out vec2 VS_TexCoord;
-
-    layout( binding = 0, std140 ) uniform UniformBuffer0
-    {
-        vec4 Timers;
-        vec4 ViewPostion;
-    };
-    layout( binding = 1, std140 ) uniform UniformBuffer1
-    {
-        mat4 ProjectTranslateViewMatrix;
-        vec4 LightmapOffset;
-    };
-
-            void main() {
-                gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
-                VS_TexCoord = InTexCoord;
-            }
-
-            );
-
-    const char * fragmentSourceCode = AN_STRINGIFY(
-
-            layout( location = 0 ) in vec2 VS_TexCoord;
-            layout( location = 0 ) out vec4 FS_FragColor;
-
-            layout( binding = 0 ) uniform sampler2D colorTex;
-
-            layout( binding = 0, std140 ) uniform UniformBuffer0
-            {
-                vec4 Timers;
-                vec4 ViewPostion;
-            };
-            layout( binding = 1, std140 ) uniform UniformBuffer1
-            {
-                mat4 ProjectTranslateViewMatrix;
-                vec4 LightmapOffset;
-            };
-
-            void main() {
-                vec2 tc;
-
-                float t = Timers.y*2;
-
-                //tc = VS_TexCoord + sin( VS_TexCoord.yx * 0.125 + t );
-
-                tc = VS_TexCoord + sin( VS_TexCoord.yx*8 + t ) / 64.0;
-
-                vec4 color = texture( colorTex, tc );
-
-                FS_FragColor = pow( color, vec4(1.0/2.2) );
-            }
-
-            );
-
-
-    int vertexSourceLength = strlen( vertexSourceCode )+1;
-    int fragmentSourceLength = strlen( fragmentSourceCode )+1;
-
-    int size = sizeof( FMaterialBuildData )
-            - sizeof( FMaterialBuildData::ShaderData )
-            + vertexSourceLength
-            + fragmentSourceLength;
-
-    FMaterialBuildData * buildData = ( FMaterialBuildData * )GMainMemoryZone.AllocCleared( size, 1 );
-
-    buildData->Size = size;
-    buildData->Type = MATERIAL_TYPE_UNLIT;
-
-    buildData->NumSamplers = 1;
-
-    FSamplerDesc & desc = buildData->Samplers[0];
-    desc.TextureType = TEXTURE_2D;
-    desc.Filter = TEXTURE_FILTER_MIPMAP_NEAREST;
-    desc.AddressU = TEXTURE_SAMPLER_WRAP;
-    desc.AddressV = TEXTURE_SAMPLER_WRAP;
-    desc.AddressW = TEXTURE_SAMPLER_WRAP;
-    desc.MipLODBias = 0;
-    desc.Anisotropy = 16;
-    desc.MinLod = -1000;
-    desc.MaxLod = 1000;
-
-    buildData->VertexSourceOffset = 0;
-    buildData->VertexSourceLength = vertexSourceLength;
-
-    buildData->FragmentSourceOffset = vertexSourceLength;
-    buildData->FragmentSourceLength = fragmentSourceLength;
-
-    memcpy( &buildData->ShaderData[buildData->VertexSourceOffset], vertexSourceCode, vertexSourceLength );
-    memcpy( &buildData->ShaderData[buildData->FragmentSourceOffset], fragmentSourceCode, fragmentSourceLength );
-
-    WaterMaterial = NewObject< FMaterial >();
-    WaterMaterial->Initialize( buildData );
-
-    GMainMemoryZone.Dealloc( buildData );
-}
-#endif
 void FGameModule::CreateWaterMaterial() {
     FMaterialProject * proj = NewObject< FMaterialProject >();
 
     FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
     FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
 
-    FMaterialProjectionBlock * projectionBlock = proj->NewBlock< FMaterialProjectionBlock >();
-    projectionBlock->Vector->Connect( inPositionBlock, "Value" );
-
     FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-    materialVertexStage->Position->Connect( projectionBlock, "Result" );
+    materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
     materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
 
@@ -384,201 +279,6 @@ void FGameModule::CreateWaterMaterial() {
     WaterMaterial = builder->Build();
 }
 
-#if 0
-void FGameModule::CreateSkyMaterial() {
-    const char * vertexSourceCode = AN_STRINGIFY(
-
-            out gl_PerVertex
-            {
-                vec4 gl_Position;
-//                float gl_PointSize;
-//                float gl_ClipDistance[];
-            };
-
-            layout( location = 0 ) out vec2 VS_TexCoord;
-            layout( location = 1 ) out vec3 VS_Dir;
-
-            layout( binding = 0, std140 ) uniform UniformBuffer0
-            {
-                vec4 Timers;
-                vec4 ViewPostion;
-            };
-            layout( binding = 1, std140 ) uniform UniformBuffer1
-            {
-                mat4 ProjectTranslateViewMatrix;
-                vec4 LightmapOffset;
-            };
-
-            void main() {
-                gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
-                VS_TexCoord = InTexCoord;
-
-                VS_Dir = InPosition - ViewPostion.xyz;
-            }
-
-            );
-
-    const char * fragmentSourceCode = AN_STRINGIFY(
-
-            layout( location = 0 ) in vec2 VS_TexCoord;
-            layout( location = 1 ) in vec3 VS_Dir;
-
-            layout( location = 0 ) out vec4 FS_FragColor;
-
-            layout( binding = 0 ) uniform sampler2DArray colorTex;
-
-            layout( binding = 0, std140 ) uniform UniformBuffer0
-            {
-                vec4 Timers;
-                vec4 ViewPostion;
-            };
-            layout( binding = 1, std140 ) uniform UniformBuffer1
-            {
-                mat4 ProjectTranslateViewMatrix;
-                vec4 LightmapOffset;
-            };
-
-            void main() {
-                vec4 color;
-
-                vec3 dir = VS_Dir;
-
-                dir.y *= 3;
-                dir.xz /= length(dir);
-                dir.x = -dir.x;
-
-                const float speed1 = 0.4;
-                const float speed2 = 0.2;
-
-                vec2 tc1 = dir.xz + vec2( Timers.y * speed1 );
-                vec2 tc2 = dir.xz + vec2( Timers.y * speed2 );
-
-                color  = texture( colorTex, vec3(tc1,0) );
-                color += texture( colorTex, vec3(tc2,1) );
-
-                FS_FragColor = pow( color, vec4(1.0/2.2) );
-            }
-
-            );
-
-
-    int vertexSourceLength = strlen( vertexSourceCode )+1;
-    int fragmentSourceLength = strlen( fragmentSourceCode )+1;
-
-    int size = sizeof( FMaterialBuildData )
-            - sizeof( FMaterialBuildData::ShaderData )
-            + vertexSourceLength
-            + fragmentSourceLength;
-
-    FMaterialBuildData * buildData = ( FMaterialBuildData * )GMainMemoryZone.AllocCleared( size, 1 );
-
-    buildData->Size = size;
-    buildData->Type = MATERIAL_TYPE_UNLIT;
-
-    buildData->NumSamplers = 1;
-
-    buildData->Samplers[0].Filter = TEXTURE_FILTER_LINEAR;
-
-    buildData->VertexSourceOffset = 0;
-    buildData->VertexSourceLength = vertexSourceLength;
-
-    buildData->FragmentSourceOffset = vertexSourceLength;
-    buildData->FragmentSourceLength = fragmentSourceLength;
-
-    memcpy( &buildData->ShaderData[buildData->VertexSourceOffset], vertexSourceCode, vertexSourceLength );
-    memcpy( &buildData->ShaderData[buildData->FragmentSourceOffset], fragmentSourceCode, fragmentSourceLength );
-
-    SkyMaterial = NewObject< FMaterial >();
-    SkyMaterial->Initialize( buildData );
-
-    GMainMemoryZone.Dealloc( buildData );
-}
-#endif
-#if 0
-void FGameModule::CreateSkinMaterial() {
-    const char * vertexSourceCode = AN_STRINGIFY(
-
-            out gl_PerVertex
-            {
-                vec4 gl_Position;
-//                float gl_PointSize;
-//                float gl_ClipDistance[];
-            };
-
-            layout( location = 0 ) out vec2 VS_TexCoord;
-
-            layout( binding = 0, std140 ) uniform UniformBuffer0
-            {
-                mat4 ProjectTranslateViewMatrix;
-                vec4 Timers;
-             };
-
-            void main() {
-                gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
-                VS_TexCoord = InTexCoord;
-            }
-
-            );
-
-    const char * fragmentSourceCode = AN_STRINGIFY(
-
-            layout( location = 0 ) in vec2 VS_TexCoord;
-            layout( location = 0 ) out vec4 FS_FragColor;
-
-            layout( binding = 0 ) uniform sampler2D colorTex;
-
-            void main() {
-                vec4 color = texture( colorTex, VS_TexCoord );
-
-                FS_FragColor = pow( color, vec4(1.0/2.2) );
-            }
-
-            );
-
-
-    int vertexSourceLength = strlen( vertexSourceCode )+1;
-    int fragmentSourceLength = strlen( fragmentSourceCode )+1;
-
-    int size = sizeof( FMaterialBuildData )
-            - sizeof( FMaterialBuildData::ShaderData )
-            + vertexSourceLength
-            + fragmentSourceLength;
-
-    FMaterialBuildData * buildData = ( FMaterialBuildData * )GMainMemoryZone.AllocCleared( size, 1 );
-
-    buildData->Size = size;
-    buildData->Type = MATERIAL_TYPE_UNLIT;
-
-    buildData->NumSamplers = 1;
-
-    FSamplerDesc & desc = buildData->Samplers[0];
-    desc.TextureType = TEXTURE_2D;
-    desc.Filter = TEXTURE_FILTER_MIPMAP_NEAREST;
-    desc.AddressU = TEXTURE_SAMPLER_WRAP;
-    desc.AddressV = TEXTURE_SAMPLER_WRAP;
-    desc.AddressW = TEXTURE_SAMPLER_WRAP;
-    desc.MipLODBias = 0;
-    desc.Anisotropy = 16;
-    desc.MinLod = -1000;
-    desc.MaxLod = 1000;
-
-    buildData->VertexSourceOffset = 0;
-    buildData->VertexSourceLength = vertexSourceLength;
-
-    buildData->FragmentSourceOffset = vertexSourceLength;
-    buildData->FragmentSourceLength = fragmentSourceLength;
-
-    memcpy( &buildData->ShaderData[buildData->VertexSourceOffset], vertexSourceCode, vertexSourceLength );
-    memcpy( &buildData->ShaderData[buildData->FragmentSourceOffset], fragmentSourceCode, fragmentSourceLength );
-
-    SkinMaterial = NewObject< FMaterial >();
-    SkinMaterial->Initialize( buildData );
-
-    GMainMemoryZone.Dealloc( buildData );
-}
-
-#endif
-
 void FGameModule::CreateWallMaterial() {
     FMaterialProject * proj = NewObject< FMaterialProject >();
 
@@ -586,11 +286,8 @@ void FGameModule::CreateWallMaterial() {
     FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
     //FMaterialInLightmapTexCoordBlock * inLightmapTexCoordBlock = proj->NewBlock< FMaterialInLightmapTexCoordBlock >();
 
-    FMaterialProjectionBlock * projectionBlock = proj->NewBlock< FMaterialProjectionBlock >();
-    projectionBlock->Vector->Connect( inPositionBlock, "Value" );
-
     FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-    materialVertexStage->Position->Connect( projectionBlock, "Result" );
+    materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
     materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
     //materialVertexStage->AddNextStageVariable( "LightmapTexCoord", AT_Float2 );
@@ -643,29 +340,52 @@ void FGameModule::CreateWallMaterial() {
     FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
     builder->VertexStage = materialVertexStage;
     builder->FragmentStage = materialFragmentStage;
-    builder->MaterialType = MATERIAL_TYPE_LIGHTMAP;
-    //builder->MaterialType = MATERIAL_TYPE_VERTEX_LIGHT;
+    builder->MaterialType = MATERIAL_TYPE_PBR;
     builder->RegisterTextureSlot( diffuseTexture );
-    //builder->RegisterTextureSlot( lightmapTexture );
     WallMaterial = builder->Build();
-
-//    FDocument document;
-//    int object = proj->Serialize( document );
-//    GLogger.Print( document.ObjectToString( object ).ToConstChar() );
-//    GLogger.Printf( "breakpoint\n" );
 }
-#if 1
+
 void FGameModule::CreateSkyMaterial() {
+#if 0
     FMaterialProject * proj = NewObject< FMaterialProject >();
 
     //
     // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
     //
-    FMaterialInPositionBlock * InPosition = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialProjectionBlock * projectionBlock = proj->NewBlock< FMaterialProjectionBlock >();
-    projectionBlock->Vector->Connect( InPosition, "Value" );
+    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
     FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-    materialVertexStage->Position->Connect( projectionBlock, "Result" );
+
+    //
+    // VS_Dir = InPosition - ViewPostion.xyz;
+    //
+    FMaterialInViewPositionBlock * inViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
+    FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
+    positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
+    positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
+    materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
+    FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
+    NSV_Dir->Connect( positionMinusViewPosition, "Result" );
+
+    FMaterialAtmosphereBlock * atmo = proj->NewBlock< FMaterialAtmosphereBlock >();
+    atmo->Dir->Connect( materialVertexStage, "Dir" );
+
+    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+    materialFragmentStage->Color->Connect( atmo, "Result" );
+
+    FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+    builder->VertexStage = materialVertexStage;
+    builder->FragmentStage = materialFragmentStage;
+    builder->MaterialType = MATERIAL_TYPE_UNLIT;
+    SkyMaterial = builder->Build();
+#else
+    FMaterialProject * proj = NewObject< FMaterialProject >();
+
+    //
+    // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
+    //
+    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
+    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+    materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
     //
     // VS_TexCoord = InTexCoord;
@@ -680,7 +400,7 @@ void FGameModule::CreateSkyMaterial() {
     //
     FMaterialInViewPositionBlock * InViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
     FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
-    positionMinusViewPosition->ValueA->Connect( InPosition, "Value" );
+    positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
     positionMinusViewPosition->ValueB->Connect( InViewPosition, "Value" );
     materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
     FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
@@ -741,89 +461,6 @@ void FGameModule::CreateSkyMaterial() {
     tc2->ValueA->Connect( tc, "Result" );
     tc2->ValueB->Connect( t2, "Result" );
 
-#if 0
-    // float tc1_fract_x = fract( tc1.x )
-    FMaterialDecomposeVectorBlock * tc1_x = proj->NewBlock< FMaterialDecomposeVectorBlock >();
-    tc1_x->Vector->Connect( tc1, "Result" );
-    FMaterialFractBlock * tc1_fract_x = proj->NewBlock< FMaterialFractBlock >();
-    tc1_fract_x->Value->Connect( tc1_x, "X" );
-
-    // float tc2_fract_x = fract( tc2.x )
-    FMaterialDecomposeVectorBlock * tc2_x = proj->NewBlock< FMaterialDecomposeVectorBlock >();
-    tc2_x->Vector->Connect( tc2, "Result" );
-    FMaterialFractBlock * tc2_fract_x = proj->NewBlock< FMaterialFractBlock >();
-    tc2_fract_x->Value->Connect( tc2_x, "X" );
-
-    // const float half = 0.5;
-    FMaterialFloatBlock * half = proj->NewBlock< FMaterialFloatBlock >();
-    half->Value = 0.5;
-
-    // const float zero = 0.0;
-    FMaterialFloatBlock * zero = proj->NewBlock< FMaterialFloatBlock >();
-    zero->Value = 0.0;
-
-    // float tc1_step = step( fract( tc1.x ), 0.5 )
-    FMaterialStepBlock * tc1_step = proj->NewBlock< FMaterialStepBlock >();
-    tc1_step->ValueA->Connect( tc1_fract_x, "Result" );
-    tc1_step->ValueB->Connect( half, "Value" );
-
-    // float tc2_step = step( 0.5, fract( tc2.x ) )
-    FMaterialStepBlock * tc2_step = proj->NewBlock< FMaterialStepBlock >();
-    tc2_step->ValueA->Connect( half, "Value" );
-    tc2_step->ValueB->Connect( tc2_fract_x, "Result" );
-
-    // tc1_step_half = tc1_step * 0.5
-    FMaterialMulBlock * tc1_step_half = proj->NewBlock< FMaterialMulBlock >();
-    tc1_step_half->ValueA->Connect( tc1_step, "Result" );
-    tc1_step_half->ValueB->Connect( half, "Value" );
-
-    // tc2_step_half = tc2_step * 0.5
-    FMaterialMulBlock * tc2_step_half = proj->NewBlock< FMaterialMulBlock >();
-    tc2_step_half->ValueA->Connect( tc2_step, "Result" );
-    tc2_step_half->ValueB->Connect( half, "Value" );
-
-    // vec1 = vec2( tc1_step_half, 0 )
-    FMaterialMakeVectorBlock * vec1 = proj->NewBlock< FMaterialMakeVectorBlock >();
-    vec1->X->Connect( tc1_step_half, "Result" );
-    vec1->Y->Connect( zero, "Value" );
-
-    // vec2 = vec2( tc2_step_half, 0 )
-    FMaterialMakeVectorBlock * vec2 = proj->NewBlock< FMaterialMakeVectorBlock >();
-    vec2->X->Connect( tc2_step_half, "Result" );
-    vec2->Y->Connect( zero, "Value" );
-
-    // result_tc1 = tc1 + vec1
-    FMaterialAddBlock * result_tc1 = proj->NewBlock< FMaterialAddBlock >();
-    result_tc1->ValueA->Connect( tc1, "Result" );
-    result_tc1->ValueB->Connect( vec1, "Result" );
-
-    // result_tc2 = tc2 + vec2
-    FMaterialAddBlock * result_tc2 = proj->NewBlock< FMaterialAddBlock >();
-    result_tc2->ValueA->Connect( tc2, "Result" );
-    result_tc2->ValueB->Connect( vec2, "Result" );
-
-    FMaterialTextureSlotBlock * skyTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
-    skyTexture->Filter = TEXTURE_FILTER_LINEAR;
-
-    // color1 = texture( colorTex, tc1 );
-    FMaterialSamplerBlock * color1 = proj->NewBlock< FMaterialSamplerBlock >();
-    color1->TexCoord->Connect( result_tc1, "Result" );
-    color1->TextureSlot->Connect( skyTexture, "Value" );
-
-    // color2 = texture( colorTex, tc2 );
-    FMaterialSamplerBlock * color2 = proj->NewBlock< FMaterialSamplerBlock >();
-    color2->TexCoord->Connect( result_tc2, "Result" );
-    color2->TextureSlot->Connect( skyTexture, "Value" );
-
-    // resultColor = color1 + color2
-    FMaterialAddBlock * resultColor = proj->NewBlock< FMaterialAddBlock >();
-    resultColor->ValueA->Connect( color1, "RGBA" );
-    resultColor->ValueB->Connect( color2, "RGBA" );
-
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
-    materialFragmentStage->Color->Connect( resultColor, "Result" );
-#endif
-
     FMaterialTextureSlotBlock * skyTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
     skyTexture->Filter = TEXTURE_FILTER_LINEAR;
     skyTexture->TextureType = TEXTURE_2D_ARRAY;
@@ -881,23 +518,18 @@ void FGameModule::CreateSkyMaterial() {
     builder->RegisterTextureSlot( skyTexture );
     SkyMaterial = builder->Build();
 
-//    FDocument document;
-//    int object = proj->Serialize( document );
-//    GLogger.Print( document.ObjectToString( object ).ToConstChar() );
-    GLogger.Printf( "breakpoint\n" );
-}
 #endif
+}
+
 void FGameModule::CreateSkyboxMaterial() {
     FMaterialProject * proj = NewObject< FMaterialProject >();
 
     //
     // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
     //
-    FMaterialInPositionBlock * InPosition = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialProjectionBlock * projectionBlock = proj->NewBlock< FMaterialProjectionBlock >();
-    projectionBlock->Vector->Connect( InPosition, "Value" );
+    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
     FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-    materialVertexStage->Position->Connect( projectionBlock, "Result" );
+    materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
     //
     // VS_TexCoord = InTexCoord;
@@ -912,7 +544,7 @@ void FGameModule::CreateSkyboxMaterial() {
     //
     FMaterialInViewPositionBlock * InViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
     FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
-    positionMinusViewPosition->ValueA->Connect( InPosition, "Value" );
+    positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
     positionMinusViewPosition->ValueB->Connect( InViewPosition, "Value" );
     materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
     FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
@@ -944,41 +576,6 @@ void FGameModule::CreateSkyboxMaterial() {
     GLogger.Printf( "breakpoint\n" );
 }
 
-void FGameModule::CreateWallVertexLightMaterial() {
-    FMaterialProject * proj = NewObject< FMaterialProject >();
-
-    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
-
-    FMaterialProjectionBlock * projectionBlock = proj->NewBlock< FMaterialProjectionBlock >();
-    projectionBlock->Vector->Connect( inPositionBlock, "Value" );
-
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-    materialVertexStage->Position->Connect( projectionBlock, "Result" );
-
-    materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
-
-    FAssemblyNextStageVariable * texCoord = materialVertexStage->FindNextStageVariable( "TexCoord" );
-    texCoord->Connect( inTexCoordBlock, "Value" );
-
-    FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
-    diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
-
-    FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
-    diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
-    diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
-
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
-    materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
-
-    FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-    builder->VertexStage = materialVertexStage;
-    builder->FragmentStage = materialFragmentStage;
-    builder->MaterialType = MATERIAL_TYPE_VERTEX_LIGHT;
-    builder->RegisterTextureSlot( diffuseTexture );
-    WallVertexLightMaterial = builder->Build();
-}
-
 //static FMaterial * CreateHudMaterial( FBaseObject * _Parent ) {
 //    FMaterialProject * proj = _Parent->NewObject< FMaterialProject >();
 
@@ -986,11 +583,8 @@ void FGameModule::CreateWallVertexLightMaterial() {
 //    FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
 //    FMaterialInColorBlock * inColorBlock = proj->NewBlock< FMaterialInColorBlock >();
 
-//    FMaterialProjectionBlock * projectionBlock = proj->NewBlock< FMaterialProjectionBlock >();
-//    projectionBlock->Vector->Connect( inPositionBlock, "Value" );
-
 //    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-//    materialVertexStage->Position->Connect( projectionBlock, "Result" );
+//    materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
 //    materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
 //    materialVertexStage->AddNextStageVariable( "Color", AT_Float4 );
