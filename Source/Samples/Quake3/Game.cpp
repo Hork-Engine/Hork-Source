@@ -66,7 +66,7 @@ void FGameModule::OnGameStart() {
 
     SpawnWorld();
 
-    LoadQuakeMap( "pak0.pk3", "maps/q3ctf3.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3ctf3.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3dm5.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3ctf2.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3dm14.bsp" );
@@ -81,7 +81,7 @@ void FGameModule::OnGameStart() {
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/asylum.bsp" );
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/gospelcrossings.bsp" );
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/aerowalk.bsp" );
-    //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/warehouse.bsp" );
+    LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/warehouse.bsp" );
 }
 
 void FGameModule::OnGameEnd() {
@@ -119,6 +119,7 @@ void FGameModule::SetInputMappings() {
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
 }
 
 void FGameModule::SpawnWorld() {

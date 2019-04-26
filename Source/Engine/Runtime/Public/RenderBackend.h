@@ -161,20 +161,20 @@ enum ETextureFilter {
     TEXTURE_FILTER_MIPMAP_TRILINEAR
 };
 
-enum ESamplerAddress {
-    TEXTURE_SAMPLER_WRAP,
-    TEXTURE_SAMPLER_MIRROR,
-    TEXTURE_SAMPLER_CLAMP,
-    TEXTURE_SAMPLER_BORDER,
-    TEXTURE_SAMPLER_MIRROR_ONCE
+enum ETextureAddress {
+    TEXTURE_ADDRESS_WRAP,
+    TEXTURE_ADDRESS_MIRROR,
+    TEXTURE_ADDRESS_CLAMP,
+    TEXTURE_ADDRESS_BORDER,
+    TEXTURE_ADDRESS_MIRROR_ONCE
 };
 
 struct FSamplerDesc {
     ETextureType TextureType;
     ETextureFilter Filter;
-    ESamplerAddress AddressU;
-    ESamplerAddress AddressV;
-    ESamplerAddress AddressW;
+    ETextureAddress AddressU;
+    ETextureAddress AddressV;
+    ETextureAddress AddressW;
     float MipLODBias;
     float Anisotropy;
     float MinLod;
@@ -641,6 +641,8 @@ struct FMaterialBuildData {
     // during rendering.
     bool bNoVertexDeform;
 
+    int NumUniformVectors;
+
     // TODO:
     // Surface specific for tricks with depth buffer
     //enum ESurfaceSpecific {
@@ -734,6 +736,8 @@ struct FMaterialInstanceFrameData {
     FRenderProxy_Material * Material;
     FRenderProxy_Texture * Textures[MAX_MATERIAL_TEXTURES];
     int NumTextures;
+    Float4 UniformVectors[4];
+    int NumUniformVectors;
 };
 
 enum FCanvasDrawCmd {
@@ -932,6 +936,8 @@ struct FRenderBackend {
     void ( *RenderFrame )( FRenderFrame * _FrameData );
     void ( *CleanupFrame )( FRenderFrame * _FrameData );
     void ( *SwapBuffers )();
+    void ( *SetGPUEvent )();
+    void ( *WaitGPU )();
     FRenderBackend * Next;
 };
 

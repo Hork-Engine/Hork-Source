@@ -41,7 +41,7 @@ enum EVSDPass {
     VSD_PASS_IGNORE     = 0,
     VSD_PASS_ALL        = ~0,
     VSD_PASS_PORTALS    = 1,
-    VSD_FACE_CULL       = 2,
+    VSD_PASS_FACE_CULL  = 2,
     VSD_PASS_BOUNDS     = 4,
     VSD_PASS_CUSTOM_VISIBLE_STEP = 8,
     VSD_PASS_VIS_MARKER = 16,
@@ -124,6 +124,12 @@ public:
     // Set indexed mesh for the component
     void SetMesh( FIndexedMesh * _Mesh );
 
+    // Set indexed mesh for the component
+    void SetMesh( const char * _Mesh );
+
+    // Set indexed mesh for the component
+    void SetMesh( FString const & _Mesh ) { SetMesh( _Mesh.ToConstChar() ); }
+
     // Get indexed mesh
     FIndexedMesh * GetMesh() const { return Mesh; }
 
@@ -152,8 +158,7 @@ protected:
     FMeshComponent();
 
     void InitializeComponent() override;
-    void BeginPlay() override;
-    void EndPlay() override;
+    void DeinitializeComponent() override;
 
 private:
     FMeshComponent * Next;

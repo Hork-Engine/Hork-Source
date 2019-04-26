@@ -37,7 +37,9 @@ FPawn::FPawn() {
 }
 
 void FPawn::BeginPlay() {
+    Super::BeginPlay();
 }
 
 void FPawn::EndPlay() {
+    Super::EndPlay();
 }

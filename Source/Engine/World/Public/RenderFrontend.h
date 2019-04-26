@@ -59,12 +59,14 @@ public:
 
     int GetVisMarker() const { return VisMarker; }
 
-    void BuildFrameData( FCanvas * _Convas );
+    void BuildFrameData( FCanvas * _Convas, struct ImDrawData * _DrawData );
 
     //int64_t RenderTimeDelta() const { return GRuntime.GetFrameData()->RenderTimeDelta; }
 
     int GetPolyCount() const { return PolyCount; }
     int GetFrontendTime() const { return FrontendTime; }
+
+    void WriteDrawList( struct ImDrawList const * _DrawList );
 
 private:
     void WriteDrawList( FCanvas * _Canvas );

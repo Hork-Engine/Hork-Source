@@ -97,6 +97,21 @@ public:
     FObjectFactory const * Factory() const { return pFactory; }
     FAttributeMeta const * GetAttribList() const { return AttributesHead; }
     FPrecacheMeta const * GetPrecacheList() const { return PrecacheHead; }
+
+    bool IsSubclassOf( FClassMeta const & _Superclass ) const {
+        for ( FClassMeta const * meta = this ; meta ; meta = meta->SuperClass() ) {
+            if ( meta->GetId() == _Superclass.GetId() ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    template< typename _Superclass >
+    bool IsSubclassOf() const {
+        return IsSubclassOf( _Superclass::ClassMeta() );
+    }
+
     // TODO: class flags?
 
     virtual FDummy * CreateInstance() const = 0;
@@ -161,6 +176,7 @@ enum class EAttributeType {
     T_Float2,
     T_Float3,
     T_Float4,
+    T_Quat,
     T_String,
 
     T_Max
@@ -191,6 +207,9 @@ template<>
 AN_FORCEINLINE EAttributeType GetAttributeType< Float4 >() { return EAttributeType::T_Float4; }
 
 template<>
+AN_FORCEINLINE EAttributeType GetAttributeType< Quat >() { return EAttributeType::T_Quat; }
+
+template<>
 AN_FORCEINLINE EAttributeType GetAttributeType< FString const & >() { return EAttributeType::T_String; }
 
 template<>
@@ -203,6 +222,7 @@ AN_FORCEINLINE FString AttrToString( float const & v ) { return Int( *( (int *)&
 AN_FORCEINLINE FString AttrToString( Float2 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString(); }
 AN_FORCEINLINE FString AttrToString( Float3 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString(); }
 AN_FORCEINLINE FString AttrToString( Float4 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString() + " " + Int( *( (int *)&v.W ) ).ToString(); }
+AN_FORCEINLINE FString AttrToString( Quat const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString() + " " + Int( *( (int *)&v.W ) ).ToString(); }
 AN_FORCEINLINE FString AttrToString( FString const & v ) { return v; }
 
 template< typename T >
@@ -231,57 +251,44 @@ AN_FORCEINLINE float AttrFromString< float >( FString const & v ) {
 
 template<>
 AN_FORCEINLINE Float2 AttrFromString< Float2 >( FString const & v ) {
-    Float2 val(0.0f);
-    FString tmp = v;
-    int n = 0;
-    for ( char * s = tmp.ToPtr(), * w = s ; *s && n < val.NumComponents() ; s++ ) {
-        if ( *s == ' ' ) {
-            *s = '\0';
-
-            int i = Int().FromString( w );
-
-            val[n] = *( float * )&i;
-
-            w = s + 1;
-        }
+    Float2 val;
+    int tmp[2];
+    sscanf( v.ToConstChar(), "%d %d", &tmp[0], &tmp[1] );
+    for ( int i = 0 ; i < 2 ; i++ ) {
+        val[i] = *( float * )&tmp[i];
     }
     return val;
 }
 
 template<>
 AN_FORCEINLINE Float3 AttrFromString< Float3 >( FString const & v ) {
-    Float3 val(0.0f);
-    FString tmp = v;
-    int n = 0;
-    for ( char * s = tmp.ToPtr(), * w = s ; *s && n < val.NumComponents() ; s++ ) {
-        if ( *s == ' ' ) {
-            *s = '\0';
-
-            int i = Int().FromString( w );
-
-            val[n] = *( float * )&i;
-
-            w = s + 1;
-        }
+    Float3 val;
+    int tmp[3];
+    sscanf( v.ToConstChar(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2] );
+    for ( int i = 0 ; i < 3 ; i++ ) {
+        val[i] = *( float * )&tmp[i];
     }
     return val;
 }
 
 template<>
 AN_FORCEINLINE Float4 AttrFromString< Float4 >( FString const & v ) {
-    Float4 val(0.0f);
-    FString tmp = v;
-    int n = 0;
-    for ( char * s = tmp.ToPtr(), * w = s ; *s && n < val.NumComponents() ; s++ ) {
-        if ( *s == ' ' ) {
-            *s = '\0';
+    Float4 val;
+    int tmp[4];
+    sscanf( v.ToConstChar(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
+    for ( int i = 0 ; i < 4 ; i++ ) {
+        val[i] = *( float * )&tmp[i];
+    }
+    return val;
+}
 
-            int i = Int().FromString( w );
-
-            val[n] = *( float * )&i;
-
-            w = s + 1;
-        }
+template<>
+AN_FORCEINLINE Quat AttrFromString< Quat >( FString const & v ) {
+    Quat val;
+    int tmp[4];
+    sscanf( v.ToConstChar(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
+    for ( int i = 0 ; i < 4 ; i++ ) {
+        val[i] = *( float * )&tmp[i];
     }
     return val;
 }
@@ -347,6 +354,54 @@ public:
 
     void CopyValue( FDummy const * _Src, FDummy * _Dst ) const {
         Copy( _Src, _Dst );
+    }
+
+    byte GetByteValue( FDummy * _Object ) const {
+        FString s;
+        ToString( _Object, s );
+        return AttrFromString< byte >( s );
+    }
+
+    bool GetBoolValue( FDummy * _Object ) const {
+        FString s;
+        ToString( _Object, s );
+        return AttrFromString< bool >( s );
+    }
+
+    int GetIntValue( FDummy * _Object ) const {
+        FString s;
+        ToString( _Object, s );
+        return AttrFromString< int >( s );
+    }
+
+    float GetFloatValue( FDummy * _Object ) const {
+        FString s;
+        ToString( _Object, s );
+        return AttrFromString< float >( s );
+    }
+
+    Float2 GetFloat2Value( FDummy * _Object ) const {
+        FString s;
+        ToString( _Object, s );
+        return AttrFromString< Float2 >( s );
+    }
+
+    Float3 GetFloat3Value( FDummy * _Object ) const {
+        FString s;
+        ToString( _Object, s );
+        return AttrFromString< Float3 >( s );
+    }
+
+    Float4 GetFloat4Value( FDummy * _Object ) const {
+        FString s;
+        ToString( _Object, s );
+        return AttrFromString< Float4 >( s );
+    }
+
+    Quat GetQuatValue( FDummy * _Object ) const {
+        FString s;
+        ToString( _Object, s );
+        return AttrFromString< Quat >( s );
     }
 
 private:

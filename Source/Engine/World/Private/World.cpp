@@ -48,6 +48,77 @@ void FActorSpawnParameters::SetTemplate( FActor const * _Template ) {
     Template = _Template;
 }
 
+#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
+#include <btBulletDynamicsCommon.h>
+#include "BulletCompatibility/BulletCompatibility.h"
+
+class FPhysicsDebugDraw : public btIDebugDraw {
+public:
+    FDebugDraw * DD;
+    int DebugMode;
+
+    //enum	DebugDrawModes
+    //{
+    //	DBG_NoDebug=0,
+    //	DBG_DrawWireframe = 1,
+    //	DBG_DrawAabb=2,
+    //	DBG_DrawFeaturesText=4,
+    //	DBG_DrawContactPoints=8,
+    //	DBG_NoDeactivation=16,
+    //	DBG_NoHelpText = 32,
+    //	DBG_DrawText=64,
+    //	DBG_ProfileTimings = 128,
+    //	DBG_EnableSatComparison = 256,
+    //	DBG_DisableBulletLCP = 512,
+    //	DBG_EnableCCD = 1024,
+    //	DBG_DrawConstraints = (1 << 11),
+    //	DBG_DrawConstraintLimits = (1 << 12),
+    //	DBG_FastWireframe = (1<<13),
+    //	DBG_DrawNormals = (1<<14),
+    //	DBG_DrawFrames = (1<<15),
+    //	DBG_MAX_DEBUG_DRAW_MODE
+    //};
+
+    virtual void drawLine( btVector3 const & from, btVector3 const & to, btVector3 const & color ) {
+        DD->SetColor( color.x(), color.y(), color.z(), 1.0f );
+        DD->DrawLine( btVectorToFloat3( from ), btVectorToFloat3( to ) );
+    }
+
+    virtual void drawContactPoint( btVector3 const & pointOnB, btVector3 const & normalOnB, btScalar distance, int lifeTime, btVector3 const & color ) {
+        DD->SetColor( color.x(), color.y(), color.z(), 1.0f );
+        DD->DrawPoint( btVectorToFloat3( pointOnB ) );
+        DD->DrawPoint( btVectorToFloat3( normalOnB ) );
+    }
+
+    virtual void reportErrorWarning( const char * warningString ) {
+    }
+
+    virtual void draw3dText( btVector3 const & location, const char * textString ) {
+    }
+
+    virtual void setDebugMode( int debugMode ) {
+        DebugMode = debugMode;
+    }
+
+    virtual int getDebugMode() const {
+        return DebugMode;
+    }
+
+    virtual void flushLines() {
+    }
+};
+
+static FPhysicsDebugDraw PhysicsDebugDraw;
+
+
+void FWorld::PrePhysicsTick( btDynamicsWorld * _World, float _TimeStep ) {
+    static_cast< FWorld * >( _World->getWorldUserInfo() )->PrePhysicsTick( _TimeStep );
+}
+
+void FWorld::PhysicsTick( btDynamicsWorld * _World, float _TimeStep ) {
+    static_cast< FWorld * >( _World->getWorldUserInfo() )->PhysicsTick( _TimeStep );
+}
+
 FWorld::FWorld() {
     PersistentLevel = NewObject< FLevel >();
     PersistentLevel->AddRef();
@@ -55,6 +126,30 @@ FWorld::FWorld() {
     PersistentLevel->bIsPersistent = true;
     PersistentLevel->IndexInArrayOfLevels = ArrayOfLevels.Length();
     ArrayOfLevels.Append( PersistentLevel );
+
+    GravityVector = Float3( 0.0f, -9.81f, 0.0f );
+
+    PhysicsBroadphase = new btDbvtBroadphase(); // TODO: AxisSweep3Internal?
+    CollisionConfiguration = new btDefaultCollisionConfiguration();
+    CollisionDispatcher = new btCollisionDispatcher( CollisionConfiguration );
+    ConstraintSolver = new btSequentialImpulseConstraintSolver;
+    PhysicsWorld = new btSoftRigidDynamicsWorld( CollisionDispatcher, PhysicsBroadphase, ConstraintSolver, CollisionConfiguration, /* SoftBodySolver */ 0 );
+    PhysicsWorld->setGravity( btVectorToFloat3( GravityVector ) );
+    PhysicsWorld->getDispatchInfo().m_useContinuous = true;
+    PhysicsWorld->getSolverInfo().m_splitImpulse = GGameMaster.bContactSolverSplitImpulse;
+    PhysicsWorld->getSolverInfo().m_numIterations = GGameMaster.NumContactSolverIterations;
+    PhysicsWorld->setDebugDrawer( &PhysicsDebugDraw );
+    PhysicsWorld->setInternalTickCallback( PrePhysicsTick, static_cast< void * >( this ), true );
+    PhysicsWorld->setInternalTickCallback( PhysicsTick, static_cast< void * >( this ), false );
+}
+
+void FWorld::SetGravityVector( Float3 const & _Gravity ) {
+    GravityVector = _Gravity;
+    bGravityDirty = true;
+}
+
+Float3 const & FWorld::GetGravityVector() const {
+    return GravityVector;
 }
 
 void FWorld::Destroy() {
@@ -80,6 +175,12 @@ void FWorld::Destroy() {
         level->RemoveRef();
     }
     ArrayOfLevels.Clear();
+
+    delete PhysicsWorld;
+    delete ConstraintSolver;
+    delete CollisionDispatcher;
+    delete CollisionConfiguration;
+    delete PhysicsBroadphase;
 
     EndPlay();
 }
@@ -287,12 +388,92 @@ void FWorld::Tick( float _TimeStep ) {
         }
     }
 
+    SimulatePhysics( _TimeStep );
+
     KickoffPendingKillObjects();
 
     WorldLocalTime += _TimeStep;
     if ( !GGameMaster.IsGamePaused() ) {
         WorldPlayTime += _TimeStep;
     }
+}
+
+void FWorld::PrePhysicsTick( float _TimeStep ) {
+    for ( FActor * actor : Actors ) {
+        if ( actor->IsPendingKill() ) {
+            continue;
+        }
+
+        if ( actor->bCanEverTick && actor->bPrePhysicsTick ) {
+
+            if ( GGameMaster.IsGamePaused() && !actor->bTickEvenWhenPaused ) {
+                continue;
+            }
+
+            //actor->PrePhysicsTickComponents( _TimeStep );
+            actor->PrePhysicsTick( _TimeStep );
+
+            //actor->LifeTime += _TimeStep;
+            //if ( actor->LifeSpan > 0.0f && actor->LifeTime > actor->LifeSpan ) {
+            //    actor->Destroy();
+            //}
+        }
+    }
+}
+
+void FWorld::PhysicsTick( float _TimeStep ) {
+
+}
+
+void FWorld::SimulatePhysics( float _TimeStep ) {
+    //DelayedWorldTransforms.clear();
+
+    if ( GGameMaster.IsGamePaused() ) {
+        return;
+    }
+
+    const float FixedTimeStep = 1.0f / GGameMaster.PhysicsHertz;
+    int numSimulationSteps = int( _TimeStep * GGameMaster.PhysicsHertz ) + 1.0f;
+    //numSimulationSteps = FMath::Min( numSimulationSteps, MAX_SIMULATION_STEPS );
+
+    btContactSolverInfo & contactSolverInfo = PhysicsWorld->getSolverInfo();
+    contactSolverInfo.m_numIterations = GGameMaster.NumContactSolverIterations;
+    if ( contactSolverInfo.m_numIterations < 1 ) contactSolverInfo.m_numIterations = 1;
+    else if ( contactSolverInfo.m_numIterations > 256 ) contactSolverInfo.m_numIterations = 256;
+    contactSolverInfo.m_splitImpulse = GGameMaster.bContactSolverSplitImpulse;
+
+    if ( bGravityDirty ) {
+        PhysicsWorld->setGravity( btVectorToFloat3( GravityVector ) );
+        bGravityDirty = false;
+    }
+
+    bPhysicsSimulating = true;
+    if ( GGameMaster.bEnablePhysicsInterpolation ) {
+        TimeAccumulation = 0;
+        PhysicsWorld->stepSimulation( _TimeStep, numSimulationSteps, FixedTimeStep );
+    } else {
+        TimeAccumulation += _TimeStep;
+        while ( TimeAccumulation >= FixedTimeStep && numSimulationSteps > 0 ) {
+            PhysicsWorld->stepSimulation( FixedTimeStep, 0, FixedTimeStep );
+            TimeAccumulation -= FixedTimeStep;
+            --numSimulationSteps;
+        }
+    }
+    bPhysicsSimulating = false;
+
+    //// Применить отложенные трансформации
+    //while ( !DelayedWorldTransforms.empty() ) {
+    //    for ( auto it = DelayedWorldTransforms.begin() ; it != DelayedWorldTransforms.end() ; ) {
+    //        const FDelayedWorldTransform & Transform = it->second;
+
+    //        if ( DelayedWorldTransforms.find( Transform.ParentRigidBody ) == DelayedWorldTransforms.end() ) {
+    //            Transform.RigidBody->ApplyWorldTransform( Transform.WorldPosition, Transform.WorldRotation );
+    //            it = DelayedWorldTransforms.erase( it );
+    //        } else {
+    //            it++;
+    //        }
+    //    }
+    //}
 }
 
 void FWorld::KickoffPendingKillObjects() {
@@ -509,6 +690,32 @@ void FWorld::DrawDebug( FDebugDraw * _DebugDraw ) {
     for ( FActor * actor : Actors ) {
         actor->DrawDebug( _DebugDraw );
     }
+
+    _DebugDraw->SetDepthTest( false );
+    PhysicsDebugDraw.DD = _DebugDraw;
+
+    int Mode = 0;
+    //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_COLLISION_SHAPES_WIREFRANE ) {
+        Mode |= FPhysicsDebugDraw::DBG_DrawWireframe;
+    //}
+    //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_COLLISION_SHAPE_AABBs ) {
+        Mode |= FPhysicsDebugDraw::DBG_DrawAabb;
+    //}
+    //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_CONTACT_POINTS ) {
+        Mode |= FPhysicsDebugDraw::DBG_DrawContactPoints;
+    //}
+    //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_CONSTRAINTS ) {
+        Mode |= FPhysicsDebugDraw::DBG_DrawConstraints;
+    //}
+    //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_CONSTRAINT_LIMITS ) {
+        Mode |= FPhysicsDebugDraw::DBG_DrawConstraintLimits;
+    //}
+    //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_COLLISION_SHAPE_NORMALS ) {
+        Mode |= FPhysicsDebugDraw::DBG_DrawNormals;
+    //}
+
+    PhysicsDebugDraw.setDebugMode( Mode );
+    PhysicsWorld->debugDrawWorld();
 
     //TPodArray< FMeshVertex > Vertices;
     //TPodArray< unsigned int > Indices;

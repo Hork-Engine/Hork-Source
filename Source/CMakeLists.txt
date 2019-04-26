@@ -36,14 +36,10 @@ endif()
 option(ENABLE_SHARED "Build shared libraries" OFF)
 option(BUILD_SHARED_LIBS "Use shared libraries" OFF)
 
-option(ENGINE_CMAKE "Build engine" ON)
-
 option(AN_USE_WEB_BROWSER "Compile with CEF" OFF)
 
-option(AN_USE_ASSIMP, "Use Assimp" OFF )
 option(AN_USE_NVTT, "Use NVidia Texture Tools" OFF )
 
-set( AN_USE_ASSIMP 1 )
 set( AN_USE_NVTT 1 )
 
 if ( AN_USE_WEB_BROWSER )
@@ -378,30 +374,6 @@ set_target_properties( minizip PROPERTIES FOLDER "ThirdParty/Compression" )
 #########################################################################################
 
 #########################################################################################
-# ASSIMP
-#if ( AN_USE_ASSIMP )
-#message( "========== ASSIMP ==========" )
-#option( ASSIMP_DOUBLE_PRECISION "Set to ON to enable double precision processing" OFF )
-#option( ASSIMP_OPT_BUILD_PACKAGES "Set to ON to generate CPack configuration files and packaging targets" OFF )
-#option( ASSIMP_ANDROID_JNIIOSYSTEM "Android JNI IOSystem support is active" OFF )
-#option( ASSIMP_NO_EXPORT "Disable Assimp's export functionality." ON )
-#option( ASSIMP_BUILD_ZLIB "Build your own zlib" OFF )
-#option( ASSIMP_BUILD_ASSIMP_TOOLS "If the supplementary tools for Assimp are built in addition to the library." OFF )
-#option( ASSIMP_BUILD_SAMPLES "If the official samples are built as well (needs Glut)." OFF )
-#option( ASSIMP_BUILD_TESTS "If the test suite for Assimp is built in addition to the library." OFF )
-#option( ASSIMP_COVERALLS "Eańable this to measure test coverage." OFF )
-#option( ASSIMP_INSTALL_PDB "Install MSVC debug files." ON )
-#include_directories( ThirdParty/assimp/include )
-#add_subdirectory( ThirdParty/assimp )
-#set_target_properties(assimp PROPERTIES FOLDER "ThirdParty")
-#if (MSVC)
-#set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "ThirdParty")
-#endif(MSVC)
-#set( AN_TOOLCHAIN_LIBS ${AN_TOOLCHAIN_LIBS} assimp )
-#endif()
-#########################################################################################
-
-#########################################################################################
 # CLIPPER
 #message( "========== CLIPPER ==========" )
 #add_subdirectory( ThirdParty/Clipper )
@@ -443,39 +415,45 @@ set_target_properties( minizip PROPERTIES FOLDER "ThirdParty/Compression" )
 
 #########################################################################################
 # BULLET PHYSICS
-#message( "========== BULLET PHYSICS ==========" )
-#option( USE_DOUBLE_PRECISION "Use double precision" OFF )
-#option( USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" ON )
-#option( USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD "Use btSoftMultiBodyDynamicsWorld" OFF )
-#option( BULLET2_USE_THREAD_LOCKS "Build Bullet 2 libraries with mutex locking around certain operations" OFF )
-#option( USE_MSVC_INCREMENTAL_LINKING "Use MSVC Incremental Linking" OFF )
-#option( USE_CUSTOM_VECTOR_MATH "Use custom vectormath library" OFF )
-#option( BUILD_CPU_DEMOS "Build original Bullet CPU examples" OFF )
-#option( USE_GLUT "Use Glut" OFF )
-#option( BUILD_OPENGL3_DEMOS "Set when you want to build the OpenGL3+ demos" OFF )
-#option( BUILD_BULLET2_DEMOS "Set when you want to build the Bullet 2 demos" OFF )
-#option( BUILD_UNIT_TESTS "Build Unit Tests" OFF )
-#include_directories( ThirdParty/bullet3/src )
-#add_subdirectory( ThirdParty/bullet3 )
-#set_target_properties( BulletFileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet2FileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3Collision PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3Common PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3Dynamics PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3Geometry PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3OpenCL_clew PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( BulletCollision PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( BulletDynamics PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( BulletInverseDynamics PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( BulletInverseDynamicsUtils PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( BulletSoftBody PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( BulletWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( BulletXmlWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( ConvexDecomposition PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( GIMPACTUtils PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( HACD PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( LinearMath PROPERTIES FOLDER "ThirdParty/Physics" )
-#set( AN_BULLET_LIBS Bullet2FileLoader BulletFileLoader Bullet3Collision Bullet3Common Bullet3Dynamics Bullet3Geometry Bullet3OpenCL_clew BulletCollision BulletDynamics BulletInverseDynamics BulletInverseDynamicsUtils BulletSoftBody BulletWorldImporter BulletXmlWorldImporter ConvexDecomposition GIMPACTUtils HACD LinearMath )
+message( "========== BULLET PHYSICS ==========" )
+option( USE_DOUBLE_PRECISION "Use double precision" OFF )
+option( USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" ON )
+option( USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD "Use btSoftMultiBodyDynamicsWorld" OFF )
+option( BULLET2_USE_THREAD_LOCKS "Build Bullet 2 libraries with mutex locking around certain operations" OFF )
+option( USE_MSVC_INCREMENTAL_LINKING "Use MSVC Incremental Linking" OFF )
+option( USE_CUSTOM_VECTOR_MATH "Use custom vectormath library" OFF )
+option( BUILD_CPU_DEMOS "Build original Bullet CPU examples" OFF )
+option( USE_GLUT "Use Glut" OFF )
+option( BUILD_OPENGL3_DEMOS "Set when you want to build the OpenGL3+ demos" OFF )
+option( BUILD_BULLET2_DEMOS "Set when you want to build the Bullet 2 demos" OFF )
+option( BUILD_UNIT_TESTS "Build Unit Tests" OFF )
+
+include_directories( ThirdParty/bullet3/src )
+
+set(BUILD_SHARED_LIBS ON)
+add_subdirectory( ThirdParty/bullet3 )
+set(BUILD_SHARED_LIBS OFF)
+
+set_target_properties( LinearMath PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( BulletFileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( Bullet2FileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( Bullet3Collision PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( Bullet3Common PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( Bullet3Dynamics PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( Bullet3Geometry PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( Bullet3OpenCL_clew PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( BulletCollision PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( BulletDynamics PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( BulletInverseDynamics PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( BulletInverseDynamicsUtils PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( BulletSoftBody PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( BulletWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( BulletXmlWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( ConvexDecomposition PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( GIMPACTUtils PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( HACD PROPERTIES FOLDER "ThirdParty/Physics" )
+
+set( AN_BULLET_LIBS LinearMath Bullet2FileLoader BulletFileLoader Bullet3Collision Bullet3Common Bullet3Dynamics Bullet3Geometry Bullet3OpenCL_clew BulletCollision BulletDynamics BulletInverseDynamics BulletInverseDynamicsUtils BulletSoftBody BulletWorldImporter BulletXmlWorldImporter ConvexDecomposition GIMPACTUtils HACD )
 #########################################################################################
 
 #########################################################################################
@@ -532,6 +510,18 @@ add_subdirectory( Samples/Quake1 )
 set_target_properties( Quake1 PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/Quake3 )
 set_target_properties( Quake3 PROPERTIES FOLDER "Samples" )
+add_subdirectory( Samples/AssimpConverter )
+set_target_properties( AssimpConverter PROPERTIES FOLDER "Samples" )
+add_subdirectory( Samples/Portals )
+set_target_properties( Portals PROPERTIES FOLDER "Samples" )
+add_subdirectory( Samples/Sponza )
+set_target_properties( Sponza PROPERTIES FOLDER "Samples" )
+add_subdirectory( Samples/Physics )
+set_target_properties( Physics PROPERTIES FOLDER "Samples" )
+#add_subdirectory( Samples/TestGame )
+#set_target_properties( TestGame PROPERTIES FOLDER "Samples" )
+add_subdirectory( Samples/Airplane )
+set_target_properties( Airplane PROPERTIES FOLDER "Samples" )
 #add_subdirectory( Samples/ClusteredTest )
 #set_target_properties( ClusteredTest PROPERTIES FOLDER "Samples" )
 #add_subdirectory( Samples/SkinnedView )
@@ -548,21 +538,6 @@ set_target_properties( Quake3 PROPERTIES FOLDER "Samples" )
 #set_target_properties( DLLTest PROPERTIES FOLDER "Samples" )
 #add_subdirectory( Samples/GameDLL )
 #set_target_properties( GameDLL PROPERTIES FOLDER "Samples" )
-#########################################################################################
-
-#########################################################################################
-# GAME
-#message( "========== GAME ==========" )
-#add_subdirectory( TestGame )
-#set_target_properties( TestGame PROPERTIES FOLDER "Samples" )
-#########################################################################################
-
-
-#########################################################################################
-# GAME
-#message( "========== GAME ==========" )
-#add_subdirectory( AirplaneGame )
-#set_target_properties( AirplaneGame PROPERTIES FOLDER "Games" )
 #########################################################################################
 
 #########################################################################################

@@ -76,6 +76,9 @@ public:
     // Get reference to array of child components
     FArrayOfChildComponents const & GetChilds() const { return Childs; }
 
+    // Get parent component
+    FSceneComponent * GetParent() const { return AttachParent; }
+
     // Get socket index by name
     int FindSocket( const char * _Name ) const;
 
@@ -231,7 +234,7 @@ protected:
 
     FSceneComponent();
 
-    void EndPlay() override;
+    void DeinitializeComponent() override;
 
     virtual void OnTransformDirty() {}
 

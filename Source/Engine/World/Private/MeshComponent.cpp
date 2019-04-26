@@ -1,6 +1,7 @@
 #include <Engine/World/Public/MeshComponent.h>
 #include <Engine/World/Public/Actor.h>
 #include <Engine/World/Public/World.h>
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_CLASS_META_NO_ATTRIBS( FMeshComponent )
 
@@ -30,12 +31,8 @@ void FMeshComponent::InitializeComponent() {
     world->RegisterMesh( this );
 }
 
-void FMeshComponent::BeginPlay() {
-    Super::BeginPlay();
-}
-
-void FMeshComponent::EndPlay() {
-    Super::EndPlay();
+void FMeshComponent::DeinitializeComponent() {
+    Super::DeinitializeComponent();
 
     FWorld * world = GetParentActor()->GetWorld();
 
@@ -71,6 +68,10 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
 
     // Mark to update world bounds
     MarkWorldBoundsDirty();
+}
+
+void FMeshComponent::SetMesh( const char * _Mesh ) {
+    SetMesh( GetResource< FIndexedMesh >( _Mesh ) );
 }
 
 void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance ) {

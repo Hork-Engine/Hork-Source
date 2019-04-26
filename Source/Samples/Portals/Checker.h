@@ -38,4 +38,6 @@ class FChecker : public FPawn {
 
 protected:
     FChecker();
+
+    void Tick( float _TimeDelta ) override;
 };

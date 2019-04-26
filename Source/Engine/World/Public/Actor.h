@@ -138,6 +138,7 @@ public:
 
     bool bCanEverTick;
     bool bTickEvenWhenPaused;
+    bool bPrePhysicsTick;
 
 protected:
 
@@ -155,6 +156,8 @@ protected:
     virtual void OnActorSpawned( FActor * _SpawnedActor ) {}
 
     virtual void Tick( float _TimeStep ) {}
+
+    virtual void PrePhysicsTick( float _TimeStep ) {}
 
     virtual void DrawDebug( FDebugDraw * _DebugDraw );
 

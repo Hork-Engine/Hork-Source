@@ -333,7 +333,7 @@ private:
 
     FString FileName;
     void *  FileHandle = nullptr;
-    int     Mode = M_Closed;
+    int     Mode;
 };
 
 AN_FORCEINLINE bool FFileStream::IsOpened() const {

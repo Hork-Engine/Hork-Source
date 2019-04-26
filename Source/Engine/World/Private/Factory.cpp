@@ -37,7 +37,7 @@ AN_CLASS_META_NO_ATTRIBS( FDummy )
 
 const char * FAttributeMeta::TypeNames[ (int)EAttributeType::T_Max ] =
 {
-    "Byte", "Bool", "Int", "Float", "Float2", "Float3", "Float4", "String"
+    "Byte", "Bool", "Int", "Float", "Float2", "Float3", "Float4", "Quat", "String"
 };
 
 FObjectFactory * FObjectFactory::FactoryList = nullptr;

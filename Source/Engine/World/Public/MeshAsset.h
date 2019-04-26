@@ -45,6 +45,7 @@ struct FSubpart {
 
 struct FMaterialTexture {
     FString FileName;
+    // TODO: keep file CRC?
 };
 
 struct FMeshMaterial {
@@ -65,20 +66,19 @@ struct FMeshAsset {
     void Write( FFileStream & f );
 };
 
-struct FSkeletonAsset {
-    TPodArray< FJoint > Joints;
-
-    void Clear();
-    void Read( FFileStream & f );
-    void Write( FFileStream & f );
-};
-
 struct FSkeletalAnimationAsset {
     float FrameDelta;       // fixed time delta between frames
     int FrameCount;         // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
     TPodArray< FJointAnimation > AnimatedJoints;
     FString Name;
     TPodArray< BvAxisAlignedBox > Bounds;
+
+    void Clear();
+};
+
+struct FSkeletonAsset {
+    TPodArray< FJoint > Joints;
+    TVector< FSkeletalAnimationAsset > Animations;
 
     void Clear();
     void Read( FFileStream & f );

@@ -95,7 +95,6 @@ protected:
 
     FPlayerController();
 
-    void BeginPlay() override;
     void EndPlay() override;
     void Tick( float _TimeStep ) override;
 
@@ -107,6 +106,7 @@ private:
     void TogglePause();
     void TakeScreenshot();
     void ToggleWireframe();
+    void ToggleDebugDraw();
 
     FInputComponent * InputComponent;
     TRefHolder< FPawn > Pawn;

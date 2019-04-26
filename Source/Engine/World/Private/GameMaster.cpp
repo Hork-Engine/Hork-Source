@@ -31,7 +31,7 @@ SOFTWARE.
 #include <Engine/World/Public/GameMaster.h>
 #include <Engine/World/Public/Console.h>
 #include <Engine/World/Public/Canvas.h>
-//#include <Engine/World/Public/ImguiContext.h>
+#include <Engine/World/Public/ImguiContext.h>
 #include <Engine/World/Public/World.h>
 #include <Engine/World/Public/Actor.h>
 #include <Engine/World/Public/InputComponent.h>
@@ -47,19 +47,19 @@ SOFTWARE.
 
 #include "FactoryLocal.h"
 
+#include <Bullet3Common/b3Logging.h>
+#include <Bullet3Common/b3AlignedAllocator.h>
+
 AN_CLASS_META_NO_ATTRIBS( IGameModule )
 
 FGameMaster & GGameMaster = FGameMaster::Inst();
 
 ImFont * GAngieFont;
 
-static FCanvas GCanvas;
-
-static size_t FrameMemoryUsed = 0;
-static size_t FrameMemorySize = 0;
+FCanvas GCanvas;
 
 static float FractAvg = 1;
-static float AxesFract = 1;
+float AxesFract = 1;
 
 void FWorldSpawnParameters::SetTemplate( FWorld const * _Template ) {
     AN_Assert( &_Template->FinalClassMeta() == WorldTypeClassMeta );
@@ -246,6 +246,21 @@ void FGameMaster::DeveloperKeys( FKeyEvent const & _Event ) {
             FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Null" );
             ResetVideoMode();
         }
+
+        if ( _Event.Key == KEY_R ) {
+            extern FAtomicBool testInput;
+            testInput.Store( true );
+        }
+
+        if ( _Event.Key == KEY_F ) {
+            extern FAtomicBool GSyncGPU;
+            GSyncGPU.Store( !GSyncGPU.Load() );
+            if ( GSyncGPU.Load() ) {
+                GLogger.Printf( "Sync GPU ON\n" );
+            } else {
+                GLogger.Printf( "Sync GPU OFF\n" );
+            }
+        }
     }
 
     //if ( _Event.Action == IE_Press && _Event.Key == KEY_F12 ) {
@@ -276,7 +291,9 @@ void FGameMaster::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
         }
     }
 
-    //ImguiContext->OnKeyEvent( _Event );
+    ImguiContext->OnKeyEvent( _Event );
+
+    DeveloperKeys( _Event );
 
     if ( GConsole.IsActive() || bAllowConsole ) {
         GConsole.KeyEvent( _Event );
@@ -284,8 +301,6 @@ void FGameMaster::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
     if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
         return;
     }
-
-    DeveloperKeys( _Event );
 
     UpdateInputAxes( FractAvg );
 
@@ -297,11 +312,11 @@ void FGameMaster::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
 }
 
 void FGameMaster::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
+    ImguiContext->OnMouseButtonEvent( _Event );
+
     if ( GConsole.IsActive() ) {
         return;
     }
-
-    //ImguiContext->OnMouseButtonEvent( _Event );
 
     UpdateInputAxes( FractAvg );
 
@@ -313,7 +328,7 @@ void FGameMaster::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _
 }
 
 void FGameMaster::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _TimeStamp ) {
-    //ImguiContext->OnMouseWheelEvent( _Event );
+    ImguiContext->OnMouseWheelEvent( _Event );
 
     GConsole.MouseWheelEvent( _Event );
     if ( GConsole.IsActive() ) {
@@ -343,26 +358,24 @@ void FGameMaster::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _Ti
 }
 
 void FGameMaster::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _TimeStamp ) {
-    if ( GConsole.IsActive() ) {
-        return;
-    }
+    if ( !GConsole.IsActive() ) {
+        float x = _Event.X * MouseSensitivity;
+        float y = _Event.Y * MouseSensitivity;
 
-    float x = _Event.X * MouseSensitivity;
-    float y = _Event.Y * MouseSensitivity;
+        AxesFract -= FractAvg;
 
-    AxesFract -= FractAvg;
+        for ( FInputComponent * component : FInputComponent::GetInputComponents() ) {
+            if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
+                component->SetMouseAxisState( x, y );
+            }
 
-    for ( FInputComponent * component : FInputComponent::GetInputComponents() ) {
-        if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
-            component->SetMouseAxisState( x, y );
-        }
+            if ( !bGamePaused ) {
+                component->UpdateAxes( FractAvg, TimeScale );
+            }
 
-        if ( !bGamePaused ) {
-            component->UpdateAxes( FractAvg, TimeScale );
-        }
-
-        if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
-            component->SetMouseAxisState( 0, 0 );
+            if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
+                component->SetMouseAxisState( 0, 0 );
+            }
         }
     }
 
@@ -379,7 +392,7 @@ void FGameMaster::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _Time
 }
 
 void FGameMaster::OnCharEvent( FCharEvent const & _Event, double _TimeStamp ) {
-    //ImguiContext->OnCharEvent( _Event );
+    ImguiContext->OnCharEvent( _Event );
 
     GConsole.CharEvent( _Event );
     if ( GConsole.IsActive() ) {
@@ -405,19 +418,20 @@ void FGameMaster::OnChangedVideoModeEvent( FChangedVideoModeEvent const & _Event
     FramebufferHeight = VideoMode.Height; // TODO
     RetinaScale = Float2( FramebufferWidth / VideoMode.Width, FramebufferHeight / VideoMode.Height );
 
-    const float MM_To_Inch = 0.0393701f;
-
     if ( _Event.bFullscreen ) {
         FPhysicalMonitor const * monitor = GRuntime.GetMonitor( _Event.PhysicalMonitor );
         VideoAspectRatio = ( float )monitor->PhysicalWidthMM / monitor->PhysicalHeightMM;
 
+        const float MM_To_Inch = 0.0393701f;
         DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
         DPI_Y = (float)VideoMode.Height / (monitor->PhysicalHeightMM*MM_To_Inch);
     } else {
+        FPhysicalMonitor const * monitor = GRuntime.GetPrimaryMonitor();//GRuntime.GetMonitor( _Event.PhysicalMonitor );
+
         VideoAspectRatio = ( float )_Event.Width / _Event.Height;
 
-        DPI_X = 1.0f / MM_To_Inch;
-        DPI_Y = 1.0f / MM_To_Inch;
+        DPI_X = monitor->DPI_X;
+        DPI_Y = monitor->DPI_Y;
     }
 
     GConsole.Resize( VideoMode.Width );
@@ -430,7 +444,7 @@ void FGameMaster::ProcessEvent( FEvent const & _Event ) {
     case ET_RuntimeUpdateEvent:
 
         //GLogger.Printf( "AxesFract %f\n", AxesFract );
-        AN_Assert( AxesFract >= 1.0f );
+        //AN_Assert( AxesFract >= 1.0f );
 
         FractAvg = 1.0f / (_Event.Data.RuntimeUpdateEvent.InputEventCount + 1);
         AxesFract = 1.0f;
@@ -486,7 +500,7 @@ void FGameMaster::ProcessEvent( FEvent const & _Event ) {
 }
 
 void FGameMaster::ProcessEvents() {
-    FEventQueue * eventQueue = GRuntime.ReadEvents();
+    FEventQueue * eventQueue = GRuntime.ReadEvents_GameThread();
 
     FEvent const * event;
     while ( nullptr != ( event = eventQueue->Pop() ) ) {
@@ -577,7 +591,7 @@ void FGameMaster::SetCursorEnabled( bool _Enabled ) {
 }
 
 FEvent & FGameMaster::SendEvent() {
-    FEventQueue * queue = GRuntime.WriteEvents();
+    FEventQueue * queue = GRuntime.WriteEvents_GameThread();
     return *queue->Push();
 }
 
@@ -647,29 +661,6 @@ void FGameMaster::KickoffPendingKillWorlds() {
     }
 }
 
-//class FPhysicsWorld : public btCollisionDispatcher, public btSoftRigidDynamicsWorld {
-//public:
-//    btDbvtBroadphase Broadphase;
-//    btDefaultCollisionConfiguration CollisionConfiguration;
-//    btSequentialImpulseConstraintSolver ConstraintSolver;
-//    FPhysicsWorld()
-//        : btCollisionDispatcher( &CollisionConfiguration )
-//        , btSoftRigidDynamicsWorld( this,
-//                                    &Broadphase,
-//                                    &ConstraintSolver,
-//                                    &CollisionConfiguration )
-//    {
-//    }
-//};
-
-//byte PhysWorld[sizeof(FPhysicsWorld)];
-
-//FPhysicsWorld * FWorld::GetPhysWorld() {
-//    return reinterpret_cast< FPhysicsWorld * >( &PhysWorld[0] );
-//}
-
-//FBulletPhysicsIntegration
-
 void FGameMaster::UpdateInputAxes( float _Fract ) {
     if ( _Fract <= 0 ) {
         return;
@@ -726,22 +717,130 @@ static void imgui_free(void *ptr, void*) {
     GMainMemoryZone.Dealloc(ptr);
 }
 
-void FGameMaster::Run() {
+static void ShowAttribute( FDummy * a, FAttributeMeta const * attr ) {
+    switch ( attr->GetType() ) {
+        case EAttributeType::T_Byte: {
+            byte v = attr->GetBoolValue( a );
 
-    if ( SetCriticalMark() ) {
-        // Critical error was emitted by this thread
-        GRuntime.Terminate();
-        return;
+            ImGui::Text( "%s (%s) : %d", attr->GetName(), attr->GetTypeName(), v );
+
+            break;
+        }
+
+        case EAttributeType::T_Bool: {
+            bool v = attr->GetBoolValue( a );
+
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v ? "true" : "false" );
+
+            break;
+        }
+
+        case EAttributeType::T_Int: {
+            int v = attr->GetIntValue( a );
+
+            ImGui::Text( "%s (%s) : %d", attr->GetName(), attr->GetTypeName(), v );
+
+            break;
+        }
+
+        case EAttributeType::T_Float: {
+            float v = attr->GetFloatValue( a );
+
+            ImGui::Text( "%s (%s) : %f", attr->GetName(), attr->GetTypeName(), v );
+
+            break;
+        }
+
+        case EAttributeType::T_Float2: {
+            Float2 v = attr->GetFloat2Value( a );
+
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().ToConstChar() );
+
+            break;
+        }
+
+        case EAttributeType::T_Float3: {
+            Float3 v = attr->GetFloat3Value( a );
+
+            FString s;
+            attr->GetValue( a, s );
+
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().ToConstChar() );
+
+            break;
+        }
+
+        case EAttributeType::T_Float4: {
+            Float4 v = attr->GetFloat4Value( a );
+
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().ToConstChar() );
+
+            break;
+        }
+
+        case EAttributeType::T_Quat: {
+            Quat v = attr->GetQuatValue( a );
+
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().ToConstChar() );
+
+            break;
+        }
+
+        case EAttributeType::T_String: {
+            FString v;
+            attr->GetValue( a, v );
+
+            ImGui::InputText( attr->GetName(), (char*)v.ToConstChar(), v.Length(), ImGuiInputTextFlags_ReadOnly );
+
+            break;
+        }
+
+        default:
+            break;
     }
+}
 
+static void PhysModulePrintFunction( const char * _Message ) {
+    GLogger.Printf( "PhysModule: %s", _Message );
+}
+
+static void PhysModuleWarningFunction( const char * _Message ) {
+    GLogger.Warning( "PhysModule: %s", _Message );
+}
+
+static void PhysModuleErrorFunction( const char * _Message ) {
+    GLogger.Error( "PhysModule: %s", _Message );
+}
+
+static void *PhysModuleAlignedAlloc( size_t _BytesCount, int _Alignement ) {
+    return GMainMemoryZone.Alloc( _BytesCount, _Alignement );
+}
+
+static void *PhysModuleAlloc( size_t _BytesCount ) {
+    return GMainMemoryZone.Alloc( _BytesCount, 1 );
+}
+
+static void PhysModuleDealloc( void * _Bytes ) {
+    GMainMemoryZone.Dealloc( _Bytes );
+}
+
+void FGameMaster::InitializeGame() {
     GConsole.ReadStoryLines();
 
     InitializeFactories();
 
     FGarbageCollector::Initialize();
 
+    // Init physics module
+    b3SetCustomPrintfFunc( PhysModulePrintFunction );
+    b3SetCustomWarningMessageFunc( PhysModuleWarningFunction );
+    b3SetCustomErrorMessageFunc( PhysModuleErrorFunction );
+    b3AlignedAllocSetCustom( PhysModuleAlloc, PhysModuleDealloc );
+    b3AlignedAllocSetCustomAligned( PhysModuleAlignedAlloc, PhysModuleDealloc );
+
     GRenderFrontend.Initialize();
     GResourceManager.Initialize();
+    InitializeResourceManager();
 
     GameRunningTimeMicro = 0;
     GameRunningTimeMicroAfterTick = 0;
@@ -752,7 +851,7 @@ void FGameMaster::Run() {
 
     GLogger.Printf( "Created game module: %s\n", GameModule->FinalClassName() );
 
-    GRuntime.SwapFrameData();
+    //GRuntime.SwapFrameData();
     ProcessEvents();
 
     AxesFract = 1;
@@ -766,22 +865,70 @@ void FGameMaster::Run() {
 
     GCanvas.Initialize();
 
-    //ImguiContext = static_cast< FImguiContext * >( FImguiContext::ClassMeta().CreateInstance() );
-    //ImguiContext->SetFontAtlas( &FontAtlas );
-    //ImguiContext->AddRef();
+    ImguiContext = static_cast< FImguiContext * >( FImguiContext::ClassMeta().CreateInstance() );
+    ImguiContext->SetFontAtlas( &FontAtlas );
+    ImguiContext->AddRef();
+}
 
-    const int64_t tickTimeMicro = 1000000.0 / GameHertz;
-    const float tickTimeSeconds = tickTimeMicro * 0.000001;
+void FGameMaster::DeinitializeGame() {
+    GameModule->OnGameEnd();
 
-    int64_t residualTime = tickTimeMicro;
-    int64_t frameDuration = tickTimeMicro;
+    DestroyWorlds();
+    KickoffPendingKillWorlds();
+
+    FInputComponent::InputComponents.Free();
+
+    GameModule->RemoveRef();
+    GameModule = nullptr;
+
+    ImguiContext->RemoveRef();
+    ImguiContext = nullptr;
+
+    GCanvas.Deinitialize();
+
+    DestroyAngieFont();
+
+    DeinitializeResourceManager();
+    GResourceManager.Deinitialize();
+    GRenderFrontend.Deinitialize();
+
+    FGarbageCollector::Deinitialize();
+
+    DeinitializeFactories();
+
+    GConsole.WriteStoryLines();
+}
+
+void FGameMaster::Run() {
+    if ( SetCriticalMark() ) {
+        // Critical error was emitted by this thread
+        GRuntime.Terminate();
+        return;
+    }
+
+//    const int64_t tickTimeMicro = 1000000.0 / GameHertz;
+//    const float tickTimeSeconds = tickTimeMicro * 0.000001;
+
+//    int64_t residualTime = tickTimeMicro;
+    int64_t frameDuration = 1000000.0 / 60;//tickTimeMicro;
 
     while ( 1 ) {
         FrameTimeStamp = GRuntime.SysMicroseconds();
 
         FrameDurationInSeconds = frameDuration * 0.000001;
 
-        TimeScale = FrameDurationInSeconds * GameHertz;
+        TimeScale = 1;//FrameDurationInSeconds * GameHertz;
+
+        // Ожидаем пока MainThread не пробудит поток вызовом SubmitGameUpdate
+
+        //do {
+
+        //    //  Пока ждем, можно сделать что-то полезное, например копить сетевые пакеты
+        //    ProcessNetworkPackets();
+
+        //} while ( WaitGameUpdate( timeOut ) );
+
+        GRuntime.WaitGameUpdate();
 
         //GLogger.Printf( "---- game frame ---- (%f ms)\n", TimeScale );
 
@@ -795,12 +942,9 @@ void FGameMaster::Run() {
             break;
         }
 
-        ProcessEvents();
-
-        UpdateInputAxes( AxesFract );
-
-        int num = 0;
-        while ( residualTime >= tickTimeMicro ) {
+//        int num = 0;
+//        int timeStamp = GRuntime.SysMicroseconds();
+//        while ( residualTime >= tickTimeMicro ) {
 
             //GLogger.Printf( "tick\n" );
 
@@ -810,101 +954,167 @@ void FGameMaster::Run() {
 
             FGarbageCollector::DeallocateObjects();
 
-            UpdateInputAxes( AxesFract );
+//            UpdateInputAxes( AxesFract );
 
-            AxesFract = 1;
-            TimeScale = 1;
+//            AxesFract = 1;
+//            TimeScale = 1;
 
-            Tick( tickTimeSeconds );
+            // Simulate physics, logics, AI, execute parallel jobs
+            Tick( FrameDurationInSeconds/*tickTimeSeconds*/ );
 
-            GameRunningTimeMicroAfterTick += tickTimeMicro;
-            residualTime -= tickTimeMicro;
+            GameRunningTimeMicroAfterTick += frameDuration;//tickTimeMicro;
+//            residualTime -= tickTimeMicro;
 
-            UpdateGameplayTimer( tickTimeMicro );
+            UpdateGameplayTimer( frameDuration/*tickTimeMicro*/ );
 
             TickNumber++;
 
-            int64_t tickDuration = GRuntime.SysMicroseconds() - FrameTimeStamp;
+//            int64_t tickDuration = GRuntime.SysMicroseconds() - timeStamp;
 
-            num++;
+//            num++;
 
-            if ( tickDuration > tickTimeMicro ) {
-                // Game tick is too long. Slowdown gameplay.
-                GLogger.Printf( "Game tick is too long. Slowdown gameplay. (%d vs %d, num %d )\n", tickDuration, tickTimeMicro, num );
-                residualTime = 0;
-                break;
-            }
-        }
+//            if ( tickDuration > tickTimeMicro ) {
+//                // Game tick is too long. Slowdown gameplay.
+//                GLogger.Printf( "Game tick is too long. Slowdown gameplay. (%d vs %d, num %d )\n", tickDuration, tickTimeMicro, num );
+//                residualTime = 0;
+//                break;
+//            }
+//        }
+//        GLogger.Printf( "Num ticks processed %d\n", num );
 
-        AxesFract = 1;
-
-        //ImguiContext->BeginFrame( FrameDurationInSeconds );
+//        AxesFract = 1;
 
         DrawCanvas();
+        UpdateImgui();
 
-        //int64_t t = GRuntime.SysMilliseconds();
-        GRenderFrontend.BuildFrameData( &GCanvas );
-        //GLogger.Printf( "time BuildFrameData %d msec\n", GRuntime.SysMilliseconds() - t );
-
-        //ImguiContext->EndFrame();
-
-#if 1
-        FrameMemoryUsed = GRuntime.GetFrameData()->FrameMemoryUsed;
-        FrameMemorySize = GRuntime.GetFrameData()->FrameMemorySize;
-        GRuntime.SwapFrameData();
-#else
-        const float timeOut = 1; // milliseconds
-        while ( !GRuntime.SwapFrameDataTimeout( timeOut ) ) {
-            // Do something...
-            GLogger.Printf( "Wait...\n" );
-        }
-#endif
-
-        // FIXME: here?
-        //BuildNetworkPacket();
+        GRuntime.SignalSimulationIsDone();
 
         frameDuration = GRuntime.SysMicroseconds() - FrameTimeStamp;
-        residualTime += frameDuration;
+//        residualTime += frameDuration;
 
         FrameNumber++;
-
-        // Limit frame rate to game hertz
-//        if ( residualTime < tickTimeMicro ) {
-////            GLogger.Printf( "Still waiting for %d microseconds\n", tickTimeMicro - residualTime );
-//            GRuntime.WaitMicroseconds( tickTimeMicro - residualTime );
-//            residualTime = tickTimeMicro;
-//            frameDuration = GRuntime.SysMicroseconds() - FrameTimeStamp;
-//        }
     }
 
-    GameModule->OnGameEnd();
-
-    DestroyWorlds();
-    KickoffPendingKillWorlds();
-
-    FInputComponent::InputComponents.Free();
-
-    GameModule->RemoveRef();
-    GameModule = nullptr;
-
-    //ImguiContext->RemoveRef();
-    //ImguiContext = nullptr;
-
-    GCanvas.Deinitialize();
-
-    DestroyAngieFont();
-
-    GResourceManager.Deinitialize();
-    GRenderFrontend.Deinitialize();
-
-    FGarbageCollector::Deinitialize();
-
-    DeinitializeFactories();
-
-    GConsole.WriteStoryLines();
-
     GRuntime.Terminate();
+    GRuntime.SignalSimulationIsDone();
 }
+
+static FActor * SelectedActor = nullptr;
+static FSceneComponent * SelectedComponent = nullptr;
+
+static void ShowComponentHierarchy( FSceneComponent * component ) {
+    if ( ImGui::TreeNodeEx( component, component == SelectedComponent ? ImGuiTreeNodeFlags_Selected : 0, "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) {
+
+        if ( ImGui::IsItemClicked() ) {
+            SelectedComponent = component;
+            SelectedActor = component->GetParentActor();
+        }
+
+        FArrayOfChildComponents const & childs = component->GetChilds();
+        for ( FSceneComponent * child : childs ) {
+            ShowComponentHierarchy( child );
+        }
+
+        ImGui::TreePop();
+    }
+}
+
+void FGameMaster::UpdateImgui() {
+    ImguiContext->BeginFrame( FrameDurationInSeconds );
+
+    //ImGui::ShowDemoWindow();
+
+    if ( ImGui::Begin( "Test" ) ) {
+        TPodArray< FAttributeMeta const * > attributes;
+
+        for ( int i = 0 ; i < Worlds.Length() ; i++ ) {
+            if ( ImGui::CollapsingHeader( "World" ) ) {
+
+                static byte childFrameId;
+                ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+                contentRegion.y *= 0.5f;
+                if ( ImGui::BeginChildFrame( ( ImGuiID )( size_t )&childFrameId, contentRegion ) ) {
+
+                    FWorld * w = Worlds[ i ];
+
+                    ImGui::Text( "Actors" );
+                    for ( int j = 0 ; j < w->Actors.Length() ; j++ ) {
+                        FActor * a = w->Actors[ j ];
+
+                        if ( ImGui::TreeNodeEx( a, a == SelectedActor ? ImGuiTreeNodeFlags_Selected : 0, "%s (%s)", a->GetNameConstChar(), a->FinalClassName() ) ) {
+
+                            if ( ImGui::IsItemClicked() ) {
+                                SelectedActor = a;
+                            }
+
+                            if ( a->RootComponent ) {
+                                ShowComponentHierarchy( a->RootComponent );
+                            }
+
+                            ImGui::TreePop();
+                        }
+                    }
+                }
+                ImGui::EndChildFrame();
+
+                ImGui::Text( "Inspector" );
+                static byte childFrameId2;
+                contentRegion = ImGui::GetContentRegionAvail();
+                if ( ImGui::BeginChildFrame( ( ImGuiID )( size_t )&childFrameId2, contentRegion ) ) {
+
+                    if ( SelectedActor ) {
+                        FActor * a = SelectedActor;
+
+                        FClassMeta const & meta = a->FinalClassMeta();
+
+                        attributes.Clear();
+                        meta.GetAttributes( attributes );
+
+                        for ( FAttributeMeta const * attr : attributes ) {
+                            ShowAttribute( a, attr );
+                        }
+
+                        for ( int k = 0 ; k < a->GetComponents().Length() ; k++ ) {
+
+                            FActorComponent * component = a->GetComponents()[ k ];
+
+                            if ( ImGui::CollapsingHeader( FString::Fmt( "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) ) {
+
+                                FClassMeta const & componentMeta = component->FinalClassMeta();
+
+                                attributes.Clear();
+                                componentMeta.GetAttributes( attributes );
+
+                                for ( FAttributeMeta const * attr : attributes ) {
+                                    ShowAttribute( component, attr );
+                                }
+                            }
+                        }
+                    }
+                }
+                ImGui::EndChildFrame();
+
+
+                //ImGui::Text( "Levels" );
+                //for( int j = 0 ; j < w->ArrayOfLevels.Length() ; j++ ) {
+                //    FLevel * lev = w->ArrayOfLevels[j];
+
+                //    if ( ImGui::TreeNode( lev, "%s (%s)", lev->GetNameConstChar(), lev->FinalClassName() ) ) {
+
+                //        ImGui::TreePop();
+                //    }
+                //}
+
+
+            }
+        }
+    }
+    ImGui::End();
+
+
+    ImguiContext->EndFrame();
+}
+
 
 void FGameMaster::Stop() {
     bStopRequest = true;
@@ -959,13 +1169,13 @@ void FGameMaster::DrawCanvas() {
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Zone memory usage: %f KB / %d MB", GMainMemoryZone.GetTotalMemoryUsage()/1024.0f, GMainMemoryZone.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Hunk memory usage: %f KB / %d MB", GMainHunkMemory.GetTotalMemoryUsage()/1024.0f, GMainHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frame memory usage: %f KB / %d MB", FrameMemoryUsed/1024.0f, FrameMemorySize>>20 ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frame memory usage: %f KB / %d MB", frameData->FrameMemoryUsed/1024.0f, frameData->FrameMemorySize>>20 ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Heap memory usage: %f KB", GMainHeapMemory.GetTotalMemoryUsage()/1024.0f
         /*- GMainMemoryZone.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Visible instances: %d", frameData->Instances.Length() ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Polycount: %d", GRenderFrontend.GetPolyCount() ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frontend time: %d msec", GRenderFrontend.GetFrontendTime() ) );
-        
+
     }
 
     GCanvas.End();

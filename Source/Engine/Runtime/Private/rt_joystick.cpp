@@ -40,7 +40,6 @@ SOFTWARE.
 
 static FJoystick Joysticks[ MAX_JOYSTICKS_COUNT ];
 static FString JoystickNames[ MAX_JOYSTICKS_COUNT ];
-static FThreadSync JoystickNameUpdateSync;
 static unsigned char JoystickButtonState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
 static float JoystickAxisState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 
@@ -76,10 +75,7 @@ void rt_DeinitializeJoysticks() {
 static void RegisterJoystick( int _Joystick ) {
     FJoystick & joystick = Joysticks[ _Joystick ];
 
-    JoystickNameUpdateSync.BeginScope();
     JoystickNames[ _Joystick ] = glfwGetJoystickName( _Joystick );
-    JoystickNameUpdateSync.EndScope();
-
     int numAxes, numButtons;
     glfwGetJoystickAxes( _Joystick, &numAxes );
     glfwGetJoystickButtons( _Joystick, &numButtons );
@@ -195,8 +191,5 @@ void rt_PollJoystickEvents() {
 }
 
 FString rt_GetJoystickName( int _Joystick ) {
-    JoystickNameUpdateSync.BeginScope();
-    FString joystickName = JoystickNames[ _Joystick ];
-    JoystickNameUpdateSync.EndScope();
-    return joystickName;
+    return JoystickNames[ _Joystick ];
 }

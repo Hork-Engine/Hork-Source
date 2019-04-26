@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Alloc.h"
+#include "HashFunc.h"
 #include <stdarg.h>
 
 /*
@@ -53,22 +54,22 @@ public:
     const char & operator[]( int _Index ) const;
     char & operator[]( int _Index );
 
-    void operator=( const FString & _Text );
-    void operator=( const char * _Text );
+    void operator=( FString const & _Str );
+    void operator=( const char * _Str );
 
-    friend FString operator+( const FString & _Str1, const FString & _Str2 );
-    friend FString operator+( const FString & _Str1, const char * _Str2 );
-    friend FString operator+( const char * _Str1, const FString & _Str2 );
+    friend FString operator+( FString const & _Str1, FString const & _Str2 );
+    friend FString operator+( FString const & _Str1, const char * _Str2 );
+    friend FString operator+( const char * _Str1, FString const & _Str2 );
 
-    FString & operator+=( const FString & _Str );
+    FString & operator+=( FString const & _Str );
     FString & operator+=( const char * _Str );
 
-    friend bool operator==( const FString & _Str1, const FString & _Str2 );
-    friend bool operator==( const FString & _Str1, const char * _Str2 );
-    friend bool operator==( const char * _Str1, const FString & _Str2 );
-    friend bool operator!=( const FString & _Str1, const FString & _Str2 );
-    friend bool operator!=( const FString & _Str1, const char * _Str2 );
-    friend bool operator!=( const char * _Str1, const FString & _Str2 );
+    friend bool operator==( FString const & _Str1, FString const & _Str2 );
+    friend bool operator==( FString const & _Str1, const char * _Str2 );
+    friend bool operator==( const char * _Str1, FString const & _Str2 );
+    friend bool operator!=( FString const & _Str1, FString const & _Str2 );
+    friend bool operator!=( FString const & _Str1, const char * _Str2 );
+    friend bool operator!=( const char * _Str1, FString const & _Str2 );
 
     void Clear();
     void Free();
@@ -80,19 +81,19 @@ public:
     const char * ToConstChar() const;
     char * ToPtr() const;
 
-    void CopyN( const char * _Text, int _Num );
+    void CopyN( const char * _Str, int _Num );
 
     FString & Concat( char _Val );
-    FString & Concat( const FString & _Text );
-    FString & Concat( const char * _Text );
+    FString & Concat( FString const & _Str );
+    FString & Concat( const char * _Str );
 
     FString & Insert( char _Val, int _Index );
-    FString & Insert( const FString & _Text, int _Index );
-    FString & Insert( const char * _Text, int _Index );
+    FString & Insert( FString const & _Str, int _Index );
+    FString & Insert( const char * _Str, int _Index );
 
     //FString & Replace( char _Val, int _Index );
-    FString & Replace( const FString & _Text, int _Index );
-    FString & Replace( const char * _Text, int _Index );
+    FString & Replace( FString const & _Str, int _Index );
+    FString & Replace( const char * _Str, int _Index );
 
     FString & Cut( int _Index, int _Count );
 
@@ -107,10 +108,17 @@ public:
     uint32_t HexToUInt32() const;
     uint64_t HexToUInt64() const;
 
-    int Icmp( const char * _Text ) const;
-    int Cmp( const char * _Text ) const;
-    int IcmpN( const char * _Text, int _Num ) const;
-    int CmpN( const char * _Text, int _Num ) const;
+    int Icmp( const char * _Str ) const;
+    int Icmp( FString const & _Str ) const { return Icmp( _Str.ToConstChar() ); }
+
+    int Cmp( const char * _Str ) const;
+    int Cmp( FString const & _Str ) const { return Cmp( _Str.ToConstChar() ); }
+
+    int IcmpN( const char * _Str, int _Num ) const;
+    int IcmpN( FString const & _Str, int _Num ) const { return IcmpN( _Str.ToConstChar(), _Num ); }
+
+    int CmpN( const char * _Str, int _Num ) const;
+    int CmpN( FString const & _Str, int _Num ) const { return CmpN( _Str.ToConstChar(), _Num ); }
 
     FString & SkipTrailingZeros();
 
@@ -125,6 +133,9 @@ public:
     FString & ReplaceExt( const char * _Extension );
     int FindExt() const;
     int FindExtWithoutDot() const;
+
+    int Hash() const { return FCore::Hash( StringData, StringLength ); }
+    int HashCase() const { return FCore::HashCase( StringData, StringLength ); }
 
     /*
 
@@ -151,14 +162,14 @@ public:
     static void Copy( char * _Dest, const char * _Src );
 
     template< typename Type >
-    static FString ToHexString( const Type & _Val, bool _LeadingZeros = false, bool _Prefix = false );
+    static FString ToHexString( Type const & _Val, bool _LeadingZeros = false, bool _Prefix = false );
 
     // The output is always null-terminated and truncated if necessary. The return value is either the number of characters stored or -1 if truncation occurs.
     static int Sprintf( char * _Buffer, int _Size, const char * _Format, ... );
     static int SprintfUnsafe( char * _Buffer, const char * _Format, ... );
     static int vsnprintf( char * _Buffer, int _Size, const char * _Format, va_list _VaList );
     static const char * NullCString();
-    static const FString & NullFString();
+    static FString const & NullFString();
     static void UpdateSeparator( char * _String );
     static void OptimizePath( char * _Path );
     static int FindPath( const char * _Str );
@@ -245,43 +256,43 @@ AN_FORCEINLINE char &FString::operator[]( int _Index ) {
     return StringData[ _Index ];
 }
 
-AN_FORCEINLINE void FString::operator=( const FString & _Text ) {
+AN_FORCEINLINE void FString::operator=( FString const & _Str ) {
     int newlength;
-    newlength = _Text.Length();
+    newlength = _Str.Length();
     ReallocIfNeed( newlength+1, false );
-    memcpy( StringData, _Text.StringData, newlength );
+    memcpy( StringData, _Str.StringData, newlength );
     StringData[newlength] = '\0';
     StringLength = newlength;
 }
 
-AN_FORCEINLINE void FString::operator=( const char * _Text ) {
+AN_FORCEINLINE void FString::operator=( const char * _Str ) {
     int newlength;
     int diff;
     int i;
 
-    if ( !_Text ) {
-        _Text = "(null)";
+    if ( !_Str ) {
+        _Str = "(null)";
     }
 
-    if ( _Text == StringData ) {
+    if ( _Str == StringData ) {
         return; // copying same thing
     }
 
     // check if we're aliasing
-    if ( _Text >= StringData && _Text <= StringData + StringLength ) {
-        diff = _Text - StringData;
-        AN_ASSERT( Length( _Text ) < StringLength, "FString=" );
-        for ( i = 0; _Text[ i ]; i++ ) {
-            StringData[ i ] = _Text[ i ];
+    if ( _Str >= StringData && _Str <= StringData + StringLength ) {
+        diff = _Str - StringData;
+        AN_ASSERT( Length( _Str ) < StringLength, "FString=" );
+        for ( i = 0; _Str[ i ]; i++ ) {
+            StringData[ i ] = _Str[ i ];
         }
         StringData[ i ] = '\0';
         StringLength -= diff;
         return;
     }
 
-    newlength = Length( _Text );
+    newlength = Length( _Str );
     ReallocIfNeed( newlength+1, false );
-    strcpy( StringData, _Text );
+    strcpy( StringData, _Str );
     StringLength = newlength;
 }
 
@@ -300,25 +311,25 @@ AN_FORCEINLINE void FString::Free() {
     StringData[0] = '\0';
 }
 
-AN_FORCEINLINE void FString::CopyN( const char * _Text, int _Num ) {
+AN_FORCEINLINE void FString::CopyN( const char * _Str, int _Num ) {
     int newlength;
     //int diff;
     int i;
 
-    if ( !_Text ) {
-        _Text = "(null)";
+    if ( !_Str ) {
+        _Str = "(null)";
     }
 
-    if ( _Text == StringData ) {
+    if ( _Str == StringData ) {
         return; // copying same thing
     }
 
     // check if we're aliasing
-    if ( _Text >= StringData && _Text <= StringData + StringLength ) {
-        //diff = _Text - StringData;
-        AN_ASSERT( Length( _Text ) < StringLength, "FString::CopyN" );
-        for ( i = 0; _Text[ i ] && i<_Num ; i++ ) {
-            StringData[ i ] = _Text[ i ];
+    if ( _Str >= StringData && _Str <= StringData + StringLength ) {
+        //diff = _Str - StringData;
+        AN_ASSERT( Length( _Str ) < StringLength, "FString::CopyN" );
+        for ( i = 0; _Str[ i ] && i<_Num ; i++ ) {
+            StringData[ i ] = _Str[ i ];
         }
         StringData[ i ] = '\0';
         StringLength = i;
@@ -326,35 +337,35 @@ AN_FORCEINLINE void FString::CopyN( const char * _Text, int _Num ) {
         return;
     }
 
-    newlength = Length( _Text );
+    newlength = Length( _Str );
     if ( newlength > _Num ) {
         newlength = _Num;
     }
     ReallocIfNeed( newlength+1, false );
-    strncpy( StringData, _Text, newlength );
+    strncpy( StringData, _Str, newlength );
     StringData[newlength] = 0;
     StringLength = newlength;
 }
 
-AN_FORCEINLINE FString operator+( const FString & _Str1, const FString & _Str2 ) {
+AN_FORCEINLINE FString operator+( FString const & _Str1, FString const & _Str2 ) {
     FString result( _Str1 );
     result.Concat( _Str2 );
     return result;
 }
 
-AN_FORCEINLINE FString operator+( const FString & _Str1, const char * _Str2 ) {
+AN_FORCEINLINE FString operator+( FString const & _Str1, const char * _Str2 ) {
     FString result( _Str1 );
     result.Concat( _Str2 );
     return result;
 }
 
-AN_FORCEINLINE FString operator+( const char * _Str1, const FString & _Str2 ) {
+AN_FORCEINLINE FString operator+( const char * _Str1, FString const & _Str2 ) {
     FString result( _Str1 );
     result.Concat( _Str2 );
     return result;
 }
 
-AN_FORCEINLINE FString &FString::operator+=( const FString & _Str ) {
+AN_FORCEINLINE FString &FString::operator+=( FString const & _Str ) {
     Concat( _Str );
     return *this;
 }
@@ -364,50 +375,50 @@ AN_FORCEINLINE FString &FString::operator+=( const char * _Str ) {
     return *this;
 }
 
-AN_FORCEINLINE bool operator==( const FString & _Str1, const FString & _Str2 ) {
+AN_FORCEINLINE bool operator==( FString const & _Str1, FString const & _Str2 ) {
     return ( !FString::Cmp( _Str1.StringData, _Str2.StringData ) );
 }
 
-AN_FORCEINLINE bool operator==( const FString & _Str1, const char * _Str2 ) {
+AN_FORCEINLINE bool operator==( FString const & _Str1, const char * _Str2 ) {
     AN_ASSERT( _Str2, "Strings comparison" );
     return ( !FString::Cmp( _Str1.StringData, _Str2 ) );
 }
 
-AN_FORCEINLINE bool operator==( const char * _Str1, const FString & _Str2 ) {
+AN_FORCEINLINE bool operator==( const char * _Str1, FString const & _Str2 ) {
     AN_ASSERT( _Str1, "Strings comparison" );
     return ( !FString::Cmp( _Str1, _Str2.StringData ) );
 }
 
-AN_FORCEINLINE bool operator!=( const FString & _Str1, const FString & _Str2 ) {
+AN_FORCEINLINE bool operator!=( FString const & _Str1, FString const & _Str2 ) {
     return !( _Str1 == _Str2 );
 }
 
-AN_FORCEINLINE bool operator!=( const FString & _Str1, const char * _Str2 ) {
+AN_FORCEINLINE bool operator!=( FString const & _Str1, const char * _Str2 ) {
     return !( _Str1 == _Str2 );
 }
 
-AN_FORCEINLINE bool operator!=( const char * _Str1, const FString & _Str2 ) {
+AN_FORCEINLINE bool operator!=( const char * _Str1, FString const & _Str2 ) {
     return !( _Str1 == _Str2 );
 }
 
-AN_FORCEINLINE int FString::Icmp( const char * _Text ) const {
-    AN_ASSERT( _Text, "FString::Icmp" );
-    return FString::Icmp( StringData, _Text );
+AN_FORCEINLINE int FString::Icmp( const char * _Str ) const {
+    AN_ASSERT( _Str, "FString::Icmp" );
+    return FString::Icmp( StringData, _Str );
 }
 
-AN_FORCEINLINE int FString::Cmp( const char * _Text ) const {
-    AN_ASSERT( _Text, "FString::Cmp" );
-    return FString::Cmp( StringData, _Text );
+AN_FORCEINLINE int FString::Cmp( const char * _Str ) const {
+    AN_ASSERT( _Str, "FString::Cmp" );
+    return FString::Cmp( StringData, _Str );
 }
 
-AN_FORCEINLINE int FString::IcmpN( const char * _Text, int _Num ) const {
-    AN_ASSERT( _Text, "FString::CmpN" );
-    return FString::IcmpN( StringData, _Text, _Num );
+AN_FORCEINLINE int FString::IcmpN( const char * _Str, int _Num ) const {
+    AN_ASSERT( _Str, "FString::CmpN" );
+    return FString::IcmpN( StringData, _Str, _Num );
 }
 
-AN_FORCEINLINE int FString::CmpN( const char * _Text, int _Num ) const {
-    AN_ASSERT( _Text, "FString::CmpN" );
-    return FString::CmpN( StringData, _Text, _Num );
+AN_FORCEINLINE int FString::CmpN( const char * _Str, int _Num ) const {
+    AN_ASSERT( _Str, "FString::CmpN" );
+    return FString::CmpN( StringData, _Str, _Num );
 }
 
 AN_FORCEINLINE int FString::Icmp( const char* _S1, const char* _S2 ) {
@@ -580,31 +591,31 @@ AN_FORCEINLINE FString & FString::Concat( char _Val ) {
     return *this;
 }
 
-AN_FORCEINLINE FString & FString::Concat( const FString & _Text ) {
+AN_FORCEINLINE FString & FString::Concat( FString const & _Str ) {
     int newlength;
     int i;
 
-    newlength = StringLength + _Text.StringLength;
+    newlength = StringLength + _Str.StringLength;
     ReallocIfNeed( newlength+1, true );
-    for ( i = 0; i < _Text.StringLength; i++ )
-        StringData[ StringLength + i ] = _Text[i];
+    for ( i = 0; i < _Str.StringLength; i++ )
+        StringData[ StringLength + i ] = _Str[i];
     StringLength = newlength;
     StringData[StringLength] = '\0';
     return *this;
 }
 
-AN_FORCEINLINE FString & FString::Concat( const char * _Text ) {
+AN_FORCEINLINE FString & FString::Concat( const char * _Str ) {
     int newlength;
     int i;
 
-    if ( _Text == NULL ) {
-        _Text = "(null)";
+    if ( _Str == NULL ) {
+        _Str = "(null)";
     }
 
-    newlength = StringLength + Length( _Text );
+    newlength = StringLength + Length( _Str );
     ReallocIfNeed( newlength+1, true );
-    for ( i = 0 ; _Text[i] ; i++ ) {
-        StringData[StringLength + i] = _Text[i];
+    for ( i = 0 ; _Str[i] ; i++ ) {
+        StringData[StringLength + i] = _Str[i];
     }
     StringLength = newlength;
     StringData[StringLength] = '\0';
@@ -626,9 +637,9 @@ AN_FORCEINLINE FString & FString::Insert( char _Val, int _Index ) {
     return *this;
 }
 
-AN_FORCEINLINE FString & FString::Insert( const FString & _Text, int _Index ) {
+AN_FORCEINLINE FString & FString::Insert( FString const & _Str, int _Index ) {
     int i;
-    int textLength = _Text.Length();
+    int textLength = _Str.Length();
     if ( _Index < 0 ) {
         _Index = 0;
     } else if ( _Index > StringLength ) {
@@ -639,15 +650,15 @@ AN_FORCEINLINE FString & FString::Insert( const FString & _Text, int _Index ) {
         StringData[ i + textLength ] = StringData[ i ];
     }
     for ( i = 0; i < textLength; i++ ) {
-        StringData[ _Index + i ] = _Text[ i ];
+        StringData[ _Index + i ] = _Str[ i ];
     }
     StringLength += textLength;
     return *this;
 }
 
-AN_FORCEINLINE FString & FString::Insert( const char * _Text, int _Index ) {
+AN_FORCEINLINE FString & FString::Insert( const char * _Str, int _Index ) {
     int i;
-    int textLength = Length( _Text );
+    int textLength = Length( _Str );
     if ( _Index < 0 ) _Index = 0;
     else if ( _Index > StringLength ) _Index = StringLength;
     ReallocIfNeed( StringLength + textLength + 1, true );
@@ -655,7 +666,7 @@ AN_FORCEINLINE FString & FString::Insert( const char * _Text, int _Index ) {
         StringData[ i + textLength ] = StringData[ i ];
     }
     for ( i = 0; i < textLength; i++ ) {
-        StringData[ _Index + i ] = _Text[ i ];
+        StringData[ _Index + i ] = _Str[ i ];
     }
     StringLength += textLength;
     return *this;
@@ -689,24 +700,24 @@ AN_FORCEINLINE void FString::ReserveInvalidate( int _Capacity ) {
 //    return *this;
 //}
 
-AN_FORCEINLINE FString & FString::Replace( const FString & _Text, int _Index ) {
-    int newlength = _Index + _Text.StringLength;
+AN_FORCEINLINE FString & FString::Replace( FString const & _Str, int _Index ) {
+    int newlength = _Index + _Str.StringLength;
 
     ReallocIfNeed( newlength+1, true );
-    for ( int i = 0; i < _Text.StringLength; i++ ) {
-        StringData[ _Index + i ] = _Text[i];
+    for ( int i = 0; i < _Str.StringLength; i++ ) {
+        StringData[ _Index + i ] = _Str[i];
     }
     StringLength = newlength;
     StringData[StringLength] = '\0';
     return *this;
 }
 
-AN_FORCEINLINE FString & FString::Replace( const char * _Text, int _Index ) {
-    int newlength = _Index + Length( _Text );
+AN_FORCEINLINE FString & FString::Replace( const char * _Str, int _Index ) {
+    int newlength = _Index + Length( _Str );
 
     ReallocIfNeed( newlength+1, true );
-    for ( int i = 0 ; _Text[i] ; i++ ) {
-        StringData[ _Index + i ] = _Text[i];
+    for ( int i = 0 ; _Str[i] ; i++ ) {
+        StringData[ _Index + i ] = _Str[i];
     }
     StringLength = newlength;
     StringData[StringLength] = '\0';
@@ -1100,7 +1111,7 @@ AN_FORCEINLINE const char * FString::NullCString() {
     return __NullCString;
 }
 
-AN_FORCEINLINE const FString & FString::NullFString() {
+AN_FORCEINLINE FString const & FString::NullFString() {
     return __NullFString;
 }
 
@@ -1108,7 +1119,7 @@ AN_FORCEINLINE const FString & FString::NullFString() {
 #define AN_INT64_LOW_INT( i64 )    int32_t( uint64_t(i64) & 0xFFFFFFFF )
 
 template< typename Type >
-FString FString::ToHexString( const Type & _Val, bool _LeadingZeros, bool _Prefix ) {
+FString FString::ToHexString( Type const & _Val, bool _LeadingZeros, bool _Prefix ) {
     TSprintfBuffer< 32 > value;
     TSprintfBuffer< 32 > format;
     const char * PrefixStr = _Prefix ? "0x" : "";

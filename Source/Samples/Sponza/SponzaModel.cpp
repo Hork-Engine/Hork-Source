@@ -36,6 +36,7 @@ SOFTWARE.
 #include <Engine/World/Public/InputComponent.h>
 #include <Engine/World/Public/Canvas.h>
 #include <Engine/World/Public/MeshAsset.h>
+#include <Engine/World/Public/ResourceManager.h>
 
 #include <Engine/Runtime/Public/EntryDecl.h>
 
@@ -47,10 +48,10 @@ void FSponzaModel::OnGameStart() {
     GGameMaster.bAllowConsole = true;
     //GGameMaster.MouseSensitivity = 0.15f;
     GGameMaster.MouseSensitivity = 0.3f;
-    //GGameMaster.SetRenderFeatures( VSync_Fixed );
+    //GGameMaster.SetRenderFeatures( VSync_Half );
     GGameMaster.SetWindowDefs( 1, true, false, false, "AngieEngine: Sponza" );
-    //GGameMaster.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    GGameMaster.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    GGameMaster.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
+    //GGameMaster.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
     GGameMaster.SetCursorEnabled( false );
 
     SetInputMappings();
@@ -86,90 +87,6 @@ void FSponzaModel::OnGameStart() {
 }
 
 void FSponzaModel::OnGameEnd() {
-    for ( FTexture * texObj : TextureCache ) {
-        texObj->RemoveRef();
-    }
-
-    for ( FIndexedMesh * mesh : MeshCache ) {
-        mesh->RemoveRef();
-    }
-}
-
-FTexture * FSponzaModel::LoadCachedTexture( const char * _FileName ) {
-
-    for ( FTexture * texObj : TextureCache ) {
-        if ( !texObj->GetName().Icmp( _FileName ) ) {
-            GLogger.Printf("Caching texture...\n");
-            return texObj;
-        }
-    }
-
-    FImage image;
-    image.LoadRawImage( _FileName, true, true );
-
-    FTexture * texObj = NewObject< FTexture >();
-    texObj->FromImage( image );
-    texObj->SetName( _FileName );
-    texObj->AddRef();
-
-    TextureCache.Append( texObj );
-
-    return texObj;
-}
-
-FIndexedMesh * FSponzaModel::LoadCachedMesh( const char * _FileName ) {
-
-    for ( FIndexedMesh * mesh : MeshCache ) {
-        if ( !mesh->GetName().Icmp( _FileName ) ) {
-            GLogger.Printf("Caching mesh...\n");
-            return mesh;
-        }
-    }
-
-    FFileStream f;
-    if ( !f.OpenRead( _FileName ) ) {
-        return nullptr;
-    }
-
-    FMeshAsset staticMeshData;
-    staticMeshData.Read( f );
-
-    TPodArray< FMaterialInstance * > matInstances;
-    matInstances.Resize( staticMeshData.Materials.Length() );
-
-    for ( int j = 0 ; j < staticMeshData.Materials.Length() ; j++ ) {
-        FMeshMaterial const & material = staticMeshData.Materials[ j ];
-
-        FMaterialInstance * matInst = NewObject< FMaterialInstance >();
-        matInst->Material = Material;
-        matInstances[j] = matInst;
-
-        for ( int n = 0 ; n < 1/*material.NumTextures*/ ; n++ ) {
-            FMaterialTexture const & texture = staticMeshData.Textures[ material.Textures[n] ];
-            FTexture * texObj = LoadCachedTexture( texture.FileName.ToConstChar() );
-            matInst->SetTexture( n, texObj );
-        }
-    }
-
-    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-    mesh->Initialize( staticMeshData.Vertices.Length(), staticMeshData.Indices.Length(), staticMeshData.Subparts.size(), false, false );
-    mesh->WriteVertexData( staticMeshData.Vertices.ToPtr(), staticMeshData.Vertices.Length(), 0 );
-    mesh->WriteIndexData( staticMeshData.Indices.ToPtr(), staticMeshData.Indices.Length(), 0 );
-    for ( int j = 0 ; j < mesh->GetSubparts().Length() ; j++ ) {
-        FSubpart const & s = staticMeshData.Subparts[j];
-        FIndexedMeshSubpart * subpart = mesh->GetSubpart( j );
-        subpart->SetName( s.Name );
-        subpart->BaseVertex = s.BaseVertex;
-        subpart->FirstIndex = s.FirstIndex;
-        subpart->IndexCount = s.IndexCount;
-        subpart->BoundingBox = s.BoundingBox;
-        subpart->MaterialInstance = matInstances[s.Material];
-    }
-
-    mesh->AddRef();
-    MeshCache.Append( mesh );
-
-    return mesh;
 }
 
 void FSponzaModel::CreateMaterial() {
@@ -180,7 +97,7 @@ void FSponzaModel::CreateMaterial() {
     texCoord->Connect( inTexCoordBlock, "Value" );
     FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
     diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
-    diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_SAMPLER_WRAP;
+    diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
     FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
     diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
     diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
@@ -200,9 +117,13 @@ void FSponzaModel::LoadStaticMeshes() {
     FString fileName;
 
     for ( int i = 0 ; i < 25 ; i++ ) {
-        fileName = "sponza/sponza_" + Int(i).ToString() + ".angie_mesh";
+        fileName = "SponzaProject/Meshes/sponza_" + Int(i).ToString() + ".angie_mesh";
 
-        FIndexedMesh * mesh = LoadCachedMesh( fileName.ToConstChar() );
+        FIndexedMesh * mesh = CreateUniqueMesh( fileName.ToConstChar() );
+
+        for ( FIndexedMeshSubpart * subpart : mesh->GetSubparts() ) {
+            subpart->MaterialInstance->Material = Material;
+        }
 
         FStaticMesh * actor = World->SpawnActor< FStaticMesh >();
 
@@ -210,7 +131,7 @@ void FSponzaModel::LoadStaticMeshes() {
     }
 #else
     // Load as single mesh with subparts
-    FIndexedMesh * mesh = LoadCachedMesh( "sponza.angie_mesh" );
+    FIndexedMesh * mesh = LoadCachedMesh( "SponzaProject/Meshes/sponza.angie_mesh" );
 
     FStaticMesh * actor = World->SpawnActor< FStaticMesh >();
 
@@ -223,17 +144,22 @@ void FSponzaModel::SetInputMappings() {
 
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_W, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_S, -1.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_UP, 1.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_DOWN, -1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveRight", ID_KEYBOARD, KEY_A, -1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveRight", ID_KEYBOARD, KEY_D, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveUp", ID_KEYBOARD, KEY_SPACE, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveDown", ID_KEYBOARD, KEY_C, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "TurnRight", ID_MOUSE, MOUSE_AXIS_X, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "TurnUp", ID_MOUSE, MOUSE_AXIS_Y, 1.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_LEFT, -1.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_RIGHT, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Speed", ID_KEYBOARD, KEY_LEFT_SHIFT, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_P, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
 }
 
 void FSponzaModel::DrawCanvas( FCanvas * _Canvas ) {

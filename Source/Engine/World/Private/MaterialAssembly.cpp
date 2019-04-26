@@ -141,6 +141,7 @@ void FMaterialBuildContext::SetStage( EMaterialStage _Stage ) {
     SourceCode.Clear();
     bHasTextures = false;
     MaxTextureSlot = -1;
+    MaxUniformAddress = -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1240,9 +1241,9 @@ FMaterialTextureSlotBlock::FMaterialTextureSlotBlock() {
 
     TextureType = TEXTURE_2D;
     Filter = TEXTURE_FILTER_LINEAR;
-    AddressU = TEXTURE_SAMPLER_WRAP;
-    AddressV = TEXTURE_SAMPLER_WRAP;
-    AddressW = TEXTURE_SAMPLER_WRAP;
+    AddressU = TEXTURE_ADDRESS_WRAP;
+    AddressV = TEXTURE_ADDRESS_WRAP;
+    AddressW = TEXTURE_ADDRESS_WRAP;
     MipLODBias = 0;
     Anisotropy = 16;
     MinLod = -1000;
@@ -1280,6 +1281,76 @@ static constexpr const char * TextureTypeToShaderSampler[][2] = {
 
 static const char * GetShaderType( ETextureType _Type ) {
     return TextureTypeToShaderSampler[ _Type ][ 0 ];
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_CLASS_META_NO_ATTRIBS( FMaterialUniformAddress )
+
+FMaterialUniformAddress::FMaterialUniformAddress() {
+    Name = "Texture Slot";
+    Stages = VERTEX_STAGE_BIT | FRAGMENT_STAGE_BIT;
+
+    Type = AT_Float4;
+    Address = 0;
+
+    Value = NewOutput( "Value", Type );
+}
+
+void FMaterialUniformAddress::Compute( FMaterialBuildContext & _Context ) {
+    if ( Address >= 0 ) {
+
+        int addr = Int(Address).Clamp( 0, 15 );
+        int location = addr / 4;
+
+        Value->Type = Type;
+        Value->Expression = "uaddr_" + Int(location).ToString();
+        switch ( Type ) {
+            case AT_Float1:
+                switch ( addr & 3 ) {
+                    case 0: Value->Expression += ".x"; break;
+                    case 1: Value->Expression += ".y"; break;
+                    case 2: Value->Expression += ".z"; break;
+                    case 3: Value->Expression += ".w"; break;
+                }
+                break;
+
+            case AT_Float2:
+                switch ( addr & 3 ) {
+                    case 0: Value->Expression += ".xy"; break;
+                    case 1: Value->Expression += ".yz"; break;
+                    case 2: Value->Expression += ".zw"; break;
+                    case 3: Value->Expression += ".ww"; break;// FIXME: error?
+                }
+                break;
+
+            case AT_Float3:
+                switch ( addr & 3 ) {
+                    case 0: Value->Expression += ".xyz"; break;
+                    case 1: Value->Expression += ".yzw"; break;
+                    case 2: Value->Expression += ".www"; break;// FIXME: error?
+                    case 3: Value->Expression += ".www"; break;// FIXME: error?
+                }
+                break;
+
+            case AT_Float4:
+                switch ( addr & 3 ) {
+                    case 1: Value->Expression += ".yzww"; break;// FIXME: error?
+                    case 2: Value->Expression += ".wwww"; break;// FIXME: error?
+                    case 3: Value->Expression += ".wwww"; break;// FIXME: error?
+                }
+                break;
+
+            default:
+                AN_Assert( 0 );
+                break;
+        }
+
+        _Context.MaxUniformAddress = FMath::Max( _Context.MaxUniformAddress, location );
+
+    } else {
+        Value->Expression.Clear();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2075,20 +2146,20 @@ vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAt
 
 vec3 atmosphere( in vec3 _RayDirNormalized, in vec3 _SunPosNormalized ) {
 
-                return _RayDirNormalized*0.5+0.5;
-//    return atmosphere(
-//        _RayDirNormalized,              // normalized ray direction
-//        vec3(0,6372e3,0),               // ray origin
-//        _SunPosNormalized,              // position of the sun
-//        22.0,                           // intensity of the sun
-//        6371e3,                         // radius of the planet in meters
-//        6471e3,                         // radius of the atmosphere in meters
-//        vec3(5.5e-6, 13.0e-6, 22.4e-6), // Rayleigh scattering coefficient
-//        21e-6,                          // Mie scattering coefficient
-//        8e3,                            // Rayleigh scale height
-//        1.2e3,                          // Mie scale height
-//        0.758                           // Mie preferred scattering direction
-//    );
+                return vec3(0.2,0.3,1)*(_RayDirNormalized.y*0.5+0.5)*2;
+    //return atmosphere(
+    //    _RayDirNormalized,              // normalized ray direction
+    //    vec3(0,6372e3,0),               // ray origin
+    //    _SunPosNormalized,              // position of the sun
+    //    22.0,                           // intensity of the sun
+    //    6371e3,                         // radius of the planet in meters
+    //    6471e3,                         // radius of the atmosphere in meters
+    //    vec3(5.5e-6, 13.0e-6, 22.4e-6), // Rayleigh scattering coefficient
+    //    21e-6,                          // Mie scattering coefficient
+    //    8e3,                            // Rayleigh scale height
+    //    1.2e3,                          // Mie scale height
+    //    0.758                           // Mie preferred scattering direction
+    //);
 }\n
 
 );
@@ -2102,6 +2173,7 @@ FMaterial * FMaterialBuilder::Build() {
     bool bVertexTextureFetch = false;
     int lightmapSlot = 0;
     int maxTextureSlot = -1;
+    int maxUniformAddress = -1;
     bool bNoVertexDeform = true;
 
     memset( bHasTextures, 0, sizeof( bHasTextures ) );
@@ -2220,6 +2292,7 @@ FMaterial * FMaterialBuilder::Build() {
 
         bHasTextures[ MATERIAL_PASS_DEPTH ] = context.bHasTextures;
         maxTextureSlot = FMath::Max( maxTextureSlot, context.MaxTextureSlot );
+        maxUniformAddress = FMath::Max( maxUniformAddress, context.MaxUniformAddress );
 
         bVertexTextureFetch |= context.bHasTextures;
 
@@ -2241,6 +2314,7 @@ FMaterial * FMaterialBuilder::Build() {
 
         bHasTextures[ MATERIAL_PASS_COLOR ] |= context.bHasTextures;
         maxTextureSlot = FMath::Max( maxTextureSlot, context.MaxTextureSlot );
+        maxUniformAddress = FMath::Max( maxUniformAddress, context.MaxUniformAddress );
 
         bVertexTextureFetch |= context.bHasTextures;
 
@@ -2286,6 +2360,7 @@ FMaterial * FMaterialBuilder::Build() {
 
         bHasTextures[ MATERIAL_PASS_COLOR ] |= context.bHasTextures;
         maxTextureSlot = FMath::Max( maxTextureSlot, context.MaxTextureSlot );
+        maxUniformAddress = FMath::Max( maxUniformAddress, context.MaxUniformAddress );
 
         lightmapSlot = context.MaxTextureSlot + 1;
 
@@ -2317,7 +2392,7 @@ FMaterial * FMaterialBuilder::Build() {
 
 // input lag test
 //"float t=FS_FragColor.r;"
-//"for (int i=0;i<3000;i++) t+=sin(t)+cos(t);\n"
+//"for (int i=0;i<30000;i++) t+=sin(t)+cos(t);\n"
 //"FS_FragColor.a *= t;\n"
 
                        // Normal debugging
@@ -2343,6 +2418,7 @@ FMaterial * FMaterialBuilder::Build() {
 
         bHasTextures[ MATERIAL_PASS_WIREFRAME ] = context.bHasTextures;
         maxTextureSlot = FMath::Max( maxTextureSlot, context.MaxTextureSlot );
+        maxUniformAddress = FMath::Max( maxUniformAddress, context.MaxUniformAddress );
 
         bVertexTextureFetch |= context.bHasTextures;
 
@@ -2423,6 +2499,8 @@ FMaterial * FMaterialBuilder::Build() {
     buildData->bVertexTextureFetch = bVertexTextureFetch;
     buildData->bNoVertexDeform = bNoVertexDeform;
     //AN_Assert(bNoVertexDeform);
+
+    buildData->NumUniformVectors = maxUniformAddress >= 0 ? maxUniformAddress / 4 + 1 : 0;
 
     buildData->NumSamplers = maxTextureSlot + 1;
 

@@ -111,6 +111,9 @@ public:
     // Create texture from string (*white* *black* *gray* *normal* *cubemap*)
     void InitializeInternalTexture( const char * _Name );
 
+    // Initialize default object representation
+    void InitializeDefaultObject() override;
+
     ETexturePixelFormat GetPixelFormat() const;
     int GetDimensionCount() const;
     int GetWidth() const;

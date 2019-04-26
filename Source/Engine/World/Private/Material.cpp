@@ -46,6 +46,8 @@ FMaterial::~FMaterial() {
 void FMaterial::Initialize( FMaterialBuildData const * _Data ) {
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
+    NumUniformVectors = _Data->NumUniformVectors;
+
     FMaterialBuildData * data = ( FMaterialBuildData * )frameData->AllocFrameData( _Data->Size );
 
     if ( data ) {

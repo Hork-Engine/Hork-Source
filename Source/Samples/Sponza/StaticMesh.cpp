@@ -39,6 +39,13 @@ AN_CLASS_META_NO_ATTRIBS( FStaticMesh )
 FStaticMesh::FStaticMesh() {
     MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
+
+    FCollisionBox * box = NewObject< FCollisionBox >();
+    box->HalfExtents = Float3(1.0f);
+    box->Margin = 0.01f;
+
+    //MeshComponent->Mass = 1.0f;
+    MeshComponent->BodyComposition.AddCollisionBody( box );
 }
 
 void FStaticMesh::SetMesh( FIndexedMesh * _Mesh ) {

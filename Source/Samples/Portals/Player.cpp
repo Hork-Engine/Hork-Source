@@ -202,16 +202,9 @@ void FPlayer::TurnUp( float _Value ) {
 }
 
 void FPlayer::SpeedPress() {
-    extern FAtomicBool GSyncFrame;
-    GSyncFrame.Store( !GSyncFrame.Load() );
-    if ( GSyncFrame.Load() ) {
-        GLogger.Printf( "Sync frame ON\n" );
-    } else {
-        GLogger.Printf( "Sync frame OFF\n" );
-    }
-    //bSpeed = true;
+    bSpeed = true;
 }
 
 void FPlayer::SpeedRelease() {
-    //bSpeed = false;
+    bSpeed = false;
 }

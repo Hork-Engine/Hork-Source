@@ -42,7 +42,6 @@ SOFTWARE.
 #define MAX_MOUSE_STALLED_TIME  3000000     // microseconds
 
 static const int GLFWCursorMode[2] = { GLFW_CURSOR_NORMAL, GLFW_CURSOR_DISABLED };
-static FThreadSync MainThreadSync;
 
 #define MOUSE_LOST (-999999999999.0)
 
@@ -85,60 +84,8 @@ static void SendChangedVideoModeEvent();
 static int PressedKeys[GLFW_KEY_LAST+1];
 static bool PressedMouseButtons[GLFW_MOUSE_BUTTON_LAST+1];
 
-
-//////////////////////////////////////////////////////////////////////////////////////////
-//
-// Clipboard
-//
-//////////////////////////////////////////////////////////////////////////////////////////
-
-struct FClipboard {
-    FString      InputString;
-    const char * OutputString = "";
-    FSyncEvent   Event;
-
-    FClipboard()
-        : bUpdated( true )
-    {
-    }
-
-    void Clear() {
-        InputString.Free();
-        Event.Signal();
-    }
-
-    void Copy( const char * _Utf8String ) {
-        InputString = _Utf8String;
-        bUpdated.Store( false );
-        Event.Wait();
-    }
-
-    const char * Paste() {
-        bUpdated.Store( false );
-        Event.Wait();
-        return OutputString ? OutputString : "";
-    }
-
-    void Update() {
-        if ( !bUpdated.Load() ) {
-            if ( !InputString.IsEmpty() ) {
-                //GLogger.Printf( "SetClipboard %s\n", InputString.ToConstChar() );
-                glfwSetClipboardString( NULL, InputString.ToConstChar() );
-                InputString.Clear();
-            } else {
-                //GLogger.Printf( "GetClipboard\n" );
-                OutputString = glfwGetClipboardString( NULL );
-            }
-            bUpdated.Store( true );
-            Event.Signal();
-        }
-    }
-
-private:
-    FAtomicBool bUpdated;
-};
-
-static FClipboard Clipboard;
+static FString ClipboardPaste;
+static FString ClipboardCopy;
 
 static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Action, int _Mods ) {
     AN_Assert( _Key >= 0 || _Key <= GLFW_KEY_LAST );
@@ -158,6 +105,10 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
 
     if ( _Action == GLFW_PRESS && PressedKeys[_Key] ) {
         return;
+    }
+
+    if ( _Key == GLFW_KEY_V && ( _Mods & GLFW_MOD_CONTROL ) ) {
+        ClipboardPaste = glfwGetClipboardString( NULL );
     }
 
     FEvent * event = rt_SendEvent();
@@ -467,7 +418,8 @@ void rt_InitializeDisplays() {
 void rt_DeinitializeDisplays() {
     DestroyDisplays();
 
-    Clipboard.Clear();
+    ClipboardPaste.Free();
+    ClipboardCopy.Free();
 }
 
 static void ProcessEvent( FEvent const & _Event ) {
@@ -644,21 +596,17 @@ void rt_UpdateDisplays( FEventQueue & _EventQueue ) {
     //bIsWindowMaximized = !!glfwGetWindowAttrib( Wnd, GLFW_MAXIMIZED );
     //bIsWindowHovered = glfwGetWindowAttrib( Wnd, GLFW_HOVERED );
 
-    Clipboard.Update();
+    if ( !ClipboardCopy.IsEmpty() ) {
+        glfwSetClipboardString( NULL, ClipboardCopy.ToConstChar() );
+        ClipboardCopy.Clear();
+    }
 }
 
-void rt_SetClipboard( const char * _Utf8String ) {
-    Clipboard.Copy( _Utf8String );
+void rt_SetClipboard_GameThread( const char * _Utf8String ) {
+    ClipboardCopy = _Utf8String;
+    ClipboardPaste = _Utf8String;
 }
 
-void rt_GetClipboard( FString & _Clipboard ) {
-    _Clipboard = Clipboard.Paste();
-}
-
-void rt_MainThreadLock() {
-    MainThreadSync.BeginScope();
-}
-
-void rt_MainThreadUnlock() {
-    MainThreadSync.EndScope();
+FString const & rt_GetClipboard_GameThread() {
+    return ClipboardPaste;
 }

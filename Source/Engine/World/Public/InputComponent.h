@@ -325,7 +325,7 @@ protected:
 
     FInputComponent();
 
-    void EndPlay() override;
+    void DeinitializeComponent() override;
     void TickComponent( float _TimeStep ) override;
 
     // Return axis binding or -1 if axis is not binded

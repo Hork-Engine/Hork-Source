@@ -43,8 +43,6 @@ public:
     TRefHolder< FInputMappings > InputMappings;
     FWorld * World;
     FMyPlayerController * PlayerController;
-    TPodArray< FTexture * > TextureCache;
-    TPodArray< FIndexedMesh * > MeshCache;
     TRefHolder< FMaterial > Material;
 
     FSponzaModel() {}
@@ -63,6 +61,4 @@ private:
     void SetInputMappings();
     void CreateMaterial();
     void LoadStaticMeshes();
-    FTexture * LoadCachedTexture( const char * _FileName );
-    FIndexedMesh * LoadCachedMesh( const char * _FileName );
 };

@@ -52,12 +52,12 @@ void FGameModule::OnGameStart() {
     // Setup game master public attributes
     GGameMaster.bQuitOnEscape = true;
     GGameMaster.bToggleFullscreenAltEnter = true;
-    GGameMaster.MouseSensitivity = 0.15f;
+    GGameMaster.MouseSensitivity = 0.3f;//0.15f;
 
     //GGameMaster.SetRenderFeatures( VSync_Disabled );
     //GGameMaster.SetRenderFeatures( VSync_Fixed );
     GGameMaster.SetVideoMode( 640, 480, 0, 60, false, "OpenGL 4.5" );
-    //GGameMaster.SetVideoMode( 1920, 1080, 0, 60, true, "OpenGL 4.5" );
+    //GGameMaster.SetVideoMode( 1920, 1080, 0, 60, false, "OpenGL 4.5" );
     GGameMaster.SetWindowDefs( 1.0f, true, false, false, "AngieEngine: Quake map sample" );
     GGameMaster.SetCursorEnabled( false );
 
@@ -132,10 +132,12 @@ void FGameModule::SetInputMappings() {
     InputMappings->MapAxis( "TurnRight", ID_MOUSE, MOUSE_AXIS_X, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "TurnUp", ID_MOUSE, MOUSE_AXIS_Y, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Speed", ID_KEYBOARD, KEY_LEFT_SHIFT, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "Attack", ID_MOUSE, MOUSE_BUTTON_LEFT, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_P, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
 }
 
 void FGameModule::SpawnWorld() {
@@ -734,7 +736,7 @@ void FGameModule::CreateSkinMaterial() {
 
     FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
     diffuseTexture->Filter = TextureFilter;
-    diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_SAMPLER_CLAMP;
+    diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_CLAMP;
 
     FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
     diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );

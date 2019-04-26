@@ -89,6 +89,13 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
     FString::CopySafe( physMonitor->MonitorName, sizeof( physMonitor->MonitorName ), glfwGetMonitorName( _Monitor ) );
     glfwGetMonitorPos( _Monitor, &physMonitor->PositionX, &physMonitor->PositionY );
     glfwGetMonitorPhysicalSize( _Monitor, &physMonitor->PhysicalWidthMM, &physMonitor->PhysicalHeightMM );
+
+    const GLFWvidmode * videoMode = glfwGetVideoMode( _Monitor );
+
+    const float MM_To_Inch = 0.0393701f;
+    physMonitor->DPI_X = (float)videoMode->width / (physMonitor->PhysicalWidthMM*MM_To_Inch);
+    physMonitor->DPI_Y = (float)videoMode->height / (physMonitor->PhysicalHeightMM*MM_To_Inch);
+
     physMonitor->Internal.Pointer = _Monitor;
     physMonitor->VideoModesCount = videoModesCount;
 

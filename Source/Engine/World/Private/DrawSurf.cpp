@@ -26,8 +26,8 @@ void FDrawSurf::InitializeComponent() {
     MarkAreaDirty();
 }
 
-void FDrawSurf::EndPlay() {
-    Super::EndPlay();
+void FDrawSurf::DeinitializeComponent() {
+    Super::DeinitializeComponent();
 
     // remove from dirty list
     IntrusiveRemoveFromList( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );

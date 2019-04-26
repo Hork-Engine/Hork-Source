@@ -55,53 +55,41 @@ FRuntime::FRuntime() {
 
 bool FRuntime::IsVSyncSupported() {
     bool r;
-    rt_MainThreadLock();
     r = rt_RenderFeatures.bSwapControl;
-    rt_MainThreadUnlock();
     return r;
 }
 
 bool FRuntime::IsAdaptiveVSyncSupported() {
     bool r;
-    rt_MainThreadLock();
     r = rt_RenderFeatures.bSwapControlTear;
-    rt_MainThreadUnlock();
     return r;
 }
 
 FPhysicalMonitor const * FRuntime::GetPrimaryMonitor() {
     FPhysicalMonitor const * monitor;
-    rt_MainThreadLock();
     monitor = rt_GetPrimaryMonitor();
-    rt_MainThreadUnlock();
     return monitor;
 }
 
 FPhysicalMonitor const * FRuntime::GetMonitor( int _Handle ) {
     FPhysicalMonitor const * monitor;
-    rt_MainThreadLock();
     FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
     monitor = ( (unsigned)_Handle < physicalMonitors.Length() ) ? physicalMonitors[ _Handle ] : nullptr;
-    rt_MainThreadUnlock();
     return monitor;
 }
 
 FPhysicalMonitor const * FRuntime::GetMonitor( const char * _MonitorName ) {
     FPhysicalMonitor const * monitor;
-    rt_MainThreadLock();
     monitor = rt_FindMonitor( _MonitorName );
-    rt_MainThreadUnlock();
     return monitor;
 }
 
 bool FRuntime::IsMonitorConnected( int _Handle ) {
     bool bConnected = false;
-    rt_MainThreadLock();
     FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
     if ( (unsigned)_Handle < physicalMonitors.Length() ) {
         bConnected = physicalMonitors[ _Handle ]->Internal.Pointer != nullptr;
     }
-    rt_MainThreadUnlock();
     return bConnected;
 }
 
@@ -118,7 +106,6 @@ void FRuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
     const double scale = 1.0 / (physMonitor->GammaRampSize - 1);
     const double InvGamma = 1.0 / _Gamma;
 
-    rt_MainThreadLock();
     for( int i = 0 ; i < physMonitor->GammaRampSize ; i++ ) {
         double val = pow( i * scale, InvGamma ) * 65535.0 + 0.5;
         if ( val > 65535.0 ) val = 65535.0;
@@ -127,7 +114,6 @@ void FRuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
         physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize * 2] = (unsigned short)val;
     }
     physMonitor->Internal.bGammaRampDirty = true;
-    rt_MainThreadUnlock();
 }
 
 void FRuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
@@ -136,7 +122,6 @@ void FRuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
         return;
     }
 
-    rt_MainThreadLock();
     int brightness = _Gamma > 0.0f ? _Gamma * 255.0f : 0.0f;
     for( int i = 0 ; i < physMonitor->GammaRampSize ; i++ ) {
         int val = i * (brightness + 1);
@@ -146,7 +131,6 @@ void FRuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
         physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize * 2] = val;
     }
     physMonitor->Internal.bGammaRampDirty = true;
-    rt_MainThreadUnlock();
 }
 
 void FRuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRamp ) {
@@ -155,10 +139,8 @@ void FRuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRa
         return;
     }
 
-    rt_MainThreadLock();
     memcpy( physMonitor->Internal.GammaRamp, _GammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
     physMonitor->Internal.bGammaRampDirty = true;
-    rt_MainThreadUnlock();
 }
 
 void FRuntime::GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, int & _GammaRampSize ) {
@@ -170,9 +152,7 @@ void FRuntime::GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, in
 
     _GammaRampSize = physMonitor->GammaRampSize;
 
-    rt_MainThreadLock();
     memcpy( _GammaRamp, physMonitor->Internal.GammaRamp, sizeof( unsigned short ) * _GammaRampSize * 3 );
-    rt_MainThreadUnlock();
 }
 
 void FRuntime::RestoreMonitorGamma( int _Handle ) {
@@ -181,18 +161,14 @@ void FRuntime::RestoreMonitorGamma( int _Handle ) {
         return;
     }
 
-    rt_MainThreadLock();
     memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
     physMonitor->Internal.bGammaRampDirty = true;
-    rt_MainThreadUnlock();
 }
 
 int FRuntime::GetPhysicalMonitorsCount() {
     int count;
-    rt_MainThreadLock();
     FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
     count = physicalMonitors.Length();
-    rt_MainThreadUnlock();
     return count;
 }
 
@@ -211,6 +187,7 @@ static waitableTimer_t WaitableTimer;
 static LARGE_INTEGER WaitTime;
 
 //#include <thread>
+
 static void WaitMicrosecondsWIN32( int _Microseconds ) {
 #if 0
     std::this_thread::sleep_for( StdChrono::microseconds( _Microseconds ) );
@@ -382,67 +359,36 @@ const char * FRuntime::GetExecutableName() {
     return rt_Executable ? rt_Executable : "";
 }
 
-void FRuntime::SetClipboard( const char * _Utf8String ) {
-    rt_SetClipboard( _Utf8String );
+void FRuntime::SetClipboard_GameThread( const char * _Utf8String ) {
+    rt_SetClipboard_GameThread( _Utf8String );
 }
 
-void FRuntime::GetClipboard( FString & _Clipboard ) {
-    rt_GetClipboard( _Clipboard );
+FString const & FRuntime::GetClipboard_GameThread() {
+    return rt_GetClipboard_GameThread();
 }
 
 void FRuntime::Terminate() {
     rt_Terminate.Store( true );
 }
 
-FRenderFrame * FRuntime::SwapFrameData() {
-    rt_FrameReadyEvent.Wait();
-    rt_ReadFrameIndex ^= 1;
-    rt_SwapFrameEvent.Signal();
-    rt_DrawFrameIndex = rt_ReadFrameIndex ^ 1;
-    rt_FrameData[rt_DrawFrameIndex].SmpIndex = rt_DrawFrameIndex;
-    rt_FrameData[rt_DrawFrameIndex].FrameMemoryUsed = 0;
-    rt_FrameData[rt_DrawFrameIndex].FrameMemorySize = rt_FrameMemorySize - rt_FrameData[rt_ReadFrameIndex].FrameMemoryUsed;
-    if ( rt_DrawFrameIndex & 1 ) {
-        rt_FrameData[rt_DrawFrameIndex].pFrameMemory = ( byte * )rt_FrameMemoryAddress + rt_FrameMemorySize;
-    } else {
-        rt_FrameData[rt_DrawFrameIndex].pFrameMemory = ( byte * )rt_FrameMemoryAddress;
-    }
-    rt_FrameData[rt_DrawFrameIndex].DrawListHead = nullptr;
-    rt_FrameData[rt_DrawFrameIndex].DrawListTail = nullptr;
-    return &rt_FrameData[rt_DrawFrameIndex];
+void FRuntime::SignalSimulationIsDone() {
+    rt_SimulationIsDone.Signal();
 }
 
-FRenderFrame * FRuntime::SwapFrameDataTimeout( int _WaitTimeout ) {
-    bool timedOut;
-
-    rt_FrameReadyEvent.WaitTimeout( _WaitTimeout, timedOut );
-
-    if ( timedOut ) {
-        return nullptr;
-    }
-
-    rt_ReadFrameIndex ^= 1;
-    rt_SwapFrameEvent.Signal();
-    rt_DrawFrameIndex = rt_ReadFrameIndex ^ 1;
-    rt_FrameData[rt_DrawFrameIndex].SmpIndex = rt_DrawFrameIndex;
-    rt_FrameData[rt_DrawFrameIndex].FrameMemoryUsed = 0;
-    rt_FrameData[rt_DrawFrameIndex].FrameMemorySize = rt_FrameMemorySize - rt_FrameData[rt_ReadFrameIndex].FrameMemoryUsed;
-    rt_FrameData[rt_DrawFrameIndex].pFrameMemory = ( byte * )rt_FrameMemoryAddress + rt_FrameData[rt_ReadFrameIndex].FrameMemoryUsed;
-    rt_FrameData[rt_DrawFrameIndex].DrawListHead = nullptr;
-    rt_FrameData[rt_DrawFrameIndex].DrawListTail = nullptr;
-    return &rt_FrameData[rt_DrawFrameIndex];
+void FRuntime::WaitGameUpdate() {
+    rt_GameUpdateEvent.Wait();
 }
 
 FRenderFrame * FRuntime::GetFrameData() {
-    return &rt_FrameData[rt_DrawFrameIndex];
+    return &rt_FrameData[0];
 }
 
-FEventQueue * FRuntime::ReadEvents() {
-    return &rt_FrameData[rt_DrawFrameIndex].RuntimeEvents;
+FEventQueue * FRuntime::ReadEvents_GameThread() {
+    return &rt_FrameData[0].RuntimeEvents;
 }
 
-FEventQueue * FRuntime::WriteEvents() {
-    return &rt_FrameData[rt_DrawFrameIndex].GameEvents;
+FEventQueue * FRuntime::WriteEvents_GameThread() {
+    return &rt_FrameData[0].GameEvents;
 }
 
 

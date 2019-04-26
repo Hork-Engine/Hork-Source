@@ -67,9 +67,7 @@ void FRenderFrontend::Deinitialize() {
 }
 
 // FUTURE: void FRenderFrontend::BuildFrameData( TPodArray< FWindow * > & _Windows ) {
-void FRenderFrontend::BuildFrameData( FCanvas * _Canvas ) {
-
-    FrontendTime = GRuntime.SysMilliseconds();
+void FRenderFrontend::BuildFrameData( FCanvas * _Canvas, ImDrawData * _DrawData ) {
 
     CurFrameData = GRuntime.GetFrameData();
 
@@ -80,10 +78,7 @@ void FRenderFrontend::BuildFrameData( FCanvas * _Canvas ) {
 
     FRenderProxy::FreeDeadProxies();
 
-    if ( CurFrameData->SmpIndex & 1 ) {
-        CurFrameData->NumViews = 0;
-        return;
-    }
+    FrontendTime = GRuntime.SysMilliseconds();
 
     MaxViewportWidth = 0;
     MaxViewportHeight = 0;
@@ -109,6 +104,58 @@ void FRenderFrontend::BuildFrameData( FCanvas * _Canvas ) {
     if ( GGameMaster.IsWindowVisible() ) {
         VisMarker++;
         WriteDrawList( _Canvas );
+
+        // -------------------------------------
+        if ( _DrawData && _DrawData->CmdListsCount > 0 ) {
+            // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
+            int fb_width = _DrawData->DisplaySize.x * _DrawData->FramebufferScale.x;
+            int fb_height = _DrawData->DisplaySize.y * _DrawData->FramebufferScale.y;
+            if ( fb_width == 0 || fb_height == 0 ) {
+                return;
+            }
+
+            if ( _DrawData->FramebufferScale.x != 1.0f || _DrawData->FramebufferScale.y != 1.0f ) {
+                _DrawData->ScaleClipRects( _DrawData->FramebufferScale );
+            }
+
+            bool bDrawMouseCursor = true;
+
+            if ( bDrawMouseCursor ) {
+                ImGuiMouseCursor cursor = ImGui::GetCurrentContext()->MouseCursor;
+
+                ImDrawList * drawList = _DrawData->CmdLists[ _DrawData->CmdListsCount - 1 ];
+                if ( cursor != ImGuiMouseCursor_None )
+                {
+                    AN_Assert( cursor > ImGuiMouseCursor_None && cursor < ImGuiMouseCursor_COUNT );
+
+                    const ImU32 col_shadow = IM_COL32( 0, 0, 0, 48 );
+                    const ImU32 col_border = IM_COL32( 0, 0, 0, 255 );          // Black
+                    const ImU32 col_fill = IM_COL32( 255, 255, 255, 255 );    // White
+
+                    Float2 pos = GGameMaster.GetCursorPosition();
+                    float scale = 1.0f;
+
+                    ImFontAtlas* font_atlas = drawList->_Data->Font->ContainerAtlas;
+                    Float2 offset, size, uv[ 4 ];
+                    if ( font_atlas->GetMouseCursorTexData( cursor, (ImVec2*)&offset, (ImVec2*)&size, (ImVec2*)&uv[ 0 ], (ImVec2*)&uv[ 2 ] ) ) {
+                        pos -= offset;
+                        const ImTextureID tex_id = font_atlas->TexID;
+                        drawList->PushClipRectFullScreen();
+                        drawList->PushTextureID( tex_id );
+                        drawList->AddImage( tex_id, pos + Float2( 1, 0 )*scale, pos + Float2( 1, 0 )*scale + size*scale, uv[ 2 ], uv[ 3 ], col_shadow );
+                        drawList->AddImage( tex_id, pos + Float2( 2, 0 )*scale, pos + Float2( 2, 0 )*scale + size*scale, uv[ 2 ], uv[ 3 ], col_shadow );
+                        drawList->AddImage( tex_id, pos, pos + size*scale, uv[ 2 ], uv[ 3 ], col_border );
+                        drawList->AddImage( tex_id, pos, pos + size*scale, uv[ 0 ], uv[ 1 ], col_fill );
+                        drawList->PopTextureID();
+                        drawList->PopClipRect();
+                    }
+                }
+            }
+
+            for ( int n = 0; n < _DrawData->CmdListsCount ; n++ ) {
+                WriteDrawList( _DrawData->CmdLists[ n ] );
+            }
+        }
     }
 #endif
 
@@ -238,6 +285,9 @@ void FRenderFrontend::UpdateMaterialInstanceFrameData( FMaterialInstance * _Inst
             textures[i] = 0;
         }
     }
+
+    _Instance->FrameData->NumUniformVectors = _Instance->Material->GetNumUniformVectors();
+    memcpy( _Instance->FrameData->UniformVectors, _Instance->UniformVectors, sizeof(Float4)*_Instance->FrameData->NumUniformVectors );
 }
 
 void FRenderFrontend::AddInstances() {
@@ -458,12 +508,119 @@ void FRenderFrontend::WriteDrawList( FCanvas * _Canvas ) {
     }
 }
 
+void FRenderFrontend::WriteDrawList( ImDrawList const * _DrawList ) {
+    FRenderFrame * frameData = GRuntime.GetFrameData();
 
+    ImDrawList const * srcList = _DrawList;
 
-bool r_spatialCull = true;
-bool r_faceCull = true;
+    if ( srcList->VtxBuffer.empty() ) {
+        return;
+    }
 
-//static int UniqueSerialIndex = 0; // меняется на каждом обновлении spatial tree
+    FDrawList * drawList = ( FDrawList * )frameData->AllocFrameData( sizeof( FDrawList ) );
+    if ( !drawList ) {
+        return;
+    }
+
+    drawList->VerticesCount = srcList->VtxBuffer.size();
+    drawList->IndicesCount = srcList->IdxBuffer.size();
+    drawList->CommandsCount = srcList->CmdBuffer.size();
+
+    int bytesCount = sizeof( FDrawVert ) * drawList->VerticesCount;
+    drawList->Vertices = ( FDrawVert * )frameData->AllocFrameData( bytesCount );
+    if ( !drawList->Vertices ) {
+        return;
+    }
+    memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
+
+    bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
+    drawList->Indices = ( unsigned short * )frameData->AllocFrameData( bytesCount );
+    if ( !drawList->Indices ) {
+        return;
+    }
+
+    memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
+
+    bytesCount = sizeof( FDrawCmd ) * drawList->CommandsCount;
+    drawList->Commands = ( FDrawCmd * )frameData->AllocFrameData( bytesCount );
+    if ( !drawList->Commands ) {
+        return;
+    }
+
+    int firstIndex = 0;
+
+    FDrawCmd * dstCmd = drawList->Commands;
+    for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
+
+        memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
+        dstCmd->IndexCount = pCmd->ElemCount;
+        dstCmd->StartIndexLocation = firstIndex;
+        dstCmd->Type = (FCanvasDrawCmd)( pCmd->BlendingState & 0xff );
+        dstCmd->Blending = (EColorBlending)( ( pCmd->BlendingState >> 8 ) & 0xff );
+        dstCmd->SamplerType = (ESamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
+
+        firstIndex += pCmd->ElemCount;
+
+        AN_Assert( pCmd->TextureId );
+
+        switch ( dstCmd->Type ) {
+        case CANVAS_DRAW_CMD_VIEWPORT:
+        {
+            drawList->CommandsCount--;
+            continue;
+        }
+
+        case CANVAS_DRAW_CMD_MATERIAL:
+        {
+            FMaterialInstance * materialInstance = static_cast< FMaterialInstance * >( pCmd->TextureId );
+            if ( !materialInstance->Material ) {
+                drawList->CommandsCount--;
+                continue;
+            }
+
+            if ( materialInstance->Material->GetType() != MATERIAL_TYPE_HUD ) {
+                drawList->CommandsCount--;
+                continue;
+            }
+
+            UpdateMaterialInstanceFrameData( materialInstance );
+
+            dstCmd->MaterialInstance = materialInstance->FrameData;
+            AN_Assert( dstCmd->MaterialInstance );
+
+            dstCmd++;
+
+            break;
+        }
+        case CANVAS_DRAW_CMD_TEXTURE:
+        case CANVAS_DRAW_CMD_ALPHA:
+        {
+            dstCmd->Texture = (FRenderProxy_Texture *)pCmd->TextureId;
+            if ( !dstCmd->Texture->IsSubmittedToRenderThread() ) {
+                drawList->CommandsCount--;
+                continue;
+            }
+            dstCmd++;
+            break;
+        }
+        default:
+            AN_Assert( 0 );
+            break;
+        }
+    }
+
+    //GLogger.Printf("WriteDrawList: %d draw calls\n", drawList->CommandsCount );
+
+    FDrawList * prev = frameData->DrawListTail;
+    drawList->Next = nullptr;
+    frameData->DrawListTail = drawList;
+    if ( prev ) {
+        prev->Next = drawList;
+    } else {
+        frameData->DrawListHead = drawList;
+    }
+}
+
 
 static int Dbg_SkippedByVisFrame;
 static int Dbg_SkippedByPlaneOffset;
@@ -957,7 +1114,7 @@ void FRenderFrontend::AddSurface( FMeshComponent * component, PlaneF const * _Cu
         return;
     }
 
-    if ( component->VSDPasses & VSD_FACE_CULL ) {
+    if ( component->VSDPasses & VSD_PASS_FACE_CULL ) {
         const bool bTwoSided = false;
         const bool bFrontSided = true;
         const float EPS = 0.25f;

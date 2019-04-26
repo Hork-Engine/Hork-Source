@@ -37,7 +37,11 @@ SOFTWARE.
 
 #include <algorithm>    // find
 
-AN_CLASS_META_NO_ATTRIBS( FSceneComponent )
+AN_BEGIN_CLASS_META( FSceneComponent )
+AN_ATTRIBUTE_( Position, AF_DEFAULT )
+AN_ATTRIBUTE_( Rotation, AF_DEFAULT )
+AN_ATTRIBUTE_( Scale, AF_DEFAULT )
+AN_END_CLASS_META()
 
 FSceneComponent::FSceneComponent() {
     Rotation = Quat( 1,0,0,0 );
@@ -45,7 +49,9 @@ FSceneComponent::FSceneComponent() {
     bTransformDirty = true;
 }
 
-void FSceneComponent::EndPlay() {
+void FSceneComponent::DeinitializeComponent() {
+    Super::DeinitializeComponent();
+
     if ( GetParentActor() && !GetParentActor()->IsPendingKill() ) {
         Detach();
         DetachChilds();

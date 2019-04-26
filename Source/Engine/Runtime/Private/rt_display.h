@@ -36,10 +36,8 @@ SOFTWARE.
 void rt_InitializeDisplays();
 void rt_DeinitializeDisplays();
 void rt_UpdateDisplays( FEventQueue & _EventQueue );
-void rt_SetClipboard( const char * _Utf8String );
-void rt_GetClipboard( FString & _Clipboard );
-void rt_MainThreadLock();
-void rt_MainThreadUnlock();
+void rt_SetClipboard_GameThread( const char * _Utf8String );
+FString const & rt_GetClipboard_GameThread();
 
 extern FRenderBackendFeatures rt_RenderFeatures;
 extern int rt_InputEventCount;

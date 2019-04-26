@@ -34,6 +34,7 @@ SOFTWARE.
 
 AN_BEGIN_CLASS_META( FActorComponent )
 //AN_ATTRIBUTE( Name, SetName, GetName, AF_NON_SERIALIZABLE )
+AN_ATTRIBUTE_( bCanEverTick, AF_DEFAULT )
 AN_END_CLASS_META()
 
 FActorComponent::FActorComponent() {
@@ -84,6 +85,8 @@ void FActorComponent::Destroy() {
     GetWorld()->PendingKillComponents = this;
 
     EndPlay();
+
+    DeinitializeComponent();
 }
 
 int FActorComponent::Serialize( FDocument & _Doc ) {

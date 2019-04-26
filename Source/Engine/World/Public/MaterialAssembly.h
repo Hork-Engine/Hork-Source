@@ -74,6 +74,7 @@ public:
     mutable FString SourceCode;
     bool bHasTextures;
     int MaxTextureSlot;
+    int MaxUniformAddress;
 
     void Reset( EMaterialType _Type, EMaterialPass _Pass ) { ++BuildSerial; MaterialType = _Type; MaterialPass = _Pass; }
     int GetBuildSerial() const { return BuildSerial; }
@@ -551,9 +552,9 @@ public:
 
     ETextureType TextureType;
     ETextureFilter Filter;
-    ESamplerAddress AddressU;
-    ESamplerAddress AddressV;
-    ESamplerAddress AddressW;
+    ETextureAddress AddressU;
+    ETextureAddress AddressV;
+    ETextureAddress AddressW;
     float MipLODBias;
     float Anisotropy;
     float MinLod;
@@ -568,6 +569,23 @@ protected:
 
 private:
     int SlotIndex;
+};
+
+class FMaterialUniformAddress : public FAssemblyBlock {
+    AN_CLASS( FMaterialUniformAddress, FAssemblyBlock )
+
+    friend class FMaterialBuilder;
+
+public:
+    FAssemblyBlockOutput * Value;
+
+    EAssemblyType Type;
+    int Address;
+
+protected:
+    FMaterialUniformAddress();
+
+    void Compute( FMaterialBuildContext & _Context ) override;
 };
 
 class FMaterialSamplerBlock : public FAssemblyBlock {

@@ -99,7 +99,11 @@ public:
     bool bQuitOnEscape = true;
     bool bToggleFullscreenAltEnter = true;
     bool bAllowConsole = true;
-    int GameHertz = 120;//30;//60;
+//    int GameHertz = 120;//30;//60;
+    int PhysicsHertz = 24;//30;
+    bool bEnablePhysicsInterpolation = true;
+    bool bContactSolverSplitImpulse = false; // disabled for performance
+    int NumContactSolverIterations = 10;
     float MouseSensitivity = 1.0f;
 
     // Spawn a new world
@@ -202,6 +206,10 @@ public:
 
     IGameModule * GetGameModule() { return GameModule; }
 
+    // !!! Temp solution !!!
+    void InitializeGame();
+    void DeinitializeGame();
+
 private:
     // Game thread callback
     friend void _GameThreadMain();
@@ -209,7 +217,7 @@ private:
     void Run();
 
     // Process any events
-    void ProcessEvents();
+    public:void ProcessEvents();private: // !!! Temp solution !!!
 
     // Process any event
     void ProcessEvent( struct FEvent const & _Event );
@@ -224,7 +232,7 @@ private:
     void OnCharEvent( struct FCharEvent const & _Event, double _TimeStamp );
     void OnChangedVideoModeEvent( struct FChangedVideoModeEvent const & _Event );
 
-    void UpdateInputAxes( float _Fract );
+    public:void UpdateInputAxes( float _Fract );private:
 
     // Used to debug some features. Must be removed from release.
     void DeveloperKeys( struct FKeyEvent const & _Event );
@@ -237,6 +245,8 @@ private:
     void KickoffPendingKillWorlds();
 
     void DrawCanvas();
+
+    void UpdateImgui();
 
     // System time at frame start
     int64_t FrameTimeStamp;
@@ -282,7 +292,7 @@ private:
 
     Float2 CursorPosition;
 
-    //FImguiContext * ImguiContext;
+    FImguiContext * ImguiContext;
 
     // Game tick number
     int TickNumber = 0;

@@ -496,8 +496,8 @@ FInputComponent::FInputComponent() {
     InputComponents.Append( this );
 }
 
-void FInputComponent::EndPlay() {
-    Super::EndPlay();
+void FInputComponent::DeinitializeComponent() {
+    Super::DeinitializeComponent();
 
     InputComponents[ IndexInStaticArray ] = InputComponents[ InputComponents.Length() - 1 ];
     InputComponents[ IndexInStaticArray ]->IndexInStaticArray = IndexInStaticArray;

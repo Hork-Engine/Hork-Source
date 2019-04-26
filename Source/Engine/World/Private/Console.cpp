@@ -327,9 +327,7 @@ static void AddStoryLine( FWideChar * _Text, int _Length ) {
 }
 
 static void InsertClipboardText() {
-    FString clipboard;
-
-    GRuntime.GetClipboard( clipboard );
+    FString const & clipboard = GRuntime.GetClipboard_GameThread();
 
     const char * s = clipboard.ToConstChar();
 

@@ -120,6 +120,10 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     }
 }
 
+void FIndexedMesh::InitializeDefaultObject() {
+    InitializeInternalMesh( "*box*" );
+}
+
 FLightmapUV * FIndexedMesh::CreateLightmapUVChannel() {
     FLightmapUV * channel = NewObject< FLightmapUV >();
 
@@ -277,21 +281,25 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
 
     if ( !FString::Cmp( _Name, "*box*" ) ) {
         InitializeShape< FBoxShape >( Float3(1), 1 );
+        SetName( _Name );
         return;
     }
 
     if ( !FString::Cmp( _Name, "*sphere*" ) ) {
         InitializeShape< FSphereShape >( 0.5f, 1, 32, 32 );
+        SetName( _Name );
         return;
     }
 
     if ( !FString::Cmp( _Name, "*cylinder*" ) ) {
         InitializeShape< FCylinderShape >( 0.5f, 1, 1, 32 );
+        SetName( _Name );
         return;
     }
 
     if ( !FString::Cmp( _Name, "*plane*" ) ) {
         InitializeShape< FPlaneShape >( 1.0f, 1.0f, 1 );
+        SetName( _Name );
         return;
     }
 

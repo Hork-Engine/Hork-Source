@@ -363,6 +363,7 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
+        SetName( _Name );
         return;
     }
 
@@ -377,6 +378,7 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
+        SetName( _Name );
         return;
     }
 
@@ -391,6 +393,7 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
+        SetName( _Name );
         return;
     }
 
@@ -407,6 +410,7 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
+        SetName( _Name );
         return;
     }
 
@@ -437,10 +441,15 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
                 memcpy( pixels, data[face], 3 );
             }
         }
+        SetName( _Name );
         return;
     }
 
     GLogger.Printf( "Unknown internal texture %s\n", _Name );
+}
+
+void FTexture::InitializeDefaultObject() {
+    InitializeInternalTexture( "*white*" );
 }
 
 void * FTexture::WriteTextureData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod ) {
@@ -688,6 +697,8 @@ static int Stbi_Eof_Mem( void *user ) {
 bool FImage::LoadRawImage( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
     FFileStream stream;
 
+    Free();
+
     if ( !stream.OpenRead( _Path ) ) {
         return false;
     }
@@ -847,6 +858,8 @@ bool FImage::LoadRawImage( FMemoryStream & _Stream, bool _SRGB, bool _GenerateMi
 
 bool FImage::LoadRawImageHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
     FFileStream stream;
+
+    Free();
 
     if ( !stream.OpenRead( _Path ) ) {
         return false;

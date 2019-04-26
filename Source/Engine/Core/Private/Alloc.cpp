@@ -1240,6 +1240,13 @@ void FMemoryZone::CheckMemoryLeaks() {
             if ( cur->size < 0 ) {
                 MemLogger.Print( "==== Zone Memory Leak ====\n" );
                 MemLogger.Printf( "Chunk Address: %u Size: %d\n", (size_t)( cur + 1 ), (-cur->size) );
+
+                //int sz = -cur->size;
+                //char * b = (char*)(cur+1);
+                //while ( sz-->0 ) {
+                //    MemLogger.Printf("%c",*b > 31 && *b < 127 ? *b : '?');
+                //    b++;
+                //}
             }
 
             if ( rover == start ) {

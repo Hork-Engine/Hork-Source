@@ -41,10 +41,6 @@ FPlayerController::FPlayerController() {
     bCanEverTick = true;
 }
 
-void FPlayerController::BeginPlay() {
-    Super::BeginPlay();
-}
-
 void FPlayerController::EndPlay() {
     Super::EndPlay();
 
@@ -77,6 +73,7 @@ void FPlayerController::SetPawn( FPawn * _Pawn ) {
     InputComponent->BindAction( "Pause", IE_Press, this, &FPlayerController::TogglePause, true );
     InputComponent->BindAction( "TakeScreenshot", IE_Press, this, &FPlayerController::TakeScreenshot, true );
     InputComponent->BindAction( "ToggleWireframe", IE_Press, this, &FPlayerController::ToggleWireframe, true );
+    InputComponent->BindAction( "ToggleDebugDraw", IE_Press, this, &FPlayerController::ToggleDebugDraw, true );
 
     Pawn = _Pawn;
 
@@ -190,5 +187,11 @@ void FPlayerController::TakeScreenshot() {
 void FPlayerController::ToggleWireframe() {
     if ( RenderingParameters ) {
         RenderingParameters->bWireframe ^= 1;
+    }
+}
+
+void FPlayerController::ToggleDebugDraw() {
+    if ( RenderingParameters ) {
+        RenderingParameters->bDrawDebug ^= 1;
     }
 }

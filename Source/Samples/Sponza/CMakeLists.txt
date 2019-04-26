@@ -22,11 +22,7 @@ else()
 add_executable( ${PROJECT} ${SRCS} )
 endif()
 
-if(ENGINE_CMAKE)
 target_link_libraries( ${PROJECT} Engine )
-else()
-target_link_libraries( ${PROJECT} Engine )
-endif(ENGINE_CMAKE)
 
 set( DLL_PATH ${CMAKE_SOURCE_DIR}/Angie/Win64/$<CONFIGURATION> )
 

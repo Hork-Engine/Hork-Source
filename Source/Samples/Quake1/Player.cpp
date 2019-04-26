@@ -121,6 +121,8 @@ void FPlayer::SetupPlayerInputComponent( FInputComponent * _Input ) {
     _Input->BindAxis( "TurnUp", this, &FPlayer::TurnUp );
     _Input->BindAction( "Speed", IE_Press, this, &FPlayer::SpeedPress );
     _Input->BindAction( "Speed", IE_Release, this, &FPlayer::SpeedRelease );
+    _Input->BindAction( "Attack", IE_Press, this, &FPlayer::AttackPress );
+    _Input->BindAction( "Attack", IE_Release, this, &FPlayer::AttackRelease );
 }
 
 void FPlayer::Tick( float _TimeStep ) {
@@ -177,6 +179,7 @@ void FPlayer::TurnRight( float _Value ) {
     Angles.Yaw -= _Value * 0.5f;
     Angles.Yaw = Angl::Normalize180( Angles.Yaw );
     RootComponent->SetAngles( Angles );
+    //GLogger.Printf("Turn right\n");
 }
 
 void FPlayer::TurnUp( float _Value ) {
@@ -186,16 +189,20 @@ void FPlayer::TurnUp( float _Value ) {
 }
 
 void FPlayer::SpeedPress() {
-    extern FAtomicBool GSyncFrame;
-    GSyncFrame.Store( !GSyncFrame.Load() );
-    if ( GSyncFrame.Load() ) {
-        GLogger.Printf( "Sync frame ON\n" );
-    } else {
-        GLogger.Printf( "Sync frame OFF\n" );
-    }
-    //bSpeed = true;
+    bSpeed = true;
 }
 
 void FPlayer::SpeedRelease() {
-    //bSpeed = false;
+    bSpeed = false;
 }
+
+void FPlayer::AttackPress() {
+    bSpeed = true;
+    //GLogger.Printf("Attack press\n");
+}
+
+void FPlayer::AttackRelease() {
+    bSpeed = false;
+    //GLogger.Printf("Attack release\n");
+}
+

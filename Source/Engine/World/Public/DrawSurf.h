@@ -30,8 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "SceneComponent.h"
-#include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
+#include "PhysicalBody.h"
 
 class FLevel;
 
@@ -50,8 +49,8 @@ FDrawSurf
 Base class for drawing surfaces
 
 */
-class ANGIE_API FDrawSurf : public FSceneComponent {
-    AN_COMPONENT( FDrawSurf, FSceneComponent )
+class ANGIE_API FDrawSurf : public FPhysicalBody {
+    AN_COMPONENT( FDrawSurf, FPhysicalBody )
 
     friend class FLevel;
     friend class FRenderFrontend;
@@ -93,8 +92,8 @@ protected:
     FDrawSurf();
 
     void InitializeComponent() override;
+    void DeinitializeComponent() override;
     void OnTransformDirty() override;
-    void EndPlay() override;
 
     void MarkWorldBoundsDirty();
     

@@ -98,6 +98,8 @@ protected:
     // Called from Actor's InitializeComponents()
     virtual void InitializeComponent() {}
 
+    virtual void DeinitializeComponent() {}
+
     virtual void BeginPlay() {}
 
     // Called only from Destroy() method

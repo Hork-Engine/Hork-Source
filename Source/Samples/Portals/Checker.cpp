@@ -42,4 +42,11 @@ FChecker::FChecker() {
     component->SetMaterialInstance( 0, GModule->CheckerMaterialInstance );
 
     RootComponent = component;
+
+    //bCanEverTick = true;
+    bCanEverTick = false;
+}
+
+void FChecker::Tick( float _TimeDelta ) {
+    RootComponent->TurnRightFPS(_TimeDelta);
 }

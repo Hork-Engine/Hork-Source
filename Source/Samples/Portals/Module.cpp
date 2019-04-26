@@ -185,6 +185,7 @@ void FModule::SetInputMappings() {
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
 }
 
 void FModule::DrawCanvas( FCanvas * _Canvas ) {
@@ -202,7 +203,7 @@ FMaterial * FModule::CreateMaterial() {
 
     FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
     diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
-    diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_SAMPLER_WRAP;
+    diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
 
     FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
     diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );

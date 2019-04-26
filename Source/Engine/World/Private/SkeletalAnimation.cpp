@@ -167,12 +167,8 @@ void FSkinnedComponent::InitializeComponent() {
     world->RegisterSkinnedMesh( this );
 }
 
-void FSkinnedComponent::BeginPlay() {
-    Super::BeginPlay();
-}
-
-void FSkinnedComponent::EndPlay() {
-    Super::EndPlay();
+void FSkinnedComponent::DeinitializeComponent() {
+    Super::DeinitializeComponent();
 
     SetSkeleton( nullptr );
 

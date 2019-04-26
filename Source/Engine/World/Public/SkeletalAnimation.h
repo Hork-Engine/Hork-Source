@@ -202,9 +202,9 @@ Animation play mode
 
 */
 enum EAnimationPlayMode {
-    ANIMATION_PLAY_CLAMP,
     ANIMATION_PLAY_WRAP,
-    ANIMATION_PLAY_MIRROR
+    ANIMATION_PLAY_MIRROR,
+    ANIMATION_PLAY_CLAMP
 };
 
 /*
@@ -275,8 +275,7 @@ protected:
     FSkinnedComponent();
 
     void InitializeComponent() override;
-    void BeginPlay() override;
-    void EndPlay() override;
+    void DeinitializeComponent() override;
 
     void DrawDebug( FDebugDraw * _DebugDraw ) override;
 

@@ -36,16 +36,25 @@ SOFTWARE.
 
 AN_CLASS_META_NO_ATTRIBS( FImguiContext )
 
+static void SetClipboardText( void *, const char * _Text ) {
+    GRuntime.SetClipboard_GameThread( _Text );
+}
+
+static const char * GetClipboardText( void * ) {
+    return GRuntime.GetClipboard_GameThread().ToConstChar();
+}
+
 FImguiContext::FImguiContext() {
     GUIContext = ImGui::CreateContext();
 
     ImGuiIO & IO = ImGui::GetIO();
     IO.Fonts = NULL;//&FontAtlas;
-    IO.SetClipboardTextFn = NULL;// []( void *, const char * _Text ) { GPlatformPort->SetClipboard( _Text ); };
-    IO.GetClipboardTextFn = NULL;// []( void * ) { return GPlatformPort->GetClipboard(); };
+    IO.SetClipboardTextFn = SetClipboardText;
+    IO.GetClipboardTextFn = GetClipboardText;
     IO.ClipboardUserData = NULL;
     //IO.UserData = this;
     IO.ImeWindowHandle = NULL;
+    IO.MouseDrawCursor = false;
 
     IO.KeyMap[ImGuiKey_Tab] = KEY_TAB;
     IO.KeyMap[ImGuiKey_LeftArrow] = KEY_LEFT;
@@ -56,8 +65,10 @@ FImguiContext::FImguiContext() {
     IO.KeyMap[ImGuiKey_PageDown] = KEY_PAGE_DOWN;
     IO.KeyMap[ImGuiKey_Home] = KEY_HOME;
     IO.KeyMap[ImGuiKey_End] = KEY_END;
+    IO.KeyMap[ImGuiKey_Insert] = KEY_INSERT;
     IO.KeyMap[ImGuiKey_Delete] = KEY_DELETE;
     IO.KeyMap[ImGuiKey_Backspace] = KEY_BACKSPACE;
+    IO.KeyMap[ImGuiKey_Space] = KEY_SPACE;
     IO.KeyMap[ImGuiKey_Enter] = KEY_ENTER;
     IO.KeyMap[ImGuiKey_Escape] = KEY_ESCAPE;
     IO.KeyMap[ImGuiKey_A] = KEY_A;
@@ -78,8 +89,9 @@ FImguiContext::FImguiContext() {
         IO.MouseDown[i] = false;
     }
     IO.MouseWheel = 0;
+    IO.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableSetMousePos;
 
-    ImGui::StyleColorsLight( &ImGui::GetStyle() );
+    ImGui::StyleColorsDark( &ImGui::GetStyle() );
 
     //ImGui::NewFrame();
 }
@@ -103,6 +115,7 @@ void FImguiContext::OnKeyEvent( FKeyEvent const & _Event ) {
     IO.KeyCtrl = IO.KeysDown[ KEY_LEFT_CONTROL ] || IO.KeysDown[ KEY_RIGHT_CONTROL ];
     IO.KeyShift = IO.KeysDown[ KEY_LEFT_SHIFT ] || IO.KeysDown[ KEY_RIGHT_SHIFT ];
     IO.KeyAlt = IO.KeysDown[ KEY_LEFT_ALT ] || IO.KeysDown[ KEY_RIGHT_ALT ];
+    IO.KeySuper = IO.KeysDown[ KEY_LEFT_SUPER ] || IO.KeysDown[ KEY_RIGHT_SUPER ];
 }
 
 void FImguiContext::OnCharEvent( FCharEvent const & _Event ) {
@@ -147,31 +160,14 @@ void FImguiContext::BeginFrame( float _TimeStep ) {
     IO.DeltaTime = _TimeStep;
     IO.MousePos.x = CursorPosition.X;
     IO.MousePos.y = CursorPosition.Y;
-    IO.MouseDrawCursor = true;
 
     ImGui::NewFrame();
+
+    if ( IO.WantSetMousePos ) {
+        GGameMaster.SetCursorPosition( IO.MousePos.x, IO.MousePos.y );
+    }
 }
 
 void FImguiContext::EndFrame() {
-    ImGui::ShowDemoWindow();
-
     ImGui::Render();
-
-    ImDrawData * drawData = ImGui::GetDrawData();
-    if ( drawData->CmdListsCount > 0 ) {
-        // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-        int fb_width = drawData->DisplaySize.x * drawData->FramebufferScale.x;
-        int fb_height = drawData->DisplaySize.y * drawData->FramebufferScale.y;
-        if ( fb_width == 0 || fb_height == 0 ) {
-            return;
-        }
-
-        if ( drawData->FramebufferScale.x != 1.0f || drawData->FramebufferScale.y != 1.0f ) {
-            drawData->ScaleClipRects( drawData->FramebufferScale );
-        }
-
-        for ( int n = 0; n < drawData->CmdListsCount ; n++ ) {
-//            GRenderFrontend.WriteDrawList( drawData->CmdLists[ n ] );
-        }
-    }
 }

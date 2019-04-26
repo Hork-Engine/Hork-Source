@@ -170,6 +170,9 @@ public:
     // Create mesh from string (*box* *sphere* *cylinder* *plane*)
     void InitializeInternalMesh( const char * _Name );
 
+    // Initialize default object representation
+    void InitializeDefaultObject() override;
+
     // Skinned mesh have 4 weights for each vertex
     bool IsSkinned() const { return bSkinnedMesh; }
 

@@ -46,6 +46,8 @@ public:
 
     FRenderProxy_Material * GetRenderProxy() { return RenderProxy; }
 
+    int GetNumUniformVectors() const { return NumUniformVectors; }
+
 protected:
     FMaterial();
     ~FMaterial();
@@ -56,6 +58,7 @@ protected:
 private:
     FRenderProxy_Material * RenderProxy;
     EMaterialType Type;
+    int NumUniformVectors;
 };
 
 class FMaterialInstance : public FBaseObject {
@@ -66,6 +69,12 @@ class FMaterialInstance : public FBaseObject {
 public:
 
     TRefHolder< FMaterial > Material;
+
+
+    union {;
+        float Uniforms[16];
+        Float4 UniformVectors[4];
+    };
 
     void SetTexture( int _TextureSlot, FTexture * _Texture );
 

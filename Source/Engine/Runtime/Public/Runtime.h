@@ -64,6 +64,8 @@ struct FPhysicalMonitor {
     char MonitorName[128];
     int PhysicalWidthMM;
     int PhysicalHeightMM;
+    float DPI_X;
+    float DPI_Y;
     int PositionX;
     int PositionY;
     int GammaRampSize;
@@ -289,13 +291,13 @@ public:
 
     void Terminate();
 
-    FEventQueue * ReadEvents();
+    FEventQueue * ReadEvents_GameThread();
 
-    FEventQueue * WriteEvents();
+    FEventQueue * WriteEvents_GameThread();
 
-    FRenderFrame * SwapFrameData();
+    void SignalSimulationIsDone();
 
-    FRenderFrame * SwapFrameDataTimeout( int _WaitTimeout );
+    void WaitGameUpdate();
 
     FRenderFrame * GetFrameData();
 
@@ -355,10 +357,10 @@ public:
         return nullptr != ( (*_ProcPtr) = (T *)GetProcAddress( _Handle, _ProcName ) );
     }
 
-    void SetClipboard( const char * _Utf8String );
-    void SetClipboard( FString const & _Clipboard ) { SetClipboard( _Clipboard.ToConstChar() ); }
+    void SetClipboard_GameThread( const char * _Utf8String );
+    void SetClipboard_GameThread( FString const & _Clipboard ) { SetClipboard_GameThread( _Clipboard.ToConstChar() ); }
 
-    void GetClipboard( FString & _Clipboard );
+    FString const & GetClipboard_GameThread();
 };
 
 extern ANGIE_API FRuntime & GRuntime;

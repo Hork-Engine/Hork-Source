@@ -40,6 +40,11 @@ class FMeshComponent;
 class FSkinnedComponent;
 class FTimer;
 class FDebugDraw;
+struct btDbvtBroadphase;
+class btDefaultCollisionConfiguration;
+class btCollisionDispatcher;
+class btSequentialImpulseConstraintSolver;
+class btSoftRigidDynamicsWorld;
 
 struct FActorSpawnParameters {
     FActorSpawnParameters() = delete;
@@ -108,8 +113,10 @@ class ANGIE_API FWorld : public FBaseObject {
     friend class FActorComponent;
     friend class FGameMaster;
     friend class FRenderFrontend;
+    friend class FPhysicalBody;
 
 public:
+
     // Worlds factory
     static FObjectFactory & Factory() { static FObjectFactory ObjectFactory( "World factory" ); return ObjectFactory; }
 
@@ -189,6 +196,11 @@ public:
 
     FMeshComponent * GetMeshList() { return MeshList; }
 
+    void SetGravityVector( Float3 const & _Gravity );
+    Float3 const & GetGravityVector() const;
+
+    bool IsPhysicsSimulating() const { return bPhysicsSimulating; }
+
     //bool bTickEvenWhenPaused;
 
 protected:
@@ -204,6 +216,14 @@ protected:
     FWorld();
 
 private:
+    void SimulatePhysics( float _TimeStep );
+
+    void PrePhysicsTick( float _TimeStep );
+    void PhysicsTick( float _TimeStep );
+
+    static void PrePhysicsTick( class btDynamicsWorld * _World, float _TimeStep );
+    static void PhysicsTick( class btDynamicsWorld * _World, float _TimeStep );
+
     void BroadcastActorSpawned( FActor * _SpawnedActor );
 
     void RegisterTimer( FTimer * _Timer );      // friend FActor
@@ -244,6 +264,17 @@ private:
 
     TRefHolder< FLevel > PersistentLevel;
     TPodArray< FLevel * > ArrayOfLevels;
+
+    btDbvtBroadphase * PhysicsBroadphase;
+    btDefaultCollisionConfiguration * CollisionConfiguration;
+    btCollisionDispatcher * CollisionDispatcher;
+    btSequentialImpulseConstraintSolver * ConstraintSolver;
+    btSoftRigidDynamicsWorld * PhysicsWorld;
+
+    Float3 GravityVector;
+    bool bGravityDirty;
+    bool bPhysicsSimulating;
+    float TimeAccumulation;
 };
 
 

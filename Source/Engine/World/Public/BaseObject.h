@@ -52,6 +52,9 @@ public:
 
     virtual void LoadObject( const char * _Path ) {}
 
+    // Initialize default object representation
+    virtual void InitializeDefaultObject() {}
+
     // Load attributes form document data
     void LoadAttributes( FDocument const & _Document, int _FieldsHead );
 
