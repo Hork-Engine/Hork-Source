@@ -1044,6 +1044,8 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
     LightmapBlockAllocator.Clear();
 
+    Bounds.Clear();
+
     for ( int surfnum = 0 ; surfnum < NumFaces ; surfnum++, in++, out++ ) {
         out->Bounds.Clear();
 
@@ -1186,6 +1188,8 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
             out->Bounds.AddPoint( pVertex->Position );
         }
+
+        Bounds.AddAABB( out->Bounds );
 
         center *= ( 1.0 / in->numedges );
 

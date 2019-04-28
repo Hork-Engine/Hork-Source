@@ -196,13 +196,60 @@ void FPlayer::SpeedRelease() {
     bSpeed = false;
 }
 
-void FPlayer::AttackPress() {
-    bSpeed = true;
-    //GLogger.Printf("Attack press\n");
+
+#include "Game.h"
+#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/World/Public/World.h>
+
+class FBoxActor : public FActor {
+    AN_ACTOR( FBoxActor, FActor )
+
+protected:
+    FBoxActor();
+
+private:
+    FMeshComponent * MeshComponent;
+};
+
+AN_CLASS_META_NO_ATTRIBS( FBoxActor )
+
+FBoxActor::FBoxActor() {
+    // Create material instance for mesh component
+    FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
+    matInst->Material = GGameModule->SkinMaterial;
+    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
+
+    // Create mesh component and set it as root component
+    MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
+    RootComponent = MeshComponent;
+    MeshComponent->bUseDefaultBodyComposition = true;
+    MeshComponent->Mass = 1.0f;
+
+    // Set mesh and material resources for mesh component
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
+    MeshComponent->SetMaterialInstance( 0, matInst );
 }
 
+void FPlayer::AttackPress() {
+    FActor * actor;
+
+    FTransform transform;
+
+    transform.Position = Camera->GetWorldPosition() + Camera->GetWorldForwardVector() * 1.5f;
+    transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
+    transform.SetScale( 0.3f );
+
+    actor = GetWorld()->SpawnActor< FBoxActor >( transform );
+
+    FMeshComponent * mesh = actor->GetComponent< FMeshComponent >();
+    if ( mesh ) {
+        mesh->ApplyCentralImpulse( Camera->GetWorldForwardVector() * 2.0f );
+    }
+}
+
+
 void FPlayer::AttackRelease() {
-    bSpeed = false;
     //GLogger.Printf("Attack release\n");
 }
 

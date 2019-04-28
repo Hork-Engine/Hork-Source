@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Engine/World/Public/CameraComponent.h>
 #include <Engine/World/Public/ResourceManager.h>
 #include <Engine/World/Public/GameMaster.h>
+#include <Engine/World/Public/MeshAsset.h>
 
 AN_CLASS_META_NO_ATTRIBS( FQuakeBSPActor )
 
@@ -65,11 +66,12 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
 
         FMeshComponent * surf = CreateComponent< FMeshComponent >( FString::Fmt( "bsp_surf%d", i ) );
         surf->SetMesh( Mesh );
-        surf->RegisterComponent();
         surf->VSDPasses = VSD_PASS_VIS_MARKER;
         surf->LightmapUVChannel = LightmapUV;
         surf->bUseDynamicRange = true;
         surf->bNoTransform = true;
+        surf->bNoPhysics = true;
+        surf->RegisterComponent();
         SurfacePool[i] = surf;
 
         FMaterialInstance * materialInstance = NewObject< FMaterialInstance >();
@@ -88,6 +90,37 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
 
         surf->SetMaterialInstance( materialInstance );
     }
+
+    // Create collision model
+    FPhysicalBody * physBody = GetComponent< FPhysicalBody >();
+    if ( !physBody ) {
+        physBody = CreateComponent< FPhysicalBody >( "physbody" );
+    }
+    physBody->BodyComposition.Clear();
+    FCollisionSharedTriangleSoup * collisionBody = physBody->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoup >();
+    collisionBody->TrisData = NewObject< FCollisionTriangleSoupData >();
+    TPodArray< Float3 > collisVerts;
+    TPodArray< unsigned int > collisInd;
+    for ( FSurfaceDef & surf : BSP->Surfaces ) {
+        FMeshVertex * vert = BSP->Vertices.ToPtr() + surf.FirstVertex;
+        unsigned int * ind = BSP->Indices.ToPtr() + surf.FirstIndex;
+
+        int firstVert = collisVerts.Length();
+        for ( int i = 0 ; i < surf.NumVertices ; i++ ) {
+            collisVerts.Append( vert[i].Position );
+        }
+        for ( int i = 0 ; i < surf.NumIndices ; i++ ) {
+            collisInd.Append( firstVert + ind[ i ] );
+        }
+    }
+    FSubpart subpart;
+    subpart.BaseVertex = 0;
+    subpart.FirstIndex = 0;
+    subpart.VertexCount = collisVerts.Length();
+    subpart.IndexCount = BSP->Indices.Length();
+    subpart.BoundingBox = _Model->Bounds;
+    collisionBody->TrisData->Initialize( (const float *)collisVerts.ToPtr(), sizeof( collisVerts[0] ), collisVerts.Length(), collisInd.ToPtr(), collisInd.Length(), &subpart, 1 );
+    physBody->RegisterComponent();
 }
 
 void FQuakeBSPActor::OnView( FCameraComponent * _Camera ) {

@@ -56,8 +56,8 @@ void FGameModule::OnGameStart() {
 
     //GGameMaster.SetRenderFeatures( VSync_Disabled );
     //GGameMaster.SetRenderFeatures( VSync_Fixed );
-    GGameMaster.SetVideoMode( 640, 480, 0, 60, false, "OpenGL 4.5" );
-    //GGameMaster.SetVideoMode( 1920, 1080, 0, 60, false, "OpenGL 4.5" );
+    //GGameMaster.SetVideoMode( 640, 480, 0, 60, false, "OpenGL 4.5" );
+    GGameMaster.SetVideoMode( 1920, 1080, 0, 60, false, "OpenGL 4.5" );
     GGameMaster.SetWindowDefs( 1.0f, true, false, false, "AngieEngine: Quake map sample" );
     GGameMaster.SetCursorEnabled( false );
 
@@ -79,10 +79,10 @@ void FGameModule::OnGameStart() {
     //LoadQuakeMap( "maps/e3m4.bsp" );
     //LoadQuakeMap( "maps/start.bsp" );
     //LoadQuakeMap( "maps/e2m4.bsp" );
-    //LoadQuakeMap( "maps/e2m5.bsp" );
+    LoadQuakeMap( "maps/e2m5.bsp" );
     //LoadQuakeMap( "maps/e1m3.bsp" );
     //LoadQuakeMap( "maps/e2m6.bsp" );
-    LoadQuakeMap( "maps/e1m4.bsp" );
+    //LoadQuakeMap( "maps/e1m4.bsp" );
     //LoadQuakeMap( "maps/dm1.bsp" );
     //LoadQuakeMap( "maps/dm2.bsp" );
     //LoadQuakeMap( "maps/dm3.bsp" );

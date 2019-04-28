@@ -155,6 +155,8 @@ public:
 
     FBinarySpaceData        BSP;
 
+    BvAxisAlignedBox        Bounds;
+
     bool FromData( FLevel * _Level, const byte * _Data, const unsigned * _Palette );
     bool LoadFromPack( FLevel * _Level, FQuakePack * _Pack, const unsigned * _Palette, const char * _MapFile );
     void Purge();
