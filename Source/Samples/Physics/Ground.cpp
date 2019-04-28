@@ -54,8 +54,12 @@ FGround::FGround() {
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
+#if 0
+    MeshComponent->bUseDefaultBodyComposition = true;
+#else
     FCollisionPlane * collisionBody = NewObject< FCollisionPlane >();
     MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
+#endif
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( mesh );

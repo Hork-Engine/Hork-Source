@@ -68,6 +68,7 @@ void FModule::OnGameStart() {
     FIndexedMesh * mesh = NewObject< FIndexedMesh >();
     mesh->InitializeShape< FPlaneShape >( 256, 256, 256 );
     mesh->SetName( "DefaultShapePlane256x256x256" );
+    mesh->BodyComposition.NewCollisionBody< FCollisionPlane >();
     RegisterResource( mesh );
     }
 
@@ -81,6 +82,8 @@ void FModule::OnGameStart() {
     FIndexedMesh * mesh = NewObject< FIndexedMesh >();
     mesh->InitializeShape< FSphereShape >( 0.5f, 2, 32, 32 );
     mesh->SetName( "ShapeSphereMesh" );
+    FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
+    collisionBody->Radius = 0.5f;
     RegisterResource( mesh );
     }
 
@@ -88,6 +91,8 @@ void FModule::OnGameStart() {
     FIndexedMesh * mesh = NewObject< FIndexedMesh >();
     mesh->InitializeShape< FCylinderShape >( 0.5f, 1, 1, 32 );
     mesh->SetName( "ShapeCylinderMesh" );
+    FCollisionCylinder * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionCylinder >();
+    collisionBody->HalfExtents = Float3( 0.5f );
     RegisterResource( mesh );
     }
 
@@ -121,6 +126,12 @@ void FModule::OnGameStart() {
     //LoadStaticMeshes();
 
     World->SpawnActor< FGround >();
+
+//    FTransform spawnTransform;
+//    spawnTransform.Position = Float3(0,0,0);
+//    spawnTransform.Rotation = Angl(0,45,0).ToQuat();
+//    spawnTransform.Scale = Float3(10.0f,1.0f,1.0f);
+//    World->SpawnActor< FSphereActor >( spawnTransform );
 
     
 

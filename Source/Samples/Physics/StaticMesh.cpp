@@ -53,14 +53,31 @@ FBoxActor::FBoxActor() {
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
+#if 1
+    MeshComponent->bUseDefaultBodyComposition = true;
+#else
     FCollisionBox * collisionBody = NewObject< FCollisionBox >();
     collisionBody->HalfExtents = Float3(0.5f);
-    MeshComponent->Mass = 1.0f;
     MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
+#endif
+
+    MeshComponent->Mass = 1.0f;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GetResource< FIndexedMesh >( "*box*" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
+
+
+//    FPhysicalBody * Dummy;
+//    Dummy = CreateComponent< FPhysicalBody >( "Dummy" );
+//    Dummy->Mass = 1.0f;
+//    Dummy->AttachTo( RootComponent );
+
+//    // Create collision body for mesh component
+//    collisionBody = NewObject< FCollisionBox >();
+//    collisionBody->HalfExtents = Float3(0.5f);
+//    collisionBody->Position = Float3(-2.0f, 0.5f, 0.0f );
+//    Dummy->BodyComposition.AddCollisionBody( collisionBody );
 }
 
 FSphereActor::FSphereActor() {
@@ -75,10 +92,14 @@ FSphereActor::FSphereActor() {
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
+#if 1
+    MeshComponent->bUseDefaultBodyComposition = true;
+#else
     FCollisionSphere * collisionBody = NewObject< FCollisionSphere >();
     collisionBody->Radius = 0.5f;
-    MeshComponent->Mass = 1.0f;
     MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
+#endif
+    MeshComponent->Mass = 1.0f;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
@@ -97,10 +118,14 @@ FCylinderActor::FCylinderActor() {
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
+#if 1
+    MeshComponent->bUseDefaultBodyComposition = true;
+#else
     FCollisionCylinder * collisionBody = NewObject< FCollisionCylinder >();
     collisionBody->HalfExtents = Float3(0.5f);
-    MeshComponent->Mass = 1.0f;
     MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
+#endif
+    MeshComponent->Mass = 1.0f;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
