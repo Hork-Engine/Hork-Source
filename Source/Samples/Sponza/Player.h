@@ -59,6 +59,7 @@ private:
     void TurnUp( float _Value );
     void SpeedPress();
     void SpeedRelease();
+    void AttackPress();
 
     Angl Angles;
     Float3 MoveVector;

@@ -46,4 +46,5 @@ protected:
 
 private:
     FMeshComponent * MeshComponent;
+    FCollisionSharedTriangleSoup * CollisionBody;
 };

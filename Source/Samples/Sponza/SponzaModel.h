@@ -62,3 +62,5 @@ private:
     void CreateMaterial();
     void LoadStaticMeshes();
 };
+
+extern FSponzaModel * GModule;

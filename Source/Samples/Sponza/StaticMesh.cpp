@@ -40,16 +40,12 @@ FStaticMesh::FStaticMesh() {
     MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
 
-    FCollisionBox * box = NewObject< FCollisionBox >();
-    box->HalfExtents = Float3(1.0f);
-    box->Margin = 0.01f;
-
-    //MeshComponent->Mass = 1.0f;
-    MeshComponent->BodyComposition.AddCollisionBody( box );
+    MeshComponent->bUseDefaultBodyComposition = true;
 }
 
 void FStaticMesh::SetMesh( FIndexedMesh * _Mesh ) {
     MeshComponent->SetMesh( _Mesh );
+    MeshComponent->RebuildRigidBody();
     MeshComponent->ClearMaterials();
     if ( _Mesh  ) {
         for ( int i = 0 ; i < _Mesh->GetSubparts().Length() ; i++ ) {

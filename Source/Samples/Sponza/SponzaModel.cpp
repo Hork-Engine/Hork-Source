@@ -43,7 +43,11 @@ SOFTWARE.
 AN_ENTRY_DECL( FSponzaModel )
 AN_CLASS_META_NO_ATTRIBS( FSponzaModel )
 
+FSponzaModel * GModule;
+
 void FSponzaModel::OnGameStart() {
+
+    GModule = this;
 
     GGameMaster.bAllowConsole = true;
     //GGameMaster.MouseSensitivity = 0.15f;
@@ -67,6 +71,18 @@ void FSponzaModel::OnGameStart() {
     RenderingParams->BackgroundColor = Float3(0.5f);
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = true;
+
+    // create texture resource from file with alias
+    CreateUniqueTexture( "mipmapchecker.png", "MipmapChecker" );
+
+    {
+    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+    mesh->InitializeShape< FSphereShape >( 0.5f, 2, 32, 32 );
+    mesh->SetName( "ShapeSphereMesh" );
+    FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
+    collisionBody->Radius = 0.5f;
+    RegisterResource( mesh );
+    }
 
     Quat r;
     r.FromAngles( 0, FMath::_HALF_PI, 0 );
@@ -155,6 +171,7 @@ void FSponzaModel::SetInputMappings() {
     InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_LEFT, -1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_RIGHT, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Speed", ID_KEYBOARD, KEY_LEFT_SHIFT, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "Attack", ID_MOUSE, MOUSE_BUTTON_LEFT, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_P, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
