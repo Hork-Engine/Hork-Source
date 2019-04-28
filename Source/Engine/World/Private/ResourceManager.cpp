@@ -336,10 +336,17 @@ FIndexedMesh * CreateUniqueMesh( const char * _FileName, const char * _Alias ) {
             subpart->SetName( s.Name );
             subpart->BaseVertex = s.BaseVertex;
             subpart->FirstIndex = s.FirstIndex;
+            subpart->VertexCount = s.VertexCount;
             subpart->IndexCount = s.IndexCount;
             subpart->BoundingBox = s.BoundingBox;
             subpart->MaterialInstance = matInstances[s.Material];
         }
+
+        // TODO: load collision from file. This code is only for test!!!
+        FCollisionSharedTriangleSoup * CollisionBody = object->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoup >();
+        CollisionBody->TrisData = static_cast< FCollisionTriangleSoupData * >( FCollisionTriangleSoupData::ClassMeta().CreateInstance() );
+        CollisionBody->TrisData->Initialize( (float *)&asset.Vertices.ToPtr()->Position, sizeof( asset.Vertices[0] ), asset.Vertices.Length(),
+            asset.Indices.ToPtr(), asset.Indices.Length(), asset.Subparts.data(), asset.Subparts.size() );
     }
 
     resource = object;

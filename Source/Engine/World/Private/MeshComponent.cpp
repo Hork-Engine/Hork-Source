@@ -66,6 +66,8 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
         }
     }
 
+    //RebuildRigidBody();
+
     // Mark to update world bounds
     MarkWorldBoundsDirty();
 }
@@ -116,6 +118,14 @@ FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) con
         return nullptr;
     }
     return Materials[_SubpartIndex];
+}
+
+FCollisionBodyComposition const & FMeshComponent::DefaultBodyComposition() const {
+    if ( Mesh ) {
+        return Mesh->BodyComposition;
+    }
+
+    return Super::DefaultBodyComposition();
 }
 
 /*

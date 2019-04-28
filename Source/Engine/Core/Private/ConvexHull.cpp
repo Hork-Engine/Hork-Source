@@ -51,10 +51,14 @@ FConvexHull * FConvexHull::CreateForPlane( PlaneF const & _Plane, float _MaxExte
     FConvexHull * hull;
     hull = Create( 4 );
     hull->NumPoints = 4;
-    hull->Points[ 0 ] = p + ( upVec - rightVec ) * _MaxExtents;
-    hull->Points[ 1 ] = p + ( upVec + rightVec ) * _MaxExtents;
-    hull->Points[ 2 ] = p - hull->Points[ 0 ];
-    hull->Points[ 3 ] = p - hull->Points[ 1 ];
+    hull->Points[ 0 ] = ( upVec - rightVec ) * _MaxExtents;
+    hull->Points[ 1 ] = ( upVec + rightVec ) * _MaxExtents;
+    hull->Points[ 2 ] = -hull->Points[ 0 ];
+    hull->Points[ 3 ] = -hull->Points[ 1 ];
+    hull->Points[ 0 ] += p;
+    hull->Points[ 1 ] += p;
+    hull->Points[ 2 ] += p;
+    hull->Points[ 3 ] += p;
     return hull;
 }
 

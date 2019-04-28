@@ -369,9 +369,7 @@ void FGameMaster::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _Time
                 component->SetMouseAxisState( x, y );
             }
 
-            if ( !bGamePaused ) {
-                component->UpdateAxes( FractAvg, TimeScale );
-            }
+            component->UpdateAxes( FractAvg, TimeScale );
 
             if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
                 component->SetMouseAxisState( 0, 0 );
@@ -667,10 +665,6 @@ void FGameMaster::UpdateInputAxes( float _Fract ) {
     }
 
     AxesFract -= _Fract;
-
-    if ( bGamePaused ) {
-        return;
-    }
 
     for ( FInputComponent * component : FInputComponent::GetInputComponents() ) {
         component->UpdateAxes( _Fract, TimeScale );

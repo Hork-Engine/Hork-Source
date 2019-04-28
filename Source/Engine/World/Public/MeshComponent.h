@@ -160,6 +160,8 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
+    FCollisionBodyComposition const & DefaultBodyComposition() const override;
+
 private:
     FMeshComponent * Next;
     FMeshComponent * Prev;

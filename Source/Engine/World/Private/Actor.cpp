@@ -195,9 +195,9 @@ FActorComponent * FActor::FindComponentGUID( FGUID const & _GUID ) {
 }
 
 void FActor::PostSpawnInitialize( FTransform const & _SpawnTransform ) {
-    GLogger.Printf( "FActor::PostSpawnInitialize()\n" );
+    //GLogger.Printf( "FActor::PostSpawnInitialize()\n" );
     if ( RootComponent ) {
-        GLogger.Printf( "FActor::PostSpawnInitialize: setting transform for %s\n", RootComponent->FinalClassName() );
+        //GLogger.Printf( "FActor::PostSpawnInitialize: setting transform for %s\n", RootComponent->FinalClassName() );
         RootComponent->SetTransform( _SpawnTransform );
     }
 }

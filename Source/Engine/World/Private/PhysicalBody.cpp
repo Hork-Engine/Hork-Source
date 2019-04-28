@@ -1,3 +1,33 @@
+/*
+
+Angie Engine Source Code
+
+MIT License
+
+Copyright (C) 2017-2019 Alexander Samusev.
+
+This file is part of the Angie Engine Source Code.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
 #include <Engine/World/Public/PhysicalBody.h>
 #include <Engine/World/Public/World.h>
 
@@ -5,57 +35,17 @@
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <Bullet3Common/b3AlignedAllocator.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
-#include <BulletCollision/CollisionShapes/btBoxShape.h>
-#include <BulletCollision/CollisionShapes/btSphereShape.h>
-#include <BulletCollision/CollisionShapes/btCylinderShape.h>
-#include <BulletCollision/CollisionShapes/btConeShape.h>
-#include <BulletCollision/CollisionShapes/btCapsuleShape.h>
-#include <BulletCollision/CollisionShapes/btStaticPlaneShape.h>
-#include <BulletCollision/CollisionShapes/btConvexHullShape.h>
+//#include <BulletCollision/CollisionShapes/btBoxShape.h>
+//#include <BulletCollision/CollisionShapes/btSphereShape.h>
+//#include <BulletCollision/CollisionShapes/btCylinderShape.h>
+//#include <BulletCollision/CollisionShapes/btConeShape.h>
+//#include <BulletCollision/CollisionShapes/btCapsuleShape.h>
+//#include <BulletCollision/CollisionShapes/btStaticPlaneShape.h>
+//#include <BulletCollision/CollisionShapes/btConvexHullShape.h>
+//#include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
+//#include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
 
 #define PHYS_COMPARE_EPSILON 0.0001f
-
-AN_CLASS_META_NO_ATTRIBS( FCollisionBody )
-AN_CLASS_META_NO_ATTRIBS( FCollisionSphere )
-AN_CLASS_META_NO_ATTRIBS( FCollisionBox )
-AN_CLASS_META_NO_ATTRIBS( FCollisionCylinder )
-AN_CLASS_META_NO_ATTRIBS( FCollisionCone )
-AN_CLASS_META_NO_ATTRIBS( FCollisionCapsule )
-AN_CLASS_META_NO_ATTRIBS( FCollisionPlane )
-AN_CLASS_META_NO_ATTRIBS( FCollisionConvexHull )
-
-#define b3New( _ClassName, ... ) new (b3AlignedAlloc(sizeof(_ClassName),16)) _ClassName( __VA_ARGS__ )
-#define b3Destroy( _Object ) { dtor( _Object ); b3AlignedFree( _Object ); }
-
-template< typename T > AN_FORCEINLINE void dtor( T * object ) { object->~T(); }
-
-btCollisionShape * FCollisionSphere::Create() {
-    return b3New( btSphereShape, Radius );
-}
-
-btCollisionShape * FCollisionBox::Create() {
-    return b3New( btBoxShape, btVectorToFloat3( HalfExtents ) );
-}
-
-btCollisionShape * FCollisionCylinder::Create() {
-    return b3New( btCylinderShape, btVectorToFloat3( HalfExtents ) );
-}
-
-btCollisionShape * FCollisionCone::Create() {
-    return b3New( btConeShape, Radius, Height );
-}
-
-btCollisionShape * FCollisionCapsule::Create() {
-    return b3New( btCapsuleShape, Radius, Height );
-}
-
-btCollisionShape * FCollisionPlane::Create() {
-    return b3New( btStaticPlaneShape, btVectorToFloat3( Plane.Normal ), Plane.D );
-}
-
-btCollisionShape * FCollisionConvexHull::Create() {
-    return b3New( btConvexHullShape, ( btScalar const * )Vertices.ToPtr(), Vertices.Length(), sizeof( Float3 ) );
-}
 
 class FPhysicalBodyMotionState : public btMotionState {
 public:
@@ -68,8 +58,8 @@ public:
 
     // Overrides
 
-    void getWorldTransform( btTransform & _WorldTransform ) const;
-    void setWorldTransform( btTransform const & _WorldTransform );
+    void getWorldTransform( btTransform & _WorldTransform ) const override;
+    void setWorldTransform( btTransform const & _WorldTransform ) override;
 
     // Public members
 
@@ -135,7 +125,9 @@ FPhysicalBody::FPhysicalBody() {
 void FPhysicalBody::InitializeComponent() {
     Super::InitializeComponent();
 
-    CreateRigidBody();
+    if ( !bNoPhysics ) {
+        CreateRigidBody();
+    }
 }
 
 void FPhysicalBody::DeinitializeComponent() {
@@ -144,21 +136,22 @@ void FPhysicalBody::DeinitializeComponent() {
     Super::DeinitializeComponent();
 }
 
-void FPhysicalBody::CreateRigidBody() {
-    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
-
-    ShiftedCompoundShape = b3New( btCompoundShape );
+btCompoundShape * CreateCollisionShape( FCollisionBodyComposition const & BodyComposition/*, Float3 const & _Scale*/ ) {
+    btCompoundShape * shiftedCompoundShape = b3New( btCompoundShape );
     btCompoundShape * compoundShape = b3New( btCompoundShape );
 
     TPodArray< float > masses;
     masses.Resize( BodyComposition.CollisionBodies.Length() );
     int numShapes = 0;
 
+    //btVector3 scaling = btVectorToFloat3( _Scale );
+
     btTransform offset;
     for ( FCollisionBody * collisionBody : BodyComposition.CollisionBodies ) {
         btCollisionShape * shape = collisionBody->Create();
 
         shape->setMargin( collisionBody->Margin );
+        //shape->setLocalScaling( scaling );
         shape->setUserPointer( collisionBody );
         collisionBody->AddRef();
 
@@ -177,30 +170,104 @@ void FPhysicalBody::CreateRigidBody() {
     if ( numShapes > 0 ) {
         btVector3 inertia( 0.0f, 0.0f, 0.0f );
         compoundShape->calculatePrincipalAxisTransform( masses.ToPtr(), principal, inertia );
-    }
 
-    btTransform adjusted;
-    for ( int i = 0 ; i < numShapes ; i++ ) {
-        adjusted = compoundShape->getChildTransform( i );
-        adjusted.setOrigin( adjusted.getOrigin() - principal.getOrigin() );
-        ShiftedCompoundShape->addChildShape( adjusted, compoundShape->getChildShape( i ) );
+        btTransform adjusted;
+        for ( int i = 0 ; i < numShapes ; i++ ) {
+            adjusted = compoundShape->getChildTransform( i );
+            adjusted.setOrigin( adjusted.getOrigin() - principal.getOrigin() );
+            ShiftedCompoundShape->addChildShape( adjusted, compoundShape->getChildShape( i ) );
+        }
     }
 #else
-    btTransform adjusted;
     for ( int i = 0 ; i < numShapes ; i++ ) {
-        ShiftedCompoundShape->addChildShape( compoundShape->getChildTransform( i ), compoundShape->getChildShape( i ) );
+        shiftedCompoundShape->addChildShape( compoundShape->getChildTransform( i ), compoundShape->getChildShape( i ) );
     }
 #endif
 
+    b3Destroy( compoundShape );
+
+    return shiftedCompoundShape;
+}
+
+static void DestroyCollisionShape( btCompoundShape * _CompoundShape ) {
+    int numShapes = _CompoundShape->getNumChildShapes();
+    for ( int i = numShapes-1 ; i >= 0 ; i-- ) {
+        btCollisionShape * shape = _CompoundShape->getChildShape( i );
+        static_cast< FCollisionBody * >( shape->getUserPointer() )->RemoveRef();
+        b3Destroy( shape );
+    }
+    b3Destroy( _CompoundShape );
+}
+
+static void UpdateRigidBodyCollisionShape( btRigidBody * RigidBody, btCompoundShape * CompoundShape, bool bTrigger, bool bKinematicBody ) {
+    int numShapes = CompoundShape->getNumChildShapes();
     bool bUseCompound = !numShapes || numShapes > 1;
     if ( !bUseCompound ) {
-        btTransform const & childTransform = ShiftedCompoundShape->getChildTransform( 0 );
+        btTransform const & childTransform = CompoundShape->getChildTransform( 0 );
 
         if ( !btVectorToFloat3( childTransform.getOrigin() ).CompareEps( Float3::Zero(), PHYS_COMPARE_EPSILON )
              || !btQuaternionToQuat( childTransform.getRotation() ).Compare( Quat::Identity() ) ) {
             bUseCompound = true;
         }
     }
+    RigidBody->setCollisionShape( bUseCompound ? CompoundShape : CompoundShape->getChildShape( 0 ) );
+
+    int collisionFlags = RigidBody->getCollisionFlags();
+
+    if ( bTrigger ) {
+        collisionFlags |= btCollisionObject::CF_NO_CONTACT_RESPONSE;
+    } else {
+        collisionFlags &= ~btCollisionObject::CF_NO_CONTACT_RESPONSE;
+    }
+    if ( bKinematicBody ) {
+        collisionFlags |= btCollisionObject::CF_KINEMATIC_OBJECT;
+    } else {
+        collisionFlags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
+    }
+    if ( !bUseCompound && RigidBody->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE /*&& World->GetInternalEdge()*/ ) {
+        collisionFlags |= btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK;
+    } else {
+        collisionFlags &= ~btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK;
+    }
+
+    RigidBody->setCollisionFlags( collisionFlags );
+    RigidBody->forceActivationState( bKinematicBody ? DISABLE_DEACTIVATION : ISLAND_SLEEPING );
+}
+
+static void UpdateRigidBodyGravity( btRigidBody * RigidBody, bool bNoGravity, bool bOverrideWorldGravity, Float3 const & SelfGravity, Float3 const & WorldGravity ) {
+    int flags = RigidBody->getFlags();
+    if ( !bNoGravity && !bOverrideWorldGravity ) {
+        flags &= ~BT_DISABLE_WORLD_GRAVITY;
+    } else {
+        flags |= BT_DISABLE_WORLD_GRAVITY;
+    }
+    RigidBody->setFlags( flags );
+
+    if ( bNoGravity ) {
+        RigidBody->setGravity( btVector3( 0.0f, 0.0f, 0.0f ) );
+    } else {
+        if ( bOverrideWorldGravity ) {
+            // Use self gravity
+            RigidBody->setGravity( btVectorToFloat3( SelfGravity ) );
+        } else {
+            // Use world gravity. TODO: If world gravity was changed, change rigid body gravity too?
+            RigidBody->setGravity( btVectorToFloat3( WorldGravity ) );
+        }
+    }
+}
+
+AN_FORCEINLINE static unsigned short ClampUnsignedShort( int _Value ) {
+    if ( _Value < 0 ) return 0;
+    if ( _Value > 0xffff ) return 0xffff;
+    return _Value;
+}
+
+void FPhysicalBody::CreateRigidBody() {
+    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
+
+    AN_Assert( RigidBody == nullptr );
+
+    ShiftedCompoundShape = CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition/*, GetWorldScale()*/ );
 
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 
@@ -210,6 +277,9 @@ void FPhysicalBody::CreateRigidBody() {
     if ( Mass > 0.0f ) {
         ShiftedCompoundShape->calculateLocalInertia( Mass, localInertia );
     }
+
+    // Set local scaling (must be after calculateLocalInertia)
+    ShiftedCompoundShape->setLocalScaling( btVectorToFloat3( GetWorldScale() ) );
 
     MotionState = b3New( FPhysicalBodyMotionState );
     MotionState->CenterOfMass = Float3(0.0f);// btVectorToFloat3( principal.getOrigin() );
@@ -229,58 +299,7 @@ void FPhysicalBody::CreateRigidBody() {
     RigidBody = b3New( btRigidBody, constructInfo );
     RigidBody->setUserPointer( this );
 
-    RigidBody->setCollisionShape( bUseCompound ? ShiftedCompoundShape : ShiftedCompoundShape->getChildShape( 0 ) );
-
-    //int flags = RigidBody->getFlags();
-    //if ( bNoGravity ) {
-    //    flags |= BT_DISABLE_WORLD_GRAVITY;
-    //} else {
-    //    flags &= ~BT_DISABLE_WORLD_GRAVITY;
-    //}
-    //RigidBody->setFlags( flags );
-    int flags = RigidBody->getFlags();
-    if ( !bNoGravity && !bOverrideWorldGravity ) {
-        flags &= ~BT_DISABLE_WORLD_GRAVITY;
-    } else {
-        flags |= BT_DISABLE_WORLD_GRAVITY;
-    }
-    RigidBody->setFlags( flags );
-
-    if ( bNoGravity ) {
-        RigidBody->setGravity( btVector3( 0.0f, 0.0f, 0.0f ) );
-    } else {
-        if ( bOverrideWorldGravity ) {
-            // Use self gravity
-            RigidBody->setGravity( btVectorToFloat3( SelfGravity ) );
-        } else {
-            // Use world gravity. TODO: If world gravity was changed, change rigid body gravity too
-            RigidBody->setGravity( btVectorToFloat3( GetWorld()->GetGravityVector() ) );
-        }
-    }
-
-    // Use world gravity. TODO: If world gravity was changed, change rigid body gravity too
-    //RigidBody->setGravity( btVectorToFloat3( GetWorld()->GetGravityVector() ) );
-
-    int collisionFlags = RigidBody->getCollisionFlags();
-
-    if ( bTrigger ) {
-        collisionFlags |= btCollisionObject::CF_NO_CONTACT_RESPONSE;
-    } else {
-        collisionFlags &= ~btCollisionObject::CF_NO_CONTACT_RESPONSE;
-    }
-    if ( bKinematicBody ) {
-        collisionFlags |= btCollisionObject::CF_KINEMATIC_OBJECT;
-    } else {
-        collisionFlags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
-    }
-    if ( !bUseCompound && RigidBody->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE /*&& World->GetInternalEdge()*/ ) {
-        collisionFlags |= btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK;
-    } else {
-        collisionFlags &= ~btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK;
-    }
-
-    RigidBody->setCollisionFlags( collisionFlags );
-    RigidBody->forceActivationState( bKinematicBody ? DISABLE_DEACTIVATION : ISLAND_SLEEPING );
+    UpdateRigidBodyCollisionShape( RigidBody, ShiftedCompoundShape, bTrigger, bKinematicBody );
 
     // Apply physical body position with center of mass shift
 //    btTransform & worldTransform = RigidBody->getWorldTransform();
@@ -291,104 +310,47 @@ void FPhysicalBody::CreateRigidBody() {
 //        RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
 //    }
 
-    //RigidBody->setMassProps( Mass, localInertia );
-    RigidBody->updateInertiaTensor();
+//!!!RigidBody->updateInertiaTensor();
 
-    physicsWorld->addRigidBody( RigidBody, CollisionLayer, CollisionMask );
+    physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
 
-    if ( Mass > 0.0f ) {
-        RigidBody->activate();
-    }
+    UpdateRigidBodyGravity( RigidBody, bNoGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
 
-    b3Destroy( compoundShape );
+    
+
+    Activate();
 }
 
 void FPhysicalBody::DestroyRigidBody() {
-    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
+    if ( RigidBody ) {
+        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
-    physicsWorld->removeRigidBody( RigidBody );
-    b3Destroy( RigidBody );
+        physicsWorld->removeRigidBody( RigidBody );
+        b3Destroy( RigidBody );
 
-    int numShapes = ShiftedCompoundShape->getNumChildShapes();
-    for ( int i = 0 ; i < numShapes ; i++ ) {
-        btCollisionShape * shape = ShiftedCompoundShape->getChildShape( i );
-        static_cast< FCollisionBody * >( shape->getUserPointer() )->RemoveRef();
-        b3Destroy( shape );
+        DestroyCollisionShape( ShiftedCompoundShape );
+
+        b3Destroy( MotionState );
+
+        RigidBody = nullptr;
     }
-    b3Destroy( ShiftedCompoundShape );
-    b3Destroy( MotionState );
 }
 
-void FPhysicalBody::RebuildComponent() {
+void FPhysicalBody::RebuildRigidBody() {
+    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
-    if ( !RigidBody ) {
+    if ( bNoPhysics && RigidBody ) {
+        DestroyRigidBody();
         return;
     }
 
-    int numShapes = ShiftedCompoundShape->getNumChildShapes();
-    for ( int i = numShapes-1 ; i >= 0 ; i-- ) {
-        btCollisionShape * shape = ShiftedCompoundShape->getChildShape( i );
-        static_cast< FCollisionBody * >( shape->getUserPointer() )->RemoveRef();
-        b3Destroy( shape );
-    }
-    b3Destroy( ShiftedCompoundShape );
-
-    //btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
-
-    ShiftedCompoundShape = b3New( btCompoundShape );
-    btCompoundShape * compoundShape = b3New( btCompoundShape );
-
-    TPodArray< float > masses;
-    masses.Resize( BodyComposition.CollisionBodies.Length() );
-    numShapes = 0;
-
-    btTransform offset;
-    for ( FCollisionBody * collisionBody : BodyComposition.CollisionBodies ) {
-        btCollisionShape * shape = collisionBody->Create();
-
-        shape->setMargin( collisionBody->Margin );
-        shape->setUserPointer( collisionBody );
-        collisionBody->AddRef();
-
-        offset.setOrigin( btVectorToFloat3( collisionBody->Position ) );
-        offset.setRotation( btQuaternionToQuat( collisionBody->Rotation ) );
-        compoundShape->addChildShape( offset, shape );
-
-        masses[numShapes++] = 1.0f;
+    if ( !RigidBody ) {
+        CreateRigidBody();
+        return;
     }
 
-#if 0
-    btTransform principal;
-    principal.setRotation( btQuaternion::getIdentity() );
-    principal.setOrigin( btVector3( 0.0f, 0.0f, 0.0f ) );
-
-    if ( numShapes > 0 ) {
-        btVector3 inertia( 0.0f, 0.0f, 0.0f );
-        compoundShape->calculatePrincipalAxisTransform( masses.ToPtr(), principal, inertia );
-    }
-
-    btTransform adjusted;
-    for ( int i = 0 ; i < numShapes ; i++ ) {
-        adjusted = compoundShape->getChildTransform( i );
-        adjusted.setOrigin( adjusted.getOrigin() - principal.getOrigin() );
-        ShiftedCompoundShape->addChildShape( adjusted, compoundShape->getChildShape( i ) );
-    }
-#else
-    btTransform adjusted;
-    for ( int i = 0 ; i < numShapes ; i++ ) {
-        ShiftedCompoundShape->addChildShape( compoundShape->getChildTransform( i ), compoundShape->getChildShape( i ) );
-    }
-#endif
-
-    bool bUseCompound = !numShapes || numShapes > 1;
-    if ( !bUseCompound ) {
-        btTransform const & childTransform = ShiftedCompoundShape->getChildTransform( 0 );
-
-        if ( !btVectorToFloat3( childTransform.getOrigin() ).CompareEps( Float3::Zero(), PHYS_COMPARE_EPSILON )
-             || !btQuaternionToQuat( childTransform.getRotation() ).Compare( Quat::Identity() ) ) {
-            bUseCompound = true;
-        }
-    }
+    DestroyCollisionShape( ShiftedCompoundShape );
+    ShiftedCompoundShape = CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition/*, GetWorldScale()*/ );
 
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 
@@ -398,6 +360,9 @@ void FPhysicalBody::RebuildComponent() {
     if ( Mass > 0.0f ) {
         ShiftedCompoundShape->calculateLocalInertia( Mass, localInertia );
     }
+
+    // Set local scaling (must be after calculateLocalInertia)
+    ShiftedCompoundShape->setLocalScaling( btVectorToFloat3( GetWorldScale() ) );
 
     MotionState->CenterOfMass = Float3(0.0f);// btVectorToFloat3( principal.getOrigin() );
 
@@ -414,58 +379,8 @@ void FPhysicalBody::RebuildComponent() {
 
     RigidBody->setMassProps( Mass, localInertia );
 
-    RigidBody->setCollisionShape( bUseCompound ? ShiftedCompoundShape : ShiftedCompoundShape->getChildShape( 0 ) );
-
-    //int flags = RigidBody->getFlags();
-    //if ( bNoGravity ) {
-    //    flags |= BT_DISABLE_WORLD_GRAVITY;
-    //} else {
-    //    flags &= ~BT_DISABLE_WORLD_GRAVITY;
-    //}
-    //RigidBody->setFlags( flags );
-    int flags = RigidBody->getFlags();
-    if ( !bNoGravity && !bOverrideWorldGravity ) {
-        flags &= ~BT_DISABLE_WORLD_GRAVITY;
-    } else {
-        flags |= BT_DISABLE_WORLD_GRAVITY;
-    }
-    RigidBody->setFlags( flags );
-
-    if ( bNoGravity ) {
-        RigidBody->setGravity( btVector3( 0.0f, 0.0f, 0.0f ) );
-    } else {
-        if ( bOverrideWorldGravity ) {
-            // Use self gravity
-            RigidBody->setGravity( btVectorToFloat3( SelfGravity ) );
-        } else {
-            // Use world gravity. TODO: If world gravity was changed, change rigid body gravity too
-            RigidBody->setGravity( btVectorToFloat3( GetWorld()->GetGravityVector() ) );
-        }
-    }
-
-    // Use world gravity. TODO: If world gravity was changed, change rigid body gravity too
-    //RigidBody->setGravity( btVectorToFloat3( GetWorld()->GetGravityVector() ) );
-
-    int collisionFlags = RigidBody->getCollisionFlags();
-
-    if ( bTrigger ) {
-        collisionFlags |= btCollisionObject::CF_NO_CONTACT_RESPONSE;
-    } else {
-        collisionFlags &= ~btCollisionObject::CF_NO_CONTACT_RESPONSE;
-    }
-    if ( bKinematicBody ) {
-        collisionFlags |= btCollisionObject::CF_KINEMATIC_OBJECT;
-    } else {
-        collisionFlags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
-    }
-    if ( !bUseCompound && RigidBody->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE /*&& World->GetInternalEdge()*/ ) {
-        collisionFlags |= btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK;
-    } else {
-        collisionFlags &= ~btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK;
-    }
-
-    RigidBody->setCollisionFlags( collisionFlags );
-    RigidBody->forceActivationState( bKinematicBody ? DISABLE_DEACTIVATION : ISLAND_SLEEPING );
+    UpdateRigidBodyCollisionShape( RigidBody, ShiftedCompoundShape, bTrigger, bKinematicBody );
+    UpdateRigidBodyGravity( RigidBody, bNoGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
 
     // Apply physical body position with center of mass shift
 //    btTransform & worldTransform = RigidBody->getWorldTransform();
@@ -479,55 +394,57 @@ void FPhysicalBody::RebuildComponent() {
     //RigidBody->setMassProps( Mass, localInertia );
     RigidBody->updateInertiaTensor();
 
-//    physicsWorld->addRigidBody( RigidBody, CollisionLayer, CollisionMask );
+    physicsWorld->removeRigidBody( RigidBody );
+    physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
 
-    if ( Mass > 0.0f ) {
-        RigidBody->activate();
-    }
-
-    b3Destroy( compoundShape );
-
-
-    //DestroyRigidBody();
-    //CreateRigidBody();
+    Activate();
 
     CachedScale = Float3(1);
-    MarkTransformDirty();
+
+    // Mark transform dirty to update local scaling
+    //MarkTransformDirty();
 }
 
 void FPhysicalBody::OnTransformDirty() {
     Super::OnTransformDirty();
 
-    if ( !bKinematicBody && !bTransformWasChangedByPhysicsEngine ) {
+    if ( RigidBody ) {
+        if ( !bKinematicBody && !bTransformWasChangedByPhysicsEngine ) {
 
-        Float3 position = GetWorldPosition();
-        Quat rotation = GetWorldRotation();
+            Float3 position = GetWorldPosition();
+            Quat rotation = GetWorldRotation();
 
-        if ( rotation != MotionState->PrevRotation ) {
-            MotionState->PrevRotation = rotation;
-            UpdatePhysicalBodyRotation( rotation );
+            if ( rotation != MotionState->PrevRotation ) {
+                MotionState->PrevRotation = rotation;
+                UpdatePhysicalBodyRotation( rotation );
+            }
+            if ( position != MotionState->PrevPosition ) {
+                MotionState->PrevPosition = position;
+                UpdatePhysicalBodyPosition( position );
+            }
         }
-        if ( position != MotionState->PrevPosition ) {
-            MotionState->PrevPosition = position;
-            UpdatePhysicalBodyPosition( position );
+
+        Float3 worldScale = GetWorldScale();
+        int numShapes = ShiftedCompoundShape->getNumChildShapes();
+
+        if ( numShapes > 0 && !CachedScale.CompareEps( worldScale, PHYS_COMPARE_EPSILON ) ) {
+
+            CachedScale = worldScale;
+
+            btVector3 scaling = btVectorToFloat3( worldScale );
+#if 0
+            for ( int i = 0 ; i < numShapes ; i++ ) {
+                btCollisionShape * shape = ShiftedCompoundShape->getChildShape( i );
+                shape->setLocalScaling( scaling );
+            }
+#else
+            ShiftedCompoundShape->setLocalScaling( scaling );
+#endif
+
+            // TODO: update center of mass?
         }
-    }
-    
-    Float3 worldScale = GetWorldScale();
-
-    if ( !CachedScale.CompareEps( worldScale, PHYS_COMPARE_EPSILON ) ) {
-
-        CachedScale = worldScale;
-
-        //foreach  shape :compoindShape { shape->setLocalScaling( btVectorToVec3( newWorldScale ) ); }
-
-        ShiftedCompoundShape->setLocalScaling( btVectorToFloat3( worldScale ) );
-
-        // TODO: update center of mass
     }
 }
-
-#define Activate() {if ( Mass > 0.0f ) RigidBody->activate( true );}
 
 void FPhysicalBody::UpdatePhysicalBodyPosition( Float3 const & _Position ) {
     btTransform & transform = RigidBody->getWorldTransform();
@@ -568,284 +485,226 @@ void FPhysicalBody::UpdatePhysicalBodyRotation( Quat const & _Rotation ) {
 }
 
 void FPhysicalBody::SetLinearVelocity( Float3 const & _Velocity ) {
-    RigidBody->setLinearVelocity( btVectorToFloat3( _Velocity ) );
-    //if ( _Velocity != Float3::Zero() ) {
-        Activate();
-    //}
+    if ( RigidBody ) {
+        RigidBody->setLinearVelocity( btVectorToFloat3( _Velocity ) );
+        if ( _Velocity != Float3::Zero() ) {
+            Activate();
+        }
+    }
 }
 
 void FPhysicalBody::SetLinearFactor( Float3 const & _Factor ) {
-    RigidBody->setLinearFactor( btVectorToFloat3( _Factor ) );
+    if ( RigidBody ) {
+        RigidBody->setLinearFactor( btVectorToFloat3( _Factor ) );
+    }
 }
 
-void FPhysicalBody::SetLinearRestThreshold( float _Threshold ) {
-    RigidBody->setSleepingThresholds( _Threshold, RigidBody->getAngularSleepingThreshold() );
+void FPhysicalBody::SetLinearSleepingThreshold( float _Threshold ) {
+    if ( RigidBody ) {
+        RigidBody->setSleepingThresholds( _Threshold, RigidBody->getAngularSleepingThreshold() );
+    }
 }
 
 void FPhysicalBody::SetLinearDamping( float _Damping ) {
-    RigidBody->setDamping( _Damping, RigidBody->getAngularDamping() );
+    if ( RigidBody ) {
+        RigidBody->setDamping( _Damping, RigidBody->getAngularDamping() );
+    }
 }
 
 void FPhysicalBody::SetAngularVelocity( Float3 const & _Velocity ) {
-    RigidBody->setAngularVelocity( btVectorToFloat3( _Velocity ) );
-    //if ( _Velocity != Float3::Zero() ) {
-        Activate();
-    //}
+    if ( RigidBody ) {
+        RigidBody->setAngularVelocity( btVectorToFloat3( _Velocity ) );
+        if ( _Velocity != Float3::Zero() ) {
+            Activate();
+        }
+    }
 }
 
 void FPhysicalBody::SetAngularFactor( Float3 const & _Factor ) {
-    RigidBody->setAngularFactor( btVectorToFloat3( _Factor ) );
+    if ( RigidBody ) {
+        RigidBody->setAngularFactor( btVectorToFloat3( _Factor ) );
+    }
 }
 
-void FPhysicalBody::SetAngularRestThreshold( float _Threshold ) {
-    RigidBody->setSleepingThresholds( RigidBody->getLinearSleepingThreshold(), _Threshold );
+void FPhysicalBody::SetAngularSleepingThreshold( float _Threshold ) {
+    if ( RigidBody ) {
+        RigidBody->setSleepingThresholds( RigidBody->getLinearSleepingThreshold(), _Threshold );
+    }
 }
 
 void FPhysicalBody::SetAngularDamping( float _Damping ) {
-    RigidBody->setDamping( RigidBody->getLinearDamping(), _Damping );
+    if ( RigidBody ) {
+        RigidBody->setDamping( RigidBody->getLinearDamping(), _Damping );
+    }
 }
 
 void FPhysicalBody::SetFriction( float _Friction ) {
-    RigidBody->setFriction( _Friction );
+    if ( RigidBody ) {
+        RigidBody->setFriction( _Friction );
+    }
 }
 
 void FPhysicalBody::SetAnisotropicFriction( Float3 const & _Friction ) {
-    RigidBody->setAnisotropicFriction( btVectorToFloat3( _Friction ) );
+    if ( RigidBody ) {
+        RigidBody->setAnisotropicFriction( btVectorToFloat3( _Friction ) );
+    }
 }
 
 void FPhysicalBody::SetRollingFriction( float _Friction ) {
-    RigidBody->setRollingFriction( _Friction );
+    if ( RigidBody ) {
+        RigidBody->setRollingFriction( _Friction );
+    }
 }
 
 void FPhysicalBody::SetRestitution( float _Restitution ) {
-    RigidBody->setRestitution( _Restitution );
+    if ( RigidBody ) {
+        RigidBody->setRestitution( _Restitution );
+    }
 }
 
 void FPhysicalBody::SetContactProcessingThreshold( float _Threshold ) {
-    RigidBody->setContactProcessingThreshold( _Threshold );
+    if ( RigidBody ) {
+        RigidBody->setContactProcessingThreshold( _Threshold );
+    }
 }
 
 void FPhysicalBody::SetCcdRadius( float _Radius ) {
-    RigidBody->setCcdSweptSphereRadius( FMath::Max( _Radius, 0.0f ) );
+    if ( RigidBody ) {
+        RigidBody->setCcdSweptSphereRadius( FMath::Max( _Radius, 0.0f ) );
+    }
 }
 
 void FPhysicalBody::SetCcdMotionThreshold( float _Threshold ) {
-    RigidBody->setCcdMotionThreshold( FMath::Max( _Threshold, 0.0f ) );
+    if ( RigidBody ) {
+        RigidBody->setCcdMotionThreshold( FMath::Max( _Threshold, 0.0f ) );
+    }
 }
 
 Float3 FPhysicalBody::GetLinearVelocity() const {
-    return btVectorToFloat3( RigidBody->getLinearVelocity() );
+    return RigidBody ? btVectorToFloat3( RigidBody->getLinearVelocity() ) : Float3::Zero();
 }
 
 Float3 FPhysicalBody::GetLinearFactor() const {
-    return btVectorToFloat3( RigidBody->getLinearFactor() );
+    return RigidBody ? btVectorToFloat3( RigidBody->getLinearFactor() ) : Float3::Zero();
 }
 
 Float3 FPhysicalBody::GetVelocityAtPoint( Float3 const & _Position ) const {
-    return btVectorToFloat3( RigidBody->getVelocityInLocalPoint( btVectorToFloat3( _Position - MotionState->CenterOfMass ) ) );
+    return RigidBody ? btVectorToFloat3( RigidBody->getVelocityInLocalPoint( btVectorToFloat3( _Position - MotionState->CenterOfMass ) ) ) : Float3::Zero();
 }
 
-float FPhysicalBody::GetLinearRestThreshold() const {
-    return RigidBody->getLinearSleepingThreshold();
+float FPhysicalBody::GetLinearSleepingThreshold() const {
+    return RigidBody ? RigidBody->getLinearSleepingThreshold() : 0;
 }
 
 float FPhysicalBody::GetLinearDamping() const {
-    return RigidBody->getLinearDamping();
+    return RigidBody ? RigidBody->getLinearDamping() : 0;
 }
 
 Float3 FPhysicalBody::GetAngularVelocity() const {
-    return btVectorToFloat3( RigidBody->getAngularVelocity() );
+    return RigidBody ? btVectorToFloat3( RigidBody->getAngularVelocity() ) : Float3::Zero();
 }
 
 Float3 FPhysicalBody::GetAngularFactor() const {
-    return btVectorToFloat3( RigidBody->getAngularFactor() );
+    return RigidBody ? btVectorToFloat3( RigidBody->getAngularFactor() ) : Float3::Zero();
 }
 
-float FPhysicalBody::GetAngularRestThreshold() const {
-    return RigidBody->getAngularSleepingThreshold();
+float FPhysicalBody::GetAngularSleepingThreshold() const {
+    return RigidBody ? RigidBody->getAngularSleepingThreshold() : 0;
 }
 
 float FPhysicalBody::GetAngularDamping() const {
-    return RigidBody->getAngularDamping();
+    return RigidBody ? RigidBody->getAngularDamping() : 0;
 }
 
 float FPhysicalBody::GetFriction() const {
-    return RigidBody->getFriction();
+    return RigidBody ? RigidBody->getFriction() : 0;
 }
 
 Float3 FPhysicalBody::GetAnisotropicFriction() const {
-    return btVectorToFloat3( RigidBody->getAnisotropicFriction() );
+    return RigidBody ? btVectorToFloat3( RigidBody->getAnisotropicFriction() ) : Float3::Zero();
 }
 
 float FPhysicalBody::GetRollingFriction() const {
-    return RigidBody->getRollingFriction();
+    return RigidBody ? RigidBody->getRollingFriction() : 0;
 }
 
 float FPhysicalBody::GetRestitution() const {
-    if ( bNoPhysics ) {
-        return 0.0f;
-    }
-
-    return RigidBody->getRestitution();
+    return RigidBody ? RigidBody->getRestitution() : 0;
 }
 
 float FPhysicalBody::GetContactProcessingThreshold() const {
-    if ( bNoPhysics ) {
-        return 0.0f;
-    }
-
-    return RigidBody->getContactProcessingThreshold();
+    return RigidBody ? RigidBody->getContactProcessingThreshold() : 0;
 }
 
 float FPhysicalBody::GetCcdRadius() const {
-    if ( bNoPhysics ) {
-        return 0.0f;
-    }
-
-    return RigidBody->getCcdSweptSphereRadius();
+    return RigidBody ? RigidBody->getCcdSweptSphereRadius() : 0;
 }
 
 float FPhysicalBody::GetCcdMotionThreshold() const {
-    if ( bNoPhysics ) {
-        return 0.0f;
-    }
+    return RigidBody ? RigidBody->getCcdMotionThreshold() : 0;
+}
 
-    return RigidBody->getCcdMotionThreshold();
+void FPhysicalBody::Activate() {
+    if ( RigidBody && Mass > 0.0f ) {
+        RigidBody->activate( true );
+    }
 }
 
 bool FPhysicalBody::IsActive() const {
-    if ( bNoPhysics ) {
-        return false;
-    }
-
-    return RigidBody->isActive();
+    return RigidBody ? RigidBody->isActive() : false;
 }
 
 void FPhysicalBody::ClearForces() {
-    if ( bNoPhysics ) {
-        return;
+    if ( RigidBody ) {
+        RigidBody->clearForces();
     }
-
-    RigidBody->clearForces();
 }
 
 void FPhysicalBody::ApplyCentralForce( Float3 const & _Force ) {
-    if ( bNoPhysics ) {
-        return;
-    }
-
-    if ( _Force != Float3::Zero() ) {
+    if ( RigidBody && _Force != Float3::Zero() ) {
         Activate();
         RigidBody->applyCentralForce( btVectorToFloat3( _Force ) );
     }
 }
 
 void FPhysicalBody::ApplyForce( Float3 const & _Force, Float3 const & _Position ) {
-    if ( bNoPhysics ) {
-        return;
-    }
-
-    if ( _Force != Float3::Zero() ) {
+    if ( RigidBody && _Force != Float3::Zero() ) {
         Activate();
         RigidBody->applyForce( btVectorToFloat3( _Force ), btVectorToFloat3( _Position - MotionState->CenterOfMass ) );
     }
 }
 
 void FPhysicalBody::ApplyTorque( Float3 const & _Torque ) {
-    if ( bNoPhysics ) {
-        return;
-    }
-
-    if ( _Torque != Float3::Zero() ) {
+    if ( RigidBody && _Torque != Float3::Zero() ) {
         Activate();
         RigidBody->applyTorque( btVectorToFloat3( _Torque ) );
     }
 }
 
 void FPhysicalBody::ApplyCentralImpulse( Float3 const & _Impulse ) {
-    if ( bNoPhysics ) {
-        return;
-    }
-
-    if ( _Impulse != Float3::Zero() ) {
+    if ( RigidBody && _Impulse != Float3::Zero() ) {
         Activate();
         RigidBody->applyCentralImpulse( btVectorToFloat3( _Impulse ) );
     }
 }
 
 void FPhysicalBody::ApplyImpulse( Float3 const & _Impulse, Float3 const & _Position ) {
-    if ( bNoPhysics ) {
-        return;
-    }
-
-    if ( _Impulse != Float3::Zero() ) {
+    if ( RigidBody && _Impulse != Float3::Zero() ) {
         Activate();
         RigidBody->applyImpulse( btVectorToFloat3( _Impulse ), btVectorToFloat3( _Position - MotionState->CenterOfMass ) );
     }
 }
 
 void FPhysicalBody::ApplyTorqueImpulse( Float3 const & _Torque ) {
-    if ( _Torque != Float3::Zero() ) {
+    if ( RigidBody && _Torque != Float3::Zero() ) {
         Activate();
         RigidBody->applyTorqueImpulse( btVectorToFloat3( _Torque ) );
     }
 }
 
-#if 0
-void FPhysicalBody::SetGravity( Float3 const & _Gravity ) {
-    if ( _Gravity != SelfGravity ) {
-        SelfGravity = _Gravity;
-        UpdateGravity();
-    }
-}
-
-void FPhysicalBody::EnableGravity( bool _Enable ) {
-    if ( _Enable != EnableGraivity ) {
-        EnableGraivity = _Enable;
-        UpdateGravity();
-    }
-}
-
-void FPhysicalBody::SetKinematic( bool _Enable ) {
-    if ( _Enable != Kinematic ) {
-        Kinematic = _Enable;
-        AddBodyToWorld();
-    }
-}
-
-void FPhysicalBody::SetTrigger( bool _Enable ) {
-    if ( _Enable != Trigger ) {
-        Trigger = _Enable;
-        AddBodyToWorld();
-    }
-}
-
-void FPhysicalBody::SetCollisionLayer( unsigned short _Layer ) {
-    if ( _Layer != CollisionLayer ) {
-        CollisionLayer = _Layer;
-        AddBodyToWorld();
-    }
-}
-
-void FPhysicalBody::SetCollisionMask( unsigned short _Mask ) {
-    if ( _Mask != CollisionMask ) {
-        CollisionMask = _Mask;
-        AddBodyToWorld();
-    }
-}
-
-void FPhysicalBody::SetCollisionLayerAndMask( unsigned short _Layer, unsigned short _Mask ) {
-    if ( _Layer != CollisionLayer || _Mask != CollisionMask ) {
-        CollisionLayer = _Layer;
-        CollisionMask = _Mask;
-        AddBodyToWorld();
-    }
-}
-#endif
-
 // TODO: check correctness
 void FPhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const {
-    if ( bNoPhysics ) {
+    if ( !RigidBody ) {
         _BoundingBoxes.Clear();
     } else {
         Float3x4 worldTransform;
@@ -857,7 +716,7 @@ void FPhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox >
         Float3 rigidBodyPosition = btVectorToFloat3( Transform.getOrigin() ) - btQuaternionToQuat( Transform.getRotation() ) * MotionState->CenterOfMass;
         Quat rigidBodyRotation = btQuaternionToQuat( Transform.getRotation() );
 
-        worldTransform.Compose( rigidBodyPosition, rigidBodyRotation.ToMatrix(), Float3(1.0f)/*GetWorldScale()*/ );
+        worldTransform.Compose( rigidBodyPosition, rigidBodyRotation.ToMatrix(), GetWorldScale() );
 
         int numShapes = ShiftedCompoundShape->getNumChildShapes();
 
@@ -865,8 +724,6 @@ void FPhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox >
 
         for ( int i = 0 ; i < numShapes ; i++ ) {
             btCompoundShapeChild & shape = ShiftedCompoundShape->getChildList()[ i ];
-
-            //FCollisionBody * collisionBody = static_cast< FCollisionBody * >( shape->getUserPointer() )->RemoveRef();
 
             shapeWorldPosition = worldTransform * btVectorToFloat3( shape.m_transform.getOrigin() );
             shapeWorldRotation.FromMatrix( worldTransform.DecomposeRotation() );
@@ -881,6 +738,3 @@ void FPhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox >
         }
     }
 }
-
-//#include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
-//btscaled

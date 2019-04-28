@@ -193,7 +193,7 @@ void FWorld::DestroyActors() {
 
 FActor * FWorld::SpawnActor( FActorSpawnParameters const & _SpawnParameters ) {
 
-    GLogger.Printf( "==== Spawn Actor ====\n" );
+    //GLogger.Printf( "==== Spawn Actor ====\n" );
 
     FClassMeta const * classMeta = _SpawnParameters.ActorClassMeta();
 
@@ -243,7 +243,7 @@ FActor * FWorld::SpawnActor( FActorSpawnParameters const & _SpawnParameters ) {
     actor->BeginPlayComponents();
     actor->BeginPlay();
 
-    GLogger.Printf( "=====================\n" );
+    //GLogger.Printf( "=====================\n" );
     return actor;
 }
 
@@ -696,7 +696,7 @@ void FWorld::DrawDebug( FDebugDraw * _DebugDraw ) {
 
     int Mode = 0;
     //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_COLLISION_SHAPES_WIREFRANE ) {
-        Mode |= FPhysicsDebugDraw::DBG_DrawWireframe;
+    //    Mode |= FPhysicsDebugDraw::DBG_DrawWireframe;
     //}
     //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_COLLISION_SHAPE_AABBs ) {
         Mode |= FPhysicsDebugDraw::DBG_DrawAabb;

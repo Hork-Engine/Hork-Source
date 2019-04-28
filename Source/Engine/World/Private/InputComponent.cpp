@@ -551,6 +551,9 @@ void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
         }
 
         FAxisBinding & binding = AxisBindings[ axisBinding ];
+        if ( GGameMaster.IsGamePaused() && !binding.bExecuteEvenWhenPaused ) {
+            continue;
+        }
 
         if ( !bIgnoreJoystickEvents ) {
             for ( int joyNum = 0 ; joyNum < MAX_JOYSTICKS_COUNT ; joyNum++ ) {
@@ -767,7 +770,7 @@ const FJoystick * FInputComponent::GetJoysticks() {
     return Static.Joysticks;
 }
 
-void FInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback ) {
+void FInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
     int hash = FCore::HashCase( _Axis, FString::Length( _Axis ) );
 
     for ( int i = AxisBindingsHash.First( hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
@@ -787,6 +790,7 @@ void FInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > c
     binding.Name = _Axis;
     binding.Callback = _Callback;
     binding.AxisScale = 0.0f;
+    binding.bExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
     AxisBindings.push_back( binding );
 }
 

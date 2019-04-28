@@ -29,8 +29,12 @@ SOFTWARE.
 */
 
 #include <Engine/World/Public/CameraComponent.h>
-#include <Engine/Runtime/Public/Runtime.h>
+#include <Engine/World/Public/DebugDraw.h>
+
 #include <Engine/Core/Public/Logger.h>
+#include <Engine/Core/Public/ConvexHull.h>
+
+#include <Engine/Runtime/Public/Runtime.h>
 
 #define DEFAULT_PROJECTION FCameraComponent::PERSPECTIVE
 #define DEFAULT_ZNEAR 0.04f//0.1f
@@ -78,83 +82,77 @@ FCameraComponent::FCameraComponent() {
 
 void FCameraComponent::InitializeComponent() {
     Super::InitializeComponent();
-
-    GLogger.Printf( "FCameraComponent::InitializeComponent()\n" );
 }
 
 void FCameraComponent::BeginPlay() {
     Super::BeginPlay();
-
-    GLogger.Printf( "FCameraComponent::BeginPlay()\n" );
 }
 
 void FCameraComponent::EndPlay() {
     Super::EndPlay();
-
-    GLogger.Printf( "FCameraComponent::EndPlay()\n" );
 }
 
 void FCameraComponent::TickComponent( float _TimeStep ) {
     Super::TickComponent( _TimeStep );
-
-    //GLogger.Printf( "FCameraComponent::TickComponent()\n" );
 }
 
-#if 0
-void FCameraComponent::DrawDebug( class FCameraComponent * _Camera, EDebugDrawFlags::Type _DebugDrawFlags, FPrimitiveBatchComponent * _DebugDraw ) {
-    if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_CAMERA_FRUSTUM ) {
-        Float3 VectorTR;
-        Float3 VectorTL;
-        Float3 VectorBR;
-        Float3 VectorBL;
+void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+    Super::DrawDebug( _DebugDraw );
 
-        Frustum.CornerVector_TR( VectorTR );
-        Frustum.CornerVector_TL( VectorTL );
-        Frustum.CornerVector_BR( VectorBR );
-        Frustum.CornerVector_BL( VectorBL );
+    //if ( _DebugDrawFlags & EDebugDrawFlags::DRAW_CAMERA_FRUSTUM ) {
+        Float3 vectorTR;
+        Float3 vectorTL;
+        Float3 vectorBR;
+        Float3 vectorBL;
+        Float3 origin = GetWorldPosition();
+        Float3 v[4];
+        Float3 faces[4][3];
+        float rayLength = 32;
 
-        float Length = 32;
+        Frustum.CornerVector_TR( vectorTR );
+        Frustum.CornerVector_TL( vectorTL );
+        Frustum.CornerVector_BR( vectorBR );
+        Frustum.CornerVector_BL( vectorBL );
 
-        Float3 Origin = GetNode()->GetWorldPosition();
+        v[0] = origin + vectorTR * rayLength;
+        v[1] = origin + vectorBR * rayLength;
+        v[2] = origin + vectorBL * rayLength;
+        v[3] = origin + vectorTL * rayLength;      
+        
+        // top
+        faces[0][0] = origin;
+        faces[0][1] = v[0];
+        faces[0][2] = v[3];
 
-        _DebugDraw->SetPrimitive( P_Lines );
+        // left
+        faces[1][0] = origin;
+        faces[1][1] = v[3];
+        faces[1][2] = v[2];
+
+        // bottom
+        faces[2][0] = origin;
+        faces[2][1] = v[2];
+        faces[2][2] = v[1];
+
+        // right
+        faces[3][0] = origin;
+        faces[3][1] = v[1];
+        faces[3][2] = v[0];
+
+        _DebugDraw->SetDepthTest( true );
+
         _DebugDraw->SetColor( 0, 1, 1, 1 );
-        _DebugDraw->SetZTest( true );
-        _DebugDraw->EmitPoint( Origin );
-        _DebugDraw->EmitPoint( Origin + VectorTR * Length );
-        _DebugDraw->EmitPoint( Origin );
-        _DebugDraw->EmitPoint( Origin + VectorTL * Length );
-        _DebugDraw->EmitPoint( Origin );
-        _DebugDraw->EmitPoint( Origin + VectorBR * Length );
-        _DebugDraw->EmitPoint( Origin );
-        _DebugDraw->EmitPoint( Origin + VectorBL * Length );
-        _DebugDraw->Flush();
+        _DebugDraw->DrawLine( origin, v[0] );
+        _DebugDraw->DrawLine( origin, v[3] );
+        _DebugDraw->DrawLine( origin, v[1] );
+        _DebugDraw->DrawLine( origin, v[2] );
+        _DebugDraw->DrawLine( v, 4, true );
 
-#if 0
-        _DebugDraw->SetPolygonMode( FPrimitiveBatchComponent::PM_Solid );
-        _DebugDraw->SetPrimitive( P_TriangleFan );
-        _DebugDraw->SetCullFace( CullFace_None );
-        _DebugDraw->SetZTest( true );
         _DebugDraw->SetColor( 1, 1, 1, 0.3f );
-        for ( int p = 0 ; p < 4 ; p++ ) {
-            PolygonF Polygon;
-
-            Polygon.CreateForPlane( Frustum[ p ], 1024.0f );
-
-            for ( int i = 0 ; i < 6 ; i++ ) {
-                if ( p != i ) {
-                    Polygon.ClipSelf( Frustum[ i ], 0.01f, false );
-                }
-            }
-            for ( int i = 0 ; i < Polygon.Length() ; i++ ) {
-                _DebugDraw->EmitPoint( Polygon[ i ].X, Polygon[ i ].Y, Polygon[ i ].Z );
-            }
-            _DebugDraw->Flush();
-        }
-#endif
-    }
+        _DebugDraw->DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
+        _DebugDraw->DrawConvexPoly( v, 4, false );
+    //}
 }
-#endif
 
 void FCameraComponent::SetProjection( int _Projection ) {
     if ( Projection == _Projection ) {
@@ -261,7 +259,7 @@ void FCameraComponent::ComputeRect( float _OrthoZoom, float * _Left, float * _Ri
         *_Top = Z / AspectRatio;
     }
 }
-#include <Engine/World/Public/GameMaster.h>
+
 void FCameraComponent::OnTransformDirty() {
     ViewMatrixDirty = true;
 }

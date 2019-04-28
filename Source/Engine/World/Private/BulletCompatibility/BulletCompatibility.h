@@ -29,4 +29,7 @@ AN_FORCEINLINE btQuaternion btQuaternionToQuat( const Quat & _In ) {
     return btQuaternion( _In.X, _In.Y, _In.Z, _In.W );
 }
 
+#define b3New( _ClassName, ... ) new (b3AlignedAlloc(sizeof(_ClassName),16)) _ClassName( __VA_ARGS__ )
+#define b3Destroy( _Object ) { dtor( _Object ); b3AlignedFree( _Object ); }
 
+template< typename T > AN_FORCEINLINE void dtor( T * object ) { object->~T(); }

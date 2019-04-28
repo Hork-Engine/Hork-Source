@@ -231,12 +231,12 @@ public:
 
     // Bind axis to class method
     template< typename T >
-    void BindAxis( const char * _Axis, T * _Object, void (T::*_Method)( float ) ) {
-        BindAxis( _Axis, { _Object, _Method } );
+    void BindAxis( const char * _Axis, T * _Object, void (T::*_Method)( float ), bool _ExecuteEvenWhenPaused = false ) {
+        BindAxis( _Axis, { _Object, _Method }, _ExecuteEvenWhenPaused );
     }
 
     // Bind axis to function
-    void BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback );
+    void BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused = false );
 
     // Unbind axis
     void UnbindAxis( const char * _Axis );
@@ -307,6 +307,7 @@ protected:
         FString Name;                           // axis name
         TCallback< void( float ) > Callback;    // binding callback
         float AxisScale;                        // final axis value that will be passed to binding callback
+        bool bExecuteEvenWhenPaused;
     };
 
     struct FActionBinding {

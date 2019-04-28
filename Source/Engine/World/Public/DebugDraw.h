@@ -54,6 +54,7 @@ public:
     void DrawConvexPoly( Float3 const * _Points, int _NumPoints, bool _TwoSided = false );
     void DrawTriangleSoup( Float3 const * _Points, int _NumPoints, int _Stride, unsigned int * _Indices, int _NumIndices, bool _TwoSided = false );
     void DrawTriangle( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, bool _TwoSided );
+    void DrawTriangles( Float3 const * _Triangles, int _NumTriangles, int _Stride, bool _TwoSided = false );
     void DrawBox( Float3 const & _Position, Float3 const & _HalfExtents );
     void DrawOrientedBox( Float3 const & _Position, Float3x3 const & _Orientation, Float3 const & _HalfExtents );
     void DrawCircle( Float3 const & _Position, Float3 const & _UpVector, const float & _Radius );

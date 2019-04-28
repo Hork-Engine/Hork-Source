@@ -116,6 +116,7 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
         FIndexedMeshSubpart * subpart = Subparts[0];
         subpart->BaseVertex = 0;
         subpart->FirstIndex = 0;
+        subpart->VertexCount = VertexCount;
         subpart->IndexCount = IndexCount;
     }
 }
@@ -282,29 +283,47 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*box*" ) ) {
         InitializeShape< FBoxShape >( Float3(1), 1 );
         SetName( _Name );
+        BodyComposition.Clear();
+        FCollisionBox * collisionBody = BodyComposition.NewCollisionBody< FCollisionBox >();
+        collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
     if ( !FString::Cmp( _Name, "*sphere*" ) ) {
         InitializeShape< FSphereShape >( 0.5f, 1, 32, 32 );
         SetName( _Name );
+        BodyComposition.Clear();
+        FCollisionSphere * collisionBody = BodyComposition.NewCollisionBody< FCollisionSphere >();
+        collisionBody->Radius = 0.5f;
         return;
     }
 
     if ( !FString::Cmp( _Name, "*cylinder*" ) ) {
         InitializeShape< FCylinderShape >( 0.5f, 1, 1, 32 );
         SetName( _Name );
+        BodyComposition.Clear();
+        FCollisionCylinder * collisionBody = BodyComposition.NewCollisionBody< FCollisionCylinder >();
+        collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
     if ( !FString::Cmp( _Name, "*plane*" ) ) {
         InitializeShape< FPlaneShape >( 1.0f, 1.0f, 1 );
         SetName( _Name );
+        BodyComposition.Clear();
+        BodyComposition.NewCollisionBody< FCollisionPlane >();
         return;
     }
 
     GLogger.Printf( "Unknown internal mesh %s\n", _Name );
 }
+
+
+//#include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
+
+//btStridingMeshInterface * FIndexedMesh::CreateStridingMeshInterface() {
+
+//}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 

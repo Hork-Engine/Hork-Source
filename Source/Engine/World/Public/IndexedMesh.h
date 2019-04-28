@@ -33,6 +33,7 @@ SOFTWARE.
 #include "BaseObject.h"
 #include "Shape.h"
 #include "MaterialAssembly.h"
+#include "CollisionBody.h"
 
 class FIndexedMesh;
 
@@ -51,6 +52,7 @@ class FIndexedMeshSubpart : public FBaseObject {
 public:
     int BaseVertex;
     int FirstIndex;
+    int VertexCount;
     int IndexCount;
 
     BvAxisAlignedBox BoundingBox;
@@ -223,6 +225,11 @@ public:
 
     // Get mesh rendering proxy
     FRenderProxy_IndexedMesh * GetRenderProxy() { return RenderProxy; }
+
+    // Create interface for physics collision body
+    //class btStridingMeshInterface * CreateStridingMeshInterface();
+
+    FCollisionBodyComposition BodyComposition;
 
 protected:
     FIndexedMesh();

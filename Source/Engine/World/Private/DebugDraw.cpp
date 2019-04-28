@@ -331,6 +331,44 @@ void FDebugDraw::DrawTriangle( Float3 const & _P0, Float3 const & _P1, Float3 co
     DrawConvexPoly( Points, 3, _TwoSided );
 }
 
+void FDebugDraw::DrawTriangles( Float3 const * _Triangles, int _NumTriangles, int _Stride, bool _TwoSided ) {
+    FDebugDrawCmd & cmd = SetDrawCmd( bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP );
+
+    int numPoints = _NumTriangles * 3;
+    int numIndices = _NumTriangles * 3;
+    int totalIndices = _TwoSided ? numIndices << 1 : numIndices;
+
+    PrimitiveReserve( numPoints, totalIndices );
+
+    FDebugVertex * verts = Vertices->ToPtr() + FirstVertex;
+    unsigned int * indices = Indices->ToPtr() + FirstIndex;
+
+    byte * pPoints = ( byte * )_Triangles;
+
+    for ( int i = 0 ; i < numPoints ; i++, verts++ ) {
+        verts->Position = *( Float3 * )pPoints;
+        verts->Color = CurrentColor;
+
+        pPoints += _Stride;
+    }
+
+    for ( int i = 0 ; i < numIndices ; i++ ) {
+        *indices++ = FirstVertex + i;
+    }
+
+    if ( _TwoSided ) {
+        for ( int i = numIndices-1 ; i >= 0 ; i-- ) {
+            *indices++ = FirstVertex + i;
+        }
+    }
+
+    FirstVertex += numPoints;
+    FirstIndex += totalIndices;
+
+    cmd.NumVertices += numPoints;
+    cmd.NumIndices += totalIndices;
+}
+
 void FDebugDraw::DrawBox( Float3 const & _Position, Float3 const & _HalfExtents ) {
     Float3 const points[8] = {
         Float3( -_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z ) + _Position,

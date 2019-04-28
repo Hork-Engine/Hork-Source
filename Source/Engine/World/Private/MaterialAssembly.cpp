@@ -2473,9 +2473,9 @@ FMaterial * FMaterialBuilder::Build() {
                        "#endif\n";
     }
 
-    GLogger.Print( "=== vertex ===\n" );
-    GLogger.Print( VertexSrc.ToConstChar() );
-    GLogger.Print( "==============\n" );
+    //GLogger.Print( "=== vertex ===\n" );
+    //GLogger.Print( VertexSrc.ToConstChar() );
+    //GLogger.Print( "==============\n" );
     //GLogger.Print( "=== fragment ===\n" );
     //GLogger.Print( FragmentSrc.ToConstChar() );
     //GLogger.Print( "==============\n" );

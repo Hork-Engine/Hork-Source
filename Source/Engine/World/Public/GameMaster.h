@@ -100,7 +100,7 @@ public:
     bool bToggleFullscreenAltEnter = true;
     bool bAllowConsole = true;
 //    int GameHertz = 120;//30;//60;
-    int PhysicsHertz = 24;//30;
+    int PhysicsHertz = 60;//24;//30;
     bool bEnablePhysicsInterpolation = true;
     bool bContactSolverSplitImpulse = false; // disabled for performance
     int NumContactSolverIterations = 10;
