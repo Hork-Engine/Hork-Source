@@ -64,3 +64,32 @@ protected:
 private:
     FMeshComponent * MeshComponent;
 };
+
+
+class FComposedActor : public FActor {
+    AN_ACTOR( FComposedActor, FActor )
+
+protected:
+    FComposedActor();
+
+private:
+    FMeshComponent * MeshComponent;
+};
+
+class FBoxTrigger : public FActor {
+    AN_ACTOR( FBoxTrigger, FActor )
+
+protected:
+    FBoxTrigger();
+
+protected:
+    void BeginPlay() override;
+    void EndPlay() override;
+
+private:
+    void OnBeginOverlap();
+    void OnEndOverlap();
+    void OnUpdateOverlap();
+
+    FMeshComponent * MeshComponent;
+};

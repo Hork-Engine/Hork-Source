@@ -90,7 +90,7 @@ FPlayer::FPlayer() {
     FCollisionCapsule * capsule = NewObject< FCollisionCapsule >();
     capsule->Radius = 0.6f;
     capsule->Height = 0.7f;
-    PhysBody = CreateComponent< FPhysicalBody >( "PhysBody" );
+    PhysBody = CreateComponent< FPhysicalBody >( "PlayerCapsule" );
     PhysBody->BodyComposition.AddCollisionBody( capsule );
     PhysBody->Mass = 70.0f;
     PhysBody->bKinematicBody = false;
@@ -291,12 +291,22 @@ void FPlayer::AttackPress() {
     transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
     transform.SetScale( 0.6f );
 
+#if 0
     int i = FMath::Rand()*3;
+
+    if ( i == 1 ) {
+        transform.Scale.X = 2;
+        transform.Scale.Z = 2;
+    }
+
     switch ( i ) {
         case 0: actor = GetWorld()->SpawnActor< FBoxActor >( transform ); break;
         case 1: actor = GetWorld()->SpawnActor< FSphereActor >( transform ); break;
         default: actor = GetWorld()->SpawnActor< FCylinderActor >( transform ); break;
     }
+#else
+    actor = GetWorld()->SpawnActor< FComposedActor >( transform );
+#endif
 
     FMeshComponent * mesh = actor->GetComponent< FMeshComponent >();
     if ( mesh ) {

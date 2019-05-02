@@ -69,13 +69,13 @@ void FModule::OnGameStart() {
     mesh->InitializeShape< FPlaneShape >( 256, 256, 256 );
     mesh->SetName( "DefaultShapePlane256x256x256" );
     mesh->BodyComposition.NewCollisionBody< FCollisionPlane >();
-    RegisterResource( mesh );
+    GResourceManager.RegisterResource( mesh );
     }
 
     {
     FIndexedMesh * mesh = NewObject< FIndexedMesh >();
     mesh->InitializeInternalMesh( "*box*" );
-    RegisterResource( mesh );
+    GResourceManager.RegisterResource( mesh );
     }
 
     {
@@ -84,7 +84,7 @@ void FModule::OnGameStart() {
     mesh->SetName( "ShapeSphereMesh" );
     FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
     collisionBody->Radius = 0.5f;
-    RegisterResource( mesh );
+    GResourceManager.RegisterResource( mesh );
     }
 
     {
@@ -93,7 +93,7 @@ void FModule::OnGameStart() {
     mesh->SetName( "ShapeCylinderMesh" );
     FCollisionCylinder * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionCylinder >();
     collisionBody->HalfExtents = Float3( 0.5f );
-    RegisterResource( mesh );
+    GResourceManager.RegisterResource( mesh );
     }
 
     //
@@ -104,7 +104,7 @@ void FModule::OnGameStart() {
     //
     // Example, how to create texture resource from file with alias
     //
-    CreateUniqueTexture( "mipmapchecker.png", "MipmapChecker" );
+    GResourceManager.CreateUniqueResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
 
 
     // Spawn world
@@ -126,6 +126,9 @@ void FModule::OnGameStart() {
     //LoadStaticMeshes();
 
     World->SpawnActor< FGround >();
+
+    FBoxTrigger * trigger = World->SpawnActor< FBoxTrigger >( Float3(0,2,3), Quat::Identity() );
+    trigger->RootComponent->SetScale( Float3(1,4,1) );
 
 //    FTransform spawnTransform;
 //    spawnTransform.Position = Float3(0,0,0);

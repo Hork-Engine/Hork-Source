@@ -41,12 +41,12 @@ AN_CLASS_META_NO_ATTRIBS( FGround )
 
 FGround::FGround() {
     // Get mesh resource (plane)
-    FIndexedMesh * mesh = GetResource< FIndexedMesh >( "DefaultShapePlane256x256x256" );
+    FIndexedMesh * mesh = GResourceManager.GetResource< FIndexedMesh >( "DefaultShapePlane256x256x256" );
 
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();
     matInst->Material = GModule->Material;
-    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( 1.0f );
 
     // Create mesh component and set it as root component
