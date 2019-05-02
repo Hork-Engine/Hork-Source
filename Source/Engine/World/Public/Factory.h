@@ -621,3 +621,7 @@ protected:
     FDummy() {}
     _AN_GENERATED_CLASS_BODY()
 };
+
+template< typename T > T * CreateInstanceOf() {
+    return static_cast< T * >( T::ClassMeta().CreateInstance() );
+}

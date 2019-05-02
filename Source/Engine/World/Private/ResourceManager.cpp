@@ -40,103 +40,14 @@ void FResourceManager::Initialize() {
 }
 
 void FResourceManager::Deinitialize() {
-    ResourceHash.Free();
-
-    for ( CacheEntry & entry : ResourceCache ) {
-        entry.Object->RemoveRef();
-    }
-
-    ResourceCache.clear();
-}
-
-FBaseObject * FResourceManager::FindCachedResource( FClassMeta const & _ClassMeta, const char * _Path, bool & _bMetadataMismatch, int & _Hash ) {
-    _Hash = FCore::HashCase( _Path, FString::Length( _Path ) );
-
-    _bMetadataMismatch = false;
-
-    for ( int i = ResourceHash.First( _Hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
-        if ( !ResourceCache[i].Path.Icmp( _Path ) ) {
-            if ( &ResourceCache[i].Object->FinalClassMeta() != &_ClassMeta ) {
-                GLogger.Printf( "FindCachedResource: %s class doesn't match meta data (%s vs %s)\n", _Path, ResourceCache[i].Object->FinalClassName(), _ClassMeta.GetName() );
-                _bMetadataMismatch = true;
-                return nullptr;
-            }
-            return ResourceCache[i].Object;
-        }
-    }
-    return nullptr;
-}
-
-//enum ELoadFlags {
-//    LF_LOAD_NOW             = 0,
-//    LF_LOAD_ASYNC           = 1,
-//    LF_LOAD_ON_LEVEL_LOAD   = 2
-//};
-
-FBaseObject * FResourceManager::LoadResource( FClassMeta const & _ClassMeta, const char * _Path/*, ELoadFlags _Flags*/ ) {
-    int hash;
-    bool bMetadataMismatch;
-
-    FBaseObject * resource = FindCachedResource( _ClassMeta, _Path, bMetadataMismatch, hash );
-
-    if ( bMetadataMismatch ) {
-        // Create empty object
-        return static_cast< FBaseObject * >( _ClassMeta.CreateInstance() );
-    }
-
-    if ( !resource ) {
-        GLogger.Printf( "Loading \"%s\"\n", _Path );
-        resource = static_cast< FBaseObject * >( _ClassMeta.CreateInstance() );
-        resource->AddRef();
-        resource->LoadObject( _Path );
-        CacheEntry entry;
-        entry.Object = resource;
-        entry.Path = _Path;
-        ResourceHash.Insert( hash, ResourceCache.size() );
-        ResourceCache.push_back( entry );
-    }
-
-    return resource;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#include <Engine/World/Public/Texture.h>
-#include <Engine/World/Public/IndexedMesh.h>
-#include <Engine/World/Public/MeshAsset.h>
-
-TPodArray< FBaseObject * > ResourceCache;
-THash<> ResourceHash;
-
-void InitializeResourceManager() {
-
-}
-
-void DeinitializeResourceManager() {
-    for ( int i = ResourceCache.Length() - 1 ; i >= 0 ; i-- ) {
-        ResourceCache[i]->RemoveRef();
+    for ( int i = ResourceCache.Length() - 1; i >= 0; i-- ) {
+        ResourceCache[ i ]->RemoveRef();
     }
     ResourceCache.Free();
     ResourceHash.Free();
 }
 
-FBaseObject * FindResource( FClassMeta const & _ClassMeta, const char * _Name, bool & _bMetadataMismatch, int & _Hash ) {
+FBaseObject * FResourceManager::FindResource( FClassMeta const & _ClassMeta, const char * _Name, bool & _bMetadataMismatch, int & _Hash ) {
     _Hash = FCore::HashCase( _Name, FString::Length( _Name ) );
 
     _bMetadataMismatch = false;
@@ -154,7 +65,7 @@ FBaseObject * FindResource( FClassMeta const & _ClassMeta, const char * _Name, b
     return nullptr;
 }
 
-FBaseObject * FindResourceByName( const char * _Name ) {
+FBaseObject * FResourceManager::FindResourceByName( const char * _Name ) {
     int hash = FCore::HashCase( _Name, FString::Length( _Name ) );
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
@@ -166,7 +77,7 @@ FBaseObject * FindResourceByName( const char * _Name ) {
     return nullptr;
 }
 
-FBaseObject * GetResource( FClassMeta const & _ClassMeta, const char * _Name, bool * _bResourceFoundResult, bool * _bMetadataMismatch ) {
+FBaseObject * FResourceManager::GetResource( FClassMeta const & _ClassMeta, const char * _Name, bool * _bResourceFoundResult, bool * _bMetadataMismatch ) {
     int hash = FCore::HashCase( _Name, FString::Length( _Name ) );
 
     if ( _bResourceFoundResult ) {
@@ -204,7 +115,7 @@ FBaseObject * GetResource( FClassMeta const & _ClassMeta, const char * _Name, bo
     return resource;
 }
 
-FClassMeta const * GetResourceInfo( const char * _Name ) {
+FClassMeta const * FResourceManager::GetResourceInfo( const char * _Name ) {
     int hash = FCore::HashCase( _Name, FString::Length( _Name ) );
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
@@ -216,7 +127,7 @@ FClassMeta const * GetResourceInfo( const char * _Name ) {
     return nullptr;
 }
 
-bool RegisterResource( FBaseObject * _Resource ) {
+bool FResourceManager::RegisterResource( FBaseObject * _Resource ) {
     int hash;
     bool bMetadataMismatch;
 
@@ -233,183 +144,40 @@ bool RegisterResource( FBaseObject * _Resource ) {
     return true;
 }
 
-FTexture * CreateUniqueTexture( const char * _FileName, const char * _Alias ) {
+FBaseObject * FResourceManager::CreateUniqueResource( FClassMeta const &  _ClassMeta, const char * _FileName, const char * _Alias ) {
     int hash;
     bool bMetadataMismatch;
-    FClassMeta const & classMeta = FTexture::ClassMeta();
     const char * resourceName = _Alias ? _Alias : _FileName;
 
-    FBaseObject * resource = FindResource( classMeta, resourceName, bMetadataMismatch, hash );
+    FBaseObject * resource = FindResource( _ClassMeta, resourceName, bMetadataMismatch, hash );
     if ( bMetadataMismatch ) {
 
         // Never return null
 
-        FTexture * object = static_cast< FTexture * >( classMeta.CreateInstance() );
-        object->InitializeDefaultObject();
+        resource = static_cast< FBaseObject * >( _ClassMeta.CreateInstance() );
+        resource->InitializeDefaultObject();
 
-        return object;
+        return resource;
     }
 
     if ( resource ) {
-        GLogger.Printf( "Caching texture...\n" );
-        return static_cast< FTexture * >( resource );
+        GLogger.Printf( "Caching resource %s...\n", _FileName );
+        return resource;
     }
 
-    FTexture * object = static_cast< FTexture * >( classMeta.CreateInstance() );
+    resource = static_cast< FBaseObject * >( _ClassMeta.CreateInstance() );
 
-    FImage image;
-    if ( !image.LoadRawImage( _FileName, true, true ) ) {
-        object->InitializeDefaultObject();
-    } else {
-        object->FromImage( image );
-    }
-
-    resource = object;
+    resource->InitializeFromFile( _FileName );
     resource->SetName( resourceName );
     resource->AddRef();
 
     ResourceHash.Insert( hash, ResourceCache.Length() );
     ResourceCache.Append( resource );
 
-    return object;
+    return resource;
 }
 
-FIndexedMesh * CreateUniqueMesh( const char * _FileName, const char * _Alias ) {
-    int hash;
-    bool bMetadataMismatch;
-    FClassMeta const & classMeta = FIndexedMesh::ClassMeta();
-    const char * resourceName = _Alias ? _Alias : _FileName;
-
-    FBaseObject * resource = FindResource( classMeta, resourceName, bMetadataMismatch, hash );
-    if ( bMetadataMismatch ) {
-
-        // Never return null
-
-        FIndexedMesh * object = static_cast< FIndexedMesh * >( classMeta.CreateInstance() );
-        object->InitializeDefaultObject();
-
-        return object;
-    }
-
-    if ( resource ) {
-        GLogger.Printf( "Caching mesh...\n" );
-        return static_cast< FIndexedMesh * >( resource );
-    }
-
-    FIndexedMesh * object = static_cast< FIndexedMesh * >( classMeta.CreateInstance() );
-
-    FFileStream f;
-    if ( !f.OpenRead( _FileName ) ) {
-        object->InitializeDefaultObject();
-    } else {
-        FMeshAsset asset;
-        asset.Read( f );
-
-        TPodArray< FMaterialInstance * > matInstances;
-        matInstances.Resize( asset.Materials.Length() );
-
-        for ( int j = 0 ; j < asset.Materials.Length() ; j++ ) {
-            FMeshMaterial const & material = asset.Materials[ j ];
-
-            FMaterialInstance * matInst = static_cast< FMaterialInstance * >( FMaterialInstance::ClassMeta().CreateInstance() );
-            //matInst->Material = Material;
-            matInstances[j] = matInst;
-
-            for ( int n = 0 ; n < 1/*material.NumTextures*/ ; n++ ) {
-                FMaterialTexture const & texture = asset.Textures[ material.Textures[n] ];
-                FTexture * texObj = CreateUniqueTexture( texture.FileName.ToConstChar() );
-                matInst->SetTexture( n, texObj );
-            }
-        }
-
-        bool bSkinned = asset.Weights.Length() == asset.Vertices.Length();
-
-        object->Initialize( asset.Vertices.Length(), asset.Indices.Length(), asset.Subparts.size(), bSkinned, false );
-        object->WriteVertexData( asset.Vertices.ToPtr(), asset.Vertices.Length(), 0 );
-        object->WriteIndexData( asset.Indices.ToPtr(), asset.Indices.Length(), 0 );
-        if ( bSkinned ) {
-            object->WriteJointWeights( asset.Weights.ToPtr(), asset.Weights.Length(), 0 );
-        }
-        for ( int j = 0 ; j < object->GetSubparts().Length() ; j++ ) {
-            FSubpart const & s = asset.Subparts[j];
-            FIndexedMeshSubpart * subpart = object->GetSubpart( j );
-            subpart->SetName( s.Name );
-            subpart->BaseVertex = s.BaseVertex;
-            subpart->FirstIndex = s.FirstIndex;
-            subpart->VertexCount = s.VertexCount;
-            subpart->IndexCount = s.IndexCount;
-            subpart->BoundingBox = s.BoundingBox;
-            subpart->MaterialInstance = matInstances[s.Material];
-        }
-
-        // TODO: load collision from file. This code is only for test!!!
-        FCollisionSharedTriangleSoup * CollisionBody = object->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoup >();
-        CollisionBody->TrisData = static_cast< FCollisionTriangleSoupData * >( FCollisionTriangleSoupData::ClassMeta().CreateInstance() );
-        CollisionBody->TrisData->Initialize( (float *)&asset.Vertices.ToPtr()->Position, sizeof( asset.Vertices[0] ), asset.Vertices.Length(),
-            asset.Indices.ToPtr(), asset.Indices.Length(), asset.Subparts.data(), asset.Subparts.size() );
-    }
-
-    resource = object;
-    resource->SetName( resourceName );
-    resource->AddRef();
-
-    ResourceHash.Insert( hash, ResourceCache.Length() );
-    ResourceCache.Append( resource );
-
-    return object;
-}
-
-FSkeleton * CreateUniqueSkeleton( const char * _FileName, const char * _Alias ) {
-    int hash;
-    bool bMetadataMismatch;
-    FClassMeta const & classMeta = FSkeleton::ClassMeta();
-    const char * resourceName = _Alias ? _Alias : _FileName;
-
-    FBaseObject * resource = FindResource( classMeta, resourceName, bMetadataMismatch, hash );
-    if ( bMetadataMismatch ) {
-
-        // Never return null
-
-        FSkeleton * object = static_cast< FSkeleton * >( classMeta.CreateInstance() );
-        object->InitializeDefaultObject();
-
-        return object;
-    }
-
-    if ( resource ) {
-        GLogger.Printf( "Caching skeleton...\n" );
-        return static_cast< FSkeleton * >( resource );
-    }
-
-    FSkeleton * object = static_cast< FSkeleton * >( classMeta.CreateInstance() );
-
-    FFileStream f;
-    if ( !f.OpenRead( _FileName ) ) {
-        object->InitializeDefaultObject();
-    } else {
-        FSkeletonAsset asset;
-        asset.Read( f );
-
-        object->Initialize( asset.Joints.ToPtr(), asset.Joints.Length() );
-        for ( int i = 0 ; i < asset.Animations.size() ; i++ ) {
-            FSkeletonAnimation * sanim = object->CreateAnimation();
-            FSkeletalAnimationAsset const & animAsset = asset.Animations[i];
-            sanim->Initialize( animAsset.FrameCount, animAsset.FrameDelta,
-                               animAsset.AnimatedJoints.ToPtr(), animAsset.AnimatedJoints.Length(), animAsset.Bounds.ToPtr() );
-        }
-    }
-
-    resource = object;
-    resource->SetName( resourceName );
-    resource->AddRef();
-
-    ResourceHash.Insert( hash, ResourceCache.Length() );
-    ResourceCache.Append( resource );
-
-    return object;
-}
-
-bool UnregisterResource( FBaseObject * _Resource ) {
+bool FResourceManager::UnregisterResource( FBaseObject * _Resource ) {
     int hash = _Resource->GetName().HashCase();
     int i;
 
@@ -434,7 +202,7 @@ bool UnregisterResource( FBaseObject * _Resource ) {
     return true;
 }
 
-void UnregisterResources( FClassMeta const & _ClassMeta ) {
+void FResourceManager::UnregisterResources( FClassMeta const & _ClassMeta ) {
     for ( int i = ResourceCache.Length() - 1 ; i >= 0 ; i-- ) {
         if ( ResourceCache[i]->FinalClassId() == _ClassMeta.GetId() ) {
             ResourceCache[i]->RemoveRef();
@@ -445,7 +213,7 @@ void UnregisterResources( FClassMeta const & _ClassMeta ) {
     }
 }
 
-void UnregisterResources() {
+void FResourceManager::UnregisterResources() {
     for ( int i = ResourceCache.Length() - 1 ; i >= 0 ; i-- ) {
         ResourceCache[i]->RemoveRef();
     }

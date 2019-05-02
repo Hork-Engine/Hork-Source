@@ -68,6 +68,14 @@ void FBaseObject::RemoveRef() {
     }
 }
 
+bool FBaseObject::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
+    if ( _CreateDefultObjectIfFails ) {
+        InitializeDefaultObject();
+        return true;
+    }
+    return false;
+}
+
 int FBaseObject::Serialize( FDocument & _Doc ) {
     int object = _Doc.CreateObjectValue();
 
@@ -206,7 +214,7 @@ bool FBaseObject::IsInLoadList() const {
 }
 
 void FBaseObject::ReloadAll() {
-    for ( FBaseObject * object = GlobalLoadList ; object ; object = object->Next ) {
-        object->LoadObject( object->GetResourcePath() );
-    }
+    //for ( FBaseObject * object = GlobalLoadList ; object ; object = object->Next ) {
+    //    object->LoadObject( object->GetResourcePath() );
+    //}
 }

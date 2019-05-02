@@ -33,9 +33,9 @@ SOFTWARE.
 #include <Engine/World/Public/MeshAsset.h>
 
 #include "BulletCompatibility/BulletCompatibility.h"
-#include <Bullet3Common/b3AlignedAllocator.h>
 #include <BulletCollision/CollisionShapes/btBoxShape.h>
 #include <BulletCollision/CollisionShapes/btSphereShape.h>
+#include <BulletCollision/CollisionShapes/btMultiSphereShape.h>
 #include <BulletCollision/CollisionShapes/btCylinderShape.h>
 #include <BulletCollision/CollisionShapes/btConeShape.h>
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
@@ -43,9 +43,22 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
 #include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
 #include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
+#include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
+
+#ifdef AN_OS_WIN32
+#pragma warning(push)
+#pragma warning( disable : 4456 )
+#endif
+#include <BulletCollision/Gimpact/btGImpactShape.h>
+#ifdef AN_OS_WIN32
+#pragma warning(pop)
+#endif
+
+#include <BulletCollision/CollisionShapes/btMultimaterialTriangleMeshShape.h>
 
 AN_CLASS_META_NO_ATTRIBS( FCollisionBody )
 AN_CLASS_META_NO_ATTRIBS( FCollisionSphere )
+AN_CLASS_META_NO_ATTRIBS( FCollisionSphereRadii )
 AN_CLASS_META_NO_ATTRIBS( FCollisionBox )
 AN_CLASS_META_NO_ATTRIBS( FCollisionCylinder )
 AN_CLASS_META_NO_ATTRIBS( FCollisionCone )
@@ -53,12 +66,27 @@ AN_CLASS_META_NO_ATTRIBS( FCollisionCapsule )
 AN_CLASS_META_NO_ATTRIBS( FCollisionPlane )
 AN_CLASS_META_NO_ATTRIBS( FCollisionConvexHull )
 AN_CLASS_META_NO_ATTRIBS( FCollisionSharedConvexHull )
-AN_CLASS_META_NO_ATTRIBS( FCollisionSharedTriangleSoup )
+AN_CLASS_META_NO_ATTRIBS( FCollisionSharedTriangleSoupBVH )
+AN_CLASS_META_NO_ATTRIBS( FCollisionSharedTriangleSoupGimpact )
 AN_CLASS_META_NO_ATTRIBS( FCollisionConvexHullData )
 AN_CLASS_META_NO_ATTRIBS( FCollisionTriangleSoupData )
+AN_CLASS_META_NO_ATTRIBS( FCollisionTriangleSoupBVHData )
 
 btCollisionShape * FCollisionSphere::Create() {
-    return b3New( btSphereShape, Radius );
+    if ( bProportionalScale ) {
+        return b3New( btSphereShape, Radius );
+    } else {
+        btVector3 pos(0,0,0);
+        return b3New( btMultiSphereShape, &pos, &Radius, 1 );
+    }
+}
+
+btCollisionShape * FCollisionSphereRadii::Create() {
+    btVector3 pos(0,0,0);
+    float radius = 1.0f;
+    btMultiSphereShape * shape = b3New( btMultiSphereShape, &pos, &radius, 1 );
+    shape->setLocalScaling( btVectorToFloat3( Radius ) );
+    return shape;
 }
 
 btCollisionShape * FCollisionBox::Create() {
@@ -90,12 +118,9 @@ btCollisionShape * FCollisionSharedConvexHull::Create() {
     return b3New( btConvexPointCloudShape, ( btVector3 * )HullData->Vertices.ToPtr(), HullData->Vertices.Length(), btVector3(1.f,1.f,1.f), bComputeAabb );
 }
 
-btCollisionShape * FCollisionSharedTriangleSoup::Create() {
-    return b3New( btScaledBvhTriangleMeshShape, TrisData->GetData(), btVector3(1.f,1.f,1.f) );
+btCollisionShape * FCollisionSharedTriangleSoupBVH::Create() {
+    return b3New( btScaledBvhTriangleMeshShape, BvhData->GetData(), btVector3(1.f,1.f,1.f) );
 }
-
-#include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
-//#include <BulletCollision/CollisionShapes/btMultimaterialTriangleMeshShape.h>
 
 ATTRIBUTE_ALIGNED16( class ) FStridingMeshInterface : public btStridingMeshInterface
 {
@@ -202,11 +227,11 @@ public:
     }
 };
 
-FCollisionTriangleSoupData::FCollisionTriangleSoupData() {
+FCollisionTriangleSoupBVHData::FCollisionTriangleSoupBVHData() {
     Interface = b3New( FStridingMeshInterface );
 }
 
-FCollisionTriangleSoupData::~FCollisionTriangleSoupData() {
+FCollisionTriangleSoupBVHData::~FCollisionTriangleSoupBVHData() {
     b3Destroy( Interface );
 
     if ( Data ) {
@@ -214,20 +239,62 @@ FCollisionTriangleSoupData::~FCollisionTriangleSoupData() {
     }
 }
 
-bool FCollisionTriangleSoupData::UsedQuantizedAabbCompression() const {
+bool FCollisionTriangleSoupBVHData::UsedQuantizedAabbCompression() const {
     return bUsedQuantizedAabbCompression;
 }
 
-void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, ::FSubpart const * _Subparts, int _SubpartsCount ) {
+void FCollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompression ) {
+    Interface->Vertices = TrisData->Vertices.ToPtr();
+    Interface->Indices = TrisData->Indices.ToPtr();
+    Interface->Subparts = TrisData->Subparts.ToPtr();
+    Interface->SubpartCount = TrisData->Subparts.Length();
 
+    if ( !bForceQuantizedAabbCompression ) {
+        constexpr unsigned int QUANTIZED_AABB_COMPRESSION_MAX_TRIANGLES = 1000000;
+
+        int indexCount = 0;
+        for ( int i = 0 ; i < Interface->SubpartCount ; i++ ) {
+            indexCount += Interface->Subparts[i].IndexCount;
+        }
+
+        // При слишком большом количестве треугольников Bullet не будет работать правильно с Quantized Aabb Compression
+        bUsedQuantizedAabbCompression = indexCount / 3 <= QUANTIZED_AABB_COMPRESSION_MAX_TRIANGLES;
+    } else {
+        bUsedQuantizedAabbCompression = true;
+    }
+
+    if ( Data ) {
+        b3Destroy( Data );
+    }
+
+    Data = b3New( btBvhTriangleMeshShape, Interface,
+                                          UsedQuantizedAabbCompression(),
+                                          btVectorToFloat3( TrisData->BoundingBox.Mins ),
+                                          btVectorToFloat3( TrisData->BoundingBox.Maxs ),
+                                          true );
+}
+
+FCollisionSharedTriangleSoupGimpact::FCollisionSharedTriangleSoupGimpact() {
+    Interface = b3New( FStridingMeshInterface );
+}
+
+FCollisionSharedTriangleSoupGimpact::~FCollisionSharedTriangleSoupGimpact() {
+    b3Destroy( Interface );
+}
+
+btCollisionShape * FCollisionSharedTriangleSoupGimpact::Create() {
+    // FIXME: This shape don't work. Why?
+    Interface->Vertices = TrisData->Vertices.ToPtr();
+    Interface->Indices = TrisData->Indices.ToPtr();
+    Interface->Subparts = TrisData->Subparts.ToPtr();
+    Interface->SubpartCount = TrisData->Subparts.Length();
+    return b3New( btGImpactMeshShape, Interface );
+}
+
+void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, ::FSubpart const * _Subparts, int _SubpartsCount ) {
     Vertices.ResizeInvalidate( _VertexCount );
     Indices.ResizeInvalidate( _IndexCount );
     Subparts.ResizeInvalidate( _SubpartsCount );
-
-    Interface->Vertices = Vertices.ToPtr();
-    Interface->Indices = Indices.ToPtr();
-    Interface->Subparts = Subparts.ToPtr();
-    Interface->SubpartCount = _SubpartsCount;
 
     if ( _VertexStride == sizeof( Vertices[0] ) ) {
         memcpy( Vertices.ToPtr(), _Vertices, sizeof( Vertices[0] ) * _VertexCount );
@@ -241,32 +308,12 @@ void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
 
     memcpy( Indices.ToPtr(), _Indices, sizeof( Indices[0] ) * _IndexCount );
 
-    BvAxisAlignedBox bounds;
-    bounds.Clear();
+    BoundingBox.Clear();
     for ( int i = 0 ; i < _SubpartsCount ; i++ ) {
         Subparts[i].BaseVertex  = _Subparts[i].BaseVertex;
         Subparts[i].VertexCount = _Subparts[i].VertexCount;
         Subparts[i].FirstIndex  = _Subparts[i].FirstIndex;
         Subparts[i].IndexCount  = _Subparts[i].IndexCount;
-        bounds.AddAABB( _Subparts[i].BoundingBox );
+        BoundingBox.AddAABB( _Subparts[i].BoundingBox );
     }
-
-    if ( Data ) {
-        b3Destroy( Data );
-    }
-
-    // TODO: calc from mesh bounds!
-    const btVector3 bvhAabbMin = btVectorToFloat3( bounds.Mins );// btVector3(-999999999.0f,-999999999.0f,-999999999.0f);
-    const btVector3 bvhAabbMax = btVectorToFloat3( bounds.Maxs );//btVector3(999999999.0f,999999999.0f,999999999.0f);
-
-    constexpr unsigned int QUANTIZED_AABB_COMPRESSION_MAX_TRIANGLES = 1000000;
-
-    // При слишком большом количестве треугольников Bullet не будет работать правильно с Quantized Aabb Compression
-    bUsedQuantizedAabbCompression = _IndexCount / 3 <= QUANTIZED_AABB_COMPRESSION_MAX_TRIANGLES;
-
-    Data = b3New( btBvhTriangleMeshShape, Interface,
-                                          UsedQuantizedAabbCompression(),
-                                          bvhAabbMin,
-                                          bvhAabbMax,
-                                          true );
 }

@@ -50,10 +50,11 @@ public:
     // Serialize object to document data
     virtual int Serialize( FDocument & _Doc );
 
-    virtual void LoadObject( const char * _Path ) {}
-
     // Initialize default object representation
     virtual void InitializeDefaultObject() {}
+
+    // Initialize object from file
+    virtual bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true );
 
     // Load attributes form document data
     void LoadAttributes( FDocument const & _Document, int _FieldsHead );
@@ -176,4 +177,69 @@ public:
             Object->AddRef();
         }
     }
+};
+
+/*
+
+TEvent
+
+*/
+template< typename... TArgs >
+struct TEvent {
+    AN_FORBID_COPY( TEvent )
+
+    using Callback = TCallback< void( TArgs... ) >;
+
+    TEvent() {}
+
+    ~TEvent() {
+        UnsubscribeAll();
+    }
+
+    template< typename T >
+    void Subscribe( T * _Object, void ( T::*_Method )(TArgs...) ) {
+
+        // Ensure this is subclass of base object. Get compiler error if not.
+        FBaseObject * baseObject = _Object;
+
+        // Add reference
+        baseObject->AddRef();
+
+        // Add callback
+        Callback & callback = Subscribers.Append();
+        callback.Initialize( _Object, _Method );
+    }
+
+    template< typename T >
+    void Unsubscribe( T * _Object ) {
+        for ( int i = Subscribers.Length() - 1 ; i >= 0 ; i-- ) {
+            Callback & callback = Subscribers[i];
+
+            if ( callback.GetObject() == _Object ) {
+                Subscribers.RemoveSwap( i );
+                _Object->RemoveRef();
+            }
+        }
+    }
+
+    void UnsubscribeAll() {
+        for ( Callback & callback : Subscribers ) {
+            // We can safe cast to base object because TEvent works only with subclasses of FBaseObject
+            static_cast< FBaseObject * >( callback.GetObject() )->RemoveRef();
+        }
+        Subscribers.Clear();
+    }
+
+    bool HasSubscribers() const {
+        return !Subscribers.IsEmpty();
+    }
+
+    void Dispatch( TArgs... _Args ) {
+        for ( Callback & callback : Subscribers ) {
+            callback( StdForward< TArgs >( _Args )... );
+        }
+    }
+
+private:
+    TPodArray< Callback > Subscribers;
 };

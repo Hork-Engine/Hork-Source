@@ -357,3 +357,12 @@ void FActor::DrawDebug( FDebugDraw * _DebugDraw ) {
         component->DrawDebug( _DebugDraw );
     }
 }
+
+void FActor::EndPlay() {
+    E_OnBeginContact.UnsubscribeAll();
+    E_OnEndContact.UnsubscribeAll();
+    E_OnUpdateContact.UnsubscribeAll();
+    E_OnBeginOverlap.UnsubscribeAll();
+    E_OnEndOverlap.UnsubscribeAll();
+    E_OnUpdateOverlap.UnsubscribeAll();
+}

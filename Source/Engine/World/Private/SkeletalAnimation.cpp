@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Engine/World/Public/World.h>
 #include <Engine/World/Public/GameMaster.h>
 #include <Engine/World/Public/DebugDraw.h>
+#include <Engine/World/Public/MeshAsset.h>
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
@@ -47,6 +48,12 @@ FSkeleton::FSkeleton() {
 }
 
 FSkeleton::~FSkeleton() {
+    Purge();
+}
+
+void FSkeleton::Purge() {
+    Joints.Clear();
+
     for ( FSkeletonAnimation * animation : Animations ) {
         animation->Skeleton = nullptr;
         animation->RemoveRef();
@@ -55,13 +62,48 @@ FSkeleton::~FSkeleton() {
     for ( FSocketDef * socket : Sockets ) {
         socket->RemoveRef();
     }
+
+    // TODO: notify components about changes
 }
 
 void FSkeleton::Initialize( FJoint * _Joints, int _JointsCount ) {
+    Purge();
+
     Joints.ResizeInvalidate( _JointsCount );
     memcpy( Joints.ToPtr(), _Joints, sizeof( *_Joints ) * _JointsCount );
 
     // TODO: notify components about changes
+}
+
+void FSkeleton::InitializeDefaultObject() {
+    Purge();
+}
+
+bool FSkeleton::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
+    FFileStream f;
+
+    if ( !f.OpenRead( _Path ) ) {
+
+        if ( _CreateDefultObjectIfFails ) {
+            InitializeDefaultObject();
+            return true;
+        }
+
+        return false;
+    }
+
+    FSkeletonAsset asset;
+    asset.Read( f );
+
+    Initialize( asset.Joints.ToPtr(), asset.Joints.Length() );
+    for ( int i = 0; i < asset.Animations.size(); i++ ) {
+        FSkeletonAnimation * sanim = CreateAnimation();
+        FSkeletalAnimationAsset const & animAsset = asset.Animations[ i ];
+        sanim->Initialize( animAsset.FrameCount, animAsset.FrameDelta,
+            animAsset.AnimatedJoints.ToPtr(), animAsset.AnimatedJoints.Length(), animAsset.Bounds.ToPtr() );
+    }
+
+    return true;
 }
 
 int FSkeleton::FindJoint( const char * _Name ) const {

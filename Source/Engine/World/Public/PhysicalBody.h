@@ -42,6 +42,14 @@ class FPhysicalBody : public FSceneComponent {
 
     friend class FPhysicalBodyMotionState;
 public:
+    // Component events
+    TEvent<> E_OnBeginContact;
+    TEvent<> E_OnEndContact;
+    TEvent<> E_OnUpdateContact;
+    TEvent<> E_OnBeginOverlap;
+    TEvent<> E_OnEndOverlap;
+    TEvent<> E_OnUpdateOverlap;
+
     float Mass;
     bool bTrigger;
     bool bKinematicBody;
@@ -60,6 +68,8 @@ public:
     int CollisionLayer = 0x1;
     int CollisionMask = 0xffff;
     bool bNoPhysics;
+    bool bDispatchContactEvents;
+    bool bDispatchOverlapEvents;
 
     void Activate();
     bool IsActive() const;
@@ -116,6 +126,8 @@ protected:
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
+
+    void EndPlay() override;
 
     void OnTransformDirty() override;
 

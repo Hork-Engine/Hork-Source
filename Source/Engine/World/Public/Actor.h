@@ -62,6 +62,27 @@ class ANGIE_API FActor : public FBaseObject {
     friend class FWorld;
     friend class FActorComponent;
 public:
+
+    // Actor events
+    TEvent<> E_OnBeginContact;
+    TEvent<> E_OnEndContact;
+    TEvent<> E_OnUpdateContact;
+    TEvent<> E_OnBeginOverlap;
+    TEvent<> E_OnEndOverlap;
+    TEvent<> E_OnUpdateOverlap;
+
+    // Root component, keeps component hierarchy and transform for the actor
+    FSceneComponent * RootComponent;
+
+    // Point when actor life ends
+    float LifeSpan;
+
+    bool bCanEverTick;
+
+    bool bTickEvenWhenPaused;
+
+    bool bPrePhysicsTick;
+
     // Actors factory
     static FObjectFactory & Factory() { static FObjectFactory ObjectFactory( "Actor factory" ); return ObjectFactory; }
 
@@ -130,16 +151,6 @@ public:
 
     void RegisterTimer( FTimer * _Timer );
 
-    // Root component, keeps component hierarchy and transform for the actor
-    FSceneComponent * RootComponent;
-
-    // Point when actor life ends
-    float LifeSpan;
-
-    bool bCanEverTick;
-    bool bTickEvenWhenPaused;
-    bool bPrePhysicsTick;
-
 protected:
 
     FActor();
@@ -151,7 +162,7 @@ protected:
     virtual void BeginPlay() {}
 
     // Called only from Destroy() method
-    virtual void EndPlay() {}
+    virtual void EndPlay();
 
     virtual void OnActorSpawned( FActor * _SpawnedActor ) {}
 

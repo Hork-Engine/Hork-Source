@@ -29,6 +29,9 @@ SOFTWARE.
 */
 
 #include <Engine/World/Public/IndexedMesh.h>
+#include <Engine/World/Public/MeshAsset.h>
+#include <Engine/World/Public/ResourceManager.h>
+
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
@@ -47,26 +50,15 @@ FIndexedMesh::FIndexedMesh() {
 FIndexedMesh::~FIndexedMesh() {
     RenderProxy->KillProxy();
 
-    for ( FIndexedMeshSubpart * subpart : Subparts ) {
-        subpart->ParentMesh = nullptr;
-        subpart->RemoveRef();
-    }
-
-    for ( FLightmapUV * channel : LightmapUVs ) {
-        channel->ParentMesh = nullptr;
-        channel->IndexInArrayOfUVs = -1;
-    }
-
-    for ( FVertexLight * channel : VertexLightChannels ) {
-        channel->ParentMesh = nullptr;
-        channel->IndexInArrayOfChannels = -1;
-    }
+    Purge();
 }
 
 void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh, bool _DynamicStorage ) {
-    if ( VertexCount == _NumVertices && IndexCount == _NumIndices && bSkinnedMesh == _SkinnedMesh && bDynamicStorage == _DynamicStorage ) {
-        return;
-    }
+    //if ( VertexCount == _NumVertices && IndexCount == _NumIndices && bSkinnedMesh == _SkinnedMesh && bDynamicStorage == _DynamicStorage ) {
+    //    return;
+    //}
+
+    Purge();
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
@@ -121,8 +113,97 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     }
 }
 
+void FIndexedMesh::Purge() {
+    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->ParentMesh = nullptr;
+        subpart->RemoveRef();
+    }
+
+    for ( FLightmapUV * channel : LightmapUVs ) {
+        channel->ParentMesh = nullptr;
+        channel->IndexInArrayOfUVs = -1;
+    }
+
+    for ( FVertexLight * channel : VertexLightChannels ) {
+        channel->ParentMesh = nullptr;
+        channel->IndexInArrayOfChannels = -1;
+    }
+
+    BodyComposition.Clear();
+}
+
 void FIndexedMesh::InitializeDefaultObject() {
     InitializeInternalMesh( "*box*" );
+}
+
+bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
+    FFileStream f;
+
+    if ( !f.OpenRead( _Path ) ) {
+
+        if ( _CreateDefultObjectIfFails ) {
+            InitializeDefaultObject();
+            return true;
+        }
+
+        return false;
+    }
+
+    FMeshAsset asset;
+    asset.Read( f );
+
+    TPodArray< FMaterialInstance * > matInstances;
+    matInstances.Resize( asset.Materials.Length() );
+
+    for ( int j = 0; j < asset.Materials.Length(); j++ ) {
+        FMeshMaterial const & material = asset.Materials[ j ];
+
+        FMaterialInstance * matInst = CreateInstanceOf< FMaterialInstance >();
+        //matInst->Material = Material;
+        matInstances[ j ] = matInst;
+
+        for ( int n = 0; n < 1/*material.NumTextures*/; n++ ) {
+            FMaterialTexture const & texture = asset.Textures[ material.Textures[ n ] ];
+            FTexture * texObj = GResourceManager.CreateUniqueResource< FTexture >( texture.FileName.ToConstChar() );
+            matInst->SetTexture( n, texObj );
+        }
+    }
+
+    bool bSkinned = asset.Weights.Length() == asset.Vertices.Length();
+
+    Initialize( asset.Vertices.Length(), asset.Indices.Length(), asset.Subparts.size(), bSkinned, false );
+    WriteVertexData( asset.Vertices.ToPtr(), asset.Vertices.Length(), 0 );
+    WriteIndexData( asset.Indices.ToPtr(), asset.Indices.Length(), 0 );
+    if ( bSkinned ) {
+        WriteJointWeights( asset.Weights.ToPtr(), asset.Weights.Length(), 0 );
+    }
+    for ( int j = 0; j < GetSubparts().Length(); j++ ) {
+        FSubpart const & s = asset.Subparts[ j ];
+        FIndexedMeshSubpart * subpart = GetSubpart( j );
+        subpart->SetName( s.Name );
+        subpart->BaseVertex = s.BaseVertex;
+        subpart->FirstIndex = s.FirstIndex;
+        subpart->VertexCount = s.VertexCount;
+        subpart->IndexCount = s.IndexCount;
+        subpart->BoundingBox = s.BoundingBox;
+        subpart->MaterialInstance = matInstances[ s.Material ];
+    }
+
+    // TODO: load collision from file. This code is only for test!!!
+
+    FCollisionTriangleSoupData * tris = CreateInstanceOf< FCollisionTriangleSoupData >();
+    tris->Initialize( ( float * )&asset.Vertices.ToPtr()->Position, sizeof( asset.Vertices[ 0 ] ), asset.Vertices.Length(),
+        asset.Indices.ToPtr(), asset.Indices.Length(), asset.Subparts.data(), asset.Subparts.size() );
+
+    FCollisionTriangleSoupBVHData * bvh = CreateInstanceOf< FCollisionTriangleSoupBVHData >();
+    bvh->TrisData = tris;
+    bvh->BuildBVH();
+
+    BodyComposition.Clear();
+    FCollisionSharedTriangleSoupBVH * CollisionBody = BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoupBVH >();
+    CollisionBody->BvhData = bvh;
+
+    return true;
 }
 
 FLightmapUV * FIndexedMesh::CreateLightmapUVChannel() {
@@ -283,7 +364,6 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*box*" ) ) {
         InitializeShape< FBoxShape >( Float3(1), 1 );
         SetName( _Name );
-        BodyComposition.Clear();
         FCollisionBox * collisionBody = BodyComposition.NewCollisionBody< FCollisionBox >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
@@ -292,7 +372,6 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*sphere*" ) ) {
         InitializeShape< FSphereShape >( 0.5f, 1, 32, 32 );
         SetName( _Name );
-        BodyComposition.Clear();
         FCollisionSphere * collisionBody = BodyComposition.NewCollisionBody< FCollisionSphere >();
         collisionBody->Radius = 0.5f;
         return;
@@ -301,7 +380,6 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*cylinder*" ) ) {
         InitializeShape< FCylinderShape >( 0.5f, 1, 1, 32 );
         SetName( _Name );
-        BodyComposition.Clear();
         FCollisionCylinder * collisionBody = BodyComposition.NewCollisionBody< FCollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
@@ -310,7 +388,6 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*plane*" ) ) {
         InitializeShape< FPlaneShape >( 1.0f, 1.0f, 1 );
         SetName( _Name );
-        BodyComposition.Clear();
         BodyComposition.NewCollisionBody< FCollisionPlane >();
         return;
     }
@@ -318,12 +395,6 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     GLogger.Printf( "Unknown internal mesh %s\n", _Name );
 }
 
-
-//#include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
-
-//btStridingMeshInterface * FIndexedMesh::CreateStridingMeshInterface() {
-
-//}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 

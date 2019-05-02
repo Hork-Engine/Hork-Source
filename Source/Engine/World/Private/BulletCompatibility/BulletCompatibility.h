@@ -5,6 +5,8 @@
 #include <LinearMath/btVector3.h>
 #include <LinearMath/btQuaternion.h>
 
+#include <Bullet3Common/b3AlignedAllocator.h>
+
 AN_FORCEINLINE Float3 btVectorToFloat3( const btVector3 & _In ) {
     return Float3( _In.x(), _In.y(), _In.z() );
 }

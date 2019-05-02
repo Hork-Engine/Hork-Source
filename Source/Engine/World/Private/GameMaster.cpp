@@ -82,7 +82,7 @@ static void PrecacheResources( FClassMeta const & _ClassMeta ) {
                         precache->GetResourceClassMeta().GetName(),
                         precache->GetResourcePath() );
 
-        GResourceManager.LoadResource( precache->GetResourceClassMeta(), precache->GetResourcePath() );
+        //GResourceManager.LoadResource( precache->GetResourceClassMeta(), precache->GetResourcePath() );
     }
 }
 
@@ -687,7 +687,7 @@ static void CreateAngieFont() {
     FontAtlas.GetTexDataAsAlpha8( &pixels, &atlasWidth, &atlasHeight );
 
     // Create atlas texture
-    FontAtlasTexture = static_cast< FTexture * >( FTexture::ClassMeta().CreateInstance() );
+    FontAtlasTexture = CreateInstanceOf< FTexture >();
     FontAtlasTexture->AddRef();
     FontAtlasTexture->Initialize2D( TEXTURE_PF_R8, 1, atlasWidth, atlasHeight );
     void * pPixels = FontAtlasTexture->WriteTextureData( 0,0,0, atlasWidth, atlasHeight, 0 );
@@ -834,7 +834,6 @@ void FGameMaster::InitializeGame() {
 
     GRenderFrontend.Initialize();
     GResourceManager.Initialize();
-    InitializeResourceManager();
 
     GameRunningTimeMicro = 0;
     GameRunningTimeMicroAfterTick = 0;
@@ -859,7 +858,7 @@ void FGameMaster::InitializeGame() {
 
     GCanvas.Initialize();
 
-    ImguiContext = static_cast< FImguiContext * >( FImguiContext::ClassMeta().CreateInstance() );
+    ImguiContext = CreateInstanceOf< FImguiContext >();
     ImguiContext->SetFontAtlas( &FontAtlas );
     ImguiContext->AddRef();
 }
@@ -882,7 +881,6 @@ void FGameMaster::DeinitializeGame() {
 
     DestroyAngieFont();
 
-    DeinitializeResourceManager();
     GResourceManager.Deinitialize();
     GRenderFrontend.Deinitialize();
 

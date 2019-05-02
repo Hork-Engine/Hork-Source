@@ -88,76 +88,76 @@ public:
     // Is component attached to socket
     bool IsAttachedToSocket() const { return SocketIndex >= 0; }
 
-    // Set node local position
+    // Set local position
     void SetPosition( Float3 const & _Position );
 
-    // Set node local position
+    // Set local position
     void SetPosition( float const & _X, float const & _Y, float const & _Z );
 
-    // Set node local orient
+    // Set local orient
     //void SetOrient( Float3x3 const & _Orient );
 
-    // Set node local rotation
+    // Set local rotation
     void SetRotation( Quat const & _Rotation );
 
-    // Set node local rotation
+    // Set local rotation
     void SetAngles( Angl const & _Angles );
 
-    // Set node local rotation
+    // Set local rotation
     void SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll );
 
-    // Set node scale
+    // Set scale
     void SetScale( Float3 const & _Scale );
 
-    // Set node scale
+    // Set scale
     void SetScale( float const & _X, float const & _Y, float const & _Z );
 
-    // Set node scale
+    // Set scale
     void SetScale( float const & _ScaleXYZ );
 
-    // Set node local transform
+    // Set local transform
     void SetTransform( Float3 const & _Position, Quat const & _Rotation );
 
-    // Set node local transform
+    // Set local transform
     void SetTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
 
-    // Set node local transform
+    // Set local transform
     void SetTransform( FTransform const & _Transform );
 
-    // Set node local transform
+    // Set local transform
     void SetTransform( FSceneComponent const * _Transform );
 
-    // Set node world position
+    // Set world position
     void SetWorldPosition( Float3 const & _Position );
 
-    // Set node world position
+    // Set world position
     void SetWorldPosition( float const & _X, float const & _Y, float const & _Z );
 
-    // Set node world rotation
+    // Set world rotation
     void SetWorldRotation( Quat const & _Rotation );
 
-    // Set node world scale
+    // Set world scale
     void SetWorldScale( Float3 const & _Scale );
 
-    // Set node world scale
+    // Set world scale
     void SetWorldScale( float const & _X, float const & _Y, float const & _Z );
 
-    // Set node world transform
+    // Set world transform
     void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation );
 
-    // Set node world transform
+    // Set world transform
     void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
 
-    // Set node world transform
+    // Set world transform
     void SetWorldTransform( FTransform const & _Transform );
 
-    // Get node local position
+    // Get local position
     Float3 const & GetPosition() const;
 
-    // Get node local orient
+    // Get local orient
     //Float3x3 GetOrient() const;
 
-    // Get node local rotation
+    // Get local rotation
     Quat const & GetRotation() const;
 
     Angl GetAngles() const;
@@ -181,13 +181,13 @@ public:
     Float3 GetWorldForwardVector() const;
     void GetWorldVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const;
 
-    // Get node scale
+    // Get scale
     Float3 const & GetScale() const;
 
-    // Get node world position
+    // Get world position
     Float3 GetWorldPosition() const;
 
-    // Get node world rotation
+    // Get world rotation
     Quat const & GetWorldRotation() const;
 
     // Get world scale

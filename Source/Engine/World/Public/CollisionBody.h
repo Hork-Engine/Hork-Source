@@ -31,11 +31,11 @@ SOFTWARE.
 #pragma once
 
 #include "BaseObject.h"
+#include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 
 class btCollisionShape;
 class btCompoundShape;
 class btBvhTriangleMeshShape;
-class btTriangleIndexVertexArray;
 class FCollisionBodyComposition;
 struct FSubpart;
 
@@ -64,9 +64,23 @@ class FCollisionSphere : public FCollisionBody {
 
 public:
     float Radius = 1;
+    bool bProportionalScale = true;
 
 protected:
     FCollisionSphere() {}
+
+private:
+    btCollisionShape * Create() override;
+};
+
+class FCollisionSphereRadii : public FCollisionBody {
+    AN_CLASS( FCollisionSphereRadii, FCollisionBody )
+
+public:
+    Float3 Radius = Float3(1);
+
+protected:
+    FCollisionSphereRadii() {}
 
 private:
     btCollisionShape * Create() override;
@@ -179,7 +193,6 @@ class FCollisionTriangleSoupData : public FBaseObject {
     AN_CLASS( FCollisionTriangleSoupData, FBaseObject )
 
 public:
-
     struct FSubpart {
         int BaseVertex;
         int VertexCount;
@@ -187,41 +200,69 @@ public:
         int IndexCount;
     };
 
-    float Friction;
+    TPodArray< Float3 > Vertices;
+    TPodArray< unsigned int > Indices;
+    TPodArray< FSubpart > Subparts;
+    BvAxisAlignedBox BoundingBox;
 
     void Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, ::FSubpart const * _Subparts, int _SubpartsCount );
+
+protected:
+    FCollisionTriangleSoupData() {}
+};
+
+class FCollisionTriangleSoupBVHData : public FBaseObject {
+    AN_CLASS( FCollisionTriangleSoupBVHData, FBaseObject )
+
+public:
+    TRefHolder< FCollisionTriangleSoupData > TrisData;
+
+    void BuildBVH( bool bForceQuantizedAabbCompression = false );
+    //void BuildQuantizedBVH();
 
     bool UsedQuantizedAabbCompression() const;
 
     btBvhTriangleMeshShape * GetData() { return Data; }
 
 protected:
-    FCollisionTriangleSoupData();
-    ~FCollisionTriangleSoupData();
+    FCollisionTriangleSoupBVHData();
+    ~FCollisionTriangleSoupBVHData();
 
 private:
     btBvhTriangleMeshShape * Data; // TODO: Try btMultimaterialTriangleMeshShape
-
-    TPodArray< Float3 > Vertices;
-    TPodArray< unsigned int > Indices;
-    TPodArray< FSubpart > Subparts;
-
+ 
     class FStridingMeshInterface * Interface;
 
     bool bUsedQuantizedAabbCompression;
 };
 
-class FCollisionSharedTriangleSoup : public FCollisionBody {
-    AN_CLASS( FCollisionSharedTriangleSoup, FCollisionBody )
+class FCollisionSharedTriangleSoupBVH : public FCollisionBody {
+    AN_CLASS( FCollisionSharedTriangleSoupBVH, FCollisionBody )
+
+public:
+    TRefHolder< FCollisionTriangleSoupBVHData > BvhData;
+
+protected:
+    FCollisionSharedTriangleSoupBVH() {}
+
+private:
+    btCollisionShape * Create() override;
+};
+
+class FCollisionSharedTriangleSoupGimpact : public FCollisionBody {
+    AN_CLASS( FCollisionSharedTriangleSoupGimpact, FCollisionBody )
 
 public:
     TRefHolder< FCollisionTriangleSoupData > TrisData;
 
 protected:
-    FCollisionSharedTriangleSoup() {}
+    FCollisionSharedTriangleSoupGimpact();
+    ~FCollisionSharedTriangleSoupGimpact();
 
 private:
     btCollisionShape * Create() override;
+
+    class FStridingMeshInterface * Interface;
 };
 
 // TODO:

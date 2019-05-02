@@ -126,6 +126,14 @@ public:
 
     void Initialize( FJoint * _Joints, int _JointsCount );
 
+    // Initialize default object representation
+    void InitializeDefaultObject() override;
+
+    // Initialize object from file
+    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    void Purge();
+
     int FindJoint( const char * _Name ) const;
 
     TPodArray< FJoint > const & GetJoints() const { return Joints; }

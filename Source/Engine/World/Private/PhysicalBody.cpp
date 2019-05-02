@@ -33,17 +33,7 @@ SOFTWARE.
 
 #include "BulletCompatibility/BulletCompatibility.h"
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
-#include <Bullet3Common/b3AlignedAllocator.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
-//#include <BulletCollision/CollisionShapes/btBoxShape.h>
-//#include <BulletCollision/CollisionShapes/btSphereShape.h>
-//#include <BulletCollision/CollisionShapes/btCylinderShape.h>
-//#include <BulletCollision/CollisionShapes/btConeShape.h>
-//#include <BulletCollision/CollisionShapes/btCapsuleShape.h>
-//#include <BulletCollision/CollisionShapes/btStaticPlaneShape.h>
-//#include <BulletCollision/CollisionShapes/btConvexHullShape.h>
-//#include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
-//#include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
 
 #define PHYS_COMPARE_EPSILON 0.0001f
 
@@ -315,8 +305,6 @@ void FPhysicalBody::CreateRigidBody() {
     physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
 
     UpdateRigidBodyGravity( RigidBody, bNoGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
-
-    
 
     Activate();
 }
@@ -737,4 +725,13 @@ void FPhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox >
             _BoundingBoxes[i].Maxs = btVectorToFloat3( maxs );
         }
     }
+}
+
+void FPhysicalBody::EndPlay() {
+    E_OnBeginContact.UnsubscribeAll();
+    E_OnEndContact.UnsubscribeAll();
+    E_OnUpdateContact.UnsubscribeAll();
+    E_OnBeginOverlap.UnsubscribeAll();
+    E_OnEndOverlap.UnsubscribeAll();
+    E_OnUpdateOverlap.UnsubscribeAll();
 }

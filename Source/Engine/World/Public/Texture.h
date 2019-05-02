@@ -97,10 +97,8 @@ class ANGIE_API FTexture : public FBaseObject, public IRenderProxyOwner {
     AN_CLASS( FTexture, FBaseObject )
 
 public:
-    //void LoadObject( const char * _Path ) override;
-
-    void FromImage( FImage const & _Image );
-    void CubemapFromImages( FImage const * _Faces[6] );
+    bool InitializeFromImage( FImage const & _Image );
+    bool InitializeCubemapFromImages( FImage const * _Faces[6] );
 
     void Initialize1D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength = 1 );
     void Initialize2D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArrayLength = 1 );
@@ -113,6 +111,11 @@ public:
 
     // Initialize default object representation
     void InitializeDefaultObject() override;
+
+    // Initialize object from file
+    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    void Purge();
 
     ETexturePixelFormat GetPixelFormat() const;
     int GetDimensionCount() const;

@@ -38,8 +38,6 @@ class ANGIE_API FMaterial : public FBaseObject, public IRenderProxyOwner {
     AN_CLASS( FMaterial, FBaseObject )
 
 public:
-    //void LoadObject( const char * _Path ) override;
-
     void Initialize( FMaterialBuildData const * _Data );
 
     EMaterialType GetType() const { return Type; }

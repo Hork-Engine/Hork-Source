@@ -73,7 +73,7 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
 }
 
 void FMeshComponent::SetMesh( const char * _Mesh ) {
-    SetMesh( GetResource< FIndexedMesh >( _Mesh ) );
+    SetMesh( GResourceManager.GetResource< FIndexedMesh >( _Mesh ) );
 }
 
 void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance ) {

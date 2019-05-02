@@ -43,6 +43,10 @@ FTexture::~FTexture() {
     RenderProxy->KillProxy();
 }
 
+void FTexture::Purge() {
+
+}
+
 static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelFormat & _PixelFormat ) {
     if ( _Image.bHDRI ) {
 
@@ -130,16 +134,16 @@ static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelForma
     return true;
 }
 
-void FTexture::FromImage( FImage const & _Image ) {
+bool FTexture::InitializeFromImage( FImage const & _Image ) {
     if ( !_Image.pRawData ) {
-        GLogger.Printf( "FTexture::FromImage: empty image data\n" );
-        return;
+        GLogger.Printf( "FTexture::InitializeFromImage: empty image data\n" );
+        return false;
     }
 
     ETexturePixelFormat pixelFormat;
 
     if ( !GetAppropriatePixelFormat( _Image, pixelFormat ) ) {
-        return;
+        return false;
     }
 
     Initialize2D( pixelFormat, _Image.NumLods, _Image.Width, _Image.Height, 1 );
@@ -161,9 +165,11 @@ void FTexture::FromImage( FImage const & _Image ) {
 
         pSrc += stride;
     }
+
+    return true;
 }
 
-void FTexture::CubemapFromImages( FImage const * _Faces[6] ) {
+bool FTexture::InitializeCubemapFromImages( FImage const * _Faces[6] ) {
     const void * faces[6];
 
     int width = _Faces[0]->Width;
@@ -171,14 +177,14 @@ void FTexture::CubemapFromImages( FImage const * _Faces[6] ) {
     for ( int i = 0 ; i < 6 ; i++ ) {
 
         if ( !_Faces[i]->pRawData ) {
-            GLogger.Printf( "FTexture::CubemapFromImages: empty image data\n" );
-            return;
+            GLogger.Printf( "FTexture::InitializeCubemapFromImages: empty image data\n" );
+            return false;
         }
 
         if ( _Faces[i]->Width != width
              || _Faces[i]->Height != width ) {
-            GLogger.Printf( "FTexture::CubemapFromImages: faces with different sizes\n" );
-            return;
+            GLogger.Printf( "FTexture::InitializeCubemapFromImages: faces with different sizes\n" );
+            return false;
         }
 
         faces[i] = _Faces[i]->pRawData;
@@ -187,19 +193,19 @@ void FTexture::CubemapFromImages( FImage const * _Faces[6] ) {
     ETexturePixelFormat pixelFormat;
 
     if ( !GetAppropriatePixelFormat( *_Faces[0], pixelFormat ) ) {
-        return;
+        return false;
     }
 
     for ( int i = 1 ; i < 6 ; i++ ) {
         ETexturePixelFormat facePF;
 
         if ( !GetAppropriatePixelFormat( *_Faces[i], facePF ) ) {
-            return;
+            return false;
         }
 
         if ( pixelFormat != facePF ) {
-            GLogger.Printf( "FTexture::CubemapFromImages: faces with different pixel formats\n" );
-            return;
+            GLogger.Printf( "FTexture::InitializeCubemapFromImages: faces with different pixel formats\n" );
+            return false;
         }
     }
 
@@ -224,12 +230,16 @@ void FTexture::CubemapFromImages( FImage const * _Faces[6] ) {
             memcpy( pPixels, pSrc, stride );
         }
     }
+
+    return true;
 }
 
 void FTexture::Initialize1D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength ) {
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
     FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+
+    Purge();
 
     data.TextureType = _ArrayLength > 1 ? TEXTURE_1D_ARRAY : TEXTURE_1D;
     data.PixelFormat = _PixelFormat;
@@ -256,6 +266,8 @@ void FTexture::Initialize2D( ETexturePixelFormat _PixelFormat, int _NumLods, int
 
     FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
 
+    Purge();
+
     data.TextureType = _ArrayLength > 1 ? TEXTURE_2D_ARRAY : TEXTURE_2D;
     data.PixelFormat = _PixelFormat;
     data.NumLods = _NumLods;
@@ -280,6 +292,8 @@ void FTexture::Initialize3D( ETexturePixelFormat _PixelFormat, int _NumLods, int
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
     FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+
+    Purge();
 
     data.TextureType = TEXTURE_3D;
     data.PixelFormat = _PixelFormat;
@@ -306,6 +320,8 @@ void FTexture::InitializeCubemap( ETexturePixelFormat _PixelFormat, int _NumLods
 
     FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
 
+    Purge();
+
     data.TextureType = _ArrayLength > 1 ? TEXTURE_CUBEMAP_ARRAY : TEXTURE_CUBEMAP;
     data.PixelFormat = _PixelFormat;
     data.NumLods = _NumLods;
@@ -330,6 +346,8 @@ void FTexture::InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, i
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
     FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+
+    Purge();
 
     data.TextureType = TEXTURE_RECT;
     data.PixelFormat = _PixelFormat;
@@ -450,6 +468,32 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
 
 void FTexture::InitializeDefaultObject() {
     InitializeInternalTexture( "*white*" );
+}
+
+bool FTexture::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
+    FImage image;
+
+    if ( !image.LoadRawImage( _Path, true, true ) ) {
+
+        if ( _CreateDefultObjectIfFails ) {
+            InitializeDefaultObject();
+            return true;
+        }
+
+        return false;
+    }
+
+    if ( !InitializeFromImage( image ) ) {
+
+        if ( _CreateDefultObjectIfFails ) {
+            InitializeDefaultObject();
+            return true;
+        }
+
+        return false;
+    }
+
+    return true;
 }
 
 void * FTexture::WriteTextureData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod ) {

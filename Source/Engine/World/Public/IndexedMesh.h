@@ -175,6 +175,11 @@ public:
     // Initialize default object representation
     void InitializeDefaultObject() override;
 
+    // Initialize object from file
+    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    void Purge();
+
     // Skinned mesh have 4 weights for each vertex
     bool IsSkinned() const { return bSkinnedMesh; }
 
