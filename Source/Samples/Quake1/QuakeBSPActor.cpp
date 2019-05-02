@@ -97,10 +97,11 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
         physBody = CreateComponent< FPhysicalBody >( "physbody" );
     }
     physBody->BodyComposition.Clear();
-    FCollisionSharedTriangleSoup * collisionBody = physBody->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoup >();
-    collisionBody->TrisData = NewObject< FCollisionTriangleSoupData >();
-    TPodArray< Float3 > collisVerts;
-    TPodArray< unsigned int > collisInd;
+
+    
+    FCollisionTriangleSoupData * tris = NewObject< FCollisionTriangleSoupData >();
+    TPodArray< Float3 > & collisVerts = tris->Vertices;
+    TPodArray< unsigned int > & collisInd = tris->Indices;
     for ( FSurfaceDef & surf : BSP->Surfaces ) {
         FMeshVertex * vert = BSP->Vertices.ToPtr() + surf.FirstVertex;
         unsigned int * ind = BSP->Indices.ToPtr() + surf.FirstIndex;
@@ -113,13 +114,26 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
             collisInd.Append( firstVert + ind[ i ] );
         }
     }
-    FSubpart subpart;
-    subpart.BaseVertex = 0;
-    subpart.FirstIndex = 0;
-    subpart.VertexCount = collisVerts.Length();
-    subpart.IndexCount = BSP->Indices.Length();
-    subpart.BoundingBox = _Model->Bounds;
-    collisionBody->TrisData->Initialize( (const float *)collisVerts.ToPtr(), sizeof( collisVerts[0] ), collisVerts.Length(), collisInd.ToPtr(), collisInd.Length(), &subpart, 1 );
+    tris->Subparts.Resize( 1 );
+    tris->Subparts[0].BaseVertex = 0;
+    tris->Subparts[0].FirstIndex = 0;
+    tris->Subparts[0].VertexCount = collisVerts.Length();
+    tris->Subparts[0].IndexCount = BSP->Indices.Length();
+    tris->BoundingBox = _Model->Bounds;
+
+#if 1
+    FCollisionTriangleSoupBVHData * bvh = NewObject< FCollisionTriangleSoupBVHData >();
+    bvh->TrisData = tris;
+    bvh->BuildBVH();
+
+    FCollisionSharedTriangleSoupBVH * collisionBody = physBody->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoupBVH >();
+    collisionBody->BvhData = bvh;
+#else
+    FCollisionSharedTriangleSoupGimpact * collisionBody = physBody->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoupGimpact >();
+    collisionBody->TrisData = tris;
+#endif
+
+    //physBody->Mass = 1;
     physBody->RegisterComponent();
 }
 

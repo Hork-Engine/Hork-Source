@@ -57,7 +57,7 @@ void FGameModule::OnGameStart() {
     //GGameMaster.SetRenderFeatures( VSync_Disabled );
     //GGameMaster.SetRenderFeatures( VSync_Fixed );
     //GGameMaster.SetVideoMode( 640, 480, 0, 60, false, "OpenGL 4.5" );
-    GGameMaster.SetVideoMode( 1920, 1080, 0, 60, false, "OpenGL 4.5" );
+    GGameMaster.SetVideoMode( 1024, 768, 0, 60, false, "OpenGL 4.5" );
     GGameMaster.SetWindowDefs( 1.0f, true, false, false, "AngieEngine: Quake map sample" );
     GGameMaster.SetCursorEnabled( false );
 
