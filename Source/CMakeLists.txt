@@ -430,9 +430,9 @@ option( BUILD_UNIT_TESTS "Build Unit Tests" OFF )
 
 include_directories( ThirdParty/bullet3/src )
 
-set(BUILD_SHARED_LIBS ON)
+#set(BUILD_SHARED_LIBS ON)
 add_subdirectory( ThirdParty/bullet3 )
-set(BUILD_SHARED_LIBS OFF)
+#set(BUILD_SHARED_LIBS OFF)
 
 set_target_properties( LinearMath PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( BulletFileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
