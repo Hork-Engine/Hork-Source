@@ -43,6 +43,8 @@ public:
     FTransform( Float3 const & _Position, Quat const & _Rotation );
     void Clear();
     void SetIdentity();
+    void SetScale( Float3 const & _Scale );
+    void SetScale( float const & _X, float const & _Y, float const & _Z );
     void SetScale( float const & _ScaleXYZ );
     void SetAngles( Angl const & _Angles );
     void SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll );
@@ -111,6 +113,14 @@ AN_FORCEINLINE void FTransform::Clear() {
 
 AN_FORCEINLINE void FTransform::SetIdentity() {
     Rotation.SetIdentity();
+}
+
+AN_FORCEINLINE void FTransform::SetScale( Float3 const & _Scale ) {
+    Scale = _Scale;
+}
+
+AN_FORCEINLINE void FTransform::SetScale( float const & _X, float const & _Y, float const & _Z ) {
+    Scale.X = _X; Scale.Y = _Y; Scale.Z = _Z;
 }
 
 AN_FORCEINLINE void FTransform::SetScale( float const & _ScaleXYZ ) {

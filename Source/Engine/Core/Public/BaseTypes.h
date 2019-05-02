@@ -464,6 +464,8 @@ struct TCallback < TReturn( TArgs... ) > {
         return (Object->*Method)(StdForward< TArgs >( _Args )...);
     }
 
+    FDummy * GetObject() { return Object; }
+
 private:
     FDummy * Object;
     TReturn ( FDummy::*Method )(TArgs...);

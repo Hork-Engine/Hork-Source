@@ -585,7 +585,7 @@ bool FArchive::Open( const char * _ArchiveName ) {
 
     Handle = unzOpen( _ArchiveName );
     if ( !Handle ) {
-        GLogger.Printf( "FArchive::Open: unzip error, couldn't open %s\n", _ArchiveName );
+        GLogger.Printf( "FArchive::Open: couldn't open %s\n", _ArchiveName );
         return false;
     }
 
