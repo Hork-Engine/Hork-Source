@@ -213,7 +213,7 @@ FBoxActor::FBoxActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
     matInst->Material = GModule->Material;
-    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
@@ -223,7 +223,7 @@ FBoxActor::FBoxActor() {
     MeshComponent->Mass = 1.0f;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
+    MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 }
 
