@@ -113,10 +113,8 @@ void FModule::OnGameStart() {
     RenderingParams->bDrawDebug = true;
 
 
-    FImage tex;
-    tex.LoadRawImage( "blank512.png", true, true );
     FTexture * texture = NewObject< FTexture >();
-    texture->FromImage( tex );
+    texture->InitializeFromFile( "blank512.png" );
 
 
     CheckerMesh = NewObject< FIndexedMesh >();
