@@ -494,7 +494,7 @@ FTexture * FQuakeBSP::LoadTexture( FArchive & _Pack, const char * _FileName ) {
 
     FTexture * tx = NewObject< FTexture >();
     tx->SetName( _FileName );
-    tx->FromImage( img );
+    tx->InitializeFromImage( img );
     return tx;
 }
 
