@@ -50,7 +50,7 @@ protected:
     void EndPlay() override;
     void SetupPlayerInputComponent( FInputComponent * _Input ) override;
     void Tick( float _TimeStep ) override;
-    void PrePhysicsTick( float _TimeStep ) override;
+    void TickPrePhysics( float _TimeStep ) override;
 
 private:
     void MoveForward( float _Value );

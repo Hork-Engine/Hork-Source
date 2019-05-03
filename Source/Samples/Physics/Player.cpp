@@ -40,7 +40,7 @@ FPlayer::FPlayer() {
     Camera = CreateComponent< FCameraComponent >( "Camera" );
 
     bCanEverTick = true;
-    bPrePhysicsTick = true;
+    bTickPrePhysics = true;
 
     FMaterialProject * proj = NewObject< FMaterialProject >();
 
@@ -181,8 +181,8 @@ void FPlayer::Tick( float _TimeStep ) {
 #endif
 }
 
-void FPlayer::PrePhysicsTick( float _TimeStep ) {
-    Super::PrePhysicsTick( _TimeStep );
+void FPlayer::TickPrePhysics( float _TimeStep ) {
+    Super::TickPrePhysics( _TimeStep );
 
     constexpr float PLAYER_MOVE_SPEED = 6; // Meters per second
     constexpr float PLAYER_MOVE_HIGH_SPEED = 10;

@@ -247,14 +247,14 @@ void FBoxTrigger::EndPlay() {
     Super::EndPlay();
 }
 
-void FBoxTrigger::OnBeginOverlap() {
+void FBoxTrigger::OnBeginOverlap( FOverlapEvent const & _Event ) {
     GLogger.Printf( "OnBeginOverlap\n" );
 }
 
-void FBoxTrigger::OnEndOverlap() {
+void FBoxTrigger::OnEndOverlap( FOverlapEvent const & _Event ) {
     GLogger.Printf( "OnEndOverlap\n" );
 }
 
-void FBoxTrigger::OnUpdateOverlap() {
+void FBoxTrigger::OnUpdateOverlap( FOverlapEvent const & _Event ) {
     GLogger.Printf( "OnUpdateOverlap\n" );
 }

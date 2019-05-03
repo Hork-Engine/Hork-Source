@@ -87,9 +87,9 @@ protected:
     void EndPlay() override;
 
 private:
-    void OnBeginOverlap();
-    void OnEndOverlap();
-    void OnUpdateOverlap();
+    void OnBeginOverlap( FOverlapEvent const & _Event );
+    void OnEndOverlap( FOverlapEvent const & _Event );
+    void OnUpdateOverlap( FOverlapEvent const & _Event );
 
     FMeshComponent * MeshComponent;
 };
