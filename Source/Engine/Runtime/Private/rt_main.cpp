@@ -119,12 +119,12 @@ static void * MemoryHeap;
 
 static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize ) {
     byte * p = ( byte * )_MemoryPointer;
-    //for ( int n = 0 ; n < 4 ; n++ ) {
+    for ( int n = 0 ; n < 4 ; n++ ) {
         for ( int m = 0 ; m < ( _MemorySize - 16 * 0x1000 ) ; m += 4 ) {
             MemoryChecksum += *( int32_t * )&p[ m ];
             MemoryChecksum += *( int32_t * )&p[ m + 16 * 0x1000 ];
         }
-    //}
+    }
 
     //int j = _MemorySize >> 2;
     //for ( int i = 0 ; i < j ; i += 64 ) {
@@ -470,10 +470,6 @@ void SubmitGameUpdate() {
     rt_GameUpdateEvent.Signal();
 }
 
-//void SetGPUEvent() {
-//    GRenderBackend->SetGPUEvent();
-//}
-
 void RenderBackend() {
     GRenderBackend->CleanupFrame( frameData );
     GRenderBackend->RenderFrame( frameData );
@@ -554,9 +550,6 @@ static void RuntimeMainLoop() {
 
         // Разбудить игровой поток
         SubmitGameUpdate();
-
-        // Установить GPU эвент, чтобы в конце кадра синхронизировать CPU-GPU
-        //SetGPUEvent();
 
         // Сгенерировать команды для GPU, SwapBuffers
         RenderBackend();

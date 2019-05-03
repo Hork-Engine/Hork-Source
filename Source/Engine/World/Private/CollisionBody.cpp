@@ -45,12 +45,12 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
 #include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
 
-#ifdef AN_OS_WIN32
+#ifdef AN_COMPILER_MSVC
 #pragma warning(push)
 #pragma warning( disable : 4456 )
 #endif
 #include <BulletCollision/Gimpact/btGImpactShape.h>
-#ifdef AN_OS_WIN32
+#ifdef AN_COMPILER_MSVC
 #pragma warning(pop)
 #endif
 
@@ -315,5 +315,52 @@ void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
         Subparts[i].FirstIndex  = _Subparts[i].FirstIndex;
         Subparts[i].IndexCount  = _Subparts[i].IndexCount;
         BoundingBox.AddAABB( _Subparts[i].BoundingBox );
+    }
+}
+
+AN_FORCEINLINE bool IsPointInsideConvexHull( Float3 const & _Point, PlaneF const * _Planes, int _NumPlanes, float _Margin ) {
+    for ( int i = 0 ; i < _NumPlanes ; i++ ) {
+        if ( _Planes[ i ].Normal.Dot( _Point ) + _Planes[ i ].D - _Margin > 0 ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices ) {
+    constexpr float tolerance = 0.0001f;
+    constexpr float quotientTolerance = 0.000001f;
+
+    for ( int i = 0 ; i < _NumPlanes ; i++ ) {
+        Float3 const & normal1 = _Planes[ i ].Normal;
+
+        for ( int j = i + 1 ; j < _NumPlanes ; j++ ) {
+            Float3 const & normal2 = _Planes[ j ].Normal;
+
+            Float3 n1n2 = normal1.Cross( normal2 );
+
+            if ( n1n2.LengthSqr() > tolerance ) {
+                for ( int k = j + 1 ; k < _NumPlanes ; k++ ) {
+                    Float3 const & normal3 = _Planes[ k ].Normal;
+
+                    Float3 n2n3 = normal2.Cross( normal3 );
+                    Float3 n3n1 = normal3.Cross( normal1 );
+
+                    if ( ( n2n3.LengthSqr() > tolerance ) && ( n3n1.LengthSqr() > tolerance ) ) {
+                        btScalar quotient = normal1.Dot( n2n3 );
+                        if ( fabs( quotient ) > quotientTolerance ) {
+                            quotient = -1 / quotient;
+
+                            Float3 potentialVertex = n2n3 * _Planes[ i ].D + n3n1 * _Planes[ j ].D + n1n2 * _Planes[ k ].D;
+                            potentialVertex *= quotient;
+
+                            if ( IsPointInsideConvexHull( potentialVertex, _Planes, _NumPlanes, 0.01f ) ) {
+                                _Vertices.Append( potentialVertex );
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "SceneComponent.h"
 #include "CollisionBody.h"
+#include "CollisionEvents.h"
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 
 class btRigidBody;
@@ -43,12 +44,12 @@ class FPhysicalBody : public FSceneComponent {
     friend class FPhysicalBodyMotionState;
 public:
     // Component events
-    TEvent<> E_OnBeginContact;
-    TEvent<> E_OnEndContact;
-    TEvent<> E_OnUpdateContact;
-    TEvent<> E_OnBeginOverlap;
-    TEvent<> E_OnEndOverlap;
-    TEvent<> E_OnUpdateOverlap;
+    FContactDelegate E_OnBeginContact;
+    FContactDelegate E_OnEndContact;
+    FContactDelegate E_OnUpdateContact;
+    FOverlapDelegate E_OnBeginOverlap;
+    FOverlapDelegate E_OnEndOverlap;
+    FOverlapDelegate E_OnUpdateOverlap;
 
     float Mass;
     bool bTrigger;
@@ -70,6 +71,7 @@ public:
     bool bNoPhysics;
     bool bDispatchContactEvents;
     bool bDispatchOverlapEvents;
+    bool bGenerateContactPoints;  // Use with bDispatchContactEvents
 
     void Activate();
     bool IsActive() const;
@@ -140,7 +142,7 @@ private:
     void UpdatePhysicalBodyRotation( Quat const & _Rotation );
 
     btRigidBody * RigidBody;
-    btCompoundShape * ShiftedCompoundShape;
+    btCompoundShape * CompoundShape;
     FPhysicalBodyMotionState * MotionState;
     bool bTransformWasChangedByPhysicsEngine;
     Float3 CachedScale;

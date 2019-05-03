@@ -43,12 +43,12 @@ SOFTWARE.
 #include <btBulletDynamicsCommon.h>
 #include "BulletCompatibility/BulletCompatibility.h"
 
-#ifdef AN_OS_WIN32
+#ifdef AN_COMPILER_MSVC
 #pragma warning(push)
 #pragma warning( disable : 4456 )
 #endif
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
-#ifdef AN_OS_WIN32
+#ifdef AN_COMPILER_MSVC
 #pragma warning(pop)
 #endif
 
@@ -118,19 +118,19 @@ FWorld::FWorld() {
     PhysicsWorld->getSolverInfo().m_splitImpulse = GGameMaster.bContactSolverSplitImpulse;
     PhysicsWorld->getSolverInfo().m_numIterations = GGameMaster.NumContactSolverIterations;
     PhysicsWorld->setDebugDrawer( &PhysicsDebugDraw );
-    PhysicsWorld->setInternalTickCallback( PrePhysicsTick, static_cast< void * >( this ), true );
-    PhysicsWorld->setInternalTickCallback( PhysicsTick, static_cast< void * >( this ), false );
+    PhysicsWorld->setInternalTickCallback( OnPrePhysics, static_cast< void * >( this ), true );
+    PhysicsWorld->setInternalTickCallback( OnPostPhysics, static_cast< void * >( this ), false );
 
     // TODO: remove this if we don't use gimpact
     btGImpactCollisionAlgorithm::registerAlgorithm( CollisionDispatcher );    
 }
 
-void FWorld::PrePhysicsTick( btDynamicsWorld * _World, float _TimeStep ) {
-    static_cast< FWorld * >( _World->getWorldUserInfo() )->PrePhysicsTick( _TimeStep );
+void FWorld::OnPrePhysics( btDynamicsWorld * _World, float _TimeStep ) {
+    static_cast< FWorld * >( _World->getWorldUserInfo() )->OnPrePhysics( _TimeStep );
 }
 
-void FWorld::PhysicsTick( btDynamicsWorld * _World, float _TimeStep ) {
-    static_cast< FWorld * >( _World->getWorldUserInfo() )->PhysicsTick( _TimeStep );
+void FWorld::OnPostPhysics( btDynamicsWorld * _World, float _TimeStep ) {
+    static_cast< FWorld * >( _World->getWorldUserInfo() )->OnPostPhysics( _TimeStep );
 }
 
 void FWorld::SetGravityVector( Float3 const & _Gravity ) {
@@ -388,20 +388,20 @@ void FWorld::Tick( float _TimeStep ) {
     }
 }
 
-void FWorld::PrePhysicsTick( float _TimeStep ) {
+void FWorld::OnPrePhysics( float _TimeStep ) {
     for ( FActor * actor : Actors ) {
         if ( actor->IsPendingKill() ) {
             continue;
         }
 
-        if ( actor->bCanEverTick && actor->bPrePhysicsTick ) {
+        if ( actor->bCanEverTick && actor->bTickPrePhysics ) {
 
             if ( GGameMaster.IsGamePaused() && !actor->bTickEvenWhenPaused ) {
                 continue;
             }
 
-            //actor->PrePhysicsTickComponents( _TimeStep );
-            actor->PrePhysicsTick( _TimeStep );
+            //actor->TickComponentsPrePhysics( _TimeStep );
+            actor->TickPrePhysics( _TimeStep );
 
             //actor->LifeTime += _TimeStep;
             //if ( actor->LifeSpan > 0.0f && actor->LifeTime > actor->LifeSpan ) {
@@ -411,7 +411,95 @@ void FWorld::PrePhysicsTick( float _TimeStep ) {
     }
 }
 
-void FWorld::PhysicsTick( float _TimeStep ) {
+static int CacheContactPoints = -1;
+
+void FWorld::GenerateContactPoints( int _ContactIndex, FCollisionContact & _Contact ) {
+    if ( CacheContactPoints == _ContactIndex ) {
+        // Contact points already generated for this contact
+        return;
+    }
+
+    CacheContactPoints = _ContactIndex;
+
+    ContactPoints.ResizeInvalidate( _Contact.Manifold->getNumContacts() );
+
+    bool bSwapped = static_cast< FPhysicalBody * >( _Contact.Manifold->getBody0()->getUserPointer() ) == _Contact.ComponentB;
+
+    if ( ( _ContactIndex & 1 ) == 0 ) {
+        // BodyA
+
+        if ( bSwapped ) {
+            for ( int j = 0; j < _Contact.Manifold->getNumContacts(); ++j ) {
+                btManifoldPoint & point = _Contact.Manifold->getContactPoint( j );
+                FContactPoint & contact = ContactPoints[ j ];
+                contact.Position = btVectorToFloat3( point.m_positionWorldOnA );
+                contact.Normal = -btVectorToFloat3( point.m_normalWorldOnB );
+                contact.Distance = point.m_distance1;
+                contact.Impulse = point.m_appliedImpulse;
+            }
+        } else {
+            for ( int j = 0; j < _Contact.Manifold->getNumContacts(); ++j ) {
+                btManifoldPoint & point = _Contact.Manifold->getContactPoint( j );
+                FContactPoint & contact = ContactPoints[ j ];
+                contact.Position = btVectorToFloat3( point.m_positionWorldOnB );
+                contact.Normal = btVectorToFloat3( point.m_normalWorldOnB );
+                contact.Distance = point.m_distance1;
+                contact.Impulse = point.m_appliedImpulse;
+            }
+        }
+
+    } else {
+        // BodyB
+
+        if ( bSwapped ) {
+            for ( int j = 0; j < _Contact.Manifold->getNumContacts(); ++j ) {
+                btManifoldPoint & point = _Contact.Manifold->getContactPoint( j );
+                FContactPoint & contact = ContactPoints[ j ];
+                contact.Position = btVectorToFloat3( point.m_positionWorldOnB );
+                contact.Normal = btVectorToFloat3( point.m_normalWorldOnB );
+                contact.Distance = point.m_distance1;
+                contact.Impulse = point.m_appliedImpulse;
+            }
+        } else {
+            for ( int j = 0; j < _Contact.Manifold->getNumContacts(); ++j ) {
+                btManifoldPoint & point = _Contact.Manifold->getContactPoint( j );
+                FContactPoint & contact = ContactPoints[ j ];
+                contact.Position = btVectorToFloat3( point.m_positionWorldOnA );
+                contact.Normal = -btVectorToFloat3( point.m_normalWorldOnB );
+                contact.Distance = point.m_distance1;
+                contact.Impulse = point.m_appliedImpulse;
+            }
+        }
+    }
+}
+
+void FWorld::OnPostPhysics( float _TimeStep ) {
+
+    DispatchContactAndOverlapEvents();
+
+    // TODO: Post physics ticks
+}
+
+void FWorld::DispatchContactAndOverlapEvents() {
+
+#ifdef AN_COMPILER_MSVC
+#pragma warning( disable : 4456 )
+#endif
+
+    TPodArray< FCollisionContact > & currentContacts = CollisionContacts[ GGameMaster.GetFrameNumber() & 1 ];
+    TPodArray< FCollisionContact > & prevContacts = CollisionContacts[ ( GGameMaster.GetFrameNumber() + 1 ) & 1 ];
+
+    THash<> & contactHash = ContactHash[ GGameMaster.GetFrameNumber() & 1 ];
+    THash<> & prevContactHash = ContactHash[ ( GGameMaster.GetFrameNumber() + 1 ) & 1 ];
+
+    FCollisionContact contact;
+
+    FOverlapEvent overlapEvent;
+    FContactEvent contactEvent;
+
+    contactHash.Clear();
+    currentContacts.Clear();
+
     int numManifolds = CollisionDispatcher->getNumManifolds();
     for ( int i = 0; i < numManifolds; i++ ) {
         btPersistentManifold * contactManifold = CollisionDispatcher->getManifoldByIndexInternal(i);
@@ -420,22 +508,380 @@ void FWorld::PhysicsTick( float _TimeStep ) {
             continue;
         }
 
-        FPhysicalBody const * objectA = static_cast< FPhysicalBody const * >( contactManifold->getBody0()->getUserPointer() );
-        FPhysicalBody const * objectB = static_cast< FPhysicalBody const * >( contactManifold->getBody1()->getUserPointer() );
+        FPhysicalBody * objectA = static_cast< FPhysicalBody * >( contactManifold->getBody0()->getUserPointer() );
+        FPhysicalBody * objectB = static_cast< FPhysicalBody * >( contactManifold->getBody1()->getUserPointer() );
 
-        if ( objectA->Mass <= 0.0f && objectB->Mass <= 0.0f ) {
+        if ( objectA < objectB ) {
+            FCore::SwapArgs( objectA, objectB );
+        }
+
+        FActor * actorA = objectA->GetParentActor();
+        FActor * actorB = objectB->GetParentActor();
+
+        if ( actorA->IsPendingKill() || actorB->IsPendingKill() || objectA->IsPendingKill() || objectB->IsPendingKill() ) {
             continue;
         }
 
-        for ( int j = 0; j < contactManifold->getNumContacts(); j++ ) {
-            btManifoldPoint const & pt = contactManifold->getContactPoint( j );
-            if ( pt.getDistance() < 0.0f ) {
-                //btVector3 const & ptA = pt.getPositionWorldOnA();
-                //btVector3 const & ptB = pt.getPositionWorldOnB();
-                //btVector3 const & normalOnB = pt.m_normalWorldOnB;
+        if ( objectA->Mass <= 0.0f && objectB->Mass <= 0.0f ) {
+            // Static vs Static
+            continue;
+        }
 
-                GLogger.Printf( "Contact %s with %s\n", objectA->GetName().ToConstChar(), objectB->GetName().ToConstChar() );
+        if ( objectA->bTrigger && objectB->bTrigger ) {
+            // Trigger vs Trigger
+            continue;
+        }
+
+        bool bContactWithTrigger = objectA->bTrigger || objectB->bTrigger; // Do not generate contact events if one of components is trigger
+
+        contact.bComponentADispatchContactEvents = !bContactWithTrigger && objectA->bDispatchContactEvents
+            && ( objectA->E_OnBeginContact.HasSubscribers()
+                || objectA->E_OnEndContact.HasSubscribers()
+                || objectA->E_OnUpdateContact.HasSubscribers() );
+
+        contact.bComponentBDispatchContactEvents = !bContactWithTrigger && objectB->bDispatchContactEvents
+            && ( objectB->E_OnBeginContact.HasSubscribers()
+                || objectB->E_OnEndContact.HasSubscribers()
+                || objectB->E_OnUpdateContact.HasSubscribers() );
+
+        contact.bComponentADispatchOverlapEvents = objectA->bTrigger && objectA->bDispatchOverlapEvents
+            && ( objectA->E_OnBeginOverlap.HasSubscribers()
+                || objectA->E_OnEndOverlap.HasSubscribers()
+                || objectA->E_OnUpdateOverlap.HasSubscribers() );
+
+        contact.bComponentBDispatchOverlapEvents = objectB->bTrigger && objectB->bDispatchOverlapEvents
+            && ( objectB->E_OnBeginOverlap.HasSubscribers()
+                || objectB->E_OnEndOverlap.HasSubscribers()
+                || objectB->E_OnUpdateOverlap.HasSubscribers() );
+
+        contact.bActorADispatchContactEvents = !bContactWithTrigger && objectA->bDispatchContactEvents
+            && ( actorA->E_OnBeginContact.HasSubscribers()
+                || actorA->E_OnEndContact.HasSubscribers()
+                || actorA->E_OnUpdateContact.HasSubscribers() );
+
+        contact.bActorBDispatchContactEvents = !bContactWithTrigger && objectB->bDispatchContactEvents
+            && ( actorB->E_OnBeginContact.HasSubscribers()
+                || actorB->E_OnEndContact.HasSubscribers()
+                || actorB->E_OnUpdateContact.HasSubscribers() );
+
+        contact.bActorADispatchOverlapEvents = objectA->bTrigger && objectA->bDispatchOverlapEvents
+            && ( actorA->E_OnBeginOverlap.HasSubscribers()
+                || actorA->E_OnEndOverlap.HasSubscribers()
+                || actorA->E_OnUpdateOverlap.HasSubscribers() );
+
+        contact.bActorBDispatchOverlapEvents = objectB->bTrigger && objectB->bDispatchOverlapEvents
+            && ( actorB->E_OnBeginOverlap.HasSubscribers()
+                || actorB->E_OnEndOverlap.HasSubscribers()
+                || actorB->E_OnUpdateOverlap.HasSubscribers() );
+
+        if ( contact.bComponentADispatchContactEvents
+            || contact.bComponentBDispatchContactEvents
+            || contact.bComponentADispatchOverlapEvents
+            || contact.bComponentBDispatchOverlapEvents
+            || contact.bActorADispatchContactEvents
+            || contact.bActorBDispatchContactEvents
+            || contact.bActorADispatchOverlapEvents
+            || contact.bActorBDispatchOverlapEvents ) {
+
+            contact.ActorA = actorA;
+            contact.ActorB = actorB;
+            contact.ComponentA = objectA;
+            contact.ComponentB = objectB;
+            contact.Manifold = contactManifold;
+
+            int hash = contact.Hash();
+
+#ifdef AN_DEBUG
+            for ( int h = contactHash.First( hash ) ; h != -1 ; h = contactHash.Next( h ) ) {
+                if ( currentContacts[ h ].ComponentA == objectA
+                    && currentContacts[ h ].ComponentB == objectB ) {
+                    AN_Assert( 0 );
+                }
             }
+#endif
+            currentContacts.Append( contact );
+            contactHash.Insert( hash, currentContacts.Length() );
+        }
+    }
+
+    // Reset cache
+    CacheContactPoints = -1;
+
+    // Dispatch contact and overlap events (OnBeginContact, OnBeginOverlap, OnUpdateContact, OnUpdateOverlap)
+    for ( int i = 0 ; i < currentContacts.Length() ; i++ ) {
+        FCollisionContact & contact = currentContacts[ i ];
+
+        int hash = contact.Hash();
+        bool bFirstContact = true;
+
+        for ( int h = prevContactHash.First( hash ); h != -1; h = prevContactHash.Next( h ) ) {
+            if ( prevContacts[ h ].ComponentA == contact.ComponentA
+                && prevContacts[ h ].ComponentB == contact.ComponentB ) {
+                bFirstContact = false;
+                break;
+            }
+        }
+
+        if ( contact.bActorADispatchContactEvents ) {
+
+            if ( contact.ActorA->E_OnBeginContact || contact.ActorA->E_OnUpdateContact ) {
+
+                if ( contact.ComponentA->bGenerateContactPoints ) {
+                    GenerateContactPoints( i << 1, contact );
+
+                    contactEvent.Points = ContactPoints.ToPtr();
+                    contactEvent.NumPoints = ContactPoints.Length();
+                } else {
+                    contactEvent.Points = NULL;
+                    contactEvent.NumPoints = 0;
+                }
+
+                contactEvent.SelfActor = contact.ActorA;
+                contactEvent.SelfBody = contact.ComponentA;
+                contactEvent.OtherActor = contact.ActorB;
+                contactEvent.OtherBody = contact.ComponentB;
+
+                if ( bFirstContact ) {
+                    contact.ActorA->E_OnBeginContact.Dispatch( contactEvent );
+                } else {
+                    contact.ActorA->E_OnUpdateContact.Dispatch( contactEvent );
+                }
+            }
+
+        } else if ( contact.bActorADispatchOverlapEvents ) {
+            overlapEvent.SelfActor = contact.ActorA;
+            overlapEvent.SelfBody = contact.ComponentA;
+            overlapEvent.OtherActor = contact.ActorB;
+            overlapEvent.OtherBody = contact.ComponentB;
+
+            if ( bFirstContact ) {
+                contact.ActorA->E_OnBeginOverlap.Dispatch( overlapEvent );
+            } else {
+                contact.ActorA->E_OnUpdateOverlap.Dispatch( overlapEvent );
+            }
+        }
+
+        if ( contact.bComponentADispatchContactEvents ) {
+
+            if ( contact.ComponentA->E_OnBeginContact || contact.ComponentA->E_OnUpdateContact ) {
+                if ( contact.ComponentA->bGenerateContactPoints ) {
+                    GenerateContactPoints( i << 1, contact );
+
+                    contactEvent.Points = ContactPoints.ToPtr();
+                    contactEvent.NumPoints = ContactPoints.Length();
+                } else {
+                    contactEvent.Points = NULL;
+                    contactEvent.NumPoints = 0;
+                }
+
+                contactEvent.SelfActor = contact.ActorA;
+                contactEvent.SelfBody = contact.ComponentA;
+                contactEvent.OtherActor = contact.ActorB;
+                contactEvent.OtherBody = contact.ComponentB;
+
+                if ( bFirstContact ) {
+                    contact.ComponentA->E_OnBeginContact.Dispatch( contactEvent );
+                } else {
+                    contact.ComponentA->E_OnUpdateContact.Dispatch( contactEvent );
+                }
+            }
+        } else if ( contact.bComponentADispatchOverlapEvents ) {
+
+            overlapEvent.SelfActor = contact.ActorA;
+            overlapEvent.SelfBody = contact.ComponentA;
+            overlapEvent.OtherActor = contact.ActorB;
+            overlapEvent.OtherBody = contact.ComponentB;
+
+            if ( bFirstContact ) {
+                contact.ComponentA->E_OnBeginOverlap.Dispatch( overlapEvent );
+            } else {
+                contact.ComponentA->E_OnUpdateOverlap.Dispatch( overlapEvent );
+            }
+        }
+
+        if ( contact.bActorBDispatchContactEvents ) {
+
+            if ( contact.ActorB->E_OnBeginContact || contact.ActorB->E_OnUpdateContact ) {
+                if ( contact.ComponentB->bGenerateContactPoints ) {
+                    GenerateContactPoints( ( i << 1 ) + 1, contact );
+
+                    contactEvent.Points = ContactPoints.ToPtr();
+                    contactEvent.NumPoints = ContactPoints.Length();
+                } else {
+                    contactEvent.Points = NULL;
+                    contactEvent.NumPoints = 0;
+                }                
+
+                contactEvent.SelfActor = contact.ActorB;
+                contactEvent.SelfBody = contact.ComponentB;
+                contactEvent.OtherActor = contact.ActorA;
+                contactEvent.OtherBody = contact.ComponentA;
+
+                if ( bFirstContact ) {
+                    contact.ActorB->E_OnBeginContact.Dispatch( contactEvent );
+                } else {
+                    contact.ActorB->E_OnUpdateContact.Dispatch( contactEvent );
+                }
+            }
+        } else if ( contact.bActorBDispatchOverlapEvents ) {
+            overlapEvent.SelfActor = contact.ActorB;
+            overlapEvent.SelfBody = contact.ComponentB;
+            overlapEvent.OtherActor = contact.ActorA;
+            overlapEvent.OtherBody = contact.ComponentA;
+
+            if ( bFirstContact ) {
+                contact.ActorB->E_OnBeginOverlap.Dispatch( overlapEvent );
+            } else {
+                contact.ActorB->E_OnUpdateOverlap.Dispatch( overlapEvent );
+            }
+        }
+
+        if ( contact.bComponentBDispatchContactEvents ) {
+
+            if ( contact.ComponentB->E_OnBeginContact || contact.ComponentB->E_OnUpdateContact ) {
+                if ( contact.ComponentB->bGenerateContactPoints ) {
+                    GenerateContactPoints( ( i << 1 ) + 1, contact );
+
+                    contactEvent.Points = ContactPoints.ToPtr();
+                    contactEvent.NumPoints = ContactPoints.Length();
+                } else {
+                    contactEvent.Points = NULL;
+                    contactEvent.NumPoints = 0;
+                }
+
+                contactEvent.SelfActor = contact.ActorB;
+                contactEvent.SelfBody = contact.ComponentB;
+                contactEvent.OtherActor = contact.ActorA;
+                contactEvent.OtherBody = contact.ComponentA;
+
+                if ( bFirstContact ) {
+                    contact.ComponentB->E_OnBeginContact.Dispatch( contactEvent );
+                } else {
+                    contact.ComponentB->E_OnUpdateContact.Dispatch( contactEvent );
+                }
+            }
+        } else if ( contact.bComponentBDispatchOverlapEvents ) {
+
+            overlapEvent.SelfActor = contact.ActorB;
+            overlapEvent.SelfBody = contact.ComponentB;
+            overlapEvent.OtherActor = contact.ActorA;
+            overlapEvent.OtherBody = contact.ComponentA;
+
+            if ( bFirstContact ) {
+                contact.ComponentB->E_OnBeginOverlap.Dispatch( overlapEvent );
+            } else {
+                contact.ComponentB->E_OnUpdateOverlap.Dispatch( overlapEvent );
+            }
+        }
+    }
+
+    // Reset cache
+    CacheContactPoints = -1;
+
+    // Dispatch contact and overlap events (OnEndContact, OnEndOverlap)
+    for ( int i = 0; i < prevContacts.Length(); i++ ) {
+        FCollisionContact & contact = prevContacts[ i ];
+
+        int hash = contact.Hash();
+        bool bNoContact = true;
+
+        for ( int h = contactHash.First( hash ); h != -1; h = contactHash.Next( h ) ) {
+            if ( currentContacts[ h ].ComponentA == contact.ComponentA
+                && currentContacts[ h ].ComponentB == contact.ComponentB ) {
+                bNoContact = false;
+                break;
+            }
+        }
+
+        if ( !bNoContact ) {
+            continue;
+        }
+
+        if ( contact.bActorADispatchContactEvents ) {
+
+            if ( contact.ActorA->E_OnEndContact ) {
+                contactEvent.SelfActor = contact.ActorA;
+                contactEvent.SelfBody = contact.ComponentA;
+                contactEvent.OtherActor = contact.ActorB;
+                contactEvent.OtherBody = contact.ComponentB;
+                contactEvent.Points = NULL;
+                contactEvent.NumPoints = 0;
+
+                contact.ActorA->E_OnEndContact.Dispatch( contactEvent );
+            }
+
+        } else if ( contact.bActorADispatchOverlapEvents ) {
+            overlapEvent.SelfActor = contact.ActorA;
+            overlapEvent.SelfBody = contact.ComponentA;
+            overlapEvent.OtherActor = contact.ActorB;
+            overlapEvent.OtherBody = contact.ComponentB;
+
+            contact.ActorA->E_OnEndOverlap.Dispatch( overlapEvent );
+        }
+
+        if ( contact.bComponentADispatchContactEvents ) {
+
+            if ( contact.ComponentA->E_OnEndContact ) {
+                contactEvent.SelfActor = contact.ActorA;
+                contactEvent.SelfBody = contact.ComponentA;
+                contactEvent.OtherActor = contact.ActorB;
+                contactEvent.OtherBody = contact.ComponentB;
+                contactEvent.Points = NULL;
+                contactEvent.NumPoints = 0;
+
+                contact.ComponentA->E_OnEndContact.Dispatch( contactEvent );
+            }
+        } else if ( contact.bComponentADispatchOverlapEvents ) {
+
+            overlapEvent.SelfActor = contact.ActorA;
+            overlapEvent.SelfBody = contact.ComponentA;
+            overlapEvent.OtherActor = contact.ActorB;
+            overlapEvent.OtherBody = contact.ComponentB;
+
+            contact.ComponentA->E_OnEndOverlap.Dispatch( overlapEvent );
+        }
+
+        if ( contact.bActorBDispatchContactEvents ) {
+
+            if ( contact.ActorB->E_OnEndContact ) {
+                contactEvent.SelfActor = contact.ActorB;
+                contactEvent.SelfBody = contact.ComponentB;
+                contactEvent.OtherActor = contact.ActorA;
+                contactEvent.OtherBody = contact.ComponentA;
+                contactEvent.Points = NULL;
+                contactEvent.NumPoints = 0;
+
+                contact.ActorB->E_OnEndContact.Dispatch( contactEvent  );
+            }
+        } else if ( contact.bActorBDispatchOverlapEvents ) {
+            overlapEvent.SelfActor = contact.ActorB;
+            overlapEvent.SelfBody = contact.ComponentB;
+            overlapEvent.OtherActor = contact.ActorA;
+            overlapEvent.OtherBody = contact.ComponentA;
+
+            contact.ActorB->E_OnEndOverlap.Dispatch( overlapEvent );
+        }
+
+        if ( contact.bComponentBDispatchContactEvents ) {
+
+            if ( contact.ComponentB->E_OnEndContact ) {
+                contactEvent.SelfActor = contact.ActorB;
+                contactEvent.SelfBody = contact.ComponentB;
+                contactEvent.OtherActor = contact.ActorA;
+                contactEvent.OtherBody = contact.ComponentA;
+                contactEvent.Points = NULL;
+                contactEvent.NumPoints = 0;
+
+                contact.ComponentB->E_OnEndContact.Dispatch( contactEvent );
+            }
+        } else if ( contact.bComponentBDispatchOverlapEvents ) {
+
+            overlapEvent.SelfActor = contact.ActorB;
+            overlapEvent.SelfBody = contact.ComponentB;
+            overlapEvent.OtherActor = contact.ActorA;
+            overlapEvent.OtherBody = contact.ComponentA;
+
+            contact.ComponentB->E_OnEndOverlap.Dispatch( overlapEvent );
         }
     }
 }

@@ -98,6 +98,30 @@ protected: \
     ~_Class() {} \
 private:
 
+class btPersistentManifold;
+
+struct FCollisionContact {
+    btPersistentManifold * Manifold;
+
+    FActor * ActorA;
+    FActor * ActorB;
+    FPhysicalBody * ComponentA;
+    FPhysicalBody * ComponentB;
+
+    bool bActorADispatchContactEvents;
+    bool bActorBDispatchContactEvents;
+    bool bActorADispatchOverlapEvents;
+    bool bActorBDispatchOverlapEvents;
+
+    bool bComponentADispatchContactEvents;
+    bool bComponentBDispatchContactEvents;
+    bool bComponentADispatchOverlapEvents;
+    bool bComponentBDispatchOverlapEvents;
+
+    int Hash() const {
+        return ( size_t )ComponentA + ( size_t )ComponentB;
+    }
+};
 
 /*
 
@@ -218,11 +242,14 @@ protected:
 private:
     void SimulatePhysics( float _TimeStep );
 
-    void PrePhysicsTick( float _TimeStep );
-    void PhysicsTick( float _TimeStep );
+    void OnPrePhysics( float _TimeStep );
+    void OnPostPhysics( float _TimeStep );
 
-    static void PrePhysicsTick( class btDynamicsWorld * _World, float _TimeStep );
-    static void PhysicsTick( class btDynamicsWorld * _World, float _TimeStep );
+    static void OnPrePhysics( class btDynamicsWorld * _World, float _TimeStep );
+    static void OnPostPhysics( class btDynamicsWorld * _World, float _TimeStep );
+
+    void GenerateContactPoints( int _ContactIndex, FCollisionContact & _Contact );
+    void DispatchContactAndOverlapEvents();
 
     void BroadcastActorSpawned( FActor * _SpawnedActor );
 
@@ -270,6 +297,9 @@ private:
     btCollisionDispatcher * CollisionDispatcher;
     btSequentialImpulseConstraintSolver * ConstraintSolver;
     btSoftRigidDynamicsWorld * PhysicsWorld;
+    TPodArray< FCollisionContact > CollisionContacts[ 2 ];
+    THash<> ContactHash[ 2 ];
+    TPodArray< FContactPoint > ContactPoints;
 
     Float3 GravityVector;
     bool bGravityDirty;

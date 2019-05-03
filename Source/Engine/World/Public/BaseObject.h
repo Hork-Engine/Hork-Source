@@ -184,7 +184,7 @@ public:
 TEvent
 
 */
-template< typename... TArgs >
+template< int BASE_CAPACITY, typename... TArgs >
 struct TEvent {
     AN_FORBID_COPY( TEvent )
 
@@ -234,6 +234,10 @@ struct TEvent {
         return !Subscribers.IsEmpty();
     }
 
+    operator bool() const {
+        return HasSubscribers();
+    }
+
     void Dispatch( TArgs... _Args ) {
         for ( Callback & callback : Subscribers ) {
             callback( StdForward< TArgs >( _Args )... );
@@ -241,5 +245,5 @@ struct TEvent {
     }
 
 private:
-    TPodArray< Callback > Subscribers;
+    TPodArray< Callback, BASE_CAPACITY > Subscribers;
 };

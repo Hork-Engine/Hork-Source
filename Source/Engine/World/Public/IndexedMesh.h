@@ -231,9 +231,6 @@ public:
     // Get mesh rendering proxy
     FRenderProxy_IndexedMesh * GetRenderProxy() { return RenderProxy; }
 
-    // Create interface for physics collision body
-    //class btStridingMeshInterface * CreateStridingMeshInterface();
-
     FCollisionBodyComposition BodyComposition;
 
 protected:

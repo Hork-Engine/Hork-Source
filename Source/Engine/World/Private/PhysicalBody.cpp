@@ -126,57 +126,47 @@ void FPhysicalBody::DeinitializeComponent() {
     Super::DeinitializeComponent();
 }
 
-btCompoundShape * CreateCollisionShape( FCollisionBodyComposition const & BodyComposition/*, Float3 const & _Scale*/ ) {
-    btCompoundShape * shiftedCompoundShape = b3New( btCompoundShape );
-    btCompoundShape * compoundShape = b3New( btCompoundShape );
+void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass ) {
+    *_CompoundShape = b3New( btCompoundShape );
 
-    TPodArray< float > masses;
-    masses.Resize( BodyComposition.CollisionBodies.Length() );
-    int numShapes = 0;
-
-    //btVector3 scaling = btVectorToFloat3( _Scale );
-
-    btTransform offset;
-    for ( FCollisionBody * collisionBody : BodyComposition.CollisionBodies ) {
-        btCollisionShape * shape = collisionBody->Create();
-
-        shape->setMargin( collisionBody->Margin );
-        //shape->setLocalScaling( scaling );
-        shape->setUserPointer( collisionBody );
-        collisionBody->AddRef();
-
-        offset.setOrigin( btVectorToFloat3( collisionBody->Position ) );
-        offset.setRotation( btQuaternionToQuat( collisionBody->Rotation ) );
-        compoundShape->addChildShape( offset, shape );
-
-        masses[numShapes++] = 1.0f;
-    }
-
-#if 0
-    btTransform principal;
-    principal.setRotation( btQuaternion::getIdentity() );
-    principal.setOrigin( btVector3( 0.0f, 0.0f, 0.0f ) );
+    int numShapes = BodyComposition.CollisionBodies.Length();
 
     if ( numShapes > 0 ) {
-        btVector3 inertia( 0.0f, 0.0f, 0.0f );
-        compoundShape->calculatePrincipalAxisTransform( masses.ToPtr(), principal, inertia );
+        btVector3 centerOfMass( 0, 0, 0 );
+        btVector3 scaling = btVectorToFloat3( _Scale );
 
-        btTransform adjusted;
-        for ( int i = 0 ; i < numShapes ; i++ ) {
-            adjusted = compoundShape->getChildTransform( i );
-            adjusted.setOrigin( adjusted.getOrigin() - principal.getOrigin() );
-            ShiftedCompoundShape->addChildShape( adjusted, compoundShape->getChildShape( i ) );
+        TPodArray< btTransform > shapeTransforms;
+        shapeTransforms.Reserve( numShapes );
+
+        for ( FCollisionBody * collisionBody : BodyComposition.CollisionBodies ) {
+            btTransform & shapeTransform = shapeTransforms.Append();
+            shapeTransform.setOrigin( btVectorToFloat3( _Scale * collisionBody->Position ) );
+            shapeTransform.setRotation( btQuaternionToQuat( collisionBody->Rotation ) );
+            centerOfMass += shapeTransform.getOrigin();
         }
-    }
-#else
-    for ( int i = 0 ; i < numShapes ; i++ ) {
-        shiftedCompoundShape->addChildShape( compoundShape->getChildTransform( i ), compoundShape->getChildShape( i ) );
-    }
-#endif
 
-    b3Destroy( compoundShape );
+        centerOfMass /= numShapes;
 
-    return shiftedCompoundShape;
+        for ( int i = 0 ; i < numShapes ; i++ ) {
+            FCollisionBody * collisionBody = BodyComposition.CollisionBodies[ i ];
+            btCollisionShape * shape = collisionBody->Create();
+            btTransform & shapeTransform = shapeTransforms[ i ];
+
+            shape->setMargin( collisionBody->Margin );
+            shape->setUserPointer( collisionBody );
+            shape->setLocalScaling( scaling );
+
+            shapeTransform.getOrigin() -= centerOfMass;
+
+            (*_CompoundShape)->addChildShape( shapeTransform, shape );
+
+            collisionBody->AddRef();
+        }
+
+        *_CenterOfMass = btVectorToFloat3( centerOfMass );
+    } else {
+        *_CenterOfMass = Float3( 0.0f );
+    }
 }
 
 static void DestroyCollisionShape( btCompoundShape * _CompoundShape ) {
@@ -255,9 +245,16 @@ AN_FORCEINLINE static unsigned short ClampUnsignedShort( int _Value ) {
 void FPhysicalBody::CreateRigidBody() {
     btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
+    AN_Assert( MotionState == nullptr );
     AN_Assert( RigidBody == nullptr );
+    AN_Assert( CompoundShape == nullptr );
 
-    ShiftedCompoundShape = CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition/*, GetWorldScale()*/ );
+    CachedScale = GetWorldScale();
+
+    MotionState = b3New( FPhysicalBodyMotionState );
+    MotionState->PhysBody = this;
+
+    CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition, CachedScale, &CompoundShape, &MotionState->CenterOfMass );
 
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 
@@ -265,17 +262,10 @@ void FPhysicalBody::CreateRigidBody() {
         Mass = 0.0f;
     }
     if ( Mass > 0.0f ) {
-        ShiftedCompoundShape->calculateLocalInertia( Mass, localInertia );
+        CompoundShape->calculateLocalInertia( Mass, localInertia );
     }
 
-    // Set local scaling (must be after calculateLocalInertia)
-    ShiftedCompoundShape->setLocalScaling( btVectorToFloat3( GetWorldScale() ) );
-
-    MotionState = b3New( FPhysicalBodyMotionState );
-    MotionState->CenterOfMass = Float3(0.0f);// btVectorToFloat3( principal.getOrigin() );
-    MotionState->PhysBody = this;
-
-    btRigidBody::btRigidBodyConstructionInfo constructInfo( Mass, MotionState, ShiftedCompoundShape, localInertia );
+    btRigidBody::btRigidBodyConstructionInfo constructInfo( Mass, MotionState, CompoundShape, localInertia );
 
 //    constructInfo.m_linearDamping;
 //    constructInfo.m_angularDamping;
@@ -289,18 +279,18 @@ void FPhysicalBody::CreateRigidBody() {
     RigidBody = b3New( btRigidBody, constructInfo );
     RigidBody->setUserPointer( this );
 
-    UpdateRigidBodyCollisionShape( RigidBody, ShiftedCompoundShape, bTrigger, bKinematicBody );
+    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, bKinematicBody );
 
-    // Apply physical body position with center of mass shift
-//    btTransform & worldTransform = RigidBody->getWorldTransform();
-//    worldTransform.setOrigin( CenterOfMass );
-//    if ( GetWorld()->IsPhysicsSimulating() ) {
-//        btTransform interpolationWorldTransform = RigidBody->getInterpolationWorldTransform();
-//        interpolationWorldTransform.setOrigin( worldTransform.getOrigin() );
-//        RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
-//    }
+    btTransform & transform = RigidBody->getWorldTransform();
+    transform.setOrigin( btVectorToFloat3( MotionState->CenterOfMass ) );
 
-//!!!RigidBody->updateInertiaTensor();
+    if ( GetWorld()->IsPhysicsSimulating() ) {
+        btTransform interpolationWorldTransform = RigidBody->getInterpolationWorldTransform();
+        interpolationWorldTransform.setOrigin( transform.getOrigin() );
+        RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
+    }
+
+    RigidBody->updateInertiaTensor();
 
     physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
 
@@ -315,19 +305,20 @@ void FPhysicalBody::DestroyRigidBody() {
 
         physicsWorld->removeRigidBody( RigidBody );
         b3Destroy( RigidBody );
+        RigidBody = nullptr;
 
-        DestroyCollisionShape( ShiftedCompoundShape );
+        DestroyCollisionShape( CompoundShape );
+        CompoundShape = nullptr;
 
         b3Destroy( MotionState );
-
-        RigidBody = nullptr;
+        MotionState = nullptr;
     }
 }
 
 void FPhysicalBody::RebuildRigidBody() {
     btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
-    if ( bNoPhysics && RigidBody ) {
+    if ( bNoPhysics ) {
         DestroyRigidBody();
         return;
     }
@@ -337,8 +328,13 @@ void FPhysicalBody::RebuildRigidBody() {
         return;
     }
 
-    DestroyCollisionShape( ShiftedCompoundShape );
-    ShiftedCompoundShape = CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition/*, GetWorldScale()*/ );
+    CachedScale = GetWorldScale();
+
+    btTransform const & bodyTransform = RigidBody->getWorldTransform();
+    Float3 position = btVectorToFloat3( bodyTransform.getOrigin() ) - btQuaternionToQuat( bodyTransform.getRotation() ) * MotionState->CenterOfMass;
+
+    DestroyCollisionShape( CompoundShape );
+    CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition, CachedScale, &CompoundShape, &MotionState->CenterOfMass );
 
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 
@@ -346,51 +342,26 @@ void FPhysicalBody::RebuildRigidBody() {
         Mass = 0.0f;
     }
     if ( Mass > 0.0f ) {
-        ShiftedCompoundShape->calculateLocalInertia( Mass, localInertia );
+        CompoundShape->calculateLocalInertia( Mass, localInertia );
     }
 
-    // Set local scaling (must be after calculateLocalInertia)
-    ShiftedCompoundShape->setLocalScaling( btVectorToFloat3( GetWorldScale() ) );
-
-    MotionState->CenterOfMass = Float3(0.0f);// btVectorToFloat3( principal.getOrigin() );
-
-//    btRigidBody::btRigidBodyConstructionInfo constructInfo( Mass, MotionState, ShiftedCompoundShape, localInertia );
-
-//    constructInfo.m_linearDamping;
-//    constructInfo.m_angularDamping;
-//    constructInfo.m_friction;
-//    constructInfo.m_rollingFriction;
-//    constructInfo.m_spinningFriction;
-//    constructInfo.m_restitution;
-//    constructInfo.m_linearSleepingThreshold;
-//    constructInfo.m_angularSleepingThreshold;
-
-    RigidBody->setMassProps( Mass, localInertia );
-
-    UpdateRigidBodyCollisionShape( RigidBody, ShiftedCompoundShape, bTrigger, bKinematicBody );
-    UpdateRigidBodyGravity( RigidBody, bNoGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
-
-    // Apply physical body position with center of mass shift
-//    btTransform & worldTransform = RigidBody->getWorldTransform();
-//    worldTransform.setOrigin( CenterOfMass );
-//    if ( GetWorld()->IsPhysicsSimulating() ) {
-//        btTransform interpolationWorldTransform = RigidBody->getInterpolationWorldTransform();
-//        interpolationWorldTransform.setOrigin( worldTransform.getOrigin() );
-//        RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
-//    }
+    // Update position with new center of mass
+    UpdatePhysicalBodyPosition( position );
 
     //RigidBody->setMassProps( Mass, localInertia );
+
+    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, bKinematicBody );
+
     RigidBody->updateInertiaTensor();
 
     physicsWorld->removeRigidBody( RigidBody );
     physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
 
+    UpdateRigidBodyGravity( RigidBody, bNoGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
+
+    RigidBody->setMassProps( Mass, localInertia );
+
     Activate();
-
-    CachedScale = Float3(1);
-
-    // Mark transform dirty to update local scaling
-    //MarkTransformDirty();
 }
 
 void FPhysicalBody::OnTransformDirty() {
@@ -413,23 +384,23 @@ void FPhysicalBody::OnTransformDirty() {
         }
 
         Float3 worldScale = GetWorldScale();
-        int numShapes = ShiftedCompoundShape->getNumChildShapes();
+        int numShapes = CompoundShape->getNumChildShapes();
 
         if ( numShapes > 0 && !CachedScale.CompareEps( worldScale, PHYS_COMPARE_EPSILON ) ) {
 
             CachedScale = worldScale;
 
             btVector3 scaling = btVectorToFloat3( worldScale );
-#if 0
+#if 1
             for ( int i = 0 ; i < numShapes ; i++ ) {
-                btCollisionShape * shape = ShiftedCompoundShape->getChildShape( i );
+                btCollisionShape * shape = CompoundShape->getChildShape( i );
                 shape->setLocalScaling( scaling );
+
+                // TODO: readd shape to shifted compound shape with origin WorldScale * shape->Position, update center of mass
             }
 #else
-            ShiftedCompoundShape->setLocalScaling( scaling );
+            CompoundShape->setLocalScaling( scaling );
 #endif
-
-            // TODO: update center of mass?
         }
     }
 }
@@ -706,12 +677,12 @@ void FPhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox >
 
         worldTransform.Compose( rigidBodyPosition, rigidBodyRotation.ToMatrix(), GetWorldScale() );
 
-        int numShapes = ShiftedCompoundShape->getNumChildShapes();
+        int numShapes = CompoundShape->getNumChildShapes();
 
         _BoundingBoxes.ResizeInvalidate( numShapes );
 
         for ( int i = 0 ; i < numShapes ; i++ ) {
-            btCompoundShapeChild & shape = ShiftedCompoundShape->getChildList()[ i ];
+            btCompoundShapeChild & shape = CompoundShape->getChildList()[ i ];
 
             shapeWorldPosition = worldTransform * btVectorToFloat3( shape.m_transform.getOrigin() );
             shapeWorldRotation.FromMatrix( worldTransform.DecomposeRotation() );

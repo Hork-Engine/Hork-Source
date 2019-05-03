@@ -42,7 +42,7 @@ struct FSubpart;
 class FCollisionBody : public FBaseObject {
     AN_CLASS( FCollisionBody, FBaseObject )
 
-    friend btCompoundShape * CreateCollisionShape( FCollisionBodyComposition const & BodyComposition/*, Float3 const & _Scale*/ );
+    friend void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
 
 public:
     Float3 Position;
@@ -153,11 +153,18 @@ private:
     btCollisionShape * Create() override;
 };
 
+void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices );
+
 class FCollisionConvexHull : public FCollisionBody {
     AN_CLASS( FCollisionConvexHull, FCollisionBody )
 
 public:
     TPodArray< Float3 > Vertices;
+
+    void InitializeFromPlanes( PlaneF const * _Planes, int _NumPlanes ) {
+        Vertices.Clear();
+        ConvexHullVerticesFromPlanes( _Planes, _NumPlanes, Vertices );
+    }
 
 protected:
     FCollisionConvexHull() {}
@@ -171,6 +178,11 @@ class FCollisionConvexHullData : public FBaseObject {
 
 public:
     TPodArray< Float3 > Vertices;
+
+    void InitializeFromPlanes( PlaneF const * _Planes, int _NumPlanes ) {
+        Vertices.Clear();
+        ConvexHullVerticesFromPlanes( _Planes, _NumPlanes, Vertices );
+    }
 
 protected:
     FCollisionConvexHullData() {}

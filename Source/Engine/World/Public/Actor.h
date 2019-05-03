@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Level.h"
+#include "CollisionEvents.h"
 #include <Engine/Core/Public/Guid.h>
 
 class FWorld;
@@ -48,7 +49,6 @@ protected: \
 private:
 
 
-
 /*
 
 FActor
@@ -64,12 +64,12 @@ class ANGIE_API FActor : public FBaseObject {
 public:
 
     // Actor events
-    TEvent<> E_OnBeginContact;
-    TEvent<> E_OnEndContact;
-    TEvent<> E_OnUpdateContact;
-    TEvent<> E_OnBeginOverlap;
-    TEvent<> E_OnEndOverlap;
-    TEvent<> E_OnUpdateOverlap;
+    FContactDelegate E_OnBeginContact;
+    FContactDelegate E_OnEndContact;
+    FContactDelegate E_OnUpdateContact;
+    FOverlapDelegate E_OnBeginOverlap;
+    FOverlapDelegate E_OnEndOverlap;
+    FOverlapDelegate E_OnUpdateOverlap;
 
     // Root component, keeps component hierarchy and transform for the actor
     FSceneComponent * RootComponent;
@@ -81,7 +81,9 @@ public:
 
     bool bTickEvenWhenPaused;
 
-    bool bPrePhysicsTick;
+    bool bTickPrePhysics;
+
+    //bool bTickPostPhysics;  TODO
 
     // Actors factory
     static FObjectFactory & Factory() { static FObjectFactory ObjectFactory( "Actor factory" ); return ObjectFactory; }
@@ -168,7 +170,7 @@ protected:
 
     virtual void Tick( float _TimeStep ) {}
 
-    virtual void PrePhysicsTick( float _TimeStep ) {}
+    virtual void TickPrePhysics( float _TimeStep ) {}
 
     virtual void DrawDebug( FDebugDraw * _DebugDraw );
 

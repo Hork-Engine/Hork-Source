@@ -54,34 +54,24 @@ FRuntime::FRuntime() {
 }
 
 bool FRuntime::IsVSyncSupported() {
-    bool r;
-    r = rt_RenderFeatures.bSwapControl;
-    return r;
+    return rt_RenderFeatures.bSwapControl;
 }
 
 bool FRuntime::IsAdaptiveVSyncSupported() {
-    bool r;
-    r = rt_RenderFeatures.bSwapControlTear;
-    return r;
+    return rt_RenderFeatures.bSwapControlTear;
 }
 
 FPhysicalMonitor const * FRuntime::GetPrimaryMonitor() {
-    FPhysicalMonitor const * monitor;
-    monitor = rt_GetPrimaryMonitor();
-    return monitor;
+    return rt_GetPrimaryMonitor();
 }
 
 FPhysicalMonitor const * FRuntime::GetMonitor( int _Handle ) {
-    FPhysicalMonitor const * monitor;
     FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
-    monitor = ( (unsigned)_Handle < physicalMonitors.Length() ) ? physicalMonitors[ _Handle ] : nullptr;
-    return monitor;
+    return ( (unsigned)_Handle < physicalMonitors.Length() ) ? physicalMonitors[ _Handle ] : nullptr;
 }
 
 FPhysicalMonitor const * FRuntime::GetMonitor( const char * _MonitorName ) {
-    FPhysicalMonitor const * monitor;
-    monitor = rt_FindMonitor( _MonitorName );
-    return monitor;
+    return rt_FindMonitor( _MonitorName );
 }
 
 bool FRuntime::IsMonitorConnected( int _Handle ) {
