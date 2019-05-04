@@ -388,19 +388,21 @@ void FPhysicalBody::OnTransformDirty() {
 
         if ( numShapes > 0 && !CachedScale.CompareEps( worldScale, PHYS_COMPARE_EPSILON ) ) {
 
-            CachedScale = worldScale;
+            //CachedScale = worldScale;
 
-            btVector3 scaling = btVectorToFloat3( worldScale );
-#if 1
-            for ( int i = 0 ; i < numShapes ; i++ ) {
-                btCollisionShape * shape = CompoundShape->getChildShape( i );
-                shape->setLocalScaling( scaling );
+            RebuildRigidBody();
 
-                // TODO: readd shape to shifted compound shape with origin WorldScale * shape->Position, update center of mass
-            }
-#else
-            CompoundShape->setLocalScaling( scaling );
-#endif
+//            btVector3 scaling = btVectorToFloat3( worldScale );
+//#if 1
+//            for ( int i = 0 ; i < numShapes ; i++ ) {
+//                btCollisionShape * shape = CompoundShape->getChildShape( i );
+//                shape->setLocalScaling( scaling );
+//
+//                // TODO: readd shape to shifted compound shape with origin WorldScale * shape->Position, update center of mass
+//            }
+//#else
+//            CompoundShape->setLocalScaling( scaling );
+//#endif
         }
     }
 }
