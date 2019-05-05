@@ -51,77 +51,141 @@ public:
     FOverlapDelegate E_OnEndOverlap;
     FOverlapDelegate E_OnUpdateOverlap;
 
-    float Mass;
-    bool bTrigger;
-    bool bKinematicBody;
-    bool bNoGravity;
-    bool bOverrideWorldGravity;
-    bool bUseDefaultBodyComposition;
-    Float3 SelfGravity;
-    //float LinearDamping;
-    //float AngularDamping;
-    //float Friction = 0.5f;
-    //float RollingFriction;      // The RollingFriction prevents rounded shapes, such as spheres, cylinders and capsules from rolling forever.
-    //float SpinningFriction;     // Torsional friction around contact normal
-    //float Restitution;          // Best simulation results using zero restitution
-    //float LinearSleepingThreshold = 0.8f;
-    //float AngularSleepingThreshold = 1.0f;
+    // Enable physics simulation. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    bool bSimulatePhysics;
+
+    // Collision layer. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
     int CollisionLayer = 0x1;
+
+    // Collision mask. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
     int CollisionMask = 0xffff;
-    bool bNoPhysics;
+
+    // Trigger can produce overlap events. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    bool bTrigger;
+
+    // Kinematic body. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    bool bKinematicBody;
+
+    // Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact)
     bool bDispatchContactEvents;
+
+    // Dispatch contact events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap)
     bool bDispatchOverlapEvents;
-    bool bGenerateContactPoints;  // Use with bDispatchContactEvents
 
-    void Activate();
-    bool IsActive() const;
+    // Generate contact points for contact events. Use with bDispatchContactEvents.
+    bool bGenerateContactPoints;
 
+    // Collision body composition. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    FCollisionBodyComposition BodyComposition;
+
+    // Set to true if you want to use body composition from overrided method DefaultBodyComposition(). Set it before component initialization
+    // or call UpdatePhysicsAttribs() to apply property.
+    bool bUseDefaultBodyComposition;
+
+    // Set to ture to disable world gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    bool bDisableGravity;
+
+    // Set to ture to override world gravity and use self gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    bool bOverrideWorldGravity;
+
+    // Object self gravity, use with bOverrideWorldGravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    Float3 SelfGravity;
+
+    // Object mass. Static objects have Mass == 0 and dynamic object must have Mass > 0. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    float Mass;
+
+    // Force physics activation
+    void ActivatePhysics();
+
+    // Is physics active
+    bool IsPhysicsActive() const;
+
+    // Object linear velocity
     void SetLinearVelocity( Float3 const & _Velocity );
+
+    // Object linear velocity factor
     void SetLinearFactor( Float3 const & _Factor );
+
     void SetLinearSleepingThreshold( float _Threshold );
+
     void SetLinearDamping( float _Damping );
+
+    // Object angular velocity
     void SetAngularVelocity( Float3 const & _Velocity );
+
+    // Object angular velocity factor
     void SetAngularFactor( Float3 const & _Factor );
+
     void SetAngularSleepingThreshold( float _Threshold );
+
     void SetAngularDamping( float _Damping );
+
     void SetFriction( float _Friction );
+
     void SetAnisotropicFriction( Float3 const & _Friction );
+
+    // The RollingFriction prevents rounded shapes, such as spheres, cylinders and capsules from rolling forever.
     void SetRollingFriction( float _Friction );
+
+    // Best simulation results using zero restitution.
     void SetRestitution( float _Restitution );
+
+    // Keep ContactProcessingThreshold*ContactProcessingThreshold < FLT_MAX
     void SetContactProcessingThreshold( float _Threshold );
+
     void SetCcdRadius( float _Radius );
+
     void SetCcdMotionThreshold( float _Threshold );
 
     Float3 GetLinearVelocity() const;
-    Float3 GetLinearFactor() const;
+
+    Float3 const & GetLinearFactor() const;
+
     Float3 GetVelocityAtPoint( Float3 const & _Position ) const;
+
     float GetLinearSleepingThreshold() const;
+
     float GetLinearDamping() const;
+
     Float3 GetAngularVelocity() const;
-    Float3 GetAngularFactor() const;
+
+    Float3 const & GetAngularFactor() const;
+
     float GetAngularSleepingThreshold() const;
+
     float GetAngularDamping() const;
+
     float GetFriction() const;
-    Float3 GetAnisotropicFriction() const;
+
+    Float3 const & GetAnisotropicFriction() const;
+
     float GetRollingFriction() const;
+
     float GetRestitution() const;
+
     float GetContactProcessingThreshold() const;
+
     float GetCcdRadius() const;
+
     float GetCcdMotionThreshold() const;
 
     void ClearForces();
+
     void ApplyCentralForce( Float3 const & _Force );
+
     void ApplyForce( Float3 const & _Force, Float3 const & _Position );
+
     void ApplyTorque( Float3 const & _Torque );
+
     void ApplyCentralImpulse( Float3 const & _Impulse );
+
     void ApplyImpulse( Float3 const & _Impulse, Float3 const & _Position );
+
     void ApplyTorqueImpulse( Float3 const & _Torque );
 
     void GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const;
 
-    void RebuildRigidBody();
-
-    FCollisionBodyComposition BodyComposition;
+    void UpdatePhysicsAttribs();
 
 protected:
     FPhysicalBody();
@@ -140,6 +204,21 @@ private:
     void DestroyRigidBody();
     void UpdatePhysicalBodyPosition( Float3 const & _Position );
     void UpdatePhysicalBodyRotation( Quat const & _Rotation );
+
+    Float3 LinearFactor = Float3( 1 );
+    float LinearDamping;
+    Float3 AngularFactor = Float3( 1 );
+    float AngularDamping;
+    float Friction = 0.5f;
+    Float3 AnisotropicFriction = Float3( 1 );
+    float RollingFriction;
+    //float SpinningFriction;   // Torsional friction around contact normal
+    float Restitution;
+    float ContactProcessingThreshold = 1e18f;
+    float LinearSleepingThreshold = 0.8f;
+    float AngularSleepingThreshold = 1.0f;
+    float CcdRadius;
+    float CcdMotionThreshold;
 
     btRigidBody * RigidBody;
     btCompoundShape * CompoundShape;

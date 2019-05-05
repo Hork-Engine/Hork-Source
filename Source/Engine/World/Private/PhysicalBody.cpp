@@ -115,7 +115,7 @@ FPhysicalBody::FPhysicalBody() {
 void FPhysicalBody::InitializeComponent() {
     Super::InitializeComponent();
 
-    if ( !bNoPhysics ) {
+    if ( bSimulatePhysics ) {
         CreateRigidBody();
     }
 }
@@ -214,16 +214,16 @@ static void UpdateRigidBodyCollisionShape( btRigidBody * RigidBody, btCompoundSh
     RigidBody->forceActivationState( bKinematicBody ? DISABLE_DEACTIVATION : ISLAND_SLEEPING );
 }
 
-static void UpdateRigidBodyGravity( btRigidBody * RigidBody, bool bNoGravity, bool bOverrideWorldGravity, Float3 const & SelfGravity, Float3 const & WorldGravity ) {
+static void UpdateRigidBodyGravity( btRigidBody * RigidBody, bool bDisableGravity, bool bOverrideWorldGravity, Float3 const & SelfGravity, Float3 const & WorldGravity ) {
     int flags = RigidBody->getFlags();
-    if ( !bNoGravity && !bOverrideWorldGravity ) {
+    if ( !bDisableGravity && !bOverrideWorldGravity ) {
         flags &= ~BT_DISABLE_WORLD_GRAVITY;
     } else {
         flags |= BT_DISABLE_WORLD_GRAVITY;
     }
     RigidBody->setFlags( flags );
 
-    if ( bNoGravity ) {
+    if ( bDisableGravity ) {
         RigidBody->setGravity( btVector3( 0.0f, 0.0f, 0.0f ) );
     } else {
         if ( bOverrideWorldGravity ) {
@@ -267,14 +267,14 @@ void FPhysicalBody::CreateRigidBody() {
 
     btRigidBody::btRigidBodyConstructionInfo constructInfo( Mass, MotionState, CompoundShape, localInertia );
 
-//    constructInfo.m_linearDamping;
-//    constructInfo.m_angularDamping;
-//    constructInfo.m_friction;
-//    constructInfo.m_rollingFriction;
+    constructInfo.m_linearDamping = LinearDamping;
+    constructInfo.m_angularDamping = AngularDamping;
+    constructInfo.m_friction = Friction;
+    constructInfo.m_rollingFriction = RollingFriction;
 //    constructInfo.m_spinningFriction;
-//    constructInfo.m_restitution;
-//    constructInfo.m_linearSleepingThreshold;
-//    constructInfo.m_angularSleepingThreshold;
+    constructInfo.m_restitution = Restitution;
+    constructInfo.m_linearSleepingThreshold = LinearSleepingThreshold;
+    constructInfo.m_angularSleepingThreshold = AngularSleepingThreshold;
 
     RigidBody = b3New( btRigidBody, constructInfo );
     RigidBody->setUserPointer( this );
@@ -294,9 +294,17 @@ void FPhysicalBody::CreateRigidBody() {
 
     physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
 
-    UpdateRigidBodyGravity( RigidBody, bNoGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
+    UpdateRigidBodyGravity( RigidBody, bDisableGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
 
-    Activate();
+    ActivatePhysics();
+
+    // Update dynamic attributes
+    SetLinearFactor( LinearFactor );
+    SetAngularFactor( AngularFactor );
+    SetAnisotropicFriction( AnisotropicFriction );
+    SetContactProcessingThreshold( ContactProcessingThreshold );
+    SetCcdRadius( CcdRadius );
+    SetCcdMotionThreshold( CcdMotionThreshold );
 }
 
 void FPhysicalBody::DestroyRigidBody() {
@@ -315,10 +323,10 @@ void FPhysicalBody::DestroyRigidBody() {
     }
 }
 
-void FPhysicalBody::RebuildRigidBody() {
+void FPhysicalBody::UpdatePhysicsAttribs() {
     btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
-    if ( bNoPhysics ) {
+    if ( bSimulatePhysics ) {
         DestroyRigidBody();
         return;
     }
@@ -357,11 +365,11 @@ void FPhysicalBody::RebuildRigidBody() {
     physicsWorld->removeRigidBody( RigidBody );
     physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
 
-    UpdateRigidBodyGravity( RigidBody, bNoGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
+    UpdateRigidBodyGravity( RigidBody, bDisableGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
 
     RigidBody->setMassProps( Mass, localInertia );
 
-    Activate();
+    ActivatePhysics();
 }
 
 void FPhysicalBody::OnTransformDirty() {
@@ -383,26 +391,9 @@ void FPhysicalBody::OnTransformDirty() {
             }
         }
 
-        Float3 worldScale = GetWorldScale();
         int numShapes = CompoundShape->getNumChildShapes();
-
-        if ( numShapes > 0 && !CachedScale.CompareEps( worldScale, PHYS_COMPARE_EPSILON ) ) {
-
-            //CachedScale = worldScale;
-
-            RebuildRigidBody();
-
-//            btVector3 scaling = btVectorToFloat3( worldScale );
-//#if 1
-//            for ( int i = 0 ; i < numShapes ; i++ ) {
-//                btCollisionShape * shape = CompoundShape->getChildShape( i );
-//                shape->setLocalScaling( scaling );
-//
-//                // TODO: readd shape to shifted compound shape with origin WorldScale * shape->Position, update center of mass
-//            }
-//#else
-//            CompoundShape->setLocalScaling( scaling );
-//#endif
+        if ( numShapes > 0 && !CachedScale.CompareEps( GetWorldScale(), PHYS_COMPARE_EPSILON ) ) {
+            UpdatePhysicsAttribs();
         }
     }
 }
@@ -417,7 +408,7 @@ void FPhysicalBody::UpdatePhysicalBodyPosition( Float3 const & _Position ) {
         RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
     }
 
-    Activate();
+    ActivatePhysics();
 }
 
 void FPhysicalBody::UpdatePhysicalBodyRotation( Quat const & _Rotation ) {
@@ -442,14 +433,14 @@ void FPhysicalBody::UpdatePhysicalBodyRotation( Quat const & _Rotation ) {
 
     RigidBody->updateInertiaTensor();
 
-    Activate();
+    ActivatePhysics();
 }
 
 void FPhysicalBody::SetLinearVelocity( Float3 const & _Velocity ) {
     if ( RigidBody ) {
         RigidBody->setLinearVelocity( btVectorToFloat3( _Velocity ) );
         if ( _Velocity != Float3::Zero() ) {
-            Activate();
+            ActivatePhysics();
         }
     }
 }
@@ -458,25 +449,31 @@ void FPhysicalBody::SetLinearFactor( Float3 const & _Factor ) {
     if ( RigidBody ) {
         RigidBody->setLinearFactor( btVectorToFloat3( _Factor ) );
     }
+
+    LinearFactor = _Factor;
 }
 
 void FPhysicalBody::SetLinearSleepingThreshold( float _Threshold ) {
     if ( RigidBody ) {
-        RigidBody->setSleepingThresholds( _Threshold, RigidBody->getAngularSleepingThreshold() );
+        RigidBody->setSleepingThresholds( _Threshold, AngularSleepingThreshold );
     }
+
+    LinearSleepingThreshold = _Threshold;
 }
 
 void FPhysicalBody::SetLinearDamping( float _Damping ) {
     if ( RigidBody ) {
-        RigidBody->setDamping( _Damping, RigidBody->getAngularDamping() );
+        RigidBody->setDamping( _Damping, AngularDamping );
     }
+
+    LinearDamping = _Damping;
 }
 
 void FPhysicalBody::SetAngularVelocity( Float3 const & _Velocity ) {
     if ( RigidBody ) {
         RigidBody->setAngularVelocity( btVectorToFloat3( _Velocity ) );
         if ( _Velocity != Float3::Zero() ) {
-            Activate();
+            ActivatePhysics();
         }
     }
 }
@@ -485,59 +482,79 @@ void FPhysicalBody::SetAngularFactor( Float3 const & _Factor ) {
     if ( RigidBody ) {
         RigidBody->setAngularFactor( btVectorToFloat3( _Factor ) );
     }
+
+    AngularFactor = _Factor;
 }
 
 void FPhysicalBody::SetAngularSleepingThreshold( float _Threshold ) {
     if ( RigidBody ) {
-        RigidBody->setSleepingThresholds( RigidBody->getLinearSleepingThreshold(), _Threshold );
+        RigidBody->setSleepingThresholds( LinearSleepingThreshold, _Threshold );
     }
+
+    AngularSleepingThreshold = _Threshold;
 }
 
 void FPhysicalBody::SetAngularDamping( float _Damping ) {
     if ( RigidBody ) {
-        RigidBody->setDamping( RigidBody->getLinearDamping(), _Damping );
+        RigidBody->setDamping( LinearDamping, _Damping );
     }
+
+    AngularDamping = _Damping;
 }
 
 void FPhysicalBody::SetFriction( float _Friction ) {
     if ( RigidBody ) {
         RigidBody->setFriction( _Friction );
     }
+
+    Friction = _Friction;
 }
 
 void FPhysicalBody::SetAnisotropicFriction( Float3 const & _Friction ) {
     if ( RigidBody ) {
         RigidBody->setAnisotropicFriction( btVectorToFloat3( _Friction ) );
     }
+
+    AnisotropicFriction = _Friction;
 }
 
 void FPhysicalBody::SetRollingFriction( float _Friction ) {
     if ( RigidBody ) {
         RigidBody->setRollingFriction( _Friction );
     }
+
+    RollingFriction = _Friction;
 }
 
 void FPhysicalBody::SetRestitution( float _Restitution ) {
     if ( RigidBody ) {
         RigidBody->setRestitution( _Restitution );
     }
+
+    Restitution = _Restitution;
 }
 
 void FPhysicalBody::SetContactProcessingThreshold( float _Threshold ) {
     if ( RigidBody ) {
         RigidBody->setContactProcessingThreshold( _Threshold );
     }
+
+    ContactProcessingThreshold = _Threshold;
 }
 
 void FPhysicalBody::SetCcdRadius( float _Radius ) {
+    CcdRadius = FMath::Max( _Radius, 0.0f );
+
     if ( RigidBody ) {
-        RigidBody->setCcdSweptSphereRadius( FMath::Max( _Radius, 0.0f ) );
+        RigidBody->setCcdSweptSphereRadius( CcdRadius );
     }
 }
 
 void FPhysicalBody::SetCcdMotionThreshold( float _Threshold ) {
+    CcdMotionThreshold = FMath::Max( _Threshold, 0.0f );
+
     if ( RigidBody ) {
-        RigidBody->setCcdMotionThreshold( FMath::Max( _Threshold, 0.0f ) );
+        RigidBody->setCcdMotionThreshold( CcdMotionThreshold );
     }
 }
 
@@ -545,8 +562,8 @@ Float3 FPhysicalBody::GetLinearVelocity() const {
     return RigidBody ? btVectorToFloat3( RigidBody->getLinearVelocity() ) : Float3::Zero();
 }
 
-Float3 FPhysicalBody::GetLinearFactor() const {
-    return RigidBody ? btVectorToFloat3( RigidBody->getLinearFactor() ) : Float3::Zero();
+Float3 const & FPhysicalBody::GetLinearFactor() const {
+    return LinearFactor;
 }
 
 Float3 FPhysicalBody::GetVelocityAtPoint( Float3 const & _Position ) const {
@@ -554,64 +571,64 @@ Float3 FPhysicalBody::GetVelocityAtPoint( Float3 const & _Position ) const {
 }
 
 float FPhysicalBody::GetLinearSleepingThreshold() const {
-    return RigidBody ? RigidBody->getLinearSleepingThreshold() : 0;
+    return LinearSleepingThreshold;
 }
 
 float FPhysicalBody::GetLinearDamping() const {
-    return RigidBody ? RigidBody->getLinearDamping() : 0;
+    return LinearDamping;
 }
 
 Float3 FPhysicalBody::GetAngularVelocity() const {
     return RigidBody ? btVectorToFloat3( RigidBody->getAngularVelocity() ) : Float3::Zero();
 }
 
-Float3 FPhysicalBody::GetAngularFactor() const {
-    return RigidBody ? btVectorToFloat3( RigidBody->getAngularFactor() ) : Float3::Zero();
+Float3 const & FPhysicalBody::GetAngularFactor() const {
+    return AngularFactor;
 }
 
 float FPhysicalBody::GetAngularSleepingThreshold() const {
-    return RigidBody ? RigidBody->getAngularSleepingThreshold() : 0;
+    return AngularSleepingThreshold;
 }
 
 float FPhysicalBody::GetAngularDamping() const {
-    return RigidBody ? RigidBody->getAngularDamping() : 0;
+    return AngularDamping;
 }
 
 float FPhysicalBody::GetFriction() const {
-    return RigidBody ? RigidBody->getFriction() : 0;
+    return Friction;
 }
 
-Float3 FPhysicalBody::GetAnisotropicFriction() const {
-    return RigidBody ? btVectorToFloat3( RigidBody->getAnisotropicFriction() ) : Float3::Zero();
+Float3 const & FPhysicalBody::GetAnisotropicFriction() const {
+    return AnisotropicFriction;
 }
 
 float FPhysicalBody::GetRollingFriction() const {
-    return RigidBody ? RigidBody->getRollingFriction() : 0;
+    return RollingFriction;
 }
 
 float FPhysicalBody::GetRestitution() const {
-    return RigidBody ? RigidBody->getRestitution() : 0;
+    return Restitution;
 }
 
 float FPhysicalBody::GetContactProcessingThreshold() const {
-    return RigidBody ? RigidBody->getContactProcessingThreshold() : 0;
+    return ContactProcessingThreshold;
 }
 
 float FPhysicalBody::GetCcdRadius() const {
-    return RigidBody ? RigidBody->getCcdSweptSphereRadius() : 0;
+    return CcdRadius;
 }
 
 float FPhysicalBody::GetCcdMotionThreshold() const {
-    return RigidBody ? RigidBody->getCcdMotionThreshold() : 0;
+    return CcdMotionThreshold;
 }
 
-void FPhysicalBody::Activate() {
+void FPhysicalBody::ActivatePhysics() {
     if ( RigidBody && Mass > 0.0f ) {
         RigidBody->activate( true );
     }
 }
 
-bool FPhysicalBody::IsActive() const {
+bool FPhysicalBody::IsPhysicsActive() const {
     return RigidBody ? RigidBody->isActive() : false;
 }
 
@@ -623,42 +640,42 @@ void FPhysicalBody::ClearForces() {
 
 void FPhysicalBody::ApplyCentralForce( Float3 const & _Force ) {
     if ( RigidBody && _Force != Float3::Zero() ) {
-        Activate();
+        ActivatePhysics();
         RigidBody->applyCentralForce( btVectorToFloat3( _Force ) );
     }
 }
 
 void FPhysicalBody::ApplyForce( Float3 const & _Force, Float3 const & _Position ) {
     if ( RigidBody && _Force != Float3::Zero() ) {
-        Activate();
+        ActivatePhysics();
         RigidBody->applyForce( btVectorToFloat3( _Force ), btVectorToFloat3( _Position - MotionState->CenterOfMass ) );
     }
 }
 
 void FPhysicalBody::ApplyTorque( Float3 const & _Torque ) {
     if ( RigidBody && _Torque != Float3::Zero() ) {
-        Activate();
+        ActivatePhysics();
         RigidBody->applyTorque( btVectorToFloat3( _Torque ) );
     }
 }
 
 void FPhysicalBody::ApplyCentralImpulse( Float3 const & _Impulse ) {
     if ( RigidBody && _Impulse != Float3::Zero() ) {
-        Activate();
+        ActivatePhysics();
         RigidBody->applyCentralImpulse( btVectorToFloat3( _Impulse ) );
     }
 }
 
 void FPhysicalBody::ApplyImpulse( Float3 const & _Impulse, Float3 const & _Position ) {
     if ( RigidBody && _Impulse != Float3::Zero() ) {
-        Activate();
+        ActivatePhysics();
         RigidBody->applyImpulse( btVectorToFloat3( _Impulse ), btVectorToFloat3( _Position - MotionState->CenterOfMass ) );
     }
 }
 
 void FPhysicalBody::ApplyTorqueImpulse( Float3 const & _Torque ) {
     if ( RigidBody && _Torque != Float3::Zero() ) {
-        Activate();
+        ActivatePhysics();
         RigidBody->applyTorqueImpulse( btVectorToFloat3( _Torque ) );
     }
 }
