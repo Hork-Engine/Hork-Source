@@ -70,7 +70,7 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
         surf->LightmapUVChannel = LightmapUV;
         surf->bUseDynamicRange = true;
         surf->bNoTransform = true;
-        surf->bNoPhysics = true;
+        surf->bSimulatePhysics = false;
         surf->RegisterComponent();
         SurfacePool[i] = surf;
 

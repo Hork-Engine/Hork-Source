@@ -199,7 +199,7 @@ FComposedActor::FComposedActor() {
 //        SphereComponent->SetPosition( Float3(0,1.0f,0) );
 
 //        // No physics, just visual
-//        SphereComponent->bNoPhysics = true;
+//        SphereComponent->bSimulatePhysics = false;
 
 //        SphereComponent->SetScale( 4,1,4 );
 
