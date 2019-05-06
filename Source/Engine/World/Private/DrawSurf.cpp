@@ -31,6 +31,12 @@ void FDrawSurf::DeinitializeComponent() {
 
     // remove from dirty list
     IntrusiveRemoveFromList( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );
+
+    // FIXME: Is it right way to remove surface areas here?
+    FWorld * world = GetWorld();
+    for ( FLevel * level : world->GetArrayOfLevels() ) {
+        level->RemoveSurfaceAreas( this );
+    }
 }
 
 void FDrawSurf::MarkAreaDirty() {

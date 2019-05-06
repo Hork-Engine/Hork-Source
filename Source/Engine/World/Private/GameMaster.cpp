@@ -909,7 +909,7 @@ void FGameMaster::Run() {
 
         FrameDurationInSeconds = frameDuration * 0.000001;
 
-        TimeScale = 1;//FrameDurationInSeconds * GameHertz;
+        TimeScale = FrameDurationInSeconds;//FrameDurationInSeconds * GameHertz;
 
         // Ожидаем пока MainThread не пробудит поток вызовом SubmitGameUpdate
 

@@ -36,6 +36,8 @@ SOFTWARE.
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 
 class btRigidBody;
+class btSoftBody;
+class btCollisionObject;
 class FPhysicalBodyMotionState;
 
 class FPhysicalBody : public FSceneComponent {
@@ -82,10 +84,10 @@ public:
     // or call UpdatePhysicsAttribs() to apply property.
     bool bUseDefaultBodyComposition;
 
-    // Set to ture to disable world gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    // Set to true to disable world gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
     bool bDisableGravity;
 
-    // Set to ture to override world gravity and use self gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    // Set to true to override world gravity and use self gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
     bool bOverrideWorldGravity;
 
     // Object self gravity, use with bOverrideWorldGravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
@@ -103,6 +105,9 @@ public:
     // Object linear velocity
     void SetLinearVelocity( Float3 const & _Velocity );
 
+    // Add value to current velocity
+    void AddLinearVelocity( Float3 const & _Velocity );
+
     // Object linear velocity factor
     void SetLinearFactor( Float3 const & _Factor );
 
@@ -112,6 +117,9 @@ public:
 
     // Object angular velocity
     void SetAngularVelocity( Float3 const & _Velocity );
+
+    // Add value to current velocity
+    void AddAngularVelocity( Float3 const & _Velocity );
 
     // Object angular velocity factor
     void SetAngularFactor( Float3 const & _Factor );
@@ -137,6 +145,7 @@ public:
 
     void SetCcdMotionThreshold( float _Threshold );
 
+    // Get object velocity. For soft bodies use GetVertexVelocity in FSoftMeshComponent.
     Float3 GetLinearVelocity() const;
 
     Float3 const & GetLinearFactor() const;
@@ -198,6 +207,9 @@ protected:
     void OnTransformDirty() override;
 
     virtual FCollisionBodyComposition const & DefaultBodyComposition() const { return BodyComposition; }
+
+    bool bSoftBodySimulation;
+    btSoftBody * SoftBody; // managed by FSoftMeshComponent
 
 private:
     void CreateRigidBody();

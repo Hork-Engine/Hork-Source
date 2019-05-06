@@ -66,7 +66,6 @@ protected:
 
 private:
     FIndexedMesh * ParentMesh;
-    //int IndexInArrayOfSubparts = -1;
 };
 
 /*
@@ -87,6 +86,9 @@ public:
     FMeshLightmapUV * WriteVertexData( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( FMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
+    // TODO
+    //TPodArray< FMeshLightmapUV > const & GetVertexData() const { return VertexData; }
+
     FRenderProxy_LightmapUVChannel * GetRenderProxy() { return RenderProxy; }
 
     FIndexedMesh * GetParent() { return ParentMesh; }
@@ -101,7 +103,8 @@ private:
     FRenderProxy_LightmapUVChannel * RenderProxy;
     FIndexedMesh * ParentMesh;
     int IndexInArrayOfUVs = -1;
-
+    // TODO
+    //TPodArray< FMeshLightmapUV > VertexData;
     int VertexCount;
     bool bDynamicStorage;
 };
@@ -146,6 +149,9 @@ private:
 using FLightmapUVChannels = TPodArray< FLightmapUV *, 1 >;
 using FVertexLightChannels = TPodArray< FVertexLight *, 1 >;
 using FIndexedMeshSubpartArray = TPodArray< FIndexedMeshSubpart *, 1 >;
+
+//struct FSoftBodyLink {
+//};
 
 /*
 

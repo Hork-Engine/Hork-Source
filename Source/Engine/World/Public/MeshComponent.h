@@ -162,12 +162,14 @@ protected:
 
     FCollisionBodyComposition const & DefaultBodyComposition() const override;
 
+    virtual void OnMeshChanged() {}
+
 private:
+    void NotifyMeshChanged();
+
     FMeshComponent * Next;
     FMeshComponent * Prev;
 
     TRefHolder< FIndexedMesh > Mesh;
     TPodArray< FMaterialInstance *, 1 > Materials;
-
-
 };

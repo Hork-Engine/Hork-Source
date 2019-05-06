@@ -40,6 +40,7 @@ SOFTWARE.
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
+#include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
 #include <btBulletDynamicsCommon.h>
 #include "BulletCompatibility/BulletCompatibility.h"
 
@@ -109,7 +110,8 @@ FWorld::FWorld() {
     GravityVector = Float3( 0.0f, -9.81f, 0.0f );
 
     PhysicsBroadphase = b3New( btDbvtBroadphase ); // TODO: AxisSweep3Internal?
-    CollisionConfiguration = b3New( btDefaultCollisionConfiguration );
+    //CollisionConfiguration = b3New( btDefaultCollisionConfiguration );
+    CollisionConfiguration = b3New( btSoftBodyRigidBodyCollisionConfiguration );
     CollisionDispatcher = b3New( btCollisionDispatcher, CollisionConfiguration );
     ConstraintSolver = b3New( btSequentialImpulseConstraintSolver );
     PhysicsWorld = b3New( btSoftRigidDynamicsWorld, CollisionDispatcher, PhysicsBroadphase, ConstraintSolver, CollisionConfiguration, /* SoftBodySolver */ 0 );
@@ -122,7 +124,18 @@ FWorld::FWorld() {
     PhysicsWorld->setInternalTickCallback( OnPostPhysics, static_cast< void * >( this ), false );
 
     // TODO: remove this if we don't use gimpact
-    btGImpactCollisionAlgorithm::registerAlgorithm( CollisionDispatcher );    
+    btGImpactCollisionAlgorithm::registerAlgorithm( CollisionDispatcher );
+
+    SoftBodyWorldInfo = b3New( btSoftBodyWorldInfo );
+    SoftBodyWorldInfo->m_dispatcher = CollisionDispatcher;
+    SoftBodyWorldInfo->m_broadphase = PhysicsBroadphase;
+    SoftBodyWorldInfo->m_gravity = btVectorToFloat3( GravityVector );
+    SoftBodyWorldInfo->air_density = ( btScalar )1.2;
+    SoftBodyWorldInfo->water_density = 0;
+    SoftBodyWorldInfo->water_offset = 0;
+    SoftBodyWorldInfo->water_normal = btVector3( 0, 0, 0 );
+    SoftBodyWorldInfo->m_sparsesdf.Initialize();
+    //SoftBodyWorldInfo.m_sparsesdf.Reset();
 }
 
 void FWorld::OnPrePhysics( btDynamicsWorld * _World, float _TimeStep ) {
@@ -167,6 +180,7 @@ void FWorld::Destroy() {
     ArrayOfLevels.Clear();
 
     b3Destroy( PhysicsWorld );
+    b3Destroy( SoftBodyWorldInfo );
     b3Destroy( ConstraintSolver );
     b3Destroy( CollisionDispatcher );
     b3Destroy( CollisionConfiguration );
@@ -362,19 +376,19 @@ void FWorld::Tick( float _TimeStep ) {
             continue;
         }
 
+        if ( GGameMaster.IsGamePaused() && !actor->bTickEvenWhenPaused ) {
+            continue;
+        }
+
         if ( actor->bCanEverTick ) {
-
-            if ( GGameMaster.IsGamePaused() && !actor->bTickEvenWhenPaused ) {
-                continue;
-            }
-
             actor->TickComponents( _TimeStep );
             actor->Tick( _TimeStep );
+        }
 
-            actor->LifeTime += _TimeStep;
-            if ( actor->LifeSpan > 0.0f && actor->LifeTime > actor->LifeSpan ) {
-                actor->Destroy();
-            }
+        actor->LifeTime += _TimeStep;
+
+        if ( actor->LifeSpan > 0.0f && actor->LifeTime > actor->LifeSpan ) {
+            actor->Destroy();
         }
     }
 
@@ -478,6 +492,9 @@ void FWorld::OnPostPhysics( float _TimeStep ) {
     DispatchContactAndOverlapEvents();
 
     // TODO: Post physics ticks
+
+
+    PhysicsTickNumber++;
 }
 
 void FWorld::DispatchContactAndOverlapEvents() {
@@ -486,11 +503,14 @@ void FWorld::DispatchContactAndOverlapEvents() {
 #pragma warning( disable : 4456 )
 #endif
 
-    TPodArray< FCollisionContact > & currentContacts = CollisionContacts[ GGameMaster.GetFrameNumber() & 1 ];
-    TPodArray< FCollisionContact > & prevContacts = CollisionContacts[ ( GGameMaster.GetFrameNumber() + 1 ) & 1 ];
+    int curTickNumber = PhysicsTickNumber & 1;
+    int prevTickNumber = ( PhysicsTickNumber + 1 ) & 1;
 
-    THash<> & contactHash = ContactHash[ GGameMaster.GetFrameNumber() & 1 ];
-    THash<> & prevContactHash = ContactHash[ ( GGameMaster.GetFrameNumber() + 1 ) & 1 ];
+    TPodArray< FCollisionContact > & currentContacts = CollisionContacts[ curTickNumber ];
+    TPodArray< FCollisionContact > & prevContacts = CollisionContacts[ prevTickNumber ];
+
+    THash<> & contactHash = ContactHash[ curTickNumber ];
+    THash<> & prevContactHash = ContactHash[ prevTickNumber ];
 
     FCollisionContact contact;
 
@@ -499,6 +519,8 @@ void FWorld::DispatchContactAndOverlapEvents() {
 
     contactHash.Clear();
     currentContacts.Clear();
+
+    //GLogger.Printf( "PhysicsTickNumber %d\n", PhysicsTickNumber );
 
     int numManifolds = CollisionDispatcher->getNumManifolds();
     for ( int i = 0; i < numManifolds; i++ ) {
@@ -524,55 +546,64 @@ void FWorld::DispatchContactAndOverlapEvents() {
 
         if ( objectA->Mass <= 0.0f && objectB->Mass <= 0.0f ) {
             // Static vs Static
+            GLogger.Printf( "Static vs Static %s %s\n", objectA->GetName().ToConstChar()
+                            , objectB->GetName().ToConstChar() );
             continue;
         }
 
         if ( objectA->bTrigger && objectB->bTrigger ) {
             // Trigger vs Trigger
+            GLogger.Printf( "Trigger vs Tsrigger %s %s\n", objectA->GetName().ToConstChar()
+                            , objectB->GetName().ToConstChar() );
             continue;
         }
 
+        // TODO: Static vs Trigger?
+
         bool bContactWithTrigger = objectA->bTrigger || objectB->bTrigger; // Do not generate contact events if one of components is trigger
 
+        //GLogger.Printf( "Contact %s %s\n", objectA->GetName().ToConstChar()
+        //                , objectB->GetName().ToConstChar() );
+
         contact.bComponentADispatchContactEvents = !bContactWithTrigger && objectA->bDispatchContactEvents
-            && ( objectA->E_OnBeginContact.HasSubscribers()
-                || objectA->E_OnEndContact.HasSubscribers()
-                || objectA->E_OnUpdateContact.HasSubscribers() );
+            && ( objectA->E_OnBeginContact
+                || objectA->E_OnEndContact
+                || objectA->E_OnUpdateContact );
 
         contact.bComponentBDispatchContactEvents = !bContactWithTrigger && objectB->bDispatchContactEvents
-            && ( objectB->E_OnBeginContact.HasSubscribers()
-                || objectB->E_OnEndContact.HasSubscribers()
-                || objectB->E_OnUpdateContact.HasSubscribers() );
+            && ( objectB->E_OnBeginContact
+                || objectB->E_OnEndContact
+                || objectB->E_OnUpdateContact );
 
         contact.bComponentADispatchOverlapEvents = objectA->bTrigger && objectA->bDispatchOverlapEvents
-            && ( objectA->E_OnBeginOverlap.HasSubscribers()
-                || objectA->E_OnEndOverlap.HasSubscribers()
-                || objectA->E_OnUpdateOverlap.HasSubscribers() );
+            && ( objectA->E_OnBeginOverlap
+                || objectA->E_OnEndOverlap
+                || objectA->E_OnUpdateOverlap );
 
         contact.bComponentBDispatchOverlapEvents = objectB->bTrigger && objectB->bDispatchOverlapEvents
-            && ( objectB->E_OnBeginOverlap.HasSubscribers()
-                || objectB->E_OnEndOverlap.HasSubscribers()
-                || objectB->E_OnUpdateOverlap.HasSubscribers() );
+            && ( objectB->E_OnBeginOverlap
+                || objectB->E_OnEndOverlap
+                || objectB->E_OnUpdateOverlap );
 
         contact.bActorADispatchContactEvents = !bContactWithTrigger && objectA->bDispatchContactEvents
-            && ( actorA->E_OnBeginContact.HasSubscribers()
-                || actorA->E_OnEndContact.HasSubscribers()
-                || actorA->E_OnUpdateContact.HasSubscribers() );
+            && ( actorA->E_OnBeginContact
+                || actorA->E_OnEndContact
+                || actorA->E_OnUpdateContact );
 
         contact.bActorBDispatchContactEvents = !bContactWithTrigger && objectB->bDispatchContactEvents
-            && ( actorB->E_OnBeginContact.HasSubscribers()
-                || actorB->E_OnEndContact.HasSubscribers()
-                || actorB->E_OnUpdateContact.HasSubscribers() );
+            && ( actorB->E_OnBeginContact
+                || actorB->E_OnEndContact
+                || actorB->E_OnUpdateContact );
 
         contact.bActorADispatchOverlapEvents = objectA->bTrigger && objectA->bDispatchOverlapEvents
-            && ( actorA->E_OnBeginOverlap.HasSubscribers()
-                || actorA->E_OnEndOverlap.HasSubscribers()
-                || actorA->E_OnUpdateOverlap.HasSubscribers() );
+            && ( actorA->E_OnBeginOverlap
+                || actorA->E_OnEndOverlap
+                || actorA->E_OnUpdateOverlap );
 
         contact.bActorBDispatchOverlapEvents = objectB->bTrigger && objectB->bDispatchOverlapEvents
-            && ( actorB->E_OnBeginOverlap.HasSubscribers()
-                || actorB->E_OnEndOverlap.HasSubscribers()
-                || actorB->E_OnUpdateOverlap.HasSubscribers() );
+           && ( actorB->E_OnBeginOverlap
+                || actorB->E_OnEndOverlap
+                || actorB->E_OnUpdateOverlap );
 
         if ( contact.bComponentADispatchContactEvents
             || contact.bComponentBDispatchContactEvents
@@ -591,16 +622,21 @@ void FWorld::DispatchContactAndOverlapEvents() {
 
             int hash = contact.Hash();
 
-#ifdef AN_DEBUG
+            bool bUnique = true;
+#if 1//#ifdef AN_DEBUG
             for ( int h = contactHash.First( hash ) ; h != -1 ; h = contactHash.Next( h ) ) {
                 if ( currentContacts[ h ].ComponentA == objectA
                     && currentContacts[ h ].ComponentB == objectB ) {
-                    AN_Assert( 0 );
+                    bUnique = false;
+                    break;
                 }
             }
+            AN_Assert( bUnique );
 #endif
-            currentContacts.Append( contact );
-            contactHash.Insert( hash, currentContacts.Length() );
+            if ( bUnique ) {
+                currentContacts.Append( contact );
+                contactHash.Insert( hash, currentContacts.Length() - 1 );
+            }
         }
     }
 
@@ -775,25 +811,22 @@ void FWorld::DispatchContactAndOverlapEvents() {
         }
     }
 
-    // Reset cache
-    CacheContactPoints = -1;
-
     // Dispatch contact and overlap events (OnEndContact, OnEndOverlap)
     for ( int i = 0; i < prevContacts.Length(); i++ ) {
         FCollisionContact & contact = prevContacts[ i ];
 
         int hash = contact.Hash();
-        bool bNoContact = true;
+        bool bHaveContact = false;
 
         for ( int h = contactHash.First( hash ); h != -1; h = contactHash.Next( h ) ) {
             if ( currentContacts[ h ].ComponentA == contact.ComponentA
                 && currentContacts[ h ].ComponentB == contact.ComponentB ) {
-                bNoContact = false;
+                bHaveContact = true;
                 break;
             }
         }
 
-        if ( !bNoContact ) {
+        if ( bHaveContact ) {
             continue;
         }
 

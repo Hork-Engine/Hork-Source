@@ -45,6 +45,7 @@ class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
 class btSequentialImpulseConstraintSolver;
 class btSoftRigidDynamicsWorld;
+struct btSoftBodyWorldInfo;
 
 struct FActorSpawnParameters {
     FActorSpawnParameters() = delete;
@@ -135,9 +136,10 @@ class ANGIE_API FWorld : public FBaseObject {
 
     friend class FActor;
     friend class FActorComponent;
-    friend class FGameMaster;
-    friend class FRenderFrontend;
     friend class FPhysicalBody;
+    friend class FSoftMeshComponent;
+    friend class FGameMaster;
+    friend class FRenderFrontend;    
 
 public:
 
@@ -296,6 +298,7 @@ private:
     btDefaultCollisionConfiguration * CollisionConfiguration;
     btCollisionDispatcher * CollisionDispatcher;
     btSequentialImpulseConstraintSolver * ConstraintSolver;
+    btSoftBodyWorldInfo * SoftBodyWorldInfo;
     btSoftRigidDynamicsWorld * PhysicsWorld;
     TPodArray< FCollisionContact > CollisionContacts[ 2 ];
     THash<> ContactHash[ 2 ];
@@ -305,6 +308,7 @@ private:
     bool bGravityDirty;
     bool bPhysicsSimulating;
     float TimeAccumulation;
+    int PhysicsTickNumber;
 };
 
 

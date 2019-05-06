@@ -27,23 +27,15 @@ void FMeshComponent::InitializeComponent() {
     Super::InitializeComponent();
 
     FWorld * world = GetParentActor()->GetWorld();
-
     world->RegisterMesh( this );
 }
 
 void FMeshComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    FWorld * world = GetParentActor()->GetWorld();
-
-//    for ( FIndexedMeshSubpart * subpart : Subparts ) {
-//        subpart->RemoveRef();
-//    }
-
-//    Subparts.Clear();
-
     ClearMaterials();
 
+    FWorld * world = GetParentActor()->GetWorld();
     world->UnregisterMesh( this );
 }
 
@@ -66,7 +58,7 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
         }
     }
 
-    //RebuildRigidBody();
+    NotifyMeshChanged();
 
     // Mark to update world bounds
     MarkWorldBoundsDirty();
@@ -126,6 +118,10 @@ FCollisionBodyComposition const & FMeshComponent::DefaultBodyComposition() const
     }
 
     return Super::DefaultBodyComposition();
+}
+
+void FMeshComponent::NotifyMeshChanged() {
+    OnMeshChanged();
 }
 
 /*

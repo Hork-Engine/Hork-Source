@@ -440,6 +440,8 @@ void FLightmapUV::OnInitialize( int _NumVertices ) {
     data.Chunks = nullptr;
     data.bReallocated = true;
 
+//    VertexData.ResizeInvalidate( _NumVertices );
+
     RenderProxy->MarkUpdated();
 }
 

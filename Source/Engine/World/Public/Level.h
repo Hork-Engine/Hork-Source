@@ -241,6 +241,7 @@ class ANGIE_API FLevel : public FBaseObject {
 
     friend class FWorld;
     friend class FRenderFrontend;
+    friend class FDrawSurf;
 
 public:
     bool IsPersistentLevel() const { return bIsPersistent; }
