@@ -132,7 +132,7 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
     FCollisionSharedTriangleSoupGimpact * collisionBody = physBody->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoupGimpact >();
     collisionBody->TrisData = tris;
 #endif
-
+    physBody->bSimulatePhysics = true;
     //physBody->Mass = 1;
     physBody->RegisterComponent();
 }

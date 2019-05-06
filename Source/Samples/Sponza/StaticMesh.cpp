@@ -40,12 +40,13 @@ FStaticMesh::FStaticMesh() {
     MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
 
+    MeshComponent->bSimulatePhysics = true;
     MeshComponent->bUseDefaultBodyComposition = true;
 }
 
 void FStaticMesh::SetMesh( FIndexedMesh * _Mesh ) {
     MeshComponent->SetMesh( _Mesh );
-    MeshComponent->RebuildRigidBody();
+    MeshComponent->UpdatePhysicsAttribs();
     MeshComponent->ClearMaterials();
     if ( _Mesh  ) {
         for ( int i = 0 ; i < _Mesh->GetSubparts().Length() ; i++ ) {

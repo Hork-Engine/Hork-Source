@@ -50,7 +50,7 @@ FGround::FGround() {
     matInst->UniformVectors[0] = Float4( 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
+    MeshComponent = CreateComponent< FMeshComponent >( "StaticPlane" );
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
@@ -60,6 +60,7 @@ FGround::FGround() {
     FCollisionPlane * collisionBody = NewObject< FCollisionPlane >();
     MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
 #endif
+    MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( mesh );

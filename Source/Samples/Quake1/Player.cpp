@@ -135,9 +135,9 @@ void FPlayer::Tick( float _TimeStep ) {
     float lenSqr = MoveVector.LengthSqr();
     if ( lenSqr > 0 ) {
 
-        if ( lenSqr > 1 ) {
+        //if ( lenSqr > 1 ) {
             MoveVector.NormalizeSelf();
-        }
+        //}
 
         Float3 dir = MoveVector * MoveSpeed;
 
@@ -160,30 +160,30 @@ void FPlayer::Tick( float _TimeStep ) {
 }
 
 void FPlayer::MoveForward( float _Value ) {
-    MoveVector += RootComponent->GetForwardVector() * _Value;
+    MoveVector += RootComponent->GetForwardVector() * Float(_Value).Sign();
 }
 
 void FPlayer::MoveRight( float _Value ) {
-    MoveVector += RootComponent->GetRightVector() * _Value;
+    MoveVector += RootComponent->GetRightVector() * Float(_Value).Sign();
 }
 
 void FPlayer::MoveUp( float _Value ) {
-    MoveVector.Y += _Value;
+    MoveVector.Y += 1;//_Value;
 }
 
 void FPlayer::MoveDown( float _Value ) {
-    MoveVector.Y -= _Value;
+    MoveVector.Y -= 1;//_Value;
 }
 
 void FPlayer::TurnRight( float _Value ) {
-    Angles.Yaw -= _Value * 0.5f;
+    Angles.Yaw -= _Value;
     Angles.Yaw = Angl::Normalize180( Angles.Yaw );
     RootComponent->SetAngles( Angles );
     //GLogger.Printf("Turn right\n");
 }
 
 void FPlayer::TurnUp( float _Value ) {
-    Angles.Pitch += _Value * 0.5f;
+    Angles.Pitch += _Value;
     Angles.Pitch = Angles.Pitch.Clamp( -90.0f, 90.0f );
     RootComponent->SetAngles( Angles );
 }
@@ -223,6 +223,7 @@ FBoxActor::FBoxActor() {
     // Create mesh component and set it as root component
     MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
+    MeshComponent->bSimulatePhysics = true;
     MeshComponent->bUseDefaultBodyComposition = true;
     MeshComponent->Mass = 1.0f;
 

@@ -94,7 +94,8 @@ FPlayer::FPlayer() {
     PhysBody->BodyComposition.AddCollisionBody( capsule );
     PhysBody->Mass = 70.0f;
     PhysBody->bKinematicBody = false;
-    PhysBody->bNoGravity = false;
+    PhysBody->bDisableGravity = false;
+    PhysBody->bSimulatePhysics = true;
 
     RootComponent = PhysBody;
 
@@ -187,8 +188,6 @@ void FPlayer::TickPrePhysics( float _TimeStep ) {
     constexpr float PLAYER_MOVE_SPEED = 6; // Meters per second
     constexpr float PLAYER_MOVE_HIGH_SPEED = 10;
 
-   // Velocity.Y -= 9.8f;
-
     //Float3 Velocity = PhysBody->GetLinearVelocity();
     //PhysBody->ApplyCentralImpulse( -Velocity * 7 );
 //GLogger.Printf( "Velocity %s Camera %s\n", Velocity.ToString().ToConstChar(), Camera->GetWorldPosition().ToString().ToConstChar() );
@@ -196,9 +195,9 @@ void FPlayer::TickPrePhysics( float _TimeStep ) {
     float lenSqr = MoveVector.LengthSqr();
     if ( lenSqr > 0 ) {
 
-        if ( lenSqr > 1 ) {
+        //if ( lenSqr > 1 ) {
             MoveVector.NormalizeSelf();
-        }
+        //}
 
         Float3 dir = MoveVector;// * MoveSpeed;
 
@@ -232,6 +231,8 @@ void FPlayer::TickPrePhysics( float _TimeStep ) {
         Velocity -= vel;
     }
 
+    //Velocity.Y -= 9.8f * _TimeStep;
+
     PhysBody->SetLinearVelocity( Velocity );
 
     unitBoxComponent->SetPosition(RootComponent->GetPosition());
@@ -241,32 +242,32 @@ void FPlayer::MoveForward( float _Value ) {
     Float3 vec = Camera->GetForwardVector();
     vec.Y = 0;
     vec.NormalizeSelf();
-    MoveVector += vec * _Value;
+    MoveVector += vec * Float(_Value).Sign();
 }
 
 void FPlayer::MoveRight( float _Value ) {
     Float3 vec = Camera->GetRightVector();
     vec.Y = 0;
     vec.NormalizeSelf();
-    MoveVector += vec * _Value;
+    MoveVector += vec * Float(_Value).Sign();
 }
 
 void FPlayer::MoveUp( float _Value ) {
-    MoveVector.Y += _Value;
+    MoveVector.Y += 1;
 }
 
 void FPlayer::MoveDown( float _Value ) {
-    MoveVector.Y -= _Value;
+    MoveVector.Y -= 1;
 }
 
 void FPlayer::TurnRight( float _Value ) {
-    Angles.Yaw -= _Value * 0.5f;
+    Angles.Yaw -= _Value;
     Angles.Yaw = Angl::Normalize180( Angles.Yaw );
     Camera->SetAngles( Angles );
 }
 
 void FPlayer::TurnUp( float _Value ) {
-    Angles.Pitch += _Value * 0.5f;
+    Angles.Pitch += _Value;
     Angles.Pitch = Angles.Pitch.Clamp( -90.0f, 90.0f );
     Camera->SetAngles( Angles );
 }
@@ -291,7 +292,7 @@ void FPlayer::AttackPress() {
     transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
     transform.SetScale( 0.6f );
 
-#if 0
+#if 1
     int i = FMath::Rand()*3;
 
     if ( i == 1 ) {

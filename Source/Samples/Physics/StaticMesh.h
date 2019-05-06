@@ -45,6 +45,16 @@ private:
     FMeshComponent * MeshComponent;
 };
 
+class FStaticBoxActor : public FActor {
+    AN_ACTOR( FStaticBoxActor, FActor )
+
+protected:
+    FStaticBoxActor();
+
+private:
+    FMeshComponent * MeshComponent;
+};
+
 class FSphereActor : public FActor {
     AN_ACTOR( FSphereActor, FActor )
 

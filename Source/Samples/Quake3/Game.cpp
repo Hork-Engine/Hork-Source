@@ -69,7 +69,7 @@ void FGameModule::OnGameStart() {
     //LoadQuakeMap( "pak0.pk3", "maps/q3ctf3.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3dm5.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3ctf2.bsp" );
-    //LoadQuakeMap( "pak0.pk3", "maps/q3dm14.bsp" );
+    LoadQuakeMap( "pak0.pk3", "maps/q3dm14.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3tourney3.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3dm1.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3dm6.bsp" );
@@ -81,7 +81,7 @@ void FGameModule::OnGameStart() {
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/asylum.bsp" );
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/gospelcrossings.bsp" );
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/aerowalk.bsp" );
-    LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/warehouse.bsp" );
+    //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/warehouse.bsp" );
 }
 
 void FGameModule::OnGameEnd() {

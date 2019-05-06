@@ -38,6 +38,7 @@ SOFTWARE.
 #include <Engine/World/Public/ResourceManager.h>
 
 AN_CLASS_META_NO_ATTRIBS( FBoxActor )
+AN_CLASS_META_NO_ATTRIBS( FStaticBoxActor )
 AN_CLASS_META_NO_ATTRIBS( FSphereActor )
 AN_CLASS_META_NO_ATTRIBS( FCylinderActor )
 AN_CLASS_META_NO_ATTRIBS( FComposedActor )
@@ -51,7 +52,7 @@ FBoxActor::FBoxActor() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
+    MeshComponent = CreateComponent< FMeshComponent >( "DynamicBox" );
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
@@ -64,6 +65,7 @@ FBoxActor::FBoxActor() {
 #endif
 
     MeshComponent->Mass = 1.0f;
+    MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "*box*" ) );
@@ -82,6 +84,32 @@ FBoxActor::FBoxActor() {
 //    Dummy->BodyComposition.AddCollisionBody( collisionBody );
 }
 
+FStaticBoxActor::FStaticBoxActor() {
+    // Create material instance for mesh component
+    FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
+    matInst->Material = GModule->Material;
+    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->UniformVectors[0] = Float4( 0.5f );
+
+    // Create mesh component and set it as root component
+    MeshComponent = CreateComponent< FMeshComponent >( "StaticBox" );
+    RootComponent = MeshComponent;
+
+    // Create collision body for mesh component
+#if 1
+    MeshComponent->bUseDefaultBodyComposition = true;
+#else
+    FCollisionBox * collisionBody = NewObject< FCollisionBox >();
+    collisionBody->HalfExtents = Float3(0.5f);
+    MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
+#endif
+    MeshComponent->bSimulatePhysics = true;
+
+    // Set mesh and material resources for mesh component
+    MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "*box*" ) );
+    MeshComponent->SetMaterialInstance( 0, matInst );
+}
+
 FSphereActor::FSphereActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
@@ -90,7 +118,7 @@ FSphereActor::FSphereActor() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
+    MeshComponent = CreateComponent< FMeshComponent >( "DynamicSphere" );
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
@@ -103,6 +131,7 @@ FSphereActor::FSphereActor() {
     MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
 #endif
     MeshComponent->Mass = 1.0f;
+    MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
@@ -117,7 +146,7 @@ FCylinderActor::FCylinderActor() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
+    MeshComponent = CreateComponent< FMeshComponent >( "DynamicCylinder" );
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
@@ -129,6 +158,7 @@ FCylinderActor::FCylinderActor() {
     MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
 #endif
     MeshComponent->Mass = 1.0f;
+    MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
@@ -148,7 +178,7 @@ FComposedActor::FComposedActor() {
 
     {
         // Create mesh component and set it as root component
-        MeshComponent = CreateComponent< FMeshComponent >( "Cylinder" );
+        MeshComponent = CreateComponent< FMeshComponent >( "DynamicComposed" );
         RootComponent = MeshComponent;
 
         FCollisionCylinder * cylinderBody = NewObject< FCollisionCylinder >();
@@ -161,12 +191,14 @@ FComposedActor::FComposedActor() {
 //        MeshComponent->BodyComposition.AddCollisionBody( sphereBody );
 
         MeshComponent->Mass = 1.0f;
+        MeshComponent->bSimulatePhysics = true;
+
         // Set mesh and material resources for mesh component
         MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
         MeshComponent->SetMaterialInstance( 0, matInst );
     }
 
-
+#if 0
     {
         FMeshComponent * SphereComponent;
         SphereComponent = CreateComponent< FMeshComponent >( "Sphere" );
@@ -181,6 +213,7 @@ FComposedActor::FComposedActor() {
 
 //        !!!TODO!!!
         SphereComponent->Mass = 1.0f;
+        SphereComponent->bSimulatePhysics = true;
 
         FCollisionSphere * sphereBody = NewObject< FCollisionSphere >();
         sphereBody->Radius = 1;
@@ -191,6 +224,7 @@ FComposedActor::FComposedActor() {
 
         SphereComponent->AttachTo( MeshComponent );
     }
+#endif
 
 //    {
 //        FMeshComponent * SphereComponent;
@@ -229,6 +263,7 @@ FBoxTrigger::FBoxTrigger() {
     MeshComponent->bTrigger = true;
     MeshComponent->bDispatchOverlapEvents = true;
     //MeshComponent->Mass = 1.0f;
+    MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "*box*" ) );
@@ -248,13 +283,19 @@ void FBoxTrigger::EndPlay() {
 }
 
 void FBoxTrigger::OnBeginOverlap( FOverlapEvent const & _Event ) {
-    GLogger.Printf( "OnBeginOverlap\n" );
+    GLogger.Printf( "OnBeginOverlap: self %s other %s\n",
+                    _Event.SelfBody->GetName().ToConstChar(),
+                    _Event.OtherBody->GetName().ToConstChar() );
 }
 
 void FBoxTrigger::OnEndOverlap( FOverlapEvent const & _Event ) {
-    GLogger.Printf( "OnEndOverlap\n" );
+    GLogger.Printf( "OnEndOverlap: self %s other %s\n",
+                    _Event.SelfBody->GetName().ToConstChar(),
+                    _Event.OtherBody->GetName().ToConstChar() );
 }
 
 void FBoxTrigger::OnUpdateOverlap( FOverlapEvent const & _Event ) {
-    GLogger.Printf( "OnUpdateOverlap\n" );
+    GLogger.Printf( "OnUpdateOverlap: self %s other %s\n",
+                    _Event.SelfBody->GetName().ToConstChar(),
+                    _Event.OtherBody->GetName().ToConstChar() );
 }

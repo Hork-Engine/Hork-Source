@@ -53,7 +53,7 @@ void FModule::OnGameStart() {
     GGameMaster.bAllowConsole = true;
     //GGameMaster.MouseSensitivity = 0.15f;
     GGameMaster.MouseSensitivity = 0.3f;
-    //GGameMaster.SetRenderFeatures( VSync_Half );
+    GGameMaster.SetRenderFeatures( VSync_Disabled );
     GGameMaster.SetWindowDefs( 1, true, false, false, "AngieEngine: Physics" );
     GGameMaster.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
     //GGameMaster.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
@@ -129,6 +129,21 @@ void FModule::OnGameStart() {
 
     FBoxTrigger * trigger = World->SpawnActor< FBoxTrigger >( Float3(0,2,3), Quat::Identity() );
     trigger->RootComponent->SetScale( Float3(1,4,1) );
+
+    FBoxTrigger * trigger2 = World->SpawnActor< FBoxTrigger >( Float3(0.1f,2,3.1f), Quat::Identity() );
+    trigger2->RootComponent->SetScale( Float3(1,4,1) );
+
+    FStaticBoxActor * staticBox = World->SpawnActor< FStaticBoxActor >( Float3(0,0,3), Quat::Identity() );
+    staticBox->RootComponent->SetScale( Float3(2,1,2) );
+
+    FStaticBoxActor * staticBox2 = World->SpawnActor< FStaticBoxActor >( Float3(0.5,0,3.5), Quat::Identity() );
+    staticBox2->RootComponent->SetScale( Float3(2,1,2) );
+
+    // Stair
+    for ( int i = 0 ; i <16 ; i++ ) {
+        FStaticBoxActor * box = World->SpawnActor< FStaticBoxActor >( Float3(i*0.5f,(i+0.5)*0.25f,0) + Float3(5,0,3), Quat::Identity() );
+        box->RootComponent->SetScale( Float3(2,0.25f,2) );
+    }
 
 //    FTransform spawnTransform;
 //    spawnTransform.Position = Float3(0,0,0);
@@ -230,8 +245,8 @@ void FModule::SetInputMappings() {
     InputMappings->MapAxis( "MoveDown", ID_KEYBOARD, KEY_C, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "TurnRight", ID_MOUSE, MOUSE_AXIS_X, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "TurnUp", ID_MOUSE, MOUSE_AXIS_Y, 1.0f, CONTROLLER_PLAYER_1 );
-    InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_LEFT, -1.0f, CONTROLLER_PLAYER_1 );
-    InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_RIGHT, 1.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_LEFT, -90.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_RIGHT, 90.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Attack", ID_MOUSE, MOUSE_BUTTON_LEFT, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Speed", ID_KEYBOARD, KEY_LEFT_SHIFT, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_P, 0, CONTROLLER_PLAYER_1 );
