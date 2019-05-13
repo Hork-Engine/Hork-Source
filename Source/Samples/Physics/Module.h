@@ -43,7 +43,6 @@ public:
     TRefHolder< FInputMappings > InputMappings;
     FWorld * World;
     FMyPlayerController * PlayerController;
-    TRefHolder< FMaterial > Material;
 
     FModule() {}
 
@@ -59,7 +58,7 @@ private:
     void DrawCanvas( FCanvas * _Canvas ) override;
 
     void SetInputMappings();
-    void CreateMaterial();
+    void CreateResources();
     void LoadStaticMeshes();
 };
 

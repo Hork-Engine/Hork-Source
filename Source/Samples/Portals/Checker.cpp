@@ -29,17 +29,16 @@ SOFTWARE.
 */
 
 #include "Checker.h"
-#include "Module.h"
 
 #include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/InputComponent.h>
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_CLASS_META_NO_ATTRIBS( FChecker )
 
 FChecker::FChecker() {
     FMeshComponent * component = CreateComponent< FMeshComponent >( "checker" );
-    component->SetMesh( GModule->CheckerMesh );
-    component->SetMaterialInstance( 0, GModule->CheckerMaterialInstance );
+    component->SetMesh( GetResource< FIndexedMesh >( "CheckerMesh" ) );
+    component->SetDefaultMaterials();
 
     RootComponent = component;
 

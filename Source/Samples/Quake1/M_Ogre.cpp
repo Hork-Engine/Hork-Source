@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "M_Ogre.h"
 #include "Game.h"
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_BEGIN_CLASS_META( M_Ogre )
 AN_END_CLASS_META()
@@ -44,7 +45,7 @@ M_Ogre::M_Ogre() {
     FramesCount = model ? model->Frames.Length() : 0;
 
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();
-    matInst->Material = GGameModule->SkinMaterial;
+    matInst->Material = GetResource< FMaterial >( "SkinMaterial" );
 
     Frame->SetMaterialInstance( matInst );
 

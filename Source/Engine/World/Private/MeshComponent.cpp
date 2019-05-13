@@ -53,8 +53,6 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
     if ( _Mesh ) {
         for ( int i = 0 ; i < _Mesh->GetSubparts().Length() ; i++ ) {
             Bounds.AddAABB( _Mesh->GetSubpart(i)->BoundingBox );
-
-            //SetMaterialInstance( i, _Mesh->GetSubpart(i)->MaterialInstance );
         }
     }
 
@@ -65,7 +63,27 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
 }
 
 void FMeshComponent::SetMesh( const char * _Mesh ) {
-    SetMesh( GResourceManager.GetResource< FIndexedMesh >( _Mesh ) );
+    SetMesh( GetResource< FIndexedMesh >( _Mesh ) );
+}
+
+void FMeshComponent::ClearMaterials() {
+    for ( FMaterialInstance * material : Materials ) {
+        if ( material ) {
+            material->RemoveRef();
+        }
+    }
+    Materials.Clear();
+}
+
+void FMeshComponent::SetDefaultMaterials() {
+    ClearMaterials();
+
+    if ( Mesh ) {
+        FIndexedMeshSubpartArray const & subparts = Mesh->GetSubparts();
+        for ( int i = 0 ; i < subparts.Length() ; i++ ) {
+            SetMaterialInstance( i, subparts[ i ]->MaterialInstance );
+        }
+    }
 }
 
 void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance ) {
@@ -94,15 +112,6 @@ void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance *
     if ( _Instance ) {
         _Instance->AddRef();
     }
-}
-
-void FMeshComponent::ClearMaterials() {
-    for ( FMaterialInstance * material : Materials ) {
-        if ( material ) {
-            material->RemoveRef();
-        }
-    }
-    Materials.Clear();
 }
 
 FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) const {

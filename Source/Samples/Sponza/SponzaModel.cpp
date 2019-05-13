@@ -73,7 +73,7 @@ void FSponzaModel::OnGameStart() {
     RenderingParams->bDrawDebug = true;
 
     // create texture resource from file with alias
-    GResourceManager.CreateUniqueResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
+    CreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
 
     {
     FIndexedMesh * mesh = NewObject< FIndexedMesh >();
@@ -81,7 +81,7 @@ void FSponzaModel::OnGameStart() {
     mesh->SetName( "ShapeSphereMesh" );
     FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
     collisionBody->Radius = 0.5f;
-    GResourceManager.RegisterResource( mesh );
+    RegisterResource( mesh );
     }
 
     Quat r;
@@ -135,7 +135,7 @@ void FSponzaModel::LoadStaticMeshes() {
     for ( int i = 0 ; i < 25 ; i++ ) {
         fileName = "SponzaProject/Meshes/sponza_" + Int(i).ToString() + ".angie_mesh";
 
-        FIndexedMesh * mesh = GResourceManager.CreateUniqueResource< FIndexedMesh >( fileName.ToConstChar() );
+        FIndexedMesh * mesh = CreateResource< FIndexedMesh >( fileName.ToConstChar() );
 
         for ( FIndexedMeshSubpart * subpart : mesh->GetSubparts() ) {
             subpart->MaterialInstance->Material = Material;

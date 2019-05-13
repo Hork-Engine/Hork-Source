@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Engine/World/Public/MaterialAssembly.h>
 #include <Engine/World/Public/InputComponent.h>
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
@@ -42,50 +43,14 @@ FPlayer::FPlayer() {
     bCanEverTick = true;
     bTickPrePhysics = true;
 
-    FMaterialProject * proj = NewObject< FMaterialProject >();
-
-    //
-    // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
-    //
-    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-
-    //
-    // VS_Dir = InPosition - ViewPostion.xyz;
-    //
-    FMaterialInViewPositionBlock * inViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
-    FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
-    positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
-    positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
-    materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
-    FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
-    NSV_Dir->Connect( /*positionMinusViewPosition*/inPositionBlock, "Value" );
-
-    FMaterialAtmosphereBlock * atmo = proj->NewBlock< FMaterialAtmosphereBlock >();
-    atmo->Dir->Connect( materialVertexStage, "Dir" );
-
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
-    materialFragmentStage->Color->Connect( atmo, "Result" );
-
-    FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-    builder->VertexStage = materialVertexStage;
-    builder->FragmentStage = materialFragmentStage;
-    builder->MaterialType = MATERIAL_TYPE_UNLIT;
-    builder->MaterialFacing = MATERIAL_FACE_BACK;
-    FMaterial * Material = builder->Build();
-
     // Create unit box
     FMaterialInstance * minst = NewObject< FMaterialInstance >();
-    minst->Material = Material;
-
-    FIndexedMesh * unitBox = NewObject< FIndexedMesh >();
-    unitBox->InitializeInternalMesh( "*box*" );
+    minst->Material = GetResource< FMaterial >( "SkyboxMaterial" );
 
     unitBoxComponent = CreateComponent< FMeshComponent >( "sky_box" );
-    unitBoxComponent->SetMesh( unitBox );
+    unitBoxComponent->SetMesh( GetResource< FIndexedMesh >( "UnitBox" ) );
     unitBoxComponent->SetMaterialInstance( minst );
     unitBoxComponent->SetScale(4000);
-
 
     FCollisionCapsule * capsule = NewObject< FCollisionCapsule >();
     capsule->Radius = 0.6f;
@@ -152,34 +117,6 @@ void FPlayer::SetupPlayerInputComponent( FInputComponent * _Input ) {
 
 void FPlayer::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
-#if 0
-    constexpr float PLAYER_MOVE_SPEED = 4; // Meters per second
-    constexpr float PLAYER_MOVE_HIGH_SPEED = 8;
-
-    Float3 Velocity = PhysBody->GetLinearVelocity();
-    PhysBody->ApplyCentralImpulse( -Velocity * 0.3f );
-
-    const float MoveSpeed = _TimeStep * ( bSpeed ? PLAYER_MOVE_HIGH_SPEED : PLAYER_MOVE_SPEED );
-    float lenSqr = MoveVector.LengthSqr();
-    if ( lenSqr > 0 ) {
-
-        if ( lenSqr > 1 ) {
-            MoveVector.NormalizeSelf();
-        }
-
-        Float3 dir = MoveVector * MoveSpeed;
-
-        
-
-        //RootComponent->Step( dir );
-
-        PhysBody->ApplyCentralImpulse( dir );
-
-        MoveVector.Clear();
-    }
-
-    unitBoxComponent->SetPosition(RootComponent->GetPosition());
-#endif
 }
 
 void FPlayer::TickPrePhysics( float _TimeStep ) {
@@ -281,7 +218,7 @@ void FPlayer::SpeedRelease() {
 }
 
 #include "StaticMesh.h"
-#include "Module.h"
+//#include "Module.h"
 #include <Engine/World/Public/World.h>
 void FPlayer::AttackPress() {
     FActor * actor;

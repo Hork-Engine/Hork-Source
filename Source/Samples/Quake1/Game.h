@@ -49,11 +49,6 @@ public:
     FMyPlayerController * PlayerController;
     TActorSpawnParameters< FPlayer > PlayerSpawnParameters;
     TRefHolder< FLevel > Level;
-    TRefHolder< FMaterial > WallMaterial;
-    TRefHolder< FMaterial > WaterMaterial;
-    TRefHolder< FMaterial > SkyMaterial;
-    TRefHolder< FMaterial > SkyboxMaterial;
-    TRefHolder< FMaterial > SkinMaterial;
 
     FGameModule() {}
 
@@ -70,7 +65,6 @@ public:
     bool LoadQuakeMap( const char * _MapName );
 
     FQuakeModel * LoadQuakeModel( const char * _ModelName );
-    FQuakeModel * FindQuakeModel( const char * _ModelName );
     void CleanModels();
 
 private:
@@ -87,7 +81,6 @@ private:
 
     enum { MAX_PACKS = 2 };
     FQuakePack Packs[MAX_PACKS];
-    TPodArray< FQuakeModel * > LoadedModels;
 };
 
 extern FGameModule * GGameModule;

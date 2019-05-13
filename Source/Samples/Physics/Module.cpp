@@ -69,13 +69,13 @@ void FModule::OnGameStart() {
     mesh->InitializeShape< FPlaneShape >( 256, 256, 256 );
     mesh->SetName( "DefaultShapePlane256x256x256" );
     mesh->BodyComposition.NewCollisionBody< FCollisionPlane >();
-    GResourceManager.RegisterResource( mesh );
+    RegisterResource( mesh );
     }
 
     {
     FIndexedMesh * mesh = NewObject< FIndexedMesh >();
     mesh->InitializeInternalMesh( "*box*" );
-    GResourceManager.RegisterResource( mesh );
+    RegisterResource( mesh );
     }
 
     {
@@ -84,7 +84,7 @@ void FModule::OnGameStart() {
     mesh->SetName( "ShapeSphereMesh" );
     FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
     collisionBody->Radius = 0.5f;
-    GResourceManager.RegisterResource( mesh );
+    RegisterResource( mesh );
     }
 
     {
@@ -93,7 +93,7 @@ void FModule::OnGameStart() {
     mesh->SetName( "ShapeCylinderMesh" );
     FCollisionCylinder * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionCylinder >();
     collisionBody->HalfExtents = Float3( 0.5f );
-    GResourceManager.RegisterResource( mesh );
+    RegisterResource( mesh );
     }
 
     //
@@ -104,7 +104,7 @@ void FModule::OnGameStart() {
     //
     // Example, how to create texture resource from file with alias
     //
-    GResourceManager.CreateUniqueResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
+    CreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
 
 
     // Spawn world
@@ -119,10 +119,12 @@ void FModule::OnGameStart() {
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = false;
 
+    CreateResources();
+
     //FPlayer * player = World->SpawnActor< FPlayer >( Float3(2.5f, 3.5f, 2.5f), Angl(-30,45,0).ToQuat() );
     FPlayer * player = World->SpawnActor< FPlayer >( Float3(2.5f, 0.0f, 2.5f), Angl(-30,45,0).ToQuat() );
 
-    CreateMaterial();
+
     //LoadStaticMeshes();
 
     World->SpawnActor< FGround >();
@@ -175,35 +177,89 @@ void FModule::OnGameStart() {
 void FModule::OnGameEnd() {
 }
 
-void FModule::CreateMaterial() {
-    FMaterialProject * proj = NewObject< FMaterialProject >();
-    FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-    FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
-    texCoord->Connect( inTexCoordBlock, "Value" );
-    FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
-    diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
-    diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
-    FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
-    diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
-    diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+void FModule::CreateResources() {
+    // Default material
+    {
+        FMaterialProject * proj = NewObject< FMaterialProject >();
+        FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
+        FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+        FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        texCoord->Connect( inTexCoordBlock, "Value" );
+        FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
+        diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+        diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
+        FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
+        diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
-    FMaterialUniformAddress * uniformAddress = proj->NewBlock< FMaterialUniformAddress >();
-    uniformAddress->Address = 0;
-    uniformAddress->Type = AT_Float4;
+        FMaterialUniformAddress * uniformAddress = proj->NewBlock< FMaterialUniformAddress >();
+        uniformAddress->Address = 0;
+        uniformAddress->Type = AT_Float4;
 
-    FMaterialMulBlock * mul = proj->NewBlock< FMaterialMulBlock >();
-    mul->ValueA->Connect( diffuseSampler, "RGBA" );
-    mul->ValueB->Connect( uniformAddress, "Value" );
+        FMaterialMulBlock * mul = proj->NewBlock< FMaterialMulBlock >();
+        mul->ValueA->Connect( diffuseSampler, "RGBA" );
+        mul->ValueB->Connect( uniformAddress, "Value" );
 
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
-    materialFragmentStage->Color->Connect( mul, "Result" );
-    FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-    builder->VertexStage = materialVertexStage;
-    builder->FragmentStage = materialFragmentStage;
-    builder->MaterialType = MATERIAL_TYPE_UNLIT;
-    builder->RegisterTextureSlot( diffuseTexture );
-    Material = builder->Build();
+        FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+        materialFragmentStage->Color->Connect( mul, "Result" );
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_UNLIT;
+        builder->RegisterTextureSlot( diffuseTexture );
+
+        FMaterial * material = builder->Build();
+        material->SetName( "DefaultMaterial" );
+
+        RegisterResource( material );
+    }
+
+    // Unit box
+    {
+        FIndexedMesh * unitBox = NewObject< FIndexedMesh >();
+        unitBox->InitializeInternalMesh( "*box*" );
+        unitBox->SetName( "UnitBox" );
+        RegisterResource( unitBox );
+    }
+
+    // Skybox material
+    {
+        FMaterialProject * proj = NewObject< FMaterialProject >();
+
+        //
+        // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
+        //
+        FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
+        FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+
+        //
+        // VS_Dir = InPosition - ViewPostion.xyz;
+        //
+        FMaterialInViewPositionBlock * inViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
+        FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
+        positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
+        positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
+        materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
+        FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
+        NSV_Dir->Connect( /*positionMinusViewPosition*/inPositionBlock, "Value" );
+
+        FMaterialAtmosphereBlock * atmo = proj->NewBlock< FMaterialAtmosphereBlock >();
+        atmo->Dir->Connect( materialVertexStage, "Dir" );
+
+        FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+        materialFragmentStage->Color->Connect( atmo, "Result" );
+
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_UNLIT;
+        builder->MaterialFacing = MATERIAL_FACE_BACK;
+
+        FMaterial * material = builder->Build();
+        material->SetName( "SkyboxMaterial" );
+
+        RegisterResource( material );
+    }
 }
 
 void FModule::LoadStaticMeshes() {

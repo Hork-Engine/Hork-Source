@@ -43,8 +43,6 @@ public:
     TRefHolder< FInputMappings > InputMappings;
     FWorld * World;
     FMyPlayerController * PlayerController;
-    TRefHolder< FIndexedMesh > CheckerMesh;
-    TRefHolder< FMaterialInstance > CheckerMaterialInstance;
 
     FModule() {}
 
@@ -59,7 +57,7 @@ private:
     void OnPostGameTick( float _TimeStep ) override{}
     void DrawCanvas( FCanvas * _Canvas ) override;
     void SetInputMappings();
-    FMaterial * CreateMaterial();
+    void CreateResources();
 };
 
 extern FModule * GModule;

@@ -55,7 +55,7 @@ void FMaterial::Initialize( FMaterialBuildData const * _Data ) {
 
         Type = data->Type;
 
-        RenderProxy->Data[frameData->SmpIndex] = data;
+        RenderProxy->Data[frameData->WriteIndex] = data;
         RenderProxy->MarkUpdated();
     }
 }

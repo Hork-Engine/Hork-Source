@@ -40,7 +40,7 @@ class FMeshComponent;
 class FSkinnedComponent;
 class FTimer;
 class FDebugDraw;
-struct btDbvtBroadphase;
+class btBroadphaseInterface;
 class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
 class btSequentialImpulseConstraintSolver;
@@ -227,6 +227,8 @@ public:
 
     bool IsPhysicsSimulating() const { return bPhysicsSimulating; }
 
+    bool IsPendingKill() const { return bPendingKill; }
+
     //bool bTickEvenWhenPaused;
 
 protected:
@@ -294,7 +296,7 @@ private:
     TRefHolder< FLevel > PersistentLevel;
     TPodArray< FLevel * > ArrayOfLevels;
 
-    btDbvtBroadphase * PhysicsBroadphase;
+    btBroadphaseInterface * PhysicsBroadphase;
     btDefaultCollisionConfiguration * CollisionConfiguration;
     btCollisionDispatcher * CollisionDispatcher;
     btSequentialImpulseConstraintSolver * ConstraintSolver;

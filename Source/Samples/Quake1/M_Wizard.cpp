@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "M_Wizard.h"
 #include "Game.h"
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_BEGIN_CLASS_META( M_Wizard )
 AN_END_CLASS_META()
@@ -44,7 +45,7 @@ M_Wizard::M_Wizard() {
     FramesCount = model ? model->Frames.Length() : 0;
 
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();
-    matInst->Material = GGameModule->SkinMaterial;
+    matInst->Material = GetResource< FMaterial >( "SkinMaterial" );
 
     Frame->SetMaterialInstance( matInst );
 

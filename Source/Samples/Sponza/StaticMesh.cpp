@@ -47,11 +47,5 @@ FStaticMesh::FStaticMesh() {
 void FStaticMesh::SetMesh( FIndexedMesh * _Mesh ) {
     MeshComponent->SetMesh( _Mesh );
     MeshComponent->UpdatePhysicsAttribs();
-    MeshComponent->ClearMaterials();
-    if ( _Mesh  ) {
-        for ( int i = 0 ; i < _Mesh->GetSubparts().Length() ; i++ ) {
-            MeshComponent->SetMaterialInstance( i, _Mesh->GetSubpart(i)->MaterialInstance );
-        }
-    }
+    MeshComponent->SetDefaultMaterials();
 }
-

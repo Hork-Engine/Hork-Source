@@ -67,7 +67,13 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     bSkinnedMesh = _SkinnedMesh;
     bDynamicStorage = _DynamicStorage;
 
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    Vertices.ResizeInvalidate( VertexCount );
+    if ( bSkinnedMesh ) {
+        Weights.ReserveInvalidate( VertexCount );
+    }
+    Indices.ResizeInvalidate( IndexCount );
+
+    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
     data.VerticesCount = _NumVertices;
     data.IndicesCount = _NumIndices;
     data.bSkinnedMesh = bSkinnedMesh;
@@ -164,7 +170,7 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
 
         for ( int n = 0; n < 1/*material.NumTextures*/; n++ ) {
             FMaterialTexture const & texture = asset.Textures[ material.Textures[ n ] ];
-            FTexture * texObj = GResourceManager.CreateUniqueResource< FTexture >( texture.FileName.ToConstChar() );
+            FTexture * texObj = CreateResource< FTexture >( texture.FileName.ToConstChar() );
             matInst->SetTexture( n, texObj );
         }
     }
@@ -202,6 +208,7 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
     BodyComposition.Clear();
     FCollisionSharedTriangleSoupBVH * CollisionBody = BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoupBVH >();
     CollisionBody->BvhData = bvh;
+    //CollisionBody->Margin = 0.2;
 
     return true;
 }
@@ -239,22 +246,22 @@ FIndexedMeshSubpart * FIndexedMesh::GetSubpart( int _SubpartIndex ) {
     return Subparts[ _SubpartIndex ];
 }
 
-FMeshVertex * FIndexedMesh::WriteVertexData( int _VerticesCount, int _StartVertexLocation ) {
+bool FIndexedMesh::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FIndexedMesh::WriteVertexData: Referencing outside of buffer\n" );
-        return nullptr;
+        GLogger.Printf( "FIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer\n" );
+        return false;
     }
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     data.bSkinnedMesh = bSkinnedMesh;
     data.bDynamicStorage = bDynamicStorage;
 
     FVertexChunk * chunk = ( FVertexChunk * )frameData->AllocFrameData( sizeof( FVertexChunk ) + sizeof( FMeshVertex ) * ( _VerticesCount - 1 ) );
     if ( !chunk ) {
-        return nullptr;
+        return false;
     }
 
     chunk->VerticesCount = _VerticesCount;
@@ -264,40 +271,43 @@ FMeshVertex * FIndexedMesh::WriteVertexData( int _VerticesCount, int _StartVerte
 
     RenderProxy->MarkUpdated();
 
-    return &chunk->Vertices[0];
-}
+    memcpy( &chunk->Vertices[ 0 ], Vertices.ToPtr() + _StartVertexLocation, _VerticesCount * sizeof( FMeshVertex ) );
 
-bool FIndexedMesh::WriteVertexData( FMeshVertex const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    FMeshVertex * pVerts = WriteVertexData( _VerticesCount, _StartVertexLocation );
-    if ( !pVerts ) {
-        return false;
-    }
-
-    memcpy( pVerts, _Vertices, _VerticesCount * sizeof( FMeshVertex ) );
     return true;
 }
 
-FMeshVertexJoint * FIndexedMesh::WriteJointWeights( int _VerticesCount, int _StartVertexLocation ) {
+bool FIndexedMesh::WriteVertexData( FMeshVertex const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
+        GLogger.Printf( "FIndexedMesh::WriteVertexData: Referencing outside of buffer\n" );
+        return false;
+    }
+
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshVertex ) );
+
+    return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
+}
+
+bool FIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLocation ) {
     if ( !bSkinnedMesh ) {
-        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n" );
-        return nullptr;
+        GLogger.Printf( "FIndexedMesh::SendJointWeightsToGPU: Cannot write joint weights for static mesh\n" );
+        return false;
     }
 
     if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Referencing outside of buffer\n" );
-        return nullptr;
+        GLogger.Printf( "FIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer\n" );
+        return false;
     }
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     data.bSkinnedMesh = bSkinnedMesh;
     data.bDynamicStorage = bDynamicStorage;
 
     FVertexJointChunk * chunk = ( FVertexJointChunk * )frameData->AllocFrameData( sizeof( FVertexJointChunk ) + sizeof( FMeshVertexJoint ) * ( _VerticesCount - 1 ) );
     if ( !chunk ) {
-        return nullptr;
+        return false;
     }
 
     chunk->VerticesCount = _VerticesCount;
@@ -307,28 +317,36 @@ FMeshVertexJoint * FIndexedMesh::WriteJointWeights( int _VerticesCount, int _Sta
 
     RenderProxy->MarkUpdated();
 
-    return &chunk->Vertices[0];
-}
+    memcpy( &chunk->Vertices[ 0 ], Weights.ToPtr() + _StartVertexLocation, _VerticesCount * sizeof( FMeshVertexJoint ) );
 
-bool FIndexedMesh::WriteJointWeights( FMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    FMeshVertexJoint * pVerts = WriteJointWeights( _VerticesCount, _StartVertexLocation );
-    if ( !pVerts ) {
-        return false;
-    }
-
-    memcpy( pVerts, _Vertices, _VerticesCount * sizeof( FMeshVertexJoint ) );
     return true;
 }
 
-unsigned int * FIndexedMesh::WriteIndexData( int _IndexCount, int _StartIndexLocation ) {
+bool FIndexedMesh::WriteJointWeights( FMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+    if ( !bSkinnedMesh ) {
+        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n" );
+        return false;
+    }
+
+    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
+        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Referencing outside of buffer\n" );
+        return false;
+    }
+
+    memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshVertexJoint ) );
+
+    return SendJointWeightsToGPU( _VerticesCount, _StartVertexLocation );
+}
+
+bool FIndexedMesh::SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation ) {
     if ( !_IndexCount || _StartIndexLocation + _IndexCount > IndexCount ) {
-        GLogger.Printf( "FIndexedMesh::WriteIndexData: Referencing outside of buffer\n" );
-        return nullptr;
+        GLogger.Printf( "FIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer\n" );
+        return false;
     }
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     data.bSkinnedMesh = bSkinnedMesh;
     data.bDynamicStorage = bDynamicStorage;
@@ -336,7 +354,7 @@ unsigned int * FIndexedMesh::WriteIndexData( int _IndexCount, int _StartIndexLoc
 
     FIndexChunk * chunk = ( FIndexChunk * )frameData->AllocFrameData( sizeof( FIndexChunk ) + sizeof( unsigned int ) * ( _IndexCount - 1 ) );
     if ( !chunk ) {
-        return nullptr;
+        return false;
     }
 
     chunk->IndexCount = _IndexCount;
@@ -346,17 +364,20 @@ unsigned int * FIndexedMesh::WriteIndexData( int _IndexCount, int _StartIndexLoc
 
     RenderProxy->MarkUpdated();
 
-    return &chunk->Indices[0];
+    memcpy( &chunk->Indices[ 0 ], Indices.ToPtr() + _StartIndexLocation, _IndexCount * sizeof( unsigned int ) );
+
+    return true;
 }
 
 bool FIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCount, int _StartIndexLocation ) {
-    unsigned int * pIndices = WriteIndexData( _IndexCount, _StartIndexLocation );
-    if ( !pIndices ) {
+    if ( !_IndexCount || _StartIndexLocation + _IndexCount > IndexCount ) {
+        GLogger.Printf( "FIndexedMesh::WriteIndexData: Referencing outside of buffer\n" );
         return false;
     }
 
-    memcpy( pIndices, _Indices, _IndexCount * sizeof( unsigned int ) );
-    return true;
+    memcpy( Indices.ToPtr() + _StartIndexLocation, _Indices, _IndexCount * sizeof( unsigned int ) );
+
+    return SendIndexDataToGPU( _IndexCount, _StartIndexLocation );
 }
 
 void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
@@ -430,7 +451,7 @@ void FLightmapUV::OnInitialize( int _NumVertices ) {
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     VertexCount = _NumVertices;
     bDynamicStorage = ParentMesh->bDynamicStorage;
@@ -440,26 +461,26 @@ void FLightmapUV::OnInitialize( int _NumVertices ) {
     data.Chunks = nullptr;
     data.bReallocated = true;
 
-//    VertexData.ResizeInvalidate( _NumVertices );
+    Vertices.ResizeInvalidate( _NumVertices );
 
     RenderProxy->MarkUpdated();
 }
 
-FMeshLightmapUV * FLightmapUV::WriteVertexData( int _VerticesCount, int _StartVertexLocation ) {
+bool FLightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FLightmapUV::WriteVertexData: Referencing outside of buffer\n" );
-        return nullptr;
+        GLogger.Printf( "FLightmapUV::SendVertexDataToGPU: Referencing outside of buffer\n" );
+        return false;
     }
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     data.bDynamicStorage = bDynamicStorage;
 
     FLightmapChunk * chunk = ( FLightmapChunk * )frameData->AllocFrameData( sizeof( FLightmapChunk ) + sizeof( FMeshLightmapUV ) * ( _VerticesCount - 1 ) );
     if ( !chunk ) {
-        return nullptr;
+        return false;
     }
 
     chunk->VerticesCount = _VerticesCount;
@@ -469,17 +490,20 @@ FMeshLightmapUV * FLightmapUV::WriteVertexData( int _VerticesCount, int _StartVe
 
     RenderProxy->MarkUpdated();
 
-    return &chunk->Vertices[0];
+    memcpy( &chunk->Vertices[ 0 ], Vertices.ToPtr() + _StartVertexLocation, _VerticesCount * sizeof( FMeshLightmapUV ) );
+
+    return true;
 }
 
 bool FLightmapUV::WriteVertexData( FMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    FMeshLightmapUV * pVerts = WriteVertexData( _VerticesCount, _StartVertexLocation );
-    if ( !pVerts ) {
+    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
+        GLogger.Printf( "FLightmapUV::WriteVertexData: Referencing outside of buffer\n" );
         return false;
     }
 
-    memcpy( pVerts, _Vertices, _VerticesCount * sizeof( FMeshLightmapUV ) );
-    return true;
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshLightmapUV ) );
+
+    return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -507,7 +531,7 @@ void FVertexLight::OnInitialize( int _NumVertices ) {
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     VertexCount = _NumVertices;
     bDynamicStorage = ParentMesh->bDynamicStorage;
@@ -517,24 +541,26 @@ void FVertexLight::OnInitialize( int _NumVertices ) {
     data.Chunks = nullptr;
     data.bReallocated = true;
 
+    Vertices.ResizeInvalidate( _NumVertices );
+
     RenderProxy->MarkUpdated();
 }
 
-FMeshVertexLight * FVertexLight::WriteVertexData( int _VerticesCount, int _StartVertexLocation ) {
+bool FVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FVertexLight::WriteVertexData: Referencing outside of buffer\n" );
-        return nullptr;
+        GLogger.Printf( "FVertexLight::SendVertexDataToGPU: Referencing outside of buffer\n" );
+        return false;
     }
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     data.bDynamicStorage = bDynamicStorage;
 
     FVertexLightChunk * chunk = ( FVertexLightChunk * )frameData->AllocFrameData( sizeof( FVertexLightChunk ) + sizeof( FMeshVertexLight ) * ( _VerticesCount - 1 ) );
     if ( !chunk ) {
-        return nullptr;
+        return false;
     }
 
     chunk->VerticesCount = _VerticesCount;
@@ -544,15 +570,18 @@ FMeshVertexLight * FVertexLight::WriteVertexData( int _VerticesCount, int _Start
 
     RenderProxy->MarkUpdated();
 
-    return &chunk->Vertices[0];
+    memcpy( &chunk->Vertices[ 0 ], Vertices.ToPtr() + _StartVertexLocation, _VerticesCount * sizeof( FMeshVertexLight ) );
+
+    return true;
 }
 
 bool FVertexLight::WriteVertexData( FMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    FMeshVertexLight * pVerts = WriteVertexData( _VerticesCount, _StartVertexLocation );
-    if ( !pVerts ) {
+    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
+        GLogger.Printf( "FVertexLight::WriteVertexData: Referencing outside of buffer\n" );
         return false;
     }
 
-    memcpy( pVerts, _Vertices, _VerticesCount * sizeof( FMeshVertexLight ) );
-    return true;
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshVertexLight ) );
+
+    return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }

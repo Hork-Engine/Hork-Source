@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Engine/World/Public/GameMaster.h>
 #include <Engine/World/Public/Canvas.h>
 #include <Engine/World/Public/MaterialAssembly.h>
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_CLASS_META_NO_ATTRIBS( FGameModule )
 
@@ -57,7 +58,7 @@ void FGameModule::OnGameStart() {
     //GGameMaster.SetRenderFeatures( VSync_Disabled );
     //GGameMaster.SetRenderFeatures( VSync_Fixed );
     //GGameMaster.SetVideoMode( 640, 480, 0, 60, false, "OpenGL 4.5" );
-    GGameMaster.SetVideoMode( 1024, 768, 0, 60, false, "OpenGL 4.5" );
+    GGameMaster.SetVideoMode( 1920, 1080, 0, 60, false, "OpenGL 4.5" );
     GGameMaster.SetWindowDefs( 1.0f, true, false, false, "AngieEngine: Quake map sample" );
     GGameMaster.SetCursorEnabled( false );
 
@@ -69,17 +70,61 @@ void FGameModule::OnGameStart() {
     CreateSkyboxMaterial();
     CreateSkinMaterial();
 
+    // Unit sphere
+    {
+        FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+        mesh->InitializeInternalMesh( "*sphere*" );
+        mesh->SetName( "UnitSphere" );
+        RegisterResource( mesh );
+    }
+
+    // MipmapChecker
+    {
+        CreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
+    }
+
+    // ExplosionMaterial
+    {
+        FMaterialProject * proj = NewObject< FMaterialProject >();
+        FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+        FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+
+        FMaterialUniformAddress * uniformAddress = proj->NewBlock< FMaterialUniformAddress >();
+        uniformAddress->Address = 0;
+        uniformAddress->Type = AT_Float4;
+
+        materialFragmentStage->Color->Connect( uniformAddress, "Value" );
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_UNLIT;
+
+        FMaterial * material = builder->Build();
+        material->SetName( "ExplosionMaterial" );
+
+        RegisterResource( material );
+    }
+
+    // Explosion material instance
+    {
+        FMaterialInstance * ExplosionMaterialInstance = NewObject< FMaterialInstance >();
+        ExplosionMaterialInstance->Material = GetResource< FMaterial >( "ExplosionMaterial" );
+        ExplosionMaterialInstance->SetName( "ExplosionMaterialInstance" );
+        ExplosionMaterialInstance->UniformVectors[0] = Float4( 1,1,0.3f,1 );
+        RegisterResource( ExplosionMaterialInstance );
+    }
+
     SetInputMappings();
 
     SpawnWorld();
 
-    //LoadQuakeMap( "maps/e4m4.bsp" );
+    LoadQuakeMap( "maps/e4m4.bsp" );
     //LoadQuakeMap( "maps/e3m6.bsp" );
     //LoadQuakeMap( "maps/e2m2.bsp" );
     //LoadQuakeMap( "maps/e3m4.bsp" );
     //LoadQuakeMap( "maps/start.bsp" );
     //LoadQuakeMap( "maps/e2m4.bsp" );
-    LoadQuakeMap( "maps/e2m5.bsp" );
+    //LoadQuakeMap( "maps/e2m5.bsp" );
     //LoadQuakeMap( "maps/e1m3.bsp" );
     //LoadQuakeMap( "maps/e2m6.bsp" );
     //LoadQuakeMap( "maps/e1m4.bsp" );
@@ -111,7 +156,7 @@ void FGameModule::InitializeQuakeGame() {
     // Create rendering parameters
     RenderingParams = NewObject< FRenderingParameters >();
     //RenderingParams->BackgroundColor = Float3(1,0,0);
-    RenderingParams->bDrawDebug = true;
+    RenderingParams->bDrawDebug = false;
 }
 
 void FGameModule::OnPreGameTick( float _TimeStep ) {
@@ -249,8 +294,20 @@ bool FGameModule::LoadQuakeMap( const char * _MapName ) {
 }
 
 FQuakeModel * FGameModule::LoadQuakeModel( const char * _ModelName ) {
-    FQuakeModel * model = FindQuakeModel( _ModelName );
+
+    /*
+
+      Also we can improve FQuakeModel by adding InitializeDefaultObject and InitializeFromFile to it.
+      Then just call CreateResource< FQuakeModel >( _ModelName );
+
+    */
+
+    bool bMetadataMismatch;
+    int hash;
+
+    FQuakeModel * model = static_cast< FQuakeModel * >( FindResource( FQuakeModel::ClassMeta(), _ModelName, bMetadataMismatch, hash ) );
     if ( model ) {
+        GLogger.Printf( "Caching %s\n", _ModelName );
         return model;
     }
     model = NewObject< FQuakeModel >();
@@ -263,27 +320,14 @@ FQuakeModel * FGameModule::LoadQuakeModel( const char * _ModelName ) {
     }
     if ( !bFound ) {
         return nullptr;
-    }
-    LoadedModels.Append( model );
-    model->AddRef();
+    }    
     model->SetName( _ModelName );
+    RegisterResource( model );
     return model;
 }
 
 void FGameModule::CleanModels() {
-    for ( FQuakeModel * model : LoadedModels ) {
-        model->RemoveRef();
-    }
-    LoadedModels.Clear();
-}
-
-FQuakeModel * FGameModule::FindQuakeModel( const char * _ModelName ) {
-    for ( FQuakeModel * model : LoadedModels ) {
-        if ( !model->GetName().Icmp( _ModelName ) ) {
-            return model;
-        }
-    }
-    return nullptr;
+    UnregisterResources< FQuakeModel >();
 }
 
 void FGameModule::CreateWaterMaterial() {
@@ -351,7 +395,10 @@ void FGameModule::CreateWaterMaterial() {
     builder->FragmentStage = materialFragmentStage;
     builder->MaterialType = MATERIAL_TYPE_UNLIT;
     builder->RegisterTextureSlot( diffuseTexture );
-    WaterMaterial = builder->Build();
+
+    FMaterial * WaterMaterial = builder->Build();
+    WaterMaterial->SetName( "WaterMaterial" );
+    RegisterResource( WaterMaterial );
 }
 
 void FGameModule::CreateWallMaterial() {
@@ -418,7 +465,9 @@ void FGameModule::CreateWallMaterial() {
     builder->MaterialType = MATERIAL_TYPE_PBR;
     builder->RegisterTextureSlot( diffuseTexture );
     //builder->RegisterTextureSlot( lightmapTexture );
-    WallMaterial = builder->Build();
+    FMaterial * WallMaterial = builder->Build();
+    WallMaterial->SetName( "WallMaterial" );
+    RegisterResource( WallMaterial );
 
 //    FDocument document;
 //    int object = proj->Serialize( document );
@@ -657,7 +706,10 @@ void FGameModule::CreateSkyMaterial() {
     builder->FragmentStage = materialFragmentStage;
     builder->MaterialType = MATERIAL_TYPE_UNLIT;
     builder->RegisterTextureSlot( skyTexture );
-    SkyMaterial = builder->Build();
+
+    FMaterial * SkyMaterial = builder->Build();
+    SkyMaterial->SetName( "SkyMaterial" );
+    RegisterResource( SkyMaterial );
 
 //    FDocument document;
 //    int object = proj->Serialize( document );
@@ -715,7 +767,10 @@ void FGameModule::CreateSkyboxMaterial() {
     builder->FragmentStage = materialFragmentStage;
     builder->MaterialType = MATERIAL_TYPE_UNLIT;
     builder->RegisterTextureSlot( skyTexture );
-    SkyboxMaterial = builder->Build();
+
+    FMaterial * SkyboxMaterial = builder->Build();
+    SkyboxMaterial->SetName( "SkyboxMaterial" );
+    RegisterResource( SkyboxMaterial );
 
     GLogger.Printf( "breakpoint\n" );
 }
@@ -750,9 +805,784 @@ void FGameModule::CreateSkinMaterial() {
     builder->FragmentStage = materialFragmentStage;
     builder->MaterialType = MATERIAL_TYPE_UNLIT;
     builder->RegisterTextureSlot( diffuseTexture );
-    SkinMaterial = builder->Build();
+
+    FMaterial * SkinMaterial = builder->Build();
+    SkinMaterial->SetName( "SkinMaterial" );
+    RegisterResource( SkinMaterial );
 }
 
 void FGameModule::DrawCanvas( FCanvas * _Canvas ) {
     _Canvas->DrawViewport( PlayerController, 0, 0, _Canvas->Width, _Canvas->Height );
 }
+
+
+/*
+
+Quake resources
+
+sound/items/r_item1.wav
+sound/items/r_item2.wav
+sound/items/health1.wav
+sound/misc/medkey.wav
+sound/misc/runekey.wav
+sound/items/protect.wav
+sound/items/protect2.wav
+sound/items/protect3.wav
+sound/items/suit.wav
+sound/items/suit2.wav
+sound/items/inv1.wav
+sound/items/inv2.wav
+sound/items/inv3.wav
+sound/items/damage.wav
+sound/items/damage2.wav
+sound/items/damage3.wav
+sound/weapons/r_exp3.wav
+sound/weapons/rocket1i.wav
+sound/weapons/sgun1.wav
+sound/weapons/guncock.wav
+sound/weapons/ric1.wav
+sound/weapons/ric2.wav
+sound/weapons/ric3.wav
+sound/weapons/spike2.wav
+sound/weapons/tink1.wav
+sound/weapons/grenade.wav
+sound/weapons/bounce.wav
+sound/weapons/shotgn2.wav
+sound/misc/menu1.wav
+sound/misc/menu2.wav
+sound/misc/menu3.wav
+sound/ambience/water1.wav
+sound/ambience/wind2.wav
+sound/demon/dland2.wav
+sound/misc/h2ohit1.wav
+sound/items/itembk2.wav
+sound/player/plyrjmp8.wav
+sound/player/land.wav
+sound/player/land2.wav
+sound/player/drown1.wav
+sound/player/drown2.wav
+sound/player/gasp1.wav
+sound/player/gasp2.wav
+sound/player/h2odeath.wav
+sound/misc/talk.wav
+sound/player/teledth1.wav
+sound/misc/r_tele1.wav
+sound/misc/r_tele2.wav
+sound/misc/r_tele3.wav
+sound/misc/r_tele4.wav
+sound/misc/r_tele5.wav
+sound/weapons/lock4.wav
+sound/weapons/pkup.wav
+sound/items/armor1.wav
+sound/weapons/lhit.wav
+sound/weapons/lstart.wav
+sound/misc/power.wav
+sound/player/gib.wav
+sound/player/udeath.wav
+sound/player/tornoff2.wav
+sound/player/pain1.wav
+sound/player/pain2.wav
+sound/player/pain3.wav
+sound/player/pain4.wav
+sound/player/pain5.wav
+sound/player/pain6.wav
+sound/player/death1.wav
+sound/player/death2.wav
+sound/player/death3.wav
+sound/player/death4.wav
+sound/player/death5.wav
+sound/weapons/ax1.wav
+sound/player/axhit1.wav
+sound/player/axhit2.wav
+sound/player/h2ojump.wav
+sound/player/slimbrn2.wav
+sound/player/inh2o.wav
+sound/player/inlava.wav
+sound/misc/outwater.wav
+sound/player/lburn1.wav
+sound/player/lburn2.wav
+sound/misc/water1.wav
+sound/misc/water2.wav
+sound/doors/medtry.wav
+sound/doors/meduse.wav
+sound/doors/runetry.wav
+sound/doors/runeuse.wav
+sound/doors/basetry.wav
+sound/doors/baseuse.wav
+sound/misc/null.wav
+sound/doors/drclos4.wav
+sound/doors/doormv1.wav
+sound/doors/hydro1.wav
+sound/doors/hydro2.wav
+sound/doors/stndr1.wav
+sound/doors/stndr2.wav
+sound/doors/ddoor1.wav
+sound/doors/ddoor2.wav
+sound/doors/latch2.wav
+sound/doors/winch2.wav
+sound/doors/airdoor1.wav
+sound/doors/airdoor2.wav
+sound/doors/basesec1.wav
+sound/doors/basesec2.wav
+sound/buttons/airbut1.wav
+sound/buttons/switch21.wav
+sound/buttons/switch02.wav
+sound/buttons/switch04.wav
+sound/misc/secret.wav
+sound/misc/trigger1.wav
+sound/ambience/hum1.wav
+sound/ambience/windfly.wav
+sound/plats/plat1.wav
+sound/plats/plat2.wav
+sound/plats/medplat1.wav
+sound/plats/medplat2.wav
+sound/plats/train2.wav
+sound/plats/train1.wav
+sound/ambience/fl_hum1.wav
+sound/ambience/buzz1.wav
+sound/ambience/fire1.wav
+sound/ambience/suck1.wav
+sound/ambience/drone6.wav
+sound/ambience/drip1.wav
+sound/ambience/comp1.wav
+sound/ambience/thunder1.wav
+sound/ambience/swamp1.wav
+sound/ambience/swamp2.wav
+sound/ogre/ogdrag.wav
+sound/ogre/ogdth.wav
+sound/ogre/ogidle.wav
+sound/ogre/ogidle2.wav
+sound/ogre/ogpain1.wav
+sound/ogre/ogsawatk.wav
+sound/ogre/ogwake.wav
+sound/demon/ddeath.wav
+sound/demon/dhit2.wav
+sound/demon/djump.wav
+sound/demon/dpain1.wav
+sound/demon/idle1.wav
+sound/demon/sight2.wav
+sound/shambler/sattck1.wav
+sound/shambler/sboom.wav
+sound/shambler/sdeath.wav
+sound/shambler/shurt2.wav
+sound/shambler/sidle.wav
+sound/shambler/ssight.wav
+sound/shambler/melee1.wav
+sound/shambler/melee2.wav
+sound/shambler/smack.wav
+sound/knight/kdeath.wav
+sound/knight/khurt.wav
+sound/knight/ksight.wav
+sound/knight/sword1.wav
+sound/knight/sword2.wav
+sound/knight/idle.wav
+sound/soldier/death1.wav
+sound/soldier/idle.wav
+sound/soldier/pain1.wav
+sound/soldier/pain2.wav
+sound/soldier/sattck1.wav
+sound/soldier/sight1.wav
+sound/wizard/hit.wav
+sound/wizard/wattack.wav
+sound/wizard/wdeath.wav
+sound/wizard/widle1.wav
+sound/wizard/widle2.wav
+sound/wizard/wpain.wav
+sound/wizard/wsight.wav
+sound/dog/dattack1.wav
+sound/dog/ddeath.wav
+sound/dog/dpain1.wav
+sound/dog/dsight.wav
+sound/dog/idle.wav
+sound/zombie/z_idle.wav
+sound/zombie/z_idle1.wav
+sound/zombie/z_shot1.wav
+sound/zombie/z_gib.wav
+sound/zombie/z_pain.wav
+sound/zombie/z_pain1.wav
+sound/zombie/z_fall.wav
+sound/zombie/z_miss.wav
+sound/zombie/z_hit.wav
+sound/zombie/idle_w2.wav
+sound/boss1/out1.wav
+sound/boss1/sight1.wav
+sound/boss1/throw.wav
+sound/boss1/pain.wav
+sound/boss1/death.wav
+sound/hknight/hit.wav
+maps/b_bh10.bsp
+maps/b_bh100.bsp
+maps/b_bh25.bsp
+progs/armor.mdl
+progs/g_shot.mdl
+progs/g_nail.mdl
+progs/g_nail2.mdl
+progs/g_rock.mdl
+progs/g_rock2.mdl
+progs/g_light.mdl
+maps/b_shell1.bsp
+maps/b_shell0.bsp
+maps/b_nail1.bsp
+maps/b_nail0.bsp
+maps/b_rock1.bsp
+maps/b_rock0.bsp
+maps/b_batt1.bsp
+maps/b_batt0.bsp
+progs/w_s_key.mdl
+progs/m_s_key.mdl
+progs/w_g_key.mdl
+progs/m_g_key.mdl
+progs/end1.mdl
+progs/invulner.mdl
+progs/suit.mdl
+progs/invisibl.mdl
+progs/quaddama.mdl
+progs/player.mdl
+progs/eyes.mdl
+progs/h_player.mdl
+progs/gib1.mdl
+progs/gib2.mdl
+progs/gib3.mdl
+progs/s_bubble.spr
+progs/s_explod.spr
+progs/v_axe.mdl
+progs/v_shot.mdl
+progs/v_nail.mdl
+progs/v_rock.mdl
+progs/v_shot2.mdl
+progs/v_nail2.mdl
+progs/v_rock2.mdl
+progs/bolt.mdl
+progs/bolt2.mdl
+progs/bolt3.mdl
+progs/lavaball.mdl
+progs/missile.mdl
+progs/grenade.mdl
+progs/spike.mdl
+progs/s_spike.mdl
+progs/backpack.mdl
+progs/zom_gib.mdl
+progs/v_light.mdl
+progs/s_light.spr
+progs/flame.mdl
+progs/flame2.mdl
+maps/b_explob.bsp
+progs/ogre.mdl
+progs/h_ogre.mdl
+progs/demon.mdl
+progs/h_demon.mdl
+progs/shambler.mdl
+progs/s_light.mdl
+progs/h_shams.mdl
+progs/knight.mdl
+progs/h_knight.mdl
+progs/soldier.mdl
+progs/h_guard.mdl
+progs/wizard.mdl
+progs/h_wizard.mdl
+progs/w_spike.mdl
+progs/h_dog.mdl
+progs/dog.mdl
+progs/zombie.mdl
+progs/h_zombie.mdl
+progs/boss.mdl
+progs.dat
+gfx.wad
+quake.rc
+default.cfg
+end1.bin
+demo1.dem
+demo2.dem
+demo3.dem
+gfx/palette.lmp
+gfx/colormap.lmp
+gfx/complete.lmp
+gfx/inter.lmp
+gfx/ranking.lmp
+gfx/vidmodes.lmp
+gfx/finale.lmp
+gfx/conback.lmp
+gfx/qplaque.lmp
+gfx/menudot1.lmp
+gfx/menudot2.lmp
+gfx/menudot3.lmp
+gfx/menudot4.lmp
+gfx/menudot5.lmp
+gfx/menudot6.lmp
+gfx/menuplyr.lmp
+gfx/bigbox.lmp
+gfx/dim_modm.lmp
+gfx/dim_drct.lmp
+gfx/dim_ipx.lmp
+gfx/dim_tcp.lmp
+gfx/dim_mult.lmp
+gfx/mainmenu.lmp
+gfx/box_tl.lmp
+gfx/box_tm.lmp
+gfx/box_tr.lmp
+gfx/box_ml.lmp
+gfx/box_mm.lmp
+gfx/box_mm2.lmp
+gfx/box_mr.lmp
+gfx/box_bl.lmp
+gfx/box_bm.lmp
+gfx/box_br.lmp
+gfx/sp_menu.lmp
+gfx/ttl_sgl.lmp
+gfx/ttl_main.lmp
+gfx/ttl_cstm.lmp
+gfx/mp_menu.lmp
+gfx/netmen1.lmp
+gfx/netmen2.lmp
+gfx/netmen3.lmp
+gfx/netmen4.lmp
+gfx/netmen5.lmp
+gfx/sell.lmp
+gfx/help0.lmp
+gfx/help1.lmp
+gfx/help2.lmp
+gfx/help3.lmp
+gfx/help4.lmp
+gfx/help5.lmp
+gfx/pause.lmp
+gfx/loading.lmp
+gfx/p_option.lmp
+gfx/p_load.lmp
+gfx/p_save.lmp
+gfx/p_multi.lmp
+maps/start.bsp
+maps/e1m1.bsp
+maps/e1m2.bsp
+maps/e1m3.bsp
+maps/e1m4.bsp
+maps/e1m5.bsp
+maps/e1m6.bsp
+maps/e1m7.bsp
+maps/e1m8.bsp
+
+
+sound/items/r_item1.wav
+sound/items/r_item2.wav
+sound/items/health1.wav
+sound/misc/medkey.wav
+sound/misc/runekey.wav
+sound/items/protect.wav
+sound/items/protect2.wav
+sound/items/protect3.wav
+sound/items/suit.wav
+sound/items/suit2.wav
+sound/items/inv1.wav
+sound/items/inv2.wav
+sound/items/inv3.wav
+sound/items/damage.wav
+sound/items/damage2.wav
+sound/items/damage3.wav
+sound/weapons/r_exp3.wav
+sound/weapons/rocket1i.wav
+sound/weapons/sgun1.wav
+sound/weapons/guncock.wav
+sound/weapons/ric1.wav
+sound/weapons/ric2.wav
+sound/weapons/ric3.wav
+sound/weapons/spike2.wav
+sound/weapons/tink1.wav
+sound/weapons/grenade.wav
+sound/weapons/bounce.wav
+sound/weapons/shotgn2.wav
+sound/misc/menu1.wav
+sound/misc/menu2.wav
+sound/misc/menu3.wav
+sound/ambience/water1.wav
+sound/ambience/wind2.wav
+sound/demon/dland2.wav
+sound/misc/h2ohit1.wav
+sound/items/itembk2.wav
+sound/player/plyrjmp8.wav
+sound/player/land.wav
+sound/player/land2.wav
+sound/player/drown1.wav
+sound/player/drown2.wav
+sound/player/gasp1.wav
+sound/player/gasp2.wav
+sound/player/h2odeath.wav
+sound/misc/talk.wav
+sound/player/teledth1.wav
+sound/misc/r_tele1.wav
+sound/misc/r_tele2.wav
+sound/misc/r_tele3.wav
+sound/misc/r_tele4.wav
+sound/misc/r_tele5.wav
+sound/weapons/lock4.wav
+sound/weapons/pkup.wav
+sound/items/armor1.wav
+sound/weapons/lhit.wav
+sound/weapons/lstart.wav
+sound/misc/power.wav
+sound/player/gib.wav
+sound/player/udeath.wav
+sound/player/tornoff2.wav
+sound/player/pain1.wav
+sound/player/pain2.wav
+sound/player/pain3.wav
+sound/player/pain4.wav
+sound/player/pain5.wav
+sound/player/pain6.wav
+sound/player/death1.wav
+sound/player/death2.wav
+sound/player/death3.wav
+sound/player/death4.wav
+sound/player/death5.wav
+sound/weapons/ax1.wav
+sound/player/axhit1.wav
+sound/player/axhit2.wav
+sound/player/h2ojump.wav
+sound/player/slimbrn2.wav
+sound/player/inh2o.wav
+sound/player/inlava.wav
+sound/misc/outwater.wav
+sound/player/lburn1.wav
+sound/player/lburn2.wav
+sound/misc/water1.wav
+sound/misc/water2.wav
+sound/doors/medtry.wav
+sound/doors/meduse.wav
+sound/doors/runetry.wav
+sound/doors/runeuse.wav
+sound/doors/basetry.wav
+sound/doors/baseuse.wav
+sound/misc/null.wav
+sound/doors/drclos4.wav
+sound/doors/doormv1.wav
+sound/doors/hydro1.wav
+sound/doors/hydro2.wav
+sound/doors/stndr1.wav
+sound/doors/stndr2.wav
+sound/doors/ddoor1.wav
+sound/doors/ddoor2.wav
+sound/doors/latch2.wav
+sound/doors/winch2.wav
+sound/doors/airdoor1.wav
+sound/doors/airdoor2.wav
+sound/doors/basesec1.wav
+sound/doors/basesec2.wav
+sound/buttons/airbut1.wav
+sound/buttons/switch21.wav
+sound/buttons/switch02.wav
+sound/buttons/switch04.wav
+sound/misc/secret.wav
+sound/misc/trigger1.wav
+sound/ambience/hum1.wav
+sound/ambience/windfly.wav
+sound/plats/plat1.wav
+sound/plats/plat2.wav
+sound/plats/medplat1.wav
+sound/plats/medplat2.wav
+sound/plats/train2.wav
+sound/plats/train1.wav
+sound/ambience/fl_hum1.wav
+sound/ambience/buzz1.wav
+sound/ambience/fire1.wav
+sound/ambience/suck1.wav
+sound/ambience/drone6.wav
+sound/ambience/drip1.wav
+sound/ambience/comp1.wav
+sound/ambience/thunder1.wav
+sound/ambience/swamp1.wav
+sound/ambience/swamp2.wav
+sound/ogre/ogdrag.wav
+sound/ogre/ogdth.wav
+sound/ogre/ogidle.wav
+sound/ogre/ogidle2.wav
+sound/ogre/ogpain1.wav
+sound/ogre/ogsawatk.wav
+sound/ogre/ogwake.wav
+sound/demon/ddeath.wav
+sound/demon/dhit2.wav
+sound/demon/djump.wav
+sound/demon/dpain1.wav
+sound/demon/idle1.wav
+sound/demon/sight2.wav
+sound/shambler/sattck1.wav
+sound/shambler/sboom.wav
+sound/shambler/sdeath.wav
+sound/shambler/shurt2.wav
+sound/shambler/sidle.wav
+sound/shambler/ssight.wav
+sound/shambler/melee1.wav
+sound/shambler/melee2.wav
+sound/shambler/smack.wav
+sound/knight/kdeath.wav
+sound/knight/khurt.wav
+sound/knight/ksight.wav
+sound/knight/sword1.wav
+sound/knight/sword2.wav
+sound/knight/idle.wav
+sound/soldier/death1.wav
+sound/soldier/idle.wav
+sound/soldier/pain1.wav
+sound/soldier/pain2.wav
+sound/soldier/sattck1.wav
+sound/soldier/sight1.wav
+sound/wizard/hit.wav
+sound/wizard/wattack.wav
+sound/wizard/wdeath.wav
+sound/wizard/widle1.wav
+sound/wizard/widle2.wav
+sound/wizard/wpain.wav
+sound/wizard/wsight.wav
+sound/dog/dattack1.wav
+sound/dog/ddeath.wav
+sound/dog/dpain1.wav
+sound/dog/dsight.wav
+sound/dog/idle.wav
+sound/zombie/z_idle.wav
+sound/zombie/z_idle1.wav
+sound/zombie/z_shot1.wav
+sound/zombie/z_gib.wav
+sound/zombie/z_pain.wav
+sound/zombie/z_pain1.wav
+sound/zombie/z_fall.wav
+sound/zombie/z_miss.wav
+sound/zombie/z_hit.wav
+sound/zombie/idle_w2.wav
+sound/boss1/out1.wav
+sound/boss1/sight1.wav
+sound/boss1/throw.wav
+sound/boss1/pain.wav
+sound/boss1/death.wav
+sound/hknight/hit.wav
+maps/b_bh10.bsp
+maps/b_bh100.bsp
+maps/b_bh25.bsp
+progs/armor.mdl
+progs/g_shot.mdl
+progs/g_nail.mdl
+progs/g_nail2.mdl
+progs/g_rock.mdl
+progs/g_rock2.mdl
+progs/g_light.mdl
+maps/b_shell1.bsp
+maps/b_shell0.bsp
+maps/b_nail1.bsp
+maps/b_nail0.bsp
+maps/b_rock1.bsp
+maps/b_rock0.bsp
+maps/b_batt1.bsp
+maps/b_batt0.bsp
+progs/w_s_key.mdl
+progs/m_s_key.mdl
+progs/w_g_key.mdl
+progs/m_g_key.mdl
+progs/end1.mdl
+progs/invulner.mdl
+progs/suit.mdl
+progs/invisibl.mdl
+progs/quaddama.mdl
+progs/player.mdl
+progs/eyes.mdl
+progs/h_player.mdl
+progs/gib1.mdl
+progs/gib2.mdl
+progs/gib3.mdl
+progs/s_bubble.spr
+progs/s_explod.spr
+progs/v_axe.mdl
+progs/v_shot.mdl
+progs/v_nail.mdl
+progs/v_rock.mdl
+progs/v_shot2.mdl
+progs/v_nail2.mdl
+progs/v_rock2.mdl
+progs/bolt.mdl
+progs/bolt2.mdl
+progs/bolt3.mdl
+progs/lavaball.mdl
+progs/missile.mdl
+progs/grenade.mdl
+progs/spike.mdl
+progs/s_spike.mdl
+progs/backpack.mdl
+progs/zom_gib.mdl
+progs/v_light.mdl
+progs/s_light.spr
+progs/flame.mdl
+progs/flame2.mdl
+maps/b_explob.bsp
+progs/ogre.mdl
+progs/h_ogre.mdl
+progs/demon.mdl
+progs/h_demon.mdl
+progs/shambler.mdl
+progs/s_light.mdl
+progs/h_shams.mdl
+progs/knight.mdl
+progs/h_knight.mdl
+progs/soldier.mdl
+progs/h_guard.mdl
+progs/wizard.mdl
+progs/h_wizard.mdl
+progs/w_spike.mdl
+progs/h_dog.mdl
+progs/dog.mdl
+progs/zombie.mdl
+progs/h_zombie.mdl
+progs/boss.mdl
+progs.dat
+gfx.wad
+quake.rc
+default.cfg
+end1.bin
+demo1.dem
+demo2.dem
+demo3.dem
+gfx/palette.lmp
+gfx/colormap.lmp
+gfx/complete.lmp
+gfx/inter.lmp
+gfx/ranking.lmp
+gfx/vidmodes.lmp
+gfx/finale.lmp
+gfx/conback.lmp
+gfx/qplaque.lmp
+gfx/menudot1.lmp
+gfx/menudot2.lmp
+gfx/menudot3.lmp
+gfx/menudot4.lmp
+gfx/menudot5.lmp
+gfx/menudot6.lmp
+gfx/menuplyr.lmp
+gfx/bigbox.lmp
+gfx/dim_modm.lmp
+gfx/dim_drct.lmp
+gfx/dim_ipx.lmp
+gfx/dim_tcp.lmp
+gfx/dim_mult.lmp
+gfx/mainmenu.lmp
+gfx/box_tl.lmp
+gfx/box_tm.lmp
+gfx/box_tr.lmp
+gfx/box_ml.lmp
+gfx/box_mm.lmp
+gfx/box_mm2.lmp
+gfx/box_mr.lmp
+gfx/box_bl.lmp
+gfx/box_bm.lmp
+gfx/box_br.lmp
+gfx/sp_menu.lmp
+gfx/ttl_sgl.lmp
+gfx/ttl_main.lmp
+gfx/ttl_cstm.lmp
+gfx/mp_menu.lmp
+gfx/netmen1.lmp
+gfx/netmen2.lmp
+gfx/netmen3.lmp
+gfx/netmen4.lmp
+gfx/netmen5.lmp
+gfx/sell.lmp
+gfx/help0.lmp
+gfx/help1.lmp
+gfx/help2.lmp
+gfx/help3.lmp
+gfx/help4.lmp
+gfx/help5.lmp
+gfx/pause.lmp
+gfx/loading.lmp
+gfx/p_option.lmp
+gfx/p_load.lmp
+gfx/p_save.lmp
+gfx/p_multi.lmp
+maps/start.bsp
+maps/e1m1.bsp
+maps/e1m2.bsp
+maps/e1m3.bsp
+maps/e1m4.bsp
+maps/e1m5.bsp
+maps/e1m6.bsp
+maps/e1m7.bsp
+maps/e1m8.bsp
+sound/misc/basekey.wav
+sound/enforcer/enfire.wav
+sound/enforcer/enfstop.wav
+sound/enforcer/sight1.wav
+sound/enforcer/sight2.wav
+sound/enforcer/sight3.wav
+sound/enforcer/sight4.wav
+sound/enforcer/pain1.wav
+sound/enforcer/pain2.wav
+sound/enforcer/death1.wav
+sound/enforcer/idle1.wav
+sound/blob/death1.wav
+sound/blob/hit1.wav
+sound/blob/land1.wav
+sound/blob/sight1.wav
+sound/hknight/attack1.wav
+sound/hknight/death1.wav
+sound/hknight/pain1.wav
+sound/hknight/sight1.wav
+sound/hknight/slash1.wav
+sound/hknight/idle.wav
+sound/hknight/grunt.wav
+sound/fish/death.wav
+sound/fish/bite.wav
+sound/fish/idle.wav
+sound/shalrath/attack.wav
+sound/shalrath/attack2.wav
+sound/shalrath/death.wav
+sound/shalrath/idle.wav
+sound/shalrath/pain.wav
+sound/shalrath/sight.wav
+sound/boss2/death.wav
+sound/boss2/idle.wav
+sound/boss2/sight.wav
+sound/boss2/pop2.wav
+progs/b_s_key.mdl
+progs/b_g_key.mdl
+progs/end2.mdl
+progs/end3.mdl
+progs/end4.mdl
+progs/teleport.mdl
+maps/b_exbox2.bsp
+progs/laser.mdl
+progs/tarbaby.mdl
+progs/hknight.mdl
+progs/k_spike.mdl
+progs/h_hellkn.mdl
+progs/fish.mdl
+progs/shalrath.mdl
+progs/h_shal.mdl
+progs/v_spike.mdl
+progs/enforcer.mdl
+progs/h_mega.mdl
+progs/oldone.mdl
+end2.bin
+gfx/pop.lmp
+maps/e2m1.bsp
+maps/e2m2.bsp
+maps/e2m3.bsp
+maps/e2m4.bsp
+maps/e2m5.bsp
+maps/e2m6.bsp
+maps/e2m7.bsp
+maps/e3m1.bsp
+maps/e3m2.bsp
+maps/e3m3.bsp
+maps/e3m4.bsp
+maps/e3m5.bsp
+maps/e3m6.bsp
+maps/e3m7.bsp
+maps/e4m1.bsp
+maps/e4m2.bsp
+maps/e4m3.bsp
+maps/e4m4.bsp
+maps/e4m5.bsp
+maps/e4m6.bsp
+maps/e4m7.bsp
+maps/e4m8.bsp
+maps/end.bsp
+maps/dm1.bsp
+maps/dm2.bsp
+maps/dm3.bsp
+maps/dm4.bsp
+maps/dm5.bsp
+maps/dm6.bsp
+*/

@@ -36,4 +36,5 @@ SOFTWARE.
 #define CriticalError CriticalError_
 #include <Windows.h>
 #undef CriticalError
+#undef FindResource
 #endif

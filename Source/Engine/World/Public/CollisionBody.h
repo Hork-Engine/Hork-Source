@@ -49,6 +49,8 @@ public:
     Quat Rotation;
     float Margin;
 
+    enum { AXIAL_X, AXIAL_Y, AXIAL_Z, AXIAL_DEFAULT = AXIAL_Y };
+
 protected:
     FCollisionBody() {
         Rotation = Quat::Identity();
@@ -63,7 +65,7 @@ class FCollisionSphere : public FCollisionBody {
     AN_CLASS( FCollisionSphere, FCollisionBody )
 
 public:
-    float Radius = 1;
+    float Radius = 0.5f;
     bool bProportionalScale = true;
 
 protected:
@@ -77,7 +79,7 @@ class FCollisionSphereRadii : public FCollisionBody {
     AN_CLASS( FCollisionSphereRadii, FCollisionBody )
 
 public:
-    Float3 Radius = Float3(1);
+    Float3 Radius = Float3(0.5f);
 
 protected:
     FCollisionSphereRadii() {}
@@ -90,7 +92,7 @@ class FCollisionBox : public FCollisionBody {
     AN_CLASS( FCollisionBox, FCollisionBody )
 
 public:
-    Float3 HalfExtents = Float3(1.0f);
+    Float3 HalfExtents = Float3(0.5f);
 
 protected:
     FCollisionBox() {}
@@ -104,6 +106,7 @@ class FCollisionCylinder : public FCollisionBody {
 
 public:
     Float3 HalfExtents = Float3(1.0f);
+    int Axial = AXIAL_DEFAULT;
 
 protected:
     FCollisionCylinder() {}
@@ -118,6 +121,7 @@ class FCollisionCone : public FCollisionBody {
 public:
     float Radius = 1;
     float Height = 1;
+    int Axial = AXIAL_DEFAULT;
 
 protected:
     FCollisionCone() {}
@@ -132,6 +136,7 @@ class FCollisionCapsule : public FCollisionBody {
 public:
     float Radius = 1;
     float Height = 1;
+    int Axial = AXIAL_DEFAULT;
 
 protected:
     FCollisionCapsule() {}
@@ -276,10 +281,6 @@ private:
 
     class FStridingMeshInterface * Interface;
 };
-
-// TODO:
-//class FCollisionTerrain : public FCollisionBody
-//etc
 
 class FCollisionBodyComposition {
     AN_FORBID_COPY( FCollisionBodyComposition )

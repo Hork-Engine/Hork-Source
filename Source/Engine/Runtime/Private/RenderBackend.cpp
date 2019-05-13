@@ -123,8 +123,8 @@ void FRenderProxy::KillProxy() {
         GMainMemoryZone.Dealloc( this );
         return;
     } else {
-        NextFreeProxy = frameData->RenderProxyFree;
-        frameData->RenderProxyFree = this;
+        NextFreeProxy = frameData->RenderProxyFree[ frameData->WriteIndex ];
+        frameData->RenderProxyFree[ frameData->WriteIndex ] = this;
     }
 
     bPendingKill = true;
@@ -171,19 +171,19 @@ void FRenderProxy::MarkUpdated() {
     //bLost[frameData->SmpIndex] = false;
 
     if ( IntrusiveIsInList( this,
-                            NextUpload[ frameData->SmpIndex ],
-                            PrevUpload[ frameData->SmpIndex ],
-                            frameData->RenderProxyUploadHead,
-                            frameData->RenderProxyUploadTail ) ) {
+                            NextUpload[ frameData->WriteIndex ],
+                            PrevUpload[ frameData->WriteIndex ],
+                            frameData->RenderProxyUploadHead[ frameData->WriteIndex ],
+                            frameData->RenderProxyUploadTail[ frameData->WriteIndex ] ) ) {
         // Already marked
         return;
     }
 
     IntrusiveAddToList( this,
-                        NextUpload[ frameData->SmpIndex ],
-                        PrevUpload[ frameData->SmpIndex ],
-                        frameData->RenderProxyUploadHead,
-                        frameData->RenderProxyUploadTail );
+                        NextUpload[ frameData->WriteIndex ],
+                        PrevUpload[ frameData->WriteIndex ],
+                        frameData->RenderProxyUploadHead[ frameData->WriteIndex ],
+                        frameData->RenderProxyUploadTail[ frameData->WriteIndex ] );
 
     bSubmittedToRenderThread = true;
 }
@@ -264,7 +264,7 @@ void * FRenderFrame::AllocFrameData( size_t _BytesCount ) {
 
     void * pMemory;
 
-    if ( SmpIndex & 1 ) {
+    if ( WriteIndex & 1 ) {
         pMemory = (byte *)pFrameMemory - FrameMemoryUsed - _BytesCount;
     } else {
         pMemory = (byte *)pFrameMemory + FrameMemoryUsed;

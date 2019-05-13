@@ -43,38 +43,50 @@ public:
     void Initialize();
     void Deinitialize();
 
-    FBaseObject * FindResource( FClassMeta const & _ClassMeta, const char * _Name, bool & _bMetadataMismatch, int & _Hash );
+    // Get or create resource. Return default object if fails.
+    template< typename T >
+    AN_FORCEINLINE T * CreateResource( const char * _FileName, const char * _Alias = nullptr ) {
+        return static_cast< T * >( CreateResource( T::ClassMeta(), _FileName, _Alias ) );
+    }
 
-    FBaseObject * FindResourceByName( const char * _Name );
-
-    FBaseObject * GetResource( FClassMeta const & _ClassMeta, const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr );
-
-    FClassMeta const * GetResourceInfo( const char * _Name );
-
+    // Get resource. Return default object if fails.
     template< typename T >
     AN_FORCEINLINE T * GetResource( const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr ) {
         return static_cast< T * >( GetResource( T::ClassMeta(), _Name, _bResourceFoundResult, _bMetadataMismatch ) );
     }
 
+    // Get or create resource. Return default object if fails.
+    FBaseObject * CreateResource( FClassMeta const &  _ClassMeta, const char * _FileName, const char * _Alias = nullptr );
+
+    // Get resource. Return default object if fails.
+    FBaseObject * GetResource( FClassMeta const & _ClassMeta, const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr );
+
+    // Get resource meta.
+    FClassMeta const * GetResourceInfo( const char * _Name );
+
+    // Find resource in cache. Return null if fails.
+    FBaseObject * FindResource( FClassMeta const & _ClassMeta, const char * _Name, bool & _bMetadataMismatch, int & _Hash );
+
+    // Find resource in cache. Return null if fails.
+    FBaseObject * FindResourceByName( const char * _Name );
+
+    // Register object as resource.
     bool RegisterResource( FBaseObject * _Resource );
 
+    // Unregister object as resource.
     bool UnregisterResource( FBaseObject * _Resource );
 
+    // Unregister all resources with same meta.
     void UnregisterResources( FClassMeta const & _ClassMeta );
 
+    // Unregister all resources by type.
     template< typename T >
     AN_FORCEINLINE void UnregisterResources() {
         UnregisterResources( T::ClassMeta() );
     }
 
+    // Unregister all resources.
     void UnregisterResources();
-
-    FBaseObject * CreateUniqueResource( FClassMeta const &  _ClassMeta, const char * _FileName, const char * _Alias = nullptr );
-
-    template< typename T >
-    AN_FORCEINLINE T * CreateUniqueResource( const char * _FileName, const char * _Alias = nullptr ) {
-        return static_cast< T * >( CreateUniqueResource( T::ClassMeta(), _FileName, _Alias ) );
-    }
 
 private:
     TPodArray< FBaseObject * > ResourceCache;
@@ -82,3 +94,57 @@ private:
 };
 
 extern FResourceManager & GResourceManager;
+
+/*
+
+Helpers
+
+*/
+
+// Get or create resource. Return default object if fails.
+template< typename T >
+AN_FORCEINLINE T * CreateResource( const char * _FileName, const char * _Alias = nullptr ) {
+    return GResourceManager.CreateResource< T >( _FileName, _Alias );
+}
+
+// Get resource. Return default object if fails.
+template< typename T >
+AN_FORCEINLINE T * GetResource( const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr ) {
+    return GResourceManager.GetResource< T >( _Name, _bResourceFoundResult, _bMetadataMismatch );
+}
+
+// Get resource meta.
+AN_FORCEINLINE FClassMeta const * GetResourceInfo( const char * _Name ) {
+    return GResourceManager.GetResourceInfo( _Name );
+}
+
+// Find resource in cache. Return null if fails.
+AN_FORCEINLINE FBaseObject * FindResource( FClassMeta const & _ClassMeta, const char * _Name, bool & _bMetadataMismatch, int & _Hash ) {
+    return GResourceManager.FindResource( _ClassMeta, _Name, _bMetadataMismatch, _Hash );
+}
+
+// Find resource in cache. Return null if fails.
+AN_FORCEINLINE FBaseObject * FindResourceByName( const char * _Name ) {
+    return GResourceManager.FindResourceByName( _Name );
+}
+
+// Register object as resource.
+AN_FORCEINLINE bool RegisterResource( FBaseObject * _Resource ) {
+    return GResourceManager.RegisterResource( _Resource );
+}
+
+// Unregister object as resource.
+AN_FORCEINLINE bool UnregisterResource( FBaseObject * _Resource ) {
+    return GResourceManager.UnregisterResource( _Resource );
+}
+
+// Unregister all resources by type.
+template< typename T >
+AN_FORCEINLINE void UnregisterResources() {
+    GResourceManager.UnregisterResources< T >();
+}
+
+// Unregister all resources.
+AN_FORCEINLINE void UnregisterResources() {
+    GResourceManager.UnregisterResources();
+}

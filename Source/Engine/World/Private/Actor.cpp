@@ -71,7 +71,7 @@ void FActor::Destroy() {
         return;
     }
 
-    // Mark actor to remove them from the world
+    // Mark actor to remove it from the world
     bPendingKill = true;
     NextPendingKillActor = ParentWorld->PendingKillActors;
     ParentWorld->PendingKillActors = this;
@@ -235,7 +235,7 @@ void FActor::BeginPlayComponents() {
 
 void FActor::TickComponents( float _TimeStep ) {
     for ( FActorComponent * component : Components ) {
-        if ( component->bCanEverTick ) {
+        if ( component->bCanEverTick && !component->IsPendingKill() ) {
             component->TickComponent( _TimeStep );
         }
     }
@@ -365,4 +365,8 @@ void FActor::EndPlay() {
     E_OnBeginOverlap.UnsubscribeAll();
     E_OnEndOverlap.UnsubscribeAll();
     E_OnUpdateOverlap.UnsubscribeAll();
+}
+
+void FActor::ApplyDamage( float _DamageAmount, Float3 const & _Position, FActor * _DamageCauser ) {
+
 }

@@ -36,6 +36,7 @@ SOFTWARE.
 #include <Engine/World/Public/ResourceManager.h>
 #include <Engine/World/Public/GameMaster.h>
 #include <Engine/World/Public/MeshAsset.h>
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_CLASS_META_NO_ATTRIBS( FQuakeBSPActor )
 
@@ -79,11 +80,11 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
         FString const & name = Model->Textures[ lightmapGroup->TextureIndex ].Object->GetName();
 
         if ( !name.CmpN( "sky", 3 ) ) {
-            materialInstance->Material = GGameModule->SkyMaterial;
+            materialInstance->Material = GetResource< FMaterial >( "SkyMaterial" );
         } else if ( name[ 0 ] == '*' ) {
-            materialInstance->Material = GGameModule->WaterMaterial;
+            materialInstance->Material = GetResource< FMaterial >( "WaterMaterial" );
         } else {
-            materialInstance->Material = GGameModule->WallMaterial;
+            materialInstance->Material = GetResource< FMaterial >( "WallMaterial" );
 
             surf->LightmapBlock = lightmapGroup->LightmapBlock;
         }

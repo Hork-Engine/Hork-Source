@@ -223,7 +223,7 @@ void FSkinnedComponent::DeinitializeComponent() {
 
 void FSkinnedComponent::ReallocateRenderProxy() {
     FRenderFrame * frameData = GRuntime.GetFrameData();
-    FRenderProxy_Skeleton::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_Skeleton::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
     data.JointsCount = Skeleton->GetJoints().Length();
     data.Chunks = nullptr;
     data.ChunksTail = nullptr;
@@ -614,7 +614,7 @@ Float3x4 const & FSkinnedComponent::GetJointTransform( int _JointIndex ) {
 
 Float3x4 * FSkinnedComponent::WriteJointTransforms( int _JointsCount, int _StartJointLocation ) {
     FRenderFrame * frameData = GRuntime.GetFrameData();
-    FRenderProxy_Skeleton::FrameData & data = RenderProxy->Data[ frameData->SmpIndex ];
+    FRenderProxy_Skeleton::FrameData & data = RenderProxy->Data[ frameData->WriteIndex ];
 
     if ( !_JointsCount ) {
         return nullptr;

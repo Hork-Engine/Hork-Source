@@ -62,11 +62,16 @@ private:
     void SpeedRelease();
     void AttackPress();
     void AttackRelease();
+    void Shoot();
 
     Angl Angles;
     Float3 MoveVector;
     bool bSpeed;
     FQuakeModelFrame * WeaponModel;
     int WeaponFramesCount;
-    Float AnimationTime;
+    bool bAttacking;
+    bool bAttackStarted;
+    bool bAttacked;
+    Angl AttackAngle;
+    Float AttackTime;
 };

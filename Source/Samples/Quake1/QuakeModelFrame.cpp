@@ -235,10 +235,7 @@ void FQuakeModelFrame::DecompressFrame( int _FrameIndex0, int _FrameIndex1, floa
         return;
     }
 
-    FMeshVertex * pVertices = Mesh->WriteVertexData( Model->VerticesCount, 0 );
-    if ( !pVertices ) {
-        return;
-    }
+    FMeshVertex * pVertices = Mesh->GetVertices();
 
     QFrame & frame0 = Model->Frames[ _FrameIndex0 ];
     QFrame & frame1 = Model->Frames[ _FrameIndex1 ];
@@ -267,6 +264,8 @@ void FQuakeModelFrame::DecompressFrame( int _FrameIndex0, int _FrameIndex1, floa
 
         // TODO: calc tangent space?
     }
+
+    Mesh->SendVertexDataToGPU( Model->VerticesCount, 0 );
 }
 
 void FQuakeModelFrame::DecompressFrame( int _FrameIndex ) {
@@ -277,10 +276,7 @@ void FQuakeModelFrame::DecompressFrame( int _FrameIndex ) {
         return;
     }
 
-    FMeshVertex * pVertices = Mesh->WriteVertexData( Model->VerticesCount, 0 );
-    if ( !pVertices ) {
-        return;
-    }
+    FMeshVertex * pVertices = Mesh->GetVertices();
 
     QFrame & frame = Model->Frames[ _FrameIndex ];
 
@@ -297,6 +293,8 @@ void FQuakeModelFrame::DecompressFrame( int _FrameIndex ) {
 
         // TODO: calc tangent space?
     }
+
+    Mesh->SendVertexDataToGPU( Model->VerticesCount, 0 );
 }
 
 void FQuakeModelFrame::SetModel( FQuakeModel * _Model ) {

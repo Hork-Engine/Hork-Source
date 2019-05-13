@@ -133,6 +133,12 @@ public:
     // Get indexed mesh
     FIndexedMesh * GetMesh() const { return Mesh; }
 
+    // Unset materials
+    void ClearMaterials();
+
+    // Set materials from mesh resource
+    void SetDefaultMaterials();
+
     // Set material instance for subpart of the mesh
     void SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance );
 
@@ -144,8 +150,6 @@ public:
 
     // Get material instance of subpart of the mesh
     FMaterialInstance * GetMaterialInstance() const { return GetMaterialInstance( 0 ); }
-
-    void ClearMaterials();
 
     // Iterate meshes in parent world
     FMeshComponent * GetNextMesh() { return Next; }

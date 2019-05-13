@@ -144,7 +144,7 @@ bool FResourceManager::RegisterResource( FBaseObject * _Resource ) {
     return true;
 }
 
-FBaseObject * FResourceManager::CreateUniqueResource( FClassMeta const &  _ClassMeta, const char * _FileName, const char * _Alias ) {
+FBaseObject * FResourceManager::CreateResource( FClassMeta const &  _ClassMeta, const char * _FileName, const char * _Alias ) {
     int hash;
     bool bMetadataMismatch;
     const char * resourceName = _Alias ? _Alias : _FileName;

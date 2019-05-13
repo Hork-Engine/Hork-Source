@@ -237,7 +237,7 @@ bool FTexture::InitializeCubemapFromImages( FImage const * _Faces[6] ) {
 void FTexture::Initialize1D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength ) {
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     Purge();
 
@@ -264,7 +264,7 @@ void FTexture::Initialize1D( ETexturePixelFormat _PixelFormat, int _NumLods, int
 void FTexture::Initialize2D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArrayLength ) {
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     Purge();
 
@@ -291,7 +291,7 @@ void FTexture::Initialize2D( ETexturePixelFormat _PixelFormat, int _NumLods, int
 void FTexture::Initialize3D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     Purge();
 
@@ -318,7 +318,7 @@ void FTexture::Initialize3D( ETexturePixelFormat _PixelFormat, int _NumLods, int
 void FTexture::InitializeCubemap( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength ) {
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     Purge();
 
@@ -345,7 +345,7 @@ void FTexture::InitializeCubemap( ETexturePixelFormat _PixelFormat, int _NumLods
 void FTexture::InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     Purge();
 
@@ -504,7 +504,7 @@ void * FTexture::WriteTextureData( int _LocationX, int _LocationY, int _Location
 
     FRenderFrame * frameData = GRuntime.GetFrameData();
 
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->SmpIndex];
+    FRenderProxy_Texture::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     data.TextureType = TextureType;
     data.PixelFormat = PixelFormat;

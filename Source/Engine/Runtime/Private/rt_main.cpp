@@ -467,6 +467,20 @@ void RenderFrontend() {
 }
 
 void SubmitGameUpdate() {
+
+    frameData->WriteIndex ^= 1;
+    frameData->FrameMemorySize = rt_FrameMemorySize - frameData->FrameMemoryUsed;
+    if ( frameData->WriteIndex & 1 ) {
+        frameData->pFrameMemory = (byte *)rt_FrameMemoryAddress + rt_FrameMemorySize;
+    } else {
+        frameData->pFrameMemory = rt_FrameMemoryAddress;
+    }
+    frameData->FrameMemoryUsed = 0;
+
+    frameData->ReadIndex = frameData->WriteIndex ^ 1;
+
+    GLogger.Printf( "Write %d, Read %d\n", frameData->WriteIndex, frameData->ReadIndex );
+
     rt_GameUpdateEvent.Signal();
 }
 
@@ -495,16 +509,21 @@ static void RuntimeMainLoop() {
 
     for ( int i = 0 ; i < 1 ; i++ ) {
         frameData = &rt_FrameData[ i ];
-        frameData->RenderProxyUploadHead = nullptr;
-        frameData->RenderProxyUploadTail = nullptr;
-        frameData->RenderProxyFree = nullptr;
+
+        for ( int j = 0 ; j < 2 ; j++ ) {
+            frameData->RenderProxyUploadHead[j] = nullptr;
+            frameData->RenderProxyUploadTail[j] = nullptr;
+            frameData->RenderProxyFree[j] = nullptr;
+        }
         frameData->DrawListHead = nullptr;
         frameData->DrawListTail = nullptr;
     }
 
-    rt_FrameData[ 0 ].FrameMemoryUsed = 0;
-    rt_FrameData[ 0 ].FrameMemorySize = rt_FrameMemorySize;
-    rt_FrameData[ 0 ].pFrameMemory = rt_FrameMemoryAddress;
+    frameData->ReadIndex = 0;
+    frameData->WriteIndex = 1;
+    frameData->FrameMemoryUsed = 0;
+    frameData->FrameMemorySize = rt_FrameMemorySize;
+    frameData->pFrameMemory = rt_FrameMemoryAddress;
 
     // Pump initial events
     frameData = &rt_FrameData[ 0 ];
@@ -523,12 +542,8 @@ static void RuntimeMainLoop() {
     while ( 1 ) {
 //        frameTimeStamp = GRuntime.SysMicroseconds();
 
-        rt_FrameData[ 0 ].FrameMemoryUsed = 0;
-        rt_FrameData[ 0 ].FrameMemorySize = rt_FrameMemorySize;
-        rt_FrameData[ 0 ].pFrameMemory = rt_FrameMemoryAddress;
-        rt_FrameData[ 0 ].SmpIndex = 0;
-        rt_FrameData[ 0 ].DrawListHead = nullptr;
-        rt_FrameData[ 0 ].DrawListTail = nullptr;
+        frameData->DrawListHead = nullptr;
+        frameData->DrawListTail = nullptr;
 
         if ( IsCriticalError() ) {
             // Critical error in other thread was occured
@@ -572,6 +587,8 @@ static void RuntimeMainLoop() {
     //for ( int i = 0 ; i < 2 ; i++ ) {
     //    frameData = &rt_FrameData[ 0 ];
 
+        GRenderBackend->CleanupFrame( frameData );
+        frameData->ReadIndex^=1;
         GRenderBackend->CleanupFrame( frameData );
 
         frameData->Instances.Free();

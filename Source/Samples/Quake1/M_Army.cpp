@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "M_Army.h"
 #include "Game.h"
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_BEGIN_CLASS_META( M_Army )
 AN_END_CLASS_META()
@@ -44,7 +45,7 @@ M_Army::M_Army() {
     FramesCount = model ? model->Frames.Length() : 0;
 
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();
-    matInst->Material = GGameModule->SkinMaterial;
+    matInst->Material = GetResource< FMaterial >( "SkinMaterial" );
 
     Frame->SetMaterialInstance( matInst );
 

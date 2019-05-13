@@ -29,10 +29,10 @@ SOFTWARE.
 */
 
 #include "Player.h"
-#include "Module.h"
 
 #include <Engine/World/Public/MaterialAssembly.h>
 #include <Engine/World/Public/InputComponent.h>
+#include <Engine/World/Public/ResourceManager.h>
 
 AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
@@ -41,65 +41,23 @@ FPlayer::FPlayer() {
     Camera = CreateComponent< FCameraComponent >( "Camera" );
     RootComponent = Camera;
 
-    FMeshComponent * component = CreateComponent< FMeshComponent >( "checker" );
-    component->SetMesh( GModule->CheckerMesh );
-    component->SetMaterialInstance( 0, GModule->CheckerMaterialInstance );
-    component->SetPosition(0,0,-0.5f);
-    component->SetScale(0.1f);
-    component->AttachTo( Camera );
+    Box = CreateComponent< FMeshComponent >( "checker" );
+    Box->SetMesh( GetResource< FIndexedMesh >( "CheckerMesh" ) );
+    Box->SetDefaultMaterials();
+    Box->SetPosition( 0, 0, -0.5f );
+    Box->SetScale( 0.1f );
+    Box->AttachTo( Camera );
 
     bCanEverTick = true;
 
-
-
-
-    FMaterialProject * proj = NewObject< FMaterialProject >();
-
-    //
-    // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
-    //
-    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
-
-    //
-    // VS_Dir = InPosition - ViewPostion.xyz;
-    //
-    FMaterialInViewPositionBlock * inViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
-    FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
-    positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
-    positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
-    materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
-    FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
-    NSV_Dir->Connect( /*positionMinusViewPosition*/inPositionBlock, "Value" );
-
-    FMaterialAtmosphereBlock * atmo = proj->NewBlock< FMaterialAtmosphereBlock >();
-    atmo->Dir->Connect( materialVertexStage, "Dir" );
-
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
-    materialFragmentStage->Color->Connect( atmo, "Result" );
-
-    FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-    builder->VertexStage = materialVertexStage;
-    builder->FragmentStage = materialFragmentStage;
-    builder->MaterialType = MATERIAL_TYPE_UNLIT;
-    builder->MaterialFacing = MATERIAL_FACE_BACK;
-    FMaterial * Material = builder->Build();
-
-    // Create unit box
     FMaterialInstance * minst = NewObject< FMaterialInstance >();
-    minst->Material = Material;
+    minst->Material = GetResource< FMaterial >( "SkyboxMaterial" );
 
-    FIndexedMesh * unitBox = NewObject< FIndexedMesh >();
-    unitBox->InitializeInternalMesh( "*box*" );
-
-    unitBoxComponent = CreateComponent< FMeshComponent >( "sky_box" );
-    unitBoxComponent->SetMesh( unitBox );
-    unitBoxComponent->SetMaterialInstance( minst );
-    //unitBoxComponent->SetScale(Float3(1000.0f,1000.0f,1000.0f));
-    unitBoxComponent->SetScale(4000);
-    unitBoxComponent->ForceOutdoorSurface( true );
-
-    //unitBoxComponent->AttachTo( RootComponent,true );
+    Skybox = CreateComponent< FMeshComponent >( "sky_box" );
+    Skybox->SetMesh( GetResource< FIndexedMesh >( "UnitBox" ) );
+    Skybox->SetMaterialInstance( minst );
+    Skybox->SetScale(4000);
+    Skybox->ForceOutdoorSurface( true );
 }
 
 void FPlayer::BeginPlay() {
@@ -127,9 +85,6 @@ void FPlayer::BeginPlay() {
     Angles.Pitch = Angles.Roll = 0;
 
     RootComponent->SetAngles( Angles );
-
-
-
 }
 
 void FPlayer::EndPlay() {
@@ -156,21 +111,11 @@ void FPlayer::Tick( float _TimeStep ) {
     const float MoveSpeed = _TimeStep * ( bSpeed ? PLAYER_MOVE_HIGH_SPEED : PLAYER_MOVE_SPEED );
     float lenSqr = MoveVector.LengthSqr();
     if ( lenSqr > 0 ) {
-
-        //if ( lenSqr > 1 ) {
-            MoveVector.NormalizeSelf();
-        //}
-
-        Float3 dir = MoveVector * MoveSpeed;
-
-        RootComponent->Step( dir );
-
+        RootComponent->Step( MoveVector.Normalized() * MoveSpeed );
         MoveVector.Clear();
     }
 
-    //unitBoxComponent->SetPosition(RootComponent->GetPosition());
-    //unitBoxComponent->TurnLeftFPS(_TimeStep*0.1f);
-    //unitBoxComponent->StepRight(_TimeStep*0.1f);
+    Box->TurnLeftFPS( _TimeStep );
 }
 
 void FPlayer::MoveForward( float _Value ) {
@@ -182,11 +127,11 @@ void FPlayer::MoveRight( float _Value ) {
 }
 
 void FPlayer::MoveUp( float _Value ) {
-    MoveVector.Y += 1;//_Value;
+    MoveVector.Y += 1;
 }
 
 void FPlayer::MoveDown( float _Value ) {
-    MoveVector.Y -= 1;//_Value;
+    MoveVector.Y -= 1;
 }
 
 void FPlayer::TurnRight( float _Value ) {

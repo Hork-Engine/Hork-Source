@@ -335,8 +335,6 @@ void FPhysicalBody::DestroyRigidBody() {
 }
 
 void FPhysicalBody::UpdatePhysicsAttribs() {
-    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
-
     if ( !bSimulatePhysics ) {
         DestroyRigidBody();
         return;
@@ -347,10 +345,14 @@ void FPhysicalBody::UpdatePhysicsAttribs() {
         return;
     }
 
-    CachedScale = GetWorldScale();
+    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
     btTransform const & bodyTransform = RigidBody->getWorldTransform();
     Float3 position = btVectorToFloat3( bodyTransform.getOrigin() - bodyTransform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
+
+    physicsWorld->removeRigidBody( RigidBody );
+
+    CachedScale = GetWorldScale();
 
     DestroyCollisionShape( CompoundShape );
     CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition, CachedScale, &CompoundShape, &MotionState->CenterOfMass );
@@ -364,23 +366,38 @@ void FPhysicalBody::UpdatePhysicsAttribs() {
         CompoundShape->calculateLocalInertia( Mass, localInertia );
     }
 
-    // Update position with new center of mass
-    UpdatePhysicalBodyPosition( position );
-
-    //RigidBody->setMassProps( Mass, localInertia );
+    RigidBody->setMassProps( Mass, localInertia );
 
     UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, bKinematicBody );
 
+#if 0
+    Quat worldRotation = GetWorldRotation();
+    Float3 worldPosition = GetWorldPosition();
+
+    btTransform & transform = RigidBody->getWorldTransform();
+
+    transform.setRotation( btQuaternionToQuat( worldRotation ) );
+    transform.setOrigin( btVectorToFloat3( worldPosition + worldRotation * MotionState->CenterOfMass ) );
+#else
+    // Update position with new center of mass
+    UpdatePhysicalBodyPosition( position );
+#endif
+
     RigidBody->updateInertiaTensor();
 
-    physicsWorld->removeRigidBody( RigidBody );
     physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
 
     UpdateRigidBodyGravity( RigidBody, bDisableGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
 
-    RigidBody->setMassProps( Mass, localInertia );
-
     ActivatePhysics();
+
+    // Update dynamic attributes
+//    SetLinearFactor( LinearFactor );
+//    SetAngularFactor( AngularFactor );
+//    SetAnisotropicFriction( AnisotropicFriction );
+//    SetContactProcessingThreshold( ContactProcessingThreshold );
+//    SetCcdRadius( CcdRadius );
+//    SetCcdMotionThreshold( CcdMotionThreshold );
 }
 
 void FPhysicalBody::OnTransformDirty() {
@@ -694,7 +711,7 @@ float FPhysicalBody::GetCcdMotionThreshold() const {
 }
 
 void FPhysicalBody::ActivatePhysics() {
-    if ( Mass > 0.0f || bKinematicBody ) { // FIXME: bKinematicBody
+    if ( Mass > 0.0f ) {
         if ( RigidBody ) {
             RigidBody->activate( true );
         }

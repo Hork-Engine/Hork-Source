@@ -265,6 +265,8 @@ bool FQuakeModel::FromData( const byte * _Data, const unsigned * _Palette ) {
             frame.FirstPose = posenum;
             frame.NumPoses = group->NumPoses;
 
+            AN_Assert( frame.NumPoses > 0 );
+
             memcpy( &frame.Mins, &group->BboxMin, sizeof( frame.Mins ) );
             memcpy( &frame.Maxs, &group->BboxMax, sizeof( frame.Maxs ) );
 

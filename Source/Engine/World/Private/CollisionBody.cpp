@@ -94,14 +94,38 @@ btCollisionShape * FCollisionBox::Create() {
 }
 
 btCollisionShape * FCollisionCylinder::Create() {
+    switch ( Axial ) {
+    case AXIAL_X:
+        return b3New( btCylinderShapeX, btVectorToFloat3( HalfExtents ) );
+    case AXIAL_Y:
+        return b3New( btCylinderShape, btVectorToFloat3( HalfExtents ) );
+    case AXIAL_Z:
+        return b3New( btCylinderShapeZ, btVectorToFloat3( HalfExtents ) );
+    }
     return b3New( btCylinderShape, btVectorToFloat3( HalfExtents ) );
 }
 
 btCollisionShape * FCollisionCone::Create() {
+    switch ( Axial ) {
+    case AXIAL_X:
+        return b3New( btConeShapeX, Radius, Height );
+    case AXIAL_Y:
+        return b3New( btConeShape, Radius, Height );
+    case AXIAL_Z:
+        return b3New( btConeShapeZ, Radius, Height );
+    }
     return b3New( btConeShape, Radius, Height );
 }
 
 btCollisionShape * FCollisionCapsule::Create() {
+    switch ( Axial ) {
+    case AXIAL_X:
+        return b3New( btCapsuleShapeX, Radius, Height );
+    case AXIAL_Y:
+        return b3New( btCapsuleShape, Radius, Height );
+    case AXIAL_Z:
+        return b3New( btCapsuleShapeZ, Radius, Height );
+    }
     return b3New( btCapsuleShape, Radius, Height );
 }
 
@@ -208,7 +232,6 @@ public:
     virtual int getNumSubParts() const {
         return SubpartCount;
     }
-
 
     void preallocateVertices( int numverts ) override { (void) numverts; }
     void preallocateIndices( int numindices ) override { (void) numindices; }
@@ -347,7 +370,7 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
                     Float3 n3n1 = normal3.Cross( normal1 );
 
                     if ( ( n2n3.LengthSqr() > tolerance ) && ( n3n1.LengthSqr() > tolerance ) ) {
-                        btScalar quotient = normal1.Dot( n2n3 );
+                        float quotient = normal1.Dot( n2n3 );
                         if ( fabs( quotient ) > quotientTolerance ) {
                             quotient = -1 / quotient;
 

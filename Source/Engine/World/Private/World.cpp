@@ -109,7 +109,11 @@ FWorld::FWorld() {
 
     GravityVector = Float3( 0.0f, -9.81f, 0.0f );
 
+#if 0
     PhysicsBroadphase = b3New( btDbvtBroadphase ); // TODO: AxisSweep3Internal?
+#else
+    PhysicsBroadphase = b3New( btAxisSweep3, btVector3(-10000,-10000,-10000), btVector3(10000,10000,10000) );
+#endif
     //CollisionConfiguration = b3New( btDefaultCollisionConfiguration );
     CollisionConfiguration = b3New( btSoftBodyRigidBodyCollisionConfiguration );
     CollisionDispatcher = b3New( btCollisionDispatcher, CollisionConfiguration );
@@ -160,10 +164,27 @@ void FWorld::Destroy() {
         return;
     }
 
-    // Mark world to remove them from the game
+    // Mark world to remove it from the game
     bPendingKill = true;
     NextPendingKillWorld = GGameMaster.PendingKillWorlds;
     GGameMaster.PendingKillWorlds = this;
+
+#if 0
+    for ( int i = 0 ; i < 2 ; i++ ) {
+        TPodArray< FCollisionContact > & currentContacts = CollisionContacts[ i ];
+        THash<> & contactHash = ContactHash[ i ];
+
+        for ( FCollisionContact & contact : currentContacts ) {
+            contact.ActorA->RemoveRef();
+            contact.ActorB->RemoveRef();
+            contact.ComponentA->RemoveRef();
+            contact.ComponentB->RemoveRef();
+        }
+
+        currentContacts.Clear();
+        contactHash.Clear();
+    }
+#endif
 
     DestroyActors();
     KickoffPendingKillObjects();
@@ -387,8 +408,12 @@ void FWorld::Tick( float _TimeStep ) {
 
         actor->LifeTime += _TimeStep;
 
-        if ( actor->LifeSpan > 0.0f && actor->LifeTime > actor->LifeSpan ) {
-            actor->Destroy();
+        if ( actor->LifeSpan > 0.0f ) {
+            actor->LifeSpan -= _TimeStep;
+
+            if ( actor->LifeSpan < 0.0f ) {
+                actor->Destroy();
+            }
         }
     }
 
@@ -517,14 +542,25 @@ void FWorld::DispatchContactAndOverlapEvents() {
     FOverlapEvent overlapEvent;
     FContactEvent contactEvent;
 
+    //GLogger.Printf( "PhysicsTickNumber %d\n", PhysicsTickNumber );
+
+#if 0
+    for ( int i = 0 ; i < currentContacts.Length() ; i++ ) {
+        FCollisionContact & contact = currentContacts[ i ];
+
+        contact.ActorA->RemoveRef();
+        contact.ActorB->RemoveRef();
+        contact.ComponentA->RemoveRef();
+        contact.ComponentB->RemoveRef();
+    }
+#endif
+
     contactHash.Clear();
     currentContacts.Clear();
 
-    //GLogger.Printf( "PhysicsTickNumber %d\n", PhysicsTickNumber );
-
     int numManifolds = CollisionDispatcher->getNumManifolds();
     for ( int i = 0; i < numManifolds; i++ ) {
-        btPersistentManifold * contactManifold = CollisionDispatcher->getManifoldByIndexInternal(i);
+        btPersistentManifold * contactManifold = CollisionDispatcher->getManifoldByIndexInternal( i );
 
         if ( !contactManifold->getNumContacts() ) {
             continue;
@@ -634,6 +670,14 @@ void FWorld::DispatchContactAndOverlapEvents() {
             AN_Assert( bUnique );
 #endif
             if ( bUnique ) {
+
+#if 0
+                actorA->AddRef();
+                actorB->AddRef();
+                objectA->AddRef();
+                objectB->AddRef();
+#endif
+
                 currentContacts.Append( contact );
                 contactHash.Insert( hash, currentContacts.Length() - 1 );
             }

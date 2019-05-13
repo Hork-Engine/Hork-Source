@@ -29,10 +29,12 @@ SOFTWARE.
 */
 
 #include "Player.h"
+#include "Projectile.h"
 #include "Game.h"
 
 #include <Engine/World/Public/CameraComponent.h>
-#include <Engine/World/Public/InputComponent.h>
+#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/World/Public/World.h>
 
 AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
@@ -51,6 +53,7 @@ FPlayer::FPlayer() {
     //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_nail2.mdl");
     //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_rock.mdl");
     FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_rock2.mdl");
+    //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/g_rock2.mdl");
     //FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/v_light.mdl");
 
     WeaponModel->SetModel( model );
@@ -58,7 +61,7 @@ FPlayer::FPlayer() {
     WeaponFramesCount = model ? model->Frames.Length() : 0;
 
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();
-    matInst->Material = GGameModule->SkinMaterial;
+    matInst->Material = GetResource< FMaterial >( "SkinMaterial" );
 
     WeaponModel->SetMaterialInstance( matInst );
 
@@ -135,28 +138,56 @@ void FPlayer::Tick( float _TimeStep ) {
     float lenSqr = MoveVector.LengthSqr();
     if ( lenSqr > 0 ) {
 
-        //if ( lenSqr > 1 ) {
-            MoveVector.NormalizeSelf();
-        //}
-
-        Float3 dir = MoveVector * MoveSpeed;
+        Float3 dir = MoveVector.Normalized() * MoveSpeed;
 
         RootComponent->Step( dir );
 
         MoveVector.Clear();
     }
 
+    if ( bAttackStarted ) {
+        if ( WeaponFramesCount > 0 ) {
+            int keyFrame = AttackTime.Floor();
+            float lerp = AttackTime.Fract();
 
-    //if ( WeaponFramesCount > 0 ) {
-    //    int keyFrame = AnimationTime.Floor();
-    //    float lerp = AnimationTime.Fract();
+            constexpr float ANIMATION_SPEED = 7.0f; // frames per second
 
-    //    WeaponModel->SetFrame( keyFrame % WeaponFramesCount, ( keyFrame + 1 ) % WeaponFramesCount, lerp );
-    //}
+            AttackTime += _TimeStep * ANIMATION_SPEED;
 
-    //constexpr float ANIMATION_SPEED = 10.0f; // frames per second
+            keyFrame = FMath::Min( keyFrame, WeaponFramesCount - 1 );
 
-    //AnimationTime += _TimeStep * ANIMATION_SPEED;
+            WeaponModel->SetFrame( keyFrame, FMath::Min( keyFrame + 1, WeaponFramesCount - 1 ), lerp );
+
+            constexpr int ShootFrameNum = 0;
+
+            if ( keyFrame == ShootFrameNum && !bAttacked ) {
+                Shoot();
+
+                bAttacked = true;
+            }
+
+            if ( keyFrame == WeaponFramesCount-1 ) {
+                AttackTime = 0;
+                AttackAngle = Angles;
+                bAttacked = false;
+
+                if ( !bAttacking ) {
+                    bAttackStarted = false;
+                }
+            }
+        }
+    }
+}
+
+void FPlayer::Shoot() {
+    FTransform transform;
+
+    transform.Position = RootComponent->GetPosition() + RootComponent->GetForwardVector() + RootComponent->GetDownVector()*0.4f;
+    transform.Rotation = Angl( -AttackAngle.Pitch, AttackAngle.Yaw+180.0f, AttackAngle.Roll ).ToQuat();
+
+    FProjectileActor * projectile = GetWorld()->SpawnActor< FProjectileActor >( transform );
+    projectile->LifeSpan = 10.0f;
+    projectile->MeshComponent->SetLinearVelocity( Camera->GetWorldForwardVector() * 30.0f );
 }
 
 void FPlayer::MoveForward( float _Value ) {
@@ -168,11 +199,11 @@ void FPlayer::MoveRight( float _Value ) {
 }
 
 void FPlayer::MoveUp( float _Value ) {
-    MoveVector.Y += 1;//_Value;
+    MoveVector.Y += 1;
 }
 
 void FPlayer::MoveDown( float _Value ) {
-    MoveVector.Y -= 1;//_Value;
+    MoveVector.Y -= 1;
 }
 
 void FPlayer::TurnRight( float _Value ) {
@@ -196,61 +227,16 @@ void FPlayer::SpeedRelease() {
     bSpeed = false;
 }
 
-
-#include "Game.h"
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/World.h>
-
-class FBoxActor : public FActor {
-    AN_ACTOR( FBoxActor, FActor )
-
-protected:
-    FBoxActor();
-
-private:
-    FMeshComponent * MeshComponent;
-};
-
-AN_CLASS_META_NO_ATTRIBS( FBoxActor )
-
-FBoxActor::FBoxActor() {
-    // Create material instance for mesh component
-    FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->Material = GGameModule->SkinMaterial;
-    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
-    matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
-
-    // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
-    RootComponent = MeshComponent;
-    MeshComponent->bSimulatePhysics = true;
-    MeshComponent->bUseDefaultBodyComposition = true;
-    MeshComponent->Mass = 1.0f;
-
-    // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
-    MeshComponent->SetMaterialInstance( 0, matInst );
-}
-
 void FPlayer::AttackPress() {
-    FActor * actor;
+    bAttacking = true;
 
-    FTransform transform;
-
-    transform.Position = Camera->GetWorldPosition() + Camera->GetWorldForwardVector() * 1.5f;
-    transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
-    transform.SetScale( 0.3f );
-
-    actor = GetWorld()->SpawnActor< FBoxActor >( transform );
-
-    FMeshComponent * mesh = actor->GetComponent< FMeshComponent >();
-    if ( mesh ) {
-        mesh->ApplyCentralImpulse( Camera->GetWorldForwardVector() * 2.0f );
+    if ( !bAttackStarted ) {
+        bAttackStarted = true;
+        AttackAngle = Angles;
+        AttackTime = 0.0f;
     }
 }
 
-
 void FPlayer::AttackRelease() {
-    //GLogger.Printf("Attack release\n");
+    bAttacking = false;
 }
-

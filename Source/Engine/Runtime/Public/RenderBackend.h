@@ -462,7 +462,6 @@ public:
     struct FrameData {
         int VerticesCount;
         int IndicesCount;
-
         int IndexType;
 
         bool bSkinnedMesh;
@@ -873,7 +872,8 @@ struct FRenderView {
 };
 
 struct FRenderFrame {
-    int SmpIndex;
+    int ReadIndex;
+    int WriteIndex;
 
     // Game tick
     int TickNumber;
@@ -897,9 +897,9 @@ struct FRenderFrame {
     FRenderView RenderViews[MAX_RENDER_VIEWS];
     int NumViews;
 
-    FRenderProxy * RenderProxyUploadHead;
-    FRenderProxy * RenderProxyUploadTail;
-    FRenderProxy * RenderProxyFree;
+    FRenderProxy * RenderProxyUploadHead[2];
+    FRenderProxy * RenderProxyUploadTail[2];
+    FRenderProxy * RenderProxyFree[2];
 
     TPodArray< FRenderInstance *, 1024 > Instances;
 

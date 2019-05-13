@@ -81,13 +81,11 @@ class FLightmapUV : public FBaseObject, public IRenderProxyOwner {
     friend class FIndexedMesh;
 
 public:
+    FMeshLightmapUV * GetVertices() { return Vertices.ToPtr(); }
     int GetVertexCount() const { return VertexCount; }
 
-    FMeshLightmapUV * WriteVertexData( int _VerticesCount, int _StartVertexLocation );
+    bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( FMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation );
-
-    // TODO
-    //TPodArray< FMeshLightmapUV > const & GetVertexData() const { return VertexData; }
 
     FRenderProxy_LightmapUVChannel * GetRenderProxy() { return RenderProxy; }
 
@@ -103,8 +101,7 @@ private:
     FRenderProxy_LightmapUVChannel * RenderProxy;
     FIndexedMesh * ParentMesh;
     int IndexInArrayOfUVs = -1;
-    // TODO
-    //TPodArray< FMeshLightmapUV > VertexData;
+    TPodArray< FMeshLightmapUV > Vertices;
     int VertexCount;
     bool bDynamicStorage;
 };
@@ -122,9 +119,10 @@ class FVertexLight : public FBaseObject, public IRenderProxyOwner {
     friend class FIndexedMesh;
 
 public:
+    FMeshVertexLight * GetVertices() { return Vertices.ToPtr(); }
     int GetVertexCount() const { return VertexCount; }
 
-    FMeshVertexLight * WriteVertexData( int _VerticesCount, int _StartVertexLocation );
+    bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( FMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
     FRenderProxy_VertexLightChannel * GetRenderProxy() { return RenderProxy; }
@@ -141,7 +139,7 @@ private:
     FRenderProxy_VertexLightChannel * RenderProxy;
     FIndexedMesh * ParentMesh;
     int IndexInArrayOfChannels = -1;
-
+    TPodArray< FMeshVertexLight > Vertices;
     int VertexCount;
     bool bDynamicStorage;
 };
@@ -201,6 +199,15 @@ public:
     // Create vertex light channel to store light colors
     FVertexLight * CreateVertexLightChannel();
 
+    // Get mesh vertices
+    FMeshVertex * GetVertices() { return Vertices.ToPtr(); }
+
+    // Get weights for vertex skinning
+    FMeshVertexJoint * GetWeights() { return Weights.ToPtr(); }
+
+    // Get mesh indices
+    unsigned int * GetIndices() { return Indices.ToPtr(); }
+
     // Get total vertex count
     int GetVertexCount() const { return VertexCount; }
 
@@ -217,19 +224,19 @@ public:
     FVertexLightChannels const & GetVertexLightChannels() const { return VertexLightChannels; }
 
     // Write vertices at location and send them to GPU
-    FMeshVertex * WriteVertexData( int _VerticesCount, int _StartVertexLocation );
+    bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
 
     // Write vertices at location and send them to GPU
     bool WriteVertexData( FMeshVertex const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
     // Write joint weights at location and send them to GPU
-    FMeshVertexJoint * WriteJointWeights( int _VerticesCount, int _StartVertexLocation );
+    bool SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLocation );
 
     // Write joint weights at location and send them to GPU
     bool WriteJointWeights( FMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
     // Write indices at location and send them to GPU
-    unsigned int * WriteIndexData( int _IndexCount, int _StartIndexLocation );
+    bool SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation );
 
     // Write indices at location and send them to GPU
     bool WriteIndexData( unsigned int const * _Indices, int _IndexCount, int _StartIndexLocation );
@@ -251,6 +258,9 @@ private:
     FIndexedMeshSubpartArray Subparts;
     FLightmapUVChannels LightmapUVs;
     FVertexLightChannels VertexLightChannels;
+    TPodArray< FMeshVertex > Vertices;
+    TPodArray< FMeshVertexJoint > Weights;
+    TPodArray< unsigned int > Indices;
     int VertexCount;
     int IndexCount;
     bool bSkinnedMesh;

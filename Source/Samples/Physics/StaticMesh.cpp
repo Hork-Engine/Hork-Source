@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "StaticMesh.h"
-#include "Module.h"
 
 #include <Engine/World/Public/MaterialAssembly.h>
 #include <Engine/World/Public/MeshComponent.h>
@@ -47,8 +46,8 @@ AN_CLASS_META_NO_ATTRIBS( FBoxTrigger )
 FBoxActor::FBoxActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->Material = GModule->Material;
-    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
+    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
@@ -68,7 +67,7 @@ FBoxActor::FBoxActor() {
     MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "*box*" ) );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "*box*" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 
 
@@ -87,8 +86,8 @@ FBoxActor::FBoxActor() {
 FStaticBoxActor::FStaticBoxActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->Material = GModule->Material;
-    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
+    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( 0.5f );
 
     // Create mesh component and set it as root component
@@ -106,15 +105,15 @@ FStaticBoxActor::FStaticBoxActor() {
     MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "*box*" ) );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "*box*" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 }
 
 FSphereActor::FSphereActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->Material = GModule->Material;
-    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
+    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
@@ -134,15 +133,15 @@ FSphereActor::FSphereActor() {
     MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 }
 
 FCylinderActor::FCylinderActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->Material = GModule->Material;
-    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
+    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
@@ -161,7 +160,7 @@ FCylinderActor::FCylinderActor() {
     MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 }
 
@@ -172,8 +171,8 @@ FCylinderActor::FCylinderActor() {
 FComposedActor::FComposedActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->Material = GModule->Material;
-    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
+    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     {
@@ -194,7 +193,7 @@ FComposedActor::FComposedActor() {
         MeshComponent->bSimulatePhysics = true;
 
         // Set mesh and material resources for mesh component
-        MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
+        MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
         MeshComponent->SetMaterialInstance( 0, matInst );
     }
 
@@ -208,7 +207,7 @@ FComposedActor::FComposedActor() {
         SphereComponent->SetScale( 4,1,4 );
 
         // Set mesh and material resources for mesh component
-        SphereComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
+        SphereComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
         SphereComponent->SetMaterialInstance( 0, matInst );
 
 //        !!!TODO!!!
@@ -250,8 +249,8 @@ FComposedActor::FComposedActor() {
 FBoxTrigger::FBoxTrigger() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->Material = GModule->Material;
-    matInst->SetTexture( 0, GResourceManager.GetResource< FTexture >( "MipmapChecker" ) );
+    matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
+    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
@@ -266,7 +265,7 @@ FBoxTrigger::FBoxTrigger() {
     MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GResourceManager.GetResource< FIndexedMesh >( "*box*" ) );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "*box*" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 }
 

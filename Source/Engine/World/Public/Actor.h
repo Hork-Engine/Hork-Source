@@ -151,7 +151,7 @@ public:
     // Is actor marked as pending kill
     bool IsPendingKill() const { return bPendingKill; }
 
-    void RegisterTimer( FTimer * _Timer );
+    virtual void ApplyDamage( float _DamageAmount, Float3 const & _Position, FActor * _DamageCauser );
 
 protected:
 
@@ -173,6 +173,8 @@ protected:
     virtual void TickPrePhysics( float _TimeStep ) {}
 
     virtual void DrawDebug( FDebugDraw * _DebugDraw );
+
+    void RegisterTimer( FTimer * _Timer );
 
 private:
 

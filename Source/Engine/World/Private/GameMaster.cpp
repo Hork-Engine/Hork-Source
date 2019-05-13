@@ -628,6 +628,9 @@ void FGameMaster::Tick( float _TimeStep ) {
 
     GameModule->OnPreGameTick( _TimeStep );
     for ( FWorld * world : Worlds ) {
+        if ( world->IsPendingKill() ) {
+            continue;
+        }
         world->Tick( _TimeStep );
     }
     GameModule->OnPostGameTick( _TimeStep );

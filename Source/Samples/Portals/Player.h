@@ -39,7 +39,6 @@ class FPlayer : public FPawn {
 
 public:
     FCameraComponent * Camera;
-    FMeshComponent * unitBoxComponent;
 
 protected:
 
@@ -60,6 +59,8 @@ private:
     void SpeedPress();
     void SpeedRelease();
 
+    FMeshComponent * Box;
+    FMeshComponent * Skybox;
     Angl Angles;
     Float3 MoveVector;
     bool bSpeed;

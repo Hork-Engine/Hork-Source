@@ -141,8 +141,10 @@ public:
     // Keep ContactProcessingThreshold*ContactProcessingThreshold < FLT_MAX
     void SetContactProcessingThreshold( float _Threshold );
 
+    // Continuous collision detection swept radius
     void SetCcdRadius( float _Radius );
 
+    // Don't do continuous collision detection if the motion (in one step) is less then CcdMotionThreshold
     void SetCcdMotionThreshold( float _Threshold );
 
     // Get object velocity. For soft bodies use GetVertexVelocity in FSoftMeshComponent.
