@@ -2,6 +2,7 @@
 #include <Engine/World/Public/World.h>
 
 #include <BulletSoftBody/btSoftBody.h>
+#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include "BulletCompatibility/BulletCompatibility.h"
 
 AN_CLASS_META_NO_ATTRIBS( FSoftMeshComponent )
@@ -12,62 +13,113 @@ FSoftMeshComponent::FSoftMeshComponent() {
 
 void FSoftMeshComponent::InitializeComponent() {
     Super::InitializeComponent();
+
+    RecreateSoftBody();
 }
 
 void FSoftMeshComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
+
+    if ( SoftBody ) {
+        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
+        physicsWorld->removeSoftBody( SoftBody );
+        b3Destroy( SoftBody );
+        SoftBody = nullptr;
+    }
 }
 
-void FSoftMeshComponent::OnMeshChanged() {
-#if 0
+void FSoftMeshComponent::RecreateSoftBody() {
+    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
+
+    if ( SoftBody ) {
+        physicsWorld->removeSoftBody( SoftBody );
+        b3Destroy( SoftBody );
+        SoftBody = nullptr;
+    }
+
+    FIndexedMesh const * meshResource = GetMesh();
+    if ( !meshResource ) {
+        return;
+    }
+
     constexpr bool bRandomizeConstraints = true;
-    unsigned int maxIndex = 0;
+    unsigned int maxVertexIndex = 0;
 
-    unsigned int * Indices;
-    unsigned int IndicesCount;
-    Float3 * Vertices;
+    FMeshVertex const * vertices = meshResource->GetVertices();
+    unsigned int const * indices = meshResource->GetIndices();
 
-    FIndexedMeshSubpartArray const & subparts = GetMesh()->GetSubparts();
+    FIndexedMeshSubpartArray const & subparts = meshResource->GetSubparts();
 
-    for ( FIndexedMeshSubpart * subpart : subparts ) {
+    for ( FIndexedMeshSubpart const * subpart : subparts ) {
         for ( int i = 0; i < subpart->IndexCount; ++i ) {
-            maxIndex = subpart->BaseVertex + FMath::Max( Indices[ subpart->FirstIndex + i ], maxIndex );
+            maxVertexIndex = FMath::Max( subpart->BaseVertex + indices[ subpart->FirstIndex + i ], maxVertexIndex );
         }
     }
-    
-    ++maxIndex;
+
+    ++maxVertexIndex;
     TPodArray< bool > chks;
-    TPodArray< btVector3 > vtx;
-    chks.Resize( maxIndex*maxIndex );
-    vtx.Resize( maxIndex );
-    for ( int i = 0 ; i < maxIndex; i++ ) {
-        vtx[ i ] = btVectorToFloat3( Vertices[ i ] );
+    btAlignedObjectArray< btVector3 > vtx;
+    //TPodArray< btVector3 > vtx;
+    chks.Resize( maxVertexIndex*maxVertexIndex );
+    vtx.resize( maxVertexIndex );
+    btVector3 sum;
+    for ( int i = 0; i < maxVertexIndex; i++ ) {
+        vtx[ i ] = btVectorToFloat3( vertices[ i ].Position );
     }
-    SoftBody = b3New( btSoftBody, GetWorld()->SoftBodyWorldInfo, vtx.Length(), vtx.ToPtr(), 0 );
-    for ( int i = 0; i < IndicesCount; i += 3 ) {
-        const int idx[] = { Indices[ i ], Indices[ i + 1 ], Indices[ i + 2 ] };
 
-        #define IDX(_x_,_y_) ((_y_)*maxIndex+(_x_))
+    SoftBody = b3New( btSoftBody, GetWorld()->SoftBodyWorldInfo, vtx.size(), &vtx[ 0 ], 0 );
 
-        for ( int j = 2, k = 0; k < 3; j = k++ ) {
-            if ( !chks[ IDX( idx[ j ], idx[ k ] ) ] ) {
-                chks[ IDX( idx[ j ], idx[ k ] ) ] = true;
-                chks[ IDX( idx[ k ], idx[ j ] ) ] = true;
-                SoftBody->appendLink( idx[ j ], idx[ k ] );
+    int idx[ 3 ];
+
+    for ( FIndexedMeshSubpart const * subpart : subparts ) {
+        for ( int i = 0; i < subpart->IndexCount; i += 3 ) {
+            idx[ 0 ] = subpart->BaseVertex + indices[ subpart->FirstIndex + i ];
+            idx[ 1 ] = subpart->BaseVertex + indices[ subpart->FirstIndex + i + 1 ];
+            idx[ 2 ] = subpart->BaseVertex + indices[ subpart->FirstIndex + i + 2 ];
+
+#define IDX(_x_,_y_) ((_y_)*maxVertexIndex+(_x_))
+
+            for ( int j = 2, k = 0; k < 3; j = k++ ) {
+                if ( !chks[ IDX( idx[ j ], idx[ k ] ) ] ) {
+                    chks[ IDX( idx[ j ], idx[ k ] ) ] = true;
+                    chks[ IDX( idx[ k ], idx[ j ] ) ] = true;
+                    SoftBody->appendLink( idx[ j ], idx[ k ] );
+                }
             }
+
+#undef IDX
+
+            SoftBody->appendFace( idx[ 0 ], idx[ 1 ], idx[ 2 ] );
         }
-
-        #undef IDX
-
-        SoftBody->appendFace( idx[ 0 ], idx[ 1 ], idx[ 2 ] );
     }
+
+    btSoftBody::Material*	pm = SoftBody->appendMaterial();
+    pm->m_kLST = 0.5;
+    pm->m_flags -= btSoftBody::fMaterial::DebugDraw;
+    SoftBody->generateBendingConstraints( 2, pm );
+    SoftBody->m_cfg.piterations = 2;
+    SoftBody->m_cfg.kDF = 0.5;
 
     if ( bRandomizeConstraints ) {
         SoftBody->randomizeConstraints();
     }
 
+    //SoftBody->randomizeConstraints();
+    //SoftBody->scale( btVector3( 6, 6, 6 ) );
+    SoftBody->setTotalMass( 100, true );
+    
+    physicsWorld->addSoftBody( SoftBody );
+
     SetWindVelocity( WindVelocity );
-#endif
+}
+
+void FSoftMeshComponent::OnMeshChanged() {
+    if ( !GetWorld() ) {
+        // Component not initialized yet
+        return;
+    }
+
+    RecreateSoftBody();
 }
 
 Float3 FSoftMeshComponent::GetVertexPosition( int _VertexIndex ) const {

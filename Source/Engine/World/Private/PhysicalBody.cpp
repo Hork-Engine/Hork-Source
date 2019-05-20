@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Engine/World/Public/PhysicalBody.h>
 #include <Engine/World/Public/World.h>
+#include <Engine/World/Public/DebugDraw.h>
 
 #include "BulletCompatibility/BulletCompatibility.h"
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
@@ -37,73 +38,45 @@ SOFTWARE.
 
 #define PHYS_COMPARE_EPSILON 0.0001f
 
+#define BASIS(t) (t).getBasis()
+
 class FPhysicalBodyMotionState : public btMotionState {
 public:
     FPhysicalBodyMotionState()
-        : PrevPosition( Float3(0) )
-        , PrevRotation( Quat::Identity() )
+        : WorldPosition( Float3(0) )
+        , WorldRotation( Quat::Identity() )
         , CenterOfMass( Float3(0) )
     {
     }
 
     // Overrides
 
-    void getWorldTransform( btTransform & _WorldTransform ) const override;
-    void setWorldTransform( btTransform const & _WorldTransform ) override;
+    void getWorldTransform( btTransform & _CenterOfMassTransform ) const override;
+    void setWorldTransform( btTransform const & _CenterOfMassTransform ) override;
 
     // Public members
 
-    FPhysicalBody * PhysBody;
-
-    mutable Float3 PrevPosition;
-    mutable Quat PrevRotation;
+    FPhysicalBody * Self;
+    mutable Float3 WorldPosition;
+    mutable Quat WorldRotation;
     Float3 CenterOfMass;
 };
 
-void FPhysicalBodyMotionState::getWorldTransform( btTransform & _WorldTransform ) const {
-    PrevPosition = PhysBody->GetWorldPosition();
-    PrevRotation = PhysBody->GetWorldRotation();
-    _WorldTransform.setOrigin( btVectorToFloat3( PrevPosition + PrevRotation * CenterOfMass ) );
-    _WorldTransform.setRotation( btQuaternionToQuat( PrevRotation ) );
+void FPhysicalBodyMotionState::getWorldTransform( btTransform & _CenterOfMassTransform ) const {
+    WorldPosition = Self->GetWorldPosition();
+    WorldRotation = Self->GetWorldRotation();
+
+    _CenterOfMassTransform.setRotation( btQuaternionToQuat( WorldRotation ) );
+    _CenterOfMassTransform.setOrigin( btVectorToFloat3( WorldPosition ) + _CenterOfMassTransform.getBasis() * btVectorToFloat3( CenterOfMass ) );
 }
 
-void FPhysicalBodyMotionState::setWorldTransform( btTransform const & _WorldTransform ) {
-    Quat newWorldRotation = btQuaternionToQuat( _WorldTransform.getRotation() );
-    Float3 newWorldPosition = btVectorToFloat3( _WorldTransform.getOrigin() ) - newWorldRotation * CenterOfMass;
-
-#if 0
-    FPhysicalBody * parentBody = 0;
-
-    FSceneComponent * parent = PhysBody->GetParent();
-    if ( parent ) {
-        if ( parent->FinalClassMeta().IsSubclassOf< FPhysicalBody >() ) {
-            parentBody = static_cast< FPhysicalBody * >( parent );
-        }
-    }
-
-    if ( !parentBody ) {
-        PhysBody->bTransformWasChangedByPhysicsEngine = true;
-        PhysBody->SetWorldPosition( newWorldPosition );
-        PhysBody->SetWorldRotation( newWorldRotation );
-        PrevPosition = PhysBody->GetWorldPosition();
-        PrevRotation = PhysBody->GetWorldRotation();
-        PhysBody->bTransformWasChangedByPhysicsEngine = false;
-    } else {
-        FDelayedWorldTransform transform;
-        transform.RigidBody = PhysBody;
-        transform.ParentRigidBody = parentBody;
-        transform.WorldPosition = newWorldPosition;
-        transform.WorldRotation = newWorldRotation;
-        PhysBody->GetWorld()->AddDelayedWorldTransform( transform );
-    }
-#else
-    PhysBody->bTransformWasChangedByPhysicsEngine = true;
-    PhysBody->SetWorldPosition( newWorldPosition );
-    PhysBody->SetWorldRotation( newWorldRotation );
-    PrevPosition = PhysBody->GetWorldPosition();
-    PrevRotation = PhysBody->GetWorldRotation();
-    PhysBody->bTransformWasChangedByPhysicsEngine = false;
-#endif
+void FPhysicalBodyMotionState::setWorldTransform( btTransform const & _CenterOfMassTransform ) {
+    Self->bTransformWasChangedByPhysicsEngine = true;
+    WorldRotation = btQuaternionToQuat( _CenterOfMassTransform.getRotation() );
+    WorldPosition = btVectorToFloat3( _CenterOfMassTransform.getOrigin() - _CenterOfMassTransform.getBasis() * btVectorToFloat3( CenterOfMass ) );
+    Self->SetWorldPosition( WorldPosition );
+    Self->SetWorldRotation( WorldRotation );
+    Self->bTransformWasChangedByPhysicsEngine = false;
 }
 
 AN_CLASS_META_NO_ATTRIBS( FPhysicalBody )
@@ -115,7 +88,7 @@ FPhysicalBody::FPhysicalBody() {
 void FPhysicalBody::InitializeComponent() {
     Super::InitializeComponent();
 
-    if ( bSimulatePhysics ) {
+    if ( bSimulatePhysics && !bSoftBodySimulation ) {
         CreateRigidBody();
     }
 }
@@ -128,44 +101,26 @@ void FPhysicalBody::DeinitializeComponent() {
 
 void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass ) {
     *_CompoundShape = b3New( btCompoundShape );
+    *_CenterOfMass = _Scale * BodyComposition.CenterOfMass;
 
-    int numShapes = BodyComposition.CollisionBodies.Length();
-
-    if ( numShapes > 0 ) {
-        btVector3 centerOfMass( 0, 0, 0 );
-        btVector3 scaling = btVectorToFloat3( _Scale );
-
-        TPodArray< btTransform > shapeTransforms;
-        shapeTransforms.Reserve( numShapes );
+    if ( !BodyComposition.CollisionBodies.IsEmpty() ) {
+        const btVector3 scaling = btVectorToFloat3( _Scale );
+        btTransform shapeTransform;
 
         for ( FCollisionBody * collisionBody : BodyComposition.CollisionBodies ) {
-            btTransform & shapeTransform = shapeTransforms.Append();
-            shapeTransform.setOrigin( btVectorToFloat3( _Scale * collisionBody->Position ) );
-            shapeTransform.setRotation( btQuaternionToQuat( collisionBody->Rotation ) );
-            centerOfMass += shapeTransform.getOrigin();
-        }
-
-        centerOfMass /= numShapes;
-
-        for ( int i = 0 ; i < numShapes ; i++ ) {
-            FCollisionBody * collisionBody = BodyComposition.CollisionBodies[ i ];
             btCollisionShape * shape = collisionBody->Create();
-            btTransform & shapeTransform = shapeTransforms[ i ];
 
             shape->setMargin( collisionBody->Margin );
             shape->setUserPointer( collisionBody );
             shape->setLocalScaling( scaling );
 
-            shapeTransform.getOrigin() -= centerOfMass;
+            shapeTransform.setOrigin( btVectorToFloat3( _Scale * collisionBody->Position - *_CenterOfMass ) );
+            shapeTransform.setRotation( btQuaternionToQuat( collisionBody->Rotation ) );
 
             (*_CompoundShape)->addChildShape( shapeTransform, shape );
 
             collisionBody->AddRef();
         }
-
-        *_CenterOfMass = btVectorToFloat3( centerOfMass );
-    } else {
-        *_CenterOfMass = Float3( 0.0f );
     }
 }
 
@@ -230,7 +185,7 @@ static void UpdateRigidBodyGravity( btRigidBody * RigidBody, bool bDisableGravit
             // Use self gravity
             RigidBody->setGravity( btVectorToFloat3( SelfGravity ) );
         } else {
-            // Use world gravity. TODO: If world gravity was changed, change rigid body gravity too?
+            // Use world gravity
             RigidBody->setGravity( btVectorToFloat3( WorldGravity ) );
         }
     }
@@ -252,7 +207,7 @@ void FPhysicalBody::CreateRigidBody() {
     CachedScale = GetWorldScale();
 
     MotionState = b3New( FPhysicalBodyMotionState );
-    MotionState->PhysBody = this;
+    MotionState->Self = this;
 
     CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition, CachedScale, &CompoundShape, &MotionState->CenterOfMass );
 
@@ -281,25 +236,13 @@ void FPhysicalBody::CreateRigidBody() {
 
     UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, bKinematicBody );
 
-#if 0
-    btTransform & transform = RigidBody->getWorldTransform();
-    transform.setOrigin( btVectorToFloat3( MotionState->CenterOfMass ) );
-
-    if ( GetWorld()->IsPhysicsSimulating() ) {
-        btTransform interpolationWorldTransform = RigidBody->getInterpolationWorldTransform();
-        interpolationWorldTransform.setOrigin( transform.getOrigin() );
-        RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
-    }
-#else
-
     Quat worldRotation = GetWorldRotation();
     Float3 worldPosition = GetWorldPosition();
 
-    btTransform & transform = RigidBody->getWorldTransform();
+    btTransform & centerOfMassTransform = RigidBody->getWorldTransform();
 
-    transform.setRotation( btQuaternionToQuat( worldRotation ) );
-    transform.setOrigin( btVectorToFloat3( worldPosition + worldRotation * MotionState->CenterOfMass ) );
-#endif
+    centerOfMassTransform.setRotation( btQuaternionToQuat( worldRotation ) );
+    centerOfMassTransform.setOrigin( btVectorToFloat3( worldPosition ) + centerOfMassTransform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
 
     RigidBody->updateInertiaTensor();
 
@@ -340,6 +283,11 @@ void FPhysicalBody::UpdatePhysicsAttribs() {
         return;
     }
 
+    if ( bSoftBodySimulation ) {
+        DestroyRigidBody();
+        return;
+    }
+
     if ( !RigidBody ) {
         CreateRigidBody();
         return;
@@ -347,8 +295,8 @@ void FPhysicalBody::UpdatePhysicsAttribs() {
 
     btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
-    btTransform const & bodyTransform = RigidBody->getWorldTransform();
-    Float3 position = btVectorToFloat3( bodyTransform.getOrigin() - bodyTransform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
+    btTransform const & centerOfMassTransform = RigidBody->getWorldTransform();
+    Float3 position = btVectorToFloat3( centerOfMassTransform.getOrigin() - BASIS( centerOfMassTransform ) * btVectorToFloat3( MotionState->CenterOfMass ) );
 
     physicsWorld->removeRigidBody( RigidBody );
 
@@ -370,18 +318,8 @@ void FPhysicalBody::UpdatePhysicsAttribs() {
 
     UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, bKinematicBody );
 
-#if 0
-    Quat worldRotation = GetWorldRotation();
-    Float3 worldPosition = GetWorldPosition();
-
-    btTransform & transform = RigidBody->getWorldTransform();
-
-    transform.setRotation( btQuaternionToQuat( worldRotation ) );
-    transform.setOrigin( btVectorToFloat3( worldPosition + worldRotation * MotionState->CenterOfMass ) );
-#else
     // Update position with new center of mass
-    UpdatePhysicalBodyPosition( position );
-#endif
+    SetCenterOfMassPosition( position );
 
     RigidBody->updateInertiaTensor();
 
@@ -409,13 +347,13 @@ void FPhysicalBody::OnTransformDirty() {
             Float3 position = GetWorldPosition();
             Quat rotation = GetWorldRotation();
 
-            if ( rotation != MotionState->PrevRotation ) {
-                MotionState->PrevRotation = rotation;
-                UpdatePhysicalBodyRotation( rotation );
+            if ( rotation != MotionState->WorldRotation ) {
+                MotionState->WorldRotation = rotation;
+                SetCenterOfMassRotation( rotation );
             }
-            if ( position != MotionState->PrevPosition ) {
-                MotionState->PrevPosition = position;
-                UpdatePhysicalBodyPosition( position );
+            if ( position != MotionState->WorldPosition ) {
+                MotionState->WorldPosition = position;
+                SetCenterOfMassPosition( position );
             }
         }
 
@@ -424,37 +362,47 @@ void FPhysicalBody::OnTransformDirty() {
             UpdatePhysicsAttribs();
         }
     }
+
+    if ( SoftBody ) {
+        Quat worldRotation = GetWorldRotation();
+        Float3 worldPosition = GetWorldPosition();
+
+        btTransform & transform = SoftBody->getWorldTransform();
+
+        transform.setRotation( btQuaternionToQuat( worldRotation ) );
+        transform.setOrigin( btVectorToFloat3( worldPosition ) );
+    }
 }
 
-void FPhysicalBody::UpdatePhysicalBodyPosition( Float3 const & _Position ) {
-    btTransform & transform = RigidBody->getWorldTransform();
-    transform.setOrigin( btVectorToFloat3( _Position ) + transform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
+void FPhysicalBody::SetCenterOfMassPosition( Float3 const & _Position ) {
+    btTransform & centerOfMassTransform = RigidBody->getWorldTransform();
+    centerOfMassTransform.setOrigin( btVectorToFloat3( _Position ) + BASIS( centerOfMassTransform ) * btVectorToFloat3( MotionState->CenterOfMass ) );
 
     if ( GetWorld()->IsPhysicsSimulating() ) {
         btTransform interpolationWorldTransform = RigidBody->getInterpolationWorldTransform();
-        interpolationWorldTransform.setOrigin( transform.getOrigin() );
+        interpolationWorldTransform.setOrigin( centerOfMassTransform.getOrigin() );
         RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
     }
 
     ActivatePhysics();
 }
 
-void FPhysicalBody::UpdatePhysicalBodyRotation( Quat const & _Rotation ) {
-    btTransform & transform = RigidBody->getWorldTransform();
+void FPhysicalBody::SetCenterOfMassRotation( Quat const & _Rotation ) {
+    btTransform & centerOfMassTransform = RigidBody->getWorldTransform();
 
-    btVector3 bodyPrevPosition = transform.getOrigin() - transform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass );
+    btVector3 bodyPrevPosition = centerOfMassTransform.getOrigin() - BASIS( centerOfMassTransform ) * btVectorToFloat3( MotionState->CenterOfMass );
 
-    transform.setRotation( btQuaternionToQuat( _Rotation ) );
+    centerOfMassTransform.setRotation( btQuaternionToQuat( _Rotation ) );
 
     if ( !MotionState->CenterOfMass.CompareEps( Float3::Zero(), PHYS_COMPARE_EPSILON ) ) {
-        transform.setOrigin( bodyPrevPosition + btVectorToFloat3( _Rotation * MotionState->CenterOfMass ) );
+        centerOfMassTransform.setOrigin( bodyPrevPosition + centerOfMassTransform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
     }
 
     if ( GetWorld()->IsPhysicsSimulating() ) {
         btTransform interpolationWorldTransform = RigidBody->getInterpolationWorldTransform();
-        interpolationWorldTransform.setBasis( transform.getBasis() );
+        interpolationWorldTransform.setBasis( centerOfMassTransform.getBasis() );
         if ( !MotionState->CenterOfMass.CompareEps( Float3::Zero(), PHYS_COMPARE_EPSILON ) ) {
-            interpolationWorldTransform.setOrigin( transform.getOrigin() );
+            interpolationWorldTransform.setOrigin( centerOfMassTransform.getOrigin() );
         }
         RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
     }
@@ -710,6 +658,14 @@ float FPhysicalBody::GetCcdMotionThreshold() const {
     return CcdMotionThreshold;
 }
 
+Float3 const & FPhysicalBody::GetCenterOfMass() const {
+    return MotionState ? MotionState->CenterOfMass : Float3::Zero();
+}
+
+Float3 FPhysicalBody::GetCenterOfMassWorldPosition() const {
+    return RigidBody ? btVectorToFloat3( RigidBody->getWorldTransform().getOrigin() ) : GetWorldPosition();
+}
+
 void FPhysicalBody::ActivatePhysics() {
     if ( Mass > 0.0f ) {
         if ( RigidBody ) {
@@ -783,21 +739,11 @@ void FPhysicalBody::ApplyTorqueImpulse( Float3 const & _Torque ) {
     }
 }
 
-// TODO: check correctness
 void FPhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const {
     if ( !RigidBody ) {
         _BoundingBoxes.Clear();
     } else {
-        Float3x4 worldTransform;
-        Float3 shapeWorldPosition;
-        btMatrix3x3 shapeWorldBasis;
-        btTransform shapeWorldTransform;
         btVector3 mins, maxs;
-        btTransform const & Transform = RigidBody->getWorldTransform();
-        Float3 rigidBodyPosition = btVectorToFloat3( Transform.getOrigin() - Transform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
-        Float3x3 rigidBodyRotation = btMatrixToFloat3x3( Transform.getBasis() );
-
-        worldTransform.Compose( rigidBodyPosition, rigidBodyRotation, GetWorldScale() );
 
         int numShapes = CompoundShape->getNumChildShapes();
 
@@ -806,18 +752,62 @@ void FPhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox >
         for ( int i = 0 ; i < numShapes ; i++ ) {
             btCompoundShapeChild & shape = CompoundShape->getChildList()[ i ];
 
-            shapeWorldPosition = worldTransform * btVectorToFloat3( shape.m_transform.getOrigin() );
-            shapeWorldBasis = btMatrixToFloat3x3( worldTransform.DecomposeRotation() ) * shape.m_transform.getBasis();
-
-            shapeWorldTransform.setBasis( shapeWorldBasis );
-            shapeWorldTransform.setOrigin( btVectorToFloat3( shapeWorldPosition ) );
-
-            shape.m_childShape->getAabb( shapeWorldTransform, mins, maxs );
+            shape.m_childShape->getAabb( RigidBody->getWorldTransform() * shape.m_transform, mins, maxs );
 
             _BoundingBoxes[i].Mins = btVectorToFloat3( mins );
             _BoundingBoxes[i].Maxs = btVectorToFloat3( maxs );
         }
     }
+}
+
+void FPhysicalBody::GetCollisionBodyWorldBounds( int _Index, BvAxisAlignedBox & _BoundingBox ) const {
+    if ( !RigidBody || _Index >= CompoundShape->getNumChildShapes() ) {
+        _BoundingBox.Clear();
+        return;
+    }
+
+    btVector3 mins, maxs;
+
+    btCompoundShapeChild & shape = CompoundShape->getChildList()[ _Index ];
+
+    shape.m_childShape->getAabb( RigidBody->getWorldTransform() * shape.m_transform, mins, maxs );
+
+    _BoundingBox.Mins = btVectorToFloat3( mins );
+    _BoundingBox.Maxs = btVectorToFloat3( maxs );
+}
+
+void FPhysicalBody::GetCollisionBodyLocalBounds( int _Index, BvAxisAlignedBox & _BoundingBox ) const {
+    if ( !RigidBody || _Index >= CompoundShape->getNumChildShapes() ) {
+        _BoundingBox.Clear();
+        return;
+    }
+
+    btVector3 mins, maxs;
+
+    btCompoundShapeChild & shape = CompoundShape->getChildList()[ _Index ];
+
+    shape.m_childShape->getAabb( shape.m_transform, mins, maxs );
+
+    _BoundingBox.Mins = btVectorToFloat3( mins );
+    _BoundingBox.Maxs = btVectorToFloat3( maxs );
+}
+
+float FPhysicalBody::GetCollisionBodyMargin( int _Index ) const {
+    if ( !RigidBody || _Index >= CompoundShape->getNumChildShapes() ) {
+        return 0;
+    }
+
+    btCompoundShapeChild & shape = CompoundShape->getChildList()[ _Index ];
+
+    return shape.m_childShape->getMargin();
+}
+
+int FPhysicalBody::GetCollisionBodiesCount() const {
+    if ( !RigidBody ) {
+        return 0;
+    }
+
+    return CompoundShape->getNumChildShapes();
 }
 
 void FPhysicalBody::EndPlay() {
@@ -827,4 +817,24 @@ void FPhysicalBody::EndPlay() {
     E_OnBeginOverlap.UnsubscribeAll();
     E_OnEndOverlap.UnsubscribeAll();
     E_OnUpdateOverlap.UnsubscribeAll();
+}
+
+void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
+
+    _DebugDraw->SetDepthTest( false );
+
+#if 0
+    TPodArray< BvAxisAlignedBox > boundingBoxes;
+
+    GetCollisionBodiesWorldBounds( boundingBoxes );
+
+    _DebugDraw->SetColor( 1, 1, 0, 1 );
+    for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
+        _DebugDraw->DrawAABB( bb );
+    }
+#endif
+    Float3 centerOfMass = GetCenterOfMassWorldPosition();
+
+    _DebugDraw->SetColor( 1, 0, 0, 1 );
+    _DebugDraw->DrawBox( centerOfMass, Float3( 0.02f ) );
 }

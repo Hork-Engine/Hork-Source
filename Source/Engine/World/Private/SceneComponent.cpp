@@ -257,6 +257,30 @@ void FSceneComponent::MarkTransformDirty() {
     }
 }
 
+void FSceneComponent::SetAbsolutePosition( bool _AbsolutePosition ) {
+    if ( bAbsolutePosition != _AbsolutePosition ) {
+        bAbsolutePosition = _AbsolutePosition;
+
+        MarkTransformDirty();
+    }
+}
+
+void FSceneComponent::SetAbsoluteRotation( bool _AbsoluteRotation ) {
+    if ( bAbsoluteRotation != _AbsoluteRotation ) {
+        bAbsoluteRotation = _AbsoluteRotation;
+
+        MarkTransformDirty();
+    }
+}
+
+void FSceneComponent::SetAbsoluteScale( bool _AbsoluteScale ) {
+    if ( bAbsoluteScale != _AbsoluteScale ) {
+        bAbsoluteScale = _AbsoluteScale;
+
+        MarkTransformDirty();
+    }
+}
+
 void FSceneComponent::SetPosition( Float3 const & _Position ) {
 
     Position = _Position;
@@ -707,20 +731,12 @@ Float3x4 const & FSceneComponent::GetWorldTransformMatrix() const {
     return WorldTransformMatrix;
 }
 
-void FSceneComponent::ComputeTransformMatrix( Float3x4 & _LocalTransformMatrix ) const {
+void FSceneComponent::ComputeLocalTransformMatrix( Float3x4 & _LocalTransformMatrix ) const {
     _LocalTransformMatrix.Compose( Position, Rotation.ToMatrix(), Scale );
 }
 
 void FSceneComponent::ComputeWorldTransform() const {
-
-    Float3x4 LocalTransformMatrix;
-
-    ComputeTransformMatrix( LocalTransformMatrix );
-
     if ( AttachParent ) {
-
-        Float3x4 const & ParentWorldTransform = AttachParent->GetWorldTransformMatrix();
-
         if ( SocketIndex >= 0 && SocketIndex < AttachParent->Sockets.Length() ) {
             FSocket * Socket = &AttachParent->Sockets[SocketIndex];
 
@@ -729,15 +745,49 @@ void FSceneComponent::ComputeWorldTransform() const {
             Quat JointRotation;
             JointRotation.FromMatrix( JointTransform.DecomposeRotation() );
 
-            WorldTransformMatrix = ParentWorldTransform * JointTransform * LocalTransformMatrix;
-            WorldRotation = AttachParent->GetWorldRotation() * JointRotation * Rotation;
+            WorldRotation = bAbsoluteRotation ? Rotation : AttachParent->GetWorldRotation() * JointRotation * Rotation;
+
+#if 0
+            // Transform with shrinking
+
+            Float3x4 LocalTransformMatrix;
+            ComputeLocalTransformMatrix( LocalTransformMatrix );
+            WorldTransformMatrix = AttachParent->GetWorldTransformMatrix() * JointTransform * LocalTransformMatrix;
+#else
+            // Take relative to parent position and rotation. Position is scaled by parent.
+            WorldTransformMatrix.Compose( bAbsolutePosition ? Position : AttachParent->GetWorldTransformMatrix() * JointTransform * Position,
+                                          WorldRotation.ToMatrix(),
+                                          bAbsoluteScale ? Scale : Scale * AttachParent->GetWorldScale() * JointTransform.DecomposeScale() );
+#endif
+            
         } else {
-            WorldTransformMatrix = ParentWorldTransform * LocalTransformMatrix;
-            WorldRotation = AttachParent->GetWorldRotation() * Rotation;
+
+            WorldRotation = bAbsoluteRotation ? Rotation : AttachParent->GetWorldRotation() * Rotation;
+
+#if 0
+            // Transform with shrinking
+
+            Float3x4 LocalTransformMatrix;
+            ComputeLocalTransformMatrix( LocalTransformMatrix );
+            WorldTransformMatrix = AttachParent->GetWorldTransformMatrix() * LocalTransformMatrix;
+#else
+#if 0
+            // Take only relative to parent position and rotation. Position is not scaled by parent.
+            Float3x4 positionAndRotation;
+            positionAndRotation.Compose( AttachParent->GetWorldPosition(), AttachParent->GetWorldRotation().ToMatrix() );
+
+            WorldTransformMatrix.Compose( positionAndRotation * Position, WorldRotation.ToMatrix(), Scale );
+#else
+            // Take relative to parent position and rotation. Position is scaled by parent.
+            WorldTransformMatrix.Compose( bAbsolutePosition ? Position : AttachParent->GetWorldTransformMatrix() * Position,
+                                          WorldRotation.ToMatrix(),
+                                          bAbsoluteScale ? Scale : Scale * AttachParent->GetWorldScale() );
+#endif
+#endif
         }
 
     } else {
-        WorldTransformMatrix = LocalTransformMatrix;
+        ComputeLocalTransformMatrix( WorldTransformMatrix );
         WorldRotation = Rotation;
     }
 

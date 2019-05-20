@@ -287,7 +287,9 @@ class FCollisionBodyComposition {
 
 public:
 
-    FCollisionBodyComposition() {}
+    FCollisionBodyComposition() {
+        CenterOfMass.Clear();
+    }
 
     ~FCollisionBodyComposition() {
         Clear();
@@ -298,6 +300,7 @@ public:
             body->RemoveRef();
         }
         CollisionBodies.Clear();
+        CenterOfMass.Clear();
     }
 
     template< typename T >
@@ -330,5 +333,16 @@ public:
         }
     }
 
+    void ComputeCenterOfMass() {
+        CenterOfMass.Clear();
+        if ( !CollisionBodies.IsEmpty() ) {
+            for ( FCollisionBody * body : CollisionBodies ) {
+                CenterOfMass += body->Position;
+            }
+            CenterOfMass /= CollisionBodies.Length();
+        }
+    }
+
     TPodArray< FCollisionBody *, 2 > CollisionBodies;
+    Float3 CenterOfMass;
 };

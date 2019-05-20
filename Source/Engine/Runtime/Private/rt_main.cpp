@@ -479,7 +479,7 @@ void SubmitGameUpdate() {
 
     frameData->ReadIndex = frameData->WriteIndex ^ 1;
 
-    GLogger.Printf( "Write %d, Read %d\n", frameData->WriteIndex, frameData->ReadIndex );
+    //GLogger.Printf( "Write %d, Read %d\n", frameData->WriteIndex, frameData->ReadIndex );
 
     rt_GameUpdateEvent.Signal();
 }

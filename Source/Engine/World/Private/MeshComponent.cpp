@@ -46,14 +46,11 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
 
     Mesh = _Mesh;
 
-    Bounds.Clear();
-
-    //ClearMaterials();
-
-    if ( _Mesh ) {
-        for ( int i = 0 ; i < _Mesh->GetSubparts().Length() ; i++ ) {
-            Bounds.AddAABB( _Mesh->GetSubpart(i)->BoundingBox );
-        }
+    // Update bounding box
+    if ( Mesh ) {
+        Bounds = Mesh->GetBoundingBox();
+    } else {
+        Bounds.Clear();
     }
 
     NotifyMeshChanged();

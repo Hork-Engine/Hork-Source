@@ -88,6 +88,21 @@ public:
     // Is component attached to socket
     bool IsAttachedToSocket() const { return SocketIndex >= 0; }
 
+    // Set ignore parent position
+    void SetAbsolutePosition( bool _AbsolutePosition );
+
+    bool IsAbsolutePosition() const { return bAbsolutePosition; }
+
+    // Set ignore parent rotation
+    void SetAbsoluteRotation( bool _AbsoluteRotation );
+
+    bool IsAbsoluteRotation() const { return bAbsoluteRotation; }
+
+    // Set ignore parent scale
+    void SetAbsoluteScale( bool _AbsoluteScale );
+
+    bool IsAbsoluteScale() const { return bAbsoluteScale; }
+
     // Set local position
     void SetPosition( Float3 const & _Position );
 
@@ -196,7 +211,8 @@ public:
     // Mark to recompute transforms
     void MarkTransformDirty();
 
-    void ComputeTransformMatrix( Float3x4 & _LocalTransformMatrix ) const;
+    // Compute component local transform matrix
+    void ComputeLocalTransformMatrix( Float3x4 & _LocalTransformMatrix ) const;
 
     // Get transposed world transform matrix
     Float3x4 const & GetWorldTransformMatrix() const;
@@ -257,4 +273,7 @@ private:
     FSceneComponent * AttachParent;
     int SocketIndex;
     //bool bIgnoreLocalTransform;
+    bool bAbsolutePosition : 1;
+    bool bAbsoluteRotation : 1;
+    bool bAbsoluteScale : 1;
 };

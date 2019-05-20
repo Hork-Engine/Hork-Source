@@ -180,6 +180,10 @@ public:
 
     float GetCcdMotionThreshold() const;
 
+    Float3 const & GetCenterOfMass() const;
+
+    Float3 GetCenterOfMassWorldPosition() const;
+
     void ClearForces();
 
     void ApplyCentralForce( Float3 const & _Force );
@@ -196,6 +200,14 @@ public:
 
     void GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const;
 
+    void GetCollisionBodyWorldBounds( int _Index, BvAxisAlignedBox & _BoundingBox ) const;
+
+    void GetCollisionBodyLocalBounds( int _Index, BvAxisAlignedBox & _BoundingBox ) const;
+
+    float GetCollisionBodyMargin( int _Index ) const;
+
+    int GetCollisionBodiesCount() const;
+
     void UpdatePhysicsAttribs();
 
 protected:
@@ -208,6 +220,8 @@ protected:
 
     void OnTransformDirty() override;
 
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+
     virtual FCollisionBodyComposition const & DefaultBodyComposition() const { return BodyComposition; }
 
     bool bSoftBodySimulation;
@@ -216,8 +230,8 @@ protected:
 private:
     void CreateRigidBody();
     void DestroyRigidBody();
-    void UpdatePhysicalBodyPosition( Float3 const & _Position );
-    void UpdatePhysicalBodyRotation( Quat const & _Rotation );
+    void SetCenterOfMassPosition( Float3 const & _Position );
+    void SetCenterOfMassRotation( Quat const & _Rotation );
 
     Float3 LinearFactor = Float3( 1 );
     float LinearDamping;

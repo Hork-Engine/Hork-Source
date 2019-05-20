@@ -66,6 +66,8 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     IndexCount = _NumIndices;
     bSkinnedMesh = _SkinnedMesh;
     bDynamicStorage = _DynamicStorage;
+    bBoundingBoxDirty = true;
+    BoundingBox.Clear();
 
     Vertices.ResizeInvalidate( VertexCount );
     if ( bSkinnedMesh ) {
@@ -380,6 +382,22 @@ bool FIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCoun
     return SendIndexDataToGPU( _IndexCount, _StartIndexLocation );
 }
 
+void FIndexedMesh::UpdateBoundingBox() {
+    BoundingBox.Clear();
+    for ( FIndexedMeshSubpart const * subpart : Subparts ) {
+        BoundingBox.AddAABB( subpart->GetBoundingBox() );
+    }
+    bBoundingBoxDirty = false;
+}
+
+BvAxisAlignedBox const & FIndexedMesh::GetBoundingBox() const {
+    if ( bBoundingBoxDirty ) {
+        const_cast< ThisClass * >( this )->UpdateBoundingBox();
+    }
+
+    return BoundingBox;
+}
+
 void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
 
     if ( !FString::Cmp( _Name, "*box*" ) ) {
@@ -424,6 +442,12 @@ FIndexedMeshSubpart::FIndexedMeshSubpart() {
 }
 
 FIndexedMeshSubpart::~FIndexedMeshSubpart() {
+}
+
+void FIndexedMeshSubpart::SetBoundingBox( BvAxisAlignedBox const & _BoundingBox ) {
+    BoundingBox = _BoundingBox;
+
+    ParentMesh->bBoundingBoxDirty = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////

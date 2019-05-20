@@ -70,6 +70,8 @@ protected:
     void OnMeshChanged() override;
 
 private:
+    void RecreateSoftBody();
+
     Float3 WindVelocity;
     
 };

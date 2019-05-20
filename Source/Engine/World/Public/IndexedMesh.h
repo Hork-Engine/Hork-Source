@@ -54,9 +54,11 @@ public:
     int FirstIndex;
     int VertexCount;
     int IndexCount;
-
-    BvAxisAlignedBox BoundingBox;
     TRefHolder< FMaterialInstance > MaterialInstance;
+
+    void SetBoundingBox( BvAxisAlignedBox const & _BoundingBox );
+
+    BvAxisAlignedBox const & GetBoundingBox() const { return BoundingBox; }
 
     FIndexedMesh * GetParent() { return ParentMesh; }
 
@@ -66,6 +68,7 @@ protected:
 
 private:
     FIndexedMesh * ParentMesh;
+    BvAxisAlignedBox BoundingBox;
 };
 
 /*
@@ -82,6 +85,7 @@ class FLightmapUV : public FBaseObject, public IRenderProxyOwner {
 
 public:
     FMeshLightmapUV * GetVertices() { return Vertices.ToPtr(); }
+    FMeshLightmapUV const * GetVertices() const { return Vertices.ToPtr(); }
     int GetVertexCount() const { return VertexCount; }
 
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
@@ -120,6 +124,7 @@ class FVertexLight : public FBaseObject, public IRenderProxyOwner {
 
 public:
     FMeshVertexLight * GetVertices() { return Vertices.ToPtr(); }
+    FMeshVertexLight const * GetVertices() const { return Vertices.ToPtr(); }
     int GetVertexCount() const { return VertexCount; }
 
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
@@ -182,6 +187,7 @@ public:
     // Initialize object from file
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
+    // Purge model data
     void Purge();
 
     // Skinned mesh have 4 weights for each vertex
@@ -201,12 +207,15 @@ public:
 
     // Get mesh vertices
     FMeshVertex * GetVertices() { return Vertices.ToPtr(); }
+    FMeshVertex const * GetVertices() const { return Vertices.ToPtr(); }
 
     // Get weights for vertex skinning
     FMeshVertexJoint * GetWeights() { return Weights.ToPtr(); }
+    FMeshVertexJoint const * GetWeights() const { return Weights.ToPtr(); }
 
     // Get mesh indices
     unsigned int * GetIndices() { return Indices.ToPtr(); }
+    unsigned int const * GetIndices() const { return Indices.ToPtr(); }
 
     // Get total vertex count
     int GetVertexCount() const { return VertexCount; }
@@ -241,6 +250,10 @@ public:
     // Write indices at location and send them to GPU
     bool WriteIndexData( unsigned int const * _Indices, int _IndexCount, int _StartIndexLocation );
 
+    void UpdateBoundingBox();
+
+    BvAxisAlignedBox const & GetBoundingBox() const;
+
     // Get mesh rendering proxy
     FRenderProxy_IndexedMesh * GetRenderProxy() { return RenderProxy; }
 
@@ -265,6 +278,8 @@ private:
     int IndexCount;
     bool bSkinnedMesh;
     bool bDynamicStorage;
+    mutable bool bBoundingBoxDirty;
+    BvAxisAlignedBox BoundingBox;
 };
 
 template< typename _Shape, class... _Valty >
