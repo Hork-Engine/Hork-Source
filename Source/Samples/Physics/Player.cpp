@@ -48,7 +48,7 @@ FPlayer::FPlayer() {
     minst->Material = GetResource< FMaterial >( "SkyboxMaterial" );
 
     unitBoxComponent = CreateComponent< FMeshComponent >( "sky_box" );
-    unitBoxComponent->SetMesh( GetResource< FIndexedMesh >( "UnitBox" ) );
+    unitBoxComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
     unitBoxComponent->SetMaterialInstance( minst );
     unitBoxComponent->SetScale(4000);
 
@@ -229,7 +229,7 @@ void FPlayer::AttackPress() {
     transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
     transform.SetScale( 0.6f );
 
-#if 1
+#if 0
     int i = FMath::Rand()*3;
 
     if ( i == 1 ) {

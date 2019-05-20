@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Engine/World/Public/MaterialAssembly.h>
 #include <Engine/World/Public/MeshComponent.h>
+#include <Engine/World/Public/SoftMeshComponent.h>
 #include <Engine/World/Public/GameMaster.h>
 #include <Engine/World/Public/InputComponent.h>
 #include <Engine/World/Public/ResourceManager.h>
@@ -67,7 +68,7 @@ FBoxActor::FBoxActor() {
     MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "*box*" ) );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 
 
@@ -105,7 +106,7 @@ FStaticBoxActor::FStaticBoxActor() {
     MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "*box*" ) );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 }
 
@@ -117,9 +118,10 @@ FSphereActor::FSphereActor() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "DynamicSphere" );
+    MeshComponent = CreateComponent< FSoftMeshComponent >( "DynamicSphere" );
     RootComponent = MeshComponent;
 
+#if 0
     // Create collision body for mesh component
 #if 0
     MeshComponent->bUseDefaultBodyComposition = true;
@@ -129,6 +131,8 @@ FSphereActor::FSphereActor() {
     collisionBody->bProportionalScale = false;
     MeshComponent->BodyComposition.AddCollisionBody( collisionBody );
 #endif
+#endif
+
     MeshComponent->Mass = 1.0f;
     MeshComponent->bSimulatePhysics = true;
 
@@ -177,51 +181,50 @@ FComposedActor::FComposedActor() {
 
     {
         // Create mesh component and set it as root component
-        MeshComponent = CreateComponent< FMeshComponent >( "DynamicComposed" );
-        RootComponent = MeshComponent;
+        Cylinder = CreateComponent< FMeshComponent >( "DynamicComposed" );
+        RootComponent = Cylinder;
 
         FCollisionCylinder * cylinderBody = NewObject< FCollisionCylinder >();
         cylinderBody->HalfExtents = Float3(0.5f);
-        MeshComponent->BodyComposition.AddCollisionBody( cylinderBody );
+        Cylinder->BodyComposition.AddCollisionBody( cylinderBody );
 
-//        FCollisionSphereRadii * sphereBody = NewObject< FCollisionSphereRadii >();
-//        sphereBody->Radius = Float3( 2,0.5,2 );
-//        sphereBody->Position = Float3(0,1,0);
-//        MeshComponent->BodyComposition.AddCollisionBody( sphereBody );
+        FCollisionBox * boxBody = NewObject< FCollisionBox >();
+        boxBody->Position = Float3(0,4,0);
+        boxBody->Rotation.FromAngles( FMath::Radians( 45.0f ), 0.f, 0.f );
+        Cylinder->BodyComposition.AddCollisionBody( boxBody );
 
-        MeshComponent->Mass = 1.0f;
-        MeshComponent->bSimulatePhysics = true;
+        Cylinder->BodyComposition.ComputeCenterOfMass();
+
+        Cylinder->Mass = 1.0f;
+        Cylinder->bSimulatePhysics = true;
 
         // Set mesh and material resources for mesh component
-        MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
-        MeshComponent->SetMaterialInstance( 0, matInst );
+        Cylinder->SetMesh( GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
+        Cylinder->SetMaterialInstance( 0, matInst );
     }
 
-#if 0
+#if 1
     {
-        FMeshComponent * SphereComponent;
-        SphereComponent = CreateComponent< FMeshComponent >( "Sphere" );
-        SphereComponent->AttachTo( MeshComponent );
-        SphereComponent->SetPosition( Float3(0,1.0f,0) );
+        Box = CreateComponent< FMeshComponent >( "Box" );
+        Box->AttachTo( Cylinder );
+        Box->SetPosition( Float3(0,4.0f,0) );
+        Box->SetAngles( 45, 0, 0 );
 
-        SphereComponent->SetScale( 4,1,4 );
+        //Box->SetScale( 4,1,4 );
 
         // Set mesh and material resources for mesh component
-        SphereComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
-        SphereComponent->SetMaterialInstance( 0, matInst );
+        Box->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
+        Box->SetMaterialInstance( 0, matInst );
 
-//        !!!TODO!!!
-        SphereComponent->Mass = 1.0f;
-        SphereComponent->bSimulatePhysics = true;
+        Box->Mass = 0.0f;
+        Box->bSimulatePhysics = false;
+        Box->bKinematicBody = true;
+        //Box->bDisableGravity = true;
 
-        FCollisionSphere * sphereBody = NewObject< FCollisionSphere >();
-        sphereBody->Radius = 1;
-        sphereBody->Position = Float3(0,1,0);
-        sphereBody->bProportionalScale = false;
-        MeshComponent->BodyComposition.AddCollisionBody( sphereBody );
-
-
-        SphereComponent->AttachTo( MeshComponent );
+        FCollisionBox * body = NewObject< FCollisionBox >();
+        //body->Radius = Float3(1);
+        //body->Position = Float3(0,0,0);
+        Box->BodyComposition.AddCollisionBody( body );
     }
 #endif
 
@@ -242,7 +245,9 @@ FComposedActor::FComposedActor() {
 //    }
 }
 
-
+void FComposedActor::BeginPlay() {
+    Cylinder->SetScale( 1, 4, 1 );
+}
 
 
 
@@ -265,7 +270,7 @@ FBoxTrigger::FBoxTrigger() {
     MeshComponent->bSimulatePhysics = true;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "*box*" ) );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
 }
 

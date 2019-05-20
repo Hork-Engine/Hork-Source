@@ -55,57 +55,13 @@ void FModule::OnGameStart() {
     GGameMaster.MouseSensitivity = 0.3f;
     GGameMaster.SetRenderFeatures( VSync_Disabled );
     GGameMaster.SetWindowDefs( 1, true, false, false, "AngieEngine: Physics" );
-    GGameMaster.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    //GGameMaster.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    //GGameMaster.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
+    GGameMaster.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
     GGameMaster.SetCursorEnabled( false );
 
     SetInputMappings();
 
-    //
-    // Example, how to create mesh resource and register it
-    //
-    {
-    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-    mesh->InitializeShape< FPlaneShape >( 256, 256, 256 );
-    mesh->SetName( "DefaultShapePlane256x256x256" );
-    mesh->BodyComposition.NewCollisionBody< FCollisionPlane >();
-    RegisterResource( mesh );
-    }
-
-    {
-    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-    mesh->InitializeInternalMesh( "*box*" );
-    RegisterResource( mesh );
-    }
-
-    {
-    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-    mesh->InitializeShape< FSphereShape >( 0.5f, 2, 32, 32 );
-    mesh->SetName( "ShapeSphereMesh" );
-    FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
-    collisionBody->Radius = 0.5f;
-    RegisterResource( mesh );
-    }
-
-    {
-    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-    mesh->InitializeShape< FCylinderShape >( 0.5f, 1, 1, 32 );
-    mesh->SetName( "ShapeCylinderMesh" );
-    FCollisionCylinder * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionCylinder >();
-    collisionBody->HalfExtents = Float3( 0.5f );
-    RegisterResource( mesh );
-    }
-
-    //
-    // Example, how to create texture resource from file
-    //
-    //CreateUniqueTexture( "mipmapchecker.png" );
-
-    //
-    // Example, how to create texture resource from file with alias
-    //
-    CreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
-
+    CreateResources();
 
     // Spawn world
     TWorldSpawnParameters< FWorld > WorldSpawnParameters;
@@ -118,8 +74,6 @@ void FModule::OnGameStart() {
     RenderingParams->BackgroundColor = Float3(0.5f);
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = false;
-
-    CreateResources();
 
     //FPlayer * player = World->SpawnActor< FPlayer >( Float3(2.5f, 3.5f, 2.5f), Angl(-30,45,0).ToQuat() );
     FPlayer * player = World->SpawnActor< FPlayer >( Float3(2.5f, 0.0f, 2.5f), Angl(-30,45,0).ToQuat() );
@@ -153,16 +107,6 @@ void FModule::OnGameStart() {
 //    spawnTransform.Scale = Float3(10.0f,1.0f,1.0f);
 //    World->SpawnActor< FSphereActor >( spawnTransform );
 
-    
-
-//    mesh = NewObject< FIndexedMesh >();
-//    mesh->InitializeInternalMesh( "*box*" );
-//    mesh->GetSubpart(0)->MaterialInstance = NewObject< FMaterialInstance >();
-//    mesh->GetSubpart(0)->MaterialInstance->Material = Material;
-//    mesh->GetSubpart(0)->MaterialInstance->SetTexture( 0, LoadCachedTexture( "blank512.png" ) );
-//    actor = World->SpawnActor< FStaticMesh >();
-//    actor->SetMesh( mesh );
-
     // Spawn player controller
     PlayerController = World->SpawnActor< FMyPlayerController >();
     PlayerController->SetPlayerIndex( CONTROLLER_PLAYER_1 );
@@ -178,6 +122,52 @@ void FModule::OnGameEnd() {
 }
 
 void FModule::CreateResources() {
+    //
+    // Example, how to create mesh resource and register it
+    //
+    {
+        FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+        mesh->InitializeShape< FPlaneShape >( 256, 256, 256 );
+        mesh->SetName( "DefaultShapePlane256x256x256" );
+        mesh->BodyComposition.NewCollisionBody< FCollisionPlane >();
+        RegisterResource( mesh );
+    }
+
+    {
+        FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+        mesh->InitializeInternalMesh( "*box*" );
+        mesh->SetName( "ShapeBoxMesh" );
+        RegisterResource( mesh );
+    }
+
+    {
+        FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+        mesh->InitializeShape< FSphereShape >( 0.5f, 2, 32, 32 );
+        mesh->SetName( "ShapeSphereMesh" );
+        FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
+        collisionBody->Radius = 0.5f;
+        RegisterResource( mesh );
+    }
+
+    {
+        FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+        mesh->InitializeShape< FCylinderShape >( 0.5f, 1, 1, 32 );
+        mesh->SetName( "ShapeCylinderMesh" );
+        FCollisionCylinder * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionCylinder >();
+        collisionBody->HalfExtents = Float3( 0.5f );
+        RegisterResource( mesh );
+    }
+
+    //
+    // Example, how to create texture resource from file
+    //
+    //CreateUniqueTexture( "mipmapchecker.png" );
+
+    //
+    // Example, how to create texture resource from file with alias
+    //
+    CreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
+
     // Default material
     {
         FMaterialProject * proj = NewObject< FMaterialProject >();
@@ -212,14 +202,6 @@ void FModule::CreateResources() {
         material->SetName( "DefaultMaterial" );
 
         RegisterResource( material );
-    }
-
-    // Unit box
-    {
-        FIndexedMesh * unitBox = NewObject< FIndexedMesh >();
-        unitBox->InitializeInternalMesh( "*box*" );
-        unitBox->SetName( "UnitBox" );
-        RegisterResource( unitBox );
     }
 
     // Skybox material

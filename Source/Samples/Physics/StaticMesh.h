@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Engine/World/Public/Actor.h>
 #include <Engine/World/Public/IndexedMesh.h>
 #include <Engine/World/Public/MeshComponent.h>
+#include <Engine/World/Public/SoftMeshComponent.h>
 //#include <Engine/World/Public/Material.h>
 
 class FBoxActor : public FActor {
@@ -62,7 +63,7 @@ protected:
     FSphereActor();
 
 private:
-    FMeshComponent * MeshComponent;
+    FSoftMeshComponent * MeshComponent;
 };
 
 class FCylinderActor : public FActor {
@@ -82,8 +83,11 @@ class FComposedActor : public FActor {
 protected:
     FComposedActor();
 
+    void BeginPlay() override;
+
 private:
-    FMeshComponent * MeshComponent;
+    FMeshComponent * Cylinder;
+    FMeshComponent * Box;
 };
 
 class FBoxTrigger : public FActor {
