@@ -40,6 +40,8 @@ SOFTWARE.
 
 #define BASIS(t) (t).getBasis()
 
+//static bool bDuringMotionStateUpdate = false;
+
 class FPhysicalBodyMotionState : public btMotionState {
 public:
     FPhysicalBodyMotionState()
@@ -60,6 +62,7 @@ public:
     mutable Float3 WorldPosition;
     mutable Quat WorldRotation;
     Float3 CenterOfMass;
+    bool bDuringMotionStateUpdate = false;
 };
 
 void FPhysicalBodyMotionState::getWorldTransform( btTransform & _CenterOfMassTransform ) const {
@@ -71,12 +74,12 @@ void FPhysicalBodyMotionState::getWorldTransform( btTransform & _CenterOfMassTra
 }
 
 void FPhysicalBodyMotionState::setWorldTransform( btTransform const & _CenterOfMassTransform ) {
-    Self->bTransformWasChangedByPhysicsEngine = true;
+    bDuringMotionStateUpdate = true;
     WorldRotation = btQuaternionToQuat( _CenterOfMassTransform.getRotation() );
     WorldPosition = btVectorToFloat3( _CenterOfMassTransform.getOrigin() - _CenterOfMassTransform.getBasis() * btVectorToFloat3( CenterOfMass ) );
     Self->SetWorldPosition( WorldPosition );
     Self->SetWorldRotation( WorldRotation );
-    Self->bTransformWasChangedByPhysicsEngine = false;
+    bDuringMotionStateUpdate = false;
 }
 
 AN_CLASS_META_NO_ATTRIBS( FPhysicalBody )
@@ -246,7 +249,7 @@ void FPhysicalBody::CreateRigidBody() {
 
     RigidBody->updateInertiaTensor();
 
-    physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
+    physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionGroup ), ClampUnsignedShort( CollisionMask ) );
 
     UpdateRigidBodyGravity( RigidBody, bDisableGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
 
@@ -323,7 +326,7 @@ void FPhysicalBody::UpdatePhysicsAttribs() {
 
     RigidBody->updateInertiaTensor();
 
-    physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionLayer ), ClampUnsignedShort( CollisionMask ) );
+    physicsWorld->addRigidBody( RigidBody, ClampUnsignedShort( CollisionGroup ), ClampUnsignedShort( CollisionMask ) );
 
     UpdateRigidBodyGravity( RigidBody, bDisableGravity, bOverrideWorldGravity, SelfGravity, GetWorld()->GetGravityVector() );
 
@@ -342,7 +345,7 @@ void FPhysicalBody::OnTransformDirty() {
     Super::OnTransformDirty();
 
     if ( RigidBody ) {
-        if ( !bKinematicBody && !bTransformWasChangedByPhysicsEngine ) {
+        if ( !bKinematicBody && !MotionState->bDuringMotionStateUpdate ) {
 
             Float3 position = GetWorldPosition();
             Quat rotation = GetWorldRotation();
@@ -363,22 +366,21 @@ void FPhysicalBody::OnTransformDirty() {
         }
     }
 
-    if ( SoftBody ) {
-        Quat worldRotation = GetWorldRotation();
-        Float3 worldPosition = GetWorldPosition();
+    //if ( SoftBody && !bUpdateSoftbodyTransform ) {
+    //    if ( !PrevWorldPosition.CompareEps( GetWorldPosition(), PHYS_COMPARE_EPSILON )
+    //        || !PrevWorldRotation.CompareEps( GetWorldRotation(), PHYS_COMPARE_EPSILON ) ) {
+    //        bUpdateSoftbodyTransform = true;
 
-        btTransform & transform = SoftBody->getWorldTransform();
-
-        transform.setRotation( btQuaternionToQuat( worldRotation ) );
-        transform.setOrigin( btVectorToFloat3( worldPosition ) );
-    }
+    //        // TODO: add to dirty list?
+    //    }
+    //}
 }
 
 void FPhysicalBody::SetCenterOfMassPosition( Float3 const & _Position ) {
     btTransform & centerOfMassTransform = RigidBody->getWorldTransform();
     centerOfMassTransform.setOrigin( btVectorToFloat3( _Position ) + BASIS( centerOfMassTransform ) * btVectorToFloat3( MotionState->CenterOfMass ) );
 
-    if ( GetWorld()->IsPhysicsSimulating() ) {
+    if ( GetWorld()->IsDuringPhysicsUpdate() ) {
         btTransform interpolationWorldTransform = RigidBody->getInterpolationWorldTransform();
         interpolationWorldTransform.setOrigin( centerOfMassTransform.getOrigin() );
         RigidBody->setInterpolationWorldTransform( interpolationWorldTransform );
@@ -398,7 +400,7 @@ void FPhysicalBody::SetCenterOfMassRotation( Quat const & _Rotation ) {
         centerOfMassTransform.setOrigin( bodyPrevPosition + centerOfMassTransform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
     }
 
-    if ( GetWorld()->IsPhysicsSimulating() ) {
+    if ( GetWorld()->IsDuringPhysicsUpdate() ) {
         btTransform interpolationWorldTransform = RigidBody->getInterpolationWorldTransform();
         interpolationWorldTransform.setBasis( centerOfMassTransform.getBasis() );
         if ( !MotionState->CenterOfMass.CompareEps( Float3::Zero(), PHYS_COMPARE_EPSILON ) ) {
@@ -810,6 +812,86 @@ int FPhysicalBody::GetCollisionBodiesCount() const {
     return CompoundShape->getNumChildShapes();
 }
 
+struct FContactTestCallback : public btCollisionWorld::ContactResultCallback {
+    FContactTestCallback( TPodArray< FPhysicalBody * > & _Result, int _CollisionMask, FPhysicalBody * _Self )
+        : Result( _Result )
+        , CollisionMask( _CollisionMask )
+        , Self( _Self )
+    {
+        _Result.Clear();
+    }
+
+    btScalar addSingleResult( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 ) override {
+        FPhysicalBody * body;
+
+        body = reinterpret_cast< FPhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
+        if ( body && body != Self && Result.Find( body ) == Result.End() && ( body->CollisionGroup & CollisionMask ) ) {
+            Result.Append( body );
+        }
+
+        body = reinterpret_cast< FPhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
+        if ( body && body != Self && Result.Find( body ) == Result.End() && ( body->CollisionGroup & CollisionMask ) ) {
+            Result.Append( body );
+        }
+
+        return 0.0f;
+    }
+
+    TPodArray< FPhysicalBody * > & Result;
+    int CollisionMask;
+    FPhysicalBody * Self;
+};
+
+struct FContactTestActorCallback : public btCollisionWorld::ContactResultCallback {
+    FContactTestActorCallback( TPodArray< FActor * > & _Result, int _CollisionMask, FActor * _Self )
+        : Result( _Result )
+        , CollisionMask( _CollisionMask )
+        , Self( _Self )
+    {
+        _Result.Clear();
+    }
+
+    btScalar addSingleResult( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 ) override {
+        FPhysicalBody * body;
+
+        body = reinterpret_cast< FPhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
+        if ( body && body->GetParentActor() != Self && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & CollisionMask ) ) {
+            Result.Append( body->GetParentActor() );
+        }
+
+        body = reinterpret_cast< FPhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
+        if ( body && body->GetParentActor() != Self && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & CollisionMask ) ) {
+            Result.Append( body->GetParentActor() );
+        }
+
+        return 0.0f;
+    }
+
+    TPodArray< FActor * > & Result;
+    int CollisionMask;
+    FActor * Self;
+};
+
+void FPhysicalBody::ContactTest( TPodArray< FPhysicalBody * > & _Result ) {
+    FContactTestCallback callback( _Result, CollisionMask, this );
+
+    if ( !RigidBody ) {
+        return;
+    }
+
+    GetWorld()->PhysicsWorld->contactTest( RigidBody, callback );
+}
+
+void FPhysicalBody::ContactTestActor( TPodArray< FActor * > & _Result ) {
+    FContactTestActorCallback callback( _Result, CollisionMask, GetParentActor() );
+
+    if ( !RigidBody ) {
+        return;
+    }
+
+    GetWorld()->PhysicsWorld->contactTest( RigidBody, callback );
+}
+
 void FPhysicalBody::EndPlay() {
     E_OnBeginContact.UnsubscribeAll();
     E_OnEndContact.UnsubscribeAll();
@@ -823,7 +905,7 @@ void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
 
     _DebugDraw->SetDepthTest( false );
 
-#if 0
+#if 1
     TPodArray< BvAxisAlignedBox > boundingBoxes;
 
     GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -833,8 +915,11 @@ void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
         _DebugDraw->DrawAABB( bb );
     }
 #endif
-    Float3 centerOfMass = GetCenterOfMassWorldPosition();
 
-    _DebugDraw->SetColor( 1, 0, 0, 1 );
-    _DebugDraw->DrawBox( centerOfMass, Float3( 0.02f ) );
+    if ( RigidBody ) {
+        Float3 centerOfMass = GetCenterOfMassWorldPosition();
+
+        _DebugDraw->SetColor( 1, 0, 0, 1 );
+        _DebugDraw->DrawBox( centerOfMass, Float3( 0.02f ) );
+    }
 }

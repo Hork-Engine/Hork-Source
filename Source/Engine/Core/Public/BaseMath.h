@@ -82,6 +82,8 @@ AN_FORCEINLINE void MinMax( const Type & _A, const Type & _B, const Type & _C, T
     }
 }
 
+template< typename Type > AN_FORCEINLINE const Type & Clamp( const Type & _Value, const Type & _Min, const Type & _Max ) { return FMath_Min( FMath_Max( _Value, _Min ), _Max ); }
+
 template< typename Type >
 AN_FORCEINLINE Type Sqrt( const Type & _Value ) {
     return _Value > Type(0) ? Type(StdSqrt( _Value )) : Type(0);

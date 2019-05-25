@@ -40,6 +40,10 @@ class btSoftBody;
 class btCollisionObject;
 class FPhysicalBodyMotionState;
 
+enum ECollisionMask {
+    CM_ALL = 0xffff
+};
+
 class FPhysicalBody : public FSceneComponent {
     AN_COMPONENT( FPhysicalBody, FSceneComponent )
 
@@ -56,11 +60,11 @@ public:
     // Enable physics simulation. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
     bool bSimulatePhysics;
 
-    // Collision layer. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    int CollisionLayer = 0x1;
+    // Collision group. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    int CollisionGroup = 0x1;
 
     // Collision mask. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    int CollisionMask = 0xffff;
+    int CollisionMask = CM_ALL;
 
     // Trigger can produce overlap events. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
     bool bTrigger;
@@ -208,6 +212,9 @@ public:
 
     int GetCollisionBodiesCount() const;
 
+    void ContactTest( TPodArray< FPhysicalBody * > & _Result );
+    void ContactTestActor( TPodArray< FActor * > & _Result );
+
     void UpdatePhysicsAttribs();
 
 protected:
@@ -226,6 +233,9 @@ protected:
 
     bool bSoftBodySimulation;
     btSoftBody * SoftBody; // managed by FSoftMeshComponent
+    //Float3 PrevWorldPosition;
+    //Quat PrevWorldRotation;
+    //bool bUpdateSoftbodyTransform;
 
 private:
     void CreateRigidBody();
@@ -251,6 +261,5 @@ private:
     btRigidBody * RigidBody;
     btCompoundShape * CompoundShape;
     FPhysicalBodyMotionState * MotionState;
-    bool bTransformWasChangedByPhysicsEngine;
     Float3 CachedScale;
 };

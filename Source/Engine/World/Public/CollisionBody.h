@@ -42,6 +42,7 @@ struct FSubpart;
 class FCollisionBody : public FBaseObject {
     AN_CLASS( FCollisionBody, FBaseObject )
 
+    friend class FWorld;
     friend void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
 
 public:
@@ -51,13 +52,15 @@ public:
 
     enum { AXIAL_X, AXIAL_Y, AXIAL_Z, AXIAL_DEFAULT = AXIAL_Y };
 
+    virtual bool IsConvex() const { return false; }
+
 protected:
     FCollisionBody() {
         Rotation = Quat::Identity();
         Margin = 0.01f;
     }
 
-    // Only CreateCollisionShape can call Create()
+    // Only FWorld and CreateCollisionShape can call Create()
     virtual btCollisionShape * Create() { AN_Assert( 0 ); return nullptr; }
 };
 
@@ -67,6 +70,8 @@ class FCollisionSphere : public FCollisionBody {
 public:
     float Radius = 0.5f;
     bool bProportionalScale = true;
+
+    bool IsConvex() const override { return true; }
 
 protected:
     FCollisionSphere() {}
@@ -81,6 +86,8 @@ class FCollisionSphereRadii : public FCollisionBody {
 public:
     Float3 Radius = Float3(0.5f);
 
+    bool IsConvex() const override { return true; }
+
 protected:
     FCollisionSphereRadii() {}
 
@@ -93,6 +100,8 @@ class FCollisionBox : public FCollisionBody {
 
 public:
     Float3 HalfExtents = Float3(0.5f);
+
+    bool IsConvex() const override { return true; }
 
 protected:
     FCollisionBox() {}
@@ -107,6 +116,8 @@ class FCollisionCylinder : public FCollisionBody {
 public:
     Float3 HalfExtents = Float3(1.0f);
     int Axial = AXIAL_DEFAULT;
+
+    bool IsConvex() const override { return true; }
 
 protected:
     FCollisionCylinder() {}
@@ -123,6 +134,8 @@ public:
     float Height = 1;
     int Axial = AXIAL_DEFAULT;
 
+    bool IsConvex() const override { return true; }
+
 protected:
     FCollisionCone() {}
 
@@ -138,6 +151,8 @@ public:
     float Height = 1;
     int Axial = AXIAL_DEFAULT;
 
+    bool IsConvex() const override { return true; }
+
 protected:
     FCollisionCapsule() {}
 
@@ -150,6 +165,8 @@ class FCollisionPlane : public FCollisionBody {
 
 public:
     PlaneF Plane = PlaneF( Float3(0.0f,1.0f,0.0f), 0.0f );
+
+    bool IsConvex() const override { return false; }
 
 protected:
     FCollisionPlane() {}
@@ -170,6 +187,8 @@ public:
         Vertices.Clear();
         ConvexHullVerticesFromPlanes( _Planes, _NumPlanes, Vertices );
     }
+
+    bool IsConvex() const override { return true; }
 
 protected:
     FCollisionConvexHull() {}
@@ -198,6 +217,8 @@ class FCollisionSharedConvexHull : public FCollisionBody {
 
 public:
     TRefHolder< FCollisionConvexHullData > HullData;
+
+    bool IsConvex() const override { return true; }
 
 protected:
     FCollisionSharedConvexHull() {}
@@ -333,7 +354,7 @@ public:
         }
     }
 
-    void ComputeCenterOfMass() {
+    void ComputeCenterOfMassAvg() {
         CenterOfMass.Clear();
         if ( !CollisionBodies.IsEmpty() ) {
             for ( FCollisionBody * body : CollisionBodies ) {

@@ -124,6 +124,31 @@ struct FCollisionContact {
     }
 };
 
+#define MAX_RAYCAST_DISTANCE 16384
+
+struct FRaycastResult {
+    FPhysicalBody * Body;
+    Float3 Position;
+    Float3 Normal;
+    float Distance;
+    float HitFraction;
+
+    void Clear() {
+        memset( this, 0, sizeof( *this ) );
+    }
+};
+
+struct FConvexCast {
+    FCollisionBody * CollisionBody;
+    Float3 Scale;
+    Float3 StartPosition;
+    Quat StartRotation;
+    Float3 EndPosition;
+    Quat EndRotation;
+    float Dist;
+    int CollisionMask;
+};
+
 /*
 
 FWorld
@@ -225,9 +250,24 @@ public:
     void SetGravityVector( Float3 const & _Gravity );
     Float3 const & GetGravityVector() const;
 
-    bool IsPhysicsSimulating() const { return bPhysicsSimulating; }
+    bool IsDuringPhysicsUpdate() const { return bDuringPhysicsUpdate; }
 
     bool IsPendingKill() const { return bPendingKill; }
+
+    bool Raycast( TPodArray< FRaycastResult > & _Result, RayF const & _Ray, float _Dist = MAX_RAYCAST_DISTANCE, int _CollisionMask = CM_ALL ) const;
+    bool RaycastClosest( FRaycastResult & _Result, RayF const & _Ray, float _Dist = MAX_RAYCAST_DISTANCE, int _CollisionMask = CM_ALL ) const;
+    bool RaycastSphere( FRaycastResult & _Result, float _Radius, RayF const & _Ray, float _Dist = MAX_RAYCAST_DISTANCE, int _CollisionMask = CM_ALL ) const;
+    bool RaycastConvex( FRaycastResult & _Result, FConvexCast const & _ConvexCast ) const;
+
+    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, float _Radius, int _CollisionMask = CM_ALL ) const;
+    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, int _CollisionMask = CM_ALL ) const;
+    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, int _CollisionMask = CM_ALL ) const;
+
+    void QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, float _Radius, int _CollisionMask = CM_ALL ) const;
+    void QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, int _CollisionMask = CM_ALL ) const;
+    void QueryActors( TPodArray< FActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, int _CollisionMask = CM_ALL ) const;
+
+    void ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, int _CollisionMask = CM_ALL );
 
     //bool bTickEvenWhenPaused;
 
@@ -308,7 +348,7 @@ private:
 
     Float3 GravityVector;
     bool bGravityDirty;
-    bool bPhysicsSimulating;
+    bool bDuringPhysicsUpdate;
     float TimeAccumulation;
     int PhysicsTickNumber;
 };

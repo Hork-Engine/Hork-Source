@@ -133,6 +133,9 @@ public:
     // Get indexed mesh
     FIndexedMesh * GetMesh() const { return Mesh; }
 
+    // Get overriden indexed mesh
+    virtual FIndexedMesh * GetMeshOverride() const { return Mesh; }
+
     // Unset materials
     void ClearMaterials();
 

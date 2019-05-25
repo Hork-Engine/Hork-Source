@@ -1176,7 +1176,7 @@ void FRenderFrontend::AddSurface( FMeshComponent * component, PlaneF const * _Cu
     Float4x4 tmpMatrix;
     Float4x4 * instanceMatrix;
 
-    FIndexedMesh * mesh = component->GetMesh();
+    FIndexedMesh * mesh = component->GetMeshOverride();
     if ( !mesh ) {
         // TODO: default mesh?
         return;

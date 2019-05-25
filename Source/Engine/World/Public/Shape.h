@@ -92,14 +92,14 @@ struct FBoxShape {
 
     static void CreateMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
         const unsigned int indices[ 6 * 6 ] =
-        {	/*0,0,0,0,0,0,*/0,1,2,2,3,0,	// front face
-            4,5,6,6,7,4,	// back face
+        {   /*0,0,0,0,0,0,*/0,1,2,2,3,0, // front face
+            4,5,6,6,7,4, // back face
 
-            5 + 8 * 1,0 + 8 * 1,3 + 8 * 1,3 + 8 * 1,6 + 8 * 1,5 + 8 * 1,	// left face
-            1 + 8 * 1,4 + 8 * 1,7 + 8 * 1,7 + 8 * 1,2 + 8 * 1,1 + 8 * 1,	// right face
+            5 + 8 * 1,0 + 8 * 1,3 + 8 * 1,3 + 8 * 1,6 + 8 * 1,5 + 8 * 1, // left face
+            1 + 8 * 1,4 + 8 * 1,7 + 8 * 1,7 + 8 * 1,2 + 8 * 1,1 + 8 * 1, // right face
 
-            3 + 8 * 2,2 + 8 * 2,7 + 8 * 2,7 + 8 * 2,6 + 8 * 2,3 + 8 * 2,	// top face
-            1 + 8 * 2,0 + 8 * 2,5 + 8 * 2,5 + 8 * 2,4 + 8 * 2,1 + 8 * 2,	// bottom face
+            3 + 8 * 2,2 + 8 * 2,7 + 8 * 2,7 + 8 * 2,6 + 8 * 2,3 + 8 * 2, // top face
+            1 + 8 * 2,0 + 8 * 2,5 + 8 * 2,5 + 8 * 2,4 + 8 * 2,1 + 8 * 2, // bottom face
         };
 
         _Vertices.ResizeInvalidate( 24 );
@@ -117,104 +117,104 @@ struct FBoxShape {
 
         FMeshVertex * pVerts = _Vertices.ToPtr();
 
-        pVerts[ 0 + 8 * 0 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z );	// 0
+        pVerts[ 0 + 8 * 0 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z ); // 0
         pVerts[ 0 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
         pVerts[ 0 + 8 * 0 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-        pVerts[ 1 + 8 * 0 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z );	// 1
+        pVerts[ 1 + 8 * 0 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z ); // 1
         pVerts[ 1 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
         pVerts[ 1 + 8 * 0 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-        pVerts[ 2 + 8 * 0 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z );	// 2
+        pVerts[ 2 + 8 * 0 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z ); // 2
         pVerts[ 2 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
         pVerts[ 2 + 8 * 0 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
-        pVerts[ 3 + 8 * 0 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z );	// 3
+        pVerts[ 3 + 8 * 0 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z ); // 3
         pVerts[ 3 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
         pVerts[ 3 + 8 * 0 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
 
-        pVerts[ 4 + 8 * 0 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z );	// 4
+        pVerts[ 4 + 8 * 0 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z ); // 4
         pVerts[ 4 + 8 * 0 ].Normal = Float3( 0, 0, -1 );
         pVerts[ 4 + 8 * 0 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-        pVerts[ 5 + 8 * 0 ].Position = Float3( Mins.X, Mins.Y, Mins.Z );	// 5
+        pVerts[ 5 + 8 * 0 ].Position = Float3( Mins.X, Mins.Y, Mins.Z ); // 5
         pVerts[ 5 + 8 * 0 ].Normal = Float3( 0, 0, -1 );
         pVerts[ 5 + 8 * 0 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-        pVerts[ 6 + 8 * 0 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z );	// 6
+        pVerts[ 6 + 8 * 0 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z ); // 6
         pVerts[ 6 + 8 * 0 ].Normal = Float3( 0, 0, -1 );
         pVerts[ 6 + 8 * 0 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
-        pVerts[ 7 + 8 * 0 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z );	// 7
+        pVerts[ 7 + 8 * 0 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z ); // 7
         pVerts[ 7 + 8 * 0 ].Normal = Float3( 0, 0, -1 );
         pVerts[ 7 + 8 * 0 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
 
-        pVerts[ 0 + 8 * 1 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z );	// 0
+        pVerts[ 0 + 8 * 1 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z ); // 0
         pVerts[ 0 + 8 * 1 ].Normal = Float3( -1, 0, 0 );
         pVerts[ 0 + 8 * 1 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-        pVerts[ 1 + 8 * 1 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z );	// 1
+        pVerts[ 1 + 8 * 1 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z ); // 1
         pVerts[ 1 + 8 * 1 ].Normal = Float3( 1, 0, 0 );
         pVerts[ 1 + 8 * 1 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-        pVerts[ 2 + 8 * 1 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z );	// 2
+        pVerts[ 2 + 8 * 1 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z ); // 2
         pVerts[ 2 + 8 * 1 ].Normal = Float3( 1, 0, 0 );
         pVerts[ 2 + 8 * 1 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
-        pVerts[ 3 + 8 * 1 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z );	// 3
+        pVerts[ 3 + 8 * 1 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z ); // 3
         pVerts[ 3 + 8 * 1 ].Normal = Float3( -1, 0, 0 );
         pVerts[ 3 + 8 * 1 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
 
-        pVerts[ 4 + 8 * 1 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z );	// 4
+        pVerts[ 4 + 8 * 1 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z ); // 4
         pVerts[ 4 + 8 * 1 ].Normal = Float3( 1, 0, 0 );
         pVerts[ 4 + 8 * 1 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-        pVerts[ 5 + 8 * 1 ].Position = Float3( Mins.X, Mins.Y, Mins.Z );	// 5
+        pVerts[ 5 + 8 * 1 ].Position = Float3( Mins.X, Mins.Y, Mins.Z ); // 5
         pVerts[ 5 + 8 * 1 ].Normal = Float3( -1, 0, 0 );
         pVerts[ 5 + 8 * 1 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-        pVerts[ 6 + 8 * 1 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z );	// 6
+        pVerts[ 6 + 8 * 1 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z ); // 6
         pVerts[ 6 + 8 * 1 ].Normal = Float3( -1, 0, 0 );
         pVerts[ 6 + 8 * 1 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
-        pVerts[ 7 + 8 * 1 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z );	// 7
+        pVerts[ 7 + 8 * 1 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z ); // 7
         pVerts[ 7 + 8 * 1 ].Normal = Float3( 1, 0, 0 );
         pVerts[ 7 + 8 * 1 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
 
-        pVerts[ 1 + 8 * 2 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z );	// 1
+        pVerts[ 1 + 8 * 2 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z ); // 1
         pVerts[ 1 + 8 * 2 ].Normal = Float3( 0, -1, 0 );
         pVerts[ 1 + 8 * 2 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
-        pVerts[ 0 + 8 * 2 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z );	// 0
+        pVerts[ 0 + 8 * 2 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z ); // 0
         pVerts[ 0 + 8 * 2 ].Normal = Float3( 0, -1, 0 );
         pVerts[ 0 + 8 * 2 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
-        pVerts[ 5 + 8 * 2 ].Position = Float3( Mins.X, Mins.Y, Mins.Z );	// 5
+        pVerts[ 5 + 8 * 2 ].Position = Float3( Mins.X, Mins.Y, Mins.Z ); // 5
         pVerts[ 5 + 8 * 2 ].Normal = Float3( 0, -1, 0 );
         pVerts[ 5 + 8 * 2 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-        pVerts[ 4 + 8 * 2 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z );	// 4
+        pVerts[ 4 + 8 * 2 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z ); // 4
         pVerts[ 4 + 8 * 2 ].Normal = Float3( 0, -1, 0 );
         pVerts[ 4 + 8 * 2 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
 
-        pVerts[ 3 + 8 * 2 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z );	// 3
+        pVerts[ 3 + 8 * 2 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z ); // 3
         pVerts[ 3 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
         pVerts[ 3 + 8 * 2 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-        pVerts[ 2 + 8 * 2 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z );	// 2
+        pVerts[ 2 + 8 * 2 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z ); // 2
         pVerts[ 2 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
         pVerts[ 2 + 8 * 2 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-        pVerts[ 7 + 8 * 2 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z );	// 7
+        pVerts[ 7 + 8 * 2 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z ); // 7
         pVerts[ 7 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
         pVerts[ 7 + 8 * 2 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
-        pVerts[ 6 + 8 * 2 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z );	// 6
+        pVerts[ 6 + 8 * 2 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z ); // 6
         pVerts[ 6 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
         pVerts[ 6 + 8 * 2 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
@@ -263,9 +263,9 @@ struct FSphereShape {
 
         unsigned int * pIndices = _Indices.ToPtr();
         for ( y = 0 ; y < _HDiv ; y++ ) {
-            int	y2 = y + 1;
+            int y2 = y + 1;
             for ( x = 0 ; x < _VDiv ; x++ ) {
-                int	x2 = x + 1;
+                int x2 = x + 1;
 
                 Quad[ 0 ] = y  * (_VDiv+1) + x;
                 Quad[ 1 ] = y2 * (_VDiv+1) + x;
@@ -314,6 +314,83 @@ struct FPlaneShape {
         _Bounds.Maxs.X = HalfWidth;
         _Bounds.Maxs.Y = 0.0f;
         _Bounds.Maxs.Z = HalfHeight;
+    }
+};
+
+struct FPatchShape {
+    static void CreateMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
+        Float3 const & Corner00,
+        Float3 const & Corner10,
+        Float3 const & Corner01,
+        Float3 const & Corner11,
+        int resx, int resy,
+        float _TexCoordScale ) {
+
+        if ( resx < 2 ) {
+            resx = 2;
+        }
+
+        if ( resy < 2 ) {
+            resy = 2;
+        }
+
+        const int vertexCount = resx * resy;
+
+        Float3 normal = ( Corner10 - Corner00 ).Cross( Corner01 - Corner00 ).Normalized();
+
+        _Vertices.ResizeInvalidate( vertexCount );
+        _Indices.ResizeInvalidate( ( resx - 1 ) * ( resy - 1 ) * 6 );
+
+        FMeshVertex * pVert = _Vertices.ToPtr();
+        unsigned int * pIndices = _Indices.ToPtr();
+
+        for ( int y = 0; y < resy; ++y ) {
+            const float lerpY = y / ( float )( resy - 1 );
+            const Float3 py0 = Corner00.Lerp( Corner01, lerpY );
+            const Float3 py1 = Corner10.Lerp( Corner11, lerpY );
+            const float ty = lerpY * _TexCoordScale;
+
+            for ( int x = 0; x < resx; ++x ) {
+                const float lerpX = x / ( float )( resx - 1 );
+
+                pVert->Position = py0.Lerp( py1, lerpX );
+                pVert->TexCoord.X = lerpX * _TexCoordScale;
+                pVert->TexCoord.Y = ty;
+                pVert->Normal = normal;
+
+                ++pVert;
+            }
+        }
+
+        for ( int y = 0; y < resy; ++y ) {
+
+            int index0 = y*resx;
+            int index1 = (y+1)*resx;
+
+            for ( int x = 0; x < resx; ++x ) {
+                int quad00 = index0 + x;
+                int quad01 = index0 + x + 1;
+                int quad10 = index1 + x;
+                int quad11 = index1 + x + 1;
+
+                if ( ( x + 1 ) < resx && ( y + 1 ) < resy ) {
+                    *pIndices++ = quad00;
+                    *pIndices++ = quad10;
+                    *pIndices++ = quad11;
+                    *pIndices++ = quad11;
+                    *pIndices++ = quad01;
+                    *pIndices++ = quad00;
+                }
+            }
+        }
+
+        CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Length(), _Indices.ToPtr(), _Indices.Length() );
+
+        _Bounds.Clear();
+        _Bounds.AddPoint( Corner00 );
+        _Bounds.AddPoint( Corner01 );
+        _Bounds.AddPoint( Corner10 );
+        _Bounds.AddPoint( Corner11 );
     }
 };
 

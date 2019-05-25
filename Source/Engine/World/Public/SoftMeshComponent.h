@@ -31,18 +31,68 @@ SOFTWARE.
 #pragma once
 
 #include "MeshComponent.h"
+#include "AnchorComponent.h"
 
 /*
 
 FSoftMeshComponent
 
-Mesh component without skinning
+Mesh with softbody physics simulation
 
 */
 class ANGIE_API FSoftMeshComponent : public FMeshComponent {
     AN_COMPONENT( FSoftMeshComponent, FMeshComponent )
 
 public:
+    // Velocities correction factor (Baumgarte)
+    float VelocitiesCorrection = 1;
+
+    // Damping coefficient [0,1]
+    float DampingCoefficient;
+
+    // Drag coefficient [0,+inf]
+    float DragCoefficient;
+
+    // Lift coefficient [0,+inf]
+    float LiftCoefficient;
+
+    // Pressure coefficient [-inf,+inf]
+    float Pressure;
+
+    // Volume conversation coefficient [0,+inf]
+    float VolumeConversation;
+
+    // Dynamic friction coefficient [0,1]
+    float DynamicFriction = 0.2f;
+
+    // Pose matching coefficient [0,1]
+    float PoseMatching;
+
+    // Linear stiffness coefficient [0,1]
+    float LinearStiffness = 1;
+
+    // Area/Angular stiffness coefficient [0,1]
+    float AngularStiffness = 1;
+
+    // Volume stiffness coefficient [0,1]
+    float VolumeStiffness = 1;
+
+    Float3x4 BaseTransform;
+
+    // Attach vertex to anchor point
+    void AttachVertex( int _VertexIndex, FAnchorComponent * _Anchor );
+
+    // Detach vertex from anchor point
+    void DetachVertex( int _VertexIndex );
+
+    // Detach all vertices
+    void DetachAllVertices();
+
+    // Get vertex attachment
+    FAnchorComponent * GetVertexAnchor( int _VertexIndex ) const;
+
+    // Get overriden indexed mesh
+    FIndexedMesh * GetMeshOverride() const override { return SoftMesh ? SoftMesh : GetMesh(); }
 
     // Set a wind velocity for interaction with the air
     void SetWindVelocity( Float3 const & _Velocity );
@@ -69,9 +119,31 @@ protected:
 
     void OnMeshChanged() override;
 
+    void BeginPlay() override;
+
+    void TickComponent( float _TimeStep ) override;
+
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+
 private:
     void RecreateSoftBody();
+    void UpdateAnchorPoints();
+    void UpdateSoftbodyTransform();
+    void UpdateSoftbodyBoundingBox();
+    void UpdateSoftbodyMesh();
 
     Float3 WindVelocity;
     
+    TRefHolder< FIndexedMesh > SoftMesh;
+
+    //Float3x3 PrevTransformBasis;
+    //Float3 PrevTransformOrigin;
+    //btRigidBody * Anchor;
+
+    struct FAnchorBinding {
+        FAnchorComponent * Anchor;
+        int VertexIndex;
+    };
+    TPodArray< FAnchorBinding > Anchors;
+    bool bUpdateAnchors;
 };
