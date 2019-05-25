@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Public/Actor.h>
+#include <Engine/World/Public/MeshComponent.h>
 
 class FMeshComponent;
 
@@ -39,8 +40,6 @@ class FGround : public FActor {
 
 protected:
     FGround();
-
-    void BeginPlay() override;
 
 private:
     FMeshComponent * MeshComponent;

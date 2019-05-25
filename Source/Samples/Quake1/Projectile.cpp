@@ -90,16 +90,15 @@ void FProjectileActor::OnDamage( FContactEvent const & _Event ) {
 
     SpawnExplosion( RootComponent->GetPosition() );
 
-    FActor * damageReceiver = _Event.OtherActor;
+//    FActor * damageReceiver = _Event.OtherActor;
+//
+//#if 1
+//    damageReceiver->ApplyDamage( 100, RootComponent->GetPosition(), this );
+//#else
+//    damageReceiver->Destroy();
+//#endif
 
-#if 1
-    damageReceiver->ApplyDamage( 100, RootComponent->GetPosition(), this );
-#else
-    damageReceiver->Destroy();
-#endif
-
-    // TODO:
-    // GetWorld()->ApplyRadialDamage( Damage, Position, Radius );
+    GetWorld()->ApplyRadialDamage( 100, RootComponent->GetPosition(), 1.0f );
 
     Destroy();
 }

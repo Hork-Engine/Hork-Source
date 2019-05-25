@@ -28,33 +28,47 @@ SOFTWARE.
 
 */
 
-#include "Ground.h"
+#include "SoftMeshActor.h"
 
-#include <Engine/World/Public/MaterialAssembly.h>
 #include <Engine/World/Public/ResourceManager.h>
 
-AN_CLASS_META_NO_ATTRIBS( FGround )
+AN_CLASS_META_NO_ATTRIBS( FSoftMeshActor )
 
-FGround::FGround() {
-    // Get mesh resource (plane)
-    FIndexedMesh * mesh = GetResource< FIndexedMesh >( "DefaultShapePlane256x256x256" );
-
+FSoftMeshActor::FSoftMeshActor() {
     // Create material instance for mesh component
-    FMaterialInstance * matInst = NewObject< FMaterialInstance >();
+    FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
     matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
     matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
-    matInst->UniformVectors[0] = Float4( 1.0f );
+    matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
+
+    FAnchorComponent * Anchor = CreateComponent< FAnchorComponent >( "Anchor" );
+    FAnchorComponent * Anchor2 = CreateComponent< FAnchorComponent >( "Anchor2" );
+    FAnchorComponent * Anchor3 = CreateComponent< FAnchorComponent >( "Anchor3" );
+    FAnchorComponent * Anchor4 = CreateComponent< FAnchorComponent >( "Anchor4" );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticPlane" );
-    RootComponent = MeshComponent;
+    SoftMesh = CreateComponent< FSoftMeshComponent >( "DynamicSphere" );
 
-    // Setup physics
-    MeshComponent->bUseDefaultBodyComposition = true;
-    MeshComponent->bSimulatePhysics = true;
-    MeshComponent->SetFriction( 2 );
+    SoftMesh->AttachVertex( 0, Anchor );
+    SoftMesh->AttachVertex( 16, Anchor2 );
+    //SoftMesh->AttachVertex( 16 * 17, Anchor3 );
+    //SoftMesh->AttachVertex( 16 * 17 + 16, Anchor4 );
 
-    // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( mesh );
-    MeshComponent->SetMaterialInstance( 0, matInst );
+    RootComponent = Anchor;
+    Anchor2->AttachTo( Anchor );
+    Anchor3->AttachTo( Anchor );
+    Anchor4->AttachTo( Anchor );
+
+    Anchor2->SetPosition( Float3( 8, 0, 0 ) );
+    Anchor3->SetPosition( Float3( 0, 0, 8 ) );
+    Anchor4->SetPosition( Float3( 8, 0, 8 ) );
+
+    SoftMesh->Mass = 1.0f;
+    SoftMesh->bSimulatePhysics = true;
+    SoftMesh->SetWindVelocity( Float3( 10, 0, 10 ) );
+
+    SoftMesh->BaseTransform = RootComponent->GetWorldTransformMatrix();
+
+    SoftMesh->SetMesh( GetResource< FIndexedMesh >( "SoftmeshPatch" ) );
+    SoftMesh->SetMaterialInstance( 0, matInst );
 }

@@ -73,6 +73,15 @@ FPlayer::FPlayer() {
     WeaponModel->AttachTo( RootComponent );
     WeaponModel->SetAngles(0,180,0);
 
+#if 1
+    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+    mesh->InitializeInternalMesh( "*sphere*" );
+
+    Sphere = CreateComponent< FMeshComponent >( "Sphere" );
+    Sphere->SetMesh( mesh );
+    Sphere->SetMaterialInstance( matInst );
+#endif
+
     bCanEverTick = true;
 }
 
@@ -177,6 +186,25 @@ void FPlayer::Tick( float _TimeStep ) {
             }
         }
     }
+
+#if 0
+    RayF ray;
+    ray.Start = RootComponent->GetPosition();
+    ray.Dir = RootComponent->GetForwardVector();
+    FRaycastResult result;
+    if ( GetWorld()->RaycastSphere( result, 0.5f, ray ) ) {
+        Sphere->SetPosition( result.Position );
+    }
+#endif
+#if 0
+    RayF ray;
+    ray.Start = RootComponent->GetPosition();
+    ray.Dir = RootComponent->GetForwardVector();
+    FRaycastResult result;
+    if ( GetWorld()->RaycastClosest( result, ray ) ) {
+        Sphere->SetPosition( result.Position );
+    }
+#endif
 }
 
 void FPlayer::Shoot() {

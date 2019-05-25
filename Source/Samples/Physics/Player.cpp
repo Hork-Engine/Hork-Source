@@ -29,7 +29,11 @@ SOFTWARE.
 */
 
 #include "Player.h"
+#include "StaticMesh.h"
+#include "SoftMeshActor.h"
+#include "ComposedActor.h"
 
+#include <Engine/World/Public/World.h>
 #include <Engine/World/Public/MaterialAssembly.h>
 #include <Engine/World/Public/InputComponent.h>
 #include <Engine/World/Public/ResourceManager.h>
@@ -109,10 +113,13 @@ void FPlayer::SetupPlayerInputComponent( FInputComponent * _Input ) {
     _Input->BindAxis( "MoveDown", this, &FPlayer::MoveDown );
     _Input->BindAxis( "TurnRight", this, &FPlayer::TurnRight );
     _Input->BindAxis( "TurnUp", this, &FPlayer::TurnUp );
+    _Input->BindAxis( "MoveObjectForward", this, &FPlayer::MoveObjectForward );
+    _Input->BindAxis( "MoveObjectRight", this, &FPlayer::MoveObjectRight );
     _Input->BindAction( "Speed", IE_Press, this, &FPlayer::SpeedPress );
     _Input->BindAction( "Speed", IE_Release, this, &FPlayer::SpeedRelease );
-    _Input->BindAction( "Attack", IE_Press, this, &FPlayer::AttackPress );
-    _Input->BindAction( "Attack", IE_Release, this, &FPlayer::AttackRelease );
+    _Input->BindAction( "SpawnRandomShape", IE_Press, this, &FPlayer::SpawnRandomShape );
+    _Input->BindAction( "SpawnSoftBody", IE_Press, this, &FPlayer::SpawnSoftBody );
+    _Input->BindAction( "SpawnComposedActor", IE_Press, this, &FPlayer::SpawnComposedActor );
 }
 
 void FPlayer::Tick( float _TimeStep ) {
@@ -217,40 +224,69 @@ void FPlayer::SpeedRelease() {
     bSpeed = false;
 }
 
-#include "StaticMesh.h"
-//#include "Module.h"
-#include <Engine/World/Public/World.h>
-void FPlayer::AttackPress() {
+void FPlayer::SpawnRandomShape() {
     FActor * actor;
 
     FTransform transform;
 
     transform.Position = Camera->GetWorldPosition() + Camera->GetWorldForwardVector() * 1.5f;
     transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
-    transform.SetScale( 0.6f );
+    //transform.SetScale( 0.6f );
 
-#if 0
-    int i = FMath::Rand()*3;
-
-    if ( i == 1 ) {
-        transform.Scale.X = 2;
-        transform.Scale.Z = 2;
-    }
-
+    int i = FMath::Rand()*4;
     switch ( i ) {
-        case 0: actor = GetWorld()->SpawnActor< FBoxActor >( transform ); break;
-        case 1: actor = GetWorld()->SpawnActor< FSphereActor >( transform ); break;
-        default: actor = GetWorld()->SpawnActor< FCylinderActor >( transform ); break;
+        case 0:
+            actor = GetWorld()->SpawnActor< FBoxActor >( transform );
+            break;
+        case 1:
+            actor = GetWorld()->SpawnActor< FSphereActor >( transform );
+            break;
+        case 2:
+            transform.Scale.X = 2;
+            transform.Scale.Z = 2; 
+            actor = GetWorld()->SpawnActor< FSphereActor >( transform );
+            break;
+        default:
+            actor = GetWorld()->SpawnActor< FCylinderActor >( transform );
+            break;
     }
-#else
-    actor = GetWorld()->SpawnActor< FComposedActor >( transform );
-#endif
 
     FMeshComponent * mesh = actor->GetComponent< FMeshComponent >();
     if ( mesh ) {
-        mesh->ApplyCentralImpulse( Camera->GetWorldForwardVector() * 2.0f );
+        mesh->ApplyCentralImpulse( Camera->GetWorldForwardVector() * 20.0f );
     }
 }
 
-void FPlayer::AttackRelease() {
+void FPlayer::SpawnSoftBody() {
+    FTransform transform;
+
+    transform.Position = Camera->GetWorldPosition() + Camera->GetWorldForwardVector() * 1.5f;
+    transform.Rotation = Camera->GetWorldRotation();
+
+    Object = GetWorld()->SpawnActor< FSoftMeshActor >( transform );
+}
+
+void FPlayer::SpawnComposedActor() {
+    FTransform transform;
+
+    transform.Position = Camera->GetWorldPosition() + Camera->GetWorldForwardVector() * 1.5f;
+
+    FComposedActor * actor = GetWorld()->SpawnActor< FComposedActor >( transform );
+    FMeshComponent * mesh = actor->GetComponent< FMeshComponent >();
+    if ( mesh ) {
+        mesh->ApplyCentralImpulse( Camera->GetWorldForwardVector() * 20.0f );
+    }
+}
+
+void FPlayer::MoveObjectForward( float _Value ) {
+
+    if ( Object ) {
+        Object->RootComponent->StepForward( _Value * 10 );
+    }
+}
+
+void FPlayer::MoveObjectRight( float _Value ) {
+    if ( Object ) {
+        Object->RootComponent->StepRight( _Value * 10 );
+    }
 }

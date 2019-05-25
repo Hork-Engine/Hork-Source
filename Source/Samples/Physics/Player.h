@@ -41,6 +41,7 @@ public:
     FPhysicalBody * PhysBody;
     FCameraComponent * Camera;
     FMeshComponent * unitBoxComponent;
+    FActor * Object;
 
 protected:
 
@@ -61,8 +62,11 @@ private:
     void TurnUp( float _Value );
     void SpeedPress();
     void SpeedRelease();
-    void AttackPress();
-    void AttackRelease();
+    void SpawnRandomShape();
+    void SpawnSoftBody();
+    void SpawnComposedActor();
+    void MoveObjectForward( float _Value );
+    void MoveObjectRight( float _Value );
 
     Angl Angles;
     Float3 MoveVector;

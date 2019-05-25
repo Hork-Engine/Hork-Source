@@ -59,7 +59,6 @@ private:
 
     void SetInputMappings();
     void CreateResources();
-    void LoadStaticMeshes();
 };
 
 extern FModule * GModule;

@@ -28,33 +28,20 @@ SOFTWARE.
 
 */
 
-#include "Ground.h"
+#pragma once
 
-#include <Engine/World/Public/MaterialAssembly.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/World/Public/Actor.h>
+#include <Engine/World/Public/MeshComponent.h>
 
-AN_CLASS_META_NO_ATTRIBS( FGround )
+class FComposedActor : public FActor {
+    AN_ACTOR( FComposedActor, FActor )
 
-FGround::FGround() {
-    // Get mesh resource (plane)
-    FIndexedMesh * mesh = GetResource< FIndexedMesh >( "DefaultShapePlane256x256x256" );
+protected:
+    FComposedActor();
 
-    // Create material instance for mesh component
-    FMaterialInstance * matInst = NewObject< FMaterialInstance >();
-    matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
-    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
-    matInst->UniformVectors[0] = Float4( 1.0f );
+    void BeginPlay() override;
 
-    // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticPlane" );
-    RootComponent = MeshComponent;
-
-    // Setup physics
-    MeshComponent->bUseDefaultBodyComposition = true;
-    MeshComponent->bSimulatePhysics = true;
-    MeshComponent->SetFriction( 2 );
-
-    // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( mesh );
-    MeshComponent->SetMaterialInstance( 0, matInst );
-}
+private:
+    FMeshComponent * Cylinder;
+    FMeshComponent * Box;
+};

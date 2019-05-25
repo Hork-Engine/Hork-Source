@@ -68,6 +68,7 @@ private:
     Float3 MoveVector;
     bool bSpeed;
     FQuakeModelFrame * WeaponModel;
+    FMeshComponent * Sphere;
     int WeaponFramesCount;
     bool bAttacking;
     bool bAttackStarted;

@@ -31,10 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Public/Actor.h>
-#include <Engine/World/Public/IndexedMesh.h>
 #include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/SoftMeshComponent.h>
-//#include <Engine/World/Public/Material.h>
 
 class FBoxActor : public FActor {
     AN_ACTOR( FBoxActor, FActor )
@@ -63,7 +60,7 @@ protected:
     FSphereActor();
 
 private:
-    FSoftMeshComponent * MeshComponent;
+    FMeshComponent * MeshComponent;
 };
 
 class FCylinderActor : public FActor {
@@ -73,37 +70,5 @@ protected:
     FCylinderActor();
 
 private:
-    FMeshComponent * MeshComponent;
-};
-
-
-class FComposedActor : public FActor {
-    AN_ACTOR( FComposedActor, FActor )
-
-protected:
-    FComposedActor();
-
-    void BeginPlay() override;
-
-private:
-    FMeshComponent * Cylinder;
-    FMeshComponent * Box;
-};
-
-class FBoxTrigger : public FActor {
-    AN_ACTOR( FBoxTrigger, FActor )
-
-protected:
-    FBoxTrigger();
-
-protected:
-    void BeginPlay() override;
-    void EndPlay() override;
-
-private:
-    void OnBeginOverlap( FOverlapEvent const & _Event );
-    void OnEndOverlap( FOverlapEvent const & _Event );
-    void OnUpdateOverlap( FOverlapEvent const & _Event );
-
     FMeshComponent * MeshComponent;
 };

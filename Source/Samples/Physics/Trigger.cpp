@@ -28,33 +28,62 @@ SOFTWARE.
 
 */
 
-#include "Ground.h"
+#include "Trigger.h"
 
-#include <Engine/World/Public/MaterialAssembly.h>
 #include <Engine/World/Public/ResourceManager.h>
 
-AN_CLASS_META_NO_ATTRIBS( FGround )
+AN_CLASS_META_NO_ATTRIBS( FBoxTrigger )
 
-FGround::FGround() {
-    // Get mesh resource (plane)
-    FIndexedMesh * mesh = GetResource< FIndexedMesh >( "DefaultShapePlane256x256x256" );
-
+FBoxTrigger::FBoxTrigger() {
     // Create material instance for mesh component
-    FMaterialInstance * matInst = NewObject< FMaterialInstance >();
+    FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
     matInst->Material = GetResource< FMaterial >( "DefaultMaterial" );
     matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
-    matInst->UniformVectors[0] = Float4( 1.0f );
+    matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticPlane" );
+    MeshComponent = CreateComponent< FMeshComponent >( "Trigger" );
     RootComponent = MeshComponent;
 
-    // Setup physics
+    // Create collision body for mesh component
     MeshComponent->bUseDefaultBodyComposition = true;
+    MeshComponent->bTrigger = true;
+    MeshComponent->bDispatchOverlapEvents = true;
+    //MeshComponent->Mass = 1.0f;
     MeshComponent->bSimulatePhysics = true;
-    MeshComponent->SetFriction( 2 );
+    MeshComponent->CollisionMask = CM_ALL;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( mesh );
+    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
     MeshComponent->SetMaterialInstance( 0, matInst );
+}
+
+void FBoxTrigger::BeginPlay() {
+    Super::BeginPlay();
+
+    E_OnBeginOverlap.Subscribe( this, &FBoxTrigger::OnBeginOverlap );
+    E_OnEndOverlap.Subscribe( this, &FBoxTrigger::OnEndOverlap );
+    E_OnUpdateOverlap.Subscribe( this, &FBoxTrigger::OnUpdateOverlap );
+}
+
+void FBoxTrigger::EndPlay() {
+    Super::EndPlay();
+}
+
+void FBoxTrigger::OnBeginOverlap( FOverlapEvent const & _Event ) {
+    GLogger.Printf( "OnBeginOverlap: self %s other %s\n",
+                    _Event.SelfBody->GetName().ToConstChar(),
+                    _Event.OtherBody->GetName().ToConstChar() );
+}
+
+void FBoxTrigger::OnEndOverlap( FOverlapEvent const & _Event ) {
+    GLogger.Printf( "OnEndOverlap: self %s other %s\n",
+                    _Event.SelfBody->GetName().ToConstChar(),
+                    _Event.OtherBody->GetName().ToConstChar() );
+}
+
+void FBoxTrigger::OnUpdateOverlap( FOverlapEvent const & _Event ) {
+    GLogger.Printf( "OnUpdateOverlap: self %s other %s\n",
+                    _Event.SelfBody->GetName().ToConstChar(),
+                    _Event.OtherBody->GetName().ToConstChar() );
 }

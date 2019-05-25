@@ -31,6 +31,7 @@ SOFTWARE.
 #include "Module.h"
 #include "StaticMesh.h"
 #include "Ground.h"
+#include "Trigger.h"
 #include "Player.h"
 
 #include <Engine/World/Public/World.h>
@@ -75,37 +76,33 @@ void FModule::OnGameStart() {
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = false;
 
-    //FPlayer * player = World->SpawnActor< FPlayer >( Float3(2.5f, 3.5f, 2.5f), Angl(-30,45,0).ToQuat() );
-    FPlayer * player = World->SpawnActor< FPlayer >( Float3(2.5f, 0.0f, 2.5f), Angl(-30,45,0).ToQuat() );
+    FPlayer * player = World->SpawnActor< FPlayer >( Float3( 0, 0.0f, 15.0f ), Quat::Identity() );
 
+    FTransform spawnTransform;
 
-    //LoadStaticMeshes();
+    spawnTransform.Position = Float3( 0 );
+    spawnTransform.Rotation = Quat::Identity();
+    spawnTransform.Scale = Float3( 1 );
+    World->SpawnActor< FGround >( spawnTransform );
 
-    World->SpawnActor< FGround >();
+    spawnTransform.Position = Float3( 4, 2, 0 );    
+    spawnTransform.Scale = Float3( 2, 4, 2 );
+    World->SpawnActor< FBoxTrigger >( spawnTransform );
 
-    FBoxTrigger * trigger = World->SpawnActor< FBoxTrigger >( Float3(0,2,3), Quat::Identity() );
-    trigger->RootComponent->SetScale( Float3(1,4,1) );
+    spawnTransform.Position = Float3( 10, 2, 0 );
+    spawnTransform.Scale = Float3( 2, 4, 2 );
+    World->SpawnActor< FBoxTrigger >( spawnTransform );
 
-    FBoxTrigger * trigger2 = World->SpawnActor< FBoxTrigger >( Float3(0.1f,2,3.1f), Quat::Identity() );
-    trigger2->RootComponent->SetScale( Float3(1,4,1) );
-
-    FStaticBoxActor * staticBox = World->SpawnActor< FStaticBoxActor >( Float3(0,0,3), Quat::Identity() );
-    staticBox->RootComponent->SetScale( Float3(2,1,2) );
-
-    FStaticBoxActor * staticBox2 = World->SpawnActor< FStaticBoxActor >( Float3(0.5,0,3.5), Quat::Identity() );
-    staticBox2->RootComponent->SetScale( Float3(2,1,2) );
+    spawnTransform.Position = Float3( 7, 0, 0 );
+    spawnTransform.Scale = Float3( 8, 1, 8 );
+    World->SpawnActor< FStaticBoxActor >( spawnTransform );
 
     // Stair
     for ( int i = 0 ; i <16 ; i++ ) {
-        FStaticBoxActor * box = World->SpawnActor< FStaticBoxActor >( Float3(i*0.5f,(i+0.5)*0.25f,0) + Float3(5,0,3), Quat::Identity() );
-        box->RootComponent->SetScale( Float3(2,0.25f,2) );
+        spawnTransform.Position = Float3( 0, ( i + 0.5 )*0.25f, -i*0.5f ) + Float3( -10, 0, 0 );
+        spawnTransform.Scale = Float3( 2, 0.25f, 2 );
+        World->SpawnActor< FStaticBoxActor >( spawnTransform );
     }
-
-//    FTransform spawnTransform;
-//    spawnTransform.Position = Float3(0,0,0);
-//    spawnTransform.Rotation = Angl(0,45,0).ToQuat();
-//    spawnTransform.Scale = Float3(10.0f,1.0f,1.0f);
-//    World->SpawnActor< FSphereActor >( spawnTransform );
 
     // Spawn player controller
     PlayerController = World->SpawnActor< FMyPlayerController >();
@@ -130,6 +127,20 @@ void FModule::CreateResources() {
         mesh->InitializeShape< FPlaneShape >( 256, 256, 256 );
         mesh->SetName( "DefaultShapePlane256x256x256" );
         mesh->BodyComposition.NewCollisionBody< FCollisionPlane >();
+        RegisterResource( mesh );
+    }
+
+    {
+        FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+        float s = 4;
+        mesh->InitializeShape< FPatchShape >(
+            Float3( -s, 0, -s ),
+            Float3( s, 0, -s ),
+            Float3( -s, 0, s ),
+            Float3( s, 0, s ),
+            17, 17,
+            2 );
+        mesh->SetName( "SoftmeshPatch" );
         RegisterResource( mesh );
     }
 
@@ -244,39 +255,11 @@ void FModule::CreateResources() {
     }
 }
 
-void FModule::LoadStaticMeshes() {
-#if 0
-#if 1
-    // Load as separate meshes
-    FString fileName;
-
-    for ( int i = 0 ; i < 25 ; i++ ) {
-        fileName = "SponzaProject/Meshes/sponza_" + Int(i).ToString() + ".angie_mesh";
-
-        FIndexedMesh * mesh = LoadCachedMesh( fileName.ToConstChar() );
-
-        FStaticMesh * actor = World->SpawnActor< FStaticMesh >();
-
-        actor->SetMesh( mesh );
-    }
-#else
-    // Load as single mesh with subparts
-    FIndexedMesh * mesh = LoadCachedMesh( "SponzaProject/Meshes/sponza.angie_mesh" );
-
-    FStaticMesh * actor = World->SpawnActor< FStaticMesh >();
-
-    actor->SetMesh( mesh );
-#endif
-#endif
-}
-
 void FModule::SetInputMappings() {
     InputMappings = NewObject< FInputMappings >();
 
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_W, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_S, -1.0f, CONTROLLER_PLAYER_1 );
-    InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_UP, 1.0f, CONTROLLER_PLAYER_1 );
-    InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_DOWN, -1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveRight", ID_KEYBOARD, KEY_A, -1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveRight", ID_KEYBOARD, KEY_D, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveUp", ID_KEYBOARD, KEY_SPACE, 1.0f, CONTROLLER_PLAYER_1 );
@@ -285,13 +268,19 @@ void FModule::SetInputMappings() {
     InputMappings->MapAxis( "TurnUp", ID_MOUSE, MOUSE_AXIS_Y, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_LEFT, -90.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "TurnRight", ID_KEYBOARD, KEY_RIGHT, 90.0f, CONTROLLER_PLAYER_1 );
-    InputMappings->MapAction( "Attack", ID_MOUSE, MOUSE_BUTTON_LEFT, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "SpawnRandomShape", ID_MOUSE, MOUSE_BUTTON_LEFT, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "SpawnSoftBody", ID_MOUSE, MOUSE_BUTTON_RIGHT, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "SpawnComposedActor", ID_MOUSE, MOUSE_BUTTON_MIDDLE, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Speed", ID_KEYBOARD, KEY_LEFT_SHIFT, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_P, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "MoveObjectForward", ID_KEYBOARD, KEY_UP, 1.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "MoveObjectForward", ID_KEYBOARD, KEY_DOWN, -1.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "MoveObjectRight", ID_KEYBOARD, KEY_RIGHT, 1.0f, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAxis( "MoveObjectRight", ID_KEYBOARD, KEY_LEFT, -1.0f, CONTROLLER_PLAYER_1 );
 }
 
 void FModule::DrawCanvas( FCanvas * _Canvas ) {
