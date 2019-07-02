@@ -564,6 +564,18 @@ enum STBVorbisError
    #define realloc(s)  0
 #endif // STB_VORBIS_NO_CRT
 
+#undef malloc
+#undef free
+#undef realloc
+#define malloc(s) GMainMemoryZone.Alloc(s,1)
+#define free(s) GMainMemoryZone.Dealloc(s)
+
+static void * ZoneRealloc( void * _Data, size_t _NewSize ) {
+    GMainMemoryZone.Dealloc( _Data );
+    return GMainMemoryZone.Alloc( _NewSize, 1 );
+}
+#define realloc(d,s) ZoneRealloc(d,s)
+
 #include <limits.h>
 
 #ifdef __MINGW32__
