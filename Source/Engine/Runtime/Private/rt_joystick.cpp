@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "rt_joystick.h"
-#include "rt_event.h"
+#include "rt_main.h"
 
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Runtime/Public/InputDefs.h>
@@ -87,7 +87,7 @@ static void RegisterJoystick( int _Joystick ) {
     memset( JoystickButtonState[_Joystick], 0, sizeof( JoystickButtonState[0][0] ) * joystick.NumButtons );
     memset( JoystickAxisState[_Joystick], 0, sizeof( JoystickAxisState[0][0] ) * joystick.NumAxes );
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->TimeStamp = GRuntime.SysSeconds_d();
     event->Type = ET_JoystickStateEvent;
     event->Data.JoystickStateEvent.Joystick = _Joystick;
@@ -104,7 +104,7 @@ static void UnregisterJoystick( int _Joystick ) {
 
     for ( int i = 0 ; i < joystick.NumAxes ; i++ ) {
         if ( JoystickAxisState[_Joystick][i] != 0.0f ) {
-            FEvent * event = rt_SendEvent();
+            FEvent * event = rt_Events.Push();
             event->Type = ET_JoystickAxisEvent;
             event->TimeStamp = timeStamp;
             event->Data.JoystickAxisEvent.Joystick = _Joystick;
@@ -116,7 +116,7 @@ static void UnregisterJoystick( int _Joystick ) {
 
     for ( int i = 0 ; i < joystick.NumButtons ; i++ ) {
         if ( JoystickButtonState[_Joystick][i] ) {
-            FEvent * event = rt_SendEvent();
+            FEvent * event = rt_Events.Push();
             event->Type = ET_JoystickButtonEvent;
             event->TimeStamp = timeStamp;
             event->Data.JoystickButtonEvent.Joystick = _Joystick;
@@ -128,7 +128,7 @@ static void UnregisterJoystick( int _Joystick ) {
 
     joystick.bConnected = false;
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_JoystickStateEvent;
     event->TimeStamp = timeStamp;
     event->Data.JoystickStateEvent.Joystick = _Joystick;
@@ -157,7 +157,7 @@ void rt_PollJoystickEvents() {
                 if ( axes[i] != JoystickAxisState[joyNum][i] ) {
                     JoystickAxisState[joyNum][i] = axes[i];
 
-                    FEvent * event = rt_SendEvent();
+                    FEvent * event = rt_Events.Push();
                     event->Type = ET_JoystickAxisEvent;
                     event->TimeStamp = timeStamp;
                     event->Data.JoystickAxisEvent.Joystick = joyNum;
@@ -175,7 +175,7 @@ void rt_PollJoystickEvents() {
                 if ( buttons[i] != JoystickButtonState[joyNum][i] ) {
                     JoystickButtonState[joyNum][i] = buttons[i];
 
-                    FEvent * event = rt_SendEvent();
+                    FEvent * event = rt_Events.Push();
                     event->Type = ET_JoystickButtonEvent;
                     event->TimeStamp = timeStamp;
                     event->Data.JoystickButtonEvent.Joystick = joyNum;

@@ -31,7 +31,6 @@ SOFTWARE.
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Core/Public/WindowsDefs.h>
 
-#include "rt_event.h"
 #include "rt_joystick.h"
 #include "rt_monitor.h"
 #include "rt_display.h"
@@ -286,6 +285,10 @@ double FRuntime::SysMicroseconds_d() {
 #endif
 }
 
+int64_t FRuntime::SysFrameTimeStamp() {
+    return rt_SysFrameTimeStamp;
+}
+
 void * FRuntime::LoadDynamicLib( const char * _LibraryName ) {
     FString name( _LibraryName );
 #if defined AN_OS_WIN32
@@ -357,28 +360,16 @@ FString const & FRuntime::GetClipboard_GameThread() {
     return rt_GetClipboard_GameThread();
 }
 
-void FRuntime::Terminate() {
-    rt_Terminate.Store( true );
-}
-
-void FRuntime::SignalSimulationIsDone() {
-    rt_SimulationIsDone.Signal();
-}
-
-void FRuntime::WaitGameUpdate() {
-    rt_GameUpdateEvent.Wait();
-}
-
 FRenderFrame * FRuntime::GetFrameData() {
-    return &rt_FrameData[0];
+    return &rt_FrameData;
 }
 
 FEventQueue * FRuntime::ReadEvents_GameThread() {
-    return &rt_FrameData[0].RuntimeEvents;
+    return &rt_Events;
 }
 
 FEventQueue * FRuntime::WriteEvents_GameThread() {
-    return &rt_FrameData[0].GameEvents;
+    return &rt_GameEvents;
 }
 
 

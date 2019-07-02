@@ -32,11 +32,15 @@ SOFTWARE.
 
 #include "GameModuleCallback.h"
 
-// Import
-extern void (*GameThreadMain)();
-extern void (*GamePrintCallback)( const char * _Message );
-//extern void (*RenderThreadMain)();
+class IGameEngine {
+public:
+    virtual ~IGameEngine() {}
+    virtual void Initialize( FCreateGameModuleCallback _CreateGameModuleCallback ) = 0;
+    virtual void Deinitialize() = 0;
+    virtual void BuildFrame() = 0;
+    virtual void UpdateFrame() = 0;
+    virtual bool IsStopped() = 0;
+    virtual void Print( const char * _Message ) = 0;
+};
 
-// Export
-extern FCreateGameModuleCallback CreateGameModuleCallback;
-//extern void (*RuntimeUpdateCallback)( FEventQueue & _RuntimeEvents, FEventQueue & _GameEvents );
+extern IGameEngine * GetGameEngine();

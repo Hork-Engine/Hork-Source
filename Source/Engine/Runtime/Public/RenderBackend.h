@@ -848,6 +848,10 @@ struct FRenderView {
     int Width;
     int Height;
 
+    // Time parameters
+    float GameRunningTimeSeconds;
+    float GameplayTimeSeconds;
+
     // View parameters
     Float3 ViewPostion;
     Quat ViewRotation;
@@ -876,10 +880,7 @@ struct FRenderFrame {
     int WriteIndex;
 
     // Game tick
-    int TickNumber;
-    int64_t TimeStampMicro;
-    float GameRunningTimeSeconds;
-    float GameplayTimeSeconds;
+    int FrameNumber;
 
     // Max surface resolution
     int AllocSurfaceWidth;
@@ -910,9 +911,6 @@ struct FRenderFrame {
     FArrayOfDebugIndices  DbgIndices;
     FArrayOfDebugDrawCmds DbgCmds;
 
-    FEventQueue RuntimeEvents;  // runtime write, game read
-    FEventQueue GameEvents;     // runtime read, game write
-
     //int64_t RenderTimeDelta;
 
     void * AllocFrameData( size_t _BytesCount );
@@ -935,8 +933,6 @@ struct FRenderBackend {
     void ( *SetRenderFeatures )( FRenderFeatures const & _Features );
     void ( *RenderFrame )( FRenderFrame * _FrameData );
     void ( *CleanupFrame )( FRenderFrame * _FrameData );
-    void ( *SwapBuffers )();
-    void ( *SetGPUEvent )();
     void ( *WaitGPU )();
     FRenderBackend * Next;
 };

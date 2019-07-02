@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "rt_display.h"
-#include "rt_event.h"
 #include "rt_monitor.h"
 #include "rt_main.h"
 
@@ -37,9 +36,6 @@ SOFTWARE.
 #include <Engine/Runtime/Public/ImportExport.h>
 
 #include <GLFW/glfw3.h>
-
-#define MAX_KEY_STALLED_TIME    3000000     // microseconds
-#define MAX_MOUSE_STALLED_TIME  3000000     // microseconds
 
 static const int GLFWCursorMode[2] = { GLFW_CURSOR_NORMAL, GLFW_CURSOR_DISABLED };
 
@@ -90,7 +86,7 @@ static FString ClipboardCopy;
 static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Action, int _Mods ) {
     AN_Assert( _Key >= 0 || _Key <= GLFW_KEY_LAST );
 
-    if ( rt_StalledTime >= MAX_KEY_STALLED_TIME && rt_InputEventCount > 200 ) {
+    if ( rt_InputEventCount > 200 ) {
         //GLogger.Printf( "Ignoring stalled keys\n" );
         return;
     }
@@ -111,7 +107,7 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
         ClipboardPaste = glfwGetClipboardString( NULL );
     }
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_KeyEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FKeyEvent & keyEvent = event->Data.KeyEvent;
@@ -126,7 +122,7 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
 static void MouseButtonCallback( GLFWwindow * _Window, int _Button, int _Action, int _Mods ) {
     AN_Assert( _Action != GLFW_REPEAT ); // Is GLFW produce GLFW_REPEAT event for mouse buttons?
 
-    if ( rt_StalledTime >= MAX_KEY_STALLED_TIME && rt_InputEventCount > 200 ) {
+    if ( rt_InputEventCount > 200 ) {
         //GLogger.Printf( "Ignoring stalled buttons\n" );
         return;
     }
@@ -135,7 +131,7 @@ static void MouseButtonCallback( GLFWwindow * _Window, int _Button, int _Action,
         return;
     }
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_MouseButtonEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FMouseButtonEvent & mouseEvent = event->Data.MouseButtonEvent;
@@ -151,7 +147,7 @@ static void CursorPosCallback( GLFWwindow * _Window, double _MouseX, double _Mou
         return;
     }
 
-    if ( rt_StalledTime >= MAX_MOUSE_STALLED_TIME && rt_InputEventCount > 200 ) {
+    if ( rt_InputEventCount > 200 ) {
         //GLogger.Printf( "Ignoring stalled mouse move\n" );
         return;
     }
@@ -162,7 +158,7 @@ static void CursorPosCallback( GLFWwindow * _Window, double _MouseX, double _Mou
         return;
     }
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_MouseMoveEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FMouseMoveEvent & mouseEvent = event->Data.MouseMoveEvent;
@@ -178,7 +174,7 @@ static void WindowPosCallback( GLFWwindow * _Window, int _X, int _Y ) {
         rt_PositionX = _X;
         rt_PositionY = _Y;
 
-        FEvent * event = rt_SendEvent();
+        FEvent * event = rt_Events.Push();
         event->Type = ET_WindowPosEvent;
         event->TimeStamp = GRuntime.SysSeconds_d();
         FWindowPosEvent & windowPosEvent = event->Data.WindowPosEvent;
@@ -193,7 +189,7 @@ static void WindowSizeCallback( GLFWwindow * _Window, int _Width, int _Height ) 
 }
 
 static void WindowCloseCallback( GLFWwindow * ) {
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_CloseEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
 }
@@ -209,7 +205,7 @@ static void WindowFocusCallback( GLFWwindow * _Window, int _Focused ) {
         MousePositionX = MOUSE_LOST;
     }
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_FocusEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     event->Data.FocusEvent.bFocused = bIsWindowFocused;
@@ -230,12 +226,12 @@ static void CharModsCallback( GLFWwindow * _Window, unsigned int _UnicodeCharact
         return;
     }
 
-    if ( rt_StalledTime >= MAX_KEY_STALLED_TIME && rt_InputEventCount > 200 ) {
+    if ( rt_InputEventCount > 200 ) {
         //GLogger.Printf( "Ignoring stalled chars\n" );
         return;
     }
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_CharEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FCharEvent & charEvent = event->Data.CharEvent;
@@ -250,12 +246,12 @@ static void CursorEnterCallback( GLFWwindow * _Window, int _Entered ) {
 }
 
 static void ScrollCallback( GLFWwindow * _Window, double _WheelX, double _WheelY ) {
-    if ( rt_StalledTime >= MAX_KEY_STALLED_TIME && rt_InputEventCount > 200 ) {
+    if ( rt_InputEventCount > 200 ) {
         //GLogger.Printf( "Ignoring stalled wheel\n" );
         return;
     }
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_MouseWheelEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FMouseWheelEvent & mouseWheelEvent = event->Data.MouseWheelEvent;
@@ -367,8 +363,6 @@ static void DestroyDisplays() {
     glfwDestroyWindow( Wnd );
 
     // Unpress all pressed keys
-    int64_t stalledTime = rt_StalledTime;
-    rt_StalledTime = 0;
     for ( int i = 0 ; i <= GLFW_KEY_LAST ; i++ ) {
         if ( PressedKeys[i] ) {
             KeyCallback( nullptr, i, PressedKeys[i] - 1, IE_Release, 0 );
@@ -379,7 +373,6 @@ static void DestroyDisplays() {
             MouseButtonCallback( nullptr, i, IE_Release, 0 );
         }
     }
-    rt_StalledTime = stalledTime;
 }
 
 void rt_InitializeDisplays() {
@@ -477,7 +470,7 @@ static void ProcessEvent( FEvent const & _Event ) {
 }
 
 static void SendChangedVideoModeEvent() {
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_ChangedVideoModeEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FChangedVideoModeEvent & data = event->Data.ChangedVideoModeEvent;
@@ -586,7 +579,7 @@ void rt_UpdateDisplays( FEventQueue & _EventQueue ) {
     bCheck = bIsWindowVisible;
     bIsWindowVisible = glfwGetWindowAttrib( Wnd, GLFW_VISIBLE );
     if ( bIsWindowVisible != bCheck ) {
-        event = rt_SendEvent();
+        event = rt_Events.Push();
         event->Type = ET_VisibleEvent;
         event->TimeStamp = GRuntime.SysSeconds_d();
         FVisibleEvent & data = event->Data.VisibleEvent;

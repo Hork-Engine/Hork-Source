@@ -32,7 +32,6 @@ SOFTWARE.
 #include "rt_joystick.h"
 #include "rt_monitor.h"
 #include "rt_display.h"
-#include "rt_event.h"
 
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/CriticalError.h>
@@ -67,16 +66,17 @@ char * rt_Executable = nullptr;
 int64_t rt_SysStartSeconds;
 int64_t rt_SysStartMilliseconds;
 int64_t rt_SysStartMicroseconds;
-FAtomicBool rt_Terminate( false );
-FRenderFrame rt_FrameData[ 2 ];
-FSyncEvent rt_SimulationIsDone;
-FSyncEvent rt_GameUpdateEvent;
-int64_t rt_StalledTime = 0;
-void * rt_FrameMemoryAddress = nullptr;
-size_t rt_FrameMemorySize = 0;
-
-FCreateGameModuleCallback CreateGameModuleCallback;
-//void (*RuntimeUpdateCallback)( FEventQueue & _RuntimeEvents, FEventQueue & _GameEvents );
+int64_t rt_SysFrameTimeStamp;
+FRenderFrame rt_FrameData;
+FEventQueue rt_Events;
+FEventQueue rt_GameEvents;
+static void * rt_FrameMemoryAddress = nullptr;
+static size_t rt_FrameMemorySize = 0;
+static FSyncEvent rt_SimulationIsDone;
+static FSyncEvent rt_GameUpdateEvent;
+static bool rt_Terminate = false;
+static IGameEngine * rt_GameEngine;
+static FCreateGameModuleCallback rt_CreateGameModuleCallback;
 
 int rt_CheckArg( const char * _Arg ) {
     for ( int i = 0 ; i < rt_NumArguments ; i++ ) {
@@ -224,7 +224,7 @@ static void LoggerMessageCallback( int _Level, const char * _Message ) {
 #endif
 #endif
 
-    GamePrintCallback( _Message );
+    rt_GameEngine->Print( _Message );
 
     if ( Log.file ) {
         FSyncGuard syncGuard( loggerSync );
@@ -376,17 +376,16 @@ static void EmergencyExit() {
 
 FAtomicBool testInput;
 
-static void RuntimeUpdate( FEventQueue & _RuntimeEvents, FEventQueue & _GameEvents ) {
-    rt_InitEventQueue( &_RuntimeEvents );
+static void RuntimeUpdate() {
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_RuntimeUpdateEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     rt_InputEventCount = 0;
 
     rt_UpdatePhysicalMonitors();
 
-    rt_UpdateDisplays( _GameEvents );
+    rt_UpdateDisplays( rt_GameEvents );
 
     // Pump joystick events before any input
     rt_PollJoystickEvents();
@@ -398,14 +397,14 @@ static void RuntimeUpdate( FEventQueue & _RuntimeEvents, FEventQueue & _GameEven
 
         FEvent * testEvent;
 
-        testEvent = _RuntimeEvents.Push();
+        testEvent = rt_Events.Push();
         testEvent->Type = ET_MouseMoveEvent;
         testEvent->TimeStamp = GRuntime.SysSeconds_d();
         testEvent->Data.MouseMoveEvent.X = 10;
         testEvent->Data.MouseMoveEvent.Y = 0;
         rt_InputEventCount++;
 
-        testEvent = _RuntimeEvents.Push();
+        testEvent = rt_Events.Push();
         testEvent->Type = ET_MouseButtonEvent;
         testEvent->TimeStamp = GRuntime.SysSeconds_d();
         testEvent->Data.MouseButtonEvent.Action = IE_Press;
@@ -413,7 +412,7 @@ static void RuntimeUpdate( FEventQueue & _RuntimeEvents, FEventQueue & _GameEven
         testEvent->Data.MouseButtonEvent.ModMask = 0;
         rt_InputEventCount++;
 
-        testEvent = _RuntimeEvents.Push();
+        testEvent = rt_Events.Push();
         testEvent->Type = ET_MouseButtonEvent;
         testEvent->TimeStamp = GRuntime.SysSeconds_d();
         testEvent->Data.MouseButtonEvent.Action = IE_Release;
@@ -421,7 +420,7 @@ static void RuntimeUpdate( FEventQueue & _RuntimeEvents, FEventQueue & _GameEven
         testEvent->Data.MouseButtonEvent.ModMask = 0;
         rt_InputEventCount++;
 
-        testEvent = _RuntimeEvents.Push();
+        testEvent = rt_Events.Push();
         testEvent->Type = ET_MouseMoveEvent;
         testEvent->TimeStamp = GRuntime.SysSeconds_d();
         testEvent->Data.MouseMoveEvent.X = 10;
@@ -430,108 +429,103 @@ static void RuntimeUpdate( FEventQueue & _RuntimeEvents, FEventQueue & _GameEven
     }
 
     // It may happen if game thread is too busy
-    if ( event->Type == ET_RuntimeUpdateEvent && _RuntimeEvents.Length() != _RuntimeEvents.MaxLength() ) {
+    if ( event->Type == ET_RuntimeUpdateEvent && rt_Events.Length() != rt_Events.MaxLength() ) {
         event->Data.RuntimeUpdateEvent.InputEventCount = rt_InputEventCount;
     } else {
         GLogger.Printf( "Warning: Runtime queue was overflowed\n" );
 
-        _RuntimeEvents.Clear();
+        rt_Events.Clear();
     }
 }
 
-static void _GameThreadMain( void * ) {
-    GameThreadMain();
-}
-
-#include <Engine/World/Public/GameMaster.h>
-#include <Engine/World/Public/Canvas.h>
-#include <Engine/World/Public/RenderFrontend.h>
-extern float AxesFract;
-extern FCanvas GCanvas;
-
-FRenderFrame * frameData;
-
-void ReadInput() {
-    rt_StalledTime = 0;
-    RuntimeUpdate( frameData->RuntimeEvents, frameData->GameEvents );
-}
-
-void UpdateCamera() {
-    GGameMaster.ProcessEvents();
-
-    GGameMaster.UpdateInputAxes( AxesFract );
-}
-
-void RenderFrontend() {
-    GRenderFrontend.BuildFrameData( &GCanvas, ImGui::GetDrawData() );
-}
-
-void SubmitGameUpdate() {
-
-    frameData->WriteIndex ^= 1;
-    frameData->FrameMemorySize = rt_FrameMemorySize - frameData->FrameMemoryUsed;
-    if ( frameData->WriteIndex & 1 ) {
-        frameData->pFrameMemory = (byte *)rt_FrameMemoryAddress + rt_FrameMemorySize;
+static void SubmitGameUpdate() {
+    rt_FrameData.WriteIndex ^= 1;
+    rt_FrameData.ReadIndex = rt_FrameData.WriteIndex ^ 1;
+    rt_FrameData.FrameMemorySize = rt_FrameMemorySize - rt_FrameData.FrameMemoryUsed;
+    if ( rt_FrameData.WriteIndex & 1 ) {
+        rt_FrameData.pFrameMemory = (byte *)rt_FrameMemoryAddress + rt_FrameMemorySize;
     } else {
-        frameData->pFrameMemory = rt_FrameMemoryAddress;
+        rt_FrameData.pFrameMemory = rt_FrameMemoryAddress;
     }
-    frameData->FrameMemoryUsed = 0;
-
-    frameData->ReadIndex = frameData->WriteIndex ^ 1;
-
-    //GLogger.Printf( "Write %d, Read %d\n", frameData->WriteIndex, frameData->ReadIndex );
-
+    rt_FrameData.FrameMemoryUsed = 0;
     rt_GameUpdateEvent.Signal();
 }
 
-void RenderBackend() {
-    GRenderBackend->CleanupFrame( frameData );
-    GRenderBackend->RenderFrame( frameData );
-    // Установить GPU эвент, чтобы в конце кадра синхронизировать CPU-GPU
-    GRenderBackend->SetGPUEvent();
-    GRenderBackend->SwapBuffers();
+static void WaitGameUpdate() {
+    rt_GameUpdateEvent.Wait();
 }
 
-void WaitSimulationIsDone() {
+static void SignalSimulationIsDone() {
+    rt_SimulationIsDone.Signal();
+}
+
+static void WaitSimulationIsDone() {
     rt_SimulationIsDone.Wait();
 }
 
-void WaitGPU() {
+static void GameThreadMain( void * ) {
+    if ( SetCriticalMark() ) {
+        // Critical error was emitted by this thread
+        rt_Terminate = true;
+        return;
+    }
+
+    while ( 1 ) {
+        // Ожидаем пока MainThread не пробудит поток вызовом SubmitGameUpdate
+        //do {
+        //    //  Пока ждем, можно сделать что-то полезное, например копить сетевые пакеты
+        //    ProcessNetworkPackets();
+        //} while ( WaitGameUpdate( timeOut ) );
+
+        WaitGameUpdate();
+
+        if ( IsCriticalError() ) {
+            // Critical error in other thread was occured
+            rt_Terminate = true;
+            return;
+        }
+
+        if ( rt_GameEngine->IsStopped() ) {
+            break;
+        }
+
+        rt_GameEngine->UpdateFrame();
+
+        SignalSimulationIsDone();
+    }
+
+    rt_Terminate = true;
+    SignalSimulationIsDone();
+}
+
+static void RenderBackend() {
+    GRenderBackend->RenderFrame( &rt_FrameData );
+}
+
+static void WaitGPU() {
     GRenderBackend->WaitGPU();
 }
 
 static void RuntimeMainLoop() {
-//    const int RenderHertz = 120;
-//    const int64_t frameTimeMicro = 1000000.0 / RenderHertz;
-//    int64_t frameTimeStamp;
-//    bool timedOut = true;
-//    int64_t syncWaitTimeout = 0;
-
-    for ( int i = 0 ; i < 1 ; i++ ) {
-        frameData = &rt_FrameData[ i ];
-
-        for ( int j = 0 ; j < 2 ; j++ ) {
-            frameData->RenderProxyUploadHead[j] = nullptr;
-            frameData->RenderProxyUploadTail[j] = nullptr;
-            frameData->RenderProxyFree[j] = nullptr;
-        }
-        frameData->DrawListHead = nullptr;
-        frameData->DrawListTail = nullptr;
+    for ( int j = 0 ; j < 2 ; j++ ) {
+        rt_FrameData.RenderProxyUploadHead[j] = nullptr;
+        rt_FrameData.RenderProxyUploadTail[j] = nullptr;
+        rt_FrameData.RenderProxyFree[j] = nullptr;
     }
-
-    frameData->ReadIndex = 0;
-    frameData->WriteIndex = 1;
-    frameData->FrameMemoryUsed = 0;
-    frameData->FrameMemorySize = rt_FrameMemorySize;
-    frameData->pFrameMemory = rt_FrameMemoryAddress;
+    rt_FrameData.DrawListHead = nullptr;
+    rt_FrameData.DrawListTail = nullptr;
+    rt_FrameData.ReadIndex = 1;
+    rt_FrameData.WriteIndex = 0;
+    rt_FrameData.FrameMemoryUsed = 0;
+    rt_FrameData.FrameMemorySize = rt_FrameMemorySize;
+    rt_FrameData.pFrameMemory = rt_FrameMemoryAddress;
 
     // Pump initial events
-    frameData = &rt_FrameData[ 0 ];
-    RuntimeUpdate( frameData->RuntimeEvents, frameData->GameEvents );
+    RuntimeUpdate();
 
-    GGameMaster.InitializeGame();
+    rt_GameEngine->Initialize( rt_CreateGameModuleCallback );
 
-    GameThread.Routine = _GameThreadMain;
+    GameThread.Routine = GameThreadMain;
     GameThread.Data = nullptr;
     GameThread.Start();
 
@@ -540,30 +534,27 @@ static void RuntimeMainLoop() {
     }
 
     while ( 1 ) {
-//        frameTimeStamp = GRuntime.SysMicroseconds();
+        rt_SysFrameTimeStamp = GRuntime.SysMicroseconds();
 
-        frameData->DrawListHead = nullptr;
-        frameData->DrawListTail = nullptr;
+        rt_FrameData.DrawListHead = nullptr;
+        rt_FrameData.DrawListTail = nullptr;
 
         if ( IsCriticalError() ) {
             // Critical error in other thread was occured
             return;
         }
 
-        if ( rt_Terminate.Load() ) {
+        if ( rt_Terminate ) {
             break;
         }
 
-        // Получить свежие данные ввода
-        ReadInput();
+        // Получить свежие данные ввода и другие события
+        RuntimeUpdate();
 
-        // Обновить камеру/курсор
-        UpdateCamera();
+        // Обновить данные кадра (камера, курсор), подготовить данные для render backend
+        rt_GameEngine->BuildFrame();
 
-        // Подготовить кадр на отрисовку (VSD culling, sort, batch, etc). Может быть разделен на параллельные джобы
-        RenderFrontend();
-
-        // Разбудить игровой поток
+        // Разбудить игровой поток, начать подготовку следующего кадра
         SubmitGameUpdate();
 
         // Сгенерировать команды для GPU, SwapBuffers
@@ -574,28 +565,19 @@ static void RuntimeMainLoop() {
 
         // Ожидаем выполнение команд GPU, чтобы исключить "input lag"
         WaitGPU();
-
-        //FrameNum++;
     }
 
     GameThread.Join();
 
-    GGameMaster.DeinitializeGame();
+    rt_GameEngine->Deinitialize();
 
-    // Game thread is stopped at this moment
-
-    //for ( int i = 0 ; i < 2 ; i++ ) {
-    //    frameData = &rt_FrameData[ 0 ];
-
-        GRenderBackend->CleanupFrame( frameData );
-        frameData->ReadIndex^=1;
-        GRenderBackend->CleanupFrame( frameData );
-
-        frameData->Instances.Free();
-        frameData->DbgVertices.Free();
-        frameData->DbgIndices.Free();
-        frameData->DbgCmds.Free();
-    //}
+    GRenderBackend->CleanupFrame( &rt_FrameData );
+    rt_FrameData.ReadIndex^=1;
+    GRenderBackend->CleanupFrame( &rt_FrameData );
+    rt_FrameData.Instances.Free();
+    rt_FrameData.DbgVertices.Free();
+    rt_FrameData.DbgIndices.Free();
+    rt_FrameData.DbgCmds.Free();
 }
 
 static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
@@ -603,6 +585,11 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
     rt_SysStartMicroseconds = StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count();
     rt_SysStartMilliseconds = rt_SysStartMicroseconds * 0.001;
     rt_SysStartSeconds = rt_SysStartMicroseconds * 0.000001;
+    rt_SysFrameTimeStamp = rt_SysStartMicroseconds;
+
+    rt_CreateGameModuleCallback = _CreateGameModule;
+
+    rt_GameEngine = GetGameEngine();
 
     //SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_HIGHEST );
 
@@ -664,9 +651,6 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
     rt_InitializePhysicalMonitors();
 
     rt_InitializeDisplays();
-
-    CreateGameModuleCallback = _CreateGameModule;
-    //RuntimeUpdateCallback = RuntimeUpdate;
 
     RuntimeMainLoop();
 

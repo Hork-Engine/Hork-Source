@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "rt_monitor.h"
-#include "rt_event.h"
+#include "rt_main.h"
 
 #include <GLFW/glfw3.h>
 
@@ -121,7 +121,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
 
     UpdatePrimaryMonitor();
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_MonitorConnectionEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();   // in seconds
     event->Data.MonitorConnectionEvent.Handle = handle;
@@ -142,7 +142,7 @@ static void UnregisterMonitor( GLFWmonitor * _Monitor ) {
 
     UpdatePrimaryMonitor();
 
-    FEvent * event = rt_SendEvent();
+    FEvent * event = rt_Events.Push();
     event->Type = ET_MonitorConnectionEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();   // in seconds
     event->Data.MonitorConnectionEvent.Handle = handle;

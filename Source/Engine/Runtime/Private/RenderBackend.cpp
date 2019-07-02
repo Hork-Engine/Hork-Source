@@ -274,5 +274,6 @@ void * FRenderFrame::AllocFrameData( size_t _BytesCount ) {
 
     //GLogger.Printf( "Allocated %u, Used %u\n", _BytesCount, FrameMemoryUsed );
 
+    //return malloc( _BytesCount );
     return pMemory;
 }

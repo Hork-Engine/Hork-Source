@@ -289,15 +289,9 @@ public:
 
     const char * GetExecutableName();
 
-    void Terminate();
-
     FEventQueue * ReadEvents_GameThread();
 
     FEventQueue * WriteEvents_GameThread();
-
-    void SignalSimulationIsDone();
-
-    void WaitGameUpdate();
 
     FRenderFrame * GetFrameData();
 
@@ -345,6 +339,8 @@ public:
 
     int64_t SysMicroseconds();
     double SysMicroseconds_d();
+
+    int64_t SysFrameTimeStamp();
 
     void * LoadDynamicLib( const char * _LibraryName );
 

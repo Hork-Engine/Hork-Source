@@ -40,12 +40,9 @@ extern char * rt_Executable;
 extern int64_t rt_SysStartSeconds;
 extern int64_t rt_SysStartMilliseconds;
 extern int64_t rt_SysStartMicroseconds;
-extern FAtomicBool rt_Terminate;
-extern FSyncEvent rt_SimulationIsDone;
-extern FSyncEvent rt_GameUpdateEvent;
-extern FRenderFrame rt_FrameData[2];
-extern int64_t rt_StalledTime;
-extern void * rt_FrameMemoryAddress;
-extern size_t rt_FrameMemorySize;
+extern int64_t rt_SysFrameTimeStamp;
+extern FRenderFrame rt_FrameData;
+extern FEventQueue rt_Events;
+extern FEventQueue rt_GameEvents;
 
 int rt_CheckArg( const char * _Arg );
