@@ -28,8 +28,11 @@ file( GLOB RendererNull Renderer/Null/*.h Renderer/Null/*.cpp )
 
 file( GLOB Imgui imgui/*.h imgui/*.cpp )
 
-file( GLOB WorldPublic World/Public/*.h World/Public/*.cpp )
-file( GLOB WorldPrivate World/Private/*.h World/Private/*.cpp )
+file( GLOB GameEnginePublic GameEngine/Public/*.h GameEngine/Public/*.cpp )
+file( GLOB GameEnginePrivate GameEngine/Private/*.h GameEngine/Private/*.cpp )
+
+file( GLOB GameEnginePublicCodec GameEngine/Public/Codec/*.h GameEngine/Public/Codec/*.cpp )
+file( GLOB GameEnginePrivateCodec GameEngine/Private/Codec/*.h GameEngine/Private/Codec/*.cpp )
 
 source_group( "Core\\Public" FILES ${CorePublic} )
 source_group( "Core\\Public\\BV" FILES ${CorePublicBV} )
@@ -48,8 +51,11 @@ source_group( "Renderer\\Null" FILES ${RendererNull} )
 
 source_group( "imgui" FILES ${Imgui} )
 
-source_group( "World\\Public" FILES ${WorldPublic} )
-source_group( "World\\Private" FILES ${WorldPrivate} )
+source_group( "GameEngine\\Public" FILES ${GameEnginePublic} )
+source_group( "GameEngine\\Private" FILES ${GameEnginePrivate} )
+
+source_group( "GameEngine\\Public\\Codec" FILES ${GameEnginePublicCodec} )
+source_group( "GameEngine\\Private\\Codec" FILES ${GameEnginePrivateCodec} )
 
 add_library(
 
@@ -72,11 +78,14 @@ ${RendererNull}
 
 ${Imgui}
 
-${WorldPublic}
-${WorldPrivate}
+${GameEnginePublic}
+${GameEnginePrivate}
 
-${WorldPublicMesh}
-${WorldPrivateMesh}
+${GameEnginePublicCodec}
+${GameEnginePrivateCodec}
+
+${GameEnginePublicMesh}
+${GameEnginePrivateMesh}
 
 )
 
@@ -91,7 +100,7 @@ else()
 set( AN_OS_LIBS uuid )
 endif()
 
-target_link_libraries( ${PROJECT} ${AN_BULLET_LIBS} ${AN_OPENGL_LIBS} ${Vulkan_LIBRARIES} ${AN_OS_LIBS} ${ZLIB_LIBRARY} minizip )
+target_link_libraries( ${PROJECT} ${AN_BULLET_LIBS} ${AN_OPENGL_LIBS} ${Vulkan_LIBRARIES} ${AN_OS_LIBS} ${ZLIB_LIBRARY} minizip fastlz vhacd Recast )
 
 set_target_properties( ${PROJECT}
     PROPERTIES
