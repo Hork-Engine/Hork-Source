@@ -1823,6 +1823,9 @@ public:
     // Return value is between MinPowerOfTwo and MaxPowerOfTwo
     UInt ToClosestPowerOfTwo() const;
 
+    // Log base 2 TODO: Add similar method to all other integral types like Int,Long,ULong,etc
+    UInt Log2() const;
+
     // Return 1 if value is greater than 0, -1 if value is less than 0, 0 if value equal to 0
     UInt Sign() const {
         return Value > 0;
@@ -3056,6 +3059,18 @@ AN_FORCEINLINE UInt UInt::ToClosestPowerOfTwo() const {
     return GreaterPow.Dist( Value ) < LessPow.Dist( Value ) ? GreaterPow : LessPow;
 }
 
+AN_FORCEINLINE UInt UInt::Log2() const {
+    uint32_t r;
+    uint32_t shift;
+    uint32_t v = Value;
+    r = (v > 0xffff) << 4; v >>= r;
+    shift = (v > 0xff) << 3; v >>= shift; r |= shift;
+    shift = (v > 0xf) << 2; v >>= shift; r |= shift;
+    shift = (v > 0x3) << 1; v >>= shift; r |= shift;
+    r |= (v >> 1);
+    return r;
+}
+
 AN_FORCEINLINE Long Long::ToGreaterPowerOfTwo() const {
     if ( Value >= MaxPowerOfTwo() ) {
         return MaxPowerOfTwo();
@@ -3139,6 +3154,16 @@ public:
     explicit constexpr SignedByte2( const int8_t & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr SignedByte2( const int8_t & _X, const int8_t & _Y ) : X( _X ), Y( _Y ) {}
 
+    SignedByte & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const SignedByte & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3150,6 +3175,9 @@ public:
         _Stream >> X;
         _Stream >> Y;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 2; }
 };
 class Byte2 final {
 public:
@@ -3160,6 +3188,16 @@ public:
     explicit constexpr Byte2( const uint8_t & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr Byte2( const uint8_t & _X, const uint8_t & _Y ) : X( _X ), Y( _Y ) {}
 
+    Byte & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Byte & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3171,6 +3209,9 @@ public:
         _Stream >> X;
         _Stream >> Y;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 2; }
 };
 class Short2 final {
 public:
@@ -3181,6 +3222,16 @@ public:
     explicit constexpr Short2( const int16_t & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr Short2( const int16_t & _X, const int16_t & _Y ) : X( _X ), Y( _Y ) {}
 
+    Short & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Short & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3192,6 +3243,9 @@ public:
         _Stream >> X;
         _Stream >> Y;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 2; }
 };
 class UShort2 final {
 public:
@@ -3202,6 +3256,16 @@ public:
     explicit constexpr UShort2( const uint16_t & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr UShort2( const uint16_t & _X, const uint16_t & _Y ) : X( _X ), Y( _Y ) {}
 
+    UShort & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const UShort & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3213,6 +3277,9 @@ public:
         _Stream >> X;
         _Stream >> Y;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 2; }
 };
 class Int2 final {
 public:
@@ -3223,6 +3290,16 @@ public:
     explicit constexpr Int2( const int32_t & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr Int2( const int32_t & _X, const int32_t & _Y ) : X( _X ), Y( _Y ) {}
 
+    Int & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Int & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3234,6 +3311,9 @@ public:
         _Stream >> X;
         _Stream >> Y;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 2; }
 };
 class UInt2 final {
 public:
@@ -3244,6 +3324,16 @@ public:
     explicit constexpr UInt2( const uint32_t & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr UInt2( const uint32_t & _X, const uint32_t & _Y ) : X( _X ), Y( _Y ) {}
 
+    UInt & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const UInt & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3255,6 +3345,9 @@ public:
         _Stream >> X;
         _Stream >> Y;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 2; }
 };
 class Long2 final {
 public:
@@ -3265,6 +3358,16 @@ public:
     explicit constexpr Long2( const int64_t & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr Long2( const int64_t & _X, const int64_t & _Y ) : X( _X ), Y( _Y ) {}
 
+    Long & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Long & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3276,6 +3379,9 @@ public:
         _Stream >> X;
         _Stream >> Y;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 2; }
 };
 class ULong2 final {
 public:
@@ -3286,6 +3392,16 @@ public:
     explicit constexpr ULong2( const uint64_t & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr ULong2( const uint64_t & _X, const uint64_t & _Y ) : X( _X ), Y( _Y ) {}
 
+    ULong & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const ULong & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3297,6 +3413,9 @@ public:
         _Stream >> X;
         _Stream >> Y;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 2; }
 };
 class SignedByte3 final {
 public:
@@ -3308,6 +3427,16 @@ public:
     explicit constexpr SignedByte3( const int8_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr SignedByte3( const int8_t & _X, const int8_t & _Y, const int8_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
+    SignedByte & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const SignedByte & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3320,6 +3449,9 @@ public:
         _Stream >> Y;
         _Stream >> Z;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 3; }
 };
 class Byte3 final {
 public:
@@ -3331,6 +3463,16 @@ public:
     explicit constexpr Byte3( const uint8_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr Byte3( const uint8_t & _X, const uint8_t & _Y, const uint8_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
+    Byte & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Byte & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3343,6 +3485,9 @@ public:
         _Stream >> Y;
         _Stream >> Z;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 3; }
 };
 class Short3 final {
 public:
@@ -3354,6 +3499,16 @@ public:
     explicit constexpr Short3( const int16_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr Short3( const int16_t & _X, const int16_t & _Y, const int16_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
+    Short & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Short & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3366,6 +3521,9 @@ public:
         _Stream >> Y;
         _Stream >> Z;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 3; }
 };
 class UShort3 final {
 public:
@@ -3377,6 +3535,16 @@ public:
     explicit constexpr UShort3( const uint16_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr UShort3( const uint16_t & _X, const uint16_t & _Y, const uint16_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
+    UShort & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const UShort & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3389,6 +3557,9 @@ public:
         _Stream >> Y;
         _Stream >> Z;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 3; }
 };
 class Int3 final {
 public:
@@ -3400,6 +3571,16 @@ public:
     explicit constexpr Int3( const int32_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr Int3( const int32_t & _X, const int32_t & _Y, const int32_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
+    Int & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Int & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3412,6 +3593,9 @@ public:
         _Stream >> Y;
         _Stream >> Z;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 3; }
 };
 class UInt3 final {
 public:
@@ -3423,6 +3607,16 @@ public:
     explicit constexpr UInt3( const uint32_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr UInt3( const uint32_t & _X, const uint32_t & _Y, const uint32_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
+    UInt & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const UInt & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3435,6 +3629,9 @@ public:
         _Stream >> Y;
         _Stream >> Z;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 3; }
 };
 class Long3 final {
 public:
@@ -3446,6 +3643,16 @@ public:
     explicit constexpr Long3( const int64_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr Long3( const int64_t & _X, const int64_t & _Y, const int64_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
+    Long & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Long & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3458,6 +3665,9 @@ public:
         _Stream >> Y;
         _Stream >> Z;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 3; }
 };
 class ULong3 final {
 public:
@@ -3469,6 +3679,16 @@ public:
     explicit constexpr ULong3( const uint64_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr ULong3( const uint64_t & _X, const uint64_t & _Y, const uint64_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
+    ULong & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const ULong & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3481,6 +3701,9 @@ public:
         _Stream >> Y;
         _Stream >> Z;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 3; }
 };
 class SignedByte4 final {
 public:
@@ -3493,6 +3716,16 @@ public:
     explicit constexpr SignedByte4( const int8_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr SignedByte4( const int8_t & _X, const int8_t & _Y, const int8_t & _Z, const int8_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
+    SignedByte & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const SignedByte & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3506,6 +3739,9 @@ public:
         _Stream >> Z;
         _Stream >> W;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 4; }
 };
 class Byte4 final {
 public:
@@ -3518,6 +3754,16 @@ public:
     explicit constexpr Byte4( const uint8_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr Byte4( const uint8_t & _X, const uint8_t & _Y, const uint8_t & _Z, const uint8_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
+    Byte & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Byte & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3531,6 +3777,9 @@ public:
         _Stream >> Z;
         _Stream >> W;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 4; }
 };
 class Short4 final {
 public:
@@ -3543,6 +3792,16 @@ public:
     explicit constexpr Short4( const int16_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr Short4( const int16_t & _X, const int16_t & _Y, const int16_t & _Z, const int16_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
+    Short & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Short & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3556,6 +3815,9 @@ public:
         _Stream >> Z;
         _Stream >> W;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 4; }
 };
 class UShort4 final {
 public:
@@ -3568,6 +3830,16 @@ public:
     explicit constexpr UShort4( const uint16_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr UShort4( const uint16_t & _X, const uint16_t & _Y, const uint16_t & _Z, const uint16_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
+    UShort & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const UShort & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3581,6 +3853,9 @@ public:
         _Stream >> Z;
         _Stream >> W;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 4; }
 };
 class Int4 final {
 public:
@@ -3593,6 +3868,16 @@ public:
     explicit constexpr Int4( const int32_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr Int4( const int32_t & _X, const int32_t & _Y, const int32_t & _Z, const int32_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
+    Int & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Int & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3606,6 +3891,9 @@ public:
         _Stream >> Z;
         _Stream >> W;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 4; }
 };
 class UInt4 final {
 public:
@@ -3618,6 +3906,16 @@ public:
     explicit constexpr UInt4( const uint32_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr UInt4( const uint32_t & _X, const uint32_t & _Y, const uint32_t & _Z, const uint32_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
+    UInt & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const UInt & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3631,6 +3929,9 @@ public:
         _Stream >> Z;
         _Stream >> W;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 4; }
 };
 class Long4 final {
 public:
@@ -3643,6 +3944,16 @@ public:
     explicit constexpr Long4( const int64_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr Long4( const int64_t & _X, const int64_t & _Y, const int64_t & _Z, const int64_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
+    Long & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const Long & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3656,6 +3967,9 @@ public:
         _Stream >> Z;
         _Stream >> W;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 4; }
 };
 class ULong4 final {
 public:
@@ -3668,6 +3982,16 @@ public:
     explicit constexpr ULong4( const uint64_t & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr ULong4( const uint64_t & _X, const uint64_t & _Y, const uint64_t & _Z, const uint64_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
+    ULong & operator[]( const int & _Index ) {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
+    const ULong & operator[]( const int & _Index ) const {
+        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        return (&X)[ _Index ];
+    }
+
     // Byte serialization
     template< typename T >
     void Write( FStreamBase< T > & _Stream ) const {
@@ -3681,6 +4005,9 @@ public:
         _Stream >> Z;
         _Stream >> W;
     }
+
+    // Static methods
+    static constexpr int NumComponents() { return 4; }
 };
 
 #if SIZEOF_SIZE_T == 4

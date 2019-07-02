@@ -9,23 +9,23 @@ public:
     Float3x3    Orient;
 
     BvOrientedBox() = default;
-    BvOrientedBox( const Float3 & _Center, const Float3 & _HalfSize ) : Center(_Center), HalfSize(_HalfSize) {}
+    BvOrientedBox( Float3 const & _Center, Float3 const & _HalfSize ) : Center(_Center), HalfSize(_HalfSize) {}
 
     // TODO: Check correcteness
 
-    void FromAxisAlignedBox( const BvAxisAlignedBox & _AxisAlignedBox, const Float3 & _Origin, const Float3x3 & _Orient ) {
+    void FromAxisAlignedBox( BvAxisAlignedBox const & _AxisAlignedBox, Float3 const & _Origin, Float3x3 const & _Orient ) {
         HalfSize = _AxisAlignedBox.HalfSize();
         Orient = _Orient;
         Center = _Origin + _Orient * _AxisAlignedBox.Center();
     }
 
-    void FromAxisAlignedBoxWithPadding( const BvAxisAlignedBox & _AxisAlignedBox, const Float3 & _Origin, const Float3x3 & _Orient, const Float & _Padding ) {
+    void FromAxisAlignedBoxWithPadding( BvAxisAlignedBox const & _AxisAlignedBox, Float3 const & _Origin, Float3x3 const & _Orient, Float const & _Padding ) {
         HalfSize = _AxisAlignedBox.HalfSize() + _Padding;
         Orient = _Orient;
         Center = _Origin + _Orient * _AxisAlignedBox.Center();
     }
 
-    void FromAxisAlignedBox( const BvAxisAlignedBox & _AxisAlignedBox, const Float3x4 & _TransformMatrix ) {
+    void FromAxisAlignedBox( BvAxisAlignedBox const & _AxisAlignedBox, Float3x4 const & _TransformMatrix ) {
         const Float3 AabbCenter = _AxisAlignedBox.Center();
         HalfSize = _AxisAlignedBox.HalfSize();
         Orient[0][0] = _TransformMatrix[0][0];
@@ -42,7 +42,7 @@ public:
         Center.Z = _TransformMatrix[2][0] * AabbCenter[0] + _TransformMatrix[2][1] * AabbCenter[1] + _TransformMatrix[2][2] * AabbCenter[2] + _TransformMatrix[2][3];
     }
 
-    void FromAxisAlignedBoxWithPadding( const BvAxisAlignedBox & _AxisAlignedBox, const Float3x4 & _TransformMatrix, const Float & _Padding ) {
+    void FromAxisAlignedBoxWithPadding( BvAxisAlignedBox const & _AxisAlignedBox, Float3x4 const & _TransformMatrix, Float const & _Padding ) {
         Float3 AabbCenter = _AxisAlignedBox.Center();
         HalfSize = _AxisAlignedBox.HalfSize() + _Padding;
         Orient[0][0] = _TransformMatrix[0][0];

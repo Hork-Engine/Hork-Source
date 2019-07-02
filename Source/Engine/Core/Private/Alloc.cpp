@@ -324,13 +324,13 @@ void * FHunkMemory::HunkMemory( size_t _BytesCount, int _Alignment ) {
     AN_Assert( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
 
     if ( !MemoryBuffer ) {
-        CriticalError( "FHeapMemory::HunkMemory: Not initialized\n" );
+        CriticalError( "FHunkMemory::HunkMemory: Not initialized\n" );
         return nullptr;
     }
 
     if ( _BytesCount == 0 ) {
         // invalid bytes count
-        CriticalError( "FHeapMemory::HunkMemory: Invalid bytes count\n" );
+        CriticalError( "FHunkMemory::HunkMemory: Invalid bytes count\n" );
         return nullptr;
     }
 
