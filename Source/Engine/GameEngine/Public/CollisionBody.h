@@ -36,6 +36,7 @@ SOFTWARE.
 class btCollisionShape;
 class btCompoundShape;
 class btBvhTriangleMeshShape;
+struct btTriangleInfoMap;
 class FCollisionBodyComposition;
 struct FSubpart;
 
@@ -293,6 +294,7 @@ protected:
 
 private:
     btBvhTriangleMeshShape * Data; // TODO: Try btMultimaterialTriangleMeshShape
+    btTriangleInfoMap * TriangleInfoMap;
  
     class FStridingMeshInterface * Interface;
 

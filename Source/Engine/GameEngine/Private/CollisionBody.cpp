@@ -44,6 +44,7 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
 #include <BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h>
 #include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 
 #ifdef AN_COMPILER_MSVC
 #pragma warning(push)
@@ -280,6 +281,10 @@ FCollisionTriangleSoupBVHData::~FCollisionTriangleSoupBVHData() {
     if ( Data ) {
         b3Destroy( Data );
     }
+
+    if ( TriangleInfoMap ) {
+        b3Destroy( TriangleInfoMap );
+    }
 }
 
 bool FCollisionTriangleSoupBVHData::UsedQuantizedAabbCompression() const {
@@ -315,6 +320,9 @@ void FCollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompressio
                                           btVectorToFloat3( TrisData->BoundingBox.Mins ),
                                           btVectorToFloat3( TrisData->BoundingBox.Maxs ),
                                           true );
+
+    TriangleInfoMap = b3New( btTriangleInfoMap );
+    btGenerateInternalEdgeInfo( Data, TriangleInfoMap );
 }
 
 FCollisionTriangleSoupGimpact::FCollisionTriangleSoupGimpact() {

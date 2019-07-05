@@ -147,6 +147,27 @@ struct FCollisionFilterCallback : public btOverlapFilterCallback {
 
 static FCollisionFilterCallback CollisionFilterCallback;
 
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
+
+extern ContactAddedCallback gContactAddedCallback;
+
+static bool CustomMaterialCombinerCallback( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0,
+                                            int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 )
+{
+    const int normalAdjustFlags = 0
+    //| BT_TRIANGLE_CONVEX_BACKFACE_MODE
+    //| BT_TRIANGLE_CONCAVE_DOUBLE_SIDED //double sided options are experimental, single sided is recommended
+    //| BT_TRIANGLE_CONVEX_DOUBLE_SIDED
+        ;
+
+    btAdjustInternalEdgeContacts( cp, colObj1Wrap, colObj0Wrap, partId1, index1, normalAdjustFlags );
+
+    cp.m_combinedFriction = btManifoldResult::calculateCombinedFriction( colObj0Wrap->getCollisionObject(), colObj1Wrap->getCollisionObject() );
+    cp.m_combinedRestitution = btManifoldResult::calculateCombinedRestitution( colObj0Wrap->getCollisionObject(), colObj1Wrap->getCollisionObject() );
+
+    return true;
+}
+
 FWorld::FWorld() {
     PersistentLevel = NewObject< FLevel >();
     PersistentLevel->AddRef();
@@ -157,6 +178,8 @@ FWorld::FWorld() {
 
     GravityVector = Float3( 0.0f, -9.81f, 0.0f );
 
+    gContactAddedCallback = CustomMaterialCombinerCallback;
+
 #if 0
     PhysicsBroadphase = b3New( btDbvtBroadphase ); // TODO: AxisSweep3Internal?
 #else
@@ -165,6 +188,8 @@ FWorld::FWorld() {
     //CollisionConfiguration = b3New( btDefaultCollisionConfiguration );
     CollisionConfiguration = b3New( btSoftBodyRigidBodyCollisionConfiguration );
     CollisionDispatcher = b3New( btCollisionDispatcher, CollisionConfiguration );
+    // TODO: remove this if we don't use gimpact
+    btGImpactCollisionAlgorithm::registerAlgorithm( CollisionDispatcher );
     ConstraintSolver = b3New( btSequentialImpulseConstraintSolver );
     PhysicsWorld = b3New( btSoftRigidDynamicsWorld, CollisionDispatcher, PhysicsBroadphase, ConstraintSolver, CollisionConfiguration, /* SoftBodySolver */ 0 );
     PhysicsWorld->setGravity( btVectorToFloat3( GravityVector ) );
@@ -175,9 +200,7 @@ FWorld::FWorld() {
     PhysicsWorld->setDebugDrawer( &PhysicsDebugDraw );
     PhysicsWorld->setInternalTickCallback( OnPrePhysics, static_cast< void * >( this ), true );
     PhysicsWorld->setInternalTickCallback( OnPostPhysics, static_cast< void * >( this ), false );
-
-    // TODO: remove this if we don't use gimpact
-    btGImpactCollisionAlgorithm::registerAlgorithm( CollisionDispatcher );
+    //PhysicsWorld->setSynchronizeAllMotionStates( true ); // TODO: check how it works
 
     SoftBodyWorldInfo = &PhysicsWorld->getWorldInfo();
     SoftBodyWorldInfo->m_dispatcher = CollisionDispatcher;

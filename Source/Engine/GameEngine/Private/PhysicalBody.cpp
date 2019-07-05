@@ -40,6 +40,8 @@ SOFTWARE.
 #define MIN_MASS 0.001f
 #define MAX_MASS 1000.0f
 
+static constexpr bool bUseInternalEdgeUtility = true;
+
 //static bool bDuringMotionStateUpdate = false;
 
 class FPhysicalBodyMotionState : public btMotionState {
@@ -173,7 +175,7 @@ static void UpdateRigidBodyCollisionShape( btCollisionObject * RigidBody, btComp
     } else {
         collisionFlags &= ~btCollisionObject::CF_STATIC_OBJECT;
     }
-    if ( !bUseCompound && RigidBody->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE /*&& World->GetInternalEdge()*/ ) {
+    if ( !bUseCompound && RigidBody->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE && bUseInternalEdgeUtility ) {
         collisionFlags |= btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK;
     } else {
         collisionFlags &= ~btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK;
