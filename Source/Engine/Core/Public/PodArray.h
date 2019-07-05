@@ -73,8 +73,7 @@ public:
     // Отражает элементы в диапазоне [ _FirstIndex ; _LastIndex )
     void            Reverse( int _FirstIndex, int _LastIndex );
 
-    void            InsertBefore( int _Index, const T & _Element );
-    void            InsertAfter( int _Index, const T & _Element );
+    void            Insert( int _Index, const T & _Element );
 
     void            Append( T const & _Element );
     void            Append( TPodArray< T, BASE_CAPACITY, GRANULARITY > const & _Array );
@@ -83,6 +82,7 @@ public:
 
     void            Remove( int _Index );
     void            RemoveLast();
+    void            RemoveDuplicates();
 
     // Оптимизированное удаление элемента массива без сдвигов путем перемещения
     // последнего элемента массива на место удаленного
@@ -119,6 +119,10 @@ public:
 
     ConstIterator   Find( T const & _Element ) const;
     ConstIterator   Find( ConstIterator _Begin, ConstIterator _End, const T & _Element ) const;
+
+    bool            IsExist( T const & _Element ) const;
+
+    int             IndexOf( T const & _Element ) const;
 
     T *             ToPtr();
     T const *       ToPtr() const;
@@ -335,13 +339,13 @@ AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::Reverse( int _Fi
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
-AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::InsertBefore( int _Index, T const & _Element ) {
-    if ( _Index == 0 && ArrayLength == 0 ) {
+AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::Insert( int _Index, T const & _Element ) {
+    if ( _Index == ArrayLength ) {
         Append( _Element );
         return;
     }
 
-    AN_ASSERT( _Index >= 0 && _Index < ArrayLength, "TPodArray::InsertBefore: array index is out of bounds" );
+    AN_ASSERT( _Index >= 0 && _Index < ArrayLength, "TPodArray::Insert: array index is out of bounds" );
 
     const int newLength = ArrayLength + 1;
     const int mod = newLength % GRANULARITY;
@@ -367,15 +371,6 @@ AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::InsertBefore( in
     memmove( ArrayData + _Index + 1, ArrayData + _Index, TYPE_SIZEOF * ( ArrayLength - _Index ) );
     ArrayData[ _Index ] = _Element;
     ArrayLength = newLength;
-}
-
-template< typename T, int BASE_CAPACITY, int GRANULARITY >
-AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::InsertAfter( int _Index, T const & _Element ) {
-    if ( _Index + 1 == ArrayLength ) {
-        Append( _Element );
-    } else {
-        InsertBefore( _Index + 1, _Element );
-    }
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
@@ -416,6 +411,22 @@ template< typename T, int BASE_CAPACITY, int GRANULARITY >
 AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::RemoveLast() {
     if ( ArrayLength > 0 ) {
         ArrayLength--;
+    }
+}
+
+template< typename T, int BASE_CAPACITY, int GRANULARITY >
+AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::RemoveDuplicates() {
+
+    for ( int i = 0 ; i < ArrayLength ; i++ ) {
+        for ( int j = ArrayLength-1 ; j > i ; j-- ) {
+
+            if ( ArrayData[j] == ArrayData[i] ) {
+                // duplicate found
+
+                memmove( ArrayData + j, ArrayData + j + 1, TYPE_SIZEOF * ( ArrayLength - j - 1 ) );
+                ArrayLength--;
+            }
+        }
     }
 }
 
@@ -522,7 +533,7 @@ template< typename T, int BASE_CAPACITY, int GRANULARITY >
 AN_FORCEINLINE typename TPodArray< T, BASE_CAPACITY, GRANULARITY >::Iterator TPodArray< T, BASE_CAPACITY, GRANULARITY >::Insert( ConstIterator _Iterator, T const & _Element ) {
     AN_ASSERT( _Iterator >= ArrayData && _Iterator <= ArrayData + ArrayLength, "TPodArray::Insert" );
     int Index = _Iterator - ArrayData;
-    InsertBefore( Index, _Element );
+    Insert( Index, _Element );
     return ArrayData + Index;
 }
 
@@ -539,6 +550,26 @@ AN_FORCEINLINE typename TPodArray< T, BASE_CAPACITY, GRANULARITY >::ConstIterato
         }
     }
     return End();
+}
+
+template< typename T, int BASE_CAPACITY, int GRANULARITY >
+AN_FORCEINLINE bool TPodArray< T, BASE_CAPACITY, GRANULARITY >::IsExist( T const & _Element ) const {
+    for ( int i = 0 ; i < ArrayLength ; i++ ) {
+        if ( ArrayData[i] == _Element ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+template< typename T, int BASE_CAPACITY, int GRANULARITY >
+AN_FORCEINLINE int TPodArray< T, BASE_CAPACITY, GRANULARITY >::IndexOf( T const & _Element ) const {
+    for ( int i = 0 ; i < ArrayLength ; i++ ) {
+        if ( ArrayData[i] == _Element ) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
