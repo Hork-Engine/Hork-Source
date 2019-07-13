@@ -1054,6 +1054,9 @@ AN_FORCEINLINE uint64_t FString::HexToUInt64( const char * _Str, int _Len ) {
 }
 
 AN_FORCEINLINE void FString::ConcatSafe( char * _Dest, size_t _DestSz, const char * _Src ) {
+    if ( !_Src ) {
+        return;
+    }
 #ifdef AN_COMPILER_MSVC
     strcat_s( _Dest, _DestSz, _Src );
 #else
@@ -1066,6 +1069,9 @@ AN_FORCEINLINE void FString::ConcatSafe( char * _Dest, size_t _DestSz, const cha
 }
 
 AN_FORCEINLINE void FString::CopySafe( char * _Dest, size_t _DestSz, const char * _Src ) {
+    if ( !_Src ) {
+        _Src = "null";
+    }
 #ifdef AN_COMPILER_MSVC
     strcpy_s( _Dest, _DestSz, _Src );
 #else
@@ -1079,6 +1085,9 @@ AN_FORCEINLINE void FString::CopySafe( char * _Dest, size_t _DestSz, const char 
 }
 
 AN_FORCEINLINE void FString::CopySafeN( char * _Dest, size_t _DestSz, const char * _Src, size_t _Num ) {
+    if ( !_Src ) {
+        _Src = "null";
+    }
 #ifdef AN_COMPILER_MSVC
     strncpy_s( _Dest, _DestSz, _Src, _Num );
 #else
@@ -1092,10 +1101,16 @@ AN_FORCEINLINE void FString::CopySafeN( char * _Dest, size_t _DestSz, const char
 }
 
 AN_FORCEINLINE void FString::Concat( char * _Dest, const char * _Src ) {
+    if ( !_Src ) {
+        return;
+    }
     strcat( _Dest, _Src );
 }
 
 AN_FORCEINLINE void FString::Copy( char * _Dest, const char * _Src ) {
+    if ( !_Src ) {
+        _Src = "null";
+    }
     strcpy( _Dest, _Src );
 }
 

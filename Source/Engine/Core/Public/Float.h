@@ -3120,6 +3120,14 @@ public:
                        Col0[3] * _Vec.X + Col1[3] * _Vec.Y + Col2[3] * _Vec.Z + Col3[3] * _Vec.W );
     }
 
+    // Assume _Vec.W = 1
+    Float4 operator*( const Float3 & _Vec ) const {
+        return Float4( Col0[ 0 ] * _Vec.X + Col1[ 0 ] * _Vec.Y + Col2[ 0 ] * _Vec.Z + Col3[ 0 ],
+            Col0[ 1 ] * _Vec.X + Col1[ 1 ] * _Vec.Y + Col2[ 1 ] * _Vec.Z + Col3[ 1 ],
+            Col0[ 2 ] * _Vec.X + Col1[ 2 ] * _Vec.Y + Col2[ 2 ] * _Vec.Z + Col3[ 2 ],
+            Col0[ 3 ] * _Vec.X + Col1[ 3 ] * _Vec.Y + Col2[ 3 ] * _Vec.Z + Col3[ 3 ] );
+    }
+
     Float4x4 operator*( const float & _Value ) const {
         return Float4x4( Col0 * _Value,
                          Col1 * _Value,
@@ -3718,6 +3726,34 @@ public:
         _Rotation[0][2] = Col2[0] * sx;
         _Rotation[1][2] = Col2[1] * sy;
         _Rotation[2][2] = Col2[2] * sz;
+    }
+
+    void DecomposeNormalMatrix( Float3x3 & _NormalMatrix ) const {
+        const Float3x4 & m = *this;
+
+        const float Determinant = m[0][0] * m[1][1] * m[2][2] +
+                                  m[1][0] * m[2][1] * m[0][2] +
+                                  m[2][0] * m[0][1] * m[1][2] -
+                                  m[2][0] * m[1][1] * m[0][2] -
+                                  m[1][0] * m[0][1] * m[2][2] -
+                                  m[0][0] * m[2][1] * m[1][2];
+
+        const float OneOverDeterminant = 1.0f / Determinant;
+
+        _NormalMatrix[0][0] =  (m[1][1] * m[2][2] - m[2][1] * m[1][2]) * OneOverDeterminant;
+        _NormalMatrix[0][1] = -(m[0][1] * m[2][2] - m[2][1] * m[0][2]) * OneOverDeterminant;
+        _NormalMatrix[0][2] =  (m[0][1] * m[1][2] - m[1][1] * m[0][2]) * OneOverDeterminant;
+
+        _NormalMatrix[1][0] = -(m[1][0] * m[2][2] - m[2][0] * m[1][2]) * OneOverDeterminant;
+        _NormalMatrix[1][1] =  (m[0][0] * m[2][2] - m[2][0] * m[0][2]) * OneOverDeterminant;
+        _NormalMatrix[1][2] = -(m[0][0] * m[1][2] - m[1][0] * m[0][2]) * OneOverDeterminant;
+
+        _NormalMatrix[2][0] =  (m[1][0] * m[2][1] - m[2][0] * m[1][1]) * OneOverDeterminant;
+        _NormalMatrix[2][1] = -(m[0][0] * m[2][1] - m[2][0] * m[0][1]) * OneOverDeterminant;
+        _NormalMatrix[2][2] =  (m[0][0] * m[1][1] - m[1][0] * m[0][1]) * OneOverDeterminant;
+
+        // Or
+        //_NormalMatrix = Float3x3(Inversed());
     }
 
     void InverseSelf() {
