@@ -32,8 +32,6 @@ SOFTWARE.
 
 #include "PhysicalBody.h"
 
-
-
 /*
 
 FDrawSurf
@@ -44,17 +42,11 @@ Base class for drawing surfaces
 class ANGIE_API FDrawSurf : public FPhysicalBody {
     AN_COMPONENT( FDrawSurf, FPhysicalBody )
 
-//    friend class FLevel;
-//    friend class FRenderFrontend;
-
 public:
-    enum { RENDERING_LAYERS_DEFAULT = 1 };
+    enum { RENDERING_GROUP_DEFAULT = 1 };
 
-    // Set rendering layers to filter mesh during rendering
-    void SetRenderingLayers( uint32_t _RenderingLayers ) { RenderingLayers = _RenderingLayers; }
-
-    // Get rendering layers
-    uint32_t GetRenderingLayers() const { return RenderingLayers; }
+    // Rendering group to filter mesh during rendering
+    int RenderingGroup;
 
     // Helper. Return true if surface is skinned mesh
     bool IsSkinnedMesh() const { return bSkinnedMesh; }
@@ -62,33 +54,5 @@ public:
 protected:
     FDrawSurf();
 
-    uint32_t                RenderingLayers; // Bit mask
-    bool                    bSkinnedMesh;
+    bool bSkinnedMesh;
 };
-
-/*
- Алгоритм:
- При обновлении world-space bounding box поверхность добавляется в список на обновления принадлежности к Area
- При удалении поверхности не забыть удалить ее из вышеуказанного списка.
- Перед VSD_PASS_PORTALS:
- for ( FDrawSurf * surf = World->MarkedForAreaUpdate ; surf = surf->NextMarkedForAreaUpdate ) {
-    RemoveSurfacesFromAllAreas( surf );
-    AddSurfaceToAreas( surf );
- }
- Очистить список (World->MarkedForAreaUpdate = World->MarkedForAreaUpdateTail = nullptr)
-*/
-
-//// Areas where located surface
-//class FPortalAreaSurf {
-//public:
-//    FDrawSurf * Surf;
-//    FPortalArea * Area;
-//    FPortalArea * Next;
-//    FPortalArea * Prev;
-//};
-//
-//class FPortalArea {
-//public:
-//    // Surfaces inside area
-//    TPodArray< FPortalAreaSurf > Surfs;
-//};

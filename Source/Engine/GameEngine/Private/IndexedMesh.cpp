@@ -100,7 +100,7 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     }
 
     for ( FIndexedMeshSubpart * subpart : Subparts ) {
-        subpart->ParentMesh = nullptr;
+        subpart->OwnerMesh = nullptr;
         subpart->RemoveRef();
     }
 
@@ -108,7 +108,7 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     for ( int i = 0 ; i < _NumSubparts ; i++ ) {
         FIndexedMeshSubpart * subpart = NewObject< FIndexedMeshSubpart >();
         subpart->AddRef();
-        subpart->ParentMesh = this;
+        subpart->OwnerMesh = this;
         Subparts[i] = subpart;
     }
 
@@ -123,17 +123,17 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
 
 void FIndexedMesh::Purge() {
     for ( FIndexedMeshSubpart * subpart : Subparts ) {
-        subpart->ParentMesh = nullptr;
+        subpart->OwnerMesh = nullptr;
         subpart->RemoveRef();
     }
 
     for ( FLightmapUV * channel : LightmapUVs ) {
-        channel->ParentMesh = nullptr;
+        channel->OwnerMesh = nullptr;
         channel->IndexInArrayOfUVs = -1;
     }
 
     for ( FVertexLight * channel : VertexLightChannels ) {
-        channel->ParentMesh = nullptr;
+        channel->OwnerMesh = nullptr;
         channel->IndexInArrayOfChannels = -1;
     }
 
@@ -218,7 +218,7 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
 FLightmapUV * FIndexedMesh::CreateLightmapUVChannel() {
     FLightmapUV * channel = NewObject< FLightmapUV >();
 
-    channel->ParentMesh = this;
+    channel->OwnerMesh = this;
     channel->IndexInArrayOfUVs = LightmapUVs.Length();
 
     LightmapUVs.Append( channel );
@@ -231,7 +231,7 @@ FLightmapUV * FIndexedMesh::CreateLightmapUVChannel() {
 FVertexLight * FIndexedMesh::CreateVertexLightChannel() {
     FVertexLight * channel = NewObject< FVertexLight >();
 
-    channel->ParentMesh = this;
+    channel->OwnerMesh = this;
     channel->IndexInArrayOfChannels = VertexLightChannels.Length();
 
     VertexLightChannels.Append( channel );
@@ -451,7 +451,7 @@ FIndexedMeshSubpart::~FIndexedMeshSubpart() {
 void FIndexedMeshSubpart::SetBoundingBox( BvAxisAlignedBox const & _BoundingBox ) {
     BoundingBox = _BoundingBox;
 
-    ParentMesh->bBoundingBoxDirty = true;
+    OwnerMesh->bBoundingBoxDirty = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -464,16 +464,16 @@ FLightmapUV::FLightmapUV() {
 FLightmapUV::~FLightmapUV() {
     RenderProxy->KillProxy();
 
-    if ( ParentMesh ) {
-        ParentMesh->LightmapUVs[ IndexInArrayOfUVs ] = ParentMesh->LightmapUVs[ ParentMesh->LightmapUVs.Length() - 1 ];
-        ParentMesh->LightmapUVs[ IndexInArrayOfUVs ]->IndexInArrayOfUVs = IndexInArrayOfUVs;
+    if ( OwnerMesh ) {
+        OwnerMesh->LightmapUVs[ IndexInArrayOfUVs ] = OwnerMesh->LightmapUVs[ OwnerMesh->LightmapUVs.Length() - 1 ];
+        OwnerMesh->LightmapUVs[ IndexInArrayOfUVs ]->IndexInArrayOfUVs = IndexInArrayOfUVs;
         IndexInArrayOfUVs = -1;
-        ParentMesh->LightmapUVs.RemoveLast();
+        OwnerMesh->LightmapUVs.RemoveLast();
     }
 }
 
 void FLightmapUV::OnInitialize( int _NumVertices ) {
-    if ( VertexCount == _NumVertices && bDynamicStorage == ParentMesh->bDynamicStorage ) {
+    if ( VertexCount == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
         return;
     }
 
@@ -482,7 +482,7 @@ void FLightmapUV::OnInitialize( int _NumVertices ) {
     FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     VertexCount = _NumVertices;
-    bDynamicStorage = ParentMesh->bDynamicStorage;
+    bDynamicStorage = OwnerMesh->bDynamicStorage;
 
     data.VerticesCount = _NumVertices;
     data.bDynamicStorage = bDynamicStorage;
@@ -544,16 +544,16 @@ FVertexLight::FVertexLight() {
 FVertexLight::~FVertexLight() {
     RenderProxy->KillProxy();
 
-    if ( ParentMesh ) {
-        ParentMesh->VertexLightChannels[ IndexInArrayOfChannels ] = ParentMesh->VertexLightChannels[ ParentMesh->VertexLightChannels.Length() - 1 ];
-        ParentMesh->VertexLightChannels[ IndexInArrayOfChannels ]->IndexInArrayOfChannels = IndexInArrayOfChannels;
+    if ( OwnerMesh ) {
+        OwnerMesh->VertexLightChannels[ IndexInArrayOfChannels ] = OwnerMesh->VertexLightChannels[ OwnerMesh->VertexLightChannels.Length() - 1 ];
+        OwnerMesh->VertexLightChannels[ IndexInArrayOfChannels ]->IndexInArrayOfChannels = IndexInArrayOfChannels;
         IndexInArrayOfChannels = -1;
-        ParentMesh->VertexLightChannels.RemoveLast();
+        OwnerMesh->VertexLightChannels.RemoveLast();
     }
 }
 
 void FVertexLight::OnInitialize( int _NumVertices ) {
-    if ( VertexCount == _NumVertices && bDynamicStorage == ParentMesh->bDynamicStorage ) {
+    if ( VertexCount == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
         return;
     }
 
@@ -562,7 +562,7 @@ void FVertexLight::OnInitialize( int _NumVertices ) {
     FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
 
     VertexCount = _NumVertices;
-    bDynamicStorage = ParentMesh->bDynamicStorage;
+    bDynamicStorage = OwnerMesh->bDynamicStorage;
 
     data.VerticesCount = _NumVertices;
     data.bDynamicStorage = bDynamicStorage;
@@ -670,4 +670,103 @@ void FIndexedMesh::GenerateSoftbodyLinksFromFaces() {
         }
         #undef IDX
     }
+}
+
+// TODO: Optimize with octree/KDtree?
+bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const {
+    bool ret = false;
+    float u, v;
+
+    unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
+    FMeshVertex const * vertices = OwnerMesh->GetVertices();
+
+    const int numTriangles = IndexCount / 3;
+
+    for ( int tri = 0 ; tri < numTriangles ; tri++, indices+=3 ) {
+        const unsigned int i0 = BaseVertex + indices[ 0 ];
+        const unsigned int i1 = BaseVertex + indices[ 1 ];
+        const unsigned int i2 = BaseVertex + indices[ 2 ];
+
+        Float3 const & v0 = vertices[i0].Position;
+        Float3 const & v1 = vertices[i1].Position;
+        Float3 const & v2 = vertices[i2].Position;
+
+        float dist;
+        if ( FMath::Intersects( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
+            if ( _Distance > dist ) {
+                FTriangleHitResult & hitResult = _HitResult.Append();
+                hitResult.HitLocation = _RayStart + _RayDir * dist;
+                hitResult.HitNormal = (v1-v0).Cross( v2-v0 ).Normalized();
+                hitResult.HitDistance = dist;
+                hitResult.HitUV.X = u;
+                hitResult.HitUV.Y = v;
+                hitResult.Indices[0] = i0;
+                hitResult.Indices[1] = i1;
+                hitResult.Indices[2] = i2;
+                hitResult.Material = MaterialInstance;
+                ret = true;
+            }
+        }
+    }
+    return ret;
+}
+
+bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
+    bool ret = false;
+    float u, v;
+
+    float minDist = _Distance;
+
+    unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
+    FMeshVertex const * vertices = OwnerMesh->GetVertices();
+
+    const int numTriangles = IndexCount / 3;
+
+    for ( int tri = 0 ; tri < numTriangles ; tri++, indices+=3 ) {
+        const unsigned int i0 = BaseVertex + indices[ 0 ];
+        const unsigned int i1 = BaseVertex + indices[ 1 ];
+        const unsigned int i2 = BaseVertex + indices[ 2 ];
+
+        Float3 const & v0 = vertices[i0].Position;
+        Float3 const & v1 = vertices[i1].Position;
+        Float3 const & v2 = vertices[i2].Position;
+
+        float dist;
+        if ( FMath::Intersects( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
+            if ( minDist > dist ) {
+                minDist = dist;
+                _HitLocation = _RayStart + _RayDir * dist;
+                _HitDistance = dist;
+                _HitUV.X = u;
+                _HitUV.Y = v;
+                _Indices[0] = i0;
+                _Indices[1] = i1;
+                _Indices[2] = i2;
+                ret = true;
+            }
+        }
+    }
+    return ret;
+}
+
+bool FIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const {
+    bool ret = false;
+    for ( int i = 0 ; i < Subparts.Length() ; i++ ) {
+        FIndexedMeshSubpart * subpart = Subparts[i];
+        ret |= subpart->Raycast( _RayStart, _RayDir, _Distance, _HitResult );
+    }
+    return ret;
+}
+
+bool FIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRefHolder< FMaterialInstance > & _Material ) const {
+    bool ret = false;
+    for ( int i = 0 ; i < Subparts.Length() ; i++ ) {
+        FIndexedMeshSubpart * subpart = Subparts[i];
+        if ( subpart->RaycastClosest( _RayStart, _RayDir, _Distance, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {
+            _Material = subpart->MaterialInstance;
+            _Distance = _HitDistance;
+            ret = true;
+        }
+    }
+    return ret;
 }

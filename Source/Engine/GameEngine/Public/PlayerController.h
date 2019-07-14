@@ -45,7 +45,7 @@ public:
     bool bClearBackground = true;
     bool bWireframe;
     bool bDrawDebug;
-    int RenderingLayers = ~0;
+    int RenderingMask = ~0;
 
 private:
     FRenderingParameters() {}

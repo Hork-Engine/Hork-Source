@@ -146,6 +146,48 @@ AN_FORCEINLINE bool Intersects( BvAxisAlignedBox const & _AABB, Float3 const & _
     return (Min <= Max) && (Max > 0.0f);
 }
 
+// Ray - triangle
+bool Intersects( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _Dist, float & _U, float & _V ) {
+    Float3 e1 = _P1 - _P0;
+    Float3 e2 = _P2 - _P0;
+    Float3 h = _RayDir.Cross( e2 );
+
+    // calc determinant
+    float det = e1.Dot( h );
+
+    // ray lies in plane of triangle, so there is no intersection
+    if ( det > -0.00001 && det < 0.00001 ) {
+        return false;
+    }
+
+    // calc inverse determinant to minimalize math divisions in next calculations
+    float invDet = 1 / det;
+
+    // calc vector from ray origin to P0
+    Float3 s = _RayStart - _P0;
+
+    // calc U
+    _U = invDet * s.Dot( h );
+    if ( _U < 0.0f || _U > 1.0f ) {
+        return false;
+    }
+
+    // calc perpendicular to compute V
+    Float3 q = s.Cross( e1 );
+
+    // calc V
+    _V = invDet * _RayDir.Dot( q );
+    if ( _V < 0.0f || _U + _V > 1.0f ) {
+        return false;
+    }
+
+    // compute distance to find out where the intersection point is on the line
+    _Dist = invDet * e2.Dot( q );
+
+    // if _Dist < 0 this is a line intersection but not a ray intersection
+    return _Dist > 0.0f;
+}
+
 // OBB - OBB
 AN_FORCEINLINE bool Intersects( BvOrientedBox const & _OBB1, BvOrientedBox const & _OBB2 ) {
     // Code based on http://gdlinks.hut.ru/cdfaq/obb.shtml
@@ -548,7 +590,6 @@ AN_FORCEINLINE bool Intersects( BvOrientedBox const & _OBB, Float3 const & _Tria
     return true;
 }
 
-// Определение попадания 2D точки в полигон
 AN_FORCEINLINE bool PointInPoly( Float2 const * _Points, int _NumPoints, Float const & _PX, Float const & _PY ) {
     int i, j, count = 0;
 	

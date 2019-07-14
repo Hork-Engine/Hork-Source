@@ -46,6 +46,7 @@ Joint properties
 struct FJoint {
     int         Parent;                 // Parent joint index
     Float3x4    JointOffsetMatrix;      // Transform vertex to joint-space
+    Float3x4    RelativeTransform;      // Joint local transform
     char        Name[64];               // Joint name
 
     FJoint() : Parent( -1 ) {}

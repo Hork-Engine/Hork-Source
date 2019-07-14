@@ -385,6 +385,7 @@ public:
         for ( FCollisionBody * body : CollisionBodies ) {
             body->AddRef();
         }
+        _Composition.CenterOfMass = CenterOfMass;
     }
 
     void ComputeCenterOfMassAvg() {

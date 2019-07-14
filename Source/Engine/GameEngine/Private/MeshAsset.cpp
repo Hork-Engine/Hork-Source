@@ -320,6 +320,8 @@ void FSkeletonAsset::Read( FFileStream & f ) {
                         &joint.JointOffsetMatrix[0][0].Value, &joint.JointOffsetMatrix[0][1].Value, &joint.JointOffsetMatrix[0][2].Value, &joint.JointOffsetMatrix[0][3].Value,
                         &joint.JointOffsetMatrix[1][0].Value, &joint.JointOffsetMatrix[1][1].Value, &joint.JointOffsetMatrix[1][2].Value, &joint.JointOffsetMatrix[1][3].Value,
                         &joint.JointOffsetMatrix[2][0].Value, &joint.JointOffsetMatrix[2][1].Value, &joint.JointOffsetMatrix[2][2].Value, &joint.JointOffsetMatrix[2][3].Value );
+
+                joint.RelativeTransform.SetIdentity(); // TODO: read from file
             }
         } else if ( nullptr != ( s = ParseTag( buf, "animations " ) ) ) {
             int numAnimations = 0;

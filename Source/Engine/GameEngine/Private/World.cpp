@@ -39,6 +39,7 @@ SOFTWARE.
 #include <Engine/GameEngine/Public/Timer.h>
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <Engine/Core/Public/BV/BvIntersect.h>
 
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
@@ -715,6 +716,11 @@ void FWorld::DispatchContactAndOverlapEvents() {
         FPhysicalBody * objectA = static_cast< FPhysicalBody * >( contactManifold->getBody0()->getUserPointer() );
         FPhysicalBody * objectB = static_cast< FPhysicalBody * >( contactManifold->getBody1()->getUserPointer() );
 
+        if ( !objectA || !objectB ) {
+            // ghost object
+            continue;
+        }
+
         if ( objectA < objectB ) {
             FCore::SwapArgs( objectA, objectB );
         }
@@ -1161,52 +1167,426 @@ void FWorld::SimulatePhysics( float _TimeStep ) {
     SoftBodyWorldInfo->m_sparsesdf.GarbageCollect();
 }
 
+bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter * _Filter ) {
+    Float3 rayVec = _RayEnd - _RayStart;
+    Float3 rayDir;
+    Float3 invRayDir;
+    Float3 rayStartLocal;
+    Float3 rayEndLocal;
+    Float3 rayDirLocal;
+
+    if ( !_Filter ) {
+        _Filter = &DefaultRaycastFilter;
+    }
+
+    _Result.Clear();
+
+    float rayLength = rayVec.Length();
+
+    if ( rayLength < 0.0001f ) {
+        return false;
+    }
+
+    rayDir = rayVec / rayLength;
+
+    invRayDir.X = 1.0f / rayDir.X;
+    invRayDir.Y = 1.0f / rayDir.Y;
+    invRayDir.Z = 1.0f / rayDir.Z;
+
+    for ( FMeshComponent * mesh = MeshList ; mesh ; mesh = mesh->Next ) {
+
+        if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
+            continue;
+        }
+
+        FIndexedMesh * resource = mesh->GetMesh();
+        if ( !resource ) {
+            continue;
+        }
+
+        if ( !FMath::Intersects( mesh->GetWorldBounds(), _RayStart, invRayDir ) ) {
+            continue;
+        }
+
+        Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
+
+        // transform ray to object space
+        rayStartLocal = transformInverse * _RayStart;
+        rayEndLocal = transformInverse * _RayEnd;
+        rayDirLocal = rayEndLocal - rayStartLocal;
+
+        float hitDistanceLocal = rayDirLocal.Length();
+        if ( hitDistanceLocal < 0.0001f ) {
+            continue;
+        }
+
+        rayDirLocal /= hitDistanceLocal;
+
+        int firstHit = _Result.Hits.Length();
+
+        if ( resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, _Result.Hits ) ) {
+
+            FWorldRaycastEntity & raycastEntity = _Result.Entities.Append();
+
+            raycastEntity.Object = mesh;
+            raycastEntity.FirstHit = firstHit;
+            raycastEntity.LastHit = _Result.Hits.Length();
+            raycastEntity.ClosestHit = raycastEntity.FirstHit;
+
+            // Convert hits to worldspace and find closest hit
+
+            Float3x4 const & transform = mesh->GetWorldTransformMatrix();
+            Float3x3 normalMatrix;
+
+            transform.DecomposeNormalMatrix( normalMatrix );
+
+            for ( int i = raycastEntity.FirstHit ; i < raycastEntity.LastHit ; i++ ) {
+                FTriangleHitResult & hitResult = _Result.Hits[i];
+
+                hitResult.HitLocation = transform * hitResult.HitLocation;
+                hitResult.HitNormal = ( normalMatrix * hitResult.HitNormal ).Normalized();
+                hitResult.HitDistance = (hitResult.HitLocation - _RayStart).Length();
+
+                if ( hitResult.HitDistance < _Result.Hits[ raycastEntity.ClosestHit ].HitDistance ) {
+                    raycastEntity.ClosestHit = i;
+                }
+            }
+        }
+    }
+
+    if ( _Result.Entities.IsEmpty() ) {
+        return false;
+    }
+
+    if ( _Filter->bSortByDistance ) {
+        _Result.Sort();
+    }
+
+    return true;
+}
+
+bool FWorld::RaycastAABB( TPodArray< FBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter * _Filter ) {
+    Float3 rayVec = _RayEnd - _RayStart;
+    Float3 rayDir;
+    Float3 invRayDir;
+
+    if ( !_Filter ) {
+        _Filter = &DefaultRaycastFilter;
+    }
+
+    _Result.Clear();
+
+    float rayLength = rayVec.Length();
+
+    if ( rayLength < 0.0001f ) {
+        return false;
+    }
+
+    rayDir = rayVec / rayLength;
+
+    invRayDir.X = 1.0f / rayDir.X;
+    invRayDir.Y = 1.0f / rayDir.Y;
+    invRayDir.Z = 1.0f / rayDir.Z;
+
+    float boxMin, boxMax;
+
+    for ( FMeshComponent * mesh = MeshList ; mesh ; mesh = mesh->Next ) {
+
+        if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
+            continue;
+        }
+
+        FIndexedMesh * resource = mesh->GetMesh();
+        if ( !resource ) {
+            continue;
+        }
+
+        if ( !FMath::Intersects( mesh->GetWorldBounds(), _RayStart, invRayDir, boxMin, boxMax ) ) {
+            continue;
+        }
+
+        FBoxHitResult & hitResult = _Result.Append();
+
+        hitResult.Object = mesh;
+        hitResult.HitLocationMin = _RayStart + rayDir * boxMin;
+        hitResult.HitLocationMax = _RayStart + rayDir * boxMax;
+        hitResult.HitDistanceMin = boxMin;
+        hitResult.HitDistanceMax = boxMax;
+    }
+
+    if ( _Result.IsEmpty() ) {
+        return false;
+    }
+
+    if ( _Filter->bSortByDistance ) {
+        struct FSortHit {
+            bool operator() ( FBoxHitResult const & _A, FBoxHitResult const & _B ) {
+                return ( _A.HitDistanceMin < _B.HitDistanceMin );
+            }
+        } SortHit;
+
+        StdSort( _Result.ToPtr(), _Result.ToPtr() + _Result.Length(), SortHit );
+    }
+
+    return true;
+}
+
+bool FWorld::RaycastClosest( FWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter * _Filter ) {
+    FMeshComponent * hitObject = nullptr;
+    Float3 rayVec = _RayEnd - _RayStart;
+    Float3 rayDir;
+    Float3 invRayDir;
+    Float3 rayStartLocal;
+    Float3 rayEndLocal;
+    Float3 rayDirLocal;
+    Float3 hitLocation;
+    Float2 hitUV;
+    float hitDistance;
+    unsigned int indices[3];
+    TRefHolder< FMaterialInstance > material;
+
+    if ( !_Filter ) {
+        _Filter = &DefaultRaycastFilter;
+    }
+
+    _Result.Clear();
+
+    float rayLength = rayVec.Length();
+
+    if ( rayLength < 0.0001f ) {
+        return false;
+    }
+
+    rayDir = rayVec / rayLength;
+
+    invRayDir.X = 1.0f / rayDir.X;
+    invRayDir.Y = 1.0f / rayDir.Y;
+    invRayDir.Z = 1.0f / rayDir.Z;
+
+    float boxMin, boxMax;
+
+    hitDistance = rayLength;
+    hitLocation = _RayEnd;
+
+    for ( FMeshComponent * mesh = MeshList ; mesh ; mesh = mesh->Next ) {
+
+        if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
+            continue;
+        }
+
+        FIndexedMesh * resource = mesh->GetMesh();
+        if ( !resource ) {
+            continue;
+        }
+
+        if ( !FMath::Intersects( mesh->GetWorldBounds(), _RayStart, invRayDir, boxMin, boxMax ) ) {
+            continue;
+        }
+
+        if ( boxMin > hitDistance ) {
+            continue;
+        }
+
+        Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
+
+        // transform ray to object space
+        rayStartLocal = transformInverse * _RayStart;
+        rayEndLocal = transformInverse * hitLocation;
+        rayDirLocal = rayEndLocal - rayStartLocal;
+
+        float hitDistanceLocal = rayDirLocal.Length();
+        if ( hitDistanceLocal < 0.0001f ) {
+            continue;
+        }
+
+        rayDirLocal /= hitDistanceLocal;
+
+        if ( resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, hitLocation, hitUV, hitDistance, indices, material ) ) {
+            hitObject = mesh;
+
+            // transform hit location to world space
+            hitLocation = hitObject->GetWorldTransformMatrix() * hitLocation;
+
+            // recalc hit distance in world space
+            hitDistance = (hitLocation - _RayStart).Length();
+
+            // hit is close enough to stop ray casting?
+            if ( hitDistance < 0.0001f ) {
+                break;
+            }
+        }
+    }
+
+    if ( !hitObject ) {
+        return false;
+    }
+
+    FIndexedMesh * resource = hitObject->GetMesh();
+    FMeshVertex * vertices = resource->GetVertices();
+    Float3x4 const & transform = hitObject->GetWorldTransformMatrix();
+
+    Float3 const & v0 = vertices[indices[0]].Position;
+    Float3 const & v1 = vertices[indices[1]].Position;
+    Float3 const & v2 = vertices[indices[2]].Position;
+
+    // calc triangle vertices
+    _Result.Vertices[0] = transform * v0;
+    _Result.Vertices[1] = transform * v1;
+    _Result.Vertices[2] = transform * v2;
+
+    // calc hit normal
+#if 1
+    _Result.Normal = (_Result.Vertices[1]-_Result.Vertices[0]).Cross( _Result.Vertices[2]-_Result.Vertices[0] ).Normalized();
+#else
+    Float3x3 normalMat;
+    transform.DecomposeNormalMatrix( normalMat );
+    _Result.Normal = (normalMat * (v1-v0).Cross( v2-v0 )).Normalized();
+#endif
+
+    _Result.Object = hitObject;
+    _Result.Position = hitLocation;
+    _Result.Distance = hitDistance;
+    _Result.Fraction = hitDistance / rayLength;
+    _Result.TriangleIndices[0] = indices[0];
+    _Result.TriangleIndices[1] = indices[1];
+    _Result.TriangleIndices[2] = indices[2];
+    _Result.Material = material;
+
+    // calc hit UV
+    Float2 const & uv0 = vertices[indices[0]].TexCoord;
+    Float2 const & uv1 = vertices[indices[1]].TexCoord;
+    Float2 const & uv2 = vertices[indices[2]].TexCoord;
+    _Result.Texcoord = uv0 * hitUV[0] + uv1 * hitUV[1] + uv2 * ( 1.0f - hitUV[0] - hitUV[1] );
+    _Result.UV = hitUV;
+
+    return true;
+}
+
+bool FWorld::RaycastClosestAABB( FBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter * _Filter ) {
+    FMeshComponent * hitObject = nullptr;
+    Float3 rayVec = _RayEnd - _RayStart;
+    Float3 rayDir;
+    Float3 invRayDir;
+    float hitDistanceMin;
+    float hitDistanceMax;
+
+    if ( !_Filter ) {
+        _Filter = &DefaultRaycastFilter;
+    }
+
+    _Result.Clear();
+
+    float rayLength = rayVec.Length();
+
+    if ( rayLength < 0.0001f ) {
+        return false;
+    }
+
+    rayDir = rayVec / rayLength;
+
+    invRayDir.X = 1.0f / rayDir.X;
+    invRayDir.Y = 1.0f / rayDir.Y;
+    invRayDir.Z = 1.0f / rayDir.Z;
+
+    float boxMin, boxMax;
+
+    hitDistanceMin = rayLength;
+    hitDistanceMax = rayLength;
+
+    for ( FMeshComponent * mesh = MeshList ; mesh ; mesh = mesh->Next ) {
+
+        if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
+            continue;
+        }
+
+        FIndexedMesh * resource = mesh->GetMesh();
+        if ( !resource ) {
+            continue;
+        }
+
+        if ( !FMath::Intersects( mesh->GetWorldBounds(), _RayStart, invRayDir, boxMin, boxMax ) ) {
+            continue;
+        }
+
+        if ( boxMin > hitDistanceMin ) {
+            continue;
+        }
+
+        hitObject = mesh;
+        hitDistanceMin = boxMin;
+        hitDistanceMax = boxMax;
+
+        // hit is close enough to stop ray casting?
+        if ( hitDistanceMin < 0.0001f ) {
+            break;
+        }
+    }
+
+    if ( !hitObject ) {
+        return false;
+    }
+
+    _Result.Object = hitObject;
+    _Result.HitLocationMin = _RayStart + rayDir * hitDistanceMin;
+    _Result.HitLocationMax = _RayStart + rayDir * hitDistanceMax;
+    _Result.HitDistanceMin = hitDistanceMin;
+    _Result.HitDistanceMax = hitDistanceMax;
+    //_Result.HitFractionMin = hitDistanceMin / rayLength;
+    //_Result.HitFractionMax = hitDistanceMax / rayLength;
+
+    return true;
+}
+
 static bool CompareDistance( FTraceResult const & A, FTraceResult const & B ) {
     return A.Distance < B.Distance;
 }
 
-static bool FindCollisionActor( FCollisionIgnoreLists const & _IgnoreLists, FActor * _Actor ) {
-    for ( int i = 0; i < _IgnoreLists.ActorsCount; i++ ) {
-        if ( _Actor == _IgnoreLists.Actors[ i ] ) {
+static bool FindCollisionActor( FCollisionQueryFilter const & _QueryFilter, FActor * _Actor ) {
+    for ( int i = 0; i < _QueryFilter.ActorsCount; i++ ) {
+        if ( _Actor == _QueryFilter.IgnoreActors[ i ] ) {
             return true;
         }
     }
     return false;
 }
 
-static bool FindCollisionBody( FCollisionIgnoreLists const & _IgnoreLists, FPhysicalBody * _Body ) {
-    for ( int i = 0; i < _IgnoreLists.BodiesCount; i++ ) {
-        if ( _Body == _IgnoreLists.Bodies[ i ] ) {
+static bool FindCollisionBody( FCollisionQueryFilter const & _QueryFilter, FPhysicalBody * _Body ) {
+    for ( int i = 0; i < _QueryFilter.BodiesCount; i++ ) {
+        if ( _Body == _QueryFilter.IgnoreBodies[ i ] ) {
             return true;
         }
     }
     return false;
 }
 
-AN_FORCEINLINE bool NeedsCollision( FCollisionIgnoreLists const & _IgnoreLists, btBroadphaseProxy * _Proxy ) {
+AN_FORCEINLINE bool NeedsCollision( FCollisionQueryFilter const & _QueryFilter, btBroadphaseProxy * _Proxy ) {
     FPhysicalBody * body = static_cast< FPhysicalBody * >( static_cast< btCollisionObject * >( _Proxy->m_clientObject )->getUserPointer() );
 
-    if ( FindCollisionActor( _IgnoreLists, body->GetParentActor() ) ) {
-        return false;
+    if ( body ) {
+        if ( FindCollisionActor( _QueryFilter, body->GetParentActor() ) ) {
+            return false;
+        }
+
+        if ( FindCollisionBody( _QueryFilter, body ) ) {
+            return false;
+        }
+    } else {
+        // ghost object
     }
 
-    if ( FindCollisionBody( _IgnoreLists, body ) ) {
-        return false;
-    }
-
-    return ( _Proxy->m_collisionFilterGroup & _IgnoreLists.CollisionMask ) && _Proxy->m_collisionFilterMask;
+    return ( _Proxy->m_collisionFilterGroup & _QueryFilter.CollisionMask ) && _Proxy->m_collisionFilterMask;
 }
 
-static FCollisionIgnoreLists DefaultIgnoreLists;
+static FCollisionQueryFilter DefaultCollisionQueryFilter;
 
 struct FTraceRayResultCallback : btCollisionWorld::AllHitsRayResultCallback {
 
-    FTraceRayResultCallback( FCollisionIgnoreLists const * _IgnoreLists, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
+    FTraceRayResultCallback( FCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
         : btCollisionWorld::AllHitsRayResultCallback( rayFromWorld, rayToWorld )
-        , IgnoreLists( _IgnoreLists ? *_IgnoreLists : DefaultIgnoreLists )
+        , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
         m_collisionFilterGroup = ( short )0xffff;
-        m_collisionFilterMask = ClampUnsignedShort( IgnoreLists.CollisionMask );
+        m_collisionFilterMask = ClampUnsignedShort( QueryFilter.CollisionMask );
 
         m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
         m_flags |= btTriangleRaycastCallback::kF_KeepUnflippedNormal;
@@ -1224,51 +1604,51 @@ struct FTraceRayResultCallback : btCollisionWorld::AllHitsRayResultCallback {
     }
 
     bool needsCollision( btBroadphaseProxy* proxy0 ) const override {
-        return NeedsCollision( IgnoreLists, proxy0 );
+        return NeedsCollision( QueryFilter, proxy0 );
     }
 
-    FCollisionIgnoreLists const & IgnoreLists;
+    FCollisionQueryFilter const & QueryFilter;
 };
 
 struct FTraceClosestRayResultCallback : btCollisionWorld::ClosestRayResultCallback {
 
-    FTraceClosestRayResultCallback( FCollisionIgnoreLists const * _IgnoreLists, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
+    FTraceClosestRayResultCallback( FCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
         : ClosestRayResultCallback( rayFromWorld, rayToWorld )
-        , IgnoreLists( _IgnoreLists ? *_IgnoreLists : DefaultIgnoreLists )
+        , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
         m_collisionFilterGroup = ( short )0xffff;
-        m_collisionFilterMask = ClampUnsignedShort( IgnoreLists.CollisionMask );
+        m_collisionFilterMask = ClampUnsignedShort( QueryFilter.CollisionMask );
 
         m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
         m_flags |= btTriangleRaycastCallback::kF_KeepUnflippedNormal;
     }
 
     bool needsCollision( btBroadphaseProxy* proxy0 ) const override {
-        return NeedsCollision( IgnoreLists, proxy0 );
+        return NeedsCollision( QueryFilter, proxy0 );
     }
 
-    FCollisionIgnoreLists const & IgnoreLists;
+    FCollisionQueryFilter const & QueryFilter;
 };
 
 struct FTraceClosestConvexResultCallback : btCollisionWorld::ClosestConvexResultCallback {
 
-    FTraceClosestConvexResultCallback( FCollisionIgnoreLists const * _IgnoreLists, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
+    FTraceClosestConvexResultCallback( FCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
         : ClosestConvexResultCallback( rayFromWorld, rayToWorld )
-        , IgnoreLists( _IgnoreLists ? *_IgnoreLists : DefaultIgnoreLists )
+        , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
         m_collisionFilterGroup = ( short )0xffff;
-        m_collisionFilterMask = ClampUnsignedShort( IgnoreLists.CollisionMask );
+        m_collisionFilterMask = ClampUnsignedShort( QueryFilter.CollisionMask );
     }
 
     bool needsCollision( btBroadphaseProxy* proxy0 ) const override {
-        return NeedsCollision( IgnoreLists, proxy0 );
+        return NeedsCollision( QueryFilter, proxy0 );
     }
 
-    FCollisionIgnoreLists const & IgnoreLists;
+    FCollisionQueryFilter const & QueryFilter;
 };
 
-bool FWorld::Trace( TPodArray< FTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists, bool _SortByDistance ) const {
-    FTraceRayResultCallback hitResult( _IgnoreLists, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
+bool FWorld::Trace( TPodArray< FTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) const {
+    FTraceRayResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
 
     PhysicsWorld->rayTest( hitResult.m_rayFromWorld, hitResult.m_rayToWorld, hitResult );
 
@@ -1280,22 +1660,26 @@ bool FWorld::Trace( TPodArray< FTraceResult > & _Result, Float3 const & _RayStar
         result.Position = btVectorToFloat3( hitResult.m_hitPointWorld[ i ] );
         result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld[ i ] );
         result.Distance = ( result.Position - _RayStart ).Length();
-        result.HitFraction = hitResult.m_closestHitFraction;
+        result.Fraction = hitResult.m_closestHitFraction;
     }
 
     //if ( bForcePerTriangleCheck ) {
         // TODO: check intersection with triangles!
     //}
 
-    if ( _SortByDistance ) {
+    if ( !_QueryFilter ) {
+        _QueryFilter = &DefaultCollisionQueryFilter;
+    }
+
+    if ( _QueryFilter->bSortByDistance ) {
         StdSort( _Result.Begin(), _Result.End(), CompareDistance );
     }
 
     return !_Result.IsEmpty();
 }
 
-bool FWorld::TraceClosest( FTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists ) const {
-    FTraceClosestRayResultCallback hitResult( _IgnoreLists, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
+bool FWorld::TraceClosest( FTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) const {
+    FTraceClosestRayResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
 
     PhysicsWorld->rayTest( hitResult.m_rayFromWorld, hitResult.m_rayToWorld, hitResult );
 
@@ -1308,12 +1692,12 @@ bool FWorld::TraceClosest( FTraceResult & _Result, Float3 const & _RayStart, Flo
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = ( _Result.Position - _RayStart ).Length();
-    _Result.HitFraction = hitResult.m_closestHitFraction;
+    _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
 }
 
-bool FWorld::TraceSphere( FTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists ) const {
-    FTraceClosestConvexResultCallback hitResult( _IgnoreLists, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
+bool FWorld::TraceSphere( FTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) const {
+    FTraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
 
     btSphereShape shape( _Radius );
     shape.setMargin( 0.0f );
@@ -1331,18 +1715,17 @@ bool FWorld::TraceSphere( FTraceResult & _Result, float _Radius, Float3 const & 
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( _RayEnd - _RayStart ).Length();
-    //_Result.Distance = hitResult.m_closestHitFraction * dist;
-    _Result.HitFraction = hitResult.m_closestHitFraction;
+    _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
 }
 
-bool FWorld::TraceBox( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists ) const {
+bool FWorld::TraceBox( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) const {
     Float3 boxPosition = ( _Maxs + _Mins ) * 0.5f;
     Float3 halfExtents = ( _Maxs - _Mins ) * 0.5f;
     Float3 startPos = boxPosition + _RayStart;
     Float3 endPos = boxPosition + _RayEnd;
 
-    FTraceClosestConvexResultCallback hitResult( _IgnoreLists, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
+    FTraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
 
     btBoxShape shape( btVectorToFloat3( halfExtents ) );
     shape.setMargin( 0.0f );
@@ -1360,17 +1743,17 @@ bool FWorld::TraceBox( FTraceResult & _Result, Float3 const & _Mins, Float3 cons
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( endPos - startPos ).Length();
-    _Result.HitFraction = hitResult.m_closestHitFraction;
+    _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
 }
 
-bool FWorld::TraceCylinder( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists ) const {
+bool FWorld::TraceCylinder( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) const {
     Float3 boxPosition = ( _Maxs + _Mins ) * 0.5f;
     Float3 halfExtents = ( _Maxs - _Mins ) * 0.5f;
     Float3 startPos = boxPosition + _RayStart;
     Float3 endPos = boxPosition + _RayEnd;
 
-    FTraceClosestConvexResultCallback hitResult( _IgnoreLists, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
+    FTraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
 
     btCylinderShape shape( btVectorToFloat3( halfExtents ) );
     shape.setMargin( 0.0f );
@@ -1388,17 +1771,17 @@ bool FWorld::TraceCylinder( FTraceResult & _Result, Float3 const & _Mins, Float3
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( endPos - startPos ).Length();
-    _Result.HitFraction = hitResult.m_closestHitFraction;
+    _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
 }
 
-bool FWorld::TraceCapsule( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists ) const {
+bool FWorld::TraceCapsule( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) const {
     Float3 boxPosition = ( _Maxs + _Mins ) * 0.5f;
     Float3 halfExtents = ( _Maxs - _Mins ) * 0.5f;
     Float3 startPos = boxPosition + _RayStart;
     Float3 endPos = boxPosition + _RayEnd;
 
-    FTraceClosestConvexResultCallback hitResult( _IgnoreLists, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
+    FTraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
 
     float radius = FMath::Max( halfExtents[0], halfExtents[2] );
 
@@ -1418,7 +1801,7 @@ bool FWorld::TraceCapsule( FTraceResult & _Result, Float3 const & _Mins, Float3 
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( endPos - startPos ).Length();
-    _Result.HitFraction = hitResult.m_closestHitFraction;
+    _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
 }
 
@@ -1445,7 +1828,7 @@ bool FWorld::TraceConvex( FTraceResult & _Result, FConvexSweepTest const & _Swee
     Quat startRot = _SweepTest.StartRotation * _SweepTest.CollisionBody->Rotation;
     Quat endRot = _SweepTest.EndRotation * _SweepTest.CollisionBody->Rotation;
 
-    FTraceClosestConvexResultCallback hitResult( &_SweepTest.IgnoreLists, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
+    FTraceClosestConvexResultCallback hitResult( &_SweepTest.QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
 
     PhysicsWorld->convexSweepTest( static_cast< btConvexShape * >( shape ),
         btTransform( btQuaternionToQuat( startRot ), hitResult.m_convexFromWorld ),
@@ -1462,35 +1845,35 @@ bool FWorld::TraceConvex( FTraceResult & _Result, FConvexSweepTest const & _Swee
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( endPos - startPos ).Length();
-    _Result.HitFraction = hitResult.m_closestHitFraction;
+    _Result.Fraction = hitResult.m_closestHitFraction;
     return true;
 }
 
 struct FQueryPhysicalBodiesCallback : public btCollisionWorld::ContactResultCallback {
-    FQueryPhysicalBodiesCallback( TPodArray< FPhysicalBody * > & _Result, FCollisionIgnoreLists const * _IgnoreLists )
+    FQueryPhysicalBodiesCallback( TPodArray< FPhysicalBody * > & _Result, FCollisionQueryFilter const * _QueryFilter )
         : Result( _Result )
-        , IgnoreLists( _IgnoreLists ? *_IgnoreLists : DefaultIgnoreLists )
+        , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
         _Result.Clear();
 
         m_collisionFilterGroup = ( short )0xffff;
-        m_collisionFilterMask = ClampUnsignedShort( IgnoreLists.CollisionMask );
+        m_collisionFilterMask = ClampUnsignedShort( QueryFilter.CollisionMask );
     }
 
     bool needsCollision( btBroadphaseProxy* proxy0 ) const override {
-        return NeedsCollision( IgnoreLists, proxy0 );
+        return NeedsCollision( QueryFilter, proxy0 );
     }
 
     btScalar addSingleResult( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 ) override {
         FPhysicalBody * body;
         
         body = reinterpret_cast< FPhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && Result.Find( body ) == Result.End() && ( body->CollisionGroup & IgnoreLists.CollisionMask ) ) {
+        if ( body && Result.Find( body ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
             Result.Append( body );
         }
 
         body = reinterpret_cast< FPhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && Result.Find( body ) == Result.End() && ( body->CollisionGroup & IgnoreLists.CollisionMask ) ) {
+        if ( body && Result.Find( body ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
             Result.Append( body );
         }
 
@@ -1498,34 +1881,34 @@ struct FQueryPhysicalBodiesCallback : public btCollisionWorld::ContactResultCall
     }
 
     TPodArray< FPhysicalBody * > & Result;
-    FCollisionIgnoreLists const & IgnoreLists;
+    FCollisionQueryFilter const & QueryFilter;
 };
 
 struct FQueryActorsCallback : public btCollisionWorld::ContactResultCallback {
-    FQueryActorsCallback( TPodArray< FActor * > & _Result, FCollisionIgnoreLists const * _IgnoreLists )
+    FQueryActorsCallback( TPodArray< FActor * > & _Result, FCollisionQueryFilter const * _QueryFilter )
         : Result( _Result )
-        , IgnoreLists( _IgnoreLists ? *_IgnoreLists : DefaultIgnoreLists )
+        , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
         _Result.Clear();
 
         m_collisionFilterGroup = ( short )0xffff;
-        m_collisionFilterMask = ClampUnsignedShort( IgnoreLists.CollisionMask );
+        m_collisionFilterMask = ClampUnsignedShort( QueryFilter.CollisionMask );
     }
 
     bool needsCollision( btBroadphaseProxy* proxy0 ) const override {
-        return NeedsCollision( IgnoreLists, proxy0 );
+        return NeedsCollision( QueryFilter, proxy0 );
     }
 
     btScalar addSingleResult( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 ) override {
         FPhysicalBody * body;
 
         body = reinterpret_cast< FPhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & IgnoreLists.CollisionMask ) ) {
+        if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
             Result.Append( body->GetParentActor() );
         }
 
         body = reinterpret_cast< FPhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & IgnoreLists.CollisionMask ) ) {
+        if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
             Result.Append( body->GetParentActor() );
         }
 
@@ -1533,11 +1916,11 @@ struct FQueryActorsCallback : public btCollisionWorld::ContactResultCallback {
     }
 
     TPodArray< FActor * > & Result;
-    FCollisionIgnoreLists const & IgnoreLists;
+    FCollisionQueryFilter const & QueryFilter;
 };
 
-void FWorld::QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, float _Radius, FCollisionIgnoreLists const * _IgnoreLists ) const {
-    FQueryPhysicalBodiesCallback callback( _Result, _IgnoreLists );
+void FWorld::QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter ) const {
+    FQueryPhysicalBodiesCallback callback( _Result, _QueryFilter );
     btSphereShape shape( _Radius );
     shape.setMargin( 0.0f );
     btRigidBody * tempBody = b3New( btRigidBody, 1.0f, nullptr, &shape );
@@ -1549,8 +1932,8 @@ void FWorld::QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3
     b3Destroy( tempBody );
 }
 
-void FWorld::QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, float _Radius, FCollisionIgnoreLists const * _IgnoreLists ) const {
-    FQueryActorsCallback callback( _Result, _IgnoreLists );
+void FWorld::QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter ) const {
+    FQueryActorsCallback callback( _Result, _QueryFilter );
     btSphereShape shape( _Radius );
     shape.setMargin( 0.0f );
     btRigidBody * tempBody = b3New( btRigidBody, 1.0f, nullptr, &shape );
@@ -1562,8 +1945,8 @@ void FWorld::QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Posit
     b3Destroy( tempBody );
 }
 
-void FWorld::QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionIgnoreLists const * _IgnoreLists ) const {
-    FQueryPhysicalBodiesCallback callback( _Result, _IgnoreLists );
+void FWorld::QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionQueryFilter const * _QueryFilter ) const {
+    FQueryPhysicalBodiesCallback callback( _Result, _QueryFilter );
     btBoxShape shape( btVectorToFloat3( _HalfExtents ) );
     shape.setMargin( 0.0f );
     btRigidBody * tempBody = b3New( btRigidBody, 1.0f, nullptr, &shape );
@@ -1575,8 +1958,8 @@ void FWorld::QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3
     b3Destroy( tempBody );
 }
 
-void FWorld::QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionIgnoreLists const * _IgnoreLists ) const {
-    FQueryActorsCallback callback( _Result, _IgnoreLists );
+void FWorld::QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionQueryFilter const * _QueryFilter ) const {
+    FQueryActorsCallback callback( _Result, _QueryFilter );
     btBoxShape shape( btVectorToFloat3( _HalfExtents ) );
     shape.setMargin( 0.0f );
     btRigidBody * tempBody = b3New( btRigidBody, 1.0f, nullptr, &shape );
@@ -1588,17 +1971,17 @@ void FWorld::QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Posit
     b3Destroy( tempBody );
 }
 
-void FWorld::QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionIgnoreLists const * _IgnoreLists ) const {
-    QueryPhysicalBodies( _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _IgnoreLists );
+void FWorld::QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionQueryFilter const * _QueryFilter ) const {
+    QueryPhysicalBodies( _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter );
 }
 
-void FWorld::QueryActors( TPodArray< FActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionIgnoreLists const * _IgnoreLists ) const {
-    QueryActors( _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _IgnoreLists );
+void FWorld::QueryActors( TPodArray< FActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionQueryFilter const * _QueryFilter ) const {
+    QueryActors( _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter );
 }
 
-void FWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, FCollisionIgnoreLists const * _IgnoreLists ) {
+void FWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter ) {
     TPodArray< FActor * > damagedActors;
-    QueryActors( damagedActors, _Position, _Radius, _IgnoreLists );
+    QueryActors( damagedActors, _Position, _Radius, _QueryFilter );
     for ( FActor * damagedActor : damagedActors ) {
         damagedActor->ApplyDamage( _DamageAmount, _Position, nullptr );
     }

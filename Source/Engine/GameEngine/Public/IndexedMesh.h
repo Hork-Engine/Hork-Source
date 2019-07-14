@@ -37,6 +37,16 @@ SOFTWARE.
 
 class FIndexedMesh;
 
+struct FTriangleHitResult {
+    Float3 HitLocation;
+    Float3 HitNormal;
+    Float2 HitUV;
+    float HitDistance;
+    //float HitFraction;
+    unsigned int Indices[3];
+    FMaterialInstance * Material;
+};
+
 /*
 
 FIndexedMeshSubpart
@@ -60,14 +70,20 @@ public:
 
     BvAxisAlignedBox const & GetBoundingBox() const { return BoundingBox; }
 
-    FIndexedMesh * GetParent() { return ParentMesh; }
+    FIndexedMesh * GetOwner() { return OwnerMesh; }
+
+    // Check ray intersection. Result is unordered by distance to save performance
+    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const;
+
+    // Check ray intersection
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
 
 protected:
     FIndexedMeshSubpart();
     ~FIndexedMeshSubpart();
 
 private:
-    FIndexedMesh * ParentMesh;
+    FIndexedMesh * OwnerMesh;
     BvAxisAlignedBox BoundingBox;
 };
 
@@ -93,7 +109,7 @@ public:
 
     FRenderProxy_LightmapUVChannel * GetRenderProxy() { return RenderProxy; }
 
-    FIndexedMesh * GetParent() { return ParentMesh; }
+    FIndexedMesh * GetOwner() { return OwnerMesh; }
 
 protected:
     FLightmapUV();
@@ -103,7 +119,7 @@ protected:
 
 private:
     FRenderProxy_LightmapUVChannel * RenderProxy;
-    FIndexedMesh * ParentMesh;
+    FIndexedMesh * OwnerMesh;
     int IndexInArrayOfUVs = -1;
     TPodArray< FMeshLightmapUV > Vertices;
     int VertexCount;
@@ -132,7 +148,7 @@ public:
 
     FRenderProxy_VertexLightChannel * GetRenderProxy() { return RenderProxy; }
 
-    FIndexedMesh * GetParent() { return ParentMesh; }
+    FIndexedMesh * GetOwner() { return OwnerMesh; }
 
 protected:
     FVertexLight();
@@ -142,7 +158,7 @@ protected:
 
 private:
     FRenderProxy_VertexLightChannel * RenderProxy;
-    FIndexedMesh * ParentMesh;
+    FIndexedMesh * OwnerMesh;
     int IndexInArrayOfChannels = -1;
     TPodArray< FMeshVertexLight > Vertices;
     int VertexCount;
@@ -261,6 +277,12 @@ public:
 
     // Get mesh rendering proxy
     FRenderProxy_IndexedMesh * GetRenderProxy() { return RenderProxy; }
+
+    // Check ray intersection. Result is unordered by distance to save performance
+    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const;
+
+    // Check ray intersection
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRefHolder< FMaterialInstance > & _Material ) const;
 
     // Rigid body collision model
     FCollisionBodyComposition BodyComposition;

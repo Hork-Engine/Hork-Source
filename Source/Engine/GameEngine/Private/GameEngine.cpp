@@ -769,6 +769,9 @@ void FGameEngine::Initialize( FCreateGameModuleCallback _CreateGameModuleCallbac
     //GDebugDrawFlags.bDrawCollisionModel=true;
     //GDebugDrawFlags.bDrawCollisionShapeWireframe=true;
     GDebugDrawFlags.bDrawNavMeshWithClosedList = true;
+    GDebugDrawFlags.bDrawSkeleton = true;
+    GDebugDrawFlags.bDrawSkeletonSockets = true;
+    GDebugDrawFlags.bDrawMeshBounds = true;
     //GDebugDrawFlags.bDrawNavMeshTileBounds = true;
     //memset( &GDebugDrawFlags, 0xff, sizeof( GDebugDrawFlags ) );
 

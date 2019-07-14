@@ -1120,7 +1120,7 @@ void FRenderFrontend::AddSurface( FMeshComponent * component, PlaneF const * _Cu
         return;
     }
 
-    if ( ( component->GetRenderingLayers() & RP->RenderingLayers ) == 0 ) {
+    if ( ( component->RenderingGroup & RP->RenderingMask ) == 0 ) {
         component->RenderMark = VisMarker;
         return;
     }
@@ -1187,7 +1187,7 @@ void FRenderFrontend::AddSurface( FMeshComponent * component, PlaneF const * _Cu
     Float4x4 tmpMatrix;
     Float4x4 * instanceMatrix;
 
-    FIndexedMesh * mesh = component->GetMeshOverride();
+    FIndexedMesh * mesh = component->GetMesh();
     if ( !mesh ) {
         // TODO: default mesh?
         return;
@@ -1287,7 +1287,7 @@ void FRenderFrontend::AddLight( FLightComponent * component, PlaneF const * _Cul
         return;
     }
 
-    if ( ( component->GetRenderingLayers() & RP->RenderingLayers ) == 0 ) {
+    if ( ( component->RenderingGroup & RP->RenderingLayers ) == 0 ) {
         component->RenderMark = VisMarker;
         return;
     }
@@ -1351,7 +1351,7 @@ void FRenderFrontend::AddEnvCapture( FEnvCaptureComponent * component, PlaneF co
         return;
     }
 
-    if ( ( component->GetRenderingLayers() & RP->RenderingLayers ) == 0 ) {
+    if ( ( component->RenderingGroup & RP->RenderingLayers ) == 0 ) {
         component->RenderMark = VisMarker;
         return;
     }

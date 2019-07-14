@@ -91,9 +91,6 @@ public:
     // Get vertex attachment
     FAnchorComponent * GetVertexAnchor( int _VertexIndex ) const;
 
-    // Get overriden indexed mesh
-    //FIndexedMesh * GetMeshOverride() const override { return SoftMesh ? SoftMesh : GetMesh(); }
-
     // Set a wind velocity for interaction with the air
     void SetWindVelocity( Float3 const & _Velocity );
 
@@ -134,8 +131,6 @@ private:
 
     Float3 WindVelocity;
     
-    //TRefHolder< FIndexedMesh > SoftMesh; // Modified copy of source mesh
-
     //Float3x3 PrevTransformBasis;
     //Float3 PrevTransformOrigin;
     //btRigidBody * Anchor;

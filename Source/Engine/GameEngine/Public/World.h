@@ -133,32 +133,36 @@ struct FTraceResult {
     Float3 Position;
     Float3 Normal;
     float Distance;
-    float HitFraction;
+    float Fraction;
 
     void Clear() {
         memset( this, 0, sizeof( *this ) );
     }
 };
 
-struct FCollisionIgnoreLists {
+struct FCollisionQueryFilter {
 
-    FCollisionIgnoreLists() {
-        Actors = nullptr;
+    FCollisionQueryFilter() {
+        IgnoreActors = nullptr;
         ActorsCount = 0;
 
-        Bodies = nullptr;
+        IgnoreBodies = nullptr;
         BodiesCount = 0;
 
         CollisionMask = CM_ALL;
+
+        bSortByDistance = true;
     }
 
-    FActor ** Actors;
+    FActor ** IgnoreActors;
     int ActorsCount;
 
-    FPhysicalBody ** Bodies;
+    FPhysicalBody ** IgnoreBodies;
     int BodiesCount;
 
     int CollisionMask;
+
+    bool bSortByDistance;
 };
 
 struct FConvexSweepTest {
@@ -168,7 +172,7 @@ struct FConvexSweepTest {
     Quat StartRotation;
     Float3 EndPosition;
     Quat EndRotation;
-    FCollisionIgnoreLists IgnoreLists;
+    FCollisionQueryFilter QueryFilter;
 };
 
 
@@ -284,14 +288,6 @@ public:
 
     void ResetGameplayTimer();
 
-    void RegisterMesh( FMeshComponent * _Mesh );
-    void UnregisterMesh( FMeshComponent * _Mesh );
-
-    void RegisterSkinnedMesh( FSkinnedComponent * _Skeleton );
-    void UnregisterSkinnedMesh( FSkinnedComponent * _Skeleton );
-
-    FMeshComponent * GetMeshList() { return MeshList; }
-
     // Set world gravity vector
     void SetGravityVector( Float3 const & _Gravity );
 
@@ -302,39 +298,70 @@ public:
 
     bool IsPendingKill() const { return bPendingKill; }
 
-    bool Trace( TPodArray< FTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists = nullptr, bool _SortByDistance = true ) const;
+    // Per-triangle raycast
+    bool Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter * _Filter = nullptr );
 
-    bool TraceClosest( FTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    // Per-AABB raycast
+    bool RaycastAABB( TPodArray< FBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter * _Filter = nullptr );
 
-    bool TraceSphere( FTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    // Per-triangle raycast
+    bool RaycastClosest( FWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter * _Filter = nullptr );
 
-    bool TraceBox( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    // Per-AABB raycast
+    bool RaycastClosestAABB( FBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter * _Filter = nullptr );
 
-    bool TraceCylinder( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    // Trace collision bodies
+    bool Trace( TPodArray< FTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
-    bool TraceCapsule( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    // Trace collision bodies
+    bool TraceClosest( FTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
+    // Trace collision bodies
+    bool TraceSphere( FTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+
+    // Trace collision bodies
+    bool TraceBox( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+
+    // Trace collision bodies
+    bool TraceCylinder( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+
+    // Trace collision bodies
+    bool TraceCapsule( FTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+
+    // Trace collision bodies
     bool TraceConvex( FTraceResult & _Result, FConvexSweepTest const & _SweepTest ) const;
 
     // Query objects in sphere
-    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, float _Radius, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     // Query objects in box
-    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     // Query objects in AABB
-    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    void QueryPhysicalBodies( TPodArray< FPhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     // Query objects in sphere
-    void QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, float _Radius, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    void QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     // Query objects in box
-    void QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    void QueryActors( TPodArray< FActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     // Query objects in AABB
-    void QueryActors( TPodArray< FActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionIgnoreLists const * _IgnoreLists = nullptr ) const;
+    void QueryActors( TPodArray< FActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
-    void ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, FCollisionIgnoreLists const * _IgnoreLists = nullptr );
+    void ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter = nullptr );
+
+    //
+    // Internal
+    //
+
+    void RegisterMesh( FMeshComponent * _Mesh );
+    void UnregisterMesh( FMeshComponent * _Mesh );
+
+    void RegisterSkinnedMesh( FSkinnedComponent * _Skeleton );
+    void UnregisterSkinnedMesh( FSkinnedComponent * _Skeleton );
+
+    FMeshComponent * GetMeshList() { return MeshList; }
 
 protected:
     // [FGameEngine friend, overridable]
@@ -362,8 +389,6 @@ private:
 
     void AddPhysicalBody( FPhysicalBody * _PhysicalBody );
     void RemovePhysicalBody( FPhysicalBody * _PhysicalBody );
-
-    void UpdateGameplayTimer( int64_t _TimeStep );
 
     void BroadcastActorSpawned( FActor * _SpawnedActor );
 
@@ -396,10 +421,10 @@ private:
     int64_t GameplayTimeMicro;
     int64_t GameplayTimeMicroAfterTick;
 
-    //float WorldLocalTime;       // in seconds
-
     FTimer * TimerList;
     FTimer * TimerListTail;
+
+    FWorldRaycastFilter DefaultRaycastFilter;
 
     int VisFrame;
     int FirstDebugDrawCommand;
@@ -417,7 +442,7 @@ private:
 
     TRefHolder< FLevel > PersistentLevel;
     TPodArray< FLevel * > ArrayOfLevels;
-
+public:
     btBroadphaseInterface * PhysicsBroadphase;
     btDefaultCollisionConfiguration * CollisionConfiguration;
     btCollisionDispatcher * CollisionDispatcher;

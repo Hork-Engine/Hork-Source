@@ -262,7 +262,8 @@ void FSkinnedComponent::SetSkeleton( FSkeleton * _Skeleton ) {
 
         RelativeTransforms.ResizeInvalidate( numJoints );
         for ( int i = 0 ; i < numJoints ; i++ ) {
-            RelativeTransforms[ i ].SetIdentity();
+            //RelativeTransforms[ i ].SetIdentity();
+            RelativeTransforms[ i ] = joints[ i ].RelativeTransform;
         }
 
         AnimChannels.ResizeInvalidate( animations.Length() );

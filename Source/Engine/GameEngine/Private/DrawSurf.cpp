@@ -10,5 +10,5 @@ AN_CLASS_META_NO_ATTRIBS( FDrawSurf )
 //AN_SCENE_COMPONENT_END_DECL
 
 FDrawSurf::FDrawSurf() {
-    RenderingLayers = RENDERING_LAYERS_DEFAULT;
+    RenderingGroup = RENDERING_GROUP_DEFAULT;
 }
