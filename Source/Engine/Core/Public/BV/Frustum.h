@@ -38,14 +38,7 @@ SOFTWARE.
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
-#ifdef AN_COMPILER_MSVC
-#pragma warning(push)
-#pragma warning(disable : 4701)
-#endif
-
-#ifdef AN_COMPILER_MSVC
 #define AN_FRUSTUM_USE_SSE
-#endif
 
 enum EFrustumPlane {
     FPL_RIGHT,
@@ -63,105 +56,98 @@ struct FFrustumPlane : public PlaneF {
 class ANGIE_API FFrustum {
 public:
     FFrustum();
+    ~FFrustum();
 
-    void			FromMatrix( const Float4x4 & _Matrix );
-    void            UpdateSignBits();
+    void FromMatrix( Float4x4 const & _Matrix );
+    void UpdateSignBits();
 
-    const FFrustumPlane & operator[]( int _Index ) const;
+    FFrustumPlane const & operator[]( int _Index ) const;
 
-    bool			CheckPoint( const Float3 & _Point ) const;
-    bool			CheckPoint2( const Float3 & _Point ) const;
-    float           CheckSphere( const BvSphere & _Sphere ) const;
-    float			CheckSphere( const Float3 & _Point, float _Radius ) const;
-    float           CheckSphere2( const BvSphere & _Sphere ) const;
-    float           CheckSphere2( const Float3 & _Point, float _Radius ) const;
-    bool			CheckAABB( const Float3 & _Mins, const Float3 & _Maxs ) const;
-    bool			CheckAABB( const Float4 & _Mins, const Float4 & _Maxs ) const;
-    bool			CheckAABB( const BvAxisAlignedBox & b ) const;
-    bool			CheckAABB2( const Float3 & _Mins, const Float3 & _Maxs ) const;
-    bool			CheckAABB2( const Float4 & _Mins, const Float4 & _Maxs ) const;
-    bool			CheckAABB2( const BvAxisAlignedBox & b ) const;
-    bool			CheckOBB( const BvOrientedBox & b ) const;
+    bool IsPointVisible( Float3 const & _Point ) const;
+    bool IsPointVisible_IgnoreZ( Float3 const & _Point ) const;
 
-    byte            CheckAABBPosX( const BvAxisAlignedBox & b ) const;
-    byte            CheckAABBNegX( const BvAxisAlignedBox & b ) const;
-    byte            CheckAABBPosY( const BvAxisAlignedBox & b ) const;
-    byte            CheckAABBNegY( const BvAxisAlignedBox & b ) const;
-    byte            CheckAABBPosZ( const BvAxisAlignedBox & b ) const;
-    byte            CheckAABBNegZ( const BvAxisAlignedBox & b ) const;
-    byte            CheckAABBSides( const BvAxisAlignedBox & b ) const;
+    float IsSphereVisible( BvSphere const & _Sphere ) const;
+    float IsSphereVisible( Float3 const & _Point, float _Radius ) const;
+    float IsSphereVisible_IgnoreZ( BvSphere const & _Sphere ) const;
+    float IsSphereVisible_IgnoreZ( Float3 const & _Point, float _Radius ) const;
 
-    void            CullSphere_Generic( const BvSphereSSE * _Bounds, int _NumObjects, int * _Result ) const;
-    void            CullSphere2_Generic( const BvSphereSSE * _Bounds, int _NumObjects, int * _Result ) const;
-    void            CullAABB_Generic( const BvAxisAlignedBoxSSE * _Bounds, int _NumObjects, int * _Result ) const;
-    void            CullAABB2_Generic( const BvAxisAlignedBoxSSE * _Bounds, int _NumObjects, int * _Result ) const;
-    void            CullSphere_SSE( const BvSphereSSE * _Bounds, int _NumObjects, int * _Result ) const;
-    void            CullSphere2_SSE( const BvSphereSSE * _Bounds, int _NumObjects, int * _Result ) const;
-    void            CullAABB_SSE( const BvAxisAlignedBoxSSE * _Bounds, int _NumObjects, int * _Result ) const;
-    void            CullAABB2_SSE( const BvAxisAlignedBoxSSE * _Bounds, int _NumObjects, int * _Result ) const;
+    bool IsBoxVisible( Float3 const & _Mins, Float3 const & _Maxs ) const;
+    bool IsBoxVisible( Float4 const & _Mins, Float4 const & _Maxs ) const;
+    bool IsBoxVisible( BvAxisAlignedBox const & b ) const;
+    bool IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float3 const & _Maxs ) const;
+    bool IsBoxVisible_IgnoreZ( Float4 const & _Mins, Float4 const & _Maxs ) const;
+    bool IsBoxVisible_IgnoreZ( BvAxisAlignedBox const & b ) const;
+
+    bool IsOrientedBoxVisible( BvOrientedBox const & b ) const;
+    bool IsOrientedBoxVisible_IgnoreZ( BvOrientedBox const & b ) const;
+
+    void CullSphere_Generic( BvSphereSSE const * _Bounds, int _NumObjects, int * _Result ) const;
+    void CullSphere_IgnoreZ_Generic( BvSphereSSE const * _Bounds, int _NumObjects, int * _Result ) const;
+    void CullBox_Generic( BvAxisAlignedBoxSSE const * _Bounds, int _NumObjects, int * _Result ) const;
+    void CullBox_IgnoreZ_Generic( BvAxisAlignedBoxSSE const * _Bounds, int _NumObjects, int * _Result ) const;
+    void CullSphere_SSE( BvSphereSSE const * _Bounds, int _NumObjects, int * _Result ) const;
+    void CullSphere_IgnoreZ_SSE( BvSphereSSE const * _Bounds, int _NumObjects, int * _Result ) const;
+    void CullBox_SSE( BvAxisAlignedBoxSSE const * _Bounds, int _NumObjects, int * _Result ) const;
+    void CullBox_IgnoreZ_SSE( BvAxisAlignedBoxSSE const * _Bounds, int _NumObjects, int * _Result ) const;
 
     // Top-right
-    void            CornerVector_TR( Float3 & _Vector ) const;
+    void CornerVector_TR( Float3 & _Vector ) const;
 
     // Top-left
-    void            CornerVector_TL( Float3 & _Vector ) const;
+    void CornerVector_TL( Float3 & _Vector ) const;
 
     // Bottom-right
-    void            CornerVector_BR( Float3 & _Vector ) const;
+    void CornerVector_BR( Float3 & _Vector ) const;
 
     // Bottom-left
-    void            CornerVector_BL( Float3 & _Vector ) const;
+    void CornerVector_BL( Float3 & _Vector ) const;
 
 private:
 #ifdef AN_FRUSTUM_USE_SSE
-    mutable __m128 frustum_planes_x[6];
-    mutable __m128 frustum_planes_y[6];
-    mutable __m128 frustum_planes_z[6];
-    mutable __m128 frustum_planes_d[6];
+    struct sse_t {
+        __m128 x[ 6 ];
+        __m128 y[ 6 ];
+        __m128 z[ 6 ];
+        __m128 d[ 6 ];
+    };
+    mutable sse_t * PlanesSSE;
 #endif
 
-    FFrustumPlane m_Planes[6];
+    FFrustumPlane Planes[6];
 };
 
-AN_FORCEINLINE FFrustum::FFrustum() {
-    for ( int i = 0 ; i < 6 ; i++ ) {
-        m_Planes[i].CachedSignBits = 0;
-    }
-}
-
-AN_FORCEINLINE const FFrustumPlane & FFrustum::operator[]( int _Index ) const {
+AN_FORCEINLINE FFrustumPlane const & FFrustum::operator[]( int _Index ) const {
     AN_ASSERT( (unsigned)_Index < 6, "FFrustum[]" );
-    return m_Planes[_Index];
+    return Planes[_Index];
 }
 
 AN_FORCEINLINE void FFrustum::UpdateSignBits() {
-    for ( FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
+    for ( FFrustumPlane * p = Planes ; p < Planes + 6 ; p++ ) {
         p->CachedSignBits = p->SignBits();
     }
 }
 
-AN_FORCEINLINE bool FFrustum::CheckPoint( const Float3 & _Point ) const {
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ )
+AN_FORCEINLINE bool FFrustum::IsPointVisible( Float3 const & _Point ) const {
+    for ( FFrustumPlane const * p = Planes ; p < Planes + 6 ; p++ )
         if ( FMath::Dot( p->Normal, _Point ) + p->D <= 0.0f )
             return false;
     return true;
 }
 
-// far/near ignore
-AN_FORCEINLINE bool FFrustum::CheckPoint2( const Float3 & _Point ) const {
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 4 ; p++ )
+AN_FORCEINLINE bool FFrustum::IsPointVisible_IgnoreZ( Float3 const & _Point ) const {
+    for ( FFrustumPlane const * p = Planes ; p < Planes + 4 ; p++ )
         if ( FMath::Dot( p->Normal, _Point ) + p->D <= 0.0f )
             return false;
     return true;
 }
 
-AN_FORCEINLINE float FFrustum::CheckSphere( const BvSphere & _Sphere ) const {
-    return CheckSphere( _Sphere.Center, _Sphere.Radius );
+AN_FORCEINLINE float FFrustum::IsSphereVisible( const BvSphere & _Sphere ) const {
+    return IsSphereVisible( _Sphere.Center, _Sphere.Radius );
 }
 
-AN_FORCEINLINE float FFrustum::CheckSphere( const Float3 & _Point, float _Radius ) const {
+AN_FORCEINLINE float FFrustum::IsSphereVisible( Float3 const & _Point, float _Radius ) const {
     float dist;
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
+    for ( FFrustumPlane const * p = Planes ; p < Planes + 6 ; p++ ) {
         dist = FMath::Dot( p->Normal, _Point ) + p->D;
         if ( dist <= -_Radius )
             return 0;
@@ -169,14 +155,13 @@ AN_FORCEINLINE float FFrustum::CheckSphere( const Float3 & _Point, float _Radius
     return dist + _Radius;
 }
 
-// far/near ignore
-AN_FORCEINLINE float FFrustum::CheckSphere2( const BvSphere & _Sphere ) const {
-    return CheckSphere2( _Sphere.Center, _Sphere.Radius );
+AN_FORCEINLINE float FFrustum::IsSphereVisible_IgnoreZ( const BvSphere & _Sphere ) const {
+    return IsSphereVisible_IgnoreZ( _Sphere.Center, _Sphere.Radius );
 }
 
-AN_FORCEINLINE float FFrustum::CheckSphere2( const Float3 & _Point, float _Radius ) const {
+AN_FORCEINLINE float FFrustum::IsSphereVisible_IgnoreZ( Float3 const & _Point, float _Radius ) const {
     float dist;
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 4 ; p++ ) {
+    for ( FFrustumPlane const * p = Planes ; p < Planes + 4 ; p++ ) {
         dist = FMath::Dot( p->Normal, _Point ) + p->D;
         if ( dist <= -_Radius )
             return 0;
@@ -184,24 +169,10 @@ AN_FORCEINLINE float FFrustum::CheckSphere2( const Float3 & _Point, float _Radiu
     return dist + _Radius;
 }
 
-AN_FORCEINLINE bool FFrustum::CheckAABB( const Float3 & _Mins, const Float3 & _Maxs ) const {
-#if 0
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        return false;
-    }
-    return true;
-#else
+AN_FORCEINLINE bool FFrustum::IsBoxVisible( Float3 const & _Mins, Float3 const & _Maxs ) const {
     bool inside = true;
 
-    const FFrustumPlane * p = m_Planes;
+    FFrustumPlane const * p = Planes;
     inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
@@ -220,27 +191,12 @@ AN_FORCEINLINE bool FFrustum::CheckAABB( const Float3 & _Mins, const Float3 & _M
     inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     return inside;
-#endif
 }
 
-AN_FORCEINLINE bool FFrustum::CheckAABB( const Float4 & _Mins, const Float4 & _Maxs ) const {
-#if 0
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        return false;
-    }
-    return true;
-#else
+AN_FORCEINLINE bool FFrustum::IsBoxVisible( Float4 const & _Mins, Float4 const & _Maxs ) const {
     bool inside = true;
 
-    const FFrustumPlane * p = m_Planes;
+    FFrustumPlane const * p = Planes;
     inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
@@ -259,104 +215,16 @@ AN_FORCEINLINE bool FFrustum::CheckAABB( const Float4 & _Mins, const Float4 & _M
     inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     return inside;
-#endif
 }
 
-AN_FORCEINLINE bool FFrustum::CheckAABB( const BvAxisAlignedBox & b ) const {
-    return CheckAABB( b.Mins, b.Maxs );
+AN_FORCEINLINE bool FFrustum::IsBoxVisible( BvAxisAlignedBox const & b ) const {
+    return IsBoxVisible( b.Mins, b.Maxs );
 }
 
-AN_FORCEINLINE byte FFrustum::CheckAABBPosX( const BvAxisAlignedBox & b ) const {
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 2
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 4
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 6
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 8
-        return 0;
-    }
-    return 1<<0;
-}
-
-AN_FORCEINLINE byte FFrustum::CheckAABBNegX( const BvAxisAlignedBox & b ) const {
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 1
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 3
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 5
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 7
-        return 0;
-    }
-    return 1<<1;
-}
-
-AN_FORCEINLINE byte FFrustum::CheckAABBPosY( const BvAxisAlignedBox & b ) const {
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 3
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 4
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 7
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 8
-        return 0;
-    }
-    return 1<<2;
-}
-
-AN_FORCEINLINE byte FFrustum::CheckAABBNegY( const BvAxisAlignedBox & b ) const {
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 1
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 2
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 5
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 6
-        return 0;
-    }
-    return 1<<3;
-}
-
-AN_FORCEINLINE byte FFrustum::CheckAABBPosZ( const BvAxisAlignedBox & b ) const {
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 5
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 6
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 7
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Maxs[2] + p->D > 0.0f ) continue; // 8
-        return 0;
-    }
-    return 1<<4;
-}
-
-AN_FORCEINLINE byte FFrustum::CheckAABBNegZ( const BvAxisAlignedBox & b ) const {
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 1
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Mins[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 2
-        if ( p->Normal[0] * b.Mins[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 3
-        if ( p->Normal[0] * b.Maxs[0] + p->Normal[1] * b.Maxs[1] + p->Normal[2] * b.Mins[2] + p->D > 0.0f ) continue; // 4
-        return 0;
-    }
-    return 1<<5;
-}
-
-AN_FORCEINLINE byte FFrustum::CheckAABBSides( const BvAxisAlignedBox & b ) const {
-    return CheckAABBPosX( b ) | CheckAABBNegX( b )
-         | CheckAABBPosY( b ) | CheckAABBNegY( b )
-         | CheckAABBPosZ( b ) | CheckAABBNegZ( b );
-}
-
-// far/near ignore
-AN_FORCEINLINE bool FFrustum::CheckAABB2( const Float3 & _Mins, const Float3 & _Maxs ) const {
-#if 0
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 4 ; p++ ) {
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        return false;
-    }
-    return true;
-#else
+AN_FORCEINLINE bool FFrustum::IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float3 const & _Maxs ) const {
     bool inside = true;
 
-    const FFrustumPlane * p = m_Planes;
+    FFrustumPlane const * p = Planes;
     inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
@@ -369,28 +237,12 @@ AN_FORCEINLINE bool FFrustum::CheckAABB2( const Float3 & _Mins, const Float3 & _
     inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     return inside;
-#endif
 }
 
-// far/near ignore
-AN_FORCEINLINE bool FFrustum::CheckAABB2( const Float4 & _Mins, const Float4 & _Maxs ) const {
-#if 0
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 4 ; p++ ) {
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Mins[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Mins[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Mins[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * _Maxs[0] + p->Normal[1] * _Maxs[1] + p->Normal[2] * _Maxs[2] + p->D > 0.0f ) continue;
-        return false;
-    }
-    return true;
-#else
+AN_FORCEINLINE bool FFrustum::IsBoxVisible_IgnoreZ( Float4 const & _Mins, Float4 const & _Maxs ) const {
     bool inside = true;
 
-    const FFrustumPlane * p = m_Planes;
+    FFrustumPlane const * p = Planes;
     inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
@@ -403,44 +255,44 @@ AN_FORCEINLINE bool FFrustum::CheckAABB2( const Float4 & _Mins, const Float4 & _
     inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     return inside;
-#endif
 }
 
-// far/near ignore
-AN_FORCEINLINE bool FFrustum::CheckAABB2( const BvAxisAlignedBox & b ) const {
-    return CheckAABB2( b.Mins, b.Maxs );
+AN_FORCEINLINE bool FFrustum::IsBoxVisible_IgnoreZ( BvAxisAlignedBox const & b ) const {
+    return IsBoxVisible_IgnoreZ( b.Mins, b.Maxs );
 }
 
-AN_FORCEINLINE bool FFrustum::CheckOBB( const BvOrientedBox & b ) const {
-    Float3 points[8];
+AN_FORCEINLINE bool FFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) const {
+    Float3 point;
 
-    Float3  Mins = -b.HalfSize;
-    Float3  Maxs = b.HalfSize;
+    for ( FFrustumPlane const * p = Planes; p < Planes + 6; p++ ) {
+        const float x = b.Orient[ 0 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 0 ] : -b.HalfSize[ 0 ];
+        const float y = b.Orient[ 1 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 1 ] : -b.HalfSize[ 1 ];
+        const float z = b.Orient[ 2 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 2 ] : -b.HalfSize[ 2 ];
 
-    // TODO: optimize
-    points[0] = b.Orient * Float3( Mins.X, Mins.Y, Maxs.Z ) + b.Center;	// 0
-    points[1] = b.Orient * Float3( Maxs.X, Mins.Y, Maxs.Z ) + b.Center;	// 1
-    points[2] = b.Orient * Float3( Maxs.X, Maxs.Y, Maxs.Z ) + b.Center;	// 2
-    points[3] = b.Orient * Float3( Mins.X, Maxs.Y, Maxs.Z ) + b.Center;	// 3
-    points[4] = b.Orient * Float3( Maxs.X, Mins.Y, Mins.Z ) + b.Center;	// 4
-    points[5] = b.Orient * Float3( Mins.X, Mins.Y, Mins.Z ) + b.Center;	// 5
-    points[6] = b.Orient * Float3( Mins.X, Maxs.Y, Mins.Z ) + b.Center;	// 6
-    points[7] = b.Orient * Float3( Maxs.X, Maxs.Y, Mins.Z ) + b.Center;	// 7
+        point = b.Center - ( x*b.Orient[ 0 ] + y*b.Orient[ 1 ] + z*b.Orient[ 2 ]);
 
-    for ( const FFrustumPlane * p = m_Planes ; p < m_Planes + 6 ; p++ ) {
-        if ( p->Normal[0] * points[0][0] + p->Normal[1] * points[0][1] + p->Normal[2] * points[0][2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * points[1][0] + p->Normal[1] * points[1][1] + p->Normal[2] * points[1][2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * points[2][0] + p->Normal[1] * points[2][1] + p->Normal[2] * points[2][2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * points[3][0] + p->Normal[1] * points[3][1] + p->Normal[2] * points[3][2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * points[4][0] + p->Normal[1] * points[4][1] + p->Normal[2] * points[4][2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * points[5][0] + p->Normal[1] * points[5][1] + p->Normal[2] * points[5][2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * points[6][0] + p->Normal[1] * points[6][1] + p->Normal[2] * points[6][2] + p->D > 0.0f ) continue;
-        if ( p->Normal[0] * points[7][0] + p->Normal[1] * points[7][1] + p->Normal[2] * points[7][2] + p->D > 0.0f ) continue;
-        return false;
+        if ( point.Dot( p->Normal ) + p->D >= 0.0f ) {
+            return false;
+        }
     }
+
     return true;
 }
 
-#ifdef AN_COMPILER_MSVC
-#pragma warning(pop)
-#endif
+AN_FORCEINLINE bool FFrustum::IsOrientedBoxVisible_IgnoreZ( BvOrientedBox const & b ) const {
+    Float3 point;
+
+    for ( FFrustumPlane const * p = Planes; p < Planes + 4; p++ ) {
+        const float x = b.Orient[ 0 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 0 ] : -b.HalfSize[ 0 ];
+        const float y = b.Orient[ 1 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 1 ] : -b.HalfSize[ 1 ];
+        const float z = b.Orient[ 2 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 2 ] : -b.HalfSize[ 2 ];
+
+        point = b.Center - ( x*b.Orient[ 0 ] + y*b.Orient[ 1 ] + z*b.Orient[ 2 ] );
+
+        if ( point.Dot( p->Normal ) + p->D >= 0.0f ) {
+            return false;
+        }
+    }
+
+    return true;
+}
