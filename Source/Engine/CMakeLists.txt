@@ -31,6 +31,8 @@ file( GLOB Imgui imgui/*.h imgui/*.cpp )
 file( GLOB GameEnginePublic GameEngine/Public/*.h GameEngine/Public/*.cpp )
 file( GLOB GameEnginePrivate GameEngine/Private/*.h GameEngine/Private/*.cpp )
 
+file( GLOB GameEnginePrivateBulletCompatibility GameEngine/Private/BulletCompatibility/*.h GameEngine/Private/BulletCompatibility/*.cpp )
+
 file( GLOB GameEnginePublicCodec GameEngine/Public/Codec/*.h GameEngine/Public/Codec/*.cpp )
 file( GLOB GameEnginePrivateCodec GameEngine/Private/Codec/*.h GameEngine/Private/Codec/*.cpp )
 
@@ -53,6 +55,8 @@ source_group( "imgui" FILES ${Imgui} )
 
 source_group( "GameEngine\\Public" FILES ${GameEnginePublic} )
 source_group( "GameEngine\\Private" FILES ${GameEnginePrivate} )
+
+source_group( "GameEngine\\Private\\BulletCompatibility" FILES ${GameEnginePrivateBulletCompatibility} )
 
 source_group( "GameEngine\\Public\\Codec" FILES ${GameEnginePublicCodec} )
 source_group( "GameEngine\\Private\\Codec" FILES ${GameEnginePrivateCodec} )
@@ -80,6 +84,8 @@ ${Imgui}
 
 ${GameEnginePublic}
 ${GameEnginePrivate}
+
+${GameEnginePrivateBulletCompatibility}
 
 ${GameEnginePublicCodec}
 ${GameEnginePrivateCodec}
