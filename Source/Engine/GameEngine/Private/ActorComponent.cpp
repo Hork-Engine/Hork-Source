@@ -33,7 +33,6 @@ SOFTWARE.
 #include <Engine/GameEngine/Public/World.h>
 
 AN_BEGIN_CLASS_META( FActorComponent )
-//AN_ATTRIBUTE( Name, SetName, GetName, AF_NON_SERIALIZABLE )
 AN_ATTRIBUTE_( bCanEverTick, AF_DEFAULT )
 AN_END_CLASS_META()
 

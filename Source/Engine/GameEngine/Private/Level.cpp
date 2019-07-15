@@ -290,12 +290,12 @@ void FLevel::AddSurfaceAreas( FSpatialObject * _Surf ) {
     }
 
     bool bHaveIntersection = false;
-    if ( FMath::Intersects( IndoorBounds, bounds ) ) {
+    if ( BvBoxOverlapBox( IndoorBounds, bounds ) ) {
         // TODO: optimize it!
         for ( int i = 0 ; i < numAreas ; i++ ) {
             area = Areas[i];
 
-            if ( FMath::Intersects( area->Bounds, bounds ) ) {
+            if ( BvBoxOverlapBox( area->Bounds, bounds ) ) {
                 AddSurfaceToArea( i, _Surf );
 
                 bHaveIntersection = true;
@@ -430,49 +430,6 @@ int FLevel::FindArea( Float3 const & _Position ) {
     return -1;
 }
 
-bool CalcAABBIntersection( BvAxisAlignedBox const & _A, BvAxisAlignedBox const & _B, BvAxisAlignedBox & _Intersection ) {
-    const float x_min = FMath::Max( _A.Mins[0], _B.Mins[0] );
-    const float x_max = FMath::Min( _A.Maxs[0], _B.Maxs[0] );
-    if ( x_max <= x_min ) {
-        return false;
-    }
-
-    const float y_min = FMath::Max( _A.Mins[1], _B.Mins[1] );
-    const float y_max = FMath::Min( _A.Maxs[1], _B.Maxs[1] );
-    if ( y_max <= y_min ) {
-        return false;
-    }
-
-    const float z_min = FMath::Max( _A.Mins[2], _B.Mins[2] );
-    const float z_max = FMath::Min( _A.Maxs[2], _B.Maxs[2] );
-    if ( z_max <= z_min ) {
-        return false;
-    }
-
-    _Intersection.Mins[0] = x_min;
-    _Intersection.Mins[1] = y_min;
-    _Intersection.Mins[2] = z_min;
-
-    _Intersection.Maxs[0] = x_max;
-    _Intersection.Maxs[1] = y_max;
-    _Intersection.Maxs[2] = z_max;
-
-    return true;
-}
-
-bool IsBoundingBoxOverlapTriangle( BvAxisAlignedBox const & _BoundingBox, Float3 const & v0, Float3 const & v1, Float3 const & v2 ) {
-
-    // Simple fast triangle AABB intersection
-
-    BvAxisAlignedBox triangleBounds;
-    triangleBounds.Clear();
-    triangleBounds.AddPoint( v0 );
-    triangleBounds.AddPoint( v1 );
-    triangleBounds.AddPoint( v2 );
-
-    return FMath::Intersects( _BoundingBox, triangleBounds );
-}
-
 void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                                     TPodArray< unsigned int > & _Indices,
                                     TBitMask<> & _WalkableTriangles,
@@ -527,7 +484,7 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
             }
 
             if ( _ClipBoundingBox ) {
-                if ( !CalcAABBIntersection( worldBounds, *_ClipBoundingBox, clippedBounds ) ) {
+                if ( !BvGetBoxIntersection( worldBounds, *_ClipBoundingBox, clippedBounds ) ) {
                     continue;
                 }
                 _ResultBoundingBox.AddAABB( clippedBounds );
@@ -590,7 +547,7 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                                     i1 = firstVertex + subpart->BaseVertex + srcIndices[ subpart->FirstIndex + i*3 + 1 ];
                                     i2 = firstVertex + subpart->BaseVertex + srcIndices[ subpart->FirstIndex + i*3 + 2 ];
 
-                                    if ( IsBoundingBoxOverlapTriangle( clippedBounds, pVertices[i0], pVertices[i1], pVertices[i2] ) ) {
+                                    if ( BvBoxOverlapTriangle_FastApproximation( clippedBounds, pVertices[i0], pVertices[i1], pVertices[i2] ) ) {
                                         *pIndices++ = i0;
                                         *pIndices++ = i1;
                                         *pIndices++ = i2;
@@ -657,7 +614,7 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                         i1 = firstVertex + srcIndices[ i*3 + 1 ];
                         i2 = firstVertex + srcIndices[ i*3 + 2 ];
 
-                        if ( IsBoundingBoxOverlapTriangle( clippedBounds, pVertices[i0], pVertices[i1], pVertices[i2] ) ) {
+                        if ( BvBoxOverlapTriangle_FastApproximation( clippedBounds, pVertices[i0], pVertices[i1], pVertices[i2] ) ) {
                             *pIndices++ = i0;
                             *pIndices++ = i1;
                             *pIndices++ = i2;

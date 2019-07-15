@@ -239,7 +239,7 @@ class FCollisionConvexHull : public FCollisionBody {
     AN_CLASS( FCollisionConvexHull, FCollisionBody )
 
 public:
-    TRefHolder< FCollisionConvexHullData > HullData;
+    TRef< FCollisionConvexHullData > HullData;
 
     bool IsConvex() const override { return true; }
 
@@ -279,7 +279,7 @@ class FCollisionTriangleSoupBVHData : public FBaseObject {
     AN_CLASS( FCollisionTriangleSoupBVHData, FBaseObject )
 
 public:
-    TRefHolder< FCollisionTriangleSoupData > TrisData;
+    TRef< FCollisionTriangleSoupData > TrisData;
 
     void BuildBVH( bool bForceQuantizedAabbCompression = false );
     //void BuildQuantizedBVH();
@@ -307,7 +307,7 @@ class FCollisionTriangleSoupBVH : public FCollisionBody {
 
 public:
     // BVH data for static or kinematic objects
-    TRefHolder< FCollisionTriangleSoupBVHData > BvhData;
+    TRef< FCollisionTriangleSoupBVHData > BvhData;
 
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
@@ -322,7 +322,7 @@ class FCollisionTriangleSoupGimpact : public FCollisionBody {
     AN_CLASS( FCollisionTriangleSoupGimpact, FCollisionBody )
 
 public:
-    TRefHolder< FCollisionTriangleSoupData > TrisData;
+    TRef< FCollisionTriangleSoupData > TrisData;
 
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 

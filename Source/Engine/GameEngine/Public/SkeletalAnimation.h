@@ -310,7 +310,7 @@ private:
 
     Float3x4 * WriteJointTransforms( int _JointsCount, int _StartJointLocation );
 
-    TRefHolder< FSkeleton > Skeleton;
+    TRef< FSkeleton > Skeleton;
 
     TPodArray< FAnimChannel > AnimChannels;
 

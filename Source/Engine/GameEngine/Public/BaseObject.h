@@ -65,24 +65,16 @@ public:
     // Remove reference
     void RemoveRef();
 
-    void AddToLoadList();
-
-    void RemoveFromLoadList();
-
-    bool IsInLoadList() const;
-
     virtual void SetName( FString const & _Name ) { Name = _Name; }
 
     FString const & GetName() const { return Name; }
 
     const char * GetNameConstChar() const { return Name.ToConstChar(); }
 
-    virtual const char * GetResourcePath() const { return ""; }
+    //virtual const char * GetResourcePath() const { return ""; }
 
     // Get total existing objects
     static uint64_t GetTotalObjects() { return TotalObjects; }
-
-    static void ReloadAll();
 
 protected:
     FBaseObject();
@@ -101,12 +93,6 @@ private:
     // Used by garbage collector to add this object to remove list
     FBaseObject * NextPendingKillObject;
     FBaseObject * PrevPendingKillObject;
-
-    // Load list
-    FBaseObject * Next;
-    FBaseObject * Prev;
-    static FBaseObject * GlobalLoadList;
-    static FBaseObject * GlobalLoadListTail;
 };
 
 /*
@@ -139,11 +125,11 @@ private:
 };
 
 template< typename T >
-class TRefHolder final {
+class TRef final {
 public:
     T * Object = nullptr;
 
-    ~TRefHolder() {
+    ~TRef() {
         if ( Object ) {
             Object->RemoveRef();
         }
@@ -161,7 +147,7 @@ public:
         return Object;
     }
 
-    void operator=( TRefHolder< T > const & _Ref ) {
+    void operator=( TRef< T > const & _Ref ) {
         this->operator =( _Ref.Object );
     }
 

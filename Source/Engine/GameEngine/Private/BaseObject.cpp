@@ -38,9 +38,6 @@ AN_END_CLASS_META()
 
 uint64_t FBaseObject::TotalObjects = 0;
 
-FBaseObject * FBaseObject::GlobalLoadList = nullptr;
-FBaseObject * FBaseObject::GlobalLoadListTail = nullptr;
-
 FBaseObject::FBaseObject() {
     TotalObjects++;
     FGarbageCollector::AddObject( this );
@@ -197,24 +194,4 @@ void FGarbageCollector::DeallocateObjects() {
     PendingKillObjectsTail = nullptr;
 
     //GPrintf( "TotalObjects: %d\n", FBaseObject::GetTotalObjects() );
-}
-
-void FBaseObject::AddToLoadList() {
-    if ( !IntrusiveIsInList( this, Next, Prev, GlobalLoadList, GlobalLoadListTail ) ) {
-        IntrusiveAddToList( this, Next, Prev, GlobalLoadList, GlobalLoadListTail );
-    }
-}
-
-void FBaseObject::RemoveFromLoadList() {
-    IntrusiveRemoveFromList( this, Next, Prev, GlobalLoadList, GlobalLoadListTail );
-}
-
-bool FBaseObject::IsInLoadList() const {
-    return IntrusiveIsInList( this, Next, Prev, GlobalLoadList, GlobalLoadListTail );
-}
-
-void FBaseObject::ReloadAll() {
-    //for ( FBaseObject * object = GlobalLoadList ; object ; object = object->Next ) {
-    //    object->LoadObject( object->GetResourcePath() );
-    //}
 }

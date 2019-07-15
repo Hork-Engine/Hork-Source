@@ -440,7 +440,7 @@ private:
 
     FWorld * NextPendingKillWorld;
 
-    TRefHolder< FLevel > PersistentLevel;
+    TRef< FLevel > PersistentLevel;
     TPodArray< FLevel * > ArrayOfLevels;
 public:
     btBroadphaseInterface * PhysicsBroadphase;

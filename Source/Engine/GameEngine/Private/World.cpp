@@ -1204,7 +1204,7 @@ bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, F
             continue;
         }
 
-        if ( !FMath::Intersects( mesh->GetWorldBounds(), _RayStart, invRayDir ) ) {
+        if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds() ) ) {
             continue;
         }
 
@@ -1301,7 +1301,7 @@ bool FWorld::RaycastAABB( TPodArray< FBoxHitResult > & _Result, Float3 const & _
             continue;
         }
 
-        if ( !FMath::Intersects( mesh->GetWorldBounds(), _RayStart, invRayDir, boxMin, boxMax ) ) {
+        if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
         }
 
@@ -1343,7 +1343,7 @@ bool FWorld::RaycastClosest( FWorldRaycastClosestResult & _Result, Float3 const 
     Float2 hitUV;
     float hitDistance;
     unsigned int indices[3];
-    TRefHolder< FMaterialInstance > material;
+    TRef< FMaterialInstance > material;
 
     if ( !_Filter ) {
         _Filter = &DefaultRaycastFilter;
@@ -1379,7 +1379,7 @@ bool FWorld::RaycastClosest( FWorldRaycastClosestResult & _Result, Float3 const 
             continue;
         }
 
-        if ( !FMath::Intersects( mesh->GetWorldBounds(), _RayStart, invRayDir, boxMin, boxMax ) ) {
+        if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
         }
 
@@ -1504,7 +1504,7 @@ bool FWorld::RaycastClosestAABB( FBoxHitResult & _Result, Float3 const & _RaySta
             continue;
         }
 
-        if ( !FMath::Intersects( mesh->GetWorldBounds(), _RayStart, invRayDir, boxMin, boxMax ) ) {
+        if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
         }
 

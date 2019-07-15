@@ -440,8 +440,6 @@ void FGameEngine::OnChangedVideoModeEvent( FChangedVideoModeEvent const & _Event
     }
 
     GConsole.Resize( VideoMode.Width );
-
-    FBaseObject::ReloadAll();
 }
 
 void FGameEngine::ProcessEvent( FEvent const & _Event ) {

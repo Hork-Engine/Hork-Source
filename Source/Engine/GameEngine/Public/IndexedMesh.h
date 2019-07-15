@@ -64,7 +64,7 @@ public:
     int FirstIndex;
     int VertexCount;
     int IndexCount;
-    TRefHolder< FMaterialInstance > MaterialInstance;
+    TRef< FMaterialInstance > MaterialInstance;
 
     void SetBoundingBox( BvAxisAlignedBox const & _BoundingBox );
 
@@ -282,7 +282,7 @@ public:
     bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const;
 
     // Check ray intersection
-    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRefHolder< FMaterialInstance > & _Material ) const;
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< FMaterialInstance > & _Material ) const;
 
     // Rigid body collision model
     FCollisionBodyComposition BodyComposition;

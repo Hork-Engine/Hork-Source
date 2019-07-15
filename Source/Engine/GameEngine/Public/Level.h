@@ -89,7 +89,7 @@ private:
     //       float AmbientVolume[4];
     //       int NumAmbients; // 0..4
 
-    TRefHolder< FSpatialTree > Tree;
+    TRef< FSpatialTree > Tree;
 };
 
 class FLevelPortal : public FBaseObject {
@@ -114,8 +114,8 @@ private:
     FLevel * ParentLevel;
 
     // Linked areas
-    TRefHolder< FLevelArea > Area1;
-    TRefHolder< FLevelArea > Area2;
+    TRef< FLevelArea > Area1;
+    TRef< FLevelArea > Area2;
 
     // Portal to areas
     FAreaPortal * Portals[2];
@@ -262,7 +262,7 @@ private:
     bool bIsPersistent;
     TPodArray< FActor * > Actors;
     TPodArray< FLevelArea * > Areas;
-    TRefHolder< FLevelArea > OutdoorArea;
+    TRef< FLevelArea > OutdoorArea;
     TPodArray< FLevelPortal * > Portals;
     TPodArray< FAreaPortal > AreaPortals;
     byte * LightData;

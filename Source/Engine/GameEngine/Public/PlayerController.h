@@ -142,13 +142,13 @@ private:
     void ToggleDebugDraw();
 
     FInputComponent * InputComponent;
-    TRefHolder< FPawn > Pawn;
-    TRefHolder< FCameraComponent > CameraComponent;
-    TRefHolder< FSceneComponent > AudioListener;
-    TRefHolder< FRenderingParameters > RenderingParameters;
-    TRefHolder< FAudioParameters > AudioParameters;
+    TRef< FPawn > Pawn;
+    TRef< FCameraComponent > CameraComponent;
+    TRef< FSceneComponent > AudioListener;
+    TRef< FRenderingParameters > RenderingParameters;
+    TRef< FAudioParameters > AudioParameters;
     TPodArray< FViewActor * > ViewActors;
-    TRefHolder< FHUD > HUD;
+    TRef< FHUD > HUD;
 
     static FPlayerController * CurrentAudioListener;
 };

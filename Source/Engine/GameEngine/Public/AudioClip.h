@@ -81,7 +81,7 @@ private:
     byte * EncodedData;
     size_t EncodedDataLength;
     bool   bLoaded;
-    TRefHolder< IAudioDecoderInterface > Decoder;
+    TRef< IAudioDecoderInterface > Decoder;
 
     // Serial id нужен для того, чтобы объекты, использующие ресурс могли узнать, что
     // ресурс перезагружен

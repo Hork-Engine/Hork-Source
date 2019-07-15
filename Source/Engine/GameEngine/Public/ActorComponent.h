@@ -59,6 +59,8 @@ class ANGIE_API FActorComponent : public FBaseObject {
     friend class FWorld;
 
 public:
+    bool bCanEverTick;
+
     // Actor Component factory
     static FObjectFactory & Factory() { static FObjectFactory ObjectFactory( "Actor Component factory" ); return ObjectFactory; }
 
@@ -89,8 +91,6 @@ public:
     // Register component to initialize it at runtime
     void RegisterComponent();
 
-    bool bCanEverTick;
-
 protected:
 
     FActorComponent();
@@ -98,6 +98,7 @@ protected:
     // Called from Actor's InitializeComponents()
     virtual void InitializeComponent() {}
 
+    // Called from Actor's DeinitializeComponents()
     virtual void DeinitializeComponent() {}
 
     virtual void BeginPlay() {}

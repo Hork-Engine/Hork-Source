@@ -816,8 +816,8 @@ Float3 FSceneComponent::RayToObjectSpaceCoord2D( Float3 const & _RayStart, Float
 
     // Find intersection with plane
     PlaneF Plane( 0,0,1,0 );
-    Float Dist;
-    if ( !FMath::Intersects( Plane, ObjectSpaceRay, Dist ) ) {
+    float Dist;
+    if ( !RayIntersectPlane( ObjectSpaceRay.Start, ObjectSpaceRay.Dir, Plane, Dist ) ) {
         Dist = 0;
     }
 

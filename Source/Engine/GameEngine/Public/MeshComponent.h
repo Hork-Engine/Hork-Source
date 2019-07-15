@@ -74,10 +74,10 @@ public:
     Float4          LightmapOffset;
 
     // Lightmap UV channel
-    TRefHolder< FLightmapUV >   LightmapUVChannel;
+    TRef< FLightmapUV >   LightmapUVChannel;
 
     // Baked vertex light channel
-    TRefHolder< FVertexLight >  VertexLightChannel;
+    TRef< FVertexLight >  VertexLightChannel;
 
     // Force using dynamic range
     bool            bUseDynamicRange;
@@ -174,6 +174,6 @@ private:
     FMeshComponent * Next;
     FMeshComponent * Prev;
 
-    TRefHolder< FIndexedMesh > Mesh;
+    TRef< FIndexedMesh > Mesh;
     TPodArray< FMaterialInstance *, 1 > Materials;
 };

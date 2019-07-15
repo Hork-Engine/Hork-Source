@@ -126,7 +126,7 @@ public:
 
 protected:
     FString Slot;
-    TRefHolder< FAssemblyBlock > Block;
+    TRef< FAssemblyBlock > Block;
 
     FAssemblyBlockInput();
 };
@@ -147,7 +147,7 @@ public:
 
 protected:
     FString Slot;
-    TRefHolder< FAssemblyBlock > Block;
+    TRef< FAssemblyBlock > Block;
 
     FAssemblyNextStageVariable() {}
     ~FAssemblyNextStageVariable() {}
@@ -761,8 +761,8 @@ class FMaterialBuilder : public FBaseObject {
     AN_CLASS( FMaterialBuilder, FBaseObject )
 
 public:
-    TRefHolder< FMaterialVertexStage > VertexStage;
-    TRefHolder< FMaterialFragmentStage > FragmentStage;
+    TRef< FMaterialVertexStage > VertexStage;
+    TRef< FMaterialFragmentStage > FragmentStage;
     EMaterialType MaterialType;
     EMaterialFacing MaterialFacing = MATERIAL_FACE_FRONT;
 

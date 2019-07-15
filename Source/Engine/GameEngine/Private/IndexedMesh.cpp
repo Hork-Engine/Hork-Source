@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <Engine/Core/Public/BV/BvIntersect.h>
 
 AN_CLASS_META_NO_ATTRIBS( FIndexedMesh )
 AN_CLASS_META_NO_ATTRIBS( FIndexedMeshSubpart )
@@ -677,6 +678,8 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
     bool ret = false;
     float u, v;
 
+    // TODO: check subpart AABB
+
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
     FMeshVertex const * vertices = OwnerMesh->GetVertices();
 
@@ -692,7 +695,7 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
         Float3 const & v2 = vertices[i2].Position;
 
         float dist;
-        if ( FMath::Intersects( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
+        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
             if ( _Distance > dist ) {
                 FTriangleHitResult & hitResult = _HitResult.Append();
                 hitResult.HitLocation = _RayStart + _RayDir * dist;
@@ -715,6 +718,8 @@ bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
     bool ret = false;
     float u, v;
 
+    // TODO: check subpart AABB
+
     float minDist = _Distance;
 
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
@@ -732,7 +737,7 @@ bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
         Float3 const & v2 = vertices[i2].Position;
 
         float dist;
-        if ( FMath::Intersects( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
+        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
             if ( minDist > dist ) {
                 minDist = dist;
                 _HitLocation = _RayStart + _RayDir * dist;
@@ -751,6 +756,7 @@ bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
 
 bool FIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const {
     bool ret = false;
+    // TODO: check mesh AABB
     for ( int i = 0 ; i < Subparts.Length() ; i++ ) {
         FIndexedMeshSubpart * subpart = Subparts[i];
         ret |= subpart->Raycast( _RayStart, _RayDir, _Distance, _HitResult );
@@ -758,8 +764,9 @@ bool FIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, fl
     return ret;
 }
 
-bool FIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRefHolder< FMaterialInstance > & _Material ) const {
+bool FIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< FMaterialInstance > & _Material ) const {
     bool ret = false;
+    // TODO: check mesh AABB
     for ( int i = 0 ; i < Subparts.Length() ; i++ ) {
         FIndexedMeshSubpart * subpart = Subparts[i];
         if ( subpart->RaycastClosest( _RayStart, _RayDir, _Distance, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {

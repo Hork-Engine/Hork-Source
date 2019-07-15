@@ -66,7 +66,7 @@ class FMaterialInstance : public FBaseObject {
 
 public:
 
-    TRefHolder< FMaterial > Material;
+    TRef< FMaterial > Material;
 
 
     union {;
@@ -82,7 +82,7 @@ protected:
     ~FMaterialInstance() {}
 
 private:
-    TRefHolder< FTexture > Textures[MAX_MATERIAL_TEXTURES];
+    TRef< FTexture > Textures[MAX_MATERIAL_TEXTURES];
 
     int VisMarker;
     FMaterialInstanceFrameData * FrameData;

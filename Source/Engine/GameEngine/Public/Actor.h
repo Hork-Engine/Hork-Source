@@ -72,10 +72,9 @@ public:
     FOverlapDelegate E_OnEndOverlap;
     FOverlapDelegate E_OnUpdateOverlap;
 
-    // Root component, keeps component hierarchy and transform for the actor
+    // Root component keeps component hierarchy and transform for the actor
     FSceneComponent * RootComponent;
 
-    // Point when actor life ends
     float LifeSpan;
 
     bool bCanEverTick;
@@ -152,23 +151,34 @@ public:
     // Is actor marked as pending kill
     bool IsPendingKill() const { return bPendingKill; }
 
+    // Actor's instigator
     FPawn * GetInstigator() { return Instigator; }
 
+    // Apply damage to actor
     virtual void ApplyDamage( float _DamageAmount, Float3 const & _Position, FActor * _DamageCauser );
 
 protected:
 
     FActor();
 
+    // Register actor's timer. Call this in BeginPlay or after.
+    void RegisterTimer( FTimer * _Timer );
+
+protected:
+
+    // Called before components initialized
     virtual void PreInitializeComponents() {}
 
+    // Called after components initialized
     virtual void PostInitializeComponents() {}
 
+    // Called when actor enters the game
     virtual void BeginPlay() {}
 
     // Called only from Destroy() method
     virtual void EndPlay();
 
+    // Notify all actors in the world when actor spawned
     virtual void OnActorSpawned( FActor * _SpawnedActor ) {}
 
     // Tick based on variable time step. Dependend on current frame rate.
@@ -183,9 +193,8 @@ protected:
     // There may be one or several ticks per frame. Called after physics simulation.
     virtual void TickPostPhysics( float _TimeStep ) {}
 
+    // Draw debug primitives
     virtual void DrawDebug( FDebugDraw * _DebugDraw );
-
-    void RegisterTimer( FTimer * _Timer );
 
 private:
 
@@ -220,8 +229,8 @@ private:
     int IndexInLevelArrayOfActors = -1;
 
     FWorld * ParentWorld;
-    TRefHolder< FLevel > Level;
-    //TRefHolder< FActor > Attach; // TODO: Attach actor to another actor
+    TRef< FLevel > Level;
+    //TRef< FActor > Attach; // TODO: Attach actor to another actor
     FPawn * Instigator;
     bool bPendingKill;
     bool bDuringConstruction = true;

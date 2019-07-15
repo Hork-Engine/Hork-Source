@@ -347,7 +347,7 @@ protected:
     // Return action binding or -1 if action is not binded
     int GetActionBindingHash( const char * _Action, int _Hash ) const;
 
-    TRefHolder< FInputMappings > InputMappings;
+    TRef< FInputMappings > InputMappings;
 
     THash<> AxisBindingsHash;
     TVector< FAxisBinding > AxisBindings;

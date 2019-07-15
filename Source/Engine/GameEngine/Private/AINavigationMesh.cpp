@@ -192,7 +192,7 @@ struct FDetourMeshProcess : public dtTileCacheMeshProcess {
             conBoundingBox.Mins -= margin;
             conBoundingBox.Maxs += margin;
 
-            if ( !FMath::Intersects( clipBounds, conBoundingBox ) ) {
+            if ( !BvBoxOverlapBox( clipBounds, conBoundingBox ) ) {
                 // Connection is outside of clip bounds
                 continue;
             }
@@ -656,7 +656,7 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
             continue;
         }
 
-        if ( !FMath::Intersects( tileWorldBoundsWithPadding, areaBoundingBox ) ) {
+        if ( !BvBoxOverlapBox( tileWorldBoundsWithPadding, areaBoundingBox ) ) {
             // Area is outside of tile bounding box
             continue;
         }
@@ -961,7 +961,7 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
             conBoundingBox.Mins -= margin;
             conBoundingBox.Maxs += margin;
 
-            if ( !FMath::Intersects( tileWorldBoundsWithPadding, conBoundingBox ) ) {
+            if ( !BvBoxOverlapBox( tileWorldBoundsWithPadding, conBoundingBox ) ) {
                 // Connection is outside of tile bounding box
                 continue;
             }
