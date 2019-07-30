@@ -54,6 +54,55 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
+struct FCPUInfo {
+    bool OS_AVX : 1;
+    bool OS_AVX512 : 1;
+    bool OS_64bit : 1;
+
+    bool Intel : 1;
+    bool AMD : 1;
+
+    // Simd 128 bit
+    bool SSE : 1;
+    bool SSE2 : 1;
+    bool SSE3 : 1;
+    bool SSSE3 : 1;
+    bool SSE41 : 1;
+    bool SSE42 : 1;
+    bool SSE4a : 1;
+    bool AES : 1;
+    bool SHA : 1;
+
+    // Simd 256 bit
+    bool AVX : 1;
+    bool XOP : 1;
+    bool FMA3 : 1;
+    bool FMA4 : 1;
+    bool AVX2 : 1;
+
+    // Simd 512 bit
+    bool AVX512_F : 1;
+    bool AVX512_CD : 1;
+    bool AVX512_PF : 1;
+    bool AVX512_ER : 1;
+    bool AVX512_VL : 1;
+    bool AVX512_BW : 1;
+    bool AVX512_DQ : 1;
+    bool AVX512_IFMA : 1;
+    bool AVX512_VBMI : 1;
+
+    // Features
+    bool x64 : 1;
+    bool ABM : 1;
+    bool MMX : 1;
+    bool RDRAND : 1;
+    bool BMI1 : 1;
+    bool BMI2 : 1;
+    bool ADX : 1;
+    bool MPX : 1;
+    bool PREFETCHWT1 : 1;
+};
+
 #define MAX_COMMAND_LINE_LENGTH 1024
 static char CmdLineBuffer[ MAX_COMMAND_LINE_LENGTH ];
 static FThread GameThread;
@@ -77,6 +126,7 @@ static FSyncEvent rt_GameUpdateEvent;
 static bool rt_Terminate = false;
 static IGameEngine * rt_GameEngine;
 static FCreateGameModuleCallback rt_CreateGameModuleCallback;
+static FCPUInfo rt_CPUInfo;
 
 int rt_CheckArg( const char * _Arg ) {
     for ( int i = 0 ; i < rt_NumArguments ; i++ ) {
@@ -86,6 +136,158 @@ int rt_CheckArg( const char * _Arg ) {
     }
     return -1;
 }
+
+#ifdef AN_OS_LINUX
+
+#include <cpuid.h>
+
+static void CPUID( int32_t out[4], int32_t x ) {
+    __cpuid_count( x, 0, out[0], out[1], out[2], out[3] );
+}
+
+static uint64_t xgetbv( unsigned int index ) {
+    uint32_t eax, edx;
+    __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
+    return ((uint64_t)edx << 32) | eax;
+}
+
+#define _XCR_XFEATURE_ENABLED_MASK 0
+
+#endif
+
+#ifdef AN_OS_WIN32
+//#include <intrin.h>
+
+static void CPUID( int32_t out[4], int32_t x ) {
+    __cpuidex(out, x, 0);
+}
+
+static __int64 xgetbv( unsigned int index ) {
+    return _xgetbv(index);
+}
+
+typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
+static BOOL IsWow64()
+{
+    BOOL bIsWow64 = FALSE;
+
+    LPFN_ISWOW64PROCESS fnIsWow64Process = (LPFN_ISWOW64PROCESS) GetProcAddress(
+        GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
+
+    if (NULL != fnIsWow64Process)
+    {
+        if (!fnIsWow64Process(GetCurrentProcess(), &bIsWow64))
+        {
+            printf("Error Detecting Operating System.\n");
+            printf("Defaulting to 32-bit OS.\n\n");
+            bIsWow64 = FALSE;
+        }
+    }
+    return bIsWow64;
+}
+
+#endif
+
+static void GetCPUInfo( FCPUInfo & _Info ){
+    int32_t cpuInfo[4];
+    char vendor[13];
+
+    memset( &_Info, 0, sizeof( _Info ) );
+
+#ifdef AN_OS_WIN32
+#ifdef _M_X64
+    _Info.OS_64bit = true;
+#else
+    _Info.OS_64bit = IsWow64() != 0;
+#endif
+#else
+    _Info.OS_64bit = true; // FIXME
+#endif
+
+    CPUID( cpuInfo, 1 );
+
+    bool osUsesXSAVE_XRSTORE = (cpuInfo[2] & (1 << 27)) != 0;
+    bool cpuAVXSuport = (cpuInfo[2] & (1 << 28)) != 0;
+
+    if ( osUsesXSAVE_XRSTORE && cpuAVXSuport ) {
+        uint64_t xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+        _Info.OS_AVX = (xcrFeatureMask & 0x6) == 0x6;
+    }
+
+    if ( _Info.OS_AVX ) {
+        uint64_t xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+        _Info.OS_AVX512 = (xcrFeatureMask & 0xe6) == 0xe6;
+    }
+
+    CPUID( cpuInfo, 0 );
+    memcpy( vendor + 0, &cpuInfo[1], 4 );
+    memcpy( vendor + 4, &cpuInfo[3], 4 );
+    memcpy( vendor + 8, &cpuInfo[2], 4 );
+    vendor[12] = '\0';
+
+    if ( !FString::Cmp( vendor, "GenuineIntel" ) ){
+        _Info.Intel = true;
+    } else if ( !FString::Cmp( vendor, "AuthenticAMD" ) ){
+        _Info.AMD = true;
+    }
+
+    int nIds = cpuInfo[0];
+
+    CPUID( cpuInfo, 0x80000000 );
+    uint32_t nExIds = cpuInfo[0];
+
+    if ( nIds >= 0x00000001 ) {
+        CPUID( cpuInfo, 0x00000001 );
+
+        _Info.MMX    = (cpuInfo[3] & ((int)1 << 23)) != 0;
+        _Info.SSE    = (cpuInfo[3] & ((int)1 << 25)) != 0;
+        _Info.SSE2   = (cpuInfo[3] & ((int)1 << 26)) != 0;
+        _Info.SSE3   = (cpuInfo[2] & ((int)1 <<  0)) != 0;
+
+        _Info.SSSE3  = (cpuInfo[2] & ((int)1 <<  9)) != 0;
+        _Info.SSE41  = (cpuInfo[2] & ((int)1 << 19)) != 0;
+        _Info.SSE42  = (cpuInfo[2] & ((int)1 << 20)) != 0;
+        _Info.AES    = (cpuInfo[2] & ((int)1 << 25)) != 0;
+
+        _Info.AVX    = (cpuInfo[2] & ((int)1 << 28)) != 0;
+        _Info.FMA3   = (cpuInfo[2] & ((int)1 << 12)) != 0;
+
+        _Info.RDRAND = (cpuInfo[2] & ((int)1 << 30)) != 0;
+    }
+
+    if ( nIds >= 0x00000007 ) {
+        CPUID( cpuInfo, 0x00000007 );
+
+        _Info.AVX2         = (cpuInfo[1] & ((int)1 <<  5)) != 0;
+
+        _Info.BMI1         = (cpuInfo[1] & ((int)1 <<  3)) != 0;
+        _Info.BMI2         = (cpuInfo[1] & ((int)1 <<  8)) != 0;
+        _Info.ADX          = (cpuInfo[1] & ((int)1 << 19)) != 0;
+        _Info.MPX          = (cpuInfo[1] & ((int)1 << 14)) != 0;
+        _Info.SHA          = (cpuInfo[1] & ((int)1 << 29)) != 0;
+        _Info.PREFETCHWT1  = (cpuInfo[2] & ((int)1 <<  0)) != 0;
+
+        _Info.AVX512_F     = (cpuInfo[1] & ((int)1 << 16)) != 0;
+        _Info.AVX512_CD    = (cpuInfo[1] & ((int)1 << 28)) != 0;
+        _Info.AVX512_PF    = (cpuInfo[1] & ((int)1 << 26)) != 0;
+        _Info.AVX512_ER    = (cpuInfo[1] & ((int)1 << 27)) != 0;
+        _Info.AVX512_VL    = (cpuInfo[1] & ((int)1 << 31)) != 0;
+        _Info.AVX512_BW    = (cpuInfo[1] & ((int)1 << 30)) != 0;
+        _Info.AVX512_DQ    = (cpuInfo[1] & ((int)1 << 17)) != 0;
+        _Info.AVX512_IFMA  = (cpuInfo[1] & ((int)1 << 21)) != 0;
+        _Info.AVX512_VBMI  = (cpuInfo[2] & ((int)1 <<  1)) != 0;
+    }
+
+    if ( nExIds >= 0x80000001 ) {
+        CPUID( cpuInfo, 0x80000001 );
+        _Info.x64   = (cpuInfo[3] & ((int)1 << 29)) != 0;
+        _Info.ABM   = (cpuInfo[2] & ((int)1 <<  5)) != 0;
+        _Info.SSE4a = (cpuInfo[2] & ((int)1 <<  6)) != 0;
+        _Info.FMA4  = (cpuInfo[2] & ((int)1 << 16)) != 0;
+        _Info.XOP   = (cpuInfo[2] & ((int)1 << 11)) != 0;
+    }
+}
+
 
 struct FMemoryInfo {
     int TotalAvailableMegabytes;
@@ -134,7 +336,7 @@ static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize ) {
 
 static void InitializeMemory() {
     const size_t ZoneSizeInMegabytes = 256;//8;
-    const size_t HunkSizeInMegabytes = 16;
+    const size_t HunkSizeInMegabytes = 32;
     const size_t FrameMemorySizeInMegabytes = 256;//128;
 
     const size_t TotalMemorySizeInBytes = ( ZoneSizeInMegabytes + HunkSizeInMegabytes + FrameMemorySizeInMegabytes ) << 20;
@@ -429,7 +631,7 @@ static void RuntimeUpdate() {
     }
 
     // It may happen if game thread is too busy
-    if ( event->Type == ET_RuntimeUpdateEvent && rt_Events.Length() != rt_Events.MaxLength() ) {
+    if ( event->Type == ET_RuntimeUpdateEvent && rt_Events.Size() != rt_Events.MaxSize() ) {
         event->Data.RuntimeUpdateEvent.InputEventCount = rt_InputEventCount;
     } else {
         GLogger.Printf( "Warning: Runtime queue was overflowed\n" );
@@ -598,11 +800,59 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
         EmergencyExit();
     }
 
+    GetCPUInfo( rt_CPUInfo );
+
     InitializeProcess();
 
     GLogger.SetMessageCallback( LoggerMessageCallback );
 
+    GLogger.Printf( "CPU: %s\n", rt_CPUInfo.Intel ? "Intel" : "AMD" );
+    GLogger.Print( "CPU Features:" );
+    if ( rt_CPUInfo.MMX ) GLogger.Print( " MMX" );
+    if ( rt_CPUInfo.x64 ) GLogger.Print( " x64" );
+    if ( rt_CPUInfo.ABM ) GLogger.Print( " ABM" );
+    if ( rt_CPUInfo.RDRAND ) GLogger.Print( " RDRAND" );
+    if ( rt_CPUInfo.BMI1 ) GLogger.Print( " BMI1" );
+    if ( rt_CPUInfo.BMI2 ) GLogger.Print( " BMI2" );
+    if ( rt_CPUInfo.ADX ) GLogger.Print( " ADX" );
+    if ( rt_CPUInfo.MPX ) GLogger.Print( " MPX" );
+    if ( rt_CPUInfo.PREFETCHWT1 ) GLogger.Print( " PREFETCHWT1" );
+    GLogger.Print( "\n" );
+    GLogger.Print( "Simd 128 bit:" );
+    if ( rt_CPUInfo.SSE ) GLogger.Print( " SSE" );
+    if ( rt_CPUInfo.SSE2 ) GLogger.Print( " SSE2" );
+    if ( rt_CPUInfo.SSE3 ) GLogger.Print( " SSE3" );
+    if ( rt_CPUInfo.SSSE3 ) GLogger.Print( " SSSE3" );
+    if ( rt_CPUInfo.SSE4a ) GLogger.Print( " SSE4a" );
+    if ( rt_CPUInfo.SSE41 ) GLogger.Print( " SSE4.1" );
+    if ( rt_CPUInfo.SSE42 ) GLogger.Print( " SSE4.2" );
+    if ( rt_CPUInfo.AES ) GLogger.Print( " AES-NI" );
+    if ( rt_CPUInfo.SHA ) GLogger.Print( " SHA" );
+    GLogger.Print( "\n" );
+    GLogger.Print( "Simd 256 bit:" );
+    if ( rt_CPUInfo.AVX ) GLogger.Print( " AVX" );
+    if ( rt_CPUInfo.XOP ) GLogger.Print( " XOP" );
+    if ( rt_CPUInfo.FMA3 ) GLogger.Print( " FMA3" );
+    if ( rt_CPUInfo.FMA4 ) GLogger.Print( " FMA4" );
+    if ( rt_CPUInfo.AVX2 ) GLogger.Print( " AVX2" );
+    GLogger.Print( "\n" );
+    GLogger.Print( "Simd 512 bit:" );
+    if ( rt_CPUInfo.AVX512_F ) GLogger.Print( " AVX512-F" );
+    if ( rt_CPUInfo.AVX512_CD ) GLogger.Print( " AVX512-CD" );
+    if ( rt_CPUInfo.AVX512_PF ) GLogger.Print( " AVX512-PF" );
+    if ( rt_CPUInfo.AVX512_ER ) GLogger.Print( " AVX512-ER" );
+    if ( rt_CPUInfo.AVX512_VL ) GLogger.Print( " AVX512-VL" );
+    if ( rt_CPUInfo.AVX512_BW ) GLogger.Print( " AVX512-BW" );
+    if ( rt_CPUInfo.AVX512_DQ ) GLogger.Print( " AVX512-DQ" );
+    if ( rt_CPUInfo.AVX512_IFMA ) GLogger.Print( " AVX512-IFMA" );
+    if ( rt_CPUInfo.AVX512_VBMI ) GLogger.Print( " AVX512-VBMI" );
+    GLogger.Print( "\n" );
     GLogger.Print( "OS: " AN_OS_STRING "\n" );
+    GLogger.Print( "OS Features:" );
+    if ( rt_CPUInfo.OS_64bit ) GLogger.Print( " 64bit" );
+    if ( rt_CPUInfo.OS_AVX ) GLogger.Print( " AVX" );
+    if ( rt_CPUInfo.OS_AVX512 ) GLogger.Print( " AVX512" );
+    GLogger.Print( "\n" );
     GLogger.Print( "Endian: " AN_ENDIAN_STRING "\n" );
 #ifdef AN_DEBUG
     GLogger.Print( "Compiler: " AN_COMPILER_STRING "\n" );

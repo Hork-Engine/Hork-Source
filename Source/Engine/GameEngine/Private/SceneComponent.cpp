@@ -199,7 +199,7 @@ FSceneComponent * FSceneComponent::FindChild( const char * _UniqueName, bool _Re
 }
 
 int FSceneComponent::FindSocket( const char * _Name ) const {
-    for ( int socketIndex = 0 ; socketIndex < Sockets.Length() ; socketIndex++ ) {
+    for ( int socketIndex = 0 ; socketIndex < Sockets.Size() ; socketIndex++ ) {
         if ( !Sockets[socketIndex].SocketDef->GetName().Icmp( _Name ) ) {
             return socketIndex;
         }
@@ -239,7 +239,7 @@ void FSceneComponent::MarkTransformDirty() {
 #endif
         node->OnTransformDirty();
 
-        numChilds = node->Childs.Length();
+        numChilds = node->Childs.Size();
         if ( numChilds > 0 ) {
 
             // Обновить дочерние узлы, причем первый дочерний узел можно обновить
@@ -737,7 +737,7 @@ void FSceneComponent::ComputeLocalTransformMatrix( Float3x4 & _LocalTransformMat
 
 void FSceneComponent::ComputeWorldTransform() const {
     if ( AttachParent ) {
-        if ( SocketIndex >= 0 && SocketIndex < AttachParent->Sockets.Length() ) {
+        if ( SocketIndex >= 0 && SocketIndex < AttachParent->Sockets.Size() ) {
             FSocket * Socket = &AttachParent->Sockets[SocketIndex];
 
             Float3x4 const & JointTransform = Socket->Parent->GetJointTransform( Socket->SocketDef->JointIndex );
@@ -802,55 +802,6 @@ Float3x4 FSceneComponent::ComputeWorldTransformInverse() const {
 
 Quat FSceneComponent::ComputeWorldRotationInverse() const {
     return GetWorldRotation().Inversed();
-}
-
-Float3 FSceneComponent::RayToObjectSpaceCoord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const {
-    // Convert ray to object space
-    //Float3x4 const & WorldTransform = GetWorldTransformMatrix();
-    Float3x4 WorldTransformInverse = ComputeWorldTransformInverse();
-    RayF ObjectSpaceRay;
-    ObjectSpaceRay.Start = WorldTransformInverse * _RayStart;
-    //ObjectSpaceRay.Dir = WorldTransformInverse * _RayDir;
-    //ObjectSpaceRay.Dir = FMath::Normalize( WorldTransformInverse * ( _RayStart + _RayDir ) - ObjectSpaceRay.start );
-    ObjectSpaceRay.Dir = ( WorldTransformInverse * ( _RayStart + _RayDir*64000.0f ) - ObjectSpaceRay.Start ).Normalized();
-
-    // Find intersection with plane
-    PlaneF Plane( 0,0,1,0 );
-    float Dist;
-    if ( !RayIntersectPlane( ObjectSpaceRay.Start, ObjectSpaceRay.Dir, Plane, Dist ) ) {
-        Dist = 0;
-    }
-
-    // Retrieve plane intersection coord in object space
-    Float3 ObjectSpaceCoord = ObjectSpaceRay.Start + ObjectSpaceRay.Dir * Dist;
-
-    return ObjectSpaceCoord;
-}
-
-Float2 FSceneComponent::RayToWorldCooord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const {
-    return Float2( _RayToWorldCooord2D( _RayStart, _RayDir ) );
-}
-
-Float3 FSceneComponent::_RayToWorldCooord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const {
-    // Retrieve plane intersection coord in object space
-    Float3 ObjectSpaceCoord = RayToObjectSpaceCoord2D( _RayStart, _RayDir );
-
-    // Convert object space coord to world space
-    Float3x4 const WorldTransform = GetWorldTransformMatrix();
-    Float3 WorldSpaceCoord = WorldTransform * ObjectSpaceCoord;
-
-    return WorldSpaceCoord;
-#if 0
-    // Find intersection with plane
-    PlaneF Plane( 0,0,1,0 );
-    float Dist;
-    FMath::Intersects( Plane, FRay( _RayStart, _RayDir ), Dist );
-
-    // Retrieve plane intersection coord in world space
-    Float3 WorldSpaceCoord = _RayStart + _RayDir * Dist;
-
-    return Float2( WorldSpaceCoord );
-#endif
 }
 
 void FSceneComponent::TurnRightFPS( float _DeltaAngleRad ) {

@@ -602,7 +602,7 @@ void FAudioSystem::RegisterDecoder( const char * _Extension, IAudioDecoderInterf
 }
 
 void FAudioSystem::UnregisterDecoder( const char * _Extension ) {
-    for ( int i = 0 ; i < Decoders.Length() ; i++ ) {
+    for ( int i = 0 ; i < Decoders.Size() ; i++ ) {
         Entry & e =  Decoders[i];
         if ( !FString::Icmp( _Extension, e.Extension ) ) {
             e.Decoder->RemoveRef();
@@ -613,7 +613,7 @@ void FAudioSystem::UnregisterDecoder( const char * _Extension ) {
 }
 
 void FAudioSystem::UnregisterDecoders() {
-    for ( int i = 0; i < Decoders.Length(); i++ ) {
+    for ( int i = 0; i < Decoders.Size(); i++ ) {
         Decoders[ i ].Decoder->RemoveRef();
     }
     Decoders.Free();
@@ -819,7 +819,7 @@ static void VirtualizeChannel( FAudioChannel * _Channel ) {
     FAudioChannel * virtualChannel = &VirtualChannels.Last();
 
     virtualChannel->SourceId = 0;
-    virtualChannel->ChannelIndex = VirtualChannels.Length() - 1;
+    virtualChannel->ChannelIndex = VirtualChannels.Size() - 1;
     virtualChannel->NumStreamBuffers = 0;
     virtualChannel->bIsVirtual = true;
 
@@ -893,7 +893,7 @@ static bool DevirtualizeChannel( FAudioChannel * _VirtualChannel ) {
 
     int i = _VirtualChannel->ChannelIndex;
     VirtualChannels.RemoveSwap( i );
-    if ( i < VirtualChannels.Length() ) {
+    if ( i < VirtualChannels.Size() ) {
         VirtualChannels[ i ].ChannelIndex = i;
     }
 
@@ -1203,7 +1203,7 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
         channel = &VirtualChannels.Append();
         channel->bIsVirtual = true;
         channel->bFree = false;
-        channel->ChannelIndex = VirtualChannels.Length() - 1;
+        channel->ChannelIndex = VirtualChannels.Size() - 1;
         GLogger.Printf( "ChannelIndex %d\n", channel->ChannelIndex );
     } else {
         channel = AllocateChannel( _SpawnParameters->Priority );
@@ -1213,7 +1213,7 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
                 channel = &VirtualChannels.Append();
                 channel->bIsVirtual = true;
                 channel->bFree = false;
-                channel->ChannelIndex = VirtualChannels.Length() - 1;
+                channel->ChannelIndex = VirtualChannels.Size() - 1;
             } else {
                 return;
             }
@@ -1590,11 +1590,11 @@ void FAudioSystem::Update( FPlayerController * _Controller, float _TimeStep ) {
 
     int numFreeChannels = MAX_AUDIO_CHANNELS - GetNumActiveChannels();
     if ( numFreeChannels > 0 ) {
-        int canRestore = FMath::Min( numFreeChannels, VirtualChannels.Length() );
+        int canRestore = FMath::Min( numFreeChannels, VirtualChannels.Size() );
 
         // TODO: sort channels by priority, gain, etc?
 
-            for ( int i = 0 ; i < VirtualChannels.Length() && canRestore > 0 ;  ) {
+            for ( int i = 0 ; i < VirtualChannels.Size() && canRestore > 0 ;  ) {
                 FAudioChannel * channel = &VirtualChannels[i];
 
                 float graceDist = GetGraceDistance( channel->MaxDistance );
@@ -1636,7 +1636,7 @@ void FAudioSystem::Update( FPlayerController * _Controller, float _TimeStep ) {
     }
 
     // Update virtual channels
-    for ( int i = 0 ; i < VirtualChannels.Length() ; ) {
+    for ( int i = 0 ; i < VirtualChannels.Size() ; ) {
         FAudioChannel * channel = &VirtualChannels[i];
 
         UpdateChannel( channel, _TimeStep );
@@ -1644,7 +1644,7 @@ void FAudioSystem::Update( FPlayerController * _Controller, float _TimeStep ) {
         if ( channel->bFree ) {
             // Was freed during update
             VirtualChannels.RemoveSwap( i );
-            if ( i < VirtualChannels.Length() ) {
+            if ( i < VirtualChannels.Size() ) {
                 VirtualChannels[ i ].ChannelIndex = i;
             }
         } else {

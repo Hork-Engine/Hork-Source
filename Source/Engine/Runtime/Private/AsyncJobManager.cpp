@@ -178,7 +178,7 @@ void FAsyncJobList::SetMaxParallelJobs( int _MaxParallelJobs ) {
 }
 
 void FAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
-    if ( JobPool.Length() == JobPool.Reserved() ) {
+    if ( JobPool.Size() == JobPool.Reserved() ) {
         GLogger.Printf( "Warning: FAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size %d)\n", JobPool.Reserved() );
 
         SubmitAndWait();
@@ -198,7 +198,7 @@ void FAsyncJobList::Submit() {
         return;
     }
 
-    FAsyncJob * headJob = &JobPool[ JobPool.Length() - NumPendingJobs ];
+    FAsyncJob * headJob = &JobPool[ JobPool.Size() - NumPendingJobs ];
     AN_Assert( headJob->Next == nullptr );
 
     // lock section
@@ -217,7 +217,7 @@ void FAsyncJobList::Submit() {
 }
 
 void FAsyncJobList::Wait() {
-    int jobsCount = JobPool.Length() - NumPendingJobs;
+    int jobsCount = JobPool.Size() - NumPendingJobs;
 
     if ( jobsCount > 0 ) {
         EventDone.Wait();

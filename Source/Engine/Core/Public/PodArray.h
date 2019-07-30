@@ -128,7 +128,7 @@ public:
     T const *       ToPtr() const;
 
     // Возвращает количество элементов в массиве
-    int             Length() const;
+    int             Size() const;
 
     // Возвращает количество элементов, под которые выделена память
     int             Reserved() const;
@@ -583,7 +583,7 @@ AN_FORCEINLINE T const * TPodArray< T, BASE_CAPACITY, GRANULARITY >::ToPtr() con
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
-AN_FORCEINLINE int TPodArray< T, BASE_CAPACITY, GRANULARITY >::Length() const {
+AN_FORCEINLINE int TPodArray< T, BASE_CAPACITY, GRANULARITY >::Size() const {
     return ArrayLength;
 }
 

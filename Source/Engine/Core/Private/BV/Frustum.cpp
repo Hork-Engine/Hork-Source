@@ -34,83 +34,51 @@ FFrustum::FFrustum() {
     for ( int i = 0; i < 6; i++ ) {
         Planes[ i ].CachedSignBits = 0;
     }
+    PlanesSSE = nullptr;
 }
 
 FFrustum::~FFrustum() {
 #ifdef AN_FRUSTUM_USE_SSE
-    //delete PlanesSSE;
     GMainMemoryZone.Dealloc( PlanesSSE );
 #endif
 }
 
 void FFrustum::FromMatrix( Float4x4 const & _Matrix ) {
-    float Normalizer;
-
-    // Setup the RIGHT clipping plane
     Planes[FPL_RIGHT].Normal.X = _Matrix[0][3] - _Matrix[0][0];
     Planes[FPL_RIGHT].Normal.Y = _Matrix[1][3] - _Matrix[1][0];
     Planes[FPL_RIGHT].Normal.Z = _Matrix[2][3] - _Matrix[2][0];
     Planes[FPL_RIGHT].D =_Matrix[3][3] - _Matrix[3][0];
+    Planes[FPL_RIGHT].NormalizeSelf();
 
-    // Normalize it
-    Normalizer = 1.0f / Planes[FPL_RIGHT].Normal.Length();
-    Planes[FPL_RIGHT].Normal *= Normalizer;
-    Planes[FPL_RIGHT].D *= Normalizer;
-
-    // Setup the LEFT clipping plane
-    Planes[FPL_LEFT].Normal.X	= _Matrix[0][3] + _Matrix[0][0];
-    Planes[FPL_LEFT].Normal.Y	= _Matrix[1][3] + _Matrix[1][0];
-    Planes[FPL_LEFT].Normal.Z	= _Matrix[2][3] + _Matrix[2][0];
+    Planes[FPL_LEFT].Normal.X = _Matrix[0][3] + _Matrix[0][0];
+    Planes[FPL_LEFT].Normal.Y = _Matrix[1][3] + _Matrix[1][0];
+    Planes[FPL_LEFT].Normal.Z = _Matrix[2][3] + _Matrix[2][0];
     Planes[FPL_LEFT].D = _Matrix[3][3] + _Matrix[3][0];
+    Planes[FPL_LEFT].NormalizeSelf();
 
-    // Normalize it
-    Normalizer = 1.0f / Planes[FPL_LEFT].Normal.Length();
-    Planes[FPL_LEFT].Normal *= Normalizer;
-    Planes[FPL_LEFT].D *= Normalizer;
-
-    // Setup the TOP clipping plane
     Planes[FPL_TOP].Normal.X = _Matrix[0][3] + _Matrix[0][1];
     Planes[FPL_TOP].Normal.Y = _Matrix[1][3] + _Matrix[1][1];
     Planes[FPL_TOP].Normal.Z = _Matrix[2][3] + _Matrix[2][1];
     Planes[FPL_TOP].D = _Matrix[3][3] + _Matrix[3][1];
+    Planes[FPL_TOP].NormalizeSelf();
 
-    // Normalize it
-    Normalizer = 1.0f / Planes[FPL_TOP].Normal.Length();
-    Planes[FPL_TOP].Normal *= Normalizer;
-    Planes[FPL_TOP].D *= Normalizer;
-
-    // Setup the BOTTOM clipping plane
     Planes[FPL_BOTTOM].Normal.X = _Matrix[0][3] - _Matrix[0][1];
     Planes[FPL_BOTTOM].Normal.Y = _Matrix[1][3] - _Matrix[1][1];
     Planes[FPL_BOTTOM].Normal.Z = _Matrix[2][3] - _Matrix[2][1];
     Planes[FPL_BOTTOM].D = _Matrix[3][3] - _Matrix[3][1];
+    Planes[FPL_BOTTOM].NormalizeSelf();
 
-    // Normalize it
-    Normalizer = 1.0f / Planes[FPL_BOTTOM].Normal.Length();
-    Planes[FPL_BOTTOM].Normal *= Normalizer;
-    Planes[FPL_BOTTOM].D *= Normalizer;
-
-    // Setup the FAR clipping plane
     Planes[FPL_FAR].Normal.X = _Matrix[0][3] - _Matrix[0][2];
     Planes[FPL_FAR].Normal.Y = _Matrix[1][3] - _Matrix[1][2];
     Planes[FPL_FAR].Normal.Z = _Matrix[2][3] - _Matrix[2][2];
     Planes[FPL_FAR].D = _Matrix[3][3] - _Matrix[3][2];
+    Planes[FPL_FAR].NormalizeSelf();
 
-    // Normalize it
-    Normalizer = 1.0f / Planes[FPL_FAR].Normal.Length();
-    Planes[FPL_FAR].Normal *= Normalizer;
-    Planes[FPL_FAR].D *= Normalizer;
-
-    // Setup the NEAR clipping plane
     Planes[FPL_NEAR].Normal.X = _Matrix[0][3] + _Matrix[0][2];
     Planes[FPL_NEAR].Normal.Y = _Matrix[1][3] + _Matrix[1][2];
     Planes[FPL_NEAR].Normal.Z = _Matrix[2][3] + _Matrix[2][2];
     Planes[FPL_NEAR].D = _Matrix[3][3] + _Matrix[3][2];
-
-    // Normalize it
-    Normalizer = 1.0f / Planes[FPL_NEAR].Normal.Length();
-    Planes[FPL_NEAR].Normal *= Normalizer;
-    Planes[FPL_NEAR].D *= Normalizer;
+    Planes[FPL_NEAR].NormalizeSelf();
 
     UpdateSignBits();
 
@@ -175,10 +143,10 @@ void FFrustum::CullSphere_Generic( BvSphereSSE const * _Bounds, int _NumObjects,
         cull = false;
         for ( p = Planes ; p < Planes + 6 ; p++ ) {
             if ( FMath::Dot( p->Normal, _Bounds->Center ) + p->D <= -_Bounds->Radius ) {
-			    cull = true;
+                cull = true;
             }
-	    }
-	    *_Result++ = cull;
+        }
+        *_Result++ = cull;
     }
 }
 
@@ -190,10 +158,10 @@ void FFrustum::CullSphere_IgnoreZ_Generic( BvSphereSSE const * _Bounds, int _Num
         cull = false;
         for ( p = Planes ; p < Planes + 4 ; p++ ) {
             if ( FMath::Dot( p->Normal, _Bounds->Center ) + p->D <= -_Bounds->Radius ) {
-			    cull = true;
+                cull = true;
             }
-	    }
-	    *_Result++ = cull;
+        }
+        *_Result++ = cull;
     }
 }
 

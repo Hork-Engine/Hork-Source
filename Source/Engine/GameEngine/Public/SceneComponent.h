@@ -220,13 +220,6 @@ public:
     Float3x4 ComputeWorldTransformInverse() const;
     Quat ComputeWorldRotationInverse() const;
 
-    // Compute tranposed local transform matrix
-    //Float3x4 ComputeLocalTransform() const;
-
-    Float3 RayToObjectSpaceCoord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const;
-    Float2 RayToWorldCooord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const;
-    Float3 _RayToWorldCooord2D( Float3 const & _RayStart, Float3 const & _RayDir ) const;
-
     // First person shooter rotations
     void TurnRightFPS( float _DeltaAngleRad );
     void TurnLeftFPS( float _DeltaAngleRad );
@@ -247,7 +240,6 @@ public:
     void Step( Float3 const & _Vector );
 
 protected:
-
     FSceneComponent();
 
     void DeinitializeComponent() override;
@@ -258,7 +250,6 @@ protected:
     FArrayOfSockets Sockets;
 
 private:
-
     void _AttachTo( FSceneComponent * _Parent, bool _KeepWorldTransform );
 
     void ComputeWorldTransform() const;

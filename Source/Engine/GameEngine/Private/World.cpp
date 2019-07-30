@@ -174,7 +174,7 @@ FWorld::FWorld() {
     PersistentLevel->AddRef();
     PersistentLevel->OwnerWorld = this;
     PersistentLevel->bIsPersistent = true;
-    PersistentLevel->IndexInArrayOfLevels = ArrayOfLevels.Length();
+    PersistentLevel->IndexInArrayOfLevels = ArrayOfLevels.Size();
     ArrayOfLevels.Append( PersistentLevel );
 
     GravityVector = Float3( 0.0f, -9.81f, 0.0f );
@@ -335,12 +335,12 @@ FActor * FWorld::SpawnActor( FActorSpawnParameters const & _SpawnParameters ) {
 
     // Add actor to world array of actors
     Actors.Append( actor );
-    actor->IndexInWorldArrayOfActors = Actors.Length() - 1;
+    actor->IndexInWorldArrayOfActors = Actors.Size() - 1;
     actor->ParentWorld = this;
 
     actor->Level = _SpawnParameters.Level ? _SpawnParameters.Level : PersistentLevel;
     actor->Level->Actors.Append( actor );
-    actor->IndexInLevelArrayOfActors = actor->Level->Actors.Length() - 1;
+    actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
 
     // Update actor name to make it unique
     actor->SetName( actor->Name );
@@ -386,12 +386,12 @@ FActor * FWorld::LoadActor( FDocument const & _Document, int _FieldsHead, FLevel
 
     // Add actor to world array of actors
     Actors.Append( actor );
-    actor->IndexInWorldArrayOfActors = Actors.Length() - 1;
+    actor->IndexInWorldArrayOfActors = Actors.Size() - 1;
     actor->ParentWorld = this;
 
     actor->Level = _Level ? _Level : PersistentLevel;
     actor->Level->Actors.Append( actor );
-    actor->IndexInLevelArrayOfActors = actor->Level->Actors.Length() - 1;
+    actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
 
     // Update actor name to make it unique
     actor->SetName( actor->Name );
@@ -845,7 +845,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
 #endif
 
                 currentContacts.Append( contact );
-                contactHash.Insert( hash, currentContacts.Length() - 1 );
+                contactHash.Insert( hash, currentContacts.Size() - 1 );
             }
         }
     }
@@ -854,7 +854,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
     CacheContactPoints = -1;
 
     // Dispatch contact and overlap events (OnBeginContact, OnBeginOverlap, OnUpdateContact, OnUpdateOverlap)
-    for ( int i = 0 ; i < currentContacts.Length() ; i++ ) {
+    for ( int i = 0 ; i < currentContacts.Size() ; i++ ) {
         FCollisionContact & contact = currentContacts[ i ];
 
         int hash = contact.Hash();
@@ -876,7 +876,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
                     GenerateContactPoints( i << 1, contact );
 
                     contactEvent.Points = ContactPoints.ToPtr();
-                    contactEvent.NumPoints = ContactPoints.Length();
+                    contactEvent.NumPoints = ContactPoints.Size();
                 } else {
                     contactEvent.Points = NULL;
                     contactEvent.NumPoints = 0;
@@ -914,7 +914,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
                     GenerateContactPoints( i << 1, contact );
 
                     contactEvent.Points = ContactPoints.ToPtr();
-                    contactEvent.NumPoints = ContactPoints.Length();
+                    contactEvent.NumPoints = ContactPoints.Size();
                 } else {
                     contactEvent.Points = NULL;
                     contactEvent.NumPoints = 0;
@@ -952,7 +952,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
                     GenerateContactPoints( ( i << 1 ) + 1, contact );
 
                     contactEvent.Points = ContactPoints.ToPtr();
-                    contactEvent.NumPoints = ContactPoints.Length();
+                    contactEvent.NumPoints = ContactPoints.Size();
                 } else {
                     contactEvent.Points = NULL;
                     contactEvent.NumPoints = 0;
@@ -989,7 +989,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
                     GenerateContactPoints( ( i << 1 ) + 1, contact );
 
                     contactEvent.Points = ContactPoints.ToPtr();
-                    contactEvent.NumPoints = ContactPoints.Length();
+                    contactEvent.NumPoints = ContactPoints.Size();
                 } else {
                     contactEvent.Points = NULL;
                     contactEvent.NumPoints = 0;
@@ -1022,7 +1022,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
     }
 
     // Dispatch contact and overlap events (OnEndContact, OnEndOverlap)
-    for ( int i = 0; i < prevContacts.Length(); i++ ) {
+    for ( int i = 0; i < prevContacts.Size(); i++ ) {
         FCollisionContact & contact = prevContacts[ i ];
 
         int hash = contact.Hash();
@@ -1222,7 +1222,7 @@ bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, F
 
         rayDirLocal /= hitDistanceLocal;
 
-        int firstHit = _Result.Hits.Length();
+        int firstHit = _Result.Hits.Size();
 
         if ( resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, _Result.Hits ) ) {
 
@@ -1230,7 +1230,7 @@ bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, F
 
             raycastEntity.Object = mesh;
             raycastEntity.FirstHit = firstHit;
-            raycastEntity.LastHit = _Result.Hits.Length();
+            raycastEntity.LastHit = _Result.Hits.Size();
             raycastEntity.ClosestHit = raycastEntity.FirstHit;
 
             // Convert hits to worldspace and find closest hit
@@ -1325,7 +1325,7 @@ bool FWorld::RaycastAABB( TPodArray< FBoxHitResult > & _Result, Float3 const & _
             }
         } SortHit;
 
-        StdSort( _Result.ToPtr(), _Result.ToPtr() + _Result.Length(), SortHit );
+        StdSort( _Result.ToPtr(), _Result.ToPtr() + _Result.Size(), SortHit );
     }
 
     return true;
@@ -2002,7 +2002,7 @@ void FWorld::KickoffPendingKillObjects() {
             // Remove component from actor array of components
             FActor * parent = component->ParentActor;
             if ( parent /*&& !parent->IsPendingKill()*/ ) {
-                parent->Components[ component->ComponentIndex ] = parent->Components[ parent->Components.Length() - 1 ];
+                parent->Components[ component->ComponentIndex ] = parent->Components[ parent->Components.Size() - 1 ];
                 parent->Components[ component->ComponentIndex ]->ComponentIndex = component->ComponentIndex;
                 parent->Components.RemoveLast();
             }
@@ -2026,7 +2026,7 @@ void FWorld::KickoffPendingKillObjects() {
             // FIXME: Call actor->EndPlay here?
 
             // Remove actor from world array of actors
-            Actors[ actor->IndexInWorldArrayOfActors ] = Actors[ Actors.Length() - 1 ];
+            Actors[ actor->IndexInWorldArrayOfActors ] = Actors[ Actors.Size() - 1 ];
             Actors[ actor->IndexInWorldArrayOfActors ]->IndexInWorldArrayOfActors = actor->IndexInWorldArrayOfActors;
             Actors.RemoveLast();
             actor->IndexInWorldArrayOfActors = -1;
@@ -2034,7 +2034,7 @@ void FWorld::KickoffPendingKillObjects() {
 
             // Remove actor from level array of actors
             FLevel * level = actor->Level;
-            level->Actors[ actor->IndexInLevelArrayOfActors ] = level->Actors[ level->Actors.Length() - 1 ];
+            level->Actors[ actor->IndexInLevelArrayOfActors ] = level->Actors[ level->Actors.Size() - 1 ];
             level->Actors[ actor->IndexInLevelArrayOfActors ]->IndexInLevelArrayOfActors = actor->IndexInLevelArrayOfActors;
             level->Actors.RemoveLast();
             actor->IndexInLevelArrayOfActors = -1;
@@ -2099,7 +2099,7 @@ void FWorld::AddLevel( FLevel * _Level ) {
     }
 
     _Level->OwnerWorld = this;
-    _Level->IndexInArrayOfLevels = ArrayOfLevels.Length();
+    _Level->IndexInArrayOfLevels = ArrayOfLevels.Size();
     _Level->AddRef();
     _Level->OnAddLevelToWorld();
     ArrayOfLevels.Append( _Level );
@@ -2122,7 +2122,7 @@ void FWorld::RemoveLevel( FLevel * _Level ) {
 
     _Level->OnRemoveLevelFromWorld();
 
-    ArrayOfLevels[ _Level->IndexInArrayOfLevels ] = ArrayOfLevels[ ArrayOfLevels.Length() - 1 ];
+    ArrayOfLevels[ _Level->IndexInArrayOfLevels ] = ArrayOfLevels[ ArrayOfLevels.Size() - 1 ];
     ArrayOfLevels[ _Level->IndexInArrayOfLevels ]->IndexInArrayOfLevels = _Level->IndexInArrayOfLevels;
     ArrayOfLevels.RemoveLast();
 

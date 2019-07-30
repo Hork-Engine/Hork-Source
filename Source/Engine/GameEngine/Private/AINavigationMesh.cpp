@@ -185,7 +185,7 @@ struct FDetourMeshProcess : public dtTileCacheMeshProcess {
         BvAxisAlignedBox conBoundingBox;
         const float margin = 0.2f;
         OffMeshConCount = 0;
-        for ( int i = 0 ; i < OwnerLevel->NavMeshConnections.Length() ; i++ ) {
+        for ( int i = 0 ; i < OwnerLevel->NavMeshConnections.Size() ; i++ ) {
             FAINavMeshConnection const & con = OwnerLevel->NavMeshConnections[i];
 
             con.CalcBoundingBox( conBoundingBox );
@@ -584,7 +584,7 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
         return false;
     }
 
-    int trianglesCount = indices.Length() / 3;
+    int trianglesCount = indices.Size() / 3;
 
     int hunkMark = GMainHunkMemory.SetHunkMark();
 
@@ -600,7 +600,7 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
 
     bool rasterized = rcRasterizeTriangles( &RecastContext,
                                             (float const *)vertices.ToPtr(),
-                                            vertices.Length(),
+                                            vertices.Size(),
                                             (int const *)indices.ToPtr(),
                                             triangleAreaTypes,
                                             trianglesCount,
@@ -645,7 +645,7 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
     }
 #if 1
     BvAxisAlignedBox areaBoundingBox;
-    for ( int areaNum = 0; areaNum < OwnerLevel->NavigationAreas.Length() ; ++areaNum ) {
+    for ( int areaNum = 0; areaNum < OwnerLevel->NavigationAreas.Size() ; ++areaNum ) {
         FAINavigationArea const & area = OwnerLevel->NavigationAreas[areaNum];
         rcCompactHeightfield const & chf = *temporal.CompactHeightfield;
 
@@ -954,7 +954,7 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
         TPodArray< unsigned short > offMeshConFlags;
         TPodArray< unsigned int > offMeshConId;
         int offMeshConCount = 0;
-        for ( int i = 0 ; i < OwnerLevel->NavMeshConnections.Length() ; i++ ) {
+        for ( int i = 0 ; i < OwnerLevel->NavMeshConnections.Size() ; i++ ) {
             FAINavMeshConnection const & con = OwnerLevel->NavMeshConnections[i];
 
             con.CalcBoundingBox( conBoundingBox );
@@ -1589,7 +1589,7 @@ bool FAINavigationMesh::MoveAlongSurface( Float3 const & _Position, Float3 const
 
     int VisitedCount = 0;
 
-    if ( !MoveAlongSurface( StartRef, _Destination, _Filter, LastVisitedPolys.ToPtr(), &VisitedCount, LastVisitedPolys.Length(), _ResultPos ) ) {
+    if ( !MoveAlongSurface( StartRef, _Destination, _Filter, LastVisitedPolys.ToPtr(), &VisitedCount, LastVisitedPolys.Size(), _ResultPos ) ) {
         LastVisitedPolys.Clear();
         return false;
     }

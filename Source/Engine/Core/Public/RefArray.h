@@ -124,7 +124,7 @@ public:
     const Ref *       ToPtr() const;
 
     // Возвращает количество элементов в массиве
-    int             Length() const;
+    int             Size() const;
 
     // Возвращает количество элементов, под которые выделена память
     int             Reserved() const;
@@ -573,7 +573,7 @@ AN_FORCEINLINE const typename TRefArray< T, BASE_CAPACITY, GRANULARITY >::Ref * 
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
-AN_FORCEINLINE int TRefArray< T, BASE_CAPACITY, GRANULARITY >::Length() const {
+AN_FORCEINLINE int TRefArray< T, BASE_CAPACITY, GRANULARITY >::Size() const {
     return ArrayLength;
 }
 

@@ -70,17 +70,22 @@ struct FSkeletalAnimationAsset {
     float FrameDelta;       // fixed time delta between frames
     int FrameCount;         // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
     TPodArray< FJointAnimation > AnimatedJoints;
-    FString Name;
+    TPodArray< FJointTransform > Transforms;
     TPodArray< BvAxisAlignedBox > Bounds;
+    FString Name;
 
     void Clear();
+    void CalcBoundingBoxes( FMeshAsset const * InMeshData, FJoint const *  InJoints, int InNumJoints );
 };
 
 struct FSkeletonAsset {
     TPodArray< FJoint > Joints;
     TVector< FSkeletalAnimationAsset > Animations;
+    BvAxisAlignedBox BindposeBounds;
 
     void Clear();
     void Read( FFileStream & f );
     void Write( FFileStream & f );
+
+    void CalcBindposeBounds( FMeshAsset const * InMeshData );
 };

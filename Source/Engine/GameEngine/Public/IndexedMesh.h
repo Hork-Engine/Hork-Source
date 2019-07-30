@@ -325,9 +325,9 @@ void FIndexedMesh::InitializeShape( _Valty &&... _Val ) {
 
     _Shape::CreateMesh( vertices, indices, bounds, std::forward< _Valty >( _Val )... );
 
-    Initialize( vertices.Length(), indices.Length(), 1 );
-    WriteVertexData( vertices.ToPtr(), vertices.Length(), 0 );
-    WriteIndexData( indices.ToPtr(), indices.Length(), 0 );
+    Initialize( vertices.Size(), indices.Size(), 1 );
+    WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
+    WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
 
     Subparts[0]->BoundingBox = bounds;
 }

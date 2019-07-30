@@ -101,7 +101,7 @@ void FActor::DestroyComponents() {
 
 void FActor::AddComponent( FActorComponent * _Component ) {
     Components.Append( _Component );
-    _Component->ComponentIndex = Components.Length() - 1;
+    _Component->ComponentIndex = Components.Size() - 1;
     _Component->ParentActor = this;
     _Component->bCreatedDuringConstruction = bDuringConstruction;
 }

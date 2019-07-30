@@ -218,7 +218,7 @@ struct FBoxShape {
         pVerts[ 6 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
         pVerts[ 6 + 8 * 2 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
-        CalcTangentSpace( pVerts, _Vertices.Length(), _Indices.ToPtr(), _Indices.Length() );
+        CalcTangentSpace( pVerts, _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
     }
 };
 
@@ -281,7 +281,7 @@ struct FSphereShape {
             }
         }
 
-        CalcTangentSpace( pVerts, _Vertices.Length(), _Indices.ToPtr(), _Indices.Length() );
+        CalcTangentSpace( pVerts, _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
     }
 
 };
@@ -306,7 +306,7 @@ struct FPlaneShape {
         const unsigned int Indices[ 6 ] = { 0,1,2,2,3,0 };
         memcpy( _Indices.ToPtr(), &Indices, sizeof( Indices ) );
 
-        CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Length(), _Indices.ToPtr(), _Indices.Length() );
+        CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 
         _Bounds.Mins.X = -HalfWidth;
         _Bounds.Mins.Y = 0.0f;
@@ -432,7 +432,7 @@ struct FPatchShape {
             }
         }
 
-        CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Length(), _Indices.ToPtr(), _Indices.Length() );
+        CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 
         _Bounds.Clear();
         _Bounds.AddPoint( Corner00 );
@@ -522,7 +522,7 @@ struct FCylinderShape {
         }
         FirstVertex += _VDiv + 1;
 
-        AN_Assert( FirstVertex == _Vertices.Length() );
+        AN_Assert( FirstVertex == _Vertices.Size() );
 
         // generate indices
 
@@ -548,8 +548,8 @@ struct FCylinderShape {
             FirstVertex += ( _VDiv + 1 ) * 2;
         }
 
-        AN_Assert( FirstVertex == _Vertices.Length() );
+        AN_Assert( FirstVertex == _Vertices.Size() );
 
-        CalcTangentSpace( pVerts, _Vertices.Length(), _Indices.ToPtr(), _Indices.Length() );
+        CalcTangentSpace( pVerts, _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
     }
 };

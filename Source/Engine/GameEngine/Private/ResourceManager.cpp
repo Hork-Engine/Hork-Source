@@ -40,7 +40,7 @@ void FResourceManager::Initialize() {
 }
 
 void FResourceManager::Deinitialize() {
-    for ( int i = ResourceCache.Length() - 1; i >= 0; i-- ) {
+    for ( int i = ResourceCache.Size() - 1; i >= 0; i-- ) {
         ResourceCache[ i ]->RemoveRef();
     }
     ResourceCache.Free();
@@ -138,7 +138,7 @@ bool FResourceManager::RegisterResource( FBaseObject * _Resource ) {
     }
 
     _Resource->AddRef();
-    ResourceHash.Insert( hash, ResourceCache.Length() );
+    ResourceHash.Insert( hash, ResourceCache.Size() );
     ResourceCache.Append( _Resource );
 
     return true;
@@ -171,7 +171,7 @@ FBaseObject * FResourceManager::GetOrCreateResource( FClassMeta const &  _ClassM
     resource->SetName( resourceName );
     resource->AddRef();
 
-    ResourceHash.Insert( hash, ResourceCache.Length() );
+    ResourceHash.Insert( hash, ResourceCache.Size() );
     ResourceCache.Append( resource );
 
     return resource;
@@ -203,7 +203,7 @@ bool FResourceManager::UnregisterResource( FBaseObject * _Resource ) {
 }
 
 void FResourceManager::UnregisterResources( FClassMeta const & _ClassMeta ) {
-    for ( int i = ResourceCache.Length() - 1 ; i >= 0 ; i-- ) {
+    for ( int i = ResourceCache.Size() - 1 ; i >= 0 ; i-- ) {
         if ( ResourceCache[i]->FinalClassId() == _ClassMeta.GetId() ) {
             ResourceCache[i]->RemoveRef();
 
@@ -214,7 +214,7 @@ void FResourceManager::UnregisterResources( FClassMeta const & _ClassMeta ) {
 }
 
 void FResourceManager::UnregisterResources() {
-    for ( int i = ResourceCache.Length() - 1 ; i >= 0 ; i-- ) {
+    for ( int i = ResourceCache.Size() - 1 ; i >= 0 ; i-- ) {
         ResourceCache[i]->RemoveRef();
     }
     ResourceHash.Clear();

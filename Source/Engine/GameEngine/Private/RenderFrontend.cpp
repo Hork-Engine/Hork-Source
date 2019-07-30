@@ -357,7 +357,7 @@ void FRenderFrontend::RenderView( int _Index ) {
     RV->bClearBackground = RP->bClearBackground;
     RV->bWireframe = RP->bWireframe;
     RV->PresentCmd = 0;
-    RV->FirstInstance = CurFrameData->Instances.Length();
+    RV->FirstInstance = CurFrameData->Instances.Size();
     RV->InstanceCount = 0;
 
     VisMarker++;
@@ -1055,7 +1055,7 @@ void FRenderFrontend::FlowThroughPortals_r( FLevelArea * _Area ) {
 }
 
 void FRenderFrontend::CullLevelInstances( FLevel * _Level ) {
-    AN_Assert( ViewArea < _Level->GetAreas().Length() );
+    AN_Assert( ViewArea < _Level->GetAreas().Size() );
 
     Dbg_SkippedByVisFrame = 0;
     Dbg_SkippedByPlaneOffset = 0;
@@ -1215,7 +1215,7 @@ void FRenderFrontend::AddSurface( FMeshComponent * component, PlaneF const * _Cu
 
     FIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
 
-    for ( int subpartIndex = 0 ; subpartIndex < subparts.Length() ; subpartIndex++ ) {
+    for ( int subpartIndex = 0 ; subpartIndex < subparts.Size() ; subpartIndex++ ) {
 
         // FIXME: check subpart bounding box here
 
@@ -1243,7 +1243,7 @@ void FRenderFrontend::AddSurface( FMeshComponent * component, PlaneF const * _Cu
         instance->MaterialInstance = materialInstance->FrameData;
         instance->MeshRenderProxy = proxy;
 
-        if ( component->LightmapUVChannel && component->LightmapBlock >= 0 && component->LightmapBlock < level->Lightmaps.Length() ) {
+        if ( component->LightmapUVChannel && component->LightmapBlock >= 0 && component->LightmapBlock < level->Lightmaps.Size() ) {
             instance->LightmapUVChannel = component->LightmapUVChannel->GetRenderProxy();
             instance->LightmapOffset = component->LightmapOffset;
             instance->Lightmap = level->Lightmaps[ component->LightmapBlock ]->GetRenderProxy();
@@ -1278,6 +1278,11 @@ void FRenderFrontend::AddSurface( FMeshComponent * component, PlaneF const * _Cu
         RV->InstanceCount++;
 
         PolyCount += instance->IndexCount / 3;
+
+        if ( component->bUseDynamicRange ) {
+            // If component uses dynamic range, mesh has actually one subpart
+            break;
+        }
     }
 }
 

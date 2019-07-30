@@ -86,7 +86,7 @@ struct FWorldRaycastResult {
         } SortEntity( Hits );
 
         // Sort by entity distance
-        StdSort( &Entities[0], &Entities[Entities.Length()], SortEntity );
+        StdSort( &Entities[0], &Entities[Entities.Size()], SortEntity );
 
         struct FSortHit {
             bool operator() ( FTriangleHitResult const & _A, FTriangleHitResult const & _B ) {

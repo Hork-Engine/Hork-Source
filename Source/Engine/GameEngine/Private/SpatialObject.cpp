@@ -77,6 +77,10 @@ BvAxisAlignedBox const & FSpatialObject::GetBounds() const {
 }
 
 BvAxisAlignedBox const & FSpatialObject::GetWorldBounds() const {
+
+    // Update bounding box
+    GetBounds();
+
     if ( bWorldBoundsDirty ) {
         WorldBounds = GetBounds().Transform( GetWorldTransformMatrix() );
         bWorldBoundsDirty = false;

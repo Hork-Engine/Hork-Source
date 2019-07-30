@@ -63,7 +63,7 @@ public:
     T *             Bottom() const;
     T *             ToPtr();
     const T *       ToPtr() const;
-    int             Length() const;
+    int             Size() const;
     int             Reserved() const;
     int             StackPoint() const;
     TPodStack &     operator=( TPodStack const & _Stack );
@@ -83,7 +83,7 @@ AN_FORCEINLINE TPodStack< T, BASE_CAPACITY, GRANULARITY >::TPodStack()
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
 AN_FORCEINLINE TPodStack< T, BASE_CAPACITY, GRANULARITY >::TPodStack( TPodStack< T, BASE_CAPACITY, GRANULARITY > const & _Stack )
-    : Array( _Stack.ToPtr(), _Stack.Length() )
+    : Array( _Stack.ToPtr(), _Stack.Size() )
 {
 }
 
@@ -133,8 +133,8 @@ AN_FORCEINLINE void TPodStack< T, BASE_CAPACITY, GRANULARITY >::Reverse() {
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
 AN_FORCEINLINE T * TPodStack< T, BASE_CAPACITY, GRANULARITY >::Push() {
-    Array.Resize( Array.Length() + 1 );
-    return Array.ToPtr()[ Array.Length() - 1 ];
+    Array.Resize( Array.Size() + 1 );
+    return Array.ToPtr()[ Array.Size() - 1 ];
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
@@ -173,8 +173,8 @@ AN_FORCEINLINE const T * TPodStack< T, BASE_CAPACITY, GRANULARITY >::ToPtr() con
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
-AN_FORCEINLINE int TPodStack< T, BASE_CAPACITY, GRANULARITY >::Length() const {
-    return Array.Length();
+AN_FORCEINLINE int TPodStack< T, BASE_CAPACITY, GRANULARITY >::Size() const {
+    return Array.Size();
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
@@ -184,12 +184,12 @@ AN_FORCEINLINE int TPodStack< T, BASE_CAPACITY, GRANULARITY >::Reserved() const 
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
 AN_FORCEINLINE int TPodStack< T, BASE_CAPACITY, GRANULARITY >::StackPoint() const {
-    return Length() - 1;
+    return Size() - 1;
 }
 
 template< typename T, int BASE_CAPACITY, int GRANULARITY >
 AN_FORCEINLINE TPodStack< T, BASE_CAPACITY, GRANULARITY > & TPodStack< T, BASE_CAPACITY, GRANULARITY >::operator=( TPodStack< T, BASE_CAPACITY, GRANULARITY > const & _Stack ) {
-    Set( _Stack.ToPtr(), _Stack.Length() );
+    Set( _Stack.ToPtr(), _Stack.Size() );
     return *this;
 }
 

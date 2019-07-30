@@ -59,8 +59,8 @@ public:
     bool IsEmpty() const;
     void Clear();
     void Free();
-    int Length() const;
-    int MaxLength() const;
+    int Size() const;
+    int MaxSize() const;
 
     TPodQueue & operator=( TPodQueue const & _Queue );
 
@@ -91,7 +91,7 @@ AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::TPodQueue( TPodQu
         pQueue = StaticData;
     }
 
-    const int queueLength = _Queue.Length();
+    const int queueLength = _Queue.Size();
     if ( queueLength == _Queue.MaxQueueLength || _Queue.QueueTail == 0 ) {
         memcpy( pQueue, _Queue.pQueue, TYPE_SIZEOF * queueLength );
         QueueHead = _Queue.QueueHead;
@@ -117,7 +117,7 @@ template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
 AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH > & TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::operator=( TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH > const & _Queue ) {
 
     // Resize queue
-    if ( _Queue.Length() > MaxQueueLength ) {
+    if ( _Queue.Size() > MaxQueueLength ) {
         if ( pQueue != StaticData ) {
             Allocator::Dealloc( pQueue );
         }
@@ -131,7 +131,7 @@ AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH > & TPodQueue< T, MA
     }
 
     // Copy
-    const int queueLength = _Queue.Length();
+    const int queueLength = _Queue.Size();
     if ( queueLength == _Queue.MaxQueueLength || _Queue.QueueTail == 0 ) {
         memcpy( pQueue, _Queue.pQueue, TYPE_SIZEOF * queueLength );
         QueueHead = _Queue.QueueHead;
@@ -183,7 +183,7 @@ AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Push() {
 
     MaxQueueLength <<= 1;
 
-    const int queueLength = Length();
+    const int queueLength = Size();
     if ( QueueTail == 0 ) {
         if ( pQueue == StaticData ) {
             pQueue = ( T * )Allocator::Alloc< 1 >( TYPE_SIZEOF * MaxQueueLength );
@@ -247,11 +247,11 @@ AN_FORCEINLINE void TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Free() {
 }
 
 template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE int TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Length() const {
+AN_FORCEINLINE int TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Size() const {
     return QueueHead - QueueTail;
 }
 
 template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE int TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::MaxLength() const {
+AN_FORCEINLINE int TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::MaxSize() const {
     return MaxQueueLength;
 }

@@ -115,7 +115,7 @@ public:
 
     void SplitCommands();
 
-    int CommandsCount() const { return Cmds->Length(); }
+    int CommandsCount() const { return Cmds->Size(); }
 
 private:
     FDebugDrawCmd & SetDrawCmd( EDebugDrawCmd _Type );

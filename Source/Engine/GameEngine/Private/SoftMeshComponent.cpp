@@ -139,10 +139,10 @@ void FSoftMeshComponent::RecreateSoftBody() {
     //unsigned int const * indices = sourceMesh->GetIndices();
 
     btAlignedObjectArray< btVector3 > vtx;
-    vtx.resize( skel->GetJoints().Length() );
+    vtx.resize( skel->GetJoints().Size() );
     FJoint const * joints = skel->GetJoints().ToPtr();
-    for ( int i = 0; i < skel->GetJoints().Length(); i++ ) {
-        vtx[ i ] = btVectorToFloat3( joints[ i ].JointOffsetMatrix.DecomposeTranslation() );
+    for ( int i = 0; i < skel->GetJoints().Size(); i++ ) {
+        vtx[ i ] = btVectorToFloat3( joints[ i ].OffsetMatrix.DecomposeTranslation() );
     }
 
     SoftBody = b3New( btSoftBody, GetWorld()->SoftBodyWorldInfo, vtx.size(), &vtx[ 0 ], 0 );
@@ -460,7 +460,7 @@ void FSoftMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
 void FSoftMeshComponent::AttachVertex( int _VertexIndex, FAnchorComponent * _Anchor ) {
     FAnchorBinding * binding = nullptr;
 
-    for ( int i = 0; i < Anchors.Length(); i++ ) {
+    for ( int i = 0; i < Anchors.Size(); i++ ) {
         if ( Anchors[ i ].VertexIndex == _VertexIndex ) {
             binding = &Anchors[ i ];
             break;
@@ -484,7 +484,7 @@ void FSoftMeshComponent::AttachVertex( int _VertexIndex, FAnchorComponent * _Anc
 }
 
 void FSoftMeshComponent::DetachVertex( int _VertexIndex ) {
-    for ( int i = 0; i < Anchors.Length(); i++ ) {
+    for ( int i = 0; i < Anchors.Size(); i++ ) {
         if ( Anchors[ i ].VertexIndex == _VertexIndex ) {
             Anchors[ i ].Anchor->RemoveRef();
             Anchors[ i ].Anchor->AttachCount--;
@@ -497,7 +497,7 @@ void FSoftMeshComponent::DetachVertex( int _VertexIndex ) {
 }
 
 void FSoftMeshComponent::DetachAllVertices() {
-    for ( int i = 0; i < Anchors.Length(); i++ ) {
+    for ( int i = 0; i < Anchors.Size(); i++ ) {
         Anchors[ i ].Anchor->RemoveRef();
         Anchors[ i ].Anchor->AttachCount--;
     }
@@ -506,7 +506,7 @@ void FSoftMeshComponent::DetachAllVertices() {
 }
 
 FAnchorComponent * FSoftMeshComponent::GetVertexAnchor( int _VertexIndex ) const {
-    for ( int i = 0; i < Anchors.Length(); i++ ) {
+    for ( int i = 0; i < Anchors.Size(); i++ ) {
         if ( Anchors[ i ].VertexIndex == _VertexIndex ) {
             return Anchors[ i ].Anchor;
         }

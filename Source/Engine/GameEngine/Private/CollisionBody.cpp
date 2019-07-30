@@ -295,7 +295,7 @@ void FCollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompressio
     Interface->Vertices = TrisData->Vertices.ToPtr();
     Interface->Indices = TrisData->Indices.ToPtr();
     Interface->Subparts = TrisData->Subparts.ToPtr();
-    Interface->SubpartCount = TrisData->Subparts.Length();
+    Interface->SubpartCount = TrisData->Subparts.Size();
 
     if ( !bForceQuantizedAabbCompression ) {
         constexpr unsigned int QUANTIZED_AABB_COMPRESSION_MAX_TRIANGLES = 1000000;
@@ -338,7 +338,7 @@ btCollisionShape * FCollisionTriangleSoupGimpact::Create() {
     Interface->Vertices = TrisData->Vertices.ToPtr();
     Interface->Indices = TrisData->Indices.ToPtr();
     Interface->Subparts = TrisData->Subparts.ToPtr();
-    Interface->SubpartCount = TrisData->Subparts.Length();
+    Interface->SubpartCount = TrisData->Subparts.Size();
     return b3New( btGImpactMeshShape, Interface );
 }
 
@@ -405,8 +405,8 @@ void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
     int vertexCount = (NumStacks + 1) * NumSlices;
     int indexCount = NumStacks * NumSlices * 6;
 
-    int firstVertex = _Vertices.Length();
-    int firstIndex = _Indices.Length();
+    int firstVertex = _Vertices.Size();
+    int firstIndex = _Indices.Size();
 
     _Vertices.Resize( firstVertex + vertexCount );
     _Indices.Resize( firstIndex + indexCount );
@@ -470,8 +470,8 @@ void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPo
     int vertexCount = (NumStacks + 1) * NumSlices;
     int indexCount = NumStacks * NumSlices * 6;
 
-    int firstVertex = _Vertices.Length();
-    int firstIndex = _Indices.Length();
+    int firstVertex = _Vertices.Size();
+    int firstIndex = _Indices.Size();
 
     _Vertices.Resize( firstVertex + vertexCount );
     _Indices.Resize( firstIndex + indexCount );
@@ -523,8 +523,8 @@ void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPo
 void FCollisionBox::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     unsigned int const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
 
-    int firstVertex = _Vertices.Length();
-    int firstIndex = _Indices.Length();
+    int firstVertex = _Vertices.Size();
+    int firstIndex = _Indices.Size();
 
     _Vertices.Resize( firstVertex + 8 );
     _Indices.Resize( firstIndex + 36 );
@@ -577,8 +577,8 @@ void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
     const int vertexCount = NumSlices * 2;
     const int indexCount = FaceTriangles * 3 * 2 + NumSlices * 6;
 
-    const int firstIndex = _Indices.Length();
-    const int firstVertex = _Vertices.Length();
+    const int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
 
     _Vertices.Resize( firstVertex + vertexCount );
     _Indices.Resize( firstIndex + indexCount );
@@ -683,8 +683,8 @@ void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
     const int vertexCount = NumSlices + 1;
     const int indexCount = FaceTriangles * 3 + NumSlices * 3;
 
-    const int firstIndex = _Indices.Length();
-    const int firstVertex = _Vertices.Length();
+    const int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
 
     _Vertices.Resize( firstVertex + vertexCount );
     _Indices.Resize( firstIndex + indexCount );
@@ -762,8 +762,8 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
     const int vertexCount = NumSlices * 2;
     const int indexCount = FaceTriangles * 3 * 2 + NumSlices * 6;
 
-    const int firstIndex = _Indices.Length();
-    const int firstVertex = _Vertices.Length();
+    const int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
 
     _Vertices.Resize( firstVertex + vertexCount );
     _Indices.Resize( firstIndex + indexCount );
@@ -845,8 +845,8 @@ void FCollisionConvexHull::CreateGeometry( TPodArray< Float3 > & _Vertices, TPod
         return;
     }
 
-    int firstVertex = _Vertices.Length();
-    int firstIndex = _Indices.Length();
+    int firstVertex = _Vertices.Size();
+    int firstIndex = _Indices.Size();
 
     _Vertices.Resize( firstVertex + HullData->GetVertexCount() );
     _Indices.Resize( firstIndex + HullData->GetIndexCount() );
@@ -874,10 +874,10 @@ void FCollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices,
             return;
         }
 
-        int firstIndex = _Indices.Length();
-        int firstVertex = _Vertices.Length();
+        int firstIndex = _Indices.Size();
+        int firstVertex = _Vertices.Size();
 
-        _Vertices.Resize( firstVertex + trisData->Vertices.Length() );
+        _Vertices.Resize( firstVertex + trisData->Vertices.Size() );
 
         int indexCount = 0;
         for ( FCollisionTriangleSoupData::FSubpart & subpart : trisData->Subparts ) {
@@ -896,7 +896,7 @@ void FCollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices,
 
         Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
 
-        for ( int i = 0 ; i < trisData->Vertices.Length() ; i++ ) {
+        for ( int i = 0 ; i < trisData->Vertices.Size() ; i++ ) {
             *pVertices++ = Rotation * trisData->Vertices[i] + Position;
         }
     }
@@ -931,10 +931,10 @@ void FCollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Verti
         return;
     }
 
-    int firstIndex = _Indices.Length();
-    int firstVertex = _Vertices.Length();
+    int firstIndex = _Indices.Size();
+    int firstVertex = _Vertices.Size();
 
-    _Vertices.Resize( firstVertex + trisData->Vertices.Length() );
+    _Vertices.Resize( firstVertex + trisData->Vertices.Size() );
 
     int indexCount = 0;
     for ( FCollisionTriangleSoupData::FSubpart & subpart : trisData->Subparts ) {
@@ -953,7 +953,7 @@ void FCollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Verti
 
     Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
 
-    for ( int i = 0 ; i < trisData->Vertices.Length() ; i++ ) {
+    for ( int i = 0 ; i < trisData->Vertices.Size() ; i++ ) {
         *pVertices++ = Rotation * trisData->Vertices[i] + Position;
     }
 }
@@ -1021,7 +1021,7 @@ void ConvexHullPlanesFromVertices( Float3 const * _Vertices, int _NumVertices, T
                     if ( plane.Normal.LengthSqr() > 0.0001f ) {
                         plane.Normal.NormalizeSelf();
 
-                        if ( FindPlane( plane, _Planes.ToPtr(), _Planes.Length() ) == -1 ) {
+                        if ( FindPlane( plane, _Planes.ToPtr(), _Planes.Size() ) == -1 ) {
                             plane.D = -plane.Normal.Dot( normal1 );
 
                             if ( AreVerticesBehindPlane( plane, _Vertices, _NumVertices, margin ) ) {
@@ -1169,13 +1169,13 @@ void BakeCollisionMarginConvexHull( Float3 const * _InVertices, int _VertexCount
 
     ConvexHullPlanesFromVertices( _InVertices, _VertexCount, planes );
 
-    for ( int i = 0 ; i < planes.Length() ; i++ ) {
+    for ( int i = 0 ; i < planes.Size() ; i++ ) {
         PlaneF & plane = planes[i];
 
         plane.D += _Margin;
     }
 
-    ConvexHullVerticesFromPlanes( planes.ToPtr(), planes.Length(), _OutVertices );
+    ConvexHullVerticesFromPlanes( planes.ToPtr(), planes.Size(), _OutVertices );
 }
 
 void PerformConvexDecomposition( Float3 const * _Vertices,
@@ -1451,7 +1451,7 @@ params.m_convexhullDownsampling = 1;
         _OutHulls.ResizeInvalidate( vhacd->GetNConvexHulls() );
         int totalVertices = 0;
         int totalIndices = 0;
-        for ( int i = 0 ; i < _OutHulls.Length() ; i++ ) {
+        for ( int i = 0 ; i < _OutHulls.Size() ; i++ ) {
             FConvexHullDesc & hull = _OutHulls[i];
 
             vhacd->GetConvexHull( i, ch );
@@ -1471,7 +1471,7 @@ params.m_convexhullDownsampling = 1;
         _OutVertices.ResizeInvalidate( totalVertices );
         _OutIndices.ResizeInvalidate( totalIndices );
 
-        for ( int i = 0 ; i < _OutHulls.Length() ; i++ ) {
+        for ( int i = 0 ; i < _OutHulls.Size() ; i++ ) {
             FConvexHullDesc & hull = _OutHulls[i];
 
             vhacd->GetConvexHull( i, ch );

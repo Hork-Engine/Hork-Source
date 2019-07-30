@@ -83,7 +83,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
 
     PhysicalMonitors.Append( physMonitor );
 
-    int handle = PhysicalMonitors.Length() - 1;
+    int handle = PhysicalMonitors.Size() - 1;
     glfwSetMonitorUserPointer( _Monitor, ( void * )( size_t )handle );
 
     FString::CopySafe( physMonitor->MonitorName, sizeof( physMonitor->MonitorName ), glfwGetMonitorName( _Monitor ) );

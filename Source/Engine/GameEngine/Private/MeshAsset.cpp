@@ -230,7 +230,7 @@ void FMeshAsset::Read( FFileStream & f ) {
         }
     }
 
-    if ( Weights.Length() > 0 && Vertices.Length() != Weights.Length() ) {
+    if ( Weights.Size() > 0 && Vertices.Size() != Weights.Size() ) {
         GLogger.Printf( "Warning: num weights != num vertices\n" );
     }
 }
@@ -241,7 +241,7 @@ void FMeshAsset::Write( FFileStream & f ) {
     for ( FMaterialTexture & texture : Textures ) {
         f.Printf( "%s\n", texture.FileName.ToConstChar() );
     }
-    f.Printf( "materials %d\n", Materials.Length() );
+    f.Printf( "materials %d\n", Materials.Size() );
     for ( FMeshMaterial & material : Materials ) {
         f.Printf( "maps %d\n", material.NumTextures );
         for ( int i = 0 ; i < material.NumTextures ; i++ ) {
@@ -252,7 +252,7 @@ void FMeshAsset::Write( FFileStream & f ) {
     for ( FSubpart & subpart : Subparts ) {
         f.Printf( "\"%s\" %d %d %d %d %d %s %s\n", subpart.Name.ToConstChar(), subpart.BaseVertex, subpart.VertexCount, subpart.FirstIndex, subpart.IndexCount, subpart.Material, subpart.BoundingBox.Mins.ToString().ToConstChar(), subpart.BoundingBox.Maxs.ToString().ToConstChar() );
     }
-    f.Printf( "verts %d\n", Vertices.Length() );
+    f.Printf( "verts %d\n", Vertices.Size() );
     for ( FMeshVertex & v : Vertices ) {
         f.Printf( "%s %s %s %f %s\n",
                   v.Position.ToString().ToConstChar(),
@@ -261,11 +261,11 @@ void FMeshAsset::Write( FFileStream & f ) {
                   v.Handedness,
                   v.Normal.ToString().ToConstChar() );
     }
-    f.Printf( "indices %d\n", Indices.Length() );
+    f.Printf( "indices %d\n", Indices.Size() );
     for ( unsigned int & i : Indices ) {
         f.Printf( "%d\n", i );
     }
-    f.Printf( "weights %d\n", Weights.Length() );
+    f.Printf( "weights %d\n", Weights.Size() );
     for ( FMeshVertexJoint & v : Weights ) {
         f.Printf( "%d %d %d %d %d %d %d %d\n",
                   v.JointIndices[0],v.JointIndices[1],v.JointIndices[2],v.JointIndices[3],
@@ -276,6 +276,7 @@ void FMeshAsset::Write( FFileStream & f ) {
 void FSkeletonAsset::Clear() {
     Joints.Clear();
     Animations.clear();
+    BindposeBounds.Clear();
 }
 
 void FSkeletonAsset::Read( FFileStream & f ) {
@@ -316,13 +317,22 @@ void FSkeletonAsset::Read( FFileStream & f ) {
                 FJoint & joint = Joints[jointIndex];
                 FString::CopySafe( joint.Name, sizeof( joint.Name ), name );
 
-                sscanf( s, "%d ( ( %f %f %f %f ) ( %f %f %f %f ) ( %f %f %f %f ) )", &joint.Parent,
-                        &joint.JointOffsetMatrix[0][0].Value, &joint.JointOffsetMatrix[0][1].Value, &joint.JointOffsetMatrix[0][2].Value, &joint.JointOffsetMatrix[0][3].Value,
-                        &joint.JointOffsetMatrix[1][0].Value, &joint.JointOffsetMatrix[1][1].Value, &joint.JointOffsetMatrix[1][2].Value, &joint.JointOffsetMatrix[1][3].Value,
-                        &joint.JointOffsetMatrix[2][0].Value, &joint.JointOffsetMatrix[2][1].Value, &joint.JointOffsetMatrix[2][2].Value, &joint.JointOffsetMatrix[2][3].Value );
+                joint.LocalTransform.SetIdentity();
 
-                joint.RelativeTransform.SetIdentity(); // TODO: read from file
+                sscanf( s, "%d ( ( %f %f %f %f ) ( %f %f %f %f ) ( %f %f %f %f ) ) ( ( %f %f %f %f ) ( %f %f %f %f ) ( %f %f %f %f ) )", &joint.Parent,
+                        &joint.OffsetMatrix[0][0].Value, &joint.OffsetMatrix[0][1].Value, &joint.OffsetMatrix[0][2].Value, &joint.OffsetMatrix[0][3].Value,
+                        &joint.OffsetMatrix[1][0].Value, &joint.OffsetMatrix[1][1].Value, &joint.OffsetMatrix[1][2].Value, &joint.OffsetMatrix[1][3].Value,
+                        &joint.OffsetMatrix[2][0].Value, &joint.OffsetMatrix[2][1].Value, &joint.OffsetMatrix[2][2].Value, &joint.OffsetMatrix[2][3].Value,
+                        &joint.LocalTransform[0][0].Value, &joint.LocalTransform[0][1].Value, &joint.LocalTransform[0][2].Value, &joint.LocalTransform[0][3].Value,
+                        &joint.LocalTransform[1][0].Value, &joint.LocalTransform[1][1].Value, &joint.LocalTransform[1][2].Value, &joint.LocalTransform[1][3].Value,
+                        &joint.LocalTransform[2][0].Value, &joint.LocalTransform[2][1].Value, &joint.LocalTransform[2][2].Value, &joint.LocalTransform[2][3].Value );
             }
+        } else if ( nullptr != ( s = ParseTag( buf, "bindpose_bounds " ) ) ) {
+
+            sscanf( s, "( %f %f %f ) ( %f %f %f )",
+                    &BindposeBounds.Mins.X.Value, &BindposeBounds.Mins.Y.Value, &BindposeBounds.Mins.Z.Value,
+                    &BindposeBounds.Maxs.X.Value, &BindposeBounds.Maxs.Y.Value, &BindposeBounds.Maxs.Z.Value );
+
         } else if ( nullptr != ( s = ParseTag( buf, "animations " ) ) ) {
             int numAnimations = 0;
             sscanf( s, "%d", &numAnimations );
@@ -372,6 +382,8 @@ void FSkeletonAsset::Read( FFileStream & f ) {
                     int numJoints = 0;
                     sscanf( s, "%d", &numJoints );
                     anim->AnimatedJoints.ResizeInvalidate( numJoints );
+                    anim->Transforms.ResizeInvalidate( numJoints * anim->FrameCount );
+                    int transformOffset = 0;
                     for ( int jointIndex = 0 ; jointIndex < numJoints ; jointIndex++ ) {
                         FJointAnimation & janim = anim->AnimatedJoints[jointIndex];
                         int numFrames = 0;
@@ -383,9 +395,12 @@ void FSkeletonAsset::Read( FFileStream & f ) {
 
                         sscanf( buf, "%d %d", &janim.JointIndex, &numFrames );
 
-                        janim.Frames.ResizeInvalidate( numFrames );
+                        AN_Assert( numFrames == anim->FrameCount );
+
+                        janim.TransformOffset = transformOffset;
+
                         for ( int j = 0 ; j < numFrames ; j++ ) {
-                            FJointKeyframe & frame = janim.Frames[j];
+                            FJointTransform & transform = anim->Transforms[ transformOffset + j ];
 
                             if ( !f.Gets( buf, sizeof( buf ) ) ) {
                                 GLogger.Printf( "Unexpected EOF\n" );
@@ -393,10 +408,12 @@ void FSkeletonAsset::Read( FFileStream & f ) {
                             }
 
                             sscanf( buf, "( %f %f %f %f ) ( %f %f %f )  ( %f %f %f )",
-                                    &frame.Transform.Rotation.X.Value, &frame.Transform.Rotation.Y.Value, &frame.Transform.Rotation.Z.Value, &frame.Transform.Rotation.W.Value,
-                                    &frame.Transform.Position.X.Value, &frame.Transform.Position.Y.Value, &frame.Transform.Position.Z.Value,
-                                    &frame.Transform.Scale.X.Value, &frame.Transform.Scale.Y.Value, &frame.Transform.Scale.Z.Value );
+                                    &transform.Rotation.X.Value, &transform.Rotation.Y.Value, &transform.Rotation.Z.Value, &transform.Rotation.W.Value,
+                                    &transform.Position.X.Value, &transform.Position.Y.Value, &transform.Position.Z.Value,
+                                    &transform.Scale.X.Value, &transform.Scale.Y.Value, &transform.Scale.Z.Value );
                         }
+
+                        transformOffset += numFrames;
                     }
                 } else if ( nullptr != ( s = ParseTag( buf, "bounds" ) ) ) {
                     anim->Bounds.ResizeInvalidate( anim->FrameCount );
@@ -424,22 +441,28 @@ void FSkeletonAsset::Read( FFileStream & f ) {
 
 void FSkeletonAsset::Write( FFileStream & f ) {
     f.Printf( "format %d %d\n", FMT_FILE_TYPE_SKELETON, FMT_VERSION_SKELETON );
-    f.Printf( "joints %d\n", Joints.Length() );
+    f.Printf( "joints %d\n", Joints.Size() );
     for ( FJoint & joint : Joints ) {
-        f.Printf( "\"%s\" %d %s\n", joint.Name, joint.Parent, joint.JointOffsetMatrix.ToString().ToConstChar() );
+        f.Printf( "\"%s\" %d %s %s\n",
+                  joint.Name, joint.Parent,
+                  joint.OffsetMatrix.ToString().ToConstChar(),
+                  joint.LocalTransform.ToString().ToConstChar() );
     }
+    f.Printf( "bindpose_bounds %s %s\n", BindposeBounds.Mins.ToString().ToConstChar(), BindposeBounds.Maxs.ToString().ToConstChar() );
 
     f.Printf( "animations %d\n", (int)Animations.size() );
     for ( FSkeletalAnimationAsset & anim : Animations ) {
         f.Printf( "animation \"%s\" %f %d\n", anim.Name.ToConstChar(), anim.FrameDelta, anim.FrameCount );
-        f.Printf( "anim_joints %d\n", anim.AnimatedJoints.Length() );
+        f.Printf( "anim_joints %d\n", anim.AnimatedJoints.Size() );
         for ( FJointAnimation & janim : anim.AnimatedJoints ) {
-            f.Printf( "%d %d\n", janim.JointIndex, janim.Frames.Length() );
-            for ( FJointKeyframe & frame : janim.Frames ) {
+            f.Printf( "%d %d\n", janim.JointIndex, anim.FrameCount );
+
+            for ( int frame = 0 ; frame < anim.FrameCount ; frame++ ) {
+                FJointTransform & transform = anim.Transforms[ janim.TransformOffset + frame ];
                 f.Printf( "%s %s %s\n",
-                          frame.Transform.Rotation.ToString().ToConstChar(),
-                          frame.Transform.Position.ToString().ToConstChar(),
-                          frame.Transform.Scale.ToString().ToConstChar()
+                          transform.Rotation.ToString().ToConstChar(),
+                          transform.Position.ToString().ToConstChar(),
+                          transform.Scale.ToString().ToConstChar()
                           );
             }
         }
@@ -451,29 +474,119 @@ void FSkeletonAsset::Write( FFileStream & f ) {
     f.Printf( "end_animation\n" );
 }
 
+void FSkeletonAsset::CalcBindposeBounds( FMeshAsset const * InMeshData ) {
+    Float3x4 absoluteTransforms[FSkeleton::MAX_JOINTS+1];
+    Float3x4 vertexTransforms[FSkeleton::MAX_JOINTS];
+
+    BindposeBounds.Clear();
+
+    absoluteTransforms[0].SetIdentity();
+    for ( unsigned int j = 0 ; j < Joints.Size() ; j++ ) {
+        FJoint const & joint = Joints[ j ];
+
+        absoluteTransforms[ j + 1 ] = absoluteTransforms[ joint.Parent + 1 ] * joint.LocalTransform;
+
+        vertexTransforms[ j ] = absoluteTransforms[ j + 1 ] * joint.OffsetMatrix;
+    }
+
+    for ( int v = 0 ; v < InMeshData->Vertices.Size() ; v++ ) {
+        Float4 const position = Float4( InMeshData->Vertices[v].Position, 1.0f );
+        FMeshVertexJoint const & w = InMeshData->Weights[v];
+
+        const float weights[4] = { w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f };
+
+        Float4 const * t = &vertexTransforms[0][0];
+
+        BindposeBounds.AddPoint(
+                    ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 0 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 0 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ).Dot( position ),
+
+                    ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 1 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 1 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ).Dot( position ),
+
+                    ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 2 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 2 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ).Dot( position ) );
+    }
+}
+
 void FSkeletalAnimationAsset::Clear() {
     FrameDelta = 0;
     FrameCount = 0;
     AnimatedJoints.Clear();
+    Transforms.Clear();
     Name.Clear();
     Bounds.Clear();
 }
 
-//void FSkeletalAnimationAsset::Write( FFileStream & f ) {
-//    f.Printf( "animation \"%s\" %f %d\n", Name.ToConstChar(), FrameDelta, FrameCount );
-//    f.Printf( "anim_joints %d\n", AnimatedJoints.Length() );
-//    for ( FJointAnimation & janim : AnimatedJoints ) {
-//        f.Printf( "%d %d\n", janim.JointIndex, janim.Frames.Length() );
-//        for ( FJointKeyframe & frame : janim.Frames ) {
-//            f.Printf( "%s %s %s\n",
-//                      frame.Transform.Rotation.ToString().ToConstChar(),
-//                      frame.Transform.Position.ToString().ToConstChar(),
-//                      frame.Transform.Scale.ToString().ToConstChar()
-//                      );
-//        }
-//    }
-//    f.Printf( "bounds\n" );
-//    for ( BvAxisAlignedBox & bounds : Bounds ) {
-//        f.Printf( "%s %s\n", bounds.Mins.ToString().ToConstChar(), bounds.Maxs.ToString().ToConstChar() );
-//    }
-//}
+void FSkeletalAnimationAsset::CalcBoundingBoxes( FMeshAsset const * InMeshData, FJoint const *  InJoints, int InNumJoints ) {
+    Float3x4 absoluteTransforms[FSkeleton::MAX_JOINTS+1];
+    TPodArray< Float3x4 > relativeTransforms[FSkeleton::MAX_JOINTS];
+    Float3x4 vertexTransforms[FSkeleton::MAX_JOINTS];
+
+    Bounds.ResizeInvalidate( FrameCount );
+
+    for ( FJointAnimation & anim : AnimatedJoints ) {
+
+        relativeTransforms[anim.JointIndex].ResizeInvalidate( FrameCount );
+
+        for ( int frameNum = 0; frameNum < FrameCount ; frameNum++ ) {
+
+            FJointTransform const & transform = Transforms[ anim.TransformOffset + frameNum ];
+
+            transform.ToMatrix( relativeTransforms[anim.JointIndex][frameNum] );
+        }
+    }
+
+    for ( int frameNum = 0 ; frameNum < FrameCount ; frameNum++ ) {
+
+        BvAxisAlignedBox & bounds = Bounds[frameNum];
+
+        bounds.Clear();
+
+        absoluteTransforms[0].SetIdentity();
+        for ( unsigned int j = 0 ; j < InNumJoints ; j++ ) {
+            FJoint const & joint = InJoints[ j ];
+
+            Float3x4 const & parentTransform = absoluteTransforms[ joint.Parent + 1 ];
+
+            if ( relativeTransforms[j].IsEmpty() ) {
+                absoluteTransforms[ j + 1 ] = parentTransform * joint.LocalTransform;
+            } else {
+                absoluteTransforms[ j + 1 ] = parentTransform * relativeTransforms[j][ frameNum ];
+            }
+
+            vertexTransforms[ j ] = absoluteTransforms[ j + 1 ] * joint.OffsetMatrix;
+        }
+
+        for ( int v = 0 ; v < InMeshData->Vertices.Size() ; v++ ) {
+            Float4 const position = Float4( InMeshData->Vertices[v].Position, 1.0f );
+            FMeshVertexJoint const & w = InMeshData->Weights[v];
+
+            const float weights[4] = { w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f };
+
+            Float4 const * t = &vertexTransforms[0][0];
+
+            bounds.AddPoint(
+                    ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 0 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 0 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ).Dot( position ),
+
+                    ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 1 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 1 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ).Dot( position ),
+
+                    ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 2 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 2 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ).Dot( position ) );
+        }
+    }
+}

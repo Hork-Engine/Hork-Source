@@ -198,7 +198,7 @@ struct TEvent {
 
     template< typename T >
     void Unsubscribe( T * _Object ) {
-        for ( int i = Subscribers.Length() - 1 ; i >= 0 ; i-- ) {
+        for ( int i = Subscribers.Size() - 1 ; i >= 0 ; i-- ) {
             Callback & callback = Subscribers[i];
 
             if ( callback.GetObject() == _Object ) {

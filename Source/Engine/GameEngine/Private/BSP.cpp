@@ -50,7 +50,7 @@ int FBinarySpaceData::FindLeaf( const Float3 & _Position ) {
     FBinarySpacePlane * plane;
     int nodeIndex;
 
-    if ( !Nodes.Length() ) {
+    if ( !Nodes.Size() ) {
         GLogger.Printf( "FBinarySpaceData::FindLeaf: no nodes\n" );
         return -1;
     }
@@ -100,7 +100,7 @@ byte const * FBinarySpaceData::DecompressVisdata( byte const * _Data ) {
     byte *out;
     int row;
 
-    row = ( Leafs.Length() + 7 ) >> 3;
+    row = ( Leafs.Size() + 7 ) >> 3;
     out = Decompressed;
 
     if ( !_Data ) { // no vis info, so make all visible
@@ -160,7 +160,7 @@ int FBinarySpaceData::MarkLeafs( int _ViewLeaf ) {
 
     byte const * vis = LeafPVS( viewLeaf );
 
-    int numLeafs = Leafs.Length();
+    int numLeafs = Leafs.Size();
 
     int cluster;
     for ( int i = 0 ; i < numLeafs ; i++ ) {
@@ -296,7 +296,7 @@ void FBinarySpaceData::PerformVSD( Float3 const & _ViewOrigin, FFrustum const & 
     ViewOrigin = _ViewOrigin;
     Frustum = &_Frustum;
 
-    VisSurfs.ResizeInvalidate( Surfaces.Length() );
+    VisSurfs.ResizeInvalidate( Surfaces.Size() );
 
     NumVisSurfs = 0;
 

@@ -365,7 +365,7 @@ FAssemblyNextStageVariable * FMaterialStageBlock::AddNextStageVariable( const ch
     FAssemblyNextStageVariable * nsv = NewObject< FAssemblyNextStageVariable >();
     nsv->AddRef();
     nsv->SetName( _Name );
-    nsv->Expression = "nsv_" + NsvPrefix + Int(NextStageVariables.Length()).ToString() + "_" + nsv->GetName();
+    nsv->Expression = "nsv_" + NsvPrefix + Int(NextStageVariables.Size()).ToString() + "_" + nsv->GetName();
     nsv->Type = _Type;
     NextStageVariables.Append( nsv );
 
@@ -1855,12 +1855,12 @@ FMaterialBuilder::~FMaterialBuilder() {
 }
 
 void FMaterialBuilder::RegisterTextureSlot( FMaterialTextureSlotBlock * _Slot ) {
-    if ( TextureSlots.Length() >= MAX_MATERIAL_TEXTURES ) { // -1 for slot reserved for lightmap
+    if ( TextureSlots.Size() >= MAX_MATERIAL_TEXTURES ) { // -1 for slot reserved for lightmap
         GLogger.Printf( "FMaterialBuilder::RegisterTextureSlot: MAX_MATERIAL_TEXTURES hit\n");
         return;
     }
     _Slot->AddRef();
-    _Slot->SlotIndex = TextureSlots.Length();
+    _Slot->SlotIndex = TextureSlots.Size();
     TextureSlots.Append( _Slot );
 }
 

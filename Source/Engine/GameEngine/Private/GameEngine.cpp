@@ -140,7 +140,7 @@ FWorld * FGameEngine::SpawnWorld( FWorldSpawnParameters const & _SpawnParameters
 
     // Add world to game array of worlds
     Worlds.Append( world );
-    world->IndexInGameArrayOfWorlds = Worlds.Length() - 1;
+    world->IndexInGameArrayOfWorlds = Worlds.Size() - 1;
 
     if ( templateWorld ) {
         // Clone attributes
@@ -195,7 +195,7 @@ FWorld * FGameEngine::LoadWorld( FDocument const & _Document, int _FieldsHead ) 
 
     // Add world to game array of worlds
     Worlds.Append( world );
-    world->IndexInGameArrayOfWorlds = Worlds.Length() - 1;
+    world->IndexInGameArrayOfWorlds = Worlds.Size() - 1;
 
     // Load world attributes
     world->LoadAttributes( _Document, _FieldsHead );
@@ -640,7 +640,7 @@ void FGameEngine::KickoffPendingKillWorlds() {
             // FIXME: Call world->EndPlay here?
 
             // Remove world from game array of worlds
-            Worlds[ world->IndexInGameArrayOfWorlds ] = Worlds[ Worlds.Length() - 1 ];
+            Worlds[ world->IndexInGameArrayOfWorlds ] = Worlds[ Worlds.Size() - 1 ];
             Worlds[ world->IndexInGameArrayOfWorlds ]->IndexInGameArrayOfWorlds = world->IndexInGameArrayOfWorlds;
             Worlds.RemoveLast();
             world->IndexInGameArrayOfWorlds = -1;
@@ -901,7 +901,7 @@ void FGameEngine::DrawCanvas() {
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frame memory usage: %f KB / %d MB", frameData->FrameMemoryUsed/1024.0f, frameData->FrameMemorySize>>20 ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Heap memory usage: %f KB", GMainHeapMemory.GetTotalMemoryUsage()/1024.0f
         /*- GMainMemoryZone.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Visible instances: %d", frameData->Instances.Length() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Polycount: %d", GRenderFrontend.GetPolyCount() ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frontend time: %d msec", GRenderFrontend.GetFrontendTime() ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) );
@@ -1035,7 +1035,7 @@ void FGameEngine::UpdateImgui() {
     if ( ImGui::Begin( "Test" ) ) {
         TPodArray< FAttributeMeta const * > attributes;
 
-        for ( int i = 0 ; i < Worlds.Length() ; i++ ) {
+        for ( int i = 0 ; i < Worlds.Size() ; i++ ) {
             if ( ImGui::CollapsingHeader( "World" ) ) {
 
                 static byte childFrameId;
@@ -1046,7 +1046,7 @@ void FGameEngine::UpdateImgui() {
                     FWorld * w = Worlds[ i ];
 
                     ImGui::Text( "Actors" );
-                    for ( int j = 0 ; j < w->Actors.Length() ; j++ ) {
+                    for ( int j = 0 ; j < w->Actors.Size() ; j++ ) {
                         FActor * a = w->Actors[ j ];
 
                         if ( ImGui::TreeNodeEx( a, a == SelectedActor ? ImGuiTreeNodeFlags_Selected : 0, "%s (%s)", a->GetNameConstChar(), a->FinalClassName() ) ) {
@@ -1082,7 +1082,7 @@ void FGameEngine::UpdateImgui() {
                             ShowAttribute( a, attr );
                         }
 
-                        for ( int k = 0 ; k < a->GetComponents().Length() ; k++ ) {
+                        for ( int k = 0 ; k < a->GetComponents().Size() ; k++ ) {
 
                             FActorComponent * component = a->GetComponents()[ k ];
 

@@ -493,14 +493,14 @@ FInputComponent::FInputComponent() {
 
     MouseAxisStateX = MouseAxisStateY = 0;
 
-    IndexInStaticArray = InputComponents.Length();
+    IndexInStaticArray = InputComponents.Size();
     InputComponents.Append( this );
 }
 
 void FInputComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    InputComponents[ IndexInStaticArray ] = InputComponents[ InputComponents.Length() - 1 ];
+    InputComponents[ IndexInStaticArray ] = InputComponents[ InputComponents.Size() - 1 ];
     InputComponents[ IndexInStaticArray ]->IndexInStaticArray = IndexInStaticArray;
     InputComponents.RemoveLast();
     IndexInStaticArray = -1;
@@ -544,7 +544,7 @@ void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
     }
 
     const TPodArray< FInputAxis * > & inputAxes = InputMappings->GetAxes();
-    for ( int i = 0 ; i < inputAxes.Length() ; i++ ) {
+    for ( int i = 0 ; i < inputAxes.Size() ; i++ ) {
         FInputAxis * inputAxis = inputAxes[i];
 
         int axisBinding = GetAxisBinding( inputAxis );
@@ -930,10 +930,10 @@ FInputMappings::FInputMappings() {
 }
 
 FInputMappings::~FInputMappings() {
-    for ( int i = 0 ; i < Axes.Length() ; i++ ) {
+    for ( int i = 0 ; i < Axes.Size() ; i++ ) {
         Axes[i]->RemoveRef();
     }
-    for ( int i = 0 ; i < Actions.Length() ; i++ ) {
+    for ( int i = 0 ; i < Actions.Size() ; i++ ) {
         Actions[i]->RemoveRef();
     }
 }
@@ -1174,7 +1174,7 @@ FInputAxis * FInputMappings::AddAxis( const char * _Name ) {
     FInputAxis * axis = NewObject< FInputAxis >();
     axis->AddRef();
     axis->Parent = this;
-    axis->IndexInArrayOfAxes = Axes.Length();
+    axis->IndexInArrayOfAxes = Axes.Size();
     axis->Name = _Name;
     axis->NameHash = FCore::HashCase( _Name, axis->Name.Length() );
     Axes.Append( axis );
@@ -1185,7 +1185,7 @@ FInputAction * FInputMappings::AddAction( const char * _Name ) {
     FInputAction * action = NewObject< FInputAction >();
     action->AddRef();
     action->Parent = this;
-    action->IndexInArrayOfActions = Actions.Length();
+    action->IndexInArrayOfActions = Actions.Size();
     action->Name = _Name;
     action->NameHash = FCore::HashCase( _Name, action->Name.Length() );
     Actions.Append( action );
@@ -1443,10 +1443,10 @@ void FInputMappings::Unmap( int _DevId, int _KeyToken ) {
 }
 
 void FInputMappings::UnmapAll() {
-    for ( int i = 0 ; i < Axes.Length() ; i++ ) {
+    for ( int i = 0 ; i < Axes.Size() ; i++ ) {
         Axes[i]->RemoveRef();
     }
-    for ( int i = 0 ; i < Actions.Length() ; i++ ) {
+    for ( int i = 0 ; i < Actions.Size() ; i++ ) {
         Actions[i]->RemoveRef();
     }
     Axes.Clear();

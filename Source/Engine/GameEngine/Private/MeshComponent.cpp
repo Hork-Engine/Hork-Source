@@ -107,7 +107,7 @@ void FMeshComponent::SetDefaultMaterials() {
 
     if ( Mesh ) {
         FIndexedMeshSubpartArray const & subparts = Mesh->GetSubparts();
-        for ( int i = 0 ; i < subparts.Length() ; i++ ) {
+        for ( int i = 0 ; i < subparts.Size() ; i++ ) {
             SetMaterialInstance( i, subparts[ i ]->MaterialInstance );
         }
     }
@@ -116,13 +116,13 @@ void FMeshComponent::SetDefaultMaterials() {
 void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance ) {
     AN_Assert( _SubpartIndex >= 0 );
 
-    if ( _SubpartIndex >= Materials.Length() ) {
+    if ( _SubpartIndex >= Materials.Size() ) {
 
         if ( _Instance ) {
-            int n = Materials.Length();
+            int n = Materials.Size();
 
             Materials.Resize( n + _SubpartIndex + 1 );
-            for ( ; n < Materials.Length() ; n++ ) {
+            for ( ; n < Materials.Size() ; n++ ) {
                 Materials[n] = nullptr;
             }
             Materials[_SubpartIndex] = _Instance;
@@ -142,7 +142,7 @@ void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance *
 }
 
 FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) const {
-    if ( _SubpartIndex < 0 || _SubpartIndex >= Materials.Length() ) {
+    if ( _SubpartIndex < 0 || _SubpartIndex >= Materials.Size() ) {
         return nullptr;
     }
     return Materials[_SubpartIndex];

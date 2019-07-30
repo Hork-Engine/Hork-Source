@@ -420,7 +420,7 @@ static void ProcessEvent( FEvent const & _Event ) {
     case ET_SetVideoModeEvent:
         rt_Width = FMath::Max< unsigned short >( MIN_DISPLAY_WIDTH, _Event.Data.SetVideoModeEvent.Width );
         rt_Height = FMath::Max< unsigned short >( MIN_DISPLAY_HEIGHT, _Event.Data.SetVideoModeEvent.Height );
-        rt_PhysicalMonitor = Int( _Event.Data.SetVideoModeEvent.PhysicalMonitor ).Clamp( 0, rt_GetPhysicalMonitors().Length() - 1 );
+        rt_PhysicalMonitor = Int( _Event.Data.SetVideoModeEvent.PhysicalMonitor ).Clamp( 0, rt_GetPhysicalMonitors().Size() - 1 );
         rt_RefreshRate = _Event.Data.SetVideoModeEvent.RefreshRate;
         rt_Fullscreen = _Event.Data.SetVideoModeEvent.bFullscreen;
 

@@ -214,7 +214,7 @@ void FLevel::BuildPortals() {
         area->PortalList = NULL;
     }
 
-    AreaPortals.ResizeInvalidate( Portals.Length() << 1 );
+    AreaPortals.ResizeInvalidate( Portals.Size() << 1 );
 
     int areaPortalId = 0;
 
@@ -274,13 +274,13 @@ void FLevel::AddSurfaceToArea( int _AreaNum, FSpatialObject * _Surf ) {
     area->Movables.Append( _Surf );
     FAreaLink & areaLink = _Surf->InArea.Append();
     areaLink.AreaNum = _AreaNum;
-    areaLink.Index = area->Movables.Length() - 1;
+    areaLink.Index = area->Movables.Size() - 1;
     areaLink.Level = this;
 }
 
 void FLevel::AddSurfaceAreas( FSpatialObject * _Surf ) {
     BvAxisAlignedBox const & bounds = _Surf->GetWorldBounds();
-    int numAreas = Areas.Length();
+    int numAreas = Areas.Size();
     FLevelArea * area;
 
     if ( _Surf->IsOutdoor() ) {
@@ -312,7 +312,7 @@ void FLevel::RemoveSurfaceAreas( FSpatialObject * _Surf ) {
     FLevelArea * area;
 
     // Remove renderables from any areas
-    for ( int i = 0 ; i < _Surf->InArea.Length() ; ) {
+    for ( int i = 0 ; i < _Surf->InArea.Size() ; ) {
         FAreaLink & InArea = _Surf->InArea[ i ];
 
         if ( InArea.Level != this ) {
@@ -320,7 +320,7 @@ void FLevel::RemoveSurfaceAreas( FSpatialObject * _Surf ) {
             continue;
         }
 
-        AN_Assert( InArea.AreaNum < InArea.Level->Areas.Length() );
+        AN_Assert( InArea.AreaNum < InArea.Level->Areas.Size() );
         area = InArea.AreaNum >= 0 ? InArea.Level->Areas[ InArea.AreaNum ] : OutdoorArea;
 
         AN_Assert( area->Movables[ InArea.Index ] == _Surf );
@@ -329,9 +329,9 @@ void FLevel::RemoveSurfaceAreas( FSpatialObject * _Surf ) {
         area->Movables.RemoveSwap( InArea.Index );
 
         // Update swapped movable index
-        if ( InArea.Index < area->Movables.Length() ) {
+        if ( InArea.Index < area->Movables.Size() ) {
             FSpatialObject * surf = area->Movables[ InArea.Index ];
-            for ( int j = 0 ; j < surf->InArea.Length() ; j++ ) {
+            for ( int j = 0 ; j < surf->InArea.Size() ; j++ ) {
                 if ( surf->InArea[ j ].Level == this && surf->InArea[ j ].AreaNum == InArea.AreaNum ) {
                     surf->InArea[ j ].Index = InArea.Index;
 
@@ -412,11 +412,11 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
 int FLevel::FindArea( Float3 const & _Position ) {
     // TODO: ... binary tree?
 
-    if ( Areas.Length() == 0 ) {
+    if ( Areas.Size() == 0 ) {
         return -1;
     }
 
-    for ( int i = 0 ; i < Areas.Length() ; i++ ) {
+    for ( int i = 0 ; i < Areas.Size() ; i++ ) {
         if (    _Position.X >= Areas[i]->Bounds.Mins.X
              && _Position.Y >= Areas[i]->Bounds.Mins.Y
              && _Position.Z >= Areas[i]->Bounds.Mins.Z
@@ -513,9 +513,9 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                         FMeshVertex const * srcVertices = indexedMesh->GetVertices();
                         unsigned int * srcIndices = indexedMesh->GetIndices();
 
-                        int firstVertex = _Vertices.Length();
-                        int firstIndex = _Indices.Length();
-                        int firstTriangle = _Indices.Length() / 3;
+                        int firstVertex = _Vertices.Size();
+                        int firstIndex = _Indices.Size();
+                        int firstTriangle = _Indices.Size() / 3;
 
                         // indexCount may be different from indexedMesh->GetIndexCount()
                         int indexCount = 0;
@@ -585,11 +585,11 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                 Float3 const * srcVertices = collisionVertices.ToPtr();
                 unsigned int * srcIndices = collisionIndices.ToPtr();
 
-                int firstVertex = _Vertices.Length();
-                int firstIndex = _Indices.Length();
-                int firstTriangle = _Indices.Length() / 3;
-                int vertexCount = collisionVertices.Length();
-                int indexCount = collisionIndices.Length();
+                int firstVertex = _Vertices.Size();
+                int firstIndex = _Indices.Size();
+                int firstTriangle = _Indices.Size() / 3;
+                int vertexCount = collisionVertices.Size();
+                int indexCount = collisionIndices.Size();
 
                 _Vertices.Resize( firstVertex + vertexCount );
                 _Indices.Resize( firstIndex + indexCount );

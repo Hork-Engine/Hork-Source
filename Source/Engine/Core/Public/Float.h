@@ -2289,6 +2289,17 @@ AN_INLINE float GreaterCommonDivisor( float m, float n ) {
     return ( m < 0.0001f ) ? n : GreaterCommonDivisor( std::fmod( n, m ), m );
 }
 
+template< typename T >
+AN_FORCEINLINE T HermiteCubicSpline( T const & p0, T const & m0, T const & p1, T const & m1, float t ) {
+    const float tt = t * t;
+    const float ttt = tt * t;
+    const float s2 = -2 * ttt + 3 * tt;
+    const float s3 = ttt - tt;
+    const float s0 = 1 - s2;
+    const float s1 = s3 - tt + t;
+    return s0 * p0 + s1 * m0 * t + s2 * p1 + s3 * m1 * t;
+}
+
 }
 
 // Column-major matrix 2x2

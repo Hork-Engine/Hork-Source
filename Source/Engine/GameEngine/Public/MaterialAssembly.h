@@ -200,7 +200,7 @@ public:
 
     FAssemblyNextStageVariable * FindNextStageVariable( const char * _Name );
 
-    int NumNextStageVariables() const { return NextStageVariables.Length(); }
+    int NumNextStageVariables() const { return NextStageVariables.Size(); }
 
     FString NSV_OutputSection();
 

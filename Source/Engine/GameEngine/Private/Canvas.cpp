@@ -456,7 +456,7 @@ void FCanvas::DrawViewport( FPlayerController * _PlayerController, int _X, int _
     Float2 a(_X,_Y);
     Float2 b(_X+_W,_Y+_H);
 
-    DrawList.AddImage( (void*)(size_t)(Viewports.Length()+1), a, b, a, a, _Color, CANVAS_DRAW_CMD_VIEWPORT | ( _Blending << 8 ) );
+    DrawList.AddImage( (void*)(size_t)(Viewports.Size()+1), a, b, a, a, _Color, CANVAS_DRAW_CMD_VIEWPORT | ( _Blending << 8 ) );
 
     FViewport & viewport = Viewports.Append();
     viewport.X = _X;

@@ -162,9 +162,9 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
     asset.Read( f );
 
     TPodArray< FMaterialInstance * > matInstances;
-    matInstances.Resize( asset.Materials.Length() );
+    matInstances.Resize( asset.Materials.Size() );
 
-    for ( int j = 0; j < asset.Materials.Length(); j++ ) {
+    for ( int j = 0; j < asset.Materials.Size(); j++ ) {
 
         FMaterialInstance * matInst = CreateInstanceOf< FMaterialInstance >();
         //matInst->Material = Material;
@@ -178,15 +178,15 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
         }
     }
 
-    bool bSkinned = asset.Weights.Length() == asset.Vertices.Length();
+    bool bSkinned = asset.Weights.Size() == asset.Vertices.Size();
 
-    Initialize( asset.Vertices.Length(), asset.Indices.Length(), asset.Subparts.size(), bSkinned, false );
-    WriteVertexData( asset.Vertices.ToPtr(), asset.Vertices.Length(), 0 );
-    WriteIndexData( asset.Indices.ToPtr(), asset.Indices.Length(), 0 );
+    Initialize( asset.Vertices.Size(), asset.Indices.Size(), asset.Subparts.size(), bSkinned, false );
+    WriteVertexData( asset.Vertices.ToPtr(), asset.Vertices.Size(), 0 );
+    WriteIndexData( asset.Indices.ToPtr(), asset.Indices.Size(), 0 );
     if ( bSkinned ) {
-        WriteJointWeights( asset.Weights.ToPtr(), asset.Weights.Length(), 0 );
+        WriteJointWeights( asset.Weights.ToPtr(), asset.Weights.Size(), 0 );
     }
-    for ( int j = 0; j < GetSubparts().Length(); j++ ) {
+    for ( int j = 0; j < GetSubparts().Size(); j++ ) {
         FSubpart const & s = asset.Subparts[ j ];
         FIndexedMeshSubpart * subpart = GetSubpart( j );
         subpart->SetName( s.Name );
@@ -201,8 +201,8 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
     // TODO: load collision from file. This code is only for test!!!
 
     FCollisionTriangleSoupData * tris = CreateInstanceOf< FCollisionTriangleSoupData >();
-    tris->Initialize( ( float * )&asset.Vertices.ToPtr()->Position, sizeof( asset.Vertices[ 0 ] ), asset.Vertices.Length(),
-        asset.Indices.ToPtr(), asset.Indices.Length(), asset.Subparts.data(), asset.Subparts.size() );
+    tris->Initialize( ( float * )&asset.Vertices.ToPtr()->Position, sizeof( asset.Vertices[ 0 ] ), asset.Vertices.Size(),
+        asset.Indices.ToPtr(), asset.Indices.Size(), asset.Subparts.data(), asset.Subparts.size() );
 
     FCollisionTriangleSoupBVHData * bvh = CreateInstanceOf< FCollisionTriangleSoupBVHData >();
     bvh->TrisData = tris;
@@ -220,7 +220,7 @@ FLightmapUV * FIndexedMesh::CreateLightmapUVChannel() {
     FLightmapUV * channel = NewObject< FLightmapUV >();
 
     channel->OwnerMesh = this;
-    channel->IndexInArrayOfUVs = LightmapUVs.Length();
+    channel->IndexInArrayOfUVs = LightmapUVs.Size();
 
     LightmapUVs.Append( channel );
 
@@ -233,7 +233,7 @@ FVertexLight * FIndexedMesh::CreateVertexLightChannel() {
     FVertexLight * channel = NewObject< FVertexLight >();
 
     channel->OwnerMesh = this;
-    channel->IndexInArrayOfChannels = VertexLightChannels.Length();
+    channel->IndexInArrayOfChannels = VertexLightChannels.Size();
 
     VertexLightChannels.Append( channel );
 
@@ -243,7 +243,7 @@ FVertexLight * FIndexedMesh::CreateVertexLightChannel() {
 }
 
 FIndexedMeshSubpart * FIndexedMesh::GetSubpart( int _SubpartIndex ) {
-    if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Length() ) {
+    if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Size() ) {
         return nullptr;
     }
     return Subparts[ _SubpartIndex ];
@@ -466,7 +466,7 @@ FLightmapUV::~FLightmapUV() {
     RenderProxy->KillProxy();
 
     if ( OwnerMesh ) {
-        OwnerMesh->LightmapUVs[ IndexInArrayOfUVs ] = OwnerMesh->LightmapUVs[ OwnerMesh->LightmapUVs.Length() - 1 ];
+        OwnerMesh->LightmapUVs[ IndexInArrayOfUVs ] = OwnerMesh->LightmapUVs[ OwnerMesh->LightmapUVs.Size() - 1 ];
         OwnerMesh->LightmapUVs[ IndexInArrayOfUVs ]->IndexInArrayOfUVs = IndexInArrayOfUVs;
         IndexInArrayOfUVs = -1;
         OwnerMesh->LightmapUVs.RemoveLast();
@@ -546,7 +546,7 @@ FVertexLight::~FVertexLight() {
     RenderProxy->KillProxy();
 
     if ( OwnerMesh ) {
-        OwnerMesh->VertexLightChannels[ IndexInArrayOfChannels ] = OwnerMesh->VertexLightChannels[ OwnerMesh->VertexLightChannels.Length() - 1 ];
+        OwnerMesh->VertexLightChannels[ IndexInArrayOfChannels ] = OwnerMesh->VertexLightChannels[ OwnerMesh->VertexLightChannels.Size() - 1 ];
         OwnerMesh->VertexLightChannels[ IndexInArrayOfChannels ]->IndexInArrayOfChannels = IndexInArrayOfChannels;
         IndexInArrayOfChannels = -1;
         OwnerMesh->VertexLightChannels.RemoveLast();
@@ -757,7 +757,7 @@ bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
 bool FIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const {
     bool ret = false;
     // TODO: check mesh AABB
-    for ( int i = 0 ; i < Subparts.Length() ; i++ ) {
+    for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
         FIndexedMeshSubpart * subpart = Subparts[i];
         ret |= subpart->Raycast( _RayStart, _RayDir, _Distance, _HitResult );
     }
@@ -767,7 +767,7 @@ bool FIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, fl
 bool FIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< FMaterialInstance > & _Material ) const {
     bool ret = false;
     // TODO: check mesh AABB
-    for ( int i = 0 ; i < Subparts.Length() ; i++ ) {
+    for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
         FIndexedMeshSubpart * subpart = Subparts[i];
         if ( subpart->RaycastClosest( _RayStart, _RayDir, _Distance, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {
             _Material = subpart->MaterialInstance;

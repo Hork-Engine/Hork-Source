@@ -88,7 +88,7 @@ public:
     }
 
     void Resize( int _NumBits ) {
-        const int oldsize = Bits.Length();
+        const int oldsize = Bits.Size();
         const int newsize = _NumBits / BitCount + 1;
 
         Bits.Resize( newsize );
@@ -109,7 +109,7 @@ public:
         NumBits = _NumBits;
     }
 
-    int Length() const {
+    int Size() const {
         return NumBits;
     }
 
@@ -126,20 +126,20 @@ public:
     }
 
     void Mark( int _BitIndex ) {
-        if ( _BitIndex >= Length() ) {
+        if ( _BitIndex >= Size() ) {
             Resize( _BitIndex + 1 );
         }
         Bits[_BitIndex >> BitExponent] |= 1 << (_BitIndex & BitWrapMask);
     }
 
     void Unmark( int _BitIndex ) {
-        if ( _BitIndex < Length() ) {
+        if ( _BitIndex < Size() ) {
             Bits[_BitIndex >> BitExponent] &= ~(1 << (_BitIndex & BitWrapMask));
         }
     }
 
     bool IsMarked( int _BitIndex ) const {
-        return _BitIndex < Length() && (Bits[_BitIndex >> BitExponent] & (1 << (_BitIndex & BitWrapMask)));
+        return _BitIndex < Size() && (Bits[_BitIndex >> BitExponent] & (1 << (_BitIndex & BitWrapMask)));
     }
 
     // Byte serialization

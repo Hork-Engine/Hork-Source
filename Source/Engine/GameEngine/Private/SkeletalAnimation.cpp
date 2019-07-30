@@ -28,6 +28,10 @@ SOFTWARE.
 
 */
 
+/*
+ TODO: Future optimizations: parallel, SSE
+ */
+
 #include <Engine/GameEngine/Public/SkeletalAnimation.h>
 #include <Engine/GameEngine/Public/Actor.h>
 #include <Engine/GameEngine/Public/World.h>
@@ -69,11 +73,13 @@ void FSkeleton::Purge() {
     // TODO: notify components about changes
 }
 
-void FSkeleton::Initialize( FJoint * _Joints, int _JointsCount ) {
+void FSkeleton::Initialize( FJoint * _Joints, int _JointsCount, BvAxisAlignedBox const & _BindposeBounds ) {
     Purge();
 
     Joints.ResizeInvalidate( _JointsCount );
     memcpy( Joints.ToPtr(), _Joints, sizeof( *_Joints ) * _JointsCount );
+
+    BindposeBounds = _BindposeBounds;
 
     // TODO: notify components about changes
 }
@@ -98,19 +104,20 @@ bool FSkeleton::InitializeFromFile( const char * _Path, bool _CreateDefultObject
     FSkeletonAsset asset;
     asset.Read( f );
 
-    Initialize( asset.Joints.ToPtr(), asset.Joints.Length() );
+    Initialize( asset.Joints.ToPtr(), asset.Joints.Size(), asset.BindposeBounds );
     for ( int i = 0; i < asset.Animations.size(); i++ ) {
         FSkeletonAnimation * sanim = CreateAnimation();
         FSkeletalAnimationAsset const & animAsset = asset.Animations[ i ];
         sanim->Initialize( animAsset.FrameCount, animAsset.FrameDelta,
-            animAsset.AnimatedJoints.ToPtr(), animAsset.AnimatedJoints.Length(), animAsset.Bounds.ToPtr() );
+                           animAsset.Transforms.ToPtr(), animAsset.Transforms.Size(),
+                           animAsset.AnimatedJoints.ToPtr(), animAsset.AnimatedJoints.Size(), animAsset.Bounds.ToPtr() );
     }
 
     return true;
 }
 
 int FSkeleton::FindJoint( const char * _Name ) const {
-    for ( int j = 0 ; j < Joints.Length() ; j++ ) {
+    for ( int j = 0 ; j < Joints.Size() ; j++ ) {
         if ( !FString::Icmp( Joints[j].Name, _Name ) ) {
             return j;
         }
@@ -139,7 +146,7 @@ FSocketDef * FSkeleton::FindSocket( const char * _Name ) {
 }
 
 FSocketDef * FSkeleton::CreateSocket( const char * _Name, int _JointIndex ) {
-    if ( _JointIndex < 0 || _JointIndex >= Joints.Length() ) {
+    if ( _JointIndex < 0 || _JointIndex >= Joints.Size() ) {
         return nullptr;
     }
 
@@ -175,21 +182,33 @@ FSkeletonAnimation::FSkeletonAnimation() {
 FSkeletonAnimation::~FSkeletonAnimation() {
 }
 
-void FSkeletonAnimation::Initialize( int _FrameCount, float _FrameDelta, FJointAnimation const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds ) {
-    AnimatedJoints.resize( _NumAnimatedJoints );
+void FSkeletonAnimation::Initialize( int _FrameCount, float _FrameDelta, FJointTransform const * _Transforms, int _TransformsCount, FJointAnimation const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds ) {
+    AN_Assert( _TransformsCount == _FrameCount * _NumAnimatedJoints );
 
-    for ( int i = 0 ; i < _NumAnimatedJoints ; ++i ) {
-        AnimatedJoints[ i ].JointIndex = _AnimatedJoints[ i ].JointIndex;
-        AnimatedJoints[ i ].Frames = _AnimatedJoints[ i ].Frames;
+    AnimatedJoints.ResizeInvalidate( _NumAnimatedJoints );
+    memcpy( AnimatedJoints.ToPtr(), _AnimatedJoints, sizeof( AnimatedJoints[0] ) * _NumAnimatedJoints );
+
+    Transforms.ResizeInvalidate( _TransformsCount );
+    memcpy( Transforms.ToPtr(), _Transforms, sizeof( Transforms[0] ) * _TransformsCount );
+
+    Bounds.ResizeInvalidate( _FrameCount );
+    memcpy( Bounds.ToPtr(), _Bounds, sizeof( Bounds[0] ) * _FrameCount );
+
+    ChannelsMap.ResizeInvalidate( Skeleton->GetJoints().Size() );
+
+    for ( int i = 0; i < ChannelsMap.Size(); i++ ) {
+        ChannelsMap[ i ] = (unsigned short)-1;
+    }
+
+    for ( int i = 0; i < AnimatedJoints.Size(); i++ ) {
+        ChannelsMap[ AnimatedJoints[ i ].JointIndex ] = i;
     }
 
     FrameCount = _FrameCount;
     FrameDelta = _FrameDelta;
     FrameRate = 1.0f / _FrameDelta;
     DurationInSeconds = ( FrameCount - 1 ) * FrameDelta;
-    DurationNormalizer = 1.0f / DurationInSeconds;
-    Bounds.Resize( _FrameCount );
-    memcpy( Bounds.ToPtr(), _Bounds, FrameCount * sizeof( BvAxisAlignedBox ) );
+    DurationNormalizer = 1.0f / DurationInSeconds;    
 }
 
 
@@ -199,9 +218,10 @@ FSkinnedComponent::FSkinnedComponent() {
     RenderProxy = FRenderProxy::NewProxy< FRenderProxy_Skeleton >();
     RenderProxy->SetOwner( this );
 
-    bUpdateChannels = true;
+    bUpdateControllers = true;
     //bWorldBoundsDirty = true;
     bSkinnedMesh = true;
+    bLazyBoundsUpdate = true;
 }
 
 void FSkinnedComponent::InitializeComponent() {
@@ -231,7 +251,7 @@ void FSkinnedComponent::OnLazyBoundsUpdate() {
 void FSkinnedComponent::ReallocateRenderProxy() {
     FRenderFrame * frameData = GRuntime.GetFrameData();
     FRenderProxy_Skeleton::FrameData & data = RenderProxy->Data[frameData->WriteIndex];
-    data.JointsCount = Skeleton->GetJoints().Length();
+    data.JointsCount = Skeleton->GetJoints().Size();
     data.Chunks = nullptr;
     data.ChunksTail = nullptr;
     data.bReallocated = true;
@@ -253,123 +273,111 @@ void FSkinnedComponent::SetSkeleton( FSkeleton * _Skeleton ) {
         TPodArray< FJoint > const & joints = Skeleton->GetJoints();
         TPodArray< FSkeletonAnimation * > const & animations = Skeleton->GetAnimations();
 
-        int numJoints = joints.Length();
+        int numJoints = joints.Size();
 
         ReallocateRenderProxy();
 
-        AbsoluteMatrices.ResizeInvalidate( numJoints + 1 );  // + 1 for root
-        AbsoluteMatrices[0].SetIdentity();
+        AbsoluteTransforms.ResizeInvalidate( numJoints + 1 );  // + 1 for root
+        AbsoluteTransforms[0].SetIdentity();
 
         RelativeTransforms.ResizeInvalidate( numJoints );
         for ( int i = 0 ; i < numJoints ; i++ ) {
-            //RelativeTransforms[ i ].SetIdentity();
-            RelativeTransforms[ i ] = joints[ i ].RelativeTransform;
+            RelativeTransforms[ i ] = joints[ i ].LocalTransform;
         }
 
-        AnimChannels.ResizeInvalidate( animations.Length() );
-        for ( int i = 0 ; i < animations.Length() ; i++ ) {
-            AnimChannels[i].Blend = 0;
-            AnimChannels[i].Frame = 0;
-            AnimChannels[i].NextFrame = 0;
-            AnimChannels[i].TimeLine = 0;
-            AnimChannels[i].PlayMode = ANIMATION_PLAY_CLAMP;
-            AnimChannels[i].Quantizer = 0.0f;
+        AnimControllers.ResizeInvalidate( animations.Size() );
+        for ( int i = 0 ; i < animations.Size() ; i++ ) {
+            AnimControllers[i].Blend = 0;
+            AnimControllers[i].Frame = 0;
+            AnimControllers[i].NextFrame = 0;
+            AnimControllers[i].TimeLine = 0;
+            AnimControllers[i].PlayMode = ANIMATION_PLAY_CLAMP;
+            AnimControllers[i].Quantizer = 0.0f;
+            AnimControllers[i].Weight = 1;
+            AnimControllers[i].bEnabled = true;
         }
 
         TPodArray< FSocketDef * > const & socketDef = Skeleton->GetSockets();
-        Sockets.ResizeInvalidate( socketDef.Length() );
-        for ( int i = 0 ; i < socketDef.Length() ; i++ ) {
+        Sockets.ResizeInvalidate( socketDef.Size() );
+        for ( int i = 0 ; i < socketDef.Size() ; i++ ) {
             socketDef[i]->AddRef();
             Sockets[i].SocketDef = socketDef[i];
             Sockets[i].Parent = this;
         }
 
     } else {
-        AbsoluteMatrices.Clear();
+        AbsoluteTransforms.Clear();
         RelativeTransforms.Clear();
-        AnimChannels.Clear();
+        AnimControllers.Clear();
         Sockets.Clear();
     }
 
-    bUpdateChannels = true;
+    bUpdateControllers = true;
 }
 
-void FSkinnedComponent::SetChannelTimeline( int _Channel, float _Timeline, EAnimationPlayMode _PlayMode, float _Quantizer ) {
-    if ( _Channel >= AnimChannels.Length() ) {
-        GLogger.Printf( "Unknown animation channel\n" );
+void FSkinnedComponent::SetControllerTimeline( int _Controller, float _Timeline, EAnimationPlayMode _PlayMode, float _Quantizer ) {
+    if ( _Controller >= AnimControllers.Size() ) {
+        GLogger.Printf( "Unknown animation controller\n" );
         return;
     }
 
-    AnimChannels[_Channel].TimeLine = _Timeline;
-    AnimChannels[_Channel].PlayMode = _PlayMode;
-    AnimChannels[_Channel].Quantizer = FMath::Min( _Quantizer, 1.0f );
+    AnimControllers[_Controller].TimeLine = _Timeline;
+    AnimControllers[_Controller].PlayMode = _PlayMode;
+    AnimControllers[_Controller].Quantizer = FMath::Min( _Quantizer, 1.0f );
 
     // TODO: quantizer можно выбирать динамически в зависимости от удаленности камеры от объекта
 
-    bUpdateChannels = true;
+    bUpdateControllers = true;
+}
+
+void FSkinnedComponent::SetControllerWeight( int _Controller, float _Weight ) {
+    if ( _Controller >= AnimControllers.Size() ) {
+        GLogger.Printf( "Unknown animation controller\n" );
+        return;
+    }
+
+    AnimControllers[_Controller].Weight = _Weight;
+}
+
+void FSkinnedComponent::SetControllerEnabled( int _Controller, bool _Enabled ) {
+    if ( _Controller >= AnimControllers.Size() ) {
+        GLogger.Printf( "Unknown animation controller\n" );
+        return;
+    }
+
+    AnimControllers[_Controller].bEnabled = _Enabled;
 }
 
 void FSkinnedComponent::SetTimelineBroadcast( float _Timeline, EAnimationPlayMode _PlayMode, float _Quantizer ) {
     const float quantizer = FMath::Min( _Quantizer, 1.0f );
-    for ( int ch = 0 ; ch < AnimChannels.Length() ; ch++ ) {
-        FAnimChannel * channel = &AnimChannels[ ch ];
-        channel->TimeLine = _Timeline;
-        channel->PlayMode = _PlayMode;
-        channel->Quantizer = quantizer;
+    for ( int i = 0 ; i < AnimControllers.Size() ; i++ ) {
+        FAnimationController * controller = &AnimControllers[ i ];
+        controller->TimeLine = _Timeline;
+        controller->PlayMode = _PlayMode;
+        controller->Quantizer = quantizer;
     }
 
-    bUpdateChannels = true;
+    bUpdateControllers = true;
 }
 
-void FSkinnedComponent::AddTimeDelta( int _Channel, float _TimeDelta ) {
-    if ( _Channel >= AnimChannels.Length() ) {
-        GLogger.Printf( "Unknown animation channel\n" );
+void FSkinnedComponent::AddTimeDelta( int _Controller, float _TimeDelta ) {
+    if ( _Controller >= AnimControllers.Size() ) {
+        GLogger.Printf( "Unknown animation controller\n" );
         return;
     }
 
-    AnimChannels[_Channel].TimeLine += _TimeDelta;
+    AnimControllers[_Controller].TimeLine += _TimeDelta;
 
-    bUpdateChannels = true;
+    bUpdateControllers = true;
 }
 
 void FSkinnedComponent::AddTimeDeltaBroadcast( float _TimeDelta ) {
-    for ( int ch = 0 ; ch < AnimChannels.Length() ; ch++ ) {
-        FAnimChannel * channel = &AnimChannels[ ch ];
-        channel->TimeLine += _TimeDelta;
+    for ( int ch = 0 ; ch < AnimControllers.Size() ; ch++ ) {
+        FAnimationController * controller = &AnimControllers[ ch ];
+        controller->TimeLine += _TimeDelta;
     }
 
-    bUpdateChannels = true;
-}
-
-void FSkinnedComponent::ApplyTransforms( FJointAnimation const * _AnimJoints,
-                                          int _JointsCount,
-                                          int _FrameIndex,
-                                          TPodArray< Float3x4 > & _RelativeTransforms ) {
-
-    for ( int j = 0 ; j < _JointsCount ; j++ ) {
-        FJointAnimation const * jointAnim = _AnimJoints + j;
-        jointAnim->Frames[_FrameIndex].Transform.ToMatrix( _RelativeTransforms[ jointAnim->JointIndex ] );
-    }
-}
-
-void FSkinnedComponent::BlendTransforms( FJointAnimation const * _AnimJoints,
-                                          int _JointsCount,
-                                          int _FrameIndex1,
-                                          int _FrameIndex2,
-                                          float _Blend,
-                                          TPodArray< Float3x4 > & _RelativeTransforms ) {
-
-    for ( int j = 0 ; j < _JointsCount ; j++ ) {
-        FJointAnimation const * jointAnim = _AnimJoints + j;
-
-        FJointTransform const & frame1 = jointAnim->Frames[_FrameIndex1].Transform;
-        FJointTransform const & frame2 = jointAnim->Frames[_FrameIndex2].Transform;
-
-        // Retrieve blended relative transform matrix
-        _RelativeTransforms[ jointAnim->JointIndex ].Compose( frame1.Position.Lerp( frame2.Position, _Blend ),
-                                                              frame1.Rotation.Slerp( frame2.Rotation, _Blend ).ToMatrix(),
-                                                              frame1.Scale.Lerp( frame2.Scale, _Blend ) );
-    }
+    bUpdateControllers = true;
 }
 
 AN_FORCEINLINE float Quantize( float _Lerp, float _Quantizer ) {
@@ -383,16 +391,16 @@ void FSkinnedComponent::MergeJointAnimations() {
 
             //GLogger.Printf("Update abs matrices\n");
             TPodArray< FJoint > const & joints = Skeleton->GetJoints();
-            for ( int j = 0 ; j < joints.Length() ; j++ ) {
+            for ( int j = 0 ; j < joints.Size() ; j++ ) {
                 // TODO: joint rotation from normal?
-                AbsoluteMatrices[ j + 1 ].Compose( btVectorToFloat3( SoftBody->m_nodes[ j ].m_x ), Float3x3::Identity() );
+                AbsoluteTransforms[ j + 1 ].Compose( btVectorToFloat3( SoftBody->m_nodes[ j ].m_x ), Float3x3::Identity() );
             }
             bUpdateAbsoluteTransforms = false;
             bWriteTransforms = true;
         }
 
     } else {
-        UpdateChannelsIfDirty();
+        UpdateControllersIfDirty();
         UpdateTransformsIfDirty();
         UpdateAbsoluteTransformsIfDirty();
     }
@@ -412,17 +420,80 @@ void FSkinnedComponent::UpdateTransforms() {
     }
 
     TPodArray< FSkeletonAnimation * > const & animations = Skeleton->GetAnimations();
+    FJoint const * joints = Skeleton->GetJoints().ToPtr();
+    int jointsCount = Skeleton->GetJoints().Size();
 
-    for ( int ch = 0 ; ch < AnimChannels.Length() ; ch++ ) {
-        FAnimChannel * channel = &AnimChannels[ ch ];
-        FSkeletonAnimation * anim = animations[ ch ];
+    TPodArray< FJointTransform > tempTransforms;
+    TPodArray< float > weights;
 
-        TVector< FJointAnimation > const & animJoints = anim->GetAnimatedJoints();
+    tempTransforms.Resize( AnimControllers.Size() );
+    weights.Resize( AnimControllers.Size() );
 
-        if ( channel->Frame == channel->NextFrame || channel->Blend < 0.0001f ) {
-            ApplyTransforms( animJoints.data(), animJoints.size(), channel->Frame, RelativeTransforms );
+    memset( RelativeTransforms.ToPtr(), 0, sizeof( RelativeTransforms[0] ) * jointsCount );
+
+    for ( int jointIndex = 0; jointIndex < jointsCount; jointIndex++ ) {
+
+        float sumWeight = 0;
+
+        int n = 0;
+
+        for ( int animIndex = 0; animIndex < AnimControllers.Size(); animIndex++ ) {
+            FAnimationController * controller = &AnimControllers[ animIndex ];
+
+            if ( !controller->bEnabled ) {
+                continue;
+            }
+
+            FSkeletonAnimation * animation = animations[ animIndex ];
+
+            unsigned short channelIndex = animation->GetChannelsMap()[ jointIndex ];
+
+            if ( channelIndex == (unsigned short)-1 ) {
+                continue;
+            }
+
+            TPodArray< FJointAnimation > const & animJoints = animation->GetAnimatedJoints();
+
+            FJointAnimation const & jointAnim = animJoints[ channelIndex ];
+
+            TPodArray< FJointTransform > const & transforms = animation->GetTransforms();
+
+            FJointTransform & transform = tempTransforms[ n ];
+            weights[ n ] = controller->Weight;
+            n++;
+
+            if ( controller->Frame == controller->NextFrame || controller->Blend < 0.0001f ) {
+                transform = transforms[ jointAnim.TransformOffset + controller->Frame ];
+            } else {
+                FJointTransform const & frame1 = transforms[ jointAnim.TransformOffset + controller->Frame ];
+                FJointTransform const & frame2 = transforms[ jointAnim.TransformOffset + controller->NextFrame ];
+
+                transform.Position = frame1.Position.Lerp( frame2.Position, controller->Blend );
+                transform.Rotation = frame1.Rotation.Slerp( frame2.Rotation, controller->Blend );
+                transform.Scale = frame1.Scale.Lerp( frame2.Scale, controller->Blend );
+            }
+
+            sumWeight += controller->Weight;
+        }
+
+        Float3x4 & resultTransform = RelativeTransforms[ jointIndex ];
+
+        if ( n > 0 ) {
+            Float3x4 m;
+
+            const float sumWeightReciprocal = ( sumWeight == 0.0f ) ? 0.0f : 1.0f / sumWeight;
+
+            for ( int i = 0; i < n; i++ ) {
+                const float weight = weights[i] * sumWeightReciprocal;
+
+                tempTransforms[ i ].ToMatrix( m );
+
+                resultTransform[ 0 ] += m[ 0 ] * weight;
+                resultTransform[ 1 ] += m[ 1 ] * weight;
+                resultTransform[ 2 ] += m[ 2 ] * weight;
+            }
         } else {
-            BlendTransforms( animJoints.data(), animJoints.size(), channel->Frame, channel->NextFrame, channel->Blend, RelativeTransforms );
+            resultTransform = joints[jointIndex].LocalTransform;
         }
     }
 
@@ -437,12 +508,12 @@ void FSkinnedComponent::UpdateAbsoluteTransformsIfDirty() {
 
     TPodArray< FJoint > const & joints = Skeleton->GetJoints();
 
-    for ( int j = 0 ; j < joints.Length() ; j++ ) {
+    for ( int j = 0 ; j < joints.Size() ; j++ ) {
         FJoint const & joint = joints[ j ];
 
         // ... Update relative joints physics here ...
 
-        AbsoluteMatrices[ j + 1 ] = AbsoluteMatrices[ joint.Parent + 1 ] * RelativeTransforms[ j ];
+        AbsoluteTransforms[ j + 1 ] = AbsoluteTransforms[ joint.Parent + 1 ] * RelativeTransforms[ j ];
 
         // ... Update absolute joints physics here ...
     }
@@ -453,59 +524,59 @@ void FSkinnedComponent::UpdateAbsoluteTransformsIfDirty() {
     //GLogger.Printf( "Updating absolute matrices (%d)\n", GGameEngine.GetFrameNumber() );
 }
 
-void FSkinnedComponent::UpdateChannelsIfDirty() {
-    if ( !bUpdateChannels ) {
+void FSkinnedComponent::UpdateControllersIfDirty() {
+    if ( !bUpdateControllers ) {
         return;
     }
 
-    UpdateChannels();
+    UpdateControllers();
 }
 
-void FSkinnedComponent::UpdateChannels() {
+void FSkinnedComponent::UpdateControllers() {
     if ( !Skeleton ) {
         return;
     }
 
     TPodArray< FSkeletonAnimation * > const & animations = Skeleton->GetAnimations();
-    Float channelTimeLine;
+    Float controllerTimeLine;
     int keyFrame;
     float lerp;
     int take;
 
-    for ( int ch = 0 ; ch < AnimChannels.Length() ; ch++ ) {
-        FAnimChannel * channel = &AnimChannels[ ch ];
-        FSkeletonAnimation * anim = animations[ ch ];
+    for ( int animIndex = 0 ; animIndex < AnimControllers.Size() ; animIndex++ ) {
+        FAnimationController * controller = &AnimControllers[ animIndex ];
+        FSkeletonAnimation * anim = animations[ animIndex ];
 
         if ( anim->GetFrameCount() > 1 ) {
 
-            switch ( channel->PlayMode ) {
+            switch ( controller->PlayMode ) {
             case ANIMATION_PLAY_CLAMP:
 
                 // clamp and normalize 0..1
-                if ( channel->TimeLine <= 0.0f ) {
+                if ( controller->TimeLine <= 0.0f ) {
 
-                    channel->Blend = 0;
-                    channel->Frame = 0;
-                    channel->NextFrame = 0;
+                    controller->Blend = 0;
+                    controller->Frame = 0;
+                    controller->NextFrame = 0;
 
-                } else if ( channel->TimeLine >= anim->GetDurationInSeconds() ) {
+                } else if ( controller->TimeLine >= anim->GetDurationInSeconds() ) {
 
-                    channel->Blend = 0;
-                    channel->Frame = channel->NextFrame = anim->GetFrameCount() - 1;
+                    controller->Blend = 0;
+                    controller->Frame = controller->NextFrame = anim->GetFrameCount() - 1;
 
                 } else {
                     // normalize 0..1
-                    channelTimeLine = channel->TimeLine * anim->GetDurationNormalizer();
+                    controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
 
                     // adjust 0...framecount-1
-                    channelTimeLine = channelTimeLine * (float)( anim->GetFrameCount() - 1 );
+                    controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
 
-                    keyFrame = channelTimeLine.Floor();
-                    lerp = channelTimeLine.Fract();
+                    keyFrame = controllerTimeLine.Floor();
+                    lerp = controllerTimeLine.Fract();
 
-                    channel->Frame = keyFrame;
-                    channel->NextFrame = keyFrame + 1;
-                    channel->Blend = Quantize( lerp, channel->Quantizer );
+                    controller->Frame = keyFrame;
+                    controller->NextFrame = keyFrame + 1;
+                    controller->Blend = Quantize( lerp, controller->Quantizer );
                 }
                 break;
 
@@ -513,76 +584,75 @@ void FSkinnedComponent::UpdateChannels() {
 
                 // normalize 0..1
 #if 1
-                channelTimeLine = channel->TimeLine * anim->GetDurationNormalizer();
-                channelTimeLine = channelTimeLine.Fract();
+                controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
+                controllerTimeLine = controllerTimeLine.Fract();
 #else
-                channelTimeLine = fmod( channel->TimeLine, anim->GetDurationInSeconds() ) * anim->GetDurationNormalize();
-                if ( channelTimeLine < 0.0f ) {
-                    channelTimeLine += 1.0f;
+                controllerTimeLine = fmod( controller->TimeLine, anim->GetDurationInSeconds() ) * anim->GetDurationNormalize();
+                if ( controllerTimeLine < 0.0f ) {
+                    controllerTimeLine += 1.0f;
                 }
 #endif
 
                 // adjust 0...framecount-1
-                channelTimeLine = channelTimeLine * (float)( anim->GetFrameCount() - 1 );
+                controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
 
-                keyFrame = channelTimeLine.Floor();
-                lerp = channelTimeLine.Fract();
+                keyFrame = controllerTimeLine.Floor();
+                lerp = controllerTimeLine.Fract();
 
-                if ( channel->TimeLine < 0.0f ) {
-                    channel->Frame = keyFrame + 1;
-                    channel->NextFrame = keyFrame;
-                    channel->Blend = Quantize( 1.0f - lerp, channel->Quantizer );
+                if ( controller->TimeLine < 0.0f ) {
+                    controller->Frame = keyFrame + 1;
+                    controller->NextFrame = keyFrame;
+                    controller->Blend = Quantize( 1.0f - lerp, controller->Quantizer );
                 } else {
-                    channel->Frame = keyFrame;
-                    channel->NextFrame = channel->Frame + 1;
-                    channel->Blend = Quantize( lerp, channel->Quantizer );
+                    controller->Frame = keyFrame;
+                    controller->NextFrame = controller->Frame + 1;
+                    controller->Blend = Quantize( lerp, controller->Quantizer );
                 }
                 break;
 
             case ANIMATION_PLAY_MIRROR:
 
                 // normalize 0..1
-                channelTimeLine = channel->TimeLine * anim->GetDurationNormalizer();
-                take = channelTimeLine.Abs().Floor();
-                channelTimeLine = channelTimeLine.Fract();
+                controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
+                take = controllerTimeLine.Abs().Floor();
+                controllerTimeLine = controllerTimeLine.Fract();
 
                 // adjust 0...framecount-1
-                channelTimeLine = channelTimeLine * (float)( anim->GetFrameCount() - 1 );
+                controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
 
-                keyFrame = channelTimeLine.Floor();
-                lerp = channelTimeLine.Fract();
+                keyFrame = controllerTimeLine.Floor();
+                lerp = controllerTimeLine.Fract();
 
-                if ( channel->TimeLine < 0.0f ) {
-                    channel->Frame = keyFrame + 1;
-                    channel->NextFrame = keyFrame;
-                    channel->Blend = Quantize( 1.0f - lerp, channel->Quantizer );
+                if ( controller->TimeLine < 0.0f ) {
+                    controller->Frame = keyFrame + 1;
+                    controller->NextFrame = keyFrame;
+                    controller->Blend = Quantize( 1.0f - lerp, controller->Quantizer );
                 } else {
-                    channel->Frame = keyFrame;
-                    channel->NextFrame = channel->Frame + 1;
-                    channel->Blend = Quantize( lerp, channel->Quantizer );
+                    controller->Frame = keyFrame;
+                    controller->NextFrame = controller->Frame + 1;
+                    controller->Blend = Quantize( lerp, controller->Quantizer );
                 }
 
                 if ( take & 1 ) {
-                    channel->Frame = anim->GetFrameCount() - channel->Frame - 1;
-                    channel->NextFrame = anim->GetFrameCount() - channel->NextFrame - 1;
+                    controller->Frame = anim->GetFrameCount() - controller->Frame - 1;
+                    controller->NextFrame = anim->GetFrameCount() - controller->NextFrame - 1;
                 }
                 break;
             }
         } else if ( anim->GetFrameCount() == 1 ) {
-            channel->Blend = 0;
-            channel->Frame = 0;
-            channel->NextFrame = 0;
+            controller->Blend = 0;
+            controller->Frame = 0;
+            controller->NextFrame = 0;
         }
     }
 
-    bUpdateChannels = false;
+    bUpdateControllers = false;
     bUpdateBounds = true;
     bUpdateRelativeTransforms = true;
 }
 
 void FSkinnedComponent::UpdateBounds() {
-
-    UpdateChannelsIfDirty();
+    UpdateControllersIfDirty();
 
     if ( !bUpdateBounds || !Skeleton ) {
         return;
@@ -590,14 +660,23 @@ void FSkinnedComponent::UpdateBounds() {
 
     bUpdateBounds = false;
 
-    Bounds.Clear();
-
     TPodArray< FSkeletonAnimation * > const & animations = Skeleton->GetAnimations();
 
-    for ( int ch = 0 ; ch < AnimChannels.Length() ; ch++ ) {
-        FAnimChannel const * channel = &AnimChannels[ ch ];
-        FSkeletonAnimation const * anim = animations[ ch ];
-        Bounds.AddAABB( anim->GetBoundingBoxes()[ channel->Frame ] );
+    if ( AnimControllers.IsEmpty() ) {
+
+        Bounds = Skeleton->GetBindposeBounds();
+
+    } else {
+        Bounds.Clear();
+        for ( int animIndex = 0 ; animIndex < AnimControllers.Size() ; animIndex++ ) {
+            FAnimationController const * controller = &AnimControllers[ animIndex ];
+            if ( !controller->bEnabled ) {
+                continue;
+            }
+
+            FSkeletonAnimation const * anim = animations[ animIndex ];
+            Bounds.AddAABB( anim->GetBoundingBoxes()[ controller->Frame ] );
+        }
     }
 
     // Mark to update world bounds
@@ -614,10 +693,10 @@ void FSkinnedComponent::UpdateJointTransforms() {
     if ( bWriteTransforms ) {
         TPodArray< FJoint > const & joints = Skeleton->GetJoints();
 
-        Float3x4 * transforms = WriteJointTransforms( joints.Length(), 0 );
+        Float3x4 * transforms = WriteJointTransforms( joints.Size(), 0 );
         if ( transforms ) {
-            for ( int j = 0 ; j < joints.Length() ; j++ ) {
-                transforms[ j ] = AbsoluteMatrices[ j + 1 ] * joints[ j ].JointOffsetMatrix;
+            for ( int j = 0 ; j < joints.Size() ; j++ ) {
+                transforms[ j ] = AbsoluteTransforms[ j + 1 ] * joints[ j ].OffsetMatrix;
             }
         }
         bWriteTransforms = false;
@@ -627,13 +706,13 @@ void FSkinnedComponent::UpdateJointTransforms() {
 }
 
 Float3x4 const & FSkinnedComponent::GetJointTransform( int _JointIndex ) {
-    if ( !Skeleton || _JointIndex < 0 || _JointIndex >= Skeleton->GetJoints().Length() ) {
+    if ( !Skeleton || _JointIndex < 0 || _JointIndex >= Skeleton->GetJoints().Size() ) {
         return Float3x4::Identity();
     }
 
     MergeJointAnimations();
 
-    return AbsoluteMatrices[_JointIndex+1];
+    return AbsoluteTransforms[_JointIndex+1];
 }
 
 Float3x4 * FSkinnedComponent::WriteJointTransforms( int _JointsCount, int _StartJointLocation ) {
@@ -644,7 +723,7 @@ Float3x4 * FSkinnedComponent::WriteJointTransforms( int _JointsCount, int _Start
         return nullptr;
     }
 
-    AN_Assert( _StartJointLocation + _JointsCount <= Skeleton->GetJoints().Length() );
+    AN_Assert( _StartJointLocation + _JointsCount <= Skeleton->GetJoints().Size() );
 
     FJointTransformChunk * chunk = ( FJointTransformChunk * )frameData->AllocFrameData( sizeof( FJointTransformChunk ) + sizeof( Float3x4 ) * ( _JointsCount - 1 ) );
     if ( !chunk ) {
@@ -678,7 +757,7 @@ void FSkinnedComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
             _DebugDraw->SetColor( 1,0,0,1 );
             _DebugDraw->SetDepthTest( false );
             TPodArray< FJoint > const & joints = Skeleton->GetJoints();
-            for ( int i = 0 ; i < joints.Length() ; i++ ) {
+            for ( int i = 0 ; i < joints.Size() ; i++ ) {
                 FJoint const & joint = joints[i];
 
                 Float3x4 t = GetWorldTransformMatrix() * GetJointTransform( i );

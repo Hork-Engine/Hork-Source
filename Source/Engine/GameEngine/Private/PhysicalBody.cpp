@@ -859,11 +859,11 @@ int FPhysicalBody::GetCollisionBodiesCount() const {
 void FPhysicalBody::CreateCollisionModel( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) {
     FCollisionBodyComposition const & collisionBody = GetBodyComposition();
 
-    int firstVertex = _Vertices.Length();
+    int firstVertex = _Vertices.Size();
 
     collisionBody.CreateGeometry( _Vertices, _Indices );
 
-    int numVertices = _Vertices.Length() - firstVertex;
+    int numVertices = _Vertices.Size() - firstVertex;
 
     Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
 
@@ -1041,8 +1041,8 @@ void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
 
         _DebugDraw->SetDepthTest(true);
         _DebugDraw->SetColor( (((size_t)GetParentActor()*123)&0xff)/255.0f, (((size_t)this*123)&0xff)/255.0f, 1.0f, 0.5f );
-        _DebugDraw->DrawTriangleSoup(collisionVertices.ToPtr(),collisionVertices.Length(),sizeof(Float3),collisionIndices.ToPtr(),collisionIndices.Length(),false);
-        _DebugDraw->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Length() );
+        _DebugDraw->DrawTriangleSoup(collisionVertices.ToPtr(),collisionVertices.Size(),sizeof(Float3),collisionIndices.ToPtr(),collisionIndices.Size(),false);
+        _DebugDraw->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
     }
 
     if ( GDebugDrawFlags.bDrawCollisionBounds ) {

@@ -135,7 +135,7 @@ FSpatialTree::~FSpatialTree() {
 }
 
 int FSpatialTree::FindPendingObject( FSpatialObject * _Object ) {
-    for ( int i = 0 ; i < PendingObjects.Length() ; i++ ) {
+    for ( int i = 0 ; i < PendingObjects.Size() ; i++ ) {
         if ( PendingObjects[i].Object == _Object ) {
             return i;
         }

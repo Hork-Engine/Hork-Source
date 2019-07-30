@@ -216,10 +216,10 @@ public:
     void Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount );
 
     Float3 const * GetVertices() const { return Vertices.ToPtr(); }
-    int GetVertexCount() const { return Vertices.Length(); }
+    int GetVertexCount() const { return Vertices.Size(); }
 
     unsigned int const * GetIndices() const { return Indices.ToPtr(); }
-    int GetIndexCount() const { return Indices.Length(); }
+    int GetIndexCount() const { return Indices.Size(); }
 
 //    void InitializeFromPlanes( PlaneF const * _Planes, int _NumPlanes ) {
 //        Vertices.Clear();
@@ -394,11 +394,11 @@ public:
             for ( FCollisionBody * body : CollisionBodies ) {
                 CenterOfMass += body->Position;
             }
-            CenterOfMass /= CollisionBodies.Length();
+            CenterOfMass /= CollisionBodies.Size();
         }
     }
 
-    int NumCollisionBodies() const { return CollisionBodies.Length(); }
+    int NumCollisionBodies() const { return CollisionBodies.Size(); }
 
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const;
 

@@ -123,8 +123,8 @@ FDebugDrawCmd & FDebugDraw::SetDrawCmd( EDebugDrawCmd _Type ) {
 }
 
 void FDebugDraw::PrimitiveReserve( int _NumVertices, int _NumIndices ) {
-    Vertices->Resize( Vertices->Length() + _NumVertices );
-    Indices->Resize( Indices->Length() + _NumIndices );
+    Vertices->Resize( Vertices->Size() + _NumVertices );
+    Indices->Resize( Indices->Size() + _NumIndices );
 }
 
 void FDebugDraw::DrawPoint( Float3 const & _Position ) {

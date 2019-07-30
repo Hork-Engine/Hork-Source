@@ -66,7 +66,7 @@ FPhysicalMonitor const * FRuntime::GetPrimaryMonitor() {
 
 FPhysicalMonitor const * FRuntime::GetMonitor( int _Handle ) {
     FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
-    return ( (unsigned)_Handle < physicalMonitors.Length() ) ? physicalMonitors[ _Handle ] : nullptr;
+    return ( (unsigned)_Handle < physicalMonitors.Size() ) ? physicalMonitors[ _Handle ] : nullptr;
 }
 
 FPhysicalMonitor const * FRuntime::GetMonitor( const char * _MonitorName ) {
@@ -76,7 +76,7 @@ FPhysicalMonitor const * FRuntime::GetMonitor( const char * _MonitorName ) {
 bool FRuntime::IsMonitorConnected( int _Handle ) {
     bool bConnected = false;
     FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
-    if ( (unsigned)_Handle < physicalMonitors.Length() ) {
+    if ( (unsigned)_Handle < physicalMonitors.Size() ) {
         bConnected = physicalMonitors[ _Handle ]->Internal.Pointer != nullptr;
     }
     return bConnected;
@@ -157,7 +157,7 @@ void FRuntime::RestoreMonitorGamma( int _Handle ) {
 int FRuntime::GetPhysicalMonitorsCount() {
     int count;
     FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
-    count = physicalMonitors.Length();
+    count = physicalMonitors.Size();
     return count;
 }
 

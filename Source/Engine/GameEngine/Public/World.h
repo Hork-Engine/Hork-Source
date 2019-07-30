@@ -512,7 +512,7 @@ struct TActorIterator {
 
     void Next() {
         FActor * a;
-        while ( i < Actors.Length() ) {
+        while ( i < Actors.Size() ) {
             a = Actors[i++];
             if ( a->IsPendingKill() ) {
                 continue;
@@ -559,7 +559,7 @@ struct TActorIterator2 {
 
     T * Next() {
         FActor * a;
-        while ( i < Actors.Length() ) {
+        while ( i < Actors.Size() ) {
             a = Actors[i++];
             if ( a->IsPendingKill() ) {
                 continue;
@@ -622,7 +622,7 @@ struct TComponentIterator {
 
     void Next() {
         FActorComponent * a;
-        while ( i < Components.Length() ) {
+        while ( i < Components.Size() ) {
             a = Components[i++];
             if ( a->IsPendingKill() ) {
                 continue;
@@ -669,7 +669,7 @@ struct TComponentIterator2 {
 
     T * Next() {
         FActorComponent * a;
-        while ( i < Components.Length() ) {
+        while ( i < Components.Size() ) {
             a = Components[i++];
             if ( a->IsPendingKill() ) {
                 continue;

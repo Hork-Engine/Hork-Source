@@ -51,7 +51,7 @@ FPlayerController::FPlayerController() {
 void FPlayerController::EndPlay() {
     Super::EndPlay();
 
-    for ( int i = 0 ; i < ViewActors.Length() ; i++ ) {
+    for ( int i = 0 ; i < ViewActors.Size() ; i++ ) {
         FViewActor * viewer = ViewActors[i];
         viewer->RemoveRef();
     }
@@ -149,7 +149,7 @@ void FPlayerController::AddViewActor( FViewActor * _ViewActor ) {
 }
 
 void FPlayerController::VisitViewActors() {
-    for ( int i = 0 ; i < ViewActors.Length() ; ) {
+    for ( int i = 0 ; i < ViewActors.Size() ; ) {
         FViewActor * viewer = ViewActors[i];
 
         if ( viewer->IsPendingKill() ) {
