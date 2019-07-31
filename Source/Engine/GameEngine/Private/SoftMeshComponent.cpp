@@ -81,48 +81,6 @@ void FSoftMeshComponent::RecreateSoftBody() {
         return;
     }
 
-#if 0
-    if ( !SoftMesh ) {
-        SoftMesh = NewObject< FIndexedMesh >();
-    }
-
-    SoftMesh->Initialize( sourceMesh->GetVertexCount(),
-        sourceMesh->GetIndexCount(),
-        sourceMesh->GetSubparts().Length(),
-        false,
-        false );
-
-    memcpy( SoftMesh->GetVertices(), sourceMesh->GetVertices(), sizeof( FMeshVertex ) * SoftMesh->GetVertexCount() );
-    memcpy( SoftMesh->GetIndices(), sourceMesh->GetIndices(), sizeof( unsigned int ) * SoftMesh->GetIndexCount() );
-
-
-    Float3x3 rotation = BaseTransform.DecomposeRotation();
-    for ( int i = 0; i < SoftMesh->GetVertexCount(); i++ ) {
-        FMeshVertex * v = SoftMesh->GetVertices() + i;
-
-        v->Position = BaseTransform * v->Position;
-        v->Normal = rotation * v->Normal;
-        v->Tangent = rotation * v->Tangent;
-    }
-    
-
-    for ( int i = 0; i < SoftMesh->GetSubparts().Length(); i++ ) {
-        FIndexedMeshSubpart * dst = SoftMesh->GetSubpart( i );
-        FIndexedMeshSubpart * src = sourceMesh->GetSubpart( i );
-
-        dst->BaseVertex = src->BaseVertex;
-        dst->FirstIndex = src->FirstIndex;
-        dst->VertexCount = src->VertexCount;
-        dst->IndexCount = src->IndexCount;
-        dst->MaterialInstance = src->MaterialInstance;
-        dst->SetBoundingBox( src->GetBoundingBox() );
-    }
-
-    SoftMesh->SetName( sourceMesh->GetName() );
-
-    SoftMesh->SendVertexDataToGPU( SoftMesh->GetVertexCount(), 0 );
-    SoftMesh->SendIndexDataToGPU( SoftMesh->GetIndexCount(), 0 );
-#endif
     btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
     if ( SoftBody ) {
@@ -289,31 +247,6 @@ void FSoftMeshComponent::UpdateSoftbodyTransform() {
 //    }
 }
 
-void FSoftMeshComponent::UpdateSoftbodyMesh() {
-//    if ( SoftMesh )
-    {
-
-        bUpdateAbsoluteTransforms = true;
-
-#if 0
-        FMeshVertex * vertices = SoftMesh->GetVertices();
-
-        for ( int i = 0; i < SoftMesh->GetVertexCount(); i++ ) {
-            //Float3 v = GetVertexPosition( i );
-
-            // TODO: optimize transfomation (move to RenderFrontend?)
-            //vertices[ i ].Position = PrevTransformBasis * ( v - PrevTransformOrigin );
-            //vertices[ i ].Normal = PrevTransformBasis * GetVertexNormal( i );
-
-            vertices[ i ].Position = GetVertexPosition( i );
-            vertices[ i ].Normal = GetVertexNormal( i );
-        }
-
-        SoftMesh->SendVertexDataToGPU( SoftMesh->GetVertexCount(), 0 );
-#endif
-    }
-}
-
 void FSoftMeshComponent::UpdateSoftbodyBoundingBox() {
     if ( SoftBody ) {
         btVector3 mins, maxs;
@@ -421,8 +354,7 @@ void FSoftMeshComponent::TickComponent( float _TimeStep ) {
     UpdateSoftbodyTransform();
     UpdateSoftbodyBoundingBox();
 
-    // TODO: This must be done just before rendering if mesh is visible
-    UpdateSoftbodyMesh();
+    bUpdateAbsoluteTransforms = true;
 }
 
 void FSoftMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {

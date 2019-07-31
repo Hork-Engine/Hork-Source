@@ -41,7 +41,7 @@ class FSkinnedComponent;
 class FSocketDef;
 struct FSocket {
     FSocketDef * SocketDef;
-    FSkinnedComponent * Parent;
+    FSkinnedComponent * Owner;
 };
 
 /*

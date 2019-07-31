@@ -127,14 +127,12 @@ public:
 
     TPodArray< FJoint > const & GetJoints() const { return Joints; }
 
-    FSkeletonAnimation * CreateAnimation();
-
     FSocketDef * CreateSocket( const char * _Name, int _JointIndex );
     FSocketDef * CreateSocket( const char * _Name, const char * _JointName );
+    // TODO: DestroySocket?
 
     FSocketDef * FindSocket( const char * _Name );
 
-    TPodArray< FSkeletonAnimation * > const & GetAnimations() const { return Animations; }
     TPodArray< FSocketDef * > const & GetSockets() const { return Sockets; }
 
     BvAxisAlignedBox const & GetBindposeBounds() const { return BindposeBounds; }
@@ -145,7 +143,6 @@ protected:
 
 private:
     TPodArray< FJoint > Joints;
-    TPodArray< FSkeletonAnimation * > Animations;
     TPodArray< FSocketDef * > Sockets;
     BvAxisAlignedBox BindposeBounds;
 };
@@ -165,10 +162,16 @@ class FSkeletonAnimation : public FBaseObject {
 public:
     void Initialize( int _FrameCount, float _FrameDelta, FJointTransform const * _Transforms, int _TransformsCount, FJointAnimation const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds );
 
+    // Initialize default object representation
+    void InitializeDefaultObject() override;
+
+    // Initialize object from file
+    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) override;
+
     TPodArray< FJointAnimation > const & GetAnimatedJoints() const { return AnimatedJoints; }
     TPodArray< FJointTransform > const & GetTransforms() const { return Transforms; }
 
-    unsigned short const * GetChannelsMap() const { return ChannelsMap.ToPtr(); }
+    unsigned short GetChannelIndex( int _JointIndex ) const;
 
     int GetFrameCount() const { return FrameCount; }
     float GetFrameDelta() const { return FrameDelta; }
@@ -182,13 +185,12 @@ protected:
     ~FSkeletonAnimation();
 
 private:
-    // Owner
-    FSkeleton * Skeleton;
-
     // Animation itself
     TPodArray< FJointAnimation > AnimatedJoints;
     TPodArray< FJointTransform > Transforms;
     TPodArray< unsigned short > ChannelsMap;
+    int     MinJointIndex;
+    int     MaxJointIndex;
 
     int     FrameCount;         // frames count
     float   FrameDelta;         // fixed time delta between frames
@@ -198,6 +200,10 @@ private:
 
     TPodArray< BvAxisAlignedBox > Bounds;
 };
+
+AN_FORCEINLINE unsigned short FSkeletonAnimation::GetChannelIndex( int _JointIndex ) const {
+    return ( _JointIndex < MinJointIndex || _JointIndex > MaxJointIndex ) ? (unsigned short)-1 : ChannelsMap[ _JointIndex - MinJointIndex ];
+}
 
 /*
 
@@ -219,15 +225,68 @@ FAnimationController
 Animation controller (track, state)
 
 */
-struct FAnimationController {
+class FAnimationController : public FBaseObject {
+    AN_CLASS( FAnimationController, FBaseObject )
+
+    friend class FSkinnedComponent;
+
+public:
+    // Set source animation
+    void SetAnimation( FSkeletonAnimation * _Animation );
+
+    // Get source animation
+    FSkeletonAnimation * GetAnimation() { return Animation; }
+
+    // Get animation owner
+    FSkinnedComponent * GetOwner() { return Owner; }
+
+    // Set position on animation track
+    void SetTime( float _Time );
+
+    // Step time delta on animation track
+    void AddTimeDelta( float _TimeDelta );
+
+    // Get time
+    float GetTime() const { return TimeLine; }
+
+    // Set play mode
+    void SetPlayMode( EAnimationPlayMode _PlayMode );
+
+    // Get play mode
+    EAnimationPlayMode GetPlayMode() const { return PlayMode; }
+
+    // Set time quantizer
+    void SetQuantizer( float _Quantizer );
+
+    // Get quantizer
+    float GetQuantizer() const { return Quantizer; }
+
+    // Set weight for animation blending
+    void SetWeight( float _Weight );
+
+    // Get weight
+    float GetWeight() const { return Weight; }
+
+    // Set controller enabled/disabled
+    void SetEnabled( bool _Enabled );
+
+    // Is controller enabled
+    bool IsEnabled() const { return bEnabled; }
+
+protected:
+    FAnimationController();
+
+private:
     float TimeLine;
     EAnimationPlayMode PlayMode;
     float Quantizer;
+    float Weight;
+    bool bEnabled;
     int Frame;
     int NextFrame;
     float Blend;
-    float Weight;
-    bool bEnabled;
+    FSkinnedComponent * Owner;
+    TRef< FSkeletonAnimation > Animation;
 };
 
 /*
@@ -242,6 +301,7 @@ class FSkinnedComponent : public FMeshComponent, public IRenderProxyOwner {
 
     friend class FRenderFrontend;
     friend class FWorld;
+    friend class FAnimationController;
 
 public:
     // Set skeleton for the component
@@ -250,29 +310,23 @@ public:
     // Get skeleton
     FSkeleton * GetSkeleton() { return Skeleton; }
 
-    // Set position on animation track
-    void SetControllerTimeline( int _Controller, float _Timeline, EAnimationPlayMode _PlayMode = ANIMATION_PLAY_WRAP, float _Quantizer = 0.0f );
+    // Add animation controller
+    void AddAnimationController( FAnimationController * _Controller );
+
+    // Remove animation controller
+    void RemoveAnimationController( FAnimationController * _Controller );
+
+    // Remove all animation controllers
+    void RemoveAnimationControllers();
+
+    // Get animation controllers
+    TPodArray< FAnimationController * > const & GetAnimationControllers() const { return AnimControllers; }
 
     // Set position on all animation tracks
-    void SetTimelineBroadcast( float _Timeline, EAnimationPlayMode _PlayMode = ANIMATION_PLAY_WRAP, float _Quantizer = 0.0f );
-
-    // Step time delta on animation track
-    void AddTimeDelta( int _Controller, float _TimeDelta );
+    void SetTimeBroadcast( float _Time );
 
     // Step time delta on all animation tracks
     void AddTimeDeltaBroadcast( float _TimeDelta );
-
-    // Set weight for animation blending
-    void SetControllerWeight( int _Controller, float _Weight );
-
-    // Set controller enabled/disabled
-    void SetControllerEnabled( int _Controller, bool _Enabled );
-
-    // Get animation tracks
-    //FAnimationController * GetControllers() { return AnimControllers.ToPtr(); }
-
-    // Get total animation tracks
-    int GetControllersCount() const { return AnimControllers.Size(); }
 
     // Recompute bounding box. Don't use directly. Use GetBounds() instead, it will recompute bounding box automatically.
     void UpdateBounds();
@@ -316,7 +370,7 @@ private:
 
     TRef< FSkeleton > Skeleton;
 
-    TPodArray< FAnimationController > AnimControllers;
+    TPodArray< FAnimationController * > AnimControllers;
 
     TPodArray< Float3x4 > AbsoluteTransforms;
     TPodArray< Float3x4 > RelativeTransforms;

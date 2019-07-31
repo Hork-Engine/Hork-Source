@@ -327,7 +327,6 @@ protected:
     FInputComponent();
 
     void DeinitializeComponent() override;
-    void TickComponent( float _TimeStep ) override;
 
     // Return axis binding or -1 if axis is not binded
     int GetAxisBinding( const char * _Axis ) const;

@@ -516,9 +516,6 @@ FInputMappings * FInputComponent::GetInputMappings() {
     return InputMappings;
 }
 
-void FInputComponent::TickComponent( float _TimeStep ) {
-}
-
 void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
     AN_Assert( _Fract > 0.0f );
     AN_Assert( _Fract <= 1.0f );

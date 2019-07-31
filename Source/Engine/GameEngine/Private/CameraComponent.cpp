@@ -80,22 +80,6 @@ FCameraComponent::FCameraComponent() {
     ProjectionDirty = true;
 }
 
-void FCameraComponent::InitializeComponent() {
-    Super::InitializeComponent();
-}
-
-void FCameraComponent::BeginPlay() {
-    Super::BeginPlay();
-}
-
-void FCameraComponent::EndPlay() {
-    Super::EndPlay();
-}
-
-void FCameraComponent::TickComponent( float _TimeStep ) {
-    Super::TickComponent( _TimeStep );
-}
-
 void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 

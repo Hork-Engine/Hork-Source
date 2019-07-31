@@ -740,7 +740,7 @@ void FSceneComponent::ComputeWorldTransform() const {
         if ( SocketIndex >= 0 && SocketIndex < AttachParent->Sockets.Size() ) {
             FSocket * Socket = &AttachParent->Sockets[SocketIndex];
 
-            Float3x4 const & JointTransform = Socket->Parent->GetJointTransform( Socket->SocketDef->JointIndex );
+            Float3x4 const & JointTransform = Socket->Owner->GetJointTransform( Socket->SocketDef->JointIndex );
 
             Quat JointRotation;
             JointRotation.FromMatrix( JointTransform.DecomposeRotation() );

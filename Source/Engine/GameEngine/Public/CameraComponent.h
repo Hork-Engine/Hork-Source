@@ -109,10 +109,6 @@ public:
 protected:
     FCameraComponent();
 
-    void InitializeComponent() override;
-    void BeginPlay() override;
-    void EndPlay() override;
-    void TickComponent( float _TimeStep ) override;
     void OnTransformDirty() override;
     void DrawDebug( FDebugDraw * _DebugDraw ) override;
 

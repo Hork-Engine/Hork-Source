@@ -127,7 +127,6 @@ private:
     void UpdateAnchorPoints();
     void UpdateSoftbodyTransform();
     void UpdateSoftbodyBoundingBox();
-    void UpdateSoftbodyMesh();
 
     Float3 WindVelocity;
     

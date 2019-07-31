@@ -156,30 +156,24 @@ static uint64_t xgetbv( unsigned int index ) {
 #endif
 
 #ifdef AN_OS_WIN32
-//#include <intrin.h>
 
 static void CPUID( int32_t out[4], int32_t x ) {
-    __cpuidex(out, x, 0);
+    __cpuidex( out, x, 0 );
 }
 
 static __int64 xgetbv( unsigned int index ) {
-    return _xgetbv(index);
+    return _xgetbv( index );
 }
 
-typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
-static BOOL IsWow64()
-{
+static BOOL IsWow64() {
     BOOL bIsWow64 = FALSE;
 
+    typedef BOOL ( WINAPI *LPFN_ISWOW64PROCESS ) ( HANDLE, PBOOL );
     LPFN_ISWOW64PROCESS fnIsWow64Process = (LPFN_ISWOW64PROCESS) GetProcAddress(
         GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
 
-    if (NULL != fnIsWow64Process)
-    {
-        if (!fnIsWow64Process(GetCurrentProcess(), &bIsWow64))
-        {
-            printf("Error Detecting Operating System.\n");
-            printf("Defaulting to 32-bit OS.\n\n");
+    if ( NULL != fnIsWow64Process ) {
+        if ( !fnIsWow64Process( GetCurrentProcess(), &bIsWow64 ) ) {
             bIsWow64 = FALSE;
         }
     }
@@ -201,7 +195,7 @@ static void GetCPUInfo( FCPUInfo & _Info ){
     _Info.OS_64bit = IsWow64() != 0;
 #endif
 #else
-    _Info.OS_64bit = true; // FIXME
+    _Info.OS_64bit = true;
 #endif
 
     CPUID( cpuInfo, 1 );
@@ -287,7 +281,6 @@ static void GetCPUInfo( FCPUInfo & _Info ){
         _Info.XOP   = (cpuInfo[2] & ((int)1 << 11)) != 0;
     }
 }
-
 
 struct FMemoryInfo {
     int TotalAvailableMegabytes;
