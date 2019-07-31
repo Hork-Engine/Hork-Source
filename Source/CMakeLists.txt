@@ -270,11 +270,11 @@ set_target_properties( minizip PROPERTIES FOLDER "ThirdParty/Compression" )
 
 #########################################################################################
 # FASTLZ
-#message( "========== FASTLZ ==========" )
-#include_directories( ThirdParty/fastlz )
-#add_subdirectory( ThirdParty/fastlz )
-#set_target_properties( fastlz PROPERTIES FOLDER "ThirdParty/Compression" )
-##set( AN_THIRDPARTY_LIBS ${AN_THIRDPARTY_LIBS} fastlz )
+message( "========== FASTLZ ==========" )
+include_directories( ThirdParty/fastlz )
+add_subdirectory( ThirdParty/fastlz )
+set_target_properties( fastlz PROPERTIES FOLDER "ThirdParty/Compression" )
+#set( AN_THIRDPARTY_LIBS ${AN_THIRDPARTY_LIBS} fastlz )
 #########################################################################################
 
 #########################################################################################
@@ -457,6 +457,16 @@ set( AN_BULLET_LIBS LinearMath Bullet2FileLoader BulletFileLoader Bullet3Collisi
 #########################################################################################
 
 #########################################################################################
+# VHACD
+message( "========== VHACD ==========" )
+include_directories( ThirdParty/VHACD )
+add_subdirectory( ThirdParty/VHACD )
+include_directories( ThirdParty/VHACD/public )
+set_target_properties( vhacd PROPERTIES FOLDER "ThirdParty/Physics" )
+#set( AN_THIRDPARTY_LIBS ${AN_THIRDPARTY_LIBS} fastlz )
+#########################################################################################
+
+#########################################################################################
 # BOX2D
 #message( "========== BOX2D ==========" )
 #option(BOX2D_INSTALL "Install Box2D libs, includes, and CMake scripts" OFF)
@@ -473,15 +483,15 @@ set( AN_BULLET_LIBS LinearMath Bullet2FileLoader BulletFileLoader Bullet3Collisi
 
 #########################################################################################
 # RECAST NAVIGATION
-#message( "========== RECAST NAVIGATION ==========" )
-#include_directories( ThirdParty/recastnavigation/DebugUtils/Include )
-#include_directories( ThirdParty/recastnavigation/Detour/Include )
-#include_directories( ThirdParty/recastnavigation/DetourCrowd/Include )
-#include_directories( ThirdParty/recastnavigation/DetourTileCache/Include )
-#include_directories( ThirdParty/recastnavigation/Recast/Include )
-#add_subdirectory( ThirdParty/recastnavigation )
-#set_target_properties( Recast PROPERTIES FOLDER "ThirdParty/Physics" )
-##set( AN_THIRDPARTY_LIBS ${AN_THIRDPARTY_LIBS} Recast )
+message( "========== RECAST NAVIGATION ==========" )
+include_directories( ThirdParty/recastnavigation/DebugUtils/Include )
+include_directories( ThirdParty/recastnavigation/Detour/Include )
+include_directories( ThirdParty/recastnavigation/DetourCrowd/Include )
+include_directories( ThirdParty/recastnavigation/DetourTileCache/Include )
+include_directories( ThirdParty/recastnavigation/Recast/Include )
+add_subdirectory( ThirdParty/recastnavigation )
+set_target_properties( Recast PROPERTIES FOLDER "ThirdParty/Physics" )
+#set( AN_THIRDPARTY_LIBS ${AN_THIRDPARTY_LIBS} Recast )
 #########################################################################################
 
 #########################################################################################
@@ -506,6 +516,8 @@ message( "========== TOOLCHAIN ==========" )
 #########################################################################################
 # SAMPLES
 message( "========== SAMPLES ==========" )
+add_subdirectory( Samples/CharacterController )
+set_target_properties( CharacterController PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/Quake1 )
 set_target_properties( Quake1 PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/Quake3 )
