@@ -105,7 +105,6 @@ struct FCPUInfo {
 
 #define MAX_COMMAND_LINE_LENGTH 1024
 static char CmdLineBuffer[ MAX_COMMAND_LINE_LENGTH ];
-static FThread GameThread;
 static bool bApplicationRun = false;
 
 int rt_NumArguments = 0;
@@ -123,7 +122,6 @@ static void * rt_FrameMemoryAddress = nullptr;
 static size_t rt_FrameMemorySize = 0;
 static FSyncEvent rt_SimulationIsDone;
 static FSyncEvent rt_GameUpdateEvent;
-static bool rt_Terminate = false;
 static IGameEngine * rt_GameEngine;
 static FCreateGameModuleCallback rt_CreateGameModuleCallback;
 static FCPUInfo rt_CPUInfo;
@@ -553,8 +551,6 @@ static void DisplayCriticalMessage( const char * _Message ) {
 }
 
 static void EmergencyExit() {
-    GameThread.Join();
-
     glfwTerminate();
 
     GMainHeapMemory.Clear();
@@ -633,84 +629,10 @@ static void RuntimeUpdate() {
     }
 }
 
-static void SubmitGameUpdate() {
-    rt_FrameData.WriteIndex ^= 1;
-    rt_FrameData.ReadIndex = rt_FrameData.WriteIndex ^ 1;
-    rt_FrameData.FrameMemorySize = rt_FrameMemorySize - rt_FrameData.FrameMemoryUsed;
-    if ( rt_FrameData.WriteIndex & 1 ) {
-        rt_FrameData.pFrameMemory = (byte *)rt_FrameMemoryAddress + rt_FrameMemorySize;
-    } else {
-        rt_FrameData.pFrameMemory = rt_FrameMemoryAddress;
-    }
-    rt_FrameData.FrameMemoryUsed = 0;
-    rt_GameUpdateEvent.Signal();
-}
-
-static void WaitGameUpdate() {
-    rt_GameUpdateEvent.Wait();
-}
-
-static void SignalSimulationIsDone() {
-    rt_SimulationIsDone.Signal();
-}
-
-static void WaitSimulationIsDone() {
-    rt_SimulationIsDone.Wait();
-}
-
-static void GameThreadMain( void * ) {
-    if ( SetCriticalMark() ) {
-        // Critical error was emitted by this thread
-        rt_Terminate = true;
-        return;
-    }
-
-    while ( 1 ) {
-        // Ожидаем пока MainThread не пробудит поток вызовом SubmitGameUpdate
-        //do {
-        //    //  Пока ждем, можно сделать что-то полезное, например копить сетевые пакеты
-        //    ProcessNetworkPackets();
-        //} while ( WaitGameUpdate( timeOut ) );
-
-        WaitGameUpdate();
-
-        if ( IsCriticalError() ) {
-            // Critical error in other thread was occured
-            rt_Terminate = true;
-            return;
-        }
-
-        if ( rt_GameEngine->IsStopped() ) {
-            break;
-        }
-
-        rt_GameEngine->UpdateFrame();
-
-        SignalSimulationIsDone();
-    }
-
-    rt_Terminate = true;
-    SignalSimulationIsDone();
-}
-
-static void RenderBackend() {
-    GRenderBackend->RenderFrame( &rt_FrameData );
-}
-
-static void WaitGPU() {
-    GRenderBackend->WaitGPU();
-}
-
 static void RuntimeMainLoop() {
-    for ( int j = 0 ; j < 2 ; j++ ) {
-        rt_FrameData.RenderProxyUploadHead[j] = nullptr;
-        rt_FrameData.RenderProxyUploadTail[j] = nullptr;
-        rt_FrameData.RenderProxyFree[j] = nullptr;
-    }
-    rt_FrameData.DrawListHead = nullptr;
-    rt_FrameData.DrawListTail = nullptr;
-    rt_FrameData.ReadIndex = 1;
-    rt_FrameData.WriteIndex = 0;
+    rt_FrameData.RenderProxyUploadHead = nullptr;
+    rt_FrameData.RenderProxyUploadTail = nullptr;
+    rt_FrameData.RenderProxyFree = nullptr;
     rt_FrameData.FrameMemoryUsed = 0;
     rt_FrameData.FrameMemorySize = rt_FrameMemorySize;
     rt_FrameData.pFrameMemory = rt_FrameMemoryAddress;
@@ -720,27 +642,16 @@ static void RuntimeMainLoop() {
 
     rt_GameEngine->Initialize( rt_CreateGameModuleCallback );
 
-    GameThread.Routine = GameThreadMain;
-    GameThread.Data = nullptr;
-    GameThread.Start();
-
     if ( SetCriticalMark() ) {
         return;
     }
 
-    while ( 1 ) {
+    do {
         rt_SysFrameTimeStamp = GRuntime.SysMicroseconds();
-
-        rt_FrameData.DrawListHead = nullptr;
-        rt_FrameData.DrawListTail = nullptr;
 
         if ( IsCriticalError() ) {
             // Critical error in other thread was occured
             return;
-        }
-
-        if ( rt_Terminate ) {
-            break;
         }
 
         // Получить свежие данные ввода и другие события
@@ -749,25 +660,22 @@ static void RuntimeMainLoop() {
         // Обновить данные кадра (камера, курсор), подготовить данные для render backend
         rt_GameEngine->BuildFrame();
 
-        // Разбудить игровой поток, начать подготовку следующего кадра
-        SubmitGameUpdate();
-
         // Сгенерировать команды для GPU, SwapBuffers
-        RenderBackend();
+        GRenderBackend->RenderFrame( &rt_FrameData );
 
-        // Ожидаем окончание симуляции в игровом потоке (тем временем, GPU выполняет команды бэкенда)
-        WaitSimulationIsDone();
+        // Очистить кадровую память для следующего кадра
+        rt_FrameData.FrameMemoryUsed = 0;
+
+        // Выполняем игровую логику для следующего кадра (тем временем, GPU выполняет команды бэкенда)
+        rt_GameEngine->UpdateFrame();
 
         // Ожидаем выполнение команд GPU, чтобы исключить "input lag"
-        WaitGPU();
-    }
+        GRenderBackend->WaitGPU();
 
-    GameThread.Join();
+    } while ( !rt_GameEngine->IsStopped() );
 
     rt_GameEngine->Deinitialize();
 
-    GRenderBackend->CleanupFrame( &rt_FrameData );
-    rt_FrameData.ReadIndex^=1;
     GRenderBackend->CleanupFrame( &rt_FrameData );
     rt_FrameData.Instances.Free();
     rt_FrameData.DbgVertices.Free();
@@ -892,7 +800,6 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
 
     rt_InitializeJoysticks();
     rt_InitializePhysicalMonitors();
-
     rt_InitializeDisplays();
 
     RuntimeMainLoop();

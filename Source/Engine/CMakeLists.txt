@@ -7,8 +7,6 @@ setup_msvc_runtime_library()
 
 add_definitions( -DANGIE_ENGINE_EXPORTS )
 
-#include_directories( Audio/Private/Codec/ThirdParty )
-
 #file( GLOB Root *.h *.cpp )
 
 file( GLOB CorePublic Core/Public/*.h Core/Public/*.cpp )
@@ -28,13 +26,31 @@ file( GLOB RendererNull Renderer/Null/*.h Renderer/Null/*.cpp )
 
 file( GLOB Imgui imgui/*.h imgui/*.cpp )
 
-file( GLOB GameEnginePublic GameEngine/Public/*.h GameEngine/Public/*.cpp )
-file( GLOB GameEnginePrivate GameEngine/Private/*.h GameEngine/Private/*.cpp )
+file( GLOB BulletCompatibility BulletCompatibility/*.h BulletCompatibility/*.cpp )
 
-file( GLOB GameEnginePrivateBulletCompatibility GameEngine/Private/BulletCompatibility/*.h GameEngine/Private/BulletCompatibility/*.cpp )
+file( GLOB BasePublic Base/Public/*.h Base/Public/*.cpp )
+file( GLOB BasePrivate Base/Private/*.h Base/Private/*.cpp )
 
-file( GLOB GameEnginePublicCodec GameEngine/Public/Codec/*.h GameEngine/Public/Codec/*.cpp )
-file( GLOB GameEnginePrivateCodec GameEngine/Private/Codec/*.h GameEngine/Private/Codec/*.cpp )
+file( GLOB ResourcePublic Resource/Public/*.h Resource/Public/*.cpp )
+file( GLOB ResourcePrivate Resource/Private/*.h Resource/Private/*.cpp )
+
+file( GLOB AudioPublic Audio/Public/*.h Audio/Public/*.cpp )
+file( GLOB AudioPrivate Audio/Private/*.h Audio/Private/*.cpp )
+
+file( GLOB AudioPublicAudioCodec Audio/Public/AudioCodec/*.h Audio/Public/AudioCodec/*.cpp )
+file( GLOB AudioPrivateAudioCodec Audio/Private/AudioCodec/*.h Audio/Private/AudioCodec/*.cpp )
+
+file( GLOB WorldPublic World/Public/*.h World/Public/*.cpp )
+file( GLOB WorldPrivate World/Private/*.h World/Private/*.cpp )
+
+file( GLOB WorldPublicActors World/Public/Actors/*.h World/Public/Actors/*.cpp )
+file( GLOB WorldPrivateActors World/Private/Actors/*.h World/Private/Actors/*.cpp )
+
+file( GLOB WorldPublicComponents World/Public/Components/*.h World/Public/Components/*.cpp )
+file( GLOB WorldPrivateComponents World/Private/Components/*.h World/Private/Components/*.cpp )
+
+file( GLOB GameThreadPublic GameThread/Public/*.h GameThread/Public/*.cpp )
+file( GLOB GameThreadPrivate GameThread/Private/*.h GameThread/Private/*.cpp )
 
 source_group( "Core\\Public" FILES ${CorePublic} )
 source_group( "Core\\Public\\BV" FILES ${CorePublicBV} )
@@ -53,13 +69,31 @@ source_group( "Renderer\\Null" FILES ${RendererNull} )
 
 source_group( "imgui" FILES ${Imgui} )
 
-source_group( "GameEngine\\Public" FILES ${GameEnginePublic} )
-source_group( "GameEngine\\Private" FILES ${GameEnginePrivate} )
+source_group( "Base\\Public" FILES ${BasePublic} )
+source_group( "Base\\Private" FILES ${BasePrivate} )
 
-source_group( "GameEngine\\Private\\BulletCompatibility" FILES ${GameEnginePrivateBulletCompatibility} )
+source_group( "BulletCompatibility" FILES ${BulletCompatibility} )
 
-source_group( "GameEngine\\Public\\Codec" FILES ${GameEnginePublicCodec} )
-source_group( "GameEngine\\Private\\Codec" FILES ${GameEnginePrivateCodec} )
+source_group( "Resource\\Public" FILES ${ResourcePublic} )
+source_group( "Resource\\Private" FILES ${ResourcePrivate} )
+
+source_group( "Audio\\Public" FILES ${AudioPublic} )
+source_group( "Audio\\Private" FILES ${AudioPrivate} )
+
+source_group( "Audio\\Public\\AudioCodec" FILES ${AudioPublicAudioCodec} )
+source_group( "Audio\\Private\\AudioCodec" FILES ${AudioPrivateAudioCodec} )
+
+source_group( "World\\Public" FILES ${WorldPublic} )
+source_group( "World\\Private" FILES ${WorldPrivate} )
+
+source_group( "World\\Public\\Actors" FILES ${WorldPublicActors} )
+source_group( "World\\Private\\Actors" FILES ${WorldPrivateActors} )
+
+source_group( "World\\Public\\Components" FILES ${WorldPublicComponents} )
+source_group( "World\\Private\\Components" FILES ${WorldPrivateComponents} )
+
+source_group( "GameThread\\Public" FILES ${GameThreadPublic} )
+source_group( "GameThread\\Private" FILES ${GameThreadPrivate} )
 
 add_library(
 
@@ -82,17 +116,31 @@ ${RendererNull}
 
 ${Imgui}
 
-${GameEnginePublic}
-${GameEnginePrivate}
+${BasePublic}
+${BasePrivate}
 
-${GameEnginePrivateBulletCompatibility}
+${BulletCompatibility}
 
-${GameEnginePublicCodec}
-${GameEnginePrivateCodec}
+${ResourcePublic}
+${ResourcePrivate}
 
-${GameEnginePublicMesh}
-${GameEnginePrivateMesh}
+${AudioPublic}
+${AudioPrivate}
 
+${AudioPublicAudioCodec}
+${AudioPrivateAudioCodec}
+
+${WorldPublic}
+${WorldPrivate}
+
+${WorldPublicActors}
+${WorldPrivateActors}
+
+${WorldPublicComponents}
+${WorldPrivateComponents}
+
+${GameThreadPublic}
+${GameThreadPrivate}
 )
 
 # if shared

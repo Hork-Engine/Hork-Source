@@ -37,6 +37,9 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
+FRenderBackendFeatures rt_RenderFeatures;
+int rt_InputEventCount = 0;
+
 static const int GLFWCursorMode[2] = { GLFW_CURSOR_NORMAL, GLFW_CURSOR_DISABLED };
 
 #define MOUSE_LOST (-999999999999.0)
@@ -71,9 +74,6 @@ static bool bIsWindowIconified = false;
 static bool bIsWindowVisible = false;
 
 static GLFWwindow * Wnd = nullptr;
-
-FRenderBackendFeatures rt_RenderFeatures;
-int rt_InputEventCount = 0;
 
 static void SendChangedVideoModeEvent();
 

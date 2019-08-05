@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include <Engine/Core/Public/Math.h>
+#include <Engine/Core/Public/CoreMath.h>
 
 //---- Define assertion handler. Defaults to calling assert().
 #define IM_ASSERT(_EXPR)  AN_Assert(_EXPR)

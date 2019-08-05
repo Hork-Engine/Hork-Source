@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Runtime/Public/InputDefs.h>
 
-#include <Engine/Core/Public/Math.h>
+#include <Engine/Core/Public/CoreMath.h>
 
 #include <GLFW/glfw3.h>
 

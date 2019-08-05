@@ -123,44 +123,11 @@ void FRenderProxy::KillProxy() {
         GMainMemoryZone.Dealloc( this );
         return;
     } else {
-        NextFreeProxy = frameData->RenderProxyFree[ frameData->WriteIndex ];
-        frameData->RenderProxyFree[ frameData->WriteIndex ] = this;
+        NextFreeProxy = frameData->RenderProxyFree;
+        frameData->RenderProxyFree = this;
     }
 
     bPendingKill = true;
-}
-
-// TODO: call this after SwapBuffers()
-void FRenderProxy::FreeDeadProxies(/* FRenderFrame * _Frame */) {
-#if 0
-    FRenderProxy * next, *prev = nullptr;
-    for ( FRenderProxy * proxy = PendingKillProxies ; proxy ; proxy = next ) {
-
-        next = proxy->NextPendingKillProxy;
-
-        if ( proxy->bCanRemove/* || !proxy->bSubmittedToRenderThread*/ ) {
-
-            if ( prev ) {
-                prev->NextPendingKillProxy = next;
-            } else {
-                PendingKillProxies = next;
-            }
-
-            proxy->~FRenderProxy();
-            GMainMemoryZone.Dealloc( proxy );
-
-        } /*else if ( !proxy->bFreed ) {
-
-            proxy->NextFreeProxy = _Frame->FreeProxies;
-            _Frame->FreeProxies = proxy;
-
-            proxy->bFreed = true;
-            prev = proxy;
-        }*/ else {
-            prev = proxy;
-        }
-    }
-#endif
 }
 
 void FRenderProxy::MarkUpdated() {
@@ -171,19 +138,19 @@ void FRenderProxy::MarkUpdated() {
     //bLost[frameData->SmpIndex] = false;
 
     if ( IntrusiveIsInList( this,
-                            NextUpload[ frameData->WriteIndex ],
-                            PrevUpload[ frameData->WriteIndex ],
-                            frameData->RenderProxyUploadHead[ frameData->WriteIndex ],
-                            frameData->RenderProxyUploadTail[ frameData->WriteIndex ] ) ) {
+                            NextUpload,
+                            PrevUpload,
+                            frameData->RenderProxyUploadHead,
+                            frameData->RenderProxyUploadTail ) ) {
         // Already marked
         return;
     }
 
     IntrusiveAddToList( this,
-                        NextUpload[ frameData->WriteIndex ],
-                        PrevUpload[ frameData->WriteIndex ],
-                        frameData->RenderProxyUploadHead[ frameData->WriteIndex ],
-                        frameData->RenderProxyUploadTail[ frameData->WriteIndex ] );
+                        NextUpload,
+                        PrevUpload,
+                        frameData->RenderProxyUploadHead,
+                        frameData->RenderProxyUploadTail );
 
     bSubmittedToRenderThread = true;
 }
@@ -264,11 +231,11 @@ void * FRenderFrame::AllocFrameData( size_t _BytesCount ) {
 
     void * pMemory;
 
-    if ( WriteIndex & 1 ) {
-        pMemory = (byte *)pFrameMemory - FrameMemoryUsed - _BytesCount;
-    } else {
+//    if ( WriteIndex & 1 ) {
+//        pMemory = (byte *)pFrameMemory - FrameMemoryUsed - _BytesCount;
+//    } else {
         pMemory = (byte *)pFrameMemory + FrameMemoryUsed;
-    }
+//    }
 
     FrameMemoryUsed += _BytesCount;
 

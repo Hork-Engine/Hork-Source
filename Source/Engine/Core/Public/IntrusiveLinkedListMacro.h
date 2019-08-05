@@ -71,3 +71,6 @@ Intrusive linked list macro
         _object->_prev = nullptr; \
     } \
 }
+
+#define IntrusiveForEach( object, head_or_tail, next_or_prev ) \
+    for ( auto * object = head_or_tail ; object ; object = object->next_or_prev )

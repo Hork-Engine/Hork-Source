@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "Math.h"
+#include "Plane.h"
 #include "BV/BvAxisAlignedBox.h"
 
 #define CONVEX_HULL_MAX_BOUNDS        ( 5*1024 )//99999999999.0f

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/Math.h>
+#include <Engine/Core/Public/CoreMath.h>
 #include <Engine/Core/Public/PodArray.h>
 
 #include "Runtime.h"
@@ -361,16 +361,14 @@ public:
 
     FRenderProxy * GetNextFreeProxy() { return NextFreeProxy; }
 
-    static void FreeDeadProxies();
-
     // Internal
 
     // Accessed only by render thread:
     FRenderProxy * Next;            // list of uploaded proxies
     FRenderProxy * Prev;            // list of uploaded proxies
 
-    FRenderProxy * NextUpload[2];
-    FRenderProxy * PrevUpload[2];
+    FRenderProxy * NextUpload;
+    FRenderProxy * PrevUpload;
 
 protected:
     FRenderProxy() {}
@@ -477,7 +475,7 @@ public:
         bool bReallocated;
     };
 
-    FrameData Data[2];
+    FrameData Data;
 
     // Accessed only by render thread:
     enum { MAX_HANDLES = 3 };
@@ -507,7 +505,7 @@ public:
         bool bReallocated;
     };
 
-    FrameData Data[2];
+    FrameData Data;
 
     // Accessed only by render thread:
     size_t Handle;
@@ -534,7 +532,7 @@ public:
         bool bReallocated;
     };
 
-    FrameData Data[2];
+    FrameData Data;
 
     // Accessed only by render thread:
     size_t Handle;
@@ -560,7 +558,7 @@ public:
         bool bReallocated;
     };
 
-    FrameData Data[2];
+    FrameData Data;
 
     // Accessed only by render thread:
     size_t Handle;
@@ -592,7 +590,7 @@ public:
         bool bReallocated;
     };
 
-    FrameData Data[2];
+    FrameData Data;
 
     // Accessed only by render thread:
     enum { MAX_HANDLES = 1 };
@@ -677,7 +675,7 @@ class FRenderProxy_Material : public FRenderProxy {
     friend class FRenderProxy;
 
 public:
-    FMaterialBuildData * Data[2];
+    FMaterialBuildData * Data;
 
     // Accessed only by render thread:
     enum {
@@ -876,9 +874,6 @@ struct FRenderView {
 };
 
 struct FRenderFrame {
-    int ReadIndex;
-    int WriteIndex;
-
     // Game tick
     int FrameNumber;
 
@@ -898,9 +893,9 @@ struct FRenderFrame {
     FRenderView RenderViews[MAX_RENDER_VIEWS];
     int NumViews;
 
-    FRenderProxy * RenderProxyUploadHead[2];
-    FRenderProxy * RenderProxyUploadTail[2];
-    FRenderProxy * RenderProxyFree[2];
+    FRenderProxy * RenderProxyUploadHead;
+    FRenderProxy * RenderProxyUploadTail;
+    FRenderProxy * RenderProxyFree;
 
     TPodArray< FRenderInstance *, 1024 > Instances;
 
@@ -910,8 +905,6 @@ struct FRenderFrame {
     FArrayOfDebugVertices DbgVertices;
     FArrayOfDebugIndices  DbgIndices;
     FArrayOfDebugDrawCmds DbgCmds;
-
-    //int64_t RenderTimeDelta;
 
     void * AllocFrameData( size_t _BytesCount );
 };
