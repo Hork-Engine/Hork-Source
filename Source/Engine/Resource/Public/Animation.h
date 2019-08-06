@@ -143,6 +143,6 @@ private:
     TPodArray< BvAxisAlignedBox > Bounds;
 };
 
-AN_FORCEINLINE unsigned short FAnimation::GetChannelIndex( int _JointIndex ) const {
-    return ( _JointIndex < MinNodeIndex || _JointIndex > MaxNodeIndex ) ? (unsigned short)-1 : ChannelsMap[ _JointIndex - MinNodeIndex ];
+AN_FORCEINLINE unsigned short FAnimation::GetChannelIndex( int _NodeIndex ) const {
+    return ( _NodeIndex < MinNodeIndex || _NodeIndex > MaxNodeIndex ) ? (unsigned short)-1 : ChannelsMap[ _NodeIndex - MinNodeIndex ];
 }

@@ -37,7 +37,7 @@ SOFTWARE.
 #endif
 
 static float FloatToHalfOverflow() {
-    float f = 1e10;
+    volatile float f = 1e10;
     for ( int j = 0 ; j < 10 ; j++ ) {
         f *= f; // this will overflow before the for loop terminates
     }

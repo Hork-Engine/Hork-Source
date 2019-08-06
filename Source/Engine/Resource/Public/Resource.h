@@ -37,6 +37,5 @@ SOFTWARE.
 #include "Material.h"
 #include "MaterialAssembly.h"
 #include "ResourceManager.h"
-#include "Shape.h"
 #include "Skeleton.h"
 #include "Texture.h"

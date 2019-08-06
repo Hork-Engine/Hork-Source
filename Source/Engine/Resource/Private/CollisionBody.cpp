@@ -252,7 +252,7 @@ public:
 
     // getNumSubParts returns the number of seperate subparts
     // each subpart has a continuous array of vertices and indices
-    virtual int getNumSubParts() const {
+    int getNumSubParts() const override {
         return SubpartCount;
     }
 

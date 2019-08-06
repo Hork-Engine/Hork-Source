@@ -36,5 +36,5 @@ SOFTWARE.
 #include "Base/Public/Base.h"
 #include "Resource/Public/Resource.h"
 #include "Audio/Public/Audio.h"
-#include "World/Public/WorldAll"
+#include "World/Public/WorldAll.h"
 #include "GameThread/Public/GameThread.h"

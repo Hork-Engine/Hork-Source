@@ -31,7 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Base/Public/BaseObject.h>
-#include "Shape.h"
 #include "MaterialAssembly.h"
 #include "CollisionBody.h"
 
@@ -263,9 +262,20 @@ public:
     // Allocate mesh
     void Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false, bool _DynamicStorage = false );
 
-    // Allocate mesh and create base shape
-    template< typename _Shape, class... _Valty >
-    void InitializeShape( _Valty &&... _Val );
+    // Helper. Create box mesh
+    void InitializeBoxMesh( const Float3 & _Size, float _TexCoordScale );
+
+    // Helper. Create sphere mesh
+    void InitializeSphereMesh( float _Radius, float _TexCoordScale, int _HDiv, int _VDiv );
+
+    // Helper. Create plane mesh
+    void InitializePlaneMesh( float _Width, float _Height, float _TexCoordScale );
+
+    // Helper. Create patch mesh
+    void InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, int resx, int resy, float _TexCoordScale, bool _TwoSided );
+
+    // Helper. Create cylinder mesh
+    void InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _VDiv );
 
     // Create mesh from string (*box* *sphere* *cylinder* *plane*)
     void InitializeInternalMesh( const char * _Name );
@@ -385,17 +395,24 @@ private:
     BvAxisAlignedBox BoundingBox;
 };
 
-template< typename _Shape, class... _Valty >
-void FIndexedMesh::InitializeShape( _Valty &&... _Val ) {
-    TPodArray< FMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
-    BvAxisAlignedBox bounds;
+void CalcTangentSpace( FMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices );
 
-    _Shape::CreateMesh( vertices, indices, bounds, std::forward< _Valty >( _Val )... );
-
-    Initialize( vertices.Size(), indices.Size(), 1 );
-    WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
-    WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
-
-    Subparts[0]->BoundingBox = bounds;
+// binormal = cross( normal, tangent ) * handedness
+AN_FORCEINLINE float CalcHandedness( Float3 const & _Tangent, Float3 const & _Binormal, Float3 const & _Normal ) {
+    return ( _Normal.Cross( _Tangent ).Dot( _Binormal ) < 0.0f ) ? -1.0f : 1.0f;
 }
+
+AN_FORCEINLINE Float3 CalcBinormal( Float3 const & _Tangent, Float3 const & _Normal, float _Handedness ) {
+    return _Normal.Cross( _Tangent ).Normalized() * _Handedness;
+}
+
+void CreateBoxMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale );
+
+void CreateSphereMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _HDiv, int _VDiv );
+
+void CreatePlaneMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale );
+
+void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
+    Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, int resx, int resy, float _TexCoordScale, bool _TwoSided );
+
+void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _VDiv );
