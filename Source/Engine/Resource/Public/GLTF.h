@@ -30,13 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "Animation.h"
-#include "Asset.h"
-#include "CollisionBody.h"
-#include "GLTF.h"
 #include "IndexedMesh.h"
-#include "Material.h"
-#include "MaterialAssembly.h"
-#include "ResourceManager.h"
 #include "Skeleton.h"
-#include "Texture.h"
+#include "Animation.h"
+
+bool LoadGLTF( const char * _FileName, FMeshAsset & _MeshAsset, FSkeletonAsset & _SkeletonAsset, TVector< FAnimationAsset > & _Animations );
