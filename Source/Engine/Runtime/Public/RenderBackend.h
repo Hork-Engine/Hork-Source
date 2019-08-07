@@ -853,6 +853,8 @@ struct FRenderView {
     // View parameters
     Float3 ViewPostion;
     Quat ViewRotation;
+    Float3 ViewRightVec;
+    Float3 ViewUpVec;
     Float4x4 ViewMatrix;
     Float3x3 NormalToViewMatrix;
     Float4x4 ProjectionMatrix;
@@ -907,6 +909,15 @@ struct FRenderFrame {
     FArrayOfDebugDrawCmds DbgCmds;
 
     void * AllocFrameData( size_t _BytesCount );
+};
+
+struct FRenderFrontendDef {
+    FRenderView * View;
+    BvFrustum const * Frustum;
+    int RenderingMask;
+    int VisMarker;
+
+    int PolyCount;
 };
 
 struct FRenderBackendFeatures {

@@ -72,19 +72,14 @@ public:
 
     void SetTexture( int _TextureSlot, FTexture * _Texture );
 
-    int GetVisMarker() const { return VisMarker; }
-    void SetVisMarker( int _Marker ) { VisMarker = _Marker; }
-
-    FMaterialInstanceFrameData * FrameData;
-    TRef< FTexture > Textures[MAX_MATERIAL_TEXTURES];
+    FMaterialInstanceFrameData * RenderFrontend_Update( int _VisMarker );
 
 protected:
-
     FMaterialInstance() {}
     ~FMaterialInstance() {}
 
 private:
-
-
+    FMaterialInstanceFrameData * FrameData;
+    TRef< FTexture > Textures[ MAX_MATERIAL_TEXTURES ];
     int VisMarker;
 };

@@ -227,6 +227,8 @@ public:
                                 BvAxisAlignedBox & _ResultBoundingBox,
                                 BvAxisAlignedBox const * _ClipBoundingBox );
 
+    void RenderFrontend_AddInstances( FRenderFrontendDef * _Def );
+
 protected:
 
     FLevel();
@@ -259,6 +261,10 @@ private:
 
     void RemoveSurfaceAreas( FSpatialObject * _Surf );
 
+    void CullInstances( FRenderFrontendDef * _Def );
+    void FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area );
+    void AddRenderInstances( FRenderFrontendDef * _Def, class FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
+
     FWorld * OwnerWorld;
     int IndexInArrayOfLevels = -1;
     bool bIsPersistent;
@@ -269,4 +275,5 @@ private:
     TPodArray< FAreaPortal > AreaPortals;
     byte * LightData;
     BvAxisAlignedBox IndoorBounds;
+    int LastVisitedArea;
 };

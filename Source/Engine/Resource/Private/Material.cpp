@@ -66,3 +66,42 @@ void FMaterialInstance::SetTexture( int _TextureSlot, FTexture * _Texture ) {
     }
     Textures[_TextureSlot] = _Texture;
 }
+
+FMaterialInstanceFrameData * FMaterialInstance::RenderFrontend_Update( int _VisMarker ) {
+    if ( VisMarker == _VisMarker ) {
+        return FrameData;
+    }
+
+    VisMarker = _VisMarker;
+
+    FrameData = ( FMaterialInstanceFrameData * )GRuntime.GetFrameData()->AllocFrameData( sizeof( FMaterialInstanceFrameData ) );
+    if ( !FrameData ) {
+        return nullptr;
+    }
+
+    FrameData->Material = Material->GetRenderProxy();
+
+    FRenderProxy_Texture ** textures = FrameData->Textures;
+    FrameData->NumTextures = 0;
+
+    for ( int i = 0; i < MAX_MATERIAL_TEXTURES; i++ ) {
+        if ( Textures[ i ] ) {
+
+            FRenderProxy_Texture * textureProxy = Textures[ i ]->GetRenderProxy();
+
+            if ( textureProxy->IsSubmittedToRenderThread() ) {
+                textures[ i ] = textureProxy;
+                FrameData->NumTextures = i + 1;
+            } else {
+                textures[ i ] = 0;
+            }
+        } else {
+            textures[ i ] = 0;
+        }
+    }
+
+    FrameData->NumUniformVectors = Material->GetNumUniformVectors();
+    memcpy( FrameData->UniformVectors, UniformVectors, sizeof( Float4 )*FrameData->NumUniformVectors );
+
+    return FrameData;
+}

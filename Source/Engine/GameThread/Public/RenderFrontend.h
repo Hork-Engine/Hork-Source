@@ -69,24 +69,19 @@ public:
 private:
     void WriteDrawList( FCanvas * _Canvas );
     void RenderView( int _Index );
-    void AddInstances();
+    void AddInstances( struct FRenderFrontendDef * _Def );
     void CullLevelInstances( FLevel * _Level );
     void FlowThroughPortals_r( FLevelArea * _Area );
     void AddSurface( FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
-    void UpdateMaterialInstanceFrameData( FMaterialInstance * _Instance );
 
     FRenderFrame * CurFrameData;
     FRenderView * RV;
     FRenderingParameters * RP;
-    FCameraComponent * Camera;
-    BvFrustum const * Frustum;
     FWorld * World;
     FDebugDraw DebugDraw;
     int VisMarker = 0;
     int PolyCount = 0;
     int FrontendTime = 0;
-    Float3 ViewOrigin;
-    int ViewArea;
     FConvexHull * Polygon[ 2 ];
 };
 

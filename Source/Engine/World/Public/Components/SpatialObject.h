@@ -58,7 +58,6 @@ class FSpatialObject : public FSceneComponent {
     friend class FLevel;
 
 public:
-
     // Force using bounding box specified by SetBoundsOverride()
     void ForceOverrideBounds( bool _OverrideBounds );
 

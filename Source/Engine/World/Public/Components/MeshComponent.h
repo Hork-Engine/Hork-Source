@@ -157,7 +157,7 @@ public:
     FMeshComponent * GetPrevMesh() { return Prev; }
 
     // Used for VSD_PASS_CUSTOM_VISIBLE_STEP algorithm
-    virtual void OnCustomVisibleStep( FCameraComponent * _Camera, bool & _OutVisibleFlag ) {}
+    virtual void RenderFrontend_CustomVisibleStep( FRenderFrontendDef * _Def, bool & _OutVisibleFlag ) {}
 
 protected:
     FMeshComponent();
