@@ -132,7 +132,7 @@ void FSceneComponent::_AttachTo( FSceneComponent * _Parent, bool _KeepWorldTrans
         MarkTransformDirty();
     }
 
-    GLogger.Printf( "%s attached to %s\n", FinalClassName(), _Parent->FinalClassName() );
+    //GLogger.Printf( "%s attached to %s\n", FinalClassName(), _Parent->FinalClassName() );
 }
 
 void FSceneComponent::Detach( bool _KeepWorldTransform ) {
@@ -151,7 +151,7 @@ void FSceneComponent::Detach( bool _KeepWorldTransform ) {
 #endif
         }
     }
-    GLogger.Printf( "%s detached from %s\n", FinalClassName(), AttachParent->FinalClassName() );
+    //GLogger.Printf( "%s detached from %s\n", FinalClassName(), AttachParent->FinalClassName() );
     AttachParent = nullptr;
     SocketIndex = -1;
     MarkTransformDirty();

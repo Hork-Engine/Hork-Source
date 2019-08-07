@@ -37,7 +37,7 @@ SOFTWARE.
 
 class FInputMappings;
 
-class ANGIE_API FRenderingParameters final : public FBaseObject {
+class ANGIE_API FRenderingParameters final : public FBaseObject{
     AN_CLASS( FRenderingParameters, FBaseObject )
 
 public:
