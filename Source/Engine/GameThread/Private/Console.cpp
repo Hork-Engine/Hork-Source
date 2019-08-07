@@ -28,7 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Engine/GameThread/Public/Console.h>
+#include "Console.h"
+
 #include <Engine/GameThread/Public/GameEngine.h>
 
 #include <Engine/World/Public/Canvas.h>
