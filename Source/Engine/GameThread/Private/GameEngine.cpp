@@ -629,6 +629,8 @@ void FGameEngine::UpdateWorlds() {
     GameModule->OnPostGameTick( FrameDurationInSeconds );
 
     KickoffPendingKillWorlds();
+
+    FSpatialObject::_UpdateSurfaceAreas();
 }
 
 void FGameEngine::KickoffPendingKillWorlds() {
@@ -782,7 +784,6 @@ void FGameEngine::Initialize( FCreateGameModuleCallback _CreateGameModuleCallbac
 
     GLogger.Printf( "Created game module: %s\n", GameModule->FinalClassName() );
 
-    //GRuntime.SwapFrameData();
     ProcessEvents();
 
     AxesFract = 1;
@@ -846,12 +847,13 @@ void FGameEngine::UpdateFrame() {
     // Set current frame number
     FrameNumber++;
 
-    // Garbage collect
+    // Garbage collect from previuous frames
     FGarbageCollector::DeallocateObjects();
 
     // Tick worlds
     UpdateWorlds();
 
+    // Update audio system
     GAudioSystem.Update( FPlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
 
     // Build draw lists for canvas
@@ -859,8 +861,6 @@ void FGameEngine::UpdateFrame() {
 
     // Imgui test
     UpdateImgui();
-
-    FSpatialObject::_UpdateSurfaceAreas();
 
     // Set next frame duration
     FrameDuration = GRuntime.SysMicroseconds() - FrameTimeStamp;
