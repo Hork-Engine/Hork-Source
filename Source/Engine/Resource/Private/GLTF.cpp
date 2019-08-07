@@ -28,10 +28,9 @@ SOFTWARE.
 
 */
 
+#include <Engine/Resource/Public/GLTF.h>
+
 #include <Engine/Core/Public/Logger.h>
-#include <Engine/Resource/Public/Animation.h>
-#include <Engine/Resource/Public/Skeleton.h>
-#include <Engine/Resource/Public/IndexedMesh.h>
 
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
