@@ -30,11 +30,11 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/BaseObject.h>
-#include <Engine/World/Public/Texture.h>
-#include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/IndexedMesh.h>
-#include <Engine/World/Public/Level.h>
+#include <Engine/Base/Public/BaseObject.h>
+#include <Engine/Resource/Public/Texture.h>
+#include <Engine/Resource/Public/IndexedMesh.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
+#include <Engine/World/Public/BSP.h>
 
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 

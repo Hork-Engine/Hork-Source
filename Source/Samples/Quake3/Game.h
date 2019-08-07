@@ -30,8 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/InputComponent.h>
-#include <Engine/World/Public/PlayerController.h>
+#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/World/Public/Actors/PlayerController.h>
+#include <Engine/World/Public/Components/InputComponent.h>
 #include <Engine/World/Public/World.h>
 
 #include "Player.h"
@@ -44,16 +45,16 @@ class FGameModule final : public IGameModule {
     AN_CLASS( FGameModule, IGameModule )
 
 public:
-    TRefHolder< FRenderingParameters > RenderingParams;
-    TRefHolder< FInputMappings > InputMappings;
+    TRef< FRenderingParameters > RenderingParams;
+    TRef< FInputMappings > InputMappings;
     FWorld * World;
     FMyPlayerController * PlayerController;
     TActorSpawnParameters< FPlayer > PlayerSpawnParameters;
-    TRefHolder< FLevel > Level;
-    TRefHolder< FMaterial > WallMaterial;
-    TRefHolder< FMaterial > WaterMaterial;
-    TRefHolder< FMaterial > SkyMaterial;
-    TRefHolder< FMaterial > SkyboxMaterial;
+    TRef< FLevel > Level;
+    TRef< FMaterial > WallMaterial;
+    TRef< FMaterial > WaterMaterial;
+    TRef< FMaterial > SkyMaterial;
+    TRef< FMaterial > SkyboxMaterial;
 
     FGameModule() {}
 

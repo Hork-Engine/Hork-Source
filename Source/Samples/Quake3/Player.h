@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Pawn.h>
+#include <Engine/World/Public/Actors/Pawn.h>
 
 class FCameraComponent;
 
@@ -43,8 +43,6 @@ public:
 protected:
 
     FPlayer();
-    void PreInitializeComponents() override;
-    void PostInitializeComponents() override;
     void BeginPlay() override;
     void EndPlay() override;
     void SetupPlayerInputComponent( FInputComponent * _Input ) override;

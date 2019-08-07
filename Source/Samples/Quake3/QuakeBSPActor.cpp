@@ -32,20 +32,21 @@ SOFTWARE.
 #include "Game.h"
 
 #include <Engine/Core/Public/Logger.h>
-#include <Engine/World/Public/CameraComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/GameMaster.h>
+#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/GameThread/Public/RenderFrontend.h>
+#include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/World/Public/Components/CameraComponent.h>
 
-AN_CLASS_META_NO_ATTRIBS( FQuakeBSPActor )
+AN_CLASS_META_NO_ATTRIBS( FQuakeBSPView )
 
 #define MAX_SUBDIV_VERTS 0//16384
 #define MAX_SUBDIV_INDICES 0//(32768*4)
 
-FQuakeBSPActor::FQuakeBSPActor() {
+FQuakeBSPView::FQuakeBSPView() {
     Mesh = NewObject< FIndexedMesh >();
 }
 
-void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
+void FQuakeBSPView::SetModel( FQuakeBSP * _Model ) {
     Model = _Model;
 
     BSP = &Model->BSP;
@@ -54,18 +55,18 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
         surf->Destroy();
     }
 
-    SurfacePool.ResizeInvalidate( Model->LightmapGroups.Length() );
-    Vertices.ResizeInvalidate( BSP->Vertices.Length() + MAX_SUBDIV_VERTS );
-    LightmapVerts.ResizeInvalidate( BSP->Vertices.Length() + MAX_SUBDIV_VERTS );
-    VertexLight.ResizeInvalidate( BSP->Vertices.Length() + MAX_SUBDIV_VERTS );
-    Indices.ResizeInvalidate( BSP->Indices.Length() + MAX_SUBDIV_INDICES );
+    SurfacePool.ResizeInvalidate( Model->LightmapGroups.Size() );
+    Vertices.ResizeInvalidate( BSP->Vertices.Size() + MAX_SUBDIV_VERTS );
+    LightmapVerts.ResizeInvalidate( BSP->Vertices.Size() + MAX_SUBDIV_VERTS );
+    VertexLight.ResizeInvalidate( BSP->Vertices.Size() + MAX_SUBDIV_VERTS );
+    Indices.ResizeInvalidate( BSP->Indices.Size() + MAX_SUBDIV_INDICES );
 
-    Mesh->Initialize( Vertices.Length(), Indices.Length(), 1, false, true );
+    Mesh->Initialize( Vertices.Size(), Indices.Size(), 1, false, true );
 
     LightmapUV = Mesh->CreateLightmapUVChannel();
     VertexLightChannel = Mesh->CreateVertexLightChannel();
 
-    for ( int i = 0 ; i < SurfacePool.Length() ; i++ ) {
+    for ( int i = 0 ; i < SurfacePool.Size() ; i++ ) {
         QLightmapGroup * lightmapGroup = &Model->LightmapGroups[i];
 
         FMeshComponent * surf = CreateComponent< FMeshComponent >( FString::Fmt( "bsp_surf%d", i ) );
@@ -96,7 +97,7 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
     }
 }
 
-void FQuakeBSPActor::OnView( FCameraComponent * _Camera ) {
+void FQuakeBSPView::OnView( FCameraComponent * _Camera ) {
     if ( !Model ) {
         return;
     }
@@ -106,7 +107,7 @@ void FQuakeBSPActor::OnView( FCameraComponent * _Camera ) {
     AddSurfaces();
 }
 
-void FQuakeBSPActor::AddSurfaces() {
+void FQuakeBSPView::AddSurfaces() {
     int batchIndex = 0;
     int prevIndex = -1;
     int numVerts = 0;
@@ -180,8 +181,8 @@ void FQuakeBSPActor::AddSurfaces() {
         AddSurface( numIndices - batchFirstIndex, batchFirstIndex, prevIndex );
     }
 
-    AN_Assert( numVerts <= Vertices.Length() );
-    AN_Assert( numIndices <= Indices.Length() );
+    AN_Assert( numVerts <= Vertices.Size() );
+    AN_Assert( numIndices <= Indices.Size() );
 
     if ( numVerts > 0 ) {
         Mesh->WriteVertexData( Vertices.ToPtr(), numVerts, 0 );
@@ -191,7 +192,7 @@ void FQuakeBSPActor::AddSurfaces() {
     }
 }
 
-void FQuakeBSPActor::AddSurface( int _NumIndices, int _FirstIndex, int _GroupIndex ) {
+void FQuakeBSPView::AddSurface( int _NumIndices, int _FirstIndex, int _GroupIndex ) {
     if ( !_NumIndices ) {
         return;
     }

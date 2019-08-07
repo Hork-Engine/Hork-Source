@@ -31,8 +31,8 @@ SOFTWARE.
 #include "QuakeModel.h"
 
 #include <Engine/Core/Public/Logger.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/Shape.h>
+#include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/World/Public/Level.h>
 
 AN_BEGIN_CLASS_META( FQuakeBSP )
 AN_END_CLASS_META()
@@ -48,6 +48,18 @@ AN_FORCEINLINE void ConvertFromQuakeCoord( Float3 & _Coord ) {
 AN_FORCEINLINE void ConvertFromQuakeNormal( Float3 & _Normal ) {
     FCore::SwapArgs( _Normal.Y, _Normal.Z );
     _Normal.X = -_Normal.X;
+}
+
+AN_FORCEINLINE void FixupBoundingBox( Float3 & _Mins, Float3 & _Maxs ) {
+    if ( _Mins.X > _Maxs.X ) {
+        FCore::SwapArgs( _Mins.X, _Maxs.X );
+    }
+    if ( _Mins.Y > _Maxs.Y ) {
+        FCore::SwapArgs( _Mins.Y, _Maxs.Y );
+    }
+    if ( _Mins.Z > _Maxs.Z ) {
+        FCore::SwapArgs( _Mins.Z, _Maxs.Z );
+    }
 }
 
 #define	BLOCK_WIDTH     128
@@ -147,9 +159,9 @@ bool FQuakeBSP::FromData( FLevel * _Level, const byte * _Data ) {
 #endif
 
     GLogger.Printf( "texcount %d lightmaps %d leafs %d leafscount %d\n",
-                    Textures.Length(),
-                    _Level->Lightmaps.Length(),
-                    BSP.Leafs.Length(),
+                    Textures.Size(),
+                    _Level->Lightmaps.Size(),
+                    BSP.Leafs.Size(),
                     LeafsCount );
 
     return true;
@@ -191,7 +203,7 @@ void FQuakeBSP::ReadLightmaps( FLevel * _Level, const byte * _Data, QBSPEntry co
     // Create lightmaps
     _Level->ClearLightmaps();
     _Level->Lightmaps.ResizeInvalidate( numLightmaps );
-    for ( int i = 0 ; i < _Level->Lightmaps.Length() ; i++ ) {
+    for ( int i = 0 ; i < _Level->Lightmaps.Size() ; i++ ) {
         _Level->Lightmaps[i] = NewObject< FTexture >();
         _Level->Lightmaps[i]->AddRef();
         //_Level->Lightmaps[i]->Initialize2D( TEXTURE_PF_R32F, 1, LightmapBlockAllocator.BLOCK_WIDTH, LightmapBlockAllocator.BLOCK_HEIGHT, 1 );
@@ -787,7 +799,7 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
     //memcpy( BSP.Indices.ToPtr(), Indices, NumIndices*sizeof(unsigned int) );
     BSP.Indices.Reserve( NumIndices );
     for ( int SurfNum = 0 ; SurfNum < NumFaces ; SurfNum++, pInputFace++ ) {
-        int FirstIndex = BSP.Indices.Length();
+        int FirstIndex = BSP.Indices.Size();
 
         if ( pInputFace->numIndexes > 0 ) {
             for ( int i = 0 ; i < pInputFace->numIndexes ; i++ ) {
@@ -864,8 +876,8 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
                 int sizeX = ( pInputFace->patchWidth - 1 ) * stepX + 1;
                 int sizeY = ( pInputFace->patchHeight - 1 ) * stepY + 1;
 
-                SurfFirstVertex = BSP.Vertices.Length();
-                SurfFirstIndex = BSP.Indices.Length();
+                SurfFirstVertex = BSP.Vertices.Size();
+                SurfFirstIndex = BSP.Indices.Size();
 
                 enum EPlanarType {
                     NO_PLANAR,
@@ -894,9 +906,9 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
                     planarType = NO_PLANAR;
                 }
 
-                BSP.Vertices.Resize( BSP.Vertices.Length() + SurfVerticesCount );
-                BSP.LightmapVerts.Resize( BSP.LightmapVerts.Length() + SurfVerticesCount );
-                BSP.Indices.Resize( BSP.Indices.Length() + SurfIndicesCount );
+                BSP.Vertices.Resize( BSP.Vertices.Size() + SurfVerticesCount );
+                BSP.LightmapVerts.Resize( BSP.LightmapVerts.Size() + SurfVerticesCount );
+                BSP.Indices.Resize( BSP.Indices.Size() + SurfIndicesCount );
 
                 FMeshVertex const * srcVerts = BSP.Vertices.ToPtr() + pInputFace->firstVert;
                 FMeshLightmapUV const * srcLM = BSP.LightmapVerts.ToPtr() + pInputFace->firstVert;
@@ -1054,7 +1066,7 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
             pOutFace->LightmapHeight = pInputFace->lightmapHeight;
     }
 
-    CalcTangentSpace( BSP.Vertices.ToPtr(), BSP.Vertices.Length(), BSP.Indices.ToPtr(), BSP.Indices.Length() );
+    CalcTangentSpace( BSP.Vertices.ToPtr(), BSP.Vertices.Size(), BSP.Indices.ToPtr(), BSP.Indices.Size() );
 }
 
 void FQuakeBSP::ReadLFaces( FLevel * _Level, const byte * _Data, QBSPEntry const & _Entry ) {
@@ -1071,7 +1083,7 @@ void FQuakeBSP::ReadLFaces( FLevel * _Level, const byte * _Data, QBSPEntry const
 
     for ( i = 0 ; i < numMarksurfaces ; i++ ) {
         j = in[i];
-        if ( j >= BSP.Surfaces.Length() ) {
+        if ( j >= BSP.Surfaces.Size() ) {
             GLogger.Printf("FQuakeBSP::ReadLFaces: bad surface number\n");
             return;
         }
@@ -1099,6 +1111,7 @@ void FQuakeBSP::ReadLeafs( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
         ConvertFromQuakeCoord( out->Bounds.Mins );
         ConvertFromQuakeCoord( out->Bounds.Maxs );
+        //FixupBoundingBox( out->Bounds.Mins, out->Bounds.Maxs );
 
         //out->Contents = -1;//in->contents;
 
@@ -1159,6 +1172,7 @@ void FQuakeBSP::ReadNodes( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
         ConvertFromQuakeCoord( out->Bounds.Mins );
         ConvertFromQuakeCoord( out->Bounds.Maxs );
+        //FixupBoundingBox( out->Bounds.Mins, out->Bounds.Maxs );
 
         out->Plane = BSP.Planes.ToPtr() + in->planenum;
 
@@ -1276,7 +1290,7 @@ void FQuakeBSP::ReadModels( const byte * _Data, QBSPEntry const & _Entry ) {
 
 
 int FQuakeBSP::GetLightmapGroup( int _TextureIndex, int _LightmapBlock ) {
-    for ( int i = 0 ; i < LightmapGroups.Length() ; i++ ) {
+    for ( int i = 0 ; i < LightmapGroups.Size() ; i++ ) {
         if ( LightmapGroups[i].TextureIndex == _TextureIndex
              && LightmapGroups[i].LightmapBlock == _LightmapBlock ) {
             return i;
@@ -1285,21 +1299,21 @@ int FQuakeBSP::GetLightmapGroup( int _TextureIndex, int _LightmapBlock ) {
     QLightmapGroup & newIndex = LightmapGroups.Append();
     newIndex.TextureIndex = _TextureIndex;
     newIndex.LightmapBlock = _LightmapBlock;
-    return LightmapGroups.Length()-1;
+    return LightmapGroups.Size()-1;
 }
 
 #if 0
-#include <Engine/World/Public/GameMaster.h>
+#include <Engine/GameThread/Public/GameEngine.h>
 void FQuakeBSP::UpdateSurfaceLight( FLevel * _Level, FSurfaceDef * _Surf ) {
     if ( _Surf->LightDataOffset < 0 || _Surf->LightmapGroup < 0 ) {
         return;
     }
 
 //    for ( int i = 0 ; i < 256 ; i++ ) {
-//        lightstylevalue[ 0 ] = 264 * (sin( float( (GGameMaster.GetGameplayTimeMicro()>>13) + i * 30 ) / 180.0 * 3.14 )*0.5+0.5);
+//        lightstylevalue[ 0 ] = 264 * (sin( float( (GGameEngine.GetGameplayTimeMicro()>>13) + i * 30 ) / 180.0 * 3.14 )*0.5+0.5);
 //    }
 
-    lightstylevalue[ 2 ] = lightstylevalue[ 5 ] = lightstylevalue[ 32 ] = 264 * (sin( float( (GGameMaster.GetGameplayTimeMicro()>>13) ) / 180.0 * 3.14 )*0.5+0.5);
+    lightstylevalue[ 2 ] = lightstylevalue[ 5 ] = lightstylevalue[ 32 ] = 264 * (sin( float( (GGameEngine.GetGameplayTimeMicro()>>13) ) / 180.0 * 3.14 )*0.5+0.5);
 
     void * data = _Level->Lightmaps[ LightmapGroups[ _Surf->LightmapGroup ].LightmapBlock ]->WriteTextureData(
 

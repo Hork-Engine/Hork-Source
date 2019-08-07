@@ -30,8 +30,8 @@ SOFTWARE.
 
 #include "Player.h"
 
-#include <Engine/World/Public/CameraComponent.h>
-#include <Engine/World/Public/InputComponent.h>
+#include <Engine/World/Public/Components/CameraComponent.h>
+#include <Engine/World/Public/Components/InputComponent.h>
 
 AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
@@ -41,14 +41,6 @@ FPlayer::FPlayer() {
     RootComponent = Camera;
 
     bCanEverTick = true;
-}
-
-void FPlayer::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
-
-void FPlayer::PostInitializeComponents() {
-    Super::PostInitializeComponents();
 }
 
 void FPlayer::BeginPlay() {

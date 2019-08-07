@@ -31,9 +31,9 @@ SOFTWARE.
 #include "Game.h"
 #include "MyPlayerController.h"
 #include <Engine/Runtime/Public/EntryDecl.h>
-#include <Engine/World/Public/GameMaster.h>
+#include <Engine/GameThread/Public/GameEngine.h>
 #include <Engine/World/Public/Canvas.h>
-#include <Engine/World/Public/MaterialAssembly.h>
+#include <Engine/Resource/Public/MaterialAssembly.h>
 
 AN_CLASS_META_NO_ATTRIBS( FGameModule )
 
@@ -45,15 +45,15 @@ void FGameModule::OnGameStart() {
     GGameModule = this;
 
     // Setup game master public attributes
-    GGameMaster.bQuitOnEscape = true;
-    GGameMaster.bToggleFullscreenAltEnter = true;
-    GGameMaster.MouseSensitivity = 0.15f;
+    GGameEngine.bQuitOnEscape = true;
+    GGameEngine.bToggleFullscreenAltEnter = true;
+    GGameEngine.MouseSensitivity = 0.15f;
 
-    GGameMaster.SetWindowDefs( 1.0f, true, false, false, "AngieEngine: Quake map sample" );
-    GGameMaster.SetVideoMode( 640, 480, 0, 60, false, "OpenGL 4.5" );
-    //GGameMaster.SetVideoMode( 1920, 1080, 0, 60, false, "OpenGL 4.5" );
-    //GGameMaster.SetVideoMode( 1024, 768, 0, 60, false, "OpenGL 4.5" );
-    GGameMaster.SetCursorEnabled( false );
+    GGameEngine.SetWindowDefs( 1.0f, true, false, false, "AngieEngine: Quake map sample" );
+    GGameEngine.SetVideoMode( 640, 480, 0, 60, false, "OpenGL 4.5" );
+    //GGameEngine.SetVideoMode( 1920, 1080, 0, 60, false, "OpenGL 4.5" );
+    //GGameEngine.SetVideoMode( 1024, 768, 0, 60, false, "OpenGL 4.5" );
+    GGameEngine.SetCursorEnabled( false );
 
     InitializeQuakeGame();
 
@@ -69,9 +69,10 @@ void FGameModule::OnGameStart() {
     //LoadQuakeMap( "pak0.pk3", "maps/q3ctf3.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3dm5.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3ctf2.bsp" );
-    LoadQuakeMap( "pak0.pk3", "maps/q3dm14.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3dm14.bsp" );
+    //LoadQuakeMap( "pak0.pk3", "maps/q3dm12.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3tourney3.bsp" );
-    //LoadQuakeMap( "pak0.pk3", "maps/q3dm1.bsp" );
+    LoadQuakeMap( "pak0.pk3", "maps/q3dm1.bsp" );
     //LoadQuakeMap( "pak0.pk3", "maps/q3dm6.bsp" );
     //LoadQuakeMap( "E:/Games/Quake III Arena/missionpack/pak0.pk3", "maps/mpterra2.bsp" );
     //LoadQuakeMap( "E:/Games/Quake III Arena/missionpack/pak0.pk3", "maps/mpterra1.bsp" );
@@ -126,7 +127,7 @@ void FGameModule::SpawnWorld() {
 
     // Spawn world
     TWorldSpawnParameters< FWorld > WorldSpawnParameters;
-    World = GGameMaster.SpawnWorld< FWorld >( WorldSpawnParameters );
+    World = GGameEngine.SpawnWorld< FWorld >( WorldSpawnParameters );
 
     // Spawn player controller
     PlayerController = World->SpawnActor< FMyPlayerController >();
@@ -201,7 +202,7 @@ bool FGameModule::LoadQuakeMap( const char * _PackName, const char * _MapName ) 
     FPlayer * player = World->SpawnActor< FPlayer >( PlayerSpawnParameters );
 
     // Spawn bsp actor
-    FQuakeBSPActor * BSPActor = World->SpawnActor< FQuakeBSPActor >( Level );
+    FQuakeBSPView * BSPActor = World->SpawnActor< FQuakeBSPView >( Level );
     BSPActor->SetModel( model );
 
     // Setup player controller
@@ -573,8 +574,6 @@ void FGameModule::CreateSkyboxMaterial() {
     builder->MaterialType = MATERIAL_TYPE_UNLIT;
     builder->RegisterTextureSlot( skyTexture );
     SkyboxMaterial = builder->Build();
-
-    GLogger.Printf( "breakpoint\n" );
 }
 
 //static FMaterial * CreateHudMaterial( FBaseObject * _Parent ) {

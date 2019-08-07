@@ -30,20 +30,20 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actor.h>
-#include <Engine/Core/Public/BV/Frustum.h>
+#include <Engine/World/Public/Actors/Actor.h>
+#include <Engine/Core/Public/BV/BvFrustum.h>
 
 #include "QuakeModel.h"
 
 
-class ANGIE_API FQuakeBSPActor : public FViewActor {
-    AN_ACTOR( FQuakeBSPActor, FViewActor )
+class ANGIE_API FQuakeBSPView : public FViewActor {
+    AN_ACTOR( FQuakeBSPView, FViewActor )
 
 public:
     void SetModel( FQuakeBSP * _Model );
 
 protected:
-    FQuakeBSPActor();
+    FQuakeBSPView();
 
     void OnView( FCameraComponent * _Camera ) override;
 
@@ -51,15 +51,15 @@ private:
     void AddSurfaces();
     void AddSurface( int _NumIndices, int _FirstIndex, int _SurfIndex );
 
-    TRefHolder< FQuakeBSP > Model;
+    TRef< FQuakeBSP > Model;
     FBinarySpaceData * BSP;
-    TRefHolder< FIndexedMesh > Mesh;
-    TRefHolder< FLightmapUV > LightmapUV;
-    TRefHolder< FVertexLight > VertexLightChannel;
+    TRef< FIndexedMesh > Mesh;
+    TRef< FLightmapUV > LightmapUV;
+    TRef< FVertexLight > VertexLightChannel;
     TPodArray< FMeshComponent * > SurfacePool;
     TPodArray< FMeshVertex > Vertices;
     TPodArray< FMeshLightmapUV > LightmapVerts;
     TPodArray< FMeshVertexLight > VertexLight;
     TPodArray< unsigned int > Indices;
-    TRefHolder< FTexture > CubemapTex;
+    TRef< FTexture > CubemapTex;
 };
