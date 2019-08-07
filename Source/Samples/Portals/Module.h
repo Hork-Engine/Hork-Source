@@ -30,17 +30,17 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/GameMaster.h>
-#include <Engine/World/Public/IndexedMesh.h>
-#include <Engine/World/Public/Material.h>
+#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/Resource/Public/IndexedMesh.h>
+#include <Engine/Resource/Public/Material.h>
 #include "MyPlayerController.h"
 
 class FModule final : public IGameModule {
     AN_CLASS( FModule, IGameModule )
 
 public:
-    TRefHolder< FRenderingParameters > RenderingParams;
-    TRefHolder< FInputMappings > InputMappings;
+    TRef< FRenderingParameters > RenderingParams;
+    TRef< FInputMappings > InputMappings;
     FWorld * World;
     FMyPlayerController * PlayerController;
 

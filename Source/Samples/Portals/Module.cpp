@@ -33,10 +33,10 @@ SOFTWARE.
 #include "Checker.h"
 
 #include <Engine/World/Public/World.h>
-#include <Engine/World/Public/InputComponent.h>
-#include <Engine/World/Public/MaterialAssembly.h>
+#include <Engine/World/Public/Components/InputComponent.h>
+#include <Engine/Resource/Public/MaterialAssembly.h>
 #include <Engine/World/Public/Canvas.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 #include <Engine/Runtime/Public/EntryDecl.h>
 
@@ -49,20 +49,20 @@ void FModule::OnGameStart() {
 
     GModule = this;
 
-    //GGameMaster.MouseSensitivity = 0.15f;
-    GGameMaster.MouseSensitivity = 0.4f;
-    //GGameMaster.SetRenderFeatures( VSync_Fixed );
-    //GGameMaster.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    GGameMaster.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
-    GGameMaster.SetCursorEnabled( false );
-    GGameMaster.SetWindowDefs(1,true,false,false,"AngieEngine: Portals");
+    //GGameEngine.MouseSensitivity = 0.15f;
+    GGameEngine.MouseSensitivity = 0.4f;
+    //GGameEngine.SetRenderFeatures( VSync_Fixed );
+    //GGameEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
+    GGameEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    GGameEngine.SetCursorEnabled( false );
+    GGameEngine.SetWindowDefs(1,true,false,false,"AngieEngine: Portals");
 
     SetInputMappings();
     CreateResources();
 
     // Spawn world
     TWorldSpawnParameters< FWorld > WorldSpawnParameters;
-    World = GGameMaster.SpawnWorld< FWorld >( WorldSpawnParameters );
+    World = GGameEngine.SpawnWorld< FWorld >( WorldSpawnParameters );
 
     FLevel * level = World->GetPersistentLevel();
     FLevelArea * area1 = level->CreateArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
@@ -117,7 +117,7 @@ void FModule::OnGameStart() {
     FTransform t;
     t.Rotation = Quat::Identity();
     t.Scale = Float3(0.1f);
-    int n = 0;
+    //int n = 0;
     for ( int i = 0 ; i < 28 ; i++ )
         for ( int j = 0 ; j < 14 ; j++ )
             for ( int k = 0 ; k < 28 ; k++ ) {
@@ -129,7 +129,7 @@ void FModule::OnGameStart() {
                 t.Position = pos*0.25;//*0.2f;
 
                 World->SpawnActor< FChecker >( t );
-                GLogger.Printf("n %d\n",++n);
+                //GLogger.Printf("n %d\n",++n);
             }
 
     //GLogger.Printf( "sizeof FChecker %u sizeof FActor %u\n", sizeof(FChecker), sizeof(FActor) );
@@ -216,7 +216,7 @@ void FModule::CreateResources() {
 
     // Texture Blank512
     {
-        CreateResource< FTexture >( "blank512.png", "Blank512" );
+        GetOrCreateResource< FTexture >( "blank512.png", "Blank512" );
     }
 
     // CheckerMaterialInstance
@@ -231,7 +231,7 @@ void FModule::CreateResources() {
     // Checker mesh
     {
         FIndexedMesh * CheckerMesh = NewObject< FIndexedMesh >();
-        CheckerMesh->InitializeInternalMesh( "*box*" );
+        CheckerMesh->InitializeInternalMesh( "*sphere*" );
         CheckerMesh->SetName( "CheckerMesh" );
         CheckerMesh->GetSubpart( 0 )->MaterialInstance = GetResource< FMaterialInstance >( "CheckerMaterialInstance" );
         RegisterResource( CheckerMesh );

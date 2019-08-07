@@ -30,8 +30,8 @@ SOFTWARE.
 
 #include "Checker.h"
 
-#include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 AN_CLASS_META_NO_ATTRIBS( FChecker )
 

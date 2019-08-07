@@ -30,9 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Pawn.h>
-#include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/CameraComponent.h>
+#include <Engine/World/Public/Actors/Pawn.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
+#include <Engine/World/Public/Components/CameraComponent.h>
 
 class FPlayer : public FPawn {
     AN_ACTOR( FPlayer, FPawn )

@@ -30,9 +30,10 @@ SOFTWARE.
 
 #include "Player.h"
 
-#include <Engine/World/Public/MaterialAssembly.h>
-#include <Engine/World/Public/InputComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/World/Public/Components/InputComponent.h>
+
+#include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
@@ -57,7 +58,7 @@ FPlayer::FPlayer() {
     Skybox->SetMesh( GetResource< FIndexedMesh >( "UnitBox" ) );
     Skybox->SetMaterialInstance( minst );
     Skybox->SetScale(4000);
-    Skybox->ForceOutdoorSurface( true );
+    Skybox->ForceOutdoor( true );
 }
 
 void FPlayer::BeginPlay() {
