@@ -919,13 +919,13 @@ void FLevel::CullInstances( FRenderFrontendDef * _Def ) {
     ViewCenter = ViewPlane.Normal * ViewZNear;
 
     // Get corner at left-bottom of frustum
-    Float3 Corner = FMath::Cross( frustum[ FPL_BOTTOM ].Normal, frustum[ FPL_LEFT ].Normal );
+    Float3 corner = FMath::Cross( frustum[ FPL_BOTTOM ].Normal, frustum[ FPL_LEFT ].Normal );
 
     // Project left-bottom corner to near plane
-    Corner = Corner * ( ViewZNear / FMath::Dot( ViewPlane.Normal, Corner ) );
+    corner = corner * ( ViewZNear / FMath::Dot( ViewPlane.Normal, corner ) );
 
-    float x = FMath::Dot( RightVec, Corner );
-    float y = FMath::Dot( UpVec, Corner );
+    float x = FMath::Dot( RightVec, corner );
+    float y = FMath::Dot( UpVec, corner );
 
     // w = tan( half_fov_x_rad ) * znear * 2;
     // h = tan( half_fov_y_rad ) * znear * 2;
@@ -1363,3 +1363,134 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         }
     }
 }
+
+#ifdef FUTURE
+void AddLight( FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
+    if ( component->RenderMark == VisMarker ) {
+        return;
+    }
+
+    if ( ( component->RenderingGroup & RP->RenderingLayers ) == 0 ) {
+        component->RenderMark = VisMarker;
+        return;
+    }
+
+    if ( component->VSDPasses & VSD_PASS_BOUNDS ) {
+
+        // TODO: use SSE cull
+
+        switch ( Light->GetType() ) {
+        case FLightComponent::T_Point:
+        {
+            BvSphereSSE const & bounds = Light->GetSphereWorldBounds();
+            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
+                Dbg_CulledByLightBounds++;
+                return;
+            }
+            break;
+        }
+        case FLightComponent::T_Spot:
+        {
+            BvSphereSSE const & bounds = Light->GetSphereWorldBounds();
+            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
+                Dbg_CulledByLightBounds++;
+                return;
+            }
+            break;
+        }
+        case FLightComponent::T_Direction:
+        {
+            break;
+        }
+        }
+    }
+
+    component->RenderMark = VisMarker;
+
+    if ( component->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
+
+        bool bVisible;
+        component->OnCustomVisibleStep( Camera, bVisible );
+
+        if ( !bVisible ) {
+            return;
+        }
+    }
+
+    if ( component->VSDPasses & VSD_PASS_VIS_MARKER ) {
+        bool bVisible = component->VisMarker == VisMarker;
+        if ( !bVisible ) {
+            return;
+        }
+    }
+
+    // TODO: add to render view
+
+    RV->LightCount++;
+}
+
+void AddEnvCapture( FEnvCaptureComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
+    if ( component->RenderMark == VisMarker ) {
+        return;
+    }
+
+    if ( ( component->RenderingGroup & RP->RenderingLayers ) == 0 ) {
+        component->RenderMark = VisMarker;
+        return;
+    }
+
+    if ( component->VSDPasses & VSD_PASS_BOUNDS ) {
+
+        // TODO: use SSE cull
+
+        switch ( component->GetShapeType() ) {
+        case FEnvCaptureComponent::SHAPE_BOX:
+        {
+            // Check OBB ?
+            BvAxisAlignedBox const & bounds = component->GetAABBWorldBounds();
+            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
+                Dbg_CulledByEnvCaptureBounds++;
+                return;
+            }
+            break;
+        }
+        case FEnvCaptureComponent::SHAPE_SPHERE:
+        {
+            BvSphereSSE const & bounds = component->GetSphereWorldBounds();
+            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
+                Dbg_CulledByEnvCaptureBounds++;
+                return;
+            }
+            break;
+        }
+        case FEnvCaptureComponent::SHAPE_GLOBAL:
+        {
+            break;
+        }
+        }
+    }
+
+    component->RenderMark = VisMarker;
+
+    if ( component->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
+
+        bool bVisible;
+        component->OnCustomVisibleStep( Camera, bVisible );
+
+        if ( !bVisible ) {
+            return;
+        }
+    }
+
+    if ( component->VSDPasses & VSD_PASS_VIS_MARKER ) {
+        bool bVisible = component->VisMarker == VisMarker;
+        if ( !bVisible ) {
+            return;
+        }
+    }
+
+    // TODO: add to render view
+
+    RV->EnvCaptureCount++;
+}
+#endif
