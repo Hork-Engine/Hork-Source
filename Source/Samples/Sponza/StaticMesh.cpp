@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include "StaticMesh.h"
 
-#include <Engine/World/Public/MaterialAssembly.h>
-#include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/GameMaster.h>
+#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
 
 AN_CLASS_META_NO_ATTRIBS( FStaticMesh )
 
@@ -40,7 +40,7 @@ FStaticMesh::FStaticMesh() {
     MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
 
-    MeshComponent->bSimulatePhysics = true;
+    MeshComponent->PhysicsBehavior = PB_STATIC;
     MeshComponent->bUseDefaultBodyComposition = true;
 }
 

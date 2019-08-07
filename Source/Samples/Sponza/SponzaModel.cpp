@@ -33,10 +33,10 @@ SOFTWARE.
 #include "Player.h"
 
 #include <Engine/World/Public/World.h>
-#include <Engine/World/Public/InputComponent.h>
+#include <Engine/World/Public/Components/InputComponent.h>
 #include <Engine/World/Public/Canvas.h>
-#include <Engine/World/Public/MeshAsset.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/Asset.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 #include <Engine/Runtime/Public/EntryDecl.h>
 
@@ -49,20 +49,20 @@ void FSponzaModel::OnGameStart() {
 
     GModule = this;
 
-    GGameMaster.bAllowConsole = true;
-    //GGameMaster.MouseSensitivity = 0.15f;
-    GGameMaster.MouseSensitivity = 0.3f;
-    //GGameMaster.SetRenderFeatures( VSync_Half );
-    GGameMaster.SetWindowDefs( 1, true, false, false, "AngieEngine: Sponza" );
-    GGameMaster.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    //GGameMaster.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
-    GGameMaster.SetCursorEnabled( false );
+    GGameEngine.bAllowConsole = true;
+    //GGameEngine.MouseSensitivity = 0.15f;
+    GGameEngine.MouseSensitivity = 0.3f;
+    //GGameEngine.SetRenderFeatures( VSync_Half );
+    GGameEngine.SetWindowDefs( 1, true, false, false, "AngieEngine: Sponza" );
+    GGameEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
+    //GGameEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    GGameEngine.SetCursorEnabled( false );
 
     SetInputMappings();
 
     // Spawn world
     TWorldSpawnParameters< FWorld > WorldSpawnParameters;
-    World = GGameMaster.SpawnWorld< FWorld >( WorldSpawnParameters );
+    World = GGameEngine.SpawnWorld< FWorld >( WorldSpawnParameters );
 
     // Spawn HUD
     //FHUD * hud = World->SpawnActor< FMyHUD >();
@@ -70,14 +70,14 @@ void FSponzaModel::OnGameStart() {
     RenderingParams = NewObject< FRenderingParameters >();
     RenderingParams->BackgroundColor = Float3(0.5f);
     RenderingParams->bWireframe = false;
-    RenderingParams->bDrawDebug = true;
+    RenderingParams->bDrawDebug = false;
 
     // create texture resource from file with alias
-    CreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
+    GetOrCreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
 
     {
     FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-    mesh->InitializeShape< FSphereShape >( 0.5f, 2, 32, 32 );
+    mesh->InitializeSphereMesh( 0.5f, 2, 32, 32 );
     mesh->SetName( "ShapeSphereMesh" );
     FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
     collisionBody->Radius = 0.5f;
@@ -135,10 +135,12 @@ void FSponzaModel::LoadStaticMeshes() {
     for ( int i = 0 ; i < 25 ; i++ ) {
         fileName = "SponzaProject/Meshes/sponza_" + Int(i).ToString() + ".angie_mesh";
 
-        FIndexedMesh * mesh = CreateResource< FIndexedMesh >( fileName.ToConstChar() );
+        FIndexedMesh * mesh = GetOrCreateResource< FIndexedMesh >( fileName.ToConstChar() );
 
         for ( FIndexedMeshSubpart * subpart : mesh->GetSubparts() ) {
-            subpart->MaterialInstance->Material = Material;
+            if ( subpart->MaterialInstance ) {
+                subpart->MaterialInstance->Material = Material;
+            }
         }
 
         FStaticMesh * actor = World->SpawnActor< FStaticMesh >();

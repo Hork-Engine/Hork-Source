@@ -30,10 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actor.h>
-#include <Engine/World/Public/IndexedMesh.h>
-#include <Engine/World/Public/MeshComponent.h>
-//#include <Engine/World/Public/Material.h>
+#include <Engine/World/Public/Actors/Actor.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
+#include <Engine/Resource/Public/IndexedMesh.h>
 
 class FStaticMesh : public FActor {
     AN_ACTOR( FStaticMesh, FActor )

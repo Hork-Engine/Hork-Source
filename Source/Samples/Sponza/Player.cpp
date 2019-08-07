@@ -30,8 +30,8 @@ SOFTWARE.
 
 #include "Player.h"
 
-#include <Engine/World/Public/MaterialAssembly.h>
-#include <Engine/World/Public/InputComponent.h>
+#include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/World/Public/Components/InputComponent.h>
 
 AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
@@ -194,7 +194,7 @@ void FPlayer::SpeedRelease() {
 
 
 #include"SponzaModel.h"
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 #include <Engine/World/Public/World.h>
 
 class FBoxActor : public FActor {
@@ -219,7 +219,7 @@ FBoxActor::FBoxActor() {
     // Create mesh component and set it as root component
     MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
-    MeshComponent->bSimulatePhysics = true;
+    MeshComponent->PhysicsBehavior = PB_DYNAMIC;
     MeshComponent->bUseDefaultBodyComposition = true;
     MeshComponent->Mass = 1.0f;
 
@@ -233,14 +233,14 @@ void FPlayer::AttackPress() {
 
     FTransform transform;
 
-    transform.Position = Camera->GetWorldPosition() + Camera->GetWorldForwardVector() * 1.5f;
+    transform.Position = Camera->GetWorldPosition();// + Camera->GetWorldForwardVector() * 1.5f;
     transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
-    transform.SetScale( 0.3f );
+    //transform.SetScale( 0.3f );
 
     actor = GetWorld()->SpawnActor< FBoxActor >( transform );
 
     FMeshComponent * mesh = actor->GetComponent< FMeshComponent >();
     if ( mesh ) {
-        mesh->ApplyCentralImpulse( Camera->GetWorldForwardVector() * 2.0f );
+        mesh->ApplyCentralImpulse( Camera->GetWorldForwardVector() * 20.0f );
     }
 }

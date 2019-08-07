@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/PlayerController.h>
+#include <Engine/World/Public/Actors/PlayerController.h>
 
 class ANGIE_API FMyPlayerController : public FPlayerController {
     AN_ACTOR( FMyPlayerController, FPlayerController )
