@@ -31,10 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Base/Public/BaseObject.h>
-//#include "MeshComponent.h"
-//#include <Engine/Runtime/Public/RenderBackend.h>
-//#include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
-//#include <Engine/Resource/Public/Skeleton.h>
 
 class FAnimation;
 class FSkinnedComponent;
