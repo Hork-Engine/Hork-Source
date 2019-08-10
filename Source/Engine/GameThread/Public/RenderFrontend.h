@@ -64,10 +64,9 @@ public:
     int GetPolyCount() const { return PolyCount; }
     int GetFrontendTime() const { return FrontendTime; }
 
-    void WriteDrawList( struct ImDrawList const * _DrawList );
-
 private:
     void WriteDrawList( FCanvas * _Canvas );
+    void WriteDrawList( struct ImDrawList const * _DrawList );
     void RenderView( int _Index );
     void AddInstances( struct FRenderFrontendDef * _Def );
     void CullLevelInstances( FLevel * _Level );

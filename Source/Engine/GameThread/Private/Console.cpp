@@ -546,7 +546,7 @@ void FConsole::MouseWheelEvent( FMouseWheelEvent const & _Event ) {
 static void DrawCmdLine( FCanvas * _Canvas, int x, int y ) {
     int32_t charColor = 0xffffffff;
 
-    ImFont * font = _Canvas->GetCurrentFont();
+    FFont * font = _Canvas->GetCurrentFont();
 
     const float scale = (float)CharacterHeight / font->FontSize;
 
@@ -618,7 +618,7 @@ void FConsole::Draw( FCanvas * _Canvas, float _TimeStep ) {
     int x = Padding;
     int y = halfVidHeight - fontVStride;
 
-    ImFont * font = _Canvas->GetCurrentFont();
+    FFont * font = _Canvas->GetCurrentFont();
 
     const float scale = (float)CharacterHeight / font->FontSize;
 

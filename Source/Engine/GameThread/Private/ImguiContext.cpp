@@ -145,17 +145,17 @@ void FImguiContext::SetFontAtlas( ImFontAtlas * _Atlas ) {
 }
 
 void FImguiContext::BeginFrame( float _TimeStep ) {
-    FVideoMode const & VideoMode = GGameEngine.GetVideoMode();
-    Float2 const & CursorPosition = GGameEngine.GetCursorPosition();
+    FVideoMode const & videoMode = GGameEngine.GetVideoMode();
+    Float2 const & cursorPosition = GGameEngine.GetCursorPosition();
 
     ImGuiIO & IO = ImGui::GetIO();
 
-    IO.DisplaySize.x = VideoMode.Width;
-    IO.DisplaySize.y = VideoMode.Height;
+    IO.DisplaySize.x = videoMode.Width;
+    IO.DisplaySize.y = videoMode.Height;
     IO.DisplayFramebufferScale = GGameEngine.GetRetinaScale();
     IO.DeltaTime = _TimeStep;
-    IO.MousePos.x = CursorPosition.X;
-    IO.MousePos.y = CursorPosition.Y;
+    IO.MousePos.x = cursorPosition.X;
+    IO.MousePos.y = cursorPosition.Y;
 
     ImGui::NewFrame();
 

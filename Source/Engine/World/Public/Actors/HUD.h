@@ -31,11 +31,11 @@ SOFTWARE.
 #pragma once
 
 #include "Actor.h"
+#include <Engine/Resource/Public/FontAtlas.h>
 
 class FPawn;
 class FPlayerController;
 class FCanvas;
-struct ImFont;
 
 class FHUD : public FActor {
     AN_ACTOR( FHUD, FActor )
@@ -45,7 +45,7 @@ public:
 
     void Draw( FCanvas * _Canvas, int _X, int _Y, int _W, int _H );
 
-    void DrawText( ImFont * _Font, int x, int y, int32_t color, const char * _Text );
+    void DrawText( FFont * _Font, int x, int y, int32_t color, const char * _Text );
 
     int GetViewportX() const { return ViewportX; }
     int GetViewportY() const { return ViewportY; }

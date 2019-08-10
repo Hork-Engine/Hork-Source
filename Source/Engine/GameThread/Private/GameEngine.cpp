@@ -60,8 +60,6 @@ AN_CLASS_META_NO_ATTRIBS( IGameModule )
 
 FGameEngine & GGameEngine = FGameEngine::Inst();
 
-ImFont * GAngieFont;
-
 FCanvas GCanvas;
 
 static float FractAvg = 1;
@@ -671,35 +669,16 @@ void FGameEngine::UpdateInputAxes( float _Fract ) {
 }
 
 
-static FTexture * FontAtlasTexture;
-static ImFontAtlas FontAtlas;
+void FGameEngine::InitializeDefaultFont() {
+    DefaultFontAtlas = CreateInstanceOf< FFontAtlas >();
 
-static void CreateAngieFont() {
-    unsigned char * pixels;
-    int atlasWidth, atlasHeight;
-
-    // Create font atlas
-    //Font = FontAtlas.AddFontFromFileTTF( "DejaVuSansMono.ttf", 16, NULL, FontAtlas.GetGlyphRangesCyrillic() );
-    GAngieFont = FontAtlas.AddFontFromFileTTF( "DroidSansMono.ttf", 16, NULL, FontAtlas.GetGlyphRangesCyrillic() );
-
-    // Get atlas raw data
-    FontAtlas.GetTexDataAsAlpha8( &pixels, &atlasWidth, &atlasHeight );
-
-    // Create atlas texture
-    FontAtlasTexture = CreateInstanceOf< FTexture >();
-    FontAtlasTexture->AddRef();
-    FontAtlasTexture->Initialize2D( TEXTURE_PF_R8, 1, atlasWidth, atlasHeight );
-    void * pPixels = FontAtlasTexture->WriteTextureData( 0,0,0, atlasWidth, atlasHeight, 0 );
-    if ( pPixels ) {
-        memcpy( pPixels, pixels, atlasWidth*atlasHeight );
-    }
-
-    FontAtlas.TexID = FontAtlasTexture->GetRenderProxy();
+    int fontId = DefaultFontAtlas->AddFontFromFileTTF( "DroidSansMono.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );
+    DefaultFontAtlas->Build();
+    DefaultFont = DefaultFontAtlas->GetFont( fontId );
 }
 
-static void DestroyAngieFont() {
-    FontAtlas.Clear();
-    FontAtlasTexture->RemoveRef();
+void FGameEngine::DeinitializeDefaultFont() {
+    DefaultFontAtlas = nullptr;
 }
 
 static void PhysModulePrintFunction( const char * _Message ) {
@@ -791,12 +770,12 @@ void FGameEngine::Initialize( FCreateGameModuleCallback _CreateGameModuleCallbac
     GameModule->AddRef();
     GameModule->OnGameStart();
 
-    CreateAngieFont();
+    InitializeDefaultFont();
 
     GCanvas.Initialize();
 
     ImguiContext = CreateInstanceOf< FImguiContext >();
-    ImguiContext->SetFontAtlas( &FontAtlas );
+    ImguiContext->SetFontAtlas( (ImFontAtlas *)DefaultFontAtlas->GetImguiFontAtlas() );
     ImguiContext->AddRef();
 
     FrameDuration = 1000000.0 / 60;
@@ -816,7 +795,7 @@ void FGameEngine::Deinitialize() {
 
     GCanvas.Deinitialize();
 
-    DestroyAngieFont();
+    DeinitializeDefaultFont();
 
     GResourceManager.Deinitialize();
     GRenderFrontend.Deinitialize();
@@ -882,7 +861,7 @@ void FGameEngine::Stop() {
 }
 
 void FGameEngine::DrawCanvas() {
-    GCanvas.Begin( GAngieFont, VideoMode.Width, VideoMode.Height );
+    GCanvas.Begin( DefaultFont, VideoMode.Width, VideoMode.Height );
 
     // Draw game
     GameModule->DrawCanvas( &GCanvas );

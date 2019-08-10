@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Engine/Runtime/Public/RenderBackend.h>
 #include <Engine/Core/Public/PodArray.h>
+#include <Engine/Resource/Public/FontAtlas.h>
 
-#include <Engine/imgui/imgui.h>
 #include <Engine/imgui/imgui_internal.h>
 
 class FPlayerController;
@@ -72,7 +72,7 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void Begin( ImFont * _DefaultFont, int _Width, int _Height );
+    void Begin( FFont * _DefaultFont, int _Width, int _Height );
     void End();
 
     // Clipping
@@ -88,11 +88,11 @@ public:
     void PopBlendingState();
 
     // Font
-    void PushFont( ImFont * _Font );
+    void PushFont( FFont * _Font );
     void PopFont();
 
-    ImFont * GetDefaultFont() { return FontStack.First(); }
-    ImFont * GetCurrentFont() { return FontStack.Last(); }
+    FFont * GetDefaultFont() { return FontStack.First(); }
+    FFont * GetCurrentFont() { return FontStack.Last(); }
 
     // Primitives
     void DrawLine( Float2 const & a, Float2 const & b, uint32_t col, float thickness = 1.0f );
@@ -111,10 +111,10 @@ public:
 
     // Text
     void DrawTextUTF8( Float2 const & _Pos, uint32_t _Color, const char* _TextBegin, const char* _TextEnd = nullptr );
-    void DrawTextUTF8( ImFont const * _Font, float _FontSize, Float2 const & _Pos, uint32_t _Color, const char* _TextBegin, const char* _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
-    void DrawChar( ImFont const * _Font, char _Ch, int _X, int _Y, float _Scale, uint32_t _Color );
-    void DrawWChar( ImFont const * _Font, FWideChar _Ch, int _X, int _Y, float _Scale, uint32_t _Color );
-    void DrawCharUTF8( ImFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, uint32_t _Color );
+    void DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const & _Pos, uint32_t _Color, const char* _TextBegin, const char* _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
+    void DrawChar( FFont const * _Font, char _Ch, int _X, int _Y, float _Scale, uint32_t _Color );
+    void DrawWChar( FFont const * _Font, FWideChar _Ch, int _X, int _Y, float _Scale, uint32_t _Color );
+    void DrawCharUTF8( FFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, uint32_t _Color );
 
     // Texture
     void DrawTexture( FTexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0 = Float2(0,0), Float2 const & _UV1 = Float2(1,1), uint32_t _Color = 0xFFFFFFFF, EColorBlending _Blending = COLOR_BLENDING_ALPHA, ESamplerType _SamplerType = SAMPLER_TYPE_TILED_LINEAR );
@@ -146,11 +146,11 @@ public:
 //    void PathRect(Float2 const & rect_min, Float2 const & rect_max, float rounding = 0.0f, int rounding_corners_flags = ImDrawCornerFlags_All);
 
 private:
-    void SetCurrentFont( ImFont * font );
+    void SetCurrentFont( FFont * font );
 
     TPodArray< FViewport > Viewports;
 
     ImDrawListSharedData DrawListSharedData;
     ImDrawList DrawList;
-    TPodArray< ImFont * > FontStack;
+    TPodArray< FFont * > FontStack;
 };

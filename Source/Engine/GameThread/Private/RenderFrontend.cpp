@@ -58,8 +58,6 @@ void FRenderFrontend::Deinitialize() {
 
 void FRenderFrontend::BuildFrameData() {
 
-    ImDrawData * drawData = ImGui::GetDrawData();
-
     CurFrameData = GRuntime.GetFrameData();
 
     CurFrameData->FrameNumber = GGameEngine.GetFrameNumber();
@@ -94,6 +92,7 @@ void FRenderFrontend::BuildFrameData() {
         WriteDrawList( &GCanvas );
 
         // -------------------------------------
+        ImDrawData * drawData = ImGui::GetDrawData();
         if ( drawData && drawData->CmdListsCount > 0 ) {
             // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
             int fb_width = drawData->DisplaySize.x * drawData->FramebufferScale.x;

@@ -34,10 +34,10 @@ SOFTWARE.
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Core/Public/Document.h>
 #include <Engine/Runtime/Public/ImportExport.h>
+#include <Engine/Resource/Public/FontAtlas.h>
 
 class FWorld;
 class FImguiContext;
-struct ImFont;
 
 struct FWorldSpawnParameters {
     FWorldSpawnParameters() = delete;
@@ -216,6 +216,9 @@ private:
 
     void UpdateImgui();
 
+    void InitializeDefaultFont();
+    void DeinitializeDefaultFont();
+
     // All existing worlds
     // FWorld friend
     TPodArray< FWorld * > Worlds;
@@ -252,6 +255,9 @@ private:
     int64_t FrameTimeStamp;
 
     IGameModule * GameModule;
+
+    TRef< FFontAtlas > DefaultFontAtlas;
+    FFont * DefaultFont;
 };
 
 class FCanvas;
@@ -276,4 +282,3 @@ public:
 };
 
 extern ANGIE_API FGameEngine & GGameEngine;
-extern ImFont * GAngieFont;

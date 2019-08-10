@@ -45,7 +45,7 @@ void FCanvas::Deinitialize() {
     Viewports.Free();
 }
 
-void FCanvas::Begin( ImFont * _DefaultFont, int _Width, int _Height ) {
+void FCanvas::Begin( FFont * _DefaultFont, int _Width, int _Height ) {
     AN_Assert( FontStack.IsEmpty() );
 
     Width = _Width;
@@ -92,7 +92,7 @@ void FCanvas::PopBlendingState() {
     DrawList.PopBlendingState();
 }
 
-void FCanvas::SetCurrentFont( ImFont * _Font ) {
+void FCanvas::SetCurrentFont( FFont * _Font ) {
     if ( _Font && _Font->IsLoaded() && _Font->Scale > 0.0f ) {
         ImFontAtlas * atlas = _Font->ContainerAtlas;
         DrawListSharedData.TexUvWhitePixel = atlas->TexUvWhitePixel;
@@ -104,7 +104,7 @@ void FCanvas::SetCurrentFont( ImFont * _Font ) {
     DrawListSharedData.Font = _Font;
 }
 
-void FCanvas::PushFont( ImFont * _Font ) {
+void FCanvas::PushFont( FFont * _Font ) {
     SetCurrentFont( _Font );
     FontStack.Append( _Font );
     DrawList.PushTextureID( _Font->ContainerAtlas->TexID );
@@ -164,7 +164,7 @@ void FCanvas::DrawTextUTF8( Float2 const & pos, uint32_t col, const char* _TextB
     DrawTextUTF8( GetCurrentFont(), DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd );
 }
 
-void FCanvas::DrawTextUTF8( ImFont const * _Font, float _FontSize, Float2 const & _Pos, uint32_t _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
+void FCanvas::DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const & _Pos, uint32_t _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
 
     AN_Assert( _Font && _FontSize > 0.0f );
 
@@ -381,11 +381,11 @@ void FCanvas::DrawTextUTF8( ImFont const * _Font, float _FontSize, Float2 const 
     DrawList._VtxCurrentIdx = (unsigned int)DrawList.VtxBuffer.Size;
 }
 
-void FCanvas::DrawChar( ImFont const * _Font, char _Ch, int _X, int _Y, float _Scale, uint32_t _Color ) {
+void FCanvas::DrawChar( FFont const * _Font, char _Ch, int _X, int _Y, float _Scale, uint32_t _Color ) {
     DrawWChar( _Font, _Ch, _X, _Y, _Scale, _Color );
 }
 
-void FCanvas::DrawWChar( ImFont const * _Font, FWideChar _Ch, int _X, int _Y, float _Scale, uint32_t _Color ) {
+void FCanvas::DrawWChar( FFont const * _Font, FWideChar _Ch, int _X, int _Y, float _Scale, uint32_t _Color ) {
     if ( (_Color & IM_COL32_A_MASK) == 0 ) {
         return;
     }
@@ -400,7 +400,7 @@ void FCanvas::DrawWChar( ImFont const * _Font, FWideChar _Ch, int _X, int _Y, fl
     }
 }
 
-void FCanvas::DrawCharUTF8( ImFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, uint32_t _Color ) {
+void FCanvas::DrawCharUTF8( FFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, uint32_t _Color ) {
     if ( (_Color & IM_COL32_A_MASK) == 0 ) {
         return;
     }

@@ -56,7 +56,7 @@ void FHUD::DrawHUD() {
 
 }
 
-void FHUD::DrawText( ImFont * _Font, int x, int y, int32_t color, const char * _Text ) {
+void FHUD::DrawText( FFont * _Font, int x, int y, int32_t color, const char * _Text ) {
     const int CharacterWidth = 8;
     const int CharacterHeight = 16;
 
