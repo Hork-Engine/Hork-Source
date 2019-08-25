@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include "ComposedActor.h"
 
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
-AN_CLASS_META_NO_ATTRIBS( FComposedActor )
+AN_CLASS_META( FComposedActor )
 
 FComposedActor::FComposedActor() {
     // Create material instance for mesh component
@@ -43,7 +43,7 @@ FComposedActor::FComposedActor() {
 
     {
         // Create mesh component and set it as root component
-        Cylinder = CreateComponent< FMeshComponent >( "DynamicComposed" );
+        Cylinder = AddComponent< FMeshComponent >( "DynamicComposed" );
         RootComponent = Cylinder;
 
         FCollisionCylinder * cylinderBody = NewObject< FCollisionCylinder >();
@@ -60,7 +60,7 @@ FComposedActor::FComposedActor() {
         Cylinder->BodyComposition.ComputeCenterOfMassAvg();
 
         Cylinder->Mass = 1.0f;
-        Cylinder->bSimulatePhysics = true;
+        Cylinder->PhysicsBehavior = PB_DYNAMIC;
 
         // Set mesh and material resources for mesh component
         Cylinder->SetMesh( GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );
@@ -69,7 +69,7 @@ FComposedActor::FComposedActor() {
 
 #if 1
     {
-        Box = CreateComponent< FMeshComponent >( "Box" );
+        Box = AddComponent< FMeshComponent >( "Box" );
         Box->AttachTo( Cylinder );
         Box->SetPosition( Float3(0,4.0f,0) );
         Box->SetAngles( 45, 0, 0 );
@@ -80,10 +80,7 @@ FComposedActor::FComposedActor() {
         Box->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
         Box->SetMaterialInstance( 0, matInst );
 
-        Box->Mass = 1;
-        Box->bSimulatePhysics = true;// false;
-        Box->bKinematicBody = false;
-        //Box->bDisableGravity = true;
+        Box->PhysicsBehavior = PB_STATIC;
 
         FCollisionBox * body = NewObject< FCollisionBox >();
         //body->Radius = Float3(1);
@@ -94,13 +91,9 @@ FComposedActor::FComposedActor() {
 
 //    {
 //        FMeshComponent * SphereComponent;
-//        SphereComponent = CreateComponent< FMeshComponent >( "Sphere" );
+//        SphereComponent = AddComponent< FMeshComponent >( "Sphere" );
 //        SphereComponent->AttachTo( MeshComponent );
 //        SphereComponent->SetPosition( Float3(0,1.0f,0) );
-
-//        // No physics, just visual
-//        SphereComponent->bSimulatePhysics = false;
-
 //        SphereComponent->SetScale( 4,1,4 );
 
 //        // Set mesh and material resources for mesh component
@@ -110,5 +103,5 @@ FComposedActor::FComposedActor() {
 }
 
 void FComposedActor::BeginPlay() {
-    Cylinder->SetScale( 1, 4, 1 );
+    RootComponent->SetScale( 1, 4, 1 );
 }

@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include "MyPlayerController.h"
 
-#include <Engine/World/Public/GameMaster.h>
+#include <Engine/GameThread/Public/GameEngine.h>
 
-AN_CLASS_META_NO_ATTRIBS( FMyPlayerController )
+AN_CLASS_META( FMyPlayerController )
 
 FMyPlayerController::FMyPlayerController() {
     bCanEverTick = true;
@@ -47,7 +47,7 @@ void FMyPlayerController::Tick( float _TimeStep ) {
 void FMyPlayerController::UpdateCameraAspectRatio() {
     FCameraComponent * camera = GetViewCamera();
     if ( camera ) {
-        camera->SetAspectRatio( GGameMaster.GetVideoAspectRatio() );
+        camera->SetAspectRatio( GGameEngine.GetVideoAspectRatio() );
         camera->SetFovX( 100.0f );
     }
 }

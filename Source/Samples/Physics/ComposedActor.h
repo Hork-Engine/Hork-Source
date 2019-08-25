@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actor.h>
-#include <Engine/World/Public/MeshComponent.h>
+#include <Engine/World/Public/Actors/Actor.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
 
 class FComposedActor : public FActor {
     AN_ACTOR( FComposedActor, FActor )

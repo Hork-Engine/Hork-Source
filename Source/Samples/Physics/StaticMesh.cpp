@@ -30,12 +30,12 @@ SOFTWARE.
 
 #include "StaticMesh.h"
 
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
-AN_CLASS_META_NO_ATTRIBS( FBoxActor )
-AN_CLASS_META_NO_ATTRIBS( FStaticBoxActor )
-AN_CLASS_META_NO_ATTRIBS( FSphereActor )
-AN_CLASS_META_NO_ATTRIBS( FCylinderActor )
+AN_CLASS_META( FBoxActor )
+AN_CLASS_META( FStaticBoxActor )
+AN_CLASS_META( FSphereActor )
+AN_CLASS_META( FCylinderActor )
 
 FBoxActor::FBoxActor() {
     // Create material instance for mesh component
@@ -45,7 +45,7 @@ FBoxActor::FBoxActor() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "DynamicBox" );
+    MeshComponent = AddComponent< FMeshComponent >( "DynamicBox" );
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
@@ -59,7 +59,8 @@ FBoxActor::FBoxActor() {
 
     // Setup physics
     MeshComponent->Mass = 1.0f;
-    MeshComponent->bSimulatePhysics = true;
+    MeshComponent->PhysicsBehavior = PB_DYNAMIC;
+    MeshComponent->CollisionGroup = CM_WORLD_DYNAMIC;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
@@ -74,12 +75,14 @@ FStaticBoxActor::FStaticBoxActor() {
     matInst->UniformVectors[0] = Float4( 0.5f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticBox" );
+    MeshComponent = AddComponent< FMeshComponent >( "StaticBox" );
     RootComponent = MeshComponent;
 
     // Setup physics
     MeshComponent->bUseDefaultBodyComposition = true;
-    MeshComponent->bSimulatePhysics = true;
+    MeshComponent->PhysicsBehavior = PB_STATIC;
+
+    MeshComponent->bAINavigation = true;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
@@ -94,15 +97,15 @@ FSphereActor::FSphereActor() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "DynamicSphere" );
+    MeshComponent = AddComponent< FMeshComponent >( "DynamicSphere" );
     RootComponent = MeshComponent;
 
     // Setup physics
     MeshComponent->bUseDefaultBodyComposition = false;
-    FCollisionSphere * collisionSphere = MeshComponent->BodyComposition.NewCollisionBody< FCollisionSphere >();
+    FCollisionSphere * collisionSphere = MeshComponent->BodyComposition.AddCollisionBody< FCollisionSphere >();
     collisionSphere->bProportionalScale = false;
     MeshComponent->Mass = 1.0f;
-    MeshComponent->bSimulatePhysics = true;
+    MeshComponent->PhysicsBehavior = PB_DYNAMIC;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
@@ -117,13 +120,13 @@ FCylinderActor::FCylinderActor() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "DynamicCylinder" );
+    MeshComponent = AddComponent< FMeshComponent >( "DynamicCylinder" );
     RootComponent = MeshComponent;
 
     // Setup physics
     MeshComponent->bUseDefaultBodyComposition = true;
     MeshComponent->Mass = 1.0f;
-    MeshComponent->bSimulatePhysics = true;
+    MeshComponent->PhysicsBehavior = PB_DYNAMIC;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeCylinderMesh" ) );

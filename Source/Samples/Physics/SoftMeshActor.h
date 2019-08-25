@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actor.h>
-#include <Engine/World/Public/SoftMeshComponent.h>
+#include <Engine/World/Public/Actors/Actor.h>
+#include <Engine/World/Public/Components/SoftMeshComponent.h>
 
 class FSoftMeshActor : public FActor {
     AN_ACTOR( FSoftMeshActor, FActor )

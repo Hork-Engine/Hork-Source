@@ -35,15 +35,16 @@ SOFTWARE.
 #include "Player.h"
 
 #include <Engine/World/Public/World.h>
-#include <Engine/World/Public/InputComponent.h>
+#include <Engine/World/Public/Components/InputComponent.h>
 #include <Engine/World/Public/Canvas.h>
-#include <Engine/World/Public/MeshAsset.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/Asset.h>
+#include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/Resource/Public/Skeleton.h>
 
 #include <Engine/Runtime/Public/EntryDecl.h>
 
 AN_ENTRY_DECL( FModule )
-AN_CLASS_META_NO_ATTRIBS( FModule )
+AN_CLASS_META( FModule )
 
 FModule * GModule;
 
@@ -51,14 +52,14 @@ void FModule::OnGameStart() {
 
     GModule = this;
 
-    GGameMaster.bAllowConsole = true;
-    //GGameMaster.MouseSensitivity = 0.15f;
-    GGameMaster.MouseSensitivity = 0.3f;
-    GGameMaster.SetRenderFeatures( VSync_Disabled );
-    GGameMaster.SetWindowDefs( 1, true, false, false, "AngieEngine: Physics" );
-    //GGameMaster.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    GGameMaster.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
-    GGameMaster.SetCursorEnabled( false );
+    GGameEngine.bAllowConsole = true;
+    //GGameEngine.MouseSensitivity = 0.15f;
+    GGameEngine.MouseSensitivity = 0.3f;
+    GGameEngine.SetRenderFeatures( VSync_Disabled );
+    GGameEngine.SetWindowDefs( 1, true, false, false, "AngieEngine: Physics" );
+    GGameEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
+    //GGameEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    GGameEngine.SetCursorEnabled( false );
 
     SetInputMappings();
 
@@ -66,7 +67,7 @@ void FModule::OnGameStart() {
 
     // Spawn world
     TWorldSpawnParameters< FWorld > WorldSpawnParameters;
-    World = GGameMaster.SpawnWorld< FWorld >( WorldSpawnParameters );
+    World = GGameEngine.SpawnWorld< FWorld >( WorldSpawnParameters );
 
     // Spawn HUD
     //FHUD * hud = World->SpawnActor< FMyHUD >();
@@ -113,6 +114,8 @@ void FModule::OnGameStart() {
 
     PlayerController->SetPawn( player );
     PlayerController->SetViewCamera( player->Camera );
+
+    World->GetPersistentLevel()->BuildNavMesh();
 }
 
 void FModule::OnGameEnd() {
@@ -124,25 +127,17 @@ void FModule::CreateResources() {
     //
     {
         FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-        mesh->InitializeShape< FPlaneShape >( 256, 256, 256 );
+        mesh->InitializePlaneMesh( 256, 256, 256 );
         mesh->SetName( "DefaultShapePlane256x256x256" );
-        mesh->BodyComposition.NewCollisionBody< FCollisionPlane >();
+        FCollisionBox * box = mesh->BodyComposition.AddCollisionBody< FCollisionBox >();
+        box->HalfExtents.X = 128;
+        box->HalfExtents.Y = 0.1f;
+        box->HalfExtents.Z = 128;
+        box->Position.Y -= box->HalfExtents.Y;
         RegisterResource( mesh );
     }
 
-    {
-        FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-        float s = 4;
-        mesh->InitializeShape< FPatchShape >(
-            Float3( -s, 0, -s ),
-            Float3( s, 0, -s ),
-            Float3( -s, 0, s ),
-            Float3( s, 0, s ),
-            17, 17,
-            2 );
-        mesh->SetName( "SoftmeshPatch" );
-        RegisterResource( mesh );
-    }
+    CreateSofbodyPatchAndSkeleton();
 
     {
         FIndexedMesh * mesh = NewObject< FIndexedMesh >();
@@ -153,19 +148,25 @@ void FModule::CreateResources() {
 
     {
         FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-        mesh->InitializeShape< FSphereShape >( 0.5f, 2, 32, 32 );
+        mesh->InitializeSphereMesh( 0.5f, 2, 32, 32 );
         mesh->SetName( "ShapeSphereMesh" );
-        FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
+        FCollisionSphere * collisionBody = mesh->BodyComposition.AddCollisionBody< FCollisionSphere >();
         collisionBody->Radius = 0.5f;
         RegisterResource( mesh );
     }
 
     {
         FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-        mesh->InitializeShape< FCylinderShape >( 0.5f, 1, 1, 32 );
+        mesh->InitializeCylinderMesh( 0.5f, 1, 1, 32 );
         mesh->SetName( "ShapeCylinderMesh" );
-        FCollisionCylinder * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionCylinder >();
-        collisionBody->HalfExtents = Float3( 0.5f );
+//        FCollisionCylinder * collisionBody = mesh->BodyComposition.AddCollisionBody< FCollisionCylinder >();
+//        collisionBody->HalfExtents = Float3( 0.5f );
+//        collisionBody->Axial = FCollisionBody::AXIAL_X;
+        FCollisionCapsule * collisionBody = mesh->BodyComposition.AddCollisionBody< FCollisionCapsule >();
+        collisionBody->Radius = 0.5f;
+        collisionBody->Height = 1;
+        collisionBody->Axial = FCollisionBody::AXIAL_Z;
+
         RegisterResource( mesh );
     }
 
@@ -177,31 +178,31 @@ void FModule::CreateResources() {
     //
     // Example, how to create texture resource from file with alias
     //
-    CreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
+    GetOrCreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
 
     // Default material
     {
         FMaterialProject * proj = NewObject< FMaterialProject >();
-        FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
-        FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+        FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
+        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
         FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
         texCoord->Connect( inTexCoordBlock, "Value" );
-        FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
+        FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
         diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
         diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
-        FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
+        FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
         diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
         diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
-        FMaterialUniformAddress * uniformAddress = proj->NewBlock< FMaterialUniformAddress >();
+        FMaterialUniformAddress * uniformAddress = proj->AddBlock< FMaterialUniformAddress >();
         uniformAddress->Address = 0;
         uniformAddress->Type = AT_Float4;
 
-        FMaterialMulBlock * mul = proj->NewBlock< FMaterialMulBlock >();
+        FMaterialMulBlock * mul = proj->AddBlock< FMaterialMulBlock >();
         mul->ValueA->Connect( diffuseSampler, "RGBA" );
         mul->ValueB->Connect( uniformAddress, "Value" );
 
-        FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
         materialFragmentStage->Color->Connect( mul, "Result" );
         FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
         builder->VertexStage = materialVertexStage;
@@ -222,24 +223,24 @@ void FModule::CreateResources() {
         //
         // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
         //
-        FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-        FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+        FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
 
         //
         // VS_Dir = InPosition - ViewPostion.xyz;
         //
-        FMaterialInViewPositionBlock * inViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
-        FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
+        FMaterialInViewPositionBlock * inViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
+        FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
         positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
         positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
         materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
         FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
         NSV_Dir->Connect( /*positionMinusViewPosition*/inPositionBlock, "Value" );
 
-        FMaterialAtmosphereBlock * atmo = proj->NewBlock< FMaterialAtmosphereBlock >();
+        FMaterialAtmosphereBlock * atmo = proj->AddBlock< FMaterialAtmosphereBlock >();
         atmo->Dir->Connect( materialVertexStage, "Dir" );
 
-        FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
         materialFragmentStage->Color->Connect( atmo, "Result" );
 
         FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
@@ -253,6 +254,102 @@ void FModule::CreateResources() {
 
         RegisterResource( material );
     }
+}
+
+void FModule::CreateSofbodyPatchAndSkeleton() {
+    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
+    float s = 4;
+
+#if 0
+    mesh->InitializePatchMesh(
+        Float3( -s, 0, -s ),
+        Float3( s, 0, -s ),
+        Float3( -s, 0, s ),
+        Float3( s, 0, s ),
+        17, 17,
+        2,
+        false );
+#endif
+
+    TPodArray< FMeshVertex > vertices;
+    TPodArray< unsigned int > indices;
+    TPodArray< FMeshVertexJoint > weights;
+    TPodArray< FJoint > joints;
+    BvAxisAlignedBox bounds;
+
+    // Generate path vertices, indices and bounds
+    CreatePatchMesh( vertices,
+                     indices,
+                     bounds,
+                     Float3( -s, 0, -s ),
+                     Float3( s, 0, -s ),
+                     Float3( -s, 0, s ),
+                     Float3( s, 0, s ),
+                     8, 8,
+                     2,
+                     true );
+
+    // Patch is two sided, so joints count is only half of vertices count
+    int numJoints = vertices.Size() >> 1;
+
+    joints.Resize( numJoints );
+
+    // Generate vertex weights for skinning
+    weights.Resize( vertices.Size() );
+    for ( int i = 0 ; i < weights.Size() ; i++ ) {
+        FMeshVertexJoint & w = weights[i];
+        w.JointIndices[0] = w.JointIndices[1] = w.JointIndices[2] = w.JointIndices[3] = i%numJoints;
+        w.JointWeights[0] = 255;
+        w.JointWeights[1] = 0;
+        w.JointWeights[2] = 0;
+        w.JointWeights[3] = 0;
+    }
+
+    // Generate skeleton joints
+    for ( int i = 0 ; i < numJoints ; i++ ) {
+        FString::CopySafe( joints[i].Name, sizeof( joints[i].Name ), FString::Fmt( "joint_%d", i ) );
+        //joints[i].JointOffsetMatrix.SetIdentity();
+
+        joints[i].OffsetMatrix.Compose( -vertices[i].Position, Float3x3::Identity() );
+        //joints[i].JointOffsetMatrix.Compose( vertices[i].Position, Float3x3::Identity() );
+
+        //vertices[i].Position.Clear();
+        //vertices[i+numJoints].Position.Clear();
+
+        joints[i].Parent = -1;
+    }
+
+    // Initialize indexed mesh with skinning
+    mesh->Initialize( vertices.Size(), indices.Size(), 1, true );
+    mesh->WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
+    mesh->WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
+    mesh->WriteJointWeights( weights.ToPtr(), weights.Size(), 0 );
+    mesh->GetSubpart( 0 )->SetBoundingBox( bounds );
+    mesh->SetName( "SoftmeshPatch" );
+
+    // Generate softbody faces
+    int totalIndices = indices.Size() >> 1; // ignore back faces
+    mesh->SoftbodyFaces.ResizeInvalidate( totalIndices / 3 );
+    int faceIndex = 0;
+    unsigned int const * pIndices = indices.ToPtr();
+    for ( int i = 0; i < totalIndices; i += 3 ) {
+        FSoftbodyFace & face = mesh->SoftbodyFaces[ faceIndex++ ];
+        face.Indices[ 0 ] = pIndices[ i ];
+        face.Indices[ 1 ] = pIndices[ i + 1 ];
+        face.Indices[ 2 ] = pIndices[ i + 2 ];
+    }
+
+    // Generate softbody links
+    mesh->GenerateSoftbodyLinksFromFaces();
+
+    // Create skeleton
+    FSkeleton * skel = NewObject< FSkeleton >();
+    skel->Initialize( joints.ToPtr(), joints.Size(), bounds );
+    skel->SetName( "SoftmeshSkeleton" );
+
+    // Register mesh and skeleton
+    RegisterResource( mesh );
+    RegisterResource( skel );
 }
 
 void FModule::SetInputMappings() {

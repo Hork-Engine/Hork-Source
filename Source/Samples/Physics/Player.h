@@ -30,9 +30,20 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Pawn.h>
-#include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/CameraComponent.h>
+#include <Engine/World/Public/Actors/Pawn.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
+#include <Engine/World/Public/Components/CameraComponent.h>
+
+struct trace_t {
+    int surfaceFlags;
+    PlaneF Plane;
+
+    float fraction;
+    Float3 endpos;
+    bool allsolid;
+    
+    FActor * Actor;
+};
 
 class FPlayer : public FPawn {
     AN_ACTOR( FPlayer, FPawn )
@@ -46,12 +57,12 @@ public:
 protected:
 
     FPlayer();
-
     void BeginPlay() override;
     void EndPlay() override;
     void SetupPlayerInputComponent( FInputComponent * _Input ) override;
     void Tick( float _TimeStep ) override;
     void TickPrePhysics( float _TimeStep ) override;
+    void DrawDebug( FDebugDraw * _DebugDraw );
 
 private:
     void MoveForward( float _Value );
@@ -62,14 +73,43 @@ private:
     void TurnUp( float _Value );
     void SpeedPress();
     void SpeedRelease();
+    //void AttackPress();
+    //void AttackRelease();
+    //void Shoot();
     void SpawnRandomShape();
     void SpawnSoftBody();
     void SpawnComposedActor();
-    void MoveObjectForward( float _Value );
-    void MoveObjectRight( float _Value );
 
     Angl Angles;
-    Float3 MoveVector;
-    Float3 Velocity;
     bool bSpeed;
+
+    void ApplyFriction();
+    bool CheckJump();
+    void AirMove();
+    void WalkMove();
+    float ScaleMove();
+    void Accelerate( Float3 const & wishdir, float wishspeed, float accel );
+    void StepSlideMove( bool gravity );
+    bool SlideMove( bool gravity );
+    void GroundTrace();
+    void GroundTraceMissed();
+    void TraceWorld( trace_t * trace, const Float3 & start, const Float3 & end, const char * debug );
+
+    Float3 Velocity;
+    float TimeStep;
+
+    float forwardmove;
+    float rightmove;
+    float upmove;
+    Float3 ForwardVec, RightVec;// , UpVec;
+    int pm_flags;
+    bool bGroundPlane;
+    bool bWalking;
+    float impactSpeed;
+    Float3 Origin;
+    trace_t groundTrace;
+    Float3 PMins, PMaxs;
+    int clientNum;
+    int tracemask;
+    FActor * groundEntityNum;
 };

@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include "Trigger.h"
 
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
-AN_CLASS_META_NO_ATTRIBS( FBoxTrigger )
+AN_CLASS_META( FBoxTrigger )
 
 FBoxTrigger::FBoxTrigger() {
     // Create material instance for mesh component
@@ -42,16 +42,18 @@ FBoxTrigger::FBoxTrigger() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "Trigger" );
+    MeshComponent = AddComponent< FMeshComponent >( "Trigger" );
     RootComponent = MeshComponent;
 
     // Create collision body for mesh component
     MeshComponent->bUseDefaultBodyComposition = true;
     MeshComponent->bTrigger = true;
     MeshComponent->bDispatchOverlapEvents = true;
-    //MeshComponent->Mass = 1.0f;
-    MeshComponent->bSimulatePhysics = true;
-    MeshComponent->CollisionMask = CM_ALL;
+    MeshComponent->PhysicsBehavior = PB_STATIC;
+    MeshComponent->CollisionMask = CM_PAWN;
+    MeshComponent->CollisionGroup = CM_TRIGGER;
+
+    //MeshComponent->bAINavigation = true;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeBoxMesh" ) );
@@ -61,9 +63,9 @@ FBoxTrigger::FBoxTrigger() {
 void FBoxTrigger::BeginPlay() {
     Super::BeginPlay();
 
-    E_OnBeginOverlap.Subscribe( this, &FBoxTrigger::OnBeginOverlap );
-    E_OnEndOverlap.Subscribe( this, &FBoxTrigger::OnEndOverlap );
-    E_OnUpdateOverlap.Subscribe( this, &FBoxTrigger::OnUpdateOverlap );
+    E_OnBeginOverlap.Add( this, &FBoxTrigger::OnBeginOverlap );
+    E_OnEndOverlap.Add( this, &FBoxTrigger::OnEndOverlap );
+    E_OnUpdateOverlap.Add( this, &FBoxTrigger::OnUpdateOverlap );
 }
 
 void FBoxTrigger::EndPlay() {

@@ -30,10 +30,10 @@ SOFTWARE.
 
 #include "Ground.h"
 
-#include <Engine/World/Public/MaterialAssembly.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/Resource/Public/MaterialAssembly.h>
 
-AN_CLASS_META_NO_ATTRIBS( FGround )
+AN_CLASS_META( FGround )
 
 FGround::FGround() {
     // Get mesh resource (plane)
@@ -46,13 +46,14 @@ FGround::FGround() {
     matInst->UniformVectors[0] = Float4( 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticPlane" );
+    MeshComponent = AddComponent< FMeshComponent >( "StaticPlane" );
     RootComponent = MeshComponent;
 
     // Setup physics
     MeshComponent->bUseDefaultBodyComposition = true;
-    MeshComponent->bSimulatePhysics = true;
     MeshComponent->SetFriction( 2 );
+
+    MeshComponent->bAINavigation = true;
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( mesh );
