@@ -35,7 +35,7 @@ SOFTWARE.
 
 #include <Engine/Core/Public/Logger.h>
 
-AN_CLASS_META_NO_ATTRIBS( FAnimation )
+AN_CLASS_META( FAnimation )
 
 FAnimation::FAnimation() {
     FrameCount = 0;
@@ -274,9 +274,9 @@ void FAnimationAsset::Read( FFileStream & f ) {
                     }
 
                     sscanf( buf, "( %f %f %f %f ) ( %f %f %f )  ( %f %f %f )",
-                        &transform.Rotation.X.Value, &transform.Rotation.Y.Value, &transform.Rotation.Z.Value, &transform.Rotation.W.Value,
-                        &transform.Position.X.Value, &transform.Position.Y.Value, &transform.Position.Z.Value,
-                        &transform.Scale.X.Value, &transform.Scale.Y.Value, &transform.Scale.Z.Value );
+                        &transform.Rotation.X, &transform.Rotation.Y, &transform.Rotation.Z, &transform.Rotation.W,
+                        &transform.Position.X, &transform.Position.Y, &transform.Position.Z,
+                        &transform.Scale.X, &transform.Scale.Y, &transform.Scale.Z );
                 }
 
                 transformOffset += numFrames;
@@ -292,8 +292,8 @@ void FAnimationAsset::Read( FFileStream & f ) {
                 }
 
                 sscanf( buf, "( %f %f %f ) ( %f %f %f )",
-                    &bv.Mins.X.Value, &bv.Mins.Y.Value, &bv.Mins.Z.Value,
-                    &bv.Maxs.X.Value, &bv.Maxs.Y.Value, &bv.Maxs.Z.Value );
+                    &bv.Mins.X, &bv.Mins.Y, &bv.Mins.Z,
+                    &bv.Maxs.X, &bv.Maxs.Y, &bv.Maxs.Z );
             }
         } else {
             GLogger.Printf( "Unknown tag '%s'\n", buf );

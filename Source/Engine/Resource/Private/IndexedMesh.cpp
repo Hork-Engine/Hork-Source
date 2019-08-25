@@ -36,10 +36,10 @@ SOFTWARE.
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 #include <Engine/Core/Public/BV/BvIntersect.h>
 
-AN_CLASS_META_NO_ATTRIBS( FIndexedMesh )
-AN_CLASS_META_NO_ATTRIBS( FIndexedMeshSubpart )
-AN_CLASS_META_NO_ATTRIBS( FLightmapUV )
-AN_CLASS_META_NO_ATTRIBS( FVertexLight )
+AN_CLASS_META( FIndexedMesh )
+AN_CLASS_META( FIndexedMeshSubpart )
+AN_CLASS_META( FLightmapUV )
+AN_CLASS_META( FVertexLight )
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -207,7 +207,7 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
     bvh->BuildBVH();
 
     BodyComposition.Clear();
-    FCollisionTriangleSoupBVH * CollisionBody = BodyComposition.NewCollisionBody< FCollisionTriangleSoupBVH >();
+    FCollisionTriangleSoupBVH * CollisionBody = BodyComposition.AddCollisionBody< FCollisionTriangleSoupBVH >();
     CollisionBody->BvhData = bvh;
     //CollisionBody->Margin = 0.2;
 
@@ -473,7 +473,7 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*box*" ) ) {
         InitializeBoxMesh( Float3(1), 1 );
         SetName( _Name );
-        FCollisionBox * collisionBody = BodyComposition.NewCollisionBody< FCollisionBox >();
+        FCollisionBox * collisionBody = BodyComposition.AddCollisionBody< FCollisionBox >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
@@ -481,7 +481,7 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*sphere*" ) ) {
         InitializeSphereMesh( 0.5f, 1, 32, 32 );
         SetName( _Name );
-        FCollisionSphere * collisionBody = BodyComposition.NewCollisionBody< FCollisionSphere >();
+        FCollisionSphere * collisionBody = BodyComposition.AddCollisionBody< FCollisionSphere >();
         collisionBody->Radius = 0.5f;
         return;
     }
@@ -489,7 +489,7 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*cylinder*" ) ) {
         InitializeCylinderMesh( 0.5f, 1, 1, 32 );
         SetName( _Name );
-        FCollisionCylinder * collisionBody = BodyComposition.NewCollisionBody< FCollisionCylinder >();
+        FCollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< FCollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
@@ -497,7 +497,7 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
     if ( !FString::Cmp( _Name, "*plane*" ) ) {
         InitializePlaneMesh( 256, 256, 256 );
         SetName( _Name );
-        FCollisionBox * box = BodyComposition.NewCollisionBody< FCollisionBox >();
+        FCollisionBox * box = BodyComposition.AddCollisionBody< FCollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 0.1f;
         box->HalfExtents.Z = 128;
@@ -923,8 +923,8 @@ void FMeshAsset::Read( FFileStream & f ) {
                 FSubpart & subpart = Subparts[i];
                 subpart.Name = name;
                 sscanf( s, "%d %d %d %d %d ( %f %f %f ) ( %f %f %f )", &subpart.BaseVertex, &subpart.VertexCount, &subpart.FirstIndex, &subpart.IndexCount, &subpart.Material,
-                        &subpart.BoundingBox.Mins.X.Value, &subpart.BoundingBox.Mins.Y.Value, &subpart.BoundingBox.Mins.Z.Value,
-                        &subpart.BoundingBox.Maxs.X.Value, &subpart.BoundingBox.Maxs.Y.Value, &subpart.BoundingBox.Maxs.Z.Value );
+                        &subpart.BoundingBox.Mins.X, &subpart.BoundingBox.Mins.Y, &subpart.BoundingBox.Mins.Z,
+                        &subpart.BoundingBox.Maxs.X, &subpart.BoundingBox.Maxs.Y, &subpart.BoundingBox.Maxs.Z );
             }
         } else if ( nullptr != ( s = AssetParseTag( buf, "verts " ) ) ) {
             int numVerts = 0;
@@ -939,11 +939,11 @@ void FMeshAsset::Read( FFileStream & f ) {
                 FMeshVertex & v = Vertices[i];
 
                 sscanf( buf, "( %f %f %f ) ( %f %f ) ( %f %f %f ) %f ( %f %f %f )\n",
-                        &v.Position.X.Value,&v.Position.Y.Value,&v.Position.Z.Value,
-                        &v.TexCoord.X.Value,&v.TexCoord.Y.Value,
-                        &v.Tangent.X.Value,&v.Tangent.Y.Value,&v.Tangent.Z.Value,
+                        &v.Position.X,&v.Position.Y,&v.Position.Z,
+                        &v.TexCoord.X,&v.TexCoord.Y,
+                        &v.Tangent.X,&v.Tangent.Y,&v.Tangent.Z,
                         &v.Handedness,
-                        &v.Normal.X.Value,&v.Normal.Y.Value,&v.Normal.Z.Value );
+                        &v.Normal.X,&v.Normal.Y,&v.Normal.Z );
             }
         } else if ( nullptr != ( s = AssetParseTag( buf, "indices " ) ) ) {
             int numIndices = 0;

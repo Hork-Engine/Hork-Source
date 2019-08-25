@@ -56,7 +56,7 @@ SOFTWARE.
 #include "Console.h"
 #include "ImguiContext.h"
 
-AN_CLASS_META_NO_ATTRIBS( IGameModule )
+AN_CLASS_META( IGameModule )
 
 FGameEngine & GGameEngine = FGameEngine::Inst();
 
@@ -306,6 +306,10 @@ void FGameEngine::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
         return;
     }
 
+    if ( Desktop ) {
+        Desktop->GenerateKeyEvents( _Event, _TimeStamp );
+    }
+
     UpdateInputAxes( FractAvg );
 
     for ( FInputComponent * component = FInputComponent::GetInputComponents()
@@ -321,6 +325,10 @@ void FGameEngine::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _
 
     if ( GConsole.IsActive() ) {
         return;
+    }
+
+    if ( Desktop ) {
+        Desktop->GenerateMouseButtonEvents( _Event, _TimeStamp );
     }
 
     UpdateInputAxes( FractAvg );
@@ -339,6 +347,10 @@ void FGameEngine::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _Ti
     GConsole.MouseWheelEvent( _Event );
     if ( GConsole.IsActive() ) {
         return;
+    }
+
+    if ( Desktop ) {
+        Desktop->GenerateMouseWheelEvents( _Event, _TimeStamp );
     }
 
     UpdateInputAxes( FractAvg );
@@ -395,6 +407,11 @@ void FGameEngine::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _Time
         CursorPosition.Y -= _Event.Y;
     }
     CursorPosition = CursorPosition.Clamp( Float2(0.0f), Float2( FramebufferWidth, FramebufferHeight ) );
+
+    if ( Desktop ) {
+        Desktop->SetCursorPosition( CursorPosition );
+        Desktop->GenerateMouseMoveEvents( _Event, _TimeStamp );
+    }
 }
 
 void FGameEngine::OnCharEvent( FCharEvent const & _Event, double _TimeStamp ) {
@@ -403,6 +420,10 @@ void FGameEngine::OnCharEvent( FCharEvent const & _Event, double _TimeStamp ) {
     GConsole.CharEvent( _Event );
     if ( GConsole.IsActive() ) {
         return;
+    }
+
+    if ( Desktop ) {
+        Desktop->GenerateCharEvents( _Event, _TimeStamp );
     }
 
     for ( FInputComponent * component = FInputComponent::GetInputComponents()
@@ -552,7 +573,7 @@ void FGameEngine::SetWindowDefs( float _Opacity, bool _Decorated, bool _AutoIcon
     event.Type = ET_SetWindowDefsEvent;
     event.TimeStamp = GRuntime.SysSeconds_d();
     FSetWindowDefsEvent & data = event.Data.SetWindowDefsEvent;
-    data.Opacity = Float(_Opacity).Clamp( 0.0f, 1.0f ) * 255.0f;
+    data.Opacity = FMath::Clamp( _Opacity, 0.0f, 1.0f ) * 255.0f;
     data.bDecorated = _Decorated;
     data.bAutoIconify = _AutoIconify;
     data.bFloating = _Floating;
@@ -600,12 +621,12 @@ FEvent & FGameEngine::SendEvent() {
     return *queue->Push();
 }
 
-void FGameEngine::MapWindowCoordinate( float & InOutX, float & InOutY ) {
+void FGameEngine::MapWindowCoordinate( float & InOutX, float & InOutY ) const {
     InOutX += WindowPosX;
     InOutY += WindowPosY;
 }
 
-void FGameEngine::UnmapWindowCoordinate( float & InOutX, float & InOutY ) {
+void FGameEngine::UnmapWindowCoordinate( float & InOutX, float & InOutY ) const {
     InOutX -= WindowPosX;
     InOutY -= WindowPosY;
 }
@@ -775,7 +796,7 @@ void FGameEngine::Initialize( FCreateGameModuleCallback _CreateGameModuleCallbac
     GCanvas.Initialize();
 
     ImguiContext = CreateInstanceOf< FImguiContext >();
-    ImguiContext->SetFontAtlas( (ImFontAtlas *)DefaultFontAtlas->GetImguiFontAtlas() );
+    ImguiContext->SetFontAtlas( DefaultFontAtlas );
     ImguiContext->AddRef();
 
     FrameDuration = 1000000.0 / 60;
@@ -783,6 +804,8 @@ void FGameEngine::Initialize( FCreateGameModuleCallback _CreateGameModuleCallbac
 
 void FGameEngine::Deinitialize() {
     GameModule->OnGameEnd();
+
+    Desktop = nullptr;
 
     DestroyWorlds();
     KickoffPendingKillWorlds();
@@ -860,14 +883,27 @@ void FGameEngine::Stop() {
     bStopRequest = true;
 }
 
+void FGameEngine::SetDesktop( WDesktop * _Desktop ) {
+    Desktop = _Desktop;
+}
+
 void FGameEngine::DrawCanvas() {
-    GCanvas.Begin( DefaultFont, VideoMode.Width, VideoMode.Height );
+    GCanvas.Begin( const_cast< FFont * >( DefaultFont ), VideoMode.Width, VideoMode.Height );
 
-    // Draw game
-    GameModule->DrawCanvas( &GCanvas );
+    if ( Desktop ) {
+        Desktop->SetSize( VideoMode.Width, VideoMode.Height );
+        Desktop->GenerateDrawEvents( GCanvas );
 
-    // Draw console
-    GConsole.Draw( &GCanvas, FrameDurationInSeconds );
+        // Draw console
+        GConsole.SetFullscreen( false );
+        GConsole.Draw( &GCanvas, FrameDurationInSeconds );
+
+    } else {
+
+        // Draw fullscreen console
+        GConsole.SetFullscreen( true );
+        GConsole.Draw( &GCanvas, FrameDurationInSeconds );
+    }
 
     // Draw debug
     if ( !GConsole.IsActive() ) {
@@ -879,16 +915,16 @@ void FGameEngine::DrawCanvas() {
 
         pos.Y = GCanvas.Height - numLines * y_step;
 
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Zone memory usage: %f KB / %d MB", GMainMemoryZone.GetTotalMemoryUsage()/1024.0f, GMainMemoryZone.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Hunk memory usage: %f KB / %d MB", GMainHunkMemory.GetTotalMemoryUsage()/1024.0f, GMainHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frame memory usage: %f KB / %d MB", frameData->FrameMemoryUsed/1024.0f, frameData->FrameMemorySize>>20 ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Heap memory usage: %f KB", GMainHeapMemory.GetTotalMemoryUsage()/1024.0f
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Zone memory usage: %f KB / %d MB", GMainMemoryZone.GetTotalMemoryUsage()/1024.0f, GMainMemoryZone.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Hunk memory usage: %f KB / %d MB", GMainHunkMemory.GetTotalMemoryUsage()/1024.0f, GMainHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Frame memory usage: %f KB / %d MB", frameData->FrameMemoryUsed/1024.0f, frameData->FrameMemorySize>>20 ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Heap memory usage: %f KB", GMainHeapMemory.GetTotalMemoryUsage()/1024.0f
         /*- GMainMemoryZone.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Polycount: %d", GRenderFrontend.GetPolyCount() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Frontend time: %d msec", GRenderFrontend.GetFrontendTime() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, 0xffffffff, FString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) );
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Polycount: %d", GRenderFrontend.GetPolyCount() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Frontend time: %d msec", GRenderFrontend.GetFrontendTime() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) );
 
     }
 

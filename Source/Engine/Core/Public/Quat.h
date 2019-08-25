@@ -34,21 +34,21 @@ SOFTWARE.
 
 class Quat final {
 public:
-    Float X;
-    Float Y;
-    Float Z;
-    Float W;
+    float X;
+    float Y;
+    float Z;
+    float W;
 
     Quat() = default;
     explicit constexpr Quat( const Float4 & _Value ) : X( _Value.X ), Y( _Value.Y ), Z( _Value.Z ), W( _Value.W ) {}
     constexpr Quat( const float _W, const float & _X, const float & _Y, const float & _Z ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
     Quat( const float & _PitchRad, const float & _YawRad, const float & _RollRad ) { FromAngles( _PitchRad, _YawRad, _RollRad ); }
 
-    Float * ToPtr() {
+    float * ToPtr() {
         return &X;
     }
 
-    const Float * ToPtr() const {
+    const float * ToPtr() const {
         return &X;
     }
 
@@ -60,12 +60,12 @@ public:
         return *this;
     }
 
-    Float & operator[]( const int & _Index ) {
+    float & operator[]( const int & _Index ) {
         AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
-    const Float & operator[]( const int & _Index ) const {
+    const float & operator[]( const int & _Index ) const {
         AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
@@ -138,34 +138,34 @@ public:
 
     // Floating point specific
     Bool4 IsInfinite() const {
-        return Bool4( X.IsInfinite(), Y.IsInfinite(), Z.IsInfinite(), W.IsInfinite() );
+        return Bool4( FMath::IsInfinite( X ), FMath::IsInfinite( Y ), FMath::IsInfinite( Z ), FMath::IsInfinite( W ) );
     }
 
     Bool4 IsNan() const {
-        return Bool4( X.IsNan(), Y.IsNan(), Z.IsNan(), W.IsNan() );
+        return Bool4( FMath::IsNan( X ), FMath::IsNan( Y ), FMath::IsNan( Z ), FMath::IsNan( W ) );
     }
 
     Bool4 IsNormal() const {
-        return Bool4( X.IsNormal(), Y.IsNormal(), Z.IsNormal(), W.IsNormal() );
+        return Bool4( FMath::IsNormal( X ), FMath::IsNormal( Y ), FMath::IsNormal( Z ), FMath::IsNormal( W ) );
     }
 
     Bool4 NotEqual( const Quat & _Other ) const {
-        return Bool4( X.NotEqual( _Other.X ), Y.NotEqual( _Other.Y ), Z.NotEqual( _Other.Z ), W.NotEqual( _Other.W ) );
+        return Bool4( FMath::NotEqual( X, _Other.X ), FMath::NotEqual( Y, _Other.Y ), FMath::NotEqual( Z, _Other.Z ), FMath::NotEqual( W, _Other.W ) );
     }
 
     Bool Compare( const Quat & _Other ) const {
         return !NotEqual( _Other ).Any();
     }
 
-    Bool CompareEps( const Quat & _Other, const Float & _Epsilon ) const {
-        return Bool4( X.Dist( _Other.X ) < _Epsilon,
-                      Y.Dist( _Other.Y ) < _Epsilon,
-                      Z.Dist( _Other.Z ) < _Epsilon,
-                      W.Dist( _Other.W ) < _Epsilon ).All();
+    Bool CompareEps( const Quat & _Other, const float & _Epsilon ) const {
+        return Bool4( FMath::Dist( X, _Other.X ) < _Epsilon,
+                      FMath::Dist( Y, _Other.Y ) < _Epsilon,
+                      FMath::Dist( Z, _Other.Z ) < _Epsilon,
+                      FMath::Dist( W, _Other.W ) < _Epsilon ).All();
     }
 
     // Quaternion methods
-    Float NormalizeSelf() {
+    float NormalizeSelf() {
         const float L = StdSqrt( X * X + Y * Y + Z * Z + W * W );
         if ( L != 0.0f ) {
             const float InvLength = 1.0f / L;
@@ -211,22 +211,22 @@ public:
         return Quat( W, -X, -Y, -Z );
     }
 
-    Float ComputeW() const {
-        return StdSqrt( ( Float(1.0f) - ( X * X + Y * Y + Z * Z ) ).Abs() );
+    float ComputeW() const {
+        return StdSqrt( FMath::Abs( 1.0f - ( X * X + Y * Y + Z * Z ) ) );
     }
 
     Float3 XAxis() const {
-        Float y2 = Y + Y, z2 = Z + Z;
+        float y2 = Y + Y, z2 = Z + Z;
         return Float3( 1.0f - (Y*y2 + Z*z2), X*y2 + W*z2, X*z2 - W*y2 );
     }
 
     Float3 YAxis() const {
-        Float x2 = X + X, y2 = Y + Y, z2 = Z + Z;
+        float x2 = X + X, y2 = Y + Y, z2 = Z + Z;
         return Float3( X*y2 - W*z2, 1.0f - (X*x2 + Z*z2), Y*z2 + W*x2 );
     }
 
     Float3 ZAxis() const {
-        Float x2 = X + X, y2 = Y + Y, z2 = Z + Z;
+        float x2 = X + X, y2 = Y + Y, z2 = Z + Z;
         return Float3( X*z2 + W*y2, Y*z2 - W*x2, 1.0f - (X*x2 + Y*y2) );
     }
 
@@ -250,7 +250,7 @@ public:
     // Return rotation around X axis
     static Quat RotationX( const float & _AngleRad ) {
         Quat Result;
-        FMath::RadSinCos( Float( _AngleRad * 0.5f ), Result.X.Value, Result.W.Value );
+        FMath::RadSinCos( _AngleRad * 0.5f, Result.X, Result.W );
         Result.Y = 0;
         Result.Z = 0;
         return Result;
@@ -259,7 +259,7 @@ public:
     // Return rotation around Y axis
     static Quat RotationY( const float & _AngleRad ) {
         Quat Result;
-        FMath::RadSinCos( Float( _AngleRad * 0.5f ), Result.Y.Value, Result.W.Value );
+        FMath::RadSinCos( _AngleRad * 0.5f, Result.Y, Result.W );
         Result.X = 0;
         Result.Z = 0;
         return Result;
@@ -268,7 +268,7 @@ public:
     // Return rotation around Z axis
     static Quat RotationZ( const float & _AngleRad ) {
         Quat Result;
-        FMath::RadSinCos( Float( _AngleRad * 0.5f ), Result.Z.Value, Result.W.Value );
+        FMath::RadSinCos( _AngleRad * 0.5f, Result.Z, Result.W );
         Result.X = 0;
         Result.Y = 0;
         return Result;
@@ -299,7 +299,7 @@ public:
                        _Vec.Dot( Float3( xz2 + yw2, yz2 - xw2, wwyy - xxzz ) ) );
     }
 
-    void ToAngles( Float & _PitchRad, Float & _YawRad, Float & _RollRad ) const {
+    void ToAngles( float & _PitchRad, float & _YawRad, float & _RollRad ) const {
         const float xx = X * X;
         const float yy = Y * Y;
         const float zz = Z * Z;
@@ -308,11 +308,11 @@ public:
         // TODO: singularity test
 
         _PitchRad = atan2( 2.0f * ( Y * Z + W * X ), ww - xx - yy + zz );
-        _YawRad   = asin( Float( -2.0f * ( X * Z - W * Y ) ).Clamp( -1.0f, 1.0f ) );
+        _YawRad   = asin( FMath::Clamp( -2.0f * ( X * Z - W * Y ), -1.0f, 1.0f ) );
         _RollRad  = atan2( 2.0f * ( X * Y + W * Z ), ww + xx - yy - zz );
     }
 
-    void FromAngles( const Float & _PitchRad, const Float & _YawRad, const Float & _RollRad ) {
+    void FromAngles( const float & _PitchRad, const float & _YawRad, const float & _RollRad ) {
         float sx, sy, sz, cx, cy, cz;
 
         FMath::RadSinCos( _PitchRad * 0.5f, sx, cx );
@@ -420,15 +420,15 @@ public:
         }
     }
 
-    Float Pitch() const {
+    float Pitch() const {
         return atan2( 2.0f * ( Y * Z + W * X ), W * W - X * X - Y * Y + Z * Z );
     }
 
-    Float Yaw() const {
-        return asin( Float( -2.0f * ( X * Z - W * Y ) ).Clamp( -1.0f, 1.0f ) );
+    float Yaw() const {
+        return asin( FMath::Clamp( -2.0f * ( X * Z - W * Y ), -1.0f, 1.0f ) );
     }
 
-    Float Roll() const {
+    float Roll() const {
         return atan2( 2.0f * ( X * Y + W * Z ), W * W + X * X - Y * Y - Z * Z );
     }
 
@@ -440,11 +440,11 @@ public:
 
     // String conversions
     FString ToString( int _Precision = -1 ) const {
-        return FString( "( " ) + X.ToString( _Precision ) + " " + Y.ToString( _Precision ) + " " + Z.ToString( _Precision ) + " " + W.ToString( _Precision ) + " )";
+        return FString( "( " ) + FMath::ToString( X, _Precision ) + " " + FMath::ToString( Y, _Precision ) + " " + FMath::ToString( Z, _Precision ) + " " + FMath::ToString( W, _Precision ) + " )";
     }
 
     FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " " + W.ToHexString( _LeadingZeros, _Prefix ) + " )";
+        return FString( "( " ) + FMath::ToHexString( X, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Z, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( W, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization

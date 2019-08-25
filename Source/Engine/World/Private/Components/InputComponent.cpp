@@ -35,9 +35,9 @@ SOFTWARE.
 #include <Engine/Core/Public/HashFunc.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META_NO_ATTRIBS( FInputAxis )
-AN_CLASS_META_NO_ATTRIBS( FInputAction )
-AN_CLASS_META_NO_ATTRIBS( FInputMappings )
+AN_CLASS_META( FInputAxis )
+AN_CLASS_META( FInputAction )
+AN_CLASS_META( FInputMappings )
 
 AN_BEGIN_CLASS_META( FInputComponent )
 //AN_ATTRIBUTE_( ReceiveInputMask, AF_DEFAULT )
@@ -950,7 +950,7 @@ int FInputMappings::Serialize( FDocument & _Doc ) {
                         _Doc.AddStringField( axisObject, "Name", axisName.ToConstChar() );
                         _Doc.AddStringField( axisObject, "Device", deviceName );
                         _Doc.AddStringField( axisObject, "Key", FInputHelper::TranslateDeviceKey( deviceId, key ) );
-                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Float( mapping->AxisScale ).ToString() ).ToConstChar() );
+                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( FMath::ToString( mapping->AxisScale ) ).ToConstChar() );
                         _Doc.AddStringField( axisObject, "Owner", FInputHelper::TranslateController( mapping->ControllerId ) );
                         _Doc.AddValueToField( axes, axisObject );
                     }
@@ -966,7 +966,7 @@ int FInputMappings::Serialize( FDocument & _Doc ) {
                         _Doc.AddStringField( axisObject, "Name", axisName.ToConstChar() );
                         _Doc.AddStringField( axisObject, "Device", deviceName );
                         _Doc.AddStringField( axisObject, "Key", FInputHelper::TranslateDeviceKey( ID_MOUSE, MOUSE_AXIS_BASE + i ) );
-                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Float( mapping->AxisScale ).ToString() ).ToConstChar() );
+                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( FMath::ToString( mapping->AxisScale ) ).ToConstChar() );
                         _Doc.AddStringField( axisObject, "Owner", FInputHelper::TranslateController( mapping->ControllerId ) );
                         _Doc.AddValueToField( axes, axisObject );
                     }
@@ -983,7 +983,7 @@ int FInputMappings::Serialize( FDocument & _Doc ) {
                             _Doc.AddStringField( axisObject, "Name", axisName.ToConstChar() );
                             _Doc.AddStringField( axisObject, "Device", deviceName );
                             _Doc.AddStringField( axisObject, "Key", FInputHelper::TranslateDeviceKey( ID_JOYSTICK_1 + joyId, JOY_AXIS_BASE + i ) );
-                            _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Float( mapping->AxisScale ).ToString() ).ToConstChar() );
+                            _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( FMath::ToString( mapping->AxisScale ) ).ToConstChar() );
                             _Doc.AddStringField( axisObject, "Owner", FInputHelper::TranslateController( mapping->ControllerId ) );
                             _Doc.AddValueToField( axes, axisObject );
                         }
@@ -1011,7 +1011,7 @@ int FInputMappings::Serialize( FDocument & _Doc ) {
                         _Doc.AddStringField( actionObject, "Key", FInputHelper::TranslateDeviceKey( deviceId, key ) );
                         _Doc.AddStringField( actionObject, "Owner", FInputHelper::TranslateController( mapping->ControllerId ) );
                         if ( mapping->ModMask ) {
-                            _Doc.AddStringField( actionObject, "ModMask", _Doc.ProxyBuffer.NewString( Float( mapping->ModMask ).ToString() ).ToConstChar() );
+                            _Doc.AddStringField( actionObject, "ModMask", _Doc.ProxyBuffer.NewString( FMath::ToString( mapping->ModMask ) ).ToConstChar() );
                         }
                         _Doc.AddValueToField( actions, actionObject );
                     }
@@ -1103,8 +1103,7 @@ void FInputMappings::LoadAxes( FDocument const & _Document, int _FieldsHead ) {
         int deviceKey = FInputHelper::LookupDeviceKey( deviceId, key.ToString().ToConstChar() );
         int controllerId = FInputHelper::LookupController( controller.ToString().ToConstChar() );
 
-        Float scaleValue;
-        scaleValue.FromString( scale.ToString() );
+        float scaleValue = FMath::FromString( scale.ToString() );
 
         MapAxis( name.ToString().ToConstChar(),
                  deviceId,

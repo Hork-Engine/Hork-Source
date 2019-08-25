@@ -114,7 +114,7 @@ public:
     TPodArray< FAnimationChannel > const & GetChannels() const { return Channels; }
     TPodArray< FChannelTransform > const & GetTransforms() const { return Transforms; }
 
-    unsigned short GetChannelIndex( int _JointIndex ) const;
+    unsigned short GetChannelIndex( int _NodeIndex ) const;
 
     int GetFrameCount() const { return FrameCount; }
     float GetFrameDelta() const { return FrameDelta; }

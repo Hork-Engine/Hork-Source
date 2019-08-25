@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Engine/Core/Public/Document.h>
 #include <Engine/Runtime/Public/ImportExport.h>
 #include <Engine/Resource/Public/FontAtlas.h>
+#include <Engine/Widgets/Public/WDesktop.h>
 
 class FWorld;
 class FImguiContext;
@@ -169,15 +170,17 @@ public:
     bool IsWindowVisible() const { return bIsWindowVisible; }
 
     // From window to monitor coordinate
-    void MapWindowCoordinate( float & InOutX, float & InOutY );
+    void MapWindowCoordinate( float & InOutX, float & InOutY ) const;
 
     // From monitor to window coordinate
-    void UnmapWindowCoordinate( float & InOutX, float & InOutY );
+    void UnmapWindowCoordinate( float & InOutX, float & InOutY ) const;
 
     void SetCursorPosition( float _X, float _Y ) { CursorPosition.X = _X; CursorPosition.Y = _Y; }
     Float2 const & GetCursorPosition() const { return CursorPosition; }
 
     IGameModule * GetGameModule() { return GameModule; }
+
+    void SetDesktop( WDesktop * _Desktop );
 
 private:
     // IGameEngine interface
@@ -257,7 +260,9 @@ private:
     IGameModule * GameModule;
 
     TRef< FFontAtlas > DefaultFontAtlas;
-    FFont * DefaultFont;
+    FFont const * DefaultFont;
+
+    TRef< WDesktop > Desktop;
 };
 
 class FCanvas;

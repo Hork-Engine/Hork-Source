@@ -176,9 +176,9 @@ protected:
     FAssemblyBlock();
     ~FAssemblyBlock();
 
-    FAssemblyBlockInput * NewInput( const char * _Name );
+    FAssemblyBlockInput * AddInput( const char * _Name );
 
-    FAssemblyBlockOutput * NewOutput( const char * _Name, EAssemblyType _Type = AT_Unknown );
+    FAssemblyBlockOutput * AddOutput( const char * _Name, EAssemblyType _Type = AT_Unknown );
 
     virtual void Compute( FMaterialBuildContext & _Context ) {}
 
@@ -784,7 +784,7 @@ class FMaterialProject : public FBaseObject {
 
 public:
     template< typename T >
-    T * NewBlock() {
+    T * AddBlock() {
         FAssemblyBlock * block = NewObject< T >();
         Blocks.Append( block );
         block->AddRef();

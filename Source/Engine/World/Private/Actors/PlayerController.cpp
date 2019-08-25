@@ -33,13 +33,13 @@ SOFTWARE.
 #include <Engine/World/Public/World.h>
 #include <Engine/Runtime/Public/Runtime.h>
 
-AN_CLASS_META_NO_ATTRIBS( FPlayerController )
-AN_CLASS_META_NO_ATTRIBS( FRenderingParameters )
+AN_CLASS_META( FPlayerController )
+AN_CLASS_META( FRenderingParameters )
 
 FPlayerController * FPlayerController::CurrentAudioListener = nullptr;
 
 FPlayerController::FPlayerController() {
-    InputComponent = CreateComponent< FInputComponent >( "PlayerControllerInput" );
+    InputComponent = AddComponent< FInputComponent >( "PlayerControllerInput" );
 
     bCanEverTick = true;
 

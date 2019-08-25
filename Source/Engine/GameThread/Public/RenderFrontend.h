@@ -35,31 +35,19 @@ SOFTWARE.
 #include <Engine/World/Public/DebugDraw.h>
 
 class FRenderingParameters;
-class FMaterialInstance;
-class FCameraComponent;
-class FMeshComponent;
-class FPlayerController;
-class FHUD;
 class FWorld;
-class FLevel;
-class FLevelArea;
-class BvFrustum;
 class FCanvas;
-class FConvexHull;
 
 class FRenderFrontend {
     AN_SINGLETON( FRenderFrontend )
 
 public:
-
     void Initialize();
     void Deinitialize();
 
     int GetVisMarker() const { return VisMarker; }
 
     void BuildFrameData();
-
-    //int64_t RenderTimeDelta() const { return GRuntime.GetFrameData()->RenderTimeDelta; }
 
     int GetPolyCount() const { return PolyCount; }
     int GetFrontendTime() const { return FrontendTime; }
@@ -69,9 +57,6 @@ private:
     void WriteDrawList( struct ImDrawList const * _DrawList );
     void RenderView( int _Index );
     void AddInstances( struct FRenderFrontendDef * _Def );
-    void CullLevelInstances( FLevel * _Level );
-    void FlowThroughPortals_r( FLevelArea * _Area );
-    void AddSurface( FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
 
     FRenderFrame * CurFrameData;
     FRenderView * RV;
@@ -81,7 +66,6 @@ private:
     int VisMarker = 0;
     int PolyCount = 0;
     int FrontendTime = 0;
-    FConvexHull * Polygon[ 2 ];
 };
 
 extern FRenderFrontend & GRenderFrontend;

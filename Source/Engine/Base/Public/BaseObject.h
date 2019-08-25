@@ -71,8 +71,6 @@ public:
 
     const char * GetNameConstChar() const { return Name.ToConstChar(); }
 
-    //virtual const char * GetResourcePath() const { return ""; }
-
     // Get total existing objects
     static uint64_t GetTotalObjects() { return TotalObjects; }
 
@@ -186,11 +184,11 @@ struct TEvent {
     TEvent() {}
 
     ~TEvent() {
-        UnsubscribeAll();
+        RemoveAll();
     }
 
     template< typename T >
-    void Subscribe( T * _Object, void ( T::*_Method )(TArgs...) ) {
+    void Add( T * _Object, void ( T::*_Method )(TArgs...) ) {
 
         // Ensure this is subclass of base object. Get compiler error if not.
         FBaseObject * baseObject = _Object;
@@ -204,7 +202,7 @@ struct TEvent {
     }
 
     template< typename T >
-    void Unsubscribe( T * _Object ) {
+    void Remove( T * _Object ) {
         for ( int i = Subscribers.Size() - 1 ; i >= 0 ; i-- ) {
             Callback & callback = Subscribers[i];
 
@@ -215,7 +213,7 @@ struct TEvent {
         }
     }
 
-    void UnsubscribeAll() {
+    void RemoveAll() {
         for ( Callback & callback : Subscribers ) {
             // We can safe cast to base object because TEvent works only with subclasses of FBaseObject
             static_cast< FBaseObject * >( callback.GetObject() )->RemoveRef();

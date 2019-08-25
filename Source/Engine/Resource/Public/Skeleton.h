@@ -110,9 +110,9 @@ public:
 
     TPodArray< FJoint > const & GetJoints() const { return Joints; }
 
-    FSocketDef * CreateSocket( const char * _Name, int _JointIndex );
-    FSocketDef * CreateSocket( const char * _Name, const char * _JointName );
-    // TODO: DestroySocket?
+    FSocketDef * AddSocket( const char * _Name, int _JointIndex );
+    FSocketDef * AddSocket( const char * _Name, const char * _JointName );
+    // TODO: RemoveSocket?
 
     FSocketDef * FindSocket( const char * _Name );
 

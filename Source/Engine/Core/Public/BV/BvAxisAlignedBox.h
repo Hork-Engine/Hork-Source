@@ -46,18 +46,18 @@ public:
     BvAxisAlignedBox() = default;
     BvAxisAlignedBox( Float3 const & _Mins, Float3 const & _Maxs );
 
-    Float * ToPtr();
-    const Float * ToPtr() const;
+    float * ToPtr();
+    const float * ToPtr() const;
 
-    void operator/=( Float const & _Scale );
-    void operator*=( Float const & _Scale );
+    void operator/=( float const & _Scale );
+    void operator*=( float const & _Scale );
 
-    BvAxisAlignedBox operator/( Float const & _Scale ) const {
+    BvAxisAlignedBox operator/( float const & _Scale ) const {
         float invScale = 1.0f / _Scale;
         return BvAxisAlignedBox( Mins * invScale, Maxs * invScale );
     }
 
-    BvAxisAlignedBox operator*( Float const & _Scale ) const {
+    BvAxisAlignedBox operator*( float const & _Scale ) const {
         return BvAxisAlignedBox( Mins * _Scale, Maxs * _Scale );
     }
 
@@ -68,13 +68,13 @@ public:
     BvAxisAlignedBox operator-( Float3 const & _Vec ) const;
 
     Bool Compare( BvAxisAlignedBox const & _Other ) const;
-    Bool CompareEps( BvAxisAlignedBox const & _Other, Float const & _Epsilon ) const;
+    Bool CompareEps( BvAxisAlignedBox const & _Other, float const & _Epsilon ) const;
     Bool operator==( BvAxisAlignedBox const & _Other ) const;
     Bool operator!=( BvAxisAlignedBox const & _Other ) const;
 
     void Clear();
     void AddPoint( Float3 const & _Point );
-    void AddPoint( Float const & _X, Float const & _Y, Float const & _Z );
+    void AddPoint( float const & _X, float const & _Y, float const & _Z );
     void AddAABB( BvAxisAlignedBox const & _Other );
     void AddAABB( Float3 const & _Mins, Float3 const & _Maxs );
     Float3 Center() const;
@@ -92,9 +92,9 @@ public:
         const Float3 OutCenter( _Orient[0][0] * InCenter[0] + _Orient[1][0] * InCenter[1] + _Orient[2][0] * InCenter[2] + _Origin.X,
                                 _Orient[0][1] * InCenter[0] + _Orient[1][1] * InCenter[1] + _Orient[2][1] * InCenter[2] + _Origin.Y,
                                 _Orient[0][2] * InCenter[0] + _Orient[1][2] * InCenter[1] + _Orient[2][2] * InCenter[2] + _Origin.Z );
-        const Float3 OutEdge( _Orient[0][0].Abs() * InEdge.X + _Orient[1][0].Abs() * InEdge.Y + _Orient[2][0].Abs() * InEdge.Z,
-                              _Orient[0][1].Abs() * InEdge.X + _Orient[1][1].Abs() * InEdge.Y + _Orient[2][1].Abs() * InEdge.Z,
-                              _Orient[0][2].Abs() * InEdge.X + _Orient[1][2].Abs() * InEdge.Y + _Orient[2][2].Abs() * InEdge.Z );
+        const Float3 OutEdge( FMath::Abs( _Orient[0][0] ) * InEdge.X + FMath::Abs( _Orient[1][0] ) * InEdge.Y + FMath::Abs( _Orient[2][0] ) * InEdge.Z,
+                              FMath::Abs( _Orient[0][1] ) * InEdge.X + FMath::Abs( _Orient[1][1] ) * InEdge.Y + FMath::Abs( _Orient[2][1] ) * InEdge.Z,
+                              FMath::Abs( _Orient[0][2] ) * InEdge.X + FMath::Abs( _Orient[1][2] ) * InEdge.Y + FMath::Abs( _Orient[2][2] ) * InEdge.Z );
         return BvAxisAlignedBox( OutCenter - OutEdge, OutCenter + OutEdge );
     }
 
@@ -104,9 +104,9 @@ public:
         const Float3 OutCenter( _TransformMatrix[0][0] * InCenter[0] + _TransformMatrix[0][1] * InCenter[1] + _TransformMatrix[0][2] * InCenter[2] + _TransformMatrix[0][3],
                                 _TransformMatrix[1][0] * InCenter[0] + _TransformMatrix[1][1] * InCenter[1] + _TransformMatrix[1][2] * InCenter[2] + _TransformMatrix[1][3],
                                 _TransformMatrix[2][0] * InCenter[0] + _TransformMatrix[2][1] * InCenter[1] + _TransformMatrix[2][2] * InCenter[2] + _TransformMatrix[2][3] );
-        const Float3 OutEdge( _TransformMatrix[0][0].Abs() * InEdge.X + _TransformMatrix[0][1].Abs() * InEdge.Y + _TransformMatrix[0][2].Abs() * InEdge.Z,
-                              _TransformMatrix[1][0].Abs() * InEdge.X + _TransformMatrix[1][1].Abs() * InEdge.Y + _TransformMatrix[1][2].Abs() * InEdge.Z,
-                              _TransformMatrix[2][0].Abs() * InEdge.X + _TransformMatrix[2][1].Abs() * InEdge.Y + _TransformMatrix[2][2].Abs() * InEdge.Z );
+        const Float3 OutEdge( FMath::Abs( _TransformMatrix[0][0] ) * InEdge.X + FMath::Abs( _TransformMatrix[0][1] ) * InEdge.Y + FMath::Abs( _TransformMatrix[0][2] ) * InEdge.Z,
+                              FMath::Abs( _TransformMatrix[1][0] ) * InEdge.X + FMath::Abs( _TransformMatrix[1][1] ) * InEdge.Y + FMath::Abs( _TransformMatrix[1][2] ) * InEdge.Z,
+                              FMath::Abs( _TransformMatrix[2][0] ) * InEdge.X + FMath::Abs( _TransformMatrix[2][1] ) * InEdge.Y + FMath::Abs( _TransformMatrix[2][2] ) * InEdge.Z );
         return BvAxisAlignedBox( OutCenter - OutEdge, OutCenter + OutEdge );
     }
 };
@@ -116,13 +116,13 @@ AN_FORCEINLINE BvAxisAlignedBox::BvAxisAlignedBox( Float3 const & _Mins, Float3 
 , Maxs(_Maxs)
 {}
 
-AN_FORCEINLINE void BvAxisAlignedBox::operator/=( Float const & _Scale ) {
+AN_FORCEINLINE void BvAxisAlignedBox::operator/=( float const & _Scale ) {
     const float InvScale = 1.0f / _Scale;
     Mins *= InvScale;
     Maxs *= InvScale;
 }
 
-AN_FORCEINLINE void BvAxisAlignedBox::operator*=( Float const & _Scale ) {
+AN_FORCEINLINE void BvAxisAlignedBox::operator*=( float const & _Scale ) {
     Mins *= _Scale;
     Maxs *= _Scale;
 }
@@ -149,7 +149,7 @@ AN_FORCEINLINE Bool BvAxisAlignedBox::Compare( BvAxisAlignedBox const & _Other )
     return Mins.Compare( _Other.Mins ) && Maxs.Compare( _Other.Maxs );
 }
 
-AN_FORCEINLINE Bool BvAxisAlignedBox::CompareEps( BvAxisAlignedBox const & _Other, Float const & _Epsilon ) const {
+AN_FORCEINLINE Bool BvAxisAlignedBox::CompareEps( BvAxisAlignedBox const & _Other, float const & _Epsilon ) const {
     return Mins.CompareEps( _Other.Mins, _Epsilon ) && Maxs.CompareEps( _Other.Maxs, _Epsilon );
 }
 
@@ -170,7 +170,7 @@ AN_FORCEINLINE void BvAxisAlignedBox::AddPoint( Float3 const & _Point ) {
     Maxs.Z = FMath::Max( _Point.Z, Maxs.Z );
 }
 
-AN_FORCEINLINE void BvAxisAlignedBox::AddPoint( Float const & _X, Float const & _Y, Float const & _Z ) {
+AN_FORCEINLINE void BvAxisAlignedBox::AddPoint( float const & _X, float const & _Y, float const & _Z ) {
     Mins.X = FMath::Min( _X, Mins.X );
     Maxs.X = FMath::Max( _X, Maxs.X );
     Mins.Y = FMath::Min( _Y, Mins.Y );
@@ -218,10 +218,10 @@ AN_FORCEINLINE Float3 BvAxisAlignedBox::HalfSize() const {
     return ( Maxs - Mins ) * 0.5f;
 }
 
-AN_FORCEINLINE Float * BvAxisAlignedBox::ToPtr() {
+AN_FORCEINLINE float * BvAxisAlignedBox::ToPtr() {
     return &Mins.X;
 }
 
-AN_FORCEINLINE const Float * BvAxisAlignedBox::ToPtr() const {
+AN_FORCEINLINE const float * BvAxisAlignedBox::ToPtr() const {
     return &Mins.X;
 }

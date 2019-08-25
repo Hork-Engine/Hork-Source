@@ -42,7 +42,7 @@ SOFTWARE.
 
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
 
-AN_CLASS_META_NO_ATTRIBS( FSoftMeshComponent )
+AN_CLASS_META( FSoftMeshComponent )
 
 FSoftMeshComponent::FSoftMeshComponent() {
     bSoftBodySimulation = true;
@@ -375,7 +375,7 @@ void FSoftMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     // Draw faces
     if ( GDebugDrawFlags.bDrawSoftmeshFaces ) {
         _DebugDraw->SetDepthTest( true );
-        _DebugDraw->SetColor( 1, 0, 0, 1 );
+        _DebugDraw->SetColor( FColor4( 1, 0, 0, 1 ) );
         for ( int i = 0; i < SoftBody->m_faces.size(); i++ ) {
 
             btSoftBody::Face & f = SoftBody->m_faces[ i ];

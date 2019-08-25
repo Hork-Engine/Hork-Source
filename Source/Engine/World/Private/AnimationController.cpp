@@ -33,7 +33,7 @@ SOFTWARE.
 
 #include <Engine/Resource/Public/Animation.h>
 
-AN_CLASS_META_NO_ATTRIBS( FAnimationController )
+AN_CLASS_META( FAnimationController )
 
 FAnimationController::FAnimationController() {
     PlayMode = ANIMATION_PLAY_CLAMP;

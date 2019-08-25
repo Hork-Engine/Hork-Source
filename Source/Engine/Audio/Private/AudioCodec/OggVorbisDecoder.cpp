@@ -49,8 +49,8 @@ SOFTWARE.
 #pragma warning( pop )
 #endif
 
-AN_CLASS_META_NO_ATTRIBS( FOggVorbisAudioTrack )
-AN_CLASS_META_NO_ATTRIBS( FOggVorbisDecoder )
+AN_CLASS_META( FOggVorbisAudioTrack )
+AN_CLASS_META( FOggVorbisDecoder )
 
 FOggVorbisAudioTrack::FOggVorbisAudioTrack() {
     Vorbis = NULL;

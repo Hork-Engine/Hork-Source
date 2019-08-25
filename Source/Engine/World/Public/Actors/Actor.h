@@ -101,13 +101,13 @@ public:
     FLevel * GetLevel() const { return Level; }
 
     // Create component by it's class id
-    FActorComponent * CreateComponent( uint64_t _ClassId, const char * _Name );
+    FActorComponent * AddComponent( uint64_t _ClassId, const char * _Name );
 
     // Create component by it's class name
-    FActorComponent * CreateComponent( const char * _ClassName, const char * _Name );
+    FActorComponent * AddComponent( const char * _ClassName, const char * _Name );
 
     // Create component by it's class meta (fastest way to create component)
-    FActorComponent * CreateComponent( FClassMeta const * _ClassMeta, const char * _Name );
+    FActorComponent * AddComponent( FClassMeta const * _ClassMeta, const char * _Name );
 
     // Load component from document data
     FActorComponent * LoadComponent( FDocument const & _Document, int _FieldsHead );
@@ -129,8 +129,8 @@ public:
 
     // Create component of specified type
     template< typename ComponentType >
-    ComponentType * CreateComponent( const char * _Name ) {
-        return static_cast< ComponentType * >( CreateComponent( &ComponentType::ClassMeta(), _Name ) );
+    ComponentType * AddComponent( const char * _Name ) {
+        return static_cast< ComponentType * >( AddComponent( &ComponentType::ClassMeta(), _Name ) );
     }
 
     // Get component of specified type

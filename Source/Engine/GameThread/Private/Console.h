@@ -43,6 +43,7 @@ class FConsole {
 public:
     void Clear();
     bool IsActive() const;
+    void SetFullscreen( bool _Fullscreen );
     void Resize( int _VidWidth );
     void Print( const char * _Text );
     void WidePrint( FWideChar const * _Text );

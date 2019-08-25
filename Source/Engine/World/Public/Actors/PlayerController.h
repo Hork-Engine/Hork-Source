@@ -58,11 +58,11 @@ class ANGIE_API FAudioParameters final : public FBaseObject {
 public:
     Float3 Velocity;
 
-    Float DopplerFactor = 1;
-    Float DopplerVelocity = 1;
-    Float SpeedOfSound = 343.3f;
+    float DopplerFactor = 1;
+    float DopplerVelocity = 1;
+    float SpeedOfSound = 343.3f;
     EAudioDistanceModel DistanceModel = AUDIO_DM_InverseClamped;
-    Float Volume = 1.0f;
+    float Volume = 1.0f;
 
 private:
     FAudioParameters() {}

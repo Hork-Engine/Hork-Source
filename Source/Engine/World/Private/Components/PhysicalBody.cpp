@@ -85,7 +85,7 @@ void FPhysicalBodyMotionState::setWorldTransform( btTransform const & _CenterOfM
     bDuringMotionStateUpdate = false;
 }
 
-AN_CLASS_META_NO_ATTRIBS( FPhysicalBody )
+AN_CLASS_META( FPhysicalBody )
 
 #define HasCollisionBody() ( !bSoftBodySimulation && GetBodyComposition().NumCollisionBodies() > 0 && ( /*PhysicsSimulation == PS_DYNAMIC || bTrigger || bKinematicBody || */CollisionGroup ) )
 
@@ -928,12 +928,12 @@ void FPhysicalBody::BeginPlay() {
 }
 
 void FPhysicalBody::EndPlay() {
-    E_OnBeginContact.UnsubscribeAll();
-    E_OnEndContact.UnsubscribeAll();
-    E_OnUpdateContact.UnsubscribeAll();
-    E_OnBeginOverlap.UnsubscribeAll();
-    E_OnEndOverlap.UnsubscribeAll();
-    E_OnUpdateOverlap.UnsubscribeAll();
+    E_OnBeginContact.RemoveAll();
+    E_OnEndContact.RemoveAll();
+    E_OnUpdateContact.RemoveAll();
+    E_OnBeginOverlap.RemoveAll();
+    E_OnEndOverlap.RemoveAll();
+    E_OnUpdateOverlap.RemoveAll();
 
     for ( FActor * actor : CollisionIgnoreActors ) {
         actor->RemoveRef();
@@ -1006,7 +1006,7 @@ void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
         CreateCollisionModel( collisionVertices, collisionIndices );
 
         _DebugDraw->SetDepthTest(true);
-        _DebugDraw->SetColor( (((size_t)GetParentActor()*123)&0xff)/255.0f, (((size_t)this*123)&0xff)/255.0f, 1.0f, 0.5f );
+        _DebugDraw->SetColor( FColor4( (((size_t)GetParentActor()*123)&0xff)/255.0f, (((size_t)this*123)&0xff)/255.0f, 1.0f, 0.5f ) );
         _DebugDraw->DrawTriangleSoup(collisionVertices.ToPtr(),collisionVertices.Size(),sizeof(Float3),collisionIndices.ToPtr(),collisionIndices.Size(),false);
         _DebugDraw->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
     }
@@ -1017,7 +1017,7 @@ void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
         GetCollisionBodiesWorldBounds( boundingBoxes );
 
         _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( 1, 1, 0, 1 );
+        _DebugDraw->SetColor( FColor4( 1, 1, 0, 1 ) );
         for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
             _DebugDraw->DrawAABB( bb );
         }
@@ -1028,7 +1028,7 @@ void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
             Float3 centerOfMass = GetCenterOfMassWorldPosition();
 
             _DebugDraw->SetDepthTest( false );
-            _DebugDraw->SetColor( 1, 0, 0, 1 );
+            _DebugDraw->SetColor( FColor4( 1, 0, 0, 1 ) );
             _DebugDraw->DrawBox( centerOfMass, Float3( 0.02f ) );
         }
     }

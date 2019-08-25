@@ -61,6 +61,7 @@ static bool bInitialized = false;
 static FThreadSync ConSync;
 static int Scroll = 0;
 static bool ConDown = false;
+static bool ConFullscreen = false;
 static float ConHeight = 0;
 static FWideChar CmdLine[MAX_CMD_LINE_CHARS];
 static int CmdLineLength = 0;
@@ -83,7 +84,11 @@ void FConsole::Clear() {
 }
 
 bool FConsole::IsActive() const {
-    return ConDown;
+    return ConDown || ConFullscreen;
+}
+
+void FConsole::SetFullscreen( bool _Fullscreen ) {
+    ConFullscreen = _Fullscreen;
 }
 
 static void _Resize( int _VidWidth ) {
@@ -359,7 +364,7 @@ static void InsertClipboardText() {
 
 void FConsole::KeyEvent( FKeyEvent const & _Event ) {
     if ( _Event.Action == IE_Press ) {
-        if ( _Event.Key == KEY_GRAVE_ACCENT ) {
+        if ( !ConFullscreen && _Event.Key == KEY_GRAVE_ACCENT ) {
             ConDown = !ConDown;
 
             if ( !ConDown ) {
@@ -369,7 +374,7 @@ void FConsole::KeyEvent( FKeyEvent const & _Event ) {
         }
     }
 
-    if ( ConDown && ( _Event.Action == IE_Press || _Event.Action == IE_Repeat ) ) {
+    if ( IsActive() && ( _Event.Action == IE_Press || _Event.Action == IE_Repeat ) ) {
 
         // Scrolling (protected by mutex)
         {
@@ -508,7 +513,7 @@ void FConsole::KeyEvent( FKeyEvent const & _Event ) {
 }
 
 void FConsole::CharEvent( FCharEvent const & _Event ) {
-    if ( !ConDown ) {
+    if ( !IsActive() ) {
         return;
     }
 
@@ -527,7 +532,7 @@ void FConsole::CharEvent( FCharEvent const & _Event ) {
 }
 
 void FConsole::MouseWheelEvent( FMouseWheelEvent const & _Event ) {
-    if ( !ConDown ) {
+    if ( !IsActive() ) {
         return;
     }
 
@@ -544,7 +549,7 @@ void FConsole::MouseWheelEvent( FMouseWheelEvent const & _Event ) {
 }
 
 static void DrawCmdLine( FCanvas * _Canvas, int x, int y ) {
-    int32_t charColor = 0xffffffff;
+    FColor4 const & charColor = FColor4::White();
 
     FFont * font = _Canvas->GetCurrentFont();
 
@@ -588,32 +593,41 @@ static void DrawCmdLine( FCanvas * _Canvas, int x, int y ) {
 }
 
 void FConsole::Draw( FCanvas * _Canvas, float _TimeStep ) {
-    if ( ConDown ) {
-        ConHeight += DropSpeed * _TimeStep;
+
+    if ( !ConFullscreen ) {
+        if ( ConDown ) {
+            ConHeight += DropSpeed * _TimeStep;
+        } else {
+            ConHeight -= DropSpeed * _TimeStep;
+        }
+
+        if ( ConHeight <= 0.0f ) {
+            ConHeight = 0.0f;
+            return;
+        }
+
+        if ( ConHeight > 1.0f ) {
+            ConHeight = 1.0f;
+        }
     } else {
-        ConHeight -= DropSpeed * _TimeStep;
-    }
-
-    if ( ConHeight <= 0.0f ) {
-        ConHeight = 0.0f;
-        return;
-    }
-
-    if ( ConHeight > 1.0f ) {
-        ConHeight = 1.0f;
+        ConHeight = 2;
     }
 
     const int fontVStride = CharacterHeight + 4;
     const int cmdLineH = fontVStride;
     const float halfVidHeight = ( _Canvas->Height >> 1 ) * ConHeight;
-    const int numVisLines = ceilf( ( halfVidHeight - cmdLineH ) / fontVStride );
+    const int numVisLines = FMath::Ceil( ( halfVidHeight - cmdLineH ) / fontVStride );
 
-    const uint32_t c1 = FColorSpace::PackNRGBAToDWord_Swapped( Float4(0,0,0,1.0f) );
-    const uint32_t c2 = FColorSpace::PackNRGBAToDWord_Swapped( Float4(0,0,0,0.0f) );
-    const uint32_t charColor = 0xffffffff;
+    const FColor4 c1(0,0,0,1.0f);
+    const FColor4 c2(0,0,0,0.0f);
+    const FColor4 charColor(1,1,1,1);
 
-    _Canvas->DrawRectFilledMultiColor( Float2( 0, 0 ), Float2( _Canvas->Width, halfVidHeight ), c1, c2, c2, c1 );
-    _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->Width, halfVidHeight ), 0xffffffff, 2.0f );
+    if ( ConFullscreen ) {
+        _Canvas->DrawRectFilled( Float2( 0, 0 ), Float2( _Canvas->Width, _Canvas->Height ), FColor4::Black() );
+    } else {
+        _Canvas->DrawRectFilledMultiColor( Float2( 0, 0 ), Float2( _Canvas->Width, halfVidHeight ), c1, c2, c2, c1 );
+    }
+    _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->Width, halfVidHeight ), FColor4::White(), 2.0f );
 
     int x = Padding;
     int y = halfVidHeight - fontVStride;

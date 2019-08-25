@@ -40,6 +40,7 @@ SOFTWARE.
 #include "Components/CameraComponent.h"
 #include "Components/DrawSurf.h"
 #include "Components/InputComponent.h"
+#include "Components/LightComponent.h"
 #include "Components/MeshComponent.h"
 #include "Components/PhysicalBody.h"
 #include "Components/SceneComponent.h"

@@ -58,8 +58,8 @@ static void WaveRewindFile( FStreamBase< T > & _File, FWaveFormat *_Wave );
 template< typename T >
 static int WaveSeekFile( FStreamBase< T > & _File, int _Offset, FWaveFormat *_Wave );
 
-AN_CLASS_META_NO_ATTRIBS( FWavAudioTrack )
-AN_CLASS_META_NO_ATTRIBS( FWavDecoder )
+AN_CLASS_META( FWavAudioTrack )
+AN_CLASS_META( FWavDecoder )
 
 FWavAudioTrack::FWavAudioTrack() {
     WaveMemory = NULL;

@@ -48,9 +48,7 @@ public:
 
     void SetColor( uint32_t _Color );
 
-    void SetColor( Float4 const & _Color );
-
-    void SetColor( float _R, float _G, float _B, float _A );
+    void SetColor( FColor4 const & _Color );
 
     void SetAlpha( float _Alpha );
 
@@ -81,7 +79,13 @@ public:
 
     void DrawOrientedBoxFilled( Float3 const & _Position, Float3x3 const & _Orientation, Float3 const & _HalfExtents, bool _TwoSided = false );
 
-    // TODO: DrawSphere, DrawSphereFilled
+    void DrawSphere( Float3 const & _Position, float _Radius );
+
+    void DrawOrientedSphere( Float3 const & _Position, Float3x3 const & _Orientation, float _Radius );
+
+    // TODO: DrawSphereFilled
+
+    void DrawSpherePatch( Float3 const & _Position, Float3 const & _Up, Float3 const & _Right, float _Radius, float _MinTh, float _MaxTh, float _MinPs, float _MaxPs, float _StepDegrees = 10.0f, bool _DrawCenter = true );
 
     void DrawCircle( Float3 const & _Position, Float3 const & _UpVector, const float & _Radius );
 
@@ -95,7 +99,9 @@ public:
 
     // TODO: void DrawCylinderFilled( Float3 const & _Position, Float3x3 const & _Orientation, const float & _Radius, const float & _Height, bool _TwoSided = false );
 
-    // TODO: DrawCapsule, DrawCapsuleFilled
+    void DrawCapsule( Float3 const & _Position, Float3x3 const & _Orientation, float _Radius, float _HalfHeight, int _UpAxis );
+
+    // TODO: DrawCapsuleFilled
 
     void DrawAABB( BvAxisAlignedBox const & _AABB );
 
@@ -152,6 +158,7 @@ struct FDebugDrawFlags {
     bool bDrawSoftmeshFaces;
     bool bDrawMeshBounds;
     bool bDrawRootComponentAxis;
+    bool bDrawLights;
 };
 
 extern FDebugDrawFlags GDebugDrawFlags;

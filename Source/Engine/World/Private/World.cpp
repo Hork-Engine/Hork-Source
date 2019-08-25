@@ -74,12 +74,12 @@ public:
     int DebugMode;
 
     void drawLine( btVector3 const & from, btVector3 const & to, btVector3 const & color ) override {
-        DD->SetColor( color.x(), color.y(), color.z(), 1.0f );
+        DD->SetColor( FColor4( color.x(), color.y(), color.z(), 1.0f ) );
         DD->DrawLine( btVectorToFloat3( from ), btVectorToFloat3( to ) );
     }
 
     void drawContactPoint( btVector3 const & pointOnB, btVector3 const & normalOnB, btScalar distance, int lifeTime, btVector3 const & color ) override {
-        DD->SetColor( color.x(), color.y(), color.z(), 1.0f );
+        DD->SetColor( FColor4( color.x(), color.y(), color.z(), 1.0f ) );
         DD->DrawPoint( btVectorToFloat3( pointOnB ) );
         DD->DrawPoint( btVectorToFloat3( normalOnB ) );
     }
@@ -1133,7 +1133,7 @@ void FWorld::SimulatePhysics( float _TimeStep ) {
 
     const float FixedTimeStep = 1.0f / PhysicsHertz;
 
-    int numSimulationSteps = floor( _TimeStep * PhysicsHertz ) + 1.0f;
+    int numSimulationSteps = FMath::Floor( _TimeStep * PhysicsHertz ) + 1.0f;
     //numSimulationSteps = FMath::Min( numSimulationSteps, MAX_SIMULATION_STEPS );
 
     btContactSolverInfo & contactSolverInfo = PhysicsWorld->getSolverInfo();
@@ -1191,6 +1191,10 @@ bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, F
     invRayDir.Z = 1.0f / rayDir.Z;
 
     for ( FMeshComponent * mesh = MeshList ; mesh ; mesh = mesh->Next ) {
+
+        if ( mesh->bUseDynamicRange ) {
+            continue;
+        }
 
         if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
             continue;
@@ -1289,6 +1293,10 @@ bool FWorld::RaycastAABB( TPodArray< FBoxHitResult > & _Result, Float3 const & _
 
     for ( FMeshComponent * mesh = MeshList ; mesh ; mesh = mesh->Next ) {
 
+        if ( mesh->bUseDynamicRange ) {
+            continue;
+        }
+
         if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
             continue;
         }
@@ -1366,6 +1374,10 @@ bool FWorld::RaycastClosest( FWorldRaycastClosestResult & _Result, Float3 const 
     hitLocation = _RayEnd;
 
     for ( FMeshComponent * mesh = MeshList ; mesh ; mesh = mesh->Next ) {
+
+        if ( mesh->bUseDynamicRange ) {
+            continue;
+        }
 
         if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
             continue;
@@ -1491,6 +1503,10 @@ bool FWorld::RaycastClosestAABB( FBoxHitResult & _Result, Float3 const & _RaySta
     hitDistanceMax = rayLength;
 
     for ( FMeshComponent * mesh = MeshList ; mesh ; mesh = mesh->Next ) {
+
+        if ( mesh->bUseDynamicRange ) {
+            continue;
+        }
 
         if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
             continue;
@@ -2186,7 +2202,7 @@ void FWorld::DrawDebug( FDebugDraw * _DebugDraw, int _FrameNumber ) {
 
     _DebugDraw->SetDepthTest( true );
 
-    _DebugDraw->SetColor(1,1,1,1);
+    _DebugDraw->SetColor( FColor4( 1,1,1,1 ) );
 
     if ( GDebugDrawFlags.bDrawMeshBounds ) {
         for ( FMeshComponent * component = MeshList ; component ; component = component->GetNextMesh() ) {

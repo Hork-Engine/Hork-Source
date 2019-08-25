@@ -32,15 +32,11 @@ SOFTWARE.
 #include <Engine/World/Public/Canvas.h>
 #include <Engine/Core/Public/Utf8.h>
 
-AN_CLASS_META_NO_ATTRIBS( FHUD )
+AN_CLASS_META( FHUD )
 
 FHUD::FHUD() {
 
 }
-
-//void FHUD::Clear() {
-//    DrawList.Clear();
-//}
 
 void FHUD::Draw( FCanvas * _Canvas, int _X, int _Y, int _W, int _H ) {
     Canvas = _Canvas;
@@ -56,7 +52,7 @@ void FHUD::DrawHUD() {
 
 }
 
-void FHUD::DrawText( FFont * _Font, int x, int y, int32_t color, const char * _Text ) {
+void FHUD::DrawText( FFont * _Font, int x, int y, FColor4 const & color, const char * _Text ) {
     const int CharacterWidth = 8;
     const int CharacterHeight = 16;
 

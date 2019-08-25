@@ -40,7 +40,7 @@ SOFTWARE.
 
 static int ResourceSerialIdGen = 0;
 
-AN_CLASS_META_NO_ATTRIBS( FAudioClip )
+AN_CLASS_META( FAudioClip )
 
 FAudioClip::FAudioClip() {
     BufferSize = DEFAULT_BUFFER_SIZE;

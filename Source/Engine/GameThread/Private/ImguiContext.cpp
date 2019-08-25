@@ -35,7 +35,7 @@ SOFTWARE.
 
 #include <Engine/imgui/imgui.h>
 
-AN_CLASS_META_NO_ATTRIBS( FImguiContext )
+AN_CLASS_META( FImguiContext )
 
 static void SetClipboardText( void *, const char * _Text ) {
     GRuntime.SetClipboard_GameThread( _Text );
@@ -138,10 +138,10 @@ void FImguiContext::OnMouseWheelEvent( FMouseWheelEvent const & _Event ) {
     }
 }
 
-void FImguiContext::SetFontAtlas( ImFontAtlas * _Atlas ) {
+void FImguiContext::SetFontAtlas( FFontAtlas * _Atlas ) {
     ImGuiIO & IO = ImGui::GetIO();
 
-    IO.Fonts = _Atlas;
+    IO.Fonts = (ImFontAtlas *)_Atlas->GetImguiFontAtlas();
 }
 
 void FImguiContext::BeginFrame( float _TimeStep ) {

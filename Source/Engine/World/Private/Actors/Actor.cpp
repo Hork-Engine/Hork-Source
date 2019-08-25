@@ -41,7 +41,7 @@ AN_ATTRIBUTE_( bCanEverTick, AF_DEFAULT )
 AN_ATTRIBUTE_( bTickEvenWhenPaused, AF_DEFAULT )
 AN_END_CLASS_META()
 
-AN_CLASS_META_NO_ATTRIBS( FViewActor )
+AN_CLASS_META( FViewActor )
 
 static UInt UniqueName = 0;
 
@@ -120,7 +120,7 @@ FString FActor::GenerateComponentUniqueName( const char * _Name ) {
     return uniqueName;
 }
 
-FActorComponent * FActor::CreateComponent( uint64_t _ClassId, const char * _Name ) {
+FActorComponent * FActor::AddComponent( uint64_t _ClassId, const char * _Name ) {
     FActorComponent * component = static_cast< FActorComponent * >( FActorComponent::Factory().CreateInstance( _ClassId ) );
     if ( !component ) {
         return nullptr;
@@ -131,7 +131,7 @@ FActorComponent * FActor::CreateComponent( uint64_t _ClassId, const char * _Name
     return component;
 }
 
-FActorComponent * FActor::CreateComponent( const char * _ClassName, const char * _Name ) {
+FActorComponent * FActor::AddComponent( const char * _ClassName, const char * _Name ) {
     FActorComponent * component = static_cast< FActorComponent * >( FActorComponent::Factory().CreateInstance( _ClassName ) );
     if ( !component ) {
         return nullptr;
@@ -142,7 +142,7 @@ FActorComponent * FActor::CreateComponent( const char * _ClassName, const char *
     return component;
 }
 
-FActorComponent * FActor::CreateComponent( FClassMeta const * _ClassMeta, const char * _Name ) {
+FActorComponent * FActor::AddComponent( FClassMeta const * _ClassMeta, const char * _Name ) {
     AN_Assert( _ClassMeta->Factory() == &FActorComponent::Factory() );
     FActorComponent * component = static_cast< FActorComponent * >( _ClassMeta->CreateInstance() );
     if ( !component ) {
@@ -283,7 +283,7 @@ void FActor::Clone( FActor const * _TemplateActor ) {
         if ( templateComponent->bCreatedDuringConstruction ) {
             component = FindComponent( templateComponent->GetName().ToConstChar() );
         } else {
-            component = CreateComponent( &templateComponent->FinalClassMeta(), templateComponent->GetName().ToConstChar() );
+            component = AddComponent( &templateComponent->FinalClassMeta(), templateComponent->GetName().ToConstChar() );
         }
 
         if ( component ) {
@@ -337,7 +337,7 @@ FActorComponent * FActor::LoadComponent( FDocument const & _Document, int _Field
     }
 
     if ( !bCreatedDuringConstruction ) {
-        component = CreateComponent( classMeta, name.IsEmpty() ? "Unnamed" : name.ToConstChar() );
+        component = AddComponent( classMeta, name.IsEmpty() ? "Unnamed" : name.ToConstChar() );
     }
 
     if ( component ) {
@@ -365,12 +365,12 @@ void FActor::DrawDebug( FDebugDraw * _DebugDraw ) {
 }
 
 void FActor::EndPlay() {
-    E_OnBeginContact.UnsubscribeAll();
-    E_OnEndContact.UnsubscribeAll();
-    E_OnUpdateContact.UnsubscribeAll();
-    E_OnBeginOverlap.UnsubscribeAll();
-    E_OnEndOverlap.UnsubscribeAll();
-    E_OnUpdateOverlap.UnsubscribeAll();
+    E_OnBeginContact.RemoveAll();
+    E_OnEndContact.RemoveAll();
+    E_OnUpdateContact.RemoveAll();
+    E_OnBeginOverlap.RemoveAll();
+    E_OnEndOverlap.RemoveAll();
+    E_OnUpdateOverlap.RemoveAll();
 }
 
 void FActor::ApplyDamage( float _DamageAmount, Float3 const & _Position, FActor * _DamageCauser ) {

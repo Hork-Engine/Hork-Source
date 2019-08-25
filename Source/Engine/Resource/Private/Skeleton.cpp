@@ -34,8 +34,8 @@ SOFTWARE.
 
 #include <Engine/Core/Public/Logger.h>
 
-AN_CLASS_META_NO_ATTRIBS( FSocketDef )
-AN_CLASS_META_NO_ATTRIBS( FSkeleton )
+AN_CLASS_META( FSocketDef )
+AN_CLASS_META( FSkeleton )
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -112,7 +112,7 @@ FSocketDef * FSkeleton::FindSocket( const char * _Name ) {
     return nullptr;
 }
 
-FSocketDef * FSkeleton::CreateSocket( const char * _Name, int _JointIndex ) {
+FSocketDef * FSkeleton::AddSocket( const char * _Name, int _JointIndex ) {
     if ( _JointIndex < 0 || _JointIndex >= Joints.Size() ) {
         return nullptr;
     }
@@ -134,8 +134,8 @@ FSocketDef * FSkeleton::CreateSocket( const char * _Name, int _JointIndex ) {
     return socket;
 }
 
-FSocketDef * FSkeleton::CreateSocket( const char * _Name, const char * _JointName ) {
-    return CreateSocket( _Name, FindJoint( _JointName ) );
+FSocketDef * FSkeleton::AddSocket( const char * _Name, const char * _JointName ) {
+    return AddSocket( _Name, FindJoint( _JointName ) );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -186,18 +186,18 @@ void FSkeletonAsset::Read( FFileStream & f ) {
                 joint.LocalTransform.SetIdentity();
 
                 sscanf( s, "%d ( ( %f %f %f %f ) ( %f %f %f %f ) ( %f %f %f %f ) ) ( ( %f %f %f %f ) ( %f %f %f %f ) ( %f %f %f %f ) )", &joint.Parent,
-                        &joint.OffsetMatrix[0][0].Value, &joint.OffsetMatrix[0][1].Value, &joint.OffsetMatrix[0][2].Value, &joint.OffsetMatrix[0][3].Value,
-                        &joint.OffsetMatrix[1][0].Value, &joint.OffsetMatrix[1][1].Value, &joint.OffsetMatrix[1][2].Value, &joint.OffsetMatrix[1][3].Value,
-                        &joint.OffsetMatrix[2][0].Value, &joint.OffsetMatrix[2][1].Value, &joint.OffsetMatrix[2][2].Value, &joint.OffsetMatrix[2][3].Value,
-                        &joint.LocalTransform[0][0].Value, &joint.LocalTransform[0][1].Value, &joint.LocalTransform[0][2].Value, &joint.LocalTransform[0][3].Value,
-                        &joint.LocalTransform[1][0].Value, &joint.LocalTransform[1][1].Value, &joint.LocalTransform[1][2].Value, &joint.LocalTransform[1][3].Value,
-                        &joint.LocalTransform[2][0].Value, &joint.LocalTransform[2][1].Value, &joint.LocalTransform[2][2].Value, &joint.LocalTransform[2][3].Value );
+                        &joint.OffsetMatrix[0][0], &joint.OffsetMatrix[0][1], &joint.OffsetMatrix[0][2], &joint.OffsetMatrix[0][3],
+                        &joint.OffsetMatrix[1][0], &joint.OffsetMatrix[1][1], &joint.OffsetMatrix[1][2], &joint.OffsetMatrix[1][3],
+                        &joint.OffsetMatrix[2][0], &joint.OffsetMatrix[2][1], &joint.OffsetMatrix[2][2], &joint.OffsetMatrix[2][3],
+                        &joint.LocalTransform[0][0], &joint.LocalTransform[0][1], &joint.LocalTransform[0][2], &joint.LocalTransform[0][3],
+                        &joint.LocalTransform[1][0], &joint.LocalTransform[1][1], &joint.LocalTransform[1][2], &joint.LocalTransform[1][3],
+                        &joint.LocalTransform[2][0], &joint.LocalTransform[2][1], &joint.LocalTransform[2][2], &joint.LocalTransform[2][3] );
             }
         } else if ( nullptr != ( s = AssetParseTag( buf, "bindpose_bounds " ) ) ) {
 
             sscanf( s, "( %f %f %f ) ( %f %f %f )",
-                    &BindposeBounds.Mins.X.Value, &BindposeBounds.Mins.Y.Value, &BindposeBounds.Mins.Z.Value,
-                    &BindposeBounds.Maxs.X.Value, &BindposeBounds.Maxs.Y.Value, &BindposeBounds.Maxs.Z.Value );
+                    &BindposeBounds.Mins.X, &BindposeBounds.Mins.Y, &BindposeBounds.Mins.Z,
+                    &BindposeBounds.Maxs.X, &BindposeBounds.Maxs.Y, &BindposeBounds.Maxs.Z );
 
         } else {
             GLogger.Printf( "Unknown tag '%s'\n", buf );

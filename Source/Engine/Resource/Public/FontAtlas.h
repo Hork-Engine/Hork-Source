@@ -35,6 +35,8 @@ SOFTWARE.
 
 using FFont = ImFont;
 
+
+
 /*
 
 FFontAtlas
@@ -50,7 +52,8 @@ public:
     int AddFontFromMemoryCompressedTTF( const void * _CompressedFontData, int _CompressedFontSize, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
     int AddFontFromMemoryCompressedBase85TTF( const char * _CompressedFontData, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
 
-    FFont * GetFont( int _Id );
+    //FFont * GetFont( int _Id );
+    FFont const * GetFont( int _Id ) const;
 
     void Build();
     void Purge();

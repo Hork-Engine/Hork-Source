@@ -48,13 +48,13 @@ static FString EvaluateVectorCast( FString const & _Expression, EAssemblyType _T
     case AT_Unknown:
         switch ( _TypeTo ) {
         case AT_Float1:
-            return Float(_DefX).ToString();
+            return FMath::ToString( _DefX );
         case AT_Float2:
-            return "vec2( " + Float(_DefX).ToString() + ", " + Float(_DefY).ToString() + " )";
+            return "vec2( " + FMath::ToString( _DefX ) + ", " + FMath::ToString( _DefY ) + " )";
         case AT_Float3:
-            return "vec3( " + Float(_DefX).ToString() + ", " + Float(_DefY).ToString() + ", " + Float(_DefZ).ToString() + " )";
+            return "vec3( " + FMath::ToString( _DefX ) + ", " + FMath::ToString( _DefY ) + ", " + FMath::ToString( _DefZ ) + " )";
         case AT_Float4:
-            return "vec4( " + Float(_DefX).ToString() + ", " + Float(_DefY).ToString() + ", " + Float(_DefZ).ToString() + ", " + Float(_DefW).ToString() + " )";
+            return "vec4( " + FMath::ToString( _DefX ) + ", " + FMath::ToString( _DefY ) + ", " + FMath::ToString( _DefZ ) + ", " + FMath::ToString( _DefW ) + " )";
         default:
             break;
         }
@@ -76,9 +76,9 @@ static FString EvaluateVectorCast( FString const & _Expression, EAssemblyType _T
         case AT_Float1:
             return _Expression + ".x";
         case AT_Float3:
-            return "vec3( " + _Expression + ", " + Float(_DefZ).ToString() + " )";
+            return "vec3( " + _Expression + ", " + FMath::ToString( _DefZ ) + " )";
         case AT_Float4:
-            return "vec4( " + _Expression + ", " + Float(_DefZ).ToString() + ", " + Float(_DefW).ToString() + " )";
+            return "vec4( " + _Expression + ", " + FMath::ToString( _DefZ ) + ", " + FMath::ToString( _DefW ) + " )";
         default:
             break;
         }
@@ -90,7 +90,7 @@ static FString EvaluateVectorCast( FString const & _Expression, EAssemblyType _T
         case AT_Float2:
             return _Expression + ".xy";
         case AT_Float4:
-            return "vec4( " + _Expression + ", " + Float(_DefW).ToString() + " )";
+            return "vec4( " + _Expression + ", " + FMath::ToString( _DefW ) + " )";
         default:
             break;
         }
@@ -146,11 +146,11 @@ void FMaterialBuildContext::SetStage( EMaterialStage _Stage ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FAssemblyBlockOutput )
+AN_CLASS_META( FAssemblyBlockOutput )
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FAssemblyBlockInput )
+AN_CLASS_META( FAssemblyBlockInput )
 
 FAssemblyBlockInput::FAssemblyBlockInput() {
 }
@@ -191,7 +191,7 @@ int FAssemblyBlockInput::Serialize( FDocument & _Doc ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FAssemblyNextStageVariable )
+AN_CLASS_META( FAssemblyNextStageVariable )
 
 void FAssemblyNextStageVariable::Connect( FAssemblyBlock * _Block, const char * _Slot ) {
     Block = _Block;
@@ -244,7 +244,7 @@ FAssemblyBlock::~FAssemblyBlock() {
     }
 }
 
-FAssemblyBlockInput * FAssemblyBlock::NewInput( const char * _Name ) {
+FAssemblyBlockInput * FAssemblyBlock::AddInput( const char * _Name ) {
     FAssemblyBlockInput * In = NewObject< FAssemblyBlockInput >();
     In->AddRef();
     In->SetName( _Name );
@@ -252,7 +252,7 @@ FAssemblyBlockInput * FAssemblyBlock::NewInput( const char * _Name ) {
     return In;
 }
 
-FAssemblyBlockOutput * FAssemblyBlock::NewOutput( const char * _Name, EAssemblyType _Type ) {
+FAssemblyBlockOutput * FAssemblyBlock::AddOutput( const char * _Name, EAssemblyType _Type ) {
     FAssemblyBlockOutput * Out = NewObject< FAssemblyBlockOutput >();
     Out->AddRef();
     Out->SetName( _Name );
@@ -349,7 +349,7 @@ int FAssemblyBlock::Serialize( FDocument & _Doc ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialStageBlock )
+AN_CLASS_META( FMaterialStageBlock )
 
 FMaterialStageBlock::~FMaterialStageBlock() {
     for ( FAssemblyNextStageVariable * nsv : NextStageVariables ) {
@@ -471,14 +471,14 @@ void FMaterialStageBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialVertexStage )
+AN_CLASS_META( FMaterialVertexStage )
 
 FMaterialVertexStage::FMaterialVertexStage() {
     Name = "Material Vertex Stage";
     Stages = VERTEX_STAGE_BIT;
     NsvPrefix = "VS";
 
-    Position = NewInput( "Position" );
+    Position = AddInput( "Position" );
 }
 
 FMaterialVertexStage::~FMaterialVertexStage() {
@@ -536,14 +536,14 @@ void FMaterialVertexStage::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialFragmentStage )
+AN_CLASS_META( FMaterialFragmentStage )
 
 FMaterialFragmentStage::FMaterialFragmentStage() {
     Name = "Material Fragment Stage";
     Stages = FRAGMENT_STAGE_BIT;
     NsvPrefix = "FS";
 
-    Color = NewInput( "Color" );
+    Color = AddInput( "Color" );
 }
 
 FMaterialFragmentStage::~FMaterialFragmentStage() {
@@ -591,14 +591,14 @@ void FMaterialFragmentStage::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialProjectionBlock )
+AN_CLASS_META( FMaterialProjectionBlock )
 
 FMaterialProjectionBlock::FMaterialProjectionBlock() {
     Name = "Projection";
     Stages = VERTEX_STAGE_BIT;
 
-    Vector = NewInput( "Vector" );
-    Result = NewOutput( "Result", AT_Float4 );
+    Vector = AddInput( "Vector" );
+    Result = AddOutput( "Result", AT_Float4 );
 }
 
 void FMaterialProjectionBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -629,14 +629,14 @@ void FMaterialProjectionBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialLengthBlock )
+AN_CLASS_META( FMaterialLengthBlock )
 
 FMaterialLengthBlock::FMaterialLengthBlock() {
     Name = "Length";
     Stages = ANY_STAGE_BIT;
 
-    Value = NewInput( "Value" );
-    Result = NewOutput( "Result", AT_Float1 );
+    Value = AddInput( "Value" );
+    Result = AddOutput( "Result", AT_Float1 );
 }
 
 void FMaterialLengthBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -655,14 +655,14 @@ void FMaterialLengthBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialNormalizeBlock )
+AN_CLASS_META( FMaterialNormalizeBlock )
 
 FMaterialNormalizeBlock::FMaterialNormalizeBlock() {
     Name = "Normalize";
     Stages = ANY_STAGE_BIT;
 
-    Value = NewInput( "Value" );
-    Result = NewOutput( "Result", AT_Unknown );
+    Value = AddInput( "Value" );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialNormalizeBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -683,17 +683,17 @@ void FMaterialNormalizeBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialDecomposeVectorBlock )
+AN_CLASS_META( FMaterialDecomposeVectorBlock )
 
 FMaterialDecomposeVectorBlock::FMaterialDecomposeVectorBlock() {
     Name = "Decompose Vector";
     Stages = ANY_STAGE_BIT;
 
-    Vector = NewInput( "Vector" );
-    X = NewOutput( "X", AT_Float1 );
-    Y = NewOutput( "Y", AT_Float1 );
-    Z = NewOutput( "Z", AT_Float1 );
-    W = NewOutput( "W", AT_Float1 );
+    Vector = AddInput( "Vector" );
+    X = AddOutput( "X", AT_Float1 );
+    Y = AddOutput( "Y", AT_Float1 );
+    Z = AddOutput( "Z", AT_Float1 );
+    W = AddOutput( "W", AT_Float1 );
 }
 
 void FMaterialDecomposeVectorBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -757,17 +757,17 @@ void FMaterialDecomposeVectorBlock::Compute( FMaterialBuildContext & _Context ) 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialMakeVectorBlock )
+AN_CLASS_META( FMaterialMakeVectorBlock )
 
 FMaterialMakeVectorBlock::FMaterialMakeVectorBlock() {
     Name = "Make Vector";
     Stages = ANY_STAGE_BIT;
 
-    X = NewInput( "X" );
-    Y = NewInput( "Y" );
-    Z = NewInput( "Z" );
-    W = NewInput( "W" );
-    Result = NewOutput( "Result", AT_Unknown );
+    X = AddInput( "X" );
+    Y = AddInput( "Y" );
+    Z = AddInput( "Z" );
+    W = AddInput( "W" );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialMakeVectorBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -854,14 +854,14 @@ void FMaterialMakeVectorBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialNegateBlock )
+AN_CLASS_META( FMaterialNegateBlock )
 
 FMaterialNegateBlock::FMaterialNegateBlock() {
     Name = "Negate";
     Stages = ANY_STAGE_BIT;
 
-    Value = NewInput( "Value" );
-    Result = NewOutput( "Result", AT_Unknown );
+    Value = AddInput( "Value" );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialNegateBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -879,14 +879,14 @@ void FMaterialNegateBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialFractBlock )
+AN_CLASS_META( FMaterialFractBlock )
 
 FMaterialFractBlock::FMaterialFractBlock() {
     Name = "Fract";
     Stages = ANY_STAGE_BIT;
 
-    Value = NewInput( "Value" );
-    Result = NewOutput( "Result", AT_Unknown );
+    Value = AddInput( "Value" );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialFractBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -909,14 +909,14 @@ void FMaterialFractBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialSinusBlock )
+AN_CLASS_META( FMaterialSinusBlock )
 
 FMaterialSinusBlock::FMaterialSinusBlock() {
     Name = "Sin";
     Stages = ANY_STAGE_BIT;
 
-    Value = NewInput( "Value" );
-    Result = NewOutput( "Result", AT_Unknown );
+    Value = AddInput( "Value" );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialSinusBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -933,14 +933,14 @@ void FMaterialSinusBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialCosinusBlock )
+AN_CLASS_META( FMaterialCosinusBlock )
 
 FMaterialCosinusBlock::FMaterialCosinusBlock() {
     Name = "Cos";
     Stages = ANY_STAGE_BIT;
 
-    Value = NewInput( "Value" );
-    Result = NewOutput( "Result", AT_Unknown );
+    Value = AddInput( "Value" );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialCosinusBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -957,15 +957,15 @@ void FMaterialCosinusBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialArithmeticBlock )
+AN_CLASS_META( FMaterialArithmeticBlock )
 
 FMaterialArithmeticBlock::FMaterialArithmeticBlock() {
     Stages = ANY_STAGE_BIT;
 
-    ValueA = NewInput( "A" );
-    ValueB = NewInput( "B" );
+    ValueA = AddInput( "A" );
+    ValueB = AddInput( "B" );
 
-    Result = NewOutput( "Result", AT_Unknown );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialArithmeticBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -996,24 +996,24 @@ void FMaterialArithmeticBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialMulBlock )
-AN_CLASS_META_NO_ATTRIBS( FMaterialDivBlock )
-AN_CLASS_META_NO_ATTRIBS( FMaterialAddBlock )
-AN_CLASS_META_NO_ATTRIBS( FMaterialSubBlock )
+AN_CLASS_META( FMaterialMulBlock )
+AN_CLASS_META( FMaterialDivBlock )
+AN_CLASS_META( FMaterialAddBlock )
+AN_CLASS_META( FMaterialSubBlock )
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialMADBlock )
+AN_CLASS_META( FMaterialMADBlock )
 
 FMaterialMADBlock::FMaterialMADBlock() {
     Name = "MAD A * B + C";
     Stages = ANY_STAGE_BIT;
 
-    ValueA = NewInput( "A" );
-    ValueB = NewInput( "B" );
-    ValueC = NewInput( "C" );
+    ValueA = AddInput( "A" );
+    ValueB = AddInput( "B" );
+    ValueC = AddInput( "C" );
 
-    Result = NewOutput( "Result", AT_Unknown );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialMADBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1052,16 +1052,16 @@ void FMaterialMADBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialStepBlock )
+AN_CLASS_META( FMaterialStepBlock )
 
 FMaterialStepBlock::FMaterialStepBlock() {
     Name = "Step( A, B )";
     Stages = ANY_STAGE_BIT;
 
-    ValueA = NewInput( "A" );
-    ValueB = NewInput( "B" );
+    ValueA = AddInput( "A" );
+    ValueB = AddInput( "B" );
 
-    Result = NewOutput( "Result", AT_Unknown );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialStepBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1091,16 +1091,16 @@ void FMaterialStepBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialPowBlock )
+AN_CLASS_META( FMaterialPowBlock )
 
 FMaterialPowBlock::FMaterialPowBlock() {
     Name = "Pow A^B";
     Stages = ANY_STAGE_BIT;
 
-    ValueA = NewInput( "A" );
-    ValueB = NewInput( "B" );
+    ValueA = AddInput( "A" );
+    ValueB = AddInput( "B" );
 
-    Result = NewOutput( "Result", AT_Unknown );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialPowBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1130,17 +1130,17 @@ void FMaterialPowBlock::Compute( FMaterialBuildContext & _Context ) {
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialLerpBlock )
+AN_CLASS_META( FMaterialLerpBlock )
 
 FMaterialLerpBlock::FMaterialLerpBlock() {
     Name = "Lerp( A, B, C )";
     Stages = ANY_STAGE_BIT;
 
-    ValueA = NewInput( "A" );
-    ValueB = NewInput( "B" );
-    ValueC = NewInput( "C" );
+    ValueA = AddInput( "A" );
+    ValueB = AddInput( "B" );
+    ValueC = AddInput( "C" );
 
-    Result = NewOutput( "Result", AT_Unknown );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialLerpBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1176,11 +1176,11 @@ AN_END_CLASS_META()
 FMaterialFloatBlock::FMaterialFloatBlock() {
     Name = "Float";
     Stages = ANY_STAGE_BIT;
-    OutValue = NewOutput( "Value", AT_Float1 );
+    OutValue = AddOutput( "Value", AT_Float1 );
 }
 
 void FMaterialFloatBlock::Compute( FMaterialBuildContext & _Context ) {
-    OutValue->Expression = Float(Value).ToString();
+    OutValue->Expression = FMath::ToString( Value );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1192,11 +1192,11 @@ AN_END_CLASS_META()
 FMaterialFloat2Block::FMaterialFloat2Block() {
     Name = "Float2";
     Stages = ANY_STAGE_BIT;
-    OutValue = NewOutput( "Value", AT_Float2 );
+    OutValue = AddOutput( "Value", AT_Float2 );
 }
 
 void FMaterialFloat2Block::Compute( FMaterialBuildContext & _Context ) {
-    _Context.GenerateSourceCode( OutValue, "vec2( " + Value.X.ToString() + ", " + Value.Y.ToString() + " )", false );
+    _Context.GenerateSourceCode( OutValue, "vec2( " + FMath::ToString( Value.X ) + ", " + FMath::ToString( Value.Y ) + " )", false );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1208,11 +1208,11 @@ AN_END_CLASS_META()
 FMaterialFloat3Block::FMaterialFloat3Block() {
     Name = "Float3";
     Stages = ANY_STAGE_BIT;
-    OutValue = NewOutput( "Value", AT_Float3 );
+    OutValue = AddOutput( "Value", AT_Float3 );
 }
 
 void FMaterialFloat3Block::Compute( FMaterialBuildContext & _Context ) {
-    _Context.GenerateSourceCode( OutValue, "vec3( " + Value.X.ToString() + ", " + Value.Y.ToString() + ", " + Value.Z.ToString() + " )", false );
+    _Context.GenerateSourceCode( OutValue, "vec3( " + FMath::ToString( Value.X ) + ", " + FMath::ToString( Value.Y ) + ", " + FMath::ToString( Value.Z ) + " )", false );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1224,16 +1224,16 @@ AN_END_CLASS_META()
 FMaterialFloat4Block::FMaterialFloat4Block() {
     Name = "Float4";
     Stages = ANY_STAGE_BIT;
-    OutValue = NewOutput( "Value", AT_Float4 );
+    OutValue = AddOutput( "Value", AT_Float4 );
 }
 
 void FMaterialFloat4Block::Compute( FMaterialBuildContext & _Context ) {
-    _Context.GenerateSourceCode( OutValue, "vec4( " + Value.X.ToString() + ", " + Value.Y.ToString() + ", " + Value.Z.ToString() + ", " + Value.W.ToString() + " )", false );
+    _Context.GenerateSourceCode( OutValue, "vec4( " + FMath::ToString( Value.X ) + ", " + FMath::ToString( Value.Y ) + ", " + FMath::ToString( Value.Z ) + ", " + FMath::ToString( Value.W ) + " )", false );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialTextureSlotBlock )
+AN_CLASS_META( FMaterialTextureSlotBlock )
 
 FMaterialTextureSlotBlock::FMaterialTextureSlotBlock() {
     Name = "Texture Slot";
@@ -1251,7 +1251,7 @@ FMaterialTextureSlotBlock::FMaterialTextureSlotBlock() {
 
     SlotIndex = -1;
 
-    Value = NewOutput( "Value", AT_Unknown );
+    Value = AddOutput( "Value", AT_Unknown );
 }
 
 void FMaterialTextureSlotBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1285,7 +1285,7 @@ static const char * GetShaderType( ETextureType _Type ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialUniformAddress )
+AN_CLASS_META( FMaterialUniformAddress )
 
 FMaterialUniformAddress::FMaterialUniformAddress() {
     Name = "Texture Slot";
@@ -1294,7 +1294,7 @@ FMaterialUniformAddress::FMaterialUniformAddress() {
     Type = AT_Float4;
     Address = 0;
 
-    Value = NewOutput( "Value", Type );
+    Value = AddOutput( "Value", Type );
 }
 
 void FMaterialUniformAddress::Compute( FMaterialBuildContext & _Context ) {
@@ -1363,13 +1363,13 @@ FMaterialSamplerBlock::FMaterialSamplerBlock() {
     Name = "Texture Sampler";
     Stages = VERTEX_STAGE_BIT | FRAGMENT_STAGE_BIT;
 
-    TextureSlot = NewInput( "TextureSlot" );
-    TexCoord = NewInput( "TexCoord" );
-    R = NewOutput( "R", AT_Float1 );
-    G = NewOutput( "G", AT_Float1 );
-    B = NewOutput( "B", AT_Float1 );
-    A = NewOutput( "A", AT_Float1 );
-    RGBA = NewOutput( "RGBA", AT_Float4 );
+    TextureSlot = AddInput( "TextureSlot" );
+    TexCoord = AddInput( "TexCoord" );
+    R = AddOutput( "R", AT_Float1 );
+    G = AddOutput( "G", AT_Float1 );
+    B = AddOutput( "B", AT_Float1 );
+    A = AddOutput( "A", AT_Float1 );
+    RGBA = AddOutput( "RGBA", AT_Float4 );
 }
 
 static const char * ChooseSampleFunction( FMaterialSamplerBlock::EColorSpace _ColorSpace ) {
@@ -1508,12 +1508,12 @@ FMaterialNormalSamplerBlock::FMaterialNormalSamplerBlock() {
     Name = "Normal Sampler";
     Stages = VERTEX_STAGE_BIT | FRAGMENT_STAGE_BIT;
 
-    TextureSlot = NewInput( "TextureSlot" );
-    TexCoord = NewInput( "TexCoord" );
-    X = NewOutput( "X", AT_Float1 );
-    Y = NewOutput( "Y", AT_Float1 );
-    Z = NewOutput( "Z", AT_Float1 );
-    XYZ = NewOutput( "XYZ", AT_Float3 );
+    TextureSlot = AddInput( "TextureSlot" );
+    TexCoord = AddInput( "TexCoord" );
+    X = AddOutput( "X", AT_Float1 );
+    Y = AddOutput( "Y", AT_Float1 );
+    Z = AddOutput( "Z", AT_Float1 );
+    XYZ = AddOutput( "XYZ", AT_Float3 );
 }
 
 static const char * ChooseSampleFunction( FMaterialNormalSamplerBlock::ENormalCompression _Compression ) {
@@ -1614,28 +1614,28 @@ void FMaterialNormalSamplerBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialInFragmentCoordBlock )
+AN_CLASS_META( FMaterialInFragmentCoordBlock )
 
 FMaterialInFragmentCoordBlock::FMaterialInFragmentCoordBlock() {
     Name = "InFragmentCoord";
     Stages = FRAGMENT_STAGE_BIT;
 
-    FAssemblyBlockOutput * OutValue = NewOutput( "Value", AT_Float4 );
+    FAssemblyBlockOutput * OutValue = AddOutput( "Value", AT_Float4 );
     OutValue->Expression = "gl_FragCoord";
 
-    FAssemblyBlockOutput * OutValueX = NewOutput( "X", AT_Float1 );
+    FAssemblyBlockOutput * OutValueX = AddOutput( "X", AT_Float1 );
     OutValueX->Expression = "gl_FragCoord.x";
 
-    FAssemblyBlockOutput * OutValueY = NewOutput( "Y", AT_Float1 );
+    FAssemblyBlockOutput * OutValueY = AddOutput( "Y", AT_Float1 );
     OutValueY->Expression = "gl_FragCoord.y";
 
-    FAssemblyBlockOutput * OutValueZ = NewOutput( "Z", AT_Float1 );
+    FAssemblyBlockOutput * OutValueZ = AddOutput( "Z", AT_Float1 );
     OutValueZ->Expression = "gl_FragCoord.z";
 
-    FAssemblyBlockOutput * OutValueW = NewOutput( "W", AT_Float1 );
+    FAssemblyBlockOutput * OutValueW = AddOutput( "W", AT_Float1 );
     OutValueW->Expression = "gl_FragCoord.w";
 
-    FAssemblyBlockOutput * OutValueXY = NewOutput( "Position", AT_Float2 );
+    FAssemblyBlockOutput * OutValueXY = AddOutput( "Position", AT_Float2 );
     OutValueXY->Expression = "gl_FragCoord.xy";
 
 }
@@ -1645,13 +1645,13 @@ void FMaterialInFragmentCoordBlock::Compute( FMaterialBuildContext & _Context ) 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialInPositionBlock )
+AN_CLASS_META( FMaterialInPositionBlock )
 
 FMaterialInPositionBlock::FMaterialInPositionBlock() {
     Name = "InPosition";
     Stages = VERTEX_STAGE_BIT;
 
-    Value = NewOutput( "Value", AT_Unknown );
+    Value = AddOutput( "Value", AT_Unknown );
     //Value->Expression = "InPosition";
 }
 
@@ -1668,13 +1668,13 @@ void FMaterialInPositionBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialInColorBlock )
+AN_CLASS_META( FMaterialInColorBlock )
 
 FMaterialInColorBlock::FMaterialInColorBlock() {
     Name = "InColor";
     Stages = VERTEX_STAGE_BIT;
 
-    Value = NewOutput( "Value", AT_Float4 );
+    Value = AddOutput( "Value", AT_Float4 );
 }
 
 void FMaterialInColorBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1687,13 +1687,13 @@ void FMaterialInColorBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialInTexCoordBlock )
+AN_CLASS_META( FMaterialInTexCoordBlock )
 
 FMaterialInTexCoordBlock::FMaterialInTexCoordBlock() {
     Name = "InTexCoord";
     Stages = VERTEX_STAGE_BIT;
 
-    FAssemblyBlockOutput * OutValue = NewOutput( "Value", AT_Float2 );
+    FAssemblyBlockOutput * OutValue = AddOutput( "Value", AT_Float2 );
     OutValue->Expression = "InTexCoord";
 }
 
@@ -1702,7 +1702,7 @@ void FMaterialInTexCoordBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #if 0
-AN_CLASS_META_NO_ATTRIBS( FMaterialInLightmapTexCoordBlock )
+AN_CLASS_META( FMaterialInLightmapTexCoordBlock )
 
 FMaterialInLightmapTexCoordBlock::FMaterialInLightmapTexCoordBlock() {
     Name = "InLightmapTexCoord";
@@ -1717,16 +1717,16 @@ void FMaterialInLightmapTexCoordBlock::Compute( FMaterialBuildContext & _Context
 #endif
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialInTimerBlock )
+AN_CLASS_META( FMaterialInTimerBlock )
 
 FMaterialInTimerBlock::FMaterialInTimerBlock() {
     Name = "InTimer";
     Stages = ANY_STAGE_BIT;
 
-    FAssemblyBlockOutput * ValGameRunningTimeSeconds = NewOutput( "GameRunningTimeSeconds", AT_Float1 );
+    FAssemblyBlockOutput * ValGameRunningTimeSeconds = AddOutput( "GameRunningTimeSeconds", AT_Float1 );
     ValGameRunningTimeSeconds->Expression = "Timers.x";
 
-    FAssemblyBlockOutput * ValGameplayTimeSeconds = NewOutput( "GameplayTimeSeconds", AT_Float1 );
+    FAssemblyBlockOutput * ValGameplayTimeSeconds = AddOutput( "GameplayTimeSeconds", AT_Float1 );
     ValGameplayTimeSeconds->Expression = "Timers.y";
 }
 
@@ -1735,13 +1735,13 @@ void FMaterialInTimerBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialInViewPositionBlock )
+AN_CLASS_META( FMaterialInViewPositionBlock )
 
 FMaterialInViewPositionBlock::FMaterialInViewPositionBlock() {
     Name = "InViewPosition";
     Stages = ANY_STAGE_BIT;
 
-    FAssemblyBlockOutput * Val = NewOutput( "Value", AT_Float3 );
+    FAssemblyBlockOutput * Val = AddOutput( "Value", AT_Float3 );
     Val->Expression = "ViewPostion.xyz";
 }
 
@@ -1750,20 +1750,20 @@ void FMaterialInViewPositionBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialCondLessBlock )
+AN_CLASS_META( FMaterialCondLessBlock )
 // TODO: add greater, lequal, gequal, equal, not equal
 
 FMaterialCondLessBlock::FMaterialCondLessBlock() {
     Name = "Cond A < B";
     Stages = ANY_STAGE_BIT;
 
-    ValueA = NewInput( "A" );
-    ValueB = NewInput( "B" );
+    ValueA = AddInput( "A" );
+    ValueB = AddInput( "B" );
 
-    True = NewInput( "True" );
-    False = NewInput( "False" );
+    True = AddInput( "True" );
+    False = AddInput( "False" );
 
-    Result = NewOutput( "Result", AT_Unknown );
+    Result = AddOutput( "Result", AT_Unknown );
 }
 
 void FMaterialCondLessBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1820,14 +1820,14 @@ void FMaterialCondLessBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialAtmosphereBlock )
+AN_CLASS_META( FMaterialAtmosphereBlock )
 
 FMaterialAtmosphereBlock::FMaterialAtmosphereBlock() {
     Name = "Atmosphere Scattering";
     Stages = ANY_STAGE_BIT;
 
-    Dir = NewInput( "Dir" );
-    Result = NewOutput( "Result", AT_Float4 );
+    Dir = AddInput( "Dir" );
+    Result = AddOutput( "Result", AT_Float4 );
 }
 
 void FMaterialAtmosphereBlock::Compute( FMaterialBuildContext & _Context ) {
@@ -1842,7 +1842,7 @@ void FMaterialAtmosphereBlock::Compute( FMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialBuilder )
+AN_CLASS_META( FMaterialBuilder )
 
 FMaterialBuilder::FMaterialBuilder() {
 
@@ -2548,7 +2548,7 @@ FMaterial * FMaterialBuilder::Build() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META_NO_ATTRIBS( FMaterialProject )
+AN_CLASS_META( FMaterialProject )
 
 FMaterialProject::FMaterialProject() {
 

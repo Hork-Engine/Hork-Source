@@ -46,7 +46,7 @@ SOFTWARE.
 
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
 
-AN_CLASS_META_NO_ATTRIBS( FSkinnedComponent )
+AN_CLASS_META( FSkinnedComponent )
 
 FSkinnedComponent::FSkinnedComponent() {
     RenderProxy = FRenderProxy::NewProxy< FRenderProxy_Skeleton >();
@@ -193,7 +193,7 @@ void FSkinnedComponent::AddTimeDeltaBroadcast( float _TimeDelta ) {
 }
 
 AN_FORCEINLINE float Quantize( float _Lerp, float _Quantizer ) {
-    return _Quantizer > 0.0f ? floorf( _Lerp * _Quantizer ) / _Quantizer : _Lerp;
+    return _Quantizer > 0.0f ? FMath::Floor( _Lerp * _Quantizer ) / _Quantizer : _Lerp;
 }
 
 void FSkinnedComponent::MergeJointAnimations() {
@@ -345,7 +345,7 @@ void FSkinnedComponent::UpdateControllers() {
         return;
     }
 
-    Float controllerTimeLine;
+    float controllerTimeLine;
     int keyFrame;
     float lerp;
     int take;
@@ -382,8 +382,8 @@ void FSkinnedComponent::UpdateControllers() {
                     // adjust 0...framecount-1
                     controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
 
-                    keyFrame = controllerTimeLine.Floor();
-                    lerp = controllerTimeLine.Fract();
+                    keyFrame = FMath::Floor( controllerTimeLine );
+                    lerp = FMath::Fract( controllerTimeLine );
 
                     controller->Frame = keyFrame;
                     controller->NextFrame = keyFrame + 1;
@@ -396,7 +396,7 @@ void FSkinnedComponent::UpdateControllers() {
                 // normalize 0..1
 #if 1
                 controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
-                controllerTimeLine = controllerTimeLine.Fract();
+                controllerTimeLine = FMath::Fract( controllerTimeLine );
 #else
                 controllerTimeLine = fmod( controller->TimeLine, anim->GetDurationInSeconds() ) * anim->GetDurationNormalize();
                 if ( controllerTimeLine < 0.0f ) {
@@ -407,8 +407,8 @@ void FSkinnedComponent::UpdateControllers() {
                 // adjust 0...framecount-1
                 controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
 
-                keyFrame = controllerTimeLine.Floor();
-                lerp = controllerTimeLine.Fract();
+                keyFrame = FMath::Floor( controllerTimeLine );
+                lerp = FMath::Fract( controllerTimeLine );
 
                 if ( controller->TimeLine < 0.0f ) {
                     controller->Frame = keyFrame + 1;
@@ -425,14 +425,14 @@ void FSkinnedComponent::UpdateControllers() {
 
                 // normalize 0..1
                 controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
-                take = controllerTimeLine.Abs().Floor();
-                controllerTimeLine = controllerTimeLine.Fract();
+                take = FMath::Floor( FMath::Abs( controllerTimeLine ) );
+                controllerTimeLine = FMath::Fract( controllerTimeLine );
 
                 // adjust 0...framecount-1
                 controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
 
-                keyFrame = controllerTimeLine.Floor();
-                lerp = controllerTimeLine.Fract();
+                keyFrame = FMath::Floor( controllerTimeLine );
+                lerp = FMath::Fract( controllerTimeLine );
 
                 if ( controller->TimeLine < 0.0f ) {
                     controller->Frame = keyFrame + 1;
@@ -562,7 +562,7 @@ void FSkinnedComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     // Draw skeleton
     if ( GDebugDrawFlags.bDrawSkeleton ) {
         if ( Skeleton ) {
-            _DebugDraw->SetColor( 1,0,0,1 );
+            _DebugDraw->SetColor( FColor4( 1,0,0,1 ) );
             _DebugDraw->SetDepthTest( false );
             TPodArray< FJoint > const & joints = Skeleton->GetJoints();
             for ( int i = 0 ; i < joints.Size() ; i++ ) {

@@ -40,8 +40,8 @@ SOFTWARE.
 
 #include <AL/alc.h>
 
-AN_CLASS_META_NO_ATTRIBS( FAudioControlCallback )
-AN_CLASS_META_NO_ATTRIBS( FAudioGroup )
+AN_CLASS_META( FAudioControlCallback )
+AN_CLASS_META( FAudioGroup )
 
 static void * LibOpenAL = NULL;
 static ALCdevice * ALCDevice = NULL;
@@ -1569,7 +1569,7 @@ void FAudioSystem::Update( FPlayerController * _Controller, float _TimeStep ) {
         AL_SAFE( alListenerfv( AL_POSITION, (float *)ListenerPosition.ToPtr() ) );
 
         if ( audioParameters ) {
-            AL_SAFE( alListenerfv( AL_VELOCITY, &audioParameters->Velocity.X.Value ) );
+            AL_SAFE( alListenerfv( AL_VELOCITY, &audioParameters->Velocity.X ) );
             AL_SAFE( alDopplerFactor( audioParameters->DopplerFactor ) );
             AL_SAFE( alDopplerVelocity( audioParameters->DopplerVelocity ) );
             AL_SAFE( alSpeedOfSound( audioParameters->SpeedOfSound ) );

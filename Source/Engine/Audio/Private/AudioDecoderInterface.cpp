@@ -31,8 +31,8 @@ SOFTWARE.
 #include <Engine/Audio/Public/AudioDecoderInterface.h>
 #include <Engine/Core/Public/Logger.h>
 
-AN_CLASS_META_NO_ATTRIBS( IAudioStreamInterface )
-AN_CLASS_META_NO_ATTRIBS( IAudioDecoderInterface )
+AN_CLASS_META( IAudioStreamInterface )
+AN_CLASS_META( IAudioDecoderInterface )
 
 bool IAudioStreamInterface::InitializeFileStream( const char * _FileName ) {
     return false;

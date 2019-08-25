@@ -32,7 +32,7 @@ SOFTWARE.
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META_NO_ATTRIBS( FFontAtlas )
+AN_CLASS_META( FFontAtlas )
 
 FFontAtlas::FFontAtlas() {
 
@@ -76,7 +76,14 @@ int FFontAtlas::AddFontFromMemoryCompressedBase85TTF( const char * _CompressedFo
     return Atlas.Fonts.size() - 1;
 }
 
-FFont * FFontAtlas::GetFont( int _Id ) {
+//FFont * FFontAtlas::GetFont( int _Id ) {
+//    if ( _Id >= 0 && _Id < Atlas.Fonts.size() ) {
+//        return Atlas.Fonts[_Id];
+//    }
+//    return nullptr;
+//}
+
+FFont const * FFontAtlas::GetFont( int _Id ) const {
     if ( _Id >= 0 && _Id < Atlas.Fonts.size() ) {
         return Atlas.Fonts[_Id];
     }

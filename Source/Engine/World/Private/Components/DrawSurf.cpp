@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Engine/World/Public/Components/DrawSurf.h>
 
-AN_CLASS_META_NO_ATTRIBS( FDrawSurf )
+AN_CLASS_META( FDrawSurf )
 
 //AN_SCENE_COMPONENT_BEGIN_DECL( FDrawSurf, CCF_HIDDEN_IN_EDITOR )
 //AN_ATTRIBUTE( "Rendering Layers", FProperty( FDrawSurf::RENDERING_LAYERS_DEFAULT ), SetRenderingLayers, GetRenderingLayers, "Set rendering layer(s)", AF_BITFIELD )

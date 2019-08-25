@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Core/Public/HashFunc.h>
 #include <Engine/Core/Public/Logger.h>
 
-AN_CLASS_META_NO_ATTRIBS( FDummy )
+AN_CLASS_META( FDummy )
 
 const char * FAttributeMeta::TypeNames[ (int)EAttributeType::T_Max ] =
 {

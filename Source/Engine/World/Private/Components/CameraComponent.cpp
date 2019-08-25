@@ -45,7 +45,7 @@ SOFTWARE.
 #define DEFAULT_PERSPECTIVE_ADJUST FCameraComponent::ADJ_FOV_X_ASPECT_RATIO
 #define DEFAULT_ORTHO_RECT Float4(-1,1,-1,1)
 
-AN_CLASS_META_NO_ATTRIBS( FCameraComponent )
+AN_CLASS_META( FCameraComponent )
 
 #if 0
 AN_SCENE_COMPONENT_BEGIN_DECL( FCameraComponent, CCF_DEFAULT )
@@ -123,14 +123,14 @@ void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
 
         _DebugDraw->SetDepthTest( true );
 
-        _DebugDraw->SetColor( 0, 1, 1, 1 );
+        _DebugDraw->SetColor( FColor4( 0, 1, 1, 1 ) );
         _DebugDraw->DrawLine( origin, v[0] );
         _DebugDraw->DrawLine( origin, v[3] );
         _DebugDraw->DrawLine( origin, v[1] );
         _DebugDraw->DrawLine( origin, v[2] );
         _DebugDraw->DrawLine( v, 4, true );
 
-        _DebugDraw->SetColor( 1, 1, 1, 0.3f );
+        _DebugDraw->SetColor( FColor4( 1, 1, 1, 0.3f ) );
         _DebugDraw->DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
         _DebugDraw->DrawConvexPoly( v, 4, false );
     }

@@ -46,20 +46,20 @@ class PlaneD;
 class PlaneF /*final*/ {
 public:
     Float3  Normal;
-    Float   D;
+    float   D;
 
     PlaneF() = default;
     PlaneF( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2 );
-    PlaneF( Float const & _A, Float const & _B, Float const & _C, const Float & _D );
-    PlaneF( Float3 const & _Normal, Float const & _Dist );
+    PlaneF( float const & _A, float const & _B, float const & _C, const float & _D );
+    PlaneF( Float3 const & _Normal, float const & _Dist );
     PlaneF( Float3 const & _Normal, Float3 const & _PointOnPlane );
     explicit PlaneF( PlaneD const & _Plane );
 
-    Float * ToPtr() {
+    float * ToPtr() {
         return &Normal.X;
     }
 
-    Float const * ToPtr() const {
+    float const * ToPtr() const {
         return &Normal.X;
     }
 
@@ -73,16 +73,16 @@ public:
         return ToVec4() == _Other.ToVec4();
     }
 
-    Bool CompareEps( const PlaneF & _Other, Float const & _NormalEpsilon, Float const & _DistEpsilon ) const {
-        return Bool4( Normal.X.Dist( _Other.Normal.X ) < _NormalEpsilon,
-                      Normal.Y.Dist( _Other.Normal.Y ) < _NormalEpsilon,
-                      Normal.Z.Dist( _Other.Normal.Z ) < _NormalEpsilon,
-                      D.Dist( _Other.D ) < _DistEpsilon ).All();
+    Bool CompareEps( const PlaneF & _Other, float const & _NormalEpsilon, float const & _DistEpsilon ) const {
+        return Bool4( FMath::Dist( Normal.X, _Other.Normal.X ) < _NormalEpsilon,
+                      FMath::Dist( Normal.Y, _Other.Normal.Y ) < _NormalEpsilon,
+                      FMath::Dist( Normal.Z, _Other.Normal.Z ) < _NormalEpsilon,
+                      FMath::Dist( D, _Other.D ) < _DistEpsilon ).All();
     }
 
     void Clear();
 
-    Float Dist() const;
+    float Dist() const;
 
     void SetDist( const float & _Dist );
 
@@ -95,9 +95,9 @@ public:
     void FromPoints( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2 );
     void FromPoints( Float3 const _Points[3] );
 
-    Float Dist( Float3 const & _Point ) const;
+    float Dist( Float3 const & _Point ) const;
 
-    EPlaneSide SideOffset( Float3 const & _Point, Float const & _Epsilon ) const;
+    EPlaneSide SideOffset( Float3 const & _Point, float const & _Epsilon ) const;
 
     void NormalizeSelf() {
         const float NormalLength = Normal.Length();
@@ -119,8 +119,8 @@ public:
 
     PlaneF Snap( const float & _NormalEpsilon, const float & _DistEpsilon ) const {
         PlaneF SnapPlane( Normal.SnapNormal( _NormalEpsilon ), D );
-        const float SnapD = D.Round();
-        if ( ( D - SnapD ).Abs() < _DistEpsilon ) {
+        const float SnapD = FMath::Round( D );
+        if ( FMath::Abs( D - SnapD ) < _DistEpsilon ) {
             SnapPlane.D = SnapD;
         }
         return SnapPlane;
@@ -133,11 +133,11 @@ public:
 
     // String conversions
     FString ToString( int _Precision = - 1 ) const {
-        return FString( "( " ) + Normal.X.ToString( _Precision ) + " " + Normal.Y.ToString( _Precision ) + " " + Normal.Z.ToString( _Precision ) + " " + D.ToString( _Precision ) + " )";
+        return FString( "( " ) + FMath::ToString( Normal.X, _Precision ) + " " + FMath::ToString( Normal.Y, _Precision ) + " " + FMath::ToString( Normal.Z, _Precision ) + " " + FMath::ToString( D, _Precision ) + " )";
     }
 
     FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Normal.X.ToHexString( _LeadingZeros, _Prefix ) + " " + Normal.Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Normal.Z.ToHexString( _LeadingZeros, _Prefix ) + " " + D.ToHexString( _LeadingZeros, _Prefix ) + " )";
+        return FString( "( " ) + FMath::ToHexString( Normal.X, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Normal.Y, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Normal.Z, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( D, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
@@ -157,12 +157,12 @@ AN_FORCEINLINE PlaneF::PlaneF( Float3 const & _P0, Float3 const & _P1, Float3 co
     FromPoints( _P0, _P1, _P2 );
 }
 
-AN_FORCEINLINE PlaneF::PlaneF( Float const & _A, Float const & _B, Float const & _C, Float const & _D )
+AN_FORCEINLINE PlaneF::PlaneF( float const & _A, float const & _B, float const & _C, float const & _D )
     : Normal( _A, _B, _C ), D( _D )
 {
 }
 
-AN_FORCEINLINE PlaneF::PlaneF( Float3 const & _Normal, Float const & _Dist )
+AN_FORCEINLINE PlaneF::PlaneF( Float3 const & _Normal, float const & _Dist )
     : Normal( _Normal ), D( -_Dist )
 {
 }
@@ -176,7 +176,7 @@ AN_FORCEINLINE void PlaneF::Clear() {
     Normal.X = Normal.Y = Normal.Z = D = 0;
 }
 
-AN_FORCEINLINE Float PlaneF::Dist() const {
+AN_FORCEINLINE float PlaneF::Dist() const {
     return -D;
 }
 
@@ -215,11 +215,11 @@ AN_FORCEINLINE void PlaneF::FromPoints( Float3 const _Points[3] ) {
     FromPoints( _Points[0], _Points[1], _Points[2] );
 }
 
-AN_FORCEINLINE Float PlaneF::Dist( Float3 const & _Point ) const {
+AN_FORCEINLINE float PlaneF::Dist( Float3 const & _Point ) const {
     return _Point.Dot( Normal ) + D;
 }
 
-AN_FORCEINLINE EPlaneSide PlaneF::SideOffset( Float3 const & _Point, Float const & _Epsilon ) const {
+AN_FORCEINLINE EPlaneSide PlaneF::SideOffset( Float3 const & _Point, float const & _Epsilon ) const {
     const float Distance = Dist( _Point );
     if ( Distance > _Epsilon ) {
         return EPlaneSide::Front;

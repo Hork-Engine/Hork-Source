@@ -32,8 +32,8 @@ SOFTWARE.
 #include <Engine/World/Public/Octree.h>
 #include <Engine/World/Public/Level.h>
 
-AN_CLASS_META_NO_ATTRIBS( FSpatialTree )
-AN_CLASS_META_NO_ATTRIBS( FOctree )
+AN_CLASS_META( FSpatialTree )
+AN_CLASS_META( FOctree )
 
 
 void FOctree::Build() {
@@ -51,7 +51,7 @@ void FOctree::Build() {
     float depth = boundingBox.Maxs[2] - boundingBox.Mins[2];
     float maxDim = FMath::Max( width, height, depth );
 
-    NumLevels = FMath::Log2( Float( maxDim + 0.5f ).ToIntFast() ) + 1;
+    NumLevels = FMath::Log2( FMath::ToIntFast( maxDim + 0.5f ) ) + 1;
 
     GLogger.Printf( "Max levels %d\n", NumLevels );
 

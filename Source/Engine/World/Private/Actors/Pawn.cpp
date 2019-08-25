@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Engine/World/Public/Actors/Pawn.h>
 
-AN_CLASS_META_NO_ATTRIBS( FPawn )
+AN_CLASS_META( FPawn )
 
 FPawn::FPawn() {
 }

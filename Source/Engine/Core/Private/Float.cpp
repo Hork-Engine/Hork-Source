@@ -259,3 +259,33 @@ Float & Float::FromString( const char * _String ) {
     Value = StringToReal< float >( _String );
     return *this;
 }
+
+namespace  FMath {
+
+UShort FloatToHalf( const UInt & _I ) {
+    return Float::FloatToHalf( _I );
+}
+
+UInt HalfToFloat( const UShort & _I ) {
+    return Float::HalfToFloat( _I );
+}
+
+void FloatToHalf( const float * _In, uint16_t * _Out, int _Count ) {
+    const float *pIn = _In;
+    while ( pIn < &_In[ _Count ] ) {
+        *_Out++ = FloatToHalf( *reinterpret_cast< const uint32_t * >( pIn++ ) );
+    }
+}
+
+void HalfToFloat( const uint16_t * _In, float * _Out, int _Count ) {
+    const unsigned short *pIn = _In;
+    while ( pIn < &_In[ _Count ] ) {
+        *reinterpret_cast< uint32_t * >( _Out++ ) = HalfToFloat( *pIn++ );
+    }
+}
+
+float FromString( const char * _String ) {
+    return StringToReal< float >( _String );
+}
+
+}

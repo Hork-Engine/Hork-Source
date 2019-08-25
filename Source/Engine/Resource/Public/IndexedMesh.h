@@ -259,11 +259,18 @@ class FIndexedMesh : public FBaseObject, public IRenderProxyOwner {
     friend class FIndexedMeshSubpart;
 
 public:
+    // Rigid body collision model
+    FCollisionBodyComposition BodyComposition;
+
+    // Soft body collision model
+    TPodArray< FSoftbodyLink > SoftbodyLinks;
+    TPodArray< FSoftbodyFace > SoftbodyFaces;
+
     // Allocate mesh
     void Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false, bool _DynamicStorage = false );
 
     // Helper. Create box mesh
-    void InitializeBoxMesh( const Float3 & _Size, float _TexCoordScale );
+    void InitializeBoxMesh( Float3 const & _Size, float _TexCoordScale );
 
     // Helper. Create sphere mesh
     void InitializeSphereMesh( float _Radius, float _TexCoordScale, int _HDiv, int _VDiv );
@@ -362,14 +369,8 @@ public:
     // Check ray intersection
     bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< FMaterialInstance > & _Material ) const;
 
-    // Rigid body collision model
-    FCollisionBodyComposition BodyComposition;
-
-    // Soft body collision model
-    TPodArray< FSoftbodyLink > SoftbodyLinks;
-    TPodArray< FSoftbodyFace > SoftbodyFaces;
-
     void GenerateSoftbodyFacesFromMeshIndices();
+
     void GenerateSoftbodyLinksFromFaces();
 
 protected:
@@ -395,6 +396,25 @@ private:
     BvAxisAlignedBox BoundingBox;
 };
 
+
+/*
+
+Utilites
+
+
+*/
+
+void CreateBoxMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, Float3 const & _Size, float _TexCoordScale );
+
+void CreateSphereMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _HDiv, int _VDiv );
+
+void CreatePlaneMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale );
+
+void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
+    Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, int resx, int resy, float _TexCoordScale, bool _TwoSided );
+
+void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _VDiv );
+
 void CalcTangentSpace( FMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices );
 
 // binormal = cross( normal, tangent ) * handedness
@@ -405,14 +425,3 @@ AN_FORCEINLINE float CalcHandedness( Float3 const & _Tangent, Float3 const & _Bi
 AN_FORCEINLINE Float3 CalcBinormal( Float3 const & _Tangent, Float3 const & _Normal, float _Handedness ) {
     return _Normal.Cross( _Tangent ).Normalized() * _Handedness;
 }
-
-void CreateBoxMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale );
-
-void CreateSphereMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _HDiv, int _VDiv );
-
-void CreatePlaneMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale );
-
-void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
-    Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, int resx, int resy, float _TexCoordScale, bool _TwoSided );
-
-void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _VDiv );

@@ -523,9 +523,9 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
     config.cs = Initial.NavCellSize;
     config.ch = Initial.NavCellHeight;
     config.walkableSlopeAngle = Initial.NavWalkableSlopeAngle;
-    config.walkableHeight = (int)ceilf( Initial.NavWalkableHeight / config.ch );
-    config.walkableClimb = (int)floorf( Initial.NavWalkableClimb / config.ch );
-    config.walkableRadius = (int)ceilf( Initial.NavWalkableRadius / config.cs );
+    config.walkableHeight = (int)FMath::Ceil( Initial.NavWalkableHeight / config.ch );
+    config.walkableClimb = (int)FMath::Floor( Initial.NavWalkableClimb / config.ch );
+    config.walkableRadius = (int)FMath::Ceil( Initial.NavWalkableRadius / config.cs );
     config.maxEdgeLen = (int)(Initial.NavEdgeMaxLength / Initial.NavCellSize);
     config.maxSimplificationError = Initial.NavEdgeMaxError;
     config.minRegionArea = (int)rcSqr( Initial.NavMinRegionSize );		// Note: area = size*size
@@ -1252,7 +1252,6 @@ struct FDebugDrawCallback : public duDebugDraw {
     }
 
     void vertex( const float x, const float y, const float z, unsigned int color ) override {
-
         DD->SetColor( color );
 
         switch ( Primitive ) {
@@ -1348,7 +1347,7 @@ void FAINavigationMesh::DrawDebug( FDebugDraw * _DebugDraw ) {
     if ( GDebugDrawFlags.bDrawNavMeshTileBounds ) {
         BvAxisAlignedBox boundingBox;
         _DebugDraw->SetDepthTest(false);
-        _DebugDraw->SetColor(1,1,1,1);
+        _DebugDraw->SetColor( FColor4( 1,1,1,1 ) );
         for ( int z = 0 ; z < NumTilesZ ; z++ ) {
             for ( int x = 0 ; x < NumTilesX ; x++ ) {
                 if ( IsTileExsist( x, z ) ) {

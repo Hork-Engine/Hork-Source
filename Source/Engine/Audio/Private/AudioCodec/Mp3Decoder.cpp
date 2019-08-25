@@ -133,8 +133,8 @@ void UnloadLibMpg123() {
     }
 }
 
-AN_CLASS_META_NO_ATTRIBS( FMp3AudioTrack )
-AN_CLASS_META_NO_ATTRIBS( FMp3Decoder )
+AN_CLASS_META( FMp3AudioTrack )
+AN_CLASS_META( FMp3Decoder )
 
 FMp3AudioTrack::FMp3AudioTrack() {
     LoadLibMpg123();

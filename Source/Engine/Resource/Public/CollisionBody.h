@@ -182,8 +182,6 @@ private:
     btCollisionShape * Create() override;
 };
 
-void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices );
-
 //class FCollisionConvexHull : public FCollisionBody {
 //    AN_CLASS( FCollisionConvexHull, FCollisionBody )
 
@@ -358,8 +356,8 @@ public:
     }
 
     template< typename T >
-    T * NewCollisionBody() {
-        T * body = static_cast< T * >( T::ClassMeta().CreateInstance() );
+    T * AddCollisionBody() {
+        T * body = CreateInstanceOf< T >();
         AddCollisionBody( body );
         return body;
     }
@@ -406,6 +404,14 @@ public:
     Float3 CenterOfMass;
 };
 
+
+/*
+
+Utilites
+
+
+*/
+
 struct FConvexHullDesc {
     int FirstVertex;
     int VertexCount;
@@ -441,6 +447,8 @@ void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       TPodArray< unsigned int > & _OutIndices,
                                       TPodArray< FConvexHullDesc > & _OutHulls,
                                       Float3 & _CenterOfMass );
+
+void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices );
 
 void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
 

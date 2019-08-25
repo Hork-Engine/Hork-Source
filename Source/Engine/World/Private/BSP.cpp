@@ -204,7 +204,7 @@ static constexpr int CullIndices[ 8 ][ 6 ] = {
 static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bounds, int & _CullBits ) {
     Float3 p;
 
-    Float const * pBounds = _Bounds.ToPtr();
+    float const * pBounds = _Bounds.ToPtr();
     int const * pIndices;
     if ( _CullBits & 1 ) {
         pIndices = CullIndices[ Frustum[0].CachedSignBits ];

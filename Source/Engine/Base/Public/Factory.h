@@ -567,7 +567,7 @@ void _Class::ThisClassMeta::RegisterAttributes() {
 #define AN_END_CLASS_META() \
     }
 
-#define AN_CLASS_META_NO_ATTRIBS( _Class ) AN_BEGIN_CLASS_META( _Class ) AN_END_CLASS_META()
+#define AN_CLASS_META( _Class ) AN_BEGIN_CLASS_META( _Class ) AN_END_CLASS_META()
 
 #define AN_ATTRIBUTE( _Name, _Setter, _Getter, _Flags ) \
     static TAttributeMeta< ThisClass > const _Name##Meta( *this, AN_STRINGIFY( _Name ), &ThisClass::_Setter, &ThisClass::_Getter, _Flags );

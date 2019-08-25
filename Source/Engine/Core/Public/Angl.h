@@ -34,19 +34,19 @@ SOFTWARE.
 
 class Angl final {
 public:
-    Float Pitch;
-    Float Yaw;
-    Float Roll;
+    float Pitch;
+    float Yaw;
+    float Roll;
 
     Angl() = default;
     explicit constexpr Angl( const Float3 & _Value ) : Pitch( _Value.X ), Yaw( _Value.Y ), Roll( _Value.Z ) {}
     constexpr Angl( const float & _Pitch, const float & _Yaw, const float & _Roll ) : Pitch( _Pitch ), Yaw( _Yaw ), Roll( _Roll ) {}
 
-    Float * ToPtr() {
+    float * ToPtr() {
         return &Pitch;
     }
 
-    const Float * ToPtr() const {
+    const float * ToPtr() const {
         return &Pitch;
     }
 
@@ -65,12 +65,12 @@ public:
         return *this;
     }
 
-    Float & operator[]( const int & _Index ) {
+    float & operator[]( const int & _Index ) {
         AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&Pitch)[ _Index ];
     }
 
-    const Float & operator[]( const int & _Index ) const {
+    const float & operator[]( const int & _Index ) const {
         AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&Pitch)[ _Index ];
     }
@@ -138,29 +138,29 @@ public:
 
     // Floating point specific
     Bool3 IsInfinite() const {
-        return Bool3( Pitch.IsInfinite(), Yaw.IsInfinite(), Roll.IsInfinite() );
+        return Bool3( FMath::IsInfinite( Pitch ), FMath::IsInfinite( Yaw ), FMath::IsInfinite( Roll ) );
     }
 
     Bool3 IsNan() const {
-        return Bool3( Pitch.IsNan(), Yaw.IsNan(), Roll.IsNan() );
+        return Bool3( FMath::IsNan( Pitch ), FMath::IsNan( Yaw ), FMath::IsNan( Roll ) );
     }
 
     Bool3 IsNormal() const {
-        return Bool3( Pitch.IsNormal(), Yaw.IsNormal(), Roll.IsNormal() );
+        return Bool3( FMath::IsNormal( Pitch ), FMath::IsNormal( Yaw ), FMath::IsNormal( Roll ) );
     }
 
     Bool3 NotEqual( const Angl & _Other ) const {
-        return Bool3( Pitch.NotEqual( _Other.Pitch ), Yaw.NotEqual( _Other.Yaw ), Roll.NotEqual( _Other.Roll ) );
+        return Bool3( FMath::NotEqual( Pitch, _Other.Pitch ), FMath::NotEqual( Yaw, _Other.Yaw ), FMath::NotEqual( Roll, _Other.Roll ) );
     }
 
     Bool Compare( const Angl & _Other ) const {
         return !NotEqual( _Other ).Any();
     }
 
-    Bool CompareEps( const Angl & _Other, const Float & _Epsilon ) const {
-        return Bool3( Pitch.CompareEps( _Other.Pitch, _Epsilon ),
-                      Yaw  .CompareEps( _Other.Yaw  , _Epsilon ),
-                      Roll .CompareEps( _Other.Roll , _Epsilon ) ).All();
+    Bool CompareEps( const Angl & _Other, const float & _Epsilon ) const {
+        return Bool3( FMath::CompareEps( Pitch, _Other.Pitch, _Epsilon ),
+                      FMath::CompareEps( Yaw, _Other.Yaw, _Epsilon ),
+                      FMath::CompareEps( Roll, _Other.Roll, _Epsilon ) ).All();
     }
 
     void Clear() {
@@ -209,7 +209,7 @@ public:
 
     static float Normalize360( const float & _Angle ) {
         //return (360.0f/65536) * (static_cast< int >(_Angle*(65536/360.0f)) & 65535);
-        Float Norm = std::fmod( _Angle, 360.0f );
+        float Norm = std::fmod( _Angle, 360.0f );
         if ( Norm < 0.0f ) {
             Norm += 360.0f;
         }
@@ -253,28 +253,28 @@ public:
     }
 
     static byte PackByte( const float & _Angle ) {
-        return Float( _Angle * ( 256.0f / 360.0f ) ).ToIntFast() & 255;
+        return FMath::ToIntFast( _Angle * ( 256.0f / 360.0f ) ) & 255;
     }
 
     static UShort PackShort( const float & _Angle ) {
-        return Float( _Angle * ( 65536.0f / 360.0f ) ).ToIntFast() & 65535;
+        return FMath::ToIntFast( _Angle * ( 65536.0f / 360.0f ) ) & 65535;
     }
 
-    static Float UnpackByte( const byte & _Angle ) {
+    static float UnpackByte( const byte & _Angle ) {
         return _Angle * ( 360.0f / 256.0f );
     }
 
-    static Float UnpackShort( const uint16_t & _Angle ) {
+    static float UnpackShort( const uint16_t & _Angle ) {
         return _Angle * ( 360.0f / 65536.0f );
     }
 
     // String conversions
     FString ToString( int _Precision = -1 ) const {
-        return FString( "( " ) + Pitch.ToString( _Precision ) + " " + Yaw.ToString( _Precision ) + " " + Roll.ToString( _Precision ) + " )";
+        return FString( "( " ) + FMath::ToString( Pitch, _Precision ) + " " + FMath::ToString( Yaw, _Precision ) + " " + FMath::ToString( Roll, _Precision ) + " )";
     }
 
     FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Pitch.ToHexString( _LeadingZeros, _Prefix ) + " " + Yaw.ToHexString( _LeadingZeros, _Prefix ) + " " + Roll.ToHexString( _LeadingZeros, _Prefix ) + " )";
+        return FString( "( " ) + FMath::ToHexString( Pitch, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Yaw, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Roll, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization

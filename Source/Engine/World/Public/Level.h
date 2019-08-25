@@ -43,6 +43,7 @@ class FActor;
 class FTexture;
 class FLevel;
 class FAreaPortal;
+class FLightComponent;
 
 class FLevelArea : public FBaseObject {
     AN_CLASS( FLevelArea, FBaseObject )
@@ -76,7 +77,7 @@ private:
 
     // Objects in area
     TPodArray< FSpatialObject * > Movables;
-    //TPodArray< FLightComponent * > Lights;
+    TPodArray< FLightComponent * > Lights;
     //TPodArray< FEnvCaptureComponent * > EnvCaptures;
 
     // Linked portals
@@ -197,10 +198,10 @@ public:
     void DestroyActors();
 
     // Create vis area
-    FLevelArea * CreateArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
+    FLevelArea * AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
 
     // Create vis portal
-    FLevelPortal * CreatePortal( Float3 const * _HullPoints, int _NumHullPoints, FLevelArea * _Area1, FLevelArea * _Area2 );
+    FLevelPortal * AddPortal( Float3 const * _HullPoints, int _NumHullPoints, FLevelArea * _Area1, FLevelArea * _Area2 );
 
     // Destroy all vis areas and portals
     void DestroyPortalTree();

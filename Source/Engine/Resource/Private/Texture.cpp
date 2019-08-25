@@ -32,7 +32,7 @@ SOFTWARE.
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META_NO_ATTRIBS( FTexture )
+AN_CLASS_META( FTexture )
 
 FTexture::FTexture() {
     RenderProxy = FRenderProxy::NewProxy< FRenderProxy_Texture >();
@@ -859,7 +859,7 @@ static bool LoadRawImageHDRI( const char * _Name, FImage & _Image, const stbi_io
         imageSize *= _Image.NumChannels;
 
         uint16_t * tmp = ( uint16_t * )AllocateBufferData( imageSize * sizeof( uint16_t ) );
-        Float::FloatToHalf( data, tmp, imageSize );
+        FMath::FloatToHalf( data, tmp, imageSize );
         DeallocateBufferData( data );
         data = ( float * )tmp;
     }
@@ -936,7 +936,7 @@ void FImage::Free() {
 }
 
 AN_FORCEINLINE float ClampByte( const float & _Value ) {
-    return Float( _Value ).Clamp( 0.0f, 255.0f );
+    return FMath::Clamp( _Value, 0.0f, 255.0f );
 }
 
 AN_FORCEINLINE float ByteToFloat( const byte & _Color ) {
@@ -945,7 +945,7 @@ AN_FORCEINLINE float ByteToFloat( const byte & _Color ) {
 
 AN_FORCEINLINE byte FloatToByte( const float & _Color ) {
     //return ClampByte( _Color * 255.0f );  // round to small
-    return ClampByte( floorf( _Color * 255.0f + 0.5f ) ); // round to nearest
+    return ClampByte( FMath::Floor( _Color * 255.0f + 0.5f ) ); // round to nearest
 }
 
 AN_FORCEINLINE byte ConvertToSRGB_UB( const float & _lRGB ) {
@@ -1002,7 +1002,7 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
                         avg = ( a + b + c + d ) * 0.25f;
                     }
 
-                    _DstData[ idx * Bpp + ch ] = ClampByte( floor( avg + 0.5f ) );
+                    _DstData[ idx * Bpp + ch ] = ClampByte( FMath::Floor( avg + 0.5f ) );
                 } else {
                     if ( _NewWidth == _CurWidth ) {
                         x = i;

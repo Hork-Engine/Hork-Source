@@ -79,6 +79,8 @@ public:
     bool IsEmpty() const;
     int Length() const;
     const char * ToConstChar() const;
+    const char * Begin() const;
+    const char * End() const;
     char * ToPtr() const;
 
     void CopyN( const char * _Str, int _Num );
@@ -569,6 +571,13 @@ AN_FORCEINLINE int FString::CmpN( const char * _S1, const char * _S2, int _Num )
 
 AN_FORCEINLINE const char * FString::ToConstChar() const {
     return StringData;
+}
+
+AN_FORCEINLINE const char * FString::Begin() const {
+    return StringData;
+}
+AN_FORCEINLINE const char * FString::End() const {
+    return StringData + StringLength;
 }
 
 AN_FORCEINLINE int FString::Length() const {

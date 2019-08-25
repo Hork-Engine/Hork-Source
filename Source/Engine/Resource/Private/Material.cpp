@@ -32,8 +32,8 @@ SOFTWARE.
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META_NO_ATTRIBS( FMaterial )
-AN_CLASS_META_NO_ATTRIBS( FMaterialInstance )
+AN_CLASS_META( FMaterial )
+AN_CLASS_META( FMaterialInstance )
 
 FMaterial::FMaterial() {
     RenderProxy = FRenderProxy::NewProxy< FRenderProxy_Material >();

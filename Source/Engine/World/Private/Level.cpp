@@ -38,9 +38,9 @@ SOFTWARE.
 #include <Engine/Resource/Public/Texture.h>
 #include <Engine/Core/Public/BV/BvIntersect.h>
 
-AN_CLASS_META_NO_ATTRIBS( FLevel )
-AN_CLASS_META_NO_ATTRIBS( FLevelArea )
-AN_CLASS_META_NO_ATTRIBS( FLevelPortal )
+AN_CLASS_META( FLevel )
+AN_CLASS_META( FLevelArea )
+AN_CLASS_META( FLevelPortal )
 
 FLevel::FLevel() {
     IndoorBounds.Clear();
@@ -99,7 +99,7 @@ void FLevel::OnRemoveLevelFromWorld() {
     RemoveSurfaces();
 }
 
-FLevelArea * FLevel::CreateArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
+FLevelArea * FLevel::AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
 
     FLevelArea * area = NewObject< FLevelArea >();
     area->AddRef();
@@ -123,7 +123,7 @@ FLevelArea * FLevel::CreateArea( Float3 const & _Position, Float3 const & _Exten
     return area;
 }
 
-FLevelPortal * FLevel::CreatePortal( Float3 const * _HullPoints, int _NumHullPoints, FLevelArea * _Area1, FLevelArea * _Area2 ) {
+FLevelPortal * FLevel::AddPortal( Float3 const * _HullPoints, int _NumHullPoints, FLevelArea * _Area1, FLevelArea * _Area2 ) {
     if ( _Area1 == _Area2 ) {
         return nullptr;
     }
@@ -373,13 +373,13 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
 
             float f = (float)( (i*12345) & 255 ) / 255.0f;
 
-            _DebugDraw->SetColor(f,f,f,1);
+            _DebugDraw->SetColor( FColor4( f,f,f,1 ) );
 
             _DebugDraw->DrawBoxFilled( area->Bounds.Center(), area->Bounds.HalfSize(), true );
         }
 #endif
         _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor(0,1,0,0.5f);
+        _DebugDraw->SetColor( FColor4( 0,1,0,0.5f) );
         for ( FLevelArea * area : Areas ) {
             _DebugDraw->DrawAABB( area->Bounds );
         }
@@ -394,7 +394,7 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
 //        }
 
         _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor(0,0,1,0.4f);
+        _DebugDraw->SetColor( FColor4( 0,0,1,0.4f ) );
 
         if ( LastVisitedArea >= 0 && LastVisitedArea < Areas.Size() ) {
             FLevelArea * area = Areas[ LastVisitedArea ];
@@ -812,7 +812,7 @@ static bool ClipPolygonFast( Float3 const * _InPoints, int _InNumPoints, FPortal
 
     AN_Assert( _InNumPoints + 4 <= MAX_HULL_POINTS );
 
-    // Определить с какой стороны находится каждая точка исходного полигона
+    // РћРїСЂРµРґРµР»РёС‚СЊ СЃ РєР°РєРѕР№ СЃС‚РѕСЂРѕРЅС‹ РЅР°С…РѕРґРёС‚СЃСЏ РєР°Р¶РґР°СЏ С‚РѕС‡РєР° РёСЃС…РѕРґРЅРѕРіРѕ РїРѕР»РёРіРѕРЅР°
     for ( i = 0; i < _InNumPoints; i++ ) {
         Dist = _InPoints[ i ].Dot( _Plane.Normal ) + _Plane.D;
 
@@ -830,13 +830,13 @@ static bool ClipPolygonFast( Float3 const * _InPoints, int _InNumPoints, FPortal
     }
 
     if ( !Front ) {
-        // Все точки находятся по заднюю сторону плоскости
+        // Р’СЃРµ С‚РѕС‡РєРё РЅР°С…РѕРґСЏС‚СЃСЏ РїРѕ Р·Р°РґРЅСЋСЋ СЃС‚РѕСЂРѕРЅСѓ РїР»РѕСЃРєРѕСЃС‚Рё
         _Out->NumPoints = 0;
         return true;
     }
 
     if ( !Back ) {
-        // Все точки находятся по фронтальную сторону плоскости
+        // Р’СЃРµ С‚РѕС‡РєРё РЅР°С…РѕРґСЏС‚СЃСЏ РїРѕ С„СЂРѕРЅС‚Р°Р»СЊРЅСѓСЋ СЃС‚РѕСЂРѕРЅСѓ РїР»РѕСЃРєРѕСЃС‚Рё
         return false;
     }
 
@@ -1308,7 +1308,7 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         }
 
         FMaterialInstanceFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
-        
+
         // Add render instance
         FRenderInstance * instance = ( FRenderInstance * )GRuntime.GetFrameData()->AllocFrameData( sizeof( FRenderInstance ) );
         if ( !instance ) {

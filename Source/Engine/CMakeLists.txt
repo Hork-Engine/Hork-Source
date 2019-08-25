@@ -49,6 +49,9 @@ file( GLOB WorldPrivateActors World/Private/Actors/*.h World/Private/Actors/*.cp
 file( GLOB WorldPublicComponents World/Public/Components/*.h World/Public/Components/*.cpp )
 file( GLOB WorldPrivateComponents World/Private/Components/*.h World/Private/Components/*.cpp )
 
+file( GLOB WidgetsPublic Widgets/Public/*.h Widgets/Public/*.cpp )
+file( GLOB WidgetsPrivate Widgets/Private/*.h Widgets/Private/*.cpp )
+
 file( GLOB GameThreadPublic GameThread/Public/*.h GameThread/Public/*.cpp )
 file( GLOB GameThreadPrivate GameThread/Private/*.h GameThread/Private/*.cpp )
 
@@ -91,6 +94,9 @@ source_group( "World\\Private\\Actors" FILES ${WorldPrivateActors} )
 
 source_group( "World\\Public\\Components" FILES ${WorldPublicComponents} )
 source_group( "World\\Private\\Components" FILES ${WorldPrivateComponents} )
+
+source_group( "Widgets\\Public" FILES ${WidgetsPublic} )
+source_group( "Widgets\\Private" FILES ${WidgetsPrivate} )
 
 source_group( "GameThread\\Public" FILES ${GameThreadPublic} )
 source_group( "GameThread\\Private" FILES ${GameThreadPrivate} )
@@ -138,6 +144,9 @@ ${WorldPrivateActors}
 
 ${WorldPublicComponents}
 ${WorldPrivateComponents}
+
+${WidgetsPublic}
+${WidgetsPrivate}
 
 ${GameThreadPublic}
 ${GameThreadPrivate}

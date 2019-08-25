@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/World/Public/World.h>
 #include <Engine/Resource/Public/ResourceManager.h>
 
-AN_CLASS_META_NO_ATTRIBS( FMeshComponent )
+AN_CLASS_META( FMeshComponent )
 
 //AN_SCENE_COMPONENT_BEGIN_DECL( FMeshComponent, CCF_HIDDEN_IN_EDITOR )
 //AN_ATTRIBUTE_CONST( "Material Instance", FProperty( byte(0) ), "MaterialInstance\0\0Material instance resource", AF_RESOURCE )

@@ -36,14 +36,14 @@ SOFTWARE.
 class BvSphere {
 public:
     Float3 Center;
-    Float  Radius;
+    float  Radius;
 
     BvSphere() = default;
-    BvSphere( const Float & _Radius );
-    BvSphere( const Float3 & _Center, const Float & _Radius );
+    BvSphere( const float & _Radius );
+    BvSphere( const Float3 & _Center, const float & _Radius );
 
-    void operator/=( const Float & _Scale );
-    void operator*=( const Float & _Scale );
+    void operator/=( const float & _Scale );
+    void operator*=( const float & _Scale );
 
     void operator+=( const Float3 & _Vec );
     void operator-=( const Float3 & _Vec );
@@ -52,7 +52,7 @@ public:
     BvSphere operator-( const Float3 & _Vec ) const;
 
     bool Compare( const BvSphere & _Other ) const;
-    bool CompareEps( const BvSphere & _Other, const Float & _Epsilon ) const;
+    bool CompareEps( const BvSphere & _Other, const float & _Epsilon ) const;
     bool operator==( const BvSphere & _Other ) const;
     bool operator!=( const BvSphere & _Other ) const;
 
@@ -66,19 +66,19 @@ public:
     void FromPointsAroundCenter( const Float3 & _Center, const Float3 * _Points, int _NumPoints );
     void FromAxisAlignedBox( const BvAxisAlignedBox & _AxisAlignedBox );
 
-    Float Dist( const PlaneF & _Plane ) const;
-    EPlaneSide SideOffset( const PlaneF & _Plane, const Float & _Epsilon ) const;
+    float Dist( const PlaneF & _Plane ) const;
+    EPlaneSide SideOffset( const PlaneF & _Plane, const float & _Epsilon ) const;
     bool ContainsPoint( const Float3 & _Point ) const;
 };
 
-AN_FORCEINLINE BvSphere::BvSphere( const Float & _Radius ) {
+AN_FORCEINLINE BvSphere::BvSphere( const float & _Radius ) {
     Center.X = 0;
     Center.Y = 0;
     Center.Z = 0;
     Radius = _Radius;
 }
 
-AN_FORCEINLINE BvSphere::BvSphere( const Float3 & _Center, const Float & _Radius ) {
+AN_FORCEINLINE BvSphere::BvSphere( const Float3 & _Center, const float & _Radius ) {
     Center = _Center;
     Radius = _Radius;
 }
@@ -87,11 +87,11 @@ AN_FORCEINLINE void BvSphere::Clear() {
     Center.X = Center.Y = Center.Z = Radius = 0;
 }
 
-AN_FORCEINLINE void BvSphere::operator/=( const Float & _Scale ) {
+AN_FORCEINLINE void BvSphere::operator/=( const float & _Scale ) {
     Radius /= _Scale;
 }
 
-AN_FORCEINLINE void BvSphere::operator*=( const Float & _Scale ) {
+AN_FORCEINLINE void BvSphere::operator*=( const float & _Scale ) {
     Radius *= _Scale;
 }
 
@@ -112,11 +112,11 @@ AN_FORCEINLINE BvSphere BvSphere::operator-( const Float3 & _Vec ) const {
 }
 
 AN_FORCEINLINE bool BvSphere::Compare( const BvSphere & _Other ) const {
-    return ( Center.Compare( _Other.Center ) && Radius.Compare( _Other.Radius ) );
+    return ( Center.Compare( _Other.Center ) && FMath::Compare( Radius, _Other.Radius ) );
 }
 
-AN_FORCEINLINE bool BvSphere::CompareEps( const BvSphere & _Other, const Float & _Epsilon ) const {
-    return Center.CompareEps( _Other.Center, _Epsilon ) && Radius.CompareEps( _Other.Radius, _Epsilon );
+AN_FORCEINLINE bool BvSphere::CompareEps( const BvSphere & _Other, const float & _Epsilon ) const {
+    return Center.CompareEps( _Other.Center, _Epsilon ) && FMath::CompareEps( Radius, _Other.Radius, _Epsilon );
 }
 
 AN_FORCEINLINE bool BvSphere::operator==( const BvSphere & _Other ) const {
@@ -140,7 +140,7 @@ AN_FORCEINLINE void BvSphere::FromPointsAverage( const Float3 * _Points, int _Nu
 
     Radius = 0;
     for ( int i = 0 ; i < _NumPoints ; ++i ) {
-        const Float DistSqr = Center.DistSqr( _Points[i] );
+        const float DistSqr = Center.DistSqr( _Points[i] );
         if ( DistSqr > Radius ) {
             Radius = DistSqr;
         }
@@ -174,7 +174,7 @@ AN_FORCEINLINE void BvSphere::FromPoints( const Float3 * _Points, int _NumPoints
     // calc Radius
     Radius = 0;
     for ( int i = 0 ; i < _NumPoints ; ++i ) {
-        const Float DistSqr = Center.DistSqr( _Points[i] );
+        const float DistSqr = Center.DistSqr( _Points[i] );
         if ( DistSqr > Radius ) {
             Radius = DistSqr;
         }
@@ -192,7 +192,7 @@ AN_FORCEINLINE void BvSphere::FromPointsAroundCenter( const Float3 & _Center, co
     // calc radius
     Radius = 0;
     for ( int i = 0 ; i < _NumPoints ; ++i ) {
-        const Float DistSqr = Center.DistSqr( _Points[i] );
+        const float DistSqr = Center.DistSqr( _Points[i] );
         if ( DistSqr > Radius ) {
             Radius = DistSqr;
         }
@@ -210,9 +210,9 @@ AN_FORCEINLINE void BvSphere::AddPoint( const Float3 & _Point ) {
         Center = _Point;
     } else {
         const Float3 CenterDiff = _Point - Center;
-        const Float LenSqr = CenterDiff.LengthSqr();
+        const float LenSqr = CenterDiff.LengthSqr();
         if ( LenSqr > Radius * Radius ) {
-            const Float Len = FMath::Sqrt( LenSqr );
+            const float Len = FMath::Sqrt( LenSqr );
             Center += CenterDiff * 0.5f * ( 1.0f - Radius / Len );
             Radius += 0.5f * ( Len - Radius );
         }
@@ -224,8 +224,8 @@ AN_FORCEINLINE void BvSphere::AddSphere( const BvSphere & _Sphere ) {
         *this = _Sphere;
     } else {
         const Float3 CenterDiff = Center - _Sphere.Center;
-        const Float LenSqr = CenterDiff.LengthSqr();
-        const Float RadiusDiff = Radius - _Sphere.Radius;
+        const float LenSqr = CenterDiff.LengthSqr();
+        const float RadiusDiff = Radius - _Sphere.Radius;
 
         if ( RadiusDiff * RadiusDiff >= LenSqr ) {
             if ( RadiusDiff < 0.0f ) {
@@ -233,15 +233,15 @@ AN_FORCEINLINE void BvSphere::AddSphere( const BvSphere & _Sphere ) {
             }
         } else {
             constexpr float ZeroTolerance = 0.000001f;
-            const Float Len = FMath::Sqrt( LenSqr );
+            const float Len = FMath::Sqrt( LenSqr );
             Center = Len > ZeroTolerance ? _Sphere.Center + CenterDiff * 0.5f * ( Len + RadiusDiff ) / Len : _Sphere.Center;
             Radius = ( Len + _Sphere.Radius + Radius ) * 0.5f;
         }
     }
 }
 
-AN_FORCEINLINE Float BvSphere::Dist( const PlaneF & _Plane ) const {
-    Float Dist = _Plane.Dist( Center );
+AN_FORCEINLINE float BvSphere::Dist( const PlaneF & _Plane ) const {
+    float Dist = _Plane.Dist( Center );
     if ( Dist > Radius ) {
         return Dist - Radius;
     }
@@ -251,8 +251,8 @@ AN_FORCEINLINE Float BvSphere::Dist( const PlaneF & _Plane ) const {
     return 0;
 }
 
-AN_FORCEINLINE EPlaneSide BvSphere::SideOffset( const PlaneF & _Plane, const Float & _Epsilon ) const {
-    Float Dist = _Plane.Dist( Center );
+AN_FORCEINLINE EPlaneSide BvSphere::SideOffset( const PlaneF & _Plane, const float & _Epsilon ) const {
+    float Dist = _Plane.Dist( Center );
     if ( Dist > Radius + _Epsilon ) {
         return EPlaneSide::Front;
     }

@@ -66,17 +66,13 @@ void FDebugDraw::SetColor( uint32_t _Color ) {
     CurrentColor = _Color;
 }
 
-void FDebugDraw::SetColor( Float4 const & _Color ) {
-    CurrentColor = FColorSpace::PackNRGBAToDWord_Swapped( _Color );
-}
-
-void FDebugDraw::SetColor( float _R, float _G, float _B, float _A ) {
-    CurrentColor = FColorSpace::PackNRGBAToDWord_Swapped( _R, _G, _B, _A );
+void FDebugDraw::SetColor( FColor4 const & _Color ) {
+    CurrentColor = _Color.GetDWord();
 }
 
 void FDebugDraw::SetAlpha( float _Alpha ) {
     CurrentColor &= 0x00ffffff;
-    CurrentColor |= FColorSpace::PackNRGBAToDWord_Swapped( 0, 0, 0, _Alpha );
+    CurrentColor |= FMath::Clamp( FMath::ToIntFast( _Alpha * 255 ), 0, 255 ) << 24;
 }
 
 void FDebugDraw::SplitCommands() {
@@ -311,7 +307,7 @@ void FDebugDraw::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, int _
 
 //#define VISUALIE_VERTICES
 #ifdef VISUALIE_VERTICES
-        verts->Color = FColorSpace::PackRGBAToDWord_Swapped(i%255,i%255,i%255,255);
+        verts->Color = FColor4( Float4(i%255,i%255,i%255,255)/255.0f ).GetDWord();
 #endif
 
         pPoints += _Stride;
@@ -474,6 +470,101 @@ void FDebugDraw::DrawOrientedBoxFilled( Float3 const & _Position, Float3x3 const
     DrawTriangleSoup( points, 8, sizeof( Float3 ), indices, 36, _TwoSided );
 }
 
+void FDebugDraw::DrawSphere( Float3 const & _Position, float _Radius ) {
+    DrawOrientedSphere( _Position, Float3x3::Identity(), _Radius );
+}
+
+void FDebugDraw::DrawOrientedSphere( Float3 const & _Position, Float3x3 const & _Orientation, float _Radius ) {
+    const float stepDegrees = 30.0f;
+    DrawSpherePatch( _Position, _Orientation[1], _Orientation[0], _Radius, -FMath::_HALF_PI, FMath::_HALF_PI, -FMath::_HALF_PI, FMath::_HALF_PI, stepDegrees, false );
+    DrawSpherePatch( _Position, _Orientation[1], -_Orientation[0], _Radius, -FMath::_HALF_PI, FMath::_HALF_PI, -FMath::_HALF_PI, FMath::_HALF_PI, stepDegrees, false );
+}
+
+void FDebugDraw::DrawSpherePatch( Float3 const & _Position, Float3 const & _Up, Float3 const & _Right, float _Radius,
+                                  float _MinTh, float _MaxTh, float _MinPs, float _MaxPs, float _StepDegrees, bool _DrawCenter ) {
+    // This function is based on code from btDebugDraw
+    Float3 vA[ 74 ];
+    Float3 vB[ 74 ];
+    Float3 *pvA = vA, *pvB = vB, *pT;
+    Float3 npole = _Position + _Up * _Radius;
+    Float3 spole = _Position - _Up * _Radius;
+    Float3 arcStart;
+    float step = FMath::Radians( _StepDegrees );
+    Float3 backVec = _Up.Cross( _Right );
+    bool drawN = false;
+    bool drawS = false;
+    if ( _MinTh <= -FMath::_HALF_PI ) {
+        _MinTh = -FMath::_HALF_PI + step;
+        drawN = true;
+    }
+    if ( _MaxTh >= FMath::_HALF_PI ) {
+        _MaxTh = FMath::_HALF_PI - step;
+        drawS = true;
+    }
+    if ( _MinTh > _MaxTh ) {
+        _MinTh = -FMath::_HALF_PI + step;
+        _MaxTh = FMath::_HALF_PI - step;
+        drawN = drawS = true;
+    }
+    int n_hor = ( int )( ( _MaxTh - _MinTh ) / step ) + 1;
+    if ( n_hor < 2 ) n_hor = 2;
+    float step_h = ( _MaxTh - _MinTh ) / float( n_hor - 1 );
+    bool isClosed = false;
+    if ( _MinPs > _MaxPs ) {
+        _MinPs = -FMath::_PI + step;
+        _MaxPs = FMath::_PI;
+        isClosed = true;
+    } else if ( _MaxPs - _MinPs >= FMath::_2PI ) {
+        isClosed = true;
+    } else {
+        isClosed = false;
+    }
+    int n_vert = ( int )( ( _MaxPs - _MinPs ) / step ) + 1;
+    if ( n_vert < 2 ) n_vert = 2;
+    float step_v = ( _MaxPs - _MinPs ) / float( n_vert - 1 );
+    for ( int i = 0; i < n_hor; i++ ) {
+        float th = _MinTh + float( i ) * step_h;
+        float sth;
+        float cth;
+        FMath::RadSinCos( th, sth, cth );
+        sth *= _Radius;
+        cth *= _Radius;
+        for ( int j = 0; j < n_vert; j++ ) {
+            float psi = _MinPs + float( j ) * step_v;
+            float sps;
+            float cps;
+            FMath::RadSinCos( psi, sps, cps );
+            pvB[ j ] = _Position + cth * cps * _Right + cth * sps * backVec + sth * _Up;
+            if ( i ) {
+                DrawLine( pvA[ j ], pvB[ j ] );
+            } else if ( drawS ) {
+                DrawLine( spole, pvB[ j ] );
+            }
+            if ( j ) {
+                DrawLine( pvB[ j - 1 ], pvB[ j ] );
+            } else {
+                arcStart = pvB[ j ];
+            }
+            if ( ( i == ( n_hor - 1 ) ) && drawN ) {
+                DrawLine( npole, pvB[ j ] );
+            }
+
+            if ( _DrawCenter ) {
+                if ( isClosed ) {
+                    if ( j == ( n_vert - 1 ) ) {
+                        DrawLine( arcStart, pvB[ j ] );
+                    }
+                } else {
+                    if ( ( !i || i == n_hor - 1 ) && ( !j || j == n_vert - 1 ) ) {
+                        DrawLine( _Position, pvB[ j ] );
+                    }
+                }
+            }
+        }
+        pT = pvA; pvA = pvB; pvB = pT;
+    }
+}
+
 void FDebugDraw::DrawCircle( Float3 const & _Position, Float3 const & _UpVector, const float & _Radius ) {
     const int NumCirclePoints = 32;
 
@@ -556,6 +647,31 @@ void FDebugDraw::DrawCylinder( Float3 const & _Position, Float3x3 const & _Orien
     DrawLine( points, NumCirclePoints, true );
 }
 
+void FDebugDraw::DrawCapsule( Float3 const & _Position, Float3x3 const & _Orientation, float _Radius, float _HalfHeight, int _UpAxis ) {
+    AN_Assert( _UpAxis >= 0 && _UpAxis < 3 );
+
+    const int stepDegrees = 30;
+
+    Float3 capStart( 0.0f );
+    capStart[ _UpAxis ] = -_HalfHeight;
+
+    Float3 capEnd( 0.0f );
+    capEnd[ _UpAxis ] = _HalfHeight;
+
+    Float3 up = _Orientation.GetRow( ( _UpAxis + 1 ) % 3 );
+    Float3 axis = _Orientation.GetRow( _UpAxis );
+
+    DrawSpherePatch( _Orientation * capStart + _Position, up, -axis, _Radius, -FMath::_HALF_PI, FMath::_HALF_PI, -FMath::_HALF_PI, FMath::_HALF_PI, stepDegrees, false );
+    DrawSpherePatch( _Orientation * capEnd + _Position, up, axis, _Radius, -FMath::_HALF_PI, FMath::_HALF_PI, -FMath::_HALF_PI, FMath::_HALF_PI, stepDegrees, false );
+
+    for ( int angle = 0; angle < 360; angle += stepDegrees ) {
+        float r = FMath::Radians( float( angle ) );
+        capEnd[ ( _UpAxis + 1 ) % 3 ] = capStart[ ( _UpAxis + 1 ) % 3 ] = std::sin( r ) * _Radius;
+        capEnd[ ( _UpAxis + 2 ) % 3 ] = capStart[ ( _UpAxis + 2 ) % 3 ] = std::cos( r ) * _Radius;
+        DrawLine( _Position + _Orientation * capStart, _Position + _Orientation * capEnd );
+    }
+}
+
 void FDebugDraw::DrawAABB( BvAxisAlignedBox const & _AABB ) {
     DrawBox( _AABB.Center(), _AABB.HalfSize() );
 }
@@ -576,20 +692,20 @@ void FDebugDraw::DrawAxis( Float3x4 const & _TransformMatrix, bool _Normalized )
         ZVec.NormalizeSelf();
     }
 
-    SetColor( 1,0,0,1 );
+    SetColor( FColor4( 1,0,0,1 ) );
     DrawLine( Origin, Origin + XVec );
-    SetColor( 0,1,0,1 );
+    SetColor( FColor4( 0,1,0,1 ) );
     DrawLine( Origin, Origin + YVec );
-    SetColor( 0,0,1,1 );
+    SetColor( FColor4( 0,0,1,1 ) );
     DrawLine( Origin, Origin + ZVec );
 }
 
 void FDebugDraw::DrawAxis( Float3 const & _Origin, Float3 const & _XVec, Float3 const & _YVec, Float3 const & _ZVec, Float3 const & _Scale ) {
-    SetColor( 1,0,0,1 );
+    SetColor( FColor4( 1,0,0,1 ) );
     DrawLine( _Origin, _Origin + _XVec * _Scale.X );
-    SetColor( 0,1,0,1 );
+    SetColor( FColor4( 0,1,0,1 ) );
     DrawLine( _Origin, _Origin + _YVec * _Scale.Y );
-    SetColor( 0,0,1,1 );
+    SetColor( FColor4( 0,0,1,1 ) );
     DrawLine( _Origin, _Origin + _ZVec * _Scale.Z );
 }
 

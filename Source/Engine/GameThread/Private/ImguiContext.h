@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Runtime/Public/Runtime.h>
+#include <Engine/Resource/Public/FontAtlas.h>
 
 struct ImFontAtlas;
 struct ImGuiContext;
@@ -40,7 +41,7 @@ class FImguiContext : public FBaseObject {
     AN_CLASS( FImguiContext, FBaseObject )
 
 public:
-    void SetFontAtlas( ImFontAtlas * _Atlas );
+    void SetFontAtlas( FFontAtlas * _Atlas );
     void BeginFrame( float _TimeStep );
     void EndFrame();
 

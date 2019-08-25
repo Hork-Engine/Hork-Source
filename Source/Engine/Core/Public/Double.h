@@ -3435,6 +3435,34 @@ public:
         _Rotation[2][2] = Col2[2] * sz;
     }
 
+    void DecomposeNormalMatrix( Double3x3 & _NormalMatrix ) const {
+        const Double3x4 & m = *this;
+
+        const double Determinant = m[0][0] * m[1][1] * m[2][2] +
+                                  m[1][0] * m[2][1] * m[0][2] +
+                                  m[2][0] * m[0][1] * m[1][2] -
+                                  m[2][0] * m[1][1] * m[0][2] -
+                                  m[1][0] * m[0][1] * m[2][2] -
+                                  m[0][0] * m[2][1] * m[1][2];
+
+        const double OneOverDeterminant = 1.0 / Determinant;
+
+        _NormalMatrix[0][0] =  (m[1][1] * m[2][2] - m[2][1] * m[1][2]) * OneOverDeterminant;
+        _NormalMatrix[0][1] = -(m[0][1] * m[2][2] - m[2][1] * m[0][2]) * OneOverDeterminant;
+        _NormalMatrix[0][2] =  (m[0][1] * m[1][2] - m[1][1] * m[0][2]) * OneOverDeterminant;
+
+        _NormalMatrix[1][0] = -(m[1][0] * m[2][2] - m[2][0] * m[1][2]) * OneOverDeterminant;
+        _NormalMatrix[1][1] =  (m[0][0] * m[2][2] - m[2][0] * m[0][2]) * OneOverDeterminant;
+        _NormalMatrix[1][2] = -(m[0][0] * m[1][2] - m[1][0] * m[0][2]) * OneOverDeterminant;
+
+        _NormalMatrix[2][0] =  (m[1][0] * m[2][1] - m[2][0] * m[1][1]) * OneOverDeterminant;
+        _NormalMatrix[2][1] = -(m[0][0] * m[2][1] - m[2][0] * m[0][1]) * OneOverDeterminant;
+        _NormalMatrix[2][2] =  (m[0][0] * m[1][1] - m[1][0] * m[0][1]) * OneOverDeterminant;
+
+        // Or
+        //_NormalMatrix = Double3x3(Inversed());
+    }
+
     void InverseSelf() {
         *this = Inversed();
     }

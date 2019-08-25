@@ -198,33 +198,3 @@ AN_FORCEINLINE size_t FTexture::UncompressedPixelByteLength() const {
 AN_FORCEINLINE size_t FTexture::CompressedTextureBlockLength() const {
     return ::CompressedTextureBlockLength( PixelFormat );
 }
-
-//#define SRGB_GAMMA_APPROX
-
-AN_FORCEINLINE float ConvertToRGB( const float & _sRGB ) {
-#ifdef SRGB_GAMMA_APPROX
-    return pow( _sRGB, 2.2f );
-#else
-    if ( _sRGB < 0.0f ) return 0.0f;
-    if ( _sRGB > 1.0f ) return 1.0f;
-    if ( _sRGB <= 0.04045 ) {
-        return _sRGB / 12.92f;
-    } else {
-        return pow( ( _sRGB + 0.055f ) / 1.055f, 2.4f );
-    }
-#endif
-}
-
-AN_FORCEINLINE float ConvertToSRGB( const float & _lRGB ) {
-#ifdef SRGB_GAMMA_APPROX
-    return pow( _lRGB, 1.0f / 2.2f );
-#else
-    if ( _lRGB < 0.0f ) return 0.0f;
-    if ( _lRGB > 1.0f ) return 1.0f;
-    if ( _lRGB <= 0.0031308 ) {
-        return _lRGB * 12.92f;
-    } else {
-        return 1.055f * pow( _lRGB, 1.0f / 2.4f ) - 0.055f;
-    }
-#endif
-}

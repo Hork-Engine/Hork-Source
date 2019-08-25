@@ -59,19 +59,19 @@ SOFTWARE.
 
 #include <BulletCollision/CollisionShapes/btMultimaterialTriangleMeshShape.h>
 
-AN_CLASS_META_NO_ATTRIBS( FCollisionBody )
-AN_CLASS_META_NO_ATTRIBS( FCollisionSphere )
-AN_CLASS_META_NO_ATTRIBS( FCollisionSphereRadii )
-AN_CLASS_META_NO_ATTRIBS( FCollisionBox )
-AN_CLASS_META_NO_ATTRIBS( FCollisionCylinder )
-AN_CLASS_META_NO_ATTRIBS( FCollisionCone )
-AN_CLASS_META_NO_ATTRIBS( FCollisionCapsule )
-AN_CLASS_META_NO_ATTRIBS( FCollisionConvexHull )
-AN_CLASS_META_NO_ATTRIBS( FCollisionTriangleSoupBVH )
-AN_CLASS_META_NO_ATTRIBS( FCollisionTriangleSoupGimpact )
-AN_CLASS_META_NO_ATTRIBS( FCollisionConvexHullData )
-AN_CLASS_META_NO_ATTRIBS( FCollisionTriangleSoupData )
-AN_CLASS_META_NO_ATTRIBS( FCollisionTriangleSoupBVHData )
+AN_CLASS_META( FCollisionBody )
+AN_CLASS_META( FCollisionSphere )
+AN_CLASS_META( FCollisionSphereRadii )
+AN_CLASS_META( FCollisionBox )
+AN_CLASS_META( FCollisionCylinder )
+AN_CLASS_META( FCollisionCone )
+AN_CLASS_META( FCollisionCapsule )
+AN_CLASS_META( FCollisionConvexHull )
+AN_CLASS_META( FCollisionTriangleSoupBVH )
+AN_CLASS_META( FCollisionTriangleSoupGimpact )
+AN_CLASS_META( FCollisionConvexHullData )
+AN_CLASS_META( FCollisionTriangleSoupData )
+AN_CLASS_META( FCollisionTriangleSoupBVHData )
 
 btCollisionShape * FCollisionSphere::Create() {
     if ( bProportionalScale ) {
@@ -399,7 +399,7 @@ void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
 
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
-    const float Detail = floorf( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float Detail = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
 
     const int NumStacks = 8 * Detail;
     const int NumSlices = 12 * Detail;
@@ -464,7 +464,7 @@ void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
 void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
-    const float Detail = floorf( FMath::Max( Float(1.0f), Radius.Max() ) + 0.5f );
+    const float Detail = FMath::Floor( FMath::Max( 1.0f, Radius.Max() ) + 0.5f );
 
     const int NumStacks = 8 * Detail;
     const int NumSlices = 12 * Detail;
@@ -571,7 +571,7 @@ void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
         break;
     }
 
-    const float Detal = floorf( FMath::Max( Float(1.0f), HalfExtents[idxRadius] ) + 0.5f );
+    const float Detal = FMath::Floor( FMath::Max( 1.0f, HalfExtents[idxRadius] ) + 0.5f );
 
     const int NumSlices = 8 * Detal;
     const int FaceTriangles = NumSlices - 2;
@@ -677,7 +677,7 @@ void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
         break;
     }
 
-    const float Detal = floorf( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float Detal = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
 
     const int NumSlices = 8 * Detal;
     const int FaceTriangles = NumSlices - 2;
@@ -756,7 +756,7 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
         break;
     }
 
-    const float Detal = floorf( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float Detal = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
 
     const int NumSlices = 8 * Detal;
     const int FaceTriangles = NumSlices - 2;
@@ -1345,7 +1345,7 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
         //memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
 #endif
 
-        FCollisionConvexHull * collisionBody = _BodyComposition.NewCollisionBody< FCollisionConvexHull >();
+        FCollisionConvexHull * collisionBody = _BodyComposition.AddCollisionBody< FCollisionConvexHull >();
         collisionBody->Position = hull.Centroid;
         collisionBody->Margin = 0.01f;
         collisionBody->HullData = hullData;
