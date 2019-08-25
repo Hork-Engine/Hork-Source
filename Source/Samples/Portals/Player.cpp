@@ -39,10 +39,10 @@ AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
 
 FPlayer::FPlayer() {
-    Camera = CreateComponent< FCameraComponent >( "Camera" );
+    Camera = AddComponent< FCameraComponent >( "Camera" );
     RootComponent = Camera;
 
-    Box = CreateComponent< FMeshComponent >( "checker" );
+    Box = AddComponent< FMeshComponent >( "checker" );
     Box->SetMesh( GetResource< FIndexedMesh >( "CheckerMesh" ) );
     Box->SetDefaultMaterials();
     Box->SetPosition( 0, 0, -0.5f );
@@ -54,7 +54,7 @@ FPlayer::FPlayer() {
     FMaterialInstance * minst = NewObject< FMaterialInstance >();
     minst->Material = GetResource< FMaterial >( "SkyboxMaterial" );
 
-    Skybox = CreateComponent< FMeshComponent >( "sky_box" );
+    Skybox = AddComponent< FMeshComponent >( "sky_box" );
     Skybox->SetMesh( GetResource< FIndexedMesh >( "UnitBox" ) );
     Skybox->SetMaterialInstance( minst );
     Skybox->SetScale(4000);
@@ -120,11 +120,11 @@ void FPlayer::Tick( float _TimeStep ) {
 }
 
 void FPlayer::MoveForward( float _Value ) {
-    MoveVector += RootComponent->GetForwardVector() * Float(_Value).Sign();
+    MoveVector += RootComponent->GetForwardVector() * FMath::Sign(_Value);
 }
 
 void FPlayer::MoveRight( float _Value ) {
-    MoveVector += RootComponent->GetRightVector() * Float(_Value).Sign();
+    MoveVector += RootComponent->GetRightVector() * FMath::Sign(_Value);
 }
 
 void FPlayer::MoveUp( float _Value ) {
@@ -143,7 +143,7 @@ void FPlayer::TurnRight( float _Value ) {
 
 void FPlayer::TurnUp( float _Value ) {
     Angles.Pitch += _Value;
-    Angles.Pitch = Angles.Pitch.Clamp( -90.0f, 90.0f );
+    Angles.Pitch = FMath::Clamp( Angles.Pitch, -90.0f, 90.0f );
     RootComponent->SetAngles( Angles );
 }
 

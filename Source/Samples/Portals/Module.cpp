@@ -41,7 +41,7 @@ SOFTWARE.
 #include <Engine/Runtime/Public/EntryDecl.h>
 
 AN_ENTRY_DECL( FModule )
-AN_CLASS_META_NO_ATTRIBS( FModule )
+AN_CLASS_META( FModule )
 
 FModule * GModule;
 
@@ -65,10 +65,10 @@ void FModule::OnGameStart() {
     World = GGameEngine.SpawnWorld< FWorld >( WorldSpawnParameters );
 
     FLevel * level = World->GetPersistentLevel();
-    FLevelArea * area1 = level->CreateArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
-    FLevelArea * area2 = level->CreateArea( Float3(-3,0,0), Float3(2.0f), Float3(-3,0,0) );
-    FLevelArea * area3 = level->CreateArea( Float3(1,0,0), Float3(2.0f), Float3(1,0,0) );
-    FLevelArea * area4 = level->CreateArea( Float3(1,0,3), Float3(2.0f,2.0f,4.0f), Float3(1,0,3) );
+    FLevelArea * area1 = level->AddArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
+    FLevelArea * area2 = level->AddArea( Float3(-3,0,0), Float3(2.0f), Float3(-3,0,0) );
+    FLevelArea * area3 = level->AddArea( Float3(1,0,0), Float3(2.0f), Float3(1,0,0) );
+    FLevelArea * area4 = level->AddArea( Float3(1,0,3), Float3(2.0f,2.0f,4.0f), Float3(1,0,3) );
 
     Float3 points[4] = {
         Float3( 0, 0.2f, -0.2f ),
@@ -76,28 +76,28 @@ void FModule::OnGameStart() {
         Float3( 0, 0.8f, 0.2f ),
         Float3( 0, 0.2f, 0.2f )
     };
-    FLevelPortal * p0 = level->CreatePortal( points, 4, area1, area3 );
+    FLevelPortal * p0 = level->AddPortal( points, 4, area1, area3 );
     for ( int i = 0 ; i < 4 ; i++ ) {
         points[i].X -= 2;
     }
-    FLevelPortal * p1 = level->CreatePortal( points, 4, area1, area2 );
+    FLevelPortal * p1 = level->AddPortal( points, 4, area1, area2 );
     Float3 points2[4] = {
         Float3( 0.2f, 0.2f, 1 ),
         Float3( 0.4f, 0.2f, 1 ),
         Float3( 0.4f, 0.8f, 1 ),
         Float3( 0.2f, 0.8f, 1 )
     };
-    FLevelPortal * p2 = level->CreatePortal( points2, 4, area3, area4 );
+    FLevelPortal * p2 = level->AddPortal( points2, 4, area3, area4 );
 
     for ( int i = 0 ; i < 4 ; i++ ) {
         points[i].X -= 2;
     }
-    FLevelPortal * p3 = level->CreatePortal( points, 4, NULL, area2 );
+    FLevelPortal * p3 = level->AddPortal( points, 4, NULL, area2 );
 
     for ( int i = 0 ; i < 4 ; i++ ) {
         points2[i].Z += 4;
     }
-    FLevelPortal * p4 = level->CreatePortal( points2, 4, area4, NULL );
+    FLevelPortal * p4 = level->AddPortal( points2, 4, area4, NULL );
 
     AN_UNUSED(p0);
     AN_UNUSED(p1);
@@ -186,21 +186,21 @@ void FModule::CreateResources() {
     {
         FMaterialProject * proj = NewObject< FMaterialProject >();
 
-        FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
+        FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
 
-        FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
         FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
         texCoord->Connect( inTexCoordBlock, "Value" );
 
-        FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
+        FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
         diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
         diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
 
-        FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
+        FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
         diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
         diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
-        FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
         materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
 
         FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
@@ -252,24 +252,24 @@ void FModule::CreateResources() {
         //
         // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
         //
-        FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-        FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+        FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
 
         //
         // VS_Dir = InPosition - ViewPostion.xyz;
         //
-        FMaterialInViewPositionBlock * inViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
-        FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
+        FMaterialInViewPositionBlock * inViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
+        FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
         positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
         positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
         materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
         FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
         NSV_Dir->Connect( /*positionMinusViewPosition*/inPositionBlock, "Value" );
 
-        FMaterialAtmosphereBlock * atmo = proj->NewBlock< FMaterialAtmosphereBlock >();
+        FMaterialAtmosphereBlock * atmo = proj->AddBlock< FMaterialAtmosphereBlock >();
         atmo->Dir->Connect( materialVertexStage, "Dir" );
 
-        FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
         materialFragmentStage->Color->Connect( atmo, "Result" );
 
         FMaterialBuilder * builder = NewObject< FMaterialBuilder >();

@@ -33,10 +33,10 @@ SOFTWARE.
 #include <Engine/World/Public/Components/MeshComponent.h>
 #include <Engine/Resource/Public/ResourceManager.h>
 
-AN_CLASS_META_NO_ATTRIBS( FChecker )
+AN_CLASS_META( FChecker )
 
 FChecker::FChecker() {
-    FMeshComponent * component = CreateComponent< FMeshComponent >( "checker" );
+    FMeshComponent * component = AddComponent< FMeshComponent >( "checker" );
     component->SetMesh( GetResource< FIndexedMesh >( "CheckerMesh" ) );
     component->SetDefaultMaterials();
 
