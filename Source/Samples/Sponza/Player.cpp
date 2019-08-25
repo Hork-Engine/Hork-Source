@@ -37,7 +37,7 @@ AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
 
 FPlayer::FPlayer() {
-    Camera = CreateComponent< FCameraComponent >( "Camera" );
+    Camera = AddComponent< FCameraComponent >( "Camera" );
     RootComponent = Camera;
 
     bCanEverTick = true;
@@ -47,24 +47,24 @@ FPlayer::FPlayer() {
     //
     // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
     //
-    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+    FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+    FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
 
     //
     // VS_Dir = InPosition - ViewPostion.xyz;
     //
-    FMaterialInViewPositionBlock * inViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
-    FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
+    FMaterialInViewPositionBlock * inViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
+    FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
     positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
     positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
     materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
     FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
     NSV_Dir->Connect( /*positionMinusViewPosition*/inPositionBlock, "Value" );
 
-    FMaterialAtmosphereBlock * atmo = proj->NewBlock< FMaterialAtmosphereBlock >();
+    FMaterialAtmosphereBlock * atmo = proj->AddBlock< FMaterialAtmosphereBlock >();
     atmo->Dir->Connect( materialVertexStage, "Dir" );
 
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+    FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
     materialFragmentStage->Color->Connect( atmo, "Result" );
 
     FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
@@ -81,7 +81,7 @@ FPlayer::FPlayer() {
     FIndexedMesh * unitBox = NewObject< FIndexedMesh >();
     unitBox->InitializeInternalMesh( "*box*" );
 
-    unitBoxComponent = CreateComponent< FMeshComponent >( "sky_box" );
+    unitBoxComponent = AddComponent< FMeshComponent >( "sky_box" );
     unitBoxComponent->SetMesh( unitBox );
     unitBoxComponent->SetMaterialInstance( minst );
     unitBoxComponent->SetScale(4000);
@@ -155,11 +155,11 @@ void FPlayer::Tick( float _TimeStep ) {
 }
 
 void FPlayer::MoveForward( float _Value ) {
-    MoveVector += RootComponent->GetForwardVector() * Float(_Value).Sign();
+    MoveVector += RootComponent->GetForwardVector() * FMath::Sign(_Value);
 }
 
 void FPlayer::MoveRight( float _Value ) {
-    MoveVector += RootComponent->GetRightVector() * Float(_Value).Sign();
+    MoveVector += RootComponent->GetRightVector() * FMath::Sign(_Value);
 }
 
 void FPlayer::MoveUp( float _Value ) {
@@ -178,7 +178,7 @@ void FPlayer::TurnRight( float _Value ) {
 
 void FPlayer::TurnUp( float _Value ) {
     Angles.Pitch += _Value;
-    Angles.Pitch = Angles.Pitch.Clamp( -90.0f, 90.0f );
+    Angles.Pitch = FMath::Clamp( Angles.Pitch, -90.0f, 90.0f );
     RootComponent->SetAngles( Angles );
 }
 
@@ -207,7 +207,7 @@ private:
     FMeshComponent * MeshComponent;
 };
 
-AN_CLASS_META_NO_ATTRIBS( FBoxActor )
+AN_CLASS_META( FBoxActor )
 
 FBoxActor::FBoxActor() {
     // Create material instance for mesh component
@@ -217,7 +217,7 @@ FBoxActor::FBoxActor() {
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
+    MeshComponent = AddComponent< FMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
     MeshComponent->PhysicsBehavior = PB_DYNAMIC;
     MeshComponent->bUseDefaultBodyComposition = true;

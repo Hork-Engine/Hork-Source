@@ -34,10 +34,10 @@ SOFTWARE.
 #include <Engine/Resource/Public/MaterialAssembly.h>
 #include <Engine/World/Public/Components/MeshComponent.h>
 
-AN_CLASS_META_NO_ATTRIBS( FStaticMesh )
+AN_CLASS_META( FStaticMesh )
 
 FStaticMesh::FStaticMesh() {
-    MeshComponent = CreateComponent< FMeshComponent >( "StaticMesh" );
+    MeshComponent = AddComponent< FMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
 
     MeshComponent->PhysicsBehavior = PB_STATIC;

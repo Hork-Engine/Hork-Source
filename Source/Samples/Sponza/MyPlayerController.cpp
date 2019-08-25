@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/GameThread/Public/GameEngine.h>
 
-AN_CLASS_META_NO_ATTRIBS( FMyPlayerController )
+AN_CLASS_META( FMyPlayerController )
 
 FMyPlayerController::FMyPlayerController() {
     bCanEverTick = true;

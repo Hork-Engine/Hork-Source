@@ -41,7 +41,7 @@ SOFTWARE.
 #include <Engine/Runtime/Public/EntryDecl.h>
 
 AN_ENTRY_DECL( FSponzaModel )
-AN_CLASS_META_NO_ATTRIBS( FSponzaModel )
+AN_CLASS_META( FSponzaModel )
 
 FSponzaModel * GModule;
 
@@ -79,7 +79,7 @@ void FSponzaModel::OnGameStart() {
     FIndexedMesh * mesh = NewObject< FIndexedMesh >();
     mesh->InitializeSphereMesh( 0.5f, 2, 32, 32 );
     mesh->SetName( "ShapeSphereMesh" );
-    FCollisionSphere * collisionBody = mesh->BodyComposition.NewCollisionBody< FCollisionSphere >();
+    FCollisionSphere * collisionBody = mesh->BodyComposition.AddCollisionBody< FCollisionSphere >();
     collisionBody->Radius = 0.5f;
     RegisterResource( mesh );
     }
@@ -107,17 +107,17 @@ void FSponzaModel::OnGameEnd() {
 
 void FSponzaModel::CreateMaterial() {
     FMaterialProject * proj = NewObject< FMaterialProject >();
-    FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+    FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
+    FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
     FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
     texCoord->Connect( inTexCoordBlock, "Value" );
-    FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
+    FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
     diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
     diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
-    FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
+    FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
     diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
     diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+    FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
     materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
     FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
     builder->VertexStage = materialVertexStage;
