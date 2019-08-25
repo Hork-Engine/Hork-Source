@@ -31,8 +31,8 @@ SOFTWARE.
 #include "QuakeModel.h"
 
 #include <Engine/Core/Public/Logger.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/Shape.h>
+#include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/World/Public/Level.h>
 
 AN_BEGIN_CLASS_META( FQuakeModel )
 AN_END_CLASS_META()
@@ -57,6 +57,18 @@ AN_FORCEINLINE void ConvertFromQuakeCoord( Float3 & _Coord ) {
 AN_FORCEINLINE void ConvertFromQuakeNormal( Float3 & _Normal ) {
     FCore::SwapArgs( _Normal.Y, _Normal.Z );
     _Normal.X = -_Normal.X;
+}
+
+AN_FORCEINLINE void FixupBoundingBox( Float3 & _Mins, Float3 & _Maxs ) {
+    if ( _Mins.X > _Maxs.X ) {
+        FCore::SwapArgs( _Mins.X, _Maxs.X );
+    }
+    if ( _Mins.Y > _Maxs.Y ) {
+        FCore::SwapArgs( _Mins.Y, _Maxs.Y );
+    }
+    if ( _Mins.Z > _Maxs.Z ) {
+        FCore::SwapArgs( _Mins.Z, _Maxs.Z );
+    }
 }
 
 bool FQuakePack::LoadPalette( unsigned * _Palette ) {
@@ -392,15 +404,25 @@ bool FQuakePack::Load( const char * _PackFile ) {
             && PackHeader.magic[ 1 ] == 'A'
             && PackHeader.magic[ 2 ] == 'C'
             && PackHeader.magic[ 3 ] == 'K' ) ) {
-        GLogger.Printf( "LoadQuakeModel: invalid PAK file\n" );
+        GLogger.Printf( "LoadQuakeResource< FQuakeModel >: invalid PAK file\n" );
         return false;
     }
 
     NumEntries = PackHeader.dirsize / sizeof(QPakEntry);
     if ( !NumEntries ) {
-        GLogger.Printf( "LoadQuakeModel: empty PAK file\n" );
+        GLogger.Printf( "LoadQuakeResource< FQuakeModel >: empty PAK file\n" );
         return false;
     }
+
+#if 0
+    // Print entries
+    QPakEntry entry;
+    File.SeekSet( PackHeader.diroffset );
+    for ( int i = 0 ; i < NumEntries ; i++ ) {
+        File.Read( &entry, sizeof( QPakEntry ) );
+        GLogger.Printf( "%s\n", (const char *)entry.filename );
+    }
+#endif
 
     return true;
 }
@@ -677,9 +699,9 @@ bool FQuakeBSP::FromData( FLevel * _Level, const byte * _Data, const unsigned * 
     TexInfos.Free();
 
     GLogger.Printf( "texcount %d lightmaps %d leafs %d leafscount %d\n",
-                    Textures.Length(),
-                    _Level->Lightmaps.Length(),
-                    BSP.Leafs.Length(),
+                    Textures.Size(),
+                    _Level->Lightmaps.Size(),
+                    BSP.Leafs.Size(),
                     LeafsCount );
 
     return true;
@@ -713,6 +735,7 @@ void FQuakeBSP::Purge() {
     LightmapGroups.Free();
     Entities.Free();
     EntitiesString.Free();
+    Models.Free();
 }
 
 void FQuakeBSP::ReadPlanes( FLevel * _Level, const byte * _Data, QBSPEntry const & _Entry ) {
@@ -764,7 +787,7 @@ void FQuakeBSP::ReadTexInfos( const byte * _Data, QBSPEntry const & _Entry ) {
 
         out->textureIndex = in->textureIndex;
 
-        if ( in->textureIndex >= Textures.Length() ) {
+        if ( in->textureIndex >= Textures.Size() ) {
             GLogger.Printf( "FQuakeBSP::ReadTexInfos: textureIndex >= numtextures\n" );
         }
     }
@@ -900,7 +923,7 @@ void FQuakeBSP::ReadTextures( const byte * _Data, const unsigned * _Palette, QBS
     QTexture *anims[ MAX_ANIM_FRAMES ];
     QTexture *altanims[ MAX_ANIM_FRAMES ];
 
-    for ( int i = 0 ; i < Textures.Length() ; i++ ) {
+    for ( int i = 0 ; i < Textures.Size() ; i++ ) {
         QTexture * tx = &Textures[ i ];
 
         const char * name = tx->Object->GetName().ToConstChar();
@@ -935,7 +958,7 @@ void FQuakeBSP::ReadTextures( const byte * _Data, const unsigned * _Palette, QBS
             CriticalError( "Invalid texture animation %s", name );
         }
 
-        for ( int j = i + 1 ; j < Textures.Length() ; j++ ) {
+        for ( int j = i + 1 ; j < Textures.Size() ; j++ ) {
             QTexture * tx2 = &Textures[ j ];
 
             const char * name2 = tx2->Object->GetName().ToConstChar();
@@ -1094,8 +1117,8 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
             }
         }
         for ( int i = 0 ; i < 2 ; i++ ) {
-            int bmins = floor( mins[ i ] / 16 );
-            int bmaxs = ceil( maxs[ i ] / 16 );
+            int bmins = FMath::Floor( mins[ i ] / 16 );
+            int bmaxs = FMath::Ceil( maxs[ i ] / 16 );
             texturemins[ i ] = bmins * 16;
             extents[ i ] = ( bmaxs - bmins ) * 16;
         }
@@ -1118,24 +1141,24 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
         FTexture * texture = Textures[ tex->textureIndex ].Object;
         if ( texture ) {
-            const char * texName = texture->GetResourcePath();
+            //const char * texName = texture->GetResourcePath();
 
             texWidth = texture->GetWidth();
             texHeight = texture->GetHeight();
 
-            if ( texture ) {
-                if ( !FString::CmpN( texName, "sky", 3 ) ) {
-                    bHasLightmap = false;
-                    //bSky = true;
-                } else if ( texName[ 0 ] == '*' ) {
-                    bHasLightmap = false;
-                    //bWater = true;
-                    for ( int i = 0 ; i < 2 ; i++ ) {
-                        extents[ i ] = 16384;
-                        texturemins[ i ] = -8192;
-                    }
-                }
-            }
+            //if ( texture ) {
+            //    if ( !FString::CmpN( texName, "sky", 3 ) ) {
+            //        bHasLightmap = false;
+            //        //bSky = true;
+            //    } else if ( texName[ 0 ] == '*' ) {
+            //        bHasLightmap = false;
+            //        //bWater = true;
+            //        for ( int i = 0 ; i < 2 ; i++ ) {
+            //            extents[ i ] = 16384;
+            //            texturemins[ i ] = -8192;
+            //        }
+            //    }
+            //}
         }
 
         out->LightmapOffsetX = 0;
@@ -1226,7 +1249,7 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
     AN_Assert( numWorldIndices == 0 );
 
-    CalcTangentSpace( BSP.Vertices.ToPtr(), BSP.Vertices.Length(), BSP.Indices.ToPtr(), BSP.Indices.Length() );
+    CalcTangentSpace( BSP.Vertices.ToPtr(), BSP.Vertices.Size(), BSP.Indices.ToPtr(), BSP.Indices.Size() );
 
     // Create lightmaps
     //_Level->ClearLightmaps();
@@ -1245,7 +1268,7 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
     // Create lightmaps
     _Level->ClearLightmaps();
     _Level->Lightmaps.ResizeInvalidate( numLightmaps );
-    for ( int i = 0 ; i < _Level->Lightmaps.Length() ; i++ ) {
+    for ( int i = 0 ; i < _Level->Lightmaps.Size() ; i++ ) {
         _Level->Lightmaps[i] = NewObject< FTexture >();
         _Level->Lightmaps[i]->AddRef();
         _Level->Lightmaps[i]->Initialize2D( TEXTURE_PF_BGR16F, 1, LightmapBlockAllocator.BLOCK_WIDTH, LightmapBlockAllocator.BLOCK_HEIGHT, 1 );
@@ -1256,7 +1279,7 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
             const float * src = LightmapBlockAllocator.GetLightmapBlock( i );
 
             for ( int p = 0 ; p < sz ; p += LightmapBlockAllocator.NUM_CHANNELS, pPixels += 3, src += LightmapBlockAllocator.NUM_CHANNELS ) {
-                pPixels[0] = pPixels[1] = pPixels[2] = Float::FloatToHalf( *reinterpret_cast< const uint32_t * >( src ) );
+                pPixels[0] = pPixels[1] = pPixels[2] = FMath::FloatToHalf( *reinterpret_cast< const uint32_t * >( src ) );
             }
         }
     }
@@ -1276,7 +1299,7 @@ void FQuakeBSP::ReadLFaces( FLevel * _Level, const byte * _Data, QBSPEntry const
 
     for ( i = 0 ; i < numMarksurfaces ; i++ ) {
         j = in[i];
-        if ( j >= BSP.Surfaces.Length() ) {
+        if ( j >= BSP.Surfaces.Size() ) {
             GLogger.Printf("FQuakeBSP::ReadLFaces: bad surface number\n");
             return;
         }
@@ -1320,15 +1343,38 @@ void FQuakeBSP::ReadLeafs( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
         ConvertFromQuakeCoord( out->Bounds.Mins );
         ConvertFromQuakeCoord( out->Bounds.Maxs );
+        //FixupBoundingBox( out->Bounds.Mins, out->Bounds.Maxs );
 
-        //out->Contents = in->contents;
+        // -1 ordinary leaf
+        // -2 the leaf is entirely inside a solid (nothing displayed)
+        // -3 water
+        // -4 slime
+        // -5 lava
+        // -6 sky
+        if ( in->contents == -1 ) {
+            out->Contents = BSP_CONTENTS_NORMAL;
+        } else {
+            out->Contents = BSP_CONTENTS_INVISIBLE;
+        }
 
         out->Cluster = i - 1; // Quake1 has no clusters
 
         out->FirstSurface = /*this->Marksurfaces.ToPtr() + */in->firstmarksurface;
         out->NumSurfaces = in->nummarksurfaces;
 
-        AN_Assert( in->firstmarksurface + in->nummarksurfaces <= BSP.Marksurfaces.Length() );
+        out->AmbientType[0] = AMBIENT_WATER;
+        out->AmbientVolume[0] = in->ambient_level[AMBIENT_WATER];
+
+        out->AmbientType[1] = AMBIENT_SKY;
+        out->AmbientVolume[1] = in->ambient_level[AMBIENT_SKY];
+
+        out->AmbientType[2] = AMBIENT_SLIME;
+        out->AmbientVolume[2] = in->ambient_level[AMBIENT_SLIME];
+
+        out->AmbientType[3] = AMBIENT_LAVA;
+        out->AmbientVolume[3] = in->ambient_level[AMBIENT_LAVA];
+
+        AN_Assert( in->firstmarksurface + in->nummarksurfaces <= BSP.Marksurfaces.Size() );
 
         visOffset = in->visofs;
         if ( visOffset == -1 ) {
@@ -1403,6 +1449,7 @@ void FQuakeBSP::ReadNodes( FLevel * _Level, const byte * _Data, QBSPEntry const 
 
         ConvertFromQuakeCoord( out->Bounds.Mins );
         ConvertFromQuakeCoord( out->Bounds.Maxs );
+        //FixupBoundingBox( out->Bounds.Mins, out->Bounds.Maxs );
 
         out->Plane = BSP.Planes.ToPtr() + in->planenum;
 
@@ -1463,7 +1510,7 @@ static char * SkipWhiteSpaces( char * s ) {
 
 void FQuakeBSP::ReadEntities( const byte * _Data, QBSPEntry const & _Entry ) {
     EntitiesString = (const char *)(_Data + _Entry.offset);
-    //GLogger.Print( EntitiesString.ToConstChar() );
+    GLogger.Print( EntitiesString.ToConstChar() );
     char * s = EntitiesString.ToPtr();
     int brackets = 0;
     int entityNum = 0;
@@ -1531,13 +1578,13 @@ void FQuakeBSP::ReadEntities( const byte * _Data, QBSPEntry const & _Entry ) {
 
         } else if ( !FString::Icmp( token, "origin" ) ) {
 
-            sscanf( value, "%f %f %f", &ent->Origin.X.Value, &ent->Origin.Y.Value, &ent->Origin.Z.Value );
+            sscanf( value, "%f %f %f", &ent->Origin.X, &ent->Origin.Y, &ent->Origin.Z );
 
             ConvertFromQuakeCoord( ent->Origin );
 
         } else if ( !FString::Icmp( token, "angle" ) ) {
 
-            ent->Angle = Float().FromString( value ) - 90.0f;
+            ent->Angle = FMath::FromString( value ) - 90.0f;
 
         } else {
 
@@ -1547,12 +1594,51 @@ void FQuakeBSP::ReadEntities( const byte * _Data, QBSPEntry const & _Entry ) {
 
 void FQuakeBSP::ReadModels( const byte * _Data, QBSPEntry const & _Entry ) {
     // TODO..
+
+    struct QModel {
+        Float3 Mins;
+        Float3 Maxs;
+        Float3 Origin;
+        int32_t node;
+        int32_t clipnodes[2];
+        int32_t unknown;
+        int32_t numLeafs;
+        int32_t faceId;
+        int32_t faceNum;
+    };
+
+    QModel const * models = (QModel const *)( _Data + _Entry.offset );
+    int numModels = _Entry.size / sizeof( QModel );
+
+    Models.Resize( numModels );
+
+    for ( int i = 0 ; i < numModels ; i++ ) {
+        GLogger.Printf( "---- Model %d ----\n", i );
+
+        QModel const * model = models + i;
+        FQuakeBSPModel & dst = Models[i];
+
+        dst.BoundingBox.Mins = model->Mins; ConvertFromQuakeCoord( dst.BoundingBox.Mins );
+        dst.BoundingBox.Maxs = model->Maxs; ConvertFromQuakeCoord( dst.BoundingBox.Maxs );
+
+        FixupBoundingBox( dst.BoundingBox.Mins, dst.BoundingBox.Maxs );
+
+        dst.Origin = model->Origin; ConvertFromQuakeCoord( dst.Origin );
+
+        dst.FirstSurf = model->faceId;
+        dst.NumSurfaces = model->faceNum;
+
+        dst.Node = model->node;
+
+        GLogger.Printf( "faceid %d facenum %d\n", model->faceId, model->faceNum );
+        //GLogger.Printf( "Bounds %s %s\nOrigin %s\n", mins.ToString().ToConstChar(), maxs.ToString().ToConstChar(), origin.ToString().ToConstChar() );
+    }
 }
 
 
 
 int FQuakeBSP::GetLightmapGroup( int _TextureIndex, int _LightmapBlock ) {
-    for ( int i = 0 ; i < LightmapGroups.Length() ; i++ ) {
+    for ( int i = 0 ; i < LightmapGroups.Size() ; i++ ) {
         if ( LightmapGroups[i].TextureIndex == _TextureIndex
              && LightmapGroups[i].LightmapBlock == _LightmapBlock ) {
             return i;
@@ -1561,21 +1647,21 @@ int FQuakeBSP::GetLightmapGroup( int _TextureIndex, int _LightmapBlock ) {
     QLightmapGroup & newIndex = LightmapGroups.Append();
     newIndex.TextureIndex = _TextureIndex;
     newIndex.LightmapBlock = _LightmapBlock;
-    return LightmapGroups.Length()-1;
+    return LightmapGroups.Size()-1;
 }
 
 
-#include <Engine/World/Public/GameMaster.h>
+#include <Engine/World/Public/World.h>
 void FQuakeBSP::UpdateSurfaceLight( FLevel * _Level, FSurfaceDef * _Surf ) {
     if ( _Surf->LightDataOffset < 0 || _Surf->LightmapGroup < 0 ) {
         return;
     }
 
 //    for ( int i = 0 ; i < 256 ; i++ ) {
-//        lightstylevalue[ 0 ] = 264 * (sin( float( (GGameMaster.GetGameplayTimeMicro()>>13) + i * 30 ) / 180.0 * 3.14 )*0.5+0.5);
+//        lightstylevalue[ 0 ] = 264 * (sin( float( (GGameEngine.GetGameplayTimeMicro()>>13) + i * 30 ) / 180.0 * 3.14 )*0.5+0.5);
 //    }
 
-    lightstylevalue[ 2 ] = lightstylevalue[ 5 ] = lightstylevalue[ 32 ] = 264 * (sin( float( (GGameMaster.GetGameplayTimeMicro()>>13) ) / 180.0 * 3.14 )*0.5+0.5);
+    lightstylevalue[ 2 ] = lightstylevalue[ 5 ] = lightstylevalue[ 32 ] = 264 * (sin( float( (_Level->GetOwnerWorld()->GetGameplayTimeMicro()>>13) ) / 180.0 * 3.14 )*0.5+0.5);
 
     void * data = _Level->Lightmaps[ LightmapGroups[ _Surf->LightmapGroup ].LightmapBlock ]->WriteTextureData(
 

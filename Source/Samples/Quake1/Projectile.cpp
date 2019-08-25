@@ -33,39 +33,47 @@ SOFTWARE.
 #include "Game.h"
 #include "QuakeModelFrame.h"
 
-#include <Engine/World/Public/World.h>
-#include <Engine/World/Public/MaterialAssembly.h>
-#include <Engine/World/Public/IndexedMesh.h>
-#include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/Resource/Public/IndexedMesh.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
-AN_CLASS_META_NO_ATTRIBS( FProjectileActor )
+#include <Engine/Audio/Public/AudioSystem.h>
+#include <Engine/Audio/Public/AudioClip.h>
+
+#include <Engine/World/Public/World.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
+
+
+AN_CLASS_META( FProjectileActor )
 
 FProjectileActor::FProjectileActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();
     matInst->Material = GetResource< FMaterial >( "SkinMaterial" );
 
-    FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/missile.mdl");
+    FQuakeModel * model = GGameModule->LoadQuakeResource< FQuakeModel >( "progs/missile.mdl");
 
     if ( model && !model->Skins.IsEmpty() ) {
         // Set random skin (just for fun)
-        matInst->SetTexture( 0, model->Skins[rand()%model->Skins.Length()].Texture );
+        matInst->SetTexture( 0, model->Skins[rand()%model->Skins.Size()].Texture );
     }
 
     // Create mesh component and set it as root component
-    MeshComponent = CreateComponent< FQuakeModelFrame >( "Missile" );
+    MeshComponent = AddComponent< FQuakeModelFrame >( "Missile" );
     RootComponent = MeshComponent;
-    MeshComponent->bSimulatePhysics = true;
+    MeshComponent->PhysicsBehavior = PB_DYNAMIC;
     MeshComponent->bUseDefaultBodyComposition = false;
     MeshComponent->bDispatchContactEvents = true;
     MeshComponent->bDisableGravity = true;
     MeshComponent->Mass = 1.0f;
-    FCollisionCapsule * capsule = MeshComponent->BodyComposition.NewCollisionBody< FCollisionCapsule >();
+    FCollisionCapsule * capsule = MeshComponent->BodyComposition.AddCollisionBody< FCollisionCapsule >();
     capsule->Radius = 0.1f;
     capsule->Height = 0.35f;
     capsule->Axial = FCollisionCapsule::AXIAL_Z;
     MeshComponent->SetCcdRadius( 10 );
+    MeshComponent->CollisionGroup = CM_PROJECTILE;
+    MeshComponent->CollisionMask = CM_WORLD | CM_PAWN | CM_PROJECTILE;
+    //MeshComponent->SetAngularFactor( Float3( 0 ) );
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetModel( model );
@@ -73,9 +81,24 @@ FProjectileActor::FProjectileActor() {
 }
 
 void FProjectileActor::BeginPlay() {
-    E_OnBeginContact.Subscribe( this, &FProjectileActor::OnDamage );
+    E_OnBeginContact.Add( this, &FProjectileActor::OnDamage );
 
     SpawnPosition = RootComponent->GetPosition();
+
+    MeshComponent->AddCollisionIgnoreActor( GetInstigator() );
+
+    FSoundSpawnParameters spawnParameters;
+    spawnParameters.Location = AUDIO_FOLLOW_INSIGATOR;
+    spawnParameters.bStopWhenInstigatorDead = true;
+    spawnParameters.Volume = 0.5f;
+
+    //desc.AttenuationDistance = std::numeric_limits<float>::infinity();
+    //desc.ReferenceDistance = 5;
+    //desc.RolloffRate = 0.5f;
+
+    FAudioClip * Clip = GGameModule->LoadQuakeResource< FQuakeAudio >( "sound/weapons/sgun1.wav" );
+
+    GAudioSystem.PlaySound( Clip, this, &spawnParameters );
 }
 
 void FProjectileActor::SpawnExplosion( Float3 const & _Position ) {
@@ -87,7 +110,7 @@ void FProjectileActor::OnDamage( FContactEvent const & _Event ) {
     if ( IsPendingKill() ) {
         return;
     }
-
+    
     SpawnExplosion( RootComponent->GetPosition() );
 
 //    FActor * damageReceiver = _Event.OtherActor;
@@ -104,5 +127,8 @@ void FProjectileActor::OnDamage( FContactEvent const & _Event ) {
 }
 
 void FProjectileActor::DrawDebug( FDebugDraw * _DebugDraw ) {
+    Super::DrawDebug( _DebugDraw );
+
+    _DebugDraw->SetColor( FColor4(1,0,1,1) );
     _DebugDraw->DrawLine( SpawnPosition, RootComponent->GetWorldPosition() );
 }

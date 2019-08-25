@@ -29,17 +29,22 @@ SOFTWARE.
 */
 
 #include "Explosion.h"
+#include "Game.h"
 
-#include <Engine/World/Public/IndexedMesh.h>
-#include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Audio/Public/AudioSystem.h>
+#include <Engine/Audio/Public/AudioClip.h>
 
-AN_CLASS_META_NO_ATTRIBS( FExplosionActor )
+#include <Engine/Resource/Public/IndexedMesh.h>
+#include <Engine/Resource/Public/ResourceManager.h>
+
+#include <Engine/World/Public/Components/MeshComponent.h>
+
+AN_CLASS_META( FExplosionActor )
 
 FExplosionActor::FExplosionActor() {
     bCanEverTick = true;
 
-    MeshComponent = CreateComponent< FMeshComponent >( "Explosion" );
+    MeshComponent = AddComponent< FMeshComponent >( "Explosion" );
     RootComponent = MeshComponent;
 
     FIndexedMesh * mesh = GetResource< FIndexedMesh >( "UnitSphere" );
@@ -51,6 +56,33 @@ void FExplosionActor::BeginPlay() {
     Super::BeginPlay();
 
     ExplosionRadius = 1;
+
+    FAudioClip * Clip = GGameModule->LoadQuakeResource< FQuakeAudio >( "sound/weapons/r_exp3.wav"  );
+
+    //struct FPlaySoundDesc {
+    //    Float3       Velocity = Float3( 0 );
+    //    bool         bPlayEvenWhenPaused = false;
+    //    bool         bLooping = false;
+    //    bool         bRelativeToListener = false;
+    //    int64_t      MaxPlayTime = 0;
+    //    float        Volume = 1;
+    //    float        VolumeFalloff = 0;
+    //    float        Pitch = 1;
+    //    float        MaxHearableDistance = 10;
+    //    float        ReferenceDistance = 1;
+    //    float        RolloffRate = 1;
+    //    FAudioControlCallback * ControlCallback = nullptr; // Reserved for future
+    //    FAudioGroup * Group = nullptr;
+    //    EAudioOffset  Offset;
+    //    int           StartOffset;
+    //};
+    //FPlaySoundDesc desc;
+    //desc.MaxHearableDistance = 1000;
+    //desc.bLooping = true;
+    //desc.bPlayEvenWhenPaused = true;
+    //desc.MaxPlayTime = Clip->GetDurationInSecounds()*2;
+
+    GAudioSystem.PlaySoundAt( Clip, RootComponent->GetPosition(), this );
 }
 
 void FExplosionActor::Tick( float _TimeStep ) {

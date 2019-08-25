@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/SceneComponent.h>
+#include <Engine/World/Public/Components/SceneComponent.h>
 
 #include "QuakeModel.h"
 
@@ -46,7 +46,8 @@ protected:
 
     void BeginPlay();
     void EndPlay();
-    void OnCustomVisibleStep( class FCameraComponent * _Camera, bool & _OutVisibleFlag );
+
+    void RenderFrontend_CustomVisibleStep( FRenderFrontendDef * _Def, bool & _OutVisibleFlag ) override;
 
 protected:
     FQuakeModelFrame();
@@ -56,8 +57,8 @@ private:
     void DecompressFrame( int _FrameIndex );
     void UpdateBounds();
 
-    TRefHolder< FQuakeModel > Model;
-    TRefHolder< FIndexedMesh > Mesh;
+    TRef< FQuakeModel > Model;
+    TRef< FIndexedMesh > Mesh;
     int Frames[2];
     int PoseNum;
     float Lerp;

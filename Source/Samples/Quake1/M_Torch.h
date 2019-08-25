@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Pawn.h>
+#include <Engine/World/Public/Actors/Pawn.h>
 
 #include "QuakeModelFrame.h"
 
@@ -41,10 +41,11 @@ protected:
 
     M_Torch();
 
+    void BeginPlay() override;
     void Tick( float _TimeStep ) override;
 
 private:
     FQuakeModelFrame * Frame;
     int FramesCount;
-    Float AnimationTime;
+    float AnimationTime;
 };

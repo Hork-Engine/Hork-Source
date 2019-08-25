@@ -31,20 +31,40 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/World/Public/Actors/Pawn.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
+#include <Engine/World/Public/Components/CameraComponent.h>
 
-#include "QuakeModelFrame.h"
+class FSpectator : public FPawn {
+    AN_ACTOR( FSpectator, FPawn )
 
-class M_Army : public FPawn {
-    AN_ACTOR( M_Army, FPawn )
+public:
+    FCameraComponent * Camera;
 
 protected:
 
-    M_Army();
+    FSpectator();
 
+    void BeginPlay() override;
+    void EndPlay() override;
+    void SetupPlayerInputComponent( FInputComponent * _Input ) override;
     void Tick( float _TimeStep ) override;
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
 
 private:
-    FQuakeModelFrame * Frame;
-    int FramesCount;
-    float AnimationTime;
+    void MoveForward( float _Value );
+    void MoveRight( float _Value );
+    void MoveUp( float _Value );
+    void MoveDown( float _Value );
+    void TurnRight( float _Value );
+    void TurnUp( float _Value );
+    void SpeedPress();
+    void SpeedRelease();
+    void SwitchToAircraft();
+
+    Angl Angles;
+    Float3 MoveVector;
+    bool bSpeed;
+    Float3 HitPos;
+    Float3 HitNormal;
+    Float3 Triangle[ 3 ];
 };

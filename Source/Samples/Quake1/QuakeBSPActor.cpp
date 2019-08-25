@@ -32,19 +32,56 @@ SOFTWARE.
 #include "Game.h"
 
 #include <Engine/Core/Public/Logger.h>
-#include <Engine/World/Public/CameraComponent.h>
-#include <Engine/World/Public/ResourceManager.h>
-#include <Engine/World/Public/GameMaster.h>
-#include <Engine/World/Public/MeshAsset.h>
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/GameThread/Public/RenderFrontend.h>
+#include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/Resource/Public/Asset.h>
+#include <Engine/World/Public/Components/CameraComponent.h>
 
-AN_CLASS_META_NO_ATTRIBS( FQuakeBSPActor )
+#undef free
 
-FQuakeBSPActor::FQuakeBSPActor() {
+AN_CLASS_META( FQuakeBSPView )
+
+FQuakeBSPView::FQuakeBSPView() {
     Mesh = NewObject< FIndexedMesh >();
+
+    for ( int i = 0 ; i < 4 ; i++ ) {
+        AmbientControl[ i ] = NewObject< FAudioControlCallback >();
+        AmbientControl[ i ]->VolumeScale = 0;
+    }
+
+    bCanEverTick = true;
 }
 
-void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
+void FQuakeBSPView::BeginPlay() {
+    Super::BeginPlay();
+
+    const char * fileName[4] = {
+        "sound/ambience/water1.wav",
+        "sound/ambience/wind2.wav",
+        "sound/ambience/swamp1.wav",
+        "sound/ambience/swamp2.wav"
+    };
+
+    FSoundSpawnParameters ambient;
+
+    ambient.Location = AUDIO_STAY_BACKGROUND;
+    ambient.Priority = AUDIO_CHANNEL_PRIORITY_AMBIENT;
+    ambient.bVirtualizeWhenSilent = true;
+    ambient.Volume = 0.5f;// 0.02f;
+    ambient.Pitch = 1;
+    ambient.bLooping = true;
+    ambient.bStopWhenInstigatorDead = true;
+
+    for ( int i = 0 ; i < 4 ; i++ ) {
+        ambient.ControlCallback = AmbientControl[i];
+
+        FAudioClip * clip = GGameModule->LoadQuakeResource< FQuakeAudio >( fileName[i] );
+        GAudioSystem.PlaySound( clip, this, &ambient );
+    }
+}
+
+void FQuakeBSPView::SetModel( FQuakeBSP * _Model ) {
     Model = _Model;
 
     BSP = &Model->BSP;
@@ -53,27 +90,28 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
         surf->Destroy();
     }
 
-    SurfacePool.ResizeInvalidate( Model->LightmapGroups.Length() );
-    Vertices.ResizeInvalidate( BSP->Vertices.Length() );
-    LightmapVerts.ResizeInvalidate( BSP->Vertices.Length() );
-    Indices.ResizeInvalidate( BSP->Indices.Length() );
+    SurfacePool.ResizeInvalidate( Model->LightmapGroups.Size() );
+    Vertices.ResizeInvalidate( BSP->Vertices.Size() );
+    LightmapVerts.ResizeInvalidate( BSP->Vertices.Size() );
+    Indices.ResizeInvalidate( BSP->Indices.Size() );
 
-    Mesh->Initialize( BSP->Vertices.Length(), BSP->Indices.Length(), 1, false, true );
+    Mesh->Initialize( BSP->Vertices.Size(), BSP->Indices.Size(), 1, false, true );
 
     LightmapUV = Mesh->CreateLightmapUVChannel();
 
-    for ( int i = 0 ; i < SurfacePool.Length() ; i++ ) {
+    for ( int i = 0 ; i < SurfacePool.Size() ; i++ ) {
         QLightmapGroup * lightmapGroup = &Model->LightmapGroups[i];
 
-        FMeshComponent * surf = CreateComponent< FMeshComponent >( FString::Fmt( "bsp_surf%d", i ) );
+        FMeshComponent * surf = AddComponent< FMeshComponent >( FString::Fmt( "bsp_surf%d", i ) );
         surf->SetMesh( Mesh );
         surf->VSDPasses = VSD_PASS_VIS_MARKER;
         surf->LightmapUVChannel = LightmapUV;
         surf->bUseDynamicRange = true;
         surf->bNoTransform = true;
-        surf->bSimulatePhysics = false;
         surf->RegisterComponent();
         SurfacePool[i] = surf;
+
+
 
         FMaterialInstance * materialInstance = NewObject< FMaterialInstance >();
 
@@ -91,54 +129,48 @@ void FQuakeBSPActor::SetModel( FQuakeBSP * _Model ) {
 
         surf->SetMaterialInstance( materialInstance );
     }
-
-    // Create collision model
-    FPhysicalBody * physBody = GetComponent< FPhysicalBody >();
-    if ( !physBody ) {
-        physBody = CreateComponent< FPhysicalBody >( "physbody" );
-    }
-    physBody->BodyComposition.Clear();
-
-    
-    FCollisionTriangleSoupData * tris = NewObject< FCollisionTriangleSoupData >();
-    TPodArray< Float3 > & collisVerts = tris->Vertices;
-    TPodArray< unsigned int > & collisInd = tris->Indices;
-    for ( FSurfaceDef & surf : BSP->Surfaces ) {
-        FMeshVertex * vert = BSP->Vertices.ToPtr() + surf.FirstVertex;
-        unsigned int * ind = BSP->Indices.ToPtr() + surf.FirstIndex;
-
-        int firstVert = collisVerts.Length();
-        for ( int i = 0 ; i < surf.NumVertices ; i++ ) {
-            collisVerts.Append( vert[i].Position );
-        }
-        for ( int i = 0 ; i < surf.NumIndices ; i++ ) {
-            collisInd.Append( firstVert + ind[ i ] );
-        }
-    }
-    tris->Subparts.Resize( 1 );
-    tris->Subparts[0].BaseVertex = 0;
-    tris->Subparts[0].FirstIndex = 0;
-    tris->Subparts[0].VertexCount = collisVerts.Length();
-    tris->Subparts[0].IndexCount = BSP->Indices.Length();
-    tris->BoundingBox = _Model->Bounds;
-
-#if 1
-    FCollisionTriangleSoupBVHData * bvh = NewObject< FCollisionTriangleSoupBVHData >();
-    bvh->TrisData = tris;
-    bvh->BuildBVH();
-
-    FCollisionSharedTriangleSoupBVH * collisionBody = physBody->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoupBVH >();
-    collisionBody->BvhData = bvh;
-#else
-    FCollisionSharedTriangleSoupGimpact * collisionBody = physBody->BodyComposition.NewCollisionBody< FCollisionSharedTriangleSoupGimpact >();
-    collisionBody->TrisData = tris;
-#endif
-    physBody->bSimulatePhysics = true;
-    //physBody->Mass = 1;
-    physBody->RegisterComponent();
 }
 
-void FQuakeBSPActor::OnView( FCameraComponent * _Camera ) {
+void FQuakeBSPView::Tick( float _TimeStep ) {
+    Super::Tick( _TimeStep );
+
+    if ( !Model ) {
+        return;
+    }
+
+    int leaf = BSP->FindLeaf( GAudioSystem.GetListenerPosition() );
+
+    if ( leaf < 0 ) {
+        for ( int i = 0 ; i < 4 ; i++ ) {
+            AmbientControl[ i ]->VolumeScale = 0.0f;
+        }
+        return;
+    }
+
+    const float step = _TimeStep;
+    for ( int i = 0 ; i < 4 ; i++ ) {
+        byte type = BSP->Leafs[leaf].AmbientType[i];
+        float volume = (float)BSP->Leafs[leaf].AmbientVolume[i]/255.0f;
+
+        FAudioControlCallback * control = AmbientControl[ type ];
+
+        if ( control->VolumeScale < volume ) {
+            control->VolumeScale += step;
+
+            if ( control->VolumeScale > volume ) {
+                control->VolumeScale = volume;
+            }
+        } else if ( control->VolumeScale > volume ) {
+            control->VolumeScale -= step;
+
+            if ( control->VolumeScale < 0 ) {
+                control->VolumeScale = 0;
+            }
+        }
+    }
+}
+
+void FQuakeBSPView::OnView( FCameraComponent * _Camera ) {
     if ( !Model ) {
         return;
     }
@@ -148,7 +180,7 @@ void FQuakeBSPActor::OnView( FCameraComponent * _Camera ) {
     AddSurfaces();
 }
 
-void FQuakeBSPActor::AddSurfaces() {
+void FQuakeBSPView::AddSurfaces() {
     int batchIndex = 0;
     int prevIndex = -1;
     int numVerts = 0;
@@ -196,8 +228,8 @@ void FQuakeBSPActor::AddSurfaces() {
         AddSurface( numIndices - batchFirstIndex, batchFirstIndex, prevIndex );
     }
 
-    AN_Assert( numVerts <= Vertices.Length() );
-    AN_Assert( numIndices <= Indices.Length() );
+    AN_Assert( numVerts <= Vertices.Size() );
+    AN_Assert( numIndices <= Indices.Size() );
 
     if ( numVerts > 0 ) {
         Mesh->WriteVertexData( Vertices.ToPtr(), numVerts, 0 );
@@ -206,7 +238,7 @@ void FQuakeBSPActor::AddSurfaces() {
     }
 }
 
-void FQuakeBSPActor::AddSurface( int _NumIndices, int _FirstIndex, int _GroupIndex ) {
+void FQuakeBSPView::AddSurface( int _NumIndices, int _FirstIndex, int _GroupIndex ) {
     FMeshComponent * surf = SurfacePool[_GroupIndex];
     FMaterialInstance * matInst = surf->GetMaterialInstance();
 
@@ -219,7 +251,7 @@ void FQuakeBSPActor::AddSurface( int _NumIndices, int _FirstIndex, int _GroupInd
     if ( texture->NumFrames == 0 ) {
         matInst->SetTexture( 0, texture->Object );
     } else {
-        int frameNum = (GGameMaster.GetGameplayTimeMicro()>>17) % texture->NumFrames;
+        int frameNum = (GetWorld()->GetGameplayTimeMicro()>>17) % texture->NumFrames;
         QTexture * frame = texture;
 
         while ( frame->FrameTimeMin > frameNum || frame->FrameTimeMax <= frameNum ) {
@@ -233,4 +265,24 @@ void FQuakeBSPActor::AddSurface( int _NumIndices, int _FirstIndex, int _GroupInd
     surf->DynamicRangeStartIndexLocation = _FirstIndex;
 
     surf->VisMarker = GRenderFrontend.GetVisMarker();
+}
+
+void FQuakeBSPView::DrawDebug( FDebugDraw * _DebugDraw ) {
+    Super::DrawDebug( _DebugDraw );
+
+#if 0
+    if ( Model ) {
+        _DebugDraw->SetDepthTest( true );
+        _DebugDraw->SetColor( 0,1,1,0.1f);
+        for ( int i = 1 ; i < Model->Models.Length() ; i++ ) {
+            _DebugDraw->DrawBoxFilled( Model->Models[i].BoundingBox.Center(), Model->Models[i].BoundingBox.HalfSize() );
+        }
+
+        _DebugDraw->SetDepthTest( false );
+        _DebugDraw->SetColor( 0,1,1,0.3f);
+        for ( int i = 1 ; i < Model->Models.Length() ; i++ ) {
+            _DebugDraw->DrawBox( Model->Models[i].BoundingBox.Center(), Model->Models[i].BoundingBox.HalfSize() );
+        }
+    }
+#endif
 }

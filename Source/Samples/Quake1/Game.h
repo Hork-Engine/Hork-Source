@@ -30,11 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/InputComponent.h>
-#include <Engine/World/Public/PlayerController.h>
+#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/World/Public/Components/InputComponent.h>
+#include <Engine/World/Public/Actors/PlayerController.h>
 #include <Engine/World/Public/World.h>
 
 #include "Player.h"
+#include "Spectator.h"
 #include "QuakeBSPActor.h"
 
 class FMyPlayerController;
@@ -43,12 +45,14 @@ class FGameModule final : public IGameModule {
     AN_CLASS( FGameModule, IGameModule )
 
 public:
-    TRefHolder< FRenderingParameters > RenderingParams;
-    TRefHolder< FInputMappings > InputMappings;
+    TRef< FRenderingParameters > RenderingParams;
+    TRef< FInputMappings > InputMappings;
     FWorld * World;
     FMyPlayerController * PlayerController;
     TActorSpawnParameters< FPlayer > PlayerSpawnParameters;
-    TRefHolder< FLevel > Level;
+    TRef< FLevel > Level;
+    FPlayer * Player;
+    FSpectator * Spectator;
 
     FGameModule() {}
 
@@ -64,8 +68,10 @@ public:
 
     bool LoadQuakeMap( const char * _MapName );
 
-    FQuakeModel * LoadQuakeModel( const char * _ModelName );
-    void CleanModels();
+    template< typename ResourceType >
+    ResourceType * LoadQuakeResource( const char * _FileName );
+
+    void CleanResources();
 
 private:
     void InitializeQuakeGame();
@@ -81,6 +87,42 @@ private:
 
     enum { MAX_PACKS = 2 };
     FQuakePack Packs[MAX_PACKS];
+
+    static unsigned QuakePalette[ 256 ];
 };
+
+template< typename ResourceType >
+ResourceType * FGameModule::LoadQuakeResource( const char * _FileName ) {
+
+    /*
+
+      Also we can improve FQuakeModel/FQuakeAudio/etc by adding InitializeDefaultObject and InitializeFromFile to it.
+      Then just call GetOrCreateResource< FQuakeModel >( _FileName );
+
+    */
+
+    bool bMetadataMismatch;
+    int hash;
+
+    ResourceType * resource = static_cast< ResourceType * >( FindResource( ResourceType::ClassMeta(), _FileName, bMetadataMismatch, hash ) );
+    if ( resource ) {
+        GLogger.Printf( "Caching %s\n", _FileName );
+        return resource;
+    }
+    resource = NewObject< ResourceType >();
+    bool bFound = false;
+    for ( int i = 0 ; i < MAX_PACKS ; i++ ) {
+        if ( resource->LoadFromPack( &Packs[i], QuakePalette, _FileName ) ) {
+            bFound = true;
+            break;
+        }
+    }
+    if ( !bFound ) {
+        return nullptr;
+    }
+    resource->SetName( _FileName );
+    RegisterResource( resource );
+    return resource;
+}
 
 extern FGameModule * GGameModule;

@@ -30,19 +30,19 @@ SOFTWARE.
 
 #include "M_Shambler.h"
 #include "Game.h"
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 AN_BEGIN_CLASS_META( M_Shambler )
 AN_END_CLASS_META()
 
 M_Shambler::M_Shambler() {
     // Animation single frame holder
-    Frame = CreateComponent< FQuakeModelFrame >( "Frame" );
+    Frame = AddComponent< FQuakeModelFrame >( "Frame" );
 
-    FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/shambler.mdl" );
+    FQuakeModel * model = GGameModule->LoadQuakeResource< FQuakeModel >( "progs/shambler.mdl" );
     Frame->SetModel( model );
 
-    FramesCount = model ? model->Frames.Length() : 0;
+    FramesCount = model ? model->Frames.Size() : 0;
 
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();
     matInst->Material = GetResource< FMaterial >( "SkinMaterial" );
@@ -51,7 +51,7 @@ M_Shambler::M_Shambler() {
 
     if ( model && !model->Skins.IsEmpty() ) {
         // Set random skin (just for fun)
-        matInst->SetTexture( 0, model->Skins[rand()%model->Skins.Length()].Texture );
+        matInst->SetTexture( 0, model->Skins[rand()%model->Skins.Size()].Texture );
     }
 
     // Set root component
@@ -66,8 +66,8 @@ void M_Shambler::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
 
     if ( FramesCount > 0 ) {
-        int keyFrame = AnimationTime.Floor();
-        float lerp = AnimationTime.Fract();
+        int keyFrame = FMath::Floor( AnimationTime );
+        float lerp = FMath::Fract( AnimationTime );
 
         Frame->SetFrame( keyFrame % FramesCount, ( keyFrame + 1 ) % FramesCount, lerp );
     }

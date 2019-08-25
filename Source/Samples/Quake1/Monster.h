@@ -44,7 +44,7 @@ SOFTWARE.
 #if 0
 
 
-#include <Engine/World/Public/Pawn.h>
+#include <Engine/World/Public/Actors/Pawn.h>
 
 #include "QuakeModelFrame.h"
 
@@ -58,8 +58,6 @@ protected:
 
     FQuakeMonster();
 
-    void PreInitializeComponents() override;
-    void PostInitializeComponents() override;
     void BeginPlay() override;
     void EndPlay() override;
     void Tick( float _TimeStep ) override;
@@ -67,6 +65,6 @@ protected:
 private:
     FQuakeModelFrame * Frame;
     int FramesCount;
-    Float AnimationTime;
+    float AnimationTime;
 };
 #endif

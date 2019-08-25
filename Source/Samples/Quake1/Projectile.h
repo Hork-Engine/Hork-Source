@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actor.h>
+#include <Engine/World/Public/Actors/Actor.h>
 
 class FQuakeModelFrame;
 

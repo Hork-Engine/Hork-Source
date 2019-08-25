@@ -30,26 +30,39 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Pawn.h>
+#include <Engine/World/Public/Actors/Pawn.h>
 #include "QuakeModelFrame.h"
 
 class FCameraComponent;
+
+struct trace_t {
+    int surfaceFlags;
+    PlaneF Plane;
+
+    float fraction;
+    Float3 endpos;
+    bool allsolid;
+
+    FActor * Actor;
+};
 
 class FPlayer : public FPawn {
     AN_ACTOR( FPlayer, FPawn )
 
 public:
     FCameraComponent * Camera;
+    FSceneComponent * Spin;
+    FPhysicalBody * PhysBody;
 
 protected:
 
     FPlayer();
-    void PreInitializeComponents() override;
-    void PostInitializeComponents() override;
     void BeginPlay() override;
     void EndPlay() override;
     void SetupPlayerInputComponent( FInputComponent * _Input ) override;
     void Tick( float _TimeStep ) override;
+    void TickPrePhysics( float _TimeStep ) override;
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
 
 private:
     void MoveForward( float _Value );
@@ -63,9 +76,9 @@ private:
     void AttackPress();
     void AttackRelease();
     void Shoot();
+    void SwitchToSpectator();
 
     Angl Angles;
-    Float3 MoveVector;
     bool bSpeed;
     FQuakeModelFrame * WeaponModel;
     FMeshComponent * Sphere;
@@ -74,5 +87,45 @@ private:
     bool bAttackStarted;
     bool bAttacked;
     Angl AttackAngle;
-    Float AttackTime;
+    float AttackTime;
+
+
+
+    void ApplyFriction();
+    bool CheckJump();
+    void AirMove();
+    void WalkMove();
+    float ScaleMove();
+    void Accelerate( Float3 const & wishdir, float wishspeed, float accel );
+    void StepSlideMove( bool gravity );
+    bool SlideMove( bool gravity );
+    void GroundTrace();
+    void GroundTraceMissed();
+    void TraceWorld( trace_t * trace, const Float3 & start, const Float3 & end, const char * debug );
+    void TraceWorld2( trace_t * trace, const Float3 & start, const Float3 & end, const char * debug );
+    float CalcBob( Float3 const & _Velocity );
+    void CrashLand();
+
+    Float3 Velocity;
+    Float3 PrevVelocity;
+    Float3 PrevOrigin;
+    float TimeStep;
+
+    float forwardmove;
+    float rightmove;
+    float upmove;
+    Float3 ForwardVec, RightVec;// , UpVec;
+    int pm_flags;
+    bool bGroundPlane;
+    bool bWalking;
+    float impactSpeed;
+    Float3 Origin;
+    trace_t groundTrace;
+    Float3 PMins, PMaxs;
+    int clientNum;
+    int tracemask;
+    FActor * GroundActor;
+    float PrevY;
+    FAINavMeshObstacle Obstacle;
+    float JumpVel;
 };

@@ -30,19 +30,20 @@ SOFTWARE.
 
 #include "M_Flame.h"
 #include "Game.h"
-#include <Engine/World/Public/ResourceManager.h>
+#include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/Audio/Public/AudioClip.h>
 
 AN_BEGIN_CLASS_META( M_Flame )
 AN_END_CLASS_META()
 
 M_Flame::M_Flame() {
     // Animation single frame holder
-    Frame = CreateComponent< FQuakeModelFrame >( "Frame" );
+    Frame = AddComponent< FQuakeModelFrame >( "Frame" );
 
-    FQuakeModel * model = GGameModule->LoadQuakeModel( "progs/flame2.mdl" );
+    FQuakeModel * model = GGameModule->LoadQuakeResource< FQuakeModel >( "progs/flame2.mdl" );
     Frame->SetModel( model );
 
-    FramesCount = model ? model->Frames.Length() : 0;
+    FramesCount = model ? model->Frames.Size() : 0;
 
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();
     matInst->Material = GetResource< FMaterial >( "SkinMaterial" );
@@ -51,7 +52,7 @@ M_Flame::M_Flame() {
 
     if ( model && !model->Skins.IsEmpty() ) {
         // Set random skin (just for fun)
-        matInst->SetTexture( 0, model->Skins[rand()%model->Skins.Length()].Texture );
+        matInst->SetTexture( 0, model->Skins[rand()%model->Skins.Size()].Texture );
     }
 
     // Set root component
@@ -66,12 +67,34 @@ void M_Flame::BeginPlay() {
     Super::BeginPlay();
 
     Frame->SetScale( 2.0f );
+
+    FSoundSpawnParameters ambient;
+
+    ambient.Location = AUDIO_STAY_AT_SPAWN_LOCATION;
+    ambient.Priority = AUDIO_CHANNEL_PRIORITY_AMBIENT;
+    ambient.bPlayEvenWhenPaused = false;
+    ambient.bVirtualizeWhenSilent = true;
+    ambient.bUseVelocity = false;
+    ambient.Attenuation.ReferenceDistance = 0.3f;
+    ambient.Attenuation.MaxDistance = 5;
+    ambient.Attenuation.RolloffRate = 1;
+    ambient.Volume = 1;
+    ambient.Pitch = 1;
+    ambient.PlayOffset = FMath::Rand();
+    ambient.bLooping = true;
+    ambient.bStopWhenInstigatorDead = true;
+    ambient.bDirectional = false;
+
+    FAudioClip * clip = GGameModule->LoadQuakeResource< FQuakeAudio >( "sound/ambience/fire1.wav" );
+    //FAudioClip * clip = GetOrCreateResource< FAudioClip >( "sex_folkish1.ogg" );
+
+    GAudioSystem.PlaySound( clip, this, &ambient );
 }
 
 void M_Flame::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
 
-    Frame->SetPose( ( GGameMaster.GetGameplayTimeMicro() >> 18 ) );
+    Frame->SetPose( ( GetWorld()->GetGameplayTimeMicro() >> 18 ) );
 
     constexpr float ANIMATION_SPEED = 10.0f; // frames per second
 

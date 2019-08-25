@@ -30,33 +30,40 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actor.h>
-#include <Engine/Core/Public/BV/Frustum.h>
+#include <Engine/World/Public/Actors/Actor.h>
+#include <Engine/Core/Public/BV/BvFrustum.h>
 
 #include "QuakeModel.h"
 
-class ANGIE_API FQuakeBSPActor : public FViewActor {
-    AN_ACTOR( FQuakeBSPActor, FViewActor )
+class ANGIE_API FQuakeBSPView : public FViewActor {
+    AN_ACTOR( FQuakeBSPView, FViewActor )
 
 public:
     void SetModel( FQuakeBSP * _Model );
 
 protected:
-    FQuakeBSPActor();
+    FQuakeBSPView();
+
+    void BeginPlay() override;
+    void Tick( float _TimeStep ) override;
 
     void OnView( FCameraComponent * _Camera ) override;
+
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
 
 private:
     void AddSurfaces();
     void AddSurface( int _NumIndices, int _FirstIndex, int _SurfIndex );
+    //void GetGeometry_r( int _NodeIndex, TPodArray< Float3 > & _CollisVerts, TPodArray< unsigned int > & _CollisInd );
 
-    TRefHolder< FQuakeBSP > Model;
+    TRef< FQuakeBSP > Model;
     FBinarySpaceData * BSP;
-    TRefHolder< FIndexedMesh > Mesh;
-    TRefHolder< FLightmapUV > LightmapUV;
+    TRef< FIndexedMesh > Mesh;
+    TRef< FLightmapUV > LightmapUV;
     TPodArray< FMeshComponent * > SurfacePool;
     TPodArray< FMeshVertex > Vertices;
     TPodArray< FMeshLightmapUV > LightmapVerts;
     TPodArray< unsigned int > Indices;
-    TRefHolder< FTexture > CubemapTex;
+    TRef< FTexture > CubemapTex;
+    TRef< FAudioControlCallback > AmbientControl[4];
 };

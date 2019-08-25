@@ -36,7 +36,7 @@ AN_END_CLASS_META()
 
 FQuakeMonster::FQuakeMonster() {
     // Animation single frame holder
-    Frame = CreateComponent< FQuakeModelFrame >( "Frame" );
+    Frame = AddComponent< FQuakeModelFrame >( "Frame" );
 
     // Set root component
     RootComponent = Frame;
@@ -59,14 +59,6 @@ void FQuakeMonster::SetModel( FQuakeModel * _Model ) {
     }
 }
 
-void FQuakeMonster::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-}
-
-void FQuakeMonster::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
-
 void FQuakeMonster::BeginPlay() {
     Super::BeginPlay();
 }
@@ -79,8 +71,8 @@ void FQuakeMonster::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
 
     if ( FramesCount > 0 ) {
-        int keyFrame = AnimationTime.Floor();
-        float lerp = AnimationTime.Fract();
+        int keyFrame = FMath::Floor( AnimationTime );
+        float lerp = FMath::Fract( AnimationTime );
 
         Frame->SetFrame( keyFrame % FramesCount, ( keyFrame + 1 ) % FramesCount, lerp );
     }

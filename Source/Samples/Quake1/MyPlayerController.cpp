@@ -30,18 +30,25 @@ SOFTWARE.
 
 #include "MyPlayerController.h"
 
-#include <Engine/World/Public/GameMaster.h>
+#include <Engine/GameThread/Public/GameEngine.h>
 #include <Engine/World/Public/Canvas.h>
 
-AN_CLASS_META_NO_ATTRIBS( FMyPlayerController )
-AN_CLASS_META_NO_ATTRIBS( FMyHUD )
+AN_CLASS_META( FMyPlayerController )
+AN_CLASS_META( FMyHUD )
 
 void FMyHUD::DrawHUD() {
     Super::DrawHUD();
 
-    ImFont * font = Canvas->GetDefaultFont();
+    int CenterX = ViewportX + ( ViewportW >> 1 );
+    int CenterY = ViewportY + ( ViewportH >> 1 );
 
-    Canvas->DrawWChar( font, '+', ViewportX + (ViewportW>>1), ViewportY + (ViewportH>>1), 1.0f, 0xffffffff );
+    //int sz = 3;
+
+    Canvas->DrawLine( Float2( CenterX - 4, CenterY ), Float2( CenterX + 4, CenterY ), FColor4(1,1,1,0.5f), 2 );
+    Canvas->DrawLine( Float2( CenterX - 0.5f, CenterY - 4 ), Float2( CenterX - 0.5f, CenterY + 4 ), FColor4(1,1,1,0.5f), 2 );
+
+    //FFont * font = Canvas->GetDefaultFont();
+    //Canvas->DrawWChar( font, '+', ViewportX + (ViewportW>>1), ViewportY + (ViewportH>>1), 1.0f, FColor4::White() );
 }
 
 FMyPlayerController::FMyPlayerController() {
@@ -57,7 +64,8 @@ void FMyPlayerController::Tick( float _TimeStep ) {
 void FMyPlayerController::UpdateCameraAspectRatio() {
     FCameraComponent * camera = GetViewCamera();
     if ( camera ) {
-        camera->SetAspectRatio( GGameMaster.GetVideoAspectRatio() );
-        camera->SetFovX( 100.0f );
+        camera->SetAspectRatio( GGameEngine.GetVideoAspectRatio() );
+        camera->SetFovX( 120.0f );
+        //camera->SetFovX( 100.0f );
     }
 }

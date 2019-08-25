@@ -30,11 +30,11 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/BaseObject.h>
-#include <Engine/World/Public/Texture.h>
-#include <Engine/World/Public/MeshComponent.h>
-#include <Engine/World/Public/IndexedMesh.h>
-#include <Engine/World/Public/Level.h>
+#include <Engine/Base/Public/BaseObject.h>
+#include <Engine/Resource/Public/Texture.h>
+#include <Engine/Resource/Public/IndexedMesh.h>
+#include <Engine/World/Public/Components/MeshComponent.h>
+#include <Engine/World/Public/BSP.h>
 
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 
@@ -143,12 +143,21 @@ struct QTexture {
     int FrameTimeMin, FrameTimeMax;
 };
 
+struct FQuakeBSPModel {
+    BvAxisAlignedBox BoundingBox;
+    Float3 Origin;
+    int FirstSurf;
+    int NumSurfaces;
+    int Node;
+};
+
 class FQuakeBSP : public FBaseObject {
     AN_CLASS( FQuakeBSP, FBaseObject )
 
 public:
     TPodArray< QTexture >   Textures;
     TPodArray< QLightmapGroup > LightmapGroups;
+    TPodArray< FQuakeBSPModel > Models;
 
     FString                 EntitiesString;
     TPodArray< QEntity >    Entities;
@@ -156,6 +165,8 @@ public:
     FBinarySpaceData        BSP;
 
     BvAxisAlignedBox        Bounds;
+
+
 
     bool FromData( FLevel * _Level, const byte * _Data, const unsigned * _Palette );
     bool LoadFromPack( FLevel * _Level, FQuakePack * _Pack, const unsigned * _Palette, const char * _MapFile );
@@ -187,4 +198,34 @@ private:
     QEdge const *           Edges;
     int const *             ledges;
     int                     LeafsCount;
+};
+
+
+#include <Engine/Audio/Public/AudioClip.h>
+#include <Engine/Audio/Public/AudioSystem.h>
+
+class FQuakeAudio : public FAudioClip {
+public:
+    bool LoadFromPack( FQuakePack * _Pack, const unsigned * _Palette, const char * _FileName ) {
+        int32_t offset;
+        int32_t size;
+
+        if ( !_Pack->FindEntry( _FileName, &offset, &size ) ) {
+            return false;
+        }
+
+        byte * data = ( byte * )GMainHunkMemory.HunkMemory( size, 1 );
+
+        _Pack->Read( offset, size, data );
+
+        IAudioDecoderInterface * decoder = GAudioSystem.FindDecoder( _FileName );
+
+        StreamType = SST_NonStreamed;
+
+        InitializeFromData( _FileName, decoder, data, size );
+
+        GMainHunkMemory.ClearLastHunk();
+
+        return true;
+    }
 };
