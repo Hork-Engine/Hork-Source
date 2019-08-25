@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Engine/World/Public/Canvas.h>
 #include <Engine/Resource/Public/MaterialAssembly.h>
 
-AN_CLASS_META_NO_ATTRIBS( FGameModule )
+AN_CLASS_META( FGameModule )
 
 FGameModule * GGameModule = nullptr;
 
@@ -216,10 +216,10 @@ bool FGameModule::LoadQuakeMap( const char * _PackName, const char * _MapName ) 
 void FGameModule::CreateWaterMaterial() {
     FMaterialProject * proj = NewObject< FMaterialProject >();
 
-    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
+    FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+    FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
 
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+    FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
     materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
     materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
@@ -227,38 +227,38 @@ void FGameModule::CreateWaterMaterial() {
     FAssemblyNextStageVariable * texCoord = materialVertexStage->FindNextStageVariable( "TexCoord" );
     texCoord->Connect( inTexCoordBlock, "Value" );
 
-    FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
+    FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
     diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
 
-    FMaterialFloatBlock * floatConstant2 = proj->NewBlock< FMaterialFloatBlock >();
+    FMaterialFloatBlock * floatConstant2 = proj->AddBlock< FMaterialFloatBlock >();
     floatConstant2->Value = 2.0f;
 
-    FMaterialFloatBlock * floatConstant8 = proj->NewBlock< FMaterialFloatBlock >();
+    FMaterialFloatBlock * floatConstant8 = proj->AddBlock< FMaterialFloatBlock >();
     floatConstant8->Value = 8.0f;
 
-    FMaterialFloatBlock * floatConstant64 = proj->NewBlock< FMaterialFloatBlock >();
+    FMaterialFloatBlock * floatConstant64 = proj->AddBlock< FMaterialFloatBlock >();
     floatConstant64->Value = 1.0f/64.0f;
 
     // Get timer
-    FMaterialInTimerBlock * timer = proj->NewBlock< FMaterialInTimerBlock >();
+    FMaterialInTimerBlock * timer = proj->AddBlock< FMaterialInTimerBlock >();
 
-    FMaterialMulBlock * scaledTime = proj->NewBlock< FMaterialMulBlock >();
+    FMaterialMulBlock * scaledTime = proj->AddBlock< FMaterialMulBlock >();
     scaledTime->ValueA->Connect( timer, "GameplayTimeSeconds" );
     scaledTime->ValueB->Connect( floatConstant2, "Value" );
 
-    FMaterialDecomposeVectorBlock * texCoordXYDecomposed = proj->NewBlock< FMaterialDecomposeVectorBlock >();
+    FMaterialDecomposeVectorBlock * texCoordXYDecomposed = proj->AddBlock< FMaterialDecomposeVectorBlock >();
     texCoordXYDecomposed->Vector->Connect( materialVertexStage, "TexCoord" );
 
-    FMaterialMakeVectorBlock * texCoordYX = proj->NewBlock< FMaterialMakeVectorBlock >();
+    FMaterialMakeVectorBlock * texCoordYX = proj->AddBlock< FMaterialMakeVectorBlock >();
     texCoordYX->X->Connect( texCoordXYDecomposed, "Y" );
     texCoordYX->Y->Connect( texCoordXYDecomposed, "X" );
 
-    FMaterialMADBlock * sinArg = proj->NewBlock< FMaterialMADBlock >();
+    FMaterialMADBlock * sinArg = proj->AddBlock< FMaterialMADBlock >();
     sinArg->ValueA->Connect( texCoordYX, "Result" );
     sinArg->ValueB->Connect( floatConstant8, "Value" );
     sinArg->ValueC->Connect( scaledTime, "Result" );
 
-    FMaterialSinusBlock * sinus = proj->NewBlock< FMaterialSinusBlock >();
+    FMaterialSinusBlock * sinus = proj->AddBlock< FMaterialSinusBlock >();
     sinus->Value->Connect( sinArg, "Result" );
 
     FMaterialMADBlock * mad = proj->NewObject< FMaterialMADBlock >();
@@ -266,11 +266,11 @@ void FGameModule::CreateWaterMaterial() {
     mad->ValueB->Connect( floatConstant64, "Value" );
     mad->ValueC->Connect( materialVertexStage, "TexCoord" );
 
-    FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
+    FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
     diffuseSampler->TexCoord->Connect( mad, "Result" );
     diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+    FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
     materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
 
     FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
@@ -284,11 +284,11 @@ void FGameModule::CreateWaterMaterial() {
 void FGameModule::CreateWallMaterial() {
     FMaterialProject * proj = NewObject< FMaterialProject >();
 
-    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialInTexCoordBlock * inTexCoordBlock = proj->NewBlock< FMaterialInTexCoordBlock >();
+    FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+    FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
     //FMaterialInLightmapTexCoordBlock * inLightmapTexCoordBlock = proj->NewBlock< FMaterialInLightmapTexCoordBlock >();
 
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+    FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
     materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
     materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
@@ -300,13 +300,13 @@ void FGameModule::CreateWallMaterial() {
     //FAssemblyNextStageVariable * lightmapTexCoord = materialVertexStage->FindNextStageVariable( "LightmapTexCoord" );
     //lightmapTexCoord->Connect( inLightmapTexCoordBlock, "Value" );
 
-    FMaterialTextureSlotBlock * diffuseTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
+    FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
     diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
 
     //FMaterialTextureSlotBlock * lightmapTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
     //lightmapTexture->Filter = TEXTURE_FILTER_LINEAR;
 
-    FMaterialSamplerBlock * diffuseSampler = proj->NewBlock< FMaterialSamplerBlock >();
+    FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
     diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
     diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
@@ -336,7 +336,7 @@ void FGameModule::CreateWallMaterial() {
     //lightmapMul->ValueA->Connect( diffuseSampler, "RGBA" );
     //lightmapMul->ValueB->Connect( condLess, "Result" );
 
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+    FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
     materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
 
     FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
@@ -385,14 +385,14 @@ void FGameModule::CreateSkyMaterial() {
     //
     // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
     //
-    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+    FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+    FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
     materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
     //
     // VS_TexCoord = InTexCoord;
     //
-    FMaterialInTexCoordBlock * InTexCoord = proj->NewBlock< FMaterialInTexCoordBlock >();
+    FMaterialInTexCoordBlock * InTexCoord = proj->AddBlock< FMaterialInTexCoordBlock >();
     materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
     FAssemblyNextStageVariable * NSV_TexCoord = materialVertexStage->FindNextStageVariable( "TexCoord" );
     NSV_TexCoord->Connect( InTexCoord, "Value" );
@@ -400,8 +400,8 @@ void FGameModule::CreateSkyMaterial() {
     //
     // VS_Dir = InPosition - ViewPostion.xyz;
     //
-    FMaterialInViewPositionBlock * InViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
-    FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
+    FMaterialInViewPositionBlock * InViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
+    FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
     positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
     positionMinusViewPosition->ValueB->Connect( InViewPosition, "Value" );
     materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
@@ -411,96 +411,96 @@ void FGameModule::CreateSkyMaterial() {
     //
     // vec3 dir = VS_Dir * vec3( 1, 3, 1 );
     //
-    FMaterialFloat3Block * flattenMultiplier = proj->NewBlock< FMaterialFloat3Block >();
+    FMaterialFloat3Block * flattenMultiplier = proj->AddBlock< FMaterialFloat3Block >();
     flattenMultiplier->Value = Float3(1,3,1);
-    FMaterialMulBlock * flattenDir = proj->NewBlock< FMaterialMulBlock >();
+    FMaterialMulBlock * flattenDir = proj->AddBlock< FMaterialMulBlock >();
     flattenDir->ValueA->Connect( materialVertexStage, "Dir" );
     flattenDir->ValueB->Connect( flattenMultiplier, "Value" );
 
     // dir = normalize( dir )
-    FMaterialNormalizeBlock * normDir = proj->NewBlock< FMaterialNormalizeBlock >();
+    FMaterialNormalizeBlock * normDir = proj->AddBlock< FMaterialNormalizeBlock >();
     normDir->Value->Connect( flattenDir, "Result" );
 
     // dir.x = -dir.x
-    FMaterialDecomposeVectorBlock * decomposeDir = proj->NewBlock< FMaterialDecomposeVectorBlock >();
+    FMaterialDecomposeVectorBlock * decomposeDir = proj->AddBlock< FMaterialDecomposeVectorBlock >();
     decomposeDir->Vector->Connect( normDir, "Result" );
-    FMaterialNegateBlock * negateDirX = proj->NewBlock< FMaterialNegateBlock >();
+    FMaterialNegateBlock * negateDirX = proj->AddBlock< FMaterialNegateBlock >();
     negateDirX->Value->Connect( decomposeDir, "X" );
 
     // vec2 tc = dir.xz
-    FMaterialMakeVectorBlock * tc = proj->NewBlock< FMaterialMakeVectorBlock >();
+    FMaterialMakeVectorBlock * tc = proj->AddBlock< FMaterialMakeVectorBlock >();
     tc->X->Connect( negateDirX, "Result" );
     tc->Y->Connect( decomposeDir, "Z" );
 
     // Get timer
-    FMaterialInTimerBlock * timer = proj->NewBlock< FMaterialInTimerBlock >();
+    FMaterialInTimerBlock * timer = proj->AddBlock< FMaterialInTimerBlock >();
 
     // const float speed1 = 0.4;
-    FMaterialFloatBlock * speed1 = proj->NewBlock< FMaterialFloatBlock >();
+    FMaterialFloatBlock * speed1 = proj->AddBlock< FMaterialFloatBlock >();
     speed1->Value = 0.2f;
 
     // const float speed2 = 0.2;
-    FMaterialFloatBlock * speed2 = proj->NewBlock< FMaterialFloatBlock >();
+    FMaterialFloatBlock * speed2 = proj->AddBlock< FMaterialFloatBlock >();
     speed2->Value = 0.4f;
 
     // t1 = Timer.y * speed1
-    FMaterialMulBlock * t1 = proj->NewBlock< FMaterialMulBlock >();
+    FMaterialMulBlock * t1 = proj->AddBlock< FMaterialMulBlock >();
     t1->ValueA->Connect( timer, "GameplayTimeSeconds" );
     t1->ValueB->Connect( speed1, "Value" );
 
     // t2 = Timer.y * speed2
-    FMaterialMulBlock * t2 = proj->NewBlock< FMaterialMulBlock >();
+    FMaterialMulBlock * t2 = proj->AddBlock< FMaterialMulBlock >();
     t2->ValueA->Connect( timer, "GameplayTimeSeconds" );
     t2->ValueB->Connect( speed2, "Value" );
 
     // vec2 tc1 = tc + t1
-    FMaterialAddBlock * tc1 = proj->NewBlock< FMaterialAddBlock >();
+    FMaterialAddBlock * tc1 = proj->AddBlock< FMaterialAddBlock >();
     tc1->ValueA->Connect( tc, "Result" );
     tc1->ValueB->Connect( t1, "Result" );
 
     // vec2 tc2 = tc + t2
-    FMaterialAddBlock * tc2 = proj->NewBlock< FMaterialAddBlock >();
+    FMaterialAddBlock * tc2 = proj->AddBlock< FMaterialAddBlock >();
     tc2->ValueA->Connect( tc, "Result" );
     tc2->ValueB->Connect( t2, "Result" );
 
-    FMaterialTextureSlotBlock * skyTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
+    FMaterialTextureSlotBlock * skyTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
     skyTexture->Filter = TEXTURE_FILTER_LINEAR;
     skyTexture->TextureType = TEXTURE_2D_ARRAY;
 
     // const float zero = 0.0;
     // const float one = 1.0;
-    FMaterialFloatBlock * zero = proj->NewBlock< FMaterialFloatBlock >();
+    FMaterialFloatBlock * zero = proj->AddBlock< FMaterialFloatBlock >();
     zero->Value = 0;
-    FMaterialFloatBlock * one = proj->NewBlock< FMaterialFloatBlock >();
+    FMaterialFloatBlock * one = proj->AddBlock< FMaterialFloatBlock >();
     one->Value = 1;
 
-    FMaterialDecomposeVectorBlock * tc1_decompose = proj->NewBlock< FMaterialDecomposeVectorBlock >();
+    FMaterialDecomposeVectorBlock * tc1_decompose = proj->AddBlock< FMaterialDecomposeVectorBlock >();
     tc1_decompose->Vector->Connect( tc1, "Result" );
-    FMaterialDecomposeVectorBlock * tc2_decompose = proj->NewBlock< FMaterialDecomposeVectorBlock >();
+    FMaterialDecomposeVectorBlock * tc2_decompose = proj->AddBlock< FMaterialDecomposeVectorBlock >();
     tc2_decompose->Vector->Connect( tc2, "Result" );
 
-    FMaterialMakeVectorBlock * tc_0 = proj->NewBlock< FMaterialMakeVectorBlock >();
+    FMaterialMakeVectorBlock * tc_0 = proj->AddBlock< FMaterialMakeVectorBlock >();
     tc_0->X->Connect( tc1_decompose, "X" );
     tc_0->Y->Connect( tc1_decompose, "Y" );
     tc_0->Z->Connect( zero, "Value" );
 
-    FMaterialMakeVectorBlock * tc_1 = proj->NewBlock< FMaterialMakeVectorBlock >();
+    FMaterialMakeVectorBlock * tc_1 = proj->AddBlock< FMaterialMakeVectorBlock >();
     tc_1->X->Connect( tc2_decompose, "X" );
     tc_1->Y->Connect( tc2_decompose, "Y" );
     tc_1->Z->Connect( one, "Value" );
 
     // color1 = texture( colorTex, tc_0 );
-    FMaterialSamplerBlock * color1 = proj->NewBlock< FMaterialSamplerBlock >();
+    FMaterialSamplerBlock * color1 = proj->AddBlock< FMaterialSamplerBlock >();
     color1->TexCoord->Connect( tc_0, "Result" );
     color1->TextureSlot->Connect( skyTexture, "Value" );
 
     // color2 = texture( colorTex, tc_1 );
-    FMaterialSamplerBlock * color2 = proj->NewBlock< FMaterialSamplerBlock >();
+    FMaterialSamplerBlock * color2 = proj->AddBlock< FMaterialSamplerBlock >();
     color2->TexCoord->Connect( tc_1, "Result" );
     color2->TextureSlot->Connect( skyTexture, "Value" );
 
     // resultColor = color1 + color2
-    FMaterialAddBlock * resultColor = proj->NewBlock< FMaterialAddBlock >();
+    FMaterialAddBlock * resultColor = proj->AddBlock< FMaterialAddBlock >();
     resultColor->ValueA->Connect( color1, "RGBA" );
     resultColor->ValueB->Connect( color2, "RGBA" );
 
@@ -510,7 +510,7 @@ void FGameModule::CreateSkyMaterial() {
     //resultColor->ValueB->Connect( color2, "RGBA" );
     //resultColor->ValueC->Connect( color2, "A" );
 
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+    FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
     materialFragmentStage->Color->Connect( resultColor, "Result" );
 
     FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
@@ -529,14 +529,14 @@ void FGameModule::CreateSkyboxMaterial() {
     //
     // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
     //
-    FMaterialInPositionBlock * inPositionBlock = proj->NewBlock< FMaterialInPositionBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->NewBlock< FMaterialVertexStage >();
+    FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+    FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
     materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
     //
     // VS_TexCoord = InTexCoord;
     //
-    FMaterialInTexCoordBlock * InTexCoord = proj->NewBlock< FMaterialInTexCoordBlock >();
+    FMaterialInTexCoordBlock * InTexCoord = proj->AddBlock< FMaterialInTexCoordBlock >();
     materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
     FAssemblyNextStageVariable * NSV_TexCoord = materialVertexStage->FindNextStageVariable( "TexCoord" );
     NSV_TexCoord->Connect( InTexCoord, "Value" );
@@ -544,8 +544,8 @@ void FGameModule::CreateSkyboxMaterial() {
     //
     // VS_Dir = InPosition - ViewPostion.xyz;
     //
-    FMaterialInViewPositionBlock * InViewPosition = proj->NewBlock< FMaterialInViewPositionBlock >();
-    FMaterialSubBlock * positionMinusViewPosition = proj->NewBlock< FMaterialSubBlock >();
+    FMaterialInViewPositionBlock * InViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
+    FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
     positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
     positionMinusViewPosition->ValueB->Connect( InViewPosition, "Value" );
     materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
@@ -553,19 +553,19 @@ void FGameModule::CreateSkyboxMaterial() {
     NSV_Dir->Connect( positionMinusViewPosition, "Result" );
 
     // normDir = normalize( VS_Dir )
-    FMaterialNormalizeBlock * normDir = proj->NewBlock< FMaterialNormalizeBlock >();
+    FMaterialNormalizeBlock * normDir = proj->AddBlock< FMaterialNormalizeBlock >();
     normDir->Value->Connect( materialVertexStage, "Dir" );
 
-    FMaterialTextureSlotBlock * skyTexture = proj->NewBlock< FMaterialTextureSlotBlock >();
+    FMaterialTextureSlotBlock * skyTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
     skyTexture->Filter = TEXTURE_FILTER_LINEAR;
     skyTexture->TextureType = TEXTURE_CUBEMAP;
 
     // color = texture( skyTexture, normDir );
-    FMaterialSamplerBlock * color = proj->NewBlock< FMaterialSamplerBlock >();
+    FMaterialSamplerBlock * color = proj->AddBlock< FMaterialSamplerBlock >();
     color->TexCoord->Connect( normDir, "Result" );
     color->TextureSlot->Connect( skyTexture, "Value" );
 
-    FMaterialFragmentStage * materialFragmentStage = proj->NewBlock< FMaterialFragmentStage >();
+    FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
     materialFragmentStage->Color->Connect( color, "RGBA" );
 
     FMaterialBuilder * builder = NewObject< FMaterialBuilder >();

@@ -221,9 +221,9 @@ void FQuakeBSP::ReadLightmaps( FLevel * _Level, const byte * _Data, QBSPEntry co
                 t[0] = ConvertToRGB( src[2] * scale ) * brightness;
                 t[1] = ConvertToRGB( src[1] * scale ) * brightness;
                 t[2] = ConvertToRGB( src[0] * scale ) * brightness;
-                pPixels[0] = Float::FloatToHalf( *reinterpret_cast< const uint32_t * >( &t[0] ) );
-                pPixels[1] = Float::FloatToHalf( *reinterpret_cast< const uint32_t * >( &t[1] ) );
-                pPixels[2] = Float::FloatToHalf( *reinterpret_cast< const uint32_t * >( &t[2] ) );
+                pPixels[0] = FMath::FloatToHalf( *reinterpret_cast< const uint32_t * >( &t[0] ) );
+                pPixels[1] = FMath::FloatToHalf( *reinterpret_cast< const uint32_t * >( &t[1] ) );
+                pPixels[2] = FMath::FloatToHalf( *reinterpret_cast< const uint32_t * >( &t[2] ) );
             }
         }
     }
@@ -343,8 +343,8 @@ void FQuakeBSP::ReadFaces( FLevel * _Level, const byte * _Data, QBSPEntry const 
             }
         }
         for ( int i = 0 ; i < 2 ; i++ ) {
-            int bmins = floor( mins[ i ] / 16 );
-            int bmaxs = ceil( maxs[ i ] / 16 );
+            int bmins = FMath::Floor( mins[ i ] / 16 );
+            int bmaxs = FMath::Ceil( maxs[ i ] / 16 );
             texturemins[ i ] = bmins * 16;
             extents[ i ] = ( bmaxs - bmins ) * 16;
         }
@@ -1275,7 +1275,7 @@ void FQuakeBSP::ReadEntities( const byte * _Data, QBSPEntry const & _Entry ) {
 
         } else if ( !FString::Icmp( token, "angle" ) ) {
 
-            ent->Angle = Float().FromString( value ) - 90.0f;
+            ent->Angle = FMath::FromString( value ) - 90.0f;
 
         } else {
 

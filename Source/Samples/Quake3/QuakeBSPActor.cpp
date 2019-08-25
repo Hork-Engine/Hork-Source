@@ -37,7 +37,7 @@ SOFTWARE.
 #include <Engine/Resource/Public/ResourceManager.h>
 #include <Engine/World/Public/Components/CameraComponent.h>
 
-AN_CLASS_META_NO_ATTRIBS( FQuakeBSPView )
+AN_CLASS_META( FQuakeBSPView )
 
 #define MAX_SUBDIV_VERTS 0//16384
 #define MAX_SUBDIV_INDICES 0//(32768*4)
@@ -69,7 +69,7 @@ void FQuakeBSPView::SetModel( FQuakeBSP * _Model ) {
     for ( int i = 0 ; i < SurfacePool.Size() ; i++ ) {
         QLightmapGroup * lightmapGroup = &Model->LightmapGroups[i];
 
-        FMeshComponent * surf = CreateComponent< FMeshComponent >( FString::Fmt( "bsp_surf%d", i ) );
+        FMeshComponent * surf = AddComponent< FMeshComponent >( FString::Fmt( "bsp_surf%d", i ) );
         surf->SetMesh( Mesh );
         surf->RegisterComponent();
         surf->VSDPasses = VSD_PASS_VIS_MARKER;
