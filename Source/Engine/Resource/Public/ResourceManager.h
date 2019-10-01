@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Base/Public/BaseObject.h>
+#include <Engine/Core/Public/CompileTimeString.h>
 
 class FResourceManager {
     AN_SINGLETON( FResourceManager )
@@ -45,6 +46,12 @@ public:
         return static_cast< T * >( GetOrCreateResource( T::ClassMeta(), _FileName, _Alias ) );
     }
 
+    // Get or create internal resource. Return default object if fails.
+    template< typename T >
+    AN_FORCEINLINE T * GetOrCreateInternalResource( const char * _InternalResourceName ) {
+        return static_cast< T * >( GetOrCreateInternalResource( T::ClassMeta(), _InternalResourceName ) );
+    }
+
     // Get resource. Return default object if fails.
     template< typename T >
     AN_FORCEINLINE T * GetResource( const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr ) {
@@ -54,10 +61,13 @@ public:
     // Get or create resource. Return default object if fails.
     FBaseObject * GetOrCreateResource( FClassMeta const &  _ClassMeta, const char * _FileName, const char * _Alias = nullptr );
 
+    // Get or create internal resource. Return default object if fails.
+    FBaseObject * GetOrCreateInternalResource( FClassMeta const &  _ClassMeta, const char * _InternalResourceName );
+
     // Get resource. Return default object if fails.
     FBaseObject * GetResource( FClassMeta const & _ClassMeta, const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr );
 
-    // Get resource meta.
+    // Get resource meta. Return null if fails.
     FClassMeta const * GetResourceInfo( const char * _Name );
 
     // Find resource in cache. Return null if fails.
@@ -103,13 +113,19 @@ AN_FORCEINLINE T * GetOrCreateResource( const char * _FileName, const char * _Al
     return GResourceManager.GetOrCreateResource< T >( _FileName, _Alias );
 }
 
+// Get or create internal resource. Return default object if fails.
+template< typename T >
+AN_FORCEINLINE T * GetOrCreateInternalResource( const char * _InternalResourceName ) {
+    return GResourceManager.GetOrCreateInternalResource< T >( _InternalResourceName );
+}
+
 // Get resource. Return default object if fails.
 template< typename T >
 AN_FORCEINLINE T * GetResource( const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr ) {
     return GResourceManager.GetResource< T >( _Name, _bResourceFoundResult, _bMetadataMismatch );
 }
 
-// Get resource meta.
+// Get resource meta. Return null if fails.
 AN_FORCEINLINE FClassMeta const * GetResourceInfo( const char * _Name ) {
     return GResourceManager.GetResourceInfo( _Name );
 }
@@ -144,3 +160,52 @@ AN_FORCEINLINE void UnregisterResources() {
 AN_FORCEINLINE void UnregisterResources() {
     GResourceManager.UnregisterResources();
 }
+
+//
+// Experemental static resource finder
+// Usage: static TStaticResourceFinder< FIndexedMesh > Resource( _CTS( "Meshes/MyMesh" ) );
+// FIndexedMesh * mesh = Resource.GetObject();
+//
+template< typename T >
+struct TStaticResourceFinder {
+
+    template< char... Chars >
+    TStaticResourceFinder( TCompileTimeString<Chars...> const & _Name )
+        : ResourceName(_Name.ToConstChar())
+    {
+        Object = GetOrCreateResource< T >( ResourceName );
+    }
+
+    T * GetObject() {
+        if ( Object.IsExpired() ) {
+            Object = GetOrCreateResource< T >( ResourceName );
+        }
+        return Object;
+    }
+
+private:
+    const char * ResourceName;
+    TWeakRef< T > Object;
+};
+
+template< typename T >
+struct TStaticInternalResourceFinder {
+
+    template< char... Chars >
+    TStaticInternalResourceFinder( TCompileTimeString<Chars...> const & _Name )
+        : ResourceName(_Name.ToConstChar())
+    {
+        Object = GetOrCreateInternalResource< T >( ResourceName );
+    }
+
+    T * GetObject() {
+        if ( Object.IsExpired() ) {
+            Object = GetOrCreateInternalResource< T >( ResourceName );
+        }
+        return Object;
+    }
+
+private:
+    const char * ResourceName;
+    TWeakRef< T > Object;
+};

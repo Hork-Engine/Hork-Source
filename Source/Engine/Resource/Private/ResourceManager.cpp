@@ -177,6 +177,38 @@ FBaseObject * FResourceManager::GetOrCreateResource( FClassMeta const &  _ClassM
     return resource;
 }
 
+FBaseObject * FResourceManager::GetOrCreateInternalResource( FClassMeta const &  _ClassMeta, const char * _InternalResourceName ) {
+    int hash;
+    bool bMetadataMismatch;
+
+    FBaseObject * resource = FindResource( _ClassMeta, _InternalResourceName, bMetadataMismatch, hash );
+    if ( bMetadataMismatch ) {
+
+        // Never return null
+
+        resource = static_cast< FBaseObject * >( _ClassMeta.CreateInstance() );
+        resource->InitializeDefaultObject();
+
+        return resource;
+    }
+
+    if ( resource ) {
+        GLogger.Printf( "Caching resource %s...\n", _InternalResourceName );
+        return resource;
+    }
+
+    resource = static_cast< FBaseObject * >( _ClassMeta.CreateInstance() );
+
+    resource->InitializeInternalResource( _InternalResourceName );
+    resource->SetName( _InternalResourceName );
+    resource->AddRef();
+
+    ResourceHash.Insert( hash, ResourceCache.Size() );
+    ResourceCache.Append( resource );
+
+    return resource;
+}
+
 bool FResourceManager::UnregisterResource( FBaseObject * _Resource ) {
     int hash = _Resource->GetName().HashCase();
     int i;
@@ -220,3 +252,4 @@ void FResourceManager::UnregisterResources() {
     ResourceHash.Clear();
     ResourceCache.Clear();
 }
+
