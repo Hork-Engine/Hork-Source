@@ -33,6 +33,9 @@ SOFTWARE.
 #include "Factory.h"
 #include <Engine/Core/Public/Document.h>
 
+struct FWeakRefCounter;
+
+
 /*
 
 FBaseObject
@@ -45,16 +48,20 @@ class ANGIE_API FBaseObject : public FDummy {
     AN_CLASS( FBaseObject, FDummy )
 
     friend class FGarbageCollector;
+    friend class FWeakReference;
 
 public:
     // Serialize object to document data
     virtual int Serialize( FDocument & _Doc );
 
     // Initialize default object representation
-    virtual void InitializeDefaultObject() {}
+    void InitializeDefaultObject();
 
     // Initialize object from file
     virtual bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true );
+
+    // Initialize internal resource
+    virtual void InitializeInternalResource( const char * _InternalResourceName );
 
     // Load attributes form document data
     void LoadAttributes( FDocument const & _Document, int _FieldsHead );
@@ -74,6 +81,12 @@ public:
     // Get total existing objects
     static uint64_t GetTotalObjects() { return TotalObjects; }
 
+    // Set weakref counter. Used by TWeakRef
+    void SetWeakRefCounter( FWeakRefCounter * _RefCounter ) { WeakRefCounter = _RefCounter; }
+
+    // Get weakref counter. Used by TWeakRef
+    FWeakRefCounter * GetWeakRefCounter() { return WeakRefCounter; }
+
 protected:
     FBaseObject();
 
@@ -82,15 +95,18 @@ protected:
     FString Name;
 
 private:
+
     // Total existing objects
     static uint64_t TotalObjects;
 
     // Current refs count for this object
     int RefCount;
 
+    FWeakRefCounter * WeakRefCounter;
+
     // Used by garbage collector to add this object to remove list
-    FBaseObject * NextPendingKillObject;
-    FBaseObject * PrevPendingKillObject;
+    FBaseObject * NextGarbageObject;
+    FBaseObject * PrevGarbageObject;
 };
 
 /*
@@ -118,8 +134,8 @@ public:
     static void DeallocateObjects();
 
 private:
-    static FBaseObject * PendingKillObjects;
-    static FBaseObject * PendingKillObjectsTail;
+    static FBaseObject * GarbageObjects;
+    static FBaseObject * GarbageObjectsTail;
 };
 
 /*
@@ -132,7 +148,23 @@ Shared pointer
 template< typename T >
 class TRef final {
 public:
-    T * Object = nullptr;
+    TRef() : Object( nullptr ) {}
+
+    TRef( TRef< T > const & _Ref )
+        : Object( _Ref.Object )
+    {
+        if ( Object ) {
+            Object->AddRef();
+        }
+    }
+
+    explicit TRef( T * _Object )
+        : Object( _Object )
+    {
+        if ( Object ) {
+            Object->AddRef();
+        }
+    }
 
     ~TRef() {
         if ( Object ) {
@@ -140,16 +172,38 @@ public:
         }
     }
 
+    T * GetObject() { return Object; }
+
+    T const * GetObject() const { return Object; }
+
+//    operator bool() const {
+//        return Object != nullptr;
+//    }
+
     operator T*() const {
         return Object;
     }
 
+    T & operator *() const {
+        AN_ASSERT( Object, "TRef" );
+        return *Object;
+    }
+
     T * operator->() {
+        AN_ASSERT( Object, "TRef" );
         return Object;
     }
 
     T const * operator->() const {
+        AN_ASSERT( Object, "TRef" );
         return Object;
+    }
+
+    void Reset() {
+        if ( Object ) {
+            Object->RemoveRef();
+            Object = nullptr;
+        }
     }
 
     void operator=( TRef< T > const & _Ref ) {
@@ -168,14 +222,204 @@ public:
             Object->AddRef();
         }
     }
+private:
+    T * Object;
 };
+
+/*
+
+TWeakRef
+
+Weak pointer
+
+*/
+
+struct FWeakRefCounter {
+    FBaseObject * Object;
+    int RefCount;
+};
+
+class FWeakReference {
+protected:
+    FWeakReference() : WeakRefCounter( nullptr ) {}
+
+    void ResetWeakRef( FBaseObject * _Object );
+
+    void RemoveWeakRef();
+
+    FWeakRefCounter * WeakRefCounter;
+
+private:
+    FWeakRefCounter * AllocateWeakRefCounter();
+
+    void DeallocateWeakRefCounter( FWeakRefCounter * _Counter );
+};
+
+template< typename T >
+class TWeakRef final : public FWeakReference {
+public:
+    TWeakRef() {}
+
+    TWeakRef( TWeakRef< T > const & _Ref ) {
+        ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
+    }
+
+    TWeakRef( TRef< T > const & _Ref ) {
+        ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
+    }
+
+    explicit TWeakRef( T * _Object ) {
+        ResetWeakRef( _Object );
+    }
+
+    ~TWeakRef() {
+        RemoveWeakRef();
+    }
+
+    TRef< T > ToStrongRef() const {
+        return TRef< T >( const_cast< T * >( GetObject() ) );
+    }
+
+    T * GetObject() {
+        return WeakRefCounter ? static_cast< T * >( WeakRefCounter->Object ) : nullptr;
+    }
+
+    T const * GetObject() const {
+        return WeakRefCounter ? static_cast< T * >( WeakRefCounter->Object ) : nullptr;
+    }
+
+//    operator bool() const {
+//        return !IsExpired();
+//    }
+
+    operator T*() const {
+        return const_cast< T * >( GetObject() );
+    }
+
+    T & operator *() const {
+        AN_ASSERT( !IsExpired(), "TWeakRef" );
+        return *GetObject();
+    }
+
+    T * operator->() {
+        AN_ASSERT( !IsExpired(), "TWeakRef" );
+        return GetObject();
+    }
+
+    T const * operator->() const {
+        AN_ASSERT( !IsExpired(), "TWeakRef" );
+        return GetObject();
+    }
+
+    bool IsExpired() const {
+        return !WeakRefCounter || static_cast< T * >( WeakRefCounter->Object ) == nullptr;
+    }
+
+    void Reset() {
+        RemoveWeakRef();
+    }
+
+    void operator=( T * _Object ) {
+        ResetWeakRef( _Object );
+    }
+
+    void operator=( TRef< T > const & _Ref ) {
+        ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
+    }
+
+    void operator=( TWeakRef< T > const & _Ref ) {
+        ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
+    }
+};
+
+template< typename T >
+AN_FORCEINLINE bool operator == ( TRef< T > const & _Ref, TRef< T > const & _Ref2 ) { return _Ref.GetObject() == _Ref2.GetObject(); }
+
+template< typename T >
+AN_FORCEINLINE bool operator != ( TRef< T > const & _Ref, TRef< T > const & _Ref2 ) { return _Ref.GetObject() != _Ref2.GetObject(); }
+
+template< typename T >
+AN_FORCEINLINE bool operator == ( TRef< T > const & _Ref, TWeakRef< T > const & _Ref2 ) { return _Ref.GetObject() == _Ref2.GetObject(); }
+
+template< typename T >
+AN_FORCEINLINE bool operator != ( TRef< T > const & _Ref, TWeakRef< T > const & _Ref2 ) { return _Ref.GetObject() != _Ref2.GetObject(); }
+
+template< typename T >
+AN_FORCEINLINE bool operator == ( TWeakRef< T > const & _Ref, TRef< T > const & _Ref2 ) { return _Ref.GetObject() == _Ref2.GetObject(); }
+
+template< typename T >
+AN_FORCEINLINE bool operator != ( TWeakRef< T > const & _Ref, TRef< T > const & _Ref2 ) { return _Ref.GetObject() != _Ref2.GetObject(); }
+
+template< typename T >
+AN_FORCEINLINE bool operator == ( TWeakRef< T > const & _Ref, TWeakRef< T > const & _Ref2 ) { return _Ref.GetObject() == _Ref2.GetObject(); }
+
+template< typename T >
+AN_FORCEINLINE bool operator != ( TWeakRef< T > const & _Ref, TWeakRef< T > const & _Ref2 ) { return _Ref.GetObject() != _Ref2.GetObject(); }
+
+
+
+/*
+
+TCallback
+
+Template callback class
+
+*/
+template< typename T >
+struct TCallback;
+
+template< typename TReturn, typename... TArgs >
+struct TCallback< TReturn( TArgs... ) > {
+    TCallback() {}
+
+    template< typename T >
+    TCallback( T * _Object, TReturn ( T::*_Method )(TArgs...) )
+        : Object( _Object )
+        , Method( (void (FBaseObject::*)(TArgs...))_Method )
+    {
+    }
+
+    template< typename T >
+    void Set( T * _Object, TReturn ( T::*_Method )(TArgs...) ) {
+        Object = _Object;
+        Method = (void (FBaseObject::*)(TArgs...))_Method;
+    }
+
+    void Clear() {
+        Object.Reset();
+    }
+
+    bool IsValid() const {
+        return !Object.IsExpired();
+    }
+
+    void operator=( TCallback< TReturn( TArgs... ) > const & _Callback ) {
+        Object = _Callback.Object;
+        Method = _Callback.Method;
+    }
+
+    TReturn operator()( TArgs... _Args ) const {
+        FBaseObject * pObject = Object;
+        if ( pObject ) {
+            return (pObject->*Method)(StdForward< TArgs >( _Args )...);
+        }
+        return TReturn();
+    }
+
+    FBaseObject * GetObject() { return Object.GetObject(); }
+
+private:
+    TWeakRef< FBaseObject > Object;
+    TReturn ( FBaseObject::*Method )(TArgs...);
+};
+
 
 /*
 
 TEvent
 
 */
-template< int BASE_CAPACITY, typename... TArgs >
+template< typename... TArgs >
 struct TEvent {
     AN_FORBID_COPY( TEvent )
 
@@ -189,52 +433,48 @@ struct TEvent {
 
     template< typename T >
     void Add( T * _Object, void ( T::*_Method )(TArgs...) ) {
-
-        // Ensure this is subclass of base object. Get compiler error if not.
-        FBaseObject * baseObject = _Object;
-
-        // Add reference
-        baseObject->AddRef();
-
         // Add callback
-        Callback & callback = Subscribers.Append();
-        callback.Initialize( _Object, _Method );
+        Callbacks.emplace_back( _Object, _Method );
     }
 
     template< typename T >
     void Remove( T * _Object ) {
-        for ( int i = Subscribers.Size() - 1 ; i >= 0 ; i-- ) {
-            Callback & callback = Subscribers[i];
+        if ( !_Object ) {
+            return;
+        }
+        for ( int i = Callbacks.size() - 1 ; i >= 0 ; i-- ) {
+            Callback & callback = Callbacks[i];
 
             if ( callback.GetObject() == _Object ) {
-                Subscribers.RemoveSwap( i );
-                _Object->RemoveRef();
+                callback.Clear();
             }
         }
     }
 
     void RemoveAll() {
-        for ( Callback & callback : Subscribers ) {
-            // We can safe cast to base object because TEvent works only with subclasses of FBaseObject
-            static_cast< FBaseObject * >( callback.GetObject() )->RemoveRef();
-        }
-        Subscribers.Clear();
+        Callbacks.clear();
     }
 
-    bool HasSubscribers() const {
-        return !Subscribers.IsEmpty();
+    bool HasCallbacks() const {
+        return !Callbacks.empty();
     }
 
     operator bool() const {
-        return HasSubscribers();
+        return HasCallbacks();
     }
 
     void Dispatch( TArgs... _Args ) {
-        for ( Callback & callback : Subscribers ) {
-            callback( StdForward< TArgs >( _Args )... );
+        for ( int i = 0 ; i < Callbacks.size() ; i++ ) {
+            if ( Callbacks[ i ].IsValid() ) {
+                // Invoke
+                Callbacks[ i ]( StdForward< TArgs >( _Args )... );
+            } else {
+                // Cleanup
+                Callbacks.erase( Callbacks.begin() + i );
+            }
         }
     }
 
 private:
-    TPodArray< Callback, BASE_CAPACITY > Subscribers;
+    TVector< Callback > Callbacks;
 };

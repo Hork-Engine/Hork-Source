@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
 AN_BEGIN_CLASS_META( FBaseObject )
-AN_ATTRIBUTE( Name, SetName, GetName, AF_DEFAULT )
+//AN_ATTRIBUTE( Name, SetName, GetName, AF_DEFAULT )
 AN_END_CLASS_META()
 
 uint64_t FBaseObject::TotalObjects = 0;
@@ -45,6 +45,10 @@ FBaseObject::FBaseObject() {
 
 FBaseObject::~FBaseObject() {
     TotalObjects--;
+
+    if ( WeakRefCounter ) {
+        WeakRefCounter->Object = nullptr;
+    }
 }
 
 void FBaseObject::AddRef() {
@@ -65,12 +69,20 @@ void FBaseObject::RemoveRef() {
     }
 }
 
+void FBaseObject::InitializeDefaultObject() {
+    InitializeInternalResource( ( FString( FinalClassName() ) + ".Default" ).ToConstChar() );
+}
+
 bool FBaseObject::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
     if ( _CreateDefultObjectIfFails ) {
         InitializeDefaultObject();
         return true;
     }
     return false;
+}
+
+void FBaseObject::InitializeInternalResource( const char * _InternalResourceName ) {
+    //SetName( _InternalResourceName );
 }
 
 int FBaseObject::Serialize( FDocument & _Doc ) {
@@ -144,8 +156,8 @@ void FBaseObject::LoadAttributes( FDocument const & _Document, int _FieldsHead )
     }
 }
 
-FBaseObject * FGarbageCollector::PendingKillObjects = nullptr;
-FBaseObject * FGarbageCollector::PendingKillObjectsTail = nullptr;
+FBaseObject * FGarbageCollector::GarbageObjects = nullptr;
+FBaseObject * FGarbageCollector::GarbageObjectsTail = nullptr;
 
 void FGarbageCollector::Initialize() {
 
@@ -156,31 +168,31 @@ void FGarbageCollector::Deinitialize() {
 }
 
 void FGarbageCollector::AddObject( FBaseObject * _Object ) {
-    IntrusiveAddToList( _Object, NextPendingKillObject, PrevPendingKillObject, PendingKillObjects, PendingKillObjectsTail )
+    IntrusiveAddToList( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
 }
 
 void FGarbageCollector::RemoveObject( FBaseObject * _Object ) {
-    IntrusiveRemoveFromList( _Object, NextPendingKillObject, PrevPendingKillObject, PendingKillObjects, PendingKillObjectsTail )
+    IntrusiveRemoveFromList( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
 }
 
 void FGarbageCollector::DeallocateObjects() {
 #if 0
-    while ( PendingKillObjects ) {
-        FBaseObject * object = PendingKillObjects;
+    while ( GarbageObjects ) {
+        FBaseObject * object = GarbageObjects;
         FBaseObject * nextObject;
 
-        PendingKillObjects = nullptr;
+        GarbageObjects = nullptr;
 
         while ( object ) {
-            nextObject = object->NextPendingKillObject;
+            nextObject = object->NextGarbageObject;
             const FClassMeta & classMeta = object->FinalClassMeta();
             classMeta.DestroyInstance( object );
             object = nextObject;
         }
     }
 #endif
-    while ( PendingKillObjects ) {
-        FBaseObject * object = PendingKillObjects;
+    while ( GarbageObjects ) {
+        FBaseObject * object = GarbageObjects;
 
         // Mark RefCount to prevent using of AddRef/RemoveRef in the object destructor
         object->RefCount = -666;
@@ -191,7 +203,56 @@ void FGarbageCollector::DeallocateObjects() {
         classMeta.DestroyInstance( object );
     }
 
-    PendingKillObjectsTail = nullptr;
+    GarbageObjectsTail = nullptr;
 
     //GPrintf( "TotalObjects: %d\n", FBaseObject::GetTotalObjects() );
+}
+
+
+void FWeakReference::ResetWeakRef( FBaseObject * _Object ) {
+    FBaseObject * Cur = WeakRefCounter ? WeakRefCounter->Object : nullptr;
+
+    if ( Cur == _Object ) {
+        return;
+    }
+
+    RemoveWeakRef();
+
+    if ( !_Object ) {
+        return;
+    }
+
+    WeakRefCounter = _Object->GetWeakRefCounter();
+    if ( !WeakRefCounter ) {
+        WeakRefCounter = AllocateWeakRefCounter();
+        WeakRefCounter->Object = _Object;
+        WeakRefCounter->RefCount = 1;
+        _Object->SetWeakRefCounter( WeakRefCounter );
+    } else {
+        WeakRefCounter->RefCount++;
+    }
+}
+
+void FWeakReference::RemoveWeakRef() {
+    if ( WeakRefCounter ) {
+        if ( --WeakRefCounter->RefCount == 0 ) {
+            if ( WeakRefCounter->Object ) {
+                WeakRefCounter->Object->SetWeakRefCounter( nullptr );
+            }
+            DeallocateWeakRefCounter( WeakRefCounter );
+        }
+        WeakRefCounter = nullptr;
+    }
+}
+
+FWeakRefCounter * FWeakReference::AllocateWeakRefCounter() {
+    // Own allocator couldn't handle destruction of static objects :(
+    return new FWeakRefCounter;
+    //return ( FWeakRefCounter * )GMainMemoryZone.Alloc( sizeof( FWeakRefCounter ), 1 );
+}
+
+void FWeakReference::DeallocateWeakRefCounter( FWeakRefCounter * _RefCounter ) {
+    // Own allocator couldn't handle destruction of static objects :(
+    delete _RefCounter;
+    //GMainMemoryZone.Dealloc( _RefCounter );
 }
