@@ -66,7 +66,6 @@ public:
     void OnGameEnd() override;
     void OnPreGameTick( float _TimeStep ) override;
     void OnPostGameTick( float _TimeStep ) override;
-    void DrawCanvas( FCanvas * _Canvas ) override;
 
     bool LoadQuakeMap( const char * _PackName, const char * _MapName );
 

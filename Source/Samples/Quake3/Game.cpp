@@ -41,6 +41,24 @@ FGameModule * GGameModule = nullptr;
 
 AN_ENTRY_DECL( FGameModule )
 
+class WMyDesktop : public WDesktop {
+    AN_CLASS( WMyDesktop, WDesktop )
+
+public:
+    TRef< FPlayerController > PlayerController;
+
+protected:
+    WMyDesktop() {
+        SetDrawBackground( true );
+    }
+
+    void OnDrawBackground( FCanvas & _Canvas ) override {
+        _Canvas.DrawViewport( PlayerController, 0, 0, _Canvas.Width, _Canvas.Height );
+    }
+};
+
+AN_CLASS_META( WMyDesktop )
+
 void FGameModule::OnGameStart() {
     GGameModule = this;
 
@@ -83,6 +101,10 @@ void FGameModule::OnGameStart() {
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/gospelcrossings.bsp" );
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/aerowalk.bsp" );
     //LoadQuakeMap( "E:/Program Files (x86)/Steam/steamapps/common/Quake Live/baseq3/pak00.pk3", "maps/warehouse.bsp" );
+
+    WMyDesktop * desktop = NewObject< WMyDesktop >();
+    desktop->PlayerController = PlayerController;
+    GGameEngine.SetDesktop( desktop );
 }
 
 void FGameModule::OnGameEnd() {
@@ -95,7 +117,7 @@ void FGameModule::InitializeQuakeGame() {
 
     // Create rendering parameters
     RenderingParams = NewObject< FRenderingParameters >();
-    RenderingParams->BackgroundColor = Float3(1,0,0);
+    RenderingParams->BackgroundColor = FColor4(1,0,0);
 }
 
 void FGameModule::OnPreGameTick( float _TimeStep ) {
@@ -617,15 +639,3 @@ void FGameModule::CreateSkyboxMaterial() {
 //    builder->RegisterTextureSlot( textureSlot );
 //    return builder->Build();
 //}
-
-void FGameModule::DrawCanvas( FCanvas * _Canvas ) {
-    //_Canvas->DrawRectFilled( Float2(0,0), Float2(_Canvas->Width,_Canvas->Height), 0xffff00ff );
-
-    //_Canvas->DrawViewport( PlayerController, 10, 10, _Canvas->Width/2-20, _Canvas->Height/2 - 20 );
-
-    //_Canvas->DrawViewport( PlayerController, 10, 10 + _Canvas->Height/2, _Canvas->Width/2-20, _Canvas->Height/2 - 20 );
-
-    //_Canvas->DrawRectFilled( Float2(30,30), Float2(60,60), 0xffffffff );
-
-    _Canvas->DrawViewport( PlayerController, 0, 0, _Canvas->Width, _Canvas->Height );
-}

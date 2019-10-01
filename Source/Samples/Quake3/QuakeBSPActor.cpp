@@ -85,10 +85,10 @@ void FQuakeBSPView::SetModel( FQuakeBSP * _Model ) {
 
         if ( !name.Icmp( "sky" ) ) {
 
-            materialInstance->Material = GGameModule->SkyMaterial;
+            materialInstance->SetMaterial( GGameModule->SkyMaterial );
         } else {
 
-            materialInstance->Material = GGameModule->WallMaterial;
+            materialInstance->SetMaterial( GGameModule->WallMaterial );
 
             surf->LightmapBlock = lightmapGroup->LightmapBlock;
         }
