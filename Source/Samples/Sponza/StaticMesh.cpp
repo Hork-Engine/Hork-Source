@@ -47,5 +47,5 @@ FStaticMesh::FStaticMesh() {
 void FStaticMesh::SetMesh( FIndexedMesh * _Mesh ) {
     MeshComponent->SetMesh( _Mesh );
     MeshComponent->UpdatePhysicsAttribs();
-    MeshComponent->SetDefaultMaterials();
+    MeshComponent->CopyMaterialsFromMeshResource();
 }

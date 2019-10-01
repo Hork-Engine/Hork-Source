@@ -31,6 +31,7 @@ SOFTWARE.
 #include "Player.h"
 
 #include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 #include <Engine/World/Public/Components/InputComponent.h>
 
 AN_BEGIN_CLASS_META( FPlayer )
@@ -76,13 +77,12 @@ FPlayer::FPlayer() {
 
     // Create unit box
     FMaterialInstance * minst = NewObject< FMaterialInstance >();
-    minst->Material = Material;
+    minst->SetMaterial( Material );
 
-    FIndexedMesh * unitBox = NewObject< FIndexedMesh >();
-    unitBox->InitializeInternalMesh( "*box*" );
+    static TStaticInternalResourceFinder< FIndexedMesh > UnitBox( _CTS( "FIndexedMesh.Box" ) );
 
     unitBoxComponent = AddComponent< FMeshComponent >( "sky_box" );
-    unitBoxComponent->SetMesh( unitBox );
+    unitBoxComponent->SetMesh( UnitBox.GetObject() );
     unitBoxComponent->SetMaterialInstance( minst );
     unitBoxComponent->SetScale(4000);
 }
@@ -212,7 +212,7 @@ AN_CLASS_META( FBoxActor )
 FBoxActor::FBoxActor() {
     // Create material instance for mesh component
     FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->Material = GModule->Material;
+    matInst->SetMaterial( GModule->Material );
     matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 

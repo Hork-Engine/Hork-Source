@@ -45,6 +45,24 @@ AN_CLASS_META( FSponzaModel )
 
 FSponzaModel * GModule;
 
+class WMyDesktop : public WDesktop {
+    AN_CLASS( WMyDesktop, WDesktop )
+
+public:
+    TRef< FPlayerController > PlayerController;
+
+protected:
+    WMyDesktop() {
+        SetDrawBackground( true );
+    }
+
+    void OnDrawBackground( FCanvas & _Canvas ) override {
+        _Canvas.DrawViewport( PlayerController, 0, 0, _Canvas.Width, _Canvas.Height );
+    }
+};
+
+AN_CLASS_META( WMyDesktop )
+
 void FSponzaModel::OnGameStart() {
 
     GModule = this;
@@ -68,7 +86,7 @@ void FSponzaModel::OnGameStart() {
     //FHUD * hud = World->SpawnActor< FMyHUD >();
 
     RenderingParams = NewObject< FRenderingParameters >();
-    RenderingParams->BackgroundColor = Float3(0.5f);
+    RenderingParams->BackgroundColor = FColor4(0.5f);
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = false;
 
@@ -100,6 +118,10 @@ void FSponzaModel::OnGameStart() {
 
     PlayerController->SetPawn( player );
     PlayerController->SetViewCamera( player->Camera );
+
+    WMyDesktop * desktop = NewObject< WMyDesktop >();
+    desktop->PlayerController = PlayerController;
+    GGameEngine.SetDesktop( desktop );
 }
 
 void FSponzaModel::OnGameEnd() {
@@ -139,7 +161,7 @@ void FSponzaModel::LoadStaticMeshes() {
 
         for ( FIndexedMeshSubpart * subpart : mesh->GetSubparts() ) {
             if ( subpart->MaterialInstance ) {
-                subpart->MaterialInstance->Material = Material;
+                subpart->MaterialInstance->SetMaterial( Material );
             }
         }
 
@@ -179,8 +201,4 @@ void FSponzaModel::SetInputMappings() {
     InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
-}
-
-void FSponzaModel::DrawCanvas( FCanvas * _Canvas ) {
-    _Canvas->DrawViewport( PlayerController, 0, 0, _Canvas->Width, _Canvas->Height );
 }
