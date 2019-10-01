@@ -100,7 +100,7 @@ public:
 
     // TODO: void DrawCylinderFilled( Float3 const & _Position, Float3x3 const & _Orientation, const float & _Radius, const float & _Height, bool _TwoSided = false );
 
-    void DrawCapsule( Float3 const & _Position, Float3x3 const & _Orientation, float _Radius, float _HalfHeight, int _UpAxis );
+    void DrawCapsule( Float3 const & _Position, Float3x3 const & _Orientation, float _Radius, float _Height, int _UpAxis );
 
     // TODO: DrawCapsuleFilled
 

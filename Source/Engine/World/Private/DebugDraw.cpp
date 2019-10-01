@@ -669,16 +669,17 @@ void FDebugDraw::DrawCylinder( Float3 const & _Position, Float3x3 const & _Orien
     DrawLine( points, NumCirclePoints, true );
 }
 
-void FDebugDraw::DrawCapsule( Float3 const & _Position, Float3x3 const & _Orientation, float _Radius, float _HalfHeight, int _UpAxis ) {
+void FDebugDraw::DrawCapsule( Float3 const & _Position, Float3x3 const & _Orientation, float _Radius, float _Height, int _UpAxis ) {
     AN_Assert( _UpAxis >= 0 && _UpAxis < 3 );
 
     const int stepDegrees = 30;
+    const float halfHeight = _Height * 0.5f;
 
     Float3 capStart( 0.0f );
-    capStart[ _UpAxis ] = -_HalfHeight;
+    capStart[ _UpAxis ] = -halfHeight;
 
     Float3 capEnd( 0.0f );
-    capEnd[ _UpAxis ] = _HalfHeight;
+    capEnd[ _UpAxis ] = halfHeight;
 
     Float3 up = _Orientation.GetRow( ( _UpAxis + 1 ) % 3 );
     Float3 axis = _Orientation.GetRow( _UpAxis );
