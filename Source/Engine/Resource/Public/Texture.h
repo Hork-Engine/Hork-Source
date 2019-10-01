@@ -106,11 +106,8 @@ public:
     void InitializeCubemap( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength = 1 );
     void InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
 
-    // Create texture from string (*white* *black* *gray* *normal* *cubemap*)
-    void InitializeInternalTexture( const char * _Name );
-
-    // Initialize default object representation
-    void InitializeDefaultObject() override;
+    // Create texture from string (Texture.White Texture.Black Texture.Gray Texture.Normal Texture.Cubemap)
+    void InitializeInternalResource( const char * _InternalResourceName ) override;
 
     // Initialize object from file
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;

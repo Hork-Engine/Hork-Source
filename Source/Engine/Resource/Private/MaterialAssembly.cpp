@@ -2165,6 +2165,18 @@ vec3 atmosphere( in vec3 _RayDirNormalized, in vec3 _SunPosNormalized ) {
 );
 
 FMaterial * FMaterialBuilder::Build() {
+
+    FMaterialBuildData * buildData = BuildData();
+
+    FMaterial * material = NewObject< FMaterial >();
+    material->Initialize( buildData );
+
+    GMainMemoryZone.Dealloc( buildData );
+
+    return material;
+}
+
+FMaterialBuildData * FMaterialBuilder::BuildData() {
     FString vertexSrc;
     FString fragmentSrc;
     FString geometrySrc;
@@ -2538,12 +2550,7 @@ FMaterial * FMaterialBuilder::Build() {
     memcpy( &buildData->ShaderData[buildData->FragmentSourceOffset], fragmentSrc.ToConstChar(), fragmentSourceLength );
     memcpy( &buildData->ShaderData[buildData->GeometrySourceOffset], geometrySrc.ToConstChar(), geometrySourceLength );
 
-    FMaterial * material = NewObject< FMaterial >();
-    material->Initialize( buildData );
-
-    GMainMemoryZone.Dealloc( buildData );
-
-    return material;
+    return buildData;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

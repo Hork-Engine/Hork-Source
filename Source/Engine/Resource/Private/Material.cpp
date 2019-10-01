@@ -29,6 +29,8 @@ SOFTWARE.
 */
 
 #include <Engine/Resource/Public/Material.h>
+#include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
@@ -58,6 +60,73 @@ void FMaterial::Initialize( FMaterialBuildData const * _Data ) {
         RenderProxy->Data = data;
         RenderProxy->MarkUpdated();
     }
+}
+
+void FMaterial::InitializeInternalResource( const char * _InternalResourceName ) {
+    if ( !FString::Icmp( _InternalResourceName, "FMaterial.Default" ) ) {
+        FMaterialProject * proj = NewObject< FMaterialProject >();
+        FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
+        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
+        FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        texCoord->Connect( inTexCoordBlock, "Value" );
+        FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
+        diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+        diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
+        FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
+        diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
+        materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_UNLIT;
+        builder->RegisterTextureSlot( diffuseTexture );
+        FMaterialBuildData * buildData = builder->BuildData();
+        Initialize( buildData );
+        GMainMemoryZone.Dealloc( buildData );
+        //SetName( _InternalResourceName );
+        return;
+    }
+    GLogger.Printf( "Unknown internal material %s\n", _InternalResourceName );
+}
+
+FMaterialInstance::FMaterialInstance() {
+    static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
+    static TStaticInternalResourceFinder< FTexture > TextureResource( _CTS( "FTexture.Default" ) );
+
+    Material = MaterialResource.GetObject();
+
+    SetTexture( 0, TextureResource.GetObject() );
+}
+
+void FMaterialInstance::InitializeInternalResource( const char * _InternalResourceName ) {
+    if ( !FString::Icmp( _InternalResourceName, "FMaterialInstance.Default" ) )
+    {
+        static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
+        static TStaticInternalResourceFinder< FTexture > TextureResource( _CTS( "FTexture.Default" ) );
+
+        Material = MaterialResource.GetObject();
+
+        SetTexture( 0, TextureResource.GetObject() );
+        //SetName( _InternalResourceName );
+        return;
+    }
+    GLogger.Printf( "Unknown internal material instance %s\n", _InternalResourceName );
+}
+
+void FMaterialInstance::SetMaterial( FMaterial * _Material ) {
+    if ( !_Material ) {
+        static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
+
+        Material = MaterialResource.GetObject();
+    } else {
+        Material = _Material;
+    }
+}
+
+FMaterial * FMaterialInstance::GetMaterial() const {
+    return Material;
 }
 
 void FMaterialInstance::SetTexture( int _TextureSlot, FTexture * _Texture ) {

@@ -107,8 +107,10 @@ void FAnimation::Initialize( int _FrameCount, float _FrameDelta, FChannelTransfo
     DurationNormalizer = 1.0f / DurationInSeconds;
 }
 
-void FAnimation::InitializeDefaultObject() {
+void FAnimation::InitializeInternalResource( const char * _InternalResourceName ) {
     Purge();
+
+    //SetName( _InternalResourceName );
 }
 
 bool FAnimation::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {

@@ -39,6 +39,9 @@ class ANGIE_API FMaterial : public FBaseObject, public IRenderProxyOwner {
 public:
     void Initialize( FMaterialBuildData const * _Data );
 
+    // Initialize internal resource
+    void InitializeInternalResource( const char * _InternalResourceName ) override;
+
     EMaterialType GetType() const { return Type; }
 
     FRenderProxy_Material * GetRenderProxy() { return RenderProxy; }
@@ -62,23 +65,29 @@ class FMaterialInstance : public FBaseObject {
     AN_CLASS( FMaterialInstance, FBaseObject )
 
 public:
-
-    TRef< FMaterial > Material;
-
-    union {
+    union
+    {
         float Uniforms[16];
         Float4 UniformVectors[4];
     };
+
+    // Initialize internal resource
+    void InitializeInternalResource( const char * _InternalResourceName ) override;
+
+    void SetMaterial( FMaterial * _Material );
+
+    FMaterial * GetMaterial() const;
 
     void SetTexture( int _TextureSlot, FTexture * _Texture );
 
     FMaterialInstanceFrameData * RenderFrontend_Update( int _VisMarker );
 
 protected:
-    FMaterialInstance() {}
+    FMaterialInstance();
     ~FMaterialInstance() {}
 
 private:
+    TRef< FMaterial > Material;
     FMaterialInstanceFrameData * FrameData;
     TRef< FTexture > Textures[ MAX_MATERIAL_TEXTURES ];
     int VisMarker;

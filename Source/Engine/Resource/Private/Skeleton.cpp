@@ -69,8 +69,10 @@ void FSkeleton::Initialize( FJoint * _Joints, int _JointsCount, BvAxisAlignedBox
     // TODO: notify components about changes
 }
 
-void FSkeleton::InitializeDefaultObject() {
+void FSkeleton::InitializeInternalResource( const char * _InternalResourceName ) {
     Purge();
+
+    //SetName( _InternalResourceName );
 }
 
 bool FSkeleton::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {

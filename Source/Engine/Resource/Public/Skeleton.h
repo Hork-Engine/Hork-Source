@@ -98,8 +98,8 @@ public:
 
     void Initialize( FJoint * _Joints, int _JointsCount, BvAxisAlignedBox const & _BindposeBounds );
 
-    // Initialize default object representation
-    void InitializeDefaultObject() override;
+    // Initialize internal resource
+    void InitializeInternalResource( const char * _InternalResourceName ) override;
 
     // Initialize object from file
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;

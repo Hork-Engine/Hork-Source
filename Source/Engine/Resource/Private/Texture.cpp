@@ -358,8 +358,10 @@ void FTexture::InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, i
     RenderProxy->MarkUpdated();
 }
 
-void FTexture::InitializeInternalTexture( const char * _Name ) {
-    if ( !FString::Cmp( _Name, "*white*" ) ) {
+void FTexture::InitializeInternalResource( const char * _InternalResourceName ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture.White" )
+         || !FString::Icmp( _InternalResourceName, "FTexture.Default" ) ) {
+
         // White texture
 
         byte data[ 1 * 1 * 3 ];
@@ -370,11 +372,11 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         return;
     }
 
-    if ( !FString::Cmp( _Name, "*black*" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture.Black" ) ) {
         // Black texture
 
         byte data[ 1 * 1 * 3 ];
@@ -385,11 +387,11 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         return;
     }
 
-    if ( !FString::Cmp( _Name, "*gray*" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture.Gray" ) ) {
         // Black texture
 
         byte data[ 1 * 1 * 3 ];
@@ -400,11 +402,11 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         return;
     }
 
-    if ( !FString::Cmp( _Name, "*normal*" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture.Normal" ) ) {
         // Normal texture
 
         byte data[ 1 * 1 * 3 ];
@@ -417,11 +419,11 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         return;
     }
 
-    if ( !FString::Cmp( _Name, "*cubemap*" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture.Cubemap" ) ) {
         // Cubemap texture
 
         const Float3 dirs[6] = {
@@ -448,15 +450,11 @@ void FTexture::InitializeInternalTexture( const char * _Name ) {
                 memcpy( pixels, data[face], 3 );
             }
         }
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         return;
     }
 
-    GLogger.Printf( "Unknown internal texture %s\n", _Name );
-}
-
-void FTexture::InitializeDefaultObject() {
-    InitializeInternalTexture( "*white*" );
+    GLogger.Printf( "Unknown internal texture %s\n", _InternalResourceName );
 }
 
 bool FTexture::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
@@ -661,6 +659,13 @@ size_t FTexture::TextureByteLengthRect( ETexturePixelFormat _PixelFormat, int _N
 #define STBI_MALLOC(sz)                     AllocateBufferData( sz )
 #define STBI_FREE(p)                        DeallocateBufferData( p )
 #define STBI_REALLOC_SIZED(p,oldsz,newsz)   ExtendBufferData(p,oldsz,newsz,false)
+
+static void * stb_realloc_impl( void * p, size_t newsz ) {
+    DeallocateBufferData( p );
+    return AllocateBufferData( newsz );
+}
+
+#define STBI_REALLOC(p,newsz) stb_realloc_impl(p, newsz)
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 //#define STBI_NO_STDIO

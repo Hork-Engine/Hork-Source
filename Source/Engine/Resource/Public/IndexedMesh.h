@@ -106,10 +106,10 @@ Raycast hit result
 
 */
 struct FTriangleHitResult {
-    Float3 HitLocation;
-    Float3 HitNormal;
-    Float2 HitUV;
-    float HitDistance;
+    Float3 Location;
+    Float3 Normal;
+    Float2 UV;
+    float Distance;
     unsigned int Indices[3];
     FMaterialInstance * Material;
 };
@@ -284,11 +284,8 @@ public:
     // Helper. Create cylinder mesh
     void InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _VDiv );
 
-    // Create mesh from string (*box* *sphere* *cylinder* *plane*)
-    void InitializeInternalMesh( const char * _Name );
-
-    // Initialize default object representation
-    void InitializeDefaultObject() override;
+    // Create mesh from string (IndexedMesh.Box IndexedMesh.Sphere IndexedMesh.Cylinder IndexedMesh.Plane)
+    void InitializeInternalResource( const char * _InternalResourceName ) override;
 
     // Initialize object from file
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;

@@ -769,6 +769,7 @@ public:
     void RegisterTextureSlot( FMaterialTextureSlotBlock * _Slot );
 
     FMaterial * Build();
+    FMaterialBuildData * BuildData();
 
 protected:
     TPodArray< FMaterialTextureSlotBlock * > TextureSlots;

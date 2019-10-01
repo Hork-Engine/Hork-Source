@@ -103,11 +103,16 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
         subpart->RemoveRef();
     }
 
+    static TStaticInternalResourceFinder< FMaterialInstance > DefaultMaterialInstance( _CTS( "FMaterialInstance.Default" ) );
+
+    FMaterialInstance * materialInstance = DefaultMaterialInstance.GetObject();
+
     Subparts.ResizeInvalidate( _NumSubparts );
     for ( int i = 0 ; i < _NumSubparts ; i++ ) {
         FIndexedMeshSubpart * subpart = NewObject< FIndexedMeshSubpart >();
         subpart->AddRef();
         subpart->OwnerMesh = this;
+        subpart->MaterialInstance = materialInstance;
         Subparts[i] = subpart;
     }
 
@@ -137,10 +142,6 @@ void FIndexedMesh::Purge() {
     }
 
     BodyComposition.Clear();
-}
-
-void FIndexedMesh::InitializeDefaultObject() {
-    InitializeInternalMesh( "*box*" );
 }
 
 bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
@@ -468,35 +469,36 @@ void FIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
+void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceName ) {
 
-    if ( !FString::Cmp( _Name, "*box*" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Box" )
+         || !FString::Icmp( _InternalResourceName, "FIndexedMesh.Default" ) ) {
         InitializeBoxMesh( Float3(1), 1 );
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         FCollisionBox * collisionBody = BodyComposition.AddCollisionBody< FCollisionBox >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
-    if ( !FString::Cmp( _Name, "*sphere*" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Sphere" ) ) {
         InitializeSphereMesh( 0.5f, 1, 32, 32 );
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         FCollisionSphere * collisionBody = BodyComposition.AddCollisionBody< FCollisionSphere >();
         collisionBody->Radius = 0.5f;
         return;
     }
 
-    if ( !FString::Cmp( _Name, "*cylinder*" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Cylinder" ) ) {
         InitializeCylinderMesh( 0.5f, 1, 1, 32 );
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         FCollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< FCollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
-    if ( !FString::Cmp( _Name, "*plane*" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Plane" ) ) {
         InitializePlaneMesh( 256, 256, 256 );
-        SetName( _Name );
+        //SetName( _InternalResourceName );
         FCollisionBox * box = BodyComposition.AddCollisionBody< FCollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 0.1f;
@@ -505,7 +507,7 @@ void FIndexedMesh::InitializeInternalMesh( const char * _Name ) {
         return;
     }
 
-    GLogger.Printf( "Unknown internal mesh %s\n", _Name );
+    GLogger.Printf( "Unknown internal mesh %s\n", _InternalResourceName );
 }
 
 
@@ -763,11 +765,11 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
         if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
             if ( _Distance > dist ) {
                 FTriangleHitResult & hitResult = _HitResult.Append();
-                hitResult.HitLocation = _RayStart + _RayDir * dist;
-                hitResult.HitNormal = (v1-v0).Cross( v2-v0 ).Normalized();
-                hitResult.HitDistance = dist;
-                hitResult.HitUV.X = u;
-                hitResult.HitUV.Y = v;
+                hitResult.Location = _RayStart + _RayDir * dist;
+                hitResult.Normal = (v1-v0).Cross( v2-v0 ).Normalized();
+                hitResult.Distance = dist;
+                hitResult.UV.X = u;
+                hitResult.UV.Y = v;
                 hitResult.Indices[0] = i0;
                 hitResult.Indices[1] = i1;
                 hitResult.Indices[2] = i2;
