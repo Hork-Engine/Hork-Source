@@ -202,9 +202,9 @@ void FCommandContext::Print( const char * _Str, int _StrLen ) {
         }
         for ( FRuntimeVariable * var : vars ) {
             if ( *var->GetComment() ) {
-                GLogger.Printf( "    %s (%s)\n", var->GetName(), var->GetComment() );
+                GLogger.Printf( "    %s \"%s\" (%s)\n", var->GetName(), var->GetValue().ToConstChar(), var->GetComment() );
             } else {
-                GLogger.Printf( "    %s\n", var->GetName() );
+                GLogger.Printf( "    %s \"%s\"\n", var->GetName(), var->GetValue().ToConstChar() );
             }
         }
     }
