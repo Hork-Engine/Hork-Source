@@ -464,10 +464,10 @@ struct TEvent {
     }
 
     void Dispatch( TArgs... _Args ) {
-        for ( int i = 0 ; i < Callbacks.size() ; i++ ) {
+        for ( int i = 0 ; i < Callbacks.size() ; ) {
             if ( Callbacks[ i ].IsValid() ) {
                 // Invoke
-                Callbacks[ i ]( StdForward< TArgs >( _Args )... );
+                Callbacks[ i++ ]( StdForward< TArgs >( _Args )... );
             } else {
                 // Cleanup
                 Callbacks.erase( Callbacks.begin() + i );
