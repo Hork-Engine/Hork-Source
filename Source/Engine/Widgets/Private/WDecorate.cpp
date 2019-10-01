@@ -253,6 +253,16 @@ WImageDecorate & WImageDecorate::SetSamplerType( ESamplerType _SamplerType ) {
     return *this;
 }
 
+WImageDecorate & WImageDecorate::SetOffset( Float2 const & _Offset ) {
+    Offset = _Offset;
+    return *this;
+}
+
+WImageDecorate & WImageDecorate::SetSize( Float2 const & _Size ) {
+    Size = _Size;
+    return *this;
+}
+
 WImageDecorate & WImageDecorate::SetHorizontalAlignment( EWidgetAlignment _Alignment ) {
     HorizontalAlignment = _Alignment;
     return *this;
@@ -322,7 +332,7 @@ void WImageDecorate::OnDrawEvent( FCanvas & _Canvas ) {
     _Canvas.DrawTextureRounded( Texture, pos.X, pos.Y, size.X, size.Y, UV0, UV1, Color, Rounding, RoundingCorners, ColorBlending, SamplerType );
 }
 
-
+#if 0
 AN_CLASS_META( WViewportDecorate )
 
 WViewportDecorate::WViewportDecorate() {
@@ -360,6 +370,16 @@ WViewportDecorate & WViewportDecorate::SetPlayerController( FPlayerController * 
 
 WViewportDecorate & WViewportDecorate::SetColorBlending( EColorBlending _Blending ) {
     ColorBlending = _Blending;
+    return *this;
+}
+
+WViewportDecorate & WViewportDecorate::SetOffset( Float2 const & _Offset ) {
+    Offset = _Offset;
+    return *this;
+}
+
+WViewportDecorate & WViewportDecorate::SetSize( Float2 const & _Size ) {
+    Size = _Size;
     return *this;
 }
 
@@ -416,3 +436,4 @@ void WViewportDecorate::OnDrawEvent( FCanvas & _Canvas ) {
 
     _Canvas.DrawViewport( PlayerController, pos.X, pos.Y, size.X, size.Y, Color, Rounding, RoundingCorners, ColorBlending );
 }
+#endif

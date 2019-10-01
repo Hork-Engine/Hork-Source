@@ -34,62 +34,9 @@ AN_CLASS_META( WButton )
 
 WButton::WButton() {
     State = ST_RELEASED;
-    Color = FColor4::White();
-    HoverColor = FColor4( 1,1,0.5f,1 );
-    PressedColor = FColor4( 1,1,0.2f,1 );
-    TextColor = FColor4::Black();
-    BorderColor = FColor4::Black();
-    Rounding = 8;
-    RoundingCorners = CORNER_ROUND_ALL;
-    BorderThickness = 1;
 }
 
 WButton::~WButton() {
-}
-
-WButton & WButton::SetText( const char * _Text ) {
-    Text = _Text;
-    return *this;
-}
-
-WButton & WButton::SetColor( FColor4 const & _Color ) {
-    Color = _Color;
-    return *this;
-}
-
-WButton & WButton::SetHoverColor( FColor4 const & _Color ) {
-    HoverColor = _Color;
-    return *this;
-}
-
-WButton & WButton::SetPressedColor( FColor4 const & _Color ) {
-    PressedColor = _Color;
-    return *this;
-}
-
-WButton & WButton::SetTextColor( FColor4 const & _Color ) {
-    TextColor = _Color;
-    return *this;
-}
-
-WButton & WButton::SetBorderColor( FColor4 const & _Color ) {
-    BorderColor = _Color;
-    return *this;
-}
-
-WButton & WButton::SetRounding( float _Rounding ) {
-    Rounding = _Rounding;
-    return *this;
-}
-
-WButton & WButton::SetRoundingCorners( EDrawCornerFlags _RoundingCorners ) {
-    RoundingCorners = _RoundingCorners;
-    return *this;
-}
-
-WButton & WButton::SetBorderThickness( float _BorderThickness ) {
-    BorderThickness = _BorderThickness;
-    return *this;
 }
 
 void WButton::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
@@ -113,7 +60,89 @@ void WButton::OnDrawEvent( FCanvas & _Canvas ) {
     FColor4 bgColor;
 
     if ( IsHoveredByCursor() && !IsDisabled() ) {
-        if ( State == ST_PRESSED ) {
+        if ( IsPressed() ) {
+            bgColor = FColor4( 0.6f,0.6f,0.6f,1 );
+        } else {
+            bgColor = FColor4( 0.5f,0.5f,0.5f,1 );
+        }
+    } else {
+        bgColor = FColor4(0.4f,0.4f,0.4f);
+    }
+
+    Float2 mins, maxs;
+
+    GetDesktopRect( mins, maxs, true );
+
+    _Canvas.DrawRectFilled( mins, maxs, bgColor );
+}
+
+
+AN_CLASS_META( WTextButton )
+
+WTextButton::WTextButton() {
+    Color = FColor4(0.4f,0.4f,0.4f);
+    HoverColor = FColor4( 0.5f,0.5f,0.5f,1 );
+    PressedColor = FColor4( 0.6f,0.6f,0.6f,1 );
+    TextColor = FColor4::White();
+    BorderColor = Float4(0,0,0,0.5f);
+    Rounding = 8;
+    RoundingCorners = CORNER_ROUND_ALL;
+    BorderThickness = 1;
+}
+
+WTextButton::~WTextButton() {
+}
+
+WTextButton & WTextButton::SetText( const char * _Text ) {
+    Text = _Text;
+    return *this;
+}
+
+WTextButton & WTextButton::SetColor( FColor4 const & _Color ) {
+    Color = _Color;
+    return *this;
+}
+
+WTextButton & WTextButton::SetHoverColor( FColor4 const & _Color ) {
+    HoverColor = _Color;
+    return *this;
+}
+
+WTextButton & WTextButton::SetPressedColor( FColor4 const & _Color ) {
+    PressedColor = _Color;
+    return *this;
+}
+
+WTextButton & WTextButton::SetTextColor( FColor4 const & _Color ) {
+    TextColor = _Color;
+    return *this;
+}
+
+WTextButton & WTextButton::SetBorderColor( FColor4 const & _Color ) {
+    BorderColor = _Color;
+    return *this;
+}
+
+WTextButton & WTextButton::SetRounding( float _Rounding ) {
+    Rounding = _Rounding;
+    return *this;
+}
+
+WTextButton & WTextButton::SetRoundingCorners( EDrawCornerFlags _RoundingCorners ) {
+    RoundingCorners = _RoundingCorners;
+    return *this;
+}
+
+WTextButton & WTextButton::SetBorderThickness( float _BorderThickness ) {
+    BorderThickness = _BorderThickness;
+    return *this;
+}
+
+void WTextButton::OnDrawEvent( FCanvas & _Canvas ) {
+    FColor4 bgColor;
+
+    if ( IsHoveredByCursor() && !IsDisabled() ) {
+        if ( IsPressed() ) {
             bgColor = PressedColor;
         } else {
             bgColor = HoverColor;
@@ -138,4 +167,50 @@ void WButton::OnDrawEvent( FCanvas & _Canvas ) {
         _Canvas.DrawRect( mins, maxs, BorderColor, Rounding, RoundingCorners, BorderThickness );
     }
     _Canvas.DrawTextUTF8( mins + Float2( width - size.X, height - size.Y ) * 0.5f, TextColor, Text.Begin(), Text.End() );
+}
+
+
+AN_CLASS_META( WImageButton )
+
+WImageButton::WImageButton() {
+}
+
+WImageButton::~WImageButton() {
+}
+
+WImageButton & WImageButton::SetImage( FTexture * _Image ) {
+    Image = _Image;
+    return *this;
+}
+
+WImageButton & WImageButton::SetHoverImage( FTexture * _Image ) {
+    HoverImage = _Image;
+    return *this;
+}
+
+WImageButton & WImageButton::SetPressedImage( FTexture * _Image ) {
+    PressedImage = _Image;
+    return *this;
+}
+
+void WImageButton::OnDrawEvent( FCanvas & _Canvas ) {
+    FTexture * bgImage;
+
+    if ( IsHoveredByCursor() && !IsDisabled() ) {
+        if ( IsPressed() ) {
+            bgImage = PressedImage;
+        } else {
+            bgImage = HoverImage;
+        }
+    } else {
+        bgImage = Image;
+    }
+
+    if ( bgImage ) {
+        Float2 mins, maxs;
+
+        GetDesktopRect( mins, maxs, true );
+
+        _Canvas.DrawTexture( bgImage, mins.X, mins.Y, maxs.X-mins.X, maxs.Y-mins.Y );
+    }
 }

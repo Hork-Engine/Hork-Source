@@ -38,11 +38,8 @@ SOFTWARE.
 TODO:
 
 Widgets:
-WScroll
 WCheckBox
 WRadioButton
-WTextEdit
-WTextEditMultiline
 WDropList
 WList
 WTable
@@ -54,8 +51,6 @@ WSpinBox
 WTab
 WMessageBox
 WTooltip
-WImageButton
-WSlider
 WSplitView?
 etc
 
@@ -66,9 +61,10 @@ window shadows
 */
 
 class WDesktop;
+class WScroll;
 
 template< typename... TArgs >
-struct TWidgetEvent : TEvent< 1, TArgs... > {};
+struct TWidgetEvent : TEvent< TArgs... > {};
 
 using FWidgetShape = TPodArray< Float2, 4 >;
 
@@ -137,7 +133,7 @@ public:
     WWidget & Unparent();
 
     // Get desktop
-    WDesktop * GetDesktop();
+    WDesktop * GetDesktop() { return Desktop; }
 
     // Get parent
     WWidget * GetParent() { return Parent; }
@@ -223,16 +219,17 @@ public:
     // Audo adjust row sizes
     WWidget & SetFitRows( bool _FitRows );
 
-    // Размер окна выбирается таким образом, чтобы на нем поместились все дочерние окна, при этом дочернее окно
-    // не должно иметь следующие выравнивания: WIDGET_ALIGNMENT_RIGHT, WIDGET_ALIGNMENT_BOTTOM, WIDGET_ALIGNMENT_CENTER, WIDGET_ALIGNMENT_STRETCH.
+    // Размер окна выбирается таким образом, чтобы на нем поместились все дочерние окна.
     // Если установлен лэйаут WIDGET_LAYOUT_IMAGE, то размер окна устанавливается равным ImageSize.
-    // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размер окна устанавливается равным размеру сетки.
-    // TODO: SetVariableWidth( bool ), SetVariableHeight( bool )
+    // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размеры ячеек зависят от вложенных окон, FitColumns/FitRows - игнорируются.
+    // Если установлен лэйаут WIDGET_LAYOUT_HORIZONTAL_WRAP/WIDGET_LAYOUT_VERTICAL_WRAP, то враппинг игнорируется.
+    WWidget & SetAutoWidth( bool _AutoWidth );
+    WWidget & SetAutoHeight( bool _AutoHeight );
 
-    // Don't allow the widget size be less then parent client area
+    // Don't allow the widget size be less than parent client area
     WWidget & SetClampWidth( bool _ClampWidth );
 
-    // Don't allow the widget size be less then parent client area
+    // Don't allow the widget size be less than parent client area
     WWidget & SetClampHeight( bool _ClampHeight );
 
     // Horizontal padding for horizontal layout
@@ -419,15 +416,24 @@ protected:
 
     void DrawDecorates( FCanvas & _Canvas );
 
+    void ScrollSelfDelta( float _Delta );
+
+    WScroll * FindScrollWidget();
+
+public:
+    void MarkTransformDirty();
+    void MarkTransformDirtyChilds();
+
 private:
     void Draw_r( FCanvas & _Canvas, Float2 const & _ClipMins, Float2 const & _ClipMaxs );
 
-    bool IsRoot() const { return Desktop != nullptr; }
+    void UpdateDesktop_r( WDesktop * _Desktop );
+
+    bool IsRoot() const;
 
     WWidget * GetRoot();
 
-    void MarkTransformDirty();
-    void MarkTransformDirtyChilds();
+    void MarkTransformDirty_r();
     void MarkGridLayoutDirty();
     void MarkVHLayoutDirty();
     void MarkImageLayoutDirty();
@@ -439,13 +445,16 @@ private:
 
     void LostFocus_r( WDesktop * _Desktop );
 
+    float CalcContentWidth();
+    float CalcContentHeight();
+
     struct FCell {
         float Size;
         float ActualSize;
         float Offset;
     };
 
-    WDesktop * Desktop; // only for root widget
+    WDesktop * Desktop;
     WWidget * Parent;
     TPodArray< WWidget * > Childs;
     TPodArray< WDecorate *, 2 > Decorates;
@@ -476,6 +485,8 @@ private:
     TPodArray< FCell, 1 > Rows;
     bool bFitColumns;
     bool bFitRows;
+    bool bAutoWidth;
+    bool bAutoHeight;
     bool bClampWidth;
     bool bClampHeight;
     bool bMaximized;

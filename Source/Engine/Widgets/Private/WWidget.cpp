@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/Widgets/Public/WWidget.h>
+#include <Engine/Widgets/Public/WScroll.h>
 #include <Engine/Widgets/Public/WDesktop.h>
 
 AN_CLASS_META( WWidget )
@@ -39,25 +40,23 @@ WWidget::WWidget() {
     ColumnsCount = RowsCount = 1;
     bTransformDirty = true;
     bLayoutDirty = true;
+    Margin = Float4(2,2,2,2);
 }
 
 WWidget::~WWidget() {
     RemoveDecorates();
 
-    AN_Assert( !bFocus );
-
-#if 0
-    // TODO: this must be optimized:
-    while ( !Childs.IsEmpty() ) {
-        Childs[0]->Unparent();
+    if ( bFocus ) {
+        AN_Assert( Desktop );
+        AN_Assert( Desktop->GetFocusWidget() == this );
+        Desktop->SetFocusWidget( nullptr );
     }
-#else
+
     for ( WWidget * child : Childs ) {
         child->Parent = nullptr;
         child->MarkTransformDirty(); // FIXME: mark anyway?
         child->RemoveRef();
     }
-#endif
 }
 
 WWidget & WWidget::SetParent( WWidget * _Parent ) {
@@ -77,6 +76,8 @@ WWidget & WWidget::SetParent( WWidget * _Parent ) {
 
     Parent = _Parent;
 
+    UpdateDesktop_r( _Parent->Desktop );
+
     AddRef();
     _Parent->Childs.Insert( 0, this );
 
@@ -85,9 +86,24 @@ WWidget & WWidget::SetParent( WWidget * _Parent ) {
     Parent->LayoutSlots.Append( this );
     Parent->MarkVHLayoutDirty();
 
+    if ( Parent->bAutoWidth || Parent->bAutoHeight ) {
+        Parent->MarkTransformDirty();
+    }
+
     MarkTransformDirty();
 
     return *this;
+}
+
+void WWidget::UpdateDesktop_r( WDesktop * _Desktop ) {
+    //if ( Desktop == _Desktop ) {
+    //    return;
+    //}
+
+    Desktop = _Desktop;
+    for ( WWidget * child : Childs ) {
+        child->UpdateDesktop_r( _Desktop );
+    }
 }
 
 void WWidget::LostFocus_r( WDesktop * _Desktop ) {
@@ -111,11 +127,17 @@ WWidget & WWidget::Unparent() {
         return *this;
     }
 
-    LostFocus_r( GetDesktop() );
+    if ( Desktop ) {
+        LostFocus_r( Desktop );
+        UpdateDesktop_r( nullptr );
+    }
 
     Parent->Childs.Remove( Parent->Childs.IndexOf( this ) );
     Parent->LayoutSlots.Remove( Parent->LayoutSlots.IndexOf( this ) );
     Parent->MarkVHLayoutDirty();
+    if ( Parent->bAutoWidth || Parent->bAutoHeight ) {
+        Parent->MarkTransformDirty();
+    }
     Parent = nullptr;
 
     MarkTransformDirty();
@@ -130,22 +152,12 @@ void WWidget::RemoveWidgets() {
     }
 }
 
-WDesktop * WWidget::GetDesktop() {
-    WWidget * root = GetRoot();
-    if ( root ) {
-        return root->Desktop;
-    }
-    return nullptr;
+bool WWidget::IsRoot() const {
+    return Desktop && Desktop->Root == this;
 }
 
 WWidget * WWidget::GetRoot() {
-    if ( IsRoot() ) {
-        return this;
-    }
-    if ( Parent ) {
-        return Parent->GetRoot();
-    }
-    return nullptr;
+    return Desktop ? Desktop->Root.GetObject() : nullptr;
 }
 
 WWidget & WWidget::SetStyle( EWidgetStyle _Style ) {
@@ -155,6 +167,9 @@ WWidget & WWidget::SetStyle( EWidgetStyle _Style ) {
 
     // Оба стиля не могут существовать одновременно
     if ( style & WIDGET_STYLE_FOREGROUND ) {
+        style &= ~WIDGET_STYLE_BACKGROUND;
+    }
+    if ( style & WIDGET_STYLE_POPUP ) {
         style &= ~WIDGET_STYLE_BACKGROUND;
     }
 
@@ -176,12 +191,11 @@ WWidget & WWidget::SetStyle( int _Style ) {
 }
 
 WWidget & WWidget::SetFocus() {
-    WDesktop * desktop = GetDesktop();
-    if ( !desktop ) {
+    if ( !Desktop ) {
         return *this;
     }
 
-    desktop->SetFocusWidget( this );
+    Desktop->SetFocusWidget( this );
 
     return *this;
 }
@@ -405,19 +419,6 @@ void WWidget::UpdateTransformIfDirty() {
     }
 }
 
-// Размер окна выбирается таким образом, чтобы на нем поместились все дочерние окна, при этом дочернее окно
-// не должно иметь следующие выравнивания: WIDGET_ALIGNMENT_RIGHT, WIDGET_ALIGNMENT_BOTTOM, WIDGET_ALIGNMENT_CENTER, WIDGET_ALIGNMENT_STRETCH.
-// Если установлен лэйаут WIDGET_LAYOUT_IMAGE, то размер окна устанавливается равным ImageSize.
-// Если установлен лэйаут WIDGET_LAYOUT_GRID, то размер окна устанавливается равным размеру сетки.
-
-//bool WWidget::CanAutoWidth() {
-//    if ( Layout == WIDGET_LAYOUT_IMAGE || Layout == WIDGET_LAYOUT_GRID ) {
-//        return;
-//    }
-
-//    WIDGET_ALIGNMENT_RIGHT, WIDGET_ALIGNMENT_BOTTOM, WIDGET_ALIGNMENT_CENTER, WIDGET_ALIGNMENT_STRETCH.
-//}
-
 static void ApplyHorizontalAlignment( EWidgetAlignment _HorizontalAlignment, Float2 const & _AvailSize, Float2 & _Size, Float2 & _Pos ) {
     switch ( _HorizontalAlignment ) {
     case WIDGET_ALIGNMENT_STRETCH:
@@ -467,13 +468,17 @@ void WWidget::UpdateTransform() {
 
     if ( !Parent ) {
         ActualPosition = Position;
-        ActualSize = Size;
+        ActualSize.X = CalcContentWidth();
+        ActualSize.Y = CalcContentHeight();
         ClampWidgetSize( ActualSize, MinSize, MaxSize );
         return;
     }
 
     Float2 curPos = Position;
-    Float2 curSize = Size;
+    Float2 curSize;
+
+    curSize.X = CalcContentWidth();
+    curSize.Y = CalcContentHeight();
 
     ClampWidgetSize( curSize, MinSize, MaxSize );
 
@@ -499,6 +504,8 @@ void WWidget::UpdateTransform() {
         }
     default:
         AN_Assert( 0 );
+        availSize = Parent->GetAvailableSize();
+        break;
     }
 
     if ( !IsMaximized() ) {
@@ -728,22 +735,20 @@ WWidget & WWidget::BringOnTop( bool _RecursiveForParents ) {
 }
 
 bool WWidget::IsHovered( Float2 const & _Position ) const {
-    WDesktop * desktop = const_cast< WWidget * >( this )->GetDesktop();
-    if ( !desktop ) {
+    if ( !Desktop ) {
         return false;
     }
 
-    WWidget * w = desktop->GetWidgetUnderCursor( _Position );
+    WWidget * w = Desktop->GetWidgetUnderCursor( _Position );
     return w == this;
 }
 
 bool WWidget::IsHoveredByCursor() const {
-    WDesktop * desktop = const_cast< WWidget * >( this )->GetDesktop();
-    if ( !desktop ) {
+    if ( !Desktop ) {
         return false;
     }
 
-    WWidget * w = desktop->GetWidgetUnderCursor( desktop->GetCursorPosition() );
+    WWidget * w = Desktop->GetWidgetUnderCursor( Desktop->GetCursorPosition() );
     return w == this;
 }
 
@@ -839,8 +844,30 @@ void WWidget::OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint64_
 
 }
 
-void WWidget::OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, double _TimeStamp ) {
+WScroll * WWidget::FindScrollWidget() {
+    for ( WWidget * p = Parent ; p ; p = p->Parent ) {
+        WScroll * scroll = Upcast< WScroll >( p );
+        if ( scroll ) {
+            return scroll;
+        }
+    }
+    return nullptr;
+}
 
+void WWidget::ScrollSelfDelta( float _Delta ) {
+    WScroll * scroll = FindScrollWidget();
+    if ( scroll ) {
+        scroll->ScrollDelta( Float2( 0.0f, _Delta ) );
+    }
+}
+
+void WWidget::OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, double _TimeStamp ) {
+    if ( _Event.WheelY < 0 ) {
+        ScrollSelfDelta( -20 );
+    }
+    else if ( _Event.WheelY > 0 ) {
+        ScrollSelfDelta( 20 );
+    }
 }
 
 void WWidget::OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) {
@@ -868,7 +895,7 @@ void WWidget::OnDrawEvent( FCanvas & _Canvas ) {
 }
 
 void WWidget::OnTransformDirty() {
-
+    //GLogger.Printf( "Widget transform dirty\n" );
 }
 
 void WWidget::AdjustSizeAndPosition( Float2 const & _AvailableSize, Float2 & _Size, Float2 & _Position ) {
@@ -987,6 +1014,30 @@ void WWidget::GetCellRect( int _ColumnIndex, int _RowIndex, Float2 & _Mins, Floa
     _Maxs.Y = _Mins.Y + ( row >= numRows ? 0.0f : Rows[ row ].ActualSize );
 }
 
+WWidget & WWidget::SetAutoWidth( bool _AutoWidth ) {
+    if ( bAutoWidth != _AutoWidth ) {
+        bAutoWidth = _AutoWidth;
+
+        WWidget * root = GetRoot();
+        if ( root ) {
+            root->MarkTransformDirtyChilds();
+        }
+    }
+    return *this;
+}
+
+WWidget & WWidget::SetAutoHeight( bool _AutoHeight ) {
+    if ( bAutoHeight != _AutoHeight ) {
+        bAutoHeight = _AutoHeight;
+
+        WWidget * root = GetRoot();
+        if ( root ) {
+            root->MarkTransformDirtyChilds();
+        }
+    }
+    return *this;
+}
+
 WWidget & WWidget::SetClampWidth( bool _ClampWidth ) {
     if ( bClampWidth != _ClampWidth ) {
         bClampWidth = _ClampWidth;
@@ -1064,6 +1115,16 @@ void WWidget::GetLayoutRect( Float2 & _Mins, Float2 & _Maxs ) const {
 }
 
 void WWidget::MarkTransformDirty() {
+
+    if ( Parent && ( Parent->bAutoWidth || Parent->bAutoHeight ) ) {
+        Parent->MarkTransformDirty();
+        return;
+    }
+
+    MarkTransformDirty_r();
+}
+
+void WWidget::MarkTransformDirty_r() {
     WWidget * node = this;
     WWidget * nextNode;
     int numChilds;
@@ -1075,7 +1136,7 @@ void WWidget::MarkTransformDirty() {
         if ( numChilds > 0 ) {
             nextNode = node->Childs[ 0 ];
             for ( int i = 1 ; i < numChilds ; i++ ) {
-                node->Childs[ i ]->MarkTransformDirty();
+                node->Childs[ i ]->MarkTransformDirty_r();
             }
             node = nextNode;
         } else {
@@ -1103,7 +1164,20 @@ void WWidget::UpdateLayout() {
         int numColumns = FMath::Min( ColumnsCount, Columns.Size() );
         int numRows = FMath::Min( RowsCount, Rows.Size() );
 
-        if ( bFitColumns ) {
+        if ( bAutoWidth ) {
+            for ( int i = 0 ; i < numColumns ; i++ ) {
+                Columns[i].ActualSize = 0;
+            }
+            for ( WWidget * child : Childs ) {
+                if ( child->IsCollapsed() ) {
+                    continue;
+                }
+                if ( child->Column < Columns.Size() ) {
+                    float w = child->CalcContentWidth();
+                    Columns[ child->Column ].ActualSize = FMath::Max( Columns[ child->Column ].ActualSize, w );
+                }
+            }
+        } else if ( bFitColumns ) {
             float sumWidth = 0;
             for ( int i = 0; i < numColumns; i++ ) {
                 sumWidth += Columns[ i ].Size;
@@ -1123,7 +1197,20 @@ void WWidget::UpdateLayout() {
             Columns[ i ].Offset = Columns[ i - 1 ].Offset + Columns[ i - 1 ].ActualSize;
         }
 
-        if ( bFitRows ) {
+        if ( bAutoHeight ) {
+            for ( int i = 0 ; i < numRows ; i++ ) {
+                Rows[i].ActualSize = 0;
+            }
+            for ( WWidget * child : Childs ) {
+                if ( child->IsCollapsed() ) {
+                    continue;
+                }
+                if ( child->Row < Rows.Size() ) {
+                    float h = child->CalcContentHeight();
+                    Rows[ child->Row ].ActualSize = FMath::Max( Rows[ child->Row ].ActualSize, h );
+                }
+            }
+        } else if ( bFitRows ) {
             float sumWidth = 0;
             for ( int i = 0; i < numRows; i++ ) {
                 sumWidth += Rows[ i ].Size;
@@ -1145,9 +1232,13 @@ void WWidget::UpdateLayout() {
     } else if ( Layout == WIDGET_LAYOUT_HORIZONTAL || Layout == WIDGET_LAYOUT_HORIZONTAL_WRAP ) {
         float offsetX = 0;
         float offsetY = 0;
-        float width = GetAvailableWidth();
+        float availWidth = 0;
         float maxHeight = 0;
-        Float2 sz;
+
+        bool bCanWrap = ( Layout == WIDGET_LAYOUT_HORIZONTAL_WRAP ) && !bAutoWidth;
+        if ( bCanWrap ) {
+            availWidth = GetAvailableWidth();
+        }
 
         for ( int i = 0 ; i < LayoutSlots.Size() ; i++ ) {
             WWidget * w = LayoutSlots[i];
@@ -1157,16 +1248,14 @@ void WWidget::UpdateLayout() {
                 continue;
             }
 
-            sz = w->GetSize();
-
             w->LayoutOffset.X = offsetX;
             w->LayoutOffset.Y = offsetY;
 
-            offsetX += sz.X + HorizontalPadding;
+            offsetX += w->CalcContentWidth() + HorizontalPadding;
 
-            if ( Layout == WIDGET_LAYOUT_HORIZONTAL_WRAP && next ) {
-                maxHeight = FMath::Max( maxHeight, sz.Y );
-                if ( offsetX + next->GetWidth() >= width ) {
+            if ( bCanWrap && next ) {
+                maxHeight = FMath::Max( maxHeight, w->CalcContentHeight() );
+                if ( offsetX + next->CalcContentWidth() >= availWidth ) {
                     offsetX = 0;
                     offsetY += maxHeight + VerticalPadding;
                     maxHeight = 0;
@@ -1176,9 +1265,13 @@ void WWidget::UpdateLayout() {
     } else if ( Layout == WIDGET_LAYOUT_VERTICAL || Layout == WIDGET_LAYOUT_VERTICAL_WRAP ) {
         float offsetX = 0;
         float offsetY = 0;
-        float height = GetAvailableHeight();
+        float availHeight = 0;
         float maxWidth = 0;
-        Float2 sz;
+
+        bool bCanWrap = ( Layout == WIDGET_LAYOUT_VERTICAL_WRAP ) && !bAutoHeight;
+        if ( bCanWrap ) {
+            availHeight = GetAvailableHeight();
+        }
 
         for ( int i = 0 ; i < LayoutSlots.Size() ; i++ ) {
             WWidget * w = LayoutSlots[i];
@@ -1188,16 +1281,14 @@ void WWidget::UpdateLayout() {
                 continue;
             }
 
-            sz = w->GetSize();
-
             w->LayoutOffset.X = offsetX;
             w->LayoutOffset.Y = offsetY;
 
-            offsetY += sz.Y + VerticalPadding;
+            offsetY += w->CalcContentHeight() + VerticalPadding;
 
-            if ( Layout == WIDGET_LAYOUT_VERTICAL_WRAP && next ) {
-                maxWidth = FMath::Max( maxWidth, sz.X );
-                if ( offsetY + next->GetHeight() >= height ) {
+            if ( bCanWrap && next ) {
+                maxWidth = FMath::Max( maxWidth, w->CalcContentWidth() );
+                if ( offsetY + next->CalcContentHeight() >= availHeight ) {
                     offsetY = 0;
                     offsetX += maxWidth + HorizontalPadding;
                     maxWidth = 0;
@@ -1207,9 +1298,167 @@ void WWidget::UpdateLayout() {
     }
 }
 
+float WWidget::CalcContentWidth() {
+    float contentWidth;
 
+    if ( !bAutoWidth ) {
+        contentWidth = Size.X;
+    }
 
+    // Если установлен лэйаут WIDGET_LAYOUT_IMAGE, то размер окна устанавливается равным ImageSize.
+    else if ( Layout == WIDGET_LAYOUT_IMAGE ) {
+        contentWidth = ImageSize.X;
+    }
 
+    // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размер окна устанавливается равным размеру сетки.
+    else if ( Layout == WIDGET_LAYOUT_GRID ) {
+        int numColumns = FMath::Min( ColumnsCount, Columns.Size() );
+
+        if ( numColumns == 0 ) {
+            contentWidth = Size.X;
+        } else {
+#if 0
+            contentWidth = 0;
+            for ( int i = 0 ; i < numColumns ; i++ ) {
+                contentWidth += Columns[ i ].Size;
+            }
+#else
+            for ( int i = 0 ; i < numColumns ; i++ ) {
+                Columns[i].ActualSize = 0;
+            }
+            for ( WWidget * child : Childs ) {
+                if ( child->IsCollapsed() ) {
+                    continue;
+                }
+
+                if ( child->Column < Columns.Size() ) {
+                    float w = child->CalcContentWidth();
+                    Columns[ child->Column ].ActualSize = FMath::Max( Columns[ child->Column ].ActualSize, w );
+                }
+            }
+            contentWidth = 0;
+            for ( int i = 0 ; i < numColumns ; i++ ) {
+                contentWidth += Columns[i].ActualSize;
+            }
+#endif
+        }
+    }
+    else {
+        contentWidth = 0;
+
+        float offsetX = 0;
+
+        for ( WWidget * child : LayoutSlots ) {
+            if ( child->IsCollapsed() ) {
+                continue;
+            }
+
+            float w = child->CalcContentWidth();
+
+            float x;
+
+            switch ( Layout ) {
+            case WIDGET_LAYOUT_HORIZONTAL:
+            case WIDGET_LAYOUT_HORIZONTAL_WRAP:
+                x = offsetX;
+                offsetX += w + HorizontalPadding;
+                break;
+
+            default:
+                if ( child->HorizontalAlignment == WIDGET_ALIGNMENT_NONE ) {
+                    x = child->Position.X;
+                } else {
+                    x = 0;
+                }
+                break;
+            }
+
+            contentWidth = FMath::Max( contentWidth, x + w );
+        }
+    }
+
+    return contentWidth + Margin.X + Margin.Z;
+}
+
+float WWidget::CalcContentHeight() {
+    float contentHeight;
+
+    if ( !bAutoHeight ) {
+        contentHeight = Size.Y;
+    }
+
+    // Если установлен лэйаут WIDGET_LAYOUT_IMAGE, то размер окна устанавливается равным ImageSize.
+    else if ( Layout == WIDGET_LAYOUT_IMAGE ) {
+        contentHeight = ImageSize.Y;
+    }
+
+    // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размер окна устанавливается равным размеру сетки.
+    else if ( Layout == WIDGET_LAYOUT_GRID ) {
+        int numRows = FMath::Min( RowsCount, Rows.Size() );
+
+        if ( numRows == 0 ) {
+            contentHeight = Size.Y;
+        } else {
+#if 0
+            contentHeight = 0;
+            for ( int i = 0 ; i < numRows ; i++ ) {
+                contentHeight += Rows[ i ].Size;
+            }
+#else
+            for ( int i = 0 ; i < numRows ; i++ ) {
+                Rows[i].ActualSize = 0;
+            }
+            for ( WWidget * child : Childs ) {
+                if ( child->IsCollapsed() ) {
+                    continue;
+                }
+                if ( child->Row < Rows.Size() ) {
+                    float h = child->CalcContentHeight();
+                    Rows[ child->Row ].ActualSize = FMath::Max( Rows[ child->Row ].ActualSize, h );
+                }
+            }
+            contentHeight = 0;
+            for ( int i = 0 ; i < numRows ; i++ ) {
+                contentHeight += Rows[i].ActualSize;
+            }
+#endif
+        }
+    }
+    else {
+        contentHeight = 0;
+
+        float offsetY = 0;
+        for ( WWidget * child : LayoutSlots ) {
+            if ( child->IsCollapsed() ) {
+                continue;
+            }
+
+            float h = child->CalcContentHeight();
+
+            float y;
+
+            switch ( Layout ) {
+            case WIDGET_LAYOUT_VERTICAL:
+            case WIDGET_LAYOUT_VERTICAL_WRAP:
+                y = offsetY;
+                offsetY += h + VerticalPadding;
+                break;
+
+            default:
+                if ( child->VerticalAlignment == WIDGET_ALIGNMENT_NONE ) {
+                    y = child->Position.Y;
+                } else {
+                    y = 0;
+                }
+                break;
+            }
+
+            contentHeight = FMath::Max( contentHeight, y + h );
+        }
+    }
+
+    return contentHeight + Margin.Y + Margin.W;
+}
 
 
 
@@ -1220,10 +1469,16 @@ void WWidget::UpdateLayout() {
 
 #include <Engine/Widgets/Public/WWindow.h>
 #include <Engine/Widgets/Public/WButton.h>
-WWidget & ScrollTest() {
+#include <Engine/Widgets/Public/WScroll.h>
+#include <Engine/Widgets/Public/WSlider.h>
+#include <Engine/Widgets/Public/WTextEdit.h>
+
+
+
+WWidget & ScrollTest2() {
     return  WWidget::New< WWindow >()
             .SetCaptionText( "Test Scroll" )
-            .SetCaptionHeight( 30 )
+            .SetCaptionHeight( 24 )
             .SetBackgroundColor( FColor4( 0.5f,0.5f,0.5f ) )
             .SetStyle( WIDGET_STYLE_RESIZABLE )
             .SetSize( 400, 300 )
@@ -1234,6 +1489,9 @@ WWidget & ScrollTest() {
             .SetRowWidth( 0, 1 )
             .SetFitColumns( true )
             .SetFitRows( true )
+            //.SetClampWidth(true)
+            .SetAutoWidth( true )
+            //.SetAutoHeight( true )
 #if 0
             [
                 WWidget::New()
@@ -1280,12 +1538,14 @@ WWidget & ScrollTest() {
 #if 1
             [
                 WWidget::New()
-                .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+                //.SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetGridOffset( 0, 0 )
                 .SetLayout( WIDGET_LAYOUT_HORIZONTAL )
                 .SetHorizontalPadding( 8 )
                 .SetVerticalPadding( 4 )
+                .SetAutoWidth( true )
+                //.SetAutoHeight( true )
                 [
                     WDecorate::New< WBorderDecorate >()
                     .SetColor( FColor4( 1,1,0 ) )
@@ -1301,7 +1561,7 @@ WWidget & ScrollTest() {
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "1" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1309,7 +1569,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "2" )
                     .SetSize( 200, 50 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1317,7 +1577,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "3" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1326,7 +1586,7 @@ WWidget & ScrollTest() {
                     //.SetCollapsed()
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "4" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1334,7 +1594,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "5" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1342,7 +1602,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "6" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1350,7 +1610,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "7" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1358,7 +1618,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "8" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1366,7 +1626,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "9" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1374,7 +1634,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "10" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
@@ -1382,7 +1642,7 @@ WWidget & ScrollTest() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "11" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1412,20 +1672,16 @@ WWidget & ScrollTest() {
                     .SetThickness( 1 )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "Up" )
-                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
-                    .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetGridOffset( 0, 0 )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WWidget::New< WTextButton >()
                     .SetText( "Down" )
-                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
-                    .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
@@ -1433,8 +1689,6 @@ WWidget & ScrollTest() {
                 ]
                 [
                     WWidget::New()
-                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
-                    .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
@@ -1450,7 +1704,176 @@ WWidget & ScrollTest() {
             ];
 }
 
+WWidget & ScrollTest() {
 
+    WWidget & contentWidget =
+            WWidget::New()
+            .SetLayout( WIDGET_LAYOUT_VERTICAL )
+            .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+            //.SetAutoWidth( true )
+            .SetAutoHeight( true )
+            //.SetMaxSize( 128, 128 )
+            .SetPosition( 0, 0 )
+            [
+                WDecorate::New< WBorderDecorate >()
+                .SetColor( FColor4( 0.5f,0.5f,0.5f,0.5f ) )
+                .SetFillBackground( true )
+                .SetBackgroundColor( FColor4( 0.3f,0.3f,0.3f ) )
+                .SetThickness( 1 )
+            ]
+//            [
+//                ScrollTest2()
+//            ]
+    ;
+
+    contentWidget[
+            WWidget::New< WSlider >()
+            .SetMinValue( 30 )
+            .SetMaxValue( 100 )
+            .SetStep( 10 )
+            .SetSize( 400, 32 )
+            //.SetVerticalOrientation( true )
+            //.SetSize( 32, 400 )
+            .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
+            .SetStyle( WIDGET_STYLE_BACKGROUND )
+            ];
+
+    contentWidget[
+        WWidget::New< WScroll >()
+            
+            .SetAutoScrollH( true )
+            .SetAutoScrollV( true )
+            .SetScrollbarSize( 12 )
+            .SetButtonWidth( 12 )
+            .SetShowButtons( true )
+            .SetSliderRounding( 4 )
+            .SetContentWidget
+            (
+                WWidget::New< WTextEdit >()
+                //.SetSize( 0, 0 )
+                //.SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
+                .SetStyle( WIDGET_STYLE_BACKGROUND )
+            )
+            .SetSize( 400, 600 )
+            .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+            //.SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
+            .SetStyle( WIDGET_STYLE_BACKGROUND )
+    ];
+
+    for (int i =0;i<100;i++ ) {
+        contentWidget[
+                WWidget::New< WTextButton >()
+                .SetText( FString::Fmt( "test button %d", i ) )
+                .SetSize( 400, 32 )
+                .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
+                .SetStyle( WIDGET_STYLE_BACKGROUND )
+                ];
+    }
+
+    return WWidget::New< WWindow >()
+                .SetCaptionText( "Test Scroll" )
+                .SetCaptionHeight( 24 )
+                .SetBackgroundColor( FColor4( 0.5f,0.5f,0.5f ) )
+                .SetStyle( WIDGET_STYLE_RESIZABLE )
+                .SetLayout( WIDGET_LAYOUT_EXPLICIT )
+                .SetSize( 320,240 )
+                .SetMaximized()
+                //.SetAutoWidth( true )
+                //.SetAutoHeight( true )
+                [
+                    WWidget::New< WScroll >()
+                    .SetAutoScrollH( true )
+                    .SetAutoScrollV( true )
+                    .SetScrollbarSize( 12 )
+                    .SetButtonWidth( 12 )
+                    .SetShowButtons( true )
+                    .SetSliderRounding( 4 )
+                    .SetContentWidget
+                    (
+                        contentWidget
+                    )
+                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+                    .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
+                ]
+            ;
+
+#if 0
+
+    WWidget & scrollView =
+            WWidget::New()
+            .SetStyle( WIDGET_STYLE_TRANSPARENT )
+            .SetLayout( WIDGET_LAYOUT_EXPLICIT )
+            .SetSize( 300, 250 )
+            .SetPosition( 0, 0 )
+            .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
+            .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+            .SetMargin( 4,4,20,20 )
+            [
+                contentWidget
+            ];
+
+    WWidget & scrollBarV =
+            WWidget::New< WScrollBar >()
+            .SetView( &scrollView )
+            .SetContent( &contentWidget )
+            .SetSliderRounding( 4 )
+            .SetShowButtons( true )
+            .SetOrientation( SCROLL_BAR_VERTICAL )
+            .SetSize( 12, 250 )
+            .SetPosition( 0, 0 )
+            .SetStyle( WIDGET_STYLE_FOREGROUND )
+            .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
+            .SetHorizontalAlignment( WIDGET_ALIGNMENT_RIGHT )
+            .SetMargin(4,4,4,4);
+
+    WWidget & scrollBarH =
+            WWidget::New< WScrollBar >()
+            .SetView( &scrollView )
+            .SetContent( &contentWidget )
+            .SetSliderRounding( 4 )
+            .SetShowButtons( true )
+            .SetOrientation( SCROLL_BAR_HORIZONTAL )
+            .SetSize( 250, 12 )
+            .SetPosition( 0, 0 )
+            .SetStyle( WIDGET_STYLE_FOREGROUND )
+            .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+            .SetVerticalAlignment( WIDGET_ALIGNMENT_BOTTOM )
+            .SetMargin(4,4,4,4);
+
+    return WWidget::New< WWindow >()
+                .SetCaptionText( "Test Scroll" )
+                .SetCaptionHeight( 24 )
+                .SetBackgroundColor( FColor4( 0.5f,0.5f,0.5f ) )
+                .SetStyle( WIDGET_STYLE_RESIZABLE )
+                .SetLayout( WIDGET_LAYOUT_EXPLICIT )
+                .SetAutoWidth( true )
+                .SetAutoHeight( true )
+                [
+                    scrollView
+                ]
+                [
+                    WWidget::New()
+                    .SetStyle( WIDGET_STYLE_TRANSPARENT )
+                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+                    .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
+                    .SetMargin(0,0,0,20)
+                    [
+                        scrollBarV
+                    ]
+                ]
+                [
+                    WWidget::New()
+                    .SetStyle( WIDGET_STYLE_TRANSPARENT )
+                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+                    .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
+                    .SetMargin(0,0,20,0)
+                    [
+                        scrollBarH
+                    ]
+                ]
+            ;
+#endif
+}
 
 
 #if 0

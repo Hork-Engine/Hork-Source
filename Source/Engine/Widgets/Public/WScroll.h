@@ -30,29 +30,116 @@ SOFTWARE.
 
 #pragma once
 
-#if 0
-
 #include "WWidget.h"
+
+struct FScrollbarGeometry {
+    bool bDrawHScrollbar;
+    bool bDrawVScrollbar;
+
+    Float2 HScrollbarMins;
+    Float2 HScrollbarMaxs;
+
+    Float2 LeftButtonMins;
+    Float2 LeftButtonMaxs;
+
+    Float2 RightButtonMins;
+    Float2 RightButtonMaxs;
+
+    Float2 HSliderBgMins;
+    Float2 HSliderBgMaxs;
+
+    Float2 HSliderMins;
+    Float2 HSliderMaxs;
+
+    Float2 VScrollbarMins;
+    Float2 VScrollbarMaxs;
+
+    Float2 UpButtonMins;
+    Float2 UpButtonMaxs;
+
+    Float2 DownButtonMins;
+    Float2 DownButtonMaxs;
+
+    Float2 VSliderBgMins;
+    Float2 VSliderBgMaxs;
+
+    Float2 VSliderMins;
+    Float2 VSliderMaxs;
+
+    Float2 ContentSize;
+    Float2 ContentPosition;
+
+    Float2 ViewSize;
+};
 
 class ANGIE_API WScroll : public WWidget {
     AN_CLASS( WScroll, WWidget )
 
 public:
-    WScroll & SetHorizontalScroll( bool _HorizontalScroll );
-    WScroll & SetVericalScroll( bool _VerticalScroll );
-    WScroll & SetScrollableWidget( WWidget * _Scrollable );
+    WScroll & SetContentWidget( WWidget * _Content );
+    WScroll & SetContentWidget( WWidget & _Content );
+    WScroll & SetAutoScrollH( bool _AutoScroll );
+    WScroll & SetAutoScrollV( bool _AutoScroll );
+    WScroll & SetScrollbarSize( float _Size );
+    WScroll & SetButtonWidth( float _Width );
+    WScroll & SetShowButtons( bool _ShowButtons );
+    WScroll & SetSliderRounding( float _Rounding );
+    WScroll & SetBackgroundColor( FColor4 const & _Color );
+
+    WWidget * GetContentWidget();
+
+    void ScrollHome();
+
+    void ScrollEnd();
+
+    void ScrollDelta( Float2 const & _Offset );
+
+    void SetScrollPosition( Float2 const & _Position );
+
+    Float2 GetScrollPosition() const;
 
 protected:
     WScroll();
     ~WScroll();
 
+    // You can override OnDrawEvent and use GetScrollbarGeometry to
+    // draw your own style scrollbar.
+    FScrollbarGeometry const & GetScrollbarGeometry() const;
+
+    void Update( float _TimeStep );
+
+    void OnTransformDirty() override;
+
     void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
+    void OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) override;
+
+    void OnFocusReceive() override;
+
+    // There is no Tick() function for widget yet. So if you override OnDrawEvent don't forget to call Update()
     void OnDrawEvent( FCanvas & _Canvas ) override;
 
 private:
-    TRef< WWidget > ScrollableWidget;
-    bool bHorizontalScroll;
-    bool bVerticalScroll;
+    void UpdateMargin();
+    void UpdateScrollbarGeometry();
+    void UpdateScrollbarGeometryIfDirty();
+    void UpdateScrolling( float _TimeStep );
+    void MoveHSlider( float _Vec );
+    void MoveVSlider( float _Vec );
+
+    enum EScrollAction { A_NONE, A_SCROLL_LEFT, A_SCROLL_RIGHT, A_SCROLL_UP, A_SCROLL_DOWN, A_SCROLL_HSLIDER, A_SCROLL_VSLIDER };
+
+    FColor4 BackgroundColor;
+
+    TRef< WWidget > Content;
+    int Action;
+    float DragCursor;
+    FScrollbarGeometry Geometry;
+    float ScrollbarSize;
+    float ButtonWidth;
+    float SliderRounding;
+    bool bAutoScrollH;
+    bool bAutoScrollV;
+    bool bShowButtons;
+    bool bUpdateGeometry;
 };
-#endif

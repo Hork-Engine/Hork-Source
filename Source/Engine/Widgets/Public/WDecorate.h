@@ -167,6 +167,7 @@ private:
     EWidgetAlignment VerticalAlignment;
 };
 
+#if 0
 class WViewportDecorate : public WDecorate {
     AN_CLASS( WViewportDecorate, WDecorate )
 
@@ -198,3 +199,4 @@ private:
     EWidgetAlignment HorizontalAlignment;
     EWidgetAlignment VerticalAlignment;
 };
+#endif

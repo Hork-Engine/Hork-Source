@@ -30,59 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "WWidget.h"
-
-class WWidget;
-
-class ANGIE_API WMenuPopup : public FBaseObject {
-    AN_CLASS( WMenuPopup, FBaseObject )
-
-    friend class WDesktop;
-
-public:
-
-    // Add child widget
-    WMenuPopup & AddWidget( WWidget * _Widget ) {
-        Self->AddWidget( _Widget );
-//        Widgets.Append( _Widget );
-//        _Widget->AddRef();
-        Float2 sz = _Widget->GetCurrentSize();
-        Float4 const & margin = Self->GetMargin();
-        CurWidth = FMath::Max( CurWidth, sz.X );
-        CurHeight += sz.Y;
-        Self->SetSize( CurWidth + margin.X + margin.Z, CurHeight + margin.Y + margin.W );
-        return *this;
-    }
-
-    // Helper. Add child widget
-    WMenuPopup & operator[]( WWidget & _Widget ) {
-        return AddWidget( &_Widget );
-    }
-
-    // Helper. Add child decorate
-    WMenuPopup & operator[]( WDecorate & _Decorate ) {
-        Self->AddDecorate( &_Decorate );
-        return *this;
-    }
-
-    void SelectFirstItem();
-    void SelectLastItem();
-    void SelectNextItem();
-    void SelectPrevItem();
-    void SelectNextSubMenu();
-    void SelectPrevSubMenu();
-
-protected:
-    WMenuPopup();
-    ~WMenuPopup();
-
-private:
-    TRef< WWidget > Self;
-    float CurWidth;
-    float CurHeight;
-
-//    TPodArray< WWidget * > Widgets;
-};
+#include "WMenuPopup.h"
 
 class ANGIE_API WDesktop : public FBaseObject {
     AN_CLASS( WDesktop, FBaseObject )

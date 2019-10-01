@@ -29,17 +29,18 @@ SOFTWARE.
 */
 
 #include <Engine/Widgets/Public/WWindow.h>
+#include <Engine/Widgets/Public/WDesktop.h>
 
 AN_CLASS_META( WWindow )
 
 WWindow::WWindow() {
-    CaptionHeight = 30;
+    CaptionHeight = 24;
     TextColor = FColor4::White();
     TextHorizontalAlignment = WIDGET_ALIGNMENT_CENTER;
     TextVerticalAlignment = WIDGET_ALIGNMENT_CENTER;
-    CaptionColor = FColor4::Black();
-    BorderColor = FColor4::White();
-    RoundingCorners = CORNER_ROUND_ALL;
+    CaptionColor = FColor4(0.1f,0.4f,0.8f);
+    BorderColor = FColor4(1,1,1,0.5f);
+    RoundingCorners = CORNER_ROUND_TOP;
     BorderRounding = 8;
     BorderThickness = 2;
     bWindowBorder = true;
@@ -214,11 +215,13 @@ void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
         FWidgetShape const & windowShape = GetShape();
 
         int bgCorners = 0;
-        if ( RoundingCorners & CORNER_ROUND_BOTTOM_LEFT ) {
-            bgCorners |= CORNER_ROUND_BOTTOM_LEFT;
-        }
-        if ( RoundingCorners & CORNER_ROUND_BOTTOM_RIGHT ) {
-            bgCorners |= CORNER_ROUND_BOTTOM_RIGHT;
+        if ( !IsMaximized() ) {
+            if ( RoundingCorners & CORNER_ROUND_BOTTOM_LEFT ) {
+                bgCorners |= CORNER_ROUND_BOTTOM_LEFT;
+            }
+            if ( RoundingCorners & CORNER_ROUND_BOTTOM_RIGHT ) {
+                bgCorners |= CORNER_ROUND_BOTTOM_RIGHT;
+            }
         }
 
         if ( windowShape.IsEmpty() ) {
@@ -239,7 +242,7 @@ void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
         FWidgetShape const & windowShape = GetShape();
 
         if ( windowShape.IsEmpty() ) {
-            _Canvas.DrawRect( mins, maxs, BorderColor, BorderRounding, RoundingCorners, BorderThickness );
+            _Canvas.DrawRect( mins, maxs, BorderColor, BorderRounding, !IsMaximized() ? RoundingCorners : 0, BorderThickness );
         } else {
             _Canvas.DrawPolyline( windowShape.ToPtr(), windowShape.Size(), BorderColor, false, BorderThickness );
         }
@@ -251,15 +254,24 @@ void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
         Float2 captionSize = Float2( width, CaptionHeight );
 
         int captionCorners = 0;
-        if ( RoundingCorners & CORNER_ROUND_TOP_LEFT ) {
-            captionCorners |= CORNER_ROUND_TOP_LEFT;
-        }
-        if ( RoundingCorners & CORNER_ROUND_TOP_RIGHT ) {
-            captionCorners |= CORNER_ROUND_TOP_RIGHT;
+        if ( !IsMaximized() ) {
+            if ( RoundingCorners & CORNER_ROUND_TOP_LEFT ) {
+                captionCorners |= CORNER_ROUND_TOP_LEFT;
+            }
+            if ( RoundingCorners & CORNER_ROUND_TOP_RIGHT ) {
+                captionCorners |= CORNER_ROUND_TOP_RIGHT;
+            }
         }
 
+        WWidget * focus = GetDesktop()->GetFocusWidget();
+        for ( ; focus && focus != this ; focus = focus->GetParent() ) {}
+
         // Draw caption
-        _Canvas.DrawRectFilled( mins, mins + captionSize, CaptionColor, BorderRounding, captionCorners );
+        if ( focus ) {
+            _Canvas.DrawRectFilled( mins, mins + captionSize, CaptionColor, BorderRounding, captionCorners );
+        } else {
+            _Canvas.DrawRectFilled( mins, mins + captionSize, FColor4(0.3f,0.3f,0.3f)/*CaptionColor*/, BorderRounding, captionCorners );
+        }
 
         // Draw caption border
         if ( bCaptionBorder ) {

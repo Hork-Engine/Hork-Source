@@ -39,11 +39,15 @@ AN_CLASS_META( WDesktop )
 WDesktop::WDesktop() {
     Root = NewObject< WWidget >();
     Root->Desktop = this;
+    Root->SetMargin(0,0,0,0);
     bCursorVisible = true;
 }
 
 WDesktop::~WDesktop() {
-    FocusWidget = nullptr;
+    if ( FocusWidget ) {
+        FocusWidget->bFocus = false;
+        FocusWidget = nullptr;
+    }
     DraggingWidget = nullptr;
     MouseClickWidget = nullptr;
     MouseFocusWidget = nullptr;
@@ -59,7 +63,7 @@ WDesktop & WDesktop::AddWidget( WWidget * _Widget ) {
 }
 
 WDesktop & WDesktop::RemoveWidget( WWidget * _Widget ) {
-    if ( _Widget->Parent == Root ) {
+    if ( _Widget->GetParent() == Root ) {
         _Widget->Unparent();
     }
     return *this;
@@ -135,8 +139,6 @@ WWidget * WDesktop::GetWidgetUnderCursor_r( WWidget * _Widget, Float2 const & _C
         return nullptr;
     }
 
-    WWidget * hoveredWidget = nullptr;
-
     Float2 rectMins, rectMaxs;
     Float2 mins, maxs;
 
@@ -182,10 +184,17 @@ WWidget * WDesktop::GetWidgetUnderCursor_r( WWidget * _Widget, Float2 const & _C
 
     // from top to bottom level
     for ( int i = _Widget->Childs.Size() - 1; i >= 0; i-- ) {
-        hoveredWidget = GetWidgetUnderCursor_r( _Widget->Childs[ i ], mins, maxs, _Position );
+        WWidget * hoveredWidget = GetWidgetUnderCursor_r( _Widget->Childs[ i ], mins, maxs, _Position );
         if ( hoveredWidget ) {
+//            if ( hoveredWidget->GetStyle() & WIDGET_STYLE_TRANSPARENT ) {
+//                continue;
+//            }
             return hoveredWidget;
         }
+    }
+
+    if ( _Widget->GetStyle() & WIDGET_STYLE_TRANSPARENT ) {
+        return nullptr;//_Widget->GetParent();
     }
 
     return _Widget;
@@ -296,7 +305,7 @@ void WDesktop::SetFocusWidget( WWidget * _Focus ) {
         return;
     }
 
-    if ( _Focus && ( _Focus->Style & WIDGET_STYLE_NO_INPUTS ) ) {
+    if ( _Focus && ( _Focus->GetStyle() & WIDGET_STYLE_NO_INPUTS ) ) {
         return;
     }
 
@@ -312,15 +321,6 @@ void WDesktop::SetFocusWidget( WWidget * _Focus ) {
         FocusWidget->OnFocusReceive();
     }
 }
-
-//static bool IsPopup( WWidget * _Widget ) {
-//    for ( WWidget const * w = _Widget ; w && !w->IsRoot() ; w = w->Parent ) {
-//        if ( AN_HASFlAG( w->GetStyle(), WIDGET_STYLE_POPUP ) ) {
-//            return true;
-//        }
-//    }
-//    return false;
-//}
 
 void WDesktop::GenerateKeyEvents( struct FKeyEvent const & _Event, double _TimeStamp ) {
     if ( DraggingWidget ) {
@@ -357,7 +357,7 @@ void WDesktop::GenerateKeyEvents( struct FKeyEvent const & _Event, double _TimeS
 }
 
 void WDesktop::GenerateMouseButtonEvents( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
-    WWidget * widget;
+    WWidget * widget = nullptr;
     const int DraggingButton = 0;
 
     MouseFocusWidget = nullptr;
@@ -381,9 +381,9 @@ void WDesktop::GenerateMouseButtonEvents( struct FMouseButtonEvent const & _Even
             widget = GetWidgetUnderCursor_r( Popup->Self, mins, maxs, CursorPosition );
             if ( widget == nullptr ) {
                 ClosePopupMenu();
-                return;
             }
-        } else {
+        }
+        if ( !widget ) {
             widget = GetExclusive();
             if ( widget ) {
                 Float2 mins, maxs;
@@ -398,8 +398,8 @@ void WDesktop::GenerateMouseButtonEvents( struct FMouseButtonEvent const & _Even
                 widget = GetWidgetUnderCursor( CursorPosition );
             }
         }
-        while ( widget && ( widget->Style & WIDGET_STYLE_NO_INPUTS ) ) {
-            widget = widget->Parent;
+        while ( widget && ( widget->GetStyle() & WIDGET_STYLE_NO_INPUTS ) ) {
+            widget = widget->GetParent();
         }
         if ( widget && widget->IsVisible() ) {
 
@@ -500,8 +500,8 @@ void WDesktop::GenerateMouseWheelEvents( struct FMouseWheelEvent const & _Event,
             widget = GetWidgetUnderCursor( CursorPosition );
         }
     }
-    while ( widget && ( widget->Style & WIDGET_STYLE_NO_INPUTS ) ) {
-        widget = widget->Parent;
+    while ( widget && ( widget->GetStyle() & WIDGET_STYLE_NO_INPUTS ) ) {
+        widget = widget->GetParent();
     }
     if ( widget && widget->IsVisible() ) {
         widget->SetFocus();
@@ -598,8 +598,8 @@ void WDesktop::GenerateMouseMoveEvents( struct FMouseMoveEvent const & _Event, d
                 widget = GetWidgetUnderCursor( CursorPosition );
             }
         }
-        while ( widget && ( widget->Style & WIDGET_STYLE_NO_INPUTS ) ) {
-            widget = widget->Parent;
+        while ( widget && ( widget->GetStyle() & WIDGET_STYLE_NO_INPUTS ) ) {
+            widget = widget->GetParent();
         }
 
     } else {
@@ -653,56 +653,4 @@ void WDesktop::OnDrawBackground( FCanvas & _Canvas ) {
 
 void WDesktop::OnDrawCursor( FCanvas & _Canvas ) {
     _Canvas.DrawCircleFilled( CursorPosition, 5.0f, FColor4::White() );
-}
-
-
-
-AN_CLASS_META( WMenuPopup )
-
-WMenuPopup::WMenuPopup() {
-    Self = NewObject< WWidget >();
-    Self->SetStyle( WIDGET_STYLE_POPUP );
-    Self->SetLayout( WIDGET_LAYOUT_VERTICAL );
-}
-
-WMenuPopup::~WMenuPopup() {
-//    for ( WWidget * w : Widgets ) {
-//        w->RemoveRef();
-//    }
-}
-
-void WMenuPopup::SelectFirstItem() {
-    GLogger.Printf( "SelectFirstItem\n" );
-
-    // TODO: ...
-}
-
-void WMenuPopup::SelectLastItem() {
-    GLogger.Printf( "SelectLastItem\n" );
-
-    // TODO: ...
-}
-
-void WMenuPopup::SelectNextItem() {
-    GLogger.Printf( "SelectNextItem\n" );
-
-    // TODO: ...
-}
-
-void WMenuPopup::SelectPrevItem() {
-    GLogger.Printf( "SelectPrevItem\n" );
-
-    // TODO: ...
-}
-
-void WMenuPopup::SelectNextSubMenu() {
-    GLogger.Printf( "SelectNextSubMenu\n" );
-
-    // TODO: ...
-}
-
-void WMenuPopup::SelectPrevSubMenu() {
-    GLogger.Printf( "SelectPrevSubMenu\n" );
-
-    // TODO: ...
 }
