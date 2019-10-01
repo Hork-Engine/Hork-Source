@@ -2725,6 +2725,102 @@ const char* ImFont::CalcWordWrapPositionA(float scale, const char* text, const c
     return s;
 }
 
+// 0xc0de:
+FWideChar const * ImFont::CalcWordWrapPositionW( float scale, FWideChar const * text, FWideChar const * text_end, float wrap_width ) const
+{
+    // Simple word-wrapping for English, not full-featured. Please submit failing cases!
+    // FIXME: Much possible improvements (don't cut things like "word !", "word!!!" but cut within "word,,,,", more sensible support for punctuations, support for Unicode punctuations, etc.)
+
+    // For references, possible wrap point marked with ^
+    //  "aaa bbb, ccc,ddd. eee   fff. ggg!"
+    //      ^    ^    ^   ^   ^__    ^    ^
+
+    // List of hardcoded separators: .,;!?'"
+
+    // Skip extra blanks after a line returns (that includes not counting them in width computation)
+    // e.g. "Hello    world" --> "Hello" "World"
+
+    // Cut words that cannot possibly fit within one line.
+    // e.g.: "The tropical fish" with ~5 characters worth of width --> "The tr" "opical" "fish"
+
+    float line_width = 0.0f;
+    float word_width = 0.0f;
+    float blank_width = 0.0f;
+    wrap_width /= scale; // We work with unscaled widths to avoid scaling every characters
+
+    FWideChar const * word_end = text;
+    FWideChar const * prev_word_end = NULL;
+    bool inside_word = true;
+
+    FWideChar const * s = text;
+    while ( s < text_end )
+    {
+        FWideChar c = *s;
+
+        if ( c == 0 )
+            break;
+
+        FWideChar const * next_s = s + 1;
+
+        if ( c < 32 )
+        {
+            if ( c == '\n' )
+            {
+                line_width = word_width = blank_width = 0.0f;
+                inside_word = true;
+                s = next_s;
+                continue;
+            }
+            if ( c == '\r' )
+            {
+                s = next_s;
+                continue;
+            }
+        }
+
+        const float char_width = ( ( int )c < IndexAdvanceX.Size ? IndexAdvanceX.Data[ c ] : FallbackAdvanceX );
+        if ( ImCharIsBlankW( c ) )
+        {
+            if ( inside_word )
+            {
+                line_width += blank_width;
+                blank_width = 0.0f;
+                word_end = s;
+            }
+            blank_width += char_width;
+            inside_word = false;
+        } else
+        {
+            word_width += char_width;
+            if ( inside_word )
+            {
+                word_end = next_s;
+            } else
+            {
+                prev_word_end = word_end;
+                line_width += word_width + blank_width;
+                word_width = blank_width = 0.0f;
+            }
+
+            // Allow wrapping after punctuation.
+            inside_word = !( c == '.' || c == ',' || c == ';' || c == '!' || c == '?' || c == '\"' );
+        }
+
+        // We ignore blank width at the end of the line (they can be skipped)
+        if ( line_width + word_width >= wrap_width )
+        {
+            // Words that cannot possibly fit within an entire line will be cut anywhere.
+            if ( word_width < wrap_width )
+                s = prev_word_end ? prev_word_end : word_end;
+            break;
+        }
+
+        s = next_s;
+    }
+
+    return s;
+}
+
 ImVec2 ImFont::CalcTextSizeA(float size, float max_width, float wrap_width, const char* text_begin, const char* text_end, const char** remaining) const
 {
     if (!text_end)
