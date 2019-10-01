@@ -93,7 +93,9 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
 
 FMaterialInstance::FMaterialInstance() {
     static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
-    static TStaticInternalResourceFinder< FTexture > TextureResource( _CTS( "FTexture.Default" ) );
+    //static TStaticInternalResourceFinder< FTexture > TextureResource( _CTS( "FTexture.Default" ) );
+    //static TStaticResourceFinder< FTexture > TextureResource( _CTS( "gridyblack.png" ) );
+    static TStaticResourceFinder< FTexture > TextureResource( _CTS( "uv_checker.png" ) );
 
     Material = MaterialResource.GetObject();
 
@@ -104,7 +106,9 @@ void FMaterialInstance::InitializeInternalResource( const char * _InternalResour
     if ( !FString::Icmp( _InternalResourceName, "FMaterialInstance.Default" ) )
     {
         static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
-        static TStaticInternalResourceFinder< FTexture > TextureResource( _CTS( "FTexture.Default" ) );
+        //static TStaticInternalResourceFinder< FTexture > TextureResource( _CTS( "FTexture.Default" ) );
+        //static TStaticResourceFinder< FTexture > TextureResource( _CTS( "gridyblack.png" ) );
+        static TStaticResourceFinder< FTexture > TextureResource( _CTS( "uv_checker.png" ) );
 
         Material = MaterialResource.GetObject();
 
