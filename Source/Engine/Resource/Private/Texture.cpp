@@ -360,7 +360,7 @@ void FTexture::InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, i
 
 void FTexture::InitializeInternalResource( const char * _InternalResourceName ) {
     if ( !FString::Icmp( _InternalResourceName, "FTexture.White" )
-         || !FString::Icmp( _InternalResourceName, "FTexture.Default" ) ) {
+        || !FString::Icmp( _InternalResourceName, "FTexture.Default" ) ) {
 
         // White texture
 

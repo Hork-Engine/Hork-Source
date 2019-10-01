@@ -412,12 +412,12 @@ void FIndexedMesh::InitializeBoxMesh( const Float3 & _Size, float _TexCoordScale
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializeSphereMesh( float _Radius, float _TexCoordScale, int _HDiv, int _VDiv ) {
+void FIndexedMesh::InitializeSphereMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
     TPodArray< FMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
     
-    CreateSphereMesh( vertices, indices, bounds, _Radius, _TexCoordScale, _HDiv, _VDiv );
+    CreateSphereMesh( vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs );
 
     Initialize( vertices.Size(), indices.Size(), 1 );
     WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
@@ -440,13 +440,13 @@ void FIndexedMesh::InitializePlaneMesh( float _Width, float _Height, float _TexC
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, int resx, int resy, float _TexCoordScale, bool _TwoSided ) {
+void FIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
     TPodArray< FMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreatePatchMesh( vertices, indices, bounds,
-        Corner00, Corner10, Corner01, Corner11, resx, resy, _TexCoordScale, _TwoSided );
+        Corner00, Corner10, Corner01, Corner11, _TexCoordScale, _TwoSided, _NumVerticalSubdivs, _NumHorizontalSubdivs );
 
     Initialize( vertices.Size(), indices.Size(), 1 );
     WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
@@ -455,12 +455,26 @@ void FIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & 
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _VDiv ) {
+void FIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
     TPodArray< FMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
-    CreateCylinderMesh( vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _VDiv );
+    CreateCylinderMesh( vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs );
+
+    Initialize( vertices.Size(), indices.Size(), 1 );
+    WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
+    WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
+
+    Subparts[ 0 ]->BoundingBox = bounds;
+}
+
+void FIndexedMesh::InitializeCapsuleMesh( float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+    TPodArray< FMeshVertex > vertices;
+    TPodArray< unsigned int > indices;
+    BvAxisAlignedBox bounds;
+
+    CreateCapsuleMesh( vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs );
 
     Initialize( vertices.Size(), indices.Size(), 1 );
     WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
@@ -481,7 +495,7 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
     }
 
     if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Sphere" ) ) {
-        InitializeSphereMesh( 0.5f, 1, 32, 32 );
+        InitializeSphereMesh( 0.5f, 1 );
         //SetName( _InternalResourceName );
         FCollisionSphere * collisionBody = BodyComposition.AddCollisionBody< FCollisionSphere >();
         collisionBody->Radius = 0.5f;
@@ -489,10 +503,19 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
     }
 
     if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Cylinder" ) ) {
-        InitializeCylinderMesh( 0.5f, 1, 1, 32 );
+        InitializeCylinderMesh( 0.5f, 1, 1 );
         //SetName( _InternalResourceName );
         FCollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< FCollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
+        return;
+    }
+
+    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Capsule" ) ) {
+        InitializeCapsuleMesh( 0.5f, 1.0f, 1 );
+        //SetName( _InternalResourceName );
+        FCollisionCapsule * collisionBody = BodyComposition.AddCollisionBody< FCollisionCapsule >();
+        collisionBody->Radius = 0.5f;
+        collisionBody->Height = 1;
         return;
     }
 
@@ -1040,26 +1063,26 @@ void FMeshAsset::Write( FFileStream & f ) {
 void CalcTangentSpace( FMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices ) {
     Float3 binormal, tangent;
 
-    TPodArray< Float3 > Binormals;
-    Binormals.ResizeInvalidate( _NumVerts );
+    TPodArray< Float3 > binormals;
+    binormals.ResizeInvalidate( _NumVerts );
 
     for ( int i = 0; i < _NumVerts; i++ ) {
         _VertexArray[ i ].Tangent = Float3( 0 );
-        Binormals[ i ] = Float3( 0 );
+        binormals[ i ] = Float3( 0 );
     }
 
     for ( unsigned int i = 0; i < _NumIndices; i += 3 ) {
-        unsigned int a = _IndexArray[ i ];
-        unsigned int b = _IndexArray[ i + 1 ];
-        unsigned int c = _IndexArray[ i + 2 ];
+        const unsigned int a = _IndexArray[ i ];
+        const unsigned int b = _IndexArray[ i + 1 ];
+        const unsigned int c = _IndexArray[ i + 2 ];
 
         Float3 e1 = _VertexArray[ b ].Position - _VertexArray[ a ].Position;
         Float3 e2 = _VertexArray[ c ].Position - _VertexArray[ a ].Position;
         Float2 et1 = _VertexArray[ b ].TexCoord - _VertexArray[ a ].TexCoord;
         Float2 et2 = _VertexArray[ c ].TexCoord - _VertexArray[ a ].TexCoord;
 
-        float denom = et1.X*et2.Y - et1.Y*et2.X;
-        float scale = ( fabsf( denom ) < 0.0001f ) ? 1.0f : ( 1.0 / denom );
+        const float denom = et1.X*et2.Y - et1.Y*et2.X;
+        const float scale = ( fabsf( denom ) < 0.0001f ) ? 1.0f : ( 1.0 / denom );
         tangent = ( e1 * et2.Y - e2 * et1.Y ) * scale;
         binormal = ( e2 * et1.X - e1 * et2.X ) * scale;
 
@@ -1067,31 +1090,28 @@ void CalcTangentSpace( FMeshVertex * _VertexArray, unsigned int _NumVerts, unsig
         _VertexArray[ b ].Tangent += tangent;
         _VertexArray[ c ].Tangent += tangent;
 
-        Binormals[ a ] += binormal;
-        Binormals[ b ] += binormal;
-        Binormals[ c ] += binormal;
+        binormals[ a ] += binormal;
+        binormals[ b ] += binormal;
+        binormals[ c ] += binormal;
     }
 
     for ( int i = 0; i < _NumVerts; i++ ) {
         const Float3 & n = _VertexArray[ i ].Normal;
         const Float3 & t = _VertexArray[ i ].Tangent;
-
         _VertexArray[ i ].Tangent = ( t - n * FMath::Dot( n, t ) ).Normalized();
-
-        _VertexArray[ i ].Handedness = CalcHandedness( t, Binormals[ i ].Normalized(), n );
+        _VertexArray[ i ].Handedness = CalcHandedness( t, binormals[ i ].Normalized(), n );
     }
 }
 
 void CreateBoxMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
-    const unsigned int indices[ 6 * 6 ] =
-    { 0,1,2,2,3,0, // front face
-        4,5,6,6,7,4, // back face
-
-        5 + 8 * 1,0 + 8 * 1,3 + 8 * 1,3 + 8 * 1,6 + 8 * 1,5 + 8 * 1, // left face
-        1 + 8 * 1,4 + 8 * 1,7 + 8 * 1,7 + 8 * 1,2 + 8 * 1,1 + 8 * 1, // right face
-
-        3 + 8 * 2,2 + 8 * 2,7 + 8 * 2,7 + 8 * 2,6 + 8 * 2,3 + 8 * 2, // top face
-        1 + 8 * 2,0 + 8 * 2,5 + 8 * 2,5 + 8 * 2,4 + 8 * 2,1 + 8 * 2, // bottom face
+    constexpr unsigned int indices[ 6 * 6 ] =
+    {
+        0, 1, 2, 2, 3, 0, // front face
+        4, 5, 6, 6, 7, 4, // back face
+        5 + 8 * 1, 0 + 8 * 1, 3 + 8 * 1, 3 + 8 * 1, 6 + 8 * 1, 5 + 8 * 1, // left face
+        1 + 8 * 1, 4 + 8 * 1, 7 + 8 * 1, 7 + 8 * 1, 2 + 8 * 1, 1 + 8 * 1, // right face
+        3 + 8 * 2, 2 + 8 * 2, 7 + 8 * 2, 7 + 8 * 2, 6 + 8 * 2, 3 + 8 * 2, // top face
+        1 + 8 * 2, 0 + 8 * 2, 5 + 8 * 2, 5 + 8 * 2, 4 + 8 * 2, 1 + 8 * 2, // bottom face
     };
 
     _Vertices.ResizeInvalidate( 24 );
@@ -1099,229 +1119,224 @@ void CreateBoxMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned in
 
     memcpy( _Indices.ToPtr(), indices, sizeof( indices ) );
 
-    Float3 HalfSize = _Size * 0.5f;
+    const Float3 halfSize = _Size * 0.5f;
 
-    _Bounds.Mins = -HalfSize;
-    _Bounds.Maxs = HalfSize;
+    _Bounds.Mins = -halfSize;
+    _Bounds.Maxs = halfSize;
 
-    const Float3 & Mins = _Bounds.Mins;
-    const Float3 & Maxs = _Bounds.Maxs;
+    const Float3 & mins = _Bounds.Mins;
+    const Float3 & maxs = _Bounds.Maxs;
 
     FMeshVertex * pVerts = _Vertices.ToPtr();
 
-    pVerts[ 0 + 8 * 0 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z ); // 0
+    pVerts[ 0 + 8 * 0 ].Position = Float3( mins.X, mins.Y, maxs.Z ); // 0
     pVerts[ 0 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
     pVerts[ 0 + 8 * 0 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-    pVerts[ 1 + 8 * 0 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z ); // 1
+    pVerts[ 1 + 8 * 0 ].Position = Float3( maxs.X, mins.Y, maxs.Z ); // 1
     pVerts[ 1 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
     pVerts[ 1 + 8 * 0 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-    pVerts[ 2 + 8 * 0 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z ); // 2
+    pVerts[ 2 + 8 * 0 ].Position = Float3( maxs.X, maxs.Y, maxs.Z ); // 2
     pVerts[ 2 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
     pVerts[ 2 + 8 * 0 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
-    pVerts[ 3 + 8 * 0 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z ); // 3
+    pVerts[ 3 + 8 * 0 ].Position = Float3( mins.X, maxs.Y, maxs.Z ); // 3
     pVerts[ 3 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
     pVerts[ 3 + 8 * 0 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
 
-    pVerts[ 4 + 8 * 0 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z ); // 4
+    pVerts[ 4 + 8 * 0 ].Position = Float3( maxs.X, mins.Y, mins.Z ); // 4
     pVerts[ 4 + 8 * 0 ].Normal = Float3( 0, 0, -1 );
     pVerts[ 4 + 8 * 0 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-    pVerts[ 5 + 8 * 0 ].Position = Float3( Mins.X, Mins.Y, Mins.Z ); // 5
+    pVerts[ 5 + 8 * 0 ].Position = Float3( mins.X, mins.Y, mins.Z ); // 5
     pVerts[ 5 + 8 * 0 ].Normal = Float3( 0, 0, -1 );
     pVerts[ 5 + 8 * 0 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-    pVerts[ 6 + 8 * 0 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z ); // 6
+    pVerts[ 6 + 8 * 0 ].Position = Float3( mins.X, maxs.Y, mins.Z ); // 6
     pVerts[ 6 + 8 * 0 ].Normal = Float3( 0, 0, -1 );
     pVerts[ 6 + 8 * 0 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
-    pVerts[ 7 + 8 * 0 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z ); // 7
+    pVerts[ 7 + 8 * 0 ].Position = Float3( maxs.X, maxs.Y, mins.Z ); // 7
     pVerts[ 7 + 8 * 0 ].Normal = Float3( 0, 0, -1 );
     pVerts[ 7 + 8 * 0 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
 
-    pVerts[ 0 + 8 * 1 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z ); // 0
+    pVerts[ 0 + 8 * 1 ].Position = Float3( mins.X, mins.Y, maxs.Z ); // 0
     pVerts[ 0 + 8 * 1 ].Normal = Float3( -1, 0, 0 );
     pVerts[ 0 + 8 * 1 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-    pVerts[ 1 + 8 * 1 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z ); // 1
+    pVerts[ 1 + 8 * 1 ].Position = Float3( maxs.X, mins.Y, maxs.Z ); // 1
     pVerts[ 1 + 8 * 1 ].Normal = Float3( 1, 0, 0 );
     pVerts[ 1 + 8 * 1 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-    pVerts[ 2 + 8 * 1 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z ); // 2
+    pVerts[ 2 + 8 * 1 ].Position = Float3( maxs.X, maxs.Y, maxs.Z ); // 2
     pVerts[ 2 + 8 * 1 ].Normal = Float3( 1, 0, 0 );
     pVerts[ 2 + 8 * 1 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
-    pVerts[ 3 + 8 * 1 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z ); // 3
+    pVerts[ 3 + 8 * 1 ].Position = Float3( mins.X, maxs.Y, maxs.Z ); // 3
     pVerts[ 3 + 8 * 1 ].Normal = Float3( -1, 0, 0 );
     pVerts[ 3 + 8 * 1 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
 
-    pVerts[ 4 + 8 * 1 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z ); // 4
+    pVerts[ 4 + 8 * 1 ].Position = Float3( maxs.X, mins.Y, mins.Z ); // 4
     pVerts[ 4 + 8 * 1 ].Normal = Float3( 1, 0, 0 );
     pVerts[ 4 + 8 * 1 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-    pVerts[ 5 + 8 * 1 ].Position = Float3( Mins.X, Mins.Y, Mins.Z ); // 5
+    pVerts[ 5 + 8 * 1 ].Position = Float3( mins.X, mins.Y, mins.Z ); // 5
     pVerts[ 5 + 8 * 1 ].Normal = Float3( -1, 0, 0 );
     pVerts[ 5 + 8 * 1 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-    pVerts[ 6 + 8 * 1 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z ); // 6
+    pVerts[ 6 + 8 * 1 ].Position = Float3( mins.X, maxs.Y, mins.Z ); // 6
     pVerts[ 6 + 8 * 1 ].Normal = Float3( -1, 0, 0 );
     pVerts[ 6 + 8 * 1 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
-    pVerts[ 7 + 8 * 1 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z ); // 7
+    pVerts[ 7 + 8 * 1 ].Position = Float3( maxs.X, maxs.Y, mins.Z ); // 7
     pVerts[ 7 + 8 * 1 ].Normal = Float3( 1, 0, 0 );
     pVerts[ 7 + 8 * 1 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
 
-    pVerts[ 1 + 8 * 2 ].Position = Float3( Maxs.X, Mins.Y, Maxs.Z ); // 1
+    pVerts[ 1 + 8 * 2 ].Position = Float3( maxs.X, mins.Y, maxs.Z ); // 1
     pVerts[ 1 + 8 * 2 ].Normal = Float3( 0, -1, 0 );
     pVerts[ 1 + 8 * 2 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
-    pVerts[ 0 + 8 * 2 ].Position = Float3( Mins.X, Mins.Y, Maxs.Z ); // 0
+    pVerts[ 0 + 8 * 2 ].Position = Float3( mins.X, mins.Y, maxs.Z ); // 0
     pVerts[ 0 + 8 * 2 ].Normal = Float3( 0, -1, 0 );
     pVerts[ 0 + 8 * 2 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
-    pVerts[ 5 + 8 * 2 ].Position = Float3( Mins.X, Mins.Y, Mins.Z ); // 5
+    pVerts[ 5 + 8 * 2 ].Position = Float3( mins.X, mins.Y, mins.Z ); // 5
     pVerts[ 5 + 8 * 2 ].Normal = Float3( 0, -1, 0 );
     pVerts[ 5 + 8 * 2 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-    pVerts[ 4 + 8 * 2 ].Position = Float3( Maxs.X, Mins.Y, Mins.Z ); // 4
+    pVerts[ 4 + 8 * 2 ].Position = Float3( maxs.X, mins.Y, mins.Z ); // 4
     pVerts[ 4 + 8 * 2 ].Normal = Float3( 0, -1, 0 );
     pVerts[ 4 + 8 * 2 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
 
-    pVerts[ 3 + 8 * 2 ].Position = Float3( Mins.X, Maxs.Y, Maxs.Z ); // 3
+    pVerts[ 3 + 8 * 2 ].Position = Float3( mins.X, maxs.Y, maxs.Z ); // 3
     pVerts[ 3 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
     pVerts[ 3 + 8 * 2 ].TexCoord = Float2( 0, 1 )*_TexCoordScale;
 
-    pVerts[ 2 + 8 * 2 ].Position = Float3( Maxs.X, Maxs.Y, Maxs.Z ); // 2
+    pVerts[ 2 + 8 * 2 ].Position = Float3( maxs.X, maxs.Y, maxs.Z ); // 2
     pVerts[ 2 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
     pVerts[ 2 + 8 * 2 ].TexCoord = Float2( 1, 1 )*_TexCoordScale;
 
-    pVerts[ 7 + 8 * 2 ].Position = Float3( Maxs.X, Maxs.Y, Mins.Z ); // 7
+    pVerts[ 7 + 8 * 2 ].Position = Float3( maxs.X, maxs.Y, mins.Z ); // 7
     pVerts[ 7 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
     pVerts[ 7 + 8 * 2 ].TexCoord = Float2( 1, 0 )*_TexCoordScale;
 
-    pVerts[ 6 + 8 * 2 ].Position = Float3( Mins.X, Maxs.Y, Mins.Z ); // 6
+    pVerts[ 6 + 8 * 2 ].Position = Float3( mins.X, maxs.Y, mins.Z ); // 6
     pVerts[ 6 + 8 * 2 ].Normal = Float3( 0, 1, 0 );
     pVerts[ 6 + 8 * 2 ].TexCoord = Float2( 0, 0 )*_TexCoordScale;
 
-    CalcTangentSpace( pVerts, _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+    CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateSphereMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _HDiv, int _VDiv ) {
+void CreateSphereMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
     int x, y;
-    float VerticalAngle, HorizontalAngle;
-    const float RadWidth = _Radius;
-    const float RadHeight = _Radius;
-    unsigned int Quad[ 4 ];
+    float verticalAngle, horizontalAngle;
+    unsigned int quad[ 4 ];
 
-    _Vertices.ResizeInvalidate( ( _VDiv + 1 )*( _HDiv + 1 ) );
-    _Indices.ResizeInvalidate( _VDiv * _HDiv * 6 );
+    _NumVerticalSubdivs = FMath::Max( _NumVerticalSubdivs, 4 );
+    _NumHorizontalSubdivs = FMath::Max( _NumHorizontalSubdivs, 4 );
+
+    _Vertices.ResizeInvalidate( ( _NumHorizontalSubdivs + 1 )*( _NumVerticalSubdivs + 1 ) );
+    _Indices.ResizeInvalidate( _NumHorizontalSubdivs * _NumVerticalSubdivs * 6 );
 
     _Bounds.Mins.X = _Bounds.Mins.Y = _Bounds.Mins.Z = -_Radius;
     _Bounds.Maxs.X = _Bounds.Maxs.Y = _Bounds.Maxs.Z = _Radius;
 
-    FMeshVertex * pVerts = _Vertices.ToPtr();
-    FMeshVertex * pVert;
+    FMeshVertex * pVert = _Vertices.ToPtr();
 
-    const float VerticalStep = FMath::_PI / _HDiv;
-    const float HorizontalStep = FMath::_2PI / _VDiv;
-    const float VerticalScale = 1.0f / _VDiv;
-    const float HorizontalScale = 1.0f / _HDiv;
+    const float verticalStep = FMath::_PI / _NumVerticalSubdivs;
+    const float horizontalStep = FMath::_2PI / _NumHorizontalSubdivs;
+    const float verticalScale = 1.0f / _NumVerticalSubdivs;
+    const float horizontalScale = 1.0f / _NumHorizontalSubdivs;
 
-    for ( y = 0, VerticalAngle = -FMath::_HALF_PI; y <= _HDiv; y++ ) {
+    for ( y = 0, verticalAngle = -FMath::_HALF_PI; y <= _NumVerticalSubdivs; y++ ) {
         float h, r;
-        FMath::RadSinCos( VerticalAngle, h, r );
-        h *= RadHeight;
-        r *= RadWidth;
-        for ( x = 0, HorizontalAngle = 0; x <= _VDiv; x++ ) {
+        FMath::RadSinCos( verticalAngle, h, r );
+        const float scaledH = h * _Radius;
+        const float scaledR = r * _Radius;
+        for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
             float s, c;
-            FMath::RadSinCos( HorizontalAngle, s, c );
-            pVert = pVerts + ( y*( _VDiv + 1 ) + x );
-            pVert->Position = Float3( r*c, h, r*s );
-            pVert->TexCoord = Float2( 1.0f - static_cast< float >( x ) * VerticalScale, 1.0f - static_cast< float >( y ) * HorizontalScale ) * _TexCoordScale;
-            pVert->Normal = pVert->Position / _Radius;
-            HorizontalAngle += HorizontalStep;
+            FMath::RadSinCos( horizontalAngle, s, c );
+            pVert->Position = Float3( scaledR*c, scaledH, scaledR*s );
+            pVert->TexCoord = Float2( 1.0f - static_cast< float >( x ) * horizontalScale, 1.0f - static_cast< float >( y ) * verticalScale ) * _TexCoordScale;
+            pVert->Normal.X = r*c;
+            pVert->Normal.Y = h;
+            pVert->Normal.Z = r*s;
+            pVert++;
+            horizontalAngle += horizontalStep;
         }
-        VerticalAngle += VerticalStep;
+        verticalAngle += verticalStep;
     }
 
     unsigned int * pIndices = _Indices.ToPtr();
-    for ( y = 0; y < _HDiv; y++ ) {
-        int y2 = y + 1;
-        for ( x = 0; x < _VDiv; x++ ) {
-            int x2 = x + 1;
+    for ( y = 0; y < _NumVerticalSubdivs; y++ ) {
+        const int y2 = y + 1;
+        for ( x = 0; x < _NumHorizontalSubdivs; x++ ) {
+            const int x2 = x + 1;
 
-            Quad[ 0 ] = y  * ( _VDiv + 1 ) + x;
-            Quad[ 1 ] = y2 * ( _VDiv + 1 ) + x;
-            Quad[ 2 ] = y2 * ( _VDiv + 1 ) + x2;
-            Quad[ 3 ] = y  * ( _VDiv + 1 ) + x2;
+            quad[ 0 ] = y  * ( _NumHorizontalSubdivs + 1 ) + x;
+            quad[ 1 ] = y2 * ( _NumHorizontalSubdivs + 1 ) + x;
+            quad[ 2 ] = y2 * ( _NumHorizontalSubdivs + 1 ) + x2;
+            quad[ 3 ] = y  * ( _NumHorizontalSubdivs + 1 ) + x2;
 
-            *pIndices++ = Quad[ 0 ];
-            *pIndices++ = Quad[ 1 ];
-            *pIndices++ = Quad[ 2 ];
-            *pIndices++ = Quad[ 2 ];
-            *pIndices++ = Quad[ 3 ];
-            *pIndices++ = Quad[ 0 ];
+            *pIndices++ = quad[ 0 ];
+            *pIndices++ = quad[ 1 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 3 ];
+            *pIndices++ = quad[ 0 ];
         }
     }
 
-    CalcTangentSpace( pVerts, _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+    CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
 void CreatePlaneMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
     _Vertices.ResizeInvalidate( 4 );
     _Indices.ResizeInvalidate( 6 );
 
-    float HalfWidth = _Width * 0.5f;
-    float HalfHeight = _Height * 0.5f;
+    const float halfWidth = _Width * 0.5f;
+    const float halfHeight = _Height * 0.5f;
 
     const FMeshVertex Verts[ 4 ] = {
-        { Float3( -HalfWidth,0,-HalfHeight ), Float2( 0,0 ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
-        { Float3( -HalfWidth,0,HalfHeight ), Float2( 0,_TexCoordScale ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
-        { Float3( HalfWidth,0,HalfHeight ), Float2( _TexCoordScale,_TexCoordScale ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
-        { Float3( HalfWidth,0,-HalfHeight ), Float2( _TexCoordScale,0 ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) }
+        { Float3( -halfWidth,0,-halfHeight ), Float2( 0,0 ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
+        { Float3( -halfWidth,0,halfHeight ), Float2( 0,_TexCoordScale ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
+        { Float3( halfWidth,0,halfHeight ), Float2( _TexCoordScale,_TexCoordScale ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
+        { Float3( halfWidth,0,-halfHeight ), Float2( _TexCoordScale,0 ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) }
     };
 
     memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( FMeshVertex ) );
 
-    const unsigned int Indices[ 6 ] = { 0,1,2,2,3,0 };
-    memcpy( _Indices.ToPtr(), &Indices, sizeof( Indices ) );
+    constexpr unsigned int indices[ 6 ] = { 0,1,2,2,3,0 };
+    memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
 
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 
-    _Bounds.Mins.X = -HalfWidth;
+    _Bounds.Mins.X = -halfWidth;
     _Bounds.Mins.Y = 0.0f;
-    _Bounds.Mins.Z = -HalfHeight;
-    _Bounds.Maxs.X = HalfWidth;
+    _Bounds.Mins.Z = -halfHeight;
+    _Bounds.Maxs.X = halfWidth;
     _Bounds.Maxs.Y = 0.0f;
-    _Bounds.Maxs.Z = HalfHeight;
+    _Bounds.Maxs.Z = halfHeight;
 }
 
 void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
-    Float3 const & Corner00,
-    Float3 const & Corner10,
-    Float3 const & Corner01,
-    Float3 const & Corner11,
-    int resx, int resy,
-    float _TexCoordScale,
-    bool _TwoSided ) {
+    Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11,
+    float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
 
-    if ( resx < 2 ) {
-        resx = 2;
-    }
+    _NumVerticalSubdivs = FMath::Max( _NumVerticalSubdivs, 2 );
+    _NumHorizontalSubdivs = FMath::Max( _NumHorizontalSubdivs, 2 );
 
-    if ( resy < 2 ) {
-        resy = 2;
-    }
+    const float scaleX = 1.0f / ( float )( _NumHorizontalSubdivs - 1 );
+    const float scaleY = 1.0f / ( float )( _NumVerticalSubdivs - 1 );
 
-    const int vertexCount = resx * resy;
-    const int indexCount = ( resx - 1 ) * ( resy - 1 ) * 6;
+    const int vertexCount = _NumHorizontalSubdivs * _NumVerticalSubdivs;
+    const int indexCount = ( _NumHorizontalSubdivs - 1 ) * ( _NumVerticalSubdivs - 1 ) * 6;
 
     Float3 normal = ( Corner10 - Corner00 ).Cross( Corner01 - Corner00 ).Normalized();
 
@@ -1331,14 +1346,14 @@ void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
     FMeshVertex * pVert = _Vertices.ToPtr();
     unsigned int * pIndices = _Indices.ToPtr();
 
-    for ( int y = 0; y < resy; ++y ) {
-        const float lerpY = y / ( float )( resy - 1 );
+    for ( int y = 0; y < _NumVerticalSubdivs; ++y ) {
+        const float lerpY = y * scaleY;
         const Float3 py0 = Corner00.Lerp( Corner01, lerpY );
         const Float3 py1 = Corner10.Lerp( Corner11, lerpY );
         const float ty = lerpY * _TexCoordScale;
 
-        for ( int x = 0; x < resx; ++x ) {
-            const float lerpX = x / ( float )( resx - 1 );
+        for ( int x = 0; x < _NumHorizontalSubdivs; ++x ) {
+            const float lerpX = x * scaleX;
 
             pVert->Position = py0.Lerp( py1, lerpX );
             pVert->TexCoord.X = lerpX * _TexCoordScale;
@@ -1352,14 +1367,14 @@ void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
     if ( _TwoSided ) {
         normal = -normal;
 
-        for ( int y = 0; y < resy; ++y ) {
-            const float lerpY = y / ( float )( resy - 1 );
+        for ( int y = 0; y < _NumVerticalSubdivs; ++y ) {
+            const float lerpY = y * scaleY;
             const Float3 py0 = Corner00.Lerp( Corner01, lerpY );
             const Float3 py1 = Corner10.Lerp( Corner11, lerpY );
             const float ty = lerpY * _TexCoordScale;
 
-            for ( int x = 0; x < resx; ++x ) {
-                const float lerpX = x / ( float )( resx - 1 );
+            for ( int x = 0; x < _NumHorizontalSubdivs; ++x ) {
+                const float lerpX = x * scaleX;
 
                 pVert->Position = py0.Lerp( py1, lerpX );
                 pVert->TexCoord.X = lerpX * _TexCoordScale;
@@ -1371,18 +1386,18 @@ void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
         }
     }
 
-    for ( int y = 0; y < resy; ++y ) {
+    for ( int y = 0; y < _NumVerticalSubdivs; ++y ) {
 
-        int index0 = y*resx;
-        int index1 = ( y + 1 )*resx;
+        const int index0 = y*_NumHorizontalSubdivs;
+        const int index1 = ( y + 1 )*_NumHorizontalSubdivs;
 
-        for ( int x = 0; x < resx; ++x ) {
-            int quad00 = index0 + x;
-            int quad01 = index0 + x + 1;
-            int quad10 = index1 + x;
-            int quad11 = index1 + x + 1;
+        for ( int x = 0; x < _NumHorizontalSubdivs; ++x ) {
+            const int quad00 = index0 + x;
+            const int quad01 = index0 + x + 1;
+            const int quad10 = index1 + x;
+            const int quad11 = index1 + x + 1;
 
-            if ( ( x + 1 ) < resx && ( y + 1 ) < resy ) {
+            if ( ( x + 1 ) < _NumHorizontalSubdivs && ( y + 1 ) < _NumVerticalSubdivs ) {
                 *pIndices++ = quad00;
                 *pIndices++ = quad10;
                 *pIndices++ = quad11;
@@ -1394,18 +1409,18 @@ void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
     }
 
     if ( _TwoSided ) {
-        for ( int y = 0; y < resy; ++y ) {
+        for ( int y = 0; y < _NumVerticalSubdivs; ++y ) {
 
-            int index0 = vertexCount + y*resx;
-            int index1 = vertexCount + ( y + 1 )*resx;
+            const int index0 = vertexCount + y*_NumHorizontalSubdivs;
+            const int index1 = vertexCount + ( y + 1 )*_NumHorizontalSubdivs;
 
-            for ( int x = 0; x < resx; ++x ) {
-                int quad00 = index0 + x;
-                int quad01 = index0 + x + 1;
-                int quad10 = index1 + x;
-                int quad11 = index1 + x + 1;
+            for ( int x = 0; x < _NumHorizontalSubdivs; ++x ) {
+                const int quad00 = index0 + x;
+                const int quad01 = index0 + x + 1;
+                const int quad10 = index1 + x;
+                const int quad11 = index1 + x + 1;
 
-                if ( ( x + 1 ) < resx && ( y + 1 ) < resy ) {
+                if ( ( x + 1 ) < _NumHorizontalSubdivs && ( y + 1 ) < _NumVerticalSubdivs ) {
                     *pIndices++ = quad00;
                     *pIndices++ = quad01;
                     *pIndices++ = quad11;
@@ -1426,112 +1441,208 @@ void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
     _Bounds.AddPoint( Corner11 );
 }
 
-void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _VDiv ) {
+void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
     int i, j;
-    float Angle;
-    const float RadWidth = _Radius;
-    const float RadHeight = _Height * 0.5f;
-    const float InvRadius = 1.0f / _Radius;
-    unsigned int Quad[ 4 ];
+    float angle;
+    unsigned int quad[ 4 ];
 
-    _Vertices.ResizeInvalidate( 6 * ( _VDiv + 1 ) );
-    _Indices.ResizeInvalidate( 3 * _VDiv * 6 );
+    _NumSubdivs = FMath::Max( _NumSubdivs, 4 );
 
-    _Bounds.Mins.X = -RadWidth;
-    _Bounds.Mins.Z = -RadWidth;
-    _Bounds.Mins.Y = -RadHeight;
+    const float invSubdivs = 1.0f / _NumSubdivs;
+    const float angleStep = FMath::_2PI * invSubdivs;
+    const float halfHeight = _Height * 0.5f;
 
-    _Bounds.Maxs.X = RadWidth;
-    _Bounds.Maxs.Z = RadWidth;
-    _Bounds.Maxs.Y = RadHeight;
+    _Vertices.ResizeInvalidate( 6 * ( _NumSubdivs + 1 ) );
+    _Indices.ResizeInvalidate( 3 * _NumSubdivs * 6 );
+
+    _Bounds.Mins.X = -_Radius;
+    _Bounds.Mins.Z = -_Radius;
+    _Bounds.Mins.Y = -halfHeight;
+
+    _Bounds.Maxs.X = _Radius;
+    _Bounds.Maxs.Z = _Radius;
+    _Bounds.Maxs.Y = halfHeight;
 
     FMeshVertex * pVerts = _Vertices.ToPtr();
 
-    int FirstVertex = 0;
+    int firstVertex = 0;
 
     // Rings
 
-    for ( j = 0; j <= _VDiv; j++ ) {
-        pVerts[ FirstVertex + j ].Position = Float3( 0.0f, -RadHeight, 0.0f );
-        pVerts[ FirstVertex + j ].TexCoord = Float2( j / float( _VDiv ), 0.0f ) * _TexCoordScale;
-        pVerts[ FirstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
+    for ( j = 0; j <= _NumSubdivs; j++ ) {
+        pVerts[ firstVertex + j ].Position = Float3( 0.0f, -halfHeight, 0.0f );
+        pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 0.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
     }
-    FirstVertex += _VDiv + 1;
+    firstVertex += _NumSubdivs + 1;
 
-    for ( j = 0, Angle = 0; j <= _VDiv; j++ ) {
+    for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( Angle, s, c );
-        pVerts[ FirstVertex + j ].Position = Float3( RadWidth*c, -RadHeight, RadWidth*s );
-        pVerts[ FirstVertex + j ].TexCoord = Float2( j / float( _VDiv ), 1.0f ) * _TexCoordScale;
-        pVerts[ FirstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
-        Angle += FMath::_2PI / ( _VDiv );
+        FMath::RadSinCos( angle, s, c );
+        pVerts[ firstVertex + j ].Position = Float3( _Radius*c, -halfHeight, _Radius*s );
+        pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 1.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
+        angle += angleStep;
     }
-    FirstVertex += _VDiv + 1;
+    firstVertex += _NumSubdivs + 1;
 
-    for ( j = 0, Angle = 0; j <= _VDiv; j++ ) {
+    for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( Angle, s, c );
-        pVerts[ FirstVertex + j ].Position = Float3( RadWidth*c, -RadHeight, RadWidth*s );
-        pVerts[ FirstVertex + j ].TexCoord = Float2( 1.0f - j / float( _VDiv ), 1.0f ) * _TexCoordScale;
-        pVerts[ FirstVertex + j ].Normal = Float3( pVerts[ FirstVertex + j ].Position.X * InvRadius, 0.0f, pVerts[ FirstVertex + j ].Position.Z * InvRadius );
-        Angle += FMath::_2PI / ( _VDiv );
+        FMath::RadSinCos( angle, s, c );
+        pVerts[ firstVertex + j ].Position = Float3( _Radius*c, -halfHeight, _Radius*s );
+        pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 1.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
+        angle += angleStep;
     }
-    FirstVertex += _VDiv + 1;
+    firstVertex += _NumSubdivs + 1;
 
-    for ( j = 0, Angle = 0; j <= _VDiv; j++ ) {
+    for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( Angle, s, c );
-        pVerts[ FirstVertex + j ].Position = Float3( RadWidth*c, RadHeight, RadWidth*s );
-        pVerts[ FirstVertex + j ].TexCoord = Float2( 1.0f - j / float( _VDiv ), 0.0f ) * _TexCoordScale;
-        pVerts[ FirstVertex + j ].Normal = Float3( pVerts[ FirstVertex + j ].Position.X * InvRadius, 0.0f, pVerts[ FirstVertex + j ].Position.Z * InvRadius );
-        Angle += FMath::_2PI / ( _VDiv );
+        FMath::RadSinCos( angle, s, c );
+        pVerts[ firstVertex + j ].Position = Float3( _Radius*c, halfHeight, _Radius*s );
+        pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 0.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
+        angle += angleStep;
     }
-    FirstVertex += _VDiv + 1;
+    firstVertex += _NumSubdivs + 1;
 
-    for ( j = 0, Angle = 0; j <= _VDiv; j++ ) {
+    for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( Angle, s, c );
-        pVerts[ FirstVertex + j ].Position = Float3( RadWidth*c, RadHeight, RadWidth*s );
-        pVerts[ FirstVertex + j ].TexCoord = Float2( j / float( _VDiv ), 0.0f ) * _TexCoordScale;
-        pVerts[ FirstVertex + j ].Normal = Float3( 0, 1.0f, 0 );
-        Angle += FMath::_2PI / ( _VDiv );
+        FMath::RadSinCos( angle, s, c );
+        pVerts[ firstVertex + j ].Position = Float3( _Radius*c, halfHeight, _Radius*s );
+        pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 0.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( 0, 1.0f, 0 );
+        angle += angleStep;
     }
-    FirstVertex += _VDiv + 1;
+    firstVertex += _NumSubdivs + 1;
 
-    for ( j = 0; j <= _VDiv; j++ ) {
-        pVerts[ FirstVertex + j ].Position = Float3( 0.0f, RadHeight, 0.0f );
-        pVerts[ FirstVertex + j ].TexCoord = Float2( j / float( _VDiv ), 1.0f ) * _TexCoordScale;
-        pVerts[ FirstVertex + j ].Normal = Float3( 0, 1.0f, 0 );
+    for ( j = 0; j <= _NumSubdivs; j++ ) {
+        pVerts[ firstVertex + j ].Position = Float3( 0.0f, halfHeight, 0.0f );
+        pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 1.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( 0, 1.0f, 0 );
     }
-    FirstVertex += _VDiv + 1;
-
-    AN_Assert( FirstVertex == _Vertices.Size() );
+    firstVertex += _NumSubdivs + 1;
 
     // generate indices
 
     unsigned int * pIndices = _Indices.ToPtr();
 
-    _Indices.Memset( 0 );
+    //_Indices.Memset( 0 );
 
-    FirstVertex = 0;
+    firstVertex = 0;
     for ( i = 0; i < 3; i++ ) {
-        for ( j = 0; j < _VDiv; j++ ) {
-            Quad[ 3 ] = FirstVertex + j;
-            Quad[ 2 ] = FirstVertex + j + 1;
-            Quad[ 1 ] = FirstVertex + j + 1 + ( _VDiv + 1 );
-            Quad[ 0 ] = FirstVertex + j + ( _VDiv + 1 );
+        for ( j = 0; j < _NumSubdivs; j++ ) {
+            quad[ 3 ] = firstVertex + j;
+            quad[ 2 ] = firstVertex + j + 1;
+            quad[ 1 ] = firstVertex + j + 1 + ( _NumSubdivs + 1 );
+            quad[ 0 ] = firstVertex + j + ( _NumSubdivs + 1 );
 
-            *pIndices++ = Quad[ 0 ];
-            *pIndices++ = Quad[ 1 ];
-            *pIndices++ = Quad[ 2 ];
-            *pIndices++ = Quad[ 2 ];
-            *pIndices++ = Quad[ 3 ];
-            *pIndices++ = Quad[ 0 ];
+            *pIndices++ = quad[ 0 ];
+            *pIndices++ = quad[ 1 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 3 ];
+            *pIndices++ = quad[ 0 ];
         }
-        FirstVertex += ( _VDiv + 1 ) * 2;
+        firstVertex += ( _NumSubdivs + 1 ) * 2;
     }
 
-    AN_Assert( FirstVertex == _Vertices.Size() );
+    CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+}
 
-    CalcTangentSpace( pVerts, _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+void CreateCapsuleMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+    int x, y, tcY;
+    float verticalAngle, horizontalAngle;
+    const float halfHeight = _Height * 0.5f;
+    unsigned int quad[ 4 ];
+
+    _NumVerticalSubdivs = FMath::Max( _NumVerticalSubdivs, 4 );
+    _NumHorizontalSubdivs = FMath::Max( _NumHorizontalSubdivs, 4 );
+
+    const int halfVerticalSubdivs = _NumVerticalSubdivs >> 1;
+
+    _Vertices.ResizeInvalidate( ( _NumHorizontalSubdivs + 1 ) * ( _NumVerticalSubdivs + 1 ) * 2 );
+    _Indices.ResizeInvalidate( _NumHorizontalSubdivs * ( _NumVerticalSubdivs + 1 ) * 6 );
+
+    _Bounds.Mins.X = _Bounds.Mins.Z = -_Radius;
+    _Bounds.Mins.Y =  -_Radius - halfHeight;
+    _Bounds.Maxs.X = _Bounds.Maxs.Z = _Radius;
+    _Bounds.Maxs.Y = _Radius + halfHeight;
+
+    FMeshVertex * pVert = _Vertices.ToPtr();
+
+    const float verticalStep = FMath::_PI / _NumVerticalSubdivs;
+    const float horizontalStep = FMath::_2PI / _NumHorizontalSubdivs;
+    const float verticalScale = 1.0f / ( _NumVerticalSubdivs + 1 );
+    const float horizontalScale = 1.0f / _NumHorizontalSubdivs;
+
+    tcY = 0;
+
+    for ( y = 0, verticalAngle = -FMath::_HALF_PI; y <= halfVerticalSubdivs; y++, tcY++ ) {
+        float h, r;
+        FMath::RadSinCos( verticalAngle, h, r );
+        const float scaledH = h * _Radius;
+        const float scaledR = r * _Radius;
+        const float posY = scaledH - halfHeight;
+        for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
+            float s, c;
+            FMath::RadSinCos( horizontalAngle, s, c );
+            pVert->Position.X = scaledR * c;
+            pVert->Position.Y = posY;
+            pVert->Position.Z = scaledR * s;
+            pVert->TexCoord.X = ( 1.0f - static_cast< float >( x ) * horizontalScale ) * _TexCoordScale;
+            pVert->TexCoord.Y = ( 1.0f - static_cast< float >( tcY ) * verticalScale ) * _TexCoordScale;
+            pVert->Normal.X = r * c;
+            pVert->Normal.Y = h;
+            pVert->Normal.Z = r * s;
+            pVert++;
+            horizontalAngle += horizontalStep;
+        }
+        verticalAngle += verticalStep;
+    }
+
+    for ( y = 0, verticalAngle = 0; y <= halfVerticalSubdivs; y++, tcY++ ) {
+        float h, r;
+        FMath::RadSinCos( verticalAngle, h, r );
+        const float scaledH = h * _Radius;
+        const float scaledR = r * _Radius;
+        const float posY = scaledH + halfHeight;
+        for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
+            float s, c;
+            FMath::RadSinCos( horizontalAngle, s, c );
+            pVert->Position.X = scaledR * c;
+            pVert->Position.Y = posY;
+            pVert->Position.Z = scaledR * s;
+            pVert->TexCoord.X = ( 1.0f - static_cast< float >( x ) * horizontalScale ) * _TexCoordScale;
+            pVert->TexCoord.Y = ( 1.0f - static_cast< float >( tcY ) * verticalScale ) * _TexCoordScale;
+            pVert->Normal.X = r * c;
+            pVert->Normal.Y = h;
+            pVert->Normal.Z = r * s;
+            pVert++;
+            horizontalAngle += horizontalStep;
+        }
+        verticalAngle += verticalStep;
+    }
+
+    unsigned int * pIndices = _Indices.ToPtr();
+    for ( y = 0; y <= _NumVerticalSubdivs; y++ ) {
+        const int y2 = y + 1;
+        for ( x = 0; x < _NumHorizontalSubdivs; x++ ) {
+            const int x2 = x + 1;
+
+            quad[ 0 ] = y  * ( _NumHorizontalSubdivs + 1 ) + x;
+            quad[ 1 ] = y2 * ( _NumHorizontalSubdivs + 1 ) + x;
+            quad[ 2 ] = y2 * ( _NumHorizontalSubdivs + 1 ) + x2;
+            quad[ 3 ] = y  * ( _NumHorizontalSubdivs + 1 ) + x2;
+
+            *pIndices++ = quad[ 0 ];
+            *pIndices++ = quad[ 1 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 3 ];
+            *pIndices++ = quad[ 0 ];
+        }
+    }
+
+    CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
