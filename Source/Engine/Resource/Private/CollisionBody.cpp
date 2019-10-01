@@ -396,19 +396,18 @@ void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
 }
 
 void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
-
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
-    const float Detail = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float detail = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
 
-    const int NumStacks = 8 * Detail;
-    const int NumSlices = 12 * Detail;
+    const int numStacks = 8 * detail;
+    const int numSlices = 12 * detail;
 
-    int vertexCount = (NumStacks + 1) * NumSlices;
-    int indexCount = NumStacks * NumSlices * 6;
+    const int vertexCount = ( numStacks + 1) * numSlices;
+    const int indexCount = numStacks * numSlices * 6;
 
-    int firstVertex = _Vertices.Size();
-    int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
+    const int firstIndex = _Indices.Size();
 
     _Vertices.Resize( firstVertex + vertexCount );
     _Indices.Resize( firstIndex + indexCount );
@@ -416,13 +415,12 @@ void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
     Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
     unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
-    for ( int stack = 0; stack <= NumStacks; ++stack ) {
-        for ( int slice = 0; slice < NumSlices; ++slice ) {
+    for ( int stack = 0; stack <= numStacks; ++stack ) {
+        const float theta = stack * FMath::_PI / numStacks;
+        FMath::RadSinCos( theta, sinTheta, cosTheta );
 
-            float theta = stack * FMath::_PI / NumStacks;
-            float phi = slice * FMath::_2PI / NumSlices;
-
-            FMath::RadSinCos( theta, sinTheta, cosTheta );
+        for ( int slice = 0; slice < numSlices; ++slice ) {            
+            const float phi = slice * FMath::_2PI / numSlices;
             FMath::RadSinCos( phi, sinPhi, cosPhi );
 
             *pVertices++ = Float3( cosPhi * sinTheta, cosTheta, sinPhi * sinTheta ) * Radius + Position;
@@ -433,30 +431,18 @@ void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
         }
     }
 
-    for ( int stack = 0; stack < NumStacks; ++stack ) {
-        int stackOffset = firstVertex + stack * NumSlices;
-        int nextStackOffset = firstVertex + ( stack + 1 ) * NumSlices;
+    for ( int stack = 0; stack < numStacks; ++stack ) {
+        const int stackOffset = firstVertex + stack * numSlices;
+        const int nextStackOffset = firstVertex + ( stack + 1 ) * numSlices;
 
-        for ( int slice = 0; slice < NumSlices; ++slice ) {
-            int nextSlice = (slice + 1) % NumSlices;
-
-#if 0
-            *pIndices++ = stackOffset + slice;
-            *pIndices++ = nextStackOffset + slice;
-            *pIndices++ = nextStackOffset + nextSlice;
-
-            *pIndices++ = nextStackOffset + nextSlice;
-            *pIndices++ = stackOffset + nextSlice;
-            *pIndices++ = stackOffset + slice;
-#else
+        for ( int slice = 0; slice < numSlices; ++slice ) {
+            const int nextSlice = (slice + 1) % numSlices;
             *pIndices++ = stackOffset + slice;
             *pIndices++ = stackOffset + nextSlice;
             *pIndices++ = nextStackOffset + nextSlice;
-
             *pIndices++ = nextStackOffset + nextSlice;
             *pIndices++ = nextStackOffset + slice;
             *pIndices++ = stackOffset + slice;
-#endif
         }
     }
 }
@@ -464,16 +450,16 @@ void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
 void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
-    const float Detail = FMath::Floor( FMath::Max( 1.0f, Radius.Max() ) + 0.5f );
+    const float detail = FMath::Floor( FMath::Max( 1.0f, Radius.Max() ) + 0.5f );
 
-    const int NumStacks = 8 * Detail;
-    const int NumSlices = 12 * Detail;
+    const int numStacks = 8 * detail;
+    const int numSlices = 12 * detail;
 
-    int vertexCount = (NumStacks + 1) * NumSlices;
-    int indexCount = NumStacks * NumSlices * 6;
+    const int vertexCount = ( numStacks + 1 ) * numSlices;
+    const int indexCount = numStacks * numSlices * 6;
 
-    int firstVertex = _Vertices.Size();
-    int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
+    const int firstIndex = _Indices.Size();
 
     _Vertices.Resize( firstVertex + vertexCount );
     _Indices.Resize( firstIndex + indexCount );
@@ -481,43 +467,30 @@ void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPo
     Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
     unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
-    for ( int stack = 0; stack <= NumStacks; ++stack ) {
-        for ( int slice = 0; slice < NumSlices; ++slice ) {
+    for ( int stack = 0; stack <= numStacks; ++stack ) {
+        const float theta = stack * FMath::_PI / numStacks;
+        FMath::RadSinCos( theta, sinTheta, cosTheta );
 
-            float theta = stack * FMath::_PI / NumStacks;
-            float phi = slice * FMath::_2PI / NumSlices;
-
-            FMath::RadSinCos( theta, sinTheta, cosTheta );
+        for ( int slice = 0; slice < numSlices; ++slice ) {
+            const float phi = slice * FMath::_2PI / numSlices;
             FMath::RadSinCos( phi, sinPhi, cosPhi );
 
             *pVertices++ = Rotation * ( Float3( cosPhi * sinTheta, cosTheta, sinPhi * sinTheta ) * Radius ) + Position;
         }
     }
 
-    for ( int stack = 0; stack < NumStacks; ++stack ) {
-        int stackOffset = firstVertex + stack * NumSlices;
-        int nextStackOffset = firstVertex + ( stack + 1 ) * NumSlices;
+    for ( int stack = 0; stack < numStacks; ++stack ) {
+        const int stackOffset = firstVertex + stack * numSlices;
+        const int nextStackOffset = firstVertex + ( stack + 1 ) * numSlices;
 
-        for ( int slice = 0; slice < NumSlices; ++slice ) {
-            int nextSlice = (slice + 1) % NumSlices;
-
-#if 0
-            *pIndices++ = stackOffset + slice;
-            *pIndices++ = nextStackOffset + slice;
-            *pIndices++ = nextStackOffset + nextSlice;
-
-            *pIndices++ = nextStackOffset + nextSlice;
-            *pIndices++ = stackOffset + nextSlice;
-            *pIndices++ = stackOffset + slice;
-#else
+        for ( int slice = 0; slice < numSlices; ++slice ) {
+            const int nextSlice = (slice + 1) % numSlices;
             *pIndices++ = stackOffset + slice;
             *pIndices++ = stackOffset + nextSlice;
             *pIndices++ = nextStackOffset + nextSlice;
-
             *pIndices++ = nextStackOffset + nextSlice;
             *pIndices++ = nextStackOffset + slice;
             *pIndices++ = stackOffset + slice;
-#endif
         }
     }
 }
@@ -525,8 +498,8 @@ void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPo
 void FCollisionBox::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     unsigned int const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
 
-    int firstVertex = _Vertices.Size();
-    int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
+    const int firstIndex = _Indices.Size();
 
     _Vertices.Resize( firstVertex + 8 );
     _Indices.Resize( firstIndex + 36 );
@@ -571,13 +544,13 @@ void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
         break;
     }
 
-    const float Detal = FMath::Floor( FMath::Max( 1.0f, HalfExtents[idxRadius] ) + 0.5f );
+    const float detal = FMath::Floor( FMath::Max( 1.0f, HalfExtents[idxRadius] ) + 0.5f );
 
-    const int NumSlices = 8 * Detal;
-    const int FaceTriangles = NumSlices - 2;
+    const int numSlices = 8 * detal;
+    const int faceTriangles = numSlices - 2;
 
-    const int vertexCount = NumSlices * 2;
-    const int indexCount = FaceTriangles * 3 * 2 + NumSlices * 6;
+    const int vertexCount = numSlices * 2;
+    const int indexCount = faceTriangles * 3 * 2 + numSlices * 6;
 
     const int firstIndex = _Indices.Size();
     const int firstVertex = _Vertices.Size();
@@ -590,8 +563,8 @@ void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
 
     Float3 vert;
 
-    for ( int slice = 0; slice < NumSlices; slice++, pVertices++ ) {
-        FMath::RadSinCos( slice * FMath::_2PI / NumSlices, sinPhi, cosPhi );
+    for ( int slice = 0; slice < numSlices; slice++, pVertices++ ) {
+        FMath::RadSinCos( slice * FMath::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * HalfExtents[idxRadius];
         vert[idxRadius2] = sinPhi * HalfExtents[idxRadius];
@@ -601,56 +574,34 @@ void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
 
         vert[idxHeight] = -vert[idxHeight];
 
-        *(pVertices + NumSlices) = Rotation * vert + Position;
+        *(pVertices + numSlices ) = Rotation * vert + Position;
     }
 
     const int offset = firstVertex;
-    const int nextOffset = firstVertex + NumSlices;
+    const int nextOffset = firstVertex + numSlices;
 
     // top face
-    for ( int i = 0 ; i < FaceTriangles ; i++ ) {
-#if 0
-        *pIndices++ = offset + 0;
-        *pIndices++ = offset + i + 1;
-        *pIndices++ = offset + i + 2;
-#else
+    for ( int i = 0 ; i < faceTriangles; i++ ) {
         *pIndices++ = offset + i + 2;
         *pIndices++ = offset + i + 1;
         *pIndices++ = offset + 0;
-#endif
     }
 
     // bottom face
-    for ( int i = 0 ; i < FaceTriangles ; i++ ) {
-#if 0
-        *pIndices++ = nextOffset + 0;
-        *pIndices++ = nextOffset + i + 2;
-        *pIndices++ = nextOffset + i + 1;
-#else
+    for ( int i = 0 ; i < faceTriangles; i++ ) {
         *pIndices++ = nextOffset + i + 1;
         *pIndices++ = nextOffset + i + 2;
         *pIndices++ = nextOffset + 0;
-#endif
     }
 
-    for ( int slice = 0; slice < NumSlices; ++slice ) {
-        int nextSlice = (slice + 1) % NumSlices;
-
-#if 0
-        *pIndices++ = offset + slice;
-        *pIndices++ = nextOffset + slice;
-        *pIndices++ = nextOffset + nextSlice;
-        *pIndices++ = nextOffset + nextSlice;
-        *pIndices++ = offset + nextSlice;
-        *pIndices++ = offset + slice;
-#else
+    for ( int slice = 0; slice < numSlices; ++slice ) {
+        const int nextSlice = (slice + 1) % numSlices;
         *pIndices++ = offset + slice;
         *pIndices++ = offset + nextSlice;
         *pIndices++ = nextOffset + nextSlice;
         *pIndices++ = nextOffset + nextSlice;
         *pIndices++ = nextOffset + slice;
         *pIndices++ = offset + slice;
-#endif
     }
 }
 
@@ -677,13 +628,13 @@ void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
         break;
     }
 
-    const float Detal = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float detal = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
 
-    const int NumSlices = 8 * Detal;
-    const int FaceTriangles = NumSlices - 2;
+    const int numSlices = 8 * detal;
+    const int faceTriangles = numSlices - 2;
 
-    const int vertexCount = NumSlices + 1;
-    const int indexCount = FaceTriangles * 3 + NumSlices * 3;
+    const int vertexCount = numSlices + 1;
+    const int indexCount = faceTriangles * 3 + numSlices * 3;
 
     const int firstIndex = _Indices.Size();
     const int firstVertex = _Vertices.Size();
@@ -704,8 +655,8 @@ void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
 
     vert[idxHeight] = 0;
 
-    for ( int slice = 0; slice < NumSlices; slice++ ) {
-        FMath::RadSinCos( slice * FMath::_2PI / NumSlices, sinPhi, cosPhi );
+    for ( int slice = 0; slice < numSlices; slice++ ) {
+        FMath::RadSinCos( slice * FMath::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * Radius;
         vert[idxRadius2] = sinPhi * Radius;
@@ -716,25 +667,21 @@ void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
     const int offset = firstVertex + 1;
 
     // bottom face
-    for ( int i = 0 ; i < FaceTriangles ; i++ ) {
+    for ( int i = 0 ; i < faceTriangles; i++ ) {
         *pIndices++ = offset + 0;
         *pIndices++ = offset + i + 1;
         *pIndices++ = offset + i + 2;
     }
 
     // sides
-    for ( int slice = 0; slice < NumSlices; ++slice ) {
+    for ( int slice = 0; slice < numSlices; ++slice ) {
         *pIndices++ = firstVertex;
-        *pIndices++ = offset + (slice + 1) % NumSlices;
+        *pIndices++ = offset + (slice + 1) % numSlices;
         *pIndices++ = offset + slice;
     }
 }
 
 void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
-
-    // TODO: Now capsule is implemented as cylinder
-
-    float sinPhi, cosPhi;
 
     int idxRadius, idxRadius2, idxHeight;
     switch ( Axial ) {
@@ -756,13 +703,18 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
         break;
     }
 
-    const float Detal = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+#if 0
+    // Capsule is implemented as cylinder
 
-    const int NumSlices = 8 * Detal;
-    const int FaceTriangles = NumSlices - 2;
+    float sinPhi, cosPhi;
 
-    const int vertexCount = NumSlices * 2;
-    const int indexCount = FaceTriangles * 3 * 2 + NumSlices * 6;
+    const float detal = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+
+    const int numSlices = 8 * detal;
+    const int faceTriangles = numSlices - 2;
+
+    const int vertexCount = numSlices * 2;
+    const int indexCount = faceTriangles * 3 * 2 + numSlices * 6;
 
     const int firstIndex = _Indices.Size();
     const int firstVertex = _Vertices.Size();
@@ -775,10 +727,10 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
 
     Float3 vert;
 
-    float halfOfTotalHeight = Height*0.5f + Radius;
+    const float halfOfTotalHeight = Height*0.5f + Radius;
 
-    for ( int slice = 0; slice < NumSlices; slice++, pVertices++ ) {
-        FMath::RadSinCos( slice * FMath::_2PI / NumSlices, sinPhi, cosPhi );
+    for ( int slice = 0; slice < numSlices; slice++, pVertices++ ) {
+        FMath::RadSinCos( slice * FMath::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * Radius;
         vert[idxRadius2] = sinPhi * Radius;
@@ -788,57 +740,118 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
 
         vert[idxHeight] = -vert[idxHeight];
 
-        *(pVertices + NumSlices) = Rotation * vert + Position;
+        *(pVertices + numSlices ) = Rotation * vert + Position;
     }
 
     const int offset = firstVertex;
-    const int nextOffset = firstVertex + NumSlices;
+    const int nextOffset = firstVertex + numSlices;
 
     // top face
-    for ( int i = 0 ; i < FaceTriangles ; i++ ) {
-#if 0
-        *pIndices++ = offset + 0;
-        *pIndices++ = offset + i + 1;
-        *pIndices++ = offset + i + 2;
-#else
+    for ( int i = 0 ; i < faceTriangles; i++ ) {
         *pIndices++ = offset + i + 2;
         *pIndices++ = offset + i + 1;
         *pIndices++ = offset + 0;
-#endif
     }
 
     // bottom face
-    for ( int i = 0 ; i < FaceTriangles ; i++ ) {
-#if 0
-        *pIndices++ = nextOffset + 0;
-        *pIndices++ = nextOffset + i + 2;
-        *pIndices++ = nextOffset + i + 1;
-#else
+    for ( int i = 0 ; i < faceTriangles; i++ ) {
         *pIndices++ = nextOffset + i + 1;
         *pIndices++ = nextOffset + i + 2;
         *pIndices++ = nextOffset + 0;
-#endif
     }
 
-    for ( int slice = 0; slice < NumSlices; ++slice ) {
-        int nextSlice = (slice + 1) % NumSlices;
-
-#if 0
-        *pIndices++ = offset + slice;
-        *pIndices++ = nextOffset + slice;
-        *pIndices++ = nextOffset + nextSlice;
-        *pIndices++ = nextOffset + nextSlice;
-        *pIndices++ = offset + nextSlice;
-        *pIndices++ = offset + slice;
-#else
+    for ( int slice = 0; slice < numSlices; ++slice ) {
+        int nextSlice = (slice + 1) % numSlices;
         *pIndices++ = offset + slice;
         *pIndices++ = offset + nextSlice;
         *pIndices++ = nextOffset + nextSlice;
         *pIndices++ = nextOffset + nextSlice;
         *pIndices++ = nextOffset + slice;
         *pIndices++ = offset + slice;
-#endif
     }
+#else
+    int x, y;
+    float verticalAngle, horizontalAngle;
+    
+    unsigned int quad[ 4 ];
+
+    const float detail = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+
+    const int numVerticalSubdivs = 6 * detail;
+    const int numHorizontalSubdivs = 8 * detail;
+
+    const int halfVerticalSubdivs = numVerticalSubdivs >> 1;
+
+    const int vertexCount = ( numHorizontalSubdivs + 1 ) * ( numVerticalSubdivs + 1 ) * 2;
+    const int indexCount = numHorizontalSubdivs * ( numVerticalSubdivs + 1 ) * 6;
+
+    const int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
+
+    _Vertices.Resize( firstVertex + vertexCount );
+    _Indices.Resize( firstIndex + indexCount );
+
+    Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
+    unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
+
+    const float verticalStep = FMath::_PI / numVerticalSubdivs;
+    const float horizontalStep = FMath::_2PI / numHorizontalSubdivs;
+
+    const float halfHeight = Height * 0.5f;
+
+    for ( y = 0, verticalAngle = -FMath::_HALF_PI; y <= halfVerticalSubdivs; y++ ) {
+        float h, r;
+        FMath::RadSinCos( verticalAngle, h, r );
+        h = h * Radius - halfHeight;
+        r *= Radius;
+        for ( x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++ ) {
+            float s, c;
+            Float3 & v = *pVertices++;
+            FMath::RadSinCos( horizontalAngle, s, c );
+            v[ idxRadius ] = r * c;
+            v[ idxRadius2 ] = r * s;
+            v[ idxHeight ] = h;
+            v = Rotation * v + Position;
+            horizontalAngle += horizontalStep;
+        }
+        verticalAngle += verticalStep;
+    }
+
+    for ( y = 0, verticalAngle = 0; y <= halfVerticalSubdivs; y++ ) {
+        float h, r;
+        FMath::RadSinCos( verticalAngle, h, r );
+        h = h * Radius + halfHeight;
+        r *= Radius;
+        for ( x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++ ) {
+            float s, c;
+            Float3 & v = *pVertices++;
+            FMath::RadSinCos( horizontalAngle, s, c );
+            v[ idxRadius ] = r * c;
+            v[ idxRadius2 ] = r * s;
+            v[ idxHeight ] = h;
+            v = Rotation * v + Position;
+            horizontalAngle += horizontalStep;
+        }
+        verticalAngle += verticalStep;
+    }
+
+    for ( y = 0; y <= numVerticalSubdivs; y++ ) {
+        const int y2 = y + 1;
+        for ( x = 0; x < numHorizontalSubdivs; x++ ) {
+            const int x2 = x + 1;
+            quad[ 0 ] = firstVertex + y  * ( numHorizontalSubdivs + 1 ) + x;
+            quad[ 1 ] = firstVertex + y2 * ( numHorizontalSubdivs + 1 ) + x;
+            quad[ 2 ] = firstVertex + y2 * ( numHorizontalSubdivs + 1 ) + x2;
+            quad[ 3 ] = firstVertex + y  * ( numHorizontalSubdivs + 1 ) + x2;
+            *pIndices++ = quad[ 0 ];
+            *pIndices++ = quad[ 1 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 3 ];
+            *pIndices++ = quad[ 0 ];
+        }
+    }
+#endif
 }
 
 void FCollisionConvexHull::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
@@ -847,8 +860,8 @@ void FCollisionConvexHull::CreateGeometry( TPodArray< Float3 > & _Vertices, TPod
         return;
     }
 
-    int firstVertex = _Vertices.Size();
-    int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
+    const int firstIndex = _Indices.Size();
 
     _Vertices.Resize( firstVertex + HullData->GetVertexCount() );
     _Indices.Resize( firstIndex + HullData->GetIndexCount() );
@@ -876,8 +889,8 @@ void FCollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices,
             return;
         }
 
-        int firstIndex = _Indices.Size();
-        int firstVertex = _Vertices.Size();
+        const int firstIndex = _Indices.Size();
+        const int firstVertex = _Vertices.Size();
 
         _Vertices.Resize( firstVertex + trisData->Vertices.Size() );
 
@@ -907,8 +920,8 @@ void FCollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices,
 
         // Create from hulls
 
-        int firstVertex = _Vertices.Length();
-        int firstIndex = _Indices.Length();
+        const int firstVertex = _Vertices.Length();
+        const int firstIndex = _Indices.Length();
 
         _Vertices.Resize( firstVertex + HullData->GetVertexCount() );
         _Indices.Resize( firstIndex + HullData->GetIndexCount() );
@@ -933,8 +946,8 @@ void FCollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Verti
         return;
     }
 
-    int firstIndex = _Indices.Size();
-    int firstVertex = _Vertices.Size();
+    const int firstIndex = _Indices.Size();
+    const int firstVertex = _Vertices.Size();
 
     _Vertices.Resize( firstVertex + trisData->Vertices.Size() );
 
