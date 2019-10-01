@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Engine/Core/Public/Atomic.h>
 #include <Engine/Core/Public/String.h>
 #include <Engine/Core/Public/PodQueue.h>
+#include <Engine/Core/Public/Utf8.h>
 #include "AsyncJobManager.h"
 
 enum EVerticalSyncMode {
@@ -279,6 +280,12 @@ class ANGIE_API FRuntime {
     AN_SINGLETON( FRuntime )
 
 public:
+    bool bCheatsAllowed = true;
+
+    bool bServerActive = false;
+
+    bool bInGameStatus = false;
+
     int GetArgc();
 
     const char * const *GetArgv();

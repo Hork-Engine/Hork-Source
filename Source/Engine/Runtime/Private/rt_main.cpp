@@ -39,6 +39,8 @@ SOFTWARE.
 #include <Engine/Core/Public/WindowsDefs.h>
 
 #include <Engine/Runtime/Public/ImportExport.h>
+#include <Engine/Runtime/Public/RuntimeCommandProcessor.h>
+#include <Engine/Runtime/Public/RuntimeVariable.h>
 
 #include <chrono>
 
@@ -774,6 +776,8 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
 
     InitWorkingDirectory();
 
+    FRuntimeVariable::AllocateVariables();
+
     GLogger.Printf( "Working directory: %s\n", rt_WorkingDir.ToConstChar() );
     GLogger.Printf( "Executable: %s\n", rt_Executable );
 
@@ -803,6 +807,8 @@ static void Runtime( FCreateGameModuleCallback _CreateGameModule ) {
     rt_InitializeDisplays();
 
     RuntimeMainLoop();
+
+    FRuntimeVariable::FreeVariables();
 
     GAsyncJobManager.Deinitialize();
 
