@@ -36,9 +36,11 @@ SOFTWARE.
 AN_CLASS_META( FChecker )
 
 FChecker::FChecker() {
+    static TStaticResourceFinder< FIndexedMesh > CheckerMesh( _CTS( "CheckerMesh" ) );
+
     FMeshComponent * component = AddComponent< FMeshComponent >( "checker" );
-    component->SetMesh( GetResource< FIndexedMesh >( "CheckerMesh" ) );
-    component->SetDefaultMaterials();
+    component->SetMesh( CheckerMesh.GetObject() );
+    component->CopyMaterialsFromMeshResource();
 
     RootComponent = component;
 

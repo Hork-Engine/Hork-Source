@@ -55,7 +55,6 @@ private:
     void OnGameEnd() override {}
     void OnPreGameTick( float _TimeStep ) override{}
     void OnPostGameTick( float _TimeStep ) override{}
-    void DrawCanvas( FCanvas * _Canvas ) override;
     void SetInputMappings();
     void CreateResources();
 };

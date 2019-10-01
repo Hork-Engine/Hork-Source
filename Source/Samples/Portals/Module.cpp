@@ -43,6 +43,24 @@ SOFTWARE.
 AN_ENTRY_DECL( FModule )
 AN_CLASS_META( FModule )
 
+class WMyDesktop : public WDesktop {
+    AN_CLASS( WMyDesktop, WDesktop )
+
+public:
+    TRef< FPlayerController > PlayerController;
+
+protected:
+    WMyDesktop() {
+        SetDrawBackground( true );
+    }
+
+    void OnDrawBackground( FCanvas & _Canvas ) override {
+        _Canvas.DrawViewport( PlayerController, 0, 0, _Canvas.Width, _Canvas.Height );
+    }
+};
+
+AN_CLASS_META( WMyDesktop )
+
 FModule * GModule;
 
 void FModule::OnGameStart() {
@@ -110,7 +128,7 @@ void FModule::OnGameStart() {
     //FHUD * hud = World->SpawnActor< FMyHUD >();
 
     RenderingParams = NewObject< FRenderingParameters >();
-    RenderingParams->BackgroundColor = Float3(0.5f);
+    RenderingParams->BackgroundColor = FColor4(0.5f);
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = true;
 
@@ -156,6 +174,10 @@ void FModule::OnGameStart() {
 
     PlayerController->SetPawn( player );
     PlayerController->SetViewCamera( player->Camera );
+
+    WMyDesktop * desktop = NewObject< WMyDesktop >();
+    desktop->PlayerController = PlayerController;
+    GGameEngine.SetDesktop( desktop );
 }
 
 void FModule::SetInputMappings() {
@@ -175,10 +197,6 @@ void FModule::SetInputMappings() {
     InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
-}
-
-void FModule::DrawCanvas( FCanvas * _Canvas ) {
-    _Canvas->DrawViewport( PlayerController, 0, 0, _Canvas->Width, _Canvas->Height );
 }
 
 void FModule::CreateResources() {
@@ -222,7 +240,7 @@ void FModule::CreateResources() {
     // CheckerMaterialInstance
     {
         FMaterialInstance * CheckerMaterialInstance = NewObject< FMaterialInstance >();
-        CheckerMaterialInstance->Material = GetResource< FMaterial >( "DefaultMaterial" );
+        CheckerMaterialInstance->SetMaterial( GetResource< FMaterial >( "DefaultMaterial" ) );
         CheckerMaterialInstance->SetTexture( 0, GetResource< FTexture >( "Blank512" ) );
         CheckerMaterialInstance->SetName( "CheckerMaterialInstance" );
         RegisterResource( CheckerMaterialInstance );
@@ -231,18 +249,10 @@ void FModule::CreateResources() {
     // Checker mesh
     {
         FIndexedMesh * CheckerMesh = NewObject< FIndexedMesh >();
-        CheckerMesh->InitializeInternalMesh( "*sphere*" );
+        CheckerMesh->InitializeInternalResource( "FIndexedMesh.Sphere" );
         CheckerMesh->SetName( "CheckerMesh" );
         CheckerMesh->GetSubpart( 0 )->MaterialInstance = GetResource< FMaterialInstance >( "CheckerMaterialInstance" );
         RegisterResource( CheckerMesh );
-    }
-
-    // Unit box
-    {
-        FIndexedMesh * unitBox = NewObject< FIndexedMesh >();
-        unitBox->InitializeInternalMesh( "*box*" );
-        unitBox->SetName( "UnitBox" );
-        RegisterResource( unitBox );
     }
 
     // Skybox material

@@ -39,12 +39,14 @@ AN_BEGIN_CLASS_META( FPlayer )
 AN_END_CLASS_META()
 
 FPlayer::FPlayer() {
+    static TStaticResourceFinder< FIndexedMesh > CheckerMesh( _CTS( "CheckerMesh" ) );
+
     Camera = AddComponent< FCameraComponent >( "Camera" );
     RootComponent = Camera;
 
     Box = AddComponent< FMeshComponent >( "checker" );
-    Box->SetMesh( GetResource< FIndexedMesh >( "CheckerMesh" ) );
-    Box->SetDefaultMaterials();
+    Box->SetMesh( CheckerMesh.GetObject() );
+    Box->CopyMaterialsFromMeshResource();
     Box->SetPosition( 0, 0, -0.5f );
     Box->SetScale( 0.1f );
     Box->AttachTo( Camera );
@@ -52,10 +54,12 @@ FPlayer::FPlayer() {
     bCanEverTick = true;
 
     FMaterialInstance * minst = NewObject< FMaterialInstance >();
-    minst->Material = GetResource< FMaterial >( "SkyboxMaterial" );
+    minst->SetMaterial( GetResource< FMaterial >( "SkyboxMaterial" ) );
 
     Skybox = AddComponent< FMeshComponent >( "sky_box" );
-    Skybox->SetMesh( GetResource< FIndexedMesh >( "UnitBox" ) );
+
+    static TStaticInternalResourceFinder< FIndexedMesh > UnitBox( _CTS( "FIndexedMesh.Box" ) );
+    Skybox->SetMesh( UnitBox.GetObject() );
     Skybox->SetMaterialInstance( minst );
     Skybox->SetScale(4000);
     Skybox->ForceOutdoor( true );
