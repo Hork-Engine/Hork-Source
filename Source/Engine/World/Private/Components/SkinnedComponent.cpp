@@ -552,7 +552,7 @@ void FSkinnedComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
     // Draw sockets
-    if ( GDebugDrawFlags.bDrawSkeletonSockets ) {
+    if ( RVDrawSkeletonSockets ) {
         for ( FSocket & socket : Sockets ) {
             Float3x4 const & transform = GetJointTransform( socket.SocketDef->JointIndex );
             _DebugDraw->DrawAxis( GetWorldTransformMatrix() * transform, true );
@@ -560,7 +560,7 @@ void FSkinnedComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     }
 
     // Draw skeleton
-    if ( GDebugDrawFlags.bDrawSkeleton ) {
+    if ( RVDrawSkeleton ) {
         if ( Skeleton ) {
             _DebugDraw->SetColor( FColor4( 1,0,0,1 ) );
             _DebugDraw->SetDepthTest( false );

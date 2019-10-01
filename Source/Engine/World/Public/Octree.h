@@ -41,12 +41,12 @@ class FMaterialInstance;
 
 struct FBoxHitResult {
     FSpatialObject * Object;
-    Float3 HitLocationMin;
-    Float3 HitLocationMax;
-    float HitDistanceMin;
-    float HitDistanceMax;
-    //float HitFractionMin;
-    //float HitFractionMax;
+    Float3 LocationMin;
+    Float3 LocationMax;
+    float DistanceMin;
+    float DistanceMax;
+    //float FractionMin;
+    //float FractionMax;
 
     void Clear() {
         memset( this, 0, sizeof( *this ) );
@@ -55,13 +55,8 @@ struct FBoxHitResult {
 
 struct FWorldRaycastEntity {
     FSpatialObject * Object;
-
-//    Float3 GetWorldHitLocation() {
-//        Object->
-//    }
-
     int FirstHit;
-    int LastHit;
+    int NumHits;
     int ClosestHit;
 };
 
@@ -78,25 +73,25 @@ struct FWorldRaycastResult {
             FSortEntity( TPodArray< FTriangleHitResult > const & _Hits ) : Hits(_Hits) {}
 
             bool operator() ( FWorldRaycastEntity const & _A, FWorldRaycastEntity const & _B ) {
-                const float hitDistanceA = Hits[_A.ClosestHit].HitDistance;
-                const float hitDistanceB = Hits[_B.ClosestHit].HitDistance;
+                const float hitDistanceA = Hits[_A.ClosestHit].Distance;
+                const float hitDistanceB = Hits[_B.ClosestHit].Distance;
 
                 return ( hitDistanceA < hitDistanceB );
             }
         } SortEntity( Hits );
 
         // Sort by entity distance
-        StdSort( &Entities[0], &Entities[Entities.Size()], SortEntity );
+        StdSort( Entities.ToPtr(), Entities.ToPtr() + Entities.Size(), SortEntity );
 
         struct FSortHit {
             bool operator() ( FTriangleHitResult const & _A, FTriangleHitResult const & _B ) {
-                return ( _A.HitDistance < _B.HitDistance );
+                return ( _A.Distance < _B.Distance );
             }
         } SortHit;
 
         // Sort by hit distance
         for ( FWorldRaycastEntity & entity : Entities ) {
-            StdSort( &Hits[entity.FirstHit], &Hits[entity.LastHit], SortHit );
+            StdSort( Hits.ToPtr() + entity.FirstHit, Hits.ToPtr() + (entity.FirstHit + entity.NumHits), SortHit );
             entity.ClosestHit = entity.FirstHit;
         }
     }
@@ -109,15 +104,11 @@ struct FWorldRaycastResult {
 
 struct FWorldRaycastClosestResult {
     FSpatialObject * Object;
-    Float3 Position;
-    Float3 Normal;
-    float Distance;
+    FTriangleHitResult TriangleHit;
+
     float Fraction;
     Float3 Vertices[3];
-    Float2 UV;
     Float2 Texcoord;
-    unsigned int TriangleIndices[3];
-    FMaterialInstance * Material;
 
     void Clear() {
         memset( this, 0, sizeof( *this ) );

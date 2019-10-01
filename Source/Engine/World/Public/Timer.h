@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/BaseTypes.h>
+#include <Engine/Base/Public/BaseObject.h>
 
 class FWorld;
 

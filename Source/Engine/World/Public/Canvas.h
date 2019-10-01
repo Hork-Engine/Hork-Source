@@ -113,6 +113,7 @@ public:
     // Text
     void DrawTextUTF8( Float2 const & _Pos, FColor4 const & _Color, const char* _TextBegin, const char* _TextEnd = nullptr );
     void DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const & _Pos, FColor4 const & _Color, const char* _TextBegin, const char* _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
+    void DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const & _Pos, FColor4 const & _Color, FWideChar const * _TextBegin, FWideChar const * _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
     void DrawChar( FFont const * _Font, char _Ch, int _X, int _Y, float _Scale, FColor4 const & _Color );
     void DrawWChar( FFont const * _Font, FWideChar _Ch, int _X, int _Y, float _Scale, FColor4 const & _Color );
     void DrawCharUTF8( FFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, FColor4 const & _Color );

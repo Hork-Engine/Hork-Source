@@ -122,6 +122,8 @@ public:
     // Used for VSD_FACE_CULL
     PlaneF          FacePlane;
 
+    bool            bOverrideMeshMaterials = true;
+
     // Set indexed mesh for the component
     void SetMesh( FIndexedMesh * _Mesh );
 
@@ -138,18 +140,18 @@ public:
     void ClearMaterials();
 
     // Set materials from mesh resource
-    void SetDefaultMaterials();
+    void CopyMaterialsFromMeshResource();
 
     // Set material instance for subpart of the mesh
     void SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance );
 
-    // Get material instance of subpart of the mesh
+    // Get material instance of subpart of the mesh. Never return null.
     FMaterialInstance * GetMaterialInstance( int _SubpartIndex ) const;
 
     // Set material instance for subpart of the mesh
     void SetMaterialInstance( FMaterialInstance * _Instance ) { SetMaterialInstance( 0, _Instance ); }
 
-    // Get material instance of subpart of the mesh
+    // Get material instance of subpart of the mesh. Never return null.
     FMaterialInstance * GetMaterialInstance() const { return GetMaterialInstance( 0 ); }
 
     // Iterate meshes in parent world
@@ -171,6 +173,8 @@ protected:
 
 private:
     void NotifyMeshChanged();
+
+    FMaterialInstance * GetMaterialInstanceUnsafe( int _SubpartIndex ) const;
 
     FMeshComponent * Next;
     FMeshComponent * Prev;

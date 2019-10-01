@@ -102,7 +102,7 @@ void FMeshComponent::ClearMaterials() {
     Materials.Clear();
 }
 
-void FMeshComponent::SetDefaultMaterials() {
+void FMeshComponent::CopyMaterialsFromMeshResource() {
     ClearMaterials();
 
     if ( Mesh ) {
@@ -141,11 +141,37 @@ void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance *
     }
 }
 
-FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) const {
-    if ( _SubpartIndex < 0 || _SubpartIndex >= Materials.Size() ) {
+FMaterialInstance * FMeshComponent::GetMaterialInstanceUnsafe( int _SubpartIndex ) const {
+    if ( _SubpartIndex < 0 ) {
         return nullptr;
     }
-    return Materials[_SubpartIndex];
+
+    if ( bOverrideMeshMaterials ) {
+        if ( _SubpartIndex >= Materials.Size() ) {
+            return nullptr;
+        }
+        return Materials[_SubpartIndex];
+    }
+
+    if ( !Mesh ) {
+        return nullptr;
+    }
+
+    FIndexedMeshSubpartArray const & subparts = Mesh->GetSubparts();
+    if ( _SubpartIndex >= subparts.Size() ) {
+        return nullptr;
+    }
+
+    return subparts[_SubpartIndex]->MaterialInstance;
+}
+
+FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) const {
+    FMaterialInstance * pInstance = GetMaterialInstanceUnsafe( _SubpartIndex );
+    if ( !pInstance ) {
+        static TStaticInternalResourceFinder< FMaterialInstance > DefaultInstance( _CTS( "FMaterialInstance.Default" ) );
+        pInstance = DefaultInstance.GetObject();
+    }
+    return pInstance;
 }
 
 FCollisionBodyComposition const & FMeshComponent::DefaultBodyComposition() const {
@@ -159,120 +185,3 @@ FCollisionBodyComposition const & FMeshComponent::DefaultBodyComposition() const
 void FMeshComponent::NotifyMeshChanged() {
     OnMeshChanged();
 }
-
-/*
-
-
-
-// Пересечение луча и меша
-// Если есть пересечение, то возвращает длину луча до ближайшей точки пересечения.
-// Если пересечения нет, то возвращает значение < 0.
-float Intersect( const Float3 & _RayStart,
-                               const Float3 & _RayDir,
-                               const Float3 & _ObjectOrigin,
-                               const Float3x3 & _ObjectOrient ) {
-    const float Epsilon = 0.000001f;
-    bool intersected = false;
-    float dist = 999999999.0f;
-
-    Float3 polygonVerts[3];
-    PlaneF polygonPlane;
-    Float3 a,b,v;
-
-    for ( int index = 0 ; index < m_NumIndices ; index += 3 ) {
-        polygonVerts[0] = _ObjectOrient*m_Verts[ m_Indices[ index + 0 ] ].position + _ObjectOrigin;
-        polygonVerts[1] = _ObjectOrient*m_Verts[ m_Indices[ index + 1 ] ].position + _ObjectOrigin;
-        polygonVerts[2] = _ObjectOrient*m_Verts[ m_Indices[ index + 2 ] ].position + _ObjectOrigin;
-
-        polygonPlane.FromPoints( polygonVerts );
-
-        if ( FMath::Dot( _RayDir, polygonPlane.normal ) < 0 ) {
-            continue;
-        }
-
-        a = polygonVerts[0] - _RayStart;
-        b = polygonVerts[1] - _RayStart;
-        v = FMath::Cross( a, b );
-        float ip1 = FMath::Dot( _RayDir, v );
-
-        a = polygonVerts[1] - _RayStart;
-        b = polygonVerts[2] - _RayStart;
-        v = FMath::Cross( a, b );
-        float ip2 = FMath::Dot( _RayDir, v );
-
-        a = polygonVerts[2] - _RayStart;
-        b = polygonVerts[0] - _RayStart;
-        v = FMath::Cross( a, b );
-        float ip3 = FMath::Dot( _RayDir, v );
-
-        if ( ( ip1 < 0 && ip2 < 0 && ip3 < 0 ) || ( ip1 > 0 && ip2 > 0 && ip3 > 0 ) ) {
-            float d = FMath::Dot( polygonPlane.normal, _RayDir );
-            if ( fabs( d ) < Epsilon ) {
-                continue;
-            }
-
-            d = -(FMath::Dot( polygonPlane.normal, _RayStart ) - polygonPlane.Dist() ) / d;
-            if ( d >= 0 ) {
-                dist = FMath::Min( dist, d );
-                intersected = true;
-            }
-        }
-    }
-
-    return intersected ? dist : -1.0f;
-}
-
-// Пересечение луча и меша
-// Возвращает есть пересечение или нет, работает быстрее, чем Intersect
-bool HasIntersection( const Float3 & _RayStart,
-                                    const Float3 & _RayDir,
-                                    const Float3 & _ObjectOrigin,
-                                    const Float3x3 & _ObjectOrient ) {
-    const float Epsilon = 0.000001f;
-    Float3 polygonVerts[3];
-    PlaneF polygonPlane;
-    Float3 a,b,v;
-
-    for ( int index = 0 ; index < m_NumIndices ; index += 3 ) {
-        polygonVerts[0] = _ObjectOrient*m_Verts[ m_Indices[ index + 0 ] ].position + _ObjectOrigin;
-        polygonVerts[1] = _ObjectOrient*m_Verts[ m_Indices[ index + 1 ] ].position + _ObjectOrigin;
-        polygonVerts[2] = _ObjectOrient*m_Verts[ m_Indices[ index + 2 ] ].position + _ObjectOrigin;
-
-        polygonPlane.FromPoints( polygonVerts );
-
-        if ( FMath::Dot( _RayDir, polygonPlane.normal ) < 0 ) {
-            continue;
-        }
-
-        a = polygonVerts[0] - _RayStart;
-        b = polygonVerts[1] - _RayStart;
-        v = FMath::Cross( a, b );
-        float ip1 = FMath::Dot( _RayDir, v );
-
-        a = polygonVerts[1] - _RayStart;
-        b = polygonVerts[2] - _RayStart;
-        v = FMath::Cross( a, b );
-        float ip2 = FMath::Dot( _RayDir, v );
-
-        a = polygonVerts[2] - _RayStart;
-        b = polygonVerts[0] - _RayStart;
-        v = FMath::Cross( a, b );
-        float ip3 = FMath::Dot( _RayDir, v );
-
-        if ( ( ip1 < 0 && ip2 < 0 && ip3 < 0 ) || ( ip1 > 0 && ip2 > 0 && ip3 > 0 ) ) {
-            float d = FMath::Dot( polygonPlane.normal, _RayDir );
-            if ( fabs( d ) < Epsilon ) {
-                continue;
-            }
-
-            d = -(FMath::Dot( polygonPlane.normal, _RayStart ) - polygonPlane.Dist() ) / d;
-            if ( d >= 0 ) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-*/

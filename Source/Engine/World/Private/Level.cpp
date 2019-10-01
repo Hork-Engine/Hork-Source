@@ -361,7 +361,7 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
 
     NavMesh.DrawDebug( _DebugDraw );
 
-    if ( GDebugDrawFlags.bDrawLevelAreaBounds ) {
+    if ( RVDrawLevelAreaBounds ) {
 
 #if 0
         _DebugDraw->SetDepthTest( true );
@@ -386,7 +386,7 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
 
     }
 
-    if ( GDebugDrawFlags.bDrawLevelPortals ) {
+    if ( RVDrawLevelPortals ) {
 //        _DebugDraw->SetDepthTest( false );
 //        _DebugDraw->SetColor(1,0,0,1);
 //        for ( FLevelPortal * portal : Portals ) {
@@ -410,7 +410,7 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
         }
     }
 
-    if ( GDebugDrawFlags.bDrawLevelIndoorBounds ) {
+    if ( RVDrawLevelIndoorBounds ) {
         _DebugDraw->SetDepthTest( false );
         _DebugDraw->DrawAABB( IndoorBounds );
     }
@@ -1302,10 +1302,9 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         FRenderProxy_IndexedMesh * proxy = mesh->GetRenderProxy();
 
         FMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
-        if ( !materialInstance || !materialInstance->Material ) {
-            //materialInstance = DefaultMaterial; // TODO
-            continue;
-        }
+        AN_Assert( materialInstance );
+
+        FMaterial * material = materialInstance->GetMaterial();
 
         FMaterialInstanceFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
 
@@ -1317,7 +1316,7 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
 
         GRuntime.GetFrameData()->Instances.Append( instance );
 
-        instance->Material = materialInstance->Material->GetRenderProxy();
+        instance->Material = material->GetRenderProxy();
         instance->MaterialInstance = materialInstanceFrameData;
         instance->MeshRenderProxy = proxy;
 
@@ -1349,7 +1348,7 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         instance->Skeleton = skeletonProxy;
         instance->Matrix = *instanceMatrix;
 
-        if ( materialInstance->Material->GetType() == MATERIAL_TYPE_PBR ) {
+        if ( material->GetType() == MATERIAL_TYPE_PBR ) {
             instance->ModelNormalToViewSpace = _Def->View->NormalToViewMatrix * component->GetWorldRotation().ToMatrix();
         }
 

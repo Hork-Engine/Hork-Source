@@ -444,8 +444,10 @@ Float4x4 const & FLightComponent::GetShadowMatrix() const {
         LightViewMatrix[ 3 ] = Float4( Origin, 1.0f );
 
         //const float SHADOWMAP_SIZE = 4096;
-        Float4 OrthoRect = Float4( -1, 1, -1, 1 )*150.0f;//(SHADOWMAP_SIZE*0.5f/100.0f);
-        Float4x4 ProjectionMatrix = Float4x4::OrthoCC( OrthoRect.X, OrthoRect.Y, OrthoRect.Z, OrthoRect.W, DEFAULT_ZNEAR, DEFAULT_ZFAR );
+        //Float4 OrthoRect = Float4( -1, 1, -1, 1 )*150.0f;//(SHADOWMAP_SIZE*0.5f/100.0f);
+        Float2 OrthoMins = Float2( -1,-1 )*150.0f;
+        Float2 OrthoMaxs = Float2(  1, 1 )*150.0f;
+        Float4x4 ProjectionMatrix = Float4x4::OrthoCC( OrthoMins, OrthoMaxs, DEFAULT_ZNEAR, DEFAULT_ZFAR );
         //Float4x4 ProjectionMatrix = FMath::PerspectiveProjectionMatrixCC( FMath::_PI/1.1f,FMath::_PI/1.1f,DEFAULT_ZNEAR, DEFAULT_ZFAR );
 
 
@@ -479,7 +481,7 @@ void FLightComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
 
     Super::DrawDebug( _DebugDraw );
 
-    if ( GDebugDrawFlags.bDrawLights ) {
+    if ( RVDrawLights ) {
         Float3 pos = GetWorldPosition();
         Float3x3 orient = GetWorldRotation().ToMatrix();
 

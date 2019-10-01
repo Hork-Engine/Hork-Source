@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Runtime/Public/RenderBackend.h>
+#include <Engine/Runtime/Public/RuntimeVariable.h>
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 #include <Engine/Core/Public/BV/BvOrientedBox.h>
 
@@ -137,28 +138,24 @@ private:
     bool bSplit;
 };
 
-struct FDebugDrawFlags {
-    bool bDrawCollisionModel;
-    bool bDrawCollisionBounds;
-    bool bDrawCollisionShapeWireframe;
-    bool bDrawCenterOfMass;
-    bool bDrawContactPoints;
-    bool bDrawConstraints;
-    bool bDrawConstraintLimits;
-    bool bDrawNavMeshBVTree;
-    bool bDrawNavMeshNodes;
-    bool bDrawNavMeshWithClosedList;
-    bool bDrawNavMeshTileBounds;
-    bool bDrawCameraFrustum;
-    bool bDrawLevelAreaBounds;
-    bool bDrawLevelIndoorBounds;
-    bool bDrawLevelPortals;
-    bool bDrawSkeleton;
-    bool bDrawSkeletonSockets;
-    bool bDrawSoftmeshFaces;
-    bool bDrawMeshBounds;
-    bool bDrawRootComponentAxis;
-    bool bDrawLights;
-};
-
-extern FDebugDrawFlags GDebugDrawFlags;
+extern FRuntimeVariable RVDrawCollisionModel;
+extern FRuntimeVariable RVDrawCollisionBounds;
+extern FRuntimeVariable RVDrawCollisionShapeWireframe;
+extern FRuntimeVariable RVDrawCenterOfMass;
+extern FRuntimeVariable RVDrawContactPoints;
+extern FRuntimeVariable RVDrawConstraints;
+extern FRuntimeVariable RVDrawConstraintLimits;
+extern FRuntimeVariable RVDrawNavMeshBVTree;
+extern FRuntimeVariable RVDrawNavMeshNodes;
+extern FRuntimeVariable RVDrawNavMeshWithClosedList;
+extern FRuntimeVariable RVDrawNavMeshTileBounds;
+extern FRuntimeVariable RVDrawCameraFrustum;
+extern FRuntimeVariable RVDrawLevelAreaBounds;
+extern FRuntimeVariable RVDrawLevelIndoorBounds;
+extern FRuntimeVariable RVDrawLevelPortals;
+extern FRuntimeVariable RVDrawSkeleton;
+extern FRuntimeVariable RVDrawSkeletonSockets;
+extern FRuntimeVariable RVDrawSoftmeshFaces;
+extern FRuntimeVariable RVDrawMeshBounds;
+extern FRuntimeVariable RVDrawRootComponentAxis;
+extern FRuntimeVariable RVDrawLights;

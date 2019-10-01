@@ -34,44 +34,35 @@ SOFTWARE.
 
 #include <Engine/Core/Public/BV/BvFrustum.h>
 
+enum ECameraProjection : uint8_t {
+    CAMERA_PROJ_ORTHOGRAPHIC,
+    CAMERA_PROJ_PERSPECTIVE,
+};
+
+enum ECameraPerspectiveAdjust : uint8_t {
+    CAMERA_ADJUST_FOV_X_ASPECT_RATIO,
+    CAMERA_ADJUST_FOV_X_FOV_Y,
+};
+
 class ANGIE_API FCameraComponent : public FSceneComponent {
     AN_COMPONENT( FCameraComponent, FSceneComponent )
 
 public:
-    enum EProjectionType {
-        ORTHOGRAPHIC,
-        PERSPECTIVE
-    };
+    void SetProjection( ECameraProjection _Projection );
 
-    enum EAdjustPerspective {
-        ADJ_FOV_X_ASPECT_RATIO,
-        ADJ_FOV_X_FOV_Y
-    };
+    void SetPerspective() { SetProjection( CAMERA_PROJ_PERSPECTIVE ); }
 
+    void SetOrthographic() { SetProjection( CAMERA_PROJ_ORTHOGRAPHIC ); }
 
-    void SetProjection( int _Projection );
-    int GetProjection() const { return Projection; }
-
-    void SetPerspective() { SetProjection( PERSPECTIVE ); }
-    void SetOrthographic() { SetProjection( ORTHOGRAPHIC ); }
-
-    bool IsPerspective() const { return Projection == PERSPECTIVE; }
-    bool IsOrthographic() const { return Projection == ORTHOGRAPHIC; }
-
-    void SetPerspectiveAdjust( int _Adjust );
-    int GetPerspectiveAdjust() const { return Adjust; }
+    void SetPerspectiveAdjust( ECameraPerspectiveAdjust _Adjust );
 
     void SetZNear( float _ZNear );
-    float GetZNear() const { return ZNear; }
 
     void SetZFar( float _ZFar );
-    float GetZFar() const { return ZFar; }
 
     void SetFovX( float _FieldOfView );
-    float GetFovX() const { return FovX; }
 
     void SetFovY( float _FieldOfView );
-    float GetFovY() const { return FovY; }
 
     // Perspective aspect ratio. For example 4/3, 16/9
     void SetAspectRatio( float _AspectRatio );
@@ -81,51 +72,75 @@ public:
 
     // Use aspect ratio from window geometry. Use it for windowed mode.
     // Call this on each window resize to update aspect ratio.
-    //void SetWindowAspectRatio( const class FVirtualDisplay * _Window );
+    //void SetWindowAspectRatio( FWindow const * _Window );
+
+    void SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs );
+
+    ECameraProjection GetProjection() const { return Projection; }
+
+    bool IsPerspective() const { return Projection == CAMERA_PROJ_PERSPECTIVE; }
+
+    bool IsOrthographic() const { return Projection == CAMERA_PROJ_ORTHOGRAPHIC; }
+
+    ECameraPerspectiveAdjust GetPerspectiveAdjust() const { return Adjust; }
+
+    float GetZNear() const { return ZNear; }
+
+    float GetZFar() const { return ZFar; }
+
+    float GetFovX() const { return FovX; }
+
+    float GetFovY() const { return FovY; }
 
     float GetAspectRatio() const { return AspectRatio; }
 
     // Computes real camera field of view in radians
     void GetEffectiveFov( float & _FovX, float & _FovY ) const;
 
-    void SetOrthoRect( const Float4 & _OrthoRect );
-    Float4 const & GetOrthoRect() const { return OrthoRect; }
+    Float2 const & GetOrthoMins() const { return OrthoMins; }
 
-    void SetOrthoRect( float _Left, float _Right, float _Bottom, float _Top );
-
-    // Compute ortho rect. Based on aspect ratio
-    void ComputeRect( float _OrthoZoom, float * _Left, float * _Right, float * _Bottom, float * _Top ) const;
-
-    // NormalizedX = ScreenX / ScreenWidth, NormalizedY = ScreenY / ScreenHeight
-    SegmentF GetRay( float _NormalizedX, float _NormalizedY ) const;
+    Float2 const & GetOrthoMaxs() const { return OrthoMaxs; }
 
     Float4x4 const & GetProjectionMatrix() const;
+
     Float4x4 const & GetViewMatrix() const;
+
     Float3x3 const & GetBillboardMatrix() const;
+
     BvFrustum const & GetFrustum() const;
 
-    void ComputeClusterProjectionMatrix( Float4x4 & _Matrix, const float _ClusterZNear, const float _ClusterZFar ) const;
+    // NormalizedX = ScreenX / ScreenWidth, NormalizedY = ScreenY / ScreenHeight
+    void MakeRay( float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) const;
+
+    static void MakeRay( Float4x4 const & _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd );
+
+    // Compute ortho rect based on aspect ratio and zoom
+    static void MakeOrthoRect( float _CameraAspectRatio, float _Zoom, Float2 & _Mins, Float2 & _Maxs );
+
+    void MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix, const float _ClusterZNear, const float _ClusterZFar ) const;
 
 protected:
     FCameraComponent();
 
     void OnTransformDirty() override;
+
     void DrawDebug( FDebugDraw * _DebugDraw ) override;
 
 private:
-    int                 Projection;
     float               FovX;
     float               FovY;
     float               ZNear;
     float               ZFar;
     float               AspectRatio;
-    Float4              OrthoRect;
-    int                 Adjust;
+    Float2              OrthoMins;
+    Float2              OrthoMaxs;    
     mutable Float4x4    ViewMatrix;
-    mutable Float3x3    BillboardMatrix;
-    mutable bool        ViewMatrixDirty;
-    mutable Float4x4    ProjectionMatrix;
-    mutable bool        ProjectionDirty;
-    mutable BvFrustum    Frustum;
-    mutable bool        FrustumDirty;
+    mutable Float3x3    BillboardMatrix;    
+    mutable Float4x4    ProjectionMatrix;    
+    mutable BvFrustum   Frustum;
+    ECameraProjection   Projection;
+    ECameraPerspectiveAdjust Adjust;
+    mutable bool        bViewMatrixDirty;
+    mutable bool        bProjectionDirty;
+    mutable bool        bFrustumDirty;
 };

@@ -28,62 +28,29 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/HUD.h>
-#include <Engine/World/Public/Canvas.h>
-#include <Engine/Core/Public/Utf8.h>
+#pragma once
 
-AN_CLASS_META( FHUD )
+#include "Pawn.h"
 
-FHUD::FHUD() {
 
-}
+/*
 
-void FHUD::Draw( FCanvas * _Canvas, int _X, int _Y, int _W, int _H ) {
-    Canvas = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
+FPlayerController
 
-    DrawHUD();
-}
+Base class for players
 
-void FHUD::DrawHUD() {
+*/
+class ANGIE_API FController : public FActor {
+    AN_ACTOR( FController, FActor )
 
-}
+public:
 
-void FHUD::DrawText( FFont * _Font, int x, int y, FColor4 const & color, const char * _Text ) {
-    const int CharacterWidth = 8;
-    const int CharacterHeight = 16;
+    virtual Float2 GetNormalizedCursorPos() const { return Float2::Zero(); }
 
-    const float scale = (float)CharacterHeight / _Font->FontSize;
+protected:
 
-    const char * s = _Text;
-    int byteLen;
-    FWideChar ch;
-    int cx = x;
+    FController();
 
-    while ( *s ) {
-        byteLen = FCore::WideCharDecodeUTF8( s, ch );
-        if ( !byteLen ) {
-            break;
-        }
+private:
 
-        s += byteLen;
-
-        if ( ch == '\n' || ch == '\r' ) {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if ( ch == ' ' ) {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar( _Font, ch, cx, y, scale, color );
-
-        cx += CharacterWidth;
-    }
-}
+};

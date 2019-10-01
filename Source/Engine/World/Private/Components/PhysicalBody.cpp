@@ -275,6 +275,11 @@ void FPhysicalBody::DestroyRigidBody() {
 }
 
 void FPhysicalBody::UpdatePhysicsAttribs() {
+    if ( !GetWorld() ) {
+        // Called before initialization
+        return;
+    }
+
     if ( !HasCollisionBody() ) {
         DestroyRigidBody();
         return;
@@ -928,13 +933,6 @@ void FPhysicalBody::BeginPlay() {
 }
 
 void FPhysicalBody::EndPlay() {
-    E_OnBeginContact.RemoveAll();
-    E_OnEndContact.RemoveAll();
-    E_OnUpdateContact.RemoveAll();
-    E_OnBeginOverlap.RemoveAll();
-    E_OnEndOverlap.RemoveAll();
-    E_OnUpdateOverlap.RemoveAll();
-
     for ( FActor * actor : CollisionIgnoreActors ) {
         actor->RemoveRef();
     }
@@ -999,7 +997,7 @@ void FPhysicalBody::RemoveCollisionIgnoreActor( FActor * _Actor ) {
 void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
-    if ( GDebugDrawFlags.bDrawCollisionModel ) {
+    if ( RVDrawCollisionModel ) {
         TPodArray< Float3 > collisionVertices;
         TPodArray< unsigned int > collisionIndices;
 
@@ -1011,7 +1009,7 @@ void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
         _DebugDraw->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
     }
 
-    if ( GDebugDrawFlags.bDrawCollisionBounds ) {
+    if ( RVDrawCollisionBounds ) {
         TPodArray< BvAxisAlignedBox > boundingBoxes;
 
         GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1023,7 +1021,7 @@ void FPhysicalBody::DrawDebug( FDebugDraw * _DebugDraw ) {
         }
     }
 
-    if ( GDebugDrawFlags.bDrawCenterOfMass ) {
+    if ( RVDrawCenterOfMass ) {
         if ( RigidBody ) {
             Float3 centerOfMass = GetCenterOfMassWorldPosition();
 

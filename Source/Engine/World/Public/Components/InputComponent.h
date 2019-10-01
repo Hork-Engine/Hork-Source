@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Engine/World/Public/Components/ActorComponent.h>
 
 #include <Engine/Runtime/Public/InputDefs.h>
+#include <Engine/Core/Public/Utf8.h>
 
 #define MAX_PRESSED_KEYS       128
 #define MAX_AXIS_BINDINGS      1024
@@ -216,6 +217,8 @@ public:
 
     // Filter character events
     bool bIgnoreCharEvents;
+
+    bool bActive = true;
 
     int ControllerId;
 

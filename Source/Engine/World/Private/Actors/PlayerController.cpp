@@ -32,20 +32,35 @@ SOFTWARE.
 #include <Engine/World/Public/Components/InputComponent.h>
 #include <Engine/World/Public/World.h>
 #include <Engine/Runtime/Public/Runtime.h>
+#include <Engine/GameThread/Public/GameEngine.h>
 
 AN_CLASS_META( FPlayerController )
 AN_CLASS_META( FRenderingParameters )
 
 FPlayerController * FPlayerController::CurrentAudioListener = nullptr;
+FCommandContext * FPlayerController::CurrentCommandContext = nullptr;
 
 FPlayerController::FPlayerController() {
     InputComponent = AddComponent< FInputComponent >( "PlayerControllerInput" );
 
     bCanEverTick = true;
 
+    ViewportSize.X = 512;
+    ViewportSize.Y = 512;
+
     if ( !CurrentAudioListener ) {
         CurrentAudioListener = this;
     }
+
+    if ( !CurrentCommandContext ) {
+        CurrentCommandContext = &CommandContext;
+    }
+
+    CommandContext.AddCommand( "quit", { this, &FPlayerController::Quit }, "Quit from application" );
+}
+
+void FPlayerController::Quit( FRuntimeCommandProcessor const & _Proc ) {
+    GGameEngine.Stop();
 }
 
 void FPlayerController::EndPlay() {
@@ -59,6 +74,10 @@ void FPlayerController::EndPlay() {
     if ( CurrentAudioListener == this ) {
         CurrentAudioListener = nullptr;
     }
+
+    if ( CurrentCommandContext == &CommandContext ) {
+        CurrentCommandContext = nullptr;
+    }
 }
 
 void FPlayerController::Tick( float _TimeStep ) {
@@ -67,21 +86,23 @@ void FPlayerController::Tick( float _TimeStep ) {
     if ( Pawn && Pawn->IsPendingKill() ) {
         SetPawn( nullptr );
     }
-
-    if ( HUD && HUD->IsPendingKill() ) {
-        SetHUD( nullptr );
-    }
-
-    if ( CameraComponent && CameraComponent->IsPendingKill() ) {
-        SetViewCamera( nullptr );
-    }
-
-    if ( AudioListener && AudioListener->IsPendingKill() ) {
-        AudioListener = nullptr;
-    }
 }
 
 void FPlayerController::SetPawn( FPawn * _Pawn ) {
+    if ( Pawn == _Pawn ) {
+        return;
+    }
+
+    if ( _Pawn && _Pawn->OwnerController ) {
+        GLogger.Printf( "Pawn already controlled by other controller\n" );
+        return;
+    }
+
+    if ( Pawn ) {
+        Pawn->OwnerController = nullptr;
+    }
+
+    Pawn = _Pawn;
 
     InputComponent->UnbindAll();
 
@@ -90,10 +111,10 @@ void FPlayerController::SetPawn( FPawn * _Pawn ) {
     InputComponent->BindAction( "ToggleWireframe", IE_Press, this, &FPlayerController::ToggleWireframe, true );
     InputComponent->BindAction( "ToggleDebugDraw", IE_Press, this, &FPlayerController::ToggleDebugDraw, true );
 
-    Pawn = _Pawn;
-
     if ( Pawn ) {
+        Pawn->OwnerController = this;
         Pawn->SetupPlayerInputComponent( InputComponent );
+        Pawn->SetupRuntimeCommands( CommandContext );
     }
 
     if ( HUD ) {
@@ -103,6 +124,11 @@ void FPlayerController::SetPawn( FPawn * _Pawn ) {
 
 void FPlayerController::SetViewCamera( FCameraComponent * _Camera ) {
     CameraComponent = _Camera;
+}
+
+void FPlayerController::SetViewport( Float2 const & _Position, Float2 const & _Size ) {
+    ViewportPosition = _Position;
+    ViewportSize = _Size;
 }
 
 void FPlayerController::SetAudioListener( FSceneComponent * _AudioListener ) {
@@ -133,6 +159,10 @@ void FPlayerController::SetHUD( FHUD * _HUD ) {
 
 void FPlayerController::SetRenderingParameters( FRenderingParameters * _RP ) {
     RenderingParameters = _RP;
+}
+
+void FPlayerController::SetAudioParameters( FAudioParameters * _AudioParameters ) {
+    AudioParameters = _AudioParameters;
 }
 
 void FPlayerController::SetInputMappings( FInputMappings * _InputMappings ) {
@@ -172,6 +202,14 @@ void FPlayerController::SetPlayerIndex( int _ControllerId ) {
 
 int FPlayerController::GetPlayerIndex() const {
     return InputComponent->ControllerId;
+}
+
+void FPlayerController::SetActive( bool _Active ) {
+    InputComponent->bActive = _Active;
+}
+
+bool FPlayerController::IsActive() const {
+    return InputComponent->bActive;
 }
 
 void FPlayerController::TogglePause() {
@@ -219,4 +257,27 @@ void FPlayerController::SetCurrentAudioListener() {
 
 FPlayerController * FPlayerController::GetCurrentAudioListener() {
     return CurrentAudioListener;
+}
+
+void FPlayerController::SetCurrentCommandContext() {
+    CurrentCommandContext = &CommandContext;
+}
+
+FCommandContext * FPlayerController::GetCurrentCommandContext() {
+    return CurrentCommandContext;
+}
+
+Float2 FPlayerController::GetNormalizedCursorPos() const {
+    if ( ViewportSize.X > 0 && ViewportSize.Y > 0 ) {
+        Float2 pos = GGameEngine.GetCursorPosition();
+        pos.X -= ViewportPosition.X;
+        pos.Y -= ViewportPosition.Y;
+        pos.X /= ViewportSize.X;
+        pos.Y /= ViewportSize.Y;
+        pos.X = FMath::Saturate( pos.X );
+        pos.Y = FMath::Saturate( pos.Y );
+        return pos;
+    } else {
+        return Float2::Zero();
+    }
 }

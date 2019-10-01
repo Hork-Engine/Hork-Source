@@ -36,14 +36,13 @@ SOFTWARE.
 
 #include <Engine/Runtime/Public/Runtime.h>
 
-#define DEFAULT_PROJECTION FCameraComponent::PERSPECTIVE
+#define DEFAULT_PROJECTION CAMERA_PROJ_PERSPECTIVE
 #define DEFAULT_ZNEAR 0.04f//0.1f
 #define DEFAULT_ZFAR 99999.0f
 #define DEFAULT_FOVX 90.0f
 #define DEFAULT_FOVY 90.0f
 #define DEFAULT_ASPECT_RATIO (4.0f / 3.0f)
-#define DEFAULT_PERSPECTIVE_ADJUST FCameraComponent::ADJ_FOV_X_ASPECT_RATIO
-#define DEFAULT_ORTHO_RECT Float4(-1,1,-1,1)
+#define DEFAULT_PERSPECTIVE_ADJUST CAMERA_ADJUST_FOV_X_ASPECT_RATIO
 
 AN_CLASS_META( FCameraComponent )
 
@@ -69,19 +68,20 @@ FCameraComponent::FCameraComponent() {
     FovX = DEFAULT_FOVX;
     FovY = DEFAULT_FOVY;
     AspectRatio = DEFAULT_ASPECT_RATIO;
-    //Width = 512;
-    //Height = 512;
     Adjust = DEFAULT_PERSPECTIVE_ADJUST;
-    OrthoRect = DEFAULT_ORTHO_RECT;
-    ViewMatrixDirty = true;
-    FrustumDirty = true;
-    ProjectionDirty = true;
+    OrthoMins.X = -1;
+    OrthoMins.Y = -1;
+    OrthoMaxs.X = 1;
+    OrthoMaxs.Y = 1;
+    bViewMatrixDirty = true;
+    bFrustumDirty = true;
+    bProjectionDirty = true;
 }
 
 void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
-    if ( GDebugDrawFlags.bDrawCameraFrustum ) {
+    if ( RVDrawCameraFrustum ) {
         Float3 vectorTR;
         Float3 vectorTL;
         Float3 vectorBR;
@@ -136,37 +136,46 @@ void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     }
 }
 
-void FCameraComponent::SetProjection( int _Projection ) {
-    if ( Projection == _Projection ) {
-        return;
+void FCameraComponent::SetProjection( ECameraProjection _Projection ) {
+    if ( Projection != _Projection ) {
+        Projection = _Projection;
+        bProjectionDirty = true;
     }
-    Projection = _Projection;
-    ProjectionDirty = true;
 }
 
 void FCameraComponent::SetZNear( float _ZNear ) {
-    ZNear = _ZNear;
-    ProjectionDirty = true;
+    if ( ZNear != _ZNear ) {
+        ZNear = _ZNear;
+        bProjectionDirty = true;
+    }
 }
 
 void FCameraComponent::SetZFar( float _ZFar ) {
-    ZFar = _ZFar;
-    ProjectionDirty = true;
+    if ( ZFar != _ZFar ) {
+        ZFar = _ZFar;
+        bProjectionDirty = true;
+    }
 }
 
 void FCameraComponent::SetFovX( float _FieldOfView ) {
-    FovX = _FieldOfView;
-    ProjectionDirty = true;
+    if ( FovX != _FieldOfView ) {
+        FovX = _FieldOfView;
+        bProjectionDirty = true;
+    }
 }
 
 void FCameraComponent::SetFovY( float _FieldOfView ) {
-    FovY = _FieldOfView;
-    ProjectionDirty = true;
+    if ( FovY != _FieldOfView ) {
+        FovY = _FieldOfView;
+        bProjectionDirty = true;
+    }
 }
 
 void FCameraComponent::SetAspectRatio( float _AspectRatio ) {
-    AspectRatio = _AspectRatio;
-    ProjectionDirty = true;
+    if ( AspectRatio != _AspectRatio ) {
+        AspectRatio = _AspectRatio;
+        bProjectionDirty = true;
+    }
 }
 
 void FCameraComponent::SetMonitorAspectRatio( const FPhysicalMonitor * _Monitor ) {
@@ -174,17 +183,17 @@ void FCameraComponent::SetMonitorAspectRatio( const FPhysicalMonitor * _Monitor 
     SetAspectRatio( MonitorAspectRatio );
 }
 
-//void FCameraComponent::SetWindowAspectRatio( const FVirtualDisplay * _Window ) {
+//void FCameraComponent::SetWindowAspectRatio( FWindow const * _Window ) {
 //    const int w = _Window->GetWidth();
 //    const int h = _Window->GetHeight();
 //    const float WindowAspectRatio = h > 0 ? ( float )w / h : DEFAULT_ASPECT_RATIO;
 //    SetAspectRatio( WindowAspectRatio );
 //}
 
-void FCameraComponent::SetPerspectiveAdjust( int _Adjust ) {
+void FCameraComponent::SetPerspectiveAdjust( ECameraPerspectiveAdjust _Adjust ) {
     if ( Adjust != _Adjust ) {
         Adjust = _Adjust;
-        ProjectionDirty = true;
+        bProjectionDirty = true;
     }
 }
 
@@ -198,14 +207,14 @@ void FCameraComponent::GetEffectiveFov( float & _FovX, float & _FovY ) const {
         //    _FovY = atan2( static_cast< float >( Height ), Width / TanHalfFovX ) * 2.0f;
         //    break;
         //}
-        case ADJ_FOV_X_ASPECT_RATIO:
+        case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
         {
             const float TanHalfFovX = tan( _FovX * 0.5f );
 
             _FovY = atan2( 1.0f, AspectRatio / TanHalfFovX ) * 2.0f;
             break;
         }
-        case ADJ_FOV_X_FOV_Y:
+        case CAMERA_ADJUST_FOV_X_FOV_Y:
         {
             _FovY = FMath::Radians( FovY );
             break;
@@ -213,147 +222,131 @@ void FCameraComponent::GetEffectiveFov( float & _FovX, float & _FovY ) const {
     }
 }
 
-void FCameraComponent::SetOrthoRect( const Float4 & _OrthoRect ) {
-    OrthoRect = _OrthoRect;
-    ProjectionDirty = true;
+void FCameraComponent::SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs ) {
+    OrthoMins = _Mins;
+    OrthoMaxs = _Maxs;
+
+    if ( IsOrthographic() ) {
+        bProjectionDirty = true;
+    }
 }
 
-void FCameraComponent::SetOrthoRect( float _Left, float _Right, float _Bottom, float _Top ) {
-    OrthoRect.X = _Left;
-    OrthoRect.Y = _Right;
-    OrthoRect.Z = _Bottom;
-    OrthoRect.W = _Top;
-    ProjectionDirty = true;
-}
-
-void FCameraComponent::ComputeRect( float _OrthoZoom, float * _Left, float * _Right, float * _Bottom, float * _Top ) const {
-    float Z = 1.0f / _OrthoZoom;
-    if ( _Left ) {
-        *_Left = -Z;
-    }
-    if ( _Right ) {
-        *_Right = Z;
-    }
-    if ( _Bottom ) {
-        *_Bottom = -Z / AspectRatio;
-    }
-    if ( _Top ) {
-        *_Top = Z / AspectRatio;
+void FCameraComponent::MakeOrthoRect( float _CameraAspectRatio, float _Zoom, Float2 & _Mins, Float2 & _Maxs ) {
+    if ( _CameraAspectRatio > 0.0f ) {
+        const float Z = _Zoom != 0.0f ? 1.0f / _Zoom : 0.0f;
+        _Maxs.X = Z;
+        _Maxs.Y = Z / _CameraAspectRatio;
+        _Mins = -_Maxs;
+    } else {
+        _Mins.X = -1;
+        _Mins.Y = -1;
+        _Maxs.X = 1;
+        _Maxs.Y = 1;
     }
 }
 
 void FCameraComponent::OnTransformDirty() {
-    ViewMatrixDirty = true;
+    bViewMatrixDirty = true;
 }
 
-void FCameraComponent::ComputeClusterProjectionMatrix( Float4x4 & _Matrix, const float _ClusterZNear, const float _ClusterZFar ) const {
+void FCameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix, const float _ClusterZNear, const float _ClusterZFar ) const {
     // TODO: if ( ClusterProjectionDirty ...
-    if ( Projection == PERSPECTIVE ) {
+    if ( Projection == CAMERA_PROJ_PERSPECTIVE ) {
         switch ( Adjust ) {
-            //case ADJ_FOV_X_VIEW_SIZE:
+            //case CAMERA_ADJUST_FOV_X_VIEW_SIZE:
             //{
-            //    _Matrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), float( Width ), float( Height ), _ClusterZNear, _ClusterZFar );
+            //    _ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), float( Width ), float( Height ), _ClusterZNear, _ClusterZFar );
             //    break;
             //}
-            case ADJ_FOV_X_ASPECT_RATIO:
+            case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
             {
-                _Matrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), AspectRatio, 1.0f, _ClusterZNear, _ClusterZFar );
+                _ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), AspectRatio, 1.0f, _ClusterZNear, _ClusterZFar );
                 break;
             }
-            case ADJ_FOV_X_FOV_Y:
+            case CAMERA_ADJUST_FOV_X_FOV_Y:
             {
-                _Matrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), FMath::Radians( FovY ), _ClusterZNear, _ClusterZFar );
+                _ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), FMath::Radians( FovY ), _ClusterZNear, _ClusterZFar );
                 break;
             }
         }
     } else {
-        _Matrix = Float4x4::OrthoRevCC( OrthoRect.X, OrthoRect.Y, OrthoRect.Z, OrthoRect.W, _ClusterZNear, _ClusterZFar );
+        _ProjectionMatrix = Float4x4::OrthoRevCC( OrthoMins, OrthoMaxs, _ClusterZNear, _ClusterZFar );
     }
 }
 
 Float4x4 const & FCameraComponent::GetProjectionMatrix() const {
 
-    if ( ProjectionDirty ) {
+    if ( bProjectionDirty ) {
 
-        if ( Projection == PERSPECTIVE ) {
+        if ( Projection == CAMERA_PROJ_PERSPECTIVE ) {
             switch ( Adjust ) {
-                //case ADJ_FOV_X_VIEW_SIZE:
+                //case CAMERA_ADJUST_FOV_X_VIEW_SIZE:
                 //{
                 //    ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), float( Width ), float( Height ), ZNear, ZFar );
                 //    break;
                 //}
-                case ADJ_FOV_X_ASPECT_RATIO:
+                case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
                 {
                     ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), AspectRatio, 1.0f, ZNear, ZFar );
                     break;
                 }
-                case ADJ_FOV_X_FOV_Y:
+                case CAMERA_ADJUST_FOV_X_FOV_Y:
                 {
                     ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), FMath::Radians( FovY ), ZNear, ZFar );
                     break;
                 }
             }
         } else {
-            ProjectionMatrix = Float4x4::OrthoRevCC( OrthoRect.X, OrthoRect.Y, OrthoRect.Z, OrthoRect.W, ZNear, ZFar );
+            ProjectionMatrix = Float4x4::OrthoRevCC( OrthoMins, OrthoMaxs, ZNear, ZFar );
         }
 
-        //Float4 v1 = ProjectionMatrix * Float4(0,0,-ZFar,1.0f);
-        //v1/=v1.W;
-        //Float4 v2 = ProjectionMatrix * Float4(0,0,-ZNear,1.0f);
-        //v2/=v2.W;
-        //Out() << v1<<v2;
-
-        ProjectionDirty = false;
-        FrustumDirty = true;
+        bProjectionDirty = false;
+        bFrustumDirty = true;
     }
 
     return ProjectionMatrix;
 }
 
-SegmentF FCameraComponent::GetRay( float _NormalizedX, float _NormalizedY ) const {
-    SegmentF RaySegment;
-
+void FCameraComponent::MakeRay( float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) const {
     // Update projection matrix
     GetProjectionMatrix();
 
     // Update view matrix
     GetViewMatrix();
 
+    // TODO: cache ModelViewProjectionInversed
     Float4x4 ModelViewProjectionInversed = ( ProjectionMatrix * ViewMatrix ).Inversed();
 
+    MakeRay( ModelViewProjectionInversed, _NormalizedX, _NormalizedY, _RayStart, _RayEnd );
+}
+
+void FCameraComponent::MakeRay( Float4x4 const & _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) {
     float x = 2.0f * _NormalizedX - 1.0f;
     float y = 2.0f * _NormalizedY - 1.0f;
-
 #if 0
     Float4 near(x, y, 1, 1.0f);
     Float4 far(x, y, 0, 1.0f);
-    RaySegment.Start.X = ModelViewProjectionInversed[0][0] * near[0] + ModelViewProjectionInversed[1][0] * near[1] + ModelViewProjectionInversed[2][0] * near[2] + ModelViewProjectionInversed[3][0];
-    RaySegment.Start.Y = ModelViewProjectionInversed[0][1] * near[0] + ModelViewProjectionInversed[1][1] * near[1] + ModelViewProjectionInversed[2][1] * near[2] + ModelViewProjectionInversed[3][1];
-    RaySegment.Start.Z = ModelViewProjectionInversed[0][2] * near[0] + ModelViewProjectionInversed[1][2] * near[1] + ModelViewProjectionInversed[2][2] * near[2] + ModelViewProjectionInversed[3][2];
-    float div          = ModelViewProjectionInversed[0][3] * near[0] + ModelViewProjectionInversed[1][3] * near[1] + ModelViewProjectionInversed[2][3] * near[2] + ModelViewProjectionInversed[3][3];
-    RaySegment.Start/=div;
-    RaySegment.End.X = ModelViewProjectionInversed[0][0] * far[0] + ModelViewProjectionInversed[1][0] * far[1] + ModelViewProjectionInversed[2][0] * far[2] + ModelViewProjectionInversed[3][0];
-    RaySegment.End.Y = ModelViewProjectionInversed[0][1] * far[0] + ModelViewProjectionInversed[1][1] * far[1] + ModelViewProjectionInversed[2][1] * far[2] + ModelViewProjectionInversed[3][1];
-    RaySegment.End.Z = ModelViewProjectionInversed[0][2] * far[0] + ModelViewProjectionInversed[1][2] * far[1] + ModelViewProjectionInversed[2][2] * far[2] + ModelViewProjectionInversed[3][2];
-    div              = ModelViewProjectionInversed[0][3] * far[0] + ModelViewProjectionInversed[1][3] * far[1] + ModelViewProjectionInversed[2][3] * far[2] + ModelViewProjectionInversed[3][3];
-    RaySegment.End/=div;
+    _RayStart.X = _ModelViewProjectionInversed[0][0] * near[0] + _ModelViewProjectionInversed[1][0] * near[1] + _ModelViewProjectionInversed[2][0] * near[2] + _ModelViewProjectionInversed[3][0];
+    _RayStart.Y = _ModelViewProjectionInversed[0][1] * near[0] + _ModelViewProjectionInversed[1][1] * near[1] + _ModelViewProjectionInversed[2][1] * near[2] + _ModelViewProjectionInversed[3][1];
+    _RayStart.Z = _ModelViewProjectionInversed[0][2] * near[0] + _ModelViewProjectionInversed[1][2] * near[1] + _ModelViewProjectionInversed[2][2] * near[2] + _ModelViewProjectionInversed[3][2];
+    _RayStart /= (_ModelViewProjectionInversed[0][3] * near[0] + _ModelViewProjectionInversed[1][3] * near[1] + _ModelViewProjectionInversed[2][3] * near[2] + _ModelViewProjectionInversed[3][3]);
+    _RayEnd.X = _ModelViewProjectionInversed[0][0] * far[0] + _ModelViewProjectionInversed[1][0] * far[1] + _ModelViewProjectionInversed[2][0] * far[2] + _ModelViewProjectionInversed[3][0];
+    _RayEnd.Y = _ModelViewProjectionInversed[0][1] * far[0] + _ModelViewProjectionInversed[1][1] * far[1] + _ModelViewProjectionInversed[2][1] * far[2] + _ModelViewProjectionInversed[3][1];
+    _RayEnd.Z = _ModelViewProjectionInversed[0][2] * far[0] + _ModelViewProjectionInversed[1][2] * far[1] + _ModelViewProjectionInversed[2][2] * far[2] + _ModelViewProjectionInversed[3][2];
+    _RayEnd /= (_ModelViewProjectionInversed[0][3] * far[0] + _ModelViewProjectionInversed[1][3] * far[1] + _ModelViewProjectionInversed[2][3] * far[2] + _ModelViewProjectionInversed[3][3]);
 #else
     // Same code
-    RaySegment.End.X = ModelViewProjectionInversed[0][0] * x + ModelViewProjectionInversed[1][0] * y + ModelViewProjectionInversed[3][0];
-    RaySegment.End.Y = ModelViewProjectionInversed[0][1] * x + ModelViewProjectionInversed[1][1] * y + ModelViewProjectionInversed[3][1];
-    RaySegment.End.Z = ModelViewProjectionInversed[0][2] * x + ModelViewProjectionInversed[1][2] * y + ModelViewProjectionInversed[3][2];
-    RaySegment.Start.X = RaySegment.End.X + ModelViewProjectionInversed[2][0];
-    RaySegment.Start.Y = RaySegment.End.Y + ModelViewProjectionInversed[2][1];
-    RaySegment.Start.Z = RaySegment.End.Z + ModelViewProjectionInversed[2][2];
-
-    float div = ModelViewProjectionInversed[0][3] * x + ModelViewProjectionInversed[1][3] * y + ModelViewProjectionInversed[3][3];
-    RaySegment.End /= div;
-
-    div += ModelViewProjectionInversed[2][3];
-    RaySegment.Start /= div;
+    _RayEnd.X = _ModelViewProjectionInversed[0][0] * x + _ModelViewProjectionInversed[1][0] * y + _ModelViewProjectionInversed[3][0];
+    _RayEnd.Y = _ModelViewProjectionInversed[0][1] * x + _ModelViewProjectionInversed[1][1] * y + _ModelViewProjectionInversed[3][1];
+    _RayEnd.Z = _ModelViewProjectionInversed[0][2] * x + _ModelViewProjectionInversed[1][2] * y + _ModelViewProjectionInversed[3][2];
+    _RayStart.X = _RayEnd.X + _ModelViewProjectionInversed[2][0];
+    _RayStart.Y = _RayEnd.Y + _ModelViewProjectionInversed[2][1];
+    _RayStart.Z = _RayEnd.Z + _ModelViewProjectionInversed[2][2];
+    float div = _ModelViewProjectionInversed[0][3] * x + _ModelViewProjectionInversed[1][3] * y + _ModelViewProjectionInversed[3][3];
+    _RayEnd /= div;
+    div += _ModelViewProjectionInversed[2][3];
+    _RayStart /= div;
 #endif
-
-    return RaySegment;
 }
 
 BvFrustum const & FCameraComponent::GetFrustum() const {
@@ -364,17 +357,17 @@ BvFrustum const & FCameraComponent::GetFrustum() const {
     // Update view matrix
     GetViewMatrix();
 
-    if ( FrustumDirty ) {
+    if ( bFrustumDirty ) {
         Frustum.FromMatrix( ProjectionMatrix * ViewMatrix );
 
-        FrustumDirty = false;
+        bFrustumDirty = false;
     }
 
     return Frustum;
 }
 
 Float4x4 const & FCameraComponent::GetViewMatrix() const {
-    if ( ViewMatrixDirty ) {
+    if ( bViewMatrixDirty ) {
         BillboardMatrix = GetWorldRotation().ToMatrix();
 
         Float3x3 Basis = BillboardMatrix.Transposed();
@@ -385,8 +378,8 @@ Float4x4 const & FCameraComponent::GetViewMatrix() const {
         ViewMatrix[2] = Float4( Basis[2], 0.0f );
         ViewMatrix[3] = Float4( Origin, 1.0f );
 
-        ViewMatrixDirty = false;
-        FrustumDirty = true;
+        bViewMatrixDirty = false;
+        bFrustumDirty = true;
     }
 
     return ViewMatrix;

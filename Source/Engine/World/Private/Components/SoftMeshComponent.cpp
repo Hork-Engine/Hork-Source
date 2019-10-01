@@ -373,7 +373,7 @@ void FSoftMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     //_DebugDraw->DrawAABB( BvAxisAlignedBox( btVectorToFloat3( mins ), btVectorToFloat3( maxs ) ) );
 
     // Draw faces
-    if ( GDebugDrawFlags.bDrawSoftmeshFaces ) {
+    if ( RVDrawSoftmeshFaces ) {
         _DebugDraw->SetDepthTest( true );
         _DebugDraw->SetColor( FColor4( 1, 0, 0, 1 ) );
         for ( int i = 0; i < SoftBody->m_faces.size(); i++ ) {

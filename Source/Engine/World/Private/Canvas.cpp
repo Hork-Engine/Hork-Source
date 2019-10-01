@@ -383,6 +383,227 @@ void FCanvas::DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const &
     DrawList._VtxCurrentIdx = (unsigned int)DrawList.VtxBuffer.Size;
 }
 
+void FCanvas::DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const & _Pos, FColor4 const & _Color, FWideChar const * _TextBegin, FWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
+
+    AN_Assert( _Font && _FontSize > 0.0f );
+
+    if ( _Color.IsTransparent() ) {
+        return;
+    }
+
+    if ( !_TextEnd ) {
+        _TextEnd = _TextBegin + FCore::WideStrLength( _TextBegin );
+    }
+
+    if ( _TextBegin == _TextEnd ) {
+        return;
+    }
+
+    uint32_t color = _Color.GetDWord();
+
+    AN_Assert( _Font->ContainerAtlas->TexID == DrawList._TextureIdStack.back() );
+
+    Float4 clipRect = DrawList._ClipRectStack.back();
+    if ( _CPUFineClipRect ) {
+        clipRect.X = FMath::Max( clipRect.X, _CPUFineClipRect->X );
+        clipRect.Y = FMath::Max( clipRect.Y, _CPUFineClipRect->Y );
+        clipRect.Z = FMath::Min( clipRect.Z, _CPUFineClipRect->Z );
+        clipRect.W = FMath::Min( clipRect.W, _CPUFineClipRect->W );
+    }
+
+    //_Font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
+
+    // Align to be pixel perfect
+    Float2 pos;
+    pos.X = ( float )( int )_Pos.X + _Font->DisplayOffset.x;
+    pos.Y = ( float )( int )_Pos.Y + _Font->DisplayOffset.y;
+    float x = pos.X;
+    float y = pos.Y;
+    if ( y > clipRect.W )
+        return;
+
+    const float scale = _FontSize / _Font->FontSize;
+    const float lineHeight = _FontSize;
+    const bool bWordWrap = ( _WrapWidth > 0.0f );
+    FWideChar const * wordWrapEOL = NULL;
+
+    // Fast-forward to first visible line
+    FWideChar const * s = _TextBegin;
+    if ( y + lineHeight < clipRect.Y && !bWordWrap ) {
+        while ( y + lineHeight < clipRect.Y && s < _TextEnd ) {
+            s = ( FWideChar const * )memchr( s, '\n', _TextEnd - s );
+            s = s ? s + 1 : _TextEnd;
+            y += lineHeight;
+        }
+    }
+
+    // For large text, scan for the last visible line in order to avoid over-reserving in the call to PrimReserve()
+    // Note that very large horizontal line will still be affected by the issue (e.g. a one megabyte string buffer without a newline will likely crash atm)
+    if ( _TextEnd - s > 10000 && !bWordWrap ) {
+        FWideChar const * s_end = s;
+        float y_end = y;
+        while ( y_end < clipRect.W && s_end < _TextEnd ) {
+            s_end = ( FWideChar const * )memchr( s_end, '\n', _TextEnd - s_end );
+            s_end = s_end ? s_end + 1 : _TextEnd;
+            y_end += lineHeight;
+        }
+        _TextEnd = s_end;
+    }
+    if ( s == _TextEnd ) {
+        return;
+    }
+
+    // Reserve vertices for remaining worse case (over-reserving is useful and easily amortized)
+    const int MaxVertices = ( int )( _TextEnd - s ) * 4;
+    const int MaxIndices = ( int )( _TextEnd - s ) * 6;
+    const int ReservedIndicesCount = DrawList.IdxBuffer.Size + MaxIndices;
+    DrawList.PrimReserve( MaxIndices, MaxVertices );
+
+    ImDrawVert * pVertices = DrawList._VtxWritePtr;
+    ImDrawIdx * pIndices = DrawList._IdxWritePtr;
+    unsigned int firstVertex = DrawList._VtxCurrentIdx;
+
+    while ( s < _TextEnd ) {
+        if ( bWordWrap ) {
+            // Calculate how far we can render. Requires two passes on the string data but keeps the code simple and not intrusive for what's essentially an uncommon feature.
+            if ( !wordWrapEOL ) {
+                wordWrapEOL = _Font->CalcWordWrapPositionW( scale, s, _TextEnd, _WrapWidth - ( x - pos.X ) );
+                if ( wordWrapEOL == s ) // Wrap_width is too small to fit anything. Force displaying 1 character to minimize the height discontinuity.
+                    wordWrapEOL++;      // +1 may not be a character start point in UTF-8 but it's ok because we use s >= word_wrap_eol below
+            }
+
+            if ( s >= wordWrapEOL ) {
+                x = pos.X;
+                y += lineHeight;
+                wordWrapEOL = NULL;
+
+                // Wrapping skips upcoming blanks
+                while ( s < _TextEnd ) {
+                    const char c = *s;
+                    if ( ImCharIsBlankA( c ) ) {
+                        s++;
+                    } else if ( c == '\n' ) {
+                        s++;
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+                continue;
+            }
+        }
+
+        // Decode and advance source
+        //unsigned int c = ( unsigned int )*s;
+        //if ( c < 0x80 ) {
+        //    s += 1;
+        //} else {
+        //    s += ImTextCharFromUtf8( &c, s, _TextEnd );
+        //    if ( c == 0 ) // Malformed UTF-8?
+        //        break;
+        //}
+        FWideChar c = *s;
+        s++;
+
+        if ( c < 32 ) {
+            if ( c == '\n' ) {
+                x = pos.X;
+                y += lineHeight;
+                if ( y > clipRect.W )
+                    break; // break out of main loop
+                continue;
+            }
+            if ( c == '\r' )
+                continue;
+        }
+
+        float charWidth = 0.0f;
+        if ( const ImFontGlyph * glyph = _Font->FindGlyph( c ) ) {
+            charWidth = glyph->AdvanceX * scale;
+
+            // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
+            if ( c != ' ' && c != '\t' ) {
+                // We don't do a second finer clipping test on the Y axis as we've already skipped anything before clipRect.Y and exit once we pass clipRect.W
+                float x1 = x + glyph->X0 * scale;
+                float x2 = x + glyph->X1 * scale;
+                float y1 = y + glyph->Y0 * scale;
+                float y2 = y + glyph->Y1 * scale;
+                if ( x1 <= clipRect.Z && x2 >= clipRect.X ) {
+                    // Render a character
+                    float u1 = glyph->U0;
+                    float v1 = glyph->V0;
+                    float u2 = glyph->U1;
+                    float v2 = glyph->V1;
+
+                    // CPU side clipping used to fit text in their frame when the frame is too small. Only does clipping for axis aligned quads.
+                    if ( _CPUFineClipRect ) {
+                        if ( x1 < clipRect.X ) {
+                            u1 = u1 + ( 1.0f - ( x2 - clipRect.X ) / ( x2 - x1 ) ) * ( u2 - u1 );
+                            x1 = clipRect.X;
+                        }
+                        if ( y1 < clipRect.Y ) {
+                            v1 = v1 + ( 1.0f - ( y2 - clipRect.Y ) / ( y2 - y1 ) ) * ( v2 - v1 );
+                            y1 = clipRect.Y;
+                        }
+                        if ( x2 > clipRect.Z ) {
+                            u2 = u1 + ( ( clipRect.Z - x1 ) / ( x2 - x1 ) ) * ( u2 - u1 );
+                            x2 = clipRect.Z;
+                        }
+                        if ( y2 > clipRect.W ) {
+                            v2 = v1 + ( ( clipRect.W - y1 ) / ( y2 - y1 ) ) * ( v2 - v1 );
+                            y2 = clipRect.W;
+                        }
+                        if ( y1 >= y2 ) {
+                            x += charWidth;
+                            continue;
+                        }
+                    }
+
+                    pIndices[ 0 ] = firstVertex;
+                    pIndices[ 1 ] = firstVertex + 1;
+                    pIndices[ 2 ] = firstVertex + 2;
+                    pIndices[ 3 ] = firstVertex;
+                    pIndices[ 4 ] = firstVertex + 2;
+                    pIndices[ 5 ] = firstVertex + 3;
+                    pVertices[ 0 ].pos.x = x1;
+                    pVertices[ 0 ].pos.y = y1;
+                    pVertices[ 0 ].col = color;
+                    pVertices[ 0 ].uv.x = u1;
+                    pVertices[ 0 ].uv.y = v1;
+                    pVertices[ 1 ].pos.x = x2;
+                    pVertices[ 1 ].pos.y = y1;
+                    pVertices[ 1 ].col = color;
+                    pVertices[ 1 ].uv.x = u2;
+                    pVertices[ 1 ].uv.y = v1;
+                    pVertices[ 2 ].pos.x = x2;
+                    pVertices[ 2 ].pos.y = y2;
+                    pVertices[ 2 ].col = color;
+                    pVertices[ 2 ].uv.x = u2;
+                    pVertices[ 2 ].uv.y = v2;
+                    pVertices[ 3 ].pos.x = x1;
+                    pVertices[ 3 ].pos.y = y2;
+                    pVertices[ 3 ].col = color;
+                    pVertices[ 3 ].uv.x = u1;
+                    pVertices[ 3 ].uv.y = v2;
+                    pVertices += 4;
+                    firstVertex += 4;
+                    pIndices += 6;
+                }
+            }
+        }
+
+        x += charWidth;
+    }
+
+    // Give back unused vertices
+    DrawList.VtxBuffer.resize( ( int )( pVertices - DrawList.VtxBuffer.Data ) );
+    DrawList.IdxBuffer.resize( ( int )( pIndices - DrawList.IdxBuffer.Data ) );
+    DrawList.CmdBuffer[ DrawList.CmdBuffer.Size - 1 ].ElemCount -= ( ReservedIndicesCount - DrawList.IdxBuffer.Size );
+    DrawList._VtxWritePtr = pVertices;
+    DrawList._IdxWritePtr = pIndices;
+    DrawList._VtxCurrentIdx = ( unsigned int )DrawList.VtxBuffer.Size;
+}
+
 void FCanvas::DrawChar( FFont const * _Font, char _Ch, int _X, int _Y, float _Scale, FColor4 const & _Color ) {
     DrawWChar( _Font, _Ch, _X, _Y, _Scale, _Color );
 }
@@ -409,7 +630,7 @@ void FCanvas::DrawCharUTF8( FFont const * _Font, const char * _Ch, int _X, int _
 
     FWideChar ch;
 
-    if ( !FCore::DecodeUTF8WChar( _Ch, ch ) ) {
+    if ( !FCore::WideCharDecodeUTF8( _Ch, ch ) ) {
         return;
     }
 

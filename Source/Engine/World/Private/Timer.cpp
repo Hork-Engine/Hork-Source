@@ -38,9 +38,7 @@ enum ETimerState {
 };
 
 void FTimer::Trigger() {
-    if ( Callback.IsInitialized() ) {
-        Callback();
-    }
+    Callback();
 }
 
 void FTimer::Restart() {

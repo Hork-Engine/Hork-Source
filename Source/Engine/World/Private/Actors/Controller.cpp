@@ -28,43 +28,9 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include <Engine/World/Public/Actors/Controller.h>
 
-#include "Actor.h"
+AN_CLASS_META( FController )
 
-class FInputComponent;
-class FCommandContext;
-class FController;
-
-/*
-
-FPawn
-
-Base class for players and monsters
-
-*/
-class ANGIE_API FPawn : public FActor {
-    AN_ACTOR( FPawn, FActor )
-
-    friend class FPlayerController; 
-
-public:
-
-    bool bGodMode;
-
-protected:
-
-    FPawn();
-
-    // Override this function to setup input component
-    virtual void SetupPlayerInputComponent( FInputComponent * _Input ) {}
-
-    virtual void SetupRuntimeCommands( FCommandContext & _Ctx ) {}
-
-    FController * GetOwnerController() { return OwnerController; }
-
-private:
-
-    FController * OwnerController;
-
-};
+FController::FController() {
+}

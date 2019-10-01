@@ -1307,15 +1307,15 @@ void FAINavigationMesh::DrawDebug( FDebugDraw * _DebugDraw ) {
     FDebugDrawCallback callback;
     callback.DD = _DebugDraw;
 
-    if ( GDebugDrawFlags.bDrawNavMeshBVTree ) {
+    if ( RVDrawNavMeshBVTree ) {
         duDebugDrawNavMeshBVTree( &callback, *NavMesh );
     }
 
-    if ( GDebugDrawFlags.bDrawNavMeshNodes ) {
+    if ( RVDrawNavMeshNodes ) {
         duDebugDrawNavMeshNodes( &callback, *NavQuery );
     }
 
-    if ( GDebugDrawFlags.bDrawNavMeshWithClosedList ) {
+    if ( RVDrawNavMeshWithClosedList ) {
         duDebugDrawNavMeshWithClosedList( &callback, *NavMesh, *NavQuery, DU_DRAWNAVMESH_OFFMESHCONS|DU_DRAWNAVMESH_CLOSEDLIST|DU_DRAWNAVMESH_COLOR_TILES );
     }
     //duDebugDrawNavMeshPolysWithFlags( &callback, *NavMesh, AI_NAV_MESH_FLAGS_DISABLED/*AI_NAV_MESH_FLAGS_DISABLED*/, duRGBA(0,0,0,128));
@@ -1323,7 +1323,7 @@ void FAINavigationMesh::DrawDebug( FDebugDraw * _DebugDraw ) {
 
 
 #if 0
-    if ( GDebugDrawFlags.bDrawNavMeshTileBounds && TileCache ) {
+    if ( RVDrawNavMeshTileBounds && TileCache ) {
         float bmin[3], bmax[3];
         for ( int i = 0 ; i < TileCache->getTileCount() ; ++i ) {
             const dtCompressedTile* tile = TileCache->getTile(i);
@@ -1344,7 +1344,7 @@ void FAINavigationMesh::DrawDebug( FDebugDraw * _DebugDraw ) {
     }
 #endif
 
-    if ( GDebugDrawFlags.bDrawNavMeshTileBounds ) {
+    if ( RVDrawNavMeshTileBounds ) {
         BvAxisAlignedBox boundingBox;
         _DebugDraw->SetDepthTest(false);
         _DebugDraw->SetColor( FColor4( 1,1,1,1 ) );

@@ -663,10 +663,7 @@ void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
                     if ( GetWorld()->IsPaused() && !binding.bExecuteEvenWhenPaused ) {
                         pressedKey.ActionBinding = -1;
                     } else {
-                        auto Callback = binding.Callback[ IE_Press ];
-                        if ( Callback.IsInitialized() ) {
-                            Callback();
-                        }
+                        binding.Callback[ IE_Press ]();
                     }
                 }
 
@@ -701,10 +698,7 @@ void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
             NumPressedKeys--;
 
             if ( actionBinding != -1 /*&& !PressedKeys[ index ].bMarkedReleased*/ ) {
-                auto Callback = ActionBindings[ actionBinding ].Callback[ IE_Release ];
-                if ( Callback.IsInitialized() ) {
-                    Callback();
-                }
+                ActionBindings[ actionBinding ].Callback[ IE_Release ]();
             }
         }
     }
@@ -721,7 +715,7 @@ bool FInputComponent::IsJoyDown( const FJoystick * _Joystick, int _Button ) cons
 }
 
 void FInputComponent::NotifyUnicodeCharacter( FWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp ) {
-    if ( !CharacterCallback.IsInitialized() ) {
+    if ( !CharacterCallback.IsValid() ) {
         return;
     }
 

@@ -359,9 +359,35 @@ FActor * FWorld::SpawnActor( FActorSpawnParameters const & _SpawnParameters ) {
     return actor;
 }
 
+static Float3 ReadFloat3( FDocument const & _Document, int _FieldsHead, const char * _FieldName, Float3 const & _Default ) {
+    FDocumentField * field = _Document.FindField( _FieldsHead, _FieldName );
+    if ( !field ) {
+        return _Default;
+    }
+
+    FDocumentValue * value = &_Document.Values[ field->ValuesHead ];
+
+    Float3 r;
+    sscanf( value->Token.ToString().ToConstChar(), "%f %f %f", &r.X, &r.Y, &r.Z );
+    return r;
+}
+
+static Quat ReadQuat( FDocument const & _Document, int _FieldsHead, const char * _FieldName, Quat const & _Default ) {
+    FDocumentField * field = _Document.FindField( _FieldsHead, _FieldName );
+    if ( !field ) {
+        return _Default;
+    }
+
+    FDocumentValue * value = &_Document.Values[ field->ValuesHead ];
+
+    Quat r;
+    sscanf( value->Token.ToString().ToConstChar(), "%f %f %f %f", &r.X, &r.Y, &r.Z, &r.W );
+    return r;
+}
+
 FActor * FWorld::LoadActor( FDocument const & _Document, int _FieldsHead, FLevel * _Level ) {
 
-    GLogger.Printf( "==== Load Actor ====\n" );
+    //GLogger.Printf( "==== Load Actor ====\n" );
 
     FDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
     if ( !classNameField ) {
@@ -396,6 +422,7 @@ FActor * FWorld::LoadActor( FDocument const & _Document, int _FieldsHead, FLevel
     // Load actor attributes
     actor->LoadAttributes( _Document, _FieldsHead );
 
+#if 0
     // Load components
     FDocumentField * componentsArray = _Document.FindField( _FieldsHead, "Components" );
     for ( int i = componentsArray->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
@@ -415,6 +442,15 @@ FActor * FWorld::LoadActor( FDocument const & _Document, int _FieldsHead, FLevel
             actor->RootComponent = root;
         }
     }
+#endif
+
+    FTransform spawnTransform;
+
+    spawnTransform.Position = ReadFloat3( _Document, _FieldsHead, "SpawnPosition", Float3(0.0f) );
+    spawnTransform.Rotation = ReadQuat( _Document, _FieldsHead, "SpawnRotation", Quat::Identity() );
+    spawnTransform.Scale    = ReadFloat3( _Document, _FieldsHead, "SpawnScale", Float3(1.0f) );
+
+    actor->PostSpawnInitialize( spawnTransform );
 
     //actor->PostActorCreated();
     //actor->ExecuteContruction( _SpawnParameters.SpawnTransform );
@@ -423,7 +459,7 @@ FActor * FWorld::LoadActor( FDocument const & _Document, int _FieldsHead, FLevel
     actor->BeginPlayComponents();
     actor->BeginPlay();
 
-    GLogger.Printf( "=====================\n" );
+    //GLogger.Printf( "=====================\n" );
     return actor;
 }
 
@@ -1231,7 +1267,7 @@ bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, F
 
             raycastEntity.Object = mesh;
             raycastEntity.FirstHit = firstHit;
-            raycastEntity.LastHit = _Result.Hits.Size();
+            raycastEntity.NumHits = _Result.Hits.Size() - firstHit;
             raycastEntity.ClosestHit = raycastEntity.FirstHit;
 
             // Convert hits to worldspace and find closest hit
@@ -1241,15 +1277,16 @@ bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, F
 
             transform.DecomposeNormalMatrix( normalMatrix );
 
-            for ( int i = raycastEntity.FirstHit ; i < raycastEntity.LastHit ; i++ ) {
-                FTriangleHitResult & hitResult = _Result.Hits[i];
+            for ( int i = 0 ; i < raycastEntity.NumHits ; i++ ) {
+                int hitNum = raycastEntity.FirstHit + i;
+                FTriangleHitResult & hitResult = _Result.Hits[hitNum];
 
-                hitResult.HitLocation = transform * hitResult.HitLocation;
-                hitResult.HitNormal = ( normalMatrix * hitResult.HitNormal ).Normalized();
-                hitResult.HitDistance = (hitResult.HitLocation - _RayStart).Length();
+                hitResult.Location = transform * hitResult.Location;
+                hitResult.Normal = ( normalMatrix * hitResult.Normal ).Normalized();
+                hitResult.Distance = (hitResult.Location - _RayStart).Length();
 
-                if ( hitResult.HitDistance < _Result.Hits[ raycastEntity.ClosestHit ].HitDistance ) {
-                    raycastEntity.ClosestHit = i;
+                if ( hitResult.Distance < _Result.Hits[ raycastEntity.ClosestHit ].Distance ) {
+                    raycastEntity.ClosestHit = hitNum;
                 }
             }
         }
@@ -1313,10 +1350,10 @@ bool FWorld::RaycastAABB( TPodArray< FBoxHitResult > & _Result, Float3 const & _
         FBoxHitResult & hitResult = _Result.Append();
 
         hitResult.Object = mesh;
-        hitResult.HitLocationMin = _RayStart + rayDir * boxMin;
-        hitResult.HitLocationMax = _RayStart + rayDir * boxMax;
-        hitResult.HitDistanceMin = boxMin;
-        hitResult.HitDistanceMax = boxMax;
+        hitResult.LocationMin = _RayStart + rayDir * boxMin;
+        hitResult.LocationMax = _RayStart + rayDir * boxMax;
+        hitResult.DistanceMin = boxMin;
+        hitResult.DistanceMax = boxMax;
     }
 
     if ( _Result.IsEmpty() ) {
@@ -1326,7 +1363,7 @@ bool FWorld::RaycastAABB( TPodArray< FBoxHitResult > & _Result, Float3 const & _
     if ( _Filter->bSortByDistance ) {
         struct FSortHit {
             bool operator() ( FBoxHitResult const & _A, FBoxHitResult const & _B ) {
-                return ( _A.HitDistanceMin < _B.HitDistanceMin );
+                return ( _A.DistanceMin < _B.DistanceMin );
             }
         } SortHit;
 
@@ -1443,30 +1480,30 @@ bool FWorld::RaycastClosest( FWorldRaycastClosestResult & _Result, Float3 const 
     _Result.Vertices[1] = transform * v1;
     _Result.Vertices[2] = transform * v2;
 
-    // calc hit normal
+    FTriangleHitResult & triangleHit = _Result.TriangleHit;
 #if 1
-    _Result.Normal = (_Result.Vertices[1]-_Result.Vertices[0]).Cross( _Result.Vertices[2]-_Result.Vertices[0] ).Normalized();
+    triangleHit.Normal = ( _Result.Vertices[1]-_Result.Vertices[0] ).Cross( _Result.Vertices[2]-_Result.Vertices[0] ).Normalized();
 #else
     Float3x3 normalMat;
     transform.DecomposeNormalMatrix( normalMat );
-    _Result.Normal = (normalMat * (v1-v0).Cross( v2-v0 )).Normalized();
+    triangleHit.Normal = (normalMat * (v1-v0).Cross( v2-v0 )).Normalized();
 #endif
+    triangleHit.Location = hitLocation;
+    triangleHit.Distance = hitDistance;
+    triangleHit.Indices[0] = indices[0];
+    triangleHit.Indices[1] = indices[1];
+    triangleHit.Indices[2] = indices[2];
+    triangleHit.Material = material;
+    triangleHit.UV = hitUV;
 
-    _Result.Object = hitObject;
-    _Result.Position = hitLocation;
-    _Result.Distance = hitDistance;
+    _Result.Object = hitObject;    
     _Result.Fraction = hitDistance / rayLength;
-    _Result.TriangleIndices[0] = indices[0];
-    _Result.TriangleIndices[1] = indices[1];
-    _Result.TriangleIndices[2] = indices[2];
-    _Result.Material = material;
 
-    // calc hit UV
+    // calc texcoord
     Float2 const & uv0 = vertices[indices[0]].TexCoord;
     Float2 const & uv1 = vertices[indices[1]].TexCoord;
     Float2 const & uv2 = vertices[indices[2]].TexCoord;
     _Result.Texcoord = uv0 * hitUV[0] + uv1 * hitUV[1] + uv2 * ( 1.0f - hitUV[0] - hitUV[1] );
-    _Result.UV = hitUV;
 
     return true;
 }
@@ -1540,10 +1577,10 @@ bool FWorld::RaycastClosestAABB( FBoxHitResult & _Result, Float3 const & _RaySta
     }
 
     _Result.Object = hitObject;
-    _Result.HitLocationMin = _RayStart + rayDir * hitDistanceMin;
-    _Result.HitLocationMax = _RayStart + rayDir * hitDistanceMax;
-    _Result.HitDistanceMin = hitDistanceMin;
-    _Result.HitDistanceMax = hitDistanceMax;
+    _Result.LocationMin = _RayStart + rayDir * hitDistanceMin;
+    _Result.LocationMax = _RayStart + rayDir * hitDistanceMax;
+    _Result.DistanceMin = hitDistanceMin;
+    _Result.DistanceMax = hitDistanceMax;
     //_Result.HitFractionMin = hitDistanceMin / rayLength;
     //_Result.HitFractionMax = hitDistanceMax / rayLength;
 
@@ -2204,7 +2241,7 @@ void FWorld::DrawDebug( FDebugDraw * _DebugDraw, int _FrameNumber ) {
 
     _DebugDraw->SetColor( FColor4( 1,1,1,1 ) );
 
-    if ( GDebugDrawFlags.bDrawMeshBounds ) {
+    if ( RVDrawMeshBounds ) {
         for ( FMeshComponent * component = MeshList ; component ; component = component->GetNextMesh() ) {
 
             _DebugDraw->DrawAABB( component->GetWorldBounds() );
@@ -2214,7 +2251,7 @@ void FWorld::DrawDebug( FDebugDraw * _DebugDraw, int _FrameNumber ) {
     for ( FActor * actor : Actors ) {
         actor->DrawDebug( _DebugDraw );
 
-        if ( GDebugDrawFlags.bDrawRootComponentAxis ) {
+        if ( RVDrawRootComponentAxis ) {
             if ( actor->RootComponent ) {
                 _DebugDraw->SetDepthTest( false );
                 _DebugDraw->DrawAxis( actor->RootComponent->GetWorldTransformMatrix(), false );
@@ -2226,22 +2263,22 @@ void FWorld::DrawDebug( FDebugDraw * _DebugDraw, int _FrameNumber ) {
     PhysicsDebugDraw.DD = _DebugDraw;
 
     int Mode = 0;
-    if ( GDebugDrawFlags.bDrawCollisionShapeWireframe ) {
+    if ( RVDrawCollisionShapeWireframe ) {
         Mode |= FPhysicsDebugDraw::DBG_DrawWireframe;
     }
-    //if ( GDebugDrawFlags.bDrawCollisionShapeAABBs ) {
+    //if ( RVDrawCollisionShapeAABBs ) {
     //    Mode |= FPhysicsDebugDraw::DBG_DrawAabb;
     //}
-    if ( GDebugDrawFlags.bDrawContactPoints ) {
+    if ( RVDrawContactPoints ) {
         Mode |= FPhysicsDebugDraw::DBG_DrawContactPoints;
     }
-    if ( GDebugDrawFlags.bDrawConstraints ) {
+    if ( RVDrawConstraints ) {
         Mode |= FPhysicsDebugDraw::DBG_DrawConstraints;
     }
-    if ( GDebugDrawFlags.bDrawConstraintLimits ) {
+    if ( RVDrawConstraintLimits ) {
         Mode |= FPhysicsDebugDraw::DBG_DrawConstraintLimits;
     }
-    //if ( GDebugDrawFlags.bDrawCollisionShapeNormals ) {
+    //if ( RVDrawCollisionShapeNormals ) {
     //    Mode |= FPhysicsDebugDraw::DBG_DrawNormals;
     //}
 

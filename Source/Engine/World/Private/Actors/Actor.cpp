@@ -36,9 +36,9 @@ SOFTWARE.
 #include <Engine/Core/Public/Logger.h>
 
 AN_BEGIN_CLASS_META( FActor )
-AN_ATTRIBUTE_( LifeSpan, AF_DEFAULT )
-AN_ATTRIBUTE_( bCanEverTick, AF_DEFAULT )
-AN_ATTRIBUTE_( bTickEvenWhenPaused, AF_DEFAULT )
+//AN_ATTRIBUTE_( LifeSpan, AF_DEFAULT )
+//AN_ATTRIBUTE_( bCanEverTick, AF_DEFAULT )
+//AN_ATTRIBUTE_( bTickEvenWhenPaused, AF_DEFAULT )
 AN_END_CLASS_META()
 
 AN_CLASS_META( FViewActor )
@@ -252,19 +252,19 @@ int FActor::Serialize( FDocument & _Doc ) {
 
     _Doc.AddStringField( object, "GUID", _Doc.ProxyBuffer.NewString( GUID.ToString() ).ToConstChar() );
 
-    if ( RootComponent ) {
-        _Doc.AddStringField( object, "Root", _Doc.ProxyBuffer.NewString( RootComponent->GetName() ).ToConstChar() );
-    }
+    //if ( RootComponent ) {
+    //    _Doc.AddStringField( object, "Root", _Doc.ProxyBuffer.NewString( RootComponent->GetName() ).ToConstChar() );
+    //}
 
-    int components = _Doc.AddArray( object, "Components" );
+    //int components = _Doc.AddArray( object, "Components" );
 
-    for ( FActorComponent * component : Components ) {
-        if ( component->IsPendingKill() ) {
-            continue;
-        }
-        int componentObject = component->Serialize( _Doc );
-        _Doc.AddValueToField( components, componentObject );
-    }
+    //for ( FActorComponent * component : Components ) {
+    //    if ( component->IsPendingKill() ) {
+    //        continue;
+    //    }
+    //    int componentObject = component->Serialize( _Doc );
+    //    _Doc.AddValueToField( components, componentObject );
+    //}
 
     return object;
 }
@@ -365,12 +365,6 @@ void FActor::DrawDebug( FDebugDraw * _DebugDraw ) {
 }
 
 void FActor::EndPlay() {
-    E_OnBeginContact.RemoveAll();
-    E_OnEndContact.RemoveAll();
-    E_OnUpdateContact.RemoveAll();
-    E_OnBeginOverlap.RemoveAll();
-    E_OnEndOverlap.RemoveAll();
-    E_OnUpdateOverlap.RemoveAll();
 }
 
 void FActor::ApplyDamage( float _DamageAmount, Float3 const & _Position, FActor * _DamageCauser ) {

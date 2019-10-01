@@ -58,5 +58,5 @@ struct FContactEvent {
     int NumPoints;
 };
 
-using FOverlapDelegate = TEvent< 1, FOverlapEvent const & >;
-using FContactDelegate = TEvent< 1, FContactEvent const & >;
+using FOverlapDelegate = TEvent< FOverlapEvent const & >;
+using FContactDelegate = TEvent< FContactEvent const & >;
