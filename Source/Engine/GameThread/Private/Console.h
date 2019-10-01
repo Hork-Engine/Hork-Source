@@ -30,7 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/BaseTypes.h>
+#include <Engine/Core/Public/Utf8.h>
+#include <Engine/World/Public/CommandContext.h>
 
 struct FKeyEvent;
 struct FCharEvent;
@@ -47,7 +48,7 @@ public:
     void Resize( int _VidWidth );
     void Print( const char * _Text );
     void WidePrint( FWideChar const * _Text );
-    void KeyEvent( FKeyEvent const & _Event );
+    void KeyEvent( FKeyEvent const & _Event, FCommandContext & _CommandCtx, FRuntimeCommandProcessor & _CommandProcessor );
     void CharEvent( FCharEvent const & _Event );
     void MouseWheelEvent( FMouseWheelEvent const & _Event );
     void Draw( FCanvas * _Canvas, float _TimeStep );

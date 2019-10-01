@@ -210,8 +210,8 @@ void FRenderFrontend::RenderView( int _Index ) {
     FViewport const * viewport = Viewports[ _Index ];
     FPlayerController * controller = viewport->PlayerController;
     FCameraComponent * camera = controller->GetViewCamera();
+    FRenderingParameters * RP = controller->GetRenderingParameters();
 
-    RP = controller->GetRenderingParameters();
     World = camera->GetWorld();
 
     RV = &CurFrameData->RenderViews[_Index];
@@ -235,16 +235,16 @@ void FRenderFrontend::RenderView( int _Index ) {
     RV->ModelviewProjection = RV->ProjectionMatrix * RV->ViewMatrix;
     RV->ViewSpaceToWorldSpace = RV->ViewMatrix.Inversed();
     RV->ClipSpaceToWorldSpace = RV->ViewSpaceToWorldSpace * RV->InverseProjectionMatrix;
-    RV->BackgroundColor = RP->BackgroundColor;
-    RV->bClearBackground = RP->bClearBackground;
-    RV->bWireframe = RP->bWireframe;
+    RV->BackgroundColor = RP ? RP->BackgroundColor.GetRGB() : Float3(1.0f);
+    RV->bClearBackground = RP ? RP->bClearBackground : true;
+    RV->bWireframe = RP ? RP->bWireframe : false;
     RV->PresentCmd = 0;
     RV->FirstInstance = CurFrameData->Instances.Size();
     RV->InstanceCount = 0;
 
     VisMarker++;
 
-    if ( RP->bDrawDebug ) {
+    if ( RP && RP->bDrawDebug ) {
         World->DrawDebug( &DebugDraw, CurFrameData->FrameNumber );
         RV->FirstDbgCmd = World->GetFirstDebugDrawCommand();
         RV->DbgCmdCount = World->GetDebugDrawCommandCount();
@@ -260,7 +260,7 @@ void FRenderFrontend::RenderView( int _Index ) {
 
     def.View = RV;
     def.Frustum = &camera->GetFrustum();
-    def.RenderingMask = RP->RenderingMask;
+    def.RenderingMask = RP ? RP->RenderingMask : ~0;
     def.VisMarker = VisMarker;
     def.PolyCount = 0;
 
@@ -356,12 +356,12 @@ void FRenderFrontend::WriteDrawList( FCanvas * _Canvas ) {
         case CANVAS_DRAW_CMD_MATERIAL:
         {
             FMaterialInstance * materialInstance = static_cast< FMaterialInstance * >( pCmd->TextureId );
-            if ( !materialInstance->Material ) {
-                drawList->CommandsCount--;
-                continue;
-            }
+            AN_Assert( materialInstance );
 
-            if ( materialInstance->Material->GetType() != MATERIAL_TYPE_HUD ) {
+            FMaterial * material = materialInstance->GetMaterial();
+            AN_Assert( material );
+
+            if ( material->GetType() != MATERIAL_TYPE_HUD ) {
                 drawList->CommandsCount--;
                 continue;
             }
@@ -468,12 +468,12 @@ void FRenderFrontend::WriteDrawList( ImDrawList const * _DrawList ) {
         case CANVAS_DRAW_CMD_MATERIAL:
         {
             FMaterialInstance * materialInstance = static_cast< FMaterialInstance * >( pCmd->TextureId );
-            if ( !materialInstance->Material ) {
-                drawList->CommandsCount--;
-                continue;
-            }
+            AN_Assert( materialInstance );
 
-            if ( materialInstance->Material->GetType() != MATERIAL_TYPE_HUD ) {
+            FMaterial * material = materialInstance->GetMaterial();
+            AN_Assert( material );
+
+            if ( material->GetType() != MATERIAL_TYPE_HUD ) {
                 drawList->CommandsCount--;
                 continue;
             }

@@ -300,7 +300,10 @@ void FGameEngine::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
     DeveloperKeys( _Event );
 
     if ( GConsole.IsActive() || bAllowConsole ) {
-        GConsole.KeyEvent( _Event );
+        FCommandContext * commandContext = FPlayerController::GetCurrentCommandContext();
+        if ( commandContext ) {
+            GConsole.KeyEvent( _Event, *commandContext, CommandProcessor );
+        }
     }
     if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
         return;
@@ -314,6 +317,11 @@ void FGameEngine::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
 
     for ( FInputComponent * component = FInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
+
+        if ( !component->bActive ) {
+            continue;
+        }
+
         if ( !component->bIgnoreKeyboardEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
             component->SetButtonState( ID_KEYBOARD, _Event.Key, _Event.Action, _Event.ModMask, _TimeStamp );
         }
@@ -335,6 +343,11 @@ void FGameEngine::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _
 
     for ( FInputComponent * component = FInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
+
+        if ( !component->bActive ) {
+            continue;
+        }
+
         if ( !component->bIgnoreJoystickEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
             component->SetButtonState( ID_MOUSE, _Event.Button, _Event.Action, _Event.ModMask, _TimeStamp );
         }
@@ -357,6 +370,11 @@ void FGameEngine::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _Ti
 
     for ( FInputComponent * component = FInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
+
+        if ( !component->bActive ) {
+            continue;
+        }
+
         if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
             if ( _Event.WheelX < 0.0 ) {
                 component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Press, 0, _TimeStamp );
@@ -385,6 +403,11 @@ void FGameEngine::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _Time
 
         for ( FInputComponent * component = FInputComponent::GetInputComponents()
               ; component ; component = component->GetNext() ) {
+
+            if ( !component->bActive ) {
+                continue;
+            }
+
             if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
                 component->SetMouseAxisState( x, y );
             }
@@ -428,6 +451,11 @@ void FGameEngine::OnCharEvent( FCharEvent const & _Event, double _TimeStamp ) {
 
     for ( FInputComponent * component = FInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
+
+        if ( !component->bActive ) {
+            continue;
+        }
+
         if ( !component->bIgnoreCharEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
             component->NotifyUnicodeCharacter( _Event.UnicodeCharacter, _Event.ModMask, _TimeStamp );
         }
@@ -685,6 +713,11 @@ void FGameEngine::UpdateInputAxes( float _Fract ) {
 
     for ( FInputComponent * component = FInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
+
+        if ( !component->bActive ) {
+            continue;
+        }
+
         component->UpdateAxes( _Fract, FrameDurationInSeconds );
     }
 }
@@ -694,6 +727,11 @@ void FGameEngine::InitializeDefaultFont() {
     DefaultFontAtlas = CreateInstanceOf< FFontAtlas >();
 
     int fontId = DefaultFontAtlas->AddFontFromFileTTF( "DroidSansMono.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );
+    //int fontId = DefaultFontAtlas->AddFontFromFileTTF( "OpenSans.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );    
+    //int fontId = DefaultFontAtlas->AddFontFromFileTTF( "DroidSans.ttf", 24, FFontAtlas::GetGlyphRangesCyrillic() );
+    //int fontId = DefaultFontAtlas->AddFontFromFileTTF( "Cousine-Regular.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );
+    //int fontId = DefaultFontAtlas->AddFontFromFileTTF( "arial.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );
+    //int fontId = DefaultFontAtlas->AddFontDefault();
     DefaultFontAtlas->Build();
     DefaultFont = DefaultFontAtlas->GetFont( fontId );
 }
@@ -770,16 +808,6 @@ void FGameEngine::Initialize( FCreateGameModuleCallback _CreateGameModuleCallbac
     GAudioSystem.RegisterDecoder( "mp3", CreateInstanceOf< FMp3Decoder >() );
     GAudioSystem.RegisterDecoder( "wav", CreateInstanceOf< FWavDecoder >() );
 
-    memset( &GDebugDrawFlags, 0, sizeof( GDebugDrawFlags ) );
-    //GDebugDrawFlags.bDrawCollisionModel=true;
-    //GDebugDrawFlags.bDrawCollisionShapeWireframe=true;
-    GDebugDrawFlags.bDrawNavMeshWithClosedList = true;
-    GDebugDrawFlags.bDrawSkeleton = true;
-    GDebugDrawFlags.bDrawSkeletonSockets = true;
-    GDebugDrawFlags.bDrawMeshBounds = true;
-    //GDebugDrawFlags.bDrawNavMeshTileBounds = true;
-    //memset( &GDebugDrawFlags, 0xff, sizeof( GDebugDrawFlags ) );
-
     GameModule = _CreateGameModuleCallback();
 
     GLogger.Printf( "Created game module: %s\n", GameModule->FinalClassName() );
@@ -851,6 +879,11 @@ void FGameEngine::UpdateFrame() {
 
     // Garbage collect from previuous frames
     FGarbageCollector::DeallocateObjects();
+
+    FCommandContext * commandContext = FPlayerController::GetCurrentCommandContext();
+    if ( commandContext ) {
+        CommandProcessor.Execute( *commandContext );
+    }
 
     // Tick worlds
     UpdateWorlds();
@@ -1054,6 +1087,9 @@ void FGameEngine::UpdateImgui() {
 
     if ( ImGui::Begin( "Test" ) ) {
         TPodArray< FAttributeMeta const * > attributes;
+
+        static char buf[ 1024 ];
+        ImGui::InputTextMultiline( "textedit", buf, sizeof( buf ) );
 
         for ( int i = 0 ; i < Worlds.Size() ; i++ ) {
             if ( ImGui::CollapsingHeader( "World" ) ) {

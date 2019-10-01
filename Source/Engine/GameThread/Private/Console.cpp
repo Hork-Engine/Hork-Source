@@ -149,7 +149,7 @@ void FConsole::Print( const char * _Text ) {
     const char * s = _Text;
 
     while ( *s ) {
-        byteLen = FCore::DecodeUTF8WChar( s, ch );
+        byteLen = FCore::WideCharDecodeUTF8( s, ch );
         if ( !byteLen ) {
             break;
         }
@@ -193,7 +193,7 @@ void FConsole::Print( const char * _Text ) {
                 do {
                     s += byteLen;
                     wordLength++;
-                    byteLen = FCore::DecodeUTF8WChar( s, ch );
+                    byteLen = FCore::WideCharDecodeUTF8( s, ch );
                 } while ( byteLen > 0 && ch > ' ' );
             } else {
                 s += byteLen;
@@ -206,7 +206,7 @@ void FConsole::Print( const char * _Text ) {
             }
 
             while ( wordLength-- > 0 ) {
-                byteLen = FCore::DecodeUTF8WChar( wordStr, ch );
+                byteLen = FCore::WideCharDecodeUTF8( wordStr, ch );
                 wordStr += byteLen;
 
                 pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ch;
@@ -304,18 +304,6 @@ void FConsole::WidePrint( FWideChar const * _Text ) {
     }
 }
 
-template< int RESULT_CAPACITY >
-static void EncodeUtf8( FWideChar const * s, FWideChar const * end, TPodArray< char, RESULT_CAPACITY > & _Result ) {
-    char utf[4];
-    while ( *s && s < end ) {
-        int byteLen = FCore::EncodeUTF8Char( *s++, utf );
-        for ( int i = 0 ; i < byteLen ; i++ ) {
-            _Result.Append( utf[i] );
-        }
-    }
-    _Result.Append( '\0' );
-}
-
 static void CopyStoryLine( FWideChar const * _StoryLine ) {
     CmdLineLength = 0;
     while ( *_StoryLine && CmdLineLength < MAX_CMD_LINE_CHARS ) {
@@ -333,14 +321,10 @@ static void AddStoryLine( FWideChar * _Text, int _Length ) {
     CurStoryLine = NumStoryLines;
 }
 
-static void InsertClipboardText() {
-    FString const & clipboard = GRuntime.GetClipboard_GameThread();
-
-    const char * s = clipboard.ToConstChar();
-
-    int len = FCore::GetUTF8StrLength( s );
+static void InsertUTF8Text( const char * _Utf8 ) {
+    int len = FCore::UTF8StrLength( _Utf8 );
     if ( CmdLineLength + len >= MAX_CMD_LINE_CHARS ) {
-        GLogger.Print( "Clipboard text is too long to be copied to command line\n" );
+        GLogger.Print( "Text is too long to be copied to command line\n" );
         return;
     }
 
@@ -353,16 +337,41 @@ static void InsertClipboardText() {
     FWideChar ch;
     int byteLen;
     while ( len-- > 0 ) {
-        byteLen = FCore::DecodeUTF8WChar( s, ch );
+        byteLen = FCore::WideCharDecodeUTF8( _Utf8, ch );
         if ( !byteLen ) {
             break;
         }
-        s += byteLen;
+        _Utf8 += byteLen;
         CmdLine[CmdLinePos++] = ch;
     }
 }
 
-void FConsole::KeyEvent( FKeyEvent const & _Event ) {
+static void InsertClipboardText() {
+    FString const & clipboard = GRuntime.GetClipboard_GameThread();
+
+    InsertUTF8Text( clipboard.ToConstChar() );
+}
+
+static void CompleteString( FCommandContext & _CommandCtx, const char * _Str ) {
+    FString completion;
+    int count = _CommandCtx.CompleteString( _Str, strlen( _Str ), completion );
+
+    if ( completion.IsEmpty() ) {
+        return;
+    }
+
+    if ( count > 1 ) {
+        _CommandCtx.Print( _Str, CmdLinePos );
+    } else {
+        completion += " ";
+    }
+
+    CmdLinePos = 0;
+    CmdLineLength = 0;
+    InsertUTF8Text( completion.ToConstChar() );
+}
+
+void FConsole::KeyEvent( FKeyEvent const & _Event, FCommandContext & _CommandCtx, FRuntimeCommandProcessor & _CommandProcessor ) {
     if ( _Event.Action == IE_Press ) {
         if ( !ConFullscreen && _Event.Key == KEY_GRAVE_ACCENT ) {
             ConDown = !ConDown;
@@ -457,16 +466,19 @@ void FConsole::KeyEvent( FKeyEvent const & _Event ) {
             }
             break;
         case KEY_ENTER: {
-            TPodArray< char, MAX_CMD_LINE_CHARS * 3 + 1 > result;   // In worst case FWideChar transforms to 3 bytes,
-                                                                    // one additional byte is reserved for trailing '\0'
+            char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
+                                                         // one additional byte is reserved for trailing '\0'
 
-            EncodeUtf8( CmdLine, CmdLine + CmdLineLength, result );
+            FCore::WideStrEncodeUTF8( result, sizeof( result ), CmdLine, CmdLine + CmdLineLength );
 
             if ( CmdLineLength > 0 ) {
                 AddStoryLine( CmdLine, CmdLineLength );
             }
 
-            GLogger.Printf( "%s\n", result.ToPtr() );
+            GLogger.Printf( "%s\n", result );
+
+            _CommandProcessor.Add( result );
+            _CommandProcessor.Add( "\n" );
 
             CmdLineLength = 0;
             CmdLinePos = 0;
@@ -506,6 +518,15 @@ void FConsole::KeyEvent( FKeyEvent const & _Event ) {
                 InsertClipboardText();
             }
             break;
+        case KEY_TAB: {
+            char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
+                                                         // one additional byte is reserved for trailing '\0'
+
+            FCore::WideStrEncodeUTF8( result, sizeof( result ), CmdLine, CmdLine + CmdLinePos );
+
+            CompleteString( _CommandCtx, result );
+            break;
+        }
         default:
             break;
         }
@@ -674,16 +695,17 @@ void FConsole::WriteStoryLines() {
         return;
     }
 
-    TPodArray< char, MAX_CMD_LINE_CHARS * 3 + 1 > result;   // In worst case FWideChar transforms to 3 bytes,
-                                                            // one additional byte is reserved for trailing '\0'
+    char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
+                                                 // one additional byte is reserved for trailing '\0'
 
     int numLines = FMath::Min( MAX_STORY_LINES, NumStoryLines );
 
     for ( int i = 0 ; i < numLines ; i++ ) {
         int n = ( NumStoryLines - numLines + i ) & ( MAX_STORY_LINES - 1 );
-        EncodeUtf8( StoryLines[n], StoryLines[n] + MAX_CMD_LINE_CHARS, result );
-        f.Printf( "%s\n", result.ToPtr() );
-        result.Clear();
+
+        FCore::WideStrEncodeUTF8( result, sizeof( result ), StoryLines[n], StoryLines[n] + MAX_CMD_LINE_CHARS );
+
+        f.Printf( "%s\n", result );
     }
 }
 
@@ -704,7 +726,7 @@ void FConsole::ReadStoryLines() {
 
         const char * s = buf;
         while ( *s && *s != '\n' && wideStrLength < MAX_CMD_LINE_CHARS ) {
-            int byteLen = FCore::DecodeUTF8WChar( s, wideStr[wideStrLength] );
+            int byteLen = FCore::WideCharDecodeUTF8( s, wideStr[wideStrLength] );
             if ( !byteLen ) {
                 break;
             }

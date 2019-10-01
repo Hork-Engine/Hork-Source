@@ -60,7 +60,6 @@ private:
 
     FRenderFrame * CurFrameData;
     FRenderView * RV;
-    FRenderingParameters * RP;
     FWorld * World;
     FDebugDraw DebugDraw;
     int VisMarker = 0;

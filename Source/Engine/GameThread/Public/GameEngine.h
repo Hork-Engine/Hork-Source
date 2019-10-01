@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Core/Public/Document.h>
 #include <Engine/Runtime/Public/ImportExport.h>
+#include <Engine/Runtime/Public/RuntimeCommandProcessor.h>
 #include <Engine/Resource/Public/FontAtlas.h>
 #include <Engine/Widgets/Public/WDesktop.h>
 
@@ -182,6 +183,8 @@ public:
 
     void SetDesktop( WDesktop * _Desktop );
 
+    FFont const * GetDefaultFont() const { return DefaultFont; }
+
 private:
     // IGameEngine interface
     void Initialize( FCreateGameModuleCallback _CreateGameModuleCallback ) override;
@@ -263,6 +266,8 @@ private:
     FFont const * DefaultFont;
 
     TRef< WDesktop > Desktop;
+
+    FRuntimeCommandProcessor CommandProcessor;
 };
 
 class FCanvas;
@@ -278,7 +283,6 @@ public:
     virtual void OnPreGameTick( float _TimeStep ) {}
     virtual void OnPostGameTick( float _TimeStep ) {}
     virtual void OnGameClose();
-    virtual void DrawCanvas( FCanvas * _Canvas ) {}
 
     template< typename T >
     static IGameModule * CreateGameModule() {
