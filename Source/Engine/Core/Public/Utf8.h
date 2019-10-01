@@ -32,199 +32,53 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
+typedef unsigned short FWideChar;
+
 namespace FCore {
 
-constexpr char FallbackCharacter = '?';
+// Length of utf8 character in bytes
+int UTF8CharByteLength( const char * _Unicode );
 
-AN_FORCEINLINE int DecodeUTF1b( const char * s ) {
-    // ASCII, в том числе латинский алфавит, простейшие знаки препинания и арабские цифры
+// Length of utf8 string
+int UTF8StrLength( const char * _Unicode );
 
-    return *s;
+// Decode utf8 character to wide char
+int WideCharDecodeUTF8( const char * _Unicode, FWideChar & _Ch );
+
+// Decode utf8 character to wide char
+int WideCharDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, FWideChar & _Ch );
+
+// Decode utf8 string to wide string
+int WideStrDecodeUTF8( const char * _Unicode, FWideChar * _Str, int _MaxLength );
+
+// Decode utf8 string to wide string
+int WideStrDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, FWideChar * _Str, int _MaxLength );
+
+// Length of utf8 character in bytes
+AN_FORCEINLINE int WideCharUTF8Bytes( FWideChar _Ch ) {
+    if ( _Ch < 0x80 ) return 1;
+    if ( _Ch < 0x800 ) return 2;
+    if ( _Ch >= 0xdc00 && _Ch < 0xe000 ) return 0;
+    if ( _Ch >= 0xd800 && _Ch < 0xdc00 ) return 4;
+    return 3;
 }
 
-AN_FORCEINLINE int DecodeUTF2b( const char * s ) {
-    // кириллица, расширенная латиница, арабский, армянский, греческий, еврейский и коптский алфавит; сирийское письмо, тана, нко; МФА; некоторые знаки препинания
+// Length of utf8 string in bytes
+int WideStrUTF8Bytes( FWideChar const * _Str, FWideChar const * _StrEnd = nullptr );
 
-    if ( ( s[1] & 0xC0 ) != 0x80 ) {
-        return 0xFFFD;
-    }
+// Length of wide string
+int WideStrLength( FWideChar const * _Str );
 
-    const int b1 = s[0] & 0x1F;
-    const int b2 = s[1] & 0x3F;
+// Encode wide character to utf8 char
+int WideCharEncodeUTF8( char * _Buf, int _BufSize, unsigned int _Ch );
 
-    return ( b1 << 6 ) | b2;
-}
+// Encode wide string to utf8 string
+int WideStrEncodeUTF8( char * _Buf, int _BufSize, FWideChar const * _Str, FWideChar const * _StrEnd = nullptr );
 
-AN_FORCEINLINE int DecodeUTF3b( const char * s ) {
-    // все другие современные формы письменности, в том числе грузинский алфавит, индийское, китайское, корейское и японское письмо; сложные знаки препинания; математические и другие специальные символы
+// Check wide char is blank
+AN_FORCEINLINE bool WideCharIsBlank( FWideChar _Ch )  { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
 
-    if ( ( s[1] & 0xC0 ) != 0x80
-         || ( s[2] & 0xC0 ) != 0x80 ) {
-        return 0xFFFD;
-    }
-
-    const int b1 = s[0] & 0x0F;
-    const int b2 = s[1] & 0x3F;
-    const int b3 = s[2] & 0x3F;
-
-    return ( b1 << 12 ) | ( b2 << 6 ) | b3;
-}
-
-AN_FORCEINLINE int DecodeUTF4b( const char * s ) {
-    // музыкальные символы, редкие китайские иероглифы, вымершие формы письменности
-
-    if ( ( s[1] & 0xC0 ) != 0x80
-         || ( s[2] & 0xC0 ) != 0x80
-         || ( s[3] & 0xC0 ) != 0x80 ) {
-        return 0xFFFD;
-    }
-
-    const int b1 = s[0] & 0x07;
-    const int b2 = s[1] & 0x3F;
-    const int b3 = s[2] & 0x3F;
-    const int b4 = s[3] & 0x3F;
-
-    return ( b1 << 18 ) | ( b2 << 12 ) | ( b3 << 6 ) | b4;
-}
-
-#define __utf8_is_1b(s)   (!(*(s) & 0x80))
-#define __utf8_is_2b(s)   (( *(s) & 0xE0 ) == 0xC0)
-#define __utf8_is_3b(s)   (( *(s) & 0xF0 ) == 0xE0)
-#define __utf8_is_4b(s)   (( *(s) & 0xF8 ) == 0xF0)
-#define __utf8_bytes_count(s) (__utf8_is_1b(s) ? 1 : __utf8_is_2b(s) ? 2 : __utf8_is_3b(s) ? 3 : __utf8_is_4b(s) ? 4 : 0)
-
-AN_FORCEINLINE int GetUTF8CharacterByteLength( const char * s ) {
-    return __utf8_bytes_count(s);
-#if 0
-    if ( __is_1b(s) ) {
-        return 1;
-    }
-    if ( __is_2b(s) ) {
-        return 2;
-    }
-    if ( __is_3b(s) ) {
-        return 3;
-    }
-    if ( __is_4b(s) ) {
-        return 4;
-    }
-    return 0;
-#endif
-}
-
-AN_FORCEINLINE int GetUTF8StrLength( const char * s ) {
-    int strLength = 0;
-    while ( *s ) {
-        const int byteLen = __utf8_bytes_count( s );
-        if ( byteLen > 0 ) {
-            s += byteLen;
-            strLength++;
-        }
-        else {
-            break;
-        }
-    }
-    return strLength;
-}
-
-AN_FORCEINLINE int DecodeUTF8Char( const char * s, int & ch ) {
-    if ( __utf8_is_1b(s) ) {
-        ch = DecodeUTF1b( s );
-        return 1;
-    }
-    if ( __utf8_is_2b(s) ) {
-        ch = DecodeUTF2b( s );
-        return 2;
-    }
-    if ( __utf8_is_3b(s) ) {
-        ch = DecodeUTF3b( s );
-        return 3;
-    }
-    if ( __utf8_is_4b(s) ) {
-        ch = DecodeUTF4b( s );
-        return 4;
-    }
-    ch = 0;
-    return 0;
-}
-
-AN_FORCEINLINE int DecodeUTF8WChar( const char * s, FWideChar & ch ) {
-    if ( __utf8_is_1b(s) ) {
-        ch = DecodeUTF1b( s );
-        return 1;
-    }
-    if ( __utf8_is_2b(s) ) {
-        ch = DecodeUTF2b( s );
-        return 2;
-    }
-    if ( __utf8_is_3b(s) ) {
-        ch = DecodeUTF3b( s );
-        if ( ch > 0xffff ) {
-            ch = FallbackCharacter;
-        }
-        return 3;
-    }
-    if ( __utf8_is_4b(s) ) {
-        ch = FallbackCharacter;
-        return 4;
-    }
-    ch = 0;
-    return 0;
-}
-
-AN_FORCEINLINE int DecodeUTF8Str( const char * s, int * out ) {
-    int * pout = out;
-    while ( *s ) {
-        const int byteLen = DecodeUTF8Char( s, *out );
-        if ( !byteLen ) {
-            break;
-        }
-        s += byteLen;
-        out++;
-    }
-    *out = 0;
-    return out - pout;
-}
-
-AN_FORCEINLINE int DecodeUTF8WStr( const char * s, FWideChar * out ) {
-    FWideChar * pout = out;
-    while ( *s ) {
-        const int byteLen = DecodeUTF8WChar( s, *out );
-        if ( !byteLen ) {
-            break;
-        }
-        s += byteLen;
-        out++;
-    }
-    *out = 0;
-    return out - pout;
-}
-
-AN_FORCEINLINE int EncodeUTF8Char( int ch, char encoded[4] ) {
-    if ( ch <= 0x7f ) {
-        encoded[0] = ch;
-        return 1;
-    }
-    if ( ch <= 0x7ff ) {
-        encoded[0] = ( ch >> 6 ) | 0xC0;
-        encoded[1] = ( ch & 0x3F ) | 0x80;
-        return 2;
-    }
-    if ( ch <= 0xffff ) {
-        encoded[0] = ( ch >> 12 ) | 0xE0;
-        encoded[1] = ( ( ch >> 6 ) & 0x3F ) | 0x80;
-        encoded[2] = ( ch & 0x3F ) | 0x80;
-        return 3;
-    }
-    if ( ch <= 0x10FFFF ) {
-        encoded[0] = ( ch >> 18 ) | 0xF0;
-        encoded[1] = ( ( ch >> 12 ) & 0x3F ) | 0x80;
-        encoded[2] = ( ( ch >> 6 ) & 0x3F ) | 0x80;
-        encoded[3] = ( ch & 0x3F ) | 0x80;
-        return 4;
-    }
-    encoded[0] = FallbackCharacter;
-    return 1;
-}
+// Check ascii char is blank
+AN_FORCEINLINE bool CharIsBlank( char _Ch )  { return _Ch == ' ' || _Ch == '\t'; }
 
 }

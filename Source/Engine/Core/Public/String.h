@@ -51,6 +51,8 @@ public:
     FString( const FString & _Str );
     ~FString();
 
+    //operator const char *() const { return ToConstChar(); }
+
     const char & operator[]( int _Index ) const;
     char & operator[]( int _Index );
 
@@ -188,10 +190,10 @@ private:
     static const FString __NullFString;
 
 protected:
+    char * StringData;
     int Allocated;
     int StringLength;
     char StaticData[BASE_ALLOC];
-    char * StringData;
 };
 
 /*
@@ -221,7 +223,7 @@ struct TSprintfBuffer {
 };
 
 AN_FORCEINLINE FString::FString()
-    : Allocated(BASE_ALLOC), StringLength(0), StringData( StaticData )
+    : StringData( StaticData ), Allocated(BASE_ALLOC), StringLength(0)
 {
     StaticData[0] = 0;
 }

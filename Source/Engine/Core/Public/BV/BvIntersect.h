@@ -805,7 +805,7 @@ AN_FORCEINLINE bool BvRayIntersectTriangle( Float3 const & _RayStart, Float3 con
 }
 
 // Ray - Plane
-AN_FORCEINLINE bool RayIntersectPlane( Float3 const & _RayStart, Float3 const & _RayDir, PlaneF const & _Plane, float & _Distance ) {
+AN_FORCEINLINE bool BvRayIntersectPlane( Float3 const & _RayStart, Float3 const & _RayDir, PlaneF const & _Plane, float & _Distance ) {
     const float d2 = _Plane.Normal.Dot( _RayDir );
     if ( d2 == 0.0f ) {
         // ray is parallel to plane

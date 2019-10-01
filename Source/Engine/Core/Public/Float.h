@@ -3642,11 +3642,11 @@ public:
     }
 
     // Standard OpenGL ortho projection for 2D
-    static AN_FORCEINLINE Float4x4 Ortho2D( const float & _Left, const float & _Right, const float & _Bottom, const float & _Top ) {
-        const float InvX = 1.0f / (_Right - _Left);
-        const float InvY = 1.0f / (_Top - _Bottom);
-        const float tx = -(_Right + _Left) * InvX;
-        const float ty = -(_Top + _Bottom) * InvY;
+    static AN_FORCEINLINE Float4x4 Ortho2D( Float2 const & _Mins, Float2 const & _Maxs ) {
+        const float InvX = 1.0f / (_Maxs.X - _Mins.X);
+        const float InvY = 1.0f / (_Maxs.Y - _Mins.Y);
+        const float tx = -(_Maxs.X + _Mins.X) * InvX;
+        const float ty = -(_Maxs.Y + _Mins.Y) * InvY;
         return Float4x4( 2 * InvX, 0,        0, 0,
                          0,        2 * InvY, 0, 0,
                          0,        0,       -2, 0,
@@ -3654,17 +3654,17 @@ public:
     }
 
     // OpenGL ortho projection for 2D with clip control "upper-left & zero-to-one"
-    static AN_FORCEINLINE Float4x4 Ortho2DCC( const float & _Left, const float & _Right, const float & _Bottom, const float & _Top ) {
-        return ClipControl_UpperLeft_ZeroToOne() * Ortho2D( _Left, _Right, _Bottom, _Top );
+    static AN_FORCEINLINE Float4x4 Ortho2DCC( Float2 const & _Mins, Float2 const & _Maxs ) {
+        return ClipControl_UpperLeft_ZeroToOne() * Ortho2D( _Mins, _Maxs );
     }
 
     // Standard OpenGL ortho projection
-    static AN_FORCEINLINE Float4x4 Ortho( const float & _Left, const float & _Right, const float & _Bottom, const float & _Top, const float & _ZNear, const float & _ZFar ) {
-        const float InvX = 1.0f / (_Right - _Left);
-        const float InvY = 1.0f / (_Top - _Bottom);
+    static AN_FORCEINLINE Float4x4 Ortho( Float2 const & _Mins, Float2 const & _Maxs, const float & _ZNear, const float & _ZFar ) {
+        const float InvX = 1.0f / (_Maxs.X - _Mins.X);
+        const float InvY = 1.0f / (_Maxs.Y - _Mins.Y);
         const float InvZ = 1.0f / (_ZFar - _ZNear);
-        const float tx = -(_Right + _Left) * InvX;
-        const float ty = -(_Top + _Bottom) * InvY;
+        const float tx = -(_Maxs.X + _Mins.X) * InvX;
+        const float ty = -(_Maxs.Y + _Mins.Y) * InvY;
         const float tz = -(_ZFar + _ZNear) * InvZ;
         return Float4x4( 2 * InvX,0,        0,         0,
                          0,       2 * InvY, 0,         0,
@@ -3673,12 +3673,12 @@ public:
     }
 
     // OpenGL ortho projection with clip control "upper-left & zero-to-one"
-    static AN_FORCEINLINE Float4x4 OrthoCC( const float & _Left, const float & _Right, const float & _Bottom, const float & _Top, const float & _ZNear, const float & _ZFar ) {
-        const float InvX = 1.0/(_Right - _Left);
-        const float InvY = 1.0/(_Top - _Bottom);
+    static AN_FORCEINLINE Float4x4 OrthoCC( Float2 const & _Mins, Float2 const & _Maxs, const float & _ZNear, const float & _ZFar ) {
+        const float InvX = 1.0/(_Maxs.X - _Mins.X);
+        const float InvY = 1.0/(_Maxs.Y - _Mins.Y);
         const float InvZ = 1.0/(_ZFar - _ZNear);
-        const float tx = -(_Right + _Left) * InvX;
-        const float ty = -(_Top + _Bottom) * InvY;
+        const float tx = -(_Maxs.X + _Mins.X) * InvX;
+        const float ty = -(_Maxs.Y + _Mins.Y) * InvY;
         const float tz = -(_ZFar + _ZNear) * InvZ;
         return Float4x4( 2 * InvX,  0,         0,              0,
                          0,         -2 * InvY, 0,              0,
@@ -3686,16 +3686,16 @@ public:
                          tx,       -ty,        tz * 0.5 + 0.5, 1 );
         // Same
         // Transform according to clip control
-        //return ClipControl_UpperLeft_ZeroToOne() * Ortho( _Left, _Right, _Bottom, _Top, _ZNear, _ZFar );
+        //return ClipControl_UpperLeft_ZeroToOne() * Ortho( _Mins, _Maxs, _ZNear, _ZFar );
     }
 
     // Reversed-depth OpenGL ortho projection
-    static AN_FORCEINLINE Float4x4 OrthoRev( const float & _Left, const float & _Right, const float & _Bottom, const float & _Top, const float & _ZNear, const float & _ZFar ) {
-        const float InvX = 1.0f / (_Right - _Left);
-        const float InvY = 1.0f / (_Top - _Bottom);
+    static AN_FORCEINLINE Float4x4 OrthoRev( Float2 const & _Mins, Float2 const & _Maxs, const float & _ZNear, const float & _ZFar ) {
+        const float InvX = 1.0f / (_Maxs.X - _Mins.X);
+        const float InvY = 1.0f / (_Maxs.Y - _Mins.Y);
         const float InvZ = 1.0f / (_ZNear - _ZFar);
-        const float tx = -(_Right + _Left) * InvX;
-        const float ty = -(_Top + _Bottom) * InvY;
+        const float tx = -(_Maxs.X + _Mins.X) * InvX;
+        const float ty = -(_Maxs.Y + _Mins.Y) * InvY;
         const float tz = -(_ZNear + _ZFar) * InvZ;
         return Float4x4( 2 * InvX, 0,        0,         0,
                          0,        2 * InvY, 0,         0,
@@ -3704,11 +3704,11 @@ public:
     }
 
     // Reversed-depth with clip control "upper-left & zero-to-one" OpenGL ortho projection
-    static AN_FORCEINLINE Float4x4 OrthoRevCC( const float & _Left, const float & _Right, const float & _Bottom, const float & _Top, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 OrthoRevCC( Float2 const & _Mins, Float2 const & _Maxs, const float & _ZNear, const float & _ZFar ) {
         // TODO: Optimize multiplication
 
         // Transform according to clip control
-        return ClipControl_UpperLeft_ZeroToOne() * OrthoRev( _Left, _Right, _Bottom, _Top, _ZNear, _ZFar );
+        return ClipControl_UpperLeft_ZeroToOne() * OrthoRev( _Mins, _Maxs, _ZNear, _ZFar );
     }
 
     // Standard OpenGL perspective projection

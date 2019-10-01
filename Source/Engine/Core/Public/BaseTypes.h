@@ -376,8 +376,6 @@ AN_SIZEOF_STATIC_CHECK( ddword, 8 )
 
 static_assert( (char)-1 < 0, "signed char mismatch" );
 
-typedef unsigned short FWideChar;
-
 namespace FCore {
 
     // Std swap function wrapper
@@ -418,55 +416,3 @@ STD wrappers
 #define StdChrono   std::chrono
 #define StdSqrt     std::sqrt
 #define StdForward  std::forward
-
-/*
-
-TCallback
-
-Template callback class
-
-*/
-class FDummy;
-
-template< typename T >
-struct TCallback;
-
-template< typename TReturn, typename... TArgs >
-struct TCallback < TReturn( TArgs... ) > {
-    TCallback()
-        : Object( nullptr )
-    {
-    }
-
-    template< typename T >
-    TCallback( T * _Object, TReturn ( T::*_Method )(TArgs...) )
-        : Object( _Object )
-        , Method( (void (FDummy::*)(TArgs...))_Method )
-    {
-    }
-
-    template< typename T >
-    void Initialize( T * _Object, TReturn ( T::*_Method )(TArgs...) ) {
-        Object = _Object;
-        Method = (void (FDummy::*)(TArgs...))_Method;
-    }
-
-    bool IsInitialized() const {
-        return Object != nullptr;
-    }
-
-    void Clear() {
-        Object = nullptr;
-    }
-
-    TReturn operator()( TArgs... _Args ) const {
-        AN_Assert( IsInitialized() );
-        return (Object->*Method)(StdForward< TArgs >( _Args )...);
-    }
-
-    FDummy * GetObject() { return Object; }
-
-private:
-    FDummy * Object;
-    TReturn ( FDummy::*Method )(TArgs...);
-};
