@@ -647,7 +647,9 @@ static void ReadSkin( FContextGLTF & Ctx, cgltf_skin * Skin, FMeshAsset const & 
 
     unpack_mat4_to_mat3x4( Skin->inverse_bind_matrices, &SkeletonAsset.Joints.ToPtr()->OffsetMatrix, sizeof( SkeletonAsset.Joints[0] ) );
 
-    ReadSkeleton_r( Ctx, Skin, Skin->skeleton, -1, SkeletonAsset );
+    if ( Skin->skeleton ) {
+        ReadSkeleton_r( Ctx, Skin, Skin->skeleton, -1, SkeletonAsset );
+    }
     SkeletonAsset.CalcBindposeBounds( &MeshAsset );
 }
 
