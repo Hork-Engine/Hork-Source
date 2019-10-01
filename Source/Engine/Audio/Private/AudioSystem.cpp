@@ -1313,6 +1313,11 @@ void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instig
         _SpawnParameters = &DefaultSpawnParameters;
     }
 
+    if ( _SpawnParameters->bStopWhenInstigatorDead && !_Instigator ) {
+        GLogger.Printf( "FAudioSystem::PlaySound: bStopWhenInstigatorDead with no instigator specified\n" );
+        return;
+    }
+
     if ( _SpawnParameters->Location == AUDIO_STAY_AT_SPAWN_LOCATION ) {
 
         if ( _Instigator ) {
@@ -1342,6 +1347,11 @@ void FAudioSystem::PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPo
 
     if ( !_SpawnParameters ) {
         _SpawnParameters = &DefaultSpawnParameters;
+    }
+
+    if ( _SpawnParameters->bStopWhenInstigatorDead && !_Instigator ) {
+        GLogger.Printf( "FAudioSystem::PlaySoundAt: bStopWhenInstigatorDead with no instigator specified\n" );
+        return;
     }
 
     CreateSound( _AudioClip, _SpawnPosition, AUDIO_STAY_AT_SPAWN_LOCATION, _Instigator, _SpawnParameters );

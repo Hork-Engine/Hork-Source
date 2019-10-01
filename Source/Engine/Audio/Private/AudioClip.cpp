@@ -96,10 +96,12 @@ static int GetAppropriateFormat( short _Channels, short _BitsPerSample ) {
     return -1;
 }
 
-void FAudioClip::InitializeDefaultObject() {
+void FAudioClip::InitializeInternalResource( const char * _InternalResourceName ) {
     Purge();
 
     // TODO: ...
+
+    //SetName( _InternalResourceName );
 }
 
 bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
