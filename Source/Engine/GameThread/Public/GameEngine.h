@@ -183,7 +183,9 @@ public:
 
     void SetDesktop( WDesktop * _Desktop );
 
-    FFont const * GetDefaultFont() const { return DefaultFont; }
+    WDesktop * GetDesktop() { return Desktop; }
+
+    FFontAtlas * GetDefaultFont() const { return DefaultFontAtlas; }
 
 private:
     // IGameEngine interface

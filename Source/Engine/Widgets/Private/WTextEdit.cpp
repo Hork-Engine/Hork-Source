@@ -401,7 +401,7 @@ FFont const * WTextEdit::GetFont() const {
 
     if ( !font ) {
         // back to default font
-        font = GGameEngine.GetDefaultFont();
+        font = GGameEngine.GetDefaultFont()->GetFont(0);
     }
 
     return font;
@@ -1155,7 +1155,15 @@ void WTextEdit::OnFocusLost() {
 }
 
 void WTextEdit::OnFocusReceive() {
+    
+}
 
+void WTextEdit::OnWindowHovered( bool _Hovered ) {
+    if ( _Hovered ) {
+        GetDesktop()->SetCursor( DRAW_CURSOR_TEXT_INPUT );
+    } else {
+        GetDesktop()->SetCursor( DRAW_CURSOR_ARROW );
+    }
 }
 
 void WTextEdit::OnDrawEvent( FCanvas & _Canvas ) {
@@ -1244,9 +1252,22 @@ void WTextEdit::UpdateWidgetSize() {
 #else
     Float2 size = CalcTextRect( GetFont(), TextData.ToPtr(), TextData.ToPtr() + CurTextLength, nullptr, nullptr, false );
 #endif
+    WWidget * parent = GetParent();
+    //if ( parent ) {
+    //    float w = parent->GetAvailableWidth();
+    //    float h = parent->GetAvailableHeight();
+    //    if ( size.X < w-1 ) {
+    //        size.X = w-1;
+    //    }
+    //    if ( size.Y < h-1 ) {
+    //        size.Y = h-1;
+    //    }
+    //}
     SetSize( size );
 
-    GetParent()->MarkTransformDirty();
+    if ( parent ) {
+        parent->MarkTransformDirty();
+    }
 }
 
 bool WTextEdit::FilterCharacter( FWideChar & _Char ) {

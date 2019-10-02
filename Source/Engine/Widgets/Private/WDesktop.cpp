@@ -625,6 +625,22 @@ void WDesktop::GenerateCharEvents( struct FCharEvent const & _Event, double _Tim
     }
 }
 
+void WDesktop::GenerateWindowHoverEvents() {
+    WWidget * w = GetWidgetUnderCursor( CursorPosition );
+
+    if ( LastHoveredWidget && ( w == nullptr || LastHoveredWidget != w ) ) {
+        LastHoveredWidget->OnWindowHovered( false );
+    }
+
+    LastHoveredWidget = w;
+
+    if ( !w ) {
+        return;
+    }
+
+    LastHoveredWidget->OnWindowHovered( true );
+}
+
 void WDesktop::GenerateDrawEvents( FCanvas & _Canvas ) {
     Float2 mins, maxs;
     Root->GetDesktopRect( mins, maxs, false );
@@ -640,9 +656,7 @@ void WDesktop::GenerateDrawEvents( FCanvas & _Canvas ) {
         child->Draw_r( _Canvas, mins, maxs );
     }
 
-    if ( bCursorVisible ) {
-        OnDrawCursor( _Canvas );
-    }
+    //_Canvas.DrawCircleFilled( CursorPosition, 5.0f, FColor4(1,0,0) );
 
     _Canvas.PopClipRect();
 }
@@ -651,6 +665,10 @@ void WDesktop::OnDrawBackground( FCanvas & _Canvas ) {
     _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), FColor4::Black() );
 }
 
-void WDesktop::OnDrawCursor( FCanvas & _Canvas ) {
-    _Canvas.DrawCircleFilled( CursorPosition, 5.0f, FColor4::White() );
+void WDesktop::DrawCursor( FCanvas & _Canvas ) {
+#if 0
+    _Canvas.DrawCursor( Cursor, GGameEngine.GetCursorPosition(), FColor4::White(), FColor4( 0, 0, 0, 1 ), FColor4( 0, 0, 0, 28 / 255.0f ) );
+#else
+    _Canvas.DrawCursor( Cursor, CursorPosition, FColor4::White(), FColor4( 0, 0, 0, 1 ), FColor4( 0, 0, 0, 0.3f ) );
+#endif
 }

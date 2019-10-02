@@ -67,6 +67,10 @@ public:
 
     bool IsCursorVisible() const { return bCursorVisible; }
 
+    void SetCursor( EDrawCursor _Cursor ) { Cursor = _Cursor; }
+
+    EDrawCursor GetCursor() const { return Cursor; }
+
     WDesktop & SetDrawBackground( bool _DrawBackground ) { bDrawBackground = _DrawBackground; return *this; }
 
     void OpenPopupMenu( WMenuPopup * _PopupMenu );
@@ -119,17 +123,19 @@ public:
     // в данный момент в фокусе.
     void GenerateCharEvents( struct FCharEvent const & _Event, double _TimeStamp );
 
+    void GenerateWindowHoverEvents();
+
     // Создает событие DrawEvent для всех видимых окон графического интерфейса.
     // События вызываются начиная с нижних уровней до высоких.
     void GenerateDrawEvents( FCanvas & _Canvas );
+
+    virtual void DrawCursor( FCanvas & _Canvas );
 
 protected:
     WDesktop();
     ~WDesktop();
 
     virtual void OnDrawBackground( FCanvas & _Canvas );
-
-    virtual void OnDrawCursor( FCanvas & _Canvas );
 
 private:
     WWidget * GetWidgetUnderCursor_r( WWidget * _Widget, Float2 const & _ClipMins, Float2 const & _ClipMaxs, Float2 const & _Position );
@@ -145,11 +151,13 @@ private:
     TRef< WWidget > DraggingWidget;
     TRef< WWidget > MouseClickWidget;
     TRef< WWidget > MouseFocusWidget;
+    TWeakRef< WWidget > LastHoveredWidget;
     uint64_t MouseClickTime;
     Float2 MouseClickPos;
     Float2 DraggingCursor;
     Float2 DraggingWidgetPos;
     Float2 CursorPosition;
+    EDrawCursor Cursor;
     bool bCursorVisible;
     bool bDrawBackground;
 };

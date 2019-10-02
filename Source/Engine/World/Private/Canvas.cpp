@@ -700,6 +700,23 @@ void FCanvas::DrawViewport( FPlayerController * _PlayerController, int _X, int _
     }
 }
 
+void FCanvas::DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, FColor4 const & _Color, FColor4 const & _BorderColor, FColor4 const & _ShadowColor, const float _Scale ) {
+    ImFontAtlas * fontAtlas = DrawList._Data->Font->ContainerAtlas;
+    Float2 offset, size, uv[ 4 ];
+
+    if ( fontAtlas->GetMouseCursorTexData( _Cursor, ( ImVec2* )&offset, ( ImVec2* )&size, ( ImVec2* )&uv[ 0 ], ( ImVec2* )&uv[ 2 ] ) ) {
+        Float2 pos = _Position.Floor() - offset;
+        const ImTextureID textureId = fontAtlas->TexID;
+        const uint32_t shadow = _ShadowColor.GetDWord();
+        DrawList.PushClipRectFullScreen();
+        DrawList.AddImage( textureId, pos + Float2( 1, 0 )*_Scale, pos + Float2( 1, 0 )*_Scale + size*_Scale, uv[ 2 ], uv[ 3 ], shadow );
+        DrawList.AddImage( textureId, pos + Float2( 2, 0 )*_Scale, pos + Float2( 2, 0 )*_Scale + size*_Scale, uv[ 2 ], uv[ 3 ], shadow );
+        DrawList.AddImage( textureId, pos, pos + size*_Scale, uv[ 2 ], uv[ 3 ], _BorderColor.GetDWord() );
+        DrawList.AddImage( textureId, pos, pos + size*_Scale, uv[ 0 ], uv[ 1 ], _Color.GetDWord() );
+        DrawList.PopClipRect();
+    }
+}
+
 void FCanvas::DrawPolyline( Float2 const * points, int num_points, FColor4 const & col, bool closed, float thickness ) {
     DrawList.AddPolyline( reinterpret_cast< ImVec2 const * >( points ), num_points, col.GetDWord(), closed, thickness );
 }

@@ -69,6 +69,8 @@ public:
 
     void * GetImguiFontAtlas() { return &Atlas; }
 
+    FTexture * GetTexture() { return AtlasTexture; }
+
 protected:
     FFontAtlas();
     ~FFontAtlas();

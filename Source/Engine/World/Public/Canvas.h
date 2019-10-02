@@ -61,6 +61,17 @@ enum EDrawCornerFlags {
     CORNER_ROUND_NONE           = 0
 };
 
+enum EDrawCursor {
+    DRAW_CURSOR_ARROW,
+    DRAW_CURSOR_TEXT_INPUT,
+    DRAW_CURSOR_RESIZE_ALL,
+    DRAW_CURSOR_RESIZE_NS,
+    DRAW_CURSOR_RESIZE_EW,
+    DRAW_CURSOR_RESIZE_NESW,
+    DRAW_CURSOR_RESIZE_NWSE,
+    DRAW_CURSOR_RESIZE_HAND
+};
+
 class FCanvas {
     AN_FORBID_COPY( FCanvas )
 
@@ -131,6 +142,8 @@ public:
     // Viewport
     void DrawViewport( FPlayerController * _PlayerController, int _X, int _Y, int _W, int _H, FColor4 const & _Color = FColor4::White(), float _Rounding = 0.0f, int _RoundingCorners = CORNER_ROUND_ALL, EColorBlending _Blending = COLOR_BLENDING_DISABLED );
 
+    // Cursor
+    void DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, FColor4 const & _Color, FColor4 const & _BorderColor, FColor4 const & _ShadowColor, const float _Scale = 1.0f );
 
     TPodArray< FViewport > const & GetViewports() { return Viewports; }
 

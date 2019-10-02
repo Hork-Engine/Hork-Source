@@ -890,6 +890,12 @@ void WWidget::OnFocusReceive() {
 
 }
 
+void WWidget::OnWindowHovered( bool _Hovered ) {
+    if ( _Hovered ) {
+        Desktop->SetCursor( DRAW_CURSOR_ARROW );
+    }
+}
+
 void WWidget::OnDrawEvent( FCanvas & _Canvas ) {
     DrawDecorates( _Canvas );
 }

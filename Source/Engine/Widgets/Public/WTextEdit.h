@@ -141,6 +141,8 @@ protected:
 
     void OnFocusReceive() override;
 
+    void OnWindowHovered( bool _Hovered ) override;
+
     void OnDrawEvent( FCanvas & _Canvas ) override;
 
 private:

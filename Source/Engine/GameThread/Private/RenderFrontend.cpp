@@ -89,8 +89,18 @@ void FRenderFrontend::BuildFrameData() {
 #else
     if ( GGameEngine.IsWindowVisible() ) {
         VisMarker++;
+
         WriteDrawList( &GCanvas );
 
+        WDesktop * desktop = GGameEngine.GetDesktop();
+        if ( desktop && desktop->IsCursorVisible() ) {
+            GCanvas.Begin( const_cast< FFont * >( GGameEngine.GetDefaultFont()->GetFont( 0 ) ), GCanvas.Width, GCanvas.Height );
+            desktop->DrawCursor( GCanvas );
+            GCanvas.End();
+            WriteDrawList( &GCanvas );
+        }
+
+#if 1
         // -------------------------------------
         ImDrawData * drawData = ImGui::GetDrawData();
         if ( drawData && drawData->CmdListsCount > 0 ) {
@@ -104,7 +114,7 @@ void FRenderFrontend::BuildFrameData() {
             if ( drawData->FramebufferScale.x != 1.0f || drawData->FramebufferScale.y != 1.0f ) {
                 drawData->ScaleClipRects( drawData->FramebufferScale );
             }
-
+#if 0
             bool bDrawMouseCursor = true;
 
             if ( bDrawMouseCursor ) {
@@ -138,11 +148,12 @@ void FRenderFrontend::BuildFrameData() {
                     }
                 }
             }
-
+#endif
             for ( int n = 0; n < drawData->CmdListsCount ; n++ ) {
                 WriteDrawList( drawData->CmdLists[ n ] );
             }
         }
+#endif
     }
 #endif
 

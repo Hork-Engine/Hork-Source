@@ -404,6 +404,8 @@ protected:
 
     virtual void OnFocusReceive();
 
+    virtual void OnWindowHovered( bool _Hovered );
+
     virtual void OnDrawEvent( FCanvas & _Canvas );
 
     virtual void OnTransformDirty();

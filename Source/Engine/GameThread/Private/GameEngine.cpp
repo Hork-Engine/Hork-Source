@@ -925,6 +925,7 @@ void FGameEngine::DrawCanvas() {
 
     if ( Desktop ) {
         Desktop->SetSize( VideoMode.Width, VideoMode.Height );
+        Desktop->GenerateWindowHoverEvents();
         Desktop->GenerateDrawEvents( GCanvas );
 
         // Draw console
