@@ -638,6 +638,9 @@ struct FMaterialBuildData {
     // during rendering.
     bool bNoVertexDeform;
 
+    // Helper. This flag allow renderer to optimize pipeline rendering order.
+    //byte RenderOrder;
+
     int NumUniformVectors;
 
     // TODO:
@@ -836,6 +839,7 @@ struct FRenderInstance {
     unsigned int                        IndexCount;
     unsigned int                        StartIndexLocation;
     int                                 BaseVertexLocation;
+    byte                                RenderingOrder;
 };
 
 struct FRenderView {
