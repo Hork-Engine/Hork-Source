@@ -372,7 +372,6 @@ void FTexture::InitializeInternalResource( const char * _InternalResourceName ) 
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
-        //SetName( _InternalResourceName );
         return;
     }
 
@@ -387,7 +386,6 @@ void FTexture::InitializeInternalResource( const char * _InternalResourceName ) 
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
-        //SetName( _InternalResourceName );
         return;
     }
 
@@ -402,7 +400,6 @@ void FTexture::InitializeInternalResource( const char * _InternalResourceName ) 
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
-        //SetName( _InternalResourceName );
         return;
     }
 
@@ -419,7 +416,6 @@ void FTexture::InitializeInternalResource( const char * _InternalResourceName ) 
         if ( pixels ) {
             memcpy( pixels, data, 3 );
         }
-        //SetName( _InternalResourceName );
         return;
     }
 
@@ -450,7 +446,6 @@ void FTexture::InitializeInternalResource( const char * _InternalResourceName ) 
                 memcpy( pixels, data[face], 3 );
             }
         }
-        //SetName( _InternalResourceName );
         return;
     }
 

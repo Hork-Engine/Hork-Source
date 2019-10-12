@@ -229,7 +229,8 @@ bool FResourceManager::UnregisterResource( FBaseObject * _Resource ) {
     }
 
     _Resource->RemoveRef();
-    ResourceHash.Remove( hash, i );
+    //ResourceHash.Remove( hash, i );
+    ResourceHash.RemoveIndex( hash, i );
     ResourceCache.Remove( i );
     return true;
 }
@@ -239,7 +240,8 @@ void FResourceManager::UnregisterResources( FClassMeta const & _ClassMeta ) {
         if ( ResourceCache[i]->FinalClassId() == _ClassMeta.GetId() ) {
             ResourceCache[i]->RemoveRef();
 
-            ResourceHash.Remove( ResourceCache[i]->GetName().HashCase(), i );
+            //ResourceHash.Remove( ResourceCache[i]->GetName().HashCase(), i );
+            ResourceHash.RemoveIndex( ResourceCache[i]->GetName().HashCase(), i );
             ResourceCache.Remove( i );
         }
     }
