@@ -65,29 +65,129 @@ void FMaterial::Initialize( FMaterialBuildData const * _Data ) {
 void FMaterial::InitializeInternalResource( const char * _InternalResourceName ) {
     if ( !FString::Icmp( _InternalResourceName, "FMaterial.Default" ) ) {
         FMaterialProject * proj = NewObject< FMaterialProject >();
+
         FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
+
         FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
+
         FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
         texCoord->Connect( inTexCoordBlock, "Value" );
+
         FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
         diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
         diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
-        FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
-        diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
-        diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        FMaterialSamplerBlock * textureSampler = proj->AddBlock< FMaterialSamplerBlock >();
+        textureSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
         FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
-        materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
+        materialFragmentStage->Color->Connect( textureSampler, "RGBA" );
+
         FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
         builder->VertexStage = materialVertexStage;
         builder->FragmentStage = materialFragmentStage;
         builder->MaterialType = MATERIAL_TYPE_UNLIT;
         builder->RegisterTextureSlot( diffuseTexture );
+
         FMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
         GMainMemoryZone.Dealloc( buildData );
-        //SetName( _InternalResourceName );
         return;
     }
+
+    if ( !FString::Icmp( _InternalResourceName, "FMaterial.Skybox" ) ) {
+#if 1
+        FMaterialProject * proj = NewObject< FMaterialProject >();
+
+        FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+
+        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
+        materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
+
+        FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
+        NSV_Dir->Connect( inPositionBlock, "Value" );
+
+        FMaterialTextureSlotBlock * cubemapTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
+        cubemapTexture->TextureType = TEXTURE_CUBEMAP;
+        cubemapTexture->Filter = TEXTURE_FILTER_LINEAR;
+        cubemapTexture->AddressU = cubemapTexture->AddressV = cubemapTexture->AddressW = TEXTURE_ADDRESS_CLAMP;
+
+        FMaterialSamplerBlock * cubemapSampler = proj->AddBlock< FMaterialSamplerBlock >();
+        cubemapSampler->TexCoord->Connect( materialVertexStage, "Dir" );
+        cubemapSampler->TextureSlot->Connect( cubemapTexture, "Value" );
+
+        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
+        materialFragmentStage->Color->Connect( cubemapSampler, "RGBA" );
+
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_UNLIT;
+        builder->MaterialFacing = MATERIAL_FACE_BACK;
+        builder->RegisterTextureSlot( cubemapTexture );
+
+        FMaterialBuildData * buildData = builder->BuildData();
+        Initialize( buildData );
+        GMainMemoryZone.Dealloc( buildData );
+#else
+        FMaterialProject * proj = NewObject< FMaterialProject >();
+
+        //
+        // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
+        //
+        FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
+        materialVertexStage->Position->Connect( inPositionBlock, "Value" );
+
+        //
+        // VS_TexCoord = InTexCoord;
+        //
+        FMaterialInTexCoordBlock * inTexCoord = proj->AddBlock< FMaterialInTexCoordBlock >();
+        materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        FAssemblyNextStageVariable * NSV_TexCoord = materialVertexStage->FindNextStageVariable( "TexCoord" );
+        NSV_TexCoord->Connect( inTexCoord, "Value" );
+
+        //
+        // VS_Dir = InPosition - ViewPostion.xyz;
+        //
+        FMaterialInViewPositionBlock * inViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
+        FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
+        positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
+        positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
+        materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
+        FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
+        NSV_Dir->Connect( positionMinusViewPosition, "Result" );
+
+        // normDir = normalize( VS_Dir )
+        FMaterialNormalizeBlock * normDir = proj->AddBlock< FMaterialNormalizeBlock >();
+        normDir->Value->Connect( materialVertexStage, "Dir" );
+
+        FMaterialTextureSlotBlock * skyTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
+        skyTexture->Filter = TEXTURE_FILTER_LINEAR;
+        skyTexture->TextureType = TEXTURE_CUBEMAP;
+
+        // color = texture( skyTexture, normDir );
+        FMaterialSamplerBlock * color = proj->AddBlock< FMaterialSamplerBlock >();
+        color->TexCoord->Connect( normDir, "Result" );
+        color->TextureSlot->Connect( skyTexture, "Value" );
+
+        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
+        materialFragmentStage->Color->Connect( color, "RGBA" );
+
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_UNLIT;
+        builder->RegisterTextureSlot( skyTexture );
+
+        FMaterialBuildData * buildData = builder->BuildData();
+        Initialize( buildData );
+        GMainMemoryZone.Dealloc( buildData );
+#endif
+        return;
+    }
+
     GLogger.Printf( "Unknown internal material %s\n", _InternalResourceName );
 }
 
