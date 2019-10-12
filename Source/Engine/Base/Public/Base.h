@@ -32,3 +32,4 @@ SOFTWARE.
 
 #include "BaseObject.h"
 #include "Factory.h"
+#include "DebugDraw.h"

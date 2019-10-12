@@ -137,25 +137,3 @@ private:
     bool bDepthTest;
     bool bSplit;
 };
-
-extern FRuntimeVariable RVDrawCollisionModel;
-extern FRuntimeVariable RVDrawCollisionBounds;
-extern FRuntimeVariable RVDrawCollisionShapeWireframe;
-extern FRuntimeVariable RVDrawCenterOfMass;
-extern FRuntimeVariable RVDrawContactPoints;
-extern FRuntimeVariable RVDrawConstraints;
-extern FRuntimeVariable RVDrawConstraintLimits;
-extern FRuntimeVariable RVDrawNavMeshBVTree;
-extern FRuntimeVariable RVDrawNavMeshNodes;
-extern FRuntimeVariable RVDrawNavMeshWithClosedList;
-extern FRuntimeVariable RVDrawNavMeshTileBounds;
-extern FRuntimeVariable RVDrawCameraFrustum;
-extern FRuntimeVariable RVDrawLevelAreaBounds;
-extern FRuntimeVariable RVDrawLevelIndoorBounds;
-extern FRuntimeVariable RVDrawLevelPortals;
-extern FRuntimeVariable RVDrawSkeleton;
-extern FRuntimeVariable RVDrawSkeletonSockets;
-extern FRuntimeVariable RVDrawSoftmeshFaces;
-extern FRuntimeVariable RVDrawMeshBounds;
-extern FRuntimeVariable RVDrawRootComponentAxis;
-extern FRuntimeVariable RVDrawLights;

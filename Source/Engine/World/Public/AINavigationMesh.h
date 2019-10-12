@@ -33,7 +33,7 @@ SOFTWARE.
 // TODO: dynamic obstacles, areas, area connections, crowd
 
 #include <Engine/Base/Public/BaseObject.h>
-#include <Engine/World/Public/DebugDraw.h>
+#include <Engine/Base/Public/DebugDraw.h>
 
 #include <Engine/Core/Public/BitMask.h>
 

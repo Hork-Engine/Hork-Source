@@ -28,32 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/DebugDraw.h>
+#include <Engine/Base/Public/DebugDraw.h>
 #include <Engine/Core/Public/Color.h>
 
 #define PRIMITIVE_RESTART_INDEX    0xffffffff
-
-FRuntimeVariable RVDrawCollisionModel( _CTS( "DrawCollisionModel" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawCollisionBounds( _CTS( "DrawCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawCollisionShapeWireframe( _CTS( "DrawCollisionShapeWireframe" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawCenterOfMass( _CTS( "DrawCenterOfMass" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawContactPoints( _CTS( "DrawContactPoints" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawConstraints( _CTS( "DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawConstraintLimits( _CTS( "DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawNavMeshBVTree( _CTS( "DrawNavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawNavMeshNodes( _CTS( "DrawNavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawNavMeshWithClosedList( _CTS( "DrawNavMeshWithClosedList" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawNavMeshTileBounds( _CTS( "DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawSkeleton( _CTS( "DrawSkeleton" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawSkeletonSockets( _CTS( "DrawSkeletonSockets" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawSoftmeshFaces( _CTS( "DrawSoftmeshFaces" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawMeshBounds( _CTS( "DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawRootComponentAxis( _CTS( "DrawRootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawLights( _CTS( "DrawLights" ), _CTS( "0" ), VAR_CHEAT );
 
 FDebugDraw::FDebugDraw() {
 }

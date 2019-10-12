@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Core/Public/BaseTypes.h>
 #include <Engine/Runtime/Public/RenderBackend.h>
-#include <Engine/World/Public/DebugDraw.h>
+#include <Engine/Base/Public/DebugDraw.h>
 
 class FRenderingParameters;
 class FWorld;
