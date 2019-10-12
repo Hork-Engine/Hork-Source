@@ -42,6 +42,8 @@ SOFTWARE.
 
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
 
+FRuntimeVariable RVDrawSoftmeshFaces( _CTS( "DrawSoftmeshFaces" ), _CTS( "0" ), VAR_CHEAT );
+
 AN_CLASS_META( FSoftMeshComponent )
 
 FSoftMeshComponent::FSoftMeshComponent() {

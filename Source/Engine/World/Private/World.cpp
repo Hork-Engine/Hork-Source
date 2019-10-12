@@ -57,6 +57,13 @@ AN_BEGIN_CLASS_META( FWorld )
 //AN_ATTRIBUTE_( bTickEvenWhenPaused, AF_DEFAULT )
 AN_END_CLASS_META()
 
+FRuntimeVariable RVDrawMeshBounds( _CTS( "DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawRootComponentAxis( _CTS( "DrawRootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawCollisionShapeWireframe( _CTS( "DrawCollisionShapeWireframe" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawContactPoints( _CTS( "DrawContactPoints" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawConstraints( _CTS( "DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawConstraintLimits( _CTS( "DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
+
 AN_FORCEINLINE static unsigned short ClampUnsignedShort( int _Value ) {
     if ( _Value < 0 ) return 0;
     if ( _Value > 0xffff ) return 0xffff;
@@ -1207,6 +1214,7 @@ bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, F
     Float3 rayStartLocal;
     Float3 rayEndLocal;
     Float3 rayDirLocal;
+    float boxMin, boxMax;
 
     if ( !_Filter ) {
         _Filter = &DefaultRaycastFilter;
@@ -1236,12 +1244,21 @@ bool FWorld::Raycast( FWorldRaycastResult & _Result, Float3 const & _RayStart, F
             continue;
         }
 
+        if ( mesh->IsSkinnedMesh() ) {
+            continue;
+        }
+
         FIndexedMesh * resource = mesh->GetMesh();
         if ( !resource ) {
             continue;
         }
 
-        if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds() ) ) {
+        if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
+            continue;
+        }
+
+        if ( boxMin > rayLength ) {
+            // Ray intersects the box, but box is too far
             continue;
         }
 
@@ -1347,6 +1364,11 @@ bool FWorld::RaycastAABB( TPodArray< FBoxHitResult > & _Result, Float3 const & _
             continue;
         }
 
+        if ( boxMin > rayLength ) {
+            // Ray intersects the box, but box is too far
+            continue;
+        }
+
         FBoxHitResult & hitResult = _Result.Append();
 
         hitResult.Object = mesh;
@@ -1420,6 +1442,10 @@ bool FWorld::RaycastClosest( FWorldRaycastClosestResult & _Result, Float3 const 
             continue;
         }
 
+        if ( mesh->IsSkinnedMesh() ) {
+            continue;
+        }
+
         FIndexedMesh * resource = mesh->GetMesh();
         if ( !resource ) {
             continue;
@@ -1430,6 +1456,7 @@ bool FWorld::RaycastClosest( FWorldRaycastClosestResult & _Result, Float3 const 
         }
 
         if ( boxMin > hitDistance ) {
+            // Ray intersects the box, but box is too far
             continue;
         }
 
@@ -1559,6 +1586,7 @@ bool FWorld::RaycastClosestAABB( FBoxHitResult & _Result, Float3 const & _RaySta
         }
 
         if ( boxMin > hitDistanceMin ) {
+            // Ray intersects the box, but box is too far
             continue;
         }
 

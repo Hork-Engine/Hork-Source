@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Engine/World/Public/Components/PhysicalBody.h>
 #include <Engine/World/Public/World.h>
-#include <Engine/World/Public/DebugDraw.h>
+#include <Engine/Base/Public/DebugDraw.h>
 
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
 
@@ -40,6 +40,10 @@ SOFTWARE.
 #define PHYS_COMPARE_EPSILON 0.0001f
 #define MIN_MASS 0.001f
 #define MAX_MASS 1000.0f
+
+FRuntimeVariable RVDrawCollisionModel( _CTS( "DrawCollisionModel" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawCollisionBounds( _CTS( "DrawCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawCenterOfMass( _CTS( "DrawCenterOfMass" ), _CTS( "0" ), VAR_CHEAT );
 
 static constexpr bool bUseInternalEdgeUtility = true;
 

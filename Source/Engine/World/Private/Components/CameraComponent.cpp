@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/World/Public/Components/CameraComponent.h>
-#include <Engine/World/Public/DebugDraw.h>
+#include <Engine/Base/Public/DebugDraw.h>
 
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/ConvexHull.h>
@@ -43,6 +43,8 @@ SOFTWARE.
 #define DEFAULT_FOVY 90.0f
 #define DEFAULT_ASPECT_RATIO (4.0f / 3.0f)
 #define DEFAULT_PERSPECTIVE_ADJUST CAMERA_ADJUST_FOV_X_ASPECT_RATIO
+
+FRuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( FCameraComponent )
 

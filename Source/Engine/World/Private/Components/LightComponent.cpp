@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/World/Public/Components/LightComponent.h>
-#include <Engine/World/Public/DebugDraw.h>
+#include <Engine/Base/Public/DebugDraw.h>
 
 #define DEFAULT_AMBIENT_INTENSITY 1.0f
 #define DEFAULT_TEMPERATURE 6590.0f
@@ -41,6 +41,8 @@ SOFTWARE.
 #define DEFAULT_COLOR Float3(1)
 #define DEFAULT_SPOT_EXPONENT 1.0f
 #define DEFAULT_MAX_SHADOW_CASCADES 4
+
+FRuntimeVariable RVDrawLights( _CTS( "DrawLights" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( FLightComponent )
 //AN_SCENE_COMPONENT_BEGIN_DECL( FLightComponent, CCF_DEFAULT )

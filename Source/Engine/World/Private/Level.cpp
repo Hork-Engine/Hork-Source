@@ -38,6 +38,10 @@ SOFTWARE.
 #include <Engine/Resource/Public/Texture.h>
 #include <Engine/Core/Public/BV/BvIntersect.h>
 
+FRuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
+
 AN_CLASS_META( FLevel )
 AN_CLASS_META( FLevelArea )
 AN_CLASS_META( FLevelPortal )
@@ -530,7 +534,7 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                         // indexCount may be different from indexedMesh->GetIndexCount()
                         int indexCount = 0;
                         for ( FIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
-                            indexCount += subpart->IndexCount;
+                            indexCount += subpart->GetIndexCount();
                         }
 
                         _Vertices.Resize( firstVertex + indexedMesh->GetVertexCount() );
@@ -551,11 +555,11 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                             unsigned int i0, i1, i2;
                             int triangleNum = 0;
                             for ( FIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
-                                int numTriangles = subpart->IndexCount / 3;
+                                int numTriangles = subpart->GetIndexCount() / 3;
                                 for ( int i = 0 ; i < numTriangles ; i++ ) {
-                                    i0 = firstVertex + subpart->BaseVertex + srcIndices[ subpart->FirstIndex + i*3 + 0 ];
-                                    i1 = firstVertex + subpart->BaseVertex + srcIndices[ subpart->FirstIndex + i*3 + 1 ];
-                                    i2 = firstVertex + subpart->BaseVertex + srcIndices[ subpart->FirstIndex + i*3 + 2 ];
+                                    i0 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 0 ];
+                                    i1 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 1 ];
+                                    i2 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 2 ];
 
                                     if ( BvBoxOverlapTriangle_FastApproximation( clippedBounds, pVertices[i0], pVertices[i1], pVertices[i2] ) ) {
                                         *pIndices++ = i0;
@@ -576,11 +580,11 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                         } else {
                             int triangleNum = 0;
                             for ( FIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
-                                int numTriangles = subpart->IndexCount / 3;
+                                int numTriangles = subpart->GetIndexCount() / 3;
                                 for ( int i = 0 ; i < numTriangles ; i++ ) {
-                                    *pIndices++ = firstVertex + subpart->BaseVertex + srcIndices[ subpart->FirstIndex + i*3 + 0 ];
-                                    *pIndices++ = firstVertex + subpart->BaseVertex + srcIndices[ subpart->FirstIndex + i*3 + 1 ];
-                                    *pIndices++ = firstVertex + subpart->BaseVertex + srcIndices[ subpart->FirstIndex + i*3 + 2 ];
+                                    *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 0 ];
+                                    *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 1 ];
+                                    *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 2 ];
 
                                     if ( !physBody->bAINonWalkable ) {
                                         _WalkableTriangles.Mark( firstTriangle + triangleNum );
@@ -1340,9 +1344,9 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
             instance->StartIndexLocation = component->DynamicRangeStartIndexLocation;
             instance->BaseVertexLocation = component->DynamicRangeBaseVertexLocation;
         } else {
-            instance->IndexCount = subpart->IndexCount;
-            instance->StartIndexLocation = subpart->FirstIndex;
-            instance->BaseVertexLocation = subpart->BaseVertex + component->SubpartBaseVertexOffset;
+            instance->IndexCount = subpart->GetIndexCount();
+            instance->StartIndexLocation = subpart->GetFirstIndex();
+            instance->BaseVertexLocation = subpart->GetBaseVertex() + component->SubpartBaseVertexOffset;
         }
 
         instance->Skeleton = skeletonProxy;
@@ -1351,6 +1355,8 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         if ( material->GetType() == MATERIAL_TYPE_PBR ) {
             instance->ModelNormalToViewSpace = _Def->View->NormalToViewMatrix * component->GetWorldRotation().ToMatrix();
         }
+
+        instance->RenderingOrder = component->RenderingOrder;
 
         _Def->View->InstanceCount++;
 

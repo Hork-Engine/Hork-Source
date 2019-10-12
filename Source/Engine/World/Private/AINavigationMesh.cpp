@@ -52,6 +52,11 @@ SOFTWARE.
 
 #include <cfloat> // FLT_MAX
 
+FRuntimeVariable RVDrawNavMeshBVTree( _CTS( "DrawNavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawNavMeshNodes( _CTS( "DrawNavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawNavMeshWithClosedList( _CTS( "DrawNavMeshWithClosedList" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawNavMeshTileBounds( _CTS( "DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
+
 static_assert( sizeof( FNavPolyRef ) == sizeof( dtPolyRef ), "Type sizeof check" );
 
 static const int MAX_LAYERS = 255;

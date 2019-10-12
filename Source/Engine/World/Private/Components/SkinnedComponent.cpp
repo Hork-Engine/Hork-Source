@@ -36,7 +36,7 @@ SOFTWARE.
 #include <Engine/World/Public/AnimationController.h>
 #include <Engine/World/Public/Actors/Actor.h>
 #include <Engine/World/Public/World.h>
-#include <Engine/World/Public/DebugDraw.h>
+#include <Engine/Base/Public/DebugDraw.h>
 #include <Engine/Resource/Public/Asset.h>
 #include <Engine/Resource/Public/Animation.h>
 #include <Engine/Core/Public/Logger.h>
@@ -45,6 +45,9 @@ SOFTWARE.
 #include <BulletSoftBody/btSoftBody.h>
 
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
+
+FRuntimeVariable RVDrawSkeleton( _CTS( "DrawSkeleton" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawSkeletonSockets( _CTS( "DrawSkeletonSockets" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( FSkinnedComponent )
 

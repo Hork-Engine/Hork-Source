@@ -32,6 +32,12 @@ SOFTWARE.
 
 #include "PhysicalBody.h"
 
+enum ERenderOrder {
+    RENDER_ORDER_WEAPON = 0,
+    RENDER_ORDER_DEFAULT = 1,
+    RENDER_ORDER_SKYBOX = 255,
+};
+
 /*
 
 FDrawSurf
@@ -47,6 +53,8 @@ public:
 
     // Rendering group to filter mesh during rendering
     int RenderingGroup;
+
+    int RenderingOrder = RENDER_ORDER_DEFAULT;
 
     // Helper. Return true if surface is skinned mesh
     bool IsSkinnedMesh() const { return bSkinnedMesh; }
