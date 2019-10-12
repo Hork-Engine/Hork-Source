@@ -108,7 +108,7 @@ void FMeshComponent::CopyMaterialsFromMeshResource() {
     if ( Mesh ) {
         FIndexedMeshSubpartArray const & subparts = Mesh->GetSubparts();
         for ( int i = 0 ; i < subparts.Size() ; i++ ) {
-            SetMaterialInstance( i, subparts[ i ]->MaterialInstance );
+            SetMaterialInstance( i, subparts[ i ]->GetMaterialInstance() );
         }
     }
 }
@@ -162,7 +162,7 @@ FMaterialInstance * FMeshComponent::GetMaterialInstanceUnsafe( int _SubpartIndex
         return nullptr;
     }
 
-    return subparts[_SubpartIndex]->MaterialInstance;
+    return subparts[_SubpartIndex]->GetMaterialInstance();
 }
 
 FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) const {
@@ -185,3 +185,12 @@ FCollisionBodyComposition const & FMeshComponent::DefaultBodyComposition() const
 void FMeshComponent::NotifyMeshChanged() {
     OnMeshChanged();
 }
+
+void FMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+    Super::DrawDebug( _DebugDraw );
+
+    if ( Mesh ) {
+        Mesh->DrawDebug( _DebugDraw );
+    }
+}
+

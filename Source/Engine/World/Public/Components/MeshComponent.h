@@ -169,6 +169,8 @@ protected:
 
     FCollisionBodyComposition const & DefaultBodyComposition() const override;
 
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+
     virtual void OnMeshChanged() {}
 
 private:
