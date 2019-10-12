@@ -100,7 +100,7 @@ void FRenderFrontend::BuildFrameData() {
             WriteDrawList( &GCanvas );
         }
 
-#if 1
+#if 0
         // -------------------------------------
         ImDrawData * drawData = ImGui::GetDrawData();
         if ( drawData && drawData->CmdListsCount > 0 ) {
@@ -185,6 +185,15 @@ void FRenderFrontend::AddInstances( FRenderFrontendDef * _Def ) {
 
 struct FInstanceSortFunction {
     bool operator() ( FRenderInstance const * _A, FRenderInstance * _B ) {
+
+        // Sort by render order
+        if ( _A->RenderingOrder < _B->RenderingOrder ) {
+            return true;
+        }
+
+        if ( _A->RenderingOrder > _B->RenderingOrder ) {
+            return false;
+        }
 
         // Sort by material
         if ( _A->Material < _B->Material ) {

@@ -104,7 +104,7 @@ FImguiContext::~FImguiContext() {
 void FImguiContext::OnKeyEvent( FKeyEvent const & _Event ) {
     ImGuiIO & IO = ImGui::GetIO();
 
-    if ( _Event.Key >= 0 && _Event.Key < AN_ARRAY_LENGTH(IO.KeysDown) ) {
+    if ( _Event.Key >= 0 && _Event.Key < AN_ARRAY_SIZE(IO.KeysDown) ) {
         IO.KeysDown[_Event.Key] = ( _Event.Action != IE_Release );
     }
 

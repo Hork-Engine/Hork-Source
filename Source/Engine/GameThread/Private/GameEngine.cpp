@@ -56,6 +56,8 @@ SOFTWARE.
 #include "Console.h"
 #include "ImguiContext.h"
 
+//#define IMGUI_CONTEXT
+
 AN_CLASS_META( IGameModule )
 
 FGameEngine & GGameEngine = FGameEngine::Inst();
@@ -295,7 +297,9 @@ void FGameEngine::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
         }
     }
 
+#ifdef IMGUI_CONTEXT
     ImguiContext->OnKeyEvent( _Event );
+#endif
 
     DeveloperKeys( _Event );
 
@@ -329,7 +333,9 @@ void FGameEngine::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
 }
 
 void FGameEngine::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
+#ifdef IMGUI_CONTEXT
     ImguiContext->OnMouseButtonEvent( _Event );
+#endif
 
     if ( GConsole.IsActive() ) {
         return;
@@ -355,7 +361,9 @@ void FGameEngine::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _
 }
 
 void FGameEngine::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _TimeStamp ) {
+#ifdef IMGUI_CONTEXT
     ImguiContext->OnMouseWheelEvent( _Event );
+#endif
 
     GConsole.MouseWheelEvent( _Event );
     if ( GConsole.IsActive() ) {
@@ -438,7 +446,9 @@ void FGameEngine::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _Time
 }
 
 void FGameEngine::OnCharEvent( FCharEvent const & _Event, double _TimeStamp ) {
+#ifdef IMGUI_CONTEXT
     ImguiContext->OnCharEvent( _Event );
+#endif
 
     GConsole.CharEvent( _Event );
     if ( GConsole.IsActive() ) {
@@ -823,9 +833,11 @@ void FGameEngine::Initialize( FCreateGameModuleCallback _CreateGameModuleCallbac
 
     GCanvas.Initialize();
 
+#ifdef IMGUI_CONTEXT
     ImguiContext = CreateInstanceOf< FImguiContext >();
     ImguiContext->SetFontAtlas( DefaultFontAtlas );
     ImguiContext->AddRef();
+#endif
 
     FrameDuration = 1000000.0 / 60;
 }
@@ -841,8 +853,10 @@ void FGameEngine::Deinitialize() {
     GameModule->RemoveRef();
     GameModule = nullptr;
 
+#ifdef IMGUI_CONTEXT
     ImguiContext->RemoveRef();
     ImguiContext = nullptr;
+#endif
 
     GCanvas.Deinitialize();
 
@@ -894,8 +908,10 @@ void FGameEngine::UpdateFrame() {
     // Build draw lists for canvas
     DrawCanvas();
 
+#ifdef IMGUI_CONTEXT
     // Imgui test
     UpdateImgui();
+#endif
 
     // Set next frame duration
     FrameDuration = GRuntime.SysMicroseconds() - FrameTimeStamp;
