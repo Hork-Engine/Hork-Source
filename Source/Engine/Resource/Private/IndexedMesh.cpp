@@ -40,6 +40,9 @@ AN_CLASS_META( FIndexedMesh )
 AN_CLASS_META( FIndexedMeshSubpart )
 AN_CLASS_META( FLightmapUV )
 AN_CLASS_META( FVertexLight )
+AN_CLASS_META( FAABBTree )
+
+FRuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -241,6 +244,12 @@ FVertexLight * FIndexedMesh::CreateVertexLightChannel() {
     return channel;
 }
 
+void FIndexedMesh::CreateBVH() {
+    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->CreateBVH();
+    }
+}
+
 FIndexedMeshSubpart * FIndexedMesh::GetSubpart( int _SubpartIndex ) {
     if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Size() ) {
         return nullptr;
@@ -285,6 +294,10 @@ bool FIndexedMesh::WriteVertexData( FMeshVertex const * _Vertices, int _Vertices
     }
 
     memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshVertex ) );
+
+    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->bAABBTreeDirty = true;
+    }
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -378,6 +391,13 @@ bool FIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCoun
     }
 
     memcpy( Indices.ToPtr() + _StartIndexLocation, _Indices, _IndexCount * sizeof( unsigned int ) );
+
+    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+        if ( _StartIndexLocation >= subpart->FirstIndex
+            && _StartIndexLocation + _IndexCount <= subpart->FirstIndex + subpart->IndexCount ) {
+            subpart->bAABBTreeDirty = true;
+        }
+    }
 
     return SendIndexDataToGPU( _IndexCount, _StartIndexLocation );
 }
@@ -488,7 +508,6 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
     if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Box" )
          || !FString::Icmp( _InternalResourceName, "FIndexedMesh.Default" ) ) {
         InitializeBoxMesh( Float3(1), 1 );
-        //SetName( _InternalResourceName );
         FCollisionBox * collisionBody = BodyComposition.AddCollisionBody< FCollisionBox >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
@@ -496,7 +515,6 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
 
     if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Sphere" ) ) {
         InitializeSphereMesh( 0.5f, 1 );
-        //SetName( _InternalResourceName );
         FCollisionSphere * collisionBody = BodyComposition.AddCollisionBody< FCollisionSphere >();
         collisionBody->Radius = 0.5f;
         return;
@@ -504,7 +522,6 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
 
     if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Cylinder" ) ) {
         InitializeCylinderMesh( 0.5f, 1, 1 );
-        //SetName( _InternalResourceName );
         FCollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< FCollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
@@ -512,7 +529,6 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
 
     if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Capsule" ) ) {
         InitializeCapsuleMesh( 0.5f, 1.0f, 1 );
-        //SetName( _InternalResourceName );
         FCollisionCapsule * collisionBody = BodyComposition.AddCollisionBody< FCollisionCapsule >();
         collisionBody->Radius = 0.5f;
         collisionBody->Height = 1;
@@ -521,7 +537,6 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
 
     if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Plane" ) ) {
         InitializePlaneMesh( 256, 256, 256 );
-        //SetName( _InternalResourceName );
         FCollisionBox * box = BodyComposition.AddCollisionBody< FCollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 0.1f;
@@ -541,6 +556,29 @@ FIndexedMeshSubpart::FIndexedMeshSubpart() {
 }
 
 FIndexedMeshSubpart::~FIndexedMeshSubpart() {
+}
+
+void FIndexedMeshSubpart::SetBaseVertex( int _BaseVertex ) {
+    BaseVertex = _BaseVertex;
+    bAABBTreeDirty = true;
+}
+
+void FIndexedMeshSubpart::SetFirstIndex( int _FirstIndex ) {
+    FirstIndex = _FirstIndex;
+    bAABBTreeDirty = true;
+}
+
+void FIndexedMeshSubpart::SetVertexCount( int _VertexCount ) {
+    VertexCount = _VertexCount;
+}
+
+void FIndexedMeshSubpart::SetIndexCount( int _IndexCount ) {
+    IndexCount = _IndexCount;
+    bAABBTreeDirty = true;
+}
+
+void FIndexedMeshSubpart::SetMaterialInstance( FMaterialInstance * _MaterialInstance ) {
+    MaterialInstance = _MaterialInstance;
 }
 
 void FIndexedMeshSubpart::SetBoundingBox( BvAxisAlignedBox const & _BoundingBox ) {
@@ -763,41 +801,105 @@ void FIndexedMesh::GenerateSoftbodyLinksFromFaces() {
     }
 }
 
-// TODO: Optimize with octree/KDtree?
+
+void FIndexedMeshSubpart::CreateBVH() {
+    // TODO: Try KD-tree
+    const int PrimitivesPerLeaf = 16;
+    AABBTree = NewObject< FAABBTree >();
+    AABBTree->Initialize( OwnerMesh->Vertices.ToPtr(), OwnerMesh->Indices.ToPtr() + FirstIndex, IndexCount, BaseVertex, PrimitivesPerLeaf );
+    bAABBTreeDirty = false;
+}
+
 bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const {
     bool ret = false;
-    float u, v;
-
-    // TODO: check subpart AABB
-
+    float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
     FMeshVertex const * vertices = OwnerMesh->GetVertices();
 
-    const int numTriangles = IndexCount / 3;
+    if ( _Distance < 0.0001f ) {
+        return false;
+    }
 
-    for ( int tri = 0 ; tri < numTriangles ; tri++, indices+=3 ) {
-        const unsigned int i0 = BaseVertex + indices[ 0 ];
-        const unsigned int i1 = BaseVertex + indices[ 1 ];
-        const unsigned int i2 = BaseVertex + indices[ 2 ];
+    if ( AABBTree ) {
+        if ( bAABBTreeDirty ) {
+            GLogger.Printf( "FIndexedMeshSubpart::Raycast: bvh is outdated\n" );
+            return false;
+        }
 
-        Float3 const & v0 = vertices[i0].Position;
-        Float3 const & v1 = vertices[i1].Position;
-        Float3 const & v2 = vertices[i2].Position;
+        Float3 invRayDir;
+        invRayDir.X = 1.0f / _RayDir.X;
+        invRayDir.Y = 1.0f / _RayDir.Y;
+        invRayDir.Z = 1.0f / _RayDir.Z;
 
-        float dist;
-        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
-            if ( _Distance > dist ) {
-                FTriangleHitResult & hitResult = _HitResult.Append();
-                hitResult.Location = _RayStart + _RayDir * dist;
-                hitResult.Normal = (v1-v0).Cross( v2-v0 ).Normalized();
-                hitResult.Distance = dist;
-                hitResult.UV.X = u;
-                hitResult.UV.Y = v;
-                hitResult.Indices[0] = i0;
-                hitResult.Indices[1] = i1;
-                hitResult.Indices[2] = i2;
-                hitResult.Material = MaterialInstance;
-                ret = true;
+        TPodArray< FAABBNode > const & nodes = AABBTree->GetNodes();
+        unsigned int const * indirection = AABBTree->GetIndirection();
+
+        float hitMin, hitMax;
+
+        for ( int nodeIndex = 0; nodeIndex < nodes.Size(); ) {
+            FAABBNode const * node = &nodes[nodeIndex];
+
+            const bool bOverlap = BvRayIntersectBox( _RayStart, invRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= _Distance;
+            const bool bLeaf = node->IsLeaf();
+
+            if ( bLeaf && bOverlap ) {
+                for ( int t = 0; t < node->PrimitiveCount; t++ ) {
+                    const int triangleNum = node->Index + t;
+                    const unsigned int baseInd = indirection[triangleNum];
+                    const unsigned int i0 = BaseVertex + indices[baseInd + 0];
+                    const unsigned int i1 = BaseVertex + indices[baseInd + 1];
+                    const unsigned int i2 = BaseVertex + indices[baseInd + 2];
+                    Float3 const & v0 = vertices[i0].Position;
+                    Float3 const & v1 = vertices[i1].Position;
+                    Float3 const & v2 = vertices[i2].Position;
+                    if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+                        if ( _Distance > d ) {
+                            FTriangleHitResult & hitResult = _HitResult.Append();
+                            hitResult.Location = _RayStart + _RayDir * d;
+                            hitResult.Normal = (v1 - v0).Cross( v2-v0 ).Normalized();
+                            hitResult.Distance = d;
+                            hitResult.UV.X = u;
+                            hitResult.UV.Y = v;
+                            hitResult.Indices[0] = i0;
+                            hitResult.Indices[1] = i1;
+                            hitResult.Indices[2] = i2;
+                            hitResult.Material = MaterialInstance;
+                            ret = true;
+                        }
+                    }
+                }
+            }
+
+            nodeIndex += (bOverlap || bLeaf) ? 1 : (-node->Index);
+        }
+    } else {
+        // TODO: check subpart AABB
+
+        const int primCount = IndexCount / 3;
+
+        for ( int tri = 0 ; tri < primCount; tri++, indices+=3 ) {
+            const unsigned int i0 = BaseVertex + indices[ 0 ];
+            const unsigned int i1 = BaseVertex + indices[ 1 ];
+            const unsigned int i2 = BaseVertex + indices[ 2 ];
+
+            Float3 const & v0 = vertices[i0].Position;
+            Float3 const & v1 = vertices[i1].Position;
+            Float3 const & v2 = vertices[i2].Position;
+
+            if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+                if ( _Distance > d ) {
+                    FTriangleHitResult & hitResult = _HitResult.Append();
+                    hitResult.Location = _RayStart + _RayDir * d;
+                    hitResult.Normal = ( v1 - v0 ).Cross( v2-v0 ).Normalized();
+                    hitResult.Distance = d;
+                    hitResult.UV.X = u;
+                    hitResult.UV.Y = v;
+                    hitResult.Indices[0] = i0;
+                    hitResult.Indices[1] = i1;
+                    hitResult.Indices[2] = i2;
+                    hitResult.Material = MaterialInstance;
+                    ret = true;
+                }
             }
         }
     }
@@ -806,38 +908,92 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
 
 bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
     bool ret = false;
-    float u, v;
-
-    // TODO: check subpart AABB
-
-    float minDist = _Distance;
-
+    float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
     FMeshVertex const * vertices = OwnerMesh->GetVertices();
 
-    const int numTriangles = IndexCount / 3;
+    if ( _Distance < 0.0001f ) {
+        return false;
+    }
 
-    for ( int tri = 0 ; tri < numTriangles ; tri++, indices+=3 ) {
-        const unsigned int i0 = BaseVertex + indices[ 0 ];
-        const unsigned int i1 = BaseVertex + indices[ 1 ];
-        const unsigned int i2 = BaseVertex + indices[ 2 ];
+    float minDist = _Distance;
 
-        Float3 const & v0 = vertices[i0].Position;
-        Float3 const & v1 = vertices[i1].Position;
-        Float3 const & v2 = vertices[i2].Position;
+    if ( AABBTree ) {
+        if ( bAABBTreeDirty ) {
+            GLogger.Printf( "FIndexedMeshSubpart::RaycastClosest: bvh is outdated\n" );
+            return false;
+        }
 
-        float dist;
-        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, dist, u, v ) ) {
-            if ( minDist > dist ) {
-                minDist = dist;
-                _HitLocation = _RayStart + _RayDir * dist;
-                _HitDistance = dist;
-                _HitUV.X = u;
-                _HitUV.Y = v;
-                _Indices[0] = i0;
-                _Indices[1] = i1;
-                _Indices[2] = i2;
-                ret = true;
+        Float3 invRayDir;
+        invRayDir.X = 1.0f / _RayDir.X;
+        invRayDir.Y = 1.0f / _RayDir.Y;
+        invRayDir.Z = 1.0f / _RayDir.Z;
+
+        TPodArray< FAABBNode > const & nodes = AABBTree->GetNodes();
+        unsigned int const * indirection = AABBTree->GetIndirection();
+
+        float hitMin, hitMax;
+
+        for ( int nodeIndex = 0; nodeIndex < nodes.Size(); ) {
+            FAABBNode const * node = &nodes[nodeIndex];
+
+            const bool bOverlap = BvRayIntersectBox( _RayStart, invRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= _Distance;
+            const bool bLeaf = node->IsLeaf();
+
+            if ( bLeaf && bOverlap ) {
+                for ( int t = 0; t < node->PrimitiveCount; t++ ) {
+                    const int triangleNum = node->Index + t;
+                    const unsigned int baseInd = indirection[triangleNum];
+                    const unsigned int i0 = BaseVertex + indices[baseInd + 0];
+                    const unsigned int i1 = BaseVertex + indices[baseInd + 1];
+                    const unsigned int i2 = BaseVertex + indices[baseInd + 2];
+                    Float3 const & v0 = vertices[i0].Position;
+                    Float3 const & v1 = vertices[i1].Position;
+                    Float3 const & v2 = vertices[i2].Position;
+                    if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+                        if ( minDist > d ) {
+                            minDist = d;
+                            _HitLocation = _RayStart + _RayDir * d;
+                            _HitDistance = d;
+                            _HitUV.X = u;
+                            _HitUV.Y = v;
+                            _Indices[0] = i0;
+                            _Indices[1] = i1;
+                            _Indices[2] = i2;
+                            ret = true;
+                        }
+                    }
+                }
+            }
+
+            nodeIndex += (bOverlap || bLeaf) ? 1 : (-node->Index);
+        }
+    } else {
+        // TODO: check subpart AABB
+
+        const int primCount = IndexCount / 3;
+
+        for ( int tri = 0 ; tri < primCount; tri++, indices+=3 ) {
+            const unsigned int i0 = BaseVertex + indices[ 0 ];
+            const unsigned int i1 = BaseVertex + indices[ 1 ];
+            const unsigned int i2 = BaseVertex + indices[ 2 ];
+
+            Float3 const & v0 = vertices[i0].Position;
+            Float3 const & v1 = vertices[i1].Position;
+            Float3 const & v2 = vertices[i2].Position;
+
+            if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+                if ( minDist > d ) {
+                    minDist = d;
+                    _HitLocation = _RayStart + _RayDir * d;
+                    _HitDistance = d;
+                    _HitUV.X = u;
+                    _HitUV.Y = v;
+                    _Indices[0] = i0;
+                    _Indices[1] = i1;
+                    _Indices[2] = i2;
+                    ret = true;
+                }
             }
         }
     }
@@ -846,7 +1002,9 @@ bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
 
 bool FIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const {
     bool ret = false;
-    // TODO: check mesh AABB
+
+    // TODO: check mesh AABB?
+
     for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
         FIndexedMeshSubpart * subpart = Subparts[i];
         ret |= subpart->Raycast( _RayStart, _RayDir, _Distance, _HitResult );
@@ -856,7 +1014,9 @@ bool FIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, fl
 
 bool FIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< FMaterialInstance > & _Material ) const {
     bool ret = false;
-    // TODO: check mesh AABB
+
+    // TODO: check mesh AABB?
+
     for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
         FIndexedMeshSubpart * subpart = Subparts[i];
         if ( subpart->RaycastClosest( _RayStart, _RayDir, _Distance, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {
@@ -865,7 +1025,31 @@ bool FIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _Ray
             ret = true;
         }
     }
+
     return ret;
+}
+
+void FIndexedMesh::DrawDebug( FDebugDraw * _DebugDraw ) {
+    if ( RVDrawIndexedMeshBVH ) {
+        for ( FIndexedMeshSubpart * subpart : Subparts ) {
+            subpart->DrawBVH( _DebugDraw );
+        }
+    }
+}
+
+void FIndexedMeshSubpart::DrawBVH( FDebugDraw * _DebugDraw ) {
+    if ( !AABBTree ) {
+        return;
+    }
+
+    _DebugDraw->SetDepthTest( false );
+    _DebugDraw->SetColor( FColor4::White() );
+
+    for ( FAABBNode const & n : AABBTree->GetNodes() ) {
+        if ( n.IsLeaf() ) {
+            _DebugDraw->DrawAABB( n.Bounds );
+        }
+    }
 }
 
 void FMeshAsset::Clear() {
@@ -1645,4 +1829,263 @@ void CreateCapsuleMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigne
     }
 
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+}
+
+struct FPrimitiveBounds {
+    BvAxisAlignedBox Bounds;
+    int PrimitiveIndex;
+};
+
+struct FBestSplitResult {
+    int Axis;
+    int PrimitiveIndex;
+};
+
+struct FAABBTreeBuild {
+    TPodArray< BvAxisAlignedBox > RightBounds;
+    TPodArray< FPrimitiveBounds > Primitives[3];
+};
+
+static void CalcNodeBounds( FPrimitiveBounds const * _Primitives, int _PrimCount, BvAxisAlignedBox & _Bounds ) {
+    AN_Assert( _PrimCount > 0 );
+
+    FPrimitiveBounds const * primitive = _Primitives;
+
+    _Bounds = primitive->Bounds;
+
+    primitive++;
+
+    for ( ; primitive < &_Primitives[_PrimCount]; primitive++ ) {
+        _Bounds.AddAABB( primitive->Bounds );
+    }
+}
+
+static float CalcAABBVolume( BvAxisAlignedBox const & _Bounds ) {
+    Float3 extents = _Bounds.Maxs - _Bounds.Mins;
+    return extents.X * extents.Y * extents.Z;
+}
+
+static FBestSplitResult FindBestSplitPrimitive( FAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _PrimCount ) {
+    struct CompareBoundsMax {
+        CompareBoundsMax( const int _Axis ) : Axis( _Axis ) {}
+        bool operator()( FPrimitiveBounds const & a, FPrimitiveBounds const & b ) const {
+            return ( a.Bounds.Maxs[ Axis ] < b.Bounds.Maxs[ Axis ] );
+        }
+        const int Axis;
+    };
+
+    FPrimitiveBounds * primitives[ 3 ] = {
+        _Build.Primitives[ 0 ].ToPtr() + _FirstPrimitive,
+        _Build.Primitives[ 1 ].ToPtr() + _FirstPrimitive,
+        _Build.Primitives[ 2 ].ToPtr() + _FirstPrimitive
+    };
+
+    for ( int i = 0; i < 3; i++ ) {
+        if ( i != _Axis ) {
+            memcpy( primitives[ i ], primitives[ _Axis ], sizeof( FPrimitiveBounds ) * _PrimCount );
+        }
+    }
+
+    BvAxisAlignedBox right;
+    BvAxisAlignedBox left;
+
+    FBestSplitResult result;
+    result.Axis = -1;
+
+    float bestSAH = Float::MaxValue(); // Surface area heuristic
+
+    const float emptyCost = 1.0f;
+
+    for ( int axis = 0; axis < 3; axis++ ) {
+        FPrimitiveBounds * primBounds = primitives[ axis ];
+
+        StdSort( primBounds, primBounds + _PrimCount, CompareBoundsMax( axis ) );
+
+        right.Clear();
+        for ( size_t i = _PrimCount - 1; i > 0; i-- ) {
+            right.AddAABB( primBounds[ i ].Bounds );
+            _Build.RightBounds[ i - 1 ] = right;
+        }
+
+        left.Clear();
+        for ( size_t i = 1; i < _PrimCount; i++ ) {
+            left.AddAABB( primBounds[ i - 1 ].Bounds );
+
+            float sah = emptyCost + CalcAABBVolume( left ) * i + CalcAABBVolume( _Build.RightBounds[ i - 1 ] ) * ( _PrimCount - i );
+            if ( bestSAH > sah ) {
+                bestSAH = sah;
+                result.Axis = axis;
+                result.PrimitiveIndex = i;
+            }
+        }
+    }
+
+    AN_Assert( ( result.Axis != -1 ) && ( bestSAH < Float::MaxValue() ) );
+
+    return result;
+}
+
+void FAABBTree::Subdivide( FAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf,
+    int & _PrimitiveIndex, const unsigned int * _Indices )
+{
+    int primCount = _MaxPrimitive - _FirstPrimitive;
+    int curNodeInex = Nodes.Size();
+
+    FPrimitiveBounds * pPrimitives = _Build.Primitives[_Axis].ToPtr() + _FirstPrimitive;
+
+    FAABBNode & node = Nodes.Append();
+
+    CalcNodeBounds( pPrimitives, primCount, node.Bounds );
+
+    if ( primCount <= _PrimitivesPerLeaf ) {
+        // Leaf
+
+        node.Index = _PrimitiveIndex;
+        node.PrimitiveCount = primCount;
+
+        for ( int i = 0; i < primCount; ++i ) {
+            Indirection[ _PrimitiveIndex + i ] = pPrimitives[ i ].PrimitiveIndex * 3;
+        }
+
+        _PrimitiveIndex += primCount;
+
+    } else {
+        // Node
+        FBestSplitResult s = FindBestSplitPrimitive( _Build, _Axis, _FirstPrimitive, primCount );
+
+        int mid = _FirstPrimitive + s.PrimitiveIndex;
+
+        Subdivide( _Build, s.Axis, _FirstPrimitive, mid, _PrimitivesPerLeaf, _PrimitiveIndex, _Indices );
+        Subdivide( _Build, s.Axis, mid, _MaxPrimitive, _PrimitivesPerLeaf, _PrimitiveIndex, _Indices );
+
+        int nextNode = Nodes.Size() - curNodeInex;
+        node.Index = -nextNode;
+    }
+}
+
+void FAABBTree::Initialize( FMeshVertex const * _Vertices, unsigned int const * _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf ) {
+    Purge();
+
+    _PrimitivesPerLeaf = FMath::Max( _PrimitivesPerLeaf, 16u );
+
+    int primCount = _IndexCount / 3;
+
+    int numLeafs = ( primCount + _PrimitivesPerLeaf - 1 ) / _PrimitivesPerLeaf;
+
+    Nodes.Clear();
+    Nodes.ReserveInvalidate( numLeafs * 4 );
+
+    Indirection.ResizeInvalidate( primCount );
+
+    FAABBTreeBuild build;
+    build.RightBounds.ResizeInvalidate( primCount );
+    build.Primitives[0].ResizeInvalidate( primCount );
+    build.Primitives[1].ResizeInvalidate( primCount );
+    build.Primitives[2].ResizeInvalidate( primCount );
+
+    int primitiveIndex = 0;
+    for ( unsigned int i = 0; i < _IndexCount; i += 3, primitiveIndex++ ) {
+        const size_t i0 = _Indices[ i ];
+        const size_t i1 = _Indices[ i + 1 ];
+        const size_t i2 = _Indices[ i + 2 ];
+
+        Float3 const & v0 = _Vertices[ _BaseVertex + i0 ].Position;
+        Float3 const & v1 = _Vertices[ _BaseVertex + i1 ].Position;
+        Float3 const & v2 = _Vertices[ _BaseVertex + i2 ].Position;
+
+        FPrimitiveBounds & primitive = build.Primitives[ 0 ][ primitiveIndex ];
+        primitive.PrimitiveIndex = primitiveIndex;
+
+        primitive.Bounds.Mins.X = FMath::Min( v0.X, v1.X, v2.X );
+        primitive.Bounds.Mins.Y = FMath::Min( v0.Y, v1.Y, v2.Y );
+        primitive.Bounds.Mins.Z = FMath::Min( v0.Z, v1.Z, v2.Z );
+
+        primitive.Bounds.Maxs.X = FMath::Max( v0.X, v1.X, v2.X );
+        primitive.Bounds.Maxs.Y = FMath::Max( v0.Y, v1.Y, v2.Y );
+        primitive.Bounds.Maxs.Z = FMath::Max( v0.Z, v1.Z, v2.Z );
+    }
+
+    primitiveIndex = 0;
+    Subdivide( build, 0, 0, primCount, _PrimitivesPerLeaf, primitiveIndex, _Indices );
+    Nodes.ShrinkToFit();
+
+    BoundingBox = Nodes[0].Bounds;
+
+    //size_t sz = Nodes.Size() * sizeof( Nodes[ 0 ] )
+    //    + Indirection.Size() * sizeof( Indirection[ 0 ] )
+    //    + sizeof( *this );
+
+    //size_t sz2 = Nodes.Reserved() * sizeof( Nodes[0] )
+    //    + Indirection.Reserved() * sizeof( Indirection[0] )
+    //    + sizeof( *this );
+    
+    //GLogger.Printf( "AABBTree memory usage: %i  %i\n", sz, sz2 );
+}
+
+void FAABBTree::Purge() {
+    Nodes.Free();
+    Indirection.Free();
+}
+
+int FAABBTree::MarkBoxOverlappingLeafs( BvAxisAlignedBox const & _Bounds, unsigned int * _MarkLeafs, int _MaxLeafs ) const {
+    if ( !_MaxLeafs ) {
+        return 0;
+    }
+    int n = 0;
+    for ( int nodeIndex = 0; nodeIndex < Nodes.Size(); ) {
+        FAABBNode const * node = &Nodes[ nodeIndex ];
+
+        const bool bOverlap = BvBoxOverlapBox( _Bounds, node->Bounds );
+        const bool bLeaf = node->IsLeaf();
+
+        if ( bLeaf && bOverlap ) {
+            _MarkLeafs[ n++ ] = nodeIndex;
+            if ( n == _MaxLeafs ) {
+                return n;
+            }
+        }
+        nodeIndex += ( bOverlap || bLeaf ) ? 1 : ( -node->Index );
+    }
+    return n;
+}
+
+int FAABBTree::MarkRayOverlappingLeafs( Float3 const & _RayStart, Float3 const & _RayEnd, unsigned int * _MarkLeafs, int _MaxLeafs ) const {
+    if ( !_MaxLeafs ) {
+        return 0;
+    }
+
+    Float3 rayDir = _RayEnd - _RayStart;
+    Float3 invRayDir;
+
+    float rayLength = rayDir.Length();
+
+    if ( rayLength < 0.0001f ) {
+        return 0;
+    }
+
+    //rayDir = rayDir / rayLength;
+
+    invRayDir.X = 1.0f / rayDir.X;
+    invRayDir.Y = 1.0f / rayDir.Y;
+    invRayDir.Z = 1.0f / rayDir.Z;
+
+    float hitMin, hitMax;
+
+    int n = 0;
+    for ( int nodeIndex = 0; nodeIndex < Nodes.Size(); ) {
+        FAABBNode const * node = &Nodes[ nodeIndex ];
+
+        const bool bOverlap = BvRayIntersectBox( _RayStart, invRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= 1.0f;// rayLength;
+        const bool bLeaf = node->IsLeaf();
+
+        if ( bLeaf && bOverlap ) {
+            _MarkLeafs[ n++ ] = nodeIndex;
+            if ( n == _MaxLeafs ) {
+                return n;
+            }
+        }
+        nodeIndex += ( bOverlap || bLeaf ) ? 1 : ( -node->Index );
+    }
+
+    return n;
 }

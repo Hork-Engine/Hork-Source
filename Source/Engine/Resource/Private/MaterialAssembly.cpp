@@ -2287,6 +2287,16 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
             "};\n"
             "#endif\n";
 
+    if ( bWeaponDepthHack ) {
+        vertexSrc += "#define WEAPON_DEPTH_HACK\n";
+        fragmentSrc += "#define WEAPON_DEPTH_HACK\n";
+    }
+
+    const char * depthHack =
+        "#ifdef WEAPON_DEPTH_HACK\n"
+        "    gl_Position.z += 0.1;\n"
+        "#endif\n";
+
     // Create depth pass
     context.Reset( MaterialType, MATERIAL_PASS_DEPTH );
     {
@@ -2299,7 +2309,9 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
         vertexSrc += SamplersString( context.MaxTextureSlot );
         vertexSrc += "void main() {\n";
         vertexSrc += prebuildVertexShader;
-        vertexSrc += context.SourceCode + "}\n";
+        vertexSrc += context.SourceCode;
+        vertexSrc += depthHack;
+        vertexSrc += "}\n";
         vertexSrc += "#endif\n";
 
         bHasTextures[ MATERIAL_PASS_DEPTH ] = context.bHasTextures;
@@ -2360,8 +2372,9 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
                      "#ifdef USE_VERTEX_LIGHT\n"
                      "    VS_VertexLight = pow( InVertexLight.xyz, vec3(2.2) ) * (4.0*InVertexLight.w);\n"
                      "#endif\n"
-                     + context.SourceCode +
-                     "}\n"
+                     + context.SourceCode
+                     + depthHack
+                     + "}\n"
                      "#endif\n";
 
         // Color pass. Fragment stage
@@ -2486,10 +2499,10 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
     }
 
     //GLogger.Print( "=== vertex ===\n" );
-    //GLogger.Print( VertexSrc.ToConstChar() );
+    //GLogger.Print( vertexSrc.ToConstChar() );
     //GLogger.Print( "==============\n" );
     //GLogger.Print( "=== fragment ===\n" );
-    //GLogger.Print( FragmentSrc.ToConstChar() );
+    //GLogger.Print( fragmentSrc.ToConstChar() );
     //GLogger.Print( "==============\n" );
 
     int vertexSourceLength = vertexSrc.Length()+1;
@@ -2510,6 +2523,7 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
     buildData->LightmapSlot = lightmapSlot;
     buildData->bVertexTextureFetch = bVertexTextureFetch;
     buildData->bNoVertexDeform = bNoVertexDeform;
+    //buildData->bWeaponDepthHack = bWeaponDepthHack;
     //AN_Assert(bNoVertexDeform);
 
     buildData->NumUniformVectors = maxUniformAddress >= 0 ? maxUniformAddress / 4 + 1 : 0;

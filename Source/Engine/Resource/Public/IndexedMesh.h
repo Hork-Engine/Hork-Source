@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Base/Public/BaseObject.h>
+#include <Engine/Base/Public/DebugDraw.h>
 #include "MaterialAssembly.h"
 #include "CollisionBody.h"
 
@@ -116,6 +117,59 @@ struct FTriangleHitResult {
 
 /*
 
+FAABBNode
+
+*/
+struct FAABBNode {
+    BvAxisAlignedBox Bounds;
+    int Index;          // First primitive in leaf (Index >= 0), next node index (Index < 0)
+    int PrimitiveCount;
+
+    bool IsLeaf() const {
+        return Index >= 0;
+    }
+};
+
+/*
+
+FAABBTree
+
+Binary AABB-based BVH tree
+
+*/
+class FAABBTree : public FBaseObject {
+    AN_CLASS( FAABBTree, FBaseObject )
+
+public:
+    void Initialize( FMeshVertex const * _Vertices, unsigned int const * _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf );
+
+    void Purge();
+
+    int MarkRayOverlappingLeafs( Float3 const & _RayStart, Float3 const & _RayEnd, unsigned int * _MarkLeafs, int _MaxLeafs ) const;
+
+    int MarkBoxOverlappingLeafs( BvAxisAlignedBox const & _Bounds, unsigned int * _MarkLeafs, int _MaxLeafs ) const;
+
+    TPodArray< FAABBNode > const & GetNodes() const { return Nodes; }
+
+    unsigned int const * GetIndirection() const { return Indirection.ToPtr(); }
+
+    BvAxisAlignedBox const & GetBoundingBox() const { return BoundingBox; }
+
+protected:
+    FAABBTree() {}
+    ~FAABBTree() {}
+
+private:
+    void Subdivide( struct FAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf,
+        int & _PrimitiveIndex, const unsigned int * _Indices );
+
+    TPodArray< FAABBNode > Nodes;
+    TPodArray< unsigned int > Indirection;
+    BvAxisAlignedBox BoundingBox;
+};
+
+/*
+
 FIndexedMeshSubpart
 
 Part of indexed mesh (submesh / element)
@@ -127,11 +181,17 @@ class FIndexedMeshSubpart : public FBaseObject {
     friend class FIndexedMesh;
 
 public:
-    int BaseVertex;
-    int FirstIndex;
-    int VertexCount;
-    int IndexCount;
-    TRef< FMaterialInstance > MaterialInstance;
+    void SetBaseVertex( int _BaseVertex );
+    void SetFirstIndex( int _FirstIndex );
+    void SetVertexCount( int _VertexCount );
+    void SetIndexCount( int _IndexCount );
+    void SetMaterialInstance( FMaterialInstance * _MaterialInstance );
+
+    int GetBaseVertex() const { return BaseVertex; }
+    int GetFirstIndex() const { return FirstIndex; }
+    int GetVertexCount() const { return VertexCount; }
+    int GetIndexCount() const { return IndexCount; }
+    FMaterialInstance * GetMaterialInstance() { return MaterialInstance; }
 
     void SetBoundingBox( BvAxisAlignedBox const & _BoundingBox );
 
@@ -145,13 +205,24 @@ public:
     // Check ray intersection
     bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
 
+    void DrawBVH( FDebugDraw * _DebugDraw );
+
 protected:
     FIndexedMeshSubpart();
     ~FIndexedMeshSubpart();
 
 private:
+    void CreateBVH();
+
     FIndexedMesh * OwnerMesh;
     BvAxisAlignedBox BoundingBox;
+    int BaseVertex;
+    int FirstIndex;
+    int VertexCount;
+    int IndexCount;
+    TRef< FMaterialInstance > MaterialInstance;
+    TRef< FAABBTree > AABBTree;
+    bool bAABBTreeDirty;
 };
 
 /*
@@ -311,6 +382,9 @@ public:
     // Create vertex light channel to store light colors
     FVertexLight * CreateVertexLightChannel();
 
+    // Create BVH for raycast optimization
+    void CreateBVH();
+
     // Get mesh vertices
     FMeshVertex * GetVertices() { return Vertices.ToPtr(); }
     FMeshVertex const * GetVertices() const { return Vertices.ToPtr(); }
@@ -373,6 +447,8 @@ public:
 
     void GenerateSoftbodyLinksFromFaces();
 
+    void DrawDebug( FDebugDraw * _DebugDraw );
+
 protected:
     FIndexedMesh();
     ~FIndexedMesh();
@@ -388,11 +464,13 @@ private:
     TPodArray< FMeshVertex > Vertices;
     TPodArray< FMeshVertexJoint > Weights;
     TPodArray< unsigned int > Indices;
+    //TRef< FAABBTree > AABBTree;
     int VertexCount;
     int IndexCount;
     bool bSkinnedMesh;
     bool bDynamicStorage;
     mutable bool bBoundingBoxDirty;
+    //bool bAABBTreeDirty;
     BvAxisAlignedBox BoundingBox;
 };
 

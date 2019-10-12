@@ -765,6 +765,7 @@ public:
     TRef< FMaterialFragmentStage > FragmentStage;
     EMaterialType MaterialType;
     EMaterialFacing MaterialFacing = MATERIAL_FACE_FRONT;
+    bool bWeaponDepthHack;
 
     void RegisterTextureSlot( FMaterialTextureSlotBlock * _Slot );
 
