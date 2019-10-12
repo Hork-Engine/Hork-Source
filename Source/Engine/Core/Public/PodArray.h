@@ -254,7 +254,7 @@ AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::Reserve( int _Ne
         ArrayData = ( T * )Allocator::Alloc< 1 >( TYPE_SIZEOF * _NewCapacity );
         memcpy( ArrayData, StaticData, TYPE_SIZEOF * ArrayLength );
     } else {
-        ArrayData = ( T * )Allocator::Extend< 1 >( ArrayData, TYPE_SIZEOF * ArrayLength, TYPE_SIZEOF * _NewCapacity, true );
+        ArrayData = ( T * )Allocator::Extend< 1 >( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, true );
     }
     ArrayCapacity = _NewCapacity;
 }
@@ -267,7 +267,7 @@ AN_FORCEINLINE void TPodArray< T, BASE_CAPACITY, GRANULARITY >::ReserveInvalidat
     if ( ArrayData == StaticData ) {
         ArrayData = ( T * )Allocator::Alloc< 1 >( TYPE_SIZEOF * _NewCapacity );
     } else {
-        ArrayData = ( T * )Allocator::Extend< 1 >( ArrayData, TYPE_SIZEOF * ArrayLength, TYPE_SIZEOF * _NewCapacity, false );
+        ArrayData = ( T * )Allocator::Extend< 1 >( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, false );
     }
     ArrayCapacity = _NewCapacity;
 }

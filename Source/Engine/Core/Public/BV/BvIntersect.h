@@ -109,6 +109,13 @@ AN_FORCEINLINE bool BvBoxOverlapBox( BvAxisAlignedBox const & _AABB1, BvAxisAlig
     return true;
 }
 
+// AABB - AABB (2D(
+AN_FORCEINLINE bool BvBoxOverlapBox2D( Float2 const & _AABB1Mins, Float2 const & _AABB1Maxs, Float2 const & _AABB2Mins, Float2 const & _AABB2Maxs ) {
+    if ( _AABB1Maxs[ 0 ] < _AABB2Mins[ 0 ] || _AABB1Mins[ 0 ] > _AABB2Maxs[ 0 ] ) return false;
+    if ( _AABB1Maxs[ 1 ] < _AABB2Mins[ 1 ] || _AABB1Mins[ 1 ] > _AABB2Maxs[ 1 ] ) return false;
+    return true;
+}
+
 // AABB - Sphere
 AN_FORCEINLINE bool BvBoxOverlapSphere( BvAxisAlignedBox const & _AABB, BvSphere const & _Sphere ) {
 #if 0
@@ -687,7 +694,10 @@ AN_FORCEINLINE bool BvRayIntersectSphere( Float3 const & _RayStart, Float3 const
 }
 
 // Ray - AABB
+// If raydir is normalized, min and max will be in rage [0,raylength]
+// If raydir is non-normalized, min and max will be in rage [0,1]
 AN_FORCEINLINE bool BvRayIntersectBox( Float3 const & _RayStart, Float3 const & _InvRayDir, BvAxisAlignedBox const & _AABB, float & _Min, float & _Max ) {
+#if 0
     float Lo = _InvRayDir.X*(_AABB.Mins.X - _RayStart.X);
     float Hi = _InvRayDir.X*(_AABB.Maxs.X - _RayStart.X);
     _Min = FMath::Min(Lo, Hi);
@@ -704,31 +714,81 @@ AN_FORCEINLINE bool BvRayIntersectBox( Float3 const & _RayStart, Float3 const & 
     _Max = FMath::Min(_Max, FMath::Max(Lo, Hi));
 
     return (_Min <= _Max) && (_Max > 0.0f);
+#else
+    _Min = -Float::MaxValue();
+    _Max = Float::MaxValue();
+
+    for ( int i = 0; i < 3; i++ ) {
+        // Check is ray axial
+        if ( FMath::IsInfinite( _InvRayDir[ i ] ) ) {
+            if ( _RayStart[ i ] < _AABB.Mins[ i ] || _RayStart[ i ] > _AABB.Maxs[ i ] ) {
+                // ray origin must be within the bounds
+                return false;
+            }
+        } else {
+            float lo = _InvRayDir[ i ] * ( _AABB.Mins[ i ] - _RayStart[ i ] );
+            float hi = _InvRayDir[ i ] * ( _AABB.Maxs[ i ] - _RayStart[ i ] );
+            if ( lo > hi ) {
+                float tmp = lo;
+                lo = hi;
+                hi = tmp;
+            }
+            if ( lo > _Min ) {
+                _Min = lo;
+            }
+            if ( hi < _Max ) {
+                _Max = hi;
+            }
+            if ( _Min > _Max            // Ray doesn't intersect AABB
+                || _Max <= 0.0f ) {     // or AABB is behind ray origin                
+                return false;
+            }
+        }
+    }
+    return true;
+#endif
 }
 
-// Ray - AABB
-AN_FORCEINLINE bool BvRayIntersectBox( Float3 const & _RayStart, Float3 const & _InvRayDir, BvAxisAlignedBox const & _AABB ) {
-    float Min, Max, Lo, Hi;
+// Ray - AABB2D
+// If raydir is normalized, min and max will be in rage [0,raylength]
+// If raydir is non-normalized, min and max will be in rage [0,1]
+AN_FORCEINLINE bool BvRayIntersectBox2D( Float2 const & _RayStart, Float2 const & _InvRayDir, Float2 const & _Mins, Float2 const & _Maxs, float & _Min, float & _Max ) {
+    _Min = -Float::MaxValue();
+    _Max = Float::MaxValue();
 
-    Lo = _InvRayDir.X*(_AABB.Mins.X - _RayStart.X);
-    Hi = _InvRayDir.X*(_AABB.Maxs.X - _RayStart.X);
-    Min = FMath::Min(Lo, Hi);
-    Max = FMath::Max(Lo, Hi);
-
-    Lo = _InvRayDir.Y*(_AABB.Mins.Y - _RayStart.Y);
-    Hi = _InvRayDir.Y*(_AABB.Maxs.Y - _RayStart.Y);
-    Min = FMath::Max(Min, FMath::Min(Lo, Hi));
-    Max = FMath::Min(Max, FMath::Max(Lo, Hi));
-
-    Lo = _InvRayDir.Z*(_AABB.Mins.Z - _RayStart.Z);
-    Hi = _InvRayDir.Z*(_AABB.Maxs.Z - _RayStart.Z);
-    Min = FMath::Max(Min, FMath::Min(Lo, Hi));
-    Max = FMath::Min(Max, FMath::Max(Lo, Hi));
-
-    return (Min <= Max) && (Max > 0.0f);
+    for ( int i = 0; i < 2; i++ ) {
+        // Check is ray axial
+        if ( FMath::IsInfinite( _InvRayDir[ i ] ) ) {
+            if ( _RayStart[ i ] < _Mins[ i ] || _RayStart[ i ] > _Maxs[ i ] ) {
+                // ray origin must be within the bounds
+                return false;
+            }
+        } else {
+            float lo = _InvRayDir[ i ] * ( _Mins[ i ] - _RayStart[ i ] );
+            float hi = _InvRayDir[ i ] * ( _Maxs[ i ] - _RayStart[ i ] );
+            if ( lo > hi ) {
+                float tmp = lo;
+                lo = hi;
+                hi = tmp;
+            }
+            if ( lo > _Min ) {
+                _Min = lo;
+            }
+            if ( hi < _Max ) {
+                _Max = hi;
+            }
+            if ( _Min > _Max            // Ray doesn't intersect AABB
+                || _Max <= 0.0f ) {     // or AABB is behind ray origin                
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 // Ray - OBB
+// If raydir is normalized, min and max will be in rage [0,raylength]
+// If raydir is non-normalized, min and max will be in rage [0,1]
 AN_FORCEINLINE bool BvRayIntersectOrientedBox( Float3 const & _RayStart, Float3 const & _RayDir, BvOrientedBox const & _OBB, float & _Min, float & _Max ) {
     const Float3x3 OrientInversed = _OBB.Orient.Transposed();
 
@@ -740,6 +800,7 @@ AN_FORCEINLINE bool BvRayIntersectOrientedBox( Float3 const & _RayStart, Float3 
     Float3 const Mins = -_OBB.HalfSize;
     Float3 const & Maxs = _OBB.HalfSize;
 
+#if 0
     const float InvRayDirX = 1.0f / RayDir.X;
     const float InvRayDirY = 1.0f / RayDir.Y;
     const float InvRayDirZ = 1.0f / RayDir.Z;
@@ -760,6 +821,40 @@ AN_FORCEINLINE bool BvRayIntersectOrientedBox( Float3 const & _RayStart, Float3 
     _Max = FMath::Min(_Max, FMath::Max(Lo, Hi));
 
     return (_Min <= _Max) && (_Max > 0.0f);
+#else
+    _Min = -Float::MaxValue();
+    _Max = Float::MaxValue();
+
+    for ( int i = 0; i < 3; i++ ) {
+        // Check is ray axial
+        if ( fabsf( RayDir[ i ] ) < 1e-6f ) {
+            if ( _RayStart[ i ] < Mins[ i ] || _RayStart[ i ] > Maxs[ i ] ) {
+                // ray origin must be within the bounds
+                return false;
+            }
+        } else {
+            float invRayDir = 1.0f / RayDir[ i ];
+            float lo = invRayDir * ( Mins[ i ] - _RayStart[ i ] );
+            float hi = invRayDir * ( Maxs[ i ] - _RayStart[ i ] );
+            if ( lo > hi ) {
+                float tmp = lo;
+                lo = hi;
+                hi = tmp;
+            }
+            if ( lo > _Min ) {
+                _Min = lo;
+            }
+            if ( hi < _Max ) {
+                _Max = hi;
+            }
+            if ( _Min > _Max            // Ray doesn't intersect AABB
+                || _Max <= 0.0f ) {     // or AABB is behind ray origin                
+                return false;
+            }
+        }
+    }
+    return true;
+#endif
 }
 
 // Ray - triangle

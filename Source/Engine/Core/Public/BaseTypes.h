@@ -291,7 +291,7 @@ Misc
 #define AN_HASBIT64i(v,bit_i)           ((v) & (uint64_t(1)<<(bit_i)))
 #define AN_HASFLAG(v,flag)              (((v) & (flag)) == (flag))
 #define AN_OFS(type, name)              (&(( type * )0)->name)
-#define AN_ARRAY_LENGTH( Array )        ( sizeof( Array ) / sizeof( Array[0] ) )
+#define AN_ARRAY_SIZE( Array )          ( sizeof( Array ) / sizeof( Array[0] ) )
 
 /*
 
