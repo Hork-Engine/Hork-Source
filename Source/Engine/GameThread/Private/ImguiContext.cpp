@@ -38,11 +38,11 @@ SOFTWARE.
 AN_CLASS_META( FImguiContext )
 
 static void SetClipboardText( void *, const char * _Text ) {
-    GRuntime.SetClipboard_GameThread( _Text );
+    GRuntime.SetClipboard( _Text );
 }
 
 static const char * GetClipboardText( void * ) {
-    return GRuntime.GetClipboard_GameThread().ToConstChar();
+    return GRuntime.GetClipboard();
 }
 
 FImguiContext::FImguiContext() {
@@ -138,10 +138,10 @@ void FImguiContext::OnMouseWheelEvent( FMouseWheelEvent const & _Event ) {
     }
 }
 
-void FImguiContext::SetFontAtlas( FFontAtlas * _Atlas ) {
+void FImguiContext::SetFont( FFont * _Font ) {
     ImGuiIO & IO = ImGui::GetIO();
 
-    IO.Fonts = (ImFontAtlas *)_Atlas->GetImguiFontAtlas();
+    IO.Fonts = (ImFontAtlas *)_Font->GetImguiFontAtlas();
 }
 
 void FImguiContext::BeginFrame( float _TimeStep ) {

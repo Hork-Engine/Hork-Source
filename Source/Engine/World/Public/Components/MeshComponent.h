@@ -127,12 +127,6 @@ public:
     // Set indexed mesh for the component
     void SetMesh( FIndexedMesh * _Mesh );
 
-    // Set indexed mesh for the component
-    void SetMesh( const char * _Mesh );
-
-    // Set indexed mesh for the component
-    void SetMesh( FString const & _Mesh ) { SetMesh( _Mesh.ToConstChar() ); }
-
     // Get indexed mesh
     FIndexedMesh * GetMesh() const { return Mesh; }
 

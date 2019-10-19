@@ -31,10 +31,10 @@ SOFTWARE.
 
 #include <Engine/World/Public/Octree.h>
 #include <Engine/World/Public/Level.h>
+#include <Engine/Core/Public/Logger.h>
 
 AN_CLASS_META( FSpatialTree )
 AN_CLASS_META( FOctree )
-
 
 void FOctree::Build() {
     Purge();
@@ -63,7 +63,7 @@ void FOctree::Build() {
 //            numNodes += n*n*n;
 //        }
 
-//        Nodes = GMainMemoryZone.Alloc( NumLevels, 1 );
+//        Nodes = GZoneMemory.Alloc( NumLevels, 1 );
 
 //        Root = Nodes[0];
 //        Root->BoundingBox = boundingBox;

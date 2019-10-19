@@ -372,8 +372,8 @@ public:
     static constexpr int BitsCount() { return sizeof( SignedByte ) * 8; }
     static constexpr SignedByte MinPowerOfTwo() { return 1; }
     static constexpr SignedByte MaxPowerOfTwo() { return 1 << ( BitsCount() - 2 ); }
-    static constexpr SignedByte MinValue() { return std::numeric_limits< int8_t >::min(); }
-    static constexpr SignedByte MaxValue() { return std::numeric_limits< int8_t >::max(); }
+    static constexpr SignedByte MinValue() { return TStdNumericLimits< int8_t >::min(); }
+    static constexpr SignedByte MaxValue() { return TStdNumericLimits< int8_t >::max(); }
 };
 
 class Byte final {
@@ -660,8 +660,8 @@ public:
     static constexpr int BitsCount() { return sizeof( Byte ) * 8; }
     static constexpr Byte MinPowerOfTwo() { return 1; }
     static constexpr Byte MaxPowerOfTwo() { return 1 << ( BitsCount() - 1 ); }
-    static constexpr Byte MinValue() { return std::numeric_limits< uint8_t >::min(); }
-    static constexpr Byte MaxValue() { return std::numeric_limits< uint8_t >::max(); }
+    static constexpr Byte MinValue() { return TStdNumericLimits< uint8_t >::min(); }
+    static constexpr Byte MaxValue() { return TStdNumericLimits< uint8_t >::max(); }
 };
 
 // 16 bits integer
@@ -980,8 +980,8 @@ public:
     static constexpr int BitsCount() { return sizeof( Short ) * 8; }
     static constexpr Short MinPowerOfTwo() { return 1; }
     static constexpr Short MaxPowerOfTwo() { return 1 << ( BitsCount() - 2 ); }
-    static constexpr Short MinValue() { return std::numeric_limits< int16_t >::min(); }
-    static constexpr Short MaxValue() { return std::numeric_limits< int16_t >::max(); }
+    static constexpr Short MinValue() { return TStdNumericLimits< int16_t >::min(); }
+    static constexpr Short MaxValue() { return TStdNumericLimits< int16_t >::max(); }
 };
 
 class UShort final {
@@ -1291,8 +1291,8 @@ public:
     static constexpr int BitsCount() { return sizeof( UShort ) * 8; }
     static constexpr UShort MinPowerOfTwo() { return 1; }
     static constexpr UShort MaxPowerOfTwo() { return 1 << ( BitsCount() - 1 ); }
-    static constexpr UShort MinValue() { return std::numeric_limits< uint16_t >::min(); }
-    static constexpr UShort MaxValue() { return std::numeric_limits< uint16_t >::max(); }
+    static constexpr UShort MinValue() { return TStdNumericLimits< uint16_t >::min(); }
+    static constexpr UShort MaxValue() { return TStdNumericLimits< uint16_t >::max(); }
 };
 
 // 32 bits integer
@@ -1598,8 +1598,8 @@ public:
     static constexpr int BitsCount() { return sizeof( Int ) * 8; }
     static constexpr Int MinPowerOfTwo() { return 1; }
     static constexpr Int MaxPowerOfTwo() { return 1 << ( BitsCount() - 2 ); }
-    static constexpr Int MinValue() { return std::numeric_limits< int32_t >::min(); }
-    static constexpr Int MaxValue() { return std::numeric_limits< int32_t >::max(); }
+    static constexpr Int MinValue() { return TStdNumericLimits< int32_t >::min(); }
+    static constexpr Int MaxValue() { return TStdNumericLimits< int32_t >::max(); }
 };
 
 class UInt final {
@@ -1896,8 +1896,8 @@ public:
     static constexpr int BitsCount() { return sizeof( UInt ) * 8; }
     static constexpr UInt MinPowerOfTwo() { return 1; }
     static constexpr UInt MaxPowerOfTwo() { return 1u << ( BitsCount() - 1 ); }
-    static constexpr UInt MinValue() { return std::numeric_limits< uint32_t >::min(); }
-    static constexpr UInt MaxValue() { return std::numeric_limits< uint32_t >::max(); }
+    static constexpr UInt MinValue() { return TStdNumericLimits< uint32_t >::min(); }
+    static constexpr UInt MaxValue() { return TStdNumericLimits< uint32_t >::max(); }
 };
 
 // 64 bits integer
@@ -2214,8 +2214,8 @@ public:
     static constexpr int BitsCount() { return sizeof( Long ) * 8; }
     static constexpr Long MinPowerOfTwo() { return 1; }
     static constexpr Long MaxPowerOfTwo() { return int64_t(1) << ( BitsCount() - 2 ); }
-    static constexpr Long MinValue() { return std::numeric_limits< int64_t >::min(); }
-    static constexpr Long MaxValue() { return std::numeric_limits< int64_t >::max(); }
+    static constexpr Long MinValue() { return TStdNumericLimits< int64_t >::min(); }
+    static constexpr Long MaxValue() { return TStdNumericLimits< int64_t >::max(); }
 };
 
 class ULong final {
@@ -2542,8 +2542,8 @@ public:
     static constexpr int BitsCount() { return sizeof( ULong ) * 8; }
     static constexpr ULong MinPowerOfTwo() { return 1; }
     static constexpr ULong MaxPowerOfTwo() { return uint64_t(1) << ( BitsCount() - 1 ); }
-    static constexpr ULong MinValue() { return std::numeric_limits< uint64_t >::min(); }
-    static constexpr ULong MaxValue() { return std::numeric_limits< uint64_t >::max(); }
+    static constexpr ULong MinValue() { return TStdNumericLimits< uint64_t >::min(); }
+    static constexpr ULong MaxValue() { return TStdNumericLimits< uint64_t >::max(); }
 };
 
 AN_FORCEINLINE constexpr SignedByte::SignedByte( const SignedByte & _Value ) : Value( _Value.Value ) {}

@@ -37,7 +37,7 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
-FRenderBackendFeatures rt_RenderFeatures;
+//FRenderBackendFeatures rt_RenderFeatures;
 int rt_InputEventCount = 0;
 
 static const int GLFWCursorMode[2] = { GLFW_CURSOR_NORMAL, GLFW_CURSOR_DISABLED };
@@ -60,7 +60,6 @@ static bool rt_Floating;
 static char rt_Title[32];
 static int rt_PositionX;
 static int rt_PositionY;
-static int rt_VSyncMode;
 static bool rt_DisabledCursor;
 
 static bool bSetRenderBackend = false;
@@ -80,11 +79,10 @@ static void SendChangedVideoModeEvent();
 static int PressedKeys[GLFW_KEY_LAST+1];
 static bool PressedMouseButtons[GLFW_MOUSE_BUTTON_LAST+1];
 
-static FString ClipboardPaste;
-static FString ClipboardCopy;
-
 static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Action, int _Mods ) {
-    AN_Assert( _Key >= 0 || _Key <= GLFW_KEY_LAST );
+    if ( _Key < 0 || _Key > GLFW_KEY_LAST ) {
+        return;
+    }
 
     if ( rt_InputEventCount > 200 ) {
         //GLogger.Printf( "Ignoring stalled keys\n" );
@@ -101,10 +99,6 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
 
     if ( _Action == GLFW_PRESS && PressedKeys[_Key] ) {
         return;
-    }
-
-    if ( _Key == GLFW_KEY_V && ( _Mods & GLFW_MOD_CONTROL ) ) {
-        ClipboardPaste = glfwGetClipboardString( NULL );
     }
 
     FEvent * event = rt_Events.Push();
@@ -264,10 +258,10 @@ static void DropCallback( GLFWwindow *, int, const char** ) {
 }
 
 static void CreateDisplays() {
-    GRenderBackend = FindRenderBackend( rt_Backend );
-    if ( !GRenderBackend ) {
-        CriticalError( "Unknown rendering backend \"%s\"\n", rt_Backend );
-    }
+    //GRenderBackend = FindRenderBackend( rt_Backend );
+    //if ( !GRenderBackend ) {
+    //    CriticalError( "Unknown rendering backend \"%s\"\n", rt_Backend );
+    //}
 
     GRenderBackend->PreInit();
 
@@ -342,11 +336,7 @@ static void CreateDisplays() {
     }
     rt_DisabledCursor = bDisabledCursor;
 
-    GRenderBackend->Initialize( ( void ** )&Wnd, 1, &rt_RenderFeatures );
-
-    FRenderFeatures features;
-    features.VSyncMode = rt_VSyncMode;
-    GRenderBackend->SetRenderFeatures( features );
+    GRenderBackend->Initialize( Wnd );
 
     bSetRenderBackend = false;
     bSetVideoMode = false;
@@ -377,9 +367,9 @@ static void DestroyDisplays() {
 
 void rt_InitializeDisplays() {
 
-    REGISTER_RENDER_BACKEND( OpenGLBackend );
-    REGISTER_RENDER_BACKEND( VulkanBackend );
-    REGISTER_RENDER_BACKEND( NullBackend );
+    //REGISTER_RENDER_BACKEND( OpenGLBackend );
+    //REGISTER_RENDER_BACKEND( VulkanBackend );
+    //REGISTER_RENDER_BACKEND( NullBackend );
 
     // TODO: load this from config:
     rt_Width = 640;
@@ -395,12 +385,11 @@ void rt_InitializeDisplays() {
     FString::CopySafe( rt_Title, sizeof( rt_Title ), "Game" );
     rt_PositionX = 100;
     rt_PositionY = 100;
-    rt_VSyncMode = VSync_Disabled;
     rt_DisabledCursor = false;
 
-    for ( FRenderBackend const * backend = GetRenderBackends() ; backend ; backend = backend->Next ) {
-        GLogger.Printf( "Found renderer backend: %s\n", backend->Name );
-    }
+    //for ( FRenderBackend const * backend = GetRenderBackends() ; backend ; backend = backend->Next ) {
+    //    GLogger.Printf( "Found renderer backend: %s\n", backend->Name );
+    //}
 
     memset( PressedKeys, 0, sizeof( PressedKeys ) );
     memset( PressedMouseButtons, 0, sizeof( PressedMouseButtons ) );
@@ -410,9 +399,6 @@ void rt_InitializeDisplays() {
 
 void rt_DeinitializeDisplays() {
     DestroyDisplays();
-
-    ClipboardPaste.Free();
-    ClipboardCopy.Free();
 }
 
 static void ProcessEvent( FEvent const & _Event ) {
@@ -447,14 +433,14 @@ static void ProcessEvent( FEvent const & _Event ) {
     case ET_SetInputFocusEvent:
         bSetFocus = true;
         break;
-    case ET_SetRenderFeaturesEvent:
-        rt_VSyncMode = Int( _Event.Data.SetRenderFeaturesEvent.VSyncMode ).Clamp( VSync_Disabled, VSync_Half );
-        {
-            FRenderFeatures features;
-            features.VSyncMode = rt_VSyncMode;
-            GRenderBackend->SetRenderFeatures( features );
-        }
-        break;
+//    case ET_SetRenderFeaturesEvent:
+//        rt_VSyncMode = Int( _Event.Data.SetRenderFeaturesEvent.VSyncMode ).Clamp( VSync_Disabled, VSync_Half );
+//        {
+//            FRenderFeatures features;
+//            features.VSyncMode = rt_VSyncMode;
+//            GRenderBackend->SetRenderFeatures( features );
+//        }
+//        break;
     case ET_SetCursorModeEvent:
         if ( rt_DisabledCursor != _Event.Data.SetCursorModeEvent.bDisabledCursor ) {
             rt_DisabledCursor = _Event.Data.SetCursorModeEvent.bDisabledCursor;
@@ -479,7 +465,7 @@ static void SendChangedVideoModeEvent() {
     data.PhysicalMonitor = rt_PhysicalMonitor;
     data.RefreshRate = rt_RefreshRate;
     data.bFullscreen = rt_Fullscreen;
-    FString::CopySafe( data.Backend, sizeof( data.Backend ), GRenderBackend->Name );
+    FString::CopySafe( data.Backend, sizeof( data.Backend ), GRenderBackend->GetName() );
 }
 
 void rt_UpdateDisplays( FEventQueue & _EventQueue ) {
@@ -588,18 +574,4 @@ void rt_UpdateDisplays( FEventQueue & _EventQueue ) {
 
     //bIsWindowMaximized = !!glfwGetWindowAttrib( Wnd, GLFW_MAXIMIZED );
     //bIsWindowHovered = glfwGetWindowAttrib( Wnd, GLFW_HOVERED );
-
-    if ( !ClipboardCopy.IsEmpty() ) {
-        glfwSetClipboardString( NULL, ClipboardCopy.ToConstChar() );
-        ClipboardCopy.Clear();
-    }
-}
-
-void rt_SetClipboard_GameThread( const char * _Utf8String ) {
-    ClipboardCopy = _Utf8String;
-    ClipboardPaste = _Utf8String;
-}
-
-FString const & rt_GetClipboard_GameThread() {
-    return ClipboardPaste;
 }

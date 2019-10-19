@@ -33,33 +33,24 @@ SOFTWARE.
 #include <Engine/Resource/Public/ResourceManager.h>
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
 AN_CLASS_META( FMaterial )
 AN_CLASS_META( FMaterialInstance )
 
 FMaterial::FMaterial() {
-    RenderProxy = FRenderProxy::NewProxy< FRenderProxy_Material >();
+    MaterialGPU = GRenderBackend->CreateMaterial( this );
 }
 
 FMaterial::~FMaterial() {
-    RenderProxy->KillProxy();
+    GRenderBackend->DestroyMaterial( MaterialGPU );
 }
 
 void FMaterial::Initialize( FMaterialBuildData const * _Data ) {
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-
     NumUniformVectors = _Data->NumUniformVectors;
+    Type = _Data->Type;
 
-    FMaterialBuildData * data = ( FMaterialBuildData * )frameData->AllocFrameData( _Data->Size );
-
-    if ( data ) {
-        memcpy( data, _Data, _Data->Size );
-
-        Type = data->Type;
-
-        RenderProxy->Data = data;
-        RenderProxy->MarkUpdated();
-    }
+    GRenderBackend->InitializeMaterial( MaterialGPU, _Data );
 }
 
 void FMaterial::InitializeInternalResource( const char * _InternalResourceName ) {
@@ -92,7 +83,7 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
 
         FMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
-        GMainMemoryZone.Dealloc( buildData );
+        GZoneMemory.Dealloc( buildData );
         return;
     }
 
@@ -125,11 +116,12 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         builder->FragmentStage = materialFragmentStage;
         builder->MaterialType = MATERIAL_TYPE_UNLIT;
         builder->MaterialFacing = MATERIAL_FACE_BACK;
+        builder->DepthHack = MATERIAL_DEPTH_HACK_SKYBOX;
         builder->RegisterTextureSlot( cubemapTexture );
 
         FMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
-        GMainMemoryZone.Dealloc( buildData );
+        GZoneMemory.Dealloc( buildData );
 #else
         FMaterialProject * proj = NewObject< FMaterialProject >();
 
@@ -183,7 +175,7 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
 
         FMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
-        GMainMemoryZone.Dealloc( buildData );
+        GZoneMemory.Dealloc( buildData );
 #endif
         return;
     }
@@ -193,9 +185,9 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
 
 FMaterialInstance::FMaterialInstance() {
     static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
-    //static TStaticInternalResourceFinder< FTexture > TextureResource( _CTS( "FTexture.Default" ) );
-    //static TStaticResourceFinder< FTexture > TextureResource( _CTS( "gridyblack.png" ) );
-    static TStaticResourceFinder< FTexture > TextureResource( _CTS( "uv_checker.png" ) );
+    //static TStaticInternalResourceFinder< FTexture2D > TextureResource( _CTS( "FTexture2D.Default" ) );
+    //static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "gridyblack.png" ) );
+    static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "uv_checker.png" ) );
 
     Material = MaterialResource.GetObject();
 
@@ -206,14 +198,13 @@ void FMaterialInstance::InitializeInternalResource( const char * _InternalResour
     if ( !FString::Icmp( _InternalResourceName, "FMaterialInstance.Default" ) )
     {
         static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
-        //static TStaticInternalResourceFinder< FTexture > TextureResource( _CTS( "FTexture.Default" ) );
-        //static TStaticResourceFinder< FTexture > TextureResource( _CTS( "gridyblack.png" ) );
-        static TStaticResourceFinder< FTexture > TextureResource( _CTS( "uv_checker.png" ) );
+        //static TStaticInternalResourceFinder< FTexture2D > TextureResource( _CTS( "FTexture2D.Default" ) );
+        //static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "gridyblack.png" ) );
+        static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "uv_checker.png" ) );
 
         Material = MaterialResource.GetObject();
 
         SetTexture( 0, TextureResource.GetObject() );
-        //SetName( _InternalResourceName );
         return;
     }
     GLogger.Printf( "Unknown internal material instance %s\n", _InternalResourceName );
@@ -240,34 +231,34 @@ void FMaterialInstance::SetTexture( int _TextureSlot, FTexture * _Texture ) {
     Textures[_TextureSlot] = _Texture;
 }
 
-FMaterialInstanceFrameData * FMaterialInstance::RenderFrontend_Update( int _VisMarker ) {
+FMaterialFrameData * FMaterialInstance::RenderFrontend_Update( int _VisMarker ) {
     if ( VisMarker == _VisMarker ) {
         return FrameData;
     }
 
     VisMarker = _VisMarker;
 
-    FrameData = ( FMaterialInstanceFrameData * )GRuntime.GetFrameData()->AllocFrameData( sizeof( FMaterialInstanceFrameData ) );
+    FrameData = ( FMaterialFrameData * )GRuntime.AllocFrameMem( sizeof( FMaterialFrameData ) );
     if ( !FrameData ) {
         return nullptr;
     }
 
-    FrameData->Material = Material->GetRenderProxy();
+    FrameData->Material = Material->GetGPUResource();
 
-    FRenderProxy_Texture ** textures = FrameData->Textures;
+    FTextureGPU ** textures = FrameData->Textures;
     FrameData->NumTextures = 0;
 
     for ( int i = 0; i < MAX_MATERIAL_TEXTURES; i++ ) {
         if ( Textures[ i ] ) {
 
-            FRenderProxy_Texture * textureProxy = Textures[ i ]->GetRenderProxy();
+            FTextureGPU * textureProxy = Textures[ i ]->GetGPUResource();
 
-            if ( textureProxy->IsSubmittedToRenderThread() ) {
+            //if ( textureProxy->IsSubmittedToRenderThread() ) {
                 textures[ i ] = textureProxy;
                 FrameData->NumTextures = i + 1;
-            } else {
-                textures[ i ] = 0;
-            }
+            //} else {
+            //    textures[ i ] = 0;
+            //}
         } else {
             textures[ i ] = 0;
         }

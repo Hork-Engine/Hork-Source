@@ -307,7 +307,7 @@ void FPhysicalBody::UpdatePhysicsAttribs() {
     CachedScale = GetWorldScale();
 
     DestroyCollisionShape( CompoundShape );
-    CreateCollisionShape( bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition, CachedScale, &CompoundShape, &MotionState->CenterOfMass );
+    CreateCollisionShape( GetBodyComposition(), CachedScale, &CompoundShape, &MotionState->CenterOfMass );
 
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 

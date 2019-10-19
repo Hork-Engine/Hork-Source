@@ -98,8 +98,8 @@ public:
     }
 
     // Static methods
-    static constexpr Char MinValue() { return std::numeric_limits< char >::min(); }
-    static constexpr Char MaxValue() { return std::numeric_limits< char >::max(); }
+    static constexpr Char MinValue() { return TStdNumericLimits< char >::min(); }
+    static constexpr Char MaxValue() { return TStdNumericLimits< char >::max(); }
 };
 
 #if 0
@@ -149,7 +149,7 @@ public:
     }
 
     // Static methods
-    static constexpr Char MinValue() { return std::numeric_limits< unsigned char >::min(); }
-    static constexpr Char MaxValue() { return std::numeric_limits< unsigned char >::max(); }
+    static constexpr Char MinValue() { return TStdNumericLimits< unsigned char >::min(); }
+    static constexpr Char MaxValue() { return TStdNumericLimits< unsigned char >::max(); }
 };
 #endif

@@ -166,7 +166,7 @@ bool FOggVorbisDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount
     *_EncodedDataLength = ftell( f );
     fseek( f, 0, SEEK_SET );
     if ( *_EncodedDataLength > 0 ) {
-        *_EncodedData = ( byte * )GMainMemoryZone.Alloc( *_EncodedDataLength, 1 );
+        *_EncodedData = ( byte * )GZoneMemory.Alloc( *_EncodedDataLength, 1 );
         fread( *_EncodedData, 1, *_EncodedDataLength, f );
     }
 

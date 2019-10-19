@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Engine/Widgets/Public/WTextEdit.h>
 #include <Engine/Widgets/Public/WScroll.h>
 #include <Engine/Widgets/Public/WDesktop.h>
+#include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Runtime/Public/InputDefs.h>
 #include <Engine/GameThread/Public/GameEngine.h>
 
@@ -202,7 +203,7 @@ enum FCharacterFilter {
 };
 
 static Float2 CalcTextRect( FFont const * _Font, FWideChar const * _TextBegin, FWideChar const * _TextEnd, const FWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine ) {
-    const float lineHeight = _Font->FontSize;
+    const float lineHeight = _Font->GetFontSize();
     Float2 rectSize( 0, 0 );
     float lineWidth = 0.0f;
 
@@ -244,7 +245,7 @@ static Float2 CalcTextRect( FFont const * _Font, FWideChar const * _TextBegin, F
 }
 
 static Float2 CalcCursorOffset( FFont const * _Font, FWideChar * _Text, int _Cursor, const FWideChar ** _Remaining ) {
-    const float lineHeight = _Font->FontSize;
+    const float lineHeight = _Font->GetFontSize();
     Float2 offset( 0 );
     float lineWidth = 0.0f;
     FWideChar const * s = _Text;
@@ -285,9 +286,8 @@ WTextEdit::WTextEdit() {
 WTextEdit::~WTextEdit() {
 }
 
-WTextEdit & WTextEdit::SetFont( FFontAtlas * _Atlas, int _FontId ) {
-    FontAtlas = _Atlas;
-    FontId = _FontId;
+WTextEdit & WTextEdit::SetFont( FFont * _Font ) {
+    Font = _Font;
     return *this;
 }
 
@@ -393,15 +393,11 @@ WTextEdit & WTextEdit::SetTextColor( FColor4 const & _Color ) {
 }
 
 FFont const * WTextEdit::GetFont() const {
-    FFont const * font = nullptr;
-
-    if ( FontAtlas ) {
-        font = FontAtlas->GetFont( FontId );
-    }
+    FFont const * font = Font;
 
     if ( !font ) {
         // back to default font
-        font = GGameEngine.GetDefaultFont()->GetFont(0);
+        font = GGameEngine.GetDefaultFont();
     }
 
     return font;
@@ -532,7 +528,7 @@ void WTextEdit::ScrollPageUp( bool _MoveCursor ) {
     WScroll * scroll = GetScroll();
     if ( scroll ) {
         FFont const * font = GetFont();
-        const float lineHeight = font->FontSize;
+        const float lineHeight = font->GetFontSize();
 
         float PageSize = scroll->GetAvailableHeight();
         PageSize = FMath::Snap( PageSize, lineHeight );
@@ -557,7 +553,7 @@ void WTextEdit::ScrollPageDown( bool _MoveCursor ) {
     WScroll * scroll = GetScroll();
     if ( scroll ) {
         FFont const * font = GetFont();
-        const float lineHeight = font->FontSize;
+        const float lineHeight = font->GetFontSize();
 
         float PageSize = scroll->GetAvailableHeight();
         PageSize = FMath::Snap( PageSize, lineHeight );
@@ -592,7 +588,7 @@ void WTextEdit::ScrollLines( int _NumLines ) {
         Float2 scrollPosition = scroll->GetScrollPosition();
 
         FFont const * font = GetFont();
-        const float lineHeight = font->FontSize;
+        const float lineHeight = font->GetFontSize();
 
         scrollPosition.Y = FMath::Snap( scrollPosition.Y, lineHeight );
         scrollPosition.Y += _NumLines * lineHeight;
@@ -698,21 +694,21 @@ void WTextEdit::ScrollToCursor() {
 
     Float2 pageSize = scroll->GetAvailableSize();
 
-    pageSize.Y = FMath::Snap( pageSize.Y, font->FontSize );
+    pageSize.Y = FMath::Snap( pageSize.Y, font->GetFontSize() );
 
     if ( cursor.X < scrollMins.X ) {
-        scrollPosition.X = FMath::Snap( -cursorOffset.X + pageSize.X*0.5f, font->FontSize );
+        scrollPosition.X = FMath::Snap( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
         bUpdateScroll = true;
     } else if ( cursor.X > scrollMaxs.X ) {
-        scrollPosition.X = FMath::Snap( -cursorOffset.X + pageSize.X*0.5f, font->FontSize );
+        scrollPosition.X = FMath::Snap( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
         bUpdateScroll = true;
     }
 
     if ( cursor.Y < scrollMins.Y ) {
-        scrollPosition.Y = FMath::Snap( -cursorOffset.Y, font->FontSize );
+        scrollPosition.Y = FMath::Snap( -cursorOffset.Y, font->GetFontSize() );
         bUpdateScroll = true;
-    } else if ( cursor.Y + font->FontSize*2 > scrollMaxs.Y ) {
-        scrollPosition.Y = FMath::Snap( -cursorOffset.Y - font->FontSize*2 + pageSize.Y, font->FontSize );
+    } else if ( cursor.Y + font->GetFontSize()*2 > scrollMaxs.Y ) {
+        scrollPosition.Y = FMath::Snap( -cursorOffset.Y - font->GetFontSize()*2 + pageSize.Y, font->GetFontSize() );
         bUpdateScroll = true;
     }
 
@@ -759,13 +755,13 @@ bool WTextEdit::Copy() {
 
     const int clipboardDataLen = FCore::WideStrUTF8Bytes( start, end ) + 1;
 
-    char * pClipboardData = ( char * )GMainMemoryZone.Alloc( clipboardDataLen, 1 );
+    char * pClipboardData = ( char * )GZoneMemory.Alloc( clipboardDataLen, 1 );
 
     FCore::WideStrEncodeUTF8( pClipboardData, clipboardDataLen, start, end );
 
-    GRuntime.SetClipboard_GameThread( pClipboardData );
+    GRuntime.SetClipboard( pClipboardData );
 
-    GMainMemoryZone.Dealloc( pClipboardData );
+    GZoneMemory.Dealloc( pClipboardData );
 
     return true;
 }
@@ -776,7 +772,7 @@ bool WTextEdit::Paste() {
         return false;
     }
 
-    FString const & clipboard = GRuntime.GetClipboard_GameThread();
+    FString const & clipboard = GRuntime.GetClipboard();
 
     const char * s = clipboard.ToConstChar();
 
@@ -1075,7 +1071,7 @@ void WTextEdit::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, dou
             Stb.select_end = Stb.cursor;
 
             if ( Stb.select_start > Stb.select_end ) {
-                FCore::SwapArgs( Stb.select_start, Stb.select_end );
+                StdSwap( Stb.select_start, Stb.select_end );
             }
 
         } else {
@@ -1173,7 +1169,7 @@ void WTextEdit::OnDrawEvent( FCanvas & _Canvas ) {
     DrawDecorates( _Canvas );
 
     FFont const * font = GetFont();
-    float fontSize = font->FontSize;
+    float fontSize = font->GetFontSize();
 
     Float2 pos = GetDesktopPosition();
 
@@ -1188,7 +1184,7 @@ void WTextEdit::OnDrawEvent( FCanvas & _Canvas ) {
 
         FWideChar const * seltext;
         Float2 selstart = CalcCursorOffset( font, TextData.ToPtr(), start, &seltext );
-        const float lineHeight = font->FontSize;
+        const float lineHeight = fontSize;
         float lineWidth = 0.0f;
         FWideChar const * s = seltext;
         FWideChar const * s_end = TextData.ToPtr() + end;
@@ -1230,7 +1226,7 @@ void WTextEdit::OnDrawEvent( FCanvas & _Canvas ) {
 void WTextEdit::UpdateWidgetSize() {
 #if 1
     FFont const * font = GetFont();
-    const float lineHeight = font->FontSize;
+    const float lineHeight = font->GetFontSize();
     Float2 size( 0.0f, lineHeight );
     float lineWidth = 0.0f;
     FWideChar const * s = TextData.ToPtr();

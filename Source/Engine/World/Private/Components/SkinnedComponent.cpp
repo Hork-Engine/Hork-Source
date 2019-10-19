@@ -52,9 +52,6 @@ FRuntimeVariable RVDrawSkeletonSockets( _CTS( "DrawSkeletonSockets" ), _CTS( "0"
 AN_CLASS_META( FSkinnedComponent )
 
 FSkinnedComponent::FSkinnedComponent() {
-    RenderProxy = FRenderProxy::NewProxy< FRenderProxy_Skeleton >();
-    RenderProxy->SetOwner( this );
-
     bUpdateControllers = true;
     bSkinnedMesh = true;
     bLazyBoundsUpdate = true;
@@ -78,21 +75,10 @@ void FSkinnedComponent::DeinitializeComponent() {
     FWorld * world = GetParentActor()->GetWorld();
 
     world->UnregisterSkinnedMesh( this );
-
-    RenderProxy->KillProxy();
 }
 
 void FSkinnedComponent::OnLazyBoundsUpdate() {
     UpdateBounds();
-}
-
-void FSkinnedComponent::ReallocateRenderProxy() {
-    FRenderProxy_Skeleton::FrameData & data = RenderProxy->Data;
-    data.JointsCount = Skeleton->GetJoints().Size();
-    data.Chunks = nullptr;
-    data.ChunksTail = nullptr;
-    data.bReallocated = true;
-    RenderProxy->MarkUpdated();
 }
 
 void FSkinnedComponent::SetSkeleton( FSkeleton * _Skeleton ) {
@@ -110,8 +96,6 @@ void FSkinnedComponent::SetSkeleton( FSkeleton * _Skeleton ) {
         TPodArray< FJoint > const & joints = Skeleton->GetJoints();
 
         int numJoints = joints.Size();
-
-        ReallocateRenderProxy();
 
         AbsoluteTransforms.ResizeInvalidate( numJoints + 1 );  // + 1 for root's parent
         AbsoluteTransforms[0].SetIdentity();
@@ -211,7 +195,7 @@ void FSkinnedComponent::MergeJointAnimations() {
                 AbsoluteTransforms[ j + 1 ].Compose( btVectorToFloat3( SoftBody->m_nodes[ j ].m_x ), Float3x3::Identity() );
             }
             bUpdateAbsoluteTransforms = false;
-            bWriteTransforms = true;
+            //bWriteTransforms = true;
         }
 
     } else {
@@ -332,7 +316,7 @@ void FSkinnedComponent::UpdateAbsoluteTransformsIfDirty() {
     }
 
     bUpdateAbsoluteTransforms = false;
-    bWriteTransforms = true;
+    //bWriteTransforms = true;
 }
 
 void FSkinnedComponent::UpdateControllersIfDirty() {
@@ -496,24 +480,33 @@ void FSkinnedComponent::UpdateBounds() {
     MarkWorldBoundsDirty();
 }
 
-void FSkinnedComponent::UpdateJointTransforms() {
+static Float3x4 JointsBufferData[FSkeleton::MAX_JOINTS];
+
+void FSkinnedComponent::UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize ) {
+    _SkeletonOffset = 0;
+    _SkeletonSize = 0;
+
     if ( !Skeleton ) {
         return;
     }
 
     MergeJointAnimations();
 
-    if ( bWriteTransforms ) {
+    //if ( bWriteTransforms ) {
         TPodArray< FJoint > const & joints = Skeleton->GetJoints();
 
-        Float3x4 * transforms = WriteJointTransforms( joints.Size(), 0 );
-        if ( transforms ) {
-            for ( int j = 0 ; j < joints.Size() ; j++ ) {
-                transforms[ j ] = AbsoluteTransforms[ j + 1 ] * joints[ j ].OffsetMatrix;
-            }
+        for ( int j = 0 ; j < joints.Size() ; j++ ) {
+            JointsBufferData[j] = AbsoluteTransforms[j + 1] * joints[j].OffsetMatrix;
         }
-        bWriteTransforms = false;
-    }
+
+        _SkeletonOffset = GRenderBackend->AllocateJoints( joints.Size() );
+        GRenderBackend->WriteJoints( _SkeletonOffset, joints.Size(), JointsBufferData );
+
+        _SkeletonSize = joints.Size() * sizeof( Float3x4 );
+
+        //bWriteTransforms = false;
+
+    //}
 }
 
 Float3x4 const & FSkinnedComponent::GetJointTransform( int _JointIndex ) {
@@ -524,31 +517,6 @@ Float3x4 const & FSkinnedComponent::GetJointTransform( int _JointIndex ) {
     MergeJointAnimations();
 
     return AbsoluteTransforms[_JointIndex+1];
-}
-
-Float3x4 * FSkinnedComponent::WriteJointTransforms( int _JointsCount, int _StartJointLocation ) {
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-    FRenderProxy_Skeleton::FrameData & data = RenderProxy->Data;
-
-    if ( !_JointsCount ) {
-        return nullptr;
-    }
-
-    AN_Assert( _StartJointLocation + _JointsCount <= Skeleton->GetJoints().Size() );
-
-    FJointTransformChunk * chunk = ( FJointTransformChunk * )frameData->AllocFrameData( sizeof( FJointTransformChunk ) + sizeof( Float3x4 ) * ( _JointsCount - 1 ) );
-    if ( !chunk ) {
-        return nullptr;
-    }
-
-    chunk->JointsCount = _JointsCount;
-    chunk->StartJointLocation = _StartJointLocation;
-
-    IntrusiveAddToList( chunk, Next, Prev, data.Chunks, data.ChunksTail );
-
-    RenderProxy->MarkUpdated();
-
-    return &chunk->Transforms[0];
 }
 
 void FSkinnedComponent::DrawDebug( FDebugDraw * _DebugDraw ) {

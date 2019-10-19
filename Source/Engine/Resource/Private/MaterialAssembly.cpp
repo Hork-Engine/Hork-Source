@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/Core/Public/Logger.h>
 
 static constexpr const char * AssemblyTypeStr[] = {
     "vec4",     // AT_Unknown
@@ -1372,55 +1373,18 @@ FMaterialSamplerBlock::FMaterialSamplerBlock() {
     RGBA = AddOutput( "RGBA", AT_Float4 );
 }
 
-static const char * ChooseSampleFunction( FMaterialSamplerBlock::EColorSpace _ColorSpace ) {
-    switch ( _ColorSpace ) {
-    case FMaterialSamplerBlock::COLORSPACE_RGBA:
-        return "texture";
-    case FMaterialSamplerBlock::COLORSPACE_SRGB_ALPHA:
-        return "texture_srgb_alpha";
-    case FMaterialSamplerBlock::COLORSPACE_YCOCG:
-        return "texture_ycocg";
-    default:
-        return "texture";
-    }
-}
-
-#if 0
 static const char * ChooseSampleFunction( ETextureColorSpace _ColorSpace ) {
     switch ( _ColorSpace ) {
     case TEXTURE_COLORSPACE_RGBA:
         return "texture";
-    case TEXTURE_COLORSPACE_sRGB_ALPHA:
+    case TEXTURE_COLORSPACE_SRGB_ALPHA:
         return "texture_srgb_alpha";
     case TEXTURE_COLORSPACE_YCOCG:
         return "texture_ycocg";
-    case TEXTURE_COLORSPACE_NM_XY:
-        return "texture_nm_xy";
-    case TEXTURE_COLORSPACE_NM_XYZ:
-        return "texture_nm_xyz";
-    case TEXTURE_COLORSPACE_NM_SPHEREMAP:
-        return "texture_nm_spheremap";
-    case TEXTURE_COLORSPACE_NM_XY_STEREOGRAPHIC:
-        return "texture_nm_stereographic";
-    case TEXTURE_COLORSPACE_NM_XY_PARABOLOID:
-        return "texture_nm_paraboloid";
-    case TEXTURE_COLORSPACE_NM_XY_QUARTIC:
-        return "texture_nm_quartic";
-    case TEXTURE_COLORSPACE_NM_FLOAT:
-        return "texture_nm_float";
-    case TEXTURE_COLORSPACE_NM_DXT5:
-        return "texture_nm_dxt5";
-    case TEXTURE_COLORSPACE_GRAYSCALED:
-        return "texture_grayscaled";
-    case TEXTURE_COLORSPACE_RGBA_INT:
-        return "texture_rgba_int";
-    case TEXTURE_COLORSPACE_RGBA_UINT:
-        return "texture_rgba_uint";
     default:
         return "texture";
     }
 }
-#endif
 
 void FMaterialSamplerBlock::Compute( FMaterialBuildContext & _Context ) {
     bool bValid = false;
@@ -1458,7 +1422,7 @@ void FMaterialSamplerBlock::Compute( FMaterialBuildContext & _Context ) {
             case TEXTURE_CUBEMAP_ARRAY:
                 sampleType = AT_Float3;
                 break;
-            case TEXTURE_RECT:
+            case TEXTURE_2DNPOT:
                 sampleType = AT_Float2;
                 break;
             default:
@@ -1516,23 +1480,23 @@ FMaterialNormalSamplerBlock::FMaterialNormalSamplerBlock() {
     XYZ = AddOutput( "XYZ", AT_Float3 );
 }
 
-static const char * ChooseSampleFunction( FMaterialNormalSamplerBlock::ENormalCompression _Compression ) {
+static const char * ChooseSampleFunction( ENormalMapCompression _Compression ) {
     switch ( _Compression ) {
-    case FMaterialNormalSamplerBlock::NM_XYZ:
+    case NM_XYZ:
         return "texture_nm_xyz";
-    case FMaterialNormalSamplerBlock::NM_XY:
+    case NM_XY:
         return "texture_nm_xy";
-    case FMaterialNormalSamplerBlock::NM_SPHEREMAP:
+    case NM_SPHEREMAP:
         return "texture_nm_spheremap";
-    case FMaterialNormalSamplerBlock::NM_STEREOGRAPHIC:
+    case NM_STEREOGRAPHIC:
         return "texture_nm_stereographic";
-    case FMaterialNormalSamplerBlock::NM_PARABOLOID:
+    case NM_PARABOLOID:
         return "texture_nm_paraboloid";
-    case FMaterialNormalSamplerBlock::NM_QUARTIC:
+    case NM_QUARTIC:
         return "texture_nm_quartic";
-    case FMaterialNormalSamplerBlock::NM_FLOAT:
+    case NM_FLOAT:
         return "texture_nm_float";
-    case FMaterialNormalSamplerBlock::NM_DXT5:
+    case NM_DXT5:
         return "texture_nm_dxt5";
     default:
         return "texture_nm_xyz";
@@ -1575,7 +1539,7 @@ void FMaterialNormalSamplerBlock::Compute( FMaterialBuildContext & _Context ) {
             case TEXTURE_CUBEMAP_ARRAY:
                 sampleType = AT_Float3;
                 break;
-            case TEXTURE_RECT:
+            case TEXTURE_2DNPOT:
                 sampleType = AT_Float2;
                 break;
             default:
@@ -2171,7 +2135,7 @@ FMaterial * FMaterialBuilder::Build() {
     FMaterial * material = NewObject< FMaterial >();
     material->Initialize( buildData );
 
-    GMainMemoryZone.Dealloc( buildData );
+    GZoneMemory.Dealloc( buildData );
 
     return material;
 }
@@ -2287,14 +2251,18 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
             "};\n"
             "#endif\n";
 
-    if ( bWeaponDepthHack ) {
+    if ( DepthHack == MATERIAL_DEPTH_HACK_WEAPON ) {
         vertexSrc += "#define WEAPON_DEPTH_HACK\n";
         fragmentSrc += "#define WEAPON_DEPTH_HACK\n";
+    } else if ( DepthHack == MATERIAL_DEPTH_HACK_SKYBOX ) {
+        vertexSrc += "#define SKYBOX_DEPTH_HACK\n";
     }
 
     const char * depthHack =
-        "#ifdef WEAPON_DEPTH_HACK\n"
+        "#if defined WEAPON_DEPTH_HACK\n"
         "    gl_Position.z += 0.1;\n"
+        "#elif defined SKYBOX_DEPTH_HACK\n"
+        "    gl_Position.z = 0.0;\n"
         "#endif\n";
 
     // Create depth pass
@@ -2515,7 +2483,7 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
             + fragmentSourceLength
             + geometrySourceLength;
 
-    FMaterialBuildData * buildData = ( FMaterialBuildData * )GMainMemoryZone.AllocCleared( size, 1 );
+    FMaterialBuildData * buildData = ( FMaterialBuildData * )GZoneMemory.AllocCleared( size, 1 );
 
     buildData->Size = size;
     buildData->Type = MaterialType;
@@ -2523,7 +2491,7 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
     buildData->LightmapSlot = lightmapSlot;
     buildData->bVertexTextureFetch = bVertexTextureFetch;
     buildData->bNoVertexDeform = bNoVertexDeform;
-    //buildData->bWeaponDepthHack = bWeaponDepthHack;
+    buildData->bDepthTest = bDepthTest;
     //AN_Assert(bNoVertexDeform);
 
     buildData->NumUniformVectors = maxUniformAddress >= 0 ? maxUniformAddress / 4 + 1 : 0;
@@ -2531,7 +2499,7 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
     buildData->NumSamplers = maxTextureSlot + 1;
 
     for ( int i = 0 ; i < buildData->NumSamplers ; i++ ) {
-        FSamplerDesc & desc = buildData->Samplers[i];
+        FTextureSampler & desc = buildData->Samplers[i];
         FMaterialTextureSlotBlock * textureSlot = TextureSlots[i];
 
         desc.TextureType = textureSlot->TextureType;

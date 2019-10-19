@@ -76,7 +76,7 @@ class WTextDecorate : public WDecorate {
 
 public:
     WTextDecorate & SetText( const char * _Text );
-    WTextDecorate & SetFont( FFontAtlas * _Atlas, int _FontId );
+    WTextDecorate & SetFont( FFont * _Font );
     WTextDecorate & SetColor( FColor4 const & _Color );
     WTextDecorate & SetHorizontalAlignment( EWidgetAlignment _Alignment );
     WTextDecorate & SetVerticalAlignment( EWidgetAlignment _Alignment );
@@ -92,8 +92,7 @@ protected:
     FFont const * GetFont( FCanvas & _Canvas ) const;
 
 private:
-    TRef< FFontAtlas > FontAtlas;
-    int FontId;
+    TRef< FFont > Font;
     FString Text;
     FColor4 Color;
     Float2 Offset;
@@ -135,9 +134,9 @@ public:
     WImageDecorate & SetColor( FColor4 const & _Color );
     WImageDecorate & SetRounding( float _Rounding );
     WImageDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
-    WImageDecorate & SetTexture( FTexture * _Texture );
+    WImageDecorate & SetTexture( FTexture2D * _Texture );
     WImageDecorate & SetColorBlending( EColorBlending _Blending );
-    WImageDecorate & SetSamplerType( ESamplerType _SamplerType );
+    WImageDecorate & SetSamplerType( EHUDSamplerType _SamplerType );
     WImageDecorate & SetOffset( Float2 const & _Offset );
     WImageDecorate & SetSize( Float2 const & _Size );
     WImageDecorate & SetHorizontalAlignment( EWidgetAlignment _Alignment );
@@ -155,9 +154,9 @@ private:
     FColor4 Color;
     float Rounding;
     EDrawCornerFlags RoundingCorners;
-    TRef< FTexture > Texture;
+    TRef< FTexture2D > Texture;
     EColorBlending ColorBlending;
-    ESamplerType SamplerType;
+    EHUDSamplerType SamplerType;
     Float2 Offset;
     Float2 Size;
     Float2 UV0;

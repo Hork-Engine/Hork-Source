@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Engine/Widgets/Public/WWidget.h>
 #include <Engine/Widgets/Public/WScroll.h>
 #include <Engine/Widgets/Public/WDesktop.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
 AN_CLASS_META( WWidget )
 
@@ -861,7 +862,7 @@ void WWidget::ScrollSelfDelta( float _Delta ) {
     }
 }
 
-void WWidget::OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, double _TimeStamp ) {
+void WWidget::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _TimeStamp ) {
     if ( _Event.WheelY < 0 ) {
         ScrollSelfDelta( -20 );
     }
@@ -870,11 +871,11 @@ void WWidget::OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, double 
     }
 }
 
-void WWidget::OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void WWidget::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _TimeStamp ) {
 
 }
 
-void WWidget::OnCharEvent( struct FCharEvent const & _Event, double _TimeStamp ) {
+void WWidget::OnCharEvent( FCharEvent const & _Event, double _TimeStamp ) {
 
 }
 
@@ -1979,7 +1980,7 @@ void WMenuItem::OnDrawEvent( FCanvas & _Canvas ) {
 
     GetDesktopRect( mins, maxs, true );
 
-    FFont * font = _Canvas.GetDefaultFont();
+    FFontNew * font = _Canvas.GetDefaultFont();
 
     float width = GetClientWidth();
     float height = GetClientHeight();

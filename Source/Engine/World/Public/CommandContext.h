@@ -85,5 +85,5 @@ private:
         TCallback< void( FRuntimeCommandProcessor const & ) > Callback;
     };
 
-    TVector< FRuntimeCommand > Commands;
+    TStdVector< FRuntimeCommand > Commands;
 };

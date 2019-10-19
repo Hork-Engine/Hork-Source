@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/Core/Public/Thread.h>
+#include <Engine/Core/Public/Std.h>
 
 #ifdef AN_OS_WIN32
 #include <Engine/Core/Public/WindowsDefs.h>
@@ -38,7 +39,7 @@ SOFTWARE.
 #include <thread>
 #include <chrono>
 
-const int FThread::NumHardwareThreads = std::thread::hardware_concurrency();
+const int FThread::NumHardwareThreads = FStdThread::hardware_concurrency();
 
 void FThread::Start() {
 #ifdef AN_OS_WIN32

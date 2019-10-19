@@ -117,12 +117,12 @@ struct FDetourLinearAllocator : public dtTileCacheAlloc {
     int High;
 
     FDetourLinearAllocator( const int _Capacity ) : Data(0), Capacity(0), Top(0), High(0) {
-        Data = ( byte * )GMainMemoryZone.Alloc( _Capacity, 1 );
+        Data = ( byte * )GZoneMemory.Alloc( _Capacity, 1 );
         Capacity = _Capacity;
     }
 
     ~FDetourLinearAllocator() {
-        GMainMemoryZone.Dealloc( Data );
+        GZoneMemory.Dealloc( Data );
     }
 
     void reset() override {
@@ -385,9 +385,9 @@ bool FAINavigationMesh::Initialize( FLevel * _OwnerLevel, FAINavMeshInitial cons
 
         const size_t MaxLinearAllocatorCapacity = 32 << 10; // 32 KB
 
-        LinearAllocator = new ( GMainMemoryZone.Alloc( sizeof( FDetourLinearAllocator ), 1 ) ) FDetourLinearAllocator( MaxLinearAllocatorCapacity );
+        LinearAllocator = new ( GZoneMemory.Alloc( sizeof( FDetourLinearAllocator ), 1 ) ) FDetourLinearAllocator( MaxLinearAllocatorCapacity );
 
-        MeshProcess = new ( GMainMemoryZone.Alloc( sizeof( FDetourMeshProcess ), 1 ) ) FDetourMeshProcess();
+        MeshProcess = new ( GZoneMemory.Alloc( sizeof( FDetourMeshProcess ), 1 ) ) FDetourMeshProcess();
         MeshProcess->OwnerLevel = OwnerLevel;
 
         status = TileCache->init( &tileCacheParams, LinearAllocator, &TileCompressorCallback, MeshProcess );
@@ -591,12 +591,12 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
 
     int trianglesCount = indices.Size() / 3;
 
-    int hunkMark = GMainHunkMemory.SetHunkMark();
+    int hunkMark = GHunkMemory.SetHunkMark();
 
     // Allocate array that can hold triangle area types.
     // If you have multiple meshes you need to process, allocate
     // and array which can hold the max number of triangles you need to process.
-    unsigned char * triangleAreaTypes = ( unsigned char * )GMainHunkMemory.HunkMemoryCleared( trianglesCount, 1 );
+    unsigned char * triangleAreaTypes = ( unsigned char * )GHunkMemory.HunkMemoryCleared( trianglesCount, 1 );
 
     // Find triangles which are walkable based on their slope and rasterize them.
     // If your input data is multiple meshes, you can transform them here, calculate
@@ -612,7 +612,7 @@ bool FAINavigationMesh::BuildTile( int _X, int _Z ) {
                                             *temporal.Heightfield,
                                             config.walkableClimb );
 
-    GMainHunkMemory.ClearToMark( hunkMark );
+    GHunkMemory.ClearToMark( hunkMark );
 
     if ( !rasterized ) {
         GLogger.Printf( "Failed on rcRasterizeTriangles\n" );
@@ -1215,13 +1215,13 @@ void FAINavigationMesh::Purge() {
 
     if ( LinearAllocator ) {
         LinearAllocator->~FDetourLinearAllocator();
-        GMainMemoryZone.Dealloc( LinearAllocator );
+        GZoneMemory.Dealloc( LinearAllocator );
         LinearAllocator = nullptr;
     }
 
     if ( MeshProcess ) {
         MeshProcess->~FDetourMeshProcess();
-        GMainMemoryZone.Dealloc( MeshProcess );
+        GZoneMemory.Dealloc( MeshProcess );
         MeshProcess = nullptr;
     }
 
@@ -1366,12 +1366,12 @@ void FAINavigationMesh::DrawDebug( FDebugDraw * _DebugDraw ) {
 }
 
 FNavQueryFilter::FNavQueryFilter() {
-    Filter = new ( GMainMemoryZone.Alloc( sizeof( dtQueryFilter ), 1 ) ) dtQueryFilter();
+    Filter = new ( GZoneMemory.Alloc( sizeof( dtQueryFilter ), 1 ) ) dtQueryFilter();
 }
 
 FNavQueryFilter::~FNavQueryFilter() {
     Filter->~dtQueryFilter();
-    GMainMemoryZone.Dealloc( Filter );
+    GZoneMemory.Dealloc( Filter );
 }
 
 void FNavQueryFilter::SetAreaCost( int _AreaId, float _Cost ) {

@@ -298,9 +298,9 @@ AN_FORCEINLINE FString AttrFromString< FString >( FString const & v ) {
     return v;
 }
 
-ANGIE_TEMPLATE template class ANGIE_API TFunction< void( FDummy *, FString const & ) >;
-ANGIE_TEMPLATE template class ANGIE_API TFunction< void( FDummy *, FString & ) >;
-ANGIE_TEMPLATE template class ANGIE_API TFunction< void( FDummy const *, FDummy * ) >;
+ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( FDummy *, FString const & ) >;
+ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( FDummy *, FString & ) >;
+ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( FDummy const *, FDummy * ) >;
 
 class ANGIE_API FAttributeMeta {
     AN_FORBID_COPY( FAttributeMeta )
@@ -412,11 +412,11 @@ private:
     uint32_t Flags;
 
 protected:
-//    TFunction< void( FDummy *, const void * ) > Setter;
-//    TFunction< void( FDummy *, void * ) > Getter;
-    TFunction< void( FDummy *, FString const & ) > FromString;
-    TFunction< void( FDummy *, FString & ) > ToString;
-    TFunction< void( FDummy const *, FDummy * ) > Copy;
+//    TStdFunction< void( FDummy *, const void * ) > Setter;
+//    TStdFunction< void( FDummy *, void * ) > Getter;
+    TStdFunction< void( FDummy *, FString const & ) > FromString;
+    TStdFunction< void( FDummy *, FString & ) > ToString;
+    TStdFunction< void( FDummy const *, FDummy * ) > Copy;
 
     static const char * TypeNames[ (int)EAttributeType::T_Max ];
 };
@@ -550,7 +550,7 @@ public:\
         } \
         void DestroyInstance( FDummy * _Object ) const override { \
             _Object->~FDummy(); \
-            _Allocator::Dealloc( _Object ); \
+            _Allocator::Inst().Dealloc( _Object ); \
         } \
     private: \
         void RegisterAttributes(); \
@@ -595,7 +595,7 @@ class ANGIE_API FDummy {
 
 public:
     typedef FDummy ThisClass;
-    typedef FAllocator Allocator;
+    typedef FZoneAllocator Allocator;
     class ThisClassMeta : public FClassMeta {
     public:
         ThisClassMeta() : FClassMeta( FClassMeta::DummyFactory(), "FDummy", nullptr ) {
@@ -605,14 +605,14 @@ public:
         }
         void DestroyInstance( FDummy * _Object ) const override {
             _Object->~FDummy();
-            Allocator::Dealloc( _Object );
+            Allocator::Inst().Dealloc( _Object );
         }
     private:
         void RegisterAttributes();
     };
     template< typename T >
     static T * NewObject() {
-        void * data = T::Allocator::AllocCleared1( sizeof( T ) );
+        void * data = T::Allocator::Inst().AllocCleared1( sizeof( T ) );
         FDummy * object = new (data) T;
         return static_cast< T * >( object );
     }

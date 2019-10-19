@@ -50,7 +50,7 @@ void InitializeFactories() {
 
 void DeinitializeFactories() {
     for ( FObjectFactory * factory = FObjectFactory::FactoryList ; factory ; factory = factory->NextFactory ) {
-        GMainMemoryZone.Dealloc( factory->IdTable );
+        GZoneMemory.Dealloc( factory->IdTable );
         factory->IdTable = nullptr;
         factory->NameTable.Free();
     }
@@ -106,7 +106,7 @@ const FClassMeta * FObjectFactory::LookupClass( uint64_t _ClassId ) const {
 
     if ( !IdTable ) {
         // init lookup table
-        IdTable = ( FClassMeta ** )GMainMemoryZone.Alloc( ( NumClasses + 1 ) * sizeof( *IdTable ), 1 );
+        IdTable = ( FClassMeta ** )GZoneMemory.Alloc( ( NumClasses + 1 ) * sizeof( *IdTable ), 1 );
         IdTable[ 0 ] = nullptr;
         for ( FClassMeta * n = Classes ; n ; n = n->pNext ) {
             IdTable[ n->GetId() ] = n;

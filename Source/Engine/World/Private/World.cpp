@@ -762,7 +762,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
         }
 
         if ( objectA < objectB ) {
-            FCore::SwapArgs( objectA, objectB );
+            StdSwap( objectA, objectB );
         }
 
         FActor * actorA = objectA->GetParentActor();

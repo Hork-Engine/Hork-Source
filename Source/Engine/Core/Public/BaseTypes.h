@@ -376,16 +376,6 @@ AN_SIZEOF_STATIC_CHECK( ddword, 8 )
 
 static_assert( (char)-1 < 0, "signed char mismatch" );
 
-namespace FCore {
-
-    // Std swap function wrapper
-    template< typename type >
-    AN_FORCEINLINE void SwapArgs( type & _Arg1, type & _Arg2 ) {
-        std::swap( _Arg1, _Arg2 );
-    }
-
-}
-
 /*
 
 Power of two compile-time check
@@ -393,26 +383,3 @@ Power of two compile-time check
 */
 template< typename integral_type >
 constexpr bool IsPowerOfTwoConstexpr( const integral_type & _value ) { return (_value & (_value - 1)) == 0 && _value > 0; }
-
-/*
-
-enable_if_t for C++11 workaround
-
-*/
-template< bool C, class T = void >
-using TEnableIf = typename std::enable_if< C, T >::type;
-
-/*
-
-STD wrappers
-
-*/
-#define FMath_Max   std::max
-#define FMath_Min   std::min
-#define TVector     std::vector
-#define TFunction   std::function
-#define StdSort     std::sort
-#define StdFind     std::find
-#define StdChrono   std::chrono
-#define StdSqrt     std::sqrt
-#define StdForward  std::forward

@@ -40,10 +40,8 @@ TPodQueue
 Queue for POD types
 
 */
-template< typename T, int MAX_QUEUE_LENGTH = 256, bool FIXED_LENGTH = true >
+template< typename T, int MAX_QUEUE_LENGTH = 256, bool FIXED_LENGTH = true, typename Allocator = FZoneAllocator >
 class TPodQueue final {
-
-    using Allocator = FAllocator;
 public:
     enum { TYPE_SIZEOF = sizeof( T ) };
 
@@ -75,17 +73,23 @@ private:
 template< typename T >
 using TPodQueueLite = TPodQueue< T, 1, false >;
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::TPodQueue()
+#define TPodQueueTemplateDecorate \
+    template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH, typename Allocator > AN_FORCEINLINE
+
+#define TPodQueueTemplate \
+    TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH, Allocator >
+
+TPodQueueTemplateDecorate
+TPodQueueTemplate::TPodQueue()
     : pQueue(StaticData), QueueHead(0), QueueTail(0), MaxQueueLength(MAX_QUEUE_LENGTH) {
     static_assert( IsPowerOfTwoConstexpr( MAX_QUEUE_LENGTH ), "Queue length must be power of two" );
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::TPodQueue( TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH > const & _Queue ) {
+TPodQueueTemplateDecorate
+TPodQueueTemplate::TPodQueue( TPodQueueTemplate const & _Queue ) {
     if ( _Queue.MaxQueueLength > MAX_QUEUE_LENGTH ) {
         MaxQueueLength = _Queue.MaxQueueLength;
-        pQueue = ( T * )Allocator::Alloc< 1 >( TYPE_SIZEOF * MaxQueueLength );
+        pQueue = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * MaxQueueLength );
     } else {
         MaxQueueLength = MAX_QUEUE_LENGTH;
         pQueue = StaticData;
@@ -106,24 +110,24 @@ AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::TPodQueue( TPodQu
     }
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::~TPodQueue() {
+TPodQueueTemplateDecorate
+TPodQueueTemplate::~TPodQueue() {
     if ( pQueue != StaticData ) {
-        Allocator::Dealloc( pQueue );
+        Allocator::Inst().Dealloc( pQueue );
     }
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH > & TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::operator=( TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH > const & _Queue ) {
+TPodQueueTemplateDecorate
+TPodQueueTemplate & TPodQueueTemplate::operator=( TPodQueueTemplate const & _Queue ) {
 
     // Resize queue
     if ( _Queue.Size() > MaxQueueLength ) {
         if ( pQueue != StaticData ) {
-            Allocator::Dealloc( pQueue );
+            Allocator::Inst().Dealloc( pQueue );
         }
         if ( _Queue.MaxQueueLength > MAX_QUEUE_LENGTH ) {
             MaxQueueLength = _Queue.MaxQueueLength;
-            pQueue = ( T * )Allocator::Alloc< 1 >( TYPE_SIZEOF * MaxQueueLength );
+            pQueue = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * MaxQueueLength );
         } else {
             MaxQueueLength = MAX_QUEUE_LENGTH;
             pQueue = StaticData;
@@ -148,24 +152,24 @@ AN_FORCEINLINE TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH > & TPodQueue< T, MA
     return *this;
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Head() const {
+TPodQueueTemplateDecorate
+T * TPodQueueTemplate::Head() const {
     if ( IsEmpty() ) {
         return nullptr;
     }
     return pQueue[ ( QueueHead - 1 ) & ( MaxQueueLength - 1 ) ];
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Tail() const {
+TPodQueueTemplateDecorate
+T * TPodQueueTemplate::Tail() const {
     if ( IsEmpty() ) {
         return nullptr;
     }
     return pQueue[ QueueTail & ( MaxQueueLength - 1 ) ];
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Push() {
+TPodQueueTemplateDecorate
+T * TPodQueueTemplate::Push() {
 
     if ( QueueHead - QueueTail < MaxQueueLength ) {
         QueueHead++;
@@ -186,20 +190,20 @@ AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Push() {
     const int queueLength = Size();
     if ( QueueTail == 0 ) {
         if ( pQueue == StaticData ) {
-            pQueue = ( T * )Allocator::Alloc< 1 >( TYPE_SIZEOF * MaxQueueLength );
+            pQueue = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * MaxQueueLength );
             memcpy( pQueue, StaticData, TYPE_SIZEOF * queueLength );
         } else {
-            pQueue = ( T * )Allocator::Extend< 1 >( pQueue, TYPE_SIZEOF * queueLength, TYPE_SIZEOF * MaxQueueLength, true );
+            pQueue = ( T * )Allocator::Inst().Extend1( pQueue, TYPE_SIZEOF * queueLength, TYPE_SIZEOF * MaxQueueLength, true );
         }
     } else {
-        T * data = ( T * )Allocator::Alloc< 1 >( TYPE_SIZEOF * MaxQueueLength );
+        T * data = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * MaxQueueLength );
         for ( int i = 0 ; i < queueLength ; i++ ) {
             data[i] = pQueue[ ( i + QueueTail ) & WrapMask ];
         }
         QueueHead = queueLength;
         QueueTail = 0;
         if ( pQueue != StaticData ) {
-            Allocator::Dealloc( pQueue );
+            Allocator::Inst().Dealloc( pQueue );
         }
         pQueue = data;
     }
@@ -208,8 +212,8 @@ AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Push() {
     return &pQueue[ ( QueueHead - 1 ) & ( MaxQueueLength - 1 ) ];
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Pop() {
+TPodQueueTemplateDecorate
+T * TPodQueueTemplate::Pop() {
     if ( QueueHead > QueueTail ) {
         QueueTail++;
         return &pQueue[ ( QueueTail - 1 ) & ( MaxQueueLength - 1 ) ];
@@ -217,8 +221,8 @@ AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Pop() {
     return nullptr;
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::PopFront() {
+TPodQueueTemplateDecorate
+T * TPodQueueTemplate::PopFront() {
     if ( QueueHead > QueueTail ) {
         QueueHead--;
         return &pQueue[ QueueHead & ( MaxQueueLength - 1 ) ];
@@ -226,32 +230,32 @@ AN_FORCEINLINE T * TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::PopFront() {
     return nullptr;
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE bool TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::IsEmpty() const {
+TPodQueueTemplateDecorate
+bool TPodQueueTemplate::IsEmpty() const {
     return QueueHead == QueueTail;
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE void TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Clear() {
+TPodQueueTemplateDecorate
+void TPodQueueTemplate::Clear() {
     QueueHead = QueueTail = 0;
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE void TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Free() {
+TPodQueueTemplateDecorate
+void TPodQueueTemplate::Free() {
     Clear();
     if ( pQueue != StaticData ) {
-        Allocator::Dealloc( pQueue );
+        Allocator::Inst().Dealloc( pQueue );
         pQueue = StaticData;
     }
     MaxQueueLength = MAX_QUEUE_LENGTH;
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE int TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::Size() const {
+TPodQueueTemplateDecorate
+int TPodQueueTemplate::Size() const {
     return QueueHead - QueueTail;
 }
 
-template< typename T, int MAX_QUEUE_LENGTH, bool FIXED_LENGTH >
-AN_FORCEINLINE int TPodQueue< T, MAX_QUEUE_LENGTH, FIXED_LENGTH >::MaxSize() const {
+TPodQueueTemplateDecorate
+int TPodQueueTemplate::MaxSize() const {
     return MaxQueueLength;
 }

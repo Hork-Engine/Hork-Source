@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/Resource/Public/Asset.h>
+#include <Engine/Core/Public/Logger.h>
 
 char * AssetParseTag( char * _Buf, const char * _Tag ) {
     int n = strlen( _Tag );

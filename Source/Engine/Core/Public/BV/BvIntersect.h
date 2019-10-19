@@ -828,14 +828,14 @@ AN_FORCEINLINE bool BvRayIntersectOrientedBox( Float3 const & _RayStart, Float3 
     for ( int i = 0; i < 3; i++ ) {
         // Check is ray axial
         if ( fabsf( RayDir[ i ] ) < 1e-6f ) {
-            if ( _RayStart[ i ] < Mins[ i ] || _RayStart[ i ] > Maxs[ i ] ) {
+            if ( RayStart[ i ] < Mins[ i ] || RayStart[ i ] > Maxs[ i ] ) {
                 // ray origin must be within the bounds
                 return false;
             }
         } else {
             float invRayDir = 1.0f / RayDir[ i ];
-            float lo = invRayDir * ( Mins[ i ] - _RayStart[ i ] );
-            float hi = invRayDir * ( Maxs[ i ] - _RayStart[ i ] );
+            float lo = invRayDir * ( Mins[ i ] - RayStart[ i ] );
+            float hi = invRayDir * ( Maxs[ i ] - RayStart[ i ] );
             if ( lo > hi ) {
                 float tmp = lo;
                 lo = hi;

@@ -863,7 +863,7 @@ static void ReadAnimation( FContextGLTF & Ctx, cgltf_animation * Anim, FSkeleton
     }
 }
 
-static void ReadAnimations( FContextGLTF & Ctx, cgltf_data * Data, FMeshAsset const & MeshAsset, FSkeletonAsset & SkeletonAsset, TVector< FAnimationAsset > & Animations ) {
+static void ReadAnimations( FContextGLTF & Ctx, cgltf_data * Data, FMeshAsset const & MeshAsset, FSkeletonAsset & SkeletonAsset, TStdVector< FAnimationAsset > & Animations ) {
     Animations.resize( Data->animations_count );
     for ( int animIndex = 0; animIndex < Data->animations_count; animIndex++ ) {
         ReadAnimation( Ctx, &Data->animations[animIndex], &SkeletonAsset, &Animations[animIndex] );
@@ -872,7 +872,7 @@ static void ReadAnimations( FContextGLTF & Ctx, cgltf_data * Data, FMeshAsset co
     }
 }
 
-static bool ReadGLTF( cgltf_data * Data, FMeshAsset & MeshAsset, FSkeletonAsset & SkeletonAsset, TVector< FAnimationAsset > & Animations ) {
+static bool ReadGLTF( cgltf_data * Data, FMeshAsset & MeshAsset, FSkeletonAsset & SkeletonAsset, TStdVector< FAnimationAsset > & Animations ) {
     FContextGLTF ctx;
 
     ctx.Data = Data;
@@ -941,7 +941,7 @@ static bool ReadGLTF( cgltf_data * Data, FMeshAsset & MeshAsset, FSkeletonAsset 
     return true;
 }
 
-bool LoadGLTF( const char * FileName, FMeshAsset & MeshAsset, FSkeletonAsset & SkeletonAsset, TVector< FAnimationAsset > & Animations ) {
+bool LoadGLTF( const char * FileName, FMeshAsset & MeshAsset, FSkeletonAsset & SkeletonAsset, TStdVector< FAnimationAsset > & Animations ) {
     bool ret = false;
     FFileStream f;
 
@@ -960,12 +960,12 @@ bool LoadGLTF( const char * FileName, FMeshAsset & MeshAsset, FSkeletonAsset & S
 
     size_t size = f.Length();
 
-    int hunkMark = GMainHunkMemory.SetHunkMark();
+    int hunkMark = GHunkMemory.SetHunkMark();
 
-    void * buf = GMainHunkMemory.HunkMemory( size, 1 );
+    void * buf = GHunkMemory.HunkMemory( size, 1 );
     f.Read( buf, size );
 
-    void * memoryBuffer = GMainHunkMemory.HunkMemory( MAX_MEMORY_GLTF, 1 );
+    void * memoryBuffer = GHunkMemory.HunkMemory( MAX_MEMORY_GLTF, 1 );
     totalAllocatedGLTF = 0;
 
     cgltf_options options;
@@ -999,7 +999,7 @@ bool LoadGLTF( const char * FileName, FMeshAsset & MeshAsset, FSkeletonAsset & S
     ret = ReadGLTF( data, MeshAsset, SkeletonAsset, Animations );
 
 fin:
-    GMainHunkMemory.ClearToMark( hunkMark );
+    GHunkMemory.ClearToMark( hunkMark );
 
     return ret;
 }

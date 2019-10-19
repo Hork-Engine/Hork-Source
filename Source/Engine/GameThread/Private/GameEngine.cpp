@@ -60,6 +60,8 @@ SOFTWARE.
 
 AN_CLASS_META( IGameModule )
 
+FRuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
+
 FGameEngine & GGameEngine = FGameEngine::Inst();
 
 FCanvas GCanvas;
@@ -238,48 +240,20 @@ FWorld * FGameEngine::LoadWorld( FDocument const & _Document, int _FieldsHead ) 
 }
 
 void FGameEngine::DeveloperKeys( FKeyEvent const & _Event ) {
-    if ( _Event.Action == IE_Press ) {
-        if ( _Event.Key == KEY_F1 ) {
-            GLogger.Printf( "OpenGL Backend Test\n" );
-            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "OpenGL 4.5" );
-            ResetVideoMode();
-        } else if ( _Event.Key == KEY_F2 ) {
-            GLogger.Printf( "Vulkan Backend Test\n" );
-            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Vulkan" );
-            ResetVideoMode();
-        } else if ( _Event.Key == KEY_F3 ) {
-            GLogger.Printf( "Null Backend Test\n" );
-            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Null" );
-            ResetVideoMode();
-        }
-
-        if ( _Event.Key == KEY_R ) {
-            extern FAtomicBool testInput;
-            testInput.Store( true );
-        }
-
-        if ( _Event.Key == KEY_F ) {
-            extern FAtomicBool GSyncGPU;
-            GSyncGPU.Store( !GSyncGPU.Load() );
-            if ( GSyncGPU.Load() ) {
-                GLogger.Printf( "Sync GPU ON\n" );
-            } else {
-                GLogger.Printf( "Sync GPU OFF\n" );
-            }
-        }
-    }
-
-    //if ( _Event.Action == IE_Press && _Event.Key == KEY_F12 ) {
-    //    CriticalError( "This is a test of critical error\n" );
-    //}
-
-//    if ( _Event.Action == IE_Press && _Event.Key == KEY_C && ( HAS_MODIFIER( _Event.ModMask, MOD_CONTROL ) ) ) {
-//        GRuntime.SetClipboard( "Some text" );
-//    }
-//    if ( _Event.Action == IE_Press && _Event.Key == KEY_V && ( HAS_MODIFIER( _Event.ModMask, MOD_CONTROL ) ) ) {
-//        FString clipboard;
-//        GRuntime.GetClipboard( clipboard );
-//        GLogger.Print( clipboard.ToConstChar() );
+//    if ( _Event.Action == IE_Press ) {
+//        if ( _Event.Key == KEY_F1 ) {
+//            GLogger.Printf( "OpenGL Backend Test\n" );
+//            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "OpenGL 4.5" );
+//            ResetVideoMode();
+//        } else if ( _Event.Key == KEY_F2 ) {
+//            GLogger.Printf( "Vulkan Backend Test\n" );
+//            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Vulkan" );
+//            ResetVideoMode();
+//        } else if ( _Event.Key == KEY_F3 ) {
+//            GLogger.Printf( "Null Backend Test\n" );
+//            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Null" );
+//            ResetVideoMode();
+//        }
 //    }
 }
 
@@ -638,13 +612,13 @@ void FGameEngine::SetInputFocus() {
     event.TimeStamp = GRuntime.SysSeconds_d();
 }
 
-void FGameEngine::SetRenderFeatures( int _VSyncMode ) {
-    FEvent & event = SendEvent();
-    event.Type = ET_SetRenderFeaturesEvent;
-    event.TimeStamp = GRuntime.SysSeconds_d();
-    FSetRenderFeaturesEvent & data = event.Data.SetRenderFeaturesEvent;
-    data.VSyncMode = _VSyncMode;
-}
+//void FGameEngine::SetRenderFeatures( int _VSyncMode ) {
+//    FEvent & event = SendEvent();
+//    event.Type = ET_SetRenderFeaturesEvent;
+//    event.TimeStamp = GRuntime.SysSeconds_d();
+//    FSetRenderFeaturesEvent & data = event.Data.SetRenderFeaturesEvent;
+//    data.VSyncMode = _VSyncMode;
+//}
 
 void FGameEngine::SetCursorEnabled( bool _Enabled ) {
     FEvent & event = SendEvent();
@@ -734,20 +708,19 @@ void FGameEngine::UpdateInputAxes( float _Fract ) {
 
 
 void FGameEngine::InitializeDefaultFont() {
-    DefaultFontAtlas = CreateInstanceOf< FFontAtlas >();
+    FFont::SetGlyphRanges( FFont::GetGlyphRangesCyrillic() );
 
-    int fontId = DefaultFontAtlas->AddFontFromFileTTF( "DroidSansMono.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );
-    //int fontId = DefaultFontAtlas->AddFontFromFileTTF( "OpenSans.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );    
-    //int fontId = DefaultFontAtlas->AddFontFromFileTTF( "DroidSans.ttf", 24, FFontAtlas::GetGlyphRangesCyrillic() );
-    //int fontId = DefaultFontAtlas->AddFontFromFileTTF( "Cousine-Regular.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );
-    //int fontId = DefaultFontAtlas->AddFontFromFileTTF( "arial.ttf", 16, FFontAtlas::GetGlyphRangesCyrillic() );
-    //int fontId = DefaultFontAtlas->AddFontDefault();
-    DefaultFontAtlas->Build();
-    DefaultFont = DefaultFontAtlas->GetFont( fontId );
+    DefaultFont = CreateInstanceOf< FFont >();
+    DefaultFont->InitializeFromFile( "DroidSansMono.ttf.16" );
+    //DefaultFont->InitializeFromFile( "OpenSans.ttf.16" );
+    //DefaultFont->InitializeFromFile( "DroidSans.ttf.24" );
+    //DefaultFont->InitializeFromFile( "Cousine-Regular.ttf.16" );
+    //DefaultFont->InitializeFromFile( "arial.16" );
+    //DefaultFont->InitializeDefaultObject();
 }
 
 void FGameEngine::DeinitializeDefaultFont() {
-    DefaultFontAtlas = nullptr;
+    DefaultFont = nullptr;
 }
 
 static void PhysModulePrintFunction( const char * _Message ) {
@@ -763,31 +736,31 @@ static void PhysModuleErrorFunction( const char * _Message ) {
 }
 
 static void *PhysModuleAlignedAlloc( size_t _BytesCount, int _Alignement ) {
-    return GMainMemoryZone.Alloc( _BytesCount, _Alignement );
+    return GZoneMemory.Alloc( _BytesCount, _Alignement );
 }
 
 static void *PhysModuleAlloc( size_t _BytesCount ) {
-    return GMainMemoryZone.Alloc( _BytesCount, 1 );
+    return GZoneMemory.Alloc( _BytesCount, 1 );
 }
 
 static void PhysModuleDealloc( void * _Bytes ) {
-    GMainMemoryZone.Dealloc( _Bytes );
+    GZoneMemory.Dealloc( _Bytes );
 }
 
 static void * NavModuleAlloc( size_t _BytesCount, dtAllocHint _Hint ) {
-    return GMainMemoryZone.Alloc( _BytesCount, 1 );
+    return GZoneMemory.Alloc( _BytesCount, 1 );
 }
 
 static void NavModuleFree( void * _Bytes ) {
-    GMainMemoryZone.Dealloc( _Bytes );
+    GZoneMemory.Dealloc( _Bytes );
 }
 
 static void *ImguiModuleAlloc( size_t _BytesCount, void * ) {
-    return GMainMemoryZone.Alloc( _BytesCount, 1 );
+    return GZoneMemory.Alloc( _BytesCount, 1 );
 }
 
 static void ImguiModuleFree( void * _Bytes, void * ) {
-    GMainMemoryZone.Dealloc( _Bytes );
+    GZoneMemory.Dealloc( _Bytes );
 }
 
 void FGameEngine::Initialize( FCreateGameModuleCallback _CreateGameModuleCallback ) {
@@ -937,7 +910,7 @@ void FGameEngine::SetDesktop( WDesktop * _Desktop ) {
 }
 
 void FGameEngine::DrawCanvas() {
-    GCanvas.Begin( const_cast< FFont * >( DefaultFont ), VideoMode.Width, VideoMode.Height );
+    GCanvas.Begin( DefaultFont, VideoMode.Width, VideoMode.Height );
 
     if ( Desktop ) {
         Desktop->SetSize( VideoMode.Width, VideoMode.Height );
@@ -955,8 +928,8 @@ void FGameEngine::DrawCanvas() {
         GConsole.Draw( &GCanvas, FrameDurationInSeconds );
     }
 
-    // Draw debug
-    if ( !GConsole.IsActive() ) {
+    // Show stats
+    if ( RVShowStat ) {
         FRenderFrame * frameData = GRuntime.GetFrameData();
 
         Float2 pos( 8, 8 );
@@ -965,12 +938,20 @@ void FGameEngine::DrawCanvas() {
 
         pos.Y = GCanvas.Height - numLines * y_step;
 
+        const size_t TotalMemorySizeInBytes = ( (GZoneMemory.GetZoneMemorySizeInMegabytes()<<20)
+                                                + (GHunkMemory.GetHunkMemorySizeInMegabytes()<<20)
+                                                + GRuntime.GetFrameMemorySize() );
+
+        static size_t MaxFrameMemoryUsage = 0;
+
+        MaxFrameMemoryUsage = FMath::Max( MaxFrameMemoryUsage, GRuntime.GetFrameMemoryUsedPrev() );
+
         GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Zone memory usage: %f KB / %d MB", GMainMemoryZone.GetTotalMemoryUsage()/1024.0f, GMainMemoryZone.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Hunk memory usage: %f KB / %d MB", GMainHunkMemory.GetTotalMemoryUsage()/1024.0f, GMainHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Frame memory usage: %f KB / %d MB", frameData->FrameMemoryUsed/1024.0f, frameData->FrameMemorySize>>20 ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Heap memory usage: %f KB", GMainHeapMemory.GetTotalMemoryUsage()/1024.0f
-        /*- GMainMemoryZone.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, MaxFrameMemoryUsage/1024.0f ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
+        /*- GZoneMemory.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Polycount: %d", GRenderFrontend.GetPolyCount() ) ); pos.Y += y_step;
         GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Frontend time: %d msec", GRenderFrontend.GetFrontendTime() ) ); pos.Y += y_step;

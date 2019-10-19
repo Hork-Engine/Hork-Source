@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Engine/Resource/Public/Texture.h>
 
 #include <Engine/Core/Public/Utf8.h>
+#include <Engine/Core/Public/Logger.h>
 
 void FCanvas::Initialize() {
     DrawList._Data = &DrawListSharedData;
@@ -85,7 +86,7 @@ void FCanvas::PopClipRect() {
 }
 
 void FCanvas::PushBlendingState( EColorBlending _Blending ) {
-    DrawList.PushBlendingState( CANVAS_DRAW_CMD_ALPHA | ( _Blending << 8 ) );
+    DrawList.PushBlendingState( HUD_DRAW_CMD_ALPHA | ( _Blending << 8 ) );
 }
 
 void FCanvas::PopBlendingState() {
@@ -93,21 +94,22 @@ void FCanvas::PopBlendingState() {
 }
 
 void FCanvas::SetCurrentFont( FFont * _Font ) {
-    if ( _Font && _Font->IsLoaded() && _Font->Scale > 0.0f ) {
-        ImFontAtlas * atlas = _Font->ContainerAtlas;
+    if ( _Font ) {
+        ImFontAtlas * atlas = (ImFontAtlas *)_Font->GetImguiFontAtlas();
         DrawListSharedData.TexUvWhitePixel = atlas->TexUvWhitePixel;
-        DrawListSharedData.FontSize = _Font->FontSize * _Font->Scale;
+        DrawListSharedData.FontSize = _Font->GetFontSize();
+        DrawListSharedData.Font = !atlas->Fonts.empty() ? atlas->Fonts[0] : nullptr;
     } else {
-        DrawListSharedData.TexUvWhitePixel = Float2(0.0f);
+        DrawListSharedData.TexUvWhitePixel = Float2::Zero();
         DrawListSharedData.FontSize = 16;
+        DrawListSharedData.Font = nullptr;
     }
-    DrawListSharedData.Font = _Font;
 }
 
 void FCanvas::PushFont( FFont * _Font ) {
     SetCurrentFont( _Font );
     FontStack.Append( _Font );
-    DrawList.PushTextureID( _Font->ContainerAtlas->TexID );
+    DrawList.PushTextureID( _Font->GetTexture()->GetGPUResource() );
 }
 
 void FCanvas::PopFont() {
@@ -182,7 +184,7 @@ void FCanvas::DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const &
 
     uint32_t color = _Color.GetDWord();
 
-    AN_Assert( _Font->ContainerAtlas->TexID == DrawList._TextureIdStack.back() );
+    AN_Assert( const_cast< FFont * >( _Font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if ( _CPUFineClipRect ) {
@@ -194,16 +196,18 @@ void FCanvas::DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const &
 
     //_Font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
 
+    Float2 const & fontOffset = _Font->GetDisplayOffset();
+
     // Align to be pixel perfect
     Float2 pos;
-    pos.X = (float)(int)_Pos.X + _Font->DisplayOffset.x;
-    pos.Y = (float)(int)_Pos.Y + _Font->DisplayOffset.y;
+    pos.X = (float)(int)_Pos.X + fontOffset.X;
+    pos.Y = (float)(int)_Pos.Y + fontOffset.Y;
     float x = pos.X;
     float y = pos.Y;
     if (y > clipRect.W)
         return;
 
-    const float scale = _FontSize / _Font->FontSize;
+    const float scale = _FontSize / _Font->GetFontSize();
     const float lineHeight = _FontSize;
     const bool bWordWrap = (_WrapWidth > 0.0f);
     const char* wordWrapEOL = NULL;
@@ -401,7 +405,7 @@ void FCanvas::DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const &
 
     uint32_t color = _Color.GetDWord();
 
-    AN_Assert( _Font->ContainerAtlas->TexID == DrawList._TextureIdStack.back() );
+    AN_Assert( const_cast< FFont * >( _Font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if ( _CPUFineClipRect ) {
@@ -413,16 +417,18 @@ void FCanvas::DrawTextUTF8( FFont const * _Font, float _FontSize, Float2 const &
 
     //_Font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
 
+    Float2 const & fontOffset = _Font->GetDisplayOffset();
+
     // Align to be pixel perfect
     Float2 pos;
-    pos.X = ( float )( int )_Pos.X + _Font->DisplayOffset.x;
-    pos.Y = ( float )( int )_Pos.Y + _Font->DisplayOffset.y;
+    pos.X = ( float )( int )_Pos.X + fontOffset.X;
+    pos.Y = ( float )( int )_Pos.Y + fontOffset.Y;
     float x = pos.X;
     float y = pos.Y;
     if ( y > clipRect.W )
         return;
 
-    const float scale = _FontSize / _Font->FontSize;
+    const float scale = _FontSize / _Font->GetFontSize();
     const float lineHeight = _FontSize;
     const bool bWordWrap = ( _WrapWidth > 0.0f );
     FWideChar const * wordWrapEOL = NULL;
@@ -615,8 +621,10 @@ void FCanvas::DrawWChar( FFont const * _Font, FWideChar _Ch, int _X, int _Y, flo
 
     const ImFontGlyph * glyph = _Font->FindGlyph( _Ch );
     if ( glyph ) {
-        const Float2 a( _X + glyph->X0 * _Scale + _Font->DisplayOffset.x, _Y + glyph->Y0 * _Scale + _Font->DisplayOffset.y );
-        const Float2 b( _X + glyph->X1 * _Scale + _Font->DisplayOffset.x, _Y + glyph->Y1 * _Scale + _Font->DisplayOffset.y );
+        Float2 const & fontOffset = _Font->GetDisplayOffset();
+
+        const Float2 a( _X + glyph->X0 * _Scale + fontOffset.X, _Y + glyph->Y0 * _Scale + fontOffset.Y );
+        const Float2 b( _X + glyph->X1 * _Scale + fontOffset.X, _Y + glyph->Y1 * _Scale + fontOffset.Y );
 
         DrawList.PrimReserve( 6, 4 );
         DrawList.PrimRectUV( a, b, Float2( glyph->U0, glyph->V0 ), Float2( glyph->U1, glyph->V1 ), _Color.GetDWord() );
@@ -637,28 +645,28 @@ void FCanvas::DrawCharUTF8( FFont const * _Font, const char * _Ch, int _X, int _
     DrawWChar( _Font, ch, _X, _Y, _Scale, _Color );
 }
 
-void FCanvas::DrawTexture( FTexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, FColor4 const & _Color, EColorBlending _Blending, ESamplerType _SamplerType ) {
-    DrawList.AddImage( _Texture->GetRenderProxy(), ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), CANVAS_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
+void FCanvas::DrawTexture( FTexture2D * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, FColor4 const & _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
+    DrawList.AddImage( _Texture->GetGPUResource(), ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
 }
 
-void FCanvas::DrawTextureQuad( FTexture * _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0, Float2 const & _UV1, Float2 const & _UV2, Float2 const & _UV3, FColor4 const & _Color, EColorBlending _Blending, ESamplerType _SamplerType ) {
-    DrawList.AddImageQuad( _Texture, ImVec2(_X0,_Y0), ImVec2(_X1,_Y1), ImVec2(_X2,_Y2), ImVec2(_X3,_Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), CANVAS_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
+void FCanvas::DrawTextureQuad( FTexture2D * _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0, Float2 const & _UV1, Float2 const & _UV2, Float2 const & _UV3, FColor4 const & _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
+    DrawList.AddImageQuad( _Texture, ImVec2(_X0,_Y0), ImVec2(_X1,_Y1), ImVec2(_X2,_Y2), ImVec2(_X3,_Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
 }
 
-void FCanvas::DrawTextureRounded( FTexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, FColor4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending, ESamplerType _SamplerType ) {
-    DrawList.AddImageRounded( _Texture, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, CANVAS_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
+void FCanvas::DrawTextureRounded( FTexture2D * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, FColor4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
+    DrawList.AddImageRounded( _Texture, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
 }
 
 void FCanvas::DrawMaterial( FMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, FColor4 const & _Color ) {
-    DrawList.AddImage( _MaterialInstance, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), CANVAS_DRAW_CMD_MATERIAL );
+    DrawList.AddImage( _MaterialInstance, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), HUD_DRAW_CMD_MATERIAL );
 }
 
 void FCanvas::DrawMaterialQuad( FMaterialInstance * _MaterialInstance, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0, Float2 const & _UV1, Float2 const & _UV2, Float2 const & _UV3, FColor4 const & _Color ) {
-    DrawList.AddImageQuad( _MaterialInstance, ImVec2(_X0,_Y0), ImVec2(_X1,_Y1), ImVec2(_X2,_Y2), ImVec2(_X3,_Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), CANVAS_DRAW_CMD_MATERIAL );
+    DrawList.AddImageQuad( _MaterialInstance, ImVec2(_X0,_Y0), ImVec2(_X1,_Y1), ImVec2(_X2,_Y2), ImVec2(_X3,_Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_MATERIAL );
 }
 
 void FCanvas::DrawMaterialRounded( FMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, FColor4 const & _Color, float _Rounding, int _RoundingCorners ) {
-    DrawList.AddImageRounded( _MaterialInstance, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, CANVAS_DRAW_CMD_MATERIAL );
+    DrawList.AddImageRounded( _MaterialInstance, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_MATERIAL );
 }
 
 void FCanvas::DrawViewport( FPlayerController * _PlayerController, int _X, int _Y, int _W, int _H, FColor4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending ) {
@@ -680,7 +688,7 @@ void FCanvas::DrawViewport( FPlayerController * _PlayerController, int _X, int _
     Float2 a(_X,_Y);
     Float2 b(_X+_W,_Y+_H);
 
-    DrawList.AddImageRounded( (void*)(size_t)(Viewports.Size()+1), a, b, a, a, _Color.GetDWord(), _Rounding, _RoundingCorners, CANVAS_DRAW_CMD_VIEWPORT | ( _Blending << 8 ) );
+    DrawList.AddImageRounded( (void*)(size_t)(Viewports.Size()+1), a, b, a, a, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_VIEWPORT | ( _Blending << 8 ) );
 
     FViewport & viewport = Viewports.Append();
     viewport.X = _X;

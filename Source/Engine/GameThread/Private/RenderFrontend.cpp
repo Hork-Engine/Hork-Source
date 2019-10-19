@@ -94,7 +94,7 @@ void FRenderFrontend::BuildFrameData() {
 
         WDesktop * desktop = GGameEngine.GetDesktop();
         if ( desktop && desktop->IsCursorVisible() ) {
-            GCanvas.Begin( const_cast< FFont * >( GGameEngine.GetDefaultFont()->GetFont( 0 ) ), GCanvas.Width, GCanvas.Height );
+            GCanvas.Begin( GGameEngine.GetDefaultFont(), GCanvas.Width, GCanvas.Height );
             desktop->DrawCursor( GCanvas );
             GCanvas.End();
             WriteDrawList( &GCanvas );
@@ -214,11 +214,11 @@ struct FInstanceSortFunction {
         }
 
         // Sort by mesh
-        if ( _A->MeshRenderProxy < _B->MeshRenderProxy ) {
+        if ( _A->VertexBuffer < _B->VertexBuffer ) {
             return true;
         }
 
-        if ( _A->MeshRenderProxy > _B->MeshRenderProxy ) {
+        if ( _A->VertexBuffer > _B->VertexBuffer ) {
             return false;
         }
 
@@ -258,7 +258,6 @@ void FRenderFrontend::RenderView( int _Index ) {
     RV->BackgroundColor = RP ? RP->BackgroundColor.GetRGB() : Float3(1.0f);
     RV->bClearBackground = RP ? RP->bClearBackground : true;
     RV->bWireframe = RP ? RP->bWireframe : false;
-    RV->PresentCmd = 0;
     RV->FirstInstance = CurFrameData->Instances.Size();
     RV->InstanceCount = 0;
 
@@ -304,7 +303,7 @@ void FRenderFrontend::WriteDrawList( FCanvas * _Canvas ) {
         return;
     }
 
-    FDrawList * drawList = ( FDrawList * )frameData->AllocFrameData( sizeof( FDrawList ) );
+    FHUDDrawList * drawList = ( FHUDDrawList * )GRuntime.AllocFrameMem( sizeof( FHUDDrawList ) );
     if ( !drawList ) {
         return;
     }
@@ -313,45 +312,45 @@ void FRenderFrontend::WriteDrawList( FCanvas * _Canvas ) {
     drawList->IndicesCount = srcList->IdxBuffer.size();
     drawList->CommandsCount = srcList->CmdBuffer.size();
 
-    int bytesCount = sizeof( FDrawVert ) * drawList->VerticesCount;
-    drawList->Vertices = ( FDrawVert * )frameData->AllocFrameData( bytesCount );
+    int bytesCount = sizeof( FHUDDrawVert ) * drawList->VerticesCount;
+    drawList->Vertices = ( FHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Vertices ) {
         return;
     }
     memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
 
     bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
-    drawList->Indices = ( unsigned short * )frameData->AllocFrameData( bytesCount );
+    drawList->Indices = ( unsigned short * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Indices ) {
         return;
     }
 
     memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
 
-    bytesCount = sizeof( FDrawCmd ) * drawList->CommandsCount;
-    drawList->Commands = ( FDrawCmd * )frameData->AllocFrameData( bytesCount );
+    bytesCount = sizeof( FHUDDrawCmd ) * drawList->CommandsCount;
+    drawList->Commands = ( FHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Commands ) {
         return;
     }
 
     int firstIndex = 0;
 
-    FDrawCmd * dstCmd = drawList->Commands;
+    FHUDDrawCmd * dstCmd = drawList->Commands;
     for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
 
         memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
         dstCmd->IndexCount = pCmd->ElemCount;
         dstCmd->StartIndexLocation = firstIndex;
-        dstCmd->Type = (FCanvasDrawCmd)( pCmd->BlendingState & 0xff );
+        dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
         dstCmd->Blending = (EColorBlending)( ( pCmd->BlendingState >> 8 ) & 0xff );
-        dstCmd->SamplerType = (ESamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
+        dstCmd->SamplerType = (EHUDSamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
 
         firstIndex += pCmd->ElemCount;
 
         AN_Assert( pCmd->TextureId );
 
         switch ( dstCmd->Type ) {
-        case CANVAS_DRAW_CMD_VIEWPORT:
+        case HUD_DRAW_CMD_VIEWPORT:
         {
             if ( NumViewports >= MAX_RENDER_VIEWS ) {
                 GLogger.Printf( "FRenderFrontend: MAX_RENDER_VIEWS hit\n" );
@@ -373,7 +372,7 @@ void FRenderFrontend::WriteDrawList( FCanvas * _Canvas ) {
             break;
         }
 
-        case CANVAS_DRAW_CMD_MATERIAL:
+        case HUD_DRAW_CMD_MATERIAL:
         {
             FMaterialInstance * materialInstance = static_cast< FMaterialInstance * >( pCmd->TextureId );
             AN_Assert( materialInstance );
@@ -386,22 +385,22 @@ void FRenderFrontend::WriteDrawList( FCanvas * _Canvas ) {
                 continue;
             }
 
-            dstCmd->MaterialInstance = materialInstance->RenderFrontend_Update( VisMarker );
+            dstCmd->MaterialFrameData = materialInstance->RenderFrontend_Update( VisMarker );
 
-            AN_Assert( dstCmd->MaterialInstance );
+            AN_Assert( dstCmd->MaterialFrameData );
 
             dstCmd++;
 
             break;
         }
-        case CANVAS_DRAW_CMD_TEXTURE:
-        case CANVAS_DRAW_CMD_ALPHA:
+        case HUD_DRAW_CMD_TEXTURE:
+        case HUD_DRAW_CMD_ALPHA:
         {
-            dstCmd->Texture = (FRenderProxy_Texture *)pCmd->TextureId;
-            if ( !dstCmd->Texture->IsSubmittedToRenderThread() ) {
-                drawList->CommandsCount--;
-                continue;
-            }
+            dstCmd->Texture = (FTextureGPU *)pCmd->TextureId;
+            //if ( !dstCmd->Texture->IsSubmittedToRenderThread() ) {
+            //    drawList->CommandsCount--;
+            //    continue;
+            //}
             dstCmd++;
             break;
         }
@@ -413,11 +412,11 @@ void FRenderFrontend::WriteDrawList( FCanvas * _Canvas ) {
 
     //GLogger.Printf("WriteDrawList: %d draw calls\n", drawList->CommandsCount );
 
-    FDrawList * prev = frameData->DrawListTail;
-    drawList->Next = nullptr;
+    FHUDDrawList * prev = frameData->DrawListTail;
+    drawList->pNext = nullptr;
     frameData->DrawListTail = drawList;
     if ( prev ) {
-        prev->Next = drawList;
+        prev->pNext = drawList;
     } else {
         frameData->DrawListHead = drawList;
     }
@@ -432,7 +431,7 @@ void FRenderFrontend::WriteDrawList( ImDrawList const * _DrawList ) {
         return;
     }
 
-    FDrawList * drawList = ( FDrawList * )frameData->AllocFrameData( sizeof( FDrawList ) );
+    FHUDDrawList * drawList = ( FHUDDrawList * )GRuntime.AllocFrameMem( sizeof( FHUDDrawList ) );
     if ( !drawList ) {
         return;
     }
@@ -441,51 +440,51 @@ void FRenderFrontend::WriteDrawList( ImDrawList const * _DrawList ) {
     drawList->IndicesCount = srcList->IdxBuffer.size();
     drawList->CommandsCount = srcList->CmdBuffer.size();
 
-    int bytesCount = sizeof( FDrawVert ) * drawList->VerticesCount;
-    drawList->Vertices = ( FDrawVert * )frameData->AllocFrameData( bytesCount );
+    int bytesCount = sizeof( FHUDDrawVert ) * drawList->VerticesCount;
+    drawList->Vertices = ( FHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Vertices ) {
         return;
     }
     memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
 
     bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
-    drawList->Indices = ( unsigned short * )frameData->AllocFrameData( bytesCount );
+    drawList->Indices = ( unsigned short * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Indices ) {
         return;
     }
 
     memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
 
-    bytesCount = sizeof( FDrawCmd ) * drawList->CommandsCount;
-    drawList->Commands = ( FDrawCmd * )frameData->AllocFrameData( bytesCount );
+    bytesCount = sizeof( FHUDDrawCmd ) * drawList->CommandsCount;
+    drawList->Commands = ( FHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Commands ) {
         return;
     }
 
     int firstIndex = 0;
 
-    FDrawCmd * dstCmd = drawList->Commands;
+    FHUDDrawCmd * dstCmd = drawList->Commands;
     for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
 
         memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
         dstCmd->IndexCount = pCmd->ElemCount;
         dstCmd->StartIndexLocation = firstIndex;
-        dstCmd->Type = (FCanvasDrawCmd)( pCmd->BlendingState & 0xff );
+        dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
         dstCmd->Blending = (EColorBlending)( ( pCmd->BlendingState >> 8 ) & 0xff );
-        dstCmd->SamplerType = (ESamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
+        dstCmd->SamplerType = (EHUDSamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
 
         firstIndex += pCmd->ElemCount;
 
         AN_Assert( pCmd->TextureId );
 
         switch ( dstCmd->Type ) {
-        case CANVAS_DRAW_CMD_VIEWPORT:
+        case HUD_DRAW_CMD_VIEWPORT:
         {
             drawList->CommandsCount--;
             continue;
         }
 
-        case CANVAS_DRAW_CMD_MATERIAL:
+        case HUD_DRAW_CMD_MATERIAL:
         {
             FMaterialInstance * materialInstance = static_cast< FMaterialInstance * >( pCmd->TextureId );
             AN_Assert( materialInstance );
@@ -498,21 +497,21 @@ void FRenderFrontend::WriteDrawList( ImDrawList const * _DrawList ) {
                 continue;
             }
 
-            dstCmd->MaterialInstance = materialInstance->RenderFrontend_Update( VisMarker );
-            AN_Assert( dstCmd->MaterialInstance );
+            dstCmd->MaterialFrameData = materialInstance->RenderFrontend_Update( VisMarker );
+            AN_Assert( dstCmd->MaterialFrameData );
 
             dstCmd++;
 
             break;
         }
-        case CANVAS_DRAW_CMD_TEXTURE:
-        case CANVAS_DRAW_CMD_ALPHA:
+        case HUD_DRAW_CMD_TEXTURE:
+        case HUD_DRAW_CMD_ALPHA:
         {
-            dstCmd->Texture = (FRenderProxy_Texture *)pCmd->TextureId;
-            if ( !dstCmd->Texture->IsSubmittedToRenderThread() ) {
-                drawList->CommandsCount--;
-                continue;
-            }
+            dstCmd->Texture = (FTextureGPU *)pCmd->TextureId;
+            //if ( !dstCmd->Texture->IsSubmittedToRenderThread() ) {
+            //    drawList->CommandsCount--;
+            //    continue;
+            //}
             dstCmd++;
             break;
         }
@@ -524,11 +523,11 @@ void FRenderFrontend::WriteDrawList( ImDrawList const * _DrawList ) {
 
     //GLogger.Printf("WriteDrawList: %d draw calls\n", drawList->CommandsCount );
 
-    FDrawList * prev = frameData->DrawListTail;
-    drawList->Next = nullptr;
+    FHUDDrawList * prev = frameData->DrawListTail;
+    drawList->pNext = nullptr;
     frameData->DrawListTail = drawList;
     if ( prev ) {
-        prev->Next = drawList;
+        prev->pNext = drawList;
     } else {
         frameData->DrawListHead = drawList;
     }

@@ -35,12 +35,11 @@ SOFTWARE.
 
 #include <Engine/Core/Public/ConvexHull.h>
 #include <Engine/Core/Public/BitMask.h>
-#include <Engine/Runtime/Public/RenderBackend.h>
+#include <Engine/Runtime/Public/RenderCore.h>
 #include "Components/DrawSurf.h"
 
 //class FWorld;
 class FActor;
-class FTexture;
 class FLevel;
 class FAreaPortal;
 class FLightComponent;
@@ -55,6 +54,8 @@ public:
     FAreaPortal const * GetPortals() const { return PortalList; }
 
     TPodArray< FSpatialObject * > const & GetSurfs() const { return Movables; }
+
+    TPodArray< FLightComponent * > const & GetLights() const { return Lights; }
 
     BvAxisAlignedBox const & GetBoundingBox() const { return Bounds; }
 
@@ -217,7 +218,7 @@ public:
     //void BuildStaticBatching();
 
     // Static lightmaps (experemental)
-    TPodArray< FTexture * > Lightmaps;    
+    TPodArray< FTexture2D * > Lightmaps;    
     void ClearLightmaps();
     void SetLightData( const byte * _Data, int _Size );
     /*const */byte * GetLightData() /*const */{ return LightData; }
@@ -265,6 +266,7 @@ private:
     void CullInstances( FRenderFrontendDef * _Def );
     void FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area );
     void AddRenderInstances( FRenderFrontendDef * _Def, class FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
+    void AddLightInstance( FRenderFrontendDef * _Def, FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
 
     FWorld * OwnerWorld;
     int IndexInArrayOfLevels = -1;

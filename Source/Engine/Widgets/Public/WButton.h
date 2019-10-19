@@ -100,9 +100,9 @@ class ANGIE_API WImageButton : public WButton {
     AN_CLASS( WImageButton, WButton )
 
 public:
-    WImageButton & SetImage( FTexture * _Image );
-    WImageButton & SetHoverImage( FTexture * _Image );
-    WImageButton & SetPressedImage( FTexture * _Image );
+    WImageButton & SetImage( FTexture2D * _Image );
+    WImageButton & SetHoverImage( FTexture2D * _Image );
+    WImageButton & SetPressedImage( FTexture2D * _Image );
 
 protected:
     WImageButton();
@@ -111,7 +111,7 @@ protected:
     void OnDrawEvent( FCanvas & _Canvas ) override;
 
 private:
-    TRef<FTexture> Image;
-    TRef<FTexture> HoverImage;
-    TRef<FTexture> PressedImage;
+    TRef<FTexture2D> Image;
+    TRef<FTexture2D> HoverImage;
+    TRef<FTexture2D> PressedImage;
 };

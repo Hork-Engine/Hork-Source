@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "Alloc.h"
+#include "Std.h"
 #include "HashFunc.h"
 #include <stdarg.h>
 
@@ -40,7 +40,7 @@ FString
 
 */
 class ANGIE_API FString final {
-    using Allocator = FAllocator;
+    using Allocator = FZoneAllocator;
 
 public:
     static const int    GRANULARITY = 32;
@@ -246,7 +246,7 @@ AN_FORCEINLINE FString::FString( const FString & _Str ) : FString() {
 
 AN_FORCEINLINE FString::~FString() {
     if ( StringData != StaticData ) {
-        Allocator::Dealloc( StringData );
+        Allocator::Inst().Dealloc( StringData );
     }
 }
 
@@ -307,7 +307,7 @@ AN_FORCEINLINE void FString::Clear() {
 
 AN_FORCEINLINE void FString::Free() {
     if ( StringData != StaticData ) {
-        Allocator::Dealloc( StringData );
+        Allocator::Inst().Dealloc( StringData );
         StringData = StaticData;
         Allocated = BASE_ALLOC;
     }
@@ -1013,17 +1013,17 @@ AN_FORCEINLINE uint64_t FString::HexToUInt64( int _Len ) const {
 }
 
 AN_FORCEINLINE uint32_t FString::HexToUInt32() const {
-    return HexToUInt32( StringData, FMath_Min( StringLength, 8 ) );
+    return HexToUInt32( StringData, StdMin( StringLength, 8 ) );
 }
 
 AN_FORCEINLINE uint64_t FString::HexToUInt64() const {
-    return HexToUInt64( StringData, FMath_Min( StringLength, 16 ) );
+    return HexToUInt64( StringData, StdMin( StringLength, 16 ) );
 }
 
 AN_FORCEINLINE uint32_t FString::HexToUInt32( const char * _Str, int _Len ) {
     uint32_t value = 0;
 
-    for ( int i = FMath_Max( 0, _Len - 8 ) ; i < _Len ; i++ ) {
+    for ( int i = StdMax( 0, _Len - 8 ) ; i < _Len ; i++ ) {
         uint32_t ch = _Str[i];
         if ( ch >= 'A' && ch <= 'F' ) {
             value = (value<<4) + ch - 'A' + 10;
@@ -1045,7 +1045,7 @@ AN_FORCEINLINE uint32_t FString::HexToUInt32( const char * _Str, int _Len ) {
 AN_FORCEINLINE uint64_t FString::HexToUInt64( const char * _Str, int _Len ) {
     uint64_t value = 0;
 
-    for ( int i = FMath_Max( 0, _Len - 16 ) ; i < _Len ; i++ ) {
+    for ( int i = StdMax( 0, _Len - 16 ) ; i < _Len ; i++ ) {
         uint64_t ch = _Str[i];
         if ( ch >= 'A' && ch <= 'F' ) {
             value = (value<<4) + ch - 'A' + 10;

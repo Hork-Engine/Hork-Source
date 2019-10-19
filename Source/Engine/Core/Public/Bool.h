@@ -94,8 +94,8 @@ public:
 
     // Static methods
     static constexpr int NumComponents() { return 1; }
-    static constexpr Bool MinValue() { return std::numeric_limits< bool >::min(); }
-    static constexpr Bool MaxValue() { return std::numeric_limits< bool >::max(); }
+    static constexpr Bool MinValue() { return TStdNumericLimits< bool >::min(); }
+    static constexpr Bool MaxValue() { return TStdNumericLimits< bool >::max(); }
 };
 
 class Bool2 final {
@@ -163,8 +163,8 @@ public:
 
     // Static methods
     static constexpr int NumComponents() { return 2; }
-    static constexpr Bool2 MinValue() { return Bool2( std::numeric_limits< bool >::min() ); }
-    static constexpr Bool2 MaxValue() { return Bool2( std::numeric_limits< bool >::max() ); }
+    static constexpr Bool2 MinValue() { return Bool2( TStdNumericLimits< bool >::min() ); }
+    static constexpr Bool2 MaxValue() { return Bool2( TStdNumericLimits< bool >::max() ); }
     static const Bool2 & Zero() {
         static constexpr Bool2 ZeroVec(false);
         return ZeroVec;

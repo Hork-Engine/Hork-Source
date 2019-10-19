@@ -47,12 +47,15 @@ FRuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" )
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FIndexedMesh::FIndexedMesh() {
-    RenderProxy = FRenderProxy::NewProxy< FRenderProxy_IndexedMesh >();
-    RenderProxy->SetOwner( this );
+    VertexBufferGPU = GRenderBackend->CreateBuffer( this );
+    IndexBufferGPU = GRenderBackend->CreateBuffer( this );
+    WeightsBufferGPU = GRenderBackend->CreateBuffer( this );
 }
 
 FIndexedMesh::~FIndexedMesh() {
-    RenderProxy->KillProxy();
+    GRenderBackend->DestroyBuffer( VertexBufferGPU );
+    GRenderBackend->DestroyBuffer( IndexBufferGPU );
+    GRenderBackend->DestroyBuffer( WeightsBufferGPU );
 
     Purge();
 }
@@ -64,30 +67,23 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
 
     Purge();
 
-    VertexCount = _NumVertices;
-    IndexCount = _NumIndices;
     bSkinnedMesh = _SkinnedMesh;
     bDynamicStorage = _DynamicStorage;
     bBoundingBoxDirty = true;
     BoundingBox.Clear();
 
-    Vertices.ResizeInvalidate( VertexCount );
+    Vertices.ResizeInvalidate( _NumVertices );
     if ( bSkinnedMesh ) {
-        Weights.ReserveInvalidate( VertexCount );
+        Weights.ResizeInvalidate( _NumVertices );
     }
-    Indices.ResizeInvalidate( IndexCount );
+    Indices.ResizeInvalidate( _NumIndices );
 
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data;
-    data.VerticesCount = _NumVertices;
-    data.IndicesCount = _NumIndices;
-    data.bSkinnedMesh = bSkinnedMesh;
-    data.bDynamicStorage = bDynamicStorage;
-    data.IndexType = INDEX_UINT32;
-    data.VertexChunks = nullptr;
-    data.VertexJointChunks = nullptr;
-    data.IndexChunks = nullptr;
-    data.bReallocated = true;
-    RenderProxy->MarkUpdated();
+    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( FMeshVertex ), bDynamicStorage );
+    GRenderBackend->InitializeBuffer( IndexBufferGPU, Indices.Size() * sizeof( unsigned int ), bDynamicStorage );
+
+    if ( _SkinnedMesh ) {
+        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( FMeshVertexJoint ), bDynamicStorage );
+    }
 
     for ( FLightmapUV * channel : LightmapUVs ) {
         channel->OnInitialize( _NumVertices );
@@ -123,8 +119,8 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
         FIndexedMeshSubpart * subpart = Subparts[0];
         subpart->BaseVertex = 0;
         subpart->FirstIndex = 0;
-        subpart->VertexCount = VertexCount;
-        subpart->IndexCount = IndexCount;
+        subpart->VertexCount = Vertices.Size();
+        subpart->IndexCount = Indices.Size();
     }
 }
 
@@ -175,7 +171,7 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
         FMeshMaterial const & material = asset.Materials[ j ];
         for ( int n = 0; n < 1/*material.NumTextures*/; n++ ) {
             FMaterialTexture const & texture = asset.Textures[ material.Textures[ n ] ];
-            FTexture * texObj = GetOrCreateResource< FTexture >( texture.FileName.ToConstChar() );
+            FTexture2D * texObj = GetOrCreateResource< FTexture2D >( texture.FileName.ToConstChar() );
             matInst->SetTexture( n, texObj );
         }
     }
@@ -215,6 +211,8 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
     CollisionBody->BvhData = bvh;
     //CollisionBody->Margin = 0.2;
 
+    // TODO: load BVH tree for raycast
+
     return true;
 }
 
@@ -226,7 +224,7 @@ FLightmapUV * FIndexedMesh::CreateLightmapUVChannel() {
 
     LightmapUVs.Append( channel );
 
-    channel->OnInitialize( VertexCount );
+    channel->OnInitialize( Vertices.Size() );
 
     return channel;
 }
@@ -239,7 +237,7 @@ FVertexLight * FIndexedMesh::CreateVertexLightChannel() {
 
     VertexLightChannels.Append( channel );
 
-    channel->OnInitialize( VertexCount );
+    channel->OnInitialize( Vertices.Size() );
 
     return channel;
 }
@@ -258,38 +256,27 @@ FIndexedMeshSubpart * FIndexedMesh::GetSubpart( int _SubpartIndex ) {
 }
 
 bool FIndexedMesh::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer\n" );
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "FIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data;
-
-    data.bSkinnedMesh = bSkinnedMesh;
-    data.bDynamicStorage = bDynamicStorage;
-
-    FVertexChunk * chunk = ( FVertexChunk * )frameData->AllocFrameData( sizeof( FVertexChunk ) + sizeof( FMeshVertex ) * ( _VerticesCount - 1 ) );
-    if ( !chunk ) {
-        return false;
-    }
-
-    chunk->VerticesCount = _VerticesCount;
-    chunk->StartVertexLocation = _StartVertexLocation;
-
-    IntrusiveAddToList( chunk, Next, Prev, data.VertexChunks, data.VertexChunksTail );
-
-    RenderProxy->MarkUpdated();
-
-    memcpy( &chunk->Vertices[ 0 ], Vertices.ToPtr() + _StartVertexLocation, _VerticesCount * sizeof( FMeshVertex ) );
+    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( FMeshVertex ), _VerticesCount * sizeof( FMeshVertex ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
 bool FIndexedMesh::WriteVertexData( FMeshVertex const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FIndexedMesh::WriteVertexData: Referencing outside of buffer\n" );
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "FIndexedMesh::WriteVertexData: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
@@ -308,31 +295,16 @@ bool FIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLo
         return false;
     }
 
-    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer\n" );
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Weights.Size() ) {
+        GLogger.Printf( "FIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data;
-
-    data.bSkinnedMesh = bSkinnedMesh;
-    data.bDynamicStorage = bDynamicStorage;
-
-    FVertexJointChunk * chunk = ( FVertexJointChunk * )frameData->AllocFrameData( sizeof( FVertexJointChunk ) + sizeof( FMeshVertexJoint ) * ( _VerticesCount - 1 ) );
-    if ( !chunk ) {
-        return false;
-    }
-
-    chunk->VerticesCount = _VerticesCount;
-    chunk->StartVertexLocation = _StartVertexLocation;
-
-    IntrusiveAddToList( chunk, Next, Prev, data.VertexJointChunks, data.VertexJointChunksTail );
-
-    RenderProxy->MarkUpdated();
-
-    memcpy( &chunk->Vertices[ 0 ], Weights.ToPtr() + _StartVertexLocation, _VerticesCount * sizeof( FMeshVertexJoint ) );
+    GRenderBackend->WriteBuffer( WeightsBufferGPU, _StartVertexLocation * sizeof( FMeshVertexJoint ), _VerticesCount * sizeof( FMeshVertexJoint ), Weights.ToPtr() + _StartVertexLocation );
 
     return true;
 }
@@ -343,8 +315,12 @@ bool FIndexedMesh::WriteJointWeights( FMeshVertexJoint const * _Vertices, int _V
         return false;
     }
 
-    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Referencing outside of buffer\n" );
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Weights.Size() ) {
+        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
@@ -354,39 +330,27 @@ bool FIndexedMesh::WriteJointWeights( FMeshVertexJoint const * _Vertices, int _V
 }
 
 bool FIndexedMesh::SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation ) {
-    if ( !_IndexCount || _StartIndexLocation + _IndexCount > IndexCount ) {
-        GLogger.Printf( "FIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer\n" );
+    if ( !_IndexCount ) {
+        return true;
+    }
+
+    if ( _StartIndexLocation + _IndexCount > Indices.Size() ) {
+        GLogger.Printf( "FIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-
-    FRenderProxy_IndexedMesh::FrameData & data = RenderProxy->Data;
-
-    data.bSkinnedMesh = bSkinnedMesh;
-    data.bDynamicStorage = bDynamicStorage;
-    data.IndexType = INDEX_UINT32;
-
-    FIndexChunk * chunk = ( FIndexChunk * )frameData->AllocFrameData( sizeof( FIndexChunk ) + sizeof( unsigned int ) * ( _IndexCount - 1 ) );
-    if ( !chunk ) {
-        return false;
-    }
-
-    chunk->IndexCount = _IndexCount;
-    chunk->StartIndexLocation = _StartIndexLocation;
-
-    IntrusiveAddToList( chunk, Next, Prev, data.IndexChunks, data.IndexChunksTail );
-
-    RenderProxy->MarkUpdated();
-
-    memcpy( &chunk->Indices[ 0 ], Indices.ToPtr() + _StartIndexLocation, _IndexCount * sizeof( unsigned int ) );
+    GRenderBackend->WriteBuffer( IndexBufferGPU, _StartIndexLocation * sizeof( unsigned int ), _IndexCount * sizeof( unsigned int ), Indices.ToPtr() + _StartIndexLocation );
 
     return true;
 }
 
 bool FIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCount, int _StartIndexLocation ) {
-    if ( !_IndexCount || _StartIndexLocation + _IndexCount > IndexCount ) {
-        GLogger.Printf( "FIndexedMesh::WriteIndexData: Referencing outside of buffer\n" );
+    if ( !_IndexCount ) {
+        return true;
+    }
+
+    if ( _StartIndexLocation + _IndexCount > Indices.Size() ) {
+        GLogger.Printf( "FIndexedMesh::WriteIndexData: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
@@ -489,6 +453,20 @@ void FIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
+void FIndexedMesh::InitializeConeMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
+    TPodArray< FMeshVertex > vertices;
+    TPodArray< unsigned int > indices;
+    BvAxisAlignedBox bounds;
+
+    CreateConeMesh( vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs );
+
+    Initialize( vertices.Size(), indices.Size(), 1 );
+    WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
+    WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
+
+    Subparts[ 0 ]->BoundingBox = bounds;
+}
+
 void FIndexedMesh::InitializeCapsuleMesh( float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
     TPodArray< FMeshVertex > vertices;
     TPodArray< unsigned int > indices;
@@ -524,6 +502,14 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
         InitializeCylinderMesh( 0.5f, 1, 1 );
         FCollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< FCollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
+        return;
+    }
+
+    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Cone" ) ) {
+        InitializeConeMesh( 0.5f, 1, 1 );
+        FCollisionCone * collisionBody = BodyComposition.AddCollisionBody< FCollisionCone >();
+        collisionBody->Radius = 0.5f;
+        collisionBody->Height = 1.0f;
         return;
     }
 
@@ -590,12 +576,11 @@ void FIndexedMeshSubpart::SetBoundingBox( BvAxisAlignedBox const & _BoundingBox 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FLightmapUV::FLightmapUV() {
-    RenderProxy = FRenderProxy::NewProxy< FRenderProxy_LightmapUVChannel >();
-    RenderProxy->SetOwner( this );
+    VertexBufferGPU = GRenderBackend->CreateBuffer( this );
 }
 
 FLightmapUV::~FLightmapUV() {
-    RenderProxy->KillProxy();
+    GRenderBackend->DestroyBuffer( VertexBufferGPU );
 
     if ( OwnerMesh ) {
         OwnerMesh->LightmapUVs[ IndexInArrayOfUVs ] = OwnerMesh->LightmapUVs[ OwnerMesh->LightmapUVs.Size() - 1 ];
@@ -606,57 +591,39 @@ FLightmapUV::~FLightmapUV() {
 }
 
 void FLightmapUV::OnInitialize( int _NumVertices ) {
-    if ( VertexCount == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
+    if ( Vertices.Size() == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
         return;
     }
 
-    FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data;
-
-    VertexCount = _NumVertices;
     bDynamicStorage = OwnerMesh->bDynamicStorage;
-
-    data.VerticesCount = _NumVertices;
-    data.bDynamicStorage = bDynamicStorage;
-    data.Chunks = nullptr;
-    data.bReallocated = true;
 
     Vertices.ResizeInvalidate( _NumVertices );
 
-    RenderProxy->MarkUpdated();
+    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( FMeshLightmapUV ), bDynamicStorage );
 }
 
 bool FLightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FLightmapUV::SendVertexDataToGPU: Referencing outside of buffer\n" );
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "FLightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-
-    FRenderProxy_LightmapUVChannel::FrameData & data = RenderProxy->Data;
-
-    data.bDynamicStorage = bDynamicStorage;
-
-    FLightmapChunk * chunk = ( FLightmapChunk * )frameData->AllocFrameData( sizeof( FLightmapChunk ) + sizeof( FMeshLightmapUV ) * ( _VerticesCount - 1 ) );
-    if ( !chunk ) {
-        return false;
-    }
-
-    chunk->VerticesCount = _VerticesCount;
-    chunk->StartVertexLocation = _StartVertexLocation;
-
-    IntrusiveAddToList( chunk, Next, Prev, data.Chunks, data.ChunksTail );
-
-    RenderProxy->MarkUpdated();
-
-    memcpy( &chunk->Vertices[ 0 ], Vertices.ToPtr() + _StartVertexLocation, _VerticesCount * sizeof( FMeshLightmapUV ) );
+    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( FMeshLightmapUV ), _VerticesCount * sizeof( FMeshLightmapUV ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
 bool FLightmapUV::WriteVertexData( FMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FLightmapUV::WriteVertexData: Referencing outside of buffer\n" );
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "FLightmapUV::WriteVertexData: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
@@ -668,12 +635,11 @@ bool FLightmapUV::WriteVertexData( FMeshLightmapUV const * _Vertices, int _Verti
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FVertexLight::FVertexLight() {
-    RenderProxy = FRenderProxy::NewProxy< FRenderProxy_VertexLightChannel >();
-    RenderProxy->SetOwner( this );
+    VertexBufferGPU = GRenderBackend->CreateBuffer( this );
 }
 
 FVertexLight::~FVertexLight() {
-    RenderProxy->KillProxy();
+    GRenderBackend->DestroyBuffer( VertexBufferGPU );
 
     if ( OwnerMesh ) {
         OwnerMesh->VertexLightChannels[ IndexInArrayOfChannels ] = OwnerMesh->VertexLightChannels[ OwnerMesh->VertexLightChannels.Size() - 1 ];
@@ -684,57 +650,39 @@ FVertexLight::~FVertexLight() {
 }
 
 void FVertexLight::OnInitialize( int _NumVertices ) {
-    if ( VertexCount == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
+    if ( Vertices.Size() == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
         return;
     }
 
-    FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data;
-
-    VertexCount = _NumVertices;
     bDynamicStorage = OwnerMesh->bDynamicStorage;
-
-    data.VerticesCount = _NumVertices;
-    data.bDynamicStorage = bDynamicStorage;
-    data.Chunks = nullptr;
-    data.bReallocated = true;
 
     Vertices.ResizeInvalidate( _NumVertices );
 
-    RenderProxy->MarkUpdated();
+    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( FMeshVertexLight ), bDynamicStorage );
 }
 
 bool FVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FVertexLight::SendVertexDataToGPU: Referencing outside of buffer\n" );
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "FVertexLight::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-
-    FRenderProxy_VertexLightChannel::FrameData & data = RenderProxy->Data;
-
-    data.bDynamicStorage = bDynamicStorage;
-
-    FVertexLightChunk * chunk = ( FVertexLightChunk * )frameData->AllocFrameData( sizeof( FVertexLightChunk ) + sizeof( FMeshVertexLight ) * ( _VerticesCount - 1 ) );
-    if ( !chunk ) {
-        return false;
-    }
-
-    chunk->VerticesCount = _VerticesCount;
-    chunk->StartVertexLocation = _StartVertexLocation;
-
-    IntrusiveAddToList( chunk, Next, Prev, data.Chunks, data.ChunksTail );
-
-    RenderProxy->MarkUpdated();
-
-    memcpy( &chunk->Vertices[ 0 ], Vertices.ToPtr() + _StartVertexLocation, _VerticesCount * sizeof( FMeshVertexLight ) );
+    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( FMeshVertexLight ), _VerticesCount * sizeof( FMeshVertexLight ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
 bool FVertexLight::WriteVertexData( FMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount || _StartVertexLocation + _VerticesCount > VertexCount ) {
-        GLogger.Printf( "FVertexLight::WriteVertexData: Referencing outside of buffer\n" );
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "FVertexLight::WriteVertexData: Referencing outside of buffer (%s)\n", GetNameConstChar() );
         return false;
     }
 
@@ -771,7 +719,7 @@ void FIndexedMesh::GenerateSoftbodyLinksFromFaces() {
     TPodArray< bool > checks;
     unsigned int * indices;
 
-    checks.Resize( VertexCount*VertexCount );
+    checks.Resize( Vertices.Size()*Vertices.Size() );
     checks.ZeroMem();
 
     SoftbodyLinks.Clear();
@@ -781,12 +729,12 @@ void FIndexedMesh::GenerateSoftbodyLinksFromFaces() {
 
         for ( int j = 2, k = 0; k < 3; j = k++ ) {
 
-            unsigned int index_j_k = indices[ j ] + indices[ k ]*VertexCount;
+            unsigned int index_j_k = indices[ j ] + indices[ k ]*Vertices.Size();
 
             // Check if link not exists
             if ( !checks[ index_j_k ] ) {
 
-                unsigned int index_k_j = indices[ k ] + indices[ j ]*VertexCount;
+                unsigned int index_k_j = indices[ k ] + indices[ j ]*Vertices.Size();
 
                 // Mark link exits
                 checks[ index_j_k ] = checks[ index_k_j ] = true;
@@ -1651,8 +1599,6 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
 
     int firstVertex = 0;
 
-    // Rings
-
     for ( j = 0; j <= _NumSubdivs; j++ ) {
         pVerts[ firstVertex + j ].Position = Float3( 0.0f, -halfHeight, 0.0f );
         pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 0.0f ) * _TexCoordScale;
@@ -1711,8 +1657,6 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
 
     unsigned int * pIndices = _Indices.ToPtr();
 
-    //_Indices.Memset( 0 );
-
     firstVertex = 0;
     for ( i = 0; i < 3; i++ ) {
         for ( j = 0; j < _NumSubdivs; j++ ) {
@@ -1730,6 +1674,104 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
         }
         firstVertex += ( _NumSubdivs + 1 ) * 2;
     }
+
+    CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+}
+
+void CreateConeMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
+    int i, j;
+    float angle;
+    unsigned int quad[ 4 ];
+
+    _NumSubdivs = FMath::Max( _NumSubdivs, 4 );
+
+    const float invSubdivs = 1.0f / _NumSubdivs;
+    const float angleStep = FMath::_2PI * invSubdivs;
+
+    _Vertices.ResizeInvalidate( 4 * ( _NumSubdivs + 1 ) );
+    _Indices.ResizeInvalidate( 2 * _NumSubdivs * 6 );
+
+    _Bounds.Mins.X = -_Radius;
+    _Bounds.Mins.Z = -_Radius;
+    _Bounds.Mins.Y = 0;
+
+    _Bounds.Maxs.X = _Radius;
+    _Bounds.Maxs.Z = _Radius;
+    _Bounds.Maxs.Y = _Height;
+
+    FMeshVertex * pVerts = _Vertices.ToPtr();
+
+    int firstVertex = 0;
+
+    for ( j = 0; j <= _NumSubdivs; j++ ) {
+        pVerts[ firstVertex + j ].Position = Float3::Zero();
+        pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 0.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
+    }
+    firstVertex += _NumSubdivs + 1;
+
+    for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
+        float s, c;
+        FMath::RadSinCos( angle, s, c );
+        pVerts[ firstVertex + j ].Position = Float3( _Radius*c, 0.0f, _Radius*s );
+        pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 1.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
+        angle += angleStep;
+    }
+    firstVertex += _NumSubdivs + 1;
+
+    for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
+        float s, c;
+        FMath::RadSinCos( angle, s, c );
+        pVerts[ firstVertex + j ].Position = Float3( _Radius*c, 0.0f, _Radius*s );
+        pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 1.0f ) * _TexCoordScale;
+        pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
+        angle += angleStep;
+    }
+    firstVertex += _NumSubdivs + 1;
+
+    Float3 vx;
+    Float3 vy( 0, _Height, 0);
+    Float3 v;
+    for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
+        float s, c;
+        FMath::RadSinCos( angle, s, c );
+        pVerts[ firstVertex + j ].Position = Float3( 0, _Height, 0 );
+        pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 0.0f ) * _TexCoordScale;
+
+        vx = Float3( c, 0.0f, s );
+        v = vy - vx;
+        pVerts[ firstVertex + j ].Normal = FMath::Cross( FMath::Cross( v, vx ), v ).Normalized();
+
+        angle += angleStep;
+    }
+    firstVertex += _NumSubdivs + 1;
+
+    AN_Assert( firstVertex == _Vertices.Size() );
+
+    // generate indices
+
+    unsigned int * pIndices = _Indices.ToPtr();
+
+    firstVertex = 0;
+    for ( i = 0; i < 2; i++ ) {
+        for ( j = 0; j < _NumSubdivs; j++ ) {
+            quad[ 3 ] = firstVertex + j;
+            quad[ 2 ] = firstVertex + j + 1;
+            quad[ 1 ] = firstVertex + j + 1 + ( _NumSubdivs + 1 );
+            quad[ 0 ] = firstVertex + j + ( _NumSubdivs + 1 );
+
+            *pIndices++ = quad[ 0 ];
+            *pIndices++ = quad[ 1 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 2 ];
+            *pIndices++ = quad[ 3 ];
+            *pIndices++ = quad[ 0 ];
+        }
+        firstVertex += ( _NumSubdivs + 1 ) * 2;
+    }
+
+    AN_Assert( pIndices == _Indices.ToPtr() + _Vertices.Size() );
 
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }

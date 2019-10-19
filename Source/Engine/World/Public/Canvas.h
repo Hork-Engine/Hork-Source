@@ -30,14 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/RenderBackend.h>
+#include <Engine/Runtime/Public/RenderCore.h>
 #include <Engine/Core/Public/PodArray.h>
 #include <Engine/Resource/Public/FontAtlas.h>
 
 #include <Engine/imgui/imgui_internal.h>
 
 class FPlayerController;
-class FTexture;
+class FTexture2D;
 class FMaterialInstance;
 
 struct FViewport {
@@ -130,9 +130,9 @@ public:
     void DrawCharUTF8( FFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, FColor4 const & _Color );
 
     // Texture
-    void DrawTexture( FTexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0 = Float2(0,0), Float2 const & _UV1 = Float2(1,1), FColor4 const & _Color = FColor4(1.0F), EColorBlending _Blending = COLOR_BLENDING_ALPHA, ESamplerType _SamplerType = SAMPLER_TYPE_TILED_LINEAR );
-    void DrawTextureQuad( FTexture * _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0 = Float2(0,0), Float2 const & _UV1 = Float2(1,0), Float2 const & _UV2 = Float2(1,1), Float2 const & _UV3 = Float2(0,1), FColor4 const & _Color = FColor4(1.0F), EColorBlending _Blending = COLOR_BLENDING_ALPHA, ESamplerType _SamplerType = SAMPLER_TYPE_TILED_LINEAR );
-    void DrawTextureRounded( FTexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, FColor4 const & _Color, float _Rounding, int _RoundingCorners = CORNER_ROUND_ALL, EColorBlending _Blending = COLOR_BLENDING_ALPHA, ESamplerType _SamplerType = SAMPLER_TYPE_TILED_LINEAR );
+    void DrawTexture( FTexture2D * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0 = Float2(0,0), Float2 const & _UV1 = Float2(1,1), FColor4 const & _Color = FColor4(1.0F), EColorBlending _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR );
+    void DrawTextureQuad( FTexture2D * _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0 = Float2(0,0), Float2 const & _UV1 = Float2(1,0), Float2 const & _UV2 = Float2(1,1), Float2 const & _UV3 = Float2(0,1), FColor4 const & _Color = FColor4(1.0F), EColorBlending _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR );
+    void DrawTextureRounded( FTexture2D * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, FColor4 const & _Color, float _Rounding, int _RoundingCorners = CORNER_ROUND_ALL, EColorBlending _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR );
 
     // Material
     void DrawMaterial( FMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0 = Float2(0,0), Float2 const & _UV1 = Float2(1,1), FColor4 const & _Color = FColor4::White() );

@@ -37,6 +37,7 @@ SOFTWARE.
 #include <Engine/World/Public/Actors/PlayerController.h>
 #include <Engine/Resource/Public/Texture.h>
 #include <Engine/Core/Public/BV/BvIntersect.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
 FRuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
 FRuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
@@ -68,7 +69,7 @@ FLevel::FLevel() {
 FLevel::~FLevel() {
     ClearLightmaps();
 
-    DeallocateBufferData( LightData );
+    HugeFree( LightData );
 
     DestroyActors();
 
@@ -76,13 +77,13 @@ FLevel::~FLevel() {
 }
 
 void FLevel::SetLightData( const byte * _Data, int _Size ) {
-    DeallocateBufferData( LightData );
-    LightData = (byte *)AllocateBufferData( _Size );
+    HugeFree( LightData );
+    LightData = (byte *)HugeAlloc( _Size );
     memcpy( LightData, _Data, _Size );
 }
 
 void FLevel::ClearLightmaps() {
-    for ( FTexture * lightmap : Lightmaps ) {
+    for ( FTexture2D * lightmap : Lightmaps ) {
         lightmap->RemoveRef();
     }
     Lightmaps.Free();
@@ -223,7 +224,7 @@ void FLevel::BuildPortals() {
         FLevelArea * a2 = portal->Area2;
 
         if ( a1 == OutdoorArea ) {
-            std::swap( a1, a2 );
+            StdSwap( a1, a2 );
         }
 
         // Check area position relative to portal plane
@@ -975,11 +976,11 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
         }
     }
 
-#ifdef FUTURE
     for ( FLightComponent * light : _Area->GetLights() ) {
-        AddLight( light, prevStack->AreaFrustum, prevStack->PlanesCount );
+        AddLightInstance( _Def, light, prevStack->AreaFrustum, prevStack->PlanesCount );
     }
 
+#ifdef FUTURE
     for ( FEnvCaptureComponent * envCapture : _Area->GetEnvCaptures() ) {
         AddEnvCapture( envCapture, prevStack->AreaFrustum, prevStack->PlanesCount );
     }
@@ -1275,14 +1276,11 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         return;
     }
 
-    FRenderProxy_Skeleton * skeletonProxy = nullptr;
+    size_t skeletonOffset = 0;
+    size_t skeletonSize = 0;
     if ( mesh->IsSkinned() && component->IsSkinnedMesh() ) {
         FSkinnedComponent * skeleton = static_cast< FSkinnedComponent * >( component );
-        skeleton->UpdateJointTransforms();
-        skeletonProxy = skeleton->GetRenderProxy();
-        if ( !skeletonProxy->IsSubmittedToRenderThread() ) {
-            skeletonProxy = nullptr;
-        }
+        skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize );
     }
 
     if ( component->bNoTransform ) {
@@ -1303,38 +1301,38 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
 
         FIndexedMeshSubpart * subpart = subparts[ subpartIndex ];
 
-        FRenderProxy_IndexedMesh * proxy = mesh->GetRenderProxy();
-
         FMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
         AN_Assert( materialInstance );
 
         FMaterial * material = materialInstance->GetMaterial();
 
-        FMaterialInstanceFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
+        FMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
 
         // Add render instance
-        FRenderInstance * instance = ( FRenderInstance * )GRuntime.GetFrameData()->AllocFrameData( sizeof( FRenderInstance ) );
+        FRenderInstance * instance = ( FRenderInstance * )GRuntime.AllocFrameMem( sizeof( FRenderInstance ) );
         if ( !instance ) {
             return;
         }
 
         GRuntime.GetFrameData()->Instances.Append( instance );
 
-        instance->Material = material->GetRenderProxy();
+        instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
-        instance->MeshRenderProxy = proxy;
+        instance->VertexBuffer = mesh->GetVertexBufferGPU();
+        instance->IndexBuffer = mesh->GetIndexBufferGPU();
+        instance->WeightsBuffer = mesh->GetWeightsBufferGPU();
 
         if ( component->LightmapUVChannel && component->LightmapBlock >= 0 && component->LightmapBlock < level->Lightmaps.Size() ) {
-            instance->LightmapUVChannel = component->LightmapUVChannel->GetRenderProxy();
+            instance->LightmapUVChannel = component->LightmapUVChannel->GetGPUResource();
             instance->LightmapOffset = component->LightmapOffset;
-            instance->Lightmap = level->Lightmaps[ component->LightmapBlock ]->GetRenderProxy();
+            instance->Lightmap = level->Lightmaps[ component->LightmapBlock ]->GetGPUResource();
         } else {
             instance->LightmapUVChannel = nullptr;
             instance->Lightmap = nullptr;
         }
 
         if ( component->VertexLightChannel ) {
-            instance->VertexLightChannel = component->VertexLightChannel->GetRenderProxy();
+            instance->VertexLightChannel = component->VertexLightChannel->GetGPUResource();
         } else {
             instance->VertexLightChannel = nullptr;
         }
@@ -1349,7 +1347,8 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
             instance->BaseVertexLocation = subpart->GetBaseVertex() + component->SubpartBaseVertexOffset;
         }
 
-        instance->Skeleton = skeletonProxy;
+        instance->SkeletonOffset = skeletonOffset;
+        instance->SkeletonSize = skeletonSize;
         instance->Matrix = *instanceMatrix;
 
         if ( material->GetType() == MATERIAL_TYPE_PBR ) {
@@ -1357,6 +1356,7 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         }
 
         instance->RenderingOrder = component->RenderingOrder;
+        instance->bLightPass = component->bLightPass;
 
         _Def->View->InstanceCount++;
 
@@ -1367,6 +1367,184 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
             break;
         }
     }
+}
+
+void FLevel::AddLightInstance( FRenderFrontendDef * _Def, FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
+#if 0
+    if ( component->RenderMark == _Def->VisMarker ) {
+        return;
+    }
+
+    if ( ( component->RenderingGroup & _Def->RenderingMask ) == 0 ) {
+        component->RenderMark = _Def->VisMarker;
+        return;
+    }
+
+    if ( component->VSDPasses & VSD_PASS_FACE_CULL ) {
+        // TODO: bTwoSided and bFrontSided must came from component
+        const bool bTwoSided = false;
+        const bool bFrontSided = true;
+        const float EPS = 0.25f;
+
+        if ( !bTwoSided ) {
+            PlaneF const & plane = component->FacePlane;
+            float d = _Def->View->ViewPostion.Dot( plane.Normal );
+
+            bool bFaceCull = false;
+
+            if ( bFrontSided ) {
+                if ( d < -plane.D - EPS ) {
+                    bFaceCull = true;
+                }
+            } else {
+                if ( d > -plane.D + EPS ) {
+                    bFaceCull = true;
+                }
+            }
+
+            if ( bFaceCull ) {
+                component->RenderMark = _Def->VisMarker;
+                #ifdef DEBUG_TRAVERSING_COUNTERS
+                Dbg_CulledByDotProduct++;
+                #endif
+                return;
+            }
+        }
+    }
+
+    if ( component->VSDPasses & VSD_PASS_BOUNDS ) {
+
+        // TODO: use SSE cull
+        BvAxisAlignedBox const & bounds = component->GetWorldBounds();
+
+        if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
+            #ifdef DEBUG_TRAVERSING_COUNTERS
+            Dbg_CulledBySurfaceBounds++;
+            #endif
+            return;
+        }
+    }
+
+    component->RenderMark = _Def->VisMarker;
+
+    if ( component->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
+
+        bool bVisible;
+        component->RenderFrontend_CustomVisibleStep( _Def, bVisible );
+
+        if ( !bVisible ) {
+            return;
+        }
+    }
+
+    if ( component->VSDPasses & VSD_PASS_VIS_MARKER ) {
+        bool bVisible = component->VisMarker == _Def->VisMarker;
+        if ( !bVisible ) {
+            return;
+        }
+    }
+
+    Float4x4 tmpMatrix;
+    Float4x4 * instanceMatrix;
+
+    FIndexedMesh * mesh = component->GetMesh();
+    if ( !mesh ) {
+        // TODO: default mesh?
+        return;
+    }
+
+    size_t skeletonOffset = 0;
+    size_t skeletonSize = 0;
+    if ( mesh->IsSkinned() && component->IsSkinnedMesh() ) {
+        FSkinnedComponent * skeleton = static_cast< FSkinnedComponent * >( component );
+        skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize );
+    }
+
+    if ( component->bNoTransform ) {
+        instanceMatrix = &_Def->View->ModelviewProjection;
+    } else {
+        tmpMatrix = _Def->View->ModelviewProjection * component->GetWorldTransformMatrix(); // TODO: optimize: parallel, sse, check if transformable
+        instanceMatrix = &tmpMatrix;
+    }
+
+    FActor * actor = component->GetParentActor();
+    FLevel * level = actor->GetLevel();
+
+    FIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+
+    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+
+        // FIXME: check subpart bounding box here
+
+        FIndexedMeshSubpart * subpart = subparts[ subpartIndex ];
+
+        FMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
+        AN_Assert( materialInstance );
+
+        FMaterial * material = materialInstance->GetMaterial();
+
+        FMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
+
+        // Add render instance
+        FRenderInstance * instance = ( FRenderInstance * )GRuntime.AllocFrameMem( sizeof( FRenderInstance ) );
+        if ( !instance ) {
+            return;
+        }
+
+        GRuntime.GetFrameData()->Instances.Append( instance );
+
+        instance->Material = material->GetGPUResource();
+        instance->MaterialInstance = materialInstanceFrameData;
+        instance->VertexBuffer = mesh->GetVertexBufferGPU();
+        instance->IndexBuffer = mesh->GetIndexBufferGPU();
+        instance->WeightsBuffer = mesh->GetWeightsBufferGPU();
+
+        if ( component->LightmapUVChannel && component->LightmapBlock >= 0 && component->LightmapBlock < level->Lightmaps.Size() ) {
+            instance->LightmapUVChannel = component->LightmapUVChannel->GetGPUResource();
+            instance->LightmapOffset = component->LightmapOffset;
+            instance->Lightmap = level->Lightmaps[ component->LightmapBlock ]->GetGPUResource();
+        } else {
+            instance->LightmapUVChannel = nullptr;
+            instance->Lightmap = nullptr;
+        }
+
+        if ( component->VertexLightChannel ) {
+            instance->VertexLightChannel = component->VertexLightChannel->GetGPUResource();
+        } else {
+            instance->VertexLightChannel = nullptr;
+        }
+
+        if ( component->bUseDynamicRange ) {
+            instance->IndexCount = component->DynamicRangeIndexCount;
+            instance->StartIndexLocation = component->DynamicRangeStartIndexLocation;
+            instance->BaseVertexLocation = component->DynamicRangeBaseVertexLocation;
+        } else {
+            instance->IndexCount = subpart->GetIndexCount();
+            instance->StartIndexLocation = subpart->GetFirstIndex();
+            instance->BaseVertexLocation = subpart->GetBaseVertex() + component->SubpartBaseVertexOffset;
+        }
+
+        instance->SkeletonOffset = skeletonOffset;
+        instance->SkeletonSize = skeletonSize;
+        instance->Matrix = *instanceMatrix;
+
+        if ( material->GetType() == MATERIAL_TYPE_PBR ) {
+            instance->ModelNormalToViewSpace = _Def->View->NormalToViewMatrix * component->GetWorldRotation().ToMatrix();
+        }
+
+        instance->RenderingOrder = component->RenderingOrder;
+        instance->bLightPass = component->bLightPass;
+
+        _Def->View->InstanceCount++;
+
+        _Def->PolyCount += instance->IndexCount / 3;
+
+        if ( component->bUseDynamicRange ) {
+            // If component uses dynamic range, mesh has actually one subpart
+            break;
+        }
+    }
+#endif
 }
 
 #ifdef FUTURE

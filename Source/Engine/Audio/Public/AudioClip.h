@@ -34,9 +34,9 @@ SOFTWARE.
 #include <Engine/Audio/Public/AudioDecoderInterface.h>
 
 enum ESoundStreamType {
-    SST_NonStreamed,
-    SST_FileStreamed,
-    SST_MemoryStreamed
+    SOUND_STREAM_DISABLED,
+    SOUND_STREAM_FILE,
+    SOUND_STREAM_MEMORY
 };
 
 enum { AUDIO_MIN_PCM_BUFFER_SIZE = 1024 * 24 };
@@ -46,7 +46,6 @@ class FAudioClip : public FBaseObject {
     AN_CLASS( FAudioClip, FBaseObject )
 
 public:
-
     ESoundStreamType StreamType;
 
     // Initialize internal resource

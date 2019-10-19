@@ -34,7 +34,7 @@ SOFTWARE.
 FConvexHull * FConvexHull::Create( int _MaxPoints ) {
     AN_Assert( _MaxPoints > 0 );
     int size = sizeof( FConvexHull ) - sizeof( Points ) + _MaxPoints * sizeof( Points[0] );
-    FConvexHull * hull = ( FConvexHull * )GMainMemoryZone.Alloc( size, 1 );
+    FConvexHull * hull = ( FConvexHull * )GZoneMemory.Alloc( size, 1 );
     hull->MaxPoints = _MaxPoints;
     hull->NumPoints = 0;
     return hull;
@@ -83,7 +83,7 @@ FConvexHull * FConvexHull::RecreateFromPoints( FConvexHull * _OldHull, Float3 co
         // resize hull
         int oldSize = sizeof( FConvexHull ) - sizeof( Points ) + _OldHull->MaxPoints * sizeof( Points[0] );
         int newSize = oldSize + ( _NumPoints - _OldHull->MaxPoints ) * sizeof( Points[0] );
-        FConvexHull * hull = ( FConvexHull * )GMainMemoryZone.Extend( _OldHull, oldSize, newSize, 1, false );
+        FConvexHull * hull = ( FConvexHull * )GZoneMemory.Extend( _OldHull, oldSize, newSize, 1, false );
         hull->MaxPoints = _NumPoints;
         hull->NumPoints = _NumPoints;
         memcpy( hull->Points, _Points, _NumPoints * sizeof( Float3 ) );
@@ -94,7 +94,7 @@ FConvexHull * FConvexHull::RecreateFromPoints( FConvexHull * _OldHull, Float3 co
 }
 
 void FConvexHull::Destroy( FConvexHull * _Hull ) {
-    GMainMemoryZone.Dealloc( _Hull );
+    GZoneMemory.Dealloc( _Hull );
 }
 
 FConvexHull * FConvexHull::Duplicate() const {

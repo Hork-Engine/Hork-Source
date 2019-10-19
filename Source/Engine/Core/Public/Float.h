@@ -465,8 +465,8 @@ public:
     static constexpr int BitsCount() { return sizeof( Float ) * 8; }
     static constexpr Float MinPowerOfTwo() { return 1.0f; }
     static constexpr Float MaxPowerOfTwo() { return float( 1u << 31 ); }
-    static constexpr Float MinValue() { return std::numeric_limits< float >::min(); }
-    static constexpr Float MaxValue() { return std::numeric_limits< float >::max(); }
+    static constexpr Float MinValue() { return TStdNumericLimits< float >::min(); }
+    static constexpr Float MaxValue() { return TStdNumericLimits< float >::max(); }
 };
 
 namespace FMath {
@@ -1028,7 +1028,12 @@ public:
         return Lerp( *this, _To, _Mix );
     }
 
+    Float2 Lerp( const Float2 & _To, const Float2 & _Mix ) const {
+        return Lerp( *this, _To, _Mix );
+    }
+
     static Float2 Lerp( const Float2 & _From, const Float2 & _To, const float & _Mix );
+    static Float2 Lerp( const Float2 & _From, const Float2 & _To, const Float2 & _Mix );
 
     float Bilerp( const float & _A, const float & _B, const float & _C, const float & _D ) const;
     Float2 Bilerp( const Float2 & _A, const Float2 & _B, const Float2 & _C, const Float2 & _D ) const;
@@ -1506,7 +1511,12 @@ public:
         return Lerp( *this, _To, _Mix );
     }
 
+    Float3 Lerp( const Float3 & _To, const Float3 & _Mix ) const {
+        return Lerp( *this, _To, _Mix );
+    }
+
     static Float3 Lerp( const Float3 & _From, const Float3 & _To, const float & _Mix );
+    static Float3 Lerp( const Float3 & _From, const Float3 & _To, const Float3 & _Mix );
 
     Float3 Clamp( const float & _Min, const float & _Max ) const {
         return Float3( FMath::Clamp( X, _Min, _Max ), FMath::Clamp( Y, _Min, _Max ), FMath::Clamp( Z, _Min, _Max ) );
@@ -1977,7 +1987,12 @@ public:
         return Lerp( *this, _To, _Mix );
     }
 
+    Float4 Lerp( const Float4 & _To, const Float4 & _Mix ) const {
+        return Lerp( *this, _To, _Mix );
+    }
+
     static Float4 Lerp( const Float4 & _From, const Float4 & _To, const float & _Mix );
+    static Float4 Lerp( const Float4 & _From, const Float4 & _To, const Float4 & _Mix );
 
     Float4 Clamp( const float & _Min, const float & _Max ) const {
         return Float4( FMath::Clamp( X, _Min, _Max ), FMath::Clamp( Y, _Min, _Max ), FMath::Clamp( Z, _Min, _Max ), FMath::Clamp( W, _Min, _Max ) );
@@ -2372,6 +2387,9 @@ AN_FORCEINLINE Float4 operator*( const float & _Left, const Float4 & _Right ) {
 AN_FORCEINLINE Float2 Float2::Lerp( const Float2 & _From, const Float2 & _To, const float & _Mix ) {
     return _From + _Mix * ( _To - _From );
 }
+AN_FORCEINLINE Float2 Float2::Lerp( const Float2 & _From, const Float2 & _To, const Float2 & _Mix ) {
+    return _From + _Mix * ( _To - _From );
+}
 AN_FORCEINLINE float Float2::Bilerp( const float & _A, const float & _B, const float & _C, const float & _D ) const {
     return _A * ( 1.0f - X ) * ( 1.0f - Y ) + _B * X * ( 1.0f - Y ) + _C * ( 1.0f - X ) * Y + _D * X * Y;
 }
@@ -2389,7 +2407,15 @@ AN_FORCEINLINE Float3 Float3::Lerp( const Float3 & _From, const Float3 & _To, co
     return _From + _Mix * ( _To - _From );
 }
 
+AN_FORCEINLINE Float3 Float3::Lerp( const Float3 & _From, const Float3 & _To, const Float3 & _Mix ) {
+    return _From + _Mix * ( _To - _From );
+}
+
 AN_FORCEINLINE Float4 Float4::Lerp( const Float4 & _From, const Float4 & _To, const float & _Mix ) {
+    return _From + _Mix * ( _To - _From );
+}
+
+AN_FORCEINLINE Float4 Float4::Lerp( const Float4 & _From, const Float4 & _To, const Float4 & _Mix ) {
     return _From + _Mix * ( _To - _From );
 }
 
@@ -2499,10 +2525,10 @@ AN_FORCEINLINE Float3 Cross( const Float3 & _Left, const Float3 & _Right ) { ret
 AN_FORCEINLINE constexpr float Degrees( const float & _Rad ) { return _Rad * _RAD2DEG; }
 AN_FORCEINLINE constexpr float Radians( const float & _Deg ) { return _Deg * _DEG2RAD; }
 
-AN_FORCEINLINE /*constexpr*/ float RadSin( const float & _Rad ) { return std::sin( _Rad ); }
-AN_FORCEINLINE /*constexpr*/ float RadCos( const float & _Rad ) { return std::cos( _Rad ); }
-AN_FORCEINLINE /*constexpr*/ float DegSin( const float & _Deg ) { return std::sin( Radians( _Deg ) ); }
-AN_FORCEINLINE /*constexpr*/ float DegCos( const float & _Deg ) { return std::cos( Radians( _Deg ) ); }
+AN_FORCEINLINE /*constexpr*/ float RadSin( const float & _Rad ) { return StdSin( _Rad ); }
+AN_FORCEINLINE /*constexpr*/ float RadCos( const float & _Rad ) { return StdCos( _Rad ); }
+AN_FORCEINLINE /*constexpr*/ float DegSin( const float & _Deg ) { return StdSin( Radians( _Deg ) ); }
+AN_FORCEINLINE /*constexpr*/ float DegCos( const float & _Deg ) { return StdCos( Radians( _Deg ) ); }
 
 AN_FORCEINLINE void RadSinCos( const float & _Rad, float & _Sin, float & _Cos ) {
 #if defined(_WIN32) && !defined(_WIN64)
@@ -2525,7 +2551,7 @@ AN_FORCEINLINE void DegSinCos( const float & _Deg, float & _Sin, float & _Cos ) 
 }
 
 AN_INLINE float GreaterCommonDivisor( float m, float n ) {
-    return ( m < 0.0001f ) ? n : GreaterCommonDivisor( std::fmod( n, m ), m );
+    return ( m < 0.0001f ) ? n : GreaterCommonDivisor( StdFmod( n, m ), m );
 }
 
 template< typename T >

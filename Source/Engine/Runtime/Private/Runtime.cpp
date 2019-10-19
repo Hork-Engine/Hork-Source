@@ -52,13 +52,13 @@ FAsyncJobList * GRenderBackendJobList;
 FRuntime::FRuntime() {
 }
 
-bool FRuntime::IsVSyncSupported() {
-    return rt_RenderFeatures.bSwapControl;
-}
+//bool FRuntime::IsVSyncSupported() {
+//    return rt_RenderFeatures.bSwapControl;
+//}
 
-bool FRuntime::IsAdaptiveVSyncSupported() {
-    return rt_RenderFeatures.bSwapControlTear;
-}
+//bool FRuntime::IsAdaptiveVSyncSupported() {
+//    return rt_RenderFeatures.bSwapControlTear;
+//}
 
 FPhysicalMonitor const * FRuntime::GetPrimaryMonitor() {
     return rt_GetPrimaryMonitor();
@@ -352,12 +352,12 @@ const char * FRuntime::GetExecutableName() {
     return rt_Executable ? rt_Executable : "";
 }
 
-void FRuntime::SetClipboard_GameThread( const char * _Utf8String ) {
-    rt_SetClipboard_GameThread( _Utf8String );
+void FRuntime::SetClipboard( const char * _Utf8String ) {
+    glfwSetClipboardString( NULL, _Utf8String );
 }
 
-FString const & FRuntime::GetClipboard_GameThread() {
-    return rt_GetClipboard_GameThread();
+const char * FRuntime::GetClipboard() {
+    return glfwGetClipboardString( NULL );
 }
 
 FRenderFrame * FRuntime::GetFrameData() {
@@ -372,6 +372,38 @@ FEventQueue * FRuntime::WriteEvents_GameThread() {
     return &rt_GameEvents;
 }
 
+void * FRuntime::AllocFrameMem( size_t _SizeInBytes ) {
+    if ( rt_FrameMemoryUsed + _SizeInBytes > rt_FrameMemorySize ) {
+        GLogger.Printf( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, rt_FrameMemorySize - rt_FrameMemoryUsed, rt_FrameMemorySize );
+        return nullptr;
+    }
+
+    void * pMemory;
+
+//    if ( WriteIndex & 1 ) {
+//        pMemory = (byte *)rt_FrameMemoryAddress - rt_FrameMemoryUsed - _SizeInBytes;
+//    } else {
+        pMemory = (byte *)rt_FrameMemoryAddress + rt_FrameMemoryUsed;
+//    }
+
+    rt_FrameMemoryUsed += _SizeInBytes;
+
+    //GLogger.Printf( "Allocated %u, Used %u\n", _SizeInBytes, rt_FrameMemoryUsed );
+
+    return pMemory;
+}
+
+size_t FRuntime::GetFrameMemorySize() const {
+    return rt_FrameMemorySize;
+}
+
+size_t FRuntime::GetFrameMemoryUsed() const {
+    return rt_FrameMemoryUsed;
+}
+
+size_t FRuntime::GetFrameMemoryUsedPrev() const {
+    return rt_FrameMemoryUsedPrev;
+}
 
 
 #if 0

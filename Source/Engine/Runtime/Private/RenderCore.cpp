@@ -28,62 +28,27 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/HUD.h>
-#include <Engine/World/Public/Canvas.h>
-#include <Engine/Core/Public/Utf8.h>
+#include <Engine/Runtime/Public/RenderCore.h>
+#include <Engine/Core/Public/Logger.h>
+#include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META( FHUD )
+#include <Engine/Renderer/OpenGL4.5/OpenGL45RenderBackend.h>
 
-FHUD::FHUD() {
+IRenderBackend * GRenderBackend = &OpenGL45::GOpenGL45RenderBackend;
 
+FResourceGPU * FResourceGPU::GPUResources;
+FResourceGPU * FResourceGPU::GPUResourcesTail;
+
+void IRenderBackend::RegisterGPUResource( FResourceGPU * _Resource ) {
+    IntrusiveAddToList( _Resource, pNext, pPrev, FResourceGPU::GPUResources, FResourceGPU::GPUResourcesTail );
 }
 
-void FHUD::Draw( FCanvas * _Canvas, int _X, int _Y, int _W, int _H ) {
-    Canvas = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
-
-    DrawHUD();
+void IRenderBackend::UnregisterGPUResource( FResourceGPU * _Resource ) {
+    IntrusiveRemoveFromList( _Resource, pNext, pPrev, FResourceGPU::GPUResources, FResourceGPU::GPUResourcesTail );
 }
 
-void FHUD::DrawHUD() {
-
-}
-
-void FHUD::DrawText( FFont * _Font, int x, int y, FColor4 const & color, const char * _Text ) {
-    const int CharacterWidth = 8;
-    const int CharacterHeight = 16;
-
-    const float scale = (float)CharacterHeight / _Font->GetFontSize();
-
-    const char * s = _Text;
-    int byteLen;
-    FWideChar ch;
-    int cx = x;
-
-    while ( *s ) {
-        byteLen = FCore::WideCharDecodeUTF8( s, ch );
-        if ( !byteLen ) {
-            break;
-        }
-
-        s += byteLen;
-
-        if ( ch == '\n' || ch == '\r' ) {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if ( ch == ' ' ) {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar( _Font, ch, cx, y, scale, color );
-
-        cx += CharacterWidth;
+void IRenderBackend::UploadGPUResources() {
+    for ( FResourceGPU * resource = FResourceGPU::GPUResources ; resource ; resource = resource->pNext ) {
+        resource->pOwner->UploadResourceGPU( resource );
     }
 }

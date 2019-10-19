@@ -77,15 +77,9 @@ AN_FORCEINLINE void ZeroMem( void * d, size_t sz ) {
 
 FHeapMemory
 
-Allocates memory directly on heap
+Allocates memory on heap
 
 */
-struct heap_t {
-    uint32_t size;
-    heap_t * next;
-    heap_t * prev;
-    int16_t padding; // to keep heap aligned
-};
 class ANGIE_API FHeapMemory final {
     AN_FORBID_COPY( FHeapMemory )
 
@@ -93,38 +87,22 @@ public:
     FHeapMemory();
     ~FHeapMemory();
 
-    // Initialize memory
+    // Initialize memory (main thread only)
     void Initialize();
 
-    // Deinitialize memory
+    // Deinitialize memory (main thread only)
     void Deinitialize();
 
-//    // Heap memory allocation
-//    void * HeapAlloc( size_t _BytesCount ) { return _HeapAllocAligned( _BytesCount, 1 ); }
-
-//    // Heap memory allocation
-//    void * HeapAlloc16( size_t _BytesCount ) { return _HeapAllocAligned( _BytesCount, 16 ); }
-
-//    // Heap memory allocation
-//    void * HeapAlloc32( size_t _BytesCount ) { return _HeapAllocAligned( _BytesCount, 32 ); }
-
-//    // Heap memory allocation
-//    template< int Alignment >
-//    void * HeapAllocAligned( size_t _BytesCount ) {
-//        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "FHeapMemory" );
-//        return _HeapAllocAligned( _BytesCount, Alignment );
-//    }
-
-    // Heap memory allocation
+    // Heap memory allocation (thread safe)
     void * HeapAlloc( size_t _BytesCount, int _Alignment );
 
-    // Heap memory allocation
+    // Heap memory allocation (thread safe)
     void * HeapAllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue = 0 );
 
-    // Heap memory deallocation
+    // Heap memory deallocation (thread safe)
     void HeapFree( void * _Bytes );
 
-    // Clearing whole heap memory
+    // Clearing whole heap memory (main thread only)
     void Clear();
 
     // Statistics: current memory usage
@@ -139,9 +117,16 @@ public:
 private:
     void CheckMemoryLeaks();
 
-    heap_t HeapChain;
+    struct SHeapChunk {
+        uint32_t Size;
+        SHeapChunk * pNext;
+        SHeapChunk * pPrev;
+        int16_t Padding; // to keep heap aligned
+    };
 
-    // TODO: FThreadSync Sync
+    SHeapChunk HeapChain;
+
+    FThreadSync Sync;
 };
 
 AN_FORCEINLINE void * FHeapMemory::HeapAllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
@@ -182,22 +167,6 @@ public:
     void * GetHunkMemoryAddress() const;
     int GetHunkMemorySizeInMegabytes() const;
 
-//    // Hunk memory allocation
-//    void * HunkMemory( size_t _BytesCount ) { return _HunkMemory( _BytesCount, 1 ); }
-
-//    // Hunk memory allocation
-//    void * HunkMemory16( size_t _BytesCount ) { return _HunkMemory( _BytesCount, 16 ); }
-
-//    // Hunk memory allocation
-//    void * HunkMemory32( size_t _BytesCount ) { return _HunkMemory( _BytesCount, 32 ); }
-
-//    // Heap memory allocation
-//    template< int Alignment >
-//    void * HunkMemoryAligned( size_t _BytesCount ) {
-//        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "FHunkMemory" );
-//        return _HunkMemory( _BytesCount, Alignment );
-//    }
-
     // Hunk memory allocation
     void * HunkMemory( size_t _BytesCount, int _Alignment );
 
@@ -229,7 +198,7 @@ private:
     void IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead );
     void DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead );
 
-    struct hunkMemory_t * MemoryBuffer = nullptr;
+    struct SHunkMemory * MemoryBuffer = nullptr;
 
     size_t TotalMemoryUsage = 0;
     size_t TotalMemoryOverhead = 0;
@@ -244,16 +213,16 @@ AN_FORCEINLINE void * FHunkMemory::HunkMemoryCleared( size_t _BytesCount, int _A
 
 /*
 
-FMemoryZone
+FZoneMemory
 
 For small blocks, objects or strings
 
 */
-class ANGIE_API FMemoryZone final {
-    AN_FORBID_COPY( FMemoryZone )
+class ANGIE_API FZoneMemory final {
+    AN_FORBID_COPY( FZoneMemory )
 
 public:
-    FMemoryZone() {}
+    FZoneMemory() {}
 
     // Initialize memory
     void Initialize( void * _MemoryAddress, int _SizeInMegabytes );
@@ -293,14 +262,14 @@ public:
     size_t GetMaxMemoryUsage() const;
 
 private:
-    struct chunk_t * FindFreeChunk( int _RequiredSize );
+    struct SZoneChunk * FindFreeChunk( int _RequiredSize );
 
     void CheckMemoryLeaks();
 
     void IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead );
     void DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead );
 
-    struct memoryBuffer_t * MemoryBuffer = nullptr;
+    struct SZoneBuffer * MemoryBuffer = nullptr;
 
     FAtomicLong TotalMemoryUsage;
     FAtomicLong TotalMemoryOverhead;
@@ -309,13 +278,13 @@ private:
     FThreadSync Sync;
 };
 
-AN_FORCEINLINE void * FMemoryZone::AllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
+AN_FORCEINLINE void * FZoneMemory::AllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
     void * bytes = Alloc( _BytesCount, _Alignment );
     ClearMemory8( bytes, _ClearValue, _BytesCount );
     return bytes;
 }
 
-AN_FORCEINLINE void * FMemoryZone::ExtendCleared( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld, uint64_t _ClearValue ) {
+AN_FORCEINLINE void * FZoneMemory::ExtendCleared( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld, uint64_t _ClearValue ) {
     void * bytes = Extend( _Data, _BytesCount, _NewBytesCount, _NewAlignment, _KeepOld );
     if ( _KeepOld ) {
         if ( _NewBytesCount > _BytesCount ) {
@@ -329,51 +298,38 @@ AN_FORCEINLINE void * FMemoryZone::ExtendCleared( void * _Data, int _BytesCount,
 
 /*
 
-FAllocator
+TTemplateAllocator
 
-Objects allocator
+Allocator base interface
 
 */
-class ANGIE_API FAllocator final {
-    AN_FORBID_COPY( FAllocator )
-
+template< typename T >
+class TTemplateAllocator {
 public:
     template< int Alignment >
-    static void * Alloc( size_t _BytesCount ) {
-        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "FAllocator" );
-        return AllocateBytes( _BytesCount, Alignment );
+    void * Alloc( size_t _BytesCount ) {
+        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
+        return static_cast< T * >( this )->ImplAllocate( _BytesCount, Alignment );
     }
 
-    static void * Alloc1( size_t _BytesCount ) { return Alloc< 1 >( _BytesCount ); }
-    static void * Alloc16( size_t _BytesCount ) { return Alloc< 16 >( _BytesCount ); }
-    static void * Alloc32( size_t _BytesCount ) { return Alloc< 32 >( _BytesCount ); }
-
     template< int Alignment >
-    static void * AllocCleared( size_t _BytesCount, uint64_t _ClearValue = 0 ) {
-        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "FAllocator" );
-        void * bytes = AllocateBytes( _BytesCount, Alignment );
+    void * AllocCleared( size_t _BytesCount, uint64_t _ClearValue = 0 ) {
+        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
+        void * bytes = static_cast< T * >( this )->ImplAllocate( _BytesCount, Alignment );
         ClearMemory8( bytes, _ClearValue, _BytesCount );
         return bytes;
     }
 
-    static void * AllocCleared1( size_t _BytesCount ) { return AllocCleared< 1 >( _BytesCount ); }
-    static void * AllocCleared16( size_t _BytesCount ) { return AllocCleared< 16 >( _BytesCount ); }
-    static void * AllocCleared32( size_t _BytesCount ) { return AllocCleared< 32 >( _BytesCount ); }
-
     template< int Alignment >
-    static void * Extend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) {
-        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "FAllocator" );
-        return ExtendAlloc( _Data, _BytesCount, _NewBytesCount, Alignment, _KeepOld );
+    void * Extend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) {
+        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
+        return static_cast< T * >( this )->ImplExtend( _Data, _BytesCount, _NewBytesCount, Alignment, _KeepOld );
     }
 
-    static void * Extend1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 1 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
-    static void * Extend16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 16 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
-    static void * Extend32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 32 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
-
     template< int Alignment >
-    static void * ExtendCleared( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) {
-        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "FAllocator" );
-        void * bytes = ExtendAlloc( _Data, _BytesCount, _NewBytesCount, Alignment, _KeepOld );
+    void * ExtendCleared( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) {
+        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
+        void * bytes = static_cast< T * >( this )->ImplExtend( _Data, _BytesCount, _NewBytesCount, Alignment, _KeepOld );
         if ( _KeepOld ) {
             if ( _NewBytesCount > _BytesCount ) {
                 ClearMemory8( ( byte * )bytes + _BytesCount, _ClearValue, _NewBytesCount - _BytesCount );
@@ -384,16 +340,65 @@ public:
         return bytes;
     }
 
-    static void * ExtendCleared1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 1 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
-    static void * ExtendCleared16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 16 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
-    static void * ExtendCleared32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 32 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
+    void Dealloc( void * _Bytes ) {
+        static_cast< T * >( this )->ImplDeallocate( _Bytes );
+    }
 
-    static void Dealloc( void * _Bytes );
+    void * Alloc1( size_t _BytesCount ) { return Alloc< 1 >( _BytesCount ); }
+    void * Alloc16( size_t _BytesCount ) { return Alloc< 16 >( _BytesCount ); }
+    void * Alloc32( size_t _BytesCount ) { return Alloc< 32 >( _BytesCount ); }
 
-private:
-    static void * AllocateBytes( size_t _BytesCount, int _Alignment );
-    static void * ExtendAlloc( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld );
+    void * AllocCleared1( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocCleared< 1 >( _BytesCount, _ClearValue ); }
+    void * AllocCleared16( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocCleared< 16 >( _BytesCount, _ClearValue ); }
+    void * AllocCleared32( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocCleared< 32 >( _BytesCount, _ClearValue ); }
+
+    void * Extend1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 1 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
+    void * Extend16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 16 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
+    void * Extend32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 32 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
+
+    void * ExtendCleared1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 1 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
+    void * ExtendCleared16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 16 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
+    void * ExtendCleared32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 32 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
 };
+
+/*
+
+FZoneAllocator
+
+Use for small objects
+
+*/
+class ANGIE_API FZoneAllocator final : public TTemplateAllocator< FZoneAllocator > {
+    AN_FORBID_COPY( FZoneAllocator )
+
+public:
+    FZoneAllocator() {}
+    static FZoneAllocator & Inst() { static FZoneAllocator inst; return inst; }
+    void * ImplAllocate( size_t _BytesCount, int _Alignment );
+    void * ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld );
+    void ImplDeallocate( void * _Bytes );
+};
+
+/*
+
+FHeapAllocator
+
+Use for huge data allocation
+
+*/
+class ANGIE_API FHeapAllocator final : public TTemplateAllocator< FHeapAllocator > {
+    AN_FORBID_COPY( FHeapAllocator )
+
+public:
+    FHeapAllocator() {}
+    static FHeapAllocator & Inst() { static FHeapAllocator inst; return inst; }
+    void * ImplAllocate( size_t _BytesCount, int _Alignment );
+    void * ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld );
+    void ImplDeallocate( void * _Bytes );
+};
+
+void * HugeAlloc( size_t _Size );
+void HugeFree( void * _Data );
 
 /*
 
@@ -404,6 +409,6 @@ Dynamic Stack Memory
 #define StackAlloc( _NumBytes ) alloca( _NumBytes )
 
 
-extern ANGIE_API FHeapMemory GMainHeapMemory;
-extern ANGIE_API FHunkMemory GMainHunkMemory;
-extern ANGIE_API FMemoryZone GMainMemoryZone;
+extern ANGIE_API FHeapMemory GHeapMemory;
+extern ANGIE_API FHunkMemory GHunkMemory;
+extern ANGIE_API FZoneMemory GZoneMemory;

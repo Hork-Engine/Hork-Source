@@ -476,5 +476,5 @@ struct TEvent {
     }
 
 private:
-    TVector< Callback > Callbacks;
+    TStdVector< Callback > Callbacks;
 };

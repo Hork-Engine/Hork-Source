@@ -37,8 +37,8 @@ FDocument::FDocument() {
 }
 
 FDocument::~FDocument() {
-    Allocator::Dealloc( Fields );
-    Allocator::Dealloc( Values );
+    Allocator::Inst().Dealloc( Fields );
+    Allocator::Inst().Dealloc( Values );
 }
 
 void FDocument::Clear() {
@@ -51,7 +51,7 @@ void FDocument::Clear() {
 int FDocument::AllocateField() {
     if ( FieldsCount == FieldsMemReserved ) {
         FieldsMemReserved = FieldsMemReserved ? FieldsMemReserved<<1 : 1024;
-        Fields = ( FDocumentField * )Allocator::Extend< 1 >( Fields, FieldsCount * sizeof( FDocumentField ), sizeof( FDocumentField ) * FieldsMemReserved, true );
+        Fields = ( FDocumentField * )Allocator::Inst().Extend< 1 >( Fields, FieldsCount * sizeof( FDocumentField ), sizeof( FDocumentField ) * FieldsMemReserved, true );
     }
     FDocumentField * field = &Fields[ FieldsCount ];
     field->ValuesHead = -1;
@@ -65,7 +65,7 @@ int FDocument::AllocateField() {
 int FDocument::AllocateValue() {
     if ( ValuesCount == ValuesMemReserved ) {
         ValuesMemReserved = ValuesMemReserved ? ValuesMemReserved<<1 : 1024;
-        Values = ( FDocumentValue * )Allocator::Extend< 1 >( Values, ValuesCount * sizeof( FDocumentValue ), sizeof( FDocumentValue ) * ValuesMemReserved, true );
+        Values = ( FDocumentValue * )Allocator::Inst().Extend1( Values, ValuesCount * sizeof( FDocumentValue ), sizeof( FDocumentValue ) * ValuesMemReserved, true );
     }
     FDocumentValue * value = &Values[ ValuesCount ];
     value->FieldsHead = -1;
@@ -84,7 +84,7 @@ FTokenBuffer::FTokenBuffer() {
 
 FTokenBuffer::~FTokenBuffer() {
     if ( !bInSitu ) {
-        Allocator::Dealloc( Start );
+        Allocator::Inst().Dealloc( Start );
     }
 }
 
@@ -95,7 +95,7 @@ void FTokenBuffer::Initialize( const char * _String, bool _InSitu ) {
     if ( bInSitu ) {
         Start = const_cast< char * >( _String );
     } else {
-        Start = ( char * )Allocator::Alloc< 1 >( FString::Length( _String ) + 1 );
+        Start = ( char * )Allocator::Inst().Alloc1( FString::Length( _String ) + 1 );
         FString::Copy( Start, _String );
     }
     Cur = Start;
@@ -104,7 +104,7 @@ void FTokenBuffer::Initialize( const char * _String, bool _InSitu ) {
 
 void FTokenBuffer::Deinitialize() {
     if ( !bInSitu ) {
-        Allocator::Dealloc( Start );
+        Allocator::Inst().Dealloc( Start );
         Cur = Start = (char *)"";
         LineNumber = 1;
         bInSitu = true;
@@ -121,12 +121,12 @@ FDocumentProxyBuffer::~FDocumentProxyBuffer() {
     for ( FStringList * node = StringList ; node ; node = next ) {
         next = node->Next;
         node->~FStringList();
-        Allocator::Dealloc( node );
+        Allocator::Inst().Dealloc( node );
     }
 }
 
 FString & FDocumentProxyBuffer::NewString() {
-    void * pMemory = Allocator::Alloc1( sizeof( FStringList ) );
+    void * pMemory = Allocator::Inst().Alloc1( sizeof( FStringList ) );
     FStringList * node = new ( pMemory ) FStringList;
     node->Next = StringList;
     StringList = node;
@@ -134,7 +134,7 @@ FString & FDocumentProxyBuffer::NewString() {
 }
 
 FString & FDocumentProxyBuffer::NewString( const char * _String ) {
-    void * pMemory = Allocator::Alloc1( sizeof( FStringList ) );
+    void * pMemory = Allocator::Inst().Alloc1( sizeof( FStringList ) );
     FStringList * node = new ( pMemory ) FStringList( _String );
     node->Next = StringList;
     StringList = node;
@@ -142,7 +142,7 @@ FString & FDocumentProxyBuffer::NewString( const char * _String ) {
 }
 
 FString & FDocumentProxyBuffer::NewString( const FString & _String ) {
-    void * pMemory = Allocator::Alloc1( sizeof( FStringList ) );
+    void * pMemory = Allocator::Inst().Alloc1( sizeof( FStringList ) );
     FStringList * node = new ( pMemory ) FStringList( _String );
     node->Next = StringList;
     StringList = node;

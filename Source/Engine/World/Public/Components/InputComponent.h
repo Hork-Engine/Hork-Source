@@ -351,10 +351,10 @@ protected:
     TRef< FInputMappings > InputMappings;
 
     THash<> AxisBindingsHash;
-    TVector< FAxisBinding > AxisBindings;
+    TStdVector< FAxisBinding > AxisBindings;
 
     THash<> ActionBindingsHash;
-    TVector< FActionBinding > ActionBindings;
+    TStdVector< FActionBinding > ActionBindings;
 
     // Array of pressed keys
     FPressedKey PressedKeys[ MAX_PRESSED_KEYS ];

@@ -43,10 +43,13 @@ class ANGIE_API FRenderingParameters final : public FBaseObject {
 
 public:
     FColor4 BackgroundColor = FColor4( 0.3f, 0.3f, 0.8f );
-    bool bClearBackground = true;
+    bool bClearBackground;
     bool bWireframe;
     bool bDrawDebug;
     int RenderingMask = ~0;
+
+    // TODO:
+    //TRef< FTexture3D > ColorGradingLUT;
 
 private:
     FRenderingParameters() {}
@@ -62,18 +65,13 @@ public:
     float DopplerFactor = 1;
     float DopplerVelocity = 1;
     float SpeedOfSound = 343.3f;
-    EAudioDistanceModel DistanceModel = AUDIO_DM_InverseClamped;
+    EAudioDistanceModel DistanceModel = AUDIO_DIST_INVERSE_CLAMPED;
     float Volume = 1.0f;
 
 private:
     FAudioParameters() {}
     ~FAudioParameters() {}
 };
-
-//class FViewport {
-//public:
-//    float X, Y, Width, Height;
-//};
 
 /*
 

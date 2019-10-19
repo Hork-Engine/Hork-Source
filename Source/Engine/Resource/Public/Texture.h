@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Engine/Base/Public/BaseObject.h>
-#include <Engine/Runtime/Public/RenderBackend.h>
+#include <Engine/Runtime/Public/RenderCore.h>
 
 /*
 
@@ -93,105 +93,260 @@ FTexture
 Textures are used for materials
 
 */
-class ANGIE_API FTexture : public FBaseObject, public IRenderProxyOwner {
+class ANGIE_API FTexture : public FBaseObject, public IGPUResourceOwner {
     AN_CLASS( FTexture, FBaseObject )
 
 public:
-    bool InitializeFromImage( FImage const & _Image );
-    bool InitializeCubemapFromImages( FImage const * _Faces[6] );
+    ETextureType GetType() const { return (ETextureType)TextureType; }
 
-    void Initialize1D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength = 1 );
-    void Initialize2D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArrayLength = 1 );
-    void Initialize3D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
-    void InitializeCubemap( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength = 1 );
-    void InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
+    FTexturePixelFormat const & GetPixelFormat() const { return PixelFormat; }
 
-    // Create texture from string (Texture.White Texture.Black Texture.Gray Texture.Normal Texture.Cubemap)
-    void InitializeInternalResource( const char * _InternalResourceName ) override;
+    int GetDimensionX() const { return Width; }
 
-    // Initialize object from file
-    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+    int GetDimensionY() const { return Height; }
 
-    void Purge();
+    int GetDimensionZ() const { return Depth; }
 
-    ETexturePixelFormat GetPixelFormat() const;
-    int GetDimensionCount() const;
-    int GetWidth() const;
-    int GetHeight() const;
-    int GetDepth() const;
-    int GetNumLods() const;
+    int GetNumLods() const { return NumLods; }
+
     bool IsCubemap() const;
-    int GetNumComponents() const;
-    bool IsCompressed() const;
-    bool IsSRGB() const;
-    size_t UncompressedPixelByteLength() const;
-    size_t CompressedTextureBlockLength() const;
 
-    void * WriteTextureData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod );
-    //bool WriteTextureData( void const * _Pixels, int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod );
+    int GetNumComponents() const { return PixelFormat.NumComponents(); }
+
+    bool IsCompressed() const { return PixelFormat.IsCompressed(); }
+
+    bool IsSRGB() const { return PixelFormat.IsSRGB(); }
+
+    size_t SizeInBytesUncompressed() const { return PixelFormat.SizeInBytesUncompressed(); }
+
+    size_t BlockSizeCompressed() const { return PixelFormat.BlockSizeCompressed(); }
 
     // Utilites
-    static size_t TextureByteLength1D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength );
-    static size_t TextureByteLength2D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArrayLength );
-    static size_t TextureByteLength3D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
-    static size_t TextureByteLengthCubemap( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength );
-    static size_t TextureByteLengthRect( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
+    static size_t TextureByteLength1D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
+    static size_t TextureByteLength2D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize );
+    static size_t TextureByteLength3D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
+    static size_t TextureByteLengthCubemap( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
+    static size_t TextureByteLength2DNPOT( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
 
-    FRenderProxy_Texture * GetRenderProxy() { return RenderProxy; }
+    FTextureGPU * GetGPUResource() { return TextureGPU; }
+
+    void Purge();
 
 protected:
     FTexture();
     ~FTexture();
 
-    // IRenderProxyOwner interface
-    void OnLost() override { /* ... */ }
+    void SendTextureDataToGPU( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod, const void * _SysMem );
 
-private:
-    FRenderProxy_Texture * RenderProxy;
+    // IGPUResourceOwner interface
+    void UploadResourceGPU( FResourceGPU * _Resource ) override {}
+
+    FTextureGPU * TextureGPU;
     int TextureType;
-    ETexturePixelFormat PixelFormat;
+    FTexturePixelFormat PixelFormat;
     int Width;
     int Height;
     int Depth;
     int NumLods;
 };
 
-AN_FORCEINLINE ETexturePixelFormat FTexture::GetPixelFormat() const {
-    return PixelFormat;
-}
+class FTexture1D : public FTexture {
+    AN_CLASS( FTexture1D, FTexture )
 
-AN_FORCEINLINE int FTexture::GetWidth() const {
-    return Width;
-}
+public:
+    void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width );
 
-AN_FORCEINLINE int FTexture::GetHeight() const {
-    return Height;
-}
+    // TODO:
+    // Initialize object from file
+    //bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
-AN_FORCEINLINE int FTexture::GetDepth() const {
-    return Depth;
-}
+    int GetWidth() const { return Width; }
 
-AN_FORCEINLINE int FTexture::GetNumLods() const {
-    return NumLods;
-}
+    size_t GetSizeInBytes() const { return TextureByteLength1D( PixelFormat, NumLods, Width, 1 ); }
 
-AN_FORCEINLINE int FTexture::GetNumComponents() const {
-    return ::NumPixelComponents( PixelFormat );
-}
+    void WriteTextureData( int _LocationX, int _Width, int _Lod, const void * _SysMem );
 
-AN_FORCEINLINE bool FTexture::IsCompressed() const {
-    return ::IsTextureCompressed( PixelFormat );
-}
+protected:
+    FTexture1D() {}
+    ~FTexture1D() {}
+};
 
-AN_FORCEINLINE bool FTexture::IsSRGB() const {
-    return ::IsTextureSRGB( PixelFormat );
-}
+class FTexture1DArray : public FTexture {
+    AN_CLASS( FTexture1DArray, FTexture )
 
-AN_FORCEINLINE size_t FTexture::UncompressedPixelByteLength() const {
-    return ::UncompressedPixelByteLength( PixelFormat );
-}
+public:
+    void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
 
-AN_FORCEINLINE size_t FTexture::CompressedTextureBlockLength() const {
-    return ::CompressedTextureBlockLength( PixelFormat );
-}
+    // TODO:
+    // Initialize object from file
+    //bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    int GetWidth() const { return Width; }
+    int GetArraySize() const { return Height; }
+
+    size_t GetSizeInBytes() const { return TextureByteLength1D( PixelFormat, NumLods, Width, GetArraySize() ); }
+
+    void WriteTextureData( int _LocationX, int _Width, int _ArrayLayer, int _Lod, const void * _SysMem );
+
+protected:
+    FTexture1DArray() {}
+    ~FTexture1DArray() {}
+};
+
+class FTexture2D : public FTexture {
+    AN_CLASS( FTexture2D, FTexture )
+
+public:
+    void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
+
+    // Create texture from string (FTexture2D.***)
+    void InitializeInternalResource( const char * _InternalResourceName ) override;
+
+    // Initialize object from file
+    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    bool InitializeFromImage( FImage const & _Image );
+
+    int GetWidth() const { return Width; }
+    int GetHeight() const { return Height; }
+
+    size_t GetSizeInBytes() const { return TextureByteLength2D( PixelFormat, NumLods, Width, Height, 1 ); }
+
+    void WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void * _SysMem );
+
+protected:
+    FTexture2D() {}
+    ~FTexture2D() {}
+};
+
+class FTexture2DArray : public FTexture {
+    AN_CLASS( FTexture2DArray, FTexture )
+
+public:
+    void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize );
+
+    // TODO:
+    // Initialize object from file
+    //bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    int GetWidth() const { return Width; }
+    int GetHeight() const { return Height; }
+    int GetArraySize() const { return Depth; }
+
+    size_t GetSizeInBytes() const { return TextureByteLength2D( PixelFormat, NumLods, Width, Height, GetArraySize() ); }
+
+    void WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _ArrayLayer, int _Lod, const void * _SysMem );
+
+protected:
+    FTexture2DArray() {}
+    ~FTexture2DArray() {}
+};
+
+struct FColorGradingPreset {
+    Float3 gain;
+    Float3 gamma;
+    Float3 lift;
+    Float3 presaturation;
+    Float3 colorTemperatureStrength;
+    float colorTemperature; // in K
+    float colorTemperatureBrightnessNormalization;
+};
+
+class FTexture3D : public FTexture {
+    AN_CLASS( FTexture3D, FTexture )
+
+public:
+    void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
+
+    // Create texture from string (FTexture3D.***)
+    void InitializeInternalResource( const char * _InternalResourceName ) override;
+
+    // TODO:
+    // Initialize object from file
+    //bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    void InitializeColorGradingLUT( const char * _Path );
+
+    void InitializeColorGradingLUT( FColorGradingPreset const & _Preset );
+
+    int GetWidth() const { return Width; }
+    int GetHeight() const { return Height; }
+    int GetDepth() const { return Depth; }
+
+    size_t GetSizeInBytes() const { return TextureByteLength3D( PixelFormat, NumLods, Width, Height, Depth ); }
+
+    void WriteTextureData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod, const void * _SysMem );
+
+protected:
+    FTexture3D() {}
+    ~FTexture3D() {}
+};
+
+class FTextureCubemap : public FTexture {
+    AN_CLASS( FTextureCubemap, FTexture )
+
+public:
+    void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width );
+
+    // TODO:
+    // Initialize object from file
+    //bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    void InitializeInternalResource( const char * _InternalResourceName );
+
+    bool InitializeCubemapFromImages( FImage const * _Faces[6] );
+
+    int GetWidth() const { return Width; }
+
+    size_t GetSizeInBytes() const { return TextureByteLengthCubemap( PixelFormat, NumLods, Width, 1 ); }
+
+    void WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _Lod, const void * _SysMem );
+
+protected:
+    FTextureCubemap() {}
+    ~FTextureCubemap() {}
+};
+
+class FTextureCubemapArray : public FTexture {
+    AN_CLASS( FTextureCubemapArray, FTexture )
+
+public:
+    void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
+
+    // TODO:
+    // Initialize object from file
+    //bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    int GetWidth() const { return Width; }
+    int GetArraySize() const { return Depth; }
+
+    size_t GetSizeInBytes() const { return TextureByteLengthCubemap( PixelFormat, NumLods, Width, GetArraySize() ); }
+
+    void WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _ArrayLayer, int _Lod, const void * _SysMem );
+
+protected:
+    FTextureCubemapArray() {}
+    ~FTextureCubemapArray() {}
+};
+
+class FTexture2DNPOT : public FTexture {
+    AN_CLASS( FTexture2DNPOT, FTexture )
+
+public:
+    void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
+
+    // TODO:
+    // Initialize object from file
+    //bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+
+    int GetWidth() const { return Width; }
+    int GetHeight() const { return Height; }
+
+    size_t GetSizeInBytes() const { return TextureByteLength2DNPOT( PixelFormat, NumLods, Width, Height ); }
+
+    void WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void * _SysMem );
+
+protected:
+    FTexture2DNPOT() {}
+    ~FTexture2DNPOT() {}
+};

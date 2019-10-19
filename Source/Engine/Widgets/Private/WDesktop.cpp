@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Engine/Widgets/Public/WDesktop.h>
 #include <Engine/Runtime/Public/InputDefs.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
 #define DOUBLECLICKTIME_MSEC        250
 #define DOUBLECLICKHALFSIZE         4.0f
@@ -322,7 +323,7 @@ void WDesktop::SetFocusWidget( WWidget * _Focus ) {
     }
 }
 
-void WDesktop::GenerateKeyEvents( struct FKeyEvent const & _Event, double _TimeStamp ) {
+void WDesktop::GenerateKeyEvents( FKeyEvent const & _Event, double _TimeStamp ) {
     if ( DraggingWidget ) {
         if ( _Event.Key == KEY_ESCAPE && _Event.Action == IE_Press ) {
             CancelDragging();

@@ -696,6 +696,7 @@ void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
 
             // Pop back
             NumPressedKeys--;
+            AN_Assert( NumPressedKeys >= 0 );
 
             if ( actionBinding != -1 /*&& !PressedKeys[ index ].bMarkedReleased*/ ) {
                 ActionBindings[ actionBinding ].Callback[ IE_Release ]();

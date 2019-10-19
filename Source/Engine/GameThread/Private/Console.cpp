@@ -36,7 +36,7 @@ SOFTWARE.
 
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Runtime/Public/InputDefs.h>
-#include <Engine/Runtime/Public/RenderBackend.h>
+#include <Engine/Runtime/Public/RenderCore.h>
 
 #include <Engine/Core/Public/Utf8.h>
 #include <Engine/Core/Public/Color.h>
@@ -347,7 +347,7 @@ static void InsertUTF8Text( const char * _Utf8 ) {
 }
 
 static void InsertClipboardText() {
-    FString const & clipboard = GRuntime.GetClipboard_GameThread();
+    FString const & clipboard = GRuntime.GetClipboard();
 
     InsertUTF8Text( clipboard.ToConstChar() );
 }
@@ -574,7 +574,7 @@ static void DrawCmdLine( FCanvas * _Canvas, int x, int y ) {
 
     FFont * font = _Canvas->GetCurrentFont();
 
-    const float scale = (float)CharacterHeight / font->FontSize;
+    const float scale = (float)CharacterHeight / font->GetFontSize();
 
     int cx = x;
 
@@ -655,7 +655,7 @@ void FConsole::Draw( FCanvas * _Canvas, float _TimeStep ) {
 
     FFont * font = _Canvas->GetCurrentFont();
 
-    const float scale = (float)CharacterHeight / font->FontSize;
+    const float scale = (float)CharacterHeight / font->GetFontSize();
 
     ConSync.BeginScope();
 

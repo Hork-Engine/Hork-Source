@@ -45,7 +45,7 @@ AN_CLASS_META( FAudioClip )
 FAudioClip::FAudioClip() {
     BufferSize = DEFAULT_BUFFER_SIZE;
     SerialId = ++ResourceSerialIdGen;
-    CurStreamType = StreamType = SST_NonStreamed;
+    CurStreamType = StreamType = SOUND_STREAM_DISABLED;
 }
 
 FAudioClip::~FAudioClip() {
@@ -118,7 +118,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
         CurStreamType = StreamType;
 
         switch ( CurStreamType ) {
-        case SST_NonStreamed:
+        case SOUND_STREAM_DISABLED:
             {
                 short * PCM;
                 Decoder->DecodePCM( _Path, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM );
@@ -134,7 +134,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
                     } else {
                         AL_UploadBuffer( BufferId, Format, PCM, SamplesCount * Channels * sizeof( byte ), Frequency );
                     }
-                    GMainMemoryZone.Dealloc( PCM );
+                    GZoneMemory.Dealloc( PCM );
 
                     bLoaded = true;
                 } else {
@@ -146,7 +146,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
                 }
             }
             break;
-        case SST_FileStreamed:
+        case SOUND_STREAM_FILE:
             {
                 if ( BufferId ) {
                     AL_DeleteBuffer( BufferId );
@@ -160,7 +160,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
                 }
             }
             break;
-        case SST_MemoryStreamed:
+        case SOUND_STREAM_MEMORY:
             {
                 if ( BufferId ) {
                     AL_DeleteBuffer( BufferId );
@@ -205,14 +205,14 @@ bool FAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
     if ( Decoder ) {
 
         CurStreamType = StreamType;
-        if ( CurStreamType == SST_FileStreamed ) {
-            CurStreamType = SST_MemoryStreamed;
+        if ( CurStreamType == SOUND_STREAM_FILE ) {
+            CurStreamType = SOUND_STREAM_MEMORY;
 
             GLogger.Printf( "Using MemoryStreamed instead of FileStreamed because file data is already in memory\n" );
         }
 
         switch ( CurStreamType ) {
-        case SST_NonStreamed:
+        case SOUND_STREAM_DISABLED:
             {
                 short * PCM;
                 Decoder->DecodePCM( _Path, _Data, _DataLength, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM );
@@ -228,7 +228,7 @@ bool FAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
                     } else {
                         AL_UploadBuffer( BufferId, Format, PCM, SamplesCount * Channels * sizeof( byte ), Frequency );
                     }
-                    GMainMemoryZone.Dealloc( PCM );
+                    GZoneMemory.Dealloc( PCM );
 
                     bLoaded = true;
                 } else {
@@ -240,7 +240,7 @@ bool FAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
                 }
             }
             break;
-        case SST_MemoryStreamed:
+        case SOUND_STREAM_MEMORY:
             {
                 if ( BufferId ) {
                     AL_DeleteBuffer( BufferId );
@@ -278,7 +278,7 @@ bool FAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
 IAudioStreamInterface * FAudioClip::CreateAudioStreamInstance() {
     IAudioStreamInterface * streamInterface;
 
-    if ( CurStreamType == SST_NonStreamed ) {
+    if ( CurStreamType == SOUND_STREAM_DISABLED ) {
         return nullptr;
     }
 
@@ -287,7 +287,7 @@ IAudioStreamInterface * FAudioClip::CreateAudioStreamInstance() {
     bool bCreateResult = false;
 
     if ( streamInterface ) {
-        if ( CurStreamType == SST_FileStreamed ) {
+        if ( CurStreamType == SOUND_STREAM_FILE ) {
             bCreateResult = streamInterface->InitializeFileStream( GetFileName().ToConstChar() );
         } else {
             bCreateResult = streamInterface->InitializeMemoryStream( GetEncodedData(), GetEncodedDataLength() );
@@ -307,7 +307,7 @@ void FAudioClip::Purge() {
         BufferId = 0;
     }
 
-    GMainMemoryZone.Dealloc( EncodedData );
+    GZoneMemory.Dealloc( EncodedData );
     EncodedData = NULL;
 
     EncodedDataLength = 0;

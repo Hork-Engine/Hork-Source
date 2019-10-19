@@ -90,7 +90,7 @@ void FCommandContext::AddCommand( const char * _Name, TCallback< void( FRuntimeC
 }
 
 void FCommandContext::RemoveCommand( const char * _Name ) {
-    for ( TVector< FRuntimeCommand >::iterator it = Commands.begin() ; it != Commands.end() ; it++ ) {
+    for ( TStdVector< FRuntimeCommand >::iterator it = Commands.begin() ; it != Commands.end() ; it++ ) {
         FRuntimeCommand & command = *it;
 
         if ( !command.GetName().Icmp( _Name ) ) {

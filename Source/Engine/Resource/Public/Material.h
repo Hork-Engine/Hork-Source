@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Base/Public/BaseObject.h>
 #include "Texture.h"
 
-class ANGIE_API FMaterial : public FBaseObject, public IRenderProxyOwner {
+class ANGIE_API FMaterial : public FBaseObject, public IGPUResourceOwner {
     AN_CLASS( FMaterial, FBaseObject )
 
 public:
@@ -44,7 +44,7 @@ public:
 
     EMaterialType GetType() const { return Type; }
 
-    FRenderProxy_Material * GetRenderProxy() { return RenderProxy; }
+    FMaterialGPU * GetGPUResource() { return MaterialGPU; }
 
     int GetNumUniformVectors() const { return NumUniformVectors; }
 
@@ -52,11 +52,11 @@ protected:
     FMaterial();
     ~FMaterial();
 
-    // IRenderProxyOwner interface
-    void OnLost() override { /* ... */ }
+    // IGPUResourceOwner interface
+    void UploadResourceGPU( FResourceGPU * _Resource ) override {}
 
 private:
-    FRenderProxy_Material * RenderProxy;
+    FMaterialGPU * MaterialGPU;
     EMaterialType Type;
     int NumUniformVectors;
 };
@@ -80,7 +80,7 @@ public:
 
     void SetTexture( int _TextureSlot, FTexture * _Texture );
 
-    FMaterialInstanceFrameData * RenderFrontend_Update( int _VisMarker );
+    FMaterialFrameData * RenderFrontend_Update( int _VisMarker );
 
 protected:
     FMaterialInstance();
@@ -88,7 +88,7 @@ protected:
 
 private:
     TRef< FMaterial > Material;
-    FMaterialInstanceFrameData * FrameData;
+    FMaterialFrameData * FrameData;
     TRef< FTexture > Textures[ MAX_MATERIAL_TEXTURES ];
     int VisMarker;
 };

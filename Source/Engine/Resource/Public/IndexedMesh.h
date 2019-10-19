@@ -86,12 +86,12 @@ Mesh plain data
 
 */
 struct FMeshAsset {
-    TVector< FSubpart > Subparts;
-    TVector< FMaterialTexture > Textures;
+    TStdVector< FSubpart > Subparts;
+    TStdVector< FMaterialTexture > Textures;
     TPodArray< FMeshMaterial > Materials;
-    TPodArray< FMeshVertex > Vertices;
-    TPodArray< unsigned int > Indices;
-    TPodArray< FMeshVertexJoint > Weights;
+    TPodArrayHeap< FMeshVertex > Vertices;
+    TPodArrayHeap< unsigned int > Indices;
+    TPodArrayHeap< FMeshVertexJoint > Weights;
 
     void Clear();
     void Read( FFileStream & f );
@@ -232,7 +232,7 @@ FLightmapUV
 Lightmap UV channel
 
 */
-class FLightmapUV : public FBaseObject, public IRenderProxyOwner {
+class FLightmapUV : public FBaseObject, public IGPUResourceOwner {
     AN_CLASS( FLightmapUV, FBaseObject )
 
     friend class FIndexedMesh;
@@ -240,12 +240,12 @@ class FLightmapUV : public FBaseObject, public IRenderProxyOwner {
 public:
     FMeshLightmapUV * GetVertices() { return Vertices.ToPtr(); }
     FMeshLightmapUV const * GetVertices() const { return Vertices.ToPtr(); }
-    int GetVertexCount() const { return VertexCount; }
+    int GetVertexCount() const { return Vertices.Size(); }
 
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( FMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
-    FRenderProxy_LightmapUVChannel * GetRenderProxy() { return RenderProxy; }
+    FBufferGPU * GetGPUResource() { return VertexBufferGPU; }
 
     FIndexedMesh * GetOwner() { return OwnerMesh; }
 
@@ -255,12 +255,14 @@ protected:
 
     void OnInitialize( int _NumVertices );
 
+    // IGPUResourceOwner interface
+    void UploadResourceGPU( FResourceGPU * _Resource ) override {}
+
 private:
-    FRenderProxy_LightmapUVChannel * RenderProxy;
+    FBufferGPU * VertexBufferGPU;
     FIndexedMesh * OwnerMesh;
     int IndexInArrayOfUVs = -1;
-    TPodArray< FMeshLightmapUV > Vertices;
-    int VertexCount;
+    TPodArrayHeap< FMeshLightmapUV > Vertices;
     bool bDynamicStorage;
 };
 
@@ -271,7 +273,7 @@ FVertexLight
 Vertex light channel
 
 */
-class FVertexLight : public FBaseObject, public IRenderProxyOwner {
+class FVertexLight : public FBaseObject, public IGPUResourceOwner {
     AN_CLASS( FVertexLight, FBaseObject )
 
     friend class FIndexedMesh;
@@ -279,12 +281,12 @@ class FVertexLight : public FBaseObject, public IRenderProxyOwner {
 public:
     FMeshVertexLight * GetVertices() { return Vertices.ToPtr(); }
     FMeshVertexLight const * GetVertices() const { return Vertices.ToPtr(); }
-    int GetVertexCount() const { return VertexCount; }
+    int GetVertexCount() const { return Vertices.Size(); }
 
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( FMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
-    FRenderProxy_VertexLightChannel * GetRenderProxy() { return RenderProxy; }
+    FBufferGPU * GetGPUResource() { return VertexBufferGPU; }
 
     FIndexedMesh * GetOwner() { return OwnerMesh; }
 
@@ -294,12 +296,14 @@ protected:
 
     void OnInitialize( int _NumVertices );
 
+    // IGPUResourceOwner interface
+    void UploadResourceGPU( FResourceGPU * _Resource ) override {}
+
 private:
-    FRenderProxy_VertexLightChannel * RenderProxy;
+    FBufferGPU * VertexBufferGPU;
     FIndexedMesh * OwnerMesh;
     int IndexInArrayOfChannels = -1;
-    TPodArray< FMeshVertexLight > Vertices;
-    int VertexCount;
+    TPodArrayHeap< FMeshVertexLight > Vertices;
     bool bDynamicStorage;
 };
 
@@ -322,7 +326,7 @@ FIndexedMesh
 Triangulated 3d surface with indexed vertices
 
 */
-class FIndexedMesh : public FBaseObject, public IRenderProxyOwner {
+class FIndexedMesh : public FBaseObject, public IGPUResourceOwner {
     AN_CLASS( FIndexedMesh, FBaseObject )
 
     friend class FLightmapUV;
@@ -355,10 +359,13 @@ public:
     // Helper. Create cylinder mesh
     void InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32 );
 
+    // Helper. Create cone mesh
+    void InitializeConeMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32 );
+
     // Helper. Create capsule mesh
     void InitializeCapsuleMesh( float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8 );
 
-    // Create mesh from string (IndexedMesh.Box IndexedMesh.Sphere IndexedMesh.Cylinder IndexedMesh.Plane)
+    // Create mesh from string (IndexedMesh.***)
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
     // Initialize object from file
@@ -398,10 +405,10 @@ public:
     unsigned int const * GetIndices() const { return Indices.ToPtr(); }
 
     // Get total vertex count
-    int GetVertexCount() const { return VertexCount; }
+    int GetVertexCount() const { return Vertices.Size(); }
 
     // Get total index count
-    int GetIndexCount() const { return IndexCount; }
+    int GetIndexCount() const { return Indices.Size(); }
 
     // Get all mesh subparts
     FIndexedMeshSubpartArray const & GetSubparts() const { return Subparts; }
@@ -434,8 +441,10 @@ public:
 
     BvAxisAlignedBox const & GetBoundingBox() const;
 
-    // Get mesh rendering proxy
-    FRenderProxy_IndexedMesh * GetRenderProxy() { return RenderProxy; }
+    // Get mesh GPU buffers
+    FBufferGPU * GetVertexBufferGPU() { return VertexBufferGPU; }
+    FBufferGPU * GetIndexBufferGPU() { return IndexBufferGPU; }
+    FBufferGPU * GetWeightsBufferGPU() { return WeightsBufferGPU; }
 
     // Check ray intersection. Result is unordered by distance to save performance
     bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const;
@@ -453,24 +462,22 @@ protected:
     FIndexedMesh();
     ~FIndexedMesh();
 
-    // IRenderProxyOwner interface
-    void OnLost() override { /* ... */ }
+    // IGPUResourceOwner interface
+    void UploadResourceGPU( FResourceGPU * _Resource ) override {}
 
 private:
-    FRenderProxy_IndexedMesh * RenderProxy;
+    FBufferGPU * VertexBufferGPU;
+    FBufferGPU * IndexBufferGPU;
+    FBufferGPU * WeightsBufferGPU;
     FIndexedMeshSubpartArray Subparts;
     FLightmapUVChannels LightmapUVs;
     FVertexLightChannels VertexLightChannels;
-    TPodArray< FMeshVertex > Vertices;
-    TPodArray< FMeshVertexJoint > Weights;
-    TPodArray< unsigned int > Indices;
-    //TRef< FAABBTree > AABBTree;
-    int VertexCount;
-    int IndexCount;
+    TPodArrayHeap< FMeshVertex > Vertices;
+    TPodArrayHeap< FMeshVertexJoint > Weights;
+    TPodArrayHeap< unsigned int > Indices;
     bool bSkinnedMesh;
     bool bDynamicStorage;
     mutable bool bBoundingBoxDirty;
-    //bool bAABBTreeDirty;
     BvAxisAlignedBox BoundingBox;
 };
 
@@ -492,6 +499,8 @@ void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
     Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs );
 
 void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32 );
+
+void CreateConeMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32 );
 
 void CreateCapsuleMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8 );
 

@@ -56,6 +56,9 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
+static FRuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "1" ) );
+static FRuntimeVariable RVTestInput( _CTS( "testInput" ),  _CTS( "0" ) );
+
 struct FCPUInfo {
     bool OS_AVX : 1;
     bool OS_AVX512 : 1;
@@ -120,8 +123,10 @@ int64_t rt_SysFrameTimeStamp;
 FRenderFrame rt_FrameData;
 FEventQueue rt_Events;
 FEventQueue rt_GameEvents;
-static void * rt_FrameMemoryAddress = nullptr;
-static size_t rt_FrameMemorySize = 0;
+void * rt_FrameMemoryAddress = nullptr;
+size_t rt_FrameMemorySize = 0;
+size_t rt_FrameMemoryUsed = 0;
+size_t rt_FrameMemoryUsedPrev = 0;
 static FSyncEvent rt_SimulationIsDone;
 static FSyncEvent rt_GameUpdateEvent;
 static IGameEngine * rt_GameEngine;
@@ -228,57 +233,58 @@ static void GetCPUInfo( FCPUInfo & _Info ){
     int nIds = cpuInfo[0];
 
     CPUID( cpuInfo, 0x80000000 );
+
     uint32_t nExIds = cpuInfo[0];
 
     if ( nIds >= 0x00000001 ) {
         CPUID( cpuInfo, 0x00000001 );
 
-        _Info.MMX    = (cpuInfo[3] & ((int)1 << 23)) != 0;
-        _Info.SSE    = (cpuInfo[3] & ((int)1 << 25)) != 0;
-        _Info.SSE2   = (cpuInfo[3] & ((int)1 << 26)) != 0;
-        _Info.SSE3   = (cpuInfo[2] & ((int)1 <<  0)) != 0;
+        _Info.MMX    = (cpuInfo[3] & (1 << 23)) != 0;
+        _Info.SSE    = (cpuInfo[3] & (1 << 25)) != 0;
+        _Info.SSE2   = (cpuInfo[3] & (1 << 26)) != 0;
+        _Info.SSE3   = (cpuInfo[2] & (1 <<  0)) != 0;
 
-        _Info.SSSE3  = (cpuInfo[2] & ((int)1 <<  9)) != 0;
-        _Info.SSE41  = (cpuInfo[2] & ((int)1 << 19)) != 0;
-        _Info.SSE42  = (cpuInfo[2] & ((int)1 << 20)) != 0;
-        _Info.AES    = (cpuInfo[2] & ((int)1 << 25)) != 0;
+        _Info.SSSE3  = (cpuInfo[2] & (1 <<  9)) != 0;
+        _Info.SSE41  = (cpuInfo[2] & (1 << 19)) != 0;
+        _Info.SSE42  = (cpuInfo[2] & (1 << 20)) != 0;
+        _Info.AES    = (cpuInfo[2] & (1 << 25)) != 0;
 
-        _Info.AVX    = (cpuInfo[2] & ((int)1 << 28)) != 0;
-        _Info.FMA3   = (cpuInfo[2] & ((int)1 << 12)) != 0;
+        _Info.AVX    = (cpuInfo[2] & (1 << 28)) != 0;
+        _Info.FMA3   = (cpuInfo[2] & (1 << 12)) != 0;
 
-        _Info.RDRAND = (cpuInfo[2] & ((int)1 << 30)) != 0;
+        _Info.RDRAND = (cpuInfo[2] & (1 << 30)) != 0;
     }
 
     if ( nIds >= 0x00000007 ) {
         CPUID( cpuInfo, 0x00000007 );
 
-        _Info.AVX2         = (cpuInfo[1] & ((int)1 <<  5)) != 0;
+        _Info.AVX2         = (cpuInfo[1] & (1 <<  5)) != 0;
 
-        _Info.BMI1         = (cpuInfo[1] & ((int)1 <<  3)) != 0;
-        _Info.BMI2         = (cpuInfo[1] & ((int)1 <<  8)) != 0;
-        _Info.ADX          = (cpuInfo[1] & ((int)1 << 19)) != 0;
-        _Info.MPX          = (cpuInfo[1] & ((int)1 << 14)) != 0;
-        _Info.SHA          = (cpuInfo[1] & ((int)1 << 29)) != 0;
-        _Info.PREFETCHWT1  = (cpuInfo[2] & ((int)1 <<  0)) != 0;
+        _Info.BMI1         = (cpuInfo[1] & (1 <<  3)) != 0;
+        _Info.BMI2         = (cpuInfo[1] & (1 <<  8)) != 0;
+        _Info.ADX          = (cpuInfo[1] & (1 << 19)) != 0;
+        _Info.MPX          = (cpuInfo[1] & (1 << 14)) != 0;
+        _Info.SHA          = (cpuInfo[1] & (1 << 29)) != 0;
+        _Info.PREFETCHWT1  = (cpuInfo[2] & (1 <<  0)) != 0;
 
-        _Info.AVX512_F     = (cpuInfo[1] & ((int)1 << 16)) != 0;
-        _Info.AVX512_CD    = (cpuInfo[1] & ((int)1 << 28)) != 0;
-        _Info.AVX512_PF    = (cpuInfo[1] & ((int)1 << 26)) != 0;
-        _Info.AVX512_ER    = (cpuInfo[1] & ((int)1 << 27)) != 0;
-        _Info.AVX512_VL    = (cpuInfo[1] & ((int)1 << 31)) != 0;
-        _Info.AVX512_BW    = (cpuInfo[1] & ((int)1 << 30)) != 0;
-        _Info.AVX512_DQ    = (cpuInfo[1] & ((int)1 << 17)) != 0;
-        _Info.AVX512_IFMA  = (cpuInfo[1] & ((int)1 << 21)) != 0;
-        _Info.AVX512_VBMI  = (cpuInfo[2] & ((int)1 <<  1)) != 0;
+        _Info.AVX512_F     = (cpuInfo[1] & (1 << 16)) != 0;
+        _Info.AVX512_CD    = (cpuInfo[1] & (1 << 28)) != 0;
+        _Info.AVX512_PF    = (cpuInfo[1] & (1 << 26)) != 0;
+        _Info.AVX512_ER    = (cpuInfo[1] & (1 << 27)) != 0;
+        _Info.AVX512_VL    = (cpuInfo[1] & (1 << 31)) != 0;
+        _Info.AVX512_BW    = (cpuInfo[1] & (1 << 30)) != 0;
+        _Info.AVX512_DQ    = (cpuInfo[1] & (1 << 17)) != 0;
+        _Info.AVX512_IFMA  = (cpuInfo[1] & (1 << 21)) != 0;
+        _Info.AVX512_VBMI  = (cpuInfo[2] & (1 <<  1)) != 0;
     }
 
     if ( nExIds >= 0x80000001 ) {
         CPUID( cpuInfo, 0x80000001 );
-        _Info.x64   = (cpuInfo[3] & ((int)1 << 29)) != 0;
-        _Info.ABM   = (cpuInfo[2] & ((int)1 <<  5)) != 0;
-        _Info.SSE4a = (cpuInfo[2] & ((int)1 <<  6)) != 0;
-        _Info.FMA4  = (cpuInfo[2] & ((int)1 << 16)) != 0;
-        _Info.XOP   = (cpuInfo[2] & ((int)1 << 11)) != 0;
+        _Info.x64   = (cpuInfo[3] & (1 << 29)) != 0;
+        _Info.ABM   = (cpuInfo[2] & (1 <<  5)) != 0;
+        _Info.SSE4a = (cpuInfo[2] & (1 <<  6)) != 0;
+        _Info.FMA4  = (cpuInfo[2] & (1 << 16)) != 0;
+        _Info.XOP   = (cpuInfo[2] & (1 << 11)) != 0;
     }
 }
 
@@ -364,27 +370,27 @@ static void InitializeMemory() {
                     "Frame memory size: %d Megs\n",
                     ZoneSizeInMegabytes, HunkSizeInMegabytes, FrameMemorySizeInMegabytes );
 
-    GMainHeapMemory.Initialize();
+    GHeapMemory.Initialize();
 
-    MemoryHeap = GMainHeapMemory.HeapAllocCleared( TotalMemorySizeInBytes, 16 );
+    MemoryHeap = GHeapMemory.HeapAllocCleared( TotalMemorySizeInBytes, 16 );
 
     //TouchMemoryPages( MemoryHeap, TotalMemorySizeInBytes );
 
     void * ZoneMemory = MemoryHeap;
-    GMainMemoryZone.Initialize( ZoneMemory, ZoneSizeInMegabytes );
+    GZoneMemory.Initialize( ZoneMemory, ZoneSizeInMegabytes );
 
     void * HunkMemory = ( byte * )MemoryHeap + ( ZoneSizeInMegabytes << 20 );
-    GMainHunkMemory.Initialize( HunkMemory, HunkSizeInMegabytes );
+    GHunkMemory.Initialize( HunkMemory, HunkSizeInMegabytes );
 
     rt_FrameMemoryAddress = ( byte * )MemoryHeap + ( ( ZoneSizeInMegabytes + HunkSizeInMegabytes ) << 20 );
     rt_FrameMemorySize = FrameMemorySizeInMegabytes << 20;
 }
 
 static void DeinitializeMemory() {
-    GMainMemoryZone.Deinitialize();
-    GMainHunkMemory.Deinitialize();
-    GMainHeapMemory.HeapFree( MemoryHeap );
-    GMainHeapMemory.Deinitialize();
+    GZoneMemory.Deinitialize();
+    GHunkMemory.Deinitialize();
+    GHeapMemory.HeapFree( MemoryHeap );
+    GHeapMemory.Deinitialize();
 }
 
 static void InitWorkingDirectory() {
@@ -555,7 +561,7 @@ static void DisplayCriticalMessage( const char * _Message ) {
 static void EmergencyExit() {
     glfwTerminate();
 
-    GMainHeapMemory.Clear();
+    GHeapMemory.Clear();
 
     const char * msg = MapCriticalErrorMessage();
     DisplayCriticalMessage( msg );
@@ -567,26 +573,9 @@ static void EmergencyExit() {
     //std::abort();
 }
 
-FAtomicBool testInput;
-
-static void RuntimeUpdate() {
-
-    FEvent * event = rt_Events.Push();
-    event->Type = ET_RuntimeUpdateEvent;
-    event->TimeStamp = GRuntime.SysSeconds_d();
-    rt_InputEventCount = 0;
-
-    rt_UpdatePhysicalMonitors();
-
-    rt_UpdateDisplays( rt_GameEvents );
-
-    // Pump joystick events before any input
-    rt_PollJoystickEvents();
-
-    glfwPollEvents();
-
-    if ( testInput.Load() ) {
-        testInput.Store( false );
+static void TestInput() {
+    if ( RVTestInput ) {
+        RVTestInput = false;
 
         FEvent * testEvent;
 
@@ -620,6 +609,24 @@ static void RuntimeUpdate() {
         testEvent->Data.MouseMoveEvent.Y = 0;
         rt_InputEventCount++;
     }
+}
+
+static void RuntimeUpdate() {
+    FEvent * event = rt_Events.Push();
+    event->Type = ET_RuntimeUpdateEvent;
+    event->TimeStamp = GRuntime.SysSeconds_d();
+    rt_InputEventCount = 0;
+
+    rt_UpdatePhysicalMonitors();
+
+    rt_UpdateDisplays( rt_GameEvents );
+
+    // Pump joystick events before any input
+    rt_PollJoystickEvents();
+
+    glfwPollEvents();
+
+    TestInput();
 
     // It may happen if game thread is too busy
     if ( event->Type == ET_RuntimeUpdateEvent && rt_Events.Size() != rt_Events.MaxSize() ) {
@@ -632,12 +639,7 @@ static void RuntimeUpdate() {
 }
 
 static void RuntimeMainLoop() {
-    rt_FrameData.RenderProxyUploadHead = nullptr;
-    rt_FrameData.RenderProxyUploadTail = nullptr;
-    rt_FrameData.RenderProxyFree = nullptr;
-    rt_FrameData.FrameMemoryUsed = 0;
-    rt_FrameData.FrameMemorySize = rt_FrameMemorySize;
-    rt_FrameData.pFrameMemory = rt_FrameMemoryAddress;
+    rt_FrameMemoryUsed = 0;
 
     // Pump initial events
     RuntimeUpdate();
@@ -656,29 +658,31 @@ static void RuntimeMainLoop() {
             return;
         }
 
-        // Получить свежие данные ввода и другие события
+        // Process game events, pump runtime events
         RuntimeUpdate();
 
-        // Обновить данные кадра (камера, курсор), подготовить данные для render backend
+        // Refresh frame data (camera, cursor), prepare frame data for render backend
         rt_GameEngine->BuildFrame();
 
-        // Сгенерировать команды для GPU, SwapBuffers
+        // Generate GPU commands, SwapBuffers
         GRenderBackend->RenderFrame( &rt_FrameData );
 
-        // Очистить кадровую память для следующего кадра
-        rt_FrameData.FrameMemoryUsed = 0;
+        // Free frame memory for next frame
+        rt_FrameMemoryUsedPrev = rt_FrameMemoryUsed;
+        rt_FrameMemoryUsed = 0;
 
-        // Выполняем игровую логику для следующего кадра (тем временем, GPU выполняет команды бэкенда)
+        // Run game logic for next frame (GPU process current frame now)
         rt_GameEngine->UpdateFrame();
 
-        // Ожидаем выполнение команд GPU, чтобы исключить "input lag"
-        GRenderBackend->WaitGPU();
+        if ( RVSyncGPU ) {
+            // Wait GPU to prevent "input lag"
+            GRenderBackend->WaitGPU();
+        }
 
     } while ( !rt_GameEngine->IsStopped() );
 
     rt_GameEngine->Deinitialize();
 
-    GRenderBackend->CleanupFrame( &rt_FrameData );
     rt_FrameData.Instances.Free();
     rt_FrameData.DbgVertices.Free();
     rt_FrameData.DbgIndices.Free();

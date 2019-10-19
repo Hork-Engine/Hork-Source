@@ -48,6 +48,9 @@ public:
 
     bool IsTransparent() const { return W < 0.0001f; }
 
+    // Assume temperature is range between 1000 and 40000.
+    void SetTemperature( float _Temperature );
+
     void SetByte( byte _Red, byte _Green, byte _Blue );
     void SetByte( byte _Red, byte _Green, byte _Blue, byte _Alpha );
 
@@ -80,6 +83,7 @@ public:
     FColor4 ToLinear() const;
     FColor4 ToSRGB() const;
 
+    Float3 & GetRGB() { return *(Float3 *)(this); }
     Float3 const & GetRGB() const { return *(Float3 *)(this); }
 
     static FColor4 const & White() {
@@ -126,12 +130,27 @@ AN_FORCEINLINE FColor4 FColor4::ToSRGB() const {
 }
 
 AN_FORCEINLINE void FColor4::SwapRGB() {
-    FCore::SwapArgs( X, Z );
+    StdSwap( X, Z );
 }
 
 AN_FORCEINLINE void FColor4::SetAlpha( float _Alpha ) {
     W = FMath::Saturate( _Alpha );
 }
+
+AN_FORCEINLINE void FColor4::SetTemperature( float _Temperature ) {
+     if ( _Temperature <= 6500.0f ) {
+         X = 1.0f;
+         Y = -2902.1955373783176f / ( 1669.5803561666639f + _Temperature ) + 1.3302673723350029f;
+         Z = -8257.7997278925690f / ( 2575.2827530017594f + _Temperature ) + 1.8993753891711275f;
+         Z = FMath::Max( 0.0f, Z );
+     } else {
+         X = 1745.0425298314172f / ( -2666.3474220535695f + _Temperature ) + 0.55995389139931482f;
+         Y = 1216.6168361476490f / ( -2173.1012343082230f + _Temperature ) + 0.70381203140554553f;
+         Z = -8257.7997278925690f / ( 2575.2827530017594f + _Temperature ) + 1.8993753891711275f;
+         X = FMath::Min( 1.0f, X );
+         Z = FMath::Min( 1.0f, Z );
+     }
+ }
 
 AN_FORCEINLINE void FColor4::SetByte( byte _Red, byte _Green, byte _Blue ) {
     constexpr float scale = 1.0f / 255.0f;

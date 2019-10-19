@@ -655,11 +655,11 @@ bool FAudioSystem::ReadEncoded( const char * _FileName, int * _SamplesCount, int
 //GAudioSystem.PlaySound( S_Player_Pain1, this );
 //GAudioSystem.PlaySoundAt( S_Player_Pain1, Position, this );
 
-static FSoundSpawnParameters DefaultSpawnParameters;
+static SSoundSpawnParameters DefaultSpawnParameters;
 
 #define MAX_AUDIO_CHANNELS 64
 
-struct FAudioChannel {
+struct SAudioChannel {
     ALuint      SourceId;
     int         ChannelIndex;
     int64_t     PlayTimeStamp;
@@ -705,20 +705,20 @@ struct FAudioChannel {
     Float3      Direction;
 };
 
-static FAudioChannel AudioChannels[ MAX_AUDIO_CHANNELS ];
+static SAudioChannel AudioChannels[ MAX_AUDIO_CHANNELS ];
 static int NumAudioChannels = 0;
 
-static FAudioChannel * FreeAudioChannels[ MAX_AUDIO_CHANNELS ];
+static SAudioChannel * FreeAudioChannels[ MAX_AUDIO_CHANNELS ];
 static int NumFreeAudioChannels = 0;
 
-static TPodArray< FAudioChannel > VirtualChannels;
+static TPodArray< SAudioChannel > VirtualChannels;
 
 static short PCM[AUDIO_MAX_PCM_BUFFER_SIZE];
 
-static FAudioChannel * AllocateChannel( int _Priority );
-static void FreeChannel( FAudioChannel * _Channel );
-static void PlayChannel( FAudioChannel * channel, float _PlayOffset );
-static float CalcAudioVolume( FAudioChannel * _Channel );
+static SAudioChannel * AllocateChannel( int _Priority );
+static void FreeChannel( SAudioChannel * _Channel );
+static void PlayChannel( SAudioChannel * channel, float _PlayOffset );
+static float CalcAudioVolume( SAudioChannel * _Channel );
 
 static void InitializeChannels() {
     memset( AudioChannels, 0, sizeof( AudioChannels ) );
@@ -728,7 +728,7 @@ void FAudioSystem::PurgeChannels() {
     GLogger.Printf( "Purging audio channels\n" );
 
     for ( int i = 0; i < NumAudioChannels; i++ ) {
-        FAudioChannel * channel = &AudioChannels[ i ];
+        SAudioChannel * channel = &AudioChannels[ i ];
 
         FreeChannel( channel );
 
@@ -743,14 +743,14 @@ void FAudioSystem::PurgeChannels() {
 
     NumAudioChannels = 0;
 
-    for ( FAudioChannel & channel : VirtualChannels ) {
+    for ( SAudioChannel & channel : VirtualChannels ) {
         FreeChannel( &channel );
     }
 
     VirtualChannels.Free();
 }
 
-static void FreeChannel( FAudioChannel * channel ) {
+static void FreeChannel( SAudioChannel * channel ) {
 
     if ( channel->bFree ) {
         return;
@@ -805,7 +805,7 @@ static void FreeChannel( FAudioChannel * channel ) {
     }
 }
 
-static void VirtualizeChannel( FAudioChannel * _Channel ) {
+static void VirtualizeChannel( SAudioChannel * _Channel ) {
     if ( _Channel->bFree ) {
         return;
     }
@@ -816,7 +816,7 @@ static void VirtualizeChannel( FAudioChannel * _Channel ) {
 
     VirtualChannels.Append( *_Channel );
 
-    FAudioChannel * virtualChannel = &VirtualChannels.Last();
+    SAudioChannel * virtualChannel = &VirtualChannels.Last();
 
     virtualChannel->SourceId = 0;
     virtualChannel->ChannelIndex = VirtualChannels.Size() - 1;
@@ -837,12 +837,12 @@ static void VirtualizeChannel( FAudioChannel * _Channel ) {
     _Channel->ClipSerialId = -1;
 }
 
-static bool DevirtualizeChannel( FAudioChannel * _VirtualChannel ) {
+static bool DevirtualizeChannel( SAudioChannel * _VirtualChannel ) {
     AN_Assert( _VirtualChannel->bIsVirtual );
 
     GLogger.Printf( "Devirtualize channel\n" );
 
-    FAudioChannel * channel = AllocateChannel( _VirtualChannel->Priority );
+    SAudioChannel * channel = AllocateChannel( _VirtualChannel->Priority );
     if ( !channel ) {
         return false;
     }
@@ -900,7 +900,7 @@ static bool DevirtualizeChannel( FAudioChannel * _VirtualChannel ) {
     return true;
 }
 
-static void FreeOrVirtualizeChannel( FAudioChannel * _Channel ) {
+static void FreeOrVirtualizeChannel( SAudioChannel * _Channel ) {
     if ( _Channel->bVirtualizeWhenSilent ) {
         VirtualizeChannel( _Channel );
     } else {
@@ -917,7 +917,7 @@ static int FindCandidateToUse( int _Priority ) {
     bool paused = false;
 
     for ( int i = 0 ; i < NumAudioChannels ; i++ ) {
-        FAudioChannel * channel = &AudioChannels[ i ];
+        SAudioChannel * channel = &AudioChannels[ i ];
 
         if ( channel->bLocked ) {
             // don't touch locked channels
@@ -958,16 +958,16 @@ static int FindCandidateToUse( int _Priority ) {
     return candidate;
 }
 
-static FAudioChannel * AllocateChannel( int _Priority ) {
+static SAudioChannel * AllocateChannel( int _Priority ) {
     if ( NumFreeAudioChannels > 0 ) {
-        FAudioChannel * channel = FreeAudioChannels[ --NumFreeAudioChannels ];
+        SAudioChannel * channel = FreeAudioChannels[ --NumFreeAudioChannels ];
         channel->bFree = false;
         return channel;
     }
 
     if ( NumAudioChannels < MAX_AUDIO_CHANNELS ) {
         // Allocate new channel
-        FAudioChannel * channel = &AudioChannels[ NumAudioChannels++ ];
+        SAudioChannel * channel = &AudioChannels[ NumAudioChannels++ ];
 
         alGenSources( 1, &channel->SourceId );
 
@@ -984,13 +984,13 @@ static FAudioChannel * AllocateChannel( int _Priority ) {
 
     FreeOrVirtualizeChannel( &AudioChannels[freeChannelIndex] );
 
-    FAudioChannel * channel = FreeAudioChannels[ --NumFreeAudioChannels ];
+    SAudioChannel * channel = FreeAudioChannels[ --NumFreeAudioChannels ];
     channel->bFree = false;
 
     return channel;
 }
 
-static bool StreamToBuffer( FAudioChannel * channel, int _BufferId ) {
+static bool StreamToBuffer( SAudioChannel * channel, int _BufferId ) {
     FAudioClip * Clip = channel->Clip;
 
     const int RequiredBufferSize = Clip->GetBufferSize();
@@ -1017,7 +1017,7 @@ AN_FORCEINLINE float GetGraceDistance( float _MaxDistance ) {
     return _MaxDistance * 1.3f;
 }
 
-static float CalcAudioVolume( FAudioChannel * _Channel ) {
+static float CalcAudioVolume( SAudioChannel * _Channel ) {
 
     float volume = MasterVolume * _Channel->Volume * ( _Channel->Group ? _Channel->Group->Volume : 1.0f );
 
@@ -1053,9 +1053,9 @@ static float CalcAudioVolume( FAudioChannel * _Channel ) {
     return volume * ( 1.0f - distance / GraceDistance );
 }
 
-static void PlayChannel( FAudioChannel * channel, float _PlayOffset ) {
+static void PlayChannel( SAudioChannel * channel, float _PlayOffset ) {
 
-    float playOffsetMod = std::fmod( _PlayOffset, channel->Clip->GetDurationInSecounds() );
+    float playOffsetMod = StdFmod( _PlayOffset, channel->Clip->GetDurationInSecounds() );
 
     if ( channel->bIsVirtual ) {
         channel->VirtualTime = _PlayOffset > 0 ? playOffsetMod : 0;
@@ -1163,12 +1163,12 @@ static void PlayChannel( FAudioChannel * channel, float _PlayOffset ) {
     }
 }
 
-static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, EAudioLocation _Location, FSceneComponent * _Instigator, FSoundSpawnParameters const * _SpawnParameters ) {
+static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, EAudioLocation _Location, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
     if ( !_AudioClip ) {
         return;
     }
 
-    FSoundAttenuationParameters const & atten = _SpawnParameters->Attenuation;
+    SSoundAttenuationParameters const & atten = _SpawnParameters->Attenuation;
 
     float refDist = FMath::Clamp( atten.ReferenceDistance, AUDIO_MIN_REF_DISTANCE, AUDIO_MAX_DISTANCE );
     float maxDist = FMath::Clamp( atten.MaxDistance, refDist, AUDIO_MAX_DISTANCE );
@@ -1189,7 +1189,7 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
     IAudioStreamInterface * streamInterface = nullptr;
 
     // Initialize audio stream instance
-    if ( _AudioClip->GetStreamType() != SST_NonStreamed ) {
+    if ( _AudioClip->GetStreamType() != SOUND_STREAM_DISABLED ) {
         streamInterface = _AudioClip->CreateAudioStreamInstance();
         if ( !streamInterface ) {
             GLogger.Printf( "Couldn't create audio stream instance\n" );
@@ -1197,7 +1197,7 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
         }
     }
 
-    FAudioChannel * channel;
+    SAudioChannel * channel;
 
     if ( bSilent ) {
         channel = &VirtualChannels.Append();
@@ -1233,7 +1233,7 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
     channel->bLooping = _SpawnParameters->bLooping;
     channel->bStopWhenInstigatorDead = _SpawnParameters->bStopWhenInstigatorDead;
     channel->Location = _Location;
-    channel->bStreamed = _AudioClip->GetStreamType() != SST_NonStreamed;
+    channel->bStreamed = _AudioClip->GetStreamType() != SOUND_STREAM_DISABLED;
     channel->Clip = _AudioClip;
     channel->ClipSerialId = _AudioClip->GetSerialId();
     channel->StreamInterface = streamInterface;
@@ -1299,15 +1299,15 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
     PlayChannel( channel, _SpawnParameters->PlayOffset );
 }
 
-void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FActor * _Instigator, FSoundSpawnParameters const * _SpawnParameters ) {
+void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
     PlaySound( _AudioClip, _Instigator ? _Instigator->RootComponent : nullptr, _SpawnParameters );
 }
 
-void FAudioSystem::PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FActor * _Instigator, FSoundSpawnParameters const * _SpawnParameters ) {
+void FAudioSystem::PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
     PlaySoundAt( _AudioClip, _SpawnPosition, _Instigator ? _Instigator->RootComponent : nullptr, _SpawnParameters );
 }
 
-void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instigator, FSoundSpawnParameters const * _SpawnParameters ) {
+void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
 
     if ( !_SpawnParameters ) {
         _SpawnParameters = &DefaultSpawnParameters;
@@ -1343,7 +1343,7 @@ void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instig
     }
 }
 
-void FAudioSystem::PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FSceneComponent * _Instigator, FSoundSpawnParameters const * _SpawnParameters ) {
+void FAudioSystem::PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
 
     if ( !_SpawnParameters ) {
         _SpawnParameters = &DefaultSpawnParameters;
@@ -1357,7 +1357,7 @@ void FAudioSystem::PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPo
     CreateSound( _AudioClip, _SpawnPosition, AUDIO_STAY_AT_SPAWN_LOCATION, _Instigator, _SpawnParameters );
 }
 
-static void UpdateChannelStreaming( FAudioChannel * _Channel ) {
+static void UpdateChannelStreaming( SAudioChannel * _Channel ) {
     if ( !_Channel->bStreamed || _Channel->bIsVirtual ) {
         return;
     }
@@ -1395,7 +1395,7 @@ static void UpdateChannelStreaming( FAudioChannel * _Channel ) {
     }
 }
 
-static void UpdateChannel( FAudioChannel * Channel, float _TimeStep ) {
+static void UpdateChannel( SAudioChannel * Channel, float _TimeStep ) {
     if ( Channel->bFree ) {
         return;
     }
@@ -1497,7 +1497,7 @@ static void UpdateChannel( FAudioChannel * Channel, float _TimeStep ) {
 
         if ( Channel->VirtualTime >= Channel->Clip->GetDurationInSecounds() ) {
             if ( Channel->bLooping ) {
-                Channel->VirtualTime = std::fmod( Channel->VirtualTime, Channel->Clip->GetDurationInSecounds() );
+                Channel->VirtualTime = StdFmod( Channel->VirtualTime, Channel->Clip->GetDurationInSecounds() );
             } else {
                 // Stopped
                 FreeChannel( Channel );
@@ -1605,7 +1605,7 @@ void FAudioSystem::Update( FPlayerController * _Controller, float _TimeStep ) {
         // TODO: sort channels by priority, gain, etc?
 
             for ( int i = 0 ; i < VirtualChannels.Size() && canRestore > 0 ;  ) {
-                FAudioChannel * channel = &VirtualChannels[i];
+                SAudioChannel * channel = &VirtualChannels[i];
 
                 float graceDist = GetGraceDistance( channel->MaxDistance );
 
@@ -1640,14 +1640,14 @@ void FAudioSystem::Update( FPlayerController * _Controller, float _TimeStep ) {
 
     // Update active channels
     for ( int i = 0 ; i < NumAudioChannels ; i++ ) {
-        FAudioChannel * channel = &AudioChannels[i];
+        SAudioChannel * channel = &AudioChannels[i];
 
         UpdateChannel( channel, _TimeStep );
     }
 
     // Update virtual channels
     for ( int i = 0 ; i < VirtualChannels.Size() ; ) {
-        FAudioChannel * channel = &VirtualChannels[i];
+        SAudioChannel * channel = &VirtualChannels[i];
 
         UpdateChannel( channel, _TimeStep );
 

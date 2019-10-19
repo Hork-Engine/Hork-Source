@@ -42,7 +42,7 @@ FSkinnedComponent
 Mesh component with skinning
 
 */
-class FSkinnedComponent : public FMeshComponent, public IRenderProxyOwner {
+class FSkinnedComponent : public FMeshComponent, public IGPUResourceOwner {
     AN_COMPONENT( FSkinnedComponent, FMeshComponent )
 
     friend class FWorld;
@@ -83,10 +83,7 @@ public:
     FSkinnedComponent * GetNextSkinnedMesh() { return Next; }
     FSkinnedComponent * GetPrevSkinnedMesh() { return Prev; }
 
-    // Render proxy for skeleton transformation state
-    FRenderProxy_Skeleton * GetRenderProxy() { return RenderProxy; }
-
-    void UpdateJointTransforms();
+    void UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize );
 
 protected:
     FSkinnedComponent();
@@ -97,6 +94,9 @@ protected:
     void DrawDebug( FDebugDraw * _DebugDraw ) override;
 
     void OnLazyBoundsUpdate() override;
+
+    // IGPUResourceOwner interface
+    void UploadResourceGPU( FResourceGPU * _Resource ) override {}
 
 private:
     void UpdateControllersIfDirty();
@@ -109,10 +109,6 @@ private:
 
     void MergeJointAnimations();
 
-    void ReallocateRenderProxy();
-
-    Float3x4 * WriteJointTransforms( int _JointsCount, int _StartJointLocation );
-
     TRef< FSkeleton > Skeleton;
 
     TPodArray< FAnimationController * > AnimControllers;
@@ -120,15 +116,13 @@ private:
     TPodArray< Float3x4 > AbsoluteTransforms;
     TPodArray< Float3x4 > RelativeTransforms;
 
-    FRenderProxy_Skeleton * RenderProxy;
-
     FSkinnedComponent * Next;
     FSkinnedComponent * Prev;
 
     bool bUpdateBounds;
     bool bUpdateControllers;
     bool bUpdateRelativeTransforms;
-    bool bWriteTransforms;
+    //bool bWriteTransforms;
 
 protected:
     bool bUpdateAbsoluteTransforms;

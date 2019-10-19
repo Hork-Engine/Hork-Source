@@ -44,5 +44,9 @@ extern int64_t rt_SysFrameTimeStamp;
 extern FRenderFrame rt_FrameData;
 extern FEventQueue rt_Events;
 extern FEventQueue rt_GameEvents;
+extern void * rt_FrameMemoryAddress;
+extern size_t rt_FrameMemorySize;
+extern size_t rt_FrameMemoryUsed;
+extern size_t rt_FrameMemoryUsedPrev;
 
 int rt_CheckArg( const char * _Arg );

@@ -35,7 +35,7 @@ SOFTWARE.
 struct FTokenBuffer final {
     AN_FORBID_COPY( FTokenBuffer )
 
-    using Allocator = FAllocator;
+    using Allocator = FZoneAllocator;
 
     const char * GetBuffer() const { return Start; }
     bool InSitu() const { return bInSitu; }
@@ -96,7 +96,7 @@ struct FDocumentField final {
 struct FDocumentProxyBuffer final {
     AN_FORBID_COPY( FDocumentProxyBuffer )
 
-    using Allocator = FAllocator;
+    using Allocator = FZoneAllocator;
 
     FString & NewString();
     FString & NewString( const char * _String );
@@ -120,7 +120,7 @@ private:
 struct ANGIE_API FDocument final {
     AN_FORBID_COPY( FDocument )
 
-    using Allocator = FAllocator;
+    using Allocator = FZoneAllocator;
 
     FTokenBuffer Buffer;
     FDocumentProxyBuffer ProxyBuffer;

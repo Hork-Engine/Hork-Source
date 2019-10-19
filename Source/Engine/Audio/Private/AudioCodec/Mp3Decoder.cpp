@@ -362,7 +362,7 @@ bool FMp3Decoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
     if ( _PCM ) {
         int readBlockSize = mpg_outblock( mh );
 
-        *_PCM = (short *)GMainMemoryZone.Alloc( NumSamples * channels * sizeof( short ), 1 );
+        *_PCM = (short *)GZoneMemory.Alloc( NumSamples * channels * sizeof( short ), 1 );
         byte * buffer = (byte *) *_PCM;
 
         size_t bytesRead = 0;
@@ -450,7 +450,7 @@ bool FMp3Decoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
 
     file.SeekEnd( 0 );
     int BufferLength = file.Tell();
-    byte * Buffer = ( byte * )GMainMemoryZone.Alloc( BufferLength, 1 );
+    byte * Buffer = ( byte * )GZoneMemory.Alloc( BufferLength, 1 );
     file.SeekSet( 0 );
     file.Read( Buffer, BufferLength );
 

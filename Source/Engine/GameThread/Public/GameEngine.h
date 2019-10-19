@@ -164,7 +164,7 @@ public:
     void SetInputFocus();
     bool IsInputFocus() const { return bInputFocus; }
 
-    void SetRenderFeatures( int _VSyncMode );
+    //void SetRenderFeatures( int _VSyncMode );
 
     void SetCursorEnabled( bool _Enabled );
 
@@ -185,7 +185,7 @@ public:
 
     WDesktop * GetDesktop() { return Desktop; }
 
-    FFontAtlas * GetDefaultFont() const { return DefaultFontAtlas; }
+    FFont * GetDefaultFont() const { return DefaultFont; }
 
 private:
     // IGameEngine interface
@@ -264,8 +264,7 @@ private:
 
     IGameModule * GameModule;
 
-    TRef< FFontAtlas > DefaultFontAtlas;
-    FFont const * DefaultFont;
+    TRef< FFont > DefaultFont;
 
     TRef< WDesktop > Desktop;
 

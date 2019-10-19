@@ -248,11 +248,11 @@ void FWeakReference::RemoveWeakRef() {
 FWeakRefCounter * FWeakReference::AllocateWeakRefCounter() {
     // Own allocator couldn't handle destruction of static objects :(
     return new FWeakRefCounter;
-    //return ( FWeakRefCounter * )GMainMemoryZone.Alloc( sizeof( FWeakRefCounter ), 1 );
+    //return ( FWeakRefCounter * )GZoneMemory.Alloc( sizeof( FWeakRefCounter ), 1 );
 }
 
 void FWeakReference::DeallocateWeakRefCounter( FWeakRefCounter * _RefCounter ) {
     // Own allocator couldn't handle destruction of static objects :(
     delete _RefCounter;
-    //GMainMemoryZone.Dealloc( _RefCounter );
+    //GZoneMemory.Dealloc( _RefCounter );
 }

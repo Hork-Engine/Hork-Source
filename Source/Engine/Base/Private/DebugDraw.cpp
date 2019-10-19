@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Engine/Base/Public/DebugDraw.h>
 #include <Engine/Core/Public/Color.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
 #define PRIMITIVE_RESTART_INDEX    0xffffffff
 
@@ -667,8 +668,8 @@ void FDebugDraw::DrawCapsule( Float3 const & _Position, Float3x3 const & _Orient
 
     for ( int angle = 0; angle < 360; angle += stepDegrees ) {
         float r = FMath::Radians( float( angle ) );
-        capEnd[ ( _UpAxis + 1 ) % 3 ] = capStart[ ( _UpAxis + 1 ) % 3 ] = std::sin( r ) * _Radius;
-        capEnd[ ( _UpAxis + 2 ) % 3 ] = capStart[ ( _UpAxis + 2 ) % 3 ] = std::cos( r ) * _Radius;
+        capEnd[ ( _UpAxis + 1 ) % 3 ] = capStart[ ( _UpAxis + 1 ) % 3 ] = StdSin( r ) * _Radius;
+        capEnd[ ( _UpAxis + 2 ) % 3 ] = capStart[ ( _UpAxis + 2 ) % 3 ] = StdCos( r ) * _Radius;
         DrawLine( _Position + _Orientation * capStart, _Position + _Orientation * capEnd );
     }
 }

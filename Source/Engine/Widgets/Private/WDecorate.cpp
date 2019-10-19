@@ -63,9 +63,8 @@ WTextDecorate & WTextDecorate::SetText( const char * _Text ) {
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetFont( FFontAtlas * _Atlas, int _FontId ) {
-    FontAtlas = _Atlas;
-    FontId = _FontId;
+WTextDecorate & WTextDecorate::SetFont( FFont * _Font ) {
+    Font = _Font;
     return *this;
 }
 
@@ -95,10 +94,7 @@ WTextDecorate & WTextDecorate::SetOffset( Float2 const & _Offset ) {
 }
 
 FFont const * WTextDecorate::GetFont( FCanvas & _Canvas ) const {
-    FFont const * font = nullptr;
-    if ( FontAtlas ) {
-        font = FontAtlas->GetFont( FontId );
-    }
+    FFont const * font = Font;
 
     if ( !font ) {
         // back to default font
@@ -114,7 +110,7 @@ void WTextDecorate::OnDrawEvent( FCanvas & _Canvas ) {
     FFont const * font = GetFont( _Canvas );
 
     Float2 pos;
-    Float2 size = font->CalcTextSizeA( font->FontSize, ownerSize.X, bWordWrap ? ownerSize.X : 0.0f, Text.Begin(), Text.End() );
+    Float2 size = font->CalcTextSizeA( font->GetFontSize(), ownerSize.X, bWordWrap ? ownerSize.X : 0.0f, Text.Begin(), Text.End() );
 
     if ( HorizontalAlignment == WIDGET_ALIGNMENT_LEFT ) {
         pos.X = 0;
@@ -142,7 +138,7 @@ void WTextDecorate::OnDrawEvent( FCanvas & _Canvas ) {
 
     pos += GetOwner()->GetDesktopPosition();
 
-    _Canvas.DrawTextUTF8( font, font->FontSize, pos, Color, Text.Begin(), Text.End(), bWordWrap ? width : 0.0f );
+    _Canvas.DrawTextUTF8( font, font->GetFontSize(), pos, Color, Text.Begin(), Text.End(), bWordWrap ? width : 0.0f );
 }
 
 
@@ -211,7 +207,7 @@ WImageDecorate::WImageDecorate() {
     Rounding = 0;
     RoundingCorners = CORNER_ROUND_ALL;
     ColorBlending = COLOR_BLENDING_ALPHA;
-    SamplerType = SAMPLER_TYPE_TILED_LINEAR;
+    SamplerType = HUD_SAMPLER_TILED_LINEAR;
     bUseOriginalSize = false;
     HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
     VerticalAlignment = WIDGET_ALIGNMENT_NONE;
@@ -238,7 +234,7 @@ WImageDecorate & WImageDecorate::SetRoundingCorners( EDrawCornerFlags _RoundingC
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetTexture( FTexture * _Texture ) {
+WImageDecorate & WImageDecorate::SetTexture( FTexture2D * _Texture ) {
     Texture = _Texture;
     return *this;
 }
@@ -248,7 +244,7 @@ WImageDecorate & WImageDecorate::SetColorBlending( EColorBlending _Blending ) {
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetSamplerType( ESamplerType _SamplerType ) {
+WImageDecorate & WImageDecorate::SetSamplerType( EHUDSamplerType _SamplerType ) {
     SamplerType = _SamplerType;
     return *this;
 }

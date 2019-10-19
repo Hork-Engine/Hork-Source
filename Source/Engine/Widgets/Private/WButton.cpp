@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/Widgets/Public/WButton.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
 AN_CLASS_META( WButton )
 
@@ -39,7 +40,7 @@ WButton::WButton() {
 WButton::~WButton() {
 }
 
-void WButton::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WButton::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
     if ( _Event.Action == IE_Press ) {
         if ( _Event.Button == 0 ) {
             State = ST_PRESSED;
@@ -160,7 +161,7 @@ void WTextButton::OnDrawEvent( FCanvas & _Canvas ) {
     float width = GetAvailableWidth();
     float height = GetAvailableHeight();
 
-    Float2 size = font->CalcTextSizeA( font->FontSize, width, 0, Text.Begin(), Text.End() );
+    Float2 size = font->CalcTextSizeA( font->GetFontSize(), width, 0, Text.Begin(), Text.End() );
 
     _Canvas.DrawRectFilled( mins, maxs, bgColor, Rounding, RoundingCorners );
     if ( BorderThickness > 0.0f ) {
@@ -178,23 +179,23 @@ WImageButton::WImageButton() {
 WImageButton::~WImageButton() {
 }
 
-WImageButton & WImageButton::SetImage( FTexture * _Image ) {
+WImageButton & WImageButton::SetImage( FTexture2D * _Image ) {
     Image = _Image;
     return *this;
 }
 
-WImageButton & WImageButton::SetHoverImage( FTexture * _Image ) {
+WImageButton & WImageButton::SetHoverImage( FTexture2D * _Image ) {
     HoverImage = _Image;
     return *this;
 }
 
-WImageButton & WImageButton::SetPressedImage( FTexture * _Image ) {
+WImageButton & WImageButton::SetPressedImage( FTexture2D * _Image ) {
     PressedImage = _Image;
     return *this;
 }
 
 void WImageButton::OnDrawEvent( FCanvas & _Canvas ) {
-    FTexture * bgImage;
+    FTexture2D * bgImage;
 
     if ( IsHoveredByCursor() && !IsDisabled() ) {
         if ( IsPressed() ) {

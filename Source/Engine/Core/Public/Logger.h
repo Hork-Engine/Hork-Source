@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "BaseTypes.h"
+#include "Std.h"
 
 enum ELoggerLevel {
     LevCritical,

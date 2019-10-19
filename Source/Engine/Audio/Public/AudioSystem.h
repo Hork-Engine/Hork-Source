@@ -77,21 +77,21 @@ enum EAudioChannelPriority {
 };
 
 enum EAudioDistanceModel {
-    AUDIO_DM_Inverse          = 0,
-    AUDIO_DM_InverseClamped   = 1, // default
-    AUDIO_DM_Linear           = 2,
-    AUDIO_DM_LinearClamped    = 3,
-    AUDIO_DM_Exponent         = 4,
-    AUDIO_DM_ExponentClamped  = 5
+    AUDIO_DIST_INVERSE           = 0,
+    AUDIO_DIST_INVERSE_CLAMPED   = 1, // default
+    AUDIO_DIST_LINEAR            = 2,
+    AUDIO_DIST_LINEAR_CLAMPED    = 3,
+    AUDIO_DIST_EXPONENT          = 4,
+    AUDIO_DIST_EXPONENT_CLAMPED  = 5
 };
 
-#define AUDIO_MIN_REF_DISTANCE      0.1f
-#define AUDIO_DEFAULT_REF_DISTANCE  1.0f
-#define AUDIO_DEFAULT_MAX_DISTANCE  100.0f
-#define AUDIO_DEFAULT_ROLLOFF_RATE  1.0f
-#define AUDIO_MAX_DISTANCE          1000.0f
+constexpr float AUDIO_MIN_REF_DISTANCE      = 0.1f;
+constexpr float AUDIO_DEFAULT_REF_DISTANCE  = 1.0f;
+constexpr float AUDIO_DEFAULT_MAX_DISTANCE  = 100.0f;
+constexpr float AUDIO_DEFAULT_ROLLOFF_RATE  = 1.0f;
+constexpr float AUDIO_MAX_DISTANCE          = 1000.0f;
 
-struct FSoundAttenuationParameters {
+struct SSoundAttenuationParameters {
 
     // Distance attenuation parameter
     // Can be from AUDIO_MIN_REF_DISTANCE to AUDIO_MAX_DISTANCE
@@ -106,7 +106,7 @@ struct FSoundAttenuationParameters {
     float        RolloffRate = AUDIO_DEFAULT_ROLLOFF_RATE;
 };
 
-struct FSoundSpawnParameters {
+struct SSoundSpawnParameters {
 
     // Sound location behavior
     EAudioLocation Location = AUDIO_STAY_AT_SPAWN_LOCATION;
@@ -130,7 +130,7 @@ struct FSoundSpawnParameters {
     FAudioGroup * Group = nullptr;
 
     // Sound attenuation
-    FSoundAttenuationParameters Attenuation;
+    SSoundAttenuationParameters Attenuation;
 
     // Sound volume
     float       Volume = 1;
@@ -166,6 +166,7 @@ class ANGIE_API FAudioSystem {
 
 public:
     void Initialize();
+
     void Deinitialize();
 
     void PurgeChannels();
@@ -182,23 +183,22 @@ public:
 
     bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
 
-    void PlaySound( FAudioClip * _AudioClip, FActor * _Instigator, FSoundSpawnParameters const * _SpawnParameters = nullptr );
+    void PlaySound( FAudioClip * _AudioClip, FActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 
-    void PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FActor * _Instigator, FSoundSpawnParameters const * _SpawnParameters = nullptr );
+    void PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 
-    void PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instigator, FSoundSpawnParameters const * _SpawnParameters = nullptr );
+    void PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 
-    void PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FSceneComponent * _Instigator, FSoundSpawnParameters const * _SpawnParameters = nullptr );
-
-    //FAudioPlayer * CreateAudioPlayer();
-
-    //FMusicChannel * GetMusicChannel( EMusicChannelName _Name );
+    void PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 
     void EnableHRTF( int _Index );
+
     void EnableDefaultHRTF();
+
     void DisableHRTF();
 
     int GetNumHRTFs() const;
+
     const char * GetHRTF( int _Index ) const;
 
     Float3 const & GetListenerPosition() const;

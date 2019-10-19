@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "BaseTypes.h"
+#include "Std.h"
 
 namespace FMath {
 
@@ -50,10 +51,10 @@ constexpr float _RAD2DEG = static_cast< float >( _RAD2DEG_DBL );
 constexpr float _INFINITY = 1e30f;
 constexpr float _ZERO_TOLERANCE = 1.1754944e-038f;
 
-template< typename Type > AN_FORCEINLINE const Type & Min( const Type & _A, const Type & _B ) { return FMath_Min( _A, _B ); }
-template< typename Type > AN_FORCEINLINE const Type & Max( const Type & _A, const Type & _B ) { return FMath_Max( _A, _B ); }
-template< typename Type > AN_FORCEINLINE const Type & Min( const Type & _A, const Type & _B, const Type & _C ) { return FMath_Min( FMath_Min( _A, _B ), _C ); }
-template< typename Type > AN_FORCEINLINE const Type & Max( const Type & _A, const Type & _B, const Type & _C ) { return FMath_Max( FMath_Max( _A, _B ), _C ); }
+template< typename Type > AN_FORCEINLINE const Type & Min( const Type & _A, const Type & _B ) { return StdMin( _A, _B ); }
+template< typename Type > AN_FORCEINLINE const Type & Max( const Type & _A, const Type & _B ) { return StdMax( _A, _B ); }
+template< typename Type > AN_FORCEINLINE const Type & Min( const Type & _A, const Type & _B, const Type & _C ) { return StdMin( StdMin( _A, _B ), _C ); }
+template< typename Type > AN_FORCEINLINE const Type & Max( const Type & _A, const Type & _B, const Type & _C ) { return StdMax( StdMax( _A, _B ), _C ); }
 
 template< typename Type >
 AN_FORCEINLINE void MinMax( const Type & _A, const Type & _B, Type & _Min, Type & _Max ) {
@@ -82,7 +83,7 @@ AN_FORCEINLINE void MinMax( const Type & _A, const Type & _B, const Type & _C, T
     }
 }
 
-template< typename Type > AN_FORCEINLINE const Type & Clamp( const Type & _Value, const Type & _Min, const Type & _Max ) { return FMath_Min( FMath_Max( _Value, _Min ), _Max ); }
+template< typename Type > AN_FORCEINLINE const Type & Clamp( const Type & _Value, const Type & _Min, const Type & _Max ) { return StdMin( StdMax( _Value, _Min ), _Max ); }
 
 template< typename Type >
 AN_FORCEINLINE Type Sqrt( const Type & _Value ) {

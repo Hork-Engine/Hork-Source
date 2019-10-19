@@ -496,9 +496,9 @@ void FLightComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
         case LIGHT_TYPE_POINT:
             _DebugDraw->SetDepthTest( false );
             _DebugDraw->SetColor( FColor4( 0.5f, 0.5f, 0.5f, 1 ) );
-            _DebugDraw->DrawCone( pos, orient, InnerRadius, InnerConeAngle * 0.5f );
+            _DebugDraw->DrawSphere( pos, InnerRadius );
             _DebugDraw->SetColor( FColor4( 1, 1, 1, 1 ) );
-            _DebugDraw->DrawCone( pos, orient, OuterRadius, OuterConeAngle * 0.5f );
+            _DebugDraw->DrawSphere( pos, OuterRadius );
             break;
         case LIGHT_TYPE_SPOT:
             _DebugDraw->SetDepthTest( false );

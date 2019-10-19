@@ -410,8 +410,8 @@ public:
 
     // Static methods
     static constexpr int NumComponents() { return 1; }
-    static constexpr Double MinValue() { return std::numeric_limits< double >::min(); }
-    static constexpr Double MaxValue() { return std::numeric_limits< double >::max(); }
+    static constexpr Double MinValue() { return TStdNumericLimits< double >::min(); }
+    static constexpr Double MaxValue() { return TStdNumericLimits< double >::max(); }
 };
 
 class Double2 final {
@@ -684,7 +684,12 @@ public:
         return Lerp( *this, _To, _Mix );
     }
 
+    Double2 Lerp( const Double2 & _To, const Double2 & _Mix ) const {
+        return Lerp( *this, _To, _Mix );
+    }
+
     static Double2 Lerp( const Double2 & _From, const Double2 & _To, const double & _Mix );
+    static Double2 Lerp( const Double2 & _From, const Double2 & _To, const Double2 & _Mix );
 
     Double Bilerp( const double & _A, const double & _B, const double & _C, const double & _D ) const;
     Double2 Bilerp( const Double2 & _A, const Double2 & _B, const Double2 & _C, const Double2 & _D ) const;
@@ -1162,7 +1167,12 @@ public:
         return Lerp( *this, _To, _Mix );
     }
 
+    Double3 Lerp( const Double3 & _To, const Double3 & _Mix ) const {
+        return Lerp( *this, _To, _Mix );
+    }
+
     static Double3 Lerp( const Double3 & _From, const Double3 & _To, const double & _Mix );
+    static Double3 Lerp( const Double3 & _From, const Double3 & _To, const Double3 & _Mix );
 
     Double3 Clamp( const double & _Min, const double & _Max ) const {
         return Double3( X.Clamp( _Min, _Max ), Y.Clamp( _Min, _Max ), Z.Clamp( _Min, _Max ) );
@@ -1633,7 +1643,12 @@ public:
         return Lerp( *this, _To, _Mix );
     }
 
+    Double4 Lerp( const Double4 & _To, const Double4 & _Mix ) const {
+        return Lerp( *this, _To, _Mix );
+    }
+
     static Double4 Lerp( const Double4 & _From, const Double4 & _To, const double & _Mix );
+    static Double4 Lerp( const Double4 & _From, const Double4 & _To, const Double4 & _Mix );
 
     Double4 Clamp( const double & _Min, const double & _Max ) const {
         return Double4( X.Clamp( _Min, _Max ), Y.Clamp( _Min, _Max ), Z.Clamp( _Min, _Max ), W.Clamp( _Min, _Max ) );
@@ -1887,6 +1902,9 @@ AN_FORCEINLINE Double4 operator*( const double & _Left, const Double4 & _Right )
 AN_FORCEINLINE Double2 Double2::Lerp( const Double2 & _From, const Double2 & _To, const double & _Mix ) {
     return _From + _Mix * ( _To - _From );
 }
+AN_FORCEINLINE Double2 Double2::Lerp( const Double2 & _From, const Double2 & _To, const Double2 & _Mix ) {
+    return _From + _Mix * ( _To - _From );
+}
 AN_FORCEINLINE Double Double2::Bilerp( const double & _A, const double & _B, const double & _C, const double & _D ) const {
     return _A * ( 1.0 - X ) * ( 1.0 - Y ) + _B * X * ( 1.0 - Y ) + _C * ( 1.0 - X ) * Y + _D * X * Y;
 }
@@ -1904,7 +1922,15 @@ AN_FORCEINLINE Double3 Double3::Lerp( const Double3 & _From, const Double3 & _To
     return _From + _Mix * ( _To - _From );
 }
 
+AN_FORCEINLINE Double3 Double3::Lerp( const Double3 & _From, const Double3 & _To, const Double3 & _Mix ) {
+    return _From + _Mix * ( _To - _From );
+}
+
 AN_FORCEINLINE Double4 Double4::Lerp( const Double4 & _From, const Double4 & _To, const double & _Mix ) {
+    return _From + _Mix * ( _To - _From );
+}
+
+AN_FORCEINLINE Double4 Double4::Lerp( const Double4 & _From, const Double4 & _To, const Double4 & _Mix ) {
     return _From + _Mix * ( _To - _From );
 }
 

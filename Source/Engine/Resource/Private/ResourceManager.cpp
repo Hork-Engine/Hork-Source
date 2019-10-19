@@ -131,9 +131,9 @@ bool FResourceManager::RegisterResource( FBaseObject * _Resource ) {
     int hash;
     bool bMetadataMismatch;
 
-    FBaseObject * resource = FindResource( _Resource->FinalClassMeta(), _Resource->GetName().ToConstChar(), bMetadataMismatch, hash );
+    FBaseObject * resource = FindResource( _Resource->FinalClassMeta(), _Resource->GetNameConstChar(), bMetadataMismatch, hash );
     if ( resource || bMetadataMismatch ) {
-        GLogger.Printf( "RegisterResource: Resource with same name already exists\n" );
+        GLogger.Printf( "RegisterResource: Resource with same name already exists (%s)\n", _Resource->GetNameConstChar() );
         return false;
     }
 
@@ -216,7 +216,7 @@ bool FResourceManager::UnregisterResource( FBaseObject * _Resource ) {
     for ( i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
         if ( !ResourceCache[i]->GetName().Icmp( _Resource->GetName() ) ) {
             if ( &ResourceCache[i]->FinalClassMeta() != &_Resource->FinalClassMeta() ) {
-                GLogger.Printf( "UnregisterResource: %s class doesn't match meta data (%s vs %s)\n", _Resource->GetName().ToConstChar(), ResourceCache[i]->FinalClassName(), _Resource->FinalClassMeta().GetName() );
+                GLogger.Printf( "UnregisterResource: %s class doesn't match meta data (%s vs %s)\n", _Resource->GetNameConstChar(), ResourceCache[i]->FinalClassName(), _Resource->FinalClassMeta().GetName() );
                 return false;
             }
             break;
@@ -224,7 +224,7 @@ bool FResourceManager::UnregisterResource( FBaseObject * _Resource ) {
     }
 
     if ( i == -1 ) {
-        GLogger.Printf( "UnregisterResource: resource %s is not found\n", _Resource->GetName().ToConstChar() );
+        GLogger.Printf( "UnregisterResource: resource %s is not found\n", _Resource->GetNameConstChar() );
         return false;
     }
 

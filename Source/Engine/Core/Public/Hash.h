@@ -30,13 +30,12 @@ SOFTWARE.
 
 #pragma once
 
-#include "Alloc.h"
+#include "Std.h"
 
-template< int HashBucketsCount = 1024 > // must be power of two
+template< int HashBucketsCount = 1024, typename Allocator = FZoneAllocator > // must be power of two
 class THash final {
     AN_FORBID_COPY( THash )
 
-    using Allocator = FAllocator;
 public:
     // Change it to set up granularity. Granularity must be >= 1
     int   Granularity = 1024;
@@ -53,11 +52,11 @@ public:
 
     ~THash() {
         if ( HashBuckets != InvalidHashIndex ) {
-            Allocator::Dealloc( HashBuckets );
+            Allocator::Inst().Dealloc( HashBuckets );
         }
 
         if ( IndexChain != InvalidHashIndex ) {
-            Allocator::Dealloc( IndexChain );
+            Allocator::Inst().Dealloc( IndexChain );
         }
     }
 
@@ -69,12 +68,12 @@ public:
 
     void Free() {
         if ( HashBuckets != InvalidHashIndex ) {
-            Allocator::Dealloc( HashBuckets );
+            Allocator::Inst().Dealloc( HashBuckets );
             HashBuckets = const_cast< int * >( InvalidHashIndex );
         }
 
         if ( IndexChain != InvalidHashIndex ) {
-            Allocator::Dealloc( IndexChain );
+            Allocator::Inst().Dealloc( IndexChain );
             IndexChain = const_cast< int * >( InvalidHashIndex );
         }
 
@@ -86,7 +85,7 @@ public:
 
         if ( HashBuckets == InvalidHashIndex ) {
             // first allocation
-            HashBuckets = ( int * )Allocator::AllocCleared< 1 >( HashBucketsCount * sizeof( *HashBuckets ), 0xffffffffffffffff );
+            HashBuckets = ( int * )Allocator::Inst().AllocCleared1( HashBucketsCount * sizeof( *HashBuckets ), 0xffffffffffffffff );
             LookupMask = ~0;
         }
 
@@ -138,13 +137,13 @@ public:
             for ( int i = 0 ; i < HashBucketsCount ; i++ ) {
                 if ( HashBuckets[i] >= _Index ) {
                     HashBuckets[i]++;
-                    max = FMath_Max( max, HashBuckets[i] );
+                    max = StdMax( max, HashBuckets[i] );
                 }
             }
             for ( int i = 0 ; i < IndexChainLength ; i++ ) {
                 if ( IndexChain[i] >= _Index ) {
                     IndexChain[i]++;
-                    max = FMath_Max( max, IndexChain[i] );
+                    max = StdMax( max, IndexChain[i] );
                 }
             }
             if ( max >= IndexChainLength ) {
@@ -172,13 +171,13 @@ public:
         int max = _Index;
         for ( int i = 0 ; i < HashBucketsCount ; i++ ) {
             if ( HashBuckets[i] >= _Index ) {
-                max = FMath_Max( max, HashBuckets[i] );
+                max = StdMax( max, HashBuckets[i] );
                 HashBuckets[i]--;
             }
         }
         for ( int i = 0 ; i < IndexChainLength ; i++ ) {
             if ( IndexChain[i] >= _Index ) {
-                max = FMath_Max( max, IndexChain[i] );
+                max = StdMax( max, IndexChain[i] );
                 IndexChain[i]--;
             }
         }
@@ -204,9 +203,9 @@ private:
 
     void GrowIndexChain( int _NewIndexChainLength ) {
         if ( IndexChain == InvalidHashIndex ) {
-            IndexChain = ( int * )Allocator::AllocCleared< 1 >( _NewIndexChainLength * sizeof( *IndexChain ), 0xffffffffffffffff );
+            IndexChain = ( int * )Allocator::Inst().AllocCleared1( _NewIndexChainLength * sizeof( *IndexChain ), 0xffffffffffffffff );
         } else {
-            IndexChain = ( int * )Allocator::ExtendCleared< 1 >( IndexChain, IndexChainLength * sizeof( *IndexChain ), _NewIndexChainLength * sizeof( *IndexChain ), true, 0xffffffffffffffff );
+            IndexChain = ( int * )Allocator::Inst().ExtendCleared1( IndexChain, IndexChainLength * sizeof( *IndexChain ), _NewIndexChainLength * sizeof( *IndexChain ), true, 0xffffffffffffffff );
         }
         IndexChainLength = _NewIndexChainLength;
     }
@@ -220,7 +219,7 @@ private:
     constexpr static const int InvalidHashIndex[1] = { -1 };
 };
 
-template< int HashBucketsCount >
-constexpr const int THash< HashBucketsCount >::InvalidHashIndex[1];
+template< int HashBucketsCount, typename Allocator >
+constexpr const int THash< HashBucketsCount, Allocator >::InvalidHashIndex[1];
 
 ANGIE_TEMPLATE template class ANGIE_API THash<>;

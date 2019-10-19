@@ -46,7 +46,7 @@ public:
     TWidgetEvent<> E_OnEnterPress;
     TWidgetEvent<> E_OnEscapePress;
 
-    WTextEdit & SetFont( FFontAtlas * _Atlas, int _FontId );
+    WTextEdit & SetFont( FFont * _Font );
     WTextEdit & SetMaxChars( int _MaxChars );
     WTextEdit & SetFilterDecimal( bool _Enabled );
     WTextEdit & SetFilterHexadecimal( bool _Enabled );
@@ -157,8 +157,7 @@ private:
     FColor4 SelectionColor;
     FColor4 TextColor;
 
-    TRef< FFontAtlas > FontAtlas;
-    int FontId;
+    TRef< FFont > Font;
 
     TPodArray< FWideChar > TextData;
     int CurTextLength;

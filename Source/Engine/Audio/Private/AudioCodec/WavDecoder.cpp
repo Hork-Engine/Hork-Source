@@ -50,13 +50,13 @@ static bool IMAADPCMUnpack16Ext_Mono( signed short * _PCM, int _IgnoreFirstNSamp
 static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSamples, int _SamplesCount, int _ChannelsCount, const byte * _ADPCM, int _DataLength, int _BlockAlign );
 
 template< typename T >
-static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave );
+static bool WaveReadHeader( FStreamBase< T > & _File, SWaveFormat & _Wave );
 template< typename T >
-static int WaveReadFile( FStreamBase< T > & _File, void * _Buffer, int _BufferLength, FWaveFormat *_Wave );
+static int WaveReadFile( FStreamBase< T > & _File, void * _Buffer, int _BufferLength, SWaveFormat *_Wave );
 template< typename T >
-static void WaveRewindFile( FStreamBase< T > & _File, FWaveFormat *_Wave );
+static void WaveRewindFile( FStreamBase< T > & _File, SWaveFormat *_Wave );
 template< typename T >
-static int WaveSeekFile( FStreamBase< T > & _File, int _Offset, FWaveFormat *_Wave );
+static int WaveSeekFile( FStreamBase< T > & _File, int _Offset, SWaveFormat *_Wave );
 
 AN_CLASS_META( FWavAudioTrack )
 AN_CLASS_META( FWavDecoder )
@@ -70,7 +70,7 @@ FWavAudioTrack::FWavAudioTrack() {
 }
 
 FWavAudioTrack::~FWavAudioTrack() {
-    GMainMemoryZone.Dealloc( ADPCM );
+    GZoneMemory.Dealloc( ADPCM );
 }
 
 bool FWavAudioTrack::InitializeFileStream( const char * _FileName ) {
@@ -101,12 +101,12 @@ bool FWavAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
     assert( !File.IsOpened() );
     assert( WaveMemory == NULL );
 
-    Wave = *(FWaveFormat *)_EncodedData;
-    WaveMemory = _EncodedData + sizeof( FWaveFormat );
+    Wave = *(SWaveFormat *)_EncodedData;
+    WaveMemory = _EncodedData + sizeof( SWaveFormat );
     PCMDataOffset = 0;
     CurrentSample = 0;
 
-    assert( Wave.DataSize == _EncodedDataLength - sizeof( FWaveFormat ) );
+    assert( Wave.DataSize == _EncodedDataLength - sizeof( SWaveFormat ) );
 
     return true;
 }
@@ -272,7 +272,7 @@ int FWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
 
                     int readBytesCount = blocksCount * Wave.BlockLength;
                     if ( ADPCMBufferLength < readBytesCount ) {
-                        ADPCM = ( byte * )GMainMemoryZone.Extend( ADPCM, ADPCMBufferLength, readBytesCount, 1, false );
+                        ADPCM = ( byte * )GZoneMemory.Extend( ADPCM, ADPCMBufferLength, readBytesCount, 1, false );
                         ADPCMBufferLength = readBytesCount;
                     }
 
@@ -316,7 +316,7 @@ IAudioStreamInterface * FWavDecoder::CreateAudioStream() {
 
 bool FWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
     FFileStream f;
-    FWaveFormat inf;
+    SWaveFormat inf;
 
     *_SamplesCount = 0;
     *_Channels = 0;
@@ -338,25 +338,25 @@ bool FWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
             return false;
         }
 
-        *_PCM = (short *)GMainMemoryZone.Alloc( inf.DataSize, 1 );
+        *_PCM = (short *)GZoneMemory.Alloc( inf.DataSize, 1 );
         if ( !*_PCM ) {
             return false;
         }
 
         if ( WaveReadFile( f, (char *)*_PCM, inf.DataSize, &inf ) != (int)inf.DataSize ) {
-            GMainMemoryZone.Dealloc( *_PCM );
+            GZoneMemory.Dealloc( *_PCM );
             *_PCM = NULL;
             return false;
         }
 
         if ( inf.Format == WAVE_FORMAT_DVI_ADPCM ) {
             byte * encodedADPCM = (byte *)*_PCM;
-            *_PCM = (short *)GMainMemoryZone.Alloc( inf.NumSamples * sizeof( short ), 1 );
+            *_PCM = (short *)GZoneMemory.Alloc( inf.NumSamples * sizeof( short ), 1 );
             if ( inf.Channels == 2 )
                 IMAADPCMUnpack16_Stereo( *_PCM, inf.NumSamples, inf.Channels, encodedADPCM, inf.DataSize, inf.BlockAlign );
             else
                 IMAADPCMUnpack16_Mono( *_PCM, inf.NumSamples, encodedADPCM, inf.DataSize, inf.BlockAlign );
-            GMainMemoryZone.Dealloc( encodedADPCM );
+            GZoneMemory.Dealloc( encodedADPCM );
         }
     }
 
@@ -370,7 +370,7 @@ bool FWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
 
 bool FWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
     FMemoryStream f;
-    FWaveFormat inf;
+    SWaveFormat inf;
 
     *_SamplesCount = 0;
     *_Channels = 0;
@@ -392,25 +392,25 @@ bool FWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
             return false;
         }
 
-        *_PCM = (short *)GMainMemoryZone.Alloc( inf.DataSize, 1 );
+        *_PCM = (short *)GZoneMemory.Alloc( inf.DataSize, 1 );
         if ( !*_PCM ) {
             return false;
         }
 
         if ( WaveReadFile( f, (char *)*_PCM, inf.DataSize, &inf ) != (int)inf.DataSize ) {
-            GMainMemoryZone.Dealloc( *_PCM );
+            GZoneMemory.Dealloc( *_PCM );
             *_PCM = NULL;
             return false;
         }
 
         if ( inf.Format == WAVE_FORMAT_DVI_ADPCM ) {
             byte * encodedADPCM = (byte *)*_PCM;
-            *_PCM = (short *)GMainMemoryZone.Alloc( inf.NumSamples * sizeof( short ), 1 );
+            *_PCM = (short *)GZoneMemory.Alloc( inf.NumSamples * sizeof( short ), 1 );
             if ( inf.Channels == 2 )
                 IMAADPCMUnpack16_Stereo( *_PCM, inf.NumSamples, inf.Channels, encodedADPCM, inf.DataSize, inf.BlockAlign );
             else
                 IMAADPCMUnpack16_Mono( *_PCM, inf.NumSamples, encodedADPCM, inf.DataSize, inf.BlockAlign );
-            GMainMemoryZone.Dealloc( encodedADPCM );
+            GZoneMemory.Dealloc( encodedADPCM );
         }
     }
 
@@ -424,7 +424,7 @@ bool FWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
 
 bool FWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
     FFileStream f;
-    FWaveFormat inf;
+    SWaveFormat inf;
 
     *_SamplesCount = 0;
     *_Channels = 0;
@@ -445,20 +445,20 @@ bool FWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
         return false;
     }
 
-    *_EncodedData = ( byte * )GMainMemoryZone.Alloc( inf.DataSize + sizeof( FWaveFormat ), 1 );
+    *_EncodedData = ( byte * )GZoneMemory.Alloc( inf.DataSize + sizeof( SWaveFormat ), 1 );
     if ( !*_EncodedData ) {
         return false;
     }
 
-    if ( WaveReadFile( f, ( char * )*_EncodedData + sizeof( FWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
-        GMainMemoryZone.Dealloc( *_EncodedData );
+    if ( WaveReadFile( f, ( char * )*_EncodedData + sizeof( SWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
+        GZoneMemory.Dealloc( *_EncodedData );
         *_EncodedData = NULL;
         return false;
     }
 
-    memcpy( *_EncodedData, &inf, sizeof( FWaveFormat ) );
+    memcpy( *_EncodedData, &inf, sizeof( SWaveFormat ) );
 
-    *_EncodedDataLength = inf.DataSize + sizeof( FWaveFormat );
+    *_EncodedDataLength = inf.DataSize + sizeof( SWaveFormat );
     *_SamplesCount = inf.NumSamples / inf.Channels;
     *_Channels = inf.Channels;
     *_SampleRate = inf.SampleRate;
@@ -469,7 +469,7 @@ bool FWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
 
 bool FWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
     FMemoryStream f;
-    FWaveFormat inf;
+    SWaveFormat inf;
 
     *_SamplesCount = 0;
     *_Channels = 0;
@@ -490,20 +490,20 @@ bool FWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_
         return false;
     }
 
-    *_EncodedData = ( byte * )GMainMemoryZone.Alloc( inf.DataSize + sizeof( FWaveFormat ), 1 );
+    *_EncodedData = ( byte * )GZoneMemory.Alloc( inf.DataSize + sizeof( SWaveFormat ), 1 );
     if ( !*_EncodedData ) {
         return false;
     }
 
-    if ( WaveReadFile( f, ( char * )*_EncodedData + sizeof( FWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
-        GMainMemoryZone.Dealloc( *_EncodedData );
+    if ( WaveReadFile( f, ( char * )*_EncodedData + sizeof( SWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
+        GZoneMemory.Dealloc( *_EncodedData );
         *_EncodedData = NULL;
         return false;
     }
 
-    memcpy( *_EncodedData, &inf, sizeof( FWaveFormat ) );
+    memcpy( *_EncodedData, &inf, sizeof( SWaveFormat ) );
 
-    *_EncodedDataLength = inf.DataSize + sizeof( FWaveFormat );
+    *_EncodedDataLength = inf.DataSize + sizeof( SWaveFormat );
     *_SamplesCount = inf.NumSamples / inf.Channels;
     *_Channels = inf.Channels;
     *_SampleRate = inf.SampleRate;
@@ -883,7 +883,7 @@ typedef uint32_t RIFF_FOURCC;
 
 struct RiffChunk {
     RIFF_FOURCC Id;
-    int32_t ByteLength;
+    int32_t SizeInBytes;
 };
 
 #define CheckID(_x, _y) strncmp((const char *) (_x), (const char *) (_y), sizeof(RIFF_FOURCC))
@@ -893,17 +893,17 @@ template< typename T >
 static int ReadChunk( FStreamBase< T > & _File, RiffChunk * _Chunk ) {
     _File.Read( _Chunk, sizeof( RiffChunk ) );
     if ( _File.GetReadBytesCount() ) {
-        _Chunk->ByteLength = FCore::LittleDWord( _Chunk->ByteLength );
+        _Chunk->SizeInBytes = FCore::LittleDWord( _Chunk->SizeInBytes );
     }
     return _File.GetReadBytesCount();
 }
 
 template< typename T >
-static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave ) {
+static bool WaveReadHeader( FStreamBase< T > & _File, SWaveFormat & _Wave ) {
     RiffChunk       chunk;
     RIFF_FOURCC     id;
     int32_t         fileSize;
-    FWaveFormat *   wave = &_Wave;
+    SWaveFormat *   wave = &_Wave;
 
     wave->DataBase = 0;
     wave->Format = 0;
@@ -925,7 +925,7 @@ static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave ) {
         return false;
     }
 
-    fileSize = PAD2( chunk.ByteLength ) - sizeof( RIFF_FOURCC );
+    fileSize = PAD2( chunk.SizeInBytes ) - sizeof( RIFF_FOURCC );
 
     bool bHasFormat = false;
     bool bHasData = false;
@@ -938,7 +938,7 @@ static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave ) {
         if ( !ReadChunk( _File, &chunk ) )
             return false;
 
-        fileSize -= sizeof( RiffChunk ) + PAD2( chunk.ByteLength );
+        fileSize -= sizeof( RiffChunk ) + PAD2( chunk.SizeInBytes );
 
         /* LIST chunk */
         if ( !CheckID( &chunk.Id, RIFF_ListID ) ) {
@@ -950,22 +950,22 @@ static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave ) {
 
             /* INFO chunk */
             if ( !CheckID( &id, RIFF_ListInfoID ) ) {
-                chunk.ByteLength -= sizeof( RIFF_FOURCC );
+                chunk.SizeInBytes -= sizeof( RIFF_FOURCC );
 
-                while ( chunk.ByteLength ) {
+                while ( chunk.SizeInBytes ) {
                     RiffChunk       c;
 
                     if ( !ReadChunk( _File, &c ) )
                         return false;
 
                     /* skip unknown chunk */
-                    _File.SeekCur( PAD2( c.ByteLength ) );
+                    _File.SeekCur( PAD2( c.SizeInBytes ) );
 
-                    chunk.ByteLength -= sizeof( RiffChunk ) + PAD2( c.ByteLength );
+                    chunk.SizeInBytes -= sizeof( RiffChunk ) + PAD2( c.SizeInBytes );
                 }
             } else {
                 /* skip unknown chunk */
-                _File.SeekCur( PAD2( chunk.ByteLength ) - sizeof( RIFF_FOURCC ) );
+                _File.SeekCur( PAD2( chunk.SizeInBytes ) - sizeof( RIFF_FOURCC ) );
             }
         }
         /* wave format chunk */
@@ -985,7 +985,7 @@ static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave ) {
             _File >> wave->BitsPerSample;
 
             /* skip any other format specific fields */
-            _File.SeekCur( PAD2( chunk.ByteLength - 16 ) );
+            _File.SeekCur( PAD2( chunk.SizeInBytes - 16 ) );
 
             bHasFormat = true;
         }
@@ -994,11 +994,11 @@ static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave ) {
             long endOfFile;
 
             wave->DataBase = _File.Tell();
-            wave->DataSize = chunk.ByteLength;
+            wave->DataSize = chunk.SizeInBytes;
             _File.SeekEnd( 0 );
             endOfFile = _File.Tell();
 
-            if ( _File.SeekSet( wave->DataBase + PAD2( chunk.ByteLength ) ) || _File.Tell() > endOfFile ) {
+            if ( _File.SeekSet( wave->DataBase + PAD2( chunk.SizeInBytes ) ) || _File.Tell() > endOfFile ) {
                 /* the seek failed, assume the size is bogus */
                 _File.SeekEnd( 0 );
                 wave->DataSize = _File.Tell() - wave->DataBase;
@@ -1009,7 +1009,7 @@ static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave ) {
             bHasData = true;
         } else {
             /* skip unknown chunk */
-            _File.SeekCur( PAD2( chunk.ByteLength ) );
+            _File.SeekCur( PAD2( chunk.SizeInBytes ) );
         }
     }
 
@@ -1041,18 +1041,18 @@ static bool WaveReadHeader( FStreamBase< T > & _File, FWaveFormat & _Wave ) {
 }
 
 template< typename T >
-static int WaveReadFile( FStreamBase< T > & _File, void * _Buffer, int _BufferLength, FWaveFormat *_Wave ) {
+static int WaveReadFile( FStreamBase< T > & _File, void * _Buffer, int _BufferLength, SWaveFormat *_Wave ) {
     _File.Read( _Buffer, _BufferLength );
     return _File.GetReadBytesCount();
 }
 
 template< typename T >
-static void WaveRewindFile( FStreamBase< T > & _File, FWaveFormat *_Wave ) {
+static void WaveRewindFile( FStreamBase< T > & _File, SWaveFormat *_Wave ) {
     _File.SeekSet( _Wave->DataBase + sizeof( long ) );
 }
 
 template< typename T >
-static int WaveSeekFile( FStreamBase< T > & _File, int _Offset, FWaveFormat *_Wave ) {
+static int WaveSeekFile( FStreamBase< T > & _File, int _Offset, SWaveFormat *_Wave ) {
     return _File.SeekSet( _Wave->DataBase + sizeof( long ) + _Offset );
 }
 

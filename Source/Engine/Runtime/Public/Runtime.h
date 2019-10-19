@@ -36,12 +36,12 @@ SOFTWARE.
 #include <Engine/Core/Public/Utf8.h>
 #include "AsyncJobManager.h"
 
-enum EVerticalSyncMode {
-    VSync_Disabled,
-    VSync_Adaptive,
-    VSync_Fixed,
-    VSync_Half
-};
+//enum EVerticalSyncMode {
+//    VSync_Disabled,
+//    VSync_Adaptive,
+//    VSync_Fixed,
+//    VSync_Half
+//};
 
 struct FMonitorVideoMode {
     int Width;
@@ -105,7 +105,7 @@ enum EEventType {
     ET_SetWindowDefsEvent,
     ET_SetWindowPosEvent,
     ET_SetInputFocusEvent,
-    ET_SetRenderFeaturesEvent,
+    //ET_SetRenderFeaturesEvent,
     ET_SetCursorModeEvent
 };
 
@@ -223,9 +223,9 @@ struct FSetInputFocusEvent {
 
 };
 
-struct FSetRenderFeaturesEvent {
-    int VSyncMode;
-};
+//struct FSetRenderFeaturesEvent {
+//    int VSyncMode;
+//};
 
 struct FSetCursorModeEvent {
     bool bDisabledCursor;
@@ -258,7 +258,7 @@ struct FEvent {
         FSetWindowDefsEvent SetWindowDefsEvent;
         FSetWindowPosEvent SetWindowPosEvent;
         FSetInputFocusEvent SetInputFocusEvent;
-        FSetRenderFeaturesEvent SetRenderFeaturesEvent;
+        //FSetRenderFeaturesEvent SetRenderFeaturesEvent;
         FSetCursorModeEvent SetCursorModeEvent;
     } Data;
 };
@@ -302,11 +302,19 @@ public:
 
     FRenderFrame * GetFrameData();
 
+    void * AllocFrameMem( size_t _SizeInBytes );
+
+    size_t GetFrameMemorySize() const;
+
+    size_t GetFrameMemoryUsed() const;
+
+    size_t GetFrameMemoryUsedPrev() const;
+
     // Is vertical synchronization control supported
-    bool IsVSyncSupported();
+    //bool IsVSyncSupported();
 
     // Is vertical synchronization tearing supported
-    bool IsAdaptiveVSyncSupported();
+    //bool IsAdaptiveVSyncSupported();
 
     int GetPhysicalMonitorsCount();
 
@@ -360,10 +368,10 @@ public:
         return nullptr != ( (*_ProcPtr) = (T *)GetProcAddress( _Handle, _ProcName ) );
     }
 
-    void SetClipboard_GameThread( const char * _Utf8String );
-    void SetClipboard_GameThread( FString const & _Clipboard ) { SetClipboard_GameThread( _Clipboard.ToConstChar() ); }
+    void SetClipboard( const char * _Utf8String );
+    void SetClipboard( FString const & _Clipboard ) { SetClipboard( _Clipboard.ToConstChar() ); }
 
-    FString const & GetClipboard_GameThread();
+    const char * GetClipboard();
 };
 
 extern ANGIE_API FRuntime & GRuntime;

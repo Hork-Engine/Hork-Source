@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Engine/Widgets/Public/WMenuPopup.h>
+#include <Engine/Core/Public/Logger.h>
 
 AN_CLASS_META( WMenuPopup )
 

@@ -41,7 +41,7 @@ class FImguiContext : public FBaseObject {
     AN_CLASS( FImguiContext, FBaseObject )
 
 public:
-    void SetFontAtlas( FFontAtlas * _Atlas );
+    void SetFont( FFont * _Font );
     void BeginFrame( float _TimeStep );
     void EndFrame();
 

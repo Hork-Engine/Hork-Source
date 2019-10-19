@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Audio/Public/AudioDecoderInterface.h>
 
-struct FWaveFormat {
+struct SWaveFormat {
     Short       Format;
     Short       Channels;
     Short       BitsPerSample;
@@ -68,7 +68,7 @@ protected:
 
 private:
     FFileStream File;
-    FWaveFormat Wave;
+    SWaveFormat Wave;
     const byte * WaveMemory;
     int CurrentSample;
     int PCMDataOffset;

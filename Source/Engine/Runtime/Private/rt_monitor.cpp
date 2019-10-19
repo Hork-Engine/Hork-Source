@@ -79,7 +79,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
     }
 
     int physMonitorSizeOf = sizeof( FPhysicalMonitor ) + sizeof( FMonitorVideoMode ) * (videoModesCount - 1);
-    FPhysicalMonitor * physMonitor = (FPhysicalMonitor *)GMainMemoryZone.AllocCleared( physMonitorSizeOf, 1 );
+    FPhysicalMonitor * physMonitor = (FPhysicalMonitor *)GZoneMemory.AllocCleared( physMonitorSizeOf, 1 );
 
     PhysicalMonitors.Append( physMonitor );
 
@@ -155,7 +155,7 @@ void rt_DeinitializePhysicalMonitors() {
     glfwSetMonitorCallback( nullptr );
 
     for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
-        GMainMemoryZone.Dealloc( physMonitor );
+        GZoneMemory.Dealloc( physMonitor );
     }
     PhysicalMonitors.Free();
 }

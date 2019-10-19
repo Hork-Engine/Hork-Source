@@ -30,6 +30,7 @@ SOFTWARE.
 
 
 #include <Engine/World/Public/BSP.h>
+#include <Engine/Core/Public/Logger.h>
 
 static int DrawSurfMarker = 0;
 
@@ -41,7 +42,7 @@ FBinarySpaceData::FBinarySpaceData() {
 }
 
 FBinarySpaceData::~FBinarySpaceData() {
-    DeallocateBufferData( Visdata );
+    HugeFree( Visdata );
 }
 
 int FBinarySpaceData::FindLeaf( const Float3 & _Position ) {

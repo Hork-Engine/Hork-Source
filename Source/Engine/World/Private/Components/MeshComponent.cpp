@@ -89,10 +89,6 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
     MarkWorldBoundsDirty();
 }
 
-void FMeshComponent::SetMesh( const char * _Mesh ) {
-    SetMesh( GetResource< FIndexedMesh >( _Mesh ) );
-}
-
 void FMeshComponent::ClearMaterials() {
     for ( FMaterialInstance * material : Materials ) {
         if ( material ) {

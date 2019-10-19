@@ -28,6 +28,8 @@ SOFTWARE.
 
 */
 
+#if 0
+
 #pragma once
 
 #include "Alloc.h"
@@ -40,10 +42,8 @@ TRefArray
 Array for ref counted types
 
 */
-template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32 >
+template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = FZoneAllocator >
 class TRefArray final {
-
-    using Allocator = FAllocator;
 public:
     typedef T * Ref;
     typedef Ref * Iterator;
@@ -595,3 +595,5 @@ AN_FORCEINLINE void TRefArray< T, BASE_CAPACITY, GRANULARITY >::Set( const Ref *
     memcpy( ArrayData, _Elements, TYPE_SIZEOF * _NumElements );
     AddRef( ArrayData, ArrayData + _NumElements );
 }
+
+#endif

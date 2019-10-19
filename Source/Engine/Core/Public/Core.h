@@ -62,6 +62,7 @@ SOFTWARE.
 #include "Ray.h"
 #include "RefArray.h"
 #include "Shuffle.h"
+#include "Std.h"
 #include "String.h"
 #include "Thread.h"
 #include "Transform.h"

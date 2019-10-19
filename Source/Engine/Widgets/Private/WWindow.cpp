@@ -65,9 +65,8 @@ WWindow & WWindow::SetCaptionHeight( float _CaptionHeight ) {
     return *this;
 }
 
-WWindow & WWindow::SetCaptionFont( FFontAtlas * _Atlas, int _FontId ) {
-    FontAtlas = _Atlas;
-    FontId = _FontId;
+WWindow & WWindow::SetCaptionFont( FFont * _Font ) {
+    Font = _Font;
     return *this;
 }
 
@@ -162,7 +161,7 @@ Float2 WWindow::GetTextPositionWithAlignment( FCanvas & _Canvas ) const {
     const float height = CaptionHeight;
 
     FFont const * font = GetFont( _Canvas );
-    Float2 size = font->CalcTextSizeA( font->FontSize, width, bWordWrap ? width : 0.0f, CaptionText.Begin(), CaptionText.End() );
+    Float2 size = font->CalcTextSizeA( font->GetFontSize(), width, bWordWrap ? width : 0.0f, CaptionText.Begin(), CaptionText.End() );
 
     if ( TextHorizontalAlignment == WIDGET_ALIGNMENT_LEFT ) {
         pos.X = 0;
@@ -192,12 +191,9 @@ Float2 WWindow::GetTextPositionWithAlignment( FCanvas & _Canvas ) const {
 }
 
 FFont const * WWindow::GetFont( FCanvas & _Canvas ) const {
-    FFont const * font = nullptr;
-    if ( FontAtlas ) {
-        font = FontAtlas->GetFont( FontId );
-    }
+    FFont const * font = Font;
 
-    if ( !font ) {
+    if ( !Font ) {
         // back to default font
         font = _Canvas.GetDefaultFont();
     }
@@ -282,7 +278,7 @@ void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
         if ( !CaptionText.IsEmpty() ) {
             FFont const * font = GetFont( _Canvas );
             _Canvas.PushClipRect( mins, mins + captionSize, true );
-            _Canvas.DrawTextUTF8( font, font->FontSize, mins + GetTextPositionWithAlignment( _Canvas ), TextColor, CaptionText.Begin(), CaptionText.End(), bWordWrap ? width : 0.0f );
+            _Canvas.DrawTextUTF8( font, font->GetFontSize(), mins + GetTextPositionWithAlignment( _Canvas ), TextColor, CaptionText.Begin(), CaptionText.End(), bWordWrap ? width : 0.0f );
             _Canvas.PopClipRect();
         }
     }

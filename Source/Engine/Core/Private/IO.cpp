@@ -64,7 +64,7 @@ void MakeDir( const char * _Directory, bool _FileName ) {
     if ( !strLen ) {
         return;
     }
-    char * tmpStr = ( char * )GMainMemoryZone.Alloc( strLen + 1, 1 );
+    char * tmpStr = ( char * )GZoneMemory.Alloc( strLen + 1, 1 );
     memcpy( tmpStr, _Directory, strLen+1 );
     char * p = tmpStr;
     #ifdef AN_OS_WIN32
@@ -91,7 +91,7 @@ void MakeDir( const char * _Directory, bool _FileName ) {
         mkdir( tmpStr, S_IRWXU | S_IRWXG | S_IRWXO );
         #endif
     }
-    GMainMemoryZone.Dealloc( tmpStr );
+    GZoneMemory.Dealloc( tmpStr );
 }
 
 bool IsFileExists( const char * _FileName ) {
@@ -403,7 +403,7 @@ bool FMemoryStream::OpenWrite( const char * _FileName, byte * _MemoryBuffer, siz
 bool FMemoryStream::OpenWrite( const char * _FileName, size_t _ReservedSize ) {
     Close();
     FileName = _FileName;
-    MemoryBuffer = ( byte * )GMainMemoryZone.Alloc( _ReservedSize, 1 );
+    MemoryBuffer = ( byte * )GZoneMemory.Alloc( _ReservedSize, 1 );
     MemoryBufferLength = _ReservedSize;
     bMemoryBufferOwner = true;
     MemoryBufferOffset = 0;
@@ -419,7 +419,7 @@ void FMemoryStream::Close() {
     Mode = M_Closed;
 
     if ( bMemoryBufferOwner ) {
-        GMainMemoryZone.Dealloc( MemoryBuffer );
+        GZoneMemory.Dealloc( MemoryBuffer );
     }
 }
 
@@ -465,7 +465,7 @@ int FMemoryStream::Impl_Write( const void * _Buffer, int _Length ) {
         if ( mod ) {
             newLength = newLength + GRANULARITY - mod;
         }
-        MemoryBuffer = ( byte * )GMainMemoryZone.Extend( MemoryBuffer, MemoryBufferLength, newLength, 1, true );
+        MemoryBuffer = ( byte * )GZoneMemory.Extend( MemoryBuffer, MemoryBufferLength, newLength, 1, true );
         MemoryBufferLength = newLength;
     }
     memcpy( MemoryBuffer + MemoryBufferOffset, _Buffer, _Length );
@@ -658,7 +658,7 @@ bool FArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuff
         return false;
     }
 
-    void * data = GMainMemoryZone.Alloc( FileInfo.uncompressed_size, 1 );
+    void * data = GZoneMemory.Alloc( FileInfo.uncompressed_size, 1 );
     Result = unzReadCurrentFile( Handle, data, FileInfo.uncompressed_size );
     if ( (uLong)Result != FileInfo.uncompressed_size ) {
         GLogger.Printf( "Couldn't read file %s complete from archive: ", _FileName );
@@ -667,7 +667,7 @@ bool FArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuff
         } else {
             GLogger.Printf( "%s\n", GetUnzipErrorStr( Result ) );
         }
-        GMainMemoryZone.Dealloc( data );
+        GZoneMemory.Dealloc( data );
         unzCloseCurrentFile( Handle );
         return false;
     }
@@ -675,7 +675,7 @@ bool FArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuff
     Result = unzCloseCurrentFile( Handle );
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Error during reading file %s (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
-        GMainMemoryZone.Dealloc( data );
+        GZoneMemory.Dealloc( data );
         return false;
     }
 
@@ -706,9 +706,9 @@ bool FArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuff
         return false;
     }
 
-    *_HunkMark = GMainHunkMemory.SetHunkMark();
+    *_HunkMark = GHunkMemory.SetHunkMark();
 
-    void * data = GMainHunkMemory.HunkMemory( FileInfo.uncompressed_size, 1 );
+    void * data = GHunkMemory.HunkMemory( FileInfo.uncompressed_size, 1 );
     Result = unzReadCurrentFile( Handle, data, FileInfo.uncompressed_size );
     if ( (uLong)Result != FileInfo.uncompressed_size ) {
         GLogger.Printf( "Couldn't read file %s complete from archive: ", _FileName );
@@ -717,7 +717,7 @@ bool FArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuff
         } else {
             GLogger.Printf( "%s\n", GetUnzipErrorStr( Result ) );
         }
-        GMainHunkMemory.ClearToMark( *_HunkMark );
+        GHunkMemory.ClearToMark( *_HunkMark );
         unzCloseCurrentFile( Handle );
         return false;
     }
@@ -725,7 +725,7 @@ bool FArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuff
     Result = unzCloseCurrentFile( Handle );
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Error during reading file %s (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
-        GMainHunkMemory.ClearToMark( *_HunkMark );
+        GHunkMemory.ClearToMark( *_HunkMark );
         return false;
     }
 

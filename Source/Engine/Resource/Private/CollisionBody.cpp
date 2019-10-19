@@ -32,6 +32,8 @@ SOFTWARE.
 #include <Engine/Resource/Public/IndexedMesh.h>
 #include <Engine/Resource/Public/Asset.h>
 
+#include <Engine/Core/Public/Logger.h>
+
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
 
 #include <BulletCollision/CollisionShapes/btBoxShape.h>
@@ -134,7 +136,7 @@ FCollisionConvexHullData::FCollisionConvexHullData() {
 }
 
 FCollisionConvexHullData::~FCollisionConvexHullData() {
-    GMainMemoryZone.Dealloc( Data );
+    GZoneMemory.Dealloc( Data );
 }
 
 void FCollisionConvexHullData::Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount ) {
@@ -144,9 +146,9 @@ void FCollisionConvexHullData::Initialize( Float3 const * _Vertices, int _Vertex
     memcpy( Vertices.ToPtr(), _Vertices, _VertexCount * sizeof( Float3 ) );
     memcpy( Indices.ToPtr(), _Indices, _IndexCount * sizeof( unsigned int ) );
 
-    GMainMemoryZone.Dealloc( Data );
+    GZoneMemory.Dealloc( Data );
 
-    Data = ( btVector3 * )GMainMemoryZone.Alloc( sizeof( btVector3 ) * _VertexCount, 1 );
+    Data = ( btVector3 * )GZoneMemory.Alloc( sizeof( btVector3 ) * _VertexCount, 1 );
     for ( int i = 0 ; i < _VertexCount ; i++ ) {
         Data[i] = btVectorToFloat3( _Vertices[i] );
     }
@@ -1201,13 +1203,13 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
                                  TPodArray< unsigned int > & _OutIndices,
                                  TPodArray< FConvexHullDesc > & _OutHulls )
 {
-    int hunkMark = GMainHunkMemory.SetHunkMark();
+    int hunkMark = GHunkMemory.SetHunkMark();
 
     HACD::Vec3< HACD::Real > * points =
-            ( HACD::Vec3< HACD::Real > * )GMainHunkMemory.HunkMemory( _VerticesCount * sizeof( HACD::Vec3< HACD::Real > ), 1 );
+            ( HACD::Vec3< HACD::Real > * )GHunkMemory.HunkMemory( _VerticesCount * sizeof( HACD::Vec3< HACD::Real > ), 1 );
 
     HACD::Vec3< long > * triangles =
-            ( HACD::Vec3< long > * )GMainHunkMemory.HunkMemory( ( _IndicesCount / 3 ) * sizeof( HACD::Vec3< long > ), 1 );
+            ( HACD::Vec3< long > * )GHunkMemory.HunkMemory( ( _IndicesCount / 3 ) * sizeof( HACD::Vec3< long > ), 1 );
 
     byte const * srcVertices = ( byte const * )_Vertices;
     for ( int i = 0 ; i < _VerticesCount ; i++ ) {
@@ -1266,10 +1268,10 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
     }
 
     HACD::Vec3< HACD::Real > * hullPoints =
-            ( HACD::Vec3< HACD::Real > * )GMainHunkMemory.HunkMemory( maxPointsPerCluster * sizeof( HACD::Vec3< HACD::Real > ), 1 );
+            ( HACD::Vec3< HACD::Real > * )GHunkMemory.HunkMemory( maxPointsPerCluster * sizeof( HACD::Vec3< HACD::Real > ), 1 );
 
     HACD::Vec3< long > * hullTriangles =
-            ( HACD::Vec3< long > * )GMainHunkMemory.HunkMemory( maxTrianglesPerCluster * sizeof( HACD::Vec3< long > ), 1 );
+            ( HACD::Vec3< long > * )GHunkMemory.HunkMemory( maxTrianglesPerCluster * sizeof( HACD::Vec3< long > ), 1 );
 
 
     _OutHulls.ResizeInvalidate( numClusters );
@@ -1321,7 +1323,7 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
         }
     }
 
-    GMainHunkMemory.ClearToMark( hunkMark );
+    GHunkMemory.ClearToMark( hunkMark );
 }
 
 void PerformConvexDecomposition( Float3 const * _Vertices,
@@ -1438,9 +1440,9 @@ params.m_convexhullDownsampling = 1;
     params.m_oclAcceleration = false;
     params.m_projectHullVertices = false;
 
-    int hunkMark = GMainHunkMemory.SetHunkMark();
+    int hunkMark = GHunkMemory.SetHunkMark();
 
-    Double3 * tempVertices = ( Double3 * )GMainHunkMemory.HunkMemory( _VerticesCount * sizeof( Double3 ), 1 );
+    Double3 * tempVertices = ( Double3 * )GHunkMemory.HunkMemory( _VerticesCount * sizeof( Double3 ), 1 );
 
     byte const * srcVertices = ( byte const * )_Vertices;
     for ( int i = 0 ; i < _VerticesCount ; i++ ) {
@@ -1515,7 +1517,7 @@ params.m_convexhullDownsampling = 1;
     vhacd->Clean();
     vhacd->Release();
 
-    GMainHunkMemory.ClearToMark( hunkMark );
+    GHunkMemory.ClearToMark( hunkMark );
 }
 
 void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass ) {

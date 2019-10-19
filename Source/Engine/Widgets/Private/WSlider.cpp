@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Engine/Widgets/Public/WSlider.h>
 #include <Engine/Widgets/Public/WDesktop.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
 AN_CLASS_META( WSlider )
 
@@ -190,7 +191,7 @@ AN_FORCEINLINE bool InRect( Float2 const & _Mins, Float2 const & _Maxs, Float2 c
             && _Position.Y >= _Mins.Y && _Position.Y < _Maxs.Y;
 }
 
-void WSlider::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WSlider::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
     Action = A_NONE;
 
     if ( _Event.Action != IE_Press ) {
@@ -223,7 +224,7 @@ void WSlider::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, doubl
     }
 }
 
-void WSlider::OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void WSlider::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _TimeStamp ) {
 
     if ( Action == A_MOVE ) {
         Float2 CursorPos = GetDesktop()->GetCursorPosition();

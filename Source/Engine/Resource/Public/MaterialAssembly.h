@@ -592,12 +592,6 @@ class FMaterialSamplerBlock : public FAssemblyBlock {
     AN_CLASS( FMaterialSamplerBlock, FAssemblyBlock )
 
 public:
-    enum EColorSpace {
-        COLORSPACE_RGBA,
-        COLORSPACE_SRGB_ALPHA,
-        COLORSPACE_YCOCG
-    };
-
     FAssemblyBlockInput * TextureSlot;
     FAssemblyBlockInput * TexCoord;
     FAssemblyBlockOutput * R;
@@ -607,7 +601,7 @@ public:
     FAssemblyBlockOutput * RGBA;
 
     bool bSwappedToBGR;
-    EColorSpace ColorSpace;
+    ETextureColorSpace ColorSpace;
 
 protected:
     FMaterialSamplerBlock();
@@ -619,17 +613,6 @@ class FMaterialNormalSamplerBlock : public FAssemblyBlock {
     AN_CLASS( FMaterialNormalSamplerBlock, FAssemblyBlock )
 
 public:
-    enum ENormalCompression {
-        NM_XYZ              = 0,
-        NM_XY               = 1,
-        NM_SPHEREMAP        = 2,
-        NM_STEREOGRAPHIC    = 3,
-        NM_PARABOLOID       = 4,
-        NM_QUARTIC          = 5,
-        NM_FLOAT            = 6,
-        NM_DXT5             = 7
-    };
-
     FAssemblyBlockInput * TextureSlot;
     FAssemblyBlockInput * TexCoord;
     FAssemblyBlockOutput * X;
@@ -637,7 +620,7 @@ public:
     FAssemblyBlockOutput * Z;
     FAssemblyBlockOutput * XYZ;
 
-    ENormalCompression Compression;
+    ENormalMapCompression Compression;
 
 protected:
     FMaterialNormalSamplerBlock();
@@ -763,9 +746,10 @@ class FMaterialBuilder : public FBaseObject {
 public:
     TRef< FMaterialVertexStage > VertexStage;
     TRef< FMaterialFragmentStage > FragmentStage;
-    EMaterialType MaterialType;
-    EMaterialFacing MaterialFacing = MATERIAL_FACE_FRONT;
-    bool bWeaponDepthHack;
+    EMaterialType       MaterialType;
+    EMaterialFacing     MaterialFacing = MATERIAL_FACE_FRONT;
+    EMaterialDepthHack  DepthHack = MATERIAL_DEPTH_HACK_NONE;
+    bool                bDepthTest = true; // Experemental
 
     void RegisterTextureSlot( FMaterialTextureSlotBlock * _Slot );
 

@@ -33,20 +33,28 @@ SOFTWARE.
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
 AN_CLASS_META( FTexture )
+AN_CLASS_META( FTexture1D )
+AN_CLASS_META( FTexture1DArray )
+AN_CLASS_META( FTexture2D )
+AN_CLASS_META( FTexture2DArray )
+AN_CLASS_META( FTexture3D )
+AN_CLASS_META( FTextureCubemap )
+AN_CLASS_META( FTextureCubemapArray )
+AN_CLASS_META( FTexture2DNPOT )
 
 FTexture::FTexture() {
-    RenderProxy = FRenderProxy::NewProxy< FRenderProxy_Texture >();
+    TextureGPU = GRenderBackend->CreateTexture( this );
 }
 
 FTexture::~FTexture() {
-    RenderProxy->KillProxy();
+    GRenderBackend->DestroyTexture( TextureGPU );
 }
 
 void FTexture::Purge() {
 
 }
 
-static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelFormat & _PixelFormat ) {
+static bool GetAppropriatePixelFormat( FImage const & _Image, FTexturePixelFormat & _PixelFormat ) {
     if ( _Image.bHDRI ) {
 
         if ( _Image.bHalf ) {
@@ -65,7 +73,7 @@ static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelForma
                 _PixelFormat = TEXTURE_PF_BGRA16F;
                 break;
             default:
-                GLogger.Printf( "FTexture::FromImage: invalid image\n" );
+                GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
                 return false;
             }
 
@@ -85,7 +93,7 @@ static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelForma
                 _PixelFormat = TEXTURE_PF_BGRA32F;
                 break;
             default:
-                GLogger.Printf( "FTexture::FromImage: invalid image\n" );
+                GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
                 return false;
             }
 
@@ -108,7 +116,7 @@ static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelForma
                 _PixelFormat = TEXTURE_PF_BGRA8;
                 break;
             default:
-                GLogger.Printf( "FTexture::FromImage: invalid image\n" );
+                GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
                 return false;
             }
 
@@ -124,7 +132,7 @@ static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelForma
             case 1:
             case 2:
             default:
-                GLogger.Printf( "FTexture::FromImage: invalid image\n" );
+                GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
                 return false;
             }
         }
@@ -133,23 +141,23 @@ static bool GetAppropriatePixelFormat( FImage const & _Image, ETexturePixelForma
     return true;
 }
 
-bool FTexture::InitializeFromImage( FImage const & _Image ) {
+bool FTexture2D::InitializeFromImage( FImage const & _Image ) {
     if ( !_Image.pRawData ) {
-        GLogger.Printf( "FTexture::InitializeFromImage: empty image data\n" );
+        GLogger.Printf( "FTexture2D::InitializeFromImage: empty image data\n" );
         return false;
     }
 
-    ETexturePixelFormat pixelFormat;
+    FTexturePixelFormat pixelFormat;
 
     if ( !GetAppropriatePixelFormat( _Image, pixelFormat ) ) {
         return false;
     }
 
-    Initialize2D( pixelFormat, _Image.NumLods, _Image.Width, _Image.Height, 1 );
+    Initialize( pixelFormat, _Image.NumLods, _Image.Width, _Image.Height );
 
     byte * pSrc = ( byte * )_Image.pRawData;
     int w, h, stride;
-    int pixelByteLength = ::UncompressedPixelByteLength( pixelFormat );
+    int pixelByteLength = pixelFormat.SizeInBytesUncompressed();
 
     for ( int lod = 0 ; lod < _Image.NumLods ; lod++ ) {
         w = FMath::Max( 1, _Image.Width >> lod );
@@ -157,10 +165,7 @@ bool FTexture::InitializeFromImage( FImage const & _Image ) {
 
         stride = w * h * pixelByteLength;
 
-         void * pPixels = WriteTextureData( 0, 0, 0, w, h, lod );
-        if ( pPixels ) {
-            memcpy( pPixels, pSrc, stride );
-        }
+        WriteTextureData( 0, 0, w, h, lod, pSrc );
 
         pSrc += stride;
     }
@@ -168,7 +173,7 @@ bool FTexture::InitializeFromImage( FImage const & _Image ) {
     return true;
 }
 
-bool FTexture::InitializeCubemapFromImages( FImage const * _Faces[6] ) {
+bool FTextureCubemap::InitializeCubemapFromImages( FImage const * _Faces[6] ) {
     const void * faces[6];
 
     int width = _Faces[0]->Width;
@@ -176,27 +181,27 @@ bool FTexture::InitializeCubemapFromImages( FImage const * _Faces[6] ) {
     for ( int i = 0 ; i < 6 ; i++ ) {
 
         if ( !_Faces[i]->pRawData ) {
-            GLogger.Printf( "FTexture::InitializeCubemapFromImages: empty image data\n" );
+            GLogger.Printf( "FTextureCubemap::InitializeCubemapFromImages: empty image data\n" );
             return false;
         }
 
         if ( _Faces[i]->Width != width
              || _Faces[i]->Height != width ) {
-            GLogger.Printf( "FTexture::InitializeCubemapFromImages: faces with different sizes\n" );
+            GLogger.Printf( "FTextureCubemap::InitializeCubemapFromImages: faces with different sizes\n" );
             return false;
         }
 
         faces[i] = _Faces[i]->pRawData;
     }
 
-    ETexturePixelFormat pixelFormat;
+    FTexturePixelFormat pixelFormat;
 
     if ( !GetAppropriatePixelFormat( *_Faces[0], pixelFormat ) ) {
         return false;
     }
 
     for ( int i = 1 ; i < 6 ; i++ ) {
-        ETexturePixelFormat facePF;
+        FTexturePixelFormat facePF;
 
         if ( !GetAppropriatePixelFormat( *_Faces[i], facePF ) ) {
             return false;
@@ -208,10 +213,10 @@ bool FTexture::InitializeCubemapFromImages( FImage const * _Faces[6] ) {
         }
     }
 
-    InitializeCubemap( pixelFormat, 1, width );
+    Initialize( pixelFormat, 1, width );
 
-    int w, stride;
-    int pixelByteLength = ::UncompressedPixelByteLength( pixelFormat );
+    int w;
+    //int pixelByteLength = ::UncompressedPixelByteLength( pixelFormat );
 
     // TODO: Write lods?
 
@@ -222,188 +227,117 @@ bool FTexture::InitializeCubemapFromImages( FImage const * _Faces[6] ) {
 
         w = FMath::Max( 1, width >> lod );
 
-        void * pPixels = WriteTextureData( 0, 0, face, w, w, lod );
-        if ( pPixels ) {
-            stride = w * w * pixelByteLength;
-
-            memcpy( pPixels, pSrc, stride );
-        }
+        WriteTextureData( 0, 0, w, w, face, lod, pSrc );
     }
 
     return true;
 }
 
-void FTexture::Initialize1D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength ) {
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data;
+//void FTexture::Initialize1D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+//    Purge();
+//
+//    TextureType = _ArraySize > 1 ? TEXTURE_1D_ARRAY : TEXTURE_1D;
+//    PixelFormat = _PixelFormat;
+//    Width = _Width;
+//    Height = _ArraySize;
+//    Depth = 1;
+//    NumLods = _NumLods;
+//
+//    GRenderBackend->InitializeTexture1D( TextureGPU, _PixelFormat, _NumLods, _Width, _ArraySize );
+//}
 
-    Purge();
+//void FTexture::Initialize2D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
+//    Purge();
 
-    data.TextureType = _ArrayLength > 1 ? TEXTURE_1D_ARRAY : TEXTURE_1D;
-    data.PixelFormat = _PixelFormat;
-    data.NumLods = _NumLods;
-    data.Width = _Width;
-    data.Height = _ArrayLength;
-    data.Depth = 1;
-    data.Chunks = nullptr;
-    data.ChunksTail  = nullptr;
-    data.bReallocated = true;
+//    TextureType = _ArraySize > 1 ? TEXTURE_2D_ARRAY : TEXTURE_2D;
+//    PixelFormat = _PixelFormat;
+//    Width = _Width;
+//    Height = _Height;
+//    Depth = _ArraySize;
+//    NumLods = _NumLods;
 
-    TextureType = data.TextureType;
-    PixelFormat = data.PixelFormat;
-    Width = data.Width;
-    Height = data.Height;
-    Depth = data.Depth;
-    NumLods = data.NumLods;
+//    GRenderBackend->InitializeTexture2D( TextureGPU, _PixelFormat, _NumLods, _Width, _Height, _ArraySize );
+//}
 
-    RenderProxy->MarkUpdated();
-}
+//void FTexture::Initialize3D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
+//    Purge();
 
-void FTexture::Initialize2D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArrayLength ) {
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data;
+//    TextureType = TEXTURE_3D;
+//    PixelFormat = _PixelFormat;
+//    Width = _Width;
+//    Height = _Height;
+//    Depth = _Depth;
+//    NumLods = _NumLods;
 
-    Purge();
+//    GRenderBackend->InitializeTexture3D( TextureGPU, _PixelFormat, _NumLods, _Width, _Height, _Depth );
+//}
 
-    data.TextureType = _ArrayLength > 1 ? TEXTURE_2D_ARRAY : TEXTURE_2D;
-    data.PixelFormat = _PixelFormat;
-    data.NumLods = _NumLods;
-    data.Width = _Width;
-    data.Height = _Height;
-    data.Depth = _ArrayLength;
-    data.Chunks = nullptr;
-    data.ChunksTail  = nullptr;
-    data.bReallocated = true;
+//void FTexture::InitializeCubemap( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+//    Purge();
 
-    TextureType = data.TextureType;
-    PixelFormat = data.PixelFormat;
-    Width = data.Width;
-    Height = data.Height;
-    Depth = data.Depth;
-    NumLods = data.NumLods;
+//    TextureType = _ArraySize > 1 ? TEXTURE_CUBEMAP_ARRAY : TEXTURE_CUBEMAP;
+//    PixelFormat = _PixelFormat;
+//    Width = _Width;
+//    Height = _Width;
+//    Depth = _ArraySize;
+//    NumLods = _NumLods;
 
-    RenderProxy->MarkUpdated();
-}
+//    GRenderBackend->InitializeTextureCubemap( TextureGPU, _PixelFormat, _NumLods, _Width, _ArraySize );
+//}
 
-void FTexture::Initialize3D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data;
+//void FTexture::InitializeRect( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
+//    Purge();
+//
+//    TextureType = TEXTURE_2DNPOT;
+//    PixelFormat = _PixelFormat;
+//    Width = _Width;
+//    Height = _Height;
+//    Depth = 1;
+//    NumLods = _NumLods;
+//
+//    GRenderBackend->InitializeTexture2DNPOT( TextureGPU, _PixelFormat, _NumLods, _Width, _Height );
+//}
 
-    Purge();
-
-    data.TextureType = TEXTURE_3D;
-    data.PixelFormat = _PixelFormat;
-    data.NumLods = _NumLods;
-    data.Width = _Width;
-    data.Height = _Height;
-    data.Depth = _Depth;
-    data.Chunks = nullptr;
-    data.ChunksTail  = nullptr;
-    data.bReallocated = true;
-
-    TextureType = data.TextureType;
-    PixelFormat = data.PixelFormat;
-    Width = data.Width;
-    Height = data.Height;
-    Depth = data.Depth;
-    NumLods = data.NumLods;
-
-    RenderProxy->MarkUpdated();
-}
-
-void FTexture::InitializeCubemap( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength ) {
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data;
-
-    Purge();
-
-    data.TextureType = _ArrayLength > 1 ? TEXTURE_CUBEMAP_ARRAY : TEXTURE_CUBEMAP;
-    data.PixelFormat = _PixelFormat;
-    data.NumLods = _NumLods;
-    data.Width = _Width;
-    data.Height = _Width;
-    data.Depth = _ArrayLength;
-    data.Chunks = nullptr;
-    data.ChunksTail  = nullptr;
-    data.bReallocated = true;
-
-    TextureType = data.TextureType;
-    PixelFormat = data.PixelFormat;
-    Width = data.Width;
-    Height = data.Height;
-    Depth = data.Depth;
-    NumLods = data.NumLods;
-
-    RenderProxy->MarkUpdated();
-}
-
-void FTexture::InitializeRect( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data;
-
-    Purge();
-
-    data.TextureType = TEXTURE_RECT;
-    data.PixelFormat = _PixelFormat;
-    data.NumLods = _NumLods;
-    data.Width = _Width;
-    data.Height = _Height;
-    data.Depth = 1;
-    data.Chunks = nullptr;
-    data.ChunksTail  = nullptr;
-    data.bReallocated = true;
-
-    TextureType = data.TextureType;
-    PixelFormat = data.PixelFormat;
-    Width = data.Width;
-    Height = data.Height;
-    Depth = data.Depth;
-    NumLods = data.NumLods;
-
-    RenderProxy->MarkUpdated();
-}
-
-void FTexture::InitializeInternalResource( const char * _InternalResourceName ) {
-    if ( !FString::Icmp( _InternalResourceName, "FTexture.White" )
-        || !FString::Icmp( _InternalResourceName, "FTexture.Default" ) ) {
+void FTexture2D::InitializeInternalResource( const char * _InternalResourceName ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture2D.White" )
+        || !FString::Icmp( _InternalResourceName, "FTexture2D.Default" ) ) {
 
         // White texture
 
         byte data[ 1 * 1 * 3 ];
         memset( data, 0xff, sizeof( data ) );
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
-        void * pixels = WriteTextureData( 0, 0, 0, 1, 1, 0 );
-        if ( pixels ) {
-            memcpy( pixels, data, 3 );
-        }
+        Initialize( TEXTURE_PF_BGR8, 1, 1, 1 );
+        WriteTextureData( 0, 0, 1, 1, 0, data );
+
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FTexture.Black" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture2D.Black" ) ) {
         // Black texture
 
         byte data[ 1 * 1 * 3 ];
         memset( data, 0x0, sizeof( data ) );
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
-        void * pixels = WriteTextureData( 0, 0, 0, 1, 1, 0 );
-        if ( pixels ) {
-            memcpy( pixels, data, 3 );
-        }
+        Initialize( TEXTURE_PF_BGR8, 1, 1, 1 );
+        WriteTextureData( 0, 0, 1, 1, 0, data );
+
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FTexture.Gray" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture2D.Gray" ) ) {
         // Black texture
 
         byte data[ 1 * 1 * 3 ];
         memset( data, 127, sizeof( data ) );
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
-        void * pixels = WriteTextureData( 0, 0, 0, 1, 1, 0 );
-        if ( pixels ) {
-            memcpy( pixels, data, 3 );
-        }
+        Initialize( TEXTURE_PF_BGR8, 1, 1, 1 );
+        WriteTextureData( 0, 0, 1, 1, 0, data );
+
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FTexture.Normal" ) ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture2D.Normal" ) ) {
         // Normal texture
 
         byte data[ 1 * 1 * 3 ];
@@ -411,40 +345,39 @@ void FTexture::InitializeInternalResource( const char * _InternalResourceName ) 
         data[ 1 ] = 127; // y
         data[ 2 ] = 127; // x
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
-        void * pixels = WriteTextureData( 0, 0, 0, 1, 1, 0 );
-        if ( pixels ) {
-            memcpy( pixels, data, 3 );
-        }
+        Initialize( TEXTURE_PF_BGR8, 1, 1, 1 );
+        WriteTextureData( 0, 0, 1, 1, 0, data );
+
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FTexture.Cubemap" ) ) {
+    GLogger.Printf( "Unknown internal texture %s\n", _InternalResourceName );
+}
+
+void FTextureCubemap::InitializeInternalResource( const char * _InternalResourceName ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTextureCubemap.Default" ) ) {
         // Cubemap texture
 
         const Float3 dirs[6] = {
-            Float3(1,0,0),
-            Float3(-1,0,0),
-            Float3(0,1,0),
-            Float3(0,-1,0),
-            Float3(0,0,1),
-            Float3(0,0,-1)
+            Float3( 1,0,0 ),
+            Float3( -1,0,0 ),
+            Float3( 0,1,0 ),
+            Float3( 0,-1,0 ),
+            Float3( 0,0,1 ),
+            Float3( 0,0,-1 )
         };
 
-        byte data[ 6 ][ 3 ];
+        byte data[6][3];
         for ( int i = 0 ; i < 6 ; i++ ) {
-            data[i][0] = ( dirs[i].Z + 1.0f ) * 127.5f;
-            data[i][1] = ( dirs[i].Y + 1.0f ) * 127.5f;
-            data[i][2] = ( dirs[i].X + 1.0f ) * 127.5f;
+            data[i][0] = (dirs[i].Z + 1.0f) * 127.5f;
+            data[i][1] = (dirs[i].Y + 1.0f) * 127.5f;
+            data[i][2] = (dirs[i].X + 1.0f) * 127.5f;
         }
 
-        InitializeCubemap( TEXTURE_PF_BGR8, 1, 1 );
+        Initialize( TEXTURE_PF_BGR8, 1, 1 );
 
         for ( int face = 0 ; face < 6 ; face++ ) {
-            void * pixels = WriteTextureData( 0, 0, face, 1, 1, 0 );
-            if ( pixels ) {
-                memcpy( pixels, data[face], 3 );
-            }
+            WriteTextureData( 0, 0, 1, 1, face, 0, data[face] );
         }
         return;
     }
@@ -452,7 +385,8 @@ void FTexture::InitializeInternalResource( const char * _InternalResourceName ) 
     GLogger.Printf( "Unknown internal texture %s\n", _InternalResourceName );
 }
 
-bool FTexture::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
+
+bool FTexture2D::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
     FImage image;
 
     if ( !image.LoadRawImage( _Path, true, true ) ) {
@@ -478,88 +412,41 @@ bool FTexture::InitializeFromFile( const char * _Path, bool _CreateDefultObjectI
     return true;
 }
 
-void * FTexture::WriteTextureData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod ) {
+void FTexture::SendTextureDataToGPU( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod, const void * _SysMem ) {
     if ( !Width ) {
-        GLogger.Printf( "FTexture::WriteTextureData: texture is not initialized\n" );
-        return nullptr;
+        GLogger.Printf( "FTexture::SendTextureDataToGPU: texture is not initialized\n" );
+        return;
     }
 
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-
-    FRenderProxy_Texture::FrameData & data = RenderProxy->Data;
-
-    data.TextureType = TextureType;
-    data.PixelFormat = PixelFormat;
-    data.Width = Width;
-    data.Height = Height;
-    data.Depth = Depth;
-    data.NumLods = NumLods;
-
-    int bytesToAllocate = _Width * _Height;
+    size_t sizeInBytes = _Width * _Height;
 
     if ( IsCompressed() ) {
         // TODO
-        AN_Assert(0);
-        return 0;
-    } else {
-        bytesToAllocate *= UncompressedPixelByteLength();
-    }
-
-    FTextureChunk * chunk = ( FTextureChunk * )frameData->AllocFrameData( sizeof( FTextureChunk ) - sizeof( int ) + bytesToAllocate );
-    if ( !chunk ) {
-        return nullptr;
-    }
-
-    chunk->LocationX = _LocationX;
-    chunk->LocationY = _LocationY;
-    chunk->LocationZ = _LocationZ;
-    chunk->Width = _Width;
-    chunk->Height = _Height;
-    chunk->LodNum = _Lod;
-
-    IntrusiveAddToList( chunk, Next, Prev, data.Chunks, data.ChunksTail );
-
-    RenderProxy->MarkUpdated();
-
-    return &chunk->Pixels[0];
-}
-
-int FTexture::GetDimensionCount() const {
-    if ( !Width ) {
-        return 0;
-    }
-
-    switch ( TextureType ) {
-    case TEXTURE_1D:
-    case TEXTURE_1D_ARRAY:
-        return 1;
-    case TEXTURE_2D:
-    //case TEXTURE_2D_MULTISAMPLE:
-    case TEXTURE_2D_ARRAY:
-    //case TEXTURE_2D_ARRAY_MULTISAMPLE:
-    case TEXTURE_CUBEMAP:
-    case TEXTURE_CUBEMAP_ARRAY:
-    case TEXTURE_RECT:
-        return 2;
-    case TEXTURE_3D:
-        return 3;
-    default:
         AN_Assert( 0 );
-        break;
+        return;
+    } else {
+        sizeInBytes *= SizeInBytesUncompressed();
     }
 
-    return 0;
+    FTextureRect rect;
+
+    rect.Offset.X = _LocationX;
+    rect.Offset.Y = _LocationY;
+    rect.Offset.Z = _LocationZ;
+    rect.Offset.Lod = _Lod;
+    rect.Dimension.X = _Width;
+    rect.Dimension.Y = _Height;
+    rect.Dimension.Z = 1;
+
+    GRenderBackend->WriteTexture( TextureGPU, rect, PixelFormat.Data, sizeInBytes, 1, _SysMem );
 }
 
 bool FTexture::IsCubemap() const {
-    return TextureType == TEXTURE_CUBEMAP
-            || TextureType == TEXTURE_CUBEMAP_ARRAY;
+    return TextureType == TEXTURE_CUBEMAP || TextureType == TEXTURE_CUBEMAP_ARRAY;
 }
 
-size_t FTexture::TextureByteLength1D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength ) {
-    bool bCompressed = IsTextureCompressed( _PixelFormat );
-
-    if ( bCompressed ) {
+size_t FTexture::TextureByteLength1D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+    if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_Assert(0);
         return 0;
@@ -569,14 +456,12 @@ size_t FTexture::TextureByteLength1D( ETexturePixelFormat _PixelFormat, int _Num
             sum += FMath::Max( 1, _Width );
             _Width >>= 1;
         }
-        return ::UncompressedPixelByteLength( _PixelFormat ) * sum * FMath::Max( _ArrayLength, 1 );
+        return _PixelFormat.SizeInBytesUncompressed() * sum * FMath::Max( _ArraySize, 1 );
     }
 }
 
-size_t FTexture::TextureByteLength2D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArrayLength ) {
-    bool bCompressed = IsTextureCompressed( _PixelFormat );
-
-    if ( bCompressed ) {
+size_t FTexture::TextureByteLength2D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
+    if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_Assert(0);
         return 0;
@@ -587,14 +472,12 @@ size_t FTexture::TextureByteLength2D( ETexturePixelFormat _PixelFormat, int _Num
             _Width >>= 1;
             _Height >>= 1;
         }
-        return ::UncompressedPixelByteLength( _PixelFormat ) * sum * FMath::Max( _ArrayLength, 1 );
+        return _PixelFormat.SizeInBytesUncompressed() * sum * FMath::Max( _ArraySize, 1 );
     }
 }
 
-size_t FTexture::TextureByteLength3D( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
-    bool bCompressed = IsTextureCompressed( _PixelFormat );
-
-    if ( bCompressed ) {
+size_t FTexture::TextureByteLength3D( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
+    if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_Assert(0);
         return 0;
@@ -606,14 +489,12 @@ size_t FTexture::TextureByteLength3D( ETexturePixelFormat _PixelFormat, int _Num
             _Height >>= 1;
             _Depth >>= 1;
         }
-        return ::UncompressedPixelByteLength( _PixelFormat ) * sum;
+        return _PixelFormat.SizeInBytesUncompressed() * sum;
     }
 }
 
-size_t FTexture::TextureByteLengthCubemap( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArrayLength ) {
-    bool bCompressed = IsTextureCompressed( _PixelFormat );
-
-    if ( bCompressed ) {
+size_t FTexture::TextureByteLengthCubemap( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+    if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_Assert(0);
         return 0;
@@ -623,14 +504,12 @@ size_t FTexture::TextureByteLengthCubemap( ETexturePixelFormat _PixelFormat, int
             sum += FMath::Max( 1, _Width ) * FMath::Max( 1, _Width );
             _Width >>= 1;
         }
-        return ::UncompressedPixelByteLength( _PixelFormat ) * sum * 6 * FMath::Max( _ArrayLength, 1 );
+        return _PixelFormat.SizeInBytesUncompressed() * sum * 6 * FMath::Max( _ArraySize, 1 );
     }
 }
 
-size_t FTexture::TextureByteLengthRect( ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
-    bool bCompressed = IsTextureCompressed( _PixelFormat );
-
-    if ( bCompressed ) {
+size_t FTexture::TextureByteLength2DNPOT( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
+    if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_Assert(0);
         return 0;
@@ -641,7 +520,7 @@ size_t FTexture::TextureByteLengthRect( ETexturePixelFormat _PixelFormat, int _N
             _Width >>= 1;
             _Height >>= 1;
         }
-        return ::UncompressedPixelByteLength( _PixelFormat ) * sum;
+        return _PixelFormat.SizeInBytesUncompressed() * sum;
     }
 }
 
@@ -651,13 +530,17 @@ size_t FTexture::TextureByteLengthRect( ETexturePixelFormat _PixelFormat, int _N
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define STBI_MALLOC(sz)                     AllocateBufferData( sz )
-#define STBI_FREE(p)                        DeallocateBufferData( p )
-#define STBI_REALLOC_SIZED(p,oldsz,newsz)   ExtendBufferData(p,oldsz,newsz,false)
+#define STBI_MALLOC(sz)                     HugeAlloc( sz )
+#define STBI_FREE(p)                        HugeFree( p )
+#define STBI_REALLOC_SIZED(p,oldsz,newsz)   stb_realloc_impl(p,newsz,oldsz)
 
-static void * stb_realloc_impl( void * p, size_t newsz ) {
-    DeallocateBufferData( p );
-    return AllocateBufferData( newsz );
+static void * stb_realloc_impl( void * p, size_t newsz, size_t oldsz = 0 ) {
+    void * newp = HugeAlloc( newsz );
+    if ( oldsz ) {
+        memcpy( newp, p, FMath::Min( oldsz, newsz ) );
+    }
+    HugeFree( p );
+    return newp;
 }
 
 #define STBI_REALLOC(p,newsz) stb_realloc_impl(p, newsz)
@@ -769,7 +652,7 @@ static bool LoadRawImage( const char * _Name, FImage & _Image, const stbi_io_cal
         // swap r & b channels to store image as BGR
         int count = _Image.Width * _Image.Height * _Image.NumChannels;
         for ( int i = 0 ; i < count ; i += _Image.NumChannels ) {
-            std::swap( data[i], data[i+2] );
+            StdSwap( data[i], data[i+2] );
         }
     }
 
@@ -786,11 +669,11 @@ static bool LoadRawImage( const char * _Name, FImage & _Image, const stbi_io_cal
         int requiredMemorySize;
         mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, _Image.NumLods );
 
-        _Image.pRawData = AllocateBufferData( requiredMemorySize );
+        _Image.pRawData = HugeAlloc( requiredMemorySize );
 
         mipmapGen.GenerateMipmaps( _Image.pRawData );
 
-        DeallocateBufferData( data );
+        HugeFree( data );
     } else {
         _Image.pRawData = data;
     }
@@ -821,7 +704,7 @@ static bool LoadRawImageHDRI( const char * _Name, FImage & _Image, const stbi_io
         // swap r & b channels to store image as BGR
         int count = _Image.Width * _Image.Height * _Image.NumChannels;
         for ( int i = 0 ; i < count ; i += _Image.NumChannels ) {
-            std::swap( data[i], data[i+2] );
+            StdSwap( data[i], data[i+2] );
         }
     }
 
@@ -838,11 +721,11 @@ static bool LoadRawImageHDRI( const char * _Name, FImage & _Image, const stbi_io
         int requiredMemorySize;
         mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, _Image.NumLods );
 
-        void * tmp = AllocateBufferData( requiredMemorySize );
+        void * tmp = HugeAlloc( requiredMemorySize );
 
         mipmapGen.GenerateMipmaps( tmp );
 
-        DeallocateBufferData( data );
+        HugeFree( data );
         data = ( float * )tmp;
     }
 
@@ -858,9 +741,9 @@ static bool LoadRawImageHDRI( const char * _Name, FImage & _Image, const stbi_io
         }
         imageSize *= _Image.NumChannels;
 
-        uint16_t * tmp = ( uint16_t * )AllocateBufferData( imageSize * sizeof( uint16_t ) );
+        uint16_t * tmp = ( uint16_t * )HugeAlloc( imageSize * sizeof( uint16_t ) );
         FMath::FloatToHalf( data, tmp, imageSize );
-        DeallocateBufferData( data );
+        HugeFree( data );
         data = ( float * )tmp;
     }
 
@@ -923,7 +806,7 @@ bool FImage::LoadRawImageHDRI( FMemoryStream & _Stream, bool _HalfFloat, bool _G
 
 void FImage::Free() {
     if ( pRawData ) {
-        DeallocateBufferData( pRawData );
+        HugeFree( pRawData );
         pRawData = nullptr;
     }
     Width = 0;
@@ -1181,4 +1064,320 @@ void FSoftwareMipmapGenerator::GenerateMipmaps( void * _Data ) {
     } else {
         ::GenerateMipmaps( (const byte *)SourceImage, Width, Height, NumChannels, bLinearSpace, (byte *)_Data );
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void FTexture1D::Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
+    Purge();
+
+    TextureType = TEXTURE_1D;
+    PixelFormat = _PixelFormat;
+    Width = _Width;
+    Height = 1;
+    Depth = 1;
+    NumLods = _NumLods;
+
+    GRenderBackend->InitializeTexture1D( TextureGPU, _PixelFormat.Data, _NumLods, _Width );
+}
+
+void FTexture1D::WriteTextureData( int _LocationX, int _Width, int _Lod, const void * _SysMem ) {
+    SendTextureDataToGPU( _LocationX, 0, 0, _Width, 1, _Lod, _SysMem );
+}
+
+void FTexture1DArray::Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+    Purge();
+
+    TextureType = TEXTURE_1D_ARRAY;
+    PixelFormat = _PixelFormat;
+    Width = _Width;
+    Height = _ArraySize;
+    Depth = 1;
+    NumLods = _NumLods;
+
+    GRenderBackend->InitializeTexture1DArray( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
+}
+
+void FTexture1DArray::WriteTextureData( int _LocationX, int _Width, int _ArrayLayer, int _Lod, const void * _SysMem ) {
+    SendTextureDataToGPU( _LocationX, _ArrayLayer, 0, _Width, 1, _Lod, _SysMem );
+}
+
+void FTexture2D::Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
+    Purge();
+
+    TextureType = TEXTURE_2D;
+    PixelFormat = _PixelFormat;
+    Width = _Width;
+    Height = _Height;
+    Depth = 1;
+    NumLods = _NumLods;
+
+    GRenderBackend->InitializeTexture2D( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height );
+}
+
+void FTexture2D::WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void * _SysMem ) {
+    SendTextureDataToGPU( _LocationX, _LocationY, 0, _Width, _Height, _Lod, _SysMem );
+}
+
+void FTexture2DArray::Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
+    Purge();
+
+    TextureType = TEXTURE_2D_ARRAY;
+    PixelFormat = _PixelFormat;
+    Width = _Width;
+    Height = _Height;
+    Depth = _ArraySize;
+    NumLods = _NumLods;
+
+    GRenderBackend->InitializeTexture2DArray( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height, _ArraySize );
+}
+
+void FTexture2DArray::WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _ArrayLayer, int _Lod, const void * _SysMem ) {
+    SendTextureDataToGPU( _LocationX, _LocationY, _ArrayLayer, _Width, _Height, _Lod, _SysMem );
+}
+
+void FTexture3D::Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
+    Purge();
+
+    TextureType = TEXTURE_3D;
+    PixelFormat = _PixelFormat;
+    Width = _Width;
+    Height = _Height;
+    Depth = _Depth;
+    NumLods = _NumLods;
+
+    GRenderBackend->InitializeTexture3D( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height, _Depth );
+}
+
+void FTexture3D::InitializeInternalResource( const char * _InternalResourceName ) {
+    if ( !FString::Icmp( _InternalResourceName, "FTexture3D.LUT1" )
+        || !FString::Icmp( _InternalResourceName, "FTexture3D.Default" ) ) {
+
+        constexpr FColorGradingPreset ColorGradingPreset1 = {
+              Float3(0.5f),   // Gain
+              Float3(0.5f),   // Gamma
+              Float3(0.5f),   // Lift
+              Float3(1.0f),   // Presaturation
+              Float3(0.0f),   // Color temperature strength
+              6500.0f,      // Color temperature (in K)
+              0.0f          // Color temperature brightness normalization factor
+            };
+
+        InitializeColorGradingLUT( ColorGradingPreset1 );
+
+        return;
+    }
+
+    if ( !FString::Icmp( _InternalResourceName, "FTexture3D.LUT2" ) ) {
+        constexpr FColorGradingPreset ColorGradingPreset2 = {
+              Float3(0.5f),   // Gain
+              Float3(0.5f),   // Gamma
+              Float3(0.5f),   // Lift
+              Float3(1.0f),   // Presaturation
+              Float3(1.0f),   // Color temperature strength
+              3500.0f,      // Color temperature (in K)
+              1.0f          // Color temperature brightness normalization factor
+            };
+
+        InitializeColorGradingLUT( ColorGradingPreset2 );
+
+        return;
+    }
+
+    if ( !FString::Icmp( _InternalResourceName, "FTexture3D.LUT3" ) ) {
+        constexpr FColorGradingPreset ColorGradingPreset3 = {
+            Float3(0.51f, 0.55f, 0.53f), // Gain
+            Float3(0.45f, 0.57f, 0.55f), // Gamma
+            Float3(0.5f,  0.4f,  0.6f),  // Lift
+            Float3(1.0f,  0.9f,  0.8f),  // Presaturation
+            Float3(1.0f,  1.0f,  1.0f),  // Color temperature strength
+            6500.0,                 // Color temperature (in K)
+            0.0                     // Color temperature brightness normalization factor
+          };
+
+        InitializeColorGradingLUT( ColorGradingPreset3 );
+
+        return;
+    }
+
+    GLogger.Printf( "Unknown internal texture %s\n", _InternalResourceName );
+}
+
+void FTexture3D::InitializeColorGradingLUT( const char * _Path ) {
+    FImage image;
+    byte data[ 16 ][ 16 ][ 16 ][ 3 ];
+
+    Initialize( TEXTURE_PF_BGR8_SRGB, 1, 16, 16, 16 );
+
+    if ( image.LoadRawImage( _Path, true, false, 3 ) ) {
+        for ( int z = 0 ; z < 16 ; z++ ) {
+            for ( int y = 0 ; y < 16 ; y++ ) {
+                memcpy( &data[ z ][ y ][ 0 ][ 0 ], static_cast< byte * >(image.pRawData) + ( z * 16 * 16 * 3 + y * 16 * 3 ), 16 * 3 );
+            }
+        }
+    } else {
+        // Initialize default color grading
+        for ( int z = 0 ; z < 16 ; z++ ) {
+            for ( int y = 0 ; y < 16 ; y++ ) {
+                for ( int x = 0 ; x < 16 ; x++ ) {
+                    //data[ z ][ y ][ x ][ 0 ] = z * (255.0f / 15.0f);
+                    //data[ z ][ y ][ x ][ 1 ] = y * (255.0f / 15.0f);
+                    //data[ z ][ y ][ x ][ 2 ] = x * (255.0f / 15.0f);
+
+                    // Luminance
+                    data[ z ][ y ][ x ][ 0 ] =
+                    data[ z ][ y ][ x ][ 1 ] =
+                    data[ z ][ y ][ x ][ 2 ] = FMath::Clamp( x * ( 0.2126f / 15.0f * 255.0f ) + y * ( 0.7152f / 15.0f * 255.0f ) + z * ( 0.0722f / 15.0f * 255.0f ), 0.0f, 255.0f );
+                }
+            }
+        }
+    }
+
+    FTextureRect rect;
+
+    rect.Offset.X = 0;
+    rect.Offset.Y = 0;
+    rect.Offset.Z = 0;
+    rect.Offset.Lod = 0;
+    rect.Dimension.X = 16;
+    rect.Dimension.Y = 16;
+    rect.Dimension.Z = 16;
+
+    GRenderBackend->WriteTexture( TextureGPU, rect, PixelFormat.Data, 16*16*16*3, 1, data );
+}
+
+static Float3 ApplyColorGrading( FColorGradingPreset const & p, FColor4 const & _Color ) {
+    float lum = _Color.GetLuminance();
+
+    FColor4 mult;
+
+    mult.SetTemperature( FMath::Clamp( p.colorTemperature, 1000.0f, 40000.0f ) );
+
+    FColor4 c =_Color.GetRGB().Lerp( _Color.GetRGB() * mult.GetRGB(), p.colorTemperatureStrength );
+
+    float newLum = c.GetLuminance();
+
+    c *= FMath::Lerp( 1.0, ( newLum > 1e-6 ) ? ( lum / newLum ) : 1.0, p.colorTemperatureBrightnessNormalization );
+
+    c = Float3( c.GetLuminance() ).Lerp( c.GetRGB(), p.presaturation );
+
+    Float3 t = ( p.gain * 2.0f ) * ( c.GetRGB() + ( ( p.lift * 2.0f - 1.0 ) * ( Float3( 1.0 ) - c.GetRGB() ) ) );
+
+    t.X = std::pow( t.X, 0.5f / p.gamma.X );
+    t.Y = std::pow( t.Y, 0.5f / p.gamma.Y );
+    t.Z = std::pow( t.Z, 0.5f / p.gamma.Z );
+
+    return t;
+}
+
+void FTexture3D::InitializeColorGradingLUT( FColorGradingPreset const & _Preset ) {
+    byte data[ 16 ][ 16 ][ 16 ][ 3 ];
+    FColor4 color;
+    Float3 result;
+
+    Initialize( TEXTURE_PF_BGR8_SRGB, 1, 16, 16, 16 );
+
+    for ( int z = 0 ; z < 16 ; z++ ) {
+        color.Z = ( 1.0f / 15.0f ) * z;
+
+        for ( int y = 0 ; y < 16 ; y++ ) {
+            color.Y = ( 1.0f / 15.0f ) * y;
+
+            for ( int x = 0 ; x < 16 ; x++ ) {
+                color.X = ( 1.0f / 15.0f ) * x;
+
+                result = ApplyColorGrading( _Preset, color ) * 255.0f;
+
+                data[ z ][ y ][ x ][ 0 ] = FMath::Clamp( result.Z, 0.0f, 255.0f );
+                data[ z ][ y ][ x ][ 1 ] = FMath::Clamp( result.Y, 0.0f, 255.0f );
+                data[ z ][ y ][ x ][ 2 ] = FMath::Clamp( result.X, 0.0f, 255.0f );
+            }
+        }
+    }
+
+    FTextureRect rect;
+
+    rect.Offset.X = 0;
+    rect.Offset.Y = 0;
+    rect.Offset.Z = 0;
+    rect.Offset.Lod = 0;
+    rect.Dimension.X = 16;
+    rect.Dimension.Y = 16;
+    rect.Dimension.Z = 16;
+
+    GRenderBackend->WriteTexture( TextureGPU, rect, PixelFormat.Data, 16*16*16*3, 1, data );
+}
+
+void FTexture3D::WriteTextureData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Lod, const void * _SysMem ) {
+    SendTextureDataToGPU( _LocationX, _LocationY, _LocationZ, _Width, _Height, _Lod, _SysMem );
+}
+
+void FTextureCubemap::Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
+    Purge();
+
+    TextureType = TEXTURE_CUBEMAP;
+    PixelFormat = _PixelFormat;
+    Width = _Width;
+    Height = _Width;
+    Depth = 1;
+    NumLods = _NumLods;
+
+    GRenderBackend->InitializeTextureCubemap( TextureGPU, _PixelFormat.Data, _NumLods, _Width );
+}
+
+void FTextureCubemap::WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _Lod, const void * _SysMem ) {
+    SendTextureDataToGPU( _LocationX, _LocationY, _FaceIndex, _Width, _Height, _Lod, _SysMem );
+}
+
+void FTextureCubemapArray::Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+    Purge();
+
+    TextureType = TEXTURE_CUBEMAP_ARRAY;
+    PixelFormat = _PixelFormat;
+    Width = _Width;
+    Height = _Width;
+    Depth = _ArraySize;
+    NumLods = _NumLods;
+
+    GRenderBackend->InitializeTextureCubemapArray( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
+}
+
+void FTextureCubemapArray::WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _ArrayLayer, int _Lod, const void * _SysMem ) {
+    SendTextureDataToGPU( _LocationX, _LocationY, _ArrayLayer*6 + _FaceIndex, _Width, _Height, _Lod, _SysMem );
+}
+
+void FTexture2DNPOT::Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
+    Purge();
+
+    TextureType = TEXTURE_2DNPOT;
+    PixelFormat = _PixelFormat;
+    Width = _Width;
+    Height = _Height;
+    Depth = 1;
+    NumLods = _NumLods;
+
+    GRenderBackend->InitializeTexture2DNPOT( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height );
+}
+
+void FTexture2DNPOT::WriteTextureData( int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void * _SysMem ) {
+    SendTextureDataToGPU( _LocationX, _LocationY, 0, _Width, _Height, _Lod, _SysMem );
 }

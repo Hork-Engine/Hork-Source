@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/RenderBackend.h>
+#include <Engine/Runtime/Public/RenderCore.h>
 #include <Engine/Core/Public/BV/BvFrustum.h>
 
 class FBinarySpacePlane : public PlaneF {

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Engine/Widgets/Public/WScroll.h>
 #include <Engine/Widgets/Public/WDesktop.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
 AN_CLASS_META( WScroll )
 
@@ -402,7 +403,7 @@ AN_FORCEINLINE bool InRect( Float2 const & _Mins, Float2 const & _Maxs, Float2 c
             && _Position.Y >= _Mins.Y && _Position.Y < _Maxs.Y;
 }
 
-void WScroll::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WScroll::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
     Action = A_NONE;
 
     if ( _Event.Action != IE_Press ) {

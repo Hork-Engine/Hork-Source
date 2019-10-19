@@ -38,7 +38,7 @@ class ANGIE_API WWindow : public WWidget {
 public:
     WWindow & SetCaptionText( const char * _CaptionText );
     WWindow & SetCaptionHeight( float _CaptionHeight );
-    WWindow & SetCaptionFont( FFontAtlas * _Atlas, int _FontId );
+    WWindow & SetCaptionFont( FFont * _Font );
     WWindow & SetTextColor( FColor4 const & _Color );
     WWindow & SetTextHorizontalAlignment( EWidgetAlignment _Alignment );
     WWindow & SetTextVerticalAlignment( EWidgetAlignment _Alignment );
@@ -50,8 +50,6 @@ public:
     WWindow & SetBackgroundColor( FColor4 const & _Color );
     WWindow & SetRounding( float _Rounding );
     WWindow & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
-    WWindow & SetWindowBorder( bool _WindowBorder );
-    WWindow & SetCaptionBorder( bool _CaptionBorder );
 
 protected:
     WWindow();
@@ -69,8 +67,7 @@ private:
 
     FString CaptionText;
     float CaptionHeight;
-    TRef< FFontAtlas > FontAtlas;
-    int FontId;
+    TRef< FFont > Font;
     FColor4 TextColor;
     Float2 TextOffset;
     bool bWordWrap;
