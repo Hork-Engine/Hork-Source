@@ -32,7 +32,7 @@ SOFTWARE.
 #include <Engine/World/Public/Components/InputComponent.h>
 #include <Engine/World/Public/World.h>
 #include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/GameThread/Public/EngineInstance.h>
 
 AN_CLASS_META( FPlayerController )
 AN_CLASS_META( FRenderingParameters )
@@ -60,7 +60,7 @@ FPlayerController::FPlayerController() {
 }
 
 void FPlayerController::Quit( FRuntimeCommandProcessor const & _Proc ) {
-    GGameEngine.Stop();
+    GRuntime.PostTerminateEvent();
 }
 
 void FPlayerController::EndPlay() {
@@ -269,7 +269,7 @@ FCommandContext * FPlayerController::GetCurrentCommandContext() {
 
 Float2 FPlayerController::GetNormalizedCursorPos() const {
     if ( ViewportSize.X > 0 && ViewportSize.Y > 0 ) {
-        Float2 pos = GGameEngine.GetCursorPosition();
+        Float2 pos = GEngine.GetCursorPosition();
         pos.X -= ViewportPosition.X;
         pos.Y -= ViewportPosition.Y;
         pos.X /= ViewportSize.X;

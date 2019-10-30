@@ -30,58 +30,59 @@ SOFTWARE.
 
 #pragma once
 
-#include "SpatialObject.h"
+#include "BaseLightComponent.h"
 
-/*
+class FSpotLightComponent : public FBaseLightComponent {
+    AN_COMPONENT( FSpotLightComponent, FBaseLightComponent )
 
-FClusteredObject
-
-*/
-class FClusteredObject : public FSceneComponent {
-    AN_COMPONENT( FClusteredObject, FSceneComponent )
-
-    friend class FLevel;
-
+    friend class FWorld;
 public:
-    enum { RENDERING_GROUP_DEFAULT = 1 };
+    void SetInnerRadius( float _Radius );
+    float GetInnerRadius() const;
 
-    // Rendering group to filter lights during rendering
-    int RenderingGroup;
+    void SetOuterRadius( float _Radius );
+    float GetOuterRadius() const;
 
-    void ForceOutdoor( bool _OutdoorSurface );
+    void SetInnerConeAngle( float _Angle );
+    float GetInnerConeAngle() const;
 
-    bool IsOutdoor() const { return bIsOutdoor; }
+    void SetOuterConeAngle( float _Angle );
+    float GetOuterConeAngle() const;
 
-    BvSphereSSE const & GetSphereWorldBounds() const;
-    BvAxisAlignedBox const & GetAABBWorldBounds() const;
-    BvOrientedBox const & GetOBBWorldBounds() const;
-    Float4x4 const & GetOBBTransformInverse() const;
+    void SetSpotExponent( float _Exponent );
+    float GetSpotExponent() const;
 
-    // TODO: SetVisible, IsVisible And only add visible objects to areas!!!
+    void SetDirection( Float3 const & _Direction );
+    Float3 GetDirection() const;
 
-    void MarkAreaDirty();
+    void SetWorldDirection( Float3 const & _Direction );
+    Float3 GetWorldDirection() const;
 
-    static void _UpdateSurfaceAreas();
+    BvAxisAlignedBox const & GetWorldBounds() const;
+
+    Float4x4 const & GetOBBTransformInverse() const { return OBBTransformInverse; }
 
 protected:
-
-    FClusteredObject();
+    FSpotLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
-    //void OnTransformDirty() override;
+    void OnTransformDirty() override;
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+
+private:
+    void UpdateBoundingBox();
 
     BvSphere SphereWorldBounds;
     BvAxisAlignedBox AABBWorldBounds;
     BvOrientedBox OBBWorldBounds;
     Float4x4 OBBTransformInverse;
 
-    FAreaLinks InArea; // list of intersected areas
-    bool bIsOutdoor;
-
-    FClusteredObject * NextDirty;
-    FClusteredObject * PrevDirty;
-
-    static FClusteredObject * DirtyList;
-    static FClusteredObject * DirtyListTail;
+    float InnerRadius;
+    float OuterRadius;
+    float InnerConeAngle;
+    float OuterConeAngle;
+    float SpotExponent;
+    FSpotLightComponent * Next;
+    FSpotLightComponent * Prev;
 };

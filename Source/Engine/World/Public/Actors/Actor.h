@@ -178,9 +178,6 @@ protected:
     // Called only from Destroy() method
     virtual void EndPlay();
 
-    // Notify all actors in the world when actor spawned
-    virtual void OnActorSpawned( FActor * _SpawnedActor ) {}
-
     // Tick based on variable time step. Dependend on current frame rate.
     // One tick per frame. It is good place to update things like animation.
     virtual void Tick( float _TimeStep ) {}

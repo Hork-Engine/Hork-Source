@@ -39,6 +39,8 @@ SOFTWARE.
 #include <Engine/Core/Public/BV/BvIntersect.h>
 #include <Engine/Runtime/Public/Runtime.h>
 
+#include "ShadowCascade.h"
+
 FRuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
 FRuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
 FRuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
@@ -165,7 +167,7 @@ void FLevel::DestroyPortalTree() {
 void FLevel::AddSurfaces() {
     FWorld * world = GetOwnerWorld();
 
-    for ( FMeshComponent * mesh = world->GetMeshList() ; mesh ; mesh = mesh->GetNextMesh() ) {
+    for ( FMeshComponent * mesh = world->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
 
         // TODO: if ( !mesh->IsMarkedDirtyArea() )
         AddSurfaceAreas( mesh );
@@ -890,7 +892,7 @@ static bool ClipPolygonFast( Float3 const * _InPoints, int _InNumPoints, FPortal
 
 void FLevel::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
     // Update view area
-    FindArea( _Def->View->ViewPostion );
+    FindArea( _Def->View->ViewPosition );
 
     // Cull invisible objects
     CullInstances( _Def );
@@ -920,7 +922,7 @@ void FLevel::CullInstances( FRenderFrontendDef * _Def ) {
     RightVec = _Def->View->ViewRightVec;
     UpVec = _Def->View->ViewUpVec;
     ViewPlane = frustum[ FPL_NEAR ];
-    ViewZNear = ViewPlane.Dist( _Def->View->ViewPostion );//Camera->GetZNear();
+    ViewZNear = ViewPlane.Dist( _Def->View->ViewPosition );//Camera->GetZNear();
     ViewCenter = ViewPlane.Normal * ViewZNear;
 
     // Get corner at left-bottom of frustum
@@ -976,11 +978,11 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
         }
     }
 
+#ifdef FUTURE
     for ( FLightComponent * light : _Area->GetLights() ) {
         AddLightInstance( _Def, light, prevStack->AreaFrustum, prevStack->PlanesCount );
     }
 
-#ifdef FUTURE
     for ( FEnvCaptureComponent * envCapture : _Area->GetEnvCaptures() ) {
         AddEnvCapture( envCapture, prevStack->AreaFrustum, prevStack->PlanesCount );
     }
@@ -1016,7 +1018,7 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
         //    continue;
         //}
 
-        d = portal->Plane.Dist( _Def->View->ViewPostion );
+        d = portal->Plane.Dist( _Def->View->ViewPosition );
         if ( d <= 0.0f ) {
             #ifdef DEBUG_TRAVERSING_COUNTERS
             Dbg_SkippedByPlaneOffset++;
@@ -1097,7 +1099,7 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
             for ( int i = 0; i < portalWinding->NumPoints; i++ ) {
 
                 // Project portal vertex to view plane
-                vec = portalWinding->Points[ i ] - _Def->View->ViewPostion;
+                vec = portalWinding->Points[ i ] - _Def->View->ViewPosition;
 
                 d = FMath::Dot( ViewPlane.Normal, vec );
 
@@ -1139,7 +1141,7 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
 
                 // Compute based on portal winding
                 for ( int i = 0; i < stack->PlanesCount; i++ ) {
-                    stack->AreaFrustum[ i ].FromPoints( _Def->View->ViewPostion, portalWinding->Points[ ( i + 1 ) % portalWinding->NumPoints ], portalWinding->Points[ i ] );
+                    stack->AreaFrustum[ i ].FromPoints( _Def->View->ViewPosition, portalWinding->Points[ ( i + 1 ) % portalWinding->NumPoints ], portalWinding->Points[ i ] );
                 }
             } else {
                 // Compute based on portal scissor
@@ -1155,22 +1157,22 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
                 // bottom
                 p = FMath::Cross( corners[ 1 ], corners[ 0 ] );
                 stack->AreaFrustum[ 0 ].Normal = p * FMath::RSqrt( FMath::Dot( p, p ) );
-                stack->AreaFrustum[ 0 ].D = -FMath::Dot( stack->AreaFrustum[ 0 ].Normal, _Def->View->ViewPostion );
+                stack->AreaFrustum[ 0 ].D = -FMath::Dot( stack->AreaFrustum[ 0 ].Normal, _Def->View->ViewPosition );
 
                 // right
                 p = FMath::Cross( corners[ 2 ], corners[ 1 ] );
                 stack->AreaFrustum[ 1 ].Normal = p * FMath::RSqrt( FMath::Dot( p, p ) );
-                stack->AreaFrustum[ 1 ].D = -FMath::Dot( stack->AreaFrustum[ 1 ].Normal, _Def->View->ViewPostion );
+                stack->AreaFrustum[ 1 ].D = -FMath::Dot( stack->AreaFrustum[ 1 ].Normal, _Def->View->ViewPosition );
 
                 // top
                 p = FMath::Cross( corners[ 3 ], corners[ 2 ] );
                 stack->AreaFrustum[ 2 ].Normal = p * FMath::RSqrt( FMath::Dot( p, p ) );
-                stack->AreaFrustum[ 2 ].D = -FMath::Dot( stack->AreaFrustum[ 2 ].Normal, _Def->View->ViewPostion );
+                stack->AreaFrustum[ 2 ].D = -FMath::Dot( stack->AreaFrustum[ 2 ].Normal, _Def->View->ViewPosition );
 
                 // left
                 p = FMath::Cross( corners[ 0 ], corners[ 3 ] );
                 stack->AreaFrustum[ 3 ].Normal = p * FMath::RSqrt( FMath::Dot( p, p ) );
-                stack->AreaFrustum[ 3 ].D = -FMath::Dot( stack->AreaFrustum[ 3 ].Normal, _Def->View->ViewPostion );
+                stack->AreaFrustum[ 3 ].D = -FMath::Dot( stack->AreaFrustum[ 3 ].Normal, _Def->View->ViewPosition );
 
                 stack->PlanesCount = 4;
             }
@@ -1194,6 +1196,10 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
 }
 
 void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
+    if ( !component->bLightPass ) {
+        return;
+    }
+
     if ( component->RenderMark == _Def->VisMarker ) {
         return;
     }
@@ -1211,7 +1217,7 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
 
         if ( !bTwoSided ) {
             PlaneF const & plane = component->FacePlane;
-            float d = _Def->View->ViewPostion.Dot( plane.Normal );
+            float d = _Def->View->ViewPosition.Dot( plane.Normal );
 
             bool bFaceCull = false;
 
@@ -1351,12 +1357,11 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         instance->SkeletonSize = skeletonSize;
         instance->Matrix = *instanceMatrix;
 
-        if ( material->GetType() == MATERIAL_TYPE_PBR ) {
+        if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
             instance->ModelNormalToViewSpace = _Def->View->NormalToViewMatrix * component->GetWorldRotation().ToMatrix();
         }
 
         instance->RenderingOrder = component->RenderingOrder;
-        instance->bLightPass = component->bLightPass;
 
         _Def->View->InstanceCount++;
 
@@ -1369,183 +1374,6 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
     }
 }
 
-void FLevel::AddLightInstance( FRenderFrontendDef * _Def, FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
-#if 0
-    if ( component->RenderMark == _Def->VisMarker ) {
-        return;
-    }
-
-    if ( ( component->RenderingGroup & _Def->RenderingMask ) == 0 ) {
-        component->RenderMark = _Def->VisMarker;
-        return;
-    }
-
-    if ( component->VSDPasses & VSD_PASS_FACE_CULL ) {
-        // TODO: bTwoSided and bFrontSided must came from component
-        const bool bTwoSided = false;
-        const bool bFrontSided = true;
-        const float EPS = 0.25f;
-
-        if ( !bTwoSided ) {
-            PlaneF const & plane = component->FacePlane;
-            float d = _Def->View->ViewPostion.Dot( plane.Normal );
-
-            bool bFaceCull = false;
-
-            if ( bFrontSided ) {
-                if ( d < -plane.D - EPS ) {
-                    bFaceCull = true;
-                }
-            } else {
-                if ( d > -plane.D + EPS ) {
-                    bFaceCull = true;
-                }
-            }
-
-            if ( bFaceCull ) {
-                component->RenderMark = _Def->VisMarker;
-                #ifdef DEBUG_TRAVERSING_COUNTERS
-                Dbg_CulledByDotProduct++;
-                #endif
-                return;
-            }
-        }
-    }
-
-    if ( component->VSDPasses & VSD_PASS_BOUNDS ) {
-
-        // TODO: use SSE cull
-        BvAxisAlignedBox const & bounds = component->GetWorldBounds();
-
-        if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
-            #ifdef DEBUG_TRAVERSING_COUNTERS
-            Dbg_CulledBySurfaceBounds++;
-            #endif
-            return;
-        }
-    }
-
-    component->RenderMark = _Def->VisMarker;
-
-    if ( component->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
-
-        bool bVisible;
-        component->RenderFrontend_CustomVisibleStep( _Def, bVisible );
-
-        if ( !bVisible ) {
-            return;
-        }
-    }
-
-    if ( component->VSDPasses & VSD_PASS_VIS_MARKER ) {
-        bool bVisible = component->VisMarker == _Def->VisMarker;
-        if ( !bVisible ) {
-            return;
-        }
-    }
-
-    Float4x4 tmpMatrix;
-    Float4x4 * instanceMatrix;
-
-    FIndexedMesh * mesh = component->GetMesh();
-    if ( !mesh ) {
-        // TODO: default mesh?
-        return;
-    }
-
-    size_t skeletonOffset = 0;
-    size_t skeletonSize = 0;
-    if ( mesh->IsSkinned() && component->IsSkinnedMesh() ) {
-        FSkinnedComponent * skeleton = static_cast< FSkinnedComponent * >( component );
-        skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize );
-    }
-
-    if ( component->bNoTransform ) {
-        instanceMatrix = &_Def->View->ModelviewProjection;
-    } else {
-        tmpMatrix = _Def->View->ModelviewProjection * component->GetWorldTransformMatrix(); // TODO: optimize: parallel, sse, check if transformable
-        instanceMatrix = &tmpMatrix;
-    }
-
-    FActor * actor = component->GetParentActor();
-    FLevel * level = actor->GetLevel();
-
-    FIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
-
-    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
-
-        // FIXME: check subpart bounding box here
-
-        FIndexedMeshSubpart * subpart = subparts[ subpartIndex ];
-
-        FMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
-        AN_Assert( materialInstance );
-
-        FMaterial * material = materialInstance->GetMaterial();
-
-        FMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
-
-        // Add render instance
-        FRenderInstance * instance = ( FRenderInstance * )GRuntime.AllocFrameMem( sizeof( FRenderInstance ) );
-        if ( !instance ) {
-            return;
-        }
-
-        GRuntime.GetFrameData()->Instances.Append( instance );
-
-        instance->Material = material->GetGPUResource();
-        instance->MaterialInstance = materialInstanceFrameData;
-        instance->VertexBuffer = mesh->GetVertexBufferGPU();
-        instance->IndexBuffer = mesh->GetIndexBufferGPU();
-        instance->WeightsBuffer = mesh->GetWeightsBufferGPU();
-
-        if ( component->LightmapUVChannel && component->LightmapBlock >= 0 && component->LightmapBlock < level->Lightmaps.Size() ) {
-            instance->LightmapUVChannel = component->LightmapUVChannel->GetGPUResource();
-            instance->LightmapOffset = component->LightmapOffset;
-            instance->Lightmap = level->Lightmaps[ component->LightmapBlock ]->GetGPUResource();
-        } else {
-            instance->LightmapUVChannel = nullptr;
-            instance->Lightmap = nullptr;
-        }
-
-        if ( component->VertexLightChannel ) {
-            instance->VertexLightChannel = component->VertexLightChannel->GetGPUResource();
-        } else {
-            instance->VertexLightChannel = nullptr;
-        }
-
-        if ( component->bUseDynamicRange ) {
-            instance->IndexCount = component->DynamicRangeIndexCount;
-            instance->StartIndexLocation = component->DynamicRangeStartIndexLocation;
-            instance->BaseVertexLocation = component->DynamicRangeBaseVertexLocation;
-        } else {
-            instance->IndexCount = subpart->GetIndexCount();
-            instance->StartIndexLocation = subpart->GetFirstIndex();
-            instance->BaseVertexLocation = subpart->GetBaseVertex() + component->SubpartBaseVertexOffset;
-        }
-
-        instance->SkeletonOffset = skeletonOffset;
-        instance->SkeletonSize = skeletonSize;
-        instance->Matrix = *instanceMatrix;
-
-        if ( material->GetType() == MATERIAL_TYPE_PBR ) {
-            instance->ModelNormalToViewSpace = _Def->View->NormalToViewMatrix * component->GetWorldRotation().ToMatrix();
-        }
-
-        instance->RenderingOrder = component->RenderingOrder;
-        instance->bLightPass = component->bLightPass;
-
-        _Def->View->InstanceCount++;
-
-        _Def->PolyCount += instance->IndexCount / 3;
-
-        if ( component->bUseDynamicRange ) {
-            // If component uses dynamic range, mesh has actually one subpart
-            break;
-        }
-    }
-#endif
-}
 
 #ifdef FUTURE
 void AddLight( FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {

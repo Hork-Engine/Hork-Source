@@ -45,23 +45,9 @@ SOFTWARE.
 #define DEFAULT_PERSPECTIVE_ADJUST CAMERA_ADJUST_FOV_X_ASPECT_RATIO
 
 FRuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
+FRuntimeVariable RVDrawFrustumClusters( _CTS( "DrawFrustumClusters" ), _CTS( "1" ), VAR_CHEAT );
 
 AN_CLASS_META( FCameraComponent )
-
-#if 0
-AN_SCENE_COMPONENT_BEGIN_DECL( FCameraComponent, CCF_DEFAULT )
-
-AN_ATTRIBUTE( "Projection", FProperty( DEFAULT_PROJECTION ), SetProjection, GetProjection, "Ortho\0Perspective\0\0Camera projection type", AF_ENUM )
-AN_ATTRIBUTE( "ZNear", FProperty( DEFAULT_ZNEAR ), SetZNear, GetZNear, "Camera near plane", AF_DEFAULT )
-AN_ATTRIBUTE( "ZFar", FProperty( DEFAULT_ZFAR ), SetZFar, GetZFar, "Camera far plane", AF_DEFAULT )
-AN_ATTRIBUTE( "FovX", FProperty( DEFAULT_FOVX ), SetFovX, GetFovX, "Camera fov X", AF_DEFAULT )
-AN_ATTRIBUTE( "FovY", FProperty( DEFAULT_FOVY ), SetFovY, GetFovY, "Camera fov Y", AF_DEFAULT )
-AN_ATTRIBUTE( "Aspect Ratio", FProperty( DEFAULT_ASPECT_RATIO ), SetAspectRatio, GetAspectRatio, "Camera perspective aspect ratio. E.g. 4/3, 16/9", AF_DEFAULT )
-AN_ATTRIBUTE( "Perspective Adjust", FProperty( DEFAULT_PERSPECTIVE_ADJUST ), SetPerspectiveAdjust, GetPerspectiveAdjust, "FovX / AspectRatio\0FovX / FovY\0\0Perspective projection adjust", AF_ENUM )
-AN_ATTRIBUTE( "OrthoRect", FProperty( DEFAULT_ORTHO_RECT ), SetOrthoRect, GetOrthoRect, "Camera ortho rect", AF_DEFAULT )
-
-AN_SCENE_COMPONENT_END_DECL
-#endif
 
 FCameraComponent::FCameraComponent() {
     Projection = DEFAULT_PROJECTION;
@@ -135,6 +121,69 @@ void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
         _DebugDraw->SetColor( FColor4( 1, 1, 1, 0.3f ) );
         _DebugDraw->DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
         _DebugDraw->DrawConvexPoly( v, 4, false );
+    }
+
+    if ( RVDrawFrustumClusters ) {
+        Float3 clusterMins;
+        Float3 clusterMaxs;
+        Float4 p[ 8 ];
+        Float3 lineP[ 8 ];
+        Float4x4 projMat;
+
+        MakeClusterProjectionMatrix( projMat/*, ZNear, ZFar*/ );
+
+        Float4x4 ViewProj = projMat * GetViewMatrix();
+        Float4x4 ViewProjInv = ViewProj.Inversed();
+
+        float * zclip = GFrustumSlice.ZClip;
+
+        for ( int sliceIndex = 0 ; sliceIndex < FFrustumSlice::NUM_CLUSTERS_Z ; sliceIndex++ ) {
+
+            clusterMins.Z = zclip[ sliceIndex + 1 ];
+            clusterMaxs.Z = zclip[ sliceIndex ];
+
+            for ( int clusterY = 0 ; clusterY < FFrustumSlice::NUM_CLUSTERS_Y ; clusterY++ ) {
+
+                clusterMins.Y = clusterY * GFrustumSlice.DeltaY - 1.0f;
+                clusterMaxs.Y = clusterMins.Y + GFrustumSlice.DeltaY;
+
+                for ( int clusterX = 0 ; clusterX < FFrustumSlice::NUM_CLUSTERS_X ; clusterX++ ) {
+
+                    clusterMins.X = clusterX * GFrustumSlice.DeltaX - 1.0f;
+                    clusterMaxs.X = clusterMins.X + GFrustumSlice.DeltaX;
+
+                    if (   GFrustumSlice.Clusters[ sliceIndex ][ clusterY ][ clusterX ].LightsCount > 0
+                        || GFrustumSlice.Clusters[ sliceIndex ][ clusterY ][ clusterX ].DecalsCount > 0
+                        || GFrustumSlice.Clusters[ sliceIndex ][ clusterY ][ clusterX ].ProbesCount > 0 ) {
+                        p[ 0 ] = Float4( clusterMins.X, clusterMins.Y, clusterMins.Z, 1.0f );
+                        p[ 1 ] = Float4( clusterMaxs.X, clusterMins.Y, clusterMins.Z, 1.0f );
+                        p[ 2 ] = Float4( clusterMaxs.X, clusterMaxs.Y, clusterMins.Z, 1.0f );
+                        p[ 3 ] = Float4( clusterMins.X, clusterMaxs.Y, clusterMins.Z, 1.0f );
+                        p[ 4 ] = Float4( clusterMaxs.X, clusterMins.Y, clusterMaxs.Z, 1.0f );
+                        p[ 5 ] = Float4( clusterMins.X, clusterMins.Y, clusterMaxs.Z, 1.0f );
+                        p[ 6 ] = Float4( clusterMins.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f );
+                        p[ 7 ] = Float4( clusterMaxs.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f );
+                        for ( int i = 0 ; i < 8 ; i++ ) {
+                            p[ i ] = ViewProjInv * p[ i ];
+                            const float Denom = 1.0f / p[ i ].W;
+                            lineP[ i ].X = p[ i ].X * Denom;
+                            lineP[ i ].Y = p[ i ].Y * Denom;
+                            lineP[ i ].Z = p[ i ].Z * Denom;
+                        }
+                        //if ( RVClusterSSE )//if ( RVReverseNegativeZ )
+                        //    _DebugDraw->SetColor( FColor4( 0, 0, 1 ) );
+                        //else
+                            _DebugDraw->SetColor( FColor4( 1, 0, 0 ) );
+                        _DebugDraw->DrawLine( lineP, 4, true );
+                        _DebugDraw->DrawLine( lineP + 4, 4, true );
+                        _DebugDraw->DrawLine( lineP[ 0 ], lineP[ 5 ] );
+                        _DebugDraw->DrawLine( lineP[ 1 ], lineP[ 4 ] );
+                        _DebugDraw->DrawLine( lineP[ 2 ], lineP[ 7 ] );
+                        _DebugDraw->DrawLine( lineP[ 3 ], lineP[ 6 ] );
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -251,7 +300,10 @@ void FCameraComponent::OnTransformDirty() {
     bViewMatrixDirty = true;
 }
 
-void FCameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix, const float _ClusterZNear, const float _ClusterZFar ) const {
+void FCameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix/*, const float _ClusterZNear, const float _ClusterZFar*/ ) const {
+    const float _ClusterZNear = GFrustumSlice.ZNear;
+    const float _ClusterZFar = GFrustumSlice.ZFar;
+
     // TODO: if ( ClusterProjectionDirty ...
     if ( Projection == CAMERA_PROJ_PERSPECTIVE ) {
         switch ( Adjust ) {

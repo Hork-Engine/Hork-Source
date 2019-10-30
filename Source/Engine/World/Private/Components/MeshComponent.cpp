@@ -39,7 +39,6 @@ AN_CLASS_META( FMeshComponent )
 //AN_ATTRIBUTE_CONST( "Material Instance", FProperty( byte(0) ), "MaterialInstance\0\0Material instance resource", AF_RESOURCE )
 //AN_ATTRIBUTE( "Shadow Cast", FProperty( true ), EnableShadowCast, IsShadowCastEnabled, "Shadow casting", AF_DEFAULT )
 //AN_ATTRIBUTE( "Light Pass", FProperty( true ), EnableLightPass, IsLightPassEnabled, "Render on main pass", AF_DEFAULT )
-//AN_ATTRIBUTE( "Material Shadow Pass", FProperty( false ), EnableMaterialShadowPass, IsMaterialShadowPassEnabled, "Use specific shadow pass from material", AF_DEFAULT )
 //AN_ATTRIBUTE( "Custom Depth-Stencil Pass", FProperty( false ), EnableCustomDepthStencilPass, IsCustomDepthStencilPassEnabled, "Render mesh to custom depth-stencil buffer", AF_DEFAULT )
 //AN_ATTRIBUTE( "Custom Depth-Stencil Value", FProperty( byte(0) ), SetCustomDepthStencilValue, GetCustomDepthStencilValue, "Render mesh to custom depth-stencil buffer", AF_DEFAULT )
 ////AN_ATTRIBUTE( "ShadowReceive", FProperty( true ), SetShadowReceive, GetShadowReceive, "Shadow receiving", AF_DEFAULT )
@@ -47,6 +46,7 @@ AN_CLASS_META( FMeshComponent )
 
 FMeshComponent::FMeshComponent() {
     bLightPass = true;
+    bCastShadow = true;
     //bMaterialShadowPass = true;
     //SurfaceType = SURF_TRISOUP;
     LightmapOffset.Z = LightmapOffset.W = 1;
@@ -56,8 +56,7 @@ FMeshComponent::FMeshComponent() {
 void FMeshComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    FWorld * world = GetParentActor()->GetWorld();
-    world->RegisterMesh( this );
+    GetWorld()->AddMesh( this );
 }
 
 void FMeshComponent::DeinitializeComponent() {
@@ -65,8 +64,7 @@ void FMeshComponent::DeinitializeComponent() {
 
     ClearMaterials();
 
-    FWorld * world = GetParentActor()->GetWorld();
-    world->UnregisterMesh( this );
+    GetWorld()->RemoveMesh( this );
 }
 
 void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {

@@ -62,7 +62,7 @@ void FSkinnedComponent::InitializeComponent() {
 
     FWorld * world = GetParentActor()->GetWorld();
 
-    world->RegisterSkinnedMesh( this );
+    world->AddSkinnedMesh( this );
 }
 
 void FSkinnedComponent::DeinitializeComponent() {
@@ -74,7 +74,7 @@ void FSkinnedComponent::DeinitializeComponent() {
 
     FWorld * world = GetParentActor()->GetWorld();
 
-    world->UnregisterSkinnedMesh( this );
+    world->RemoveSkinnedMesh( this );
 }
 
 void FSkinnedComponent::OnLazyBoundsUpdate() {

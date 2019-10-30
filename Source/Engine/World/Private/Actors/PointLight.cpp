@@ -28,13 +28,11 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include <Engine/World/Public/Actors/PointLight.h>
 
-#include "Core/Public/Core.h"
-#include "Runtime/Public/Runtime.h"
-#include "Runtime/Public/EntryDecl.h"
-#include "Base/Public/Base.h"
-#include "Resource/Public/Resource.h"
-#include "Audio/Public/Audio.h"
-#include "World/Public/WorldAll.h"
-#include "GameThread/Public/GameThread.h"
+AN_CLASS_META( FPointLight )
+
+FPointLight::FPointLight() {
+    LightComponent = AddComponent< FPointLightComponent >( "PointLight" );
+    RootComponent = LightComponent;
+}

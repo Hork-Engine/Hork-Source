@@ -84,7 +84,7 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void Begin( FFont * _DefaultFont, int _Width, int _Height );
+    void Begin( int _Width, int _Height );
     void End();
 
     // Clipping
@@ -103,7 +103,7 @@ public:
     void PushFont( FFont * _Font );
     void PopFont();
 
-    FFont * GetDefaultFont() { return FontStack.First(); }
+    static FFont * GetDefaultFont();
     FFont * GetCurrentFont() { return FontStack.Last(); }
 
     // Primitives

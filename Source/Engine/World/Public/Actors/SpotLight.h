@@ -30,31 +30,18 @@ SOFTWARE.
 
 #pragma once
 
-#include "Actors/Actor.h"
-#include "Actors/HUD.h"
-#include "Actors/Pawn.h"
-#include "Actors/PlayerController.h"
+#include <Engine/World/Public/Actors/Actor.h>
+#include <Engine/World/Public/Components/SpotLightComponent.h>
 
-#include "Components/ActorComponent.h"
-#include "Components/AnchorComponent.h"
-#include "Components/CameraComponent.h"
-#include "Components/DrawSurf.h"
-#include "Components/InputComponent.h"
-#include "Components/LightComponent.h"
-#include "Components/MeshComponent.h"
-#include "Components/PhysicalBody.h"
-#include "Components/SceneComponent.h"
-#include "Components/SkinnedComponent.h"
-#include "Components/SoftMeshComponent.h"
-#include "Components/SpatialObject.h"
+class FSpotLight : public FActor {
+    AN_ACTOR( FSpotLight, FActor )
 
-#include "AINavigationMesh.h"
-#include "AnimationController.h"
-#include "BSP.h"
-#include "Canvas.h"
-#include "CollisionEvents.h"
-#include "DebugDraw.h"
-#include "Level.h"
-#include "Octree.h"
-#include "Timer.h"
-#include "World.h"
+public:
+    FSpotLightComponent * LightComponent;
+
+protected:
+    FSpotLight();
+
+private:
+    
+};

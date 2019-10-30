@@ -185,7 +185,7 @@ AN_FORCEINLINE static unsigned short ClampUnsignedShort( int _Value ) {
 
 void FPhysicalBody::AddPhysicalBodyToWorld() {
     if ( bInWorld ) {
-        GetWorld()->PhysicsWorld->removeRigidBody( RigidBody );
+        GetWorld()->GetPhysicsWorld()->removeRigidBody( RigidBody );
         bInWorld = false;
     }
 
@@ -258,7 +258,7 @@ void FPhysicalBody::CreateRigidBody() {
 
 void FPhysicalBody::DestroyRigidBody() {
     if ( RigidBody ) {
-        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
+        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetPhysicsWorld();
 
         GetWorld()->RemovePhysicalBody( this );
 
@@ -917,7 +917,7 @@ void FPhysicalBody::ContactTest( TPodArray< FPhysicalBody * > & _Result ) {
 
     // TODO: Add rigid body to world?
 
-    GetWorld()->PhysicsWorld->contactTest( RigidBody, callback );
+    GetWorld()->GetPhysicsWorld()->contactTest( RigidBody, callback );
 }
 
 void FPhysicalBody::ContactTestActor( TPodArray< FActor * > & _Result ) {
@@ -929,7 +929,7 @@ void FPhysicalBody::ContactTestActor( TPodArray< FActor * > & _Result ) {
 
     // TODO: Add rigid body to world?
 
-    GetWorld()->PhysicsWorld->contactTest( RigidBody, callback );
+    GetWorld()->GetPhysicsWorld()->contactTest( RigidBody, callback );
 }
 
 void FPhysicalBody::BeginPlay() {

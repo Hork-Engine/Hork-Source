@@ -99,13 +99,10 @@ public:
     bool            bLightPass;
 
     // Cast shadow
-    bool            bShadowCast;
+    bool            bCastShadow;
 
     // Receive shadow
-    //bool            bShadowReceive;
-
-    // Use specific shadow pass from material
-    //bool            bMaterialShadowPass;
+    //bool            bReceiveShadow;
 
     // Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled
     bool            bCustomDepthStencilPass;

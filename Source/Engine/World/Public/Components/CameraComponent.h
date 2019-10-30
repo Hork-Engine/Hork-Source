@@ -117,7 +117,7 @@ public:
     // Compute ortho rect based on aspect ratio and zoom
     static void MakeOrthoRect( float _CameraAspectRatio, float _Zoom, Float2 & _Mins, Float2 & _Maxs );
 
-    void MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix, const float _ClusterZNear, const float _ClusterZFar ) const;
+    void MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix/*, const float _ClusterZNear, const float _ClusterZFar*/ ) const;
 
 protected:
     FCameraComponent();

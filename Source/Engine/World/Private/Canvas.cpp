@@ -37,7 +37,11 @@ SOFTWARE.
 #include <Engine/Core/Public/Utf8.h>
 #include <Engine/Core/Public/Logger.h>
 
+#include <Engine/Resource/Public/ResourceManager.h>
+
 void FCanvas::Initialize() {
+    GetOrCreateResource< FFont >( "DroidSansMono.ttf.16", "CanvasFont" );
+
     DrawList._Data = &DrawListSharedData;
 }
 
@@ -46,7 +50,12 @@ void FCanvas::Deinitialize() {
     Viewports.Free();
 }
 
-void FCanvas::Begin( FFont * _DefaultFont, int _Width, int _Height ) {
+FFont * FCanvas::GetDefaultFont() {
+    static TStaticResourceFinder< FFont > FontResource( _CTS( "CanvasFont" ) );
+    return FontResource.GetObject();
+}
+
+void FCanvas::Begin( int _Width, int _Height ) {
     AN_Assert( FontStack.IsEmpty() );
 
     Width = _Width;
@@ -59,7 +68,7 @@ void FCanvas::Begin( FFont * _DefaultFont, int _Width, int _Height ) {
     DrawListSharedData.ClipRectFullscreen.z = _Width;
     DrawListSharedData.ClipRectFullscreen.w = _Height;
 
-    PushFont( _DefaultFont );
+    PushFont( GetDefaultFont() );
     PushClipRectFullScreen();
 }
 

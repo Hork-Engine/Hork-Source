@@ -30,58 +30,41 @@ SOFTWARE.
 
 #pragma once
 
-#include "SpatialObject.h"
+#include "BaseLightComponent.h"
 
-/*
+class ANGIE_API FPointLightComponent : public FBaseLightComponent {
+    AN_COMPONENT( FPointLightComponent, FBaseLightComponent )
 
-FClusteredObject
-
-*/
-class FClusteredObject : public FSceneComponent {
-    AN_COMPONENT( FClusteredObject, FSceneComponent )
-
-    friend class FLevel;
-
+    friend class FWorld;
 public:
-    enum { RENDERING_GROUP_DEFAULT = 1 };
+    void SetInnerRadius( float _Radius );
+    float GetInnerRadius() const;
 
-    // Rendering group to filter lights during rendering
-    int RenderingGroup;
+    void SetOuterRadius( float _Radius );
+    float GetOuterRadius() const;
 
-    void ForceOutdoor( bool _OutdoorSurface );
+    BvAxisAlignedBox const & GetWorldBounds() const;
 
-    bool IsOutdoor() const { return bIsOutdoor; }
-
-    BvSphereSSE const & GetSphereWorldBounds() const;
-    BvAxisAlignedBox const & GetAABBWorldBounds() const;
-    BvOrientedBox const & GetOBBWorldBounds() const;
-    Float4x4 const & GetOBBTransformInverse() const;
-
-    // TODO: SetVisible, IsVisible And only add visible objects to areas!!!
-
-    void MarkAreaDirty();
-
-    static void _UpdateSurfaceAreas();
+    Float4x4 const GetOBBTransformInverse() const { return OBBTransformInverse; }
 
 protected:
-
-    FClusteredObject();
+    FPointLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
-    //void OnTransformDirty() override;
+    void OnTransformDirty() override;
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+
+private:
+    void UpdateBoundingBox();
 
     BvSphere SphereWorldBounds;
     BvAxisAlignedBox AABBWorldBounds;
     BvOrientedBox OBBWorldBounds;
     Float4x4 OBBTransformInverse;
 
-    FAreaLinks InArea; // list of intersected areas
-    bool bIsOutdoor;
-
-    FClusteredObject * NextDirty;
-    FClusteredObject * PrevDirty;
-
-    static FClusteredObject * DirtyList;
-    static FClusteredObject * DirtyListTail;
+    float InnerRadius;
+    float OuterRadius;
+    FPointLightComponent * Next;
+    FPointLightComponent * Prev;
 };

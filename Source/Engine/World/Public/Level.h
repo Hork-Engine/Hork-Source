@@ -42,7 +42,7 @@ SOFTWARE.
 class FActor;
 class FLevel;
 class FAreaPortal;
-class FLightComponent;
+//class FLightComponent;
 
 class FLevelArea : public FBaseObject {
     AN_CLASS( FLevelArea, FBaseObject )
@@ -55,7 +55,7 @@ public:
 
     TPodArray< FSpatialObject * > const & GetSurfs() const { return Movables; }
 
-    TPodArray< FLightComponent * > const & GetLights() const { return Lights; }
+    //TPodArray< FLightComponent * > const & GetLights() const { return Lights; }
 
     BvAxisAlignedBox const & GetBoundingBox() const { return Bounds; }
 
@@ -78,7 +78,7 @@ private:
 
     // Objects in area
     TPodArray< FSpatialObject * > Movables;
-    TPodArray< FLightComponent * > Lights;
+    //TPodArray< FLightComponent * > Lights;
     //TPodArray< FEnvCaptureComponent * > EnvCaptures;
 
     // Linked portals
@@ -266,7 +266,7 @@ private:
     void CullInstances( FRenderFrontendDef * _Def );
     void FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area );
     void AddRenderInstances( FRenderFrontendDef * _Def, class FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
-    void AddLightInstance( FRenderFrontendDef * _Def, FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
+    //void AddLightInstance( FRenderFrontendDef * _Def, FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
 
     FWorld * OwnerWorld;
     int IndexInArrayOfLevels = -1;

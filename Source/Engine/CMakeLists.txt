@@ -34,6 +34,9 @@ file( GLOB BasePrivate Base/Private/*.h Base/Private/*.cpp )
 file( GLOB ResourcePublic Resource/Public/*.h Resource/Public/*.cpp )
 file( GLOB ResourcePrivate Resource/Private/*.h Resource/Private/*.cpp )
 
+file( GLOB MaterialGraphPublic MaterialGraph/Public/*.h MaterialGraph/Public/*.cpp )
+file( GLOB MaterialGraphPrivate MaterialGraph/Private/*.h MaterialGraph/Private/*.cpp )
+
 file( GLOB AudioPublic Audio/Public/*.h Audio/Public/*.cpp )
 file( GLOB AudioPrivate Audio/Private/*.h Audio/Private/*.cpp )
 
@@ -79,6 +82,9 @@ source_group( "BulletCompatibility" FILES ${BulletCompatibility} )
 
 source_group( "Resource\\Public" FILES ${ResourcePublic} )
 source_group( "Resource\\Private" FILES ${ResourcePrivate} )
+
+source_group( "MaterialGraph\\Public" FILES ${MaterialGraphPublic} )
+source_group( "MaterialGraph\\Private" FILES ${MaterialGraphPrivate} )
 
 source_group( "Audio\\Public" FILES ${AudioPublic} )
 source_group( "Audio\\Private" FILES ${AudioPrivate} )
@@ -129,6 +135,9 @@ ${BulletCompatibility}
 
 ${ResourcePublic}
 ${ResourcePrivate}
+
+${MaterialGraphPublic}
+${MaterialGraphPrivate}
 
 ${AudioPublic}
 ${AudioPrivate}

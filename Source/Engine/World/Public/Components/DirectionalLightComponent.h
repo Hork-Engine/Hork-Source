@@ -30,58 +30,35 @@ SOFTWARE.
 
 #pragma once
 
-#include "SpatialObject.h"
+#include "BaseLightComponent.h"
 
-/*
+class FDirectionalLightComponent : public FBaseLightComponent {
+    AN_COMPONENT( FDirectionalLightComponent, FBaseLightComponent )
 
-FClusteredObject
-
-*/
-class FClusteredObject : public FSceneComponent {
-    AN_COMPONENT( FClusteredObject, FSceneComponent )
-
-    friend class FLevel;
-
+    friend class FWorld;
 public:
-    enum { RENDERING_GROUP_DEFAULT = 1 };
+    void SetDirection( Float3 const & _Direction );
+    Float3 GetDirection() const;
 
-    // Rendering group to filter lights during rendering
-    int RenderingGroup;
+    void SetWorldDirection( Float3 const & _Direction );
+    Float3 GetWorldDirection() const;
 
-    void ForceOutdoor( bool _OutdoorSurface );
-
-    bool IsOutdoor() const { return bIsOutdoor; }
-
-    BvSphereSSE const & GetSphereWorldBounds() const;
-    BvAxisAlignedBox const & GetAABBWorldBounds() const;
-    BvOrientedBox const & GetOBBWorldBounds() const;
-    Float4x4 const & GetOBBTransformInverse() const;
-
-    // TODO: SetVisible, IsVisible And only add visible objects to areas!!!
-
-    void MarkAreaDirty();
-
-    static void _UpdateSurfaceAreas();
+    void SetMaxShadowCascades( int _MaxShadowCascades );
+    int GetMaxShadowCascades() const;
 
 protected:
-
-    FClusteredObject();
+    FDirectionalLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
-    //void OnTransformDirty() override;
+    void OnTransformDirty() override;
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
 
-    BvSphere SphereWorldBounds;
-    BvAxisAlignedBox AABBWorldBounds;
-    BvOrientedBox OBBWorldBounds;
-    Float4x4 OBBTransformInverse;
-
-    FAreaLinks InArea; // list of intersected areas
-    bool bIsOutdoor;
-
-    FClusteredObject * NextDirty;
-    FClusteredObject * PrevDirty;
-
-    static FClusteredObject * DirtyList;
-    static FClusteredObject * DirtyListTail;
+private:
+    int                     MaxShadowCascades;
+//    mutable Float4x4        LightViewMatrix;
+//    mutable Float4x4        ShadowMatrix;
+//    mutable bool            bShadowMatrixDirty;
+    FDirectionalLightComponent * Next;
+    FDirectionalLightComponent * Prev;
 };
