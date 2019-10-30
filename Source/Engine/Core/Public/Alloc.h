@@ -39,7 +39,7 @@ Memory utilites
 
 */
 
-// Clear memory with size aligned to 8 byte block length
+/** Clear memory with size aligned to 8 byte block length */
 AN_FORCEINLINE void ClearMemory8( void * _Buffer, uint64_t _ClearValue, size_t _Size ) {
     size_t count = ( ( _Size + 7 ) & ~7 ) >> 3;
     uint64_t * data = ( uint64_t * )_Buffer;
@@ -48,7 +48,7 @@ AN_FORCEINLINE void ClearMemory8( void * _Buffer, uint64_t _ClearValue, size_t _
     }
 }
 
-// Clear memory with size aligned to 8 byte block length
+/** Clear memory with size aligned to 8 byte block length */
 AN_FORCEINLINE void ZeroMemory8( void * _Buffer, size_t _Size ) {
     size_t count = ( ( _Size + 7 ) & ~7 ) >> 3;
     uint64_t * data = ( uint64_t * )_Buffer;
@@ -57,7 +57,7 @@ AN_FORCEINLINE void ZeroMemory8( void * _Buffer, size_t _Size ) {
     }
 }
 
-// Built-in memset function replacement
+/** Built-in memset function replacement */
 AN_FORCEINLINE void Memset( void * d, int v, size_t sz ) {
     byte * p = (byte*)d;
     while ( sz-- ) {
@@ -65,7 +65,7 @@ AN_FORCEINLINE void Memset( void * d, int v, size_t sz ) {
     }
 }
 
-// Built-in memset function replacement
+/** Built-in memset function replacement */
 AN_FORCEINLINE void ZeroMem( void * d, size_t sz ) {
     byte * p = (byte*)d;
     while ( sz-- ) {
@@ -73,7 +73,7 @@ AN_FORCEINLINE void ZeroMem( void * d, size_t sz ) {
     }
 }
 
-/*
+/**
 
 FHeapMemory
 
@@ -87,31 +87,31 @@ public:
     FHeapMemory();
     ~FHeapMemory();
 
-    // Initialize memory (main thread only)
+    /** Initialize memory (main thread only) */
     void Initialize();
 
-    // Deinitialize memory (main thread only)
+    /** Deinitialize memory (main thread only) */
     void Deinitialize();
 
-    // Heap memory allocation (thread safe)
+    /** Heap memory allocation (thread safe) */
     void * HeapAlloc( size_t _BytesCount, int _Alignment );
 
-    // Heap memory allocation (thread safe)
+    /** Heap memory allocation (thread safe) */
     void * HeapAllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue = 0 );
 
-    // Heap memory deallocation (thread safe)
+    /** Heap memory deallocation (thread safe) */
     void HeapFree( void * _Bytes );
 
-    // Clearing whole heap memory (main thread only)
+    /** Clearing whole heap memory (main thread only) */
     void Clear();
 
-    // Statistics: current memory usage
+    /** Statistics: current memory usage */
     static size_t GetTotalMemoryUsage();
 
-    // Statistics: current memory usage overhead
+    /** Statistics: current memory usage overhead */
     static size_t GetTotalMemoryOverhead();
 
-    // Statistics: max memory usage during memory using
+    /** Statistics: max memory usage during memory using */
     static size_t GetMaxMemoryUsage();
 
 private:
@@ -135,7 +135,7 @@ AN_FORCEINLINE void * FHeapMemory::HeapAllocCleared( size_t _BytesCount, int _Al
     return bytes;
 }
 
-/*
+/**
 
 FHunkMemory
 
@@ -158,38 +158,39 @@ class ANGIE_API FHunkMemory final {
 public:
     FHunkMemory() {}
 
-    // Initialize memory
+    /** Initialize memory */
     void Initialize( void * _MemoryAddress, int _SizeInMegabytes );
 
-    // Deinitialize memory
+    /** Deinitialize memory */
     void Deinitialize();
 
     void * GetHunkMemoryAddress() const;
     int GetHunkMemorySizeInMegabytes() const;
 
-    // Hunk memory allocation
+    /** Hunk memory allocation */
     void * HunkMemory( size_t _BytesCount, int _Alignment );
 
+    /** Hunk memory allocation */
     void * HunkMemoryCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue = 0 );
 
-    // Memory control functions
+    /** Memory control functions */
     int SetHunkMark();
     void ClearToMark( int _Mark );
     void Clear();
 
-    // Clear last allocated hunk
+    /** Clear last allocated hunk */
     void ClearLastHunk();
 
-    // Statistics: current memory usage
+    /** Statistics: current memory usage */
     size_t GetTotalMemoryUsage() const;
 
-    // Statistics: current memory usage overhead
+    /** Statistics: current memory usage overhead */
     size_t GetTotalMemoryOverhead() const;
 
-    // Statistics: current free memory
+    /** Statistics: current free memory */
     size_t GetTotalFreeMemory() const;
 
-    // Statistics: max memory usage during memory using
+    /** Statistics: max memory usage during memory using */
     size_t GetMaxMemoryUsage() const;
 
 private:
@@ -211,7 +212,7 @@ AN_FORCEINLINE void * FHunkMemory::HunkMemoryCleared( size_t _BytesCount, int _A
     return bytes;
 }
 
-/*
+/**
 
 FZoneMemory
 
@@ -224,41 +225,43 @@ class ANGIE_API FZoneMemory final {
 public:
     FZoneMemory() {}
 
-    // Initialize memory
+    /** Initialize memory */
     void Initialize( void * _MemoryAddress, int _SizeInMegabytes );
 
-    // Deinitialize memory
+    /** Deinitialize memory */
     void Deinitialize();
 
     void * GetZoneMemoryAddress() const;
     int GetZoneMemorySizeInMegabytes() const;
 
-    // Zone memory allocation
+    /** Zone memory allocation */
     void * Alloc( size_t _BytesCount, int _Alignment );
 
+    /** Zone memory allocation */
     void * AllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue = 0 );
 
-    // Tries to extend existing buffer
+    /** Tries to extend existing buffer */
     void * Extend( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld );
 
+    /** Tries to extend existing buffer */
     void * ExtendCleared( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld, uint64_t _ClearValue = 0 );
 
-    // Zone memory deallocation
+    /** Zone memory deallocation */
     void Dealloc( void * _Bytes );
 
-    // Clearing whole zone memory
+    /** Clearing whole zone memory */
     void Clear();
 
-    // Statistics: current memory usage
+    /** Statistics: current memory usage */
     size_t GetTotalMemoryUsage() const;
 
-    // Statistics: current memory usage overhead
+    /** Statistics: current memory usage overhead */
     size_t GetTotalMemoryOverhead() const;
 
-    // Statistics: current free memory
+    /** Statistics: current free memory */
     size_t GetTotalFreeMemory() const;
 
-    // Statistics: max memory usage during memory using
+    /** Statistics: max memory usage during memory using */
     size_t GetMaxMemoryUsage() const;
 
 private:
@@ -296,7 +299,7 @@ AN_FORCEINLINE void * FZoneMemory::ExtendCleared( void * _Data, int _BytesCount,
     return bytes;
 }
 
-/*
+/**
 
 TTemplateAllocator
 
@@ -361,7 +364,7 @@ public:
     void * ExtendCleared32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 32 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
 };
 
-/*
+/**
 
 FZoneAllocator
 
@@ -379,7 +382,7 @@ public:
     void ImplDeallocate( void * _Bytes );
 };
 
-/*
+/**
 
 FHeapAllocator
 
@@ -400,7 +403,7 @@ public:
 void * HugeAlloc( size_t _Size );
 void HugeFree( void * _Data );
 
-/*
+/**
 
 Dynamic Stack Memory
 

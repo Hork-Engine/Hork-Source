@@ -41,7 +41,6 @@ SOFTWARE.
 #include "Integer.h"
 #include "Plane.h"
 #include "Quat.h"
-#include "Ray.h"
 #include "Shuffle.h"
 #include "Transform.h"
 #include "BV/Bv.h"

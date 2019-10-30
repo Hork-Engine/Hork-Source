@@ -36,25 +36,25 @@ typedef unsigned short FWideChar;
 
 namespace FCore {
 
-// Length of utf8 character in bytes
+/** Length of utf8 character in bytes */
 int UTF8CharByteLength( const char * _Unicode );
 
-// Length of utf8 string
+/** Length of utf8 string */
 int UTF8StrLength( const char * _Unicode );
 
-// Decode utf8 character to wide char
+/** Decode utf8 character to wide char */
 int WideCharDecodeUTF8( const char * _Unicode, FWideChar & _Ch );
 
-// Decode utf8 character to wide char
+/** Decode utf8 character to wide char */
 int WideCharDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, FWideChar & _Ch );
 
-// Decode utf8 string to wide string
+/** Decode utf8 string to wide string */
 int WideStrDecodeUTF8( const char * _Unicode, FWideChar * _Str, int _MaxLength );
 
-// Decode utf8 string to wide string
+/** Decode utf8 string to wide string */
 int WideStrDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, FWideChar * _Str, int _MaxLength );
 
-// Length of utf8 character in bytes
+/** Length of utf8 character in bytes */
 AN_FORCEINLINE int WideCharUTF8Bytes( FWideChar _Ch ) {
     if ( _Ch < 0x80 ) return 1;
     if ( _Ch < 0x800 ) return 2;
@@ -63,22 +63,22 @@ AN_FORCEINLINE int WideCharUTF8Bytes( FWideChar _Ch ) {
     return 3;
 }
 
-// Length of utf8 string in bytes
+/** Length of utf8 string in bytes */
 int WideStrUTF8Bytes( FWideChar const * _Str, FWideChar const * _StrEnd = nullptr );
 
-// Length of wide string
+/** Length of wide string */
 int WideStrLength( FWideChar const * _Str );
 
-// Encode wide character to utf8 char
+/** Encode wide character to utf8 char */
 int WideCharEncodeUTF8( char * _Buf, int _BufSize, unsigned int _Ch );
 
-// Encode wide string to utf8 string
+/** Encode wide string to utf8 string */
 int WideStrEncodeUTF8( char * _Buf, int _BufSize, FWideChar const * _Str, FWideChar const * _StrEnd = nullptr );
 
-// Check wide char is blank
+/** Check wide char is blank */
 AN_FORCEINLINE bool WideCharIsBlank( FWideChar _Ch )  { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
 
-// Check ascii char is blank
+/** Check ascii char is blank */
 AN_FORCEINLINE bool CharIsBlank( char _Ch )  { return _Ch == ' ' || _Ch == '\t'; }
 
 }

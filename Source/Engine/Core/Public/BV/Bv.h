@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "BvAxisAlignedBox.h"
+#include "BvFrustum.h"
 #include "BvIntersect.h"
 #include "BvOrientedBox.h"
 #include "BvSphere.h"
-#include "BvFrustum.h"

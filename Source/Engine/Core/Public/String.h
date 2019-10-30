@@ -99,9 +99,13 @@ public:
     FString & Replace( FString const & _Str, int _Index );
     FString & Replace( const char * _Str, int _Index );
 
+    FString & Replace( const char * _Substring, const char * _NewStr );
+
     FString & Cut( int _Index, int _Count );
 
     int Contains( char _Ch ) const;
+
+    int Substring( const char * _Substring ) const;
 
     FString & ToLower();
     FString & ToUpper();
