@@ -599,7 +599,7 @@ void FDebugDraw::DrawCircleFilled( Float3 const & _Position, Float3 const & _UpV
 }
 
 void FDebugDraw::DrawCone( Float3 const & _Position, Float3x3 const & _Orientation, const float & _Radius, const float & _HalfAngle ) {
-    const Float3 coneDirection = -_Orientation[2];
+    const Float3 coneDirection = _Orientation[2];
     const Float3 v = Float3x3::RotationAroundNormal( _HalfAngle,  _Orientation[0] ) * coneDirection * _Radius;
 
     const int NumCirclePoints = 32;

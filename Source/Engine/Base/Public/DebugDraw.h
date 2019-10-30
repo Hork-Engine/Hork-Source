@@ -66,6 +66,7 @@ public:
     void DrawConvexPoly( Float3 const * _Points, int _NumPoints, bool _TwoSided = false );
 
     void DrawTriangleSoup( Float3 const * _Points, int _NumPoints, int _Stride, unsigned int const * _Indices, int _NumIndices, bool _TwoSided = false );
+
     void DrawTriangleSoupWireframe( Float3 const * _Points, int _Stride, unsigned int const * _Indices, int _NumIndices );
 
     void DrawTriangle( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, bool _TwoSided = false );
