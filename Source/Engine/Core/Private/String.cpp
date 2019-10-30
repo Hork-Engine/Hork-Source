@@ -190,3 +190,21 @@ FString & FString::OptimizePath() {
 void FString::OptimizePath( char * _Path ) {
     ::OptimizePath( _Path, Length( _Path ) );
 }
+
+int FString::Substring( const char * _Substring ) const {
+    const char * s = strstr( StringData, _Substring );
+    if ( !s ) {
+        return -1;
+    }
+    return (int)(s - StringData);
+}
+
+FString & FString::Replace( const char * _Substring, const char * _NewStr ) {
+    int len = FString::Length( _Substring );
+    int index;
+    while ( -1 != (index = Substring( _Substring )) ) {
+        Cut( index, len );
+        Insert( _NewStr, index );
+    }
+    return *this;
+}
