@@ -30,9 +30,8 @@ SOFTWARE.
 
 #include "Player.h"
 
+#include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/World/Public/Components/InputComponent.h>
-
-#include <Engine/Resource/Public/MaterialAssembly.h>
 #include <Engine/Resource/Public/ResourceManager.h>
 
 AN_BEGIN_CLASS_META( FPlayer )
@@ -53,16 +52,15 @@ FPlayer::FPlayer() {
 
     bCanEverTick = true;
 
-    FMaterialInstance * minst = NewObject< FMaterialInstance >();
-    minst->SetMaterial( GetResource< FMaterial >( "SkyboxMaterial" ) );
-
-    Skybox = AddComponent< FMeshComponent >( "sky_box" );
-
     static TStaticInternalResourceFinder< FIndexedMesh > UnitBox( _CTS( "FIndexedMesh.Box" ) );
+    static TStaticResourceFinder< FMaterialInstance > SkyboxMaterialInst( _CTS( "SkyboxMaterialInstance" ) );
+    Skybox = AddComponent< FMeshComponent >( "Skybox" );
     Skybox->SetMesh( UnitBox.GetObject() );
-    Skybox->SetMaterialInstance( minst );
-    Skybox->SetScale(4000);
+    Skybox->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
     Skybox->ForceOutdoor( true );
+    Skybox->AttachTo( Camera );
+    Skybox->SetAbsoluteRotation( true );
+    Skybox->RenderingOrder = RENDER_ORDER_SKYBOX;
 }
 
 void FPlayer::BeginPlay() {

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/GameThread/Public/EngineInstance.h>
 #include <Engine/Resource/Public/IndexedMesh.h>
 #include <Engine/Resource/Public/Material.h>
 #include "MyPlayerController.h"

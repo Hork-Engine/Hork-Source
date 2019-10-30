@@ -34,13 +34,9 @@ SOFTWARE.
 
 #include <Engine/World/Public/World.h>
 #include <Engine/World/Public/Components/InputComponent.h>
-#include <Engine/Resource/Public/MaterialAssembly.h>
 #include <Engine/World/Public/Canvas.h>
 #include <Engine/Resource/Public/ResourceManager.h>
 
-#include <Engine/Runtime/Public/EntryDecl.h>
-
-AN_ENTRY_DECL( FModule )
 AN_CLASS_META( FModule )
 
 class WMyDesktop : public WDesktop {
@@ -67,20 +63,17 @@ void FModule::OnGameStart() {
 
     GModule = this;
 
-    //GGameEngine.MouseSensitivity = 0.15f;
-    GGameEngine.MouseSensitivity = 0.4f;
-    //GGameEngine.SetRenderFeatures( VSync_Fixed );
-    //GGameEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    GGameEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
-    GGameEngine.SetCursorEnabled( false );
-    GGameEngine.SetWindowDefs(1,true,false,false,"AngieEngine: Portals");
+    //GEngine.MouseSensitivity = 0.15f;
+    GEngine.MouseSensitivity = 0.4f;
+    //GEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
+    GEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    GEngine.SetCursorEnabled( false );
+    GEngine.SetWindowDefs(1,true,false,false,"AngieEngine: Portals");
 
     SetInputMappings();
     CreateResources();
 
-    // Spawn world
-    TWorldSpawnParameters< FWorld > WorldSpawnParameters;
-    World = GGameEngine.SpawnWorld< FWorld >( WorldSpawnParameters );
+    World = FWorld::CreateWorld();
 
     FLevel * level = World->GetPersistentLevel();
     FLevelArea * area1 = level->AddArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
@@ -177,7 +170,7 @@ void FModule::OnGameStart() {
 
     WMyDesktop * desktop = NewObject< WMyDesktop >();
     desktop->PlayerController = PlayerController;
-    GGameEngine.SetDesktop( desktop );
+    GEngine.SetDesktop( desktop );
 }
 
 void FModule::SetInputMappings() {
@@ -200,97 +193,79 @@ void FModule::SetInputMappings() {
 }
 
 void FModule::CreateResources() {
-    // Default material
-    {
-        FMaterialProject * proj = NewObject< FMaterialProject >();
-
-        FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
-
-        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
-        FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
-        texCoord->Connect( inTexCoordBlock, "Value" );
-
-        FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
-        diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
-        diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
-
-        FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
-        diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
-        diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
-
-        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
-        materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
-
-        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-        builder->VertexStage = materialVertexStage;
-        builder->FragmentStage = materialFragmentStage;
-        builder->MaterialType = MATERIAL_TYPE_UNLIT;
-        builder->RegisterTextureSlot( diffuseTexture );
-
-        FMaterial * material = builder->Build();
-        material->SetName( "DefaultMaterial" );
-        RegisterResource( material );
-    }
-
     // Texture Blank512
     {
-        GetOrCreateResource< FTexture >( "blank512.png", "Blank512" );
+        GetOrCreateResource< FTexture2D >( "blank512.png", "Blank512" );
     }
 
     // CheckerMaterialInstance
     {
+        static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
+        static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "Blank512" ) );
         FMaterialInstance * CheckerMaterialInstance = NewObject< FMaterialInstance >();
-        CheckerMaterialInstance->SetMaterial( GetResource< FMaterial >( "DefaultMaterial" ) );
-        CheckerMaterialInstance->SetTexture( 0, GetResource< FTexture >( "Blank512" ) );
+        CheckerMaterialInstance->SetMaterial( MaterialResource.GetObject() );
+        CheckerMaterialInstance->SetTexture( 0, TextureResource.GetObject() );
         CheckerMaterialInstance->SetName( "CheckerMaterialInstance" );
         RegisterResource( CheckerMaterialInstance );
     }
 
     // Checker mesh
     {
+        static TStaticResourceFinder< FMaterialInstance > MaterialInst( _CTS( "CheckerMaterialInstance" ) );
         FIndexedMesh * CheckerMesh = NewObject< FIndexedMesh >();
         CheckerMesh->InitializeInternalResource( "FIndexedMesh.Sphere" );
         CheckerMesh->SetName( "CheckerMesh" );
-        CheckerMesh->GetSubpart( 0 )->MaterialInstance = GetResource< FMaterialInstance >( "CheckerMaterialInstance" );
+        CheckerMesh->SetMaterialInstance( 0, MaterialInst.GetObject() );
         RegisterResource( CheckerMesh );
     }
 
-    // Skybox material
+    // Skybox texture
     {
-        FMaterialProject * proj = NewObject< FMaterialProject >();
+        const char * Cubemap[6] = {
+            "DarkSky/rt.tga",
+            "DarkSky/lt.tga",
+            "DarkSky/up.tga",
+            "DarkSky/dn.tga",
+            "DarkSky/bk.tga",
+            "DarkSky/ft.tga"
+        };
+        FImage rt, lt, up, dn, bk, ft;
+        FImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
+        rt.LoadHDRI( Cubemap[0], false, false, 3 );
+        lt.LoadHDRI( Cubemap[1], false, false, 3 );
+        up.LoadHDRI( Cubemap[2], false, false, 3 );
+        dn.LoadHDRI( Cubemap[3], false, false, 3 );
+        bk.LoadHDRI( Cubemap[4], false, false, 3 );
+        ft.LoadHDRI( Cubemap[5], false, false, 3 );
+        //const float HDRI_Scale = 4.0f;
+        //const float HDRI_Pow = 1.1f;
+        //for ( int i = 0 ; i < 6 ; i++ ) {
+        //    float * HDRI = (float*)cubeFaces[i]->pRawData;
+        //    int count = cubeFaces[i]->Width*cubeFaces[i]->Height*3;
+        //    for ( int j = 0; j < count ; j += 3 ) {
+        //        HDRI[j] = pow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
+        //        HDRI[j + 1] = pow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
+        //        HDRI[j + 2] = pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
+        //    }
+        //}
+        FTextureCubemap * SkyboxTexture = NewObject< FTextureCubemap >();
+        SkyboxTexture->InitializeCubemapFromImages( cubeFaces );
+        SkyboxTexture->SetName( "SkyboxTexture" );
+        RegisterResource( SkyboxTexture );
+    }
 
-        //
-        // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
-        //
-        FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
-        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
-
-        //
-        // VS_Dir = InPosition - ViewPostion.xyz;
-        //
-        FMaterialInViewPositionBlock * inViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
-        FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
-        positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
-        positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
-        materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
-        FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
-        NSV_Dir->Connect( /*positionMinusViewPosition*/inPositionBlock, "Value" );
-
-        FMaterialAtmosphereBlock * atmo = proj->AddBlock< FMaterialAtmosphereBlock >();
-        atmo->Dir->Connect( materialVertexStage, "Dir" );
-
-        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
-        materialFragmentStage->Color->Connect( atmo, "Result" );
-
-        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-        builder->VertexStage = materialVertexStage;
-        builder->FragmentStage = materialFragmentStage;
-        builder->MaterialType = MATERIAL_TYPE_UNLIT;
-        builder->MaterialFacing = MATERIAL_FACE_BACK;
-
-        FMaterial * material = builder->Build();
-        material->SetName( "SkyboxMaterial" );
-
-        RegisterResource( material );
+    // Skybox material instance
+    {
+        static TStaticInternalResourceFinder< FMaterial > SkyboxMaterial( _CTS( "FMaterial.Skybox" ) );
+        static TStaticResourceFinder< FTextureCubemap > SkyboxTexture( _CTS( "SkyboxTexture" ) );
+        FMaterialInstance * SkyboxMaterialInstance = NewObject< FMaterialInstance >();
+        SkyboxMaterialInstance->SetName( "SkyboxMaterialInstance" );
+        SkyboxMaterialInstance->SetMaterial( SkyboxMaterial.GetObject() );
+        SkyboxMaterialInstance->SetTexture( 0, SkyboxTexture.GetObject() );
+        RegisterResource( SkyboxMaterialInstance );
     }
 }
+
+#include <Engine/Runtime/Public/EntryDecl.h>
+
+AN_ENTRY_DECL( FModule )
