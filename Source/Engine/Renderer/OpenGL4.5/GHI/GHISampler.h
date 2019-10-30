@@ -81,6 +81,7 @@ struct SamplerCreateInfo {
     float                BorderColor[4];
     float                MinLOD;
     float                MaxLOD;
+    bool                 bCubemapSeamless;
 
     void SetDefaults() {
         // Default values from OpenGL specification
@@ -98,6 +99,7 @@ struct SamplerCreateInfo {
         BorderColor[ 3 ] = 0;
         MinLOD = -1000;
         MaxLOD = 1000;
+        bCubemapSeamless = false;
     }
 };
 

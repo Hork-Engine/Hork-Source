@@ -82,8 +82,8 @@ void Framebuffer::Initialize( FramebufferCreateInfo const & _CreateInfo ) {
         GLuint textureId = GL_HANDLE( texture->GetHandle() );
         GLenum attachmentName = GL_COLOR_ATTACHMENT0 + i;
 
-        if ( _CreateInfo.Width != texture->GetWidth()
-            || _CreateInfo.Height != texture->GetHeight() ) {
+        if ( _CreateInfo.Width != ( texture->GetWidth() >> attachment->LodNum )
+            || _CreateInfo.Height != ( texture->GetHeight() >> attachment->LodNum ) ) {
             LogPrintf( "Framebuffer::Initialize: invalid texture resolution\n" );
         }
 

@@ -236,6 +236,7 @@ Sampler const Device::GetOrCreateSampler( SamplerCreateInfo const & _CreateInfo 
     glSamplerParameterfv( id, GL_TEXTURE_BORDER_COLOR, _CreateInfo.BorderColor );
     glSamplerParameterf( id, GL_TEXTURE_MIN_LOD, _CreateInfo.MinLOD );
     glSamplerParameterf( id, GL_TEXTURE_MAX_LOD, _CreateInfo.MaxLOD );
+    glSamplerParameteri( id, GL_TEXTURE_CUBE_MAP_SEAMLESS, _CreateInfo.bCubemapSeamless );
 
     // We can use also these functions to retrieve sampler parameters:
     //glGetSamplerParameterfv
