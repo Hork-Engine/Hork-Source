@@ -30,170 +30,140 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Base/Public/Factory.h>
-#include <Engine/Base/Public/BaseObject.h>
-#include <Engine/Core/Public/Document.h>
-#include <Engine/Runtime/Public/ImportExport.h>
+#include <Engine/Base/Public/GameModuleInterface.h>
+#include <Engine/Runtime/Public/EngineInterface.h>
 #include <Engine/Runtime/Public/RuntimeCommandProcessor.h>
 #include <Engine/Resource/Public/FontAtlas.h>
 #include <Engine/Widgets/Public/WDesktop.h>
+#include <Engine/World/Public/World.h>
 
-class FWorld;
-class FImguiContext;
-
-struct FWorldSpawnParameters {
-    FWorldSpawnParameters() = delete;
-
-    FWorldSpawnParameters( FClassMeta const * _WorldTypeClassMeta )
-        : Template( nullptr )
-        , WorldTypeClassMeta( _WorldTypeClassMeta )
-    {
-    }
-
-    // FIXME: This might be useful from scripts
-#if 0
-    FWorldSpawnParameters( uint64_t _WorldClassId )
-        : FWorldSpawnParameters( FWorld::Factory().LookupClass( _WorldClassId ) )
-    {
-    }
-
-    FWorldSpawnParameters( const char * _WorldClassName )
-        : FWorldSpawnParameters( FWorld::Factory().LookupClass( _WorldClassName ) )
-    {
-    }
-#endif
-
-    void SetTemplate( FWorld const * _Template );
-
-    FClassMeta const * WorldClassMeta() const { return WorldTypeClassMeta; }
-    FWorld const * GetTemplate() const { return Template; }
-
-    // TODO: here world spawn parameters
-
-protected:
-    FWorld const * Template;    // template type meta must match WorldTypeClassMeta
-    FClassMeta const * WorldTypeClassMeta;
-};
-
-template< typename WorldType >
-struct TWorldSpawnParameters : FWorldSpawnParameters {
-    TWorldSpawnParameters()
-        : FWorldSpawnParameters( &WorldType::ClassMeta() )
-    {
-    }
-};
-
-struct FVideoMode {
+struct FVideoMode
+{
+    /** Horizontal display resolution */
     unsigned short Width;
+    /** Vertical display resolution */
     unsigned short Height;
+    /** Phyisical monitor */
     unsigned short PhysicalMonitor;
+    /** Display refresh rate */
     byte RefreshRate;
+    /** Fullscreen or Windowed mode */
     bool bFullscreen;
+    /** Render backend name */
     char Backend[32];
 };
 
-class ANGIE_API FGameEngine : public IGameEngine {
-    AN_SINGLETON( FGameEngine )
-
-    friend class FWorld;
+class ANGIE_API FEngineInstance : public IEngineInterface
+{
+    AN_SINGLETON( FEngineInstance )
 
 public:
+    /** Quit when user press ESCAPE */
     bool bQuitOnEscape = true;
 
+    /** Toggle fullscreen on ALT+ENTER */
     bool bToggleFullscreenAltEnter = true;
 
+    /** Allow to drop down the console */
     bool bAllowConsole = true;
 
+    /** Global mouse sensitivity */
     float MouseSensitivity = 1.0f;
 
-    // Spawn a new world
-    FWorld * SpawnWorld( FWorldSpawnParameters const & _SpawnParameters );
+    /** Helper. Create a new world */
+    FWorld * CreateWorld() { return FWorld::CreateWorld(); }
 
-    // Spawn a new world
-    template< typename WorldType >
-    WorldType * SpawnWorld( TWorldSpawnParameters< WorldType > const & _SpawnParameters ) {
-        FWorldSpawnParameters const & spawnParameters = _SpawnParameters;
-        return static_cast< WorldType * >( SpawnWorld( spawnParameters ) );
-    }
+    /** Helper. Destroy all existing worlds */
+    void DestroyWorlds() { return FWorld::DestroyWorlds(); }
 
-    // Spawn a new world
-    template< typename WorldType >
-    WorldType * SpawnWorld() {
-        TWorldSpawnParameters< WorldType > spawnParameters;
-        return static_cast< WorldType * >( SpawnWorld( spawnParameters ) );
-    }
+    /** Helper. Get all existing worlds */
+    TPodArray< FWorld * > const & GetWorld() { return FWorld::GetWorlds(); }
 
-    // Load world from document data
-    FWorld * LoadWorld( FDocument const & _Document, int _FieldsHead );
-
-    // Destroy all existing worlds
-    void DestroyWorlds();
-
-    // Get all worlds
-    TPodArray< FWorld * > const & GetWorlds() const { return Worlds; }
-
-    // void SetHearableWorld( FWorld * _World ); TODO?
-    // FWorld * GetHearableWorld()
-
-    // Get current frame update number
+    /** Get current frame update number */
     int GetFrameNumber() const { return FrameNumber; }
 
-    // Stops the game
-    void Stop();
-
+    /** Change a video mode */
     void SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, byte _RefreshRate, bool _Fullscreen, const char * _Backend );
-    void SetVideoMode( FVideoMode const & _VideoMode );
-    void ResetVideoMode();
 
+    /** Change a video mode */
+    void SetVideoMode( FVideoMode const & _VideoMode );
+
+    /** Get current video mode */
     FVideoMode const & GetVideoMode() const;
 
+    /** Get video mode aspect ratio */
     float GetVideoAspectRatio() const { return VideoAspectRatio; }
 
+    /** Get framebuffer size */
     float GetFramebufferWidth() const { return FramebufferWidth; }
+
+    /** Get framebuffer size */
     float GetFramebufferHeight() const { return FramebufferHeight; }
+
+    /** Get scale for retina displays */
     Float2 const & GetRetinaScale() const { return RetinaScale; }
 
+    /** Get dots per inch for current video mode */
     float GetDPIX() const { return DPI_X; }
+
+    /** Get dots per inch for current video mode */
     float GetDPIY() const { return DPI_Y; }
 
+    /** Change window parameters */
     void SetWindowDefs( float _Opacity, bool _Decorated, bool _AutoIconify, bool _Floating, const char * _Title );
 
+    /** Change window position */
     void SetWindowPos( int _X, int _Y );
+
+    /** Get current window position */
     void GetWindowPos( int & _X, int & _Y );
 
+    /** Set window in focus */
     void SetInputFocus();
+
+    /** Is window in focus */
     bool IsInputFocus() const { return bInputFocus; }
 
-    //void SetRenderFeatures( int _VSyncMode );
-
-    void SetCursorEnabled( bool _Enabled );
-
+    /** Get window visible status */
     bool IsWindowVisible() const { return bIsWindowVisible; }
 
-    // From window to monitor coordinate
+    void SetCursorEnabled( bool _Enabled );    
+
+    /** Map coordinate from window space to monitor space */
     void MapWindowCoordinate( float & InOutX, float & InOutY ) const;
 
-    // From monitor to window coordinate
+    /** Map coordinate from monitor space to window space */
     void UnmapWindowCoordinate( float & InOutX, float & InOutY ) const;
 
+    /** Set cursor position */
     void SetCursorPosition( float _X, float _Y ) { CursorPosition.X = _X; CursorPosition.Y = _Y; }
+
+    /** Get cursor position */
     Float2 const & GetCursorPosition() const { return CursorPosition; }
 
+    /** Set game module */
     IGameModule * GetGameModule() { return GameModule; }
 
+    /** Set hud desktop */
     void SetDesktop( WDesktop * _Desktop );
 
+    /** Get hud desktop */
     WDesktop * GetDesktop() { return Desktop; }
 
-    FFont * GetDefaultFont() const { return DefaultFont; }
-
 private:
-    // IGameEngine interface
+    /** IEngineInterface interface. Initialize the engine */
     void Initialize( FCreateGameModuleCallback _CreateGameModuleCallback ) override;
+
+    /** IEngineInterface interface. Shutdown the engine */
     void Deinitialize() override;
-    void BuildFrame() override;
+
+    /** IEngineInterface interface. Prepare a frame for rendering */
+    void PrepareFrame() override;
+
+    /** IEngineInterface interface. Update game frame */
     void UpdateFrame() override;
-    bool IsStopped() override;
+
+    /** IEngineInterface interface. Print callback */
     void Print( const char * _Message ) override;
 
     // Process runtime event
@@ -224,14 +194,7 @@ private:
 
     void UpdateImgui();
 
-    void InitializeDefaultFont();
-    void DeinitializeDefaultFont();
-
-    // All existing worlds
-    // FWorld friend
-    TPodArray< FWorld * > Worlds;
-
-    bool bStopRequest;
+    void ResetVideoMode();
 
     FVideoMode VideoMode;
     float VideoAspectRatio = 4.0f/3.0f;
@@ -248,7 +211,7 @@ private:
 
     Float2 CursorPosition;
 
-    FImguiContext * ImguiContext;
+    //class FImguiContext * ImguiContext;
 
     // Frame update number
     int FrameNumber = 0;
@@ -264,31 +227,9 @@ private:
 
     IGameModule * GameModule;
 
-    TRef< FFont > DefaultFont;
-
     TRef< WDesktop > Desktop;
 
     FRuntimeCommandProcessor CommandProcessor;
 };
 
-class FCanvas;
-
-class IGameModule : public FBaseObject {
-    AN_CLASS( IGameModule, FBaseObject )
-
-public:
-    IGameModule() {}
-
-    virtual void OnGameStart() {}
-    virtual void OnGameEnd() {}
-    virtual void OnPreGameTick( float _TimeStep ) {}
-    virtual void OnPostGameTick( float _TimeStep ) {}
-    virtual void OnGameClose();
-
-    template< typename T >
-    static IGameModule * CreateGameModule() {
-        return NewObject< T >();
-    }
-};
-
-extern ANGIE_API FGameEngine & GGameEngine;
+extern ANGIE_API FEngineInstance & GEngine;

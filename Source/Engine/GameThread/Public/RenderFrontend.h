@@ -33,12 +33,19 @@ SOFTWARE.
 #include <Engine/Core/Public/BaseTypes.h>
 #include <Engine/Runtime/Public/RenderCore.h>
 #include <Engine/Base/Public/DebugDraw.h>
+#include <Engine/World/Public/Canvas.h>
 
 class FRenderingParameters;
 class FWorld;
-class FCanvas;
 
-class FRenderFrontend {
+struct FRenderFrontendStat {
+    int PolyCount;
+    int ShadowMapPolyCount;
+    int FrontendTime;
+};
+
+class FRenderFrontend
+{
     AN_SINGLETON( FRenderFrontend )
 
 public:
@@ -47,24 +54,30 @@ public:
 
     int GetVisMarker() const { return VisMarker; }
 
-    void BuildFrameData();
+    void Render();
 
-    int GetPolyCount() const { return PolyCount; }
-    int GetFrontendTime() const { return FrontendTime; }
+    FRenderFrontendStat const & GetStat() const { return Stat; }
 
 private:
-    void WriteDrawList( FCanvas * _Canvas );
-    void WriteDrawList( struct ImDrawList const * _DrawList );
+    void RenderCanvas( FCanvas * _Canvas );
+    void RenderImgui();
+    void RenderImgui( struct ImDrawList const * _DrawList );
     void RenderView( int _Index );
-    void AddInstances( struct FRenderFrontendDef * _Def );
+    void AddDirectionalShadowmapInstances( struct FRenderFrontendDef * _Def );
 
     FRenderFrame * CurFrameData;
     FRenderView * RV;
     FWorld * World;
     FDebugDraw DebugDraw;
     int VisMarker = 0;
-    int PolyCount = 0;
-    int FrontendTime = 0;
+
+    FRenderFrontendStat Stat;
+
+    FViewport const * Viewports[MAX_RENDER_VIEWS];
+    int NumViewports = 0;
+    int MaxViewportWidth = 0;
+    int MaxViewportHeight = 0;
+
 };
 
 extern FRenderFrontend & GRenderFrontend;

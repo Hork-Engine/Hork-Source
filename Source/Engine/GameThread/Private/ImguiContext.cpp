@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "ImguiContext.h"
 
-#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/GameThread/Public/EngineInstance.h>
 #include <Engine/Runtime/Public/InputDefs.h>
 
 #include <Engine/imgui/imgui.h>
@@ -145,14 +145,14 @@ void FImguiContext::SetFont( FFont * _Font ) {
 }
 
 void FImguiContext::BeginFrame( float _TimeStep ) {
-    FVideoMode const & videoMode = GGameEngine.GetVideoMode();
-    Float2 const & cursorPosition = GGameEngine.GetCursorPosition();
+    FVideoMode const & videoMode = GEngine.GetVideoMode();
+    Float2 const & cursorPosition = GEngine.GetCursorPosition();
 
     ImGuiIO & IO = ImGui::GetIO();
 
     IO.DisplaySize.x = videoMode.Width;
     IO.DisplaySize.y = videoMode.Height;
-    IO.DisplayFramebufferScale = GGameEngine.GetRetinaScale();
+    IO.DisplayFramebufferScale = GEngine.GetRetinaScale();
     IO.DeltaTime = _TimeStep;
     IO.MousePos.x = cursorPosition.X;
     IO.MousePos.y = cursorPosition.Y;
@@ -160,7 +160,7 @@ void FImguiContext::BeginFrame( float _TimeStep ) {
     ImGui::NewFrame();
 
     if ( IO.WantSetMousePos ) {
-        GGameEngine.SetCursorPosition( IO.MousePos.x, IO.MousePos.y );
+        GEngine.SetCursorPosition( IO.MousePos.x, IO.MousePos.y );
     }
 }
 
