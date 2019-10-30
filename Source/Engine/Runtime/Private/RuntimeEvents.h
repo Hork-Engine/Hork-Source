@@ -30,23 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/String.h>
 #include <Engine/Runtime/Public/Runtime.h>
 
-extern int rt_NumArguments;
-extern char **rt_Arguments;
-extern FString rt_WorkingDir;
-extern char * rt_Executable;
-extern int64_t rt_SysStartSeconds;
-extern int64_t rt_SysStartMilliseconds;
-extern int64_t rt_SysStartMicroseconds;
-extern int64_t rt_SysFrameTimeStamp;
-extern FRenderFrame rt_FrameData;
-extern FEventQueue rt_Events;
-extern FEventQueue rt_GameEvents;
-extern void * rt_FrameMemoryAddress;
-extern size_t rt_FrameMemorySize;
-extern size_t rt_FrameMemoryUsed;
-extern size_t rt_FrameMemoryUsedPrev;
+extern FEventQueue GRuntimeEvents;
+extern FEventQueue GGameEvents;
 
-int rt_CheckArg( const char * _Arg );
+extern int GInputEventsCount;

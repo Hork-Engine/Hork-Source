@@ -28,10 +28,12 @@ SOFTWARE.
 
 */
 
-#include "rt_monitor.h"
-#include "rt_main.h"
+#include "MonitorManager.h"
+#include "RuntimeEvents.h"
 
 #include <GLFW/glfw3.h>
+
+FMonitorManager & GMonitorManager = FMonitorManager::Inst();
 
 static FPhysicalMonitorArray PhysicalMonitors;
 static FPhysicalMonitor * PrimaryMonitor = nullptr;
@@ -39,7 +41,11 @@ static FPhysicalMonitor * PrimaryMonitor = nullptr;
 static void RegisterMonitor( GLFWmonitor * _Monitor );
 static void UnregisterMonitor( GLFWmonitor * _Monitor );
 
-void rt_InitializePhysicalMonitors() {
+FMonitorManager::FMonitorManager() {
+
+}
+
+void FMonitorManager::Initialize() {
     int monitorsCount = 0;
     GLFWmonitor ** monitors;
 
@@ -121,7 +127,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
 
     UpdatePrimaryMonitor();
 
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_MonitorConnectionEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();   // in seconds
     event->Data.MonitorConnectionEvent.Handle = handle;
@@ -142,7 +148,7 @@ static void UnregisterMonitor( GLFWmonitor * _Monitor ) {
 
     UpdatePrimaryMonitor();
 
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_MonitorConnectionEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();   // in seconds
     event->Data.MonitorConnectionEvent.Handle = handle;
@@ -151,7 +157,7 @@ static void UnregisterMonitor( GLFWmonitor * _Monitor ) {
     GLogger.Printf( "Monitor disconnected %s\n", glfwGetMonitorName( _Monitor ) );
 }
 
-void rt_DeinitializePhysicalMonitors() {
+void FMonitorManager::Deinitialize() {
     glfwSetMonitorCallback( nullptr );
 
     for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
@@ -170,7 +176,7 @@ static void UpdateMonitorGamma( FPhysicalMonitor * _PhysMonitor ) {
     _PhysMonitor->Internal.bGammaRampDirty = false;
 }
 
-void rt_UpdatePhysicalMonitors() {
+void FMonitorManager::UpdateMonitors() {
     for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
         if ( !physMonitor->Internal.Pointer ) {
             // not connected
@@ -182,7 +188,7 @@ void rt_UpdatePhysicalMonitors() {
     }
 }
 
-FPhysicalMonitor * rt_FindMonitor( const char * _MonitorName ) {
+FPhysicalMonitor * FMonitorManager::FindMonitor( const char * _MonitorName ) {
     for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
         if ( !FString::Cmp( physMonitor->MonitorName, _MonitorName ) ) {
             return physMonitor;
@@ -191,10 +197,10 @@ FPhysicalMonitor * rt_FindMonitor( const char * _MonitorName ) {
     return nullptr;
 }
 
-FPhysicalMonitorArray const & rt_GetPhysicalMonitors() {
+FPhysicalMonitorArray const & FMonitorManager::GetMonitors() {
     return PhysicalMonitors;
 }
 
-FPhysicalMonitor * rt_GetPrimaryMonitor() {
+FPhysicalMonitor * FMonitorManager::GetPrimaryMonitor() {
     return PrimaryMonitor;
 }

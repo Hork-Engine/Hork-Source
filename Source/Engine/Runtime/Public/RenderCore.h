@@ -375,8 +375,10 @@ enum ETextureGroup {
 
 enum EMaterialType {
     MATERIAL_TYPE_UNLIT,
+    MATERIAL_TYPE_BASELIGHT,
     MATERIAL_TYPE_PBR,
-    MATERIAL_TYPE_HUD
+    MATERIAL_TYPE_HUD,
+    MATERIAL_TYPE_POSTPROCESS
 };
 
 enum EMaterialFacing {
@@ -393,7 +395,7 @@ enum EMaterialDepthHack {
 
 struct FMaterialBuildData {
     // Size of allocated memory for this structure (in bytes)
-    int Size;
+    int SizeInBytes;
 
     // Material type
     EMaterialType Type;
@@ -406,30 +408,24 @@ struct FMaterialBuildData {
 
     // Have texture fetching in vertex stage. This flag allow renderer to optimize sampler/texture bindings
     // during rendering.
-    bool bVertexTextureFetch;
+    bool bDepthPassTextureFetch;
+    bool bColorPassTextureFetch;
+    bool bWireframePassTextureFetch;
+    bool bShadowMapPassTextureFetch;
 
     // Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
     // during rendering.
-    bool bNoVertexDeform;
+    bool bHasVertexDeform;
 
     bool bDepthTest;
 
-    // Helper. This flag allow renderer to optimize pipeline rendering order.
-    //byte RenderOrder;
+    // Disable shadow casting (for specific materials like skybox or first person shooter weapon)
+    bool bNoCastShadow;
+
+    // Enable shadow map masking
+    bool bShadowMapMasking;
 
     int NumUniformVectors;
-
-    // Vertex source code lump
-    int VertexSourceOffset;
-    int VertexSourceLength;
-
-    // Fragment source code lump
-    int FragmentSourceOffset;
-    int FragmentSourceLength;
-
-    // Geometry source code lump
-    int GeometrySourceOffset;
-    int GeometrySourceLength;
 
     // Material samplers
     FTextureSampler Samplers[MAX_MATERIAL_TEXTURES];
@@ -480,11 +476,20 @@ public:
 
     int     LightmapSlot;
 
-    bool    bVertexTextureFetch;
-    bool    bNoVertexDeform;
+    bool    bDepthPassTextureFetch;
+    bool    bColorPassTextureFetch;
+    bool    bWireframePassTextureFetch;
+    bool    bShadowMapPassTextureFetch;
+
+    bool    bHasVertexDeform;
+
+    // Just helper for render frontend to prevent rendering of materials with disabled shadow casting
+    bool    bNoCastShadow;
+
+    bool    bShadowMapMasking;
 
     struct {
-        void * PBR;
+        void * Lit;
         void * Unlit;
         void * HUD;
     } ShadeModel;
@@ -590,6 +595,39 @@ struct FHUDDrawList {
     FHUDDrawList *  pNext;
 };
 
+constexpr int MAX_SHADOW_CASCADES = 4;
+constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
+
+struct FDirectionalLightDef {
+    Float4   ColorAndAmbientIntensity;
+    Float3x3 Matrix;            // Light rotation matrix
+    int      RenderMask;
+    int      MaxShadowCascades; // Max allowed cascades for light
+    int      FirstCascade;      // First cascade offset
+    int      NumCascades;       // Current visible cascades count for light
+    bool     bCastShadow;
+};
+
+struct FClusterItem {
+    Float4x4 OBBTransformInverse;
+    BvAxisAlignedBox BoundingBox;
+
+    int     ListIndex;
+};
+
+struct FLightDef : FClusterItem {
+    Float4   ColorAndAmbientIntensity;
+    Float3   Position;
+    float    InnerRadius;
+    float    OuterRadius;
+    float    InnerConeAngle;
+    float    OuterConeAngle;
+    Float3   SpotDirection;
+    float    SpotExponent;
+    int      RenderMask;
+    bool     bSpot;
+};
+
 
 //
 // Render instance
@@ -613,9 +651,26 @@ struct FRenderInstance {
     unsigned int        StartIndexLocation;
     int                 BaseVertexLocation;
     byte                RenderingOrder;
-    bool                bLightPass;
 };
 
+//
+// ShadowMap Render instance
+//
+
+struct FShadowRenderInstance {
+    FMaterialGPU *      Material;
+    FMaterialFrameData *MaterialInstance;
+    FBufferGPU *        VertexBuffer;
+    FBufferGPU *        IndexBuffer;
+    FBufferGPU *        WeightsBuffer;
+    Float3x4            WorldTransformMatrix;
+    size_t              SkeletonOffset;
+    size_t              SkeletonSize;
+    unsigned int        IndexCount;
+    unsigned int        StartIndexLocation;
+    int                 BaseVertexLocation;
+    uint16_t            CascadeMask;
+};
 
 //
 // Render frame
@@ -638,26 +693,53 @@ struct FRenderView {
     float GameplayTimeSeconds;
 
     // View parameters
-    Float3 ViewPostion;
+    Float3 ViewPosition;
     Quat ViewRotation;
     Float3 ViewRightVec;
     Float3 ViewUpVec;
+    Float3 ViewDir;
     Float4x4 ViewMatrix;
+    float ViewZNear;
+    float ViewZFar;
+    float ViewFovX;
+    float ViewFovY;
+    Float2 ViewOrthoMins;
+    Float2 ViewOrthoMaxs;
     Float3x3 NormalToViewMatrix;
     Float4x4 ProjectionMatrix;
     Float4x4 InverseProjectionMatrix;
     Float4x4 ModelviewProjection;
     Float4x4 ViewSpaceToWorldSpace;
     Float4x4 ClipSpaceToWorldSpace;
+    Float4x4 ClusterProjectionMatrix;
     Float3 BackgroundColor;
     bool bClearBackground;
     bool bWireframe;
+    bool bPerspective;
+    bool bPadding1;
+
+    float MaxVisibleDistance;
+
+    int NumShadowMapCascades;
+    int NumCascadedShadowMaps;
 
     int FirstInstance;
     int InstanceCount;
 
+    int FirstShadowInstance;
+    int ShadowInstanceCount;
+
+    int FirstDirectionalLight;
+    int NumDirectionalLights;
+
+    int FirstLight;
+    int NumLights;
+
     int FirstDbgCmd;
     int DbgCmdCount;
+
+    Float4x4 LightViewProjectionMatrices[MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES];
+    Float4x4 ShadowMapMatrices[MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES];
 };
 
 struct FRenderFrame {
@@ -675,7 +757,12 @@ struct FRenderFrame {
     FRenderView RenderViews[MAX_RENDER_VIEWS];
     int NumViews;
 
+    int ShadowCascadePoolSize;
+
     TPodArray< FRenderInstance *, 1024 > Instances;
+    TPodArray< FShadowRenderInstance *, 1024 > ShadowInstances;
+    TPodArray< FDirectionalLightDef * > DirectionalLights;
+    TPodArray< FLightDef * > Lights;
 
     FHUDDrawList * DrawListHead;
     FHUDDrawList * DrawListTail;
@@ -692,6 +779,105 @@ struct FRenderFrontendDef {
     int VisMarker;
 
     int PolyCount;
+    int ShadowMapPolyCount;
+};
+
+
+//
+// Frustum cluster data
+//
+
+struct FFrustumCluster {
+    unsigned short LightsCount;
+    unsigned short DecalsCount;
+    unsigned short ProbesCount;
+};
+
+struct FFrustumSlice {
+    static constexpr int NUM_CLUSTERS_X = 16;
+    static constexpr int NUM_CLUSTERS_Y = 8;
+    static constexpr int NUM_CLUSTERS_Z = 24;
+
+    const float ZNear = 0.0125f;
+    const float ZFar = 512;
+    const float ZRange = ZFar - ZNear;
+    const int NearOffset = 20;
+    const float DeltaX = 2.0f / NUM_CLUSTERS_X;
+    const float DeltaY = 2.0f / NUM_CLUSTERS_Y;
+    const float Scale = -(NUM_CLUSTERS_Z + NearOffset) / std::log2( (double)ZFar / ZNear );
+    const float Bias = std::log2( (double)ZFar ) * (NUM_CLUSTERS_Z + NearOffset) / std::log2( (double)ZFar / ZNear ) - NearOffset;
+    float ZClip[NUM_CLUSTERS_Z + 1];
+
+    static FFrustumCluster Clusters[FFrustumSlice::NUM_CLUSTERS_Z][FFrustumSlice::NUM_CLUSTERS_Y][FFrustumSlice::NUM_CLUSTERS_X];
+
+    FFrustumSlice();
+};
+
+extern FFrustumSlice GFrustumSlice;
+
+
+
+// texture3d RG32UI
+// ivec2 Offset = texelFetch( ClusterLookup, TexCoord ).xy;
+// Offset.X  -- item offset
+// int NumProbes = Offest.Y & 0xff;
+// int NumDecals = ( Offest.Y >> 8 ) & 0xff;
+// int NumLights = ( Offest.Y >> 16 ) & 0xff;
+// int Unused = ( Offest.Y >> 24 ) & 0xff // can be used in future
+struct FClusterBuffer {
+    uint32_t ItemOffset;
+    byte NumProbes;
+    byte NumDecals;
+    byte NumLights;
+    byte Unused;
+};
+
+// texture1d R32UI
+// uint ItemIndices = (uint)(texelFetch( ItemList, Offset.X ).X);
+// int LightIndex = ItemIndices & 0x3ff;
+// int DecalIndex = ( ItemIndices >> 12 ) & 0x3ff;
+// int ProbeIndex = ItemIndices >> 24;
+struct FClusterItemBuffer {
+    uint32_t Indices;
+};
+
+struct FClusterLight {
+    Float3 Position;     // For point and spot lights: position and radius
+    float  OuterRadius;
+
+    float LightType;
+    float InnerRadius;
+    float OuterConeAngle;
+    float InnerConeAngle;
+
+    Float3 SpotDirection;
+    float SpotExponent;
+
+    Float4 Color;    // RGB, alpha - ambient intensity
+
+    unsigned int RenderMask;
+    unsigned int Padding0;
+    unsigned int Padding1;
+    unsigned int Padding2;
+};
+
+struct FFrameLightData {
+    static constexpr int MAX_ITEM_BUFFER = 1024*128; // TODO: подобрать оптимальный размер
+    static constexpr int MAX_CLUSTER_ITEMS = 256;
+    static constexpr int MAX_LIGHTS = 768;//1024 // indexed by 12 bit integer, limited by shader max uniform buffer size
+    static constexpr int MAX_DECALS = 1024; // indexed by 12 bit integer
+    static constexpr int MAX_PROBES = 256;  // indexed by 8 bit integer
+
+    FClusterBuffer ClusterOffsetBuffer[FFrustumSlice::NUM_CLUSTERS_Z][FFrustumSlice::NUM_CLUSTERS_Y][FFrustumSlice::NUM_CLUSTERS_X];
+
+    FClusterItemBuffer ClusterItemBuffer[MAX_ITEM_BUFFER + MAX_CLUSTER_ITEMS*3]; //  + MAX_CLUSTER_ITEMS*3 для возможного выхода за пределы массива на максимальное количество итемов в кластере
+    int TotalItems;
+
+    FClusterLight Lights[MAX_LIGHTS];
+    int TotalLights;
+
+    //FClusterProbe Probes[MAX_PROBES];
+    //int TotalProbes;
 };
 
 

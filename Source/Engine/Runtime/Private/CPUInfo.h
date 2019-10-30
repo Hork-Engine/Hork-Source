@@ -30,5 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-class IGameModule;
-typedef IGameModule * (*FCreateGameModuleCallback)();
+#include <Engine/Runtime/Public/Runtime.h>
+
+void GetCPUInfo( FCPUInfo & _Info );

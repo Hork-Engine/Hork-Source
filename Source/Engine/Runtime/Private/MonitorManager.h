@@ -35,9 +35,21 @@ SOFTWARE.
 
 using FPhysicalMonitorArray = TPodArray< FPhysicalMonitor *, 4 >;
 
-void rt_InitializePhysicalMonitors();
-void rt_DeinitializePhysicalMonitors();
-void rt_UpdatePhysicalMonitors();
-FPhysicalMonitor * rt_FindMonitor( const char * _MonitorName );
-FPhysicalMonitorArray const & rt_GetPhysicalMonitors();
-FPhysicalMonitor * rt_GetPrimaryMonitor();
+class FMonitorManager {
+    AN_SINGLETON( FMonitorManager )
+
+public:
+    void Initialize();
+
+    void Deinitialize();
+
+    void UpdateMonitors();
+
+    FPhysicalMonitor * FindMonitor( const char * _MonitorName );
+
+    FPhysicalMonitorArray const & GetMonitors();
+
+    FPhysicalMonitor * GetPrimaryMonitor();
+};
+
+extern FMonitorManager & GMonitorManager;

@@ -28,7 +28,9 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include "RuntimeEvents.h"
 
-class IGameModule;
-typedef IGameModule * (*FCreateGameModuleCallback)();
+FEventQueue GRuntimeEvents;
+FEventQueue GGameEvents;
+
+int GInputEventsCount = 0;

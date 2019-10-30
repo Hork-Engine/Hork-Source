@@ -28,39 +28,37 @@ SOFTWARE.
 
 */
 
-#include "rt_display.h"
-#include "rt_monitor.h"
-#include "rt_main.h"
-
-#include <Engine/Core/Public/CriticalError.h>
-#include <Engine/Runtime/Public/ImportExport.h>
+#include "WindowManager.h"
+#include "MonitorManager.h"
+#include "RuntimeEvents.h"
 
 #include <GLFW/glfw3.h>
 
-//FRenderBackendFeatures rt_RenderFeatures;
-int rt_InputEventCount = 0;
+FWindowManager & GWindowManager = FWindowManager::Inst();
 
 static const int GLFWCursorMode[2] = { GLFW_CURSOR_NORMAL, GLFW_CURSOR_DISABLED };
+
+#define MAX_INPUT_EVENTS  200
 
 #define MOUSE_LOST (-999999999999.0)
 
 static double MousePositionX = MOUSE_LOST;
 static double MousePositionY = MOUSE_LOST;
 
-static unsigned short rt_Width;
-static unsigned short rt_Height;
-static unsigned short rt_PhysicalMonitor;
-static byte rt_RefreshRate;
-static bool rt_Fullscreen;
-static char rt_Backend[32];
-static byte rt_Opacity;
-static bool rt_Decorated;
-static bool rt_AutoIconify;
-static bool rt_Floating;
-static char rt_Title[32];
-static int rt_PositionX;
-static int rt_PositionY;
-static bool rt_DisabledCursor;
+static unsigned short VidWidth;
+static unsigned short VidHeight;
+static unsigned short VidPhysicalMonitor;
+static byte VidRefreshRate;
+static bool VidFullscreen;
+static char VidRenderBackend[32];
+static byte WinOpacity;
+static bool WinDecorated;
+static bool WinAutoIconify;
+static bool WinFloating;
+static char WinTitle[32];
+static int WinPositionX;
+static int WinPositionY;
+static bool WinDisabledCursor;
 
 static bool bSetRenderBackend = false;
 static bool bSetVideoMode = false;
@@ -84,8 +82,8 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
         return;
     }
 
-    if ( rt_InputEventCount > 200 ) {
-        //GLogger.Printf( "Ignoring stalled keys\n" );
+    if ( GInputEventsCount >= MAX_INPUT_EVENTS ) {
+        GLogger.Printf( "Ignoring stalled keys\n" );
         return;
     }
 
@@ -101,7 +99,7 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
         return;
     }
 
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_KeyEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FKeyEvent & keyEvent = event->Data.KeyEvent;
@@ -110,14 +108,14 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
     keyEvent.ModMask = _Mods;
     keyEvent.Action = _Action;
     PressedKeys[_Key] = ( _Action == GLFW_RELEASE ) ? 0 : _Scancode + 1;
-    ++rt_InputEventCount;
+    GInputEventsCount++;
 }
 
 static void MouseButtonCallback( GLFWwindow * _Window, int _Button, int _Action, int _Mods ) {
     AN_Assert( _Action != GLFW_REPEAT ); // Is GLFW produce GLFW_REPEAT event for mouse buttons?
 
-    if ( rt_InputEventCount > 200 ) {
-        //GLogger.Printf( "Ignoring stalled buttons\n" );
+    if ( GInputEventsCount >= MAX_INPUT_EVENTS ) {
+        GLogger.Printf( "Ignoring stalled buttons\n" );
         return;
     }
 
@@ -125,7 +123,7 @@ static void MouseButtonCallback( GLFWwindow * _Window, int _Button, int _Action,
         return;
     }
 
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_MouseButtonEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FMouseButtonEvent & mouseEvent = event->Data.MouseButtonEvent;
@@ -133,16 +131,16 @@ static void MouseButtonCallback( GLFWwindow * _Window, int _Button, int _Action,
     mouseEvent.ModMask = _Mods;
     mouseEvent.Action = _Action;
     PressedMouseButtons[_Button] = _Action;
-    ++rt_InputEventCount;
+    GInputEventsCount++;
 }
 
 static void CursorPosCallback( GLFWwindow * _Window, double _MouseX, double _MouseY ) {
-    if ( !rt_DisabledCursor || !bIsWindowFocused ) {
+    if ( !WinDisabledCursor || !bIsWindowFocused ) {
         return;
     }
 
-    if ( rt_InputEventCount > 200 ) {
-        //GLogger.Printf( "Ignoring stalled mouse move\n" );
+    if ( GInputEventsCount >= MAX_INPUT_EVENTS ) {
+        GLogger.Printf( "Ignoring stalled mouse move\n" );
         return;
     }
 
@@ -152,7 +150,7 @@ static void CursorPosCallback( GLFWwindow * _Window, double _MouseX, double _Mou
         return;
     }
 
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_MouseMoveEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FMouseMoveEvent & mouseEvent = event->Data.MouseMoveEvent;
@@ -160,15 +158,15 @@ static void CursorPosCallback( GLFWwindow * _Window, double _MouseX, double _Mou
     mouseEvent.Y = static_cast< float >( MousePositionY - _MouseY );
     MousePositionX = _MouseX;
     MousePositionY = _MouseY;
-    ++rt_InputEventCount;
+    GInputEventsCount++;
 }
 
 static void WindowPosCallback( GLFWwindow * _Window, int _X, int _Y ) {
-    if ( !rt_Fullscreen ) {
-        rt_PositionX = _X;
-        rt_PositionY = _Y;
+    if ( !VidFullscreen ) {
+        WinPositionX = _X;
+        WinPositionY = _Y;
 
-        FEvent * event = rt_Events.Push();
+        FEvent * event = GRuntimeEvents.Push();
         event->Type = ET_WindowPosEvent;
         event->TimeStamp = GRuntime.SysSeconds_d();
         FWindowPosEvent & windowPosEvent = event->Data.WindowPosEvent;
@@ -178,12 +176,12 @@ static void WindowPosCallback( GLFWwindow * _Window, int _X, int _Y ) {
 }
 
 static void WindowSizeCallback( GLFWwindow * _Window, int _Width, int _Height ) {
-    rt_Width = _Width;
-    rt_Height = _Height;
+    VidWidth = _Width;
+    VidHeight = _Height;
 }
 
 static void WindowCloseCallback( GLFWwindow * ) {
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_CloseEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
 }
@@ -194,12 +192,12 @@ static void WindowRefreshCallback( GLFWwindow * ) {
 static void WindowFocusCallback( GLFWwindow * _Window, int _Focused ) {
     bIsWindowFocused = !!_Focused;
 
-    if ( bIsWindowFocused && rt_DisabledCursor ) {
+    if ( bIsWindowFocused && WinDisabledCursor ) {
         //glfwGetCursorPos( Wnd, &MousePositionX, &MousePositionY );
         MousePositionX = MOUSE_LOST;
     }
 
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_FocusEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     event->Data.FocusEvent.bFocused = bIsWindowFocused;
@@ -220,12 +218,12 @@ static void CharModsCallback( GLFWwindow * _Window, unsigned int _UnicodeCharact
         return;
     }
 
-    if ( rt_InputEventCount > 200 ) {
-        //GLogger.Printf( "Ignoring stalled chars\n" );
+    if ( GInputEventsCount >= MAX_INPUT_EVENTS ) {
+        GLogger.Printf( "Ignoring stalled chars\n" );
         return;
     }
 
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_CharEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FCharEvent & charEvent = event->Data.CharEvent;
@@ -234,33 +232,33 @@ static void CharModsCallback( GLFWwindow * _Window, unsigned int _UnicodeCharact
 }
 
 static void CursorEnterCallback( GLFWwindow * _Window, int _Entered ) {
-//    if ( _Entered && rt_DisabledCursor ) {
+//    if ( _Entered && WinDisabledCursor ) {
 //        glfwGetCursorPos( Wnd, &display->MousePositionX, &display->MousePositionY );
 //    }
 }
 
 static void ScrollCallback( GLFWwindow * _Window, double _WheelX, double _WheelY ) {
-    if ( rt_InputEventCount > 200 ) {
+    if ( GInputEventsCount >= MAX_INPUT_EVENTS ) {
         //GLogger.Printf( "Ignoring stalled wheel\n" );
         return;
     }
 
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_MouseWheelEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FMouseWheelEvent & mouseWheelEvent = event->Data.MouseWheelEvent;
     mouseWheelEvent.WheelX = _WheelX;
     mouseWheelEvent.WheelY = _WheelY;
-    ++rt_InputEventCount;
+    GInputEventsCount++;
 }
 
 static void DropCallback( GLFWwindow *, int, const char** ) {
 }
 
 static void CreateDisplays() {
-    //GRenderBackend = FindRenderBackend( rt_Backend );
+    //GRenderBackend = FindRenderBackend( VidRenderBackend );
     //if ( !GRenderBackend ) {
-    //    CriticalError( "Unknown rendering backend \"%s\"\n", rt_Backend );
+    //    CriticalError( "Unknown rendering backend \"%s\"\n", VidRenderBackend );
     //}
 
     GRenderBackend->PreInit();
@@ -271,20 +269,20 @@ static void CreateDisplays() {
     glfwWindowHint( GLFW_CENTER_CURSOR, GLFW_TRUE );
     glfwWindowHint( GLFW_FOCUSED, GLFW_TRUE );
     glfwWindowHint( GLFW_RESIZABLE, GLFW_FALSE );
-    glfwWindowHint( GLFW_DECORATED, rt_Decorated );
-    glfwWindowHint( GLFW_AUTO_ICONIFY, rt_AutoIconify );
-    glfwWindowHint( GLFW_FLOATING, rt_Floating );
+    glfwWindowHint( GLFW_DECORATED, WinDecorated );
+    glfwWindowHint( GLFW_AUTO_ICONIFY, WinAutoIconify );
+    glfwWindowHint( GLFW_FLOATING, WinFloating );
     glfwWindowHint( GLFW_MAXIMIZED, GLFW_FALSE );
-    glfwWindowHint( GLFW_REFRESH_RATE, rt_RefreshRate );
+    glfwWindowHint( GLFW_REFRESH_RATE, VidRefreshRate );
 
     GLFWmonitor * monitor = nullptr;
-    if ( rt_Fullscreen ) {
-        FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
-        FPhysicalMonitor * physMonitor = physicalMonitors[ rt_PhysicalMonitor ];
+    if ( VidFullscreen ) {
+        FPhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
+        FPhysicalMonitor * physMonitor = physicalMonitors[ VidPhysicalMonitor ];
         monitor = ( GLFWmonitor * )physMonitor->Internal.Pointer;
     }
 
-    Wnd = glfwCreateWindow( rt_Width, rt_Height, rt_Title, monitor, nullptr );
+    Wnd = glfwCreateWindow( VidWidth, VidHeight, WinTitle, monitor, nullptr );
     if ( !Wnd ) {
         CriticalError( "Failed to initialize game display\n" );
     }
@@ -293,19 +291,19 @@ static void CreateDisplays() {
         const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
 
         // Store real refresh rate
-        rt_RefreshRate = videoMode->refreshRate;
+        VidRefreshRate = videoMode->refreshRate;
     }
 
-    rt_Fullscreen = glfwGetWindowMonitor( Wnd ) != nullptr;
+    VidFullscreen = glfwGetWindowMonitor( Wnd ) != nullptr;
 
     // Disable cursor to discard any mouse moving
-    bool bDisabledCursor = rt_DisabledCursor;
-    rt_DisabledCursor = false;
+    bool bDisabledCursor = WinDisabledCursor;
+    WinDisabledCursor = false;
 
     //glfwSetWindowUserPointer( Wnd, display );
     //glfwSetWindowSizeLimits( Wnd, MinWidth, MinHeight, MaxWidth, MaxHeight );
-    glfwSetWindowPos( Wnd, rt_PositionX, rt_PositionY );
-    glfwSetWindowOpacity( Wnd, rt_Opacity / 255.0f );
+    glfwSetWindowPos( Wnd, WinPositionX, WinPositionY );
+    glfwSetWindowOpacity( Wnd, WinOpacity / 255.0f );
     glfwSetInputMode( Wnd, GLFW_STICKY_KEYS, GLFW_FALSE );
     glfwSetInputMode( Wnd, GLFW_STICKY_MOUSE_BUTTONS, GLFW_FALSE );
     glfwSetInputMode( Wnd, GLFW_LOCK_KEY_MODS, GLFW_TRUE );
@@ -334,7 +332,7 @@ static void CreateDisplays() {
         //glfwSetCursorPos( Wnd, MousePositionX, MousePositionY );
         MousePositionX = MOUSE_LOST;
     }
-    rt_DisabledCursor = bDisabledCursor;
+    WinDisabledCursor = bDisabledCursor;
 
     GRenderBackend->Initialize( Wnd );
 
@@ -365,27 +363,31 @@ static void DestroyDisplays() {
     }
 }
 
-void rt_InitializeDisplays() {
+FWindowManager::FWindowManager() {
+
+}
+
+void FWindowManager::Initialize() {
 
     //REGISTER_RENDER_BACKEND( OpenGLBackend );
     //REGISTER_RENDER_BACKEND( VulkanBackend );
     //REGISTER_RENDER_BACKEND( NullBackend );
 
     // TODO: load this from config:
-    rt_Width = 640;
-    rt_Height = 480;
-    rt_PhysicalMonitor = 0;
-    rt_RefreshRate = 120;
-    rt_Fullscreen = false;
-    FString::CopySafe( rt_Backend, sizeof( rt_Backend ), "OpenGL 4.5" );
-    rt_Opacity = 255;
-    rt_Decorated = true;
-    rt_AutoIconify = false;
-    rt_Floating = false;
-    FString::CopySafe( rt_Title, sizeof( rt_Title ), "Game" );
-    rt_PositionX = 100;
-    rt_PositionY = 100;
-    rt_DisabledCursor = false;
+    VidWidth = 640;
+    VidHeight = 480;
+    VidPhysicalMonitor = 0;
+    VidRefreshRate = 120;
+    VidFullscreen = false;
+    FString::CopySafe( VidRenderBackend, sizeof( VidRenderBackend ), "OpenGL 4.5" );
+    WinOpacity = 255;
+    WinDecorated = true;
+    WinAutoIconify = false;
+    WinFloating = false;
+    FString::CopySafe( WinTitle, sizeof( WinTitle ), "Game" );
+    WinPositionX = 100;
+    WinPositionY = 100;
+    WinDisabledCursor = false;
 
     //for ( FRenderBackend const * backend = GetRenderBackends() ; backend ; backend = backend->Next ) {
     //    GLogger.Printf( "Found renderer backend: %s\n", backend->Name );
@@ -397,55 +399,55 @@ void rt_InitializeDisplays() {
     CreateDisplays();
 }
 
-void rt_DeinitializeDisplays() {
+void FWindowManager::Deinitialize() {
     DestroyDisplays();
 }
 
 static void ProcessEvent( FEvent const & _Event ) {
     switch ( _Event.Type ) {
     case ET_SetVideoModeEvent:
-        rt_Width = FMath::Max< unsigned short >( MIN_DISPLAY_WIDTH, _Event.Data.SetVideoModeEvent.Width );
-        rt_Height = FMath::Max< unsigned short >( MIN_DISPLAY_HEIGHT, _Event.Data.SetVideoModeEvent.Height );
-        rt_PhysicalMonitor = Int( _Event.Data.SetVideoModeEvent.PhysicalMonitor ).Clamp( 0, rt_GetPhysicalMonitors().Size() - 1 );
-        rt_RefreshRate = _Event.Data.SetVideoModeEvent.RefreshRate;
-        rt_Fullscreen = _Event.Data.SetVideoModeEvent.bFullscreen;
+        VidWidth = FMath::Max< unsigned short >( 1, _Event.Data.SetVideoModeEvent.Width );
+        VidHeight = FMath::Max< unsigned short >( 1, _Event.Data.SetVideoModeEvent.Height );
+        VidPhysicalMonitor = Int( _Event.Data.SetVideoModeEvent.PhysicalMonitor ).Clamp( 0, GMonitorManager.GetMonitors().Size() - 1 );
+        VidRefreshRate = _Event.Data.SetVideoModeEvent.RefreshRate;
+        VidFullscreen = _Event.Data.SetVideoModeEvent.bFullscreen;
 
-        if ( FString::Icmp( rt_Backend, _Event.Data.SetVideoModeEvent.Backend ) ) {
-            FString::CopySafe( rt_Backend, sizeof( rt_Backend ), _Event.Data.SetVideoModeEvent.Backend );
+        if ( FString::Icmp( VidRenderBackend, _Event.Data.SetVideoModeEvent.Backend ) ) {
+            FString::CopySafe( VidRenderBackend, sizeof( VidRenderBackend ), _Event.Data.SetVideoModeEvent.Backend );
             bSetRenderBackend = true;
         }
 
         bSetVideoMode = true;
         break;
     case ET_SetWindowDefsEvent:
-        rt_Opacity = _Event.Data.SetWindowDefsEvent.Opacity;
-        rt_Decorated = _Event.Data.SetWindowDefsEvent.bDecorated;
-        rt_AutoIconify = _Event.Data.SetWindowDefsEvent.bAutoIconify;
-        rt_Floating = _Event.Data.SetWindowDefsEvent.bFloating;
-        FString::CopySafe( rt_Title, sizeof( rt_Title ), _Event.Data.SetWindowDefsEvent.Title );
+        WinOpacity = _Event.Data.SetWindowDefsEvent.Opacity;
+        WinDecorated = _Event.Data.SetWindowDefsEvent.bDecorated;
+        WinAutoIconify = _Event.Data.SetWindowDefsEvent.bAutoIconify;
+        WinFloating = _Event.Data.SetWindowDefsEvent.bFloating;
+        FString::CopySafe( WinTitle, sizeof( WinTitle ), _Event.Data.SetWindowDefsEvent.Title );
         bSetWindowDefs = true;
         break;
     case ET_SetWindowPosEvent:
-        rt_PositionX = _Event.Data.SetWindowPosEvent.PositionX;
-        rt_PositionY = _Event.Data.SetWindowPosEvent.PositionY;
+        WinPositionX = _Event.Data.SetWindowPosEvent.PositionX;
+        WinPositionY = _Event.Data.SetWindowPosEvent.PositionY;
         bSetWindowPos = true;
         break;
     case ET_SetInputFocusEvent:
         bSetFocus = true;
         break;
 //    case ET_SetRenderFeaturesEvent:
-//        rt_VSyncMode = Int( _Event.Data.SetRenderFeaturesEvent.VSyncMode ).Clamp( VSync_Disabled, VSync_Half );
+//        VSyncMode = Int( _Event.Data.SetRenderFeaturesEvent.VSyncMode ).Clamp( VSync_Disabled, VSync_Half );
 //        {
 //            FRenderFeatures features;
-//            features.VSyncMode = rt_VSyncMode;
+//            features.VSyncMode = VSyncMode;
 //            GRenderBackend->SetRenderFeatures( features );
 //        }
 //        break;
     case ET_SetCursorModeEvent:
-        if ( rt_DisabledCursor != _Event.Data.SetCursorModeEvent.bDisabledCursor ) {
-            rt_DisabledCursor = _Event.Data.SetCursorModeEvent.bDisabledCursor;
-            glfwSetInputMode( Wnd, GLFW_CURSOR, GLFWCursorMode[ rt_DisabledCursor ] );
-            if ( rt_DisabledCursor ) {
+        if ( WinDisabledCursor != _Event.Data.SetCursorModeEvent.bDisabledCursor ) {
+            WinDisabledCursor = _Event.Data.SetCursorModeEvent.bDisabledCursor;
+            glfwSetInputMode( Wnd, GLFW_CURSOR, GLFWCursorMode[ WinDisabledCursor ] );
+            if ( WinDisabledCursor ) {
                 //glfwGetCursorPos( Wnd, &MousePositionX, &MousePositionY );
                 MousePositionX = MOUSE_LOST;
             }
@@ -456,19 +458,19 @@ static void ProcessEvent( FEvent const & _Event ) {
 }
 
 static void SendChangedVideoModeEvent() {
-    FEvent * event = rt_Events.Push();
+    FEvent * event = GRuntimeEvents.Push();
     event->Type = ET_ChangedVideoModeEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     FChangedVideoModeEvent & data = event->Data.ChangedVideoModeEvent;
-    data.Width = rt_Width;
-    data.Height = rt_Height;
-    data.PhysicalMonitor = rt_PhysicalMonitor;
-    data.RefreshRate = rt_RefreshRate;
-    data.bFullscreen = rt_Fullscreen;
+    data.Width = VidWidth;
+    data.Height = VidHeight;
+    data.PhysicalMonitor = VidPhysicalMonitor;
+    data.RefreshRate = VidRefreshRate;
+    data.bFullscreen = VidFullscreen;
     FString::CopySafe( data.Backend, sizeof( data.Backend ), GRenderBackend->GetName() );
 }
 
-void rt_UpdateDisplays( FEventQueue & _EventQueue ) {
+void FWindowManager::Update( FEventQueue & _EventQueue ) {
     FEvent * event;
     while ( nullptr != ( event = _EventQueue.Pop() ) ) {
         ProcessEvent( *event );
@@ -484,40 +486,40 @@ void rt_UpdateDisplays( FEventQueue & _EventQueue ) {
     if ( bSetVideoMode ) {
         bSetVideoMode = false;
 
-        if ( rt_Fullscreen ) {
-            FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
-            FPhysicalMonitor * physMonitor = physicalMonitors[ rt_PhysicalMonitor ];
+        if ( VidFullscreen ) {
+            FPhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
+            FPhysicalMonitor * physMonitor = physicalMonitors[ VidPhysicalMonitor ];
             GLFWmonitor * monitor = ( GLFWmonitor * )physMonitor->Internal.Pointer;
             bool bIsMonitorConnected = monitor != nullptr;
 
             glfwSetWindowMonitor( Wnd,
                                   monitor,                      // switch to fullscreen mode
-                                  rt_PositionX, rt_PositionY,   // position is ignored
-                                  rt_Width,
-                                  rt_Height,
-                                  rt_RefreshRate );
+                                  WinPositionX, WinPositionY,   // position is ignored
+                                  VidWidth,
+                                  VidHeight,
+                                  VidRefreshRate );
 
             bSetWindowPos = false;
 
             if ( bIsMonitorConnected ) {
                 // Store real refresh rate
                 const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
-                rt_RefreshRate = videoMode->refreshRate;
+                VidRefreshRate = videoMode->refreshRate;
 
                 glfwFocusWindow( Wnd );
                 bSetFocus = false;
             }
 
             if ( !glfwGetWindowMonitor( Wnd ) ) {
-                rt_Fullscreen = false;
+                VidFullscreen = false;
             }
 
         } else {
             glfwSetWindowMonitor( Wnd,
                 nullptr,  // switch to windowed mode
-                rt_PositionX, rt_PositionY,
-                rt_Width,
-                rt_Height,
+                WinPositionX, WinPositionY,
+                VidWidth,
+                VidHeight,
                 0         // refresh rate is ignored
             );
 
@@ -539,18 +541,18 @@ void rt_UpdateDisplays( FEventQueue & _EventQueue ) {
     if ( bSetWindowDefs ) {
         bSetWindowDefs = false;
 
-        glfwSetWindowOpacity( Wnd, rt_Opacity / 255.0f );
-        glfwSetWindowAttrib( Wnd, GLFW_DECORATED, rt_Decorated );
-        glfwSetWindowAttrib( Wnd, GLFW_AUTO_ICONIFY, rt_AutoIconify );
-        glfwSetWindowAttrib( Wnd, GLFW_FLOATING, rt_Floating );
-        glfwSetWindowTitle( Wnd, rt_Title );
+        glfwSetWindowOpacity( Wnd, WinOpacity / 255.0f );
+        glfwSetWindowAttrib( Wnd, GLFW_DECORATED, WinDecorated );
+        glfwSetWindowAttrib( Wnd, GLFW_AUTO_ICONIFY, WinAutoIconify );
+        glfwSetWindowAttrib( Wnd, GLFW_FLOATING, WinFloating );
+        glfwSetWindowTitle( Wnd, WinTitle );
     }
 
     if ( bSetWindowPos ) {
         bSetWindowPos = false;
 
-        if ( !rt_Fullscreen ) {
-            glfwSetWindowPos( Wnd, rt_PositionX, rt_PositionY );
+        if ( !VidFullscreen ) {
+            glfwSetWindowPos( Wnd, WinPositionX, WinPositionY );
         }
     }
 
@@ -565,7 +567,7 @@ void rt_UpdateDisplays( FEventQueue & _EventQueue ) {
     bCheck = bIsWindowVisible;
     bIsWindowVisible = glfwGetWindowAttrib( Wnd, GLFW_VISIBLE );
     if ( bIsWindowVisible != bCheck ) {
-        event = rt_Events.Push();
+        event = GRuntimeEvents.Push();
         event->Type = ET_VisibleEvent;
         event->TimeStamp = GRuntime.SysSeconds_d();
         FVisibleEvent & data = event->Data.VisibleEvent;

@@ -32,15 +32,26 @@ SOFTWARE.
 
 #include "GameModuleCallback.h"
 
-class IGameEngine {
+/** Engine interface */
+class IEngineInterface
+{
 public:
-    virtual ~IGameEngine() {}
+    virtual ~IEngineInterface() {}
+
+    /** Initialize the engine */
     virtual void Initialize( FCreateGameModuleCallback _CreateGameModuleCallback ) = 0;
+
+    /** Shutdown the engine */
     virtual void Deinitialize() = 0;
-    virtual void BuildFrame() = 0;
+
+    /** Prepare a frame for rendering */
+    virtual void PrepareFrame() = 0;
+
+    /** Update game frame */
     virtual void UpdateFrame() = 0;
-    virtual bool IsStopped() = 0;
+
+    /** Print callback */
     virtual void Print( const char * _Message ) = 0;
 };
 
-extern IGameEngine * GetGameEngine();
+extern IEngineInterface * GetEngineInstance();

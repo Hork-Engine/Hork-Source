@@ -34,7 +34,10 @@ SOFTWARE.
 
 #include <Engine/Core/Public/BaseTypes.h>
 
+/** Runtime entry point */
 ANGIE_API void Runtime( const char * _CommandLine, FCreateGameModuleCallback _CreateGameModule );
+
+/** Runtime entry point */
 ANGIE_API void Runtime( int _Argc, char ** _Argv, FCreateGameModuleCallback _CreateGameModule );
 
 #ifdef AN_OS_WIN32

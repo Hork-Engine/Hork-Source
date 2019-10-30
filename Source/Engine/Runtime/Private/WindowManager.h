@@ -30,9 +30,18 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/String.h>
+#include <Engine/Runtime/Public/Runtime.h>
+#include <Engine/Runtime/Public/RenderCore.h>
 
-void rt_InitializeJoysticks();
-void rt_DeinitializeJoysticks();
-void rt_PollJoystickEvents();
-FString rt_GetJoystickName( int _Joystick );
+class FWindowManager {
+    AN_SINGLETON( FWindowManager )
+
+public:
+    void Initialize();
+
+    void Deinitialize();
+
+    void Update( FEventQueue & _EventQueue );
+};
+
+extern FWindowManager & GWindowManager;

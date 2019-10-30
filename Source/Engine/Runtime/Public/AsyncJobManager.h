@@ -34,30 +34,43 @@ SOFTWARE.
 
 //#define AN_ACTIVE_THREADS_COUNTERS
 
-struct FAsyncJob {
+/** Job for job list */
+struct FAsyncJob
+{
+    /** Callback for the job */
     void (*Callback)( void * );
+    /** Data that will be passed for the job */
     void *Data;
+    /** Pointer to the next job in job list */
     FAsyncJob * Next;
 };
 
 class FAsyncJobManager;
 
-class FAsyncJobList final {
+/** Job list */
+class FAsyncJobList final
+{
     AN_FORBID_COPY( FAsyncJobList )
 
     friend class FAsyncJobManager;
 
 public:
+    /** Set job pool size (max jobs for the list) */
     void SetMaxParallelJobs( int _MaxParallelJobs );
 
+    /** Get job pool size */
     int GetMaxParallelJobs() const;
 
+    /** Add job to the list */
     void AddJob( void (*_Callback)( void * ), void * _Data );
 
+    /** Submit jobs to worker threads */
     void Submit();
 
+    /** Block current thread while jobs are in working threads */
     void Wait();
 
+    /** Submit jobs to worker threads and block current thread while jobs are in working threads */
     void SubmitAndWait();
 
 private:
@@ -81,7 +94,9 @@ AN_FORCEINLINE int FAsyncJobList::GetMaxParallelJobs() const {
     return JobPool.Reserved();
 }
 
-class FAsyncJobManager final {
+/** Job manager */
+class FAsyncJobManager final
+{
     AN_FORBID_COPY( FAsyncJobManager )
 
 public:
@@ -90,12 +105,16 @@ public:
 
     FAsyncJobManager();
 
+    /** Initialize job manager. Set worker threads count and create job lists */
     void Initialize( int _NumWorkerThreads, int _NumJobLists );
 
+    /** Shutdown job manager */
     void Deinitialize();
 
+    /** Wakeup worker threads for the new jobs */
     void NotifyThreads();
 
+    /** Get job list by the index */
     FAsyncJobList * GetAsyncJobList( int _Index ) { AN_Assert( _Index >= 0 && _Index < NumJobLists ); return &JobList[_Index]; }
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
@@ -129,43 +148,3 @@ private:
 
     bool        bTerminated;
 };
-
-#if 0
-struct FAsyncStreamTask {
-    void ( *Callback )( void * );
-    void * Data;
-    bool bAbort;
-    FAsyncStreamTask * Next;
-};
-
-class FAsyncStreamManager final {
-    AN_FORBID_COPY( FAsyncStreamManager )
-
-public:
-    void Initialize();
-
-    void Shutdown();
-
-    void AddTask( FAsyncStreamTask * _Task );
-
-private:
-
-    void Run();
-
-    void ProcessTasks();
-
-    FAsyncStreamTask * FetchTask();
-
-    static void ThreadRoutine( void * _Data );
-
-    FThread Thread;
-    FThreadSync FetchSync;
-
-    using FTaskQueue = TPodQueue< FAsyncStreamTask *, 256, false >;
-
-    FTaskQueue Tasks;
-    FSyncEvent EventNotify;
-
-    bool bTerminate;
-};
-#endif

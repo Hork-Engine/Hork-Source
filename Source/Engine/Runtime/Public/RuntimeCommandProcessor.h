@@ -34,12 +34,16 @@ SOFTWARE.
 
 class FRuntimeCommandProcessor;
 
-class IRuntimeCommandContext {
+/** Runtime command execute context */
+class IRuntimeCommandContext
+{
 public:
     virtual void ExecuteCommand( FRuntimeCommandProcessor const & _Proc ) = 0;
 };
 
-class FRuntimeCommandProcessor final {
+/** Command buffer parser */
+class FRuntimeCommandProcessor final
+{
     AN_FORBID_COPY( FRuntimeCommandProcessor )
 
 public:
@@ -48,18 +52,25 @@ public:
 
     FRuntimeCommandProcessor();
 
+    /** Clear command buffer */
     void ClearBuffer();
 
+    /** Add text to the end of command buffer */
     void Add( const char * _Text );
 
+    /** Insert text to current command buffer offset */
     void Insert( const char * _Text );
 
+    /** Execute with command context */
     void Execute( IRuntimeCommandContext & _Ctx );
 
+    /** Get argument by index */
     const char * GetArg( int i ) const { return Args[i]; }
 
+    /** Get arguments count */
     int GetArgsCount() const { return ArgsCount; }
 
+    /** Helper. Check is command name valid. */
     static bool IsValidCommandName( const char * _Name );
 
 private:

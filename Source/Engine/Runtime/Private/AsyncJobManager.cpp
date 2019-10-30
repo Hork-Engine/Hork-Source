@@ -288,6 +288,45 @@ void FAsyncJobList::SubmitAndWait() {
 
 
 #if 0
+
+struct FAsyncStreamTask {
+    void ( *Callback )( void * );
+    void * Data;
+    bool bAbort;
+    FAsyncStreamTask * Next;
+};
+
+class FAsyncStreamManager final {
+    AN_FORBID_COPY( FAsyncStreamManager )
+
+public:
+    void Initialize();
+
+    void Shutdown();
+
+    void AddTask( FAsyncStreamTask * _Task );
+
+private:
+
+    void Run();
+
+    void ProcessTasks();
+
+    FAsyncStreamTask * FetchTask();
+
+    static void ThreadRoutine( void * _Data );
+
+    FThread Thread;
+    FThreadSync FetchSync;
+
+    using FTaskQueue = TPodQueue< FAsyncStreamTask *, 256, false >;
+
+    FTaskQueue Tasks;
+    FSyncEvent EventNotify;
+
+    bool bTerminate;
+};
+
 void FAsyncStreamManager::Initialize() {
     bTerminate = false;
     Thread.Routine = ThreadRoutine;

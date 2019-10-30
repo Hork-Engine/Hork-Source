@@ -31,10 +31,11 @@ SOFTWARE.
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Core/Public/WindowsDefs.h>
 
-#include "rt_joystick.h"
-#include "rt_monitor.h"
-#include "rt_display.h"
-#include "rt_main.h"
+#include "JoystickManager.h"
+#include "MonitorManager.h"
+#include "WindowManager.h"
+#include "RuntimeMain.h"
+#include "RuntimeEvents.h"
 
 #ifdef AN_OS_LINUX
 #include <dlfcn.h>
@@ -52,30 +53,22 @@ FAsyncJobList * GRenderBackendJobList;
 FRuntime::FRuntime() {
 }
 
-//bool FRuntime::IsVSyncSupported() {
-//    return rt_RenderFeatures.bSwapControl;
-//}
-
-//bool FRuntime::IsAdaptiveVSyncSupported() {
-//    return rt_RenderFeatures.bSwapControlTear;
-//}
-
 FPhysicalMonitor const * FRuntime::GetPrimaryMonitor() {
-    return rt_GetPrimaryMonitor();
+    return GMonitorManager.GetPrimaryMonitor();
 }
 
 FPhysicalMonitor const * FRuntime::GetMonitor( int _Handle ) {
-    FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
+    FPhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
     return ( (unsigned)_Handle < physicalMonitors.Size() ) ? physicalMonitors[ _Handle ] : nullptr;
 }
 
 FPhysicalMonitor const * FRuntime::GetMonitor( const char * _MonitorName ) {
-    return rt_FindMonitor( _MonitorName );
+    return GMonitorManager.FindMonitor( _MonitorName );
 }
 
 bool FRuntime::IsMonitorConnected( int _Handle ) {
     bool bConnected = false;
-    FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
+    FPhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
     if ( (unsigned)_Handle < physicalMonitors.Size() ) {
         bConnected = physicalMonitors[ _Handle ]->Internal.Pointer != nullptr;
     }
@@ -154,9 +147,13 @@ void FRuntime::RestoreMonitorGamma( int _Handle ) {
     physMonitor->Internal.bGammaRampDirty = true;
 }
 
+FCPUInfo const & FRuntime::GetCPUInfo() const {
+    return GRuntimeMain.CPUInfo;
+}
+
 int FRuntime::GetPhysicalMonitorsCount() {
     int count;
-    FPhysicalMonitorArray const & physicalMonitors = rt_GetPhysicalMonitors();
+    FPhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
     count = physicalMonitors.Size();
     return count;
 }
@@ -239,7 +236,7 @@ void FRuntime::WaitMicroseconds( int _Microseconds ) {
 
 int64_t FRuntime::SysSeconds() {
 #ifdef CHRONO_TIMER
-    return StdChrono::duration_cast< StdChrono::seconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - rt_SysStartSeconds;
+    return StdChrono::duration_cast< StdChrono::seconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - GRuntimeMain.SysStartSeconds;
 #else
     return glfwGetTime();
 #endif
@@ -255,7 +252,7 @@ double FRuntime::SysSeconds_d() {
 
 int64_t FRuntime::SysMilliseconds() {
 #ifdef CHRONO_TIMER
-    return StdChrono::duration_cast< StdChrono::milliseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - rt_SysStartMilliseconds;
+    return StdChrono::duration_cast< StdChrono::milliseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - GRuntimeMain.SysStartMilliseconds;
 #else
     return glfwGetTime() * 1000.0;
 #endif
@@ -271,7 +268,7 @@ double FRuntime::SysMilliseconds_d() {
 
 int64_t FRuntime::SysMicroseconds() {
 #ifdef CHRONO_TIMER
-    return StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - rt_SysStartMicroseconds;
+    return StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - GRuntimeMain.SysStartMicroseconds;
 #else
     return glfwGetTime() * 1000000.0;
 #endif
@@ -286,7 +283,7 @@ double FRuntime::SysMicroseconds_d() {
 }
 
 int64_t FRuntime::SysFrameTimeStamp() {
-    return rt_SysFrameTimeStamp;
+    return GRuntimeMain.SysFrameTimeStamp;
 }
 
 void * FRuntime::LoadDynamicLib( const char * _LibraryName ) {
@@ -329,27 +326,27 @@ void * FRuntime::GetProcAddress( void * _Handle, const char * _ProcName ) {
 }
 
 FString FRuntime::GetJoystickName( int _Joystick ) {
-    return rt_GetJoystickName( _Joystick );
+    return GJoystickManager.GetJoystickName( _Joystick );
 }
 
 int FRuntime::CheckArg( const char * _Arg ) {
-    return rt_CheckArg( _Arg );
+    return GRuntimeMain.CheckArg( _Arg );
 }
 
 int FRuntime::GetArgc() {
-    return rt_NumArguments;
+    return GRuntimeMain.NumArguments;
 }
 
 const char * const *FRuntime::GetArgv() {
-    return rt_Arguments;
+    return GRuntimeMain.Arguments;
 }
 
 FString const & FRuntime::GetWorkingDir() {
-    return rt_WorkingDir;
+    return GRuntimeMain.WorkingDir;
 }
 
 const char * FRuntime::GetExecutableName() {
-    return rt_Executable ? rt_Executable : "";
+    return GRuntimeMain.Executable ? GRuntimeMain.Executable : "";
 }
 
 void FRuntime::SetClipboard( const char * _Utf8String ) {
@@ -361,48 +358,52 @@ const char * FRuntime::GetClipboard() {
 }
 
 FRenderFrame * FRuntime::GetFrameData() {
-    return &rt_FrameData;
+    return &GRuntimeMain.FrameData;
 }
 
 FEventQueue * FRuntime::ReadEvents_GameThread() {
-    return &rt_Events;
+    return &GRuntimeEvents;
 }
 
 FEventQueue * FRuntime::WriteEvents_GameThread() {
-    return &rt_GameEvents;
+    return &GGameEvents;
 }
 
 void * FRuntime::AllocFrameMem( size_t _SizeInBytes ) {
-    if ( rt_FrameMemoryUsed + _SizeInBytes > rt_FrameMemorySize ) {
-        GLogger.Printf( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, rt_FrameMemorySize - rt_FrameMemoryUsed, rt_FrameMemorySize );
+    if ( GRuntimeMain.FrameMemoryUsed + _SizeInBytes > GRuntimeMain.FrameMemorySize ) {
+        GLogger.Printf( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, GRuntimeMain.FrameMemorySize - GRuntimeMain.FrameMemoryUsed, GRuntimeMain.FrameMemorySize );
         return nullptr;
     }
 
     void * pMemory;
 
 //    if ( WriteIndex & 1 ) {
-//        pMemory = (byte *)rt_FrameMemoryAddress - rt_FrameMemoryUsed - _SizeInBytes;
+//        pMemory = (byte *)GRuntimeMain.FrameMemoryAddress - GRuntimeMain.FrameMemoryUsed - _SizeInBytes;
 //    } else {
-        pMemory = (byte *)rt_FrameMemoryAddress + rt_FrameMemoryUsed;
+        pMemory = (byte *)GRuntimeMain.FrameMemoryAddress + GRuntimeMain.FrameMemoryUsed;
 //    }
 
-    rt_FrameMemoryUsed += _SizeInBytes;
+    GRuntimeMain.FrameMemoryUsed += _SizeInBytes;
 
-    //GLogger.Printf( "Allocated %u, Used %u\n", _SizeInBytes, rt_FrameMemoryUsed );
+    //GLogger.Printf( "Allocated %u, Used %u\n", _SizeInBytes, GRuntimeMain.FrameMemoryUsed );
 
     return pMemory;
 }
 
 size_t FRuntime::GetFrameMemorySize() const {
-    return rt_FrameMemorySize;
+    return GRuntimeMain.FrameMemorySize;
 }
 
 size_t FRuntime::GetFrameMemoryUsed() const {
-    return rt_FrameMemoryUsed;
+    return GRuntimeMain.FrameMemoryUsed;
 }
 
 size_t FRuntime::GetFrameMemoryUsedPrev() const {
-    return rt_FrameMemoryUsedPrev;
+    return GRuntimeMain.FrameMemoryUsedPrev;
+}
+
+void FRuntime::PostTerminateEvent() {
+    GRuntimeMain.bTerminate = true;
 }
 
 

@@ -83,6 +83,56 @@ struct FJoystick {
     int Id;
 };
 
+/** CPU features */
+struct FCPUInfo {
+    bool OS_AVX : 1;
+    bool OS_AVX512 : 1;
+    bool OS_64bit : 1;
+
+    bool Intel : 1;
+    bool AMD : 1;
+
+    // Simd 128 bit
+    bool SSE : 1;
+    bool SSE2 : 1;
+    bool SSE3 : 1;
+    bool SSSE3 : 1;
+    bool SSE41 : 1;
+    bool SSE42 : 1;
+    bool SSE4a : 1;
+    bool AES : 1;
+    bool SHA : 1;
+
+    // Simd 256 bit
+    bool AVX : 1;
+    bool XOP : 1;
+    bool FMA3 : 1;
+    bool FMA4 : 1;
+    bool AVX2 : 1;
+
+    // Simd 512 bit
+    bool AVX512_F : 1;
+    bool AVX512_CD : 1;
+    bool AVX512_PF : 1;
+    bool AVX512_ER : 1;
+    bool AVX512_VL : 1;
+    bool AVX512_BW : 1;
+    bool AVX512_DQ : 1;
+    bool AVX512_IFMA : 1;
+    bool AVX512_VBMI : 1;
+
+    // Features
+    bool x64 : 1;
+    bool ABM : 1;
+    bool MMX : 1;
+    bool RDRAND : 1;
+    bool BMI1 : 1;
+    bool BMI2 : 1;
+    bool ADX : 1;
+    bool MPX : 1;
+    bool PREFETCHWT1 : 1;
+};
+
 enum EEventType {
     ET_Unknown,
     ET_RuntimeUpdateEvent,
@@ -265,49 +315,64 @@ struct FEvent {
 
 using FEventQueue = TPodQueue< FEvent >;
 
-enum {
+enum
+{
     RENDER_FRONTEND_JOB_LIST,
     RENDER_BACKEND_JOB_LIST,
     MAX_RUNTIME_JOB_LISTS
 };
 
-#define MIN_DISPLAY_WIDTH 1
-#define MIN_DISPLAY_HEIGHT 1
-
 struct FRenderFrame;
 
-class ANGIE_API FRuntime {
+/** Runtime public class */
+class ANGIE_API FRuntime
+{
     AN_SINGLETON( FRuntime )
 
 public:
+    /** Is cheats allowed for the game. This allow to change runtime variables with flag VAR_CHEAT */
     bool bCheatsAllowed = true;
 
+    /** Is game server. This allow to change runtime variables with flag VAR_SERVERONLY */
     bool bServerActive = false;
 
+    /** Is in game. This blocks changing runtime variables with flag VAR_NOINGAME */
     bool bInGameStatus = false;
 
+    /** Application command line args count */
     int GetArgc();
 
+    /** Application command line args */
     const char * const *GetArgv();
 
+    /** Check is argument exists in application command line. Return argument index or -1 if argument was not found. */
     int CheckArg( const char * _Arg );
 
+    /** Return application working directory */
     FString const & GetWorkingDir();
 
+    /** Return application exacutable name */
     const char * GetExecutableName();
 
+    /** Return event queue for reading */
     FEventQueue * ReadEvents_GameThread();
 
+    /** Return event queue for writing */
     FEventQueue * WriteEvents_GameThread();
 
+    /** Get render frame data */
     FRenderFrame * GetFrameData();
 
+    /** Allocate frame memory */
     void * AllocFrameMem( size_t _SizeInBytes );
 
+    /** Return frame memory size in bytes */
     size_t GetFrameMemorySize() const;
 
+    /** Return used frame memory in bytes */
     size_t GetFrameMemoryUsed() const;
 
+    /** Return used frame memory on previous frame, in bytes */
     size_t GetFrameMemoryUsedPrev() const;
 
     // Is vertical synchronization control supported
@@ -316,62 +381,101 @@ public:
     // Is vertical synchronization tearing supported
     //bool IsAdaptiveVSyncSupported();
 
+    /** Get CPU info */
+    FCPUInfo const & GetCPUInfo() const;
+
+    /** Get physical monitors count */
     int GetPhysicalMonitorsCount();
 
+    /** Return primary monitor */
     FPhysicalMonitor const * GetPrimaryMonitor();
 
+    /** Get physical monitor by handle */
     FPhysicalMonitor const * GetMonitor( int _Handle );
 
+    /** Get physical monitor by name */
     FPhysicalMonitor const * GetMonitor( const char * _MonitorName );
 
+    /** Check is monitor connected */
     bool IsMonitorConnected( int _Handle );
 
+    /** Change monitor gamma */
     void SetMonitorGammaCurve( int _Handle, float _Gamma );
 
+    /** Change monitor gamma */
     void SetMonitorGamma( int _Handle, float _Gamma );
 
+    /** Change monitor gamma */
     void SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRamp );
 
+    /** Get current monitor gamma */
     void GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, int & _GammaRampSize );
 
+    /** Restore original monitor gamma */
     void RestoreMonitorGamma( int _Handle );
 
+    /** Get joystick name by handle */
     FString GetJoystickName( int _Joystick );
 
+    /** Get joystick name */
     FString GetJoystickName( const FJoystick * _Joystick ) { return GetJoystickName( _Joystick->Id ); }
 
+    /** Sleep current thread */
     void WaitSeconds( int _Seconds );
 
+    /** Sleep current thread */
     void WaitMilliseconds( int _Milliseconds );
 
+    /** Sleep current thread */
     void WaitMicroseconds( int _Microseconds );
 
+    /** Get current time in seconds since application start */
     int64_t SysSeconds();
+
+    /** Get current time in seconds since application start */
     double SysSeconds_d();
 
+    /** Get current time in milliseconds since application start */
     int64_t SysMilliseconds();
+
+    /** Get current time in milliseconds since application start */
     double SysMilliseconds_d();
 
+    /** Get current time in microseconds since application start */
     int64_t SysMicroseconds();
+
+    /** Get current time in microseconds since application start */
     double SysMicroseconds_d();
 
+    /** Get time stamp at beggining of the frame */
     int64_t SysFrameTimeStamp();
 
+    /** Load dynamic library (.dll or .so) */
     void * LoadDynamicLib( const char * _LibraryName );
 
+    /** Unload dynamic library (.dll or .so) */
     void UnloadDynamicLib( void * _Handle );
 
+    /** Get address of procedure in dynamic library */
     void * GetProcAddress( void * _Handle, const char * _ProcName );
 
+    /** Helper. Get address of procedure in dynamic library */
     template< typename T >
     bool GetProcAddress( void * _Handle, T ** _ProcPtr, const char * _ProcName ) {
         return nullptr != ( (*_ProcPtr) = (T *)GetProcAddress( _Handle, _ProcName ) );
     }
 
+    /** Set clipboard text */
     void SetClipboard( const char * _Utf8String );
+
+    /** Set clipboard text */
     void SetClipboard( FString const & _Clipboard ) { SetClipboard( _Clipboard.ToConstChar() ); }
 
+    /** Get clipboard text */
     const char * GetClipboard();
+
+    /** Terminate the application */
+    void PostTerminateEvent();
 };
 
 extern ANGIE_API FRuntime & GRuntime;
