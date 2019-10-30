@@ -36,43 +36,51 @@ namespace OpenGL45 {
 
 class FDepthPass : public GHI::Pipeline {
 public:
-    void Create( const char * _VertexSourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned );
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned );
 };
 
 class FWireframePass : public GHI::Pipeline {
 public:
-    void Create( const char * _VertexSourceCode, const char * _GeometrySourceCode, const char * _FragmentSourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned );
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned );
 };
 
 class FColorPassHUD : public GHI::Pipeline {
 public:
-    void Create( const char * _VertexSourceCode, const char * _FragmentSourceCode );
+    void Create( const char * _SourceCode );
 };
 
 class FColorPass : public GHI::Pipeline {
 public:
-    void Create( const char * _VertexSourceCode, const char * _FragmentSourceCode, GHI::POLYGON_CULL _CullMode, bool _Unlit, bool _Skinned, bool _DepthTest );
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest );
 };
 
 class FColorPassLightmap : public GHI::Pipeline {
 public:
-    void Create( const char * _VertexSourceCode, const char * _FragmentSourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest );
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest );
 };
 
 class FColorPassVertexLight : public GHI::Pipeline {
 public:
-    void Create( const char * _VertexSourceCode, const char * _FragmentSourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest );
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest );
 };
 
-struct FShadeModelPBR {
+class FShadowMapPass : public GHI::Pipeline {
+public:
+    void Create( const char * _SourceCode, bool _ShadowMasking, bool _Skinned );
+};
+
+
+struct FShadeModelLit {
     FDepthPass DepthPass;
     FDepthPass DepthPassSkinned;
     FWireframePass WireframePass;
     FWireframePass WireframePassSkinned;
     FColorPass ColorPassSimple;
     FColorPass ColorPassSkinned;
-    FColorPassLightmap LightmapPass;
-    FColorPassVertexLight VertexLightPass;
+    FColorPassLightmap ColorPassLightmap;
+    FColorPassVertexLight ColorPassVertexLight;
+    FShadowMapPass ShadowPass;
+    FShadowMapPass ShadowPassSkinned;
 };
 
 struct FShadeModelUnlit {
@@ -82,6 +90,8 @@ struct FShadeModelUnlit {
     FWireframePass WireframePassSkinned;
     FColorPass ColorPassSimple;
     FColorPass ColorPassSkinned;
+    FShadowMapPass ShadowPass;
+    FShadowMapPass ShadowPassSkinned;
 };
 
 struct FShadeModelHUD {

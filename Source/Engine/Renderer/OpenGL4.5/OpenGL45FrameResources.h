@@ -35,27 +35,44 @@ SOFTWARE.
 namespace OpenGL45 {
 
 struct FViewUniformBuffer {
-    Float4 Timer;
-    Float4 ViewPostion;
-//            Float4x4 InverseProjectionMatrix;
-//            Float4x4 ProjectTranslateViewMatrix;
-//            Float4 Viewport;                     // x,y,width,height
-//            Float4 InvViewportSize;              // 1/viewportSize, zNear, zFar
+    Float4x4 OrthoProjection;
+    Float4x4 ModelviewProjection;
+    Float4x4 InverseProjectionMatrix;
+    Float3x4 WorldNormalToViewSpace;
 
-//            Float3x4 WorldNormalToViewSpace;
-//            Float3x4 ModelNormalToViewSpace;
+    // ViewportParams
+    Float2 InvViewportSize;
+    float ZNear;
+    float ZFar;
 
-//            Float3x4 PositionToViewSpace;
+    // Timers
+    float GameRunningTimeSeconds;
+    float GameplayTimeSeconds;
+    float Padding0;
+    float Padding1;
 
-//            Float4 ViewWorldPosition;            // x, y, z, t
+    Float3 ViewPostion;
+    float Padding2;
 
-//            Int4 Counters;                    // Counterd.x = NumDirectionalLights
+    uint64_t EnvProbeSampler;
+    uint64_t Padding3;
 
-//            Float3x4 FromObjectToWorldSpace;
+    int32_t NumDirectionalLights;
+    int32_t Padding4;
+    int32_t Padding5;
+    int32_t DebugMode;
+
+    Float4 LightDirs[MAX_DIRECTIONAL_LIGHTS];            // Direction, W-channel is not used
+    Float4 LightColors[MAX_DIRECTIONAL_LIGHTS];          // RGB, alpha - ambient intensity
+    UInt4  LightParameters[MAX_DIRECTIONAL_LIGHTS];      // RenderMask, FirstCascade, NumCascades, W-channel is not used
+    
+    //Float4 Viewport;                     // x,y,width,height
+    //Float3x4 PositionToViewSpace;
+    //Float3x4 FromObjectToWorldSpace;
 };
 
 struct FInstanceUniformBuffer {
-    Float4x4 ProjectTranslateViewMatrix;
+    Float4x4 TransformMatrix;
     Float3x4 ModelNormalToViewSpace;
     Float4 LightmapOffset;
     Float4 uaddr_0;
@@ -65,6 +82,17 @@ struct FInstanceUniformBuffer {
 };
 
 constexpr size_t InstanceUniformBufferSizeof = GHI::UBOAligned( sizeof( FInstanceUniformBuffer ) );
+
+struct FShadowInstanceUniformBuffer {
+    Float4x4 TransformMatrix; // TODO: 3x4
+    // For material with vertex deformations:
+    Float4 uaddr_0;
+    Float4 uaddr_1;
+    Float4 uaddr_2;
+    Float4 uaddr_3;
+};
+
+constexpr size_t ShadowInstanceUniformBufferSizeof = GHI::UBOAligned( sizeof( FShadowInstanceUniformBuffer ) );
 
 class FFrameResources {
 public:
@@ -76,13 +104,20 @@ public:
     GHI::Buffer ViewUniformBuffer;
     GHI::Buffer InstanceUniformBuffer;
     int         InstanceUniformBufferSize;
-    GHI::Buffer UniformBuffer;
+    GHI::Buffer ShadowInstanceUniformBuffer;
+    int         ShadowInstanceUniformBufferSize;
+    GHI::Buffer CascadeViewProjectionBuffer;
+    GHI::Texture EnvProbe;
+    GHI::Sampler EnvProbeSampler;
+    GHI::BindlessSampler EnvProbeBindless;
+    FViewUniformBuffer ViewUniformBufferUniformData;
 
     GHI::ShaderResources        Resources;
-    GHI::ShaderBufferBinding    BufferBinding[3];
+    GHI::ShaderBufferBinding    BufferBinding[4];
     GHI::ShaderBufferBinding *  ViewUniformBufferBinding;
-    GHI::ShaderBufferBinding *  UniformBufferBinding;
+    GHI::ShaderBufferBinding *  InstanceUniformBufferBinding;
     GHI::ShaderBufferBinding *  SkeletonBufferBinding;
+    GHI::ShaderBufferBinding *  CascadeBufferBinding;
     GHI::ShaderTextureBinding   TextureBindings[16];
     GHI::ShaderSamplerBinding   SamplerBindings[16];
 

@@ -238,7 +238,7 @@ void FEnvProbeGenerator::Initialize() {
         "layout( binding = 0 ) uniform samplerCube Envmap;\n" // Envmap must be HDRI in linear space
         "layout( binding = 0, std140 ) uniform UniformBlock\n"
         "{\n"
-        "    mat4 uTransform;\n"
+        "    mat4 uTransform[6];\n"
         "    vec4 uRoughness;\n"
         "};\n"
 
@@ -268,7 +268,7 @@ void FEnvProbeGenerator::Initialize() {
         "    return vec2( float( i )/float( N ), radicalInverse_VdC( i ) );\n"
         "}\n"
 
-        "const float PI = 3.1415926535897932384626433832795;\n"
+        "const float PI = 3.1415926;\n"
 
         "vec3 ImportanceSampleGGX( vec2 Xi, float Roughness, vec3 N ) {\n"
         "    float a = Roughness * Roughness;\n"
@@ -347,6 +347,7 @@ void FEnvProbeGenerator::Initialize() {
     SamplerCreateInfo samplerCI;
     samplerCI.SetDefaults();
     samplerCI.Filter = FILTER_LINEAR;
+    samplerCI.bCubemapSeamless = true;
     m_Sampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 

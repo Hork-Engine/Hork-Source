@@ -33,7 +33,6 @@ SOFTWARE.
 #include "OpenGL45RenderTarget.h"
 #include "OpenGL45Material.h"
 #include "OpenGL45ShaderSource.h"
-#include "OpenGL45ShaderBuiltin.h"
 
 using namespace GHI;
 
@@ -119,7 +118,7 @@ void FDebugDrawPassRenderer::Initialize() {
             layout( location = 0 ) out vec4 VS_Color;
 
             void main() {
-                gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
+                gl_Position = ModelviewProjection * vec4( InPosition, 1.0 );
                 VS_Color = InColor;
                 //gl_PointSize = 10;
             }
@@ -140,14 +139,12 @@ void FDebugDrawPassRenderer::Initialize() {
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
     GShaderSources.Add( UniformStr );
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
     GShaderSources.Add( vertesSourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
     GShaderSources.Add( fragmentSourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
@@ -263,11 +260,6 @@ void FDebugDrawPassRenderer::Deinitialize() {
 }
 
 void FDebugDrawPassRenderer::RenderInstances() {
-    GFrameResources.UniformBuffer.WriteRange( GHI_STRUCT_OFS( FInstanceUniformBuffer, ProjectTranslateViewMatrix ), sizeof( FInstanceUniformBuffer::ProjectTranslateViewMatrix ), &GRenderView->ModelviewProjection );
-    GFrameResources.UniformBufferBinding->pBuffer = &GFrameResources.UniformBuffer;
-    GFrameResources.UniformBufferBinding->BindingOffset = 0;
-    GFrameResources.UniformBufferBinding->BindingSize = 0;
-
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &DebugDrawPass;

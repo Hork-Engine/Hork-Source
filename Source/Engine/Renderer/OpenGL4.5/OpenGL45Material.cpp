@@ -33,15 +33,15 @@ SOFTWARE.
 #include "OpenGL45CanvasPassRenderer.h"
 #include "OpenGL45DepthPassRenderer.h"
 #include "OpenGL45ColorPassRenderer.h"
+#include "OpenGL45ShadowMapPassRenderer.h"
 #include "OpenGL45WireframePassRenderer.h"
 #include "OpenGL45ShaderSource.h"
-#include "OpenGL45ShaderBuiltin.h"
+
+using namespace GHI;
 
 namespace OpenGL45 {
 
-void FDepthPass::Create( const char * _VertexSourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
-    using namespace GHI;
-
+void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -55,7 +55,7 @@ void FDepthPass::Create( const char * _VertexSourceCode, GHI::POLYGON_CULL _Cull
 
     DepthStencilStateInfo dssd;
     dssd.SetDefaults();
-    dssd.DepthFunc = CMPFUNC_GREATER;
+    dssd.DepthFunc = CMPFUNC_GEQUAL;//CMPFUNC_GREATER;
 
     VertexBindingInfo vertexBinding[2] = {};
 
@@ -179,14 +179,12 @@ void FDepthPass::Create( const char * _VertexSourceCode, GHI::POLYGON_CULL _Cull
     ShaderModule vertexShaderModule;
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
     if ( _Skinned ) {
         GShaderSources.Add( "#define SKINNED_MESH\n" );
     }
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
-    GShaderSources.Add( _VertexSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     PipelineInputAssemblyInfo inputAssembly = {};
@@ -202,9 +200,9 @@ void FDepthPass::Create( const char * _VertexSourceCode, GHI::POLYGON_CULL _Cull
     vs.Stage = SHADER_STAGE_VERTEX_BIT;
     vs.pModule = &vertexShaderModule;
 
-    ShaderStageInfo stages[1] = { vs };
+    ShaderStageInfo stages[] = { vs };
 
-    pipelineCI.NumStages = 1;
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
 
     pipelineCI.pRenderPass = GDepthPassRenderer.GetRenderPass();
@@ -213,9 +211,7 @@ void FDepthPass::Create( const char * _VertexSourceCode, GHI::POLYGON_CULL _Cull
     Initialize( pipelineCI );
 }
 
-void FWireframePass::Create( const char * _VertexSourceCode, const char * _GeometrySourceCode, const char * _FragmentSourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
-    using namespace GHI;
-
+void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -355,34 +351,28 @@ void FWireframePass::Create( const char * _VertexSourceCode, const char * _Geome
     ShaderModule vertexShaderModule, geometryShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
     if ( _Skinned ) {
         GShaderSources.Add( "#define SKINNED_MESH\n" );
     }
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
-    GShaderSources.Add( _VertexSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
     if ( _Skinned ) {
         GShaderSources.Add( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _GeometrySourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( GEOMETRY_SHADER, &geometryShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
     if ( _Skinned ) {
         GShaderSources.Add( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _FragmentSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
     PipelineInputAssemblyInfo inputAssembly = {};
@@ -406,9 +396,9 @@ void FWireframePass::Create( const char * _VertexSourceCode, const char * _Geome
     fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
     fs.pModule = &fragmentShaderModule;
 
-    ShaderStageInfo stages[3] = { vs, gs, fs };
+    ShaderStageInfo stages[] = { vs, gs, fs };
 
-    pipelineCI.NumStages = 3;
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
 
     pipelineCI.pRenderPass = GWireframePassRenderer.GetRenderPass();
@@ -417,9 +407,7 @@ void FWireframePass::Create( const char * _VertexSourceCode, const char * _Geome
     Initialize( pipelineCI );
 }
 
-void FColorPassHUD::Create( const char * _VertexSourceCode, const char * _FragmentSourceCode ) {
-    using namespace GHI;
-
+void FColorPassHUD::Create( const char * _SourceCode ) {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
     rsd.CullMode = POLYFON_CULL_DISABLED;
@@ -470,18 +458,14 @@ void FColorPassHUD::Create( const char * _VertexSourceCode, const char * _Fragme
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
-    GShaderSources.Add( _VertexSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-    GShaderSources.Add( _FragmentSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
     PipelineCreateInfo pipelineCI = {};
@@ -503,9 +487,9 @@ void FColorPassHUD::Create( const char * _VertexSourceCode, const char * _Fragme
     fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
     fs.pModule = &fragmentShaderModule;
 
-    ShaderStageInfo stages[2] = { vs, fs };
+    ShaderStageInfo stages[] = { vs, fs };
 
-    pipelineCI.NumStages = 2;
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
 
     VertexBindingInfo vertexBinding[1] = {};
@@ -526,8 +510,7 @@ void FColorPassHUD::Create( const char * _VertexSourceCode, const char * _Fragme
     Initialize( pipelineCI );
 }
 
-void FColorPass::Create( const char * _VertexSourceCode, const char * _FragmentSourceCode, GHI::POLYGON_CULL _CullMode, bool _Unlit, bool _Skinned, bool _DepthTest ) {
-    using namespace GHI;
+void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -568,9 +551,9 @@ void FColorPass::Create( const char * _VertexSourceCode, const char * _FragmentS
     fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
     fs.pModule = &fragmentShaderModule;
 
-    ShaderStageInfo stages[2] = { vs, fs };
+    ShaderStageInfo stages[] = { vs, fs };
 
-    pipelineCI.NumStages = 2;
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
 
     VertexBindingInfo vertexBinding[2] = {};
@@ -647,26 +630,16 @@ void FColorPass::Create( const char * _VertexSourceCode, const char * _FragmentS
         FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
         GShaderSources.Clear();
-        GShaderSources.Add( "#version 450\n" );
-        GShaderSources.Add( UniformStr );
         GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
         GShaderSources.Add( "#define SKINNED_MESH\n" );
-        if ( _Unlit ) {
-            GShaderSources.Add( "#define UNLIT\n" );
-        }
         GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
-        GShaderSources.Add( _VertexSourceCode );
+        GShaderSources.Add( _SourceCode );
         GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
         GShaderSources.Clear();
-        GShaderSources.Add( "#version 450\n" );
-        GShaderSources.Add( UniformStr );
         GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
         GShaderSources.Add( "#define SKINNED_MESH\n" );
-        if ( _Unlit ) {
-            GShaderSources.Add( "#define UNLIT\n" );
-        }
-        GShaderSources.Add( _FragmentSourceCode );
+        GShaderSources.Add( _SourceCode );
         GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
         pipelineCI.NumVertexBindings = 2;
@@ -716,24 +689,14 @@ void FColorPass::Create( const char * _VertexSourceCode, const char * _FragmentS
         FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
         GShaderSources.Clear();
-        GShaderSources.Add( "#version 450\n" );
-        GShaderSources.Add( UniformStr );
         GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        if ( _Unlit ) {
-            GShaderSources.Add( "#define UNLIT\n" );
-        }
         GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
-        GShaderSources.Add( _VertexSourceCode );
+        GShaderSources.Add( _SourceCode );
         GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
         GShaderSources.Clear();
-        GShaderSources.Add( "#version 450\n" );
-        GShaderSources.Add( UniformStr );
         GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        if ( _Unlit ) {
-            GShaderSources.Add( "#define UNLIT\n" );
-        }
-        GShaderSources.Add( _FragmentSourceCode );
+        GShaderSources.Add( _SourceCode );
         GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
         pipelineCI.NumVertexBindings = 1;
@@ -747,9 +710,7 @@ void FColorPass::Create( const char * _VertexSourceCode, const char * _FragmentS
 }
 
 
-void FColorPassLightmap::Create( const char * _VertexSourceCode, const char * _FragmentSourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
-    using namespace GHI;
-
+void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -827,20 +788,16 @@ void FColorPassLightmap::Create( const char * _VertexSourceCode, const char * _F
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
     GShaderSources.Add( "#define USE_LIGHTMAP\n" );
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
-    GShaderSources.Add( _VertexSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
     GShaderSources.Add( "#define USE_LIGHTMAP\n" );
-    GShaderSources.Add( _FragmentSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
     PipelineInputAssemblyInfo inputAssembly = {};
@@ -860,9 +817,9 @@ void FColorPassLightmap::Create( const char * _VertexSourceCode, const char * _F
     fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
     fs.pModule = &fragmentShaderModule;
 
-    ShaderStageInfo stages[2] = { vs, fs };
+    ShaderStageInfo stages[] = { vs, fs };
 
-    pipelineCI.NumStages = 2;
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
 
     VertexBindingInfo vertexBinding[2] = {};
@@ -884,8 +841,7 @@ void FColorPassLightmap::Create( const char * _VertexSourceCode, const char * _F
     Initialize( pipelineCI );
 }
 
-void FColorPassVertexLight::Create( const char * _VertexSourceCode, const char * _FragmentSourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
-    using namespace GHI;
+void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -963,20 +919,16 @@ void FColorPassVertexLight::Create( const char * _VertexSourceCode, const char *
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
     GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
-    GShaderSources.Add( _VertexSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
     GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
-    GShaderSources.Add( _FragmentSourceCode );
+    GShaderSources.Add( _SourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
     PipelineInputAssemblyInfo inputAssembly = {};
@@ -996,9 +948,9 @@ void FColorPassVertexLight::Create( const char * _VertexSourceCode, const char *
     fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
     fs.pModule = &fragmentShaderModule;
 
-    ShaderStageInfo stages[2] = { vs, fs };
+    ShaderStageInfo stages[] = { vs, fs };
 
-    pipelineCI.NumStages = 2;
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
 
     VertexBindingInfo vertexBinding[2] = {};
@@ -1015,6 +967,225 @@ void FColorPassVertexLight::Create( const char * _VertexSourceCode, const char *
     pipelineCI.pVertexBindings = vertexBinding;
 
     pipelineCI.pRenderPass = GColorPassRenderer.GetRenderPass();
+    pipelineCI.Subpass = 0;
+
+    Initialize( pipelineCI );
+}
+
+void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool _Skinned ) {
+    PipelineCreateInfo pipelineCI = {};
+
+    RasterizerStateInfo rsd;
+    rsd.SetDefaults();
+    rsd.bScissorEnable = SCISSOR_TEST;
+#if defined SHADOWMAP_VSM
+    //Desc.CullMode = GHI_CullFront; // Less light bleeding
+    Desc.CullMode = POLYGON_CULL_DISABLED;
+#else
+    rsd.CullMode = POLYGON_CULL_BACK;
+#endif
+    //rsd.CullMode = POLYGON_CULL_FRONT;
+    //rsd.CullMode = POLYGON_CULL_DISABLED;
+    //rsd.DepthOffset.Slope = 4;
+    //rsd.DepthOffset.Bias = 4;
+
+    BlendingStateInfo bsd;
+    bsd.SetDefaults();
+    //bsd.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;  // FIXME: there is no fragment shader, so we realy need to disable color mask?
+#if defined SHADOWMAP_VSM
+    bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_NO_BLEND );
+#endif
+
+    DepthStencilStateInfo dssd;
+    dssd.SetDefaults();
+    dssd.DepthFunc = CMPFUNC_LESS;
+
+    VertexBindingInfo vertexBinding[2] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( FMeshVertex );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    vertexBinding[1].InputSlot = 1;
+    vertexBinding[1].Stride = sizeof( FMeshVertexJoint );
+    vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
+
+    pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    static const VertexAttribInfo vertexAttribsSkinned[] = {
+        {
+            "InPosition",
+            0,              // location
+            0,              // buffer input slot
+            VAT_FLOAT3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertex, Position )
+        },
+        {
+            "InTexCoord",
+            1,              // location
+            0,              // buffer input slot
+            VAT_FLOAT2,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+        },
+        {
+            "InTangent",
+            2,              // location
+            0,              // buffer input slot
+            VAT_FLOAT4,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertex, Tangent )
+        },
+        {
+            "InNormal",
+            3,              // location
+            0,              // buffer input slot
+            VAT_FLOAT3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertex, Normal )
+        },
+        {
+            "InJointIndices",
+            4,              // location
+            1,              // buffer input slot
+            VAT_UBYTE4,
+            VAM_INTEGER,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertexJoint, JointIndices )
+        },
+        {
+            "InJointWeights",
+            5,              // location
+            1,              // buffer input slot
+            VAT_UBYTE4N,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertexJoint, JointWeights )
+        }
+    };
+
+    static const VertexAttribInfo vertexAttribs[] = {
+        {
+            "InPosition",
+            0,              // location
+            0,              // buffer input slot
+            VAT_FLOAT3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertex, Position )
+        },
+        {
+            "InTexCoord",
+            1,              // location
+            0,              // buffer input slot
+            VAT_FLOAT2,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+        },
+        {
+            "InTangent",
+            2,              // location
+            0,              // buffer input slot
+            VAT_FLOAT4,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertex, Tangent )
+        },
+        {
+            "InNormal",
+            3,              // location
+            0,              // buffer input slot
+            VAT_FLOAT3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            GHI_STRUCT_OFS( FMeshVertex, Normal )
+        }
+    };
+
+    if ( _Skinned ) {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = vertexAttribsSkinned;
+    } else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+        pipelineCI.pVertexAttribs = vertexAttribs;
+    }
+
+    PipelineInputAssemblyInfo inputAssembly = {};
+    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    inputAssembly.bPrimitiveRestart = false;
+
+    pipelineCI.pInputAssembly = &inputAssembly;
+    pipelineCI.pBlending = &bsd;
+    pipelineCI.pRasterizer = &rsd;
+    pipelineCI.pDepthStencil = &dssd;
+
+    ShaderStageInfo stages[3] = {};
+
+    pipelineCI.NumStages = 0;
+
+    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+
+    ShaderModule vertexShaderModule;
+    ShaderModule geometryShaderModule;
+    ShaderModule fragmentShaderModule;
+
+    GShaderSources.Clear();
+    GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+    if ( _Skinned ) {
+        GShaderSources.Add( "#define SKINNED_MESH\n" );
+    }
+    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( _SourceCode );
+    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
+
+    ShaderStageInfo & vs = stages[pipelineCI.NumStages++];
+    vs.Stage = SHADER_STAGE_VERTEX_BIT;
+    vs.pModule = &vertexShaderModule;
+
+    GShaderSources.Clear();
+    GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+    if ( _Skinned ) {
+        GShaderSources.Add( "#define SKINNED_MESH\n" );
+    }
+    GShaderSources.Add( _SourceCode );
+    GShaderSources.Build( GEOMETRY_SHADER, &geometryShaderModule );
+
+    ShaderStageInfo & gs = stages[pipelineCI.NumStages++];
+    gs.Stage = SHADER_STAGE_GEOMETRY_BIT;
+    gs.pModule = &geometryShaderModule;
+
+    bool bVSM = false;
+
+#if defined SHADOWMAP_VSM || defined SHADOWMAP_EVSM
+    bVSM = true;
+#endif
+
+    if ( _ShadowMasking || bVSM ) {
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+        if ( _ShadowMasking ) {
+            GShaderSources.Add( "#define SHADOW_MASKING\n" );
+        }
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
+
+        ShaderStageInfo & fs = stages[pipelineCI.NumStages++];
+        fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
+        fs.pModule = &fragmentShaderModule;
+    }
+
+    pipelineCI.pStages = stages;
+    pipelineCI.pRenderPass = GShadowMapPassRenderer.GetRenderPass();
     pipelineCI.Subpass = 0;
 
     Initialize( pipelineCI );

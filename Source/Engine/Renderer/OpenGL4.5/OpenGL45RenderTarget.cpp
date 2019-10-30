@@ -63,6 +63,7 @@ void FRenderTarget::CreateFramebuffer() {
     FramebufferTexture.InitializeStorage( texStorageCI );
 
     texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_DEPTH24_STENCIL8;
+    //texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_DEPTH32F_STENCIL8;
     FramebufferDepth.InitializeStorage( texStorageCI );
 
     FramebufferCreateInfo framebufferCI = {};

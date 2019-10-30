@@ -29,8 +29,10 @@ SOFTWARE.
 */
 
 #include "OpenGL45ColorPassRenderer.h"
+#include "OpenGL45ShadowMapPassRenderer.h"
 #include "OpenGL45FrameResources.h"
 #include "OpenGL45RenderTarget.h"
+#include "OpenGL45ShadowMapRT.h"
 #include "OpenGL45Material.h"
 
 using namespace GHI;
@@ -107,16 +109,17 @@ bool FColorPassRenderer::BindMaterial( FRenderInstance const * instance ) {
         break;
 
     case MATERIAL_TYPE_PBR:
+    case MATERIAL_TYPE_BASELIGHT:
 
         if ( bSkinned ) {
 
-            pPipeline = &((FShadeModelPBR*)pMaterial->ShadeModel.PBR)->ColorPassSkinned;
+            pPipeline = &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassSkinned;
 
             pSecondVertexBuffer = GPUBufferHandle( instance->WeightsBuffer );
 
         } else if ( bLightmap ) {
 
-            pPipeline = &((FShadeModelPBR*)pMaterial->ShadeModel.PBR)->LightmapPass;
+            pPipeline = &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassLightmap;
 
             pSecondVertexBuffer = GPUBufferHandle( instance->LightmapUVChannel );
 
@@ -126,13 +129,13 @@ bool FColorPassRenderer::BindMaterial( FRenderInstance const * instance ) {
 
         } else if ( bVertexLight ) {
 
-            pPipeline = &((FShadeModelPBR*)pMaterial->ShadeModel.PBR)->VertexLightPass;
+            pPipeline = &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassVertexLight;
 
             pSecondVertexBuffer = GPUBufferHandle( instance->VertexLightChannel );
 
         } else {
 
-            pPipeline = &((FShadeModelPBR*)pMaterial->ShadeModel.PBR)->ColorPassSimple;
+            pPipeline = &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassSimple;
 
             pSecondVertexBuffer = nullptr;
         }
@@ -150,14 +153,24 @@ bool FColorPassRenderer::BindMaterial( FRenderInstance const * instance ) {
     Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, 0 );
 
     // Set samplers
-    for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-        GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
+    if ( pMaterial->bColorPassTextureFetch ) {
+        for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
+            GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
+        }
     }
 
     // Bind vertex and index buffers
     BindVertexAndIndexBuffers( instance );
 
     return true;
+}
+
+void FColorPassRenderer::BindTexturesColorPass( FMaterialFrameData * _Instance ) {
+    if ( !_Instance->Material->bColorPassTextureFetch ) {
+        return;
+    }
+
+    BindTextures( _Instance );
 }
 
 void FColorPassRenderer::RenderInstances() {
@@ -207,20 +220,20 @@ void FColorPassRenderer::RenderInstances() {
     for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
         FRenderInstance const * instance = GFrameData->Instances[ GRenderView->FirstInstance + i ];
 
-        if ( !instance->bLightPass ) {
-            continue;
-        }
-
         // Choose pipeline and second vertex buffer
         if ( !BindMaterial( instance ) ) {
             continue;
         }
 
         // Set material data (textures, uniforms)
-        BindMaterialInstance( instance->MaterialInstance );
+        BindTexturesColorPass( instance->MaterialInstance );
 
         // Bind skeleton
         BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
+
+        // Bind shadow map
+        GFrameResources.TextureBindings[15].pTexture = &GShadowMapRT.GetTexture();
+        GFrameResources.SamplerBindings[15].pSampler = GShadowMapPassRenderer.GetShadowDepthSampler();
 
         // Set instance uniforms
         SetInstanceUniforms( i );

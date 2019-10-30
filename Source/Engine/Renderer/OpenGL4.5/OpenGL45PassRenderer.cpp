@@ -59,17 +59,18 @@ void FPassRenderer::BindTextures( FMaterialFrameData * _MaterialInstance ) {
     //}
 }
 
-void FPassRenderer::BindMaterialInstanceVertexOnly( FMaterialFrameData * _NewInstance ) {
-    if ( _NewInstance->Material->bVertexTextureFetch ) {
-        BindTextures( _NewInstance );
-    }
-}
-
-void FPassRenderer::BindMaterialInstance( FMaterialFrameData * _NewInstance ) {
-    BindTextures( _NewInstance );
-}
-
 void FPassRenderer::BindVertexAndIndexBuffers( FRenderInstance const * _Instance ) {
+    Buffer * pVertexBuffer = GPUBufferHandle( _Instance->VertexBuffer );
+    Buffer * pIndexBuffer = GPUBufferHandle( _Instance->IndexBuffer );
+
+    AN_Assert( pVertexBuffer );
+    AN_Assert( pIndexBuffer );
+
+    Cmd.BindVertexBuffer( 0, pVertexBuffer, 0 );
+    Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, 0 );
+}
+
+void FPassRenderer::BindVertexAndIndexBuffers( FShadowRenderInstance const * _Instance ) {
     Buffer * pVertexBuffer = GPUBufferHandle( _Instance->VertexBuffer );
     Buffer * pIndexBuffer = GPUBufferHandle( _Instance->IndexBuffer );
 
@@ -85,10 +86,16 @@ void FPassRenderer::BindSkeleton( size_t _Offset, size_t _Size ) {
     GFrameResources.SkeletonBufferBinding->BindingSize = _Size;
 }
 
-void FPassRenderer::SetInstanceUniforms( int _Index/*FRenderInstance const * _Instance*/ ) {
-    GFrameResources.UniformBufferBinding->pBuffer = &GFrameResources.InstanceUniformBuffer;
-    GFrameResources.UniformBufferBinding->BindingOffset = _Index * InstanceUniformBufferSizeof;
-    GFrameResources.UniformBufferBinding->BindingSize = sizeof( FInstanceUniformBuffer );
+void FPassRenderer::SetInstanceUniforms( int _Index ) {
+    GFrameResources.InstanceUniformBufferBinding->pBuffer = &GFrameResources.InstanceUniformBuffer;
+    GFrameResources.InstanceUniformBufferBinding->BindingOffset = _Index * InstanceUniformBufferSizeof;
+    GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( FInstanceUniformBuffer );
+}
+
+void FPassRenderer::SetShadowInstanceUniforms( int _Index ) {
+    GFrameResources.InstanceUniformBufferBinding->pBuffer = &GFrameResources.ShadowInstanceUniformBuffer;
+    GFrameResources.InstanceUniformBufferBinding->BindingOffset = _Index * ShadowInstanceUniformBufferSizeof;
+    GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( FShadowInstanceUniformBuffer );
 }
 
 }

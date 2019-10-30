@@ -35,13 +35,35 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
+constexpr const char * UniformStr = AN_STRINGIFY(
+
+layout( binding = 0, std140 ) uniform UniformBuffer0
+{
+    mat4 OrthoProjection;
+    mat4 ModelviewProjection;
+    mat4 InverseProjectionMatrix;
+    vec4 WorldNormalToViewSpace0;
+    vec4 WorldNormalToViewSpace1;
+    vec4 WorldNormalToViewSpace2;
+    vec4 ViewportParams;  // 1/width, 1/height, znear, zfar
+    vec4 Timers;
+    vec4 ViewPostion;
+    uvec2 EnvProbeSampler;
+    int  NumDirectionalLights;
+    vec4 LightDirs[MAX_DIRECTIONAL_LIGHTS];            // Direction, W-channel is not used
+    vec4 LightColors[MAX_DIRECTIONAL_LIGHTS];          // RGB, alpha - ambient intensity
+    uvec4 LightParameters[MAX_DIRECTIONAL_LIGHTS];    // RenderMask, FirstCascade, NumCascades, W-channel is not used
+};
+
+);
+
 struct FShaderSources {
     enum { MAX_SOURCES = 10 };
     const char * Sources[MAX_SOURCES];
     int NumSources;
 
     void Clear() {
-        NumSources = 0;
+        NumSources = 2;
     }
 
     void Add( const char * _Source ) {
@@ -57,12 +79,42 @@ struct FShaderSources {
 
         char * Log;
 
+        const char * predefine[] = {
+            "#define VERTEX_SHADER\n",
+            "#define FRAGMENT_SHADER\n",
+            "#define TESS_CONTROL_SHADER\n",
+            "#define TESS_EVALUATION_SHADER\n",
+            "#define GEOMETRY_SHADER\n",
+            "#define COMPUTE_SHADER\n"
+        };
+
+        FString predefines = predefine[_ShaderType];
+        predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Int( MAX_DIRECTIONAL_LIGHTS ).ToString() + "\n";
+        predefines += "#define MAX_SHADOW_CASCADES " + Int( MAX_SHADOW_CASCADES ).ToString() + "\n";
+
+        #ifdef SHADOWMAP_PCF
+        predefines += "#define SHADOWMAP_PCF\n";
+        #endif
+        #ifdef SHADOWMAP_PCSS
+        predefines += "#define SHADOWMAP_PCSS\n";
+        #endif
+        #ifdef SHADOWMAP_VSM
+        predefines += "#define SHADOWMAP_VSM\n";
+        #endif
+        #ifdef SHADOWMAP_EVSM
+        predefines += "#define SHADOWMAP_EVSM\n";
+        #endif
+
+        Sources[0] = "#version 450\n"
+                     "#extension GL_ARB_bindless_texture : enable\n";
+        Sources[1] = predefines.ToConstChar();
+
         _Module->InitializeFromCode( _ShaderType, NumSources, Sources, &Log );
 
         if ( *Log ) {
-            for ( int i = 0 ; i < NumSources ; i++ ) {
-                GLogger.Print( Sources[i] );
-            }
+            //for ( int i = 0 ; i < NumSources ; i++ ) {
+            //    GLogger.Print( Sources[i] );
+            //}
             switch ( _ShaderType ) {
             case VERTEX_SHADER:
                 GLogger.Printf( "VS: %s\n", Log );

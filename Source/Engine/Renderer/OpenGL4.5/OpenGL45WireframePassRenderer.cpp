@@ -85,9 +85,10 @@ bool FWireframePassRenderer::BindMaterial( FRenderInstance const * instance ) {
         break;
 
     case MATERIAL_TYPE_PBR:
+    case MATERIAL_TYPE_BASELIGHT:
 
-        pPipeline = bSkinned ? &((FShadeModelPBR*)pMaterial->ShadeModel.PBR)->WireframePassSkinned
-                             : &((FShadeModelPBR*)pMaterial->ShadeModel.PBR)->WireframePass;
+        pPipeline = bSkinned ? &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->WireframePassSkinned
+                             : &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->WireframePass;
 
         break;
 
@@ -103,7 +104,7 @@ bool FWireframePassRenderer::BindMaterial( FRenderInstance const * instance ) {
     Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, 0 );
 
     // Set samplers
-    if ( pMaterial->bVertexTextureFetch ) {
+    if ( pMaterial->bWireframePassTextureFetch ) {
         for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
             GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
         }
@@ -113,6 +114,14 @@ bool FWireframePassRenderer::BindMaterial( FRenderInstance const * instance ) {
     BindVertexAndIndexBuffers( instance );
 
     return true;
+}
+
+void FWireframePassRenderer::BindTexturesWireframePass( FMaterialFrameData * _Instance ) {
+    if ( !_Instance->Material->bWireframePassTextureFetch ) {
+        return;
+    }
+
+    BindTextures( _Instance );
 }
 
 void FWireframePassRenderer::RenderInstances() {
@@ -150,7 +159,7 @@ void FWireframePassRenderer::RenderInstances() {
         }
 
         // Set material data (textures, uniforms)
-        BindMaterialInstanceVertexOnly( instance->MaterialInstance );
+        BindTexturesWireframePass( instance->MaterialInstance );
 
         // Bind skeleton
         BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );

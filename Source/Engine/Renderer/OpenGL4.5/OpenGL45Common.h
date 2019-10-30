@@ -47,6 +47,11 @@ SOFTWARE.
 #define SCISSOR_TEST false
 #define DEPTH_PREPASS
 
+#define SHADOWMAP_PCF
+//#define SHADOWMAP_PCSS
+//#define SHADOWMAP_VSM
+//#define SHADOWMAP_EVSM
+
 namespace OpenGL45 {
 
 extern GHI::Device          GDevice;

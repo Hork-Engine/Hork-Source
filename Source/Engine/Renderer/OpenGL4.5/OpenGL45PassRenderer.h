@@ -36,18 +36,17 @@ namespace OpenGL45 {
 
 class FPassRenderer {
 protected:
-    void BindMaterialInstanceVertexOnly( FMaterialFrameData * _NewInstance );
-
-    void BindMaterialInstance( FMaterialFrameData * _NewInstance );
-
     void BindVertexAndIndexBuffers( FRenderInstance const * _Instance );
+
+    void BindVertexAndIndexBuffers( FShadowRenderInstance const * _Instance );
 
     void BindSkeleton( size_t _Offset, size_t _Size );
 
+    void BindTextures( FMaterialFrameData * _MaterialInstance );
+
     void SetInstanceUniforms( int _Index );
 
-private:
-    void BindTextures( FMaterialFrameData * _MaterialInstance );
+    void SetShadowInstanceUniforms( int _Index );
 };
 
 }

@@ -45,6 +45,7 @@ public:
 
 private:
     bool BindMaterial( FRenderInstance const * instance );
+    void BindTexturesDepthPass( FMaterialFrameData * _Instance );
 
     GHI::RenderPass DepthPass;
 };

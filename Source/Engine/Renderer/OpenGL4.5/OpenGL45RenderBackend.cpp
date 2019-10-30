@@ -32,8 +32,10 @@ SOFTWARE.
 #include "OpenGL45GPUSync.h"
 #include "OpenGL45FrameResources.h"
 #include "OpenGL45RenderTarget.h"
+#include "OpenGL45ShadowMapRT.h"
 #include "OpenGL45Material.h"
 #include "OpenGL45CanvasPassRenderer.h"
+#include "OpenGL45ShadowMapPassRenderer.h"
 #include "OpenGL45DepthPassRenderer.h"
 #include "OpenGL45ColorPassRenderer.h"
 #include "OpenGL45WireframePassRenderer.h"
@@ -57,7 +59,7 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
-FRuntimeVariable RVRenderView( _CTS("RenderView"), _CTS("1") );
+FRuntimeVariable RVRenderView( _CTS("RenderView"), _CTS("1"), VAR_CHEAT );
 FRuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
 
 extern thread_local char LogBuffer[16384]; // Use existing log buffer
@@ -387,6 +389,8 @@ void FRenderBackend::Initialize( void * _NativeWindowHandle ) {
 
     GJointsAllocator.Initialize();
     GRenderTarget.Initialize();
+    GShadowMapRT.Initialize();
+    GShadowMapPassRenderer.Initialize();
     GDepthPassRenderer.Initialize();
     GColorPassRenderer.Initialize();
     GWireframePassRenderer.Initialize();
@@ -400,6 +404,8 @@ void FRenderBackend::Deinitialize() {
 
     GJointsAllocator.Deinitialize();
     GRenderTarget.Deinitialize();
+    GShadowMapRT.Deinitialize();
+    GShadowMapPassRenderer.Deinitialize();
     GDepthPassRenderer.Deinitialize();
     GColorPassRenderer.Deinitialize();
     GWireframePassRenderer.Deinitialize();
@@ -649,13 +655,13 @@ void FRenderBackend::DestroyMaterial( FMaterialGPU * _Material ) {
 
     UnregisterGPUResource( _Material );
 
-    FShadeModelPBR * PBR = (FShadeModelPBR *)_Material->ShadeModel.PBR;
+    FShadeModelLit * Lit = (FShadeModelLit *)_Material->ShadeModel.Lit;
     FShadeModelUnlit* Unlit = (FShadeModelUnlit *)_Material->ShadeModel.Unlit;
     FShadeModelHUD * HUD = (FShadeModelHUD *)_Material->ShadeModel.HUD;
 
-    if ( PBR ) {
-        PBR->~FShadeModelPBR();
-        GZoneMemory.Dealloc( PBR );
+    if ( Lit ) {
+        Lit->~FShadeModelLit();
+        GZoneMemory.Dealloc( Lit );
     }
 
     if ( Unlit ) {
@@ -677,9 +683,14 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
 
     _Material->MaterialType = _BuildData->Type;
     _Material->LightmapSlot = _BuildData->LightmapSlot;
-    _Material->bVertexTextureFetch = _BuildData->bVertexTextureFetch;
-    _Material->bNoVertexDeform = _BuildData->bNoVertexDeform;
-    _Material->NumSamplers = _BuildData->NumSamplers;
+    _Material->bDepthPassTextureFetch     = _BuildData->bDepthPassTextureFetch;
+    _Material->bColorPassTextureFetch     = _BuildData->bColorPassTextureFetch;
+    _Material->bWireframePassTextureFetch = _BuildData->bWireframePassTextureFetch;
+    _Material->bShadowMapPassTextureFetch = _BuildData->bShadowMapPassTextureFetch;
+    _Material->bHasVertexDeform = _BuildData->bHasVertexDeform;
+    _Material->bNoCastShadow    = _BuildData->bNoCastShadow;
+    _Material->bShadowMapMasking= _BuildData->bShadowMapMasking;
+    _Material->NumSamplers      = _BuildData->NumSamplers;
 
     static constexpr POLYGON_CULL PolygonCullLUT[] = {
         POLYGON_CULL_FRONT,
@@ -689,14 +700,14 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
 
     POLYGON_CULL cullMode = PolygonCullLUT[_BuildData->Facing];
 
-    FShadeModelPBR   * PBR   = (FShadeModelPBR *)_Material->ShadeModel.PBR;
+    FShadeModelLit   * Lit   = (FShadeModelLit *)_Material->ShadeModel.Lit;
     FShadeModelUnlit * Unlit = (FShadeModelUnlit *)_Material->ShadeModel.Unlit;
     FShadeModelHUD   * HUD   = (FShadeModelHUD *)_Material->ShadeModel.HUD;
 
-    if ( PBR ) {
-        PBR->~FShadeModelPBR();
-        GZoneMemory.Dealloc( PBR );
-        _Material->ShadeModel.PBR = nullptr;
+    if ( Lit ) {
+        Lit->~FShadeModelLit();
+        GZoneMemory.Dealloc( Lit );
+        _Material->ShadeModel.Lit = nullptr;
     }
 
     if ( Unlit ) {
@@ -711,27 +722,27 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
         _Material->ShadeModel.HUD = nullptr;
     }
 
-    const char * pVertexSourceCode   = &_BuildData->ShaderData[_BuildData->VertexSourceOffset];
-    const char * pFragmentSourceCode = &_BuildData->ShaderData[_BuildData->FragmentSourceOffset];
-    const char * pGeometrySourceCode = &_BuildData->ShaderData[_BuildData->GeometrySourceOffset];
-
     switch ( _Material->MaterialType ) {
-    case MATERIAL_TYPE_PBR: {
-        void * pMem = GZoneMemory.Alloc( sizeof( FShadeModelPBR ), 1 );
-        PBR = new (pMem) FShadeModelPBR();
-        _Material->ShadeModel.PBR = PBR;
+    case MATERIAL_TYPE_PBR:
+    case MATERIAL_TYPE_BASELIGHT: {
+        void * pMem = GZoneMemory.Alloc( sizeof( FShadeModelLit ), 1 );
+        Lit = new (pMem) FShadeModelLit();
+        _Material->ShadeModel.Lit = Lit;
 
-        PBR->ColorPassSimple.Create( pVertexSourceCode, pFragmentSourceCode, cullMode, false, false, _BuildData->bDepthTest );
-        PBR->ColorPassSkinned.Create( pVertexSourceCode, pFragmentSourceCode, cullMode, false, true, _BuildData->bDepthTest );
+        Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest );
+        Lit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest );
 
-        PBR->LightmapPass.Create( pVertexSourceCode, pFragmentSourceCode, cullMode, _BuildData->bDepthTest );
-        PBR->VertexLightPass.Create( pVertexSourceCode, pFragmentSourceCode, cullMode, _BuildData->bDepthTest );
+        Lit->ColorPassLightmap.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest );
+        Lit->ColorPassVertexLight.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest );
 
-        PBR->DepthPass.Create( pVertexSourceCode, cullMode, false );
-        PBR->DepthPassSkinned.Create( pVertexSourceCode, cullMode, true );
+        Lit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
+        Lit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
 
-        PBR->WireframePass.Create( pVertexSourceCode, pGeometrySourceCode, pFragmentSourceCode, cullMode, false );
-        PBR->WireframePassSkinned.Create( pVertexSourceCode, pGeometrySourceCode, pFragmentSourceCode, cullMode, true );
+        Lit->WireframePass.Create( _BuildData->ShaderData, cullMode, false );
+        Lit->WireframePassSkinned.Create( _BuildData->ShaderData, cullMode, true );
+
+        Lit->ShadowPass.Create( _BuildData->ShaderData, _BuildData->bShadowMapMasking, false );
+        Lit->ShadowPassSkinned.Create( _BuildData->ShaderData, _BuildData->bShadowMapMasking, true );
         break;
     }
 
@@ -740,22 +751,26 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
         Unlit = new (pMem) FShadeModelUnlit();
         _Material->ShadeModel.Unlit = Unlit;
 
-        Unlit->ColorPassSimple.Create( pVertexSourceCode, pFragmentSourceCode, cullMode, true, false, _BuildData->bDepthTest );
-        Unlit->ColorPassSkinned.Create( pVertexSourceCode, pFragmentSourceCode, cullMode, true, true, _BuildData->bDepthTest );
+        Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest );
+        Unlit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest );
 
-        Unlit->DepthPass.Create( pVertexSourceCode, cullMode, false );
-        Unlit->DepthPassSkinned.Create( pVertexSourceCode, cullMode, true );
+        Unlit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
+        Unlit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
 
-        Unlit->WireframePass.Create( pVertexSourceCode, pGeometrySourceCode, pFragmentSourceCode, cullMode, false );
-        Unlit->WireframePassSkinned.Create( pVertexSourceCode, pGeometrySourceCode, pFragmentSourceCode, cullMode, true );
+        Unlit->WireframePass.Create( _BuildData->ShaderData, cullMode, false );
+        Unlit->WireframePassSkinned.Create( _BuildData->ShaderData, cullMode, true );
+
+        Unlit->ShadowPass.Create( _BuildData->ShaderData, _BuildData->bShadowMapMasking, false );
+        Unlit->ShadowPassSkinned.Create( _BuildData->ShaderData, _BuildData->bShadowMapMasking, true );
         break;
     }
 
-    case MATERIAL_TYPE_HUD: {
+    case MATERIAL_TYPE_HUD:
+    case MATERIAL_TYPE_POSTPROCESS: {
         void * pMem = GZoneMemory.Alloc( sizeof( FShadeModelHUD ), 1 );
         HUD = new (pMem) FShadeModelHUD();
         _Material->ShadeModel.HUD = HUD;
-        HUD->ColorPassHUD.Create( pVertexSourceCode, pFragmentSourceCode );
+        HUD->ColorPassHUD.Create( _BuildData->ShaderData );
         break;
     }
 
@@ -810,6 +825,7 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
         samplerCI.MaxAnisotropy = desc->Anisotropy;
         samplerCI.MinLOD = desc->MinLod;
         samplerCI.MaxLOD = desc->MaxLod;
+        samplerCI.bCubemapSeamless = true; // FIXME: use desc->bCubemapSeamless ?
 
         _Material->pSampler[i] = GDevice.GetOrCreateSampler( samplerCI );
     }
@@ -836,6 +852,15 @@ void FRenderBackend::RenderFrame( FRenderFrame * _FrameData ) {
 
     GRenderTarget.ReallocSurface( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
 
+    // Calc canvas projection matrix
+    const Float2 orthoMins( 0.0f, (float)GFrameData->CanvasHeight );
+    const Float2 orthoMaxs( (float)GFrameData->CanvasWidth, 0.0f );
+    GFrameResources.ViewUniformBufferUniformData.OrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs );
+    GFrameResources.ViewUniformBuffer.WriteRange(
+        GHI_STRUCT_OFS( FViewUniformBuffer, OrthoProjection ),
+        sizeof( GFrameResources.ViewUniformBufferUniformData.OrthoProjection ),
+        &GFrameResources.ViewUniformBufferUniformData.OrthoProjection );
+
     GCanvasPassRenderer.RenderInstances();
 
     SetGPUEvent();
@@ -850,6 +875,8 @@ void FRenderBackend::RenderView( FRenderView * _RenderView ) {
     }
 
     GFrameResources.UploadUniforms();
+
+    GShadowMapPassRenderer.RenderInstances();
 
 #ifdef DEPTH_PREPASS
     GDepthPassRenderer.RenderInstances();

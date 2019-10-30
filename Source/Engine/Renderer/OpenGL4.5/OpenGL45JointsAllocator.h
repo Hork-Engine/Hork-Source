@@ -75,7 +75,7 @@ public:
         Offset += SizeInBytes;
         Offset = GHI::UBOAligned( Offset );
         MaxUsage = FMath::Max( MaxUsage, Ofs + SizeInBytes );
-        GLogger.Printf( "AllocJoints: Allocated %u bytes. Max usage %u bytes\n", SizeInBytes, MaxUsage );
+        //GLogger.Printf( "AllocJoints: Allocated %u bytes. Max usage %u bytes\n", SizeInBytes, MaxUsage );
         return Ofs;
     }
 };

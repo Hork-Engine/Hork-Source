@@ -45,6 +45,7 @@ public:
 
 private:
     bool BindMaterial( FRenderInstance const * instance );
+    void BindTexturesColorPass( FMaterialFrameData * _Instance );
 
     GHI::RenderPass ColorPass;
     GHI::Sampler LightmapSampler;

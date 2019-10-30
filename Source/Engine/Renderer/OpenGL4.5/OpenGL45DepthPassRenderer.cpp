@@ -79,9 +79,10 @@ bool FDepthPassRenderer::BindMaterial( FRenderInstance const * instance ) {
         break;
 
     case MATERIAL_TYPE_PBR:
+    case MATERIAL_TYPE_BASELIGHT:
 
-        pPipeline = bSkinned ? &((FShadeModelPBR*)pMaterial->ShadeModel.PBR)->DepthPassSkinned
-                             : &((FShadeModelPBR*)pMaterial->ShadeModel.PBR)->DepthPass;
+        pPipeline = bSkinned ? &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPassSkinned
+                             : &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPass;
 
         break;
 
@@ -97,7 +98,7 @@ bool FDepthPassRenderer::BindMaterial( FRenderInstance const * instance ) {
     Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, 0 );
 
     // Set samplers
-    if ( pMaterial->bVertexTextureFetch ) {
+    if ( pMaterial->bDepthPassTextureFetch ) {
         for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
             GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
         }
@@ -107,6 +108,14 @@ bool FDepthPassRenderer::BindMaterial( FRenderInstance const * instance ) {
     BindVertexAndIndexBuffers( instance );
 
     return true;
+}
+
+void FDepthPassRenderer::BindTexturesDepthPass( FMaterialFrameData * _Instance ) {
+    if ( !_Instance->Material->bDepthPassTextureFetch ) {
+        return;
+    }
+
+    BindTextures( _Instance );
 }
 
 void FDepthPassRenderer::RenderInstances() {
@@ -147,7 +156,7 @@ void FDepthPassRenderer::RenderInstances() {
         }
 
         // Set material data (textures, uniforms)
-        BindMaterialInstanceVertexOnly( instance->MaterialInstance );
+        BindTexturesDepthPass( instance->MaterialInstance );
 
         // Bind skeleton
         BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );

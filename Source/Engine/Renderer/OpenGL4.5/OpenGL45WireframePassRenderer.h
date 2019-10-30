@@ -45,6 +45,7 @@ public:
 
 private:
     bool BindMaterial( FRenderInstance const * instance );
+    void BindTexturesWireframePass( FMaterialFrameData * _Instance );
 
     GHI::RenderPass WireframePass;
 };

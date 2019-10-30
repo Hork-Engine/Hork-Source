@@ -30,8 +30,36 @@ SOFTWARE.
 
 #pragma once
 
+#include "OpenGL45Common.h"
+
 namespace OpenGL45 {
 
-extern const char * UniformStr;
+class FShadowMapRT {
+public:
+    void Initialize();
+    void Deinitialize();
+
+    void Realloc( int _MaxCascades );
+
+    int GetMaxCascades() const { return MaxCascades; }
+
+    GHI::Framebuffer & GetFramebuffer() { return Framebuffer; }
+
+    GHI::Texture & GetTexture() { return ShadowPoolTexture; }
+    GHI::Texture & GetDepthMomentsVSM() { return DepthMomentsTexture; } // Only for VSM shadows
+    GHI::Texture & GetDepthMomentsVSMBlur() { return DepthMomentsTextureTmp; } // Only for VSM shadows
+
+private:
+    void CreateFramebuffer();
+
+    GHI::Framebuffer Framebuffer;
+    int CascadeSize;
+    GHI::Texture ShadowPoolTexture;
+    GHI::Texture DepthMomentsTexture;
+    GHI::Texture DepthMomentsTextureTmp; // For blur
+    int MaxCascades;
+};
+
+extern FShadowMapRT GShadowMapRT;
 
 }

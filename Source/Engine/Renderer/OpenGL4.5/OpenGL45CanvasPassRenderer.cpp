@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "OpenGL45CanvasPassRenderer.h"
 #include "OpenGL45ShaderSource.h"
-#include "OpenGL45ShaderBuiltin.h"
 #include "OpenGL45FrameResources.h"
 #include "OpenGL45RenderTarget.h"
 #include "OpenGL45Material.h"
@@ -157,7 +156,7 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
             "layout( location = 0 ) flat out vec2 VS_TexCoord;\n"
             "layout( location = 1 ) out vec4 VS_Color;\n"
             "void main() {\n"
-            "  gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 0.0, 1.0 );\n"
+            "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
             "  VS_TexCoord = InTexCoord;\n"
             "  VS_Color = InColor;\n"
             "}\n";
@@ -176,14 +175,12 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
             "}\n";
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
     GShaderSources.Add( UniformStr );
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
     GShaderSources.Add( vertexSourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
     GShaderSources.Add( UniformStr );
     GShaderSources.Add( fragmentSourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
@@ -298,7 +295,7 @@ void FCanvasPassRenderer::CreatePipelines() {
             "layout( location = 0 ) out vec2 VS_TexCoord;\n"
             "layout( location = 1 ) out vec4 VS_Color;\n"
             "void main() {\n"
-            "  gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 0.0, 1.0 );\n"
+            "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
             "  VS_TexCoord = InTexCoord;\n"
             "  VS_Color = InColor;\n"
             "}\n";
@@ -313,14 +310,12 @@ void FCanvasPassRenderer::CreatePipelines() {
             "}\n";
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
     GShaderSources.Add( UniformStr );
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
     GShaderSources.Add( vertexSourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
     GShaderSources.Add( UniformStr );
     GShaderSources.Add( fragmentSourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
@@ -435,7 +430,7 @@ void FCanvasPassRenderer::CreateAlphaPipelines() {
             "layout( location = 0 ) out vec2 VS_TexCoord;\n"
             "layout( location = 1 ) out vec4 VS_Color;\n"
             "void main() {\n"
-            "  gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 0.0, 1.0 );\n"
+            "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
             "  VS_TexCoord = InTexCoord;\n"
             "  VS_Color = InColor;\n"
             "}\n";
@@ -450,14 +445,12 @@ void FCanvasPassRenderer::CreateAlphaPipelines() {
             "}\n";
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
     GShaderSources.Add( UniformStr );
     GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
     GShaderSources.Add( vertexSourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( "#version 450\n" );
     GShaderSources.Add( UniformStr );
     GShaderSources.Add( fragmentSourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
@@ -578,17 +571,6 @@ void FCanvasPassRenderer::RenderInstances() {
 
     Rect2D scissorRect;
 
-    // Calc canvas projection matrix
-    const Float2 orthoMins( 0.0f, (float)GFrameData->CanvasHeight );
-    const Float2 orthoMaxs( (float)GFrameData->CanvasWidth, 0.0f );
-    Float4x4 projMat = Float4x4::Ortho2DCC( orthoMins, orthoMaxs );
-
-    // Set canvas uniforms
-    GFrameResources.UniformBuffer.WriteRange( GHI_STRUCT_OFS( FInstanceUniformBuffer, ProjectTranslateViewMatrix ), sizeof( FInstanceUniformBuffer::ProjectTranslateViewMatrix ), &projMat );
-    GFrameResources.UniformBufferBinding->pBuffer = &GFrameResources.UniformBuffer;
-    GFrameResources.UniformBufferBinding->BindingOffset = 0;
-    GFrameResources.UniformBufferBinding->BindingSize = 0;
-
     // Begin render pass
     BeginCanvasPass();
 
@@ -634,12 +616,6 @@ void FCanvasPassRenderer::RenderInstances() {
 
                     OpenGL45RenderView( renderView );
 
-                    // Restore canvas uniforms
-                    GFrameResources.UniformBuffer.WriteRange( GHI_STRUCT_OFS( FInstanceUniformBuffer, ProjectTranslateViewMatrix ), sizeof( FInstanceUniformBuffer::ProjectTranslateViewMatrix ), &projMat );
-                    GFrameResources.UniformBufferBinding->pBuffer = &GFrameResources.UniformBuffer;
-                    GFrameResources.UniformBufferBinding->BindingOffset = 0;
-                    GFrameResources.UniformBufferBinding->BindingSize = 0;
-
                     // Restore canvas pass
                     BeginCanvasPass();
 
@@ -683,7 +659,7 @@ void FCanvasPassRenderer::RenderInstances() {
 
                     // FIXME: What about material uniforms?
 
-                    BindMaterialInstance( cmd->MaterialFrameData );
+                    BindTextures( cmd->MaterialFrameData );
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;
