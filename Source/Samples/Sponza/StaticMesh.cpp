@@ -30,8 +30,7 @@ SOFTWARE.
 
 #include "StaticMesh.h"
 
-#include <Engine/GameThread/Public/GameEngine.h>
-#include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/GameThread/Public/EngineInstance.h>
 #include <Engine/World/Public/Components/MeshComponent.h>
 
 AN_CLASS_META( FStaticMesh )

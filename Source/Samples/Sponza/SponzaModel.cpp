@@ -35,12 +35,11 @@ SOFTWARE.
 #include <Engine/World/Public/World.h>
 #include <Engine/World/Public/Components/InputComponent.h>
 #include <Engine/World/Public/Canvas.h>
+#include <Engine/World/Public/Actors/DirectionalLight.h>
+#include <Engine/World/Public/Actors/PointLight.h>
 #include <Engine/Resource/Public/Asset.h>
 #include <Engine/Resource/Public/ResourceManager.h>
 
-#include <Engine/Runtime/Public/EntryDecl.h>
-
-AN_ENTRY_DECL( FSponzaModel )
 AN_CLASS_META( FSponzaModel )
 
 FSponzaModel * GModule;
@@ -67,20 +66,17 @@ void FSponzaModel::OnGameStart() {
 
     GModule = this;
 
-    GGameEngine.bAllowConsole = true;
-    //GGameEngine.MouseSensitivity = 0.15f;
-    GGameEngine.MouseSensitivity = 0.3f;
-    //GGameEngine.SetRenderFeatures( VSync_Half );
-    GGameEngine.SetWindowDefs( 1, true, false, false, "AngieEngine: Sponza" );
-    GGameEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    //GGameEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
-    GGameEngine.SetCursorEnabled( false );
+    GEngine.bAllowConsole = true;
+    //GEngine.MouseSensitivity = 0.15f;
+    GEngine.MouseSensitivity = 0.3f;
+    GEngine.SetWindowDefs( 1, true, false, false, "AngieEngine: Sponza" );
+    //GEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
+    GEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    GEngine.SetCursorEnabled( false );
 
     SetInputMappings();
 
-    // Spawn world
-    TWorldSpawnParameters< FWorld > WorldSpawnParameters;
-    World = GGameEngine.SpawnWorld< FWorld >( WorldSpawnParameters );
+    World = FWorld::CreateWorld();
 
     // Spawn HUD
     //FHUD * hud = World->SpawnActor< FMyHUD >();
@@ -88,26 +84,61 @@ void FSponzaModel::OnGameStart() {
     RenderingParams = NewObject< FRenderingParameters >();
     RenderingParams->BackgroundColor = FColor4(0.5f);
     RenderingParams->bWireframe = false;
-    RenderingParams->bDrawDebug = false;
+    RenderingParams->bDrawDebug = true;
+
+    // Skybox texture
+    {
+        const char * Cubemap[6] = {
+            "ClearSky/rt.bmp",
+            "ClearSky/lt.bmp",
+            "ClearSky/up.bmp",
+            "ClearSky/dn.bmp",
+            "ClearSky/bk.bmp",
+            "ClearSky/ft.bmp"
+        };
+        FImage rt, lt, up, dn, bk, ft;
+        FImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
+        rt.LoadHDRI( Cubemap[0], false, false, 3 );
+        lt.LoadHDRI( Cubemap[1], false, false, 3 );
+        up.LoadHDRI( Cubemap[2], false, false, 3 );
+        dn.LoadHDRI( Cubemap[3], false, false, 3 );
+        bk.LoadHDRI( Cubemap[4], false, false, 3 );
+        ft.LoadHDRI( Cubemap[5], false, false, 3 );
+        FTextureCubemap * SkyboxTexture = NewObject< FTextureCubemap >();
+        SkyboxTexture->InitializeCubemapFromImages( cubeFaces );
+        SkyboxTexture->SetName( "SkyboxTexture" );
+        RegisterResource( SkyboxTexture );
+    }
+
+    // Skybox material instance
+    {
+        static TStaticInternalResourceFinder< FMaterial > SkyboxMaterial( _CTS( "FMaterial.Skybox" ) );
+        static TStaticResourceFinder< FTextureCubemap > SkyboxTexture( _CTS( "SkyboxTexture" ) );
+        FMaterialInstance * SkyboxMaterialInstance = NewObject< FMaterialInstance >();
+        SkyboxMaterialInstance->SetName( "SkyboxMaterialInstance" );
+        SkyboxMaterialInstance->SetMaterial( SkyboxMaterial.GetObject() );
+        SkyboxMaterialInstance->SetTexture( 0, SkyboxTexture.GetObject() );
+        RegisterResource( SkyboxMaterialInstance );
+    }
 
     // create texture resource from file with alias
-    GetOrCreateResource< FTexture >( "mipmapchecker.png", "MipmapChecker" );
-
-    {
-    FIndexedMesh * mesh = NewObject< FIndexedMesh >();
-    mesh->InitializeSphereMesh( 0.5f, 2, 32, 32 );
-    mesh->SetName( "ShapeSphereMesh" );
-    FCollisionSphere * collisionBody = mesh->BodyComposition.AddCollisionBody< FCollisionSphere >();
-    collisionBody->Radius = 0.5f;
-    RegisterResource( mesh );
-    }
+    GetOrCreateResource< FTexture2D >( "mipmapchecker.png", "MipmapChecker" );
 
     Quat r;
     r.FromAngles( 0, FMath::_HALF_PI, 0 );
     FPlayer * player = World->SpawnActor< FPlayer >( Float3(0,1.6f,-0.36f), r );
 
-    CreateMaterial();
     LoadStaticMeshes();
+
+    FPointLight * pointLight = World->SpawnActor< FPointLight >( Float3(0,2,0), Quat::Identity() );
+    pointLight->LightComponent->SetOuterRadius( 3.0f );
+    pointLight->LightComponent->SetInnerRadius( 2.5f );
+    pointLight->LightComponent->SetColor( 1, 0.5f, 0.5f );
+    
+    // Spawn directional light
+    FDirectionalLight * dirlight = World->SpawnActor< FDirectionalLight >();
+    dirlight->LightComponent->bCastShadow = true;
+    dirlight->LightComponent->SetDirection( Float3( -0.5f, -2, -0.5f ) );
 
     // Spawn player controller
     PlayerController = World->SpawnActor< FMyPlayerController >();
@@ -121,61 +152,99 @@ void FSponzaModel::OnGameStart() {
 
     WMyDesktop * desktop = NewObject< WMyDesktop >();
     desktop->PlayerController = PlayerController;
-    GGameEngine.SetDesktop( desktop );
+    GEngine.SetDesktop( desktop );
 }
 
 void FSponzaModel::OnGameEnd() {
 }
 
-void FSponzaModel::CreateMaterial() {
-    FMaterialProject * proj = NewObject< FMaterialProject >();
-    FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
-    FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
-    texCoord->Connect( inTexCoordBlock, "Value" );
-    FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
-    diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
-    diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
-    FMaterialSamplerBlock * diffuseSampler = proj->AddBlock< FMaterialSamplerBlock >();
-    diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
-    diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
-    FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
-    materialFragmentStage->Color->Connect( diffuseSampler, "RGBA" );
-    FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-    builder->VertexStage = materialVertexStage;
-    builder->FragmentStage = materialFragmentStage;
-    builder->MaterialType = MATERIAL_TYPE_UNLIT;
-    builder->RegisterTextureSlot( diffuseTexture );
-    Material = builder->Build();
-}
-
 void FSponzaModel::LoadStaticMeshes() {
+#if 0
+    static TStaticResourceFinder< FIndexedMesh > Mesh( _CTS( "glTF/SciFiHelmet.gltf" ) );
+    static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.PBRMetallicRoughness" ) );
+    static TStaticResourceFinder< FTexture2D > Diffuse( _CTS( "glTF/SciFiHelmet_BaseColor.png" ) );
+    //static TStaticInternalResourceFinder< FTexture2D > Metallic( _CTS( "FTexture2D.Black" ) );
+    //static TStaticResourceFinder< FTexture2D > Normal( _CTS( "glTF/SciFiHelmet_Normal.png" ) );
+    //static TStaticResourceFinder< FTexture2D > Roughness( _CTS( "glTF/SciFiHelmet_MetallicRoughness.png" ) );
+
+
+    FImage image;
+    //image.LoadRawImage( "glTF/SciFiHelmet_BaseColor.png", true, true, 3 );
+    //FTexture2D * Albedo = NewObject< FTexture2D >();
+    //Albedo->InitializeFromImage( image );
+
+    image.LoadRawImage( "glTF/SciFiHelmet_Normal.png", false, true, 3 );
+    FTexture2D * Normal = NewObject< FTexture2D >();
+    Normal->InitializeFromImage( image );
+
+    image.LoadRawImage( "glTF/SciFiHelmet_MetallicRoughness.png", false, true, 3 );
+    FTexture2D * MetallicRoughness = NewObject< FTexture2D >();
+    MetallicRoughness->InitializeFromImage( image );
+#else
+    static TStaticResourceFinder< FIndexedMesh > Mesh( _CTS( "DamagedHelmet/glTF/DamagedHelmet.gltf" ) );
+    static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.PBRMetallicRoughness" ) );
+    static TStaticResourceFinder< FTexture2D > Diffuse( _CTS( "DamagedHelmet/glTF/Default_albedo.jpg" ) );
+    //static TStaticInternalResourceFinder< FTexture2D > Metallic( _CTS( "FTexture2D.Black" ) );
+    //static TStaticResourceFinder< FTexture2D > Normal( _CTS( "glTF/SciFiHelmet_Normal.png" ) );
+    //static TStaticResourceFinder< FTexture2D > Roughness( _CTS( "glTF/SciFiHelmet_MetallicRoughness.png" ) );
+
+
+    FImage image;
+    //image.LoadRawImage( "glTF/SciFiHelmet_BaseColor.png", true, true, 3 );
+    //FTexture2D * Albedo = NewObject< FTexture2D >();
+    //Albedo->InitializeFromImage( image );
+
+    image.LoadLDRI( "DamagedHelmet/glTF/Default_normal.jpg", false, true, 3 );
+    FTexture2D * Normal = NewObject< FTexture2D >();
+    Normal->InitializeFromImage( image );
+
+    image.LoadLDRI( "DamagedHelmet/glTF/Default_metalRoughness.jpg", false, true, 3 );
+    FTexture2D * MetallicRoughness = NewObject< FTexture2D >();
+    MetallicRoughness->InitializeFromImage( image );
+
+    image.LoadLDRI( "DamagedHelmet/glTF/Default_AO.jpg", false, true, 3 );
+    FTexture2D * Ambient = NewObject< FTexture2D >();
+    Ambient->InitializeFromImage( image );
+
+    image.LoadLDRI( "DamagedHelmet/glTF/Default_emissive.jpg", false, true, 3 );
+    FTexture2D * Emissive = NewObject< FTexture2D >();
+    Emissive->InitializeFromImage( image );
+
+#endif
+
+    FMaterialInstance * materialInst = NewObject< FMaterialInstance >();
+    materialInst->SetMaterial( MaterialResource.GetObject() );
+    materialInst->SetTexture( 0, Diffuse.GetObject() );
+    materialInst->SetTexture( 1, MetallicRoughness );
+    materialInst->SetTexture( 2, Normal );
+    materialInst->SetTexture( 3, Ambient );
+    materialInst->SetTexture( 4, Emissive );
+
+    Mesh.GetObject()->SetMaterialInstance( 0, materialInst );
+
+    FStaticMesh * actor = World->SpawnActor< FStaticMesh >( Float3(0,3,0), Quat::RotationY( FMath::Radians(90.0f) ) );
+    actor->SetMesh( Mesh.GetObject() );
+
+    
+
 #if 1
-    // Load as separate meshes
+    //// Load as separate meshes
     FString fileName;
 
     for ( int i = 0 ; i < 25 ; i++ ) {
         fileName = "SponzaProject/Meshes/sponza_" + Int(i).ToString() + ".angie_mesh";
 
+        actor = World->SpawnActor< FStaticMesh >();
+
         FIndexedMesh * mesh = GetOrCreateResource< FIndexedMesh >( fileName.ToConstChar() );
-
-        for ( FIndexedMeshSubpart * subpart : mesh->GetSubparts() ) {
-            if ( subpart->MaterialInstance ) {
-                subpart->MaterialInstance->SetMaterial( Material );
-            }
-        }
-
-        FStaticMesh * actor = World->SpawnActor< FStaticMesh >();
+        //mesh->SetMaterialInstance( 0, materialInst );
 
         actor->SetMesh( mesh );
     }
 #else
     // Load as single mesh with subparts
-    FIndexedMesh * mesh = LoadCachedMesh( "SponzaProject/Meshes/sponza.angie_mesh" );
-
     FStaticMesh * actor = World->SpawnActor< FStaticMesh >();
-
-    actor->SetMesh( mesh );
+    actor->SetMesh( GetOrCreateResource< FIndexedMesh >( "SponzaProject/Meshes/sponza.angie_mesh" ) );
 #endif
 }
 
@@ -202,3 +271,7 @@ void FSponzaModel::SetInputMappings() {
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
 }
+
+#include <Engine/Runtime/Public/EntryDecl.h>
+
+AN_ENTRY_DECL( FSponzaModel )

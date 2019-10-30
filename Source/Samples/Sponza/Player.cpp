@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "Player.h"
 
-#include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Resource/Public/ResourceManager.h>
 #include <Engine/World/Public/Components/InputComponent.h>
 
@@ -43,48 +43,15 @@ FPlayer::FPlayer() {
 
     bCanEverTick = true;
 
-    FMaterialProject * proj = NewObject< FMaterialProject >();
-
-    //
-    // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
-    //
-    FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
-    FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
-
-    //
-    // VS_Dir = InPosition - ViewPostion.xyz;
-    //
-    FMaterialInViewPositionBlock * inViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
-    FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
-    positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
-    positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
-    materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
-    FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
-    NSV_Dir->Connect( /*positionMinusViewPosition*/inPositionBlock, "Value" );
-
-    FMaterialAtmosphereBlock * atmo = proj->AddBlock< FMaterialAtmosphereBlock >();
-    atmo->Dir->Connect( materialVertexStage, "Dir" );
-
-    FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
-    materialFragmentStage->Color->Connect( atmo, "Result" );
-
-    FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-    builder->VertexStage = materialVertexStage;
-    builder->FragmentStage = materialFragmentStage;
-    builder->MaterialType = MATERIAL_TYPE_UNLIT;
-    builder->MaterialFacing = MATERIAL_FACE_BACK;
-    FMaterial * Material = builder->Build();
-
-    // Create unit box
-    FMaterialInstance * minst = NewObject< FMaterialInstance >();
-    minst->SetMaterial( Material );
-
+    // Create skybox
     static TStaticInternalResourceFinder< FIndexedMesh > UnitBox( _CTS( "FIndexedMesh.Box" ) );
-
-    unitBoxComponent = AddComponent< FMeshComponent >( "sky_box" );
-    unitBoxComponent->SetMesh( UnitBox.GetObject() );
-    unitBoxComponent->SetMaterialInstance( minst );
-    unitBoxComponent->SetScale(4000);
+    static TStaticResourceFinder< FMaterialInstance > SkyboxMaterialInst( _CTS( "SkyboxMaterialInstance" ) );
+    SkyboxComponent = AddComponent< FMeshComponent >( "Skybox" );
+    SkyboxComponent->SetMesh( UnitBox.GetObject() );
+    SkyboxComponent->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
+    SkyboxComponent->AttachTo( Camera );
+    SkyboxComponent->SetAbsoluteRotation( true );
+    SkyboxComponent->RenderingOrder = RENDER_ORDER_SKYBOX;
 }
 
 void FPlayer::BeginPlay() {
@@ -151,7 +118,7 @@ void FPlayer::Tick( float _TimeStep ) {
         MoveVector.Clear();
     }
 
-    unitBoxComponent->SetPosition(RootComponent->GetPosition());
+    //unitBoxComponent->SetPosition(RootComponent->GetPosition());
 }
 
 void FPlayer::MoveForward( float _Value ) {
@@ -197,23 +164,76 @@ void FPlayer::SpeedRelease() {
 #include <Engine/Resource/Public/ResourceManager.h>
 #include <Engine/World/Public/World.h>
 
-class FBoxActor : public FActor {
-    AN_ACTOR( FBoxActor, FActor )
+class FSphereActor : public FActor {
+    AN_ACTOR( FSphereActor, FActor )
 
 protected:
-    FBoxActor();
+    FSphereActor();
 
 private:
     FMeshComponent * MeshComponent;
 };
 
-AN_CLASS_META( FBoxActor )
+#include <Engine/MaterialGraph/Public/MaterialGraph.h>
+AN_CLASS_META( FSphereActor )
 
-FBoxActor::FBoxActor() {
+static FMaterial * GetOrCreateSphereMaterial() {
+    static FMaterial * material = nullptr;
+    if ( !material )
+    {
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
+        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
+        MGNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        texCoord->Connect( inTexCoordBlock, "Value" );
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+        MGSampler * diffuseSampler = graph->AddNode< MGSampler >();
+        diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+        MGUniformAddress * uniformAddress = graph->AddNode< MGUniformAddress >();
+        uniformAddress->Address = 0;
+        uniformAddress->Type = AT_Float4;
+        MGMulNode * mul = graph->AddNode< MGMulNode >();
+        mul->ValueA->Connect( diffuseSampler, "RGBA" );
+        mul->ValueB->Connect( uniformAddress, "Value" );
+        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
+        materialFragmentStage->Color->Connect( mul, "Result" );
+
+        //MGFloat3Node * normal = graph->AddNode< MGFloat3Node >();
+        //normal->Value = Float3(0,0,1);
+        MGFloatNode * metallic = graph->AddNode< MGFloatNode >();
+        metallic->Value = 0.0f;
+        MGFloatNode * roughness = graph->AddNode< MGFloatNode >();
+        roughness->Value = 0.1f;
+
+        //materialFragmentStage->Normal->Connect( normal, "Value" );
+        materialFragmentStage->Metallic->Connect( metallic, "Value" );
+        materialFragmentStage->Roughness->Connect( roughness, "Value" );
+
+        //materialFragmentStage->Ambient->Connect( ambientSampler, "R" );
+        //materialFragmentStage->Emissive->Connect( emissiveSampler, "RGBA" );
+
+        FMaterialBuilder * builder = CreateInstanceOf< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_PBR;
+        builder->RegisterTextureSlot( diffuseTexture );
+        material = builder->Build();
+        material->SetName( "SphereMaterial" );
+        RegisterResource( material );
+    }
+    return material;
+}
+
+FSphereActor::FSphereActor() {
+    static TStaticInternalResourceFinder< FIndexedMesh > MeshResource( _CTS( "FIndexedMesh.Sphere" ) );
+    static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "mipmapchecker.png" ) );
+
     // Create material instance for mesh component
-    FMaterialInstance * matInst = NewObject< FMaterialInstance >();;
-    matInst->SetMaterial( GModule->Material );
-    matInst->SetTexture( 0, GetResource< FTexture >( "MipmapChecker" ) );
+    FMaterialInstance * matInst = NewObject< FMaterialInstance >();
+    matInst->SetMaterial( GetOrCreateSphereMaterial() );
+    matInst->SetTexture( 0, TextureResource.GetObject() );
     matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
@@ -224,7 +244,7 @@ FBoxActor::FBoxActor() {
     MeshComponent->Mass = 1.0f;
 
     // Set mesh and material resources for mesh component
-    MeshComponent->SetMesh( GetResource< FIndexedMesh >( "ShapeSphereMesh" ) );
+    MeshComponent->SetMesh( MeshResource.GetObject() );
     MeshComponent->SetMaterialInstance( 0, matInst );
 }
 
@@ -237,7 +257,7 @@ void FPlayer::AttackPress() {
     transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
     //transform.SetScale( 0.3f );
 
-    actor = GetWorld()->SpawnActor< FBoxActor >( transform );
+    actor = GetWorld()->SpawnActor< FSphereActor >( transform );
 
     FMeshComponent * mesh = actor->GetComponent< FMeshComponent >();
     if ( mesh ) {

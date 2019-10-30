@@ -30,8 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/GameThread/Public/GameEngine.h>
-#include <Engine/Resource/Public/MaterialAssembly.h>
+#include <Engine/GameThread/Public/EngineInstance.h>
 #include <Engine/Resource/Public/IndexedMesh.h>
 #include "MyPlayerController.h"
 
@@ -43,7 +42,6 @@ public:
     TRef< FInputMappings > InputMappings;
     FWorld * World;
     FMyPlayerController * PlayerController;
-    TRef< FMaterial > Material;
 
     FSponzaModel() {}
 
@@ -58,7 +56,6 @@ private:
     void OnPostGameTick( float _TimeStep ) override{}
 
     void SetInputMappings();
-    void CreateMaterial();
     void LoadStaticMeshes();
 };
 

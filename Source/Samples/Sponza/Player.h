@@ -39,7 +39,7 @@ class FPlayer : public FPawn {
 
 public:
     FCameraComponent * Camera;
-    FMeshComponent * unitBoxComponent;
+    FMeshComponent * SkyboxComponent;
 
 protected:
 

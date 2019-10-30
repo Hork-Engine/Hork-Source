@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "MyPlayerController.h"
 
-#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/GameThread/Public/EngineInstance.h>
 
 AN_CLASS_META( FMyPlayerController )
 
@@ -47,7 +47,7 @@ void FMyPlayerController::Tick( float _TimeStep ) {
 void FMyPlayerController::UpdateCameraAspectRatio() {
     FCameraComponent * camera = GetViewCamera();
     if ( camera ) {
-        camera->SetAspectRatio( GGameEngine.GetVideoAspectRatio() );
+        camera->SetAspectRatio( GEngine.GetVideoAspectRatio() );
         camera->SetFovX( 100.0f );
     }
 }
