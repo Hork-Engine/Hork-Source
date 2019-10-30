@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Engine/Widgets/Public/WDesktop.h>
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Runtime/Public/InputDefs.h>
-#include <Engine/GameThread/Public/GameEngine.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 // Forward decl
 static Float2 CalcTextRect( FFont const * _Font, FWideChar const * _TextBegin, FWideChar const * _TextEnd, const FWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine );
@@ -393,14 +393,7 @@ WTextEdit & WTextEdit::SetTextColor( FColor4 const & _Color ) {
 }
 
 FFont const * WTextEdit::GetFont() const {
-    FFont const * font = Font;
-
-    if ( !font ) {
-        // back to default font
-        font = GGameEngine.GetDefaultFont();
-    }
-
-    return font;
+    return Font ? Font : FCanvas::GetDefaultFont();
 }
 
 int WTextEdit::GetTextLength() const {

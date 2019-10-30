@@ -668,7 +668,7 @@ void WDesktop::OnDrawBackground( FCanvas & _Canvas ) {
 
 void WDesktop::DrawCursor( FCanvas & _Canvas ) {
 #if 0
-    _Canvas.DrawCursor( Cursor, GGameEngine.GetCursorPosition(), FColor4::White(), FColor4( 0, 0, 0, 1 ), FColor4( 0, 0, 0, 28 / 255.0f ) );
+    _Canvas.DrawCursor( Cursor, GEngine.GetCursorPosition(), FColor4::White(), FColor4( 0, 0, 0, 1 ), FColor4( 0, 0, 0, 28 / 255.0f ) );
 #else
     _Canvas.DrawCursor( Cursor, CursorPosition, FColor4::White(), FColor4( 0, 0, 0, 1 ), FColor4( 0, 0, 0, 0.3f ) );
 #endif

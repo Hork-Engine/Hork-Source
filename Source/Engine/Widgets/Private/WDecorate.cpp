@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Engine/Widgets/Public/WDecorate.h>
 #include <Engine/Widgets/Public/WWidget.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 AN_CLASS_META( WDecorate )
 
@@ -93,21 +94,14 @@ WTextDecorate & WTextDecorate::SetOffset( Float2 const & _Offset ) {
     return *this;
 }
 
-FFont const * WTextDecorate::GetFont( FCanvas & _Canvas ) const {
-    FFont const * font = Font;
-
-    if ( !font ) {
-        // back to default font
-        font = _Canvas.GetDefaultFont();
-    }
-
-    return font;
+FFont const * WTextDecorate::GetFont() const {
+    return Font ? Font : FCanvas::GetDefaultFont();
 }
 
 void WTextDecorate::OnDrawEvent( FCanvas & _Canvas ) {
     Float2 ownerSize = GetOwner()->GetCurrentSize();
     float width = ownerSize.X;
-    FFont const * font = GetFont( _Canvas );
+    FFont const * font = GetFont();
 
     Float2 pos;
     Float2 size = font->CalcTextSizeA( font->GetFontSize(), ownerSize.X, bWordWrap ? ownerSize.X : 0.0f, Text.Begin(), Text.End() );

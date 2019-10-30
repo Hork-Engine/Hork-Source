@@ -89,7 +89,7 @@ protected:
 
     void OnDrawEvent( FCanvas & _Canvas ) override;
 
-    FFont const * GetFont( FCanvas & _Canvas ) const;
+    FFont const * GetFont() const;
 
 private:
     TRef< FFont > Font;

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Engine/Widgets/Public/WWindow.h>
 #include <Engine/Widgets/Public/WDesktop.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 AN_CLASS_META( WWindow )
 
@@ -160,7 +161,7 @@ Float2 WWindow::GetTextPositionWithAlignment( FCanvas & _Canvas ) const {
     const float width = GetCurrentSize().X;
     const float height = CaptionHeight;
 
-    FFont const * font = GetFont( _Canvas );
+    FFont const * font = GetFont();
     Float2 size = font->CalcTextSizeA( font->GetFontSize(), width, bWordWrap ? width : 0.0f, CaptionText.Begin(), CaptionText.End() );
 
     if ( TextHorizontalAlignment == WIDGET_ALIGNMENT_LEFT ) {
@@ -190,15 +191,8 @@ Float2 WWindow::GetTextPositionWithAlignment( FCanvas & _Canvas ) const {
     return pos;
 }
 
-FFont const * WWindow::GetFont( FCanvas & _Canvas ) const {
-    FFont const * font = Font;
-
-    if ( !Font ) {
-        // back to default font
-        font = _Canvas.GetDefaultFont();
-    }
-
-    return font;
+FFont const * WWindow::GetFont() const {
+    return Font ? Font : FCanvas::GetDefaultFont();
 }
 
 void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
@@ -276,7 +270,7 @@ void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
 
         // Draw caption text
         if ( !CaptionText.IsEmpty() ) {
-            FFont const * font = GetFont( _Canvas );
+            FFont const * font = GetFont();
             _Canvas.PushClipRect( mins, mins + captionSize, true );
             _Canvas.DrawTextUTF8( font, font->GetFontSize(), mins + GetTextPositionWithAlignment( _Canvas ), TextColor, CaptionText.Begin(), CaptionText.End(), bWordWrap ? width : 0.0f );
             _Canvas.PopClipRect();

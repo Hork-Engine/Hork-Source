@@ -156,7 +156,7 @@ void WTextButton::OnDrawEvent( FCanvas & _Canvas ) {
 
     GetDesktopRect( mins, maxs, true );
 
-    FFont * font = _Canvas.GetDefaultFont();
+    FFont * font = FCanvas::GetDefaultFont();
 
     float width = GetAvailableWidth();
     float height = GetAvailableHeight();

@@ -59,7 +59,7 @@ protected:
     void OnDrawEvent( FCanvas & _Canvas ) override;
 
     Float2 GetTextPositionWithAlignment( FCanvas & _Canvas ) const;
-    FFont const * GetFont( FCanvas & _Canvas ) const;
+    FFont const * GetFont() const;
 
 private:
     void UpdateDragShape();

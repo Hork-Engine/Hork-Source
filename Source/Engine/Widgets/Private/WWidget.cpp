@@ -1980,7 +1980,7 @@ void WMenuItem::OnDrawEvent( FCanvas & _Canvas ) {
 
     GetDesktopRect( mins, maxs, true );
 
-    FFontNew * font = _Canvas.GetDefaultFont();
+    FFontNew * font = FCanvas::GetDefaultFont();
 
     float width = GetClientWidth();
     float height = GetClientHeight();
