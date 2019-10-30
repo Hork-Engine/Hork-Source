@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Base/Public/DebugDraw.h>
-#include "MaterialAssembly.h"
+#include "Material.h"
 #include "CollisionBody.h"
 
 class FIndexedMesh;
@@ -391,6 +391,10 @@ public:
 
     // Create BVH for raycast optimization
     void CreateBVH();
+
+    void SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _MaterialInstance );
+
+    void SetBoundingBox( int _SubpartIndex, BvAxisAlignedBox const & _BoundingBox );
 
     // Get mesh vertices
     FMeshVertex * GetVertices() { return Vertices.ToPtr(); }

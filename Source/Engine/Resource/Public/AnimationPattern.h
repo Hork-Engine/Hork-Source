@@ -30,13 +30,18 @@ SOFTWARE.
 
 #pragma once
 
-#include "Animation.h"
-#include "Asset.h"
-#include "CollisionBody.h"
-#include "GLTF.h"
-#include "IndexedMesh.h"
-#include "Material.h"
-#include "MaterialAssembly.h"
-#include "ResourceManager.h"
-#include "Skeleton.h"
-#include "Texture.h"
+#include <Engine/Base/Public/BaseObject.h>
+
+class FAnimationPattern : public FBaseObject {
+    AN_CLASS( FAnimationPattern, FBaseObject )
+
+public:
+    FString Pattern;
+    float   Speed = 1.0f;
+    float   Quantizer;
+
+    float Calculate( float _Time );
+
+protected:
+    FAnimationPattern() {}
+};

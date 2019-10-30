@@ -43,7 +43,7 @@ struct FSubpart;
 class FCollisionBody : public FBaseObject {
     AN_CLASS( FCollisionBody, FBaseObject )
 
-    friend class FWorld;
+    friend struct FWorldCollisionQuery;
     friend void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
 
 public:
@@ -63,7 +63,7 @@ protected:
         Margin = 0.01f;
     }
 
-    // Only FWorld and CreateCollisionShape can call Create()
+    // Only FWorldCollisionQuery and CreateCollisionShape can call Create()
     virtual btCollisionShape * Create() { AN_Assert( 0 ); return nullptr; }
 };
 

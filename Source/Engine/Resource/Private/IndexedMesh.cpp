@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Engine/Resource/Public/IndexedMesh.h>
 #include <Engine/Resource/Public/Asset.h>
 #include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/Resource/Public/GLTF.h>
 
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
@@ -144,32 +145,46 @@ void FIndexedMesh::Purge() {
 }
 
 bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
-    FFileStream f;
-
-    if ( !f.OpenRead( _Path ) ) {
-
-        if ( _CreateDefultObjectIfFails ) {
-            InitializeDefaultObject();
-            return true;
-        }
-
-        return false;
-    }
 
     FMeshAsset asset;
-    asset.Read( f );
+    
+    int i = FString::FindExt( _Path );
+    if ( !FString::Icmp( &_Path[i], ".gltf" ) ) {
+
+        FSkeletonAsset skelAsset;
+        TStdVector< FAnimationAsset > animAsset;
+
+        LoadGLTF( _Path, asset, skelAsset, animAsset );
+    } else {
+        FFileStream f;
+
+        if ( !f.OpenRead( _Path ) ) {
+
+            if ( _CreateDefultObjectIfFails ) {
+                InitializeDefaultObject();
+                return true;
+            }
+
+            return false;
+        }
+    
+        asset.Read( f );
+    }
 
     TPodArray< FMaterialInstance * > matInstances;
     matInstances.Resize( asset.Materials.Size() );
 
+    static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.DefaultPBR" ) );
+
     for ( int j = 0; j < asset.Materials.Size(); j++ ) {
 
         FMaterialInstance * matInst = CreateInstanceOf< FMaterialInstance >();
-        //matInst->Material = Material;
         matInstances[ j ] = matInst;
 
+        matInst->SetMaterial( MaterialResource.GetObject() );
+
         FMeshMaterial const & material = asset.Materials[ j ];
-        for ( int n = 0; n < 1/*material.NumTextures*/; n++ ) {
+        for ( int n = 0; n < material.NumTextures; n++ ) {
             FMaterialTexture const & texture = asset.Textures[ material.Textures[ n ] ];
             FTexture2D * texObj = GetOrCreateResource< FTexture2D >( texture.FileName.ToConstChar() );
             matInst->SetTexture( n, texObj );
@@ -177,6 +192,12 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
     }
 
     bool bSkinned = asset.Weights.Size() == asset.Vertices.Size();
+
+    //for ( int j = 0; j < asset.Subparts.size(); j++ ) {
+    //    FSubpart const & s = asset.Subparts[j];
+
+    //    CalcTangentSpace( asset.Vertices.ToPtr() + s.BaseVertex, s.VertexCount, asset.Indices.ToPtr() + s.FirstIndex, s.IndexCount );
+    //}
 
     Initialize( asset.Vertices.Size(), asset.Indices.Size(), asset.Subparts.size(), bSkinned, false );
     WriteVertexData( asset.Vertices.ToPtr(), asset.Vertices.Size(), 0 );
@@ -193,7 +214,9 @@ bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObj
         subpart->VertexCount = s.VertexCount;
         subpart->IndexCount = s.IndexCount;
         subpart->BoundingBox = s.BoundingBox;
-        subpart->MaterialInstance = matInstances[ s.Material ];
+        if ( s.Material < matInstances.Size() ) {
+            subpart->MaterialInstance = matInstances[ s.Material ];
+        }
     }
 
     // TODO: load collision from file. This code is only for test!!!
@@ -246,6 +269,20 @@ void FIndexedMesh::CreateBVH() {
     for ( FIndexedMeshSubpart * subpart : Subparts ) {
         subpart->CreateBVH();
     }
+}
+
+void FIndexedMesh::SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _MaterialInstance ) {
+    if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Size() ) {
+        return;
+    }
+    Subparts[_SubpartIndex]->SetMaterialInstance( _MaterialInstance );
+}
+
+void FIndexedMesh::SetBoundingBox( int _SubpartIndex, BvAxisAlignedBox const & _BoundingBox ) {
+    if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Size() ) {
+        return;
+    }
+    Subparts[_SubpartIndex]->SetBoundingBox( _BoundingBox );
 }
 
 FIndexedMeshSubpart * FIndexedMesh::GetSubpart( int _SubpartIndex ) {

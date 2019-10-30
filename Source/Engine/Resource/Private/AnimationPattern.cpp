@@ -28,19 +28,33 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include <Engine/Resource/Public/AnimationPattern.h>
 
-#include <Engine/Core/Public/IO.h>
+AN_CLASS_META( FAnimationPattern )
 
-#define FMT_FILE_TYPE_MESH      1
-#define FMT_FILE_TYPE_SKELETON  2
-#define FMT_FILE_TYPE_ANIMATION 3
-#define FMT_VERSION_MESH        1
-#define FMT_VERSION_SKELETON    1
-#define FMT_VERSION_ANIMATION   1
+AN_FORCEINLINE float Quantize( float _Lerp, float _Quantizer ) {
+    return _Quantizer > 0.0f ? FMath::Floor( _Lerp * _Quantizer ) / _Quantizer : _Lerp;
+}
 
-char * AssetParseTag( char * _Buf, const char * _Tag );
+float FAnimationPattern::Calculate( float _Time ) {
+    int numFrames = Pattern.Length();
 
-char * AssetParseName( char * _Buf, char ** _Name );
+    if ( numFrames > 0 ) {
+        float t = _Time * Speed;
 
-bool AssetReadFormat( FFileStream & f, int * _Format, int * _Version );
+        int keyFrame = FMath::Floor( t );
+        int nextFrame = keyFrame + 1;
+
+        float lerp = t - keyFrame;
+
+        keyFrame %= numFrames;
+        nextFrame %= numFrames;
+
+        float a = (FMath::Clamp( Pattern[keyFrame ], 'a', 'z' )-'a') / 26.0f;
+        float b = (FMath::Clamp( Pattern[nextFrame], 'a', 'z' )-'a') / 26.0f;
+
+        return FMath::Lerp( a, b, Quantize( lerp, Quantizer ) );
+    }
+
+    return 1.0f;
+}

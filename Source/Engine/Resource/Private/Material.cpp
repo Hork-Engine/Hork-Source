@@ -29,8 +29,8 @@ SOFTWARE.
 */
 
 #include <Engine/Resource/Public/Material.h>
-#include <Engine/Resource/Public/MaterialAssembly.h>
 #include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/MaterialGraph/Public/MaterialGraph.h>
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 #include <Engine/Runtime/Public/Runtime.h>
@@ -54,25 +54,25 @@ void FMaterial::Initialize( FMaterialBuildData const * _Data ) {
 }
 
 void FMaterial::InitializeInternalResource( const char * _InternalResourceName ) {
-    if ( !FString::Icmp( _InternalResourceName, "FMaterial.Default" ) ) {
-        FMaterialProject * proj = NewObject< FMaterialProject >();
+    if ( !FString::Icmp( _InternalResourceName, "FMaterial.Default" )
+        || !FString::Icmp( _InternalResourceName, "FMaterial.DefaultUnlit" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
-        FMaterialInTexCoordBlock * inTexCoordBlock = proj->AddBlock< FMaterialInTexCoordBlock >();
+        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
 
-        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
+        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
 
-        FAssemblyNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        MGNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
         texCoord->Connect( inTexCoordBlock, "Value" );
 
-        FMaterialTextureSlotBlock * diffuseTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
-        diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
-        diffuseTexture->AddressU = diffuseTexture->AddressV = diffuseTexture->AddressW = TEXTURE_ADDRESS_WRAP;
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
 
-        FMaterialSamplerBlock * textureSampler = proj->AddBlock< FMaterialSamplerBlock >();
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
         textureSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
         textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
-        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
+        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
         materialFragmentStage->Color->Connect( textureSampler, "RGBA" );
 
         FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
@@ -87,28 +87,192 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         return;
     }
 
+    if ( !FString::Icmp( _InternalResourceName, "FMaterial.DefaultBaseLight" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+
+        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
+
+        MGNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        texCoord->Connect( inTexCoordBlock, "Value" );
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
+        materialFragmentStage->Color->Connect( textureSampler, "RGBA" );
+
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_BASELIGHT;
+        builder->RegisterTextureSlot( diffuseTexture );
+
+        FMaterialBuildData * buildData = builder->BuildData();
+        Initialize( buildData );
+        GZoneMemory.Dealloc( buildData );
+        return;
+    }
+
+    if ( !FString::Icmp( _InternalResourceName, "FMaterial.DefaultPBR" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+
+        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
+
+        MGNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        texCoord->Connect( inTexCoordBlock, "Value" );
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * metallicTexture = graph->AddNode< MGTextureSlot >();
+        metallicTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * normalTexture = graph->AddNode< MGTextureSlot >();
+        normalTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * roughnessTexture = graph->AddNode< MGTextureSlot >();
+        roughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
+        normalSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        normalSampler->TextureSlot->Connect( normalTexture, "Value" );
+        normalSampler->Compression = NM_XYZ;
+
+        MGSampler * metallicSampler = graph->AddNode< MGSampler >();
+        metallicSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        metallicSampler->TextureSlot->Connect( metallicTexture, "Value" );
+
+        MGSampler * roughnessSampler = graph->AddNode< MGSampler >();
+        roughnessSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        roughnessSampler->TextureSlot->Connect( roughnessTexture, "Value" );
+
+        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
+        materialFragmentStage->Color->Connect( textureSampler, "RGBA" );
+        materialFragmentStage->Normal->Connect( normalSampler, "XYZ" );
+        materialFragmentStage->Metallic->Connect( metallicSampler, "R" );
+        materialFragmentStage->Roughness->Connect( roughnessSampler, "R" );
+
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_PBR;
+        builder->RegisterTextureSlot( diffuseTexture );
+        builder->RegisterTextureSlot( metallicTexture );
+        builder->RegisterTextureSlot( normalTexture );
+        builder->RegisterTextureSlot( roughnessTexture );
+
+        FMaterialBuildData * buildData = builder->BuildData();
+        Initialize( buildData );
+        GZoneMemory.Dealloc( buildData );
+        return;
+    }
+
+    if ( !FString::Icmp( _InternalResourceName, "FMaterial.PBRMetallicRoughness" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+
+        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
+
+        MGNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        texCoord->Connect( inTexCoordBlock, "Value" );
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * metallicRoughnessTexture = graph->AddNode< MGTextureSlot >();
+        metallicRoughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * normalTexture = graph->AddNode< MGTextureSlot >();
+        normalTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * ambientTexture = graph->AddNode< MGTextureSlot >();
+        ambientTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * emissiveTexture = graph->AddNode< MGTextureSlot >();
+        emissiveTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
+        normalSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        normalSampler->TextureSlot->Connect( normalTexture, "Value" );
+        normalSampler->Compression = NM_XYZ;
+
+        MGSampler * metallicRoughnessSampler = graph->AddNode< MGSampler >();
+        metallicRoughnessSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        metallicRoughnessSampler->TextureSlot->Connect( metallicRoughnessTexture, "Value" );
+
+        MGSampler * ambientSampler = graph->AddNode< MGSampler >();
+        ambientSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        ambientSampler->TextureSlot->Connect( ambientTexture, "Value" );
+
+        MGSampler * emissiveSampler = graph->AddNode< MGSampler >();
+        emissiveSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        emissiveSampler->TextureSlot->Connect( emissiveTexture, "Value" );
+
+        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
+        materialFragmentStage->Color->Connect( textureSampler, "RGBA" );
+        materialFragmentStage->Normal->Connect( normalSampler, "XYZ" );
+        materialFragmentStage->Metallic->Connect( metallicRoughnessSampler, "B" );
+        materialFragmentStage->Roughness->Connect( metallicRoughnessSampler, "G" );
+        materialFragmentStage->Ambient->Connect( ambientSampler, "R" );
+        materialFragmentStage->Emissive->Connect( emissiveSampler, "RGBA" );
+
+        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        builder->VertexStage = materialVertexStage;
+        builder->FragmentStage = materialFragmentStage;
+        builder->MaterialType = MATERIAL_TYPE_PBR;
+        builder->RegisterTextureSlot( diffuseTexture );
+        builder->RegisterTextureSlot( metallicRoughnessTexture );
+        builder->RegisterTextureSlot( normalTexture );
+        builder->RegisterTextureSlot( ambientTexture );
+        builder->RegisterTextureSlot( emissiveTexture );
+
+        FMaterialBuildData * buildData = builder->BuildData();
+        Initialize( buildData );
+        GZoneMemory.Dealloc( buildData );
+        return;
+    }
+
     if ( !FString::Icmp( _InternalResourceName, "FMaterial.Skybox" ) ) {
 #if 1
-        FMaterialProject * proj = NewObject< FMaterialProject >();
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
-        FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
+        MGInPosition * inPositionBlock = graph->AddNode< MGInPosition >();
 
-        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
+        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
         materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
 
-        FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
+        MGNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
         NSV_Dir->Connect( inPositionBlock, "Value" );
 
-        FMaterialTextureSlotBlock * cubemapTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
-        cubemapTexture->TextureType = TEXTURE_CUBEMAP;
-        cubemapTexture->Filter = TEXTURE_FILTER_LINEAR;
-        cubemapTexture->AddressU = cubemapTexture->AddressV = cubemapTexture->AddressW = TEXTURE_ADDRESS_CLAMP;
+        MGTextureSlot * cubemapTexture = graph->AddNode< MGTextureSlot >();
+        cubemapTexture->SamplerDesc.TextureType = TEXTURE_CUBEMAP;
+        cubemapTexture->SamplerDesc.Filter = TEXTURE_FILTER_LINEAR;
+        cubemapTexture->SamplerDesc.AddressU =
+        cubemapTexture->SamplerDesc.AddressV =
+        cubemapTexture->SamplerDesc.AddressW = TEXTURE_ADDRESS_CLAMP;
 
-        FMaterialSamplerBlock * cubemapSampler = proj->AddBlock< FMaterialSamplerBlock >();
+        MGSampler * cubemapSampler = graph->AddNode< MGSampler >();
         cubemapSampler->TexCoord->Connect( materialVertexStage, "Dir" );
         cubemapSampler->TextureSlot->Connect( cubemapTexture, "Value" );
 
-        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
+        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
         materialFragmentStage->Color->Connect( cubemapSampler, "RGBA" );
 
         FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
@@ -123,48 +287,48 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         Initialize( buildData );
         GZoneMemory.Dealloc( buildData );
 #else
-        FMaterialProject * proj = NewObject< FMaterialProject >();
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
         //
-        // gl_Position = ProjectTranslateViewMatrix * vec4( InPosition, 1.0 );
+        // gl_Position = TransformMatrix * vec4( InPosition, 1.0 );
         //
-        FMaterialInPositionBlock * inPositionBlock = proj->AddBlock< FMaterialInPositionBlock >();
-        FMaterialVertexStage * materialVertexStage = proj->AddBlock< FMaterialVertexStage >();
+        MGInPosition * inPositionBlock = graph->AddNode< MGInPosition >();
+        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
         materialVertexStage->Position->Connect( inPositionBlock, "Value" );
 
         //
         // VS_TexCoord = InTexCoord;
         //
-        FMaterialInTexCoordBlock * inTexCoord = proj->AddBlock< FMaterialInTexCoordBlock >();
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
         materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
-        FAssemblyNextStageVariable * NSV_TexCoord = materialVertexStage->FindNextStageVariable( "TexCoord" );
+        MGNextStageVariable * NSV_TexCoord = materialVertexStage->FindNextStageVariable( "TexCoord" );
         NSV_TexCoord->Connect( inTexCoord, "Value" );
 
         //
         // VS_Dir = InPosition - ViewPostion.xyz;
         //
-        FMaterialInViewPositionBlock * inViewPosition = proj->AddBlock< FMaterialInViewPositionBlock >();
-        FMaterialSubBlock * positionMinusViewPosition = proj->AddBlock< FMaterialSubBlock >();
+        MGInViewPosition * inViewPosition = graph->AddNode< MGInViewPosition >();
+        MGSubNode * positionMinusViewPosition = graph->AddNode< MGSubNode >();
         positionMinusViewPosition->ValueA->Connect( inPositionBlock, "Value" );
         positionMinusViewPosition->ValueB->Connect( inViewPosition, "Value" );
         materialVertexStage->AddNextStageVariable( "Dir", AT_Float3 );
-        FAssemblyNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
+        MGNextStageVariable * NSV_Dir = materialVertexStage->FindNextStageVariable( "Dir" );
         NSV_Dir->Connect( positionMinusViewPosition, "Result" );
 
         // normDir = normalize( VS_Dir )
-        FMaterialNormalizeBlock * normDir = proj->AddBlock< FMaterialNormalizeBlock >();
+        MGNormalizeNode * normDir = graph->AddNode< MGNormalizeNode >();
         normDir->Value->Connect( materialVertexStage, "Dir" );
 
-        FMaterialTextureSlotBlock * skyTexture = proj->AddBlock< FMaterialTextureSlotBlock >();
+        MGTextureSlot * skyTexture = graph->AddNode< MGTextureSlot >();
         skyTexture->Filter = TEXTURE_FILTER_LINEAR;
         skyTexture->TextureType = TEXTURE_CUBEMAP;
 
         // color = texture( skyTexture, normDir );
-        FMaterialSamplerBlock * color = proj->AddBlock< FMaterialSamplerBlock >();
+        MGSampler * color = graph->AddNode< MGSampler >();
         color->TexCoord->Connect( normDir, "Result" );
         color->TextureSlot->Connect( skyTexture, "Value" );
 
-        FMaterialFragmentStage * materialFragmentStage = proj->AddBlock< FMaterialFragmentStage >();
+        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
         materialFragmentStage->Color->Connect( color, "RGBA" );
 
         FMaterialBuilder * builder = NewObject< FMaterialBuilder >();

@@ -30,61 +30,9 @@ SOFTWARE.
 
 #pragma once
 
+#include <Engine/Core/Public/Image.h>
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Runtime/Public/RenderCore.h>
-
-/*
-
-FSoftwareMipmapGenerator
-
-Software mipmap generator
-
-*/
-struct FSoftwareMipmapGenerator {
-    void * SourceImage;
-    int Width;
-    int Height;
-    int NumChannels;
-    bool bLinearSpace;
-    bool bHDRI;
-
-    void ComputeRequiredMemorySize( int & _RequiredMemory, int & _NumLods ) const;
-    void GenerateMipmaps( void * _Data );
-};
-
-/*
-
-FImage
-
-Image loader
-
-*/
-class ANGIE_API FImage {
-public:
-    void * pRawData;
-    int Width;
-    int Height;
-    int NumChannels;
-    bool bHDRI;
-    bool bLinearSpace;
-    bool bHalf; // Only for HDRI images
-    int NumLods;
-
-    FImage();
-    ~FImage();
-
-    // Load image as byte*
-    bool LoadRawImage( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadRawImage( FFileStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadRawImage( FMemoryStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-
-    // Load image as float* in linear space
-    bool LoadRawImageHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadRawImageHDRI( FFileStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadRawImageHDRI( FMemoryStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-
-    void Free();
-};
 
 /*
 
@@ -243,13 +191,13 @@ protected:
 };
 
 struct FColorGradingPreset {
-    Float3 gain;
-    Float3 gamma;
-    Float3 lift;
-    Float3 presaturation;
-    Float3 colorTemperatureStrength;
-    float colorTemperature; // in K
-    float colorTemperatureBrightnessNormalization;
+    Float3 Gain;
+    Float3 Gamma;
+    Float3 Lift;
+    Float3 Presaturation;
+    Float3 ColorTemperatureStrength;
+    float ColorTemperature; // in K
+    float ColorTemperatureBrightnessNormalization;
 };
 
 class FTexture3D : public FTexture {

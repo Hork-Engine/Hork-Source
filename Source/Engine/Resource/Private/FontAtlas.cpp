@@ -34,122 +34,6 @@ SOFTWARE.
 
 static const unsigned short * GGlyphRanges = FFont::GetGlyphRangesDefault();
 
-#if 0
-AN_CLASS_META( FFontAtlas )
-
-FFontAtlas::FFontAtlas() {
-
-}
-
-FFontAtlas::~FFontAtlas() {
-}
-
-int FFontAtlas::AddFontDefault() {
-    if ( !Atlas.AddFontDefault() ) {
-        return -1;
-    }
-    return Atlas.Fonts.size() - 1;
-}
-
-int FFontAtlas::AddFontFromFileTTF( const char * _FileName, float _SizePixels, unsigned short const * _GlyphRanges ) {
-    if ( !Atlas.AddFontFromFileTTF( _FileName, _SizePixels, nullptr, _GlyphRanges ) ) {
-        return -1;
-    }
-    return Atlas.Fonts.size() - 1;
-}
-
-int FFontAtlas::AddFontFromMemoryTTF( void * _FontData, int _FontSize, float _SizePixels, unsigned short const * _GlyphRanges ) {
-    if ( !Atlas.AddFontFromMemoryTTF( _FontData, _FontSize, _SizePixels, nullptr, _GlyphRanges ) ) {
-        return -1;
-    }
-    return Atlas.Fonts.size() - 1;
-}
-
-int FFontAtlas::AddFontFromMemoryCompressedTTF( const void * _CompressedFontData, int _CompressedFontSize, float _SizePixels, unsigned short const * _GlyphRanges ) {
-    if ( !Atlas.AddFontFromMemoryCompressedTTF( _CompressedFontData, _CompressedFontSize, _SizePixels, nullptr, _GlyphRanges ) ) {
-         return -1;
-     }
-    return Atlas.Fonts.size() - 1;
-}
-
-int FFontAtlas::AddFontFromMemoryCompressedBase85TTF( const char * _CompressedFontData, float _SizePixels, unsigned short const * _GlyphRanges ) {
-    if ( !Atlas.AddFontFromMemoryCompressedBase85TTF( _CompressedFontData, _SizePixels, nullptr, _GlyphRanges ) ) {
-        return -1;
-    }
-    return Atlas.Fonts.size() - 1;
-}
-
-//FFont * FFontAtlas::GetFont( int _Id ) {
-//    if ( _Id >= 0 && _Id < Atlas.Fonts.size() ) {
-//        return Atlas.Fonts[_Id];
-//    }
-//    return nullptr;
-//}
-
-FFont const * FFontAtlas::GetFont( int _Id ) const {
-    if ( _Id >= 0 && _Id < Atlas.Fonts.size() ) {
-        return Atlas.Fonts[_Id];
-    }
-    return nullptr;
-}
-
-void FFontAtlas::Build() {
-    unsigned char * pixels;
-    int atlasWidth, atlasHeight;
-
-    // Get atlas raw data
-    Atlas.GetTexDataAsAlpha8( &pixels, &atlasWidth, &atlasHeight );
-
-    // Create atlas texture
-    if ( !AtlasTexture ) {
-        AtlasTexture = NewObject< FTexture2D >();
-    }
-    AtlasTexture->Initialize( TEXTURE_PF_R8, 1, atlasWidth, atlasHeight );
-    AtlasTexture->WriteTextureData( 0, 0, atlasWidth, atlasHeight, 0, pixels );
-
-    Atlas.TexID = AtlasTexture->GetGPUResource();
-}
-
-void FFontAtlas::Purge() {
-    Atlas.Clear();
-    Atlas.TexID = nullptr;
-    AtlasTexture = nullptr;
-}
-
-const unsigned short * FFontAtlas::GetGlyphRangesDefault() {
-    return ImFontAtlas::GetGlyphRangesDefault();
-}
-
-const unsigned short * FFontAtlas::GetGlyphRangesKorean() {
-    return ImFontAtlas::GetGlyphRangesKorean();
-}
-
-const unsigned short * FFontAtlas::GetGlyphRangesJapanese() {
-    return ImFontAtlas::GetGlyphRangesJapanese();
-}
-
-const unsigned short * FFontAtlas::GetGlyphRangesChineseFull() {
-    return ImFontAtlas::GetGlyphRangesChineseFull();
-}
-
-const unsigned short * FFontAtlas::GetGlyphRangesChineseSimplifiedCommon() {
-    return ImFontAtlas::GetGlyphRangesChineseSimplifiedCommon();
-}
-
-const unsigned short * FFontAtlas::GetGlyphRangesCyrillic() {
-    return ImFontAtlas::GetGlyphRangesCyrillic();
-}
-
-const unsigned short * FFontAtlas::GetGlyphRangesThai() {
-    return ImFontAtlas::GetGlyphRangesThai();
-}
-
-const unsigned short * FFontAtlas::GetGlyphRangesVietnamese() {
-    return ImFontAtlas::GetGlyphRangesVietnamese();
-}
-#endif
-
-
 AN_CLASS_META( FFont )
 
 void FFont::InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, float _SizePixels, unsigned short const * _GlyphRanges ) {
@@ -192,6 +76,7 @@ void FFont::InitializeInternalResource( const char * _InternalResourceName ) {
         Atlas.AddFontDefault();
 
         CreateTexture();
+        return;
     }
 
     GLogger.Printf( "Unknown internal font %s\n", _InternalResourceName );
