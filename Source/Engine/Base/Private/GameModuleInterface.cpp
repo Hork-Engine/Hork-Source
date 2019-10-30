@@ -28,8 +28,31 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include <Engine/Base/Public/GameModuleInterface.h>
+#include <Engine/Runtime/Public/Runtime.h>
 
-#include "BaseObject.h"
-#include "Factory.h"
-#include "DebugDraw.h"
+AN_CLASS_META( IGameModule )
+
+IGameModule::IGameModule() {
+
+}
+
+void IGameModule::OnGameStart() {
+
+}
+
+void IGameModule::OnGameEnd() {
+
+}
+
+void IGameModule::OnPreGameTick( float _TimeStep ) {
+
+}
+
+void IGameModule::OnPostGameTick( float _TimeStep ) {
+
+}
+
+void IGameModule::OnGameClose() {
+    GRuntime.PostTerminateEvent();
+}
