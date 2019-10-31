@@ -161,10 +161,10 @@ class FCollisionCapsule : public FCollisionBody {
 
 public:
 
-    // Radius of the capsule. The total height is Height + 2 * Radius
+    /** Radius of the capsule. The total height is Height + 2 * Radius */
     float Radius = 1;
 
-    // Height between the center of each sphere of the capsule caps
+    /** Height between the center of each sphere of the capsule caps */
     float Height = 1;
 
     int Axial = AXIAL_DEFAULT;
@@ -304,7 +304,7 @@ class FCollisionTriangleSoupBVH : public FCollisionBody {
     AN_CLASS( FCollisionTriangleSoupBVH, FCollisionBody )
 
 public:
-    // BVH data for static or kinematic objects
+    /** BVH data for static or kinematic objects */
     TRef< FCollisionTriangleSoupBVHData > BvhData;
 
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;

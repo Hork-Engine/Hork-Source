@@ -37,22 +37,22 @@ class FFont : public FBaseObject {
     AN_CLASS( FFont, FBaseObject )
 
 public:
-    // Initialize from memory
+    /** Initialize from memory */
     void InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
 
-    // Initialize from memory compressed
+    /** Initialize from memory compressed */
     void InitializeFromMemoryCompressedTTF( const void * _SysMem, size_t _SizeInBytes, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
 
-    // Initialize from memory compressed base85
+    /** Initialize from memory compressed base85 */
     void InitializeFromMemoryCompressedBase85TTF( const char * _SysMem, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
 
-    // Create font from string (FFont.***)
+    /** Create font from string (FFont.***) */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
-    // Initialize font from file
+    /** Initialize font from file */
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
-    // Purge model data
+    /** Purge font data */
     void Purge();
 
     bool IsValid() const;
@@ -80,14 +80,23 @@ public:
     static void SetGlyphRanges( const unsigned short * _GlyphRanges );
 
     // Helpers.
-    static const unsigned short * GetGlyphRangesDefault();                // Basic Latin, Extended Latin
-    static const unsigned short * GetGlyphRangesKorean();                 // Default + Korean characters
-    static const unsigned short * GetGlyphRangesJapanese();               // Default + Hiragana, Katakana, Half-Width, Selection of 1946 Ideographs
-    static const unsigned short * GetGlyphRangesChineseFull();            // Default + Half-Width + Japanese Hiragana/Katakana + full set of about 21000 CJK Unified Ideographs
-    static const unsigned short * GetGlyphRangesChineseSimplifiedCommon();// Default + Half-Width + Japanese Hiragana/Katakana + set of 2500 CJK Unified Ideographs for common simplified Chinese
-    static const unsigned short * GetGlyphRangesCyrillic();               // Default + about 400 Cyrillic characters
-    static const unsigned short * GetGlyphRangesThai();                   // Default + Thai characters
-    static const unsigned short * GetGlyphRangesVietnamese();             // Default + Vietname characters
+
+    /** Basic Latin, Extended Latin */
+    static const unsigned short * GetGlyphRangesDefault();
+    /** Default + Korean characters */
+    static const unsigned short * GetGlyphRangesKorean();
+    /** Default + Hiragana, Katakana, Half-Width, Selection of 1946 Ideographs */
+    static const unsigned short * GetGlyphRangesJapanese();
+    /** Default + Half-Width + Japanese Hiragana/Katakana + full set of about 21000 CJK Unified Ideographs */
+    static const unsigned short * GetGlyphRangesChineseFull();
+    /** Default + Half-Width + Japanese Hiragana/Katakana + set of 2500 CJK Unified Ideographs for common simplified Chinese */
+    static const unsigned short * GetGlyphRangesChineseSimplifiedCommon();
+    /** Default + about 400 Cyrillic characters */
+    static const unsigned short * GetGlyphRangesCyrillic();
+    /** Default + Thai characters */
+    static const unsigned short * GetGlyphRangesThai();
+    /** Default + Vietname characters */
+    static const unsigned short * GetGlyphRangesVietnamese();
 
 protected:
     FFont() {}

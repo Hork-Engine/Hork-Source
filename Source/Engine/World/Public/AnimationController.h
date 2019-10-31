@@ -35,7 +35,7 @@ SOFTWARE.
 class FAnimation;
 class FSkinnedComponent;
 
-/*
+/**
 
 EAnimationPlayMode
 
@@ -48,7 +48,7 @@ enum EAnimationPlayMode {
     ANIMATION_PLAY_CLAMP
 };
 
-/*
+/**
 
 FAnimationController
 
@@ -61,46 +61,46 @@ class FAnimationController : public FBaseObject {
     friend class FSkinnedComponent;
 
 public:
-    // Set source animation
+    /** Set source animation */
     void SetAnimation( FAnimation * _Animation );
 
-    // Get source animation
+    /** Get source animation */
     FAnimation * GetAnimation() { return Animation; }
 
-    // Get animation owner
+    /** Get animation owner */
     FSkinnedComponent * GetOwner() { return Owner; }
 
-    // Set position on animation track
+    /** Set position on animation track */
     void SetTime( float _Time );
 
-    // Step time delta on animation track
+    /** Step time delta on animation track */
     void AddTimeDelta( float _TimeDelta );
 
-    // Get time
+    /** Get time */
     float GetTime() const { return TimeLine; }
 
-    // Set play mode
+    /** Set play mode */
     void SetPlayMode( EAnimationPlayMode _PlayMode );
 
-    // Get play mode
+    /** Get play mode */
     EAnimationPlayMode GetPlayMode() const { return PlayMode; }
 
-    // Set time quantizer
+    /** Set time quantizer */
     void SetQuantizer( float _Quantizer );
 
-    // Get quantizer
+    /** Get quantizer */
     float GetQuantizer() const { return Quantizer; }
 
-    // Set weight for animation blending
+    /** Set weight for animation blending */
     void SetWeight( float _Weight );
 
-    // Get weight
+    /** Get weight */
     float GetWeight() const { return Weight; }
 
-    // Set controller enabled/disabled
+    /** Set controller enabled/disabled */
     void SetEnabled( bool _Enabled );
 
-    // Is controller enabled
+    /** Is controller enabled */
     bool IsEnabled() const { return bEnabled; }
 
 protected:

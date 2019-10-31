@@ -37,9 +37,31 @@ SOFTWARE.
 
 class FIndexedMesh;
 
-/*
+/**
 
-FMaterialTexture
+FSocketDef
+
+Socket for attaching
+
+*/
+class FSocketDef : public FBaseObject {
+    AN_CLASS( FSocketDef, FBaseObject )
+
+public:
+    Float3 Position;
+    Float3 Scale;
+    Quat Rotation;
+    int JointIndex;
+
+protected:
+    FSocketDef() : Position(0.0f), Scale(1.0f), Rotation(Quat::Identity()), JointIndex(-1)
+    {
+    }
+};
+
+/**
+
+FSubpart
 
 Mesh subpart plain data
 
@@ -54,7 +76,7 @@ struct FSubpart {
     int Material;
 };
 
-/*
+/**
 
 FMaterialTexture
 
@@ -66,7 +88,7 @@ struct FMaterialTexture {
     // TODO: keep file CRC?
 };
 
-/*
+/**
 
 FMeshMaterial
 
@@ -78,7 +100,7 @@ struct FMeshMaterial {
     int NumTextures;
 };
 
-/*
+/**
 
 FMeshAsset
 
@@ -98,8 +120,38 @@ struct FMeshAsset {
     void Write( FFileStream & f );
 };
 
+///**
 
-/*
+//FJoint
+
+//Joint properties
+
+//*/
+//struct FJoint {
+//    int      Parent;                 // Parent joint index. For root = -1
+//    Float3x4 OffsetMatrix;           // Transform vertex to joint-space
+//    Float3x4 LocalTransform;         // Joint local transform
+//    char     Name[64];               // Joint name
+//};
+
+///**
+
+//FSkeletonAsset
+
+//Skeleton plain data
+
+//*/
+//struct FSkeletonAsset {
+//    TPodArray< FJoint > Joints;
+//    BvAxisAlignedBox BindposeBounds;
+
+//    void Clear();
+//    void Read( FFileStream & f );
+//    void Write( FFileStream & f );
+//    void CalcBindposeBounds( FMeshAsset const * InMeshData );
+//};
+
+/**
 
 FTriangleHitResult
 
@@ -115,7 +167,7 @@ struct FTriangleHitResult {
     FMaterialInstance * Material;
 };
 
-/*
+/**
 
 FAABBNode
 
@@ -130,7 +182,7 @@ struct FAABBNode {
     }
 };
 
-/*
+/**
 
 FAABBTree
 
@@ -168,7 +220,7 @@ private:
     BvAxisAlignedBox BoundingBox;
 };
 
-/*
+/**
 
 FIndexedMeshSubpart
 
@@ -199,10 +251,10 @@ public:
 
     FIndexedMesh * GetOwner() { return OwnerMesh; }
 
-    // Check ray intersection. Result is unordered by distance to save performance
+    /** Check ray intersection. Result is unordered by distance to save performance */
     bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const;
 
-    // Check ray intersection
+    /** Check ray intersection */
     bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
 
     void DrawBVH( FDebugDraw * _DebugDraw );
@@ -225,7 +277,7 @@ private:
     bool bAABBTreeDirty;
 };
 
-/*
+/**
 
 FLightmapUV
 
@@ -255,7 +307,7 @@ protected:
 
     void OnInitialize( int _NumVertices );
 
-    // IGPUResourceOwner interface
+    /** IGPUResourceOwner interface */
     void UploadResourceGPU( FResourceGPU * _Resource ) override {}
 
 private:
@@ -266,7 +318,7 @@ private:
     bool bDynamicStorage;
 };
 
-/*
+/**
 
 FVertexLight
 
@@ -296,7 +348,7 @@ protected:
 
     void OnInitialize( int _NumVertices );
 
-    // IGPUResourceOwner interface
+    /** IGPUResourceOwner interface */
     void UploadResourceGPU( FResourceGPU * _Resource ) override {}
 
 private:
@@ -319,7 +371,7 @@ struct FSoftbodyFace {
     unsigned int Indices[3];
 };
 
-/*
+/**
 
 FIndexedMesh
 
@@ -334,126 +386,149 @@ class FIndexedMesh : public FBaseObject, public IGPUResourceOwner {
     friend class FIndexedMeshSubpart;
 
 public:
-    // Rigid body collision model
+    //enum { MAX_JOINTS = 256 };
+
+    /** Rigid body collision model */
     FCollisionBodyComposition BodyComposition;
 
-    // Soft body collision model
+    /** Soft body collision model */
     TPodArray< FSoftbodyLink > SoftbodyLinks;
     TPodArray< FSoftbodyFace > SoftbodyFaces;
 
-    // Allocate mesh
+    /** Allocate mesh */
     void Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false, bool _DynamicStorage = false );
 
-    // Helper. Create box mesh
+    /** Helper. Create box mesh */
     void InitializeBoxMesh( Float3 const & _Size, float _TexCoordScale );
 
-    // Helper. Create sphere mesh
+    /** Helper. Create sphere mesh */
     void InitializeSphereMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32 );
 
-    // Helper. Create plane mesh
+    /** Helper. Create plane mesh */
     void InitializePlaneMesh( float _Width, float _Height, float _TexCoordScale );
 
-    // Helper. Create patch mesh
+    /** Helper. Create patch mesh */
     void InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs );
 
-    // Helper. Create cylinder mesh
+    /** Helper. Create cylinder mesh */
     void InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32 );
 
-    // Helper. Create cone mesh
+    /** Helper. Create cone mesh */
     void InitializeConeMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32 );
 
-    // Helper. Create capsule mesh
+    /** Helper. Create capsule mesh */
     void InitializeCapsuleMesh( float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8 );
 
-    // Create mesh from string (IndexedMesh.***)
+    /** Create mesh from string (IndexedMesh.***) */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
-    // Initialize object from file
+    /** Initialize object from file */
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
-    // Purge model data
+    /** Purge model data */
     void Purge();
 
-    // Skinned mesh have 4 weights for each vertex
+    /** Skinned mesh have 4 weights for each vertex */
     bool IsSkinned() const { return bSkinnedMesh; }
 
-    // Dynamic storage is the mesh that updates every or almost every frame
+    /** Dynamic storage is the mesh that updates every or almost every frame */
     bool IsDynamicStorage() const { return bDynamicStorage; }
 
-    // Get mesh part
+    /** Get mesh part */
     FIndexedMeshSubpart * GetSubpart( int _SubpartIndex );
 
-    // Create lightmap channel to store lighmap UVs
+    /** Create lightmap channel to store lighmap UVs */
     FLightmapUV * CreateLightmapUVChannel();
 
-    // Create vertex light channel to store light colors
+    /** Create vertex light channel to store light colors */
     FVertexLight * CreateVertexLightChannel();
 
-    // Create BVH for raycast optimization
+    /** Set a new skeleton data */
+    //void ResetSkeleton( FJoint const * _Joints, int _JointCount, BvAxisAlignedBox const & _BindposeBounds );
+
+    /** Add the socket */
+    void AddSocket( FSocketDef * _Socket );
+    // TODO: RemoveSocket?
+
+    /** Find socket by name */
+    FSocketDef * FindSocket( const char * _Name );
+
+    /** Find joint by name */
+    //int FindJoint( const char * _Name ) const;
+
+    /** Get array of sockets */
+    TPodArray< FSocketDef * > const & GetSockets() const { return Sockets; }
+
+    /** Get array of joints */
+    //TPodArray< FJoint > const & GetJoints() const { return Joints; }
+
+    /** Create BVH for raycast optimization */
     void CreateBVH();
 
     void SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _MaterialInstance );
 
     void SetBoundingBox( int _SubpartIndex, BvAxisAlignedBox const & _BoundingBox );
 
-    // Get mesh vertices
+    /** Get mesh vertices */
     FMeshVertex * GetVertices() { return Vertices.ToPtr(); }
     FMeshVertex const * GetVertices() const { return Vertices.ToPtr(); }
 
-    // Get weights for vertex skinning
+    /** Get weights for vertex skinning */
     FMeshVertexJoint * GetWeights() { return Weights.ToPtr(); }
     FMeshVertexJoint const * GetWeights() const { return Weights.ToPtr(); }
 
-    // Get mesh indices
+    /** Get mesh indices */
     unsigned int * GetIndices() { return Indices.ToPtr(); }
     unsigned int const * GetIndices() const { return Indices.ToPtr(); }
 
-    // Get total vertex count
+    /** Get total vertex count */
     int GetVertexCount() const { return Vertices.Size(); }
 
-    // Get total index count
+    /** Get total index count */
     int GetIndexCount() const { return Indices.Size(); }
 
-    // Get all mesh subparts
+    /** Get all mesh subparts */
     FIndexedMeshSubpartArray const & GetSubparts() const { return Subparts; }
 
-    // Get all lightmap channels
+    /** Get all lightmap channels */
     FLightmapUVChannels const & GetLightmapUVChannels() const { return LightmapUVs; }
 
-    // Get all vertex light channels
+    /** Get all vertex light channels */
     FVertexLightChannels const & GetVertexLightChannels() const { return VertexLightChannels; }
 
-    // Write vertices at location and send them to GPU
+    /** Write vertices at location and send them to GPU */
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
 
-    // Write vertices at location and send them to GPU
+    /** Write vertices at location and send them to GPU */
     bool WriteVertexData( FMeshVertex const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
-    // Write joint weights at location and send them to GPU
+    /** Write joint weights at location and send them to GPU */
     bool SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLocation );
 
-    // Write joint weights at location and send them to GPU
+    /** Write joint weights at location and send them to GPU */
     bool WriteJointWeights( FMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
-    // Write indices at location and send them to GPU
+    /** Write indices at location and send them to GPU */
     bool SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation );
 
-    // Write indices at location and send them to GPU
+    /** Write indices at location and send them to GPU */
     bool WriteIndexData( unsigned int const * _Indices, int _IndexCount, int _StartIndexLocation );
 
     void UpdateBoundingBox();
 
+    BvAxisAlignedBox const & GetBindposeBounds() const { return BindposeBounds; }
+
     BvAxisAlignedBox const & GetBoundingBox() const;
 
-    // Get mesh GPU buffers
+    /** Get mesh GPU buffers */
     FBufferGPU * GetVertexBufferGPU() { return VertexBufferGPU; }
     FBufferGPU * GetIndexBufferGPU() { return IndexBufferGPU; }
     FBufferGPU * GetWeightsBufferGPU() { return WeightsBufferGPU; }
 
-    // Check ray intersection. Result is unordered by distance to save performance
+    /** Check ray intersection. Result is unordered by distance to save performance */
     bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const;
 
-    // Check ray intersection
+    /** Check ray intersection */
     bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< FMaterialInstance > & _Material ) const;
 
     void GenerateSoftbodyFacesFromMeshIndices();
@@ -466,7 +541,7 @@ protected:
     FIndexedMesh();
     ~FIndexedMesh();
 
-    // IGPUResourceOwner interface
+    /** IGPUResourceOwner interface */
     void UploadResourceGPU( FResourceGPU * _Resource ) override {}
 
 private:
@@ -479,10 +554,13 @@ private:
     TPodArrayHeap< FMeshVertex > Vertices;
     TPodArrayHeap< FMeshVertexJoint > Weights;
     TPodArrayHeap< unsigned int > Indices;
+    TPodArray< FSocketDef * > Sockets;
+    //TPodArray< FJoint > Joints;
+    BvAxisAlignedBox BindposeBounds;
+    BvAxisAlignedBox BoundingBox;
     bool bSkinnedMesh;
     bool bDynamicStorage;
     mutable bool bBoundingBoxDirty;
-    BvAxisAlignedBox BoundingBox;
 };
 
 
@@ -510,7 +588,7 @@ void CreateCapsuleMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigne
 
 void CalcTangentSpace( FMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices );
 
-// binormal = cross( normal, tangent ) * handedness
+/** binormal = cross( normal, tangent ) * handedness */
 AN_FORCEINLINE float CalcHandedness( Float3 const & _Tangent, Float3 const & _Binormal, Float3 const & _Normal ) {
     return ( _Normal.Cross( _Tangent ).Dot( _Binormal ) < 0.0f ) ? -1.0f : 1.0f;
 }

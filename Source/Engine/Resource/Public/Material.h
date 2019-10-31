@@ -39,7 +39,7 @@ class ANGIE_API FMaterial : public FBaseObject, public IGPUResourceOwner {
 public:
     void Initialize( FMaterialBuildData const * _Data );
 
-    // Initialize internal resource
+    /** Initialize internal resource */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
     EMaterialType GetType() const { return Type; }
@@ -71,7 +71,7 @@ public:
         Float4 UniformVectors[4];
     };
 
-    // Initialize internal resource
+    /** Initialize internal resource */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
     void SetMaterial( FMaterial * _Material );

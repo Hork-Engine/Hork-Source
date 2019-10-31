@@ -35,51 +35,51 @@ SOFTWARE.
 
 class FAnimationController;
 
-/*
+/**
 
 FSkinnedComponent
 
 Mesh component with skinning
 
 */
-class FSkinnedComponent : public FMeshComponent, public IGPUResourceOwner {
+class FSkinnedComponent : public FMeshComponent {
     AN_COMPONENT( FSkinnedComponent, FMeshComponent )
 
     friend class FWorld;
     friend class FAnimationController;
 
 public:
-    // Set skeleton for the component
+    /** Set skeleton for the component */
     void SetSkeleton( FSkeleton * _Skeleton );
 
-    // Get skeleton
+    /** Get skeleton */
     FSkeleton * GetSkeleton() { return Skeleton; }
 
-    // Add animation controller
+    /** Add animation controller */
     void AddAnimationController( FAnimationController * _Controller );
 
-    // Remove animation controller
+    /** Remove animation controller */
     void RemoveAnimationController( FAnimationController * _Controller );
 
-    // Remove all animation controllers
+    /** Remove all animation controllers */
     void RemoveAnimationControllers();
 
-    // Get animation controllers
+    /** Get animation controllers */
     TPodArray< FAnimationController * > const & GetAnimationControllers() const { return AnimControllers; }
 
-    // Set position on all animation tracks
+    /** Set position on all animation tracks */
     void SetTimeBroadcast( float _Time );
 
-    // Step time delta on all animation tracks
+    /** Step time delta on all animation tracks */
     void AddTimeDeltaBroadcast( float _TimeDelta );
 
-    // Recompute bounding box. Don't use directly. Use GetBounds() instead, it will recompute bounding box automatically.
+    /** Recompute bounding box. Don't use directly. Use GetBounds() instead, it will recompute bounding box automatically. */
     void UpdateBounds();
 
-    // Get transform of the joint
+    /** Get transform of the joint */
     Float3x4 const & GetJointTransform( int _JointIndex );
 
-    // Iterate meshes in parent world
+    /** Iterate meshes in parent world */
     FSkinnedComponent * GetNextSkinnedMesh() { return Next; }
     FSkinnedComponent * GetPrevSkinnedMesh() { return Prev; }
 
@@ -91,12 +91,10 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
-
+    //void OnMeshChanged() override;
     void OnLazyBoundsUpdate() override;
 
-    // IGPUResourceOwner interface
-    void UploadResourceGPU( FResourceGPU * _Resource ) override {}
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
 
 private:
     void UpdateControllersIfDirty();

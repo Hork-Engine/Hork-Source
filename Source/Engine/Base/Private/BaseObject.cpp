@@ -168,11 +168,11 @@ void FGarbageCollector::Deinitialize() {
 }
 
 void FGarbageCollector::AddObject( FBaseObject * _Object ) {
-    IntrusiveAddToList( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
+    INTRUSIVE_ADD( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
 }
 
 void FGarbageCollector::RemoveObject( FBaseObject * _Object ) {
-    IntrusiveRemoveFromList( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
+    INTRUSIVE_REMOVE( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
 }
 
 void FGarbageCollector::DeallocateObjects() {

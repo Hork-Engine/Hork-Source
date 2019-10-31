@@ -77,7 +77,7 @@ public:
     static constexpr int MAX_COLUMNS = 32;
     static constexpr int MAX_ROWS = 128;
 
-    // Add child widget
+    /** Add child widget */
     template< typename T >
     T * AddWidget() {
         T * w = NewObject< T >();
@@ -85,29 +85,29 @@ public:
         return w;
     }
 
-    // Add child widget
+    /** Add child widget */
     WWidget & AddWidget( WWidget * _Widget ) {
         _Widget->SetParent( this );
         return *this;
     }
 
-    // Remove all childs
+    /** Remove all childs */
     void RemoveWidgets();
 
-    // Add widget decoration
+    /** Add widget decoration */
     template< typename T >
     WWidget & AddDecorate() {
         WDecorate * d = NewObject< T >();
         return AddDecorate( d );
     }
 
-    // Add widget decoration
+    /** Add widget decoration */
     WWidget & AddDecorate( WDecorate * _Decorate );
 
-    // Remove widget decoration
+    /** Remove widget decoration */
     WWidget & RemoveDecorate( WDecorate * _Decorate );
 
-    // Remove all widget decorations
+    /** Remove all widget decorations */
     WWidget & RemoveDecorates();
 
     template< typename T = WWidget >
@@ -116,107 +116,107 @@ public:
         return *static_cast< T * >( w );
     }
 
-    // Helper. Add child widget
+    /** Helper. Add child widget */
     WWidget & operator[]( WWidget & _Widget ) {
         return AddWidget( &_Widget );
     }
 
-    // Helper. Add child decorate
+    /** Helper. Add child decorate */
     WWidget & operator[]( WDecorate & _Decorate ) {
         return AddDecorate( &_Decorate );
     }
 
-    // Set widget parent
+    /** Set widget parent */
     WWidget & SetParent( WWidget * _Parent );
 
-    // Unset widget parent
+    /** Unset widget parent */
     WWidget & Unparent();
 
-    // Get desktop
+    /** Get desktop */
     WDesktop * GetDesktop() { return Desktop; }
 
-    // Get parent
+    /** Get parent */
     WWidget * GetParent() { return Parent; }
 
-    // Get childs
+    /** Get childs */
     TPodArray< WWidget * > const & GetChilds() const { return Childs; }
 
-    // Set input focus
+    /** Set input focus */
     WWidget & SetFocus();
 
-    // Set widget style
+    /** Set widget style */
     WWidget & SetStyle( EWidgetStyle _Style );
 
-    // Set widget style
+    /** Set widget style */
     WWidget & SetStyle( int _Style );
 
-    // Widget location
+    /** Widget location */
     WWidget & SetPosition( float _X, float _Y );
 
-    // Widget location
+    /** Widget location */
     WWidget & SetPosition( Float2 const & _Position );
 
-    // Widget location on desktop
+    /** Widget location on desktop */
     WWidget & SetDektopPosition( float _X, float _Y );
 
-    // Widget location on desktop
+    /** Widget location on desktop */
     WWidget & SetDektopPosition( Float2 const & _Position );
 
-    // Widget size
+    /** Widget size */
     WWidget & SetSize( float _Width, float _Height );
 
-    // Widget size
+    /** Widget size */
     WWidget & SetSize( Float2 const & _Size );
 
-    // Widget min size
+    /** Widget min size */
     WWidget & SetMinSize( float _Width, float _Height );
 
-    // Widget min size
+    /** Widget min size */
     WWidget & SetMinSize( Float2 const & _Size );
 
-    // Widget max size
+    /** Widget max size */
     WWidget & SetMaxSize( float _Width, float _Height );
 
-    // Widget max size
+    /** Widget max size */
     WWidget & SetMaxSize( Float2 const & _Size );
 
-    // Custom clickable area
+    /** Custom clickable area */
     WWidget & SetShape( Float2 const * _Vertices, int _NumVertices );
 
-    // Custom drag area
+    /** Custom drag area */
     WWidget & SetDragShape( Float2 const * _Vertices, int _NumVertices );
 
-    // Determines the padding of the client area within the widget
+    /** Determines the padding of the client area within the widget */
     WWidget & SetMargin( float _Left, float _Top, float _Right, float _Bottom );
 
-    // Determines the padding of the client area within the widget
+    /** Determines the padding of the client area within the widget */
     WWidget & SetMargin( Float4 const & _Margin );
 
-    // Determines horizontal location of the widget within its parent
+    /** Determines horizontal location of the widget within its parent */
     WWidget & SetHorizontalAlignment( EWidgetAlignment _Alignment );
 
-    // Determines vertical location of the widget within its parent
+    /** Determines vertical location of the widget within its parent */
     WWidget & SetVerticalAlignment( EWidgetAlignment _Alignment );
 
-    // Determines layout for child widgets
+    /** Determines layout for child widgets */
     WWidget & SetLayout( EWidgetLayout _Layout );
 
-    // Determines location in grid (for grid layouts)
+    /** Determines location in grid (for grid layouts) */
     WWidget & SetGridOffset( int _Column, int _Row );
 
-    // Determines grid size
+    /** Determines grid size */
     WWidget & SetGridSize( int _ColumnsCount, int _RowsCount );
 
-    // Determines grid column size
+    /** Determines grid column size */
     WWidget & SetColumnWidth( int _ColumnIndex, float _Width );
 
-    // Determines grid row size
+    /** Determines grid row size */
     WWidget & SetRowWidth( int _RowIndex, float _Width );
 
-    // Audo adjust column sizes
+    /** Audo adjust column sizes */
     WWidget & SetFitColumns( bool _FitColumns );
 
-    // Audo adjust row sizes
+    /** Audo adjust row sizes */
     WWidget & SetFitRows( bool _FitRows );
 
     // Размер окна выбирается таким образом, чтобы на нем поместились все дочерние окна.
@@ -226,160 +226,160 @@ public:
     WWidget & SetAutoWidth( bool _AutoWidth );
     WWidget & SetAutoHeight( bool _AutoHeight );
 
-    // Don't allow the widget size be less than parent client area
+    /** Don't allow the widget size be less than parent client area */
     WWidget & SetClampWidth( bool _ClampWidth );
 
-    // Don't allow the widget size be less than parent client area
+    /** Don't allow the widget size be less than parent client area */
     WWidget & SetClampHeight( bool _ClampHeight );
 
-    // Horizontal padding for horizontal layout
+    /** Horizontal padding for horizontal layout */
     WWidget & SetHorizontalPadding( float _Padding );
 
-    // Vertical padding for vertical layout
+    /** Vertical padding for vertical layout */
     WWidget & SetVerticalPadding( float _Padding );
 
-    // Image size for (for image layouts)
+    /** Image size for (for image layouts) */
     WWidget & SetImageSize( float _Width, float _Height );
 
-    // Image size for (for image layouts)
+    /** Image size for (for image layouts) */
     WWidget & SetImageSize( Float2 const & _ImageSize );
 
-    // Widget visibility type
+    /** Widget visibility type */
     WWidget & SetVisibility( EWidgetVisibility _Visibility );
 
-    // Helper. Set widget visible
+    /** Helper. Set widget visible */
     WWidget & SetVisible() { return SetVisibility( WIDGET_VISIBILITY_VISIBLE ); }
 
-    // Helper. Set widget invisible
+    /** Helper. Set widget invisible */
     WWidget & SetInvisible() { return SetVisibility( WIDGET_VISIBILITY_INVISIBLE ); }
 
-    // Helper. Set widget collapsed
+    /** Helper. Set widget collapsed */
     WWidget & SetCollapsed() { return SetVisibility( WIDGET_VISIBILITY_COLLAPSED ); }
 
-    // Set widget maximized
+    /** Set widget maximized */
     WWidget & SetMaximized();
 
-    // Set widget normal
+    /** Set widget normal */
     WWidget & SetNormal();
 
-    // Set widget enabled
+    /** Set widget enabled */
     WWidget & SetEnabled( bool _Enabled ) { bDisabled = !_Enabled; return *this; }
 
-    // Is widget in focus
+    /** Is widget in focus */
     bool IsFocus() const;
 
-    // Is widget under specified location
+    /** Is widget under specified location */
     bool IsHovered( Float2 const & _Position ) const;
 
-    // Is widget hovered by mouse cursor
+    /** Is widget hovered by mouse cursor */
     bool IsHoveredByCursor() const;
 
-    // Get widget style
+    /** Get widget style */
     EWidgetStyle GetStyle() const { return Style; }
 
-    // Get widget position specified by user
+    /** Get widget position specified by user */
     Float2 const & GetPosition() const;
 
-    // Get position of widget (in desktop coordinates)
+    /** Get position of widget (in desktop coordinates) */
     Float2 GetDesktopPosition() const;
 
-    // Get position of client area (in desktop coordinates)
+    /** Get position of client area (in desktop coordinates) */
     Float2 GetClientPosition() const;
 
-    // Get widget size specified by user
+    /** Get widget size specified by user */
     Float2 const & GetSize() const { return Size; }
 
-    // Get widget min size
+    /** Get widget min size */
     Float2 const & GetMinSize() { return MinSize; }
 
-    // Get widget max size
+    /** Get widget max size */
     Float2 const & GetMaxSize() { return MaxSize; }
 
-    // Get widget width specified by user
+    /** Get widget width specified by user */
     float GetWidth() const { return Size.X; }
 
-    // Get widget height specified by user
+    /** Get widget height specified by user */
     float GetHeight() const { return Size.Y; }
 
-    // Get current width size
+    /** Get current width size */
     Float2 GetCurrentSize() const;
 
-    // Get client area width
+    /** Get client area width */
     float GetAvailableWidth() const;
 
-    // Get client area height
+    /** Get client area height */
     float GetAvailableHeight() const;
 
-    // Get client area size
+    /** Get client area size */
     Float2 GetAvailableSize() const;
 
-    // Get rectangle for the widget (in desktop coordinates)
+    /** Get rectangle for the widget (in desktop coordinates) */
     void GetDesktopRect( Float2 & _Mins, Float2 & _Maxs, bool _Margin );
 
-    // Get rectangle for specified cell (in local coordinates)
+    /** Get rectangle for specified cell (in local coordinates) */
     void GetCellRect( int _ColumnIndex, int _RowIndex, Float2 & _Mins, Float2 & _Maxs ) const;
 
-    // Get parent layout area (in desktop coordinates)
+    /** Get parent layout area (in desktop coordinates) */
     void GetLayoutRect( Float2 & _Mins, Float2 & _Maxs ) const;
 
-    // Custom clickable area
+    /** Custom clickable area */
     FWidgetShape const & GetShape() const { return Shape; }
 
-    // Custom drag area
+    /** Custom drag area */
     FWidgetShape const & GetDragShape() const { return DragShape; }
 
-    // Padding of the client area within the widget
+    /** Padding of the client area within the widget */
     Float4 const & GetMargin() const { return Margin; }
 
-    // Horizontal location of the widget within its parent
+    /** Horizontal location of the widget within its parent */
     EWidgetAlignment GetHorizontalAlignment() const { return HorizontalAlignment; }
 
-    // Vertical location of the widget within its parent
+    /** Vertical location of the widget within its parent */
     EWidgetAlignment GetVerticalAlignment() const { return VerticalAlignment; }
 
-    // Layout for child widgets
+    /** Layout for child widgets */
     EWidgetLayout GetLayout() const { return Layout; }
 
-    // Horizontal padding for horizontal layout
+    /** Horizontal padding for horizontal layout */
     float GetHorizontalPadding() const { return HorizontalPadding; }
 
-    // Vertical padding for vertical layout
+    /** Vertical padding for vertical layout */
     float GetVerticalPadding() const { return VerticalPadding; }
 
-    // Image size for (for image layouts)
+    /** Image size for (for image layouts) */
     Float2 const & GetImageSize() const { return ImageSize; }
 
-    // Get location in parents grid
+    /** Get location in parents grid */
     void GetGridOffset( int & _Column, int & _Row ) const;
 
-    // Get widget visibility type
+    /** Get widget visibility type */
     EWidgetVisibility GetVisibility() const { return Visibility; }
 
-    // Is widget visible
+    /** Is widget visible */
     bool IsVisible() const { return Visibility == WIDGET_VISIBILITY_VISIBLE; }
 
-    // Is widget not visible
+    /** Is widget not visible */
     bool IsInvisible() const { return Visibility != WIDGET_VISIBILITY_VISIBLE; }
 
-    // Is widget collapsed
+    /** Is widget collapsed */
     bool IsCollapsed() const { return Visibility == WIDGET_VISIBILITY_COLLAPSED; }
 
-    // Is widget maximized
+    /** Is widget maximized */
     bool IsMaximized() const;
 
-    // Is widget disabled
+    /** Is widget disabled */
     bool IsDisabled() const;
 
-    // From client to desktop coordinate
+    /** From client to desktop coordinate */
     void FromClientToDesktop( Float2 & InOut ) const;
 
-    // From desktop to client coordinate
+    /** From desktop to client coordinate */
     void FromDesktopToClient( Float2 & InOut ) const;
 
-    // From desktop to widget coordinate
+    /** From desktop to widget coordinate */
     void FromDesktopToWidget( Float2 & InOut ) const;
 
-    // Set widget on top of other widgets
+    /** Set widget on top of other widgets */
     WWidget & BringOnTop( bool _RecursiveForParents = true );
 
 protected:

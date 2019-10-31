@@ -224,6 +224,7 @@ void FActor::PostActorConstruction() {
 void FActor::InitializeComponents() {
     for ( FActorComponent * component : Components ) {
         component->InitializeComponent();
+        component->bInitialized = true;
     }
 }
 

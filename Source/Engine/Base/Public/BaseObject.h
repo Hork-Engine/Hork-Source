@@ -36,7 +36,7 @@ SOFTWARE.
 struct FWeakRefCounter;
 
 
-/*
+/**
 
 FBaseObject
 
@@ -51,25 +51,25 @@ class ANGIE_API FBaseObject : public FDummy {
     friend class FWeakReference;
 
 public:
-    // Serialize object to document data
+    /** Serialize object to document data */
     virtual int Serialize( FDocument & _Doc );
 
-    // Initialize default object representation
+    /** Initialize default object representation */
     void InitializeDefaultObject();
 
-    // Initialize object from file
+    /** Initialize object from file */
     virtual bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true );
 
-    // Initialize internal resource
+    /** Initialize internal resource */
     virtual void InitializeInternalResource( const char * _InternalResourceName );
 
-    // Load attributes form document data
+    /** Load attributes form document data */
     void LoadAttributes( FDocument const & _Document, int _FieldsHead );
 
-    // Add reference
+    /** Add reference */
     void AddRef();
 
-    // Remove reference
+    /** Remove reference */
     void RemoveRef();
 
     virtual void SetName( FString const & _Name ) { Name = _Name; }
@@ -78,13 +78,13 @@ public:
 
     const char * GetNameConstChar() const { return Name.ToConstChar(); }
 
-    // Get total existing objects
+    /** Get total existing objects */
     static uint64_t GetTotalObjects() { return TotalObjects; }
 
-    // Set weakref counter. Used by TWeakRef
+    /** Set weakref counter. Used by TWeakRef */
     void SetWeakRefCounter( FWeakRefCounter * _RefCounter ) { WeakRefCounter = _RefCounter; }
 
-    // Get weakref counter. Used by TWeakRef
+    /** Get weakref counter. Used by TWeakRef */
     FWeakRefCounter * GetWeakRefCounter() { return WeakRefCounter; }
 
 protected:
@@ -96,20 +96,20 @@ protected:
 
 private:
 
-    // Total existing objects
+    /** Total existing objects */
     static uint64_t TotalObjects;
 
-    // Current refs count for this object
+    /** Current refs count for this object */
     int RefCount;
 
     FWeakRefCounter * WeakRefCounter;
 
-    // Used by garbage collector to add this object to remove list
+    /** Used by garbage collector to add this object to remove list */
     FBaseObject * NextGarbageObject;
     FBaseObject * PrevGarbageObject;
 };
 
-/*
+/**
 
 FGarbageCollector
 
@@ -120,17 +120,17 @@ class FGarbageCollector final {
     AN_FORBID_COPY( FGarbageCollector )
 
 public:
-    // Initialize garbage collector
+    /** Initialize garbage collector */
     static void Initialize();
 
-    // Deinitialize garbage collector
+    /** Deinitialize garbage collector */
     static void Deinitialize();
 
-    // Add object to remove it at next DeallocateObjects() call
+    /** Add object to remove it at next DeallocateObjects() call */
     static void AddObject( FBaseObject * _Object );
     static void RemoveObject( FBaseObject * _Object );
 
-    // Deallocates all collected objects
+    /** Deallocates all collected objects */
     static void DeallocateObjects();
 
 private:
@@ -138,7 +138,7 @@ private:
     static FBaseObject * GarbageObjectsTail;
 };
 
-/*
+/**
 
 TRef
 
@@ -226,7 +226,7 @@ private:
     T * Object;
 };
 
-/*
+/**
 
 TWeakRef
 
@@ -358,7 +358,7 @@ AN_FORCEINLINE bool operator != ( TWeakRef< T > const & _Ref, TWeakRef< T > cons
 
 
 
-/*
+/**
 
 TCallback
 
@@ -414,7 +414,7 @@ private:
 };
 
 
-/*
+/**
 
 TEvent
 

@@ -29,34 +29,32 @@ SOFTWARE.
 */
 
 #include <Engine/World/Public/Components/MeshComponent.h>
+#include <Engine/World/Public/Components/SkinnedComponent.h>
 #include <Engine/World/Public/Actors/Actor.h>
 #include <Engine/World/Public/World.h>
 #include <Engine/Resource/Public/ResourceManager.h>
 
 AN_CLASS_META( FMeshComponent )
 
-//AN_SCENE_COMPONENT_BEGIN_DECL( FMeshComponent, CCF_HIDDEN_IN_EDITOR )
-//AN_ATTRIBUTE_CONST( "Material Instance", FProperty( byte(0) ), "MaterialInstance\0\0Material instance resource", AF_RESOURCE )
-//AN_ATTRIBUTE( "Shadow Cast", FProperty( true ), EnableShadowCast, IsShadowCastEnabled, "Shadow casting", AF_DEFAULT )
-//AN_ATTRIBUTE( "Light Pass", FProperty( true ), EnableLightPass, IsLightPassEnabled, "Render on main pass", AF_DEFAULT )
-//AN_ATTRIBUTE( "Custom Depth-Stencil Pass", FProperty( false ), EnableCustomDepthStencilPass, IsCustomDepthStencilPassEnabled, "Render mesh to custom depth-stencil buffer", AF_DEFAULT )
-//AN_ATTRIBUTE( "Custom Depth-Stencil Value", FProperty( byte(0) ), SetCustomDepthStencilValue, GetCustomDepthStencilValue, "Render mesh to custom depth-stencil buffer", AF_DEFAULT )
-////AN_ATTRIBUTE( "ShadowReceive", FProperty( true ), SetShadowReceive, GetShadowReceive, "Shadow receiving", AF_DEFAULT )
-//AN_SCENE_COMPONENT_END_DECL
-
 FMeshComponent::FMeshComponent() {
     bLightPass = true;
     bCastShadow = true;
-    //bMaterialShadowPass = true;
-    //SurfaceType = SURF_TRISOUP;
     LightmapOffset.Z = LightmapOffset.W = 1;
-    //bShadowReceive = true;
 }
 
 void FMeshComponent::InitializeComponent() {
     Super::InitializeComponent();
 
     GetWorld()->AddMesh( this );
+
+    if ( bCastShadow )
+    {
+        GetWorld()->AddShadowCaster( this );
+    }
+    else
+    {
+        GetWorld()->RemoveShadowCaster( this );
+    }
 }
 
 void FMeshComponent::DeinitializeComponent() {
@@ -65,6 +63,32 @@ void FMeshComponent::DeinitializeComponent() {
     ClearMaterials();
 
     GetWorld()->RemoveMesh( this );
+
+    if ( bCastShadow )
+    {
+        GetWorld()->RemoveShadowCaster( this );
+    }
+}
+
+void FMeshComponent::SetCastShadow( bool _CastShadow ) {
+    if ( bCastShadow == _CastShadow )
+    {
+        return;
+    }
+
+    bCastShadow = _CastShadow;
+
+    if ( IsInitialized() )
+    {
+        if ( bCastShadow )
+        {
+            GetWorld()->AddShadowCaster( this );
+        }
+        else
+        {
+            GetWorld()->RemoveShadowCaster( this );
+        }
+    }
 }
 
 void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
@@ -74,11 +98,28 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
 
     Mesh = _Mesh;
 
-    // Update bounding box
-    if ( Mesh ) {
+    for ( FSocket & socket : Sockets ) {
+        socket.SocketDef->RemoveRef();
+    }
+
+    if ( Mesh )
+    {
+        // Update bounding box
         Bounds = Mesh->GetBoundingBox();
-    } else {
+
+        // Update sockets
+        TPodArray< FSocketDef * > const & socketDef = Mesh->GetSockets();
+        Sockets.ResizeInvalidate( socketDef.Size() );
+        for ( int i = 0 ; i < socketDef.Size() ; i++ ) {
+            socketDef[i]->AddRef();
+            Sockets[i].SocketDef = socketDef[i];
+            Sockets[i].SkinnedMesh = IsSkinnedMesh() ? static_cast< FSkinnedComponent * >( this ) : nullptr;
+        }
+    }
+    else
+    {
         Bounds.Clear();
+        Sockets.Clear();
     }
 
     NotifyMeshChanged();
@@ -169,11 +210,7 @@ FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) con
 }
 
 FCollisionBodyComposition const & FMeshComponent::DefaultBodyComposition() const {
-    if ( Mesh ) {
-        return Mesh->BodyComposition;
-    }
-
-    return Super::DefaultBodyComposition();
+    return Mesh ? Mesh->BodyComposition : Super::DefaultBodyComposition();
 }
 
 void FMeshComponent::NotifyMeshChanged() {
@@ -183,8 +220,8 @@ void FMeshComponent::NotifyMeshChanged() {
 void FMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
-    if ( Mesh ) {
+    if ( Mesh )
+    {
         Mesh->DrawDebug( _DebugDraw );
     }
 }
-

@@ -36,15 +36,20 @@ class FSceneComponent;
 
 using FArrayOfChildComponents = TPodArray< FSceneComponent *, 8 >;
 
-
-class FSkinnedComponent;
 class FSocketDef;
-struct FSocket {
+class FSkinnedComponent;
+
+struct FSocket
+{
+    /** Socket resource object */
     FSocketDef * SocketDef;
-    FSkinnedComponent * Owner;
+    /** Skinned mesh if socket is attached to joint */
+    FSkinnedComponent * SkinnedMesh;
+    /** Evaluate socket transform */
+    Float3x4 EvaluateTransform() const;
 };
 
-/*
+/**
 
 FSceneComponent
 
@@ -55,124 +60,127 @@ class ANGIE_API FSceneComponent : public FActorComponent {
     AN_COMPONENT( FSceneComponent, FActorComponent )
 
 public:
-    // Attach to parent component
+    /** Attach to parent component */
     void AttachTo( FSceneComponent * _Parent, const char * _Socket = nullptr, bool _KeepWorldTransform = false );
 
-    // Detach from parent component
+    /** Detach from parent component */
     void Detach( bool _KeepWorldTransform = false );
 
-    // Detach all childs
+    /** Detach all childs */
     void DetachChilds( bool _bRecursive = false, bool _KeepWorldTransform = false );
 
-    // Is component parent of specified child
+    /** Is component parent of specified child */
     bool IsChild( FSceneComponent * _Child, bool _Recursive ) const;
 
-    // Is component root
+    /** Is component root */
     bool IsRoot() const;
 
-    // Find child by name
+    /** Find child by name */
     FSceneComponent * FindChild( const char * _UniqueName, bool _Recursive );
 
-    // Get reference to array of child components
+    /** Get reference to array of child components */
     FArrayOfChildComponents const & GetChilds() const { return Childs; }
 
-    // Get parent component
+    /** Get parent component */
     FSceneComponent * GetParent() const { return AttachParent; }
 
-    // Get socket index by name
+    /** Get socket index by name */
     int FindSocket( const char * _Name ) const;
 
-    // Get attached socket
+    /** Get socket transform matrix */
+    Float3x4 GetSocketTransform( int _SocketIndex ) const;
+
+    /** Get attached socket */
     int GetAttachedSocket() const { return SocketIndex; }
 
-    // Is component attached to socket
+    /** Is component attached to socket */
     bool IsAttachedToSocket() const { return SocketIndex >= 0; }
 
-    // Set ignore parent position
+    /** Set ignore parent position */
     void SetAbsolutePosition( bool _AbsolutePosition );
 
     bool IsAbsolutePosition() const { return bAbsolutePosition; }
 
-    // Set ignore parent rotation
+    /** Set ignore parent rotation */
     void SetAbsoluteRotation( bool _AbsoluteRotation );
 
     bool IsAbsoluteRotation() const { return bAbsoluteRotation; }
 
-    // Set ignore parent scale
+    /** Set ignore parent scale */
     void SetAbsoluteScale( bool _AbsoluteScale );
 
     bool IsAbsoluteScale() const { return bAbsoluteScale; }
 
-    // Set local position
+    /** Set local position */
     void SetPosition( Float3 const & _Position );
 
-    // Set local position
+    /** Set local position */
     void SetPosition( float const & _X, float const & _Y, float const & _Z );
 
-    // Set local orient
+    // /** Set local orient */
     //void SetOrient( Float3x3 const & _Orient );
 
-    // Set local rotation
+    /** Set local rotation */
     void SetRotation( Quat const & _Rotation );
 
-    // Set local rotation
+    /** Set local rotation */
     void SetAngles( Angl const & _Angles );
 
-    // Set local rotation
+    /** Set local rotation */
     void SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll );
 
-    // Set scale
+    /** Set scale */
     void SetScale( Float3 const & _Scale );
 
-    // Set scale
+    /** Set scale */
     void SetScale( float const & _X, float const & _Y, float const & _Z );
 
-    // Set scale
+    /** Set scale */
     void SetScale( float const & _ScaleXYZ );
 
-    // Set local transform
+    /** Set local transform */
     void SetTransform( Float3 const & _Position, Quat const & _Rotation );
 
-    // Set local transform
+    /** Set local transform */
     void SetTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
 
-    // Set local transform
+    /** Set local transform */
     void SetTransform( FTransform const & _Transform );
 
-    // Set local transform
+    /** Set local transform */
     void SetTransform( FSceneComponent const * _Transform );
 
-    // Set world position
+    /** Set world position */
     void SetWorldPosition( Float3 const & _Position );
 
-    // Set world position
+    /** Set world position */
     void SetWorldPosition( float const & _X, float const & _Y, float const & _Z );
 
-    // Set world rotation
+    /** Set world rotation */
     void SetWorldRotation( Quat const & _Rotation );
 
-    // Set world scale
+    /** Set world scale */
     void SetWorldScale( Float3 const & _Scale );
 
-    // Set world scale
+    /** Set world scale */
     void SetWorldScale( float const & _X, float const & _Y, float const & _Z );
 
-    // Set world transform
+    /** Set world transform */
     void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation );
 
-    // Set world transform
+    /** Set world transform */
     void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
 
-    // Set world transform
+    /** Set world transform */
     void SetWorldTransform( FTransform const & _Transform );
 
-    // Get local position
+    /** Get local position */
     Float3 const & GetPosition() const;
 
-    // Get local orient
+    // /** Get local orient
     //Float3x3 GetOrient() const;
 
-    // Get local rotation
+    /** Get local rotation */
     Quat const & GetRotation() const;
 
     Angl GetAngles() const;
@@ -196,41 +204,41 @@ public:
     Float3 GetWorldForwardVector() const;
     void GetWorldVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const;
 
-    // Get scale
+    /** Get scale */
     Float3 const & GetScale() const;
 
-    // Get world position
+    /** Get world position */
     Float3 GetWorldPosition() const;
 
-    // Get world rotation
+    /** Get world rotation */
     Quat const & GetWorldRotation() const;
 
-    // Get world scale
+    /** Get world scale */
     Float3 GetWorldScale() const;
 
-    // Mark to recompute transforms
+    /** Mark to recompute transforms */
     void MarkTransformDirty();
 
-    // Compute component local transform matrix
+    /** Compute component local transform matrix */
     void ComputeLocalTransformMatrix( Float3x4 & _LocalTransformMatrix ) const;
 
-    // Get transposed world transform matrix
+    /** Get transposed world transform matrix */
     Float3x4 const & GetWorldTransformMatrix() const;
 
     Float3x4 ComputeWorldTransformInverse() const;
     Quat ComputeWorldRotationInverse() const;
 
-    // First person shooter rotations
+    /** First person shooter rotations */
     void TurnRightFPS( float _DeltaAngleRad );
     void TurnLeftFPS( float _DeltaAngleRad );
     void TurnUpFPS( float _DeltaAngleRad );
     void TurnDownFPS( float _DeltaAngleRad );
 
-    // Rotations
+    /** Rotations */
     void TurnAroundAxis( float _DeltaAngleRad, Float3 const & _NormalizedAxis );
     void TurnAroundVector( float _DeltaAngleRad, Float3 const & _Vector );
 
-    // Move
+    /** Move */
     void StepRight( float _Units );
     void StepLeft( float _Units );
     void StepUp( float _Units );
@@ -243,6 +251,8 @@ protected:
     FSceneComponent();
 
     void DeinitializeComponent() override;
+
+    void DrawDebug( FDebugDraw * _DebugDraw ) override;
 
     virtual void OnTransformDirty() {}
 

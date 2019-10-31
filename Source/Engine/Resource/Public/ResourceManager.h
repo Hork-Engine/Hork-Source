@@ -40,58 +40,58 @@ public:
     void Initialize();
     void Deinitialize();
 
-    // Get or create resource. Return default object if fails.
+    /** Get or create resource. Return default object if fails. */
     template< typename T >
     AN_FORCEINLINE T * GetOrCreateResource( const char * _FileName, const char * _Alias = nullptr ) {
         return static_cast< T * >( GetOrCreateResource( T::ClassMeta(), _FileName, _Alias ) );
     }
 
-    // Get or create internal resource. Return default object if fails.
+    /** Get or create internal resource. Return default object if fails. */
     template< typename T >
     AN_FORCEINLINE T * GetOrCreateInternalResource( const char * _InternalResourceName ) {
         return static_cast< T * >( GetOrCreateInternalResource( T::ClassMeta(), _InternalResourceName ) );
     }
 
-    // Get resource. Return default object if fails.
+    /** Get resource. Return default object if fails. */
     template< typename T >
     AN_FORCEINLINE T * GetResource( const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr ) {
         return static_cast< T * >( GetResource( T::ClassMeta(), _Name, _bResourceFoundResult, _bMetadataMismatch ) );
     }
 
-    // Get or create resource. Return default object if fails.
+    /** Get or create resource. Return default object if fails. */
     FBaseObject * GetOrCreateResource( FClassMeta const &  _ClassMeta, const char * _FileName, const char * _Alias = nullptr );
 
-    // Get or create internal resource. Return default object if fails.
+    /** Get or create internal resource. Return default object if fails. */
     FBaseObject * GetOrCreateInternalResource( FClassMeta const &  _ClassMeta, const char * _InternalResourceName );
 
-    // Get resource. Return default object if fails.
+    /** Get resource. Return default object if fails. */
     FBaseObject * GetResource( FClassMeta const & _ClassMeta, const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr );
 
-    // Get resource meta. Return null if fails.
+    /** Get resource meta. Return null if fails. */
     FClassMeta const * GetResourceInfo( const char * _Name );
 
-    // Find resource in cache. Return null if fails.
+    /** Find resource in cache. Return null if fails. */
     FBaseObject * FindResource( FClassMeta const & _ClassMeta, const char * _Name, bool & _bMetadataMismatch, int & _Hash );
 
-    // Find resource in cache. Return null if fails.
+    /** Find resource in cache. Return null if fails. */
     FBaseObject * FindResourceByName( const char * _Name );
 
-    // Register object as resource.
+    /** Register object as resource. */
     bool RegisterResource( FBaseObject * _Resource );
 
-    // Unregister object as resource.
+    /** Unregister object as resource. */
     bool UnregisterResource( FBaseObject * _Resource );
 
-    // Unregister all resources with same meta.
+    /** Unregister all resources with same meta. */
     void UnregisterResources( FClassMeta const & _ClassMeta );
 
-    // Unregister all resources by type.
+    /** Unregister all resources by type. */
     template< typename T >
     AN_FORCEINLINE void UnregisterResources() {
         UnregisterResources( T::ClassMeta() );
     }
 
-    // Unregister all resources.
+    /** Unregister all resources. */
     void UnregisterResources();
 
 private:
@@ -107,56 +107,56 @@ Helpers
 
 */
 
-// Get or create resource. Return default object if fails.
+/** Get or create resource. Return default object if fails. */
 template< typename T >
 AN_FORCEINLINE T * GetOrCreateResource( const char * _FileName, const char * _Alias = nullptr ) {
     return GResourceManager.GetOrCreateResource< T >( _FileName, _Alias );
 }
 
-// Get or create internal resource. Return default object if fails.
+/** Get or create internal resource. Return default object if fails. */
 template< typename T >
 AN_FORCEINLINE T * GetOrCreateInternalResource( const char * _InternalResourceName ) {
     return GResourceManager.GetOrCreateInternalResource< T >( _InternalResourceName );
 }
 
-// Get resource. Return default object if fails.
+/** Get resource. Return default object if fails. */
 template< typename T >
 AN_FORCEINLINE T * GetResource( const char * _Name, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr ) {
     return GResourceManager.GetResource< T >( _Name, _bResourceFoundResult, _bMetadataMismatch );
 }
 
-// Get resource meta. Return null if fails.
+/** Get resource meta. Return null if fails. */
 AN_FORCEINLINE FClassMeta const * GetResourceInfo( const char * _Name ) {
     return GResourceManager.GetResourceInfo( _Name );
 }
 
-// Find resource in cache. Return null if fails.
+/** Find resource in cache. Return null if fails. */
 AN_FORCEINLINE FBaseObject * FindResource( FClassMeta const & _ClassMeta, const char * _Name, bool & _bMetadataMismatch, int & _Hash ) {
     return GResourceManager.FindResource( _ClassMeta, _Name, _bMetadataMismatch, _Hash );
 }
 
-// Find resource in cache. Return null if fails.
+/** Find resource in cache. Return null if fails. */
 AN_FORCEINLINE FBaseObject * FindResourceByName( const char * _Name ) {
     return GResourceManager.FindResourceByName( _Name );
 }
 
-// Register object as resource.
+/** Register object as resource. */
 AN_FORCEINLINE bool RegisterResource( FBaseObject * _Resource ) {
     return GResourceManager.RegisterResource( _Resource );
 }
 
-// Unregister object as resource.
+/** Unregister object as resource. */
 AN_FORCEINLINE bool UnregisterResource( FBaseObject * _Resource ) {
     return GResourceManager.UnregisterResource( _Resource );
 }
 
-// Unregister all resources by type.
+/** Unregister all resources by type. */
 template< typename T >
 AN_FORCEINLINE void UnregisterResources() {
     GResourceManager.UnregisterResources< T >();
 }
 
-// Unregister all resources.
+/** Unregister all resources. */
 AN_FORCEINLINE void UnregisterResources() {
     GResourceManager.UnregisterResources();
 }

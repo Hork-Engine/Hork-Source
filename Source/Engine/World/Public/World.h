@@ -385,6 +385,9 @@ public:
     void AddSkinnedMesh( FSkinnedComponent * _Skeleton );
     void RemoveSkinnedMesh( FSkinnedComponent * _Skeleton );
 
+    void AddShadowCaster( FMeshComponent * _Mesh );
+    void RemoveShadowCaster( FMeshComponent * _Mesh );
+
     void AddDirectionalLight( FDirectionalLightComponent * _Light );
     void RemoveDirectionalLight( FDirectionalLightComponent * _Light );
 
@@ -442,6 +445,8 @@ private:
     FMeshComponent * MeshListTail;
     FSkinnedComponent * SkinnedMeshList;
     FSkinnedComponent * SkinnedMeshListTail;
+    FMeshComponent * ShadowCasters;
+    FMeshComponent * ShadowCastersTail;
     FDirectionalLightComponent * DirectionalLightList;
     FDirectionalLightComponent * DirectionalLightListTail;
     FPointLightComponent * PointLightList;

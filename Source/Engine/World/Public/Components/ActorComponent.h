@@ -45,7 +45,7 @@ protected: \
 private:
 
 
-/*
+/**
 
 FActorComponent
 
@@ -61,49 +61,52 @@ class ANGIE_API FActorComponent : public FBaseObject {
 public:
     bool bCanEverTick;
 
-    // Actor Component factory
+    /** Actor Component factory */
     static FObjectFactory & Factory() { static FObjectFactory ObjectFactory( "Actor Component factory" ); return ObjectFactory; }
 
-    // Get component GUID
+    /** Get component GUID */
     FGUID const & GetGUID() const { return GUID; }
 
-    // Set component unique name
+    /** Set component unique name */
     void SetName( FString const & _Name ) override;
 
-    // Component parent actor
+    /** Component parent actor */
     FActor * GetParentActor() const { return ParentActor; }
 
-    // Component parent level
+    /** Component parent level */
     FLevel * GetLevel() const;
 
-    // Get world
+    /** Get world */
     FWorld * GetWorld() const;
 
-    // Serialize component to document data
+    /** Serialize component to document data */
     int Serialize( FDocument & _Doc ) override;
 
-    // Destroy this component
+    /** Destroy this component */
     void Destroy();
 
-    // Is component marked as pending kill
+    /** Is component initialized */
+    bool IsInitialized() const { return bInitialized; }
+
+    /** Is component marked as pending kill */
     bool IsPendingKill() const { return bPendingKill; }
 
-    // Register component to initialize it at runtime
+    /** Register component to initialize it at runtime */
     void RegisterComponent();
 
 protected:
 
     FActorComponent();
 
-    // Called from Actor's InitializeComponents()
+    /** Called from Actor's InitializeComponents() */
     virtual void InitializeComponent() {}
 
-    // Called from Actor's DeinitializeComponents()
+    /** Called from Actor's DeinitializeComponents() */
     virtual void DeinitializeComponent() {}
 
     virtual void BeginPlay() {}
 
-    // Called only from Destroy() method
+    /** Called only from Destroy() method */
     virtual void EndPlay() {}
 
     virtual void TickComponent( float _TimeStep ) {}
@@ -118,6 +121,7 @@ private:
 
     FActor * ParentActor;
 
+    bool bInitialized;
     bool bPendingKill;
     bool bCreatedDuringConstruction;
     FActorComponent * NextPendingKillComponent;

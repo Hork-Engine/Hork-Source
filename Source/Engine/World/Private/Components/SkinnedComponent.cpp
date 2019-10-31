@@ -47,7 +47,6 @@ SOFTWARE.
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
 
 FRuntimeVariable RVDrawSkeleton( _CTS( "DrawSkeleton" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawSkeletonSockets( _CTS( "DrawSkeletonSockets" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( FSkinnedComponent )
 
@@ -68,8 +67,6 @@ void FSkinnedComponent::InitializeComponent() {
 void FSkinnedComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    SetSkeleton( nullptr );
-
     RemoveAnimationControllers();
 
     FWorld * world = GetParentActor()->GetWorld();
@@ -88,10 +85,6 @@ void FSkinnedComponent::SetSkeleton( FSkeleton * _Skeleton ) {
 
     Skeleton = _Skeleton;
 
-    for ( FSocket & socket : Sockets ) {
-        socket.SocketDef->RemoveRef();
-    }
-
     if ( Skeleton ) {
         TPodArray< FJoint > const & joints = Skeleton->GetJoints();
 
@@ -104,19 +97,9 @@ void FSkinnedComponent::SetSkeleton( FSkeleton * _Skeleton ) {
         for ( int i = 0 ; i < numJoints ; i++ ) {
             RelativeTransforms[ i ] = joints[ i ].LocalTransform;
         }
-
-        TPodArray< FSocketDef * > const & socketDef = Skeleton->GetSockets();
-        Sockets.ResizeInvalidate( socketDef.Size() );
-        for ( int i = 0 ; i < socketDef.Size() ; i++ ) {
-            socketDef[i]->AddRef();
-            Sockets[i].SocketDef = socketDef[i];
-            Sockets[i].Owner = this;
-        }
-
     } else {
         AbsoluteTransforms.Clear();
         RelativeTransforms.Clear();
-        Sockets.Clear();
     }
 
     bUpdateControllers = true;
@@ -521,14 +504,6 @@ Float3x4 const & FSkinnedComponent::GetJointTransform( int _JointIndex ) {
 
 void FSkinnedComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
-
-    // Draw sockets
-    if ( RVDrawSkeletonSockets ) {
-        for ( FSocket & socket : Sockets ) {
-            Float3x4 const & transform = GetJointTransform( socket.SocketDef->JointIndex );
-            _DebugDraw->DrawAxis( GetWorldTransformMatrix() * transform, true );
-        }
-    }
 
     // Draw skeleton
     if ( RVDrawSkeleton ) {

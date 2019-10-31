@@ -34,11 +34,11 @@ SOFTWARE.
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Runtime/Public/RenderCore.h>
 
-/*
+/**
 
 FTexture
 
-Textures are used for materials
+Texture base class. Don't create objects with this class. Use FTexture2D,FTexture3D,etc instead.
 
 */
 class ANGIE_API FTexture : public FBaseObject, public IGPUResourceOwner {
@@ -147,10 +147,10 @@ class FTexture2D : public FTexture {
 public:
     void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
 
-    // Create texture from string (FTexture2D.***)
+    /** Create texture from string (FTexture2D.***) */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
-    // Initialize object from file
+    /** Initialize object from file */
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
     bool InitializeFromImage( FImage const & _Image );
@@ -206,7 +206,7 @@ class FTexture3D : public FTexture {
 public:
     void Initialize( FTexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
 
-    // Create texture from string (FTexture3D.***)
+    /** Create texture from string (FTexture3D.***) */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
     // TODO:

@@ -196,7 +196,7 @@ enum POLYGON_CULL : uint8_t
 {
     POLYGON_CULL_BACK      = 0,
     POLYGON_CULL_FRONT     = 1,
-    POLYFON_CULL_DISABLED  = 2
+    POLYGON_CULL_DISABLED  = 2
 };
 
 struct RasterizerStateInfo {

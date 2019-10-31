@@ -577,14 +577,14 @@ void FWorld::Tick( float _TimeStep ) {
 }
 
 void FWorld::AddPhysicalBody( FPhysicalBody * _PhysicalBody ) {
-    if ( !IntrusiveIsInList( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail ) ) {
-        IntrusiveAddToList( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail );
+    if ( !INTRUSIVE_EXISTS( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail ) ) {
+        INTRUSIVE_ADD( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail );
     }
 }
 
 void FWorld::RemovePhysicalBody( FPhysicalBody * _PhysicalBody ) {
-    if ( IntrusiveIsInList( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail ) ) {
-        IntrusiveRemoveFromList( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail );
+    if ( INTRUSIVE_EXISTS( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail ) ) {
+        INTRUSIVE_REMOVE( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail );
     }
 }
 
@@ -1371,81 +1371,94 @@ void FWorld::RemoveLevel( FLevel * _Level ) {
 }
 
 void FWorld::AddMesh( FMeshComponent * _Mesh ) {
-    if ( IntrusiveIsInList( _Mesh, Next, Prev, MeshList, MeshListTail ) ) {
+    if ( INTRUSIVE_EXISTS( _Mesh, Next, Prev, MeshList, MeshListTail ) ) {
         AN_Assert( 0 );
         return;
     }
 
-    IntrusiveAddToList( _Mesh, Next, Prev, MeshList, MeshListTail );
+    INTRUSIVE_ADD( _Mesh, Next, Prev, MeshList, MeshListTail );
 }
 
 void FWorld::RemoveMesh( FMeshComponent * _Mesh ) {
-    IntrusiveRemoveFromList( _Mesh, Next, Prev, MeshList, MeshListTail );
+    INTRUSIVE_REMOVE( _Mesh, Next, Prev, MeshList, MeshListTail );
 }
 
 void FWorld::AddSkinnedMesh( FSkinnedComponent * _Skeleton ) {
-    if ( IntrusiveIsInList( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail ) ) {
+    if ( INTRUSIVE_EXISTS( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail ) ) {
         AN_Assert( 0 );
         return;
     }
 
-    IntrusiveAddToList( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+    INTRUSIVE_ADD( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
 
 void FWorld::RemoveSkinnedMesh( FSkinnedComponent * _Skeleton ) {
-    IntrusiveRemoveFromList( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+    INTRUSIVE_REMOVE( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+}
+
+void FWorld::AddShadowCaster( FMeshComponent * _Mesh ) {
+    if ( INTRUSIVE_EXISTS( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail ) ) {
+        AN_Assert( 0 );
+        return;
+    }
+
+    INTRUSIVE_ADD( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
+}
+
+void FWorld::RemoveShadowCaster( FMeshComponent * _Mesh ) {
+    INTRUSIVE_REMOVE( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
 }
 
 void FWorld::AddDirectionalLight( FDirectionalLightComponent * _Light ) {
-    if ( IntrusiveIsInList( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail ) ) {
+    if ( INTRUSIVE_EXISTS( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail ) ) {
         AN_Assert( 0 );
         return;
     }
 
-    IntrusiveAddToList( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
+    INTRUSIVE_ADD( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
 }
 
 void FWorld::RemoveDirectionalLight( FDirectionalLightComponent * _Light ) {
-    IntrusiveRemoveFromList( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
+    INTRUSIVE_REMOVE( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
 }
 
 void FWorld::AddPointLight( FPointLightComponent * _Light ) {
-    if ( IntrusiveIsInList( _Light, Next, Prev, PointLightList, PointLightListTail ) ) {
+    if ( INTRUSIVE_EXISTS( _Light, Next, Prev, PointLightList, PointLightListTail ) ) {
         AN_Assert( 0 );
         return;
     }
 
-    IntrusiveAddToList( _Light, Next, Prev, PointLightList, PointLightListTail );
+    INTRUSIVE_ADD( _Light, Next, Prev, PointLightList, PointLightListTail );
 }
 
 void FWorld::RemovePointLight( FPointLightComponent * _Light ) {
-    IntrusiveRemoveFromList( _Light, Next, Prev, PointLightList, PointLightListTail );
+    INTRUSIVE_REMOVE( _Light, Next, Prev, PointLightList, PointLightListTail );
 }
 
 void FWorld::AddSpotLight( FSpotLightComponent * _Light ) {
-    if ( IntrusiveIsInList( _Light, Next, Prev, SpotLightList, SpotLightListTail ) ) {
+    if ( INTRUSIVE_EXISTS( _Light, Next, Prev, SpotLightList, SpotLightListTail ) ) {
         AN_Assert( 0 );
         return;
     }
 
-    IntrusiveAddToList( _Light, Next, Prev, SpotLightList, SpotLightListTail );
+    INTRUSIVE_ADD( _Light, Next, Prev, SpotLightList, SpotLightListTail );
 }
 
 void FWorld::RemoveSpotLight( FSpotLightComponent * _Light ) {
-    IntrusiveRemoveFromList( _Light, Next, Prev, SpotLightList, SpotLightListTail );
+    INTRUSIVE_REMOVE( _Light, Next, Prev, SpotLightList, SpotLightListTail );
 }
 
 void FWorld::RegisterTimer( FTimer * _Timer ) {
-    if ( IntrusiveIsInList( _Timer, Next, Prev, TimerList, TimerListTail ) ) {
+    if ( INTRUSIVE_EXISTS( _Timer, Next, Prev, TimerList, TimerListTail ) ) {
         AN_Assert( 0 );
         return;
     }
 
-    IntrusiveAddToList( _Timer, Next, Prev, TimerList, TimerListTail );
+    INTRUSIVE_ADD( _Timer, Next, Prev, TimerList, TimerListTail );
 }
 
 void FWorld::UnregisterTimer( FTimer * _Timer ) {
-    IntrusiveRemoveFromList( _Timer, Next, Prev, TimerList, TimerListTail );
+    INTRUSIVE_REMOVE( _Timer, Next, Prev, TimerList, TimerListTail );
 }
 
 void FWorld::DrawDebug( FDebugDraw * _DebugDraw, int _FrameNumber ) {
@@ -1633,11 +1646,7 @@ void FWorld::RenderFrontend_AddDirectionalShadowmapInstances( FRenderFrontendDef
 
     // Create shadow instances
 
-    for ( FMeshComponent * component = MeshList ; component ; component = component->GetNextMesh() ) {
-
-        if ( !component->bCastShadow ) {
-            continue;
-        }
+    for ( FMeshComponent * component = ShadowCasters ; component ; component = component->GetNextShadowCaster() ) {
 
         // TODO: Perform culling for each shadow cascade, set CascadeMask
 

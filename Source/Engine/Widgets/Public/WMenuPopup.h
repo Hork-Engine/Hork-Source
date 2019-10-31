@@ -39,18 +39,18 @@ class ANGIE_API WMenuPopup : public FBaseObject {
 
 public:
 
-    // Add child widget
+    /** Add child widget */
     WMenuPopup & AddWidget( WWidget * _Widget ) {
         Self->AddWidget( _Widget );
         return *this;
     }
 
-    // Helper. Add child widget
+    /** Helper. Add child widget */
     WMenuPopup & operator[]( WWidget & _Widget ) {
         return AddWidget( &_Widget );
     }
 
-    // Helper. Add child decorate
+    /** Helper. Add child decorate */
     WMenuPopup & operator[]( WDecorate & _Decorate ) {
         Self->AddDecorate( &_Decorate );
         return *this;

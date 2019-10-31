@@ -695,7 +695,7 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
     static constexpr POLYGON_CULL PolygonCullLUT[] = {
         POLYGON_CULL_FRONT,
         POLYGON_CULL_BACK,
-        POLYFON_CULL_DISABLED
+        POLYGON_CULL_DISABLED
     };
 
     POLYGON_CULL cullMode = PolygonCullLUT[_BuildData->Facing];
@@ -729,11 +729,11 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
         Lit = new (pMem) FShadeModelLit();
         _Material->ShadeModel.Lit = Lit;
 
-        Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest );
-        Lit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest );
+        Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL );
+        Lit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL );
 
-        Lit->ColorPassLightmap.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest );
-        Lit->ColorPassVertexLight.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest );
+        Lit->ColorPassLightmap.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL );
+        Lit->ColorPassVertexLight.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL );
 
         Lit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
         Lit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
@@ -751,8 +751,8 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
         Unlit = new (pMem) FShadeModelUnlit();
         _Material->ShadeModel.Unlit = Unlit;
 
-        Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest );
-        Unlit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest );
+        Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL );
+        Unlit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL );
 
         Unlit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
         Unlit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );

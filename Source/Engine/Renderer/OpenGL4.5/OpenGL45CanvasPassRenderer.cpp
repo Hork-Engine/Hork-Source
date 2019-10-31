@@ -101,7 +101,7 @@ void FCanvasPassRenderer::Deinitialize() {
 void FCanvasPassRenderer::CreatePresentViewPipeline() {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
-    rsd.CullMode = POLYFON_CULL_DISABLED;
+    rsd.CullMode = POLYGON_CULL_DISABLED;
     rsd.bScissorEnable = true;
 
     BlendingStateInfo bsd;
@@ -240,7 +240,7 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
 void FCanvasPassRenderer::CreatePipelines() {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
-    rsd.CullMode = POLYFON_CULL_DISABLED;
+    rsd.CullMode = POLYGON_CULL_DISABLED;
     rsd.bScissorEnable = true;
 
     BlendingStateInfo bsd;
@@ -375,7 +375,7 @@ void FCanvasPassRenderer::CreatePipelines() {
 void FCanvasPassRenderer::CreateAlphaPipelines() {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
-    rsd.CullMode = POLYFON_CULL_DISABLED;
+    rsd.CullMode = POLYGON_CULL_DISABLED;
     rsd.bScissorEnable = true;
 
     BlendingStateInfo bsd;

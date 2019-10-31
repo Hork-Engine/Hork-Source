@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Engine/Core/Public/Logger.h>
 
-AN_CLASS_META( FSocketDef )
+//AN_CLASS_META( FSocketDef )
 AN_CLASS_META( FSkeleton )
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,11 +49,11 @@ FSkeleton::~FSkeleton() {
 void FSkeleton::Purge() {
     Joints.Clear();
 
-    for ( FSocketDef * socket : Sockets ) {
-        socket->RemoveRef();
-    }
+//    for ( FSocketDef * socket : Sockets ) {
+//        socket->RemoveRef();
+//    }
 
-    Sockets.Clear();
+//    Sockets.Clear();
 
     // TODO: notify components about changes
 }
@@ -105,40 +105,21 @@ int FSkeleton::FindJoint( const char * _Name ) const {
     return -1;
 }
 
-FSocketDef * FSkeleton::FindSocket( const char * _Name ) {
-    for ( FSocketDef * socket : Sockets ) {
-        if ( socket->GetName().Icmp( _Name ) ) {
-            return socket;
-        }
-    }
-    return nullptr;
-}
+//FSocketDef * FSkeleton::FindSocket( const char * _Name ) {
+//    for ( FSocketDef * socket : Sockets ) {
+//        if ( socket->GetName().Icmp( _Name ) ) {
+//            return socket;
+//        }
+//    }
+//    return nullptr;
+//}
 
-FSocketDef * FSkeleton::AddSocket( const char * _Name, int _JointIndex ) {
-    if ( _JointIndex < 0 || _JointIndex >= Joints.Size() ) {
-        return nullptr;
-    }
+//void FSkeleton::AddSocket( FSocketDef * _Socket ) {
+//    _Socket->AddRef();
+//    Sockets.Append( _Socket );
 
-    FSocketDef * socket = FindSocket( _Name );
-    if ( socket ) {
-        // Socket already exists
-        return nullptr;
-    }
-
-    socket = NewObject< FSocketDef >();
-    socket->AddRef();
-    socket->SetName( _Name );
-    socket->JointIndex = _JointIndex;
-    Sockets.Append( socket );
-
-    // TODO: notify components about changes
-
-    return socket;
-}
-
-FSocketDef * FSkeleton::AddSocket( const char * _Name, const char * _JointName ) {
-    return AddSocket( _Name, FindJoint( _JointName ) );
-}
+//    // TODO: notify components about changes
+//}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 

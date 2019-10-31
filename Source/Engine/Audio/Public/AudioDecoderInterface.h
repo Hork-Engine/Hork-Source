@@ -56,16 +56,16 @@ class ANGIE_API IAudioDecoderInterface : public FBaseObject {
 public:        
     virtual IAudioStreamInterface * CreateAudioStream();
 
-    // Decode file to memory
+    /** Decode file to memory */
     virtual bool DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM );
 
-    // Decode from raw memory
+    /** Decode from raw memory */
     virtual bool DecodePCM( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM );
 
-    // Read encoded data from file
+    /** Read encoded data from file */
     virtual bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
 
-    // Read encoded data from raw memory
+    /** Read encoded data from raw memory */
     virtual bool ReadEncoded( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
 
 protected:

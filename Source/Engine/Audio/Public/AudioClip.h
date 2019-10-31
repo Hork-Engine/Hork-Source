@@ -48,18 +48,18 @@ class FAudioClip : public FBaseObject {
 public:
     ESoundStreamType StreamType;
 
-    // Initialize internal resource
+    /** Initialize internal resource */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
-    // Initialize object from file
+    /** Initialize object from file */
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
-    // Initialize object from data
+    /** Initialize object from data */
     bool InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength );
 
     IAudioStreamInterface * CreateAudioStreamInstance();
 
-    // Purge audio data
+    /** Purge audio data */
     void Purge();
 
     int GetFrequency() const;
@@ -74,10 +74,10 @@ public:
 
     ESoundStreamType GetStreamType() const;
 
-    // Set buffer size in samples for streamed audio
+    /** Set buffer size in samples for streamed audio */
     void SetBufferSize( int _BufferSizeInSamples );
 
-    // Get current buffer size in samples for streamed audio
+    /** Get current buffer size in samples for streamed audio */
     int GetBufferSize() const;
 
     IAudioDecoderInterface * GetDecoderInterface() { return Decoder; }

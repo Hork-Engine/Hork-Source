@@ -93,52 +93,52 @@ constexpr float AUDIO_MAX_DISTANCE          = 1000.0f;
 
 struct SSoundAttenuationParameters {
 
-    // Distance attenuation parameter
-    // Can be from AUDIO_MIN_REF_DISTANCE to AUDIO_MAX_DISTANCE
+    /** Distance attenuation parameter
+    Can be from AUDIO_MIN_REF_DISTANCE to AUDIO_MAX_DISTANCE */
     float        ReferenceDistance = AUDIO_DEFAULT_REF_DISTANCE;
 
-    // Distance attenuation parameter
-    // Can be from ReferenceDistance to AUDIO_MAX_DISTANCE
+    /** Distance attenuation parameter
+    Can be from ReferenceDistance to AUDIO_MAX_DISTANCE */
     float        MaxDistance = AUDIO_DEFAULT_MAX_DISTANCE;
 
-    // Distance attenuation parameter
-    // Gain rolloff factor
+    /** Distance attenuation parameter
+    Gain rolloff factor */
     float        RolloffRate = AUDIO_DEFAULT_ROLLOFF_RATE;
 };
 
 struct SSoundSpawnParameters {
 
-    // Sound location behavior
+    /** Sound location behavior */
     EAudioLocation Location = AUDIO_STAY_AT_SPAWN_LOCATION;
 
-    // Priority to play the sound
+    /** Priority to play the sound */
     int         Priority = AUDIO_CHANNEL_PRIORITY_ONESHOT;
 
-    // Play the sound even when game is paused
+    /** Play the sound even when game is paused */
     bool        bPlayEvenWhenPaused = false;
 
-    // Virtualize sound when silent
+    /** Virtualize sound when silent */
     bool        bVirtualizeWhenSilent = false;
 
-    // Calc position based velocity to affect the sound
+    /** Calc position based velocity to affect the sound */
     bool        bUseVelocity = false;
 
-    // Use velocity from physical body
+    /** Use velocity from physical body */
     bool        bUsePhysicalVelocity = false;
 
-    // Audio group
+    /** Audio group */
     FAudioGroup * Group = nullptr;
 
-    // Sound attenuation
+    /** Sound attenuation */
     SSoundAttenuationParameters Attenuation;
 
-    // Sound volume
+    /** Sound volume */
     float       Volume = 1;
 
-    // Sound pitch
+    /** Sound pitch */
     float       Pitch = 1;
 
-    // Play audio with offset (in seconds)
+    /** Play audio with offset (in seconds) */
     float       PlayOffset = 0;
 
     bool        bLooping = false;
@@ -147,13 +147,13 @@ struct SSoundSpawnParameters {
 
     bool        bDirectional = false;
 
-    // Directional sound inner cone angle in degrees. [0-360]
+    /** Directional sound inner cone angle in degrees. [0-360] */
     float       ConeInnerAngle = 360;
 
-    // Directional sound outer cone angle in degrees. [0-360]
+    /** Directional sound outer cone angle in degrees. [0-360] */
     float       ConeOuterAngle = 360;
 
-    // Direction of sound porpagation
+    /** Direction of sound porpagation */
     Float3      Direction = Float3::Zero();
 
     float       LifeSpan = 0;

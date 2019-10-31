@@ -35,7 +35,7 @@ SOFTWARE.
 
 struct FMeshAsset;
 
-/*
+/**
 
 FJoint
 
@@ -49,7 +49,7 @@ struct FJoint {
     char     Name[64];               // Joint name
 };
 
-/*
+/**
 
 FSkeletonAsset
 
@@ -66,24 +66,29 @@ struct FSkeletonAsset {
     void CalcBindposeBounds( FMeshAsset const * InMeshData );
 };
 
-/*
+///**
 
-FSocketDef
+//FSocketDef
 
-Socket for attaching to skeleton joint
+//Socket for attaching
 
-*/
-class FSocketDef : public FBaseObject {
-    AN_CLASS( FSocketDef, FBaseObject )
+//*/
+//class FSocketDef : public FBaseObject {
+//    AN_CLASS( FSocketDef, FBaseObject )
 
-public:
-    int JointIndex;
+//public:
+//    Float3 Position;
+//    Float3 Scale;
+//    Quat Rotation;
+//    int JointIndex;
 
-protected:
-    FSocketDef() {}
-};
+//protected:
+//    FSocketDef() : Position(0.0f), Scale(1.0f), Rotation(Quat::Identity()), JointIndex(-1)
+//    {
+//    }
+//};
 
-/*
+/**
 
 FSkeleton
 
@@ -98,10 +103,10 @@ public:
 
     void Initialize( FJoint * _Joints, int _JointsCount, BvAxisAlignedBox const & _BindposeBounds );
 
-    // Initialize internal resource
+    /** Initialize internal resource */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
-    // Initialize object from file
+    /** Initialize object from file */
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
     void Purge();
@@ -110,13 +115,12 @@ public:
 
     TPodArray< FJoint > const & GetJoints() const { return Joints; }
 
-    FSocketDef * AddSocket( const char * _Name, int _JointIndex );
-    FSocketDef * AddSocket( const char * _Name, const char * _JointName );
+    //void AddSocket( FSocketDef * _Socket );
     // TODO: RemoveSocket?
 
-    FSocketDef * FindSocket( const char * _Name );
+    //FSocketDef * FindSocket( const char * _Name );
 
-    TPodArray< FSocketDef * > const & GetSockets() const { return Sockets; }
+    //TPodArray< FSocketDef * > const & GetSockets() const { return Sockets; }
 
     BvAxisAlignedBox const & GetBindposeBounds() const { return BindposeBounds; }
 
@@ -126,6 +130,6 @@ protected:
 
 private:
     TPodArray< FJoint > Joints;
-    TPodArray< FSocketDef * > Sockets;
+    //TPodArray< FSocketDef * > Sockets;
     BvAxisAlignedBox BindposeBounds;
 };

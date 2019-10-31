@@ -495,13 +495,13 @@ FInputComponent::FInputComponent() {
 
     MouseAxisStateX = MouseAxisStateY = 0;
 
-    IntrusiveAddToList( this, Next, Prev, InputComponents, InputComponentsTail );
+    INTRUSIVE_ADD( this, Next, Prev, InputComponents, InputComponentsTail );
 }
 
 void FInputComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    IntrusiveRemoveFromList( this, Next, Prev, InputComponents, InputComponentsTail );
+    INTRUSIVE_REMOVE( this, Next, Prev, InputComponents, InputComponentsTail );
 
     InputMappings = nullptr;
 }
@@ -744,7 +744,7 @@ void FInputComponent::SetJoystickState( int _Joystick, int _NumAxes, int _NumBut
 }
 
 void FInputComponent::SetJoystickButtonState( int _Joystick, int _Button, int _Action, double _TimeStamp ) {
-    IntrusiveForEach( component, InputComponents, Next ) {
+    INTRUSIVE_FOREACH( component, InputComponents, Next ) {
         if ( !component->bIgnoreJoystickEvents ) {
             component->SetButtonState( ID_JOYSTICK_1 + _Joystick, _Button, _Action, 0, _TimeStamp );
         }

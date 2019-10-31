@@ -187,17 +187,19 @@ struct FTextureSampler {
     float MaxLod;
 };
 
-// Texture pixel format
-// Bits: 7 - signed uncompressed, 6 - compressed
-// For uncompressed formats:
-//    5 - float point,
-//    4 - srgb
-//    3+2 - num components (0 - 1, 1 - 2, 2 - 3, 3 - 4)
-//    1+0 - bytes per channel (0 - 1, 1 - 2, 2 - 4)
-// For compressed formats
-//    7,5 - unused
-//    4 - srgb
-//    3+2 - num components (0 - 1, 1 - 2, 2 - 3, 3 - 4)
+/**
+ Texture pixel format
+ Bits: 7 - signed uncompressed, 6 - compressed
+ For uncompressed formats:
+    5 - float point,
+    4 - srgb
+    3+2 - num components (0 - 1, 1 - 2, 2 - 3, 3 - 4)
+    1+0 - bytes per channel (0 - 1, 1 - 2, 2 - 4)
+ For compressed formats
+    7,5 - unused
+    4 - srgb
+    3+2 - num components (0 - 1, 1 - 2, 2 - 3, 3 - 4)
+*/
 enum ETexturePixelFormat : uint8_t
 {
     TEXTURE_PF_R8_SIGNED  = ( 1<<7 ) | ( 0 << 2 ) | ( 0 ),
@@ -394,44 +396,45 @@ enum EMaterialDepthHack {
 };
 
 struct FMaterialBuildData {
-    // Size of allocated memory for this structure (in bytes)
+    /** Size of allocated memory for this structure (in bytes) */
     int SizeInBytes;
 
-    // Material type
+    /** Material type */
     EMaterialType Type;
 
-    // Facing
+    /** Facing */
     EMaterialFacing Facing;
 
-    // Lightmap binding unit
+    /** Lightmap binding unit */
     int LightmapSlot;
 
-    // Have texture fetching in vertex stage. This flag allow renderer to optimize sampler/texture bindings
-    // during rendering.
+    /** Have texture fetching in vertex stage. This flag allow renderer to optimize sampler/texture bindings
+    during rendering. */
     bool bDepthPassTextureFetch;
     bool bColorPassTextureFetch;
     bool bWireframePassTextureFetch;
     bool bShadowMapPassTextureFetch;
 
-    // Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
-    // during rendering.
+    /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
+    during rendering. */
     bool bHasVertexDeform;
 
-    bool bDepthTest;
+    /** Experemental. Depth testing. */
+    bool bDepthTest_EXPEREMENTAL;
 
-    // Disable shadow casting (for specific materials like skybox or first person shooter weapon)
+    /** Disable shadow casting (for specific materials like skybox or first person shooter weapon) */
     bool bNoCastShadow;
 
-    // Enable shadow map masking
+    /** Enable shadow map masking */
     bool bShadowMapMasking;
 
     int NumUniformVectors;
 
-    // Material samplers
+    /** Material samplers */
     FTextureSampler Samplers[MAX_MATERIAL_TEXTURES];
     int NumSamplers;
 
-    // Shader source code
+    /** Shader source code */
     char ShaderData[1];
 };
 

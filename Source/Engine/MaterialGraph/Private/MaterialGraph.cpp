@@ -2603,7 +2603,7 @@ FMaterialBuildData * FMaterialBuilder::BuildData() {
     data->bWireframePassTextureFetch = bWireframePassTextureFetch;
     data->bShadowMapPassTextureFetch = bShadowMapPassTextureFetch;
     data->bHasVertexDeform    = bHasVertexDeform;
-    data->bDepthTest          = bDepthTest;
+    data->bDepthTest_EXPEREMENTAL          = bDepthTest;
     data->bNoCastShadow       = bNoCastShadow;
     data->bShadowMapMasking   = bShadowMapMasking;
     data->NumUniformVectors   = maxUniformAddress >= 0 ? maxUniformAddress / 4 + 1 : 0;

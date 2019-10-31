@@ -88,6 +88,7 @@ void FActorComponent::Destroy() {
     EndPlay();
 
     DeinitializeComponent();
+    bInitialized = false;
 }
 
 int FActorComponent::Serialize( FDocument & _Doc ) {

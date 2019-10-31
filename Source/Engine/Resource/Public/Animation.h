@@ -36,7 +36,7 @@ SOFTWARE.
 struct FMeshAsset;
 struct FJoint;
 
-/*
+/**
 
 FChannelTransform
 
@@ -48,13 +48,13 @@ struct FChannelTransform {
     Float3 Position;
     Float3 Scale;
 
-    // Helper to convert joint transform to matrix 3x4
+    /** Helper to convert joint transform to matrix 3x4 */
     void ToMatrix( Float3x4 & _Matrix ) const {
         _Matrix.Compose( Position, Rotation.ToMatrix(), Scale );
     }
 };
 
-/*
+/**
 
 FAnimationChannel
 
@@ -62,14 +62,14 @@ Animation for single joint
 
 */
 struct FAnimationChannel {
-    // Node index (Joint index in skeleton)
+    /** Node index (Joint index in skeleton) */
     int NodeIndex;
 
-    // Joint frames
+    /** Joint frames */
     int TransformOffset;
 };
 
-/*
+/**
 
 FAnimationAsset
 
@@ -90,7 +90,7 @@ struct FAnimationAsset {
     void CalcBoundingBoxes( FMeshAsset const * InMeshData, FJoint const *  InJoints, int InNumJoints );
 };
 
-/*
+/**
 
 FAnimation
 
@@ -103,10 +103,10 @@ class FAnimation : public FBaseObject {
 public:
     void Initialize( int _FrameCount, float _FrameDelta, FChannelTransform const * _Transforms, int _TransformsCount, FAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds );
 
-    // Initialize internal resource
+    /** Initialize internal resource */
     void InitializeInternalResource( const char * _InternalResourceName ) override;
 
-    // Initialize object from file
+    /** Initialize object from file */
     bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
     void Purge();

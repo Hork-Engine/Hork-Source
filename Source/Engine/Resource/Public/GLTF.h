@@ -35,3 +35,4 @@ SOFTWARE.
 #include "IndexedMesh.h"
 
 bool LoadGLTF( const char * _FileName, FMeshAsset & _MeshAsset, FSkeletonAsset & _SkeletonAsset, TStdVector< FAnimationAsset > & _Animations );
+bool LoadGeometryGLTF( const char * _FileName, FMeshAsset & _MeshAsset );

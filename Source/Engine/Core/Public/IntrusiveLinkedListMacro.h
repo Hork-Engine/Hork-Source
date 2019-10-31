@@ -36,10 +36,10 @@ Intrusive linked list macro
 
 */
 
-#define IntrusiveIsInList( _object, _next, _prev, _head, _tail ) \
+#define INTRUSIVE_EXISTS( _object, _next, _prev, _head, _tail ) \
     ( _object->_prev || _object->_next || _head == _object )
 
-#define IntrusiveAddToList( _object, _next, _prev, _head, _tail ) \
+#define INTRUSIVE_ADD( _object, _next, _prev, _head, _tail ) \
 { \
     _object->_prev = _tail; \
     _object->_next = nullptr; \
@@ -51,7 +51,7 @@ Intrusive linked list macro
     } \
 }
 
-#define IntrusiveRemoveFromList( _object, _next, _prev, _head, _tail ) \
+#define INTRUSIVE_REMOVE( _object, _next, _prev, _head, _tail ) \
 { \
     auto * __next = _object->_next; \
     auto * __prev = _object->_prev; \
@@ -72,5 +72,5 @@ Intrusive linked list macro
     } \
 }
 
-#define IntrusiveForEach( object, head_or_tail, next_or_prev ) \
+#define INTRUSIVE_FOREACH( object, head_or_tail, next_or_prev ) \
     for ( auto * object = head_or_tail ; object ; object = object->next_or_prev )

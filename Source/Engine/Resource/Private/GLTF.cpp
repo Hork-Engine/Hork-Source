@@ -941,6 +941,70 @@ static bool ReadGLTF( cgltf_data * Data, FMeshAsset & MeshAsset, FSkeletonAsset 
     return true;
 }
 
+static bool ReadGeometryGLTF( cgltf_data * Data, FMeshAsset & MeshAsset ) {
+    FContextGLTF ctx;
+
+    ctx.Data = Data;
+    ctx.bSkeletal = Data->skins_count > 0;
+
+    GLogger.Printf( "%d scenes\n", Data->scenes_count );
+    GLogger.Printf( "%d skins\n", Data->skins_count );
+    GLogger.Printf( "%d meshes\n", Data->meshes_count );
+    GLogger.Printf( "%d nodes\n", Data->nodes_count );
+    GLogger.Printf( "%d cameras\n", Data->cameras_count );
+    GLogger.Printf( "%d lights\n", Data->lights_count );
+
+    if ( Data->extensions_used_count > 0 ) {
+        GLogger.Printf( "Used extensions:\n" );
+        for ( int i = 0; i < Data->extensions_used_count; i++ ) {
+            GLogger.Printf( "    %s\n", Data->extensions_used[ i ] );
+        }
+    }
+
+    if ( Data->extensions_required_count > 0 ) {
+        GLogger.Printf( "Required extensions:\n" );
+        for ( int i = 0; i < Data->extensions_required_count; i++ ) {
+            GLogger.Printf( "    %s\n", Data->extensions_required[ i ] );
+        }
+    }
+
+    if ( ctx.bSkeletal ) {
+        // read meshes
+        //for ( int i = 0; i < Data->meshes_count; i++ ) {
+        //    ReadMesh( ctx, &Data->meshes[i], Float3x4::Identity(), Float3x3::Identity(), MeshAsset );
+        //}
+
+        // read meshes hierarchy
+        for ( int i = 0; i < Data->scenes_count; i++ ) {
+            cgltf_scene * scene = &Data->scene[ i ];
+
+            GLogger.Printf( "Scene \"%s\" nodes %d\n", scene->name, scene->nodes_count );
+
+            for ( int n = 0; n < scene->nodes_count; n++ ) {
+                cgltf_node * node = scene->nodes[ n ];
+
+                ReadNode_r( ctx, node, MeshAsset );
+            }
+        }
+
+    } else {
+        // read meshes hierarchy
+        for ( int i = 0; i < Data->scenes_count; i++ ) {
+            cgltf_scene * scene = &Data->scene[ i ];
+
+            GLogger.Printf( "Scene \"%s\" nodes %d\n", scene->name, scene->nodes_count );
+
+            for ( int n = 0; n < scene->nodes_count; n++ ) {
+                cgltf_node * node = scene->nodes[ n ];
+
+                ReadNode_r( ctx, node, MeshAsset );
+            }
+        }
+    }
+
+    return true;
+}
+
 bool LoadGLTF( const char * FileName, FMeshAsset & MeshAsset, FSkeletonAsset & SkeletonAsset, TStdVector< FAnimationAsset > & Animations ) {
     bool ret = false;
     FFileStream f;
@@ -1003,3 +1067,66 @@ fin:
 
     return ret;
 }
+
+
+bool LoadGeometryGLTF( const char * FileName, FMeshAsset & MeshAsset ) {
+    bool ret = false;
+    FFileStream f;
+
+    MeshAsset.Clear();
+
+    FString path = FileName;
+    path.StripFilename();
+    path += "/";
+
+    if ( !f.OpenRead( FileName ) ) {
+        GLogger.Printf( "Couldn't open %s\n", FileName );
+        return false;
+    }
+
+    size_t size = f.Length();
+
+    int hunkMark = GHunkMemory.SetHunkMark();
+
+    void * buf = GHunkMemory.HunkMemory( size, 1 );
+    f.Read( buf, size );
+
+    void * memoryBuffer = GHunkMemory.HunkMemory( MAX_MEMORY_GLTF, 1 );
+    totalAllocatedGLTF = 0;
+
+    cgltf_options options;
+
+    memset( &options, 0, sizeof( options ) );
+
+    options.memory_alloc = cgltf_alloc;
+    options.memory_free = cgltf_free;
+    options.memory_user_data = memoryBuffer;
+
+    cgltf_data * data = NULL;
+
+    cgltf_result result = cgltf_parse( &options, buf, size, &data );
+    if ( result != cgltf_result_success ) {
+        GLogger.Printf( "Couldn't load %s : %s\n", FileName, GetErrorString( result ) );
+        goto fin;
+    }
+
+    result = cgltf_validate( data );
+    if ( result != cgltf_result_success ) {
+        GLogger.Printf( "Couldn't load %s : %s\n", FileName, GetErrorString( result ) );
+        goto fin;
+    }
+
+    result = cgltf_load_buffers( &options, data, path.ToConstChar() );
+    if ( result != cgltf_result_success ) {
+        GLogger.Printf( "Couldn't load %s buffers : %s\n", FileName, GetErrorString( result ) );
+        goto fin;
+    }
+
+    ret = ReadGeometryGLTF( data, MeshAsset );
+
+fin:
+    GHunkMemory.ClearToMark( hunkMark );
+
+    return ret;
+}
+

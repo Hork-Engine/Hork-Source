@@ -49,7 +49,7 @@ enum EVSDPass {
     VSD_PASS_DEFAULT    = VSD_PASS_PORTALS | VSD_PASS_BOUNDS,
 };
 
-/*
+/**
 
 FMeshComponent
 
@@ -62,94 +62,96 @@ class ANGIE_API FMeshComponent : public FDrawSurf {
     friend class FWorld;
 
 public:
-    // Visible surface determination alogrithm
+    /** Visible surface determination alogrithm */
     int             VSDPasses = VSD_PASS_DEFAULT;
 
-    // Marker for VSD_PASS_VIS_MARKER
+    /** Marker for VSD_PASS_VIS_MARKER */
     int             VisMarker;
 
-    // Lightmap atlas index
+    /** Lightmap atlas index */
     int             LightmapBlock;
 
-    // Lighmap channel UV offset and scale
+    /** Lighmap channel UV offset and scale */
     Float4          LightmapOffset;
 
-    // Lightmap UV channel
+    /** Lightmap UV channel */
     TRef< FLightmapUV >   LightmapUVChannel;
 
-    // Baked vertex light channel
+    /** Baked vertex light channel */
     TRef< FVertexLight >  VertexLightChannel;
 
-    // Force using dynamic range
+    /** Force using dynamic range */
     bool            bUseDynamicRange;
 
-    // Dynamic range property
+    /** Dynamic range property */
     unsigned int    DynamicRangeIndexCount;
 
-    // Dynamic range property
+    /** Dynamic range property */
     unsigned int    DynamicRangeStartIndexLocation;
 
-    // Dynamic range property
+    /** Dynamic range property */
     int             DynamicRangeBaseVertexLocation;
 
-    // Flipbook animation page offset
+    /** Flipbook animation page offset */
     unsigned int    SubpartBaseVertexOffset;
 
-    // Render during light pass
+    /** Render during light pass */
     bool            bLightPass;
 
-    // Cast shadow
-    bool            bCastShadow;
-
-    // Receive shadow
-    //bool            bReceiveShadow;
-
-    // Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled
+    /** Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled */
     bool            bCustomDepthStencilPass;
 
-    // Custom depth stencil value for the mesh
+    /** Custom depth stencil value for the mesh */
     byte            CustomDepthStencilValue;
 
-    // Force ignoring component position/rotation/scale. FIXME: move this to super class SceneComponent?
+    /** Force ignoring component position/rotation/scale. FIXME: move this to super class SceneComponent? */
     bool            bNoTransform;
 
-    // Internal. Used by frontend to filter rendered meshes.
+    /** Internal. Used by frontend to filter rendered meshes. */
     int             RenderMark;
 
-    // Used for VSD_FACE_CULL
+    /** Used for VSD_FACE_CULL */
     PlaneF          FacePlane;
 
     bool            bOverrideMeshMaterials = true;
 
-    // Set indexed mesh for the component
+    /** Set indexed mesh for the component */
     void SetMesh( FIndexedMesh * _Mesh );
 
-    // Get indexed mesh
+    /** Get indexed mesh */
     FIndexedMesh * GetMesh() const { return Mesh; }
 
-    // Unset materials
+    /** Unset materials */
     void ClearMaterials();
 
-    // Set materials from mesh resource
+    /** Set materials from mesh resource */
     void CopyMaterialsFromMeshResource();
 
-    // Set material instance for subpart of the mesh
+    /** Set material instance for subpart of the mesh */
     void SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance );
 
-    // Get material instance of subpart of the mesh. Never return null.
+    /** Get material instance of subpart of the mesh. Never return null. */
     FMaterialInstance * GetMaterialInstance( int _SubpartIndex ) const;
 
-    // Set material instance for subpart of the mesh
+    /** Set material instance for subpart of the mesh */
     void SetMaterialInstance( FMaterialInstance * _Instance ) { SetMaterialInstance( 0, _Instance ); }
 
-    // Get material instance of subpart of the mesh. Never return null.
+    /** Get material instance of subpart of the mesh. Never return null. */
     FMaterialInstance * GetMaterialInstance() const { return GetMaterialInstance( 0 ); }
 
-    // Iterate meshes in parent world
+    void SetCastShadow( bool _CastShadow );
+
+    bool IsCastShadow() const { return bCastShadow; }
+
+    /** Iterate meshes in parent world */
     FMeshComponent * GetNextMesh() { return Next; }
     FMeshComponent * GetPrevMesh() { return Prev; }
 
-    // Used for VSD_PASS_CUSTOM_VISIBLE_STEP algorithm
+    /** Iterate shadow casters in parent world */
+    FMeshComponent * GetNextShadowCaster() { return NextShadowCaster; }
+    FMeshComponent * GetPrevShadowCaster() { return PrevShadowCaster; }
+
+    /** Used for VSD_PASS_CUSTOM_VISIBLE_STEP algorithm */
     virtual void RenderFrontend_CustomVisibleStep( FRenderFrontendDef * _Def, bool & _OutVisibleFlag ) {}
 
 protected:
@@ -172,6 +174,11 @@ private:
     FMeshComponent * Next;
     FMeshComponent * Prev;
 
+    FMeshComponent * NextShadowCaster;
+    FMeshComponent * PrevShadowCaster;
+
     TRef< FIndexedMesh > Mesh;
     TPodArray< FMaterialInstance *, 1 > Materials;
+
+    bool bCastShadow;
 };

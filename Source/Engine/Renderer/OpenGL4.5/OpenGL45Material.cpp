@@ -410,7 +410,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
 void FColorPassHUD::Create( const char * _SourceCode ) {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
-    rsd.CullMode = POLYFON_CULL_DISABLED;
+    rsd.CullMode = POLYGON_CULL_DISABLED;
     rsd.bScissorEnable = true;
 
     BlendingStateInfo bsd;
@@ -983,6 +983,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
     Desc.CullMode = POLYGON_CULL_DISABLED;
 #else
     rsd.CullMode = POLYGON_CULL_BACK;
+    //rsd.CullMode = POLYGON_CULL_DISABLED; // Less light bleeding
 #endif
     //rsd.CullMode = POLYGON_CULL_FRONT;
     //rsd.CullMode = POLYGON_CULL_DISABLED;

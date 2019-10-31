@@ -333,10 +333,10 @@ void CommandBuffer::BindPipeline( Pipeline * _Pipeline ) {
         }
 
         if ( state->RasterizerState.CullMode != desc.CullMode ) {
-            if ( desc.CullMode == POLYFON_CULL_DISABLED ) {
+            if ( desc.CullMode == POLYGON_CULL_DISABLED ) {
                 glDisable( GL_CULL_FACE );
             } else {
-                if ( state->RasterizerState.CullMode == POLYFON_CULL_DISABLED ) {
+                if ( state->RasterizerState.CullMode == POLYGON_CULL_DISABLED ) {
                     glEnable( GL_CULL_FACE );
                 }
                 glCullFace( CullModeLUT[ desc.CullMode ] );

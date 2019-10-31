@@ -37,6 +37,8 @@ SOFTWARE.
 
 #include <algorithm>    // find
 
+FRuntimeVariable RVDrawSockets( _CTS( "DrawSockets" ), _CTS( "0" ), VAR_CHEAT );
+
 AN_BEGIN_CLASS_META( FSceneComponent )
 AN_ATTRIBUTE_( Position, AF_DEFAULT )
 AN_ATTRIBUTE_( Rotation, AF_DEFAULT )
@@ -199,11 +201,11 @@ FSceneComponent * FSceneComponent::FindChild( const char * _UniqueName, bool _Re
 }
 
 int FSceneComponent::FindSocket( const char * _Name ) const {
-    for ( int socketIndex = 0 ; socketIndex < Sockets.Size() ; socketIndex++ ) {
-        if ( !Sockets[socketIndex].SocketDef->GetName().Icmp( _Name ) ) {
-            return socketIndex;
-        }
-    }
+//    for ( int socketIndex = 0 ; socketIndex < Sockets.Size() ; socketIndex++ ) {
+//        if ( !Sockets[socketIndex].SocketDef->GetName().Icmp( _Name ) ) {
+//            return socketIndex;
+//        }
+//    }
     GLogger.Printf( "Socket not found %s\n", _Name );
     return -1;
 }
@@ -735,29 +737,63 @@ void FSceneComponent::ComputeLocalTransformMatrix( Float3x4 & _LocalTransformMat
     _LocalTransformMatrix.Compose( Position, Rotation.ToMatrix(), Scale );
 }
 
+Float3x4 FSocket::EvaluateTransform() const {
+    Float3x4 transform;
+
+    if ( SkinnedMesh )
+    {
+        Float3x4 const & jointTransform = SkinnedMesh->GetJointTransform( SocketDef->JointIndex );
+
+        Quat jointRotation;
+        jointRotation.FromMatrix( jointTransform.DecomposeRotation() );
+
+        Float3 jointScale = jointTransform.DecomposeScale();
+
+        Quat worldRotation = jointRotation * SocketDef->Rotation;
+
+        transform.Compose( jointTransform * SocketDef->Position, worldRotation.ToMatrix(), SocketDef->Scale * jointScale );
+    }
+    else
+    {
+        transform.Compose( SocketDef->Position, SocketDef->Rotation.ToMatrix(), SocketDef->Scale );
+    }
+
+    return transform;
+}
+
+Float3x4 FSceneComponent::GetSocketTransform( int _SocketIndex ) const {
+    if ( SocketIndex < 0 || SocketIndex >= AttachParent->Sockets.Size() )
+    {
+        return Float3x4::Identity();
+    }
+
+    return Sockets[_SocketIndex].EvaluateTransform();
+}
+
 void FSceneComponent::ComputeWorldTransform() const {
+    // TODO: optimize
+
     if ( AttachParent ) {
         if ( SocketIndex >= 0 && SocketIndex < AttachParent->Sockets.Size() ) {
-            FSocket * Socket = &AttachParent->Sockets[SocketIndex];
 
-            Float3x4 const & JointTransform = Socket->Owner->GetJointTransform( Socket->SocketDef->JointIndex );
+            Float3x4 const & SocketTransform = AttachParent->Sockets[ SocketIndex ].EvaluateTransform();
 
-            Quat JointRotation;
-            JointRotation.FromMatrix( JointTransform.DecomposeRotation() );
+            Quat SocketRotation;
+            SocketRotation.FromMatrix( SocketTransform.DecomposeRotation() );
 
-            WorldRotation = bAbsoluteRotation ? Rotation : AttachParent->GetWorldRotation() * JointRotation * Rotation;
+            WorldRotation = bAbsoluteRotation ? Rotation : AttachParent->GetWorldRotation() * SocketRotation * Rotation;
 
 #if 0
             // Transform with shrinking
 
             Float3x4 LocalTransformMatrix;
             ComputeLocalTransformMatrix( LocalTransformMatrix );
-            WorldTransformMatrix = AttachParent->GetWorldTransformMatrix() * JointTransform * LocalTransformMatrix;
+            WorldTransformMatrix = AttachParent->GetWorldTransformMatrix() * SocketTransform * LocalTransformMatrix;
 #else
             // Take relative to parent position and rotation. Position is scaled by parent.
-            WorldTransformMatrix.Compose( bAbsolutePosition ? Position : AttachParent->GetWorldTransformMatrix() * JointTransform * Position,
+            WorldTransformMatrix.Compose( bAbsolutePosition ? Position : AttachParent->GetWorldTransformMatrix() * SocketTransform * Position,
                                           WorldRotation.ToMatrix(),
-                                          bAbsoluteScale ? Scale : Scale * AttachParent->GetWorldScale() * JointTransform.DecomposeScale() );
+                                          bAbsoluteScale ? Scale : Scale * AttachParent->GetWorldScale() * SocketTransform.DecomposeScale() );
 #endif
             
         } else {
@@ -862,4 +898,33 @@ void FSceneComponent::Step( Float3 const & _Vector ) {
     Position += _Vector;
 
     MarkTransformDirty();
+}
+
+void FSceneComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+    Super::DrawDebug( _DebugDraw );
+
+    // Draw sockets
+    if ( RVDrawSockets ) {
+        Float3x4 transform;
+        Float3 worldScale;
+        Quat worldRotation;
+        Quat r;
+        for ( FSocket & socket : Sockets ) {
+            transform = socket.EvaluateTransform();
+
+#if 1
+            Float3x4 const & worldTransform = GetWorldTransformMatrix();
+            worldRotation.FromMatrix( worldTransform.DecomposeRotation() );
+            worldScale = worldTransform.DecomposeScale();
+            r.FromMatrix( transform.DecomposeRotation() );
+            worldRotation = worldRotation * r;
+            transform.Compose( worldTransform * transform.DecomposeTranslation(),
+                               worldRotation.ToMatrix(),
+                               transform.DecomposeScale() * worldScale );
+            _DebugDraw->DrawAxis( transform, true );
+#else
+            _DebugDraw->DrawAxis( GetWorldTransformMatrix() * transform, true );
+#endif
+        }
+    }
 }

@@ -105,7 +105,7 @@ void FSpatialObject::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     // remove from dirty list
-    IntrusiveRemoveFromList( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );
+    INTRUSIVE_REMOVE( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );
 
     // FIXME: Is it right way to remove surface areas here?
     FWorld * world = GetWorld();
@@ -116,15 +116,17 @@ void FSpatialObject::DeinitializeComponent() {
 
 void FSpatialObject::MarkAreaDirty() {
     // add to dirty list
-    if ( !IntrusiveIsInList( this, NextDirty, PrevDirty, DirtyList, DirtyListTail ) ) {
-        IntrusiveAddToList( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );
+    if ( !INTRUSIVE_EXISTS( this, NextDirty, PrevDirty, DirtyList, DirtyListTail ) ) {
+        INTRUSIVE_ADD( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );
     }
 }
 
 void FSpatialObject::MarkWorldBoundsDirty() {
     bWorldBoundsDirty = true;
 
-    MarkAreaDirty();
+    if ( IsInitialized() ) {
+        MarkAreaDirty();
+    }
 }
 
 void FSpatialObject::ForceOutdoor( bool _OutdoorSurface ) {
@@ -133,7 +135,10 @@ void FSpatialObject::ForceOutdoor( bool _OutdoorSurface ) {
     }
 
     bIsOutdoor = _OutdoorSurface;
-    MarkAreaDirty();
+
+    if ( IsInitialized() ) {
+        MarkAreaDirty();
+    }
 }
 
 void FSpatialObject::_UpdateSurfaceAreas() {

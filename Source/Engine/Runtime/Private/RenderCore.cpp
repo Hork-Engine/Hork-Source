@@ -42,11 +42,11 @@ FResourceGPU * FResourceGPU::GPUResources;
 FResourceGPU * FResourceGPU::GPUResourcesTail;
 
 void IRenderBackend::RegisterGPUResource( FResourceGPU * _Resource ) {
-    IntrusiveAddToList( _Resource, pNext, pPrev, FResourceGPU::GPUResources, FResourceGPU::GPUResourcesTail );
+    INTRUSIVE_ADD( _Resource, pNext, pPrev, FResourceGPU::GPUResources, FResourceGPU::GPUResourcesTail );
 }
 
 void IRenderBackend::UnregisterGPUResource( FResourceGPU * _Resource ) {
-    IntrusiveRemoveFromList( _Resource, pNext, pPrev, FResourceGPU::GPUResources, FResourceGPU::GPUResourcesTail );
+    INTRUSIVE_REMOVE( _Resource, pNext, pPrev, FResourceGPU::GPUResources, FResourceGPU::GPUResourcesTail );
 }
 
 void IRenderBackend::UploadGPUResources() {
