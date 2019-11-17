@@ -92,9 +92,9 @@ public:
         const Float3 OutCenter( _Orient[0][0] * InCenter[0] + _Orient[1][0] * InCenter[1] + _Orient[2][0] * InCenter[2] + _Origin.X,
                                 _Orient[0][1] * InCenter[0] + _Orient[1][1] * InCenter[1] + _Orient[2][1] * InCenter[2] + _Origin.Y,
                                 _Orient[0][2] * InCenter[0] + _Orient[1][2] * InCenter[1] + _Orient[2][2] * InCenter[2] + _Origin.Z );
-        const Float3 OutEdge( FMath::Abs( _Orient[0][0] ) * InEdge.X + FMath::Abs( _Orient[1][0] ) * InEdge.Y + FMath::Abs( _Orient[2][0] ) * InEdge.Z,
-                              FMath::Abs( _Orient[0][1] ) * InEdge.X + FMath::Abs( _Orient[1][1] ) * InEdge.Y + FMath::Abs( _Orient[2][1] ) * InEdge.Z,
-                              FMath::Abs( _Orient[0][2] ) * InEdge.X + FMath::Abs( _Orient[1][2] ) * InEdge.Y + FMath::Abs( _Orient[2][2] ) * InEdge.Z );
+        const Float3 OutEdge( Math::Abs( _Orient[0][0] ) * InEdge.X + Math::Abs( _Orient[1][0] ) * InEdge.Y + Math::Abs( _Orient[2][0] ) * InEdge.Z,
+                              Math::Abs( _Orient[0][1] ) * InEdge.X + Math::Abs( _Orient[1][1] ) * InEdge.Y + Math::Abs( _Orient[2][1] ) * InEdge.Z,
+                              Math::Abs( _Orient[0][2] ) * InEdge.X + Math::Abs( _Orient[1][2] ) * InEdge.Y + Math::Abs( _Orient[2][2] ) * InEdge.Z );
         return BvAxisAlignedBox( OutCenter - OutEdge, OutCenter + OutEdge );
     }
 
@@ -104,10 +104,26 @@ public:
         const Float3 OutCenter( _TransformMatrix[0][0] * InCenter[0] + _TransformMatrix[0][1] * InCenter[1] + _TransformMatrix[0][2] * InCenter[2] + _TransformMatrix[0][3],
                                 _TransformMatrix[1][0] * InCenter[0] + _TransformMatrix[1][1] * InCenter[1] + _TransformMatrix[1][2] * InCenter[2] + _TransformMatrix[1][3],
                                 _TransformMatrix[2][0] * InCenter[0] + _TransformMatrix[2][1] * InCenter[1] + _TransformMatrix[2][2] * InCenter[2] + _TransformMatrix[2][3] );
-        const Float3 OutEdge( FMath::Abs( _TransformMatrix[0][0] ) * InEdge.X + FMath::Abs( _TransformMatrix[0][1] ) * InEdge.Y + FMath::Abs( _TransformMatrix[0][2] ) * InEdge.Z,
-                              FMath::Abs( _TransformMatrix[1][0] ) * InEdge.X + FMath::Abs( _TransformMatrix[1][1] ) * InEdge.Y + FMath::Abs( _TransformMatrix[1][2] ) * InEdge.Z,
-                              FMath::Abs( _TransformMatrix[2][0] ) * InEdge.X + FMath::Abs( _TransformMatrix[2][1] ) * InEdge.Y + FMath::Abs( _TransformMatrix[2][2] ) * InEdge.Z );
+        const Float3 OutEdge( Math::Abs( _TransformMatrix[0][0] ) * InEdge.X + Math::Abs( _TransformMatrix[0][1] ) * InEdge.Y + Math::Abs( _TransformMatrix[0][2] ) * InEdge.Z,
+                              Math::Abs( _TransformMatrix[1][0] ) * InEdge.X + Math::Abs( _TransformMatrix[1][1] ) * InEdge.Y + Math::Abs( _TransformMatrix[1][2] ) * InEdge.Z,
+                              Math::Abs( _TransformMatrix[2][0] ) * InEdge.X + Math::Abs( _TransformMatrix[2][1] ) * InEdge.Y + Math::Abs( _TransformMatrix[2][2] ) * InEdge.Z );
         return BvAxisAlignedBox( OutCenter - OutEdge, OutCenter + OutEdge );
+    }
+
+    static BvAxisAlignedBox const & Empty() {
+        static BvAxisAlignedBox EmptyBox( Float3(9999999999.0f), Float3(-9999999999.0f) );
+        return EmptyBox;
+    }
+
+    // Byte serialization
+    void Write( IStreamBase & _Stream ) const {
+        Mins.Write( _Stream );
+        Maxs.Write( _Stream );
+    }
+
+    void Read( IStreamBase & _Stream ) {
+        Mins.Read( _Stream );
+        Maxs.Read( _Stream );
     }
 };
 
@@ -162,39 +178,39 @@ AN_FORCEINLINE Bool BvAxisAlignedBox::operator!=( BvAxisAlignedBox const & _Othe
 }
 
 AN_FORCEINLINE void BvAxisAlignedBox::AddPoint( Float3 const & _Point ) {
-    Mins.X = FMath::Min( _Point.X, Mins.X );
-    Maxs.X = FMath::Max( _Point.X, Maxs.X );
-    Mins.Y = FMath::Min( _Point.Y, Mins.Y );
-    Maxs.Y = FMath::Max( _Point.Y, Maxs.Y );
-    Mins.Z = FMath::Min( _Point.Z, Mins.Z );
-    Maxs.Z = FMath::Max( _Point.Z, Maxs.Z );
+    Mins.X = Math::Min( _Point.X, Mins.X );
+    Maxs.X = Math::Max( _Point.X, Maxs.X );
+    Mins.Y = Math::Min( _Point.Y, Mins.Y );
+    Maxs.Y = Math::Max( _Point.Y, Maxs.Y );
+    Mins.Z = Math::Min( _Point.Z, Mins.Z );
+    Maxs.Z = Math::Max( _Point.Z, Maxs.Z );
 }
 
 AN_FORCEINLINE void BvAxisAlignedBox::AddPoint( float const & _X, float const & _Y, float const & _Z ) {
-    Mins.X = FMath::Min( _X, Mins.X );
-    Maxs.X = FMath::Max( _X, Maxs.X );
-    Mins.Y = FMath::Min( _Y, Mins.Y );
-    Maxs.Y = FMath::Max( _Y, Maxs.Y );
-    Mins.Z = FMath::Min( _Z, Mins.Z );
-    Maxs.Z = FMath::Max( _Z, Maxs.Z );
+    Mins.X = Math::Min( _X, Mins.X );
+    Maxs.X = Math::Max( _X, Maxs.X );
+    Mins.Y = Math::Min( _Y, Mins.Y );
+    Maxs.Y = Math::Max( _Y, Maxs.Y );
+    Mins.Z = Math::Min( _Z, Mins.Z );
+    Maxs.Z = Math::Max( _Z, Maxs.Z );
 }
 
 AN_FORCEINLINE void BvAxisAlignedBox::AddAABB( BvAxisAlignedBox const & _Other ) {
-    Mins.X = FMath::Min( _Other.Mins.X, Mins.X );
-    Maxs.X = FMath::Max( _Other.Maxs.X, Maxs.X );
-    Mins.Y = FMath::Min( _Other.Mins.Y, Mins.Y );
-    Maxs.Y = FMath::Max( _Other.Maxs.Y, Maxs.Y );
-    Mins.Z = FMath::Min( _Other.Mins.Z, Mins.Z );
-    Maxs.Z = FMath::Max( _Other.Maxs.Z, Maxs.Z );
+    Mins.X = Math::Min( _Other.Mins.X, Mins.X );
+    Maxs.X = Math::Max( _Other.Maxs.X, Maxs.X );
+    Mins.Y = Math::Min( _Other.Mins.Y, Mins.Y );
+    Maxs.Y = Math::Max( _Other.Maxs.Y, Maxs.Y );
+    Mins.Z = Math::Min( _Other.Mins.Z, Mins.Z );
+    Maxs.Z = Math::Max( _Other.Maxs.Z, Maxs.Z );
 }
 
 AN_FORCEINLINE void BvAxisAlignedBox::AddAABB( Float3 const & _Mins, Float3 const & _Maxs ) {
-    Mins.X = FMath::Min( _Mins.X, Mins.X );
-    Maxs.X = FMath::Max( _Maxs.X, Maxs.X );
-    Mins.Y = FMath::Min( _Mins.Y, Mins.Y );
-    Maxs.Y = FMath::Max( _Maxs.Y, Maxs.Y );
-    Mins.Z = FMath::Min( _Mins.Z, Mins.Z );
-    Maxs.Z = FMath::Max( _Maxs.Z, Maxs.Z );
+    Mins.X = Math::Min( _Mins.X, Mins.X );
+    Maxs.X = Math::Max( _Maxs.X, Maxs.X );
+    Mins.Y = Math::Min( _Mins.Y, Mins.Y );
+    Maxs.Y = Math::Max( _Maxs.Y, Maxs.Y );
+    Mins.Z = Math::Min( _Mins.Z, Mins.Z );
+    Maxs.Z = Math::Max( _Maxs.Z, Maxs.Z );
 }
 
 AN_FORCEINLINE void BvAxisAlignedBox::Clear() {

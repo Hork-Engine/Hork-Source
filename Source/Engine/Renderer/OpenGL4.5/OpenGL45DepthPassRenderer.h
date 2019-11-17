@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class FDepthPassRenderer : public FPassRenderer {
+class ADepthPassRenderer : public APassRenderer {
 public:
     void Initialize();
     void Deinitialize();
@@ -44,12 +44,12 @@ public:
     GHI::RenderPass * GetRenderPass() { return &DepthPass; }
 
 private:
-    bool BindMaterial( FRenderInstance const * instance );
-    void BindTexturesDepthPass( FMaterialFrameData * _Instance );
+    bool BindMaterial( SRenderInstance const * instance );
+    void BindTexturesDepthPass( SMaterialFrameData * _Instance );
 
     GHI::RenderPass DepthPass;
 };
 
-extern FDepthPassRenderer GDepthPassRenderer;
+extern ADepthPassRenderer GDepthPassRenderer;
 
 }

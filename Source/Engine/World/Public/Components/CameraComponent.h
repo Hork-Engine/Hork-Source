@@ -44,8 +44,8 @@ enum ECameraPerspectiveAdjust : uint8_t {
     CAMERA_ADJUST_FOV_X_FOV_Y,
 };
 
-class ANGIE_API FCameraComponent : public FSceneComponent {
-    AN_COMPONENT( FCameraComponent, FSceneComponent )
+class ANGIE_API ACameraComponent : public ASceneComponent {
+    AN_COMPONENT( ACameraComponent, ASceneComponent )
 
 public:
     void SetProjection( ECameraProjection _Projection );
@@ -68,7 +68,7 @@ public:
     void SetAspectRatio( float _AspectRatio );
 
     // Use aspect ratio from monitor geometry. Use it for fullscreen video mode.
-    void SetMonitorAspectRatio( struct FPhysicalMonitor const * _Monitor );
+    void SetMonitorAspectRatio( struct SPhysicalMonitor const * _Monitor );
 
     // Use aspect ratio from window geometry. Use it for windowed mode.
     // Call this on each window resize to update aspect ratio.
@@ -120,11 +120,11 @@ public:
     void MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix/*, const float _ClusterZNear, const float _ClusterZFar*/ ) const;
 
 protected:
-    FCameraComponent();
+    ACameraComponent();
 
     void OnTransformDirty() override;
 
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
 private:
     float               FovX;

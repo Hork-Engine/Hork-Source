@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class FColorPassRenderer : public FPassRenderer {
+class AColorPassRenderer : public APassRenderer {
 public:
     void Initialize();
     void Deinitialize();
@@ -44,13 +44,13 @@ public:
     GHI::RenderPass * GetRenderPass() { return &ColorPass; }
 
 private:
-    bool BindMaterial( FRenderInstance const * instance );
-    void BindTexturesColorPass( FMaterialFrameData * _Instance );
+    bool BindMaterial( SRenderInstance const * instance );
+    void BindTexturesColorPass( SMaterialFrameData * _Instance );
 
     GHI::RenderPass ColorPass;
     GHI::Sampler LightmapSampler;
 };
 
-extern FColorPassRenderer GColorPassRenderer;
+extern AColorPassRenderer GColorPassRenderer;
 
 }

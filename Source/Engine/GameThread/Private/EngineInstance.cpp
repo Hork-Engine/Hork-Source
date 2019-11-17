@@ -56,16 +56,16 @@ SOFTWARE.
 
 //#define IMGUI_CONTEXT
 
-FRuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
+ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
 
-FEngineInstance & GEngine = FEngineInstance::Inst();
+AEngineInstance & GEngine = AEngineInstance::Inst();
 
-FCanvas GCanvas;
+ACanvas GCanvas;
 
 static float FractAvg = 1;
 static float AxesFract = 1;
 
-FEngineInstance::FEngineInstance() {
+AEngineInstance::AEngineInstance() {
     bInputFocus = false;
     bIsWindowVisible = false;
     WindowPosX = 0;
@@ -112,12 +112,12 @@ static void ImguiModuleFree( void * _Bytes, void * ) {
     GZoneMemory.Dealloc( _Bytes );
 }
 
-void FEngineInstance::Initialize( FCreateGameModuleCallback _CreateGameModuleCallback ) {
+void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCallback ) {
     GConsole.ReadStoryLines();
 
     InitializeFactories();
 
-    FGarbageCollector::Initialize();
+    AGarbageCollector::Initialize();
 
     // Init physics module
     b3SetCustomPrintfFunc( PhysModulePrintFunction );
@@ -132,15 +132,14 @@ void FEngineInstance::Initialize( FCreateGameModuleCallback _CreateGameModuleCal
     // Init Imgui allocators
     ImGui::SetAllocatorFunctions( ImguiModuleAlloc, ImguiModuleFree, NULL );
 
-    GRenderFrontend.Initialize();
     GResourceManager.Initialize();
 
     GAudioSystem.Initialize();
-    GAudioSystem.RegisterDecoder( "ogg", CreateInstanceOf< FOggVorbisDecoder >() );
-    GAudioSystem.RegisterDecoder( "mp3", CreateInstanceOf< FMp3Decoder >() );
-    GAudioSystem.RegisterDecoder( "wav", CreateInstanceOf< FWavDecoder >() );
+    GAudioSystem.RegisterDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
+    GAudioSystem.RegisterDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
+    GAudioSystem.RegisterDecoder( "wav", CreateInstanceOf< AWavDecoder >() );
 
-    FFont::SetGlyphRanges( FFont::GetGlyphRangesCyrillic() );
+    AFont::SetGlyphRanges( AFont::GetGlyphRangesCyrillic() );
 
     GCanvas.Initialize();
 
@@ -156,21 +155,21 @@ void FEngineInstance::Initialize( FCreateGameModuleCallback _CreateGameModuleCal
     GameModule->OnGameStart();
 
 #ifdef IMGUI_CONTEXT
-    ImguiContext = CreateInstanceOf< FImguiContext >();
-    ImguiContext->SetFont( FCanvas::GetDefaultFont() );
+    ImguiContext = CreateInstanceOf< AImguiContext >();
+    ImguiContext->SetFont( ACanvas::GetDefaultFont() );
     ImguiContext->AddRef();
 #endif
 
     FrameDuration = 1000000.0 / 60;
 }
 
-void FEngineInstance::Deinitialize() {
+void AEngineInstance::Deinitialize() {
     GameModule->OnGameEnd();
 
     Desktop = nullptr;
 
-    FWorld::DestroyWorlds();
-    FWorld::KickoffPendingKillWorlds();
+    AWorld::DestroyWorlds();
+    AWorld::KickoffPendingKillWorlds();
 
     GameModule->RemoveRef();
     GameModule = nullptr;
@@ -183,11 +182,10 @@ void FEngineInstance::Deinitialize() {
     GCanvas.Deinitialize();
 
     GResourceManager.Deinitialize();
-    GRenderFrontend.Deinitialize();
     GAudioSystem.PurgeChannels();
     GAudioSystem.UnregisterDecoders();
 
-    FGarbageCollector::Deinitialize();
+    AGarbageCollector::Deinitialize();
 
     GAudioSystem.Deinitialize();
 
@@ -196,7 +194,7 @@ void FEngineInstance::Deinitialize() {
     GConsole.WriteStoryLines();
 }
 
-void FEngineInstance::PrepareFrame() {
+void AEngineInstance::PrepareFrame() {
     ProcessEvents();
 
     UpdateInputAxes( AxesFract );
@@ -204,7 +202,7 @@ void FEngineInstance::PrepareFrame() {
     GRenderFrontend.Render();
 }
 
-void FEngineInstance::UpdateFrame() {
+void AEngineInstance::UpdateFrame() {
     // Take current frame duration
     FrameDurationInSeconds = FrameDuration * 0.000001;
 
@@ -212,18 +210,18 @@ void FEngineInstance::UpdateFrame() {
     FrameNumber++;
 
     // Garbage collect from previuous frames
-    FGarbageCollector::DeallocateObjects();
+    AGarbageCollector::DeallocateObjects();
 
-    FCommandContext * commandContext = FPlayerController::GetCurrentCommandContext();
+    ACommandContext * commandContext = APlayerController::GetCurrentCommandContext();
     if ( commandContext ) {
         CommandProcessor.Execute( *commandContext );
     }
 
     // Tick worlds
-    FWorld::UpdateWorlds( GameModule, FrameDurationInSeconds );
+    AWorld::UpdateWorlds( GameModule, FrameDurationInSeconds );
 
     // Update audio system
-    GAudioSystem.Update( FPlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
+    GAudioSystem.Update( APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
 
     // Build draw lists for canvas
     DrawCanvas();
@@ -240,7 +238,7 @@ void FEngineInstance::UpdateFrame() {
     FrameTimeStamp = GRuntime.SysMicroseconds();
 }
 
-void FEngineInstance::DrawCanvas() {
+void AEngineInstance::DrawCanvas() {
     GCanvas.Begin( VideoMode.Width, VideoMode.Height );
 
     if ( Desktop ) {
@@ -261,7 +259,7 @@ void FEngineInstance::DrawCanvas() {
 
     // Show stats
     if ( RVShowStat ) {
-        FRenderFrame * frameData = GRuntime.GetFrameData();
+        SRenderFrame * frameData = GRuntime.GetFrameData();
 
         Float2 pos( 8, 8 );
         const float y_step = 22;
@@ -275,52 +273,52 @@ void FEngineInstance::DrawCanvas() {
 
         static size_t MaxFrameMemoryUsage = 0;
 
-        MaxFrameMemoryUsage = FMath::Max( MaxFrameMemoryUsage, GRuntime.GetFrameMemoryUsedPrev() );
+        MaxFrameMemoryUsage = Math::Max( MaxFrameMemoryUsage, GRuntime.GetFrameMemoryUsedPrev() );
 
-        FRenderFrontendStat const & stat = GRenderFrontend.GetStat();
+        SRenderFrontendStat const & stat = GRenderFrontend.GetStat();
 
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, MaxFrameMemoryUsage/1024.0f ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, MaxFrameMemoryUsage/1024.0f ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
         /*- GZoneMemory.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Polycount: %d", stat.PolyCount ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, FColor4::White(), FString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) );
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Polycount: %d", stat.PolyCount ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
+        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) );
 
     }
 
     GCanvas.End();
 }
 
-void FEngineInstance::Print( const char * _Message ) {
+void AEngineInstance::Print( const char * _Message ) {
     GConsole.Print( _Message );
 }
 
-void FEngineInstance::DeveloperKeys( FKeyEvent const & _Event ) {
+void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event ) {
 //    if ( _Event.Action == IE_Press ) {
 //        if ( _Event.Key == KEY_F1 ) {
 //            GLogger.Printf( "OpenGL Backend Test\n" );
-//            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "OpenGL 4.5" );
+//            AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "OpenGL 4.5" );
 //            ResetVideoMode();
 //        } else if ( _Event.Key == KEY_F2 ) {
 //            GLogger.Printf( "Vulkan Backend Test\n" );
-//            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Vulkan" );
+//            AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Vulkan" );
 //            ResetVideoMode();
 //        } else if ( _Event.Key == KEY_F3 ) {
 //            GLogger.Printf( "Null Backend Test\n" );
-//            FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Null" );
+//            AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Null" );
 //            ResetVideoMode();
 //        }
 //    }
 }
 
-void FEngineInstance::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) {
     if ( bQuitOnEscape && _Event.Action == IE_Press && _Event.Key == KEY_ESCAPE ) {
         GameModule->OnGameClose();
     }
@@ -341,7 +339,7 @@ void FEngineInstance::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) 
     DeveloperKeys( _Event );
 
     if ( GConsole.IsActive() || bAllowConsole ) {
-        FCommandContext * commandContext = FPlayerController::GetCurrentCommandContext();
+        ACommandContext * commandContext = APlayerController::GetCurrentCommandContext();
         if ( commandContext ) {
             GConsole.KeyEvent( _Event, *commandContext, CommandProcessor );
         }
@@ -356,7 +354,7 @@ void FEngineInstance::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) 
 
     UpdateInputAxes( FractAvg );
 
-    for ( FInputComponent * component = FInputComponent::GetInputComponents()
+    for ( AInputComponent * component = AInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
 
         if ( !component->bActive ) {
@@ -369,7 +367,7 @@ void FEngineInstance::OnKeyEvent( FKeyEvent const & _Event, double _TimeStamp ) 
     }
 }
 
-void FEngineInstance::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
 #ifdef IMGUI_CONTEXT
     ImguiContext->OnMouseButtonEvent( _Event );
 #endif
@@ -384,7 +382,7 @@ void FEngineInstance::OnMouseButtonEvent( FMouseButtonEvent const & _Event, doub
 
     UpdateInputAxes( FractAvg );
 
-    for ( FInputComponent * component = FInputComponent::GetInputComponents()
+    for ( AInputComponent * component = AInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
 
         if ( !component->bActive ) {
@@ -397,7 +395,7 @@ void FEngineInstance::OnMouseButtonEvent( FMouseButtonEvent const & _Event, doub
     }
 }
 
-void FEngineInstance::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double _TimeStamp ) {
 #ifdef IMGUI_CONTEXT
     ImguiContext->OnMouseWheelEvent( _Event );
 #endif
@@ -413,7 +411,7 @@ void FEngineInstance::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double
 
     UpdateInputAxes( FractAvg );
 
-    for ( FInputComponent * component = FInputComponent::GetInputComponents()
+    for ( AInputComponent * component = AInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
 
         if ( !component->bActive ) {
@@ -439,14 +437,14 @@ void FEngineInstance::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double
     }
 }
 
-void FEngineInstance::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStamp ) {
     if ( !GConsole.IsActive() ) {
         float x = _Event.X * MouseSensitivity;
         float y = _Event.Y * MouseSensitivity;
 
         AxesFract -= FractAvg;
 
-        for ( FInputComponent * component = FInputComponent::GetInputComponents()
+        for ( AInputComponent * component = AInputComponent::GetInputComponents()
               ; component ; component = component->GetNext() ) {
 
             if ( !component->bActive ) {
@@ -482,7 +480,7 @@ void FEngineInstance::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _
     }
 }
 
-void FEngineInstance::OnCharEvent( FCharEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp ) {
 #ifdef IMGUI_CONTEXT
     ImguiContext->OnCharEvent( _Event );
 #endif
@@ -496,7 +494,7 @@ void FEngineInstance::OnCharEvent( FCharEvent const & _Event, double _TimeStamp 
         Desktop->GenerateCharEvents( _Event, _TimeStamp );
     }
 
-    for ( FInputComponent * component = FInputComponent::GetInputComponents()
+    for ( AInputComponent * component = AInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
 
         if ( !component->bActive ) {
@@ -509,27 +507,27 @@ void FEngineInstance::OnCharEvent( FCharEvent const & _Event, double _TimeStamp 
     }
 }
 
-void FEngineInstance::OnChangedVideoModeEvent( FChangedVideoModeEvent const & _Event ) {
+void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _Event ) {
     VideoMode.Width = _Event.Width;
     VideoMode.Height = _Event.Height;
     VideoMode.PhysicalMonitor = _Event.PhysicalMonitor;
     VideoMode.RefreshRate = _Event.RefreshRate;
     VideoMode.bFullscreen = _Event.bFullscreen;
-    FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), _Event.Backend );
+    AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), _Event.Backend );
 
     FramebufferWidth = VideoMode.Width; // TODO
     FramebufferHeight = VideoMode.Height; // TODO
     RetinaScale = Float2( FramebufferWidth / VideoMode.Width, FramebufferHeight / VideoMode.Height );
 
     if ( _Event.bFullscreen ) {
-        FPhysicalMonitor const * monitor = GRuntime.GetMonitor( _Event.PhysicalMonitor );
+        SPhysicalMonitor const * monitor = GRuntime.GetMonitor( _Event.PhysicalMonitor );
         VideoAspectRatio = ( float )monitor->PhysicalWidthMM / monitor->PhysicalHeightMM;
 
         const float MM_To_Inch = 0.0393701f;
         DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
         DPI_Y = (float)VideoMode.Height / (monitor->PhysicalHeightMM*MM_To_Inch);
     } else {
-        FPhysicalMonitor const * monitor = GRuntime.GetPrimaryMonitor();//GRuntime.GetMonitor( _Event.PhysicalMonitor );
+        SPhysicalMonitor const * monitor = GRuntime.GetPrimaryMonitor();//GRuntime.GetMonitor( _Event.PhysicalMonitor );
 
         VideoAspectRatio = ( float )_Event.Width / _Event.Height;
 
@@ -540,7 +538,7 @@ void FEngineInstance::OnChangedVideoModeEvent( FChangedVideoModeEvent const & _E
     GConsole.Resize( VideoMode.Width );
 }
 
-void FEngineInstance::ProcessEvent( FEvent const & _Event ) {
+void AEngineInstance::ProcessEvent( SEvent const & _Event ) {
     switch ( _Event.Type ) {
     case ET_RuntimeUpdateEvent:
 
@@ -565,13 +563,13 @@ void FEngineInstance::ProcessEvent( FEvent const & _Event ) {
         OnMouseMoveEvent( _Event.Data.MouseMoveEvent, _Event.TimeStamp );
         break;
     case ET_JoystickStateEvent:
-        FInputComponent::SetJoystickState( _Event.Data.JoystickStateEvent.Joystick, _Event.Data.JoystickStateEvent.NumAxes, _Event.Data.JoystickStateEvent.NumButtons, _Event.Data.JoystickStateEvent.bGamePad, _Event.Data.JoystickStateEvent.bConnected );
+        AInputComponent::SetJoystickState( _Event.Data.JoystickStateEvent.Joystick, _Event.Data.JoystickStateEvent.NumAxes, _Event.Data.JoystickStateEvent.NumButtons, _Event.Data.JoystickStateEvent.bGamePad, _Event.Data.JoystickStateEvent.bConnected );
         break;
     case ET_JoystickButtonEvent:
-        FInputComponent::SetJoystickButtonState( _Event.Data.JoystickButtonEvent.Joystick, _Event.Data.JoystickButtonEvent.Button, _Event.Data.JoystickButtonEvent.Action, _Event.TimeStamp );
+        AInputComponent::SetJoystickButtonState( _Event.Data.JoystickButtonEvent.Joystick, _Event.Data.JoystickButtonEvent.Button, _Event.Data.JoystickButtonEvent.Action, _Event.TimeStamp );
         break;
     case ET_JoystickAxisEvent:
-        FInputComponent::SetJoystickAxisState( _Event.Data.JoystickAxisEvent.Joystick, _Event.Data.JoystickAxisEvent.Axis, _Event.Data.JoystickAxisEvent.Value );
+        AInputComponent::SetJoystickAxisState( _Event.Data.JoystickAxisEvent.Joystick, _Event.Data.JoystickAxisEvent.Axis, _Event.Data.JoystickAxisEvent.Value );
         break;
     case ET_CharEvent:
         OnCharEvent( _Event.Data.CharEvent, _Event.TimeStamp );
@@ -600,10 +598,10 @@ void FEngineInstance::ProcessEvent( FEvent const & _Event ) {
     }
 }
 
-void FEngineInstance::ProcessEvents() {
-    FEventQueue * eventQueue = GRuntime.ReadEvents_GameThread();
+void AEngineInstance::ProcessEvents() {
+    AEventQueue * eventQueue = GRuntime.ReadEvents_GameThread();
 
-    FEvent const * event;
+    SEvent const * event;
     while ( nullptr != ( event = eventQueue->Pop() ) ) {
         ProcessEvent( *event );
     }
@@ -611,109 +609,109 @@ void FEngineInstance::ProcessEvents() {
     AN_Assert( eventQueue->IsEmpty() );
 }
 
-void FEngineInstance::SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, byte _RefreshRate, bool _Fullscreen, const char * _Backend ) {
-    FEvent & event = SendEvent();
+void AEngineInstance::SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, byte _RefreshRate, bool _Fullscreen, const char * _Backend ) {
+    SEvent & event = SendEvent();
     event.Type = ET_SetVideoModeEvent;
     event.TimeStamp = GRuntime.SysSeconds_d();
-    FSetVideoModeEvent & data = event.Data.SetVideoModeEvent;
+    SSetVideoModeEvent & data = event.Data.SetVideoModeEvent;
     data.Width = _Width;
     data.Height = _Height;
     data.PhysicalMonitor = _PhysicalMonitor;
     data.RefreshRate = _RefreshRate;
     data.bFullscreen = _Fullscreen;
-    FString::CopySafe( data.Backend, sizeof( data.Backend ), _Backend );
+    AString::CopySafe( data.Backend, sizeof( data.Backend ), _Backend );
 
     VideoMode.Width = _Width;
     VideoMode.Height = _Height;
     VideoMode.PhysicalMonitor = _PhysicalMonitor;
     VideoMode.RefreshRate = _RefreshRate;
     VideoMode.bFullscreen = _Fullscreen;
-    FString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), _Backend );
+    AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), _Backend );
 }
 
-void FEngineInstance::SetVideoMode( FVideoMode const & _VideoMode ) {
+void AEngineInstance::SetVideoMode( SVideoMode const & _VideoMode ) {
     SetVideoMode( _VideoMode.Width, _VideoMode.Height, _VideoMode.PhysicalMonitor, _VideoMode.RefreshRate, _VideoMode.bFullscreen, _VideoMode.Backend );
 }
 
-void FEngineInstance::ResetVideoMode() {
+void AEngineInstance::ResetVideoMode() {
     SetVideoMode( VideoMode );
 }
 
-FVideoMode const & FEngineInstance::GetVideoMode() const {
+SVideoMode const & AEngineInstance::GetVideoMode() const {
     return VideoMode;
 }
 
-void FEngineInstance::SetWindowDefs( float _Opacity, bool _Decorated, bool _AutoIconify, bool _Floating, const char * _Title ) {
-    FEvent & event = SendEvent();
+void AEngineInstance::SetWindowDefs( float _Opacity, bool _Decorated, bool _AutoIconify, bool _Floating, const char * _Title ) {
+    SEvent & event = SendEvent();
     event.Type = ET_SetWindowDefsEvent;
     event.TimeStamp = GRuntime.SysSeconds_d();
-    FSetWindowDefsEvent & data = event.Data.SetWindowDefsEvent;
-    data.Opacity = FMath::Clamp( _Opacity, 0.0f, 1.0f ) * 255.0f;
+    SSetWindowDefsEvent & data = event.Data.SetWindowDefsEvent;
+    data.Opacity = Math::Clamp( _Opacity, 0.0f, 1.0f ) * 255.0f;
     data.bDecorated = _Decorated;
     data.bAutoIconify = _AutoIconify;
     data.bFloating = _Floating;
-    FString::CopySafe( data.Title, sizeof( data.Title ), _Title );
+    AString::CopySafe( data.Title, sizeof( data.Title ), _Title );
 }
 
-void FEngineInstance::SetWindowPos( int _X, int _Y ) {
-    FEvent & event = SendEvent();
+void AEngineInstance::SetWindowPos( int _X, int _Y ) {
+    SEvent & event = SendEvent();
     event.Type = ET_SetWindowPosEvent;
     event.TimeStamp = GRuntime.SysSeconds_d();
-    FSetWindowPosEvent & data = event.Data.SetWindowPosEvent;
+    SSetWindowPosEvent & data = event.Data.SetWindowPosEvent;
     data.PositionX = WindowPosX = _X;
     data.PositionY = WindowPosY = _Y;
 }
 
-void FEngineInstance::GetWindowPos( int & _X, int & _Y ) {
+void AEngineInstance::GetWindowPos( int & _X, int & _Y ) {
     _X = WindowPosX;
     _Y = WindowPosY;
 }
 
-void FEngineInstance::SetInputFocus() {
-    FEvent & event = SendEvent();
+void AEngineInstance::SetInputFocus() {
+    SEvent & event = SendEvent();
     event.Type = ET_SetInputFocusEvent;
     event.TimeStamp = GRuntime.SysSeconds_d();
 }
 
-//void FEngineInstance::SetRenderFeatures( int _VSyncMode ) {
-//    FEvent & event = SendEvent();
+//void AEngineInstance::SetRenderFeatures( int _VSyncMode ) {
+//    SEvent & event = SendEvent();
 //    event.Type = ET_SetRenderFeaturesEvent;
 //    event.TimeStamp = GRuntime.SysSeconds_d();
-//    FSetRenderFeaturesEvent & data = event.Data.SetRenderFeaturesEvent;
+//    SSetRenderFeaturesEvent & data = event.Data.SetRenderFeaturesEvent;
 //    data.VSyncMode = _VSyncMode;
 //}
 
-void FEngineInstance::SetCursorEnabled( bool _Enabled ) {
-    FEvent & event = SendEvent();
+void AEngineInstance::SetCursorEnabled( bool _Enabled ) {
+    SEvent & event = SendEvent();
     event.Type = ET_SetCursorModeEvent;
     event.TimeStamp = GRuntime.SysSeconds_d();
-    FSetCursorModeEvent & data = event.Data.SetCursorModeEvent;
+    SSetCursorModeEvent & data = event.Data.SetCursorModeEvent;
     data.bDisabledCursor = !_Enabled;
 }
 
-FEvent & FEngineInstance::SendEvent() {
-    FEventQueue * queue = GRuntime.WriteEvents_GameThread();
+SEvent & AEngineInstance::SendEvent() {
+    AEventQueue * queue = GRuntime.WriteEvents_GameThread();
     return *queue->Push();
 }
 
-void FEngineInstance::MapWindowCoordinate( float & InOutX, float & InOutY ) const {
+void AEngineInstance::MapWindowCoordinate( float & InOutX, float & InOutY ) const {
     InOutX += WindowPosX;
     InOutY += WindowPosY;
 }
 
-void FEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) const {
+void AEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) const {
     InOutX -= WindowPosX;
     InOutY -= WindowPosY;
 }
 
-void FEngineInstance::UpdateInputAxes( float _Fract ) {
+void AEngineInstance::UpdateInputAxes( float _Fract ) {
     if ( _Fract <= 0 ) {
         return;
     }
 
     AxesFract -= _Fract;
 
-    for ( FInputComponent * component = FInputComponent::GetInputComponents()
+    for ( AInputComponent * component = AInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
 
         if ( !component->bActive ) {
@@ -724,7 +722,7 @@ void FEngineInstance::UpdateInputAxes( float _Fract ) {
     }
 }
 
-void FEngineInstance::SetDesktop( WDesktop * _Desktop ) {
+void AEngineInstance::SetDesktop( WDesktop * _Desktop ) {
     Desktop = _Desktop;
 }
 
@@ -739,10 +737,10 @@ IEngineInterface * GetEngineInstance() {
 // IMGUI test
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-static FActor * SelectedActor = nullptr;
-static FSceneComponent * SelectedComponent = nullptr;
+static AActor * SelectedActor = nullptr;
+static ASceneComponent * SelectedComponent = nullptr;
 
-static void ShowAttribute( FDummy * a, FAttributeMeta const * attr ) {
+static void ShowAttribute( ADummy * a, AAttributeMeta const * attr ) {
     switch ( attr->GetType() ) {
         case EAttributeType::T_Byte: {
             byte v = attr->GetBoolValue( a );
@@ -779,7 +777,7 @@ static void ShowAttribute( FDummy * a, FAttributeMeta const * attr ) {
         case EAttributeType::T_Float2: {
             Float2 v = attr->GetFloat2Value( a );
 
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().ToConstChar() );
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().CStr() );
 
             break;
         }
@@ -787,10 +785,10 @@ static void ShowAttribute( FDummy * a, FAttributeMeta const * attr ) {
         case EAttributeType::T_Float3: {
             Float3 v = attr->GetFloat3Value( a );
 
-            FString s;
+            AString s;
             attr->GetValue( a, s );
 
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().ToConstChar() );
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().CStr() );
 
             break;
         }
@@ -798,7 +796,7 @@ static void ShowAttribute( FDummy * a, FAttributeMeta const * attr ) {
         case EAttributeType::T_Float4: {
             Float4 v = attr->GetFloat4Value( a );
 
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().ToConstChar() );
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().CStr() );
 
             break;
         }
@@ -806,16 +804,16 @@ static void ShowAttribute( FDummy * a, FAttributeMeta const * attr ) {
         case EAttributeType::T_Quat: {
             Quat v = attr->GetQuatValue( a );
 
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().ToConstChar() );
+            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().CStr() );
 
             break;
         }
 
         case EAttributeType::T_String: {
-            FString v;
+            AString v;
             attr->GetValue( a, v );
 
-            ImGui::InputText( attr->GetName(), (char*)v.ToConstChar(), v.Length(), ImGuiInputTextFlags_ReadOnly );
+            ImGui::InputText( attr->GetName(), (char*)v.CStr(), v.Length(), ImGuiInputTextFlags_ReadOnly );
 
             break;
         }
@@ -825,7 +823,7 @@ static void ShowAttribute( FDummy * a, FAttributeMeta const * attr ) {
     }
 }
 
-static void ShowComponentHierarchy( FSceneComponent * component ) {
+static void ShowComponentHierarchy( ASceneComponent * component ) {
     if ( ImGui::TreeNodeEx( component, component == SelectedComponent ? ImGuiTreeNodeFlags_Selected : 0, "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) {
 
         if ( ImGui::IsItemClicked() ) {
@@ -833,8 +831,8 @@ static void ShowComponentHierarchy( FSceneComponent * component ) {
             SelectedActor = component->GetParentActor();
         }
 
-        FArrayOfChildComponents const & childs = component->GetChilds();
-        for ( FSceneComponent * child : childs ) {
+        AArrayOfChildComponents const & childs = component->GetChilds();
+        for ( ASceneComponent * child : childs ) {
             ShowComponentHierarchy( child );
         }
 
@@ -842,18 +840,18 @@ static void ShowComponentHierarchy( FSceneComponent * component ) {
     }
 }
 
-void FEngineInstance::UpdateImgui() {
+void AEngineInstance::UpdateImgui() {
     ImguiContext->BeginFrame( FrameDurationInSeconds );
 
     //ImGui::ShowDemoWindow();
 
     if ( ImGui::Begin( "Test" ) ) {
-        TPodArray< FAttributeMeta const * > attributes;
+        TPodArray< AAttributeMeta const * > attributes;
 
         static char buf[ 1024 ];
         ImGui::InputTextMultiline( "textedit", buf, sizeof( buf ) );
 
-        TPodArray< FWorld * > const & Worlds = FWorld::GetWorlds();
+        TPodArray< AWorld * > const & Worlds = AWorld::GetWorlds();
 
         for ( int i = 0 ; i < Worlds.Size() ; i++ ) {
             if ( ImGui::CollapsingHeader( "World" ) ) {
@@ -863,13 +861,13 @@ void FEngineInstance::UpdateImgui() {
                 contentRegion.y *= 0.5f;
                 if ( ImGui::BeginChildFrame( ( ImGuiID )( size_t )&childFrameId, contentRegion ) ) {
 
-                    FWorld * w = Worlds[ i ];
+                    AWorld * w = Worlds[ i ];
 
-                    TPodArray< FActor * > const & actors = w->GetActors();
+                    TPodArray< AActor * > const & actors = w->GetActors();
 
                     ImGui::Text( "Actors" );
                     for ( int j = 0 ; j < actors.Size() ; j++ ) {
-                        FActor * a = actors[ j ];
+                        AActor * a = actors[ j ];
 
                         if ( ImGui::TreeNodeEx( a, a == SelectedActor ? ImGuiTreeNodeFlags_Selected : 0, "%s (%s)", a->GetNameConstChar(), a->FinalClassName() ) ) {
 
@@ -893,29 +891,29 @@ void FEngineInstance::UpdateImgui() {
                 if ( ImGui::BeginChildFrame( ( ImGuiID )( size_t )&childFrameId2, contentRegion ) ) {
 
                     if ( SelectedActor ) {
-                        FActor * a = SelectedActor;
+                        AActor * a = SelectedActor;
 
-                        FClassMeta const & meta = a->FinalClassMeta();
+                        AClassMeta const & meta = a->FinalClassMeta();
 
                         attributes.Clear();
                         meta.GetAttributes( attributes );
 
-                        for ( FAttributeMeta const * attr : attributes ) {
+                        for ( AAttributeMeta const * attr : attributes ) {
                             ShowAttribute( a, attr );
                         }
 
                         for ( int k = 0 ; k < a->GetComponents().Size() ; k++ ) {
 
-                            FActorComponent * component = a->GetComponents()[ k ];
+                            AActorComponent * component = a->GetComponents()[ k ];
 
-                            if ( ImGui::CollapsingHeader( FString::Fmt( "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) ) {
+                            if ( ImGui::CollapsingHeader( AString::Fmt( "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) ) {
 
-                                FClassMeta const & componentMeta = component->FinalClassMeta();
+                                AClassMeta const & componentMeta = component->FinalClassMeta();
 
                                 attributes.Clear();
                                 componentMeta.GetAttributes( attributes );
 
-                                for ( FAttributeMeta const * attr : attributes ) {
+                                for ( AAttributeMeta const * attr : attributes ) {
                                     ShowAttribute( component, attr );
                                 }
                             }
@@ -927,7 +925,7 @@ void FEngineInstance::UpdateImgui() {
 
                 //ImGui::Text( "Levels" );
                 //for( int j = 0 ; j < w->ArrayOfLevels.Length() ; j++ ) {
-                //    FLevel * lev = w->ArrayOfLevels[j];
+                //    ALevel * lev = w->ArrayOfLevels[j];
 
                 //    if ( ImGui::TreeNode( lev, "%s (%s)", lev->GetNameConstChar(), lev->FinalClassName() ) ) {
 
@@ -949,8 +947,8 @@ void FEngineInstance::UpdateImgui() {
 
 
 #if 0
-static void PrecacheResources( FClassMeta const & _ClassMeta ) {
-    for ( FPrecacheMeta const * precache = _ClassMeta.GetPrecacheList() ; precache ; precache = precache->Next() ) {
+static void PrecacheResources( AClassMeta const & _ClassMeta ) {
+    for ( APrecacheMeta const * precache = _ClassMeta.GetPrecacheList() ; precache ; precache = precache->Next() ) {
         GLogger.Printf( "---------- Precache -----------\n"
                         "Resource Class: \"%s\"\n"
                         "Resource Path: \"%s\"\n",
@@ -961,48 +959,48 @@ static void PrecacheResources( FClassMeta const & _ClassMeta ) {
     }
 }
 
-static FClassMeta const * GetActorClassMeta( FDocument const & _Document, int _Object ) {
-    FDocumentField * classNameField = _Document.FindField( _Object, "ClassName" );
+static AClassMeta const * GetActorClassMeta( ADocument const & _Document, int _Object ) {
+    SDocumentField * classNameField = _Document.FindField( _Object, "ClassName" );
     if ( !classNameField ) {
-        GLogger.Printf( "FWorld::LoadActor: invalid actor class\n" );
+        GLogger.Printf( "AWorld::LoadActor: invalid actor class\n" );
         return nullptr;
     }
 
-    FDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
+    SDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
 
-    FClassMeta const * classMeta = FActor::Factory().LookupClass( classNameValue->Token.ToString().ToConstChar() );
+    AClassMeta const * classMeta = AActor::Factory().LookupClass( classNameValue->Token.ToString().CStr() );
     if ( !classMeta ) {
-        GLogger.Printf( "FWorld::LoadActor: invalid actor class \"%s\"\n", classNameValue->Token.ToString().ToConstChar() );
+        GLogger.Printf( "AWorld::LoadActor: invalid actor class \"%s\"\n", classNameValue->Token.ToString().CStr() );
         return nullptr;
     }
 
     return classMeta;
 }
 
-FWorld * FEngineInstance::SpawnWorld( FWorldSpawnParameters const & _SpawnParameters ) {
+AWorld * AEngineInstance::SpawnWorld( FWorldSpawnParameters const & _SpawnParameters ) {
 
     GLogger.Printf( "==== Spawn World ====\n" );
 
-    FClassMeta const * classMeta = _SpawnParameters.WorldClassMeta();
+    AClassMeta const * classMeta = _SpawnParameters.WorldClassMeta();
 
     if ( !classMeta ) {
-        GLogger.Printf( "FEngineInstance::SpawnWorld: invalid world class\n" );
+        GLogger.Printf( "AEngineInstance::SpawnWorld: invalid world class\n" );
         return nullptr;
     }
 
-    if ( classMeta->Factory() != &FWorld::Factory() ) {
-        GLogger.Printf( "FEngineInstance::SpawnWorld: not an world class\n" );
+    if ( classMeta->Factory() != &AWorld::Factory() ) {
+        GLogger.Printf( "AEngineInstance::SpawnWorld: not an world class\n" );
         return nullptr;
     }
 
-    FWorld const * templateWorld = _SpawnParameters.GetTemplate();
+    AWorld const * templateWorld = _SpawnParameters.GetTemplate();
 
     if ( templateWorld && classMeta != &templateWorld->ClassMeta() ) {
-        GLogger.Printf( "FEngineInstance::SpawnWorld: FWorldSpawnParameters::Template class doesn't match meta data\n" );
+        GLogger.Printf( "AEngineInstance::SpawnWorld: FWorldSpawnParameters::Template class doesn't match meta data\n" );
         return nullptr;
     }
 
-    FWorld * world = static_cast< FWorld * >( classMeta->CreateInstance() );
+    AWorld * world = static_cast< AWorld * >( classMeta->CreateInstance() );
 
     world->AddRef();
 
@@ -1012,15 +1010,15 @@ FWorld * FEngineInstance::SpawnWorld( FWorldSpawnParameters const & _SpawnParame
 
     if ( templateWorld ) {
         // Clone attributes
-        FClassMeta::CloneAttributes( templateWorld, world );
+        AClassMeta::CloneAttributes( templateWorld, world );
 
         // Precache world resources
-        for ( FActor const * templateActor : templateWorld->GetActors() ) {
+        for ( AActor const * templateActor : templateWorld->GetActors() ) {
             PrecacheResources( templateActor->FinalClassMeta() );
         }
 
         // Clone actors
-        for ( FActor const * templateActor : templateWorld->GetActors() ) {
+        for ( AActor const * templateActor : templateWorld->GetActors() ) {
             if ( templateActor->IsPendingKill() ) {
                 continue;
             }
@@ -1038,25 +1036,25 @@ FWorld * FEngineInstance::SpawnWorld( FWorldSpawnParameters const & _SpawnParame
     return world;
 }
 
-FWorld * FEngineInstance::LoadWorld( FDocument const & _Document, int _FieldsHead ) {
+AWorld * AEngineInstance::LoadWorld( ADocument const & _Document, int _FieldsHead ) {
 
     GLogger.Printf( "==== Load World ====\n" );
 
-    FDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
+    SDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
     if ( !classNameField ) {
-        GLogger.Printf( "FEngineInstance::LoadWorld: invalid world class\n" );
+        GLogger.Printf( "AEngineInstance::LoadWorld: invalid world class\n" );
         return nullptr;
     }
 
-    FDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
+    SDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
 
-    FClassMeta const * classMeta = FWorld::Factory().LookupClass( classNameValue->Token.ToString().ToConstChar() );
+    AClassMeta const * classMeta = AWorld::Factory().LookupClass( classNameValue->Token.ToString().CStr() );
     if ( !classMeta ) {
-        GLogger.Printf( "FEngineInstance::LoadWorld: invalid world class \"%s\"\n", classNameValue->Token.ToString().ToConstChar() );
+        GLogger.Printf( "AEngineInstance::LoadWorld: invalid world class \"%s\"\n", classNameValue->Token.ToString().CStr() );
         return nullptr;
     }
 
-    FWorld * world = static_cast< FWorld * >( classMeta->CreateInstance() );
+    AWorld * world = static_cast< AWorld * >( classMeta->CreateInstance() );
 
     world->AddRef();
     //world->bDuringConstruction = false;
@@ -1069,18 +1067,18 @@ FWorld * FEngineInstance::LoadWorld( FDocument const & _Document, int _FieldsHea
     world->LoadAttributes( _Document, _FieldsHead );
 
     // Load actors
-    FDocumentField * actorsField = _Document.FindField( _FieldsHead, "Actors" );
+    SDocumentField * actorsField = _Document.FindField( _FieldsHead, "Actors" );
     if ( actorsField ) {
 
         // First pass. Precache resources
         for ( int i = actorsField->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-            if ( _Document.Values[ i ].Type != FDocumentValue::T_Object ) {
+            if ( _Document.Values[ i ].Type != SDocumentValue::T_Object ) {
                 continue;
             }
 
             int actorObject = _Document.Values[ i ].FieldsHead;
 
-            FClassMeta const * actorClassMeta = GetActorClassMeta( _Document, actorObject );
+            AClassMeta const * actorClassMeta = GetActorClassMeta( _Document, actorObject );
             if ( !actorClassMeta ) {
                 continue;
             }
@@ -1090,7 +1088,7 @@ FWorld * FEngineInstance::LoadWorld( FDocument const & _Document, int _FieldsHea
 
         // Second pass. Load actors
         for ( int i = actorsField->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-            if ( _Document.Values[ i ].Type != FDocumentValue::T_Object ) {
+            if ( _Document.Values[ i ].Type != SDocumentValue::T_Object ) {
                 continue;
             }
 

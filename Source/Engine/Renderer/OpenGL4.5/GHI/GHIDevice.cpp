@@ -199,7 +199,7 @@ Sampler const Device::GetOrCreateSampler( SamplerCreateInfo const & _CreateInfo 
         SamplerInfo const * sampler = SamplerCache[i];
 
         if ( !memcmp( &sampler->CreateInfo, &_CreateInfo, sizeof( sampler->CreateInfo ) ) ) {
-            LogPrintf( "Caching sampler\n" );
+            //LogPrintf( "Caching sampler\n" );
             return sampler->Handle;
         }
     }
@@ -212,7 +212,7 @@ Sampler const Device::GetOrCreateSampler( SamplerCreateInfo const & _CreateInfo 
     SamplerHash.Insert( hash, i );
     SamplerCache.Append( sampler );
 
-    LogPrintf( "Total samplers %d\n", i+1 );
+    //LogPrintf( "Total samplers %d\n", i+1 );
 
     // 3.3 or GL_ARB_sampler_objects
 
@@ -258,7 +258,7 @@ BlendingStateInfo const * Device::CachedBlendingState( BlendingStateInfo const &
         BlendingStateInfo const * state = BlendingStateCache[ i ];
 
         if ( !memcmp( state, &_BlendingState, sizeof( *state ) ) ) {
-            LogPrintf( "Caching blending state\n" );
+            //LogPrintf( "Caching blending state\n" );
             return state;
         }
     }
@@ -271,7 +271,7 @@ BlendingStateInfo const * Device::CachedBlendingState( BlendingStateInfo const &
     BlendingHash.Insert( hash, i );
     BlendingStateCache.Append( state );
 
-    LogPrintf( "Total blending states %d\n", i+1 );
+    //LogPrintf( "Total blending states %d\n", i+1 );
 
     return state;
 }
@@ -285,7 +285,7 @@ RasterizerStateInfo const * Device::CachedRasterizerState( RasterizerStateInfo c
         RasterizerStateInfo const * state = RasterizerStateCache[ i ];
 
         if ( !memcmp( state, &_RasterizerState, sizeof( *state ) ) ) {
-            LogPrintf( "Caching rasterizer state\n" );
+            //LogPrintf( "Caching rasterizer state\n" );
             return state;
         }
     }
@@ -298,7 +298,7 @@ RasterizerStateInfo const * Device::CachedRasterizerState( RasterizerStateInfo c
     RasterizerHash.Insert( hash, i );
     RasterizerStateCache.Append( state );
 
-    LogPrintf( "Total rasterizer states %d\n", i+1 );
+    //LogPrintf( "Total rasterizer states %d\n", i+1 );
 
     return state;
 }
@@ -312,7 +312,7 @@ DepthStencilStateInfo const * Device::CachedDepthStencilState( DepthStencilState
         DepthStencilStateInfo const * state = DepthStencilStateCache[ i ];
 
         if ( !memcmp( state, &_DepthStencilState, sizeof( *state ) ) ) {
-            LogPrintf( "Caching depth stencil state\n" );
+            //LogPrintf( "Caching depth stencil state\n" );
             return state;
         }
     }
@@ -325,7 +325,7 @@ DepthStencilStateInfo const * Device::CachedDepthStencilState( DepthStencilState
     DepthStencilHash.Insert( hash, i );
     DepthStencilStateCache.Append( state );
 
-    LogPrintf( "Total depth stencil states %d\n", i+1 );
+    //LogPrintf( "Total depth stencil states %d\n", i+1 );
 
     return state;
 }

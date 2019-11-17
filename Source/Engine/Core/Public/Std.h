@@ -61,13 +61,13 @@ struct TStdAllocator {
 template< typename T, typename U > bool operator==( TStdAllocator< T > const &, TStdAllocator< U > const & ) { return true; }
 template< typename T, typename U > bool operator!=( TStdAllocator< T > const &, TStdAllocator< U > const & ) { return false; }
 
-using FStdString = std::basic_string< char, std::char_traits< char >, TStdAllocator< char > >;
+using AStdString = std::basic_string< char, std::char_traits< char >, TStdAllocator< char > >;
 
 template< typename T > using TStdVector = std::vector< T, TStdAllocator< T > >;
 
 template< typename T > using TStdNumericLimits = std::numeric_limits< T >;
 
-using FStdThread = std::thread;
+using AStdThread = std::thread;
 
 // Type wrap
 #define TStdFunction   std::function

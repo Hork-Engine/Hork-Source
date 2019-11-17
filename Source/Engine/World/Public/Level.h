@@ -38,30 +38,28 @@ SOFTWARE.
 #include <Engine/Runtime/Public/RenderCore.h>
 #include "Components/DrawSurf.h"
 
-//class FWorld;
-class FActor;
-class FLevel;
-class FAreaPortal;
-//class FLightComponent;
+class AActor;
+class ALevel;
+struct SAreaPortal;
 
-class FLevelArea : public FBaseObject {
-    AN_CLASS( FLevelArea, FBaseObject )
+class ALevelArea : public ABaseObject {
+    AN_CLASS( ALevelArea, ABaseObject )
 
-    friend class FLevel;
+    friend class ALevel;
 
 public:
 
-    FAreaPortal const * GetPortals() const { return PortalList; }
+    SAreaPortal const * GetPortals() const { return PortalList; }
 
-    TPodArray< FSpatialObject * > const & GetSurfs() const { return Movables; }
+    TPodArray< ASpatialObject * > const & GetSurfs() const { return Movables; }
 
     //TPodArray< FLightComponent * > const & GetLights() const { return Lights; }
 
     BvAxisAlignedBox const & GetBoundingBox() const { return Bounds; }
 
 protected:
-    FLevelArea() {}
-    ~FLevelArea() {}
+    ALevelArea() {}
+    ~ALevelArea() {}
 
 private:
     // Area property
@@ -74,30 +72,30 @@ private:
     Float3 ReferencePoint;
 
     // Owner
-    FLevel * ParentLevel;
+    ALevel * ParentLevel;
 
     // Objects in area
-    TPodArray< FSpatialObject * > Movables;
+    TPodArray< ASpatialObject * > Movables;
     //TPodArray< FLightComponent * > Lights;
     //TPodArray< FEnvCaptureComponent * > EnvCaptures;
 
     // Linked portals
-    FAreaPortal * PortalList;
+    SAreaPortal * PortalList;
 
     // Area bounding box
     BvAxisAlignedBox Bounds;
 
-    // TODO: FAudioClip * Ambient[4];
+    // TODO: AAudioClip * Ambient[4];
     //       float AmbientVolume[4];
     //       int NumAmbients; // 0..4
 
-    TRef< FSpatialTree > Tree;
+    TRef< ASpatialTree > Tree;
 };
 
-class FLevelPortal : public FBaseObject {
-    AN_CLASS( FLevelPortal, FBaseObject )
+class ALevelPortal : public ABaseObject {
+    AN_CLASS( ALevelPortal, ABaseObject )
 
-    friend class FLevel;
+    friend class ALevel;
 
 public:
 
@@ -105,25 +103,25 @@ public:
     mutable int VisMark;
 
 protected:
-    FLevelPortal() {}
+    ALevelPortal() {}
 
-    ~FLevelPortal() {
-        FConvexHull::Destroy( Hull );
+    ~ALevelPortal() {
+        AConvexHull::Destroy( Hull );
     }
 
 private:
     // Owner
-    FLevel * ParentLevel;
+    ALevel * ParentLevel;
 
     // Linked areas
-    TRef< FLevelArea > Area1;
-    TRef< FLevelArea > Area2;
+    TRef< ALevelArea > Area1;
+    TRef< ALevelArea > Area2;
 
     // Portal to areas
-    FAreaPortal * Portals[2];
+    SAreaPortal * Portals[2];
 
     // Portal hull
-    FConvexHull * Hull;
+    AConvexHull * Hull;
 
     // Portal plane
     PlaneF Plane;
@@ -132,27 +130,26 @@ private:
     //int BlockingBits;
 };
 
-class FAreaPortal {
-public:
-    FLevelArea * ToArea;
-    FConvexHull * Hull;
+struct SAreaPortal {
+    ALevelArea * ToArea;
+    AConvexHull * Hull;
     PlaneF Plane;
-    FAreaPortal * Next; // Next portal inside area
-    FLevelPortal * Owner;
+    SAreaPortal * Next; // Next portal inside area
+    ALevelPortal * Owner;
 };
 
 /*
 
-FLevel
+ALevel
 
 Logical subpart of a world
 
 */
-class ANGIE_API FLevel : public FBaseObject {
-    AN_CLASS( FLevel, FBaseObject )
+class ANGIE_API ALevel : public ABaseObject {
+    AN_CLASS( ALevel, ABaseObject )
 
-    friend class FWorld;
-    friend class FSpatialObject;
+    friend class AWorld;
+    friend class ASpatialObject;
 
 public:
 
@@ -166,28 +163,28 @@ public:
     //float NavigationBoundingBoxPadding = 1.0f;
 
     // Navigation mesh.
-    FAINavigationMesh NavMesh;
+    AAINavigationMesh NavMesh;
 
     // Navigation mesh connections. You must rebuild navigation mesh if you change connections.
-    TPodArray< FAINavMeshConnection > NavMeshConnections;
+    TPodArray< SAINavMeshConnection > NavMeshConnections;
 
     // Navigation areas. You must rebuild navigation mesh if you change areas.
-    TPodArray< FAINavigationArea > NavigationAreas;
+    TPodArray< SAINavigationArea > NavigationAreas;
 
     // Level is persistent if created by world
     bool IsPersistentLevel() const { return bIsPersistent; }
 
     // Get level world
-    FWorld * GetOwnerWorld() const { return OwnerWorld; }
+    AWorld * GetOwnerWorld() const { return OwnerWorld; }
 
     // Get actors in level
-    TPodArray< FActor * > const & GetActors() const { return Actors; }
+    TPodArray< AActor * > const & GetActors() const { return Actors; }
 
     // Get level areas
-    TPodArray< FLevelArea * > const & GetAreas() const { return Areas; }
+    TPodArray< ALevelArea * > const & GetAreas() const { return Areas; }
 
     // Get level outdoor area
-    FLevelArea * GetOutdoorArea() const { return OutdoorArea; }
+    ALevelArea * GetOutdoorArea() const { return OutdoorArea; }
 
     // Get level indoor bounding box
     BvAxisAlignedBox const & GetIndoorBounds() const { return IndoorBounds; }
@@ -199,10 +196,10 @@ public:
     void DestroyActors();
 
     // Create vis area
-    FLevelArea * AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
+    ALevelArea * AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
 
     // Create vis portal
-    FLevelPortal * AddPortal( Float3 const * _HullPoints, int _NumHullPoints, FLevelArea * _Area1, FLevelArea * _Area2 );
+    ALevelPortal * AddPortal( Float3 const * _HullPoints, int _NumHullPoints, ALevelArea * _Area1, ALevelArea * _Area2 );
 
     // Destroy all vis areas and portals
     void DestroyPortalTree();
@@ -218,7 +215,7 @@ public:
     //void BuildStaticBatching();
 
     // Static lightmaps (experemental)
-    TPodArray< FTexture2D * > Lightmaps;    
+    TPodArray< ATexture * > Lightmaps;    
     void ClearLightmaps();
     void SetLightData( const byte * _Data, int _Size );
     /*const */byte * GetLightData() /*const */{ return LightData; }
@@ -229,12 +226,12 @@ public:
                                 BvAxisAlignedBox & _ResultBoundingBox,
                                 BvAxisAlignedBox const * _ClipBoundingBox );
 
-    void RenderFrontend_AddInstances( FRenderFrontendDef * _Def );
+    void RenderFrontend_AddInstances( SRenderFrontendDef * _Def );
 
 protected:
 
-    FLevel();
-    ~FLevel();
+    ALevel();
+    ~ALevel();
 
 private:
 
@@ -242,7 +239,7 @@ private:
     void Tick( float _TimeStep );
 
     // Draw debug. Called by owner world.
-    void DrawDebug( FDebugDraw * _DebugDraw );
+    void DrawDebug( ADebugDraw * _DebugDraw );
 
     // Callback on add level to world. Called by owner world.
     void OnAddLevelToWorld();
@@ -257,25 +254,25 @@ private:
 
     void RemoveSurfaces();
 
-    void AddSurfaceAreas( FSpatialObject * _Surf );
+    void AddSurfaceAreas( ASpatialObject * _Surf );
 
-    void AddSurfaceToArea( int _AreaNum, FSpatialObject * _Surf );
+    void AddSurfaceToArea( int _AreaNum, ASpatialObject * _Surf );
 
-    void RemoveSurfaceAreas( FSpatialObject * _Surf );
+    void RemoveSurfaceAreas( ASpatialObject * _Surf );
 
-    void CullInstances( FRenderFrontendDef * _Def );
-    void FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area );
-    void AddRenderInstances( FRenderFrontendDef * _Def, class FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
-    //void AddLightInstance( FRenderFrontendDef * _Def, FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
+    void CullInstances( SRenderFrontendDef * _Def );
+    void FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area );
+    void AddRenderInstances( SRenderFrontendDef * _Def, class AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
+    //void AddLightInstance( SRenderFrontendDef * _Def, FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
 
-    FWorld * OwnerWorld;
+    AWorld * OwnerWorld;
     int IndexInArrayOfLevels = -1;
     bool bIsPersistent;
-    TPodArray< FActor * > Actors;
-    TPodArray< FLevelArea * > Areas;
-    TRef< FLevelArea > OutdoorArea;
-    TPodArray< FLevelPortal * > Portals;
-    TPodArray< FAreaPortal > AreaPortals;
+    TPodArray< AActor * > Actors;
+    TPodArray< ALevelArea * > Areas;
+    TRef< ALevelArea > OutdoorArea;
+    TPodArray< ALevelPortal * > Portals;
+    TPodArray< SAreaPortal > AreaPortals;
     byte * LightData;
     BvAxisAlignedBox IndoorBounds;
     int LastVisitedArea;

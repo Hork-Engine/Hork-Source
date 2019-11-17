@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Engine/World/Public/Actors/Controller.h>
 
-AN_CLASS_META( FController )
+AN_CLASS_META( AController )
 
-FController::FController() {
+AController::AController() {
 }

@@ -31,7 +31,7 @@ SOFTWARE.
 #include <Engine/World/Public/Components/DirectionalLightComponent.h>
 #include <Engine/Base/Public/DebugDraw.h>
 
-struct FTemperatureToColor {
+struct STemperatureToColor {
 
     static constexpr float MIN_TEMPERATURE = 1000.0f;
     static constexpr float MAX_TEMPERATURE = 40000.0f;
@@ -48,14 +48,14 @@ struct FTemperatureToColor {
             Result.Y = -2902.1955373783176f / ( 1669.5803561666639f + _Temperature ) + 1.3302673723350029f;
             Result.Z = -8257.7997278925690f / ( 2575.2827530017594f + _Temperature ) + 1.8993753891711275f;
 
-            Result.Z = FMath::Max< float >( 0.0f, Result.Z );
+            Result.Z = Math::Max< float >( 0.0f, Result.Z );
         } else {
             Result.X = 1745.0425298314172f / ( -2666.3474220535695f + _Temperature ) + 0.55995389139931482f;
             Result.Y = 1216.6168361476490f / ( -2173.1012343082230f + _Temperature ) + 0.70381203140554553f;
             Result.Z = -8257.7997278925690f / ( 2575.2827530017594f + _Temperature ) + 1.8993753891711275f;
 
-            Result.X = FMath::Min< float >( 1.0f, Result.X );
-            Result.Z = FMath::Min< float >( 1.0f, Result.Z );
+            Result.X = Math::Min< float >( 1.0f, Result.X );
+            Result.Z = Math::Min< float >( 1.0f, Result.Z );
         }
 
         return Result;
@@ -77,16 +77,16 @@ struct FTemperatureToColor {
 
             // Note: the R-squared value for this approximation is .996
             Value = (99.4708025861/255.0) * log(_Temperature) - (161.1195681661/255.0);
-            Result.Y = FMath::Min( 1.0f, Value );//FMath::Clamp( Value, 0.0f, 1.0f );
+            Result.Y = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
 
         } else {
             // Note: the R-squared value for this approximation is .988
             Value = ( 329.698727446 / 255.0 ) * pow(_Temperature - 60, -0.1332047592);
-            Result.X = FMath::Min( 1.0f, Value );//FMath::Clamp( Value, 0.0f, 1.0f );
+            Result.X = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
 
             // Note: the R-squared value for this approximation is .987
             Value = (288.1221695283/255.0) * pow(_Temperature - 60, -0.0755148492);
-            Result.Y = Value;//FMath::Clamp( Value, 0.0f, 1.0f );
+            Result.Y = Value;//Math::Clamp( Value, 0.0f, 1.0f );
         }
 
         if ( _Temperature >= 66 ) {
@@ -96,7 +96,7 @@ struct FTemperatureToColor {
         } else {
             // Note: the R-squared value for this approximation is .998
             Value = (138.5177312231/255.0) * log(_Temperature - 10) - (305.0447927307/255.0);
-            Result.Z = FMath::Max( 0.0f, Value );//FMath::Clamp( Value, 0.0f, 1.0f );
+            Result.Z = Math::Max( 0.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
         }
 
         return Result;

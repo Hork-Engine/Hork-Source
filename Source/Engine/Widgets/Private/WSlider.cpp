@@ -48,7 +48,7 @@ WSlider::~WSlider() {
 }
 
 WSlider & WSlider::SetValue( float _Value ) {
-    float NewValue = FMath::Clamp( Step > 0.0f ? FMath::Snap( _Value, Step ) : _Value, MinValue, MaxValue );
+    float NewValue = Math::Clamp( Step > 0.0f ? Math::Snap( _Value, Step ) : _Value, MinValue, MaxValue );
 
     if ( Value != NewValue ) {
         Value = NewValue;
@@ -96,7 +96,7 @@ WSlider & WSlider::SetStep( float _Step ) {
 }
 
 WSlider & WSlider::SetSliderWidth( float _Width ) {
-    SliderWidth = FMath::Max( _Width, 1.0f );
+    SliderWidth = Math::Max( _Width, 1.0f );
     bUpdateGeometry = true;
     return *this;
 }
@@ -120,7 +120,7 @@ void WSlider::UpdateSliderGeometry() {
 
     if ( bVerticalOrientation ) {
         float AvailableWidth = maxs.Y - mins.Y;
-        float SliderActualWidth = FMath::Min( AvailableWidth / 4.0f, SliderWidth );
+        float SliderActualWidth = Math::Min( AvailableWidth / 4.0f, SliderWidth );
         float SliderHalfWidth = SliderActualWidth * 0.5f;
 
         Geometry.BgMins = mins;
@@ -139,7 +139,7 @@ void WSlider::UpdateSliderGeometry() {
         Geometry.SliderMaxs.Y = Geometry.SliderMins.Y + SliderActualWidth;
     } else {
         float AvailableWidth = maxs.X - mins.X;
-        float SliderActualWidth = FMath::Min( AvailableWidth / 4.0f, SliderWidth );
+        float SliderActualWidth = Math::Min( AvailableWidth / 4.0f, SliderWidth );
         float SliderHalfWidth = SliderActualWidth * 0.5f;
 
         Geometry.BgMins = mins;
@@ -165,7 +165,7 @@ void WSlider::UpdateSliderGeometryIfDirty() {
     }
 }
 
-FSliderGeometry const & WSlider::GetSliderGeometry() const{
+SSliderGeometry const & WSlider::GetSliderGeometry() const{
     const_cast< WSlider * >( this )->UpdateSliderGeometryIfDirty();
 
     return Geometry;
@@ -178,7 +178,7 @@ void WSlider::OnTransformDirty() {
 }
 
 void WSlider::MoveSlider( float Vec ) {
-    FSliderGeometry const & geometry = GetSliderGeometry();
+    SSliderGeometry const & geometry = GetSliderGeometry();
 
     float SliderBarSize = bVerticalOrientation ? geometry.BgMaxs.Y - geometry.BgMins.Y
                                                : geometry.BgMaxs.X - geometry.BgMins.X;
@@ -191,7 +191,7 @@ AN_FORCEINLINE bool InRect( Float2 const & _Mins, Float2 const & _Maxs, Float2 c
             && _Position.Y >= _Mins.Y && _Position.Y < _Maxs.Y;
 }
 
-void WSlider::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WSlider::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
     Action = A_NONE;
 
     if ( _Event.Action != IE_Press ) {
@@ -200,7 +200,7 @@ void WSlider::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _Time
 
     Float2 const & CursorPos = GetDesktop()->GetCursorPosition();
 
-    FSliderGeometry const & geometry = GetSliderGeometry();
+    SSliderGeometry const & geometry = GetSliderGeometry();
 
     if ( InRect( geometry.SliderMins, geometry.SliderMaxs, CursorPos ) ) {
         Action = A_MOVE;
@@ -224,7 +224,7 @@ void WSlider::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _Time
     }
 }
 
-void WSlider::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void WSlider::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStamp ) {
 
     if ( Action == A_MOVE ) {
         Float2 CursorPos = GetDesktop()->GetCursorPosition();
@@ -233,29 +233,29 @@ void WSlider::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _TimeStam
     }
 }
 
-void WSlider::OnDrawEvent( FCanvas & _Canvas ) {
-    FSliderGeometry const & geometry = GetSliderGeometry();
+void WSlider::OnDrawEvent( ACanvas & _Canvas ) {
+    SSliderGeometry const & geometry = GetSliderGeometry();
 
     DrawDecorates( _Canvas );
 
     Float2 mins, maxs;
     GetDesktopRect( mins, maxs, false );
 
-    _Canvas.DrawRectFilled( mins, maxs, FColor4( 0.4f, 0.4f, 0.4f ) );
+    _Canvas.DrawRectFilled( mins, maxs, AColor4( 0.4f, 0.4f, 0.4f ) );
 
     // Draw slider background
     if ( geometry.BgMaxs.X > geometry.BgMins.X && geometry.BgMaxs.Y > geometry.BgMins.Y ) {
-        //_Canvas.DrawRectFilled( geometry.BgMins, geometry.BgMaxs, FColor4(0.4f,0.4f,0.4f) );
+        //_Canvas.DrawRectFilled( geometry.BgMins, geometry.BgMaxs, AColor4(0.4f,0.4f,0.4f) );
 
         Float2 h = bVerticalOrientation ? Float2( ( geometry.BgMaxs.X - geometry.BgMins.X ) * 0.5f, 0.0f )
                                         : Float2( 0.0f, ( geometry.BgMaxs.Y - geometry.BgMins.Y ) * 0.5f );
 
-        _Canvas.DrawLine( geometry.BgMins + h, geometry.BgMaxs - h, FColor4(1.0f), 2.0f );
+        _Canvas.DrawLine( geometry.BgMins + h, geometry.BgMaxs - h, AColor4(1.0f), 2.0f );
     }
 
     // Draw slider
     if ( geometry.SliderMaxs.X > geometry.SliderMins.X && geometry.SliderMaxs.Y > geometry.SliderMins.Y ) {
         const float SliderRounding = 4.0f;
-        _Canvas.DrawRectFilled( geometry.SliderMins, geometry.SliderMaxs, FColor4(1,1,1,1), SliderRounding );
+        _Canvas.DrawRectFilled( geometry.SliderMins, geometry.SliderMaxs, AColor4(1,1,1,1), SliderRounding );
     }
 }

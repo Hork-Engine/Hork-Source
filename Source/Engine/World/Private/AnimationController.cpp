@@ -33,15 +33,15 @@ SOFTWARE.
 
 #include <Engine/Resource/Public/Animation.h>
 
-AN_CLASS_META( FAnimationController )
+AN_CLASS_META( AAnimationController )
 
-FAnimationController::FAnimationController() {
+AAnimationController::AAnimationController() {
     PlayMode = ANIMATION_PLAY_CLAMP;
     Weight = 1;
     bEnabled = true;
 }
 
-void FAnimationController::SetAnimation( FAnimation * _Animation ) {
+void AAnimationController::SetAnimation( ASkeletalAnimation * _Animation ) {
     Animation = _Animation;
 
     if ( Owner ) {
@@ -50,7 +50,7 @@ void FAnimationController::SetAnimation( FAnimation * _Animation ) {
     }
 }
 
-void FAnimationController::SetTime( float _Time ) {
+void AAnimationController::SetTime( float _Time ) {
     TimeLine = _Time;
 
     if ( Owner ) {
@@ -58,7 +58,7 @@ void FAnimationController::SetTime( float _Time ) {
     }
 }
 
-void FAnimationController::AddTimeDelta( float _TimeDelta ) {
+void AAnimationController::AddTimeDelta( float _TimeDelta ) {
     TimeLine += _TimeDelta;
 
     if ( Owner ) {
@@ -66,7 +66,7 @@ void FAnimationController::AddTimeDelta( float _TimeDelta ) {
     }
 }
 
-void FAnimationController::SetPlayMode( EAnimationPlayMode _PlayMode ) {
+void AAnimationController::SetPlayMode( EAnimationPlayMode _PlayMode ) {
     PlayMode = _PlayMode;
 
     if ( Owner ) {
@@ -74,15 +74,15 @@ void FAnimationController::SetPlayMode( EAnimationPlayMode _PlayMode ) {
     }
 }
 
-void FAnimationController::SetQuantizer( float _Quantizer ) {
-    Quantizer = FMath::Min( _Quantizer, 1.0f );
+void AAnimationController::SetQuantizer( float _Quantizer ) {
+    Quantizer = Math::Min( _Quantizer, 1.0f );
 
     if ( Owner ) {
         Owner->bUpdateControllers = true;
     }
 }
 
-void FAnimationController::SetWeight( float _Weight ) {
+void AAnimationController::SetWeight( float _Weight ) {
     Weight = _Weight;
 
     if ( Owner ) {
@@ -90,7 +90,7 @@ void FAnimationController::SetWeight( float _Weight ) {
     }
 }
 
-void FAnimationController::SetEnabled( bool _Enabled ) {
+void AAnimationController::SetEnabled( bool _Enabled ) {
     bEnabled = _Enabled;
 
     if ( Owner ) {

@@ -32,13 +32,13 @@ SOFTWARE.
 
 #include "AudioDecoderInterface.h"
 
-class FAudioClip;
-class FActor;
-class FSceneComponent;
-class FPlayerController;
+class AAudioClip;
+class AActor;
+class ASceneComponent;
+class APlayerController;
 
-class FAudioControlCallback : public FBaseObject {
-    AN_CLASS( FAudioControlCallback, FBaseObject )
+class AAudioControlCallback : public ABaseObject {
+    AN_CLASS( AAudioControlCallback, ABaseObject )
 
 public:
     float VolumeScale = 1.0f;
@@ -46,11 +46,11 @@ public:
     // TODO: ...
 
 protected:
-    FAudioControlCallback() {}
+    AAudioControlCallback() {}
 };
 
-class FAudioGroup : public FBaseObject {
-    AN_CLASS( FAudioGroup, FBaseObject )
+class AAudioGroup : public ABaseObject {
+    AN_CLASS( AAudioGroup, ABaseObject )
 
 public:
     float Volume = 1;
@@ -58,7 +58,7 @@ public:
     //SetPaused, etc
 
 protected:
-    FAudioGroup() {}
+    AAudioGroup() {}
 };
 
 enum EAudioLocation {
@@ -127,7 +127,7 @@ struct SSoundSpawnParameters {
     bool        bUsePhysicalVelocity = false;
 
     /** Audio group */
-    FAudioGroup * Group = nullptr;
+    AAudioGroup * Group = nullptr;
 
     /** Sound attenuation */
     SSoundAttenuationParameters Attenuation;
@@ -158,11 +158,11 @@ struct SSoundSpawnParameters {
 
     float       LifeSpan = 0;
 
-    FAudioControlCallback * ControlCallback = nullptr; // Reserved for future
+    AAudioControlCallback * ControlCallback = nullptr; // Reserved for future
 };
 
-class ANGIE_API FAudioSystem {
-    AN_SINGLETON( FAudioSystem )
+class ANGIE_API AAudioSystem {
+    AN_SINGLETON( AAudioSystem )
 
 public:
     void Initialize();
@@ -183,13 +183,13 @@ public:
 
     bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
 
-    void PlaySound( FAudioClip * _AudioClip, FActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
+    void PlaySound( AAudioClip * _AudioClip, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 
-    void PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
+    void PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 
-    void PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
+    void PlaySound( AAudioClip * _AudioClip, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 
-    void PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
+    void PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 
     void EnableHRTF( int _Index );
 
@@ -203,12 +203,12 @@ public:
 
     Float3 const & GetListenerPosition() const;
 
-    void Update( FPlayerController * _Controller, float _TimeStep );
+    void Update( APlayerController * _Controller, float _TimeStep );
 
     int GetNumActiveChannels() const;
 
 private:
-    ~FAudioSystem();
+    ~AAudioSystem();
 
     bool bInitialized;
 
@@ -220,4 +220,4 @@ private:
     TPodArray< Entry > Decoders;
 };
 
-extern FAudioSystem & GAudioSystem;
+extern AAudioSystem & GAudioSystem;

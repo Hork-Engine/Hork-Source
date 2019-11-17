@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include <Engine/World/Public/Actors/SpotLight.h>
 
-AN_CLASS_META( FSpotLight )
+AN_CLASS_META( ASpotLight )
 
-FSpotLight::FSpotLight() {
-    LightComponent = AddComponent< FSpotLightComponent >( "SpotLight" );
+ASpotLight::ASpotLight() {
+    LightComponent = CreateComponent< ASpotLightComponent >( "SpotLight" );
     RootComponent = LightComponent;
 }

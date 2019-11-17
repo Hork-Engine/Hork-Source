@@ -39,9 +39,9 @@ SOFTWARE.
 #include <thread>
 #include <chrono>
 
-const int FThread::NumHardwareThreads = FStdThread::hardware_concurrency();
+const int AThread::NumHardwareThreads = AStdThread::hardware_concurrency();
 
-void FThread::Start() {
+void AThread::Start() {
 #ifdef AN_OS_WIN32
     unsigned threadId;
     Internal = (HANDLE)_beginthreadex(
@@ -58,7 +58,7 @@ void FThread::Start() {
 #endif
 }
 
-void FThread::Join() {
+void AThread::Join() {
     if ( !Internal ) {
         return;
     }
@@ -73,7 +73,7 @@ void FThread::Join() {
 #endif
 }
 
-size_t FThread::ThisThreadId() {
+size_t AThread::ThisThreadId() {
 #ifdef AN_OS_WIN32
     return GetCurrentThreadId();
 #else
@@ -82,14 +82,14 @@ size_t FThread::ThisThreadId() {
 }
 
 #ifdef AN_OS_WIN32
-unsigned __stdcall FThread::StartRoutine( void * _Thread ) {
-    static_cast< FThread * >( _Thread )->Routine( static_cast< FThread * >( _Thread )->Data );
+unsigned __stdcall AThread::StartRoutine( void * _Thread ) {
+    static_cast< AThread * >( _Thread )->Routine( static_cast< AThread * >( _Thread )->Data );
     _endthreadex( 0 );
     return 0;
 }
 #else
-void * FThread::StartRoutine( void * _Thread ) {
-    static_cast< FThread * >( _Thread )->Routine( static_cast< FThread * >( _Thread )->Data );
+void * AThread::StartRoutine( void * _Thread ) {
+    static_cast< AThread * >( _Thread )->Routine( static_cast< AThread * >( _Thread )->Data );
     return 0;
 }
 #endif
@@ -98,20 +98,20 @@ void * FThread::StartRoutine( void * _Thread ) {
 constexpr int INTERNAL_SIZEOF = sizeof( CRITICAL_SECTION );
 #endif
 
-FThreadSync::FThreadSync() {
+AThreadSync::AThreadSync() {
 #ifdef AN_OS_WIN32
     static_assert( sizeof( Internal ) == INTERNAL_SIZEOF, "Critical section sizeof check" );
     InitializeCriticalSection( ( CRITICAL_SECTION * )&Internal[0] );
 #endif
 }
 
-FThreadSync::~FThreadSync() {
+AThreadSync::~AThreadSync() {
 #ifdef AN_OS_WIN32
     DeleteCriticalSection( (CRITICAL_SECTION *)&Internal[0] );
 #endif
 }
 
-void FThreadSync::BeginScope() {
+void AThreadSync::BeginScope() {
 #ifdef AN_OS_WIN32
     EnterCriticalSection( (CRITICAL_SECTION *)&Internal[0] );
 #else
@@ -119,7 +119,7 @@ void FThreadSync::BeginScope() {
 #endif
 }
 
-bool FThreadSync::TryBeginScope() {
+bool AThreadSync::TryBeginScope() {
 #ifdef AN_OS_WIN32
     return TryEnterCriticalSection( (CRITICAL_SECTION *)&Internal[0] ) != FALSE;
 #else
@@ -127,7 +127,7 @@ bool FThreadSync::TryBeginScope() {
 #endif
 }
 
-void FThreadSync::EndScope() {
+void AThreadSync::EndScope() {
 #ifdef AN_OS_WIN32
     LeaveCriticalSection( (CRITICAL_SECTION *)&Internal[0] );
 #else
@@ -136,24 +136,24 @@ void FThreadSync::EndScope() {
 }
 
 #ifdef AN_OS_WIN32
-void FSyncEvent::CreateEventWIN32() {
+void ASyncEvent::CreateEventWIN32() {
     Internal = CreateEvent( NULL, FALSE, FALSE, NULL );
 }
 
-void FSyncEvent::DestroyEventWIN32() {
+void ASyncEvent::DestroyEventWIN32() {
     CloseHandle( Internal );
 }
 
-void FSyncEvent::WaitWIN32() {
+void ASyncEvent::WaitWIN32() {
     WaitForSingleObject( Internal, INFINITE );
 }
 
-void FSyncEvent::SingalWIN32() {
+void ASyncEvent::SingalWIN32() {
     SetEvent( Internal );
 }
 #endif
 
-void FSyncEvent::WaitTimeout( int _Milliseconds, bool & _TimedOut ) {
+void ASyncEvent::WaitTimeout( int _Milliseconds, bool & _TimedOut ) {
     _TimedOut = false;
 
 #ifdef AN_OS_WIN32
@@ -172,7 +172,7 @@ void FSyncEvent::WaitTimeout( int _Milliseconds, bool & _TimedOut ) {
         nanoseconds
     };
 
-    FSyncGuard syncGuard( Sync );
+    ASyncGuard syncGuard( Sync );
     while ( !bSignaled ) {
         if ( pthread_cond_timedwait( &Internal, &Sync.Internal, &ts ) == ETIMEDOUT ) {
             _TimedOut = true;

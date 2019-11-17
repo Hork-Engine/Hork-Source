@@ -33,10 +33,10 @@ SOFTWARE.
 #include "_math.h"
 
 Bool & Bool::FromString( const char * _String ) {
-    if ( !FString::Cmp( _String, "0" )
-         || !FString::Cmp( _String, "false" ) ) {
+    if ( !AString::Cmp( _String, "0" )
+         || !AString::Cmp( _String, "false" ) ) {
         Value = false;
-    } else if ( !FString::Cmp( _String, "true" ) ) {
+    } else if ( !AString::Cmp( _String, "true" ) ) {
         Value = true;
     } else {
         Value = StringToInt< int >( _String ) != 0;

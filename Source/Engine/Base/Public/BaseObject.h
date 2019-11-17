@@ -33,38 +33,29 @@ SOFTWARE.
 #include "Factory.h"
 #include <Engine/Core/Public/Document.h>
 
-struct FWeakRefCounter;
+struct SWeakRefCounter;
 
 
 /**
 
-FBaseObject
+ABaseObject
 
 Base object class.
 Cares of reference counting, garbage collecting and little basic functionality.
 
 */
-class ANGIE_API FBaseObject : public FDummy {
-    AN_CLASS( FBaseObject, FDummy )
+class ANGIE_API ABaseObject : public ADummy {
+    AN_CLASS( ABaseObject, ADummy )
 
-    friend class FGarbageCollector;
-    friend class FWeakReference;
+    friend class AGarbageCollector;
+    friend class AWeakReference;
 
 public:
     /** Serialize object to document data */
-    virtual int Serialize( FDocument & _Doc );
-
-    /** Initialize default object representation */
-    void InitializeDefaultObject();
-
-    /** Initialize object from file */
-    virtual bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true );
-
-    /** Initialize internal resource */
-    virtual void InitializeInternalResource( const char * _InternalResourceName );
+    virtual int Serialize( ADocument & _Doc );
 
     /** Load attributes form document data */
-    void LoadAttributes( FDocument const & _Document, int _FieldsHead );
+    void LoadAttributes( ADocument const & _Document, int _FieldsHead );
 
     /** Add reference */
     void AddRef();
@@ -72,29 +63,32 @@ public:
     /** Remove reference */
     void RemoveRef();
 
-    virtual void SetName( FString const & _Name ) { Name = _Name; }
+    /** Set object debug/editor or ingame name */
+    void SetObjectName( AString const & _Name ) { Name = _Name; }
 
-    FString const & GetName() const { return Name; }
+    /** Get object debug/editor or ingame name */
+    AString const & GetObjectName() const { return Name; }
 
-    const char * GetNameConstChar() const { return Name.ToConstChar(); }
+    /** Get object debug/editor or ingame name */
+    const char * GetObjectNameConstChar() const { return Name.CStr(); }
 
     /** Get total existing objects */
     static uint64_t GetTotalObjects() { return TotalObjects; }
 
     /** Set weakref counter. Used by TWeakRef */
-    void SetWeakRefCounter( FWeakRefCounter * _RefCounter ) { WeakRefCounter = _RefCounter; }
+    void SetWeakRefCounter( SWeakRefCounter * _RefCounter ) { WeakRefCounter = _RefCounter; }
 
     /** Get weakref counter. Used by TWeakRef */
-    FWeakRefCounter * GetWeakRefCounter() { return WeakRefCounter; }
+    SWeakRefCounter * GetWeakRefCounter() { return WeakRefCounter; }
 
 protected:
-    FBaseObject();
+    ABaseObject();
 
-    virtual ~FBaseObject();
-
-    FString Name;
+    virtual ~ABaseObject();
 
 private:
+
+    AString Name;
 
     /** Total existing objects */
     static uint64_t TotalObjects;
@@ -102,22 +96,66 @@ private:
     /** Current refs count for this object */
     int RefCount;
 
-    FWeakRefCounter * WeakRefCounter;
+    SWeakRefCounter * WeakRefCounter;
 
     /** Used by garbage collector to add this object to remove list */
-    FBaseObject * NextGarbageObject;
-    FBaseObject * PrevGarbageObject;
+    ABaseObject * NextGarbageObject;
+    ABaseObject * PrevGarbageObject;
+};
+
+class ANGIE_API AResourceBase : public ABaseObject {
+    AN_CLASS( AResourceBase, ABaseObject )
+
+    friend class AResourceManager;
+
+public:
+    /** Initialize default object representation */
+    void InitializeDefaultObject();
+
+    /** Initialize object from file */
+    void InitializeFromFile( const char * _Path );
+
+    /** Get resource alias/guid */
+    AString const & GetResourceAlias() const { return ResourceAlias; }
+
+    /** Get physical resource path */
+    AString const & GetResourcePath() const { return ResourcePath; }
+
+protected:
+    AResourceBase() {}
+
+    /** Load resource from file */
+    virtual bool LoadResource( AString const & _Path ) { return false; }
+
+    /** Create internal resource */
+    virtual void LoadInternalResource( const char * _Path ) {}
+
+    virtual const char * GetDefaultResourcePath() const { return "/Default/UnknownResource"; }
+
+private:
+    void SetResourceAlias( const char * _ResourceAlias ) { ResourceAlias = _ResourceAlias; }
+
+    void SetResourceAlias( AString const &  _ResourceAlias ) { ResourceAlias = _ResourceAlias; }
+
+    /** Set physical resource path */
+    void SetResourcePath( const char * _ResourcePath ) { ResourcePath = _ResourcePath; }
+
+    /** Set physical resource path */
+    void SetResourcePath( AString const & _ResourcePath ) { ResourcePath = _ResourcePath; }
+
+    AString ResourceAlias;
+    AString ResourcePath;
 };
 
 /**
 
-FGarbageCollector
+AGarbageCollector
 
 Cares of garbage collecting and removing
 
 */
-class FGarbageCollector final {
-    AN_FORBID_COPY( FGarbageCollector )
+class AGarbageCollector final {
+    AN_FORBID_COPY( AGarbageCollector )
 
 public:
     /** Initialize garbage collector */
@@ -127,15 +165,15 @@ public:
     static void Deinitialize();
 
     /** Add object to remove it at next DeallocateObjects() call */
-    static void AddObject( FBaseObject * _Object );
-    static void RemoveObject( FBaseObject * _Object );
+    static void AddObject( ABaseObject * _Object );
+    static void RemoveObject( ABaseObject * _Object );
 
     /** Deallocates all collected objects */
     static void DeallocateObjects();
 
 private:
-    static FBaseObject * GarbageObjects;
-    static FBaseObject * GarbageObjectsTail;
+    static ABaseObject * GarbageObjects;
+    static ABaseObject * GarbageObjectsTail;
 };
 
 /**
@@ -234,29 +272,29 @@ Weak pointer
 
 */
 
-struct FWeakRefCounter {
-    FBaseObject * Object;
+struct SWeakRefCounter {
+    ABaseObject * Object;
     int RefCount;
 };
 
-class FWeakReference {
+class AWeakReference {
 protected:
-    FWeakReference() : WeakRefCounter( nullptr ) {}
+    AWeakReference() : WeakRefCounter( nullptr ) {}
 
-    void ResetWeakRef( FBaseObject * _Object );
+    void ResetWeakRef( ABaseObject * _Object );
 
     void RemoveWeakRef();
 
-    FWeakRefCounter * WeakRefCounter;
+    SWeakRefCounter * WeakRefCounter;
 
 private:
-    FWeakRefCounter * AllocateWeakRefCounter();
+    SWeakRefCounter * AllocateWeakRefCounter();
 
-    void DeallocateWeakRefCounter( FWeakRefCounter * _Counter );
+    void DeallocateWeakRefCounter( SWeakRefCounter * _Counter );
 };
 
 template< typename T >
-class TWeakRef final : public FWeakReference {
+class TWeakRef final : public AWeakReference {
 public:
     TWeakRef() {}
 
@@ -375,14 +413,14 @@ struct TCallback< TReturn( TArgs... ) > {
     template< typename T >
     TCallback( T * _Object, TReturn ( T::*_Method )(TArgs...) )
         : Object( _Object )
-        , Method( (void (FBaseObject::*)(TArgs...))_Method )
+        , Method( (void (ABaseObject::*)(TArgs...))_Method )
     {
     }
 
     template< typename T >
     void Set( T * _Object, TReturn ( T::*_Method )(TArgs...) ) {
         Object = _Object;
-        Method = (void (FBaseObject::*)(TArgs...))_Method;
+        Method = (void (ABaseObject::*)(TArgs...))_Method;
     }
 
     void Clear() {
@@ -399,18 +437,18 @@ struct TCallback< TReturn( TArgs... ) > {
     }
 
     TReturn operator()( TArgs... _Args ) const {
-        FBaseObject * pObject = Object;
+        ABaseObject * pObject = Object;
         if ( pObject ) {
             return (pObject->*Method)(StdForward< TArgs >( _Args )...);
         }
         return TReturn();
     }
 
-    FBaseObject * GetObject() { return Object.GetObject(); }
+    ABaseObject * GetObject() { return Object.GetObject(); }
 
 private:
-    TWeakRef< FBaseObject > Object;
-    TReturn ( FBaseObject::*Method )(TArgs...);
+    TWeakRef< ABaseObject > Object;
+    TReturn ( ABaseObject::*Method )(TArgs...);
 };
 
 

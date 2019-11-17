@@ -31,19 +31,20 @@ SOFTWARE.
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
-AN_BEGIN_CLASS_META( FBaseObject )
+AN_BEGIN_CLASS_META( ABaseObject )
 //AN_ATTRIBUTE( Name, SetName, GetName, AF_DEFAULT )
 AN_END_CLASS_META()
 
-uint64_t FBaseObject::TotalObjects = 0;
+uint64_t ABaseObject::TotalObjects = 0;
 
-FBaseObject::FBaseObject() {
+ABaseObject::ABaseObject() {
     TotalObjects++;
-    FGarbageCollector::AddObject( this );
+    AGarbageCollector::AddObject( this );
 }
 
-FBaseObject::~FBaseObject() {
+ABaseObject::~ABaseObject() {
     TotalObjects--;
 
     if ( WeakRefCounter ) {
@@ -51,52 +52,36 @@ FBaseObject::~FBaseObject() {
     }
 }
 
-void FBaseObject::AddRef() {
+void ABaseObject::AddRef() {
     AN_ASSERT( RefCount != -666, "Calling AddRef() in destructor" );
     ++RefCount;
     if ( RefCount == 1 ) {
-        FGarbageCollector::RemoveObject( this );
+        AGarbageCollector::RemoveObject( this );
     }
 }
 
-void FBaseObject::RemoveRef() {
+void ABaseObject::RemoveRef() {
     AN_ASSERT( RefCount != -666, "Calling RemoveRef() in destructor" );
     if ( RefCount == 1 ) {
         RefCount = 0;
-        FGarbageCollector::AddObject( this );
+        AGarbageCollector::AddObject( this );
     } else if ( RefCount > 0 ) {
         --RefCount;
     }
 }
 
-void FBaseObject::InitializeDefaultObject() {
-    InitializeInternalResource( ( FString( FinalClassName() ) + ".Default" ).ToConstChar() );
-}
-
-bool FBaseObject::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
-    if ( _CreateDefultObjectIfFails ) {
-        InitializeDefaultObject();
-        return true;
-    }
-    return false;
-}
-
-void FBaseObject::InitializeInternalResource( const char * _InternalResourceName ) {
-    //SetName( _InternalResourceName );
-}
-
-int FBaseObject::Serialize( FDocument & _Doc ) {
+int ABaseObject::Serialize( ADocument & _Doc ) {
     int object = _Doc.CreateObjectValue();
 
     _Doc.AddStringField( object, "ClassName", FinalClassName() );
 
 //    int precacheArray = -1;
 
-    for ( FClassMeta const * Meta = &FinalClassMeta()
+    for ( AClassMeta const * Meta = &FinalClassMeta()
           ; Meta ; Meta = Meta->SuperClass() ) {
 
 #if 0
-        FPrecacheMeta const * precache = Meta->GetPrecacheList();
+        APrecacheMeta const * precache = Meta->GetPrecacheList();
         if ( precache ) {
 
             for ( ; precache ; precache = precache->Next() ) {
@@ -108,11 +93,11 @@ int FBaseObject::Serialize( FDocument & _Doc ) {
         }
 #endif
 
-        FAttributeMeta const * attribs = Meta->GetAttribList();
+        AAttributeMeta const * attribs = Meta->GetAttribList();
         if ( attribs ) {
             int attribArray = -1;
 
-            for ( FAttributeMeta const * attr = attribs ; attr ; attr = attr->Next() ) {
+            for ( AAttributeMeta const * attr = attribs ; attr ; attr = attr->Next() ) {
 
                 if ( attr->GetFlags() & AF_NON_SERIALIZABLE ) {
                     continue;
@@ -122,10 +107,10 @@ int FBaseObject::Serialize( FDocument & _Doc ) {
 
                 int attribObject = _Doc.CreateObjectValue();
 
-                FString & s = _Doc.ProxyBuffer.NewString();
+                AString & s = _Doc.ProxyBuffer.NewString();
                 attr->GetValue( this, s );
 
-                _Doc.AddStringField( attribObject, attr->GetName(), s.ToConstChar() );
+                _Doc.AddStringField( attribObject, attr->GetName(), s.CStr() );
 
                 _Doc.AddValueToField( attribArray, attribObject );
             }
@@ -135,18 +120,18 @@ int FBaseObject::Serialize( FDocument & _Doc ) {
     return object;
 }
 
-void FBaseObject::LoadAttributes( FDocument const & _Document, int _FieldsHead ) {
-    for ( FClassMeta const * meta = &FinalClassMeta() ; meta ; meta = meta->SuperClass() ) {
-        FDocumentField const * field = _Document.FindField( _FieldsHead, meta->GetName() );
+void ABaseObject::LoadAttributes( ADocument const & _Document, int _FieldsHead ) {
+    for ( AClassMeta const * meta = &FinalClassMeta() ; meta ; meta = meta->SuperClass() ) {
+        SDocumentField const * field = _Document.FindField( _FieldsHead, meta->GetName() );
         if ( field ) {
             for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-                FDocumentValue * attributeObject = &_Document.Values[ i ];
-                if ( attributeObject->Type == FDocumentValue::T_Object ) {
+                SDocumentValue * attributeObject = &_Document.Values[ i ];
+                if ( attributeObject->Type == SDocumentValue::T_Object ) {
                     for ( int j = attributeObject->FieldsHead ; j != -1 ; j = _Document.Fields[ j ].Next ) {
-                        FDocumentField const * attributeName = &_Document.Fields[ j ];
-                        FAttributeMeta const * attrMeta = meta->FindAttribute( attributeName->Name.ToString().ToConstChar(), false );
+                        SDocumentField const * attributeName = &_Document.Fields[ j ];
+                        AAttributeMeta const * attrMeta = meta->FindAttribute( attributeName->Name.ToString().CStr(), false );
                         if ( attrMeta ) {
-                            FDocumentValue const * attributeValue = &_Document.Values[ attributeName->ValuesHead ];
+                            SDocumentValue const * attributeValue = &_Document.Values[ attributeName->ValuesHead ];
                             attrMeta->SetValue( this, attributeValue->Token.ToString() );
                         }
                     }
@@ -156,61 +141,61 @@ void FBaseObject::LoadAttributes( FDocument const & _Document, int _FieldsHead )
     }
 }
 
-FBaseObject * FGarbageCollector::GarbageObjects = nullptr;
-FBaseObject * FGarbageCollector::GarbageObjectsTail = nullptr;
+ABaseObject * AGarbageCollector::GarbageObjects = nullptr;
+ABaseObject * AGarbageCollector::GarbageObjectsTail = nullptr;
 
-void FGarbageCollector::Initialize() {
+void AGarbageCollector::Initialize() {
 
 }
 
-void FGarbageCollector::Deinitialize() {
+void AGarbageCollector::Deinitialize() {
     DeallocateObjects();
 }
 
-void FGarbageCollector::AddObject( FBaseObject * _Object ) {
+void AGarbageCollector::AddObject( ABaseObject * _Object ) {
     INTRUSIVE_ADD( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
 }
 
-void FGarbageCollector::RemoveObject( FBaseObject * _Object ) {
+void AGarbageCollector::RemoveObject( ABaseObject * _Object ) {
     INTRUSIVE_REMOVE( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
 }
 
-void FGarbageCollector::DeallocateObjects() {
+void AGarbageCollector::DeallocateObjects() {
 #if 0
     while ( GarbageObjects ) {
-        FBaseObject * object = GarbageObjects;
-        FBaseObject * nextObject;
+        ABaseObject * object = GarbageObjects;
+        ABaseObject * nextObject;
 
         GarbageObjects = nullptr;
 
         while ( object ) {
             nextObject = object->NextGarbageObject;
-            const FClassMeta & classMeta = object->FinalClassMeta();
+            const AClassMeta & classMeta = object->FinalClassMeta();
             classMeta.DestroyInstance( object );
             object = nextObject;
         }
     }
 #endif
     while ( GarbageObjects ) {
-        FBaseObject * object = GarbageObjects;
+        ABaseObject * object = GarbageObjects;
 
         // Mark RefCount to prevent using of AddRef/RemoveRef in the object destructor
         object->RefCount = -666;
 
         RemoveObject( object );
 
-        const FClassMeta & classMeta = object->FinalClassMeta();
+        const AClassMeta & classMeta = object->FinalClassMeta();
         classMeta.DestroyInstance( object );
     }
 
     GarbageObjectsTail = nullptr;
 
-    //GPrintf( "TotalObjects: %d\n", FBaseObject::GetTotalObjects() );
+    //GPrintf( "TotalObjects: %d\n", ABaseObject::GetTotalObjects() );
 }
 
 
-void FWeakReference::ResetWeakRef( FBaseObject * _Object ) {
-    FBaseObject * Cur = WeakRefCounter ? WeakRefCounter->Object : nullptr;
+void AWeakReference::ResetWeakRef( ABaseObject * _Object ) {
+    ABaseObject * Cur = WeakRefCounter ? WeakRefCounter->Object : nullptr;
 
     if ( Cur == _Object ) {
         return;
@@ -233,7 +218,7 @@ void FWeakReference::ResetWeakRef( FBaseObject * _Object ) {
     }
 }
 
-void FWeakReference::RemoveWeakRef() {
+void AWeakReference::RemoveWeakRef() {
     if ( WeakRefCounter ) {
         if ( --WeakRefCounter->RefCount == 0 ) {
             if ( WeakRefCounter->Object ) {
@@ -245,14 +230,56 @@ void FWeakReference::RemoveWeakRef() {
     }
 }
 
-FWeakRefCounter * FWeakReference::AllocateWeakRefCounter() {
+SWeakRefCounter * AWeakReference::AllocateWeakRefCounter() {
     // Own allocator couldn't handle destruction of static objects :(
-    return new FWeakRefCounter;
-    //return ( FWeakRefCounter * )GZoneMemory.Alloc( sizeof( FWeakRefCounter ), 1 );
+    return new SWeakRefCounter;
+    //return ( SWeakRefCounter * )GZoneMemory.Alloc( sizeof( SWeakRefCounter ), 1 );
 }
 
-void FWeakReference::DeallocateWeakRefCounter( FWeakRefCounter * _RefCounter ) {
+void AWeakReference::DeallocateWeakRefCounter( SWeakRefCounter * _RefCounter ) {
     // Own allocator couldn't handle destruction of static objects :(
     delete _RefCounter;
     //GZoneMemory.Dealloc( _RefCounter );
+}
+
+
+
+
+AN_CLASS_META( AResourceBase )
+
+void AResourceBase::InitializeDefaultObject() {
+    InitializeFromFile( GetDefaultResourcePath() );
+}
+
+void AResourceBase::InitializeFromFile( const char * _Path ) {
+    if ( !AString::IcmpN( _Path, "/Default/", 9 ) ) {
+        LoadInternalResource( _Path );
+        return;
+    }
+
+    if ( !AString::IcmpN( _Path, "/Root/", 6 ) ) {
+        _Path += 6;
+
+        AString fileSystemPath = GResourceManager.GetRootPath() + _Path;
+
+        if ( !LoadResource( fileSystemPath ) ) {
+            InitializeDefaultObject();
+        }
+
+        return;
+
+    } else if ( !AString::IcmpN( _Path, "/Common/", 6 ) ) {
+        _Path += 1;
+
+        if ( !LoadResource( _Path ) ) {
+            InitializeDefaultObject();
+        }
+
+        return;
+
+    }
+
+    // Invalid path
+    GLogger.Printf( "Invalid path \"%s\"\n", _Path );
+    InitializeDefaultObject();
 }

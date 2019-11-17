@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "Std.h"
 
-template< int HashBucketsCount = 1024, typename Allocator = FZoneAllocator > // must be power of two
+template< int HashBucketsCount = 1024, typename Allocator = AZoneAllocator > // must be power of two
 class THash final {
     AN_FORBID_COPY( THash )
 

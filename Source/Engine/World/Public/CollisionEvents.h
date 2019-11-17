@@ -32,31 +32,31 @@ SOFTWARE.
 
 #include <Engine/Base/Public/BaseObject.h>
 
-class FActor;
-class FPhysicalBody;
+class AActor;
+class APhysicalBody;
 
-struct FOverlapEvent {
-    FActor * SelfActor;
-    FPhysicalBody * SelfBody;
-    FActor * OtherActor;
-    FPhysicalBody * OtherBody;
+struct SOverlapEvent {
+    AActor * SelfActor;
+    APhysicalBody * SelfBody;
+    AActor * OtherActor;
+    APhysicalBody * OtherBody;
 };
 
-struct FContactPoint {
+struct SContactPoint {
     Float3 Position;
     Float3 Normal;
     float Distance;
     float Impulse;
 };
 
-struct FContactEvent {
-    FActor * SelfActor;
-    FPhysicalBody * SelfBody;
-    FActor * OtherActor;
-    FPhysicalBody * OtherBody;
-    FContactPoint const * Points;
+struct SContactEvent {
+    AActor * SelfActor;
+    APhysicalBody * SelfBody;
+    AActor * OtherActor;
+    APhysicalBody * OtherBody;
+    SContactPoint const * Points;
     int NumPoints;
 };
 
-using FOverlapDelegate = TEvent< FOverlapEvent const & >;
-using FContactDelegate = TEvent< FContactEvent const & >;
+using AOverlapDelegate = TEvent< SOverlapEvent const & >;
+using AContactDelegate = TEvent< SContactEvent const & >;

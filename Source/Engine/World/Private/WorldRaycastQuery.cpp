@@ -32,9 +32,9 @@ SOFTWARE.
 #include <Engine/World/Public/World.h>
 #include <Engine/World/Public/Components/MeshComponent.h>
 
-FWorldRaycastFilter FWorldRaycastQuery::DefaultRaycastFilter;
+SWorldRaycastFilter AWorldRaycastQuery::DefaultRaycastFilter;
 
-bool FWorldRaycastQuery::Raycast( FWorld const * _World, FWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter const * _Filter ) {
+bool AWorldRaycastQuery::Raycast( AWorld const * _World, SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
     Float3 rayVec = _RayEnd - _RayStart;
     Float3 rayDir;
     Float3 invRayDir;
@@ -61,7 +61,7 @@ bool FWorldRaycastQuery::Raycast( FWorld const * _World, FWorldRaycastResult & _
     invRayDir.Y = 1.0f / rayDir.Y;
     invRayDir.Z = 1.0f / rayDir.Z;
 
-    for ( FMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
+    for ( AMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
 
         if ( mesh->bUseDynamicRange ) {
             continue;
@@ -75,10 +75,7 @@ bool FWorldRaycastQuery::Raycast( FWorld const * _World, FWorldRaycastResult & _
             continue;
         }
 
-        FIndexedMesh * resource = mesh->GetMesh();
-        if ( !resource ) {
-            continue;
-        }
+        AIndexedMesh * resource = mesh->GetMesh();
 
         if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
@@ -107,7 +104,7 @@ bool FWorldRaycastQuery::Raycast( FWorld const * _World, FWorldRaycastResult & _
 
         if ( resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, _Result.Hits ) ) {
 
-            FWorldRaycastEntity & raycastEntity = _Result.Entities.Append();
+            SWorldRaycastEntity & raycastEntity = _Result.Entities.Append();
 
             raycastEntity.Object = mesh;
             raycastEntity.FirstHit = firstHit;
@@ -123,7 +120,7 @@ bool FWorldRaycastQuery::Raycast( FWorld const * _World, FWorldRaycastResult & _
 
             for ( int i = 0 ; i < raycastEntity.NumHits ; i++ ) {
                 int hitNum = raycastEntity.FirstHit + i;
-                FTriangleHitResult & hitResult = _Result.Hits[hitNum];
+                STriangleHitResult & hitResult = _Result.Hits[hitNum];
 
                 hitResult.Location = transform * hitResult.Location;
                 hitResult.Normal = ( normalMatrix * hitResult.Normal ).Normalized();
@@ -147,7 +144,7 @@ bool FWorldRaycastQuery::Raycast( FWorld const * _World, FWorldRaycastResult & _
     return true;
 }
 
-bool FWorldRaycastQuery::RaycastAABB( FWorld const * _World, TPodArray< FBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter const * _Filter ) {
+bool AWorldRaycastQuery::RaycastAABB( AWorld const * _World, TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
     Float3 rayVec = _RayEnd - _RayStart;
     Float3 rayDir;
     Float3 invRayDir;
@@ -172,18 +169,13 @@ bool FWorldRaycastQuery::RaycastAABB( FWorld const * _World, TPodArray< FBoxHitR
 
     float boxMin, boxMax;
 
-    for ( FMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
+    for ( AMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
 
         if ( mesh->bUseDynamicRange ) {
             continue;
         }
 
         if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
-            continue;
-        }
-
-        FIndexedMesh * resource = mesh->GetMesh();
-        if ( !resource ) {
             continue;
         }
 
@@ -196,7 +188,7 @@ bool FWorldRaycastQuery::RaycastAABB( FWorld const * _World, TPodArray< FBoxHitR
             continue;
         }
 
-        FBoxHitResult & hitResult = _Result.Append();
+        SBoxHitResult & hitResult = _Result.Append();
 
         hitResult.Object = mesh;
         hitResult.LocationMin = _RayStart + rayDir * boxMin;
@@ -210,8 +202,8 @@ bool FWorldRaycastQuery::RaycastAABB( FWorld const * _World, TPodArray< FBoxHitR
     }
 
     if ( _Filter->bSortByDistance ) {
-        struct FSortHit {
-            bool operator() ( FBoxHitResult const & _A, FBoxHitResult const & _B ) {
+        struct ASortHit {
+            bool operator() ( SBoxHitResult const & _A, SBoxHitResult const & _B ) {
                 return ( _A.DistanceMin < _B.DistanceMin );
             }
         } SortHit;
@@ -222,8 +214,8 @@ bool FWorldRaycastQuery::RaycastAABB( FWorld const * _World, TPodArray< FBoxHitR
     return true;
 }
 
-bool FWorldRaycastQuery::RaycastClosest( FWorld const * _World, FWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter const * _Filter ) {
-    FMeshComponent * hitObject = nullptr;
+bool AWorldRaycastQuery::RaycastClosest( AWorld const * _World, SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
+    AMeshComponent * hitObject = nullptr;
     Float3 rayVec = _RayEnd - _RayStart;
     Float3 rayDir;
     Float3 invRayDir;
@@ -234,7 +226,7 @@ bool FWorldRaycastQuery::RaycastClosest( FWorld const * _World, FWorldRaycastClo
     Float2 hitUV;
     float hitDistance;
     unsigned int indices[3];
-    TRef< FMaterialInstance > material;
+    TRef< AMaterialInstance > material;
 
     if ( !_Filter ) {
         _Filter = &DefaultRaycastFilter;
@@ -259,7 +251,7 @@ bool FWorldRaycastQuery::RaycastClosest( FWorld const * _World, FWorldRaycastClo
     hitDistance = rayLength;
     hitLocation = _RayEnd;
 
-    for ( FMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
+    for ( AMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
 
         if ( mesh->bUseDynamicRange ) {
             continue;
@@ -273,10 +265,7 @@ bool FWorldRaycastQuery::RaycastClosest( FWorld const * _World, FWorldRaycastClo
             continue;
         }
 
-        FIndexedMesh * resource = mesh->GetMesh();
-        if ( !resource ) {
-            continue;
-        }
+        AIndexedMesh * resource = mesh->GetMesh();
 
         if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
@@ -321,8 +310,8 @@ bool FWorldRaycastQuery::RaycastClosest( FWorld const * _World, FWorldRaycastClo
         return false;
     }
 
-    FIndexedMesh * resource = hitObject->GetMesh();
-    FMeshVertex * vertices = resource->GetVertices();
+    AIndexedMesh * resource = hitObject->GetMesh();
+    SMeshVertex * vertices = resource->GetVertices();
     Float3x4 const & transform = hitObject->GetWorldTransformMatrix();
 
     Float3 const & v0 = vertices[indices[0]].Position;
@@ -334,7 +323,7 @@ bool FWorldRaycastQuery::RaycastClosest( FWorld const * _World, FWorldRaycastClo
     _Result.Vertices[1] = transform * v1;
     _Result.Vertices[2] = transform * v2;
 
-    FTriangleHitResult & triangleHit = _Result.TriangleHit;
+    STriangleHitResult & triangleHit = _Result.TriangleHit;
 #if 1
     triangleHit.Normal = ( _Result.Vertices[1]-_Result.Vertices[0] ).Cross( _Result.Vertices[2]-_Result.Vertices[0] ).Normalized();
 #else
@@ -362,8 +351,8 @@ bool FWorldRaycastQuery::RaycastClosest( FWorld const * _World, FWorldRaycastClo
     return true;
 }
 
-bool FWorldRaycastQuery::RaycastClosestAABB( FWorld const * _World, FBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FWorldRaycastFilter const * _Filter ) {
-    FMeshComponent * hitObject = nullptr;
+bool AWorldRaycastQuery::RaycastClosestAABB( AWorld const * _World, SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
+    AMeshComponent * hitObject = nullptr;
     Float3 rayVec = _RayEnd - _RayStart;
     Float3 rayDir;
     Float3 invRayDir;
@@ -393,18 +382,13 @@ bool FWorldRaycastQuery::RaycastClosestAABB( FWorld const * _World, FBoxHitResul
     hitDistanceMin = rayLength;
     hitDistanceMax = rayLength;
 
-    for ( FMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
+    for ( AMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
 
         if ( mesh->bUseDynamicRange ) {
             continue;
         }
 
         if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
-            continue;
-        }
-
-        FIndexedMesh * resource = mesh->GetMesh();
-        if ( !resource ) {
             continue;
         }
 

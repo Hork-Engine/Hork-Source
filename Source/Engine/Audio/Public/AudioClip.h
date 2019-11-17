@@ -42,17 +42,11 @@ enum ESoundStreamType {
 enum { AUDIO_MIN_PCM_BUFFER_SIZE = 1024 * 24 };
 enum { AUDIO_MAX_PCM_BUFFER_SIZE = 1024 * 256 };
 
-class FAudioClip : public FBaseObject {
-    AN_CLASS( FAudioClip, FBaseObject )
+class AAudioClip : public AResourceBase {
+    AN_CLASS( AAudioClip, AResourceBase )
 
 public:
     ESoundStreamType StreamType;
-
-    /** Initialize internal resource */
-    void InitializeInternalResource( const char * _InternalResourceName ) override;
-
-    /** Initialize object from file */
-    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
     /** Initialize object from data */
     bool InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength );
@@ -85,7 +79,7 @@ public:
     const byte * GetEncodedData() const { return EncodedData; }
     size_t GetEncodedDataLength() const { return EncodedDataLength; }
 
-    FString const & GetFileName() const { return FileName; }
+    AString const & GetFileName() const { return FileName; }
 
     int GetFormat() const { return Format; }
 
@@ -94,8 +88,16 @@ public:
     int GetSerialId() const { return SerialId; }
 
 protected:
-    FAudioClip();
-    ~FAudioClip();
+    AAudioClip();
+    ~AAudioClip();
+
+    /** Load resource from file */
+    bool LoadResource( AString const & _Path ) override;
+
+    /** Create internal resource */
+    void LoadInternalResource( const char * _Path ) override;
+
+    const char * GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 
 private:
     unsigned int BufferId;
@@ -106,7 +108,7 @@ private:
     int    SamplesCount;
     float  DurationInSeconds;
     int    Format;
-    FSize  BufferSize;
+    int    BufferSize;
     byte * EncodedData;
     size_t EncodedDataLength;
     bool   bLoaded;
@@ -116,5 +118,5 @@ private:
     // ресурс перезагружен
     int SerialId;
 
-    FString FileName;
+    AString FileName;
 };

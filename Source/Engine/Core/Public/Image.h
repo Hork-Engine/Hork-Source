@@ -33,7 +33,7 @@ SOFTWARE.
 #include "IO.h"
 
 /** Software mipmap generator */
-struct FSoftwareMipmapGenerator {
+struct ASoftwareMipmapGenerator {
     void * SourceImage;
     int Width;
     int Height;
@@ -46,7 +46,7 @@ struct FSoftwareMipmapGenerator {
 };
 
 /** Image loader */
-class FImage {
+class AImage {
 public:
     void * pRawData;
     int Width;
@@ -57,18 +57,18 @@ public:
     bool bHalf; // Only for HDRI images
     int NumLods;
 
-    FImage();
-    ~FImage();
+    AImage();
+    ~AImage();
 
     // Load image as byte*
     bool LoadLDRI( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadLDRI( FFileStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadLDRI( FMemoryStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+    bool LoadLDRI( IStreamBase & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
 
     // Load image as float* in linear space
     bool LoadHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadHDRI( FFileStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadHDRI( FMemoryStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+    bool LoadHDRI( IStreamBase & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+
+    void FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _NumChannels, bool _SRGB, bool _GenerateMipmaps );
 
     void Free();
 };

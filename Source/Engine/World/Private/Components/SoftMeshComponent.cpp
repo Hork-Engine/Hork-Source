@@ -42,11 +42,11 @@ SOFTWARE.
 
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
 
-FRuntimeVariable RVDrawSoftmeshFaces( _CTS( "DrawSoftmeshFaces" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawSoftmeshFaces( _CTS( "DrawSoftmeshFaces" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_CLASS_META( FSoftMeshComponent )
+AN_CLASS_META( ASoftMeshComponent )
 
-FSoftMeshComponent::FSoftMeshComponent() {
+ASoftMeshComponent::ASoftMeshComponent() {
     bSoftBodySimulation = true;
     bCanEverTick = true;
 
@@ -55,13 +55,13 @@ FSoftMeshComponent::FSoftMeshComponent() {
     //PrevTransformBasis.SetIdentity();
 }
 
-void FSoftMeshComponent::InitializeComponent() {
+void ASoftMeshComponent::InitializeComponent() {
     Super::InitializeComponent();
 
     RecreateSoftBody();
 }
 
-void FSoftMeshComponent::DeinitializeComponent() {
+void ASoftMeshComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     DetachAllVertices();
@@ -74,12 +74,12 @@ void FSoftMeshComponent::DeinitializeComponent() {
     }
 }
 
-void FSoftMeshComponent::RecreateSoftBody() {
+void ASoftMeshComponent::RecreateSoftBody() {
 
-    FIndexedMesh * sourceMesh = GetMesh();
-    FSkeleton * skel = GetSkeleton();
+    AIndexedMesh * sourceMesh = GetMesh();
+    //ASkeleton * skel = GetSkeleton();
 
-    if ( !sourceMesh || !skel || sourceMesh->SoftbodyFaces.IsEmpty() || sourceMesh->SoftbodyLinks.IsEmpty() ) {
+    if ( !sourceMesh /*|| !skel*/ || sourceMesh->SoftbodyFaces.IsEmpty() || sourceMesh->SoftbodyLinks.IsEmpty() ) {
         // TODO: Warning?
         return;
     }
@@ -96,21 +96,24 @@ void FSoftMeshComponent::RecreateSoftBody() {
 
     constexpr bool bRandomizeConstraints = true;
 
-    //FMeshVertex const * vertices = sourceMesh->GetVertices();
+    //SMeshVertex const * vertices = sourceMesh->GetVertices();
     //unsigned int const * indices = sourceMesh->GetIndices();
 
     btAlignedObjectArray< btVector3 > vtx;
-    vtx.resize( skel->GetJoints().Size() );
-    FJoint const * joints = skel->GetJoints().ToPtr();
-    for ( int i = 0; i < skel->GetJoints().Size(); i++ ) {
-        vtx[ i ] = btVectorToFloat3( joints[ i ].OffsetMatrix.DecomposeTranslation() );
+
+    ASkin const & skin = sourceMesh->GetSkin();
+
+    vtx.resize( skin.JointIndices.Size() );
+
+    for ( int i = 0; i < skin.JointIndices.Size(); i++ ) {
+        vtx[ i ] = btVectorToFloat3( skin.OffsetMatrices[i].DecomposeTranslation() );
     }
 
     SoftBody = b3New( btSoftBody, GetWorld()->GetSoftBodyWorldInfo(), vtx.size(), &vtx[ 0 ], 0 );
-    for ( FSoftbodyLink & link : sourceMesh->SoftbodyLinks ) {
+    for ( SSoftbodyLink & link : sourceMesh->SoftbodyLinks ) {
         SoftBody->appendLink( link.Indices[0], link.Indices[1] );
     }
-    for ( FSoftbodyFace & face : sourceMesh->SoftbodyFaces ) {
+    for ( SSoftbodyFace & face : sourceMesh->SoftbodyFaces ) {
         SoftBody->appendFace( face.Indices[0], face.Indices[1], face.Indices[2] );
     }
     btSoftBody::Material * pm = SoftBody->appendMaterial();
@@ -158,7 +161,7 @@ void FSoftMeshComponent::RecreateSoftBody() {
     //bUpdateSoftbodyTransform = true;
 }
 
-void FSoftMeshComponent::OnMeshChanged() {
+void ASoftMeshComponent::OnMeshChanged() {
     if ( !GetWorld() ) {
         // Component not initialized yet
         return;
@@ -167,7 +170,7 @@ void FSoftMeshComponent::OnMeshChanged() {
     RecreateSoftBody();
 }
 
-Float3 FSoftMeshComponent::GetVertexPosition( int _VertexIndex ) const {
+Float3 ASoftMeshComponent::GetVertexPosition( int _VertexIndex ) const {
     if ( SoftBody ) {
         if ( _VertexIndex >= 0 && _VertexIndex < SoftBody->m_nodes.size() ) {
             return btVectorToFloat3( SoftBody->m_nodes[ _VertexIndex ].m_x );
@@ -176,7 +179,7 @@ Float3 FSoftMeshComponent::GetVertexPosition( int _VertexIndex ) const {
     return Float3::Zero();
 }
 
-Float3 FSoftMeshComponent::GetVertexNormal( int _VertexIndex ) const {
+Float3 ASoftMeshComponent::GetVertexNormal( int _VertexIndex ) const {
     if ( SoftBody ) {
         if ( _VertexIndex >= 0 && _VertexIndex < SoftBody->m_nodes.size() ) {
             return btVectorToFloat3( SoftBody->m_nodes[ _VertexIndex ].m_n );
@@ -185,7 +188,7 @@ Float3 FSoftMeshComponent::GetVertexNormal( int _VertexIndex ) const {
     return Float3::Zero();
 }
 
-Float3 FSoftMeshComponent::GetVertexVelocity( int _VertexIndex ) const {
+Float3 ASoftMeshComponent::GetVertexVelocity( int _VertexIndex ) const {
     if ( SoftBody ) {
         if ( _VertexIndex >= 0 && _VertexIndex < SoftBody->m_nodes.size() ) {
             return btVectorToFloat3( SoftBody->m_nodes[ _VertexIndex ].m_v );
@@ -194,7 +197,7 @@ Float3 FSoftMeshComponent::GetVertexVelocity( int _VertexIndex ) const {
     return Float3::Zero();
 }
 
-void FSoftMeshComponent::SetWindVelocity( Float3 const & _Velocity ) {
+void ASoftMeshComponent::SetWindVelocity( Float3 const & _Velocity ) {
     //if ( SoftBody ) {
     //    SoftBody->setWindVelocity( btVectorToFloat3( _Velocity ) );
     //}
@@ -202,23 +205,23 @@ void FSoftMeshComponent::SetWindVelocity( Float3 const & _Velocity ) {
     WindVelocity = _Velocity;
 }
 
-Float3 const & FSoftMeshComponent::GetWindVelocity() const {
+Float3 const & ASoftMeshComponent::GetWindVelocity() const {
     return WindVelocity;
 }
 
-void FSoftMeshComponent::AddForceSoftBody( Float3 const & _Force ) {
+void ASoftMeshComponent::AddForceSoftBody( Float3 const & _Force ) {
     if ( SoftBody ) {
         SoftBody->addForce( btVectorToFloat3( _Force ) );
     }
 }
 
-void FSoftMeshComponent::AddForceToVertex( Float3 const & _Force, int _VertexIndex ) {
+void ASoftMeshComponent::AddForceToVertex( Float3 const & _Force, int _VertexIndex ) {
     if ( SoftBody && _VertexIndex >= 0 && _VertexIndex < SoftBody->m_nodes.size() ) {
         SoftBody->addForce( btVectorToFloat3( _Force ), _VertexIndex );
     }
 }
 
-void FSoftMeshComponent::UpdateSoftbodyTransform() {
+void ASoftMeshComponent::UpdateSoftbodyTransform() {
 //    if ( bUpdateSoftbodyTransform ) {
 //        btTransform transform;
 //
@@ -250,7 +253,7 @@ void FSoftMeshComponent::UpdateSoftbodyTransform() {
 //    }
 }
 
-void FSoftMeshComponent::UpdateSoftbodyBoundingBox() {
+void ASoftMeshComponent::UpdateSoftbodyBoundingBox() {
     if ( SoftBody ) {
         btVector3 mins, maxs;
 
@@ -273,7 +276,7 @@ void FSoftMeshComponent::UpdateSoftbodyBoundingBox() {
     }
 }
 
-void FSoftMeshComponent::UpdateAnchorPoints() {
+void ASoftMeshComponent::UpdateAnchorPoints() {
     if ( !SoftBody ) {
         return;
     }
@@ -287,7 +290,7 @@ void FSoftMeshComponent::UpdateAnchorPoints() {
         SoftBody->m_anchors.clear();
 
         // Add new anchors
-        for ( FAnchorBinding & binding : Anchors ) {
+        for ( SAnchorBinding & binding : Anchors ) {
 
             if ( binding.VertexIndex < 0 || binding.VertexIndex >= SoftBody->m_nodes.size() ) {
                 continue;
@@ -336,21 +339,21 @@ void FSoftMeshComponent::UpdateAnchorPoints() {
     }
 }
 
-void FSoftMeshComponent::BeginPlay() {
+void ASoftMeshComponent::BeginPlay() {
 }
 
-void FSoftMeshComponent::TickComponent( float _TimeStep ) {
+void ASoftMeshComponent::TickComponent( float _TimeStep ) {
     Super::TickComponent( _TimeStep );
 
     UpdateAnchorPoints();
 
 	// TODO: This must be done in pre physics tick!!!
     if ( SoftBody ) {
-        //SoftBody->addVelocity( btVectorToFloat3( WindVelocity*_TimeStep*(FMath::Rand()*0.5f+0.5f) ) );
+        //SoftBody->addVelocity( btVectorToFloat3( WindVelocity*_TimeStep*(Math::Rand()*0.5f+0.5f) ) );
 
         btVector3 vel = btVectorToFloat3(WindVelocity*_TimeStep);
 
-        for(int i=0,ni=SoftBody->m_nodes.size();i<ni;++i) SoftBody->addVelocity(vel*(FMath::Rand()*0.5f+0.5f),i);
+        for(int i=0,ni=SoftBody->m_nodes.size();i<ni;++i) SoftBody->addVelocity(vel*(Math::Rand()*0.5f+0.5f),i);
     }
 
     // TODO: This must be done in post physics tick!!!
@@ -360,7 +363,7 @@ void FSoftMeshComponent::TickComponent( float _TimeStep ) {
     bUpdateAbsoluteTransforms = true;
 }
 
-void FSoftMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+void ASoftMeshComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
     if ( !SoftBody ) {
@@ -377,7 +380,7 @@ void FSoftMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     // Draw faces
     if ( RVDrawSoftmeshFaces ) {
         _DebugDraw->SetDepthTest( true );
-        _DebugDraw->SetColor( FColor4( 1, 0, 0, 1 ) );
+        _DebugDraw->SetColor( AColor4( 1, 0, 0, 1 ) );
         for ( int i = 0; i < SoftBody->m_faces.size(); i++ ) {
 
             btSoftBody::Face & f = SoftBody->m_faces[ i ];
@@ -392,8 +395,8 @@ void FSoftMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     }
 }
 
-void FSoftMeshComponent::AttachVertex( int _VertexIndex, FAnchorComponent * _Anchor ) {
-    FAnchorBinding * binding = nullptr;
+void ASoftMeshComponent::AttachVertex( int _VertexIndex, AAnchorComponent * _Anchor ) {
+    SAnchorBinding * binding = nullptr;
 
     for ( int i = 0; i < Anchors.Size(); i++ ) {
         if ( Anchors[ i ].VertexIndex == _VertexIndex ) {
@@ -418,7 +421,7 @@ void FSoftMeshComponent::AttachVertex( int _VertexIndex, FAnchorComponent * _Anc
     bUpdateAnchors = true;
 }
 
-void FSoftMeshComponent::DetachVertex( int _VertexIndex ) {
+void ASoftMeshComponent::DetachVertex( int _VertexIndex ) {
     for ( int i = 0; i < Anchors.Size(); i++ ) {
         if ( Anchors[ i ].VertexIndex == _VertexIndex ) {
             Anchors[ i ].Anchor->RemoveRef();
@@ -431,7 +434,7 @@ void FSoftMeshComponent::DetachVertex( int _VertexIndex ) {
     bUpdateAnchors = true;
 }
 
-void FSoftMeshComponent::DetachAllVertices() {
+void ASoftMeshComponent::DetachAllVertices() {
     for ( int i = 0; i < Anchors.Size(); i++ ) {
         Anchors[ i ].Anchor->RemoveRef();
         Anchors[ i ].Anchor->AttachCount--;
@@ -440,7 +443,7 @@ void FSoftMeshComponent::DetachAllVertices() {
     bUpdateAnchors = true;
 }
 
-FAnchorComponent * FSoftMeshComponent::GetVertexAnchor( int _VertexIndex ) const {
+AAnchorComponent * ASoftMeshComponent::GetVertexAnchor( int _VertexIndex ) const {
     for ( int i = 0; i < Anchors.Size(); i++ ) {
         if ( Anchors[ i ].VertexIndex == _VertexIndex ) {
             return Anchors[ i ].Anchor;

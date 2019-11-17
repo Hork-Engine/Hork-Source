@@ -36,17 +36,17 @@ AN_CLASS_META( WWindow )
 
 WWindow::WWindow() {
     CaptionHeight = 24;
-    TextColor = FColor4::White();
+    TextColor = AColor4::White();
     TextHorizontalAlignment = WIDGET_ALIGNMENT_CENTER;
     TextVerticalAlignment = WIDGET_ALIGNMENT_CENTER;
-    CaptionColor = FColor4(0.1f,0.4f,0.8f);
-    BorderColor = FColor4(1,1,1,0.5f);
+    CaptionColor = AColor4(0.1f,0.4f,0.8f);
+    BorderColor = AColor4(1,1,1,0.5f);
     RoundingCorners = CORNER_ROUND_TOP;
     BorderRounding = 8;
     BorderThickness = 2;
     bWindowBorder = true;
     bCaptionBorder = true;
-    BgColor = FColor4( 0 ); // transparent by default
+    BgColor = AColor4( 0 ); // transparent by default
     UpdateDragShape();
     UpdateMargin();
 }
@@ -66,12 +66,12 @@ WWindow & WWindow::SetCaptionHeight( float _CaptionHeight ) {
     return *this;
 }
 
-WWindow & WWindow::SetCaptionFont( FFont * _Font ) {
+WWindow & WWindow::SetCaptionFont( AFont * _Font ) {
     Font = _Font;
     return *this;
 }
 
-WWindow & WWindow::SetTextColor( FColor4 const & _Color ) {
+WWindow & WWindow::SetTextColor( AColor4 const & _Color ) {
     TextColor = _Color;
     return *this;
 }
@@ -96,12 +96,12 @@ WWindow & WWindow::SetTextOffset( Float2 const & _Offset ) {
     return *this;
 }
 
-WWindow & WWindow::SetCaptionColor( FColor4 const & _Color ) {
+WWindow & WWindow::SetCaptionColor( AColor4 const & _Color ) {
     CaptionColor = _Color;
     return *this;
 }
 
-WWindow & WWindow::SetBorderColor( FColor4 const & _Color ) {
+WWindow & WWindow::SetBorderColor( AColor4 const & _Color ) {
     BorderColor = _Color;
     return *this;
 }
@@ -112,7 +112,7 @@ WWindow & WWindow::SetBorderThickness( float _Thickness ) {
     return *this;
 }
 
-WWindow & WWindow::SetBackgroundColor( FColor4 const & _Color ) {
+WWindow & WWindow::SetBackgroundColor( AColor4 const & _Color ) {
     BgColor = _Color;
     return *this;
 }
@@ -155,13 +155,13 @@ void WWindow::OnTransformDirty() {
     UpdateDragShape();
 }
 
-Float2 WWindow::GetTextPositionWithAlignment( FCanvas & _Canvas ) const {
+Float2 WWindow::GetTextPositionWithAlignment( ACanvas & _Canvas ) const {
     Float2 pos;
 
     const float width = GetCurrentSize().X;
     const float height = CaptionHeight;
 
-    FFont const * font = GetFont();
+    AFont const * font = GetFont();
     Float2 size = font->CalcTextSizeA( font->GetFontSize(), width, bWordWrap ? width : 0.0f, CaptionText.Begin(), CaptionText.End() );
 
     if ( TextHorizontalAlignment == WIDGET_ALIGNMENT_LEFT ) {
@@ -191,18 +191,18 @@ Float2 WWindow::GetTextPositionWithAlignment( FCanvas & _Canvas ) const {
     return pos;
 }
 
-FFont const * WWindow::GetFont() const {
-    return Font ? Font : FCanvas::GetDefaultFont();
+AFont const * WWindow::GetFont() const {
+    return Font ? Font : ACanvas::GetDefaultFont();
 }
 
-void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
+void WWindow::OnDrawEvent( ACanvas & _Canvas ) {
     Float2 mins, maxs;
 
     GetDesktopRect( mins, maxs, false );
 
     if ( !BgColor.IsTransparent() ) {
 
-        FWidgetShape const & windowShape = GetShape();
+        AWidgetShape const & windowShape = GetShape();
 
         int bgCorners = 0;
         if ( !IsMaximized() ) {
@@ -229,7 +229,7 @@ void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
     // Draw border
     if ( bWindowBorder ) {
 
-        FWidgetShape const & windowShape = GetShape();
+        AWidgetShape const & windowShape = GetShape();
 
         if ( windowShape.IsEmpty() ) {
             _Canvas.DrawRect( mins, maxs, BorderColor, BorderRounding, !IsMaximized() ? RoundingCorners : 0, BorderThickness );
@@ -260,7 +260,7 @@ void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
         if ( focus ) {
             _Canvas.DrawRectFilled( mins, mins + captionSize, CaptionColor, BorderRounding, captionCorners );
         } else {
-            _Canvas.DrawRectFilled( mins, mins + captionSize, FColor4(0.3f,0.3f,0.3f)/*CaptionColor*/, BorderRounding, captionCorners );
+            _Canvas.DrawRectFilled( mins, mins + captionSize, AColor4(0.3f,0.3f,0.3f)/*CaptionColor*/, BorderRounding, captionCorners );
         }
 
         // Draw caption border
@@ -270,7 +270,7 @@ void WWindow::OnDrawEvent( FCanvas & _Canvas ) {
 
         // Draw caption text
         if ( !CaptionText.IsEmpty() ) {
-            FFont const * font = GetFont();
+            AFont const * font = GetFont();
             _Canvas.PushClipRect( mins, mins + captionSize, true );
             _Canvas.DrawTextUTF8( font, font->GetFontSize(), mins + GetTextPositionWithAlignment( _Canvas ), TextColor, CaptionText.Begin(), CaptionText.End(), bWordWrap ? width : 0.0f );
             _Canvas.PopClipRect();

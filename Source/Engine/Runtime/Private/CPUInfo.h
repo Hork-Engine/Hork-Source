@@ -32,4 +32,4 @@ SOFTWARE.
 
 #include <Engine/Runtime/Public/Runtime.h>
 
-void GetCPUInfo( FCPUInfo & _Info );
+void GetCPUInfo( SCPUInfo & _Info );

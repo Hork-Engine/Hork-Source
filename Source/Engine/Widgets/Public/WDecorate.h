@@ -45,8 +45,8 @@ WDecorate
 Specifies the base class for non interactive widgets (decorates)
 
 */
-class WDecorate : public FBaseObject {
-    AN_CLASS( WDecorate, FBaseObject )
+class WDecorate : public ABaseObject {
+    AN_CLASS( WDecorate, ABaseObject )
 
     friend class WWidget;
 
@@ -65,7 +65,7 @@ protected:
     WDecorate();
     ~WDecorate();
 
-    virtual void OnDrawEvent( FCanvas & _Canvas );
+    virtual void OnDrawEvent( ACanvas & _Canvas );
 
 private:
     WWidget * Owner;
@@ -76,8 +76,8 @@ class WTextDecorate : public WDecorate {
 
 public:
     WTextDecorate & SetText( const char * _Text );
-    WTextDecorate & SetFont( FFont * _Font );
-    WTextDecorate & SetColor( FColor4 const & _Color );
+    WTextDecorate & SetFont( AFont * _Font );
+    WTextDecorate & SetColor( AColor4 const & _Color );
     WTextDecorate & SetHorizontalAlignment( EWidgetAlignment _Alignment );
     WTextDecorate & SetVerticalAlignment( EWidgetAlignment _Alignment );
     WTextDecorate & SetWordWrap( bool _WordWrap );
@@ -87,14 +87,14 @@ protected:
     WTextDecorate();
     ~WTextDecorate();
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
-    FFont const * GetFont() const;
+    AFont const * GetFont() const;
 
 private:
-    TRef< FFont > Font;
-    FString Text;
-    FColor4 Color;
+    TRef< AFont > Font;
+    AString Text;
+    AColor4 Color;
     Float2 Offset;
     bool bWordWrap;
     EWidgetAlignment HorizontalAlignment;
@@ -105,9 +105,9 @@ class WBorderDecorate : public WDecorate {
     AN_CLASS( WBorderDecorate, WDecorate )
 
 public:
-    WBorderDecorate & SetColor( FColor4 const & _Color );
+    WBorderDecorate & SetColor( AColor4 const & _Color );
     WBorderDecorate & SetFillBackground( bool _FillBackgrond );
-    WBorderDecorate & SetBackgroundColor( FColor4 const & _Color );
+    WBorderDecorate & SetBackgroundColor( AColor4 const & _Color );
     WBorderDecorate & SetThickness( float _Thickness );
     WBorderDecorate & SetRounding( float _Rounding );
     WBorderDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
@@ -116,11 +116,11 @@ protected:
     WBorderDecorate();
     ~WBorderDecorate();
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    FColor4 Color;
-    FColor4 BgColor;
+    AColor4 Color;
+    AColor4 BgColor;
     EDrawCornerFlags RoundingCorners;
     float Rounding;
     float Thickness;
@@ -131,10 +131,10 @@ class WImageDecorate : public WDecorate {
     AN_CLASS( WImageDecorate, WDecorate )
 
 public:
-    WImageDecorate & SetColor( FColor4 const & _Color );
+    WImageDecorate & SetColor( AColor4 const & _Color );
     WImageDecorate & SetRounding( float _Rounding );
     WImageDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
-    WImageDecorate & SetTexture( FTexture2D * _Texture );
+    WImageDecorate & SetTexture( ATexture * _Texture );
     WImageDecorate & SetColorBlending( EColorBlending _Blending );
     WImageDecorate & SetSamplerType( EHUDSamplerType _SamplerType );
     WImageDecorate & SetOffset( Float2 const & _Offset );
@@ -148,13 +148,13 @@ protected:
     WImageDecorate();
     ~WImageDecorate();
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    FColor4 Color;
+    AColor4 Color;
     float Rounding;
     EDrawCornerFlags RoundingCorners;
-    TRef< FTexture2D > Texture;
+    TRef< ATexture > Texture;
     EColorBlending ColorBlending;
     EHUDSamplerType SamplerType;
     Float2 Offset;
@@ -171,10 +171,10 @@ class WViewportDecorate : public WDecorate {
     AN_CLASS( WViewportDecorate, WDecorate )
 
 public:
-    WViewportDecorate & SetColor( FColor4 const & _Color );
+    WViewportDecorate & SetColor( AColor4 const & _Color );
     WViewportDecorate & SetRounding( float _Rounding );
     WViewportDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
-    WViewportDecorate & SetPlayerController( FPlayerController * _PlayerController );
+    WViewportDecorate & SetPlayerController( APlayerController * _PlayerController );
     WViewportDecorate & SetColorBlending( EColorBlending _Blending );
     WViewportDecorate & SetOffset( Float2 const & _Offset );
     WViewportDecorate & SetSize( Float2 const & _Size );
@@ -185,13 +185,13 @@ protected:
     WViewportDecorate();
     ~WViewportDecorate();
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    FColor4 Color;
+    AColor4 Color;
     float Rounding;
     EDrawCornerFlags RoundingCorners;
-    TRef< FPlayerController > PlayerController;
+    TRef< APlayerController > PlayerController;
     EColorBlending ColorBlending;
     Float2 Offset;
     Float2 Size;

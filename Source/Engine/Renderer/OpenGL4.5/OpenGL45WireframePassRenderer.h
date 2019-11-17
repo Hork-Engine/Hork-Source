@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class FWireframePassRenderer : public FPassRenderer {
+class AWireframePassRenderer : public APassRenderer {
 public:    
     void Initialize();
     void Deinitialize();
@@ -44,12 +44,12 @@ public:
     GHI::RenderPass * GetRenderPass() { return &WireframePass; }
 
 private:
-    bool BindMaterial( FRenderInstance const * instance );
-    void BindTexturesWireframePass( FMaterialFrameData * _Instance );
+    bool BindMaterial( SRenderInstance const * instance );
+    void BindTexturesWireframePass( SMaterialFrameData * _Instance );
 
     GHI::RenderPass WireframePass;
 };
 
-extern FWireframePassRenderer GWireframePassRenderer;
+extern AWireframePassRenderer GWireframePassRenderer;
 
 }

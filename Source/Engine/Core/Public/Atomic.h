@@ -39,14 +39,14 @@ SOFTWARE.
 #include <atomic>
 #endif
 
-class ANGIE_API FAtomicBool {
-    AN_FORBID_COPY( FAtomicBool )
+class ANGIE_API AAtomicBool {
+    AN_FORBID_COPY( AAtomicBool )
 
 public:
     typedef bool AtomicType;
 
-    FAtomicBool() {}
-    explicit FAtomicBool( const AtomicType & _i ) : i( _i ) {}
+    AAtomicBool() {}
+    explicit AAtomicBool( const AtomicType & _i ) : i( _i ) {}
 
     // Load relaxed
     AtomicType LoadRelaxed() const;
@@ -72,14 +72,14 @@ private:
 #endif
 };
 
-class ANGIE_API FAtomicShort {
-    AN_FORBID_COPY( FAtomicShort )
+class ANGIE_API AAtomicShort {
+    AN_FORBID_COPY( AAtomicShort )
 
 public:
     typedef int16_t AtomicType;
 
-    FAtomicShort() {}
-    explicit FAtomicShort( const AtomicType & _i ) : i(_i) {}
+    AAtomicShort() {}
+    explicit AAtomicShort( const AtomicType & _i ) : i(_i) {}
 
     // Load relaxed
     AtomicType LoadRelaxed() const;
@@ -136,14 +136,14 @@ private:
 #endif
 };
 
-class ANGIE_API FAtomicInt {
-    AN_FORBID_COPY( FAtomicInt )
+class ANGIE_API AAtomicInt {
+    AN_FORBID_COPY( AAtomicInt )
 
 public:
     typedef int32_t AtomicType;
 
-    FAtomicInt() {}
-    explicit FAtomicInt( const AtomicType & _i ) : i(_i) {}
+    AAtomicInt() {}
+    explicit AAtomicInt( const AtomicType & _i ) : i(_i) {}
 
     // Load relaxed
     AtomicType LoadRelaxed() const;
@@ -211,14 +211,14 @@ private:
 #endif
 };
 
-class ANGIE_API FAtomicLong {
-    AN_FORBID_COPY( FAtomicLong )
+class ANGIE_API AAtomicLong {
+    AN_FORBID_COPY( AAtomicLong )
 
 public:
     typedef int64_t AtomicType;
 
-    FAtomicLong() {}
-    explicit FAtomicLong( const AtomicType & _i ) : i(_i) {}
+    AAtomicLong() {}
+    explicit AAtomicLong( const AtomicType & _i ) : i(_i) {}
 
     // Load relaxed
     AtomicType LoadRelaxed() const;
@@ -287,7 +287,7 @@ private:
 };
 
 template< typename Type >
-class FAtomicPtr {
+class TAtomicPtr {
 public:
     typedef Type * AtomicType;
 
@@ -340,7 +340,7 @@ private:
 };
 
 template< typename Type >
-AN_FORCEINLINE typename FAtomicPtr< Type >::AtomicType FAtomicPtr< Type >::LoadRelaxed() const {
+AN_FORCEINLINE typename TAtomicPtr< Type >::AtomicType TAtomicPtr< Type >::LoadRelaxed() const {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return i;
 #else
@@ -349,7 +349,7 @@ AN_FORCEINLINE typename FAtomicPtr< Type >::AtomicType FAtomicPtr< Type >::LoadR
 }
 
 template< typename Type >
-AN_FORCEINLINE void FAtomicPtr< Type >::StoreRelaxed( AtomicType _i ) {
+AN_FORCEINLINE void TAtomicPtr< Type >::StoreRelaxed( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     i = _i;
 #else
@@ -365,7 +365,7 @@ ANGIE_API void * AtomicCompareExchangePointer( void *& _Ptr, void * _Desired, vo
 #endif
 
 template< typename Type >
-AN_FORCEINLINE typename FAtomicPtr< Type >::AtomicType FAtomicPtr< Type >::Load() const {
+AN_FORCEINLINE typename TAtomicPtr< Type >::AtomicType TAtomicPtr< Type >::Load() const {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return AtomicLoadAcquirePointer( i );
 #else
@@ -374,7 +374,7 @@ AN_FORCEINLINE typename FAtomicPtr< Type >::AtomicType FAtomicPtr< Type >::Load(
 }
 
 template< typename Type >
-AN_FORCEINLINE void FAtomicPtr< Type >::Store( AtomicType _i ) {
+AN_FORCEINLINE void TAtomicPtr< Type >::Store( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     AtomicStoreReleasePointer( i, _i );
 #else
@@ -383,7 +383,7 @@ AN_FORCEINLINE void FAtomicPtr< Type >::Store( AtomicType _i ) {
 }
 
 template< typename Type >
-AN_FORCEINLINE typename FAtomicPtr< Type >::AtomicType FAtomicPtr< Type >::Exchange( AtomicType _Exchange ) {
+AN_FORCEINLINE typename TAtomicPtr< Type >::AtomicType TAtomicPtr< Type >::Exchange( AtomicType _Exchange ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return AtomicExchangePointer( i, _Exchange );
 #else
@@ -392,7 +392,7 @@ AN_FORCEINLINE typename FAtomicPtr< Type >::AtomicType FAtomicPtr< Type >::Excha
 }
 
 template< typename Type >
-AN_FORCEINLINE bool FAtomicPtr< Type >::CompareExchange( AtomicType _Expected, AtomicType _Desired ) {
+AN_FORCEINLINE bool TAtomicPtr< Type >::CompareExchange( AtomicType _Expected, AtomicType _Desired ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return AtomicCompareExchangePointer( i, _Desired, _Expected ) == _Expected; // FIXME
 #else

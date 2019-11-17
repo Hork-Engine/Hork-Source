@@ -33,13 +33,13 @@ SOFTWARE.
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Core/Public/Guid.h>
 
-class FWorld;
-class FLevel;
-class FActor;
-class FDebugDraw;
+class AWorld;
+class ALevel;
+class AActor;
+class ADebugDraw;
 
 #define AN_COMPONENT( _Class, _SuperClass ) \
-    AN_FACTORY_CLASS( FActorComponent::Factory(), _Class, _SuperClass ) \
+    AN_FACTORY_CLASS( AActorComponent::Factory(), _Class, _SuperClass ) \
 protected: \
     ~_Class() {} \
 private:
@@ -47,40 +47,35 @@ private:
 
 /**
 
-FActorComponent
+AActorComponent
 
 Base class for all actor components
 
 */
-class ANGIE_API FActorComponent : public FBaseObject {
-    AN_COMPONENT( FActorComponent, FBaseObject )
+class ANGIE_API AActorComponent : public ABaseObject {
+    AN_COMPONENT( AActorComponent, ABaseObject )
 
-    friend class FActor;
-    friend class FWorld;
+    friend class AActor;
+    friend class AWorld;
 
 public:
-    bool bCanEverTick;
-
     /** Actor Component factory */
-    static FObjectFactory & Factory() { static FObjectFactory ObjectFactory( "Actor Component factory" ); return ObjectFactory; }
+    static AObjectFactory & Factory() { static AObjectFactory ObjectFactory( "Actor Component factory" ); return ObjectFactory; }
 
     /** Get component GUID */
-    FGUID const & GetGUID() const { return GUID; }
-
-    /** Set component unique name */
-    void SetName( FString const & _Name ) override;
+    //AGUID const & GetGUID() const { return GUID; }
 
     /** Component parent actor */
-    FActor * GetParentActor() const { return ParentActor; }
+    AActor * GetParentActor() const { return ParentActor; }
 
     /** Component parent level */
-    FLevel * GetLevel() const;
+    ALevel * GetLevel() const;
 
     /** Get world */
-    FWorld * GetWorld() const;
+    AWorld * GetWorld() const;
 
     /** Serialize component to document data */
-    int Serialize( FDocument & _Doc ) override;
+    int Serialize( ADocument & _Doc ) override;
 
     /** Destroy this component */
     void Destroy();
@@ -91,12 +86,17 @@ public:
     /** Is component marked as pending kill */
     bool IsPendingKill() const { return bPendingKill; }
 
+    /** Is component was created during actor construction */
+    bool IsDefault() const { return bCreatedDuringConstruction; }
+
     /** Register component to initialize it at runtime */
     void RegisterComponent();
 
 protected:
 
-    FActorComponent();
+    bool bCanEverTick;
+
+    AActorComponent();
 
     /** Called from Actor's InitializeComponents() */
     virtual void InitializeComponent() {}
@@ -111,20 +111,21 @@ protected:
 
     virtual void TickComponent( float _TimeStep ) {}
 
-    virtual void DrawDebug( FDebugDraw * _DebugDraw ) {}
+    virtual void DrawDebug( ADebugDraw * _DebugDraw ) {}
 
 private:
 
-    void Clone( FActorComponent const * _TemplateComponent );
+    void Clone( AActorComponent const * _TemplateComponent );
 
-    FGUID GUID;
+    //AGUID GUID;
 
-    FActor * ParentActor;
+    AActor * ParentActor;
 
-    bool bInitialized;
-    bool bPendingKill;
-    bool bCreatedDuringConstruction;
-    FActorComponent * NextPendingKillComponent;
+    AActorComponent * NextPendingKillComponent;
 
     int ComponentIndex = -1;
+
+    bool bInitialized : 1;
+    bool bPendingKill : 1;
+    bool bCreatedDuringConstruction : 1;
 };

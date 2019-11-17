@@ -32,17 +32,17 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
-class FThread final {
-    AN_FORBID_COPY( FThread )
+class AThread final {
+    AN_FORBID_COPY( AThread )
 
 public:
     static const int NumHardwareThreads;
 
-    FThread() {
+    AThread() {
 
     }
 
-    ~FThread() {
+    ~AThread() {
         Join();
     }
 
@@ -68,19 +68,19 @@ private:
 
 /*
 
-FThreadSync
+AThreadSync
 
 Thread mutex.
 
 */
-class FThreadSync final {
-    AN_FORBID_COPY( FThreadSync )
+class AThreadSync final {
+    AN_FORBID_COPY( AThreadSync )
 
-    friend class FSyncEvent;
+    friend class ASyncEvent;
 public:
 
-    FThreadSync();
-    ~FThreadSync();
+    AThreadSync();
+    ~AThreadSync();
 
     void BeginScope();
 
@@ -98,50 +98,50 @@ private:
 
 /*
 
-FSyncGuard
+ASyncGuard
 
-A FSyncGuard controls mutex ownership within a scope, releasing
+A ASyncGuard controls mutex ownership within a scope, releasing
 ownership in the destructor.
 
 */
-class FSyncGuard final {
-    AN_FORBID_COPY( FSyncGuard )
+class ASyncGuard final {
+    AN_FORBID_COPY( ASyncGuard )
 public:
-    explicit FSyncGuard( FThreadSync & _Sync );
-    ~FSyncGuard();
+    explicit ASyncGuard( AThreadSync & _Sync );
+    ~ASyncGuard();
 private:
-    FThreadSync & Sync;
+    AThreadSync & Sync;
 };
 
-AN_FORCEINLINE FSyncGuard::FSyncGuard( FThreadSync & _Sync )
+AN_FORCEINLINE ASyncGuard::ASyncGuard( AThreadSync & _Sync )
   : Sync( _Sync )
 {
     Sync.BeginScope();
 }
 
-AN_FORCEINLINE FSyncGuard::~FSyncGuard() {
+AN_FORCEINLINE ASyncGuard::~ASyncGuard() {
     Sync.EndScope();
 }
 
 /*
 
-FSyncGuardCond
+ASyncGuardCond
 
-A FSyncGuard controls mutex ownership within a scope, releasing
+A ASyncGuard controls mutex ownership within a scope, releasing
 ownership in the destructor. Checks condition.
 
 */
-class FSyncGuardCond final {
-    AN_FORBID_COPY( FSyncGuardCond )
+class ASyncGuardCond final {
+    AN_FORBID_COPY( ASyncGuardCond )
 public:
-    explicit FSyncGuardCond( FThreadSync & _Sync, const bool _Cond = true );
-    ~FSyncGuardCond();
+    explicit ASyncGuardCond( AThreadSync & _Sync, const bool _Cond = true );
+    ~ASyncGuardCond();
 private:
-    FThreadSync & Sync;
+    AThreadSync & Sync;
     const bool Cond;
 };
 
-AN_FORCEINLINE FSyncGuardCond::FSyncGuardCond( FThreadSync & _Sync, const bool _Cond )
+AN_FORCEINLINE ASyncGuardCond::ASyncGuardCond( AThreadSync & _Sync, const bool _Cond )
   : Sync( _Sync )
   , Cond( _Cond )
 {
@@ -150,7 +150,7 @@ AN_FORCEINLINE FSyncGuardCond::FSyncGuardCond( FThreadSync & _Sync, const bool _
     }
 }
 
-AN_FORCEINLINE FSyncGuardCond::~FSyncGuardCond() {
+AN_FORCEINLINE ASyncGuardCond::~ASyncGuardCond() {
     if ( Cond ) {
         Sync.EndScope();
     }
@@ -158,17 +158,17 @@ AN_FORCEINLINE FSyncGuardCond::~FSyncGuardCond() {
 
 /*
 
-FSyncEvent
+ASyncEvent
 
 Thread event.
 
 */
-class FSyncEvent final {
-    AN_FORBID_COPY( FSyncEvent )
+class ASyncEvent final {
+    AN_FORBID_COPY( ASyncEvent )
 public:
 
-    FSyncEvent();
-    ~FSyncEvent();
+    ASyncEvent();
+    ~ASyncEvent();
 
     // Waits until the event is in the signaled state.
     void Wait();
@@ -187,13 +187,13 @@ private:
     void SingalWIN32();
     void * Internal;
 #else
-    FThreadSync Sync;
+    AThreadSync Sync;
     pthread_cond_t Internal = PTHREAD_COND_INITIALIZER;
     bool bSignaled;
 #endif
 };
 
-AN_FORCEINLINE FSyncEvent::FSyncEvent() {
+AN_FORCEINLINE ASyncEvent::ASyncEvent() {
 #ifdef AN_OS_WIN32
     CreateEventWIN32();
 #else
@@ -201,17 +201,17 @@ AN_FORCEINLINE FSyncEvent::FSyncEvent() {
 #endif
 }
 
-AN_FORCEINLINE FSyncEvent::~FSyncEvent() {
+AN_FORCEINLINE ASyncEvent::~ASyncEvent() {
 #ifdef AN_OS_WIN32
     DestroyEventWIN32();
 #endif
 }
 
-AN_FORCEINLINE void FSyncEvent::Wait() {
+AN_FORCEINLINE void ASyncEvent::Wait() {
 #ifdef AN_OS_WIN32
     WaitWIN32();
 #else
-    FSyncGuard syncGuard( Sync );
+    ASyncGuard syncGuard( Sync );
     while ( !bSignaled ) {
         pthread_cond_wait( &Internal, &Sync.Internal );
     }
@@ -219,12 +219,12 @@ AN_FORCEINLINE void FSyncEvent::Wait() {
 #endif
 }
 
-AN_FORCEINLINE void FSyncEvent::Signal() {
+AN_FORCEINLINE void ASyncEvent::Signal() {
 #ifdef AN_OS_WIN32
     SingalWIN32();
 #else
     {
-        FSyncGuard syncGuard( Sync );
+        ASyncGuard syncGuard( Sync );
         bSignaled = true;
     }
     pthread_cond_signal( &Internal );

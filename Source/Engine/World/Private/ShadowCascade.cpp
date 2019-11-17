@@ -2,7 +2,7 @@
 
 #include <Engine/Runtime/Public/RuntimeVariable.h>
 
-FRuntimeVariable RVShadowCascadeBits( _CTS( "ShadowCascadeBits" ), _CTS( "24" ) );    // Allowed 16, 24 or 32 bits
+ARuntimeVariable RVShadowCascadeBits( _CTS( "ShadowCascadeBits" ), _CTS( "24" ) );    // Allowed 16, 24 or 32 bits
 
 constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -17,19 +17,19 @@ static constexpr Float4x4 ShadowMapBias = Float4x4(
 //
 // Temporary variables
 //
-struct FCascadeSplit { // TODO: move inside LightComponent.h
+struct SCascadeSplit { // TODO: move inside LightComponent.h
     float Distance;     // Distance from view
 };
-static FCascadeSplit CascadeSplits[ MAX_CASCADE_SPLITS ];   // TODO: move inside FDirectionalLightComponent?
+static SCascadeSplit CascadeSplits[ MAX_CASCADE_SPLITS ];   // TODO: move inside ADirectionalLightComponent?
 static Float4 LightSpaceVerts[ MAX_CASCADE_SPLITS ][ 4 ];    // Split corners in light space
 static Float3 CascadeBounds[ MAX_SHADOW_CASCADES ][ 2 ];     // Cascade bounding boxes
 static float PerspHalfWidth;
 static float PerspHalfHeight;
 static Float3 RV, UV;           // scaled right and up vectors in world space
 
-static void CalcCascades( FRenderView * View, FDirectionalLightDef & _LightDef, FCascadeSplit * _CascadeSplits );
+static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, SCascadeSplit * _CascadeSplits );
 
-void CreateDirectionalLightCascades( FRenderFrame * Frame, FRenderView * View ) {
+void CreateDirectionalLightCascades( SRenderFrame * Frame, SRenderView * View ) {
     View->NumShadowMapCascades = 0;
     View->NumCascadedShadowMaps = 0;
 
@@ -44,12 +44,12 @@ void CreateDirectionalLightCascades( FRenderFrame * Frame, FRenderView * View ) 
         float orthoWidth = View->ViewOrthoMaxs.X - View->ViewOrthoMins.X;
         float orthoHeight = View->ViewOrthoMaxs.Y - View->ViewOrthoMins.Y;
 
-        RV = View->ViewRightVec * FMath::Abs( orthoWidth * 0.5f );
-        UV = View->ViewUpVec * FMath::Abs( orthoHeight * 0.5f );
+        RV = View->ViewRightVec * Math::Abs( orthoWidth * 0.5f );
+        UV = View->ViewUpVec * Math::Abs( orthoHeight * 0.5f );
     }
 
     for ( int i = 0 ; i < View->NumDirectionalLights ; i++ ) {
-        FDirectionalLightDef & lightDef = *Frame->DirectionalLights[ View->FirstDirectionalLight + i ];
+        SDirectionalLightDef & lightDef = *Frame->DirectionalLights[ View->FirstDirectionalLight + i ];
 
         if ( !lightDef.bCastShadow ) {
             continue;
@@ -89,10 +89,10 @@ void CreateDirectionalLightCascades( FRenderFrame * Frame, FRenderView * View ) 
         }
     }
 
-    Frame->ShadowCascadePoolSize = FMath::Max( Frame->ShadowCascadePoolSize, View->NumShadowMapCascades );
+    Frame->ShadowCascadePoolSize = Math::Max( Frame->ShadowCascadePoolSize, View->NumShadowMapCascades );
 }
 
-static void CalcCascades( FRenderView * View, FDirectionalLightDef & _LightDef, FCascadeSplit * _CascadeSplits ) {
+static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, SCascadeSplit * _CascadeSplits ) {
     int NumSplits = _LightDef.MaxShadowCascades + 1;
     int NumVisibleSplits;
     int NumVisibleCascades;
@@ -116,7 +116,7 @@ static void CalcCascades( FRenderView * View, FDirectionalLightDef & _LightDef, 
 
     // FIXME: Возможно лучше для каждого каскада позиционировать источник освещения индивидуально?
 
-    const float MaxVisibleDistance = FMath::Max( View->MaxVisibleDistance, _CascadeSplits[0].Distance );
+    const float MaxVisibleDistance = Math::Max( View->MaxVisibleDistance, _CascadeSplits[0].Distance );
 
     for ( NumVisibleSplits = 0 ;
           NumVisibleSplits < NumSplits && ( _CascadeSplits[ NumVisibleSplits - 1 ].Distance <= MaxVisibleDistance ) ;
@@ -161,73 +161,73 @@ static void CalcCascades( FRenderView * View, FDirectionalLightDef & _LightDef, 
 
         ++pVerts;
 
-        Mins.X = FMath::Min( Mins.X, pVerts->X );
-        Mins.Y = FMath::Min( Mins.Y, pVerts->Y );
-        Mins.Z = FMath::Min( Mins.Z, pVerts->Z );
+        Mins.X = Math::Min( Mins.X, pVerts->X );
+        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
 
-        Maxs.X = FMath::Max( Maxs.X, pVerts->X );
-        Maxs.Y = FMath::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = FMath::Max( Maxs.Z, pVerts->Z );
-
-        ++pVerts;
-
-        Mins.X = FMath::Min( Mins.X, pVerts->X );
-        Mins.Y = FMath::Min( Mins.Y, pVerts->Y );
-        Mins.Z = FMath::Min( Mins.Z, pVerts->Z );
-
-        Maxs.X = FMath::Max( Maxs.X, pVerts->X );
-        Maxs.Y = FMath::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = FMath::Max( Maxs.Z, pVerts->Z );
+        Maxs.X = Math::Max( Maxs.X, pVerts->X );
+        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
 
         ++pVerts;
 
-        Mins.X = FMath::Min( Mins.X, pVerts->X );
-        Mins.Y = FMath::Min( Mins.Y, pVerts->Y );
-        Mins.Z = FMath::Min( Mins.Z, pVerts->Z );
+        Mins.X = Math::Min( Mins.X, pVerts->X );
+        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
 
-        Maxs.X = FMath::Max( Maxs.X, pVerts->X );
-        Maxs.Y = FMath::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = FMath::Max( Maxs.Z, pVerts->Z );
-
-        ++pVerts;
-
-        Mins.X = FMath::Min( Mins.X, pVerts->X );
-        Mins.Y = FMath::Min( Mins.Y, pVerts->Y );
-        Mins.Z = FMath::Min( Mins.Z, pVerts->Z );
-
-        Maxs.X = FMath::Max( Maxs.X, pVerts->X );
-        Maxs.Y = FMath::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = FMath::Max( Maxs.Z, pVerts->Z );
+        Maxs.X = Math::Max( Maxs.X, pVerts->X );
+        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
 
         ++pVerts;
 
-        Mins.X = FMath::Min( Mins.X, pVerts->X );
-        Mins.Y = FMath::Min( Mins.Y, pVerts->Y );
-        Mins.Z = FMath::Min( Mins.Z, pVerts->Z );
+        Mins.X = Math::Min( Mins.X, pVerts->X );
+        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
 
-        Maxs.X = FMath::Max( Maxs.X, pVerts->X );
-        Maxs.Y = FMath::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = FMath::Max( Maxs.Z, pVerts->Z );
-
-        ++pVerts;
-
-        Mins.X = FMath::Min( Mins.X, pVerts->X );
-        Mins.Y = FMath::Min( Mins.Y, pVerts->Y );
-        Mins.Z = FMath::Min( Mins.Z, pVerts->Z );
-
-        Maxs.X = FMath::Max( Maxs.X, pVerts->X );
-        Maxs.Y = FMath::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = FMath::Max( Maxs.Z, pVerts->Z );
+        Maxs.X = Math::Max( Maxs.X, pVerts->X );
+        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
 
         ++pVerts;
 
-        Mins.X = FMath::Min( Mins.X, pVerts->X );
-        Mins.Y = FMath::Min( Mins.Y, pVerts->Y );
-        Mins.Z = FMath::Min( Mins.Z, pVerts->Z );
+        Mins.X = Math::Min( Mins.X, pVerts->X );
+        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
 
-        Maxs.X = FMath::Max( Maxs.X, pVerts->X );
-        Maxs.Y = FMath::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = FMath::Max( Maxs.Z, pVerts->Z );
+        Maxs.X = Math::Max( Maxs.X, pVerts->X );
+        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+
+        ++pVerts;
+
+        Mins.X = Math::Min( Mins.X, pVerts->X );
+        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+
+        Maxs.X = Math::Max( Maxs.X, pVerts->X );
+        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+
+        ++pVerts;
+
+        Mins.X = Math::Min( Mins.X, pVerts->X );
+        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+
+        Maxs.X = Math::Max( Maxs.X, pVerts->X );
+        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+
+        ++pVerts;
+
+        Mins.X = Math::Min( Mins.X, pVerts->X );
+        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+
+        Maxs.X = Math::Max( Maxs.X, pVerts->X );
+        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
 
         Mins -= Extrusion;
         Maxs += Extrusion;
@@ -240,7 +240,7 @@ static void CalcCascades( FRenderView * View, FDirectionalLightDef & _LightDef, 
         Maxs.Y = ceilf( Maxs.Y * 0.5f ) * 2.0f;
         Maxs.Z = ceilf( Maxs.Z * 0.5f ) * 2.0f;
 
-        //CascadeProjectionMatrix = FMath::OrthoCC( Mins, Maxs );
+        //CascadeProjectionMatrix = Math::OrthoCC( Mins, Maxs );
 
         if ( CascadeIndex == NumVisibleCascades - 1 ) {
             // Last cascade have extended far plane

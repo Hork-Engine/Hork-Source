@@ -33,39 +33,36 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include <Engine/Resource/Public/Skeleton.h>
 
-class FAnimationController;
+class AAnimationController;
 
 /**
 
-FSkinnedComponent
+ASkinnedComponent
 
 Mesh component with skinning
 
 */
-class FSkinnedComponent : public FMeshComponent {
-    AN_COMPONENT( FSkinnedComponent, FMeshComponent )
+class ASkinnedComponent : public AMeshComponent {
+    AN_COMPONENT( ASkinnedComponent, AMeshComponent )
 
-    friend class FWorld;
-    friend class FAnimationController;
+    friend class AWorld;
+    friend class AAnimationController;
 
 public:
-    /** Set skeleton for the component */
-    void SetSkeleton( FSkeleton * _Skeleton );
-
-    /** Get skeleton */
-    FSkeleton * GetSkeleton() { return Skeleton; }
+    /** Get skeleton. Never return null */
+    ASkeleton * GetSkeleton() { return Skeleton; }
 
     /** Add animation controller */
-    void AddAnimationController( FAnimationController * _Controller );
+    void AddAnimationController( AAnimationController * _Controller );
 
     /** Remove animation controller */
-    void RemoveAnimationController( FAnimationController * _Controller );
+    void RemoveAnimationController( AAnimationController * _Controller );
 
     /** Remove all animation controllers */
     void RemoveAnimationControllers();
 
     /** Get animation controllers */
-    TPodArray< FAnimationController * > const & GetAnimationControllers() const { return AnimControllers; }
+    TPodArray< AAnimationController * > const & GetAnimationControllers() const { return AnimControllers; }
 
     /** Set position on all animation tracks */
     void SetTimeBroadcast( float _Time );
@@ -80,21 +77,21 @@ public:
     Float3x4 const & GetJointTransform( int _JointIndex );
 
     /** Iterate meshes in parent world */
-    FSkinnedComponent * GetNextSkinnedMesh() { return Next; }
-    FSkinnedComponent * GetPrevSkinnedMesh() { return Prev; }
+    ASkinnedComponent * GetNextSkinnedMesh() { return Next; }
+    ASkinnedComponent * GetPrevSkinnedMesh() { return Prev; }
 
     void UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize );
 
 protected:
-    FSkinnedComponent();
+    ASkinnedComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    //void OnMeshChanged() override;
+    void OnMeshChanged() override;
     void OnLazyBoundsUpdate() override;
 
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
 private:
     void UpdateControllersIfDirty();
@@ -107,15 +104,15 @@ private:
 
     void MergeJointAnimations();
 
-    TRef< FSkeleton > Skeleton;
+    TRef< ASkeleton > Skeleton;
 
-    TPodArray< FAnimationController * > AnimControllers;
+    TPodArray< AAnimationController * > AnimControllers;
 
     TPodArray< Float3x4 > AbsoluteTransforms;
     TPodArray< Float3x4 > RelativeTransforms;
 
-    FSkinnedComponent * Next;
-    FSkinnedComponent * Prev;
+    ASkinnedComponent * Next;
+    ASkinnedComponent * Prev;
 
     bool bUpdateBounds;
     bool bUpdateControllers;

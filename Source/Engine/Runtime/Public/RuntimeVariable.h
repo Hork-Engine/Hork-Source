@@ -45,27 +45,27 @@ enum ERuntimeVariableFlags {
     VAR_MODIFIED    = AN_BIT(6)
 };
 
-class FRuntimeVariable final {
-    AN_FORBID_COPY( FRuntimeVariable )
+class ARuntimeVariable final {
+    AN_FORBID_COPY( ARuntimeVariable )
 
 public:
     template< char... NameChars >
-    FRuntimeVariable( TCompileTimeString<NameChars...> const & _Name )
-      : FRuntimeVariable( _Name.ToConstChar(), "0", 0, "" ) {}
+    ARuntimeVariable( TCompileTimeString<NameChars...> const & _Name )
+      : ARuntimeVariable( _Name.CStr(), "0", 0, "" ) {}
 
     template< char... NameChars, char... ValueChars >
-    FRuntimeVariable( TCompileTimeString<NameChars...> const & _Name, TCompileTimeString<ValueChars...> const & _Value )
-      : FRuntimeVariable( _Name.ToConstChar(), _Value.ToConstChar(), 0, "" ) {}
+    ARuntimeVariable( TCompileTimeString<NameChars...> const & _Name, TCompileTimeString<ValueChars...> const & _Value )
+      : ARuntimeVariable( _Name.CStr(), _Value.CStr(), 0, "" ) {}
 
     template< char... NameChars, char... ValueChars >
-    FRuntimeVariable( TCompileTimeString<NameChars...> const & _Name, TCompileTimeString<ValueChars...> const & _Value, uint16_t _Flags )
-      : FRuntimeVariable( _Name.ToConstChar(), _Value.ToConstChar(), _Flags, "" ) {}
+    ARuntimeVariable( TCompileTimeString<NameChars...> const & _Name, TCompileTimeString<ValueChars...> const & _Value, uint16_t _Flags )
+      : ARuntimeVariable( _Name.CStr(), _Value.CStr(), _Flags, "" ) {}
 
     template< char... NameChars, char... ValueChars, char... CommentChars >
-    FRuntimeVariable( TCompileTimeString<NameChars...> const & _Name, TCompileTimeString<ValueChars...> const & _Value, uint16_t _Flags, TCompileTimeString<CommentChars...> const & _Comment )
-      : FRuntimeVariable( _Name.ToConstChar(), _Value.ToConstChar(), _Flags, _Comment.ToConstChar() ) {}
+    ARuntimeVariable( TCompileTimeString<NameChars...> const & _Name, TCompileTimeString<ValueChars...> const & _Value, uint16_t _Flags, TCompileTimeString<CommentChars...> const & _Comment )
+      : ARuntimeVariable( _Name.CStr(), _Value.CStr(), _Flags, _Comment.CStr() ) {}
 
-    ~FRuntimeVariable();
+    ~ARuntimeVariable();
 
     char const * GetName() const { return Name; }
 
@@ -75,9 +75,9 @@ public:
 
     const char * GetDefaultValue() const { return DefaultValue; }
 
-    FString const & GetValue() const { return Value; }
+    AString const & GetValue() const { return Value; }
 
-    FString const & GetLatchedValue() const { return LatchedValue; }
+    AString const & GetLatchedValue() const { return LatchedValue; }
 
     bool GetBool() const { return !!I32; }
 
@@ -103,7 +103,7 @@ public:
 
     void SetString( const char * _String );
 
-    void SetString( FString const & _String );
+    void SetString( AString const & _String );
 
     void SetBool( bool _Bool );
 
@@ -113,7 +113,7 @@ public:
 
     void ForceString( const char * _String );
 
-    void ForceString( FString const & _String );
+    void ForceString( AString const & _String );
 
     void ForceBool( bool _Bool );
 
@@ -125,25 +125,25 @@ public:
 
     void Print();
 
-    FRuntimeVariable const & operator=( const char * _String ) { SetString( _String ); return *this; }
-    FRuntimeVariable const & operator=( FString const & _String ) { SetString( _String ); return *this; }
-    FRuntimeVariable const & operator=( bool _Bool ) { SetBool( _Bool ); return *this; }
-    FRuntimeVariable const & operator=( int32_t _Integer ) { SetInteger( _Integer ); return *this; }
-    FRuntimeVariable const & operator=( float _Float ) { SetFloat( _Float ); return *this; }
+    ARuntimeVariable const & operator=( const char * _String ) { SetString( _String ); return *this; }
+    ARuntimeVariable const & operator=( AString const & _String ) { SetString( _String ); return *this; }
+    ARuntimeVariable const & operator=( bool _Bool ) { SetBool( _Bool ); return *this; }
+    ARuntimeVariable const & operator=( int32_t _Integer ) { SetInteger( _Integer ); return *this; }
+    ARuntimeVariable const & operator=( float _Float ) { SetFloat( _Float ); return *this; }
     operator bool() const { return GetBool(); }
 
-    FRuntimeVariable * GetNext() { return Next; }
+    ARuntimeVariable * GetNext() { return Next; }
 
-    static FRuntimeVariable * GlobalVariableList();
+    static ARuntimeVariable * GlobalVariableList();
 
-    static FRuntimeVariable * FindVariable( const char * _Name );
+    static ARuntimeVariable * FindVariable( const char * _Name );
 
     // Internal
     static void AllocateVariables();
     static void FreeVariables();
 
 private:
-    FRuntimeVariable( const char * _Name,
+    ARuntimeVariable( const char * _Name,
                       const char * _Value,
                       uint16_t _Flags,
                       const char * _Comment );
@@ -151,10 +151,10 @@ private:
     char const * const Name;
     char const * const DefaultValue;
     char const * const Comment;
-    FString Value;
-    FString LatchedValue;
+    AString Value;
+    AString LatchedValue;
     int32_t I32;
     float F32;
     uint16_t Flags;
-    FRuntimeVariable * Next;
+    ARuntimeVariable * Next;
 };

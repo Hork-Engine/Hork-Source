@@ -38,9 +38,9 @@ constexpr float DEFAULT_TEMPERATURE         = 6590.0f;
 constexpr float DEFAULT_LUMENS              = 3000.0f;
 constexpr Float3 DEFAULT_COLOR(1.0f);
 
-AN_CLASS_META( FBaseLightComponent )
+AN_CLASS_META( ABaseLightComponent )
 
-FBaseLightComponent::FBaseLightComponent() {
+ABaseLightComponent::ABaseLightComponent() {
     Color = DEFAULT_COLOR;
     Temperature = DEFAULT_TEMPERATURE;
     Lumens = DEFAULT_LUMENS;
@@ -52,19 +52,19 @@ FBaseLightComponent::FBaseLightComponent() {
     AnimationBrightness = 1;
 }
 
-void FBaseLightComponent::SetEnabled( bool _Enabled ) {
+void ABaseLightComponent::SetEnabled( bool _Enabled ) {
     bEnabled = _Enabled;
 }
 
-void FBaseLightComponent::SetAnimation( const char * _Pattern, float _Speed, float _Quantizer ) {
-    FAnimationPattern * anim = NewObject< FAnimationPattern >();
+void ABaseLightComponent::SetAnimation( const char * _Pattern, float _Speed, float _Quantizer ) {
+    AAnimationPattern * anim = NewObject< AAnimationPattern >();
     anim->Pattern = _Pattern;
     anim->Speed = _Speed;
     anim->Quantizer = _Quantizer;
     SetAnimation( anim );
 }
 
-void FBaseLightComponent::SetAnimation( FAnimationPattern * _Animation ) {
+void ABaseLightComponent::SetAnimation( AAnimationPattern * _Animation ) {
     if ( Animation == _Animation ) {
         return;
     }
@@ -82,59 +82,59 @@ void FBaseLightComponent::SetAnimation( FAnimationPattern * _Animation ) {
     bEffectiveColorDirty = true;
 }
 
-void FBaseLightComponent::SetColor( Float3 const & _Color ) {
+void ABaseLightComponent::SetColor( Float3 const & _Color ) {
     Color = _Color;
     bEffectiveColorDirty = true;
 }
 
-void FBaseLightComponent::SetColor( float _R, float _G, float _B ) {
+void ABaseLightComponent::SetColor( float _R, float _G, float _B ) {
     Color.X = _R;
     Color.Y = _G;
     Color.Z = _B;
     bEffectiveColorDirty = true;
 }
 
-Float3 const & FBaseLightComponent::GetColor() const {
+Float3 const & ABaseLightComponent::GetColor() const {
     return Color;
 }
 
-Float4 const & FBaseLightComponent::GetEffectiveColor() const {
+Float4 const & ABaseLightComponent::GetEffectiveColor() const {
     if ( bEffectiveColorDirty ) {
-        float energy = FTemperatureToColor::GetLightEnergyFromLumens( Lumens );
+        float energy = STemperatureToColor::GetLightEnergyFromLumens( Lumens );
         energy *= AnimationBrightness;
-        *(Float3 *)&EffectiveColor = Color * FTemperatureToColor::GetRGBFromTemperature( Temperature ) * energy;
+        *(Float3 *)&EffectiveColor = Color * STemperatureToColor::GetRGBFromTemperature( Temperature ) * energy;
         bEffectiveColorDirty = false;
     }
     return EffectiveColor;
 }
 
-void FBaseLightComponent::SetTemperature( float _Temperature ) {
-    Temperature = FMath::Clamp( _Temperature, FTemperatureToColor::MIN_TEMPERATURE, FTemperatureToColor::MAX_TEMPERATURE );
+void ABaseLightComponent::SetTemperature( float _Temperature ) {
+    Temperature = Math::Clamp( _Temperature, STemperatureToColor::MIN_TEMPERATURE, STemperatureToColor::MAX_TEMPERATURE );
     bEffectiveColorDirty = true;
 }
 
-float FBaseLightComponent::GetTemperature() const {
+float ABaseLightComponent::GetTemperature() const {
     return Temperature;
 }
 
-void FBaseLightComponent::SetLumens( float _Lumens ) {
-    Lumens = FMath::Max( 0.0f, _Lumens );
+void ABaseLightComponent::SetLumens( float _Lumens ) {
+    Lumens = Math::Max( 0.0f, _Lumens );
     bEffectiveColorDirty = true;
 }
 
-float FBaseLightComponent::GetLumens() const {
+float ABaseLightComponent::GetLumens() const {
     return Lumens;
 }
 
-void FBaseLightComponent::SetAmbientIntensity( float _Intensity ) {
-    EffectiveColor.W = FMath::Max( 0.1f, _Intensity );
+void ABaseLightComponent::SetAmbientIntensity( float _Intensity ) {
+    EffectiveColor.W = Math::Max( 0.1f, _Intensity );
 }
 
-float FBaseLightComponent::GetAmbientIntensity() const {
+float ABaseLightComponent::GetAmbientIntensity() const {
     return EffectiveColor.W;
 }
 
-void FBaseLightComponent::TickComponent( float _TimeStep ) {
+void ABaseLightComponent::TickComponent( float _TimeStep ) {
     if ( !bEnabled ) {
         return;
     }

@@ -36,7 +36,7 @@ SOFTWARE.
 #include <Engine/Resource/Public/ResourceManager.h>
 
 // Forward decl
-static Float2 CalcTextRect( FFont const * _Font, FWideChar const * _TextBegin, FWideChar const * _TextEnd, const FWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine );
+static Float2 CalcTextRect( AFont const * _Font, FWideChar const * _TextBegin, FWideChar const * _TextEnd, const FWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine );
 
 #undef STB_TEXTEDIT_STRING
 #undef STB_TEXTEDIT_CHARTYPE
@@ -148,7 +148,7 @@ AN_FORCEINLINE bool IsSeparator( FWideChar c ) {
 }
 
 static bool IsWordBoundary( FWideChar * s ) {
-    if ( FCore::WideCharIsBlank( s[-1] ) && !FCore::WideCharIsBlank( s[0] ) ) {
+    if ( Core::WideCharIsBlank( s[-1] ) && !Core::WideCharIsBlank( s[0] ) ) {
         return true;
     }
 
@@ -156,7 +156,7 @@ static bool IsWordBoundary( FWideChar * s ) {
         return true;
     }
 
-    if ( !FCore::WideCharIsBlank( s[0] ) ) {
+    if ( !Core::WideCharIsBlank( s[0] ) ) {
         if ( ( IsSeparator(s[-1]) || IsSeparator(s[0]) ) && ( s[-1] != s[0] ) ) {
             return true;
         }
@@ -202,7 +202,7 @@ enum FCharacterFilter {
     CHARS_SCIENTIFIC    = AN_BIT( 4 ),   // 0123456789.+-*/eE (Scientific notation input)
 };
 
-static Float2 CalcTextRect( FFont const * _Font, FWideChar const * _TextBegin, FWideChar const * _TextEnd, const FWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine ) {
+static Float2 CalcTextRect( AFont const * _Font, FWideChar const * _TextBegin, FWideChar const * _TextEnd, const FWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine ) {
     const float lineHeight = _Font->GetFontSize();
     Float2 rectSize( 0, 0 );
     float lineWidth = 0.0f;
@@ -211,7 +211,7 @@ static Float2 CalcTextRect( FFont const * _Font, FWideChar const * _TextBegin, F
     while ( s < _TextEnd ) {
         FWideChar c = *s++;
         if ( c == '\n' ) {
-            rectSize.X = FMath::Max( rectSize.X, lineWidth );
+            rectSize.X = Math::Max( rectSize.X, lineWidth );
             rectSize.Y += lineHeight;
             lineWidth = 0.0f;
             if ( _StopOnNewLine ) {
@@ -244,7 +244,7 @@ static Float2 CalcTextRect( FFont const * _Font, FWideChar const * _TextBegin, F
     return rectSize;
 }
 
-static Float2 CalcCursorOffset( FFont const * _Font, FWideChar * _Text, int _Cursor, const FWideChar ** _Remaining ) {
+static Float2 CalcCursorOffset( AFont const * _Font, FWideChar * _Text, int _Cursor, const FWideChar ** _Remaining ) {
     const float lineHeight = _Font->GetFontSize();
     Float2 offset( 0 );
     float lineWidth = 0.0f;
@@ -277,8 +277,8 @@ WTextEdit::WTextEdit() {
     bAllowUndo = true;
     bAllowTabInput = true;
     InsertSpacesOnTab = 4;
-    SelectionColor = FColor4( 0.32f, 0.32f, 0.4f );
-    TextColor = FColor4( 0.9f, 0.9f, 0.9f );
+    SelectionColor = AColor4( 0.32f, 0.32f, 0.4f );
+    TextColor = AColor4( 0.9f, 0.9f, 0.9f );
 
     SetSize( 0, 0 );
 }
@@ -286,7 +286,7 @@ WTextEdit::WTextEdit() {
 WTextEdit::~WTextEdit() {
 }
 
-WTextEdit & WTextEdit::SetFont( FFont * _Font ) {
+WTextEdit & WTextEdit::SetFont( AFont * _Font ) {
     Font = _Font;
     return *this;
 }
@@ -382,18 +382,18 @@ WTextEdit & WTextEdit::SetAllowUndo( bool _Enabled ) {
     return *this;
 }
 
-WTextEdit & WTextEdit::SetSelectionColor( FColor4 const & _Color ) {
+WTextEdit & WTextEdit::SetSelectionColor( AColor4 const & _Color ) {
     SelectionColor = _Color;
     return *this;
 }
 
-WTextEdit & WTextEdit::SetTextColor( FColor4 const & _Color ) {
+WTextEdit & WTextEdit::SetTextColor( AColor4 const & _Color ) {
     TextColor = _Color;
     return *this;
 }
 
-FFont const * WTextEdit::GetFont() const {
-    return Font ? Font : FCanvas::GetDefaultFont();
+AFont const * WTextEdit::GetFont() const {
+    return Font ? Font : ACanvas::GetDefaultFont();
 }
 
 int WTextEdit::GetTextLength() const {
@@ -405,11 +405,11 @@ int WTextEdit::GetCursorPosition() const {
 }
 
 int WTextEdit::GetSelectionStart() const {
-    return FMath::Min( Stb.select_start, Stb.select_end );
+    return Math::Min( Stb.select_start, Stb.select_end );
 }
 
 int WTextEdit::GetSelectionEnd() const {
-    return FMath::Max( Stb.select_start, Stb.select_end );
+    return Math::Max( Stb.select_start, Stb.select_end );
 }
 
 bool WTextEdit::InsertCharsProxy( int _Offset, FWideChar const * _Text, int _TextLength ) {
@@ -520,11 +520,11 @@ void WTextEdit::ScrollPageUp( bool _MoveCursor ) {
 
     WScroll * scroll = GetScroll();
     if ( scroll ) {
-        FFont const * font = GetFont();
+        AFont const * font = GetFont();
         const float lineHeight = font->GetFontSize();
 
         float PageSize = scroll->GetAvailableHeight();
-        PageSize = FMath::Snap( PageSize, lineHeight );
+        PageSize = Math::Snap( PageSize, lineHeight );
 
         int numLines = (int)(PageSize / lineHeight);
 
@@ -545,11 +545,11 @@ void WTextEdit::ScrollPageDown( bool _MoveCursor ) {
 
     WScroll * scroll = GetScroll();
     if ( scroll ) {
-        FFont const * font = GetFont();
+        AFont const * font = GetFont();
         const float lineHeight = font->GetFontSize();
 
         float PageSize = scroll->GetAvailableHeight();
-        PageSize = FMath::Snap( PageSize, lineHeight );
+        PageSize = Math::Snap( PageSize, lineHeight );
 
         int numLines = (int)(PageSize / lineHeight);
 
@@ -580,10 +580,10 @@ void WTextEdit::ScrollLines( int _NumLines ) {
     if ( scroll ) {
         Float2 scrollPosition = scroll->GetScrollPosition();
 
-        FFont const * font = GetFont();
+        AFont const * font = GetFont();
         const float lineHeight = font->GetFontSize();
 
-        scrollPosition.Y = FMath::Snap( scrollPosition.Y, lineHeight );
+        scrollPosition.Y = Math::Snap( scrollPosition.Y, lineHeight );
         scrollPosition.Y += _NumLines * lineHeight;
 
         scroll->SetScrollPosition( scrollPosition );
@@ -642,7 +642,7 @@ void WTextEdit::ScrollLineEnd() {
         return;
     }
 
-    FFont const * font = GetFont();
+    AFont const * font = GetFont();
     FWideChar * lineStart;
     FWideChar * lineEnd;
 
@@ -672,7 +672,7 @@ void WTextEdit::ScrollToCursor() {
         return;
     }
 
-    FFont const * font = GetFont();
+    AFont const * font = GetFont();
     Float2 mins, maxs;
     Float2 scrollMins, scrollMaxs;
 
@@ -687,21 +687,21 @@ void WTextEdit::ScrollToCursor() {
 
     Float2 pageSize = scroll->GetAvailableSize();
 
-    pageSize.Y = FMath::Snap( pageSize.Y, font->GetFontSize() );
+    pageSize.Y = Math::Snap( pageSize.Y, font->GetFontSize() );
 
     if ( cursor.X < scrollMins.X ) {
-        scrollPosition.X = FMath::Snap( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
+        scrollPosition.X = Math::Snap( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
         bUpdateScroll = true;
     } else if ( cursor.X > scrollMaxs.X ) {
-        scrollPosition.X = FMath::Snap( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
+        scrollPosition.X = Math::Snap( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
         bUpdateScroll = true;
     }
 
     if ( cursor.Y < scrollMins.Y ) {
-        scrollPosition.Y = FMath::Snap( -cursorOffset.Y, font->GetFontSize() );
+        scrollPosition.Y = Math::Snap( -cursorOffset.Y, font->GetFontSize() );
         bUpdateScroll = true;
     } else if ( cursor.Y + font->GetFontSize()*2 > scrollMaxs.Y ) {
-        scrollPosition.Y = FMath::Snap( -cursorOffset.Y - font->GetFontSize()*2 + pageSize.Y, font->GetFontSize() );
+        scrollPosition.Y = Math::Snap( -cursorOffset.Y - font->GetFontSize()*2 + pageSize.Y, font->GetFontSize() );
         bUpdateScroll = true;
     }
 
@@ -746,11 +746,11 @@ bool WTextEdit::Copy() {
     FWideChar * const start = TextData.ToPtr() + startOfs;
     FWideChar * const end = TextData.ToPtr() + endOfs;
 
-    const int clipboardDataLen = FCore::WideStrUTF8Bytes( start, end ) + 1;
+    const int clipboardDataLen = Core::WideStrUTF8Bytes( start, end ) + 1;
 
     char * pClipboardData = ( char * )GZoneMemory.Alloc( clipboardDataLen, 1 );
 
-    FCore::WideStrEncodeUTF8( pClipboardData, clipboardDataLen, start, end );
+    Core::WideStrEncodeUTF8( pClipboardData, clipboardDataLen, start, end );
 
     GRuntime.SetClipboard( pClipboardData );
 
@@ -765,11 +765,11 @@ bool WTextEdit::Paste() {
         return false;
     }
 
-    FString const & clipboard = GRuntime.GetClipboard();
+    AString const & clipboard = GRuntime.GetClipboard();
 
-    const char * s = clipboard.ToConstChar();
+    const char * s = clipboard.CStr();
 
-    int len = FCore::UTF8StrLength( s );
+    int len = Core::UTF8StrLength( s );
 
     TPodArray< FWideChar > wideStr;
     wideStr.Resize( len );
@@ -778,7 +778,7 @@ bool WTextEdit::Paste() {
     int i, byteLen;
     i = 0;
     while ( len-- > 0 ) {
-        byteLen = FCore::WideCharDecodeUTF8( s, ch );
+        byteLen = Core::WideCharDecodeUTF8( s, ch );
         if ( !byteLen ) {
             break;
         }
@@ -796,7 +796,7 @@ bool WTextEdit::Paste() {
     return true;
 }
 
-void WTextEdit::OnKeyEvent( struct FKeyEvent const & _Event, double _TimeStamp ) {
+void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) {
 
     if ( _Event.Action != IE_Release ) {
 
@@ -1046,7 +1046,7 @@ void WTextEdit::OnKeyEvent( struct FKeyEvent const & _Event, double _TimeStamp )
     }
 }
 
-void WTextEdit::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
     if ( _Event.Action == IE_Press ) {
         Float2 CursorPos = GetDesktop()->GetCursorPosition();
 
@@ -1086,7 +1086,7 @@ void WTextEdit::OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint6
         int e = GetSelectionEnd();
 
         while ( e-- > s ) {
-            if ( !FCore::WideCharIsBlank( TextData[e] ) ) {
+            if ( !Core::WideCharIsBlank( TextData[e] ) ) {
                 break;
             }
             PressKey( STB_TEXTEDIT_K_LEFT | STB_TEXTEDIT_K_SHIFT );
@@ -1094,7 +1094,7 @@ void WTextEdit::OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint6
     }
 }
 
-void WTextEdit::OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, double _TimeStamp ) {
+void WTextEdit::OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) {
     if ( _Event.WheelY < 0 ) {
         ScrollLines( -2 );
     }
@@ -1103,7 +1103,7 @@ void WTextEdit::OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, doubl
     }
 }
 
-void WTextEdit::OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void WTextEdit::OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) {
     if ( bStartDragging ) {
         Float2 CursorPos = GetDesktop()->GetCursorPosition();
 
@@ -1115,7 +1115,7 @@ void WTextEdit::OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double 
     }
 }
 
-void WTextEdit::OnCharEvent( struct FCharEvent const & _Event, double _TimeStamp ) {
+void WTextEdit::OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) {
     if ( bReadOnly ) {
         return;
     }
@@ -1155,13 +1155,13 @@ void WTextEdit::OnWindowHovered( bool _Hovered ) {
     }
 }
 
-void WTextEdit::OnDrawEvent( FCanvas & _Canvas ) {
+void WTextEdit::OnDrawEvent( ACanvas & _Canvas ) {
 
     //Stb.insert_mode = true;//GRuntime.GlobalInsertMode(); // TODO
 
     DrawDecorates( _Canvas );
 
-    FFont const * font = GetFont();
+    AFont const * font = GetFont();
     float fontSize = font->GetFontSize();
 
     Float2 pos = GetDesktopPosition();
@@ -1169,7 +1169,7 @@ void WTextEdit::OnDrawEvent( FCanvas & _Canvas ) {
     Float2 mins, maxs;
     GetDesktopRect( mins, maxs, false );
 
-    //_Canvas.DrawRect( mins, maxs, FColor4::White() );
+    //_Canvas.DrawRect( mins, maxs, AColor4::White() );
 
     if ( HasSelection() ) {
         int start = GetSelectionStart();
@@ -1184,7 +1184,7 @@ void WTextEdit::OnDrawEvent( FCanvas & _Canvas ) {
         while ( s < s_end ) {
             FWideChar c = *s++;
             if ( c == '\n' ) {
-                lineWidth = FMath::Max( lineWidth, font->GetCharAdvance(' ') * 0.4f );
+                lineWidth = Math::Max( lineWidth, font->GetCharAdvance(' ') * 0.4f );
                 _Canvas.DrawRectFilled( mins + selstart, mins + selstart + Float2( lineWidth, lineHeight ), SelectionColor );
                 selstart.X = 0;
                 selstart.Y += lineHeight;
@@ -1218,7 +1218,7 @@ void WTextEdit::OnDrawEvent( FCanvas & _Canvas ) {
 
 void WTextEdit::UpdateWidgetSize() {
 #if 1
-    FFont const * font = GetFont();
+    AFont const * font = GetFont();
     const float lineHeight = font->GetFontSize();
     Float2 size( 0.0f, lineHeight );
     float lineWidth = 0.0f;
@@ -1227,7 +1227,7 @@ void WTextEdit::UpdateWidgetSize() {
     while ( s < s_end ) {
         FWideChar c = *s++;
         if ( c == '\n' ) {
-            size.X = FMath::Max( size.X, lineWidth );
+            size.X = Math::Max( size.X, lineWidth );
             size.Y += lineHeight;
             lineWidth = 0.0f;
             continue;
@@ -1237,7 +1237,7 @@ void WTextEdit::UpdateWidgetSize() {
         }
         lineWidth += font->GetCharAdvance( c );
     }
-    size.X = FMath::Max( size.X, lineWidth );
+    size.X = Math::Max( size.X, lineWidth );
 #else
     Float2 size = CalcTextRect( GetFont(), TextData.ToPtr(), TextData.ToPtr() + CurTextLength, nullptr, nullptr, false );
 #endif
@@ -1294,7 +1294,7 @@ bool WTextEdit::FilterCharacter( FWideChar & _Char ) {
         }
 
         if ( CharacterFilter & CHARS_NO_BLANK )
-            if ( FCore::WideCharIsBlank( c ) )
+            if ( Core::WideCharIsBlank( c ) )
                 return false;
     }
 

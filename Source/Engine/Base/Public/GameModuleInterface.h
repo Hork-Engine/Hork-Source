@@ -32,11 +32,13 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
-class IGameModule : public FBaseObject {
-    AN_CLASS( IGameModule, FBaseObject )
+class IGameModule : public ABaseObject {
+    AN_CLASS( IGameModule, ABaseObject )
 
 public:
     IGameModule();
+
+    static const char * RootPath;
 
     virtual void OnGameStart();
     virtual void OnGameEnd();

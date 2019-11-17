@@ -34,25 +34,25 @@ SOFTWARE.
 
 static int DrawSurfMarker = 0;
 
-FBinarySpaceData::FBinarySpaceData() {
+SBinarySpaceData::SBinarySpaceData() {
     Visdata = nullptr;
 
     NumVisSurfs = 0;
     ViewLeafCluster = -1;
 }
 
-FBinarySpaceData::~FBinarySpaceData() {
+SBinarySpaceData::~SBinarySpaceData() {
     HugeFree( Visdata );
 }
 
-int FBinarySpaceData::FindLeaf( const Float3 & _Position ) {
-    FBinarySpaceNode * node;
+int SBinarySpaceData::FindLeaf( const Float3 & _Position ) {
+    SBinarySpaceNode * node;
     float d;
-    FBinarySpacePlane * plane;
+    ABinarySpacePlane * plane;
     int nodeIndex;
 
     if ( !Nodes.Size() ) {
-        GLogger.Printf( "FBinarySpaceData::FindLeaf: no nodes\n" );
+        GLogger.Printf( "SBinarySpaceData::FindLeaf: no nodes\n" );
         return -1;
     }
 
@@ -62,7 +62,7 @@ int FBinarySpaceData::FindLeaf( const Float3 & _Position ) {
         if ( plane->Type < 3 ) {
             d = _Position[ plane->Type ] * plane->Normal[ plane->Type ] + plane->D;
         } else {
-            d = FMath::Dot( _Position, plane->Normal ) + plane->D;
+            d = Math::Dot( _Position, plane->Normal ) + plane->D;
         }
 
         nodeIndex = node->ChildrenIdx[ ( d <= 0 ) ];
@@ -82,20 +82,19 @@ int FBinarySpaceData::FindLeaf( const Float3 & _Position ) {
 
 #define MAX_MAP_LEAFS 0x20000
 
-class FEmptyVisData {
-public:
-    FEmptyVisData();
+struct SEmptyVisData {
+    SEmptyVisData();
 
     byte Data[ MAX_MAP_LEAFS / 8 ];
 };
 
-FEmptyVisData::FEmptyVisData() {
+SEmptyVisData::SEmptyVisData() {
     memset( Data, 0xff, sizeof( Data ) );
 }
 
-static FEmptyVisData EmptyVis;
+static SEmptyVisData EmptyVis;
 
-byte const * FBinarySpaceData::DecompressVisdata( byte const * _Data ) {
+byte const * SBinarySpaceData::DecompressVisdata( byte const * _Data ) {
     static byte Decompressed[ MAX_MAP_LEAFS / 8 ];
     int c;
     byte *out;
@@ -129,7 +128,7 @@ byte const * FBinarySpaceData::DecompressVisdata( byte const * _Data ) {
     return Decompressed;
 }
 
-byte const * FBinarySpaceData::LeafPVS( FBinarySpaceLeaf const * _Leaf ) {
+byte const * SBinarySpaceData::LeafPVS( SBinarySpaceLeaf const * _Leaf ) {
     if ( bCompressedVisData ) {
         if (_Leaf == Leafs.ToPtr() ) {
             return EmptyVis.Data;
@@ -143,14 +142,14 @@ byte const * FBinarySpaceData::LeafPVS( FBinarySpaceLeaf const * _Leaf ) {
     }
 }
 
-int FBinarySpaceData::MarkLeafs( int _ViewLeaf ) {
+int SBinarySpaceData::MarkLeafs( int _ViewLeaf ) {
     //ViewLeaf = _ViewLeaf;
 
     if ( _ViewLeaf < 0 ) {
         return VisFrameCount;
     }
 
-    FBinarySpaceLeaf * viewLeaf = &Leafs[ _ViewLeaf ];
+    SBinarySpaceLeaf * viewLeaf = &Leafs[ _ViewLeaf ];
 
     if ( ViewLeafCluster == viewLeaf->Cluster ) {
         return VisFrameCount;
@@ -165,7 +164,7 @@ int FBinarySpaceData::MarkLeafs( int _ViewLeaf ) {
 
     int cluster;
     for ( int i = 0 ; i < numLeafs ; i++ ) {
-        FBinarySpaceLeaf * Leaf = &Leafs[ i ];
+        SBinarySpaceLeaf * Leaf = &Leafs[ i ];
 
         cluster = Leaf->Cluster;
         if ( cluster < 0 || cluster >= NumVisClusters ) {
@@ -178,7 +177,7 @@ int FBinarySpaceData::MarkLeafs( int _ViewLeaf ) {
 
         // TODO: check for door connection here
 
-        FBinarySpaceNode * parent = ( FBinarySpaceNode* )Leaf;
+        SBinarySpaceNode * parent = ( SBinarySpaceNode* )Leaf;
         do {
             if ( parent->VisFrame == VisFrameCount ) {
                 break;
@@ -214,7 +213,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
         p[ 1 ] = pBounds[ pIndices[ 1 ] ];
         p[ 2 ] = pBounds[ pIndices[ 2 ] ];
 
-        if ( FMath::Dot( p, Frustum[ 0 ].Normal ) <= -Frustum[ 0 ].D ) {
+        if ( Math::Dot( p, Frustum[ 0 ].Normal ) <= -Frustum[ 0 ].D ) {
             return true;
         }
 
@@ -222,7 +221,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
         p[ 1 ] = pBounds[ pIndices[ 4 ] ];
         p[ 2 ] = pBounds[ pIndices[ 5 ] ];
 
-        if ( FMath::Dot( p, Frustum[ 0 ].Normal ) >= -Frustum[ 0 ].D ) {
+        if ( Math::Dot( p, Frustum[ 0 ].Normal ) >= -Frustum[ 0 ].D ) {
             _CullBits &= ~1;
         }
     }
@@ -234,7 +233,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
         p[ 1 ] = pBounds[ pIndices[ 1 ] ];
         p[ 2 ] = pBounds[ pIndices[ 2 ] ];
 
-        if ( FMath::Dot( p, Frustum[ 1 ].Normal ) <= -Frustum[ 1 ].D ) {
+        if ( Math::Dot( p, Frustum[ 1 ].Normal ) <= -Frustum[ 1 ].D ) {
             return true;
         }
 
@@ -242,7 +241,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
         p[ 1 ] = pBounds[ pIndices[ 4 ] ];
         p[ 2 ] = pBounds[ pIndices[ 5 ] ];
 
-        if ( FMath::Dot( p, Frustum[ 1 ].Normal ) >= -Frustum[ 1 ].D ) {
+        if ( Math::Dot( p, Frustum[ 1 ].Normal ) >= -Frustum[ 1 ].D ) {
             _CullBits &= ~2;
         }
     }
@@ -254,7 +253,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
         p[ 1 ] = pBounds[ pIndices[ 1 ] ];
         p[ 2 ] = pBounds[ pIndices[ 2 ] ];
 
-        if ( FMath::Dot( p, Frustum[ 2 ].Normal ) <= -Frustum[ 2 ].D ) {
+        if ( Math::Dot( p, Frustum[ 2 ].Normal ) <= -Frustum[ 2 ].D ) {
             return true;
         }
 
@@ -262,7 +261,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
         p[ 1 ] = pBounds[ pIndices[ 4 ] ];
         p[ 2 ] = pBounds[ pIndices[ 5 ] ];
 
-        if ( FMath::Dot( p, Frustum[ 2 ].Normal ) >= -Frustum[ 2 ].D ) {
+        if ( Math::Dot( p, Frustum[ 2 ].Normal ) >= -Frustum[ 2 ].D ) {
             _CullBits &= ~4;
         }
     }
@@ -274,7 +273,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
         p[ 1 ] = pBounds[ pIndices[ 1 ] ];
         p[ 2 ] = pBounds[ pIndices[ 2 ] ];
 
-        if ( FMath::Dot( p, Frustum[ 3 ].Normal ) <= -Frustum[ 3 ].D ) {
+        if ( Math::Dot( p, Frustum[ 3 ].Normal ) <= -Frustum[ 3 ].D ) {
             return true;
         }
 
@@ -282,7 +281,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
         p[ 1 ] = pBounds[ pIndices[ 4 ] ];
         p[ 2 ] = pBounds[ pIndices[ 5 ] ];
 
-        if ( FMath::Dot( p, Frustum[ 3 ].Normal ) >= -Frustum[ 3 ].D ) {
+        if ( Math::Dot( p, Frustum[ 3 ].Normal ) >= -Frustum[ 3 ].D ) {
             _CullBits &= ~8;
         }
     }
@@ -290,7 +289,7 @@ static bool CullNode( BvFrustum const & Frustum, BvAxisAlignedBox const & _Bound
     return false;
 }
 
-void FBinarySpaceData::PerformVSD( Float3 const & _ViewOrigin, BvFrustum const & _Frustum, bool _SortLightmapGroup ) {
+void SBinarySpaceData::PerformVSD( Float3 const & _ViewOrigin, BvFrustum const & _Frustum, bool _SortLightmapGroup ) {
 
     ++DrawSurfMarker;
 
@@ -307,8 +306,8 @@ void FBinarySpaceData::PerformVSD( Float3 const & _ViewOrigin, BvFrustum const &
 
     Traverse_r( 0, 0xf );
 
-    struct FSortFunction {
-        bool operator() ( FSurfaceDef const * _A, FSurfaceDef const * _B ) {
+    struct ASortFunction {
+        bool operator() ( SSurfaceDef const * _A, SSurfaceDef const * _B ) {
             return ( _A->LightmapGroup < _B->LightmapGroup );
         }
     } SortFunction;
@@ -318,12 +317,12 @@ void FBinarySpaceData::PerformVSD( Float3 const & _ViewOrigin, BvFrustum const &
     }
 }
 
-void FBinarySpaceData::Traverse_r( int _NodeIndex, int _CullBits ) {
+void SBinarySpaceData::Traverse_r( int _NodeIndex, int _CullBits ) {
     int * mark;
-    FBinarySpaceLeaf const * pleaf;
+    SBinarySpaceLeaf const * pleaf;
     int Count;
-    FSurfaceDef * Surf;
-    FNodeBase const * Node;
+    SSurfaceDef * Surf;
+    SNodeBase const * Node;
 
     while ( 1 ) {
         if ( _NodeIndex < 0 ) {
@@ -359,12 +358,12 @@ void FBinarySpaceData::Traverse_r( int _NodeIndex, int _CullBits ) {
             //return;
         }
 
-        Traverse_r( ((FBinarySpaceNode *)Node)->ChildrenIdx[0], _CullBits );
+        Traverse_r( ((SBinarySpaceNode *)Node)->ChildrenIdx[0], _CullBits );
 
-        _NodeIndex = ((FBinarySpaceNode *)Node)->ChildrenIdx[1];
+        _NodeIndex = ((SBinarySpaceNode *)Node)->ChildrenIdx[1];
     }
 
-    pleaf = ( FBinarySpaceLeaf const * )Node;
+    pleaf = ( SBinarySpaceLeaf const * )Node;
 
     mark = &Marksurfaces[ pleaf->FirstSurface ];
 
@@ -391,7 +390,7 @@ void FBinarySpaceData::Traverse_r( int _NodeIndex, int _CullBits ) {
                     {
                         if ( !TwoSided ) {
                             const PlaneF & Plane = Surf->Plane;
-                            float d = FMath::Dot( ViewOrigin, Plane.Normal );
+                            float d = Math::Dot( ViewOrigin, Plane.Normal );
 
                             if ( FrontSided ) {
                                 if ( d < -Plane.D - EPS ) {

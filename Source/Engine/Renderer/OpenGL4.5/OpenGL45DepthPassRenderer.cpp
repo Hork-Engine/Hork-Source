@@ -37,9 +37,9 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-FDepthPassRenderer GDepthPassRenderer;
+ADepthPassRenderer GDepthPassRenderer;
 
-void FDepthPassRenderer::Initialize() {
+void ADepthPassRenderer::Initialize() {
     RenderPassCreateInfo renderPassCI = {};
 
     renderPassCI.NumColorAttachments = 0;
@@ -57,12 +57,12 @@ void FDepthPassRenderer::Initialize() {
     DepthPass.Initialize( renderPassCI );
 }
 
-void FDepthPassRenderer::Deinitialize() {
+void ADepthPassRenderer::Deinitialize() {
     DepthPass.Deinitialize();
 }
 
-bool FDepthPassRenderer::BindMaterial( FRenderInstance const * instance ) {
-    FMaterialGPU * pMaterial = instance->Material;
+bool ADepthPassRenderer::BindMaterial( SRenderInstance const * instance ) {
+    AMaterialGPU * pMaterial = instance->Material;
     Pipeline * pPipeline;
 
     AN_Assert( pMaterial );
@@ -73,16 +73,16 @@ bool FDepthPassRenderer::BindMaterial( FRenderInstance const * instance ) {
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
 
-        pPipeline = bSkinned ? &((FShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->DepthPassSkinned
-                             : &((FShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->DepthPass;
+        pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->DepthPassSkinned
+                             : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->DepthPass;
 
         break;
 
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
 
-        pPipeline = bSkinned ? &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPassSkinned
-                             : &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPass;
+        pPipeline = bSkinned ? &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPassSkinned
+                             : &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPass;
 
         break;
 
@@ -110,7 +110,7 @@ bool FDepthPassRenderer::BindMaterial( FRenderInstance const * instance ) {
     return true;
 }
 
-void FDepthPassRenderer::BindTexturesDepthPass( FMaterialFrameData * _Instance ) {
+void ADepthPassRenderer::BindTexturesDepthPass( SMaterialFrameData * _Instance ) {
     if ( !_Instance->Material->bDepthPassTextureFetch ) {
         return;
     }
@@ -118,7 +118,7 @@ void FDepthPassRenderer::BindTexturesDepthPass( FMaterialFrameData * _Instance )
     BindTextures( _Instance );
 }
 
-void FDepthPassRenderer::RenderInstances() {
+void ADepthPassRenderer::RenderInstances() {
     ClearDepthStencilValue depthStencilValue = {};
     depthStencilValue.Depth = 0;
     depthStencilValue.Stencil = 0;
@@ -149,7 +149,7 @@ void FDepthPassRenderer::RenderInstances() {
     drawCmd.StartInstanceLocation = 0;
 
     for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-        FRenderInstance const * instance = GFrameData->Instances[ GRenderView->FirstInstance + i ];
+        SRenderInstance const * instance = GFrameData->Instances[ GRenderView->FirstInstance + i ];
 
         if ( !BindMaterial( instance ) ) {
             continue;

@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class FRenderTarget {
+class ARenderTarget {
 public:
     void Initialize();
     void Deinitialize();
@@ -54,6 +54,6 @@ private:
     GHI::Texture FramebufferDepth;
 };
 
-extern FRenderTarget GRenderTarget;
+extern ARenderTarget GRenderTarget;
 
 }

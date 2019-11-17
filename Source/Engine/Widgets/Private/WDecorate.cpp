@@ -42,7 +42,7 @@ WDecorate::~WDecorate() {
 
 }
 
-void WDecorate::OnDrawEvent( FCanvas & _Canvas ) {
+void WDecorate::OnDrawEvent( ACanvas & _Canvas ) {
 
 }
 
@@ -50,7 +50,7 @@ void WDecorate::OnDrawEvent( FCanvas & _Canvas ) {
 AN_CLASS_META( WTextDecorate )
 
 WTextDecorate::WTextDecorate() {
-    Color = FColor4::White();
+    Color = AColor4::White();
     bWordWrap = false;
     HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
     VerticalAlignment = WIDGET_ALIGNMENT_NONE;
@@ -64,12 +64,12 @@ WTextDecorate & WTextDecorate::SetText( const char * _Text ) {
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetFont( FFont * _Font ) {
+WTextDecorate & WTextDecorate::SetFont( AFont * _Font ) {
     Font = _Font;
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetColor( FColor4 const & _Color ) {
+WTextDecorate & WTextDecorate::SetColor( AColor4 const & _Color ) {
     Color = _Color;
     return *this;
 }
@@ -94,14 +94,14 @@ WTextDecorate & WTextDecorate::SetOffset( Float2 const & _Offset ) {
     return *this;
 }
 
-FFont const * WTextDecorate::GetFont() const {
-    return Font ? Font : FCanvas::GetDefaultFont();
+AFont const * WTextDecorate::GetFont() const {
+    return Font ? Font : ACanvas::GetDefaultFont();
 }
 
-void WTextDecorate::OnDrawEvent( FCanvas & _Canvas ) {
+void WTextDecorate::OnDrawEvent( ACanvas & _Canvas ) {
     Float2 ownerSize = GetOwner()->GetCurrentSize();
     float width = ownerSize.X;
-    FFont const * font = GetFont();
+    AFont const * font = GetFont();
 
     Float2 pos;
     Float2 size = font->CalcTextSizeA( font->GetFontSize(), ownerSize.X, bWordWrap ? ownerSize.X : 0.0f, Text.Begin(), Text.End() );
@@ -140,8 +140,8 @@ void WTextDecorate::OnDrawEvent( FCanvas & _Canvas ) {
 AN_CLASS_META( WBorderDecorate )
 
 WBorderDecorate::WBorderDecorate() {
-    Color = FColor4::White();
-    BgColor = FColor4::Black();
+    Color = AColor4::White();
+    BgColor = AColor4::Black();
     bFillBackgrond = false;
     Rounding = 0;
     RoundingCorners = CORNER_ROUND_ALL;
@@ -151,7 +151,7 @@ WBorderDecorate::WBorderDecorate() {
 WBorderDecorate::~WBorderDecorate() {
 }
 
-WBorderDecorate & WBorderDecorate::SetColor( FColor4 const & _Color ) {
+WBorderDecorate & WBorderDecorate::SetColor( AColor4 const & _Color ) {
     Color = _Color;
     return *this;
 }
@@ -161,7 +161,7 @@ WBorderDecorate & WBorderDecorate::SetFillBackground( bool _FillBackgrond ) {
     return *this;
 }
 
-WBorderDecorate & WBorderDecorate::SetBackgroundColor( FColor4 const & _Color ) {
+WBorderDecorate & WBorderDecorate::SetBackgroundColor( AColor4 const & _Color ) {
     BgColor = _Color;
     return *this;
 }
@@ -181,7 +181,7 @@ WBorderDecorate & WBorderDecorate::SetRoundingCorners( EDrawCornerFlags _Roundin
     return *this;
 }
 
-void WBorderDecorate::OnDrawEvent( FCanvas & _Canvas ) {
+void WBorderDecorate::OnDrawEvent( ACanvas & _Canvas ) {
     Float2 mins, maxs;
 
     GetOwner()->GetDesktopRect( mins, maxs, false );
@@ -197,7 +197,7 @@ void WBorderDecorate::OnDrawEvent( FCanvas & _Canvas ) {
 AN_CLASS_META( WImageDecorate )
 
 WImageDecorate::WImageDecorate() {
-    Color = FColor4::White();
+    Color = AColor4::White();
     Rounding = 0;
     RoundingCorners = CORNER_ROUND_ALL;
     ColorBlending = COLOR_BLENDING_ALPHA;
@@ -213,7 +213,7 @@ WImageDecorate::WImageDecorate() {
 WImageDecorate::~WImageDecorate() {
 }
 
-WImageDecorate & WImageDecorate::SetColor( FColor4 const & _Color ) {
+WImageDecorate & WImageDecorate::SetColor( AColor4 const & _Color ) {
     Color = _Color;
     return *this;
 }
@@ -228,7 +228,7 @@ WImageDecorate & WImageDecorate::SetRoundingCorners( EDrawCornerFlags _RoundingC
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetTexture( FTexture2D * _Texture ) {
+WImageDecorate & WImageDecorate::SetTexture( ATexture * _Texture ) {
     Texture = _Texture;
     return *this;
 }
@@ -274,7 +274,7 @@ WImageDecorate & WImageDecorate::SetUVs( Float2 const & _UV0, Float2 const & _UV
     return *this;
 }
 
-void WImageDecorate::OnDrawEvent( FCanvas & _Canvas ) {
+void WImageDecorate::OnDrawEvent( ACanvas & _Canvas ) {
     if ( !Texture ) {
         return;
     }
@@ -285,8 +285,8 @@ void WImageDecorate::OnDrawEvent( FCanvas & _Canvas ) {
     Float2 size = Size;
 
     if ( bUseOriginalSize ) {
-        size.X = Texture->GetWidth();
-        size.Y = Texture->GetHeight();
+        size.X = Texture->GetDimensionX();
+        size.Y = Texture->GetDimensionY();
     }
 
     if ( HorizontalAlignment == WIDGET_ALIGNMENT_STRETCH ) {
@@ -326,7 +326,7 @@ void WImageDecorate::OnDrawEvent( FCanvas & _Canvas ) {
 AN_CLASS_META( WViewportDecorate )
 
 WViewportDecorate::WViewportDecorate() {
-    Color = FColor4::White();
+    Color = AColor4::White();
     Rounding = 0;
     RoundingCorners = CORNER_ROUND_ALL;
     ColorBlending = COLOR_BLENDING_DISABLED;
@@ -338,7 +338,7 @@ WViewportDecorate::WViewportDecorate() {
 WViewportDecorate::~WViewportDecorate() {
 }
 
-WViewportDecorate & WViewportDecorate::SetColor( FColor4 const & _Color ) {
+WViewportDecorate & WViewportDecorate::SetColor( AColor4 const & _Color ) {
     Color = _Color;
     return *this;
 }
@@ -353,7 +353,7 @@ WViewportDecorate & WViewportDecorate::SetRoundingCorners( EDrawCornerFlags _Rou
     return *this;
 }
 
-WViewportDecorate & WViewportDecorate::SetPlayerController( FPlayerController * _PlayerController ) {
+WViewportDecorate & WViewportDecorate::SetPlayerController( APlayerController * _PlayerController ) {
     PlayerController = _PlayerController;
     return *this;
 }
@@ -383,7 +383,7 @@ WViewportDecorate & WViewportDecorate::SetVerticalAlignment( EWidgetAlignment _A
     return *this;
 }
 
-void WViewportDecorate::OnDrawEvent( FCanvas & _Canvas ) {
+void WViewportDecorate::OnDrawEvent( ACanvas & _Canvas ) {
     if ( !PlayerController ) {
         return;
     }

@@ -33,10 +33,10 @@ SOFTWARE.
 #include <Engine/World/Public/Level.h>
 #include <Engine/Core/Public/Logger.h>
 
-AN_CLASS_META( FSpatialTree )
-AN_CLASS_META( FOctree )
+AN_CLASS_META( ASpatialTree )
+AN_CLASS_META( AOctree )
 
-void FOctree::Build() {
+void AOctree::Build() {
     Purge();
 
     BvAxisAlignedBox const & boundingBox = Owner->GetBoundingBox();
@@ -49,9 +49,9 @@ void FOctree::Build() {
     float width = boundingBox.Maxs[0] - boundingBox.Mins[0];
     float height = boundingBox.Maxs[1] - boundingBox.Mins[1];
     float depth = boundingBox.Maxs[2] - boundingBox.Mins[2];
-    float maxDim = FMath::Max( width, height, depth );
+    float maxDim = Math::Max( width, height, depth );
 
-    NumLevels = FMath::Log2( FMath::ToIntFast( maxDim + 0.5f ) ) + 1;
+    NumLevels = Math::Log2( Math::ToIntFast( maxDim + 0.5f ) ) + 1;
 
     GLogger.Printf( "Max levels %d\n", NumLevels );
 
@@ -69,29 +69,29 @@ void FOctree::Build() {
 //        Root->BoundingBox = boundingBox;
 }
 
-void FOctree::TreeAddObject( FSpatialObject * _Object ) {
+void AOctree::TreeAddObject( ASpatialObject * _Object ) {
     ObjectsInTree.Append( _Object );
     _Object->AddRef();
 
     //BvAxisAlignedBox const & bounds = _Object->GetWorldBounds();
 }
 
-void FOctree::TreeRemoveObject( int _Index ) {
+void AOctree::TreeRemoveObject( int _Index ) {
     ObjectsInTree[ _Index ]->RemoveRef();
     ObjectsInTree.RemoveSwap( _Index );
 }
 
-void FOctree::TreeUpdateObject( int _Index ) {
+void AOctree::TreeUpdateObject( int _Index ) {
 
 }
 
-void FOctree::Update() {
-    for ( FPendingObjectInfo & info : PendingObjects ) {
+void AOctree::Update() {
+    for ( SPendingObjectInfo & info : PendingObjects ) {
 
         int i = ObjectsInTree.IndexOf( info.Object );
 
         switch ( info.PendingOp ) {
-        case FPendingObjectInfo::PENDING_ADD:
+        case SPendingObjectInfo::PENDING_ADD:
             if ( i != -1 ) {
                 // object already in tree, just update it
 
@@ -102,7 +102,7 @@ void FOctree::Update() {
                 TreeAddObject( info.Object );
             }
             break;
-        case FPendingObjectInfo::PENDING_UPDATE:
+        case SPendingObjectInfo::PENDING_UPDATE:
             if ( i != -1 ) {
                 // just update it
 
@@ -111,7 +111,7 @@ void FOctree::Update() {
                 // nothing to update
             }
             break;
-        case FPendingObjectInfo::PENDING_REMOVE:
+        case SPendingObjectInfo::PENDING_REMOVE:
             if ( i != -1 ) {
                 // remove it
 
@@ -130,11 +130,11 @@ void FOctree::Update() {
 
 
 
-FSpatialTree::~FSpatialTree() {
+ASpatialTree::~ASpatialTree() {
     ClearPendingList();
 }
 
-int FSpatialTree::FindPendingObject( FSpatialObject * _Object ) {
+int ASpatialTree::FindPendingObject( ASpatialObject * _Object ) {
     for ( int i = 0 ; i < PendingObjects.Size() ; i++ ) {
         if ( PendingObjects[i].Object == _Object ) {
             return i;
@@ -143,56 +143,56 @@ int FSpatialTree::FindPendingObject( FSpatialObject * _Object ) {
     return -1;
 }
 
-void FSpatialTree::AddObject( FSpatialObject * _Object ) {
+void ASpatialTree::AddObject( ASpatialObject * _Object ) {
     int i = FindPendingObject( _Object );
     if ( i != -1 ) {
-        FPendingObjectInfo & info = PendingObjects[i];
-        info.PendingOp = FPendingObjectInfo::PENDING_ADD;
+        SPendingObjectInfo & info = PendingObjects[i];
+        info.PendingOp = SPendingObjectInfo::PENDING_ADD;
     } else {
-        FPendingObjectInfo & info = PendingObjects.Append();
+        SPendingObjectInfo & info = PendingObjects.Append();
 
-        info.PendingOp = FPendingObjectInfo::PENDING_ADD;
+        info.PendingOp = SPendingObjectInfo::PENDING_ADD;
         info.Object = _Object;
 
         _Object->AddRef();
     }
 }
 
-void FSpatialTree::RemoveObject( FSpatialObject * _Object ) {
+void ASpatialTree::RemoveObject( ASpatialObject * _Object ) {
     int i = FindPendingObject( _Object );
     if ( i != -1 ) {
-        FPendingObjectInfo & info = PendingObjects[i];
-        info.PendingOp = FPendingObjectInfo::PENDING_REMOVE;
+        SPendingObjectInfo & info = PendingObjects[i];
+        info.PendingOp = SPendingObjectInfo::PENDING_REMOVE;
     } else {
-        FPendingObjectInfo & info = PendingObjects.Append();
+        SPendingObjectInfo & info = PendingObjects.Append();
 
-        info.PendingOp = FPendingObjectInfo::PENDING_REMOVE;
+        info.PendingOp = SPendingObjectInfo::PENDING_REMOVE;
         info.Object = _Object;
 
         _Object->AddRef();
     }
 }
 
-void FSpatialTree::UpdateObject( FSpatialObject * _Object ) {
+void ASpatialTree::UpdateObject( ASpatialObject * _Object ) {
     int i = FindPendingObject( _Object );
     if ( i != -1 ) {
-        FPendingObjectInfo & info = PendingObjects[i];
-        info.PendingOp = FPendingObjectInfo::PENDING_UPDATE;
+        SPendingObjectInfo & info = PendingObjects[i];
+        info.PendingOp = SPendingObjectInfo::PENDING_UPDATE;
     } else {
-        FPendingObjectInfo & info = PendingObjects.Append();
+        SPendingObjectInfo & info = PendingObjects.Append();
 
-        info.PendingOp = FPendingObjectInfo::PENDING_UPDATE;
+        info.PendingOp = SPendingObjectInfo::PENDING_UPDATE;
         info.Object = _Object;
 
         _Object->AddRef();
     }
 }
 
-void FSpatialTree::Update() {
+void ASpatialTree::Update() {
 }
 
-void FSpatialTree::ClearPendingList() {
-    for ( FPendingObjectInfo & info : PendingObjects ) {
+void ASpatialTree::ClearPendingList() {
+    for ( SPendingObjectInfo & info : PendingObjects ) {
         info.Object->RemoveRef();
     }
     PendingObjects.Clear();

@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "WWidget.h"
 
-struct FScrollbarGeometry {
+struct SScrollbarGeometry {
     bool bDrawHScrollbar;
     bool bDrawVScrollbar;
 
@@ -84,7 +84,7 @@ public:
     WScroll & SetButtonWidth( float _Width );
     WScroll & SetShowButtons( bool _ShowButtons );
     WScroll & SetSliderRounding( float _Rounding );
-    WScroll & SetBackgroundColor( FColor4 const & _Color );
+    WScroll & SetBackgroundColor( AColor4 const & _Color );
 
     WWidget * GetContentWidget();
 
@@ -104,20 +104,20 @@ protected:
 
     // You can override OnDrawEvent and use GetScrollbarGeometry to
     // draw your own style scrollbar.
-    FScrollbarGeometry const & GetScrollbarGeometry() const;
+    SScrollbarGeometry const & GetScrollbarGeometry() const;
 
     void Update( float _TimeStep );
 
     void OnTransformDirty() override;
 
-    void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
-    void OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
 
     void OnFocusReceive() override;
 
     // There is no Tick() function for widget yet. So if you override OnDrawEvent don't forget to call Update()
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
     void UpdateMargin();
@@ -129,12 +129,12 @@ private:
 
     enum EScrollAction { A_NONE, A_SCROLL_LEFT, A_SCROLL_RIGHT, A_SCROLL_UP, A_SCROLL_DOWN, A_SCROLL_HSLIDER, A_SCROLL_VSLIDER };
 
-    FColor4 BackgroundColor;
+    AColor4 BackgroundColor;
 
     TRef< WWidget > Content;
     int Action;
     float DragCursor;
-    FScrollbarGeometry Geometry;
+    SScrollbarGeometry Geometry;
     float ScrollbarSize;
     float ButtonWidth;
     float SliderRounding;

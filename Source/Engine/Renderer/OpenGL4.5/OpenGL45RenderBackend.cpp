@@ -59,8 +59,8 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
-FRuntimeVariable RVRenderView( _CTS("RenderView"), _CTS("1"), VAR_CHEAT );
-FRuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
+ARuntimeVariable RVRenderView( _CTS("RenderView"), _CTS("1"), VAR_CHEAT );
+ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
 
 extern thread_local char LogBuffer[16384]; // Use existing log buffer
 
@@ -78,7 +78,7 @@ State * GetCurrentState() {
 void LogPrintf( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    FString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     GLogger.Print( LogBuffer );
 }
@@ -87,7 +87,7 @@ void LogPrintf( const char * _Format, ... ) {
 
 namespace OpenGL45 {
 
-FRenderBackend GOpenGL45RenderBackend;
+ARenderBackend GOpenGL45RenderBackend;
 
 static GHI::TEXTURE_PIXEL_FORMAT PixelFormatTable[256];
 static GHI::INTERNAL_PIXEL_FORMAT InternalPixelFormatTable[256];
@@ -101,7 +101,7 @@ static bool bSwapControlTear = false;
 //
 
 static int GHIImport_Hash( const unsigned char * _Data, int _Size ) {
-    return FCore::Hash( ( const char * )_Data, _Size );
+    return Core::Hash( ( const char * )_Data, _Size );
 }
 
 static void * GHIImport_Allocate( size_t _BytesCount ) {
@@ -112,7 +112,7 @@ static void GHIImport_Deallocate( void * _Bytes ) {
     GZoneMemory.Dealloc( _Bytes );
 }
 
-void FRenderBackend::PreInit() {
+void ARenderBackend::PreInit() {
     glfwWindowHint( GLFW_CLIENT_API, GLFW_OPENGL_API );
     // Possible APIs: GLFW_OPENGL_ES_API
 
@@ -149,7 +149,7 @@ void FRenderBackend::PreInit() {
     glfwWindowHint( GLFW_STEREO, 0 );
 }
 
-void FRenderBackend::Initialize( void * _NativeWindowHandle ) {
+void ARenderBackend::Initialize( void * _NativeWindowHandle ) {
     using namespace GHI;
 
     GLogger.Printf( "Initializing OpenGL backend...\n" );
@@ -169,7 +169,7 @@ void FRenderBackend::Initialize( void * _NativeWindowHandle ) {
     }
 
     const char * vendorString = (const char *)glGetString( GL_VENDOR );
-    vendorString = vendorString ? vendorString : FString::NullCString();
+    vendorString = vendorString ? vendorString : AString::NullCString();
 
     const char * adapterString = (const char *)glGetString( GL_RENDERER );
     adapterString = adapterString ? adapterString : "Unknown";
@@ -188,7 +188,7 @@ void FRenderBackend::Initialize( void * _NativeWindowHandle ) {
     GLogger.Printf( "Graphics vendor: %s\n", vendorString );
     GLogger.Printf( "Graphics adapter: %s\n", adapterString );
 #if 0
-    FMemoryInfo gpuMemoryInfo = GetGPUMemoryInfo();
+    SMemoryInfo gpuMemoryInfo = GetGPUMemoryInfo();
 
     if ( gpuMemoryInfo.TotalAvailableMegabytes > 0 && gpuMemoryInfo.CurrentAvailableMegabytes > 0 ) {
         GLogger.Printf( "Total available GPU memory: %d Megs\n", gpuMemoryInfo.TotalAvailableMegabytes );
@@ -399,7 +399,7 @@ void FRenderBackend::Initialize( void * _NativeWindowHandle ) {
     GFrameResources.Initialize();
 }
 
-void FRenderBackend::Deinitialize() {
+void ARenderBackend::Deinitialize() {
     GLogger.Printf( "Deinitializing OpenGL backend...\n" );
 
     GJointsAllocator.Deinitialize();
@@ -418,17 +418,17 @@ void FRenderBackend::Deinitialize() {
     GDevice.Deinitialize();
 }
 
-void FRenderBackend::WaitGPU() {
+void ARenderBackend::WaitGPU() {
     GOpenGL45GPUSync.Wait();
 }
 
-void FRenderBackend::SetGPUEvent() {
+void ARenderBackend::SetGPUEvent() {
     GOpenGL45GPUSync.SetEvent();
 }
 
-FTextureGPU * FRenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
-    void * pData = GZoneMemory.AllocCleared( sizeof( FTextureGPU ), 1 );
-    FTextureGPU * texture = new (pData) FTextureGPU;
+ATextureGPU * ARenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
+    void * pData = GZoneMemory.AllocCleared( sizeof( ATextureGPU ), 1 );
+    ATextureGPU * texture = new (pData) ATextureGPU;
     texture->pOwner = _Owner;
     texture->pHandleGPU = GZoneMemory.AllocCleared( sizeof( GHI::Texture ), 1 );
     new (texture->pHandleGPU) GHI::Texture;
@@ -436,17 +436,17 @@ FTextureGPU * FRenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
     return texture;
 }
 
-void FRenderBackend::DestroyTexture( FTextureGPU * _Texture ) {
+void ARenderBackend::DestroyTexture( ATextureGPU * _Texture ) {
     using namespace GHI;
     UnregisterGPUResource( _Texture );
     GHI::Texture * texture = GPUTextureHandle( _Texture );
     texture->~Texture();
     GZoneMemory.Dealloc( _Texture->pHandleGPU );
-    _Texture->~FTextureGPU();
+    _Texture->~ATextureGPU();
     GZoneMemory.Dealloc( _Texture );
 }
 
-void FRenderBackend::InitializeTexture1D( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
+void ARenderBackend::InitializeTexture1D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureStorageCreateInfo textureCI = {};
@@ -458,7 +458,7 @@ void FRenderBackend::InitializeTexture1D( FTextureGPU * _Texture, ETexturePixelF
     texture->InitializeStorage( textureCI );
 }
 
-void FRenderBackend::InitializeTexture1DArray( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+void ARenderBackend::InitializeTexture1DArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureStorageCreateInfo textureCI = {};
@@ -471,7 +471,7 @@ void FRenderBackend::InitializeTexture1DArray( FTextureGPU * _Texture, ETextureP
     texture->InitializeStorage( textureCI );
 }
 
-void FRenderBackend::InitializeTexture2D( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
+void ARenderBackend::InitializeTexture2D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureStorageCreateInfo textureCI = {};
@@ -484,7 +484,7 @@ void FRenderBackend::InitializeTexture2D( FTextureGPU * _Texture, ETexturePixelF
     texture->InitializeStorage( textureCI );
 }
 
-void FRenderBackend::InitializeTexture2DArray( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
+void ARenderBackend::InitializeTexture2DArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureStorageCreateInfo textureCI = {};
@@ -498,7 +498,7 @@ void FRenderBackend::InitializeTexture2DArray( FTextureGPU * _Texture, ETextureP
     texture->InitializeStorage( textureCI );
 }
 
-void FRenderBackend::InitializeTexture3D( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
+void ARenderBackend::InitializeTexture3D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureStorageCreateInfo textureCI = {};
@@ -512,7 +512,7 @@ void FRenderBackend::InitializeTexture3D( FTextureGPU * _Texture, ETexturePixelF
     texture->InitializeStorage( textureCI );
 }
 
-void FRenderBackend::InitializeTextureCubemap( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
+void ARenderBackend::InitializeTextureCubemap( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureStorageCreateInfo textureCI = {};
@@ -524,7 +524,7 @@ void FRenderBackend::InitializeTextureCubemap( FTextureGPU * _Texture, ETextureP
     texture->InitializeStorage( textureCI );
 }
 
-void FRenderBackend::InitializeTextureCubemapArray( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+void ARenderBackend::InitializeTextureCubemapArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureStorageCreateInfo textureCI = {};
@@ -537,7 +537,7 @@ void FRenderBackend::InitializeTextureCubemapArray( FTextureGPU * _Texture, ETex
     texture->InitializeStorage( textureCI );
 }
 
-void FRenderBackend::InitializeTexture2DNPOT( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
+void ARenderBackend::InitializeTexture2DNPOT( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureStorageCreateInfo textureCI = {};
@@ -550,7 +550,7 @@ void FRenderBackend::InitializeTexture2DNPOT( FTextureGPU * _Texture, ETexturePi
     texture->InitializeStorage( textureCI );
 }
 
-void FRenderBackend::WriteTexture( FTextureGPU * _Texture, FTextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) {
+void ARenderBackend::WriteTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureRect rect;
@@ -565,7 +565,7 @@ void FRenderBackend::WriteTexture( FTextureGPU * _Texture, FTextureRect const & 
     texture->WriteRect( rect, PixelFormatTable[_PixelFormat], _SizeInBytes, _Alignment, _SysMem );
 }
 
-void FRenderBackend::ReadTexture( FTextureGPU * _Texture, FTextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) {
+void ARenderBackend::ReadTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
     GHI::TextureRect rect;
@@ -580,9 +580,9 @@ void FRenderBackend::ReadTexture( FTextureGPU * _Texture, FTextureRect const & _
     texture->ReadRect( rect, PixelFormatTable[_PixelFormat], _SizeInBytes, _Alignment, _SysMem );
 }
 
-FBufferGPU * FRenderBackend::CreateBuffer( IGPUResourceOwner * _Owner ) {
-    void * pData = GZoneMemory.AllocCleared( sizeof( FBufferGPU ), 1 );
-    FBufferGPU * buffer = new (pData) FBufferGPU;
+ABufferGPU * ARenderBackend::CreateBuffer( IGPUResourceOwner * _Owner ) {
+    void * pData = GZoneMemory.AllocCleared( sizeof( ABufferGPU ), 1 );
+    ABufferGPU * buffer = new (pData) ABufferGPU;
     buffer->pOwner = _Owner;
     buffer->pHandleGPU = GZoneMemory.AllocCleared( sizeof( GHI::Buffer ), 1 );
     new (buffer->pHandleGPU) GHI::Buffer;
@@ -590,17 +590,17 @@ FBufferGPU * FRenderBackend::CreateBuffer( IGPUResourceOwner * _Owner ) {
     return buffer;
 }
 
-void FRenderBackend::DestroyBuffer( FBufferGPU * _Buffer ) {
+void ARenderBackend::DestroyBuffer( ABufferGPU * _Buffer ) {
     using namespace GHI;
     UnregisterGPUResource( _Buffer );
     GHI::Buffer * texture = GPUBufferHandle( _Buffer );
     texture->~Buffer();
     GZoneMemory.Dealloc( _Buffer->pHandleGPU );
-    _Buffer->~FBufferGPU();
+    _Buffer->~ABufferGPU();
     GZoneMemory.Dealloc( _Buffer );
 }
 
-void FRenderBackend::InitializeBuffer( FBufferGPU * _Buffer, size_t _SizeInBytes, bool _DynamicStorage ) {
+void ARenderBackend::InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes, bool _DynamicStorage ) {
     GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
 
     GHI::BufferCreateInfo bufferCI = {};
@@ -630,55 +630,55 @@ void FRenderBackend::InitializeBuffer( FBufferGPU * _Buffer, size_t _SizeInBytes
     buffer->Initialize( bufferCI );
 }
 
-void FRenderBackend::WriteBuffer( FBufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) {
+void ARenderBackend::WriteBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) {
     GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
 
     buffer->WriteRange( _ByteOffset, _SizeInBytes, _SysMem );
 }
 
-void FRenderBackend::ReadBuffer( FBufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) {
+void ARenderBackend::ReadBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) {
     GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
 
     buffer->ReadRange( _ByteOffset, _SizeInBytes, _SysMem );
 }
 
-FMaterialGPU * FRenderBackend::CreateMaterial( IGPUResourceOwner * _Owner ) {
-    void * pData = GZoneMemory.AllocCleared( sizeof( FMaterialGPU ), 1 );
-    FMaterialGPU * material = new (pData) FMaterialGPU;
+AMaterialGPU * ARenderBackend::CreateMaterial( IGPUResourceOwner * _Owner ) {
+    void * pData = GZoneMemory.AllocCleared( sizeof( AMaterialGPU ), 1 );
+    AMaterialGPU * material = new (pData) AMaterialGPU;
     material->pOwner = _Owner;
     RegisterGPUResource( material );
     return material;
 }
 
-void FRenderBackend::DestroyMaterial( FMaterialGPU * _Material ) {
+void ARenderBackend::DestroyMaterial( AMaterialGPU * _Material ) {
     using namespace GHI;
 
     UnregisterGPUResource( _Material );
 
-    FShadeModelLit * Lit = (FShadeModelLit *)_Material->ShadeModel.Lit;
-    FShadeModelUnlit* Unlit = (FShadeModelUnlit *)_Material->ShadeModel.Unlit;
-    FShadeModelHUD * HUD = (FShadeModelHUD *)_Material->ShadeModel.HUD;
+    AShadeModelLit * Lit = (AShadeModelLit *)_Material->ShadeModel.Lit;
+    AShadeModelUnlit* Unlit = (AShadeModelUnlit *)_Material->ShadeModel.Unlit;
+    AShadeModelHUD * HUD = (AShadeModelHUD *)_Material->ShadeModel.HUD;
 
     if ( Lit ) {
-        Lit->~FShadeModelLit();
+        Lit->~AShadeModelLit();
         GZoneMemory.Dealloc( Lit );
     }
 
     if ( Unlit ) {
-        Unlit->~FShadeModelUnlit();
+        Unlit->~AShadeModelUnlit();
         GZoneMemory.Dealloc( Unlit );
     }
 
     if ( HUD ) {
-        HUD->~FShadeModelHUD();
+        HUD->~AShadeModelHUD();
         GZoneMemory.Dealloc( HUD );
     }
 
-    _Material->~FMaterialGPU();
+    _Material->~AMaterialGPU();
     GZoneMemory.Dealloc( _Material );
 }
 
-void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuildData const * _BuildData ) {
+void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) {
     using namespace GHI;
 
     _Material->MaterialType = _BuildData->Type;
@@ -700,24 +700,24 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
 
     POLYGON_CULL cullMode = PolygonCullLUT[_BuildData->Facing];
 
-    FShadeModelLit   * Lit   = (FShadeModelLit *)_Material->ShadeModel.Lit;
-    FShadeModelUnlit * Unlit = (FShadeModelUnlit *)_Material->ShadeModel.Unlit;
-    FShadeModelHUD   * HUD   = (FShadeModelHUD *)_Material->ShadeModel.HUD;
+    AShadeModelLit   * Lit   = (AShadeModelLit *)_Material->ShadeModel.Lit;
+    AShadeModelUnlit * Unlit = (AShadeModelUnlit *)_Material->ShadeModel.Unlit;
+    AShadeModelHUD   * HUD   = (AShadeModelHUD *)_Material->ShadeModel.HUD;
 
     if ( Lit ) {
-        Lit->~FShadeModelLit();
+        Lit->~AShadeModelLit();
         GZoneMemory.Dealloc( Lit );
         _Material->ShadeModel.Lit = nullptr;
     }
 
     if ( Unlit ) {
-        Unlit->~FShadeModelUnlit();
+        Unlit->~AShadeModelUnlit();
         GZoneMemory.Dealloc( Unlit );
         _Material->ShadeModel.Unlit = nullptr;
     }
 
     if ( HUD ) {
-        HUD->~FShadeModelHUD();
+        HUD->~AShadeModelHUD();
         GZoneMemory.Dealloc( HUD );
         _Material->ShadeModel.HUD = nullptr;
     }
@@ -725,8 +725,8 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
     switch ( _Material->MaterialType ) {
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT: {
-        void * pMem = GZoneMemory.Alloc( sizeof( FShadeModelLit ), 1 );
-        Lit = new (pMem) FShadeModelLit();
+        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelLit ), 1 );
+        Lit = new (pMem) AShadeModelLit();
         _Material->ShadeModel.Lit = Lit;
 
         Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL );
@@ -747,8 +747,8 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
     }
 
     case MATERIAL_TYPE_UNLIT: {
-        void * pMem = GZoneMemory.Alloc( sizeof( FShadeModelUnlit ), 1 );
-        Unlit = new (pMem) FShadeModelUnlit();
+        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelUnlit ), 1 );
+        Unlit = new (pMem) AShadeModelUnlit();
         _Material->ShadeModel.Unlit = Unlit;
 
         Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL );
@@ -767,8 +767,8 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
 
     case MATERIAL_TYPE_HUD:
     case MATERIAL_TYPE_POSTPROCESS: {
-        void * pMem = GZoneMemory.Alloc( sizeof( FShadeModelHUD ), 1 );
-        HUD = new (pMem) FShadeModelHUD();
+        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelHUD ), 1 );
+        HUD = new (pMem) AShadeModelHUD();
         _Material->ShadeModel.HUD = HUD;
         HUD->ColorPassHUD.Create( _BuildData->ShaderData );
         break;
@@ -815,7 +815,7 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
     };
 
     for ( int i = 0 ; i < _BuildData->NumSamplers ; i++ ) {
-        FTextureSampler const * desc = &_BuildData->Samplers[i];
+        STextureSampler const * desc = &_BuildData->Samplers[i];
 
         samplerCI.Filter = SamplerFilterLUT[ desc->Filter ];
         samplerCI.AddressU = SamplerAddressLUT[ desc->AddressU ];
@@ -831,15 +831,15 @@ void FRenderBackend::InitializeMaterial( FMaterialGPU * _Material, FMaterialBuil
     }
 }
 
-size_t FRenderBackend::AllocateJoints( size_t _JointsCount ) {
+size_t ARenderBackend::AllocateJoints( size_t _JointsCount ) {
     return GJointsAllocator.AllocJoints( _JointsCount );
 }
 
-void FRenderBackend::WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) {
+void ARenderBackend::WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) {
     GJointsAllocator.Buffer.WriteRange( _Offset, _JointsCount * sizeof( Float3x4 ), _Matrices );
 }
 
-void FRenderBackend::RenderFrame( FRenderFrame * _FrameData ) {
+void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
     GFrameData = _FrameData;
 
     GJointsAllocator.Reset();
@@ -857,7 +857,7 @@ void FRenderBackend::RenderFrame( FRenderFrame * _FrameData ) {
     const Float2 orthoMaxs( (float)GFrameData->CanvasWidth, 0.0f );
     GFrameResources.ViewUniformBufferUniformData.OrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs );
     GFrameResources.ViewUniformBuffer.WriteRange(
-        GHI_STRUCT_OFS( FViewUniformBuffer, OrthoProjection ),
+        GHI_STRUCT_OFS( SViewUniformBuffer, OrthoProjection ),
         sizeof( GFrameResources.ViewUniformBufferUniformData.OrthoProjection ),
         &GFrameResources.ViewUniformBufferUniformData.OrthoProjection );
 
@@ -867,7 +867,7 @@ void FRenderBackend::RenderFrame( FRenderFrame * _FrameData ) {
     SwapBuffers();
 }
 
-void FRenderBackend::RenderView( FRenderView * _RenderView ) {
+void ARenderBackend::RenderView( SRenderView * _RenderView ) {
     GRenderView = _RenderView;
 
     if ( !RVRenderView ) {
@@ -887,18 +887,18 @@ void FRenderBackend::RenderView( FRenderView * _RenderView ) {
         GWireframePassRenderer.RenderInstances();
     }
 
-    if ( GRenderView->DbgCmdCount > 0 ) {
+    if ( GRenderView->DebugDrawCommandCount > 0 ) {
         GDebugDrawPassRenderer.RenderInstances();
     }
 }
 
-void OpenGL45RenderView( FRenderView * _RenderView ) {
+void OpenGL45RenderView( SRenderView * _RenderView ) {
     GOpenGL45RenderBackend.RenderView( _RenderView );
 }
 
-void FRenderBackend::SwapBuffers() {
+void ARenderBackend::SwapBuffers() {
     if ( bSwapControl ) {
-        int i = FMath::Clamp( RVSwapInterval.GetInteger(), -1, 1 );
+        int i = Math::Clamp( RVSwapInterval.GetInteger(), -1, 1 );
         if ( i == -1 && !bSwapControlTear ) {
             // Tearing not supported
             i = 0;

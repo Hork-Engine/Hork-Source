@@ -54,7 +54,7 @@ void WViewport::OnTransformDirty() {
     UpdatePlayerControllerViewport();
 }
 
-WViewport & WViewport::SetPlayerController( FPlayerController * _PlayerController ) {
+WViewport & WViewport::SetPlayerController( APlayerController * _PlayerController ) {
     PlayerController = _PlayerController;
 
     UpdatePlayerControllerViewport();
@@ -62,11 +62,11 @@ WViewport & WViewport::SetPlayerController( FPlayerController * _PlayerControlle
     return *this;
 }
 
-void WViewport::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WViewport::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
     
 }
 
-void WViewport::OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void WViewport::OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) {
     //static int i = 0;
     //i++;
     //GLogger.Printf( "OnMouseMoveEvent %d\n", i );
@@ -84,13 +84,13 @@ void WViewport::OnFocusReceive() {
     }
 }
 
-void WViewport::OnDrawEvent( FCanvas & _Canvas ) {
+void WViewport::OnDrawEvent( ACanvas & _Canvas ) {
     if ( PlayerController ) {
         Float2 mins, maxs;
         GetDesktopRect( mins, maxs, false );
 
         Float2 const & pos = mins;//PlayerController->GetViewportPosition();
         Float2 const & size = maxs-mins;//PlayerController->GetViewportSize();
-        _Canvas.DrawViewport( PlayerController, pos.X, pos.Y, size.X, size.Y, FColor4::White(), 0, -1, COLOR_BLENDING_DISABLED );
+        _Canvas.DrawViewport( PlayerController, pos.X, pos.Y, size.X, size.Y, AColor4::White(), 0, -1, COLOR_BLENDING_DISABLED );
     }
 }

@@ -32,47 +32,47 @@ SOFTWARE.
 #include <Engine/World/Public/Actors/Actor.h>
 #include <Engine/World/Public/World.h>
 
-AN_BEGIN_CLASS_META( FActorComponent )
+AN_BEGIN_CLASS_META( AActorComponent )
 AN_ATTRIBUTE_( bCanEverTick, AF_DEFAULT )
 AN_END_CLASS_META()
 
-FActorComponent::FActorComponent() {
-    GUID.Generate();
+AActorComponent::AActorComponent() {
+    //GUID.Generate();
 }
 
-FWorld * FActorComponent::GetWorld() const {
+AWorld * AActorComponent::GetWorld() const {
     AN_Assert( ParentActor != nullptr );
     return ParentActor->GetWorld();
 }
 
-FLevel * FActorComponent::GetLevel() const {
+ALevel * AActorComponent::GetLevel() const {
     AN_Assert( ParentActor != nullptr );
     return ParentActor->GetLevel();
 }
 
-void FActorComponent::SetName( FString const & _Name ) {
-    if ( !ParentActor ) {
-        // In constructor
-        Name = _Name;
-        return;
-    }
+//void AActorComponent::SetName( AString const & _Name ) {
+//    if ( !ParentActor ) {
+//        // In constructor
+//        Name = _Name;
+//        return;
+//    }
+//
+//    AString newName = _Name;
+//
+//    // Clear name for GenerateComponentUniqueName
+//    Name.Clear();
+//
+//    // Generate new name
+//    Name = ParentActor->GenerateComponentUniqueName( newName.CStr() );
+//}
 
-    FString newName = _Name;
-
-    // Clear name for GenerateComponentUniqueName
-    Name.Clear();
-
-    // Generate new name
-    Name = ParentActor->GenerateComponentUniqueName( newName.ToConstChar() );
-}
-
-void FActorComponent::RegisterComponent() {
+void AActorComponent::RegisterComponent() {
     InitializeComponent();
 
     // FIXME: Call BeginPlay() from here?
 }
 
-void FActorComponent::Destroy() {
+void AActorComponent::Destroy() {
 
     if ( bPendingKill ) {
         return;
@@ -91,15 +91,15 @@ void FActorComponent::Destroy() {
     bInitialized = false;
 }
 
-int FActorComponent::Serialize( FDocument & _Doc ) {
+int AActorComponent::Serialize( ADocument & _Doc ) {
     int object = Super::Serialize( _Doc );
 
-    _Doc.AddStringField( object, "Name", _Doc.ProxyBuffer.NewString( Name ).ToConstChar() );
+    _Doc.AddStringField( object, "Name", _Doc.ProxyBuffer.NewString( GetObjectName() ).CStr() );
     //_Doc.AddStringField( object, "bCreatedDuringConstruction", bCreatedDuringConstruction ? "1" : "0" );
 
     return object;
 }
 
-void FActorComponent::Clone( FActorComponent const * _TemplateComponent ) {
-    FClassMeta::CloneAttributes( _TemplateComponent, this );
+void AActorComponent::Clone( AActorComponent const * _TemplateComponent ) {
+    AClassMeta::CloneAttributes( _TemplateComponent, this );
 }

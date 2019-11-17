@@ -48,8 +48,8 @@ struct SWaveFormat {
     int         BlocksCount;
 };
 
-class ANGIE_API FWavAudioTrack : public IAudioStreamInterface {
-    AN_CLASS( FWavAudioTrack, IAudioStreamInterface )
+class ANGIE_API AWavAudioTrack : public IAudioStreamInterface {
+    AN_CLASS( AWavAudioTrack, IAudioStreamInterface )
 
 public:
     bool InitializeFileStream( const char * _FileName ) override;
@@ -63,11 +63,11 @@ public:
     int StreamDecodePCM( short * _Buffer, int _NumShorts ) override;
 
 protected:
-    FWavAudioTrack();
-    ~FWavAudioTrack();
+    AWavAudioTrack();
+    ~AWavAudioTrack();
 
 private:
-    FFileStream File;
+    AFileStream File;
     SWaveFormat Wave;
     const byte * WaveMemory;
     int CurrentSample;
@@ -76,8 +76,8 @@ private:
     int ADPCMBufferLength;
 };
 
-class ANGIE_API FWavDecoder : public IAudioDecoderInterface {
-    AN_CLASS( FWavDecoder, IAudioDecoderInterface )
+class ANGIE_API AWavDecoder : public IAudioDecoderInterface {
+    AN_CLASS( AWavDecoder, IAudioDecoderInterface )
 
 public:
     IAudioStreamInterface * CreateAudioStream() override;
@@ -89,5 +89,5 @@ public:
     bool ReadEncoded( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) override;
 
 protected:
-    FWavDecoder();
+    AWavDecoder();
 };

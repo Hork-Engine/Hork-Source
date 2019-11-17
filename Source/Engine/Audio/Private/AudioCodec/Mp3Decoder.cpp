@@ -75,7 +75,7 @@ static bool LoadLibMpg123() {
     bool bError = false;
 
     #define GET_PROC_ADDRESS( Proc ) { \
-        if ( !GRuntime.GetProcAddress( LibMpg, &Proc, FString::Fmt( "mpg123%s", AN_STRINGIFY( Proc )+3 ) ) ) { \
+        if ( !GRuntime.GetProcAddress( LibMpg, &Proc, AString::Fmt( "mpg123%s", AN_STRINGIFY( Proc )+3 ) ) ) { \
             GLogger.Printf( "Failed to load %s\n", AN_STRINGIFY(Proc) ); \
             bError = true; \
         } \
@@ -133,23 +133,23 @@ void UnloadLibMpg123() {
     }
 }
 
-AN_CLASS_META( FMp3AudioTrack )
-AN_CLASS_META( FMp3Decoder )
+AN_CLASS_META( AMp3AudioTrack )
+AN_CLASS_META( AMp3Decoder )
 
-FMp3AudioTrack::FMp3AudioTrack() {
+AMp3AudioTrack::AMp3AudioTrack() {
     LoadLibMpg123();
 
     Handle = NULL;
 }
 
-FMp3AudioTrack::~FMp3AudioTrack() {
+AMp3AudioTrack::~AMp3AudioTrack() {
     if ( Handle ) {
         mpg_close( Handle );
         mpg_delete( Handle );
     }
 }
 
-bool FMp3AudioTrack::InitializeFileStream( const char * _FileName ) {
+bool AMp3AudioTrack::InitializeFileStream( const char * _FileName ) {
     int result = MPG123_OK;
     long sampleRate = 0;
     int encoding = 0;
@@ -185,15 +185,15 @@ bool FMp3AudioTrack::InitializeFileStream( const char * _FileName ) {
     return true;
 }
 
-static ssize_t ReadFS( void * _File, void * _Buffer, size_t _BufferLength ) {
-    FFileStream * file = static_cast< FFileStream * >( _File );
+static ssize_t ReadFile( void * _File, void * _Buffer, size_t _BufferLength ) {
+    IStreamBase * file = static_cast< IStreamBase * >( _File );
 
-    file->Read( _Buffer, _BufferLength );
+    file->ReadBuffer( _Buffer, _BufferLength );
     return file->GetReadBytesCount();
 }
 
-static off_t SeekFS( void * _File, off_t _Offset, int _Origin ) {
-    FFileStream * file = static_cast< FFileStream * >( _File );
+static off_t SeekFile( void * _File, off_t _Offset, int _Origin ) {
+    IStreamBase * file = static_cast< IStreamBase * >( _File );
     int Result = -1;
 
     switch ( _Origin ) {
@@ -205,27 +205,7 @@ static off_t SeekFS( void * _File, off_t _Offset, int _Origin ) {
     return ( Result == 0 ) ? file->Tell() : -1;
 }
 
-static ssize_t ReadMem( void * _File, void * _Buffer, size_t _BufferLength ) {
-    FMemoryStream * file = static_cast< FMemoryStream * >( _File );
-
-    file->Read( _Buffer, _BufferLength );
-    return file->GetReadBytesCount();
-}
-
-static off_t SeekMem( void * _File, off_t _Offset, int _Origin ) {
-    FMemoryStream * file = static_cast< FMemoryStream * >( _File );
-    int result = -1;
-
-    switch ( _Origin ) {
-    case SEEK_CUR: result = file->SeekCur( _Offset ); break;
-    case SEEK_END: result = file->SeekEnd( _Offset ); break;
-    case SEEK_SET: result = file->SeekSet( _Offset ); break;
-    }
-
-    return ( result == 0 ) ? file->Tell() : -1;
-}
-
-bool FMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
+bool AMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
     int result = MPG123_OK;
     long sampleRate = 0;
     int encoding = 0;
@@ -236,7 +216,7 @@ bool FMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
         return false;
     }
 
-    FMemoryStream file;
+    AMemoryStream file;
 
     if ( !file.OpenRead( "mpg", _EncodedData, _EncodedDataLength ) ) {
         return false;
@@ -247,7 +227,7 @@ bool FMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
         return false;
     }
 
-    if ( mpg_replace_reader_handle( Handle, ReadMem, SeekMem, NULL ) != MPG123_OK ) {
+    if ( mpg_replace_reader_handle( Handle, ReadFile, SeekFile, NULL ) != MPG123_OK ) {
         GLogger.Printf( "Failed to set file callbacks: %s\n", mpg_strerror( Handle ) );
         mpg_delete( Handle );
         Handle = NULL;
@@ -274,19 +254,19 @@ bool FMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
     return true;
 }
 
-void FMp3AudioTrack::StreamRewind() {
+void AMp3AudioTrack::StreamRewind() {
     if ( Handle ) {
         mpg_seek( Handle, 0, SEEK_SET );
     }
 }
 
-void FMp3AudioTrack::StreamSeek( int _PositionInSamples ) {
+void AMp3AudioTrack::StreamSeek( int _PositionInSamples ) {
     if ( Handle ) {
         mpg_seek( Handle, _PositionInSamples, SEEK_CUR );
     }
 }
 
-int FMp3AudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
+int AMp3AudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
     if ( Handle ) {
         int result;
         size_t bytesRead = 0;
@@ -294,7 +274,7 @@ int FMp3AudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
         int bufferSize;
         byte * buffer = (byte *) _Buffer;
         do {
-            bufferSize = FMath::Min( _NumShorts<<1, BlockSize );
+            bufferSize = Math::Min( _NumShorts<<1, BlockSize );
             result = mpg_read( Handle, buffer, bufferSize, &bytesRead );
             numSamples += bytesRead;
             buffer += bytesRead;
@@ -306,15 +286,15 @@ int FMp3AudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
     return 0;
 }
 
-FMp3Decoder::FMp3Decoder() {
+AMp3Decoder::AMp3Decoder() {
 
 }
 
-IAudioStreamInterface * FMp3Decoder::CreateAudioStream() {
-    return CreateInstanceOf< FMp3AudioTrack >();
+IAudioStreamInterface * AMp3Decoder::CreateAudioStream() {
+    return CreateInstanceOf< AMp3AudioTrack >();
 }
 
-bool FMp3Decoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
+bool AMp3Decoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
     mpg123_handle * mh = NULL;
     int result = MPG123_OK;
     long sampleRate = 0;
@@ -391,7 +371,7 @@ bool FMp3Decoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
     return true;
 }
 
-bool FMp3Decoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
+bool AMp3Decoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
     mpg123_handle * mh = NULL;
     int result = MPG123_OK;
     long sampleRate = 0;
@@ -416,13 +396,13 @@ bool FMp3Decoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
         return false;
     }
 
-    if ( mpg_replace_reader_handle( mh, ReadFS, SeekFS, NULL ) != MPG123_OK ) {
+    if ( mpg_replace_reader_handle( mh, ReadFile, SeekFile, NULL ) != MPG123_OK ) {
         GLogger.Printf( "Failed to set file callbacks: %s\n", mpg_strerror( mh ) );
         mpg_delete( mh );
         return false;
     }
 
-    FFileStream file;
+    AFileStream file;
 
     if ( !file.OpenRead( _FileName ) ) {
         GLogger.Printf( "Failed to open file %s\n", _FileName );
@@ -452,7 +432,7 @@ bool FMp3Decoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
     int BufferLength = file.Tell();
     byte * Buffer = ( byte * )GZoneMemory.Alloc( BufferLength, 1 );
     file.SeekSet( 0 );
-    file.Read( Buffer, BufferLength );
+    file.ReadBuffer( Buffer, BufferLength );
 
     *_Channels = channels;
     *_SampleRate = sampleRate;

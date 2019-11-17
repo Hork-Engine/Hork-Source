@@ -37,25 +37,25 @@ enum ETimerState {
     TS_TriggeredOnFirstDelay = 4
 };
 
-void FTimer::Trigger() {
+void ATimer::Trigger() {
     Callback();
 }
 
-void FTimer::Restart() {
+void ATimer::Restart() {
     State = 0;
     NumPulses = 0;
     ElapsedTime = 0;
 }
 
-void FTimer::Stop() {
+void ATimer::Stop() {
     State = TS_Finished;
 }
 
-bool FTimer::IsStopped() const {
+bool ATimer::IsStopped() const {
     return !!(State & TS_Finished);
 }
 
-void FTimer::Tick( FWorld * _World, float _TimeStep ) {
+void ATimer::Tick( AWorld * _World, float _TimeStep ) {
     if ( State & TS_Finished ) {
         return;
     }

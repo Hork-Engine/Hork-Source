@@ -34,14 +34,14 @@ SOFTWARE.
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/GameThread/Public/EngineInstance.h>
 
-AN_CLASS_META( FPlayerController )
-AN_CLASS_META( FRenderingParameters )
+AN_CLASS_META( APlayerController )
+AN_CLASS_META( ARenderingParameters )
 
-FPlayerController * FPlayerController::CurrentAudioListener = nullptr;
-FCommandContext * FPlayerController::CurrentCommandContext = nullptr;
+APlayerController * APlayerController::CurrentAudioListener = nullptr;
+ACommandContext * APlayerController::CurrentCommandContext = nullptr;
 
-FPlayerController::FPlayerController() {
-    InputComponent = AddComponent< FInputComponent >( "PlayerControllerInput" );
+APlayerController::APlayerController() {
+    InputComponent = CreateComponent< AInputComponent >( "PlayerControllerInput" );
 
     bCanEverTick = true;
 
@@ -56,20 +56,20 @@ FPlayerController::FPlayerController() {
         CurrentCommandContext = &CommandContext;
     }
 
-    CommandContext.AddCommand( "quit", { this, &FPlayerController::Quit }, "Quit from application" );
+    CommandContext.AddCommand( "quit", { this, &APlayerController::Quit }, "Quit from application" );
 }
 
-void FPlayerController::Quit( FRuntimeCommandProcessor const & _Proc ) {
+void APlayerController::Quit( ARuntimeCommandProcessor const & _Proc ) {
     GRuntime.PostTerminateEvent();
 }
 
-void FPlayerController::EndPlay() {
+void APlayerController::EndPlay() {
     Super::EndPlay();
 
-    for ( int i = 0 ; i < ViewActors.Size() ; i++ ) {
-        FViewActor * viewer = ViewActors[i];
-        viewer->RemoveRef();
-    }
+    //for ( int i = 0 ; i < ViewActors.Size() ; i++ ) {
+    //    FViewActor * viewer = ViewActors[i];
+    //    viewer->RemoveRef();
+    //}
 
     if ( CurrentAudioListener == this ) {
         CurrentAudioListener = nullptr;
@@ -80,7 +80,7 @@ void FPlayerController::EndPlay() {
     }
 }
 
-void FPlayerController::Tick( float _TimeStep ) {
+void APlayerController::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
 
     if ( Pawn && Pawn->IsPendingKill() ) {
@@ -88,7 +88,7 @@ void FPlayerController::Tick( float _TimeStep ) {
     }
 }
 
-void FPlayerController::SetPawn( FPawn * _Pawn ) {
+void APlayerController::SetPawn( APawn * _Pawn ) {
     if ( Pawn == _Pawn ) {
         return;
     }
@@ -106,10 +106,10 @@ void FPlayerController::SetPawn( FPawn * _Pawn ) {
 
     InputComponent->UnbindAll();
 
-    InputComponent->BindAction( "Pause", IE_Press, this, &FPlayerController::TogglePause, true );
-    InputComponent->BindAction( "TakeScreenshot", IE_Press, this, &FPlayerController::TakeScreenshot, true );
-    InputComponent->BindAction( "ToggleWireframe", IE_Press, this, &FPlayerController::ToggleWireframe, true );
-    InputComponent->BindAction( "ToggleDebugDraw", IE_Press, this, &FPlayerController::ToggleDebugDraw, true );
+    InputComponent->BindAction( "Pause", IE_Press, this, &APlayerController::TogglePause, true );
+    InputComponent->BindAction( "TakeScreenshot", IE_Press, this, &APlayerController::TakeScreenshot, true );
+    InputComponent->BindAction( "ToggleWireframe", IE_Press, this, &APlayerController::ToggleWireframe, true );
+    InputComponent->BindAction( "ToggleDebugDraw", IE_Press, this, &APlayerController::ToggleDebugDraw, true );
 
     if ( Pawn ) {
         Pawn->OwnerController = this;
@@ -122,20 +122,20 @@ void FPlayerController::SetPawn( FPawn * _Pawn ) {
     }
 }
 
-void FPlayerController::SetViewCamera( FCameraComponent * _Camera ) {
+void APlayerController::SetViewCamera( ACameraComponent * _Camera ) {
     CameraComponent = _Camera;
 }
 
-void FPlayerController::SetViewport( Float2 const & _Position, Float2 const & _Size ) {
+void APlayerController::SetViewport( Float2 const & _Position, Float2 const & _Size ) {
     ViewportPosition = _Position;
     ViewportSize = _Size;
 }
 
-void FPlayerController::SetAudioListener( FSceneComponent * _AudioListener ) {
+void APlayerController::SetAudioListener( ASceneComponent * _AudioListener ) {
     AudioListener = _AudioListener;
 }
 
-void FPlayerController::SetHUD( FHUD * _HUD ) {
+void APlayerController::SetHUD( AHUD * _HUD ) {
     if ( HUD == _HUD ) {
         return;
     }
@@ -157,78 +157,78 @@ void FPlayerController::SetHUD( FHUD * _HUD ) {
     }
 }
 
-void FPlayerController::SetRenderingParameters( FRenderingParameters * _RP ) {
+void APlayerController::SetRenderingParameters( ARenderingParameters * _RP ) {
     RenderingParameters = _RP;
 }
 
-void FPlayerController::SetAudioParameters( FAudioParameters * _AudioParameters ) {
+void APlayerController::SetAudioParameters( AAudioParameters * _AudioParameters ) {
     AudioParameters = _AudioParameters;
 }
 
-void FPlayerController::SetInputMappings( FInputMappings * _InputMappings ) {
+void APlayerController::SetInputMappings( AInputMappings * _InputMappings ) {
     InputComponent->SetInputMappings( _InputMappings );
 }
 
-FInputMappings * FPlayerController::GetInputMappings() {
+AInputMappings * APlayerController::GetInputMappings() {
     return InputComponent->GetInputMappings();
 }
 
-void FPlayerController::AddViewActor( FViewActor * _ViewActor ) {
-    ViewActors.Append( _ViewActor );
-    _ViewActor->AddRef();
-}
+//void APlayerController::AddViewActor( FViewActor * _ViewActor ) {
+//    ViewActors.Append( _ViewActor );
+//    _ViewActor->AddRef();
+//}
 
-void FPlayerController::VisitViewActors() {
-    for ( int i = 0 ; i < ViewActors.Size() ; ) {
-        FViewActor * viewer = ViewActors[i];
+//void APlayerController::VisitViewActors() {
+//    for ( int i = 0 ; i < ViewActors.Size() ; ) {
+//        FViewActor * viewer = ViewActors[i];
 
-        if ( viewer->IsPendingKill() ) {
-            viewer->RemoveRef();
-            ViewActors.Remove( i );
-            continue;
-        }
+//        if ( viewer->IsPendingKill() ) {
+//            viewer->RemoveRef();
+//            ViewActors.Remove( i );
+//            continue;
+//        }
 
-        if ( CameraComponent ) {
-            viewer->OnView( CameraComponent );
-        }
+//        if ( CameraComponent ) {
+//            viewer->OnView( CameraComponent );
+//        }
 
-        i++;
-    }
-}
+//        i++;
+//    }
+//}
 
-void FPlayerController::SetPlayerIndex( int _ControllerId ) {
+void APlayerController::SetPlayerIndex( int _ControllerId ) {
     InputComponent->ControllerId = _ControllerId;
 }
 
-int FPlayerController::GetPlayerIndex() const {
+int APlayerController::GetPlayerIndex() const {
     return InputComponent->ControllerId;
 }
 
-void FPlayerController::SetActive( bool _Active ) {
+void APlayerController::SetActive( bool _Active ) {
     InputComponent->bActive = _Active;
 }
 
-bool FPlayerController::IsActive() const {
+bool APlayerController::IsActive() const {
     return InputComponent->bActive;
 }
 
-void FPlayerController::TogglePause() {
+void APlayerController::TogglePause() {
     GetWorld()->SetPaused( !GetWorld()->IsPaused() );
 }
 
-void FPlayerController::TakeScreenshot() {
+void APlayerController::TakeScreenshot() {
     /*
 
     TODO: something like this?
 
-    struct FScreenshotParameters {
+    struct SScreenshotParameters {
         int Width;          // Screenshot custom width or zero to use display width
         int Height;         // Screenshot custom height or zero to use display height
         bool bJpeg;         // Use JPEG compression instead of PNG
         int Number;         // Custom screenshot number. Set to zero to generate unique number.
     };
 
-    FScreenshotParameters screenshotParams;
+    SScreenshotParameters screenshotParams;
     memset( &screenshotParams, 0, sizeof( screenshotParams ) );
 
     GRuntime.TakeScreenshot( screenshotParams );
@@ -239,43 +239,43 @@ void FPlayerController::TakeScreenshot() {
     */
 }
 
-void FPlayerController::ToggleWireframe() {
+void APlayerController::ToggleWireframe() {
     if ( RenderingParameters ) {
         RenderingParameters->bWireframe ^= 1;
     }
 }
 
-void FPlayerController::ToggleDebugDraw() {
+void APlayerController::ToggleDebugDraw() {
     if ( RenderingParameters ) {
         RenderingParameters->bDrawDebug ^= 1;
     }
 }
 
-void FPlayerController::SetCurrentAudioListener() {
+void APlayerController::SetCurrentAudioListener() {
     CurrentAudioListener = this;
 }
 
-FPlayerController * FPlayerController::GetCurrentAudioListener() {
+APlayerController * APlayerController::GetCurrentAudioListener() {
     return CurrentAudioListener;
 }
 
-void FPlayerController::SetCurrentCommandContext() {
+void APlayerController::SetCurrentCommandContext() {
     CurrentCommandContext = &CommandContext;
 }
 
-FCommandContext * FPlayerController::GetCurrentCommandContext() {
+ACommandContext * APlayerController::GetCurrentCommandContext() {
     return CurrentCommandContext;
 }
 
-Float2 FPlayerController::GetNormalizedCursorPos() const {
+Float2 APlayerController::GetNormalizedCursorPos() const {
     if ( ViewportSize.X > 0 && ViewportSize.Y > 0 ) {
         Float2 pos = GEngine.GetCursorPosition();
         pos.X -= ViewportPosition.X;
         pos.Y -= ViewportPosition.Y;
         pos.X /= ViewportSize.X;
         pos.Y /= ViewportSize.Y;
-        pos.X = FMath::Saturate( pos.X );
-        pos.Y = FMath::Saturate( pos.Y );
+        pos.X = Math::Saturate( pos.X );
+        pos.Y = Math::Saturate( pos.Y );
         return pos;
     } else {
         return Float2::Zero();

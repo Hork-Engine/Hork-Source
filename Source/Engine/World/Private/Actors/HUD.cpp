@@ -32,13 +32,13 @@ SOFTWARE.
 #include <Engine/World/Public/Canvas.h>
 #include <Engine/Core/Public/Utf8.h>
 
-AN_CLASS_META( FHUD )
+AN_CLASS_META( AHUD )
 
-FHUD::FHUD() {
+AHUD::AHUD() {
 
 }
 
-void FHUD::Draw( FCanvas * _Canvas, int _X, int _Y, int _W, int _H ) {
+void AHUD::Draw( ACanvas * _Canvas, int _X, int _Y, int _W, int _H ) {
     Canvas = _Canvas;
     ViewportX = _X;
     ViewportY = _Y;
@@ -48,11 +48,11 @@ void FHUD::Draw( FCanvas * _Canvas, int _X, int _Y, int _W, int _H ) {
     DrawHUD();
 }
 
-void FHUD::DrawHUD() {
+void AHUD::DrawHUD() {
 
 }
 
-void FHUD::DrawText( FFont * _Font, int x, int y, FColor4 const & color, const char * _Text ) {
+void AHUD::DrawText( AFont * _Font, int x, int y, AColor4 const & color, const char * _Text ) {
     const int CharacterWidth = 8;
     const int CharacterHeight = 16;
 
@@ -64,7 +64,7 @@ void FHUD::DrawText( FFont * _Font, int x, int y, FColor4 const & color, const c
     int cx = x;
 
     while ( *s ) {
-        byteLen = FCore::WideCharDecodeUTF8( s, ch );
+        byteLen = Core::WideCharDecodeUTF8( s, ch );
         if ( !byteLen ) {
             break;
         }

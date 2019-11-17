@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include <Engine/World/Public/Actors/DirectionalLight.h>
 
-AN_CLASS_META( FDirectionalLight )
+AN_CLASS_META( ADirectionalLight )
 
-FDirectionalLight::FDirectionalLight() {
-    LightComponent = AddComponent< FDirectionalLightComponent >( "DirectionalLight" );
+ADirectionalLight::ADirectionalLight() {
+    LightComponent = CreateComponent< ADirectionalLightComponent >( "DirectionalLight" );
     RootComponent = LightComponent;
 }

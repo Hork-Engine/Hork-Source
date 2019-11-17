@@ -41,24 +41,24 @@ SOFTWARE.
 
 #include "ShadowCascade.h"
 
-FRuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_CLASS_META( FLevel )
-AN_CLASS_META( FLevelArea )
-AN_CLASS_META( FLevelPortal )
+AN_CLASS_META( ALevel )
+AN_CLASS_META( ALevelArea )
+AN_CLASS_META( ALevelPortal )
 
-FLevel::FLevel() {
+ALevel::ALevel() {
     IndoorBounds.Clear();
 
-    OutdoorArea = NewObject< FLevelArea >();
+    OutdoorArea = NewObject< ALevelArea >();
     OutdoorArea->Extents = Float3( CONVEX_HULL_MAX_BOUNDS * 2 );
     OutdoorArea->ParentLevel = this;
     OutdoorArea->Bounds.Mins = -OutdoorArea->Extents * 0.5f;
     OutdoorArea->Bounds.Maxs = OutdoorArea->Extents * 0.5f;
 
-    OutdoorArea->Tree = NewObject< FOctree >();
+    OutdoorArea->Tree = NewObject< AOctree >();
     OutdoorArea->Tree->Owner = OutdoorArea;
     OutdoorArea->Tree->Build();
 
@@ -68,7 +68,7 @@ FLevel::FLevel() {
     LastVisitedArea = -1;
 }
 
-FLevel::~FLevel() {
+ALevel::~ALevel() {
     ClearLightmaps();
 
     HugeFree( LightData );
@@ -78,37 +78,37 @@ FLevel::~FLevel() {
     DestroyPortalTree();
 }
 
-void FLevel::SetLightData( const byte * _Data, int _Size ) {
+void ALevel::SetLightData( const byte * _Data, int _Size ) {
     HugeFree( LightData );
     LightData = (byte *)HugeAlloc( _Size );
     memcpy( LightData, _Data, _Size );
 }
 
-void FLevel::ClearLightmaps() {
-    for ( FTexture2D * lightmap : Lightmaps ) {
+void ALevel::ClearLightmaps() {
+    for ( ATexture * lightmap : Lightmaps ) {
         lightmap->RemoveRef();
     }
     Lightmaps.Free();
 }
 
-void FLevel::DestroyActors() {
-    for ( FActor * actor : Actors ) {
+void ALevel::DestroyActors() {
+    for ( AActor * actor : Actors ) {
         actor->Destroy();
     }
 }
 
-void FLevel::OnAddLevelToWorld() {
+void ALevel::OnAddLevelToWorld() {
     RemoveSurfaces();
     AddSurfaces();
 }
 
-void FLevel::OnRemoveLevelFromWorld() {
+void ALevel::OnRemoveLevelFromWorld() {
     RemoveSurfaces();
 }
 
-FLevelArea * FLevel::AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
+ALevelArea * ALevel::AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
 
-    FLevelArea * area = NewObject< FLevelArea >();
+    ALevelArea * area = NewObject< ALevelArea >();
     area->AddRef();
     area->Position = _Position;
     area->Extents = _Extents;
@@ -121,7 +121,7 @@ FLevelArea * FLevel::AddArea( Float3 const & _Position, Float3 const & _Extents,
         area->Bounds.Maxs[i] = area->Position[i] + halfExtents[i];
     }
 
-    area->Tree = NewObject< FOctree >();
+    area->Tree = NewObject< AOctree >();
     area->Tree->Owner = area;
     area->Tree->Build();
 
@@ -130,14 +130,14 @@ FLevelArea * FLevel::AddArea( Float3 const & _Position, Float3 const & _Extents,
     return area;
 }
 
-FLevelPortal * FLevel::AddPortal( Float3 const * _HullPoints, int _NumHullPoints, FLevelArea * _Area1, FLevelArea * _Area2 ) {
+ALevelPortal * ALevel::AddPortal( Float3 const * _HullPoints, int _NumHullPoints, ALevelArea * _Area1, ALevelArea * _Area2 ) {
     if ( _Area1 == _Area2 ) {
         return nullptr;
     }
 
-    FLevelPortal * portal = NewObject< FLevelPortal >();
+    ALevelPortal * portal = NewObject< ALevelPortal >();
     portal->AddRef();
-    portal->Hull = FConvexHull::CreateFromPoints( _HullPoints, _NumHullPoints );
+    portal->Hull = AConvexHull::CreateFromPoints( _HullPoints, _NumHullPoints );
     portal->Plane = portal->Hull->CalcPlane();
     portal->Area1 = _Area1 ? _Area1 : OutdoorArea;
     portal->Area2 = _Area2 ? _Area2 : OutdoorArea;
@@ -146,16 +146,16 @@ FLevelPortal * FLevel::AddPortal( Float3 const * _HullPoints, int _NumHullPoints
     return portal;
 }
 
-void FLevel::DestroyPortalTree() {
+void ALevel::DestroyPortalTree() {
     PurgePortals();
 
-    for ( FLevelArea * area : Areas ) {
+    for ( ALevelArea * area : Areas ) {
         area->RemoveRef();
     }
 
     Areas.Clear();
 
-    for ( FLevelPortal * portal : Portals ) {
+    for ( ALevelPortal * portal : Portals ) {
         portal->RemoveRef();
     }
 
@@ -164,18 +164,18 @@ void FLevel::DestroyPortalTree() {
     IndoorBounds.Clear();
 }
 
-void FLevel::AddSurfaces() {
-    FWorld * world = GetOwnerWorld();
+void ALevel::AddSurfaces() {
+    AWorld * world = GetOwnerWorld();
 
-    for ( FMeshComponent * mesh = world->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
+    for ( AMeshComponent * mesh = world->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
 
         // TODO: if ( !mesh->IsMarkedDirtyArea() )
         AddSurfaceAreas( mesh );
     }
 }
 
-void FLevel::RemoveSurfaces() {
-    for ( FLevelArea * area : Areas ) {
+void ALevel::RemoveSurfaces() {
+    for ( ALevelArea * area : Areas ) {
         while ( !area->Movables.IsEmpty() ) {
             RemoveSurfaceAreas( area->Movables[0] );
         }
@@ -186,24 +186,24 @@ void FLevel::RemoveSurfaces() {
     }
 }
 
-void FLevel::PurgePortals() {
+void ALevel::PurgePortals() {
     RemoveSurfaces();
 
-    for ( FAreaPortal & areaPortal : AreaPortals ) {
-        FConvexHull::Destroy( areaPortal.Hull );
+    for ( SAreaPortal & areaPortal : AreaPortals ) {
+        AConvexHull::Destroy( areaPortal.Hull );
     }
 
     AreaPortals.Clear();
 }
 
-void FLevel::BuildPortals() {
+void ALevel::BuildPortals() {
 
     PurgePortals();
 
     IndoorBounds.Clear();
 
 //    Float3 halfExtents;
-    for ( FLevelArea * area : Areas ) {
+    for ( ALevelArea * area : Areas ) {
 //        // Update area bounds
 //        halfExtents = area->Extents * 0.5f;
 //        for ( int i = 0 ; i < 3 ; i++ ) {
@@ -221,9 +221,9 @@ void FLevel::BuildPortals() {
 
     int areaPortalId = 0;
 
-    for ( FLevelPortal * portal : Portals ) {
-        FLevelArea * a1 = portal->Area1;
-        FLevelArea * a2 = portal->Area2;
+    for ( ALevelPortal * portal : Portals ) {
+        ALevelArea * a1 = portal->Area1;
+        ALevelArea * a2 = portal->Area2;
 
         if ( a1 == OutdoorArea ) {
             StdSwap( a1, a2 );
@@ -235,7 +235,7 @@ void FLevel::BuildPortals() {
         // If area position is on back side of plane, then reverse hull vertices and plane
         int id = offset == EPlaneSide::Back ? 1 : 0;
 
-        FAreaPortal * areaPortal;
+        SAreaPortal * areaPortal;
 
         areaPortal = &AreaPortals[ areaPortalId++ ];
         portal->Portals[id] = areaPortal;
@@ -271,20 +271,20 @@ void FLevel::BuildPortals() {
     AddSurfaces();
 }
 
-void FLevel::AddSurfaceToArea( int _AreaNum, FSpatialObject * _Surf ) {
-    FLevelArea * area = _AreaNum >= 0 ? Areas[_AreaNum] : OutdoorArea;
+void ALevel::AddSurfaceToArea( int _AreaNum, ASpatialObject * _Surf ) {
+    ALevelArea * area = _AreaNum >= 0 ? Areas[_AreaNum] : OutdoorArea;
 
     area->Movables.Append( _Surf );
-    FAreaLink & areaLink = _Surf->InArea.Append();
+    SAreaLink & areaLink = _Surf->InArea.Append();
     areaLink.AreaNum = _AreaNum;
     areaLink.Index = area->Movables.Size() - 1;
     areaLink.Level = this;
 }
 
-void FLevel::AddSurfaceAreas( FSpatialObject * _Surf ) {
+void ALevel::AddSurfaceAreas( ASpatialObject * _Surf ) {
     BvAxisAlignedBox const & bounds = _Surf->GetWorldBounds();
     int numAreas = Areas.Size();
-    FLevelArea * area;
+    ALevelArea * area;
 
     if ( _Surf->IsOutdoor() ) {
         // add to outdoor
@@ -311,12 +311,12 @@ void FLevel::AddSurfaceAreas( FSpatialObject * _Surf ) {
     }
 }
 
-void FLevel::RemoveSurfaceAreas( FSpatialObject * _Surf ) {
-    FLevelArea * area;
+void ALevel::RemoveSurfaceAreas( ASpatialObject * _Surf ) {
+    ALevelArea * area;
 
     // Remove renderables from any areas
     for ( int i = 0 ; i < _Surf->InArea.Size() ; ) {
-        FAreaLink & InArea = _Surf->InArea[ i ];
+        SAreaLink & InArea = _Surf->InArea[ i ];
 
         if ( InArea.Level != this ) {
             i++;
@@ -333,7 +333,7 @@ void FLevel::RemoveSurfaceAreas( FSpatialObject * _Surf ) {
 
         // Update swapped movable index
         if ( InArea.Index < area->Movables.Size() ) {
-            FSpatialObject * surf = area->Movables[ InArea.Index ];
+            ASpatialObject * surf = area->Movables[ InArea.Index ];
             for ( int j = 0 ; j < surf->InArea.Size() ; j++ ) {
                 if ( surf->InArea[ j ].Level == this && surf->InArea[ j ].AreaNum == InArea.AreaNum ) {
                     surf->InArea[ j ].Index = InArea.Index;
@@ -348,7 +348,7 @@ void FLevel::RemoveSurfaceAreas( FSpatialObject * _Surf ) {
     }
 }
 
-void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
+void ALevel::DrawDebug( ADebugDraw * _DebugDraw ) {
 
 #if 0
     static TPodArray< Float3 > vertices;
@@ -373,21 +373,21 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
 #if 0
         _DebugDraw->SetDepthTest( true );
         int i = 0;
-        for ( FLevelArea * area : Areas ) {
+        for ( ALevelArea * area : Areas ) {
             //_DebugDraw->DrawAABB( area->Bounds );
 
             i++;
 
             float f = (float)( (i*12345) & 255 ) / 255.0f;
 
-            _DebugDraw->SetColor( FColor4( f,f,f,1 ) );
+            _DebugDraw->SetColor( AColor4( f,f,f,1 ) );
 
             _DebugDraw->DrawBoxFilled( area->Bounds.Center(), area->Bounds.HalfSize(), true );
         }
 #endif
         _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( FColor4( 0,1,0,0.5f) );
-        for ( FLevelArea * area : Areas ) {
+        _DebugDraw->SetColor( AColor4( 0,1,0,0.5f) );
+        for ( ALevelArea * area : Areas ) {
             _DebugDraw->DrawAABB( area->Bounds );
         }
 
@@ -396,22 +396,22 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
     if ( RVDrawLevelPortals ) {
 //        _DebugDraw->SetDepthTest( false );
 //        _DebugDraw->SetColor(1,0,0,1);
-//        for ( FLevelPortal * portal : Portals ) {
+//        for ( ALevelPortal * portal : Portals ) {
 //            _DebugDraw->DrawLine( portal->Hull->Points, portal->Hull->NumPoints, true );
 //        }
 
         _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( FColor4( 0,0,1,0.4f ) );
+        _DebugDraw->SetColor( AColor4( 0,0,1,0.4f ) );
 
         if ( LastVisitedArea >= 0 && LastVisitedArea < Areas.Size() ) {
-            FLevelArea * area = Areas[ LastVisitedArea ];
-            FAreaPortal * portals = area->PortalList;
+            ALevelArea * area = Areas[ LastVisitedArea ];
+            SAreaPortal * portals = area->PortalList;
 
-            for ( FAreaPortal * p = portals; p; p = p->Next ) {
+            for ( SAreaPortal * p = portals; p; p = p->Next ) {
                 _DebugDraw->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, true );
             }
         } else {
-            for ( FLevelPortal * portal : Portals ) {
+            for ( ALevelPortal * portal : Portals ) {
                 _DebugDraw->DrawConvexPoly( portal->Hull->Points, portal->Hull->NumPoints, true );
             }
         }
@@ -423,7 +423,7 @@ void FLevel::DrawDebug( FDebugDraw * _DebugDraw ) {
     }
 }
 
-int FLevel::FindArea( Float3 const & _Position ) {
+int ALevel::FindArea( Float3 const & _Position ) {
     // TODO: ... binary tree?
 
     LastVisitedArea = -1;
@@ -447,7 +447,7 @@ int FLevel::FindArea( Float3 const & _Position ) {
     return -1;
 }
 
-void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
+void ALevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                                     TPodArray< unsigned int > & _Indices,
                                     TBitMask<> & _WalkableTriangles,
                                     BvAxisAlignedBox & _ResultBoundingBox,
@@ -466,21 +466,21 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
         _ResultBoundingBox.Clear();
 //    }
 
-    for ( FActor * actor : Actors ) {
+    for ( AActor * actor : Actors ) {
 
         if ( actor->IsPendingKill() ) {
             continue;
         }
 
-        FArrayOfActorComponents const & components = actor->GetComponents();
+        AArrayOfActorComponents const & components = actor->GetComponents();
 
-        for ( FActorComponent * component : components ) {
+        for ( AActorComponent * component : components ) {
 
             if ( component->IsPendingKill() ) {
                 continue;
             }
 
-            FPhysicalBody * physBody = Upcast< FPhysicalBody >( component );
+            APhysicalBody * physBody = Upcast< APhysicalBody >( component );
             if ( !physBody ) {
                 continue;
             }
@@ -517,17 +517,17 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
             if ( collisionIndices.IsEmpty() ) {
 
                 // Try to get from mesh
-                FMeshComponent * mesh = Upcast< FMeshComponent >( component );
+                AMeshComponent * mesh = Upcast< AMeshComponent >( component );
 
                 if ( mesh && !mesh->IsSkinnedMesh() ) {
 
-                    FIndexedMesh * indexedMesh = mesh->GetMesh();
+                    AIndexedMesh * indexedMesh = mesh->GetMesh();
 
-                    if ( indexedMesh && !indexedMesh->IsSkinned() ) {
+                    if ( !indexedMesh->IsSkinned() ) {
 
                         Float3x4 const & worldTransform = mesh->GetWorldTransformMatrix();
 
-                        FMeshVertex const * srcVertices = indexedMesh->GetVertices();
+                        SMeshVertex const * srcVertices = indexedMesh->GetVertices();
                         unsigned int * srcIndices = indexedMesh->GetIndices();
 
                         int firstVertex = _Vertices.Size();
@@ -536,7 +536,7 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
 
                         // indexCount may be different from indexedMesh->GetIndexCount()
                         int indexCount = 0;
-                        for ( FIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
+                        for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
                             indexCount += subpart->GetIndexCount();
                         }
 
@@ -557,7 +557,7 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
                             // Clip triangles
                             unsigned int i0, i1, i2;
                             int triangleNum = 0;
-                            for ( FIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
+                            for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
                                 int numTriangles = subpart->GetIndexCount() / 3;
                                 for ( int i = 0 ; i < numTriangles ; i++ ) {
                                     i0 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 0 ];
@@ -582,7 +582,7 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
 
                         } else {
                             int triangleNum = 0;
-                            for ( FIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
+                            for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
                                 int numTriangles = subpart->GetIndexCount() / 3;
                                 for ( int i = 0 ; i < numTriangles ; i++ ) {
                                     *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 0 ];
@@ -669,14 +669,14 @@ void FLevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
 //    }
 }
 
-void FLevel::BuildNavMesh() {
+void ALevel::BuildNavMesh() {
 //    TPodArray< Float3 > vertices;
 //    TPodArray< unsigned int > indices;
 //    BvAxisAlignedBox boundingBox;
 //    TBitMask<> walkableMask;
 //    GenerateSourceNavMesh( vertices, indices, walkableMask, boundingBox, nullptr );
 
-    FAINavMeshInitial initial;
+    SAINavMeshInitial initial;
     initial.BoundingBox = NavigationBoundingBox;
     initial.bDynamicNavMesh = true;
     initial.NavWalkableClimb = 0.9f;
@@ -687,11 +687,11 @@ void FLevel::BuildNavMesh() {
     NavMesh.Build();
 }
 
-void FLevel::Tick( float _TimeStep ) {
+void ALevel::Tick( float _TimeStep ) {
     NavMesh.Tick( _TimeStep );
 
     OutdoorArea->Tree->Update();
-    for ( FLevelArea * area : Areas ) {
+    for ( ALevelArea * area : Areas ) {
         area->Tree->Update();
     }
 }
@@ -708,21 +708,21 @@ void FLevel::Tick( float _TimeStep ) {
 
 #define MAX_PORTAL_STACK 64
 
-struct FPortalScissor {
+struct SPortalScissor {
     float MinX;
     float MinY;
     float MaxX;
     float MaxY;
 };
 
-struct FPortalStack {
+struct SPortalStack {
     PlaneF AreaFrustum[ 4 ];
     int PlanesCount;
-    FAreaPortal const * Portal;
-    FPortalScissor Scissor;
+    SAreaPortal const * Portal;
+    SPortalScissor Scissor;
 };
 
-static FPortalStack PortalStack[ MAX_PORTAL_STACK ];
+static SPortalStack PortalStack[ MAX_PORTAL_STACK ];
 static int PortalStackPos;
 
 //
@@ -743,11 +743,11 @@ static Float3 ViewCenter;
 static float ClipDistances[ MAX_HULL_POINTS ];
 static EPlaneSide ClipSides[ MAX_HULL_POINTS ];
 
-struct FPortalHull {
+struct SPortalHull {
     int NumPoints;
     Float3 Points[ MAX_HULL_POINTS ];
 };
-static FPortalHull PortalHull[ 2 ];
+static SPortalHull PortalHull[ 2 ];
 
 
 //
@@ -756,7 +756,7 @@ static FPortalHull PortalHull[ 2 ];
 
 //#define DEBUG_PORTAL_SCISSORS
 #ifdef DEBUG_PORTAL_SCISSORS
-static TPodArray< FPortalScissor > DebugScissors;
+static TPodArray< SPortalScissor > DebugScissors;
 #endif
 
 //
@@ -783,9 +783,9 @@ static int Dbg_StackDeep;
 AN_FORCEINLINE bool Cull( PlaneF const * _Planes, int _Count, Float3 const & _Mins, Float3 const & _Maxs ) {
     bool inside = true;
     for ( PlaneF const * p = _Planes; p < _Planes + _Count; p++ ) {
-        inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X )
-            + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y )
-            + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z )
+        inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X )
+            + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y )
+            + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z )
             + p->D ) > 0;
     }
     return !inside;
@@ -801,7 +801,7 @@ AN_FORCEINLINE bool Cull( PlaneF const * _Planes, int _Count, BvAxisAlignedBox c
 AN_FORCEINLINE bool Cull( PlaneF const * _Planes, int _Count, BvSphereSSE const & _Sphere ) {
     bool cull = false;
     for ( const PlaneF * p = _Planes; p < _Planes + _Count; p++ ) {
-        if ( FMath::Dot( p->Normal, _Sphere.Center ) + p->D <= -_Sphere.Radius ) {
+        if ( Math::Dot( p->Normal, _Sphere.Center ) + p->D <= -_Sphere.Radius ) {
             cull = true;
         }
     }
@@ -811,7 +811,7 @@ AN_FORCEINLINE bool Cull( PlaneF const * _Planes, int _Count, BvSphereSSE const 
 //
 // Fast polygon clipping. Without memory allocations.
 //
-static bool ClipPolygonFast( Float3 const * _InPoints, int _InNumPoints, FPortalHull * _Out, PlaneF const & _Plane, const float _Epsilon ) {
+static bool ClipPolygonFast( Float3 const * _InPoints, int _InNumPoints, SPortalHull * _Out, PlaneF const & _Plane, const float _Epsilon ) {
     int Front = 0;
     int Back = 0;
     int i;
@@ -890,7 +890,7 @@ static bool ClipPolygonFast( Float3 const * _InPoints, int _InNumPoints, FPortal
     return true;
 }
 
-void FLevel::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
+void ALevel::RenderFrontend_AddInstances( SRenderFrontendDef * _Def ) {
     // Update view area
     FindArea( _Def->View->ViewPosition );
 
@@ -898,7 +898,7 @@ void FLevel::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
     CullInstances( _Def );
 }
 
-void FLevel::CullInstances( FRenderFrontendDef * _Def ) {
+void ALevel::CullInstances( SRenderFrontendDef * _Def ) {
     AN_Assert( LastVisitedArea < Areas.Size() );
 
     #ifdef DEBUG_TRAVERSING_COUNTERS
@@ -926,13 +926,13 @@ void FLevel::CullInstances( FRenderFrontendDef * _Def ) {
     ViewCenter = ViewPlane.Normal * ViewZNear;
 
     // Get corner at left-bottom of frustum
-    Float3 corner = FMath::Cross( frustum[ FPL_BOTTOM ].Normal, frustum[ FPL_LEFT ].Normal );
+    Float3 corner = Math::Cross( frustum[ FPL_BOTTOM ].Normal, frustum[ FPL_LEFT ].Normal );
 
     // Project left-bottom corner to near plane
-    corner = corner * ( ViewZNear / FMath::Dot( ViewPlane.Normal, corner ) );
+    corner = corner * ( ViewZNear / Math::Dot( ViewPlane.Normal, corner ) );
 
-    float x = FMath::Dot( RightVec, corner );
-    float y = FMath::Dot( UpVec, corner );
+    float x = Math::Dot( RightVec, corner );
+    float y = Math::Dot( UpVec, corner );
 
     // w = tan( half_fov_x_rad ) * znear * 2;
     // h = tan( half_fov_y_rad ) * znear * 2;
@@ -964,12 +964,12 @@ void FLevel::CullInstances( FRenderFrontendDef * _Def ) {
     #endif
 }
 
-void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area ) {
-    FPortalStack * prevStack = &PortalStack[ PortalStackPos ];
-    FPortalStack * stack = prevStack + 1;
+void ALevel::FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area ) {
+    SPortalStack * prevStack = &PortalStack[ PortalStackPos ];
+    SPortalStack * stack = prevStack + 1;
 
-    for ( FSpatialObject * surf : _Area->GetSurfs() ) {
-        FMeshComponent * component = Upcast< FMeshComponent >( surf );
+    for ( ASpatialObject * surf : _Area->GetSurfs() ) {
+        AMeshComponent * component = Upcast< AMeshComponent >( surf );
 
         if ( component ) {
             AddRenderInstances( _Def, component, prevStack->AreaFrustum, prevStack->PlanesCount );
@@ -996,7 +996,7 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
     ++PortalStackPos;
 
     #ifdef DEBUG_TRAVERSING_COUNTERS
-    Dbg_StackDeep = FMath::Max( Dbg_StackDeep, PortalStackPos );
+    Dbg_StackDeep = Math::Max( Dbg_StackDeep, PortalStackPos );
     #endif
 
     static float x, y, d;
@@ -1009,7 +1009,7 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
     static Float3 corners[ 4 ];
     static int flip = 0;
 
-    for ( FAreaPortal const * portal = _Area->GetPortals(); portal; portal = portal->Next ) {
+    for ( SAreaPortal const * portal = _Area->GetPortals(); portal; portal = portal->Next ) {
 
         //if ( portal->DoublePortal->VisFrame == _Def->VisMarker ) {
         //    #ifdef DEBUG_TRAVERSING_COUNTERS
@@ -1076,7 +1076,7 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
                 }
             }
 
-            FPortalHull * portalWinding = &PortalHull[ flip ];
+            SPortalHull * portalWinding = &PortalHull[ flip ];
 
             if ( portalWinding->NumPoints < 3 ) {
                 // Invisible
@@ -1101,7 +1101,7 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
                 // Project portal vertex to view plane
                 vec = portalWinding->Points[ i ] - _Def->View->ViewPosition;
 
-                d = FMath::Dot( ViewPlane.Normal, vec );
+                d = Math::Dot( ViewPlane.Normal, vec );
 
                 //if ( d < ViewZNear ) {
                 //    AN_Assert(0);
@@ -1110,22 +1110,22 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
                 p = d < ViewZNear ? vec : vec * ( ViewZNear / d );
 
                 // Compute relative coordinates
-                x = FMath::Dot( RightVec, p );
-                y = FMath::Dot( UpVec, p );
+                x = Math::Dot( RightVec, p );
+                y = Math::Dot( UpVec, p );
 
                 // Compute bounds
-                minX = FMath::Min( x, minX );
-                minY = FMath::Min( y, minY );
+                minX = Math::Min( x, minX );
+                minY = Math::Min( y, minY );
 
-                maxX = FMath::Max( x, maxX );
-                maxY = FMath::Max( y, maxY );
+                maxX = Math::Max( x, maxX );
+                maxY = Math::Max( y, maxY );
             }
 
             // Clip bounds by current scissor bounds
-            minX = FMath::Max( prevStack->Scissor.MinX, minX );
-            minY = FMath::Max( prevStack->Scissor.MinY, minY );
-            maxX = FMath::Min( prevStack->Scissor.MaxX, maxX );
-            maxY = FMath::Min( prevStack->Scissor.MaxY, maxY );
+            minX = Math::Max( prevStack->Scissor.MinX, minX );
+            minY = Math::Max( prevStack->Scissor.MinY, minY );
+            maxX = Math::Min( prevStack->Scissor.MaxX, maxX );
+            maxY = Math::Min( prevStack->Scissor.MaxY, maxY );
 
             if ( minX >= maxX || minY >= maxY ) {
                 // invisible
@@ -1155,24 +1155,24 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
                 corners[ 3 ] = rightMin + upMax;
 
                 // bottom
-                p = FMath::Cross( corners[ 1 ], corners[ 0 ] );
-                stack->AreaFrustum[ 0 ].Normal = p * FMath::RSqrt( FMath::Dot( p, p ) );
-                stack->AreaFrustum[ 0 ].D = -FMath::Dot( stack->AreaFrustum[ 0 ].Normal, _Def->View->ViewPosition );
+                p = Math::Cross( corners[ 1 ], corners[ 0 ] );
+                stack->AreaFrustum[ 0 ].Normal = p * Math::RSqrt( Math::Dot( p, p ) );
+                stack->AreaFrustum[ 0 ].D = -Math::Dot( stack->AreaFrustum[ 0 ].Normal, _Def->View->ViewPosition );
 
                 // right
-                p = FMath::Cross( corners[ 2 ], corners[ 1 ] );
-                stack->AreaFrustum[ 1 ].Normal = p * FMath::RSqrt( FMath::Dot( p, p ) );
-                stack->AreaFrustum[ 1 ].D = -FMath::Dot( stack->AreaFrustum[ 1 ].Normal, _Def->View->ViewPosition );
+                p = Math::Cross( corners[ 2 ], corners[ 1 ] );
+                stack->AreaFrustum[ 1 ].Normal = p * Math::RSqrt( Math::Dot( p, p ) );
+                stack->AreaFrustum[ 1 ].D = -Math::Dot( stack->AreaFrustum[ 1 ].Normal, _Def->View->ViewPosition );
 
                 // top
-                p = FMath::Cross( corners[ 3 ], corners[ 2 ] );
-                stack->AreaFrustum[ 2 ].Normal = p * FMath::RSqrt( FMath::Dot( p, p ) );
-                stack->AreaFrustum[ 2 ].D = -FMath::Dot( stack->AreaFrustum[ 2 ].Normal, _Def->View->ViewPosition );
+                p = Math::Cross( corners[ 3 ], corners[ 2 ] );
+                stack->AreaFrustum[ 2 ].Normal = p * Math::RSqrt( Math::Dot( p, p ) );
+                stack->AreaFrustum[ 2 ].D = -Math::Dot( stack->AreaFrustum[ 2 ].Normal, _Def->View->ViewPosition );
 
                 // left
-                p = FMath::Cross( corners[ 0 ], corners[ 3 ] );
-                stack->AreaFrustum[ 3 ].Normal = p * FMath::RSqrt( FMath::Dot( p, p ) );
-                stack->AreaFrustum[ 3 ].D = -FMath::Dot( stack->AreaFrustum[ 3 ].Normal, _Def->View->ViewPosition );
+                p = Math::Cross( corners[ 0 ], corners[ 3 ] );
+                stack->AreaFrustum[ 3 ].Normal = p * Math::RSqrt( Math::Dot( p, p ) );
+                stack->AreaFrustum[ 3 ].D = -Math::Dot( stack->AreaFrustum[ 3 ].Normal, _Def->View->ViewPosition );
 
                 stack->PlanesCount = 4;
             }
@@ -1195,7 +1195,7 @@ void FLevel::FlowThroughPortals_r( FRenderFrontendDef * _Def, FLevelArea * _Area
     --PortalStackPos;
 }
 
-void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
+void ALevel::AddRenderInstances( SRenderFrontendDef * _Def, AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
     if ( !component->bLightPass ) {
         return;
     }
@@ -1258,7 +1258,7 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
 
     if ( component->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
 
-        bool bVisible;
+        bool bVisible = false;
         component->RenderFrontend_CustomVisibleStep( _Def, bVisible );
 
         if ( !bVisible ) {
@@ -1276,16 +1276,12 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
     Float4x4 tmpMatrix;
     Float4x4 * instanceMatrix;
 
-    FIndexedMesh * mesh = component->GetMesh();
-    if ( !mesh ) {
-        // TODO: default mesh?
-        return;
-    }
+    AIndexedMesh * mesh = component->GetMesh();
 
     size_t skeletonOffset = 0;
     size_t skeletonSize = 0;
     if ( mesh->IsSkinned() && component->IsSkinnedMesh() ) {
-        FSkinnedComponent * skeleton = static_cast< FSkinnedComponent * >( component );
+        ASkinnedComponent * skeleton = static_cast< ASkinnedComponent * >( component );
         skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize );
     }
 
@@ -1296,26 +1292,26 @@ void FLevel::AddRenderInstances( FRenderFrontendDef * _Def, FMeshComponent * com
         instanceMatrix = &tmpMatrix;
     }
 
-    FActor * actor = component->GetParentActor();
-    FLevel * level = actor->GetLevel();
+    AActor * actor = component->GetParentActor();
+    ALevel * level = actor->GetLevel();
 
-    FIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+    AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
 
     for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
 
         // FIXME: check subpart bounding box here
 
-        FIndexedMeshSubpart * subpart = subparts[ subpartIndex ];
+        AIndexedMeshSubpart * subpart = subparts[ subpartIndex ];
 
-        FMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
+        AMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
         AN_Assert( materialInstance );
 
-        FMaterial * material = materialInstance->GetMaterial();
+        AMaterial * material = materialInstance->GetMaterial();
 
-        FMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
+        SMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
 
         // Add render instance
-        FRenderInstance * instance = ( FRenderInstance * )GRuntime.AllocFrameMem( sizeof( FRenderInstance ) );
+        SRenderInstance * instance = ( SRenderInstance * )GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
         if ( !instance ) {
             return;
         }

@@ -40,7 +40,7 @@ WButton::WButton() {
 WButton::~WButton() {
 }
 
-void WButton::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WButton::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
     if ( _Event.Action == IE_Press ) {
         if ( _Event.Button == 0 ) {
             State = ST_PRESSED;
@@ -57,17 +57,17 @@ void WButton::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _Time
     }
 }
 
-void WButton::OnDrawEvent( FCanvas & _Canvas ) {
-    FColor4 bgColor;
+void WButton::OnDrawEvent( ACanvas & _Canvas ) {
+    AColor4 bgColor;
 
     if ( IsHoveredByCursor() && !IsDisabled() ) {
         if ( IsPressed() ) {
-            bgColor = FColor4( 0.6f,0.6f,0.6f,1 );
+            bgColor = AColor4( 0.6f,0.6f,0.6f,1 );
         } else {
-            bgColor = FColor4( 0.5f,0.5f,0.5f,1 );
+            bgColor = AColor4( 0.5f,0.5f,0.5f,1 );
         }
     } else {
-        bgColor = FColor4(0.4f,0.4f,0.4f);
+        bgColor = AColor4(0.4f,0.4f,0.4f);
     }
 
     Float2 mins, maxs;
@@ -81,10 +81,10 @@ void WButton::OnDrawEvent( FCanvas & _Canvas ) {
 AN_CLASS_META( WTextButton )
 
 WTextButton::WTextButton() {
-    Color = FColor4(0.4f,0.4f,0.4f);
-    HoverColor = FColor4( 0.5f,0.5f,0.5f,1 );
-    PressedColor = FColor4( 0.6f,0.6f,0.6f,1 );
-    TextColor = FColor4::White();
+    Color = AColor4(0.4f,0.4f,0.4f);
+    HoverColor = AColor4( 0.5f,0.5f,0.5f,1 );
+    PressedColor = AColor4( 0.6f,0.6f,0.6f,1 );
+    TextColor = AColor4::White();
     BorderColor = Float4(0,0,0,0.5f);
     Rounding = 8;
     RoundingCorners = CORNER_ROUND_ALL;
@@ -99,27 +99,27 @@ WTextButton & WTextButton::SetText( const char * _Text ) {
     return *this;
 }
 
-WTextButton & WTextButton::SetColor( FColor4 const & _Color ) {
+WTextButton & WTextButton::SetColor( AColor4 const & _Color ) {
     Color = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetHoverColor( FColor4 const & _Color ) {
+WTextButton & WTextButton::SetHoverColor( AColor4 const & _Color ) {
     HoverColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetPressedColor( FColor4 const & _Color ) {
+WTextButton & WTextButton::SetPressedColor( AColor4 const & _Color ) {
     PressedColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetTextColor( FColor4 const & _Color ) {
+WTextButton & WTextButton::SetTextColor( AColor4 const & _Color ) {
     TextColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetBorderColor( FColor4 const & _Color ) {
+WTextButton & WTextButton::SetBorderColor( AColor4 const & _Color ) {
     BorderColor = _Color;
     return *this;
 }
@@ -139,8 +139,8 @@ WTextButton & WTextButton::SetBorderThickness( float _BorderThickness ) {
     return *this;
 }
 
-void WTextButton::OnDrawEvent( FCanvas & _Canvas ) {
-    FColor4 bgColor;
+void WTextButton::OnDrawEvent( ACanvas & _Canvas ) {
+    AColor4 bgColor;
 
     if ( IsHoveredByCursor() && !IsDisabled() ) {
         if ( IsPressed() ) {
@@ -156,7 +156,7 @@ void WTextButton::OnDrawEvent( FCanvas & _Canvas ) {
 
     GetDesktopRect( mins, maxs, true );
 
-    FFont * font = FCanvas::GetDefaultFont();
+    AFont * font = ACanvas::GetDefaultFont();
 
     float width = GetAvailableWidth();
     float height = GetAvailableHeight();
@@ -179,23 +179,23 @@ WImageButton::WImageButton() {
 WImageButton::~WImageButton() {
 }
 
-WImageButton & WImageButton::SetImage( FTexture2D * _Image ) {
+WImageButton & WImageButton::SetImage( ATexture * _Image ) {
     Image = _Image;
     return *this;
 }
 
-WImageButton & WImageButton::SetHoverImage( FTexture2D * _Image ) {
+WImageButton & WImageButton::SetHoverImage( ATexture * _Image ) {
     HoverImage = _Image;
     return *this;
 }
 
-WImageButton & WImageButton::SetPressedImage( FTexture2D * _Image ) {
+WImageButton & WImageButton::SetPressedImage( ATexture * _Image ) {
     PressedImage = _Image;
     return *this;
 }
 
-void WImageButton::OnDrawEvent( FCanvas & _Canvas ) {
-    FTexture2D * bgImage;
+void WImageButton::OnDrawEvent( ACanvas & _Canvas ) {
+    ATexture * bgImage;
 
     if ( IsHoveredByCursor() && !IsDisabled() ) {
         if ( IsPressed() ) {

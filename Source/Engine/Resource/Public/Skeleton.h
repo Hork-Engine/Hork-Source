@@ -32,104 +32,78 @@ SOFTWARE.
 
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
-
-struct FMeshAsset;
+#include <Engine/Core/Public/Guid.h>
 
 /**
 
-FJoint
+SJoint
 
 Joint properties
 
 */
-struct FJoint {
-    int      Parent;                 // Parent joint index. For root = -1
-    Float3x4 OffsetMatrix;           // Transform vertex to joint-space
-    Float3x4 LocalTransform;         // Joint local transform
-    char     Name[64];               // Joint name
+struct SJoint {
+    /** Parent node index. For root = -1 */
+    int32_t  Parent;
+
+    /** Joint local transform */
+    Float3x4 LocalTransform;
+
+    /** Joint name */
+    char     Name[64];
+
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteInt32( Parent );
+        _Stream.WriteObject( LocalTransform );
+        _Stream.WriteString( Name );
+    }
+
+    void Read( IStreamBase & _Stream ) {
+        Parent = _Stream.ReadInt32();
+        _Stream.ReadObject( LocalTransform );
+
+        AString jointName;
+        _Stream.ReadString( jointName );
+        AString::CopySafe( Name, sizeof( Name ), jointName.CStr() );
+    }
 };
+
 
 /**
 
-FSkeletonAsset
-
-Skeleton plain data
-
-*/
-struct FSkeletonAsset {
-    TPodArray< FJoint > Joints;
-    BvAxisAlignedBox BindposeBounds;
-
-    void Clear();
-    void Read( FFileStream & f );
-    void Write( FFileStream & f );
-    void CalcBindposeBounds( FMeshAsset const * InMeshData );
-};
-
-///**
-
-//FSocketDef
-
-//Socket for attaching
-
-//*/
-//class FSocketDef : public FBaseObject {
-//    AN_CLASS( FSocketDef, FBaseObject )
-
-//public:
-//    Float3 Position;
-//    Float3 Scale;
-//    Quat Rotation;
-//    int JointIndex;
-
-//protected:
-//    FSocketDef() : Position(0.0f), Scale(1.0f), Rotation(Quat::Identity()), JointIndex(-1)
-//    {
-//    }
-//};
-
-/**
-
-FSkeleton
+ASkeleton
 
 Skeleton structure
 
 */
-class FSkeleton : public FBaseObject {
-    AN_CLASS( FSkeleton, FBaseObject )
+class ASkeleton : public AResourceBase {
+    AN_CLASS( ASkeleton, AResourceBase )
 
 public:
     enum { MAX_JOINTS = 256 };
 
-    void Initialize( FJoint * _Joints, int _JointsCount, BvAxisAlignedBox const & _BindposeBounds );
-
-    /** Initialize internal resource */
-    void InitializeInternalResource( const char * _InternalResourceName ) override;
-
-    /** Initialize object from file */
-    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+    void Initialize( SJoint * _Joints, int _JointsCount, BvAxisAlignedBox const & _BindposeBounds );
 
     void Purge();
 
     int FindJoint( const char * _Name ) const;
 
-    TPodArray< FJoint > const & GetJoints() const { return Joints; }
-
-    //void AddSocket( FSocketDef * _Socket );
-    // TODO: RemoveSocket?
-
-    //FSocketDef * FindSocket( const char * _Name );
-
-    //TPodArray< FSocketDef * > const & GetSockets() const { return Sockets; }
+    TPodArray< SJoint > const & GetJoints() const { return Joints; }
 
     BvAxisAlignedBox const & GetBindposeBounds() const { return BindposeBounds; }
 
 protected:
-    FSkeleton();
-    ~FSkeleton();
+    ASkeleton();
+    ~ASkeleton();
+
+    /** Load resource from file */
+    bool LoadResource( AString const & _Path ) override;
+
+    /** Create internal resource */
+    void LoadInternalResource( const char * _Path ) override;
+
+    const char * GetDefaultResourcePath() const override { return "/Default/Skeleton/Default"; }
 
 private:
-    TPodArray< FJoint > Joints;
-    //TPodArray< FSocketDef * > Sockets;
+    TPodArray< SJoint > Joints;
     BvAxisAlignedBox BindposeBounds;
 };

@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include "WWidget.h"
 
-class ANGIE_API WMenuPopup : public FBaseObject {
-    AN_CLASS( WMenuPopup, FBaseObject )
+class ANGIE_API WMenuPopup : public ABaseObject {
+    AN_CLASS( WMenuPopup, ABaseObject )
 
     friend class WDesktop;
 

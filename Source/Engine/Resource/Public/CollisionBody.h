@@ -37,14 +37,14 @@ class btCollisionShape;
 class btCompoundShape;
 class btBvhTriangleMeshShape;
 struct btTriangleInfoMap;
-class FCollisionBodyComposition;
-struct FSubpart;
+class ACollisionBodyComposition;
+class AIndexedMeshSubpart;
 
-class FCollisionBody : public FBaseObject {
-    AN_CLASS( FCollisionBody, FBaseObject )
+class ACollisionBody : public ABaseObject {
+    AN_CLASS( ACollisionBody, ABaseObject )
 
-    friend struct FWorldCollisionQuery;
-    friend void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
+    friend struct AWorldCollisionQuery;
+    friend void CreateCollisionShape( ACollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
 
 public:
     Float3 Position;
@@ -58,17 +58,17 @@ public:
     virtual void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {}
 
 protected:
-    FCollisionBody() {
+    ACollisionBody() {
         Rotation = Quat::Identity();
         Margin = 0.01f;
     }
 
-    // Only FWorldCollisionQuery and CreateCollisionShape can call Create()
+    // Only AWorldCollisionQuery and CreateCollisionShape can call Create()
     virtual btCollisionShape * Create() { AN_Assert( 0 ); return nullptr; }
 };
 
-class FCollisionSphere : public FCollisionBody {
-    AN_CLASS( FCollisionSphere, FCollisionBody )
+class ACollisionSphere : public ACollisionBody {
+    AN_CLASS( ACollisionSphere, ACollisionBody )
 
 public:
     float Radius = 0.5f;
@@ -79,14 +79,14 @@ public:
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionSphere() {}
+    ACollisionSphere() {}
 
 private:
     btCollisionShape * Create() override;
 };
 
-class FCollisionSphereRadii : public FCollisionBody {
-    AN_CLASS( FCollisionSphereRadii, FCollisionBody )
+class ACollisionSphereRadii : public ACollisionBody {
+    AN_CLASS( ACollisionSphereRadii, ACollisionBody )
 
 public:
     Float3 Radius = Float3(0.5f);
@@ -96,14 +96,14 @@ public:
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionSphereRadii() {}
+    ACollisionSphereRadii() {}
 
 private:
     btCollisionShape * Create() override;
 };
 
-class FCollisionBox : public FCollisionBody {
-    AN_CLASS( FCollisionBox, FCollisionBody )
+class ACollisionBox : public ACollisionBody {
+    AN_CLASS( ACollisionBox, ACollisionBody )
 
 public:
     Float3 HalfExtents = Float3(0.5f);
@@ -113,14 +113,14 @@ public:
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionBox() {}
+    ACollisionBox() {}
 
 private:
     btCollisionShape * Create() override;
 };
 
-class FCollisionCylinder : public FCollisionBody {
-    AN_CLASS( FCollisionCylinder, FCollisionBody )
+class ACollisionCylinder : public ACollisionBody {
+    AN_CLASS( ACollisionCylinder, ACollisionBody )
 
 public:
     Float3 HalfExtents = Float3(1.0f);
@@ -131,14 +131,14 @@ public:
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionCylinder() {}
+    ACollisionCylinder() {}
 
 private:
     btCollisionShape * Create() override;
 };
 
-class FCollisionCone : public FCollisionBody {
-    AN_CLASS( FCollisionCone, FCollisionBody )
+class ACollisionCone : public ACollisionBody {
+    AN_CLASS( ACollisionCone, ACollisionBody )
 
 public:
     float Radius = 1;
@@ -150,14 +150,14 @@ public:
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionCone() {}
+    ACollisionCone() {}
 
 private:
     btCollisionShape * Create() override;
 };
 
-class FCollisionCapsule : public FCollisionBody {
-    AN_CLASS( FCollisionCapsule, FCollisionBody )
+class ACollisionCapsule : public ACollisionBody {
+    AN_CLASS( ACollisionCapsule, ACollisionBody )
 
 public:
 
@@ -176,14 +176,14 @@ public:
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionCapsule() {}
+    ACollisionCapsule() {}
 
 private:
     btCollisionShape * Create() override;
 };
 
-//class FCollisionConvexHull : public FCollisionBody {
-//    AN_CLASS( FCollisionConvexHull, FCollisionBody )
+//class ACollisionConvexHull : public ACollisionBody {
+//    AN_CLASS( ACollisionConvexHull, ACollisionBody )
 
 //public:
 //    TPodArray< Float3 > Vertices;
@@ -198,16 +198,16 @@ private:
 //    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 //protected:
-//    FCollisionConvexHull() {}
+//    ACollisionConvexHull() {}
 
 //private:
 //    btCollisionShape * Create() override;
 //};
 
-class FCollisionConvexHullData : public FBaseObject {
-    AN_CLASS( FCollisionConvexHullData, FBaseObject )
+class ACollisionConvexHullData : public ABaseObject {
+    AN_CLASS( ACollisionConvexHullData, ABaseObject )
 
-    friend class FCollisionConvexHull;
+    friend class ACollisionConvexHull;
 
 public:
 
@@ -225,36 +225,36 @@ public:
 //    }
 
 protected:
-    FCollisionConvexHullData();
-    ~FCollisionConvexHullData();
+    ACollisionConvexHullData();
+    ~ACollisionConvexHullData();
 
     TPodArray< Float3 > Vertices;
     TPodArray< unsigned int > Indices;
     class btVector3 * Data;
 };
 
-class FCollisionConvexHull : public FCollisionBody {
-    AN_CLASS( FCollisionConvexHull, FCollisionBody )
+class ACollisionConvexHull : public ACollisionBody {
+    AN_CLASS( ACollisionConvexHull, ACollisionBody )
 
 public:
-    TRef< FCollisionConvexHullData > HullData;
+    TRef< ACollisionConvexHullData > HullData;
 
     bool IsConvex() const override { return true; }
 
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionConvexHull() {}
+    ACollisionConvexHull() {}
 
 private:
     btCollisionShape * Create() override;
 };
 
-class FCollisionTriangleSoupData : public FBaseObject {
-    AN_CLASS( FCollisionTriangleSoupData, FBaseObject )
+class ACollisionTriangleSoupData : public ABaseObject {
+    AN_CLASS( ACollisionTriangleSoupData, ABaseObject )
 
 public:
-    struct FSubpart {
+    struct SSubpart {
         int BaseVertex;
         int VertexCount;
         int FirstIndex;
@@ -263,92 +263,101 @@ public:
 
     TPodArray< Float3 > Vertices;
     TPodArray< unsigned int > Indices;
-    TPodArray< FSubpart > Subparts;
+    TPodArray< SSubpart > Subparts;
     BvAxisAlignedBox BoundingBox;
 
-    void Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, ::FSubpart const * _Subparts, int _SubpartsCount );
+    /** Initialize collision triangle soup from indexed mesh */
+    void Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, AIndexedMeshSubpart * const * _Subparts, int _SubpartsCount );
+
+    /** Initialize collision triangle soup from subparts */
+    void Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, SSubpart const * _Subparts, int _SubpartsCount, BvAxisAlignedBox const & _BoundingBox );
+
+    /** Initialize collision triangle soup with single subpart */
     void Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, BvAxisAlignedBox const & _BoundingBox );
 
 protected:
-    FCollisionTriangleSoupData() {}
+    ACollisionTriangleSoupData() {}
 };
 
-class FCollisionTriangleSoupBVHData : public FBaseObject {
-    AN_CLASS( FCollisionTriangleSoupBVHData, FBaseObject )
+class ACollisionTriangleSoupBVHData : public ABaseObject {
+    AN_CLASS( ACollisionTriangleSoupBVHData, ABaseObject )
 
 public:
-    TRef< FCollisionTriangleSoupData > TrisData;
+    TRef< ACollisionTriangleSoupData > TrisData;
 
     void BuildBVH( bool bForceQuantizedAabbCompression = false );
     //void BuildQuantizedBVH();
+
+    //void Read( IStreamBase & _Stream );
+    //void Write( IStreamBase & _Stream ) const;
 
     bool UsedQuantizedAabbCompression() const;
 
     btBvhTriangleMeshShape * GetData() { return Data; }
 
 protected:
-    FCollisionTriangleSoupBVHData();
-    ~FCollisionTriangleSoupBVHData();
+    ACollisionTriangleSoupBVHData();
+    ~ACollisionTriangleSoupBVHData();
 
 private:
     btBvhTriangleMeshShape * Data; // TODO: Try btMultimaterialTriangleMeshShape
     btTriangleInfoMap * TriangleInfoMap;
  
-    class FStridingMeshInterface * Interface;
+    class AStridingMeshInterface * Interface;
 
     bool bUsedQuantizedAabbCompression;
 };
 
-// FCollisionTriangleSoupBVH can be used only for static or kinematic objects
-class FCollisionTriangleSoupBVH : public FCollisionBody {
-    AN_CLASS( FCollisionTriangleSoupBVH, FCollisionBody )
+// ACollisionTriangleSoupBVH can be used only for static or kinematic objects
+class ACollisionTriangleSoupBVH : public ACollisionBody {
+    AN_CLASS( ACollisionTriangleSoupBVH, ACollisionBody )
 
 public:
     /** BVH data for static or kinematic objects */
-    TRef< FCollisionTriangleSoupBVHData > BvhData;
+    TRef< ACollisionTriangleSoupBVHData > BvhData;
 
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionTriangleSoupBVH() {}
+    ACollisionTriangleSoupBVH() {}
 
 private:
     btCollisionShape * Create() override;
 };
 
-class FCollisionTriangleSoupGimpact : public FCollisionBody {
-    AN_CLASS( FCollisionTriangleSoupGimpact, FCollisionBody )
+class ACollisionTriangleSoupGimpact : public ACollisionBody {
+    AN_CLASS( ACollisionTriangleSoupGimpact, ACollisionBody )
 
 public:
-    TRef< FCollisionTriangleSoupData > TrisData;
+    TRef< ACollisionTriangleSoupData > TrisData;
 
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 protected:
-    FCollisionTriangleSoupGimpact();
-    ~FCollisionTriangleSoupGimpact();
+    ACollisionTriangleSoupGimpact();
+    ~ACollisionTriangleSoupGimpact();
 
 private:
     btCollisionShape * Create() override;
 
-    class FStridingMeshInterface * Interface;
+    class AStridingMeshInterface * Interface;
 };
 
-class FCollisionBodyComposition {
-    AN_FORBID_COPY( FCollisionBodyComposition )
+class ACollisionBodyComposition {
+    AN_FORBID_COPY( ACollisionBodyComposition )
 
 public:
 
-    FCollisionBodyComposition() {
+    ACollisionBodyComposition() {
         CenterOfMass.Clear();
     }
 
-    ~FCollisionBodyComposition() {
+    ~ACollisionBodyComposition() {
         Clear();
     }
 
     void Clear() {
-        for ( FCollisionBody * body : CollisionBodies ) {
+        for ( ACollisionBody * body : CollisionBodies ) {
             body->RemoveRef();
         }
         CollisionBodies.Clear();
@@ -362,13 +371,13 @@ public:
         return body;
     }
 
-    void AddCollisionBody( FCollisionBody * _Body ) {
+    void AddCollisionBody( ACollisionBody * _Body ) {
         AN_Assert( CollisionBodies.Find( _Body ) == CollisionBodies.End() );
         CollisionBodies.Append( _Body );
         _Body->AddRef();
     }
 
-    void RemoveCollisionBody( FCollisionBody * _Body ) {
+    void RemoveCollisionBody( ACollisionBody * _Body ) {
         auto it = CollisionBodies.Find( _Body );
         if ( it == CollisionBodies.End() ) {
             return;
@@ -377,10 +386,10 @@ public:
         CollisionBodies.Erase( it );
     }
 
-    void Duplicate( FCollisionBodyComposition & _Composition ) const {
+    void Duplicate( ACollisionBodyComposition & _Composition ) const {
         _Composition.Clear();
         _Composition.CollisionBodies = CollisionBodies;
-        for ( FCollisionBody * body : CollisionBodies ) {
+        for ( ACollisionBody * body : CollisionBodies ) {
             body->AddRef();
         }
         _Composition.CenterOfMass = CenterOfMass;
@@ -389,7 +398,7 @@ public:
     void ComputeCenterOfMassAvg() {
         CenterOfMass.Clear();
         if ( !CollisionBodies.IsEmpty() ) {
-            for ( FCollisionBody * body : CollisionBodies ) {
+            for ( ACollisionBody * body : CollisionBodies ) {
                 CenterOfMass += body->Position;
             }
             CenterOfMass /= CollisionBodies.Size();
@@ -400,7 +409,7 @@ public:
 
     void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const;
 
-    TPodArray< FCollisionBody *, 2 > CollisionBodies;
+    TPodArray< ACollisionBody *, 2 > CollisionBodies;
     Float3 CenterOfMass;
 };
 
@@ -412,7 +421,7 @@ Utilites
 
 */
 
-struct FConvexHullDesc {
+struct SConvexHullDesc {
     int FirstVertex;
     int VertexCount;
     int FirstIndex;
@@ -429,14 +438,14 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
                                  int _IndicesCount,
                                  TPodArray< Float3 > & _OutVertices,
                                  TPodArray< unsigned int > & _OutIndices,
-                                 TPodArray< FConvexHullDesc > & _OutHulls );
+                                 TPodArray< SConvexHullDesc > & _OutHulls );
 
 void PerformConvexDecomposition( Float3 const * _Vertices,
                                  int _VerticesCount,
                                  int _VertexStride,
                                  unsigned int const * _Indices,
                                  int _IndicesCount,
-                                 FCollisionBodyComposition & _BodyComposition );
+                                 ACollisionBodyComposition & _BodyComposition );
 
 void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       int _VerticesCount,
@@ -445,11 +454,11 @@ void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       int _IndicesCount,
                                       TPodArray< Float3 > & _OutVertices,
                                       TPodArray< unsigned int > & _OutIndices,
-                                      TPodArray< FConvexHullDesc > & _OutHulls,
+                                      TPodArray< SConvexHullDesc > & _OutHulls,
                                       Float3 & _CenterOfMass );
 
 void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices );
 
-void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
+void CreateCollisionShape( ACollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
 
 void DestroyCollisionShape( btCompoundShape * _CompoundShape );

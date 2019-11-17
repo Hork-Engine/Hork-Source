@@ -40,13 +40,13 @@ enum ERenderOrder {
 
 /*
 
-FDrawSurf
+ADrawSurf
 
 Base class for drawing surfaces
 
 */
-class ANGIE_API FDrawSurf : public FPhysicalBody {
-    AN_COMPONENT( FDrawSurf, FPhysicalBody )
+class ANGIE_API ADrawSurf : public APhysicalBody {
+    AN_COMPONENT( ADrawSurf, APhysicalBody )
 
 public:
     enum { RENDERING_GROUP_DEFAULT = 1 };
@@ -60,7 +60,7 @@ public:
     bool IsSkinnedMesh() const { return bSkinnedMesh; }
 
 protected:
-    FDrawSurf();
+    ADrawSurf();
 
     bool bSkinnedMesh;
 };

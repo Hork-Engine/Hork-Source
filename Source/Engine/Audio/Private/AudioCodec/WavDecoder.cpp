@@ -49,19 +49,15 @@ static bool IMAADPCMUnpack16_Stereo( signed short * _PCM, int _SamplesCount, int
 static bool IMAADPCMUnpack16Ext_Mono( signed short * _PCM, int _IgnoreFirstNSamples, int _SamplesCount, const byte * _ADPCM, int _DataLength, int _BlockAlign );
 static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSamples, int _SamplesCount, int _ChannelsCount, const byte * _ADPCM, int _DataLength, int _BlockAlign );
 
-template< typename T >
-static bool WaveReadHeader( FStreamBase< T > & _File, SWaveFormat & _Wave );
-template< typename T >
-static int WaveReadFile( FStreamBase< T > & _File, void * _Buffer, int _BufferLength, SWaveFormat *_Wave );
-template< typename T >
-static void WaveRewindFile( FStreamBase< T > & _File, SWaveFormat *_Wave );
-template< typename T >
-static int WaveSeekFile( FStreamBase< T > & _File, int _Offset, SWaveFormat *_Wave );
+static bool WaveReadHeader( IStreamBase & _File, SWaveFormat & _Wave );
+static int WaveReadFile( IStreamBase & _File, void * _Buffer, int _BufferLength, SWaveFormat *_Wave );
+static void WaveRewindFile( IStreamBase & _File, SWaveFormat *_Wave );
+static int WaveSeekFile( IStreamBase & _File, int _Offset, SWaveFormat *_Wave );
 
-AN_CLASS_META( FWavAudioTrack )
-AN_CLASS_META( FWavDecoder )
+AN_CLASS_META( AWavAudioTrack )
+AN_CLASS_META( AWavDecoder )
 
-FWavAudioTrack::FWavAudioTrack() {
+AWavAudioTrack::AWavAudioTrack() {
     WaveMemory = NULL;
     PCMDataOffset = 0;
     CurrentSample = 0;
@@ -69,11 +65,11 @@ FWavAudioTrack::FWavAudioTrack() {
     ADPCMBufferLength = 0;
 }
 
-FWavAudioTrack::~FWavAudioTrack() {
+AWavAudioTrack::~AWavAudioTrack() {
     GZoneMemory.Dealloc( ADPCM );
 }
 
-bool FWavAudioTrack::InitializeFileStream( const char * _FileName ) {
+bool AWavAudioTrack::InitializeFileStream( const char * _FileName ) {
     assert( !File.IsOpened() );
     assert( WaveMemory == NULL );
 
@@ -97,7 +93,7 @@ bool FWavAudioTrack::InitializeFileStream( const char * _FileName ) {
     return true;
 }
 
-bool FWavAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
+bool AWavAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
     assert( !File.IsOpened() );
     assert( WaveMemory == NULL );
 
@@ -111,7 +107,7 @@ bool FWavAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
     return true;
 }
 
-void FWavAudioTrack::StreamRewind() {
+void AWavAudioTrack::StreamRewind() {
     PCMDataOffset = 0;
     CurrentSample = 0;
 
@@ -120,12 +116,12 @@ void FWavAudioTrack::StreamRewind() {
     }
 }
 
-void FWavAudioTrack::StreamSeek( int _PositionInSamples ) {
+void AWavAudioTrack::StreamSeek( int _PositionInSamples ) {
     if ( WaveMemory ) {
         if ( Wave.Format == WAVE_FORMAT_PCM ) {
             int bytesPerSample = Wave.BitsPerSample >> 3;
 
-            CurrentSample = FMath::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
+            CurrentSample = Math::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
 
             PCMDataOffset = CurrentSample * bytesPerSample;
 
@@ -134,25 +130,25 @@ void FWavAudioTrack::StreamSeek( int _PositionInSamples ) {
             //    PCMDataOffset = Wave.DataSize;
             //}
         } else if ( Wave.Format == WAVE_FORMAT_DVI_ADPCM ) {
-            CurrentSample = FMath::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
+            CurrentSample = Math::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
         }
 
     } else if ( File.IsOpened() ) {
         if ( Wave.Format == WAVE_FORMAT_PCM ) {
             int bytesPerSample = Wave.BitsPerSample >> 3;
 
-            CurrentSample = FMath::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
+            CurrentSample = Math::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
 
             PCMDataOffset = CurrentSample * bytesPerSample;
 
             WaveSeekFile( File, PCMDataOffset, &Wave );
         } else if ( Wave.Format == WAVE_FORMAT_DVI_ADPCM ) {
-            CurrentSample = FMath::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
+            CurrentSample = Math::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
         }
     }
 }
 
-int FWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
+int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
     if ( WaveMemory ) {
         switch ( Wave.Format ) {
             case WAVE_FORMAT_PCM: {
@@ -306,16 +302,16 @@ int FWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
     return 0;
 }
 
-FWavDecoder::FWavDecoder() {
+AWavDecoder::AWavDecoder() {
 
 }
 
-IAudioStreamInterface * FWavDecoder::CreateAudioStream() {
-    return CreateInstanceOf< FWavAudioTrack >();
+IAudioStreamInterface * AWavDecoder::CreateAudioStream() {
+    return CreateInstanceOf< AWavAudioTrack >();
 }
 
-bool FWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
-    FFileStream f;
+bool AWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
+    AFileStream f;
     SWaveFormat inf;
 
     *_SamplesCount = 0;
@@ -368,8 +364,8 @@ bool FWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
     return true;
 }
 
-bool FWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
-    FMemoryStream f;
+bool AWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
+    AMemoryStream f;
     SWaveFormat inf;
 
     *_SamplesCount = 0;
@@ -422,8 +418,8 @@ bool FWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
     return true;
 }
 
-bool FWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
-    FFileStream f;
+bool AWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
+    AFileStream f;
     SWaveFormat inf;
 
     *_SamplesCount = 0;
@@ -467,8 +463,8 @@ bool FWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
     return true;
 }
 
-bool FWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
-    FMemoryStream f;
+bool AWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
+    AMemoryStream f;
     SWaveFormat inf;
 
     *_SamplesCount = 0;
@@ -544,7 +540,7 @@ static bool IMAADPCMUnpack16_Mono( signed short * _PCM, int _SamplesCount, const
 
     sampleIndex = 0;
     while ( sampleIndex < _SamplesCount && _DataLength > 4 ) {
-        sampleValue = FCore::LittleWord( *( ( short int * )_ADPCM ) );
+        sampleValue = Core::LittleWord( *( ( short int * )_ADPCM ) );
         tableIndex = _ADPCM[ 2 ];
         if ( tableIndex > 88 ) {
             tableIndex = 88;
@@ -608,7 +604,7 @@ static bool IMAADPCMUnpack16_Stereo( signed short * _PCM, int _SamplesCount, int
     while ( sampleIndex < _SamplesCount && _DataLength > MinDataLength ) {
 
         for ( int channel = 0 ; channel < _ChannelsCount ; channel++ ) {
-            sampleValue[channel] = FCore::LittleWord( *( ( short int * )_ADPCM ) );
+            sampleValue[channel] = Core::LittleWord( *( ( short int * )_ADPCM ) );
             tableIndex[channel] = _ADPCM[ 2 ];
             if ( tableIndex[channel] > 88 ) {
                 tableIndex[channel] = 88;
@@ -689,7 +685,7 @@ static bool IMAADPCMUnpack16Ext_Mono( signed short * _PCM, int _IgnoreFirstNSamp
 
     sampleIndex = 0;
     while ( sampleIndex < _SamplesCount && _DataLength > 4 ) {
-        sampleValue = FCore::LittleWord( *( ( short int * )_ADPCM ) );
+        sampleValue = Core::LittleWord( *( ( short int * )_ADPCM ) );
         tableIndex = _ADPCM[ 2 ];
         if ( tableIndex > 88 ) {
             tableIndex = 88;
@@ -761,7 +757,7 @@ static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSa
     while ( sampleIndex < _SamplesCount && _DataLength > MinDataLength ) {
 
         for ( int channel = 0 ; channel < _ChannelsCount ; channel++ ) {
-            sampleValue[channel] = FCore::LittleWord( *( ( short int * )_ADPCM ) );
+            sampleValue[channel] = Core::LittleWord( *( ( short int * )_ADPCM ) );
             tableIndex[channel] = _ADPCM[ 2 ];
             if ( tableIndex[channel] > 88 ) {
                 tableIndex[channel] = 88;
@@ -889,17 +885,15 @@ struct RiffChunk {
 #define CheckID(_x, _y) strncmp((const char *) (_x), (const char *) (_y), sizeof(RIFF_FOURCC))
 #define PAD2(_x)	    (((_x) + 1) & ~1)
 
-template< typename T >
-static int ReadChunk( FStreamBase< T > & _File, RiffChunk * _Chunk ) {
-    _File.Read( _Chunk, sizeof( RiffChunk ) );
+static int ReadChunk( IStreamBase & _File, RiffChunk * _Chunk ) {
+    _File.ReadBuffer( _Chunk, sizeof( RiffChunk ) );
     if ( _File.GetReadBytesCount() ) {
-        _Chunk->SizeInBytes = FCore::LittleDWord( _Chunk->SizeInBytes );
+        _Chunk->SizeInBytes = Core::LittleDWord( _Chunk->SizeInBytes );
     }
     return _File.GetReadBytesCount();
 }
 
-template< typename T >
-static bool WaveReadHeader( FStreamBase< T > & _File, SWaveFormat & _Wave ) {
+static bool WaveReadHeader( IStreamBase & _File, SWaveFormat & _Wave ) {
     RiffChunk       chunk;
     RIFF_FOURCC     id;
     int32_t         fileSize;
@@ -916,7 +910,7 @@ static bool WaveReadHeader( FStreamBase< T > & _File, SWaveFormat & _Wave ) {
         return false;
     }
 
-    _File.Read( &id, sizeof( RIFF_FOURCC ) );
+    _File.ReadBuffer( &id, sizeof( RIFF_FOURCC ) );
     if ( !_File.GetReadBytesCount() ) {
         return false;
     }
@@ -943,7 +937,7 @@ static bool WaveReadHeader( FStreamBase< T > & _File, SWaveFormat & _Wave ) {
         /* LIST chunk */
         if ( !CheckID( &chunk.Id, RIFF_ListID ) ) {
 
-            _File.Read( &id, sizeof( RIFF_FOURCC ) );
+            _File.ReadBuffer( &id, sizeof( RIFF_FOURCC ) );
             if ( !_File.GetReadBytesCount() ) {
                 return false;
             }
@@ -972,17 +966,17 @@ static bool WaveReadHeader( FStreamBase< T > & _File, SWaveFormat & _Wave ) {
         else if ( !CheckID( &chunk.Id, RIFF_WaveFmtID ) && !wave->Format ) {
             Int Dummy;
 
-            _File >> wave->Format;
-            _File >> wave->Channels;
-            _File >> wave->SampleRate;
-            _File >> Dummy;
-            _File >> wave->BlockAlign;
+            _File.ReadObject( wave->Format );
+            _File.ReadObject( wave->Channels );
+            _File.ReadObject( wave->SampleRate );
+            _File.ReadObject( Dummy );
+            _File.ReadObject( wave->BlockAlign );
 
             if ( wave->Format != WAVE_FORMAT_PCM && wave->Format != WAVE_FORMAT_DVI_ADPCM ) {
                 return false;
             }
 
-            _File >> wave->BitsPerSample;
+            _File.ReadObject( wave->BitsPerSample );
 
             /* skip any other format specific fields */
             _File.SeekCur( PAD2( chunk.SizeInBytes - 16 ) );
@@ -1040,19 +1034,16 @@ static bool WaveReadHeader( FStreamBase< T > & _File, SWaveFormat & _Wave ) {
     return true;
 }
 
-template< typename T >
-static int WaveReadFile( FStreamBase< T > & _File, void * _Buffer, int _BufferLength, SWaveFormat *_Wave ) {
-    _File.Read( _Buffer, _BufferLength );
+static int WaveReadFile( IStreamBase & _File, void * _Buffer, int _BufferLength, SWaveFormat *_Wave ) {
+    _File.ReadBuffer( _Buffer, _BufferLength );
     return _File.GetReadBytesCount();
 }
 
-template< typename T >
-static void WaveRewindFile( FStreamBase< T > & _File, SWaveFormat *_Wave ) {
+static void WaveRewindFile( IStreamBase & _File, SWaveFormat *_Wave ) {
     _File.SeekSet( _Wave->DataBase + sizeof( long ) );
 }
 
-template< typename T >
-static int WaveSeekFile( FStreamBase< T > & _File, int _Offset, SWaveFormat *_Wave ) {
+static int WaveSeekFile( IStreamBase & _File, int _Offset, SWaveFormat *_Wave ) {
     return _File.SeekSet( _Wave->DataBase + sizeof( long ) + _Offset );
 }
 

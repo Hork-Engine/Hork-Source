@@ -51,9 +51,9 @@ protected:
     WButton();
     ~WButton();
 
-    void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
     enum {
@@ -69,11 +69,11 @@ class ANGIE_API WTextButton : public WButton {
 
 public:
     WTextButton & SetText( const char * _Text );
-    WTextButton & SetColor( FColor4 const & _Color );
-    WTextButton & SetHoverColor( FColor4 const & _Color );
-    WTextButton & SetPressedColor( FColor4 const & _Color );
-    WTextButton & SetTextColor( FColor4 const & _Color );
-    WTextButton & SetBorderColor( FColor4 const & _Color );
+    WTextButton & SetColor( AColor4 const & _Color );
+    WTextButton & SetHoverColor( AColor4 const & _Color );
+    WTextButton & SetPressedColor( AColor4 const & _Color );
+    WTextButton & SetTextColor( AColor4 const & _Color );
+    WTextButton & SetBorderColor( AColor4 const & _Color );
     WTextButton & SetRounding( float _Rounding );
     WTextButton & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
     WTextButton & SetBorderThickness( float _Thickness );
@@ -82,16 +82,16 @@ protected:
     WTextButton();
     ~WTextButton();
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    FColor4 Color;
-    FColor4 HoverColor;
-    FColor4 PressedColor;
-    FColor4 TextColor;
-    FColor4 BorderColor;
+    AColor4 Color;
+    AColor4 HoverColor;
+    AColor4 PressedColor;
+    AColor4 TextColor;
+    AColor4 BorderColor;
     EDrawCornerFlags RoundingCorners;
-    FString Text;
+    AString Text;
     float Rounding;
     float BorderThickness;
 };
@@ -100,18 +100,18 @@ class ANGIE_API WImageButton : public WButton {
     AN_CLASS( WImageButton, WButton )
 
 public:
-    WImageButton & SetImage( FTexture2D * _Image );
-    WImageButton & SetHoverImage( FTexture2D * _Image );
-    WImageButton & SetPressedImage( FTexture2D * _Image );
+    WImageButton & SetImage( ATexture * _Image );
+    WImageButton & SetHoverImage( ATexture * _Image );
+    WImageButton & SetPressedImage( ATexture * _Image );
 
 protected:
     WImageButton();
     ~WImageButton();
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    TRef<FTexture2D> Image;
-    TRef<FTexture2D> HoverImage;
-    TRef<FTexture2D> PressedImage;
+    TRef<ATexture> Image;
+    TRef<ATexture> HoverImage;
+    TRef<ATexture> PressedImage;
 };

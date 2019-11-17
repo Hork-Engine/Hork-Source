@@ -34,15 +34,21 @@ SOFTWARE.
 #include <Engine/World/Public/World.h>
 #include <Engine/Resource/Public/ResourceManager.h>
 
-AN_CLASS_META( FMeshComponent )
+ARuntimeVariable RVDrawMeshBounds( _CTS( "DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
 
-FMeshComponent::FMeshComponent() {
+AN_CLASS_META( AMeshComponent )
+
+AMeshComponent::AMeshComponent() {
     bLightPass = true;
     bCastShadow = true;
     LightmapOffset.Z = LightmapOffset.W = 1;
+
+    static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Box" ) );
+    Mesh = MeshResource.GetObject();
+    Bounds = Mesh->GetBoundingBox();
 }
 
-void FMeshComponent::InitializeComponent() {
+void AMeshComponent::InitializeComponent() {
     Super::InitializeComponent();
 
     GetWorld()->AddMesh( this );
@@ -57,7 +63,7 @@ void FMeshComponent::InitializeComponent() {
     }
 }
 
-void FMeshComponent::DeinitializeComponent() {
+void AMeshComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     ClearMaterials();
@@ -70,7 +76,7 @@ void FMeshComponent::DeinitializeComponent() {
     }
 }
 
-void FMeshComponent::SetCastShadow( bool _CastShadow ) {
+void AMeshComponent::SetCastShadow( bool _CastShadow ) {
     if ( bCastShadow == _CastShadow )
     {
         return;
@@ -91,35 +97,32 @@ void FMeshComponent::SetCastShadow( bool _CastShadow ) {
     }
 }
 
-void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
+void AMeshComponent::SetMesh( AIndexedMesh * _Mesh ) {
     if ( Mesh == _Mesh ) {
         return;
     }
 
     Mesh = _Mesh;
 
-    for ( FSocket & socket : Sockets ) {
+    for ( SSocket & socket : Sockets ) {
         socket.SocketDef->RemoveRef();
     }
 
-    if ( Mesh )
-    {
-        // Update bounding box
-        Bounds = Mesh->GetBoundingBox();
-
-        // Update sockets
-        TPodArray< FSocketDef * > const & socketDef = Mesh->GetSockets();
-        Sockets.ResizeInvalidate( socketDef.Size() );
-        for ( int i = 0 ; i < socketDef.Size() ; i++ ) {
-            socketDef[i]->AddRef();
-            Sockets[i].SocketDef = socketDef[i];
-            Sockets[i].SkinnedMesh = IsSkinnedMesh() ? static_cast< FSkinnedComponent * >( this ) : nullptr;
-        }
+    if ( !Mesh ) {
+        static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Box" ) );
+        Mesh = MeshResource.GetObject();
     }
-    else
-    {
-        Bounds.Clear();
-        Sockets.Clear();
+
+    // Update bounding box
+    Bounds = Mesh->GetBoundingBox();
+
+    // Update sockets
+    TPodArray< ASocketDef * > const & socketDef = Mesh->GetSockets();
+    Sockets.ResizeInvalidate( socketDef.Size() );
+    for ( int i = 0 ; i < socketDef.Size() ; i++ ) {
+        socketDef[i]->AddRef();
+        Sockets[i].SocketDef = socketDef[i];
+        Sockets[i].SkinnedMesh = IsSkinnedMesh() ? static_cast< ASkinnedComponent * >( this ) : nullptr;
     }
 
     NotifyMeshChanged();
@@ -128,8 +131,8 @@ void FMeshComponent::SetMesh( FIndexedMesh * _Mesh ) {
     MarkWorldBoundsDirty();
 }
 
-void FMeshComponent::ClearMaterials() {
-    for ( FMaterialInstance * material : Materials ) {
+void AMeshComponent::ClearMaterials() {
+    for ( AMaterialInstance * material : Materials ) {
         if ( material ) {
             material->RemoveRef();
         }
@@ -137,18 +140,16 @@ void FMeshComponent::ClearMaterials() {
     Materials.Clear();
 }
 
-void FMeshComponent::CopyMaterialsFromMeshResource() {
+void AMeshComponent::CopyMaterialsFromMeshResource() {
     ClearMaterials();
 
-    if ( Mesh ) {
-        FIndexedMeshSubpartArray const & subparts = Mesh->GetSubparts();
-        for ( int i = 0 ; i < subparts.Size() ; i++ ) {
-            SetMaterialInstance( i, subparts[ i ]->GetMaterialInstance() );
-        }
+    AIndexedMeshSubpartArray const & subparts = Mesh->GetSubparts();
+    for ( int i = 0 ; i < subparts.Size() ; i++ ) {
+        SetMaterialInstance( i, subparts[ i ]->GetMaterialInstance() );
     }
 }
 
-void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance ) {
+void AMeshComponent::SetMaterialInstance( int _SubpartIndex, AMaterialInstance * _Instance ) {
     AN_Assert( _SubpartIndex >= 0 );
 
     if ( _SubpartIndex >= Materials.Size() ) {
@@ -176,7 +177,7 @@ void FMeshComponent::SetMaterialInstance( int _SubpartIndex, FMaterialInstance *
     }
 }
 
-FMaterialInstance * FMeshComponent::GetMaterialInstanceUnsafe( int _SubpartIndex ) const {
+AMaterialInstance * AMeshComponent::GetMaterialInstanceUnsafe( int _SubpartIndex ) const {
     if ( _SubpartIndex < 0 ) {
         return nullptr;
     }
@@ -188,11 +189,7 @@ FMaterialInstance * FMeshComponent::GetMaterialInstanceUnsafe( int _SubpartIndex
         return Materials[_SubpartIndex];
     }
 
-    if ( !Mesh ) {
-        return nullptr;
-    }
-
-    FIndexedMeshSubpartArray const & subparts = Mesh->GetSubparts();
+    AIndexedMeshSubpartArray const & subparts = Mesh->GetSubparts();
     if ( _SubpartIndex >= subparts.Size() ) {
         return nullptr;
     }
@@ -200,28 +197,41 @@ FMaterialInstance * FMeshComponent::GetMaterialInstanceUnsafe( int _SubpartIndex
     return subparts[_SubpartIndex]->GetMaterialInstance();
 }
 
-FMaterialInstance * FMeshComponent::GetMaterialInstance( int _SubpartIndex ) const {
-    FMaterialInstance * pInstance = GetMaterialInstanceUnsafe( _SubpartIndex );
+AMaterialInstance * AMeshComponent::GetMaterialInstance( int _SubpartIndex ) const {
+    AMaterialInstance * pInstance = GetMaterialInstanceUnsafe( _SubpartIndex );
     if ( !pInstance ) {
-        static TStaticInternalResourceFinder< FMaterialInstance > DefaultInstance( _CTS( "FMaterialInstance.Default" ) );
+        static TStaticResourceFinder< AMaterialInstance > DefaultInstance( _CTS( "/Default/MaterialInstance/Default" ) );
         pInstance = DefaultInstance.GetObject();
     }
     return pInstance;
 }
 
-FCollisionBodyComposition const & FMeshComponent::DefaultBodyComposition() const {
-    return Mesh ? Mesh->BodyComposition : Super::DefaultBodyComposition();
+ACollisionBodyComposition const & AMeshComponent::DefaultBodyComposition() const {
+    return Mesh->BodyComposition;
 }
 
-void FMeshComponent::NotifyMeshChanged() {
+void AMeshComponent::NotifyMeshChanged() {
     OnMeshChanged();
 }
 
-void FMeshComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+void AMeshComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
-    if ( Mesh )
+    Mesh->DrawDebug( _DebugDraw );
+
+    if ( RVDrawMeshBounds )
     {
-        Mesh->DrawDebug( _DebugDraw );
+        _DebugDraw->SetDepthTest( true );
+
+        if ( IsSkinnedMesh() )
+        {
+            _DebugDraw->SetColor( AColor4( 0.5f,0.5f,1,1 ) );
+        }
+        else
+        {
+            _DebugDraw->SetColor( AColor4( 1,1,1,1 ) );
+        }
+
+        _DebugDraw->DrawAABB( GetWorldBounds() );
     }
 }

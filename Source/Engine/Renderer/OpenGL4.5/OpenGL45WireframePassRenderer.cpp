@@ -37,9 +37,9 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-FWireframePassRenderer GWireframePassRenderer;
+AWireframePassRenderer GWireframePassRenderer;
 
-void FWireframePassRenderer::Initialize() {
+void AWireframePassRenderer::Initialize() {
     RenderPassCreateInfo renderPassCI = {};
 
     renderPassCI.NumColorAttachments = 1;
@@ -63,12 +63,12 @@ void FWireframePassRenderer::Initialize() {
     WireframePass.Initialize( renderPassCI );
 }
 
-void FWireframePassRenderer::Deinitialize() {
+void AWireframePassRenderer::Deinitialize() {
     WireframePass.Deinitialize();
 }
 
-bool FWireframePassRenderer::BindMaterial( FRenderInstance const * instance ) {
-    FMaterialGPU * pMaterial = instance->Material;
+bool AWireframePassRenderer::BindMaterial( SRenderInstance const * instance ) {
+    AMaterialGPU * pMaterial = instance->Material;
     Pipeline * pPipeline;
 
     AN_Assert( pMaterial );
@@ -79,16 +79,16 @@ bool FWireframePassRenderer::BindMaterial( FRenderInstance const * instance ) {
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
 
-        pPipeline = bSkinned ? &((FShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->WireframePassSkinned
-                             : &((FShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->WireframePass;
+        pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->WireframePassSkinned
+                             : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->WireframePass;
 
         break;
 
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
 
-        pPipeline = bSkinned ? &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->WireframePassSkinned
-                             : &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->WireframePass;
+        pPipeline = bSkinned ? &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->WireframePassSkinned
+                             : &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->WireframePass;
 
         break;
 
@@ -116,7 +116,7 @@ bool FWireframePassRenderer::BindMaterial( FRenderInstance const * instance ) {
     return true;
 }
 
-void FWireframePassRenderer::BindTexturesWireframePass( FMaterialFrameData * _Instance ) {
+void AWireframePassRenderer::BindTexturesWireframePass( SMaterialFrameData * _Instance ) {
     if ( !_Instance->Material->bWireframePassTextureFetch ) {
         return;
     }
@@ -124,7 +124,7 @@ void FWireframePassRenderer::BindTexturesWireframePass( FMaterialFrameData * _In
     BindTextures( _Instance );
 }
 
-void FWireframePassRenderer::RenderInstances() {
+void AWireframePassRenderer::RenderInstances() {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &WireframePass;
@@ -152,7 +152,7 @@ void FWireframePassRenderer::RenderInstances() {
     drawCmd.StartInstanceLocation = 0;
 
     for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-        FRenderInstance const * instance = GFrameData->Instances[ GRenderView->FirstInstance + i ];
+        SRenderInstance const * instance = GFrameData->Instances[ GRenderView->FirstInstance + i ];
 
         if ( !BindMaterial( instance ) ) {
             continue;

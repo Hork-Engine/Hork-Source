@@ -143,16 +143,14 @@ public:
     }
 
     // Byte serialization
-    template< typename Stream >
-    void Write( FStreamBase< Stream > & _Stream ) const {
-        _Stream << NumBits;
-        _Stream << Bits;
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteUInt32( NumBits );
+        _Stream.WriteArrayUInt32( Bits );
     }
 
-    template< typename Stream >
-    void Read( FStreamBase< Stream > & _Stream ) {
-        _Stream >> NumBits;
-        _Stream >> Bits;
+    void Read( IStreamBase & _Stream ) {
+        NumBits = _Stream.ReadUInt32();
+        _Stream.ReadArrayUInt32( Bits );
     }
 
 private:

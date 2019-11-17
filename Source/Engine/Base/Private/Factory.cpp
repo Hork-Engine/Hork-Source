@@ -33,64 +33,64 @@ SOFTWARE.
 #include <Engine/Core/Public/HashFunc.h>
 #include <Engine/Core/Public/Logger.h>
 
-AN_CLASS_META( FDummy )
+AN_CLASS_META( ADummy )
 
-const char * FAttributeMeta::TypeNames[ (int)EAttributeType::T_Max ] =
+const char * AAttributeMeta::TypeNames[ (int)EAttributeType::T_Max ] =
 {
     "Byte", "Bool", "Int", "Float", "Float2", "Float3", "Float4", "Quat", "String"
 };
 
-FObjectFactory * FObjectFactory::FactoryList = nullptr;
+AObjectFactory * AObjectFactory::FactoryList = nullptr;
 
 void InitializeFactories() {
-    //for ( FObjectFactory * factory = FObjectFactory::FactoryList ; factory = factory->NextFactory ) {
+    //for ( AObjectFactory * factory = AObjectFactory::FactoryList ; factory = factory->NextFactory ) {
     //    ... do something
     //}
 }
 
 void DeinitializeFactories() {
-    for ( FObjectFactory * factory = FObjectFactory::FactoryList ; factory ; factory = factory->NextFactory ) {
+    for ( AObjectFactory * factory = AObjectFactory::FactoryList ; factory ; factory = factory->NextFactory ) {
         GZoneMemory.Dealloc( factory->IdTable );
         factory->IdTable = nullptr;
         factory->NameTable.Free();
     }
 }
 
-FObjectFactory::FObjectFactory( const char * _Tag )
+AObjectFactory::AObjectFactory( const char * _Tag )
     : Tag( _Tag ), Classes( nullptr ), IdTable( nullptr ), NumClasses( 0 )
 {
     NextFactory = FactoryList;
     FactoryList = this;
 }
 
-FObjectFactory::~FObjectFactory() {
+AObjectFactory::~AObjectFactory() {
     AN_Assert( IdTable == nullptr );
 }
 
-const FClassMeta * FObjectFactory::FindClass( const char * _ClassName ) const {
+const AClassMeta * AObjectFactory::FindClass( const char * _ClassName ) const {
     if ( !*_ClassName ) {
         return NULL;
     }
-    for ( FClassMeta const * n = Classes ; n ; n = n->pNext ) {
-        if ( !FString::Cmp( n->GetName(), _ClassName ) ) {
+    for ( AClassMeta const * n = Classes ; n ; n = n->pNext ) {
+        if ( !AString::Cmp( n->GetName(), _ClassName ) ) {
             return n;
         }
     }
     return NULL;
 }
 
-const FClassMeta * FObjectFactory::LookupClass( const char * _ClassName ) const {
+const AClassMeta * AObjectFactory::LookupClass( const char * _ClassName ) const {
     if ( !NameTable.IsAllocated() ) {
         // init name table
-        for ( FClassMeta * n = Classes ; n ; n = n->pNext ) {
-            NameTable.Insert( FCore::Hash( n->GetName(), FString::Length( n->GetName() ) ), n->GetId() );
+        for ( AClassMeta * n = Classes ; n ; n = n->pNext ) {
+            NameTable.Insert( Core::Hash( n->GetName(), AString::Length( n->GetName() ) ), n->GetId() );
         }
     }
 
-    int i = NameTable.First( FCore::Hash( _ClassName, FString::Length( _ClassName ) ) );
+    int i = NameTable.First( Core::Hash( _ClassName, AString::Length( _ClassName ) ) );
     for ( ; i != -1 ; i = NameTable.Next( i ) ) {
-        FClassMeta const * classMeta = LookupClass( i );
-        if ( classMeta && !FString::Cmp( classMeta->GetName(), _ClassName ) ) {
+        AClassMeta const * classMeta = LookupClass( i );
+        if ( classMeta && !AString::Cmp( classMeta->GetName(), _ClassName ) ) {
              return classMeta;
         }
     }
@@ -98,7 +98,7 @@ const FClassMeta * FObjectFactory::LookupClass( const char * _ClassName ) const 
     return nullptr;
 }
 
-const FClassMeta * FObjectFactory::LookupClass( uint64_t _ClassId ) const {
+const AClassMeta * AObjectFactory::LookupClass( uint64_t _ClassId ) const {
     if ( _ClassId > NumClasses ) {
         // invalid class id
         return nullptr;
@@ -106,9 +106,9 @@ const FClassMeta * FObjectFactory::LookupClass( uint64_t _ClassId ) const {
 
     if ( !IdTable ) {
         // init lookup table
-        IdTable = ( FClassMeta ** )GZoneMemory.Alloc( ( NumClasses + 1 ) * sizeof( *IdTable ), 1 );
+        IdTable = ( AClassMeta ** )GZoneMemory.Alloc( ( NumClasses + 1 ) * sizeof( *IdTable ), 1 );
         IdTable[ 0 ] = nullptr;
-        for ( FClassMeta * n = Classes ; n ; n = n->pNext ) {
+        for ( AClassMeta * n = Classes ; n ; n = n->pNext ) {
             IdTable[ n->GetId() ] = n;
         }
     }
@@ -116,9 +116,9 @@ const FClassMeta * FObjectFactory::LookupClass( uint64_t _ClassId ) const {
     return IdTable[ _ClassId ];
 }
 
-FAttributeMeta const * FClassMeta::FindAttribute( const char * _Name, bool _Recursive ) const {
-    for ( FAttributeMeta const * attrib = AttributesHead ; attrib ; attrib = attrib->Next() ) {
-        if ( !FString::Cmp( attrib->GetName(), _Name ) ) {
+AAttributeMeta const * AClassMeta::FindAttribute( const char * _Name, bool _Recursive ) const {
+    for ( AAttributeMeta const * attrib = AttributesHead ; attrib ; attrib = attrib->Next() ) {
+        if ( !AString::Cmp( attrib->GetName(), _Name ) ) {
             return attrib;
         }
     }
@@ -128,8 +128,8 @@ FAttributeMeta const * FClassMeta::FindAttribute( const char * _Name, bool _Recu
     return nullptr;
 }
 
-void FClassMeta::GetAttributes( TPodArray< FAttributeMeta const * > & _Attributes, bool _Recursive ) const {
-    for ( FAttributeMeta const * attrib = AttributesHead ; attrib ; attrib = attrib->Next() ) {
+void AClassMeta::GetAttributes( TPodArray< AAttributeMeta const * > & _Attributes, bool _Recursive ) const {
+    for ( AAttributeMeta const * attrib = AttributesHead ; attrib ; attrib = attrib->Next() ) {
         _Attributes.Append( attrib );
     }
     if ( _Recursive && pSuperClass ) {
@@ -137,13 +137,13 @@ void FClassMeta::GetAttributes( TPodArray< FAttributeMeta const * > & _Attribute
     }
 }
 
-void FClassMeta::CloneAttributes( FDummy const * _Template, FDummy * _Destination ) {
+void AClassMeta::CloneAttributes( ADummy const * _Template, ADummy * _Destination ) {
     if ( &_Template->FinalClassMeta() != &_Destination->FinalClassMeta() ) {
-        GLogger.Printf( "FClassMeta::CloneAttributes: Template is not an %s class\n", _Destination->FinalClassName() );
+        GLogger.Printf( "AClassMeta::CloneAttributes: Template is not an %s class\n", _Destination->FinalClassName() );
         return;
     }
-    for ( FClassMeta const * Meta = &_Template->FinalClassMeta() ; Meta ; Meta = Meta->SuperClass() ) {
-        for ( FAttributeMeta const * attr = Meta->GetAttribList() ; attr ; attr = attr->Next() ) {
+    for ( AClassMeta const * Meta = &_Template->FinalClassMeta() ; Meta ; Meta = Meta->SuperClass() ) {
+        for ( AAttributeMeta const * attr = Meta->GetAttribList() ; attr ; attr = attr->Next() ) {
             attr->CopyValue( _Template, _Destination );
         }
     }

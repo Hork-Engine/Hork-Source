@@ -39,69 +39,69 @@ SOFTWARE.
 #include <android/log.h>
 #endif
 
-FLogger GLogger;
+ALogger GLogger;
 
 thread_local char LogBuffer[16384];
 
-void FLogger::Critical( const char * _Format, ... ) {
+void ALogger::Critical( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    FString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevCritical, LogBuffer );
 }
 
-void FLogger::Error( const char * _Format, ... ) {
+void ALogger::Error( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    FString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevError, LogBuffer );
 }
 
-void FLogger::Warning( const char * _Format, ... ) {
+void ALogger::Warning( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    FString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevWarning, LogBuffer );
 }
 
-void FLogger::DebugMessage( const char * _Format, ... ) {
+void ALogger::DebugMessage( const char * _Format, ... ) {
 #ifdef AN_DEBUG
     va_list VaList;
     va_start( VaList, _Format );
-    FString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevMessage, LogBuffer );
 #endif
 }
 
-void FLogger::Printf( const char * _Format, ... ) {
+void ALogger::Printf( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    FString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevMessage, LogBuffer );
 }
 
-void FLogger::Print( const char * _Message ) {
+void ALogger::Print( const char * _Message ) {
     MessageCallback( LevMessage, _Message );
 }
 
-void FLogger::_Printf( int _Level, const char * _Format, ... ) {
+void ALogger::_Printf( int _Level, const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    FString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( _Level, LogBuffer );
 }
 
-void FLogger::SetMessageCallback( void (*_MessageCallback)( int, const char * ) ) {
+void ALogger::SetMessageCallback( void (*_MessageCallback)( int, const char * ) ) {
     MessageCallback = _MessageCallback;
 }
 
-void FLogger::DefaultMessageCallback( int, const char * _Message ) {
+void ALogger::DefaultMessageCallback( int, const char * _Message ) {
 #if defined AN_COMPILER_MSVC && defined AN_DEBUG
     OutputDebugStringA( _Message );
 #else

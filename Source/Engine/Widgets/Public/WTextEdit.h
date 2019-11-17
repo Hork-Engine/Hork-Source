@@ -46,7 +46,7 @@ public:
     TWidgetEvent<> E_OnEnterPress;
     TWidgetEvent<> E_OnEscapePress;
 
-    WTextEdit & SetFont( FFont * _Font );
+    WTextEdit & SetFont( AFont * _Font );
     WTextEdit & SetMaxChars( int _MaxChars );
     WTextEdit & SetFilterDecimal( bool _Enabled );
     WTextEdit & SetFilterHexadecimal( bool _Enabled );
@@ -61,8 +61,8 @@ public:
     WTextEdit & SetCtrlEnterForNewLine( bool _Enabled );
     WTextEdit & SetAllowTabInput( bool _Enabled );
     WTextEdit & SetAllowUndo( bool _Enabled );
-    WTextEdit & SetSelectionColor( FColor4 const & _Color );
-    WTextEdit & SetTextColor( FColor4 const & _Color );
+    WTextEdit & SetSelectionColor( AColor4 const & _Color );
+    WTextEdit & SetTextColor( AColor4 const & _Color );
 
     void ClearSelection();
 
@@ -110,13 +110,13 @@ public:
 
     int GetSelectionEnd() const;
 
-    FFont const * GetFont() const;
+    AFont const * GetFont() const;
 
     // FUTURE:
     // WTextEdit & SetSyntaxHighlighter( ISyntaxHighlighter * _SyntaxHighlighterInterface );
     // class ISyntaxHighlighter {
     // public:
-    //     virtual FColor4 const & GetWordColor( FWideChar * _WordStart, FWideChar * _WordEnd ) = 0;
+    //     virtual AColor4 const & GetWordColor( FWideChar * _WordStart, FWideChar * _WordEnd ) = 0;
     // };
 
 protected:
@@ -125,17 +125,17 @@ protected:
 
     virtual bool OnFilterCharacter( FWideChar & _Char ) { return true; }
 
-    void OnKeyEvent( struct FKeyEvent const & _Event, double _TimeStamp ) override;
+    void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) override;
 
-    void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
     void OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint64_t _ClickTime ) override;
 
-    void OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) override;
 
-    void OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
 
-    void OnCharEvent( struct FCharEvent const & _Event, double _TimeStamp ) override;
+    void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) override;
 
     void OnFocusLost() override;
 
@@ -143,7 +143,7 @@ protected:
 
     void OnWindowHovered( bool _Hovered ) override;
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
     void PressKey( int _Key );
@@ -154,10 +154,10 @@ private:
     bool FindLineStartEnd( int _Cursor, FWideChar ** _LineStart, FWideChar ** _LineEnd );
     WScroll * GetScroll();
 
-    FColor4 SelectionColor;
-    FColor4 TextColor;
+    AColor4 SelectionColor;
+    AColor4 TextColor;
 
-    TRef< FFont > Font;
+    TRef< AFont > Font;
 
     TPodArray< FWideChar > TextData;
     int CurTextLength;

@@ -36,7 +36,7 @@ class ANGIE_API WViewport : public WWidget {
     AN_CLASS( WViewport, WWidget )
 
 public:
-    WViewport & SetPlayerController( FPlayerController * _PlayerController );
+    WViewport & SetPlayerController( APlayerController * _PlayerController );
 
 protected:
     WViewport();
@@ -44,18 +44,18 @@ protected:
 
     void OnTransformDirty() override;
 
-    void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
-    void OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
 
     void OnFocusLost() override;
 
     void OnFocusReceive() override;
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
     void UpdatePlayerControllerViewport();
 
-    TRef< FPlayerController > PlayerController;
+    TRef< APlayerController > PlayerController;
 };

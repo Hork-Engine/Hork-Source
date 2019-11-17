@@ -35,11 +35,11 @@ SOFTWARE.
 #include <Engine/Core/Public/HashFunc.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META( FInputAxis )
-AN_CLASS_META( FInputAction )
-AN_CLASS_META( FInputMappings )
+AN_CLASS_META( AInputAxis )
+AN_CLASS_META( AInputAction )
+AN_CLASS_META( AInputMappings )
 
-AN_BEGIN_CLASS_META( FInputComponent )
+AN_BEGIN_CLASS_META( AInputComponent )
 //AN_ATTRIBUTE_( ReceiveInputMask, AF_DEFAULT )
 AN_ATTRIBUTE_( bIgnoreKeyboardEvents, AF_DEFAULT )
 AN_ATTRIBUTE_( bIgnoreMouseEvents, AF_DEFAULT )
@@ -48,7 +48,7 @@ AN_ATTRIBUTE_( bIgnoreCharEvents, AF_DEFAULT )
 AN_ATTRIBUTE_( ControllerId, AF_DEFAULT )
 AN_END_CLASS_META()
 
-struct FInputComponentStatic {
+struct AInputComponentStatic {
     const char * KeyNames[ MAX_KEYBOARD_BUTTONS ];
     const char * MouseButtonNames[ MAX_MOUSE_BUTTONS ];
     const char * MouseAxisNames[ MAX_MOUSE_AXES ];
@@ -59,10 +59,10 @@ struct FInputComponentStatic {
     const char * ControllerNames[ MAX_INPUT_CONTROLLERS ];
 
     int DeviceButtonLimits[ MAX_INPUT_DEVICES ];
-    FJoystick Joysticks[ MAX_JOYSTICKS_COUNT ];
+    SJoystick Joysticks[ MAX_JOYSTICKS_COUNT ];
     float JoystickAxisState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 
-    FInputComponentStatic() {
+    AInputComponentStatic() {
         #define InitKey( _Key ) KeyNames[ _Key ] = AN_STRINGIFY( _Key ) + 4
         #define InitButton( _Button ) MouseButtonNames[ _Button ] = AN_STRINGIFY( _Button ) + 6
         #define InitMouseAxis( _Axis ) MouseAxisNames[ _Axis - MOUSE_AXIS_BASE ] = AN_STRINGIFY( _Axis ) + 6
@@ -358,26 +358,26 @@ struct FInputComponentStatic {
     }
 };
 
-static FInputComponentStatic Static;
+static AInputComponentStatic Static;
 
-FInputComponent * FInputComponent::InputComponents = nullptr;
-FInputComponent * FInputComponent::InputComponentsTail = nullptr;
+AInputComponent * AInputComponent::InputComponents = nullptr;
+AInputComponent * AInputComponent::InputComponentsTail = nullptr;
 
-const char * FInputHelper::TranslateDevice( int _DevId ) {
+const char * AInputHelper::TranslateDevice( int _DevId ) {
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return "UNKNOWN";
     }
     return Static.DeviceNames[ _DevId ];
 }
 
-const char * FInputHelper::TranslateModifier( int _Modifier ) {
+const char * AInputHelper::TranslateModifier( int _Modifier ) {
     if ( _Modifier < 0 || _Modifier > MOD_LAST ) {
         return "UNKNOWN";
     }
     return Static.ModifierNames[ _Modifier ];
 }
 
-const char * FInputHelper::TranslateDeviceKey( int _DevId, int _Key ) {
+const char * AInputHelper::TranslateDeviceKey( int _DevId, int _Key ) {
     switch ( _DevId ) {
     case ID_KEYBOARD:
         if ( _Key < 0 || _Key > KEY_LAST ) {
@@ -412,48 +412,48 @@ const char * FInputHelper::TranslateDeviceKey( int _DevId, int _Key ) {
     return "UNKNOWN";
 }
 
-const char * FInputHelper::TranslateController( int _ControllerId ) {
+const char * AInputHelper::TranslateController( int _ControllerId ) {
     if ( _ControllerId < 0 || _ControllerId >= MAX_INPUT_CONTROLLERS ) {
         return "UNKNOWN";
     }
     return Static.ControllerNames[ _ControllerId ];
 }
 
-int FInputHelper::LookupDevice( const char * _Device ) {
+int AInputHelper::LookupDevice( const char * _Device ) {
     for ( int i = 0 ; i < MAX_INPUT_DEVICES ; i++ ) {
-        if ( !FString::Icmp( Static.DeviceNames[i], _Device ) ) {
+        if ( !AString::Icmp( Static.DeviceNames[i], _Device ) ) {
             return i;
         }
     }
     return -1;
 }
 
-int FInputHelper::LookupModifier( const char * _Modifier ) {
+int AInputHelper::LookupModifier( const char * _Modifier ) {
     for ( int i = 0 ; i < MAX_MODIFIERS ; i++ ) {
-        if ( !FString::Icmp( Static.ModifierNames[i], _Modifier ) ) {
+        if ( !AString::Icmp( Static.ModifierNames[i], _Modifier ) ) {
             return i;
         }
     }
     return -1;
 }
 
-int FInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
+int AInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
     switch ( _DevId ) {
     case ID_KEYBOARD:
         for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
-            if ( !FString::Icmp( Static.KeyNames[i], _Key ) ) {
+            if ( !AString::Icmp( Static.KeyNames[i], _Key ) ) {
                 return i;
             }
         }
         return -1;
     case ID_MOUSE:
         for ( int i = 0 ; i < MAX_MOUSE_BUTTONS ; i++ ) {
-            if ( !FString::Icmp( Static.MouseButtonNames[i], _Key ) ) {
+            if ( !AString::Icmp( Static.MouseButtonNames[i], _Key ) ) {
                 return MOUSE_BUTTON_BASE + i;
             }
         }
         for ( int i = 0 ; i < MAX_MOUSE_AXES ; i++ ) {
-            if ( !FString::Icmp( Static.MouseAxisNames[i], _Key ) ) {
+            if ( !AString::Icmp( Static.MouseAxisNames[i], _Key ) ) {
                 return MOUSE_AXIS_BASE + i;
             }
         }
@@ -461,12 +461,12 @@ int FInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
     }
     if ( _DevId >= ID_JOYSTICK_1 && _DevId <= ID_JOYSTICK_16 ) {
         for ( int i = 0 ; i < MAX_JOYSTICK_BUTTONS ; i++ ) {
-            if ( !FString::Icmp( Static.JoystickButtonNames[i], _Key ) ) {
+            if ( !AString::Icmp( Static.JoystickButtonNames[i], _Key ) ) {
                 return JOY_BUTTON_BASE + i;
             }
         }
         for ( int i = 0 ; i < MAX_JOYSTICK_AXES ; i++ ) {
-            if ( !FString::Icmp( Static.JoystickAxisNames[i], _Key ) ) {
+            if ( !AString::Icmp( Static.JoystickAxisNames[i], _Key ) ) {
                 return JOY_AXIS_BASE + i;
             }
         }
@@ -474,16 +474,16 @@ int FInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
     return -1;
 }
 
-int FInputHelper::LookupController( const char * _Controller ) {
+int AInputHelper::LookupController( const char * _Controller ) {
     for ( int i = 0 ; i < MAX_INPUT_CONTROLLERS ; i++ ) {
-        if ( !FString::Icmp( Static.ControllerNames[i], _Controller ) ) {
+        if ( !AString::Icmp( Static.ControllerNames[i], _Controller ) ) {
             return i;
         }
     }
     return -1;
 }
 
-FInputComponent::FInputComponent() {
+AInputComponent::AInputComponent() {
     DeviceButtonDown[ ID_KEYBOARD ] = KeyboardButtonDown;
     DeviceButtonDown[ ID_MOUSE ] = MouseButtonDown;
     for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
@@ -498,7 +498,7 @@ FInputComponent::FInputComponent() {
     INTRUSIVE_ADD( this, Next, Prev, InputComponents, InputComponentsTail );
 }
 
-void FInputComponent::DeinitializeComponent() {
+void AInputComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     INTRUSIVE_REMOVE( this, Next, Prev, InputComponents, InputComponentsTail );
@@ -506,15 +506,15 @@ void FInputComponent::DeinitializeComponent() {
     InputMappings = nullptr;
 }
 
-void FInputComponent::SetInputMappings( FInputMappings * _InputMappings ) {
+void AInputComponent::SetInputMappings( AInputMappings * _InputMappings ) {
     InputMappings = _InputMappings;
 }
 
-FInputMappings * FInputComponent::GetInputMappings() {
+AInputMappings * AInputComponent::GetInputMappings() {
     return InputMappings;
 }
 
-void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
+void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
     AN_Assert( _Fract > 0.0f );
     AN_Assert( _Fract <= 1.0f );
 
@@ -526,11 +526,11 @@ void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
 
     _Fract *= _TimeStep;
 
-    for ( FAxisBinding & binding : AxisBindings ) {
+    for ( SAxisBinding & binding : AxisBindings ) {
         binding.AxisScale = 0.0f;
     }
 
-    for ( FPressedKey * key = PressedKeys ; key < &PressedKeys[ NumPressedKeys ] ; key++ ) {
+    for ( SPressedKey * key = PressedKeys ; key < &PressedKeys[ NumPressedKeys ] ; key++ ) {
         if ( key->AxisBinding != -1 ) {
             AxisBindings[ key->AxisBinding ].AxisScale += key->AxisScale * _Fract;
         } else {
@@ -538,9 +538,9 @@ void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
         }
     }
 
-    const TPodArray< FInputAxis * > & inputAxes = InputMappings->GetAxes();
+    const TPodArray< AInputAxis * > & inputAxes = InputMappings->GetAxes();
     for ( int i = 0 ; i < inputAxes.Size() ; i++ ) {
-        FInputAxis * inputAxis = inputAxes[i];
+        AInputAxis * inputAxis = inputAxes[i];
 
         int axisBinding = GetAxisBinding( inputAxis );
         if ( axisBinding == -1 ) {
@@ -548,7 +548,7 @@ void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
             continue;
         }
 
-        FAxisBinding & binding = AxisBindings[ axisBinding ];
+        SAxisBinding & binding = AxisBindings[ axisBinding ];
         if ( bPaused && !binding.bExecuteEvenWhenPaused ) {
             continue;
         }
@@ -563,7 +563,7 @@ void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
                 for ( int joystickAxis = 0 ; joystickAxis < MAX_JOYSTICK_AXES ; joystickAxis++ ) {
 
                     if ( joystickAxes & ( 1 << joystickAxis ) ) {
-                        FInputMappings::FMapping & mapping = InputMappings->JoystickAxisMappings[ joyNum ][ joystickAxis ];
+                        AInputMappings::SMapping & mapping = InputMappings->JoystickAxisMappings[ joyNum ][ joystickAxis ];
 
                         AN_Assert( mapping.AxisOrActionIndex == i );
 
@@ -579,7 +579,7 @@ void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
             const byte mouseAxes = inputAxis->GetMouseAxes();
             for ( int mouseAxis = 0 ; mouseAxis < MAX_MOUSE_AXES ; mouseAxis++ ) {
                 if ( mouseAxes & ( 1 << mouseAxis ) ) {
-                    FInputMappings::FMapping & mapping = InputMappings->MouseAxisMappings[ mouseAxis ];
+                    AInputMappings::SMapping & mapping = InputMappings->MouseAxisMappings[ mouseAxis ];
 
                     AN_Assert( mapping.AxisOrActionIndex == i );
 
@@ -596,7 +596,7 @@ void FInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
     }
 }
 
-void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp ) {
+void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp ) {
     AN_Assert( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
 
     char * ButtonIndex = DeviceButtonDown[ _DevId ];
@@ -618,7 +618,7 @@ void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
     if ( _Action == IE_Press ) {
         if ( ButtonIndex[ _Button ] == -1 ) {
             if ( NumPressedKeys < MAX_PRESSED_KEYS ) {
-                FPressedKey & pressedKey = PressedKeys[ NumPressedKeys ];
+                SPressedKey & pressedKey = PressedKeys[ NumPressedKeys ];
                 pressedKey.DevId = _DevId;
                 pressedKey.Key = _Button;
                 pressedKey.AxisBinding = -1;
@@ -626,7 +626,7 @@ void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
                 pressedKey.AxisScale = 0;
 
                 if ( InputMappings ) {
-                    const FInputMappings::FMapping * mapping;
+                    const AInputMappings::SMapping * mapping;
                     if ( _DevId == ID_KEYBOARD ) {
                         mapping = &InputMappings->KeyboardMappings[ _Button ];
                     } else if ( _DevId == ID_MOUSE ) {
@@ -639,13 +639,13 @@ void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
                         if ( mapping->bAxis ) {
                             pressedKey.AxisScale = mapping->AxisScale;
 
-                            FInputAxis * inputAxis = InputMappings->GetAxes()[ mapping->AxisOrActionIndex ];
+                            AInputAxis * inputAxis = InputMappings->GetAxes()[ mapping->AxisOrActionIndex ];
 
                             pressedKey.AxisBinding = GetAxisBinding( inputAxis );
 
                         } else {
                             if ( ( _ModMask & mapping->ModMask ) == mapping->ModMask ) {
-                                FInputAction * inputAction = InputMappings->GetActions()[ mapping->AxisOrActionIndex ];
+                                AInputAction * inputAction = InputMappings->GetActions()[ mapping->AxisOrActionIndex ];
                                 pressedKey.ActionBinding = GetActionBinding( inputAction );
                             }
                         }
@@ -658,7 +658,7 @@ void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
 
                 if ( pressedKey.ActionBinding != -1 ) {
 
-                    FActionBinding & binding = ActionBindings[ pressedKey.ActionBinding ];
+                    SActionBinding & binding = ActionBindings[ pressedKey.ActionBinding ];
 
                     if ( GetWorld()->IsPaused() && !binding.bExecuteEvenWhenPaused ) {
                         pressedKey.ActionBinding = -1;
@@ -705,17 +705,17 @@ void FInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
     }
 }
 
-bool FInputComponent::GetButtonState( int _DevId, int _Button ) const {
+bool AInputComponent::GetButtonState( int _DevId, int _Button ) const {
     AN_Assert( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
 
     return DeviceButtonDown[ _DevId ][ _Button ] != -1;
 }
 
-bool FInputComponent::IsJoyDown( const FJoystick * _Joystick, int _Button ) const {
+bool AInputComponent::IsJoyDown( const SJoystick * _Joystick, int _Button ) const {
     return GetButtonState( ID_JOYSTICK_1 + _Joystick->Id, _Button );
 }
 
-void FInputComponent::NotifyUnicodeCharacter( FWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp ) {
+void AInputComponent::NotifyUnicodeCharacter( FWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp ) {
     if ( !CharacterCallback.IsValid() ) {
         return;
     }
@@ -727,23 +727,23 @@ void FInputComponent::NotifyUnicodeCharacter( FWideChar _UnicodeCharacter, int _
     CharacterCallback( _UnicodeCharacter, _ModMask, _TimeStamp );
 }
 
-void FInputComponent::SetMouseAxisState( float _X, float _Y ) {
+void AInputComponent::SetMouseAxisState( float _X, float _Y ) {
     MouseAxisStateX = _X;
     MouseAxisStateY = _Y;
 }
 
-float FInputComponent::GetMouseAxisState( int _Axis ) {
+float AInputComponent::GetMouseAxisState( int _Axis ) {
     return (&MouseAxisStateX)[_Axis];
 }
 
-void FInputComponent::SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected ) {
+void AInputComponent::SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected ) {
     Static.Joysticks[_Joystick].NumAxes = _NumAxes;
     Static.Joysticks[_Joystick].NumButtons = _NumButtons;
     Static.Joysticks[_Joystick].bGamePad = _bGamePad;
     Static.Joysticks[_Joystick].bConnected = _bConnected;
 }
 
-void FInputComponent::SetJoystickButtonState( int _Joystick, int _Button, int _Action, double _TimeStamp ) {
+void AInputComponent::SetJoystickButtonState( int _Joystick, int _Button, int _Action, double _TimeStamp ) {
     INTRUSIVE_FOREACH( component, InputComponents, Next ) {
         if ( !component->bIgnoreJoystickEvents ) {
             component->SetButtonState( ID_JOYSTICK_1 + _Joystick, _Button, _Action, 0, _TimeStamp );
@@ -751,20 +751,20 @@ void FInputComponent::SetJoystickButtonState( int _Joystick, int _Button, int _A
     }
 }
 
-void FInputComponent::SetJoystickAxisState( int _Joystick, int _Axis, float _Value ) {
+void AInputComponent::SetJoystickAxisState( int _Joystick, int _Axis, float _Value ) {
     Static.JoystickAxisState[_Joystick][_Axis] = _Value;
 }
 
-float FInputComponent::GetJoystickAxisState( int _Joystick, int _Axis ) {
+float AInputComponent::GetJoystickAxisState( int _Joystick, int _Axis ) {
     return Static.JoystickAxisState[_Joystick][_Axis];
 }
 
-const FJoystick * FInputComponent::GetJoysticks() {
+const SJoystick * AInputComponent::GetJoysticks() {
     return Static.Joysticks;
 }
 
-void FInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
-    int hash = FCore::HashCase( _Axis, FString::Length( _Axis ) );
+void AInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
+    int hash = Core::HashCase( _Axis, AString::Length( _Axis ) );
 
     for ( int i = AxisBindingsHash.First( hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
         if ( !AxisBindings[i].Name.Icmp( _Axis ) ) {
@@ -779,7 +779,7 @@ void FInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > c
     }
 
     AxisBindingsHash.Insert( hash, AxisBindings.size() );
-    FAxisBinding binding;
+    SAxisBinding binding;
     binding.Name = _Axis;
     binding.Callback = _Callback;
     binding.AxisScale = 0.0f;
@@ -787,8 +787,8 @@ void FInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > c
     AxisBindings.push_back( binding );
 }
 
-void FInputComponent::UnbindAxis( const char * _Axis ) {
-    int hash = FCore::HashCase( _Axis, FString::Length( _Axis ) );
+void AInputComponent::UnbindAxis( const char * _Axis ) {
+    int hash = Core::HashCase( _Axis, AString::Length( _Axis ) );
 
     for ( int i = AxisBindingsHash.First( hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
         if ( !AxisBindings[i].Name.Icmp( _Axis ) ) {
@@ -796,7 +796,7 @@ void FInputComponent::UnbindAxis( const char * _Axis ) {
             auto it = AxisBindings.begin() + i;
             AxisBindings.erase( it );
 
-            for ( FPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
+            for ( SPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
                 if ( pressedKey->AxisBinding == i ) {
                     pressedKey->AxisBinding = -1;
                 }
@@ -807,13 +807,13 @@ void FInputComponent::UnbindAxis( const char * _Axis ) {
     }
 }
 
-void FInputComponent::BindAction( const char * _Action, int _Event, TCallback< void() > const & _Callback, bool _ExecuteEvenWhenPaused ) {
+void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< void() > const & _Callback, bool _ExecuteEvenWhenPaused ) {
     if ( _Event != IE_Press && _Event != IE_Release ) {
-        GLogger.Printf( "FInputComponent::BindAction: expected IE_Press or IE_Release event\n" );
+        GLogger.Printf( "AInputComponent::BindAction: expected IE_Press or IE_Release event\n" );
         return;
     }
 
-    int hash = FCore::HashCase( _Action, FString::Length( _Action ) );
+    int hash = Core::HashCase( _Action, AString::Length( _Action ) );
 
     for ( int i = ActionBindingsHash.First( hash ) ; i != -1 ; i = ActionBindingsHash.Next( i ) ) {
         if ( !ActionBindings[i].Name.Icmp( _Action ) ) {
@@ -828,15 +828,15 @@ void FInputComponent::BindAction( const char * _Action, int _Event, TCallback< v
     }
 
     ActionBindingsHash.Insert( hash, ActionBindings.size() );
-    FActionBinding binding;
+    SActionBinding binding;
     binding.Name = _Action;
     binding.Callback[ _Event ] = _Callback;
     binding.bExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
     ActionBindings.push_back( binding );
 }
 
-void FInputComponent::UnbindAction( const char * _Action ) {
-    int hash = FCore::HashCase( _Action, FString::Length( _Action ) );
+void AInputComponent::UnbindAction( const char * _Action ) {
+    int hash = Core::HashCase( _Action, AString::Length( _Action ) );
 
     for ( int i = ActionBindingsHash.First( hash ) ; i != -1 ; i = ActionBindingsHash.Next( i ) ) {
         if ( !ActionBindings[i].Name.Icmp( _Action ) ) {
@@ -844,7 +844,7 @@ void FInputComponent::UnbindAction( const char * _Action ) {
             auto it = ActionBindings.begin() + i;
             ActionBindings.erase( it );
 
-            for ( FPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
+            for ( SPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
                 if ( pressedKey->ActionBinding == i ) {
                     pressedKey->ActionBinding = -1;
                 }
@@ -855,37 +855,37 @@ void FInputComponent::UnbindAction( const char * _Action ) {
     }
 }
 
-void FInputComponent::UnbindAll() {
+void AInputComponent::UnbindAll() {
     AxisBindingsHash.Clear();
     AxisBindings.clear();
 
     ActionBindingsHash.Clear();
     ActionBindings.clear();
 
-    for ( FPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
+    for ( SPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
         pressedKey->AxisBinding = -1;
         pressedKey->ActionBinding = -1;
     }
 }
 
-void FInputComponent::SetCharacterCallback( TCallback< void( FWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
+void AInputComponent::SetCharacterCallback( TCallback< void( FWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
     CharacterCallback = _Callback;
     bCharacterCallbackExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
 }
 
-void FInputComponent::UnsetCharacterCallback() {
+void AInputComponent::UnsetCharacterCallback() {
     CharacterCallback.Clear();
 }
 
-int FInputComponent::GetAxisBinding( const char * _Axis ) const {
-    return GetAxisBindingHash( _Axis, FCore::HashCase( _Axis, FString::Length( _Axis ) ) );
+int AInputComponent::GetAxisBinding( const char * _Axis ) const {
+    return GetAxisBindingHash( _Axis, Core::HashCase( _Axis, AString::Length( _Axis ) ) );
 }
 
-int FInputComponent::GetAxisBinding( const FInputAxis * _Axis ) const {
-    return GetAxisBindingHash( _Axis->GetName().ToConstChar(), _Axis->GetNameHash() );
+int AInputComponent::GetAxisBinding( const AInputAxis * _Axis ) const {
+    return GetAxisBindingHash( _Axis->GetObjectName().CStr(), _Axis->GetNameHash() );
 }
 
-int FInputComponent::GetAxisBindingHash( const char * _Axis, int _Hash ) const {
+int AInputComponent::GetAxisBindingHash( const char * _Axis, int _Hash ) const {
     for ( int i = AxisBindingsHash.First( _Hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
         if ( !AxisBindings[i].Name.Icmp( _Axis ) ) {
             return i;
@@ -894,15 +894,15 @@ int FInputComponent::GetAxisBindingHash( const char * _Axis, int _Hash ) const {
     return -1;
 }
 
-int FInputComponent::GetActionBinding( const char * _Action ) const {
-    return GetActionBindingHash( _Action, FCore::HashCase( _Action, FString::Length( _Action ) ) );
+int AInputComponent::GetActionBinding( const char * _Action ) const {
+    return GetActionBindingHash( _Action, Core::HashCase( _Action, AString::Length( _Action ) ) );
 }
 
-int FInputComponent::GetActionBinding( const FInputAction * _Action ) const {
-    return GetActionBindingHash( _Action->GetName().ToConstChar(), _Action->GetNameHash() );
+int AInputComponent::GetActionBinding( const AInputAction * _Action ) const {
+    return GetActionBindingHash( _Action->GetObjectName().CStr(), _Action->GetNameHash() );
 }
 
-int FInputComponent::GetActionBindingHash( const char * _Action, int _Hash ) const {
+int AInputComponent::GetActionBindingHash( const char * _Action, int _Hash ) const {
     for ( int i = ActionBindingsHash.First( _Hash ) ; i != -1 ; i = ActionBindingsHash.Next( i ) ) {
         if ( !ActionBindings[i].Name.Icmp( _Action ) ) {
             return i;
@@ -911,7 +911,7 @@ int FInputComponent::GetActionBindingHash( const char * _Action, int _Hash ) con
     return -1;
 }
 
-FInputMappings::FInputMappings() {
+AInputMappings::AInputMappings() {
     Memset( KeyboardMappings, 0xff, sizeof( KeyboardMappings ) );
     Memset( MouseMappings, 0xff, sizeof( MouseMappings ) );
     Memset( MouseAxisMappings, 0xff, sizeof( MouseAxisMappings ) );
@@ -919,7 +919,7 @@ FInputMappings::FInputMappings() {
     Memset( JoystickAxisMappings, 0xff, sizeof( JoystickAxisMappings ) );
 }
 
-FInputMappings::~FInputMappings() {
+AInputMappings::~AInputMappings() {
     for ( int i = 0 ; i < Axes.Size() ; i++ ) {
         Axes[i]->RemoveRef();
     }
@@ -928,41 +928,41 @@ FInputMappings::~FInputMappings() {
     }
 }
 
-int FInputMappings::Serialize( FDocument & _Doc ) {
+int AInputMappings::Serialize( ADocument & _Doc ) {
     int object = Super::Serialize( _Doc );
     if ( !Axes.IsEmpty() ) {
         int axes = _Doc.AddArray( object, "Axes" );
 
-        for ( FInputAxis const * axis : Axes ) {
-            FString & axisName = _Doc.ProxyBuffer.NewString( axis->GetName() );
+        for ( AInputAxis const * axis : Axes ) {
+            AString & axisName = _Doc.ProxyBuffer.NewString( axis->GetObjectName() );
 
             for ( int deviceId = 0 ; deviceId < MAX_INPUT_DEVICES ; deviceId++ ) {
                 if ( !axis->MappedKeys[ deviceId ].IsEmpty() ) {
-                    const char * deviceName = FInputHelper::TranslateDevice( deviceId );
+                    const char * deviceName = AInputHelper::TranslateDevice( deviceId );
                     for ( unsigned short key : axis->MappedKeys[ deviceId ] ) {
-                        FMapping * mapping = GetMapping( deviceId, key );
+                        SMapping * mapping = GetMapping( deviceId, key );
                         int axisObject = _Doc.CreateObjectValue();
-                        _Doc.AddStringField( axisObject, "Name", axisName.ToConstChar() );
+                        _Doc.AddStringField( axisObject, "Name", axisName.CStr() );
                         _Doc.AddStringField( axisObject, "Device", deviceName );
-                        _Doc.AddStringField( axisObject, "Key", FInputHelper::TranslateDeviceKey( deviceId, key ) );
-                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( FMath::ToString( mapping->AxisScale ) ).ToConstChar() );
-                        _Doc.AddStringField( axisObject, "Owner", FInputHelper::TranslateController( mapping->ControllerId ) );
+                        _Doc.AddStringField( axisObject, "Key", AInputHelper::TranslateDeviceKey( deviceId, key ) );
+                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Math::ToString( mapping->AxisScale ) ).CStr() );
+                        _Doc.AddStringField( axisObject, "Owner", AInputHelper::TranslateController( mapping->ControllerId ) );
                         _Doc.AddValueToField( axes, axisObject );
                     }
                 }
             }
 
             if ( axis->MappedMouseAxes ) {
-                const char * deviceName = FInputHelper::TranslateDevice( ID_MOUSE );
+                const char * deviceName = AInputHelper::TranslateDevice( ID_MOUSE );
                 for ( int i = 0 ; i < MAX_MOUSE_AXES ; i++ ) {
                     if ( axis->MappedMouseAxes & ( 1 << i ) ) {
-                        FMapping * mapping = GetMapping( ID_MOUSE, MOUSE_AXIS_BASE + i );
+                        SMapping * mapping = GetMapping( ID_MOUSE, MOUSE_AXIS_BASE + i );
                         int axisObject = _Doc.CreateObjectValue();
-                        _Doc.AddStringField( axisObject, "Name", axisName.ToConstChar() );
+                        _Doc.AddStringField( axisObject, "Name", axisName.CStr() );
                         _Doc.AddStringField( axisObject, "Device", deviceName );
-                        _Doc.AddStringField( axisObject, "Key", FInputHelper::TranslateDeviceKey( ID_MOUSE, MOUSE_AXIS_BASE + i ) );
-                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( FMath::ToString( mapping->AxisScale ) ).ToConstChar() );
-                        _Doc.AddStringField( axisObject, "Owner", FInputHelper::TranslateController( mapping->ControllerId ) );
+                        _Doc.AddStringField( axisObject, "Key", AInputHelper::TranslateDeviceKey( ID_MOUSE, MOUSE_AXIS_BASE + i ) );
+                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Math::ToString( mapping->AxisScale ) ).CStr() );
+                        _Doc.AddStringField( axisObject, "Owner", AInputHelper::TranslateController( mapping->ControllerId ) );
                         _Doc.AddValueToField( axes, axisObject );
                     }
                 }
@@ -970,16 +970,16 @@ int FInputMappings::Serialize( FDocument & _Doc ) {
 
             for ( int joyId = 0 ; joyId < MAX_JOYSTICKS_COUNT ; joyId++ ) {
                 if ( axis->MappedJoystickAxes[ joyId ] ) {
-                    const char * deviceName = FInputHelper::TranslateDevice( ID_JOYSTICK_1 + joyId );
+                    const char * deviceName = AInputHelper::TranslateDevice( ID_JOYSTICK_1 + joyId );
                     for ( int i = 0 ; i < MAX_JOYSTICK_AXES ; i++ ) {
                         if ( axis->MappedJoystickAxes[ joyId ] & ( 1 << i ) ) {
-                            FMapping * mapping = GetMapping( ID_JOYSTICK_1 + joyId, JOY_AXIS_BASE + i );
+                            SMapping * mapping = GetMapping( ID_JOYSTICK_1 + joyId, JOY_AXIS_BASE + i );
                             int axisObject = _Doc.CreateObjectValue();
-                            _Doc.AddStringField( axisObject, "Name", axisName.ToConstChar() );
+                            _Doc.AddStringField( axisObject, "Name", axisName.CStr() );
                             _Doc.AddStringField( axisObject, "Device", deviceName );
-                            _Doc.AddStringField( axisObject, "Key", FInputHelper::TranslateDeviceKey( ID_JOYSTICK_1 + joyId, JOY_AXIS_BASE + i ) );
-                            _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( FMath::ToString( mapping->AxisScale ) ).ToConstChar() );
-                            _Doc.AddStringField( axisObject, "Owner", FInputHelper::TranslateController( mapping->ControllerId ) );
+                            _Doc.AddStringField( axisObject, "Key", AInputHelper::TranslateDeviceKey( ID_JOYSTICK_1 + joyId, JOY_AXIS_BASE + i ) );
+                            _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Math::ToString( mapping->AxisScale ) ).CStr() );
+                            _Doc.AddStringField( axisObject, "Owner", AInputHelper::TranslateController( mapping->ControllerId ) );
                             _Doc.AddValueToField( axes, axisObject );
                         }
                     }
@@ -991,22 +991,22 @@ int FInputMappings::Serialize( FDocument & _Doc ) {
     if ( !Actions.IsEmpty() ) {
         int actions = _Doc.AddArray( object, "Actions" );
 
-        for ( FInputAction const * action : Actions ) {
+        for ( AInputAction const * action : Actions ) {
 
-            FString & actionName = _Doc.ProxyBuffer.NewString( action->GetName() );
+            AString & actionName = _Doc.ProxyBuffer.NewString( action->GetObjectName() );
 
             for ( int deviceId = 0 ; deviceId < MAX_INPUT_DEVICES ; deviceId++ ) {
                 if ( !action->MappedKeys[ deviceId ].IsEmpty() ) {
-                    const char * deviceName = FInputHelper::TranslateDevice( deviceId );
+                    const char * deviceName = AInputHelper::TranslateDevice( deviceId );
                     for ( unsigned short key : action->MappedKeys[ deviceId ] ) {
-                        FMapping * mapping = GetMapping( deviceId, key );
+                        SMapping * mapping = GetMapping( deviceId, key );
                         int actionObject = _Doc.CreateObjectValue();
-                        _Doc.AddStringField( actionObject, "Name", actionName.ToConstChar() );
+                        _Doc.AddStringField( actionObject, "Name", actionName.CStr() );
                         _Doc.AddStringField( actionObject, "Device", deviceName );
-                        _Doc.AddStringField( actionObject, "Key", FInputHelper::TranslateDeviceKey( deviceId, key ) );
-                        _Doc.AddStringField( actionObject, "Owner", FInputHelper::TranslateController( mapping->ControllerId ) );
+                        _Doc.AddStringField( actionObject, "Key", AInputHelper::TranslateDeviceKey( deviceId, key ) );
+                        _Doc.AddStringField( actionObject, "Owner", AInputHelper::TranslateController( mapping->ControllerId ) );
                         if ( mapping->ModMask ) {
-                            _Doc.AddStringField( actionObject, "ModMask", _Doc.ProxyBuffer.NewString( FMath::ToString( mapping->ModMask ) ).ToConstChar() );
+                            _Doc.AddStringField( actionObject, "ModMask", _Doc.ProxyBuffer.NewString( Math::ToString( mapping->ModMask ) ).CStr() );
                         }
                         _Doc.AddValueToField( actions, actionObject );
                     }
@@ -1018,36 +1018,36 @@ int FInputMappings::Serialize( FDocument & _Doc ) {
     return object;
 }
 
-FInputMappings * FInputMappings::LoadMappings( FDocument const & _Document, int _FieldsHead ) {
-    FDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
+AInputMappings * AInputMappings::LoadMappings( ADocument const & _Document, int _FieldsHead ) {
+    SDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
     if ( !classNameField ) {
-        GLogger.Printf( "FInputMappings::LoadMappings: invalid class\n" );
+        GLogger.Printf( "AInputMappings::LoadMappings: invalid class\n" );
         return nullptr;
     }
 
-    FDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
+    SDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
 
-    FObjectFactory const * factory = FInputMappings::ClassMeta().Factory();
+    AObjectFactory const * factory = AInputMappings::ClassMeta().Factory();
 
-    FClassMeta const * classMeta = factory->LookupClass( classNameValue->Token.ToString().ToConstChar() );
+    AClassMeta const * classMeta = factory->LookupClass( classNameValue->Token.ToString().CStr() );
     if ( !classMeta ) {
-        GLogger.Printf( "FInputMappings::LoadMappings: invalid class \"%s\"\n", classNameValue->Token.ToString().ToConstChar() );
+        GLogger.Printf( "AInputMappings::LoadMappings: invalid class \"%s\"\n", classNameValue->Token.ToString().CStr() );
         return nullptr;
     }
 
-    FInputMappings * inputMappings = static_cast< FInputMappings * >( classMeta->CreateInstance() );
+    AInputMappings * inputMappings = static_cast< AInputMappings * >( classMeta->CreateInstance() );
 
     // Load attributes
     inputMappings->LoadAttributes( _Document, _FieldsHead );
 
     // Load axes
-    FDocumentField * axesArray = _Document.FindField( _FieldsHead, "Axes" );
+    SDocumentField * axesArray = _Document.FindField( _FieldsHead, "Axes" );
     if ( axesArray ) {
         inputMappings->LoadAxes( _Document, ( size_t )( axesArray - &_Document.Fields[0] ) );
     }
 
     // Load actions
-    FDocumentField * actionsArray = _Document.FindField( _FieldsHead, "Actions" );
+    SDocumentField * actionsArray = _Document.FindField( _FieldsHead, "Actions" );
     if ( actionsArray ) {
         inputMappings->LoadActions( _Document, ( size_t )( actionsArray - &_Document.Fields[0] ) );
     }
@@ -1055,52 +1055,52 @@ FInputMappings * FInputMappings::LoadMappings( FDocument const & _Document, int 
     return inputMappings;
 }
 
-void FInputMappings::LoadAxes( FDocument const & _Document, int _FieldsHead ) {
-    FDocumentField * field = &_Document.Fields[ _FieldsHead ];
+void AInputMappings::LoadAxes( ADocument const & _Document, int _FieldsHead ) {
+    SDocumentField * field = &_Document.Fields[ _FieldsHead ];
     for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-        FDocumentValue * value = &_Document.Values[ i ];
-        if ( value->Type != FDocumentValue::T_Object ) {
+        SDocumentValue * value = &_Document.Values[ i ];
+        if ( value->Type != SDocumentValue::T_Object ) {
             continue;
         }
 
-        FDocumentField * nameField = _Document.FindField( value->FieldsHead, "Name" );
+        SDocumentField * nameField = _Document.FindField( value->FieldsHead, "Name" );
         if ( !nameField ) {
             continue;
         }
 
-        FDocumentField * deviceField = _Document.FindField( value->FieldsHead, "Device" );
+        SDocumentField * deviceField = _Document.FindField( value->FieldsHead, "Device" );
         if ( !deviceField ) {
             continue;
         }
 
-        FDocumentField * keyField = _Document.FindField( value->FieldsHead, "Key" );
+        SDocumentField * keyField = _Document.FindField( value->FieldsHead, "Key" );
         if ( !keyField ) {
             continue;
         }
 
-        FDocumentField * scaleField = _Document.FindField( value->FieldsHead, "Scale" );
+        SDocumentField * scaleField = _Document.FindField( value->FieldsHead, "Scale" );
         if ( !scaleField ) {
             continue;
         }
 
-        FDocumentField * ownerField = _Document.FindField( value->FieldsHead, "Owner" );
+        SDocumentField * ownerField = _Document.FindField( value->FieldsHead, "Owner" );
         if ( !ownerField ) {
             continue;
         }
 
-        FToken const & name = _Document.Values[ nameField->ValuesHead ].Token;
-        FToken const & device = _Document.Values[ deviceField->ValuesHead ].Token;
-        FToken const & key = _Document.Values[ keyField->ValuesHead ].Token;
-        FToken const & scale = _Document.Values[ scaleField->ValuesHead ].Token;
-        FToken const & controller = _Document.Values[ ownerField->ValuesHead ].Token;
+        SToken const & name = _Document.Values[ nameField->ValuesHead ].Token;
+        SToken const & device = _Document.Values[ deviceField->ValuesHead ].Token;
+        SToken const & key = _Document.Values[ keyField->ValuesHead ].Token;
+        SToken const & scale = _Document.Values[ scaleField->ValuesHead ].Token;
+        SToken const & controller = _Document.Values[ ownerField->ValuesHead ].Token;
 
-        int deviceId = FInputHelper::LookupDevice( device.ToString().ToConstChar() );
-        int deviceKey = FInputHelper::LookupDeviceKey( deviceId, key.ToString().ToConstChar() );
-        int controllerId = FInputHelper::LookupController( controller.ToString().ToConstChar() );
+        int deviceId = AInputHelper::LookupDevice( device.ToString().CStr() );
+        int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.ToString().CStr() );
+        int controllerId = AInputHelper::LookupController( controller.ToString().CStr() );
 
-        float scaleValue = FMath::FromString( scale.ToString() );
+        float scaleValue = Math::FromString( scale.ToString() );
 
-        MapAxis( name.ToString().ToConstChar(),
+        MapAxis( name.ToString().CStr(),
                  deviceId,
                  deviceKey,
                  scaleValue,
@@ -1108,50 +1108,50 @@ void FInputMappings::LoadAxes( FDocument const & _Document, int _FieldsHead ) {
     }
 }
 
-void FInputMappings::LoadActions( FDocument const & _Document, int _FieldsHead ) {
-    FDocumentField * field = &_Document.Fields[ _FieldsHead ];
+void AInputMappings::LoadActions( ADocument const & _Document, int _FieldsHead ) {
+    SDocumentField * field = &_Document.Fields[ _FieldsHead ];
     for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-        FDocumentValue * value = &_Document.Values[ i ];
-        if ( value->Type != FDocumentValue::T_Object ) {
+        SDocumentValue * value = &_Document.Values[ i ];
+        if ( value->Type != SDocumentValue::T_Object ) {
             continue;
         }
 
-        FDocumentField * nameField = _Document.FindField( value->FieldsHead, "Name" );
+        SDocumentField * nameField = _Document.FindField( value->FieldsHead, "Name" );
         if ( !nameField ) {
             continue;
         }
 
-        FDocumentField * deviceField = _Document.FindField( value->FieldsHead, "Device" );
+        SDocumentField * deviceField = _Document.FindField( value->FieldsHead, "Device" );
         if ( !deviceField ) {
             continue;
         }
 
-        FDocumentField * keyField = _Document.FindField( value->FieldsHead, "Key" );
+        SDocumentField * keyField = _Document.FindField( value->FieldsHead, "Key" );
         if ( !keyField ) {
             continue;
         }
 
-        FDocumentField * ownerField = _Document.FindField( value->FieldsHead, "Owner" );
+        SDocumentField * ownerField = _Document.FindField( value->FieldsHead, "Owner" );
         if ( !ownerField ) {
             continue;
         }
 
         Int modMask = 0;
-        FDocumentField * modMaskField = _Document.FindField( value->FieldsHead, "ModMask" );
+        SDocumentField * modMaskField = _Document.FindField( value->FieldsHead, "ModMask" );
         if ( modMaskField ) {
             modMask.FromString( _Document.Values[ nameField->ValuesHead ].Token.ToString() );
         }
 
-        FToken const & name = _Document.Values[ nameField->ValuesHead ].Token;
-        FToken const & device = _Document.Values[ deviceField->ValuesHead ].Token;
-        FToken const & key = _Document.Values[ keyField->ValuesHead ].Token;
-        FToken const & controller = _Document.Values[ ownerField->ValuesHead ].Token;
+        SToken const & name = _Document.Values[ nameField->ValuesHead ].Token;
+        SToken const & device = _Document.Values[ deviceField->ValuesHead ].Token;
+        SToken const & key = _Document.Values[ keyField->ValuesHead ].Token;
+        SToken const & controller = _Document.Values[ ownerField->ValuesHead ].Token;
 
-        int deviceId = FInputHelper::LookupDevice( device.ToString().ToConstChar() );
-        int deviceKey = FInputHelper::LookupDeviceKey( deviceId, key.ToString().ToConstChar() );
-        int controllerId = FInputHelper::LookupController( controller.ToString().ToConstChar() );
+        int deviceId = AInputHelper::LookupDevice( device.ToString().CStr() );
+        int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.ToString().CStr() );
+        int controllerId = AInputHelper::LookupController( controller.ToString().CStr() );
 
-        MapAction( name.ToString().ToConstChar(),
+        MapAction( name.ToString().CStr(),
                    deviceId,
                    deviceKey,
                    modMask,
@@ -1159,47 +1159,47 @@ void FInputMappings::LoadActions( FDocument const & _Document, int _FieldsHead )
     }
 }
 
-FInputAxis * FInputMappings::AddAxis( const char * _Name ) {
-    FInputAxis * axis = NewObject< FInputAxis >();
+AInputAxis * AInputMappings::AddAxis( const char * _Name ) {
+    AInputAxis * axis = NewObject< AInputAxis >();
     axis->AddRef();
     axis->Parent = this;
     axis->IndexInArrayOfAxes = Axes.Size();
-    axis->Name = _Name;
-    axis->NameHash = FCore::HashCase( _Name, axis->Name.Length() );
+    axis->SetObjectName( _Name );
+    axis->NameHash = axis->GetObjectName().HashCase();
     Axes.Append( axis );
     return axis;
 }
 
-FInputAction * FInputMappings::AddAction( const char * _Name ) {
-    FInputAction * action = NewObject< FInputAction >();
+AInputAction * AInputMappings::AddAction( const char * _Name ) {
+    AInputAction * action = NewObject< AInputAction >();
     action->AddRef();
     action->Parent = this;
     action->IndexInArrayOfActions = Actions.Size();
-    action->Name = _Name;
-    action->NameHash = FCore::HashCase( _Name, action->Name.Length() );
+    action->SetObjectName( _Name );
+    action->NameHash = action->GetObjectName().HashCase();
     Actions.Append( action );
     return action;
 }
 
-FInputAxis * FInputMappings::FindAxis( const char * _AxisName ) {
-    for ( FInputAxis * axis : Axes ) {
-        if ( !axis->Name.Icmp( _AxisName ) ) {
+AInputAxis * AInputMappings::FindAxis( const char * _AxisName ) {
+    for ( AInputAxis * axis : Axes ) {
+        if ( !axis->GetObjectName().Icmp( _AxisName ) ) {
             return axis;
         }
     }
     return nullptr;
 }
 
-FInputAction * FInputMappings::FindAction( const char * _ActionName ) {
-    for ( FInputAction * action : Actions ) {
-        if ( !action->Name.Icmp( _ActionName ) ) {
+AInputAction * AInputMappings::FindAction( const char * _ActionName ) {
+    for ( AInputAction * action : Actions ) {
+        if ( !action->GetObjectName().Icmp( _ActionName ) ) {
             return action;
         }
     }
     return nullptr;
 }
 
-void FInputMappings::MapAxis( const char * _AxisName, int _DevId, int _KeyToken, float _AxisScale, int _ControllerId ) {
+void AInputMappings::MapAxis( const char * _AxisName, int _DevId, int _KeyToken, float _AxisScale, int _ControllerId ) {
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return;
     }
@@ -1210,11 +1210,11 @@ void FInputMappings::MapAxis( const char * _AxisName, int _DevId, int _KeyToken,
 
     Unmap( _DevId, _KeyToken );
 
-    FInputAxis * axis = FindAxis( _AxisName );
+    AInputAxis * axis = FindAxis( _AxisName );
 
     axis = ( !axis ) ? AddAxis( _AxisName ) : axis;
 
-    FInputMappings::FMapping * mapping;
+    AInputMappings::SMapping * mapping;
 
     switch ( _DevId ) {
     case ID_KEYBOARD:
@@ -1272,7 +1272,7 @@ void FInputMappings::MapAxis( const char * _AxisName, int _DevId, int _KeyToken,
     mapping->ControllerId = _ControllerId;
 }
 
-void FInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyToken, int _ModMask, int _ControllerId ) {
+void AInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyToken, int _ModMask, int _ControllerId ) {
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return;
     }
@@ -1293,11 +1293,11 @@ void FInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyTo
 
     Unmap( _DevId, _KeyToken );
 
-    FInputAction * action = FindAction( _ActionName );
+    AInputAction * action = FindAction( _ActionName );
 
     action = ( !action ) ? AddAction( _ActionName ) : action;
 
-    FInputMappings::FMapping * mapping;
+    AInputMappings::SMapping * mapping;
 
     switch ( _DevId ) {
     case ID_KEYBOARD:
@@ -1341,7 +1341,7 @@ void FInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyTo
     mapping->ModMask = _ModMask & 0xff;
 }
 
-void FInputMappings::Unmap( int _DevId, int _KeyToken ) {
+void AInputMappings::Unmap( int _DevId, int _KeyToken ) {
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return;
     }
@@ -1350,7 +1350,7 @@ void FInputMappings::Unmap( int _DevId, int _KeyToken ) {
         return;
     }
 
-    FInputMappings::FMapping * mapping;
+    AInputMappings::SMapping * mapping;
 
     switch ( _DevId ) {
     case ID_KEYBOARD:
@@ -1400,7 +1400,7 @@ void FInputMappings::Unmap( int _DevId, int _KeyToken ) {
     }
 
     if ( mapping->bAxis ) {
-        FInputAxis * axis = Axes[ mapping->AxisOrActionIndex ];
+        AInputAxis * axis = Axes[ mapping->AxisOrActionIndex ];
 
         if ( _DevId >= ID_JOYSTICK_1 && _DevId <= ID_JOYSTICK_16 && _KeyToken >= JOY_AXIS_BASE ) {
             int joystickId = _DevId - ID_JOYSTICK_1;
@@ -1418,7 +1418,7 @@ void FInputMappings::Unmap( int _DevId, int _KeyToken ) {
             }
         }
     } else {
-        FInputAction * action = Actions[ mapping->AxisOrActionIndex ];
+        AInputAction * action = Actions[ mapping->AxisOrActionIndex ];
 
         for ( auto it = action->MappedKeys[_DevId].begin() ; it != action->MappedKeys[_DevId].end() ; it++ ) {
             if ( *it == _KeyToken ) {
@@ -1431,7 +1431,7 @@ void FInputMappings::Unmap( int _DevId, int _KeyToken ) {
     mapping->AxisOrActionIndex = -1;
 }
 
-void FInputMappings::UnmapAll() {
+void AInputMappings::UnmapAll() {
     for ( int i = 0 ; i < Axes.Size() ; i++ ) {
         Axes[i]->RemoveRef();
     }
@@ -1447,7 +1447,7 @@ void FInputMappings::UnmapAll() {
     Memset( JoystickAxisMappings, 0xff, sizeof( JoystickAxisMappings ) );
 }
 
-FInputMappings::FMapping * FInputMappings::GetMapping( int _DevId, int _KeyToken ) {
+AInputMappings::SMapping * AInputMappings::GetMapping( int _DevId, int _KeyToken ) {
     if ( _KeyToken < 0 || _KeyToken >= Static.DeviceButtonLimits[ _DevId ] ) {
         AN_Assert( 0 );
         return nullptr;
@@ -1472,15 +1472,15 @@ FInputMappings::FMapping * FInputMappings::GetMapping( int _DevId, int _KeyToken
     return nullptr;
 }
 
-FInputAxis::FInputAxis() {
+AInputAxis::AInputAxis() {
     MappedMouseAxes = 0;
     ZeroMem( MappedJoystickAxes,  sizeof( MappedJoystickAxes ) );
 }
 
-void FInputAxis::Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId ) {
-    Parent->MapAxis( Name.ToConstChar(), _DevId, _KeyToken, _AxisScale, _ControllerId );
+void AInputAxis::Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId ) {
+    Parent->MapAxis( GetObjectNameConstChar(), _DevId, _KeyToken, _AxisScale, _ControllerId );
 }
 
-void FInputAction::Map( int _DevId, int _KeyToken, int _ModMask, int _ControllerId ) {
-    Parent->MapAction( Name.ToConstChar(), _DevId, _KeyToken, _ModMask, _ControllerId );
+void AInputAction::Map( int _DevId, int _KeyToken, int _ModMask, int _ControllerId ) {
+    Parent->MapAction( GetObjectNameConstChar(), _DevId, _KeyToken, _ModMask, _ControllerId );
 }

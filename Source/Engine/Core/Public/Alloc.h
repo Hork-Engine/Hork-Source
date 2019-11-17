@@ -75,17 +75,17 @@ AN_FORCEINLINE void ZeroMem( void * d, size_t sz ) {
 
 /**
 
-FHeapMemory
+AHeapMemory
 
 Allocates memory on heap
 
 */
-class ANGIE_API FHeapMemory final {
-    AN_FORBID_COPY( FHeapMemory )
+class ANGIE_API AHeapMemory final {
+    AN_FORBID_COPY( AHeapMemory )
 
 public:
-    FHeapMemory();
-    ~FHeapMemory();
+    AHeapMemory();
+    ~AHeapMemory();
 
     /** Initialize memory (main thread only) */
     void Initialize();
@@ -126,10 +126,10 @@ private:
 
     SHeapChunk HeapChain;
 
-    FThreadSync Sync;
+    AThreadSync Sync;
 };
 
-AN_FORCEINLINE void * FHeapMemory::HeapAllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
+AN_FORCEINLINE void * AHeapMemory::HeapAllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
     void * bytes = HeapAlloc( _BytesCount, _Alignment );
     ClearMemory8( bytes, _ClearValue, _BytesCount );
     return bytes;
@@ -137,7 +137,7 @@ AN_FORCEINLINE void * FHeapMemory::HeapAllocCleared( size_t _BytesCount, int _Al
 
 /**
 
-FHunkMemory
+AHunkMemory
 
 For large temporary blocks like textures, meshes, etc
 
@@ -152,11 +152,11 @@ byte * buffer2 = HunkMemory.HunkMemory( bufferSize2 );
 HunkMemory.ClearToMark( Mark ); // here all buffers allocated after SetHunkMark will be deallocated
 
 */
-class ANGIE_API FHunkMemory final {
-    AN_FORBID_COPY( FHunkMemory )
+class ANGIE_API AHunkMemory final {
+    AN_FORBID_COPY( AHunkMemory )
 
 public:
-    FHunkMemory() {}
+    AHunkMemory() {}
 
     /** Initialize memory */
     void Initialize( void * _MemoryAddress, int _SizeInMegabytes );
@@ -206,7 +206,7 @@ private:
     size_t MaxMemoryUsage = 0;
 };
 
-AN_FORCEINLINE void * FHunkMemory::HunkMemoryCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
+AN_FORCEINLINE void * AHunkMemory::HunkMemoryCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
     void * bytes = HunkMemory( _BytesCount, _Alignment );
     ClearMemory8( bytes, _ClearValue, _BytesCount );
     return bytes;
@@ -214,16 +214,16 @@ AN_FORCEINLINE void * FHunkMemory::HunkMemoryCleared( size_t _BytesCount, int _A
 
 /**
 
-FZoneMemory
+AZoneMemory
 
 For small blocks, objects or strings
 
 */
-class ANGIE_API FZoneMemory final {
-    AN_FORBID_COPY( FZoneMemory )
+class ANGIE_API AZoneMemory final {
+    AN_FORBID_COPY( AZoneMemory )
 
 public:
-    FZoneMemory() {}
+    AZoneMemory() {}
 
     /** Initialize memory */
     void Initialize( void * _MemoryAddress, int _SizeInMegabytes );
@@ -274,20 +274,20 @@ private:
 
     struct SZoneBuffer * MemoryBuffer = nullptr;
 
-    FAtomicLong TotalMemoryUsage;
-    FAtomicLong TotalMemoryOverhead;
-    FAtomicLong MaxMemoryUsage;
+    AAtomicLong TotalMemoryUsage;
+    AAtomicLong TotalMemoryOverhead;
+    AAtomicLong MaxMemoryUsage;
 
-    FThreadSync Sync;
+    AThreadSync Sync;
 };
 
-AN_FORCEINLINE void * FZoneMemory::AllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
+AN_FORCEINLINE void * AZoneMemory::AllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
     void * bytes = Alloc( _BytesCount, _Alignment );
     ClearMemory8( bytes, _ClearValue, _BytesCount );
     return bytes;
 }
 
-AN_FORCEINLINE void * FZoneMemory::ExtendCleared( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld, uint64_t _ClearValue ) {
+AN_FORCEINLINE void * AZoneMemory::ExtendCleared( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld, uint64_t _ClearValue ) {
     void * bytes = Extend( _Data, _BytesCount, _NewBytesCount, _NewAlignment, _KeepOld );
     if ( _KeepOld ) {
         if ( _NewBytesCount > _BytesCount ) {
@@ -366,17 +366,17 @@ public:
 
 /**
 
-FZoneAllocator
+AZoneAllocator
 
 Use for small objects
 
 */
-class ANGIE_API FZoneAllocator final : public TTemplateAllocator< FZoneAllocator > {
-    AN_FORBID_COPY( FZoneAllocator )
+class ANGIE_API AZoneAllocator final : public TTemplateAllocator< AZoneAllocator > {
+    AN_FORBID_COPY( AZoneAllocator )
 
 public:
-    FZoneAllocator() {}
-    static FZoneAllocator & Inst() { static FZoneAllocator inst; return inst; }
+    AZoneAllocator() {}
+    static AZoneAllocator & Inst() { static AZoneAllocator inst; return inst; }
     void * ImplAllocate( size_t _BytesCount, int _Alignment );
     void * ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld );
     void ImplDeallocate( void * _Bytes );
@@ -384,17 +384,17 @@ public:
 
 /**
 
-FHeapAllocator
+AHeapAllocator
 
 Use for huge data allocation
 
 */
-class ANGIE_API FHeapAllocator final : public TTemplateAllocator< FHeapAllocator > {
-    AN_FORBID_COPY( FHeapAllocator )
+class ANGIE_API AHeapAllocator final : public TTemplateAllocator< AHeapAllocator > {
+    AN_FORBID_COPY( AHeapAllocator )
 
 public:
-    FHeapAllocator() {}
-    static FHeapAllocator & Inst() { static FHeapAllocator inst; return inst; }
+    AHeapAllocator() {}
+    static AHeapAllocator & Inst() { static AHeapAllocator inst; return inst; }
     void * ImplAllocate( size_t _BytesCount, int _Alignment );
     void * ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld );
     void ImplDeallocate( void * _Bytes );
@@ -412,6 +412,6 @@ Dynamic Stack Memory
 #define StackAlloc( _NumBytes ) alloca( _NumBytes )
 
 
-extern ANGIE_API FHeapMemory GHeapMemory;
-extern ANGIE_API FHunkMemory GHunkMemory;
-extern ANGIE_API FZoneMemory GZoneMemory;
+extern ANGIE_API AHeapMemory GHeapMemory;
+extern ANGIE_API AHunkMemory GHunkMemory;
+extern ANGIE_API AZoneMemory GZoneMemory;

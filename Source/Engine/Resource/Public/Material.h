@@ -30,65 +30,112 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Base/Public/BaseObject.h>
+#include "ResourceManager.h"
 #include "Texture.h"
 
-class ANGIE_API FMaterial : public FBaseObject, public IGPUResourceOwner {
-    AN_CLASS( FMaterial, FBaseObject )
+#define MAX_MATERIAL_UNIFORMS           16
+#define MAX_MATERIAL_UNIFORM_VECTORS    (16>>2)
+
+/**
+
+Material
+
+*/
+class ANGIE_API AMaterial : public AResourceBase, public IGPUResourceOwner {
+    AN_CLASS( AMaterial, AResourceBase )
 
 public:
-    void Initialize( FMaterialBuildData const * _Data );
+    /** Initialize from data */
+    void Initialize( SMaterialBuildData const * _Data );
 
-    /** Initialize internal resource */
-    void InitializeInternalResource( const char * _InternalResourceName ) override;
-
+    /** Get material type */
     EMaterialType GetType() const { return Type; }
 
-    FMaterialGPU * GetGPUResource() { return MaterialGPU; }
+    AMaterialGPU * GetGPUResource() { return MaterialGPU; }
 
     int GetNumUniformVectors() const { return NumUniformVectors; }
 
 protected:
-    FMaterial();
-    ~FMaterial();
+    AMaterial();
+    ~AMaterial();
+
+    /** Load resource from file */
+    bool LoadResource( AString const & _Path );
+
+    /** Create internal resource */
+    void LoadInternalResource( const char * _Path ) override;
 
     // IGPUResourceOwner interface
-    void UploadResourceGPU( FResourceGPU * _Resource ) override {}
+    void UploadResourceGPU( AResourceGPU * _Resource ) override {}
+
+    const char * GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 
 private:
-    FMaterialGPU * MaterialGPU;
+    AMaterialGPU * MaterialGPU;
     EMaterialType Type;
     int NumUniformVectors;
 };
 
-class FMaterialInstance : public FBaseObject {
-    AN_CLASS( FMaterialInstance, FBaseObject )
+
+/**
+
+Material Instance
+
+*/
+class AMaterialInstance : public AResourceBase {
+    AN_CLASS( AMaterialInstance, AResourceBase )
 
 public:
     union
     {
-        float Uniforms[16];
-        Float4 UniformVectors[4];
+        /** Instance uniforms */
+        float Uniforms[MAX_MATERIAL_UNIFORMS];
+
+        /** Instance uniform vectors */
+        Float4 UniformVectors[MAX_MATERIAL_UNIFORM_VECTORS];
     };
 
-    /** Initialize internal resource */
-    void InitializeInternalResource( const char * _InternalResourceName ) override;
+    /** Set material */
+    void SetMaterial( AMaterial * _Material );
 
-    void SetMaterial( FMaterial * _Material );
+    /** Helper. Set material by alias */
+    template< char... Chars >
+    void SetMaterial( TCompileTimeString<Chars...> const & _Alias ) {
+        static TStaticResourceFinder< AMaterial > Resource( _Alias );
+        SetMaterial( Resource.GetObject() );
+    }
 
-    FMaterial * GetMaterial() const;
+    /** Get material. Never return null. */
+    AMaterial * GetMaterial() const;
 
-    void SetTexture( int _TextureSlot, FTexture * _Texture );
+    /** Set texture for the slot */
+    void SetTexture( int _TextureSlot, ATexture * _Texture );
 
-    FMaterialFrameData * RenderFrontend_Update( int _VisMarker );
+    /** Helper. Set texture for the slot */
+    template< char... Chars >
+    void SetTexture( int _TextureSlot, TCompileTimeString<Chars...> const & _Alias ) {
+        static TStaticResourceFinder< ATexture > Resource( _Alias );
+        SetTexture( _TextureSlot, Resource.GetObject() );
+    }
+
+    /** Internal. Used by render frontend */
+    SMaterialFrameData * RenderFrontend_Update( int _VisMarker );
 
 protected:
-    FMaterialInstance();
-    ~FMaterialInstance() {}
+    AMaterialInstance();
+    ~AMaterialInstance() {}
+
+    /** Load resource from file */
+    bool LoadResource( AString const & _Path ) override;
+
+    /** Create internal resource */
+    void LoadInternalResource( const char * _Path ) override;
+
+    const char * GetDefaultResourcePath() const override { return "/Default/MaterialInstance/Default"; }
 
 private:
-    TRef< FMaterial > Material;
-    FMaterialFrameData * FrameData;
-    TRef< FTexture > Textures[ MAX_MATERIAL_TEXTURES ];
+    TRef< AMaterial > Material;
+    SMaterialFrameData * FrameData;
+    TRef< ATexture > Textures[ MAX_MATERIAL_TEXTURES ];
     int VisMarker;
 };

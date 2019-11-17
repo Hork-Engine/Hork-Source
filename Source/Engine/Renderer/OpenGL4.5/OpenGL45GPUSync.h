@@ -36,12 +36,12 @@ namespace OpenGL45 {
 
 /*
 
-FGPUSync
+AGPUSync
 
 Sync GPU and CPU. Used to reduce input lag.
 
 */
-struct FGPUSync {
+struct AGPUSync {
     void Wait();
     void SetEvent();
 
@@ -53,6 +53,6 @@ private:
     GHI::Texture Staging;
 };
 
-extern FGPUSync GOpenGL45GPUSync;
+extern AGPUSync GOpenGL45GPUSync;
 
 }

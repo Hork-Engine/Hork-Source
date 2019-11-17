@@ -32,25 +32,25 @@ SOFTWARE.
 
 #include <Engine/Core/Public/String.h>
 
-class FRuntimeCommandProcessor;
+class ARuntimeCommandProcessor;
 
 /** Runtime command execute context */
 class IRuntimeCommandContext
 {
 public:
-    virtual void ExecuteCommand( FRuntimeCommandProcessor const & _Proc ) = 0;
+    virtual void ExecuteCommand( ARuntimeCommandProcessor const & _Proc ) = 0;
 };
 
 /** Command buffer parser */
-class FRuntimeCommandProcessor final
+class ARuntimeCommandProcessor final
 {
-    AN_FORBID_COPY( FRuntimeCommandProcessor )
+    AN_FORBID_COPY( ARuntimeCommandProcessor )
 
 public:
     static constexpr int MAX_ARGS = 256;
     static constexpr int MAX_ARG_LEN = 256;
 
-    FRuntimeCommandProcessor();
+    ARuntimeCommandProcessor();
 
     /** Clear command buffer */
     void ClearBuffer();
@@ -74,7 +74,7 @@ public:
     static bool IsValidCommandName( const char * _Name );
 
 private:
-    FString Cmdbuf;
+    AString Cmdbuf;
     int CmdbufPos;
     char Args[MAX_ARGS][MAX_ARG_LEN];
     int ArgsCount;

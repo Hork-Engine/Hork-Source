@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
-namespace FCore {
+namespace Core {
 
 // Robert Sedgwicks Algorithms in C book
 AN_FORCEINLINE uint32_t RSHash( const char * _Str, int _Length ) {

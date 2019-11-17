@@ -49,40 +49,40 @@ SOFTWARE.
 #pragma warning( pop )
 #endif
 
-AN_CLASS_META( FOggVorbisAudioTrack )
-AN_CLASS_META( FOggVorbisDecoder )
+AN_CLASS_META( AOggVorbisAudioTrack )
+AN_CLASS_META( AOggVorbisDecoder )
 
-FOggVorbisAudioTrack::FOggVorbisAudioTrack() {
+AOggVorbisAudioTrack::AOggVorbisAudioTrack() {
     Vorbis = NULL;
 }
 
-FOggVorbisAudioTrack::~FOggVorbisAudioTrack() {
+AOggVorbisAudioTrack::~AOggVorbisAudioTrack() {
     stb_vorbis_close( Vorbis );
 }
 
-bool FOggVorbisAudioTrack::InitializeFileStream( const char * _FileName ) {
+bool AOggVorbisAudioTrack::InitializeFileStream( const char * _FileName ) {
     assert( Vorbis == NULL );
 
     Vorbis = stb_vorbis_open_filename( _FileName, NULL, NULL );
     return Vorbis != NULL;
 }
 
-bool FOggVorbisAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
+bool AOggVorbisAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
     assert( Vorbis == NULL );
 
     Vorbis = stb_vorbis_open_memory( _EncodedData, _EncodedDataLength, NULL, NULL );
     return Vorbis !=NULL;
 }
 
-void FOggVorbisAudioTrack::StreamRewind() {
+void AOggVorbisAudioTrack::StreamRewind() {
     stb_vorbis_seek_start( Vorbis );
 }
 
-void FOggVorbisAudioTrack::StreamSeek( int _PositionInSamples ) {
+void AOggVorbisAudioTrack::StreamSeek( int _PositionInSamples ) {
     stb_vorbis_seek( Vorbis, _PositionInSamples );
 }
 
-int FOggVorbisAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
+int AOggVorbisAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
     int totalSamples = 0;
     int readSamples = 0;
 
@@ -97,15 +97,15 @@ int FOggVorbisAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
     return totalSamples;
 }
 
-FOggVorbisDecoder::FOggVorbisDecoder() {
+AOggVorbisDecoder::AOggVorbisDecoder() {
 
 }
 
-IAudioStreamInterface * FOggVorbisDecoder::CreateAudioStream() {
-    return CreateInstanceOf< FOggVorbisAudioTrack >();
+IAudioStreamInterface * AOggVorbisDecoder::CreateAudioStream() {
+    return CreateInstanceOf< AOggVorbisAudioTrack >();
 }
 
-bool FOggVorbisDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
+bool AOggVorbisDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
     bool bResult = false;
     int numSamples = 0;
     int numChannels = 0;
@@ -138,7 +138,7 @@ bool FOggVorbisDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, 
     return bResult;
 }
 
-bool FOggVorbisDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
+bool AOggVorbisDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
     *_SamplesCount = 0;
     *_Channels = 0;
     *_SampleRate = 0;
@@ -146,7 +146,7 @@ bool FOggVorbisDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount
     *_EncodedData = NULL;
     *_EncodedDataLength = 0;
 
-    // TODO: replace FILE by FFileStream?
+    // TODO: replace FILE by AFileStream?
     FILE * f = fopen( _FileName, "rb" );
     if ( !f ) {
         return false;

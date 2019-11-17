@@ -33,15 +33,15 @@ SOFTWARE.
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Runtime/Public/RenderCore.h>
 
-class FWindowManager {
-    AN_SINGLETON( FWindowManager )
+class AWindowManager {
+    AN_SINGLETON( AWindowManager )
 
 public:
     void Initialize();
 
     void Deinitialize();
 
-    void Update( FEventQueue & _EventQueue );
+    void Update( AEventQueue & _EventQueue );
 };
 
-extern FWindowManager & GWindowManager;
+extern AWindowManager & GWindowManager;

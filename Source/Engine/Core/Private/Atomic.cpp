@@ -177,14 +177,14 @@ AN_INLINE void AtomicStoreRelease( volatile T * ptr, T value ) {
 
 #endif
 
-//#define FAtomicClass FAtomicBool
+//#define FAtomicClass AAtomicBool
 //#define FAtomicClass_N( _A ) _A##8_ANGIE
 //#undef FAtomicClass_SupportAdd
 //#include "_atomic.h"
 //#undef FAtomicClass
 //#undef FAtomicClass_N
 
-FAtomicBool::AtomicType FAtomicBool::LoadRelaxed() const {
+AAtomicBool::AtomicType AAtomicBool::LoadRelaxed() const {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return i;
 #else
@@ -193,7 +193,7 @@ FAtomicBool::AtomicType FAtomicBool::LoadRelaxed() const {
 }
 
 // Store relaxed
-void FAtomicBool::StoreRelaxed( AtomicType _i ) {
+void AAtomicBool::StoreRelaxed( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     i = _i;
 #else
@@ -202,7 +202,7 @@ void FAtomicBool::StoreRelaxed( AtomicType _i ) {
 }
 
 // Atomic load
-FAtomicBool::AtomicType FAtomicBool::Load() const {
+AAtomicBool::AtomicType AAtomicBool::Load() const {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return AtomicLoadAcquire( &i );
 #else
@@ -211,7 +211,7 @@ FAtomicBool::AtomicType FAtomicBool::Load() const {
 }
 
 // Atomic store
-void FAtomicBool::Store( AtomicType _i ) {
+void AAtomicBool::Store( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     AtomicStoreRelease( &i, _i );
 #else
@@ -219,7 +219,7 @@ void FAtomicBool::Store( AtomicType _i ) {
 #endif
 }
 
-FAtomicBool::AtomicType FAtomicBool::Exchange( AtomicType _Exchange ) {
+AAtomicBool::AtomicType AAtomicBool::Exchange( AtomicType _Exchange ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return InterlockedExchange8( reinterpret_cast< char *>( &i ), _Exchange );
 #else
@@ -227,7 +227,7 @@ FAtomicBool::AtomicType FAtomicBool::Exchange( AtomicType _Exchange ) {
 #endif
 }
 
-//bool FAtomicBool::CompareExchange( AtomicType _Exchange, AtomicType _Comparand ) {
+//bool AAtomicBool::CompareExchange( AtomicType _Exchange, AtomicType _Comparand ) {
 //#if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
 //    return InterlockedCompareExchange8( &i, _Comparand, _Exchange ) == _Exchange; !!!
 //#else
@@ -236,21 +236,21 @@ FAtomicBool::AtomicType FAtomicBool::Exchange( AtomicType _Exchange ) {
 //#endif
 //}
 
-#define FAtomicClass FAtomicShort
+#define FAtomicClass AAtomicShort
 #define FAtomicClass_N( _A ) _A##16_ANGIE
 #undef FAtomicClass_SupportAdd
 #include "_atomic.h"
 #undef FAtomicClass
 #undef FAtomicClass_N
 
-#define FAtomicClass FAtomicInt
+#define FAtomicClass AAtomicInt
 #define FAtomicClass_N( _A ) _A##32_ANGIE
 #define FAtomicClass_SupportAdd
 #include "_atomic.h"
 #undef FAtomicClass
 #undef FAtomicClass_N
 
-#define FAtomicClass FAtomicLong
+#define FAtomicClass AAtomicLong
 #define FAtomicClass_N( _A ) _A##64_ANGIE
 #include "_atomic.h"
 #undef FAtomicClass

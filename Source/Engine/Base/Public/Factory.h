@@ -36,70 +36,70 @@ SOFTWARE.
 #include <Engine/Core/Public/CoreMath.h>
 #include <Engine/Core/Public/PodArray.h>
 
-class FClassMeta;
-class FAttributeMeta;
-class FPrecacheMeta;
-class FDummy;
+class AClassMeta;
+class AAttributeMeta;
+class APrecacheMeta;
+class ADummy;
 
-class ANGIE_API FObjectFactory {
-    AN_FORBID_COPY( FObjectFactory )
+class ANGIE_API AObjectFactory {
+    AN_FORBID_COPY( AObjectFactory )
 
-    friend class FClassMeta;
+    friend class AClassMeta;
     friend void InitializeFactories();
     friend void DeinitializeFactories();
 
 public:
-    FObjectFactory( const char * _Tag );
-    ~FObjectFactory();
+    AObjectFactory( const char * _Tag );
+    ~AObjectFactory();
 
     const char * GetTag() const { return Tag; }
 
-    FDummy * CreateInstance( const char * _ClassName ) const;
-    FDummy * CreateInstance( uint64_t _ClassId ) const;
+    ADummy * CreateInstance( const char * _ClassName ) const;
+    ADummy * CreateInstance( uint64_t _ClassId ) const;
 
     template< typename T >
     T * CreateInstance() const { return static_cast< T * >( CreateInstance( T::ClassId() ) ); }
 
-    FClassMeta const * GetClassList() const;
+    AClassMeta const * GetClassList() const;
 
-    FClassMeta const * FindClass( const char * _ClassName ) const;
+    AClassMeta const * FindClass( const char * _ClassName ) const;
 
-    FClassMeta const * LookupClass( const char * _ClassName ) const;
-    FClassMeta const * LookupClass( uint64_t _ClassId ) const;
+    AClassMeta const * LookupClass( const char * _ClassName ) const;
+    AClassMeta const * LookupClass( uint64_t _ClassId ) const;
 
     uint64_t FactoryClassCount() const { return NumClasses; }
 
-    static FObjectFactory const * Factories() { return FactoryList; }
-    FObjectFactory const * Next() const { return NextFactory; }
+    static AObjectFactory const * Factories() { return FactoryList; }
+    AObjectFactory const * Next() const { return NextFactory; }
 
 private:
     const char * Tag;
-    FClassMeta * Classes;
-    mutable FClassMeta ** IdTable;
+    AClassMeta * Classes;
+    mutable AClassMeta ** IdTable;
     mutable THash<> NameTable;
     uint64_t NumClasses;
-    FObjectFactory * NextFactory;
-    static FObjectFactory * FactoryList;
+    AObjectFactory * NextFactory;
+    static AObjectFactory * FactoryList;
 };
 
-class ANGIE_API FClassMeta {
-    AN_FORBID_COPY( FClassMeta )
+class ANGIE_API AClassMeta {
+    AN_FORBID_COPY( AClassMeta )
 
-    friend class FObjectFactory;
-    friend class FAttributeMeta;
-    friend class FPrecacheMeta;
+    friend class AObjectFactory;
+    friend class AAttributeMeta;
+    friend class APrecacheMeta;
 
 public:
     const char * GetName() const { return ClassName; }
     uint64_t GetId() const { return ClassId; }
-    FClassMeta const * SuperClass() const { return pSuperClass; }
-    FClassMeta const * Next() const { return pNext; }
-    FObjectFactory const * Factory() const { return pFactory; }
-    FAttributeMeta const * GetAttribList() const { return AttributesHead; }
-    FPrecacheMeta const * GetPrecacheList() const { return PrecacheHead; }
+    AClassMeta const * SuperClass() const { return pSuperClass; }
+    AClassMeta const * Next() const { return pNext; }
+    AObjectFactory const * Factory() const { return pFactory; }
+    AAttributeMeta const * GetAttribList() const { return AttributesHead; }
+    APrecacheMeta const * GetPrecacheList() const { return PrecacheHead; }
 
-    bool IsSubclassOf( FClassMeta const & _Superclass ) const {
-        for ( FClassMeta const * meta = this ; meta ; meta = meta->SuperClass() ) {
+    bool IsSubclassOf( AClassMeta const & _Superclass ) const {
+        for ( AClassMeta const * meta = this ; meta ; meta = meta->SuperClass() ) {
             if ( meta->GetId() == _Superclass.GetId() ) {
                 return true;
             }
@@ -114,19 +114,19 @@ public:
 
     // TODO: class flags?
 
-    virtual FDummy * CreateInstance() const = 0;
-    virtual void DestroyInstance( FDummy * _Object ) const = 0;
+    virtual ADummy * CreateInstance() const = 0;
+    virtual void DestroyInstance( ADummy * _Object ) const = 0;
 
-    static void CloneAttributes( FDummy const * _Template, FDummy * _Destination );
+    static void CloneAttributes( ADummy const * _Template, ADummy * _Destination );
 
-    static FObjectFactory & DummyFactory() { static FObjectFactory ObjectFactory( "Dummy factory" ); return ObjectFactory; }
+    static AObjectFactory & DummyFactory() { static AObjectFactory ObjectFactory( "Dummy factory" ); return ObjectFactory; }
 
     // Utilites
-    FAttributeMeta const * FindAttribute( const char * _Name, bool _Recursive ) const;
-    void GetAttributes( TPodArray< FAttributeMeta const * > & _Attributes, bool _Recursive = true ) const;
+    AAttributeMeta const * FindAttribute( const char * _Name, bool _Recursive ) const;
+    void GetAttributes( TPodArray< AAttributeMeta const * > & _Attributes, bool _Recursive = true ) const;
 
 protected:
-    FClassMeta( FObjectFactory & _Factory, const char * _ClassName, FClassMeta const * _SuperClassMeta )
+    AClassMeta( AObjectFactory & _Factory, const char * _ClassName, AClassMeta const * _SuperClassMeta )
         : ClassName( _ClassName )
     {
         AN_ASSERT( _Factory.FindClass( _ClassName ) == NULL, "Class already defined" );
@@ -145,26 +145,26 @@ protected:
 private:
     const char * ClassName;
     uint64_t ClassId;
-    FClassMeta * pNext;
-    FClassMeta const * pSuperClass;
-    FObjectFactory const * pFactory;
-    FAttributeMeta const * AttributesHead;
-    FAttributeMeta const * AttributesTail;
-    FPrecacheMeta const * PrecacheHead;
-    FPrecacheMeta const * PrecacheTail;
+    AClassMeta * pNext;
+    AClassMeta const * pSuperClass;
+    AObjectFactory const * pFactory;
+    AAttributeMeta const * AttributesHead;
+    AAttributeMeta const * AttributesTail;
+    APrecacheMeta const * PrecacheHead;
+    APrecacheMeta const * PrecacheTail;
 };
 
-AN_FORCEINLINE FDummy * FObjectFactory::CreateInstance( const char * _ClassName ) const {
-    FClassMeta const * classMeta = LookupClass( _ClassName );
+AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( const char * _ClassName ) const {
+    AClassMeta const * classMeta = LookupClass( _ClassName );
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-AN_FORCEINLINE FDummy * FObjectFactory::CreateInstance( uint64_t _ClassId ) const {
-    FClassMeta const * classMeta = LookupClass( _ClassId );
+AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( uint64_t _ClassId ) const {
+    AClassMeta const * classMeta = LookupClass( _ClassId );
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-AN_FORCEINLINE FClassMeta const * FObjectFactory::GetClassList() const {
+AN_FORCEINLINE AClassMeta const * AObjectFactory::GetClassList() const {
     return Classes;
 }
 
@@ -210,50 +210,50 @@ template<>
 AN_FORCEINLINE EAttributeType GetAttributeType< Quat >() { return EAttributeType::T_Quat; }
 
 template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< FString const & >() { return EAttributeType::T_String; }
+AN_FORCEINLINE EAttributeType GetAttributeType< AString const & >() { return EAttributeType::T_String; }
 
 template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< FString >() { return EAttributeType::T_String; }
+AN_FORCEINLINE EAttributeType GetAttributeType< AString >() { return EAttributeType::T_String; }
 
-AN_FORCEINLINE FString AttrToString( byte const & v ) { return Byte( v ).ToString(); }
-AN_FORCEINLINE FString AttrToString( bool const & v ) { return Byte( v ).ToString(); }
-AN_FORCEINLINE FString AttrToString( int const & v ) { return Int( v ).ToString(); }
-AN_FORCEINLINE FString AttrToString( float const & v ) { return Int( *( (int *)&v ) ).ToString(); }
-AN_FORCEINLINE FString AttrToString( Float2 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString(); }
-AN_FORCEINLINE FString AttrToString( Float3 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString(); }
-AN_FORCEINLINE FString AttrToString( Float4 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString() + " " + Int( *( (int *)&v.W ) ).ToString(); }
-AN_FORCEINLINE FString AttrToString( Quat const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString() + " " + Int( *( (int *)&v.W ) ).ToString(); }
-AN_FORCEINLINE FString AttrToString( FString const & v ) { return v; }
+AN_FORCEINLINE AString AttrToString( byte const & v ) { return Byte( v ).ToString(); }
+AN_FORCEINLINE AString AttrToString( bool const & v ) { return Byte( v ).ToString(); }
+AN_FORCEINLINE AString AttrToString( int const & v ) { return Int( v ).ToString(); }
+AN_FORCEINLINE AString AttrToString( float const & v ) { return Int( *( (int *)&v ) ).ToString(); }
+AN_FORCEINLINE AString AttrToString( Float2 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString(); }
+AN_FORCEINLINE AString AttrToString( Float3 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString(); }
+AN_FORCEINLINE AString AttrToString( Float4 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString() + " " + Int( *( (int *)&v.W ) ).ToString(); }
+AN_FORCEINLINE AString AttrToString( Quat const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString() + " " + Int( *( (int *)&v.W ) ).ToString(); }
+AN_FORCEINLINE AString AttrToString( AString const & v ) { return v; }
 
 template< typename T >
-/*AN_FORCEINLINE*/ T AttrFromString( FString const & v );
+/*AN_FORCEINLINE*/ T AttrFromString( AString const & v );
 
 template<>
-AN_FORCEINLINE byte AttrFromString< byte >( FString const & v ) {
+AN_FORCEINLINE byte AttrFromString< byte >( AString const & v ) {
     return Byte().FromString( v );
 }
 
 template<>
-AN_FORCEINLINE bool AttrFromString< bool >( FString const & v ) {
+AN_FORCEINLINE bool AttrFromString< bool >( AString const & v ) {
     return Bool().FromString( v );
 }
 
 template<>
-AN_FORCEINLINE int AttrFromString< int >( FString const & v ) {
+AN_FORCEINLINE int AttrFromString< int >( AString const & v ) {
     return Int().FromString( v );
 }
 
 template<>
-AN_FORCEINLINE float AttrFromString< float >( FString const & v ) {
+AN_FORCEINLINE float AttrFromString< float >( AString const & v ) {
     int i = Int().FromString( v );
     return *( float * )&i;
 }
 
 template<>
-AN_FORCEINLINE Float2 AttrFromString< Float2 >( FString const & v ) {
+AN_FORCEINLINE Float2 AttrFromString< Float2 >( AString const & v ) {
     Float2 val;
     int tmp[2];
-    sscanf( v.ToConstChar(), "%d %d", &tmp[0], &tmp[1] );
+    sscanf( v.CStr(), "%d %d", &tmp[0], &tmp[1] );
     for ( int i = 0 ; i < 2 ; i++ ) {
         val[i] = *( float * )&tmp[i];
     }
@@ -261,10 +261,10 @@ AN_FORCEINLINE Float2 AttrFromString< Float2 >( FString const & v ) {
 }
 
 template<>
-AN_FORCEINLINE Float3 AttrFromString< Float3 >( FString const & v ) {
+AN_FORCEINLINE Float3 AttrFromString< Float3 >( AString const & v ) {
     Float3 val;
     int tmp[3];
-    sscanf( v.ToConstChar(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2] );
+    sscanf( v.CStr(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2] );
     for ( int i = 0 ; i < 3 ; i++ ) {
         val[i] = *( float * )&tmp[i];
     }
@@ -272,10 +272,10 @@ AN_FORCEINLINE Float3 AttrFromString< Float3 >( FString const & v ) {
 }
 
 template<>
-AN_FORCEINLINE Float4 AttrFromString< Float4 >( FString const & v ) {
+AN_FORCEINLINE Float4 AttrFromString< Float4 >( AString const & v ) {
     Float4 val;
     int tmp[4];
-    sscanf( v.ToConstChar(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
+    sscanf( v.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
     for ( int i = 0 ; i < 4 ; i++ ) {
         val[i] = *( float * )&tmp[i];
     }
@@ -283,10 +283,10 @@ AN_FORCEINLINE Float4 AttrFromString< Float4 >( FString const & v ) {
 }
 
 template<>
-AN_FORCEINLINE Quat AttrFromString< Quat >( FString const & v ) {
+AN_FORCEINLINE Quat AttrFromString< Quat >( AString const & v ) {
     Quat val;
     int tmp[4];
-    sscanf( v.ToConstChar(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
+    sscanf( v.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
     for ( int i = 0 ; i < 4 ; i++ ) {
         val[i] = *( float * )&tmp[i];
     }
@@ -294,16 +294,16 @@ AN_FORCEINLINE Quat AttrFromString< Quat >( FString const & v ) {
 }
 
 template<>
-AN_FORCEINLINE FString AttrFromString< FString >( FString const & v ) {
+AN_FORCEINLINE AString AttrFromString< AString >( AString const & v ) {
     return v;
 }
 
-ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( FDummy *, FString const & ) >;
-ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( FDummy *, FString & ) >;
-ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( FDummy const *, FDummy * ) >;
+ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( ADummy *, AString const & ) >;
+ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( ADummy *, AString & ) >;
+ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( ADummy const *, ADummy * ) >;
 
-class ANGIE_API FAttributeMeta {
-    AN_FORBID_COPY( FAttributeMeta )
+class ANGIE_API AAttributeMeta {
+    AN_FORBID_COPY( AAttributeMeta )
 
 public:
     const char * GetName() const { return Name; }
@@ -311,19 +311,19 @@ public:
     const char * GetTypeName() const { return TypeNames[ (int)Type ]; }
     uint32_t GetFlags() const { return Flags; }
 
-    FAttributeMeta const * Next() const { return pNext; }
-    FAttributeMeta const * Prev() const { return pPrev; }
+    AAttributeMeta const * Next() const { return pNext; }
+    AAttributeMeta const * Prev() const { return pPrev; }
 
-    FAttributeMeta( FClassMeta const & _ClassMeta, const char * _Name, EAttributeType _Type, uint32_t _Flags )
+    AAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name, EAttributeType _Type, uint32_t _Flags )
         : Name( _Name )
         , Type( _Type )
         , Flags( _Flags )
     {
-        FClassMeta & classMeta = const_cast< FClassMeta & >( _ClassMeta );
+        AClassMeta & classMeta = const_cast< AClassMeta & >( _ClassMeta );
         pNext = nullptr;
         pPrev = classMeta.AttributesTail;
         if ( pPrev ) {
-            const_cast< FAttributeMeta * >( pPrev )->pNext = this;
+            const_cast< AAttributeMeta * >( pPrev )->pNext = this;
         } else {
             classMeta.AttributesHead = this;
         }
@@ -332,74 +332,74 @@ public:
 
     // TODO: Min/Max range for integer or float attributes, support for enums
 
-//    void CallSetter( FDummy * _Object, const void * _Value ) const {
+//    void CallSetter( ADummy * _Object, const void * _Value ) const {
 //        if ( Setter ) {
 //            Setter( _Object, _Value );
 //        }
 //    }
 
-//    void CallGetter( FDummy * _Object, void * _Value ) const {
+//    void CallGetter( ADummy * _Object, void * _Value ) const {
 //        if ( Getter ) {
 //            Getter( _Object, _Value );
 //        }
 //    }
 
-    void SetValue( FDummy * _Object, FString const & _Value ) const {
+    void SetValue( ADummy * _Object, AString const & _Value ) const {
         FromString( _Object, _Value );
     }
 
-    void GetValue( FDummy * _Object, FString & _Value ) const {
+    void GetValue( ADummy * _Object, AString & _Value ) const {
         ToString( _Object, _Value );
     }
 
-    void CopyValue( FDummy const * _Src, FDummy * _Dst ) const {
+    void CopyValue( ADummy const * _Src, ADummy * _Dst ) const {
         Copy( _Src, _Dst );
     }
 
-    byte GetByteValue( FDummy * _Object ) const {
-        FString s;
+    byte GetByteValue( ADummy * _Object ) const {
+        AString s;
         ToString( _Object, s );
         return AttrFromString< byte >( s );
     }
 
-    bool GetBoolValue( FDummy * _Object ) const {
-        FString s;
+    bool GetBoolValue( ADummy * _Object ) const {
+        AString s;
         ToString( _Object, s );
         return AttrFromString< bool >( s );
     }
 
-    int GetIntValue( FDummy * _Object ) const {
-        FString s;
+    int GetIntValue( ADummy * _Object ) const {
+        AString s;
         ToString( _Object, s );
         return AttrFromString< int >( s );
     }
 
-    float GetFloatValue( FDummy * _Object ) const {
-        FString s;
+    float GetFloatValue( ADummy * _Object ) const {
+        AString s;
         ToString( _Object, s );
         return AttrFromString< float >( s );
     }
 
-    Float2 GetFloat2Value( FDummy * _Object ) const {
-        FString s;
+    Float2 GetFloat2Value( ADummy * _Object ) const {
+        AString s;
         ToString( _Object, s );
         return AttrFromString< Float2 >( s );
     }
 
-    Float3 GetFloat3Value( FDummy * _Object ) const {
-        FString s;
+    Float3 GetFloat3Value( ADummy * _Object ) const {
+        AString s;
         ToString( _Object, s );
         return AttrFromString< Float3 >( s );
     }
 
-    Float4 GetFloat4Value( FDummy * _Object ) const {
-        FString s;
+    Float4 GetFloat4Value( ADummy * _Object ) const {
+        AString s;
         ToString( _Object, s );
         return AttrFromString< Float4 >( s );
     }
 
-    Quat GetQuatValue( FDummy * _Object ) const {
-        FString s;
+    Quat GetQuatValue( ADummy * _Object ) const {
+        AString s;
         ToString( _Object, s );
         return AttrFromString< Quat >( s );
     }
@@ -407,42 +407,42 @@ public:
 private:
     const char * Name;
     EAttributeType Type;
-    FAttributeMeta const * pNext;
-    FAttributeMeta const * pPrev;
+    AAttributeMeta const * pNext;
+    AAttributeMeta const * pPrev;
     uint32_t Flags;
 
 protected:
-//    TStdFunction< void( FDummy *, const void * ) > Setter;
-//    TStdFunction< void( FDummy *, void * ) > Getter;
-    TStdFunction< void( FDummy *, FString const & ) > FromString;
-    TStdFunction< void( FDummy *, FString & ) > ToString;
-    TStdFunction< void( FDummy const *, FDummy * ) > Copy;
+//    TStdFunction< void( ADummy *, const void * ) > Setter;
+//    TStdFunction< void( ADummy *, void * ) > Getter;
+    TStdFunction< void( ADummy *, AString const & ) > FromString;
+    TStdFunction< void( ADummy *, AString & ) > ToString;
+    TStdFunction< void( ADummy const *, ADummy * ) > Copy;
 
     static const char * TypeNames[ (int)EAttributeType::T_Max ];
 };
 
 #include <Engine/Core/Public/HashFunc.h>
-class ANGIE_API FPrecacheMeta {
-    AN_FORBID_COPY( FPrecacheMeta )
+class ANGIE_API APrecacheMeta {
+    AN_FORBID_COPY( APrecacheMeta )
 
 public:
-    FClassMeta const & GetResourceClassMeta() const { return ResourceClassMeta; }
+    AClassMeta const & GetResourceClassMeta() const { return ResourceClassMeta; }
     const char * GetResourcePath() const { return Path; }
     int GetResourceHash() const { return Hash; }
 
-    FPrecacheMeta const * Next() const { return pNext; }
-    FPrecacheMeta const * Prev() const { return pPrev; }
+    APrecacheMeta const * Next() const { return pNext; }
+    APrecacheMeta const * Prev() const { return pPrev; }
 
-    FPrecacheMeta( FClassMeta const & _ClassMeta, FClassMeta const & _ResourceClassMeta, const char * _Path )
+    APrecacheMeta( AClassMeta const & _ClassMeta, AClassMeta const & _ResourceClassMeta, const char * _Path )
         : ResourceClassMeta( _ResourceClassMeta )
         , Path( _Path )
-        , Hash( FCore::HashCase( _Path, FString::Length( _Path ) ) )
+        , Hash( Core::HashCase( _Path, AString::Length( _Path ) ) )
     {
-        FClassMeta & classMeta = const_cast< FClassMeta & >( _ClassMeta );
+        AClassMeta & classMeta = const_cast< AClassMeta & >( _ClassMeta );
         pNext = nullptr;
         pPrev = classMeta.PrecacheTail;
         if ( pPrev ) {
-            const_cast< FPrecacheMeta * >( pPrev )->pNext = this;
+            const_cast< APrecacheMeta * >( pPrev )->pNext = this;
         } else {
             classMeta.PrecacheHead = this;
         }
@@ -450,58 +450,58 @@ public:
     }
 
 private:
-    FClassMeta const & ResourceClassMeta;
+    AClassMeta const & ResourceClassMeta;
     const char * Path;
     int Hash;
-    FPrecacheMeta const * pNext;
-    FPrecacheMeta const * pPrev;
+    APrecacheMeta const * pNext;
+    APrecacheMeta const * pPrev;
 };
 
 template< typename ObjectType >
-class TAttributeMeta : public FAttributeMeta {
+class TAttributeMeta : public AAttributeMeta {
     AN_FORBID_COPY( TAttributeMeta )
 
 public:
 
     template< typename AttributeType >
-    TAttributeMeta( FClassMeta const & _ClassMeta, const char * _Name,
+    TAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name,
                     void(ObjectType::*_Setter)( AttributeType ),
                     AttributeType(ObjectType::*_Getter)() const,
                     int _Flags )
-        : FAttributeMeta( _ClassMeta, _Name, GetAttributeType< AttributeType >(), _Flags )
+        : AAttributeMeta( _ClassMeta, _Name, GetAttributeType< AttributeType >(), _Flags )
     {
-//        Setter = [_Setter]( FDummy * _Object, const void * _DataPtr ) {
+//        Setter = [_Setter]( ADummy * _Object, const void * _DataPtr ) {
 //            ObjectType * object = static_cast< ObjectType * >( _Object );
 //            (*object.*_Setter)( *(( AttributeType const * )_DataPtr) );
 //        };
-//        Getter = [_Getter]( FDummy * _Object, void * _DataPtr ) {
+//        Getter = [_Getter]( ADummy * _Object, void * _DataPtr ) {
 //            ObjectType * object = static_cast< ObjectType * >( _Object );
 //            AttributeType Value = (*object.*_Getter)();
 //            memcpy( ( AttributeType * )_DataPtr, &Value, sizeof( Value ) );
 //        };
 
-        FromString = [_Setter]( FDummy * _Object, FString const & _Value ) {
-            (*static_cast< ObjectType * >( _Object ).*_Setter)( ::AttrFromString< FString >( _Value ) );
+        FromString = [_Setter]( ADummy * _Object, AString const & _Value ) {
+            (*static_cast< ObjectType * >( _Object ).*_Setter)( ::AttrFromString< AString >( _Value ) );
         };
-        ToString = [_Getter]( FDummy * _Object, FString & _Value ) {
+        ToString = [_Getter]( ADummy * _Object, AString & _Value ) {
             _Value = ::AttrToString( (*static_cast< ObjectType * >( _Object ).*_Getter)() );
         };
-        Copy = [_Setter,_Getter]( FDummy const * _Src, FDummy * _Dst ) {
+        Copy = [_Setter,_Getter]( ADummy const * _Src, ADummy * _Dst ) {
             (*static_cast< ObjectType * >( _Dst ).*_Setter)( (*static_cast< ObjectType const * >( _Src ).*_Getter)() );
         };
     }
 
     template< typename AttributeType >
-    TAttributeMeta( FClassMeta const & _ClassMeta, const char * _Name, AttributeType * _AttribPointer, int _Flags )
-        : FAttributeMeta( _ClassMeta, _Name, GetAttributeType< AttributeType >(), _Flags )
+    TAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name, AttributeType * _AttribPointer, int _Flags )
+        : AAttributeMeta( _ClassMeta, _Name, GetAttributeType< AttributeType >(), _Flags )
     {
-        FromString = [_AttribPointer]( FDummy * _Object, FString const & _Value ) {
+        FromString = [_AttribPointer]( ADummy * _Object, AString const & _Value ) {
             *( AttributeType * )( (byte *)static_cast< ObjectType * >( _Object ) + (size_t)_AttribPointer ) = ::AttrFromString< AttributeType >( _Value );
         };
-        ToString = [_AttribPointer]( FDummy * _Object, FString & _Value ) {
+        ToString = [_AttribPointer]( ADummy * _Object, AString & _Value ) {
             _Value = ::AttrToString( *( AttributeType * )( (byte *)static_cast< ObjectType * >( _Object ) + (size_t)_AttribPointer ) );
         };
-        Copy = [_AttribPointer]( FDummy const * _Src, FDummy * _Dst ) {
+        Copy = [_AttribPointer]( ADummy const * _Src, ADummy * _Dst ) {
             *( AttributeType * )( (byte *)static_cast< ObjectType * >( _Dst ) + (size_t)_AttribPointer ) = *( AttributeType const * )( (byte const *)static_cast< ObjectType const * >( _Src ) + (size_t)_AttribPointer );
         };
     }
@@ -509,11 +509,11 @@ public:
 
 #define _AN_GENERATED_CLASS_BODY() \
 public: \
-    static FClassMeta const & ClassMeta() { \
+    static AClassMeta const & ClassMeta() { \
         static ThisClassMeta __Meta; \
         return __Meta; \
     }\
-    static FClassMeta const * SuperClass() { \
+    static AClassMeta const * SuperClass() { \
         return ClassMeta().SuperClass(); \
     } \
     static const char * ClassName() { \
@@ -522,34 +522,34 @@ public: \
     static uint64_t ClassId() { \
         return ClassMeta().GetId(); \
     } \
-    virtual FClassMeta const & FinalClassMeta() const { return ClassMeta(); } \
+    virtual AClassMeta const & FinalClassMeta() const { return ClassMeta(); } \
     virtual const char * FinalClassName() const { return ClassName(); } \
     virtual uint64_t FinalClassId() const { return ClassId(); }
 
 
 #define AN_CLASS( _Class, _SuperClass ) \
-    AN_FACTORY_CLASS( FClassMeta::DummyFactory(), _Class, _SuperClass )
+    AN_FACTORY_CLASS( AClassMeta::DummyFactory(), _Class, _SuperClass )
 
 #define AN_FACTORY_CLASS( _Factory, _Class, _SuperClass ) \
-    AN_FACTORY_CLASS_A( _Factory, _Class, _SuperClass, FDummy::Allocator )
+    AN_FACTORY_CLASS_A( _Factory, _Class, _SuperClass, ADummy::Allocator )
 
 #define AN_FACTORY_CLASS_A( _Factory, _Class, _SuperClass, _Allocator ) \
     AN_FORBID_COPY( _Class ) \
-    friend class FDummy; \
+    friend class ADummy; \
 public:\
     typedef _SuperClass Super; \
     typedef _Class ThisClass; \
     typedef _Allocator Allocator; \
-    class ThisClassMeta : public FClassMeta { \
+    class ThisClassMeta : public AClassMeta { \
     public: \
-        ThisClassMeta() : FClassMeta( _Factory, AN_STRINGIFY( _Class ), &Super::ClassMeta() ) { \
+        ThisClassMeta() : AClassMeta( _Factory, AN_STRINGIFY( _Class ), &Super::ClassMeta() ) { \
             RegisterAttributes(); \
         } \
-        FDummy * CreateInstance() const override { \
+        ADummy * CreateInstance() const override { \
             return NewObject< ThisClass >(); \
         } \
-        void DestroyInstance( FDummy * _Object ) const override { \
-            _Object->~FDummy(); \
+        void DestroyInstance( ADummy * _Object ) const override { \
+            _Object->~ADummy(); \
             _Allocator::Inst().Dealloc( _Object ); \
         } \
     private: \
@@ -561,7 +561,7 @@ private:
 
 
 #define AN_BEGIN_CLASS_META( _Class ) \
-FClassMeta const & _Class##__Meta = _Class::ClassMeta(); \
+AClassMeta const & _Class##__Meta = _Class::ClassMeta(); \
 void _Class::ThisClassMeta::RegisterAttributes() {
 
 #define AN_END_CLASS_META() \
@@ -576,7 +576,7 @@ void _Class::ThisClassMeta::RegisterAttributes() {
     static TAttributeMeta< ThisClass > const _Name##Meta( *this, AN_STRINGIFY( _Name ), (&(( ThisClass * )0)->_Name), _Flags );
 
 #define AN_PRECACHE( _ResourceClass, _ResourceName, _Path ) \
-    static FPrecacheMeta const _ResourceName##Precache( *this, _ResourceClass::ClassMeta(), _Path );
+    static APrecacheMeta const _ResourceName##Precache( *this, _ResourceClass::ClassMeta(), _Path );
 
 /* Attribute flags */
 #define AF_DEFAULT              0
@@ -584,27 +584,27 @@ void _Class::ThisClassMeta::RegisterAttributes() {
 
 /*
 
-FDummy
+ADummy
 
 Base factory object class.
 Needs to resolve class meta data.
 
 */
-class ANGIE_API FDummy {
-    AN_FORBID_COPY( FDummy )
+class ANGIE_API ADummy {
+    AN_FORBID_COPY( ADummy )
 
 public:
-    typedef FDummy ThisClass;
-    typedef FZoneAllocator Allocator;
-    class ThisClassMeta : public FClassMeta {
+    typedef ADummy ThisClass;
+    typedef AZoneAllocator Allocator;
+    class ThisClassMeta : public AClassMeta {
     public:
-        ThisClassMeta() : FClassMeta( FClassMeta::DummyFactory(), "FDummy", nullptr ) {
+        ThisClassMeta() : AClassMeta( AClassMeta::DummyFactory(), "ADummy", nullptr ) {
         }
-        FDummy * CreateInstance() const override {
+        ADummy * CreateInstance() const override {
             return NewObject< ThisClass >();
         }
-        void DestroyInstance( FDummy * _Object ) const override {
-            _Object->~FDummy();
+        void DestroyInstance( ADummy * _Object ) const override {
+            _Object->~ADummy();
             Allocator::Inst().Dealloc( _Object );
         }
     private:
@@ -613,12 +613,12 @@ public:
     template< typename T >
     static T * NewObject() {
         void * data = T::Allocator::Inst().AllocCleared1( sizeof( T ) );
-        FDummy * object = new (data) T;
+        ADummy * object = new (data) T;
         return static_cast< T * >( object );
     }
-    virtual ~FDummy() {}
+    virtual ~ADummy() {}
 protected:
-    FDummy() {}
+    ADummy() {}
     _AN_GENERATED_CLASS_BODY()
 };
 
@@ -627,7 +627,7 @@ template< typename T > T * CreateInstanceOf() {
 }
 
 template< typename T >
-T * Upcast( FDummy * _Object ) {
+T * Upcast( ADummy * _Object ) {
     AN_Assert( _Object );
     if ( _Object->FinalClassMeta().IsSubclassOf< T >() ) {
         return static_cast< T * >( _Object );

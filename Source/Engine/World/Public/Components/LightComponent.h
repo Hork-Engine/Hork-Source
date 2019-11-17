@@ -34,13 +34,13 @@ SOFTWARE.
 
 /*
 
-FClusteredObject
+AClusteredObject
 
 */
-class FClusteredObject : public FSceneComponent {
-    AN_COMPONENT( FClusteredObject, FSceneComponent )
+class AClusteredObject : public ASceneComponent {
+    AN_COMPONENT( AClusteredObject, ASceneComponent )
 
-    friend class FLevel;
+    friend class ALevel;
 
 public:
     enum { RENDERING_GROUP_DEFAULT = 1 };
@@ -65,7 +65,7 @@ public:
 
 protected:
 
-    FClusteredObject();
+    AClusteredObject();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -76,12 +76,12 @@ protected:
     BvOrientedBox OBBWorldBounds;
     Float4x4 OBBTransformInverse;
 
-    FAreaLinks InArea; // list of intersected areas
+    AAreaLinks InArea; // list of intersected areas
     bool bIsOutdoor;
 
-    FClusteredObject * NextDirty;
-    FClusteredObject * PrevDirty;
+    AClusteredObject * NextDirty;
+    AClusteredObject * PrevDirty;
 
-    static FClusteredObject * DirtyList;
-    static FClusteredObject * DirtyListTail;
+    static AClusteredObject * DirtyList;
+    static AClusteredObject * DirtyListTail;
 };

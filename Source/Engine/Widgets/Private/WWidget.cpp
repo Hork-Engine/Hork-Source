@@ -554,10 +554,10 @@ void WWidget::UpdateTransform() {
         }
 
         if ( bClampWidth && curPos.X + curSize.X > availSize.X ) {
-            curSize.X = FMath::Max( 0.0f, availSize.X - curPos.X );
+            curSize.X = Math::Max( 0.0f, availSize.X - curPos.X );
         }
         if ( bClampWidth && curPos.Y + curSize.Y > availSize.Y ) {
-            curSize.Y = FMath::Max( 0.0f, availSize.Y - curPos.Y );
+            curSize.Y = Math::Max( 0.0f, availSize.Y - curPos.Y );
         }
 
         curPos += localOffset;
@@ -590,18 +590,18 @@ Float2 WWidget::GetCurrentSize() const {
 
 float WWidget::GetAvailableWidth() const {
     Float2 sz = GetCurrentSize();
-    return FMath::Max( sz.X - Margin.X - Margin.Z, 0.0f );
+    return Math::Max( sz.X - Margin.X - Margin.Z, 0.0f );
 }
 
 float WWidget::GetAvailableHeight() const {
     Float2 sz = GetCurrentSize();
-    return FMath::Max( sz.Y - Margin.Y - Margin.W, 0.0f );
+    return Math::Max( sz.Y - Margin.Y - Margin.W, 0.0f );
 }
 
 Float2 WWidget::GetAvailableSize() const {
     Float2 sz = GetCurrentSize();
-    return Float2( FMath::Max( sz.X - Margin.X - Margin.Z, 0.0f ),
-                   FMath::Max( sz.Y - Margin.Y - Margin.W, 0.0f ) );
+    return Float2( Math::Max( sz.X - Margin.X - Margin.Z, 0.0f ),
+                   Math::Max( sz.Y - Margin.Y - Margin.W, 0.0f ) );
 }
 
 void WWidget::GetDesktopRect( Float2 & _Mins, Float2 & _Maxs, bool _Margin ) {
@@ -760,7 +760,7 @@ AN_FORCEINLINE void ApplyMargins( Float2 & _Mins, Float2 & _Maxs, Float4 const &
     _Maxs.Y -= _Margins.W;
 }
 
-void WWidget::Draw_r( FCanvas & _Canvas, Float2 const & _ClipMins, Float2 const & _ClipMaxs ) {
+void WWidget::Draw_r( ACanvas & _Canvas, Float2 const & _ClipMins, Float2 const & _ClipMaxs ) {
     if ( !IsVisible() ) {
         return;
     }
@@ -770,11 +770,11 @@ void WWidget::Draw_r( FCanvas & _Canvas, Float2 const & _ClipMins, Float2 const 
 
     GetDesktopRect( rectMins, rectMaxs, false );
 
-    mins.X = FMath::Max( rectMins.X, _ClipMins.X );
-    mins.Y = FMath::Max( rectMins.Y, _ClipMins.Y );
+    mins.X = Math::Max( rectMins.X, _ClipMins.X );
+    mins.Y = Math::Max( rectMins.Y, _ClipMins.Y );
 
-    maxs.X = FMath::Min( rectMaxs.X, _ClipMaxs.X );
-    maxs.Y = FMath::Min( rectMaxs.Y, _ClipMaxs.Y );
+    maxs.X = Math::Min( rectMaxs.X, _ClipMaxs.X );
+    maxs.Y = Math::Min( rectMaxs.Y, _ClipMaxs.Y );
 
     if ( mins.X >= maxs.X || mins.Y >= maxs.Y ) {
         return; // invalid rect
@@ -788,11 +788,11 @@ void WWidget::Draw_r( FCanvas & _Canvas, Float2 const & _ClipMins, Float2 const 
 
     ApplyMargins( rectMins, rectMaxs, GetMargin() );
 
-    mins.X = FMath::Max( rectMins.X, _ClipMins.X );
-    mins.Y = FMath::Max( rectMins.Y, _ClipMins.Y );
+    mins.X = Math::Max( rectMins.X, _ClipMins.X );
+    mins.Y = Math::Max( rectMins.Y, _ClipMins.Y );
 
-    maxs.X = FMath::Min( rectMaxs.X, _ClipMaxs.X );
-    maxs.Y = FMath::Min( rectMaxs.Y, _ClipMaxs.Y );
+    maxs.X = Math::Min( rectMaxs.X, _ClipMaxs.X );
+    maxs.Y = Math::Min( rectMaxs.Y, _ClipMaxs.Y );
 
     if ( mins.X >= maxs.X || mins.Y >= maxs.Y ) {
         return; // invalid rect
@@ -814,11 +814,11 @@ void WWidget::Draw_r( FCanvas & _Canvas, Float2 const & _ClipMins, Float2 const 
             cellMins += clientPos;
             cellMaxs += clientPos;
 
-            cellMins.X = FMath::Max( cellMins.X, mins.X );
-            cellMins.Y = FMath::Max( cellMins.Y, mins.Y );
+            cellMins.X = Math::Max( cellMins.X, mins.X );
+            cellMins.Y = Math::Max( cellMins.Y, mins.Y );
 
-            cellMaxs.X = FMath::Min( cellMaxs.X, maxs.X );
-            cellMaxs.Y = FMath::Min( cellMaxs.Y, maxs.Y );
+            cellMaxs.X = Math::Min( cellMaxs.X, maxs.X );
+            cellMaxs.Y = Math::Min( cellMaxs.Y, maxs.Y );
 
             if ( cellMins.X >= cellMaxs.X || cellMins.Y >= cellMaxs.Y ) {
                 continue;
@@ -833,11 +833,11 @@ void WWidget::Draw_r( FCanvas & _Canvas, Float2 const & _ClipMins, Float2 const 
     }
 }
 
-void WWidget::OnKeyEvent( struct FKeyEvent const & _Event, double _TimeStamp ) {
+void WWidget::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) {
 
 }
 
-void WWidget::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WWidget::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
 
 }
 
@@ -862,7 +862,7 @@ void WWidget::ScrollSelfDelta( float _Delta ) {
     }
 }
 
-void WWidget::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _TimeStamp ) {
+void WWidget::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double _TimeStamp ) {
     if ( _Event.WheelY < 0 ) {
         ScrollSelfDelta( -20 );
     }
@@ -871,11 +871,11 @@ void WWidget::OnMouseWheelEvent( FMouseWheelEvent const & _Event, double _TimeSt
     }
 }
 
-void WWidget::OnMouseMoveEvent( FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void WWidget::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStamp ) {
 
 }
 
-void WWidget::OnCharEvent( FCharEvent const & _Event, double _TimeStamp ) {
+void WWidget::OnCharEvent( SCharEvent const & _Event, double _TimeStamp ) {
 
 }
 
@@ -897,7 +897,7 @@ void WWidget::OnWindowHovered( bool _Hovered ) {
     }
 }
 
-void WWidget::OnDrawEvent( FCanvas & _Canvas ) {
+void WWidget::OnDrawEvent( ACanvas & _Canvas ) {
     DrawDecorates( _Canvas );
 }
 
@@ -909,7 +909,7 @@ void WWidget::AdjustSizeAndPosition( Float2 const & _AvailableSize, Float2 & _Si
 
 }
 
-void WWidget::DrawDecorates( FCanvas & _Canvas ) {
+void WWidget::DrawDecorates( ACanvas & _Canvas ) {
     for ( WDecorate * d : Decorates ) {
         d->OnDrawEvent( _Canvas );
     }
@@ -940,8 +940,8 @@ void WWidget::MarkImageLayoutDirty() {
 }
 
 WWidget & WWidget::SetGridSize( int _ColumnsCount, int _RowsCount ) {
-    ColumnsCount = FMath::Clamp( _ColumnsCount, 1, MAX_COLUMNS );
-    RowsCount = FMath::Clamp( _RowsCount, 1, MAX_ROWS );
+    ColumnsCount = Math::Clamp( _ColumnsCount, 1, MAX_COLUMNS );
+    RowsCount = Math::Clamp( _RowsCount, 1, MAX_ROWS );
     MarkGridLayoutDirty();
     return *this;
 }
@@ -959,7 +959,7 @@ WWidget & WWidget::SetColumnWidth( int _ColumnIndex, float _Width ) {
         memset( Columns.ToPtr() + oldSize, 0, ( Columns.Size() - oldSize ) * sizeof( Columns[0] ) );
     }
 
-    Columns[ _ColumnIndex ].Size = FMath::Max( _Width, 0.0f );
+    Columns[ _ColumnIndex ].Size = Math::Max( _Width, 0.0f );
 
     MarkGridLayoutDirty();
 
@@ -979,7 +979,7 @@ WWidget & WWidget::SetRowWidth( int _RowIndex, float _Width ) {
         memset( Rows.ToPtr() + oldSize, 0, ( Rows.Size() - oldSize ) * sizeof( Rows[0] ) );
     }
 
-    Rows[ _RowIndex ].Size = FMath::Max( _Width, 0.0f );
+    Rows[ _RowIndex ].Size = Math::Max( _Width, 0.0f );
 
     MarkGridLayoutDirty();
 
@@ -1005,8 +1005,8 @@ WWidget & WWidget::SetFitRows( bool _FitRows ) {
 void WWidget::GetCellRect( int _ColumnIndex, int _RowIndex, Float2 & _Mins, Float2 & _Maxs ) const {
     const_cast< WWidget * >( this )->UpdateLayoutIfDirty();
 
-    int numColumns = FMath::Min( ColumnsCount, Columns.Size() );
-    int numRows = FMath::Min( RowsCount, Rows.Size() );
+    int numColumns = Math::Min( ColumnsCount, Columns.Size() );
+    int numRows = Math::Min( RowsCount, Rows.Size() );
 
     if ( _ColumnIndex < 0 || _RowIndex < 0 || numColumns == 0 || numRows == 0 ) {
         _Mins = _Maxs = Float2(0.0f);
@@ -1168,8 +1168,8 @@ void WWidget::UpdateLayout() {
     bLayoutDirty = false;
 
     if ( Layout == WIDGET_LAYOUT_GRID ) {
-        int numColumns = FMath::Min( ColumnsCount, Columns.Size() );
-        int numRows = FMath::Min( RowsCount, Rows.Size() );
+        int numColumns = Math::Min( ColumnsCount, Columns.Size() );
+        int numRows = Math::Min( RowsCount, Rows.Size() );
 
         if ( bAutoWidth ) {
             for ( int i = 0 ; i < numColumns ; i++ ) {
@@ -1181,7 +1181,7 @@ void WWidget::UpdateLayout() {
                 }
                 if ( child->Column < Columns.Size() ) {
                     float w = child->CalcContentWidth();
-                    Columns[ child->Column ].ActualSize = FMath::Max( Columns[ child->Column ].ActualSize, w );
+                    Columns[ child->Column ].ActualSize = Math::Max( Columns[ child->Column ].ActualSize, w );
                 }
             }
         } else if ( bFitColumns ) {
@@ -1214,7 +1214,7 @@ void WWidget::UpdateLayout() {
                 }
                 if ( child->Row < Rows.Size() ) {
                     float h = child->CalcContentHeight();
-                    Rows[ child->Row ].ActualSize = FMath::Max( Rows[ child->Row ].ActualSize, h );
+                    Rows[ child->Row ].ActualSize = Math::Max( Rows[ child->Row ].ActualSize, h );
                 }
             }
         } else if ( bFitRows ) {
@@ -1261,7 +1261,7 @@ void WWidget::UpdateLayout() {
             offsetX += w->CalcContentWidth() + HorizontalPadding;
 
             if ( bCanWrap && next ) {
-                maxHeight = FMath::Max( maxHeight, w->CalcContentHeight() );
+                maxHeight = Math::Max( maxHeight, w->CalcContentHeight() );
                 if ( offsetX + next->CalcContentWidth() >= availWidth ) {
                     offsetX = 0;
                     offsetY += maxHeight + VerticalPadding;
@@ -1294,7 +1294,7 @@ void WWidget::UpdateLayout() {
             offsetY += w->CalcContentHeight() + VerticalPadding;
 
             if ( bCanWrap && next ) {
-                maxWidth = FMath::Max( maxWidth, w->CalcContentWidth() );
+                maxWidth = Math::Max( maxWidth, w->CalcContentWidth() );
                 if ( offsetY + next->CalcContentHeight() >= availHeight ) {
                     offsetY = 0;
                     offsetX += maxWidth + HorizontalPadding;
@@ -1319,7 +1319,7 @@ float WWidget::CalcContentWidth() {
 
     // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размер окна устанавливается равным размеру сетки.
     else if ( Layout == WIDGET_LAYOUT_GRID ) {
-        int numColumns = FMath::Min( ColumnsCount, Columns.Size() );
+        int numColumns = Math::Min( ColumnsCount, Columns.Size() );
 
         if ( numColumns == 0 ) {
             contentWidth = Size.X;
@@ -1340,7 +1340,7 @@ float WWidget::CalcContentWidth() {
 
                 if ( child->Column < Columns.Size() ) {
                     float w = child->CalcContentWidth();
-                    Columns[ child->Column ].ActualSize = FMath::Max( Columns[ child->Column ].ActualSize, w );
+                    Columns[ child->Column ].ActualSize = Math::Max( Columns[ child->Column ].ActualSize, w );
                 }
             }
             contentWidth = 0;
@@ -1380,7 +1380,7 @@ float WWidget::CalcContentWidth() {
                 break;
             }
 
-            contentWidth = FMath::Max( contentWidth, x + w );
+            contentWidth = Math::Max( contentWidth, x + w );
         }
     }
 
@@ -1401,7 +1401,7 @@ float WWidget::CalcContentHeight() {
 
     // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размер окна устанавливается равным размеру сетки.
     else if ( Layout == WIDGET_LAYOUT_GRID ) {
-        int numRows = FMath::Min( RowsCount, Rows.Size() );
+        int numRows = Math::Min( RowsCount, Rows.Size() );
 
         if ( numRows == 0 ) {
             contentHeight = Size.Y;
@@ -1421,7 +1421,7 @@ float WWidget::CalcContentHeight() {
                 }
                 if ( child->Row < Rows.Size() ) {
                     float h = child->CalcContentHeight();
-                    Rows[ child->Row ].ActualSize = FMath::Max( Rows[ child->Row ].ActualSize, h );
+                    Rows[ child->Row ].ActualSize = Math::Max( Rows[ child->Row ].ActualSize, h );
                 }
             }
             contentHeight = 0;
@@ -1460,7 +1460,7 @@ float WWidget::CalcContentHeight() {
                 break;
             }
 
-            contentHeight = FMath::Max( contentHeight, y + h );
+            contentHeight = Math::Max( contentHeight, y + h );
         }
     }
 
@@ -1486,7 +1486,7 @@ WWidget & ScrollTest2() {
     return  WWidget::New< WWindow >()
             .SetCaptionText( "Test Scroll" )
             .SetCaptionHeight( 24 )
-            .SetBackgroundColor( FColor4( 0.5f,0.5f,0.5f ) )
+            .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
             .SetStyle( WIDGET_STYLE_RESIZABLE )
             .SetSize( 400, 300 )
             .SetLayout( WIDGET_LAYOUT_GRID )
@@ -1555,15 +1555,15 @@ WWidget & ScrollTest2() {
                 //.SetAutoHeight( true )
                 [
                     WDecorate::New< WBorderDecorate >()
-                    .SetColor( FColor4( 1,1,0 ) )
+                    .SetColor( AColor4( 1,1,0 ) )
                     .SetFillBackground( true )
-                    .SetBackgroundColor( FColor4( 0,1,0 ) )
+                    .SetBackgroundColor( AColor4( 0,1,0 ) )
                     .SetThickness( 1 )
                 ]
                 [
                     WDecorate::New< WTextDecorate >()
                     .SetText( "Content view" )
-                    .SetColor( FColor4::Black() )
+                    .SetColor( AColor4::Black() )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
                 ]
@@ -1673,9 +1673,9 @@ WWidget & ScrollTest2() {
                 .SetLayout( WIDGET_LAYOUT_GRID )
                 [
                     WDecorate::New< WBorderDecorate >()
-                    .SetColor( FColor4( 1,0,0 ) )
+                    .SetColor( AColor4( 1,0,0 ) )
                     .SetFillBackground( true )
-                    .SetBackgroundColor( FColor4( 1,0,1 ) )
+                    .SetBackgroundColor( AColor4( 1,0,1 ) )
                     .SetThickness( 1 )
                 ]
                 [
@@ -1701,9 +1701,9 @@ WWidget & ScrollTest2() {
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetGridOffset( 0, 1 )
                     .AddDecorate( &(*CreateInstanceOf< WBorderDecorate >())
-                                  .SetColor( FColor4( 0,1,0 ) )
+                                  .SetColor( AColor4( 0,1,0 ) )
                                   .SetFillBackground( true )
-                                  .SetBackgroundColor( FColor4::Black() )
+                                  .SetBackgroundColor( AColor4::Black() )
                                   .SetThickness( 1 )
                                   .SetRounding( 0 )
                                   .SetRoundingCorners( CORNER_ROUND_NONE ) )
@@ -1723,9 +1723,9 @@ WWidget & ScrollTest() {
             .SetPosition( 0, 0 )
             [
                 WDecorate::New< WBorderDecorate >()
-                .SetColor( FColor4( 0.5f,0.5f,0.5f,0.5f ) )
+                .SetColor( AColor4( 0.5f,0.5f,0.5f,0.5f ) )
                 .SetFillBackground( true )
-                .SetBackgroundColor( FColor4( 0.3f,0.3f,0.3f ) )
+                .SetBackgroundColor( AColor4( 0.3f,0.3f,0.3f ) )
                 .SetThickness( 1 )
             ]
 //            [
@@ -1770,7 +1770,7 @@ WWidget & ScrollTest() {
     for (int i =0;i<100;i++ ) {
         contentWidget[
                 WWidget::New< WTextButton >()
-                .SetText( FString::Fmt( "test button %d", i ) )
+                .SetText( AString::Fmt( "test button %d", i ) )
                 .SetSize( 400, 32 )
                 .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
                 .SetStyle( WIDGET_STYLE_BACKGROUND )
@@ -1780,7 +1780,7 @@ WWidget & ScrollTest() {
     return WWidget::New< WWindow >()
                 .SetCaptionText( "Test Scroll" )
                 .SetCaptionHeight( 24 )
-                .SetBackgroundColor( FColor4( 0.5f,0.5f,0.5f ) )
+                .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
                 .SetStyle( WIDGET_STYLE_RESIZABLE )
                 .SetLayout( WIDGET_LAYOUT_EXPLICIT )
                 .SetSize( 320,240 )
@@ -1850,7 +1850,7 @@ WWidget & ScrollTest() {
     return WWidget::New< WWindow >()
                 .SetCaptionText( "Test Scroll" )
                 .SetCaptionHeight( 24 )
-                .SetBackgroundColor( FColor4( 0.5f,0.5f,0.5f ) )
+                .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
                 .SetStyle( WIDGET_STYLE_RESIZABLE )
                 .SetLayout( WIDGET_LAYOUT_EXPLICIT )
                 .SetAutoWidth( true )
@@ -1888,11 +1888,11 @@ AN_CLASS_META( WMenuItem )
 
 WMenuItem::WMenuItem() {
     State = ST_RELEASED;
-    Color = FColor4::White();
-    HoverColor = FColor4( 1,1,0.5f,1 );
-    PressedColor = FColor4( 1,1,0.2f,1 );
-    TextColor = FColor4::Black();
-    BorderColor = FColor4::Black();
+    Color = AColor4::White();
+    HoverColor = AColor4( 1,1,0.5f,1 );
+    PressedColor = AColor4( 1,1,0.2f,1 );
+    TextColor = AColor4::Black();
+    BorderColor = AColor4::Black();
     Rounding = 8;
     RoundingCorners = CORNER_ROUND_ALL;
     BorderThickness = 1;
@@ -1906,27 +1906,27 @@ WMenuItem & WMenuItem::SetText( const char * _Text ) {
     return *this;
 }
 
-WMenuItem & WMenuItem::SetColor( FColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetColor( AColor4 const & _Color ) {
     Color = _Color;
     return *this;
 }
 
-WMenuItem & WMenuItem::SetHoverColor( FColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetHoverColor( AColor4 const & _Color ) {
     HoverColor = _Color;
     return *this;
 }
 
-WMenuItem & WMenuItem::SetPressedColor( FColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetPressedColor( AColor4 const & _Color ) {
     PressedColor = _Color;
     return *this;
 }
 
-WMenuItem & WMenuItem::SetTextColor( FColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetTextColor( AColor4 const & _Color ) {
     TextColor = _Color;
     return *this;
 }
 
-WMenuItem & WMenuItem::SetBorderColor( FColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetBorderColor( AColor4 const & _Color ) {
     BorderColor = _Color;
     return *this;
 }
@@ -1946,7 +1946,7 @@ WMenuItem & WMenuItem::SetBorderThickness( float _BorderThickness ) {
     return *this;
 }
 
-void WMenuItem::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WMenuItem::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
     if ( _Event.Action == IE_Press ) {
         if ( _Event.Button == 0 ) {
             State = ST_PRESSED;
@@ -1963,8 +1963,8 @@ void WMenuItem::OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, dou
     }
 }
 
-void WMenuItem::OnDrawEvent( FCanvas & _Canvas ) {
-    FColor4 bgColor;
+void WMenuItem::OnDrawEvent( ACanvas & _Canvas ) {
+    AColor4 bgColor;
 
     if ( IsHoveredByCursor() && !IsDisabled() ) {
         if ( State == ST_PRESSED ) {
@@ -1980,7 +1980,7 @@ void WMenuItem::OnDrawEvent( FCanvas & _Canvas ) {
 
     GetDesktopRect( mins, maxs, true );
 
-    FFontNew * font = FCanvas::GetDefaultFont();
+    FFontNew * font = ACanvas::GetDefaultFont();
 
     float width = GetClientWidth();
     float height = GetClientHeight();

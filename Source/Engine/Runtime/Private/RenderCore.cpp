@@ -38,22 +38,110 @@ SOFTWARE.
 
 IRenderBackend * GRenderBackend = &OpenGL45::GOpenGL45RenderBackend;
 
-FResourceGPU * FResourceGPU::GPUResources;
-FResourceGPU * FResourceGPU::GPUResourcesTail;
+AResourceGPU * AResourceGPU::GPUResources;
+AResourceGPU * AResourceGPU::GPUResourcesTail;
 
-void IRenderBackend::RegisterGPUResource( FResourceGPU * _Resource ) {
-    INTRUSIVE_ADD( _Resource, pNext, pPrev, FResourceGPU::GPUResources, FResourceGPU::GPUResourcesTail );
+void IRenderBackend::RegisterGPUResource( AResourceGPU * _Resource ) {
+    INTRUSIVE_ADD( _Resource, pNext, pPrev, AResourceGPU::GPUResources, AResourceGPU::GPUResourcesTail );
 }
 
-void IRenderBackend::UnregisterGPUResource( FResourceGPU * _Resource ) {
-    INTRUSIVE_REMOVE( _Resource, pNext, pPrev, FResourceGPU::GPUResources, FResourceGPU::GPUResourcesTail );
+void IRenderBackend::UnregisterGPUResource( AResourceGPU * _Resource ) {
+    INTRUSIVE_REMOVE( _Resource, pNext, pPrev, AResourceGPU::GPUResources, AResourceGPU::GPUResourcesTail );
 }
 
 void IRenderBackend::UploadGPUResources() {
-    for ( FResourceGPU * resource = FResourceGPU::GPUResources ; resource ; resource = resource->pNext ) {
+    for ( AResourceGPU * resource = AResourceGPU::GPUResources ; resource ; resource = resource->pNext ) {
         resource->pOwner->UploadResourceGPU( resource );
     }
 }
+
+bool GetAppropriatePixelFormat( AImage const & _Image, STexturePixelFormat & _PixelFormat ) {
+    if ( _Image.bHDRI ) {
+
+        if ( _Image.bHalf ) {
+
+            switch ( _Image.NumChannels ) {
+            case 1:
+                _PixelFormat = TEXTURE_PF_R16F;
+                break;
+            case 2:
+                _PixelFormat = TEXTURE_PF_RG16F;
+                break;
+            case 3:
+                _PixelFormat = TEXTURE_PF_BGR16F;
+                break;
+            case 4:
+                _PixelFormat = TEXTURE_PF_BGRA16F;
+                break;
+            default:
+                GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
+                return false;
+            }
+
+        } else {
+
+            switch ( _Image.NumChannels ) {
+            case 1:
+                _PixelFormat = TEXTURE_PF_R32F;
+                break;
+            case 2:
+                _PixelFormat = TEXTURE_PF_RG32F;
+                break;
+            case 3:
+                _PixelFormat = TEXTURE_PF_BGR32F;
+                break;
+            case 4:
+                _PixelFormat = TEXTURE_PF_BGRA32F;
+                break;
+            default:
+                GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
+                return false;
+            }
+
+        }
+    } else {
+
+        if ( _Image.bLinearSpace ) {
+
+            switch ( _Image.NumChannels ) {
+            case 1:
+                _PixelFormat = TEXTURE_PF_R8;
+                break;
+            case 2:
+                _PixelFormat = TEXTURE_PF_RG8;
+                break;
+            case 3:
+                _PixelFormat = TEXTURE_PF_BGR8;
+                break;
+            case 4:
+                _PixelFormat = TEXTURE_PF_BGRA8;
+                break;
+            default:
+                GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
+                return false;
+            }
+
+        } else {
+
+            switch ( _Image.NumChannels ) {
+            case 3:
+                _PixelFormat = TEXTURE_PF_BGR8_SRGB;
+                break;
+            case 4:
+                _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
+                break;
+            case 1:
+            case 2:
+            default:
+                GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 
 
 /*
@@ -153,11 +241,11 @@ AN_FORCEINLINE Float4x4SSE operator*( Float4x4SSE const & m1, Float4x4SSE const 
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FFrustumSlice GFrustumSlice;
+SFrustumSlice GFrustumSlice;
 
-FFrustumCluster FFrustumSlice::Clusters[FFrustumSlice::NUM_CLUSTERS_Z][FFrustumSlice::NUM_CLUSTERS_Y][FFrustumSlice::NUM_CLUSTERS_X];
+SFrustumCluster SFrustumSlice::Clusters[SFrustumSlice::NUM_CLUSTERS_Z][SFrustumSlice::NUM_CLUSTERS_Y][SFrustumSlice::NUM_CLUSTERS_X];
 
-FFrustumSlice::FFrustumSlice() {
+SFrustumSlice::SFrustumSlice() {
     ZClip[0] = 1; // extended near cluster
 
     for ( int sliceIndex = 1 ; sliceIndex < NUM_CLUSTERS_Z + 1 ; sliceIndex++ ) {
@@ -178,7 +266,7 @@ FFrustumSlice::FFrustumSlice() {
 #define DECAL_ITEMS_OFFSET 256
 #define PROBE_ITEMS_OFFSET 512
 
-struct FItemInfo {
+struct SItemInfo {
     int MinSlice;
     int MinClusterX;
     int MinClusterY;
@@ -196,29 +284,29 @@ struct FItemInfo {
     //AN_ALIGN_SSE __m128 AabbMaxsSSE;
     AN_ALIGN_SSE Float4x4SSE ClipToBoxMatSSE;
 
-    FLightDef * Light;
+    SLightDef * Light;
     //FDecalDef * Decal;
     //FEnvProbeDef * Probe;
 };
 
 #define MAX_ITEMS 32768
-static FItemInfo ItemInfos[MAX_ITEMS];
+static SItemInfo ItemInfos[MAX_ITEMS];
 static int ItemsCount;
 
-static void PackLight( FClusterLight * _Parameters, FLightDef * _Light ) {
+static void PackLight( SClusterLight * _Parameters, SLightDef * _Light ) {
     _Parameters->Position = Float3(/* WorldspaceToViewspace * */ _Light->Position );
     _Parameters->OuterRadius = _Light->OuterRadius;
-    _Parameters->InnerRadius = FMath::Min( _Light->InnerRadius, _Light->OuterRadius ); // TODO: do this check early
+    _Parameters->InnerRadius = Math::Min( _Light->InnerRadius, _Light->OuterRadius ); // TODO: do this check early
     _Parameters->Color = _Light->ColorAndAmbientIntensity;
     _Parameters->RenderMask = _Light->RenderMask;
 
     if ( _Light->bSpot ) {
         _Parameters->LightType = 1;
 
-        const float ToHalfAngleRadians = 0.5f / 180.0f * FMath::_PI;
+        const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
 
         _Parameters->OuterConeAngle = cos( _Light->OuterConeAngle * ToHalfAngleRadians );
-        _Parameters->InnerConeAngle = cos( FMath::Min( _Light->InnerConeAngle, _Light->OuterConeAngle ) * ToHalfAngleRadians );
+        _Parameters->InnerConeAngle = cos( Math::Min( _Light->InnerConeAngle, _Light->OuterConeAngle ) * ToHalfAngleRadians );
 
         _Parameters->SpotDirection = /*RenderFrame.NormalToView **/ (-_Light->SpotDirection);
         _Parameters->SpotExponent = _Light->SpotExponent;
@@ -235,20 +323,20 @@ static __m128 MaxNDC_SSE;
 static constexpr Float3 Item_AabbMins = Float3( -1.0f );
 static constexpr Float3 Item_AabbMaxs = Float3( 1.0f );
 
-static unsigned short Items[FFrustumSlice::NUM_CLUSTERS_Z][FFrustumSlice::NUM_CLUSTERS_Y][FFrustumSlice::NUM_CLUSTERS_X][FFrameLightData::MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
+static unsigned short Items[SFrustumSlice::NUM_CLUSTERS_Z][SFrustumSlice::NUM_CLUSTERS_Y][SFrustumSlice::NUM_CLUSTERS_X][SFrameLightData::MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
 
-static FAtomicInt ItemCounter;
+static AAtomicInt ItemCounter;
 
-static FFrameLightData FrameLightData;
+static SFrameLightData FrameLightData;
 
-FRuntimeVariable RVClusterSSE( _CTS( "ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
-FRuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVFixFrustumClusters( _CTS( "FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVClusterSSE( _CTS( "ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVFixFrustumClusters( _CTS( "FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 
 static Float4x4 ViewProj;
 static Float4x4 ViewProjInv;
 
-struct FVoxelizer {
+struct AVoxelizer {
     static void VoxelizeWork( void * _Data ) {
         int SliceIndex = (size_t)_Data;
 
@@ -260,7 +348,7 @@ struct FVoxelizer {
         ClusterMins.Z = GFrustumSlice.ZClip[SliceIndex + 1];
         ClusterMaxs.Z = GFrustumSlice.ZClip[SliceIndex];
 
-        FFrustumCluster * pCluster;
+        SFrustumCluster * pCluster;
         unsigned short * pClusterItem;
 
         if ( RVClusterSSE ) {
@@ -279,7 +367,7 @@ struct FVoxelizer {
             AN_ALIGN_SSE int CullingResult[4];
 
             for ( int ItemIndex = 0 ; ItemIndex < ItemsCount ; ItemIndex++ ) {
-                FItemInfo & Info = ItemInfos[ItemIndex];
+                SItemInfo & Info = ItemInfos[ItemIndex];
 
                 if ( SliceIndex < Info.MinSlice || SliceIndex >= Info.MaxSlice ) {
                     continue;
@@ -369,21 +457,21 @@ struct FVoxelizer {
                         }
 
                         if ( Info.Light ) {
-                            pClusterItem[ClusterX * (FFrameLightData::MAX_CLUSTER_ITEMS * 3) + LIGHT_ITEMS_OFFSET + ((pCluster + ClusterX)->LightsCount++ & (FFrameLightData::MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
+                            pClusterItem[ClusterX * (SFrameLightData::MAX_CLUSTER_ITEMS * 3) + LIGHT_ITEMS_OFFSET + ((pCluster + ClusterX)->LightsCount++ & (SFrameLightData::MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
                         }/* else if ( Info.Probe ) {
                          pClusterItem[ ClusterX * (MAX_CLUSTER_ITEMS * 3) + PROBE_ITEMS_OFFSET + ( ( pCluster + ClusterX )->ProbesCount++ & ( MAX_CLUSTER_ITEMS - 1 ) ) ] = ItemIndex;
                          }*/
                     }
 
-                    pCluster += FFrustumSlice::NUM_CLUSTERS_X;
-                    pClusterItem += FFrustumSlice::NUM_CLUSTERS_X * FFrameLightData::MAX_CLUSTER_ITEMS * 3;
+                    pCluster += SFrustumSlice::NUM_CLUSTERS_X;
+                    pClusterItem += SFrustumSlice::NUM_CLUSTERS_X * SFrameLightData::MAX_CLUSTER_ITEMS * 3;
                 }
             }
         } else {
             Float4 BoxPoints[8];
 
             for ( int ItemIndex = 0 ; ItemIndex < ItemsCount ; ItemIndex++ ) {
-                FItemInfo & Info = ItemInfos[ItemIndex];
+                SItemInfo & Info = ItemInfos[ItemIndex];
 
                 if ( SliceIndex < Info.MinSlice || SliceIndex >= Info.MaxSlice ) {
                     continue;
@@ -461,14 +549,14 @@ struct FVoxelizer {
                         }
 #endif
                         if ( Info.Light ) {
-                            pClusterItem[ClusterX * (FFrameLightData::MAX_CLUSTER_ITEMS * 3) + LIGHT_ITEMS_OFFSET + ((pCluster + ClusterX)->LightsCount++ & (FFrameLightData::MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
+                            pClusterItem[ClusterX * (SFrameLightData::MAX_CLUSTER_ITEMS * 3) + LIGHT_ITEMS_OFFSET + ((pCluster + ClusterX)->LightsCount++ & (SFrameLightData::MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
                         }/* else if ( Info.Probe ) {
-                         pClusterItem[ ClusterX * (FFrameLightData::MAX_CLUSTER_ITEMS * 3) + PROBE_ITEMS_OFFSET + ( ( pCluster + ClusterX )->ProbesCount++ & ( FFrameLightData::MAX_CLUSTER_ITEMS - 1 ) ) ] = ItemIndex;
+                         pClusterItem[ ClusterX * (SFrameLightData::MAX_CLUSTER_ITEMS * 3) + PROBE_ITEMS_OFFSET + ( ( pCluster + ClusterX )->ProbesCount++ & ( SFrameLightData::MAX_CLUSTER_ITEMS - 1 ) ) ] = ItemIndex;
                          }*/
                     }
 
-                    pCluster += FFrustumSlice::NUM_CLUSTERS_X;
-                    pClusterItem += FFrustumSlice::NUM_CLUSTERS_X * FFrameLightData::MAX_CLUSTER_ITEMS * 3;
+                    pCluster += SFrustumSlice::NUM_CLUSTERS_X;
+                    pClusterItem += SFrustumSlice::NUM_CLUSTERS_X * SFrameLightData::MAX_CLUSTER_ITEMS * 3;
                 }
             }
         }
@@ -477,29 +565,29 @@ struct FVoxelizer {
         //    int i = 0;
         int NumClusterItems;
 
-        FClusterBuffer * pBuffer = &FrameLightData.ClusterOffsetBuffer[SliceIndex][0][0];
-        FClusterItemBuffer * pItem;
-        FItemInfo * pItemInfo;
+        SClusterBuffer * pBuffer = &FrameLightData.ClusterOffsetBuffer[SliceIndex][0][0];
+        SClusterItemBuffer * pItem;
+        SItemInfo * pItemInfo;
 
         pCluster = &GFrustumSlice.Clusters[SliceIndex][0][0];
         pClusterItem = &Items[SliceIndex][0][0][0];
 
-        for ( int ClusterY = 0 ; ClusterY < FFrustumSlice::NUM_CLUSTERS_Y ; ClusterY++ ) {
-            for ( int ClusterX = 0 ; ClusterX < FFrustumSlice::NUM_CLUSTERS_X ; ClusterX++ ) {
+        for ( int ClusterY = 0 ; ClusterY < SFrustumSlice::NUM_CLUSTERS_Y ; ClusterY++ ) {
+            for ( int ClusterX = 0 ; ClusterX < SFrustumSlice::NUM_CLUSTERS_X ; ClusterX++ ) {
 
-                pBuffer->NumLights = FMath::Min< unsigned short >( pCluster->LightsCount, FFrameLightData::MAX_CLUSTER_ITEMS );
-                pBuffer->NumDecals = FMath::Min< unsigned short >( pCluster->DecalsCount, FFrameLightData::MAX_CLUSTER_ITEMS );
-                pBuffer->NumProbes = FMath::Min< unsigned short >( pCluster->ProbesCount, FFrameLightData::MAX_CLUSTER_ITEMS );
+                pBuffer->NumLights = Math::Min< unsigned short >( pCluster->LightsCount, SFrameLightData::MAX_CLUSTER_ITEMS );
+                pBuffer->NumDecals = Math::Min< unsigned short >( pCluster->DecalsCount, SFrameLightData::MAX_CLUSTER_ITEMS );
+                pBuffer->NumProbes = Math::Min< unsigned short >( pCluster->ProbesCount, SFrameLightData::MAX_CLUSTER_ITEMS );
 
-                NumClusterItems = FMath::Max( pBuffer->NumLights, pBuffer->NumDecals, pBuffer->NumProbes );
+                NumClusterItems = Math::Max( pBuffer->NumLights, pBuffer->NumDecals, pBuffer->NumProbes );
 
                 int ItemOffset = ItemCounter.FetchAdd( NumClusterItems );
 
-                pBuffer->ItemOffset = ItemOffset & (FFrameLightData::MAX_ITEM_BUFFER - 1);
+                pBuffer->ItemOffset = ItemOffset & (SFrameLightData::MAX_ITEM_BUFFER - 1);
 
                 pItem = &FrameLightData.ClusterItemBuffer[pBuffer->ItemOffset];
 
-                memset( pItem, 0, NumClusterItems * sizeof( FClusterItemBuffer ) );
+                memset( pItem, 0, NumClusterItems * sizeof( SClusterItemBuffer ) );
 
                 for ( int t = 0 ; t < pBuffer->NumLights ; t++ ) {
                     pItemInfo = ItemInfos + pClusterItem[LIGHT_ITEMS_OFFSET + t];
@@ -531,12 +619,12 @@ struct FVoxelizer {
 
                 pBuffer++;
                 pCluster++;
-                pClusterItem += FFrameLightData::MAX_CLUSTER_ITEMS * 3;
+                pClusterItem += SFrameLightData::MAX_CLUSTER_ITEMS * 3;
             }
         }
     }
 
-    FVoxelizer() {
+    AVoxelizer() {
         // Uniform box
         Item_AabbMinsSSE = _mm_set_ps( 0.0f, -1.0f, -1.0f, -1.0f );
         Item_AabbMaxsSSE = _mm_set_ps( 0.0f, 1.0f, 1.0f, 1.0f );
@@ -544,11 +632,11 @@ struct FVoxelizer {
         MaxNDC_SSE = _mm_set_ps( 0.0f, 1.0f, 1.0f, 1.0f );
     }
 
-    ~FVoxelizer() {
+    ~AVoxelizer() {
 
     }
 
-    void Voxelize( FRenderFrame * Frame, FRenderView * RV ) {
+    void Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
 
         Float4x4SSE ViewProjSSE;
         Float4x4SSE ViewProjInvSSE;
@@ -561,14 +649,14 @@ struct FVoxelizer {
         int lightsCount = RV->NumLights;
         int envProbesCount = 0;//RV->NumEnvProbes;
 
-        if ( lightsCount > FFrameLightData::MAX_LIGHTS ) {
+        if ( lightsCount > SFrameLightData::MAX_LIGHTS ) {
             GLogger.Printf( "MAX_LIGHTS hit\n" );
-            lightsCount = FFrameLightData::MAX_LIGHTS;
+            lightsCount = SFrameLightData::MAX_LIGHTS;
         }
 
-        if ( envProbesCount > FFrameLightData::MAX_PROBES ) {
+        if ( envProbesCount > SFrameLightData::MAX_PROBES ) {
             GLogger.Printf( "MAX_PROBES hit\n" );
-            envProbesCount = FFrameLightData::MAX_PROBES;
+            envProbesCount = SFrameLightData::MAX_PROBES;
         }
 
         int ComponentListIndex[2] = { 0, 0 };
@@ -597,8 +685,8 @@ struct FVoxelizer {
 
             ItemsCount = 0;
 
-            FClusterItem ** ClusteredLists[] = {
-                (FClusterItem **)(Frame->Lights.ToPtr() + RV->FirstLight),
+            SClusterItem ** ClusteredLists[] = {
+                (SClusterItem **)(Frame->Lights.ToPtr() + RV->FirstLight),
                 //EnvProbes
             };
             const int ClusteredListsSize[] = {
@@ -609,20 +697,20 @@ struct FVoxelizer {
             const int numLists = AN_ARRAY_SIZE( ClusteredLists );
 
             for ( int list = 0 ; list < numLists ; list++ ) {
-                FClusterItem ** items = ClusteredLists[list];
+                SClusterItem ** items = ClusteredLists[list];
                 int itemsCount = ClusteredListsSize[list];
                 int & listIndex = ComponentListIndex[list];
 
                 for ( int itemIndex = 0; itemIndex < itemsCount ; itemIndex++ ) {
 
-                    FClusterItem * item = items[itemIndex];
+                    SClusterItem * item = items[itemIndex];
 
                     BvAxisAlignedBox const & AABB = item->BoundingBox;
 
-                    FItemInfo & ItemInfo = ItemInfos[ItemsCount++];
+                    SItemInfo & ItemInfo = ItemInfos[ItemsCount++];
 
                     if ( list == 0 ) { // Light
-                        ItemInfo.Light = static_cast< FLightDef * >(item);
+                        ItemInfo.Light = static_cast< SLightDef * >(item);
                         //ItemInfo.Probe = NULL;
                         item->ListIndex = listIndex++;// & ( MAX_LIGHTS - 1 );
 
@@ -693,7 +781,7 @@ struct FVoxelizer {
 #if 0
                                                                                                                                 // Alternative way to multiple matrix by vector
                     Float4x4SSE Test;
-                    Test.set( FMath::Transpose( ViewProj ) );
+                    Test.set( Math::Transpose( ViewProj ) );
                     for ( int c = 0 ; c < 8 ; c++ ) {
                         __m128 Vec = _mm_loadu_ps( (const float*)&BoxPoints[c] );
                         __m128 x = _mm_dp_ps( Test.col0, Vec, 0b11110001 );
@@ -772,20 +860,20 @@ struct FVoxelizer {
                     ItemInfo.MaxSlice = ceilf ( std::log2f( bb_mins.Z * GFrustumSlice.ZRange + GFrustumSlice.ZNear ) * GFrustumSlice.Scale + GFrustumSlice.Bias );
                     ItemInfo.MinSlice = floorf( std::log2f( bb_maxs.Z * GFrustumSlice.ZRange + GFrustumSlice.ZNear ) * GFrustumSlice.Scale + GFrustumSlice.Bias );
 
-                    ItemInfo.MinClusterX = floorf( (bb_mins.X + 1.0f) * (0.5f * FFrustumSlice::NUM_CLUSTERS_X) );
-                    ItemInfo.MaxClusterX = ceilf ( (bb_maxs.X + 1.0f) * (0.5f * FFrustumSlice::NUM_CLUSTERS_X) );
+                    ItemInfo.MinClusterX = floorf( (bb_mins.X + 1.0f) * (0.5f * SFrustumSlice::NUM_CLUSTERS_X) );
+                    ItemInfo.MaxClusterX = ceilf ( (bb_maxs.X + 1.0f) * (0.5f * SFrustumSlice::NUM_CLUSTERS_X) );
 
-                    ItemInfo.MinClusterY = floorf( (bb_mins.Y + 1.0f) * (0.5f * FFrustumSlice::NUM_CLUSTERS_Y) );
-                    ItemInfo.MaxClusterY = ceilf ( (bb_maxs.Y + 1.0f) * (0.5f * FFrustumSlice::NUM_CLUSTERS_Y) );
+                    ItemInfo.MinClusterY = floorf( (bb_mins.Y + 1.0f) * (0.5f * SFrustumSlice::NUM_CLUSTERS_Y) );
+                    ItemInfo.MaxClusterY = ceilf ( (bb_maxs.Y + 1.0f) * (0.5f * SFrustumSlice::NUM_CLUSTERS_Y) );
 
-                    ItemInfo.MinSlice = FMath::Max( ItemInfo.MinSlice, 0 );
-                    ItemInfo.MaxSlice = Int( ItemInfo.MaxSlice ).Clamp( 1, FFrustumSlice::NUM_CLUSTERS_Z );
+                    ItemInfo.MinSlice = Math::Max( ItemInfo.MinSlice, 0 );
+                    ItemInfo.MaxSlice = Int( ItemInfo.MaxSlice ).Clamp( 1, SFrustumSlice::NUM_CLUSTERS_Z );
 
-                    assert( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= FFrustumSlice::NUM_CLUSTERS_Z );
-                    assert( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= FFrustumSlice::NUM_CLUSTERS_X );
-                    assert( ItemInfo.MinClusterY >= 0 && ItemInfo.MinClusterY <= FFrustumSlice::NUM_CLUSTERS_Y );
-                    assert( ItemInfo.MaxClusterX >= 0 && ItemInfo.MaxClusterX <= FFrustumSlice::NUM_CLUSTERS_X );
-                    assert( ItemInfo.MaxClusterY >= 0 && ItemInfo.MaxClusterY <= FFrustumSlice::NUM_CLUSTERS_Y );
+                    assert( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= SFrustumSlice::NUM_CLUSTERS_Z );
+                    assert( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= SFrustumSlice::NUM_CLUSTERS_X );
+                    assert( ItemInfo.MinClusterY >= 0 && ItemInfo.MinClusterY <= SFrustumSlice::NUM_CLUSTERS_Y );
+                    assert( ItemInfo.MaxClusterX >= 0 && ItemInfo.MaxClusterX <= SFrustumSlice::NUM_CLUSTERS_X );
+                    assert( ItemInfo.MaxClusterY >= 0 && ItemInfo.MaxClusterY <= SFrustumSlice::NUM_CLUSTERS_Y );
                 }
             }
         } else {
@@ -798,7 +886,7 @@ struct FVoxelizer {
 
                 FLightComponent * Light = _VisibleLights[LightIndex];
 
-                FItemInfo & ItemInfo = ItemInfos[ItemsCount++];
+                SItemInfo & ItemInfo = ItemInfos[ItemsCount++];
 
                 ItemInfo.Light = Light;
                 Light->ListIndex = ListIndex++ & (MAX_LIGHTS - 1);
@@ -817,7 +905,7 @@ struct FVoxelizer {
                 Mins = Float3( -1.0f );
                 Maxs = Float3( 1.0f );
 
-                Float4x4 OBBTransform = FMath::Inverse( Light->GetOBBTransformInverse() );
+                Float4x4 OBBTransform = Math::Inverse( Light->GetOBBTransformInverse() );
 
                 BoxPoints[0] = ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Maxs.Z, 1.0f );
                 BoxPoints[1] = ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Maxs.Z, 1.0f );
@@ -879,12 +967,12 @@ struct FVoxelizer {
                 }
 
                 // Take care +-inf received by division w=0
-                bb.Mins.X = FMath::Clamp( bb.Mins.X, -1.0f, 1.0f );
-                bb.Mins.Y = FMath::Clamp( bb.Mins.Y, -1.0f, 1.0f );
-                bb.Mins.Z = FMath::Clamp( bb.Mins.Z, -1.0f, 1.0f );
-                bb.Maxs.X = FMath::Clamp( bb.Maxs.X, -1.0f, 1.0f );
-                bb.Maxs.Y = FMath::Clamp( bb.Maxs.Y, -1.0f, 1.0f );
-                bb.Maxs.Z = FMath::Clamp( bb.Maxs.Z, -1.0f, 1.0f );
+                bb.Mins.X = Math::Clamp( bb.Mins.X, -1.0f, 1.0f );
+                bb.Mins.Y = Math::Clamp( bb.Mins.Y, -1.0f, 1.0f );
+                bb.Mins.Z = Math::Clamp( bb.Mins.Z, -1.0f, 1.0f );
+                bb.Maxs.X = Math::Clamp( bb.Maxs.X, -1.0f, 1.0f );
+                bb.Maxs.Y = Math::Clamp( bb.Maxs.Y, -1.0f, 1.0f );
+                bb.Maxs.Z = Math::Clamp( bb.Maxs.Z, -1.0f, 1.0f );
 
                 assert( bb.Mins.Z >= 0 );
 
@@ -897,14 +985,14 @@ struct FVoxelizer {
                 ItemInfo.MinClusterY = floorf( (bb.Mins.Y + 1.0f) * 0.5f * NUM_CLUSTERS_Y );
                 ItemInfo.MaxClusterY = ceilf ( (bb.Maxs.Y + 1.0f) * 0.5f * NUM_CLUSTERS_Y );
 
-                ItemInfo.MinSlice = FMath::Max( ItemInfo.MinSlice, 0 );
-                //ItemInfo.MinClusterX = FMath::Max( ItemInfo.MinClusterX, 0 );
-                //ItemInfo.MinClusterY = FMath::Max( ItemInfo.MinClusterY, 0 );
+                ItemInfo.MinSlice = Math::Max( ItemInfo.MinSlice, 0 );
+                //ItemInfo.MinClusterX = Math::Max( ItemInfo.MinClusterX, 0 );
+                //ItemInfo.MinClusterY = Math::Max( ItemInfo.MinClusterY, 0 );
 
-                ItemInfo.MaxSlice = FMath::Clamp( ItemInfo.MaxSlice, 1, NUM_CLUSTERS_Z );
-                //ItemInfo.MaxSlice = FMath::Max( ItemInfo.MaxSlice, 1 );
-                //ItemInfo.MaxClusterX = FMath::Min( ItemInfo.MaxClusterX, NUM_CLUSTERS_X );
-                //ItemInfo.MaxClusterY = FMath::Min( ItemInfo.MaxClusterY, NUM_CLUSTERS_Y );
+                ItemInfo.MaxSlice = Math::Clamp( ItemInfo.MaxSlice, 1, NUM_CLUSTERS_Z );
+                //ItemInfo.MaxSlice = Math::Max( ItemInfo.MaxSlice, 1 );
+                //ItemInfo.MaxClusterX = Math::Min( ItemInfo.MaxClusterX, NUM_CLUSTERS_X );
+                //ItemInfo.MaxClusterY = Math::Min( ItemInfo.MaxClusterY, NUM_CLUSTERS_Y );
 
                 assert( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= NUM_CLUSTERS_Z );
                 assert( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= NUM_CLUSTERS_X );
@@ -917,7 +1005,7 @@ struct FVoxelizer {
 
         ItemCounter.StoreRelaxed( 0 );
 
-        for ( int i = 0 ; i < FFrustumSlice::NUM_CLUSTERS_Z ; i++ ) {
+        for ( int i = 0 ; i < SFrustumSlice::NUM_CLUSTERS_Z ; i++ ) {
             GRenderFrontendJobList->AddJob( VoxelizeWork, reinterpret_cast< void * >(static_cast< size_t >(i)) );
         }
 
@@ -926,11 +1014,11 @@ struct FVoxelizer {
 
 };
 
-static FVoxelizer Voxelizer;
+static AVoxelizer Voxelizer;
 
-void Voxelize( FRenderFrame * Frame, FRenderView * RV ) {
+void Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
 
-    //GLogger.Printf( "FrameLightData %f KB\n", sizeof( FFrameLightData ) / 1024.0f );
+    //GLogger.Printf( "FrameLightData %f KB\n", sizeof( SFrameLightData ) / 1024.0f );
     if ( !RVFixFrustumClusters ) {
         Voxelizer.Voxelize( Frame, RV );
     }

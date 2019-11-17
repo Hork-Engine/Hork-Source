@@ -58,7 +58,7 @@ static int CurWidth = 0;
 static int MaxLines = 0;
 static int NumLines = 0;
 static bool bInitialized = false;
-static FThreadSync ConSync;
+static AThreadSync ConSync;
 static int Scroll = 0;
 static bool ConDown = false;
 static bool ConFullscreen = false;
@@ -70,24 +70,24 @@ static FWideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
 static int NumStoryLines = 0;
 static int CurStoryLine = 0;
 
-FConsole & GConsole = FConsole::Inst();
+AConsole & GConsole = AConsole::Inst();
 
-FConsole::FConsole() {
+AConsole::AConsole() {
 }
 
-void FConsole::Clear() {
-    FSyncGuard syncGuard( ConSync );
+void AConsole::Clear() {
+    ASyncGuard syncGuard( ConSync );
 
     memset( pImage, 0, sizeof( *pImage ) * CON_IMAGE_SIZE );
 
     Scroll = 0;
 }
 
-bool FConsole::IsActive() const {
+bool AConsole::IsActive() const {
     return ConDown || ConFullscreen;
 }
 
-void FConsole::SetFullscreen( bool _Fullscreen ) {
+void AConsole::SetFullscreen( bool _Fullscreen ) {
     ConFullscreen = _Fullscreen;
 }
 
@@ -111,8 +111,8 @@ static void _Resize( int _VidWidth ) {
 
     memset( pNewImage, 0, sizeof( *pNewImage ) * CON_IMAGE_SIZE );
 
-    const int width = FMath::Min( prevMaxLineChars, MaxLineChars );
-    const int height = FMath::Min( prevMaxLines, MaxLines );
+    const int width = Math::Min( prevMaxLineChars, MaxLineChars );
+    const int height = Math::Min( prevMaxLines, MaxLines );
 
     for ( int i = 0 ; i < height ; i++ ) {
         const int newOffset = ( MaxLines - i - 1 ) * MaxLineChars;
@@ -127,19 +127,19 @@ static void _Resize( int _VidWidth ) {
     Scroll = 0;
 }
 
-void FConsole::Resize( int _VidWidth ) {
-    FSyncGuard syncGuard( ConSync );
+void AConsole::Resize( int _VidWidth ) {
+    ASyncGuard syncGuard( ConSync );
 
     _Resize( _VidWidth );
 }
 
-void FConsole::Print( const char * _Text ) {
+void AConsole::Print( const char * _Text ) {
     const char * wordStr;
     int wordLength;
     FWideChar ch;
     int byteLen;
 
-    FSyncGuard syncGuard( ConSync );
+    ASyncGuard syncGuard( ConSync );
 
     if ( !bInitialized ) {
         _Resize( 640 );
@@ -149,7 +149,7 @@ void FConsole::Print( const char * _Text ) {
     const char * s = _Text;
 
     while ( *s ) {
-        byteLen = FCore::WideCharDecodeUTF8( s, ch );
+        byteLen = Core::WideCharDecodeUTF8( s, ch );
         if ( !byteLen ) {
             break;
         }
@@ -193,7 +193,7 @@ void FConsole::Print( const char * _Text ) {
                 do {
                     s += byteLen;
                     wordLength++;
-                    byteLen = FCore::WideCharDecodeUTF8( s, ch );
+                    byteLen = Core::WideCharDecodeUTF8( s, ch );
                 } while ( byteLen > 0 && ch > ' ' );
             } else {
                 s += byteLen;
@@ -206,7 +206,7 @@ void FConsole::Print( const char * _Text ) {
             }
 
             while ( wordLength-- > 0 ) {
-                byteLen = FCore::WideCharDecodeUTF8( wordStr, ch );
+                byteLen = Core::WideCharDecodeUTF8( wordStr, ch );
                 wordStr += byteLen;
 
                 pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ch;
@@ -225,11 +225,11 @@ void FConsole::Print( const char * _Text ) {
     }
 }
 
-void FConsole::WidePrint( FWideChar const * _Text ) {
+void AConsole::WidePrint( FWideChar const * _Text ) {
     FWideChar const * wordStr;
     int wordLength;
 
-    FSyncGuard syncGuard( ConSync );
+    ASyncGuard syncGuard( ConSync );
 
     if ( !bInitialized ) {
         _Resize( 640 );
@@ -314,7 +314,7 @@ static void CopyStoryLine( FWideChar const * _StoryLine ) {
 
 static void AddStoryLine( FWideChar * _Text, int _Length ) {
     FWideChar * storyLine = StoryLines[NumStoryLines++ & ( MAX_STORY_LINES - 1 )];
-    memcpy( storyLine, _Text, sizeof( _Text[0] ) * FMath::Min( _Length, MAX_CMD_LINE_CHARS ) );
+    memcpy( storyLine, _Text, sizeof( _Text[0] ) * Math::Min( _Length, MAX_CMD_LINE_CHARS ) );
     if ( _Length < MAX_CMD_LINE_CHARS ) {
         storyLine[_Length] = 0;
     }
@@ -322,7 +322,7 @@ static void AddStoryLine( FWideChar * _Text, int _Length ) {
 }
 
 static void InsertUTF8Text( const char * _Utf8 ) {
-    int len = FCore::UTF8StrLength( _Utf8 );
+    int len = Core::UTF8StrLength( _Utf8 );
     if ( CmdLineLength + len >= MAX_CMD_LINE_CHARS ) {
         GLogger.Print( "Text is too long to be copied to command line\n" );
         return;
@@ -337,7 +337,7 @@ static void InsertUTF8Text( const char * _Utf8 ) {
     FWideChar ch;
     int byteLen;
     while ( len-- > 0 ) {
-        byteLen = FCore::WideCharDecodeUTF8( _Utf8, ch );
+        byteLen = Core::WideCharDecodeUTF8( _Utf8, ch );
         if ( !byteLen ) {
             break;
         }
@@ -347,13 +347,13 @@ static void InsertUTF8Text( const char * _Utf8 ) {
 }
 
 static void InsertClipboardText() {
-    FString const & clipboard = GRuntime.GetClipboard();
+    AString const & clipboard = GRuntime.GetClipboard();
 
-    InsertUTF8Text( clipboard.ToConstChar() );
+    InsertUTF8Text( clipboard.CStr() );
 }
 
-static void CompleteString( FCommandContext & _CommandCtx, const char * _Str ) {
-    FString completion;
+static void CompleteString( ACommandContext & _CommandCtx, const char * _Str ) {
+    AString completion;
     int count = _CommandCtx.CompleteString( _Str, strlen( _Str ), completion );
 
     if ( completion.IsEmpty() ) {
@@ -368,10 +368,10 @@ static void CompleteString( FCommandContext & _CommandCtx, const char * _Str ) {
 
     CmdLinePos = 0;
     CmdLineLength = 0;
-    InsertUTF8Text( completion.ToConstChar() );
+    InsertUTF8Text( completion.CStr() );
 }
 
-void FConsole::KeyEvent( FKeyEvent const & _Event, FCommandContext & _CommandCtx, FRuntimeCommandProcessor & _CommandProcessor ) {
+void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor ) {
     if ( _Event.Action == IE_Press ) {
         if ( !ConFullscreen && _Event.Key == KEY_GRAVE_ACCENT ) {
             ConDown = !ConDown;
@@ -387,7 +387,7 @@ void FConsole::KeyEvent( FKeyEvent const & _Event, FCommandContext & _CommandCtx
 
         // Scrolling (protected by mutex)
         {
-            FSyncGuard syncGuard( ConSync );
+            ASyncGuard syncGuard( ConSync );
 
             int scrollDelta = 1;
             if ( _Event.ModMask & MOD_MASK_CONTROL ) {
@@ -469,7 +469,7 @@ void FConsole::KeyEvent( FKeyEvent const & _Event, FCommandContext & _CommandCtx
             char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
                                                          // one additional byte is reserved for trailing '\0'
 
-            FCore::WideStrEncodeUTF8( result, sizeof( result ), CmdLine, CmdLine + CmdLineLength );
+            Core::WideStrEncodeUTF8( result, sizeof( result ), CmdLine, CmdLine + CmdLineLength );
 
             if ( CmdLineLength > 0 ) {
                 AddStoryLine( CmdLine, CmdLineLength );
@@ -522,7 +522,7 @@ void FConsole::KeyEvent( FKeyEvent const & _Event, FCommandContext & _CommandCtx
             char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
                                                          // one additional byte is reserved for trailing '\0'
 
-            FCore::WideStrEncodeUTF8( result, sizeof( result ), CmdLine, CmdLine + CmdLinePos );
+            Core::WideStrEncodeUTF8( result, sizeof( result ), CmdLine, CmdLine + CmdLinePos );
 
             CompleteString( _CommandCtx, result );
             break;
@@ -533,7 +533,7 @@ void FConsole::KeyEvent( FKeyEvent const & _Event, FCommandContext & _CommandCtx
     }
 }
 
-void FConsole::CharEvent( FCharEvent const & _Event ) {
+void AConsole::CharEvent( SCharEvent const & _Event ) {
     if ( !IsActive() ) {
         return;
     }
@@ -552,12 +552,12 @@ void FConsole::CharEvent( FCharEvent const & _Event ) {
     }
 }
 
-void FConsole::MouseWheelEvent( FMouseWheelEvent const & _Event ) {
+void AConsole::MouseWheelEvent( SMouseWheelEvent const & _Event ) {
     if ( !IsActive() ) {
         return;
     }
 
-    FSyncGuard syncGuard( ConSync );
+    ASyncGuard syncGuard( ConSync );
 
     if ( _Event.WheelY < 0.0 ) {
         Scroll--;
@@ -569,10 +569,10 @@ void FConsole::MouseWheelEvent( FMouseWheelEvent const & _Event ) {
     }
 }
 
-static void DrawCmdLine( FCanvas * _Canvas, int x, int y ) {
-    FColor4 const & charColor = FColor4::White();
+static void DrawCmdLine( ACanvas * _Canvas, int x, int y ) {
+    AColor4 const & charColor = AColor4::White();
 
-    FFont * font = _Canvas->GetCurrentFont();
+    AFont * font = _Canvas->GetCurrentFont();
 
     const float scale = (float)CharacterHeight / font->GetFontSize();
 
@@ -613,7 +613,7 @@ static void DrawCmdLine( FCanvas * _Canvas, int x, int y ) {
     }
 }
 
-void FConsole::Draw( FCanvas * _Canvas, float _TimeStep ) {
+void AConsole::Draw( ACanvas * _Canvas, float _TimeStep ) {
 
     if ( !ConFullscreen ) {
         if ( ConDown ) {
@@ -637,23 +637,23 @@ void FConsole::Draw( FCanvas * _Canvas, float _TimeStep ) {
     const int fontVStride = CharacterHeight + 4;
     const int cmdLineH = fontVStride;
     const float halfVidHeight = ( _Canvas->Height >> 1 ) * ConHeight;
-    const int numVisLines = FMath::Ceil( ( halfVidHeight - cmdLineH ) / fontVStride );
+    const int numVisLines = Math::Ceil( ( halfVidHeight - cmdLineH ) / fontVStride );
 
-    const FColor4 c1(0,0,0,1.0f);
-    const FColor4 c2(0,0,0,0.0f);
-    const FColor4 charColor(1,1,1,1);
+    const AColor4 c1(0,0,0,1.0f);
+    const AColor4 c2(0,0,0,0.0f);
+    const AColor4 charColor(1,1,1,1);
 
     if ( ConFullscreen ) {
-        _Canvas->DrawRectFilled( Float2( 0, 0 ), Float2( _Canvas->Width, _Canvas->Height ), FColor4::Black() );
+        _Canvas->DrawRectFilled( Float2( 0, 0 ), Float2( _Canvas->Width, _Canvas->Height ), AColor4::Black() );
     } else {
         _Canvas->DrawRectFilledMultiColor( Float2( 0, 0 ), Float2( _Canvas->Width, halfVidHeight ), c1, c2, c2, c1 );
     }
-    _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->Width, halfVidHeight ), FColor4::White(), 2.0f );
+    _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->Width, halfVidHeight ), AColor4::White(), 2.0f );
 
     int x = Padding;
     int y = halfVidHeight - fontVStride;
 
-    FFont * font = _Canvas->GetCurrentFont();
+    AFont * font = _Canvas->GetCurrentFont();
 
     const float scale = (float)CharacterHeight / font->GetFontSize();
 
@@ -684,12 +684,12 @@ void FConsole::Draw( FCanvas * _Canvas, float _TimeStep ) {
     ConSync.EndScope();
 }
 
-void FConsole::WriteStoryLines() {
+void AConsole::WriteStoryLines() {
     if ( !NumStoryLines ) {
         return;
     }
 
-    FFileStream f;
+    AFileStream f;
     if ( !f.OpenWrite( "console_story.txt" ) ) {
         GLogger.Printf( "Failed to write console story\n" );
         return;
@@ -698,24 +698,24 @@ void FConsole::WriteStoryLines() {
     char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
                                                  // one additional byte is reserved for trailing '\0'
 
-    int numLines = FMath::Min( MAX_STORY_LINES, NumStoryLines );
+    int numLines = Math::Min( MAX_STORY_LINES, NumStoryLines );
 
     for ( int i = 0 ; i < numLines ; i++ ) {
         int n = ( NumStoryLines - numLines + i ) & ( MAX_STORY_LINES - 1 );
 
-        FCore::WideStrEncodeUTF8( result, sizeof( result ), StoryLines[n], StoryLines[n] + MAX_CMD_LINE_CHARS );
+        Core::WideStrEncodeUTF8( result, sizeof( result ), StoryLines[n], StoryLines[n] + MAX_CMD_LINE_CHARS );
 
         f.Printf( "%s\n", result );
     }
 }
 
-void FConsole::ReadStoryLines() {
+void AConsole::ReadStoryLines() {
     FWideChar wideStr[ MAX_CMD_LINE_CHARS ];
     int wideStrLength;
     char buf[ MAX_CMD_LINE_CHARS * 3 + 2 ]; // In worst case FWideChar transforms to 3 bytes,
                                             // two additional bytes are reserved for trailing '\n\0'
 
-    FFileStream f;
+    AFileStream f;
     if ( !f.OpenRead( "console_story.txt" ) ) {
         return;
     }
@@ -726,7 +726,7 @@ void FConsole::ReadStoryLines() {
 
         const char * s = buf;
         while ( *s && *s != '\n' && wideStrLength < MAX_CMD_LINE_CHARS ) {
-            int byteLen = FCore::WideCharDecodeUTF8( s, wideStr[wideStrLength] );
+            int byteLen = Core::WideCharDecodeUTF8( s, wideStr[wideStrLength] );
             if ( !byteLen ) {
                 break;
             }

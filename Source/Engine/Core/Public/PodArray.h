@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Alloc.h"
-#include "Integer.h"
+//#include "Integer.h"
 
 /*
 
@@ -40,7 +40,7 @@ TPodArray
 Array for POD types
 
 */
-template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = FZoneAllocator >
+template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
 class TPodArray final {
 public:
     typedef T * Iterator;
@@ -135,24 +135,21 @@ public:
 
     void            Set( T const * _Elements, int _NumElements );
 
-    // Byte serialization
-    template< typename Stream >
-    void Write( FStreamBase< Stream > & _Stream ) const {
-        _Stream << Int(ArrayLength);
-        for ( int i = 0 ; i < ArrayLength ; i++ ) {
-            _Stream << ArrayData[i];
-        }
-    }
+//    // Byte serialization
+//    void Write( IStreamBase & _Stream ) const {
+//        _Stream.WriteUInt32( ArrayLength );
+//        for ( int i = 0 ; i < ArrayLength ; i++ ) {
+//            ArrayData[i].Write( _Stream );
+//        }
+//    }
 
-    template< typename Stream >
-    void Read( FStreamBase< Stream > & _Stream ) {
-        Int newLength;
-        _Stream >> newLength;
-        ResizeInvalidate( newLength );
-        for ( int i = 0 ; i < ArrayLength ; i++ ) {
-            _Stream >> ArrayData[i];
-        }
-    }
+//    void Read( IStreamBase & _Stream ) {
+//        int newLength = _Stream.ReadUInt32();
+//        ResizeInvalidate( newLength );
+//        for ( int i = 0 ; i < ArrayLength ; i++ ) {
+//            ArrayData[i].Read( _Stream );
+//        }
+//    }
 
 private:
     T *             ArrayData;
@@ -165,7 +162,7 @@ template< typename T >
 using TPodArrayLite = TPodArray< T, 1 >;
 
 template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32 >
-using TPodArrayHeap = TPodArray< T, BASE_CAPACITY, GRANULARITY, FHeapAllocator >;
+using TPodArrayHeap = TPodArray< T, BASE_CAPACITY, GRANULARITY, AHeapAllocator >;
 
 #define TPodArrayTemplateDecorate \
     template< typename T, int BASE_CAPACITY, int GRANULARITY, typename Allocator > AN_FORCEINLINE

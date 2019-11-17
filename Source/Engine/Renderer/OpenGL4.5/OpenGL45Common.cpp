@@ -35,7 +35,7 @@ namespace OpenGL45 {
 GHI::Device          GDevice;
 GHI::State           GState;
 GHI::CommandBuffer   Cmd;
-FRenderFrame *       GFrameData;
-FRenderView *        GRenderView;
+SRenderFrame *       GFrameData;
+SRenderView *        GRenderView;
 
 }

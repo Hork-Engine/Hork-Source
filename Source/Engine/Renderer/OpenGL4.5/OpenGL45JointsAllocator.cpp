@@ -32,6 +32,6 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-FJointAllocator GJointsAllocator;
+AJointAllocator GJointsAllocator;
 
 }

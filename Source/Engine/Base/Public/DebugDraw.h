@@ -35,21 +35,25 @@ SOFTWARE.
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 #include <Engine/Core/Public/BV/BvOrientedBox.h>
 
-class FDebugDraw {
-    AN_FORBID_COPY( FDebugDraw )
+class ADebugDraw {
+    AN_FORBID_COPY( ADebugDraw )
 
 public:
-    FDebugDraw();
+    ADebugDraw();
 
-    ~FDebugDraw();
+    ~ADebugDraw();
 
     void Reset();
+
+    void BeginRenderView( SRenderView * _View );
+
+    void EndRenderView();
 
     void SetDepthTest( bool _DepthTest );
 
     void SetColor( uint32_t _Color );
 
-    void SetColor( FColor4 const & _Color );
+    void SetColor( AColor4 const & _Color );
 
     void SetAlpha( float _Alpha );
 
@@ -126,12 +130,13 @@ public:
     int CommandsCount() const { return Cmds->Size(); }
 
 private:
-    FDebugDrawCmd & SetDrawCmd( EDebugDrawCmd _Type );
+    SDebugDrawCmd & SetDrawCmd( EDebugDrawCmd _Type );
     void PrimitiveReserve( int _NumVertices, int _NumIndices );
 
-    FArrayOfDebugVertices * Vertices;
-    FArrayOfDebugIndices * Indices;
-    FArrayOfDebugDrawCmds * Cmds;
+    SRenderView * pView;
+    AArrayOfDebugVertices * Vertices;
+    AArrayOfDebugIndices * Indices;
+    AArrayOfDebugDrawCmds * Cmds;
     uint32_t CurrentColor;
     int FirstVertex;
     int FirstIndex;

@@ -34,27 +34,27 @@ SOFTWARE.
 
 constexpr float DEFAULT_MAX_SHADOW_CASCADES = 4;
 
-FRuntimeVariable RVDrawDirectionalLights( _CTS( "DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawDirectionalLights( _CTS( "DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_CLASS_META( FDirectionalLightComponent )
+AN_CLASS_META( ADirectionalLightComponent )
 
-FDirectionalLightComponent::FDirectionalLightComponent() {
+ADirectionalLightComponent::ADirectionalLightComponent() {
     MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
 }
 
-void FDirectionalLightComponent::InitializeComponent() {
+void ADirectionalLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
     GetWorld()->AddDirectionalLight( this );
 }
 
-void FDirectionalLightComponent::DeinitializeComponent() {
+void ADirectionalLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     GetWorld()->RemoveDirectionalLight( this );
 }
 
-void FDirectionalLightComponent::SetDirection( Float3 const & _Direction ) {
+void ADirectionalLightComponent::SetDirection( Float3 const & _Direction ) {
     Float3x3 orientation;
 
     orientation[2] = -_Direction.Normalized();
@@ -67,11 +67,11 @@ void FDirectionalLightComponent::SetDirection( Float3 const & _Direction ) {
     //bShadowMatrixDirty = true;
 }
 
-Float3 FDirectionalLightComponent::GetDirection() const {
+Float3 ADirectionalLightComponent::GetDirection() const {
     return GetForwardVector();
 }
 
-void FDirectionalLightComponent::SetWorldDirection( Float3 const & _Direction ) {
+void ADirectionalLightComponent::SetWorldDirection( Float3 const & _Direction ) {
     Float3x3 orientation;
     orientation[2] = -_Direction.Normalized();
     orientation[2].ComputeBasis( orientation[0], orientation[1] );
@@ -83,26 +83,26 @@ void FDirectionalLightComponent::SetWorldDirection( Float3 const & _Direction ) 
     //bShadowMatrixDirty = true;
 }
 
-Float3 FDirectionalLightComponent::GetWorldDirection() const {
+Float3 ADirectionalLightComponent::GetWorldDirection() const {
     return GetWorldForwardVector();
 }
 
-void FDirectionalLightComponent::SetMaxShadowCascades( int _MaxShadowCascades ) {
+void ADirectionalLightComponent::SetMaxShadowCascades( int _MaxShadowCascades ) {
     MaxShadowCascades = Int( _MaxShadowCascades ).Clamp( 1, MAX_SHADOW_CASCADES );
 }
 
-int FDirectionalLightComponent::GetMaxShadowCascades() const {
+int ADirectionalLightComponent::GetMaxShadowCascades() const {
     return MaxShadowCascades;
 }
 
-void FDirectionalLightComponent::OnTransformDirty() {
+void ADirectionalLightComponent::OnTransformDirty() {
     Super::OnTransformDirty();
 
 //    bShadowMatrixDirty = true;
 }
 
 #if 0
-Float4x4 const & FDirectionalLightComponent::GetShadowMatrix() const {
+Float4x4 const & ADirectionalLightComponent::GetShadowMatrix() const {
     if ( bShadowMatrixDirty ) {
         // Update shadow matrix
 
@@ -124,11 +124,11 @@ Float4x4 const & FDirectionalLightComponent::GetShadowMatrix() const {
         Float2 OrthoMins = Float2( -1,-1 )*150.0f;
         Float2 OrthoMaxs = Float2(  1, 1 )*150.0f;
         Float4x4 ProjectionMatrix = Float4x4::OrthoCC( OrthoMins, OrthoMaxs, DEFAULT_ZNEAR, DEFAULT_ZFAR );
-        //Float4x4 ProjectionMatrix = FMath::PerspectiveProjectionMatrixCC( FMath::_PI/1.1f,FMath::_PI/1.1f,DEFAULT_ZNEAR, DEFAULT_ZFAR );
+        //Float4x4 ProjectionMatrix = Math::PerspectiveProjectionMatrixCC( Math::_PI/1.1f,Math::_PI/1.1f,DEFAULT_ZNEAR, DEFAULT_ZFAR );
 
 
-        //Float4x4 Test = FMath::PerspectiveProjectionMatrix( OrthoRect.X, OrthoRect.Y, OrthoRect.Z, OrthoRect.W, DEFAULT_ZNEAR, DEFAULT_ZFAR );
-        //Float4x4 Test = PerspectiveProjectionMatrixRevCC( FMath::_PI/4,FMath::_PI/4,DEFAULT_ZNEAR, DEFAULT_ZFAR );
+        //Float4x4 Test = Math::PerspectiveProjectionMatrix( OrthoRect.X, OrthoRect.Y, OrthoRect.Z, OrthoRect.W, DEFAULT_ZNEAR, DEFAULT_ZFAR );
+        //Float4x4 Test = PerspectiveProjectionMatrixRevCC( Math::_PI/4,Math::_PI/4,DEFAULT_ZNEAR, DEFAULT_ZFAR );
 
 
 
@@ -138,7 +138,7 @@ Float4x4 const & FDirectionalLightComponent::GetShadowMatrix() const {
         //Float4 v2 = Test * Float4(0,0,-DEFAULT_ZNEAR,1.0f);
         //v2/=v2.W;
 
-        //Float4x4 ProjectionMatrix = PerspectiveProjectionMatrixRevCC( FMath::_PI/4.0f, FMath::_PI/4.0f, /*SHADOWMAP_SIZE, SHADOWMAP_SIZE, */DEFAULT_ZNEAR, DEFAULT_ZFAR );
+        //Float4x4 ProjectionMatrix = PerspectiveProjectionMatrixRevCC( Math::_PI/4.0f, Math::_PI/4.0f, /*SHADOWMAP_SIZE, SHADOWMAP_SIZE, */DEFAULT_ZNEAR, DEFAULT_ZFAR );
         ShadowMatrix = ProjectionMatrix * LightViewMatrix;
 
         bShadowMatrixDirty = false;
@@ -147,20 +147,20 @@ Float4x4 const & FDirectionalLightComponent::GetShadowMatrix() const {
     return ShadowMatrix;
 }
 
-const Float4x4 & FDirectionalLightComponent::GetLightViewMatrix() const {
+const Float4x4 & ADirectionalLightComponent::GetLightViewMatrix() const {
     GetShadowMatrix(); // Update matrix
 
     return LightViewMatrix;
 }
 #endif
 
-void FDirectionalLightComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+void ADirectionalLightComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
     if ( RVDrawDirectionalLights ) {
         Float3 pos = GetWorldPosition();
         _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( FColor4( 1, 1, 1, 1 ) );
+        _DebugDraw->SetColor( AColor4( 1, 1, 1, 1 ) );
         _DebugDraw->DrawLine( pos, pos + GetWorldDirection() * 10.0f );
     }
 }

@@ -30,12 +30,12 @@ SOFTWARE.
 
 #include <Engine/World/Public/Components/DrawSurf.h>
 
-AN_CLASS_META( FDrawSurf )
+AN_CLASS_META( ADrawSurf )
 
-//AN_SCENE_COMPONENT_BEGIN_DECL( FDrawSurf, CCF_HIDDEN_IN_EDITOR )
-//AN_ATTRIBUTE( "Rendering Layers", FProperty( FDrawSurf::RENDERING_LAYERS_DEFAULT ), SetRenderingLayers, GetRenderingLayers, "Set rendering layer(s)", AF_BITFIELD )
+//AN_SCENE_COMPONENT_BEGIN_DECL( ADrawSurf, CCF_HIDDEN_IN_EDITOR )
+//AN_ATTRIBUTE( "Rendering Layers", FProperty( ADrawSurf::RENDERING_LAYERS_DEFAULT ), SetRenderingLayers, GetRenderingLayers, "Set rendering layer(s)", AF_BITFIELD )
 //AN_SCENE_COMPONENT_END_DECL
 
-FDrawSurf::FDrawSurf() {
+ADrawSurf::ADrawSurf() {
     RenderingGroup = RENDERING_GROUP_DEFAULT;
 }

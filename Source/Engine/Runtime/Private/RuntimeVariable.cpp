@@ -34,24 +34,24 @@ SOFTWARE.
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/CoreMath.h>
 
-static FRuntimeVariable * GlobalVars = nullptr;
+static ARuntimeVariable * GlobalVars = nullptr;
 static bool GVariableAllocated = false;
 
-FRuntimeVariable * FRuntimeVariable::GlobalVariableList() {
+ARuntimeVariable * ARuntimeVariable::GlobalVariableList() {
     return GlobalVars;
 }
 
-FRuntimeVariable * FRuntimeVariable::FindVariable( const char * _Name ) {
-    for ( FRuntimeVariable * var = GlobalVars ; var ; var = var->GetNext() ) {
-        if ( !FString::Icmp( var->GetName(), _Name ) ) {
+ARuntimeVariable * ARuntimeVariable::FindVariable( const char * _Name ) {
+    for ( ARuntimeVariable * var = GlobalVars ; var ; var = var->GetNext() ) {
+        if ( !AString::Icmp( var->GetName(), _Name ) ) {
             return var;
         }
     }
     return nullptr;
 }
 
-void FRuntimeVariable::AllocateVariables() {
-    for ( FRuntimeVariable * var = GlobalVars ; var ; var = var->Next ) {
+void ARuntimeVariable::AllocateVariables() {
+    for ( ARuntimeVariable * var = GlobalVars ; var ; var = var->Next ) {
         var->Value = var->DefaultValue;
         var->I32 = Int().FromString( var->Value );
         var->F32 = Float().FromString( var->Value );
@@ -59,15 +59,15 @@ void FRuntimeVariable::AllocateVariables() {
     GVariableAllocated = true;
 }
 
-void FRuntimeVariable::FreeVariables() {
-    for ( FRuntimeVariable * var = GlobalVars ; var ; var = var->Next ) {
+void ARuntimeVariable::FreeVariables() {
+    for ( ARuntimeVariable * var = GlobalVars ; var ; var = var->Next ) {
         var->Value.Free();
         var->LatchedValue.Free();
     }
     GlobalVars = nullptr;
 }
 
-FRuntimeVariable::FRuntimeVariable( const char * _Name,
+ARuntimeVariable::ARuntimeVariable( const char * _Name,
                                     const char * _Value,
                                     uint16_t _Flags,
                                     const char * _Comment )
@@ -77,16 +77,16 @@ FRuntimeVariable::FRuntimeVariable( const char * _Name,
     , Flags( _Flags )
 {
     AN_Assert( !GVariableAllocated );
-    AN_Assert( FRuntimeCommandProcessor::IsValidCommandName( Name ) );
+    AN_Assert( ARuntimeCommandProcessor::IsValidCommandName( Name ) );
 
-    FRuntimeVariable * head = GlobalVars;
+    ARuntimeVariable * head = GlobalVars;
     Next = head;
     GlobalVars = this;
 }
 
-FRuntimeVariable::~FRuntimeVariable() {
-    FRuntimeVariable * prev = nullptr;
-    for ( FRuntimeVariable * var = GlobalVars ; var ; var = var->Next ) {
+ARuntimeVariable::~ARuntimeVariable() {
+    ARuntimeVariable * prev = nullptr;
+    for ( ARuntimeVariable * var = GlobalVars ; var ; var = var->Next ) {
         if ( var == this ) {
             if ( prev ) {
                 prev->Next = var->Next;
@@ -99,7 +99,7 @@ FRuntimeVariable::~FRuntimeVariable() {
     }
 }
 
-bool FRuntimeVariable::CanChangeValue() const {
+bool ARuntimeVariable::CanChangeValue() const {
     if ( Flags & VAR_READONLY ) {
         GLogger.Printf( "%s is readonly\n", Name );
         return false;
@@ -123,7 +123,7 @@ bool FRuntimeVariable::CanChangeValue() const {
     return true;
 }
 
-void FRuntimeVariable::SetString( const char * _String ) {
+void ARuntimeVariable::SetString( const char * _String ) {
     if ( !CanChangeValue() ) {
         return;
     }
@@ -143,23 +143,23 @@ void FRuntimeVariable::SetString( const char * _String ) {
     }
 }
 
-void FRuntimeVariable::SetString( FString const & _String ) {
-    SetString( _String.ToConstChar() );
+void ARuntimeVariable::SetString( AString const & _String ) {
+    SetString( _String.CStr() );
 }
 
-void FRuntimeVariable::SetBool( bool _Bool ) {
+void ARuntimeVariable::SetBool( bool _Bool ) {
     SetString( _Bool ? "1" : "0" );
 }
 
-void FRuntimeVariable::SetInteger( int32_t _Integer ) {
+void ARuntimeVariable::SetInteger( int32_t _Integer ) {
     SetString( Int(_Integer).ToString() );
 }
 
-void FRuntimeVariable::SetFloat( float _Float ) {
+void ARuntimeVariable::SetFloat( float _Float ) {
     SetString( Float(_Float).ToString() );
 }
 
-void FRuntimeVariable::ForceString( const char * _String ) {
+void ARuntimeVariable::ForceString( const char * _String ) {
     Value = _String;
     I32 = Int().FromString( Value );
     F32 = Float().FromString( Value );
@@ -167,23 +167,23 @@ void FRuntimeVariable::ForceString( const char * _String ) {
     MarkModified();
 }
 
-void FRuntimeVariable::ForceString( FString const & _String ) {
-    ForceString( _String.ToConstChar() );
+void ARuntimeVariable::ForceString( AString const & _String ) {
+    ForceString( _String.CStr() );
 }
 
-void FRuntimeVariable::ForceBool( bool _Bool ) {
+void ARuntimeVariable::ForceBool( bool _Bool ) {
     ForceString( _Bool ? "1" : "0" );
 }
 
-void FRuntimeVariable::ForceInteger( int32_t _Integer ) {
+void ARuntimeVariable::ForceInteger( int32_t _Integer ) {
     ForceString( Int(_Integer).ToString() );
 }
 
-void FRuntimeVariable::ForceFloat( float _Float ) {
+void ARuntimeVariable::ForceFloat( float _Float ) {
     ForceString( Float(_Float).ToString() );
 }
 
-void FRuntimeVariable::SetLatched() {
+void ARuntimeVariable::SetLatched() {
     if ( !(Flags & VAR_LATCHED) ) {
         return;
     }
@@ -199,17 +199,17 @@ void FRuntimeVariable::SetLatched() {
     ForceString( LatchedValue );
 }
 
-void FRuntimeVariable::Print() {
+void ARuntimeVariable::Print() {
     GLogger.Printf( "    %s", Name );
 
     if ( *Comment ) {
         GLogger.Printf( " (%s)", Comment );
     }
 
-    GLogger.Printf( "\n        [CURRENT \"%s\"]  [DEFAULT \"%s\"]", Value.ToConstChar(), DefaultValue );
+    GLogger.Printf( "\n        [CURRENT \"%s\"]  [DEFAULT \"%s\"]", Value.CStr(), DefaultValue );
 
     if ( ( Flags & VAR_LATCHED ) && !LatchedValue.IsEmpty() ) {
-        GLogger.Printf( "  [LATCHED \"%s\"]\n", LatchedValue.ToConstChar() );
+        GLogger.Printf( "  [LATCHED \"%s\"]\n", LatchedValue.CStr() );
     } else {
         GLogger.Print( "\n" );
     }

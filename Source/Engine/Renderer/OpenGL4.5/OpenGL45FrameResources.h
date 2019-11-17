@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-struct FViewUniformBuffer {
+struct SViewUniformBuffer {
     Float4x4 OrthoProjection;
     Float4x4 ModelviewProjection;
     Float4x4 InverseProjectionMatrix;
@@ -71,7 +71,7 @@ struct FViewUniformBuffer {
     //Float3x4 FromObjectToWorldSpace;
 };
 
-struct FInstanceUniformBuffer {
+struct SInstanceUniformBuffer {
     Float4x4 TransformMatrix;
     Float3x4 ModelNormalToViewSpace;
     Float4 LightmapOffset;
@@ -81,9 +81,9 @@ struct FInstanceUniformBuffer {
     Float4 uaddr_3;
 };
 
-constexpr size_t InstanceUniformBufferSizeof = GHI::UBOAligned( sizeof( FInstanceUniformBuffer ) );
+constexpr size_t InstanceUniformBufferSizeof = GHI::UBOAligned( sizeof( SInstanceUniformBuffer ) );
 
-struct FShadowInstanceUniformBuffer {
+struct SShadowInstanceUniformBuffer {
     Float4x4 TransformMatrix; // TODO: 3x4
     // For material with vertex deformations:
     Float4 uaddr_0;
@@ -92,9 +92,9 @@ struct FShadowInstanceUniformBuffer {
     Float4 uaddr_3;
 };
 
-constexpr size_t ShadowInstanceUniformBufferSizeof = GHI::UBOAligned( sizeof( FShadowInstanceUniformBuffer ) );
+constexpr size_t ShadowInstanceUniformBufferSizeof = GHI::UBOAligned( sizeof( SShadowInstanceUniformBuffer ) );
 
-class FFrameResources {
+class AFrameResources {
 public:
     void Initialize();
     void Deinitialize();
@@ -110,7 +110,7 @@ public:
     GHI::Texture EnvProbe;
     GHI::Sampler EnvProbeSampler;
     GHI::BindlessSampler EnvProbeBindless;
-    FViewUniformBuffer ViewUniformBufferUniformData;
+    SViewUniformBuffer ViewUniformBufferUniformData;
 
     GHI::ShaderResources        Resources;
     GHI::ShaderBufferBinding    BufferBinding[4];
@@ -127,6 +127,6 @@ private:
     TPodArray< byte > TempData;
 };
 
-extern FFrameResources GFrameResources;
+extern AFrameResources GFrameResources;
 
 }

@@ -38,11 +38,11 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-FCanvasPassRenderer GCanvasPassRenderer;
+ACanvasPassRenderer GCanvasPassRenderer;
 
-void OpenGL45RenderView( FRenderView * _RenderView );
+void OpenGL45RenderView( SRenderView * _RenderView );
 
-void FCanvasPassRenderer::Initialize() {
+void ACanvasPassRenderer::Initialize() {
     RenderPassCreateInfo renderPassCI = {};
 
     renderPassCI.NumColorAttachments = 1;
@@ -85,7 +85,7 @@ void FCanvasPassRenderer::Initialize() {
     CreateBuffers();
 }
 
-void FCanvasPassRenderer::Deinitialize() {
+void ACanvasPassRenderer::Deinitialize() {
     CanvasPass.Deinitialize();
 
     for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
@@ -98,7 +98,7 @@ void FCanvasPassRenderer::Deinitialize() {
     IndexBuffer.Deinitialize();
 }
 
-void FCanvasPassRenderer::CreatePresentViewPipeline() {
+void ACanvasPassRenderer::CreatePresentViewPipeline() {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
     rsd.CullMode = POLYGON_CULL_DISABLED;
@@ -121,7 +121,7 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, Position )
+            GHI_STRUCT_OFS( SHUDDrawVert, Position )
         },
         {
             "InTexCoord",
@@ -130,7 +130,7 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, TexCoord )
+            GHI_STRUCT_OFS( SHUDDrawVert, TexCoord )
         },
         {
             "InColor",
@@ -139,12 +139,12 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, Color )
+            GHI_STRUCT_OFS( SHUDDrawVert, Color )
         }
     };
 
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
@@ -176,7 +176,7 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
 
     GShaderSources.Clear();
     GShaderSources.Add( UniformStr );
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( vertexSourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -211,7 +211,7 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
     VertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FHUDDrawVert );
+    vertexBinding[0].Stride = sizeof( SHUDDrawVert );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
@@ -237,7 +237,7 @@ void FCanvasPassRenderer::CreatePresentViewPipeline() {
     }
 }
 
-void FCanvasPassRenderer::CreatePipelines() {
+void ACanvasPassRenderer::CreatePipelines() {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
     rsd.CullMode = POLYGON_CULL_DISABLED;
@@ -260,7 +260,7 @@ void FCanvasPassRenderer::CreatePipelines() {
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, Position )
+            GHI_STRUCT_OFS( SHUDDrawVert, Position )
         },
         {
             "InTexCoord",
@@ -269,7 +269,7 @@ void FCanvasPassRenderer::CreatePipelines() {
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, TexCoord )
+            GHI_STRUCT_OFS( SHUDDrawVert, TexCoord )
         },
         {
             "InColor",
@@ -278,12 +278,12 @@ void FCanvasPassRenderer::CreatePipelines() {
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, Color )
+            GHI_STRUCT_OFS( SHUDDrawVert, Color )
         }
     };
 
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
@@ -311,7 +311,7 @@ void FCanvasPassRenderer::CreatePipelines() {
 
     GShaderSources.Clear();
     GShaderSources.Add( UniformStr );
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( vertexSourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -346,7 +346,7 @@ void FCanvasPassRenderer::CreatePipelines() {
     VertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FHUDDrawVert );
+    vertexBinding[0].Stride = sizeof( SHUDDrawVert );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
@@ -372,7 +372,7 @@ void FCanvasPassRenderer::CreatePipelines() {
     }
 }
 
-void FCanvasPassRenderer::CreateAlphaPipelines() {
+void ACanvasPassRenderer::CreateAlphaPipelines() {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
     rsd.CullMode = POLYGON_CULL_DISABLED;
@@ -395,7 +395,7 @@ void FCanvasPassRenderer::CreateAlphaPipelines() {
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, Position )
+            GHI_STRUCT_OFS( SHUDDrawVert, Position )
         },
         {
             "InTexCoord",
@@ -404,7 +404,7 @@ void FCanvasPassRenderer::CreateAlphaPipelines() {
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, TexCoord )
+            GHI_STRUCT_OFS( SHUDDrawVert, TexCoord )
         },
         {
             "InColor",
@@ -413,12 +413,12 @@ void FCanvasPassRenderer::CreateAlphaPipelines() {
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, Color )
+            GHI_STRUCT_OFS( SHUDDrawVert, Color )
         }
     };
 
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
@@ -446,7 +446,7 @@ void FCanvasPassRenderer::CreateAlphaPipelines() {
 
     GShaderSources.Clear();
     GShaderSources.Add( UniformStr );
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( vertexSourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -481,7 +481,7 @@ void FCanvasPassRenderer::CreateAlphaPipelines() {
     VertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FHUDDrawVert );
+    vertexBinding[0].Stride = sizeof( SHUDDrawVert );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
@@ -507,7 +507,7 @@ void FCanvasPassRenderer::CreateAlphaPipelines() {
     }
 }
 
-void FCanvasPassRenderer::CreateSamplers() {
+void ACanvasPassRenderer::CreateSamplers() {
     SamplerCreateInfo samplerCI;
     samplerCI.SetDefaults();
     samplerCI.Filter = FILTER_NEAREST;
@@ -523,7 +523,7 @@ void FCanvasPassRenderer::CreateSamplers() {
     }
 }
 
-void FCanvasPassRenderer::CreateBuffers() {
+void ACanvasPassRenderer::CreateBuffers() {
     VertexBufferSize = 1024;
     IndexBufferSize = 1024;
 
@@ -533,14 +533,14 @@ void FCanvasPassRenderer::CreateBuffers() {
     streamBufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
     streamBufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
 
-    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( FHUDDrawVert );
+    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( SHUDDrawVert );
     VertexBuffer.Initialize( streamBufferCI );
 
     streamBufferCI.SizeInBytes = IndexBufferSize * sizeof( unsigned short );
     IndexBuffer.Initialize( streamBufferCI );
 }
 
-void FCanvasPassRenderer::BeginCanvasPass() {
+void ACanvasPassRenderer::BeginCanvasPass() {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &CanvasPass;
@@ -564,7 +564,7 @@ void FCanvasPassRenderer::BeginCanvasPass() {
     Cmd.SetViewport( vp );
 }
 
-void FCanvasPassRenderer::RenderInstances() {
+void ACanvasPassRenderer::RenderInstances() {
     if ( !GFrameData->DrawListHead ) {
         return;
     }
@@ -579,16 +579,16 @@ void FCanvasPassRenderer::RenderInstances() {
     drawCmd.StartInstanceLocation = 0;
     drawCmd.BaseVertexLocation = 0;
 
-    for ( FHUDDrawList * drawList = GFrameData->DrawListHead ; drawList ; drawList = drawList->pNext ) {
+    for ( SHUDDrawList * drawList = GFrameData->DrawListHead ; drawList ; drawList = drawList->pNext ) {
 
         Cmd.Barrier( VERTEX_ATTRIB_ARRAY_BARRIER_BIT | ELEMENT_ARRAY_BARRIER_BIT );
 
         // Upload vertices
         if ( VertexBufferSize < drawList->VerticesCount ) {
             VertexBufferSize = drawList->VerticesCount;
-            VertexBuffer.Realloc( VertexBufferSize * sizeof( FHUDDrawVert ), drawList->Vertices );
+            VertexBuffer.Realloc( VertexBufferSize * sizeof( SHUDDrawVert ), drawList->Vertices );
         } else {
-            VertexBuffer.WriteRange( 0, drawList->VerticesCount * sizeof( FHUDDrawVert ), drawList->Vertices );
+            VertexBuffer.WriteRange( 0, drawList->VerticesCount * sizeof( SHUDDrawVert ), drawList->Vertices );
         }
 
         // Upload indices
@@ -600,7 +600,7 @@ void FCanvasPassRenderer::RenderInstances() {
         }
 
         // Process render commands
-        for ( FHUDDrawCmd * cmd = drawList->Commands ; cmd < &drawList->Commands[drawList->CommandsCount] ; cmd++ ) {
+        for ( SHUDDrawCmd * cmd = drawList->Commands ; cmd < &drawList->Commands[drawList->CommandsCount] ; cmd++ ) {
 
             switch ( cmd->Type )
             {
@@ -612,7 +612,7 @@ void FCanvasPassRenderer::RenderInstances() {
                     // Render scene to viewport
                     AN_Assert( cmd->ViewportIndex >= 0 && cmd->ViewportIndex < MAX_RENDER_VIEWS );
 
-                    FRenderView * renderView = &GFrameData->RenderViews[cmd->ViewportIndex];
+                    SRenderView * renderView = &GFrameData->RenderViews[cmd->ViewportIndex];
 
                     OpenGL45RenderView( renderView );
 
@@ -645,11 +645,11 @@ void FCanvasPassRenderer::RenderInstances() {
                 {
                     AN_Assert( cmd->MaterialFrameData );
 
-                    FMaterialGPU * pMaterial = cmd->MaterialFrameData->Material;
+                    AMaterialGPU * pMaterial = cmd->MaterialFrameData->Material;
 
                     AN_Assert( pMaterial->MaterialType == MATERIAL_TYPE_HUD );
 
-                    Cmd.BindPipeline( &((FShadeModelHUD *)pMaterial->ShadeModel.HUD)->ColorPassHUD );
+                    Cmd.BindPipeline( &((AShadeModelHUD *)pMaterial->ShadeModel.HUD)->ColorPassHUD );
                     Cmd.BindVertexBuffer( 0, &VertexBuffer, 0 );
                     Cmd.BindIndexBuffer( &IndexBuffer, INDEX_TYPE_UINT16, 0 );
 

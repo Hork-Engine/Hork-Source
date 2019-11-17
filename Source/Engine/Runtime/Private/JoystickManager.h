@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Engine/Core/Public/String.h>
 
-class FJoystickManager {
-    AN_SINGLETON( FJoystickManager )
+class AJoystickManager {
+    AN_SINGLETON( AJoystickManager )
 
 public:
     void Initialize();
@@ -42,7 +42,7 @@ public:
 
     void PollEvents();
 
-    FString GetJoystickName( int _Joystick );
+    AString GetJoystickName( int _Joystick );
 };
 
-extern FJoystickManager & GJoystickManager;
+extern AJoystickManager & GJoystickManager;

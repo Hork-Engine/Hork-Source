@@ -49,7 +49,7 @@ enum EFrustumPlane {
     FPL_NEAR
 };
 
-struct FFrustumPlane : public PlaneF {
+struct BvFrustumPlane : public PlaneF {
     int CachedSignBits;
 };
 
@@ -61,7 +61,7 @@ public:
     void FromMatrix( Float4x4 const & _Matrix );
     void UpdateSignBits();
 
-    FFrustumPlane const & operator[]( int _Index ) const;
+    BvFrustumPlane const & operator[]( int _Index ) const;
 
     bool IsPointVisible( Float3 const & _Point ) const;
     bool IsPointVisible_IgnoreZ( Float3 const & _Point ) const;
@@ -113,30 +113,30 @@ private:
     mutable sse_t * PlanesSSE;
 #endif
 
-    FFrustumPlane Planes[6];
+    BvFrustumPlane Planes[6];
 };
 
-AN_FORCEINLINE FFrustumPlane const & BvFrustum::operator[]( int _Index ) const {
+AN_FORCEINLINE BvFrustumPlane const & BvFrustum::operator[]( int _Index ) const {
     AN_ASSERT( (unsigned)_Index < 6, "BvFrustum[]" );
     return Planes[_Index];
 }
 
 AN_FORCEINLINE void BvFrustum::UpdateSignBits() {
-    for ( FFrustumPlane * p = Planes ; p < Planes + 6 ; p++ ) {
+    for ( BvFrustumPlane * p = Planes ; p < Planes + 6 ; p++ ) {
         p->CachedSignBits = p->SignBits();
     }
 }
 
 AN_FORCEINLINE bool BvFrustum::IsPointVisible( Float3 const & _Point ) const {
-    for ( FFrustumPlane const * p = Planes ; p < Planes + 6 ; p++ )
-        if ( FMath::Dot( p->Normal, _Point ) + p->D <= 0.0f )
+    for ( BvFrustumPlane const * p = Planes ; p < Planes + 6 ; p++ )
+        if ( Math::Dot( p->Normal, _Point ) + p->D <= 0.0f )
             return false;
     return true;
 }
 
 AN_FORCEINLINE bool BvFrustum::IsPointVisible_IgnoreZ( Float3 const & _Point ) const {
-    for ( FFrustumPlane const * p = Planes ; p < Planes + 4 ; p++ )
-        if ( FMath::Dot( p->Normal, _Point ) + p->D <= 0.0f )
+    for ( BvFrustumPlane const * p = Planes ; p < Planes + 4 ; p++ )
+        if ( Math::Dot( p->Normal, _Point ) + p->D <= 0.0f )
             return false;
     return true;
 }
@@ -147,8 +147,8 @@ AN_FORCEINLINE float BvFrustum::IsSphereVisible( const BvSphere & _Sphere ) cons
 
 AN_FORCEINLINE float BvFrustum::IsSphereVisible( Float3 const & _Point, float _Radius ) const {
     float dist;
-    for ( FFrustumPlane const * p = Planes ; p < Planes + 6 ; p++ ) {
-        dist = FMath::Dot( p->Normal, _Point ) + p->D;
+    for ( BvFrustumPlane const * p = Planes ; p < Planes + 6 ; p++ ) {
+        dist = Math::Dot( p->Normal, _Point ) + p->D;
         if ( dist <= -_Radius )
             return 0;
     }
@@ -161,8 +161,8 @@ AN_FORCEINLINE float BvFrustum::IsSphereVisible_IgnoreZ( const BvSphere & _Spher
 
 AN_FORCEINLINE float BvFrustum::IsSphereVisible_IgnoreZ( Float3 const & _Point, float _Radius ) const {
     float dist;
-    for ( FFrustumPlane const * p = Planes ; p < Planes + 4 ; p++ ) {
-        dist = FMath::Dot( p->Normal, _Point ) + p->D;
+    for ( BvFrustumPlane const * p = Planes ; p < Planes + 4 ; p++ ) {
+        dist = Math::Dot( p->Normal, _Point ) + p->D;
         if ( dist <= -_Radius )
             return 0;
     }
@@ -172,23 +172,23 @@ AN_FORCEINLINE float BvFrustum::IsSphereVisible_IgnoreZ( Float3 const & _Point, 
 AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float3 const & _Mins, Float3 const & _Maxs ) const {
     bool inside = true;
 
-    FFrustumPlane const * p = Planes;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    BvFrustumPlane const * p = Planes;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     return inside;
 }
@@ -196,23 +196,23 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float3 const & _Mins, Float3 const 
 AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float4 const & _Mins, Float4 const & _Maxs ) const {
     bool inside = true;
 
-    FFrustumPlane const * p = Planes;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    BvFrustumPlane const * p = Planes;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     return inside;
 }
@@ -224,17 +224,17 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible( BvAxisAlignedBox const & b ) const 
 AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float3 const & _Maxs ) const {
     bool inside = true;
 
-    FFrustumPlane const * p = Planes;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    BvFrustumPlane const * p = Planes;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     return inside;
 }
@@ -242,17 +242,17 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float
 AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float4 const & _Mins, Float4 const & _Maxs ) const {
     bool inside = true;
 
-    FFrustumPlane const * p = Planes;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    BvFrustumPlane const * p = Planes;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
-    inside &= ( FMath::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + FMath::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + FMath::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
+    inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     return inside;
 }
@@ -264,7 +264,7 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( BvAxisAlignedBox const & b 
 AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) const {
     Float3 point;
 
-    for ( FFrustumPlane const * p = Planes; p < Planes + 6; p++ ) {
+    for ( BvFrustumPlane const * p = Planes; p < Planes + 6; p++ ) {
         const float x = b.Orient[ 0 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 0 ] : -b.HalfSize[ 0 ];
         const float y = b.Orient[ 1 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 1 ] : -b.HalfSize[ 1 ];
         const float z = b.Orient[ 2 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 2 ] : -b.HalfSize[ 2 ];
@@ -282,7 +282,7 @@ AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) c
 AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible_IgnoreZ( BvOrientedBox const & b ) const {
     Float3 point;
 
-    for ( FFrustumPlane const * p = Planes; p < Planes + 4; p++ ) {
+    for ( BvFrustumPlane const * p = Planes; p < Planes + 4; p++ ) {
         const float x = b.Orient[ 0 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 0 ] : -b.HalfSize[ 0 ];
         const float y = b.Orient[ 1 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 1 ] : -b.HalfSize[ 1 ];
         const float z = b.Orient[ 2 ].Dot( p->Normal ) >= 0.0f ? b.HalfSize[ 2 ] : -b.HalfSize[ 2 ];

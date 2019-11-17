@@ -39,7 +39,7 @@ public:
     virtual ~IEngineInterface() {}
 
     /** Initialize the engine */
-    virtual void Initialize( FCreateGameModuleCallback _CreateGameModuleCallback ) = 0;
+    virtual void Initialize( ACreateGameModuleCallback _CreateGameModuleCallback ) = 0;
 
     /** Shutdown the engine */
     virtual void Deinitialize() = 0;

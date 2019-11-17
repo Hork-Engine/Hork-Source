@@ -33,10 +33,11 @@ SOFTWARE.
 #include <Engine/Resource/Public/Texture.h>
 #include <Engine/Resource/Public/Material.h>
 #include <Engine/Resource/Public/IndexedMesh.h>
+#include <Engine/Resource/Public/ResourceManager.h>
 
 #include "DrawSurf.h"
 
-class FCameraComponent;
+class ACameraComponent;
 
 enum EVSDPass {
     VSD_PASS_IGNORE     = 0,
@@ -51,15 +52,15 @@ enum EVSDPass {
 
 /**
 
-FMeshComponent
+AMeshComponent
 
 Mesh component without skinning
 
 */
-class ANGIE_API FMeshComponent : public FDrawSurf {
-    AN_COMPONENT( FMeshComponent, FDrawSurf )
+class ANGIE_API AMeshComponent : public ADrawSurf {
+    AN_COMPONENT( AMeshComponent, ADrawSurf )
 
-    friend class FWorld;
+    friend class AWorld;
 
 public:
     /** Visible surface determination alogrithm */
@@ -75,10 +76,10 @@ public:
     Float4          LightmapOffset;
 
     /** Lightmap UV channel */
-    TRef< FLightmapUV >   LightmapUVChannel;
+    TRef< ALightmapUV >   LightmapUVChannel;
 
     /** Baked vertex light channel */
-    TRef< FVertexLight >  VertexLightChannel;
+    TRef< AVertexLight >  VertexLightChannel;
 
     /** Force using dynamic range */
     bool            bUseDynamicRange;
@@ -95,7 +96,7 @@ public:
     /** Flipbook animation page offset */
     unsigned int    SubpartBaseVertexOffset;
 
-    /** Render during light pass */
+    /** Render during main pass */
     bool            bLightPass;
 
     /** Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled */
@@ -116,10 +117,17 @@ public:
     bool            bOverrideMeshMaterials = true;
 
     /** Set indexed mesh for the component */
-    void SetMesh( FIndexedMesh * _Mesh );
+    void SetMesh( AIndexedMesh * _Mesh );
 
-    /** Get indexed mesh */
-    FIndexedMesh * GetMesh() const { return Mesh; }
+    /** Helper. Set indexed mesh by alias */
+    template< char... Chars >
+    void SetMesh( TCompileTimeString<Chars...> const & _Alias ) {
+        static TStaticResourceFinder< AIndexedMesh > Resource( _Alias );
+        SetMesh( Resource.GetObject() );
+    }
+
+    /** Get indexed mesh. Never return null */
+    AIndexedMesh * GetMesh() const { return Mesh; }
 
     /** Unset materials */
     void ClearMaterials();
@@ -128,57 +136,73 @@ public:
     void CopyMaterialsFromMeshResource();
 
     /** Set material instance for subpart of the mesh */
-    void SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _Instance );
+    void SetMaterialInstance( int _SubpartIndex, AMaterialInstance * _Instance );
+
+    /** Helper. Set material instance by alias */
+    template< char... Chars >
+    void SetMaterialInstance( int _SubpartIndex, TCompileTimeString<Chars...> const & _Alias ) {
+        static TStaticResourceFinder< AMaterialInstance > Resource( _Alias );
+        SetMaterialInstance( _SubpartIndex, Resource.GetObject() );
+    }
 
     /** Get material instance of subpart of the mesh. Never return null. */
-    FMaterialInstance * GetMaterialInstance( int _SubpartIndex ) const;
+    AMaterialInstance * GetMaterialInstance( int _SubpartIndex ) const;
 
     /** Set material instance for subpart of the mesh */
-    void SetMaterialInstance( FMaterialInstance * _Instance ) { SetMaterialInstance( 0, _Instance ); }
+    void SetMaterialInstance( AMaterialInstance * _Instance ) { SetMaterialInstance( 0, _Instance ); }
+
+    /** Helper. Set material instance by alias */
+    template< char... Chars >
+    void SetMaterialInstance( TCompileTimeString<Chars...> const & _Alias ) {
+        static TStaticResourceFinder< AMaterialInstance > Resource( _Alias );
+        SetMaterialInstance( 0, Resource.GetObject() );
+    }
 
     /** Get material instance of subpart of the mesh. Never return null. */
-    FMaterialInstance * GetMaterialInstance() const { return GetMaterialInstance( 0 ); }
+    AMaterialInstance * GetMaterialInstance() const { return GetMaterialInstance( 0 ); }
 
+    /** Allow mesh to cast shadows on the world */
     void SetCastShadow( bool _CastShadow );
 
+    /** Is cast shadows enabled */
     bool IsCastShadow() const { return bCastShadow; }
 
     /** Iterate meshes in parent world */
-    FMeshComponent * GetNextMesh() { return Next; }
-    FMeshComponent * GetPrevMesh() { return Prev; }
+    AMeshComponent * GetNextMesh() { return Next; }
+    AMeshComponent * GetPrevMesh() { return Prev; }
 
     /** Iterate shadow casters in parent world */
-    FMeshComponent * GetNextShadowCaster() { return NextShadowCaster; }
-    FMeshComponent * GetPrevShadowCaster() { return PrevShadowCaster; }
+    AMeshComponent * GetNextShadowCaster() { return NextShadowCaster; }
+    AMeshComponent * GetPrevShadowCaster() { return PrevShadowCaster; }
 
     /** Used for VSD_PASS_CUSTOM_VISIBLE_STEP algorithm */
-    virtual void RenderFrontend_CustomVisibleStep( FRenderFrontendDef * _Def, bool & _OutVisibleFlag ) {}
+    virtual void RenderFrontend_CustomVisibleStep( SRenderFrontendDef * _Def, bool & _OutVisibleFlag ) {}
 
 protected:
-    FMeshComponent();
+    AMeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    FCollisionBodyComposition const & DefaultBodyComposition() const override;
+    ACollisionBodyComposition const & DefaultBodyComposition() const override;
 
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
     virtual void OnMeshChanged() {}
 
 private:
     void NotifyMeshChanged();
 
-    FMaterialInstance * GetMaterialInstanceUnsafe( int _SubpartIndex ) const;
+    AMaterialInstance * GetMaterialInstanceUnsafe( int _SubpartIndex ) const;
 
-    FMeshComponent * Next;
-    FMeshComponent * Prev;
+    AMeshComponent * Next;
+    AMeshComponent * Prev;
 
-    FMeshComponent * NextShadowCaster;
-    FMeshComponent * PrevShadowCaster;
+    AMeshComponent * NextShadowCaster;
+    AMeshComponent * PrevShadowCaster;
 
-    TRef< FIndexedMesh > Mesh;
-    TPodArray< FMaterialInstance *, 1 > Materials;
+    TRef< AIndexedMesh > Mesh;
+    TPodArray< AMaterialInstance *, 1 > Materials;
 
     bool bCastShadow;
 };

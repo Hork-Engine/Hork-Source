@@ -34,8 +34,8 @@ SOFTWARE.
 
 #include <Engine/Resource/Public/AnimationPattern.h>
 
-class FBaseLightComponent : public FSceneComponent {
-    AN_COMPONENT( FBaseLightComponent, FSceneComponent )
+class ABaseLightComponent : public ASceneComponent {
+    AN_COMPONENT( ABaseLightComponent, ASceneComponent )
 
 public:
     enum { RENDERING_GROUP_DEFAULT = 1 };
@@ -66,11 +66,11 @@ public:
     bool IsEnabled() const { return bEnabled; }
 
     void SetAnimation( const char * _Pattern, float _Speed = 1.0f, float _Quantizer = 0.0f );
-    void SetAnimation( FAnimationPattern * _Animation );
-    FAnimationPattern * GetAnimation() { return Animation; }
+    void SetAnimation( AAnimationPattern * _Animation );
+    AAnimationPattern * GetAnimation() { return Animation; }
 
 protected:
-    FBaseLightComponent();
+    ABaseLightComponent();
 
     void TickComponent( float _TimeStep ) override;
 
@@ -81,7 +81,7 @@ private:
     bool           bEnabled;
     float          Temperature;
     float          Lumens;
-    TRef< FAnimationPattern >Animation;
+    TRef< AAnimationPattern >Animation;
     float          AnimTime;
     float          AnimationBrightness;
 };

@@ -74,10 +74,10 @@ public:
     }
 
     Bool CompareEps( const PlaneF & _Other, float const & _NormalEpsilon, float const & _DistEpsilon ) const {
-        return Bool4( FMath::Dist( Normal.X, _Other.Normal.X ) < _NormalEpsilon,
-                      FMath::Dist( Normal.Y, _Other.Normal.Y ) < _NormalEpsilon,
-                      FMath::Dist( Normal.Z, _Other.Normal.Z ) < _NormalEpsilon,
-                      FMath::Dist( D, _Other.D ) < _DistEpsilon ).All();
+        return Bool4( Math::Dist( Normal.X, _Other.Normal.X ) < _NormalEpsilon,
+                      Math::Dist( Normal.Y, _Other.Normal.Y ) < _NormalEpsilon,
+                      Math::Dist( Normal.Z, _Other.Normal.Z ) < _NormalEpsilon,
+                      Math::Dist( D, _Other.D ) < _DistEpsilon ).All();
     }
 
     void Clear();
@@ -119,8 +119,8 @@ public:
 
     PlaneF Snap( const float & _NormalEpsilon, const float & _DistEpsilon ) const {
         PlaneF SnapPlane( Normal.SnapNormal( _NormalEpsilon ), D );
-        const float SnapD = FMath::Round( D );
-        if ( FMath::Abs( D - SnapD ) < _DistEpsilon ) {
+        const float SnapD = Math::Round( D );
+        if ( Math::Abs( D - SnapD ) < _DistEpsilon ) {
             SnapPlane.D = SnapD;
         }
         return SnapPlane;
@@ -132,24 +132,23 @@ public:
     Float4 const & ToVec4() const { return *reinterpret_cast< const Float4 * >( this ); }
 
     // String conversions
-    FString ToString( int _Precision = - 1 ) const {
-        return FString( "( " ) + FMath::ToString( Normal.X, _Precision ) + " " + FMath::ToString( Normal.Y, _Precision ) + " " + FMath::ToString( Normal.Z, _Precision ) + " " + FMath::ToString( D, _Precision ) + " )";
+    AString ToString( int _Precision = - 1 ) const {
+        return AString( "( " ) + Math::ToString( Normal.X, _Precision ) + " " + Math::ToString( Normal.Y, _Precision ) + " " + Math::ToString( Normal.Z, _Precision ) + " " + Math::ToString( D, _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + FMath::ToHexString( Normal.X, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Normal.Y, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Normal.Z, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( D, _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Math::ToHexString( Normal.X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Normal.Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Normal.Z, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( D, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Normal << D;
+    void Write( IStreamBase & _Stream ) const {
+        Normal.Write( _Stream );
+        _Stream.WriteFloat( D );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Normal;
-        _Stream >> D;
+    void Read( IStreamBase & _Stream ) {
+        Normal.Read( _Stream );
+        D = _Stream.ReadFloat();
     }
 };
 
@@ -237,7 +236,7 @@ AN_FORCEINLINE EPlaneSide PlaneF::SideOffset( Float3 const & _Point, float const
 //    return _Point - ( Normal.Dot( _Point ) * OneOverLengthSqr ) * N;
 //}
 
-//namespace FMath {
+//namespace Math {
 
 //// Assumes Plane.D == 0
 //AN_FORCEINLINE Float3 ProjectPointOnPlane( Float3 const & _Point, Float3 const & _Normal ) {
@@ -338,12 +337,12 @@ public:
     Double4 const & ToVec4() const { return *reinterpret_cast< const Double4 * >( this ); }
 
     // String conversions
-    FString ToString( int _Precision = - 1 ) const {
-        return FString( "( " ) + Normal.X.ToString( _Precision ) + " " + Normal.Y.ToString( _Precision ) + " " + Normal.Z.ToString( _Precision ) + " " + D.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = - 1 ) const {
+        return AString( "( " ) + Normal.X.ToString( _Precision ) + " " + Normal.Y.ToString( _Precision ) + " " + Normal.Z.ToString( _Precision ) + " " + D.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Normal.X.ToHexString( _LeadingZeros, _Prefix ) + " " + Normal.Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Normal.Z.ToHexString( _LeadingZeros, _Prefix ) + " " + D.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Normal.X.ToHexString( _LeadingZeros, _Prefix ) + " " + Normal.Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Normal.Z.ToHexString( _LeadingZeros, _Prefix ) + " " + D.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 };
 

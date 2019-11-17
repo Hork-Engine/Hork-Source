@@ -58,16 +58,14 @@ SOFTWARE.
 #pragma warning(pop)
 #endif
 
-AN_BEGIN_CLASS_META( FWorld )
+AN_BEGIN_CLASS_META( AWorld )
 //AN_ATTRIBUTE_( bTickEvenWhenPaused, AF_DEFAULT )
 AN_END_CLASS_META()
 
-FRuntimeVariable RVDrawMeshBounds( _CTS( "DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawRootComponentAxis( _CTS( "DrawRootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawCollisionShapeWireframe( _CTS( "DrawCollisionShapeWireframe" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawContactPoints( _CTS( "DrawContactPoints" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawConstraints( _CTS( "DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawConstraintLimits( _CTS( "DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawCollisionShapeWireframe( _CTS( "DrawCollisionShapeWireframe" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawContactPoints( _CTS( "DrawContactPoints" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawConstraints( _CTS( "DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawConstraintLimits( _CTS( "DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_FORCEINLINE static unsigned short ClampUnsignedShort( int _Value ) {
     if ( _Value < 0 ) return 0;
@@ -75,23 +73,23 @@ AN_FORCEINLINE static unsigned short ClampUnsignedShort( int _Value ) {
     return _Value;
 }
 
-void FActorSpawnInfo::SetTemplate( FActor const * _Template ) {
+void SActorSpawnInfo::SetTemplate( AActor const * _Template ) {
     AN_Assert( &_Template->FinalClassMeta() == ActorTypeClassMeta );
     Template = _Template;
 }
 
-class FPhysicsDebugDraw : public btIDebugDraw {
+class APhysicsDebugDraw : public btIDebugDraw {
 public:
-    FDebugDraw * DD;
+    ADebugDraw * DD;
     int DebugMode;
 
     void drawLine( btVector3 const & from, btVector3 const & to, btVector3 const & color ) override {
-        DD->SetColor( FColor4( color.x(), color.y(), color.z(), 1.0f ) );
+        DD->SetColor( AColor4( color.x(), color.y(), color.z(), 1.0f ) );
         DD->DrawLine( btVectorToFloat3( from ), btVectorToFloat3( to ) );
     }
 
     void drawContactPoint( btVector3 const & pointOnB, btVector3 const & normalOnB, btScalar distance, int lifeTime, btVector3 const & color ) override {
-        DD->SetColor( FColor4( color.x(), color.y(), color.z(), 1.0f ) );
+        DD->SetColor( AColor4( color.x(), color.y(), color.z(), 1.0f ) );
         DD->DrawPoint( btVectorToFloat3( pointOnB ) );
         DD->DrawPoint( btVectorToFloat3( normalOnB ) );
     }
@@ -114,9 +112,9 @@ public:
     }
 };
 
-static FPhysicsDebugDraw PhysicsDebugDraw;
+static APhysicsDebugDraw PhysicsDebugDraw;
 
-struct FCollisionFilterCallback : public btOverlapFilterCallback {
+struct ACollisionFilterCallback : public btOverlapFilterCallback {
 
     // Return true when pairs need collision
     bool needBroadphaseCollision( btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1 ) const override {
@@ -129,16 +127,16 @@ struct FCollisionFilterCallback : public btOverlapFilterCallback {
             btCollisionObject const * colObj0 = reinterpret_cast< btCollisionObject const * >( proxy0->m_clientObject );
             btCollisionObject const * colObj1 = reinterpret_cast< btCollisionObject const * >( proxy1->m_clientObject );
 
-            FPhysicalBody const * body0 = ( FPhysicalBody const * )colObj0->getUserPointer();
-            FPhysicalBody const * body1 = ( FPhysicalBody const * )colObj1->getUserPointer();
+            APhysicalBody const * body0 = ( APhysicalBody const * )colObj0->getUserPointer();
+            APhysicalBody const * body1 = ( APhysicalBody const * )colObj1->getUserPointer();
 
             if ( !body0 || !body1 ) {
                 GLogger.Printf( "Null body\n" );
                 return true;
             }
 
-//            FPhysicalBody * body0 = static_cast< FPhysicalBody * >( static_cast< btCollisionObject * >( proxy0->m_clientObject )->getUserPointer() );
-//            FPhysicalBody * body1 = static_cast< FPhysicalBody * >( static_cast< btCollisionObject * >( proxy1->m_clientObject )->getUserPointer() );
+//            APhysicalBody * body0 = static_cast< APhysicalBody * >( static_cast< btCollisionObject * >( proxy0->m_clientObject )->getUserPointer() );
+//            APhysicalBody * body1 = static_cast< APhysicalBody * >( static_cast< btCollisionObject * >( proxy1->m_clientObject )->getUserPointer() );
 
             if ( body0->CollisionIgnoreActors.Find( body1->GetParentActor() ) != body0->CollisionIgnoreActors.End() ) {
                 return false;
@@ -155,7 +153,7 @@ struct FCollisionFilterCallback : public btOverlapFilterCallback {
     }
 };
 
-static FCollisionFilterCallback CollisionFilterCallback;
+static ACollisionFilterCallback CollisionFilterCallback;
 
 extern ContactAddedCallback gContactAddedCallback;
 
@@ -176,10 +174,10 @@ static bool CustomMaterialCombinerCallback( btManifoldPoint& cp, const btCollisi
     return true;
 }
 
-FWorld * FWorld::PendingKillWorlds = nullptr;
+AWorld * AWorld::PendingKillWorlds = nullptr;
 
-FWorld::FWorld() {
-    PersistentLevel = NewObject< FLevel >();
+AWorld::AWorld() {
+    PersistentLevel = NewObject< ALevel >();
     PersistentLevel->AddRef();
     PersistentLevel->OwnerWorld = this;
     PersistentLevel->bIsPersistent = true;
@@ -223,37 +221,37 @@ FWorld::FWorld() {
     SoftBodyWorldInfo->m_sparsesdf.Initialize();
 }
 
-void FWorld::SetPaused( bool _Paused ) {
+void AWorld::SetPaused( bool _Paused ) {
     bPauseRequest = _Paused;
     bUnpauseRequest = !_Paused;
 }
 
-bool FWorld::IsPaused() const {
+bool AWorld::IsPaused() const {
     return bPaused;
 }
 
-void FWorld::ResetGameplayTimer() {
+void AWorld::ResetGameplayTimer() {
     bResetGameplayTimer = true;
 }
 
-void FWorld::OnPrePhysics( btDynamicsWorld * _World, float _TimeStep ) {
-    static_cast< FWorld * >( _World->getWorldUserInfo() )->OnPrePhysics( _TimeStep );
+void AWorld::OnPrePhysics( btDynamicsWorld * _World, float _TimeStep ) {
+    static_cast< AWorld * >( _World->getWorldUserInfo() )->OnPrePhysics( _TimeStep );
 }
 
-void FWorld::OnPostPhysics( btDynamicsWorld * _World, float _TimeStep ) {
-    static_cast< FWorld * >( _World->getWorldUserInfo() )->OnPostPhysics( _TimeStep );
+void AWorld::OnPostPhysics( btDynamicsWorld * _World, float _TimeStep ) {
+    static_cast< AWorld * >( _World->getWorldUserInfo() )->OnPostPhysics( _TimeStep );
 }
 
-void FWorld::SetGravityVector( Float3 const & _Gravity ) {
+void AWorld::SetGravityVector( Float3 const & _Gravity ) {
     GravityVector = _Gravity;
     bGravityDirty = true;
 }
 
-Float3 const & FWorld::GetGravityVector() const {
+Float3 const & AWorld::GetGravityVector() const {
     return GravityVector;
 }
 
-void FWorld::Destroy() {
+void AWorld::Destroy() {
     if ( bPendingKill ) {
         return;
     }
@@ -265,10 +263,10 @@ void FWorld::Destroy() {
 
 #if 0
     for ( int i = 0 ; i < 2 ; i++ ) {
-        TPodArray< FCollisionContact > & currentContacts = CollisionContacts[ i ];
+        TPodArray< SCollisionContact > & currentContacts = CollisionContacts[ i ];
         THash<> & contactHash = ContactHash[ i ];
 
-        for ( FCollisionContact & contact : currentContacts ) {
+        for ( SCollisionContact & contact : currentContacts ) {
             contact.ActorA->RemoveRef();
             contact.ActorB->RemoveRef();
             contact.ComponentA->RemoveRef();
@@ -284,7 +282,7 @@ void FWorld::Destroy() {
     KickoffPendingKillObjects();
 
     // Remove all levels from world including persistent level
-    for ( FLevel * level : ArrayOfLevels ) {
+    for ( ALevel * level : ArrayOfLevels ) {
         if ( !level->bIsPersistent ) {
             level->OnRemoveLevelFromWorld();
         }
@@ -304,46 +302,46 @@ void FWorld::Destroy() {
     EndPlay();
 }
 
-void FWorld::DestroyActors() {
-    for ( FActor * actor : Actors ) {
+void AWorld::DestroyActors() {
+    for ( AActor * actor : Actors ) {
         actor->Destroy();
     }
 }
 
-FActorSpawnInfo::FActorSpawnInfo( uint64_t _ActorClassId )
-    : FActorSpawnInfo( FActor::Factory().LookupClass( _ActorClassId ) )
+SActorSpawnInfo::SActorSpawnInfo( uint64_t _ActorClassId )
+    : SActorSpawnInfo( AActor::Factory().LookupClass( _ActorClassId ) )
 {
 }
 
-FActorSpawnInfo::FActorSpawnInfo( const char * _ActorClassName )
-    : FActorSpawnInfo( FActor::Factory().LookupClass( _ActorClassName ) )
+SActorSpawnInfo::SActorSpawnInfo( const char * _ActorClassName )
+    : SActorSpawnInfo( AActor::Factory().LookupClass( _ActorClassName ) )
 {
 }
 
-FActor * FWorld::SpawnActor( FActorSpawnInfo const & _SpawnParameters ) {
+AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
 
     //GLogger.Printf( "==== Spawn Actor ====\n" );
 
-    FClassMeta const * classMeta = _SpawnParameters.ActorClassMeta();
+    AClassMeta const * classMeta = _SpawnParameters.ActorClassMeta();
 
     if ( !classMeta ) {
-        GLogger.Printf( "FWorld::SpawnActor: invalid actor class\n" );
+        GLogger.Printf( "AWorld::SpawnActor: invalid actor class\n" );
         return nullptr;
     }
 
-    if ( classMeta->Factory() != &FActor::Factory() ) {
-        GLogger.Printf( "FWorld::SpawnActor: not an actor class\n" );
+    if ( classMeta->Factory() != &AActor::Factory() ) {
+        GLogger.Printf( "AWorld::SpawnActor: not an actor class\n" );
         return nullptr;
     }
 
-    FActor const * templateActor = _SpawnParameters.GetTemplate();
+    AActor const * templateActor = _SpawnParameters.GetTemplate();
 
     if ( templateActor && classMeta != &templateActor->FinalClassMeta() ) {
-        GLogger.Printf( "FWorld::SpawnActor: FActorSpawnParameters::Template class doesn't match meta data\n" );
+        GLogger.Printf( "AWorld::SpawnActor: FActorSpawnParameters::Template class doesn't match meta data\n" );
         return nullptr;
     }
 
-    FActor * actor = static_cast< FActor * >( classMeta->CreateInstance() );
+    AActor * actor = static_cast< AActor * >( classMeta->CreateInstance() );
     actor->AddRef();
     actor->bDuringConstruction = false;
 
@@ -362,70 +360,65 @@ FActor * FWorld::SpawnActor( FActorSpawnInfo const & _SpawnParameters ) {
     actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
 
     // Update actor name to make it unique
-    actor->SetName( actor->Name );
+    //actor->SetObjectName( actor->Name );
 
     if ( templateActor ) {
         actor->Clone( templateActor );
     }
 
-    actor->PostSpawnInitialize( _SpawnParameters.SpawnTransform );
-    //actor->PostActorCreated();
-    //actor->ExecuteContruction( _SpawnParameters.SpawnTransform );
-    actor->PostActorConstruction();
+    actor->Initialize( _SpawnParameters.SpawnTransform );
 
     BroadcastActorSpawned( actor );
-    actor->BeginPlayComponents();
-    actor->BeginPlay();
 
     //GLogger.Printf( "=====================\n" );
     return actor;
 }
 
-static Float3 ReadFloat3( FDocument const & _Document, int _FieldsHead, const char * _FieldName, Float3 const & _Default ) {
-    FDocumentField * field = _Document.FindField( _FieldsHead, _FieldName );
+static Float3 ReadFloat3( ADocument const & _Document, int _FieldsHead, const char * _FieldName, Float3 const & _Default ) {
+    SDocumentField * field = _Document.FindField( _FieldsHead, _FieldName );
     if ( !field ) {
         return _Default;
     }
 
-    FDocumentValue * value = &_Document.Values[ field->ValuesHead ];
+    SDocumentValue * value = &_Document.Values[ field->ValuesHead ];
 
     Float3 r;
-    sscanf( value->Token.ToString().ToConstChar(), "%f %f %f", &r.X, &r.Y, &r.Z );
+    sscanf( value->Token.ToString().CStr(), "%f %f %f", &r.X, &r.Y, &r.Z );
     return r;
 }
 
-static Quat ReadQuat( FDocument const & _Document, int _FieldsHead, const char * _FieldName, Quat const & _Default ) {
-    FDocumentField * field = _Document.FindField( _FieldsHead, _FieldName );
+static Quat ReadQuat( ADocument const & _Document, int _FieldsHead, const char * _FieldName, Quat const & _Default ) {
+    SDocumentField * field = _Document.FindField( _FieldsHead, _FieldName );
     if ( !field ) {
         return _Default;
     }
 
-    FDocumentValue * value = &_Document.Values[ field->ValuesHead ];
+    SDocumentValue * value = &_Document.Values[ field->ValuesHead ];
 
     Quat r;
-    sscanf( value->Token.ToString().ToConstChar(), "%f %f %f %f", &r.X, &r.Y, &r.Z, &r.W );
+    sscanf( value->Token.ToString().CStr(), "%f %f %f %f", &r.X, &r.Y, &r.Z, &r.W );
     return r;
 }
 
-FActor * FWorld::LoadActor( FDocument const & _Document, int _FieldsHead, FLevel * _Level ) {
+AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel * _Level ) {
 
     //GLogger.Printf( "==== Load Actor ====\n" );
 
-    FDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
+    SDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
     if ( !classNameField ) {
-        GLogger.Printf( "FWorld::LoadActor: invalid actor class\n" );
+        GLogger.Printf( "AWorld::LoadActor: invalid actor class\n" );
         return nullptr;
     }
 
-    FDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
+    SDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
 
-    FClassMeta const * classMeta = FActor::Factory().LookupClass( classNameValue->Token.ToString().ToConstChar() );
+    AClassMeta const * classMeta = AActor::Factory().LookupClass( classNameValue->Token.ToString().CStr() );
     if ( !classMeta ) {
-        GLogger.Printf( "FWorld::LoadActor: invalid actor class \"%s\"\n", classNameValue->Token.ToString().ToConstChar() );
+        GLogger.Printf( "AWorld::LoadActor: invalid actor class \"%s\"\n", classNameValue->Token.ToString().CStr() );
         return nullptr;
     }
 
-    FActor * actor = static_cast< FActor * >( classMeta->CreateInstance() );
+    AActor * actor = static_cast< AActor * >( classMeta->CreateInstance() );
     actor->AddRef();
     actor->bDuringConstruction = false;
 
@@ -439,90 +432,85 @@ FActor * FWorld::LoadActor( FDocument const & _Document, int _FieldsHead, FLevel
     actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
 
     // Update actor name to make it unique
-    actor->SetName( actor->Name );
+    //actor->SetObjectName( actor->Name );
 
     // Load actor attributes
     actor->LoadAttributes( _Document, _FieldsHead );
 
 #if 0
     // Load components
-    FDocumentField * componentsArray = _Document.FindField( _FieldsHead, "Components" );
+    SDocumentField * componentsArray = _Document.FindField( _FieldsHead, "Components" );
     for ( int i = componentsArray->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-        FDocumentValue const * componentObject = &_Document.Values[ i ];
-        if ( componentObject->Type != FDocumentValue::T_Object ) {
+        SDocumentValue const * componentObject = &_Document.Values[ i ];
+        if ( componentObject->Type != SDocumentValue::T_Object ) {
             continue;
         }
         actor->LoadComponent( _Document, componentObject->FieldsHead );
     }
 
     // Load root component
-    FDocumentField * rootField = _Document.FindField( _FieldsHead, "Root" );
+    SDocumentField * rootField = _Document.FindField( _FieldsHead, "Root" );
     if ( rootField ) {
-        FDocumentValue * rootValue = &_Document.Values[ rootField->ValuesHead ];
-        FSceneComponent * root = dynamic_cast< FSceneComponent * >( actor->FindComponent( rootValue->Token.ToString().ToConstChar() ) );
+        SDocumentValue * rootValue = &_Document.Values[ rootField->ValuesHead ];
+        ASceneComponent * root = dynamic_cast< ASceneComponent * >( actor->FindComponent( rootValue->Token.ToString().CStr() ) );
         if ( root ) {
             actor->RootComponent = root;
         }
     }
 #endif
 
-    FTransform spawnTransform;
+    ATransform spawnTransform;
 
     spawnTransform.Position = ReadFloat3( _Document, _FieldsHead, "SpawnPosition", Float3(0.0f) );
     spawnTransform.Rotation = ReadQuat( _Document, _FieldsHead, "SpawnRotation", Quat::Identity() );
     spawnTransform.Scale    = ReadFloat3( _Document, _FieldsHead, "SpawnScale", Float3(1.0f) );
 
-    actor->PostSpawnInitialize( spawnTransform );
+    actor->Initialize( spawnTransform );
 
-    //actor->PostActorCreated();
-    //actor->ExecuteContruction( _SpawnParameters.SpawnTransform );
-    actor->PostActorConstruction();
     BroadcastActorSpawned( actor );
-    actor->BeginPlayComponents();
-    actor->BeginPlay();
 
     //GLogger.Printf( "=====================\n" );
     return actor;
 }
 
-FString FWorld::GenerateActorUniqueName( const char * _Name ) {
-    // TODO: optimize!
-    if ( !FindActor( _Name ) ) {
-        return _Name;
-    }
-    int uniqueNumber = 0;
-    FString uniqueName;
-    do {
-        uniqueName.Resize( 0 );
-        uniqueName.Concat( _Name );
-        uniqueName.Concat( Int( ++uniqueNumber ).ToConstChar() );
-    } while ( FindActor( uniqueName.ToConstChar() ) != nullptr );
-    return uniqueName;
-}
+//AString AWorld::GenerateActorUniqueName( const char * _Name ) {
+//    // TODO: optimize!
+//    if ( !FindActor( _Name ) ) {
+//        return _Name;
+//    }
+//    int uniqueNumber = 0;
+//    AString uniqueName;
+//    do {
+//        uniqueName.Resize( 0 );
+//        uniqueName.Concat( _Name );
+//        uniqueName.Concat( Int( ++uniqueNumber ).CStr() );
+//    } while ( FindActor( uniqueName.CStr() ) != nullptr );
+//    return uniqueName;
+//}
 
-FActor * FWorld::FindActor( const char * _UniqueName ) {
-    // TODO: Use hash!
-    for ( FActor * actor : Actors ) {
-        if ( !actor->GetName().Icmp( _UniqueName ) ) {
-            return actor;
-        }
-    }
-    return nullptr;
-}
+//AActor * AWorld::FindActor( const char * _UniqueName ) {
+//    // TODO: Use hash!
+//    for ( AActor * actor : Actors ) {
+//        if ( !actor->GetName().Icmp( _UniqueName ) ) {
+//            return actor;
+//        }
+//    }
+//    return nullptr;
+//}
 
-void FWorld::BroadcastActorSpawned( FActor * _SpawnedActor ) {    
+void AWorld::BroadcastActorSpawned( AActor * _SpawnedActor ) {    
     E_OnActorSpawned.Dispatch( _SpawnedActor );
 }
 
-void FWorld::BeginPlay() {
-    GLogger.Printf( "FWorld::BeginPlay()\n" );
+void AWorld::BeginPlay() {
+    GLogger.Printf( "AWorld::BeginPlay()\n" );
 }
 
-void FWorld::EndPlay() {
-    GLogger.Printf( "FWorld::EndPlay()\n" );
+void AWorld::EndPlay() {
+    GLogger.Printf( "AWorld::EndPlay()\n" );
 }
 
-void FWorld::Tick( float _TimeStep ) {
+void AWorld::Tick( float _TimeStep ) {
 
     //UpdatePauseStatus();
     if ( bPauseRequest ) {
@@ -541,13 +529,13 @@ void FWorld::Tick( float _TimeStep ) {
 
     //UpdateTimers();
     // Tick all timers. TODO: move timer tick to PrePhysicsTick?
-    for ( FTimer * timer = TimerList ; timer ; timer = timer->Next ) {
+    for ( ATimer * timer = TimerList ; timer ; timer = timer->Next ) {
         timer->Tick( this, _TimeStep );
     }
 
     //UpdateActors();
     // Tick actors
-    for ( FActor * actor : Actors ) {
+    for ( AActor * actor : Actors ) {
         if ( actor->IsPendingKill() ) {
             continue;
         }
@@ -566,7 +554,7 @@ void FWorld::Tick( float _TimeStep ) {
     SimulatePhysics( _TimeStep );
 
     // Update levels
-    for ( FLevel * level : ArrayOfLevels ) {
+    for ( ALevel * level : ArrayOfLevels ) {
         level->Tick( _TimeStep );
     }
 
@@ -576,25 +564,25 @@ void FWorld::Tick( float _TimeStep ) {
     GameRunningTimeMicroAfterTick += frameDuration;
 }
 
-void FWorld::AddPhysicalBody( FPhysicalBody * _PhysicalBody ) {
+void AWorld::AddPhysicalBody( APhysicalBody * _PhysicalBody ) {
     if ( !INTRUSIVE_EXISTS( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail ) ) {
         INTRUSIVE_ADD( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail );
     }
 }
 
-void FWorld::RemovePhysicalBody( FPhysicalBody * _PhysicalBody ) {
+void AWorld::RemovePhysicalBody( APhysicalBody * _PhysicalBody ) {
     if ( INTRUSIVE_EXISTS( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail ) ) {
         INTRUSIVE_REMOVE( _PhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail );
     }
 }
 
-void FWorld::OnPrePhysics( float _TimeStep ) {
+void AWorld::OnPrePhysics( float _TimeStep ) {
 
     GameplayTimeMicro = GameplayTimeMicroAfterTick;
 
     // Add physical bodies
-    FPhysicalBody * next;
-    for ( FPhysicalBody * body = PendingAddToWorldHead ; body ; body = next ) {
+    APhysicalBody * next;
+    for ( APhysicalBody * body = PendingAddToWorldHead ; body ; body = next ) {
         next = body->NextMarked;
 
         body->NextMarked = body->PrevMarked = nullptr;
@@ -608,7 +596,7 @@ void FWorld::OnPrePhysics( float _TimeStep ) {
     PendingAddToWorldHead = PendingAddToWorldTail = nullptr;
 
     // Tick actors
-    for ( FActor * actor : Actors ) {
+    for ( AActor * actor : Actors ) {
         if ( actor->IsPendingKill() ) {
             continue;
         }
@@ -622,7 +610,7 @@ void FWorld::OnPrePhysics( float _TimeStep ) {
 
 static int CacheContactPoints = -1;
 
-void FWorld::GenerateContactPoints( int _ContactIndex, FCollisionContact & _Contact ) {
+void AWorld::GenerateContactPoints( int _ContactIndex, SCollisionContact & _Contact ) {
     if ( CacheContactPoints == _ContactIndex ) {
         // Contact points already generated for this contact
         return;
@@ -632,7 +620,7 @@ void FWorld::GenerateContactPoints( int _ContactIndex, FCollisionContact & _Cont
 
     ContactPoints.ResizeInvalidate( _Contact.Manifold->getNumContacts() );
 
-    bool bSwapped = static_cast< FPhysicalBody * >( _Contact.Manifold->getBody0()->getUserPointer() ) == _Contact.ComponentB;
+    bool bSwapped = static_cast< APhysicalBody * >( _Contact.Manifold->getBody0()->getUserPointer() ) == _Contact.ComponentB;
 
     if ( ( _ContactIndex & 1 ) == 0 ) {
         // BodyA
@@ -640,7 +628,7 @@ void FWorld::GenerateContactPoints( int _ContactIndex, FCollisionContact & _Cont
         if ( bSwapped ) {
             for ( int j = 0; j < _Contact.Manifold->getNumContacts(); ++j ) {
                 btManifoldPoint & point = _Contact.Manifold->getContactPoint( j );
-                FContactPoint & contact = ContactPoints[ j ];
+                SContactPoint & contact = ContactPoints[ j ];
                 contact.Position = btVectorToFloat3( point.m_positionWorldOnA );
                 contact.Normal = -btVectorToFloat3( point.m_normalWorldOnB );
                 contact.Distance = point.m_distance1;
@@ -649,7 +637,7 @@ void FWorld::GenerateContactPoints( int _ContactIndex, FCollisionContact & _Cont
         } else {
             for ( int j = 0; j < _Contact.Manifold->getNumContacts(); ++j ) {
                 btManifoldPoint & point = _Contact.Manifold->getContactPoint( j );
-                FContactPoint & contact = ContactPoints[ j ];
+                SContactPoint & contact = ContactPoints[ j ];
                 contact.Position = btVectorToFloat3( point.m_positionWorldOnB );
                 contact.Normal = btVectorToFloat3( point.m_normalWorldOnB );
                 contact.Distance = point.m_distance1;
@@ -663,7 +651,7 @@ void FWorld::GenerateContactPoints( int _ContactIndex, FCollisionContact & _Cont
         if ( bSwapped ) {
             for ( int j = 0; j < _Contact.Manifold->getNumContacts(); ++j ) {
                 btManifoldPoint & point = _Contact.Manifold->getContactPoint( j );
-                FContactPoint & contact = ContactPoints[ j ];
+                SContactPoint & contact = ContactPoints[ j ];
                 contact.Position = btVectorToFloat3( point.m_positionWorldOnB );
                 contact.Normal = btVectorToFloat3( point.m_normalWorldOnB );
                 contact.Distance = point.m_distance1;
@@ -672,7 +660,7 @@ void FWorld::GenerateContactPoints( int _ContactIndex, FCollisionContact & _Cont
         } else {
             for ( int j = 0; j < _Contact.Manifold->getNumContacts(); ++j ) {
                 btManifoldPoint & point = _Contact.Manifold->getContactPoint( j );
-                FContactPoint & contact = ContactPoints[ j ];
+                SContactPoint & contact = ContactPoints[ j ];
                 contact.Position = btVectorToFloat3( point.m_positionWorldOnA );
                 contact.Normal = -btVectorToFloat3( point.m_normalWorldOnB );
                 contact.Distance = point.m_distance1;
@@ -682,11 +670,11 @@ void FWorld::GenerateContactPoints( int _ContactIndex, FCollisionContact & _Cont
     }
 }
 
-void FWorld::OnPostPhysics( float _TimeStep ) {
+void AWorld::OnPostPhysics( float _TimeStep ) {
 
     DispatchContactAndOverlapEvents();
 
-    for ( FActor * actor : Actors ) {
+    for ( AActor * actor : Actors ) {
         if ( actor->IsPendingKill() ) {
             continue;
         }
@@ -722,7 +710,7 @@ void FWorld::OnPostPhysics( float _TimeStep ) {
     }
 }
 
-void FWorld::DispatchContactAndOverlapEvents() {
+void AWorld::DispatchContactAndOverlapEvents() {
 
 #ifdef AN_COMPILER_MSVC
 #pragma warning( disable : 4456 )
@@ -731,20 +719,20 @@ void FWorld::DispatchContactAndOverlapEvents() {
     int curTickNumber = FixedTickNumber & 1;
     int prevTickNumber = ( FixedTickNumber + 1 ) & 1;
 
-    TPodArray< FCollisionContact > & currentContacts = CollisionContacts[ curTickNumber ];
-    TPodArray< FCollisionContact > & prevContacts = CollisionContacts[ prevTickNumber ];
+    TPodArray< SCollisionContact > & currentContacts = CollisionContacts[ curTickNumber ];
+    TPodArray< SCollisionContact > & prevContacts = CollisionContacts[ prevTickNumber ];
 
     THash<> & contactHash = ContactHash[ curTickNumber ];
     THash<> & prevContactHash = ContactHash[ prevTickNumber ];
 
-    FCollisionContact contact;
+    SCollisionContact contact;
 
-    FOverlapEvent overlapEvent;
-    FContactEvent contactEvent;
+    SOverlapEvent overlapEvent;
+    SContactEvent contactEvent;
 
 #if 0
     for ( int i = 0 ; i < currentContacts.Length() ; i++ ) {
-        FCollisionContact & contact = currentContacts[ i ];
+        SCollisionContact & contact = currentContacts[ i ];
 
         contact.ActorA->RemoveRef();
         contact.ActorB->RemoveRef();
@@ -764,8 +752,8 @@ void FWorld::DispatchContactAndOverlapEvents() {
             continue;
         }
 
-        FPhysicalBody * objectA = static_cast< FPhysicalBody * >( contactManifold->getBody0()->getUserPointer() );
-        FPhysicalBody * objectB = static_cast< FPhysicalBody * >( contactManifold->getBody1()->getUserPointer() );
+        APhysicalBody * objectA = static_cast< APhysicalBody * >( contactManifold->getBody0()->getUserPointer() );
+        APhysicalBody * objectB = static_cast< APhysicalBody * >( contactManifold->getBody1()->getUserPointer() );
 
         if ( !objectA || !objectB ) {
             // ghost object
@@ -776,8 +764,8 @@ void FWorld::DispatchContactAndOverlapEvents() {
             StdSwap( objectA, objectB );
         }
 
-        FActor * actorA = objectA->GetParentActor();
-        FActor * actorB = objectB->GetParentActor();
+        AActor * actorA = objectA->GetParentActor();
+        AActor * actorB = objectB->GetParentActor();
 
         if ( actorA->IsPendingKill() || actorB->IsPendingKill() || objectA->IsPendingKill() || objectB->IsPendingKill() ) {
             continue;
@@ -786,37 +774,37 @@ void FWorld::DispatchContactAndOverlapEvents() {
 #if 0
         if ( objectA->Mass <= 0.0f && objectB->Mass <= 0.0f ) {
             // Static vs Static
-            GLogger.Printf( "Static vs Static %s %s\n", objectA->GetName().ToConstChar()
-                            , objectB->GetName().ToConstChar() );
+            GLogger.Printf( "Static vs Static %s %s\n", objectA->GetName().CStr()
+                            , objectB->GetName().CStr() );
             continue;
         }
 
         if ( objectA->bTrigger && objectB->bTrigger ) {
             // Trigger vs Trigger
-            GLogger.Printf( "Trigger vs Tsrigger %s %s\n", objectA->GetName().ToConstChar()
-                            , objectB->GetName().ToConstChar() );
+            GLogger.Printf( "Trigger vs Tsrigger %s %s\n", objectA->GetName().CStr()
+                            , objectB->GetName().CStr() );
             continue;
         }
 
         if ( objectA->Mass <= 0.0f && objectB->bTrigger ) {
             // Static vs Trigger
-            GLogger.Printf( "Static vs Trigger %s %s\n", objectA->GetName().ToConstChar()
-                , objectB->GetName().ToConstChar() );
+            GLogger.Printf( "Static vs Trigger %s %s\n", objectA->GetName().CStr()
+                , objectB->GetName().CStr() );
             continue;
         }
 
         if ( objectB->Mass <= 0.0f && objectA->bTrigger ) {
             // Static vs Trigger
-            GLogger.Printf( "Static vs Trigger %s %s\n", objectB->GetName().ToConstChar()
-                , objectA->GetName().ToConstChar() );
+            GLogger.Printf( "Static vs Trigger %s %s\n", objectB->GetName().CStr()
+                , objectA->GetName().CStr() );
             continue;
         }
 #endif
 
         bool bContactWithTrigger = objectA->bTrigger || objectB->bTrigger; // Do not generate contact events if one of components is trigger
 
-        //GLogger.Printf( "Contact %s %s\n", objectA->GetName().ToConstChar()
-        //                , objectB->GetName().ToConstChar() );
+        //GLogger.Printf( "Contact %s %s\n", objectA->GetName().CStr()
+        //                , objectB->GetName().CStr() );
 
         contact.bComponentADispatchContactEvents = !bContactWithTrigger && objectA->bDispatchContactEvents
             && ( objectA->E_OnBeginContact
@@ -884,7 +872,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
                     break;
                 }
             }
-            AN_Assert( bUnique );
+            //AN_Assert( bUnique );
 #endif
             if ( bUnique ) {
 
@@ -897,6 +885,8 @@ void FWorld::DispatchContactAndOverlapEvents() {
 
                 currentContacts.Append( contact );
                 contactHash.Insert( hash, currentContacts.Size() - 1 );
+            } else {
+                GLogger.Printf( "Assertion failed: bUnique\n" );
             }
         }
     }
@@ -906,7 +896,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
 
     // Dispatch contact and overlap events (OnBeginContact, OnBeginOverlap, OnUpdateContact, OnUpdateOverlap)
     for ( int i = 0 ; i < currentContacts.Size() ; i++ ) {
-        FCollisionContact & contact = currentContacts[ i ];
+        SCollisionContact & contact = currentContacts[ i ];
 
         int hash = contact.Hash();
         bool bFirstContact = true;
@@ -1074,7 +1064,7 @@ void FWorld::DispatchContactAndOverlapEvents() {
 
     // Dispatch contact and overlap events (OnEndContact, OnEndOverlap)
     for ( int i = 0; i < prevContacts.Size(); i++ ) {
-        FCollisionContact & contact = prevContacts[ i ];
+        SCollisionContact & contact = prevContacts[ i ];
 
         int hash = contact.Hash();
         bool bHaveContact = false;
@@ -1180,18 +1170,18 @@ void FWorld::DispatchContactAndOverlapEvents() {
     }
 }
 
-void FWorld::SimulatePhysics( float _TimeStep ) {
+void AWorld::SimulatePhysics( float _TimeStep ) {
     if ( bPaused ) {
         return;
     }
 
     const float FixedTimeStep = 1.0f / PhysicsHertz;
 
-    int numSimulationSteps = FMath::Floor( _TimeStep * PhysicsHertz ) + 1.0f;
-    //numSimulationSteps = FMath::Min( numSimulationSteps, MAX_SIMULATION_STEPS );
+    int numSimulationSteps = Math::Floor( _TimeStep * PhysicsHertz ) + 1.0f;
+    //numSimulationSteps = Math::Min( numSimulationSteps, MAX_SIMULATION_STEPS );
 
     btContactSolverInfo & contactSolverInfo = PhysicsWorld->getSolverInfo();
-    contactSolverInfo.m_numIterations = FMath::Clamp( NumContactSolverIterations, 1, 256 );
+    contactSolverInfo.m_numIterations = Math::Clamp( NumContactSolverIterations, 1, 256 );
     contactSolverInfo.m_splitImpulse = bContactSolverSplitImpulse;
 
     if ( bGravityDirty ) {
@@ -1218,18 +1208,18 @@ void FWorld::SimulatePhysics( float _TimeStep ) {
     SoftBodyWorldInfo->m_sparsesdf.GarbageCollect();
 }
 
-void FWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter ) {
-    TPodArray< FActor * > damagedActors;
+void AWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) {
+    TPodArray< AActor * > damagedActors;
     QueryActors( damagedActors, _Position, _Radius, _QueryFilter );
-    for ( FActor * damagedActor : damagedActors ) {
+    for ( AActor * damagedActor : damagedActors ) {
         damagedActor->ApplyDamage( _DamageAmount, _Position, nullptr );
     }
 }
 
-void FWorld::KickoffPendingKillObjects() {
+void AWorld::KickoffPendingKillObjects() {
     while ( PendingKillComponents ) {
-        FActorComponent * component = PendingKillComponents;
-        FActorComponent * nextComponent;
+        AActorComponent * component = PendingKillComponents;
+        AActorComponent * nextComponent;
 
         PendingKillComponents = nullptr;
 
@@ -1239,7 +1229,7 @@ void FWorld::KickoffPendingKillObjects() {
             // FIXME: Call component->EndPlay here?
 
             // Remove component from actor array of components
-            FActor * parent = component->ParentActor;
+            AActor * parent = component->ParentActor;
             if ( parent /*&& !parent->IsPendingKill()*/ ) {
                 parent->Components[ component->ComponentIndex ] = parent->Components[ parent->Components.Size() - 1 ];
                 parent->Components[ component->ComponentIndex ]->ComponentIndex = component->ComponentIndex;
@@ -1254,8 +1244,8 @@ void FWorld::KickoffPendingKillObjects() {
     }
 
     while ( PendingKillActors ) {
-        FActor * actor = PendingKillActors;
-        FActor * nextActor;
+        AActor * actor = PendingKillActors;
+        AActor * nextActor;
 
         PendingKillActors = nullptr;
 
@@ -1272,7 +1262,7 @@ void FWorld::KickoffPendingKillObjects() {
             actor->ParentWorld = nullptr;
 
             // Remove actor from level array of actors
-            FLevel * level = actor->Level;
+            ALevel * level = actor->Level;
             level->Actors[ actor->IndexInLevelArrayOfActors ] = level->Actors[ level->Actors.Size() - 1 ];
             level->Actors[ actor->IndexInLevelArrayOfActors ]->IndexInLevelArrayOfActors = actor->IndexInLevelArrayOfActors;
             level->Actors.RemoveLast();
@@ -1286,7 +1276,7 @@ void FWorld::KickoffPendingKillObjects() {
     }
 }
 //#include <unordered_set>
-int FWorld::Serialize( FDocument & _Doc ) {
+int AWorld::Serialize( ADocument & _Doc ) {
     int object = Super::Serialize( _Doc );
 
     if ( !Actors.IsEmpty() ) {
@@ -1294,16 +1284,16 @@ int FWorld::Serialize( FDocument & _Doc ) {
 
 //        std::unordered_set< std::string > precacheStrs;
 
-        for ( FActor * actor : Actors ) {
+        for ( AActor * actor : Actors ) {
             if ( actor->IsPendingKill() ) {
                 continue;
             }
             int actorObject = actor->Serialize( _Doc );
             _Doc.AddValueToField( actors, actorObject );
 
-//            FClassMeta const & classMeta = actor->FinalClassMeta();
+//            AClassMeta const & classMeta = actor->FinalClassMeta();
 
-//            for ( FPrecacheMeta const * precache = classMeta.GetPrecacheList() ; precache ; precache = precache->Next() ) {
+//            for ( APrecacheMeta const * precache = classMeta.GetPrecacheList() ; precache ; precache = precache->Next() ) {
 //                precacheStrs.insert( precache->GetResourcePath() );
 //            }
 //            // TODO: precache all objects, not only actors
@@ -1314,7 +1304,7 @@ int FWorld::Serialize( FDocument & _Doc ) {
 //            for ( auto it : precacheStrs ) {
 //                const std::string & s = it;
 
-//                _Doc.AddValueToField( precache, _Doc.CreateStringValue( _Doc.ProxyBuffer.NewString( s.c_str() ).ToConstChar() ) );
+//                _Doc.AddValueToField( precache, _Doc.CreateStringValue( _Doc.ProxyBuffer.NewString( s.c_str() ).CStr() ) );
 //            }
 //        }
     }
@@ -1322,9 +1312,9 @@ int FWorld::Serialize( FDocument & _Doc ) {
     return object;
 }
 
-void FWorld::AddLevel( FLevel * _Level ) {
+void AWorld::AddLevel( ALevel * _Level ) {
     if ( _Level->IsPersistentLevel() ) {
-        GLogger.Printf( "FWorld::AddLevel: Can't add persistent level\n" );
+        GLogger.Printf( "AWorld::AddLevel: Can't add persistent level\n" );
         return;
     }
 
@@ -1344,18 +1334,18 @@ void FWorld::AddLevel( FLevel * _Level ) {
     ArrayOfLevels.Append( _Level );
 }
 
-void FWorld::RemoveLevel( FLevel * _Level ) {
+void AWorld::RemoveLevel( ALevel * _Level ) {
     if ( !_Level ) {
         return;
     }
 
     if ( _Level->IsPersistentLevel() ) {
-        GLogger.Printf( "FWorld::AddLevel: Can't remove persistent level\n" );
+        GLogger.Printf( "AWorld::AddLevel: Can't remove persistent level\n" );
         return;
     }
 
     if ( _Level->OwnerWorld != this ) {
-        GLogger.Printf( "FWorld::AddLevel: level is not in world\n" );
+        GLogger.Printf( "AWorld::AddLevel: level is not in world\n" );
         return;
     }
 
@@ -1370,7 +1360,7 @@ void FWorld::RemoveLevel( FLevel * _Level ) {
     _Level->RemoveRef();
 }
 
-void FWorld::AddMesh( FMeshComponent * _Mesh ) {
+void AWorld::AddMesh( AMeshComponent * _Mesh ) {
     if ( INTRUSIVE_EXISTS( _Mesh, Next, Prev, MeshList, MeshListTail ) ) {
         AN_Assert( 0 );
         return;
@@ -1379,11 +1369,11 @@ void FWorld::AddMesh( FMeshComponent * _Mesh ) {
     INTRUSIVE_ADD( _Mesh, Next, Prev, MeshList, MeshListTail );
 }
 
-void FWorld::RemoveMesh( FMeshComponent * _Mesh ) {
+void AWorld::RemoveMesh( AMeshComponent * _Mesh ) {
     INTRUSIVE_REMOVE( _Mesh, Next, Prev, MeshList, MeshListTail );
 }
 
-void FWorld::AddSkinnedMesh( FSkinnedComponent * _Skeleton ) {
+void AWorld::AddSkinnedMesh( ASkinnedComponent * _Skeleton ) {
     if ( INTRUSIVE_EXISTS( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail ) ) {
         AN_Assert( 0 );
         return;
@@ -1392,11 +1382,11 @@ void FWorld::AddSkinnedMesh( FSkinnedComponent * _Skeleton ) {
     INTRUSIVE_ADD( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
 
-void FWorld::RemoveSkinnedMesh( FSkinnedComponent * _Skeleton ) {
+void AWorld::RemoveSkinnedMesh( ASkinnedComponent * _Skeleton ) {
     INTRUSIVE_REMOVE( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
 
-void FWorld::AddShadowCaster( FMeshComponent * _Mesh ) {
+void AWorld::AddShadowCaster( AMeshComponent * _Mesh ) {
     if ( INTRUSIVE_EXISTS( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail ) ) {
         AN_Assert( 0 );
         return;
@@ -1405,11 +1395,11 @@ void FWorld::AddShadowCaster( FMeshComponent * _Mesh ) {
     INTRUSIVE_ADD( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
 }
 
-void FWorld::RemoveShadowCaster( FMeshComponent * _Mesh ) {
+void AWorld::RemoveShadowCaster( AMeshComponent * _Mesh ) {
     INTRUSIVE_REMOVE( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
 }
 
-void FWorld::AddDirectionalLight( FDirectionalLightComponent * _Light ) {
+void AWorld::AddDirectionalLight( ADirectionalLightComponent * _Light ) {
     if ( INTRUSIVE_EXISTS( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail ) ) {
         AN_Assert( 0 );
         return;
@@ -1418,11 +1408,11 @@ void FWorld::AddDirectionalLight( FDirectionalLightComponent * _Light ) {
     INTRUSIVE_ADD( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
 }
 
-void FWorld::RemoveDirectionalLight( FDirectionalLightComponent * _Light ) {
+void AWorld::RemoveDirectionalLight( ADirectionalLightComponent * _Light ) {
     INTRUSIVE_REMOVE( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
 }
 
-void FWorld::AddPointLight( FPointLightComponent * _Light ) {
+void AWorld::AddPointLight( APointLightComponent * _Light ) {
     if ( INTRUSIVE_EXISTS( _Light, Next, Prev, PointLightList, PointLightListTail ) ) {
         AN_Assert( 0 );
         return;
@@ -1431,11 +1421,11 @@ void FWorld::AddPointLight( FPointLightComponent * _Light ) {
     INTRUSIVE_ADD( _Light, Next, Prev, PointLightList, PointLightListTail );
 }
 
-void FWorld::RemovePointLight( FPointLightComponent * _Light ) {
+void AWorld::RemovePointLight( APointLightComponent * _Light ) {
     INTRUSIVE_REMOVE( _Light, Next, Prev, PointLightList, PointLightListTail );
 }
 
-void FWorld::AddSpotLight( FSpotLightComponent * _Light ) {
+void AWorld::AddSpotLight( ASpotLightComponent * _Light ) {
     if ( INTRUSIVE_EXISTS( _Light, Next, Prev, SpotLightList, SpotLightListTail ) ) {
         AN_Assert( 0 );
         return;
@@ -1444,11 +1434,11 @@ void FWorld::AddSpotLight( FSpotLightComponent * _Light ) {
     INTRUSIVE_ADD( _Light, Next, Prev, SpotLightList, SpotLightListTail );
 }
 
-void FWorld::RemoveSpotLight( FSpotLightComponent * _Light ) {
+void AWorld::RemoveSpotLight( ASpotLightComponent * _Light ) {
     INTRUSIVE_REMOVE( _Light, Next, Prev, SpotLightList, SpotLightListTail );
 }
 
-void FWorld::RegisterTimer( FTimer * _Timer ) {
+void AWorld::RegisterTimer( ATimer * _Timer ) {
     if ( INTRUSIVE_EXISTS( _Timer, Next, Prev, TimerList, TimerListTail ) ) {
         AN_Assert( 0 );
         return;
@@ -1457,47 +1447,20 @@ void FWorld::RegisterTimer( FTimer * _Timer ) {
     INTRUSIVE_ADD( _Timer, Next, Prev, TimerList, TimerListTail );
 }
 
-void FWorld::UnregisterTimer( FTimer * _Timer ) {
+void AWorld::UnregisterTimer( ATimer * _Timer ) {
     INTRUSIVE_REMOVE( _Timer, Next, Prev, TimerList, TimerListTail );
 }
 
-void FWorld::DrawDebug( FDebugDraw * _DebugDraw, int _FrameNumber ) {
+void AWorld::DrawDebug( ADebugDraw * _DebugDraw ) {
 
-    if ( DebugDrawFrame == _FrameNumber ) {
-        // Debug commands was already generated for this frame
-        return;
-    }
-
-    DebugDrawFrame = _FrameNumber;
-
-    FirstDebugDrawCommand = _DebugDraw->CommandsCount();
-
-    _DebugDraw->SplitCommands();
-
-    for ( FLevel * level : ArrayOfLevels ) {
+    for ( ALevel * level : ArrayOfLevels ) {
         level->DrawDebug( _DebugDraw );
     }
 
     _DebugDraw->SetDepthTest( true );
 
-    _DebugDraw->SetColor( FColor4( 1,1,1,1 ) );
-
-    if ( RVDrawMeshBounds ) {
-        for ( FMeshComponent * component = MeshList ; component ; component = component->GetNextMesh() ) {
-
-            _DebugDraw->DrawAABB( component->GetWorldBounds() );
-        }
-    }
-
-    for ( FActor * actor : Actors ) {
+    for ( AActor * actor : Actors ) {
         actor->DrawDebug( _DebugDraw );
-
-        if ( RVDrawRootComponentAxis ) {
-            if ( actor->RootComponent ) {
-                _DebugDraw->SetDepthTest( false );
-                _DebugDraw->DrawAxis( actor->RootComponent->GetWorldTransformMatrix(), false );
-            }
-        }
     }
 
     _DebugDraw->SetDepthTest( false );
@@ -1505,42 +1468,38 @@ void FWorld::DrawDebug( FDebugDraw * _DebugDraw, int _FrameNumber ) {
 
     int Mode = 0;
     if ( RVDrawCollisionShapeWireframe ) {
-        Mode |= FPhysicsDebugDraw::DBG_DrawWireframe;
+        Mode |= APhysicsDebugDraw::DBG_DrawWireframe;
     }
     //if ( RVDrawCollisionShapeAABBs ) {
-    //    Mode |= FPhysicsDebugDraw::DBG_DrawAabb;
+    //    Mode |= APhysicsDebugDraw::DBG_DrawAabb;
     //}
     if ( RVDrawContactPoints ) {
-        Mode |= FPhysicsDebugDraw::DBG_DrawContactPoints;
+        Mode |= APhysicsDebugDraw::DBG_DrawContactPoints;
     }
     if ( RVDrawConstraints ) {
-        Mode |= FPhysicsDebugDraw::DBG_DrawConstraints;
+        Mode |= APhysicsDebugDraw::DBG_DrawConstraints;
     }
     if ( RVDrawConstraintLimits ) {
-        Mode |= FPhysicsDebugDraw::DBG_DrawConstraintLimits;
+        Mode |= APhysicsDebugDraw::DBG_DrawConstraintLimits;
     }
     //if ( RVDrawCollisionShapeNormals ) {
-    //    Mode |= FPhysicsDebugDraw::DBG_DrawNormals;
+    //    Mode |= APhysicsDebugDraw::DBG_DrawNormals;
     //}
 
     PhysicsDebugDraw.setDebugMode( Mode );
     PhysicsWorld->debugDrawWorld();
-
-    DebugDrawCommandCount = _DebugDraw->CommandsCount() - FirstDebugDrawCommand;
-
-    //GLogger.Printf( "DebugDrawCommandCount %d\n", DebugDrawCommandCount );
 }
 
-void FWorld::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
-    FRenderFrame * frameData = GRuntime.GetFrameData();
-    FRenderView * view = _Def->View;
+void AWorld::RenderFrontend_AddInstances( SRenderFrontendDef * _Def ) {
+    SRenderFrame * frameData = GRuntime.GetFrameData();
+    SRenderView * view = _Def->View;
 
-    for ( FLevel * level : ArrayOfLevels ) {
+    for ( ALevel * level : ArrayOfLevels ) {
         level->RenderFrontend_AddInstances( _Def );
     }
 
     // Add directional lights
-    for ( FDirectionalLightComponent * light = DirectionalLightList ; light ; light = light->Next ) {
+    for ( ADirectionalLightComponent * light = DirectionalLightList ; light ; light = light->Next ) {
 
         if ( view->NumDirectionalLights > MAX_DIRECTIONAL_LIGHTS ) {
             GLogger.Printf( "MAX_DIRECTIONAL_LIGHTS hit\n" );
@@ -1551,7 +1510,7 @@ void FWorld::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
             continue;
         }
 
-        FDirectionalLightDef * lightDef = (FDirectionalLightDef *)GRuntime.AllocFrameMem( sizeof( FDirectionalLightDef ) );
+        SDirectionalLightDef * lightDef = (SDirectionalLightDef *)GRuntime.AllocFrameMem( sizeof( SDirectionalLightDef ) );
         if ( !lightDef ) {
             break;
         }
@@ -1571,7 +1530,7 @@ void FWorld::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
 
 
     // Add point lights
-    for ( FPointLightComponent * light = PointLightList ; light ; light = light->Next ) {
+    for ( APointLightComponent * light = PointLightList ; light ; light = light->Next ) {
 
         if ( !light->IsEnabled() ) {
             continue;
@@ -1579,7 +1538,7 @@ void FWorld::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
 
         // TODO: cull light
 
-        FLightDef * lightDef = (FLightDef *)GRuntime.AllocFrameMem( sizeof( FLightDef ) );
+        SLightDef * lightDef = (SLightDef *)GRuntime.AllocFrameMem( sizeof( SLightDef ) );
         if ( !lightDef ) {
             break;
         }
@@ -1600,7 +1559,7 @@ void FWorld::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
 
 
     // Add spot lights
-    for ( FSpotLightComponent * light = SpotLightList ; light ; light = light->Next ) {
+    for ( ASpotLightComponent * light = SpotLightList ; light ; light = light->Next ) {
 
         if ( !light->IsEnabled() ) {
             continue;
@@ -1608,7 +1567,7 @@ void FWorld::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
 
         // TODO: cull light
 
-        FLightDef * lightDef = (FLightDef *)GRuntime.AllocFrameMem( sizeof( FLightDef ) );
+        SLightDef * lightDef = (SLightDef *)GRuntime.AllocFrameMem( sizeof( SLightDef ) );
         if ( !lightDef ) {
             break;
         }
@@ -1631,12 +1590,12 @@ void FWorld::RenderFrontend_AddInstances( FRenderFrontendDef * _Def ) {
         view->NumLights++;
     }
 
-    void Voxelize( FRenderFrame * Frame, FRenderView * RV );
+    void Voxelize( SRenderFrame * Frame, SRenderView * RV );
 
     Voxelize( frameData, view );
 }
 
-void FWorld::RenderFrontend_AddDirectionalShadowmapInstances( FRenderFrontendDef * _Def ) {
+void AWorld::RenderFrontend_AddDirectionalShadowmapInstances( SRenderFrontendDef * _Def ) {
 
     CreateDirectionalLightCascades( GRuntime.GetFrameData(), _Def->View );
 
@@ -1646,7 +1605,7 @@ void FWorld::RenderFrontend_AddDirectionalShadowmapInstances( FRenderFrontendDef
 
     // Create shadow instances
 
-    for ( FMeshComponent * component = ShadowCasters ; component ; component = component->GetNextShadowCaster() ) {
+    for ( AMeshComponent * component = ShadowCasters ; component ; component = component->GetNextShadowCaster() ) {
 
         // TODO: Perform culling for each shadow cascade, set CascadeMask
 
@@ -1725,16 +1684,12 @@ void FWorld::RenderFrontend_AddDirectionalShadowmapInstances( FRenderFrontendDef
 
         Float3x4 const * instanceMatrix;
 
-        FIndexedMesh * mesh = component->GetMesh();
-        if ( !mesh ) {
-            // TODO: default mesh?
-            continue;
-        }
+        AIndexedMesh * mesh = component->GetMesh();
 
         size_t skeletonOffset = 0;
         size_t skeletonSize = 0;
         if ( mesh->IsSkinned() && component->IsSkinnedMesh() ) {
-            FSkinnedComponent * skeleton = static_cast< FSkinnedComponent * >(component);
+            ASkinnedComponent * skeleton = static_cast< ASkinnedComponent * >(component);
 
             // TODO: Если кости уже были обновлены на этом кадре, то не нужно их обновлять снова!
             skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize );
@@ -1746,28 +1701,28 @@ void FWorld::RenderFrontend_AddDirectionalShadowmapInstances( FRenderFrontendDef
             instanceMatrix = &component->GetWorldTransformMatrix();
         }
 
-        FIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+        AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
 
         for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
 
             // FIXME: check subpart bounding box here
 
-            FIndexedMeshSubpart * subpart = subparts[subpartIndex];
+            AIndexedMeshSubpart * subpart = subparts[subpartIndex];
 
-            FMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
+            AMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
             AN_Assert( materialInstance );
 
-            FMaterial * material = materialInstance->GetMaterial();
+            AMaterial * material = materialInstance->GetMaterial();
 
             // Prevent rendering of instances with disabled shadow casting
             if ( material->GetGPUResource()->bNoCastShadow ) {
                 continue;
             }
 
-            FMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
+            SMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( _Def->VisMarker );
 
             // Add render instance
-            FShadowRenderInstance * instance = (FShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( FShadowRenderInstance ) );
+            SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
             if ( !instance ) {
                 break;
             }
@@ -1808,10 +1763,10 @@ void FWorld::RenderFrontend_AddDirectionalShadowmapInstances( FRenderFrontendDef
 }
 
 
-TPodArray< FWorld * > FWorld::Worlds;
+TPodArray< AWorld * > AWorld::Worlds;
 
-FWorld * FWorld::CreateWorld() {
-    FWorld * world = CreateInstanceOf< FWorld >();
+AWorld * AWorld::CreateWorld() {
+    AWorld * world = CreateInstanceOf< AWorld >();
 
     world->AddRef();
 
@@ -1824,16 +1779,16 @@ FWorld * FWorld::CreateWorld() {
     return world;
 }
 
-void FWorld::DestroyWorlds() {
-    for ( FWorld * world : Worlds ) {
+void AWorld::DestroyWorlds() {
+    for ( AWorld * world : Worlds ) {
         world->Destroy();
     }
 }
 
-void FWorld::KickoffPendingKillWorlds() {
+void AWorld::KickoffPendingKillWorlds() {
     while ( PendingKillWorlds ) {
-        FWorld * world = PendingKillWorlds;
-        FWorld * nextWorld;
+        AWorld * world = PendingKillWorlds;
+        AWorld * nextWorld;
 
         PendingKillWorlds = nullptr;
 
@@ -1854,9 +1809,9 @@ void FWorld::KickoffPendingKillWorlds() {
     }
 }
 
-void FWorld::UpdateWorlds( IGameModule * _GameModule, float _TimeStep ) {
+void AWorld::UpdateWorlds( IGameModule * _GameModule, float _TimeStep ) {
     _GameModule->OnPreGameTick( _TimeStep );
-    for ( FWorld * world : Worlds ) {
+    for ( AWorld * world : Worlds ) {
         if ( world->IsPendingKill() ) {
             continue;
         }
@@ -1866,5 +1821,5 @@ void FWorld::UpdateWorlds( IGameModule * _GameModule, float _TimeStep ) {
 
     KickoffPendingKillWorlds();
 
-    FSpatialObject::_UpdateSurfaceAreas();
+    ASpatialObject::_UpdateSurfaceAreas();
 }

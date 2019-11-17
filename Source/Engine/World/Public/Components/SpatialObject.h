@@ -34,28 +34,28 @@ SOFTWARE.
 
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 
-class FLevel;
+class ALevel;
 
-struct FAreaLink {
-    FLevel * Level;
+struct SAreaLink {
+    ALevel * Level;
     int AreaNum;
     int Index;
 };
 
-using FAreaLinks = TPodArray< FAreaLink, 4 >;
+using AAreaLinks = TPodArray< SAreaLink, 4 >;
 
 /*
 
-FSpatialObject
+ASpatialObject
 
 Scene component with bounds.
 Spatial objects are located in visareas of the level.
 
 */
-class FSpatialObject : public FSceneComponent {
-    AN_COMPONENT( FSpatialObject, FSceneComponent )
+class ASpatialObject : public ASceneComponent {
+    AN_COMPONENT( ASpatialObject, ASceneComponent )
 
-    friend class FLevel;
+    friend class ALevel;
 
 public:
     // Force using bounding box specified by SetBoundsOverride()
@@ -84,8 +84,7 @@ public:
     static void _UpdateSurfaceAreas();
 
 protected:
-
-    FSpatialObject();
+    ASpatialObject();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -101,13 +100,13 @@ protected:
     BvAxisAlignedBox        OverrideBoundingBox;
     bool                    bOverrideBounds;
 
-    FAreaLinks              InArea; // list of intersected areas
+    AAreaLinks              InArea; // list of intersected areas
     bool                    bLazyBoundsUpdate;
     bool                    bIsOutdoor;
 
-    FSpatialObject * NextDirty;
-    FSpatialObject * PrevDirty;
+    ASpatialObject * NextDirty;
+    ASpatialObject * PrevDirty;
 
-    static FSpatialObject * DirtyList;
-    static FSpatialObject * DirtyListTail;
+    static ASpatialObject * DirtyList;
+    static ASpatialObject * DirtyListTail;
 };

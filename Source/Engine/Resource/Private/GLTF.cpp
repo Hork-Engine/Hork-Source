@@ -1,3 +1,4 @@
+#if 0
 /*
 
 Angie Engine Source Code
@@ -35,7 +36,7 @@ SOFTWARE.
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 
-struct FContextGLTF {
+struct SContextGLTF {
     cgltf_data * Data;
     bool bSkeletal;
     TPodArray< cgltf_node * > NodeToJoint;
@@ -176,7 +177,7 @@ static void unpack_mat4_to_mat3x4( cgltf_accessor * acc, Float3x4 * output, size
     }
 }
 
-static void unpack_weights( cgltf_accessor * acc, FMeshVertexJoint * weights ) {
+static void unpack_weights( cgltf_accessor * acc, SMeshVertexJoint * weights ) {
     float weight[ 4 ];
 
     if ( !acc || acc->type != cgltf_type_vec4 ) {
@@ -188,14 +189,14 @@ static void unpack_weights( cgltf_accessor * acc, FMeshVertexJoint * weights ) {
 
         const float invSum = 255.0f / ( weight[0] + weight[1] + weight[2] + weight[3] );
 
-        weights->JointWeights[ 0 ] = FMath::Clamp< int >( weight[ 0 ] * invSum, 0, 255 );
-        weights->JointWeights[ 1 ] = FMath::Clamp< int >( weight[ 1 ] * invSum, 0, 255 );
-        weights->JointWeights[ 2 ] = FMath::Clamp< int >( weight[ 2 ] * invSum, 0, 255 );
-        weights->JointWeights[ 3 ] = FMath::Clamp< int >( weight[ 3 ] * invSum, 0, 255 );
+        weights->JointWeights[ 0 ] = Math::Clamp< int >( weight[ 0 ] * invSum, 0, 255 );
+        weights->JointWeights[ 1 ] = Math::Clamp< int >( weight[ 1 ] * invSum, 0, 255 );
+        weights->JointWeights[ 2 ] = Math::Clamp< int >( weight[ 2 ] * invSum, 0, 255 );
+        weights->JointWeights[ 3 ] = Math::Clamp< int >( weight[ 3 ] * invSum, 0, 255 );
     }
 }
 
-static void unpack_joints( cgltf_accessor * acc, FMeshVertexJoint * weights ) {
+static void unpack_joints( cgltf_accessor * acc, SMeshVertexJoint * weights ) {
     float indices[ 4 ];
 
     if ( !acc || acc->type != cgltf_type_vec4 ) {
@@ -205,10 +206,10 @@ static void unpack_joints( cgltf_accessor * acc, FMeshVertexJoint * weights ) {
     for ( int i = 0; i < acc->count; i++, weights++ ) {
         cgltf_accessor_read_float( acc, i, indices, 4 );
 
-        weights->JointIndices[ 0 ] = FMath::Clamp< int >( indices[0], 0, FSkeleton::MAX_JOINTS );
-        weights->JointIndices[ 1 ] = FMath::Clamp< int >( indices[1], 0, FSkeleton::MAX_JOINTS );
-        weights->JointIndices[ 2 ] = FMath::Clamp< int >( indices[2], 0, FSkeleton::MAX_JOINTS );
-        weights->JointIndices[ 3 ] = FMath::Clamp< int >( indices[3], 0, FSkeleton::MAX_JOINTS );
+        weights->JointIndices[ 0 ] = Math::Clamp< int >( indices[0], 0, ASkeleton::MAX_JOINTS );
+        weights->JointIndices[ 1 ] = Math::Clamp< int >( indices[1], 0, ASkeleton::MAX_JOINTS );
+        weights->JointIndices[ 2 ] = Math::Clamp< int >( indices[2], 0, ASkeleton::MAX_JOINTS );
+        weights->JointIndices[ 3 ] = Math::Clamp< int >( indices[3], 0, ASkeleton::MAX_JOINTS );
     }
 }
 
@@ -282,7 +283,7 @@ static void sample_vec3( cgltf_animation_sampler * sampler, float frameTime, Flo
                 m0 *= dur;
                 m1 *= dur;
 
-                vec = FMath::HermiteCubicSpline( p0, m0, p1, m1, fract );
+                vec = Math::HermiteCubicSpline( p0, m0, p1, m1, fract );
             }
             break;
         }
@@ -364,7 +365,7 @@ static void sample_quat( cgltf_animation_sampler * sampler, float frameTime, Qua
                 m1.NormalizeSelf();
                 p1.NormalizeSelf();
 
-                q = FMath::HermiteCubicSpline( p0, m0, p1, m1, fract );
+                q = Math::HermiteCubicSpline( p0, m0, p1, m1, fract );
                 q.NormalizeSelf();
             }
             break;
@@ -372,8 +373,8 @@ static void sample_quat( cgltf_animation_sampler * sampler, float frameTime, Qua
     }
 }
 
-static void ReadMesh( FContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & GlobalTransform, Float3x3 const & NormalMatrix, FMeshAsset & MeshAsset ) {
-    struct FSortFunction {
+static void ReadMesh( SContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & GlobalTransform, Float3x3 const & NormalMatrix, SMeshAsset & MeshAsset ) {
+    struct ASortFunction {
         bool operator() ( cgltf_primitive const & _A, cgltf_primitive const & _B ) {
             return ( _A.material < _B.material );
         }
@@ -382,7 +383,7 @@ static void ReadMesh( FContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
     StdSort( &Mesh->primitives[ 0 ], &Mesh->primitives[ Mesh->primitives_count ], SortFunction );
 
     cgltf_material * material = nullptr;
-    FSubpart * subpart = nullptr;
+    SSubpart * subpart = nullptr;
 
     for ( int i = 0; i < Mesh->primitives_count; i++ ) {
         cgltf_primitive * prim = &Mesh->primitives[ i ];
@@ -472,7 +473,7 @@ static void ReadMesh( FContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
         }
 
         if ( !material || material != prim->material ) {
-            MeshAsset.Subparts.push_back( FSubpart() );
+            MeshAsset.Subparts.push_back( SSubpart() );
             subpart = &MeshAsset.Subparts.back();
             subpart->BoundingBox.Clear();
             subpart->BaseVertex = MeshAsset.Vertices.Size();
@@ -507,10 +508,10 @@ static void ReadMesh( FContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
             }
         }
 
-        unpack_vec2_or_vec3( position, &MeshAsset.Vertices[ firstVert ].Position, sizeof( FMeshVertex ) );
+        unpack_vec2_or_vec3( position, &MeshAsset.Vertices[ firstVert ].Position, sizeof( SMeshVertex ) );
 
         if ( texcoord ) {
-            unpack_vec2( texcoord, &MeshAsset.Vertices[ firstVert ].TexCoord, sizeof( FMeshVertex ) );
+            unpack_vec2( texcoord, &MeshAsset.Vertices[ firstVert ].TexCoord, sizeof( SMeshVertex ) );
         } else {
             for ( int v = 0; v < vertexCount; v++ ) {
                 MeshAsset.Vertices[ firstVert + v ].TexCoord.Clear();
@@ -518,9 +519,9 @@ static void ReadMesh( FContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
         }
 
         if ( normal && ( normal->type == cgltf_type_vec2 || normal->type == cgltf_type_vec3 ) && normal->count == vertexCount ) {
-            unpack_vec2_or_vec3( normal, &MeshAsset.Vertices[ firstVert ].Normal, sizeof( FMeshVertex ) );
+            unpack_vec2_or_vec3( normal, &MeshAsset.Vertices[ firstVert ].Normal, sizeof( SMeshVertex ) );
 
-            FMeshVertex * pVert = MeshAsset.Vertices.ToPtr() + firstVert;
+            SMeshVertex * pVert = MeshAsset.Vertices.ToPtr() + firstVert;
             for ( int v = 0; v < vertexCount; v++, pVert++ ) {
                 pVert->Normal.NormalizeSelf();
             }
@@ -536,7 +537,7 @@ static void ReadMesh( FContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
         }
 
         if ( tangent && ( tangent->type == cgltf_type_vec4 ) && tangent->count == vertexCount ) {
-            unpack_vec4( tangent, (Float4 *)&MeshAsset.Vertices[ firstVert ].Tangent, sizeof( FMeshVertex ) );
+            unpack_vec4( tangent, (Float4 *)&MeshAsset.Vertices[ firstVert ].Tangent, sizeof( SMeshVertex ) );
         } else {
             CalcTangentSpace( MeshAsset.Vertices.ToPtr(), MeshAsset.Vertices.Size(), MeshAsset.Indices.ToPtr() + firstIndex, indexCount );
         }
@@ -550,7 +551,7 @@ static void ReadMesh( FContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
 
         AN_UNUSED( color );
 
-        FMeshVertex * pVert = MeshAsset.Vertices.ToPtr() + firstVert;
+        SMeshVertex * pVert = MeshAsset.Vertices.ToPtr() + firstVert;
 
         if ( Ctx.bSkeletal ) {
             for ( int v = 0; v < vertexCount; v++, pVert++ ) {
@@ -579,7 +580,7 @@ static void ReadMesh( FContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
     GLogger.Printf( "Subparts %d, Primitives %d\n", MeshAsset.Subparts.size(), Mesh->primitives_count );
 }
 
-static void ReadMesh( FContextGLTF & Ctx, cgltf_node * Node, FMeshAsset & MeshAsset ) {
+static void ReadMesh( SContextGLTF & Ctx, cgltf_node * Node, SMeshAsset & MeshAsset ) {
     cgltf_mesh * mesh = Node->mesh;
 
     if ( !mesh ) {
@@ -605,7 +606,7 @@ static int FindJoint( cgltf_skin * Skin, cgltf_node * Node ) {
     return -1;
 }
 
-static void ReadSkeleton_r( FContextGLTF & Ctx, cgltf_skin * Skin, cgltf_node * Node, int ParentNum, FSkeletonAsset & Asset ) {
+static void ReadSkeleton_r( SContextGLTF & Ctx, cgltf_skin * Skin, cgltf_node * Node, int ParentNum, SSkeletonAsset & Asset ) {
     int jointIndex = FindJoint( Skin, Node );
     if ( jointIndex == -1 ) {
         for ( int i = 0; i < Node->children_count; i++ ) {
@@ -614,12 +615,12 @@ static void ReadSkeleton_r( FContextGLTF & Ctx, cgltf_skin * Skin, cgltf_node * 
         return;
     }
 
-    FJoint * joint = &Asset.Joints[ jointIndex ];
+    SJoint * joint = &Asset.Joints[ jointIndex ];
 
     if ( Node->name ) {
-        FString::CopySafe( joint->Name, sizeof( joint->Name ), Node->name );
+        AString::CopySafe( joint->Name, sizeof( joint->Name ), Node->name );
     } else {
-        FString::CopySafe( joint->Name, sizeof( joint->Name ), "unnamed" );
+        AString::CopySafe( joint->Name, sizeof( joint->Name ), "unnamed" );
     }
 
     joint->Parent = ParentNum;
@@ -636,7 +637,7 @@ static void ReadSkeleton_r( FContextGLTF & Ctx, cgltf_skin * Skin, cgltf_node * 
     }
 }
 
-static void ReadSkin( FContextGLTF & Ctx, cgltf_skin * Skin, FMeshAsset const & MeshAsset, FSkeletonAsset & SkeletonAsset ) {
+static void ReadSkin( SContextGLTF & Ctx, cgltf_skin * Skin, SMeshAsset const & MeshAsset, SSkeletonAsset & SkeletonAsset ) {
     SkeletonAsset.Joints.ResizeInvalidate( Skin->joints_count );
     Ctx.NodeToJoint.ResizeInvalidate( Skin->joints_count );
 
@@ -645,15 +646,15 @@ static void ReadSkin( FContextGLTF & Ctx, cgltf_skin * Skin, FMeshAsset const & 
         return;
     }
 
-    unpack_mat4_to_mat3x4( Skin->inverse_bind_matrices, &SkeletonAsset.Joints.ToPtr()->OffsetMatrix, sizeof( SkeletonAsset.Joints[0] ) );
+    unpack_mat4_to_mat3x4( Skin->inverse_bind_matrices, SkeletonAsset.Skin.OffsetMatrices.ToPtr(), sizeof( Float3x4 ) );
 
     if ( Skin->skeleton ) {
         ReadSkeleton_r( Ctx, Skin, Skin->skeleton, -1, SkeletonAsset );
     }
-    SkeletonAsset.CalcBindposeBounds( &MeshAsset );
+    SkeletonAsset.CalcBindposeBounds( MeshAsset.Vertices.ToPtr(), MeshAsset.Weights.ToPtr(), MeshAsset.Vertices.Size(), &SkeletonAsset.Skin );
 }
 
-static void ReadSkin( FContextGLTF & Ctx, cgltf_node * Node, FMeshAsset const & MeshAsset, FSkeletonAsset & SkeletonAsset ) {
+static void ReadSkin( SContextGLTF & Ctx, cgltf_node * Node, SMeshAsset const & MeshAsset, SSkeletonAsset & SkeletonAsset ) {
     cgltf_skin * skin = Node->skin;
 
     if ( !skin ) {
@@ -663,7 +664,7 @@ static void ReadSkin( FContextGLTF & Ctx, cgltf_node * Node, FMeshAsset const & 
     ReadSkin( Ctx, skin, MeshAsset, SkeletonAsset );
 }
 
-static void ReadNode_r( FContextGLTF & Ctx, cgltf_node * Node, FMeshAsset & MeshAsset ) {
+static void ReadNode_r( SContextGLTF & Ctx, cgltf_node * Node, SMeshAsset & MeshAsset ) {
 
     //GLogger.Printf( "node \"%s\"\n", Node->name );
 
@@ -687,6 +688,7 @@ static void ReadNode_r( FContextGLTF & Ctx, cgltf_node * Node, FMeshAsset & Mesh
         ReadNode_r( Ctx, child, MeshAsset );
     }
 }
+
 
 static const char * GetErrorString( cgltf_result code ) {
     switch ( code ) {
@@ -760,7 +762,7 @@ static bool IsChannelValid( cgltf_animation_channel * channel ) {
     return true;
 }
 
-static void ReadAnimation( FContextGLTF & Ctx, cgltf_animation * Anim, FSkeletonAsset * SkeletonAsset, FAnimationAsset * AnimAsset ) {
+static void ReadAnimation( SContextGLTF & Ctx, cgltf_animation * Anim, SSkeletonAsset * SkeletonAsset, SAnimationAsset * AnimAsset ) {
     const int framesPerSecond = 30;
 //    float gcd = 0;
     float maxDuration = 0;
@@ -778,12 +780,12 @@ static void ReadAnimation( FContextGLTF & Ctx, cgltf_animation * Anim, FSkeleton
         float time = 0;
         for ( int t = 0; t < animtimes->count; t++ ) {
             cgltf_accessor_read_float( animtimes, t, &time, 1 );
-            gcd = FMath::GreaterCommonDivisor( gcd, time );
+            gcd = Math::GreaterCommonDivisor( gcd, time );
         }
 #endif
         float time = 0;
         cgltf_accessor_read_float( animtimes, animtimes->count - 1, &time, 1 );
-        maxDuration = FMath::Max( maxDuration, time );
+        maxDuration = Math::Max( maxDuration, time );
     }
 
     int numFrames = maxDuration * framesPerSecond;
@@ -804,7 +806,7 @@ static void ReadAnimation( FContextGLTF & Ctx, cgltf_animation * Anim, FSkeleton
             continue;
         }
 
-        FJoint * joint = nullptr;
+        SJoint * joint = nullptr;
         int jointIndex;
         for ( jointIndex = 0; jointIndex < Ctx.NodeToJoint.Size(); jointIndex++ ) {
             if ( Ctx.NodeToJoint[ jointIndex ] == channel->target_node ) {
@@ -824,7 +826,7 @@ static void ReadAnimation( FContextGLTF & Ctx, cgltf_animation * Anim, FSkeleton
             }
         }
 
-        FAnimationChannel * jointAnim;
+        SAnimationChannel * jointAnim;
 
         if ( mergedChannel < AnimAsset->Channels.Size() ) {
             jointAnim = &AnimAsset->Channels[ mergedChannel ];
@@ -834,7 +836,7 @@ static void ReadAnimation( FContextGLTF & Ctx, cgltf_animation * Anim, FSkeleton
             jointAnim->TransformOffset = AnimAsset->Transforms.Size();
             AnimAsset->Transforms.Resize( AnimAsset->Transforms.Size() + numFrames );
             for ( int f = 0; f < numFrames; f++ ) {
-                FChannelTransform & transform = AnimAsset->Transforms[ jointAnim->TransformOffset + f ];
+                ATransform & transform = AnimAsset->Transforms[ jointAnim->TransformOffset + f ];
                 transform.Position = Float3( 0 );
                 transform.Scale = Float3( 1 );
                 transform.Rotation.SetIdentity();
@@ -842,7 +844,7 @@ static void ReadAnimation( FContextGLTF & Ctx, cgltf_animation * Anim, FSkeleton
         }
 
         for ( int f = 0; f < numFrames; f++ ) {
-            FChannelTransform & transform = AnimAsset->Transforms[ jointAnim->TransformOffset + f ];
+            ATransform & transform = AnimAsset->Transforms[ jointAnim->TransformOffset + f ];
 
             float frameTime = f * frameDelta;
 
@@ -863,17 +865,17 @@ static void ReadAnimation( FContextGLTF & Ctx, cgltf_animation * Anim, FSkeleton
     }
 }
 
-static void ReadAnimations( FContextGLTF & Ctx, cgltf_data * Data, FMeshAsset const & MeshAsset, FSkeletonAsset & SkeletonAsset, TStdVector< FAnimationAsset > & Animations ) {
+static void ReadAnimations( SContextGLTF & Ctx, cgltf_data * Data, SMeshAsset const & MeshAsset, SSkeletonAsset & SkeletonAsset, TStdVector< SAnimationAsset > & Animations ) {
     Animations.resize( Data->animations_count );
     for ( int animIndex = 0; animIndex < Data->animations_count; animIndex++ ) {
         ReadAnimation( Ctx, &Data->animations[animIndex], &SkeletonAsset, &Animations[animIndex] );
 
-        Animations[animIndex].CalcBoundingBoxes( &MeshAsset, SkeletonAsset.Joints.ToPtr(), SkeletonAsset.Joints.Size() );
+        Animations[animIndex].CalcBoundingBoxes( MeshAsset.Vertices.ToPtr(), MeshAsset.Weights.ToPtr(), MeshAsset.Vertices.Size(), SkeletonAsset.Joints.ToPtr(), SkeletonAsset.Joints.Size(), &SkeletonAsset.Skin );
     }
 }
 
-static bool ReadGLTF( cgltf_data * Data, FMeshAsset & MeshAsset, FSkeletonAsset & SkeletonAsset, TStdVector< FAnimationAsset > & Animations ) {
-    FContextGLTF ctx;
+static bool ReadGLTF( cgltf_data * Data, SMeshAsset & MeshAsset, SSkeletonAsset & SkeletonAsset, TStdVector< SAnimationAsset > & Animations ) {
+    SContextGLTF ctx;
 
     ctx.Data = Data;
     ctx.bSkeletal = Data->skins_count > 0;
@@ -941,8 +943,8 @@ static bool ReadGLTF( cgltf_data * Data, FMeshAsset & MeshAsset, FSkeletonAsset 
     return true;
 }
 
-static bool ReadGeometryGLTF( cgltf_data * Data, FMeshAsset & MeshAsset ) {
-    FContextGLTF ctx;
+static bool ReadGeometryGLTF( cgltf_data * Data, SMeshAsset & MeshAsset ) {
+    SContextGLTF ctx;
 
     ctx.Data = Data;
     ctx.bSkeletal = Data->skins_count > 0;
@@ -1005,15 +1007,15 @@ static bool ReadGeometryGLTF( cgltf_data * Data, FMeshAsset & MeshAsset ) {
     return true;
 }
 
-bool LoadGLTF( const char * FileName, FMeshAsset & MeshAsset, FSkeletonAsset & SkeletonAsset, TStdVector< FAnimationAsset > & Animations ) {
+bool LoadGLTF( const char * FileName, SMeshAsset & MeshAsset, SSkeletonAsset & SkeletonAsset, TStdVector< SAnimationAsset > & Animations ) {
     bool ret = false;
-    FFileStream f;
+    AFileStream f;
 
     MeshAsset.Clear();
     SkeletonAsset.Clear();
     Animations.clear();
 
-    FString path = FileName;
+    AString path = FileName;
     path.StripFilename();
     path += "/";
 
@@ -1022,7 +1024,7 @@ bool LoadGLTF( const char * FileName, FMeshAsset & MeshAsset, FSkeletonAsset & S
         return false;
     }
 
-    size_t size = f.Length();
+    size_t size = f.SizeInBytes();
 
     int hunkMark = GHunkMemory.SetHunkMark();
 
@@ -1054,7 +1056,7 @@ bool LoadGLTF( const char * FileName, FMeshAsset & MeshAsset, FSkeletonAsset & S
         goto fin;
     }
 
-    result = cgltf_load_buffers( &options, data, path.ToConstChar() );
+    result = cgltf_load_buffers( &options, data, path.CStr() );
     if ( result != cgltf_result_success ) {
         GLogger.Printf( "Couldn't load %s buffers : %s\n", FileName, GetErrorString( result ) );
         goto fin;
@@ -1069,13 +1071,13 @@ fin:
 }
 
 
-bool LoadGeometryGLTF( const char * FileName, FMeshAsset & MeshAsset ) {
+bool LoadGeometryGLTF( const char * FileName, SMeshAsset & MeshAsset ) {
     bool ret = false;
-    FFileStream f;
+    AFileStream f;
 
     MeshAsset.Clear();
 
-    FString path = FileName;
+    AString path = FileName;
     path.StripFilename();
     path += "/";
 
@@ -1084,7 +1086,7 @@ bool LoadGeometryGLTF( const char * FileName, FMeshAsset & MeshAsset ) {
         return false;
     }
 
-    size_t size = f.Length();
+    size_t size = f.SizeInBytes();
 
     int hunkMark = GHunkMemory.SetHunkMark();
 
@@ -1116,7 +1118,7 @@ bool LoadGeometryGLTF( const char * FileName, FMeshAsset & MeshAsset ) {
         goto fin;
     }
 
-    result = cgltf_load_buffers( &options, data, path.ToConstChar() );
+    result = cgltf_load_buffers( &options, data, path.CStr() );
     if ( result != cgltf_result_success ) {
         GLogger.Printf( "Couldn't load %s buffers : %s\n", FileName, GetErrorString( result ) );
         goto fin;
@@ -1129,4 +1131,4 @@ fin:
 
     return ret;
 }
-
+#endif

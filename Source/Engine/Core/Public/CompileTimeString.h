@@ -36,7 +36,7 @@ struct TCompileTimeString {
 
     operator const char *() const { return Data; }
 
-    const char * ToConstChar() const { return Data; }
+    const char * CStr() const { return Data; }
 
     constexpr int Length() const { return sizeof...(Chars) - 1; }
 };

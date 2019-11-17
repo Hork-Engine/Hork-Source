@@ -32,7 +32,7 @@ SOFTWARE.
 #include <Engine/Core/Public/Std.h>
 #include <fastlz.h>
 
-size_t FFastLZCompressor::CalcAppropriateCompressedDataSize( size_t _SourceSize ) {
+size_t AFastLZCompressor::CalcAppropriateCompressedDataSize( size_t _SourceSize ) {
     // The output buffer must be at least 5% larger than the input buffer
     // and can not be smaller than 66 bytes.
     size_t size = StdFloor( _SourceSize * 1.05 + 0.5 );
@@ -42,7 +42,7 @@ size_t FFastLZCompressor::CalcAppropriateCompressedDataSize( size_t _SourceSize 
     return size;
 }
 
-bool FFastLZCompressor::CompressData( const byte * _Data, size_t _DataSz, byte * _CompressedData, size_t & _CompressedDataSz ) {
+bool AFastLZCompressor::CompressData( const byte * _Data, size_t _DataSz, byte * _CompressedData, size_t & _CompressedDataSz ) {
     if ( _DataSz < 16 ) {
         // too small buffer
         return false;
@@ -54,7 +54,7 @@ bool FFastLZCompressor::CompressData( const byte * _Data, size_t _DataSz, byte *
     return _CompressedDataSz <= _DataSz;
 }
 
-bool FFastLZCompressor::CompressDataLevel( ECompressionLevel _Level, const byte * _Data, size_t _DataSz, byte * _CompressedData, size_t & _CompressedDataSz ) {
+bool AFastLZCompressor::CompressDataLevel( ECompressionLevel _Level, const byte * _Data, size_t _DataSz, byte * _CompressedData, size_t & _CompressedDataSz ) {
     if ( _DataSz < 16 ) {
         // too small buffer
         return false;
@@ -66,7 +66,7 @@ bool FFastLZCompressor::CompressDataLevel( ECompressionLevel _Level, const byte 
     return _CompressedDataSz <= _DataSz;
 }
 
-bool FFastLZCompressor::DecompressData( const byte * _CompressedData, size_t _CompressedDataSz, byte * _Data, size_t & _DataSz, int _MaxOut ) {
+bool AFastLZCompressor::DecompressData( const byte * _CompressedData, size_t _CompressedDataSz, byte * _Data, size_t & _DataSz, int _MaxOut ) {
     int result = fastlz_decompress( _CompressedData, _CompressedDataSz, _Data, _MaxOut );
     _DataSz = result;
 

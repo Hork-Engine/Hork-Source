@@ -31,16 +31,16 @@ SOFTWARE.
 #include <Engine/Core/Public/ConvexHull.h>
 #include <Engine/Core/Public/Logger.h>
 
-FConvexHull * FConvexHull::Create( int _MaxPoints ) {
+AConvexHull * AConvexHull::Create( int _MaxPoints ) {
     AN_Assert( _MaxPoints > 0 );
-    int size = sizeof( FConvexHull ) - sizeof( Points ) + _MaxPoints * sizeof( Points[0] );
-    FConvexHull * hull = ( FConvexHull * )GZoneMemory.Alloc( size, 1 );
+    int size = sizeof( AConvexHull ) - sizeof( Points ) + _MaxPoints * sizeof( Points[0] );
+    AConvexHull * hull = ( AConvexHull * )GZoneMemory.Alloc( size, 1 );
     hull->MaxPoints = _MaxPoints;
     hull->NumPoints = 0;
     return hull;
 }
 
-FConvexHull * FConvexHull::CreateForPlane( PlaneF const & _Plane, float _MaxExtents ) {
+AConvexHull * AConvexHull::CreateForPlane( PlaneF const & _Plane, float _MaxExtents ) {
     Float3 rightVec;
     Float3 upVec;
 
@@ -48,7 +48,7 @@ FConvexHull * FConvexHull::CreateForPlane( PlaneF const & _Plane, float _MaxExte
 
     Float3 p = _Plane.Normal * _Plane.Dist(); // point on plane
 
-    FConvexHull * hull;
+    AConvexHull * hull;
     hull = Create( 4 );
     hull->NumPoints = 4;
     hull->Points[ 0 ] = ( upVec - rightVec ) * _MaxExtents;
@@ -62,15 +62,15 @@ FConvexHull * FConvexHull::CreateForPlane( PlaneF const & _Plane, float _MaxExte
     return hull;
 }
 
-FConvexHull * FConvexHull::CreateFromPoints( Float3 const * _Points, int _NumPoints ) {
-    FConvexHull * hull;
+AConvexHull * AConvexHull::CreateFromPoints( Float3 const * _Points, int _NumPoints ) {
+    AConvexHull * hull;
     hull = Create( _NumPoints );
     hull->NumPoints = _NumPoints;
     memcpy( hull->Points, _Points, sizeof( Float3 ) * _NumPoints );
     return hull;
 }
 
-FConvexHull * FConvexHull::RecreateFromPoints( FConvexHull * _OldHull, Float3 const * _Points, int _NumPoints ) {
+AConvexHull * AConvexHull::RecreateFromPoints( AConvexHull * _OldHull, Float3 const * _Points, int _NumPoints ) {
     if ( _OldHull ) {
 
         // hull capacity is big enough
@@ -81,9 +81,9 @@ FConvexHull * FConvexHull::RecreateFromPoints( FConvexHull * _OldHull, Float3 co
         }
 
         // resize hull
-        int oldSize = sizeof( FConvexHull ) - sizeof( Points ) + _OldHull->MaxPoints * sizeof( Points[0] );
+        int oldSize = sizeof( AConvexHull ) - sizeof( Points ) + _OldHull->MaxPoints * sizeof( Points[0] );
         int newSize = oldSize + ( _NumPoints - _OldHull->MaxPoints ) * sizeof( Points[0] );
-        FConvexHull * hull = ( FConvexHull * )GZoneMemory.Extend( _OldHull, oldSize, newSize, 1, false );
+        AConvexHull * hull = ( AConvexHull * )GZoneMemory.Extend( _OldHull, oldSize, newSize, 1, false );
         hull->MaxPoints = _NumPoints;
         hull->NumPoints = _NumPoints;
         memcpy( hull->Points, _Points, _NumPoints * sizeof( Float3 ) );
@@ -93,20 +93,20 @@ FConvexHull * FConvexHull::RecreateFromPoints( FConvexHull * _OldHull, Float3 co
     return CreateFromPoints( _Points, _NumPoints );
 }
 
-void FConvexHull::Destroy( FConvexHull * _Hull ) {
+void AConvexHull::Destroy( AConvexHull * _Hull ) {
     GZoneMemory.Dealloc( _Hull );
 }
 
-FConvexHull * FConvexHull::Duplicate() const {
-    FConvexHull * hull;
+AConvexHull * AConvexHull::Duplicate() const {
+    AConvexHull * hull;
     hull = Create( MaxPoints );
     hull->NumPoints = NumPoints;
     memcpy( hull->Points, Points, sizeof( Float3 ) * NumPoints );
     return hull;
 }
 
-FConvexHull * FConvexHull::Reversed() const {
-    FConvexHull * hull;
+AConvexHull * AConvexHull::Reversed() const {
+    AConvexHull * hull;
     hull = Create( MaxPoints );
     hull->NumPoints = NumPoints;
     const int numPointsMinusOne = NumPoints - 1;
@@ -116,7 +116,7 @@ FConvexHull * FConvexHull::Reversed() const {
     return hull;
 }
 
-EPlaneSide FConvexHull::Classify( PlaneF const & _Plane, float _Epsilon ) const {
+EPlaneSide AConvexHull::Classify( PlaneF const & _Plane, float _Epsilon ) const {
     EPlaneSide side;
     int front = 0;
     int back = 0;
@@ -158,7 +158,7 @@ EPlaneSide FConvexHull::Classify( PlaneF const & _Plane, float _Epsilon ) const 
     return EPlaneSide::Cross;
 }
 
-bool FConvexHull::IsTiny( float _MinEdgeLength ) const {
+bool AConvexHull::IsTiny( float _MinEdgeLength ) const {
     int numEdges = 0;
     for ( int i = 0 ; i < NumPoints ; i++ ) {
         const Float3 & p1 = Points[ i ];
@@ -173,7 +173,7 @@ bool FConvexHull::IsTiny( float _MinEdgeLength ) const {
     return true;
 }
 
-bool FConvexHull::IsHuge() const {
+bool AConvexHull::IsHuge() const {
     for ( int i = 0 ; i < NumPoints ; i++ ) {
         const Float3 & p = Points[ i ];
         if (   p.X <= CONVEX_HULL_MIN_BOUNDS || p.X >= CONVEX_HULL_MAX_BOUNDS
@@ -185,7 +185,7 @@ bool FConvexHull::IsHuge() const {
     return false;
 }
 
-float FConvexHull::CalcArea() const {
+float AConvexHull::CalcArea() const {
     float Area = 0;
     for ( int i = 2 ; i < NumPoints ; i++ ) {
         Area += ( Points[i - 1] - Points[0] ).Cross( Points[i] - Points[0] ).Length();
@@ -193,7 +193,7 @@ float FConvexHull::CalcArea() const {
     return Area * 0.5f;
 }
 
-BvAxisAlignedBox FConvexHull::CalcBounds() const {
+BvAxisAlignedBox AConvexHull::CalcBounds() const {
     BvAxisAlignedBox bounds;
 
     bounds.Clear();
@@ -203,9 +203,9 @@ BvAxisAlignedBox FConvexHull::CalcBounds() const {
     return bounds;
 }
 
-Float3 FConvexHull::CalcNormal() const {
+Float3 AConvexHull::CalcNormal() const {
     if ( NumPoints < 3 ) {
-        GLogger.Print( "FConvexHull::CalcNormal: num points < 3\n" );
+        GLogger.Print( "AConvexHull::CalcNormal: num points < 3\n" );
         return Float3( 0 );
     }
 
@@ -214,11 +214,11 @@ Float3 FConvexHull::CalcNormal() const {
     return ( Points[1] - center ).Cross( Points[0] - center ).NormalizeFix();
 }
 
-PlaneF FConvexHull::CalcPlane() const {
+PlaneF AConvexHull::CalcPlane() const {
     PlaneF plane;
 
     if ( NumPoints < 3 ) {
-        GLogger.Print( "FConvexHull::CalcPlane: num points < 3\n" );
+        GLogger.Print( "AConvexHull::CalcPlane: num points < 3\n" );
         plane.Clear();
         return plane;
     }
@@ -230,10 +230,10 @@ PlaneF FConvexHull::CalcPlane() const {
     return plane;
 }
 
-Float3 FConvexHull::CalcCenter() const {
+Float3 AConvexHull::CalcCenter() const {
     Float3 center(0);
     if ( !NumPoints ) {
-        GLogger.Print( "FConvexHull::CalcCenter: no points in hull\n" );
+        GLogger.Print( "AConvexHull::CalcCenter: no points in hull\n" );
         return center;
     }
     for ( int i = 0 ; i < NumPoints ; i++ ) {
@@ -242,7 +242,7 @@ Float3 FConvexHull::CalcCenter() const {
     return center * ( 1.0f / NumPoints );
 }
 
-void FConvexHull::Reverse() {
+void AConvexHull::Reverse() {
     const int n = NumPoints >> 1;
     const int numPointsMinusOne = NumPoints - 1;
     Float3 tmp;
@@ -253,7 +253,7 @@ void FConvexHull::Reverse() {
     }
 }
 
-EPlaneSide FConvexHull::Split( PlaneF const & _Plane, float _Epsilon, FConvexHull ** _Front, FConvexHull ** _Back ) const {
+EPlaneSide AConvexHull::Split( PlaneF const & _Plane, float _Epsilon, AConvexHull ** _Front, AConvexHull ** _Back ) const {
     int i;
 
     int front = 0;
@@ -265,7 +265,7 @@ EPlaneSide FConvexHull::Split( PlaneF const & _Plane, float _Epsilon, FConvexHul
     EPlaneSide * sides = ( EPlaneSide * )StackAlloc( ( NumPoints + 1 ) * sizeof( EPlaneSide ) );
 
     if ( !distances || !sides ) {
-        CriticalError( "FConvexHull:Split: stack overflow\n" );
+        CriticalError( "AConvexHull:Split: stack overflow\n" );
     }
 
     // Определить с какой стороны находится каждая точка исходного полигона
@@ -320,8 +320,8 @@ EPlaneSide FConvexHull::Split( PlaneF const & _Plane, float _Epsilon, FConvexHul
     *_Front = Create( NumPoints + 4 );
     *_Back = Create( NumPoints + 4 );
 
-    FConvexHull * f = *_Front;
-    FConvexHull * b = *_Back;
+    AConvexHull * f = *_Front;
+    AConvexHull * b = *_Back;
 
     for ( i = 0 ; i < NumPoints ; i++ ) {
         Float3 const & v = Points[ i ];
@@ -384,7 +384,7 @@ EPlaneSide FConvexHull::Split( PlaneF const & _Plane, float _Epsilon, FConvexHul
     return EPlaneSide::Cross;
 }
 
-EPlaneSide FConvexHull::Clip( PlaneF const & _Plane, float _Epsilon, FConvexHull ** _Front ) const {
+EPlaneSide AConvexHull::Clip( PlaneF const & _Plane, float _Epsilon, AConvexHull ** _Front ) const {
     int i;
     int front = 0;
     int back = 0;
@@ -395,7 +395,7 @@ EPlaneSide FConvexHull::Clip( PlaneF const & _Plane, float _Epsilon, FConvexHull
     EPlaneSide * sides = ( EPlaneSide * )StackAlloc( ( NumPoints + 1 ) * sizeof( EPlaneSide ) );
 
     if ( !distances || !sides ) {
-        CriticalError( "FConvexHull:Clip: stack overflow\n" );
+        CriticalError( "AConvexHull:Clip: stack overflow\n" );
     }
 
     // Определить с какой стороны находится каждая точка исходного полигона
@@ -431,7 +431,7 @@ EPlaneSide FConvexHull::Clip( PlaneF const & _Plane, float _Epsilon, FConvexHull
 
     *_Front = Create( NumPoints + 4 );
 
-    FConvexHull * f = *_Front;
+    AConvexHull * f = *_Front;
 
     for ( i = 0 ; i < NumPoints ; i++ ) {
         Float3 const & v = Points[ i ];

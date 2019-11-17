@@ -343,7 +343,7 @@ VertexArrayObject * State::CachedVAO( VertexBindingInfo const * pVertexBindings,
         VertexArrayObject * vao = VAOCache[ i ];
 
         if ( !memcmp( &vao->Hashed, &hashed, sizeof( vao->Hashed ) ) ) {
-            LogPrintf( "Caching VAO\n" );
+            //LogPrintf( "Caching VAO\n" );
             return vao;
         }
     }
@@ -362,7 +362,7 @@ VertexArrayObject * State::CachedVAO( VertexBindingInfo const * pVertexBindings,
     VAOHash.Insert( hash, i );
     VAOCache.Append( vao );
 
-    LogPrintf( "Total VAOs %d\n", i+1 );
+    //LogPrintf( "Total VAOs %d\n", i+1 );
 
     glCreateVertexArrays( 1, &vao->Handle );
     if ( !vao->Handle ) {

@@ -35,24 +35,24 @@ SOFTWARE.
 //#define AN_ACTIVE_THREADS_COUNTERS
 
 /** Job for job list */
-struct FAsyncJob
+struct SAsyncJob
 {
     /** Callback for the job */
     void (*Callback)( void * );
     /** Data that will be passed for the job */
     void *Data;
     /** Pointer to the next job in job list */
-    FAsyncJob * Next;
+    SAsyncJob * Next;
 };
 
-class FAsyncJobManager;
+class AAsyncJobManager;
 
 /** Job list */
-class FAsyncJobList final
+class AAsyncJobList final
 {
-    AN_FORBID_COPY( FAsyncJobList )
+    AN_FORBID_COPY( AAsyncJobList )
 
-    friend class FAsyncJobManager;
+    friend class AAsyncJobManager;
 
 public:
     /** Set job pool size (max jobs for the list) */
@@ -74,36 +74,36 @@ public:
     void SubmitAndWait();
 
 private:
-    FAsyncJobList();
-    ~FAsyncJobList();
+    AAsyncJobList();
+    ~AAsyncJobList();
 
-    FAsyncJobManager * JobManager;
+    AAsyncJobManager * JobManager;
 
-    TPodArray< FAsyncJob, 1024 > JobPool;
-    FAsyncJob * JobList;
+    TPodArray< SAsyncJob, 1024 > JobPool;
+    SAsyncJob * JobList;
     int NumPendingJobs;
 
-    FAsyncJob * SubmittedJobs;
-    FThreadSync SubmitSync;
+    SAsyncJob * SubmittedJobs;
+    AThreadSync SubmitSync;
 
-    FSyncEvent EventDone;
+    ASyncEvent EventDone;
     bool       bSignalled;      // FIXME: must be atomic?
 };
 
-AN_FORCEINLINE int FAsyncJobList::GetMaxParallelJobs() const {
+AN_FORCEINLINE int AAsyncJobList::GetMaxParallelJobs() const {
     return JobPool.Reserved();
 }
 
 /** Job manager */
-class FAsyncJobManager final
+class AAsyncJobManager final
 {
-    AN_FORBID_COPY( FAsyncJobManager )
+    AN_FORBID_COPY( AAsyncJobManager )
 
 public:
     static constexpr int MAX_WORKER_THREADS = 4;
     static constexpr int MAX_JOB_LISTS = 4;
 
-    FAsyncJobManager();
+    AAsyncJobManager();
 
     /** Initialize job manager. Set worker threads count and create job lists */
     void Initialize( int _NumWorkerThreads, int _NumJobLists );
@@ -115,7 +115,7 @@ public:
     void NotifyThreads();
 
     /** Get job list by the index */
-    FAsyncJobList * GetAsyncJobList( int _Index ) { AN_Assert( _Index >= 0 && _Index < NumJobLists ); return &JobList[_Index]; }
+    AAsyncJobList * GetAsyncJobList( int _Index ) { AN_Assert( _Index >= 0 && _Index < NumJobLists ); return &JobList[_Index]; }
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
     int GetNumActiveThreads() const { return NumActiveThreads.Load(); }
@@ -127,24 +127,24 @@ private:
 
     void WorkerThreadRoutine( int _ThreadId );
 
-    FThread     WorkerThread[MAX_WORKER_THREADS];
+    AThread     WorkerThread[MAX_WORKER_THREADS];
     int         NumWorkerThreads;
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
-    FAtomicInt  NumActiveThreads;
+    AAtomicInt  NumActiveThreads;
 #endif
 
-    FSyncEvent  EventNotify[MAX_WORKER_THREADS];
+    ASyncEvent  EventNotify[MAX_WORKER_THREADS];
 
-    FAsyncJobList JobList[MAX_JOB_LISTS];
+    AAsyncJobList JobList[MAX_JOB_LISTS];
     int         NumJobLists;
 
-    struct FContext {
-        FAsyncJobManager * JobManager;
+    struct SContext {
+        AAsyncJobManager * JobManager;
         int ThreadId;
     };
 
-    FContext    Contexts[MAX_WORKER_THREADS];
+    SContext    Contexts[MAX_WORKER_THREADS];
 
     bool        bTerminated;
 };

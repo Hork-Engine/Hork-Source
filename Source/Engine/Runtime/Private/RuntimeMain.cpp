@@ -61,15 +61,15 @@ SOFTWARE.
 #define PROCESS_ALREADY_EXISTS       2
 #define PROCESS_UNIQUE               3
 
-static FRuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "1" ) );
-static FRuntimeVariable RVTestInput( _CTS( "TestInput" ),  _CTS( "0" ) );
+static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "1" ) );
+static ARuntimeVariable RVTestInput( _CTS( "TestInput" ),  _CTS( "0" ) );
 
-FRuntimeMain & GRuntimeMain = FRuntimeMain::Inst();
+ARuntimeMain & GRuntimeMain = ARuntimeMain::Inst();
 
 static void LoggerMessageCallback( int _Level, const char * _Message );
 static void TestInput();
 
-FRuntimeMain::FRuntimeMain() {
+ARuntimeMain::ARuntimeMain() {
     NumArguments = 0;
     Arguments = nullptr;
     Executable = nullptr;
@@ -80,7 +80,7 @@ FRuntimeMain::FRuntimeMain() {
     bTerminate = false;
 }
 
-void FRuntimeMain::Run( FCreateGameModuleCallback _CreateGameModule ) {
+void ARuntimeMain::Run( ACreateGameModuleCallback _CreateGameModule ) {
     SysStartMicroseconds = StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count();
     SysStartMilliseconds = SysStartMicroseconds * 0.001;
     SysStartSeconds = SysStartMicroseconds * 0.000001;
@@ -170,9 +170,9 @@ void FRuntimeMain::Run( FCreateGameModuleCallback _CreateGameModule ) {
 
     InitializeWorkingDirectory();
 
-    FRuntimeVariable::AllocateVariables();
+    ARuntimeVariable::AllocateVariables();
 
-    GLogger.Printf( "Working directory: %s\n", WorkingDir.ToConstChar() );
+    GLogger.Printf( "Working directory: %s\n", WorkingDir.CStr() );
     GLogger.Printf( "Executable: %s\n", Executable );
 
     glfwSetErrorCallback( []( int _ErrorCode, const char * _UnicodeMessage ) {
@@ -185,11 +185,11 @@ void FRuntimeMain::Run( FCreateGameModuleCallback _CreateGameModule ) {
         CriticalError( "Failed to initialize runtime\n" );
     }
 
-    if ( FThread::NumHardwareThreads ) {
-        GLogger.Printf( "Num hardware threads: %d\n", FThread::NumHardwareThreads );
+    if ( AThread::NumHardwareThreads ) {
+        GLogger.Printf( "Num hardware threads: %d\n", AThread::NumHardwareThreads );
     }
 
-    int jobManagerThreadCount = FThread::NumHardwareThreads ? FMath::Min( FThread::NumHardwareThreads, GAsyncJobManager.MAX_WORKER_THREADS )
+    int jobManagerThreadCount = AThread::NumHardwareThreads ? Math::Min( AThread::NumHardwareThreads, GAsyncJobManager.MAX_WORKER_THREADS )
         : GAsyncJobManager.MAX_WORKER_THREADS;
     GAsyncJobManager.Initialize( jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS );
 
@@ -204,7 +204,7 @@ void FRuntimeMain::Run( FCreateGameModuleCallback _CreateGameModule ) {
 
     RuntimeMainLoop();
 
-    FRuntimeVariable::FreeVariables();
+    ARuntimeVariable::FreeVariables();
 
     GAsyncJobManager.Deinitialize();
 
@@ -227,7 +227,7 @@ void FRuntimeMain::Run( FCreateGameModuleCallback _CreateGameModule ) {
     DeinitializeProcess();
 }
 
-void FRuntimeMain::RuntimeMainLoop() {
+void ARuntimeMain::RuntimeMainLoop() {
 
     // Pump initial events
     RuntimeUpdate();
@@ -281,8 +281,8 @@ void FRuntimeMain::RuntimeMainLoop() {
     FrameData.DbgCmds.Free();
 }
 
-void FRuntimeMain::RuntimeUpdate() {
-    FEvent * event = GRuntimeEvents.Push();
+void ARuntimeMain::RuntimeUpdate() {
+    SEvent * event = GRuntimeEvents.Push();
     event->Type = ET_RuntimeUpdateEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();
     GInputEventsCount = 0;
@@ -308,12 +308,12 @@ void FRuntimeMain::RuntimeUpdate() {
     }
 }
 
-struct FProcessLog {
+struct SProcessLog {
     FILE * File = nullptr;
 };
 
-static FProcessLog ProcessLog;
-static FThreadSync LoggerSync;
+static SProcessLog ProcessLog;
+static AThreadSync LoggerSync;
 
 static void LoggerMessageCallback( int _Level, const char * _Message ) {
 #if defined AN_COMPILER_MSVC// && defined AN_DEBUG
@@ -330,7 +330,7 @@ static void LoggerMessageCallback( int _Level, const char * _Message ) {
     GRuntimeMain.Engine->Print( _Message );
 
     if ( ProcessLog.File ) {
-        FSyncGuard syncGuard( LoggerSync );
+        ASyncGuard syncGuard( LoggerSync );
         fprintf( ProcessLog.File, "%s", _Message );
         fflush( ProcessLog.File );
     }
@@ -340,7 +340,7 @@ static void LoggerMessageCallback( int _Level, const char * _Message ) {
 static HANDLE ProcessMutex = NULL;
 #endif
 
-void FRuntimeMain::InitializeProcess() {
+void ARuntimeMain::InitializeProcess() {
     setlocale( LC_ALL, "C" );
     srand( ( unsigned )time( NULL ) );
 
@@ -369,11 +369,11 @@ void FRuntimeMain::InitializeProcess() {
     }
     Executable[ len ] = 0;
 
-    FString::UpdateSeparator( Executable );
+    AString::FixSeparator( Executable );
 
-    uint32_t appHash = FCore::SDBMHash( Executable, len );
+    uint32_t appHash = Core::SDBMHash( Executable, len );
 
-    ProcessMutex = CreateMutexA( NULL, FALSE, FString::Fmt( "angie_%u", appHash ) );
+    ProcessMutex = CreateMutexA( NULL, FALSE, AString::Fmt( "angie_%u", appHash ) );
     if ( !ProcessMutex ) {
         ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
     } else if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
@@ -401,8 +401,8 @@ void FRuntimeMain::InitializeProcess() {
     }
     Executable[ len ] = 0;
 
-    uint32_t appHash = FCore::SDBMHash( Executable, len );
-    int f = open( FString::Fmt( "/tmp/angie_%u.pid", appHash ), O_RDWR | O_CREAT, 0666 );
+    uint32_t appHash = Core::SDBMHash( Executable, len );
+    int f = open( AString::Fmt( "/tmp/angie_%u.pid", appHash ), O_RDWR | O_CREAT, 0666 );
     int locked = flock( f, LOCK_EX | LOCK_NB );
     if ( locked ) {
         if ( errno == EWOULDBLOCK ) {
@@ -423,7 +423,7 @@ void FRuntimeMain::InitializeProcess() {
     }
 }
 
-void FRuntimeMain::DeinitializeProcess() {
+void ARuntimeMain::DeinitializeProcess() {
     if ( ProcessLog.File ) {
         fclose( ProcessLog.File );
         ProcessLog.File = nullptr;
@@ -443,13 +443,13 @@ void FRuntimeMain::DeinitializeProcess() {
 #endif
 }
 
-struct FMemoryInfo {
+struct SMemoryInfo {
     int TotalAvailableMegabytes;
     int CurrentAvailableMegabytes;
 };
 
-static FMemoryInfo GetPhysMemoryInfo() {
-    FMemoryInfo info;
+static SMemoryInfo GetPhysMemoryInfo() {
+    SMemoryInfo info;
 
     memset( &info, 0, sizeof( info ) );
 
@@ -490,7 +490,7 @@ static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize ) {
     //}
 }
 
-void FRuntimeMain::InitializeMemory() {
+void ARuntimeMain::InitializeMemory() {
     const size_t ZoneSizeInMegabytes = 256;//8;
     const size_t HunkSizeInMegabytes = 32;
     const size_t FrameMemorySizeInMegabytes = 256;//128;
@@ -516,7 +516,7 @@ void FRuntimeMain::InitializeMemory() {
 
     GLogger.Printf( "Memory page size: %d bytes\n", pageSize );
 
-    FMemoryInfo physMemoryInfo = GetPhysMemoryInfo();
+    SMemoryInfo physMemoryInfo = GetPhysMemoryInfo();
     if ( physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0 ) {
         GLogger.Printf( "Total available phys memory: %d Megs\n", physMemoryInfo.TotalAvailableMegabytes );
         GLogger.Printf( "Current available phys memory: %d Megs\n", physMemoryInfo.CurrentAvailableMegabytes );
@@ -543,27 +543,27 @@ void FRuntimeMain::InitializeMemory() {
     FrameMemorySize = FrameMemorySizeInMegabytes << 20;
 }
 
-void FRuntimeMain::DeinitializeMemory() {
+void ARuntimeMain::DeinitializeMemory() {
     GZoneMemory.Deinitialize();
     GHunkMemory.Deinitialize();
     GHeapMemory.HeapFree( MemoryHeap );
     GHeapMemory.Deinitialize();
 }
 
-void FRuntimeMain::InitializeWorkingDirectory() {
+void ARuntimeMain::InitializeWorkingDirectory() {
     WorkingDir = Executable;
     WorkingDir.StripFilename();
 
 #if defined AN_OS_WIN32
-    SetCurrentDirectoryA( WorkingDir.ToConstChar() );
+    SetCurrentDirectoryA( WorkingDir.CStr() );
 #elif defined AN_OS_LINUX
-    chdir( WorkingDir.ToConstChar() );
+    chdir( WorkingDir.CStr() );
 #else
     #warning "InitializeWorkingDirectory not implemented under current platform"
 #endif
 }
 
-void FRuntimeMain::DisplayCriticalMessage( const char * _Message ) {
+void ARuntimeMain::DisplayCriticalMessage( const char * _Message ) {
 #if defined AN_OS_WIN32
     MessageBoxA( NULL, _Message, "Critical Error", MB_OK | MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST );
 #elif defined AN_OS_ANDROID
@@ -574,7 +574,7 @@ void FRuntimeMain::DisplayCriticalMessage( const char * _Message ) {
 #endif
 }
 
-void FRuntimeMain::EmergencyExit() {
+void ARuntimeMain::EmergencyExit() {
     glfwTerminate();
 
     GHeapMemory.Clear();
@@ -593,7 +593,7 @@ static void TestInput() {
     if ( RVTestInput ) {
         RVTestInput = false;
 
-        FEvent * event;
+        SEvent * event;
 
         event = GRuntimeEvents.Push();
         event->Type = ET_MouseMoveEvent;
@@ -627,9 +627,9 @@ static void TestInput() {
     }
 }
 
-int FRuntimeMain::CheckArg( const char * _Arg ) {
+int ARuntimeMain::CheckArg( const char * _Arg ) {
     for ( int i = 0 ; i < NumArguments ; i++ ) {
-        if ( !FString::Icmp( Arguments[ i ], _Arg ) ) {
+        if ( !AString::Icmp( Arguments[ i ], _Arg ) ) {
             return i;
         }
     }
@@ -722,25 +722,25 @@ static void FreeCommandLineArgs( char ** _Arguments ) {
 static char CmdLineBuffer[ MAX_COMMAND_LINE_LENGTH ];
 static bool bApplicationRun = false;
 
-ANGIE_API void Runtime( const char * _CommandLine, FCreateGameModuleCallback _CreateGameModule ) {
+ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _CreateGameModule ) {
     if ( bApplicationRun ) {
         AN_Assert( 0 );
         return;
     }
     bApplicationRun = true;
-    FString::CopySafe( CmdLineBuffer, sizeof( CmdLineBuffer ), _CommandLine );
+    AString::CopySafe( CmdLineBuffer, sizeof( CmdLineBuffer ), _CommandLine );
     AllocCommandLineArgs( CmdLineBuffer, &GRuntimeMain.NumArguments, &GRuntimeMain.Arguments );
     if ( GRuntimeMain.NumArguments < 1 ) {
         AN_Assert( 0 );
         return;
     }
     // Fix executable path separator
-    FString::UpdateSeparator( GRuntimeMain.Arguments[ 0 ] );
+    AString::FixSeparator( GRuntimeMain.Arguments[ 0 ] );
     GRuntimeMain.Run( _CreateGameModule );
     FreeCommandLineArgs( GRuntimeMain.Arguments );
 }
 
-ANGIE_API void Runtime( int _Argc, char ** _Argv, FCreateGameModuleCallback _CreateGameModule ) {
+ANGIE_API void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _CreateGameModule ) {
     if ( bApplicationRun ) {
         AN_Assert( 0 );
         return;
@@ -753,7 +753,7 @@ ANGIE_API void Runtime( int _Argc, char ** _Argv, FCreateGameModuleCallback _Cre
         return;
     }
     // Fix executable path separator
-    FString::UpdateSeparator( GRuntimeMain.Arguments[ 0 ] );
+    AString::FixSeparator( GRuntimeMain.Arguments[ 0 ] );
     GRuntimeMain.Run( _CreateGameModule );
 }
 

@@ -36,26 +36,26 @@ SOFTWARE.
 #define CONVEX_HULL_MAX_BOUNDS        ( 5*1024 )//99999999999.0f
 #define CONVEX_HULL_MIN_BOUNDS        ( -5*1024 )//99999999999.0f
 
-class FConvexHull final {
-    AN_FORBID_COPY( FConvexHull )
+class AConvexHull final {
+    AN_FORBID_COPY( AConvexHull )
 
 private:
-    FConvexHull() {}
-    ~FConvexHull() {}
+    AConvexHull() {}
+    ~AConvexHull() {}
 
 public:
-    static FConvexHull * Create( int _MaxPoints );
+    static AConvexHull * Create( int _MaxPoints );
 
-    static FConvexHull * CreateForPlane( PlaneF const & _Plane, float _MaxExtents = CONVEX_HULL_MAX_BOUNDS );
+    static AConvexHull * CreateForPlane( PlaneF const & _Plane, float _MaxExtents = CONVEX_HULL_MAX_BOUNDS );
 
-    static FConvexHull * CreateFromPoints( Float3 const * _Points, int _NumPoints );
-    static FConvexHull * RecreateFromPoints( FConvexHull * _OldHull, Float3 const * _Points, int _NumPoints );
+    static AConvexHull * CreateFromPoints( Float3 const * _Points, int _NumPoints );
+    static AConvexHull * RecreateFromPoints( AConvexHull * _OldHull, Float3 const * _Points, int _NumPoints );
 
-    static void Destroy( FConvexHull * _Hull );
+    static void Destroy( AConvexHull * _Hull );
 
-    FConvexHull * Duplicate() const;
+    AConvexHull * Duplicate() const;
 
-    FConvexHull * Reversed() const;
+    AConvexHull * Reversed() const;
 
     EPlaneSide Classify( PlaneF const & _Plane, float _Epsilon ) const;
 
@@ -75,9 +75,9 @@ public:
 
     void Reverse();
 
-    EPlaneSide Split( PlaneF const & _Plane, float _Epsilon, FConvexHull ** _Front, FConvexHull ** _Back ) const;
+    EPlaneSide Split( PlaneF const & _Plane, float _Epsilon, AConvexHull ** _Front, AConvexHull ** _Back ) const;
 
-    EPlaneSide Clip( PlaneF const & _Plane, float _Epsilon, FConvexHull ** _Front ) const;
+    EPlaneSide Clip( PlaneF const & _Plane, float _Epsilon, AConvexHull ** _Front ) const;
 
     int NumPoints;
     int MaxPoints;

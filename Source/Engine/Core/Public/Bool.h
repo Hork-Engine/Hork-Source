@@ -65,31 +65,29 @@ public:
     Bool All() const { return Value; }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         static constexpr const char * s[2] = { "false", "true" };
         return s[ Value ];
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    Bool & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    Bool & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     Bool & FromString( const char * _String );
 
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( &Value, 1 );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteBool( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( &Value, 1 );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadBool();
     }
 
     // Static methods
@@ -140,25 +138,23 @@ public:
     Bool All() const { return ( X & Y ); }
 
     // String conversions
-    FString ToString() const {
-        return FString( "( " ) + X.ToString() + " " + Y.ToString() + " )";
+    AString ToString() const {
+        return AString( "( " ) + X.ToString() + " " + Y.ToString() + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -215,26 +211,25 @@ public:
     Bool All() const { return ( X & Y & Z ); }
 
     // String conversions
-    FString ToString() const {
-        return FString( "( " ) + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + " )";
+    AString ToString() const {
+        return AString( "( " ) + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -290,27 +285,27 @@ public:
     Bool All() const { return ( X & Y & Z & W ); }
 
     // String conversions
-    FString ToString() const {
-        return FString( "( " ) + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + " " + W.ToString() + " )";
+    AString ToString() const {
+        return AString( "( " ) + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + " " + W.ToString() + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " " + W.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " " + W.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods

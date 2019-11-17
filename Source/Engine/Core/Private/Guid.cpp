@@ -33,7 +33,7 @@ SOFTWARE.
 #if defined( AN_OS_WIN32 )
 #include <Engine/Core/Public/WindowsDefs.h>
 #include <objbase.h>
-void FGUID::Generate() {
+void AGUID::Generate() {
     GUID id;
     CoCreateGuid( &id );
     Hi = ( static_cast< uint64_t >( ( id.Data1 >> 24 ) & 0xff ) << 56 )
@@ -55,7 +55,7 @@ void FGUID::Generate() {
 }
 #elif defined( AN_OS_LINUX )
 #include <uuid/uuid.h>
-void FGUID::Generate() {
+void AGUID::Generate() {
     uuid_t id;
     uuid_generate( id );
     Hi = ( static_cast< uint64_t >( id[0] ) << 56 )
@@ -76,7 +76,7 @@ void FGUID::Generate() {
              | ( static_cast< uint64_t >( id[15] ) << 0 );
 }
 #elif defined( AN_OS_APPLE )
-void FGUID::Generate() {
+void AGUID::Generate() {
     auto id = CFUUIDCreate( NULL );
     auto bytes = CFUUIDGetUUIDBytes( id );
     CFRelease( id );
@@ -101,7 +101,7 @@ void FGUID::Generate() {
 #error "GenerateGUID is not implemented on current platform"
 #endif
 
-FGUID & FGUID::FromString( const char * _String ) {
+AGUID & AGUID::FromString( const char * _String ) {
     char ch;
     int n = 0;
 

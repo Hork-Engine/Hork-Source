@@ -32,6 +32,6 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-FShaderSources GShaderSources;
+AShaderSources GShaderSources;
 
 }

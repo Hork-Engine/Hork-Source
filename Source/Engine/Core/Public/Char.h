@@ -73,28 +73,26 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 4 > buffer;
         return buffer.Sprintf( "%c", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%c", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%c", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( &Value, 1 );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteInt8( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( &Value, 1 );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadInt8();
     }
 
     // Static methods
@@ -128,23 +126,21 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 4 > buffer;
         return buffer.Sprintf( "%d", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FMath::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return Math::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
+    void Write( IStreamBase & _Stream ) const {
         _Stream.Write( &Value, 1 );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
+    void Read( IStreamBase & _Stream ) {
         _Stream.Read( &Value, 1 );
     }
 

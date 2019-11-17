@@ -32,13 +32,13 @@ SOFTWARE.
 
 #include <Engine/Base/Public/BaseObject.h>
 
-class FWorld;
+class AWorld;
 
-class ANGIE_API FTimer final {
-    AN_FORBID_COPY( FTimer )
+class ANGIE_API ATimer final {
+    AN_FORBID_COPY( ATimer )
 
-    friend class FWorld;
-    friend class FActor;
+    friend class AWorld;
+    friend class AActor;
 
 public:
     float FirstDelay = 0;
@@ -48,7 +48,7 @@ public:
     bool bTickEvenWhenPaused = false;
     int MaxPulses = 0;
 
-    FTimer() {}
+    ATimer() {}
     void Restart();
     void Stop();
     bool IsStopped() const;
@@ -70,10 +70,10 @@ private:
     int NumPulses = 0;
     float ElapsedTime = 0;
     TCallback< void() > Callback;
-    FTimer * P;         // List inside actor
-    FTimer * Next;      // List inside world
-    FTimer * Prev;      // List inside world
+    ATimer * P;         // List inside actor
+    ATimer * Next;      // List inside world
+    ATimer * Prev;      // List inside world
 
-    void Tick( FWorld * _World, float _TimeStep );
+    void Tick( AWorld * _World, float _TimeStep );
     void Trigger();
 };

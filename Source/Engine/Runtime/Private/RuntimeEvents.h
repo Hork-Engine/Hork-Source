@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Engine/Runtime/Public/Runtime.h>
 
-extern FEventQueue GRuntimeEvents;
-extern FEventQueue GGameEvents;
+extern AEventQueue GRuntimeEvents;
+extern AEventQueue GGameEvents;
 
 extern int GInputEventsCount;

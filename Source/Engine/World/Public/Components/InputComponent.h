@@ -81,15 +81,15 @@ enum {
     CONTROLLER_PLAYER_16       = 15
 };
 
-class FInputAxis;
-class FInputAction;
-class FInputMappings;
-class FInputComponent;
+class AInputAxis;
+class AInputAction;
+class AInputMappings;
+class AInputComponent;
 
-class ANGIE_API FInputAxis final : public FBaseObject {
-    AN_CLASS( FInputAxis, FBaseObject )
+class ANGIE_API AInputAxis final : public ABaseObject {
+    AN_CLASS( AInputAxis, ABaseObject )
 
-    friend class FInputMappings;
+    friend class AInputMappings;
 public:
     int GetNameHash() const { return NameHash; }
 
@@ -99,11 +99,11 @@ public:
     uint32_t GetJoystickAxes( int _Joystick ) const { return MappedJoystickAxes[ _Joystick ]; }
 
 private:
-    FInputAxis();
+    AInputAxis();
 
     int NameHash;
 
-    FInputMappings * Parent;
+    AInputMappings * Parent;
 
     // Keys mapped to this axis
     TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
@@ -117,21 +117,21 @@ private:
     int IndexInArrayOfAxes;
 };
 
-class ANGIE_API FInputAction final : public FBaseObject {
-    AN_CLASS( FInputAction, FBaseObject )
+class ANGIE_API AInputAction final : public ABaseObject {
+    AN_CLASS( AInputAction, ABaseObject )
 
-    friend class FInputMappings;
+    friend class AInputMappings;
 public:
     int GetNameHash() const { return NameHash; }
 
     void Map( int _DevId, int _KeyToken, int _ModMask, int _ControllerId );
 
 private:
-    FInputAction() {}
+    AInputAction() {}
 
     int NameHash;
 
-    FInputMappings * Parent;
+    AInputMappings * Parent;
 
     // Keys mapped to this action
     TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
@@ -139,43 +139,43 @@ private:
     int IndexInArrayOfActions;
 };
 
-class ANGIE_API FInputMappings final : public FBaseObject {
-    AN_CLASS( FInputMappings, FBaseObject )
+class ANGIE_API AInputMappings final : public ABaseObject {
+    AN_CLASS( AInputMappings, ABaseObject )
 
-    friend class FInputAxis;
-    friend class FInputAction;
-    friend class FInputComponent;
+    friend class AInputAxis;
+    friend class AInputAction;
+    friend class AInputComponent;
 
 public:
-    int Serialize( FDocument & _Doc ) override;
+    int Serialize( ADocument & _Doc ) override;
 
-    static FInputMappings * LoadMappings( FDocument const & _Document, int _FieldsHead );
+    static AInputMappings * LoadMappings( ADocument const & _Document, int _FieldsHead );
 
     // Load axes form document data
-    void LoadAxes( FDocument const & _Document, int _FieldsHead );
+    void LoadAxes( ADocument const & _Document, int _FieldsHead );
 
     // Load actions form document data
-    void LoadActions( FDocument const & _Document, int _FieldsHead );
+    void LoadActions( ADocument const & _Document, int _FieldsHead );
 
-    FInputAxis * AddAxis( const char * _Name );
-    FInputAction * AddAction( const char * _Name );
+    AInputAxis * AddAxis( const char * _Name );
+    AInputAction * AddAction( const char * _Name );
 
-    FInputAxis * FindAxis( const char * _AxisName );
-    FInputAction * FindAction( const char * _ActionName );
+    AInputAxis * FindAxis( const char * _AxisName );
+    AInputAction * FindAction( const char * _ActionName );
 
     void MapAxis( const char * _AxisName, int _DevId, int _KeyToken, float _AxisScale, int _ControllerId );
     void MapAction( const char * _ActionName, int _DevId, int _KeyToken, int _ModMask, int _ControllerId );
     void Unmap( int _DevId, int _KeyToken );
     void UnmapAll();
 
-    const TPodArray< FInputAxis * > & GetAxes() const { return Axes; }
-    const TPodArray< FInputAction * > & GetActions() const { return Actions; }
+    const TPodArray< AInputAxis * > & GetAxes() const { return Axes; }
+    const TPodArray< AInputAction * > & GetActions() const { return Actions; }
 
 private:
-    FInputMappings();
-    ~FInputMappings();
+    AInputMappings();
+    ~AInputMappings();
 
-    struct FMapping {
+    struct SMapping {
         int AxisOrActionIndex;      // -1 if not mapped
         float AxisScale;
         byte ControllerId;
@@ -183,23 +183,23 @@ private:
         byte ModMask;
     };
 
-    FMapping * GetMapping( int _DevId, int _KeyToken );
+    SMapping * GetMapping( int _DevId, int _KeyToken );
 
     // All known axes
-    TPodArray< FInputAxis * > Axes;
+    TPodArray< AInputAxis * > Axes;
 
     // All known actions
-    TPodArray< FInputAction * > Actions;
+    TPodArray< AInputAction * > Actions;
 
-    FMapping KeyboardMappings[ MAX_KEYBOARD_BUTTONS ];
-    FMapping MouseMappings[ MAX_MOUSE_BUTTONS ];
-    FMapping MouseAxisMappings[ MAX_MOUSE_AXES ];
-    FMapping JoystickMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
-    FMapping JoystickAxisMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
+    SMapping KeyboardMappings[ MAX_KEYBOARD_BUTTONS ];
+    SMapping MouseMappings[ MAX_MOUSE_BUTTONS ];
+    SMapping MouseAxisMappings[ MAX_MOUSE_AXES ];
+    SMapping JoystickMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
+    SMapping JoystickAxisMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 };
 
-class ANGIE_API FInputComponent final : public FActorComponent {
-    AN_COMPONENT( FInputComponent, FActorComponent )
+class ANGIE_API AInputComponent final : public AActorComponent {
+    AN_COMPONENT( AInputComponent, AActorComponent )
 
 public:
 
@@ -223,10 +223,10 @@ public:
     int ControllerId;
 
     // Set input mappings config
-    void SetInputMappings( FInputMappings * _InputMappings );
+    void SetInputMappings( AInputMappings * _InputMappings );
 
     // Get input mappints config
-    FInputMappings * GetInputMappings();
+    AInputMappings * GetInputMappings();
 
     // Bind axis to class method
     template< typename T >
@@ -269,7 +269,7 @@ public:
 
     bool IsKeyDown( int _Key ) const { return GetButtonState( ID_KEYBOARD, _Key ); }
     bool IsMouseDown( int _Button ) const { return GetButtonState( ID_MOUSE, _Button ); }
-    bool IsJoyDown( const struct FJoystick * _Joystick, int _Button ) const;
+    bool IsJoyDown( const struct SJoystick * _Joystick, int _Button ) const;
 
     // Used by EngineInstance during main game tick to notfiy input component for button press/release
     void SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp );
@@ -286,8 +286,8 @@ public:
 
     void NotifyUnicodeCharacter( FWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp );
 
-    FInputComponent * GetNext() { return Next; }
-    FInputComponent * GetPrev() { return Prev; }
+    AInputComponent * GetNext() { return Next; }
+    AInputComponent * GetPrev() { return Prev; }
 
     // Used by EngineInstance during main game tick to update joystick state
     static void SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected );
@@ -300,25 +300,25 @@ public:
 
     static float GetJoystickAxisState( int _Joystick, int _Axis );
 
-    static struct FJoystick const * GetJoysticks();
+    static struct SJoystick const * GetJoysticks();
 
-    static FInputComponent * GetInputComponents() { return InputComponents; }
+    static AInputComponent * GetInputComponents() { return InputComponents; }
 
 protected:
-    struct FAxisBinding {
-        FString Name;                           // axis name
+    struct SAxisBinding {
+        AString Name;                           // axis name
         TCallback< void( float ) > Callback;    // binding callback
         float AxisScale;                        // final axis value that will be passed to binding callback
         bool bExecuteEvenWhenPaused;
     };
 
-    struct FActionBinding {
-        FString Name;                           // action name
+    struct SActionBinding {
+        AString Name;                           // action name
         TCallback< void() > Callback[2];        // binding callback
         bool bExecuteEvenWhenPaused;
     };
 
-    struct FPressedKey {
+    struct SPressedKey {
         unsigned short Key;
         short AxisBinding;
         short ActionBinding;
@@ -326,7 +326,7 @@ protected:
         byte DevId;
     };
 
-    FInputComponent();
+    AInputComponent();
 
     void DeinitializeComponent() override;
 
@@ -334,7 +334,7 @@ protected:
     int GetAxisBinding( const char * _Axis ) const;
 
     // Return axis binding or -1 if axis is not binded
-    int GetAxisBinding( const FInputAxis * _Axis ) const;
+    int GetAxisBinding( const AInputAxis * _Axis ) const;
 
     // Return axis binding or -1 if axis is not binded
     int GetAxisBindingHash( const char * _Axis, int _Hash ) const;
@@ -343,21 +343,21 @@ protected:
     int GetActionBinding( const char * _Action ) const;
 
     // Return action binding or -1 if action is not binded
-    int GetActionBinding( const FInputAction * _Action ) const;
+    int GetActionBinding( const AInputAction * _Action ) const;
 
     // Return action binding or -1 if action is not binded
     int GetActionBindingHash( const char * _Action, int _Hash ) const;
 
-    TRef< FInputMappings > InputMappings;
+    TRef< AInputMappings > InputMappings;
 
     THash<> AxisBindingsHash;
-    TStdVector< FAxisBinding > AxisBindings;
+    TStdVector< SAxisBinding > AxisBindings;
 
     THash<> ActionBindingsHash;
-    TStdVector< FActionBinding > ActionBindings;
+    TStdVector< SActionBinding > ActionBindings;
 
     // Array of pressed keys
-    FPressedKey PressedKeys[ MAX_PRESSED_KEYS ];
+    SPressedKey PressedKeys[ MAX_PRESSED_KEYS ];
     int NumPressedKeys;
 
     // Index to PressedKeys array or -1 if button is up
@@ -372,14 +372,14 @@ protected:
     TCallback< void( FWideChar, int, double ) > CharacterCallback;
     bool bCharacterCallbackExecuteEvenWhenPaused;
 
-    FInputComponent * Next;
-    FInputComponent * Prev;
+    AInputComponent * Next;
+    AInputComponent * Prev;
 
-    static FInputComponent * InputComponents;
-    static FInputComponent * InputComponentsTail;
+    static AInputComponent * InputComponents;
+    static AInputComponent * InputComponentsTail;
 };
 
-class ANGIE_API FInputHelper final {
+class ANGIE_API AInputHelper final {
 public:
     // Translate device to string
     static const char * TranslateDevice( int _DevId );

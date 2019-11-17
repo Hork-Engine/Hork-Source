@@ -287,7 +287,7 @@ public:
         //if ( Value > _Max )
         //    return _Max;
         //return Value;
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     Double Saturate() const {
@@ -347,7 +347,7 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = DBL_DIG ) const {
+    AString ToString( int _Precision = DBL_DIG ) const {
         TSprintfBuffer< 64 > value;
         if ( _Precision >= 0 ) {
             TSprintfBuffer< 64 > format;
@@ -355,7 +355,7 @@ public:
         } else {
             value.Sprintf( "%f", Value );
         }
-        for ( char * p = &value.Data[ FString::Length( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
+        for ( char * p = &value.Data[ AString::Length( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
             if ( *p != '0' ) {
                 if ( *p != '.' ) {
                     p++;
@@ -367,15 +367,15 @@ public:
         return value.Data;
     }
 
-    const char * ToConstChar( int _Precision = DBL_DIG ) const {
+    const char * CStr( int _Precision = DBL_DIG ) const {
         char * s;
         if ( _Precision >= 0 ) {
             TSprintfBuffer< 64 > format;
-            s = FString::Fmt( format.Sprintf( "%%.%df", _Precision ), Value );
+            s = AString::Fmt( format.Sprintf( "%%.%df", _Precision ), Value );
         } else {
-            s = FString::Fmt( "%f", Value );
+            s = AString::Fmt( "%f", Value );
         }
-        for ( char * p = s + FString::Length( s ) - 1 ; p >= s ; p-- ) {
+        for ( char * p = s + AString::Length( s ) - 1 ; p >= s ; p-- ) {
             if ( *p != '0' ) {
                 if ( *p != '.' ) {
                     p++;
@@ -387,25 +387,23 @@ public:
         return s;
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    Double & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    Double & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     Double & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( *( ddword * )&Value );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteDouble( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( *( ddword * )&Value );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadDouble();
     }
 
     // Static methods
@@ -529,11 +527,11 @@ public:
     }
 
     Double Min() const {
-        return FMath::Min( X, Y );
+        return Math::Min( X, Y );
     }
 
     Double Max() const {
-        return FMath::Max( X, Y );
+        return Math::Max( X, Y );
     }
 
     int MinorAxis() const {
@@ -718,22 +716,22 @@ public:
     }
 
     int NormalAxialType() const {
-        if ( X == 1.0 || X == -1.0 ) return FMath::AxialX;
-        if ( Y == 1.0 || Y == -1.0 ) return FMath::AxialY;
-        return FMath::NonAxial;
+        if ( X == 1.0 || X == -1.0 ) return Math::AxialX;
+        if ( Y == 1.0 || Y == -1.0 ) return Math::AxialY;
+        return Math::NonAxial;
     }
 
     int NormalPositiveAxialType() const {
-        if ( X == 1.0 ) return FMath::AxialX;
-        if ( Y == 1.0 ) return FMath::AxialY;
-        return FMath::NonAxial;
+        if ( X == 1.0 ) return Math::AxialX;
+        if ( Y == 1.0 ) return Math::AxialY;
+        return Math::NonAxial;
     }
 
     int VectorAxialType() const {
         if ( X.Abs() < 0.00001f ) {
-            return ( Y.Abs() < 0.00001f ) ? FMath::NonAxial : FMath::AxialY;
+            return ( Y.Abs() < 0.00001f ) ? Math::NonAxial : Math::AxialY;
         }
-        return ( Y.Abs() < 0.00001f ) ? FMath::AxialX : FMath::NonAxial;
+        return ( Y.Abs() < 0.00001f ) ? Math::AxialX : Math::NonAxial;
     }
 
     Double Dot( const Double2 & _Other ) const {
@@ -741,24 +739,23 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = DBL_DIG ) const {
-        return FString( "( " ) + X.ToString( _Precision ) + " " + Y.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = DBL_DIG ) const {
+        return AString( "( " ) + X.ToString( _Precision ) + " " + Y.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -894,11 +891,11 @@ public:
     }
 
     Double Min() const {
-        return FMath::Min( FMath::Min( X, Y ), Z );
+        return Math::Min( Math::Min( X, Y ), Z );
     }
 
     Double Max() const {
-        return FMath::Max( FMath::Max( X, Y ), Z );
+        return Math::Max( Math::Max( X, Y ), Z );
     }
 
     int MinorAxis() const {
@@ -1226,39 +1223,39 @@ public:
     }
 
     int NormalAxialType() const {
-        if ( X == 1.0 || X == -1.0 ) return FMath::AxialX;
-        if ( Y == 1.0 || Y == -1.0 ) return FMath::AxialY;
-        if ( Z == 1.0 || Z == -1.0 ) return FMath::AxialZ;
-        return FMath::NonAxial;
+        if ( X == 1.0 || X == -1.0 ) return Math::AxialX;
+        if ( Y == 1.0 || Y == -1.0 ) return Math::AxialY;
+        if ( Z == 1.0 || Z == -1.0 ) return Math::AxialZ;
+        return Math::NonAxial;
     }
 
     int NormalPositiveAxialType() const {
-        if ( X == 1.0 ) return FMath::AxialX;
-        if ( Y == 1.0 ) return FMath::AxialY;
-        if ( Z == 1.0 ) return FMath::AxialZ;
-        return FMath::NonAxial;
+        if ( X == 1.0 ) return Math::AxialX;
+        if ( Y == 1.0 ) return Math::AxialY;
+        if ( Z == 1.0 ) return Math::AxialZ;
+        return Math::NonAxial;
     }
 
     int VectorAxialType() const {
         Bool3 Zero = Abs().LessThan( 0.00001f );
 
         if ( int( Zero.X + Zero.Y + Zero.Z ) != 2 ) {
-            return FMath::NonAxial;
+            return Math::NonAxial;
         }
 
         if ( !Zero.X ) {
-            return FMath::AxialX;
+            return Math::AxialX;
         }
 
         if ( !Zero.Y ) {
-            return FMath::AxialY;
+            return Math::AxialY;
         }
 
         if ( !Zero.Z ) {
-            return FMath::AxialZ;
+            return Math::AxialZ;
         }
 
-        return FMath::NonAxial;
+        return Math::NonAxial;
     }
 
     Double Dot( const Double3 & _Other ) const {
@@ -1275,7 +1272,7 @@ public:
         if ( !dp ) {
             return Double3(1,0,0);
         } else {
-            dp = FMath::InvSqrt( dp );
+            dp = Math::InvSqrt( dp );
             return Double3( -Y * dp, X * dp, 0 );
         }
     }
@@ -1286,25 +1283,25 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = DBL_DIG ) const {
-        return FString( "( " ) + X.ToString( _Precision ) + " " + Y.ToString( _Precision ) + " " + Z.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = DBL_DIG ) const {
+        return AString( "( " ) + X.ToString( _Precision ) + " " + Y.ToString( _Precision ) + " " + Z.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -1450,11 +1447,11 @@ public:
     }
 
     Double Min() const {
-        return FMath::Min( FMath::Min( FMath::Min( X, Y ), Z ), W );
+        return Math::Min( Math::Min( Math::Min( X, Y ), Z ), W );
     }
 
     Double Max() const {
-        return FMath::Max( FMath::Max( FMath::Max( X, Y ), Z ), W );
+        return Math::Max( Math::Max( Math::Max( X, Y ), Z ), W );
     }
 
     int MinorAxis() const {
@@ -1674,45 +1671,45 @@ public:
     }
 
     int NormalAxialType() const {
-        if ( X == 1.0 || X == -1.0 ) return FMath::AxialX;
-        if ( Y == 1.0 || Y == -1.0 ) return FMath::AxialY;
-        if ( Z == 1.0 || Z == -1.0 ) return FMath::AxialZ;
-        if ( W == 1.0 || W == -1.0 ) return FMath::AxialW;
-        return FMath::NonAxial;
+        if ( X == 1.0 || X == -1.0 ) return Math::AxialX;
+        if ( Y == 1.0 || Y == -1.0 ) return Math::AxialY;
+        if ( Z == 1.0 || Z == -1.0 ) return Math::AxialZ;
+        if ( W == 1.0 || W == -1.0 ) return Math::AxialW;
+        return Math::NonAxial;
     }
 
     int NormalPositiveAxialType() const {
-        if ( X == 1.0 ) return FMath::AxialX;
-        if ( Y == 1.0 ) return FMath::AxialY;
-        if ( Z == 1.0 ) return FMath::AxialZ;
-        if ( W == 1.0 ) return FMath::AxialW;
-        return FMath::NonAxial;
+        if ( X == 1.0 ) return Math::AxialX;
+        if ( Y == 1.0 ) return Math::AxialY;
+        if ( Z == 1.0 ) return Math::AxialZ;
+        if ( W == 1.0 ) return Math::AxialW;
+        return Math::NonAxial;
     }
 
     int VectorAxialType() const {
         Bool4 Zero = Abs().LessThan( 0.00001f );
 
         if ( int( Zero.X + Zero.Y + Zero.Z + Zero.W ) != 3 ) {
-            return FMath::NonAxial;
+            return Math::NonAxial;
         }
 
         if ( !Zero.X ) {
-            return FMath::AxialX;
+            return Math::AxialX;
         }
 
         if ( !Zero.Y ) {
-            return FMath::AxialY;
+            return Math::AxialY;
         }
 
         if ( !Zero.Z ) {
-            return FMath::AxialZ;
+            return Math::AxialZ;
         }
 
         if ( !Zero.W ) {
-            return FMath::AxialW;
+            return Math::AxialW;
         }
 
-        return FMath::NonAxial;
+        return Math::NonAxial;
     }
 
     Double Dot( const Double4 & _Other ) const {
@@ -1720,26 +1717,27 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = DBL_DIG ) const {
-        return FString( "( " ) + X.ToString( _Precision ) + " " + Y.ToString( _Precision ) + " " + Z.ToString( _Precision ) + " " + W.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = DBL_DIG ) const {
+        return AString( "( " ) + X.ToString( _Precision ) + " " + Y.ToString( _Precision ) + " " + Z.ToString( _Precision ) + " " + W.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " " + W.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " " + W.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
@@ -1991,7 +1989,7 @@ AN_FORCEINLINE Double4 Double4::SmoothStep( const Double4 & _Edge0, const Double
     return t * t * ( ( -2.0 ) * t + 3.0 );
 }
 
-namespace FMath {
+namespace Math {
 
 AN_FORCEINLINE Double Dot( const Double2 & _Left, const Double2 & _Right ) { return _Left.Dot( _Right ); }
 AN_FORCEINLINE Double Dot( const Double3 & _Left, const Double3 & _Right ) { return _Left.Dot( _Right ); }
@@ -2146,7 +2144,7 @@ public:
     // Return rotation around Z axis
     static Double2x2 Rotation( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double2x2( c, s,
                         -s, c );
     }
@@ -2211,24 +2209,23 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = DBL_DIG ) const {
-        return FString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = DBL_DIG ) const {
+        return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Col0 << Col1;
+    void Write( IStreamBase & _Stream ) const {
+        Col0.Write( _Stream );
+        Col1.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Col0;
-        _Stream >> Col1;
+    void Read( IStreamBase & _Stream ) {
+        Col0.Read( _Stream );
+        Col1.Read( _Stream );
     }
 
     // Static methods
@@ -2378,7 +2375,7 @@ public:
     // Return rotation around normalized axis
     static Double3x3 RotationAroundNormal( const double & _AngleRad, const Double3 & _Normal ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         const Double3 Temp = ( 1.0 - c ) * _Normal;
         const Double3 Temp2 = s * _Normal;
         return Double3x3( c + Temp[0] * _Normal[0],                Temp[0] * _Normal[1] + Temp2[2],     Temp[0] * _Normal[2] - Temp2[1],
@@ -2389,7 +2386,7 @@ public:
     // Return rotation around normalized axis
     Double3x3 RotateAroundNormal( const double & _AngleRad, const Double3 & _Normal ) const {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         Double3 Temp = ( 1.0 - c ) * _Normal;
         Double3 Temp2 = s * _Normal;
         return Double3x3( Col0 * (c + Temp[0] * _Normal[0])            + Col1 * (    Temp[0] * _Normal[1] + Temp2[2]) + Col2 * (    Temp[0] * _Normal[2] - Temp2[1]),
@@ -2410,7 +2407,7 @@ public:
     // Return rotation around X axis
     static Double3x3 RotationX( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double3x3( 1, 0, 0,
                          0, c, s,
                          0,-s, c );
@@ -2419,7 +2416,7 @@ public:
     // Return rotation around Y axis
     static Double3x3 RotationY( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double3x3( c, 0,-s,
                          0, 1, 0,
                          s, 0, c );
@@ -2428,7 +2425,7 @@ public:
     // Return rotation around Z axis
     static Double3x3 RotationZ( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double3x3( c, s, 0,
                         -s, c, 0,
                          0, 0, 1 );
@@ -2533,25 +2530,25 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = DBL_DIG ) const {
-        return FString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = DBL_DIG ) const {
+        return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Col0 << Col1 << Col2;
+    void Write( IStreamBase & _Stream ) const {
+        Col0.Write( _Stream );
+        Col1.Write( _Stream );
+        Col2.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Col0;
-        _Stream >> Col1;
-        _Stream >> Col2;
+    void Read( IStreamBase & _Stream ) {
+        Col0.Read( _Stream );
+        Col1.Read( _Stream );
+        Col2.Read( _Stream );
     }
 
     // Static methods
@@ -2793,7 +2790,7 @@ public:
     // Return rotation around normalized axis
     static Double4x4 RotationAroundNormal( const double & _AngleRad, const Double3 & _Normal ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         const Double3 Temp = ( 1.0 - c ) * _Normal;
         const Double3 Temp2 = s * _Normal;
         return Double4x4( c + Temp[0] * _Normal[0],                Temp[0] * _Normal[1] + Temp2[2],     Temp[0] * _Normal[2] - Temp2[1], 0,
@@ -2805,7 +2802,7 @@ public:
     // Return rotation around normalized axis
     Double4x4 RotateAroundNormal( const double & _AngleRad, const Double3 & _Normal ) const {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         Double3 Temp = ( 1.0 - c ) * _Normal;
         Double3 Temp2 = s * _Normal;
         return Double4x4( Col0 * (c + Temp[0] * _Normal[0])            + Col1 * (    Temp[0] * _Normal[1] + Temp2[2]) + Col2 * (    Temp[0] * _Normal[2] - Temp2[1]),
@@ -2827,7 +2824,7 @@ public:
     // Return rotation around X axis
     static Double4x4 RotationX( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double4x4( 1, 0, 0, 0,
                          0, c, s, 0,
                          0,-s, c, 0,
@@ -2837,7 +2834,7 @@ public:
     // Return rotation around Y axis
     static Double4x4 RotationY( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double4x4( c, 0,-s, 0,
                          0, 1, 0, 0,
                          s, 0, c, 0,
@@ -2847,7 +2844,7 @@ public:
     // Return rotation around Z axis
     static Double4x4 RotationZ( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double4x4( c, s, 0, 0,
                         -s, c, 0, 0,
                          0, 0, 1, 0,
@@ -3065,26 +3062,27 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = DBL_DIG ) const {
-        return FString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " " + Col3.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = DBL_DIG ) const {
+        return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " " + Col3.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " " + Col3.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " " + Col3.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Col0 << Col1 << Col2 << Col3;
+    void Write( IStreamBase & _Stream ) const {
+        Col0.Write( _Stream );
+        Col1.Write( _Stream );
+        Col2.Write( _Stream );
+        Col3.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Col0;
-        _Stream >> Col1;
-        _Stream >> Col2;
-        _Stream >> Col3;
+    void Read( IStreamBase & _Stream ) {
+        Col0.Read( _Stream );
+        Col1.Read( _Stream );
+        Col2.Read( _Stream );
+        Col3.Read( _Stream );
     }
 
     // Static methods
@@ -3260,23 +3258,23 @@ public:
                                                     Double4x4 & _NegativeY,
                                                     Double4x4 & _PositiveZ,
                                                     Double4x4 & _NegativeZ ) {
-        _PositiveX = Double4x4::RotationZ( FMath::_PI ).RotateAroundNormal( FMath::_HALF_PI, Double3(0,1,0) );
-        _NegativeX = Double4x4::RotationZ( FMath::_PI ).RotateAroundNormal( -FMath::_HALF_PI, Double3(0,1,0) );
-        _PositiveY = Double4x4::RotationX( -FMath::_HALF_PI );
-        _NegativeY = Double4x4::RotationX( FMath::_HALF_PI );
-        _PositiveZ = Double4x4::RotationX( FMath::_PI );
-        _NegativeZ = Double4x4::RotationZ( FMath::_PI );
+        _PositiveX = Double4x4::RotationZ( Math::_PI ).RotateAroundNormal( Math::_HALF_PI, Double3(0,1,0) );
+        _NegativeX = Double4x4::RotationZ( Math::_PI ).RotateAroundNormal( -Math::_HALF_PI, Double3(0,1,0) );
+        _PositiveY = Double4x4::RotationX( -Math::_HALF_PI );
+        _NegativeY = Double4x4::RotationX( Math::_HALF_PI );
+        _PositiveZ = Double4x4::RotationX( Math::_PI );
+        _NegativeZ = Double4x4::RotationZ( Math::_PI );
     }
 
     static AN_FORCEINLINE const Double4x4 * GetCubeFaceMatrices() {
         // TODO: Precompute this matrices
         static const Double4x4 CubeFaceMatrices[6] = {
-            Double4x4::RotationZ( FMath::_PI ).RotateAroundNormal( FMath::_HALF_PI, Double3(0,1,0) ),
-            Double4x4::RotationZ( FMath::_PI ).RotateAroundNormal( -FMath::_HALF_PI, Double3(0,1,0) ),
-            Double4x4::RotationX( -FMath::_HALF_PI ),
-            Double4x4::RotationX( FMath::_HALF_PI ),
-            Double4x4::RotationX( FMath::_PI ),
-            Double4x4::RotationZ( FMath::_PI )
+            Double4x4::RotationZ( Math::_PI ).RotateAroundNormal( Math::_HALF_PI, Double3(0,1,0) ),
+            Double4x4::RotationZ( Math::_PI ).RotateAroundNormal( -Math::_HALF_PI, Double3(0,1,0) ),
+            Double4x4::RotationX( -Math::_HALF_PI ),
+            Double4x4::RotationX( Math::_HALF_PI ),
+            Double4x4::RotationX( Math::_PI ),
+            Double4x4::RotationZ( Math::_PI )
         };
         return CubeFaceMatrices;
     }
@@ -3554,7 +3552,7 @@ public:
     // Return rotation around normalized axis
     static Double3x4 RotationAroundNormal( const double & _AngleRad, const Double3 & _Normal ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         const Double3 Temp = ( 1.0 - c ) * _Normal;
         const Double3 Temp2 = s * _Normal;
         return Double3x4( c + Temp[0] * _Normal[0]        ,        Temp[1] * _Normal[0] - Temp2[2],     Temp[2] * _Normal[0] + Temp2[1], 0,
@@ -3570,7 +3568,7 @@ public:
     // Return rotation around X axis
     static Double3x4 RotationX( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double3x4( 1, 0, 0, 0,
                          0, c,-s, 0,
                          0, s, c, 0 );
@@ -3579,7 +3577,7 @@ public:
     // Return rotation around Y axis
     static Double3x4 RotationY( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double3x4( c, 0, s, 0,
                          0, 1, 0, 0,
                         -s, 0, c, 0 );
@@ -3588,7 +3586,7 @@ public:
     // Return rotation around Z axis
     static Double3x4 RotationZ( const double & _AngleRad ) {
         double s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Double3x4( c,-s, 0, 0,
                          s, c, 0, 0,
                          0, 0, 1, 0 );
@@ -3674,25 +3672,25 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = DBL_DIG ) const {
-        return FString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = DBL_DIG ) const {
+        return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Col0 << Col1 << Col2;
+    void Write( IStreamBase & _Stream ) const {
+        Col0.Write( _Stream );
+        Col1.Write( _Stream );
+        Col2.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Col0;
-        _Stream >> Col1;
-        _Stream >> Col2;
+    void Read( IStreamBase & _Stream ) {
+        Col0.Read( _Stream );
+        Col1.Read( _Stream );
+        Col2.Read( _Stream );
     }
 
     // Static methods
@@ -3782,7 +3780,7 @@ AN_FORCEINLINE void Double4x4::operator*=( const Double3x4 & _Mat ) {
                       Col0 * SrcB0[3] + Col1 * SrcB1[3] + Col2 * SrcB2[3] + Col3 );
 }
 
-namespace FMath {
+namespace Math {
 
     /*static*/ AN_FORCEINLINE bool Unproject( const Double4x4 & _ModelViewProjectionInversed, const double _Viewport[4], const Double3 & _Coord, Double3 & _Result ) {
         Double4 In( _Coord, 1.0 );

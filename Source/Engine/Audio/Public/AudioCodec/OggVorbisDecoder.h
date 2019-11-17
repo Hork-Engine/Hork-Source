@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Engine/Audio/Public/AudioDecoderInterface.h>
 
-class ANGIE_API FOggVorbisAudioTrack : public IAudioStreamInterface {
-    AN_CLASS( FOggVorbisAudioTrack, IAudioStreamInterface )
+class ANGIE_API AOggVorbisAudioTrack : public IAudioStreamInterface {
+    AN_CLASS( AOggVorbisAudioTrack, IAudioStreamInterface )
 
 public:
     bool InitializeFileStream( const char * _FileName ) override;
@@ -47,15 +47,15 @@ public:
     int StreamDecodePCM( short * _Buffer, int _NumShorts ) override;
 
 protected:
-    FOggVorbisAudioTrack();
-    ~FOggVorbisAudioTrack();
+    AOggVorbisAudioTrack();
+    ~AOggVorbisAudioTrack();
 
 private:
     struct stb_vorbis * Vorbis;
 };
 
-class ANGIE_API FOggVorbisDecoder : public IAudioDecoderInterface {
-    AN_CLASS( FOggVorbisDecoder, IAudioDecoderInterface )
+class ANGIE_API AOggVorbisDecoder : public IAudioDecoderInterface {
+    AN_CLASS( AOggVorbisDecoder, IAudioDecoderInterface )
 
 public:
     IAudioStreamInterface * CreateAudioStream() override;
@@ -64,5 +64,5 @@ public:
     bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) override;
 
 protected:
-    FOggVorbisDecoder();
+    AOggVorbisDecoder();
 };

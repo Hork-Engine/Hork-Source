@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include "BaseLightComponent.h"
 
-class FDirectionalLightComponent : public FBaseLightComponent {
-    AN_COMPONENT( FDirectionalLightComponent, FBaseLightComponent )
+class ADirectionalLightComponent : public ABaseLightComponent {
+    AN_COMPONENT( ADirectionalLightComponent, ABaseLightComponent )
 
-    friend class FWorld;
+    friend class AWorld;
 public:
     void SetDirection( Float3 const & _Direction );
     Float3 GetDirection() const;
@@ -47,18 +47,18 @@ public:
     int GetMaxShadowCascades() const;
 
 protected:
-    FDirectionalLightComponent();
+    ADirectionalLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
 private:
     int                     MaxShadowCascades;
 //    mutable Float4x4        LightViewMatrix;
 //    mutable Float4x4        ShadowMatrix;
 //    mutable bool            bShadowMatrixDirty;
-    FDirectionalLightComponent * Next;
-    FDirectionalLightComponent * Prev;
+    ADirectionalLightComponent * Next;
+    ADirectionalLightComponent * Prev;
 };

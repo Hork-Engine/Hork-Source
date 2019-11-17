@@ -33,11 +33,11 @@ SOFTWARE.
 #include <Engine/Core/Public/BaseTypes.h>
 
 // Lightning-fast lossless compression
-class ANGIE_API FFastLZCompressor {
-    AN_FORBID_COPY( FFastLZCompressor )
+class ANGIE_API AFastLZCompressor {
+    AN_FORBID_COPY( AFastLZCompressor )
 
 public:
-    FFastLZCompressor() {}
+    AFastLZCompressor() {}
 
     // Compress a block of data in the input buffer and returns the size of 
     // compressed block. The size of input buffer is specified by length. The 

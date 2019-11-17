@@ -167,7 +167,7 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     // triangle normal (not normalized)
     n = edge0.Cross( edge1 );
 
-    if ( FMath::Abs( n.Dot( distVec ) ) > halfSize.X * FMath::Abs( n.X ) + halfSize.Y * FMath::Abs( n.Y ) + halfSize.Z * FMath::Abs( n.Z ) ) {
+    if ( Math::Abs( n.Dot( distVec ) ) > halfSize.X * Math::Abs( n.X ) + halfSize.Y * Math::Abs( n.Y ) + halfSize.Z * Math::Abs( n.Z ) ) {
         return false;
     }
 
@@ -177,7 +177,7 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
         d1 = edge1[i];
         radius = halfSize[ i ];
 
-        if ( FMath::Min( p, FMath::Min( p + d0, p + d1 ) ) > radius || FMath::Max( p, FMath::Max( p + d0, p + d1 ) ) < -radius ) {
+        if ( Math::Min( p, Math::Min( p + d0, p + d1 ) ) > radius || Math::Max( p, Math::Max( p + d0, p + d1 ) ) < -radius ) {
             return false;
         }
     }
@@ -187,9 +187,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge1 );
 
-    radius = halfSize[ 1 ] * FMath::Abs( edge0[2] ) + halfSize[ 2 ] * FMath::Abs( edge0[1] );
+    radius = halfSize[ 1 ] * Math::Abs( edge0[2] ) + halfSize[ 2 ] * Math::Abs( edge0[1] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisX and edge1
@@ -197,9 +197,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = halfSize[ 1 ] * FMath::Abs( edge1[2] ) + halfSize[ 2 ] * FMath::Abs( edge1[1] );
+    radius = halfSize[ 1 ] * Math::Abs( edge1[2] ) + halfSize[ 2 ] * Math::Abs( edge1[1] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisX and edge2
@@ -207,9 +207,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = halfSize[ 1 ] * FMath::Abs( edge2[2] ) + halfSize[ 2 ] * FMath::Abs( edge2[1] );
+    radius = halfSize[ 1 ] * Math::Abs( edge2[2] ) + halfSize[ 2 ] * Math::Abs( edge2[1] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisY and edge0
@@ -217,9 +217,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge1 );
 
-    radius = halfSize[ 0 ] * FMath::Abs( edge0[2] ) + halfSize[ 2 ] * FMath::Abs( edge0[0] );
+    radius = halfSize[ 0 ] * Math::Abs( edge0[2] ) + halfSize[ 2 ] * Math::Abs( edge0[0] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisY and edge1
@@ -227,9 +227,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = halfSize[ 0 ] * FMath::Abs( edge1[2] ) + halfSize[ 2 ] * FMath::Abs( edge1[0] );
+    radius = halfSize[ 0 ] * Math::Abs( edge1[2] ) + halfSize[ 2 ] * Math::Abs( edge1[0] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisY and edge2
@@ -237,9 +237,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = halfSize[ 0 ] * FMath::Abs( edge2[2] ) + halfSize[ 2 ] * FMath::Abs( edge2[0] );
+    radius = halfSize[ 0 ] * Math::Abs( edge2[2] ) + halfSize[ 2 ] * Math::Abs( edge2[0] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisZ and edge0
@@ -247,9 +247,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge1 );
 
-    radius = halfSize[ 0 ] * FMath::Abs( edge0[1] ) + halfSize[ 1 ] * FMath::Abs( edge0[0] );
+    radius = halfSize[ 0 ] * Math::Abs( edge0[1] ) + halfSize[ 1 ] * Math::Abs( edge0[0] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisZ and edge1
@@ -257,9 +257,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = halfSize[ 0 ] * FMath::Abs( edge1[1] ) + halfSize[ 1 ] * FMath::Abs( edge1[0] );
+    radius = halfSize[ 0 ] * Math::Abs( edge1[1] ) + halfSize[ 1 ] * Math::Abs( edge1[0] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisZ and edge2
@@ -267,9 +267,9 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle( BvAxisAlignedBox const & _AABB, Float3
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = halfSize[ 0 ] * FMath::Abs( edge2[1] ) + halfSize[ 1 ] * FMath::Abs( edge2[0] );
+    radius = halfSize[ 0 ] * Math::Abs( edge2[1] ) + halfSize[ 1 ] * Math::Abs( edge2[0] );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     return true;
@@ -282,32 +282,32 @@ AN_FORCEINLINE bool BvBoxOverlapTriangle_FastApproximation( BvAxisAlignedBox con
 
     BvAxisAlignedBox triangleBounds;
 
-    triangleBounds.Mins.X = FMath::Min( _P0.X, _P1.X, _P2.X );
-    triangleBounds.Mins.Y = FMath::Min( _P0.Y, _P1.Y, _P2.Y );
-    triangleBounds.Mins.Z = FMath::Min( _P0.Z, _P1.Z, _P2.Z );
+    triangleBounds.Mins.X = Math::Min( _P0.X, _P1.X, _P2.X );
+    triangleBounds.Mins.Y = Math::Min( _P0.Y, _P1.Y, _P2.Y );
+    triangleBounds.Mins.Z = Math::Min( _P0.Z, _P1.Z, _P2.Z );
 
-    triangleBounds.Maxs.X = FMath::Max( _P0.X, _P1.X, _P2.X );
-    triangleBounds.Maxs.Y = FMath::Max( _P0.Y, _P1.Y, _P2.Y );
-    triangleBounds.Maxs.Z = FMath::Max( _P0.Z, _P1.Z, _P2.Z );
+    triangleBounds.Maxs.X = Math::Max( _P0.X, _P1.X, _P2.X );
+    triangleBounds.Maxs.Y = Math::Max( _P0.Y, _P1.Y, _P2.Y );
+    triangleBounds.Maxs.Z = Math::Max( _P0.Z, _P1.Z, _P2.Z );
 
     return BvBoxOverlapBox( _BoundingBox, triangleBounds );
 }
 
 AN_FORCEINLINE bool BvGetBoxIntersection( BvAxisAlignedBox const & _A, BvAxisAlignedBox const & _B, BvAxisAlignedBox & _Intersection ) {
-    const float x_min = FMath::Max( _A.Mins[ 0 ], _B.Mins[ 0 ] );
-    const float x_max = FMath::Min( _A.Maxs[ 0 ], _B.Maxs[ 0 ] );
+    const float x_min = Math::Max( _A.Mins[ 0 ], _B.Mins[ 0 ] );
+    const float x_max = Math::Min( _A.Maxs[ 0 ], _B.Maxs[ 0 ] );
     if ( x_max <= x_min ) {
         return false;
     }
 
-    const float y_min = FMath::Max( _A.Mins[ 1 ], _B.Mins[ 1 ] );
-    const float y_max = FMath::Min( _A.Maxs[ 1 ], _B.Maxs[ 1 ] );
+    const float y_min = Math::Max( _A.Mins[ 1 ], _B.Mins[ 1 ] );
+    const float y_max = Math::Min( _A.Maxs[ 1 ], _B.Maxs[ 1 ] );
     if ( y_max <= y_min ) {
         return false;
     }
 
-    const float z_min = FMath::Max( _A.Mins[ 2 ], _B.Mins[ 2 ] );
-    const float z_max = FMath::Min( _A.Maxs[ 2 ], _B.Maxs[ 2 ] );
+    const float z_min = Math::Max( _A.Mins[ 2 ], _B.Mins[ 2 ] );
+    const float z_max = Math::Min( _A.Maxs[ 2 ], _B.Maxs[ 2 ] );
     if ( z_max <= z_min ) {
         return false;
     }
@@ -352,61 +352,61 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapOrientedBox( BvOrientedBox const & _OBB1
 
     for ( int i = 0; i < 3; i++ ) {
         ra = _OBB1.HalfSize[ i ];
-        rb = _OBB2.HalfSize[ 0 ] * FMath::Abs( R[ i ][ 0 ] ) + _OBB2.HalfSize[ 1 ] * FMath::Abs( R[ i ][ 1 ] ) + _OBB2.HalfSize[ 2 ] * FMath::Abs( R[ i ][ 2 ] );
-        if ( FMath::Abs( T[ i ] ) > ra + rb )
+        rb = _OBB2.HalfSize[ 0 ] * Math::Abs( R[ i ][ 0 ] ) + _OBB2.HalfSize[ 1 ] * Math::Abs( R[ i ][ 1 ] ) + _OBB2.HalfSize[ 2 ] * Math::Abs( R[ i ][ 2 ] );
+        if ( Math::Abs( T[ i ] ) > ra + rb )
             return false;
     }
 
     for ( int i = 0; i < 3; i++ ) {
-        ra = _OBB1.HalfSize[ 0 ] * FMath::Abs( R[ 0 ][ i ] ) + _OBB1.HalfSize[ 1 ] * FMath::Abs( R[ 1 ][ i ] ) + _OBB1.HalfSize[ 2 ] * FMath::Abs( R[ 2 ][ i ] );
+        ra = _OBB1.HalfSize[ 0 ] * Math::Abs( R[ 0 ][ i ] ) + _OBB1.HalfSize[ 1 ] * Math::Abs( R[ 1 ][ i ] ) + _OBB1.HalfSize[ 2 ] * Math::Abs( R[ 2 ][ i ] );
         rb = _OBB2.HalfSize[ i ];
-        if ( FMath::Abs( ( T[ 0 ] * R[ 0 ][ i ] + T[ 1 ] * R[ 1 ][ i ] + T[ 2 ] * R[ 2 ][ i ] ) ) > ra + rb )
+        if ( Math::Abs( ( T[ 0 ] * R[ 0 ][ i ] + T[ 1 ] * R[ 1 ][ i ] + T[ 2 ] * R[ 2 ][ i ] ) ) > ra + rb )
             return false;
     }
 
-    ra = _OBB1.HalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 0 ] ) + _OBB1.HalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 0 ] );
-    rb = _OBB2.HalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 1 ] );
-    if ( FMath::Abs( ( T[ 2 ] * R[ 1 ][ 0 ] - T[ 1 ] * R[ 2 ][ 0 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 1 ] * Math::Abs( R[ 2 ][ 0 ] ) + _OBB1.HalfSize[ 2 ] * Math::Abs( R[ 1 ][ 0 ] );
+    rb = _OBB2.HalfSize[ 1 ] * Math::Abs( R[ 0 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * Math::Abs( R[ 0 ][ 1 ] );
+    if ( Math::Abs( ( T[ 2 ] * R[ 1 ][ 0 ] - T[ 1 ] * R[ 2 ][ 0 ] ) ) > ra + rb )
         return false;
 
-    ra = _OBB1.HalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 1 ] ) + _OBB1.HalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 1 ] );
-    rb = _OBB2.HalfSize[ 0 ] * FMath::Abs( R[ 0 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 2 ] * R[ 1 ][ 1 ] - T[ 1 ] * R[ 2 ][ 1 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 1 ] * Math::Abs( R[ 2 ][ 1 ] ) + _OBB1.HalfSize[ 2 ] * Math::Abs( R[ 1 ][ 1 ] );
+    rb = _OBB2.HalfSize[ 0 ] * Math::Abs( R[ 0 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * Math::Abs( R[ 0 ][ 0 ] );
+    if ( Math::Abs( ( T[ 2 ] * R[ 1 ][ 1 ] - T[ 1 ] * R[ 2 ][ 1 ] ) ) > ra + rb )
         return false;
 
-    ra = _OBB1.HalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 2 ] ) + _OBB1.HalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 2 ] );
-    rb = _OBB2.HalfSize[ 0 ] * FMath::Abs( R[ 0 ][ 1 ] ) + _OBB2.HalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 2 ] * R[ 1 ][ 2 ] - T[ 1 ] * R[ 2 ][ 2 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 1 ] * Math::Abs( R[ 2 ][ 2 ] ) + _OBB1.HalfSize[ 2 ] * Math::Abs( R[ 1 ][ 2 ] );
+    rb = _OBB2.HalfSize[ 0 ] * Math::Abs( R[ 0 ][ 1 ] ) + _OBB2.HalfSize[ 1 ] * Math::Abs( R[ 0 ][ 0 ] );
+    if ( Math::Abs( ( T[ 2 ] * R[ 1 ][ 2 ] - T[ 1 ] * R[ 2 ][ 2 ] ) ) > ra + rb )
         return false;
 
-    ra = _OBB1.HalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 0 ] ) + _OBB1.HalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 0 ] );
-    rb = _OBB2.HalfSize[ 1 ] * FMath::Abs( R[ 1 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 1 ] );
-    if ( FMath::Abs( ( T[ 0 ] * R[ 2 ][ 0 ] - T[ 2 ] * R[ 0 ][ 0 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 0 ] * Math::Abs( R[ 2 ][ 0 ] ) + _OBB1.HalfSize[ 2 ] * Math::Abs( R[ 0 ][ 0 ] );
+    rb = _OBB2.HalfSize[ 1 ] * Math::Abs( R[ 1 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * Math::Abs( R[ 1 ][ 1 ] );
+    if ( Math::Abs( ( T[ 0 ] * R[ 2 ][ 0 ] - T[ 2 ] * R[ 0 ][ 0 ] ) ) > ra + rb )
         return false;
 
-    ra = _OBB1.HalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 1 ] ) + _OBB1.HalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 1 ] );
-    rb = _OBB2.HalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 0 ] * R[ 2 ][ 1 ] - T[ 2 ] * R[ 0 ][ 1 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 0 ] * Math::Abs( R[ 2 ][ 1 ] ) + _OBB1.HalfSize[ 2 ] * Math::Abs( R[ 0 ][ 1 ] );
+    rb = _OBB2.HalfSize[ 0 ] * Math::Abs( R[ 1 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * Math::Abs( R[ 1 ][ 0 ] );
+    if ( Math::Abs( ( T[ 0 ] * R[ 2 ][ 1 ] - T[ 2 ] * R[ 0 ][ 1 ] ) ) > ra + rb )
         return false;
 
-    ra = _OBB1.HalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 2 ] ) + _OBB1.HalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 2 ] );
-    rb = _OBB2.HalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 1 ] ) + _OBB2.HalfSize[ 1 ] * FMath::Abs( R[ 1 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 0 ] * R[ 2 ][ 2 ] - T[ 2 ] * R[ 0 ][ 2 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 0 ] * Math::Abs( R[ 2 ][ 2 ] ) + _OBB1.HalfSize[ 2 ] * Math::Abs( R[ 0 ][ 2 ] );
+    rb = _OBB2.HalfSize[ 0 ] * Math::Abs( R[ 1 ][ 1 ] ) + _OBB2.HalfSize[ 1 ] * Math::Abs( R[ 1 ][ 0 ] );
+    if ( Math::Abs( ( T[ 0 ] * R[ 2 ][ 2 ] - T[ 2 ] * R[ 0 ][ 2 ] ) ) > ra + rb )
         return false;
 
-    ra = _OBB1.HalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 0 ] ) + _OBB1.HalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 0 ] );
-    rb = _OBB2.HalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * FMath::Abs( R[ 2 ][ 1 ] );
-    if ( FMath::Abs( ( T[ 1 ] * R[ 0 ][ 0 ] - T[ 0 ] * R[ 1 ][ 0 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 0 ] * Math::Abs( R[ 1 ][ 0 ] ) + _OBB1.HalfSize[ 1 ] * Math::Abs( R[ 0 ][ 0 ] );
+    rb = _OBB2.HalfSize[ 1 ] * Math::Abs( R[ 2 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * Math::Abs( R[ 2 ][ 1 ] );
+    if ( Math::Abs( ( T[ 1 ] * R[ 0 ][ 0 ] - T[ 0 ] * R[ 1 ][ 0 ] ) ) > ra + rb )
         return false;
 
-    ra = _OBB1.HalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 1 ] ) + _OBB1.HalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 1 ] );
-    rb = _OBB2.HalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * FMath::Abs( R[ 2 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 1 ] * R[ 0 ][ 1 ] - T[ 0 ] * R[ 1 ][ 1 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 0 ] * Math::Abs( R[ 1 ][ 1 ] ) + _OBB1.HalfSize[ 1 ] * Math::Abs( R[ 0 ][ 1 ] );
+    rb = _OBB2.HalfSize[ 0 ] * Math::Abs( R[ 2 ][ 2 ] ) + _OBB2.HalfSize[ 2 ] * Math::Abs( R[ 2 ][ 0 ] );
+    if ( Math::Abs( ( T[ 1 ] * R[ 0 ][ 1 ] - T[ 0 ] * R[ 1 ][ 1 ] ) ) > ra + rb )
         return false;
 
-    ra = _OBB1.HalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 2 ] ) + _OBB1.HalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 2 ] );
-    rb = _OBB2.HalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 1 ] ) + _OBB2.HalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 1 ] * R[ 0 ][ 2 ] - T[ 0 ] * R[ 1 ][ 2 ] ) ) > ra + rb )
+    ra = _OBB1.HalfSize[ 0 ] * Math::Abs( R[ 1 ][ 2 ] ) + _OBB1.HalfSize[ 1 ] * Math::Abs( R[ 0 ][ 2 ] );
+    rb = _OBB2.HalfSize[ 0 ] * Math::Abs( R[ 2 ][ 1 ] ) + _OBB2.HalfSize[ 1 ] * Math::Abs( R[ 2 ][ 0 ] );
+    if ( Math::Abs( ( T[ 1 ] * R[ 0 ][ 2 ] - T[ 0 ] * R[ 1 ][ 2 ] ) ) > ra + rb )
         return false;
 
     return true;
@@ -441,61 +441,61 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapBox( BvOrientedBox const & _OBB, Float3 
 
     for ( int i = 0; i < 3; i++ ) {
         ra = _AABBHalfSize[ i ];
-        rb = _OBB.HalfSize[ 0 ] * FMath::Abs( R[ i ][ 0 ] ) + _OBB.HalfSize[ 1 ] * FMath::Abs( R[ i ][ 1 ] ) + _OBB.HalfSize[ 2 ] * FMath::Abs( R[ i ][ 2 ] );
-        if ( FMath::Abs( T[ i ] ) > ra + rb )
+        rb = _OBB.HalfSize[ 0 ] * Math::Abs( R[ i ][ 0 ] ) + _OBB.HalfSize[ 1 ] * Math::Abs( R[ i ][ 1 ] ) + _OBB.HalfSize[ 2 ] * Math::Abs( R[ i ][ 2 ] );
+        if ( Math::Abs( T[ i ] ) > ra + rb )
             return false;
     }
 
     for ( int i = 0; i < 3; i++ ) {
-        ra = _AABBHalfSize[ 0 ] * FMath::Abs( R[ 0 ][ i ] ) + _AABBHalfSize[ 1 ] * FMath::Abs( R[ 1 ][ i ] ) + _AABBHalfSize[ 2 ] * FMath::Abs( R[ 2 ][ i ] );
+        ra = _AABBHalfSize[ 0 ] * Math::Abs( R[ 0 ][ i ] ) + _AABBHalfSize[ 1 ] * Math::Abs( R[ 1 ][ i ] ) + _AABBHalfSize[ 2 ] * Math::Abs( R[ 2 ][ i ] );
         rb = _OBB.HalfSize[ i ];
-        if ( FMath::Abs( ( T[ 0 ] * R[ 0 ][ i ] + T[ 1 ] * R[ 1 ][ i ] + T[ 2 ] * R[ 2 ][ i ] ) ) > ra + rb )
+        if ( Math::Abs( ( T[ 0 ] * R[ 0 ][ i ] + T[ 1 ] * R[ 1 ][ i ] + T[ 2 ] * R[ 2 ][ i ] ) ) > ra + rb )
             return false;
     }
 
-    ra = _AABBHalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 0 ] ) + _AABBHalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 0 ] );
-    rb = _OBB.HalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 1 ] );
-    if ( FMath::Abs( ( T[ 2 ] * R[ 1 ][ 0 ] - T[ 1 ] * R[ 2 ][ 0 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 1 ] * Math::Abs( R[ 2 ][ 0 ] ) + _AABBHalfSize[ 2 ] * Math::Abs( R[ 1 ][ 0 ] );
+    rb = _OBB.HalfSize[ 1 ] * Math::Abs( R[ 0 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * Math::Abs( R[ 0 ][ 1 ] );
+    if ( Math::Abs( ( T[ 2 ] * R[ 1 ][ 0 ] - T[ 1 ] * R[ 2 ][ 0 ] ) ) > ra + rb )
         return false;
 
-    ra = _AABBHalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 1 ] ) + _AABBHalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 1 ] );
-    rb = _OBB.HalfSize[ 0 ] * FMath::Abs( R[ 0 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 2 ] * R[ 1 ][ 1 ] - T[ 1 ] * R[ 2 ][ 1 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 1 ] * Math::Abs( R[ 2 ][ 1 ] ) + _AABBHalfSize[ 2 ] * Math::Abs( R[ 1 ][ 1 ] );
+    rb = _OBB.HalfSize[ 0 ] * Math::Abs( R[ 0 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * Math::Abs( R[ 0 ][ 0 ] );
+    if ( Math::Abs( ( T[ 2 ] * R[ 1 ][ 1 ] - T[ 1 ] * R[ 2 ][ 1 ] ) ) > ra + rb )
         return false;
 
-    ra = _AABBHalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 2 ] ) + _AABBHalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 2 ] );
-    rb = _OBB.HalfSize[ 0 ] * FMath::Abs( R[ 0 ][ 1 ] ) + _OBB.HalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 2 ] * R[ 1 ][ 2 ] - T[ 1 ] * R[ 2 ][ 2 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 1 ] * Math::Abs( R[ 2 ][ 2 ] ) + _AABBHalfSize[ 2 ] * Math::Abs( R[ 1 ][ 2 ] );
+    rb = _OBB.HalfSize[ 0 ] * Math::Abs( R[ 0 ][ 1 ] ) + _OBB.HalfSize[ 1 ] * Math::Abs( R[ 0 ][ 0 ] );
+    if ( Math::Abs( ( T[ 2 ] * R[ 1 ][ 2 ] - T[ 1 ] * R[ 2 ][ 2 ] ) ) > ra + rb )
         return false;
 
-    ra = _AABBHalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 0 ] ) + _AABBHalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 0 ] );
-    rb = _OBB.HalfSize[ 1 ] * FMath::Abs( R[ 1 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 1 ] );
-    if ( FMath::Abs( ( T[ 0 ] * R[ 2 ][ 0 ] - T[ 2 ] * R[ 0 ][ 0 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 0 ] * Math::Abs( R[ 2 ][ 0 ] ) + _AABBHalfSize[ 2 ] * Math::Abs( R[ 0 ][ 0 ] );
+    rb = _OBB.HalfSize[ 1 ] * Math::Abs( R[ 1 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * Math::Abs( R[ 1 ][ 1 ] );
+    if ( Math::Abs( ( T[ 0 ] * R[ 2 ][ 0 ] - T[ 2 ] * R[ 0 ][ 0 ] ) ) > ra + rb )
         return false;
 
-    ra = _AABBHalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 1 ] ) + _AABBHalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 1 ] );
-    rb = _OBB.HalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * FMath::Abs( R[ 1 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 0 ] * R[ 2 ][ 1 ] - T[ 2 ] * R[ 0 ][ 1 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 0 ] * Math::Abs( R[ 2 ][ 1 ] ) + _AABBHalfSize[ 2 ] * Math::Abs( R[ 0 ][ 1 ] );
+    rb = _OBB.HalfSize[ 0 ] * Math::Abs( R[ 1 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * Math::Abs( R[ 1 ][ 0 ] );
+    if ( Math::Abs( ( T[ 0 ] * R[ 2 ][ 1 ] - T[ 2 ] * R[ 0 ][ 1 ] ) ) > ra + rb )
         return false;
 
-    ra = _AABBHalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 2 ] ) + _AABBHalfSize[ 2 ] * FMath::Abs( R[ 0 ][ 2 ] );
-    rb = _OBB.HalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 1 ] ) + _OBB.HalfSize[ 1 ] * FMath::Abs( R[ 1 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 0 ] * R[ 2 ][ 2 ] - T[ 2 ] * R[ 0 ][ 2 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 0 ] * Math::Abs( R[ 2 ][ 2 ] ) + _AABBHalfSize[ 2 ] * Math::Abs( R[ 0 ][ 2 ] );
+    rb = _OBB.HalfSize[ 0 ] * Math::Abs( R[ 1 ][ 1 ] ) + _OBB.HalfSize[ 1 ] * Math::Abs( R[ 1 ][ 0 ] );
+    if ( Math::Abs( ( T[ 0 ] * R[ 2 ][ 2 ] - T[ 2 ] * R[ 0 ][ 2 ] ) ) > ra + rb )
         return false;
 
-    ra = _AABBHalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 0 ] ) + _AABBHalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 0 ] );
-    rb = _OBB.HalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * FMath::Abs( R[ 2 ][ 1 ] );
-    if ( FMath::Abs( ( T[ 1 ] * R[ 0 ][ 0 ] - T[ 0 ] * R[ 1 ][ 0 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 0 ] * Math::Abs( R[ 1 ][ 0 ] ) + _AABBHalfSize[ 1 ] * Math::Abs( R[ 0 ][ 0 ] );
+    rb = _OBB.HalfSize[ 1 ] * Math::Abs( R[ 2 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * Math::Abs( R[ 2 ][ 1 ] );
+    if ( Math::Abs( ( T[ 1 ] * R[ 0 ][ 0 ] - T[ 0 ] * R[ 1 ][ 0 ] ) ) > ra + rb )
         return false;
 
-    ra = _AABBHalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 1 ] ) + _AABBHalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 1 ] );
-    rb = _OBB.HalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * FMath::Abs( R[ 2 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 1 ] * R[ 0 ][ 1 ] - T[ 0 ] * R[ 1 ][ 1 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 0 ] * Math::Abs( R[ 1 ][ 1 ] ) + _AABBHalfSize[ 1 ] * Math::Abs( R[ 0 ][ 1 ] );
+    rb = _OBB.HalfSize[ 0 ] * Math::Abs( R[ 2 ][ 2 ] ) + _OBB.HalfSize[ 2 ] * Math::Abs( R[ 2 ][ 0 ] );
+    if ( Math::Abs( ( T[ 1 ] * R[ 0 ][ 1 ] - T[ 0 ] * R[ 1 ][ 1 ] ) ) > ra + rb )
         return false;
 
-    ra = _AABBHalfSize[ 0 ] * FMath::Abs( R[ 1 ][ 2 ] ) + _AABBHalfSize[ 1 ] * FMath::Abs( R[ 0 ][ 2 ] );
-    rb = _OBB.HalfSize[ 0 ] * FMath::Abs( R[ 2 ][ 1 ] ) + _OBB.HalfSize[ 1 ] * FMath::Abs( R[ 2 ][ 0 ] );
-    if ( FMath::Abs( ( T[ 1 ] * R[ 0 ][ 2 ] - T[ 0 ] * R[ 1 ][ 2 ] ) ) > ra + rb )
+    ra = _AABBHalfSize[ 0 ] * Math::Abs( R[ 1 ][ 2 ] ) + _AABBHalfSize[ 1 ] * Math::Abs( R[ 0 ][ 2 ] );
+    rb = _OBB.HalfSize[ 0 ] * Math::Abs( R[ 2 ][ 1 ] ) + _OBB.HalfSize[ 1 ] * Math::Abs( R[ 2 ][ 0 ] );
+    if ( Math::Abs( ( T[ 1 ] * R[ 0 ][ 2 ] - T[ 0 ] * R[ 1 ][ 2 ] ) ) > ra + rb )
         return false;
 
     return true;
@@ -527,7 +527,7 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     // triangle normal (not normalized)
     n = edge0.Cross( edge1 );
 
-    if ( FMath::Abs( n.Dot( distVec ) ) > ( _OBB.HalfSize.X * FMath::Abs( n.Dot( _OBB.Orient[ 0 ] ) ) + _OBB.HalfSize.Y * FMath::Abs( n.Dot( _OBB.Orient[ 1 ] ) ) + _OBB.HalfSize.Z * FMath::Abs( n.Dot( _OBB.Orient[ 2 ] ) ) ) )
+    if ( Math::Abs( n.Dot( distVec ) ) > ( _OBB.HalfSize.X * Math::Abs( n.Dot( _OBB.Orient[ 0 ] ) ) + _OBB.HalfSize.Y * Math::Abs( n.Dot( _OBB.Orient[ 1 ] ) ) + _OBB.HalfSize.Z * Math::Abs( n.Dot( _OBB.Orient[ 2 ] ) ) ) )
         return false;
 
     for ( int i = 0; i < 3; i++ ) {
@@ -536,7 +536,7 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
         d1 = _OBB.Orient[ i ].Dot( edge1 );
         radius = _OBB.HalfSize[ i ];
 
-        if ( FMath::Min( p, FMath::Min( p + d0, p + d1 ) ) > radius || FMath::Max( p, FMath::Max( p + d0, p + d1 ) ) < -radius ) {
+        if ( Math::Min( p, Math::Min( p + d0, p + d1 ) ) > radius || Math::Max( p, Math::Max( p + d0, p + d1 ) ) < -radius ) {
             return false;
         }
     }
@@ -546,9 +546,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge1 );
 
-    radius = _OBB.HalfSize[ 1 ] * FMath::Abs( _OBB.Orient[ 2 ].Dot( edge0 ) ) + _OBB.HalfSize[ 2 ] * FMath::Abs( _OBB.Orient[ 1 ].Dot( edge0 ) );
+    radius = _OBB.HalfSize[ 1 ] * Math::Abs( _OBB.Orient[ 2 ].Dot( edge0 ) ) + _OBB.HalfSize[ 2 ] * Math::Abs( _OBB.Orient[ 1 ].Dot( edge0 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisX and edge1
@@ -556,9 +556,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = _OBB.HalfSize[ 1 ] * FMath::Abs( _OBB.Orient[ 2 ].Dot( edge1 ) ) + _OBB.HalfSize[ 2 ] * FMath::Abs( _OBB.Orient[ 1 ].Dot( edge1 ) );
+    radius = _OBB.HalfSize[ 1 ] * Math::Abs( _OBB.Orient[ 2 ].Dot( edge1 ) ) + _OBB.HalfSize[ 2 ] * Math::Abs( _OBB.Orient[ 1 ].Dot( edge1 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisX and edge2
@@ -566,9 +566,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = _OBB.HalfSize[ 1 ] * FMath::Abs( _OBB.Orient[ 2 ].Dot( edge2 ) ) + _OBB.HalfSize[ 2 ] * FMath::Abs( _OBB.Orient[ 1 ].Dot( edge2 ) );
+    radius = _OBB.HalfSize[ 1 ] * Math::Abs( _OBB.Orient[ 2 ].Dot( edge2 ) ) + _OBB.HalfSize[ 2 ] * Math::Abs( _OBB.Orient[ 1 ].Dot( edge2 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisY and edge0
@@ -576,9 +576,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge1 );
 
-    radius = _OBB.HalfSize[ 0 ] * FMath::Abs( _OBB.Orient[ 2 ].Dot( edge0 ) ) + _OBB.HalfSize[ 2 ] * FMath::Abs( _OBB.Orient[ 0 ].Dot( edge0 ) );
+    radius = _OBB.HalfSize[ 0 ] * Math::Abs( _OBB.Orient[ 2 ].Dot( edge0 ) ) + _OBB.HalfSize[ 2 ] * Math::Abs( _OBB.Orient[ 0 ].Dot( edge0 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisY and edge1
@@ -586,9 +586,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = _OBB.HalfSize[ 0 ] * FMath::Abs( _OBB.Orient[ 2 ].Dot( edge1 ) ) + _OBB.HalfSize[ 2 ] * FMath::Abs( _OBB.Orient[ 0 ].Dot( edge1 ) );
+    radius = _OBB.HalfSize[ 0 ] * Math::Abs( _OBB.Orient[ 2 ].Dot( edge1 ) ) + _OBB.HalfSize[ 2 ] * Math::Abs( _OBB.Orient[ 0 ].Dot( edge1 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisY and edge2
@@ -596,9 +596,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = _OBB.HalfSize[ 0 ] * FMath::Abs( _OBB.Orient[ 2 ].Dot( edge2 ) ) + _OBB.HalfSize[ 2 ] * FMath::Abs( _OBB.Orient[ 0 ].Dot( edge2 ) );
+    radius = _OBB.HalfSize[ 0 ] * Math::Abs( _OBB.Orient[ 2 ].Dot( edge2 ) ) + _OBB.HalfSize[ 2 ] * Math::Abs( _OBB.Orient[ 0 ].Dot( edge2 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisZ and edge0
@@ -606,9 +606,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge1 );
 
-    radius = _OBB.HalfSize[ 0 ] * FMath::Abs( _OBB.Orient[ 1 ].Dot( edge0 ) ) + _OBB.HalfSize[ 1 ] * FMath::Abs( _OBB.Orient[ 0 ].Dot( edge0 ) );
+    radius = _OBB.HalfSize[ 0 ] * Math::Abs( _OBB.Orient[ 1 ].Dot( edge0 ) ) + _OBB.HalfSize[ 1 ] * Math::Abs( _OBB.Orient[ 0 ].Dot( edge0 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisZ and edge1
@@ -616,9 +616,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = _OBB.HalfSize[ 0 ] * FMath::Abs( _OBB.Orient[ 1 ].Dot( edge1 ) ) + _OBB.HalfSize[ 1 ] * FMath::Abs( _OBB.Orient[ 0 ].Dot( edge1 ) );
+    radius = _OBB.HalfSize[ 0 ] * Math::Abs( _OBB.Orient[ 1 ].Dot( edge1 ) ) + _OBB.HalfSize[ 1 ] * Math::Abs( _OBB.Orient[ 0 ].Dot( edge1 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     // check axisZ and edge2
@@ -626,9 +626,9 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle( BvOrientedBox const & _OBB, Fl
     p = n.Dot( distVec );
     d0 = n.Dot( edge0 );
 
-    radius = _OBB.HalfSize[ 0 ] * FMath::Abs( _OBB.Orient[ 1 ].Dot( edge2 ) ) + _OBB.HalfSize[ 1 ] * FMath::Abs( _OBB.Orient[ 0 ].Dot( edge2 ) );
+    radius = _OBB.HalfSize[ 0 ] * Math::Abs( _OBB.Orient[ 1 ].Dot( edge2 ) ) + _OBB.HalfSize[ 1 ] * Math::Abs( _OBB.Orient[ 0 ].Dot( edge2 ) );
 
-    if ( FMath::Min( p, p + d0 ) > radius || FMath::Max( p, p + d0 ) < -radius )
+    if ( Math::Min( p, p + d0 ) > radius || Math::Max( p, p + d0 ) < -radius )
         return false;
 
     return true;
@@ -641,13 +641,13 @@ AN_FORCEINLINE bool BvOrientedBoxOverlapTriangle_FastApproximation( BvOrientedBo
 
     BvAxisAlignedBox triangleBounds;
 
-    triangleBounds.Mins.X = FMath::Min( _P0.X, _P1.X, _P2.X );
-    triangleBounds.Mins.Y = FMath::Min( _P0.Y, _P1.Y, _P2.Y );
-    triangleBounds.Mins.Z = FMath::Min( _P0.Z, _P1.Z, _P2.Z );
+    triangleBounds.Mins.X = Math::Min( _P0.X, _P1.X, _P2.X );
+    triangleBounds.Mins.Y = Math::Min( _P0.Y, _P1.Y, _P2.Y );
+    triangleBounds.Mins.Z = Math::Min( _P0.Z, _P1.Z, _P2.Z );
 
-    triangleBounds.Maxs.X = FMath::Max( _P0.X, _P1.X, _P2.X );
-    triangleBounds.Maxs.Y = FMath::Max( _P0.Y, _P1.Y, _P2.Y );
-    triangleBounds.Maxs.Z = FMath::Max( _P0.Z, _P1.Z, _P2.Z );
+    triangleBounds.Maxs.X = Math::Max( _P0.X, _P1.X, _P2.X );
+    triangleBounds.Maxs.Y = Math::Max( _P0.Y, _P1.Y, _P2.Y );
+    triangleBounds.Maxs.Z = Math::Max( _P0.Z, _P1.Z, _P2.Z );
 
     return BvOrientedBoxOverlapBox( _OBB, triangleBounds );
 }
@@ -673,8 +673,8 @@ AN_FORCEINLINE bool BvRayIntersectSphere( Float3 const & _RayStart, Float3 const
     if ( distance < 0.0f ) {
         return false;
     }
-    distance = FMath::Sqrt( distance );
-    FMath::MinMax( -b + distance, -b - distance, _Min, _Max );
+    distance = Math::Sqrt( distance );
+    Math::MinMax( -b + distance, -b - distance, _Min, _Max );
     return _Min > 0.0f || _Max > 0.0f;
 }
 
@@ -687,8 +687,8 @@ AN_FORCEINLINE bool BvRayIntersectSphere( Float3 const & _RayStart, Float3 const
         return false;
     }
     float t1, t2;
-    _Distance = FMath::Sqrt( _Distance );
-    FMath::MinMax( -b + _Distance, -b - _Distance, t1, t2 );
+    _Distance = Math::Sqrt( _Distance );
+    Math::MinMax( -b + _Distance, -b - _Distance, t1, t2 );
     _Distance = t1 >= 0.0f ? t1 : t2;
     return _Distance > 0.0f;
 }
@@ -700,18 +700,18 @@ AN_FORCEINLINE bool BvRayIntersectBox( Float3 const & _RayStart, Float3 const & 
 #if 0
     float Lo = _InvRayDir.X*(_AABB.Mins.X - _RayStart.X);
     float Hi = _InvRayDir.X*(_AABB.Maxs.X - _RayStart.X);
-    _Min = FMath::Min(Lo, Hi);
-    _Max = FMath::Max(Lo, Hi);
+    _Min = Math::Min(Lo, Hi);
+    _Max = Math::Max(Lo, Hi);
 
     Lo = _InvRayDir.Y*(_AABB.Mins.Y - _RayStart.Y);
     Hi = _InvRayDir.Y*(_AABB.Maxs.Y - _RayStart.Y);
-    _Min = FMath::Max(_Min, FMath::Min(Lo, Hi));
-    _Max = FMath::Min(_Max, FMath::Max(Lo, Hi));
+    _Min = Math::Max(_Min, Math::Min(Lo, Hi));
+    _Max = Math::Min(_Max, Math::Max(Lo, Hi));
 
     Lo = _InvRayDir.Z*(_AABB.Mins.Z - _RayStart.Z);
     Hi = _InvRayDir.Z*(_AABB.Maxs.Z - _RayStart.Z);
-    _Min = FMath::Max(_Min, FMath::Min(Lo, Hi));
-    _Max = FMath::Min(_Max, FMath::Max(Lo, Hi));
+    _Min = Math::Max(_Min, Math::Min(Lo, Hi));
+    _Max = Math::Min(_Max, Math::Max(Lo, Hi));
 
     return (_Min <= _Max) && (_Max > 0.0f);
 #else
@@ -720,7 +720,7 @@ AN_FORCEINLINE bool BvRayIntersectBox( Float3 const & _RayStart, Float3 const & 
 
     for ( int i = 0; i < 3; i++ ) {
         // Check is ray axial
-        if ( FMath::IsInfinite( _InvRayDir[ i ] ) ) {
+        if ( Math::IsInfinite( _InvRayDir[ i ] ) ) {
             if ( _RayStart[ i ] < _AABB.Mins[ i ] || _RayStart[ i ] > _AABB.Maxs[ i ] ) {
                 // ray origin must be within the bounds
                 return false;
@@ -758,7 +758,7 @@ AN_FORCEINLINE bool BvRayIntersectBox2D( Float2 const & _RayStart, Float2 const 
 
     for ( int i = 0; i < 2; i++ ) {
         // Check is ray axial
-        if ( FMath::IsInfinite( _InvRayDir[ i ] ) ) {
+        if ( Math::IsInfinite( _InvRayDir[ i ] ) ) {
             if ( _RayStart[ i ] < _Mins[ i ] || _RayStart[ i ] > _Maxs[ i ] ) {
                 // ray origin must be within the bounds
                 return false;
@@ -807,18 +807,18 @@ AN_FORCEINLINE bool BvRayIntersectOrientedBox( Float3 const & _RayStart, Float3 
 
     float Lo = InvRayDirX*(Mins.X - RayStart.X);
     float Hi = InvRayDirX*(Maxs.X - RayStart.X);
-    _Min = FMath::Min(Lo, Hi);
-    _Max = FMath::Max(Lo, Hi);
+    _Min = Math::Min(Lo, Hi);
+    _Max = Math::Max(Lo, Hi);
 
     Lo = InvRayDirY*(Mins.Y - RayStart.Y);
     Hi = InvRayDirY*(Maxs.Y - RayStart.Y);
-    _Min = FMath::Max(_Min, FMath::Min(Lo, Hi));
-    _Max = FMath::Min(_Max, FMath::Max(Lo, Hi));
+    _Min = Math::Max(_Min, Math::Min(Lo, Hi));
+    _Max = Math::Min(_Max, Math::Max(Lo, Hi));
 
     Lo = InvRayDirZ*(Mins.Z - RayStart.Z);
     Hi = InvRayDirZ*(Maxs.Z - RayStart.Z);
-    _Min = FMath::Max(_Min, FMath::Min(Lo, Hi));
-    _Max = FMath::Min(_Max, FMath::Max(Lo, Hi));
+    _Min = Math::Max(_Min, Math::Min(Lo, Hi));
+    _Max = Math::Min(_Max, Math::Max(Lo, Hi));
 
     return (_Min <= _Max) && (_Max > 0.0f);
 #else
@@ -920,9 +920,9 @@ AN_FORCEINLINE bool BvRayIntersectElipsoid( Float3 const & _RayStart, Float3 con
     if ( d < 0.0f ) {
         return false;
     }
-    const float distance = FMath::Sqrt( d );
+    const float distance = Math::Sqrt( d );
     const float denom = 0.5f / a;
-    FMath::MinMax( ( -b + distance ) * denom, ( -b - distance ) * denom, _Min, _Max );
+    Math::MinMax( ( -b + distance ) * denom, ( -b - distance ) * denom, _Min, _Max );
     return _Min > 0.0f || _Max > 0.0f;
 }
 
@@ -935,10 +935,10 @@ AN_FORCEINLINE bool BvRayIntersectElipsoid( Float3 const & _RayStart, Float3 con
     if ( d < 0.0f ) {
         return false;
     }
-    _Distance = FMath::Sqrt( d );
+    _Distance = Math::Sqrt( d );
     const float denom = 0.5f / a;
     float t1, t2;
-    FMath::MinMax( ( -b + _Distance ) * denom, ( -b - _Distance ) * denom, t1, t2 );
+    Math::MinMax( ( -b + _Distance ) * denom, ( -b - _Distance ) * denom, t1, t2 );
     _Distance = t1 >= 0.0f ? t1 : t2;
     return _Distance > 0.0f;
 }

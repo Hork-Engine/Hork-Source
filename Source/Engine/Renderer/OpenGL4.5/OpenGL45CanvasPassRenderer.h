@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class FCanvasPassRenderer : public FPassRenderer {
+class ACanvasPassRenderer : public APassRenderer {
 public:
     void Initialize();
     void Deinitialize();
@@ -64,6 +64,6 @@ private:
     int IndexBufferSize;
 };
 
-extern FCanvasPassRenderer GCanvasPassRenderer;
+extern ACanvasPassRenderer GCanvasPassRenderer;
 
 }

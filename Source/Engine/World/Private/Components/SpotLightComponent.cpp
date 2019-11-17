@@ -38,11 +38,11 @@ constexpr float DEFAULT_INNER_CONE_ANGLE = 30.0f;
 constexpr float DEFAULT_OUTER_CONE_ANGLE = 35.0f;
 constexpr float DEFAULT_SPOT_EXPONENT = 1.0f;
 
-FRuntimeVariable RVDrawSpotLights( _CTS( "DrawSpotLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawSpotLights( _CTS( "DrawSpotLights" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_CLASS_META( FSpotLightComponent )
+AN_CLASS_META( ASpotLightComponent )
 
-FSpotLightComponent::FSpotLightComponent() {
+ASpotLightComponent::ASpotLightComponent() {
     InnerRadius = DEFAULT_INNER_RADIUS;
     OuterRadius = DEFAULT_OUTER_RADIUS;
     InnerConeAngle = DEFAULT_INNER_CONE_ANGLE;
@@ -57,63 +57,63 @@ FSpotLightComponent::FSpotLightComponent() {
     UpdateBoundingBox();
 }
 
-void FSpotLightComponent::InitializeComponent() {
+void ASpotLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
     GetWorld()->AddSpotLight( this );
 }
 
-void FSpotLightComponent::DeinitializeComponent() {
+void ASpotLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     GetWorld()->RemoveSpotLight( this );
 }
 
-void FSpotLightComponent::SetInnerRadius( float _Radius ) {
-    InnerRadius = FMath::Max( 0.001f, _Radius );
+void ASpotLightComponent::SetInnerRadius( float _Radius ) {
+    InnerRadius = Math::Max( 0.001f, _Radius );
 }
 
-float FSpotLightComponent::GetInnerRadius() const {
+float ASpotLightComponent::GetInnerRadius() const {
     return InnerRadius;
 }
 
-void FSpotLightComponent::SetOuterRadius( float _Radius ) {
-    OuterRadius = FMath::Max( 0.001f, _Radius );
+void ASpotLightComponent::SetOuterRadius( float _Radius ) {
+    OuterRadius = Math::Max( 0.001f, _Radius );
 
     UpdateBoundingBox();
 }
 
-float FSpotLightComponent::GetOuterRadius() const {
+float ASpotLightComponent::GetOuterRadius() const {
     return OuterRadius;
 }
 
-void FSpotLightComponent::SetInnerConeAngle( float _Angle ) {
-    InnerConeAngle = FMath::Clamp( _Angle, 0.0001f, 180.0f );
+void ASpotLightComponent::SetInnerConeAngle( float _Angle ) {
+    InnerConeAngle = Math::Clamp( _Angle, 0.0001f, 180.0f );
 }
 
-float FSpotLightComponent::GetInnerConeAngle() const {
+float ASpotLightComponent::GetInnerConeAngle() const {
     return InnerConeAngle;
 }
 
-void FSpotLightComponent::SetOuterConeAngle( float _Angle ) {
-    OuterConeAngle = FMath::Clamp( _Angle, 0.0001f, 180.0f );
+void ASpotLightComponent::SetOuterConeAngle( float _Angle ) {
+    OuterConeAngle = Math::Clamp( _Angle, 0.0001f, 180.0f );
 
     UpdateBoundingBox();
 }
 
-float FSpotLightComponent::GetOuterConeAngle() const {
+float ASpotLightComponent::GetOuterConeAngle() const {
     return OuterConeAngle;
 }
 
-void FSpotLightComponent::SetSpotExponent( float _Exponent ) {
+void ASpotLightComponent::SetSpotExponent( float _Exponent ) {
     SpotExponent = _Exponent;
 }
 
-float FSpotLightComponent::GetSpotExponent() const {
+float ASpotLightComponent::GetSpotExponent() const {
     return SpotExponent;
 }
 
-void FSpotLightComponent::SetDirection( Float3 const & _Direction ) {
+void ASpotLightComponent::SetDirection( Float3 const & _Direction ) {
     Float3x3 orientation;
 
     orientation[2] = -_Direction.Normalized();
@@ -124,11 +124,11 @@ void FSpotLightComponent::SetDirection( Float3 const & _Direction ) {
     SetRotation( rotation );
 }
 
-Float3 FSpotLightComponent::GetDirection() const {
+Float3 ASpotLightComponent::GetDirection() const {
     return GetForwardVector();
 }
 
-void FSpotLightComponent::SetWorldDirection( Float3 const & _Direction ) {
+void ASpotLightComponent::SetWorldDirection( Float3 const & _Direction ) {
     Float3x3 orientation;
     orientation[2] = -_Direction.Normalized();
     orientation[2].ComputeBasis( orientation[0], orientation[1] );
@@ -138,23 +138,23 @@ void FSpotLightComponent::SetWorldDirection( Float3 const & _Direction ) {
     SetWorldRotation( rotation );
 }
 
-Float3 FSpotLightComponent::GetWorldDirection() const {
+Float3 ASpotLightComponent::GetWorldDirection() const {
     return GetWorldForwardVector();
 }
 
-BvAxisAlignedBox const & FSpotLightComponent::GetWorldBounds() const {
+BvAxisAlignedBox const & ASpotLightComponent::GetWorldBounds() const {
     return AABBWorldBounds;
 }
 
-void FSpotLightComponent::OnTransformDirty() {
+void ASpotLightComponent::OnTransformDirty() {
     Super::OnTransformDirty();
 
     UpdateBoundingBox();
     //MarkAreaDirty();
 }
 
-void FSpotLightComponent::UpdateBoundingBox() {
-    const float ToHalfAngleRadians = 0.5f / 180.0f * FMath::_PI;
+void ASpotLightComponent::UpdateBoundingBox() {
+    const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
     const float HalfConeAngle = OuterConeAngle * ToHalfAngleRadians;
     const Float3 WorldPos = GetWorldPosition();
 
@@ -185,7 +185,7 @@ void FSpotLightComponent::UpdateBoundingBox() {
 
     // Посмотреть, как более эффективно распределяется площадь - у сферы или AABB
     // Compute cone Sphere bounds
-    if ( HalfConeAngle > FMath::_PI / 4 ) {
+    if ( HalfConeAngle > Math::_PI / 4 ) {
         SphereWorldBounds.Radius = sin( HalfConeAngle ) * OuterRadius;
         SphereWorldBounds.Center = WorldPos + SpotDir * ( cos( HalfConeAngle ) * OuterRadius );
     } else {
@@ -194,16 +194,16 @@ void FSpotLightComponent::UpdateBoundingBox() {
     }
 }
 
-void FSpotLightComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+void ASpotLightComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
     if ( RVDrawSpotLights ) {
         Float3 pos = GetWorldPosition();
         Float3x3 orient = GetWorldRotation().ToMatrix();
         _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( FColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+        _DebugDraw->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
         _DebugDraw->DrawCone( pos, orient, OuterRadius, InnerConeAngle * 0.5f );
-        _DebugDraw->SetColor( FColor4( 1, 1, 1, 1 ) );
+        _DebugDraw->SetColor( AColor4( 1, 1, 1, 1 ) );
         _DebugDraw->DrawCone( pos, orient, OuterRadius, OuterConeAngle * 0.5f );
     }
 }

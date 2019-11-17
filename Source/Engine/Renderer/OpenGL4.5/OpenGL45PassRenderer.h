@@ -34,15 +34,15 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class FPassRenderer {
+class APassRenderer {
 protected:
-    void BindVertexAndIndexBuffers( FRenderInstance const * _Instance );
+    void BindVertexAndIndexBuffers( SRenderInstance const * _Instance );
 
-    void BindVertexAndIndexBuffers( FShadowRenderInstance const * _Instance );
+    void BindVertexAndIndexBuffers( SShadowRenderInstance const * _Instance );
 
     void BindSkeleton( size_t _Offset, size_t _Size );
 
-    void BindTextures( FMaterialFrameData * _MaterialInstance );
+    void BindTextures( SMaterialFrameData * _MaterialInstance );
 
     void SetInstanceUniforms( int _Index );
 

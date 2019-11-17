@@ -260,7 +260,7 @@ Float & Float::FromString( const char * _String ) {
     return *this;
 }
 
-namespace  FMath {
+namespace  Math {
 
 UShort FloatToHalf( const UInt & _I ) {
     return Float::FloatToHalf( _I );

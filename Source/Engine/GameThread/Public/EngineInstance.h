@@ -37,7 +37,7 @@ SOFTWARE.
 #include <Engine/Widgets/Public/WDesktop.h>
 #include <Engine/World/Public/World.h>
 
-struct FVideoMode
+struct SVideoMode
 {
     /** Horizontal display resolution */
     unsigned short Width;
@@ -53,9 +53,9 @@ struct FVideoMode
     char Backend[32];
 };
 
-class ANGIE_API FEngineInstance : public IEngineInterface
+class ANGIE_API AEngineInstance : public IEngineInterface
 {
-    AN_SINGLETON( FEngineInstance )
+    AN_SINGLETON( AEngineInstance )
 
 public:
     /** Quit when user press ESCAPE */
@@ -71,13 +71,13 @@ public:
     float MouseSensitivity = 1.0f;
 
     /** Helper. Create a new world */
-    FWorld * CreateWorld() { return FWorld::CreateWorld(); }
+    AWorld * CreateWorld() { return AWorld::CreateWorld(); }
 
     /** Helper. Destroy all existing worlds */
-    void DestroyWorlds() { return FWorld::DestroyWorlds(); }
+    void DestroyWorlds() { return AWorld::DestroyWorlds(); }
 
     /** Helper. Get all existing worlds */
-    TPodArray< FWorld * > const & GetWorld() { return FWorld::GetWorlds(); }
+    TPodArray< AWorld * > const & GetWorld() { return AWorld::GetWorlds(); }
 
     /** Get current frame update number */
     int GetFrameNumber() const { return FrameNumber; }
@@ -86,10 +86,10 @@ public:
     void SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, byte _RefreshRate, bool _Fullscreen, const char * _Backend );
 
     /** Change a video mode */
-    void SetVideoMode( FVideoMode const & _VideoMode );
+    void SetVideoMode( SVideoMode const & _VideoMode );
 
     /** Get current video mode */
-    FVideoMode const & GetVideoMode() const;
+    SVideoMode const & GetVideoMode() const;
 
     /** Get video mode aspect ratio */
     float GetVideoAspectRatio() const { return VideoAspectRatio; }
@@ -150,9 +150,11 @@ public:
     /** Get hud desktop */
     WDesktop * GetDesktop() { return Desktop; }
 
+    ARuntimeCommandProcessor & GetCommandProcessor() { return CommandProcessor; }
+
 private:
     /** IEngineInterface interface. Initialize the engine */
-    void Initialize( FCreateGameModuleCallback _CreateGameModuleCallback ) override;
+    void Initialize( ACreateGameModuleCallback _CreateGameModuleCallback ) override;
 
     /** IEngineInterface interface. Shutdown the engine */
     void Deinitialize() override;
@@ -167,23 +169,23 @@ private:
     void Print( const char * _Message ) override;
 
     // Process runtime event
-    void ProcessEvent( struct FEvent const & _Event );
+    void ProcessEvent( struct SEvent const & _Event );
     void ProcessEvents();
 
     // Send event to runtime
-    FEvent & SendEvent();
+    SEvent & SendEvent();
 
-    void OnKeyEvent( struct FKeyEvent const & _Event, double _TimeStamp );
-    void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp );
-    void OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, double _TimeStamp );
-    void OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp );
-    void OnCharEvent( struct FCharEvent const & _Event, double _TimeStamp );
-    void OnChangedVideoModeEvent( struct FChangedVideoModeEvent const & _Event );
+    void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp );
+    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp );
+    void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp );
+    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp );
+    void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp );
+    void OnChangedVideoModeEvent( struct SChangedVideoModeEvent const & _Event );
 
     public:void UpdateInputAxes( float _Fract );private: // !!! Temp solution !!!
 
     // Used to debug some features. Must be removed from release.
-    void DeveloperKeys( struct FKeyEvent const & _Event );
+    void DeveloperKeys( struct SKeyEvent const & _Event );
 
     // Tick the game
     void UpdateWorlds();
@@ -196,7 +198,7 @@ private:
 
     void ResetVideoMode();
 
-    FVideoMode VideoMode;
+    SVideoMode VideoMode;
     float VideoAspectRatio = 4.0f/3.0f;
     float FramebufferWidth;
     float FramebufferHeight;
@@ -211,7 +213,7 @@ private:
 
     Float2 CursorPosition;
 
-    //class FImguiContext * ImguiContext;
+    //class AImguiContext * ImguiContext;
 
     // Frame update number
     int FrameNumber = 0;
@@ -229,7 +231,7 @@ private:
 
     TRef< WDesktop > Desktop;
 
-    FRuntimeCommandProcessor CommandProcessor;
+    ARuntimeCommandProcessor CommandProcessor;
 };
 
-extern ANGIE_API FEngineInstance & GEngine;
+extern ANGIE_API AEngineInstance & GEngine;

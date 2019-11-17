@@ -37,22 +37,22 @@ SOFTWARE.
 struct ImFontAtlas;
 struct ImGuiContext;
 
-class FImguiContext : public FBaseObject {
-    AN_CLASS( FImguiContext, FBaseObject )
+class AImguiContext : public ABaseObject {
+    AN_CLASS( AImguiContext, ABaseObject )
 
 public:
-    void SetFont( FFont * _Font );
+    void SetFont( AFont * _Font );
     void BeginFrame( float _TimeStep );
     void EndFrame();
 
-    void OnKeyEvent( FKeyEvent const & _Event );
-    void OnCharEvent( FCharEvent const & _Event );
-    void OnMouseButtonEvent( FMouseButtonEvent const & _Event );
-    void OnMouseWheelEvent( FMouseWheelEvent const & _Event );
+    void OnKeyEvent( SKeyEvent const & _Event );
+    void OnCharEvent( SCharEvent const & _Event );
+    void OnMouseButtonEvent( SMouseButtonEvent const & _Event );
+    void OnMouseWheelEvent( SMouseWheelEvent const & _Event );
 
 protected:
-    FImguiContext();
-    ~FImguiContext();
+    AImguiContext();
+    ~AImguiContext();
 
     ImGuiContext * GUIContext;
 };

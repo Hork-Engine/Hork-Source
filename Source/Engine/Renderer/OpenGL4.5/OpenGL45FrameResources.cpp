@@ -35,15 +35,15 @@ SOFTWARE.
 #include <Engine/Core/Public/Image.h>
 #include <Engine/Runtime/Public/RuntimeVariable.h>
 
-FRuntimeVariable RVDebugRenderMode( _CTS( "DebugRenderMode" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDebugRenderMode( _CTS( "DebugRenderMode" ), _CTS( "0" ), VAR_CHEAT );
 
 using namespace GHI;
 
 namespace OpenGL45 {
 
-FFrameResources GFrameResources;
+AFrameResources GFrameResources;
 
-void FFrameResources::Initialize() {
+void AFrameResources::Initialize() {
     GHI::BufferCreateInfo uniformBufferCI = {};
     uniformBufferCI.bImmutableStorage = true;
     uniformBufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
@@ -51,7 +51,7 @@ void FFrameResources::Initialize() {
     uniformBufferCI.SizeInBytes = 2 * MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES * sizeof( Float4x4 );
     CascadeViewProjectionBuffer.Initialize( uniformBufferCI );
 
-    uniformBufferCI.SizeInBytes = sizeof( FViewUniformBuffer );
+    uniformBufferCI.SizeInBytes = sizeof( SViewUniformBuffer );
     ViewUniformBuffer.Initialize( uniformBufferCI );
 
     InstanceUniformBufferSize = 1024;
@@ -124,8 +124,8 @@ void FFrameResources::Initialize() {
         "DarkSky/bk.tga",
         "DarkSky/ft.tga"
     };
-    FImage rt, lt, up, dn, bk, ft;
-    FImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
+    AImage rt, lt, up, dn, bk, ft;
+    AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
     rt.LoadHDRI( Cubemap[0], false, false, 3 );
     lt.LoadHDRI( Cubemap[1], false, false, 3 );
     up.LoadHDRI( Cubemap[2], false, false, 3 );
@@ -185,7 +185,7 @@ void FFrameResources::Initialize() {
         cubemap2.WriteRect( rect, PIXEL_FORMAT_FLOAT_BGR, w*w*3*sizeof( float ), 1, pSrc );
     }
     Texture * cubemaps[2] = { &cubemap, &cubemap2 };
-    FEnvProbeGenerator envProbeGenerator;
+    AEnvProbeGenerator envProbeGenerator;
     envProbeGenerator.Initialize();
     envProbeGenerator.GenerateArray( EnvProbe, 7, 2, cubemaps );
     SamplerCreateInfo samplerCI;
@@ -198,7 +198,7 @@ void FFrameResources::Initialize() {
     /////////////////////////////////////////////////////////////////////
 }
 
-void FFrameResources::Deinitialize() {
+void AFrameResources::Deinitialize() {
     EnvProbeBindless.MakeNonResident();
     EnvProbe.Deinitialize();
     CascadeViewProjectionBuffer.Deinitialize();
@@ -208,8 +208,8 @@ void FFrameResources::Deinitialize() {
     TempData.Free();
 }
 
-void FFrameResources::SetViewUniforms() {
-    FViewUniformBuffer * uniformData = &ViewUniformBufferUniformData;
+void AFrameResources::SetViewUniforms() {
+    SViewUniformBuffer * uniformData = &ViewUniformBufferUniformData;
 
 //    ViewUniformBlock->Viewport.X = 0;
 //    ViewUniformBlock->Viewport.Y = 0;
@@ -267,7 +267,7 @@ void FFrameResources::SetViewUniforms() {
     //GLogger.Printf( "GRenderView->FirstDirectionalLight: %d\n", GRenderView->FirstDirectionalLight );
 
     for ( int i = 0 ; i < GRenderView->NumDirectionalLights ; i++ ) {
-        FDirectionalLightDef * light = GFrameData->DirectionalLights[ GRenderView->FirstDirectionalLight + i ];
+        SDirectionalLightDef * light = GFrameData->DirectionalLights[ GRenderView->FirstDirectionalLight + i ];
 
         uniformData->LightDirs[i] = Float4( GRenderView->NormalToViewMatrix * (light->Matrix[2]), 0.0f );
         uniformData->LightColors[i] = light->ColorAndAmbientIntensity;
@@ -318,7 +318,7 @@ AN_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed( Float3x4 const & _In, Flo
     _Out[3][3] = 1;
 }
 
-void FFrameResources::UploadUniforms() {
+void AFrameResources::UploadUniforms() {
     SetViewUniforms();
 
     // Set Instances Uniforms
@@ -335,9 +335,9 @@ void FFrameResources::UploadUniforms() {
 
     // FIXME: Map?
     for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-        FRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+        SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
-        FInstanceUniformBuffer * pUniformBuf = reinterpret_cast< FInstanceUniformBuffer * >( TempData.ToPtr() + i*InstanceUniformBufferSizeof );
+        SInstanceUniformBuffer * pUniformBuf = reinterpret_cast< SInstanceUniformBuffer * >( TempData.ToPtr() + i*InstanceUniformBufferSizeof );
 
         memcpy( &pUniformBuf->TransformMatrix, &instance->Matrix, sizeof( pUniformBuf->TransformMatrix ) );
         StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, pUniformBuf->ModelNormalToViewSpace );
@@ -365,8 +365,8 @@ void FFrameResources::UploadUniforms() {
     TempData.ResizeInvalidate( GRenderView->ShadowInstanceCount * ShadowInstanceUniformBufferSizeof );
 
     for ( int i = 0 ; i < GRenderView->ShadowInstanceCount ; i++ ) {
-        FShadowRenderInstance const * instance = GFrameData->ShadowInstances[GRenderView->FirstShadowInstance + i];
-        FShadowInstanceUniformBuffer * pUniformBuf = reinterpret_cast< FShadowInstanceUniformBuffer * >(TempData.ToPtr() + i*ShadowInstanceUniformBufferSizeof);
+        SShadowRenderInstance const * instance = GFrameData->ShadowInstances[GRenderView->FirstShadowInstance + i];
+        SShadowInstanceUniformBuffer * pUniformBuf = reinterpret_cast< SShadowInstanceUniformBuffer * >(TempData.ToPtr() + i*ShadowInstanceUniformBufferSizeof);
 
         StoreFloat3x4AsFloat4x4Transposed( instance->WorldTransformMatrix, pUniformBuf->TransformMatrix );
         memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
@@ -382,7 +382,7 @@ void FFrameResources::UploadUniforms() {
 
     //GLogger.Printf( "NumShadowMapCascades: %d\n", GRenderView->NumShadowMapCascades );
     //for ( int i = 0 ; i < GRenderView->NumShadowMapCascades ; i++ ) {
-    //    GLogger.Printf( "---\n%s\n", GRenderView->LightViewProjectionMatrices[i].ToString().ToConstChar() );
+    //    GLogger.Printf( "---\n%s\n", GRenderView->LightViewProjectionMatrices[i].ToString().CStr() );
     //}
 }
 

@@ -41,9 +41,9 @@ SOFTWARE.
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-FHeapMemory GHeapMemory;
-FHunkMemory GHunkMemory;
-FZoneMemory GZoneMemory;
+AHeapMemory GHeapMemory;
+AHunkMemory GHunkMemory;
+AZoneMemory GZoneMemory;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -59,7 +59,7 @@ typedef uint16_t TRASH_MARKER;
 
 static const TRASH_MARKER TrashMarker = 0xfeee;
 
-static FLogger MemLogger;
+static ALogger MemLogger;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -92,23 +92,23 @@ AN_FORCEINLINE void UnalignedFree( void * _Ptr ) {
     free( _Ptr );
 }
 
-FHeapMemory::FHeapMemory() {
+AHeapMemory::AHeapMemory() {
     HeapChain.pNext = HeapChain.pPrev = &HeapChain;
 }
 
-FHeapMemory::~FHeapMemory() {
+AHeapMemory::~AHeapMemory() {
 }
 
-void FHeapMemory::Initialize() {
+void AHeapMemory::Initialize() {
 
 }
 
-void FHeapMemory::Deinitialize() {
+void AHeapMemory::Deinitialize() {
     CheckMemoryLeaks();
     Clear();
 }
 
-void FHeapMemory::Clear() {
+void AHeapMemory::Clear() {
     SHeapChunk * nextHeap;
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = nextHeap ) {
         nextHeap = heap->pNext;
@@ -134,12 +134,12 @@ AN_FORCEINLINE void * AlignPointer( void * _UnalignedPtr, int _Alignment ) {
     return ( void * )( ( (size_t)_UnalignedPtr + _Alignment - 1 ) & ~( _Alignment - 1 ) );
 }
 
-void * FHeapMemory::HeapAlloc( size_t _BytesCount, int _Alignment ) {
+void * AHeapMemory::HeapAlloc( size_t _BytesCount, int _Alignment ) {
     AN_Assert( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
 
     if ( _BytesCount == 0 ) {
         // invalid bytes count
-        CriticalError( "FHeapMemory::HeapAlloc: Invalid bytes count\n" );
+        CriticalError( "AHeapMemory::HeapAlloc: Invalid bytes count\n" );
     }
 
 #ifdef ENABLE_BLOCK_SIZE_ALIGN
@@ -182,11 +182,11 @@ void * FHeapMemory::HeapAlloc( size_t _BytesCount, int _Alignment ) {
         return aligned;
     }
 
-    CriticalError( "FHeapMemory::HeapAlloc: Failed on allocation of %u bytes\n", _BytesCount );
+    CriticalError( "AHeapMemory::HeapAlloc: Failed on allocation of %u bytes\n", _BytesCount );
     return nullptr;
 }
 
-void FHeapMemory::HeapFree( void * _Bytes ) {
+void AHeapMemory::HeapFree( void * _Bytes ) {
     if ( _Bytes ) {
         byte * bytes = ( byte * )_Bytes;
 
@@ -195,7 +195,7 @@ void FHeapMemory::HeapFree( void * _Bytes ) {
 
 #ifdef ENABLE_TRASH_TEST
         if ( *( TRASH_MARKER * )( bytes + heap->Size - sizeof( TRASH_MARKER ) ) != TrashMarker ) {
-            MemLogger.Print( "FHeapMemory::HeapFree: Warning: memory was trashed\n" );
+            MemLogger.Print( "AHeapMemory::HeapFree: Warning: memory was trashed\n" );
             // error()
         }
 #endif
@@ -211,22 +211,22 @@ void FHeapMemory::HeapFree( void * _Bytes ) {
     }
 }
 
-void FHeapMemory::CheckMemoryLeaks() {
+void AHeapMemory::CheckMemoryLeaks() {
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = heap->pNext ) {
         MemLogger.Print( "==== Heap Memory Leak ====\n" );
         MemLogger.Printf( "Heap Address: %u Size: %d\n", (size_t)( heap + 1 ), heap->Size );
     }
 }
 
-size_t FHeapMemory::GetTotalMemoryUsage() {
+size_t AHeapMemory::GetTotalMemoryUsage() {
     return HeapTotalMemoryUsage;
 }
 
-size_t FHeapMemory::GetTotalMemoryOverhead() {
+size_t AHeapMemory::GetTotalMemoryOverhead() {
     return HeapTotalMemoryOverhead;
 }
 
-size_t FHeapMemory::GetMaxMemoryUsage() {
+size_t AHeapMemory::GetMaxMemoryUsage() {
     return HeapMaxMemoryUsage;
 }
 
@@ -251,14 +251,14 @@ struct SHunkMemory {
     int32_t Mark;
 };
 
-void * FHunkMemory::GetHunkMemoryAddress() const { return MemoryBuffer; }
-int FHunkMemory::GetHunkMemorySizeInMegabytes() const { return MemoryBuffer ? MemoryBuffer->Size >> 10 >> 10 : 0; }
-size_t FHunkMemory::GetTotalMemoryUsage() const { return TotalMemoryUsage; }
-size_t FHunkMemory::GetTotalMemoryOverhead() const { return TotalMemoryOverhead; }
-size_t FHunkMemory::GetTotalFreeMemory() const { return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage : 0; }
-size_t FHunkMemory::GetMaxMemoryUsage() const { return MaxMemoryUsage; }
+void * AHunkMemory::GetHunkMemoryAddress() const { return MemoryBuffer; }
+int AHunkMemory::GetHunkMemorySizeInMegabytes() const { return MemoryBuffer ? MemoryBuffer->Size >> 10 >> 10 : 0; }
+size_t AHunkMemory::GetTotalMemoryUsage() const { return TotalMemoryUsage; }
+size_t AHunkMemory::GetTotalMemoryOverhead() const { return TotalMemoryOverhead; }
+size_t AHunkMemory::GetTotalFreeMemory() const { return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage : 0; }
+size_t AHunkMemory::GetMaxMemoryUsage() const { return MaxMemoryUsage; }
 
-void FHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
+void AHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     size_t sizeInBytes = _SizeInMegabytes << 20;
 
     MemoryBuffer = ( SHunkMemory * )_MemoryAddress;
@@ -274,7 +274,7 @@ void FHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     TotalMemoryOverhead = 0;
 }
 
-void FHunkMemory::Deinitialize() {
+void AHunkMemory::Deinitialize() {
     CheckMemoryLeaks();
 
     MemoryBuffer = nullptr;
@@ -284,7 +284,7 @@ void FHunkMemory::Deinitialize() {
     TotalMemoryOverhead = 0;
 }
 
-void FHunkMemory::Clear() {
+void AHunkMemory::Clear() {
     MemoryBuffer->Mark = 0;
     MemoryBuffer->Hunk = ( SHunk * )( MemoryBuffer + 1 );
     MemoryBuffer->Hunk->Size = MemoryBuffer->Size - sizeof( SHunkMemory );
@@ -296,7 +296,7 @@ void FHunkMemory::Clear() {
     TotalMemoryOverhead = 0;
 }
 
-int FHunkMemory::SetHunkMark() {
+int AHunkMemory::SetHunkMark() {
     return ++MemoryBuffer->Mark;
 }
 
@@ -325,34 +325,34 @@ AN_FORCEINLINE bool HunkTrashTest( const SHunk * _Hunk ) {
 #endif
 }
 
-void * FHunkMemory::HunkMemory( size_t _BytesCount, int _Alignment ) {
+void * AHunkMemory::HunkMemory( size_t _BytesCount, int _Alignment ) {
     AN_Assert( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
 
     if ( !MemoryBuffer ) {
-        CriticalError( "FHunkMemory::HunkMemory: Not initialized\n" );
+        CriticalError( "AHunkMemory::HunkMemory: Not initialized\n" );
     }
 
     if ( _BytesCount == 0 ) {
         // invalid bytes count
-        CriticalError( "FHunkMemory::HunkMemory: Invalid bytes count\n" );
+        CriticalError( "AHunkMemory::HunkMemory: Invalid bytes count\n" );
     }
 
     // check memory trash
     if ( MemoryBuffer->Cur && HunkTrashTest( MemoryBuffer->Cur ) ) {
-        CriticalError( "FHunkMemory::HunkMemory: Memory was trashed\n" );
+        CriticalError( "AHunkMemory::HunkMemory: Memory was trashed\n" );
     }
 
     SHunk * hunk = MemoryBuffer->Hunk;
 
     if ( hunk->Mark != -1 ) {
         // not enough memory
-        CriticalError( "FHunkMemory::HunkMemory: Failed on allocation of %u bytes\n", _BytesCount );
+        CriticalError( "AHunkMemory::HunkMemory: Failed on allocation of %u bytes\n", _BytesCount );
     }
 
     int requiredSize = AdjustHunkSize( _BytesCount, _Alignment );
     if ( requiredSize > hunk->Size ) {
         // not enough memory
-        CriticalError( "FHunkMemory::HunkMemory: Failed on allocation of %u bytes\n", _BytesCount );
+        CriticalError( "AHunkMemory::HunkMemory: Failed on allocation of %u bytes\n", _BytesCount );
     }
 
     hunk->Mark = MemoryBuffer->Mark;
@@ -381,7 +381,7 @@ void * FHunkMemory::HunkMemory( size_t _BytesCount, int _Alignment ) {
     return aligned;
 }
 
-void FHunkMemory::ClearToMark( int _Mark ) {
+void AHunkMemory::ClearToMark( int _Mark ) {
     if ( MemoryBuffer->Mark < _Mark ) {
         return;
     }
@@ -394,7 +394,7 @@ void FHunkMemory::ClearToMark( int _Mark ) {
 
     // check memory trash
     if ( MemoryBuffer->Cur && HunkTrashTest( MemoryBuffer->Cur ) ) {
-        CriticalError( "FHunkMemory::ClearToMark: Memory was trashed\n" );
+        CriticalError( "AHunkMemory::ClearToMark: Memory was trashed\n" );
     }
 
     int grow = 0;
@@ -409,7 +409,7 @@ void FHunkMemory::ClearToMark( int _Mark ) {
     while ( hunk && hunk->Mark >= _Mark ) {
         DecMemoryStatistics( hunk->Size, sizeof( SHunk ) );
         if ( HunkTrashTest( hunk ) ) {
-            CriticalError( "FHunkMemory::ClearToMark: Warning: memory was trashed\n" );
+            CriticalError( "AHunkMemory::ClearToMark: Warning: memory was trashed\n" );
         }
         hunk->Size += grow;
         hunk->Mark = -1; // mark free
@@ -421,7 +421,7 @@ void FHunkMemory::ClearToMark( int _Mark ) {
     MemoryBuffer->Mark = _Mark;
 }
 
-void FHunkMemory::ClearLastHunk() {
+void AHunkMemory::ClearLastHunk() {
     int grow = 0;
 
     SHunk * hunk = MemoryBuffer->Hunk;
@@ -434,7 +434,7 @@ void FHunkMemory::ClearLastHunk() {
     if ( hunk ) {
         DecMemoryStatistics( hunk->Size, sizeof( SHunk ) );
         if ( HunkTrashTest( hunk ) ) {
-            MemLogger.Print( "FHunkMemory::ClearLastHunk: Warning: memory was trashed\n" );
+            MemLogger.Print( "AHunkMemory::ClearLastHunk: Warning: memory was trashed\n" );
             // error()
         }
         hunk->Size += grow;
@@ -444,11 +444,11 @@ void FHunkMemory::ClearLastHunk() {
     }
 }
 
-void FHunkMemory::CheckMemoryLeaks() {
+void AHunkMemory::CheckMemoryLeaks() {
     if ( TotalMemoryUsage > 0 ) {
         // check memory trash
         if ( MemoryBuffer->Cur && HunkTrashTest( MemoryBuffer->Cur ) ) {
-            MemLogger.Print( "FHunkMemory::CheckMemoryLeaks: Memory was trashed\n" );
+            MemLogger.Print( "AHunkMemory::CheckMemoryLeaks: Memory was trashed\n" );
         }
 
         SHunk * hunk = MemoryBuffer->Hunk;
@@ -464,14 +464,14 @@ void FHunkMemory::CheckMemoryLeaks() {
     }
 }
 
-void FHunkMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AHunkMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
     // TODO: atomic increment for multithreading
     TotalMemoryUsage += _MemoryUsage;
     TotalMemoryOverhead += _Overhead;
     MaxMemoryUsage = StdMax( MaxMemoryUsage, TotalMemoryUsage );
 }
 
-void FHunkMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AHunkMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
     // TODO: atomic decrement for multithreading
     TotalMemoryUsage -= _MemoryUsage;
     TotalMemoryOverhead -= _Overhead;
@@ -588,14 +588,14 @@ static void * AllocateOnHeap( size_t _BytesCount, int _Alignment ) {
     return nullptr;
 }
 
-void * FZoneMemory::GetZoneMemoryAddress() const { return MemoryBuffer; }
-int FZoneMemory::GetZoneMemorySizeInMegabytes() const { return MemoryBuffer ? MemoryBuffer->Size >> 10 >> 10 : 0; }
-size_t FZoneMemory::GetTotalMemoryUsage() const { return TotalMemoryUsage.Load(); }
-size_t FZoneMemory::GetTotalMemoryOverhead() const { return TotalMemoryOverhead.Load(); }
-size_t FZoneMemory::GetTotalFreeMemory() const { return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage.Load() : 0; }
-size_t FZoneMemory::GetMaxMemoryUsage() const { return MaxMemoryUsage.Load(); }
+void * AZoneMemory::GetZoneMemoryAddress() const { return MemoryBuffer; }
+int AZoneMemory::GetZoneMemorySizeInMegabytes() const { return MemoryBuffer ? MemoryBuffer->Size >> 10 >> 10 : 0; }
+size_t AZoneMemory::GetTotalMemoryUsage() const { return TotalMemoryUsage.Load(); }
+size_t AZoneMemory::GetTotalMemoryOverhead() const { return TotalMemoryOverhead.Load(); }
+size_t AZoneMemory::GetTotalFreeMemory() const { return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage.Load() : 0; }
+size_t AZoneMemory::GetMaxMemoryUsage() const { return MaxMemoryUsage.Load(); }
 
-void FZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
+void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     size_t sizeInBytes = _SizeInMegabytes << 20;
 
 #ifdef FREE_LIST_BASED
@@ -619,7 +619,7 @@ void FZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     MaxMemoryUsage.StoreRelaxed( 0 );
 }
 
-void FZoneMemory::Deinitialize() {
+void AZoneMemory::Deinitialize() {
     CheckMemoryLeaks();
 
     MemoryBuffer = nullptr;
@@ -629,7 +629,7 @@ void FZoneMemory::Deinitialize() {
     MaxMemoryUsage.StoreRelaxed( 0 );
 }
 
-void FZoneMemory::Clear() {
+void AZoneMemory::Clear() {
     if ( !MemoryBuffer ) {
         return;
     }
@@ -656,21 +656,21 @@ void FZoneMemory::Clear() {
     // Allocated "on heap" memory is still present
 }
 
-void FZoneMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AZoneMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
     // TODO: atomic increment for multithreading
     TotalMemoryUsage.FetchAdd( _MemoryUsage );
     TotalMemoryOverhead.FetchAdd( _Overhead );
     MaxMemoryUsage.Store( StdMax( MaxMemoryUsage.Load(), TotalMemoryUsage.Load() ) );
 }
 
-void FZoneMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AZoneMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
     // TODO: atomic decrement for multithreading
     TotalMemoryUsage.FetchSub( _MemoryUsage );
     TotalMemoryOverhead.FetchSub( _Overhead );
 }
 
 #ifdef FREE_LIST_BASED
-SZoneChunk * FZoneMemory::FindFreeChunk( int _RequiredSize ) {
+SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
     SZoneChunk * cur = FreeChunk;
 
     if ( !cur ) {
@@ -704,7 +704,7 @@ SZoneChunk * FZoneMemory::FindFreeChunk( int _RequiredSize ) {
     return cur;
 }
 
-byte * FZoneMemory::AllocateBytes( size_t _BytesCount ) {
+byte * AZoneMemory::AllocateBytes( size_t _BytesCount ) {
 
     if ( _BytesCount == 0 ) {
         // invalid bytes count
@@ -775,7 +775,7 @@ byte * FZoneMemory::AllocateBytes( size_t _BytesCount ) {
     return bytes;
 }
 
-void FZoneMemory::Dealloc( byte * _Bytes ) {
+void AZoneMemory::Dealloc( byte * _Bytes ) {
     if ( !_Bytes ) {
         return;
     }
@@ -788,7 +788,7 @@ void FZoneMemory::Dealloc( byte * _Bytes ) {
     }
 
     if ( ChunkTrashTest( chunk ) ) {
-        MemLogger.Print( "FZoneMemory::Dealloc: Warning: memory was trashed\n" );
+        MemLogger.Print( "AZoneMemory::Dealloc: Warning: memory was trashed\n" );
         // error()
     }
 
@@ -908,7 +908,7 @@ void FZoneMemory::Dealloc( byte * _Bytes ) {
 
 #else
 
-SZoneChunk * FZoneMemory::FindFreeChunk( int _RequiredSize ) {
+SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
     SZoneChunk * rover = MemoryBuffer->Rover;
     SZoneChunk * start = rover->pPrev;
     SZoneChunk * cur;
@@ -924,19 +924,19 @@ SZoneChunk * FZoneMemory::FindFreeChunk( int _RequiredSize ) {
     return cur;
 }
 
-void * FZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
+void * AZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
     AN_Assert( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
 
     if ( !MemoryBuffer ) {
-        CriticalError( "FZoneMemory::Alloc: Not initialized\n" );
+        CriticalError( "AZoneMemory::Alloc: Not initialized\n" );
     }
 
     if ( _BytesCount == 0 ) {
         // invalid bytes count
-        CriticalError( "FZoneMemory::Alloc: Invalid bytes count\n" );
+        CriticalError( "AZoneMemory::Alloc: Invalid bytes count\n" );
     }
 
-    FSyncGuard syncGuard( Sync );
+    ASyncGuard syncGuard( Sync );
 
     size_t requiredSize = AdjustChunkSize( _BytesCount, _Alignment );
 
@@ -946,7 +946,7 @@ void * FZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
 #ifdef ALLOW_ALLOCATE_ON_HEAP
         return AllocateOnHeap( _BytesCount, _Alignment );
 #else
-        CriticalError( "FZoneMemory::Alloc: Failed on allocation of %u bytes\n", _BytesCount );
+        CriticalError( "AZoneMemory::Alloc: Failed on allocation of %u bytes\n", _BytesCount );
 #endif
     }
 
@@ -981,7 +981,7 @@ void * FZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
     return bytes;
 }
 
-void * FZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
+void * AZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
     AN_Assert( _NewAlignment <= 128 && IsPowerOfTwoConstexpr( _NewAlignment ) );
 
     if ( !_Data ) {
@@ -1022,7 +1022,7 @@ void * FZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
     // Check freed
     bool bFreed;
     {
-        FSyncGuard syncGuard( Sync );
+        ASyncGuard syncGuard( Sync );
         bFreed = chunk->Size > 0;
 
 #ifdef ALLOW_ALLOCATE_ON_HEAP
@@ -1037,10 +1037,10 @@ void * FZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
         return Alloc( _NewBytesCount, _NewAlignment );
     }
 
-    FSyncGuard syncGuard( Sync );
+    ASyncGuard syncGuard( Sync );
 
     if ( ChunkTrashTest( chunk ) ) {
-        MemLogger.Print( "FZoneMemory::ExtendAlloc: Warning: memory was trashed\n" );
+        MemLogger.Print( "AZoneMemory::ExtendAlloc: Warning: memory was trashed\n" );
         // error()
     }
 
@@ -1093,7 +1093,7 @@ void * FZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
 
             // no free chunks
 
-            CriticalError( "FZoneMemory::Extend: Failed on allocation of %u bytes\n", _NewBytesCount );
+            CriticalError( "AZoneMemory::Extend: Failed on allocation of %u bytes\n", _NewBytesCount );
         }
 
         DecMemoryStatistics( chunk->Size, ChunkHeaderLength + padding );
@@ -1168,7 +1168,7 @@ void * FZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
     }
 }
 
-void FZoneMemory::Dealloc( void * _Bytes ) {
+void AZoneMemory::Dealloc( void * _Bytes ) {
     if ( !MemoryBuffer ) {
         return;
     }
@@ -1177,7 +1177,7 @@ void FZoneMemory::Dealloc( void * _Bytes ) {
         return;
     }
 
-    FSyncGuard syncGuard( Sync );
+    ASyncGuard syncGuard( Sync );
 
     byte * bytes = ( byte * )_Bytes;
     int padding = *(bytes - 1);
@@ -1190,7 +1190,7 @@ void FZoneMemory::Dealloc( void * _Bytes ) {
     }
 
     if ( ChunkTrashTest( chunk ) ) {
-        MemLogger.Print( "FZoneMemory::Dealloc: Warning: memory was trashed\n" );
+        MemLogger.Print( "AZoneMemory::Dealloc: Warning: memory was trashed\n" );
         // error()
     }
 
@@ -1239,8 +1239,8 @@ void FZoneMemory::Dealloc( void * _Bytes ) {
     }
 }
 
-void FZoneMemory::CheckMemoryLeaks() {
-    FSyncGuard syncGuard( Sync );
+void AZoneMemory::CheckMemoryLeaks() {
+    ASyncGuard syncGuard( Sync );
 
     if ( TotalMemoryUsage.Load() > 0 ) {
         SZoneChunk * rover = MemoryBuffer->Rover;
@@ -1289,24 +1289,24 @@ static void PrintMemoryStatistics( T & _Manager, const char * _Message ) {
 // Zone allocator
 //
 
-void * FZoneAllocator::ImplAllocate( size_t _BytesCount, int _Alignment ) {
+void * AZoneAllocator::ImplAllocate( size_t _BytesCount, int _Alignment ) {
     void * bytes = GZoneMemory.Alloc( _BytesCount, _Alignment );
     //PrintMemoryStatistics( GZoneMemory, "AllocateBytes" );
     return bytes;
 }
 
-void * FZoneAllocator::ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
+void * AZoneAllocator::ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
     void * bytes = GZoneMemory.Extend( _Data, _BytesCount, _NewBytesCount, _NewAlignment, _KeepOld );
     //PrintMemoryStatistics( GZoneMemory, "ExtendAlloc" );
     return bytes;
 }
 
-void FZoneAllocator::ImplDeallocate( void * _Bytes ) {
+void AZoneAllocator::ImplDeallocate( void * _Bytes ) {
     GZoneMemory.Dealloc( _Bytes );
     //PrintMemoryStatistics( GZoneMemory, "Dealloc" );
 }
 
-void * FHeapAllocator::ImplAllocate( size_t _BytesCount, int _Alignment ) {
+void * AHeapAllocator::ImplAllocate( size_t _BytesCount, int _Alignment ) {
     void * bytes = GHeapMemory.HeapAlloc( _BytesCount, _Alignment );
     //PrintMemoryStatistics( GMainHeapMemory, "AllocateBytes" );
     return bytes;
@@ -1316,7 +1316,7 @@ void * FHeapAllocator::ImplAllocate( size_t _BytesCount, int _Alignment ) {
 // Heap allocator
 //
 
-void * FHeapAllocator::ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
+void * AHeapAllocator::ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
     void * bytes;
     if ( !_Data ) {
         // first alloc
@@ -1355,7 +1355,7 @@ void * FHeapAllocator::ImplExtend( void * _Data, size_t _BytesCount, size_t _New
     return bytes;
 }
 
-void FHeapAllocator::ImplDeallocate( void * _Bytes ) {
+void AHeapAllocator::ImplDeallocate( void * _Bytes ) {
     GHeapMemory.HeapFree( _Bytes );
     //PrintMemoryStatistics( GMainHeapMemory, "Dealloc" );
 }

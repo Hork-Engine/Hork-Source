@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "IO.h"
 
-struct FGUID {
+struct AGUID {
     union {
         uint64_t Hi;
         byte HiBytes[8];
@@ -48,16 +48,16 @@ struct FGUID {
 
     void Generate();
 
-    bool operator==( FGUID const & _Other ) const {
+    bool operator==( AGUID const & _Other ) const {
         return Hi == _Other.Hi && Lo == _Other.Lo;
     }
 
-    bool operator!=( FGUID const & _Other ) const {
+    bool operator!=( AGUID const & _Other ) const {
         return Hi != _Other.Hi || Lo != _Other.Lo;
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 37 > buffer;
         return buffer.Sprintf( "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
                                HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
@@ -67,8 +67,8 @@ struct FGUID {
                                LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7] );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+    const char * CStr() const {
+        return AString::Fmt( "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
                              HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
                              HiBytes[4], HiBytes[5],
                              HiBytes[6], HiBytes[7],
@@ -76,25 +76,23 @@ struct FGUID {
                              LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7] );
     }
 
-    FGUID & FromString( FString const & _String ) {
-        return FromString( _String.ToConstChar() );
+    AGUID & FromString( AString const & _String ) {
+        return FromString( _String.CStr() );
     }
 
-    FGUID & FromString( const char * _String );
+    AGUID & FromString( const char * _String );
 
     const byte * GetBytes() const { return &HiBytes[0]; }
     byte * GetBytes() { return &HiBytes[0]; }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( Hi );
-        _Stream.Write( Lo );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteUInt64( Hi );
+        _Stream.WriteUInt64( Lo );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( Hi );
-        _Stream.Read( Lo );
+    void Read( IStreamBase & _Stream ) {
+        Hi = _Stream.ReadUInt64();
+        Lo = _Stream.ReadUInt64();
     }
 };

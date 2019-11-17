@@ -34,20 +34,20 @@ SOFTWARE.
 #include <Engine/Runtime/Public/RuntimeVariable.h>
 #include <Engine/Base/Public/BaseObject.h>
 
-class FCommandContext : public IRuntimeCommandContext {
-    AN_FORBID_COPY( FCommandContext )
+class ACommandContext : public IRuntimeCommandContext {
+    AN_FORBID_COPY( ACommandContext )
 
 public:
-    FCommandContext();
-    ~FCommandContext();
+    ACommandContext();
+    ~ACommandContext();
 
-    void AddCommand( const char * _Name, TCallback< void( FRuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment = "" );
+    void AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment = "" );
 
     void RemoveCommand( const char * _Name );
 
     void RemoveCommands();
 
-    int CompleteString( const char * _Str, int _StrLen, FString & _Result );
+    int CompleteString( const char * _Str, int _StrLen, AString & _Result );
 
     void Print( const char * _Str, int _StrLen );
 
@@ -56,34 +56,34 @@ protected:
     // IRuntimeCommandContext implementation
     //
 
-    void ExecuteCommand( FRuntimeCommandProcessor const & _Proc ) override;
+    void ExecuteCommand( ARuntimeCommandProcessor const & _Proc ) override;
 
 private:
-    class FRuntimeCommand {
+    class ARuntimeCommand {
     public:
-        FRuntimeCommand( const char * _Name, TCallback< void( FRuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment )
+        ARuntimeCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment )
             : Name( _Name )
             , Comment( _Comment )
             , Callback( _Callback )
         {
         }
 
-        void Override( TCallback< void( FRuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment ) {
+        void Override( TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment ) {
             Comment = _Comment;
             Callback = _Callback;
         }
 
-        FString const & GetName() const { return Name; }
+        AString const & GetName() const { return Name; }
 
-        FString const & GetComment() const { return Comment; }
+        AString const & GetComment() const { return Comment; }
 
-        void Execute( FRuntimeCommandProcessor const & _Proc ) { Callback( _Proc ); }
+        void Execute( ARuntimeCommandProcessor const & _Proc ) { Callback( _Proc ); }
 
     private:
-        FString Name;
-        FString Comment;
-        TCallback< void( FRuntimeCommandProcessor const & ) > Callback;
+        AString Name;
+        AString Comment;
+        TCallback< void( ARuntimeCommandProcessor const & ) > Callback;
     };
 
-    TStdVector< FRuntimeCommand > Commands;
+    TStdVector< ARuntimeCommand > Commands;
 };

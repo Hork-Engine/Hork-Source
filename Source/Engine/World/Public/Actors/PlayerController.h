@@ -36,13 +36,13 @@ SOFTWARE.
 #include <Engine/World/Public/CommandContext.h>
 #include <Engine/Audio/Public/AudioSystem.h>
 
-class FInputMappings;
+class AInputMappings;
 
-class ANGIE_API FRenderingParameters final : public FBaseObject {
-    AN_CLASS( FRenderingParameters, FBaseObject )
+class ANGIE_API ARenderingParameters final : public ABaseObject {
+    AN_CLASS( ARenderingParameters, ABaseObject )
 
 public:
-    FColor4 BackgroundColor = FColor4( 0.3f, 0.3f, 0.8f );
+    AColor4 BackgroundColor = AColor4( 0.3f, 0.3f, 0.8f );
     bool bClearBackground;
     bool bWireframe;
     bool bDrawDebug;
@@ -52,12 +52,12 @@ public:
     //TRef< FTexture3D > ColorGradingLUT;
 
 private:
-    FRenderingParameters() {}
-    ~FRenderingParameters() {}
+    ARenderingParameters() {}
+    ~ARenderingParameters() {}
 };
 
-class ANGIE_API FAudioParameters final : public FBaseObject {
-    AN_CLASS( FAudioParameters, FBaseObject )
+class ANGIE_API AAudioParameters final : public ABaseObject {
+    AN_CLASS( AAudioParameters, ABaseObject )
 
 public:
     Float3 Velocity;
@@ -69,39 +69,39 @@ public:
     float Volume = 1.0f;
 
 private:
-    FAudioParameters() {}
-    ~FAudioParameters() {}
+    AAudioParameters() {}
+    ~AAudioParameters() {}
 };
 
 /*
 
-FPlayerController
+APlayerController
 
 Base class for players
 
 */
-class ANGIE_API FPlayerController : public FController {
-    AN_ACTOR( FPlayerController, FController )
+class ANGIE_API APlayerController : public AController {
+    AN_ACTOR( APlayerController, AController )
 
 public:
-    FCommandContext CommandContext;
+    ACommandContext CommandContext;
 
-    void SetPawn( FPawn * _Pawn );
+    void SetPawn( APawn * _Pawn );
 
-    void SetViewCamera( FCameraComponent * _Camera );
+    void SetViewCamera( ACameraComponent * _Camera );
 
     void SetViewport( Float2 const & _Position, Float2 const & _Size );
 
-    void SetAudioListener( FSceneComponent * _AudioListener );
+    void SetAudioListener( ASceneComponent * _AudioListener );
 
-    void SetHUD( FHUD * _HUD );
+    void SetHUD( AHUD * _HUD );
 
-    void SetRenderingParameters( FRenderingParameters * _RP );
+    void SetRenderingParameters( ARenderingParameters * _RP );
 
-    void SetAudioParameters( FAudioParameters * _AudioParameters );
+    void SetAudioParameters( AAudioParameters * _AudioParameters );
 
     // Forward setting input mappings to input component
-    void SetInputMappings( FInputMappings * _InputMappings );
+    void SetInputMappings( AInputMappings * _InputMappings );
 
     void SetPlayerIndex( int _ControllerId );
 
@@ -111,66 +111,66 @@ public:
 
     void SetActive( bool _Active );
 
-    void AddViewActor( FViewActor * _ViewActor );
+    //void AddViewActor( FViewActor * _ViewActor );
 
-    FPawn * GetPawn() const { return Pawn; }    
+    APawn * GetPawn() const { return Pawn; }    
 
-    FCameraComponent * GetViewCamera() const { return CameraComponent; }    
+    ACameraComponent * GetViewCamera() const { return CameraComponent; }    
 
-    //FViewport const & GetViewport() const { return Viewport; }
+    //SViewport const & GetViewport() const { return Viewport; }
     Float2 const & GetViewportPosition() const { return ViewportPosition; }
 
     Float2 const & GetViewportSize() const { return ViewportSize; }
 
-    FSceneComponent * GetAudioListener() { return AudioListener ? AudioListener.GetObject() : CameraComponent; }
+    ASceneComponent * GetAudioListener() { return AudioListener ? AudioListener.GetObject() : CameraComponent; }
 
-    FHUD * GetHUD() const { return HUD; }
+    AHUD * GetHUD() const { return HUD; }
 
-    FRenderingParameters * GetRenderingParameters() { return RenderingParameters; }
+    ARenderingParameters * GetRenderingParameters() { return RenderingParameters; }
 
-    FAudioParameters * GetAudioParameters() { return AudioParameters; }
+    AAudioParameters * GetAudioParameters() { return AudioParameters; }
 
-    FInputMappings * GetInputMappings();
+    AInputMappings * GetInputMappings();
 
-    FInputComponent * GetInputComponent() const { return InputComponent; }
+    AInputComponent * GetInputComponent() const { return InputComponent; }
 
     int GetPlayerIndex() const;
 
     bool IsActive() const;
 
-    static FPlayerController * GetCurrentAudioListener();
-    static FCommandContext * GetCurrentCommandContext();
+    static APlayerController * GetCurrentAudioListener();
+    static ACommandContext * GetCurrentCommandContext();
 
-    void VisitViewActors();
+    //void VisitViewActors();
 
     Float2 GetNormalizedCursorPos() const override;
 
 protected:
 
-    FPlayerController();
+    APlayerController();
 
     void EndPlay() override;
     void Tick( float _TimeStep ) override;
 
 private:
-    void Quit( FRuntimeCommandProcessor const & _Proc );
+    void Quit( ARuntimeCommandProcessor const & _Proc );
 
     void TogglePause();
     void TakeScreenshot();
     void ToggleWireframe();
     void ToggleDebugDraw();
 
-    TRef< FRenderingParameters > RenderingParameters;
-    TRef< FAudioParameters > AudioParameters;
-    FInputComponent * InputComponent;
-    TWeakRef< FCameraComponent > CameraComponent;
-    TWeakRef< FSceneComponent > AudioListener;
-    TRef< FPawn > Pawn;
-    TWeakRef< FHUD > HUD;
-    TPodArray< FViewActor * > ViewActors;
+    TRef< ARenderingParameters > RenderingParameters;
+    TRef< AAudioParameters > AudioParameters;
+    AInputComponent * InputComponent;
+    TWeakRef< ACameraComponent > CameraComponent;
+    TWeakRef< ASceneComponent > AudioListener;
+    TRef< APawn > Pawn;
+    TWeakRef< AHUD > HUD;
+    //TPodArray< FViewActor * > ViewActors;
     Float2 ViewportPosition;
     Float2 ViewportSize;
 
-    static FPlayerController * CurrentAudioListener;
-    static FCommandContext * CurrentCommandContext;
+    static APlayerController * CurrentAudioListener;
+    static ACommandContext * CurrentCommandContext;
 };

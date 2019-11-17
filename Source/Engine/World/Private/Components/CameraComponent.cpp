@@ -44,12 +44,12 @@ SOFTWARE.
 #define DEFAULT_ASPECT_RATIO (4.0f / 3.0f)
 #define DEFAULT_PERSPECTIVE_ADJUST CAMERA_ADJUST_FOV_X_ASPECT_RATIO
 
-FRuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
-FRuntimeVariable RVDrawFrustumClusters( _CTS( "DrawFrustumClusters" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawFrustumClusters( _CTS( "DrawFrustumClusters" ), _CTS( "1" ), VAR_CHEAT );
 
-AN_CLASS_META( FCameraComponent )
+AN_CLASS_META( ACameraComponent )
 
-FCameraComponent::FCameraComponent() {
+ACameraComponent::ACameraComponent() {
     Projection = DEFAULT_PROJECTION;
     ZNear = DEFAULT_ZNEAR;
     ZFar = DEFAULT_ZFAR;
@@ -66,7 +66,7 @@ FCameraComponent::FCameraComponent() {
     bProjectionDirty = true;
 }
 
-void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+void ACameraComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
     if ( RVDrawCameraFrustum ) {
@@ -111,14 +111,14 @@ void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
 
         _DebugDraw->SetDepthTest( true );
 
-        _DebugDraw->SetColor( FColor4( 0, 1, 1, 1 ) );
+        _DebugDraw->SetColor( AColor4( 0, 1, 1, 1 ) );
         _DebugDraw->DrawLine( origin, v[0] );
         _DebugDraw->DrawLine( origin, v[3] );
         _DebugDraw->DrawLine( origin, v[1] );
         _DebugDraw->DrawLine( origin, v[2] );
         _DebugDraw->DrawLine( v, 4, true );
 
-        _DebugDraw->SetColor( FColor4( 1, 1, 1, 0.3f ) );
+        _DebugDraw->SetColor( AColor4( 1, 1, 1, 0.3f ) );
         _DebugDraw->DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
         _DebugDraw->DrawConvexPoly( v, 4, false );
     }
@@ -137,17 +137,17 @@ void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
 
         float * zclip = GFrustumSlice.ZClip;
 
-        for ( int sliceIndex = 0 ; sliceIndex < FFrustumSlice::NUM_CLUSTERS_Z ; sliceIndex++ ) {
+        for ( int sliceIndex = 0 ; sliceIndex < SFrustumSlice::NUM_CLUSTERS_Z ; sliceIndex++ ) {
 
             clusterMins.Z = zclip[ sliceIndex + 1 ];
             clusterMaxs.Z = zclip[ sliceIndex ];
 
-            for ( int clusterY = 0 ; clusterY < FFrustumSlice::NUM_CLUSTERS_Y ; clusterY++ ) {
+            for ( int clusterY = 0 ; clusterY < SFrustumSlice::NUM_CLUSTERS_Y ; clusterY++ ) {
 
                 clusterMins.Y = clusterY * GFrustumSlice.DeltaY - 1.0f;
                 clusterMaxs.Y = clusterMins.Y + GFrustumSlice.DeltaY;
 
-                for ( int clusterX = 0 ; clusterX < FFrustumSlice::NUM_CLUSTERS_X ; clusterX++ ) {
+                for ( int clusterX = 0 ; clusterX < SFrustumSlice::NUM_CLUSTERS_X ; clusterX++ ) {
 
                     clusterMins.X = clusterX * GFrustumSlice.DeltaX - 1.0f;
                     clusterMaxs.X = clusterMins.X + GFrustumSlice.DeltaX;
@@ -171,9 +171,9 @@ void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
                             lineP[ i ].Z = p[ i ].Z * Denom;
                         }
                         //if ( RVClusterSSE )//if ( RVReverseNegativeZ )
-                        //    _DebugDraw->SetColor( FColor4( 0, 0, 1 ) );
+                        //    _DebugDraw->SetColor( AColor4( 0, 0, 1 ) );
                         //else
-                            _DebugDraw->SetColor( FColor4( 1, 0, 0 ) );
+                            _DebugDraw->SetColor( AColor4( 1, 0, 0 ) );
                         _DebugDraw->DrawLine( lineP, 4, true );
                         _DebugDraw->DrawLine( lineP + 4, 4, true );
                         _DebugDraw->DrawLine( lineP[ 0 ], lineP[ 5 ] );
@@ -187,69 +187,69 @@ void FCameraComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
     }
 }
 
-void FCameraComponent::SetProjection( ECameraProjection _Projection ) {
+void ACameraComponent::SetProjection( ECameraProjection _Projection ) {
     if ( Projection != _Projection ) {
         Projection = _Projection;
         bProjectionDirty = true;
     }
 }
 
-void FCameraComponent::SetZNear( float _ZNear ) {
+void ACameraComponent::SetZNear( float _ZNear ) {
     if ( ZNear != _ZNear ) {
         ZNear = _ZNear;
         bProjectionDirty = true;
     }
 }
 
-void FCameraComponent::SetZFar( float _ZFar ) {
+void ACameraComponent::SetZFar( float _ZFar ) {
     if ( ZFar != _ZFar ) {
         ZFar = _ZFar;
         bProjectionDirty = true;
     }
 }
 
-void FCameraComponent::SetFovX( float _FieldOfView ) {
+void ACameraComponent::SetFovX( float _FieldOfView ) {
     if ( FovX != _FieldOfView ) {
         FovX = _FieldOfView;
         bProjectionDirty = true;
     }
 }
 
-void FCameraComponent::SetFovY( float _FieldOfView ) {
+void ACameraComponent::SetFovY( float _FieldOfView ) {
     if ( FovY != _FieldOfView ) {
         FovY = _FieldOfView;
         bProjectionDirty = true;
     }
 }
 
-void FCameraComponent::SetAspectRatio( float _AspectRatio ) {
+void ACameraComponent::SetAspectRatio( float _AspectRatio ) {
     if ( AspectRatio != _AspectRatio ) {
         AspectRatio = _AspectRatio;
         bProjectionDirty = true;
     }
 }
 
-void FCameraComponent::SetMonitorAspectRatio( const FPhysicalMonitor * _Monitor ) {
+void ACameraComponent::SetMonitorAspectRatio( const SPhysicalMonitor * _Monitor ) {
     const float MonitorAspectRatio = ( float )_Monitor->PhysicalWidthMM / _Monitor->PhysicalHeightMM;
     SetAspectRatio( MonitorAspectRatio );
 }
 
-//void FCameraComponent::SetWindowAspectRatio( FWindow const * _Window ) {
+//void ACameraComponent::SetWindowAspectRatio( FWindow const * _Window ) {
 //    const int w = _Window->GetWidth();
 //    const int h = _Window->GetHeight();
 //    const float WindowAspectRatio = h > 0 ? ( float )w / h : DEFAULT_ASPECT_RATIO;
 //    SetAspectRatio( WindowAspectRatio );
 //}
 
-void FCameraComponent::SetPerspectiveAdjust( ECameraPerspectiveAdjust _Adjust ) {
+void ACameraComponent::SetPerspectiveAdjust( ECameraPerspectiveAdjust _Adjust ) {
     if ( Adjust != _Adjust ) {
         Adjust = _Adjust;
         bProjectionDirty = true;
     }
 }
 
-void FCameraComponent::GetEffectiveFov( float & _FovX, float & _FovY ) const {
-    _FovX = FMath::Radians( FovX );
+void ACameraComponent::GetEffectiveFov( float & _FovX, float & _FovY ) const {
+    _FovX = Math::Radians( FovX );
 
     switch ( Adjust ) {
         //case ADJ_FOV_X_VIEW_SIZE:
@@ -267,13 +267,13 @@ void FCameraComponent::GetEffectiveFov( float & _FovX, float & _FovY ) const {
         }
         case CAMERA_ADJUST_FOV_X_FOV_Y:
         {
-            _FovY = FMath::Radians( FovY );
+            _FovY = Math::Radians( FovY );
             break;
         }
     }
 }
 
-void FCameraComponent::SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs ) {
+void ACameraComponent::SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs ) {
     OrthoMins = _Mins;
     OrthoMaxs = _Maxs;
 
@@ -282,7 +282,7 @@ void FCameraComponent::SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs 
     }
 }
 
-void FCameraComponent::MakeOrthoRect( float _CameraAspectRatio, float _Zoom, Float2 & _Mins, Float2 & _Maxs ) {
+void ACameraComponent::MakeOrthoRect( float _CameraAspectRatio, float _Zoom, Float2 & _Mins, Float2 & _Maxs ) {
     if ( _CameraAspectRatio > 0.0f ) {
         const float Z = _Zoom != 0.0f ? 1.0f / _Zoom : 0.0f;
         _Maxs.X = Z;
@@ -296,11 +296,11 @@ void FCameraComponent::MakeOrthoRect( float _CameraAspectRatio, float _Zoom, Flo
     }
 }
 
-void FCameraComponent::OnTransformDirty() {
+void ACameraComponent::OnTransformDirty() {
     bViewMatrixDirty = true;
 }
 
-void FCameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix/*, const float _ClusterZNear, const float _ClusterZFar*/ ) const {
+void ACameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix/*, const float _ClusterZNear, const float _ClusterZFar*/ ) const {
     const float _ClusterZNear = GFrustumSlice.ZNear;
     const float _ClusterZFar = GFrustumSlice.ZFar;
 
@@ -309,17 +309,17 @@ void FCameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix
         switch ( Adjust ) {
             //case CAMERA_ADJUST_FOV_X_VIEW_SIZE:
             //{
-            //    _ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), float( Width ), float( Height ), _ClusterZNear, _ClusterZFar );
+            //    _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), float( Width ), float( Height ), _ClusterZNear, _ClusterZFar );
             //    break;
             //}
             case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
             {
-                _ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), AspectRatio, 1.0f, _ClusterZNear, _ClusterZFar );
+                _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, _ClusterZNear, _ClusterZFar );
                 break;
             }
             case CAMERA_ADJUST_FOV_X_FOV_Y:
             {
-                _ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), FMath::Radians( FovY ), _ClusterZNear, _ClusterZFar );
+                _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), Math::Radians( FovY ), _ClusterZNear, _ClusterZFar );
                 break;
             }
         }
@@ -328,7 +328,7 @@ void FCameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix
     }
 }
 
-Float4x4 const & FCameraComponent::GetProjectionMatrix() const {
+Float4x4 const & ACameraComponent::GetProjectionMatrix() const {
 
     if ( bProjectionDirty ) {
 
@@ -336,17 +336,17 @@ Float4x4 const & FCameraComponent::GetProjectionMatrix() const {
             switch ( Adjust ) {
                 //case CAMERA_ADJUST_FOV_X_VIEW_SIZE:
                 //{
-                //    ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), float( Width ), float( Height ), ZNear, ZFar );
+                //    ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), float( Width ), float( Height ), ZNear, ZFar );
                 //    break;
                 //}
                 case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
                 {
-                    ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), AspectRatio, 1.0f, ZNear, ZFar );
+                    ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, ZNear, ZFar );
                     break;
                 }
                 case CAMERA_ADJUST_FOV_X_FOV_Y:
                 {
-                    ProjectionMatrix = Float4x4::PerspectiveRevCC( FMath::Radians( FovX ), FMath::Radians( FovY ), ZNear, ZFar );
+                    ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), Math::Radians( FovY ), ZNear, ZFar );
                     break;
                 }
             }
@@ -361,7 +361,7 @@ Float4x4 const & FCameraComponent::GetProjectionMatrix() const {
     return ProjectionMatrix;
 }
 
-void FCameraComponent::MakeRay( float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) const {
+void ACameraComponent::MakeRay( float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) const {
     // Update projection matrix
     GetProjectionMatrix();
 
@@ -374,7 +374,7 @@ void FCameraComponent::MakeRay( float _NormalizedX, float _NormalizedY, Float3 &
     MakeRay( ModelViewProjectionInversed, _NormalizedX, _NormalizedY, _RayStart, _RayEnd );
 }
 
-void FCameraComponent::MakeRay( Float4x4 const & _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) {
+void ACameraComponent::MakeRay( Float4x4 const & _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) {
     float x = 2.0f * _NormalizedX - 1.0f;
     float y = 2.0f * _NormalizedY - 1.0f;
 #if 0
@@ -403,7 +403,7 @@ void FCameraComponent::MakeRay( Float4x4 const & _ModelViewProjectionInversed, f
 #endif
 }
 
-BvFrustum const & FCameraComponent::GetFrustum() const {
+BvFrustum const & ACameraComponent::GetFrustum() const {
 
     // Update projection matrix
     GetProjectionMatrix();
@@ -420,7 +420,7 @@ BvFrustum const & FCameraComponent::GetFrustum() const {
     return Frustum;
 }
 
-Float4x4 const & FCameraComponent::GetViewMatrix() const {
+Float4x4 const & ACameraComponent::GetViewMatrix() const {
     if ( bViewMatrixDirty ) {
         BillboardMatrix = GetWorldRotation().ToMatrix();
 
@@ -439,7 +439,7 @@ Float4x4 const & FCameraComponent::GetViewMatrix() const {
     return ViewMatrix;
 }
 
-Float3x3 const & FCameraComponent::GetBillboardMatrix() const {
+Float3x3 const & ACameraComponent::GetBillboardMatrix() const {
     // Update billboard matrix
     GetViewMatrix();
 

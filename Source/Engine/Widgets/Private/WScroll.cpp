@@ -39,7 +39,7 @@ WScroll::WScroll() {
     bAutoScrollV = true;
     bUpdateGeometry = true;
     ScrollbarSize = 12;
-    BackgroundColor = FColor4( 0.05f, 0.05f, 0.05f );
+    BackgroundColor = AColor4( 0.05f, 0.05f, 0.05f );
     UpdateMargin();
 }
 
@@ -154,7 +154,7 @@ WScroll & WScroll::SetSliderRounding( float _Rounding ) {
     return *this;
 }
 
-WScroll & WScroll::SetBackgroundColor( FColor4 const & _Color ) {
+WScroll & WScroll::SetBackgroundColor( AColor4 const & _Color ) {
     BackgroundColor = _Color;
     return *this;
 }
@@ -215,14 +215,14 @@ void WScroll::UpdateScrollbarGeometry() {
             } else {
                 float MinPos = -Geometry.ContentSize.X + Geometry.ViewSize.X;
 
-                Geometry.ContentPosition.X = FMath::Clamp( Geometry.ContentPosition.X, MinPos, 0.0f );
+                Geometry.ContentPosition.X = Math::Clamp( Geometry.ContentPosition.X, MinPos, 0.0f );
 
                 SliderPos = -Geometry.ContentPosition.X / Geometry.ContentSize.X;
                 SliderSize = Geometry.ViewSize.X / Geometry.ContentSize.X;
             }
         }
 
-        float SliderBgSize = FMath::Max( 0.0f, Geometry.HSliderBgMaxs.X - Geometry.HSliderBgMins.X );
+        float SliderBgSize = Math::Max( 0.0f, Geometry.HSliderBgMaxs.X - Geometry.HSliderBgMins.X );
 
         SliderPos *= SliderBgSize;
         SliderSize *= SliderBgSize;
@@ -270,14 +270,14 @@ void WScroll::UpdateScrollbarGeometry() {
             } else {
                 float MinPos = -Geometry.ContentSize.Y + Geometry.ViewSize.Y;
 
-                Geometry.ContentPosition.Y = FMath::Clamp( Geometry.ContentPosition.Y, MinPos, 0.0f );
+                Geometry.ContentPosition.Y = Math::Clamp( Geometry.ContentPosition.Y, MinPos, 0.0f );
 
                 SliderPos = -Geometry.ContentPosition.Y / Geometry.ContentSize.Y;
                 SliderSize = Geometry.ViewSize.Y / Geometry.ContentSize.Y;
             }
         }
 
-        float SliderBgSize = FMath::Max( 0.0f, Geometry.VSliderBgMaxs.Y - Geometry.VSliderBgMins.Y );
+        float SliderBgSize = Math::Max( 0.0f, Geometry.VSliderBgMaxs.Y - Geometry.VSliderBgMins.Y );
 
         SliderPos *= SliderBgSize;
         SliderSize *= SliderBgSize;
@@ -297,7 +297,7 @@ void WScroll::UpdateScrollbarGeometryIfDirty() {
     }
 }
 
-FScrollbarGeometry const & WScroll::GetScrollbarGeometry() const{
+SScrollbarGeometry const & WScroll::GetScrollbarGeometry() const{
     const_cast< WScroll * >( this )->UpdateScrollbarGeometryIfDirty();
 
     return Geometry;
@@ -315,15 +315,15 @@ void WScroll::MoveHSlider( float Vec ) {
         return;
     }
 
-    FScrollbarGeometry const & geometry = GetScrollbarGeometry();
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
 
     float SliderBarSize = geometry.HSliderBgMaxs.X - geometry.HSliderBgMins.X;
 
     float ContentPos = -Vec * geometry.ContentSize.X / SliderBarSize;
-    ContentPos = FMath::Min( ContentPos, 0.0f );
+    ContentPos = Math::Min( ContentPos, 0.0f );
 
     float MinPos = -geometry.ContentSize.X + geometry.ViewSize.X;
-    ContentPos = FMath::Max( ContentPos, MinPos );
+    ContentPos = Math::Max( ContentPos, MinPos );
 
     Float2 pos = geometry.ContentPosition;
     pos.X = ContentPos;
@@ -338,15 +338,15 @@ void WScroll::MoveVSlider( float Vec ) {
         return;
     }
 
-    FScrollbarGeometry const & geometry = GetScrollbarGeometry();
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
 
     float SliderBarSize = geometry.VSliderBgMaxs.Y - geometry.VSliderBgMins.Y;
 
     float ContentPos = -Vec * geometry.ContentSize.Y / SliderBarSize;
-    ContentPos = FMath::Min( ContentPos, 0.0f );
+    ContentPos = Math::Min( ContentPos, 0.0f );
 
     float MinPos = -geometry.ContentSize.Y + geometry.ViewSize.Y;
-    ContentPos = FMath::Max( ContentPos, MinPos );
+    ContentPos = Math::Max( ContentPos, MinPos );
 
     Float2 pos = geometry.ContentPosition;
     pos.Y = ContentPos;
@@ -361,9 +361,9 @@ void WScroll::ScrollDelta( Float2 const & _Delta ) {
         return;
     }
 
-    FScrollbarGeometry const & geometry = GetScrollbarGeometry();
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
 
-    //GLogger.Printf("Scroll delta %s\n", _Delta.ToString().ToConstChar() );
+    //GLogger.Printf("Scroll delta %s\n", _Delta.ToString().CStr() );
 
     SetScrollPosition( geometry.ContentPosition + _Delta );
 }
@@ -373,14 +373,14 @@ void WScroll::SetScrollPosition( Float2 const & _Position ) {
         return;
     }
 
-    FScrollbarGeometry const & geometry = GetScrollbarGeometry();
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
 
     Float2 ContentPos = _Position;
 
-    ContentPos.X = FMath::Max( ContentPos.X, -geometry.ContentSize.X + geometry.ViewSize.X );
-    ContentPos.Y = FMath::Max( ContentPos.Y, -geometry.ContentSize.Y + geometry.ViewSize.Y );
-    ContentPos.X = FMath::Min( ContentPos.X, 0.0f );
-    ContentPos.Y = FMath::Min( ContentPos.Y, 0.0f );
+    ContentPos.X = Math::Max( ContentPos.X, -geometry.ContentSize.X + geometry.ViewSize.X );
+    ContentPos.Y = Math::Max( ContentPos.Y, -geometry.ContentSize.Y + geometry.ViewSize.Y );
+    ContentPos.X = Math::Min( ContentPos.X, 0.0f );
+    ContentPos.Y = Math::Min( ContentPos.Y, 0.0f );
 
     if ( geometry.ContentPosition.X != ContentPos.X || geometry.ContentPosition.Y != ContentPos.Y ) {
         Content->SetPosition( ContentPos );
@@ -394,7 +394,7 @@ Float2 WScroll::GetScrollPosition() const {
         return Float2(0.0f);
     }
 
-    FScrollbarGeometry const & geometry = GetScrollbarGeometry();
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
     return geometry.ContentPosition;
 }
 
@@ -403,7 +403,7 @@ AN_FORCEINLINE bool InRect( Float2 const & _Mins, Float2 const & _Maxs, Float2 c
             && _Position.Y >= _Mins.Y && _Position.Y < _Maxs.Y;
 }
 
-void WScroll::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WScroll::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
     Action = A_NONE;
 
     if ( _Event.Action != IE_Press ) {
@@ -421,7 +421,7 @@ void WScroll::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _Time
 
     Float2 const & CursorPos = GetDesktop()->GetCursorPosition();
 
-    FScrollbarGeometry const & geometry = GetScrollbarGeometry();
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
 
     if ( geometry.bDrawHScrollbar && geometry.ContentSize.X > geometry.ViewSize.X ) {
 
@@ -490,7 +490,7 @@ void WScroll::OnMouseButtonEvent( FMouseButtonEvent const & _Event, double _Time
     }
 }
 
-void WScroll::OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void WScroll::OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) {
 
     if ( Action == A_SCROLL_HSLIDER ) {
         Float2 CursorPos = GetDesktop()->GetCursorPosition();
@@ -543,8 +543,8 @@ void WScroll::OnFocusReceive() {
 //    }
 }
 
-void WScroll::OnDrawEvent( FCanvas & _Canvas ) {
-    FScrollbarGeometry const & geometry = GetScrollbarGeometry();
+void WScroll::OnDrawEvent( ACanvas & _Canvas ) {
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
 
     Update(1); // TODO: move it to Tick()
 
@@ -560,23 +560,23 @@ void WScroll::OnDrawEvent( FCanvas & _Canvas ) {
         if ( bShowButtons ) {
             // Left button
             if ( geometry.LeftButtonMaxs.X > geometry.LeftButtonMins.X && geometry.LeftButtonMaxs.Y > geometry.LeftButtonMins.Y ) {
-                _Canvas.DrawRect( geometry.LeftButtonMins, geometry.LeftButtonMaxs, FColor4(1,0,1,1) );
+                _Canvas.DrawRect( geometry.LeftButtonMins, geometry.LeftButtonMaxs, AColor4(1,0,1,1) );
             }
 
             // Right button
             if ( geometry.RightButtonMaxs.X > geometry.RightButtonMins.X && geometry.RightButtonMaxs.Y > geometry.RightButtonMins.Y ) {
-                _Canvas.DrawRect( geometry.RightButtonMins, geometry.RightButtonMaxs, FColor4(1,0,1,1) );
+                _Canvas.DrawRect( geometry.RightButtonMins, geometry.RightButtonMaxs, AColor4(1,0,1,1) );
             }
         }
 
         // Draw slider background
         if ( geometry.HSliderBgMaxs.X > geometry.HSliderBgMins.X && geometry.HSliderBgMaxs.Y > geometry.HSliderBgMins.Y ) {
-            _Canvas.DrawRectFilled( geometry.HSliderBgMins, geometry.HSliderBgMaxs, FColor4(0.4f,0.4f,0.4f) );
+            _Canvas.DrawRectFilled( geometry.HSliderBgMins, geometry.HSliderBgMaxs, AColor4(0.4f,0.4f,0.4f) );
         }
 
         // Draw slider
         if ( geometry.HSliderMaxs.X > geometry.HSliderMins.X && geometry.HSliderMaxs.Y > geometry.HSliderMins.Y ) {
-            _Canvas.DrawRectFilled( geometry.HSliderMins, geometry.HSliderMaxs, FColor4(1,1,1,1), SliderRounding );
+            _Canvas.DrawRectFilled( geometry.HSliderMins, geometry.HSliderMaxs, AColor4(1,1,1,1), SliderRounding );
         }
     }
 
@@ -584,23 +584,23 @@ void WScroll::OnDrawEvent( FCanvas & _Canvas ) {
         if ( bShowButtons ) {
             // Up button
             if ( geometry.UpButtonMaxs.X > geometry.UpButtonMins.X && geometry.UpButtonMaxs.Y > geometry.UpButtonMins.Y ) {
-                _Canvas.DrawRect( geometry.UpButtonMins, geometry.UpButtonMaxs, FColor4(1,0,1,1) );
+                _Canvas.DrawRect( geometry.UpButtonMins, geometry.UpButtonMaxs, AColor4(1,0,1,1) );
             }
 
             // Down button
             if ( geometry.DownButtonMaxs.X > geometry.DownButtonMins.X && geometry.DownButtonMaxs.Y > geometry.DownButtonMins.Y ) {
-                _Canvas.DrawRect( geometry.DownButtonMins, geometry.DownButtonMaxs, FColor4(1,0,1,1) );
+                _Canvas.DrawRect( geometry.DownButtonMins, geometry.DownButtonMaxs, AColor4(1,0,1,1) );
             }
         }
 
         // Draw slider background
         if ( geometry.VSliderBgMaxs.X > geometry.VSliderBgMins.X && geometry.VSliderBgMaxs.Y > geometry.VSliderBgMins.Y ) {
-            _Canvas.DrawRectFilled( geometry.VSliderBgMins, geometry.VSliderBgMaxs, FColor4(0.4f,0.4f,0.4f) );
+            _Canvas.DrawRectFilled( geometry.VSliderBgMins, geometry.VSliderBgMaxs, AColor4(0.4f,0.4f,0.4f) );
         }
 
         // Draw slider
         if ( geometry.VSliderMaxs.X > geometry.VSliderMins.X && geometry.VSliderMaxs.Y > geometry.VSliderMins.Y ) {
-            _Canvas.DrawRectFilled( geometry.VSliderMins, geometry.VSliderMaxs, FColor4(1,1,1,1), SliderRounding );
+            _Canvas.DrawRectFilled( geometry.VSliderMins, geometry.VSliderMaxs, AColor4(1,1,1,1), SliderRounding );
         }
     }
 }
@@ -614,7 +614,7 @@ void WScroll::ScrollEnd() {
         return;
     }
 
-    FScrollbarGeometry const & geometry = GetScrollbarGeometry();
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
 
     Float2 ContentPos( 0.0f, -geometry.ContentSize.Y + geometry.ViewSize.Y );
 

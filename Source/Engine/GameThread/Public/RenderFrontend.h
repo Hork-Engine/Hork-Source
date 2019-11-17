@@ -30,54 +30,42 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/BaseTypes.h>
 #include <Engine/Runtime/Public/RenderCore.h>
 #include <Engine/Base/Public/DebugDraw.h>
 #include <Engine/World/Public/Canvas.h>
 
-class FRenderingParameters;
-class FWorld;
-
-struct FRenderFrontendStat {
+struct SRenderFrontendStat {
     int PolyCount;
     int ShadowMapPolyCount;
     int FrontendTime;
 };
 
-class FRenderFrontend
+class ARenderFrontend
 {
-    AN_SINGLETON( FRenderFrontend )
+    AN_SINGLETON( ARenderFrontend )
 
 public:
-    void Initialize();
-    void Deinitialize();
-
-    int GetVisMarker() const { return VisMarker; }
-
     void Render();
 
-    FRenderFrontendStat const & GetStat() const { return Stat; }
+    SRenderFrontendStat const & GetStat() const { return Stat; }
 
 private:
-    void RenderCanvas( FCanvas * _Canvas );
+    void RenderCanvas( ACanvas * _Canvas );
     void RenderImgui();
     void RenderImgui( struct ImDrawList const * _DrawList );
     void RenderView( int _Index );
-    void AddDirectionalShadowmapInstances( struct FRenderFrontendDef * _Def );
 
-    FRenderFrame * CurFrameData;
-    FRenderView * RV;
-    FWorld * World;
-    FDebugDraw DebugDraw;
+    SRenderFrame * FrameData;
+    ADebugDraw DebugDraw;
     int VisMarker = 0;
 
-    FRenderFrontendStat Stat;
+    SRenderFrontendStat Stat;
 
-    FViewport const * Viewports[MAX_RENDER_VIEWS];
+    SViewport const * Viewports[MAX_RENDER_VIEWS];
     int NumViewports = 0;
     int MaxViewportWidth = 0;
     int MaxViewportHeight = 0;
 
 };
 
-extern FRenderFrontend & GRenderFrontend;
+extern ARenderFrontend & GRenderFrontend;

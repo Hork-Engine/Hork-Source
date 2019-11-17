@@ -34,21 +34,21 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-FRenderTarget GRenderTarget;
+ARenderTarget GRenderTarget;
 
-void FRenderTarget::Initialize() {
+void ARenderTarget::Initialize() {
     FramebufferWidth = 0;
     FramebufferHeight = 0;
     //CreateFramebuffer();
 }
 
-void FRenderTarget::Deinitialize() {
+void ARenderTarget::Deinitialize() {
     Framebuffer.Deinitialize();
     FramebufferTexture.Deinitialize();
     FramebufferDepth.Deinitialize();
 }
 
-void FRenderTarget::CreateFramebuffer() {
+void ARenderTarget::CreateFramebuffer() {
     Framebuffer.Deinitialize();
     FramebufferTexture.Deinitialize();
     FramebufferDepth.Deinitialize();
@@ -88,7 +88,7 @@ void FRenderTarget::CreateFramebuffer() {
     Framebuffer.Initialize( framebufferCI );
 }
 
-void FRenderTarget::ReallocSurface( int _AllocSurfaceWidth, int _AllocSurfaceHeight ) {
+void ARenderTarget::ReallocSurface( int _AllocSurfaceWidth, int _AllocSurfaceHeight ) {
     if ( FramebufferWidth != _AllocSurfaceWidth
         || FramebufferHeight != _AllocSurfaceHeight ) {
 

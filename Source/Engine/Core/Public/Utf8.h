@@ -34,7 +34,7 @@ SOFTWARE.
 
 typedef unsigned short FWideChar;
 
-namespace FCore {
+namespace Core {
 
 /** Length of utf8 character in bytes */
 int UTF8CharByteLength( const char * _Unicode );

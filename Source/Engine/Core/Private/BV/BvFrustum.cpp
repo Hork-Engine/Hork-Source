@@ -142,7 +142,7 @@ void BvFrustum::CullSphere_Generic( BvSphereSSE const * _Bounds, int _NumObjects
     for ( BvSphereSSE const * Last = _Bounds + _NumObjects ; _Bounds < Last ; _Bounds++ ) {
         cull = false;
         for ( p = Planes ; p < Planes + 6 ; p++ ) {
-            if ( FMath::Dot( p->Normal, _Bounds->Center ) + p->D <= -_Bounds->Radius ) {
+            if ( Math::Dot( p->Normal, _Bounds->Center ) + p->D <= -_Bounds->Radius ) {
                 cull = true;
             }
         }
@@ -157,7 +157,7 @@ void BvFrustum::CullSphere_IgnoreZ_Generic( BvSphereSSE const * _Bounds, int _Nu
     for ( BvSphereSSE const * Last = _Bounds + _NumObjects ; _Bounds < Last ; _Bounds++ ) {
         cull = false;
         for ( p = Planes ; p < Planes + 4 ; p++ ) {
-            if ( FMath::Dot( p->Normal, _Bounds->Center ) + p->D <= -_Bounds->Radius ) {
+            if ( Math::Dot( p->Normal, _Bounds->Center ) + p->D <= -_Bounds->Radius ) {
                 cull = true;
             }
         }

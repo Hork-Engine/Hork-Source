@@ -32,28 +32,28 @@ SOFTWARE.
 #include <Engine/Core/Public/Alloc.h>
 #include <Engine/Core/Public/Logger.h>
 
-FDocument::FDocument() {
+ADocument::ADocument() {
 
 }
 
-FDocument::~FDocument() {
+ADocument::~ADocument() {
     Allocator::Inst().Dealloc( Fields );
     Allocator::Inst().Dealloc( Values );
 }
 
-void FDocument::Clear() {
+void ADocument::Clear() {
     FieldsHead = -1;
     FieldsTail = -1;
     FieldsCount = 0;
     ValuesCount = 0;
 }
 
-int FDocument::AllocateField() {
+int ADocument::AllocateField() {
     if ( FieldsCount == FieldsMemReserved ) {
         FieldsMemReserved = FieldsMemReserved ? FieldsMemReserved<<1 : 1024;
-        Fields = ( FDocumentField * )Allocator::Inst().Extend< 1 >( Fields, FieldsCount * sizeof( FDocumentField ), sizeof( FDocumentField ) * FieldsMemReserved, true );
+        Fields = ( SDocumentField * )Allocator::Inst().Extend< 1 >( Fields, FieldsCount * sizeof( SDocumentField ), sizeof( SDocumentField ) * FieldsMemReserved, true );
     }
-    FDocumentField * field = &Fields[ FieldsCount ];
+    SDocumentField * field = &Fields[ FieldsCount ];
     field->ValuesHead = -1;
     field->ValuesTail = -1;
     field->Next = -1;
@@ -62,12 +62,12 @@ int FDocument::AllocateField() {
     return FieldsCount - 1;
 }
 
-int FDocument::AllocateValue() {
+int ADocument::AllocateValue() {
     if ( ValuesCount == ValuesMemReserved ) {
         ValuesMemReserved = ValuesMemReserved ? ValuesMemReserved<<1 : 1024;
-        Values = ( FDocumentValue * )Allocator::Inst().Extend1( Values, ValuesCount * sizeof( FDocumentValue ), sizeof( FDocumentValue ) * ValuesMemReserved, true );
+        Values = ( SDocumentValue * )Allocator::Inst().Extend1( Values, ValuesCount * sizeof( SDocumentValue ), sizeof( SDocumentValue ) * ValuesMemReserved, true );
     }
-    FDocumentValue * value = &Values[ ValuesCount ];
+    SDocumentValue * value = &Values[ ValuesCount ];
     value->FieldsHead = -1;
     value->FieldsTail = -1;
     value->Next = -1;
@@ -76,33 +76,33 @@ int FDocument::AllocateValue() {
     return ValuesCount - 1;
 }
 
-FTokenBuffer::FTokenBuffer() {
+ATokenBuffer::ATokenBuffer() {
     Cur = Start = (char *)"";
     LineNumber = 1;
     bInSitu = true;
 }
 
-FTokenBuffer::~FTokenBuffer() {
+ATokenBuffer::~ATokenBuffer() {
     if ( !bInSitu ) {
         Allocator::Inst().Dealloc( Start );
     }
 }
 
-void FTokenBuffer::Initialize( const char * _String, bool _InSitu ) {
+void ATokenBuffer::Initialize( const char * _String, bool _InSitu ) {
     Deinitialize();
 
     bInSitu = _InSitu;
     if ( bInSitu ) {
         Start = const_cast< char * >( _String );
     } else {
-        Start = ( char * )Allocator::Inst().Alloc1( FString::Length( _String ) + 1 );
-        FString::Copy( Start, _String );
+        Start = ( char * )Allocator::Inst().Alloc1( AString::Length( _String ) + 1 );
+        AString::Copy( Start, _String );
     }
     Cur = Start;
     LineNumber = 1;
 }
 
-void FTokenBuffer::Deinitialize() {
+void ATokenBuffer::Deinitialize() {
     if ( !bInSitu ) {
         Allocator::Inst().Dealloc( Start );
         Cur = Start = (char *)"";
@@ -111,39 +111,39 @@ void FTokenBuffer::Deinitialize() {
     }
 }
 
-FDocumentProxyBuffer::FDocumentProxyBuffer()
+ADocumentProxyBuffer::ADocumentProxyBuffer()
     : StringList( nullptr ) {
 
 }
 
-FDocumentProxyBuffer::~FDocumentProxyBuffer() {
-    FStringList * next;
-    for ( FStringList * node = StringList ; node ; node = next ) {
+ADocumentProxyBuffer::~ADocumentProxyBuffer() {
+    AStringList * next;
+    for ( AStringList * node = StringList ; node ; node = next ) {
         next = node->Next;
-        node->~FStringList();
+        node->~AStringList();
         Allocator::Inst().Dealloc( node );
     }
 }
 
-FString & FDocumentProxyBuffer::NewString() {
-    void * pMemory = Allocator::Inst().Alloc1( sizeof( FStringList ) );
-    FStringList * node = new ( pMemory ) FStringList;
+AString & ADocumentProxyBuffer::NewString() {
+    void * pMemory = Allocator::Inst().Alloc1( sizeof( AStringList ) );
+    AStringList * node = new ( pMemory ) AStringList;
     node->Next = StringList;
     StringList = node;
     return node->Str;
 }
 
-FString & FDocumentProxyBuffer::NewString( const char * _String ) {
-    void * pMemory = Allocator::Inst().Alloc1( sizeof( FStringList ) );
-    FStringList * node = new ( pMemory ) FStringList( _String );
+AString & ADocumentProxyBuffer::NewString( const char * _String ) {
+    void * pMemory = Allocator::Inst().Alloc1( sizeof( AStringList ) );
+    AStringList * node = new ( pMemory ) AStringList( _String );
     node->Next = StringList;
     StringList = node;
     return node->Str;
 }
 
-FString & FDocumentProxyBuffer::NewString( const FString & _String ) {
-    void * pMemory = Allocator::Inst().Alloc1( sizeof( FStringList ) );
-    FStringList * node = new ( pMemory ) FStringList( _String );
+AString & ADocumentProxyBuffer::NewString( const AString & _String ) {
+    void * pMemory = Allocator::Inst().Alloc1( sizeof( AStringList ) );
+    AStringList * node = new ( pMemory ) AStringList( _String );
     node->Next = StringList;
     StringList = node;
     return node->Str;
@@ -157,7 +157,7 @@ static const char * TokenType[] = {
     "String"
 };
 
-bool FToken::CompareToString( const char * _Str ) const {
+bool SToken::CompareToString( const char * _Str ) const {
     const char * p = Begin;
     while ( *_Str && p < End ) {
         if ( *_Str != *p ) {
@@ -169,30 +169,30 @@ bool FToken::CompareToString( const char * _Str ) const {
     return ( *_Str || p != End ) ? false : true;
 }
 
-void FToken::FromString( const char * _Str ) {
+void SToken::FromString( const char * _Str ) {
     Begin = _Str;
-    End = Begin + FString::Length( _Str );
+    End = Begin + AString::Length( _Str );
 }
 
-FString FToken::ToString() const {
-    FString str;
+AString SToken::ToString() const {
+    AString str;
     str.Resize( End - Begin );
     memcpy( str.ToPtr(), Begin, str.Length() );
     return str;
 }
 
-const char * FToken::NamedType() const {
+const char * SToken::NamedType() const {
     return TokenType[ Type ];
 }
 
-struct FTokenizer {
-    FToken CurToken;
+struct ATokenizer {
+    SToken CurToken;
 
-    const FToken & GetToken() const;
-    void NextToken( FTokenBuffer & buffer );
+    const SToken & GetToken() const;
+    void NextToken( ATokenBuffer & buffer );
 };
 
-static void SkipWhiteSpaces( FTokenBuffer & _Buffer ) {
+static void SkipWhiteSpaces( ATokenBuffer & _Buffer ) {
     const char *& s = _Buffer.Cur;
     while ( *s == ' ' || *s == '\t' || *s == '\n' || *s == '\r' ) {
         if ( *s == '\n' ) {
@@ -227,11 +227,11 @@ static void SkipWhiteSpaces( FTokenBuffer & _Buffer ) {
     }
 }
 
-const FToken & FTokenizer::GetToken() const {
+const SToken & ATokenizer::GetToken() const {
     return CurToken;
 }
 
-void FTokenizer::NextToken( FTokenBuffer & _Buffer ) {
+void ATokenizer::NextToken( ATokenBuffer & _Buffer ) {
     // Skip white spaces, tabs and comments
     SkipWhiteSpaces( _Buffer );
 
@@ -292,7 +292,7 @@ void FTokenizer::NextToken( FTokenBuffer & _Buffer ) {
     }
 }
 
-static bool Expect( int _Type, const FToken & _Token ) {
+static bool Expect( int _Type, const SToken & _Token ) {
     if ( _Token.Type != _Type ) {
         GLogger.Printf( "unexpected %s found, expected %s\n", _Token.NamedType(), TokenType[_Type] );
         return false;
@@ -300,15 +300,15 @@ static bool Expect( int _Type, const FToken & _Token ) {
     return true;
 }
 
-static int ParseObject( FTokenizer & _Tokenizer, FDocument & _Doc );
-static int ParseField( FTokenizer & _Tokenizer, FDocument & _Doc, FToken & _FieldToken );
+static int ParseObject( ATokenizer & _Tokenizer, ADocument & _Doc );
+static int ParseField( ATokenizer & _Tokenizer, ADocument & _Doc, SToken & _FieldToken );
 
-static void ParseArray( FTokenizer & _Tokenizer, FDocument & _Doc, int & _ArrayHead, int & _ArrayTail ) {
+static void ParseArray( ATokenizer & _Tokenizer, ADocument & _Doc, int & _ArrayHead, int & _ArrayTail ) {
     _ArrayHead = -1;
     _ArrayTail = -1;
 
     while ( 1 ) {
-        FToken token = _Tokenizer.GetToken();
+        SToken token = _Tokenizer.GetToken();
 
         if ( token.Type == TT_Bracket ) {
             if ( *token.Begin == ']' ) {
@@ -346,7 +346,7 @@ static void ParseArray( FTokenizer & _Tokenizer, FDocument & _Doc, int & _ArrayH
             // array element is string
 
             int value = _Doc.AllocateValue();
-            _Doc.Values[ value ].Type = FDocumentValue::T_String;
+            _Doc.Values[ value ].Type = SDocumentValue::T_String;
             _Doc.Values[ value ].Token = token;
             _Doc.Values[ value ].Prev = _ArrayTail;
             if ( _Doc.Values[ value ].Prev != -1 ) {
@@ -367,13 +367,13 @@ static void ParseArray( FTokenizer & _Tokenizer, FDocument & _Doc, int & _ArrayH
     }
 }
 
-static int ParseObject( FTokenizer & _Tokenizer, FDocument & _Doc ) {
+static int ParseObject( ATokenizer & _Tokenizer, ADocument & _Doc ) {
 
     int value = _Doc.AllocateValue();
-    _Doc.Values[ value ].Type = FDocumentValue::T_Object;
+    _Doc.Values[ value ].Type = SDocumentValue::T_Object;
 
     while ( 1 ) {
-        FToken token = _Tokenizer.GetToken();
+        SToken token = _Tokenizer.GetToken();
 
         if ( token.Type == TT_Bracket ) {
             if ( *token.Begin == '}' ) {
@@ -412,8 +412,8 @@ static int ParseObject( FTokenizer & _Tokenizer, FDocument & _Doc ) {
     return -1;
 }
 
-static int ParseField( FTokenizer & _Tokenizer, FDocument & _Doc, FToken & _FieldToken ) {
-    FToken token = _Tokenizer.GetToken();
+static int ParseField( ATokenizer & _Tokenizer, ADocument & _Doc, SToken & _FieldToken ) {
+    SToken token = _Tokenizer.GetToken();
 
     if ( token.Type == TT_Bracket ) {
         if ( *token.Begin == '[' ) {
@@ -455,7 +455,7 @@ static int ParseField( FTokenizer & _Tokenizer, FDocument & _Doc, FToken & _Fiel
 
         // value is string
         int value = _Doc.AllocateValue();
-        _Doc.Values[ value ].Type = FDocumentValue::T_String;
+        _Doc.Values[ value ].Type = SDocumentValue::T_String;
         _Doc.Values[ value ].Token = token;
 
         int field = _Doc.AllocateField();
@@ -469,14 +469,14 @@ static int ParseField( FTokenizer & _Tokenizer, FDocument & _Doc, FToken & _Fiel
     return -1;
 }
 
-static void PrintField( const FDocument & _Doc, int i );
+static void PrintField( const ADocument & _Doc, int i );
 
-static void PrintValue( const FDocument & _Doc, int i ) {
-    const FDocumentValue * value = &_Doc.Values[ i ];
+static void PrintValue( const ADocument & _Doc, int i ) {
+    const SDocumentValue * value = &_Doc.Values[ i ];
 
-    GLogger.Printf( "Type: %s\n", value->Type == FDocumentValue::T_String ? "STRING" : "OBJECT" );
-    if ( value->Type == FDocumentValue::T_String ) {
-        GLogger.Printf( "%s\n", value->Token.ToString().ToConstChar() );
+    GLogger.Printf( "Type: %s\n", value->Type == SDocumentValue::T_String ? "STRING" : "OBJECT" );
+    if ( value->Type == SDocumentValue::T_String ) {
+        GLogger.Printf( "%s\n", value->Token.ToString().CStr() );
         return;
     }
 
@@ -485,17 +485,17 @@ static void PrintValue( const FDocument & _Doc, int i ) {
     }
 }
 
-static void PrintField( const FDocument & _Doc, int i ) {
-    const FDocumentField * field = &_Doc.Fields[ i ];
+static void PrintField( const ADocument & _Doc, int i ) {
+    const SDocumentField * field = &_Doc.Fields[ i ];
 
-    GLogger.Printf( "Field: %s\n", field->Name.ToString().ToConstChar() );
+    GLogger.Printf( "Field: %s\n", field->Name.ToString().CStr() );
 
     for ( i = field->ValuesHead ; i != -1 ; i = _Doc.Values[ i ].Next ) {
         PrintValue( _Doc, i );
     }
 }
 
-void PrintDocument( FDocument const & _Doc ) {
+void PrintDocument( ADocument const & _Doc ) {
     GLogger.Print( "-------------- Document ----------------\n" );
 
     for ( int i = _Doc.FieldsHead ; i != -1 ; i = _Doc.Fields[ i ].Next ) {
@@ -505,8 +505,8 @@ void PrintDocument( FDocument const & _Doc ) {
     GLogger.Print( "----------------------------------------\n" );
 }
 
-void FDocument::FromString( const char * _Script, bool _InSitu ) {
-    FTokenizer tokenizer;
+void ADocument::FromString( const char * _Script, bool _InSitu ) {
+    ATokenizer tokenizer;
 
     Clear();
 
@@ -515,7 +515,7 @@ void FDocument::FromString( const char * _Script, bool _InSitu ) {
     tokenizer.NextToken( Buffer );
 
     while ( 1 ) {
-        FToken token = tokenizer.GetToken();
+        SToken token = tokenizer.GetToken();
         if ( token.Type == TT_EOF || token.Type == TT_Unknown ) {
             break;
         }
@@ -546,9 +546,9 @@ void FDocument::FromString( const char * _Script, bool _InSitu ) {
     //PrintDocument( *this );
 }
 
-FDocumentField * FDocument::FindField( int _FieldsHead, const char * _Name ) const {
+SDocumentField * ADocument::FindField( int _FieldsHead, const char * _Name ) const {
     for ( int i = _FieldsHead ; i != -1 ; i = Fields[ i ].Next ) {
-        FDocumentField * field = &Fields[ i ];
+        SDocumentField * field = &Fields[ i ];
         if ( field->Name.CompareToString( _Name ) ) {
             return field;
         }
@@ -556,26 +556,26 @@ FDocumentField * FDocument::FindField( int _FieldsHead, const char * _Name ) con
     return nullptr;
 }
 
-int FDocument::CreateField( const char * _FieldName ) {
+int ADocument::CreateField( const char * _FieldName ) {
     int field = AllocateField();
     Fields[ field ].Name.FromString( _FieldName );
     return field;
 }
 
-int FDocument::CreateStringValue( const char * _Value ) {
+int ADocument::CreateStringValue( const char * _Value ) {
     int value = AllocateValue();
-    Values[ value ].Type = FDocumentValue::T_String;
+    Values[ value ].Type = SDocumentValue::T_String;
     Values[ value ].Token.FromString( _Value );
     return value;
 }
 
-int FDocument::CreateObjectValue() {
+int ADocument::CreateObjectValue() {
     int value = AllocateValue();
-    Values[ value ].Type = FDocumentValue::T_Object;
+    Values[ value ].Type = SDocumentValue::T_Object;
     return value;
 }
 
-void FDocument::AddValueToField( int _FieldOrArray, int _Value ) {
+void ADocument::AddValueToField( int _FieldOrArray, int _Value ) {
     Values[ _Value ].Prev = Fields[ _FieldOrArray ].ValuesTail;
     if ( Values[ _Value ].Prev != -1 ) {
         Values[ Values[ _Value ].Prev ].Next = _Value;
@@ -585,15 +585,15 @@ void FDocument::AddValueToField( int _FieldOrArray, int _Value ) {
     Fields[ _FieldOrArray ].ValuesTail = _Value;
 }
 
-int FDocument::CreateStringField( const char * _FieldName, const char * _FieldValue ) {
+int ADocument::CreateStringField( const char * _FieldName, const char * _FieldValue ) {
     int field = CreateField( _FieldName );
     int value = CreateStringValue( _FieldValue );
     AddValueToField( field, value );
     return field;
 }
 
-void FDocument::AddFieldToObject( int _Object, int _Field ) {
-    AN_Assert( Values[ _Object ].Type == FDocumentValue::T_Object );
+void ADocument::AddFieldToObject( int _Object, int _Field ) {
+    AN_Assert( Values[ _Object ].Type == SDocumentValue::T_Object );
     Fields[ _Field ].Prev = Values[ _Object ].FieldsTail;
     if ( Fields[ _Field ].Prev != -1 ) {
         Fields[ Fields[ _Field ].Prev ].Next = _Field;
@@ -603,19 +603,19 @@ void FDocument::AddFieldToObject( int _Object, int _Field ) {
     Values[ _Object ].FieldsTail = _Field;
 }
 
-int FDocument::AddStringField( int _Object, const char * _FieldName, const char * _FieldValue ) {
+int ADocument::AddStringField( int _Object, const char * _FieldName, const char * _FieldValue ) {
     int field = CreateStringField( _FieldName, _FieldValue );
     AddFieldToObject(  _Object, field );
     return field;
 }
 
-int FDocument::AddArray( int _Object, const char * _ArrayName ) {
+int ADocument::AddArray( int _Object, const char * _ArrayName ) {
     int array = CreateField( _ArrayName );
     AddFieldToObject( _Object, array );
     return array;
 }
 
-void FDocument::AddField( int _Field ) {
+void ADocument::AddField( int _Field ) {
     Fields[ _Field ].Prev = FieldsTail;
     if ( Fields[ _Field ].Prev != -1 ) {
         Fields[ Fields[ _Field ].Prev ].Next = _Field;
@@ -627,22 +627,22 @@ void FDocument::AddField( int _Field ) {
 
 
 static int DocumentStack = 0;
-static FString ObjectToString( const FDocument & _Doc, int _FieldsHead, bool & singleField );
+static AString ObjectToString( const ADocument & _Doc, int _FieldsHead, bool & singleField );
 
-static FString InserSpaces() {
-    FString s;
+static AString InsertSpaces() {
+    AString s;
     for ( int i = 0 ; i < DocumentStack ; i++ ) {
         s += " ";
     }
     return s;
 }
 
-static FString ValueToString( const FDocument & _Doc, int i ) {
-    const FDocumentValue * value = &_Doc.Values[ i ];
+static AString ValueToString( const ADocument & _Doc, int i ) {
+    const SDocumentValue * value = &_Doc.Values[ i ];
 
-    FString s;
+    AString s;
 
-    if ( value->Type == FDocumentValue::T_String ) {
+    if ( value->Type == SDocumentValue::T_String ) {
         s += "\"" + value->Token.ToString() + "\"";
         return s;
     }
@@ -655,17 +655,17 @@ static FString ValueToString( const FDocument & _Doc, int i ) {
     DocumentStack--;
 
     if ( !singleField ) {
-        s += InserSpaces();
+        s += InsertSpaces();
     }
     s += "}";
 
     return s;
 }
 
-static FString FieldToString( const FDocument & _Doc, int i ) {
-    const FDocumentField * field = &_Doc.Fields[ i ];
+static AString FieldToString( const ADocument & _Doc, int i ) {
+    const SDocumentField * field = &_Doc.Fields[ i ];
 
-    FString s;
+    AString s;
 
     //s += InserSpaces();
     s += field->Name.ToString();
@@ -684,7 +684,7 @@ static FString FieldToString( const FDocument & _Doc, int i ) {
         }
 
         if ( !singleValue ) {
-            s += InserSpaces();
+            s += InsertSpaces();
         }
         s += ValueToString( _Doc, i );
         if ( !singleValue ) {
@@ -696,14 +696,14 @@ static FString FieldToString( const FDocument & _Doc, int i ) {
 
     if ( !singleValue ) {
         DocumentStack--;
-        s += InserSpaces() + "]";
+        s += InsertSpaces() + "]";
     }
 
     return s;
 }
 
-static FString ObjectToString( const FDocument & _Doc, int _FieldsHead, bool & singleField ) {
-    FString s;
+static AString ObjectToString( const ADocument & _Doc, int _FieldsHead, bool & singleField ) {
+    AString s;
     singleField = true;
     for ( int i = _FieldsHead ; i != -1 ; ) {
         int next = _Doc.Fields[ i ].Next;
@@ -714,7 +714,7 @@ static FString ObjectToString( const FDocument & _Doc, int _FieldsHead, bool & s
         }
 
         if ( !singleField ) {
-            s += InserSpaces();
+            s += InsertSpaces();
         }
         s += FieldToString( _Doc, i );
 
@@ -727,19 +727,19 @@ static FString ObjectToString( const FDocument & _Doc, int _FieldsHead, bool & s
     return s;
 }
 
-static FString ObjectToStringCompact( const FDocument & _Doc, int _FieldsHead );
+static AString ObjectToStringCompact( const ADocument & _Doc, int _FieldsHead );
 
-static FString ValueToStringCompact( const FDocument & _Doc, int i ) {
-    const FDocumentValue * value = &_Doc.Values[ i ];
-    if ( value->Type == FDocumentValue::T_String ) {
-        return FString( "\"" ) + value->Token.ToString() + "\"";
+static AString ValueToStringCompact( const ADocument & _Doc, int i ) {
+    const SDocumentValue * value = &_Doc.Values[ i ];
+    if ( value->Type == SDocumentValue::T_String ) {
+        return AString( "\"" ) + value->Token.ToString() + "\"";
     }
-    return FString( "{" ) + ObjectToStringCompact( _Doc, value->FieldsHead ) + "}";
+    return AString( "{" ) + ObjectToStringCompact( _Doc, value->FieldsHead ) + "}";
 }
 
-static FString FieldToStringCompact( const FDocument & _Doc, int i ) {
-    const FDocumentField * field = &_Doc.Fields[ i ];
-    FString s = field->Name.ToString();
+static AString FieldToStringCompact( const ADocument & _Doc, int i ) {
+    const SDocumentField * field = &_Doc.Fields[ i ];
+    AString s = field->Name.ToString();
     bool singleValue = true;
     for ( i = field->ValuesHead ; i != -1 ;  ) {
         int next = _Doc.Values[ i ].Next;
@@ -756,15 +756,15 @@ static FString FieldToStringCompact( const FDocument & _Doc, int i ) {
     return s;
 }
 
-static FString ObjectToStringCompact( const FDocument & _Doc, int _FieldsHead ) {
-    FString s;
+static AString ObjectToStringCompact( const ADocument & _Doc, int _FieldsHead ) {
+    AString s;
     for ( int i = _FieldsHead ; i != -1 ; i = _Doc.Fields[ i ].Next ) {
         s += FieldToStringCompact( _Doc, i );
     }
     return s;
 }
 
-FString FDocument::ToString() const {
+AString ADocument::ToString() const {
     if ( bCompactStringConversion ) {
         return ObjectToStringCompact( *this, FieldsHead );
     }
@@ -774,7 +774,7 @@ FString FDocument::ToString() const {
     return ::ObjectToString( *this, FieldsHead, singleField );
 }
 
-FString FDocument::ObjectToString( int _Object ) const {
+AString ADocument::ObjectToString( int _Object ) const {
     if ( _Object < 0 ) {
         return "";
     }

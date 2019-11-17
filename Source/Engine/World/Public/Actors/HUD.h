@@ -33,19 +33,19 @@ SOFTWARE.
 #include "Actor.h"
 #include <Engine/Resource/Public/FontAtlas.h>
 
-class FPawn;
-class FPlayerController;
-class FCanvas;
+class APawn;
+class APlayerController;
+class ACanvas;
 
-class FHUD : public FActor {
-    AN_ACTOR( FHUD, FActor )
+class AHUD : public AActor {
+    AN_ACTOR( AHUD, AActor )
 
-    friend class FPlayerController;
+    friend class APlayerController;
 public:
 
-    void Draw( FCanvas * _Canvas, int _X, int _Y, int _W, int _H );
+    void Draw( ACanvas * _Canvas, int _X, int _Y, int _W, int _H );
 
-    void DrawText( FFont * _Font, int x, int y, FColor4 const & color, const char * _Text );
+    void DrawText( AFont * _Font, int x, int y, AColor4 const & color, const char * _Text );
 
     int GetViewportX() const { return ViewportX; }
     int GetViewportY() const { return ViewportY; }
@@ -53,18 +53,18 @@ public:
     int GetViewportH() const { return ViewportH; }
 
 protected:
-    FHUD();
+    AHUD();
 
     virtual void DrawHUD();
 
     // Read only
-    FCanvas * Canvas;
+    ACanvas * Canvas;
     int ViewportX;
     int ViewportY;
     int ViewportW;
     int ViewportH;
 
 private:
-    FPlayerController * OwnerPlayer;
-    FPawn * OwnerPawn;
+    APlayerController * OwnerPlayer;
+    APawn * OwnerPawn;
 };

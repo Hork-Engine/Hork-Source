@@ -33,10 +33,10 @@ SOFTWARE.
 #include "Components/PhysicalBody.h"
 
 /** Collision trace result */
-struct FCollisionTraceResult
+struct SCollisionTraceResult
 {
     /** Colliding body */
-    FPhysicalBody * Body;
+    APhysicalBody * Body;
     /** Contact position */
     Float3 Position;
     /** Contact normal */
@@ -54,14 +54,14 @@ struct FCollisionTraceResult
 };
 
 /** Collision query filter */
-struct FCollisionQueryFilter
+struct SCollisionQueryFilter
 {
     /** List of actors that will be ignored during collision query */
-    FActor ** IgnoreActors;
+    AActor ** IgnoreActors;
     int ActorsCount;
 
     /** List of bodies that will be ignored during collision query */
-    FPhysicalBody ** IgnoreBodies;
+    APhysicalBody ** IgnoreBodies;
     int BodiesCount;
 
     /** Physical body collision mask */
@@ -70,7 +70,7 @@ struct FCollisionQueryFilter
     /** Sort result by the distance */
     bool bSortByDistance;
 
-    FCollisionQueryFilter()
+    SCollisionQueryFilter()
     {
         IgnoreActors = nullptr;
         ActorsCount = 0;
@@ -85,10 +85,10 @@ struct FCollisionQueryFilter
 };
 
 /** Convex sweep tracing */
-struct FConvexSweepTest
+struct SConvexSweepTest
 {
     /** Convex collision body */
-    FCollisionBody * CollisionBody;
+    ACollisionBody * CollisionBody;
     /** Scale of collision body */
     Float3 Scale;
     /** Start position for convex sweep trace */
@@ -100,48 +100,48 @@ struct FConvexSweepTest
     /** End rotation for convex sweep trace */
     Quat EndRotation;
     /** Query filter */
-    FCollisionQueryFilter QueryFilter;
+    SCollisionQueryFilter QueryFilter;
 };
 
 /** World collision queries */
-struct FWorldCollisionQuery
+struct AWorldCollisionQuery
 {    
     /** Trace collision bodies */
-    static bool Trace( FWorld const * _World, TPodArray< FCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static bool Trace( AWorld const * _World, TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Trace collision bodies */
-    static bool TraceClosest( FWorld const * _World, FCollisionTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static bool TraceClosest( AWorld const * _World, SCollisionTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Trace collision bodies */
-    static bool TraceSphere( FWorld const * _World, FCollisionTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static bool TraceSphere( AWorld const * _World, SCollisionTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Trace collision bodies */
-    static bool TraceBox( FWorld const * _World, FCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static bool TraceBox( AWorld const * _World, SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Trace collision bodies */
-    static bool TraceCylinder( FWorld const * _World, FCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static bool TraceCylinder( AWorld const * _World, SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Trace collision bodies */
-    static bool TraceCapsule( FWorld const * _World, FCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static bool TraceCapsule( AWorld const * _World, SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Trace collision bodies */
-    static bool TraceConvex( FWorld const * _World, FCollisionTraceResult & _Result, FConvexSweepTest const & _SweepTest );
+    static bool TraceConvex( AWorld const * _World, SCollisionTraceResult & _Result, SConvexSweepTest const & _SweepTest );
 
     /** Query objects in sphere */
-    static void QueryPhysicalBodies( FWorld const * _World, TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static void QueryPhysicalBodies( AWorld const * _World, TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Query objects in box */
-    static void QueryPhysicalBodies( FWorld const * _World, TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static void QueryPhysicalBodies( AWorld const * _World, TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Query objects in AABB */
-    static void QueryPhysicalBodies( FWorld const * _World, TPodArray< FPhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static void QueryPhysicalBodies( AWorld const * _World, TPodArray< APhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Query objects in sphere */
-    static void QueryActors( FWorld const * _World, TPodArray< FActor * > & _Result, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static void QueryActors( AWorld const * _World, TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Query objects in box */
-    static void QueryActors( FWorld const * _World, TPodArray< FActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static void QueryActors( AWorld const * _World, TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
     /** Query objects in AABB */
-    static void QueryActors( FWorld const * _World, TPodArray< FActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionQueryFilter const * _QueryFilter = nullptr );
+    static void QueryActors( AWorld const * _World, TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr );
 };

@@ -57,7 +57,7 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
 
 );
 
-struct FShaderSources {
+struct AShaderSources {
     enum { MAX_SOURCES = 10 };
     const char * Sources[MAX_SOURCES];
     int NumSources;
@@ -88,7 +88,7 @@ struct FShaderSources {
             "#define COMPUTE_SHADER\n"
         };
 
-        FString predefines = predefine[_ShaderType];
+        AString predefines = predefine[_ShaderType];
         predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Int( MAX_DIRECTIONAL_LIGHTS ).ToString() + "\n";
         predefines += "#define MAX_SHADOW_CASCADES " + Int( MAX_SHADOW_CASCADES ).ToString() + "\n";
 
@@ -107,7 +107,7 @@ struct FShaderSources {
 
         Sources[0] = "#version 450\n"
                      "#extension GL_ARB_bindless_texture : enable\n";
-        Sources[1] = predefines.ToConstChar();
+        Sources[1] = predefines.CStr();
 
         _Module->InitializeFromCode( _ShaderType, NumSources, Sources, &Log );
 
@@ -139,6 +139,6 @@ struct FShaderSources {
     }
 };
 
-extern FShaderSources GShaderSources;
+extern AShaderSources GShaderSources;
 
 }

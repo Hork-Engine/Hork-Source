@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include "BaseLightComponent.h"
 
-class ANGIE_API FPointLightComponent : public FBaseLightComponent {
-    AN_COMPONENT( FPointLightComponent, FBaseLightComponent )
+class ANGIE_API APointLightComponent : public ABaseLightComponent {
+    AN_COMPONENT( APointLightComponent, ABaseLightComponent )
 
-    friend class FWorld;
+    friend class AWorld;
 public:
     void SetInnerRadius( float _Radius );
     float GetInnerRadius() const;
@@ -48,12 +48,12 @@ public:
     Float4x4 const GetOBBTransformInverse() const { return OBBTransformInverse; }
 
 protected:
-    FPointLightComponent();
+    APointLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
 private:
     void UpdateBoundingBox();
@@ -65,6 +65,6 @@ private:
 
     float InnerRadius;
     float OuterRadius;
-    FPointLightComponent * Next;
-    FPointLightComponent * Prev;
+    APointLightComponent * Next;
+    APointLightComponent * Prev;
 };

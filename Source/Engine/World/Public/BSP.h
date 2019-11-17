@@ -33,21 +33,19 @@ SOFTWARE.
 #include <Engine/Runtime/Public/RenderCore.h>
 #include <Engine/Core/Public/BV/BvFrustum.h>
 
-class FBinarySpacePlane : public PlaneF {
+class ABinarySpacePlane : public PlaneF {
 public:
     byte Type; // axial type
 };
 
-class FNodeBase {
-public:
+struct SNodeBase {
     int VisFrame;
     BvAxisAlignedBox Bounds;
-    class FBinarySpaceNode * Parent;
+    struct SBinarySpaceNode * Parent;
 };
 
-class FBinarySpaceNode : public FNodeBase {
-public:
-    FBinarySpacePlane * Plane;
+struct SBinarySpaceNode : SNodeBase {
+    ABinarySpacePlane * Plane;
     int ChildrenIdx[2];
 };
 
@@ -56,8 +54,7 @@ enum EBinarySpaceLeafContents {
     BSP_CONTENTS_INVISIBLE
 };
 
-class FBinarySpaceLeaf : public FNodeBase {
-public:
+struct SBinarySpaceLeaf : SNodeBase {
     int Cluster;
     byte const * Visdata;
     int FirstSurface;
@@ -76,8 +73,7 @@ enum ESurfaceType {
     //SURF_BEZIER_PATCH
 };
 
-class FSurfaceDef {
-public:
+struct SSurfaceDef {
     BvAxisAlignedBox Bounds; // currently unused
     int FirstVertex;
     int NumVertices;
@@ -98,28 +94,28 @@ public:
     int Marker;
 };
 
-struct FBinarySpaceData {
-    TPodArray< FBinarySpacePlane > Planes;
-    TPodArray< FBinarySpaceNode >  Nodes;
-    TPodArray< FBinarySpaceLeaf >  Leafs;
+struct SBinarySpaceData {
+    TPodArray< ABinarySpacePlane > Planes;
+    TPodArray< SBinarySpaceNode >  Nodes;
+    TPodArray< SBinarySpaceLeaf >  Leafs;
     byte *                         Visdata;
     bool                           bCompressedVisData;
     int                            NumVisClusters;
-    TPodArray< FSurfaceDef >       Surfaces;
+    TPodArray< SSurfaceDef >       Surfaces;
     TPodArray< int >               Marksurfaces;
-    TPodArray< FMeshVertex >       Vertices;
-    TPodArray< FMeshLightmapUV >   LightmapVerts;
-    TPodArray< FMeshVertexLight >  VertexLight;
+    TPodArray< SMeshVertex >       Vertices;
+    TPodArray< SMeshLightmapUV >   LightmapVerts;
+    TPodArray< SMeshVertexLight >  VertexLight;
     TPodArray< unsigned int >      Indices;
 
-    TPodArray< FSurfaceDef * >     VisSurfs;
+    TPodArray< SSurfaceDef * >     VisSurfs;
     int                            NumVisSurfs;
 
-    FBinarySpaceData();
-    ~FBinarySpaceData();
+    SBinarySpaceData();
+    ~SBinarySpaceData();
 
     int FindLeaf( const Float3 & _Position );
-    byte const * LeafPVS( FBinarySpaceLeaf const * _Leaf );
+    byte const * LeafPVS( SBinarySpaceLeaf const * _Leaf );
 
     int MarkLeafs( int _ViewLeaf );
 

@@ -32,36 +32,36 @@ SOFTWARE.
 
 #include "ActorComponent.h"
 
-class FSceneComponent;
+class ASceneComponent;
 
-using FArrayOfChildComponents = TPodArray< FSceneComponent *, 8 >;
+using AArrayOfChildComponents = TPodArray< ASceneComponent *, 8 >;
 
-class FSocketDef;
-class FSkinnedComponent;
+class ASocketDef;
+class ASkinnedComponent;
 
-struct FSocket
+struct SSocket
 {
     /** Socket resource object */
-    FSocketDef * SocketDef;
+    ASocketDef * SocketDef;
     /** Skinned mesh if socket is attached to joint */
-    FSkinnedComponent * SkinnedMesh;
+    ASkinnedComponent * SkinnedMesh;
     /** Evaluate socket transform */
     Float3x4 EvaluateTransform() const;
 };
 
 /**
 
-FSceneComponent
+ASceneComponent
 
 Base class for all actor components that have its position, rotation and scale
 
 */
-class ANGIE_API FSceneComponent : public FActorComponent {
-    AN_COMPONENT( FSceneComponent, FActorComponent )
+class ANGIE_API ASceneComponent : public AActorComponent {
+    AN_COMPONENT( ASceneComponent, AActorComponent )
 
 public:
     /** Attach to parent component */
-    void AttachTo( FSceneComponent * _Parent, const char * _Socket = nullptr, bool _KeepWorldTransform = false );
+    void AttachTo( ASceneComponent * _Parent, const char * _Socket = nullptr, bool _KeepWorldTransform = false );
 
     /** Detach from parent component */
     void Detach( bool _KeepWorldTransform = false );
@@ -70,19 +70,19 @@ public:
     void DetachChilds( bool _bRecursive = false, bool _KeepWorldTransform = false );
 
     /** Is component parent of specified child */
-    bool IsChild( FSceneComponent * _Child, bool _Recursive ) const;
+    bool IsChild( ASceneComponent * _Child, bool _Recursive ) const;
 
     /** Is component root */
     bool IsRoot() const;
 
     /** Find child by name */
-    FSceneComponent * FindChild( const char * _UniqueName, bool _Recursive );
+    ASceneComponent * FindChild( const char * _UniqueName, bool _Recursive );
 
     /** Get reference to array of child components */
-    FArrayOfChildComponents const & GetChilds() const { return Childs; }
+    AArrayOfChildComponents const & GetChilds() const { return Childs; }
 
     /** Get parent component */
-    FSceneComponent * GetParent() const { return AttachParent; }
+    ASceneComponent * GetParent() const { return AttachParent; }
 
     /** Get socket index by name */
     int FindSocket( const char * _Name ) const;
@@ -145,10 +145,10 @@ public:
     void SetTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
 
     /** Set local transform */
-    void SetTransform( FTransform const & _Transform );
+    void SetTransform( ATransform const & _Transform );
 
     /** Set local transform */
-    void SetTransform( FSceneComponent const * _Transform );
+    void SetTransform( ASceneComponent const * _Transform );
 
     /** Set world position */
     void SetWorldPosition( Float3 const & _Position );
@@ -172,7 +172,7 @@ public:
     void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
 
     /** Set world transform */
-    void SetWorldTransform( FTransform const & _Transform );
+    void SetWorldTransform( ATransform const & _Transform );
 
     /** Get local position */
     Float3 const & GetPosition() const;
@@ -248,19 +248,19 @@ public:
     void Step( Float3 const & _Vector );
 
 protected:
-    FSceneComponent();
+    ASceneComponent();
 
     void DeinitializeComponent() override;
 
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
     virtual void OnTransformDirty() {}
 
-    using FArrayOfSockets = TPodArray< FSocket, 1 >;
-    FArrayOfSockets Sockets;
+    using AArrayOfSockets = TPodArray< SSocket, 1 >;
+    AArrayOfSockets Sockets;
 
 private:
-    void _AttachTo( FSceneComponent * _Parent, bool _KeepWorldTransform );
+    void _AttachTo( ASceneComponent * _Parent, bool _KeepWorldTransform );
 
     void ComputeWorldTransform() const;
 
@@ -270,8 +270,8 @@ private:
     mutable Float3x4 WorldTransformMatrix;   // Transposed world transform matrix
     mutable Quat WorldRotation;
     mutable bool bTransformDirty;
-    FArrayOfChildComponents Childs;
-    FSceneComponent * AttachParent;
+    AArrayOfChildComponents Childs;
+    ASceneComponent * AttachParent;
     int SocketIndex;
     //bool bIgnoreLocalTransform;
     bool bAbsolutePosition : 1;

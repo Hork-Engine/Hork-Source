@@ -36,27 +36,27 @@ using namespace GHI;
 
 #define BLUR_SCALE      1//16//2//2//4
 
-extern FRuntimeVariable RVShadowCascadeBits;
+extern ARuntimeVariable RVShadowCascadeBits;
 
-FRuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ),  _CTS( "2048" ) );
+ARuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ),  _CTS( "2048" ) );
 
 namespace OpenGL45 {
 
-FShadowMapRT GShadowMapRT;
+AShadowMapRT GShadowMapRT;
 
-void FShadowMapRT::Initialize() {
+void AShadowMapRT::Initialize() {
     CascadeSize = 0;
     MaxCascades = 0;
 }
 
-void FShadowMapRT::Deinitialize() {
+void AShadowMapRT::Deinitialize() {
     Framebuffer.Deinitialize();
     ShadowPoolTexture.Deinitialize();
     DepthMomentsTexture.Deinitialize();
     DepthMomentsTextureTmp.Deinitialize();
 }
 
-void FShadowMapRT::CreateFramebuffer() {
+void AShadowMapRT::CreateFramebuffer() {
     Framebuffer.Deinitialize();
     ShadowPoolTexture.Deinitialize();
     DepthMomentsTexture.Deinitialize();
@@ -130,7 +130,7 @@ void FShadowMapRT::CreateFramebuffer() {
     Framebuffer.Initialize( framebufferCI );
 }
 
-void FShadowMapRT::Realloc( int _MaxCascades ) {
+void AShadowMapRT::Realloc( int _MaxCascades ) {
     AN_Assert( _MaxCascades > 0 );
     if ( CascadeSize != RVShadowCascadeResolution.GetInteger() || MaxCascades != _MaxCascades ) {
         CascadeSize = RVShadowCascadeResolution.GetInteger();

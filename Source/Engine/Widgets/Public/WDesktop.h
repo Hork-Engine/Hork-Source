@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include "WMenuPopup.h"
 
-class ANGIE_API WDesktop : public FBaseObject {
-    AN_CLASS( WDesktop, FBaseObject )
+class ANGIE_API WDesktop : public ABaseObject {
+    AN_CLASS( WDesktop, ABaseObject )
 
     friend class WWidget;
 
@@ -105,37 +105,37 @@ public:
     // Если клавиша - это кнопка мыши, то устанавливается фокус у окна под курсором.
     // Далее срабатывает событиеKeyPressEvent или KeyReleaseEvent у окна, которое
     // в данный момент в фокусе.
-    void GenerateKeyEvents( struct FKeyEvent const & _Event, double _TimeStamp );
+    void GenerateKeyEvents( struct SKeyEvent const & _Event, double _TimeStamp );
 
     // Создает события MouseButtonEvent и OnDblClickEvent
     // Устанавливает фокус у окна под курсором. Далее срабатывает событие
     // MouseButtonEvent у окна, которое в данный момент в фокусе.
-    void GenerateMouseButtonEvents( struct FMouseButtonEvent const & _Event, double _TimeStamp );
+    void GenerateMouseButtonEvents( struct SMouseButtonEvent const & _Event, double _TimeStamp );
 
     // Создает событие MouseWheelEvent
-    void GenerateMouseWheelEvents( struct FMouseWheelEvent const & _Event, double _TimeStamp );
+    void GenerateMouseWheelEvents( struct SMouseWheelEvent const & _Event, double _TimeStamp );
 
     // Инициирует событие перемещаения мыши в окне, над которым в данный момент находится курсор.
     // Перемещает курсор на указанную дельта. Осуществляет перемещение текущего захваченного окна.
-    void GenerateMouseMoveEvents( struct FMouseMoveEvent const & _Event, double _TimeStamp );
+    void GenerateMouseMoveEvents( struct SMouseMoveEvent const & _Event, double _TimeStamp );
 
     // Создает событие CharEvent у окна, которое
     // в данный момент в фокусе.
-    void GenerateCharEvents( struct FCharEvent const & _Event, double _TimeStamp );
+    void GenerateCharEvents( struct SCharEvent const & _Event, double _TimeStamp );
 
     void GenerateWindowHoverEvents();
 
     // Создает событие DrawEvent для всех видимых окон графического интерфейса.
     // События вызываются начиная с нижних уровней до высоких.
-    void GenerateDrawEvents( FCanvas & _Canvas );
+    void GenerateDrawEvents( ACanvas & _Canvas );
 
-    virtual void DrawCursor( FCanvas & _Canvas );
+    virtual void DrawCursor( ACanvas & _Canvas );
 
 protected:
     WDesktop();
     ~WDesktop();
 
-    virtual void OnDrawBackground( FCanvas & _Canvas );
+    virtual void OnDrawBackground( ACanvas & _Canvas );
 
 private:
     WWidget * GetWidgetUnderCursor_r( WWidget * _Widget, Float2 const & _ClipMins, Float2 const & _ClipMaxs, Float2 const & _Position );

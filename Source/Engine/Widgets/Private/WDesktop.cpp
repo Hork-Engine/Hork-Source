@@ -145,11 +145,11 @@ WWidget * WDesktop::GetWidgetUnderCursor_r( WWidget * _Widget, Float2 const & _C
 
     _Widget->GetDesktopRect( rectMins, rectMaxs, false );
 
-    mins.X = FMath::Max( rectMins.X, _ClipMins.X );
-    mins.Y = FMath::Max( rectMins.Y, _ClipMins.Y );
+    mins.X = Math::Max( rectMins.X, _ClipMins.X );
+    mins.Y = Math::Max( rectMins.Y, _ClipMins.Y );
 
-    maxs.X = FMath::Min( rectMaxs.X, _ClipMaxs.X );
-    maxs.Y = FMath::Min( rectMaxs.Y, _ClipMaxs.Y );
+    maxs.X = Math::Min( rectMaxs.X, _ClipMaxs.X );
+    maxs.Y = Math::Min( rectMaxs.Y, _ClipMaxs.Y );
 
     if ( mins.X >= maxs.X || mins.Y >= maxs.Y ) {
         return nullptr; // invalid rect
@@ -165,7 +165,7 @@ WWidget * WDesktop::GetWidgetUnderCursor_r( WWidget * _Widget, Float2 const & _C
         Float2 localPosition = _Position;
         _Widget->FromDesktopToWidget( localPosition );
 
-        FWidgetShape const & shape = _Widget->GetShape();
+        AWidgetShape const & shape = _Widget->GetShape();
         if ( !BvPointInPoly2D( shape.ToPtr(), shape.Size(), localPosition ) ) {
             return nullptr;
         }
@@ -173,11 +173,11 @@ WWidget * WDesktop::GetWidgetUnderCursor_r( WWidget * _Widget, Float2 const & _C
 
     ApplyMargins( rectMins, rectMaxs, _Widget->GetMargin() );
 
-    mins.X = FMath::Max( rectMins.X, _ClipMins.X );
-    mins.Y = FMath::Max( rectMins.Y, _ClipMins.Y );
+    mins.X = Math::Max( rectMins.X, _ClipMins.X );
+    mins.Y = Math::Max( rectMins.Y, _ClipMins.Y );
 
-    maxs.X = FMath::Min( rectMaxs.X, _ClipMaxs.X );
-    maxs.Y = FMath::Min( rectMaxs.Y, _ClipMaxs.Y );
+    maxs.X = Math::Min( rectMaxs.X, _ClipMaxs.X );
+    maxs.Y = Math::Min( rectMaxs.Y, _ClipMaxs.Y );
 
     if ( mins.X >= maxs.X || mins.Y >= maxs.Y ) {
         return _Widget;
@@ -323,7 +323,7 @@ void WDesktop::SetFocusWidget( WWidget * _Focus ) {
     }
 }
 
-void WDesktop::GenerateKeyEvents( FKeyEvent const & _Event, double _TimeStamp ) {
+void WDesktop::GenerateKeyEvents( SKeyEvent const & _Event, double _TimeStamp ) {
     if ( DraggingWidget ) {
         if ( _Event.Key == KEY_ESCAPE && _Event.Action == IE_Press ) {
             CancelDragging();
@@ -357,7 +357,7 @@ void WDesktop::GenerateKeyEvents( FKeyEvent const & _Event, double _TimeStamp ) 
     }
 }
 
-void WDesktop::GenerateMouseButtonEvents( struct FMouseButtonEvent const & _Event, double _TimeStamp ) {
+void WDesktop::GenerateMouseButtonEvents( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
     WWidget * widget = nullptr;
     const int DraggingButton = 0;
 
@@ -448,7 +448,7 @@ void WDesktop::GenerateMouseButtonEvents( struct FMouseButtonEvent const & _Even
             MouseClickPos.X = CursorPosition.X;
             MouseClickPos.Y = CursorPosition.Y;
 
-            FWidgetShape const & dragShape = widget->GetDragShape();
+            AWidgetShape const & dragShape = widget->GetDragShape();
 
             Float2 localPosition = CursorPosition;
             widget->FromDesktopToWidget( localPosition );
@@ -475,7 +475,7 @@ void WDesktop::GenerateMouseButtonEvents( struct FMouseButtonEvent const & _Even
     }
 }
 
-void WDesktop::GenerateMouseWheelEvents( struct FMouseWheelEvent const & _Event, double _TimeStamp ){
+void WDesktop::GenerateMouseWheelEvents( struct SMouseWheelEvent const & _Event, double _TimeStamp ){
     WWidget * widget;
 
     if ( DraggingWidget ) {
@@ -536,9 +536,9 @@ bool WDesktop::HandleDraggingWidget() {
 
             Float2 newWidgetPos;
             if ( cursor.X < parentSize.X * 0.5f ) {
-                newWidgetPos.X = cursor.X - FMath::Min( cursor.X, widgetHalfWidth );
+                newWidgetPos.X = cursor.X - Math::Min( cursor.X, widgetHalfWidth );
             } else {
-                newWidgetPos.X = cursor.X + FMath::Min( parentSize.X - cursor.X, widgetHalfWidth ) - widgetWidth;
+                newWidgetPos.X = cursor.X + Math::Min( parentSize.X - cursor.X, widgetHalfWidth ) - widgetWidth;
             }
             newWidgetPos.Y = 0;
 
@@ -572,7 +572,7 @@ bool WDesktop::HandleDraggingWidget() {
     return true;
 }
 
-void WDesktop::GenerateMouseMoveEvents( struct FMouseMoveEvent const & _Event, double _TimeStamp ) {
+void WDesktop::GenerateMouseMoveEvents( struct SMouseMoveEvent const & _Event, double _TimeStamp ) {
 
     if ( HandleDraggingWidget() ) {
         return;
@@ -615,7 +615,7 @@ void WDesktop::GenerateMouseMoveEvents( struct FMouseMoveEvent const & _Event, d
     }
 }
 
-void WDesktop::GenerateCharEvents( struct FCharEvent const & _Event, double _TimeStamp ) {
+void WDesktop::GenerateCharEvents( struct SCharEvent const & _Event, double _TimeStamp ) {
     if ( DraggingWidget ) {
         // Ignore when dragging
         return;
@@ -642,7 +642,7 @@ void WDesktop::GenerateWindowHoverEvents() {
     LastHoveredWidget->OnWindowHovered( true );
 }
 
-void WDesktop::GenerateDrawEvents( FCanvas & _Canvas ) {
+void WDesktop::GenerateDrawEvents( ACanvas & _Canvas ) {
     Float2 mins, maxs;
     Root->GetDesktopRect( mins, maxs, false );
 
@@ -657,19 +657,19 @@ void WDesktop::GenerateDrawEvents( FCanvas & _Canvas ) {
         child->Draw_r( _Canvas, mins, maxs );
     }
 
-    //_Canvas.DrawCircleFilled( CursorPosition, 5.0f, FColor4(1,0,0) );
+    //_Canvas.DrawCircleFilled( CursorPosition, 5.0f, AColor4(1,0,0) );
 
     _Canvas.PopClipRect();
 }
 
-void WDesktop::OnDrawBackground( FCanvas & _Canvas ) {
-    _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), FColor4::Black() );
+void WDesktop::OnDrawBackground( ACanvas & _Canvas ) {
+    _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4::Black() );
 }
 
-void WDesktop::DrawCursor( FCanvas & _Canvas ) {
+void WDesktop::DrawCursor( ACanvas & _Canvas ) {
 #if 0
-    _Canvas.DrawCursor( Cursor, GEngine.GetCursorPosition(), FColor4::White(), FColor4( 0, 0, 0, 1 ), FColor4( 0, 0, 0, 28 / 255.0f ) );
+    _Canvas.DrawCursor( Cursor, GEngine.GetCursorPosition(), AColor4::White(), AColor4( 0, 0, 0, 1 ), AColor4( 0, 0, 0, 28 / 255.0f ) );
 #else
-    _Canvas.DrawCursor( Cursor, CursorPosition, FColor4::White(), FColor4( 0, 0, 0, 1 ), FColor4( 0, 0, 0, 0.3f ) );
+    _Canvas.DrawCursor( Cursor, CursorPosition, AColor4::White(), AColor4( 0, 0, 0, 1 ), AColor4( 0, 0, 0, 0.3f ) );
 #endif
 }

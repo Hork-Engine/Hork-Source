@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include "String.h"
 
-struct FTokenBuffer final {
-    AN_FORBID_COPY( FTokenBuffer )
+struct ATokenBuffer final {
+    AN_FORBID_COPY( ATokenBuffer )
 
-    using Allocator = FZoneAllocator;
+    using Allocator = AZoneAllocator;
 
     const char * GetBuffer() const { return Start; }
     bool InSitu() const { return bInSitu; }
@@ -43,8 +43,8 @@ struct FTokenBuffer final {
     const char * Cur;
     int LineNumber;
 
-    FTokenBuffer();
-    ~FTokenBuffer();
+    ATokenBuffer();
+    ~ATokenBuffer();
 
     void Initialize( const char * _String, bool _InSitu );
     void Deinitialize();
@@ -62,90 +62,90 @@ enum ETokenType {
     TT_String
 };
 
-struct FToken final {
+struct SToken final {
     const char * Begin;
     const char * End;
     int Type;
 
     void FromString( const char * _Str );
-    FString ToString() const;
+    AString ToString() const;
     bool CompareToString( const char * _Str ) const;
     const char * NamedType() const;
 };
 
-struct FDocumentField;
+struct SDocumentField;
 
-struct FDocumentValue final {
+struct SDocumentValue final {
     enum { T_String, T_Object };
     int Type;
-    FToken Token;   // for T_String
+    SToken Token;   // for T_String
     int FieldsHead; // for T_Object list of fields
     int FieldsTail; // for T_Object list of fields
     int Next;       // next value
     int Prev;       // prev value
 };
 
-struct FDocumentField final {
-    FToken Name;
+struct SDocumentField final {
+    SToken Name;
     int ValuesHead; // list of values
     int ValuesTail; // list of values
     int Next;       // next field
     int Prev;       // prev field
 };
 
-struct FDocumentProxyBuffer final {
-    AN_FORBID_COPY( FDocumentProxyBuffer )
+struct ADocumentProxyBuffer final {
+    AN_FORBID_COPY( ADocumentProxyBuffer )
 
-    using Allocator = FZoneAllocator;
+    using Allocator = AZoneAllocator;
 
-    FString & NewString();
-    FString & NewString( const char * _String );
-    FString & NewString( FString const & _String );
+    AString & NewString();
+    AString & NewString( const char * _String );
+    AString & NewString( AString const & _String );
 
-    FDocumentProxyBuffer();
-    ~FDocumentProxyBuffer();
+    ADocumentProxyBuffer();
+    ~ADocumentProxyBuffer();
 
 private:
-    struct FStringList {
-        FStringList() {}
-        FStringList( const char * _Str ) : Str( _Str ) {}
-        FStringList( FString const & _Str ) : Str( _Str ) {}
-        FString Str;
-        FStringList * Next;
+    struct AStringList {
+        AStringList() {}
+        AStringList( const char * _Str ) : Str( _Str ) {}
+        AStringList( AString const & _Str ) : Str( _Str ) {}
+        AString Str;
+        AStringList * Next;
     };
 
-    FStringList * StringList;
+    AStringList * StringList;
 };
 
-struct ANGIE_API FDocument final {
-    AN_FORBID_COPY( FDocument )
+struct ANGIE_API ADocument final {
+    AN_FORBID_COPY( ADocument )
 
-    using Allocator = FZoneAllocator;
+    using Allocator = AZoneAllocator;
 
-    FTokenBuffer Buffer;
-    FDocumentProxyBuffer ProxyBuffer;
+    ATokenBuffer Buffer;
+    ADocumentProxyBuffer ProxyBuffer;
 
     bool bCompactStringConversion = false;
 
     int FieldsHead = -1;    // list of fields
     int FieldsTail = -1;    // list of fields
 
-    FDocumentField * Fields = nullptr;
-    FDocumentValue * Values = nullptr;
+    SDocumentField * Fields = nullptr;
+    SDocumentValue * Values = nullptr;
 
-    FDocument();
-    ~FDocument();
+    ADocument();
+    ~ADocument();
 
     int AllocateField();
     int AllocateValue();
     void Clear();
 
     void FromString( const char * _Script, bool _InSitu );
-    FString ToString() const;
+    AString ToString() const;
 
-    FString ObjectToString( int _Object ) const;
+    AString ObjectToString( int _Object ) const;
 
-    FDocumentField * FindField( int _FieldsHead, const char * _Name ) const;
+    SDocumentField * FindField( int _FieldsHead, const char * _Name ) const;
 
     int CreateField( const char * _FieldName );
     int CreateStringValue( const char * _Value );
@@ -164,4 +164,4 @@ private:
     int ValuesCount = 0;
 };
 
-void PrintDocument( FDocument const & _Doc );
+void PrintDocument( ADocument const & _Doc );

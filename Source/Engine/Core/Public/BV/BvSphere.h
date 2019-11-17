@@ -112,11 +112,11 @@ AN_FORCEINLINE BvSphere BvSphere::operator-( const Float3 & _Vec ) const {
 }
 
 AN_FORCEINLINE bool BvSphere::Compare( const BvSphere & _Other ) const {
-    return ( Center.Compare( _Other.Center ) && FMath::Compare( Radius, _Other.Radius ) );
+    return ( Center.Compare( _Other.Center ) && Math::Compare( Radius, _Other.Radius ) );
 }
 
 AN_FORCEINLINE bool BvSphere::CompareEps( const BvSphere & _Other, const float & _Epsilon ) const {
-    return Center.CompareEps( _Other.Center, _Epsilon ) && FMath::CompareEps( Radius, _Other.Radius, _Epsilon );
+    return Center.CompareEps( _Other.Center, _Epsilon ) && Math::CompareEps( Radius, _Other.Radius, _Epsilon );
 }
 
 AN_FORCEINLINE bool BvSphere::operator==( const BvSphere & _Other ) const {
@@ -146,7 +146,7 @@ AN_FORCEINLINE void BvSphere::FromPointsAverage( const Float3 * _Points, int _Nu
         }
     }
 
-    Radius = FMath::Sqrt( Radius );
+    Radius = Math::Sqrt( Radius );
 }
 
 AN_FORCEINLINE void BvSphere::FromPoints( const Float3 * _Points, int _NumPoints ) {
@@ -179,7 +179,7 @@ AN_FORCEINLINE void BvSphere::FromPoints( const Float3 * _Points, int _NumPoints
             Radius = DistSqr;
         }
     }
-    Radius = FMath::Sqrt( Radius );
+    Radius = Math::Sqrt( Radius );
 }
 
 AN_FORCEINLINE void BvSphere::FromPointsAroundCenter( const Float3 & _Center, const Float3 * _Points, int _NumPoints ) {
@@ -197,7 +197,7 @@ AN_FORCEINLINE void BvSphere::FromPointsAroundCenter( const Float3 & _Center, co
             Radius = DistSqr;
         }
     }
-    Radius = FMath::Sqrt( Radius );
+    Radius = Math::Sqrt( Radius );
 }
 
 AN_FORCEINLINE void BvSphere::FromAxisAlignedBox( const BvAxisAlignedBox & _AxisAlignedBox ) {
@@ -212,7 +212,7 @@ AN_FORCEINLINE void BvSphere::AddPoint( const Float3 & _Point ) {
         const Float3 CenterDiff = _Point - Center;
         const float LenSqr = CenterDiff.LengthSqr();
         if ( LenSqr > Radius * Radius ) {
-            const float Len = FMath::Sqrt( LenSqr );
+            const float Len = Math::Sqrt( LenSqr );
             Center += CenterDiff * 0.5f * ( 1.0f - Radius / Len );
             Radius += 0.5f * ( Len - Radius );
         }
@@ -233,7 +233,7 @@ AN_FORCEINLINE void BvSphere::AddSphere( const BvSphere & _Sphere ) {
             }
         } else {
             constexpr float ZeroTolerance = 0.000001f;
-            const float Len = FMath::Sqrt( LenSqr );
+            const float Len = Math::Sqrt( LenSqr );
             Center = Len > ZeroTolerance ? _Sphere.Center + CenterDiff * 0.5f * ( Len + RadiusDiff ) / Len : _Sphere.Center;
             Radius = ( Len + _Sphere.Radius + Radius ) * 0.5f;
         }

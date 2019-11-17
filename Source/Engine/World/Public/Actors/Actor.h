@@ -34,50 +34,48 @@ SOFTWARE.
 #include <Engine/World/Public/CollisionEvents.h>
 #include <Engine/Core/Public/Guid.h>
 
-class FWorld;
-class FPawn;
-class FSceneComponent;
-class FCameraComponent;
-class FActorComponent;
-class FTimer;
+class AWorld;
+class APawn;
+class ASceneComponent;
+class ACameraComponent;
+class AActorComponent;
+class ATimer;
 
-using FArrayOfActorComponents = TPodArray< FActorComponent *, 8 >;
+using AArrayOfActorComponents = TPodArray< AActorComponent *, 8 >;
 
 #define AN_ACTOR( _Class, _SuperClass ) \
-    AN_FACTORY_CLASS( FActor::Factory(), _Class, _SuperClass ) \
+    AN_FACTORY_CLASS( AActor::Factory(), _Class, _SuperClass ) \
 protected: \
     ~_Class() {} \
 private:
 
 
-/*
+/**
 
-FActor
+AActor
 
 Base class for all actors
 
 */
-class ANGIE_API FActor : public FBaseObject {
-    AN_ACTOR( FActor, FBaseObject )
+class ANGIE_API AActor : public ABaseObject {
+    AN_ACTOR( AActor, ABaseObject )
 
-    friend class FWorld;
-    friend class FActorComponent;
+    friend class AWorld;
+    friend class AActorComponent;
 public:
 
     // Actor events
-    FContactDelegate E_OnBeginContact;
-    FContactDelegate E_OnEndContact;
-    FContactDelegate E_OnUpdateContact;
-    FOverlapDelegate E_OnBeginOverlap;
-    FOverlapDelegate E_OnEndOverlap;
-    FOverlapDelegate E_OnUpdateOverlap;
+    AContactDelegate E_OnBeginContact;
+    AContactDelegate E_OnEndContact;
+    AContactDelegate E_OnUpdateContact;
+    AOverlapDelegate E_OnBeginOverlap;
+    AOverlapDelegate E_OnEndOverlap;
+    AOverlapDelegate E_OnUpdateOverlap;
 
-    // Root component keeps component hierarchy and transform for the actor
-    FSceneComponent * RootComponent;
+    /** Root component keeps component hierarchy and transform for the actor */
+    ASceneComponent * RootComponent;
 
     float LifeSpan;
-
-    bool bCanEverTick;
 
     bool bTickEvenWhenPaused;
 
@@ -85,166 +83,146 @@ public:
 
     bool bTickPostPhysics;
 
-    // Actors factory
-    static FObjectFactory & Factory() { static FObjectFactory ObjectFactory( "Actor factory" ); return ObjectFactory; }
+    /** Actors factory */
+    static AObjectFactory & Factory() { static AObjectFactory ObjectFactory( "Actor factory" ); return ObjectFactory; }
 
     // Get actor GUID
-    FGUID const & GetGUID() const { return GUID; }
+    //AGUID const & GetGUID() const { return GUID; }
 
-    // Set actor unique name
-    void SetName( FString const & _Name ) override;
+    /** Get actor's world */
+    AWorld * GetWorld() const { return ParentWorld; }
 
-    // Get actor's world
-    FWorld * GetWorld() const { return ParentWorld; }
+    /** Get actor's level */
+    ALevel * GetLevel() const { return Level; }
 
-    // Get actor's level
-    FLevel * GetLevel() const { return Level; }
+    /** Create component by it's class id */
+    AActorComponent * CreateComponent( uint64_t _ClassId, const char * _Name );
 
-    // Create component by it's class id
-    FActorComponent * AddComponent( uint64_t _ClassId, const char * _Name );
+    /** Create component by it's class name */
+    AActorComponent * CreateComponent( const char * _ClassName, const char * _Name );
 
-    // Create component by it's class name
-    FActorComponent * AddComponent( const char * _ClassName, const char * _Name );
+    /** Create component by it's class meta (fastest way to create component) */
+    AActorComponent * CreateComponent( AClassMeta const * _ClassMeta, const char * _Name );
 
-    // Create component by it's class meta (fastest way to create component)
-    FActorComponent * AddComponent( FClassMeta const * _ClassMeta, const char * _Name );
+    /** Get component by it's class id */
+    AActorComponent * GetComponent( uint64_t _ClassId );
 
-    // Load component from document data
-    FActorComponent * LoadComponent( FDocument const & _Document, int _FieldsHead );
+    /** Get component by it's class name */
+    AActorComponent * GetComponent( const char * _ClassName );
 
-    // Get component by it's class id
-    FActorComponent * GetComponent( uint64_t _ClassId );
+    /** Get component by it's class meta */
+    AActorComponent * GetComponent( AClassMeta const * _ClassMeta );
 
-    // Get component by it's class name
-    FActorComponent * GetComponent( const char * _ClassName );
-
-    // Get component by it's class meta
-    FActorComponent * GetComponent( FClassMeta const * _ClassMeta );
-
-    // Get component by it's unique name
-    FActorComponent * FindComponent( const char * _UniqueName );
-
-    // Get component by it's unique GUID
-    FActorComponent * FindComponentGUID( FGUID const & _GUID );
-
-    // Create component of specified type
+    /** Create component of specified type */
     template< typename ComponentType >
-    ComponentType * AddComponent( const char * _Name ) {
-        return static_cast< ComponentType * >( AddComponent( &ComponentType::ClassMeta(), _Name ) );
+    ComponentType * CreateComponent( const char * _Name ) {
+        return static_cast< ComponentType * >( CreateComponent( &ComponentType::ClassMeta(), _Name ) );
     }
 
-    // Get component of specified type
+    /** Get component of specified type */
     template< typename ComponentType >
     ComponentType * GetComponent() {
         return static_cast< ComponentType * >( GetComponent( &ComponentType::ClassMeta() ) );
     }
 
-    // Get all actor components
-    FArrayOfActorComponents const & GetComponents() const { return Components; }
+    /** Get all actor components */
+    AArrayOfActorComponents const & GetComponents() const { return Components; }
 
-    // Serialize actor to document data
-    int Serialize( FDocument & _Doc ) override;
+    /** Serialize actor to document data */
+    int Serialize( ADocument & _Doc ) override;
 
-    // Destroy this actor
+    /** Destroy self */
     void Destroy();
 
-    // Is actor marked as pending kill
+    /** Is actor marked as pending kill */
     bool IsPendingKill() const { return bPendingKill; }
 
-    // Actor's instigator
-    FPawn * GetInstigator() { return Instigator; }
+    /** Actor's instigator */
+    APawn * GetInstigator() { return Instigator; }
 
-    // Apply damage to actor
-    virtual void ApplyDamage( float _DamageAmount, Float3 const & _Position, FActor * _DamageCauser );
-
-protected:
-
-    FActor();
-
-    // Register actor's timer. Call this in BeginPlay or after.
-    void RegisterTimer( FTimer * _Timer );
+    /** Apply damage to the actor */
+    virtual void ApplyDamage( float _DamageAmount, Float3 const & _Position, AActor * _DamageCauser );
 
 protected:
 
-    // Called before components initialized
+    bool bCanEverTick;
+
+    AActor();
+
+    /** Register actor's timer. Call this in BeginPlay or after. */
+    void RegisterTimer( ATimer * _Timer );
+
+protected:
+
+    /** Called before components initialized */
     virtual void PreInitializeComponents() {}
 
-    // Called after components initialized
+    /** Called after components initialized */
     virtual void PostInitializeComponents() {}
 
-    // Called when actor enters the game
+    /** Called when actor enters the game */
     virtual void BeginPlay() {}
 
-    // Called only from Destroy() method
+    /** Called only from Destroy() method */
     virtual void EndPlay();
 
-    // Tick based on variable time step. Dependend on current frame rate.
-    // One tick per frame. It is good place to update things like animation.
+    /** Tick based on variable time step. Dependend on current frame rate.
+    One tick per frame. It is good place to update things like animation. */
     virtual void Tick( float _TimeStep ) {}
 
-    // Tick based on fixed time step. Use it to update logic and physics.
-    // There may be one or several ticks per frame. Called before physics simulation.
+    /** Tick based on fixed time step. Use it to update logic and physics.
+    There may be one or several ticks per frame. Called before physics simulation. */
     virtual void TickPrePhysics( float _TimeStep ) {}
 
-    // Tick based on fixed time step. Use it to update logic based on physics simulation.
-    // There may be one or several ticks per frame. Called after physics simulation.
+    /** Tick based on fixed time step. Use it to update logic based on physics simulation.
+    There may be one or several ticks per frame. Called after physics simulation. */
     virtual void TickPostPhysics( float _TimeStep ) {}
 
-    // Draw debug primitives
-    virtual void DrawDebug( FDebugDraw * _DebugDraw );
+    /** Draw debug primitives */
+    virtual void DrawDebug( ADebugDraw * _DebugDraw );
 
 private:
 
-    void PostSpawnInitialize( FTransform const & _SpawnTransform );
-
-    void PostActorConstruction();
+    void Initialize( ATransform const & _SpawnTransform );
 
     void InitializeComponents();
 
-    // Called only from SpawnActor
     void BeginPlayComponents();
 
     void TickComponents( float _TimeStep );
 
     void DestroyComponents();
 
-    void Clone( FActor const * _TemplateActor );
+    void Clone( AActor const * _TemplateActor );
 
-    void AddComponent( FActorComponent * _Component );
+    void AddComponent( AActorComponent * _Component );
 
-    FString GenerateComponentUniqueName( const char * _Name );
+    //AGUID GUID;
 
-    FGUID GUID;
+    /** All actor components */
+    AArrayOfActorComponents Components;
 
-    // All actor components
-    FArrayOfActorComponents Components;
-
-    // Index in world array of actors
+    /** Index in world array of actors */
     int IndexInWorldArrayOfActors = -1;
 
-    // Index in level array of actors
+    /** Index in level array of actors */
     int IndexInLevelArrayOfActors = -1;
 
-    FWorld * ParentWorld;
-    TRef< FLevel > Level;
-    //TRef< FActor > Attach; // TODO: Attach actor to another actor
-    FPawn * Instigator;
-    bool bPendingKill;
-    bool bDuringConstruction = true;
-    FActor * NextPendingKillActor;
+    AActor * NextPendingKillActor;
+
+    /** List of timers */
+    ATimer * Timers;
+
+    AWorld * ParentWorld;
+
+    TRef< ALevel > Level;
+
+    //TWeakRef< AActor > Attach; // TODO: Attach actor to another actor
+
+    APawn * Instigator;
 
     float LifeTime;
 
-    FTimer * Timers;
-};
-
-class ANGIE_API FViewActor : public FActor {
-    AN_ACTOR( FViewActor, FActor )
-
-    friend class FPlayerController;
-
-protected:
-    FViewActor() {}
-
-    virtual void OnView( FCameraComponent * _Camera ) {}
+    bool bPendingKill;
+    bool bDuringConstruction = true;
 };

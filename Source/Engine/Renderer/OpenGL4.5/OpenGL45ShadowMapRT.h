@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class FShadowMapRT {
+class AShadowMapRT {
 public:
     void Initialize();
     void Deinitialize();
@@ -60,6 +60,6 @@ private:
     int MaxCascades;
 };
 
-extern FShadowMapRT GShadowMapRT;
+extern AShadowMapRT GShadowMapRT;
 
 }

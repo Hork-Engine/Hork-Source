@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "WWidget.h"
 
-struct FSliderGeometry {
+struct SSliderGeometry {
     Float2 SliderMins;
     Float2 SliderMaxs;
 
@@ -69,17 +69,17 @@ protected:
 
     // You can override OnDrawEvent and use GetSliderGeometry to
     // draw your own style slider.
-    FSliderGeometry const & GetSliderGeometry() const;
+    SSliderGeometry const & GetSliderGeometry() const;
 
     bool IsVertical() const { return bVerticalOrientation; }
 
     void OnTransformDirty() override;
 
-    void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
-    void OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
     void UpdateSliderGeometry();
@@ -90,7 +90,7 @@ private:
 
     int Action;
     float DragCursor;
-    FSliderGeometry Geometry;
+    SSliderGeometry Geometry;
     float MinValue;
     float MaxValue;
     float Step;

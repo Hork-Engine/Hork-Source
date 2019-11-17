@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "RuntimeEvents.h"
 
-FEventQueue GRuntimeEvents;
-FEventQueue GGameEvents;
+AEventQueue GRuntimeEvents;
+AEventQueue GGameEvents;
 
 int GInputEventsCount = 0;

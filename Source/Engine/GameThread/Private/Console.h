@@ -33,13 +33,13 @@ SOFTWARE.
 #include <Engine/Core/Public/Utf8.h>
 #include <Engine/World/Public/CommandContext.h>
 
-struct FKeyEvent;
-struct FCharEvent;
-struct FMouseWheelEvent;
-class FCanvas;
+struct SKeyEvent;
+struct SCharEvent;
+struct SMouseWheelEvent;
+class ACanvas;
 
-class FConsole {
-    AN_SINGLETON( FConsole )
+class AConsole {
+    AN_SINGLETON( AConsole )
 
 public:
     void Clear();
@@ -48,12 +48,12 @@ public:
     void Resize( int _VidWidth );
     void Print( const char * _Text );
     void WidePrint( FWideChar const * _Text );
-    void KeyEvent( FKeyEvent const & _Event, FCommandContext & _CommandCtx, FRuntimeCommandProcessor & _CommandProcessor );
-    void CharEvent( FCharEvent const & _Event );
-    void MouseWheelEvent( FMouseWheelEvent const & _Event );
-    void Draw( FCanvas * _Canvas, float _TimeStep );
+    void KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor );
+    void CharEvent( SCharEvent const & _Event );
+    void MouseWheelEvent( SMouseWheelEvent const & _Event );
+    void Draw( ACanvas * _Canvas, float _TimeStep );
     void WriteStoryLines();
     void ReadStoryLines();
 };
 
-extern FConsole & GConsole;
+extern AConsole & GConsole;

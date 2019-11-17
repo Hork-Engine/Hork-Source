@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Engine/Base/Public/BaseObject.h>
 
-class ANGIE_API IAudioStreamInterface : public FBaseObject {
-    AN_CLASS( IAudioStreamInterface, FBaseObject )
+class ANGIE_API IAudioStreamInterface : public ABaseObject {
+    AN_CLASS( IAudioStreamInterface, ABaseObject )
 
 public:
     virtual bool InitializeFileStream( const char * _FileName );
@@ -50,8 +50,8 @@ protected:
     IAudioStreamInterface() {}
 };
 
-class ANGIE_API IAudioDecoderInterface : public FBaseObject {
-    AN_CLASS( IAudioDecoderInterface, FBaseObject )
+class ANGIE_API IAudioDecoderInterface : public ABaseObject {
+    AN_CLASS( IAudioDecoderInterface, ABaseObject )
 
 public:        
     virtual IAudioStreamInterface * CreateAudioStream();

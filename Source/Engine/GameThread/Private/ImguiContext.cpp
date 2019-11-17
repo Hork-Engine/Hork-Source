@@ -35,7 +35,7 @@ SOFTWARE.
 
 #include <Engine/imgui/imgui.h>
 
-AN_CLASS_META( FImguiContext )
+AN_CLASS_META( AImguiContext )
 
 static void SetClipboardText( void *, const char * _Text ) {
     GRuntime.SetClipboard( _Text );
@@ -45,7 +45,7 @@ static const char * GetClipboardText( void * ) {
     return GRuntime.GetClipboard();
 }
 
-FImguiContext::FImguiContext() {
+AImguiContext::AImguiContext() {
     GUIContext = ImGui::CreateContext();
 
     ImGuiIO & IO = ImGui::GetIO();
@@ -95,13 +95,13 @@ FImguiContext::FImguiContext() {
     ImGui::StyleColorsDark( &ImGui::GetStyle() );
 }
 
-FImguiContext::~FImguiContext() {
+AImguiContext::~AImguiContext() {
     ImGui::GetIO().Fonts = NULL;
 
     ImGui::DestroyContext( GUIContext );
 }
 
-void FImguiContext::OnKeyEvent( FKeyEvent const & _Event ) {
+void AImguiContext::OnKeyEvent( SKeyEvent const & _Event ) {
     ImGuiIO & IO = ImGui::GetIO();
 
     if ( _Event.Key >= 0 && _Event.Key < AN_ARRAY_SIZE(IO.KeysDown) ) {
@@ -114,13 +114,13 @@ void FImguiContext::OnKeyEvent( FKeyEvent const & _Event ) {
     IO.KeySuper = IO.KeysDown[ KEY_LEFT_SUPER ] || IO.KeysDown[ KEY_RIGHT_SUPER ];
 }
 
-void FImguiContext::OnCharEvent( FCharEvent const & _Event ) {
+void AImguiContext::OnCharEvent( SCharEvent const & _Event ) {
     ImGuiIO & IO = ImGui::GetIO();
 
     IO.AddInputCharacter( _Event.UnicodeCharacter );
 }
 
-void FImguiContext::OnMouseButtonEvent( FMouseButtonEvent const & _Event ) {
+void AImguiContext::OnMouseButtonEvent( SMouseButtonEvent const & _Event ) {
     ImGuiIO & IO = ImGui::GetIO();
 
     if ( _Event.Button < 5 ) {
@@ -128,7 +128,7 @@ void FImguiContext::OnMouseButtonEvent( FMouseButtonEvent const & _Event ) {
     }
 }
 
-void FImguiContext::OnMouseWheelEvent( FMouseWheelEvent const & _Event ) {
+void AImguiContext::OnMouseWheelEvent( SMouseWheelEvent const & _Event ) {
     ImGuiIO & IO = ImGui::GetIO();
 
     if ( _Event.WheelY < 0.0 ) {
@@ -138,14 +138,14 @@ void FImguiContext::OnMouseWheelEvent( FMouseWheelEvent const & _Event ) {
     }
 }
 
-void FImguiContext::SetFont( FFont * _Font ) {
+void AImguiContext::SetFont( AFont * _Font ) {
     ImGuiIO & IO = ImGui::GetIO();
 
     IO.Fonts = (ImFontAtlas *)_Font->GetImguiFontAtlas();
 }
 
-void FImguiContext::BeginFrame( float _TimeStep ) {
-    FVideoMode const & videoMode = GEngine.GetVideoMode();
+void AImguiContext::BeginFrame( float _TimeStep ) {
+    SVideoMode const & videoMode = GEngine.GetVideoMode();
     Float2 const & cursorPosition = GEngine.GetCursorPosition();
 
     ImGuiIO & IO = ImGui::GetIO();
@@ -164,6 +164,6 @@ void FImguiContext::BeginFrame( float _TimeStep ) {
     }
 }
 
-void FImguiContext::EndFrame() {
+void AImguiContext::EndFrame() {
     ImGui::Render();
 }

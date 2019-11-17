@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Engine/Core/Public/CoreMath.h>
 #include <Engine/Core/Public/PodArray.h>
 #include <Engine/Core/Public/Logger.h>
+#include <Engine/Core/Public/Image.h>
 
 //
 // Common constants
@@ -48,46 +49,82 @@ constexpr int MAX_MATERIAL_TEXTURES                 = 15;
 // Vertex formats
 //
 
-struct FMeshVertex {
+struct SMeshVertex {
     Float3 Position;
     Float2 TexCoord;
     Float3 Tangent;
     float  Handedness;
     Float3 Normal;
 
-    static FMeshVertex Lerp( FMeshVertex const & _Vertex1, FMeshVertex const & _Vertex2, float _Value = 0.5f );
+    static SMeshVertex Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value = 0.5f );
+
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteObject( Position );
+        _Stream.WriteObject( TexCoord );
+        _Stream.WriteObject( Tangent );
+        _Stream.WriteFloat( Handedness );
+        _Stream.WriteObject( Normal );
+    }
+
+    void Read( IStreamBase & _Stream ) {
+        _Stream.ReadObject( Position );
+        _Stream.ReadObject( TexCoord );
+        _Stream.ReadObject( Tangent );
+        Handedness = _Stream.ReadFloat();
+        _Stream.ReadObject( Normal );
+    }
 };
 
-struct FMeshLightmapUV {
+struct SMeshLightmapUV {
     Float2 TexCoord;
 
-    static FMeshLightmapUV Lerp( FMeshLightmapUV const & _Vertex1, FMeshLightmapUV const & _Vertex2, float _Value = 0.5f );
+    static SMeshLightmapUV Lerp( SMeshLightmapUV const & _Vertex1, SMeshLightmapUV const & _Vertex2, float _Value = 0.5f );
 };
 
-struct FMeshVertexLight {
+struct SMeshVertexLight {
     uint32_t VertexLight;
 
-    static FMeshVertexLight Lerp( FMeshVertexLight const & _Vertex1, FMeshVertexLight const & _Vertex2, float _Value = 0.5f );
+    static SMeshVertexLight Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value = 0.5f );
 };
 
-struct FMeshVertexJoint {
+struct SMeshVertexJoint {
     byte   JointIndices[4];
     byte   JointWeights[4];
+
+    void Write( IStreamBase & _Stream ) const {
+#if 0
+        _Stream.WriteUInt8( _Vertex.JointIndices[0] );
+        _Stream.WriteUInt8( _Vertex.JointIndices[1] );
+        _Stream.WriteUInt8( _Vertex.JointIndices[2] );
+        _Stream.WriteUInt8( _Vertex.JointIndices[3] );
+
+        _Stream.WriteUInt8( _Vertex.JointWeights[0] );
+        _Stream.WriteUInt8( _Vertex.JointWeights[1] );
+        _Stream.WriteUInt8( _Vertex.JointWeights[2] );
+        _Stream.WriteUInt8( _Vertex.JointWeights[3] );
+#else
+        _Stream.WriteBuffer( JointIndices, 8 );
+#endif
+    }
+
+    void Read( IStreamBase & _Stream ) {
+        _Stream.ReadBuffer( JointIndices, 8 );
+    }
 };
 
-struct FHUDDrawVert {
+struct SHUDDrawVert {
     Float2   Position;
     Float2   TexCoord;
     uint32_t Color;
 };
 
-struct FDebugVertex {
+struct SDebugVertex {
     Float3 Position;
     uint32_t Color;
 };
 
-AN_FORCEINLINE FMeshVertex FMeshVertex::Lerp( FMeshVertex const & _Vertex1, FMeshVertex const & _Vertex2, float _Value ) {
-    FMeshVertex Result;
+AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value ) {
+    SMeshVertex Result;
 
     Result.Position   = _Vertex1.Position.Lerp( _Vertex2.Position, _Value );
     Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
@@ -98,16 +135,16 @@ AN_FORCEINLINE FMeshVertex FMeshVertex::Lerp( FMeshVertex const & _Vertex1, FMes
     return Result;
 }
 
-AN_FORCEINLINE FMeshLightmapUV FMeshLightmapUV::Lerp( FMeshLightmapUV const & _Vertex1, FMeshLightmapUV const & _Vertex2, float _Value ) {
-    FMeshLightmapUV Result;
+AN_FORCEINLINE SMeshLightmapUV SMeshLightmapUV::Lerp( SMeshLightmapUV const & _Vertex1, SMeshLightmapUV const & _Vertex2, float _Value ) {
+    SMeshLightmapUV Result;
 
     Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
 
     return Result;
 }
 
-AN_FORCEINLINE FMeshVertexLight FMeshVertexLight::Lerp( FMeshVertexLight const & _Vertex1, FMeshVertexLight const & _Vertex2, float _Value ) {
-    FMeshVertexLight Result;
+AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value ) {
+    SMeshVertexLight Result;
 
     const byte * c0 = reinterpret_cast< const byte * >( &_Vertex1.VertexLight );
     const byte * c1 = reinterpret_cast< const byte * >( &_Vertex2.VertexLight );
@@ -140,8 +177,8 @@ enum ETextureColorSpace {
     TEXTURE_COLORSPACE_RGBA,
     TEXTURE_COLORSPACE_SRGB_ALPHA,
     TEXTURE_COLORSPACE_YCOCG,
+    TEXTURE_COLORSPACE_GRAYSCALED
 
-    //TEXTURE_COLORSPACE_GRAYSCALED
     //TEXTURE_COLORSPACE_RGBA_INT
     //TEXTURE_COLORSPACE_RGBA_UINT
 };
@@ -175,7 +212,7 @@ enum ETextureAddress {
     TEXTURE_ADDRESS_MIRROR_ONCE
 };
 
-struct FTextureSampler {
+struct STextureSampler {
     ETextureType TextureType;
     ETextureFilter Filter;
     ETextureAddress AddressU;
@@ -264,18 +301,18 @@ enum ETexturePixelFormat : uint8_t
     TEXTURE_PF_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT = ( 1<<6 ) | ( 2 << 2 ),
 };
 
-struct FTexturePixelFormat {
+struct STexturePixelFormat {
     ETexturePixelFormat Data;
 
-    FTexturePixelFormat() : Data( TEXTURE_PF_BGRA8_SRGB ) {}
-    FTexturePixelFormat( ETexturePixelFormat _PixelFormat ) : Data( _PixelFormat ) {}
+    STexturePixelFormat() : Data( TEXTURE_PF_BGRA8_SRGB ) {}
+    STexturePixelFormat( ETexturePixelFormat _PixelFormat ) : Data( _PixelFormat ) {}
 
     void operator = ( ETexturePixelFormat _PixelFormat ) { Data = _PixelFormat; }
 
     bool operator==( ETexturePixelFormat _PixelFormat ) const { return Data == _PixelFormat; }
-    bool operator==( FTexturePixelFormat _PixelFormat ) const { return Data == _PixelFormat.Data; }
+    bool operator==( STexturePixelFormat _PixelFormat ) const { return Data == _PixelFormat.Data; }
     bool operator!=( ETexturePixelFormat _PixelFormat ) const { return Data != _PixelFormat; }
-    bool operator!=( FTexturePixelFormat _PixelFormat ) const { return Data != _PixelFormat.Data; }
+    bool operator!=( STexturePixelFormat _PixelFormat ) const { return Data != _PixelFormat.Data; }
 
     bool IsCompressed() const {
         return ( Data >> 6 ) & 1;
@@ -313,7 +350,17 @@ struct FTexturePixelFormat {
     int NumComponents() const {
         return ( ( Data >> 2 ) & 3 ) + 1;
     }
+
+    void Read( IStreamBase & _Stream ) {
+        Data = (ETexturePixelFormat)_Stream.ReadUInt8();
+    }
+
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteUInt8( (uint8_t)Data );
+    }
 };
+
+bool GetAppropriatePixelFormat( AImage const & _Image, STexturePixelFormat & _PixelFormat );
 
 enum ETextureGroup {
 
@@ -395,7 +442,7 @@ enum EMaterialDepthHack {
     MATERIAL_DEPTH_HACK_SKYBOX
 };
 
-struct FMaterialBuildData {
+struct SMaterialBuildData {
     /** Size of allocated memory for this structure (in bytes) */
     int SizeInBytes;
 
@@ -431,7 +478,7 @@ struct FMaterialBuildData {
     int NumUniformVectors;
 
     /** Material samplers */
-    FTextureSampler Samplers[MAX_MATERIAL_TEXTURES];
+    STextureSampler Samplers[MAX_MATERIAL_TEXTURES];
     int NumSamplers;
 
     /** Shader source code */
@@ -442,35 +489,35 @@ struct FMaterialBuildData {
 // GPU Resources
 //
 
-class FResourceGPU;
+class AResourceGPU;
 
 class IGPUResourceOwner {
 public:
-    virtual void UploadResourceGPU( FResourceGPU * _Resource ) = 0;
+    virtual void UploadResourceGPU( AResourceGPU * _Resource ) = 0;
 };
 
-class FResourceGPU {
+class AResourceGPU {
 public:
     IGPUResourceOwner * pOwner;
 
-    FResourceGPU * pNext;
-    FResourceGPU * pPrev;
+    AResourceGPU * pNext;
+    AResourceGPU * pPrev;
 
-    static FResourceGPU * GPUResources;
-    static FResourceGPU * GPUResourcesTail;
+    static AResourceGPU * GPUResources;
+    static AResourceGPU * GPUResourcesTail;
 };
 
-class FTextureGPU : public FResourceGPU {
+class ATextureGPU : public AResourceGPU {
 public:
     void * pHandleGPU;
 };
 
-class FBufferGPU : public FResourceGPU {
+class ABufferGPU : public AResourceGPU {
 public:
     void * pHandleGPU;
 };
 
-class FMaterialGPU : public FResourceGPU {
+class AMaterialGPU : public AResourceGPU {
 public:
     EMaterialType MaterialType;
 
@@ -498,9 +545,9 @@ public:
     } ShadeModel;
 };
 
-struct FMaterialFrameData {
-    FMaterialGPU * Material;
-    FTextureGPU * Textures[MAX_MATERIAL_TEXTURES];
+struct SMaterialFrameData {
+    AMaterialGPU * Material;
+    ATextureGPU * Textures[MAX_MATERIAL_TEXTURES];
     int NumTextures;
     Float4 UniformVectors[4];
     int NumUniformVectors;
@@ -533,7 +580,7 @@ enum EDebugDrawCmd {
     DBG_DRAW_CMD_NOP
 };
 
-struct FDebugDrawCmd {
+struct SDebugDrawCmd {
     EDebugDrawCmd Type;
     int FirstVertex;
     int NumVertices;
@@ -572,7 +619,7 @@ enum EColorBlending {
     COLOR_BLENDING_MAX
 };
 
-struct FHUDDrawCmd {
+struct SHUDDrawCmd {
     unsigned int    IndexCount;
     unsigned int    StartIndexLocation;
     Float2          ClipMins;
@@ -582,26 +629,26 @@ struct FHUDDrawCmd {
     EHUDSamplerType SamplerType;        // only for type DRAW_CMD_TEXTURE
 
     union {
-        FTextureGPU *        Texture;               // HUD_DRAW_CMD_TEXTURE, HUD_DRAW_CMD_ALPHA
-        FMaterialFrameData * MaterialFrameData;     // HUD_DRAW_CMD_MATERIAL
+        ATextureGPU *        Texture;               // HUD_DRAW_CMD_TEXTURE, HUD_DRAW_CMD_ALPHA
+        SMaterialFrameData * MaterialFrameData;     // HUD_DRAW_CMD_MATERIAL
         int                  ViewportIndex;         // HUD_DRAW_CMD_VIEWPORT
     };
 };
 
-struct FHUDDrawList {
+struct SHUDDrawList {
     int             VerticesCount;
     int             IndicesCount;
-    FHUDDrawVert *  Vertices;
+    SHUDDrawVert *  Vertices;
     unsigned short* Indices;
     int             CommandsCount;
-    FHUDDrawCmd *   Commands;
-    FHUDDrawList *  pNext;
+    SHUDDrawCmd *   Commands;
+    SHUDDrawList *  pNext;
 };
 
 constexpr int MAX_SHADOW_CASCADES = 4;
 constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
 
-struct FDirectionalLightDef {
+struct SDirectionalLightDef {
     Float4   ColorAndAmbientIntensity;
     Float3x3 Matrix;            // Light rotation matrix
     int      RenderMask;
@@ -611,14 +658,14 @@ struct FDirectionalLightDef {
     bool     bCastShadow;
 };
 
-struct FClusterItem {
+struct SClusterItem {
     Float4x4 OBBTransformInverse;
     BvAxisAlignedBox BoundingBox;
 
     int     ListIndex;
 };
 
-struct FLightDef : FClusterItem {
+struct SLightDef : SClusterItem {
     Float4   ColorAndAmbientIntensity;
     Float3   Position;
     float    InnerRadius;
@@ -636,15 +683,15 @@ struct FLightDef : FClusterItem {
 // Render instance
 //
 
-struct FRenderInstance {
-    FMaterialGPU *      Material;
-    FMaterialFrameData *MaterialInstance;
-    FBufferGPU *        VertexBuffer;
-    FBufferGPU *        IndexBuffer;
-    FBufferGPU *        WeightsBuffer;
-    FBufferGPU *        VertexLightChannel;
-    FBufferGPU *        LightmapUVChannel;
-    FTextureGPU *       Lightmap;
+struct SRenderInstance {
+    AMaterialGPU *      Material;
+    SMaterialFrameData *MaterialInstance;
+    ABufferGPU *        VertexBuffer;
+    ABufferGPU *        IndexBuffer;
+    ABufferGPU *        WeightsBuffer;
+    ABufferGPU *        VertexLightChannel;
+    ABufferGPU *        LightmapUVChannel;
+    ATextureGPU *       Lightmap;
     Float4              LightmapOffset;
     Float4x4            Matrix;
     Float3x3            ModelNormalToViewSpace;
@@ -660,12 +707,12 @@ struct FRenderInstance {
 // ShadowMap Render instance
 //
 
-struct FShadowRenderInstance {
-    FMaterialGPU *      Material;
-    FMaterialFrameData *MaterialInstance;
-    FBufferGPU *        VertexBuffer;
-    FBufferGPU *        IndexBuffer;
-    FBufferGPU *        WeightsBuffer;
+struct SShadowRenderInstance {
+    AMaterialGPU *      Material;
+    SMaterialFrameData *MaterialInstance;
+    ABufferGPU *        VertexBuffer;
+    ABufferGPU *        IndexBuffer;
+    ABufferGPU *        WeightsBuffer;
     Float3x4            WorldTransformMatrix;
     size_t              SkeletonOffset;
     size_t              SkeletonSize;
@@ -679,11 +726,11 @@ struct FShadowRenderInstance {
 // Render frame
 //
 
-using FArrayOfDebugVertices = TPodArray< FDebugVertex, 1024 >;
-using FArrayOfDebugIndices = TPodArray< unsigned int, 1024 >;
-using FArrayOfDebugDrawCmds = TPodArray< FDebugDrawCmd >;
+using AArrayOfDebugVertices = TPodArray< SDebugVertex, 1024 >;
+using AArrayOfDebugIndices = TPodArray< unsigned int, 1024 >;
+using AArrayOfDebugDrawCmds = TPodArray< SDebugDrawCmd >;
 
-struct FRenderView {
+struct SRenderView {
     // Current view index
     int ViewIndex;
 
@@ -738,14 +785,14 @@ struct FRenderView {
     int FirstLight;
     int NumLights;
 
-    int FirstDbgCmd;
-    int DbgCmdCount;
+    int FirstDebugDrawCommand;
+    int DebugDrawCommandCount;
 
     Float4x4 LightViewProjectionMatrices[MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES];
     Float4x4 ShadowMapMatrices[MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES];
 };
 
-struct FRenderFrame {
+struct SRenderFrame {
     // Game tick
     int FrameNumber;
 
@@ -757,26 +804,26 @@ struct FRenderFrame {
     int CanvasWidth;
     int CanvasHeight;
 
-    FRenderView RenderViews[MAX_RENDER_VIEWS];
+    SRenderView RenderViews[MAX_RENDER_VIEWS];
     int NumViews;
 
     int ShadowCascadePoolSize;
 
-    TPodArray< FRenderInstance *, 1024 > Instances;
-    TPodArray< FShadowRenderInstance *, 1024 > ShadowInstances;
-    TPodArray< FDirectionalLightDef * > DirectionalLights;
-    TPodArray< FLightDef * > Lights;
+    TPodArray< SRenderInstance *, 1024 > Instances;
+    TPodArray< SShadowRenderInstance *, 1024 > ShadowInstances;
+    TPodArray< SDirectionalLightDef * > DirectionalLights;
+    TPodArray< SLightDef * > Lights;
 
-    FHUDDrawList * DrawListHead;
-    FHUDDrawList * DrawListTail;
+    SHUDDrawList * DrawListHead;
+    SHUDDrawList * DrawListTail;
 
-    FArrayOfDebugVertices DbgVertices;
-    FArrayOfDebugIndices  DbgIndices;
-    FArrayOfDebugDrawCmds DbgCmds;
+    AArrayOfDebugVertices DbgVertices;
+    AArrayOfDebugIndices  DbgIndices;
+    AArrayOfDebugDrawCmds DbgCmds;
 };
 
-struct FRenderFrontendDef {
-    FRenderView * View;
+struct SRenderFrontendDef {
+    SRenderView * View;
     BvFrustum const * Frustum;
     int RenderingMask;
     int VisMarker;
@@ -790,13 +837,13 @@ struct FRenderFrontendDef {
 // Frustum cluster data
 //
 
-struct FFrustumCluster {
+struct SFrustumCluster {
     unsigned short LightsCount;
     unsigned short DecalsCount;
     unsigned short ProbesCount;
 };
 
-struct FFrustumSlice {
+struct SFrustumSlice {
     static constexpr int NUM_CLUSTERS_X = 16;
     static constexpr int NUM_CLUSTERS_Y = 8;
     static constexpr int NUM_CLUSTERS_Z = 24;
@@ -811,12 +858,12 @@ struct FFrustumSlice {
     const float Bias = std::log2( (double)ZFar ) * (NUM_CLUSTERS_Z + NearOffset) / std::log2( (double)ZFar / ZNear ) - NearOffset;
     float ZClip[NUM_CLUSTERS_Z + 1];
 
-    static FFrustumCluster Clusters[FFrustumSlice::NUM_CLUSTERS_Z][FFrustumSlice::NUM_CLUSTERS_Y][FFrustumSlice::NUM_CLUSTERS_X];
+    static SFrustumCluster Clusters[SFrustumSlice::NUM_CLUSTERS_Z][SFrustumSlice::NUM_CLUSTERS_Y][SFrustumSlice::NUM_CLUSTERS_X];
 
-    FFrustumSlice();
+    SFrustumSlice();
 };
 
-extern FFrustumSlice GFrustumSlice;
+extern SFrustumSlice GFrustumSlice;
 
 
 
@@ -827,7 +874,7 @@ extern FFrustumSlice GFrustumSlice;
 // int NumDecals = ( Offest.Y >> 8 ) & 0xff;
 // int NumLights = ( Offest.Y >> 16 ) & 0xff;
 // int Unused = ( Offest.Y >> 24 ) & 0xff // can be used in future
-struct FClusterBuffer {
+struct SClusterBuffer {
     uint32_t ItemOffset;
     byte NumProbes;
     byte NumDecals;
@@ -840,11 +887,11 @@ struct FClusterBuffer {
 // int LightIndex = ItemIndices & 0x3ff;
 // int DecalIndex = ( ItemIndices >> 12 ) & 0x3ff;
 // int ProbeIndex = ItemIndices >> 24;
-struct FClusterItemBuffer {
+struct SClusterItemBuffer {
     uint32_t Indices;
 };
 
-struct FClusterLight {
+struct SClusterLight {
     Float3 Position;     // For point and spot lights: position and radius
     float  OuterRadius;
 
@@ -864,19 +911,19 @@ struct FClusterLight {
     unsigned int Padding2;
 };
 
-struct FFrameLightData {
+struct SFrameLightData {
     static constexpr int MAX_ITEM_BUFFER = 1024*128; // TODO: подобрать оптимальный размер
     static constexpr int MAX_CLUSTER_ITEMS = 256;
     static constexpr int MAX_LIGHTS = 768;//1024 // indexed by 12 bit integer, limited by shader max uniform buffer size
     static constexpr int MAX_DECALS = 1024; // indexed by 12 bit integer
     static constexpr int MAX_PROBES = 256;  // indexed by 8 bit integer
 
-    FClusterBuffer ClusterOffsetBuffer[FFrustumSlice::NUM_CLUSTERS_Z][FFrustumSlice::NUM_CLUSTERS_Y][FFrustumSlice::NUM_CLUSTERS_X];
+    SClusterBuffer ClusterOffsetBuffer[SFrustumSlice::NUM_CLUSTERS_Z][SFrustumSlice::NUM_CLUSTERS_Y][SFrustumSlice::NUM_CLUSTERS_X];
 
-    FClusterItemBuffer ClusterItemBuffer[MAX_ITEM_BUFFER + MAX_CLUSTER_ITEMS*3]; //  + MAX_CLUSTER_ITEMS*3 для возможного выхода за пределы массива на максимальное количество итемов в кластере
+    SClusterItemBuffer ClusterItemBuffer[MAX_ITEM_BUFFER + MAX_CLUSTER_ITEMS*3]; //  + MAX_CLUSTER_ITEMS*3 для возможного выхода за пределы массива на максимальное количество итемов в кластере
     int TotalItems;
 
-    FClusterLight Lights[MAX_LIGHTS];
+    SClusterLight Lights[MAX_LIGHTS];
     int TotalLights;
 
     //FClusterProbe Probes[MAX_PROBES];
@@ -888,22 +935,22 @@ struct FFrameLightData {
 // Render backend interface
 //
 
-struct FTextureOffset {
+struct STextureOffset {
     uint16_t Lod;
     uint16_t X;
     uint16_t Y;
     uint16_t Z;
 };
 
-struct FTextureDimension {
+struct STextureDimension {
     uint16_t X;
     uint16_t Y;
     uint16_t Z;
 };
 
-struct FTextureRect {
-    FTextureOffset Offset;
-    FTextureDimension Dimension;
+struct STextureRect {
+    STextureOffset Offset;
+    STextureDimension Dimension;
 };
 
 class IRenderBackend {
@@ -914,37 +961,37 @@ public:
     virtual void Initialize( void * _NativeWindowHandle ) = 0;
     virtual void Deinitialize() = 0;
 
-    virtual void RenderFrame( FRenderFrame * _FrameData ) = 0;
+    virtual void RenderFrame( SRenderFrame * _FrameData ) = 0;
     virtual void WaitGPU() = 0;
 
-    virtual FTextureGPU * CreateTexture( IGPUResourceOwner * _Owner ) = 0;
-    virtual void DestroyTexture( FTextureGPU * _Texture ) = 0;
-    virtual void InitializeTexture1D( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
-    virtual void InitializeTexture1DArray( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
-    virtual void InitializeTexture2D( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) = 0;
-    virtual void InitializeTexture2DArray( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) = 0;
-    virtual void InitializeTexture3D( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) = 0;
-    virtual void InitializeTextureCubemap( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
-    virtual void InitializeTextureCubemapArray( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
-    virtual void InitializeTexture2DNPOT( FTextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) = 0;
-    virtual void WriteTexture( FTextureGPU * _Texture, FTextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) = 0;
-    virtual void ReadTexture( FTextureGPU * _Texture, FTextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) = 0;
+    virtual ATextureGPU * CreateTexture( IGPUResourceOwner * _Owner ) = 0;
+    virtual void DestroyTexture( ATextureGPU * _Texture ) = 0;
+    virtual void InitializeTexture1D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
+    virtual void InitializeTexture1DArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
+    virtual void InitializeTexture2D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) = 0;
+    virtual void InitializeTexture2DArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) = 0;
+    virtual void InitializeTexture3D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) = 0;
+    virtual void InitializeTextureCubemap( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
+    virtual void InitializeTextureCubemapArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
+    virtual void InitializeTexture2DNPOT( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) = 0;
+    virtual void WriteTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) = 0;
+    virtual void ReadTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) = 0;
 
-    virtual FBufferGPU * CreateBuffer( IGPUResourceOwner * _Owner ) = 0;
-    virtual void DestroyBuffer( FBufferGPU * _Buffer ) = 0;
-    virtual void InitializeBuffer( FBufferGPU * _Buffer, size_t _SizeInBytes, bool _DynamicStorage ) = 0;
-    virtual void WriteBuffer( FBufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) = 0;
-    virtual void ReadBuffer( FBufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) = 0;
+    virtual ABufferGPU * CreateBuffer( IGPUResourceOwner * _Owner ) = 0;
+    virtual void DestroyBuffer( ABufferGPU * _Buffer ) = 0;
+    virtual void InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes, bool _DynamicStorage ) = 0;
+    virtual void WriteBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) = 0;
+    virtual void ReadBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) = 0;
 
-    virtual FMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) = 0;
-    virtual void DestroyMaterial( FMaterialGPU * _Material ) = 0;
-    virtual void InitializeMaterial( FMaterialGPU * _Material, FMaterialBuildData const * _BuildData ) = 0;
+    virtual AMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) = 0;
+    virtual void DestroyMaterial( AMaterialGPU * _Material ) = 0;
+    virtual void InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) = 0;
 
     virtual size_t AllocateJoints( size_t _JointsCount ) = 0;
     virtual void WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) = 0;
 
-    static void RegisterGPUResource( FResourceGPU * _Resource );
-    static void UnregisterGPUResource( FResourceGPU * _Resource );
+    static void RegisterGPUResource( AResourceGPU * _Resource );
+    static void UnregisterGPUResource( AResourceGPU * _Resource );
     static void UploadGPUResources();
 
     const char * GetName() { return BackendName; }

@@ -35,62 +35,61 @@ SOFTWARE.
 
 #include <Engine/Core/Public/BV/BvFrustum.h>
 
-class FLevelArea;
-class FSpatialObject;
-class FMaterialInstance;
+class ALevelArea;
+class ASpatialObject;
+class AMaterialInstance;
 
 
 
 
-class FSpatialTree : public FBaseObject {
-    AN_CLASS( FSpatialTree, FBaseObject )
+class ASpatialTree : public ABaseObject {
+    AN_CLASS( ASpatialTree, ABaseObject )
 
 public:
 
-    void AddObject( FSpatialObject * _Object );
-    void RemoveObject( FSpatialObject * _Object );
-    void UpdateObject( FSpatialObject * _Object );
+    void AddObject( ASpatialObject * _Object );
+    void RemoveObject( ASpatialObject * _Object );
+    void UpdateObject( ASpatialObject * _Object );
 
     virtual void Build() {
 
     }
 
-    virtual bool Trace( struct FWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd ) {
+    virtual bool Trace( struct SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd ) {
         return false;
     }
 
     virtual void Update();
 
-    FLevelArea * Owner;
+    ALevelArea * Owner;
 
 protected:
-    FSpatialTree() {}
-    ~FSpatialTree();
+    ASpatialTree() {}
+    ~ASpatialTree();
 
-    int FindPendingObject( FSpatialObject * _Object );
+    int FindPendingObject( ASpatialObject * _Object );
 
     void ClearPendingList();
 
-    struct FPendingObjectInfo {
+    struct SPendingObjectInfo {
         enum { PENDING_ADD, PENDING_REMOVE, PENDING_UPDATE };
 
-        FSpatialObject * Object;
+        ASpatialObject * Object;
         int PendingOp;
     };
 
-    TPodArray< FPendingObjectInfo > PendingObjects;
+    TPodArray< SPendingObjectInfo > PendingObjects;
 };
 
-class FOctreeNode {
-public:
+struct SOctreeNode {
     BvAxisAlignedBox BoundingBox;
 
-    FOctreeNode * Parent;
-    FOctreeNode * Childs[8];
+    SOctreeNode * Parent;
+    SOctreeNode * Childs[8];
 };
 
-class FOctree : public FSpatialTree {
-    AN_CLASS( FOctree, FSpatialTree )
+class AOctree : public ASpatialTree {
+    AN_CLASS( AOctree, ASpatialTree )
 
 public:
 
@@ -100,7 +99,7 @@ public:
 
     }
 
-    bool Trace( FWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd ) override {
+    bool Trace( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd ) override {
         return false;
     }
 
@@ -108,20 +107,20 @@ public:
 
 protected:
 
-    FOctree() {}
+    AOctree() {}
 
-    ~FOctree() {
+    ~AOctree() {
         Purge();
     }
 
 private:
-    void TreeAddObject( FSpatialObject * _Object );
+    void TreeAddObject( ASpatialObject * _Object );
     void TreeRemoveObject( int _Index );
     void TreeUpdateObject( int _Index );
 
-//    FOctreeNode * Root;
-//    FOctreeNode * Nodes;
+//    SOctreeNode * Root;
+//    SOctreeNode * Nodes;
     int NumLevels;
 
-    TPodArray< FSpatialObject * > ObjectsInTree;
+    TPodArray< ASpatialObject * > ObjectsInTree;
 };

@@ -35,14 +35,14 @@ SOFTWARE.
 #include <Engine/Runtime/Public/EngineInterface.h>
 #include <Engine/Runtime/Public/RenderCore.h>
 
-class FRuntimeMain {
-    AN_SINGLETON( FRuntimeMain )
+class ARuntimeMain {
+    AN_SINGLETON( ARuntimeMain )
 
 public:
     int             NumArguments;
     char **         Arguments;
 
-    FString         WorkingDir;
+    AString         WorkingDir;
     char *          Executable;
 
     int64_t         SysStartSeconds;
@@ -50,7 +50,7 @@ public:
     int64_t         SysStartMicroseconds;
     int64_t         SysFrameTimeStamp;
 
-    FRenderFrame    FrameData;
+    SRenderFrame    FrameData;
 
     void *          FrameMemoryAddress;
     size_t          FrameMemorySize;
@@ -59,13 +59,13 @@ public:
 
     IEngineInterface * Engine;
 
-    FCreateGameModuleCallback CreateGameModuleCallback;
+    ACreateGameModuleCallback CreateGameModuleCallback;
 
-    FCPUInfo        CPUInfo;
+    SCPUInfo        CPUInfo;
 
     bool            bTerminate;
 
-    void Run( FCreateGameModuleCallback _CreateGameModule );
+    void Run( ACreateGameModuleCallback _CreateGameModule );
 
     int CheckArg( const char * _Arg );
 
@@ -91,4 +91,4 @@ private:
     int ProcessAttribute = 0;
 };
 
-extern FRuntimeMain & GRuntimeMain;
+extern ARuntimeMain & GRuntimeMain;

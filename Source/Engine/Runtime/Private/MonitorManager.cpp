@@ -33,19 +33,19 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
-FMonitorManager & GMonitorManager = FMonitorManager::Inst();
+AMonitorManager & GMonitorManager = AMonitorManager::Inst();
 
-static FPhysicalMonitorArray PhysicalMonitors;
-static FPhysicalMonitor * PrimaryMonitor = nullptr;
+static APhysicalMonitorArray PhysicalMonitors;
+static SPhysicalMonitor * PrimaryMonitor = nullptr;
 
 static void RegisterMonitor( GLFWmonitor * _Monitor );
 static void UnregisterMonitor( GLFWmonitor * _Monitor );
 
-FMonitorManager::FMonitorManager() {
+AMonitorManager::AMonitorManager() {
 
 }
 
-void FMonitorManager::Initialize() {
+void AMonitorManager::Initialize() {
     int monitorsCount = 0;
     GLFWmonitor ** monitors;
 
@@ -84,15 +84,15 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
         return;
     }
 
-    int physMonitorSizeOf = sizeof( FPhysicalMonitor ) + sizeof( FMonitorVideoMode ) * (videoModesCount - 1);
-    FPhysicalMonitor * physMonitor = (FPhysicalMonitor *)GZoneMemory.AllocCleared( physMonitorSizeOf, 1 );
+    int physMonitorSizeOf = sizeof( SPhysicalMonitor ) + sizeof( SMonitorVideoMode ) * (videoModesCount - 1);
+    SPhysicalMonitor * physMonitor = (SPhysicalMonitor *)GZoneMemory.AllocCleared( physMonitorSizeOf, 1 );
 
     PhysicalMonitors.Append( physMonitor );
 
     int handle = PhysicalMonitors.Size() - 1;
     glfwSetMonitorUserPointer( _Monitor, ( void * )( size_t )handle );
 
-    FString::CopySafe( physMonitor->MonitorName, sizeof( physMonitor->MonitorName ), glfwGetMonitorName( _Monitor ) );
+    AString::CopySafe( physMonitor->MonitorName, sizeof( physMonitor->MonitorName ), glfwGetMonitorName( _Monitor ) );
     glfwGetMonitorPos( _Monitor, &physMonitor->PositionX, &physMonitor->PositionY );
     glfwGetMonitorPhysicalSize( _Monitor, &physMonitor->PhysicalWidthMM, &physMonitor->PhysicalHeightMM );
 
@@ -106,7 +106,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
     physMonitor->VideoModesCount = videoModesCount;
 
     for ( int mode = 0; mode < videoModesCount; mode++ ) {
-        FMonitorVideoMode * dst = &physMonitor->VideoModes[mode];
+        SMonitorVideoMode * dst = &physMonitor->VideoModes[mode];
         const GLFWvidmode * src = &videoModesGLFW[mode];
         dst->Width = src->width;
         dst->Height = src->height;
@@ -127,7 +127,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
 
     UpdatePrimaryMonitor();
 
-    FEvent * event = GRuntimeEvents.Push();
+    SEvent * event = GRuntimeEvents.Push();
     event->Type = ET_MonitorConnectionEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();   // in seconds
     event->Data.MonitorConnectionEvent.Handle = handle;
@@ -142,13 +142,13 @@ static void UnregisterMonitor( GLFWmonitor * _Monitor ) {
         return;
     }
 
-    FPhysicalMonitor * physMonitor = PhysicalMonitors[ handle ];
+    SPhysicalMonitor * physMonitor = PhysicalMonitors[ handle ];
 
     physMonitor->Internal.Pointer = nullptr;
 
     UpdatePrimaryMonitor();
 
-    FEvent * event = GRuntimeEvents.Push();
+    SEvent * event = GRuntimeEvents.Push();
     event->Type = ET_MonitorConnectionEvent;
     event->TimeStamp = GRuntime.SysSeconds_d();   // in seconds
     event->Data.MonitorConnectionEvent.Handle = handle;
@@ -157,16 +157,16 @@ static void UnregisterMonitor( GLFWmonitor * _Monitor ) {
     GLogger.Printf( "Monitor disconnected %s\n", glfwGetMonitorName( _Monitor ) );
 }
 
-void FMonitorManager::Deinitialize() {
+void AMonitorManager::Deinitialize() {
     glfwSetMonitorCallback( nullptr );
 
-    for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
+    for ( SPhysicalMonitor * physMonitor : PhysicalMonitors ) {
         GZoneMemory.Dealloc( physMonitor );
     }
     PhysicalMonitors.Free();
 }
 
-static void UpdateMonitorGamma( FPhysicalMonitor * _PhysMonitor ) {
+static void UpdateMonitorGamma( SPhysicalMonitor * _PhysMonitor ) {
     GLFWgammaramp ramp;
     ramp.size = _PhysMonitor->GammaRampSize;
     ramp.red = _PhysMonitor->Internal.GammaRamp;
@@ -176,8 +176,8 @@ static void UpdateMonitorGamma( FPhysicalMonitor * _PhysMonitor ) {
     _PhysMonitor->Internal.bGammaRampDirty = false;
 }
 
-void FMonitorManager::UpdateMonitors() {
-    for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
+void AMonitorManager::UpdateMonitors() {
+    for ( SPhysicalMonitor * physMonitor : PhysicalMonitors ) {
         if ( !physMonitor->Internal.Pointer ) {
             // not connected
             continue;
@@ -188,19 +188,19 @@ void FMonitorManager::UpdateMonitors() {
     }
 }
 
-FPhysicalMonitor * FMonitorManager::FindMonitor( const char * _MonitorName ) {
-    for ( FPhysicalMonitor * physMonitor : PhysicalMonitors ) {
-        if ( !FString::Cmp( physMonitor->MonitorName, _MonitorName ) ) {
+SPhysicalMonitor * AMonitorManager::FindMonitor( const char * _MonitorName ) {
+    for ( SPhysicalMonitor * physMonitor : PhysicalMonitors ) {
+        if ( !AString::Cmp( physMonitor->MonitorName, _MonitorName ) ) {
             return physMonitor;
         }
     }
     return nullptr;
 }
 
-FPhysicalMonitorArray const & FMonitorManager::GetMonitors() {
+APhysicalMonitorArray const & AMonitorManager::GetMonitors() {
     return PhysicalMonitors;
 }
 
-FPhysicalMonitor * FMonitorManager::GetPrimaryMonitor() {
+SPhysicalMonitor * AMonitorManager::GetPrimaryMonitor() {
     return PrimaryMonitor;
 }

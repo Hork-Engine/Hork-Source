@@ -34,12 +34,12 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-struct FRoughnessUniformBuffer {
+struct SRoughnessUniformBuffer {
     Float4x4 Transform[6];
     Float4 Roughness;
 };
 
-class FEnvProbeGenerator {
+class AEnvProbeGenerator {
 public:
     void Initialize();
     void Deinitialize();
@@ -50,7 +50,7 @@ private:
     GHI::Buffer m_VertexBuffer;
     GHI::Buffer m_IndexBuffer;
     GHI::Buffer m_UniformBuffer;
-    FRoughnessUniformBuffer m_UniformBufferData;
+    SRoughnessUniformBuffer m_UniformBufferData;
     GHI::Pipeline m_Pipeline;
     GHI::Sampler m_Sampler;
     GHI::RenderPass m_RP;

@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include "BaseLightComponent.h"
 
-class FSpotLightComponent : public FBaseLightComponent {
-    AN_COMPONENT( FSpotLightComponent, FBaseLightComponent )
+class ASpotLightComponent : public ABaseLightComponent {
+    AN_COMPONENT( ASpotLightComponent, ABaseLightComponent )
 
-    friend class FWorld;
+    friend class AWorld;
 public:
     void SetInnerRadius( float _Radius );
     float GetInnerRadius() const;
@@ -63,12 +63,12 @@ public:
     Float4x4 const & GetOBBTransformInverse() const { return OBBTransformInverse; }
 
 protected:
-    FSpotLightComponent();
+    ASpotLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
 private:
     void UpdateBoundingBox();
@@ -83,6 +83,6 @@ private:
     float InnerConeAngle;
     float OuterConeAngle;
     float SpotExponent;
-    FSpotLightComponent * Next;
-    FSpotLightComponent * Prev;
+    ASpotLightComponent * Next;
+    ASpotLightComponent * Prev;
 };

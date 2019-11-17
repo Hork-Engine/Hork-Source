@@ -7,7 +7,7 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-FShadowMapPassRenderer GShadowMapPassRenderer;
+AShadowMapPassRenderer GShadowMapPassRenderer;
 
 static const float EVSM_positiveExponent = 40.0;
 static const float EVSM_negativeExponent = 5.0;
@@ -15,16 +15,16 @@ static const Float2 EVSM_WarpDepth( std::exp( EVSM_positiveExponent ), -std::exp
 static const Float4 EVSM_ClearValue( EVSM_WarpDepth.X, EVSM_WarpDepth.Y, EVSM_WarpDepth.X*EVSM_WarpDepth.X, EVSM_WarpDepth.Y*EVSM_WarpDepth.Y );
 static const Float4 VSM_ClearValue( 1.0f );
 
-void FShadowMapPassRenderer::Initialize() {
+void AShadowMapPassRenderer::Initialize() {
     CreateShadowDepthSamplers();
     CreateRenderPass();
 }
 
-void FShadowMapPassRenderer::Deinitialize() {
+void AShadowMapPassRenderer::Deinitialize() {
     DepthPass.Deinitialize();
 }
 
-void FShadowMapPassRenderer::CreateRenderPass() {
+void AShadowMapPassRenderer::CreateRenderPass() {
     RenderPassCreateInfo renderPassCI = {};
 
     SubpassInfo subpass = {};
@@ -59,7 +59,7 @@ void FShadowMapPassRenderer::CreateRenderPass() {
 }
 
 #if defined SHADOWMAP_PCSS
-void FShadowMapPassRenderer::CreateShadowDepthSamplers() {
+void AShadowMapPassRenderer::CreateShadowDepthSamplers() {
     SamplerCreateInfo samplerCI;
 
     samplerCI.SetDefaults();
@@ -85,7 +85,7 @@ void FShadowMapPassRenderer::CreateShadowDepthSamplers() {
     ShadowDepthSampler1 = GDevice.GetOrCreateSampler( samplerCI );
 }
 #elif defined SHADOWMAP_PCF
-void FShadowMapPassRenderer::CreateShadowDepthSamplers() {
+void AShadowMapPassRenderer::CreateShadowDepthSamplers() {
     SamplerCreateInfo samplerCI;
 
     samplerCI.SetDefaults();
@@ -103,7 +103,7 @@ void FShadowMapPassRenderer::CreateShadowDepthSamplers() {
     ShadowDepthSampler1 = GDevice.GetOrCreateSampler( samplerCI );
 }
 #elif defined SHADOWMAP_VSM
-void FShadowMapPassRenderer::CreateShadowDepthSamplers() {
+void AShadowMapPassRenderer::CreateShadowDepthSamplers() {
     SamplerCreateInfo samplerCI;
 
     samplerCI.SetDefaults();
@@ -129,8 +129,8 @@ void FShadowMapPassRenderer::CreateShadowDepthSamplers() {
 }
 #endif
 
-bool FShadowMapPassRenderer::BindMaterial( FShadowRenderInstance const * instance ) {
-    FMaterialGPU * pMaterial = instance->Material;
+bool AShadowMapPassRenderer::BindMaterial( SShadowRenderInstance const * instance ) {
+    AMaterialGPU * pMaterial = instance->Material;
     Pipeline * pPipeline;
 
     AN_Assert( pMaterial );
@@ -141,12 +141,12 @@ bool FShadowMapPassRenderer::BindMaterial( FShadowRenderInstance const * instanc
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
-        pPipeline = bSkinned ? &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPassSkinned
-                             : &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPass;
+        pPipeline = bSkinned ? &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPassSkinned
+                             : &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPass;
         break;
     case MATERIAL_TYPE_UNLIT:
-        pPipeline = bSkinned ? &((FShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPassSkinned
-                             : &((FShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPass;
+        pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPassSkinned
+                             : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPass;
         break;
     default:
         return false;
@@ -172,7 +172,7 @@ bool FShadowMapPassRenderer::BindMaterial( FShadowRenderInstance const * instanc
     return true;
 }
 
-void FShadowMapPassRenderer::BindTexturesShadowMapPass( FMaterialFrameData * _Instance ) {
+void AShadowMapPassRenderer::BindTexturesShadowMapPass( SMaterialFrameData * _Instance ) {
     if ( !_Instance->Material->bShadowMapPassTextureFetch ) {
         return;
     }
@@ -180,7 +180,7 @@ void FShadowMapPassRenderer::BindTexturesShadowMapPass( FMaterialFrameData * _In
     BindTextures( _Instance );
 }
 
-void FShadowMapPassRenderer::RenderInstances() {
+void AShadowMapPassRenderer::RenderInstances() {
 
     if ( !GRenderView->NumShadowMapCascades ) {
         return;
@@ -242,7 +242,7 @@ void FShadowMapPassRenderer::RenderInstances() {
     drawCmd.StartInstanceLocation = 0;
 
     for ( int i = 0 ; i < GRenderView->ShadowInstanceCount ; i++ ) {
-        FShadowRenderInstance const * instance = GFrameData->ShadowInstances[ GRenderView->FirstShadowInstance + i ];
+        SShadowRenderInstance const * instance = GFrameData->ShadowInstances[ GRenderView->FirstShadowInstance + i ];
 
         if ( !BindMaterial( instance ) ) {
             continue;

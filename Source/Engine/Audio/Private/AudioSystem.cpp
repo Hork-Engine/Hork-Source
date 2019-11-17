@@ -40,8 +40,8 @@ SOFTWARE.
 
 #include <AL/alc.h>
 
-AN_CLASS_META( FAudioControlCallback )
-AN_CLASS_META( FAudioGroup )
+AN_CLASS_META( AAudioControlCallback )
+AN_CLASS_META( AAudioGroup )
 
 static void * LibOpenAL = NULL;
 static ALCdevice * ALCDevice = NULL;
@@ -328,7 +328,7 @@ void AL_CheckError( const char * _Text ) {
 #ifndef AN_NO_OPENAL
     Int Error = alGetError();
     if ( Error != AL_NO_ERROR ) {
-        GLogger.Printf( "AL ERROR: %s %s\n", _Text, Error.ToHexString().ToConstChar() );
+        GLogger.Printf( "AL ERROR: %s %s\n", _Text, Error.ToHexString().CStr() );
     }
 #endif
 }
@@ -337,25 +337,25 @@ static void ALC_CheckError( const char * _Text ) {
 #ifndef AN_NO_OPENAL
     Int Error = malcGetError( ALCDevice );
     if ( Error != ALC_NO_ERROR ) {
-        GLogger.Printf( "ALC ERROR: %s %s\n", _Text, Error.ToHexString().ToConstChar() );
+        GLogger.Printf( "ALC ERROR: %s %s\n", _Text, Error.ToHexString().CStr() );
     }
 #endif
 }
 
-FAudioSystem & GAudioSystem = FAudioSystem::Inst();
+AAudioSystem & GAudioSystem = AAudioSystem::Inst();
 
-FAudioSystem::FAudioSystem() {
+AAudioSystem::AAudioSystem() {
     bInitialized = false;
     //bEAX = false;
     ALCDevice = NULL;
     ALCContext = NULL;
 }
 
-FAudioSystem::~FAudioSystem() {
+AAudioSystem::~AAudioSystem() {
     assert( bInitialized == false );
 }
 
-void FAudioSystem::Initialize() {
+void AAudioSystem::Initialize() {
     GLogger.Printf( "Initializing audio system...\n" );
 
     if ( !LoadOpenAL() ) {
@@ -365,7 +365,7 @@ void FAudioSystem::Initialize() {
     ALC_SAFE( ALCDevice = malcOpenDevice( NULL ) );
 
     if ( !ALCDevice ) {
-        CriticalError( "FAudioSystem::Initialize: Failed to open device\n" );
+        CriticalError( "AAudioSystem::Initialize: Failed to open device\n" );
     }
 
     ALC_SAFE( ALCContext = malcCreateContext( ALCDevice, NULL ) );
@@ -376,7 +376,7 @@ void FAudioSystem::Initialize() {
 #endif
         ALCDevice = NULL;
 
-        CriticalError( "FAudioSystem::Initialize: Failed to create context\n" );
+        CriticalError( "AAudioSystem::Initialize: Failed to create context\n" );
     }
 
     ALCboolean Result = ALC_FALSE;
@@ -391,7 +391,7 @@ void FAudioSystem::Initialize() {
         ALCDevice = NULL;
         ALCContext = NULL;
 
-        CriticalError( "FAudioSystem::Initialize: Failed to make current context\n" );
+        CriticalError( "AAudioSystem::Initialize: Failed to make current context\n" );
     }
 
     // Check for EAX 2.0 support
@@ -483,7 +483,7 @@ void FAudioSystem::Initialize() {
     bInitialized = true;
 }
 
-void FAudioSystem::Deinitialize() {
+void AAudioSystem::Deinitialize() {
     GLogger.Printf( "Deinitializing audio system...\n" );
 
     UnregisterDecoders();
@@ -520,7 +520,7 @@ static void CheckHRTFState() {
     }
 }
 
-void FAudioSystem::EnableHRTF( int _Index ) {
+void AAudioSystem::EnableHRTF( int _Index ) {
     if ( _Index < 0 || _Index >= NumHRTFs ) {
         return;
     }
@@ -540,7 +540,7 @@ void FAudioSystem::EnableHRTF( int _Index ) {
     CheckHRTFState();
 }
 
-void FAudioSystem::EnableDefaultHRTF() {
+void AAudioSystem::EnableDefaultHRTF() {
     if ( !NumHRTFs ) {
         return;
     }
@@ -558,7 +558,7 @@ void FAudioSystem::EnableDefaultHRTF() {
     CheckHRTFState();
 }
 
-void FAudioSystem::DisableHRTF() {
+void AAudioSystem::DisableHRTF() {
     if ( !NumHRTFs ) {
         return;
     }
@@ -576,22 +576,22 @@ void FAudioSystem::DisableHRTF() {
     CheckHRTFState();
 }
 
-int FAudioSystem::GetNumHRTFs() const {
+int AAudioSystem::GetNumHRTFs() const {
     return NumHRTFs;
 }
 
-const char * FAudioSystem::GetHRTF( int _Index ) const {
+const char * AAudioSystem::GetHRTF( int _Index ) const {
     if ( _Index >= 0 && _Index < NumHRTFs ) {
         const ALCchar * name;
         ALC_SAFE( name = malcGetStringiSOFT( ALCDevice, ALC_HRTF_SPECIFIER_SOFT, _Index ) );
-        return name ? name : FString::NullCString();
+        return name ? name : AString::NullCString();
     }
-    return FString::NullCString();
+    return AString::NullCString();
 }
 
-void FAudioSystem::RegisterDecoder( const char * _Extension, IAudioDecoderInterface * _Interface ) {
+void AAudioSystem::RegisterDecoder( const char * _Extension, IAudioDecoderInterface * _Interface ) {
     for ( Entry & e : Decoders ) {
-        if ( !FString::Icmp( _Extension, e.Extension ) ) {
+        if ( !AString::Icmp( _Extension, e.Extension ) ) {
             e.Decoder->RemoveRef();
             e.Decoder = _Interface;
             _Interface->AddRef();
@@ -599,16 +599,16 @@ void FAudioSystem::RegisterDecoder( const char * _Extension, IAudioDecoderInterf
         }
     }
     Entry e;
-    FString::CopySafe( e.Extension, sizeof( e.Extension ), _Extension );
+    AString::CopySafe( e.Extension, sizeof( e.Extension ), _Extension );
     e.Decoder = _Interface;
     _Interface->AddRef();
     Decoders.Append( e );
 }
 
-void FAudioSystem::UnregisterDecoder( const char * _Extension ) {
+void AAudioSystem::UnregisterDecoder( const char * _Extension ) {
     for ( int i = 0 ; i < Decoders.Size() ; i++ ) {
         Entry & e =  Decoders[i];
-        if ( !FString::Icmp( _Extension, e.Extension ) ) {
+        if ( !AString::Icmp( _Extension, e.Extension ) ) {
             e.Decoder->RemoveRef();
             Decoders.Remove( i );
             return;
@@ -616,24 +616,24 @@ void FAudioSystem::UnregisterDecoder( const char * _Extension ) {
     }
 }
 
-void FAudioSystem::UnregisterDecoders() {
+void AAudioSystem::UnregisterDecoders() {
     for ( int i = 0; i < Decoders.Size(); i++ ) {
         Decoders[ i ].Decoder->RemoveRef();
     }
     Decoders.Free();
 }
 
-IAudioDecoderInterface * FAudioSystem::FindDecoder( const char * _FileName ) {
-    int i = FString::FindExtWithoutDot( _FileName );
+IAudioDecoderInterface * AAudioSystem::FindDecoder( const char * _FileName ) {
+    int i = AString::FindExtWithoutDot( _FileName );
     for ( Entry & e : Decoders ) {
-        if ( !FString::Icmp( _FileName + i, e.Extension ) ) {
+        if ( !AString::Icmp( _FileName + i, e.Extension ) ) {
             return e.Decoder;
         }
     }
     return nullptr;
 }
 
-bool FAudioSystem::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM ) {
+bool AAudioSystem::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM ) {
     IAudioDecoderInterface * decoder = FindDecoder( _FileName );
     if ( !decoder ) {
         return false;
@@ -641,7 +641,7 @@ bool FAudioSystem::DecodePCM( const char * _FileName, int * _SamplesCount, int *
     return decoder->DecodePCM( _FileName, _SamplesCount, _Channels, _SampleRate, _BitsPerSample, _PCM );
 }
 
-bool FAudioSystem::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
+bool AAudioSystem::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
     IAudioDecoderInterface * decoder = FindDecoder( _FileName );
     if ( !decoder ) {
         return false;
@@ -651,7 +651,7 @@ bool FAudioSystem::ReadEncoded( const char * _FileName, int * _SamplesCount, int
 
 
 // How to use:
-//FAudioClip * S_Player_Pain1 = GetOrCreateResource< FAudioClip >( "Sounds/Player/Pain1.ogg" );
+//AAudioClip * S_Player_Pain1 = GetOrCreateResource< AAudioClip >( "Sounds/Player/Pain1.ogg" );
 //GAudioSystem.PlaySound( S_Player_Pain1, this );
 //GAudioSystem.PlaySoundAt( S_Player_Pain1, Position, this );
 
@@ -674,7 +674,7 @@ struct SAudioChannel {
     bool        bStopWhenInstigatorDead;
     EAudioLocation Location;
     bool        bStreamed;
-    FAudioClip * Clip;
+    AAudioClip * Clip;
     int         ClipSerialId;
     int         NumStreamBuffers;
     unsigned int StreamBuffers[2];
@@ -683,11 +683,11 @@ struct SAudioChannel {
     int         Priority;   // EAudioChannelPriority
     float       LifeSpan;
     bool        bPlayEvenWhenPaused;
-    FAudioControlCallback * ControlCallback;
-    FAudioGroup * Group;
-    FSceneComponent * Instigator;
-    FPhysicalBody * PhysicalBody;
-    FWorld *    World;
+    AAudioControlCallback * ControlCallback;
+    AAudioGroup * Group;
+    ASceneComponent * Instigator;
+    APhysicalBody * PhysicalBody;
+    AWorld *    World;
     bool        bFree;
     bool        bPausedByGame;
     bool        bLocked;
@@ -724,7 +724,7 @@ static void InitializeChannels() {
     memset( AudioChannels, 0, sizeof( AudioChannels ) );
 }
 
-void FAudioSystem::PurgeChannels() {
+void AAudioSystem::PurgeChannels() {
     GLogger.Printf( "Purging audio channels\n" );
 
     for ( int i = 0; i < NumAudioChannels; i++ ) {
@@ -991,7 +991,7 @@ static SAudioChannel * AllocateChannel( int _Priority ) {
 }
 
 static bool StreamToBuffer( SAudioChannel * channel, int _BufferId ) {
-    FAudioClip * Clip = channel->Clip;
+    AAudioClip * Clip = channel->Clip;
 
     const int RequiredBufferSize = Clip->GetBufferSize();
 
@@ -1163,15 +1163,15 @@ static void PlayChannel( SAudioChannel * channel, float _PlayOffset ) {
     }
 }
 
-static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, EAudioLocation _Location, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
+static void CreateSound( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, EAudioLocation _Location, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
     if ( !_AudioClip ) {
         return;
     }
 
     SSoundAttenuationParameters const & atten = _SpawnParameters->Attenuation;
 
-    float refDist = FMath::Clamp( atten.ReferenceDistance, AUDIO_MIN_REF_DISTANCE, AUDIO_MAX_DISTANCE );
-    float maxDist = FMath::Clamp( atten.MaxDistance, refDist, AUDIO_MAX_DISTANCE );
+    float refDist = Math::Clamp( atten.ReferenceDistance, AUDIO_MIN_REF_DISTANCE, AUDIO_MAX_DISTANCE );
+    float maxDist = Math::Clamp( atten.MaxDistance, refDist, AUDIO_MAX_DISTANCE );
     float graceDist = GetGraceDistance( maxDist );
 
     //int numActiveChannels = NumAudioChannels - NumFreeAudioChannels;
@@ -1245,8 +1245,8 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
         channel->Direction.Clear();
     } else {
         channel->bDirectional = _SpawnParameters->bDirectional;
-        channel->ConeInnerAngle = FMath::Clamp( _SpawnParameters->ConeInnerAngle, 0.0f, 360.0f );
-        channel->ConeOuterAngle = FMath::Clamp( _SpawnParameters->ConeOuterAngle, _SpawnParameters->ConeInnerAngle, 360.0f );
+        channel->ConeInnerAngle = Math::Clamp( _SpawnParameters->ConeInnerAngle, 0.0f, 360.0f );
+        channel->ConeOuterAngle = Math::Clamp( _SpawnParameters->ConeOuterAngle, _SpawnParameters->ConeInnerAngle, 360.0f );
 
         if ( _Location == AUDIO_STAY_AT_SPAWN_LOCATION ) {
             channel->Direction = _SpawnParameters->Direction;
@@ -1282,7 +1282,7 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
         channel->Instigator->AddRef();
 
         if ( channel->bUsePhysicalVelocity ) {
-            channel->PhysicalBody = Upcast< FPhysicalBody >( channel->Instigator );
+            channel->PhysicalBody = Upcast< APhysicalBody >( channel->Instigator );
         }
     }
 
@@ -1299,22 +1299,22 @@ static void CreateSound( FAudioClip * _AudioClip, Float3 const & _SpawnPosition,
     PlayChannel( channel, _SpawnParameters->PlayOffset );
 }
 
-void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
+void AAudioSystem::PlaySound( AAudioClip * _AudioClip, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
     PlaySound( _AudioClip, _Instigator ? _Instigator->RootComponent : nullptr, _SpawnParameters );
 }
 
-void FAudioSystem::PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
+void AAudioSystem::PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
     PlaySoundAt( _AudioClip, _SpawnPosition, _Instigator ? _Instigator->RootComponent : nullptr, _SpawnParameters );
 }
 
-void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
+void AAudioSystem::PlaySound( AAudioClip * _AudioClip, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
 
     if ( !_SpawnParameters ) {
         _SpawnParameters = &DefaultSpawnParameters;
     }
 
     if ( _SpawnParameters->bStopWhenInstigatorDead && !_Instigator ) {
-        GLogger.Printf( "FAudioSystem::PlaySound: bStopWhenInstigatorDead with no instigator specified\n" );
+        GLogger.Printf( "AAudioSystem::PlaySound: bStopWhenInstigatorDead with no instigator specified\n" );
         return;
     }
 
@@ -1323,7 +1323,7 @@ void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instig
         if ( _Instigator ) {
             CreateSound( _AudioClip, _Instigator->GetWorldPosition(), AUDIO_STAY_AT_SPAWN_LOCATION, _Instigator, _SpawnParameters );
         } else {
-            GLogger.Printf( "FAudioSystem::PlaySound: no spawn location specified with flag AUDIO_STAY_AT_SPAWN_LOCATION\n" );
+            GLogger.Printf( "AAudioSystem::PlaySound: no spawn location specified with flag AUDIO_STAY_AT_SPAWN_LOCATION\n" );
         }
 
     } else if ( _SpawnParameters->Location == AUDIO_FOLLOW_INSIGATOR ) {
@@ -1331,7 +1331,7 @@ void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instig
         if ( _Instigator ) {
             CreateSound( _AudioClip, _Instigator->GetWorldPosition(), AUDIO_FOLLOW_INSIGATOR, _Instigator, _SpawnParameters );
         } else {
-            GLogger.Printf( "FAudioSystem::PlaySound: no instigator specified with flag AUDIO_FOLLOW_INSIGATOR\n" );
+            GLogger.Printf( "AAudioSystem::PlaySound: no instigator specified with flag AUDIO_FOLLOW_INSIGATOR\n" );
         }
 
     } else if ( _SpawnParameters->Location == AUDIO_STAY_BACKGROUND ) {
@@ -1339,18 +1339,18 @@ void FAudioSystem::PlaySound( FAudioClip * _AudioClip, FSceneComponent * _Instig
         CreateSound( _AudioClip, Float3( 0 ), AUDIO_STAY_BACKGROUND, _Instigator, _SpawnParameters );
 
     } else {
-        GLogger.Printf( "FAudioSystem::PlaySound: unknown spawn location\n" );
+        GLogger.Printf( "AAudioSystem::PlaySound: unknown spawn location\n" );
     }
 }
 
-void FAudioSystem::PlaySoundAt( FAudioClip * _AudioClip, Float3 const & _SpawnPosition, FSceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
+void AAudioSystem::PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
 
     if ( !_SpawnParameters ) {
         _SpawnParameters = &DefaultSpawnParameters;
     }
 
     if ( _SpawnParameters->bStopWhenInstigatorDead && !_Instigator ) {
-        GLogger.Printf( "FAudioSystem::PlaySoundAt: bStopWhenInstigatorDead with no instigator specified\n" );
+        GLogger.Printf( "AAudioSystem::PlaySoundAt: bStopWhenInstigatorDead with no instigator specified\n" );
         return;
     }
 
@@ -1455,7 +1455,7 @@ static void UpdateChannel( SAudioChannel * Channel, float _TimeStep ) {
         }
     }
 
-    FWorld * world = Channel->World;
+    AWorld * world = Channel->World;
     if ( world && !Channel->bPlayEvenWhenPaused ) {
         if ( world->IsPaused() ) {
             if ( !Channel->bPausedByGame ) {
@@ -1539,19 +1539,19 @@ static void UpdateChannel( SAudioChannel * Channel, float _TimeStep ) {
     UpdateChannelStreaming( Channel );
 }
 
-int FAudioSystem::GetNumActiveChannels() const {
+int AAudioSystem::GetNumActiveChannels() const {
     return NumAudioChannels - NumFreeAudioChannels;
 }
 
-Float3 const & FAudioSystem::GetListenerPosition() const {
+Float3 const & AAudioSystem::GetListenerPosition() const {
     return ListenerPosition;
 }
 
-void FAudioSystem::Update( FPlayerController * _Controller, float _TimeStep ) {
+void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep ) {
 
     if ( _Controller ) {
-        FSceneComponent * audioListener = _Controller->GetAudioListener();
-        FAudioParameters * audioParameters = _Controller->GetAudioParameters();
+        ASceneComponent * audioListener = _Controller->GetAudioListener();
+        AAudioParameters * audioParameters = _Controller->GetAudioParameters();
 
         if ( audioListener ) {
 
@@ -1600,7 +1600,7 @@ void FAudioSystem::Update( FPlayerController * _Controller, float _TimeStep ) {
 
     int numFreeChannels = MAX_AUDIO_CHANNELS - GetNumActiveChannels();
     if ( numFreeChannels > 0 ) {
-        int canRestore = FMath::Min( numFreeChannels, VirtualChannels.Size() );
+        int canRestore = Math::Min( numFreeChannels, VirtualChannels.Size() );
 
         // TODO: sort channels by priority, gain, etc?
 

@@ -38,9 +38,9 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-FDebugDrawPassRenderer GDebugDrawPassRenderer;
+ADebugDrawPassRenderer GDebugDrawPassRenderer;
 
-void FDebugDrawPassRenderer::Initialize() {
+void ADebugDrawPassRenderer::Initialize() {
     RenderPassCreateInfo renderPassCI = {};
 
     renderPassCI.NumColorAttachments = 1;
@@ -91,7 +91,7 @@ void FDebugDrawPassRenderer::Initialize() {
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FDebugVertex, Position )
+            GHI_STRUCT_OFS( SDebugVertex, Position )
         },
         {
             "InColor",
@@ -100,11 +100,11 @@ void FDebugDrawPassRenderer::Initialize() {
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FDebugVertex, Color )
+            GHI_STRUCT_OFS( SDebugVertex, Color )
         }
     };
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
     const char * vertesSourceCode = AN_STRINGIFY(
 
@@ -140,7 +140,7 @@ void FDebugDrawPassRenderer::Initialize() {
 
     GShaderSources.Clear();
     GShaderSources.Add( UniformStr );
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( vertesSourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -172,7 +172,7 @@ void FDebugDrawPassRenderer::Initialize() {
 
     VertexBindingInfo vertexBinding = {};
     vertexBinding.InputSlot = 0;
-    vertexBinding.Stride = sizeof( FDebugVertex );
+    vertexBinding.Stride = sizeof( SDebugVertex );
     vertexBinding.InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = 1;
@@ -241,14 +241,14 @@ void FDebugDrawPassRenderer::Initialize() {
     streamBufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
     streamBufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
 
-    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( FDebugVertex );
+    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( SDebugVertex );
     VertexBuffer.Initialize( streamBufferCI );
 
     streamBufferCI.SizeInBytes = IndexBufferSize * sizeof( unsigned int );
     IndexBuffer.Initialize( streamBufferCI );
 }
 
-void FDebugDrawPassRenderer::Deinitialize() {
+void ADebugDrawPassRenderer::Deinitialize() {
     DebugDrawPass.Deinitialize();
 
     for ( int i = 0 ; i < DBG_DRAW_CMD_MAX ; i++ ) {
@@ -259,7 +259,7 @@ void FDebugDrawPassRenderer::Deinitialize() {
     IndexBuffer.Deinitialize();
 }
 
-void FDebugDrawPassRenderer::RenderInstances() {
+void ADebugDrawPassRenderer::RenderInstances() {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &DebugDrawPass;
@@ -289,8 +289,8 @@ void FDebugDrawPassRenderer::RenderInstances() {
     drawCmd.StartInstanceLocation = 0;
     drawCmd.BaseVertexLocation = 0;
 
-    for ( int i = 0 ; i < GRenderView->DbgCmdCount ; i++ ) {
-        FDebugDrawCmd * cmd = &GFrameData->DbgCmds[GRenderView->FirstDbgCmd + i];
+    for ( int i = 0 ; i < GRenderView->DebugDrawCommandCount ; i++ ) {
+        SDebugDrawCmd * cmd = &GFrameData->DbgCmds[GRenderView->FirstDebugDrawCommand + i];
 
         Cmd.BindPipeline( &Pipelines[cmd->Type] );
         Cmd.BindVertexBuffer( 0, &VertexBuffer, 0 );
@@ -305,15 +305,15 @@ void FDebugDrawPassRenderer::RenderInstances() {
     Cmd.EndRenderPass();
 }
 
-void FDebugDrawPassRenderer::UploadBuffers() {
+void ADebugDrawPassRenderer::UploadBuffers() {
     // Upload debug geometry
     int vertexCount = GFrameData->DbgVertices.Size();
     int indexCount = GFrameData->DbgIndices.Size();
     if ( VertexBufferSize < vertexCount ) {
         VertexBufferSize = vertexCount;
-        VertexBuffer.Realloc( VertexBufferSize * sizeof( FDebugVertex ), GFrameData->DbgVertices.ToPtr() );
+        VertexBuffer.Realloc( VertexBufferSize * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
     } else {
-        VertexBuffer.WriteRange( 0, vertexCount * sizeof( FDebugVertex ), GFrameData->DbgVertices.ToPtr() );
+        VertexBuffer.WriteRange( 0, vertexCount * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
     }
     if ( IndexBufferSize < indexCount ) {
         IndexBufferSize = indexCount;

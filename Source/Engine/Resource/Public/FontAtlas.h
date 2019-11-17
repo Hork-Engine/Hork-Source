@@ -33,8 +33,8 @@ SOFTWARE.
 #include "Texture.h"
 #include <Engine/imgui/imgui.h>
 
-class FFont : public FBaseObject {
-    AN_CLASS( FFont, FBaseObject )
+class AFont : public AResourceBase {
+    AN_CLASS( AFont, AResourceBase )
 
 public:
     /** Initialize from memory */
@@ -45,12 +45,6 @@ public:
 
     /** Initialize from memory compressed base85 */
     void InitializeFromMemoryCompressedBase85TTF( const char * _SysMem, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
-
-    /** Create font from string (FFont.***) */
-    void InitializeInternalResource( const char * _InternalResourceName ) override;
-
-    /** Initialize font from file */
-    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
 
     /** Purge font data */
     void Purge();
@@ -75,7 +69,7 @@ public:
 
     void * GetImguiFontAtlas() { return &Atlas; }
 
-    FTexture2D * GetTexture() { return AtlasTexture; }
+    ATexture * GetTexture() { return AtlasTexture; }
 
     static void SetGlyphRanges( const unsigned short * _GlyphRanges );
 
@@ -99,12 +93,20 @@ public:
     static const unsigned short * GetGlyphRangesVietnamese();
 
 protected:
-    FFont() {}
+    AFont() {}
+
+    /** Load resource from file */
+    bool LoadResource( AString const & _Path ) override;
+
+    /** Create internal resource */
+    void LoadInternalResource( const char * _Path ) override;
+
+    const char * GetDefaultResourcePath() const override { return "/Default/Fonts/Default"; }
 
 private:
     void CreateTexture();
 
     ImFontAtlas Atlas;
     ImFont * Font;
-    TRef< FTexture2D > AtlasTexture;
+    TRef< ATexture > AtlasTexture;
 };

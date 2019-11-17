@@ -35,10 +35,10 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-void FPassRenderer::BindTextures( FMaterialFrameData * _MaterialInstance ) {
+void APassRenderer::BindTextures( SMaterialFrameData * _MaterialInstance ) {
     AN_Assert( _MaterialInstance );
 
-    FTextureGPU ** texture = _MaterialInstance->Textures;
+    ATextureGPU ** texture = _MaterialInstance->Textures;
 
     int n = _MaterialInstance->NumTextures;
     if ( n > _MaterialInstance->Material->NumSamplers ) {
@@ -47,7 +47,7 @@ void FPassRenderer::BindTextures( FMaterialFrameData * _MaterialInstance ) {
 
     for (int t = 0 ; t < n ; t++, texture++ ) {
         if ( *texture ) {
-            FTextureGPU * texProxy = *texture;
+            ATextureGPU * texProxy = *texture;
             GFrameResources.TextureBindings[t].pTexture = GPUTextureHandle( texProxy );
         } else {
             GFrameResources.TextureBindings[t].pTexture = nullptr;
@@ -59,7 +59,7 @@ void FPassRenderer::BindTextures( FMaterialFrameData * _MaterialInstance ) {
     //}
 }
 
-void FPassRenderer::BindVertexAndIndexBuffers( FRenderInstance const * _Instance ) {
+void APassRenderer::BindVertexAndIndexBuffers( SRenderInstance const * _Instance ) {
     Buffer * pVertexBuffer = GPUBufferHandle( _Instance->VertexBuffer );
     Buffer * pIndexBuffer = GPUBufferHandle( _Instance->IndexBuffer );
 
@@ -70,7 +70,7 @@ void FPassRenderer::BindVertexAndIndexBuffers( FRenderInstance const * _Instance
     Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, 0 );
 }
 
-void FPassRenderer::BindVertexAndIndexBuffers( FShadowRenderInstance const * _Instance ) {
+void APassRenderer::BindVertexAndIndexBuffers( SShadowRenderInstance const * _Instance ) {
     Buffer * pVertexBuffer = GPUBufferHandle( _Instance->VertexBuffer );
     Buffer * pIndexBuffer = GPUBufferHandle( _Instance->IndexBuffer );
 
@@ -81,21 +81,21 @@ void FPassRenderer::BindVertexAndIndexBuffers( FShadowRenderInstance const * _In
     Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, 0 );
 }
 
-void FPassRenderer::BindSkeleton( size_t _Offset, size_t _Size ) {
+void APassRenderer::BindSkeleton( size_t _Offset, size_t _Size ) {
     GFrameResources.SkeletonBufferBinding->BindingOffset = _Offset;
     GFrameResources.SkeletonBufferBinding->BindingSize = _Size;
 }
 
-void FPassRenderer::SetInstanceUniforms( int _Index ) {
+void APassRenderer::SetInstanceUniforms( int _Index ) {
     GFrameResources.InstanceUniformBufferBinding->pBuffer = &GFrameResources.InstanceUniformBuffer;
     GFrameResources.InstanceUniformBufferBinding->BindingOffset = _Index * InstanceUniformBufferSizeof;
-    GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( FInstanceUniformBuffer );
+    GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( SInstanceUniformBuffer );
 }
 
-void FPassRenderer::SetShadowInstanceUniforms( int _Index ) {
+void APassRenderer::SetShadowInstanceUniforms( int _Index ) {
     GFrameResources.InstanceUniformBufferBinding->pBuffer = &GFrameResources.ShadowInstanceUniformBuffer;
     GFrameResources.InstanceUniformBufferBinding->BindingOffset = _Index * ShadowInstanceUniformBufferSizeof;
-    GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( FShadowInstanceUniformBuffer );
+    GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( SShadowInstanceUniformBuffer );
 }
 
 }

@@ -41,7 +41,7 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
+void ADepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -60,11 +60,11 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FMeshVertex );
+    vertexBinding[0].Stride = sizeof( SMeshVertex );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( FMeshVertexJoint );
+    vertexBinding[1].Stride = sizeof( SMeshVertexJoint );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -78,7 +78,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Position )
+            GHI_STRUCT_OFS( SMeshVertex, Position )
         },
         {
             "InTexCoord",
@@ -87,7 +87,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+            GHI_STRUCT_OFS( SMeshVertex, TexCoord )
         },
         {
             "InTangent",
@@ -96,7 +96,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_FLOAT4,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Tangent )
+            GHI_STRUCT_OFS( SMeshVertex, Tangent )
         },
         {
             "InNormal",
@@ -105,7 +105,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Normal )
+            GHI_STRUCT_OFS( SMeshVertex, Normal )
         },
         {
             "InJointIndices",
@@ -114,7 +114,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_UBYTE4,
             VAM_INTEGER,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertexJoint, JointIndices )
+            GHI_STRUCT_OFS( SMeshVertexJoint, JointIndices )
         },
         {
             "InJointWeights",
@@ -123,7 +123,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertexJoint, JointWeights )
+            GHI_STRUCT_OFS( SMeshVertexJoint, JointWeights )
         }
     };
 
@@ -135,7 +135,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Position )
+            GHI_STRUCT_OFS( SMeshVertex, Position )
         },
         {
             "InTexCoord",
@@ -144,7 +144,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+            GHI_STRUCT_OFS( SMeshVertex, TexCoord )
         },
         {
             "InTangent",
@@ -153,7 +153,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_FLOAT4,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Tangent )
+            GHI_STRUCT_OFS( SMeshVertex, Tangent )
         },
         {
             "InNormal",
@@ -162,7 +162,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Normal )
+            GHI_STRUCT_OFS( SMeshVertex, Normal )
         }
     };
 
@@ -174,7 +174,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
         pipelineCI.pVertexAttribs = vertexAttribs;
     }
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     ShaderModule vertexShaderModule;
 
@@ -183,7 +183,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     if ( _Skinned ) {
         GShaderSources.Add( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -211,7 +211,7 @@ void FDepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     Initialize( pipelineCI );
 }
 
-void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
+void AWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -232,11 +232,11 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
     VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FMeshVertex );
+    vertexBinding[0].Stride = sizeof( SMeshVertex );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( FMeshVertexJoint );
+    vertexBinding[1].Stride = sizeof( SMeshVertexJoint );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -251,7 +251,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_FLOAT3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Position )
+                GHI_STRUCT_OFS( SMeshVertex, Position )
             },
             {
                 "InTexCoord",
@@ -260,7 +260,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_FLOAT2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+                GHI_STRUCT_OFS( SMeshVertex, TexCoord )
             },
             {
                 "InTangent",
@@ -269,7 +269,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_FLOAT4,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Tangent )
+                GHI_STRUCT_OFS( SMeshVertex, Tangent )
             },
             {
                 "InNormal",
@@ -278,7 +278,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_FLOAT3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Normal )
+                GHI_STRUCT_OFS( SMeshVertex, Normal )
             },
             {
                 "InJointIndices",
@@ -287,7 +287,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_UBYTE4,
                 VAM_INTEGER,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertexJoint, JointIndices )
+                GHI_STRUCT_OFS( SMeshVertexJoint, JointIndices )
             },
             {
                 "InJointWeights",
@@ -296,7 +296,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_UBYTE4N,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertexJoint, JointWeights )
+                GHI_STRUCT_OFS( SMeshVertexJoint, JointWeights )
             }
         };
 
@@ -311,7 +311,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_FLOAT3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Position )
+                GHI_STRUCT_OFS( SMeshVertex, Position )
             },
             {
                 "InTexCoord",
@@ -320,7 +320,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_FLOAT2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+                GHI_STRUCT_OFS( SMeshVertex, TexCoord )
             },
             {
                 "InTangent",
@@ -329,7 +329,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_FLOAT4,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Tangent )
+                GHI_STRUCT_OFS( SMeshVertex, Tangent )
             },
             {
                 "InNormal",
@@ -338,7 +338,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_FLOAT3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Normal )
+                GHI_STRUCT_OFS( SMeshVertex, Normal )
             }
         };
 
@@ -346,7 +346,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
         pipelineCI.pVertexAttribs = vertexAttribs;
     }
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     ShaderModule vertexShaderModule, geometryShaderModule, fragmentShaderModule;
 
@@ -355,7 +355,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
     if ( _Skinned ) {
         GShaderSources.Add( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -407,7 +407,7 @@ void FWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
     Initialize( pipelineCI );
 }
 
-void FColorPassHUD::Create( const char * _SourceCode ) {
+void AColorPassHUD::Create( const char * _SourceCode ) {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
     rsd.CullMode = POLYGON_CULL_DISABLED;
@@ -430,7 +430,7 @@ void FColorPassHUD::Create( const char * _SourceCode ) {
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, Position )
+            GHI_STRUCT_OFS( SHUDDrawVert, Position )
         },
         {
             "InTexCoord",
@@ -439,7 +439,7 @@ void FColorPassHUD::Create( const char * _SourceCode ) {
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, TexCoord )
+            GHI_STRUCT_OFS( SHUDDrawVert, TexCoord )
         },
         {
             "InColor",
@@ -448,18 +448,18 @@ void FColorPassHUD::Create( const char * _SourceCode ) {
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FHUDDrawVert, Color )
+            GHI_STRUCT_OFS( SHUDDrawVert, Color )
         }
     };
 
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -495,7 +495,7 @@ void FColorPassHUD::Create( const char * _SourceCode ) {
     VertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FHUDDrawVert );
+    vertexBinding[0].Stride = sizeof( SHUDDrawVert );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
@@ -510,7 +510,7 @@ void FColorPassHUD::Create( const char * _SourceCode ) {
     Initialize( pipelineCI );
 }
 
-void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest ) {
+void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -559,11 +559,11 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FMeshVertex );
+    vertexBinding[0].Stride = sizeof( SMeshVertex );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( FMeshVertexJoint );
+    vertexBinding[1].Stride = sizeof( SMeshVertexJoint );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if ( _Skinned ) {
@@ -575,7 +575,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_FLOAT3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Position )
+                GHI_STRUCT_OFS( SMeshVertex, Position )
             },
             {
                 "InTexCoord",
@@ -584,7 +584,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_FLOAT2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+                GHI_STRUCT_OFS( SMeshVertex, TexCoord )
             },
             {
                 "InTangent",
@@ -593,7 +593,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_FLOAT4,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Tangent )
+                GHI_STRUCT_OFS( SMeshVertex, Tangent )
             },
             {
                 "InNormal",
@@ -602,7 +602,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_FLOAT3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Normal )
+                GHI_STRUCT_OFS( SMeshVertex, Normal )
             },
             {
                 "InJointIndices",
@@ -611,7 +611,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_UBYTE4,
                 VAM_INTEGER,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertexJoint, JointIndices )
+                GHI_STRUCT_OFS( SMeshVertexJoint, JointIndices )
             },
             {
                 "InJointWeights",
@@ -620,19 +620,19 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_UBYTE4N,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertexJoint, JointWeights )
+                GHI_STRUCT_OFS( SMeshVertexJoint, JointWeights )
             }
         };
 
         pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
         pipelineCI.pVertexAttribs = vertexAttribs;
 
-        FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+        AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
         GShaderSources.Clear();
         GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
         GShaderSources.Add( "#define SKINNED_MESH\n" );
-        GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+        GShaderSources.Add( vertexAttribsShaderString.CStr() );
         GShaderSources.Add( _SourceCode );
         GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -652,7 +652,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_FLOAT3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Position )
+                GHI_STRUCT_OFS( SMeshVertex, Position )
             },
             {
                 "InTexCoord",
@@ -661,7 +661,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_FLOAT2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+                GHI_STRUCT_OFS( SMeshVertex, TexCoord )
             },
             {
                 "InTangent",
@@ -670,7 +670,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_FLOAT4,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Tangent )
+                GHI_STRUCT_OFS( SMeshVertex, Tangent )
             },
             {
                 "InNormal",
@@ -679,18 +679,18 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_FLOAT3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( FMeshVertex, Normal )
+                GHI_STRUCT_OFS( SMeshVertex, Normal )
             }
         };
 
         pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
         pipelineCI.pVertexAttribs = vertexAttribs;
 
-        FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+        AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
         GShaderSources.Clear();
         GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+        GShaderSources.Add( vertexAttribsShaderString.CStr() );
         GShaderSources.Add( _SourceCode );
         GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -710,7 +710,7 @@ void FColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
 }
 
 
-void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
+void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -740,7 +740,7 @@ void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Position )
+            GHI_STRUCT_OFS( SMeshVertex, Position )
         },
         {
             "InTexCoord",
@@ -749,7 +749,7 @@ void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+            GHI_STRUCT_OFS( SMeshVertex, TexCoord )
         },
         {
             "InTangent",
@@ -758,7 +758,7 @@ void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
             VAT_FLOAT4,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Tangent )
+            GHI_STRUCT_OFS( SMeshVertex, Tangent )
         },
         {
             "InNormal",
@@ -767,7 +767,7 @@ void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Normal )
+            GHI_STRUCT_OFS( SMeshVertex, Normal )
         },
         {
             "InLightmapTexCoord",
@@ -776,21 +776,21 @@ void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshLightmapUV, TexCoord )
+            GHI_STRUCT_OFS( SMeshLightmapUV, TexCoord )
         }
     };
 
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
     GShaderSources.Add( "#define USE_LIGHTMAP\n" );
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -825,11 +825,11 @@ void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
     VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FMeshVertex );
+    vertexBinding[0].Stride = sizeof( SMeshVertex );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( FMeshLightmapUV );
+    vertexBinding[1].Stride = sizeof( SMeshLightmapUV );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
@@ -841,7 +841,7 @@ void FColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
     Initialize( pipelineCI );
 }
 
-void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
+void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -871,7 +871,7 @@ void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Position )
+            GHI_STRUCT_OFS( SMeshVertex, Position )
         },
         {
             "InTexCoord",
@@ -880,7 +880,7 @@ void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+            GHI_STRUCT_OFS( SMeshVertex, TexCoord )
         },
         {
             "InTangent",
@@ -889,7 +889,7 @@ void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
             VAT_FLOAT4,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Tangent )
+            GHI_STRUCT_OFS( SMeshVertex, Tangent )
         },
         {
             "InNormal",
@@ -898,7 +898,7 @@ void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Normal )
+            GHI_STRUCT_OFS( SMeshVertex, Normal )
         },
         {
             "InVertexLight",
@@ -907,21 +907,21 @@ void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertexLight, VertexLight )
+            GHI_STRUCT_OFS( SMeshVertexLight, VertexLight )
         }
     };
 
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
     GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
     GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
@@ -956,11 +956,11 @@ void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
     VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FMeshVertex );
+    vertexBinding[0].Stride = sizeof( SMeshVertex );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( FMeshVertexLight );
+    vertexBinding[1].Stride = sizeof( SMeshVertexLight );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
@@ -972,23 +972,21 @@ void FColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
     Initialize( pipelineCI );
 }
 
-void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool _Skinned ) {
+void AShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool _Skinned ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
     rsd.bScissorEnable = SCISSOR_TEST;
 #if defined SHADOWMAP_VSM
-    //Desc.CullMode = GHI_CullFront; // Less light bleeding
+    //Desc.CullMode = POLYGON_CULL_FRONT; // Less light bleeding
     Desc.CullMode = POLYGON_CULL_DISABLED;
 #else
-    rsd.CullMode = POLYGON_CULL_BACK;
+    //rsd.CullMode = POLYGON_CULL_BACK;
     //rsd.CullMode = POLYGON_CULL_DISABLED; // Less light bleeding
+    rsd.CullMode = POLYGON_CULL_FRONT;
 #endif
-    //rsd.CullMode = POLYGON_CULL_FRONT;
     //rsd.CullMode = POLYGON_CULL_DISABLED;
-    //rsd.DepthOffset.Slope = 4;
-    //rsd.DepthOffset.Bias = 4;
 
     BlendingStateInfo bsd;
     bsd.SetDefaults();
@@ -1004,11 +1002,11 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
     VertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( FMeshVertex );
+    vertexBinding[0].Stride = sizeof( SMeshVertex );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( FMeshVertexJoint );
+    vertexBinding[1].Stride = sizeof( SMeshVertexJoint );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -1022,7 +1020,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Position )
+            GHI_STRUCT_OFS( SMeshVertex, Position )
         },
         {
             "InTexCoord",
@@ -1031,7 +1029,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+            GHI_STRUCT_OFS( SMeshVertex, TexCoord )
         },
         {
             "InTangent",
@@ -1040,7 +1038,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_FLOAT4,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Tangent )
+            GHI_STRUCT_OFS( SMeshVertex, Tangent )
         },
         {
             "InNormal",
@@ -1049,7 +1047,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Normal )
+            GHI_STRUCT_OFS( SMeshVertex, Normal )
         },
         {
             "InJointIndices",
@@ -1058,7 +1056,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_UBYTE4,
             VAM_INTEGER,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertexJoint, JointIndices )
+            GHI_STRUCT_OFS( SMeshVertexJoint, JointIndices )
         },
         {
             "InJointWeights",
@@ -1067,7 +1065,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertexJoint, JointWeights )
+            GHI_STRUCT_OFS( SMeshVertexJoint, JointWeights )
         }
     };
 
@@ -1079,7 +1077,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Position )
+            GHI_STRUCT_OFS( SMeshVertex, Position )
         },
         {
             "InTexCoord",
@@ -1088,7 +1086,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, TexCoord )
+            GHI_STRUCT_OFS( SMeshVertex, TexCoord )
         },
         {
             "InTangent",
@@ -1097,7 +1095,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_FLOAT4,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Tangent )
+            GHI_STRUCT_OFS( SMeshVertex, Tangent )
         },
         {
             "InNormal",
@@ -1106,7 +1104,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( FMeshVertex, Normal )
+            GHI_STRUCT_OFS( SMeshVertex, Normal )
         }
     };
 
@@ -1131,7 +1129,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
 
     pipelineCI.NumStages = 0;
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     ShaderModule vertexShaderModule;
     ShaderModule geometryShaderModule;
@@ -1142,7 +1140,7 @@ void FShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
     if ( _Skinned ) {
         GShaderSources.Add( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.ToConstChar() );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 

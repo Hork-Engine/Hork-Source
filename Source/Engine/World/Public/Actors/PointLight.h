@@ -33,14 +33,14 @@ SOFTWARE.
 #include <Engine/World/Public/Actors/Actor.h>
 #include <Engine/World/Public/Components/PointLightComponent.h>
 
-class FPointLight : public FActor {
-    AN_ACTOR( FPointLight, FActor )
+class APointLight : public AActor {
+    AN_ACTOR( APointLight, AActor )
 
 public:
-    FPointLightComponent * LightComponent;
+    APointLightComponent * LightComponent;
 
 protected:
-    FPointLight();
+    APointLight();
 
 private:
     

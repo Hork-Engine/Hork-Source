@@ -36,22 +36,22 @@ class btRigidBody;
 
 /*
 
-FAnchorComponent
+AAnchorComponent
 
 Anchors is used to attach softbodies
 
 */
-class ANGIE_API FAnchorComponent : public FSceneComponent {
-    AN_COMPONENT( FAnchorComponent, FSceneComponent )
+class ANGIE_API AAnchorComponent : public ASceneComponent {
+    AN_COMPONENT( AAnchorComponent, ASceneComponent )
 
-    friend class FSoftMeshComponent;
+    friend class ASoftMeshComponent;
 public:
     
 
 
 protected:
 
-    FAnchorComponent();
+    AAnchorComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;

@@ -36,7 +36,7 @@ SOFTWARE.
 namespace OpenGL45 {
 
 // NOTE: We can use TBO to increase max joints and draw instanced
-class FJointAllocator {
+class AJointAllocator {
 public:
     GHI::Buffer Buffer;
     size_t Offset;
@@ -67,19 +67,19 @@ public:
     size_t AllocJoints( size_t _Count ) {
         size_t SizeInBytes = _Count * sizeof( Float3x4 );
         if ( Offset + SizeInBytes > Buffer.GetSizeInBytes() ) {
-            GLogger.Printf( "FJointAllocator::AllocJoints: overflow\n" );
+            GLogger.Printf( "AJointAllocator::AllocJoints: overflow\n" );
             // TODO: allocate new buffer?
             return 0;
         }
         size_t Ofs = Offset;
         Offset += SizeInBytes;
         Offset = GHI::UBOAligned( Offset );
-        MaxUsage = FMath::Max( MaxUsage, Ofs + SizeInBytes );
+        MaxUsage = Math::Max( MaxUsage, Ofs + SizeInBytes );
         //GLogger.Printf( "AllocJoints: Allocated %u bytes. Max usage %u bytes\n", SizeInBytes, MaxUsage );
         return Ofs;
     }
 };
 
-extern FJointAllocator GJointsAllocator;
+extern AJointAllocator GJointsAllocator;
 
 }

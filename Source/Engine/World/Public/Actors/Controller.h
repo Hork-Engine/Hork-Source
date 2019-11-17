@@ -35,13 +35,13 @@ SOFTWARE.
 
 /*
 
-FPlayerController
+AController
 
-Base class for players
+Base class for controllers
 
 */
-class ANGIE_API FController : public FActor {
-    AN_ACTOR( FController, FActor )
+class ANGIE_API AController : public AActor {
+    AN_ACTOR( AController, AActor )
 
 public:
 
@@ -49,7 +49,7 @@ public:
 
 protected:
 
-    FController();
+    AController();
 
 private:
 

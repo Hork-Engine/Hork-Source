@@ -34,8 +34,8 @@ SOFTWARE.
 #include <Engine/Core/Public/String.h>
 
 thread_local jmp_buf CriticalErrorMark;
-static FAtomicBool bCriticalError( false );
-static FThreadSync CriticalErrorMutex;
+static AAtomicBool bCriticalError( false );
+static AThreadSync CriticalErrorMutex;
 
 static char CriticalErrorMessage[ 4096 ] = { 0 };
 
@@ -57,11 +57,11 @@ void CriticalError( const char * _Format, ... ) {
 
     CriticalErrorMutex.BeginScope();
 
-    int criticalErrorMessageLength = FString::Length( CriticalErrorMessage );
+    int criticalErrorMessageLength = AString::Length( CriticalErrorMessage );
 
     va_list VaList;
     va_start( VaList, _Format );
-    FString::vsnprintf( &CriticalErrorMessage[ criticalErrorMessageLength ],
+    AString::vsnprintf( &CriticalErrorMessage[ criticalErrorMessageLength ],
                         sizeof( CriticalErrorMessage ) - criticalErrorMessageLength,
                         _Format,
                         VaList );

@@ -33,18 +33,18 @@ SOFTWARE.
 
 #include <Engine/BulletCompatibility/BulletCompatibility.h>
 
-AN_BEGIN_CLASS_META( FAnchorComponent )
+AN_BEGIN_CLASS_META( AAnchorComponent )
 AN_END_CLASS_META()
 
-FAnchorComponent::FAnchorComponent() {
+AAnchorComponent::AAnchorComponent() {
 
 }
 
-void FAnchorComponent::InitializeComponent() {
+void AAnchorComponent::InitializeComponent() {
 
 }
 
-void FAnchorComponent::DeinitializeComponent() {
+void AAnchorComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     if ( Anchor ) {
@@ -53,7 +53,7 @@ void FAnchorComponent::DeinitializeComponent() {
     }
 }
 
-void FAnchorComponent::OnTransformDirty() {
+void AAnchorComponent::OnTransformDirty() {
     btTransform transform;
 
     Float3 worldPosition = GetWorldPosition();

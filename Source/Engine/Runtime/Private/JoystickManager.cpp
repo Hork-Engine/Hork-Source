@@ -32,24 +32,25 @@ SOFTWARE.
 #include "RuntimeEvents.h"
 
 #include <Engine/Runtime/Public/InputDefs.h>
+#include <Engine/Core/Public/CoreMath.h>
 
 #include <GLFW/glfw3.h>
 
-FJoystickManager & GJoystickManager = FJoystickManager::Inst();
+AJoystickManager & GJoystickManager = AJoystickManager::Inst();
 
-static FJoystick Joysticks[ MAX_JOYSTICKS_COUNT ];
-static FString JoystickNames[ MAX_JOYSTICKS_COUNT ];
+static SJoystick Joysticks[ MAX_JOYSTICKS_COUNT ];
+static AString JoystickNames[ MAX_JOYSTICKS_COUNT ];
 static unsigned char JoystickButtonState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
 static float JoystickAxisState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 
 static void RegisterJoystick( int _Joystick );
 static void UnregisterJoystick( int _Joystick );
 
-FJoystickManager::FJoystickManager() {
+AJoystickManager::AJoystickManager() {
 
 }
 
-void FJoystickManager::Initialize() {
+void AJoystickManager::Initialize() {
     memset( Joysticks, 0, sizeof( Joysticks ) );
     memset( JoystickButtonState, 0, sizeof( JoystickButtonState ) );
     memset( JoystickAxisState, 0, sizeof( JoystickAxisState ) );
@@ -68,7 +69,7 @@ void FJoystickManager::Initialize() {
     );
 }
 
-void FJoystickManager::Deinitialize() {
+void AJoystickManager::Deinitialize() {
     glfwSetJoystickCallback( nullptr );
 
     for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
@@ -77,21 +78,21 @@ void FJoystickManager::Deinitialize() {
 }
 
 static void RegisterJoystick( int _Joystick ) {
-    FJoystick & joystick = Joysticks[ _Joystick ];
+    SJoystick & joystick = Joysticks[ _Joystick ];
 
     JoystickNames[ _Joystick ] = glfwGetJoystickName( _Joystick );
     int numAxes, numButtons;
     glfwGetJoystickAxes( _Joystick, &numAxes );
     glfwGetJoystickButtons( _Joystick, &numButtons );
-    joystick.NumAxes = FMath::Min( numAxes, MAX_JOYSTICK_AXES );
-    joystick.NumButtons = FMath::Min( numButtons, MAX_JOYSTICK_BUTTONS );
+    joystick.NumAxes = Math::Min( numAxes, MAX_JOYSTICK_AXES );
+    joystick.NumButtons = Math::Min( numButtons, MAX_JOYSTICK_BUTTONS );
     joystick.bGamePad = glfwJoystickIsGamepad( _Joystick );
     joystick.bConnected = true;
 
     memset( JoystickButtonState[_Joystick], 0, sizeof( JoystickButtonState[0][0] ) * joystick.NumButtons );
     memset( JoystickAxisState[_Joystick], 0, sizeof( JoystickAxisState[0][0] ) * joystick.NumAxes );
 
-    FEvent * event = GRuntimeEvents.Push();
+    SEvent * event = GRuntimeEvents.Push();
     event->TimeStamp = GRuntime.SysSeconds_d();
     event->Type = ET_JoystickStateEvent;
     event->Data.JoystickStateEvent.Joystick = _Joystick;
@@ -102,13 +103,13 @@ static void RegisterJoystick( int _Joystick ) {
 }
 
 static void UnregisterJoystick( int _Joystick ) {
-    FJoystick & joystick = Joysticks[ _Joystick ];
+    SJoystick & joystick = Joysticks[ _Joystick ];
 
     const double timeStamp = GRuntime.SysSeconds_d();
 
     for ( int i = 0 ; i < joystick.NumAxes ; i++ ) {
         if ( JoystickAxisState[_Joystick][i] != 0.0f ) {
-            FEvent * event = GRuntimeEvents.Push();
+            SEvent * event = GRuntimeEvents.Push();
             event->Type = ET_JoystickAxisEvent;
             event->TimeStamp = timeStamp;
             event->Data.JoystickAxisEvent.Joystick = _Joystick;
@@ -120,7 +121,7 @@ static void UnregisterJoystick( int _Joystick ) {
 
     for ( int i = 0 ; i < joystick.NumButtons ; i++ ) {
         if ( JoystickButtonState[_Joystick][i] ) {
-            FEvent * event = GRuntimeEvents.Push();
+            SEvent * event = GRuntimeEvents.Push();
             event->Type = ET_JoystickButtonEvent;
             event->TimeStamp = timeStamp;
             event->Data.JoystickButtonEvent.Joystick = _Joystick;
@@ -132,7 +133,7 @@ static void UnregisterJoystick( int _Joystick ) {
 
     joystick.bConnected = false;
 
-    FEvent * event = GRuntimeEvents.Push();
+    SEvent * event = GRuntimeEvents.Push();
     event->Type = ET_JoystickStateEvent;
     event->TimeStamp = timeStamp;
     event->Data.JoystickStateEvent.Joystick = _Joystick;
@@ -142,13 +143,13 @@ static void UnregisterJoystick( int _Joystick ) {
     event->Data.JoystickStateEvent.bConnected = joystick.bConnected;
 }
 
-void FJoystickManager::PollEvents() {
+void AJoystickManager::PollEvents() {
     int count;
     int joyNum = 0;
 
     const double timeStamp = GRuntime.SysSeconds_d();
 
-    for ( FJoystick & joystick : Joysticks ) {
+    for ( SJoystick & joystick : Joysticks ) {
         if ( !joystick.bConnected ) {
             joyNum++;
             continue;
@@ -156,12 +157,12 @@ void FJoystickManager::PollEvents() {
 
         const float * axes = glfwGetJoystickAxes( joyNum, &count );
         if ( axes ) {
-            count = FMath::Min< int >( joystick.NumAxes, count );
+            count = Math::Min< int >( joystick.NumAxes, count );
             for ( int i = 0 ; i < count ; i++ ) {
                 if ( axes[i] != JoystickAxisState[joyNum][i] ) {
                     JoystickAxisState[joyNum][i] = axes[i];
 
-                    FEvent * event = GRuntimeEvents.Push();
+                    SEvent * event = GRuntimeEvents.Push();
                     event->Type = ET_JoystickAxisEvent;
                     event->TimeStamp = timeStamp;
                     event->Data.JoystickAxisEvent.Joystick = joyNum;
@@ -174,12 +175,12 @@ void FJoystickManager::PollEvents() {
 
         const unsigned char * buttons = glfwGetJoystickButtons( joyNum, &count );
         if ( buttons ) {
-            count = FMath::Min< int >( joystick.NumButtons, count );
+            count = Math::Min< int >( joystick.NumButtons, count );
             for ( int i = 0 ; i < count ; i++ ) {
                 if ( buttons[i] != JoystickButtonState[joyNum][i] ) {
                     JoystickButtonState[joyNum][i] = buttons[i];
 
-                    FEvent * event = GRuntimeEvents.Push();
+                    SEvent * event = GRuntimeEvents.Push();
                     event->Type = ET_JoystickButtonEvent;
                     event->TimeStamp = timeStamp;
                     event->Data.JoystickButtonEvent.Joystick = joyNum;
@@ -194,6 +195,6 @@ void FJoystickManager::PollEvents() {
     }
 }
 
-FString FJoystickManager::GetJoystickName( int _Joystick ) {
+AString AJoystickManager::GetJoystickName( int _Joystick ) {
     return JoystickNames[ _Joystick ];
 }

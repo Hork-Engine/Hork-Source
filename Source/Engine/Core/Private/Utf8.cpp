@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Engine/Core/Public/Utf8.h>
 
-namespace  FCore {
+namespace  Core {
 
 #define __utf8_is_1b(s)   (!(*(s) & 0x80))
 #define __utf8_is_2b(s)   (( *(s) & 0xE0 ) == 0xC0)

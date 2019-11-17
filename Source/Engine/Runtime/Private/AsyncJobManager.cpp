@@ -35,15 +35,15 @@ SOFTWARE.
 #pragma warning( disable : 4701 )
 #endif
 
-constexpr int FAsyncJobManager::MAX_WORKER_THREADS;
-constexpr int FAsyncJobManager::MAX_JOB_LISTS;
+constexpr int AAsyncJobManager::MAX_WORKER_THREADS;
+constexpr int AAsyncJobManager::MAX_JOB_LISTS;
 
-FAsyncJobManager::FAsyncJobManager() {
+AAsyncJobManager::AAsyncJobManager() {
 }
 
-void FAsyncJobManager::Initialize( int _NumWorkerThreads, int _NumJobLists ) {
+void AAsyncJobManager::Initialize( int _NumWorkerThreads, int _NumJobLists ) {
     if ( _NumWorkerThreads > MAX_WORKER_THREADS ) {
-        GLogger.Printf( "FAsyncJobManager::Initialize: NumWorkerThreads > MAX_WORKER_THREADS\n" );
+        GLogger.Printf( "AAsyncJobManager::Initialize: NumWorkerThreads > MAX_WORKER_THREADS\n" );
         _NumWorkerThreads = MAX_WORKER_THREADS;
     } else if ( _NumWorkerThreads <= 0 ) {
         _NumWorkerThreads = MAX_WORKER_THREADS;
@@ -70,7 +70,7 @@ void FAsyncJobManager::Initialize( int _NumWorkerThreads, int _NumJobLists ) {
     }
 }
 
-void FAsyncJobManager::Deinitialize() {
+void AAsyncJobManager::Deinitialize() {
     GLogger.Printf( "Deinitializing async job manager\n" );
 
     NotifyThreads();
@@ -88,20 +88,20 @@ void FAsyncJobManager::Deinitialize() {
     }
 }
 
-void FAsyncJobManager::NotifyThreads() {
+void AAsyncJobManager::NotifyThreads() {
     for ( int i = 0 ; i < NumWorkerThreads ; i++ ) {
         EventNotify[i].Signal();
     }
 }
 
-void FAsyncJobManager::_WorkerThreadRoutine( void * _Data ) {
-    FContext * context = ( FContext * )_Data;
+void AAsyncJobManager::_WorkerThreadRoutine( void * _Data ) {
+    SContext * context = ( SContext * )_Data;
 
     context->JobManager->WorkerThreadRoutine( context->ThreadId );
 }
 
-void FAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
-    FAsyncJob job;
+void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
+    SAsyncJob job;
     bool haveJob;
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
@@ -123,7 +123,7 @@ void FAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
 
             int fetchIndex = ( _ThreadId + currentList ) %  NumJobLists;
 
-            FAsyncJobList * jobList = &JobList[ fetchIndex ];
+            AAsyncJobList * jobList = &JobList[ fetchIndex ];
 
             do {
 
@@ -131,7 +131,7 @@ void FAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
 
                 // fetch job
                 {
-                    FSyncGuard syncGuard( jobList->SubmitSync );
+                    ASyncGuard syncGuard( jobList->SubmitSync );
 
                     if ( jobList->SubmittedJobs ) {
                         job = *jobList->SubmittedJobs;
@@ -160,32 +160,32 @@ void FAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
     GLogger.Printf( "Terminating worker thread (%d)\n", _ThreadId );
 }
 
-FAsyncJobList::FAsyncJobList() {
+AAsyncJobList::AAsyncJobList() {
     JobList = nullptr;
     SubmittedJobs = nullptr;
     NumPendingJobs = 0;
     bSignalled = false;
 }
 
-FAsyncJobList::~FAsyncJobList() {
+AAsyncJobList::~AAsyncJobList() {
     Wait();
 }
 
-void FAsyncJobList::SetMaxParallelJobs( int _MaxParallelJobs ) {
+void AAsyncJobList::SetMaxParallelJobs( int _MaxParallelJobs ) {
     AN_Assert( JobPool.IsEmpty() );
 
     JobPool.ReserveInvalidate( _MaxParallelJobs );
 }
 
-void FAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
+void AAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
     if ( JobPool.Size() == JobPool.Reserved() ) {
-        GLogger.Printf( "Warning: FAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size %d)\n", JobPool.Reserved() );
+        GLogger.Printf( "Warning: AAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size %d)\n", JobPool.Reserved() );
 
         SubmitAndWait();
         SetMaxParallelJobs( JobPool.Reserved() * 2 );
     }
 
-    FAsyncJob & job = JobPool.Append();
+    SAsyncJob & job = JobPool.Append();
     job.Callback = _Callback;
     job.Data = _Data;
     job.Next = JobList;
@@ -193,17 +193,17 @@ void FAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
     NumPendingJobs++;
 }
 
-void FAsyncJobList::Submit() {
+void AAsyncJobList::Submit() {
     if ( !NumPendingJobs ) {
         return;
     }
 
-    FAsyncJob * headJob = &JobPool[ JobPool.Size() - NumPendingJobs ];
+    SAsyncJob * headJob = &JobPool[ JobPool.Size() - NumPendingJobs ];
     AN_Assert( headJob->Next == nullptr );
 
     // lock section
     {
-        FSyncGuard syncGuard( SubmitSync );
+        ASyncGuard syncGuard( SubmitSync );
 
         headJob->Next = SubmittedJobs;
         SubmittedJobs = JobList;
@@ -216,7 +216,7 @@ void FAsyncJobList::Submit() {
     NumPendingJobs = 0;
 }
 
-void FAsyncJobList::Wait() {
+void AAsyncJobList::Wait() {
     int jobsCount = JobPool.Size() - NumPendingJobs;
 
     if ( jobsCount > 0 ) {
@@ -226,7 +226,7 @@ void FAsyncJobList::Wait() {
 
         if ( NumPendingJobs > 0 ) {
 
-            GLogger.Printf( "Warning: FAsyncJobList::Wait: NumPendingJobs > 0\n" );
+            GLogger.Printf( "Warning: AAsyncJobList::Wait: NumPendingJobs > 0\n" );
 
             JobPool.Remove( 0, jobsCount );
 
@@ -241,7 +241,7 @@ void FAsyncJobList::Wait() {
     }
 }
 
-void FAsyncJobList::SubmitAndWait() {
+void AAsyncJobList::SubmitAndWait() {
     Submit();
     Wait();
 }
@@ -263,12 +263,12 @@ void FAsyncJobList::SubmitAndWait() {
 
 //void AsyncJobManagerTest() {
 
-//    FAsyncJobManager jobManager;
+//    AAsyncJobManager jobManager;
 
 //    jobManager.Initialize( 4, 2 );
 
-//    FAsyncJobList * first = jobManager.GetAsyncJobList( 0 );
-//    FAsyncJobList * second = jobManager.GetAsyncJobList( 1 );
+//    AAsyncJobList * first = jobManager.GetAsyncJobList( 0 );
+//    AAsyncJobList * second = jobManager.GetAsyncJobList( 1 );
 
 //    first->AddJob( FirstJob, ( void * )0 );
 //    first->AddJob( FirstJob, ( void * )1 );
@@ -289,22 +289,22 @@ void FAsyncJobList::SubmitAndWait() {
 
 #if 0
 
-struct FAsyncStreamTask {
+struct SAsyncStreamTask {
     void ( *Callback )( void * );
     void * Data;
     bool bAbort;
-    FAsyncStreamTask * Next;
+    SAsyncStreamTask * Next;
 };
 
-class FAsyncStreamManager final {
-    AN_FORBID_COPY( FAsyncStreamManager )
+class AAsyncStreamManager final {
+    AN_FORBID_COPY( AAsyncStreamManager )
 
 public:
     void Initialize();
 
     void Shutdown();
 
-    void AddTask( FAsyncStreamTask * _Task );
+    void AddTask( SAsyncStreamTask * _Task );
 
 private:
 
@@ -312,44 +312,44 @@ private:
 
     void ProcessTasks();
 
-    FAsyncStreamTask * FetchTask();
+    SAsyncStreamTask * FetchTask();
 
     static void ThreadRoutine( void * _Data );
 
-    FThread Thread;
-    FThreadSync FetchSync;
+    AThread Thread;
+    AThreadSync FetchSync;
 
-    using FTaskQueue = TPodQueue< FAsyncStreamTask *, 256, false >;
+    using ATaskQueue = TPodQueue< SAsyncStreamTask *, 256, false >;
 
-    FTaskQueue Tasks;
-    FSyncEvent EventNotify;
+    ATaskQueue Tasks;
+    ASyncEvent EventNotify;
 
     bool bTerminate;
 };
 
-void FAsyncStreamManager::Initialize() {
+void AAsyncStreamManager::Initialize() {
     bTerminate = false;
     Thread.Routine = ThreadRoutine;
     Thread.Data = this;
     Thread.Start();
 }
 
-void FAsyncStreamManager::Shutdown() {
+void AAsyncStreamManager::Shutdown() {
     bTerminate = true;
     EventNotify.Signal();
     Thread.Join();
 }
 
-void FAsyncStreamManager::AddTask( FAsyncStreamTask * _Task ) {
+void AAsyncStreamManager::AddTask( SAsyncStreamTask * _Task ) {
     {
-        FSyncGuard syncGuard( FetchSync );
+        ASyncGuard syncGuard( FetchSync );
         *Tasks.Push() = _Task;
     }
 
     EventNotify.Signal();
 }
 
-void FAsyncStreamManager::Run() {
+void AAsyncStreamManager::Run() {
     while ( !bTerminate ) {
         EventNotify.Wait();
 
@@ -358,16 +358,16 @@ void FAsyncStreamManager::Run() {
     ProcessTasks();
 }
 
-void FAsyncStreamManager::ProcessTasks() {
-    FAsyncStreamTask * task;
+void AAsyncStreamManager::ProcessTasks() {
+    SAsyncStreamTask * task;
 
     while ( nullptr != ( task = FetchTask() ) ) {
         task->Callback( task->Data );
     }
 }
 
-FAsyncStreamTask * FAsyncStreamManager::FetchTask() {
-    FSyncGuard syncGuard( FetchSync );
+SAsyncStreamTask * AAsyncStreamManager::FetchTask() {
+    ASyncGuard syncGuard( FetchSync );
 
     if ( Tasks.IsEmpty() ) {
         return nullptr;
@@ -376,10 +376,10 @@ FAsyncStreamTask * FAsyncStreamManager::FetchTask() {
     return *Tasks.Pop();
 }
 
-void FAsyncStreamManager::ThreadRoutine( void * _Data ) {
-    ( FAsyncStreamManager * )(_Data)->Run();
+void AAsyncStreamManager::ThreadRoutine( void * _Data ) {
+    ( AAsyncStreamManager * )(_Data)->Run();
 }
 
 
-FAsyncStreamManager GStreamManager;
+AAsyncStreamManager GStreamManager;
 #endif

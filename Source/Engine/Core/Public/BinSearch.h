@@ -34,7 +34,7 @@ SOFTWARE.
 
 // Массив должен быть отсортирован по возрастанию
 
-namespace FCore {
+namespace Core {
 
 // Ищет последний элемент массива, который меньше заданного значения
 template< typename type >

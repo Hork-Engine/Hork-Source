@@ -61,21 +61,21 @@ SOFTWARE.
 
 #include <BulletCollision/CollisionShapes/btMultimaterialTriangleMeshShape.h>
 
-AN_CLASS_META( FCollisionBody )
-AN_CLASS_META( FCollisionSphere )
-AN_CLASS_META( FCollisionSphereRadii )
-AN_CLASS_META( FCollisionBox )
-AN_CLASS_META( FCollisionCylinder )
-AN_CLASS_META( FCollisionCone )
-AN_CLASS_META( FCollisionCapsule )
-AN_CLASS_META( FCollisionConvexHull )
-AN_CLASS_META( FCollisionTriangleSoupBVH )
-AN_CLASS_META( FCollisionTriangleSoupGimpact )
-AN_CLASS_META( FCollisionConvexHullData )
-AN_CLASS_META( FCollisionTriangleSoupData )
-AN_CLASS_META( FCollisionTriangleSoupBVHData )
+AN_CLASS_META( ACollisionBody )
+AN_CLASS_META( ACollisionSphere )
+AN_CLASS_META( ACollisionSphereRadii )
+AN_CLASS_META( ACollisionBox )
+AN_CLASS_META( ACollisionCylinder )
+AN_CLASS_META( ACollisionCone )
+AN_CLASS_META( ACollisionCapsule )
+AN_CLASS_META( ACollisionConvexHull )
+AN_CLASS_META( ACollisionTriangleSoupBVH )
+AN_CLASS_META( ACollisionTriangleSoupGimpact )
+AN_CLASS_META( ACollisionConvexHullData )
+AN_CLASS_META( ACollisionTriangleSoupData )
+AN_CLASS_META( ACollisionTriangleSoupBVHData )
 
-btCollisionShape * FCollisionSphere::Create() {
+btCollisionShape * ACollisionSphere::Create() {
     if ( bProportionalScale ) {
         return b3New( btSphereShape, Radius );
     } else {
@@ -84,7 +84,7 @@ btCollisionShape * FCollisionSphere::Create() {
     }
 }
 
-btCollisionShape * FCollisionSphereRadii::Create() {
+btCollisionShape * ACollisionSphereRadii::Create() {
     btVector3 pos(0,0,0);
     float radius = 1.0f;
     btMultiSphereShape * shape = b3New( btMultiSphereShape, &pos, &radius, 1 );
@@ -92,11 +92,11 @@ btCollisionShape * FCollisionSphereRadii::Create() {
     return shape;
 }
 
-btCollisionShape * FCollisionBox::Create() {
+btCollisionShape * ACollisionBox::Create() {
     return b3New( btBoxShape, btVectorToFloat3( HalfExtents ) );
 }
 
-btCollisionShape * FCollisionCylinder::Create() {
+btCollisionShape * ACollisionCylinder::Create() {
     switch ( Axial ) {
     case AXIAL_X:
         return b3New( btCylinderShapeX, btVectorToFloat3( HalfExtents ) );
@@ -108,7 +108,7 @@ btCollisionShape * FCollisionCylinder::Create() {
     return b3New( btCylinderShape, btVectorToFloat3( HalfExtents ) );
 }
 
-btCollisionShape * FCollisionCone::Create() {
+btCollisionShape * ACollisionCone::Create() {
     switch ( Axial ) {
     case AXIAL_X:
         return b3New( btConeShapeX, Radius, Height );
@@ -120,7 +120,7 @@ btCollisionShape * FCollisionCone::Create() {
     return b3New( btConeShape, Radius, Height );
 }
 
-btCollisionShape * FCollisionCapsule::Create() {
+btCollisionShape * ACollisionCapsule::Create() {
     switch ( Axial ) {
     case AXIAL_X:
         return b3New( btCapsuleShapeX, Radius, Height );
@@ -132,14 +132,14 @@ btCollisionShape * FCollisionCapsule::Create() {
     return b3New( btCapsuleShape, Radius, Height );
 }
 
-FCollisionConvexHullData::FCollisionConvexHullData() {
+ACollisionConvexHullData::ACollisionConvexHullData() {
 }
 
-FCollisionConvexHullData::~FCollisionConvexHullData() {
+ACollisionConvexHullData::~ACollisionConvexHullData() {
     GZoneMemory.Dealloc( Data );
 }
 
-void FCollisionConvexHullData::Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount ) {
+void ACollisionConvexHullData::Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount ) {
     Vertices.Resize( _VertexCount );
     Indices.Resize( _IndexCount );
 
@@ -154,24 +154,24 @@ void FCollisionConvexHullData::Initialize( Float3 const * _Vertices, int _Vertex
     }
 }
 
-//btCollisionShape * FCollisionConvexHull::Create() {
+//btCollisionShape * ACollisionConvexHull::Create() {
 //    return b3New( btConvexHullShape, ( btScalar const * )Vertices.ToPtr(), Vertices.Length(), sizeof( Float3 ) );
 //}
 
-btCollisionShape * FCollisionConvexHull::Create() {
+btCollisionShape * ACollisionConvexHull::Create() {
     constexpr bool bComputeAabb = false; // FIXME: Нужно ли сейчас считать aabb?
     return b3New( btConvexPointCloudShape, HullData->Data, HullData->GetVertexCount(), btVector3(1.f,1.f,1.f), bComputeAabb );
 
     //return b3New( btConvexHullShape, ( btScalar const * )HullData->Vertices.ToPtr(), HullData->Vertices.Length(), sizeof( Float3 ) );
 }
 
-btCollisionShape * FCollisionTriangleSoupBVH::Create() {
+btCollisionShape * ACollisionTriangleSoupBVH::Create() {
     return b3New( btScaledBvhTriangleMeshShape, BvhData->GetData(), btVector3(1.f,1.f,1.f) );
 
     // TODO: Create GImpact mesh shape for dynamic objects
 }
 
-ATTRIBUTE_ALIGNED16( class ) FStridingMeshInterface : public btStridingMeshInterface
+ATTRIBUTE_ALIGNED16( class ) AStridingMeshInterface : public btStridingMeshInterface
 {
 protected:
     mutable int bHasAABB; // using int instead of bool to maintain alignment
@@ -182,18 +182,18 @@ protected:
 public:
     Float3 * Vertices;
     unsigned int * Indices;
-    FCollisionTriangleSoupData::FSubpart * Subparts;
+    ACollisionTriangleSoupData::SSubpart * Subparts;
     int SubpartCount;
 
 public:
     //BT_DECLARE_ALIGNED_ALLOCATOR();
 
-    FStridingMeshInterface()
+    AStridingMeshInterface()
         : bHasAABB(0)
     {
     }
 
-    ~FStridingMeshInterface() {
+    ~AStridingMeshInterface() {
 
     }
 
@@ -209,7 +209,7 @@ public:
 
         AN_Assert( Subpart < SubpartCount );
 
-        FCollisionTriangleSoupData::FSubpart * subpart = Subparts + Subpart;
+        ACollisionTriangleSoupData::SSubpart * subpart = Subparts + Subpart;
 
         (*VertexBase) = ( unsigned char * )( Vertices + subpart->BaseVertex );
         VertexCount = subpart->VertexCount;
@@ -233,7 +233,7 @@ public:
                                            int Subpart = 0 ) const override {
         AN_Assert( Subpart < SubpartCount );
 
-        FCollisionTriangleSoupData::FSubpart * subpart = Subparts + Subpart;
+        ACollisionTriangleSoupData::SSubpart * subpart = Subparts + Subpart;
 
         (*VertexBase) = ( const unsigned char * )( Vertices + subpart->BaseVertex );
         VertexCount = subpart->VertexCount;
@@ -275,11 +275,11 @@ public:
     }
 };
 
-FCollisionTriangleSoupBVHData::FCollisionTriangleSoupBVHData() {
-    Interface = b3New( FStridingMeshInterface );
+ACollisionTriangleSoupBVHData::ACollisionTriangleSoupBVHData() {
+    Interface = b3New( AStridingMeshInterface );
 }
 
-FCollisionTriangleSoupBVHData::~FCollisionTriangleSoupBVHData() {
+ACollisionTriangleSoupBVHData::~ACollisionTriangleSoupBVHData() {
     b3Destroy( Interface );
 
     if ( Data ) {
@@ -291,11 +291,11 @@ FCollisionTriangleSoupBVHData::~FCollisionTriangleSoupBVHData() {
     }
 }
 
-bool FCollisionTriangleSoupBVHData::UsedQuantizedAabbCompression() const {
+bool ACollisionTriangleSoupBVHData::UsedQuantizedAabbCompression() const {
     return bUsedQuantizedAabbCompression;
 }
 
-void FCollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompression ) {
+void ACollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompression ) {
     Interface->Vertices = TrisData->Vertices.ToPtr();
     Interface->Indices = TrisData->Indices.ToPtr();
     Interface->Subparts = TrisData->Subparts.ToPtr();
@@ -319,6 +319,10 @@ void FCollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompressio
         b3Destroy( Data );
     }
 
+    if ( TriangleInfoMap ) {
+        b3Destroy( TriangleInfoMap );
+    }
+
     Data = b3New( btBvhTriangleMeshShape, Interface,
                                           UsedQuantizedAabbCompression(),
                                           btVectorToFloat3( TrisData->BoundingBox.Mins ),
@@ -329,15 +333,50 @@ void FCollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompressio
     btGenerateInternalEdgeInfo( Data, TriangleInfoMap );
 }
 
-FCollisionTriangleSoupGimpact::FCollisionTriangleSoupGimpact() {
-    Interface = b3New( FStridingMeshInterface );
+#if 0
+#include <bullet3/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.h>
+
+void ACollisionTriangleSoupBVHData::Read( IStreamBase & _Stream ) {
+    uint32_t bufferSize;
+    _Stream >> bufferSize;
+    byte * buffer = (byte *)GHeapMemory.HeapAlloc( bufferSize, 1 );
+    _Stream.Read( buffer, bufferSize );
+
+
+    btBulletWorldImporter Importer(0);
+    if ( Importer.loadFileFromMemory( (char *)buffer, bufferSize ) ) {
+        Data = (btBvhTriangleMeshShape*)Importer.getCollisionShapeByIndex( 0 );
+    }
+
+    GHeapMemory.HeapFree( buffer );
 }
 
-FCollisionTriangleSoupGimpact::~FCollisionTriangleSoupGimpact() {
+void ACollisionTriangleSoupBVHData::Write( IStreamBase & _Stream ) const {
+    if ( Data ) {
+        btDefaultSerializer Serializer;
+
+        Serializer.startSerialization();
+
+        Data->serializeSingleBvh( &Serializer );
+        Data->serializeSingleTriangleInfoMap( &Serializer );
+
+        Serializer.finishSerialization();
+
+        _Stream << uint32_t( Serializer.getCurrentBufferSize() );
+        _Stream.Write( Serializer.getBufferPointer(), Serializer.getCurrentBufferSize() );
+    }
+}
+#endif
+
+ACollisionTriangleSoupGimpact::ACollisionTriangleSoupGimpact() {
+    Interface = b3New( AStridingMeshInterface );
+}
+
+ACollisionTriangleSoupGimpact::~ACollisionTriangleSoupGimpact() {
     b3Destroy( Interface );
 }
 
-btCollisionShape * FCollisionTriangleSoupGimpact::Create() {
+btCollisionShape * ACollisionTriangleSoupGimpact::Create() {
     // FIXME: This shape don't work. Why?
     Interface->Vertices = TrisData->Vertices.ToPtr();
     Interface->Indices = TrisData->Indices.ToPtr();
@@ -346,7 +385,7 @@ btCollisionShape * FCollisionTriangleSoupGimpact::Create() {
     return b3New( btGImpactMeshShape, Interface );
 }
 
-void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, ::FSubpart const * _Subparts, int _SubpartsCount ) {
+void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, AIndexedMeshSubpart * const * _Subparts, int _SubpartsCount ) {
     Vertices.ResizeInvalidate( _VertexCount );
     Indices.ResizeInvalidate( _IndexCount );
     Subparts.ResizeInvalidate( _SubpartsCount );
@@ -365,15 +404,41 @@ void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
 
     BoundingBox.Clear();
     for ( int i = 0 ; i < _SubpartsCount ; i++ ) {
-        Subparts[i].BaseVertex  = _Subparts[i].BaseVertex;
-        Subparts[i].VertexCount = _Subparts[i].VertexCount;
-        Subparts[i].FirstIndex  = _Subparts[i].FirstIndex;
-        Subparts[i].IndexCount  = _Subparts[i].IndexCount;
-        BoundingBox.AddAABB( _Subparts[i].BoundingBox );
+        Subparts[i].BaseVertex  = _Subparts[i]->GetBaseVertex();
+        Subparts[i].VertexCount = _Subparts[i]->GetVertexCount();
+        Subparts[i].FirstIndex  = _Subparts[i]->GetFirstIndex();
+        Subparts[i].IndexCount  = _Subparts[i]->GetIndexCount();
+        BoundingBox.AddAABB( _Subparts[i]->GetBoundingBox() );
     }
 }
 
-void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, BvAxisAlignedBox const & _BoundingBox ) {
+void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, SSubpart const * _Subparts, int _SubpartsCount, BvAxisAlignedBox const & _BoundingBox ) {
+    Vertices.ResizeInvalidate( _VertexCount );
+    Indices.ResizeInvalidate( _IndexCount );
+    Subparts.ResizeInvalidate( _SubpartsCount );
+
+    if ( _VertexStride == sizeof( Vertices[0] ) ) {
+        memcpy( Vertices.ToPtr(), _Vertices, sizeof( Vertices[0] ) * _VertexCount );
+    } else {
+        byte const * ptr = (byte const *)_Vertices;
+        for ( int i = 0 ; i < _VertexCount ; i++ ) {
+            memcpy( Vertices.ToPtr() + i, ptr, sizeof( Vertices[0] ) );
+            ptr += _VertexStride;
+        }
+    }
+
+    memcpy( Indices.ToPtr(), _Indices, sizeof( Indices[0] ) * _IndexCount );
+
+    BoundingBox = _BoundingBox;
+    for ( int i = 0 ; i < _SubpartsCount ; i++ ) {
+        Subparts[i].BaseVertex = _Subparts[i].BaseVertex;
+        Subparts[i].VertexCount = _Subparts[i].VertexCount;
+        Subparts[i].FirstIndex = _Subparts[i].FirstIndex;
+        Subparts[i].IndexCount = _Subparts[i].IndexCount;
+    }
+}
+
+void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, BvAxisAlignedBox const & _BoundingBox ) {
     Vertices.ResizeInvalidate( _VertexCount );
     Indices.ResizeInvalidate( _IndexCount );
     Subparts.ResizeInvalidate( 1 );
@@ -397,10 +462,10 @@ void FCollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
     Subparts[0].IndexCount  = _IndexCount;
 }
 
-void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
-    const float detail = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float detail = Math::Floor( Math::Max( 1.0f, Radius ) + 0.5f );
 
     const int numStacks = 8 * detail;
     const int numSlices = 12 * detail;
@@ -418,12 +483,12 @@ void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
     unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
     for ( int stack = 0; stack <= numStacks; ++stack ) {
-        const float theta = stack * FMath::_PI / numStacks;
-        FMath::RadSinCos( theta, sinTheta, cosTheta );
+        const float theta = stack * Math::_PI / numStacks;
+        Math::RadSinCos( theta, sinTheta, cosTheta );
 
         for ( int slice = 0; slice < numSlices; ++slice ) {            
-            const float phi = slice * FMath::_2PI / numSlices;
-            FMath::RadSinCos( phi, sinPhi, cosPhi );
+            const float phi = slice * Math::_2PI / numSlices;
+            Math::RadSinCos( phi, sinPhi, cosPhi );
 
             *pVertices++ = Float3( cosPhi * sinTheta, cosTheta, sinPhi * sinTheta ) * Radius + Position;
 
@@ -449,10 +514,10 @@ void FCollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
     }
 }
 
-void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
-    const float detail = FMath::Floor( FMath::Max( 1.0f, Radius.Max() ) + 0.5f );
+    const float detail = Math::Floor( Math::Max( 1.0f, Radius.Max() ) + 0.5f );
 
     const int numStacks = 8 * detail;
     const int numSlices = 12 * detail;
@@ -470,12 +535,12 @@ void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPo
     unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
     for ( int stack = 0; stack <= numStacks; ++stack ) {
-        const float theta = stack * FMath::_PI / numStacks;
-        FMath::RadSinCos( theta, sinTheta, cosTheta );
+        const float theta = stack * Math::_PI / numStacks;
+        Math::RadSinCos( theta, sinTheta, cosTheta );
 
         for ( int slice = 0; slice < numSlices; ++slice ) {
-            const float phi = slice * FMath::_2PI / numSlices;
-            FMath::RadSinCos( phi, sinPhi, cosPhi );
+            const float phi = slice * Math::_2PI / numSlices;
+            Math::RadSinCos( phi, sinPhi, cosPhi );
 
             *pVertices++ = Rotation * ( Float3( cosPhi * sinTheta, cosTheta, sinPhi * sinTheta ) * Radius ) + Position;
         }
@@ -497,7 +562,7 @@ void FCollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPo
     }
 }
 
-void FCollisionBox::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionBox::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     unsigned int const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
 
     const int firstVertex = _Vertices.Size();
@@ -523,7 +588,7 @@ void FCollisionBox::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< 
     }
 }
 
-void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     float sinPhi, cosPhi;
 
     int idxRadius, idxRadius2, idxHeight;
@@ -546,7 +611,7 @@ void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
         break;
     }
 
-    const float detal = FMath::Floor( FMath::Max( 1.0f, HalfExtents[idxRadius] ) + 0.5f );
+    const float detal = Math::Floor( Math::Max( 1.0f, HalfExtents[idxRadius] ) + 0.5f );
 
     const int numSlices = 8 * detal;
     const int faceTriangles = numSlices - 2;
@@ -566,7 +631,7 @@ void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
     Float3 vert;
 
     for ( int slice = 0; slice < numSlices; slice++, pVertices++ ) {
-        FMath::RadSinCos( slice * FMath::_2PI / numSlices, sinPhi, cosPhi );
+        Math::RadSinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * HalfExtents[idxRadius];
         vert[idxRadius2] = sinPhi * HalfExtents[idxRadius];
@@ -607,7 +672,7 @@ void FCollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
     }
 }
 
-void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
     float sinPhi, cosPhi;
 
     int idxRadius, idxRadius2, idxHeight;
@@ -630,7 +695,7 @@ void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
         break;
     }
 
-    const float detal = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float detal = Math::Floor( Math::Max( 1.0f, Radius ) + 0.5f );
 
     const int numSlices = 8 * detal;
     const int faceTriangles = numSlices - 2;
@@ -658,7 +723,7 @@ void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
     vert[idxHeight] = 0;
 
     for ( int slice = 0; slice < numSlices; slice++ ) {
-        FMath::RadSinCos( slice * FMath::_2PI / numSlices, sinPhi, cosPhi );
+        Math::RadSinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * Radius;
         vert[idxRadius2] = sinPhi * Radius;
@@ -683,7 +748,7 @@ void FCollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
     }
 }
 
-void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
 
     int idxRadius, idxRadius2, idxHeight;
     switch ( Axial ) {
@@ -710,7 +775,7 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
 
     float sinPhi, cosPhi;
 
-    const float detal = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float detal = Math::Floor( Math::Max( 1.0f, Radius ) + 0.5f );
 
     const int numSlices = 8 * detal;
     const int faceTriangles = numSlices - 2;
@@ -732,7 +797,7 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
     const float halfOfTotalHeight = Height*0.5f + Radius;
 
     for ( int slice = 0; slice < numSlices; slice++, pVertices++ ) {
-        FMath::RadSinCos( slice * FMath::_2PI / numSlices, sinPhi, cosPhi );
+        Math::RadSinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * Radius;
         vert[idxRadius2] = sinPhi * Radius;
@@ -777,7 +842,7 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
     
     unsigned int quad[ 4 ];
 
-    const float detail = FMath::Floor( FMath::Max( 1.0f, Radius ) + 0.5f );
+    const float detail = Math::Floor( Math::Max( 1.0f, Radius ) + 0.5f );
 
     const int numVerticalSubdivs = 6 * detail;
     const int numHorizontalSubdivs = 8 * detail;
@@ -796,20 +861,20 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
     Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
     unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
-    const float verticalStep = FMath::_PI / numVerticalSubdivs;
-    const float horizontalStep = FMath::_2PI / numHorizontalSubdivs;
+    const float verticalStep = Math::_PI / numVerticalSubdivs;
+    const float horizontalStep = Math::_2PI / numHorizontalSubdivs;
 
     const float halfHeight = Height * 0.5f;
 
-    for ( y = 0, verticalAngle = -FMath::_HALF_PI; y <= halfVerticalSubdivs; y++ ) {
+    for ( y = 0, verticalAngle = -Math::_HALF_PI; y <= halfVerticalSubdivs; y++ ) {
         float h, r;
-        FMath::RadSinCos( verticalAngle, h, r );
+        Math::RadSinCos( verticalAngle, h, r );
         h = h * Radius - halfHeight;
         r *= Radius;
         for ( x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++ ) {
             float s, c;
             Float3 & v = *pVertices++;
-            FMath::RadSinCos( horizontalAngle, s, c );
+            Math::RadSinCos( horizontalAngle, s, c );
             v[ idxRadius ] = r * c;
             v[ idxRadius2 ] = r * s;
             v[ idxHeight ] = h;
@@ -821,13 +886,13 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
 
     for ( y = 0, verticalAngle = 0; y <= halfVerticalSubdivs; y++ ) {
         float h, r;
-        FMath::RadSinCos( verticalAngle, h, r );
+        Math::RadSinCos( verticalAngle, h, r );
         h = h * Radius + halfHeight;
         r *= Radius;
         for ( x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++ ) {
             float s, c;
             Float3 & v = *pVertices++;
-            FMath::RadSinCos( horizontalAngle, s, c );
+            Math::RadSinCos( horizontalAngle, s, c );
             v[ idxRadius ] = r * c;
             v[ idxRadius2 ] = r * s;
             v[ idxHeight ] = h;
@@ -856,7 +921,7 @@ void FCollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
 #endif
 }
 
-void FCollisionConvexHull::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionConvexHull::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
 
     if ( !HullData ) {
         return;
@@ -880,13 +945,13 @@ void FCollisionConvexHull::CreateGeometry( TPodArray< Float3 > & _Vertices, TPod
     }
 }
 
-void FCollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
 
     if ( BvhData ) {
 
         // Create from triangle mesh
 
-        FCollisionTriangleSoupData * trisData = BvhData->TrisData;
+        ACollisionTriangleSoupData * trisData = BvhData->TrisData;
         if ( !trisData ) {
             return;
         }
@@ -897,7 +962,7 @@ void FCollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices,
         _Vertices.Resize( firstVertex + trisData->Vertices.Size() );
 
         int indexCount = 0;
-        for ( FCollisionTriangleSoupData::FSubpart & subpart : trisData->Subparts ) {
+        for ( ACollisionTriangleSoupData::SSubpart & subpart : trisData->Subparts ) {
             indexCount += subpart.IndexCount;
         }
 
@@ -905,7 +970,7 @@ void FCollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices,
 
         unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
-        for ( FCollisionTriangleSoupData::FSubpart & subpart : trisData->Subparts ) {
+        for ( ACollisionTriangleSoupData::SSubpart & subpart : trisData->Subparts ) {
             for ( int i = 0 ; i < subpart.IndexCount ; i++ ) {
                 *pIndices++ = firstVertex + subpart.BaseVertex + trisData->Indices[ subpart.FirstIndex + i ];
             }
@@ -942,8 +1007,8 @@ void FCollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices,
 #endif
 }
 
-void FCollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
-    FCollisionTriangleSoupData * trisData = TrisData;
+void ACollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+    ACollisionTriangleSoupData * trisData = TrisData;
     if ( !trisData ) {
         return;
     }
@@ -954,7 +1019,7 @@ void FCollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Verti
     _Vertices.Resize( firstVertex + trisData->Vertices.Size() );
 
     int indexCount = 0;
-    for ( FCollisionTriangleSoupData::FSubpart & subpart : trisData->Subparts ) {
+    for ( ACollisionTriangleSoupData::SSubpart & subpart : trisData->Subparts ) {
         indexCount += subpart.IndexCount;
     }
 
@@ -962,7 +1027,7 @@ void FCollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Verti
 
     unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
-    for ( FCollisionTriangleSoupData::FSubpart & subpart : trisData->Subparts ) {
+    for ( ACollisionTriangleSoupData::SSubpart & subpart : trisData->Subparts ) {
         for ( int i = 0 ; i < subpart.IndexCount ; i++ ) {
             *pIndices++ = firstVertex + subpart.BaseVertex + trisData->Indices[ subpart.FirstIndex + i ];
         }
@@ -975,8 +1040,8 @@ void FCollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Verti
     }
 }
 
-void FCollisionBodyComposition::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
-    for ( FCollisionBody * collisionBody : CollisionBodies ) {
+void ACollisionBodyComposition::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+    for ( ACollisionBody * collisionBody : CollisionBodies ) {
         collisionBody->CreateGeometry( _Vertices, _Indices );
     }
 }
@@ -1094,7 +1159,7 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
     }
 }
 
-//struct FConvexDecompositionDesc {
+//struct SConvexDecompositionDesc {
 //    // options
 //    unsigned int  Depth;    // depth to split, a maximum of 10, generally not over 7.
 //    float         ConcavityThreshold; // the concavity threshold percentage.  0=20 is reasonable.
@@ -1136,7 +1201,7 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
 //        float               mSphereVolume;      // volume of the best fit sphere
 //#endif
 
-//        FConvexHullDesc & hull = Hulls.Append();
+//        SConvexHullDesc & hull = Hulls.Append();
 
 //        hull.FirstVertex = Vertices.Length();
 //        hull.VertexCount = _Result.mHullVcount;
@@ -1153,7 +1218,7 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
 
 //    }
 
-//    struct FConvexHullDesc {
+//    struct SConvexHullDesc {
 //        int FirstVertex;
 //        int VertexCount;
 //        int FirstIndex;
@@ -1176,7 +1241,7 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
 
 //    TPodArray< Float3 > Vertices;
 //    TPodArray< unsigned int > Indices;
-//    TPodArray< FConvexHullDesc > Hulls;
+//    TPodArray< SConvexHullDesc > Hulls;
 //};
 // TODO: try ConvexBuilder
 
@@ -1201,7 +1266,7 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
                                  int _IndicesCount,
                                  TPodArray< Float3 > & _OutVertices,
                                  TPodArray< unsigned int > & _OutIndices,
-                                 TPodArray< FConvexHullDesc > & _OutHulls )
+                                 TPodArray< SConvexHullDesc > & _OutHulls )
 {
     int hunkMark = GHunkMemory.SetHunkMark();
 
@@ -1263,8 +1328,8 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
         totalPoints += numPoints;
         totalTriangles += numTriangles;
 
-        maxPointsPerCluster = FMath::Max( maxPointsPerCluster, numPoints );
-        maxTrianglesPerCluster = FMath::Max( maxTrianglesPerCluster, numTriangles );
+        maxPointsPerCluster = Math::Max( maxPointsPerCluster, numPoints );
+        maxTrianglesPerCluster = Math::Max( maxTrianglesPerCluster, numTriangles );
     }
 
     HACD::Vec3< HACD::Real > * hullPoints =
@@ -1287,7 +1352,7 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
 
         hacd.GetCH( cluster, hullPoints, hullTriangles );
 
-        FConvexHullDesc & hull = _OutHulls[cluster];
+        SConvexHullDesc & hull = _OutHulls[cluster];
         hull.FirstVertex = totalPoints;
         hull.VertexCount = numPoints;
         hull.FirstIndex = totalTriangles * 3;
@@ -1331,11 +1396,11 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
                                  int _VertexStride,
                                  unsigned int const * _Indices,
                                  int _IndicesCount,
-                                 FCollisionBodyComposition & _BodyComposition ) {
+                                 ACollisionBodyComposition & _BodyComposition ) {
 
     TPodArray< Float3 > HullVertices;
     TPodArray< unsigned int > HullIndices;
-    TPodArray< FConvexHullDesc > Hulls;
+    TPodArray< SConvexHullDesc > Hulls;
 
     PerformConvexDecomposition( _Vertices,
                                 _VerticesCount,
@@ -1348,9 +1413,9 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
 
     _BodyComposition.Clear();
 
-    for ( FConvexHullDesc const & hull : Hulls ) {
+    for ( SConvexHullDesc const & hull : Hulls ) {
 
-        FCollisionConvexHullData * hullData = CreateInstanceOf< FCollisionConvexHullData >();
+        ACollisionConvexHullData * hullData = CreateInstanceOf< ACollisionConvexHullData >();
 
 #if 0
         BakeCollisionMarginConvexHull( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, hullData->Vertices );
@@ -1360,7 +1425,7 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
         //memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
 #endif
 
-        FCollisionConvexHull * collisionBody = _BodyComposition.AddCollisionBody< FCollisionConvexHull >();
+        ACollisionConvexHull * collisionBody = _BodyComposition.AddCollisionBody< ACollisionConvexHull >();
         collisionBody->Position = hull.Centroid;
         collisionBody->Margin = 0.01f;
         collisionBody->HullData = hullData;
@@ -1381,7 +1446,7 @@ void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       int _IndicesCount,
                                       TPodArray< Float3 > & _OutVertices,
                                       TPodArray< unsigned int > & _OutIndices,
-                                      TPodArray< FConvexHullDesc > & _OutHulls,
+                                      TPodArray< SConvexHullDesc > & _OutHulls,
                                       Float3 & _CenterOfMass ) {
 
 
@@ -1468,7 +1533,7 @@ params.m_convexhullDownsampling = 1;
         int totalVertices = 0;
         int totalIndices = 0;
         for ( int i = 0 ; i < _OutHulls.Size() ; i++ ) {
-            FConvexHullDesc & hull = _OutHulls[i];
+            SConvexHullDesc & hull = _OutHulls[i];
 
             vhacd->GetConvexHull( i, ch );
 
@@ -1488,7 +1553,7 @@ params.m_convexhullDownsampling = 1;
         _OutIndices.ResizeInvalidate( totalIndices );
 
         for ( int i = 0 ; i < _OutHulls.Size() ; i++ ) {
-            FConvexHullDesc & hull = _OutHulls[i];
+            SConvexHullDesc & hull = _OutHulls[i];
 
             vhacd->GetConvexHull( i, ch );
 
@@ -1520,7 +1585,7 @@ params.m_convexhullDownsampling = 1;
     GHunkMemory.ClearToMark( hunkMark );
 }
 
-void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass ) {
+void CreateCollisionShape( ACollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass ) {
     *_CompoundShape = b3New( btCompoundShape );
     *_CenterOfMass = _Scale * BodyComposition.CenterOfMass;
 
@@ -1528,7 +1593,7 @@ void CreateCollisionShape( FCollisionBodyComposition const & BodyComposition, Fl
         const btVector3 scaling = btVectorToFloat3( _Scale );
         btTransform shapeTransform;
 
-        for ( FCollisionBody * collisionBody : BodyComposition.CollisionBodies ) {
+        for ( ACollisionBody * collisionBody : BodyComposition.CollisionBodies ) {
             btCollisionShape * shape = collisionBody->Create();
 
             shape->setMargin( collisionBody->Margin );
@@ -1549,7 +1614,7 @@ void DestroyCollisionShape( btCompoundShape * _CompoundShape ) {
     int numShapes = _CompoundShape->getNumChildShapes();
     for ( int i = numShapes-1 ; i >= 0 ; i-- ) {
         btCollisionShape * shape = _CompoundShape->getChildShape( i );
-        static_cast< FCollisionBody * >( shape->getUserPointer() )->RemoveRef();
+        static_cast< ACollisionBody * >( shape->getUserPointer() )->RemoveRef();
         b3Destroy( shape );
     }
     b3Destroy( _CompoundShape );

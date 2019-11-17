@@ -33,53 +33,53 @@ SOFTWARE.
 
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-AN_BEGIN_CLASS_META( FClusteredObject )
+AN_BEGIN_CLASS_META( AClusteredObject )
 AN_END_CLASS_META()
 
-FClusteredObject * FClusteredObject::DirtyList = nullptr;
-FClusteredObject * FClusteredObject::DirtyListTail = nullptr;
+AClusteredObject * AClusteredObject::DirtyList = nullptr;
+AClusteredObject * AClusteredObject::DirtyListTail = nullptr;
 
-FClusteredObject::FClusteredObject() {
+AClusteredObject::AClusteredObject() {
     RenderingGroup = RENDERING_GROUP_DEFAULT;
 }
 
-BvSphereSSE const & FClusteredObject::GetSphereWorldBounds() const {
+BvSphereSSE const & AClusteredObject::GetSphereWorldBounds() const {
     return SphereWorldBounds;
 }
 
-BvAxisAlignedBox const & FClusteredObject::GetAABBWorldBounds() const {
+BvAxisAlignedBox const & AClusteredObject::GetAABBWorldBounds() const {
     return AABBWorldBounds;
 }
 
-BvOrientedBox const & FClusteredObject::GetOBBWorldBounds() const {
+BvOrientedBox const & AClusteredObject::GetOBBWorldBounds() const {
     return OBBWorldBounds;
 }
 
-Float4x4 const & FClusteredObject::GetOBBTransformInverse() const {
+Float4x4 const & AClusteredObject::GetOBBTransformInverse() const {
     return OBBTransformInverse;
 }
 
-void FClusteredObject::InitializeComponent() {
+void AClusteredObject::InitializeComponent() {
     Super::InitializeComponent();
 
     MarkAreaDirty();
 }
 
-void FClusteredObject::DeinitializeComponent() {
+void AClusteredObject::DeinitializeComponent() {
     Super::DeinitializeComponent();
 #if 0
     // remove from dirty list
     IntrusiveRemoveFromList( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );
 
     // FIXME: Is it right way to remove surface areas here?
-    FWorld * world = GetWorld();
-    for ( FLevel * level : world->GetArrayOfLevels() ) {
+    AWorld * world = GetWorld();
+    for ( ALevel * level : world->GetArrayOfLevels() ) {
         level->RemoveSurfaceAreas( this );
     }
 #endif
 }
 
-void FClusteredObject::MarkAreaDirty() {
+void AClusteredObject::MarkAreaDirty() {
 #if 0
     // add to dirty list
     if ( !IntrusiveIsInList( this, NextDirty, PrevDirty, DirtyList, DirtyListTail ) ) {
@@ -88,7 +88,7 @@ void FClusteredObject::MarkAreaDirty() {
 #endif
 }
 
-void FClusteredObject::ForceOutdoor( bool _OutdoorSurface ) {
+void AClusteredObject::ForceOutdoor( bool _OutdoorSurface ) {
     if ( bIsOutdoor == _OutdoorSurface ) {
         return;
     }
@@ -97,20 +97,20 @@ void FClusteredObject::ForceOutdoor( bool _OutdoorSurface ) {
     MarkAreaDirty();
 }
 
-void FClusteredObject::_UpdateSurfaceAreas() {
+void AClusteredObject::_UpdateSurfaceAreas() {
 #if 0
-    FClusteredObject * next;
-    for ( FClusteredObject * surf = DirtyList; surf; surf = next ) {
+    AClusteredObject * next;
+    for ( AClusteredObject * surf = DirtyList; surf; surf = next ) {
 
         next = surf->NextDirty;
 
-        FWorld * world = surf->GetWorld();
+        AWorld * world = surf->GetWorld();
 
-        for ( FLevel * level : world->GetArrayOfLevels() ) {
+        for ( ALevel * level : world->GetArrayOfLevels() ) {
             level->RemoveSurfaceAreas( surf );
         }
 
-        for ( FLevel * level : world->GetArrayOfLevels() ) {
+        for ( ALevel * level : world->GetArrayOfLevels() ) {
             level->AddSurfaceAreas( surf );
             //GLogger.Printf( "Update actor %s\n", surf->GetParentActor()->GetNameConstChar() );
         }

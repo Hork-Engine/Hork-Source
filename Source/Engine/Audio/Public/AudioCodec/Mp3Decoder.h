@@ -38,8 +38,8 @@ struct mpg123_handle_struct;
 
 }
 
-class ANGIE_API FMp3AudioTrack : public IAudioStreamInterface {
-    AN_CLASS( FMp3AudioTrack, IAudioStreamInterface )
+class ANGIE_API AMp3AudioTrack : public IAudioStreamInterface {
+    AN_CLASS( AMp3AudioTrack, IAudioStreamInterface )
 
 public:
     bool InitializeFileStream( const char * _FileName ) override;
@@ -53,8 +53,8 @@ public:
     int StreamDecodePCM( short * _Buffer, int _NumShorts ) override;
 
 protected:
-    FMp3AudioTrack();
-    ~FMp3AudioTrack();
+    AMp3AudioTrack();
+    ~AMp3AudioTrack();
 
 private:
     mpg123_handle_struct * Handle;
@@ -62,8 +62,8 @@ private:
     int NumChannels;
 };
 
-class ANGIE_API FMp3Decoder : public IAudioDecoderInterface {
-    AN_CLASS( FMp3Decoder, IAudioDecoderInterface )
+class ANGIE_API AMp3Decoder : public IAudioDecoderInterface {
+    AN_CLASS( AMp3Decoder, IAudioDecoderInterface )
 
 public:
     IAudioStreamInterface * CreateAudioStream() override;
@@ -72,5 +72,5 @@ public:
     bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) override;
 
 protected:
-    FMp3Decoder();
+    AMp3Decoder();
 };

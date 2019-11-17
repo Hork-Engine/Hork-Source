@@ -40,48 +40,47 @@ SOFTWARE.
 
 static int ResourceSerialIdGen = 0;
 
-AN_CLASS_META( FAudioClip )
+AN_CLASS_META( AAudioClip )
 
-FAudioClip::FAudioClip() {
+AAudioClip::AAudioClip() {
     BufferSize = DEFAULT_BUFFER_SIZE;
     SerialId = ++ResourceSerialIdGen;
     CurStreamType = StreamType = SOUND_STREAM_DISABLED;
 }
 
-FAudioClip::~FAudioClip() {
+AAudioClip::~AAudioClip() {
     Purge();
 }
 
-int FAudioClip::GetFrequency() const {
+int AAudioClip::GetFrequency() const {
     return Frequency;
 }
 
-int FAudioClip::GetBitsPerSample() const {
+int AAudioClip::GetBitsPerSample() const {
     return BitsPerSample;
 }
 
-int FAudioClip::GetChannels() const {
+int AAudioClip::GetChannels() const {
     return Channels;
 }
 
-int FAudioClip::GetSamplesCount() const {
+int AAudioClip::GetSamplesCount() const {
     return SamplesCount;
 }
 
-float FAudioClip::GetDurationInSecounds() const {
+float AAudioClip::GetDurationInSecounds() const {
     return DurationInSeconds;
 }
 
-ESoundStreamType FAudioClip::GetStreamType() const {
+ESoundStreamType AAudioClip::GetStreamType() const {
     return CurStreamType;
 }
 
-void FAudioClip::SetBufferSize( int _BufferSize ) {
-    BufferSize = _BufferSize;
-    BufferSize.Clamp( AUDIO_MIN_PCM_BUFFER_SIZE, AUDIO_MAX_PCM_BUFFER_SIZE );
+void AAudioClip::SetBufferSize( int _BufferSize ) {
+    BufferSize = Math::Clamp( _BufferSize, AUDIO_MIN_PCM_BUFFER_SIZE, AUDIO_MAX_PCM_BUFFER_SIZE );
 }
 
-int FAudioClip::GetBufferSize() const {
+int AAudioClip::GetBufferSize() const {
     return BufferSize;
 }
 
@@ -96,15 +95,13 @@ static int GetAppropriateFormat( short _Channels, short _BitsPerSample ) {
     return -1;
 }
 
-void FAudioClip::InitializeInternalResource( const char * _InternalResourceName ) {
+void AAudioClip::LoadInternalResource( const char * _Path ) {
     Purge();
 
     // TODO: ...
-
-    //SetName( _InternalResourceName );
 }
 
-bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
+bool AAudioClip::LoadResource( AString const & _Path ) {
     Purge();
 
     FileName = _Path;
@@ -112,7 +109,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
     // Mark resource was changed
     SerialId = ++ResourceSerialIdGen;
 
-    Decoder = GAudioSystem.FindDecoder( _Path );
+    Decoder = GAudioSystem.FindDecoder( _Path.CStr() );
     if ( Decoder ) {
 
         CurStreamType = StreamType;
@@ -121,7 +118,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
         case SOUND_STREAM_DISABLED:
             {
                 short * PCM;
-                Decoder->DecodePCM( _Path, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM );
+                Decoder->DecodePCM( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM );
 
                 if ( SamplesCount > 0 ) {
                     Format = GetAppropriateFormat( Channels, BitsPerSample );
@@ -153,7 +150,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
                     BufferId = 0;
                 }
 
-                bool bDecodeResult = Decoder->DecodePCM( _Path, &SamplesCount, &Channels, &Frequency, &BitsPerSample, NULL );
+                bool bDecodeResult = Decoder->DecodePCM( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, NULL );
                 if ( bDecodeResult ) {
                     Format = GetAppropriateFormat( Channels, BitsPerSample );
                     bLoaded = true;
@@ -167,7 +164,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
                     BufferId = 0;
                 }
 
-                bool bResult = Decoder->ReadEncoded( _Path, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &EncodedData, &EncodedDataLength );
+                bool bResult = Decoder->ReadEncoded( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, &EncodedData, &EncodedDataLength );
                 if ( bResult ) {
                     Format = GetAppropriateFormat( Channels, BitsPerSample );
                     bLoaded = true;
@@ -178,12 +175,6 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
     }
 
     if ( !bLoaded ) {
-
-        if ( _CreateDefultObjectIfFails ) {
-            InitializeDefaultObject();
-            return true;
-        }
-
         return false;
     }
 
@@ -193,7 +184,7 @@ bool FAudioClip::InitializeFromFile( const char * _Path, bool _CreateDefultObjec
 }
 
 
-bool FAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength ) {
+bool AAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength ) {
     Purge();
 
     FileName = _Path;
@@ -261,12 +252,6 @@ bool FAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
     }
 
     if ( !bLoaded ) {
-
-//        if ( _CreateDefultObjectIfFails ) {
-//            InitializeDefaultObject();
-//            return true;
-//        }
-
         return false;
     }
 
@@ -275,7 +260,7 @@ bool FAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
     return true;
 }
 
-IAudioStreamInterface * FAudioClip::CreateAudioStreamInstance() {
+IAudioStreamInterface * AAudioClip::CreateAudioStreamInstance() {
     IAudioStreamInterface * streamInterface;
 
     if ( CurStreamType == SOUND_STREAM_DISABLED ) {
@@ -288,7 +273,7 @@ IAudioStreamInterface * FAudioClip::CreateAudioStreamInstance() {
 
     if ( streamInterface ) {
         if ( CurStreamType == SOUND_STREAM_FILE ) {
-            bCreateResult = streamInterface->InitializeFileStream( GetFileName().ToConstChar() );
+            bCreateResult = streamInterface->InitializeFileStream( GetFileName().CStr() );
         } else {
             bCreateResult = streamInterface->InitializeMemoryStream( GetEncodedData(), GetEncodedDataLength() );
         }
@@ -301,7 +286,7 @@ IAudioStreamInterface * FAudioClip::CreateAudioStreamInstance() {
     return streamInterface;
 }
 
-void FAudioClip::Purge() {
+void AAudioClip::Purge() {
     if ( BufferId ) {
         AL_DeleteBuffer( BufferId );
         BufferId = 0;

@@ -33,7 +33,7 @@ SOFTWARE.
 #include "BaseTypes.h"
 #include "Std.h"
 
-namespace FMath {
+namespace Math {
 
 constexpr double _PI_DBL = 3.1415926535897932384626433832795;
 constexpr double _2PI_DBL = 2.0 * _PI_DBL;

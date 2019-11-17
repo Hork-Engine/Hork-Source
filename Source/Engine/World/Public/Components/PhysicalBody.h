@@ -38,7 +38,7 @@ SOFTWARE.
 class btRigidBody;
 class btSoftBody;
 class btCollisionObject;
-class FPhysicalBodyMotionState;
+class SPhysicalBodyMotionState;
 
 enum ECollisionMask {
     CM_NOCOLLISION   = 0,
@@ -68,21 +68,21 @@ enum EPhysicsBehavior {
     PB_KINEMATIC        // Physics simulated by game logic
 };
 
-class FPhysicalBody : public FSpatialObject {
-    AN_COMPONENT( FPhysicalBody, FSpatialObject )
+class APhysicalBody : public ASpatialObject {
+    AN_COMPONENT( APhysicalBody, ASpatialObject )
 
-    friend class FPhysicalBodyMotionState;
-    friend struct FCollisionFilterCallback;
-    friend class FWorld;
+    friend class SPhysicalBodyMotionState;
+    friend struct ACollisionFilterCallback;
+    friend class AWorld;
 
 public:
     // Component events
-    FContactDelegate E_OnBeginContact;
-    FContactDelegate E_OnEndContact;
-    FContactDelegate E_OnUpdateContact;
-    FOverlapDelegate E_OnBeginOverlap;
-    FOverlapDelegate E_OnEndOverlap;
-    FOverlapDelegate E_OnUpdateOverlap;
+    AContactDelegate E_OnBeginContact;
+    AContactDelegate E_OnEndContact;
+    AContactDelegate E_OnUpdateContact;
+    AOverlapDelegate E_OnBeginOverlap;
+    AOverlapDelegate E_OnEndOverlap;
+    AOverlapDelegate E_OnUpdateOverlap;
 
     // Physics simulation. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
     EPhysicsBehavior PhysicsBehavior;
@@ -108,7 +108,7 @@ public:
     bool bGenerateContactPoints;
 
     // Collision body composition. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    FCollisionBodyComposition BodyComposition;
+    ACollisionBodyComposition BodyComposition;
 
     // Set to true if you want to use body composition from overrided method DefaultBodyComposition(). Set it before component initialization
     // or call UpdatePhysicsAttribs() to apply property.
@@ -150,10 +150,10 @@ public:
     void SetCollisionFilter( int _CollisionGroup, int _CollisionMask );
 
     // Set actor to ignore collisions with this component
-    void AddCollisionIgnoreActor( FActor * _Actor );
+    void AddCollisionIgnoreActor( AActor * _Actor );
 
     // Unset actor to ignore collisions with this component
-    void RemoveCollisionIgnoreActor( FActor * _Actor );
+    void RemoveCollisionIgnoreActor( AActor * _Actor );
 
     // Force physics activation
     void ActivatePhysics();
@@ -212,7 +212,7 @@ public:
     // Get collision mask. See ECollisionMask.
     int SetCollisionMask() const { return CollisionMask; }
 
-    // Get object velocity. For soft bodies use GetVertexVelocity in FSoftMeshComponent.
+    // Get object velocity. For soft bodies use GetVertexVelocity in ASoftMeshComponent.
     Float3 GetLinearVelocity() const;
 
     Float3 const & GetLinearFactor() const;
@@ -275,18 +275,18 @@ public:
 
     int GetCollisionBodiesCount() const;
 
-    FCollisionBodyComposition const & GetBodyComposition() const;
+    ACollisionBodyComposition const & GetBodyComposition() const;
 
     // Create 3d mesh model from collision body composition. Store coordinates in world space.
     void CreateCollisionModel( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices );
 
-    void ContactTest( TPodArray< FPhysicalBody * > & _Result );
-    void ContactTestActor( TPodArray< FActor * > & _Result );
+    void ContactTest( TPodArray< APhysicalBody * > & _Result );
+    void ContactTestActor( TPodArray< AActor * > & _Result );
 
     void UpdatePhysicsAttribs();
 
 protected:
-    FPhysicalBody();
+    APhysicalBody();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -296,12 +296,12 @@ protected:
 
     void OnTransformDirty() override;
 
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
-    virtual FCollisionBodyComposition const & DefaultBodyComposition() const { return BodyComposition; }
+    virtual ACollisionBodyComposition const & DefaultBodyComposition() const { return BodyComposition; }
 
     bool bSoftBodySimulation;
-    btSoftBody * SoftBody; // managed by FSoftMeshComponent
+    btSoftBody * SoftBody; // managed by ASoftMeshComponent
     //Float3 PrevWorldPosition;
     //Quat PrevWorldRotation;
     //bool bUpdateSoftbodyTransform;
@@ -313,7 +313,7 @@ private:
     void SetCenterOfMassRotation( Quat const & _Rotation );
     void AddPhysicalBodyToWorld();
 
-    TPodArray< FActor *, 1 > CollisionIgnoreActors;
+    TPodArray< AActor *, 1 > CollisionIgnoreActors;
 
     Float3 LinearFactor = Float3( 1 );
     float LinearDamping;
@@ -333,9 +333,9 @@ private:
 
     btRigidBody * RigidBody;
     btCompoundShape * CompoundShape;
-    FPhysicalBodyMotionState * MotionState;
+    SPhysicalBodyMotionState * MotionState;
     Float3 CachedScale;
 
-    FPhysicalBody * NextMarked;
-    FPhysicalBody * PrevMarked;
+    APhysicalBody * NextMarked;
+    APhysicalBody * PrevMarked;
 };

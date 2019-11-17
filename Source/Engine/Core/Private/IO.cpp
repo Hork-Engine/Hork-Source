@@ -57,7 +57,7 @@ extern AAssetManager * __AssetManager;
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-namespace FCore {
+namespace Core {
 
 void MakeDir( const char * _Directory, bool _FileName ) {
     size_t strLen = strlen( _Directory );
@@ -74,7 +74,7 @@ void MakeDir( const char * _Directory, bool _FileName ) {
     }
     #endif
     for ( ; *_Directory ; p++, _Directory++ ) {
-        if ( FString::IsPathSeparator( *p ) ) {
+        if ( AString::IsPathSeparator( *p ) ) {
             *p = 0;
             #ifdef AN_COMPILER_MSVC
             mkdir( tmpStr );
@@ -95,14 +95,14 @@ void MakeDir( const char * _Directory, bool _FileName ) {
 }
 
 bool IsFileExists( const char * _FileName ) {
-    FString s = _FileName;
-    s.UpdateSeparator();
-    return access( s.ToConstChar(), 0 ) == 0;
+    AString s = _FileName;
+    s.FixSeparator();
+    return access( s.CStr(), 0 ) == 0;
 }
 
 void RemoveFile( const char * _FileName ) {
-    FString s = _FileName;
-    s.UpdateSeparator();
+    AString s = _FileName;
+    s.FixSeparator();
 #if defined AN_OS_LINUX
     ::remove( _FileName );
 #elif defined AN_OS_WIN32
@@ -120,43 +120,43 @@ void RemoveFile( const char * _FileName ) {
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-FFileStream::FFileStream()
+AFileStream::AFileStream()
     : Mode( M_Closed )
 {
 }
 
-FFileStream::~FFileStream() {
+AFileStream::~AFileStream() {
     Close();
 }
 
-bool FFileStream::OpenRead( const char * _FileName ) {
+bool AFileStream::OpenRead( const char * _FileName ) {
     return Open( _FileName, M_Read );
 }
 
-bool FFileStream::OpenWrite( const char * _FileName ) {
+bool AFileStream::OpenWrite( const char * _FileName ) {
     return Open( _FileName, M_Write );
 }
 
-bool FFileStream::OpenAppend( const char * _FileName ) {
+bool AFileStream::OpenAppend( const char * _FileName ) {
     return Open( _FileName, M_Append );
 }
 
-bool FFileStream::Open( const char * _FileName, int _Mode ) {
+bool AFileStream::Open( const char * _FileName, int _Mode ) {
     Close();
 
 #ifdef AN_OS_ANDROID
     if ( _Mode != M_Read ) {
-        Out() << "FFileStream::Open: only read mode is supported on current platform";
+        Out() << "AFileStream::Open: only read mode is supported on current platform";
         return false;
     }
     AAsset * f = AAssetManager_open( __AssetManager, UpdatePathSeparator( _Url ).c_str(), _Access );
 #else
     FileName = _FileName;
-    FileName.UpdateSeparator();
+    FileName.FixSeparator();
     if ( FileName.Length() && FileName[ FileName.Length() - 1 ] == '/' ) {
 
         if ( bVerbose ) {
-            GLogger.Printf( "FFileStream::Open: invalid file name %s\n", _FileName );
+            GLogger.Printf( "AFileStream::Open: invalid file name %s\n", _FileName );
         }
 
         FileName.Free();
@@ -169,15 +169,15 @@ bool FFileStream::Open( const char * _FileName, int _Mode ) {
     AN_ASSERT( _Mode >= 0 && _Mode < 3, "Invalid mode" );
 
     if ( _Mode == M_Write || _Mode == M_Append ) {
-        FCore::MakeDir( FileName.ToConstChar(), true );
+        Core::MakeDir( FileName.CStr(), true );
     }
 
-    FILE * f = fopen( FileName.ToConstChar(), fopen_mode[ _Mode ] );
+    FILE * f = fopen( FileName.CStr(), fopen_mode[ _Mode ] );
 #endif
 
     if ( !f ) {
         if ( bVerbose ) {
-            GLogger.Printf( "FFileStream::Open: couldn't open %s\n", FileName.ToConstChar() );
+            GLogger.Printf( "AFileStream::Open: couldn't open %s\n", FileName.CStr() );
         }
         FileName.Free();
         return false;
@@ -189,7 +189,7 @@ bool FFileStream::Open( const char * _FileName, int _Mode ) {
     return true;
 }
 
-void FFileStream::Close() {
+void AFileStream::Close() {
     if ( Mode == M_Closed ) {
         return;
     }
@@ -203,13 +203,13 @@ void FFileStream::Close() {
 #endif
 }
 
-const char * FFileStream::Impl_GetFileName() const {
-    return FileName.ToConstChar();
+const char * AFileStream::Impl_GetFileName() const {
+    return FileName.CStr();
 }
 
-int FFileStream::Impl_Read( void * _Buffer, int _Length ) {
+int AFileStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
     if ( Mode != M_Read ) {
-        GLogger.Printf( "FFileStream::Read: expected read mode for %s\n", FileName.ToConstChar() );
+        GLogger.Printf( "AFileStream::Read: expected read mode for %s\n", FileName.CStr() );
         return 0;
     }
 
@@ -217,7 +217,7 @@ int FFileStream::Impl_Read( void * _Buffer, int _Length ) {
     int numTries = 0;
     byte * data = ( byte * )_Buffer;
 
-    for ( int bytesCount = _Length ; bytesCount > 0 ; bytesCount -= count, data += count ) {
+    for ( int bytesCount = _SizeInBytes ; bytesCount > 0 ; bytesCount -= count, data += count ) {
 #ifdef AN_OS_ANDROID
         count = AAsset_read( ( AAsset * )FileHandle, data, bytesCount );
 #else
@@ -226,29 +226,29 @@ int FFileStream::Impl_Read( void * _Buffer, int _Length ) {
         if ( count == 0 ) {
             if ( numTries > 0 ) {
                 if ( ferror( ( FILE * )FileHandle ) ) {
-                    GLogger.Printf( "FFileStream::Read: read error %s\n", FileName.ToConstChar() );
+                    GLogger.Printf( "AFileStream::Read: read error %s\n", FileName.CStr() );
                 } else if ( feof( ( FILE * )FileHandle ) ) {
-                    //GLogger.Printf( "FFileStream::Read: unexpected end of file %s\n", FileName.ToConstChar() );
+                    //GLogger.Printf( "AFileStream::Read: unexpected end of file %s\n", FileName.CStr() );
                 }
-                bytesCount = _Length - bytesCount;
+                bytesCount = _SizeInBytes - bytesCount;
                 return bytesCount;
             }
             numTries++;
         } else  if ( count < 0 ) {
-            GLogger.Printf( "FFileStream::Read: failed to read from %s\n", FileName.ToConstChar() );
+            GLogger.Printf( "AFileStream::Read: failed to read from %s\n", FileName.CStr() );
             return 0;
         }
     }
-    return _Length;
+    return _SizeInBytes;
 }
 
-int FFileStream::Impl_Write( const void * _Buffer, int _Length ) {
+int AFileStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
 #ifdef AN_OS_ANDROID
     #error "write mode is not supported on current platform";
 #else
 
     if ( Mode != M_Write && Mode != M_Append ) {
-        GLogger.Printf( "FFileStream::Write: expected write or append mode for %s\n", FileName.ToConstChar() );
+        GLogger.Printf( "AFileStream::Write: expected write or append mode for %s\n", FileName.CStr() );
         return 0;
     }
 
@@ -256,32 +256,32 @@ int FFileStream::Impl_Write( const void * _Buffer, int _Length ) {
     int numTries = 0;
     byte * data = ( byte * )_Buffer;
 
-    for ( int bytesCount = _Length ; bytesCount > 0 ; bytesCount -= count, data += count ) {
+    for ( int bytesCount = _SizeInBytes ; bytesCount > 0 ; bytesCount -= count, data += count ) {
         count = fwrite( data, 1, bytesCount, ( FILE * )FileHandle );
         if ( count == 0 ) {
             if ( numTries > 0 ) {
-                GLogger.Printf( "FFileStream::Write: write error %s\n", FileName.ToConstChar() );
-                bytesCount = _Length - bytesCount;
+                GLogger.Printf( "AFileStream::Write: write error %s\n", FileName.CStr() );
+                bytesCount = _SizeInBytes - bytesCount;
                 return bytesCount;
             }
             numTries++;
         } else  if ( count == -1 ) {
-            GLogger.Printf( "FFileStream::Write: failed to write to %s\n", FileName.ToConstChar() );
+            GLogger.Printf( "AFileStream::Write: failed to write to %s\n", FileName.CStr() );
             return 0;
         }
     }
 
-    return _Length;
+    return _SizeInBytes;
 #endif
 }
 
-char * FFileStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
+char * AFileStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
 #ifdef AN_OS_ANDROID
     #error "Gets() is not supported on current platform";
 #else
 
     if ( Mode != M_Read ) {
-        GLogger.Printf( "FFileStream::Gets: expected read mode for %s\n", FileName.ToConstChar() );
+        GLogger.Printf( "AFileStream::Gets: expected read mode for %s\n", FileName.CStr() );
         return nullptr;
     }
 
@@ -289,7 +289,7 @@ char * FFileStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
 #endif
 }
 
-void FFileStream::Impl_Flush() {
+void AFileStream::Impl_Flush() {
 #ifdef AN_OS_ANDROID
     #error "Flush() is not supported on current platform";
 #else
@@ -297,7 +297,7 @@ void FFileStream::Impl_Flush() {
 #endif
 }
 
-long FFileStream::Impl_Tell() {
+long AFileStream::Impl_Tell() {
 #ifdef AN_OS_ANDROID
     return AAsset_getLength( ( AAsset * )FileHandle ) - AAsset_getRemainingLength( ( AAsset * )FileHandle );
 #else
@@ -305,7 +305,7 @@ long FFileStream::Impl_Tell() {
 #endif
 }
 
-int FFileStream::Impl_SeekSet( long _Offset ) {
+int AFileStream::Impl_SeekSet( long _Offset ) {
 #ifdef AN_OS_ANDROID
     return AAsset_seek( ( AAsset * )FileHandle, _Offset, SEEK_SET );
 #else
@@ -313,7 +313,7 @@ int FFileStream::Impl_SeekSet( long _Offset ) {
 #endif
 }
 
-int FFileStream::Impl_SeekCur( long _Offset ) {
+int AFileStream::Impl_SeekCur( long _Offset ) {
 #ifdef AN_OS_ANDROID
     return AAsset_seek( ( AAsset * )FileHandle, _Offset, SEEK_CUR );
 #else
@@ -321,7 +321,7 @@ int FFileStream::Impl_SeekCur( long _Offset ) {
 #endif
 }
 
-int FFileStream::Impl_SeekEnd( long _Offset ) {
+int AFileStream::Impl_SeekEnd( long _Offset ) {
 #ifdef AN_OS_ANDROID
     return AAsset_seek( ( AAsset * )FileHandle, _Offset, SEEK_END );
 #else
@@ -329,7 +329,7 @@ int FFileStream::Impl_SeekEnd( long _Offset ) {
 #endif
 }
 
-long FFileStream::Impl_Length() {
+long AFileStream::Impl_SizeInBytes() {
     long Offset = Tell();
     SeekEnd( 0 );
     long FileSz = Tell();
@@ -337,7 +337,7 @@ long FFileStream::Impl_Length() {
     return FileSz;
 }
 
-bool FFileStream::Impl_Eof() {
+bool AFileStream::Impl_Eof() {
 #ifdef AN_OS_ANDROID
     TODO
 #else
@@ -351,34 +351,50 @@ bool FFileStream::Impl_Eof() {
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-FMemoryStream::FMemoryStream()
+AMemoryStream::AMemoryStream()
     : Mode( M_Closed )
     , MemoryBuffer( nullptr )
-    , MemoryBufferLength( 0 )
+    , MemoryBufferSize( 0 )
     , bMemoryBufferOwner( false )
     , MemoryBufferOffset( 0 )
 {
 }
 
-FMemoryStream::~FMemoryStream() {
+AMemoryStream::~AMemoryStream() {
     Close();
 }
 
-bool FMemoryStream::OpenRead( const char * _FileName, const byte * _MemoryBuffer, size_t _MemoryBufferLength ) {
+bool AMemoryStream::OpenRead( AString const & _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes ) {
+    return OpenRead( _FileName.CStr(), _MemoryBuffer, _SizeInBytes );
+}
+
+bool AMemoryStream::OpenRead( AString const & _FileName, AArchive & _Archive ) {
+    return OpenRead( _FileName.CStr(), _Archive );
+}
+
+bool AMemoryStream::OpenWrite( AString const & _FileName, byte * _MemoryBuffer, size_t _SizeInBytes ) {
+    return OpenWrite( _FileName.CStr(), _MemoryBuffer, _SizeInBytes );
+}
+
+bool AMemoryStream::OpenWrite( AString const & _FileName, size_t _ReservedSize ) {
+    return OpenWrite( _FileName.CStr(), _ReservedSize );
+}
+
+bool AMemoryStream::OpenRead( const char * _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes ) {
     Close();
     FileName = _FileName;
     MemoryBuffer = const_cast< byte * >( _MemoryBuffer );
-    MemoryBufferLength = _MemoryBufferLength;
+    MemoryBufferSize = _SizeInBytes;
     bMemoryBufferOwner = false;
     MemoryBufferOffset = 0;
     Mode = M_Read;
     return true;
 }
 
-bool FMemoryStream::OpenRead( const char * _FileName, FArchive & _Archive ) {
+bool AMemoryStream::OpenRead( const char * _FileName, AArchive & _Archive ) {
     Close();
 
-    if ( !_Archive.ReadFileToZoneMemory( _FileName, &MemoryBuffer, &MemoryBufferLength ) ) {
+    if ( !_Archive.ReadFileToZoneMemory( _FileName, &MemoryBuffer, &MemoryBufferSize ) ) {
         return false;
     }
 
@@ -389,29 +405,29 @@ bool FMemoryStream::OpenRead( const char * _FileName, FArchive & _Archive ) {
     return true;
 }
 
-bool FMemoryStream::OpenWrite( const char * _FileName, byte * _MemoryBuffer, size_t _MemoryBufferLength ) {
+bool AMemoryStream::OpenWrite( const char * _FileName, byte * _MemoryBuffer, size_t _SizeInBytes ) {
     Close();
     FileName = _FileName;
     MemoryBuffer = _MemoryBuffer;
-    MemoryBufferLength = _MemoryBufferLength;
+    MemoryBufferSize = _SizeInBytes;
     bMemoryBufferOwner = false;
     MemoryBufferOffset = 0;
     Mode = M_Write;
     return true;
 }
 
-bool FMemoryStream::OpenWrite( const char * _FileName, size_t _ReservedSize ) {
+bool AMemoryStream::OpenWrite( const char * _FileName, size_t _ReservedSize ) {
     Close();
     FileName = _FileName;
     MemoryBuffer = ( byte * )GZoneMemory.Alloc( _ReservedSize, 1 );
-    MemoryBufferLength = _ReservedSize;
+    MemoryBufferSize = _ReservedSize;
     bMemoryBufferOwner = true;
     MemoryBufferOffset = 0;
     Mode = M_Write;
     return true;
 }
 
-void FMemoryStream::Close() {
+void AMemoryStream::Close() {
     if ( Mode == M_Closed ) {
         return;
     }
@@ -423,20 +439,20 @@ void FMemoryStream::Close() {
     }
 }
 
-const char * FMemoryStream::Impl_GetFileName() const {
-    return FileName.ToConstChar();
+const char * AMemoryStream::Impl_GetFileName() const {
+    return FileName.CStr();
 }
 
-int FMemoryStream::Impl_Read( void * _Buffer, int _Length ) {
+int AMemoryStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
     if ( Mode != M_Read ) {
-        GLogger.Printf( "FMemoryStream::Read: expected read mode for %s\n", FileName.ToConstChar() );
+        GLogger.Printf( "AMemoryStream::Read: expected read mode for %s\n", FileName.CStr() );
         return 0;
     }
 
-    int bytesCount = _Length;
-    if ( MemoryBufferOffset + _Length > MemoryBufferLength ) {
-        bytesCount = MemoryBufferLength - MemoryBufferOffset;
-        //GLogger.Printf( "FFileStream::Read: unexpected end of file %s\n", FileName.ToConstChar() );
+    int bytesCount = _SizeInBytes;
+    if ( MemoryBufferOffset + _SizeInBytes > MemoryBufferSize ) {
+        bytesCount = MemoryBufferSize - MemoryBufferOffset;
+        //GLogger.Printf( "AFileStream::Read: unexpected end of file %s\n", FileName.CStr() );
     }
 
     if ( bytesCount > 0 ) {
@@ -447,45 +463,45 @@ int FMemoryStream::Impl_Read( void * _Buffer, int _Length ) {
     return bytesCount;
 }
 
-int FMemoryStream::Impl_Write( const void * _Buffer, int _Length ) {
+int AMemoryStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
     if ( Mode != M_Write ) {
-        GLogger.Printf( "FMemoryStream::Write: expected write mode for %s\n", FileName.ToConstChar() );
+        GLogger.Printf( "AMemoryStream::Write: expected write mode for %s\n", FileName.CStr() );
         return 0;
     }
 
-    int diff = MemoryBufferOffset + _Length - MemoryBufferLength;
+    int diff = MemoryBufferOffset + _SizeInBytes - MemoryBufferSize;
     if ( diff > 0 ) {
         if ( !bMemoryBufferOwner ) {
-            GLogger.Printf( "FMemoryStream::Write: buffer overflowed for %s\n", FileName.ToConstChar() );
+            GLogger.Printf( "AMemoryStream::Write: buffer overflowed for %s\n", FileName.CStr() );
             return 0;
         }
         const int GRANULARITY = 256;
-        int newLength = MemoryBufferLength + diff;
+        int newLength = MemoryBufferSize + diff;
         int mod = newLength % GRANULARITY;
         if ( mod ) {
             newLength = newLength + GRANULARITY - mod;
         }
-        MemoryBuffer = ( byte * )GZoneMemory.Extend( MemoryBuffer, MemoryBufferLength, newLength, 1, true );
-        MemoryBufferLength = newLength;
+        MemoryBuffer = ( byte * )GZoneMemory.Extend( MemoryBuffer, MemoryBufferSize, newLength, 1, true );
+        MemoryBufferSize = newLength;
     }
-    memcpy( MemoryBuffer + MemoryBufferOffset, _Buffer, _Length );
-    MemoryBufferOffset += _Length;
-    return _Length;
+    memcpy( MemoryBuffer + MemoryBufferOffset, _Buffer, _SizeInBytes );
+    MemoryBufferOffset += _SizeInBytes;
+    return _SizeInBytes;
 }
 
-char * FMemoryStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
+char * AMemoryStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
     if ( Mode != M_Read ) {
-        GLogger.Printf( "FMemoryStream::Gets: expected read mode for %s\n", FileName.ToConstChar() );
+        GLogger.Printf( "AMemoryStream::Gets: expected read mode for %s\n", FileName.CStr() );
         return nullptr;
     }
 
-    if ( _StrSz == 0 || MemoryBufferOffset >= MemoryBufferLength ) {
+    if ( _StrSz == 0 || MemoryBufferOffset >= MemoryBufferSize ) {
         return nullptr;
     }
 
     int charsCount = _StrSz-1;
-    if ( MemoryBufferOffset + charsCount > MemoryBufferLength ) {
-        charsCount = MemoryBufferLength - MemoryBufferOffset;
+    if ( MemoryBufferOffset + charsCount > MemoryBufferSize ) {
+        charsCount = MemoryBufferSize - MemoryBufferOffset;
     }
 
     char * memoryPointer, * memory = ( char * )&MemoryBuffer[ MemoryBufferOffset ];
@@ -505,18 +521,18 @@ char * FMemoryStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
     return _StrBuf;
 }
 
-void FMemoryStream::Impl_Flush() {
+void AMemoryStream::Impl_Flush() {
 }
 
-long FMemoryStream::Impl_Tell() {
+long AMemoryStream::Impl_Tell() {
     return static_cast< long >( MemoryBufferOffset );
 }
 
-int FMemoryStream::Impl_SeekSet( long _Offset ) {
+int AMemoryStream::Impl_SeekSet( long _Offset ) {
     const int NewOffset = _Offset;
 
-    if ( NewOffset < 0 || NewOffset > MemoryBufferLength ) {
-        GLogger.Printf( "FMemoryStream::Seek: bad offset for %s\n", FileName.ToConstChar() );
+    if ( NewOffset < 0 || NewOffset > MemoryBufferSize ) {
+        GLogger.Printf( "AMemoryStream::Seek: bad offset for %s\n", FileName.CStr() );
         return -1;
     }
 
@@ -524,11 +540,11 @@ int FMemoryStream::Impl_SeekSet( long _Offset ) {
     return 0;
 }
 
-int FMemoryStream::Impl_SeekCur( long _Offset ) {
+int AMemoryStream::Impl_SeekCur( long _Offset ) {
     const int NewOffset = MemoryBufferOffset + _Offset;
 
-    if ( NewOffset < 0 || NewOffset > MemoryBufferLength ) {
-        GLogger.Printf( "FMemoryStream::Seek: bad offset for %s\n", FileName.ToConstChar() );
+    if ( NewOffset < 0 || NewOffset > MemoryBufferSize ) {
+        GLogger.Printf( "AMemoryStream::Seek: bad offset for %s\n", FileName.CStr() );
         return -1;
     }
 
@@ -536,11 +552,11 @@ int FMemoryStream::Impl_SeekCur( long _Offset ) {
     return 0;
 }
 
-int FMemoryStream::Impl_SeekEnd( long _Offset ) {
-    const int NewOffset = MemoryBufferLength + _Offset;
+int AMemoryStream::Impl_SeekEnd( long _Offset ) {
+    const int NewOffset = MemoryBufferSize + _Offset;
 
-    if ( NewOffset < 0 || NewOffset > MemoryBufferLength ) {
-        GLogger.Printf( "FMemoryStream::Seek: bad offset for %s\n", FileName.ToConstChar() );
+    if ( NewOffset < 0 || NewOffset > MemoryBufferSize ) {
+        GLogger.Printf( "AMemoryStream::Seek: bad offset for %s\n", FileName.CStr() );
         return -1;
     }
 
@@ -548,15 +564,15 @@ int FMemoryStream::Impl_SeekEnd( long _Offset ) {
     return 0;
 }
 
-long FMemoryStream::Impl_Length() {
-    return static_cast< long >( MemoryBufferLength );
+long AMemoryStream::Impl_SizeInBytes() {
+    return static_cast< long >(MemoryBufferSize);
 }
 
-bool FMemoryStream::Impl_Eof() {
-    return MemoryBufferOffset >= MemoryBufferLength;
+bool AMemoryStream::Impl_Eof() {
+    return MemoryBufferOffset >= MemoryBufferSize;
 }
 
-byte * FMemoryStream::GrabMemory() {
+byte * AMemoryStream::GrabMemory() {
     return MemoryBuffer;
 }
 
@@ -570,29 +586,29 @@ static constexpr int Case_Strcmp = 1;    // comparision is case sensitivity (lik
 static constexpr int Case_Strcmpi = 2;   // comparision is not case sensitivity (like strcmpi or strcasecmp)
 static constexpr int Case_OS = 0;        // case sensitivity is defaut of current operating system
 
-FArchive::FArchive()
+AArchive::AArchive()
  : Handle( nullptr )
 {
 
 }
 
-FArchive::~FArchive() {
+AArchive::~AArchive() {
     Close();
 }
 
-bool FArchive::Open( const char * _ArchiveName ) {
+bool AArchive::Open( const char * _ArchiveName ) {
     Close();
 
     Handle = unzOpen( _ArchiveName );
     if ( !Handle ) {
-        GLogger.Printf( "FArchive::Open: couldn't open %s\n", _ArchiveName );
+        GLogger.Printf( "AArchive::Open: couldn't open %s\n", _ArchiveName );
         return false;
     }
 
     return true;
 }
 
-void FArchive::Close() {
+void AArchive::Close() {
     if ( !Handle ) {
         return;
     }
@@ -621,23 +637,23 @@ static const char * GetUnzipErrorStr( int _ErrorCode ) {
     return "unknown error";
 }
 
-bool FArchive::LocateFile( const char * _FileName ) const {
+bool AArchive::LocateFile( const char * _FileName ) const {
     return Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) == UNZ_OK : false;
 }
 
-bool FArchive::GoToFirstFile() {
+bool AArchive::GoToFirstFile() {
     return Handle ? unzGoToFirstFile( Handle ) == UNZ_OK : false;
 }
 
-bool FArchive::GoToNextFile() {
+bool AArchive::GoToNextFile() {
     return Handle ? unzGoToNextFile( Handle ) == UNZ_OK : false;
 }
 
-bool FArchive::GetCurrentFileInfo( char * _FileName, size_t _SizeofFileName ) {
+bool AArchive::GetCurrentFileInfo( char * _FileName, size_t _SizeofFileName ) {
     return Handle ? unzGetCurrentFileInfo( Handle, NULL, _FileName, _SizeofFileName, NULL, 0, NULL, 0 ) == UNZ_OK : false;
 }
 
-bool FArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _MemoryBufferLength ) {
+bool AArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes ) {
     int Result = Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) : UNZ_BADZIPFILE;
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Couldn't open file %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
@@ -680,12 +696,12 @@ bool FArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuff
     }
 
     *_MemoryBuffer = ( byte * )data;
-    *_MemoryBufferLength = FileInfo.uncompressed_size;
+    *_SizeInBytes = FileInfo.uncompressed_size;
 
     return true;
 }
 
-bool FArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuffer, int * _MemoryBufferLength, int * _HunkMark ) {
+bool AArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, int * _HunkMark ) {
     int Result = Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) : UNZ_BADZIPFILE;
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Couldn't open file %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
@@ -730,7 +746,7 @@ bool FArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuff
     }
 
     *_MemoryBuffer = ( byte * )data;
-    *_MemoryBufferLength = FileInfo.uncompressed_size;
+    *_SizeInBytes = FileInfo.uncompressed_size;
 
     return true;
 }
@@ -836,7 +852,7 @@ bool FProgressCopyFile::Copy() {
         return false;
     }
 
-    FCore::MakeDir( NewFileName, true );
+    Core::MakeDir( NewFileName, true );
 
     if ( !CallProgressRoutine ) {
         return ::CopyFileA( ExistingFileName, NewFileName, !Overwrite ) != FALSE;
@@ -899,7 +915,7 @@ bool FProgressMoveFile::Move() {
         return false;
     }
 
-    FCore::CreateDir( NewFileName, true );
+    Core::CreateDir( NewFileName, true );
 
     DWORD flags = MOVEFILE_WRITE_THROUGH;
     if ( Overwrite ) {
@@ -926,14 +942,14 @@ void FDiskScanner::ScanDir_r( const char * _Directory, bool _SubDirs, bool _Fold
     size_t replaceLen = 1;
     WIN32_FIND_DATAA findData = {};
 
-    FString path = _Directory;
+    AString path = _Directory;
     path += "\\*";
 
     HANDLE find = FindFirstFileA( path.Str(), &findData );
     if ( find != INVALID_HANDLE_VALUE ) {
         do {
-            if ( !(FString::Cmp( findData.cFileName, "." )
-                   && FString::Cmp( findData.cFileName, ".." )) ) {
+            if ( !(AString::Cmp( findData.cFileName, "." )
+                   && AString::Cmp( findData.cFileName, ".." )) ) {
                 continue;
             }
 
@@ -971,13 +987,13 @@ void FDiskScanner::ScanDir_r( const char * _Directory, bool _SubDirs, bool _Fold
         size_t replaceLen = 1;
         WIN32_FIND_DATAA findData = {};
 
-        FString path = _Directory;
+        AString path = _Directory;
         path += "\\*";
         HANDLE find = FindFirstFileA( path.Str(), &findData );
         if ( find != INVALID_HANDLE_VALUE ) {
             do {
-                if ( !(FString::Cmp( findData.cFileName, "." )
-                       && FString::Cmp( findData.cFileName, ".." )) ) {
+                if ( !(AString::Cmp( findData.cFileName, "." )
+                       && AString::Cmp( findData.cFileName, ".." )) ) {
                     continue;
                 }
 
@@ -1011,14 +1027,14 @@ void FDiskScanner::ScanDir_r( const char * _Directory, bool _SubDirs, bool _Fold
         size_t replaceLen = 1;
         WIN32_FIND_DATAA findData = {};
 
-        FString path = _Directory;
+        AString path = _Directory;
         path += "\\*";
 
         HANDLE find = FindFirstFileA( path.Str(), &findData );
         if ( find != INVALID_HANDLE_VALUE ) {
             do {
-                if ( !(FString::Cmp( findData.cFileName, "." )
-                       && FString::Cmp( findData.cFileName, ".." )) ) {
+                if ( !(AString::Cmp( findData.cFileName, "." )
+                       && AString::Cmp( findData.cFileName, ".." )) ) {
                     continue;
                 }
 
@@ -1052,8 +1068,8 @@ bool RemoveDir( const char * _Directory, bool _SubDirs ) {
     if ( find != INVALID_HANDLE_VALUE ) {
         ret = true;
         do {
-            if ( !(FString::Cmp( findData.cFileName, "." )
-                   && FString::Cmp( findData.cFileName, ".." )) ) {
+            if ( !(AString::Cmp( findData.cFileName, "." )
+                   && AString::Cmp( findData.cFileName, ".." )) ) {
                 continue;
             }
 

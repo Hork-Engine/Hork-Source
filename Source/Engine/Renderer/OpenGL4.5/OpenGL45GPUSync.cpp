@@ -34,9 +34,9 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-FGPUSync GOpenGL45GPUSync;
+AGPUSync GOpenGL45GPUSync;
 
-void FGPUSync::Wait() {
+void AGPUSync::Wait() {
     if ( !bCreated ) {
         bCreated = true;
 
@@ -85,7 +85,7 @@ void FGPUSync::Wait() {
     }
 }
 
-void FGPUSync::SetEvent() {
+void AGPUSync::SetEvent() {
     //if ( !GSyncGPU.Load() ) {
     //    return;
     //}
@@ -95,7 +95,7 @@ void FGPUSync::SetEvent() {
     }
 }
 
-void FGPUSync::Release() {
+void AGPUSync::Release() {
     if ( bCreated ) {
         bCreated = false;
 

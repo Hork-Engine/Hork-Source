@@ -40,7 +40,7 @@ TPodQueue
 Queue for POD types
 
 */
-template< typename T, int MAX_QUEUE_LENGTH = 256, bool FIXED_LENGTH = true, typename Allocator = FZoneAllocator >
+template< typename T, int MAX_QUEUE_LENGTH = 256, bool FIXED_LENGTH = true, typename Allocator = AZoneAllocator >
 class TPodQueue final {
 public:
     enum { TYPE_SIZEOF = sizeof( T ) };

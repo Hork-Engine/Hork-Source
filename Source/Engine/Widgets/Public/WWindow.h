@@ -38,16 +38,16 @@ class ANGIE_API WWindow : public WWidget {
 public:
     WWindow & SetCaptionText( const char * _CaptionText );
     WWindow & SetCaptionHeight( float _CaptionHeight );
-    WWindow & SetCaptionFont( FFont * _Font );
-    WWindow & SetTextColor( FColor4 const & _Color );
+    WWindow & SetCaptionFont( AFont * _Font );
+    WWindow & SetTextColor( AColor4 const & _Color );
     WWindow & SetTextHorizontalAlignment( EWidgetAlignment _Alignment );
     WWindow & SetTextVerticalAlignment( EWidgetAlignment _Alignment );
     WWindow & SetWordWrap( bool _WordWrap );
     WWindow & SetTextOffset( Float2 const & _Offset );
-    WWindow & SetCaptionColor( FColor4 const & _Color );
-    WWindow & SetBorderColor( FColor4 const & _Color );
+    WWindow & SetCaptionColor( AColor4 const & _Color );
+    WWindow & SetBorderColor( AColor4 const & _Color );
     WWindow & SetBorderThickness( float _Thickness );
-    WWindow & SetBackgroundColor( FColor4 const & _Color );
+    WWindow & SetBackgroundColor( AColor4 const & _Color );
     WWindow & SetRounding( float _Rounding );
     WWindow & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
 
@@ -56,26 +56,26 @@ protected:
     ~WWindow();
 
     void OnTransformDirty() override;
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
-    Float2 GetTextPositionWithAlignment( FCanvas & _Canvas ) const;
-    FFont const * GetFont() const;
+    Float2 GetTextPositionWithAlignment( ACanvas & _Canvas ) const;
+    AFont const * GetFont() const;
 
 private:
     void UpdateDragShape();
     void UpdateMargin();
 
-    FString CaptionText;
+    AString CaptionText;
     float CaptionHeight;
-    TRef< FFont > Font;
-    FColor4 TextColor;
+    TRef< AFont > Font;
+    AColor4 TextColor;
     Float2 TextOffset;
     bool bWordWrap;
     EWidgetAlignment TextHorizontalAlignment;
     EWidgetAlignment TextVerticalAlignment;
-    FColor4 CaptionColor;
-    FColor4 BorderColor;
-    FColor4 BgColor;
+    AColor4 CaptionColor;
+    AColor4 BorderColor;
+    AColor4 BgColor;
     EDrawCornerFlags RoundingCorners;
     float BorderRounding;
     float BorderThickness;

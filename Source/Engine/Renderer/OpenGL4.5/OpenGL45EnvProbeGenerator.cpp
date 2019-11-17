@@ -50,16 +50,16 @@ static void CreateSphere( int _HDiv, int _VDiv, TPodArray< Float3 > & _Vertices,
     _Vertices.Resize( numVerts );
     _Indices.Resize( numIndices );
 
-    for ( i = 0, a1 = FMath::_PI / _HDiv; i < (_HDiv - 1); i++ ) {
+    for ( i = 0, a1 = Math::_PI / _HDiv; i < (_HDiv - 1); i++ ) {
         float y, r;
-        FMath::RadSinCos( a1, r, y );
+        Math::RadSinCos( a1, r, y );
         for ( j = 0, a2 = 0; j < _VDiv; j++ ) {
             float s, c;
-            FMath::RadSinCos( a2, s, c );
+            Math::RadSinCos( a2, s, c );
             _Vertices[i*_VDiv + j] = Float3( r*c, -y, r*s );
-            a2 += FMath::_2PI / (_VDiv - 1);
+            a2 += Math::_2PI / (_VDiv - 1);
         }
-        a1 += FMath::_PI / _HDiv;
+        a1 += Math::_PI / _HDiv;
     }
     _Vertices[(_HDiv - 1)*_VDiv + 0] = Float3( 0, -1, 0 );
     _Vertices[(_HDiv - 1)*_VDiv + 1] = Float3( 0, 1, 0 );
@@ -93,13 +93,13 @@ static void CreateSphere( int _HDiv, int _VDiv, TPodArray< Float3 > & _Vertices,
     }
 }
 
-struct FRoughnessMapVertex {
+struct SRoughnessMapVertex {
     Float3 Position;
 };
 
 static const INTERNAL_PIXEL_FORMAT ENVPROBE_IPF = INTERNAL_PIXEL_FORMAT_RGB32F; // FIXME: is RGB16F enough? // TODO: try RGB16F and compression!!
 
-void FEnvProbeGenerator::Initialize() {
+void AEnvProbeGenerator::Initialize() {
     TPodArray< Float3 > vertices;
     TPodArray< unsigned short > indices;
 
@@ -117,11 +117,11 @@ void FEnvProbeGenerator::Initialize() {
     m_IndexBuffer.Initialize( bufferCI, indices.ToPtr() );
 
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( FRoughnessUniformBuffer );
+    bufferCI.SizeInBytes = sizeof( SRoughnessUniformBuffer );
     m_UniformBuffer.Initialize( bufferCI );
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-    Float4x4 projMat = Float4x4::PerspectiveRevCC( FMath::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f );
+    Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f );
 
     for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
         m_UniformBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
@@ -162,7 +162,7 @@ void FEnvProbeGenerator::Initialize() {
     {
         {
             0,                              // vertex buffer binding
-            sizeof( FRoughnessMapVertex ),  // vertex stride
+            sizeof( SRoughnessMapVertex ),  // vertex stride
             INPUT_RATE_PER_VERTEX,          // per vertex / per instance
         }
     };
@@ -182,9 +182,9 @@ void FEnvProbeGenerator::Initialize() {
 
     char * infoLog = nullptr;
 
-    FString vertexAttribsShaderString = ShaderStringForVertexAttribs< FString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
-    FString vertexSource =
+    AString vertexSource =
         "#version 450\n"
         +vertexAttribsShaderString+
         "out gl_PerVertex\n"
@@ -309,7 +309,7 @@ void FEnvProbeGenerator::Initialize() {
         "}\n";
 
     ShaderModule vertexShader, geometryShader, fragmentShader;
-    vertexShader.InitializeFromCode( VERTEX_SHADER, vertexSource.ToConstChar(), &infoLog );
+    vertexShader.InitializeFromCode( VERTEX_SHADER, vertexSource.CStr(), &infoLog );
     geometryShader.InitializeFromCode( GEOMETRY_SHADER, geometrySource, &infoLog );
     fragmentShader.InitializeFromCode( FRAGMENT_SHADER, fragmentSource, &infoLog );
 
@@ -351,7 +351,7 @@ void FEnvProbeGenerator::Initialize() {
     m_Sampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 
-void FEnvProbeGenerator::Deinitialize() {
+void AEnvProbeGenerator::Deinitialize() {
     m_VertexBuffer.Deinitialize();
     m_IndexBuffer.Deinitialize();
     m_UniformBuffer.Deinitialize();
@@ -359,7 +359,7 @@ void FEnvProbeGenerator::Deinitialize() {
     m_RP.Deinitialize();
 }
 
-void FEnvProbeGenerator::GenerateArray( Texture & _CubemapArray, int _MaxLod, int _CubemapsCount, Texture ** _Cubemaps ) {
+void AEnvProbeGenerator::GenerateArray( Texture & _CubemapArray, int _MaxLod, int _CubemapsCount, Texture ** _Cubemaps ) {
     int size = 1 << _MaxLod;
 
     TextureStorageCreateInfo textureCI = {};
@@ -457,7 +457,7 @@ void FEnvProbeGenerator::GenerateArray( Texture & _CubemapArray, int _MaxLod, in
     }
 }
 
-void FEnvProbeGenerator::Generate( Texture & _Cubemap, int _MaxLod, Texture * _SourceCubemap ) {
+void AEnvProbeGenerator::Generate( Texture & _Cubemap, int _MaxLod, Texture * _SourceCubemap ) {
     int size = 1 << _MaxLod;
 
     TextureStorageCreateInfo textureCI = {};

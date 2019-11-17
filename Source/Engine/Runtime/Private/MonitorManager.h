@@ -33,10 +33,10 @@ SOFTWARE.
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Core/Public/PodArray.h>
 
-using FPhysicalMonitorArray = TPodArray< FPhysicalMonitor *, 4 >;
+using APhysicalMonitorArray = TPodArray< SPhysicalMonitor *, 4 >;
 
-class FMonitorManager {
-    AN_SINGLETON( FMonitorManager )
+class AMonitorManager {
+    AN_SINGLETON( AMonitorManager )
 
 public:
     void Initialize();
@@ -45,11 +45,11 @@ public:
 
     void UpdateMonitors();
 
-    FPhysicalMonitor * FindMonitor( const char * _MonitorName );
+    SPhysicalMonitor * FindMonitor( const char * _MonitorName );
 
-    FPhysicalMonitorArray const & GetMonitors();
+    APhysicalMonitorArray const & GetMonitors();
 
-    FPhysicalMonitor * GetPrimaryMonitor();
+    SPhysicalMonitor * GetPrimaryMonitor();
 };
 
-extern FMonitorManager & GMonitorManager;
+extern AMonitorManager & GMonitorManager;

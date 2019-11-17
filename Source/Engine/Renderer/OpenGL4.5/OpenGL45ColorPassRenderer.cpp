@@ -39,9 +39,9 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-FColorPassRenderer GColorPassRenderer;
+AColorPassRenderer GColorPassRenderer;
 
-void FColorPassRenderer::Initialize() {
+void AColorPassRenderer::Initialize() {
     RenderPassCreateInfo renderPassCI = {};
     renderPassCI.NumColorAttachments = 1;
 
@@ -84,12 +84,12 @@ void FColorPassRenderer::Initialize() {
     LightmapSampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 
-void FColorPassRenderer::Deinitialize() {
+void AColorPassRenderer::Deinitialize() {
     ColorPass.Deinitialize();
 }
 
-bool FColorPassRenderer::BindMaterial( FRenderInstance const * instance ) {
-    FMaterialGPU * pMaterial = instance->Material;
+bool AColorPassRenderer::BindMaterial( SRenderInstance const * instance ) {
+    AMaterialGPU * pMaterial = instance->Material;
     Pipeline * pPipeline;
     Buffer * pSecondVertexBuffer = nullptr;
 
@@ -102,8 +102,8 @@ bool FColorPassRenderer::BindMaterial( FRenderInstance const * instance ) {
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
 
-        pPipeline = bSkinned ? &((FShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ColorPassSkinned
-                             : &((FShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ColorPassSimple;
+        pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ColorPassSkinned
+                             : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ColorPassSimple;
 
         pSecondVertexBuffer = bSkinned ? GPUBufferHandle( instance->WeightsBuffer ) : nullptr;
         break;
@@ -113,13 +113,13 @@ bool FColorPassRenderer::BindMaterial( FRenderInstance const * instance ) {
 
         if ( bSkinned ) {
 
-            pPipeline = &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassSkinned;
+            pPipeline = &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassSkinned;
 
             pSecondVertexBuffer = GPUBufferHandle( instance->WeightsBuffer );
 
         } else if ( bLightmap ) {
 
-            pPipeline = &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassLightmap;
+            pPipeline = &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassLightmap;
 
             pSecondVertexBuffer = GPUBufferHandle( instance->LightmapUVChannel );
 
@@ -129,13 +129,13 @@ bool FColorPassRenderer::BindMaterial( FRenderInstance const * instance ) {
 
         } else if ( bVertexLight ) {
 
-            pPipeline = &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassVertexLight;
+            pPipeline = &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassVertexLight;
 
             pSecondVertexBuffer = GPUBufferHandle( instance->VertexLightChannel );
 
         } else {
 
-            pPipeline = &((FShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassSimple;
+            pPipeline = &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassSimple;
 
             pSecondVertexBuffer = nullptr;
         }
@@ -165,7 +165,7 @@ bool FColorPassRenderer::BindMaterial( FRenderInstance const * instance ) {
     return true;
 }
 
-void FColorPassRenderer::BindTexturesColorPass( FMaterialFrameData * _Instance ) {
+void AColorPassRenderer::BindTexturesColorPass( SMaterialFrameData * _Instance ) {
     if ( !_Instance->Material->bColorPassTextureFetch ) {
         return;
     }
@@ -173,7 +173,7 @@ void FColorPassRenderer::BindTexturesColorPass( FMaterialFrameData * _Instance )
     BindTextures( _Instance );
 }
 
-void FColorPassRenderer::RenderInstances() {
+void AColorPassRenderer::RenderInstances() {
     ClearColorValue clearValue = {};
 
     clearValue.Float32[0] = GRenderView->BackgroundColor.X;
@@ -218,7 +218,7 @@ void FColorPassRenderer::RenderInstances() {
     drawCmd.StartInstanceLocation = 0;
 
     for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-        FRenderInstance const * instance = GFrameData->Instances[ GRenderView->FirstInstance + i ];
+        SRenderInstance const * instance = GFrameData->Instances[ GRenderView->FirstInstance + i ];
 
         // Choose pipeline and second vertex buffer
         if ( !BindMaterial( instance ) ) {

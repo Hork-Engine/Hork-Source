@@ -37,13 +37,13 @@ SOFTWARE.
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 #include <btBulletDynamicsCommon.h>
 
-static FCollisionQueryFilter DefaultCollisionQueryFilter;
+static SCollisionQueryFilter DefaultCollisionQueryFilter;
 
-static bool CompareDistance( FCollisionTraceResult const & A, FCollisionTraceResult const & B ) {
+static bool CompareDistance( SCollisionTraceResult const & A, SCollisionTraceResult const & B ) {
     return A.Distance < B.Distance;
 }
 
-static bool FindCollisionActor( FCollisionQueryFilter const & _QueryFilter, FActor * _Actor ) {
+static bool FindCollisionActor( SCollisionQueryFilter const & _QueryFilter, AActor * _Actor ) {
     for ( int i = 0; i < _QueryFilter.ActorsCount; i++ ) {
         if ( _Actor == _QueryFilter.IgnoreActors[ i ] ) {
             return true;
@@ -52,7 +52,7 @@ static bool FindCollisionActor( FCollisionQueryFilter const & _QueryFilter, FAct
     return false;
 }
 
-static bool FindCollisionBody( FCollisionQueryFilter const & _QueryFilter, FPhysicalBody * _Body ) {
+static bool FindCollisionBody( SCollisionQueryFilter const & _QueryFilter, APhysicalBody * _Body ) {
     for ( int i = 0; i < _QueryFilter.BodiesCount; i++ ) {
         if ( _Body == _QueryFilter.IgnoreBodies[ i ] ) {
             return true;
@@ -61,8 +61,8 @@ static bool FindCollisionBody( FCollisionQueryFilter const & _QueryFilter, FPhys
     return false;
 }
 
-AN_FORCEINLINE static bool NeedsCollision( FCollisionQueryFilter const & _QueryFilter, btBroadphaseProxy * _Proxy ) {
-    FPhysicalBody * body = static_cast< FPhysicalBody * >( static_cast< btCollisionObject * >( _Proxy->m_clientObject )->getUserPointer() );
+AN_FORCEINLINE static bool NeedsCollision( SCollisionQueryFilter const & _QueryFilter, btBroadphaseProxy * _Proxy ) {
+    APhysicalBody * body = static_cast< APhysicalBody * >( static_cast< btCollisionObject * >( _Proxy->m_clientObject )->getUserPointer() );
 
     if ( body ) {
         if ( FindCollisionActor( _QueryFilter, body->GetParentActor() ) ) {
@@ -85,9 +85,9 @@ AN_FORCEINLINE static unsigned short ClampUnsignedShort( int _Value ) {
     return _Value;
 }
 
-struct FTraceRayResultCallback : btCollisionWorld::AllHitsRayResultCallback {
+struct STraceRayResultCallback : btCollisionWorld::AllHitsRayResultCallback {
 
-    FTraceRayResultCallback( FCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
+    STraceRayResultCallback( SCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
         : btCollisionWorld::AllHitsRayResultCallback( rayFromWorld, rayToWorld )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
@@ -113,12 +113,12 @@ struct FTraceRayResultCallback : btCollisionWorld::AllHitsRayResultCallback {
         return NeedsCollision( QueryFilter, proxy0 );
     }
 
-    FCollisionQueryFilter const & QueryFilter;
+    SCollisionQueryFilter const & QueryFilter;
 };
 
-struct FTraceClosestRayResultCallback : btCollisionWorld::ClosestRayResultCallback {
+struct STraceClosestRayResultCallback : btCollisionWorld::ClosestRayResultCallback {
 
-    FTraceClosestRayResultCallback( FCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
+    STraceClosestRayResultCallback( SCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
         : ClosestRayResultCallback( rayFromWorld, rayToWorld )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
@@ -133,12 +133,12 @@ struct FTraceClosestRayResultCallback : btCollisionWorld::ClosestRayResultCallba
         return NeedsCollision( QueryFilter, proxy0 );
     }
 
-    FCollisionQueryFilter const & QueryFilter;
+    SCollisionQueryFilter const & QueryFilter;
 };
 
-struct FTraceClosestConvexResultCallback : btCollisionWorld::ClosestConvexResultCallback {
+struct STraceClosestConvexResultCallback : btCollisionWorld::ClosestConvexResultCallback {
 
-    FTraceClosestConvexResultCallback( FCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
+    STraceClosestConvexResultCallback( SCollisionQueryFilter const * _QueryFilter, btVector3 const & rayFromWorld, btVector3 const & rayToWorld )
         : ClosestConvexResultCallback( rayFromWorld, rayToWorld )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
@@ -150,19 +150,19 @@ struct FTraceClosestConvexResultCallback : btCollisionWorld::ClosestConvexResult
         return NeedsCollision( QueryFilter, proxy0 );
     }
 
-    FCollisionQueryFilter const & QueryFilter;
+    SCollisionQueryFilter const & QueryFilter;
 };
 
-bool FWorldCollisionQuery::Trace( FWorld const * _World, TPodArray< FCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) {
-    FTraceRayResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
+bool AWorldCollisionQuery::Trace( AWorld const * _World, TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) {
+    STraceRayResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
 
     _World->PhysicsWorld->rayTest( hitResult.m_rayFromWorld, hitResult.m_rayToWorld, hitResult );
 
     _Result.Resize( hitResult.m_collisionObjects.size() );
 
     for ( int i = 0; i < hitResult.m_collisionObjects.size(); i++ ) {
-        FCollisionTraceResult & result = _Result[ i ];
-        result.Body = static_cast< FPhysicalBody * >( hitResult.m_collisionObjects[ i ]->getUserPointer() );
+        SCollisionTraceResult & result = _Result[ i ];
+        result.Body = static_cast< APhysicalBody * >( hitResult.m_collisionObjects[ i ]->getUserPointer() );
         result.Position = btVectorToFloat3( hitResult.m_hitPointWorld[ i ] );
         result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld[ i ] );
         result.Distance = ( result.Position - _RayStart ).Length();
@@ -184,8 +184,8 @@ bool FWorldCollisionQuery::Trace( FWorld const * _World, TPodArray< FCollisionTr
     return !_Result.IsEmpty();
 }
 
-bool FWorldCollisionQuery::TraceClosest( FWorld const * _World, FCollisionTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) {
-    FTraceClosestRayResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
+bool AWorldCollisionQuery::TraceClosest( AWorld const * _World, SCollisionTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) {
+    STraceClosestRayResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
 
     _World->PhysicsWorld->rayTest( hitResult.m_rayFromWorld, hitResult.m_rayToWorld, hitResult );
 
@@ -194,7 +194,7 @@ bool FWorldCollisionQuery::TraceClosest( FWorld const * _World, FCollisionTraceR
         return false;
     }
 
-    _Result.Body = static_cast< FPhysicalBody * >( hitResult.m_collisionObject->getUserPointer() );
+    _Result.Body = static_cast< APhysicalBody * >( hitResult.m_collisionObject->getUserPointer() );
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = ( _Result.Position - _RayStart ).Length();
@@ -202,8 +202,8 @@ bool FWorldCollisionQuery::TraceClosest( FWorld const * _World, FCollisionTraceR
     return true;
 }
 
-bool FWorldCollisionQuery::TraceSphere( FWorld const * _World, FCollisionTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) {
-    FTraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
+bool AWorldCollisionQuery::TraceSphere( AWorld const * _World, SCollisionTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) {
+    STraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ) );
 
     btSphereShape shape( _Radius );
     shape.setMargin( 0.0f );
@@ -217,7 +217,7 @@ bool FWorldCollisionQuery::TraceSphere( FWorld const * _World, FCollisionTraceRe
         return false;
     }
 
-    _Result.Body = static_cast< FPhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
+    _Result.Body = static_cast< APhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( _RayEnd - _RayStart ).Length();
@@ -225,13 +225,13 @@ bool FWorldCollisionQuery::TraceSphere( FWorld const * _World, FCollisionTraceRe
     return true;
 }
 
-bool FWorldCollisionQuery::TraceBox( FWorld const * _World, FCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) {
+bool AWorldCollisionQuery::TraceBox( AWorld const * _World, SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) {
     Float3 boxPosition = ( _Maxs + _Mins ) * 0.5f;
     Float3 halfExtents = ( _Maxs - _Mins ) * 0.5f;
     Float3 startPos = boxPosition + _RayStart;
     Float3 endPos = boxPosition + _RayEnd;
 
-    FTraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
+    STraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
 
     btBoxShape shape( btVectorToFloat3( halfExtents ) );
     shape.setMargin( 0.0f );
@@ -245,7 +245,7 @@ bool FWorldCollisionQuery::TraceBox( FWorld const * _World, FCollisionTraceResul
         return false;
     }
 
-    _Result.Body = static_cast< FPhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
+    _Result.Body = static_cast< APhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( endPos - startPos ).Length();
@@ -253,13 +253,13 @@ bool FWorldCollisionQuery::TraceBox( FWorld const * _World, FCollisionTraceResul
     return true;
 }
 
-bool FWorldCollisionQuery::TraceCylinder( FWorld const * _World, FCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) {
+bool AWorldCollisionQuery::TraceCylinder( AWorld const * _World, SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) {
     Float3 boxPosition = ( _Maxs + _Mins ) * 0.5f;
     Float3 halfExtents = ( _Maxs - _Mins ) * 0.5f;
     Float3 startPos = boxPosition + _RayStart;
     Float3 endPos = boxPosition + _RayEnd;
 
-    FTraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
+    STraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
 
     btCylinderShape shape( btVectorToFloat3( halfExtents ) );
     shape.setMargin( 0.0f );
@@ -273,7 +273,7 @@ bool FWorldCollisionQuery::TraceCylinder( FWorld const * _World, FCollisionTrace
         return false;
     }
 
-    _Result.Body = static_cast< FPhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
+    _Result.Body = static_cast< APhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( endPos - startPos ).Length();
@@ -281,15 +281,15 @@ bool FWorldCollisionQuery::TraceCylinder( FWorld const * _World, FCollisionTrace
     return true;
 }
 
-bool FWorldCollisionQuery::TraceCapsule( FWorld const * _World, FCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, FCollisionQueryFilter const * _QueryFilter ) {
+bool AWorldCollisionQuery::TraceCapsule( AWorld const * _World, SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) {
     Float3 boxPosition = ( _Maxs + _Mins ) * 0.5f;
     Float3 halfExtents = ( _Maxs - _Mins ) * 0.5f;
     Float3 startPos = boxPosition + _RayStart;
     Float3 endPos = boxPosition + _RayEnd;
 
-    FTraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
+    STraceClosestConvexResultCallback hitResult( _QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
 
-    float radius = FMath::Max( halfExtents[0], halfExtents[2] );
+    float radius = Math::Max( halfExtents[0], halfExtents[2] );
 
     btCapsuleShape shape( radius, (halfExtents[1]-radius)*2.0f );
     shape.setMargin( 0.0f );
@@ -303,7 +303,7 @@ bool FWorldCollisionQuery::TraceCapsule( FWorld const * _World, FCollisionTraceR
         return false;
     }
 
-    _Result.Body = static_cast< FPhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
+    _Result.Body = static_cast< APhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( endPos - startPos ).Length();
@@ -311,10 +311,10 @@ bool FWorldCollisionQuery::TraceCapsule( FWorld const * _World, FCollisionTraceR
     return true;
 }
 
-bool FWorldCollisionQuery::TraceConvex( FWorld const * _World, FCollisionTraceResult & _Result, FConvexSweepTest const & _SweepTest ) {
+bool AWorldCollisionQuery::TraceConvex( AWorld const * _World, SCollisionTraceResult & _Result, SConvexSweepTest const & _SweepTest ) {
 
     if ( !_SweepTest.CollisionBody->IsConvex() ) {
-        GLogger.Printf( "FWorld::TraceConvex: non-convex collision body for convex trace\n" );
+        GLogger.Printf( "AWorld::TraceConvex: non-convex collision body for convex trace\n" );
         _Result.Clear();
         return false;
     }
@@ -334,7 +334,7 @@ bool FWorldCollisionQuery::TraceConvex( FWorld const * _World, FCollisionTraceRe
     Quat startRot = _SweepTest.StartRotation * _SweepTest.CollisionBody->Rotation;
     Quat endRot = _SweepTest.EndRotation * _SweepTest.CollisionBody->Rotation;
 
-    FTraceClosestConvexResultCallback hitResult( &_SweepTest.QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
+    STraceClosestConvexResultCallback hitResult( &_SweepTest.QueryFilter, btVectorToFloat3( startPos ), btVectorToFloat3( endPos ) );
 
     _World->PhysicsWorld->convexSweepTest( static_cast< btConvexShape * >( shape ),
         btTransform( btQuaternionToQuat( startRot ), hitResult.m_convexFromWorld ),
@@ -347,7 +347,7 @@ bool FWorldCollisionQuery::TraceConvex( FWorld const * _World, FCollisionTraceRe
         return false;
     }
 
-    _Result.Body = static_cast< FPhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
+    _Result.Body = static_cast< APhysicalBody * >( hitResult.m_hitCollisionObject->getUserPointer() );
     _Result.Position = btVectorToFloat3( hitResult.m_hitPointWorld );
     _Result.Normal = btVectorToFloat3( hitResult.m_hitNormalWorld );
     _Result.Distance = hitResult.m_closestHitFraction * ( endPos - startPos ).Length();
@@ -355,8 +355,8 @@ bool FWorldCollisionQuery::TraceConvex( FWorld const * _World, FCollisionTraceRe
     return true;
 }
 
-struct FQueryPhysicalBodiesCallback : public btCollisionWorld::ContactResultCallback {
-    FQueryPhysicalBodiesCallback( TPodArray< FPhysicalBody * > & _Result, FCollisionQueryFilter const * _QueryFilter )
+struct SQueryPhysicalBodiesCallback : public btCollisionWorld::ContactResultCallback {
+    SQueryPhysicalBodiesCallback( TPodArray< APhysicalBody * > & _Result, SCollisionQueryFilter const * _QueryFilter )
         : Result( _Result )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
@@ -371,14 +371,14 @@ struct FQueryPhysicalBodiesCallback : public btCollisionWorld::ContactResultCall
     }
 
     btScalar addSingleResult( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 ) override {
-        FPhysicalBody * body;
+        APhysicalBody * body;
 
-        body = reinterpret_cast< FPhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
+        body = reinterpret_cast< APhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
         if ( body && Result.Find( body ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
             Result.Append( body );
         }
 
-        body = reinterpret_cast< FPhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
+        body = reinterpret_cast< APhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
         if ( body && Result.Find( body ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
             Result.Append( body );
         }
@@ -386,12 +386,12 @@ struct FQueryPhysicalBodiesCallback : public btCollisionWorld::ContactResultCall
         return 0.0f;
     }
 
-    TPodArray< FPhysicalBody * > & Result;
-    FCollisionQueryFilter const & QueryFilter;
+    TPodArray< APhysicalBody * > & Result;
+    SCollisionQueryFilter const & QueryFilter;
 };
 
-struct FQueryActorsCallback : public btCollisionWorld::ContactResultCallback {
-    FQueryActorsCallback( TPodArray< FActor * > & _Result, FCollisionQueryFilter const * _QueryFilter )
+struct SQueryActorsCallback : public btCollisionWorld::ContactResultCallback {
+    SQueryActorsCallback( TPodArray< AActor * > & _Result, SCollisionQueryFilter const * _QueryFilter )
         : Result( _Result )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
@@ -406,14 +406,14 @@ struct FQueryActorsCallback : public btCollisionWorld::ContactResultCallback {
     }
 
     btScalar addSingleResult( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 ) override {
-        FPhysicalBody * body;
+        APhysicalBody * body;
 
-        body = reinterpret_cast< FPhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
+        body = reinterpret_cast< APhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
         if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
             Result.Append( body->GetParentActor() );
         }
 
-        body = reinterpret_cast< FPhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
+        body = reinterpret_cast< APhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
         if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
             Result.Append( body->GetParentActor() );
         }
@@ -421,12 +421,12 @@ struct FQueryActorsCallback : public btCollisionWorld::ContactResultCallback {
         return 0.0f;
     }
 
-    TPodArray< FActor * > & Result;
-    FCollisionQueryFilter const & QueryFilter;
+    TPodArray< AActor * > & Result;
+    SCollisionQueryFilter const & QueryFilter;
 };
 
-void FWorldCollisionQuery::QueryPhysicalBodies( FWorld const * _World, TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter ) {
-    FQueryPhysicalBodiesCallback callback( _Result, _QueryFilter );
+void AWorldCollisionQuery::QueryPhysicalBodies( AWorld const * _World, TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) {
+    SQueryPhysicalBodiesCallback callback( _Result, _QueryFilter );
     btSphereShape shape( _Radius );
     shape.setMargin( 0.0f );
     btRigidBody * tempBody = b3New( btRigidBody, 1.0f, nullptr, &shape );
@@ -438,8 +438,8 @@ void FWorldCollisionQuery::QueryPhysicalBodies( FWorld const * _World, TPodArray
     b3Destroy( tempBody );
 }
 
-void FWorldCollisionQuery::QueryActors( FWorld const * _World, TPodArray< FActor * > & _Result, Float3 const & _Position, float _Radius, FCollisionQueryFilter const * _QueryFilter ) {
-    FQueryActorsCallback callback( _Result, _QueryFilter );
+void AWorldCollisionQuery::QueryActors( AWorld const * _World, TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) {
+    SQueryActorsCallback callback( _Result, _QueryFilter );
     btSphereShape shape( _Radius );
     shape.setMargin( 0.0f );
     btRigidBody * tempBody = b3New( btRigidBody, 1.0f, nullptr, &shape );
@@ -451,8 +451,8 @@ void FWorldCollisionQuery::QueryActors( FWorld const * _World, TPodArray< FActor
     b3Destroy( tempBody );
 }
 
-void FWorldCollisionQuery::QueryPhysicalBodies( FWorld const * _World, TPodArray< FPhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionQueryFilter const * _QueryFilter ) {
-    FQueryPhysicalBodiesCallback callback( _Result, _QueryFilter );
+void AWorldCollisionQuery::QueryPhysicalBodies( AWorld const * _World, TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) {
+    SQueryPhysicalBodiesCallback callback( _Result, _QueryFilter );
     btBoxShape shape( btVectorToFloat3( _HalfExtents ) );
     shape.setMargin( 0.0f );
     btRigidBody * tempBody = b3New( btRigidBody, 1.0f, nullptr, &shape );
@@ -464,8 +464,8 @@ void FWorldCollisionQuery::QueryPhysicalBodies( FWorld const * _World, TPodArray
     b3Destroy( tempBody );
 }
 
-void FWorldCollisionQuery::QueryActors( FWorld const * _World, TPodArray< FActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, FCollisionQueryFilter const * _QueryFilter ) {
-    FQueryActorsCallback callback( _Result, _QueryFilter );
+void AWorldCollisionQuery::QueryActors( AWorld const * _World, TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) {
+    SQueryActorsCallback callback( _Result, _QueryFilter );
     btBoxShape shape( btVectorToFloat3( _HalfExtents ) );
     shape.setMargin( 0.0f );
     btRigidBody * tempBody = b3New( btRigidBody, 1.0f, nullptr, &shape );
@@ -477,10 +477,10 @@ void FWorldCollisionQuery::QueryActors( FWorld const * _World, TPodArray< FActor
     b3Destroy( tempBody );
 }
 
-void FWorldCollisionQuery::QueryPhysicalBodies( FWorld const * _World, TPodArray< FPhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionQueryFilter const * _QueryFilter ) {
+void AWorldCollisionQuery::QueryPhysicalBodies( AWorld const * _World, TPodArray< APhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) {
     QueryPhysicalBodies( _World, _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter );
 }
 
-void FWorldCollisionQuery::QueryActors( FWorld const * _World, TPodArray< FActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, FCollisionQueryFilter const * _QueryFilter ) {
+void AWorldCollisionQuery::QueryActors( AWorld const * _World, TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) {
     QueryActors( _World, _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter );
 }

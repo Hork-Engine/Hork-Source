@@ -40,7 +40,7 @@ enum ELoggerLevel {
     LevMessage
 };
 
-class FLogger {
+class ALogger {
 public:
     void Critical( const char * _Format, ... );
     void Error( const char * _Format, ... );
@@ -63,4 +63,4 @@ private:
     static void DefaultMessageCallback( int, const char * );
 };
 
-extern FLogger GLogger;
+extern ALogger GLogger;

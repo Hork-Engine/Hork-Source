@@ -138,19 +138,19 @@ public:
 
     // Floating point specific
     Bool4 IsInfinite() const {
-        return Bool4( FMath::IsInfinite( X ), FMath::IsInfinite( Y ), FMath::IsInfinite( Z ), FMath::IsInfinite( W ) );
+        return Bool4( Math::IsInfinite( X ), Math::IsInfinite( Y ), Math::IsInfinite( Z ), Math::IsInfinite( W ) );
     }
 
     Bool4 IsNan() const {
-        return Bool4( FMath::IsNan( X ), FMath::IsNan( Y ), FMath::IsNan( Z ), FMath::IsNan( W ) );
+        return Bool4( Math::IsNan( X ), Math::IsNan( Y ), Math::IsNan( Z ), Math::IsNan( W ) );
     }
 
     Bool4 IsNormal() const {
-        return Bool4( FMath::IsNormal( X ), FMath::IsNormal( Y ), FMath::IsNormal( Z ), FMath::IsNormal( W ) );
+        return Bool4( Math::IsNormal( X ), Math::IsNormal( Y ), Math::IsNormal( Z ), Math::IsNormal( W ) );
     }
 
     Bool4 NotEqual( const Quat & _Other ) const {
-        return Bool4( FMath::NotEqual( X, _Other.X ), FMath::NotEqual( Y, _Other.Y ), FMath::NotEqual( Z, _Other.Z ), FMath::NotEqual( W, _Other.W ) );
+        return Bool4( Math::NotEqual( X, _Other.X ), Math::NotEqual( Y, _Other.Y ), Math::NotEqual( Z, _Other.Z ), Math::NotEqual( W, _Other.W ) );
     }
 
     Bool Compare( const Quat & _Other ) const {
@@ -158,10 +158,10 @@ public:
     }
 
     Bool CompareEps( const Quat & _Other, const float & _Epsilon ) const {
-        return Bool4( FMath::Dist( X, _Other.X ) < _Epsilon,
-                      FMath::Dist( Y, _Other.Y ) < _Epsilon,
-                      FMath::Dist( Z, _Other.Z ) < _Epsilon,
-                      FMath::Dist( W, _Other.W ) < _Epsilon ).All();
+        return Bool4( Math::Dist( X, _Other.X ) < _Epsilon,
+                      Math::Dist( Y, _Other.Y ) < _Epsilon,
+                      Math::Dist( Z, _Other.Z ) < _Epsilon,
+                      Math::Dist( W, _Other.W ) < _Epsilon ).All();
     }
 
     // Quaternion methods
@@ -212,7 +212,7 @@ public:
     }
 
     float ComputeW() const {
-        return StdSqrt( FMath::Abs( 1.0f - ( X * X + Y * Y + Z * Z ) ) );
+        return StdSqrt( Math::Abs( 1.0f - ( X * X + Y * Y + Z * Z ) ) );
     }
 
     Float3 XAxis() const {
@@ -238,7 +238,7 @@ public:
     // Return rotation around normalized axis
     static Quat RotationAroundNormal( const float & _AngleRad, const Float3 & _Normal ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad * 0.5f, s, c );
+        Math::RadSinCos( _AngleRad * 0.5f, s, c );
         return Quat( c, s * _Normal.X, s * _Normal.Y, s * _Normal.Z );
     }
 
@@ -250,7 +250,7 @@ public:
     // Return rotation around X axis
     static Quat RotationX( const float & _AngleRad ) {
         Quat Result;
-        FMath::RadSinCos( _AngleRad * 0.5f, Result.X, Result.W );
+        Math::RadSinCos( _AngleRad * 0.5f, Result.X, Result.W );
         Result.Y = 0;
         Result.Z = 0;
         return Result;
@@ -259,7 +259,7 @@ public:
     // Return rotation around Y axis
     static Quat RotationY( const float & _AngleRad ) {
         Quat Result;
-        FMath::RadSinCos( _AngleRad * 0.5f, Result.Y, Result.W );
+        Math::RadSinCos( _AngleRad * 0.5f, Result.Y, Result.W );
         Result.X = 0;
         Result.Z = 0;
         return Result;
@@ -268,7 +268,7 @@ public:
     // Return rotation around Z axis
     static Quat RotationZ( const float & _AngleRad ) {
         Quat Result;
-        FMath::RadSinCos( _AngleRad * 0.5f, Result.Z, Result.W );
+        Math::RadSinCos( _AngleRad * 0.5f, Result.Z, Result.W );
         Result.X = 0;
         Result.Y = 0;
         return Result;
@@ -276,7 +276,7 @@ public:
 
     Quat RotateAroundNormal( const float & _AngleRad, const Float3 & _Normal ) const {
         float s, c;
-        FMath::RadSinCos( _AngleRad * 0.5f, s, c );
+        Math::RadSinCos( _AngleRad * 0.5f, s, c );
         return *this * Quat( c, s * _Normal.X, s * _Normal.Y, s * _Normal.Z );
         // FIXME: or? return Quat( c, s * _Normal.X, s * _Normal.Y, s * _Normal.Z ) * (*this);
     }
@@ -308,16 +308,16 @@ public:
         // TODO: singularity test
 
         _PitchRad = atan2( 2.0f * ( Y * Z + W * X ), ww - xx - yy + zz );
-        _YawRad   = asin( FMath::Clamp( -2.0f * ( X * Z - W * Y ), -1.0f, 1.0f ) );
+        _YawRad   = asin( Math::Clamp( -2.0f * ( X * Z - W * Y ), -1.0f, 1.0f ) );
         _RollRad  = atan2( 2.0f * ( X * Y + W * Z ), ww + xx - yy - zz );
     }
 
     void FromAngles( const float & _PitchRad, const float & _YawRad, const float & _RollRad ) {
         float sx, sy, sz, cx, cy, cz;
 
-        FMath::RadSinCos( _PitchRad * 0.5f, sx, cx );
-        FMath::RadSinCos( _YawRad * 0.5f, sy, cy );
-        FMath::RadSinCos( _RollRad * 0.5f, sz, cz );
+        Math::RadSinCos( _PitchRad * 0.5f, sx, cx );
+        Math::RadSinCos( _YawRad * 0.5f, sy, cy );
+        Math::RadSinCos( _RollRad * 0.5f, sz, cz );
 
         const float w = cy * cx;
         const float x = cy * sx;
@@ -425,7 +425,7 @@ public:
     }
 
     float Yaw() const {
-        return asin( FMath::Clamp( -2.0f * ( X * Z - W * Y ), -1.0f, 1.0f ) );
+        return asin( Math::Clamp( -2.0f * ( X * Z - W * Y ), -1.0f, 1.0f ) );
     }
 
     float Roll() const {
@@ -439,26 +439,27 @@ public:
     static Quat Slerp( const Quat & _From, const Quat & _To, const float & _Mix );
 
     // String conversions
-    FString ToString( int _Precision = -1 ) const {
-        return FString( "( " ) + FMath::ToString( X, _Precision ) + " " + FMath::ToString( Y, _Precision ) + " " + FMath::ToString( Z, _Precision ) + " " + FMath::ToString( W, _Precision ) + " )";
+    AString ToString( int _Precision = -1 ) const {
+        return AString( "( " ) + Math::ToString( X, _Precision ) + " " + Math::ToString( Y, _Precision ) + " " + Math::ToString( Z, _Precision ) + " " + Math::ToString( W, _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + FMath::ToHexString( X, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Z, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( W, _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Z, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( W, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteFloat( X );
+        _Stream.WriteFloat( Y );
+        _Stream.WriteFloat( Z );
+        _Stream.WriteFloat( W );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X = _Stream.ReadFloat();
+        Y = _Stream.ReadFloat();
+        Z = _Stream.ReadFloat();
+        W = _Stream.ReadFloat();
         NormalizeSelf();
     }
 

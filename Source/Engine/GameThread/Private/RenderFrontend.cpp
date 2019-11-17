@@ -37,21 +37,15 @@ SOFTWARE.
 #include <Engine/Runtime/Public/Runtime.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-FRenderFrontend & GRenderFrontend = FRenderFrontend::Inst();
+ARenderFrontend & GRenderFrontend = ARenderFrontend::Inst();
 
-extern FCanvas GCanvas;
+extern ACanvas GCanvas;
 
-FRenderFrontend::FRenderFrontend() {
+ARenderFrontend::ARenderFrontend() {
 }
 
-void FRenderFrontend::Initialize() {
-}
-
-void FRenderFrontend::Deinitialize() {
-}
-
-struct FInstanceSortFunction {
-    bool operator() ( FRenderInstance const * _A, FRenderInstance * _B ) {
+struct SInstanceSortFunction {
+    bool operator() ( SRenderInstance const * _A, SRenderInstance * _B ) {
 
         // Sort by render order
         if ( _A->RenderingOrder < _B->RenderingOrder ) {
@@ -93,8 +87,8 @@ struct FInstanceSortFunction {
     }
 } InstanceSortFunction;
 
-struct FShadowInstanceSortFunction {
-    bool operator() ( FShadowRenderInstance const * _A, FShadowRenderInstance * _B ) {
+struct SShadowInstanceSortFunction {
+    bool operator() ( SShadowRenderInstance const * _A, SShadowRenderInstance * _B ) {
 
         // Sort by material
         if ( _A->Material < _B->Material ) {
@@ -127,12 +121,12 @@ struct FShadowInstanceSortFunction {
     }
 } ShadowInstanceSortFunction;
 
-void FRenderFrontend::Render() {
-    CurFrameData = GRuntime.GetFrameData();
+void ARenderFrontend::Render() {
+    FrameData = GRuntime.GetFrameData();
 
-    CurFrameData->FrameNumber = GEngine.GetFrameNumber();
-    CurFrameData->DrawListHead = nullptr;
-    CurFrameData->DrawListTail = nullptr;
+    FrameData->FrameNumber = GEngine.GetFrameNumber();
+    FrameData->DrawListHead = nullptr;
+    FrameData->DrawListTail = nullptr;
 
     Stat.FrontendTime = GRuntime.SysMilliseconds();
     Stat.PolyCount = 0;
@@ -164,19 +158,19 @@ void FRenderFrontend::Render() {
         //RenderImgui();
     }
 
-    CurFrameData->AllocSurfaceWidth = MaxViewportWidth;
-    CurFrameData->AllocSurfaceHeight = MaxViewportHeight;
-    CurFrameData->CanvasWidth = GCanvas.Width;
-    CurFrameData->CanvasHeight = GCanvas.Height;
-    CurFrameData->NumViews = NumViewports;
-    CurFrameData->Instances.Clear();
-    CurFrameData->ShadowInstances.Clear();
-    CurFrameData->DirectionalLights.Clear();
-    CurFrameData->Lights.Clear();
-    CurFrameData->ShadowCascadePoolSize = 0;
-    CurFrameData->DbgVertices.Clear();
-    CurFrameData->DbgIndices.Clear();
-    CurFrameData->DbgCmds.Clear();
+    FrameData->AllocSurfaceWidth = MaxViewportWidth;
+    FrameData->AllocSurfaceHeight = MaxViewportHeight;
+    FrameData->CanvasWidth = GCanvas.Width;
+    FrameData->CanvasHeight = GCanvas.Height;
+    FrameData->NumViews = NumViewports;
+    FrameData->Instances.Clear();
+    FrameData->ShadowInstances.Clear();
+    FrameData->DirectionalLights.Clear();
+    FrameData->Lights.Clear();
+    FrameData->ShadowCascadePoolSize = 0;
+    FrameData->DbgVertices.Clear();
+    FrameData->DbgIndices.Clear();
+    FrameData->DbgCmds.Clear();
 
     DebugDraw.Reset();
 
@@ -187,99 +181,98 @@ void FRenderFrontend::Render() {
     Stat.FrontendTime = GRuntime.SysMilliseconds() - Stat.FrontendTime;
 }
 
-void FRenderFrontend::RenderView( int _Index ) {
-    FViewport const * viewport = Viewports[ _Index ];
-    FPlayerController * controller = viewport->PlayerController;
-    FCameraComponent * camera = controller->GetViewCamera();
-    FRenderingParameters * RP = controller->GetRenderingParameters();
-
-    World = camera->GetWorld();
-
-    RV = &CurFrameData->RenderViews[_Index];
-
-    RV->GameRunningTimeSeconds = World->GetRunningTimeMicro() * 0.000001;
-    RV->GameplayTimeSeconds = World->GetGameplayTimeMicro() * 0.000001;
-
-    RV->ViewIndex = _Index;
-    RV->Width = viewport->Width;
-    RV->Height = viewport->Height;
-    RV->ViewPosition = camera->GetWorldPosition();
-    RV->ViewRotation = camera->GetWorldRotation();
-    RV->ViewRightVec = camera->GetWorldRightVector();
-    RV->ViewUpVec = camera->GetWorldUpVector();
-    RV->ViewDir = camera->GetWorldForwardVector();
-    RV->ViewMatrix = camera->GetViewMatrix();
-    RV->ViewZNear = camera->GetZNear();
-    RV->ViewZFar = camera->GetZFar();
-    RV->ViewOrthoMins = camera->GetOrthoMins();
-    RV->ViewOrthoMaxs = camera->GetOrthoMaxs();
-    camera->GetEffectiveFov( RV->ViewFovX, RV->ViewFovY );
-    RV->bPerspective = camera->IsPerspective();
-    RV->MaxVisibleDistance = camera->GetZFar(); // TODO: расчитать дальность до самой дальней точки на экране (по баундингам static&skinned mesh)
-    RV->NormalToViewMatrix = Float3x3( RV->ViewMatrix );
-    RV->ProjectionMatrix = camera->GetProjectionMatrix();
-    RV->InverseProjectionMatrix = camera->IsPerspective() ?
-                RV->ProjectionMatrix.PerspectiveProjectionInverseFast()
-              : RV->ProjectionMatrix.OrthoProjectionInverseFast();
-    RV->ModelviewProjection = RV->ProjectionMatrix * RV->ViewMatrix;
-    RV->ViewSpaceToWorldSpace = RV->ViewMatrix.Inversed();
-    RV->ClipSpaceToWorldSpace = RV->ViewSpaceToWorldSpace * RV->InverseProjectionMatrix;
-    camera->MakeClusterProjectionMatrix( RV->ClusterProjectionMatrix );
-    RV->BackgroundColor = RP ? RP->BackgroundColor.GetRGB() : Float3(1.0f);
-    RV->bClearBackground = RP ? RP->bClearBackground : true;
-    RV->bWireframe = RP ? RP->bWireframe : false;
-    RV->FirstInstance = CurFrameData->Instances.Size();
-    RV->InstanceCount = 0;
-    RV->FirstShadowInstance = CurFrameData->ShadowInstances.Size();
-    RV->ShadowInstanceCount = 0;
-    RV->FirstDirectionalLight = CurFrameData->DirectionalLights.Size();
-    RV->NumDirectionalLights = 0;
-    RV->FirstLight = CurFrameData->Lights.Size();
-    RV->NumLights = 0;
+void ARenderFrontend::RenderView( int _Index ) {
+    SViewport const * viewport = Viewports[ _Index ];
+    APlayerController * controller = viewport->PlayerController;
+    ACameraComponent * camera = controller->GetViewCamera();
+    ARenderingParameters * RP = controller->GetRenderingParameters();
+    AWorld * world = camera->GetWorld();
+    SRenderView * view = &FrameData->RenderViews[_Index];
 
     VisMarker++;
 
-    if ( RP && RP->bDrawDebug ) {
-        World->DrawDebug( &DebugDraw, CurFrameData->FrameNumber );
-        RV->FirstDbgCmd = World->GetFirstDebugDrawCommand();
-        RV->DbgCmdCount = World->GetDebugDrawCommandCount();
-    } else {
-        RV->FirstDbgCmd = 0;
-        RV->DbgCmdCount = 0;
+    view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
+    view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
+    view->ViewIndex = _Index;
+    view->Width = viewport->Width;
+    view->Height = viewport->Height;
+    view->ViewPosition = camera->GetWorldPosition();
+    view->ViewRotation = camera->GetWorldRotation();
+    view->ViewRightVec = camera->GetWorldRightVector();
+    view->ViewUpVec = camera->GetWorldUpVector();
+    view->ViewDir = camera->GetWorldForwardVector();
+    view->ViewMatrix = camera->GetViewMatrix();
+    view->ViewZNear = camera->GetZNear();
+    view->ViewZFar = camera->GetZFar();
+    view->ViewOrthoMins = camera->GetOrthoMins();
+    view->ViewOrthoMaxs = camera->GetOrthoMaxs();
+    camera->GetEffectiveFov( view->ViewFovX, view->ViewFovY );
+    view->bPerspective = camera->IsPerspective();
+    view->MaxVisibleDistance = camera->GetZFar(); // TODO: расчитать дальность до самой дальней точки на экране (по баундингам static&skinned mesh)
+    view->NormalToViewMatrix = Float3x3( view->ViewMatrix );
+    view->ProjectionMatrix = camera->GetProjectionMatrix();
+    view->InverseProjectionMatrix = camera->IsPerspective() ?
+                view->ProjectionMatrix.PerspectiveProjectionInverseFast()
+              : view->ProjectionMatrix.OrthoProjectionInverseFast();
+    view->ModelviewProjection = view->ProjectionMatrix * view->ViewMatrix;
+    view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed();
+    view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
+    camera->MakeClusterProjectionMatrix( view->ClusterProjectionMatrix );
+    view->BackgroundColor = RP ? RP->BackgroundColor.GetRGB() : Float3(1.0f);
+    view->bClearBackground = RP ? RP->bClearBackground : true;
+    view->bWireframe = RP ? RP->bWireframe : false;
+    view->FirstInstance = FrameData->Instances.Size();
+    view->InstanceCount = 0;
+    view->FirstShadowInstance = FrameData->ShadowInstances.Size();
+    view->ShadowInstanceCount = 0;
+    view->FirstDirectionalLight = FrameData->DirectionalLights.Size();
+    view->NumDirectionalLights = 0;
+    view->FirstLight = FrameData->Lights.Size();
+    view->NumLights = 0;
+    view->FirstDebugDrawCommand = 0;
+    view->DebugDrawCommandCount = 0;
+
+    world->SetRenderFrameNumber( FrameData->FrameNumber );
+
+    world->E_OnPrepareRenderFrontend.Dispatch( camera, VisMarker );
+
+    // Generate debug draw commands
+    if ( RP && RP->bDrawDebug )
+    {
+        DebugDraw.BeginRenderView( view );
+        world->DrawDebug( &DebugDraw );
+        DebugDraw.EndRenderView();
     }
 
-    // TODO: call this once per frame!
-    controller->VisitViewActors();
-
-    FRenderFrontendDef def;
-
-    def.View = RV;
+    SRenderFrontendDef def;
+    def.View = view;
     def.Frustum = &camera->GetFrustum();
     def.RenderingMask = RP ? RP->RenderingMask : ~0;
     def.VisMarker = VisMarker;
     def.PolyCount = 0;
     def.ShadowMapPolyCount = 0;
 
-    World->RenderFrontend_AddInstances( &def );
-    World->RenderFrontend_AddDirectionalShadowmapInstances( &def );
+    world->RenderFrontend_AddInstances( &def );
+    world->RenderFrontend_AddDirectionalShadowmapInstances( &def );
 
     Stat.PolyCount += def.PolyCount;
     Stat.ShadowMapPolyCount += def.ShadowMapPolyCount;
 
     //int64_t t = GRuntime.SysMilliseconds();
-    StdSort( CurFrameData->Instances.Begin() + RV->FirstInstance,
-             CurFrameData->Instances.Begin() + ( RV->FirstInstance + RV->InstanceCount ),
+
+    StdSort( FrameData->Instances.Begin() + view->FirstInstance,
+             FrameData->Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
              InstanceSortFunction );
 
-    StdSort( CurFrameData->ShadowInstances.Begin() + RV->FirstShadowInstance,
-             CurFrameData->ShadowInstances.Begin() + (RV->FirstShadowInstance + RV->ShadowInstanceCount),
+    StdSort( FrameData->ShadowInstances.Begin() + view->FirstShadowInstance,
+             FrameData->ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
              ShadowInstanceSortFunction );
 
     //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, RV->InstanceCount );
 }
 
-void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
-    FRenderFrame * frameData = GRuntime.GetFrameData();
+void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
+    SRenderFrame * frameData = GRuntime.GetFrameData();
 
     ImDrawList const * srcList = &_Canvas->GetDrawList();
 
@@ -287,7 +280,7 @@ void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
         return;
     }
 
-    FHUDDrawList * drawList = ( FHUDDrawList * )GRuntime.AllocFrameMem( sizeof( FHUDDrawList ) );
+    SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime.AllocFrameMem( sizeof( SHUDDrawList ) );
     if ( !drawList ) {
         return;
     }
@@ -296,8 +289,8 @@ void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
     drawList->IndicesCount = srcList->IdxBuffer.size();
     drawList->CommandsCount = srcList->CmdBuffer.size();
 
-    int bytesCount = sizeof( FHUDDrawVert ) * drawList->VerticesCount;
-    drawList->Vertices = ( FHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
+    int bytesCount = sizeof( SHUDDrawVert ) * drawList->VerticesCount;
+    drawList->Vertices = ( SHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Vertices ) {
         return;
     }
@@ -311,15 +304,15 @@ void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
 
     memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
 
-    bytesCount = sizeof( FHUDDrawCmd ) * drawList->CommandsCount;
-    drawList->Commands = ( FHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
+    bytesCount = sizeof( SHUDDrawCmd ) * drawList->CommandsCount;
+    drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Commands ) {
         return;
     }
 
     int firstIndex = 0;
 
-    FHUDDrawCmd * dstCmd = drawList->Commands;
+    SHUDDrawCmd * dstCmd = drawList->Commands;
     for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
 
         memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
@@ -337,19 +330,19 @@ void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
         case HUD_DRAW_CMD_VIEWPORT:
         {
             if ( NumViewports >= MAX_RENDER_VIEWS ) {
-                GLogger.Printf( "FRenderFrontend: MAX_RENDER_VIEWS hit\n" );
+                GLogger.Printf( "ARenderFrontend: MAX_RENDER_VIEWS hit\n" );
                 drawList->CommandsCount--;
                 continue;
             }
 
-            FViewport const * viewport = &_Canvas->GetViewports()[ (size_t)pCmd->TextureId - 1 ];
+            SViewport const * viewport = &_Canvas->GetViewports()[ (size_t)pCmd->TextureId - 1 ];
 
             dstCmd->ViewportIndex = NumViewports++;
 
             Viewports[ dstCmd->ViewportIndex ] = viewport;
 
-            MaxViewportWidth = FMath::Max( MaxViewportWidth, viewport->Width );
-            MaxViewportHeight = FMath::Max( MaxViewportHeight, viewport->Height );
+            MaxViewportWidth = Math::Max( MaxViewportWidth, viewport->Width );
+            MaxViewportHeight = Math::Max( MaxViewportHeight, viewport->Height );
 
             dstCmd++;
 
@@ -358,10 +351,10 @@ void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
 
         case HUD_DRAW_CMD_MATERIAL:
         {
-            FMaterialInstance * materialInstance = static_cast< FMaterialInstance * >( pCmd->TextureId );
+            AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( pCmd->TextureId );
             AN_Assert( materialInstance );
 
-            FMaterial * material = materialInstance->GetMaterial();
+            AMaterial * material = materialInstance->GetMaterial();
             AN_Assert( material );
 
             if ( material->GetType() != MATERIAL_TYPE_HUD ) {
@@ -380,7 +373,7 @@ void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
         case HUD_DRAW_CMD_TEXTURE:
         case HUD_DRAW_CMD_ALPHA:
         {
-            dstCmd->Texture = (FTextureGPU *)pCmd->TextureId;
+            dstCmd->Texture = (ATextureGPU *)pCmd->TextureId;
             dstCmd++;
             break;
         }
@@ -390,7 +383,7 @@ void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
         }
     }
 
-    FHUDDrawList * prev = frameData->DrawListTail;
+    SHUDDrawList * prev = frameData->DrawListTail;
     drawList->pNext = nullptr;
     frameData->DrawListTail = drawList;
     if ( prev ) {
@@ -400,7 +393,7 @@ void FRenderFrontend::RenderCanvas( FCanvas * _Canvas ) {
     }
 }
 
-void FRenderFrontend::RenderImgui() {
+void ARenderFrontend::RenderImgui() {
     ImDrawData * drawData = ImGui::GetDrawData();
     if ( drawData && drawData->CmdListsCount > 0 ) {
         // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
@@ -454,8 +447,8 @@ void FRenderFrontend::RenderImgui() {
     }
 }
 
-void FRenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
-    FRenderFrame * frameData = GRuntime.GetFrameData();
+void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
+    SRenderFrame * frameData = GRuntime.GetFrameData();
 
     ImDrawList const * srcList = _DrawList;
 
@@ -463,7 +456,7 @@ void FRenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         return;
     }
 
-    FHUDDrawList * drawList = ( FHUDDrawList * )GRuntime.AllocFrameMem( sizeof( FHUDDrawList ) );
+    SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime.AllocFrameMem( sizeof( SHUDDrawList ) );
     if ( !drawList ) {
         return;
     }
@@ -472,8 +465,8 @@ void FRenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
     drawList->IndicesCount = srcList->IdxBuffer.size();
     drawList->CommandsCount = srcList->CmdBuffer.size();
 
-    int bytesCount = sizeof( FHUDDrawVert ) * drawList->VerticesCount;
-    drawList->Vertices = ( FHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
+    int bytesCount = sizeof( SHUDDrawVert ) * drawList->VerticesCount;
+    drawList->Vertices = ( SHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Vertices ) {
         return;
     }
@@ -487,15 +480,15 @@ void FRenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
 
     memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
 
-    bytesCount = sizeof( FHUDDrawCmd ) * drawList->CommandsCount;
-    drawList->Commands = ( FHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
+    bytesCount = sizeof( SHUDDrawCmd ) * drawList->CommandsCount;
+    drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Commands ) {
         return;
     }
 
     int firstIndex = 0;
 
-    FHUDDrawCmd * dstCmd = drawList->Commands;
+    SHUDDrawCmd * dstCmd = drawList->Commands;
     for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
 
         memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
@@ -518,10 +511,10 @@ void FRenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
 
         case HUD_DRAW_CMD_MATERIAL:
         {
-            FMaterialInstance * materialInstance = static_cast< FMaterialInstance * >( pCmd->TextureId );
+            AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( pCmd->TextureId );
             AN_Assert( materialInstance );
 
-            FMaterial * material = materialInstance->GetMaterial();
+            AMaterial * material = materialInstance->GetMaterial();
             AN_Assert( material );
 
             if ( material->GetType() != MATERIAL_TYPE_HUD ) {
@@ -539,7 +532,7 @@ void FRenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         case HUD_DRAW_CMD_TEXTURE:
         case HUD_DRAW_CMD_ALPHA:
         {
-            dstCmd->Texture = (FTextureGPU *)pCmd->TextureId;
+            dstCmd->Texture = (ATextureGPU *)pCmd->TextureId;
             dstCmd++;
             break;
         }
@@ -549,7 +542,7 @@ void FRenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         }
     }
 
-    FHUDDrawList * prev = frameData->DrawListTail;
+    SHUDDrawList * prev = frameData->DrawListTail;
     drawList->pNext = nullptr;
     frameData->DrawListTail = drawList;
     if ( prev ) {

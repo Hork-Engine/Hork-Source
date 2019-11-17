@@ -66,10 +66,10 @@ class WScroll;
 template< typename... TArgs >
 struct TWidgetEvent : TEvent< TArgs... > {};
 
-using FWidgetShape = TPodArray< Float2, 4 >;
+using AWidgetShape = TPodArray< Float2, 4 >;
 
-class ANGIE_API WWidget : public FBaseObject {
-    AN_CLASS( WWidget, FBaseObject )
+class ANGIE_API WWidget : public ABaseObject {
+    AN_CLASS( WWidget, ABaseObject )
 
     friend class WDesktop;
 
@@ -323,10 +323,10 @@ public:
     void GetLayoutRect( Float2 & _Mins, Float2 & _Maxs ) const;
 
     /** Custom clickable area */
-    FWidgetShape const & GetShape() const { return Shape; }
+    AWidgetShape const & GetShape() const { return Shape; }
 
     /** Custom drag area */
-    FWidgetShape const & GetDragShape() const { return DragShape; }
+    AWidgetShape const & GetDragShape() const { return DragShape; }
 
     /** Padding of the client area within the widget */
     Float4 const & GetMargin() const { return Margin; }
@@ -386,17 +386,17 @@ protected:
     WWidget();
     ~WWidget();
 
-    virtual void OnKeyEvent( struct FKeyEvent const & _Event, double _TimeStamp );
+    virtual void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp );
 
-    virtual void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp );
+    virtual void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp );
 
     virtual void OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint64_t _ClickTime );
 
-    virtual void OnMouseWheelEvent( struct FMouseWheelEvent const & _Event, double _TimeStamp );
+    virtual void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp );
 
-    virtual void OnMouseMoveEvent( struct FMouseMoveEvent const & _Event, double _TimeStamp );
+    virtual void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp );
 
-    virtual void OnCharEvent( struct FCharEvent const & _Event, double _TimeStamp );
+    virtual void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp );
 
     virtual void OnDragEvent( Float2 & _Position );
 
@@ -406,7 +406,7 @@ protected:
 
     virtual void OnWindowHovered( bool _Hovered );
 
-    virtual void OnDrawEvent( FCanvas & _Canvas );
+    virtual void OnDrawEvent( ACanvas & _Canvas );
 
     virtual void OnTransformDirty();
 
@@ -416,7 +416,7 @@ protected:
 
     // TODO: Add joystick events?
 
-    void DrawDecorates( FCanvas & _Canvas );
+    void DrawDecorates( ACanvas & _Canvas );
 
     void ScrollSelfDelta( float _Delta );
 
@@ -427,7 +427,7 @@ public:
     void MarkTransformDirtyChilds();
 
 private:
-    void Draw_r( FCanvas & _Canvas, Float2 const & _ClipMins, Float2 const & _ClipMaxs );
+    void Draw_r( ACanvas & _Canvas, Float2 const & _ClipMins, Float2 const & _ClipMaxs );
 
     void UpdateDesktop_r( WDesktop * _Desktop );
 
@@ -450,7 +450,7 @@ private:
     float CalcContentWidth();
     float CalcContentHeight();
 
-    struct FCell {
+    struct SCell {
         float Size;
         float ActualSize;
         float Offset;
@@ -461,8 +461,8 @@ private:
     TPodArray< WWidget * > Childs;
     TPodArray< WDecorate *, 2 > Decorates;
     TPodArray< WWidget * > LayoutSlots;
-    FWidgetShape Shape;
-    FWidgetShape DragShape;
+    AWidgetShape Shape;
+    AWidgetShape DragShape;
     Float2 Position;
     Float2 Size;
     Float2 MinSize;
@@ -483,8 +483,8 @@ private:
     float VerticalPadding;
     int ColumnsCount;
     int RowsCount;
-    TPodArray< FCell, 1 > Columns;
-    TPodArray< FCell, 1 > Rows;
+    TPodArray< SCell, 1 > Columns;
+    TPodArray< SCell, 1 > Rows;
     bool bFitColumns;
     bool bFitRows;
     bool bAutoWidth;
@@ -506,11 +506,11 @@ public:
     TWidgetEvent<> E_OnButtonClick;
 
     WMenuItem & SetText( const char * _Text );
-    WMenuItem & SetColor( FColor4 const & _Color );
-    WMenuItem & SetHoverColor( FColor4 const & _Color );
-    WMenuItem & SetPressedColor( FColor4 const & _Color );
-    WMenuItem & SetTextColor( FColor4 const & _Color );
-    WMenuItem & SetBorderColor( FColor4 const & _Color );
+    WMenuItem & SetColor( AColor4 const & _Color );
+    WMenuItem & SetHoverColor( AColor4 const & _Color );
+    WMenuItem & SetPressedColor( AColor4 const & _Color );
+    WMenuItem & SetTextColor( AColor4 const & _Color );
+    WMenuItem & SetBorderColor( AColor4 const & _Color );
     WMenuItem & SetRounding( float _Rounding );
     WMenuItem & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
     WMenuItem & SetBorderThickness( float _Thickness );
@@ -528,9 +528,9 @@ protected:
     WMenuItem();
     ~WMenuItem();
 
-    void OnMouseButtonEvent( struct FMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
-    void OnDrawEvent( FCanvas & _Canvas ) override;
+    void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
     enum {
@@ -539,13 +539,13 @@ private:
     };
 
     int State;
-    FColor4 Color;
-    FColor4 HoverColor;
-    FColor4 PressedColor;
-    FColor4 TextColor;
-    FColor4 BorderColor;
+    AColor4 Color;
+    AColor4 HoverColor;
+    AColor4 PressedColor;
+    AColor4 TextColor;
+    AColor4 BorderColor;
     EDrawCornerFlags RoundingCorners;
-    FString Text;
+    AString Text;
     float Rounding;
     float BorderThickness;
 };

@@ -343,7 +343,7 @@ public:
         //if ( Value > _Max )
         //    return _Max;
         //return Value;
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     Float Saturate() const {
@@ -399,7 +399,7 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = FLT_DIG ) const {
+    AString ToString( int _Precision = FLT_DIG ) const {
         TSprintfBuffer< 64 > value;
         if ( _Precision >= 0 ) {
             TSprintfBuffer< 64 > format;
@@ -407,7 +407,7 @@ public:
         } else {
             value.Sprintf( "%f", Value );
         }
-        for ( char * p = &value.Data[ FString::Length( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
+        for ( char * p = &value.Data[ AString::Length( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
             if ( *p != '0' ) {
                 if ( *p != '.' ) {
                     p++;
@@ -419,15 +419,15 @@ public:
         return value.Data;
     }
 
-    const char * ToConstChar( int _Precision = FLT_DIG ) const {
+    const char * CStr( int _Precision = FLT_DIG ) const {
         char * s;
         if ( _Precision >= 0 ) {
             TSprintfBuffer< 64 > format;
-            s = FString::Fmt( format.Sprintf( "%%.%df", _Precision ), Value );
+            s = AString::Fmt( format.Sprintf( "%%.%df", _Precision ), Value );
         } else {
-            s = FString::Fmt( "%f", Value );
+            s = AString::Fmt( "%f", Value );
         }
-        for ( char * p = s + FString::Length( s ) - 1 ; p >= s ; p-- ) {
+        for ( char * p = s + AString::Length( s ) - 1 ; p >= s ; p-- ) {
             if ( *p != '0' ) {
                 if ( *p != '.' ) {
                     p++;
@@ -439,25 +439,23 @@ public:
         return s;
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    Float & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    Float & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     Float & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( *( dword * )&Value );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteFloat( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( *( dword * )&Value );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadFloat();
     }
 
     // Static methods
@@ -469,7 +467,7 @@ public:
     static constexpr Float MaxValue() { return TStdNumericLimits< float >::max(); }
 };
 
-namespace FMath {
+namespace Math {
 
 AN_FORCEINLINE bool IsInfinite( const float & _Self ) {
     //return std::isinf( Self );
@@ -534,7 +532,7 @@ AN_FORCEINLINE float Clamp( const float & _Self, const float & _Min, const float
     //if ( _Self > _Max )
     //    return _Max;
     //return _Self;
-    return FMath::Min( FMath::Max( _Self, _Min ), _Max );
+    return Math::Min( Math::Max( _Self, _Min ), _Max );
 }
 
 AN_FORCEINLINE float Saturate( const float & _Self ) {
@@ -706,7 +704,7 @@ AN_FORCEINLINE float ToLittleEndian( const float & _Self ) {
 }
 
 // String conversions
-AN_FORCEINLINE FString ToString( const float & _Self, int _Precision = FLT_DIG ) {
+AN_FORCEINLINE AString ToString( const float & _Self, int _Precision = FLT_DIG ) {
     TSprintfBuffer< 64 > value;
     if ( _Precision >= 0 ) {
         TSprintfBuffer< 64 > format;
@@ -714,7 +712,7 @@ AN_FORCEINLINE FString ToString( const float & _Self, int _Precision = FLT_DIG )
     } else {
         value.Sprintf( "%f", _Self );
     }
-    for ( char * p = &value.Data[ FString::Length( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
+    for ( char * p = &value.Data[ AString::Length( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
         if ( *p != '0' ) {
             if ( *p != '.' ) {
                 p++;
@@ -726,15 +724,15 @@ AN_FORCEINLINE FString ToString( const float & _Self, int _Precision = FLT_DIG )
     return value.Data;
 }
 
-AN_FORCEINLINE const char * ToConstChar( const float & _Self, int _Precision = FLT_DIG ) {
+AN_FORCEINLINE const char * CStr( const float & _Self, int _Precision = FLT_DIG ) {
     char * s;
     if ( _Precision >= 0 ) {
         TSprintfBuffer< 64 > format;
-        s = FString::Fmt( format.Sprintf( "%%.%df", _Precision ), _Self );
+        s = AString::Fmt( format.Sprintf( "%%.%df", _Precision ), _Self );
     } else {
-        s = FString::Fmt( "%f", _Self );
+        s = AString::Fmt( "%f", _Self );
     }
-    for ( char * p = s + FString::Length( s ) - 1 ; p >= s ; p-- ) {
+    for ( char * p = s + AString::Length( s ) - 1 ; p >= s ; p-- ) {
         if ( *p != '0' ) {
             if ( *p != '.' ) {
                 p++;
@@ -746,14 +744,14 @@ AN_FORCEINLINE const char * ToConstChar( const float & _Self, int _Precision = F
     return s;
 }
 
-AN_FORCEINLINE FString ToHexString( const float & _Self, bool _LeadingZeros = false, bool _Prefix = false ) {
-    return FString::ToHexString( _Self, _LeadingZeros, _Prefix );
+AN_FORCEINLINE AString ToHexString( const float & _Self, bool _LeadingZeros = false, bool _Prefix = false ) {
+    return AString::ToHexString( _Self, _LeadingZeros, _Prefix );
 }
 
 float FromString( const char * _String );
 
-AN_FORCEINLINE float FromString( FString const & _String ) {
-    return FromString( _String.ToConstChar() );
+AN_FORCEINLINE float FromString( AString const & _String ) {
+    return FromString( _String.CStr() );
 }
 
 }
@@ -873,73 +871,73 @@ public:
     }
 
     float Min() const {
-        return FMath::Min( X, Y );
+        return Math::Min( X, Y );
     }
 
     float Max() const {
-        return FMath::Max( X, Y );
+        return Math::Max( X, Y );
     }
 
     int MinorAxis() const {
-        return int( FMath::Abs( X ) >= FMath::Abs( Y ) );
+        return int( Math::Abs( X ) >= Math::Abs( Y ) );
     }
 
     int MajorAxis() const {
-        return int( FMath::Abs( X ) < FMath::Abs( Y ) );
+        return int( Math::Abs( X ) < Math::Abs( Y ) );
     }
 
     // Floating point specific
     Bool2 IsInfinite() const {
-        return Bool2( FMath::IsInfinite( X ), FMath::IsInfinite( Y ) );
+        return Bool2( Math::IsInfinite( X ), Math::IsInfinite( Y ) );
     }
 
     Bool2 IsNan() const {
-        return Bool2( FMath::IsNan( X ), FMath::IsNan( Y ) );
+        return Bool2( Math::IsNan( X ), Math::IsNan( Y ) );
     }
 
     Bool2 IsNormal() const {
-        return Bool2( FMath::IsNormal( X ), FMath::IsNormal( Y ) );
+        return Bool2( Math::IsNormal( X ), Math::IsNormal( Y ) );
     }
 
     Bool2 IsDenormal() const {
-        return Bool2( FMath::IsDenormal( X ), FMath::IsDenormal( Y ) );
+        return Bool2( Math::IsDenormal( X ), Math::IsDenormal( Y ) );
     }
 
     // Comparision
 
     Bool2 LessThan( const Float2 & _Other ) const {
-        return Bool2( FMath::LessThan( X, _Other.X ), FMath::LessThan( Y, _Other.Y ) );
+        return Bool2( Math::LessThan( X, _Other.X ), Math::LessThan( Y, _Other.Y ) );
     }
     Bool2 LessThan( const float & _Other ) const {
-        return Bool2( FMath::LessThan( X, _Other ), FMath::LessThan( Y, _Other ) );
+        return Bool2( Math::LessThan( X, _Other ), Math::LessThan( Y, _Other ) );
     }
 
     Bool2 LequalThan( const Float2 & _Other ) const {
-        return Bool2( FMath::LequalThan( X, _Other.X ), FMath::LequalThan( Y, _Other.Y ) );
+        return Bool2( Math::LequalThan( X, _Other.X ), Math::LequalThan( Y, _Other.Y ) );
     }
     Bool2 LequalThan( const float & _Other ) const {
-        return Bool2( FMath::LequalThan( X, _Other ), FMath::LequalThan( Y, _Other ) );
+        return Bool2( Math::LequalThan( X, _Other ), Math::LequalThan( Y, _Other ) );
     }
 
     Bool2 GreaterThan( const Float2 & _Other ) const {
-        return Bool2( FMath::GreaterThan( X, _Other.X ), FMath::GreaterThan( Y, _Other.Y ) );
+        return Bool2( Math::GreaterThan( X, _Other.X ), Math::GreaterThan( Y, _Other.Y ) );
     }
     Bool2 GreaterThan( const float & _Other ) const {
-        return Bool2( FMath::GreaterThan( X, _Other ), FMath::GreaterThan( Y, _Other ) );
+        return Bool2( Math::GreaterThan( X, _Other ), Math::GreaterThan( Y, _Other ) );
     }
 
     Bool2 GequalThan( const Float2 & _Other ) const {
-        return Bool2( FMath::GequalThan( X, _Other.X ), FMath::GequalThan( Y, _Other.Y ) );
+        return Bool2( Math::GequalThan( X, _Other.X ), Math::GequalThan( Y, _Other.Y ) );
     }
     Bool2 GequalThan( const float & _Other ) const {
-        return Bool2( FMath::GequalThan( X, _Other ), FMath::GequalThan( Y, _Other ) );
+        return Bool2( Math::GequalThan( X, _Other ), Math::GequalThan( Y, _Other ) );
     }
 
     Bool2 NotEqual( const Float2 & _Other ) const {
-        return Bool2( FMath::NotEqual( X, _Other.X ), FMath::NotEqual( Y, _Other.Y ) );
+        return Bool2( Math::NotEqual( X, _Other.X ), Math::NotEqual( Y, _Other.Y ) );
     }
     Bool2 NotEqual( const float & _Other ) const {
-        return Bool2( FMath::NotEqual( X, _Other ), FMath::NotEqual( Y, _Other ) );
+        return Bool2( Math::NotEqual( X, _Other ), Math::NotEqual( Y, _Other ) );
     }
 
     Bool Compare( const Float2 & _Other ) const {
@@ -947,15 +945,15 @@ public:
     }
 
     Bool CompareEps( const Float2 & _Other, const float & _Epsilon ) const {
-        return Bool2( FMath::CompareEps( X, _Other.X, _Epsilon ),
-                      FMath::CompareEps( Y, _Other.Y, _Epsilon ) ).All();
+        return Bool2( Math::CompareEps( X, _Other.X, _Epsilon ),
+                      Math::CompareEps( Y, _Other.Y, _Epsilon ) ).All();
     }
 
     void Clear() {
         X = Y = 0;
     }
 
-    Float2 Abs() const { return Float2( FMath::Abs( X ), FMath::Abs( Y ) ); }
+    Float2 Abs() const { return Float2( Math::Abs( X ), Math::Abs( Y ) ); }
 
     // Vector methods
     float LengthSqr() const {
@@ -998,15 +996,15 @@ public:
     }
 
     Float2 Floor() const {
-        return Float2( FMath::Floor( X ), FMath::Floor( Y ) );
+        return Float2( Math::Floor( X ), Math::Floor( Y ) );
     }
 
     Float2 Ceil() const {
-        return Float2( FMath::Ceil( X ), FMath::Ceil( Y ) );
+        return Float2( Math::Ceil( X ), Math::Ceil( Y ) );
     }
 
     Float2 Fract() const {
-        return Float2( FMath::Fract( X ), FMath::Fract( Y ) );
+        return Float2( Math::Fract( X ), Math::Fract( Y ) );
     }
 
     Float2 Step( const float & _Edge ) const;
@@ -1017,11 +1015,11 @@ public:
 
     // Return 1 if value is greater than 0, -1 if value is less than 0, 0 if value equal to 0
     Float2 Sign() const {
-        return Float2( FMath::Sign( X ), FMath::Sign( Y ) );
+        return Float2( Math::Sign( X ), Math::Sign( Y ) );
     }
 
     int SignBits() const {
-        return FMath::SignBits( X ) | (FMath::SignBits( Y )<<1);
+        return Math::SignBits( X ) | (Math::SignBits( Y )<<1);
     }
 
     Float2 Lerp( const Float2 & _To, const float & _Mix ) const {
@@ -1041,11 +1039,11 @@ public:
     Float4 Bilerp( const Float4 & _A, const Float4 & _B, const Float4 & _C, const Float4 & _D ) const;
 
     Float2 Clamp( const float & _Min, const float & _Max ) const {
-        return Float2( FMath::Clamp( X, _Min, _Max ), FMath::Clamp( Y, _Min, _Max ) );
+        return Float2( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ) );
     }
 
     Float2 Clamp( const Float2 & _Min, const Float2 & _Max ) const {
-        return Float2( FMath::Clamp( X, _Min.X, _Max.X ), FMath::Clamp( Y, _Min.Y, _Max.Y ) );
+        return Float2( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ) );
     }
 
     Float2 Saturate() const {
@@ -1056,28 +1054,28 @@ public:
         AN_ASSERT( _SnapValue > 0, "Snap" );
         Float2 SnapVector;
         SnapVector = *this / _SnapValue;
-        SnapVector.X = FMath::Round( SnapVector.X ) * _SnapValue;
-        SnapVector.Y = FMath::Round( SnapVector.Y ) * _SnapValue;
+        SnapVector.X = Math::Round( SnapVector.X ) * _SnapValue;
+        SnapVector.Y = Math::Round( SnapVector.Y ) * _SnapValue;
         return SnapVector;
     }
 
     int NormalAxialType() const {
-        if ( X == 1.0f || X == -1.0f ) return FMath::AxialX;
-        if ( Y == 1.0f || Y == -1.0f ) return FMath::AxialY;
-        return FMath::NonAxial;
+        if ( X == 1.0f || X == -1.0f ) return Math::AxialX;
+        if ( Y == 1.0f || Y == -1.0f ) return Math::AxialY;
+        return Math::NonAxial;
     }
 
     int NormalPositiveAxialType() const {
-        if ( X == 1.0f ) return FMath::AxialX;
-        if ( Y == 1.0f ) return FMath::AxialY;
-        return FMath::NonAxial;
+        if ( X == 1.0f ) return Math::AxialX;
+        if ( Y == 1.0f ) return Math::AxialY;
+        return Math::NonAxial;
     }
 
     int VectorAxialType() const {
-        if ( FMath::Abs( X ) < 0.00001f ) {
-            return ( FMath::Abs( Y ) < 0.00001f ) ? FMath::NonAxial : FMath::AxialY;
+        if ( Math::Abs( X ) < 0.00001f ) {
+            return ( Math::Abs( Y ) < 0.00001f ) ? Math::NonAxial : Math::AxialY;
         }
-        return ( FMath::Abs( Y ) < 0.00001f ) ? FMath::AxialX : FMath::NonAxial;
+        return ( Math::Abs( Y ) < 0.00001f ) ? Math::AxialX : Math::NonAxial;
     }
 
     float Dot( const Float2 & _Other ) const {
@@ -1085,24 +1083,23 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = FLT_DIG ) const {
-        return FString( "( " ) + FMath::ToString( X, _Precision ) + " " + FMath::ToString( Y, _Precision ) + " )";
+    AString ToString( int _Precision = FLT_DIG ) const {
+        return AString( "( " ) + Math::ToString( X, _Precision ) + " " + Math::ToString( Y, _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + FMath::ToHexString( X, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Y, _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteFloat( X );
+        _Stream.WriteFloat( Y );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X = _Stream.ReadFloat();
+        Y = _Stream.ReadFloat();
     }
 
     // Static methods
@@ -1238,25 +1235,25 @@ public:
     }
 
     float Min() const {
-        return FMath::Min( FMath::Min( X, Y ), Z );
+        return Math::Min( Math::Min( X, Y ), Z );
     }
 
     float Max() const {
-        return FMath::Max( FMath::Max( X, Y ), Z );
+        return Math::Max( Math::Max( X, Y ), Z );
     }
 
     int MinorAxis() const {
-        float Minor = FMath::Abs( X );
+        float Minor = Math::Abs( X );
         int Axis = 0;
         float Tmp;
 
-        Tmp = FMath::Abs( Y );
+        Tmp = Math::Abs( Y );
         if ( Tmp <= Minor ) {
             Axis = 1;
             Minor = Tmp;
         }
 
-        Tmp = FMath::Abs( Z );
+        Tmp = Math::Abs( Z );
         if ( Tmp <= Minor ) {
             Axis = 2;
             Minor = Tmp;
@@ -1266,17 +1263,17 @@ public:
     }
 
     int MajorAxis() const {
-        float Major = FMath::Abs( X );
+        float Major = Math::Abs( X );
         int Axis = 0;
         float Tmp;
 
-        Tmp = FMath::Abs( Y );
+        Tmp = Math::Abs( Y );
         if ( Tmp > Major ) {
             Axis = 1;
             Major = Tmp;
         }
 
-        Tmp = FMath::Abs( Z );
+        Tmp = Math::Abs( Z );
         if ( Tmp > Major ) {
             Axis = 2;
             Major = Tmp;
@@ -1287,55 +1284,55 @@ public:
 
     // Floating point specific
     Bool3 IsInfinite() const {
-        return Bool3( FMath::IsInfinite( X ), FMath::IsInfinite( Y ), FMath::IsInfinite( Z ) );
+        return Bool3( Math::IsInfinite( X ), Math::IsInfinite( Y ), Math::IsInfinite( Z ) );
     }
 
     Bool3 IsNan() const {
-        return Bool3( FMath::IsNan( X ), FMath::IsNan( Y ), FMath::IsNan( Z ) );
+        return Bool3( Math::IsNan( X ), Math::IsNan( Y ), Math::IsNan( Z ) );
     }
 
     Bool3 IsNormal() const {
-        return Bool3( FMath::IsNormal( X ), FMath::IsNormal( Y ), FMath::IsNormal( Z ) );
+        return Bool3( Math::IsNormal( X ), Math::IsNormal( Y ), Math::IsNormal( Z ) );
     }
 
     Bool3 IsDenormal() const {
-        return Bool3( FMath::IsDenormal( X ), FMath::IsDenormal( Y ), FMath::IsDenormal( Z ) );
+        return Bool3( Math::IsDenormal( X ), Math::IsDenormal( Y ), Math::IsDenormal( Z ) );
     }
 
     // Comparision
     Bool3 LessThan( const Float3 & _Other ) const {
-        return Bool3( FMath::LessThan( X, _Other.X ), FMath::LessThan( Y, _Other.Y ), FMath::LessThan( Z, _Other.Z ) );
+        return Bool3( Math::LessThan( X, _Other.X ), Math::LessThan( Y, _Other.Y ), Math::LessThan( Z, _Other.Z ) );
     }
     Bool3 LessThan( const float & _Other ) const {
-        return Bool3( FMath::LessThan( X, _Other ), FMath::LessThan( Y, _Other ), FMath::LessThan( Z, _Other ) );
+        return Bool3( Math::LessThan( X, _Other ), Math::LessThan( Y, _Other ), Math::LessThan( Z, _Other ) );
     }
 
     Bool3 LequalThan( const Float3 & _Other ) const {
-        return Bool3( FMath::LequalThan( X, _Other.X ), FMath::LequalThan( Y, _Other.Y ), FMath::LequalThan( Z, _Other.Z ) );
+        return Bool3( Math::LequalThan( X, _Other.X ), Math::LequalThan( Y, _Other.Y ), Math::LequalThan( Z, _Other.Z ) );
     }
     Bool3 LequalThan( const float & _Other ) const {
-        return Bool3( FMath::LequalThan( X, _Other ), FMath::LequalThan( Y, _Other ), FMath::LequalThan( Z, _Other ) );
+        return Bool3( Math::LequalThan( X, _Other ), Math::LequalThan( Y, _Other ), Math::LequalThan( Z, _Other ) );
     }
 
     Bool3 GreaterThan( const Float3 & _Other ) const {
-        return Bool3( FMath::GreaterThan( X, _Other.X ), FMath::GreaterThan( Y, _Other.Y ), FMath::GreaterThan( Z, _Other.Z ) );
+        return Bool3( Math::GreaterThan( X, _Other.X ), Math::GreaterThan( Y, _Other.Y ), Math::GreaterThan( Z, _Other.Z ) );
     }
     Bool3 GreaterThan( const float & _Other ) const {
-        return Bool3( FMath::GreaterThan( X, _Other ), FMath::GreaterThan( Y, _Other ), FMath::GreaterThan( Z, _Other ) );
+        return Bool3( Math::GreaterThan( X, _Other ), Math::GreaterThan( Y, _Other ), Math::GreaterThan( Z, _Other ) );
     }
 
     Bool3 GequalThan( const Float3 & _Other ) const {
-        return Bool3( FMath::GequalThan( X, _Other.X ), FMath::GequalThan( Y, _Other.Y ), FMath::GequalThan( Z, _Other.Z ) );
+        return Bool3( Math::GequalThan( X, _Other.X ), Math::GequalThan( Y, _Other.Y ), Math::GequalThan( Z, _Other.Z ) );
     }
     Bool3 GequalThan( const float & _Other ) const {
-        return Bool3( FMath::GequalThan( X, _Other ), FMath::GequalThan( Y, _Other ), FMath::GequalThan( Z, _Other ) );
+        return Bool3( Math::GequalThan( X, _Other ), Math::GequalThan( Y, _Other ), Math::GequalThan( Z, _Other ) );
     }
 
     Bool3 NotEqual( const Float3 & _Other ) const {
-        return Bool3( FMath::NotEqual( X, _Other.X ), FMath::NotEqual( Y, _Other.Y ), FMath::NotEqual( Z, _Other.Z ) );
+        return Bool3( Math::NotEqual( X, _Other.X ), Math::NotEqual( Y, _Other.Y ), Math::NotEqual( Z, _Other.Z ) );
     }
     Bool3 NotEqual( const float & _Other ) const {
-        return Bool3( FMath::NotEqual( X, _Other ), FMath::NotEqual( Y, _Other ), FMath::NotEqual( Z, _Other ) );
+        return Bool3( Math::NotEqual( X, _Other ), Math::NotEqual( Y, _Other ), Math::NotEqual( Z, _Other ) );
     }
 
     Bool Compare( const Float3 & _Other ) const {
@@ -1343,16 +1340,16 @@ public:
     }
 
     Bool CompareEps( const Float3 & _Other, const float & _Epsilon ) const {
-        return Bool3( FMath::CompareEps( X, _Other.X, _Epsilon ),
-                      FMath::CompareEps( Y, _Other.Y, _Epsilon ),
-                      FMath::CompareEps( Z, _Other.Z, _Epsilon ) ).All();
+        return Bool3( Math::CompareEps( X, _Other.X, _Epsilon ),
+                      Math::CompareEps( Y, _Other.Y, _Epsilon ),
+                      Math::CompareEps( Z, _Other.Z, _Epsilon ) ).All();
     }
 
     void Clear() {
         X = Y = Z = 0;
     }
 
-    Float3 Abs() const { return Float3( FMath::Abs( X ), FMath::Abs( Y ), FMath::Abs( Z ) ); }
+    Float3 Abs() const { return Float3( Math::Abs( X ), Math::Abs( Y ), Math::Abs( Z ) ); }
 
     // Vector methods
     float LengthSqr() const {
@@ -1453,7 +1450,7 @@ public:
             }
         }
 
-        if ( FMath::Abs( X ) == ONE ) {
+        if ( Math::Abs( X ) == ONE ) {
             if ( Y != ZERO || Z != ZERO ) {
                 Y = Z = ZERO;
                 return true;
@@ -1461,7 +1458,7 @@ public:
             return false;
         }
 
-        if ( FMath::Abs( Y ) == ONE ) {
+        if ( Math::Abs( Y ) == ONE ) {
             if ( X != ZERO || Z != ZERO ) {
                 X = Z = ZERO;
                 return true;
@@ -1469,7 +1466,7 @@ public:
             return false;
         }
 
-        if ( FMath::Abs( Z ) == ONE ) {
+        if ( Math::Abs( Z ) == ONE ) {
             if ( X != ZERO || Y != ZERO ) {
                 X = Y = ZERO;
                 return true;
@@ -1481,15 +1478,15 @@ public:
     }
 
     Float3 Floor() const {
-        return Float3( FMath::Floor( X ), FMath::Floor( Y ), FMath::Floor( Z ) );
+        return Float3( Math::Floor( X ), Math::Floor( Y ), Math::Floor( Z ) );
     }
 
     Float3 Ceil() const {
-        return Float3( FMath::Ceil( X ), FMath::Ceil( Y ), FMath::Ceil( Z ) );
+        return Float3( Math::Ceil( X ), Math::Ceil( Y ), Math::Ceil( Z ) );
     }
 
     Float3 Fract() const {
-        return Float3( FMath::Fract( X ), FMath::Fract( Y ), FMath::Fract( Z ) );
+        return Float3( Math::Fract( X ), Math::Fract( Y ), Math::Fract( Z ) );
     }
 
     Float3 Step( const float & _Edge ) const;
@@ -1500,11 +1497,11 @@ public:
 
     // Return 1 if value is greater than 0, -1 if value is less than 0, 0 if value equal to 0
     Float3 Sign() const {
-        return Float3( FMath::Sign( X ), FMath::Sign( Y ), FMath::Sign( Z ) );
+        return Float3( Math::Sign( X ), Math::Sign( Y ), Math::Sign( Z ) );
     }
 
     int SignBits() const {
-        return FMath::SignBits( X ) | (FMath::SignBits( Y )<<1) | (FMath::SignBits( Z )<<2);
+        return Math::SignBits( X ) | (Math::SignBits( Y )<<1) | (Math::SignBits( Z )<<2);
     }
 
     Float3 Lerp( const Float3 & _To, const float & _Mix ) const {
@@ -1519,11 +1516,11 @@ public:
     static Float3 Lerp( const Float3 & _From, const Float3 & _To, const Float3 & _Mix );
 
     Float3 Clamp( const float & _Min, const float & _Max ) const {
-        return Float3( FMath::Clamp( X, _Min, _Max ), FMath::Clamp( Y, _Min, _Max ), FMath::Clamp( Z, _Min, _Max ) );
+        return Float3( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ), Math::Clamp( Z, _Min, _Max ) );
     }
 
     Float3 Clamp( const Float3 & _Min, const Float3 & _Max ) const {
-        return Float3( FMath::Clamp( X, _Min.X, _Max.X ), FMath::Clamp( Y, _Min.Y, _Max.Y ), FMath::Clamp( Z, _Min.Z, _Max.Z ) );
+        return Float3( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ), Math::Clamp( Z, _Min.Z, _Max.Z ) );
     }
 
     Float3 Saturate() const {
@@ -1534,34 +1531,34 @@ public:
         AN_ASSERT( _SnapValue > 0, "Snap" );
         Float3 SnapVector;
         SnapVector = *this / _SnapValue;
-        SnapVector.X = FMath::Round( SnapVector.X ) * _SnapValue;
-        SnapVector.Y = FMath::Round( SnapVector.Y ) * _SnapValue;
-        SnapVector.Z = FMath::Round( SnapVector.Z ) * _SnapValue;
+        SnapVector.X = Math::Round( SnapVector.X ) * _SnapValue;
+        SnapVector.Y = Math::Round( SnapVector.Y ) * _SnapValue;
+        SnapVector.Z = Math::Round( SnapVector.Z ) * _SnapValue;
         return SnapVector;
     }
 
     Float3 SnapNormal( const float & _Epsilon ) const {
         Float3 Normal = *this;
         for ( int i = 0 ; i < 3 ; i++ ) {
-            if ( FMath::Abs( Normal[i] - 1.0f ) < _Epsilon ) {
+            if ( Math::Abs( Normal[i] - 1.0f ) < _Epsilon ) {
                 Normal = Float3(0);
                 Normal[i] = 1;
                 break;
             }
-            if ( FMath::Abs( Normal[i] - -1.0f ) < _Epsilon ) {
+            if ( Math::Abs( Normal[i] - -1.0f ) < _Epsilon ) {
                 Normal = Float3(0);
                 Normal[i] = -1;
                 break;
             }
         }
 
-        if ( FMath::Abs( Normal[0] ) < _Epsilon && FMath::Abs( Normal[1] ) >= _Epsilon && FMath::Abs( Normal[2] ) >= _Epsilon ) {
+        if ( Math::Abs( Normal[0] ) < _Epsilon && Math::Abs( Normal[1] ) >= _Epsilon && Math::Abs( Normal[2] ) >= _Epsilon ) {
             Normal[0] = 0;
             Normal.NormalizeSelf();
-        } else if ( FMath::Abs( Normal[1] ) < _Epsilon && FMath::Abs( Normal[0] ) >= _Epsilon && FMath::Abs( Normal[2] ) >= _Epsilon ) {
+        } else if ( Math::Abs( Normal[1] ) < _Epsilon && Math::Abs( Normal[0] ) >= _Epsilon && Math::Abs( Normal[2] ) >= _Epsilon ) {
             Normal[1] = 0;
             Normal.NormalizeSelf();
-        } else if ( FMath::Abs( Normal[2] ) < _Epsilon && FMath::Abs( Normal[0] ) >= _Epsilon && FMath::Abs( Normal[1] ) >= _Epsilon ) {
+        } else if ( Math::Abs( Normal[2] ) < _Epsilon && Math::Abs( Normal[0] ) >= _Epsilon && Math::Abs( Normal[1] ) >= _Epsilon ) {
             Normal[2] = 0;
             Normal.NormalizeSelf();
         }
@@ -1570,39 +1567,39 @@ public:
     }
 
     int NormalAxialType() const {
-        if ( X == 1.0f || X == -1.0f ) return FMath::AxialX;
-        if ( Y == 1.0f || Y == -1.0f ) return FMath::AxialY;
-        if ( Z == 1.0f || Z == -1.0f ) return FMath::AxialZ;
-        return FMath::NonAxial;
+        if ( X == 1.0f || X == -1.0f ) return Math::AxialX;
+        if ( Y == 1.0f || Y == -1.0f ) return Math::AxialY;
+        if ( Z == 1.0f || Z == -1.0f ) return Math::AxialZ;
+        return Math::NonAxial;
     }
 
     int NormalPositiveAxialType() const {
-        if ( X == 1.0f ) return FMath::AxialX;
-        if ( Y == 1.0f ) return FMath::AxialY;
-        if ( Z == 1.0f ) return FMath::AxialZ;
-        return FMath::NonAxial;
+        if ( X == 1.0f ) return Math::AxialX;
+        if ( Y == 1.0f ) return Math::AxialY;
+        if ( Z == 1.0f ) return Math::AxialZ;
+        return Math::NonAxial;
     }
 
     int VectorAxialType() const {
         Bool3 Zero = Abs().LessThan( 0.00001f );
 
         if ( int( Zero.X + Zero.Y + Zero.Z ) != 2 ) {
-            return FMath::NonAxial;
+            return Math::NonAxial;
         }
 
         if ( !Zero.X ) {
-            return FMath::AxialX;
+            return Math::AxialX;
         }
 
         if ( !Zero.Y ) {
-            return FMath::AxialY;
+            return Math::AxialY;
         }
 
         if ( !Zero.Z ) {
-            return FMath::AxialZ;
+            return Math::AxialZ;
         }
 
-        return FMath::NonAxial;
+        return Math::NonAxial;
     }
 
     float Dot( const Float3 & _Other ) const {
@@ -1619,7 +1616,7 @@ public:
         if ( !dp ) {
             return Float3(1,0,0);
         } else {
-            dp = FMath::InvSqrt( dp );
+            dp = Math::InvSqrt( dp );
             return Float3( -Y * dp, X * dp, 0 );
         }
     }
@@ -1630,25 +1627,25 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = FLT_DIG ) const {
-        return FString( "( " ) + FMath::ToString( X, _Precision ) + " " + FMath::ToString( Y, _Precision ) + " " + FMath::ToString( Z, _Precision ) + " )";
+    AString ToString( int _Precision = FLT_DIG ) const {
+        return AString( "( " ) + Math::ToString( X, _Precision ) + " " + Math::ToString( Y, _Precision ) + " " + Math::ToString( Z, _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + FMath::ToHexString( X, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Z, _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Z, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteFloat( X );
+        _Stream.WriteFloat( Y );
+        _Stream.WriteFloat( Z );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X = _Stream.ReadFloat();
+        Y = _Stream.ReadFloat();
+        Z = _Stream.ReadFloat();
     }
 
     // Static methods
@@ -1794,31 +1791,31 @@ public:
     }
 
     float Min() const {
-        return FMath::Min( FMath::Min( FMath::Min( X, Y ), Z ), W );
+        return Math::Min( Math::Min( Math::Min( X, Y ), Z ), W );
     }
 
     float Max() const {
-        return FMath::Max( FMath::Max( FMath::Max( X, Y ), Z ), W );
+        return Math::Max( Math::Max( Math::Max( X, Y ), Z ), W );
     }
 
     int MinorAxis() const {
-        float Minor = FMath::Abs( X );
+        float Minor = Math::Abs( X );
         int Axis = 0;
         float Tmp;
 
-        Tmp = FMath::Abs( Y );
+        Tmp = Math::Abs( Y );
         if ( Tmp <= Minor ) {
             Axis = 1;
             Minor = Tmp;
         }
 
-        Tmp = FMath::Abs( Z );
+        Tmp = Math::Abs( Z );
         if ( Tmp <= Minor ) {
             Axis = 2;
             Minor = Tmp;
         }
 
-        Tmp = FMath::Abs( W );
+        Tmp = Math::Abs( W );
         if ( Tmp <= Minor ) {
             Axis = 3;
             Minor = Tmp;
@@ -1828,23 +1825,23 @@ public:
     }
 
     int MajorAxis() const {
-        float Major = FMath::Abs( X );
+        float Major = Math::Abs( X );
         int Axis = 0;
         float Tmp;
 
-        Tmp = FMath::Abs( Y );
+        Tmp = Math::Abs( Y );
         if ( Tmp > Major ) {
             Axis = 1;
             Major = Tmp;
         }
 
-        Tmp = FMath::Abs( Z );
+        Tmp = Math::Abs( Z );
         if ( Tmp > Major ) {
             Axis = 2;
             Major = Tmp;
         }
 
-        Tmp = FMath::Abs( W );
+        Tmp = Math::Abs( W );
         if ( Tmp > Major ) {
             Axis = 3;
             Major = Tmp;
@@ -1855,55 +1852,55 @@ public:
 
     // Floating point specific
     Bool4 IsInfinite() const {
-        return Bool4( FMath::IsInfinite( X ), FMath::IsInfinite( Y ), FMath::IsInfinite( Z ), FMath::IsInfinite( W ) );
+        return Bool4( Math::IsInfinite( X ), Math::IsInfinite( Y ), Math::IsInfinite( Z ), Math::IsInfinite( W ) );
     }
 
     Bool4 IsNan() const {
-        return Bool4( FMath::IsNan( X ), FMath::IsNan( Y ), FMath::IsNan( Z ), FMath::IsNan( W ) );
+        return Bool4( Math::IsNan( X ), Math::IsNan( Y ), Math::IsNan( Z ), Math::IsNan( W ) );
     }
 
     Bool4 IsNormal() const {
-        return Bool4( FMath::IsNormal( X ), FMath::IsNormal( Y ), FMath::IsNormal( Z ), FMath::IsNormal( W ) );
+        return Bool4( Math::IsNormal( X ), Math::IsNormal( Y ), Math::IsNormal( Z ), Math::IsNormal( W ) );
     }
 
     Bool4 IsDenormal() const {
-        return Bool4( FMath::IsDenormal( X ), FMath::IsDenormal( Y ), FMath::IsDenormal( Z ), FMath::IsDenormal( W ) );
+        return Bool4( Math::IsDenormal( X ), Math::IsDenormal( Y ), Math::IsDenormal( Z ), Math::IsDenormal( W ) );
     }
 
     // Comparision
     Bool4 LessThan( const Float4 & _Other ) const {
-        return Bool4( FMath::LessThan( X, _Other.X ), FMath::LessThan( Y, _Other.Y ), FMath::LessThan( Z, _Other.Z ), FMath::LessThan( W, _Other.W ) );
+        return Bool4( Math::LessThan( X, _Other.X ), Math::LessThan( Y, _Other.Y ), Math::LessThan( Z, _Other.Z ), Math::LessThan( W, _Other.W ) );
     }
     Bool4 LessThan( const float & _Other ) const {
-        return Bool4( FMath::LessThan( X, _Other ), FMath::LessThan( Y, _Other ), FMath::LessThan( Z, _Other ), FMath::LessThan( W, _Other ) );
+        return Bool4( Math::LessThan( X, _Other ), Math::LessThan( Y, _Other ), Math::LessThan( Z, _Other ), Math::LessThan( W, _Other ) );
     }
 
     Bool4 LequalThan( const Float4 & _Other ) const {
-        return Bool4( FMath::LequalThan( X, _Other.X ), FMath::LequalThan( Y, _Other.Y ), FMath::LequalThan( Z, _Other.Z ), FMath::LequalThan( W, _Other.W ) );
+        return Bool4( Math::LequalThan( X, _Other.X ), Math::LequalThan( Y, _Other.Y ), Math::LequalThan( Z, _Other.Z ), Math::LequalThan( W, _Other.W ) );
     }
     Bool4 LequalThan( const float & _Other ) const {
-        return Bool4( FMath::LequalThan( X, _Other ), FMath::LequalThan( Y, _Other ), FMath::LequalThan( Z, _Other ), FMath::LequalThan( W, _Other ) );
+        return Bool4( Math::LequalThan( X, _Other ), Math::LequalThan( Y, _Other ), Math::LequalThan( Z, _Other ), Math::LequalThan( W, _Other ) );
     }
 
     Bool4 GreaterThan( const Float4 & _Other ) const {
-        return Bool4( FMath::GreaterThan( X, _Other.X ), FMath::GreaterThan( Y, _Other.Y ), FMath::GreaterThan( Z, _Other.Z ), FMath::GreaterThan( W, _Other.W ) );
+        return Bool4( Math::GreaterThan( X, _Other.X ), Math::GreaterThan( Y, _Other.Y ), Math::GreaterThan( Z, _Other.Z ), Math::GreaterThan( W, _Other.W ) );
     }
     Bool4 GreaterThan( const float & _Other ) const {
-        return Bool4( FMath::GreaterThan( X, _Other ), FMath::GreaterThan( Y, _Other ), FMath::GreaterThan( Z, _Other ), FMath::GreaterThan( W, _Other ) );
+        return Bool4( Math::GreaterThan( X, _Other ), Math::GreaterThan( Y, _Other ), Math::GreaterThan( Z, _Other ), Math::GreaterThan( W, _Other ) );
     }
 
     Bool4 GequalThan( const Float4 & _Other ) const {
-        return Bool4( FMath::GequalThan( X, _Other.X ), FMath::GequalThan( Y, _Other.Y ), FMath::GequalThan( Z, _Other.Z ), FMath::GequalThan( W, _Other.W ) );
+        return Bool4( Math::GequalThan( X, _Other.X ), Math::GequalThan( Y, _Other.Y ), Math::GequalThan( Z, _Other.Z ), Math::GequalThan( W, _Other.W ) );
     }
     Bool4 GequalThan( const float & _Other ) const {
-        return Bool4( FMath::GequalThan( X, _Other ), FMath::GequalThan( Y, _Other ), FMath::GequalThan( Z, _Other ), FMath::GequalThan( W, _Other ) );
+        return Bool4( Math::GequalThan( X, _Other ), Math::GequalThan( Y, _Other ), Math::GequalThan( Z, _Other ), Math::GequalThan( W, _Other ) );
     }
 
     Bool4 NotEqual( const Float4 & _Other ) const {
-        return Bool4( FMath::NotEqual( X, _Other.X ), FMath::NotEqual( Y, _Other.Y ), FMath::NotEqual( Z, _Other.Z ), FMath::NotEqual( W, _Other.W ) );
+        return Bool4( Math::NotEqual( X, _Other.X ), Math::NotEqual( Y, _Other.Y ), Math::NotEqual( Z, _Other.Z ), Math::NotEqual( W, _Other.W ) );
     }
     Bool4 NotEqual( const float & _Other ) const {
-        return Bool4( FMath::NotEqual( X, _Other ), FMath::NotEqual( Y, _Other ), FMath::NotEqual( Z, _Other ), FMath::NotEqual( W, _Other ) );
+        return Bool4( Math::NotEqual( X, _Other ), Math::NotEqual( Y, _Other ), Math::NotEqual( Z, _Other ), Math::NotEqual( W, _Other ) );
     }
 
     Bool Compare( const Float4 & _Other ) const {
@@ -1911,17 +1908,17 @@ public:
     }
 
     Bool CompareEps( const Float4 & _Other, const float & _Epsilon ) const {
-        return Bool4( FMath::CompareEps( X, _Other.X, _Epsilon ),
-                      FMath::CompareEps( Y, _Other.Y, _Epsilon ),
-                      FMath::CompareEps( Z, _Other.Z, _Epsilon ),
-                      FMath::CompareEps( W, _Other.W, _Epsilon ) ).All();
+        return Bool4( Math::CompareEps( X, _Other.X, _Epsilon ),
+                      Math::CompareEps( Y, _Other.Y, _Epsilon ),
+                      Math::CompareEps( Z, _Other.Z, _Epsilon ),
+                      Math::CompareEps( W, _Other.W, _Epsilon ) ).All();
     }
 
     void Clear() {
         X = Y = Z = W = 0;
     }
 
-    Float4 Abs() const { return Float4( FMath::Abs( X ), FMath::Abs( Y ), FMath::Abs( Z ), FMath::Abs( W ) ); }
+    Float4 Abs() const { return Float4( Math::Abs( X ), Math::Abs( Y ), Math::Abs( Z ), Math::Abs( W ) ); }
 
     // Vector methods
     float LengthSqr() const {
@@ -1957,15 +1954,15 @@ public:
     }
 
     Float4 Floor() const {
-        return Float4( FMath::Floor( X ), FMath::Floor( Y ), FMath::Floor( Z ), FMath::Floor( W ) );
+        return Float4( Math::Floor( X ), Math::Floor( Y ), Math::Floor( Z ), Math::Floor( W ) );
     }
 
     Float4 Ceil() const {
-        return Float4( FMath::Ceil( X ), FMath::Ceil( Y ), FMath::Ceil( Z ), FMath::Ceil( W ) );
+        return Float4( Math::Ceil( X ), Math::Ceil( Y ), Math::Ceil( Z ), Math::Ceil( W ) );
     }
 
     Float4 Fract() const {
-        return Float4( FMath::Fract( X ), FMath::Fract( Y ), FMath::Fract( Z ), FMath::Fract( W ) );
+        return Float4( Math::Fract( X ), Math::Fract( Y ), Math::Fract( Z ), Math::Fract( W ) );
     }
 
     Float4 Step( const float & _Edge ) const;
@@ -1976,11 +1973,11 @@ public:
 
     // Return 1 if value is greater than 0, -1 if value is less than 0, 0 if value equal to 0
     Float4 Sign() const {
-        return Float4( FMath::Sign( X ), FMath::Sign( Y ), FMath::Sign( Z ), FMath::Sign( W ) );
+        return Float4( Math::Sign( X ), Math::Sign( Y ), Math::Sign( Z ), Math::Sign( W ) );
     }
 
     int SignBits() const {
-        return FMath::SignBits( X ) | (FMath::SignBits( Y )<<1) | (FMath::SignBits( Z )<<2) | (FMath::SignBits( W )<<3);
+        return Math::SignBits( X ) | (Math::SignBits( Y )<<1) | (Math::SignBits( Z )<<2) | (Math::SignBits( W )<<3);
     }
 
     Float4 Lerp( const Float4 & _To, const float & _Mix ) const {
@@ -1995,11 +1992,11 @@ public:
     static Float4 Lerp( const Float4 & _From, const Float4 & _To, const Float4 & _Mix );
 
     Float4 Clamp( const float & _Min, const float & _Max ) const {
-        return Float4( FMath::Clamp( X, _Min, _Max ), FMath::Clamp( Y, _Min, _Max ), FMath::Clamp( Z, _Min, _Max ), FMath::Clamp( W, _Min, _Max ) );
+        return Float4( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ), Math::Clamp( Z, _Min, _Max ), Math::Clamp( W, _Min, _Max ) );
     }
 
     Float4 Clamp( const Float4 & _Min, const Float4 & _Max ) const {
-        return Float4( FMath::Clamp( X, _Min.X, _Max.X ), FMath::Clamp( Y, _Min.Y, _Max.Y ), FMath::Clamp( Z, _Min.Z, _Max.Z ), FMath::Clamp( W, _Min.W, _Max.W ) );
+        return Float4( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ), Math::Clamp( Z, _Min.Z, _Max.Z ), Math::Clamp( W, _Min.W, _Max.W ) );
     }
 
     Float4 Saturate() const {
@@ -2010,53 +2007,53 @@ public:
         AN_ASSERT( _SnapValue > 0, "Snap" );
         Float4 SnapVector;
         SnapVector = *this / _SnapValue;
-        SnapVector.X = FMath::Round( SnapVector.X ) * _SnapValue;
-        SnapVector.Y = FMath::Round( SnapVector.Y ) * _SnapValue;
-        SnapVector.Z = FMath::Round( SnapVector.Z ) * _SnapValue;
-        SnapVector.W = FMath::Round( SnapVector.W ) * _SnapValue;
+        SnapVector.X = Math::Round( SnapVector.X ) * _SnapValue;
+        SnapVector.Y = Math::Round( SnapVector.Y ) * _SnapValue;
+        SnapVector.Z = Math::Round( SnapVector.Z ) * _SnapValue;
+        SnapVector.W = Math::Round( SnapVector.W ) * _SnapValue;
         return SnapVector;
     }
 
     int NormalAxialType() const {
-        if ( X == 1.0f || X == -1.0f ) return FMath::AxialX;
-        if ( Y == 1.0f || Y == -1.0f ) return FMath::AxialY;
-        if ( Z == 1.0f || Z == -1.0f ) return FMath::AxialZ;
-        if ( W == 1.0f || W == -1.0f ) return FMath::AxialW;
-        return FMath::NonAxial;
+        if ( X == 1.0f || X == -1.0f ) return Math::AxialX;
+        if ( Y == 1.0f || Y == -1.0f ) return Math::AxialY;
+        if ( Z == 1.0f || Z == -1.0f ) return Math::AxialZ;
+        if ( W == 1.0f || W == -1.0f ) return Math::AxialW;
+        return Math::NonAxial;
     }
 
     int NormalPositiveAxialType() const {
-        if ( X == 1.0f ) return FMath::AxialX;
-        if ( Y == 1.0f ) return FMath::AxialY;
-        if ( Z == 1.0f ) return FMath::AxialZ;
-        if ( W == 1.0f ) return FMath::AxialW;
-        return FMath::NonAxial;
+        if ( X == 1.0f ) return Math::AxialX;
+        if ( Y == 1.0f ) return Math::AxialY;
+        if ( Z == 1.0f ) return Math::AxialZ;
+        if ( W == 1.0f ) return Math::AxialW;
+        return Math::NonAxial;
     }
 
     int VectorAxialType() const {
         Bool4 Zero = Abs().LessThan( 0.00001f );
 
         if ( int( Zero.X + Zero.Y + Zero.Z + Zero.W ) != 3 ) {
-            return FMath::NonAxial;
+            return Math::NonAxial;
         }
 
         if ( !Zero.X ) {
-            return FMath::AxialX;
+            return Math::AxialX;
         }
 
         if ( !Zero.Y ) {
-            return FMath::AxialY;
+            return Math::AxialY;
         }
 
         if ( !Zero.Z ) {
-            return FMath::AxialZ;
+            return Math::AxialZ;
         }
 
         if ( !Zero.W ) {
-            return FMath::AxialW;
+            return Math::AxialW;
         }
 
-        return FMath::NonAxial;
+        return Math::NonAxial;
     }
 
     float Dot( const Float4 & _Other ) const {
@@ -2064,26 +2061,27 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = FLT_DIG ) const {
-        return FString( "( " ) + FMath::ToString( X, _Precision ) + " " + FMath::ToString( Y, _Precision ) + " " + FMath::ToString( Z, _Precision ) + " " + FMath::ToString( W, _Precision ) + " )";
+    AString ToString( int _Precision = FLT_DIG ) const {
+        return AString( "( " ) + Math::ToString( X, _Precision ) + " " + Math::ToString( Y, _Precision ) + " " + Math::ToString( Z, _Precision ) + " " + Math::ToString( W, _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + FMath::ToHexString( X, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( Z, _LeadingZeros, _Prefix ) + " " + FMath::ToHexString( W, _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Z, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( W, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteFloat( X );
+        _Stream.WriteFloat( Y );
+        _Stream.WriteFloat( Z );
+        _Stream.WriteFloat( W );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X = _Stream.ReadFloat();
+        Y = _Stream.ReadFloat();
+        Z = _Stream.ReadFloat();
+        W = _Stream.ReadFloat();
     }
 
     // Static methods
@@ -2514,7 +2512,7 @@ AN_FORCEINLINE Float Float::ToClosestPowerOfTwo() const {
     return GreaterPow.Dist( Value ) < LessPow.Dist( Value ) ? GreaterPow : LessPow;
 }
 
-namespace FMath {
+namespace Math {
 
 AN_FORCEINLINE float Dot( const Float2 & _Left, const Float2 & _Right ) { return _Left.Dot( _Right ); }
 AN_FORCEINLINE float Dot( const Float3 & _Left, const Float3 & _Right ) { return _Left.Dot( _Right ); }
@@ -2631,7 +2629,7 @@ public:
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 4 ; i++ ) {
-            if ( FMath::Abs( *pm1++ - *pm2++ ) >= _Epsilon ) {
+            if ( Math::Abs( *pm1++ - *pm2++ ) >= _Epsilon ) {
                 return false;
             }
         }
@@ -2686,7 +2684,7 @@ public:
     // Return rotation around Z axis
     static Float2x2 Rotation( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float2x2( c, s,
                         -s, c );
     }
@@ -2751,24 +2749,23 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = FLT_DIG ) const {
-        return FString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = FLT_DIG ) const {
+        return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Col0 << Col1;
+    void Write( IStreamBase & _Stream ) const {
+        Col0.Write( _Stream );
+        Col1.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Col0;
-        _Stream >> Col1;
+    void Read( IStreamBase & _Stream ) {
+        Col0.Read( _Stream );
+        Col1.Read( _Stream );
     }
 
     // Static methods
@@ -2848,7 +2845,7 @@ public:
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 9 ; i++ ) {
-            if ( FMath::Abs( *pm1++ - *pm2++ ) >= _Epsilon ) {
+            if ( Math::Abs( *pm1++ - *pm2++ ) >= _Epsilon ) {
                 return false;
             }
         }
@@ -2923,7 +2920,7 @@ public:
     // Return rotation around normalized axis
     static Float3x3 RotationAroundNormal( const float & _AngleRad, const Float3 & _Normal ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         const Float3 Temp = ( 1.0f - c ) * _Normal;
         const Float3 Temp2 = s * _Normal;
         return Float3x3( c + Temp[0] * _Normal[0],                Temp[0] * _Normal[1] + Temp2[2],     Temp[0] * _Normal[2] - Temp2[1],
@@ -2934,7 +2931,7 @@ public:
     // Return rotation around normalized axis
     Float3x3 RotateAroundNormal( const float & _AngleRad, const Float3 & _Normal ) const {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         Float3 Temp = ( 1.0f - c ) * _Normal;
         Float3 Temp2 = s * _Normal;
         return Float3x3( Col0 * (c + Temp[0] * _Normal[0])            + Col1 * (    Temp[0] * _Normal[1] + Temp2[2]) + Col2 * (    Temp[0] * _Normal[2] - Temp2[1]),
@@ -2955,7 +2952,7 @@ public:
     // Return rotation around X axis
     static Float3x3 RotationX( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float3x3( 1, 0, 0,
                          0, c, s,
                          0,-s, c );
@@ -2964,7 +2961,7 @@ public:
     // Return rotation around Y axis
     static Float3x3 RotationY( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float3x3( c, 0,-s,
                          0, 1, 0,
                          s, 0, c );
@@ -2973,7 +2970,7 @@ public:
     // Return rotation around Z axis
     static Float3x3 RotationZ( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float3x3( c, s, 0,
                         -s, c, 0,
                          0, 0, 1 );
@@ -3078,25 +3075,25 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = FLT_DIG ) const {
-        return FString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = FLT_DIG ) const {
+        return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Col0 << Col1 << Col2;
+    void Write( IStreamBase & _Stream ) const {
+        Col0.Write( _Stream );
+        Col1.Write( _Stream );
+        Col2.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Col0;
-        _Stream >> Col1;
-        _Stream >> Col2;
+    void Read( IStreamBase & _Stream ) {
+        Col0.Read( _Stream );
+        Col1.Read( _Stream );
+        Col2.Read( _Stream );
     }
 
     // Static methods
@@ -3179,7 +3176,7 @@ public:
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 16 ; i++ ) {
-            if ( FMath::Abs( *pm1++ - *pm2++ ) >= _Epsilon ) {
+            if ( Math::Abs( *pm1++ - *pm2++ ) >= _Epsilon ) {
                 return false;
             }
         }
@@ -3343,7 +3340,7 @@ public:
     // Return rotation around normalized axis
     static Float4x4 RotationAroundNormal( const float & _AngleRad, const Float3 & _Normal ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         const Float3 Temp = ( 1.0f - c ) * _Normal;
         const Float3 Temp2 = s * _Normal;
         return Float4x4( c + Temp[0] * _Normal[0],                Temp[0] * _Normal[1] + Temp2[2],     Temp[0] * _Normal[2] - Temp2[1], 0,
@@ -3355,7 +3352,7 @@ public:
     // Return rotation around normalized axis
     Float4x4 RotateAroundNormal( const float & _AngleRad, const Float3 & _Normal ) const {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         Float3 Temp = ( 1.0f - c ) * _Normal;
         Float3 Temp2 = s * _Normal;
         return Float4x4( Col0 * (c + Temp[0] * _Normal[0])            + Col1 * (    Temp[0] * _Normal[1] + Temp2[2]) + Col2 * (    Temp[0] * _Normal[2] - Temp2[1]),
@@ -3377,7 +3374,7 @@ public:
     // Return rotation around X axis
     static Float4x4 RotationX( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float4x4( 1, 0, 0, 0,
                          0, c, s, 0,
                          0,-s, c, 0,
@@ -3387,7 +3384,7 @@ public:
     // Return rotation around Y axis
     static Float4x4 RotationY( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float4x4( c, 0,-s, 0,
                          0, 1, 0, 0,
                          s, 0, c, 0,
@@ -3397,7 +3394,7 @@ public:
     // Return rotation around Z axis
     static Float4x4 RotationZ( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float4x4( c, s, 0, 0,
                         -s, c, 0, 0,
                          0, 0, 1, 0,
@@ -3623,26 +3620,27 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = FLT_DIG ) const {
-        return FString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " " + Col3.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = FLT_DIG ) const {
+        return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " " + Col3.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " " + Col3.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " " + Col3.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Col0 << Col1 << Col2 << Col3;
+    void Write( IStreamBase & _Stream ) const {
+        Col0.Write( _Stream );
+        Col1.Write( _Stream );
+        Col2.Write( _Stream );
+        Col3.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Col0;
-        _Stream >> Col1;
-        _Stream >> Col2;
-        _Stream >> Col3;
+    void Read( IStreamBase & _Stream ) {
+        Col0.Read( _Stream );
+        Col1.Read( _Stream );
+        Col2.Read( _Stream );
+        Col3.Read( _Stream );
     }
 
     // Static methods
@@ -3818,23 +3816,23 @@ public:
                                                     Float4x4 & _NegativeY,
                                                     Float4x4 & _PositiveZ,
                                                     Float4x4 & _NegativeZ ) {
-        _PositiveX = Float4x4::RotationZ( FMath::_PI ).RotateAroundNormal( FMath::_HALF_PI, Float3(0,1,0) );
-        _NegativeX = Float4x4::RotationZ( FMath::_PI ).RotateAroundNormal( -FMath::_HALF_PI, Float3(0,1,0) );
-        _PositiveY = Float4x4::RotationX( -FMath::_HALF_PI );
-        _NegativeY = Float4x4::RotationX( FMath::_HALF_PI );
-        _PositiveZ = Float4x4::RotationX( FMath::_PI );
-        _NegativeZ = Float4x4::RotationZ( FMath::_PI );
+        _PositiveX = Float4x4::RotationZ( Math::_PI ).RotateAroundNormal( Math::_HALF_PI, Float3(0,1,0) );
+        _NegativeX = Float4x4::RotationZ( Math::_PI ).RotateAroundNormal( -Math::_HALF_PI, Float3(0,1,0) );
+        _PositiveY = Float4x4::RotationX( -Math::_HALF_PI );
+        _NegativeY = Float4x4::RotationX( Math::_HALF_PI );
+        _PositiveZ = Float4x4::RotationX( Math::_PI );
+        _NegativeZ = Float4x4::RotationZ( Math::_PI );
     }
 
     static AN_FORCEINLINE const Float4x4 * GetCubeFaceMatrices() {
         // TODO: Precompute this matrices
         static const Float4x4 CubeFaceMatrices[6] = {
-            Float4x4::RotationZ( FMath::_PI ).RotateAroundNormal( FMath::_HALF_PI, Float3(0,1,0) ),
-            Float4x4::RotationZ( FMath::_PI ).RotateAroundNormal( -FMath::_HALF_PI, Float3(0,1,0) ),
-            Float4x4::RotationX( -FMath::_HALF_PI ),
-            Float4x4::RotationX( FMath::_HALF_PI ),
-            Float4x4::RotationX( FMath::_PI ),
-            Float4x4::RotationZ( FMath::_PI )
+            Float4x4::RotationZ( Math::_PI ).RotateAroundNormal( Math::_HALF_PI, Float3(0,1,0) ),
+            Float4x4::RotationZ( Math::_PI ).RotateAroundNormal( -Math::_HALF_PI, Float3(0,1,0) ),
+            Float4x4::RotationX( -Math::_HALF_PI ),
+            Float4x4::RotationX( Math::_HALF_PI ),
+            Float4x4::RotationX( Math::_PI ),
+            Float4x4::RotationZ( Math::_PI )
         };
         return CubeFaceMatrices;
     }
@@ -3909,7 +3907,7 @@ public:
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 12 ; i++ ) {
-            if ( FMath::Abs( *pm1++ - *pm2++ ) >= _Epsilon ) {
+            if ( Math::Abs( *pm1++ - *pm2++ ) >= _Epsilon ) {
                 return false;
             }
         }
@@ -4117,7 +4115,7 @@ public:
     // Return rotation around normalized axis
     static Float3x4 RotationAroundNormal( const float & _AngleRad, const Float3 & _Normal ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         const Float3 Temp = ( 1.0f - c ) * _Normal;
         const Float3 Temp2 = s * _Normal;
         return Float3x4( c + Temp[0] * _Normal[0]        ,        Temp[1] * _Normal[0] - Temp2[2],     Temp[2] * _Normal[0] + Temp2[1], 0,
@@ -4133,7 +4131,7 @@ public:
     // Return rotation around X axis
     static Float3x4 RotationX( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float3x4( 1, 0, 0, 0,
                          0, c,-s, 0,
                          0, s, c, 0 );
@@ -4142,7 +4140,7 @@ public:
     // Return rotation around Y axis
     static Float3x4 RotationY( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float3x4( c, 0, s, 0,
                          0, 1, 0, 0,
                         -s, 0, c, 0 );
@@ -4151,7 +4149,7 @@ public:
     // Return rotation around Z axis
     static Float3x4 RotationZ( const float & _AngleRad ) {
         float s, c;
-        FMath::RadSinCos( _AngleRad, s, c );
+        Math::RadSinCos( _AngleRad, s, c );
         return Float3x4( c,-s, 0, 0,
                          s, c, 0, 0,
                          0, 0, 1, 0 );
@@ -4237,25 +4235,25 @@ public:
     }
 
     // String conversions
-    FString ToString( int _Precision = FLT_DIG ) const {
-        return FString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
+    AString ToString( int _Precision = FLT_DIG ) const {
+        return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " )";
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString( "( " ) + Col0.ToHexString( _LeadingZeros, _Prefix ) + " " + Col1.ToHexString( _LeadingZeros, _Prefix ) + " " + Col2.ToHexString( _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << Col0 << Col1 << Col2;
+    void Write( IStreamBase & _Stream ) const {
+        Col0.Write( _Stream );
+        Col1.Write( _Stream );
+        Col2.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> Col0;
-        _Stream >> Col1;
-        _Stream >> Col2;
+    void Read( IStreamBase & _Stream ) {
+        Col0.Read( _Stream );
+        Col1.Read( _Stream );
+        Col2.Read( _Stream );
     }
 
     // Static methods
@@ -4345,7 +4343,7 @@ AN_FORCEINLINE void Float4x4::operator*=( const Float3x4 & _Mat ) {
                       Col0 * SrcB0[3] + Col1 * SrcB1[3] + Col2 * SrcB2[3] + Col3 );
 }
 
-namespace FMath {
+namespace Math {
 
     /*static*/ AN_FORCEINLINE bool Unproject( const Float4x4 & _ModelViewProjectionInversed, const float _Viewport[4], const Float3 & _Coord, Float3 & _Result ) {
         Float4 In( _Coord, 1.0f );

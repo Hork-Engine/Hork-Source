@@ -33,20 +33,20 @@ SOFTWARE.
 
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 
-AN_BEGIN_CLASS_META( FSpatialObject )
+AN_BEGIN_CLASS_META( ASpatialObject )
 AN_END_CLASS_META()
 
-FSpatialObject * FSpatialObject::DirtyList = nullptr;
-FSpatialObject * FSpatialObject::DirtyListTail = nullptr;
+ASpatialObject * ASpatialObject::DirtyList = nullptr;
+ASpatialObject * ASpatialObject::DirtyListTail = nullptr;
 
-FSpatialObject::FSpatialObject() {
+ASpatialObject::ASpatialObject() {
     Bounds.Clear();
     WorldBounds.Clear();
     bWorldBoundsDirty = true;
     OverrideBoundingBox.Clear();
 }
 
-void FSpatialObject::ForceOverrideBounds( bool _OverrideBounds ) {
+void ASpatialObject::ForceOverrideBounds( bool _OverrideBounds ) {
     if ( bOverrideBounds == _OverrideBounds ) {
         return;
     }
@@ -55,14 +55,14 @@ void FSpatialObject::ForceOverrideBounds( bool _OverrideBounds ) {
     MarkWorldBoundsDirty();
 }
 
-void FSpatialObject::SetBoundsOverride( BvAxisAlignedBox const & _Bounds ) {
+void ASpatialObject::SetBoundsOverride( BvAxisAlignedBox const & _Bounds ) {
     OverrideBoundingBox = _Bounds;
     if ( bOverrideBounds ) {
         MarkWorldBoundsDirty();
     }
 }
 
-BvAxisAlignedBox const & FSpatialObject::GetBounds() const {
+BvAxisAlignedBox const & ASpatialObject::GetBounds() const {
 
     if ( bOverrideBounds ) {
         return OverrideBoundingBox;
@@ -70,13 +70,13 @@ BvAxisAlignedBox const & FSpatialObject::GetBounds() const {
 
     if ( bLazyBoundsUpdate ) {
         // Some components like skinned mesh has lazy bounds update
-        const_cast< FSpatialObject * >( this )->OnLazyBoundsUpdate();
+        const_cast< ASpatialObject * >( this )->OnLazyBoundsUpdate();
     }
 
     return Bounds;
 }
 
-BvAxisAlignedBox const & FSpatialObject::GetWorldBounds() const {
+BvAxisAlignedBox const & ASpatialObject::GetWorldBounds() const {
 
     // Update bounding box
     GetBounds();
@@ -89,39 +89,39 @@ BvAxisAlignedBox const & FSpatialObject::GetWorldBounds() const {
     return WorldBounds;
 }
 
-void FSpatialObject::OnTransformDirty() {
+void ASpatialObject::OnTransformDirty() {
     Super::OnTransformDirty();
 
     MarkWorldBoundsDirty();
 }
 
-void FSpatialObject::InitializeComponent() {
+void ASpatialObject::InitializeComponent() {
     Super::InitializeComponent();
 
     MarkAreaDirty();
 }
 
-void FSpatialObject::DeinitializeComponent() {
+void ASpatialObject::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     // remove from dirty list
     INTRUSIVE_REMOVE( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );
 
     // FIXME: Is it right way to remove surface areas here?
-    FWorld * world = GetWorld();
-    for ( FLevel * level : world->GetArrayOfLevels() ) {
+    AWorld * world = GetWorld();
+    for ( ALevel * level : world->GetArrayOfLevels() ) {
         level->RemoveSurfaceAreas( this );
     }
 }
 
-void FSpatialObject::MarkAreaDirty() {
+void ASpatialObject::MarkAreaDirty() {
     // add to dirty list
     if ( !INTRUSIVE_EXISTS( this, NextDirty, PrevDirty, DirtyList, DirtyListTail ) ) {
         INTRUSIVE_ADD( this, NextDirty, PrevDirty, DirtyList, DirtyListTail );
     }
 }
 
-void FSpatialObject::MarkWorldBoundsDirty() {
+void ASpatialObject::MarkWorldBoundsDirty() {
     bWorldBoundsDirty = true;
 
     if ( IsInitialized() ) {
@@ -129,7 +129,7 @@ void FSpatialObject::MarkWorldBoundsDirty() {
     }
 }
 
-void FSpatialObject::ForceOutdoor( bool _OutdoorSurface ) {
+void ASpatialObject::ForceOutdoor( bool _OutdoorSurface ) {
     if ( bIsOutdoor == _OutdoorSurface ) {
         return;
     }
@@ -141,19 +141,19 @@ void FSpatialObject::ForceOutdoor( bool _OutdoorSurface ) {
     }
 }
 
-void FSpatialObject::_UpdateSurfaceAreas() {
-    FSpatialObject * next;
-    for ( FSpatialObject * surf = DirtyList ; surf ; surf = next ) {
+void ASpatialObject::_UpdateSurfaceAreas() {
+    ASpatialObject * next;
+    for ( ASpatialObject * surf = DirtyList ; surf ; surf = next ) {
 
         next = surf->NextDirty;
 
-        FWorld * world = surf->GetWorld();
+        AWorld * world = surf->GetWorld();
 
-        for ( FLevel * level : world->GetArrayOfLevels() ) {
+        for ( ALevel * level : world->GetArrayOfLevels() ) {
             level->RemoveSurfaceAreas( surf );
         }
 
-        for ( FLevel * level : world->GetArrayOfLevels() ) {
+        for ( ALevel * level : world->GetArrayOfLevels() ) {
             level->AddSurfaceAreas( surf );
             //GLogger.Printf( "Update actor %s\n", surf->GetParentActor()->GetNameConstChar() );
         }

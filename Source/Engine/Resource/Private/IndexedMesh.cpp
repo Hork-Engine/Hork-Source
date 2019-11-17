@@ -33,28 +33,35 @@ SOFTWARE.
 #include <Engine/Resource/Public/ResourceManager.h>
 #include <Engine/Resource/Public/GLTF.h>
 
+#include <Engine/Runtime/Public/ScopedTimeCheck.h>
+
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 #include <Engine/Core/Public/BV/BvIntersect.h>
 
-AN_CLASS_META( FIndexedMesh )
-AN_CLASS_META( FIndexedMeshSubpart )
-AN_CLASS_META( FLightmapUV )
-AN_CLASS_META( FVertexLight )
-AN_CLASS_META( FAABBTree )
-AN_CLASS_META( FSocketDef )
+AN_CLASS_META( AIndexedMesh )
+AN_CLASS_META( AIndexedMeshSubpart )
+AN_CLASS_META( ALightmapUV )
+AN_CLASS_META( AVertexLight )
+AN_CLASS_META( ATreeAABB )
+AN_CLASS_META( ASocketDef )
 
-FRuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FIndexedMesh::FIndexedMesh() {
+AIndexedMesh::AIndexedMesh() {
     VertexBufferGPU = GRenderBackend->CreateBuffer( this );
     IndexBufferGPU = GRenderBackend->CreateBuffer( this );
     WeightsBufferGPU = GRenderBackend->CreateBuffer( this );
+
+    static TStaticResourceFinder< ASkeleton > SkeletonResource( _CTS( "/Default/Skeleton/Default" ) );
+    Skeleton = SkeletonResource.GetObject();
+
+    RaycastPrimitivesPerLeaf = 16;
 }
 
-FIndexedMesh::~FIndexedMesh() {
+AIndexedMesh::~AIndexedMesh() {
     GRenderBackend->DestroyBuffer( VertexBufferGPU );
     GRenderBackend->DestroyBuffer( IndexBufferGPU );
     GRenderBackend->DestroyBuffer( WeightsBufferGPU );
@@ -62,18 +69,13 @@ FIndexedMesh::~FIndexedMesh() {
     Purge();
 }
 
-void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh, bool _DynamicStorage ) {
-    //if ( VertexCount == _NumVertices && IndexCount == _NumIndices && bSkinnedMesh == _SkinnedMesh && bDynamicStorage == _DynamicStorage ) {
-    //    return;
-    //}
-
+void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh, bool _DynamicStorage ) {
     Purge();
 
     bSkinnedMesh = _SkinnedMesh;
     bDynamicStorage = _DynamicStorage;
     bBoundingBoxDirty = true;
     BoundingBox.Clear();
-    BindposeBounds.Clear();
 
     Vertices.ResizeInvalidate( _NumVertices );
     if ( bSkinnedMesh ) {
@@ -81,45 +83,35 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     }
     Indices.ResizeInvalidate( _NumIndices );
 
-    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( FMeshVertex ), bDynamicStorage );
+    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertex ), bDynamicStorage );
     GRenderBackend->InitializeBuffer( IndexBufferGPU, Indices.Size() * sizeof( unsigned int ), bDynamicStorage );
 
     if ( _SkinnedMesh ) {
-        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( FMeshVertexJoint ), bDynamicStorage );
+        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexJoint ), bDynamicStorage );
     }
 
-    for ( FLightmapUV * channel : LightmapUVs ) {
-        channel->OnInitialize( _NumVertices );
-    }
+    //for ( ALightmapUV * channel : LightmapUVs ) {
+    //    channel->OnInitialize( _NumVertices );
+    //}
 
-    for ( FVertexLight * channel : VertexLightChannels ) {
-        channel->OnInitialize( _NumVertices );
-    }
+    //for ( AVertexLight * channel : VertexLightChannels ) {
+    //    channel->OnInitialize( _NumVertices );
+    //}
 
     if ( _NumSubparts <= 0 ) {
         _NumSubparts = 1;
     }
 
-    for ( FIndexedMeshSubpart * subpart : Subparts ) {
-        subpart->OwnerMesh = nullptr;
-        subpart->RemoveRef();
-    }
-
-    static TStaticInternalResourceFinder< FMaterialInstance > DefaultMaterialInstance( _CTS( "FMaterialInstance.Default" ) );
-
-    FMaterialInstance * materialInstance = DefaultMaterialInstance.GetObject();
-
     Subparts.ResizeInvalidate( _NumSubparts );
     for ( int i = 0 ; i < _NumSubparts ; i++ ) {
-        FIndexedMeshSubpart * subpart = NewObject< FIndexedMeshSubpart >();
+        AIndexedMeshSubpart * subpart = NewObject< AIndexedMeshSubpart >();
         subpart->AddRef();
         subpart->OwnerMesh = this;
-        subpart->MaterialInstance = materialInstance;
         Subparts[i] = subpart;
     }
 
     if ( _NumSubparts == 1 ) {
-        FIndexedMeshSubpart * subpart = Subparts[0];
+        AIndexedMeshSubpart * subpart = Subparts[0];
         subpart->BaseVertex = 0;
         subpart->FirstIndex = 0;
         subpart->VertexCount = Vertices.Size();
@@ -127,139 +119,242 @@ void FIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     }
 }
 
-void FIndexedMesh::Purge() {
-    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+void AIndexedMesh::Purge() {
+    for ( AIndexedMeshSubpart * subpart : Subparts ) {
         subpart->OwnerMesh = nullptr;
         subpart->RemoveRef();
     }
 
-    for ( FLightmapUV * channel : LightmapUVs ) {
+    Subparts.Clear();
+
+    for ( ALightmapUV * channel : LightmapUVs ) {
         channel->OwnerMesh = nullptr;
         channel->IndexInArrayOfUVs = -1;
     }
 
-    for ( FVertexLight * channel : VertexLightChannels ) {
+    LightmapUVs.Clear();
+
+    for ( AVertexLight * channel : VertexLightChannels ) {
         channel->OwnerMesh = nullptr;
         channel->IndexInArrayOfChannels = -1;
     }
 
-    for ( FSocketDef * socket : Sockets ) {
+    VertexLightChannels.Clear();
+
+    for ( ASocketDef * socket : Sockets ) {
         socket->RemoveRef();
     }
 
     Sockets.Clear();
 
-    //Joints.Clear();
+    Skin.JointIndices.Clear();
+    Skin.OffsetMatrices.Clear();
 
     BodyComposition.Clear();
 }
 
-bool FIndexedMesh::InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails ) {
+static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IStreamBase & f ) {
+    AString Name;
+    int32_t BaseVertex;
+    uint32_t FirstIndex;
+    uint32_t VertexCount;
+    uint32_t IndexCount;
+    AString MaterialInstance;
+    BvAxisAlignedBox BoundingBox;
 
-    FMeshAsset asset;
+    f.ReadString( Name );
+    BaseVertex = f.ReadInt32();
+    FirstIndex = f.ReadUInt32();
+    VertexCount = f.ReadUInt32();
+    IndexCount = f.ReadUInt32();
+    f.ReadString( MaterialInstance );
+    f.ReadObject( BoundingBox );
 
-    int i = FString::FindExt( _Path );
-    if ( !FString::Icmp( &_Path[i], ".gltf" ) ) {
-        LoadGeometryGLTF( _Path, asset );
-    } else {
-        FFileStream f;
+    AIndexedMeshSubpart * Subpart = CreateInstanceOf< AIndexedMeshSubpart >();
+    Subpart->AddRef();
+    Subpart->SetObjectName( Name );
+    Subpart->SetBaseVertex( BaseVertex );
+    Subpart->SetFirstIndex( FirstIndex );
+    Subpart->SetVertexCount( VertexCount );
+    Subpart->SetIndexCount( IndexCount );
+    Subpart->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( MaterialInstance.CStr() ) );
+    Subpart->SetBoundingBox( BoundingBox );
+    return Subpart;
+}
 
-        if ( !f.OpenRead( _Path ) ) {
+static ASocketDef * ReadSocket( IStreamBase & f ) {
+    AString Name;
+    uint32_t JointIndex;
 
-            if ( _CreateDefultObjectIfFails ) {
-                InitializeDefaultObject();
-                return true;
-            }
+    f.ReadString( Name );
+    JointIndex = f.ReadUInt32();
 
+    ASocketDef * Socket = CreateInstanceOf< ASocketDef >();
+    Socket->AddRef();
+    Socket->SetObjectName( Name );
+    Socket->JointIndex = JointIndex;
+
+    f.ReadObject( Socket->Position );
+    f.ReadObject( Socket->Scale );
+    f.ReadObject( Socket->Rotation );
+
+    return Socket;
+}
+
+bool AIndexedMesh::LoadResource( AString const & _Path ) {
+    AScopedTimeCheck ScopedTime( _Path.CStr() );
+
+#if 0
+    int i = _Path.FindExt();
+    if ( !AString::Icmp( &_Path[i], ".gltf" ) ) {
+        SMeshAsset asset;
+
+        if ( !LoadGeometryGLTF( _Path.CStr(), asset ) ) {
             return false;
         }
-    
-        asset.Read( f );
 
-//        // TODO: объединить и хранить скелет в файле с мешем
-//        FString skeletonAsset = _Path;
-//        skeletonAsset.Resize( i );
-//        skeletonAsset += ".angie_skeleton";
-//        if ( f.OpenRead( skeletonAsset.ToConstChar() ) ) {
-//            skelAsset.Read( f );
-//        }
+        bool bSkinned = asset.Weights.Size() == asset.Vertices.Size();
+
+        static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/PBRMetallicRoughness" ) );
+
+        Initialize( asset.Vertices.Size(), asset.Indices.Size(), asset.Subparts.size(), bSkinned, false );
+        WriteVertexData( asset.Vertices.ToPtr(), asset.Vertices.Size(), 0 );
+        WriteIndexData( asset.Indices.ToPtr(), asset.Indices.Size(), 0 );
+        if ( bSkinned ) {
+            WriteJointWeights( asset.Weights.ToPtr(), asset.Weights.Size(), 0 );
+        }
+
+        TPodArray< AMaterialInstance * > matInstances;
+        matInstances.Resize( asset.Materials.Size() );
+        for ( int j = 0; j < asset.Materials.Size(); j++ ) {
+            AMaterialInstance * matInst = NewObject< AMaterialInstance >();
+            matInstances[j] = matInst;
+            matInst->SetMaterial( MaterialResource.GetObject() );
+            SMeshMaterial const & material = asset.Materials[j];
+            for ( int n = 0; n < material.NumTextures; n++ ) {
+                SMaterialTexture const & texture = asset.Textures[material.Textures[n]];
+                ATexture * texObj = GetOrCreateResource< ATexture >( texture.FileName.CStr() );
+                matInst->SetTexture( n, texObj );
+            }
+        }
+
+        for ( int j = 0; j < GetSubparts().Size(); j++ ) {
+            SSubpart const & s = asset.Subparts[j];
+            AIndexedMeshSubpart * subpart = GetSubpart( j );
+            subpart->SetObjectName( s.Name );
+            subpart->SetBaseVertex( s.BaseVertex );
+            subpart->SetFirstIndex( s.FirstIndex );
+            subpart->SetVertexCount( s.VertexCount );
+            subpart->SetIndexCount( s.IndexCount );
+            subpart->SetBoundingBox( s.BoundingBox );
+            if ( s.Material < matInstances.Size() ) {
+                subpart->SetMaterialInstance( matInstances[s.Material] );
+            }
+        }
+
+        GenerateRigidbodyCollisions();
+        GenerateBVH();
+
+        return true;
+    }
+#endif
+
+    AFileStream f;
+
+    if ( !f.OpenRead( _Path ) ) {
+        return false;
     }
 
-    TPodArray< FMaterialInstance * > matInstances;
-    matInstances.Resize( asset.Materials.Size() );
+    uint32_t fileFormat = f.ReadUInt32();
 
-    static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.DefaultPBR" ) );
+    if ( fileFormat != FMT_FILE_TYPE_MESH ) {
+        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MESH );
+        return false;
+    }
 
-    for ( int j = 0; j < asset.Materials.Size(); j++ ) {
+    uint32_t fileVersion = f.ReadUInt32();
 
-        FMaterialInstance * matInst = CreateInstanceOf< FMaterialInstance >();
-        matInstances[ j ] = matInst;
+    if ( fileVersion != FMT_VERSION_MESH ) {
+        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MESH );
+        return false;
+    }
 
-        matInst->SetMaterial( MaterialResource.GetObject() );
+    Purge();
 
-        FMeshMaterial const & material = asset.Materials[ j ];
-        for ( int n = 0; n < material.NumTextures; n++ ) {
-            FMaterialTexture const & texture = asset.Textures[ material.Textures[ n ] ];
-            FTexture2D * texObj = GetOrCreateResource< FTexture2D >( texture.FileName.ToConstChar() );
-            matInst->SetTexture( n, texObj );
+    bool bRaycastBVH;
+
+    AString guidStr;
+    f.ReadString( guidStr );
+
+    bSkinnedMesh = f.ReadBool();
+    bDynamicStorage = f.ReadBool();
+    f.ReadObject( BoundingBox );
+    f.ReadArrayUInt32( Indices );
+    f.ReadArrayOfStructs( Vertices );
+    f.ReadArrayOfStructs( Weights );
+    bRaycastBVH = f.ReadBool();
+    RaycastPrimitivesPerLeaf = f.ReadUInt16();
+
+    uint32_t subpartsCount = f.ReadUInt32();
+    Subparts.ResizeInvalidate( subpartsCount );
+    for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
+        Subparts[i] = ReadIndexedMeshSubpart( f );
+    }
+
+    if ( bRaycastBVH ) {
+        for ( AIndexedMeshSubpart * subpart : Subparts ) {
+            ATreeAABB * bvh = NewObject< ATreeAABB >();
+
+            bvh->Read( f );
+
+            subpart->SetBVH( bvh );
         }
     }
 
-    bool bSkinned = asset.Weights.Size() == asset.Vertices.Size();
-
-    //for ( int j = 0; j < asset.Subparts.size(); j++ ) {
-    //    FSubpart const & s = asset.Subparts[j];
-
-    //    CalcTangentSpace( asset.Vertices.ToPtr() + s.BaseVertex, s.VertexCount, asset.Indices.ToPtr() + s.FirstIndex, s.IndexCount );
-    //}
-
-    Initialize( asset.Vertices.Size(), asset.Indices.Size(), asset.Subparts.size(), bSkinned, false );
-    WriteVertexData( asset.Vertices.ToPtr(), asset.Vertices.Size(), 0 );
-    WriteIndexData( asset.Indices.ToPtr(), asset.Indices.Size(), 0 );
-    if ( bSkinned ) {
-        WriteJointWeights( asset.Weights.ToPtr(), asset.Weights.Size(), 0 );
-    }
-    for ( int j = 0; j < GetSubparts().Size(); j++ ) {
-        FSubpart const & s = asset.Subparts[ j ];
-        FIndexedMeshSubpart * subpart = GetSubpart( j );
-        subpart->SetName( s.Name );
-        subpart->BaseVertex = s.BaseVertex;
-        subpart->FirstIndex = s.FirstIndex;
-        subpart->VertexCount = s.VertexCount;
-        subpart->IndexCount = s.IndexCount;
-        subpart->BoundingBox = s.BoundingBox;
-        if ( s.Material < matInstances.Size() ) {
-            subpart->MaterialInstance = matInstances[ s.Material ];
-        }
+    uint32_t socketsCount = f.ReadUInt32();
+    Sockets.ResizeInvalidate( socketsCount );
+    for ( int i = 0 ; i < Sockets.Size() ; i++ ) {
+        Sockets[i] = ReadSocket( f );
     }
 
-    // TODO: load collision from file. This code is only for test!!!
+    AString skeleton;
+    f.ReadString( skeleton );
 
-    FCollisionTriangleSoupData * tris = CreateInstanceOf< FCollisionTriangleSoupData >();
-    tris->Initialize( ( float * )&asset.Vertices.ToPtr()->Position, sizeof( asset.Vertices[ 0 ] ), asset.Vertices.Size(),
-        asset.Indices.ToPtr(), asset.Indices.Size(), asset.Subparts.data(), asset.Subparts.size() );
+    if ( bSkinnedMesh ) {
+        f.ReadArrayInt32( Skin.JointIndices );
+        f.ReadArrayOfStructs( Skin.OffsetMatrices );
+    }
 
-    FCollisionTriangleSoupBVHData * bvh = CreateInstanceOf< FCollisionTriangleSoupBVHData >();
-    bvh->TrisData = tris;
-    bvh->BuildBVH();
+    for ( AIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->OwnerMesh = this;
+    }
 
-    BodyComposition.Clear();
-    FCollisionTriangleSoupBVH * CollisionBody = BodyComposition.AddCollisionBody< FCollisionTriangleSoupBVH >();
-    CollisionBody->BvhData = bvh;
-    //CollisionBody->Margin = 0.2;
+    SetSkeleton( GetOrCreateResource< ASkeleton >( skeleton.CStr() ) );
 
-    // TODO: load BVH tree for raycast
+    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertex ), bDynamicStorage );
+    GRenderBackend->InitializeBuffer( IndexBufferGPU, Indices.Size() * sizeof( unsigned int ), bDynamicStorage );
 
+    if ( bSkinnedMesh ) {
+        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexJoint ), bDynamicStorage );
+    }
 
-    // TODO: Read sockets!!!
+    SendVertexDataToGPU( Vertices.Size(), 0 );
+    SendIndexDataToGPU( Indices.Size(), 0 );
+    if ( bSkinnedMesh ) {
+        SendJointWeightsToGPU( Weights.Size(), 0 );
+    }
 
-    //ResetSkeleton( skelAsset.Joints.ToPtr(), skelAsset.Joints.Size(), skelAsset.BindposeBounds );
+    bBoundingBoxDirty = false;
+
+    if ( !bSkinnedMesh ) {
+        GenerateRigidbodyCollisions();   // TODO: load collision from file
+    }
 
     return true;
 }
 
-FLightmapUV * FIndexedMesh::CreateLightmapUVChannel() {
-    FLightmapUV * channel = NewObject< FLightmapUV >();
+ALightmapUV * AIndexedMesh::CreateLightmapUVChannel() {
+    ALightmapUV * channel = NewObject< ALightmapUV >();
 
     channel->OwnerMesh = this;
     channel->IndexInArrayOfUVs = LightmapUVs.Size();
@@ -271,8 +366,8 @@ FLightmapUV * FIndexedMesh::CreateLightmapUVChannel() {
     return channel;
 }
 
-FVertexLight * FIndexedMesh::CreateVertexLightChannel() {
-    FVertexLight * channel = NewObject< FVertexLight >();
+AVertexLight * AIndexedMesh::CreateVertexLightChannel() {
+    AVertexLight * channel = NewObject< AVertexLight >();
 
     channel->OwnerMesh = this;
     channel->IndexInArrayOfChannels = VertexLightChannels.Size();
@@ -284,104 +379,117 @@ FVertexLight * FIndexedMesh::CreateVertexLightChannel() {
     return channel;
 }
 
-//void FIndexedMesh::ResetSkeleton( FJoint const * _Joints, int _JointCount, BvAxisAlignedBox const & _BindposeBounds ) {
-//    Joints.ResizeInvalidate( _JointCount );
-//    memcpy( Joints.ToPtr(), _Joints, sizeof( FJoint ) * _JointCount );
-//    BindposeBounds = _BindposeBounds;
-//}
-
-void FIndexedMesh::AddSocket( FSocketDef * _Socket ) {
+void AIndexedMesh::AddSocket( ASocketDef * _Socket ) {
     _Socket->AddRef();
     Sockets.Append( _Socket );
 }
 
-FSocketDef * FIndexedMesh::FindSocket( const char * _Name ) {
-    for ( FSocketDef * socket : Sockets ) {
-        if ( socket->GetName().Icmp( _Name ) ) {
+ASocketDef * AIndexedMesh::FindSocket( const char * _Name ) {
+    for ( ASocketDef * socket : Sockets ) {
+        if ( socket->GetObjectName().Icmp( _Name ) ) {
             return socket;
         }
     }
     return nullptr;
 }
 
-//int FIndexedMesh::FindJoint( const char * _Name ) const {
-//    for ( int j = 0 ; j < Joints.Size() ; j++ ) {
-//        if ( !FString::Icmp( Joints[j].Name, _Name ) ) {
-//            return j;
-//        }
-//    }
-//    return -1;
-//}
+void AIndexedMesh::GenerateBVH( unsigned int PrimitivesPerLeaf ) {
+    AScopedTimeCheck ScopedTime( "GenerateBVH" );
 
-void FIndexedMesh::CreateBVH() {
     if ( bSkinnedMesh ) {
-        GLogger.Printf( "FIndexedMesh::CreateBVH: called for skinned mesh\n" );
+        GLogger.Printf( "AIndexedMesh::GenerateBVH: called for skinned mesh\n" );
         return;
     }
 
-    for ( FIndexedMeshSubpart * subpart : Subparts ) {
-        subpart->CreateBVH();
+    const unsigned int MaxPrimitivesPerLeaf = 1024;
+
+    // Don't allow to generate large leafs
+    if ( PrimitivesPerLeaf > MaxPrimitivesPerLeaf ) {
+        PrimitivesPerLeaf = MaxPrimitivesPerLeaf;
+    }
+
+    for ( AIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->GenerateBVH( PrimitivesPerLeaf );
+    }
+
+    RaycastPrimitivesPerLeaf = PrimitivesPerLeaf;
+}
+
+void AIndexedMesh::SetSkeleton( ASkeleton * _Skeleton ) {
+    Skeleton = _Skeleton;
+
+    if ( !Skeleton ) {
+        static TStaticResourceFinder< ASkeleton > SkeletonResource( _CTS( "/Default/Skeleton/Default" ) );
+        Skeleton = SkeletonResource.GetObject();
     }
 }
 
-void FIndexedMesh::SetMaterialInstance( int _SubpartIndex, FMaterialInstance * _MaterialInstance ) {
+void AIndexedMesh::SetSkin( int32_t const * _JointIndices, Float3x4 const * _OffsetMatrices, int _JointsCount ) {
+    Skin.JointIndices.ResizeInvalidate( _JointsCount );
+    Skin.OffsetMatrices.ResizeInvalidate( _JointsCount );
+
+    memcpy( Skin.JointIndices.ToPtr(), _JointIndices, _JointsCount * sizeof(*_JointIndices) );
+    memcpy( Skin.OffsetMatrices.ToPtr(), _OffsetMatrices, _JointsCount * sizeof(*_OffsetMatrices) );
+}
+
+void AIndexedMesh::SetMaterialInstance( int _SubpartIndex, AMaterialInstance * _MaterialInstance ) {
     if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Size() ) {
         return;
     }
     Subparts[_SubpartIndex]->SetMaterialInstance( _MaterialInstance );
 }
 
-void FIndexedMesh::SetBoundingBox( int _SubpartIndex, BvAxisAlignedBox const & _BoundingBox ) {
+void AIndexedMesh::SetBoundingBox( int _SubpartIndex, BvAxisAlignedBox const & _BoundingBox ) {
     if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Size() ) {
         return;
     }
     Subparts[_SubpartIndex]->SetBoundingBox( _BoundingBox );
 }
 
-FIndexedMeshSubpart * FIndexedMesh::GetSubpart( int _SubpartIndex ) {
+AIndexedMeshSubpart * AIndexedMesh::GetSubpart( int _SubpartIndex ) {
     if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Size() ) {
         return nullptr;
     }
     return Subparts[ _SubpartIndex ];
 }
 
-bool FIndexedMesh::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
+bool AIndexedMesh::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount ) {
         return true;
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "FIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
-    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( FMeshVertex ), _VerticesCount * sizeof( FMeshVertex ), Vertices.ToPtr() + _StartVertexLocation );
+    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertex ), _VerticesCount * sizeof( SMeshVertex ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
-bool FIndexedMesh::WriteVertexData( FMeshVertex const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+bool AIndexedMesh::WriteVertexData( SMeshVertex const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount ) {
         return true;
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "FIndexedMesh::WriteVertexData: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshVertex ) );
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertex ) );
 
-    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+    for ( AIndexedMeshSubpart * subpart : Subparts ) {
         subpart->bAABBTreeDirty = true;
     }
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
 
-bool FIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLocation ) {
+bool AIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLocation ) {
     if ( !bSkinnedMesh ) {
-        GLogger.Printf( "FIndexedMesh::SendJointWeightsToGPU: Cannot write joint weights for static mesh\n" );
+        GLogger.Printf( "AIndexedMesh::SendJointWeightsToGPU: Cannot write joint weights for static mesh\n" );
         return false;
     }
 
@@ -390,18 +498,18 @@ bool FIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLo
     }
 
     if ( _StartVertexLocation + _VerticesCount > Weights.Size() ) {
-        GLogger.Printf( "FIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
-    GRenderBackend->WriteBuffer( WeightsBufferGPU, _StartVertexLocation * sizeof( FMeshVertexJoint ), _VerticesCount * sizeof( FMeshVertexJoint ), Weights.ToPtr() + _StartVertexLocation );
+    GRenderBackend->WriteBuffer( WeightsBufferGPU, _StartVertexLocation * sizeof( SMeshVertexJoint ), _VerticesCount * sizeof( SMeshVertexJoint ), Weights.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
-bool FIndexedMesh::WriteJointWeights( FMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+bool AIndexedMesh::WriteJointWeights( SMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
     if ( !bSkinnedMesh ) {
-        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n" );
+        GLogger.Printf( "AIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n" );
         return false;
     }
 
@@ -410,22 +518,22 @@ bool FIndexedMesh::WriteJointWeights( FMeshVertexJoint const * _Vertices, int _V
     }
 
     if ( _StartVertexLocation + _VerticesCount > Weights.Size() ) {
-        GLogger.Printf( "FIndexedMesh::WriteJointWeights: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::WriteJointWeights: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
-    memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshVertexJoint ) );
+    memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexJoint ) );
 
     return SendJointWeightsToGPU( _VerticesCount, _StartVertexLocation );
 }
 
-bool FIndexedMesh::SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation ) {
+bool AIndexedMesh::SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation ) {
     if ( !_IndexCount ) {
         return true;
     }
 
     if ( _StartIndexLocation + _IndexCount > Indices.Size() ) {
-        GLogger.Printf( "FIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
@@ -434,19 +542,19 @@ bool FIndexedMesh::SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation 
     return true;
 }
 
-bool FIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCount, int _StartIndexLocation ) {
+bool AIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCount, int _StartIndexLocation ) {
     if ( !_IndexCount ) {
         return true;
     }
 
     if ( _StartIndexLocation + _IndexCount > Indices.Size() ) {
-        GLogger.Printf( "FIndexedMesh::WriteIndexData: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::WriteIndexData: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
     memcpy( Indices.ToPtr() + _StartIndexLocation, _Indices, _IndexCount * sizeof( unsigned int ) );
 
-    for ( FIndexedMeshSubpart * subpart : Subparts ) {
+    for ( AIndexedMeshSubpart * subpart : Subparts ) {
         if ( _StartIndexLocation >= subpart->FirstIndex
             && _StartIndexLocation + _IndexCount <= subpart->FirstIndex + subpart->IndexCount ) {
             subpart->bAABBTreeDirty = true;
@@ -456,15 +564,15 @@ bool FIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCoun
     return SendIndexDataToGPU( _IndexCount, _StartIndexLocation );
 }
 
-void FIndexedMesh::UpdateBoundingBox() {
+void AIndexedMesh::UpdateBoundingBox() {
     BoundingBox.Clear();
-    for ( FIndexedMeshSubpart const * subpart : Subparts ) {
+    for ( AIndexedMeshSubpart const * subpart : Subparts ) {
         BoundingBox.AddAABB( subpart->GetBoundingBox() );
     }
     bBoundingBoxDirty = false;
 }
 
-BvAxisAlignedBox const & FIndexedMesh::GetBoundingBox() const {
+BvAxisAlignedBox const & AIndexedMesh::GetBoundingBox() const {
     if ( bBoundingBoxDirty ) {
         const_cast< ThisClass * >( this )->UpdateBoundingBox();
     }
@@ -472,8 +580,8 @@ BvAxisAlignedBox const & FIndexedMesh::GetBoundingBox() const {
     return BoundingBox;
 }
 
-void FIndexedMesh::InitializeBoxMesh( const Float3 & _Size, float _TexCoordScale ) {
-    TPodArray< FMeshVertex > vertices;
+void AIndexedMesh::InitializeBoxMesh( const Float3 & _Size, float _TexCoordScale ) {
+    TPodArray< SMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
@@ -486,8 +594,8 @@ void FIndexedMesh::InitializeBoxMesh( const Float3 & _Size, float _TexCoordScale
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializeSphereMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
-    TPodArray< FMeshVertex > vertices;
+void AIndexedMesh::InitializeSphereMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+    TPodArray< SMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
     
@@ -500,8 +608,8 @@ void FIndexedMesh::InitializeSphereMesh( float _Radius, float _TexCoordScale, in
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializePlaneMesh( float _Width, float _Height, float _TexCoordScale ) {
-    TPodArray< FMeshVertex > vertices;
+void AIndexedMesh::InitializePlaneMesh( float _Width, float _Height, float _TexCoordScale ) {
+    TPodArray< SMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
@@ -514,8 +622,8 @@ void FIndexedMesh::InitializePlaneMesh( float _Width, float _Height, float _TexC
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
-    TPodArray< FMeshVertex > vertices;
+void AIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+    TPodArray< SMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
@@ -529,8 +637,8 @@ void FIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & 
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
-    TPodArray< FMeshVertex > vertices;
+void AIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
+    TPodArray< SMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
@@ -543,8 +651,8 @@ void FIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializeConeMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
-    TPodArray< FMeshVertex > vertices;
+void AIndexedMesh::InitializeConeMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
+    TPodArray< SMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
@@ -557,8 +665,8 @@ void FIndexedMesh::InitializeConeMesh( float _Radius, float _Height, float _TexC
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializeCapsuleMesh( float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
-    TPodArray< FMeshVertex > vertices;
+void AIndexedMesh::InitializeCapsuleMesh( float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+    TPodArray< SMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
@@ -571,49 +679,48 @@ void FIndexedMesh::InitializeCapsuleMesh( float _Radius, float _Height, float _T
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceName ) {
+void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 
-    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Box" )
-         || !FString::Icmp( _InternalResourceName, "FIndexedMesh.Default" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Meshes/Box" ) ) {
         InitializeBoxMesh( Float3(1), 1 );
-        FCollisionBox * collisionBody = BodyComposition.AddCollisionBody< FCollisionBox >();
+        ACollisionBox * collisionBody = BodyComposition.AddCollisionBody< ACollisionBox >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Sphere" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Meshes/Sphere" ) ) {
         InitializeSphereMesh( 0.5f, 1 );
-        FCollisionSphere * collisionBody = BodyComposition.AddCollisionBody< FCollisionSphere >();
+        ACollisionSphere * collisionBody = BodyComposition.AddCollisionBody< ACollisionSphere >();
         collisionBody->Radius = 0.5f;
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Cylinder" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Meshes/Cylinder" ) ) {
         InitializeCylinderMesh( 0.5f, 1, 1 );
-        FCollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< FCollisionCylinder >();
+        ACollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< ACollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Cone" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Meshes/Cone" ) ) {
         InitializeConeMesh( 0.5f, 1, 1 );
-        FCollisionCone * collisionBody = BodyComposition.AddCollisionBody< FCollisionCone >();
+        ACollisionCone * collisionBody = BodyComposition.AddCollisionBody< ACollisionCone >();
         collisionBody->Radius = 0.5f;
         collisionBody->Height = 1.0f;
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Capsule" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Meshes/Capsule" ) ) {
         InitializeCapsuleMesh( 0.5f, 1.0f, 1 );
-        FCollisionCapsule * collisionBody = BodyComposition.AddCollisionBody< FCollisionCapsule >();
+        ACollisionCapsule * collisionBody = BodyComposition.AddCollisionBody< ACollisionCapsule >();
         collisionBody->Radius = 0.5f;
         collisionBody->Height = 1;
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FIndexedMesh.Plane" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Meshes/Plane") ) {
         InitializePlaneMesh( 256, 256, 256 );
-        FCollisionBox * box = BodyComposition.AddCollisionBody< FCollisionBox >();
+        ACollisionBox * box = BodyComposition.AddCollisionBody< ACollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 0.1f;
         box->HalfExtents.Z = 128;
@@ -621,55 +728,67 @@ void FIndexedMesh::InitializeInternalResource( const char * _InternalResourceNam
         return;
     }
 
-    GLogger.Printf( "Unknown internal mesh %s\n", _InternalResourceName );
+    GLogger.Printf( "Unknown internal mesh %s\n", _Path );
+
+    LoadInternalResource( "/Default/Meshes/Box" );
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FIndexedMeshSubpart::FIndexedMeshSubpart() {
+AIndexedMeshSubpart::AIndexedMeshSubpart() {
     BoundingBox.Clear();
+
+    static TStaticResourceFinder< AMaterialInstance > DefaultMaterialInstance( _CTS( "/Default/MaterialInstance/Default" ) );
+    MaterialInstance = DefaultMaterialInstance.GetObject();
 }
 
-FIndexedMeshSubpart::~FIndexedMeshSubpart() {
+AIndexedMeshSubpart::~AIndexedMeshSubpart() {
 }
 
-void FIndexedMeshSubpart::SetBaseVertex( int _BaseVertex ) {
+void AIndexedMeshSubpart::SetBaseVertex( int _BaseVertex ) {
     BaseVertex = _BaseVertex;
     bAABBTreeDirty = true;
 }
 
-void FIndexedMeshSubpart::SetFirstIndex( int _FirstIndex ) {
+void AIndexedMeshSubpart::SetFirstIndex( int _FirstIndex ) {
     FirstIndex = _FirstIndex;
     bAABBTreeDirty = true;
 }
 
-void FIndexedMeshSubpart::SetVertexCount( int _VertexCount ) {
+void AIndexedMeshSubpart::SetVertexCount( int _VertexCount ) {
     VertexCount = _VertexCount;
 }
 
-void FIndexedMeshSubpart::SetIndexCount( int _IndexCount ) {
+void AIndexedMeshSubpart::SetIndexCount( int _IndexCount ) {
     IndexCount = _IndexCount;
     bAABBTreeDirty = true;
 }
 
-void FIndexedMeshSubpart::SetMaterialInstance( FMaterialInstance * _MaterialInstance ) {
+void AIndexedMeshSubpart::SetMaterialInstance( AMaterialInstance * _MaterialInstance ) {
     MaterialInstance = _MaterialInstance;
+
+    if ( !MaterialInstance ) {
+        static TStaticResourceFinder< AMaterialInstance > DefaultMaterialInstance( _CTS( "/Default/MaterialInstance/Default" ) );
+        MaterialInstance = DefaultMaterialInstance.GetObject();
+    }
 }
 
-void FIndexedMeshSubpart::SetBoundingBox( BvAxisAlignedBox const & _BoundingBox ) {
+void AIndexedMeshSubpart::SetBoundingBox( BvAxisAlignedBox const & _BoundingBox ) {
     BoundingBox = _BoundingBox;
 
-    OwnerMesh->bBoundingBoxDirty = true;
+    if ( OwnerMesh ) {
+        OwnerMesh->bBoundingBoxDirty = true;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FLightmapUV::FLightmapUV() {
+ALightmapUV::ALightmapUV() {
     VertexBufferGPU = GRenderBackend->CreateBuffer( this );
 }
 
-FLightmapUV::~FLightmapUV() {
+ALightmapUV::~ALightmapUV() {
     GRenderBackend->DestroyBuffer( VertexBufferGPU );
 
     if ( OwnerMesh ) {
@@ -680,7 +799,7 @@ FLightmapUV::~FLightmapUV() {
     }
 }
 
-void FLightmapUV::OnInitialize( int _NumVertices ) {
+void ALightmapUV::OnInitialize( int _NumVertices ) {
     if ( Vertices.Size() == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
         return;
     }
@@ -689,46 +808,46 @@ void FLightmapUV::OnInitialize( int _NumVertices ) {
 
     Vertices.ResizeInvalidate( _NumVertices );
 
-    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( FMeshLightmapUV ), bDynamicStorage );
+    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshLightmapUV ), bDynamicStorage );
 }
 
-bool FLightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
+bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount ) {
         return true;
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "FLightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
-    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( FMeshLightmapUV ), _VerticesCount * sizeof( FMeshLightmapUV ), Vertices.ToPtr() + _StartVertexLocation );
+    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshLightmapUV ), _VerticesCount * sizeof( SMeshLightmapUV ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
-bool FLightmapUV::WriteVertexData( FMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+bool ALightmapUV::WriteVertexData( SMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount ) {
         return true;
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "FLightmapUV::WriteVertexData: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "ALightmapUV::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshLightmapUV ) );
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshLightmapUV ) );
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FVertexLight::FVertexLight() {
+AVertexLight::AVertexLight() {
     VertexBufferGPU = GRenderBackend->CreateBuffer( this );
 }
 
-FVertexLight::~FVertexLight() {
+AVertexLight::~AVertexLight() {
     GRenderBackend->DestroyBuffer( VertexBufferGPU );
 
     if ( OwnerMesh ) {
@@ -739,7 +858,7 @@ FVertexLight::~FVertexLight() {
     }
 }
 
-void FVertexLight::OnInitialize( int _NumVertices ) {
+void AVertexLight::OnInitialize( int _NumVertices ) {
     if ( Vertices.Size() == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
         return;
     }
@@ -748,43 +867,61 @@ void FVertexLight::OnInitialize( int _NumVertices ) {
 
     Vertices.ResizeInvalidate( _NumVertices );
 
-    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( FMeshVertexLight ), bDynamicStorage );
+    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertexLight ), bDynamicStorage );
 }
 
-bool FVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
+bool AVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount ) {
         return true;
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "FVertexLight::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "AVertexLight::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
-    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( FMeshVertexLight ), _VerticesCount * sizeof( FMeshVertexLight ), Vertices.ToPtr() + _StartVertexLocation );
+    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexLight ), _VerticesCount * sizeof( SMeshVertexLight ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
-bool FVertexLight::WriteVertexData( FMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount ) {
         return true;
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "FVertexLight::WriteVertexData: Referencing outside of buffer (%s)\n", GetNameConstChar() );
+        GLogger.Printf( "AVertexLight::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
         return false;
     }
 
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( FMeshVertexLight ) );
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexLight ) );
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
 
-void FIndexedMesh::GenerateSoftbodyFacesFromMeshIndices() {
+void AIndexedMesh::GenerateRigidbodyCollisions() {
+    AScopedTimeCheck ScopedTime( "GenerateRigidbodyCollisions" );
+
+    ACollisionTriangleSoupData * tris = NewObject< ACollisionTriangleSoupData >();
+    tris->Initialize( (float *)&Vertices.ToPtr()->Position, sizeof( Vertices[0] ), Vertices.Size(),
+        Indices.ToPtr(), Indices.Size(), Subparts.ToPtr(), Subparts.Size() );
+
+    ACollisionTriangleSoupBVHData * bvh = NewObject< ACollisionTriangleSoupBVHData >();
+    bvh->TrisData = tris;
+    bvh->BuildBVH();
+
+    BodyComposition.Clear();
+    ACollisionTriangleSoupBVH * CollisionBody = BodyComposition.AddCollisionBody< ACollisionTriangleSoupBVH >();
+    CollisionBody->BvhData = bvh;
+}
+
+void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices() {
+    AScopedTimeCheck ScopedTime( "GenerateSoftbodyFacesFromMeshIndices" );
+
     int totalIndices = 0;
 
-    for ( FIndexedMeshSubpart const * subpart : Subparts ) {
+    for ( AIndexedMeshSubpart const * subpart : Subparts ) {
         totalIndices += subpart->IndexCount;
     }
 
@@ -794,9 +931,9 @@ void FIndexedMesh::GenerateSoftbodyFacesFromMeshIndices() {
 
     unsigned int const * indices = Indices.ToPtr();
 
-    for ( FIndexedMeshSubpart const * subpart : Subparts ) {
+    for ( AIndexedMeshSubpart const * subpart : Subparts ) {
         for ( int i = 0; i < subpart->IndexCount; i += 3 ) {
-            FSoftbodyFace & face = SoftbodyFaces[ faceIndex++ ];
+            SSoftbodyFace & face = SoftbodyFaces[ faceIndex++ ];
 
             face.Indices[ 0 ] = subpart->BaseVertex + indices[ subpart->FirstIndex + i ];
             face.Indices[ 1 ] = subpart->BaseVertex + indices[ subpart->FirstIndex + i + 1 ];
@@ -805,7 +942,9 @@ void FIndexedMesh::GenerateSoftbodyFacesFromMeshIndices() {
     }
 }
 
-void FIndexedMesh::GenerateSoftbodyLinksFromFaces() {
+void AIndexedMesh::GenerateSoftbodyLinksFromFaces() {
+    AScopedTimeCheck ScopedTime( "GenerateSoftbodyLinksFromFaces" );
+
     TPodArray< bool > checks;
     unsigned int * indices;
 
@@ -814,7 +953,7 @@ void FIndexedMesh::GenerateSoftbodyLinksFromFaces() {
 
     SoftbodyLinks.Clear();
 
-    for ( FSoftbodyFace & face : SoftbodyFaces ) {
+    for ( SSoftbodyFace & face : SoftbodyFaces ) {
         indices = face.Indices;
 
         for ( int j = 2, k = 0; k < 3; j = k++ ) {
@@ -830,7 +969,7 @@ void FIndexedMesh::GenerateSoftbodyLinksFromFaces() {
                 checks[ index_j_k ] = checks[ index_k_j ] = true;
 
                 // Append link
-                FSoftbodyLink & link = SoftbodyLinks.Append();
+                SSoftbodyLink & link = SoftbodyLinks.Append();
                 link.Indices[0] = indices[ j ];
                 link.Indices[1] = indices[ k ];
             }
@@ -840,19 +979,27 @@ void FIndexedMesh::GenerateSoftbodyLinksFromFaces() {
 }
 
 
-void FIndexedMeshSubpart::CreateBVH() {
+void AIndexedMeshSubpart::GenerateBVH( unsigned int PrimitivesPerLeaf ) {
     // TODO: Try KD-tree
-    const int PrimitivesPerLeaf = 16;
-    AABBTree = NewObject< FAABBTree >();
-    AABBTree->Initialize( OwnerMesh->Vertices.ToPtr(), OwnerMesh->Indices.ToPtr() + FirstIndex, IndexCount, BaseVertex, PrimitivesPerLeaf );
+
+    if ( OwnerMesh )
+    {
+        AABBTree = NewObject< ATreeAABB >();
+        AABBTree->Initialize( OwnerMesh->Vertices.ToPtr(), OwnerMesh->Indices.ToPtr() + FirstIndex, IndexCount, BaseVertex, PrimitivesPerLeaf );
+        bAABBTreeDirty = false;
+    }
+}
+
+void AIndexedMeshSubpart::SetBVH( ATreeAABB * BVH ) {
+    AABBTree = BVH;
     bAABBTreeDirty = false;
 }
 
-bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const {
+bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
     bool ret = false;
     float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
-    FMeshVertex const * vertices = OwnerMesh->GetVertices();
+    SMeshVertex const * vertices = OwnerMesh->GetVertices();
 
     if ( _Distance < 0.0001f ) {
         return false;
@@ -860,7 +1007,7 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
 
     if ( AABBTree ) {
         if ( bAABBTreeDirty ) {
-            GLogger.Printf( "FIndexedMeshSubpart::Raycast: bvh is outdated\n" );
+            GLogger.Printf( "AIndexedMeshSubpart::Raycast: bvh is outdated\n" );
             return false;
         }
 
@@ -869,13 +1016,13 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
         invRayDir.Y = 1.0f / _RayDir.Y;
         invRayDir.Z = 1.0f / _RayDir.Z;
 
-        TPodArray< FAABBNode > const & nodes = AABBTree->GetNodes();
+        TPodArray< SNodeAABB > const & nodes = AABBTree->GetNodes();
         unsigned int const * indirection = AABBTree->GetIndirection();
 
         float hitMin, hitMax;
 
         for ( int nodeIndex = 0; nodeIndex < nodes.Size(); ) {
-            FAABBNode const * node = &nodes[nodeIndex];
+            SNodeAABB const * node = &nodes[nodeIndex];
 
             const bool bOverlap = BvRayIntersectBox( _RayStart, invRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= _Distance;
             const bool bLeaf = node->IsLeaf();
@@ -892,7 +1039,7 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
                     Float3 const & v2 = vertices[i2].Position;
                     if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
                         if ( _Distance > d ) {
-                            FTriangleHitResult & hitResult = _HitResult.Append();
+                            STriangleHitResult & hitResult = _HitResult.Append();
                             hitResult.Location = _RayStart + _RayDir * d;
                             hitResult.Normal = (v1 - v0).Cross( v2-v0 ).Normalized();
                             hitResult.Distance = d;
@@ -926,7 +1073,7 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
 
             if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
                 if ( _Distance > d ) {
-                    FTriangleHitResult & hitResult = _HitResult.Append();
+                    STriangleHitResult & hitResult = _HitResult.Append();
                     hitResult.Location = _RayStart + _RayDir * d;
                     hitResult.Normal = ( v1 - v0 ).Cross( v2-v0 ).Normalized();
                     hitResult.Distance = d;
@@ -944,11 +1091,11 @@ bool FIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
     return ret;
 }
 
-bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
+bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
     bool ret = false;
     float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
-    FMeshVertex const * vertices = OwnerMesh->GetVertices();
+    SMeshVertex const * vertices = OwnerMesh->GetVertices();
 
     if ( _Distance < 0.0001f ) {
         return false;
@@ -958,7 +1105,7 @@ bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
 
     if ( AABBTree ) {
         if ( bAABBTreeDirty ) {
-            GLogger.Printf( "FIndexedMeshSubpart::RaycastClosest: bvh is outdated\n" );
+            GLogger.Printf( "AIndexedMeshSubpart::RaycastClosest: bvh is outdated\n" );
             return false;
         }
 
@@ -967,13 +1114,13 @@ bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
         invRayDir.Y = 1.0f / _RayDir.Y;
         invRayDir.Z = 1.0f / _RayDir.Z;
 
-        TPodArray< FAABBNode > const & nodes = AABBTree->GetNodes();
+        TPodArray< SNodeAABB > const & nodes = AABBTree->GetNodes();
         unsigned int const * indirection = AABBTree->GetIndirection();
 
         float hitMin, hitMax;
 
         for ( int nodeIndex = 0; nodeIndex < nodes.Size(); ) {
-            FAABBNode const * node = &nodes[nodeIndex];
+            SNodeAABB const * node = &nodes[nodeIndex];
 
             const bool bOverlap = BvRayIntersectBox( _RayStart, invRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= _Distance;
             const bool bLeaf = node->IsLeaf();
@@ -1038,25 +1185,25 @@ bool FIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
     return ret;
 }
 
-bool FIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< FTriangleHitResult > & _HitResult ) const {
+bool AIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
     bool ret = false;
 
     // TODO: check mesh AABB?
 
     for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
-        FIndexedMeshSubpart * subpart = Subparts[i];
+        AIndexedMeshSubpart * subpart = Subparts[i];
         ret |= subpart->Raycast( _RayStart, _RayDir, _Distance, _HitResult );
     }
     return ret;
 }
 
-bool FIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< FMaterialInstance > & _Material ) const {
+bool AIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< AMaterialInstance > & _Material ) const {
     bool ret = false;
 
     // TODO: check mesh AABB?
 
     for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
-        FIndexedMeshSubpart * subpart = Subparts[i];
+        AIndexedMeshSubpart * subpart = Subparts[i];
         if ( subpart->RaycastClosest( _RayStart, _RayDir, _Distance, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {
             _Material = subpart->MaterialInstance;
             _Distance = _HitDistance;
@@ -1067,222 +1214,30 @@ bool FIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _Ray
     return ret;
 }
 
-void FIndexedMesh::DrawDebug( FDebugDraw * _DebugDraw ) {
+void AIndexedMesh::DrawDebug( ADebugDraw * _DebugDraw ) {
     if ( RVDrawIndexedMeshBVH ) {
-        for ( FIndexedMeshSubpart * subpart : Subparts ) {
+        for ( AIndexedMeshSubpart * subpart : Subparts ) {
             subpart->DrawBVH( _DebugDraw );
         }
     }
 }
 
-void FIndexedMeshSubpart::DrawBVH( FDebugDraw * _DebugDraw ) {
+void AIndexedMeshSubpart::DrawBVH( ADebugDraw * _DebugDraw ) {
     if ( !AABBTree ) {
         return;
     }
 
     _DebugDraw->SetDepthTest( false );
-    _DebugDraw->SetColor( FColor4::White() );
+    _DebugDraw->SetColor( AColor4::White() );
 
-    for ( FAABBNode const & n : AABBTree->GetNodes() ) {
+    for ( SNodeAABB const & n : AABBTree->GetNodes() ) {
         if ( n.IsLeaf() ) {
             _DebugDraw->DrawAABB( n.Bounds );
         }
     }
 }
 
-void FMeshAsset::Clear() {
-    Subparts.clear();
-    Textures.clear();
-    Materials.Clear();
-    Vertices.Clear();
-    Indices.Clear();
-    Weights.Clear();
-}
-
-void FMeshAsset::Read( FFileStream & f ) {
-    char buf[1024];
-    char * s;
-    int format, version;
-
-    Clear();
-
-    if ( !AssetReadFormat( f, &format, &version ) ) {
-        return;
-    }
-
-    if ( format != FMT_FILE_TYPE_MESH ) {
-        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MESH );
-        return;
-    }
-
-    if ( version != FMT_VERSION_MESH ) {
-        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MESH );
-        return;
-    }
-
-    while ( f.Gets( buf, sizeof( buf ) ) ) {
-        if ( nullptr != ( s = AssetParseTag( buf, "textures " ) ) ) {
-            int numTextures = 0;
-            sscanf( s, "%d", &numTextures );
-            Textures.resize( numTextures );
-            for ( int i = 0 ; i < numTextures ; i++ ) {
-                if ( !f.Gets( buf, sizeof( buf ) ) ) {
-                    GLogger.Printf( "Unexpected EOF\n" );
-                    return;
-                }
-                for ( s = buf ; *s && *s != '\n' ; s++ ) {} *s = 0;
-                Textures[i].FileName = buf;
-            }
-        } else if ( nullptr != ( s = AssetParseTag( buf, "materials " ) ) ) {
-            int numMaterials = 0;
-            sscanf( s, "%d", &numMaterials );
-            Materials.ResizeInvalidate( numMaterials );
-            for ( int i = 0 ; i < numMaterials ; i++ ) {
-                if ( !f.Gets( buf, sizeof( buf ) ) ) {
-                    GLogger.Printf( "Unexpected EOF\n" );
-                    return;
-                }
-                if ( nullptr != ( s = AssetParseTag( buf, "maps " ) ) ) {
-                    Materials[i].NumTextures = 0;
-                    sscanf( s, "%d", &Materials[i].NumTextures );
-                    for ( int j = 0 ; j < Materials[i].NumTextures ; j++ ) {
-                        if ( !f.Gets( buf, sizeof( buf ) ) ) {
-                            GLogger.Printf( "Unexpected EOF\n" );
-                            return;
-                        }
-                        Materials[i].Textures[j] = Int().FromString( buf );
-                    }
-                }
-            }
-        } else if ( nullptr != ( s = AssetParseTag( buf, "subparts " ) ) ) {
-            int numSubparts = 0;
-            sscanf( s, "%d", &numSubparts );
-            Subparts.resize( numSubparts );
-            for ( int i = 0 ; i < numSubparts ; i++ ) {
-                if ( !f.Gets( buf, sizeof( buf ) ) ) {
-                    GLogger.Printf( "Unexpected EOF\n" );
-                    return;
-                }
-
-                char * name;
-                s = AssetParseName( buf, &name );
-
-                FSubpart & subpart = Subparts[i];
-                subpart.Name = name;
-                sscanf( s, "%d %d %d %d %d ( %f %f %f ) ( %f %f %f )", &subpart.BaseVertex, &subpart.VertexCount, &subpart.FirstIndex, &subpart.IndexCount, &subpart.Material,
-                        &subpart.BoundingBox.Mins.X, &subpart.BoundingBox.Mins.Y, &subpart.BoundingBox.Mins.Z,
-                        &subpart.BoundingBox.Maxs.X, &subpart.BoundingBox.Maxs.Y, &subpart.BoundingBox.Maxs.Z );
-            }
-        } else if ( nullptr != ( s = AssetParseTag( buf, "verts " ) ) ) {
-            int numVerts = 0;
-            sscanf( s, "%d", &numVerts );
-            Vertices.ResizeInvalidate( numVerts );
-            for ( int i = 0 ; i < numVerts ; i++ ) {
-                if ( !f.Gets( buf, sizeof( buf ) ) ) {
-                    GLogger.Printf( "Unexpected EOF\n" );
-                    return;
-                }
-
-                FMeshVertex & v = Vertices[i];
-
-                sscanf( buf, "( %f %f %f ) ( %f %f ) ( %f %f %f ) %f ( %f %f %f )\n",
-                        &v.Position.X,&v.Position.Y,&v.Position.Z,
-                        &v.TexCoord.X,&v.TexCoord.Y,
-                        &v.Tangent.X,&v.Tangent.Y,&v.Tangent.Z,
-                        &v.Handedness,
-                        &v.Normal.X,&v.Normal.Y,&v.Normal.Z );
-            }
-        } else if ( nullptr != ( s = AssetParseTag( buf, "indices " ) ) ) {
-            int numIndices = 0;
-            sscanf( s, "%d", &numIndices );
-            Indices.ResizeInvalidate( numIndices );
-            for ( int i = 0 ; i < numIndices ; i++ ) {
-                if ( !f.Gets( buf, sizeof( buf ) ) ) {
-                    GLogger.Printf( "Unexpected EOF\n" );
-                    return;
-                }
-
-                Indices[i] = UInt().FromString( buf );
-            }
-        } else if ( nullptr != ( s = AssetParseTag( buf, "weights " ) ) ) {
-            int numWeights = 0;
-            sscanf( s, "%d", &numWeights );
-            Weights.ResizeInvalidate( numWeights );
-            for ( int i = 0 ; i < numWeights ; i++ ) {
-                if ( !f.Gets( buf, sizeof( buf ) ) ) {
-                    GLogger.Printf( "Unexpected EOF\n" );
-                    return;
-                }
-
-                FMeshVertexJoint & w = Weights[i];
-
-                int d[8];
-
-                sscanf( buf, "%d %d %d %d %d %d %d %d", &d[0], &d[1], &d[2], &d[3], &d[4], &d[5], &d[6], &d[7] );
-
-                for ( int n = 0 ; n < 8 ; n++ ) {
-                    d[n] = FMath::Max( d[n], 0 );
-                    d[n] = FMath::Min( d[n], 255 );
-                }
-
-                w.JointIndices[0] = d[0];
-                w.JointIndices[1] = d[1];
-                w.JointIndices[2] = d[2];
-                w.JointIndices[3] = d[3];
-                w.JointWeights[0] = d[4];
-                w.JointWeights[1] = d[5];
-                w.JointWeights[2] = d[6];
-                w.JointWeights[3] = d[7];
-            }
-        } else {
-            GLogger.Printf( "Unknown tag1\n" );
-        }
-    }
-
-    if ( Weights.Size() > 0 && Vertices.Size() != Weights.Size() ) {
-        GLogger.Printf( "Warning: num weights != num vertices\n" );
-    }
-}
-
-void FMeshAsset::Write( FFileStream & f ) {
-    f.Printf( "format %d %d\n", FMT_FILE_TYPE_MESH, FMT_VERSION_MESH );
-    f.Printf( "textures %d\n", (int)Textures.size() );
-    for ( FMaterialTexture & texture : Textures ) {
-        f.Printf( "%s\n", texture.FileName.ToConstChar() );
-    }
-    f.Printf( "materials %d\n", Materials.Size() );
-    for ( FMeshMaterial & material : Materials ) {
-        f.Printf( "maps %d\n", material.NumTextures );
-        for ( int i = 0 ; i < material.NumTextures ; i++ ) {
-            f.Printf( "%d\n", material.Textures[i] );
-        }
-    }
-    f.Printf( "subparts %d\n", (int)Subparts.size() );
-    for ( FSubpart & subpart : Subparts ) {
-        f.Printf( "\"%s\" %d %d %d %d %d %s %s\n", subpart.Name.ToConstChar(), subpart.BaseVertex, subpart.VertexCount, subpart.FirstIndex, subpart.IndexCount, subpart.Material, subpart.BoundingBox.Mins.ToString().ToConstChar(), subpart.BoundingBox.Maxs.ToString().ToConstChar() );
-    }
-    f.Printf( "verts %d\n", Vertices.Size() );
-    for ( FMeshVertex & v : Vertices ) {
-        f.Printf( "%s %s %s %f %s\n",
-                  v.Position.ToString().ToConstChar(),
-                  v.TexCoord.ToString().ToConstChar(),
-                  v.Tangent.ToString().ToConstChar(),
-                  v.Handedness,
-                  v.Normal.ToString().ToConstChar() );
-    }
-    f.Printf( "indices %d\n", Indices.Size() );
-    for ( unsigned int & i : Indices ) {
-        f.Printf( "%d\n", i );
-    }
-    f.Printf( "weights %d\n", Weights.Size() );
-    for ( FMeshVertexJoint & v : Weights ) {
-        f.Printf( "%d %d %d %d %d %d %d %d\n",
-                  v.JointIndices[0],v.JointIndices[1],v.JointIndices[2],v.JointIndices[3],
-                v.JointWeights[0],v.JointWeights[1],v.JointWeights[2],v.JointWeights[3] );
-    }
-}
-
-void CalcTangentSpace( FMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices ) {
+void CalcTangentSpace( SMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices ) {
     Float3 binormal, tangent;
 
     TPodArray< Float3 > binormals;
@@ -1320,12 +1275,151 @@ void CalcTangentSpace( FMeshVertex * _VertexArray, unsigned int _NumVerts, unsig
     for ( int i = 0; i < _NumVerts; i++ ) {
         const Float3 & n = _VertexArray[ i ].Normal;
         const Float3 & t = _VertexArray[ i ].Tangent;
-        _VertexArray[ i ].Tangent = ( t - n * FMath::Dot( n, t ) ).Normalized();
+        _VertexArray[ i ].Tangent = ( t - n * Math::Dot( n, t ) ).Normalized();
         _VertexArray[ i ].Handedness = CalcHandedness( t, binormals[ i ].Normalized(), n );
     }
 }
 
-void CreateBoxMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
+
+BvAxisAlignedBox CalcBindposeBounds( SMeshVertex const * InVertices,
+                                     SMeshVertexJoint const * InWeights,
+                                     int InVertexCount,
+                                     ASkin const * InSkin,
+                                     SJoint * InJoints,
+                                     int InJointsCount )
+{
+    Float3x4 absoluteTransforms[ASkeleton::MAX_JOINTS+1];
+    Float3x4 vertexTransforms[ASkeleton::MAX_JOINTS];
+
+    BvAxisAlignedBox BindposeBounds;
+
+    BindposeBounds.Clear();
+
+    absoluteTransforms[0].SetIdentity();
+    for ( unsigned int j = 0 ; j < InJointsCount ; j++ ) {
+        SJoint const & joint = InJoints[ j ];
+
+        absoluteTransforms[ j + 1 ] = absoluteTransforms[ joint.Parent + 1 ] * joint.LocalTransform;
+    }
+
+    for ( unsigned int j = 0 ; j < InSkin->JointIndices.Size() ; j++ ) {
+        int jointIndex = InSkin->JointIndices[j];
+
+        vertexTransforms[ j ] = absoluteTransforms[ jointIndex + 1 ] * InSkin->OffsetMatrices[j];
+    }
+
+    for ( int v = 0 ; v < InVertexCount ; v++ ) {
+        Float4 const position = Float4( InVertices[v].Position, 1.0f );
+        SMeshVertexJoint const & w = InWeights[v];
+
+        const float weights[4] = { w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f };
+
+        Float4 const * t = &vertexTransforms[0][0];
+
+        BindposeBounds.AddPoint(
+                    ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 0 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 0 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ).Dot( position ),
+
+                    ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 1 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 1 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ).Dot( position ),
+
+                    ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 2 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 2 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ).Dot( position ) );
+    }
+
+    return BindposeBounds;
+}
+
+void CalcBoundingBoxes( SMeshVertex const * InVertices,
+                        SMeshVertexJoint const * InWeights,
+                        int InVertexCount,
+                        ASkin const * InSkin,
+                        SJoint const *  InJoints,
+                        int InNumJoints,
+                        uint32_t FrameCount,
+                        SAnimationChannel const * InChannels,
+                        int InChannelsCount,
+                        ATransform const * InTransforms,
+                        TPodArray< BvAxisAlignedBox > & Bounds )
+{
+    Float3x4 absoluteTransforms[ASkeleton::MAX_JOINTS+1];
+    TPodArray< Float3x4 > relativeTransforms[ASkeleton::MAX_JOINTS];
+    Float3x4 vertexTransforms[ASkeleton::MAX_JOINTS];
+
+    Bounds.ResizeInvalidate( FrameCount );
+
+    for ( int i = 0 ; i < InChannelsCount ; i++ ) {
+        SAnimationChannel const & anim = InChannels[i];
+
+        relativeTransforms[anim.JointIndex].ResizeInvalidate( FrameCount );
+
+        for ( int frameNum = 0; frameNum < FrameCount ; frameNum++ ) {
+
+            ATransform const & transform = InTransforms[ anim.TransformOffset + frameNum ];
+
+            transform.ComputeTransformMatrix( relativeTransforms[anim.JointIndex][frameNum] );
+        }
+    }
+
+    for ( int frameNum = 0 ; frameNum < FrameCount ; frameNum++ ) {
+
+        BvAxisAlignedBox & bounds = Bounds[frameNum];
+
+        bounds.Clear();
+
+        absoluteTransforms[0].SetIdentity();
+        for ( unsigned int j = 0 ; j < InNumJoints ; j++ ) {
+            SJoint const & joint = InJoints[ j ];
+
+            Float3x4 const & parentTransform = absoluteTransforms[ joint.Parent + 1 ];
+
+            if ( relativeTransforms[j].IsEmpty() ) {
+                absoluteTransforms[ j + 1 ] = parentTransform * joint.LocalTransform;
+            } else {
+                absoluteTransforms[ j + 1 ] = parentTransform * relativeTransforms[j][ frameNum ];
+            }
+        }
+
+        for ( unsigned int j = 0 ; j < InSkin->JointIndices.Size() ; j++ ) {
+            int jointIndex = InSkin->JointIndices[j];
+
+            vertexTransforms[ j ] = absoluteTransforms[ jointIndex + 1 ] * InSkin->OffsetMatrices[j];
+        }
+
+        for ( int v = 0 ; v < InVertexCount ; v++ ) {
+            Float4 const position = Float4( InVertices[v].Position, 1.0f );
+            SMeshVertexJoint const & w = InWeights[v];
+
+            const float weights[4] = { w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f };
+
+            Float4 const * t = &vertexTransforms[0][0];
+
+            bounds.AddPoint(
+                    ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 0 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 0 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ).Dot( position ),
+
+                    ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 1 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 1 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ).Dot( position ),
+
+                    ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
+                    + t[ w.JointIndices[1] * 3 + 2 ] * weights[1]
+                    + t[ w.JointIndices[2] * 3 + 2 ] * weights[2]
+                    + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ).Dot( position ) );
+        }
+    }
+}
+
+void CreateBoxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
     constexpr unsigned int indices[ 6 * 6 ] =
     {
         0, 1, 2, 2, 3, 0, // front face
@@ -1349,7 +1443,7 @@ void CreateBoxMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned in
     const Float3 & mins = _Bounds.Mins;
     const Float3 & maxs = _Bounds.Maxs;
 
-    FMeshVertex * pVerts = _Vertices.ToPtr();
+    SMeshVertex * pVerts = _Vertices.ToPtr();
 
     pVerts[ 0 + 8 * 0 ].Position = Float3( mins.X, mins.Y, maxs.Z ); // 0
     pVerts[ 0 + 8 * 0 ].Normal = Float3( 0, 0, 1 );
@@ -1455,13 +1549,13 @@ void CreateBoxMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned in
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateSphereMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+void CreateSphereMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
     int x, y;
     float verticalAngle, horizontalAngle;
     unsigned int quad[ 4 ];
 
-    _NumVerticalSubdivs = FMath::Max( _NumVerticalSubdivs, 4 );
-    _NumHorizontalSubdivs = FMath::Max( _NumHorizontalSubdivs, 4 );
+    _NumVerticalSubdivs = Math::Max( _NumVerticalSubdivs, 4 );
+    _NumHorizontalSubdivs = Math::Max( _NumHorizontalSubdivs, 4 );
 
     _Vertices.ResizeInvalidate( ( _NumHorizontalSubdivs + 1 )*( _NumVerticalSubdivs + 1 ) );
     _Indices.ResizeInvalidate( _NumHorizontalSubdivs * _NumVerticalSubdivs * 6 );
@@ -1469,21 +1563,21 @@ void CreateSphereMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned
     _Bounds.Mins.X = _Bounds.Mins.Y = _Bounds.Mins.Z = -_Radius;
     _Bounds.Maxs.X = _Bounds.Maxs.Y = _Bounds.Maxs.Z = _Radius;
 
-    FMeshVertex * pVert = _Vertices.ToPtr();
+    SMeshVertex * pVert = _Vertices.ToPtr();
 
-    const float verticalStep = FMath::_PI / _NumVerticalSubdivs;
-    const float horizontalStep = FMath::_2PI / _NumHorizontalSubdivs;
+    const float verticalStep = Math::_PI / _NumVerticalSubdivs;
+    const float horizontalStep = Math::_2PI / _NumHorizontalSubdivs;
     const float verticalScale = 1.0f / _NumVerticalSubdivs;
     const float horizontalScale = 1.0f / _NumHorizontalSubdivs;
 
-    for ( y = 0, verticalAngle = -FMath::_HALF_PI; y <= _NumVerticalSubdivs; y++ ) {
+    for ( y = 0, verticalAngle = -Math::_HALF_PI; y <= _NumVerticalSubdivs; y++ ) {
         float h, r;
-        FMath::RadSinCos( verticalAngle, h, r );
+        Math::RadSinCos( verticalAngle, h, r );
         const float scaledH = h * _Radius;
         const float scaledR = r * _Radius;
         for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
             float s, c;
-            FMath::RadSinCos( horizontalAngle, s, c );
+            Math::RadSinCos( horizontalAngle, s, c );
             pVert->Position = Float3( scaledR*c, scaledH, scaledR*s );
             pVert->TexCoord = Float2( 1.0f - static_cast< float >( x ) * horizontalScale, 1.0f - static_cast< float >( y ) * verticalScale ) * _TexCoordScale;
             pVert->Normal.X = r*c;
@@ -1518,21 +1612,21 @@ void CreateSphereMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreatePlaneMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
+void CreatePlaneMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
     _Vertices.ResizeInvalidate( 4 );
     _Indices.ResizeInvalidate( 6 );
 
     const float halfWidth = _Width * 0.5f;
     const float halfHeight = _Height * 0.5f;
 
-    const FMeshVertex Verts[ 4 ] = {
+    const SMeshVertex Verts[ 4 ] = {
         { Float3( -halfWidth,0,-halfHeight ), Float2( 0,0 ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
         { Float3( -halfWidth,0,halfHeight ), Float2( 0,_TexCoordScale ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
         { Float3( halfWidth,0,halfHeight ), Float2( _TexCoordScale,_TexCoordScale ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) },
         { Float3( halfWidth,0,-halfHeight ), Float2( _TexCoordScale,0 ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) }
     };
 
-    memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( FMeshVertex ) );
+    memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( SMeshVertex ) );
 
     constexpr unsigned int indices[ 6 ] = { 0,1,2,2,3,0 };
     memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
@@ -1547,12 +1641,12 @@ void CreatePlaneMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
     _Bounds.Maxs.Z = halfHeight;
 }
 
-void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
+void CreatePatchMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
     Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11,
     float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
 
-    _NumVerticalSubdivs = FMath::Max( _NumVerticalSubdivs, 2 );
-    _NumHorizontalSubdivs = FMath::Max( _NumHorizontalSubdivs, 2 );
+    _NumVerticalSubdivs = Math::Max( _NumVerticalSubdivs, 2 );
+    _NumHorizontalSubdivs = Math::Max( _NumHorizontalSubdivs, 2 );
 
     const float scaleX = 1.0f / ( float )( _NumHorizontalSubdivs - 1 );
     const float scaleY = 1.0f / ( float )( _NumVerticalSubdivs - 1 );
@@ -1565,7 +1659,7 @@ void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
     _Vertices.ResizeInvalidate( _TwoSided ? vertexCount << 1 : vertexCount );
     _Indices.ResizeInvalidate( _TwoSided ? indexCount << 1 : indexCount );
 
-    FMeshVertex * pVert = _Vertices.ToPtr();
+    SMeshVertex * pVert = _Vertices.ToPtr();
     unsigned int * pIndices = _Indices.ToPtr();
 
     for ( int y = 0; y < _NumVerticalSubdivs; ++y ) {
@@ -1663,15 +1757,15 @@ void CreatePatchMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned 
     _Bounds.AddPoint( Corner11 );
 }
 
-void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
+void CreateCylinderMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
     int i, j;
     float angle;
     unsigned int quad[ 4 ];
 
-    _NumSubdivs = FMath::Max( _NumSubdivs, 4 );
+    _NumSubdivs = Math::Max( _NumSubdivs, 4 );
 
     const float invSubdivs = 1.0f / _NumSubdivs;
-    const float angleStep = FMath::_2PI * invSubdivs;
+    const float angleStep = Math::_2PI * invSubdivs;
     const float halfHeight = _Height * 0.5f;
 
     _Vertices.ResizeInvalidate( 6 * ( _NumSubdivs + 1 ) );
@@ -1685,7 +1779,7 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
     _Bounds.Maxs.Z = _Radius;
     _Bounds.Maxs.Y = halfHeight;
 
-    FMeshVertex * pVerts = _Vertices.ToPtr();
+    SMeshVertex * pVerts = _Vertices.ToPtr();
 
     int firstVertex = 0;
 
@@ -1698,7 +1792,7 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( angle, s, c );
+        Math::RadSinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, -halfHeight, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 1.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
@@ -1708,7 +1802,7 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( angle, s, c );
+        Math::RadSinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, -halfHeight, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 1.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
@@ -1718,7 +1812,7 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( angle, s, c );
+        Math::RadSinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, halfHeight, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 0.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
@@ -1728,7 +1822,7 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( angle, s, c );
+        Math::RadSinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, halfHeight, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 0.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( 0, 1.0f, 0 );
@@ -1768,15 +1862,15 @@ void CreateCylinderMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsign
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateConeMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
+void CreateConeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
     int i, j;
     float angle;
     unsigned int quad[ 4 ];
 
-    _NumSubdivs = FMath::Max( _NumSubdivs, 4 );
+    _NumSubdivs = Math::Max( _NumSubdivs, 4 );
 
     const float invSubdivs = 1.0f / _NumSubdivs;
-    const float angleStep = FMath::_2PI * invSubdivs;
+    const float angleStep = Math::_2PI * invSubdivs;
 
     _Vertices.ResizeInvalidate( 4 * ( _NumSubdivs + 1 ) );
     _Indices.ResizeInvalidate( 2 * _NumSubdivs * 6 );
@@ -1789,7 +1883,7 @@ void CreateConeMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned i
     _Bounds.Maxs.Z = _Radius;
     _Bounds.Maxs.Y = _Height;
 
-    FMeshVertex * pVerts = _Vertices.ToPtr();
+    SMeshVertex * pVerts = _Vertices.ToPtr();
 
     int firstVertex = 0;
 
@@ -1802,7 +1896,7 @@ void CreateConeMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned i
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( angle, s, c );
+        Math::RadSinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, 0.0f, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 1.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
@@ -1812,7 +1906,7 @@ void CreateConeMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned i
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( angle, s, c );
+        Math::RadSinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, 0.0f, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 1.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
@@ -1825,13 +1919,13 @@ void CreateConeMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned i
     Float3 v;
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        FMath::RadSinCos( angle, s, c );
+        Math::RadSinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( 0, _Height, 0 );
         pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 0.0f ) * _TexCoordScale;
 
         vx = Float3( c, 0.0f, s );
         v = vy - vx;
-        pVerts[ firstVertex + j ].Normal = FMath::Cross( FMath::Cross( v, vx ), v ).Normalized();
+        pVerts[ firstVertex + j ].Normal = Math::Cross( Math::Cross( v, vx ), v ).Normalized();
 
         angle += angleStep;
     }
@@ -1866,14 +1960,14 @@ void CreateConeMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned i
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateCapsuleMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+void CreateCapsuleMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
     int x, y, tcY;
     float verticalAngle, horizontalAngle;
     const float halfHeight = _Height * 0.5f;
     unsigned int quad[ 4 ];
 
-    _NumVerticalSubdivs = FMath::Max( _NumVerticalSubdivs, 4 );
-    _NumHorizontalSubdivs = FMath::Max( _NumHorizontalSubdivs, 4 );
+    _NumVerticalSubdivs = Math::Max( _NumVerticalSubdivs, 4 );
+    _NumHorizontalSubdivs = Math::Max( _NumHorizontalSubdivs, 4 );
 
     const int halfVerticalSubdivs = _NumVerticalSubdivs >> 1;
 
@@ -1885,24 +1979,24 @@ void CreateCapsuleMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigne
     _Bounds.Maxs.X = _Bounds.Maxs.Z = _Radius;
     _Bounds.Maxs.Y = _Radius + halfHeight;
 
-    FMeshVertex * pVert = _Vertices.ToPtr();
+    SMeshVertex * pVert = _Vertices.ToPtr();
 
-    const float verticalStep = FMath::_PI / _NumVerticalSubdivs;
-    const float horizontalStep = FMath::_2PI / _NumHorizontalSubdivs;
+    const float verticalStep = Math::_PI / _NumVerticalSubdivs;
+    const float horizontalStep = Math::_2PI / _NumHorizontalSubdivs;
     const float verticalScale = 1.0f / ( _NumVerticalSubdivs + 1 );
     const float horizontalScale = 1.0f / _NumHorizontalSubdivs;
 
     tcY = 0;
 
-    for ( y = 0, verticalAngle = -FMath::_HALF_PI; y <= halfVerticalSubdivs; y++, tcY++ ) {
+    for ( y = 0, verticalAngle = -Math::_HALF_PI; y <= halfVerticalSubdivs; y++, tcY++ ) {
         float h, r;
-        FMath::RadSinCos( verticalAngle, h, r );
+        Math::RadSinCos( verticalAngle, h, r );
         const float scaledH = h * _Radius;
         const float scaledR = r * _Radius;
         const float posY = scaledH - halfHeight;
         for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
             float s, c;
-            FMath::RadSinCos( horizontalAngle, s, c );
+            Math::RadSinCos( horizontalAngle, s, c );
             pVert->Position.X = scaledR * c;
             pVert->Position.Y = posY;
             pVert->Position.Z = scaledR * s;
@@ -1919,13 +2013,13 @@ void CreateCapsuleMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigne
 
     for ( y = 0, verticalAngle = 0; y <= halfVerticalSubdivs; y++, tcY++ ) {
         float h, r;
-        FMath::RadSinCos( verticalAngle, h, r );
+        Math::RadSinCos( verticalAngle, h, r );
         const float scaledH = h * _Radius;
         const float scaledR = r * _Radius;
         const float posY = scaledH + halfHeight;
         for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
             float s, c;
-            FMath::RadSinCos( horizontalAngle, s, c );
+            Math::RadSinCos( horizontalAngle, s, c );
             pVert->Position.X = scaledR * c;
             pVert->Position.Y = posY;
             pVert->Position.Z = scaledR * s;
@@ -1963,25 +2057,25 @@ void CreateCapsuleMesh( TPodArray< FMeshVertex > & _Vertices, TPodArray< unsigne
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-struct FPrimitiveBounds {
+struct SPrimitiveBounds {
     BvAxisAlignedBox Bounds;
     int PrimitiveIndex;
 };
 
-struct FBestSplitResult {
+struct SBestSplitResult {
     int Axis;
     int PrimitiveIndex;
 };
 
-struct FAABBTreeBuild {
+struct SAABBTreeBuild {
     TPodArray< BvAxisAlignedBox > RightBounds;
-    TPodArray< FPrimitiveBounds > Primitives[3];
+    TPodArray< SPrimitiveBounds > Primitives[3];
 };
 
-static void CalcNodeBounds( FPrimitiveBounds const * _Primitives, int _PrimCount, BvAxisAlignedBox & _Bounds ) {
+static void CalcNodeBounds( SPrimitiveBounds const * _Primitives, int _PrimCount, BvAxisAlignedBox & _Bounds ) {
     AN_Assert( _PrimCount > 0 );
 
-    FPrimitiveBounds const * primitive = _Primitives;
+    SPrimitiveBounds const * primitive = _Primitives;
 
     _Bounds = primitive->Bounds;
 
@@ -1997,16 +2091,16 @@ static float CalcAABBVolume( BvAxisAlignedBox const & _Bounds ) {
     return extents.X * extents.Y * extents.Z;
 }
 
-static FBestSplitResult FindBestSplitPrimitive( FAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _PrimCount ) {
+static SBestSplitResult FindBestSplitPrimitive( SAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _PrimCount ) {
     struct CompareBoundsMax {
         CompareBoundsMax( const int _Axis ) : Axis( _Axis ) {}
-        bool operator()( FPrimitiveBounds const & a, FPrimitiveBounds const & b ) const {
+        bool operator()( SPrimitiveBounds const & a, SPrimitiveBounds const & b ) const {
             return ( a.Bounds.Maxs[ Axis ] < b.Bounds.Maxs[ Axis ] );
         }
         const int Axis;
     };
 
-    FPrimitiveBounds * primitives[ 3 ] = {
+    SPrimitiveBounds * primitives[ 3 ] = {
         _Build.Primitives[ 0 ].ToPtr() + _FirstPrimitive,
         _Build.Primitives[ 1 ].ToPtr() + _FirstPrimitive,
         _Build.Primitives[ 2 ].ToPtr() + _FirstPrimitive
@@ -2014,14 +2108,14 @@ static FBestSplitResult FindBestSplitPrimitive( FAABBTreeBuild & _Build, int _Ax
 
     for ( int i = 0; i < 3; i++ ) {
         if ( i != _Axis ) {
-            memcpy( primitives[ i ], primitives[ _Axis ], sizeof( FPrimitiveBounds ) * _PrimCount );
+            memcpy( primitives[ i ], primitives[ _Axis ], sizeof( SPrimitiveBounds ) * _PrimCount );
         }
     }
 
     BvAxisAlignedBox right;
     BvAxisAlignedBox left;
 
-    FBestSplitResult result;
+    SBestSplitResult result;
     result.Axis = -1;
 
     float bestSAH = Float::MaxValue(); // Surface area heuristic
@@ -2029,7 +2123,7 @@ static FBestSplitResult FindBestSplitPrimitive( FAABBTreeBuild & _Build, int _Ax
     const float emptyCost = 1.0f;
 
     for ( int axis = 0; axis < 3; axis++ ) {
-        FPrimitiveBounds * primBounds = primitives[ axis ];
+        SPrimitiveBounds * primBounds = primitives[ axis ];
 
         StdSort( primBounds, primBounds + _PrimCount, CompareBoundsMax( axis ) );
 
@@ -2057,15 +2151,15 @@ static FBestSplitResult FindBestSplitPrimitive( FAABBTreeBuild & _Build, int _Ax
     return result;
 }
 
-void FAABBTree::Subdivide( FAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf,
+void ATreeAABB::Subdivide( SAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf,
     int & _PrimitiveIndex, const unsigned int * _Indices )
 {
     int primCount = _MaxPrimitive - _FirstPrimitive;
     int curNodeInex = Nodes.Size();
 
-    FPrimitiveBounds * pPrimitives = _Build.Primitives[_Axis].ToPtr() + _FirstPrimitive;
+    SPrimitiveBounds * pPrimitives = _Build.Primitives[_Axis].ToPtr() + _FirstPrimitive;
 
-    FAABBNode & node = Nodes.Append();
+    SNodeAABB & node = Nodes.Append();
 
     CalcNodeBounds( pPrimitives, primCount, node.Bounds );
 
@@ -2083,7 +2177,7 @@ void FAABBTree::Subdivide( FAABBTreeBuild & _Build, int _Axis, int _FirstPrimiti
 
     } else {
         // Node
-        FBestSplitResult s = FindBestSplitPrimitive( _Build, _Axis, _FirstPrimitive, primCount );
+        SBestSplitResult s = FindBestSplitPrimitive( _Build, _Axis, _FirstPrimitive, primCount );
 
         int mid = _FirstPrimitive + s.PrimitiveIndex;
 
@@ -2095,10 +2189,14 @@ void FAABBTree::Subdivide( FAABBTreeBuild & _Build, int _Axis, int _FirstPrimiti
     }
 }
 
-void FAABBTree::Initialize( FMeshVertex const * _Vertices, unsigned int const * _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf ) {
+ATreeAABB::ATreeAABB() {
+    BoundingBox.Clear();
+}
+
+void ATreeAABB::Initialize( SMeshVertex const * _Vertices, unsigned int const * _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf ) {
     Purge();
 
-    _PrimitivesPerLeaf = FMath::Max( _PrimitivesPerLeaf, 16u );
+    _PrimitivesPerLeaf = Math::Max( _PrimitivesPerLeaf, 16u );
 
     int primCount = _IndexCount / 3;
 
@@ -2109,7 +2207,7 @@ void FAABBTree::Initialize( FMeshVertex const * _Vertices, unsigned int const * 
 
     Indirection.ResizeInvalidate( primCount );
 
-    FAABBTreeBuild build;
+    SAABBTreeBuild build;
     build.RightBounds.ResizeInvalidate( primCount );
     build.Primitives[0].ResizeInvalidate( primCount );
     build.Primitives[1].ResizeInvalidate( primCount );
@@ -2125,16 +2223,16 @@ void FAABBTree::Initialize( FMeshVertex const * _Vertices, unsigned int const * 
         Float3 const & v1 = _Vertices[ _BaseVertex + i1 ].Position;
         Float3 const & v2 = _Vertices[ _BaseVertex + i2 ].Position;
 
-        FPrimitiveBounds & primitive = build.Primitives[ 0 ][ primitiveIndex ];
+        SPrimitiveBounds & primitive = build.Primitives[ 0 ][ primitiveIndex ];
         primitive.PrimitiveIndex = primitiveIndex;
 
-        primitive.Bounds.Mins.X = FMath::Min( v0.X, v1.X, v2.X );
-        primitive.Bounds.Mins.Y = FMath::Min( v0.Y, v1.Y, v2.Y );
-        primitive.Bounds.Mins.Z = FMath::Min( v0.Z, v1.Z, v2.Z );
+        primitive.Bounds.Mins.X = Math::Min( v0.X, v1.X, v2.X );
+        primitive.Bounds.Mins.Y = Math::Min( v0.Y, v1.Y, v2.Y );
+        primitive.Bounds.Mins.Z = Math::Min( v0.Z, v1.Z, v2.Z );
 
-        primitive.Bounds.Maxs.X = FMath::Max( v0.X, v1.X, v2.X );
-        primitive.Bounds.Maxs.Y = FMath::Max( v0.Y, v1.Y, v2.Y );
-        primitive.Bounds.Maxs.Z = FMath::Max( v0.Z, v1.Z, v2.Z );
+        primitive.Bounds.Maxs.X = Math::Max( v0.X, v1.X, v2.X );
+        primitive.Bounds.Maxs.Y = Math::Max( v0.Y, v1.Y, v2.Y );
+        primitive.Bounds.Maxs.Z = Math::Max( v0.Z, v1.Z, v2.Z );
     }
 
     primitiveIndex = 0;
@@ -2154,18 +2252,18 @@ void FAABBTree::Initialize( FMeshVertex const * _Vertices, unsigned int const * 
     //GLogger.Printf( "AABBTree memory usage: %i  %i\n", sz, sz2 );
 }
 
-void FAABBTree::Purge() {
+void ATreeAABB::Purge() {
     Nodes.Free();
     Indirection.Free();
 }
 
-int FAABBTree::MarkBoxOverlappingLeafs( BvAxisAlignedBox const & _Bounds, unsigned int * _MarkLeafs, int _MaxLeafs ) const {
+int ATreeAABB::MarkBoxOverlappingLeafs( BvAxisAlignedBox const & _Bounds, unsigned int * _MarkLeafs, int _MaxLeafs ) const {
     if ( !_MaxLeafs ) {
         return 0;
     }
     int n = 0;
     for ( int nodeIndex = 0; nodeIndex < Nodes.Size(); ) {
-        FAABBNode const * node = &Nodes[ nodeIndex ];
+        SNodeAABB const * node = &Nodes[ nodeIndex ];
 
         const bool bOverlap = BvBoxOverlapBox( _Bounds, node->Bounds );
         const bool bLeaf = node->IsLeaf();
@@ -2181,7 +2279,7 @@ int FAABBTree::MarkBoxOverlappingLeafs( BvAxisAlignedBox const & _Bounds, unsign
     return n;
 }
 
-int FAABBTree::MarkRayOverlappingLeafs( Float3 const & _RayStart, Float3 const & _RayEnd, unsigned int * _MarkLeafs, int _MaxLeafs ) const {
+int ATreeAABB::MarkRayOverlappingLeafs( Float3 const & _RayStart, Float3 const & _RayEnd, unsigned int * _MarkLeafs, int _MaxLeafs ) const {
     if ( !_MaxLeafs ) {
         return 0;
     }
@@ -2205,7 +2303,7 @@ int FAABBTree::MarkRayOverlappingLeafs( Float3 const & _RayStart, Float3 const &
 
     int n = 0;
     for ( int nodeIndex = 0; nodeIndex < Nodes.Size(); ) {
-        FAABBNode const * node = &Nodes[ nodeIndex ];
+        SNodeAABB const * node = &Nodes[ nodeIndex ];
 
         const bool bOverlap = BvRayIntersectBox( _RayStart, invRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= 1.0f;// rayLength;
         const bool bLeaf = node->IsLeaf();
@@ -2222,126 +2320,14 @@ int FAABBTree::MarkRayOverlappingLeafs( Float3 const & _RayStart, Float3 const &
     return n;
 }
 
-
-
-#if 0
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void FSkeletonAsset::Clear() {
-    Joints.Clear();
-    BindposeBounds.Clear();
+void ATreeAABB::Read( IStreamBase & _Stream ) {
+    _Stream.ReadArrayOfStructs( Nodes );
+    _Stream.ReadArrayUInt32( Indirection );
+    _Stream.ReadObject( BoundingBox );
 }
 
-void FSkeletonAsset::Read( FFileStream & f ) {
-    char buf[1024];
-    char * s;
-    int format, version;
-
-    Clear();
-
-    if ( !AssetReadFormat( f, &format, &version ) ) {
-        return;
-    }
-
-    if ( format != FMT_FILE_TYPE_SKELETON ) {
-        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_SKELETON );
-        return;
-    }
-
-    if ( version != FMT_VERSION_SKELETON ) {
-        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_SKELETON );
-        return;
-    }
-
-    while ( f.Gets( buf, sizeof( buf ) ) ) {
-        if ( nullptr != ( s = AssetParseTag( buf, "joints " ) ) ) {
-            int numJoints = 0;
-            sscanf( s, "%d", &numJoints );
-            Joints.ResizeInvalidate( numJoints );
-            for ( int jointIndex = 0 ; jointIndex < numJoints ; jointIndex++ ) {
-                if ( !f.Gets( buf, sizeof( buf ) ) ) {
-                    GLogger.Printf( "Unexpected EOF\n" );
-                    return;
-                }
-
-                char * name;
-                s = AssetParseName( buf, &name );
-
-                FJoint & joint = Joints[jointIndex];
-                FString::CopySafe( joint.Name, sizeof( joint.Name ), name );
-
-                joint.LocalTransform.SetIdentity();
-
-                sscanf( s, "%d ( ( %f %f %f %f ) ( %f %f %f %f ) ( %f %f %f %f ) ) ( ( %f %f %f %f ) ( %f %f %f %f ) ( %f %f %f %f ) )", &joint.Parent,
-                        &joint.OffsetMatrix[0][0], &joint.OffsetMatrix[0][1], &joint.OffsetMatrix[0][2], &joint.OffsetMatrix[0][3],
-                        &joint.OffsetMatrix[1][0], &joint.OffsetMatrix[1][1], &joint.OffsetMatrix[1][2], &joint.OffsetMatrix[1][3],
-                        &joint.OffsetMatrix[2][0], &joint.OffsetMatrix[2][1], &joint.OffsetMatrix[2][2], &joint.OffsetMatrix[2][3],
-                        &joint.LocalTransform[0][0], &joint.LocalTransform[0][1], &joint.LocalTransform[0][2], &joint.LocalTransform[0][3],
-                        &joint.LocalTransform[1][0], &joint.LocalTransform[1][1], &joint.LocalTransform[1][2], &joint.LocalTransform[1][3],
-                        &joint.LocalTransform[2][0], &joint.LocalTransform[2][1], &joint.LocalTransform[2][2], &joint.LocalTransform[2][3] );
-            }
-        } else if ( nullptr != ( s = AssetParseTag( buf, "bindpose_bounds " ) ) ) {
-
-            sscanf( s, "( %f %f %f ) ( %f %f %f )",
-                    &BindposeBounds.Mins.X, &BindposeBounds.Mins.Y, &BindposeBounds.Mins.Z,
-                    &BindposeBounds.Maxs.X, &BindposeBounds.Maxs.Y, &BindposeBounds.Maxs.Z );
-
-        } else {
-            GLogger.Printf( "Unknown tag '%s'\n", buf );
-        }
-    }
+void ATreeAABB::Write( IStreamBase & _Stream ) const {
+    _Stream.WriteArrayOfStructs( Nodes );
+    _Stream.WriteArrayUInt32( Indirection );
+    _Stream.WriteObject( BoundingBox );
 }
-
-void FSkeletonAsset::Write( FFileStream & f ) {
-    f.Printf( "format %d %d\n", FMT_FILE_TYPE_SKELETON, FMT_VERSION_SKELETON );
-    f.Printf( "joints %d\n", Joints.Size() );
-    for ( FJoint & joint : Joints ) {
-        f.Printf( "\"%s\" %d %s %s\n",
-                  joint.Name, joint.Parent,
-                  joint.OffsetMatrix.ToString().ToConstChar(),
-                  joint.LocalTransform.ToString().ToConstChar() );
-    }
-    f.Printf( "bindpose_bounds %s %s\n", BindposeBounds.Mins.ToString().ToConstChar(), BindposeBounds.Maxs.ToString().ToConstChar() );
-}
-
-void FSkeletonAsset::CalcBindposeBounds( FMeshAsset const * InMeshData ) {
-    Float3x4 absoluteTransforms[FSkeleton::MAX_JOINTS+1];
-    Float3x4 vertexTransforms[FSkeleton::MAX_JOINTS];
-
-    BindposeBounds.Clear();
-
-    absoluteTransforms[0].SetIdentity();
-    for ( unsigned int j = 0 ; j < Joints.Size() ; j++ ) {
-        FJoint const & joint = Joints[ j ];
-
-        absoluteTransforms[ j + 1 ] = absoluteTransforms[ joint.Parent + 1 ] * joint.LocalTransform;
-
-        vertexTransforms[ j ] = absoluteTransforms[ j + 1 ] * joint.OffsetMatrix;
-    }
-
-    for ( int v = 0 ; v < InMeshData->Vertices.Size() ; v++ ) {
-        Float4 const position = Float4( InMeshData->Vertices[v].Position, 1.0f );
-        FMeshVertexJoint const & w = InMeshData->Weights[v];
-
-        const float weights[4] = { w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f };
-
-        Float4 const * t = &vertexTransforms[0][0];
-
-        BindposeBounds.AddPoint(
-                    ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
-                    + t[ w.JointIndices[1] * 3 + 0 ] * weights[1]
-                    + t[ w.JointIndices[2] * 3 + 0 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ).Dot( position ),
-
-                    ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
-                    + t[ w.JointIndices[1] * 3 + 1 ] * weights[1]
-                    + t[ w.JointIndices[2] * 3 + 1 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ).Dot( position ),
-
-                    ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
-                    + t[ w.JointIndices[1] * 3 + 2 ] * weights[1]
-                    + t[ w.JointIndices[2] * 3 + 2 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ).Dot( position ) );
-    }
-}
-#endif

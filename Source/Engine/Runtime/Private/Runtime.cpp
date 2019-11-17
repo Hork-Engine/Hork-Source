@@ -45,38 +45,38 @@ SOFTWARE.
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-FRuntime & GRuntime = FRuntime::Inst();
-FAsyncJobManager GAsyncJobManager;
-FAsyncJobList * GRenderFrontendJobList;
-FAsyncJobList * GRenderBackendJobList;
+ARuntime & GRuntime = ARuntime::Inst();
+AAsyncJobManager GAsyncJobManager;
+AAsyncJobList * GRenderFrontendJobList;
+AAsyncJobList * GRenderBackendJobList;
 
-FRuntime::FRuntime() {
+ARuntime::ARuntime() {
 }
 
-FPhysicalMonitor const * FRuntime::GetPrimaryMonitor() {
+SPhysicalMonitor const * ARuntime::GetPrimaryMonitor() {
     return GMonitorManager.GetPrimaryMonitor();
 }
 
-FPhysicalMonitor const * FRuntime::GetMonitor( int _Handle ) {
-    FPhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
+SPhysicalMonitor const * ARuntime::GetMonitor( int _Handle ) {
+    APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
     return ( (unsigned)_Handle < physicalMonitors.Size() ) ? physicalMonitors[ _Handle ] : nullptr;
 }
 
-FPhysicalMonitor const * FRuntime::GetMonitor( const char * _MonitorName ) {
+SPhysicalMonitor const * ARuntime::GetMonitor( const char * _MonitorName ) {
     return GMonitorManager.FindMonitor( _MonitorName );
 }
 
-bool FRuntime::IsMonitorConnected( int _Handle ) {
+bool ARuntime::IsMonitorConnected( int _Handle ) {
     bool bConnected = false;
-    FPhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
+    APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
     if ( (unsigned)_Handle < physicalMonitors.Size() ) {
         bConnected = physicalMonitors[ _Handle ]->Internal.Pointer != nullptr;
     }
     return bConnected;
 }
 
-void FRuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
-    FPhysicalMonitor * physMonitor = const_cast< FPhysicalMonitor * >( GetMonitor( _Handle ) );
+void ARuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
+    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
     if ( !physMonitor ) {
         return;
     }
@@ -98,8 +98,8 @@ void FRuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
     physMonitor->Internal.bGammaRampDirty = true;
 }
 
-void FRuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
-    FPhysicalMonitor * physMonitor = const_cast< FPhysicalMonitor * >( GetMonitor( _Handle ) );
+void ARuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
+    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
     if ( !physMonitor ) {
         return;
     }
@@ -115,8 +115,8 @@ void FRuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
     physMonitor->Internal.bGammaRampDirty = true;
 }
 
-void FRuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRamp ) {
-    FPhysicalMonitor * physMonitor = const_cast< FPhysicalMonitor * >( GetMonitor( _Handle ) );
+void ARuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRamp ) {
+    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
     if ( !physMonitor ) {
         return;
     }
@@ -125,10 +125,10 @@ void FRuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRa
     physMonitor->Internal.bGammaRampDirty = true;
 }
 
-void FRuntime::GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, int & _GammaRampSize ) {
-    FPhysicalMonitor * physMonitor = const_cast< FPhysicalMonitor * >( GetMonitor( _Handle ) );
+void ARuntime::GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, int & _GammaRampSize ) {
+    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
     if ( !physMonitor ) {
-        memset( _GammaRamp, 0, sizeof( FPhysicalMonitorInternal::GammaRamp ) );
+        memset( _GammaRamp, 0, sizeof( SPhysicalMonitorInternal::GammaRamp ) );
         return;
     }
 
@@ -137,8 +137,8 @@ void FRuntime::GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, in
     memcpy( _GammaRamp, physMonitor->Internal.GammaRamp, sizeof( unsigned short ) * _GammaRampSize * 3 );
 }
 
-void FRuntime::RestoreMonitorGamma( int _Handle ) {
-    FPhysicalMonitor * physMonitor = const_cast< FPhysicalMonitor * >( GetMonitor( _Handle ) );
+void ARuntime::RestoreMonitorGamma( int _Handle ) {
+    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
     if ( !physMonitor ) {
         return;
     }
@@ -147,13 +147,13 @@ void FRuntime::RestoreMonitorGamma( int _Handle ) {
     physMonitor->Internal.bGammaRampDirty = true;
 }
 
-FCPUInfo const & FRuntime::GetCPUInfo() const {
+SCPUInfo const & ARuntime::GetCPUInfo() const {
     return GRuntimeMain.CPUInfo;
 }
 
-int FRuntime::GetPhysicalMonitorsCount() {
+int ARuntime::GetPhysicalMonitorsCount() {
     int count;
-    FPhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
+    APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
     count = physicalMonitors.Size();
     return count;
 }
@@ -192,7 +192,7 @@ static void WaitMicrosecondsWIN32( int _Microseconds ) {
 
 #endif
 
-void FRuntime::WaitSeconds( int _Seconds ) {
+void ARuntime::WaitSeconds( int _Seconds ) {
 #ifdef AN_OS_WIN32
     //std::this_thread::sleep_for( StdChrono::seconds( _Seconds ) );
     WaitMicrosecondsWIN32( _Seconds * 1000000 );
@@ -202,7 +202,7 @@ void FRuntime::WaitSeconds( int _Seconds ) {
 #endif
 }
 
-void FRuntime::WaitMilliseconds( int _Milliseconds ) {
+void ARuntime::WaitMilliseconds( int _Milliseconds ) {
 #ifdef AN_OS_WIN32
     //std::this_thread::sleep_for( StdChrono::milliseconds( _Milliseconds ) );
     WaitMicrosecondsWIN32( _Milliseconds * 1000 );
@@ -217,7 +217,7 @@ void FRuntime::WaitMilliseconds( int _Milliseconds ) {
 #endif
 }
 
-void FRuntime::WaitMicroseconds( int _Microseconds ) {
+void ARuntime::WaitMicroseconds( int _Microseconds ) {
 #ifdef AN_OS_WIN32
     //std::this_thread::sleep_for( StdChrono::microseconds( _Microseconds ) );
     WaitMicrosecondsWIN32( _Microseconds );
@@ -234,7 +234,7 @@ void FRuntime::WaitMicroseconds( int _Microseconds ) {
 
 #define CHRONO_TIMER
 
-int64_t FRuntime::SysSeconds() {
+int64_t ARuntime::SysSeconds() {
 #ifdef CHRONO_TIMER
     return StdChrono::duration_cast< StdChrono::seconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - GRuntimeMain.SysStartSeconds;
 #else
@@ -242,7 +242,7 @@ int64_t FRuntime::SysSeconds() {
 #endif
 }
 
-double FRuntime::SysSeconds_d() {
+double ARuntime::SysSeconds_d() {
 #ifdef CHRONO_TIMER
     return SysMicroseconds() * 0.000001;
 #else
@@ -250,7 +250,7 @@ double FRuntime::SysSeconds_d() {
 #endif
 }
 
-int64_t FRuntime::SysMilliseconds() {
+int64_t ARuntime::SysMilliseconds() {
 #ifdef CHRONO_TIMER
     return StdChrono::duration_cast< StdChrono::milliseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - GRuntimeMain.SysStartMilliseconds;
 #else
@@ -258,7 +258,7 @@ int64_t FRuntime::SysMilliseconds() {
 #endif
 }
 
-double FRuntime::SysMilliseconds_d() {
+double ARuntime::SysMilliseconds_d() {
 #ifdef CHRONO_TIMER
     return SysMicroseconds() * 0.001;
 #else
@@ -266,7 +266,7 @@ double FRuntime::SysMilliseconds_d() {
 #endif
 }
 
-int64_t FRuntime::SysMicroseconds() {
+int64_t ARuntime::SysMicroseconds() {
 #ifdef CHRONO_TIMER
     return StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - GRuntimeMain.SysStartMicroseconds;
 #else
@@ -274,7 +274,7 @@ int64_t FRuntime::SysMicroseconds() {
 #endif
 }
 
-double FRuntime::SysMicroseconds_d() {
+double ARuntime::SysMicroseconds_d() {
 #ifdef CHRONO_TIMER
     return static_cast< double >( SysMicroseconds() );
 #else
@@ -282,24 +282,24 @@ double FRuntime::SysMicroseconds_d() {
 #endif
 }
 
-int64_t FRuntime::SysFrameTimeStamp() {
+int64_t ARuntime::SysFrameTimeStamp() {
     return GRuntimeMain.SysFrameTimeStamp;
 }
 
-void * FRuntime::LoadDynamicLib( const char * _LibraryName ) {
-    FString name( _LibraryName );
+void * ARuntime::LoadDynamicLib( const char * _LibraryName ) {
+    AString name( _LibraryName );
 #if defined AN_OS_WIN32
     name.ReplaceExt( ".dll" );
-    return ( void * )LoadLibraryA( name.ToConstChar() );
+    return ( void * )LoadLibraryA( name.CStr() );
 #elif defined AN_OS_LINUX
     name.ReplaceExt( ".so" );
-    return dlopen( name.ToConstChar(), RTLD_LAZY | RTLD_GLOBAL );
+    return dlopen( name.CStr(), RTLD_LAZY | RTLD_GLOBAL );
 #else
 #error LoadDynamicLib not implemented under current platform
 #endif
 }
 
-void FRuntime::UnloadDynamicLib( void * _Handle ) {
+void ARuntime::UnloadDynamicLib( void * _Handle ) {
     if ( !_Handle ) {
         return;
     }
@@ -312,7 +312,7 @@ void FRuntime::UnloadDynamicLib( void * _Handle ) {
 #endif
 }
 
-void * FRuntime::GetProcAddress( void * _Handle, const char * _ProcName ) {
+void * ARuntime::GetProcAddress( void * _Handle, const char * _ProcName ) {
     if ( !_Handle ) {
         return nullptr;
     }
@@ -325,51 +325,51 @@ void * FRuntime::GetProcAddress( void * _Handle, const char * _ProcName ) {
 #endif
 }
 
-FString FRuntime::GetJoystickName( int _Joystick ) {
+AString ARuntime::GetJoystickName( int _Joystick ) {
     return GJoystickManager.GetJoystickName( _Joystick );
 }
 
-int FRuntime::CheckArg( const char * _Arg ) {
+int ARuntime::CheckArg( const char * _Arg ) {
     return GRuntimeMain.CheckArg( _Arg );
 }
 
-int FRuntime::GetArgc() {
+int ARuntime::GetArgc() {
     return GRuntimeMain.NumArguments;
 }
 
-const char * const *FRuntime::GetArgv() {
+const char * const *ARuntime::GetArgv() {
     return GRuntimeMain.Arguments;
 }
 
-FString const & FRuntime::GetWorkingDir() {
+AString const & ARuntime::GetWorkingDir() {
     return GRuntimeMain.WorkingDir;
 }
 
-const char * FRuntime::GetExecutableName() {
+const char * ARuntime::GetExecutableName() {
     return GRuntimeMain.Executable ? GRuntimeMain.Executable : "";
 }
 
-void FRuntime::SetClipboard( const char * _Utf8String ) {
+void ARuntime::SetClipboard( const char * _Utf8String ) {
     glfwSetClipboardString( NULL, _Utf8String );
 }
 
-const char * FRuntime::GetClipboard() {
+const char * ARuntime::GetClipboard() {
     return glfwGetClipboardString( NULL );
 }
 
-FRenderFrame * FRuntime::GetFrameData() {
+SRenderFrame * ARuntime::GetFrameData() {
     return &GRuntimeMain.FrameData;
 }
 
-FEventQueue * FRuntime::ReadEvents_GameThread() {
+AEventQueue * ARuntime::ReadEvents_GameThread() {
     return &GRuntimeEvents;
 }
 
-FEventQueue * FRuntime::WriteEvents_GameThread() {
+AEventQueue * ARuntime::WriteEvents_GameThread() {
     return &GGameEvents;
 }
 
-void * FRuntime::AllocFrameMem( size_t _SizeInBytes ) {
+void * ARuntime::AllocFrameMem( size_t _SizeInBytes ) {
     if ( GRuntimeMain.FrameMemoryUsed + _SizeInBytes > GRuntimeMain.FrameMemorySize ) {
         GLogger.Printf( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, GRuntimeMain.FrameMemorySize - GRuntimeMain.FrameMemoryUsed, GRuntimeMain.FrameMemorySize );
         return nullptr;
@@ -390,19 +390,19 @@ void * FRuntime::AllocFrameMem( size_t _SizeInBytes ) {
     return pMemory;
 }
 
-size_t FRuntime::GetFrameMemorySize() const {
+size_t ARuntime::GetFrameMemorySize() const {
     return GRuntimeMain.FrameMemorySize;
 }
 
-size_t FRuntime::GetFrameMemoryUsed() const {
+size_t ARuntime::GetFrameMemoryUsed() const {
     return GRuntimeMain.FrameMemoryUsed;
 }
 
-size_t FRuntime::GetFrameMemoryUsedPrev() const {
+size_t ARuntime::GetFrameMemoryUsedPrev() const {
     return GRuntimeMain.FrameMemoryUsedPrev;
 }
 
-void FRuntime::PostTerminateEvent() {
+void ARuntime::PostTerminateEvent() {
     GRuntimeMain.bTerminate = true;
 }
 

@@ -30,32 +30,37 @@ SOFTWARE.
 
 #include <Engine/Resource/Public/Material.h>
 #include <Engine/Resource/Public/ResourceManager.h>
+#include <Engine/Resource/Public/Asset.h>
 #include <Engine/MaterialGraph/Public/MaterialGraph.h>
 #include <Engine/Core/Public/Logger.h>
 #include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
 #include <Engine/Runtime/Public/Runtime.h>
 
-AN_CLASS_META( FMaterial )
-AN_CLASS_META( FMaterialInstance )
+AN_CLASS_META( AMaterial )
+AN_CLASS_META( AMaterialInstance )
 
-FMaterial::FMaterial() {
+AMaterial::AMaterial() {
     MaterialGPU = GRenderBackend->CreateMaterial( this );
 }
 
-FMaterial::~FMaterial() {
+AMaterial::~AMaterial() {
     GRenderBackend->DestroyMaterial( MaterialGPU );
 }
 
-void FMaterial::Initialize( FMaterialBuildData const * _Data ) {
+void AMaterial::Initialize( SMaterialBuildData const * _Data ) {
     NumUniformVectors = _Data->NumUniformVectors;
     Type = _Data->Type;
 
     GRenderBackend->InitializeMaterial( MaterialGPU, _Data );
 }
 
-void FMaterial::InitializeInternalResource( const char * _InternalResourceName ) {
-    if ( !FString::Icmp( _InternalResourceName, "FMaterial.Default" )
-        || !FString::Icmp( _InternalResourceName, "FMaterial.DefaultUnlit" ) ) {
+bool AMaterial::LoadResource( AString const & _Path ) {
+    // TODO: load the material
+    return false;
+}
+
+void AMaterial::LoadInternalResource( const char * _Path ) {
+    if ( !AString::Icmp( _Path, "/Default/Materials/Unlit" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
@@ -75,19 +80,20 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
         materialFragmentStage->Color->Connect( textureSampler, "RGBA" );
 
-        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-        builder->VertexStage = materialVertexStage;
-        builder->FragmentStage = materialFragmentStage;
-        builder->MaterialType = MATERIAL_TYPE_UNLIT;
-        builder->RegisterTextureSlot( diffuseTexture );
+        graph->VertexStage = materialVertexStage;
+        graph->FragmentStage = materialFragmentStage;
+        graph->MaterialType = MATERIAL_TYPE_UNLIT;
+        graph->RegisterTextureSlot( diffuseTexture );
 
-        FMaterialBuildData * buildData = builder->BuildData();
+        AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
+        builder->Graph = graph;
+        SMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
         GZoneMemory.Dealloc( buildData );
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FMaterial.DefaultBaseLight" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Materials/BaseLight" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
@@ -107,19 +113,20 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
         materialFragmentStage->Color->Connect( textureSampler, "RGBA" );
 
-        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-        builder->VertexStage = materialVertexStage;
-        builder->FragmentStage = materialFragmentStage;
-        builder->MaterialType = MATERIAL_TYPE_BASELIGHT;
-        builder->RegisterTextureSlot( diffuseTexture );
+        graph->VertexStage = materialVertexStage;
+        graph->FragmentStage = materialFragmentStage;
+        graph->MaterialType = MATERIAL_TYPE_BASELIGHT;
+        graph->RegisterTextureSlot( diffuseTexture );
 
-        FMaterialBuildData * buildData = builder->BuildData();
+        AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
+        builder->Graph = graph;
+        SMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
         GZoneMemory.Dealloc( buildData );
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FMaterial.DefaultPBR" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Materials/DefaultPBR" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
@@ -164,22 +171,23 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         materialFragmentStage->Metallic->Connect( metallicSampler, "R" );
         materialFragmentStage->Roughness->Connect( roughnessSampler, "R" );
 
-        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-        builder->VertexStage = materialVertexStage;
-        builder->FragmentStage = materialFragmentStage;
-        builder->MaterialType = MATERIAL_TYPE_PBR;
-        builder->RegisterTextureSlot( diffuseTexture );
-        builder->RegisterTextureSlot( metallicTexture );
-        builder->RegisterTextureSlot( normalTexture );
-        builder->RegisterTextureSlot( roughnessTexture );
+        graph->VertexStage = materialVertexStage;
+        graph->FragmentStage = materialFragmentStage;
+        graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->RegisterTextureSlot( diffuseTexture );
+        graph->RegisterTextureSlot( metallicTexture );
+        graph->RegisterTextureSlot( normalTexture );
+        graph->RegisterTextureSlot( roughnessTexture );
 
-        FMaterialBuildData * buildData = builder->BuildData();
+        AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
+        builder->Graph = graph;
+        SMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
         GZoneMemory.Dealloc( buildData );
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FMaterial.PBRMetallicRoughness" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Materials/PBRMetallicRoughness" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
@@ -233,23 +241,127 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         materialFragmentStage->Ambient->Connect( ambientSampler, "R" );
         materialFragmentStage->Emissive->Connect( emissiveSampler, "RGBA" );
 
-        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-        builder->VertexStage = materialVertexStage;
-        builder->FragmentStage = materialFragmentStage;
-        builder->MaterialType = MATERIAL_TYPE_PBR;
-        builder->RegisterTextureSlot( diffuseTexture );
-        builder->RegisterTextureSlot( metallicRoughnessTexture );
-        builder->RegisterTextureSlot( normalTexture );
-        builder->RegisterTextureSlot( ambientTexture );
-        builder->RegisterTextureSlot( emissiveTexture );
+        graph->VertexStage = materialVertexStage;
+        graph->FragmentStage = materialFragmentStage;
+        graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->RegisterTextureSlot( diffuseTexture );
+        graph->RegisterTextureSlot( metallicRoughnessTexture );
+        graph->RegisterTextureSlot( normalTexture );
+        graph->RegisterTextureSlot( ambientTexture );
+        graph->RegisterTextureSlot( emissiveTexture );
 
-        FMaterialBuildData * buildData = builder->BuildData();
+        AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
+        builder->Graph = graph;
+        SMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
         GZoneMemory.Dealloc( buildData );
         return;
     }
 
-    if ( !FString::Icmp( _InternalResourceName, "FMaterial.Skybox" ) ) {
+    if ( !AString::Icmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactor" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+
+        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
+
+        MGNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
+        texCoord->Connect( inTexCoordBlock, "Value" );
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * metallicRoughnessTexture = graph->AddNode< MGTextureSlot >();
+        metallicRoughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * normalTexture = graph->AddNode< MGTextureSlot >();
+        normalTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * ambientTexture = graph->AddNode< MGTextureSlot >();
+        ambientTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * emissiveTexture = graph->AddNode< MGTextureSlot >();
+        emissiveTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
+        normalSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        normalSampler->TextureSlot->Connect( normalTexture, "Value" );
+        normalSampler->Compression = NM_XYZ;
+
+        MGSampler * metallicRoughnessSampler = graph->AddNode< MGSampler >();
+        metallicRoughnessSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        metallicRoughnessSampler->TextureSlot->Connect( metallicRoughnessTexture, "Value" );
+
+        MGSampler * ambientSampler = graph->AddNode< MGSampler >();
+        ambientSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        ambientSampler->TextureSlot->Connect( ambientTexture, "Value" );
+
+        MGSampler * emissiveSampler = graph->AddNode< MGSampler >();
+        emissiveSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        emissiveSampler->TextureSlot->Connect( emissiveTexture, "Value" );
+
+        MGUniformAddress * baseColorFactor = graph->AddNode< MGUniformAddress >();
+        baseColorFactor->Type = AT_Float4;
+        baseColorFactor->Address = 0;
+
+        MGUniformAddress * metallicFactor = graph->AddNode< MGUniformAddress >();
+        metallicFactor->Type = AT_Float1;
+        metallicFactor->Address = 4;
+
+        MGUniformAddress * roughnessFactor = graph->AddNode< MGUniformAddress >();
+        roughnessFactor->Type = AT_Float1;
+        roughnessFactor->Address = 5;
+
+        MGUniformAddress * emissiveFactor = graph->AddNode< MGUniformAddress >();
+        emissiveFactor->Type = AT_Float3;
+        emissiveFactor->Address = 8;
+
+        MGMulNode * colorMul = graph->AddNode< MGMulNode >();
+        colorMul->ValueA->Connect( textureSampler, "RGBA" );
+        colorMul->ValueB->Connect( baseColorFactor, "Value" );
+
+        MGMulNode * metallicMul = graph->AddNode< MGMulNode >();
+        metallicMul->ValueA->Connect( metallicRoughnessSampler, "B" );
+        metallicMul->ValueB->Connect( metallicFactor, "Value" );
+
+        MGMulNode * roughnessMul = graph->AddNode< MGMulNode >();
+        roughnessMul->ValueA->Connect( metallicRoughnessSampler, "G" );
+        roughnessMul->ValueB->Connect( roughnessFactor, "Value" );
+
+        MGMulNode * emissiveMul = graph->AddNode< MGMulNode >();
+        emissiveMul->ValueA->Connect( emissiveSampler, "RGB" );
+        emissiveMul->ValueB->Connect( emissiveFactor, "Value" );
+
+        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
+        materialFragmentStage->Color->Connect( colorMul, "Result" );
+        materialFragmentStage->Normal->Connect( normalSampler, "XYZ" );
+        materialFragmentStage->Metallic->Connect( metallicMul, "Result" );
+        materialFragmentStage->Roughness->Connect( roughnessMul, "Result" );
+        materialFragmentStage->Ambient->Connect( ambientSampler, "R" );
+        materialFragmentStage->Emissive->Connect( emissiveMul, "Result" );
+
+        graph->VertexStage = materialVertexStage;
+        graph->FragmentStage = materialFragmentStage;
+        graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->RegisterTextureSlot( diffuseTexture );
+        graph->RegisterTextureSlot( metallicRoughnessTexture );
+        graph->RegisterTextureSlot( normalTexture );
+        graph->RegisterTextureSlot( ambientTexture );
+        graph->RegisterTextureSlot( emissiveTexture );
+
+        AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
+        builder->Graph = graph;
+        SMaterialBuildData * buildData = builder->BuildData();
+        Initialize( buildData );
+        GZoneMemory.Dealloc( buildData );
+        return;
+    }
+
+    if ( !AString::Icmp( _Path, "/Default/Materials/Skybox" ) ) {
 #if 1
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
@@ -275,15 +387,16 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
         materialFragmentStage->Color->Connect( cubemapSampler, "RGBA" );
 
-        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
-        builder->VertexStage = materialVertexStage;
-        builder->FragmentStage = materialFragmentStage;
-        builder->MaterialType = MATERIAL_TYPE_UNLIT;
-        builder->MaterialFacing = MATERIAL_FACE_BACK;
-        builder->DepthHack = MATERIAL_DEPTH_HACK_SKYBOX;
-        builder->RegisterTextureSlot( cubemapTexture );
+        graph->VertexStage = materialVertexStage;
+        graph->FragmentStage = materialFragmentStage;
+        graph->MaterialType = MATERIAL_TYPE_UNLIT;
+        graph->MaterialFacing = MATERIAL_FACE_BACK;
+        graph->DepthHack = MATERIAL_DEPTH_HACK_SKYBOX;
+        graph->RegisterTextureSlot( cubemapTexture );
 
-        FMaterialBuildData * buildData = builder->BuildData();
+        AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
+        builder->Graph = graph;
+        SMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
         GZoneMemory.Dealloc( buildData );
 #else
@@ -331,52 +444,109 @@ void FMaterial::InitializeInternalResource( const char * _InternalResourceName )
         MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
         materialFragmentStage->Color->Connect( color, "RGBA" );
 
-        FMaterialBuilder * builder = NewObject< FMaterialBuilder >();
+        AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
         builder->VertexStage = materialVertexStage;
         builder->FragmentStage = materialFragmentStage;
         builder->MaterialType = MATERIAL_TYPE_UNLIT;
         builder->RegisterTextureSlot( skyTexture );
 
-        FMaterialBuildData * buildData = builder->BuildData();
+        SMaterialBuildData * buildData = builder->BuildData();
         Initialize( buildData );
         GZoneMemory.Dealloc( buildData );
 #endif
         return;
     }
 
-    GLogger.Printf( "Unknown internal material %s\n", _InternalResourceName );
+    GLogger.Printf( "Unknown internal material %s\n", _Path );
+
+    LoadInternalResource( "/Default/Materials/Unlit" );
 }
 
-FMaterialInstance::FMaterialInstance() {
-    static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
-    //static TStaticInternalResourceFinder< FTexture2D > TextureResource( _CTS( "FTexture2D.Default" ) );
-    //static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "gridyblack.png" ) );
-    static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "uv_checker.png" ) );
+AMaterialInstance::AMaterialInstance() {
+    static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
+    //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
+    //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
+    static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
 
     Material = MaterialResource.GetObject();
 
     SetTexture( 0, TextureResource.GetObject() );
 }
 
-void FMaterialInstance::InitializeInternalResource( const char * _InternalResourceName ) {
-    if ( !FString::Icmp( _InternalResourceName, "FMaterialInstance.Default" ) )
+void AMaterialInstance::LoadInternalResource( const char * _Path ) {
+    if ( !AString::Icmp( _Path, "/Default/MaterialInstance/Default" ) )
     {
-        static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
-        //static TStaticInternalResourceFinder< FTexture2D > TextureResource( _CTS( "FTexture2D.Default" ) );
-        //static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "gridyblack.png" ) );
-        static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "uv_checker.png" ) );
+        static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
+        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
+        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
+        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
 
         Material = MaterialResource.GetObject();
 
         SetTexture( 0, TextureResource.GetObject() );
         return;
     }
-    GLogger.Printf( "Unknown internal material instance %s\n", _InternalResourceName );
+    GLogger.Printf( "Unknown internal material instance %s\n", _Path );
+
+    LoadInternalResource( "/Default/MaterialInstance/Default" );
 }
 
-void FMaterialInstance::SetMaterial( FMaterial * _Material ) {
+bool AMaterialInstance::LoadResource( AString const & _Path ) {
+    AFileStream f;
+
+    if ( !f.OpenRead( _Path ) ) {
+        return false;
+    }
+
+    uint32_t fileFormat;
+    uint32_t fileVersion;
+
+    fileFormat = f.ReadUInt32();
+
+    if ( fileFormat != FMT_FILE_TYPE_MATERIAL_INSTANCE ) {
+        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MATERIAL_INSTANCE );
+        return false;
+    }
+
+    fileVersion = f.ReadUInt32();
+
+    if ( fileVersion != FMT_VERSION_MATERIAL_INSTANCE ) {
+        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MATERIAL_INSTANCE );
+        return false;
+    }
+
+    AString guidStr;
+    AString materialGUID;
+    AString textureGUID;
+
+    f.ReadString( guidStr );
+    f.ReadString( materialGUID );
+
+    int texCount = f.ReadUInt32();
+    for ( int i = 0 ; i < texCount ; i++ ) {
+        f.ReadString( textureGUID );
+
+        SetTexture( i, GetOrCreateResource< ATexture >( textureGUID.CStr() ) );
+    }
+
+    for ( int i = texCount ; i < MAX_MATERIAL_TEXTURES ; i++ ) {
+        SetTexture( i, nullptr );
+    }
+
+    for ( int i = 0 ; i < MAX_MATERIAL_UNIFORMS ; i++ ) {
+        Uniforms[i] = f.ReadFloat();
+    }
+
+    SetMaterial( GetOrCreateResource< AMaterial >( materialGUID.CStr() ) );
+
+    return true;
+}
+
+
+
+void AMaterialInstance::SetMaterial( AMaterial * _Material ) {
     if ( !_Material ) {
-        static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
+        static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
 
         Material = MaterialResource.GetObject();
     } else {
@@ -384,38 +554,38 @@ void FMaterialInstance::SetMaterial( FMaterial * _Material ) {
     }
 }
 
-FMaterial * FMaterialInstance::GetMaterial() const {
+AMaterial * AMaterialInstance::GetMaterial() const {
     return Material;
 }
 
-void FMaterialInstance::SetTexture( int _TextureSlot, FTexture * _Texture ) {
+void AMaterialInstance::SetTexture( int _TextureSlot, ATexture * _Texture ) {
     if ( _TextureSlot >= MAX_MATERIAL_TEXTURES ) {
         return;
     }
     Textures[_TextureSlot] = _Texture;
 }
 
-FMaterialFrameData * FMaterialInstance::RenderFrontend_Update( int _VisMarker ) {
+SMaterialFrameData * AMaterialInstance::RenderFrontend_Update( int _VisMarker ) {
     if ( VisMarker == _VisMarker ) {
         return FrameData;
     }
 
     VisMarker = _VisMarker;
 
-    FrameData = ( FMaterialFrameData * )GRuntime.AllocFrameMem( sizeof( FMaterialFrameData ) );
+    FrameData = ( SMaterialFrameData * )GRuntime.AllocFrameMem( sizeof( SMaterialFrameData ) );
     if ( !FrameData ) {
         return nullptr;
     }
 
     FrameData->Material = Material->GetGPUResource();
 
-    FTextureGPU ** textures = FrameData->Textures;
+    ATextureGPU ** textures = FrameData->Textures;
     FrameData->NumTextures = 0;
 
     for ( int i = 0; i < MAX_MATERIAL_TEXTURES; i++ ) {
         if ( Textures[ i ] ) {
 
-            FTextureGPU * textureProxy = Textures[ i ]->GetGPUResource();
+            ATextureGPU * textureProxy = Textures[ i ]->GetGPUResource();
 
             //if ( textureProxy->IsSubmittedToRenderThread() ) {
                 textures[ i ] = textureProxy;

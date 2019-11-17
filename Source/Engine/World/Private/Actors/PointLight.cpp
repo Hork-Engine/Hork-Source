@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include <Engine/World/Public/Actors/PointLight.h>
 
-AN_CLASS_META( FPointLight )
+AN_CLASS_META( APointLight )
 
-FPointLight::FPointLight() {
-    LightComponent = AddComponent< FPointLightComponent >( "PointLight" );
+APointLight::APointLight() {
+    LightComponent = CreateComponent< APointLightComponent >( "PointLight" );
     RootComponent = LightComponent;
 }

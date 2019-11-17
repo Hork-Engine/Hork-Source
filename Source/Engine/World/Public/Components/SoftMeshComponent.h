@@ -35,13 +35,13 @@ SOFTWARE.
 
 /*
 
-FSoftMeshComponent
+ASoftMeshComponent
 
 Mesh with softbody physics simulation
 
 */
-class ANGIE_API FSoftMeshComponent : public FSkinnedComponent {
-    AN_COMPONENT( FSoftMeshComponent, FSkinnedComponent )
+class ANGIE_API ASoftMeshComponent : public ASkinnedComponent {
+    AN_COMPONENT( ASoftMeshComponent, ASkinnedComponent )
 
 public:
     // Velocities correction factor (Baumgarte)
@@ -80,7 +80,7 @@ public:
     //Float3x4 BaseTransform;
 
     // Attach vertex to anchor point
-    void AttachVertex( int _VertexIndex, FAnchorComponent * _Anchor );
+    void AttachVertex( int _VertexIndex, AAnchorComponent * _Anchor );
 
     // Detach vertex from anchor point
     void DetachVertex( int _VertexIndex );
@@ -89,7 +89,7 @@ public:
     void DetachAllVertices();
 
     // Get vertex attachment
-    FAnchorComponent * GetVertexAnchor( int _VertexIndex ) const;
+    AAnchorComponent * GetVertexAnchor( int _VertexIndex ) const;
 
     // Set a wind velocity for interaction with the air
     void SetWindVelocity( Float3 const & _Velocity );
@@ -109,7 +109,7 @@ public:
     Float3 GetVertexVelocity( int _VertexIndex ) const;    
 
 protected:
-    FSoftMeshComponent();
+    ASoftMeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -120,7 +120,7 @@ protected:
 
     void TickComponent( float _TimeStep ) override;
 
-    void DrawDebug( FDebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugDraw * _DebugDraw ) override;
 
 private:
     void RecreateSoftBody();
@@ -134,10 +134,10 @@ private:
     //Float3 PrevTransformOrigin;
     //btRigidBody * Anchor;
 
-    struct FAnchorBinding {
-        FAnchorComponent * Anchor;
+    struct SAnchorBinding {
+        AAnchorComponent * Anchor;
         int VertexIndex;
     };
-    TPodArray< FAnchorBinding > Anchors;
+    TPodArray< SAnchorBinding > Anchors;
     bool bUpdateAnchors;
 };

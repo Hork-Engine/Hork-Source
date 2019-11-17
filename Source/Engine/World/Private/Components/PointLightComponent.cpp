@@ -35,11 +35,11 @@ SOFTWARE.
 constexpr float DEFAULT_INNER_RADIUS = 0.5f;
 constexpr float DEFAULT_OUTER_RADIUS = 1.0f;
 
-FRuntimeVariable RVDrawPointLights( _CTS( "DrawPointLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawPointLights( _CTS( "DrawPointLights" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_CLASS_META( FPointLightComponent )
+AN_CLASS_META( APointLightComponent )
 
-FPointLightComponent::FPointLightComponent() {
+APointLightComponent::APointLightComponent() {
     InnerRadius = DEFAULT_INNER_RADIUS;
     OuterRadius = DEFAULT_OUTER_RADIUS;
 #ifdef FUTURE
@@ -51,48 +51,48 @@ FPointLightComponent::FPointLightComponent() {
     UpdateBoundingBox();
 }
 
-void FPointLightComponent::InitializeComponent() {
+void APointLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
     GetWorld()->AddPointLight( this );
 }
 
-void FPointLightComponent::DeinitializeComponent() {
+void APointLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     GetWorld()->RemovePointLight( this );
 }
 
-void FPointLightComponent::SetInnerRadius( float _Radius ) {
-    InnerRadius = FMath::Max( 0.001f, _Radius );
+void APointLightComponent::SetInnerRadius( float _Radius ) {
+    InnerRadius = Math::Max( 0.001f, _Radius );
 }
 
-float FPointLightComponent::GetInnerRadius() const {
+float APointLightComponent::GetInnerRadius() const {
     return InnerRadius;
 }
 
-void FPointLightComponent::SetOuterRadius( float _Radius ) {
-    OuterRadius = FMath::Max( 0.001f, _Radius );
+void APointLightComponent::SetOuterRadius( float _Radius ) {
+    OuterRadius = Math::Max( 0.001f, _Radius );
 
     UpdateBoundingBox();
 }
 
-float FPointLightComponent::GetOuterRadius() const {
+float APointLightComponent::GetOuterRadius() const {
     return OuterRadius;
 }
 
-BvAxisAlignedBox const & FPointLightComponent::GetWorldBounds() const {
+BvAxisAlignedBox const & APointLightComponent::GetWorldBounds() const {
     return AABBWorldBounds;
 }
 
-void FPointLightComponent::OnTransformDirty() {
+void APointLightComponent::OnTransformDirty() {
     Super::OnTransformDirty();
 
     UpdateBoundingBox();
     //MarkAreaDirty();
 }
 
-void FPointLightComponent::UpdateBoundingBox() {
+void APointLightComponent::UpdateBoundingBox() {
     SphereWorldBounds.Radius = OuterRadius;
     SphereWorldBounds.Center = GetWorldPosition();
     AABBWorldBounds.Mins = SphereWorldBounds.Center - OuterRadius;
@@ -106,16 +106,16 @@ void FPointLightComponent::UpdateBoundingBox() {
     OBBTransformInverse = OBBTransform.Inversed();
 }
 
-void FPointLightComponent::DrawDebug( FDebugDraw * _DebugDraw ) {
+void APointLightComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
     Super::DrawDebug( _DebugDraw );
 
     if ( RVDrawPointLights ) {
         Float3 pos = GetWorldPosition();
 
         _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( FColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+        _DebugDraw->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
         _DebugDraw->DrawSphere( pos, InnerRadius );
-        _DebugDraw->SetColor( FColor4( 1, 1, 1, 1 ) );
+        _DebugDraw->SetColor( AColor4( 1, 1, 1, 1 ) );
         _DebugDraw->DrawSphere( pos, OuterRadius );
     }
 }

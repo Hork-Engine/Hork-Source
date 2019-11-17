@@ -43,7 +43,7 @@ SOFTWARE.
 //    VSync_Half
 //};
 
-struct FMonitorVideoMode {
+struct SMonitorVideoMode {
     int Width;
     int Height;
     int RedBits;
@@ -54,14 +54,14 @@ struct FMonitorVideoMode {
 
 #define GAMMA_RAMP_SIZE 1024
 
-struct FPhysicalMonitorInternal {
+struct SPhysicalMonitorInternal {
     void * Pointer;
     unsigned short InitialGammaRamp[ GAMMA_RAMP_SIZE * 3 ];
     unsigned short GammaRamp[ GAMMA_RAMP_SIZE * 3 ];
     bool bGammaRampDirty;
 };
 
-struct FPhysicalMonitor {
+struct SPhysicalMonitor {
     char MonitorName[128];
     int PhysicalWidthMM;
     int PhysicalHeightMM;
@@ -70,12 +70,12 @@ struct FPhysicalMonitor {
     int PositionX;
     int PositionY;
     int GammaRampSize;
-    FPhysicalMonitorInternal Internal; // for internal use
+    SPhysicalMonitorInternal Internal; // for internal use
     int VideoModesCount;
-    FMonitorVideoMode VideoModes[1];
+    SMonitorVideoMode VideoModes[1];
 };
 
-struct FJoystick {
+struct SJoystick {
     int NumAxes;
     int NumButtons;
     bool bGamePad;
@@ -84,7 +84,7 @@ struct FJoystick {
 };
 
 /** CPU features */
-struct FCPUInfo {
+struct SCPUInfo {
     bool OS_AVX : 1;
     bool OS_AVX512 : 1;
     bool OS_64bit : 1;
@@ -165,46 +165,46 @@ enum EInputEvent {
     IE_Repeat
 };
 
-struct FRuntimeUpdateEvent {
+struct SRuntimeUpdateEvent {
     int InputEventCount;
 };
 
-struct FKeyEvent {
+struct SKeyEvent {
     int Key;
     int Scancode;       // Not used, reserved for future
     int ModMask;
     int Action;         // EInputEvent
 };
 
-struct FMouseButtonEvent {
+struct SMouseButtonEvent {
     int Button;
     int ModMask;
     int Action;         // EInputEvent
 };
 
-struct FMouseWheelEvent {
+struct SMouseWheelEvent {
     double WheelX;
     double WheelY;
 };
 
-struct FMouseMoveEvent {
+struct SMouseMoveEvent {
     float X;
     float Y;
 };
 
-struct FJoystickAxisEvent {
+struct SJoystickAxisEvent {
     int Joystick;
     int Axis;
     float Value;
 };
 
-struct FJoystickButtonEvent {
+struct SJoystickButtonEvent {
     int Joystick;
     int Button;
     int Action;         // EInputEvent
 };
 
-struct FJoystickStateEvent {
+struct SJoystickStateEvent {
     int Joystick;
     int NumAxes;
     int NumButtons;
@@ -212,33 +212,33 @@ struct FJoystickStateEvent {
     bool bConnected;
 };
 
-struct FCharEvent {
+struct SCharEvent {
     FWideChar UnicodeCharacter;
     int ModMask;
 };
 
-struct FMonitorConnectionEvent {
+struct SMonitorConnectionEvent {
     int Handle;
     bool bConnected;
 };
 
-struct FCloseEvent {
+struct SCloseEvent {
 };
 
-struct FFocusEvent {
+struct SFocusEvent {
     bool bFocused;
 };
 
-struct FVisibleEvent {
+struct SVisibleEvent {
     bool bVisible;
 };
 
-struct FWindowPosEvent {
+struct SWindowPosEvent {
     int PositionX;
     int PositionY;
 };
 
-struct FChangedVideoModeEvent {
+struct SChangedVideoModeEvent {
     unsigned short Width;
     unsigned short Height;
     unsigned short PhysicalMonitor;
@@ -247,7 +247,7 @@ struct FChangedVideoModeEvent {
     char Backend[32];
 };
 
-struct FSetVideoModeEvent {
+struct SSetVideoModeEvent {
     unsigned short Width;
     unsigned short Height;
     unsigned short PhysicalMonitor;
@@ -256,7 +256,7 @@ struct FSetVideoModeEvent {
     char Backend[32];
 };
 
-struct FSetWindowDefsEvent {
+struct SSetWindowDefsEvent {
     byte Opacity;
     bool bDecorated;
     bool bAutoIconify;
@@ -264,56 +264,56 @@ struct FSetWindowDefsEvent {
     char Title[32];
 };
 
-struct FSetWindowPosEvent {
+struct SSetWindowPosEvent {
     int PositionX;
     int PositionY;
 };
 
-struct FSetInputFocusEvent {
+struct SSetInputFocusEvent {
 
 };
 
-//struct FSetRenderFeaturesEvent {
+//struct SSetRenderFeaturesEvent {
 //    int VSyncMode;
 //};
 
-struct FSetCursorModeEvent {
+struct SSetCursorModeEvent {
     bool bDisabledCursor;
 };
 
-struct FEvent {
+struct SEvent {
     int Type;
     double TimeStamp;   // in seconds
 
     union {
         // Runtime output events
-        FRuntimeUpdateEvent RuntimeUpdateEvent;
-        FKeyEvent KeyEvent;
-        FMouseButtonEvent MouseButtonEvent;
-        FMouseWheelEvent MouseWheelEvent;
-        FMouseMoveEvent MouseMoveEvent;
-        FCharEvent CharEvent;
-        FJoystickAxisEvent JoystickAxisEvent;
-        FJoystickButtonEvent JoystickButtonEvent;
-        FJoystickStateEvent JoystickStateEvent;
-        FMonitorConnectionEvent MonitorConnectionEvent;
-        FCloseEvent CloseEvent;
-        FFocusEvent FocusEvent;
-        FVisibleEvent VisibleEvent;
-        FWindowPosEvent WindowPosEvent;
-        FChangedVideoModeEvent ChangedVideoModeEvent;
+        SRuntimeUpdateEvent RuntimeUpdateEvent;
+        SKeyEvent KeyEvent;
+        SMouseButtonEvent MouseButtonEvent;
+        SMouseWheelEvent MouseWheelEvent;
+        SMouseMoveEvent MouseMoveEvent;
+        SCharEvent CharEvent;
+        SJoystickAxisEvent JoystickAxisEvent;
+        SJoystickButtonEvent JoystickButtonEvent;
+        SJoystickStateEvent JoystickStateEvent;
+        SMonitorConnectionEvent MonitorConnectionEvent;
+        SCloseEvent CloseEvent;
+        SFocusEvent FocusEvent;
+        SVisibleEvent VisibleEvent;
+        SWindowPosEvent WindowPosEvent;
+        SChangedVideoModeEvent ChangedVideoModeEvent;
 
         // Runtime input events
-        FSetVideoModeEvent SetVideoModeEvent;
-        FSetWindowDefsEvent SetWindowDefsEvent;
-        FSetWindowPosEvent SetWindowPosEvent;
-        FSetInputFocusEvent SetInputFocusEvent;
-        //FSetRenderFeaturesEvent SetRenderFeaturesEvent;
-        FSetCursorModeEvent SetCursorModeEvent;
+        SSetVideoModeEvent SetVideoModeEvent;
+        SSetWindowDefsEvent SetWindowDefsEvent;
+        SSetWindowPosEvent SetWindowPosEvent;
+        SSetInputFocusEvent SetInputFocusEvent;
+        //SSetRenderFeaturesEvent SetRenderFeaturesEvent;
+        SSetCursorModeEvent SetCursorModeEvent;
     } Data;
 };
 
-using FEventQueue = TPodQueue< FEvent >;
+using AEventQueue = TPodQueue< SEvent >;
 
 enum
 {
@@ -322,12 +322,12 @@ enum
     MAX_RUNTIME_JOB_LISTS
 };
 
-struct FRenderFrame;
+struct SRenderFrame;
 
 /** Runtime public class */
-class ANGIE_API FRuntime
+class ANGIE_API ARuntime
 {
-    AN_SINGLETON( FRuntime )
+    AN_SINGLETON( ARuntime )
 
 public:
     /** Is cheats allowed for the game. This allow to change runtime variables with flag VAR_CHEAT */
@@ -349,19 +349,19 @@ public:
     int CheckArg( const char * _Arg );
 
     /** Return application working directory */
-    FString const & GetWorkingDir();
+    AString const & GetWorkingDir();
 
     /** Return application exacutable name */
     const char * GetExecutableName();
 
     /** Return event queue for reading */
-    FEventQueue * ReadEvents_GameThread();
+    AEventQueue * ReadEvents_GameThread();
 
     /** Return event queue for writing */
-    FEventQueue * WriteEvents_GameThread();
+    AEventQueue * WriteEvents_GameThread();
 
     /** Get render frame data */
-    FRenderFrame * GetFrameData();
+    SRenderFrame * GetFrameData();
 
     /** Allocate frame memory */
     void * AllocFrameMem( size_t _SizeInBytes );
@@ -382,19 +382,19 @@ public:
     //bool IsAdaptiveVSyncSupported();
 
     /** Get CPU info */
-    FCPUInfo const & GetCPUInfo() const;
+    SCPUInfo const & GetCPUInfo() const;
 
     /** Get physical monitors count */
     int GetPhysicalMonitorsCount();
 
     /** Return primary monitor */
-    FPhysicalMonitor const * GetPrimaryMonitor();
+    SPhysicalMonitor const * GetPrimaryMonitor();
 
     /** Get physical monitor by handle */
-    FPhysicalMonitor const * GetMonitor( int _Handle );
+    SPhysicalMonitor const * GetMonitor( int _Handle );
 
     /** Get physical monitor by name */
-    FPhysicalMonitor const * GetMonitor( const char * _MonitorName );
+    SPhysicalMonitor const * GetMonitor( const char * _MonitorName );
 
     /** Check is monitor connected */
     bool IsMonitorConnected( int _Handle );
@@ -415,10 +415,10 @@ public:
     void RestoreMonitorGamma( int _Handle );
 
     /** Get joystick name by handle */
-    FString GetJoystickName( int _Joystick );
+    AString GetJoystickName( int _Joystick );
 
     /** Get joystick name */
-    FString GetJoystickName( const FJoystick * _Joystick ) { return GetJoystickName( _Joystick->Id ); }
+    AString GetJoystickName( const SJoystick * _Joystick ) { return GetJoystickName( _Joystick->Id ); }
 
     /** Sleep current thread */
     void WaitSeconds( int _Seconds );
@@ -469,7 +469,7 @@ public:
     void SetClipboard( const char * _Utf8String );
 
     /** Set clipboard text */
-    void SetClipboard( FString const & _Clipboard ) { SetClipboard( _Clipboard.ToConstChar() ); }
+    void SetClipboard( AString const & _Clipboard ) { SetClipboard( _Clipboard.CStr() ); }
 
     /** Get clipboard text */
     const char * GetClipboard();
@@ -478,7 +478,7 @@ public:
     void PostTerminateEvent();
 };
 
-extern ANGIE_API FRuntime & GRuntime;
-extern ANGIE_API FAsyncJobManager GAsyncJobManager;
-extern ANGIE_API FAsyncJobList * GRenderFrontendJobList;
-extern ANGIE_API FAsyncJobList * GRenderBackendJobList;
+extern ANGIE_API ARuntime & GRuntime;
+extern ANGIE_API AAsyncJobManager GAsyncJobManager;
+extern ANGIE_API AAsyncJobList * GRenderFrontendJobList;
+extern ANGIE_API AAsyncJobList * GRenderBackendJobList;

@@ -32,28 +32,28 @@ SOFTWARE.
 #include <Engine/World/Public/CommandContext.h>
 #include <Engine/Core/Public/Logger.h>
 
-FCommandContext::FCommandContext() {
+ACommandContext::ACommandContext() {
 
 }
 
-FCommandContext::~FCommandContext() {
+ACommandContext::~ACommandContext() {
 
 }
 
-void FCommandContext::ExecuteCommand( FRuntimeCommandProcessor const & _Proc ) {
+void ACommandContext::ExecuteCommand( ARuntimeCommandProcessor const & _Proc ) {
     AN_Assert( _Proc.GetArgsCount() > 0 );
 
     const char * name = _Proc.GetArg( 0 );
 
-    for ( FRuntimeCommand & cmd : Commands ) {
+    for ( ARuntimeCommand & cmd : Commands ) {
         if ( !cmd.GetName().Icmp( name ) ) {
             cmd.Execute( _Proc );
             return;
         }
     }
 
-    FRuntimeVariable * var;
-    if ( nullptr != (var = FRuntimeVariable::FindVariable( name )) ) {
+    ARuntimeVariable * var;
+    if ( nullptr != (var = ARuntimeVariable::FindVariable( name )) ) {
         if ( _Proc.GetArgsCount() < 2 ) {
             var->Print();
         } else {
@@ -65,18 +65,18 @@ void FCommandContext::ExecuteCommand( FRuntimeCommandProcessor const & _Proc ) {
     GLogger.Printf( "Unknown command \"%s\"\n", name );
 }
 
-void FCommandContext::AddCommand( const char * _Name, TCallback< void( FRuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment ) {
-    if ( !FRuntimeCommandProcessor::IsValidCommandName( _Name ) ) {
-        GLogger.Printf( "FCommandContext::AddCommand: invalid command name\n" );
+void ACommandContext::AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment ) {
+    if ( !ARuntimeCommandProcessor::IsValidCommandName( _Name ) ) {
+        GLogger.Printf( "ACommandContext::AddCommand: invalid command name\n" );
         return;
     }
 
-    if ( FRuntimeVariable::FindVariable( _Name ) ) {
+    if ( ARuntimeVariable::FindVariable( _Name ) ) {
         GLogger.Printf( "Name conflict: %s already registered as variable\n", _Name );
         return;
     }
 
-    for ( FRuntimeCommand & cmd : Commands ) {
+    for ( ARuntimeCommand & cmd : Commands ) {
         if ( !cmd.GetName().Icmp( _Name ) ) {
             GLogger.Printf( "Overriding %s command\n", _Name );
 
@@ -89,9 +89,9 @@ void FCommandContext::AddCommand( const char * _Name, TCallback< void( FRuntimeC
     Commands.emplace_back( _Name, _Callback, _Comment );
 }
 
-void FCommandContext::RemoveCommand( const char * _Name ) {
-    for ( TStdVector< FRuntimeCommand >::iterator it = Commands.begin() ; it != Commands.end() ; it++ ) {
-        FRuntimeCommand & command = *it;
+void ACommandContext::RemoveCommand( const char * _Name ) {
+    for ( TStdVector< ARuntimeCommand >::iterator it = Commands.begin() ; it != Commands.end() ; it++ ) {
+        ARuntimeCommand & command = *it;
 
         if ( !command.GetName().Icmp( _Name ) ) {
             Commands.erase( it );
@@ -100,7 +100,7 @@ void FCommandContext::RemoveCommand( const char * _Name ) {
     }
 }
 
-void FCommandContext::RemoveCommands() {
+void ACommandContext::RemoveCommands() {
     Commands.clear();
 }
 
@@ -112,7 +112,7 @@ AN_FORCEINLINE bool CompareChar( char _Ch1, char _Ch2 ) {
 
 }
 
-int FCommandContext::CompleteString( const char * _Str, int _StrLen, FString & _Result ) {
+int ACommandContext::CompleteString( const char * _Str, int _StrLen, AString & _Result ) {
     int count = 0;
 
     _Result.Clear();
@@ -127,10 +127,10 @@ int FCommandContext::CompleteString( const char * _Str, int _StrLen, FString & _
         return 0;
     }
 
-    for ( FRuntimeCommand const & cmd : Commands ) {
+    for ( ARuntimeCommand const & cmd : Commands ) {
         if ( !cmd.GetName().IcmpN( _Str, _StrLen ) ) {
             int n;
-            int minLen = FMath::Min( cmd.GetName().Length(), _Result.Length() );
+            int minLen = Math::Min( cmd.GetName().Length(), _Result.Length() );
             for ( n = 0 ; n < minLen && CompareChar( cmd.GetName()[n], _Result[n] ) ; n++ ) {}
             if ( n == 0 ) {
                 _Result = cmd.GetName();
@@ -141,10 +141,10 @@ int FCommandContext::CompleteString( const char * _Str, int _StrLen, FString & _
         }
     }
 
-    for ( FRuntimeVariable * var = FRuntimeVariable::GlobalVariableList() ; var ; var = var->GetNext() ) {
-        if ( !FString::IcmpN( var->GetName(), _Str, _StrLen ) ) {
+    for ( ARuntimeVariable * var = ARuntimeVariable::GlobalVariableList() ; var ; var = var->GetNext() ) {
+        if ( !AString::IcmpN( var->GetName(), _Str, _StrLen ) ) {
             int n;
-            int minLen = FMath::Min( FString::Length( var->GetName() ), _Result.Length() );
+            int minLen = Math::Min( AString::Length( var->GetName() ), _Result.Length() );
             for ( n = 0 ; n < minLen && CompareChar( var->GetName()[n], _Result[n] ) ; n++ ) {}
             if ( n == 0 ) {
                 _Result = var->GetName();
@@ -158,34 +158,34 @@ int FCommandContext::CompleteString( const char * _Str, int _StrLen, FString & _
     return count;
 }
 
-void FCommandContext::Print( const char * _Str, int _StrLen ) {
-    TPodArray< FRuntimeCommand * > cmds;
-    TPodArray< FRuntimeVariable * > vars;
+void ACommandContext::Print( const char * _Str, int _StrLen ) {
+    TPodArray< ARuntimeCommand * > cmds;
+    TPodArray< ARuntimeVariable * > vars;
 
     if ( _StrLen > 0 ) {
-        for ( FRuntimeCommand & cmd : Commands ) {
+        for ( ARuntimeCommand & cmd : Commands ) {
             if ( !cmd.GetName().IcmpN( _Str, _StrLen ) ) {
                 cmds.Append( &cmd );
             }
         }
 
         struct {
-            bool operator() ( FRuntimeCommand const * _A, FRuntimeCommand * _B ) {
+            bool operator() ( ARuntimeCommand const * _A, ARuntimeCommand * _B ) {
                 return _A->GetName().Icmp( _B->GetName() ) < 0;
             }
         } CmdSortFunction;
 
         StdSort( cmds.Begin(), cmds.End(), CmdSortFunction );
 
-        for ( FRuntimeVariable * var = FRuntimeVariable::GlobalVariableList() ; var ; var = var->GetNext() ) {
-            if ( !FString::IcmpN( var->GetName(), _Str, _StrLen ) ) {
+        for ( ARuntimeVariable * var = ARuntimeVariable::GlobalVariableList() ; var ; var = var->GetNext() ) {
+            if ( !AString::IcmpN( var->GetName(), _Str, _StrLen ) ) {
                 vars.Append( var );
             }
         }
 
         struct {
-            bool operator() ( FRuntimeVariable const * _A, FRuntimeVariable * _B ) {
-                return FString::Icmp( _A->GetName(), _B->GetName() ) < 0;
+            bool operator() ( ARuntimeVariable const * _A, ARuntimeVariable * _B ) {
+                return AString::Icmp( _A->GetName(), _B->GetName() ) < 0;
             }
         } VarSortFunction;
 
@@ -193,18 +193,18 @@ void FCommandContext::Print( const char * _Str, int _StrLen ) {
 
         GLogger.Printf( "Total commands found: %d\n"
                         "Total variables found: %d\n", cmds.Size(), vars.Size() );
-        for ( FRuntimeCommand * cmd : cmds ) {
+        for ( ARuntimeCommand * cmd : cmds ) {
             if ( !cmd->GetComment().IsEmpty() ) {
-                GLogger.Printf( "    %s (%s)\n", cmd->GetName().ToConstChar(), cmd->GetComment().ToConstChar() );
+                GLogger.Printf( "    %s (%s)\n", cmd->GetName().CStr(), cmd->GetComment().CStr() );
             } else{
-                GLogger.Printf( "    %s\n", cmd->GetName().ToConstChar() );
+                GLogger.Printf( "    %s\n", cmd->GetName().CStr() );
             }
         }
-        for ( FRuntimeVariable * var : vars ) {
+        for ( ARuntimeVariable * var : vars ) {
             if ( *var->GetComment() ) {
-                GLogger.Printf( "    %s \"%s\" (%s)\n", var->GetName(), var->GetValue().ToConstChar(), var->GetComment() );
+                GLogger.Printf( "    %s \"%s\" (%s)\n", var->GetName(), var->GetValue().CStr(), var->GetComment() );
             } else {
-                GLogger.Printf( "    %s \"%s\"\n", var->GetName(), var->GetValue().ToConstChar() );
+                GLogger.Printf( "    %s \"%s\"\n", var->GetName(), var->GetValue().CStr() );
             }
         }
     }

@@ -32,16 +32,16 @@ SOFTWARE.
 
 #include <Engine/Base/Public/BaseObject.h>
 
-class FAnimationPattern : public FBaseObject {
-    AN_CLASS( FAnimationPattern, FBaseObject )
+class AAnimationPattern : public ABaseObject {
+    AN_CLASS( AAnimationPattern, ABaseObject )
 
 public:
-    FString Pattern;
+    AString Pattern;
     float   Speed = 1.0f;
     float   Quantizer;
 
     float Calculate( float _Time );
 
 protected:
-    FAnimationPattern() {}
+    AAnimationPattern() {}
 };

@@ -33,88 +33,64 @@ SOFTWARE.
 #include <Engine/Base/Public/BaseObject.h>
 #include <Engine/Core/Public/BV/BvAxisAlignedBox.h>
 
-struct FMeshAsset;
-struct FJoint;
 
 /**
 
-FChannelTransform
+SAnimationChannel
 
-Animation channel transform
+Animation for single joint
 
 */
-struct FChannelTransform {
-    Quat   Rotation;
-    Float3 Position;
-    Float3 Scale;
+struct SAnimationChannel {
+    /** Joint index in skeleton */
+    int32_t JointIndex;
 
-    /** Helper to convert joint transform to matrix 3x4 */
-    void ToMatrix( Float3x4 & _Matrix ) const {
-        _Matrix.Compose( Position, Rotation.ToMatrix(), Scale );
+    /** Joint frames */
+    int32_t TransformOffset;
+
+    bool bHasPosition : 1;
+    bool bHasRotation : 1;
+    bool bHasScale : 1;
+
+    void Read( IStreamBase & _Stream ) {
+        JointIndex = _Stream.ReadInt32();
+        TransformOffset = _Stream.ReadInt32();
+
+        uint8_t bitMask = _Stream.ReadUInt8();
+
+        bHasPosition = (bitMask>>0) & 1;
+        bHasRotation = (bitMask>>1) & 1;
+        bHasScale    = (bitMask>>2) & 1;
+    }
+
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteInt32( JointIndex );
+        _Stream.WriteInt32( TransformOffset );
+        _Stream.WriteUInt8(   ( uint8_t(bHasPosition) << 0 )
+                            | ( uint8_t(bHasRotation) << 1 )
+                            | ( uint8_t(bHasScale   ) << 2 ) );
     }
 };
 
 /**
 
-FAnimationChannel
-
-Animation for single joint
-
-*/
-struct FAnimationChannel {
-    /** Node index (Joint index in skeleton) */
-    int NodeIndex;
-
-    /** Joint frames */
-    int TransformOffset;
-};
-
-/**
-
-FAnimationAsset
-
-Animation plain data
-
-*/
-struct FAnimationAsset {
-    float FrameDelta;       // fixed time delta between frames
-    int FrameCount;         // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
-    TPodArray< FAnimationChannel > Channels;
-    TPodArray< FChannelTransform > Transforms;
-    TPodArray< BvAxisAlignedBox > Bounds;
-    FString Name;
-
-    void Clear();
-    void Read( FFileStream & f );
-    void Write( FFileStream & f );
-    void CalcBoundingBoxes( FMeshAsset const * InMeshData, FJoint const *  InJoints, int InNumJoints );
-};
-
-/**
-
-FAnimation
+ASkeletalAnimation
 
 Animation class
 
 */
-class FAnimation : public FBaseObject {
-    AN_CLASS( FAnimation, FBaseObject )
+class ASkeletalAnimation : public AResourceBase {
+    AN_CLASS( ASkeletalAnimation, AResourceBase )
 
 public:
-    void Initialize( int _FrameCount, float _FrameDelta, FChannelTransform const * _Transforms, int _TransformsCount, FAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds );
-
-    /** Initialize internal resource */
-    void InitializeInternalResource( const char * _InternalResourceName ) override;
-
-    /** Initialize object from file */
-    bool InitializeFromFile( const char * _Path, bool _CreateDefultObjectIfFails = true ) override;
+    void Initialize( int _FrameCount, float _FrameDelta, ATransform const * _Transforms, int _TransformsCount, SAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds );
 
     void Purge();
 
-    TPodArray< FAnimationChannel > const & GetChannels() const { return Channels; }
-    TPodArray< FChannelTransform > const & GetTransforms() const { return Transforms; }
+    TPodArray< SAnimationChannel > const & GetChannels() const { return Channels; }
+    TPodArray< ATransform > const & GetTransforms() const { return Transforms; }
 
-    unsigned short GetChannelIndex( int _NodeIndex ) const;
+    unsigned short GetChannelIndex( int _JointIndex ) const;
 
     int GetFrameCount() const { return FrameCount; }
     float GetFrameDelta() const { return FrameDelta; }
@@ -122,14 +98,23 @@ public:
     float GetDurationInSeconds() const { return DurationInSeconds; }
     float GetDurationNormalizer() const { return DurationNormalizer; }
     TPodArray< BvAxisAlignedBox > const & GetBoundingBoxes() const { return Bounds; }
+    bool IsValid() const { return bIsAnimationValid; }
 
 protected:
-    FAnimation();
-    ~FAnimation();
+    ASkeletalAnimation();
+    ~ASkeletalAnimation();
+
+    /** Load resource from file */
+    bool LoadResource( AString const & _Path ) override;
+
+    /** Create internal resource */
+    void LoadInternalResource( const char * _Path ) override;
+
+    const char * GetDefaultResourcePath() const override { return "/Default/Animation/Default"; }
 
 private:
-    TPodArray< FAnimationChannel > Channels;
-    TPodArray< FChannelTransform > Transforms;
+    TPodArray< SAnimationChannel > Channels;
+    TPodArray< ATransform > Transforms;
     TPodArray< unsigned short > ChannelsMap;
     int     MinNodeIndex;
     int     MaxNodeIndex;
@@ -141,8 +126,10 @@ private:
     float   DurationNormalizer; // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
 
     TPodArray< BvAxisAlignedBox > Bounds;
+
+    bool    bIsAnimationValid;
 };
 
-AN_FORCEINLINE unsigned short FAnimation::GetChannelIndex( int _NodeIndex ) const {
-    return ( _NodeIndex < MinNodeIndex || _NodeIndex > MaxNodeIndex ) ? (unsigned short)-1 : ChannelsMap[ _NodeIndex - MinNodeIndex ];
+AN_FORCEINLINE unsigned short ASkeletalAnimation::GetChannelIndex( int _JointIndex ) const {
+    return ( _JointIndex < MinNodeIndex || _JointIndex > MaxNodeIndex ) ? (unsigned short)-1 : ChannelsMap[ _JointIndex - MinNodeIndex ];
 }

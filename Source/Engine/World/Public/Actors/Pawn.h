@@ -32,21 +32,21 @@ SOFTWARE.
 
 #include "Actor.h"
 
-class FInputComponent;
-class FCommandContext;
-class FController;
+class AInputComponent;
+class ACommandContext;
+class AController;
 
 /*
 
-FPawn
+APawn
 
 Base class for players and monsters
 
 */
-class ANGIE_API FPawn : public FActor {
-    AN_ACTOR( FPawn, FActor )
+class ANGIE_API APawn : public AActor {
+    AN_ACTOR( APawn, AActor )
 
-    friend class FPlayerController; 
+    friend class APlayerController; 
 
 public:
 
@@ -54,17 +54,17 @@ public:
 
 protected:
 
-    FPawn();
+    APawn();
 
     // Override this function to setup input component
-    virtual void SetupPlayerInputComponent( FInputComponent * _Input ) {}
+    virtual void SetupPlayerInputComponent( AInputComponent * _Input ) {}
 
-    virtual void SetupRuntimeCommands( FCommandContext & _Ctx ) {}
+    virtual void SetupRuntimeCommands( ACommandContext & _Ctx ) {}
 
-    FController * GetOwnerController() { return OwnerController; }
+    AController * GetOwnerController() { return OwnerController; }
 
 private:
 
-    FController * OwnerController;
+    AController * OwnerController;
 
 };

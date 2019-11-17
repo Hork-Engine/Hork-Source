@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Engine/Base/Public/BaseObject.h>
 
-class FAnimation;
-class FSkinnedComponent;
+class ASkeletalAnimation;
+class ASkinnedComponent;
 
 /**
 
@@ -50,25 +50,25 @@ enum EAnimationPlayMode {
 
 /**
 
-FAnimationController
+AAnimationController
 
 Animation controller (track, state)
 
 */
-class FAnimationController : public FBaseObject {
-    AN_CLASS( FAnimationController, FBaseObject )
+class AAnimationController : public ABaseObject {
+    AN_CLASS( AAnimationController, ABaseObject )
 
-    friend class FSkinnedComponent;
+    friend class ASkinnedComponent;
 
 public:
     /** Set source animation */
-    void SetAnimation( FAnimation * _Animation );
+    void SetAnimation( ASkeletalAnimation * _Animation );
 
     /** Get source animation */
-    FAnimation * GetAnimation() { return Animation; }
+    ASkeletalAnimation * GetAnimation() { return Animation; }
 
     /** Get animation owner */
-    FSkinnedComponent * GetOwner() { return Owner; }
+    ASkinnedComponent * GetOwner() { return Owner; }
 
     /** Set position on animation track */
     void SetTime( float _Time );
@@ -104,7 +104,7 @@ public:
     bool IsEnabled() const { return bEnabled; }
 
 protected:
-    FAnimationController();
+    AAnimationController();
 
 private:
     float TimeLine;
@@ -115,6 +115,6 @@ private:
     int Frame;
     int NextFrame;
     float Blend;
-    FSkinnedComponent * Owner;
-    TRef< FAnimation > Animation;
+    ASkinnedComponent * Owner;
+    TRef< ASkeletalAnimation > Animation;
 };

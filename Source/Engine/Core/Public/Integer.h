@@ -320,7 +320,7 @@ public:
     }
 
     SignedByte Clamp( const int8_t & _Min, const int8_t & _Max ) const {
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     SignedByte SwapBytes() const {
@@ -336,34 +336,32 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 5 > buffer;
         return buffer.Sprintf( "%d", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%d", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%d", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    SignedByte & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    SignedByte & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     SignedByte & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( &Value, 1 );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteInt8( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( &Value, 1 );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadInt8();
     }
 
     // Static methods
@@ -608,7 +606,7 @@ public:
     }
 
     Byte Clamp( const uint8_t & _Min, const uint8_t & _Max ) const {
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     Byte SwapBytes() const {
@@ -624,34 +622,32 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 4 > buffer;
         return buffer.Sprintf( "%u", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%u", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%u", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    Byte & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    Byte & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     Byte & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( &Value, 1 );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteUInt8( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( &Value, 1 );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadUInt8();
     }
 
     // Static methods
@@ -920,7 +916,7 @@ public:
     }
 
     Short Clamp( const int16_t & _Min, const int16_t & _Max ) const {
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     Short SwapBytes() const {
@@ -944,34 +940,32 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 7 > buffer;
         return buffer.Sprintf( "%d", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%d", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%d", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    Short & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    Short & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     Short & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( *( word * )&Value );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteInt16( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( *( word * )&Value );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadInt16();
     }
 
     // Static methods
@@ -1231,7 +1225,7 @@ public:
     }
 
     UShort Clamp( const uint16_t & _Min, const uint16_t & _Max ) const {
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     UShort SwapBytes() const {
@@ -1255,34 +1249,32 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 6 > buffer;
         return buffer.Sprintf( "%u", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%u", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%u", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    UShort & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    UShort & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     UShort & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( *( word * )&Value );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteUInt16( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( *( word * )&Value );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadUInt16();
     }
 
     // Static methods
@@ -1538,7 +1530,7 @@ public:
     }
 
     Int Clamp( const int32_t & _Min, const int32_t & _Max ) const {
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     Int SwapBytes() const {
@@ -1562,34 +1554,32 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 12 > buffer;
         return buffer.Sprintf( "%d", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%d", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%d", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    Int & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    Int & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     Int & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( *( dword * )&Value );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteInt32( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( *( dword * )&Value );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadInt32();
     }
 
     // Static methods
@@ -1836,7 +1826,7 @@ public:
     }
 
     UInt Clamp( const uint32_t & _Min, const uint32_t & _Max ) const {
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     UInt SwapBytes() const {
@@ -1860,34 +1850,32 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 11 > buffer;
         return buffer.Sprintf( "%u", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%u", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%u", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    UInt & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    UInt & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     UInt & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( *( dword * )&Value );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteUInt32( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( *( dword * )&Value );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadUInt32();
     }
 
     // Static methods
@@ -2147,7 +2135,7 @@ public:
     }
 
     Long Clamp( const int64_t & _Min, const int64_t & _Max ) const {
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     Long SwapBytes() const {
@@ -2178,34 +2166,32 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 21 > buffer;
         return buffer.Sprintf( "%d", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%d", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%d", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    Long & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    Long & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     Long & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( *( ddword * )&Value );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteInt64( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( *( ddword * )&Value );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadInt64();
     }
 
     // Static methods
@@ -2475,7 +2461,7 @@ public:
     }
 
     ULong Clamp( const uint64_t & _Min, const uint64_t & _Max ) const {
-        return FMath::Min( FMath::Max( Value, _Min ), _Max );
+        return Math::Min( Math::Max( Value, _Min ), _Max );
     }
 
     ULong SwapBytes() const {
@@ -2506,34 +2492,32 @@ public:
     }
 
     // String conversions
-    FString ToString() const {
+    AString ToString() const {
         TSprintfBuffer< 21 > buffer;
         return buffer.Sprintf( "%u", Value );
     }
 
-    const char * ToConstChar() const {
-        return FString::Fmt( "%u", Value );
+    const char * CStr() const {
+        return AString::Fmt( "%u", Value );
     }
 
-    FString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return FString::ToHexString( Value, _LeadingZeros, _Prefix );
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
     }
 
-    ULong & FromString( const FString & _String ) {
-        return FromString( _String.ToConstChar() );
+    ULong & FromString( const AString & _String ) {
+        return FromString( _String.CStr() );
     }
 
     ULong & FromString( const char * _String );
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream.Write( *( ddword * )&Value );
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteUInt64( Value );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream.Read( *( ddword * )&Value );
+    void Read( IStreamBase & _Stream ) {
+        Value = _Stream.ReadUInt64();
     }
 
     // Static methods
@@ -3165,15 +3149,14 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -3199,15 +3182,14 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -3233,15 +3215,14 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -3267,15 +3248,14 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -3301,15 +3281,14 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -3335,15 +3314,14 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -3369,15 +3347,14 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -3403,15 +3380,14 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
     }
 
     // Static methods
@@ -3438,16 +3414,16 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -3474,16 +3450,16 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -3510,16 +3486,16 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -3546,16 +3522,16 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -3582,16 +3558,16 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -3618,16 +3594,16 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -3654,16 +3630,16 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -3690,16 +3666,16 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
     }
 
     // Static methods
@@ -3727,17 +3703,18 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
@@ -3765,17 +3742,18 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
@@ -3803,17 +3781,18 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
@@ -3841,17 +3820,18 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
@@ -3879,17 +3859,18 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
@@ -3917,17 +3898,18 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
@@ -3955,17 +3937,18 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
@@ -3993,25 +3976,20 @@ public:
     }
 
     // Byte serialization
-    template< typename T >
-    void Write( FStreamBase< T > & _Stream ) const {
-        _Stream << X << Y << Z << W;
+    void Write( IStreamBase & _Stream ) const {
+        X.Write( _Stream );
+        Y.Write( _Stream );
+        Z.Write( _Stream );
+        W.Write( _Stream );
     }
 
-    template< typename T >
-    void Read( FStreamBase< T > & _Stream ) {
-        _Stream >> X;
-        _Stream >> Y;
-        _Stream >> Z;
-        _Stream >> W;
+    void Read( IStreamBase & _Stream ) {
+        X.Read( _Stream );
+        Y.Read( _Stream );
+        Z.Read( _Stream );
+        W.Read( _Stream );
     }
 
     // Static methods
     static constexpr int NumComponents() { return 4; }
 };
-
-#if SIZEOF_SIZE_T == 4
-using FSize = UInt;
-#else
-using FSize = ULong;
-#endif

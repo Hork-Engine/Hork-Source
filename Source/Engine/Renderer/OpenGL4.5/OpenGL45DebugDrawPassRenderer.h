@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class FDebugDrawPassRenderer : public FPassRenderer {
+class ADebugDrawPassRenderer : public APassRenderer {
 public:
     void Initialize();
     void Deinitialize();
@@ -53,6 +53,6 @@ private:
     int IndexBufferSize;
 };
 
-extern FDebugDrawPassRenderer GDebugDrawPassRenderer;
+extern ADebugDrawPassRenderer GDebugDrawPassRenderer;
 
 }

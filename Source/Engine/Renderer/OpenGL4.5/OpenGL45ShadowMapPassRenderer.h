@@ -4,7 +4,7 @@
 
 namespace OpenGL45 {
 
-class FShadowMapPassRenderer : public FPassRenderer {
+class AShadowMapPassRenderer : public APassRenderer {
 public:
     void Initialize();
     void Deinitialize();
@@ -19,14 +19,14 @@ public:
 private:
     void CreateShadowDepthSamplers();
     void CreateRenderPass();
-    bool BindMaterial( FShadowRenderInstance const * instance );
-    void BindTexturesShadowMapPass( FMaterialFrameData * _Instance );
+    bool BindMaterial( SShadowRenderInstance const * instance );
+    void BindTexturesShadowMapPass( SMaterialFrameData * _Instance );
 
     GHI::Sampler ShadowDepthSampler0;
     GHI::Sampler ShadowDepthSampler1;
     GHI::RenderPass DepthPass;
 };
 
-extern FShadowMapPassRenderer GShadowMapPassRenderer;
+extern AShadowMapPassRenderer GShadowMapPassRenderer;
 
 }

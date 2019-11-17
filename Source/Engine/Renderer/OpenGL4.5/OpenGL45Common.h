@@ -57,14 +57,14 @@ namespace OpenGL45 {
 extern GHI::Device          GDevice;
 extern GHI::State           GState;
 extern GHI::CommandBuffer   Cmd;
-extern FRenderFrame *       GFrameData;
-extern FRenderView *        GRenderView;
+extern SRenderFrame *       GFrameData;
+extern SRenderView *        GRenderView;
 
-AN_FORCEINLINE GHI::Buffer * GPUBufferHandle( FBufferGPU * _Buffer ) {
+AN_FORCEINLINE GHI::Buffer * GPUBufferHandle( ABufferGPU * _Buffer ) {
     return static_cast< GHI::Buffer * >( _Buffer->pHandleGPU );
 }
 
-AN_FORCEINLINE GHI::Texture * GPUTextureHandle( FTextureGPU * _Texture ) {
+AN_FORCEINLINE GHI::Texture * GPUTextureHandle( ATextureGPU * _Texture ) {
     return static_cast< GHI::Texture * >( _Texture->pHandleGPU );
 }
 

@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
-namespace FCore {
+namespace Core {
 
 AN_FORCEINLINE constexpr bool IsLittleEndian() {
 #ifdef AN_LITTLE_ENDIAN
@@ -215,6 +215,6 @@ AN_FORCEINLINE void LittleBlock( void * _Bytes, int _ElementSz, int _Count ) {
 #endif
 }
 
-} // namespace FCore
+} // namespace Core
 
 

@@ -32,15 +32,15 @@ SOFTWARE.
 
 #include "Angl.h"
 
-class FTransform final {
+class ATransform final {
 public:
     Float3 Position;
     Quat Rotation;
     Float3 Scale;
 
-    FTransform();
-    FTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
-    FTransform( Float3 const & _Position, Quat const & _Rotation );
+    ATransform();
+    ATransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
+    ATransform( Float3 const & _Position, Quat const & _Rotation );
     void Clear();
     void SetIdentity();
     void SetScale( Float3 const & _Scale );
@@ -74,90 +74,90 @@ public:
     void StepForward( float _Units );
     void Step( Float3 const & _Vector );
 
-    FTransform operator*( FTransform const & _T ) const;
+    ATransform operator*( ATransform const & _T ) const;
 
-    FTransform Inversed() const;
+    ATransform Inversed() const;
     void InverseSelf();
 
     // Byte serialization
-    template< typename T > void Write( FStreamBase< T > & _Stream ) const;
-    template< typename T > void Read( FStreamBase< T > & _Stream );
+    void Write( IStreamBase & _Stream ) const;
+    void Read( IStreamBase & _Stream );
 };
 
-AN_FORCEINLINE FTransform::FTransform()
+AN_FORCEINLINE ATransform::ATransform()
     : Position( 0, 0, 0 )
     , Rotation( 1, 0, 0, 0 )
     , Scale( 1, 1, 1 )
 {
 }
 
-AN_FORCEINLINE FTransform::FTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale )
+AN_FORCEINLINE ATransform::ATransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale )
     : Position( _Position )
     , Rotation( _Rotation )
     , Scale( _Scale )
 {
 }
 
-AN_FORCEINLINE FTransform::FTransform( Float3 const & _Position, Quat const & _Rotation )
+AN_FORCEINLINE ATransform::ATransform( Float3 const & _Position, Quat const & _Rotation )
     : Position( _Position )
     , Rotation( _Rotation )
     , Scale( 1, 1, 1 )
 {
 }
 
-AN_FORCEINLINE void FTransform::Clear() {
+AN_FORCEINLINE void ATransform::Clear() {
     Position.X = Position.Y = Position.Z = 0;
     SetIdentity();
     SetScale( 1 );
 }
 
-AN_FORCEINLINE void FTransform::SetIdentity() {
+AN_FORCEINLINE void ATransform::SetIdentity() {
     Rotation.SetIdentity();
 }
 
-AN_FORCEINLINE void FTransform::SetScale( Float3 const & _Scale ) {
+AN_FORCEINLINE void ATransform::SetScale( Float3 const & _Scale ) {
     Scale = _Scale;
 }
 
-AN_FORCEINLINE void FTransform::SetScale( float const & _X, float const & _Y, float const & _Z ) {
+AN_FORCEINLINE void ATransform::SetScale( float const & _X, float const & _Y, float const & _Z ) {
     Scale.X = _X; Scale.Y = _Y; Scale.Z = _Z;
 }
 
-AN_FORCEINLINE void FTransform::SetScale( float const & _ScaleXYZ ) {
+AN_FORCEINLINE void ATransform::SetScale( float const & _ScaleXYZ ) {
     Scale.X = Scale.Y = Scale.Z = _ScaleXYZ;
 }
 
-AN_FORCEINLINE void FTransform::SetAngles( Angl const & _Angles ) {
+AN_FORCEINLINE void ATransform::SetAngles( Angl const & _Angles ) {
     Rotation = _Angles.ToQuat();
 }
 
-AN_FORCEINLINE void FTransform::SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll ) {
+AN_FORCEINLINE void ATransform::SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll ) {
     Rotation = Angl( _Pitch, _Yaw, _Roll ).ToQuat();
 }
 
-AN_FORCEINLINE Angl FTransform::GetAngles() const {
+AN_FORCEINLINE Angl ATransform::GetAngles() const {
     Angl Angles;
     Rotation.ToAngles( Angles.Pitch, Angles.Yaw, Angles.Roll );
-    Angles.Pitch = FMath::Degrees( Angles.Pitch );
-    Angles.Yaw = FMath::Degrees( Angles.Yaw );
-    Angles.Roll = FMath::Degrees( Angles.Roll );
+    Angles.Pitch = Math::Degrees( Angles.Pitch );
+    Angles.Yaw = Math::Degrees( Angles.Yaw );
+    Angles.Roll = Math::Degrees( Angles.Roll );
     return Angles;
 }
 
-AN_FORCEINLINE float FTransform::GetPitch() const {
-    return FMath::Degrees( Rotation.Pitch() );
+AN_FORCEINLINE float ATransform::GetPitch() const {
+    return Math::Degrees( Rotation.Pitch() );
 }
 
-AN_FORCEINLINE float FTransform::GetYaw() const {
-    return FMath::Degrees( Rotation.Yaw() );
+AN_FORCEINLINE float ATransform::GetYaw() const {
+    return Math::Degrees( Rotation.Yaw() );
 }
 
-AN_FORCEINLINE float FTransform::GetRoll() const {
-    return FMath::Degrees( Rotation.Roll() );
+AN_FORCEINLINE float ATransform::GetRoll() const {
+    return Math::Degrees( Rotation.Roll() );
 }
 
-AN_FORCEINLINE Float3 FTransform::GetRightVector() const {
-    //return FMath::ToMat3(Rotation)[0];
+AN_FORCEINLINE Float3 ATransform::GetRightVector() const {
+    //return Math::ToMat3(Rotation)[0];
 
     float qyy(Rotation.Y * Rotation.Y);
     float qzz(Rotation.Z * Rotation.Z);
@@ -169,8 +169,8 @@ AN_FORCEINLINE Float3 FTransform::GetRightVector() const {
     return Float3( 1 - 2 * (qyy +  qzz), 2 * (qxy + qwz), 2 * (qxz - qwy) );
 }
 
-AN_FORCEINLINE Float3 FTransform::GetLeftVector() const {
-    //return -FMath::ToMat3(Rotation)[0];
+AN_FORCEINLINE Float3 ATransform::GetLeftVector() const {
+    //return -Math::ToMat3(Rotation)[0];
 
     float qyy(Rotation.Y * Rotation.Y);
     float qzz(Rotation.Z * Rotation.Z);
@@ -182,8 +182,8 @@ AN_FORCEINLINE Float3 FTransform::GetLeftVector() const {
     return Float3( -1 + 2 * (qyy +  qzz), -2 * (qxy + qwz), -2 * (qxz - qwy) );
 }
 
-AN_FORCEINLINE Float3 FTransform::GetUpVector() const {
-    //return FMath::ToMat3(Rotation)[1];
+AN_FORCEINLINE Float3 ATransform::GetUpVector() const {
+    //return Math::ToMat3(Rotation)[1];
 
     float qxx(Rotation.X * Rotation.X);
     float qzz(Rotation.Z * Rotation.Z);
@@ -195,8 +195,8 @@ AN_FORCEINLINE Float3 FTransform::GetUpVector() const {
     return Float3( 2 * (qxy - qwz), 1 - 2 * (qxx +  qzz), 2 * (qyz + qwx) );
 }
 
-AN_FORCEINLINE Float3 FTransform::GetDownVector() const {
-    //return -FMath::ToMat3(Rotation)[1];
+AN_FORCEINLINE Float3 ATransform::GetDownVector() const {
+    //return -Math::ToMat3(Rotation)[1];
 
     float qxx(Rotation.X * Rotation.X);
     float qzz(Rotation.Z * Rotation.Z);
@@ -208,8 +208,8 @@ AN_FORCEINLINE Float3 FTransform::GetDownVector() const {
     return Float3( -2 * (qxy - qwz), -1 + 2 * (qxx +  qzz), -2 * (qyz + qwx) );
 }
 
-AN_FORCEINLINE Float3 FTransform::GetBackVector() const {
-    //return FMath::ToMat3(Rotation)[2];
+AN_FORCEINLINE Float3 ATransform::GetBackVector() const {
+    //return Math::ToMat3(Rotation)[2];
 
     float qxx(Rotation.X * Rotation.X);
     float qyy(Rotation.Y * Rotation.Y);
@@ -221,8 +221,8 @@ AN_FORCEINLINE Float3 FTransform::GetBackVector() const {
     return Float3( 2 * (qxz + qwy), 2 * (qyz - qwx), 1 - 2 * (qxx +  qyy) );
 }
 
-AN_FORCEINLINE Float3 FTransform::GetForwardVector() const {
-    //return -FMath::ToMat3(Rotation)[2];
+AN_FORCEINLINE Float3 ATransform::GetForwardVector() const {
+    //return -Math::ToMat3(Rotation)[2];
 
     float qxx(Rotation.X * Rotation.X);
     float qyy(Rotation.Y * Rotation.Y);
@@ -234,10 +234,10 @@ AN_FORCEINLINE Float3 FTransform::GetForwardVector() const {
     return Float3( -2 * (qxz + qwy), -2 * (qyz - qwx), -1 + 2 * (qxx +  qyy) );
 }
 
-AN_FORCEINLINE void FTransform::GetVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const {
-    //if ( _Right ) *_Right = FMath::ToMat3(Rotation)[0];
-    //if ( _Up ) *_Up = FMath::ToMat3(Rotation)[1];
-    //if ( _Back ) *_Back = FMath::ToMat3(Rotation)[2];
+AN_FORCEINLINE void ATransform::GetVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const {
+    //if ( _Right ) *_Right = Math::ToMat3(Rotation)[0];
+    //if ( _Up ) *_Up = Math::ToMat3(Rotation)[1];
+    //if ( _Back ) *_Back = Math::ToMat3(Rotation)[2];
     //return;
 
     float qxx(Rotation.X * Rotation.X);
@@ -270,79 +270,79 @@ AN_FORCEINLINE void FTransform::GetVectors( Float3 * _Right, Float3 * _Up, Float
 }
 
 
-AN_FORCEINLINE void FTransform::ComputeTransformMatrix( Float3x4 & _LocalTransformMatrix ) const {
+AN_FORCEINLINE void ATransform::ComputeTransformMatrix( Float3x4 & _LocalTransformMatrix ) const {
     _LocalTransformMatrix.Compose( Position, Rotation.ToMatrix(), Scale );
 }
 
-AN_FORCEINLINE void FTransform::TurnRightFPS( float _DeltaAngleRad ) {
+AN_FORCEINLINE void ATransform::TurnRightFPS( float _DeltaAngleRad ) {
     TurnLeftFPS( -_DeltaAngleRad );
 }
 
-AN_FORCEINLINE void FTransform::TurnLeftFPS( float _DeltaAngleRad ) {
+AN_FORCEINLINE void ATransform::TurnLeftFPS( float _DeltaAngleRad ) {
     TurnAroundAxis( _DeltaAngleRad, Float3( 0,1,0 ) );
 }
 
-AN_FORCEINLINE void FTransform::TurnUpFPS( float _DeltaAngleRad ) {
+AN_FORCEINLINE void ATransform::TurnUpFPS( float _DeltaAngleRad ) {
     TurnAroundAxis( _DeltaAngleRad, GetRightVector() );
 }
 
-AN_FORCEINLINE void FTransform::TurnDownFPS( float _DeltaAngleRad ) {
+AN_FORCEINLINE void ATransform::TurnDownFPS( float _DeltaAngleRad ) {
     TurnUpFPS( -_DeltaAngleRad );
 }
 
-AN_FORCEINLINE void FTransform::TurnAroundAxis( float _DeltaAngleRad, Float3 const & _NormalizedAxis ) {
+AN_FORCEINLINE void ATransform::TurnAroundAxis( float _DeltaAngleRad, Float3 const & _NormalizedAxis ) {
     float s, c;
 
-    FMath::RadSinCos( _DeltaAngleRad * 0.5f, s, c );
+    Math::RadSinCos( _DeltaAngleRad * 0.5f, s, c );
 
     Rotation = Quat( c, s * _NormalizedAxis.X, s * _NormalizedAxis.Y, s * _NormalizedAxis.Z ) * Rotation;
 }
 
-AN_FORCEINLINE void FTransform::TurnAroundVector( float _DeltaAngleRad, Float3 const & _Vector ) {
+AN_FORCEINLINE void ATransform::TurnAroundVector( float _DeltaAngleRad, Float3 const & _Vector ) {
     TurnAroundAxis( _DeltaAngleRad, _Vector.Normalized() );
 }
 
-AN_FORCEINLINE void FTransform::StepRight( float _Units ) {
+AN_FORCEINLINE void ATransform::StepRight( float _Units ) {
     Step( GetRightVector() * _Units );
 }
 
-AN_FORCEINLINE void FTransform::StepLeft( float _Units ) {
+AN_FORCEINLINE void ATransform::StepLeft( float _Units ) {
     Step( GetLeftVector() * _Units );
 }
 
-AN_FORCEINLINE void FTransform::StepUp( float _Units ) {
+AN_FORCEINLINE void ATransform::StepUp( float _Units ) {
     Step( GetUpVector() * _Units );
 }
 
-AN_FORCEINLINE void FTransform::StepDown( float _Units ) {
+AN_FORCEINLINE void ATransform::StepDown( float _Units ) {
     Step( GetDownVector() * _Units );
 }
 
-AN_FORCEINLINE void FTransform::StepBack( float _Units ) {
+AN_FORCEINLINE void ATransform::StepBack( float _Units ) {
     Step( GetBackVector() * _Units );
 }
 
-AN_FORCEINLINE void FTransform::StepForward( float _Units ) {
+AN_FORCEINLINE void ATransform::StepForward( float _Units ) {
     Step( GetForwardVector() * _Units );
 }
 
-AN_FORCEINLINE void FTransform::Step( Float3 const & _Vector ) {
+AN_FORCEINLINE void ATransform::Step( Float3 const & _Vector ) {
     Position += _Vector;
 }
 
-AN_FORCEINLINE FTransform FTransform::operator*( FTransform const & _T ) const {
+AN_FORCEINLINE ATransform ATransform::operator*( ATransform const & _T ) const {
     Float3x4 M;
     ComputeTransformMatrix( M );
-    return FTransform( M * _T.Position, Rotation * _T.Rotation, Scale * _T.Scale );
+    return ATransform( M * _T.Position, Rotation * _T.Rotation, Scale * _T.Scale );
 }
 
-AN_FORCEINLINE FTransform FTransform::Inversed() const {
+AN_FORCEINLINE ATransform ATransform::Inversed() const {
     Float3x4 M;
     ComputeTransformMatrix( M );
-    return FTransform( M.Inversed().DecomposeTranslation(), Rotation.Inversed(), Float3(1.0) / Scale );
+    return ATransform( M.Inversed().DecomposeTranslation(), Rotation.Inversed(), Float3(1.0) / Scale );
 }
 
-AN_FORCEINLINE void FTransform::InverseSelf() {
+AN_FORCEINLINE void ATransform::InverseSelf() {
     Float3x4 M;
     ComputeTransformMatrix( M );
     Position = M.Inversed().DecomposeTranslation();
@@ -350,14 +350,14 @@ AN_FORCEINLINE void FTransform::InverseSelf() {
     Scale = Float3(1.0) / Scale;
 }
 
-template< typename T >
-AN_FORCEINLINE void FTransform::Write( FStreamBase< T > & _Stream ) const {
-    _Stream << Position << Rotation << Scale;
+AN_FORCEINLINE void ATransform::Write( IStreamBase & _Stream ) const {
+    Position.Write( _Stream );
+    Rotation.Write( _Stream );
+    Scale.Write( _Stream );
 }
 
-template< typename T >
-AN_FORCEINLINE void FTransform::Read( FStreamBase< T > & _Stream ) {
-    _Stream >> Position;
-    _Stream >> Rotation;
-    _Stream >> Scale;
+AN_FORCEINLINE void ATransform::Read( IStreamBase & _Stream ) {
+    Position.Read( _Stream );
+    Rotation.Read( _Stream );
+    Scale.Read( _Stream );
 }

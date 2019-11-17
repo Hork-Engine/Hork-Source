@@ -77,7 +77,7 @@ static BOOL IsWow64() {
 
 #endif
 
-void GetCPUInfo( FCPUInfo & _Info ) {
+void GetCPUInfo( SCPUInfo & _Info ) {
     int32_t cpuInfo[4];
     char vendor[13];
 
@@ -114,9 +114,9 @@ void GetCPUInfo( FCPUInfo & _Info ) {
     memcpy( vendor + 8, &cpuInfo[2], 4 );
     vendor[12] = '\0';
 
-    if ( !FString::Cmp( vendor, "GenuineIntel" ) ){
+    if ( !AString::Cmp( vendor, "GenuineIntel" ) ){
         _Info.Intel = true;
-    } else if ( !FString::Cmp( vendor, "AuthenticAMD" ) ){
+    } else if ( !AString::Cmp( vendor, "AuthenticAMD" ) ){
         _Info.AMD = true;
     }
 
