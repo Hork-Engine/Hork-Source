@@ -51,12 +51,12 @@ class ANGIE_API ADrawSurf : public APhysicalBody {
 public:
     enum { RENDERING_GROUP_DEFAULT = 1 };
 
-    // Rendering group to filter mesh during rendering
+    /** Rendering group to filter mesh during rendering */
     int RenderingGroup;
 
     int RenderingOrder = RENDER_ORDER_DEFAULT;
 
-    // Helper. Return true if surface is skinned mesh
+    /** Helper. Return true if surface is skinned mesh */
     bool IsSkinnedMesh() const { return bSkinnedMesh; }
 
 protected:

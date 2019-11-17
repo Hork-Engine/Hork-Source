@@ -63,16 +63,21 @@ enum ECollisionMask {
 };
 
 enum EPhysicsBehavior {
-    PB_STATIC,          // No physics simulation, just collisions
-    PB_DYNAMIC,         // Physics simulated by engine
-    PB_KINEMATIC        // Physics simulated by game logic
+    /** No physics simulation, just collisions */
+    PB_STATIC,
+
+    /** Physics simulated by engine */
+    PB_DYNAMIC,
+
+    /** Physics simulated by game logic */
+    PB_KINEMATIC
 };
 
 class APhysicalBody : public ASpatialObject {
     AN_COMPONENT( APhysicalBody, ASpatialObject )
 
     friend class SPhysicalBodyMotionState;
-    friend struct ACollisionFilterCallback;
+    friend struct SCollisionFilterCallback;
     friend class AWorld;
 
 public:
@@ -84,103 +89,103 @@ public:
     AOverlapDelegate E_OnEndOverlap;
     AOverlapDelegate E_OnUpdateOverlap;
 
-    // Physics simulation. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    /** Physics simulation. Set it before component initialization or call UpdatePhysicsAttribs() to apply property. */
     EPhysicsBehavior PhysicsBehavior;
 
-    // Collision group. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    // See ECollisionMask.
+    /** Collision group. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    See ECollisionMask. */
     int CollisionGroup = CM_WORLD;
 
-    // Collision mask. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    // See ECollisionMask.
+    /** Collision mask. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    See ECollisionMask. */
     int CollisionMask = CM_ALL;
 
-    // Trigger can produce overlap events. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    /** Trigger can produce overlap events. Set it before component initialization or call UpdatePhysicsAttribs() to apply property. */
     bool bTrigger;
 
-    // Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact)
+    /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
     bool bDispatchContactEvents;
 
-    // Dispatch contact events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap)
+    /** Dispatch contact events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
     bool bDispatchOverlapEvents;
 
-    // Generate contact points for contact events. Use with bDispatchContactEvents.
+    /** Generate contact points for contact events. Use with bDispatchContactEvents. */
     bool bGenerateContactPoints;
 
-    // Collision body composition. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    /** Collision body composition. Set it before component initialization or call UpdatePhysicsAttribs() to apply property. */
     ACollisionBodyComposition BodyComposition;
 
-    // Set to true if you want to use body composition from overrided method DefaultBodyComposition(). Set it before component initialization
-    // or call UpdatePhysicsAttribs() to apply property.
+    /** Set to true if you want to use body composition from overrided method DefaultBodyComposition(). Set it before component initialization
+    or call UpdatePhysicsAttribs() to apply property. */
     bool bUseDefaultBodyComposition;
 
-    // Set to true to disable world gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    // Only for PS_DYNAMIC
+    /** Set to true to disable world gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    Only for PS_DYNAMIC */
     bool bDisableGravity;
 
-    // Set to true to override world gravity and use self gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    // Only for PS_DYNAMIC
+    /** Set to true to override world gravity and use self gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    Only for PS_DYNAMIC */
     bool bOverrideWorldGravity;
 
-    // Object self gravity, use with bOverrideWorldGravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    // Only for PS_DYNAMIC
+    /** Object self gravity, use with bOverrideWorldGravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    Only for PS_DYNAMIC */
     Float3 SelfGravity;
 
-    // Object mass. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    // Only for PS_DYNAMIC
+    /** Object mass. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
+    Only for PS_DYNAMIC */
     float Mass = 1.0f;
 
-    // Used to build AI navigation mesh
-    // Only for PB_STATIC
+    /** Used to build AI navigation mesh
+    Only for PB_STATIC */
     bool bAINavigation; // alternative names: bContainsNavigationData, bUseForAINavigation?
 
-    // Helper for AI navmesh builder to mark non-walkable objects (static obstacles)
+    /** Helper for AI navmesh builder to mark non-walkable objects (static obstacles) */
     bool bAINonWalkable;
 
     // TODO:
     //bool bAIDynamicObstacle;
 
-    // Set collision group. See ECollisionMask.
+    /** Set collision group. See ECollisionMask. */
     void SetCollisionGroup( int _CollisionGroup );
 
-    // Set collision mask. See ECollisionMask.
+    /** Set collision mask. See ECollisionMask. */
     void SetCollisionMask( int _CollisionMask );
 
-    // Set collision group and mask. See ECollisionMask.
+    /** Set collision group and mask. See ECollisionMask. */
     void SetCollisionFilter( int _CollisionGroup, int _CollisionMask );
 
-    // Set actor to ignore collisions with this component
+    /** Set actor to ignore collisions with this component */
     void AddCollisionIgnoreActor( AActor * _Actor );
 
-    // Unset actor to ignore collisions with this component
+    /** Unset actor to ignore collisions with this component */
     void RemoveCollisionIgnoreActor( AActor * _Actor );
 
-    // Force physics activation
+    /** Force physics activation */
     void ActivatePhysics();
 
-    // Is physics active
+    /** Is physics active */
     bool IsPhysicsActive() const;
 
-    // Object linear velocity
+    /** Object linear velocity */
     void SetLinearVelocity( Float3 const & _Velocity );
 
-    // Add value to current velocity
+    /** Add value to current velocity */
     void AddLinearVelocity( Float3 const & _Velocity );
 
-    // Object linear velocity factor
+    /** Object linear velocity factor */
     void SetLinearFactor( Float3 const & _Factor );
 
     void SetLinearSleepingThreshold( float _Threshold );
 
     void SetLinearDamping( float _Damping );
 
-    // Object angular velocity
+    /** Object angular velocity */
     void SetAngularVelocity( Float3 const & _Velocity );
 
-    // Add value to current velocity
+    /** Add value to current velocity */
     void AddAngularVelocity( Float3 const & _Velocity );
 
-    // Object angular velocity factor
+    /** Object angular velocity factor */
     void SetAngularFactor( Float3 const & _Factor );
 
     void SetAngularSleepingThreshold( float _Threshold );
@@ -191,28 +196,28 @@ public:
 
     void SetAnisotropicFriction( Float3 const & _Friction );
 
-    // The RollingFriction prevents rounded shapes, such as spheres, cylinders and capsules from rolling forever.
+    /** The RollingFriction prevents rounded shapes, such as spheres, cylinders and capsules from rolling forever. */
     void SetRollingFriction( float _Friction );
 
-    // Best simulation results using zero restitution.
+    /** Best simulation results using zero restitution. */
     void SetRestitution( float _Restitution );
 
-    // Keep ContactProcessingThreshold*ContactProcessingThreshold < FLT_MAX
+    /** Keep ContactProcessingThreshold*ContactProcessingThreshold < FLT_MAX */
     void SetContactProcessingThreshold( float _Threshold );
 
-    // Continuous collision detection swept radius
+    /** Continuous collision detection swept radius */
     void SetCcdRadius( float _Radius );
 
-    // Don't do continuous collision detection if the motion (in one step) is less then CcdMotionThreshold
+    /** Don't do continuous collision detection if the motion (in one step) is less then CcdMotionThreshold */
     void SetCcdMotionThreshold( float _Threshold );
 
-    // Get collision group. See ECollisionMask.
+    /** Get collision group. See ECollisionMask. */
     int GetCollisionGroup() const { return CollisionGroup; }
 
-    // Get collision mask. See ECollisionMask.
+    /** Get collision mask. See ECollisionMask. */
     int SetCollisionMask() const { return CollisionMask; }
 
-    // Get object velocity. For soft bodies use GetVertexVelocity in ASoftMeshComponent.
+    /** Get object velocity. For soft bodies use GetVertexVelocity in ASoftMeshComponent. */
     Float3 GetLinearVelocity() const;
 
     Float3 const & GetLinearFactor() const;
@@ -277,7 +282,7 @@ public:
 
     ACollisionBodyComposition const & GetBodyComposition() const;
 
-    // Create 3d mesh model from collision body composition. Store coordinates in world space.
+    /** Create 3d mesh model from collision body composition. Store coordinates in world space. */
     void CreateCollisionModel( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices );
 
     void ContactTest( TPodArray< APhysicalBody * > & _Result );

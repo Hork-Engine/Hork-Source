@@ -45,7 +45,7 @@ class AClusteredObject : public ASceneComponent {
 public:
     enum { RENDERING_GROUP_DEFAULT = 1 };
 
-    // Rendering group to filter lights during rendering
+    /** Rendering group to filter lights during rendering */
     int RenderingGroup;
 
     void ForceOutdoor( bool _OutdoorSurface );

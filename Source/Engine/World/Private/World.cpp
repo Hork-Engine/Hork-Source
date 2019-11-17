@@ -114,7 +114,7 @@ public:
 
 static APhysicsDebugDraw PhysicsDebugDraw;
 
-struct ACollisionFilterCallback : public btOverlapFilterCallback {
+struct SCollisionFilterCallback : public btOverlapFilterCallback {
 
     // Return true when pairs need collision
     bool needBroadphaseCollision( btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1 ) const override {
@@ -153,7 +153,7 @@ struct ACollisionFilterCallback : public btOverlapFilterCallback {
     }
 };
 
-static ACollisionFilterCallback CollisionFilterCallback;
+static SCollisionFilterCallback CollisionFilterCallback;
 
 extern ContactAddedCallback gContactAddedCallback;
 

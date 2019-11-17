@@ -105,13 +105,13 @@ private:
 
     AInputMappings * Parent;
 
-    // Keys mapped to this axis
+    /** Keys mapped to this axis */
     TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
-    // Mouse axes mapped to this axis
+    /** Mouse axes mapped to this axis */
     byte MappedMouseAxes;
 
-    // Joystick axes mapped to this axis
+    /** Joystick axes mapped to this axis */
     uint32_t MappedJoystickAxes[MAX_JOYSTICKS_COUNT];
 
     int IndexInArrayOfAxes;
@@ -133,7 +133,7 @@ private:
 
     AInputMappings * Parent;
 
-    // Keys mapped to this action
+    /** Keys mapped to this action */
     TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
     int IndexInArrayOfActions;
@@ -185,10 +185,10 @@ private:
 
     SMapping * GetMapping( int _DevId, int _KeyToken );
 
-    // All known axes
+    /** All known axes */
     TPodArray< AInputAxis * > Axes;
 
-    // All known actions
+    /** All known actions */
     TPodArray< AInputAction * > Actions;
 
     SMapping KeyboardMappings[ MAX_KEYBOARD_BUTTONS ];
@@ -206,61 +206,62 @@ public:
     // Set displays to receive input
     //int ReceiveInputMask = RI_ALL_DISPLAYS;
 
-    // Filter keyboard events
+    /** Filter keyboard events */
     bool bIgnoreKeyboardEvents;
 
-    // Filter mouse events
+    /** Filter mouse events */
     bool bIgnoreMouseEvents;
 
-    // Filter joystick events
+    /** Filter joystick events */
     bool bIgnoreJoystickEvents;
 
-    // Filter character events
+    /** Filter character events */
     bool bIgnoreCharEvents;
 
     bool bActive = true;
 
     int ControllerId;
 
-    // Set input mappings config
+    /** Set input mappings config */
     void SetInputMappings( AInputMappings * _InputMappings );
 
-    // Get input mappints config
+    /** Get input mappints config */
     AInputMappings * GetInputMappings();
 
-    // Bind axis to class method
+    /** Bind axis to class method */
     template< typename T >
     void BindAxis( const char * _Axis, T * _Object, void (T::*_Method)( float ), bool _ExecuteEvenWhenPaused = false ) {
         BindAxis( _Axis, { _Object, _Method }, _ExecuteEvenWhenPaused );
     }
 
-    // Bind axis to function
+    /** Bind axis to function */
     void BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused = false );
 
-    // Unbind axis
+    /** Unbind axis */
     void UnbindAxis( const char * _Axis );
 
-    // Bind action to class method
+    /** Bind action to class method */
     template< typename T >
     void BindAction( const char * _Action, int _Event, T * _Object, void (T::*_Method)(), bool _ExecuteEvenWhenPaused = false ) {
         BindAction( _Action, _Event, { _Object, _Method }, _ExecuteEvenWhenPaused );
     }
 
-    // Bind action to function
+    /** Bind action to function */
     void BindAction( const char * _Action, int _Event, TCallback< void() > const & _Callback, bool _ExecuteEvenWhenPaused = false );
 
-    // Unbind action
+    /** Unbind action */
     void UnbindAction( const char * _Action );
 
-    // Unbind all
+    /** Unbind all */
     void UnbindAll();
 
-    // Set callback for input characters
+    /** Set callback for input characters */
     template< typename T >
     void SetCharacterCallback( T * _Object, void (T::*_Method)( FWideChar, int, double ), bool _ExecuteEvenWhenPaused = false ) {
         SetCharacterCallback( { _Object, _Method }, _ExecuteEvenWhenPaused );
     }
 
+    /** Set callback for input characters */
     void SetCharacterCallback( TCallback< void( FWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused = false );
 
     void UnsetCharacterCallback();
@@ -271,10 +272,10 @@ public:
     bool IsMouseDown( int _Button ) const { return GetButtonState( ID_MOUSE, _Button ); }
     bool IsJoyDown( const struct SJoystick * _Joystick, int _Button ) const;
 
-    // Used by EngineInstance during main game tick to notfiy input component for button press/release
+    /** Used by EngineInstance during main game tick to notfiy input component for button press/release */
     void SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp );
 
-    // Return is button pressed or not
+    /** Return is button pressed or not */
     bool GetButtonState( int _DevId, int _Button ) const;
 
     void SetMouseAxisState( float _X, float _Y );
@@ -289,13 +290,13 @@ public:
     AInputComponent * GetNext() { return Next; }
     AInputComponent * GetPrev() { return Prev; }
 
-    // Used by EngineInstance during main game tick to update joystick state
+    /** Used by EngineInstance during main game tick to update joystick state */
     static void SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected );
 
-    // Used by EngineInstance during main game tick to notfiy input component for button press/release
+    /** Used by EngineInstance during main game tick to notfiy input component for button press/release */
     static void SetJoystickButtonState( int _Joystick, int _Button, int _Action, double _TimeStamp );
 
-    // Used by EngineInstance during main game tick to update joystick axis state
+    /** Used by EngineInstance during main game tick to update joystick axis state */
     static void SetJoystickAxisState( int _Joystick, int _Axis, float _Value );
 
     static float GetJoystickAxisState( int _Joystick, int _Axis );
@@ -330,22 +331,22 @@ protected:
 
     void DeinitializeComponent() override;
 
-    // Return axis binding or -1 if axis is not binded
+    /** Return axis binding or -1 if axis is not binded */
     int GetAxisBinding( const char * _Axis ) const;
 
-    // Return axis binding or -1 if axis is not binded
+    /** Return axis binding or -1 if axis is not binded */
     int GetAxisBinding( const AInputAxis * _Axis ) const;
 
-    // Return axis binding or -1 if axis is not binded
+    /** Return axis binding or -1 if axis is not binded */
     int GetAxisBindingHash( const char * _Axis, int _Hash ) const;
 
-    // Return action binding or -1 if action is not binded
+    /** Return action binding or -1 if action is not binded */
     int GetActionBinding( const char * _Action ) const;
 
-    // Return action binding or -1 if action is not binded
+    /** Return action binding or -1 if action is not binded */
     int GetActionBinding( const AInputAction * _Action ) const;
 
-    // Return action binding or -1 if action is not binded
+    /** Return action binding or -1 if action is not binded */
     int GetActionBindingHash( const char * _Action, int _Hash ) const;
 
     TRef< AInputMappings > InputMappings;
@@ -381,27 +382,27 @@ protected:
 
 class ANGIE_API AInputHelper final {
 public:
-    // Translate device to string
+    /** Translate device to string */
     static const char * TranslateDevice( int _DevId );
 
-    // Translate modifier to string
+    /** Translate modifier to string */
     static const char * TranslateModifier( int _Modifier );
 
-    // Translate key code to string
+    /** Translate key code to string */
     static const char * TranslateDeviceKey( int _DevId, int _Key );
 
-    // Translate key owner player to string
+    /** Translate key owner player to string */
     static const char * TranslateController( int _ControllerId );
 
-    // Lookup device from string
+    /** Lookup device from string */
     static int LookupDevice( const char * _Device );
 
-    // Lookup modifier from string
+    /** Lookup modifier from string */
     static int LookupModifier( const char * _Modifier );
 
-    // Lookup key code from string
+    /** Lookup key code from string */
     static int LookupDeviceKey( int _DevId, const char * _Key );
 
-    // Lookup key owner player from string
+    /** Lookup key owner player from string */
     static int LookupController( const char * _ControllerId );
 };

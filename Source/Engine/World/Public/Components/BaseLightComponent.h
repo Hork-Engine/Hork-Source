@@ -40,10 +40,10 @@ class ABaseLightComponent : public ASceneComponent {
 public:
     enum { RENDERING_GROUP_DEFAULT = 1 };
 
-    // Rendering group to filter lights during rendering
+    /** Rendering group to filter lights during rendering */
     int RenderingGroup;
 
-    // Only directional light supports shadow casting yet
+    /** Only directional light supports shadow casting yet */
     bool bCastShadow;
 
     void SetColor( Float3 const & _Color );

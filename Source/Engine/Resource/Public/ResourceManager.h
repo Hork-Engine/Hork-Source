@@ -166,7 +166,7 @@ AN_FORCEINLINE void UnregisterResources() {
 Static resource finder
 
 Usage:
-static TStaticResourceFinder< AIndexedMesh > Resource( _CTS( "Meshes/MyMesh" ) );
+static TStaticResourceFinder< AIndexedMesh > Resource( _CTS( "/Root/Meshes/MyMesh.asset" ) );
 AIndexedMesh * mesh = Resource.GetObject();
 
 */

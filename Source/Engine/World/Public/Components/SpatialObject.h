@@ -58,19 +58,19 @@ class ASpatialObject : public ASceneComponent {
     friend class ALevel;
 
 public:
-    // Force using bounding box specified by SetBoundsOverride()
+    /** Force using bounding box specified by SetBoundsOverride() */
     void ForceOverrideBounds( bool _OverrideBounds );
 
-    // Set bounding box to override object bounds
+    /** Set bounding box to override object bounds */
     void SetBoundsOverride( BvAxisAlignedBox const & _Bounds );
 
-    // Get overrided bounding box in local space
+    /** Get overrided bounding box in local space */
     BvAxisAlignedBox const & GetBoundsOverride() const { return OverrideBoundingBox; }
 
-    // Get current local bounds
+    /** Get current local bounds */
     BvAxisAlignedBox const & GetBounds() const;
 
-    // Get current bounds in world space
+    /** Get current bounds in world space */
     BvAxisAlignedBox const & GetWorldBounds() const;
 
     void ForceOutdoor( bool _OutdoorSurface );

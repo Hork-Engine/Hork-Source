@@ -44,62 +44,62 @@ class ANGIE_API ASoftMeshComponent : public ASkinnedComponent {
     AN_COMPONENT( ASoftMeshComponent, ASkinnedComponent )
 
 public:
-    // Velocities correction factor (Baumgarte)
+    /** Velocities correction factor (Baumgarte) */
     float VelocitiesCorrection = 1;
 
-    // Damping coefficient [0,1]
+    /** Damping coefficient [0,1] */
     float DampingCoefficient;
 
-    // Drag coefficient [0,+inf]
+    /** Drag coefficient [0,+inf] */
     float DragCoefficient;
 
-    // Lift coefficient [0,+inf]
+    /** Lift coefficient [0,+inf] */
     float LiftCoefficient;
 
-    // Pressure coefficient [-inf,+inf]
+    /** Pressure coefficient [-inf,+inf] */
     float Pressure;
 
-    // Volume conversation coefficient [0,+inf]
+    /** Volume conversation coefficient [0,+inf] */
     float VolumeConversation;
 
-    // Dynamic friction coefficient [0,1]
+    /** Dynamic friction coefficient [0,1] */
     float DynamicFriction = 0.2f;
 
-    // Pose matching coefficient [0,1]
+    /** Pose matching coefficient [0,1] */
     float PoseMatching;
 
-    // Linear stiffness coefficient [0,1]
+    /** Linear stiffness coefficient [0,1] */
     float LinearStiffness = 1;
 
-    // Area/Angular stiffness coefficient [0,1]
+    /** Area/Angular stiffness coefficient [0,1] */
     float AngularStiffness = 1;
 
-    // Volume stiffness coefficient [0,1]
+    /** Volume stiffness coefficient [0,1] */
     float VolumeStiffness = 1;
 
     //Float3x4 BaseTransform;
 
-    // Attach vertex to anchor point
+    /** Attach vertex to anchor point */
     void AttachVertex( int _VertexIndex, AAnchorComponent * _Anchor );
 
-    // Detach vertex from anchor point
+    /** Detach vertex from anchor point */
     void DetachVertex( int _VertexIndex );
 
-    // Detach all vertices
+    /** Detach all vertices */
     void DetachAllVertices();
 
-    // Get vertex attachment
+    /** Get vertex attachment */
     AAnchorComponent * GetVertexAnchor( int _VertexIndex ) const;
 
-    // Set a wind velocity for interaction with the air
+    /** Set a wind velocity for interaction with the air */
     void SetWindVelocity( Float3 const & _Velocity );
 
     Float3 const & GetWindVelocity() const;
 
-    // Add force (or gravity) to the entire soft body
+    /** Add force (or gravity) to the entire soft body */
     void AddForceSoftBody( Float3 const & _Force );
 
-    // Add force (or gravity) to a vertex of the soft body
+    /** Add force (or gravity) to a vertex of the soft body */
     void AddForceToVertex( Float3 const & _Force, int _VertexIndex );
 
     Float3 GetVertexPosition( int _VertexIndex ) const;

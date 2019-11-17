@@ -64,10 +64,10 @@ public:
 
     void SetFovY( float _FieldOfView );
 
-    // Perspective aspect ratio. For example 4/3, 16/9
+    /** Perspective aspect ratio. For example 4/3, 16/9 */
     void SetAspectRatio( float _AspectRatio );
 
-    // Use aspect ratio from monitor geometry. Use it for fullscreen video mode.
+    /** Use aspect ratio from monitor geometry. Use it for fullscreen video mode. */
     void SetMonitorAspectRatio( struct SPhysicalMonitor const * _Monitor );
 
     // Use aspect ratio from window geometry. Use it for windowed mode.
@@ -94,7 +94,7 @@ public:
 
     float GetAspectRatio() const { return AspectRatio; }
 
-    // Computes real camera field of view in radians
+    /** Computes real camera field of view in radians */
     void GetEffectiveFov( float & _FovX, float & _FovY ) const;
 
     Float2 const & GetOrthoMins() const { return OrthoMins; }
@@ -109,12 +109,12 @@ public:
 
     BvFrustum const & GetFrustum() const;
 
-    // NormalizedX = ScreenX / ScreenWidth, NormalizedY = ScreenY / ScreenHeight
+    /** NormalizedX = ScreenX / ScreenWidth, NormalizedY = ScreenY / ScreenHeight */
     void MakeRay( float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) const;
 
     static void MakeRay( Float4x4 const & _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd );
 
-    // Compute ortho rect based on aspect ratio and zoom
+    /** Compute ortho rect based on aspect ratio and zoom */
     static void MakeOrthoRect( float _CameraAspectRatio, float _Zoom, Float2 & _Mins, Float2 & _Maxs );
 
     void MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix/*, const float _ClusterZNear, const float _ClusterZFar*/ ) const;
