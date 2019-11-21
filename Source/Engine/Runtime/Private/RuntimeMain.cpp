@@ -35,19 +35,20 @@ SOFTWARE.
 #include "WindowManager.h"
 #include "CPUInfo.h"
 
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/CriticalError.h>
-#include <Engine/Core/Public/HashFunc.h>
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/CriticalError.h>
+#include <Core/Public/HashFunc.h>
+#include <Core/Public/WindowsDefs.h>
 
-#include <Engine/Runtime/Public/RuntimeCommandProcessor.h>
-#include <Engine/Runtime/Public/RuntimeVariable.h>
+#include <Runtime/Public/RuntimeCommandProcessor.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 #include <chrono>
 
 #ifdef AN_OS_LINUX
 #include <unistd.h>
 #include <sys/file.h>
+#include <signal.h>
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
 
@@ -77,6 +78,7 @@ ARuntimeMain::ARuntimeMain() {
     FrameMemorySize = 0;
     FrameMemoryUsed = 0;
     FrameMemoryUsedPrev = 0;
+    MaxFrameMemoryUsage = 0;
     bTerminate = false;
 }
 
@@ -256,8 +258,11 @@ void ARuntimeMain::RuntimeMainLoop() {
         // Generate GPU commands, SwapBuffers
         GRenderBackend->RenderFrame( &FrameData );
 
-        // Free frame memory for next frame
+        // Keep memory statistics
+        MaxFrameMemoryUsage = Math::Max( MaxFrameMemoryUsage, FrameMemoryUsed );
         FrameMemoryUsedPrev = FrameMemoryUsed;
+
+        // Free frame memory for the next frame
         FrameMemoryUsed = 0;
 
         // Run game logic for next frame (GPU process current frame now)
@@ -335,6 +340,39 @@ static void LoggerMessageCallback( int _Level, const char * _Message ) {
         fflush( ProcessLog.File );
     }
 }
+
+#ifdef AN_ALLOW_ASSERTS
+
+// Define global assert function
+void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment ) {
+    static thread_local bool bNestedFunctionCall = false;
+
+    if ( bNestedFunctionCall ) {
+        // Assertion occurs in logger's print function
+        return;
+    }
+
+    bNestedFunctionCall = true;
+
+    // Printf is thread-safe function so we don't need to wrap it by a critical section
+    GLogger.Printf( "===== Assertion failed =====\n"
+                    "At file %s, line %d\n"
+                    "Function: %s\n"
+                    "Assertion: %s\n"
+                    "%s%s"
+                    "============================\n",
+                    _File, _Line, _Function, _Assertion, _Comment ? _Comment : "", _Comment ? "\n" : "" );
+
+#ifdef AN_OS_WIN32
+    DebugBreak();
+#else
+    raise( SIGTRAP );
+#endif
+
+    bNestedFunctionCall = false;
+}
+
+#endif
 
 #ifdef AN_OS_WIN32
 static HANDLE ProcessMutex = NULL;
@@ -724,14 +762,14 @@ static bool bApplicationRun = false;
 
 ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _CreateGameModule ) {
     if ( bApplicationRun ) {
-        AN_Assert( 0 );
+        AN_ASSERT( 0 );
         return;
     }
     bApplicationRun = true;
     AString::CopySafe( CmdLineBuffer, sizeof( CmdLineBuffer ), _CommandLine );
     AllocCommandLineArgs( CmdLineBuffer, &GRuntimeMain.NumArguments, &GRuntimeMain.Arguments );
     if ( GRuntimeMain.NumArguments < 1 ) {
-        AN_Assert( 0 );
+        AN_ASSERT( 0 );
         return;
     }
     // Fix executable path separator
@@ -742,14 +780,14 @@ ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _Cr
 
 ANGIE_API void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _CreateGameModule ) {
     if ( bApplicationRun ) {
-        AN_Assert( 0 );
+        AN_ASSERT( 0 );
         return;
     }
     bApplicationRun = true;
     GRuntimeMain.NumArguments = _Argc;
     GRuntimeMain.Arguments = _Argv;
     if ( GRuntimeMain.NumArguments < 1 ) {
-        AN_Assert( 0 );
+        AN_ASSERT( 0 );
         return;
     }
     // Fix executable path separator

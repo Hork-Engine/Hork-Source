@@ -117,7 +117,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
     }
 
     const GLFWgammaramp * gammaRamp = glfwGetGammaRamp( _Monitor );
-    AN_Assert( gammaRamp && gammaRamp->size <= GAMMA_RAMP_SIZE );
+    AN_ASSERT( gammaRamp && gammaRamp->size <= GAMMA_RAMP_SIZE );
     memcpy( &physMonitor->Internal.InitialGammaRamp[0], gammaRamp->red, gammaRamp->size * sizeof( unsigned short ) );
     memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size], gammaRamp->green, gammaRamp->size * sizeof( unsigned short ) );
     memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size * 2], gammaRamp->blue, gammaRamp->size * sizeof( unsigned short ) );

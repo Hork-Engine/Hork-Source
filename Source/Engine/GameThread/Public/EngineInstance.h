@@ -30,12 +30,12 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Base/Public/GameModuleInterface.h>
-#include <Engine/Runtime/Public/EngineInterface.h>
-#include <Engine/Runtime/Public/RuntimeCommandProcessor.h>
-#include <Engine/Resource/Public/FontAtlas.h>
-#include <Engine/Widgets/Public/WDesktop.h>
-#include <Engine/World/Public/World.h>
+#include <World/Public/Base/GameModuleInterface.h>
+#include <Runtime/Public/EngineInterface.h>
+#include <Runtime/Public/RuntimeCommandProcessor.h>
+#include <World/Public/Resource/FontAtlas.h>
+#include <World/Public/Widgets/WDesktop.h>
+#include <World/Public/World.h>
 
 struct SVideoMode
 {
@@ -69,6 +69,8 @@ public:
 
     /** Global mouse sensitivity */
     float MouseSensitivity = 1.0f;
+
+    ACanvas Canvas;
 
     /** Helper. Create a new world */
     AWorld * CreateWorld() { return AWorld::CreateWorld(); }
@@ -165,7 +167,7 @@ private:
     /** IEngineInterface interface. Update game frame */
     void UpdateFrame() override;
 
-    /** IEngineInterface interface. Print callback */
+    /** IEngineInterface interface. Message print callback. This must be a thread-safe function. */
     void Print( const char * _Message ) override;
 
     // Process runtime event
@@ -197,6 +199,8 @@ private:
     void UpdateImgui();
 
     void ResetVideoMode();
+
+    void ShowStats();
 
     SVideoMode VideoMode;
     float VideoAspectRatio = 4.0f/3.0f;
@@ -232,6 +236,9 @@ private:
     TRef< WDesktop > Desktop;
 
     ARuntimeCommandProcessor CommandProcessor;
+
+    float AxesFractAvg = 1;
+    float AxesFract = 1;
 };
 
 extern ANGIE_API AEngineInstance & GEngine;

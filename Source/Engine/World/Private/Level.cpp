@@ -29,15 +29,15 @@ SOFTWARE.
 */
 
 
-#include <Engine/World/Public/Level.h>
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/World/Public/Components/SkinnedComponent.h>
-#include <Engine/World/Public/Components/CameraComponent.h>
-#include <Engine/World/Public/Actors/PlayerController.h>
-#include <Engine/Resource/Public/Texture.h>
-#include <Engine/Core/Public/BV/BvIntersect.h>
-#include <Engine/Runtime/Public/Runtime.h>
+#include <World/Public/Level.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/World.h>
+#include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/Components/CameraComponent.h>
+#include <World/Public/Actors/PlayerController.h>
+#include <World/Public/Resource/Texture.h>
+#include <Core/Public/BV/BvIntersect.h>
+#include <Runtime/Public/Runtime.h>
 
 #include "ShadowCascade.h"
 
@@ -61,9 +61,6 @@ ALevel::ALevel() {
     OutdoorArea->Tree = NewObject< AOctree >();
     OutdoorArea->Tree->Owner = OutdoorArea;
     OutdoorArea->Tree->Build();
-
-    NavigationBoundingBox.Mins = Float3(-512);
-    NavigationBoundingBox.Maxs = Float3(512);
 
     LastVisitedArea = -1;
 }
@@ -98,12 +95,12 @@ void ALevel::DestroyActors() {
 }
 
 void ALevel::OnAddLevelToWorld() {
-    RemoveSurfaces();
-    AddSurfaces();
+    RemoveDrawables();
+    AddDrawables();
 }
 
 void ALevel::OnRemoveLevelFromWorld() {
-    RemoveSurfaces();
+    RemoveDrawables();
 }
 
 ALevelArea * ALevel::AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
@@ -164,30 +161,29 @@ void ALevel::DestroyPortalTree() {
     IndoorBounds.Clear();
 }
 
-void ALevel::AddSurfaces() {
-    AWorld * world = GetOwnerWorld();
+void ALevel::AddDrawables() {
+    AWorld * pWorld = GetOwnerWorld();
+    ARenderWorld & RenderWorld = pWorld->GetRenderWorld();
 
-    for ( AMeshComponent * mesh = world->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
-
-        // TODO: if ( !mesh->IsMarkedDirtyArea() )
-        AddSurfaceAreas( mesh );
+    for ( ADrawable * drawable = RenderWorld.GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
+        AddDrawable( drawable );
     }
 }
 
-void ALevel::RemoveSurfaces() {
+void ALevel::RemoveDrawables() {
     for ( ALevelArea * area : Areas ) {
-        while ( !area->Movables.IsEmpty() ) {
-            RemoveSurfaceAreas( area->Movables[0] );
+        while ( !area->Drawables.IsEmpty() ) {
+            RemoveDrawable( area->Drawables[0] );
         }
     }
 
-    while ( !OutdoorArea->Movables.IsEmpty() ) {
-        RemoveSurfaceAreas( OutdoorArea->Movables[0] );
+    while ( !OutdoorArea->Drawables.IsEmpty() ) {
+        RemoveDrawable( OutdoorArea->Drawables[0] );
     }
 }
 
 void ALevel::PurgePortals() {
-    RemoveSurfaces();
+    RemoveDrawables();
 
     for ( SAreaPortal & areaPortal : AreaPortals ) {
         AConvexHull::Destroy( areaPortal.Hull );
@@ -268,27 +264,27 @@ void ALevel::BuildPortals() {
         a2->PortalList = areaPortal;
     }
 
-    AddSurfaces();
+    AddDrawables();
 }
 
-void ALevel::AddSurfaceToArea( int _AreaNum, ASpatialObject * _Surf ) {
+void ALevel::AddDrawableToArea( int _AreaNum, ADrawable * _Drawable ) {
     ALevelArea * area = _AreaNum >= 0 ? Areas[_AreaNum] : OutdoorArea;
 
-    area->Movables.Append( _Surf );
-    SAreaLink & areaLink = _Surf->InArea.Append();
+    area->Drawables.Append( _Drawable );
+    SAreaLink & areaLink = _Drawable->InArea.Append();
     areaLink.AreaNum = _AreaNum;
-    areaLink.Index = area->Movables.Size() - 1;
+    areaLink.Index = area->Drawables.Size() - 1;
     areaLink.Level = this;
 }
 
-void ALevel::AddSurfaceAreas( ASpatialObject * _Surf ) {
-    BvAxisAlignedBox const & bounds = _Surf->GetWorldBounds();
+void ALevel::AddDrawable( ADrawable * _Drawable ) {
+    BvAxisAlignedBox const & bounds = _Drawable->GetWorldBounds();
     int numAreas = Areas.Size();
     ALevelArea * area;
 
-    if ( _Surf->IsOutdoor() ) {
+    if ( _Drawable->IsOutdoor() ) {
         // add to outdoor
-        AddSurfaceToArea( -1, _Surf );
+        AddDrawableToArea( -1, _Drawable );
         return;
     }
 
@@ -299,7 +295,7 @@ void ALevel::AddSurfaceAreas( ASpatialObject * _Surf ) {
             area = Areas[i];
 
             if ( BvBoxOverlapBox( area->Bounds, bounds ) ) {
-                AddSurfaceToArea( i, _Surf );
+                AddDrawableToArea( i, _Drawable );
 
                 bHaveIntersection = true;
             }
@@ -307,44 +303,44 @@ void ALevel::AddSurfaceAreas( ASpatialObject * _Surf ) {
     }
 
     if ( !bHaveIntersection ) {
-        AddSurfaceToArea( -1, _Surf );
+        AddDrawableToArea( -1, _Drawable );
     }
 }
 
-void ALevel::RemoveSurfaceAreas( ASpatialObject * _Surf ) {
+void ALevel::RemoveDrawable( ADrawable * _Drawable ) {
     ALevelArea * area;
 
     // Remove renderables from any areas
-    for ( int i = 0 ; i < _Surf->InArea.Size() ; ) {
-        SAreaLink & InArea = _Surf->InArea[ i ];
+    for ( int i = 0 ; i < _Drawable->InArea.Size() ; ) {
+        SAreaLink & InArea = _Drawable->InArea[ i ];
 
         if ( InArea.Level != this ) {
             i++;
             continue;
         }
 
-        AN_Assert( InArea.AreaNum < InArea.Level->Areas.Size() );
+        AN_ASSERT( InArea.AreaNum < InArea.Level->Areas.Size() );
         area = InArea.AreaNum >= 0 ? InArea.Level->Areas[ InArea.AreaNum ] : OutdoorArea;
 
-        AN_Assert( area->Movables[ InArea.Index ] == _Surf );
+        AN_ASSERT( area->Drawables[ InArea.Index ] == _Drawable );
 
         // Swap with last array element
-        area->Movables.RemoveSwap( InArea.Index );
+        area->Drawables.RemoveSwap( InArea.Index );
 
         // Update swapped movable index
-        if ( InArea.Index < area->Movables.Size() ) {
-            ASpatialObject * surf = area->Movables[ InArea.Index ];
-            for ( int j = 0 ; j < surf->InArea.Size() ; j++ ) {
-                if ( surf->InArea[ j ].Level == this && surf->InArea[ j ].AreaNum == InArea.AreaNum ) {
-                    surf->InArea[ j ].Index = InArea.Index;
+        if ( InArea.Index < area->Drawables.Size() ) {
+            ADrawable * drawable = area->Drawables[ InArea.Index ];
+            for ( int j = 0 ; j < drawable->InArea.Size() ; j++ ) {
+                if ( drawable->InArea[ j ].Level == this && drawable->InArea[ j ].AreaNum == InArea.AreaNum ) {
+                    drawable->InArea[ j ].Index = InArea.Index;
 
-                    AN_Assert( area->Movables[ surf->InArea[ j ].Index ] == surf );
+                    AN_ASSERT( area->Drawables[ drawable->InArea[ j ].Index ] == drawable );
                     break;
                 }
             }
         }
 
-        _Surf->InArea.RemoveSwap(i);
+        _Drawable->InArea.RemoveSwap(i);
     }
 }
 
@@ -365,8 +361,6 @@ void ALevel::DrawDebug( ADebugDraw * _DebugDraw ) {
     _DebugDraw->DrawTriangleSoup(vertices.ToPtr(),vertices.Length(),sizeof(Float3),indices.ToPtr(),indices.Length(),false);
     GLogger.Printf( "indices %d\n",indices.Length());
 #endif
-
-    NavMesh.DrawDebug( _DebugDraw );
 
     if ( RVDrawLevelAreaBounds ) {
 
@@ -447,249 +441,7 @@ int ALevel::FindArea( Float3 const & _Position ) {
     return -1;
 }
 
-void ALevel::GenerateSourceNavMesh( TPodArray< Float3 > & _Vertices,
-                                    TPodArray< unsigned int > & _Indices,
-                                    TBitMask<> & _WalkableTriangles,
-                                    BvAxisAlignedBox & _ResultBoundingBox,
-                                    BvAxisAlignedBox const * _ClipBoundingBox ) {
-    BvAxisAlignedBox clippedBounds;
-    TPodArray< Float3 > collisionVertices;
-    TPodArray< unsigned int > collisionIndices;
-    BvAxisAlignedBox worldBounds;
-
-    _Vertices.Clear();
-    _Indices.Clear();
-
-//    if ( _ClipBoundingBox ) {
-//        _ResultBoundingBox = *_ClipBoundingBox;
-//    } else {
-        _ResultBoundingBox.Clear();
-//    }
-
-    for ( AActor * actor : Actors ) {
-
-        if ( actor->IsPendingKill() ) {
-            continue;
-        }
-
-        AArrayOfActorComponents const & components = actor->GetComponents();
-
-        for ( AActorComponent * component : components ) {
-
-            if ( component->IsPendingKill() ) {
-                continue;
-            }
-
-            APhysicalBody * physBody = Upcast< APhysicalBody >( component );
-            if ( !physBody ) {
-                continue;
-            }
-
-            if ( !physBody->bAINavigation ) {
-                // Not used for AI navigation
-                continue;
-            }
-
-            if ( physBody->PhysicsBehavior != PB_STATIC ) {
-                // Generate navmesh only for static geometry
-                continue;
-            }
-
-            physBody->GetCollisionWorldBounds( worldBounds );
-            if ( worldBounds.IsEmpty() ) {
-                continue;
-            }
-
-            if ( _ClipBoundingBox ) {
-                if ( !BvGetBoxIntersection( worldBounds, *_ClipBoundingBox, clippedBounds ) ) {
-                    continue;
-                }
-                _ResultBoundingBox.AddAABB( clippedBounds );
-            } else {
-                _ResultBoundingBox.AddAABB( worldBounds );
-            }
-
-            collisionVertices.Clear();
-            collisionIndices.Clear();
-
-            physBody->CreateCollisionModel( collisionVertices, collisionIndices );
-
-            if ( collisionIndices.IsEmpty() ) {
-
-                // Try to get from mesh
-                AMeshComponent * mesh = Upcast< AMeshComponent >( component );
-
-                if ( mesh && !mesh->IsSkinnedMesh() ) {
-
-                    AIndexedMesh * indexedMesh = mesh->GetMesh();
-
-                    if ( !indexedMesh->IsSkinned() ) {
-
-                        Float3x4 const & worldTransform = mesh->GetWorldTransformMatrix();
-
-                        SMeshVertex const * srcVertices = indexedMesh->GetVertices();
-                        unsigned int * srcIndices = indexedMesh->GetIndices();
-
-                        int firstVertex = _Vertices.Size();
-                        int firstIndex = _Indices.Size();
-                        int firstTriangle = _Indices.Size() / 3;
-
-                        // indexCount may be different from indexedMesh->GetIndexCount()
-                        int indexCount = 0;
-                        for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
-                            indexCount += subpart->GetIndexCount();
-                        }
-
-                        _Vertices.Resize( firstVertex + indexedMesh->GetVertexCount() );
-                        _Indices.Resize( firstIndex + indexCount );
-                        _WalkableTriangles.Resize( firstTriangle + indexCount / 3 );
-
-                        Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
-                        unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
-
-                        for ( int i = 0 ; i < indexedMesh->GetVertexCount() ; i++ ) {
-                            pVertices[i] = worldTransform * srcVertices[i].Position;
-
-                            //pVertices[i].Y += 50;
-                        }
-
-                        if ( _ClipBoundingBox ) {
-                            // Clip triangles
-                            unsigned int i0, i1, i2;
-                            int triangleNum = 0;
-                            for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
-                                int numTriangles = subpart->GetIndexCount() / 3;
-                                for ( int i = 0 ; i < numTriangles ; i++ ) {
-                                    i0 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 0 ];
-                                    i1 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 1 ];
-                                    i2 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 2 ];
-
-                                    if ( BvBoxOverlapTriangle_FastApproximation( clippedBounds, pVertices[i0], pVertices[i1], pVertices[i2] ) ) {
-                                        *pIndices++ = i0;
-                                        *pIndices++ = i1;
-                                        *pIndices++ = i2;
-
-                                        if ( !physBody->bAINonWalkable ) {
-                                            _WalkableTriangles.Mark( firstTriangle + triangleNum );
-                                        }
-                                        triangleNum++;
-                                    }
-                                }
-                            }
-
-                            _Indices.Resize( firstIndex + triangleNum*3 );
-                            _WalkableTriangles.Resize( firstTriangle + triangleNum );
-
-                        } else {
-                            int triangleNum = 0;
-                            for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
-                                int numTriangles = subpart->GetIndexCount() / 3;
-                                for ( int i = 0 ; i < numTriangles ; i++ ) {
-                                    *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 0 ];
-                                    *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 1 ];
-                                    *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 2 ];
-
-                                    if ( !physBody->bAINonWalkable ) {
-                                        _WalkableTriangles.Mark( firstTriangle + triangleNum );
-                                    }
-                                    triangleNum++;
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                Float3 const * srcVertices = collisionVertices.ToPtr();
-                unsigned int * srcIndices = collisionIndices.ToPtr();
-
-                int firstVertex = _Vertices.Size();
-                int firstIndex = _Indices.Size();
-                int firstTriangle = _Indices.Size() / 3;
-                int vertexCount = collisionVertices.Size();
-                int indexCount = collisionIndices.Size();
-
-                _Vertices.Resize( firstVertex + vertexCount );
-                _Indices.Resize( firstIndex + indexCount );
-                _WalkableTriangles.Resize( firstTriangle + indexCount / 3 );
-
-                Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
-                unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
-
-                memcpy( pVertices, srcVertices, vertexCount * sizeof( Float3 ) );
-
-                //for ( int i = 0 ; i < vertexCount ; i++ ) {
-                //    pVertices[i].Y += 50;
-                //}
-
-                if ( _ClipBoundingBox ) {
-                    // Clip triangles
-                    unsigned int i0, i1, i2;
-                    int numTriangles = indexCount / 3;
-                    int triangleNum = 0;
-                    for ( int i = 0 ; i < numTriangles ; i++ ) {
-                        i0 = firstVertex + srcIndices[ i*3 + 0 ];
-                        i1 = firstVertex + srcIndices[ i*3 + 1 ];
-                        i2 = firstVertex + srcIndices[ i*3 + 2 ];
-
-                        if ( BvBoxOverlapTriangle_FastApproximation( clippedBounds, pVertices[i0], pVertices[i1], pVertices[i2] ) ) {
-                            *pIndices++ = i0;
-                            *pIndices++ = i1;
-                            *pIndices++ = i2;
-
-                            if ( !physBody->bAINonWalkable ) {
-                                _WalkableTriangles.Mark( firstTriangle + triangleNum );
-                            }
-                            triangleNum++;
-                        }
-                    }
-
-                    _Indices.Resize( firstIndex + triangleNum * 3 );
-                    _WalkableTriangles.Resize( firstTriangle + triangleNum );
-
-                } else {
-                    int numTriangles = indexCount / 3;
-                    for ( int i = 0 ; i < numTriangles ; i++ ) {
-                        *pIndices++ = firstVertex + srcIndices[ i*3 + 0 ];
-                        *pIndices++ = firstVertex + srcIndices[ i*3 + 1 ];
-                        *pIndices++ = firstVertex + srcIndices[ i*3 + 2 ];
-
-                        if ( !physBody->bAINonWalkable ) {
-                            _WalkableTriangles.Mark( firstTriangle + i );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-//    if ( !_ClipBoundingBox && NavigationBoundingBoxPadding > 0 ) {
-//        // Apply bounding box padding
-//        _ResultBoundingBox.Mins -= NavigationBoundingBoxPadding;
-//        _ResultBoundingBox.Maxs += NavigationBoundingBoxPadding;
-//    }
-}
-
-void ALevel::BuildNavMesh() {
-//    TPodArray< Float3 > vertices;
-//    TPodArray< unsigned int > indices;
-//    BvAxisAlignedBox boundingBox;
-//    TBitMask<> walkableMask;
-//    GenerateSourceNavMesh( vertices, indices, walkableMask, boundingBox, nullptr );
-
-    SAINavMeshInitial initial;
-    initial.BoundingBox = NavigationBoundingBox;
-    initial.bDynamicNavMesh = true;
-    initial.NavWalkableClimb = 0.9f;
-    initial.NavWalkableSlopeAngle = 80;
-    //initial.NavTileSize = 128;
-
-    NavMesh.Initialize( this, initial );
-    NavMesh.Build();
-}
-
 void ALevel::Tick( float _TimeStep ) {
-    NavMesh.Tick( _TimeStep );
-
     OutdoorArea->Tree->Update();
     for ( ALevelArea * area : Areas ) {
         area->Tree->Update();
@@ -768,7 +520,8 @@ static TPodArray< SPortalScissor > DebugScissors;
 #ifdef DEBUG_TRAVERSING_COUNTERS
 static int Dbg_SkippedByVisFrame;
 static int Dbg_SkippedByPlaneOffset;
-static int Dbg_CulledBySurfaceBounds;
+static int Dbg_CulledByDrawableBounds;
+static int Dbg_CulledSubpartsCount;
 static int Dbg_CulledByDotProduct;
 static int Dbg_CulledByLightBounds;
 static int Dbg_CulledByEnvCaptureBounds;
@@ -817,7 +570,7 @@ static bool ClipPolygonFast( Float3 const * _InPoints, int _InNumPoints, SPortal
     int i;
     float Dist;
 
-    AN_Assert( _InNumPoints + 4 <= MAX_HULL_POINTS );
+    AN_ASSERT( _InNumPoints + 4 <= MAX_HULL_POINTS );
 
     // Определить с какой стороны находится каждая точка исходного полигона
     for ( i = 0; i < _InNumPoints; i++ ) {
@@ -899,12 +652,13 @@ void ALevel::RenderFrontend_AddInstances( SRenderFrontendDef * _Def ) {
 }
 
 void ALevel::CullInstances( SRenderFrontendDef * _Def ) {
-    AN_Assert( LastVisitedArea < Areas.Size() );
+    AN_ASSERT( LastVisitedArea < Areas.Size() );
 
     #ifdef DEBUG_TRAVERSING_COUNTERS
     Dbg_SkippedByVisFrame = 0;
     Dbg_SkippedByPlaneOffset = 0;
-    Dbg_CulledBySurfaceBounds = 0;
+    Dbg_CulledByDrawableBounds = 0;
+    Dbg_CulledSubpartsCount = 0;
     Dbg_CulledByDotProduct = 0;
     Dbg_CulledByLightBounds = 0;
     Dbg_CulledByEnvCaptureBounds = 0;
@@ -955,7 +709,8 @@ void ALevel::CullInstances( SRenderFrontendDef * _Def ) {
     GLogger.Printf( "VSD: VisFrame %d\n", Dbg_SkippedByVisFrame );
     GLogger.Printf( "VSD: PlaneOfs %d\n", Dbg_SkippedByPlaneOffset );
     GLogger.Printf( "VSD: FaceCull %d\n", Dbg_CulledByDotProduct );
-    GLogger.Printf( "VSD: AABBCull %d\n", Dbg_CulledBySurfaceBounds );
+    GLogger.Printf( "VSD: AABBCull %d\n", Dbg_CulledByDrawableBounds );
+    GLogger.Printf( "VSD: AABBCull (subparts) %d\n", Dbg_CulledSubpartsCount );
     GLogger.Printf( "VSD: LightCull %d\n", Dbg_CulledByLightBounds );
     GLogger.Printf( "VSD: EnvCaptureCull %d\n", Dbg_CulledByEnvCaptureBounds );
     GLogger.Printf( "VSD: Clipped %d\n", Dbg_ClippedPortals );
@@ -964,29 +719,111 @@ void ALevel::CullInstances( SRenderFrontendDef * _Def ) {
     #endif
 }
 
+void ALevel::RenderDrawables( SRenderFrontendDef * _Def, TPodArray< ADrawable * > const & _Drawables, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
+    for ( ADrawable * drawable : _Drawables ) {
+        if ( !drawable->bLightPass ) {
+            continue;
+        }
+
+        if ( drawable->RenderMark == _Def->VisMarker ) {
+            continue;
+        }
+
+        if ( ( drawable->RenderingGroup & _Def->RenderingMask ) == 0 ) {
+            drawable->RenderMark = _Def->VisMarker;
+            continue;
+        }
+
+        if ( drawable->VSDPasses & VSD_PASS_FACE_CULL ) {
+            // TODO: bTwoSided and bFrontSided must came from the drawable
+            const bool bTwoSided = false;
+            const bool bFrontSided = true;
+            const float EPS = 0.25f;
+
+            if ( !bTwoSided ) {
+                PlaneF const & plane = drawable->FacePlane;
+                float d = _Def->View->ViewPosition.Dot( plane.Normal );
+
+                bool bFaceCull = false;
+
+                if ( bFrontSided ) {
+                    if ( d < -plane.D - EPS ) {
+                        bFaceCull = true;
+                    }
+                } else {
+                    if ( d > -plane.D + EPS ) {
+                        bFaceCull = true;
+                    }
+                }
+
+                if ( bFaceCull ) {
+                    drawable->RenderMark = _Def->VisMarker;
+                    #ifdef DEBUG_TRAVERSING_COUNTERS
+                    Dbg_CulledByDotProduct++;
+                    #endif
+                    continue;
+                }
+            }
+        }
+
+        if ( drawable->VSDPasses & VSD_PASS_BOUNDS ) {
+
+            // TODO: use SSE cull
+            BvAxisAlignedBox const & bounds = drawable->GetWorldBounds();
+
+            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
+                #ifdef DEBUG_TRAVERSING_COUNTERS
+                Dbg_CulledByDrawableBounds++;
+                #endif
+                continue;
+            }
+        }
+
+        drawable->RenderMark = _Def->VisMarker;
+
+        if ( drawable->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
+
+            bool bVisible = false;
+            drawable->RenderFrontend_CustomVisibleStep( _Def, bVisible );
+
+            if ( !bVisible ) {
+                continue;
+            }
+        }
+
+        if ( drawable->VSDPasses & VSD_PASS_VIS_MARKER ) {
+            bool bVisible = drawable->VisMarker == _Def->VisMarker;
+            if ( !bVisible ) {
+                continue;
+            }
+        }
+
+        AMeshComponent * mesh = Upcast< AMeshComponent >( drawable );
+
+        if ( mesh ) {
+            RenderMesh( _Def, mesh, _CullPlanes, _CullPlanesCount );
+        } else {
+            GLogger.Printf( "Not a mesh\n" );
+
+            // TODO: Add other drawables (Sprite, ...)
+        }
+    }
+}
+
+void ALevel::RenderArea( SRenderFrontendDef * _Def, ALevelArea * _Area, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
+    RenderDrawables( _Def, _Area->GetDrawables(), _CullPlanes, _CullPlanesCount );
+#ifdef FUTURE
+    RenderPointLights( _Def, _Area->GetPointLights(), _CullPlanes, _CullPlanesCount );
+    RenderSpotLights( _Def, _Area->GetSpotLights(), _CullPlanes, _CullPlanesCount );
+    RenderEnvProbes( _Def, _Area->GetEnvProbes(), _CullPlanes, _CullPlanesCount );
+#endif
+}
+
 void ALevel::FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area ) {
     SPortalStack * prevStack = &PortalStack[ PortalStackPos ];
     SPortalStack * stack = prevStack + 1;
 
-    for ( ASpatialObject * surf : _Area->GetSurfs() ) {
-        AMeshComponent * component = Upcast< AMeshComponent >( surf );
-
-        if ( component ) {
-            AddRenderInstances( _Def, component, prevStack->AreaFrustum, prevStack->PlanesCount );
-        } else {
-            //GLogger.Printf( "Not a mesh\n" );
-        }
-    }
-
-#ifdef FUTURE
-    for ( FLightComponent * light : _Area->GetLights() ) {
-        AddLightInstance( _Def, light, prevStack->AreaFrustum, prevStack->PlanesCount );
-    }
-
-    for ( FEnvCaptureComponent * envCapture : _Area->GetEnvCaptures() ) {
-        AddEnvCapture( envCapture, prevStack->AreaFrustum, prevStack->PlanesCount );
-    }
-#endif
+    RenderArea( _Def, _Area, prevStack->AreaFrustum, prevStack->PlanesCount );
 
     if ( PortalStackPos == ( MAX_PORTAL_STACK - 1 ) ) {
         GLogger.Printf( "MAX_PORTAL_STACK hit\n" );
@@ -1058,7 +895,7 @@ void ALevel::FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area
 
             if ( !ClipPolygonFast( portal->Hull->Points, portal->Hull->NumPoints, &PortalHull[ flip ], ViewPlane, 0.0f ) ) {
 
-                AN_Assert( portal->Hull->NumPoints <= MAX_HULL_POINTS );
+                AN_ASSERT( portal->Hull->NumPoints <= MAX_HULL_POINTS );
 
                 memcpy( PortalHull[ flip ].Points, portal->Hull->Points, portal->Hull->NumPoints * sizeof( Float3 ) );
                 PortalHull[ flip ].NumPoints = portal->Hull->NumPoints;
@@ -1104,7 +941,7 @@ void ALevel::FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area
                 d = Math::Dot( ViewPlane.Normal, vec );
 
                 //if ( d < ViewZNear ) {
-                //    AN_Assert(0);
+                //    AN_ASSERT(0);
                 //}
 
                 p = d < ViewZNear ? vec : vec * ( ViewZNear / d );
@@ -1195,84 +1032,7 @@ void ALevel::FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area
     --PortalStackPos;
 }
 
-void ALevel::AddRenderInstances( SRenderFrontendDef * _Def, AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
-    if ( !component->bLightPass ) {
-        return;
-    }
-
-    if ( component->RenderMark == _Def->VisMarker ) {
-        return;
-    }
-
-    if ( ( component->RenderingGroup & _Def->RenderingMask ) == 0 ) {
-        component->RenderMark = _Def->VisMarker;
-        return;
-    }
-
-    if ( component->VSDPasses & VSD_PASS_FACE_CULL ) {
-        // TODO: bTwoSided and bFrontSided must came from component
-        const bool bTwoSided = false;
-        const bool bFrontSided = true;
-        const float EPS = 0.25f;
-
-        if ( !bTwoSided ) {
-            PlaneF const & plane = component->FacePlane;
-            float d = _Def->View->ViewPosition.Dot( plane.Normal );
-
-            bool bFaceCull = false;
-
-            if ( bFrontSided ) {
-                if ( d < -plane.D - EPS ) {
-                    bFaceCull = true;
-                }
-            } else {
-                if ( d > -plane.D + EPS ) {
-                    bFaceCull = true;
-                }
-            }
-
-            if ( bFaceCull ) {
-                component->RenderMark = _Def->VisMarker;
-                #ifdef DEBUG_TRAVERSING_COUNTERS
-                Dbg_CulledByDotProduct++;
-                #endif
-                return;
-            }
-        }
-    }
-
-    if ( component->VSDPasses & VSD_PASS_BOUNDS ) {
-
-        // TODO: use SSE cull
-        BvAxisAlignedBox const & bounds = component->GetWorldBounds();
-
-        if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
-            #ifdef DEBUG_TRAVERSING_COUNTERS
-            Dbg_CulledBySurfaceBounds++;
-            #endif
-            return;
-        }
-    }
-
-    component->RenderMark = _Def->VisMarker;
-
-    if ( component->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
-
-        bool bVisible = false;
-        component->RenderFrontend_CustomVisibleStep( _Def, bVisible );
-
-        if ( !bVisible ) {
-            return;
-        }
-    }
-
-    if ( component->VSDPasses & VSD_PASS_VIS_MARKER ) {
-        bool bVisible = component->VisMarker == _Def->VisMarker;
-        if ( !bVisible ) {
-            return;
-        }
-    }
-
+void ALevel::RenderMesh( SRenderFrontendDef * _Def, AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
     Float4x4 tmpMatrix;
     Float4x4 * instanceMatrix;
 
@@ -1282,13 +1042,15 @@ void ALevel::AddRenderInstances( SRenderFrontendDef * _Def, AMeshComponent * com
     size_t skeletonSize = 0;
     if ( mesh->IsSkinned() && component->IsSkinnedMesh() ) {
         ASkinnedComponent * skeleton = static_cast< ASkinnedComponent * >( component );
-        skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize );
+        skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize, GRuntime.GetFrameData()->FrameNumber );
     }
+
+    Float3x4 const & componentWorldTransform = component->GetWorldTransformMatrix();
 
     if ( component->bNoTransform ) {
         instanceMatrix = &_Def->View->ModelviewProjection;
     } else {
-        tmpMatrix = _Def->View->ModelviewProjection * component->GetWorldTransformMatrix(); // TODO: optimize: parallel, sse, check if transformable
+        tmpMatrix = _Def->View->ModelviewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
         instanceMatrix = &tmpMatrix;
     }
 
@@ -1299,12 +1061,22 @@ void ALevel::AddRenderInstances( SRenderFrontendDef * _Def, AMeshComponent * com
 
     for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
 
-        // FIXME: check subpart bounding box here
-
         AIndexedMeshSubpart * subpart = subparts[ subpartIndex ];
 
+        if ( !mesh->IsSkinned() && subparts.Size() > 1 && ( component->VSDPasses & VSD_PASS_BOUNDS ) ) {
+
+            // TODO: use SSE cull
+
+            if ( Cull( _CullPlanes, _CullPlanesCount, subpart->GetBoundingBox().Transform( componentWorldTransform ) ) ) {
+                #ifdef DEBUG_TRAVERSING_COUNTERS
+                Dbg_CulledSubpartsCount++;
+                #endif
+                continue;
+            }
+        }
+
         AMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
-        AN_Assert( materialInstance );
+        AN_ASSERT( materialInstance );
 
         AMaterial * material = materialInstance->GetMaterial();
 

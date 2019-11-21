@@ -31,8 +31,8 @@ SOFTWARE.
 #include "JoystickManager.h"
 #include "RuntimeEvents.h"
 
-#include <Engine/Runtime/Public/InputDefs.h>
-#include <Engine/Core/Public/CoreMath.h>
+#include <Runtime/Public/InputDefs.h>
+#include <Core/Public/CoreMath.h>
 
 #include <GLFW/glfw3.h>
 

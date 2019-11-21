@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Engine/Runtime/Public/RuntimeVariable.h>
-#include <Engine/Runtime/Public/RuntimeCommandProcessor.h>
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/CoreMath.h>
+#include <Runtime/Public/RuntimeVariable.h>
+#include <Runtime/Public/RuntimeCommandProcessor.h>
+#include <Runtime/Public/Runtime.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/CoreMath.h>
 
 static ARuntimeVariable * GlobalVars = nullptr;
 static bool GVariableAllocated = false;
@@ -76,8 +76,8 @@ ARuntimeVariable::ARuntimeVariable( const char * _Name,
     , Comment( _Comment ? _Comment : "" )
     , Flags( _Flags )
 {
-    AN_Assert( !GVariableAllocated );
-    AN_Assert( ARuntimeCommandProcessor::IsValidCommandName( Name ) );
+    AN_ASSERT( !GVariableAllocated );
+    AN_ASSERT( ARuntimeCommandProcessor::IsValidCommandName( Name ) );
 
     ARuntimeVariable * head = GlobalVars;
     Next = head;

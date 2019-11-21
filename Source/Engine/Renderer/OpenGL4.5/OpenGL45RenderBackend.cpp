@@ -42,8 +42,8 @@ SOFTWARE.
 #include "OpenGL45DebugDrawPassRenderer.h"
 #include "OpenGL45JointsAllocator.h"
 
-#include <Engine/Runtime/Public/RuntimeVariable.h>
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Runtime/Public/RuntimeVariable.h>
+#include <Core/Public/WindowsDefs.h>
 
 #include <GL/glew.h>
 
@@ -775,7 +775,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
     }
 
     default:
-        AN_Assert( 0 );
+        AN_ASSERT( 0 );
     }
 
     SamplerCreateInfo samplerCI;

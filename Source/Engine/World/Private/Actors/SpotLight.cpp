@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/SpotLight.h>
+#include <World/Public/Actors/SpotLight.h>
 
 AN_CLASS_META( ASpotLight )
 

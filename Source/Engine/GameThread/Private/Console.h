@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/Utf8.h>
-#include <Engine/World/Public/CommandContext.h>
+#include <Core/Public/Utf8.h>
+#include <World/Public/CommandContext.h>
 
 struct SKeyEvent;
 struct SCharEvent;

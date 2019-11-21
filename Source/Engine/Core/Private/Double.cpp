@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Double.h>
-#include <Engine/Core/Public/Float.h>
+#include <Core/Public/Double.h>
+#include <Core/Public/Float.h>
 
 #include "_math.h"
 

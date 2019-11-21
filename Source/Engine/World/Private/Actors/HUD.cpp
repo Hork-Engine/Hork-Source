@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/HUD.h>
-#include <Engine/World/Public/Canvas.h>
-#include <Engine/Core/Public/Utf8.h>
+#include <World/Public/Actors/HUD.h>
+#include <World/Public/Canvas.h>
+#include <Core/Public/Utf8.h>
 
 AN_CLASS_META( AHUD )
 

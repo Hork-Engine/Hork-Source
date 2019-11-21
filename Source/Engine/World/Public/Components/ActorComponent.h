@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Base/Public/BaseObject.h>
-#include <Engine/Core/Public/Guid.h>
+#include <World/Public/Base/BaseObject.h>
+#include <Core/Public/Guid.h>
 
 class AWorld;
 class ALevel;

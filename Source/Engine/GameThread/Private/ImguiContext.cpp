@@ -30,10 +30,10 @@ SOFTWARE.
 
 #include "ImguiContext.h"
 
-#include <Engine/GameThread/Public/EngineInstance.h>
-#include <Engine/Runtime/Public/InputDefs.h>
+#include <GameThread/Public/EngineInstance.h>
+#include <Runtime/Public/InputDefs.h>
 
-#include <Engine/imgui/imgui.h>
+#include <imgui/imgui.h>
 
 AN_CLASS_META( AImguiContext )
 

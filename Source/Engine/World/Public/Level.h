@@ -32,11 +32,11 @@ SOFTWARE.
 
 #include "Octree.h"
 #include "AINavigationMesh.h"
+#include "Components/Drawable.h"
 
-#include <Engine/Core/Public/ConvexHull.h>
-#include <Engine/Core/Public/BitMask.h>
-#include <Engine/Runtime/Public/RenderCore.h>
-#include "Components/DrawSurf.h"
+#include <Core/Public/ConvexHull.h>
+#include <Core/Public/BitMask.h>
+#include <Runtime/Public/RenderCore.h>
 
 class AActor;
 class ALevel;
@@ -51,7 +51,7 @@ public:
 
     SAreaPortal const * GetPortals() const { return PortalList; }
 
-    TPodArray< ASpatialObject * > const & GetSurfs() const { return Movables; }
+    TPodArray< ADrawable * > const & GetDrawables() const { return Drawables; }
 
     //TPodArray< FLightComponent * > const & GetLights() const { return Lights; }
 
@@ -75,7 +75,7 @@ private:
     ALevel * ParentLevel;
 
     // Objects in area
-    TPodArray< ASpatialObject * > Movables;
+    TPodArray< ADrawable * > Drawables;
     //TPodArray< FLightComponent * > Lights;
     //TPodArray< FEnvCaptureComponent * > EnvCaptures;
 
@@ -149,28 +149,9 @@ class ANGIE_API ALevel : public ABaseObject {
     AN_CLASS( ALevel, ABaseObject )
 
     friend class AWorld;
-    friend class ASpatialObject;
+    friend class ADrawable;
 
 public:
-
-    // Navigation bounding box is used to cutoff level geometry outside of it. Use with bOverrideNavigationBoundingBox = true.
-    BvAxisAlignedBox NavigationBoundingBox;
-
-    // Use navigation bounding box to cutoff level geometry outside of it.
-    //bool bOverrideNavigationBoundingBox;
-
-    // Navigation bounding box padding is required to extend current level geometry bounding box.
-    //float NavigationBoundingBoxPadding = 1.0f;
-
-    // Navigation mesh.
-    AAINavigationMesh NavMesh;
-
-    // Navigation mesh connections. You must rebuild navigation mesh if you change connections.
-    TPodArray< SAINavMeshConnection > NavMeshConnections;
-
-    // Navigation areas. You must rebuild navigation mesh if you change areas.
-    TPodArray< SAINavigationArea > NavigationAreas;
-
     // Level is persistent if created by world
     bool IsPersistentLevel() const { return bIsPersistent; }
 
@@ -207,9 +188,6 @@ public:
     // Build level visibility
     void BuildPortals();
 
-    // Build level navigation
-    void BuildNavMesh();
-
     // TODO: future:
     //void BuildLight();
     //void BuildStaticBatching();
@@ -219,12 +197,6 @@ public:
     void ClearLightmaps();
     void SetLightData( const byte * _Data, int _Size );
     /*const */byte * GetLightData() /*const */{ return LightData; }
-
-    void GenerateSourceNavMesh( TPodArray< Float3 > & allVertices,
-                                TPodArray< unsigned int > & allIndices,
-                                TBitMask<> & _WalkableTriangles,
-                                BvAxisAlignedBox & _ResultBoundingBox,
-                                BvAxisAlignedBox const * _ClipBoundingBox );
 
     void RenderFrontend_AddInstances( SRenderFrontendDef * _Def );
 
@@ -250,20 +222,20 @@ private:
 private:
     void PurgePortals();
 
-    void AddSurfaces();
+    void AddDrawables();
+    void RemoveDrawables();
 
-    void RemoveSurfaces();
+    void AddDrawable( ADrawable * _Drawable );
+    void RemoveDrawable( ADrawable * _Drawable );
 
-    void AddSurfaceAreas( ASpatialObject * _Surf );
-
-    void AddSurfaceToArea( int _AreaNum, ASpatialObject * _Surf );
-
-    void RemoveSurfaceAreas( ASpatialObject * _Surf );
+    void AddDrawableToArea( int _AreaNum, ADrawable * _Drawable );
 
     void CullInstances( SRenderFrontendDef * _Def );
     void FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area );
-    void AddRenderInstances( SRenderFrontendDef * _Def, class AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
-    //void AddLightInstance( SRenderFrontendDef * _Def, FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
+
+    void RenderArea( SRenderFrontendDef * _Def, ALevelArea * _Area, PlaneF const * _CullPlanes, int _CullPlanesCount );
+    void RenderDrawables( SRenderFrontendDef * _Def, TPodArray< ADrawable * > const & _Drawables, PlaneF const * _CullPlanes, int _CullPlanesCount );
+    void RenderMesh( SRenderFrontendDef * _Def, class AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
 
     AWorld * OwnerWorld;
     int IndexInArrayOfLevels = -1;

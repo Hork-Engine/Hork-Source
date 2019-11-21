@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Atomic.h>
+#include <Core/Public/Atomic.h>
 
 #include <posh.h>
 
@@ -110,7 +110,7 @@ SOFTWARE.
 
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
 
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Core/Public/WindowsDefs.h>
 
 template< typename T >
 AN_INLINE T AtomicLoadAcquire( const volatile T * ptr ) {

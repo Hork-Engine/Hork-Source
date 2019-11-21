@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "GameModuleCallback.h"
 
-#include <Engine/Core/Public/BaseTypes.h>
+#include <Core/Public/BaseTypes.h>
 
 /** Runtime entry point */
 ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _CreateGameModule );
@@ -41,7 +41,7 @@ ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _Cr
 ANGIE_API void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _CreateGameModule );
 
 #ifdef AN_OS_WIN32
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Core/Public/WindowsDefs.h>
 static void RunEngineWin32( HINSTANCE hInstance, ACreateGameModuleCallback _CreateGameModule ) {
 #if defined( AN_DEBUG ) && defined( AN_COMPILER_MSVC )
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );

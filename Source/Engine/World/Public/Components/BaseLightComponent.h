@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "SceneComponent.h"
 
-#include <Engine/Resource/Public/AnimationPattern.h>
+#include <World/Public/Resource/AnimationPattern.h>
 
 class ABaseLightComponent : public ASceneComponent {
     AN_COMPONENT( ABaseLightComponent, ASceneComponent )

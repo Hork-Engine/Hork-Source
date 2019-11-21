@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include "SpatialObject.h"
-#include <Engine/World/Public/CollisionEvents.h>
+#include "SceneComponent.h"
+#include <World/Public/CollisionEvents.h>
 
-#include <Engine/Resource/Public/CollisionBody.h>
+#include <World/Public/Resource/CollisionBody.h>
 
 class btRigidBody;
 class btSoftBody;
@@ -73,12 +73,30 @@ enum EPhysicsBehavior {
     PB_KINEMATIC
 };
 
-class APhysicalBody : public ASpatialObject {
-    AN_COMPONENT( APhysicalBody, ASpatialObject )
+enum EAINavigationBehavior {
+    /** The body will not be used for navmesh generation */
+    AI_NAVIGATION_BEHAVIOR_NONE,
+
+    /** The body will be used for navmesh generation. AI can walk on. */
+    AI_NAVIGATION_BEHAVIOR_STATIC,
+
+    /** The body will be used for navmesh generation. AI can't walk on. */
+    AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE,
+
+    /** The body is dynamic obstacle. AI can walk on. */
+    AI_NAVIGATION_BEHAVIOR_DYNAMIC,                 // TODO
+
+    /** The body is dynamic obstacle. AI can't walk on. */
+    AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE     // TODO
+};
+
+class APhysicalBody : public ASceneComponent {
+    AN_COMPONENT( APhysicalBody, ASceneComponent )
 
     friend class SPhysicalBodyMotionState;
     friend struct SCollisionFilterCallback;
-    friend class AWorld;
+    friend class APhysicsWorld;
+    friend class AAINavigationMesh;
 
 public:
     // Component events
@@ -135,16 +153,6 @@ public:
     Only for PS_DYNAMIC */
     float Mass = 1.0f;
 
-    /** Used to build AI navigation mesh
-    Only for PB_STATIC */
-    bool bAINavigation; // alternative names: bContainsNavigationData, bUseForAINavigation?
-
-    /** Helper for AI navmesh builder to mark non-walkable objects (static obstacles) */
-    bool bAINonWalkable;
-
-    // TODO:
-    //bool bAIDynamicObstacle;
-
     /** Set collision group. See ECollisionMask. */
     void SetCollisionGroup( int _CollisionGroup );
 
@@ -159,6 +167,9 @@ public:
 
     /** Unset actor to ignore collisions with this component */
     void RemoveCollisionIgnoreActor( AActor * _Actor );
+
+    /** Specifies how the body will be used by navigation mesh generator */
+    void SetAINavigationBehavior( EAINavigationBehavior _AINavigationBehavior );
 
     /** Force physics activation */
     void ActivatePhysics();
@@ -215,7 +226,10 @@ public:
     int GetCollisionGroup() const { return CollisionGroup; }
 
     /** Get collision mask. See ECollisionMask. */
-    int SetCollisionMask() const { return CollisionMask; }
+    int GetCollisionMask() const { return CollisionMask; }
+
+    /** Is body can be used to build AI navigation mesh */
+    EAINavigationBehavior GetAINavigationBehavior() const { return AINavigationBehavior; }
 
     /** Get object velocity. For soft bodies use GetVertexVelocity in ASoftMeshComponent. */
     Float3 GetLinearVelocity() const;
@@ -285,8 +299,9 @@ public:
     /** Create 3d mesh model from collision body composition. Store coordinates in world space. */
     void CreateCollisionModel( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices );
 
-    void ContactTest( TPodArray< APhysicalBody * > & _Result );
-    void ContactTestActor( TPodArray< AActor * > & _Result );
+    void CollisionContactQuery( TPodArray< APhysicalBody * > & _Result ) const;
+
+    void CollisionContactQueryActor( TPodArray< AActor * > & _Result ) const;
 
     void UpdatePhysicsAttribs();
 
@@ -317,6 +332,7 @@ private:
     void SetCenterOfMassPosition( Float3 const & _Position );
     void SetCenterOfMassRotation( Quat const & _Rotation );
     void AddPhysicalBodyToWorld();
+    void RemovePhysicalBodyFromWorld();
 
     TPodArray< AActor *, 1 > CollisionIgnoreActors;
 
@@ -334,6 +350,7 @@ private:
     float AngularSleepingThreshold = 1.0f;
     float CcdRadius;
     float CcdMotionThreshold;
+    EAINavigationBehavior AINavigationBehavior;
     bool bInWorld;
 
     btRigidBody * RigidBody;
@@ -343,4 +360,7 @@ private:
 
     APhysicalBody * NextMarked;
     APhysicalBody * PrevMarked;
+
+    APhysicalBody * NextNavBody;
+    APhysicalBody * PrevNavBody;
 };

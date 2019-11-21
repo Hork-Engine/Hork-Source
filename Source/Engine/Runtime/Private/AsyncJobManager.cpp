@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Engine/Runtime/Public/AsyncJobManager.h>
-#include <Engine/Core/Public/Logger.h>
+#include <Runtime/Public/AsyncJobManager.h>
+#include <Core/Public/Logger.h>
 
 #ifdef AN_COMPILER_MSVC
 #pragma warning( disable : 4701 )
@@ -49,7 +49,7 @@ void AAsyncJobManager::Initialize( int _NumWorkerThreads, int _NumJobLists ) {
         _NumWorkerThreads = MAX_WORKER_THREADS;
     }
 
-    AN_Assert( _NumJobLists >= 1 && _NumJobLists <= MAX_JOB_LISTS );
+    AN_ASSERT( _NumJobLists >= 1 && _NumJobLists <= MAX_JOB_LISTS );
 
     GLogger.Printf( "Initializing async job manager ( %d worker threads, %d job lists )\n", _NumWorkerThreads, _NumJobLists );
 
@@ -172,7 +172,7 @@ AAsyncJobList::~AAsyncJobList() {
 }
 
 void AAsyncJobList::SetMaxParallelJobs( int _MaxParallelJobs ) {
-    AN_Assert( JobPool.IsEmpty() );
+    AN_ASSERT( JobPool.IsEmpty() );
 
     JobPool.ReserveInvalidate( _MaxParallelJobs );
 }
@@ -199,7 +199,7 @@ void AAsyncJobList::Submit() {
     }
 
     SAsyncJob * headJob = &JobPool[ JobPool.Size() - NumPendingJobs ];
-    AN_Assert( headJob->Next == nullptr );
+    AN_ASSERT( headJob->Next == nullptr );
 
     // lock section
     {
@@ -222,7 +222,7 @@ void AAsyncJobList::Wait() {
     if ( jobsCount > 0 ) {
         EventDone.Wait();
 
-        AN_Assert( SubmittedJobs == nullptr );
+        AN_ASSERT( SubmittedJobs == nullptr );
 
         if ( NumPendingJobs > 0 ) {
 
@@ -246,7 +246,7 @@ void AAsyncJobList::SubmitAndWait() {
     Wait();
 }
 
-//#include <Engine/Runtime/Public/Runtime.h>
+//#include <Runtime/Public/Runtime.h>
 //void FirstJob( void * _Data ) {
 //    for ( int i = 0 ; i < 32 ; i++ ) {
 //        GLogger.Printf( "FirstJob: Processing %d (%d) th %d\n", (size_t)_Data&0xf, i, (size_t)_Data>>16 );

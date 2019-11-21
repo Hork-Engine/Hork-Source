@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/Components/DirectionalLightComponent.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/Components/DirectionalLightComponent.h>
 
 class ADirectionalLight : public AActor {
     AN_ACTOR( ADirectionalLight, AActor )

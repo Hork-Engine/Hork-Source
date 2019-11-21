@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/PointLightComponent.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Base/Public/DebugDraw.h>
+#include <World/Public/Components/PointLightComponent.h>
+#include <World/Public/World.h>
+#include <World/Public/Base/DebugDraw.h>
 
 constexpr float DEFAULT_INNER_RADIUS = 0.5f;
 constexpr float DEFAULT_OUTER_RADIUS = 1.0f;
@@ -54,13 +54,13 @@ APointLightComponent::APointLightComponent() {
 void APointLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    GetWorld()->AddPointLight( this );
+    GetWorld()->GetRenderWorld().AddPointLight( this );
 }
 
 void APointLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    GetWorld()->RemovePointLight( this );
+    GetWorld()->GetRenderWorld().RemovePointLight( this );
 }
 
 void APointLightComponent::SetInnerRadius( float _Radius ) {

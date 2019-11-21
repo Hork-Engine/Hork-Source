@@ -28,18 +28,16 @@ SOFTWARE.
 
 */
 
-#include <Engine/GameThread/Public/RenderFrontend.h>
-#include <Engine/GameThread/Public/EngineInstance.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/World/Public/Components/CameraComponent.h>
-#include <Engine/World/Public/Components/SkinnedComponent.h>
-#include <Engine/World/Public/Actors/PlayerController.h>
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <GameThread/Public/RenderFrontend.h>
+#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/World.h>
+#include <World/Public/Components/CameraComponent.h>
+#include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/Actors/PlayerController.h>
+#include <Runtime/Public/Runtime.h>
+#include <Core/Public/IntrusiveLinkedListMacro.h>
 
 ARenderFrontend & GRenderFrontend = ARenderFrontend::Inst();
-
-extern ACanvas GCanvas;
 
 ARenderFrontend::ARenderFrontend() {
 }
@@ -141,18 +139,18 @@ void ARenderFrontend::Render() {
         VisMarker++;
 
         // Render canvas
-        RenderCanvas( &GCanvas );
+        RenderCanvas( &GEngine.Canvas );
 
         // Draw cursor just right before rendering to reduce input latency
         WDesktop * desktop = GEngine.GetDesktop();
         if ( desktop && desktop->IsCursorVisible() )
         {
-            GCanvas.Begin( GCanvas.Width, GCanvas.Height );
-            desktop->DrawCursor( GCanvas );
-            GCanvas.End();
+            GEngine.Canvas.Begin( GEngine.Canvas.Width, GEngine.Canvas.Height );
+            desktop->DrawCursor( GEngine.Canvas );
+            GEngine.Canvas.End();
 
             // Render cursor
-            RenderCanvas( &GCanvas );
+            RenderCanvas( &GEngine.Canvas );
         }
 
         //RenderImgui();
@@ -160,8 +158,8 @@ void ARenderFrontend::Render() {
 
     FrameData->AllocSurfaceWidth = MaxViewportWidth;
     FrameData->AllocSurfaceHeight = MaxViewportHeight;
-    FrameData->CanvasWidth = GCanvas.Width;
-    FrameData->CanvasHeight = GCanvas.Height;
+    FrameData->CanvasWidth = GEngine.Canvas.Width;
+    FrameData->CanvasHeight = GEngine.Canvas.Height;
     FrameData->NumViews = NumViewports;
     FrameData->Instances.Clear();
     FrameData->ShadowInstances.Clear();
@@ -232,8 +230,6 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
 
-    world->SetRenderFrameNumber( FrameData->FrameNumber );
-
     world->E_OnPrepareRenderFrontend.Dispatch( camera, VisMarker );
 
     // Generate debug draw commands
@@ -252,8 +248,8 @@ void ARenderFrontend::RenderView( int _Index ) {
     def.PolyCount = 0;
     def.ShadowMapPolyCount = 0;
 
-    world->RenderFrontend_AddInstances( &def );
-    world->RenderFrontend_AddDirectionalShadowmapInstances( &def );
+    world->GetRenderWorld().RenderFrontend_AddInstances( &def );
+    world->GetRenderWorld().RenderFrontend_AddDirectionalShadowmapInstances( &def );
 
     Stat.PolyCount += def.PolyCount;
     Stat.ShadowMapPolyCount += def.ShadowMapPolyCount;
@@ -324,7 +320,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
 
         firstIndex += pCmd->ElemCount;
 
-        AN_Assert( pCmd->TextureId );
+        AN_ASSERT( pCmd->TextureId );
 
         switch ( dstCmd->Type ) {
         case HUD_DRAW_CMD_VIEWPORT:
@@ -352,10 +348,10 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
         case HUD_DRAW_CMD_MATERIAL:
         {
             AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( pCmd->TextureId );
-            AN_Assert( materialInstance );
+            AN_ASSERT( materialInstance );
 
             AMaterial * material = materialInstance->GetMaterial();
-            AN_Assert( material );
+            AN_ASSERT( material );
 
             if ( material->GetType() != MATERIAL_TYPE_HUD ) {
                 drawList->CommandsCount--;
@@ -364,7 +360,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
 
             dstCmd->MaterialFrameData = materialInstance->RenderFrontend_Update( VisMarker );
 
-            AN_Assert( dstCmd->MaterialFrameData );
+            AN_ASSERT( dstCmd->MaterialFrameData );
 
             dstCmd++;
 
@@ -378,7 +374,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
             break;
         }
         default:
-            AN_Assert( 0 );
+            AN_ASSERT( 0 );
             break;
         }
     }
@@ -415,7 +411,7 @@ void ARenderFrontend::RenderImgui() {
             ImDrawList * drawList = drawData->CmdLists[ drawData->CmdListsCount - 1 ];
             if ( cursor != ImGuiMouseCursor_None )
             {
-                AN_Assert( cursor > ImGuiMouseCursor_None && cursor < ImGuiMouseCursor_COUNT );
+                AN_ASSERT( cursor > ImGuiMouseCursor_None && cursor < ImGuiMouseCursor_COUNT );
 
                 const ImU32 col_shadow = IM_COL32( 0, 0, 0, 48 );
                 const ImU32 col_border = IM_COL32( 0, 0, 0, 255 );          // Black
@@ -500,7 +496,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
 
         firstIndex += pCmd->ElemCount;
 
-        AN_Assert( pCmd->TextureId );
+        AN_ASSERT( pCmd->TextureId );
 
         switch ( dstCmd->Type ) {
         case HUD_DRAW_CMD_VIEWPORT:
@@ -512,10 +508,10 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         case HUD_DRAW_CMD_MATERIAL:
         {
             AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( pCmd->TextureId );
-            AN_Assert( materialInstance );
+            AN_ASSERT( materialInstance );
 
             AMaterial * material = materialInstance->GetMaterial();
-            AN_Assert( material );
+            AN_ASSERT( material );
 
             if ( material->GetType() != MATERIAL_TYPE_HUD ) {
                 drawList->CommandsCount--;
@@ -523,7 +519,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
             }
 
             dstCmd->MaterialFrameData = materialInstance->RenderFrontend_Update( VisMarker );
-            AN_Assert( dstCmd->MaterialFrameData );
+            AN_ASSERT( dstCmd->MaterialFrameData );
 
             dstCmd++;
 
@@ -537,7 +533,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
             break;
         }
         default:
-            AN_Assert( 0 );
+            AN_ASSERT( 0 );
             break;
         }
     }

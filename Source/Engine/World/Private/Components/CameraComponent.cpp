@@ -28,13 +28,13 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/CameraComponent.h>
-#include <Engine/Base/Public/DebugDraw.h>
+#include <World/Public/Components/CameraComponent.h>
+#include <World/Public/Base/DebugDraw.h>
 
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/ConvexHull.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/ConvexHull.h>
 
-#include <Engine/Runtime/Public/Runtime.h>
+#include <Runtime/Public/Runtime.h>
 
 #define DEFAULT_PROJECTION CAMERA_PROJ_PERSPECTIVE
 #define DEFAULT_ZNEAR 0.04f//0.1f

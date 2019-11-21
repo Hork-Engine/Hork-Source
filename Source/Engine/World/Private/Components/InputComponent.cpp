@@ -28,12 +28,12 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/InputComponent.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/HashFunc.h>
-#include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <World/Public/Components/InputComponent.h>
+#include <World/Public/World.h>
+#include <Runtime/Public/Runtime.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/HashFunc.h>
+#include <Core/Public/IntrusiveLinkedListMacro.h>
 
 AN_CLASS_META( AInputAxis )
 AN_CLASS_META( AInputAction )
@@ -515,8 +515,8 @@ AInputMappings * AInputComponent::GetInputMappings() {
 }
 
 void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
-    AN_Assert( _Fract > 0.0f );
-    AN_Assert( _Fract <= 1.0f );
+    AN_ASSERT( _Fract > 0.0f );
+    AN_ASSERT( _Fract <= 1.0f );
 
     if ( !InputMappings ) {
         return;
@@ -565,7 +565,7 @@ void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
                     if ( joystickAxes & ( 1 << joystickAxis ) ) {
                         AInputMappings::SMapping & mapping = InputMappings->JoystickAxisMappings[ joyNum ][ joystickAxis ];
 
-                        AN_Assert( mapping.AxisOrActionIndex == i );
+                        AN_ASSERT( mapping.AxisOrActionIndex == i );
 
                         if ( mapping.ControllerId == ControllerId ) {
                             binding.AxisScale += Static.JoystickAxisState[ joyNum ][ joystickAxis ] * mapping.AxisScale * _Fract;
@@ -581,7 +581,7 @@ void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
                 if ( mouseAxes & ( 1 << mouseAxis ) ) {
                     AInputMappings::SMapping & mapping = InputMappings->MouseAxisMappings[ mouseAxis ];
 
-                    AN_Assert( mapping.AxisOrActionIndex == i );
+                    AN_ASSERT( mapping.AxisOrActionIndex == i );
 
                     if ( mapping.ControllerId == ControllerId ) {
                         binding.AxisScale += (&MouseAxisStateX)[ mouseAxis ] * mapping.AxisScale;
@@ -597,20 +597,20 @@ void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
 }
 
 void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp ) {
-    AN_Assert( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
+    AN_ASSERT( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
 
     char * ButtonIndex = DeviceButtonDown[ _DevId ];
 
 #ifdef AN_DEBUG
     switch ( _DevId ) {
     case ID_KEYBOARD:
-        AN_Assert( _Button < MAX_KEYBOARD_BUTTONS );
+        AN_ASSERT( _Button < MAX_KEYBOARD_BUTTONS );
         break;
     case ID_MOUSE:
-        AN_Assert( _Button < MAX_MOUSE_BUTTONS );
+        AN_ASSERT( _Button < MAX_MOUSE_BUTTONS );
         break;
     default:
-        AN_Assert( _Button < MAX_JOYSTICK_BUTTONS );
+        AN_ASSERT( _Button < MAX_JOYSTICK_BUTTONS );
         break;
     }
 #endif
@@ -674,7 +674,7 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
 
             // Button is repressed
 
-            //AN_Assert( 0 );
+            //AN_ASSERT( 0 );
 
         }
     } else if ( _Action == IE_Release ) {
@@ -696,7 +696,7 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
 
             // Pop back
             NumPressedKeys--;
-            AN_Assert( NumPressedKeys >= 0 );
+            AN_ASSERT( NumPressedKeys >= 0 );
 
             if ( actionBinding != -1 /*&& !PressedKeys[ index ].bMarkedReleased*/ ) {
                 ActionBindings[ actionBinding ].Callback[ IE_Release ]();
@@ -706,7 +706,7 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
 }
 
 bool AInputComponent::GetButtonState( int _DevId, int _Button ) const {
-    AN_Assert( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
+    AN_ASSERT( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
 
     return DeviceButtonDown[ _DevId ][ _Button ] != -1;
 }
@@ -1262,7 +1262,7 @@ void AInputMappings::MapAxis( const char * _AxisName, int _DevId, int _KeyToken,
         break;
     }
     default:
-        AN_Assert(0);
+        AN_ASSERT(0);
         return;
     }
 
@@ -1328,7 +1328,7 @@ void AInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyTo
         break;
     }
     default:
-        AN_Assert(0);
+        AN_ASSERT(0);
         return;
     }
 
@@ -1391,7 +1391,7 @@ void AInputMappings::Unmap( int _DevId, int _KeyToken ) {
         break;
     }
     default:
-        AN_Assert(0);
+        AN_ASSERT(0);
         return;
     }
 
@@ -1449,7 +1449,7 @@ void AInputMappings::UnmapAll() {
 
 AInputMappings::SMapping * AInputMappings::GetMapping( int _DevId, int _KeyToken ) {
     if ( _KeyToken < 0 || _KeyToken >= Static.DeviceButtonLimits[ _DevId ] ) {
-        AN_Assert( 0 );
+        AN_ASSERT( 0 );
         return nullptr;
     }
 
@@ -1467,7 +1467,7 @@ AInputMappings::SMapping * AInputMappings::GetMapping( int _DevId, int _KeyToken
                     : &JoystickMappings[ joystickId ][ _KeyToken ];
     }
 
-    AN_Assert(0);
+    AN_ASSERT(0);
 
     return nullptr;
 }

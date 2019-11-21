@@ -28,10 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/AnchorComponent.h>
+#include <World/Public/Components/AnchorComponent.h>
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 
-#include <Engine/BulletCompatibility/BulletCompatibility.h>
+#include "../BulletCompatibility/BulletCompatibility.h"
 
 AN_BEGIN_CLASS_META( AAnchorComponent )
 AN_END_CLASS_META()

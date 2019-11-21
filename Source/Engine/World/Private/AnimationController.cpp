@@ -28,10 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/AnimationController.h>
-#include <Engine/World/Public/Components/SkinnedComponent.h>
+#include <World/Public/AnimationController.h>
+#include <World/Public/Components/SkinnedComponent.h>
 
-#include <Engine/Resource/Public/Animation.h>
+#include <World/Public/Resource/Animation.h>
 
 AN_CLASS_META( AAnimationController )
 

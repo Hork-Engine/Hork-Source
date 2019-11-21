@@ -3139,12 +3139,12 @@ public:
     constexpr SignedByte2( const int8_t & _X, const int8_t & _Y ) : X( _X ), Y( _Y ) {}
 
     SignedByte & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const SignedByte & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3172,12 +3172,12 @@ public:
     constexpr Byte2( const uint8_t & _X, const uint8_t & _Y ) : X( _X ), Y( _Y ) {}
 
     Byte & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Byte & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3205,12 +3205,12 @@ public:
     constexpr Short2( const int16_t & _X, const int16_t & _Y ) : X( _X ), Y( _Y ) {}
 
     Short & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Short & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3238,12 +3238,12 @@ public:
     constexpr UShort2( const uint16_t & _X, const uint16_t & _Y ) : X( _X ), Y( _Y ) {}
 
     UShort & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const UShort & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3271,12 +3271,12 @@ public:
     constexpr Int2( const int32_t & _X, const int32_t & _Y ) : X( _X ), Y( _Y ) {}
 
     Int & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Int & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3304,12 +3304,12 @@ public:
     constexpr UInt2( const uint32_t & _X, const uint32_t & _Y ) : X( _X ), Y( _Y ) {}
 
     UInt & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const UInt & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3337,12 +3337,12 @@ public:
     constexpr Long2( const int64_t & _X, const int64_t & _Y ) : X( _X ), Y( _Y ) {}
 
     Long & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Long & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3370,12 +3370,12 @@ public:
     constexpr ULong2( const uint64_t & _X, const uint64_t & _Y ) : X( _X ), Y( _Y ) {}
 
     ULong & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const ULong & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3404,12 +3404,12 @@ public:
     constexpr SignedByte3( const int8_t & _X, const int8_t & _Y, const int8_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     SignedByte & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const SignedByte & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3440,12 +3440,12 @@ public:
     constexpr Byte3( const uint8_t & _X, const uint8_t & _Y, const uint8_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     Byte & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Byte & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3476,12 +3476,12 @@ public:
     constexpr Short3( const int16_t & _X, const int16_t & _Y, const int16_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     Short & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Short & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3512,12 +3512,12 @@ public:
     constexpr UShort3( const uint16_t & _X, const uint16_t & _Y, const uint16_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     UShort & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const UShort & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3548,12 +3548,12 @@ public:
     constexpr Int3( const int32_t & _X, const int32_t & _Y, const int32_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     Int & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Int & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3584,12 +3584,12 @@ public:
     constexpr UInt3( const uint32_t & _X, const uint32_t & _Y, const uint32_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     UInt & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const UInt & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3620,12 +3620,12 @@ public:
     constexpr Long3( const int64_t & _X, const int64_t & _Y, const int64_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     Long & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Long & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3656,12 +3656,12 @@ public:
     constexpr ULong3( const uint64_t & _X, const uint64_t & _Y, const uint64_t & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     ULong & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const ULong & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3693,12 +3693,12 @@ public:
     constexpr SignedByte4( const int8_t & _X, const int8_t & _Y, const int8_t & _Z, const int8_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     SignedByte & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const SignedByte & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3732,12 +3732,12 @@ public:
     constexpr Byte4( const uint8_t & _X, const uint8_t & _Y, const uint8_t & _Z, const uint8_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     Byte & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Byte & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3771,12 +3771,12 @@ public:
     constexpr Short4( const int16_t & _X, const int16_t & _Y, const int16_t & _Z, const int16_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     Short & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Short & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3810,12 +3810,12 @@ public:
     constexpr UShort4( const uint16_t & _X, const uint16_t & _Y, const uint16_t & _Z, const uint16_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     UShort & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const UShort & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3849,12 +3849,12 @@ public:
     constexpr Int4( const int32_t & _X, const int32_t & _Y, const int32_t & _Z, const int32_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     Int & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Int & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3888,12 +3888,12 @@ public:
     constexpr UInt4( const uint32_t & _X, const uint32_t & _Y, const uint32_t & _Z, const uint32_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     UInt & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const UInt & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3927,12 +3927,12 @@ public:
     constexpr Long4( const int64_t & _X, const int64_t & _Y, const int64_t & _Z, const int64_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     Long & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Long & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -3966,12 +3966,12 @@ public:
     constexpr ULong4( const uint64_t & _X, const uint64_t & _Y, const uint64_t & _Z, const uint64_t & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     ULong & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const ULong & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 

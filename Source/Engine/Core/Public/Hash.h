@@ -109,7 +109,7 @@ public:
     }
 
     void Remove( int _Key, int _Index ) {
-        AN_Assert( _Index < IndexChainLength );
+        AN_ASSERT( _Index < IndexChainLength );
 
         if ( HashBuckets == InvalidHashIndex ) {
             // Hash not allocated yet
@@ -192,7 +192,7 @@ public:
     }
 
     int Next( int _Index ) const {
-        AN_Assert( _Index < IndexChainLength );
+        AN_ASSERT( _Index < IndexChainLength );
         return IndexChain[ _Index & LookupMask ];
     }
 

@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Integer.h>
+#include <Core/Public/Integer.h>
 
 template< typename integral_type >
 AN_FORCEINLINE integral_type StringToInt( const char * _String ) {

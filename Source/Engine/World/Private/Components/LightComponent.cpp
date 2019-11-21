@@ -28,10 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/LightComponent.h>
-#include <Engine/Base/Public/DebugDraw.h>
+#if 0
+#include <World/Public/Components/LightComponent.h>
+#include <World/Public/Base/DebugDraw.h>
 
-#include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <Core/Public/IntrusiveLinkedListMacro.h>
 
 AN_BEGIN_CLASS_META( AClusteredObject )
 AN_END_CLASS_META()
@@ -120,3 +121,4 @@ void AClusteredObject::_UpdateSurfaceAreas() {
 #endif
     DirtyList = DirtyListTail = nullptr;
 }
+#endif

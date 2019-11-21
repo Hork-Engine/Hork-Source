@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/Pawn.h>
+#include <World/Public/Actors/Pawn.h>
 
 AN_CLASS_META( APawn )
 

@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Engine/Runtime/Public/RuntimeCommandProcessor.h>
-#include <Engine/Core/Public/Logger.h>
+#include <Runtime/Public/RuntimeCommandProcessor.h>
+#include <Core/Public/Logger.h>
 
 ARuntimeCommandProcessor::ARuntimeCommandProcessor() {
     ClearBuffer();
@@ -56,7 +56,7 @@ void ARuntimeCommandProcessor::Execute( IRuntimeCommandContext & _Ctx ) {
 
     ArgsCount = 0;
 
-    AN_Assert( CmdbufPos == 0 );
+    AN_ASSERT( CmdbufPos == 0 );
 
     while ( CmdbufPos < Cmdbuf.Length() ) {
         // "//" comments

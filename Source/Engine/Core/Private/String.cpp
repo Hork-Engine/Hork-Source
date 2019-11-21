@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/String.h>
+#include <Core/Public/String.h>
 
 #define STB_SPRINTF_IMPLEMENTATION
 #define STB_SPRINTF_STATIC
@@ -65,7 +65,7 @@ char * AString::Fmt( const char * _Format, ... ) {
 }
 
 void AString::ReallocIfNeed( int _Alloc, bool _CopyOld ) {
-    AN_ASSERT( _Alloc > 0, "Invalid string size" );
+    AN_ASSERT_( _Alloc > 0, "Invalid string size" );
 
     if ( _Alloc <= Allocated ) {
         return;
@@ -115,7 +115,7 @@ void AString::operator=( const char * _Str ) {
     // check if we're aliasing
     if ( _Str >= StringData && _Str <= StringData + StringLength ) {
         diff = _Str - StringData;
-        AN_ASSERT( Length( _Str ) < StringLength, "AString=" );
+        AN_ASSERT_( Length( _Str ) < StringLength, "AString=" );
         for ( i = 0; _Str[ i ]; i++ ) {
             StringData[ i ] = _Str[ i ];
         }
@@ -146,7 +146,7 @@ void AString::CopyN( const char * _Str, int _Num ) {
     // check if we're aliasing
     if ( _Str >= StringData && _Str <= StringData + StringLength ) {
         //diff = _Str - StringData;
-        AN_ASSERT( Length( _Str ) < StringLength, "AString::CopyN" );
+        AN_ASSERT_( Length( _Str ) < StringLength, "AString::CopyN" );
         for ( i = 0; _Str[ i ] && i<_Num ; i++ ) {
             StringData[ i ] = _Str[ i ];
         }
@@ -192,7 +192,7 @@ int AString::Icmp( const char* _S1, const char* _S2 ) {
 int AString::IcmpN( const char* _S1, const char* _S2, int _Num ) {
     char        c1, c2;
 
-    AN_ASSERT( _Num >= 0, "AString::IcmpN" );
+    AN_ASSERT_( _Num >= 0, "AString::IcmpN" );
 
     do {
         c1 = *_S1++;
@@ -248,7 +248,7 @@ int AString::CmpPath( const char* _S1, const char* _S2 ) {
 int AString::CmpPathN( const char* _S1, const char* _S2, int _Num ) {
     char c1, c2;
 
-    AN_ASSERT( _Num >= 0, "AString::CmpPathN" );
+    AN_ASSERT_( _Num >= 0, "AString::CmpPathN" );
 
     do {
         c1 = *_S1++;
@@ -293,7 +293,7 @@ int AString::Cmp( const char * _S1, const char * _S2 ) {
 int AString::CmpN( const char * _S1, const char * _S2, int _Num ) {
     char        c1, c2;
 
-    AN_ASSERT( _Num >= 0, "AString::CmpN" );
+    AN_ASSERT_( _Num >= 0, "AString::CmpN" );
 
     do {
         c1 = *_S1++;
@@ -425,7 +425,7 @@ void AString::Replace( const char * _Str, int _Index ) {
 
 void AString::Cut( int _Index, int _Count ) {
     int i;
-    AN_ASSERT( _Count > 0, "AString::Cut" );
+    AN_ASSERT_( _Count > 0, "AString::Cut" );
     if ( _Index < 0 ) _Index = 0;
     else if ( _Index > StringLength ) _Index = StringLength;
     for ( i = _Index + _Count ; i < StringLength ; i++ ) {

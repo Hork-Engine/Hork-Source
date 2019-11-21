@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "MeshComponent.h"
-#include <Engine/Resource/Public/Skeleton.h>
+#include <World/Public/Resource/Skeleton.h>
 
 class AAnimationController;
 
@@ -45,7 +45,7 @@ Mesh component with skinning
 class ASkinnedComponent : public AMeshComponent {
     AN_COMPONENT( ASkinnedComponent, AMeshComponent )
 
-    friend class AWorld;
+    friend class ARenderWorld;
     friend class AAnimationController;
 
 public:
@@ -80,7 +80,7 @@ public:
     ASkinnedComponent * GetNextSkinnedMesh() { return Next; }
     ASkinnedComponent * GetPrevSkinnedMesh() { return Prev; }
 
-    void UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize );
+    void UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize, int _FrameNumber );
 
 protected:
     ASkinnedComponent();
@@ -114,12 +114,19 @@ private:
     ASkinnedComponent * Next;
     ASkinnedComponent * Prev;
 
-    bool bUpdateBounds;
-    bool bUpdateControllers;
-    bool bUpdateRelativeTransforms;
-    //bool bWriteTransforms;
+    // Memory offset/size for the skeleton animation snapshot
+    size_t SkeletonOffset;
+    size_t SkeletonSize;
+
+    // Frame when UpdateJointTransforms was called
+    int UpdateFrameNumber;
+
+    bool bUpdateBounds : 1;
+    bool bUpdateControllers : 1;
+    bool bUpdateRelativeTransforms : 1;
+    //bool bWriteTransforms : 1;
 
 protected:
-    bool bUpdateAbsoluteTransforms;
-    bool bJointsSimulatedByPhysics;
+    bool bUpdateAbsoluteTransforms : 1;
+    bool bJointsSimulatedByPhysics : 1;
 };

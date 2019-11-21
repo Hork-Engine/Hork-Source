@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/PhysicalBody.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Base/Public/DebugDraw.h>
+#include <World/Public/Components/PhysicalBody.h>
+#include <World/Public/World.h>
+#include <World/Public/Base/DebugDraw.h>
 
-#include <Engine/BulletCompatibility/BulletCompatibility.h>
+#include "../BulletCompatibility/BulletCompatibility.h"
 
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
@@ -103,12 +103,39 @@ void APhysicalBody::InitializeComponent() {
     if ( HasCollisionBody() ) {
         CreateRigidBody();
     }
+
+    if ( AINavigationBehavior != AI_NAVIGATION_BEHAVIOR_NONE )
+    {
+        AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
+        NavigationMesh.AddNavigationGeometry( this );
+    }
 }
 
 void APhysicalBody::DeinitializeComponent() {
     DestroyRigidBody();
 
     Super::DeinitializeComponent();
+}
+
+void APhysicalBody::SetAINavigationBehavior( EAINavigationBehavior _AINavigationBehavior ) {
+    if ( AINavigationBehavior == _AINavigationBehavior )
+    {
+        return;
+    }
+
+    AINavigationBehavior = _AINavigationBehavior;
+
+    if ( IsInitialized() )
+    {
+        AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
+
+        NavigationMesh.RemoveNavigationGeometry( this );
+
+        if ( AINavigationBehavior != AI_NAVIGATION_BEHAVIOR_NONE )
+        {
+            NavigationMesh.AddNavigationGeometry( this );
+        }
+    }
 }
 
 ACollisionBodyComposition const & APhysicalBody::GetBodyComposition() const {
@@ -177,29 +204,12 @@ static void UpdateRigidBodyGravity( btRigidBody * RigidBody, bool bDisableGravit
     }
 }
 
-AN_FORCEINLINE static unsigned short ClampUnsignedShort( int _Value ) {
-    if ( _Value < 0 ) return 0;
-    if ( _Value > 0xffff ) return 0xffff;
-    return _Value;
-}
-
-void APhysicalBody::AddPhysicalBodyToWorld() {
-    if ( bInWorld ) {
-        GetWorld()->GetPhysicsWorld()->removeRigidBody( RigidBody );
-        bInWorld = false;
-    }
-
-    if ( RigidBody ) {
-        GetWorld()->AddPhysicalBody( this );
-    }
-}
-
 void APhysicalBody::CreateRigidBody() {
     //btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
-    AN_Assert( MotionState == nullptr );
-    AN_Assert( RigidBody == nullptr );
-    AN_Assert( CompoundShape == nullptr );
+    AN_ASSERT( MotionState == nullptr );
+    AN_ASSERT( RigidBody == nullptr );
+    AN_ASSERT( CompoundShape == nullptr );
 
     CachedScale = GetWorldScale();
 
@@ -258,14 +268,7 @@ void APhysicalBody::CreateRigidBody() {
 
 void APhysicalBody::DestroyRigidBody() {
     if ( RigidBody ) {
-        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetPhysicsWorld();
-
-        GetWorld()->RemovePhysicalBody( this );
-
-        if ( bInWorld ) {
-            physicsWorld->removeRigidBody( RigidBody );
-            bInWorld = false;
-        }
+        RemovePhysicalBodyFromWorld();
 
         b3Destroy( RigidBody );
         RigidBody = nullptr;
@@ -276,6 +279,14 @@ void APhysicalBody::DestroyRigidBody() {
         b3Destroy( MotionState );
         MotionState = nullptr;
     }
+}
+
+void APhysicalBody::AddPhysicalBodyToWorld() {
+    GetWorld()->GetPhysicsWorld().AddPhysicalBody( this );
+}
+
+void APhysicalBody::RemovePhysicalBodyFromWorld() {
+    GetWorld()->GetPhysicsWorld().RemovePhysicalBody( this );
 }
 
 void APhysicalBody::UpdatePhysicsAttribs() {
@@ -298,11 +309,6 @@ void APhysicalBody::UpdatePhysicsAttribs() {
 
     btTransform const & centerOfMassTransform = RigidBody->getWorldTransform();
     Float3 position = btVectorToFloat3( centerOfMassTransform.getOrigin() - centerOfMassTransform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
-
-//    if ( bInWorld ) {
-//        physicsWorld->removeRigidBody( RigidBody );
-//        bInWorld = false;
-//    }
 
     CachedScale = GetWorldScale();
 
@@ -840,16 +846,19 @@ void APhysicalBody::CreateCollisionModel( TPodArray< Float3 > & _Vertices, TPodA
 
     int numVertices = _Vertices.Size() - firstVertex;
 
-    Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
+    if ( numVertices > 0 )
+    {
+        Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
 
-    Float3x4 const & worldTransofrm = GetWorldTransformMatrix();
-    for ( int i = 0 ; i < numVertices ; i++, pVertices++ ) {
-        *pVertices = worldTransofrm * (*pVertices);
+        Float3x4 const & worldTransofrm = GetWorldTransformMatrix();
+        for ( int i = 0 ; i < numVertices ; i++, pVertices++ ) {
+            *pVertices = worldTransofrm * (*pVertices);
+        }
     }
 }
 
-struct SContactTestCallback : public btCollisionWorld::ContactResultCallback {
-    SContactTestCallback( TPodArray< APhysicalBody * > & _Result, int _CollisionMask, APhysicalBody * _Self )
+struct SContactQueryCallback : public btCollisionWorld::ContactResultCallback {
+    SContactQueryCallback( TPodArray< APhysicalBody * > & _Result, int _CollisionMask, APhysicalBody const * _Self )
         : Result( _Result )
         , CollisionMask( _CollisionMask )
         , Self( _Self )
@@ -875,11 +884,11 @@ struct SContactTestCallback : public btCollisionWorld::ContactResultCallback {
 
     TPodArray< APhysicalBody * > & Result;
     int CollisionMask;
-    APhysicalBody * Self;
+    APhysicalBody const * Self;
 };
 
-struct SContactTestActorCallback : public btCollisionWorld::ContactResultCallback {
-    SContactTestActorCallback( TPodArray< AActor * > & _Result, int _CollisionMask, AActor * _Self )
+struct SContactQueryActorCallback : public btCollisionWorld::ContactResultCallback {
+    SContactQueryActorCallback( TPodArray< AActor * > & _Result, int _CollisionMask, AActor const * _Self )
         : Result( _Result )
         , CollisionMask( _CollisionMask )
         , Self( _Self )
@@ -905,31 +914,43 @@ struct SContactTestActorCallback : public btCollisionWorld::ContactResultCallbac
 
     TPodArray< AActor * > & Result;
     int CollisionMask;
-    AActor * Self;
+    AActor const * Self;
 };
 
-void APhysicalBody::ContactTest( TPodArray< APhysicalBody * > & _Result ) {
-    SContactTestCallback callback( _Result, CollisionMask, this );
+void APhysicalBody::CollisionContactQuery( TPodArray< APhysicalBody * > & _Result ) const {
+    SContactQueryCallback callback( _Result, CollisionMask, this );
 
-    if ( !RigidBody ) {
+    if ( !RigidBody )
+    {
+        GLogger.Printf( "APhysicalBody::CollisionContactQuery: The object has no rigid body\n" );
         return;
     }
 
-    // TODO: Add rigid body to world?
+    if ( !bInWorld )
+    {
+        GLogger.Printf( "APhysicalBody::CollisionContactQuery: The body is not in world\n" );
+        return;
+    }
 
-    GetWorld()->GetPhysicsWorld()->contactTest( RigidBody, callback );
+    GetWorld()->GetDynamicsWorld()->contactTest( RigidBody, callback );
 }
 
-void APhysicalBody::ContactTestActor( TPodArray< AActor * > & _Result ) {
-    SContactTestActorCallback callback( _Result, CollisionMask, GetParentActor() );
+void APhysicalBody::CollisionContactQueryActor( TPodArray< AActor * > & _Result ) const {
+    SContactQueryActorCallback callback( _Result, CollisionMask, GetParentActor() );
 
-    if ( !RigidBody ) {
+    if ( !RigidBody )
+    {
+        GLogger.Printf( "APhysicalBody::CollisionContactQueryActor: The object has no rigid body\n" );
         return;
     }
 
-    // TODO: Add rigid body to world?
+    if ( !bInWorld )
+    {
+        GLogger.Printf( "APhysicalBody::CollisionContactQueryActor: The body is not in world\n" );
+        return;
+    }
 
-    GetWorld()->GetPhysicsWorld()->contactTest( RigidBody, callback );
+    GetWorld()->GetDynamicsWorld()->contactTest( RigidBody, callback );
 }
 
 void APhysicalBody::BeginPlay() {

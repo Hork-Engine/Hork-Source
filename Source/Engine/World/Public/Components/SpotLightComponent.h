@@ -35,7 +35,8 @@ SOFTWARE.
 class ASpotLightComponent : public ABaseLightComponent {
     AN_COMPONENT( ASpotLightComponent, ABaseLightComponent )
 
-    friend class AWorld;
+    friend class ARenderWorld;
+
 public:
     void SetInnerRadius( float _Radius );
     float GetInnerRadius() const;

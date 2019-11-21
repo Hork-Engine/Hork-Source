@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/PointLightComponent.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Base/Public/DebugDraw.h>
+#include <World/Public/Components/PointLightComponent.h>
+#include <World/Public/World.h>
+#include <World/Public/Base/DebugDraw.h>
 #include "TemperatureToColor.h"
 
 constexpr float DEFAULT_AMBIENT_INTENSITY   = 1.0f;
@@ -138,6 +138,8 @@ void ABaseLightComponent::TickComponent( float _TimeStep ) {
     if ( !bEnabled ) {
         return;
     }
+
+    // FIXME: Update light animation only if light is visible?
 
     AnimationBrightness = Animation->Calculate( AnimTime );
     AnimTime += _TimeStep;

@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/DirectionalLight.h>
+#include <World/Public/Actors/DirectionalLight.h>
 
 AN_CLASS_META( ADirectionalLight )
 

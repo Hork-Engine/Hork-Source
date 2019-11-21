@@ -274,16 +274,17 @@ Misc
 
 */
 
-#if 1
-#define AN_Assert(expression) \
-    assert(expression)
+//#ifdef AN_DEBUG
+#define AN_ALLOW_ASSERTS
+//#endif
+
+#ifdef AN_ALLOW_ASSERTS
+#define AN_ASSERT_(assertion,comment)  ((assertion) ? static_cast<void>(0) : AssertFunction(__FILE__,__LINE__,AN_FUNCSIG,AN_STRINGIFY(assertion),comment))
+extern void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment );
 #else
-    if ( !(expression) ) { \
-        CriticalError( "Assertion Failed on line %d, file %s.\nExpression %s.\n", __LINE__, __FILE__, AN_STRINGIFY(expression) ); \
-    }
+#define AN_ASSERT_(assertion,comment)
 #endif
-//#define AN_ASSERT_(expression)          assert(expression)
-#define AN_ASSERT(expression,text)      AN_Assert((expression) && (text))
+#define AN_ASSERT(assertion)            AN_ASSERT_(assertion,nullptr)
 #define AN_STRINGIFY(text)              #text
 #define AN_BIT(sh)                      (1<<(sh))
 #define AN_BIT64(sh)                    (uint64_t(1)<<(sh))

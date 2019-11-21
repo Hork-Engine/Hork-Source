@@ -30,11 +30,11 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/RenderCore.h>
-#include <Engine/Core/Public/PodArray.h>
-#include <Engine/Resource/Public/FontAtlas.h>
+#include <Runtime/Public/RenderCore.h>
+#include <Core/Public/PodArray.h>
+#include <World/Public/Resource/FontAtlas.h>
 
-#include <Engine/imgui/imgui_internal.h>
+#include <imgui/imgui_internal.h>
 
 class APlayerController;
 class ATexture;

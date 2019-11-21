@@ -32,20 +32,20 @@ SOFTWARE.
  TODO: Future optimizations: parallel, SSE
  */
 
-#include <Engine/World/Public/Components/SkinnedComponent.h>
-#include <Engine/World/Public/AnimationController.h>
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Base/Public/DebugDraw.h>
-#include <Engine/Resource/Public/Asset.h>
-#include <Engine/Resource/Public/Animation.h>
-#include <Engine/Resource/Public/ResourceManager.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/AnimationController.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/World.h>
+#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/ResourceManager.h>
+#include <World/Public/Resource/Asset.h>
+#include <World/Public/Resource/Animation.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/IntrusiveLinkedListMacro.h>
 
 #include <BulletSoftBody/btSoftBody.h>
 
-#include <Engine/BulletCompatibility/BulletCompatibility.h>
+#include "../BulletCompatibility/BulletCompatibility.h"
 
 ARuntimeVariable RVDrawSkeleton( _CTS( "DrawSkeleton" ), _CTS( "0" ), VAR_CHEAT );
 
@@ -63,9 +63,7 @@ ASkinnedComponent::ASkinnedComponent() {
 void ASkinnedComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    AWorld * world = GetParentActor()->GetWorld();
-
-    world->AddSkinnedMesh( this );
+    GetWorld()->GetRenderWorld().AddSkinnedMesh( this );
 }
 
 void ASkinnedComponent::DeinitializeComponent() {
@@ -73,9 +71,7 @@ void ASkinnedComponent::DeinitializeComponent() {
 
     RemoveAnimationControllers();
 
-    AWorld * world = GetParentActor()->GetWorld();
-
-    world->RemoveSkinnedMesh( this );
+    GetWorld()->GetRenderWorld().RemoveSkinnedMesh( this );
 }
 
 void ASkinnedComponent::OnLazyBoundsUpdate() {
@@ -440,11 +436,12 @@ void ASkinnedComponent::UpdateBounds() {
 
     bUpdateBounds = false;
 
-    if ( AnimControllers.IsEmpty() ) {
-
+    if ( AnimControllers.IsEmpty() )
+    {
         Bounds = Skeleton->GetBindposeBounds();
-
-    } else {
+    }
+    else
+    {
         Bounds.Clear();
         for ( int controllerId = 0 ; controllerId < AnimControllers.Size() ; controllerId++ ) {
             AAnimationController const * controller = AnimControllers[ controllerId ];
@@ -462,9 +459,16 @@ void ASkinnedComponent::UpdateBounds() {
     MarkWorldBoundsDirty();
 }
 
-static Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS];
+static Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS]; // TODO: thread_local for multithreaded update
 
-void ASkinnedComponent::UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize ) {
+void ASkinnedComponent::UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize, int _FrameNumber ) {
+    if ( UpdateFrameNumber == _FrameNumber ) {
+        _SkeletonOffset = SkeletonOffset;
+        _SkeletonSize = SkeletonSize;
+        GLogger.Printf( "Caching UpdateJointTransforms()\n" );
+        return;
+    }
+
     _SkeletonOffset = 0;
     _SkeletonSize = 0;
 
@@ -489,6 +493,10 @@ void ASkinnedComponent::UpdateJointTransforms( size_t & _SkeletonOffset, size_t 
         //bWriteTransforms = false;
 
     //}
+
+    UpdateFrameNumber = _FrameNumber;
+    SkeletonOffset = _SkeletonOffset;
+    SkeletonSize = _SkeletonSize;
 }
 
 Float3x4 const & ASkinnedComponent::GetJointTransform( int _JointIndex ) {
@@ -527,7 +535,7 @@ void ASkinnedComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
 }
 
 /*
-void FJointTransform::ToMatrix( Float3x4 & _JointTransform ) const {
+void ToMatrix( Float3x4 & _JointTransform, Float3 const & Position, Quat const & Rotation ) const {
     float * mat = Math::ToPtr( _JointTransform );
 
     float x2 = Rotation.x + Rotation.x;
@@ -563,7 +571,7 @@ void FJointTransform::ToMatrix( Float3x4 & _JointTransform ) const {
     mat[ 2 * 4 + 3 ] = Position[2];
 }
 
-void FJointTransform::FromMatrix( Float3x4 const & _JointTransform ) {
+void FromMatrix( Float3x4 const & _JointTransform, Float3 & Position, Quat & Rotation  ) {
     float trace;
     float s;
     float t;

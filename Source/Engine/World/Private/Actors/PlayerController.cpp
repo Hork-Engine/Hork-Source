@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/PlayerController.h>
-#include <Engine/World/Public/Components/InputComponent.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/GameThread/Public/EngineInstance.h>
+#include <World/Public/Actors/PlayerController.h>
+#include <World/Public/Components/InputComponent.h>
+#include <World/Public/World.h>
+#include <Runtime/Public/Runtime.h>
+#include <GameThread/Public/EngineInstance.h> // TODO: Remove this dependency: GEngine.GetCursorPosition()
 
 AN_CLASS_META( APlayerController )
 AN_CLASS_META( ARenderingParameters )
@@ -65,11 +65,6 @@ void APlayerController::Quit( ARuntimeCommandProcessor const & _Proc ) {
 
 void APlayerController::EndPlay() {
     Super::EndPlay();
-
-    //for ( int i = 0 ; i < ViewActors.Size() ; i++ ) {
-    //    FViewActor * viewer = ViewActors[i];
-    //    viewer->RemoveRef();
-    //}
 
     if ( CurrentAudioListener == this ) {
         CurrentAudioListener = nullptr;
@@ -172,29 +167,6 @@ void APlayerController::SetInputMappings( AInputMappings * _InputMappings ) {
 AInputMappings * APlayerController::GetInputMappings() {
     return InputComponent->GetInputMappings();
 }
-
-//void APlayerController::AddViewActor( FViewActor * _ViewActor ) {
-//    ViewActors.Append( _ViewActor );
-//    _ViewActor->AddRef();
-//}
-
-//void APlayerController::VisitViewActors() {
-//    for ( int i = 0 ; i < ViewActors.Size() ; ) {
-//        FViewActor * viewer = ViewActors[i];
-
-//        if ( viewer->IsPendingKill() ) {
-//            viewer->RemoveRef();
-//            ViewActors.Remove( i );
-//            continue;
-//        }
-
-//        if ( CameraComponent ) {
-//            viewer->OnView( CameraComponent );
-//        }
-
-//        i++;
-//    }
-//}
 
 void APlayerController::SetPlayerIndex( int _ControllerId ) {
     InputComponent->ControllerId = _ControllerId;

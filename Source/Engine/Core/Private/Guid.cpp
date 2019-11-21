@@ -28,10 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Guid.h>
+#include <Core/Public/Guid.h>
 
 #if defined( AN_OS_WIN32 )
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Core/Public/WindowsDefs.h>
 #include <objbase.h>
 void AGUID::Generate() {
     GUID id;

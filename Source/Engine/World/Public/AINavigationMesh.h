@@ -32,10 +32,10 @@ SOFTWARE.
 
 // TODO: dynamic obstacles, areas, area connections, crowd
 
-#include <Engine/Base/Public/BaseObject.h>
-#include <Engine/Base/Public/DebugDraw.h>
+#include <World/Public/Base/BaseObject.h>
+#include <World/Public/Base/DebugDraw.h>
 
-#include <Engine/Core/Public/BitMask.h>
+#include <Core/Public/BitMask.h>
 
 #ifdef DT_POLYREF64
 typedef uint64_t SNavPolyRef;
@@ -43,7 +43,8 @@ typedef uint64_t SNavPolyRef;
 typedef unsigned int SNavPolyRef;
 #endif
 
-class ALevel;
+class AWorld;
+class APhysicalBody;
 
 struct SNavPointRef {
     SNavPolyRef PolyRef;
@@ -252,47 +253,47 @@ private:
     class dtQueryFilter * Filter;
 };
 
-struct SAINavMeshInitial {
+struct SAINavigationConfig {
     //unsigned int NavTrianglesPerChunk = 256;
 
     /** The walkable height */
-    float NavWalkableHeight = 2.0f;
+    float WalkableHeight = 2.0f;
 
     /** The walkable radius */
-    float NavWalkableRadius = 0.6f;
+    float WalkableRadius = 0.6f;
 
     /** The maximum traversable ledge (Up/Down) */
-    float NavWalkableClimb = 0.2f;//0.9f
+    float WalkableClimb = 0.2f;//0.9f
 
     /** The maximum slope that is considered walkable. In degrees, ( 0 <= value < 90 ) */
-    float NavWalkableSlopeAngle = 45.0f;
+    float WalkableSlopeAngle = 45.0f;
 
     /** The xz-plane cell size to use for fields. (value > 0) */
-    float NavCellSize = 0.3f;
+    float CellSize = 0.3f;
 
     /** The y-axis cell size to use for fields. (value > 0) */
-    float NavCellHeight = 0.01f;// 0.2f
+    float CellHeight = 0.01f;// 0.2f
 
-    float NavEdgeMaxLength = 12.0f;
+    float EdgeMaxLength = 12.0f;
 
     /** The maximum distance a simplfied contour's border edges should deviate
     the original raw contour. (value >= 0) */
-    float NavEdgeMaxError = 1.3f;
+    float EdgeMaxError = 1.3f;
 
-    float NavMinRegionSize = 8.0f;
+    float MinRegionSize = 8.0f;
 
-    float NavMergeRegionSize = 20.0f;
+    float MergeRegionSize = 20.0f;
 
-    float NavDetailSampleDist = 6.0f;
+    float DetailSampleDist = 6.0f;
 
-    float NavDetailSampleMaxError = 1.0f;
+    float DetailSampleMaxError = 1.0f;
 
     /** The maximum number of vertices allowed for polygons generated during the
     contour to polygon conversion process. (value >= 3) */
-    int NavVertsPerPoly = 6;
+    int VertsPerPoly = 6;
 
     /** The width/height size of tile's on the xz-plane. (value >= 0) */
-    int NavTileSize = 48;
+    int TileSize = 48;
 
     bool bDynamicNavMesh = true;
 
@@ -309,19 +310,33 @@ struct SAINavMeshInitial {
 };
 
 class AAINavigationMesh {
+    AN_FORBID_COPY( AAINavigationMesh )
+
 public:
-    AAINavigationMesh();
+    AAINavigationMesh( AWorld * InOwnerWorld );
     ~AAINavigationMesh();
 
     /** Default query filter */
     ANavQueryFilter QueryFilter;
 
+    /** Navigation mesh connections. You must rebuild navigation mesh if you change connections. */
+    TPodArray< SAINavMeshConnection > NavMeshConnections; // TODO: Components?
+
+    /** Navigation areas. You must rebuild navigation mesh if you change areas. */
+    TPodArray< SAINavigationArea > NavigationAreas; // TODO: Components?
+
     //
     // Public methods
     //
 
-    /** Initialize empry nav mesh */
-    bool Initialize( ALevel * _OwnerLevel, SAINavMeshInitial const & _Initial );
+    /** Initialize empty nav mesh. You must rebuild nav mesh after that. */
+    bool Initialize( SAINavigationConfig const & _NavigationConfig );
+
+    /** Add source geometry to build navigation mesh */
+    void AddNavigationGeometry( APhysicalBody * InPhysicalBody );
+
+    /** Remove source geometry to build navigation mesh */
+    void RemoveNavigationGeometry( APhysicalBody * InPhysicalBody );
 
     /** Build all tiles in nav mesh */
     bool Build();
@@ -350,7 +365,7 @@ public:
     void Purge();
 
     /** NavMesh ticking */
-    void Tick( float _TimeStep );
+    void Update( float _TimeStep );
 
     /** Draw debug info */
     void DrawDebug( ADebugDraw * _DebugDraw );
@@ -483,8 +498,13 @@ public:
 private:
     bool BuildTiles( Int2 const & _Mins, Int2 const & _Maxs );
     bool BuildTile( int _X, int _Z );
+    void GatherNavigationGeometry( TPodArray< Float3 > & _Vertices,
+                                   TPodArray< unsigned int > & _Indices,
+                                   TBitMask<> & _WalkableTriangles,
+                                   BvAxisAlignedBox & _ResultBoundingBox,
+                                   BvAxisAlignedBox const * _ClipBoundingBox );
 
-    SAINavMeshInitial Initial;
+    SAINavigationConfig Initial;
 
     int NumTilesX;
     int NumTilesZ;
@@ -501,7 +521,12 @@ private:
     struct ADetourLinearAllocator * LinearAllocator;
     struct ADetourMeshProcess * MeshProcess;
 
-    ALevel * OwnerLevel;
+    APhysicalBody * NavigationGeometryList;
+    APhysicalBody * NavigationGeometryListTail;
+
+    AWorld * pOwnerWorld;
+
+    //bool bNavigationDirty;
 
     // NavMesh areas
     //TPodArray< SAINavigationArea > Areas;

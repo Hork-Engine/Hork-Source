@@ -30,25 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Resource/Public/Texture.h>
-#include <Engine/Resource/Public/Material.h>
-#include <Engine/Resource/Public/IndexedMesh.h>
-#include <Engine/Resource/Public/ResourceManager.h>
+#include <World/Public/Resource/Texture.h>
+#include <World/Public/Resource/Material.h>
+#include <World/Public/Resource/IndexedMesh.h>
+#include <World/Public/Base/ResourceManager.h>
 
-#include "DrawSurf.h"
+#include "Drawable.h"
 
 class ACameraComponent;
-
-enum EVSDPass {
-    VSD_PASS_IGNORE     = 0,
-    VSD_PASS_ALL        = ~0,
-    VSD_PASS_PORTALS    = 1,
-    VSD_PASS_FACE_CULL  = 2,
-    VSD_PASS_BOUNDS     = 4,
-    VSD_PASS_CUSTOM_VISIBLE_STEP = 8,
-    VSD_PASS_VIS_MARKER = 16,
-    VSD_PASS_DEFAULT    = VSD_PASS_PORTALS | VSD_PASS_BOUNDS,
-};
 
 /**
 
@@ -57,18 +46,12 @@ AMeshComponent
 Mesh component without skinning
 
 */
-class ANGIE_API AMeshComponent : public ADrawSurf {
-    AN_COMPONENT( AMeshComponent, ADrawSurf )
+class ANGIE_API AMeshComponent : public ADrawable {
+    AN_COMPONENT( AMeshComponent, ADrawable )
 
-    friend class AWorld;
+    friend class ARenderWorld;
 
 public:
-    /** Visible surface determination alogrithm */
-    int             VSDPasses = VSD_PASS_DEFAULT;
-
-    /** Marker for VSD_PASS_VIS_MARKER */
-    int             VisMarker;
-
     /** Lightmap atlas index */
     int             LightmapBlock;
 
@@ -96,9 +79,6 @@ public:
     /** Flipbook animation page offset */
     unsigned int    SubpartBaseVertexOffset;
 
-    /** Render during main pass */
-    bool            bLightPass;
-
     /** Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled */
     bool            bCustomDepthStencilPass;
 
@@ -107,12 +87,6 @@ public:
 
     /** Force ignoring component position/rotation/scale. FIXME: move this to super class SceneComponent? */
     bool            bNoTransform;
-
-    /** Internal. Used by frontend to filter rendered meshes. */
-    int             RenderMark;
-
-    /** Used for VSD_FACE_CULL */
-    PlaneF          FacePlane;
 
     bool            bOverrideMeshMaterials = true;
 
@@ -161,6 +135,8 @@ public:
     /** Get material instance of subpart of the mesh. Never return null. */
     AMaterialInstance * GetMaterialInstance() const { return GetMaterialInstance( 0 ); }
 
+    BvAxisAlignedBox GetSubpartWorldBounds( int _SubpartIndex ) const;
+
     /** Allow mesh to cast shadows on the world */
     void SetCastShadow( bool _CastShadow );
 
@@ -174,9 +150,6 @@ public:
     /** Iterate shadow casters in parent world */
     AMeshComponent * GetNextShadowCaster() { return NextShadowCaster; }
     AMeshComponent * GetPrevShadowCaster() { return PrevShadowCaster; }
-
-    /** Used for VSD_PASS_CUSTOM_VISIBLE_STEP algorithm */
-    virtual void RenderFrontend_CustomVisibleStep( SRenderFrontendDef * _Def, bool & _OutVisibleFlag ) {}
 
 protected:
     AMeshComponent();

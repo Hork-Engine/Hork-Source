@@ -133,7 +133,7 @@ bool AShadowMapPassRenderer::BindMaterial( SShadowRenderInstance const * instanc
     AMaterialGPU * pMaterial = instance->Material;
     Pipeline * pPipeline;
 
-    AN_Assert( pMaterial );
+    AN_ASSERT( pMaterial );
 
     bool bSkinned = instance->SkeletonSize > 0;
 

@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Utf8.h>
+#include <Core/Public/Utf8.h>
 
 namespace  Core {
 
@@ -189,7 +189,7 @@ int WideCharDecodeUTF8( const char * _Unicode, FWideChar & _Ch ) {
 }
 
 int WideCharDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, FWideChar & _Ch ) {
-    AN_Assert( _UnicodeEnd != nullptr );
+    AN_ASSERT( _UnicodeEnd != nullptr );
     const unsigned char * s = (const unsigned char *)_Unicode;
     const unsigned char * e = (const unsigned char *)_UnicodeEnd;
     if ( __utf8_is_1b(s) ) {

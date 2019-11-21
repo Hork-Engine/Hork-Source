@@ -32,8 +32,8 @@ SOFTWARE.
 #include "OpenGL45JointsAllocator.h"
 #include "OpenGL45EnvProbeGenerator.h"
 
-#include <Engine/Core/Public/Image.h>
-#include <Engine/Runtime/Public/RuntimeVariable.h>
+#include <Core/Public/Image.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 ARuntimeVariable RVDebugRenderMode( _CTS( "DebugRenderMode" ), _CTS( "0" ), VAR_CHEAT );
 

@@ -30,13 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Base/Public/BaseObject.h>
-#include <Engine/Resource/Public/IndexedMesh.h>
+#include <World/Public/Base/BaseObject.h>
+#include <World/Public/Resource/IndexedMesh.h>
 
-#include <Engine/Core/Public/BV/BvFrustum.h>
+#include <Core/Public/BV/BvFrustum.h>
 
 class ALevelArea;
-class ASpatialObject;
+class ADrawable;
 class AMaterialInstance;
 
 
@@ -47,9 +47,9 @@ class ASpatialTree : public ABaseObject {
 
 public:
 
-    void AddObject( ASpatialObject * _Object );
-    void RemoveObject( ASpatialObject * _Object );
-    void UpdateObject( ASpatialObject * _Object );
+    void AddObject( ADrawable * _Object );
+    void RemoveObject( ADrawable * _Object );
+    void UpdateObject( ADrawable * _Object );
 
     virtual void Build() {
 
@@ -67,14 +67,14 @@ protected:
     ASpatialTree() {}
     ~ASpatialTree();
 
-    int FindPendingObject( ASpatialObject * _Object );
+    int FindPendingObject( ADrawable * _Object );
 
     void ClearPendingList();
 
     struct SPendingObjectInfo {
         enum { PENDING_ADD, PENDING_REMOVE, PENDING_UPDATE };
 
-        ASpatialObject * Object;
+        ADrawable * Object;
         int PendingOp;
     };
 
@@ -114,7 +114,7 @@ protected:
     }
 
 private:
-    void TreeAddObject( ASpatialObject * _Object );
+    void TreeAddObject( ADrawable * _Object );
     void TreeRemoveObject( int _Index );
     void TreeUpdateObject( int _Index );
 
@@ -122,5 +122,5 @@ private:
 //    SOctreeNode * Nodes;
     int NumLevels;
 
-    TPodArray< ASpatialObject * > ObjectsInTree;
+    TPodArray< ADrawable * > ObjectsInTree;
 };

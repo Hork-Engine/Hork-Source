@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/String.h>
+#include <Core/Public/String.h>
 
 class AJoystickManager {
     AN_SINGLETON( AJoystickManager )

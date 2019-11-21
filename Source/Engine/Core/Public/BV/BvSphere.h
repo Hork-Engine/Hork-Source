@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/Plane.h>
+#include <Core/Public/Plane.h>
 #include "BvAxisAlignedBox.h"
 
 class BvSphere {

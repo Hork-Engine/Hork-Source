@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/DirectionalLightComponent.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Base/Public/DebugDraw.h>
+#include <World/Public/Components/DirectionalLightComponent.h>
+#include <World/Public/World.h>
+#include <World/Public/Base/DebugDraw.h>
 
 constexpr float DEFAULT_MAX_SHADOW_CASCADES = 4;
 
@@ -45,13 +45,13 @@ ADirectionalLightComponent::ADirectionalLightComponent() {
 void ADirectionalLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    GetWorld()->AddDirectionalLight( this );
+    GetWorld()->GetRenderWorld().AddDirectionalLight( this );
 }
 
 void ADirectionalLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    GetWorld()->RemoveDirectionalLight( this );
+    GetWorld()->GetRenderWorld().RemoveDirectionalLight( this );
 }
 
 void ADirectionalLightComponent::SetDirection( Float3 const & _Direction ) {

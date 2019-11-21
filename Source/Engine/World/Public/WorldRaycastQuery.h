@@ -30,15 +30,15 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Resource/Public/IndexedMesh.h>
+#include <World/Public/Resource/IndexedMesh.h>
 
-class AWorld;
-class ASpatialObject;
+class ARenderWorld;
+class ADrawable;
 
 /** Box hit result */
 struct SBoxHitResult
 {
-    ASpatialObject * Object;
+    ADrawable * Object;
     Float3 LocationMin;
     Float3 LocationMax;
     float DistanceMin;
@@ -51,10 +51,10 @@ struct SBoxHitResult
     }
 };
 
-/** Raycast entity */
-struct SWorldRaycastEntity
+/** Raycast drawable */
+struct SWorldRaycastDrawable
 {
-    ASpatialObject * Object;
+    ADrawable * Object;
     int FirstHit;
     int NumHits;
     int ClosestHit;
@@ -64,26 +64,26 @@ struct SWorldRaycastEntity
 struct SWorldRaycastResult
 {
     TPodArray< STriangleHitResult > Hits;
-    TPodArray< SWorldRaycastEntity > Entities;
+    TPodArray< SWorldRaycastDrawable > Drawables;
 
     void Sort() {
 
-        struct ASortEntity {
+        struct ASortDrawables {
 
             TPodArray< STriangleHitResult > const & Hits;
 
-            ASortEntity( TPodArray< STriangleHitResult > const & _Hits ) : Hits(_Hits) {}
+            ASortDrawables( TPodArray< STriangleHitResult > const & _Hits ) : Hits(_Hits) {}
 
-            bool operator() ( SWorldRaycastEntity const & _A, SWorldRaycastEntity const & _B ) {
+            bool operator() ( SWorldRaycastDrawable const & _A, SWorldRaycastDrawable const & _B ) {
                 const float hitDistanceA = Hits[_A.ClosestHit].Distance;
                 const float hitDistanceB = Hits[_B.ClosestHit].Distance;
 
                 return ( hitDistanceA < hitDistanceB );
             }
-        } SortEntity( Hits );
+        } SortDrawables( Hits );
 
-        // Sort by entity distance
-        StdSort( Entities.ToPtr(), Entities.ToPtr() + Entities.Size(), SortEntity );
+        // Sort by drawables distance
+        StdSort( Drawables.ToPtr(), Drawables.ToPtr() + Drawables.Size(), SortDrawables );
 
         struct ASortHit {
             bool operator() ( STriangleHitResult const & _A, STriangleHitResult const & _B ) {
@@ -92,22 +92,22 @@ struct SWorldRaycastResult
         } SortHit;
 
         // Sort by hit distance
-        for ( SWorldRaycastEntity & entity : Entities ) {
-            StdSort( Hits.ToPtr() + entity.FirstHit, Hits.ToPtr() + (entity.FirstHit + entity.NumHits), SortHit );
-            entity.ClosestHit = entity.FirstHit;
+        for ( SWorldRaycastDrawable & drawable : Drawables ) {
+            StdSort( Hits.ToPtr() + drawable.FirstHit, Hits.ToPtr() + (drawable.FirstHit + drawable.NumHits), SortHit );
+            drawable.ClosestHit = drawable.FirstHit;
         }
     }
 
     void Clear() {
         Hits.Clear();
-        Entities.Clear();
+        Drawables.Clear();
     }
 };
 
 /** Closest hit result */
 struct SWorldRaycastClosestResult
 {
-    ASpatialObject * Object;
+    ADrawable * Object;
     STriangleHitResult TriangleHit;
 
     float Fraction;
@@ -137,16 +137,16 @@ struct SWorldRaycastFilter
 struct AWorldRaycastQuery
 {
     /** Per-triangle raycast */
-    static bool Raycast( AWorld const * _World, SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr );
+    static bool Raycast( ARenderWorld const * _World, SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr );
 
     /** Per-AABB raycast */
-    static bool RaycastAABB( AWorld const * _World, TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr );
+    static bool RaycastAABB( ARenderWorld const * _World, TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr );
 
     /** Per-triangle raycast */
-    static bool RaycastClosest( AWorld const * _World, SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr );
+    static bool RaycastClosest( ARenderWorld const * _World, SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr );
 
     /** Per-AABB raycast */
-    static bool RaycastClosestAABB( AWorld const * _World, SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr );
+    static bool RaycastClosestAABB( ARenderWorld const * _World, SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr );
 
 private:
     static SWorldRaycastFilter DefaultRaycastFilter;

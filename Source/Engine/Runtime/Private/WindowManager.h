@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Runtime/Public/RenderCore.h>
+#include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/RenderCore.h>
 
 class AWindowManager {
     AN_SINGLETON( AWindowManager )

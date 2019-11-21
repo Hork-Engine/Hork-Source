@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/SpotLightComponent.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Base/Public/DebugDraw.h>
+#include <World/Public/Components/SpotLightComponent.h>
+#include <World/Public/World.h>
+#include <World/Public/Base/DebugDraw.h>
 
 constexpr float DEFAULT_INNER_RADIUS = 0.5f;
 constexpr float DEFAULT_OUTER_RADIUS = 1.0f;
@@ -60,13 +60,13 @@ ASpotLightComponent::ASpotLightComponent() {
 void ASpotLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    GetWorld()->AddSpotLight( this );
+    GetWorld()->GetRenderWorld().AddSpotLight( this );
 }
 
 void ASpotLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    GetWorld()->RemoveSpotLight( this );
+    GetWorld()->GetRenderWorld().RemoveSpotLight( this );
 }
 
 void ASpotLightComponent::SetInnerRadius( float _Radius ) {

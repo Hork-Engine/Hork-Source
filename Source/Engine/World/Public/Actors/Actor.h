@@ -30,9 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Level.h>
-#include <Engine/World/Public/CollisionEvents.h>
-#include <Engine/Core/Public/Guid.h>
+#include <World/Public/Level.h>
+#include <World/Public/CollisionEvents.h>
+#include <Core/Public/Guid.h>
 
 class AWorld;
 class APawn;

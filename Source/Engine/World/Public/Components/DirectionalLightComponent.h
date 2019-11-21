@@ -35,7 +35,8 @@ SOFTWARE.
 class ADirectionalLightComponent : public ABaseLightComponent {
     AN_COMPONENT( ADirectionalLightComponent, ABaseLightComponent )
 
-    friend class AWorld;
+    friend class ARenderWorld;
+
 public:
     void SetDirection( Float3 const & _Direction );
     Float3 GetDirection() const;

@@ -30,6 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/Runtime.h>
+#include <Runtime/Public/Runtime.h>
 
 void GetCPUInfo( SCPUInfo & _Info );

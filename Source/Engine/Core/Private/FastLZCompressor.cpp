@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/FastLZCompressor.h>
-#include <Engine/Core/Public/Std.h>
+#include <Core/Public/FastLZCompressor.h>
+#include <Core/Public/Std.h>
 #include <fastlz.h>
 
 size_t AFastLZCompressor::CalcAppropriateCompressedDataSize( size_t _SourceSize ) {

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/PodArray.h>
+#include <Core/Public/PodArray.h>
 
 //#define AN_ACTIVE_THREADS_COUNTERS
 
@@ -115,7 +115,7 @@ public:
     void NotifyThreads();
 
     /** Get job list by the index */
-    AAsyncJobList * GetAsyncJobList( int _Index ) { AN_Assert( _Index >= 0 && _Index < NumJobLists ); return &JobList[_Index]; }
+    AAsyncJobList * GetAsyncJobList( int _Index ) { AN_ASSERT( _Index >= 0 && _Index < NumJobLists ); return &JobList[_Index]; }
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
     int GetNumActiveThreads() const { return NumActiveThreads.Load(); }

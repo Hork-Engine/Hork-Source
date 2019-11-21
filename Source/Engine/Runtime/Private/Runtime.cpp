@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Runtime/Public/Runtime.h>
+#include <Core/Public/WindowsDefs.h>
 
 #include "JoystickManager.h"
 #include "MonitorManager.h"
@@ -400,6 +400,10 @@ size_t ARuntime::GetFrameMemoryUsed() const {
 
 size_t ARuntime::GetFrameMemoryUsedPrev() const {
     return GRuntimeMain.FrameMemoryUsedPrev;
+}
+
+size_t ARuntime::GetMaxFrameMemoryUsage() const {
+    return GRuntimeMain.MaxFrameMemoryUsage;
 }
 
 void ARuntime::PostTerminateEvent() {

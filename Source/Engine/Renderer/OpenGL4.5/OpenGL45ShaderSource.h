@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "OpenGL45Common.h"
-#include <Engine/Core/Public/Logger.h>
+#include <Core/Public/Logger.h>
 
 namespace OpenGL45 {
 
@@ -67,7 +67,7 @@ struct AShaderSources {
     }
 
     void Add( const char * _Source ) {
-        AN_Assert( NumSources < MAX_SOURCES );
+        AN_ASSERT( NumSources < MAX_SOURCES );
 
         if ( NumSources < MAX_SOURCES ) {
             Sources[NumSources++] = _Source;

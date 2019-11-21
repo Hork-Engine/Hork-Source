@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/BaseTypes.h>
+#include <Core/Public/BaseTypes.h>
 
 // Lightning-fast lossless compression
 class ANGIE_API AFastLZCompressor {

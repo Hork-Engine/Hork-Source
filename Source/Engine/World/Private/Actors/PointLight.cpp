@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/PointLight.h>
+#include <World/Public/Actors/PointLight.h>
 
 AN_CLASS_META( APointLight )
 

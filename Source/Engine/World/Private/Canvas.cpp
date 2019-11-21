@@ -28,16 +28,16 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Canvas.h>
-#include <Engine/World/Public/Actors/PlayerController.h>
-#include <Engine/World/Public/Actors/HUD.h>
+#include <World/Public/Canvas.h>
+#include <World/Public/Actors/PlayerController.h>
+#include <World/Public/Actors/HUD.h>
 
-#include <Engine/Resource/Public/Texture.h>
+#include <World/Public/Resource/Texture.h>
 
-#include <Engine/Core/Public/Utf8.h>
-#include <Engine/Core/Public/Logger.h>
+#include <Core/Public/Utf8.h>
+#include <Core/Public/Logger.h>
 
-#include <Engine/Resource/Public/ResourceManager.h>
+#include <World/Public/Base/ResourceManager.h>
 
 void ACanvas::Initialize() {
     GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/DroidSansMono.ttf.16" );
@@ -56,7 +56,7 @@ AFont * ACanvas::GetDefaultFont() {
 }
 
 void ACanvas::Begin( int _Width, int _Height ) {
-    AN_Assert( FontStack.IsEmpty() );
+    AN_ASSERT( FontStack.IsEmpty() );
 
     Width = _Width;
     Height = _Height;
@@ -177,7 +177,7 @@ void ACanvas::DrawTextUTF8( Float2 const & pos, AColor4 const & col, const char*
 
 void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
 
-    AN_Assert( _Font && _FontSize > 0.0f );
+    AN_ASSERT( _Font && _FontSize > 0.0f );
 
     if ( _Color.IsTransparent() ) {
         return;
@@ -193,7 +193,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
 
     uint32_t color = _Color.GetDWord();
 
-    AN_Assert( const_cast< AFont * >( _Font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
+    AN_ASSERT( const_cast< AFont * >( _Font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if ( _CPUFineClipRect ) {
@@ -398,7 +398,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
 
 void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, FWideChar const * _TextBegin, FWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
 
-    AN_Assert( _Font && _FontSize > 0.0f );
+    AN_ASSERT( _Font && _FontSize > 0.0f );
 
     if ( _Color.IsTransparent() ) {
         return;
@@ -414,7 +414,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
 
     uint32_t color = _Color.GetDWord();
 
-    AN_Assert( const_cast< AFont * >( _Font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
+    AN_ASSERT( const_cast< AFont * >( _Font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if ( _CPUFineClipRect ) {

@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Components/ActorComponent.h>
+#include <World/Public/Components/ActorComponent.h>
 
-#include <Engine/Runtime/Public/InputDefs.h>
-#include <Engine/Core/Public/Utf8.h>
+#include <Runtime/Public/InputDefs.h>
+#include <Core/Public/Utf8.h>
 
 #define MAX_PRESSED_KEYS       128
 #define MAX_AXIS_BINDINGS      1024

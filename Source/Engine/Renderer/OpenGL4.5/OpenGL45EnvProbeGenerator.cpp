@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "OpenGL45EnvProbeGenerator.h"
 
-#include <Engine/Core/Public/PodArray.h>
+#include <Core/Public/PodArray.h>
 
 using namespace GHI;
 
@@ -42,7 +42,7 @@ static void CreateSphere( int _HDiv, int _VDiv, TPodArray< Float3 > & _Vertices,
     int i, j;
     float a1, a2;
 
-    AN_ASSERT( numVerts < 65536, "Too many vertices" );
+    AN_ASSERT_( numVerts < 65536, "Too many vertices" );
 
     _Vertices.Clear();
     _Indices.Clear();

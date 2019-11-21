@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "SceneComponent.h"
 
-#include <Engine/Core/Public/BV/BvFrustum.h>
+#include <Core/Public/BV/BvFrustum.h>
 
 enum ECameraProjection : uint8_t {
     CAMERA_PROJ_ORTHOGRAPHIC,

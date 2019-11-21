@@ -28,12 +28,12 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/Actors/Pawn.h>
-#include <Engine/World/Public/Components/SceneComponent.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/World/Public/Timer.h>
-#include <Engine/Core/Public/Logger.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/Actors/Pawn.h>
+#include <World/Public/Components/SceneComponent.h>
+#include <World/Public/World.h>
+#include <World/Public/Timer.h>
+#include <Core/Public/Logger.h>
 
 AN_CLASS_META( AActor )
 
@@ -139,7 +139,7 @@ AActorComponent * AActor::CreateComponent( const char * _ClassName, const char *
 }
 
 AActorComponent * AActor::CreateComponent( AClassMeta const * _ClassMeta, const char * _Name ) {
-    AN_Assert( _ClassMeta->Factory() == &AActorComponent::Factory() );
+    AN_ASSERT( _ClassMeta->Factory() == &AActorComponent::Factory() );
     AActorComponent * component = static_cast< AActorComponent * >( _ClassMeta->CreateInstance() );
     if ( !component ) {
         return nullptr;
@@ -169,7 +169,7 @@ AActorComponent * AActor::GetComponent( const char * _ClassName ) {
 }
 
 AActorComponent * AActor::GetComponent( AClassMeta const * _ClassMeta ) {
-    AN_Assert( _ClassMeta->Factory() == &AActorComponent::Factory() );
+    AN_ASSERT( _ClassMeta->Factory() == &AActorComponent::Factory() );
     for ( AActorComponent * component : Components ) {
         if ( &component->FinalClassMeta() == _ClassMeta ) {
             return component;
@@ -345,7 +345,7 @@ void AActor::RegisterTimer( ATimer * _Timer ) {
         GLogger.Printf( "Use AActor::RegisterTimer() in BeginPlay()\n" );
         return;
     }
-    AN_Assert( ParentWorld != nullptr );
+    AN_ASSERT( ParentWorld != nullptr );
     _Timer->P = Timers;
     Timers = _Timer;
     ParentWorld->RegisterTimer( _Timer );

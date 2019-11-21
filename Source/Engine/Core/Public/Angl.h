@@ -66,12 +66,12 @@ public:
     }
 
     float & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&Pitch)[ _Index ];
     }
 
     const float & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&Pitch)[ _Index ];
     }
 

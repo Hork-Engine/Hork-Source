@@ -35,7 +35,8 @@ SOFTWARE.
 class ANGIE_API APointLightComponent : public ABaseLightComponent {
     AN_COMPONENT( APointLightComponent, ABaseLightComponent )
 
-    friend class AWorld;
+    friend class ARenderWorld;
+
 public:
     void SetInnerRadius( float _Radius );
     float GetInnerRadius() const;

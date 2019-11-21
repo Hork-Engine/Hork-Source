@@ -32,25 +32,16 @@ SOFTWARE.
 
 #include "Level.h"
 #include "WorldRaycastQuery.h"
-#include "WorldCollisionQuery.h"
+#include "PhysicsWorld.h"
+#include "RenderWorld.h"
+#include "AINavigationMesh.h"
 
 class AActor;
 class APawn;
 class AActorComponent;
 class ACameraComponent;
-class AMeshComponent;
-class ASkinnedComponent;
-class ADirectionalLightComponent;
-class APointLightComponent;
-class ASpotLightComponent;
 class ATimer;
 class ADebugDraw;
-class btBroadphaseInterface;
-class btDefaultCollisionConfiguration;
-class btCollisionDispatcher;
-class btSequentialImpulseConstraintSolver;
-class btSoftRigidDynamicsWorld;
-struct btSoftBodyWorldInfo;
 class IGameModule;
 
 /** Actor spawn parameters */
@@ -107,58 +98,21 @@ struct TActorSpawnInfo : SActorSpawnInfo
     }
 };
 
-/** Collision contact */
-struct SCollisionContact {
-    class btPersistentManifold * Manifold;
-
-    AActor * ActorA;
-    AActor * ActorB;
-    APhysicalBody * ComponentA;
-    APhysicalBody * ComponentB;
-
-    bool bActorADispatchContactEvents;
-    bool bActorBDispatchContactEvents;
-    bool bActorADispatchOverlapEvents;
-    bool bActorBDispatchOverlapEvents;
-
-    bool bComponentADispatchContactEvents;
-    bool bComponentBDispatchContactEvents;
-    bool bComponentADispatchOverlapEvents;
-    bool bComponentBDispatchOverlapEvents;
-
-    int Hash() const {
-        return ( size_t )ComponentA + ( size_t )ComponentB;
-    }
-};
-
-/** World. Defines a game map or editor/tool scene */
-class ANGIE_API AWorld : public ABaseObject
+/** AWorld. Defines a game map or editor/tool scene */
+class ANGIE_API AWorld : public ABaseObject, public IPhysicsWorldInterface
 {
     AN_CLASS( AWorld, ABaseObject )
 
     friend class AActor;
     friend class AActorComponent;
-    friend struct AWorldCollisionQuery;
 
 public:
-    /** Physics refresh rate */
-    int PhysicsHertz = 60;
-
-    /** Enable interpolation during physics simulation */
-    bool bEnablePhysicsInterpolation = true;
-
-    /** Contact solver split impulse. Disabled by default for performance */
-    bool bContactSolverSplitImpulse = false;
-
-    /** Contact solver iterations count */
-    int NumContactSolverIterations = 10;
-
     /** Scale audio volume in the entire world */
     float AudioVolume = 1.0f;
 
     /** Delegate to notify when any actor spawned */
-    using SOnActorSpawned = TEvent< AActor * >;
-    SOnActorSpawned E_OnActorSpawned;
+    using AOnActorSpawned = TEvent< AActor * >;
+    AOnActorSpawned E_OnActorSpawned;
 
     /** Delegate to prepare for rendering */
     using AOnPrepareRenderFrontend = TEvent< ACameraComponent *, int >;
@@ -173,11 +127,13 @@ public:
     /** Get array of worlds */
     static TPodArray< AWorld * > const & GetWorlds() { return Worlds; }
 
-    /** Tick worlds */
+    /** Tick the worlds */
     static void UpdateWorlds( IGameModule * _GameModule, float _TimeStep );
 
     /** Remove worlds, marked pending kill */
     static void KickoffPendingKillWorlds();
+
+    void BuildNavigation( SAINavigationConfig const & _NavigationConfig );
 
     /** Spawn a new actor */
     AActor * SpawnActor( SActorSpawnInfo const & _SpawnParameters );
@@ -219,10 +175,7 @@ public:
     /** Load actor from the document */
     AActor * LoadActor( ADocument const & _Document, int _FieldsHead, ALevel * _Level = nullptr );
 
-    /** Find actor by name */
-    //AActor * FindActor( const char * _UniqueName );
-
-    /** Get all actors in world */
+    /** Get all actors in the world */
     TPodArray< AActor * > const & GetActors() const { return Actors; }
 
     /** Serialize world to the document */
@@ -246,9 +199,6 @@ public:
     /** Get all levels in the world */
     TPodArray< ALevel * > const & GetArrayOfLevels() const { return ArrayOfLevels; }
 
-    /** Unique name generator for actors */
-    //AString GenerateActorUniqueName( const char * _Name );
-
     /** Pause the game. Freezes world and actor ticking since the next game tick. */
     void SetPaused( bool _Paused );
 
@@ -264,6 +214,18 @@ public:
     /** Reset gameplay timer to zero. This is delayed operation. */
     void ResetGameplayTimer();
 
+    /** Physics simulation refresh rate */
+    void SetPhysicsHertz( int _Hertz );
+
+    /** Enable interpolation during physics simulation */
+    void SetPhysicsInterpolation( bool _Interpolation );
+
+    /** Contact solver split impulse. Disabled by default for performance */
+    void SetContactSolverSplitImpulse( bool _SplitImpulse );
+
+    /** Contact solver iterations count */
+    void SetContactSolverIterations( int _InterationsCount );
+
     /** Set world gravity vector */
     void SetGravityVector( Float3 const & _Gravity );
 
@@ -271,157 +233,115 @@ public:
     Float3 const & GetGravityVector() const;
 
     /** Is in physics update now */
-    bool IsDuringPhysicsUpdate() const { return bDuringPhysicsUpdate; }
+    bool IsDuringPhysicsUpdate() const { return PhysicsWorld.bDuringPhysicsUpdate; }
 
     /** Is world destroyed, but not removed yet. */
     bool IsPendingKill() const { return bPendingKill; }
 
     /** Per-triangle raycast */
     bool Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const {
-        return AWorldRaycastQuery::Raycast( this, _Result, _RayStart, _RayEnd, _Filter );
+        return AWorldRaycastQuery::Raycast( &RenderWorld, _Result, _RayStart, _RayEnd, _Filter );
     }
 
     /** Per-AABB raycast */
     bool RaycastAABB( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const {
-        return AWorldRaycastQuery::RaycastAABB( this, _Result, _RayStart, _RayEnd, _Filter );
+        return AWorldRaycastQuery::RaycastAABB( &RenderWorld, _Result, _RayStart, _RayEnd, _Filter );
     }
 
     /** Per-triangle raycast */
     bool RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const {
-        return AWorldRaycastQuery::RaycastClosest( this, _Result, _RayStart, _RayEnd, _Filter );
+        return AWorldRaycastQuery::RaycastClosest( &RenderWorld, _Result, _RayStart, _RayEnd, _Filter );
     }
 
     /** Per-AABB raycast */
     bool RaycastClosestAABB( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const {
-        return AWorldRaycastQuery::RaycastClosestAABB( this, _Result, _RayStart, _RayEnd, _Filter );
+        return AWorldRaycastQuery::RaycastClosestAABB( &RenderWorld, _Result, _RayStart, _RayEnd, _Filter );
     }
 
     /** Trace collision bodies */
     bool Trace( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        return AWorldCollisionQuery::Trace( this, _Result, _RayStart, _RayEnd, _QueryFilter );
+        return PhysicsWorld.Trace( _Result, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
     bool TraceClosest( SCollisionTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        return AWorldCollisionQuery::TraceClosest( this, _Result, _RayStart, _RayEnd, _QueryFilter );
+        return PhysicsWorld.TraceClosest( _Result, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
     bool TraceSphere( SCollisionTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        return AWorldCollisionQuery::TraceSphere( this, _Result, _Radius, _RayStart, _RayEnd, _QueryFilter );
+        return PhysicsWorld.TraceSphere( _Result, _Radius, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
     bool TraceBox( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        return AWorldCollisionQuery::TraceBox( this, _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
+        return PhysicsWorld.TraceBox( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
     bool TraceCylinder( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        return AWorldCollisionQuery::TraceCylinder( this, _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
+        return PhysicsWorld.TraceCylinder( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
     bool TraceCapsule( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        return AWorldCollisionQuery::TraceCapsule( this, _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
+        return PhysicsWorld.TraceCapsule( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
     bool TraceConvex( SCollisionTraceResult & _Result, SConvexSweepTest const & _SweepTest ) const {
-        return AWorldCollisionQuery::TraceConvex( this, _Result, _SweepTest );
+        return PhysicsWorld.TraceConvex( _Result, _SweepTest );
     }
 
     /** Query objects in sphere */
     void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        AWorldCollisionQuery::QueryPhysicalBodies( this, _Result, _Position, _Radius, _QueryFilter );
+        PhysicsWorld.QueryPhysicalBodies( _Result, _Position, _Radius, _QueryFilter );
     }
 
     /** Query objects in box */
     void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        AWorldCollisionQuery::QueryPhysicalBodies( this, _Result, _Position, _HalfExtents, _QueryFilter );
+        PhysicsWorld.QueryPhysicalBodies( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
     /** Query objects in AABB */
     void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        AWorldCollisionQuery::QueryPhysicalBodies( this, _Result, _BoundingBox, _QueryFilter );
+        PhysicsWorld.QueryPhysicalBodies( _Result, _BoundingBox, _QueryFilter );
     }
 
     /** Query objects in sphere */
     void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        AWorldCollisionQuery::QueryActors( this, _Result, _Position, _Radius, _QueryFilter );
+        PhysicsWorld.QueryActors( _Result, _Position, _Radius, _QueryFilter );
     }
 
     /** Query objects in box */
     void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        AWorldCollisionQuery::QueryActors( this, _Result, _Position, _HalfExtents, _QueryFilter );
+        PhysicsWorld.QueryActors( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
     /** Query objects in AABB */
     void QueryActors( TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        AWorldCollisionQuery::QueryActors( this, _Result, _BoundingBox, _QueryFilter );
+        PhysicsWorld.QueryActors( _Result, _BoundingBox, _QueryFilter );
     }
 
     /** Apply amount of damage in specified radius */
     void ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
-    /** Get static and skinned meshes in the world */
-    AMeshComponent * GetMeshes() { return MeshList; }
-    AMeshComponent * GetMeshes() const { return MeshList; }
-
-    /** Get skinned meshes in the world */
-    ASkinnedComponent * GetSkinnedMeshes() { return SkinnedMeshList; }
-
-    /** Get all shadow casters in the world */
-    AMeshComponent * GetShadowCasters() { return ShadowCasters; }
-
-    /** Get directional lights in the world */
-    ADirectionalLightComponent * GetDirectionalLights() { return DirectionalLightList; }
-
-    /** Get point lights in the world */
-    APointLightComponent * GetPointLights() { return PointLightList; }
-
-    /** Get spot lights in the world */
-    ASpotLightComponent * GetSpotLights() { return SpotLightList; }
-
-    void SetRenderFrameNumber( int _FrameNumber ) {
-        FrameNumber = _FrameNumber;
-    }
-
-    int GetRenderFrameNumber() const {
-        return FrameNumber;
-    }
-
     //
     // Internal
     //
 
-    void AddMesh( AMeshComponent * _Mesh );
-    void RemoveMesh( AMeshComponent * _Mesh );
+    APhysicsWorld & GetPhysicsWorld() { return PhysicsWorld; }
 
-    void AddSkinnedMesh( ASkinnedComponent * _Skeleton );
-    void RemoveSkinnedMesh( ASkinnedComponent * _Skeleton );
+    ARenderWorld & GetRenderWorld() { return RenderWorld; }
 
-    void AddShadowCaster( AMeshComponent * _Mesh );
-    void RemoveShadowCaster( AMeshComponent * _Mesh );
+    AAINavigationMesh & GetNavigationMesh() { return NavigationMesh; }
 
-    void AddDirectionalLight( ADirectionalLightComponent * _Light );
-    void RemoveDirectionalLight( ADirectionalLightComponent * _Light );
+    btSoftRigidDynamicsWorld * GetDynamicsWorld() { return PhysicsWorld.DynamicsWorld; }
+    btSoftRigidDynamicsWorld const * GetDynamicsWorld() const { return PhysicsWorld.DynamicsWorld; }
 
-    void AddPointLight( APointLightComponent * _Light );
-    void RemovePointLight( APointLightComponent * _Light );
+    btSoftBodyWorldInfo * GetSoftBodyWorldInfo() { return PhysicsWorld.SoftBodyWorldInfo; }
 
-    void AddSpotLight( ASpotLightComponent * _Light );
-    void RemoveSpotLight( ASpotLightComponent * _Light );
-
-    void AddPhysicalBody( APhysicalBody * _PhysicalBody );
-    void RemovePhysicalBody( APhysicalBody * _PhysicalBody );
-
-    btSoftRigidDynamicsWorld * GetPhysicsWorld() { return PhysicsWorld; }
-
-    btSoftBodyWorldInfo * GetSoftBodyWorldInfo() { return SoftBodyWorldInfo; }
-
-    void RenderFrontend_AddInstances( SRenderFrontendDef * _Def );
-    void RenderFrontend_AddDirectionalShadowmapInstances( SRenderFrontendDef * _Def );
+    void UpdateDrawableArea( ADrawable * _Drawable );
 
     void DrawDebug( ADebugDraw * _DebugDraw );
 
@@ -435,17 +355,6 @@ protected:
     AWorld();
 
 private:
-    void SimulatePhysics( float _TimeStep );
-
-    void OnPrePhysics( float _TimeStep );
-    void OnPostPhysics( float _TimeStep );
-
-    static void OnPrePhysics( class btDynamicsWorld * _World, float _TimeStep );
-    static void OnPostPhysics( class btDynamicsWorld * _World, float _TimeStep );
-
-    void GenerateContactPoints( int _ContactIndex, SCollisionContact & _Contact );
-    void DispatchContactAndOverlapEvents();
-
     void BroadcastActorSpawned( AActor * _SpawnedActor );
 
     void RegisterTimer( ATimer * _Timer );      // friend AActor
@@ -453,20 +362,20 @@ private:
 
     void KickoffPendingKillObjects();
 
-    TPodArray< AActor * > Actors;
+    void UpdatePauseStatus();
+    void UpdateTimers( float _TimeStep );
+    void UpdateActors( float _TimeStep );
+    void UpdateActorsPrePhysics( float _TimeStep );
+    void UpdateActorsPostPhysics( float _TimeStep );
+    void UpdateLevels( float _TimeStep );
+    void UpdatePhysics( float _TimeStep );
+    void UpdateDrawableAreas();
 
-    AMeshComponent * MeshList;
-    AMeshComponent * MeshListTail;
-    ASkinnedComponent * SkinnedMeshList;
-    ASkinnedComponent * SkinnedMeshListTail;
-    AMeshComponent * ShadowCasters;
-    AMeshComponent * ShadowCastersTail;
-    ADirectionalLightComponent * DirectionalLightList;
-    ADirectionalLightComponent * DirectionalLightListTail;
-    APointLightComponent * PointLightList;
-    APointLightComponent * PointLightListTail;
-    ASpotLightComponent * SpotLightList;
-    ASpotLightComponent * SpotLightListTail;
+    // IPhysicsWorldInterface
+    void OnPrePhysics( float _TimeStep ) override;
+    void OnPostPhysics( float _TimeStep ) override;
+
+    TPodArray< AActor * > Actors;
 
     bool bPauseRequest;
     bool bUnpauseRequest;
@@ -484,8 +393,6 @@ private:
     ATimer * TimerList;
     ATimer * TimerListTail;
 
-    int FrameNumber;
-
     int IndexInGameArrayOfWorlds = -1;
 
     bool bPendingKill;
@@ -501,24 +408,13 @@ private:
 
     TRef< ALevel > PersistentLevel;
     TPodArray< ALevel * > ArrayOfLevels;
-//public:
-    btBroadphaseInterface * PhysicsBroadphase;
-    btDefaultCollisionConfiguration * CollisionConfiguration;
-    btCollisionDispatcher * CollisionDispatcher;
-    btSequentialImpulseConstraintSolver * ConstraintSolver;
-    btSoftBodyWorldInfo * SoftBodyWorldInfo;
-    btSoftRigidDynamicsWorld * PhysicsWorld;
-    TPodArray< SCollisionContact > CollisionContacts[ 2 ];
-    THash<> ContactHash[ 2 ];
-    TPodArray< SContactPoint > ContactPoints;
-    APhysicalBody * PendingAddToWorldHead;
-    APhysicalBody * PendingAddToWorldTail;
 
-    Float3 GravityVector;
-    bool bGravityDirty;
-    bool bDuringPhysicsUpdate;
-    float TimeAccumulation;
-    int FixedTickNumber;
+    APhysicsWorld PhysicsWorld;
+    ARenderWorld RenderWorld;
+    AAINavigationMesh NavigationMesh;
+
+    ADrawable * DrawableUpdateList;
+    ADrawable * DrawableUpdateListTail;
 };
 
 

@@ -29,11 +29,13 @@ SOFTWARE.
 */
 
 
-#include <Engine/World/Public/AINavigationMesh.h>
-#include <Engine/World/Public/Level.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/FastLZCompressor.h>
-#include <Engine/Core/Public/BV/BvIntersect.h>
+#include <World/Public/AINavigationMesh.h>
+#include <World/Public/World.h>
+#include <World/Public/Components/MeshComponent.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/FastLZCompressor.h>
+#include <Core/Public/BV/BvIntersect.h>
+#include <Core/Public/IntrusiveLinkedListMacro.h>
 
 #undef malloc
 #undef free
@@ -54,7 +56,7 @@ SOFTWARE.
 
 ARuntimeVariable RVDrawNavMeshBVTree( _CTS( "DrawNavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawNavMeshNodes( _CTS( "DrawNavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawNavMeshWithClosedList( _CTS( "DrawNavMeshWithClosedList" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawNavMesh( _CTS( "DrawNavMesh" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVDrawNavMeshTileBounds( _CTS( "DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
 
 static_assert( sizeof( SNavPolyRef ) == sizeof( dtPolyRef ), "Type sizeof check" );
@@ -153,7 +155,7 @@ struct ADetourMeshProcess : public dtTileCacheMeshProcess {
     TPodArray< unsigned short > OffMeshConFlags;
     TPodArray< unsigned int >   OffMeshConId;
     int                         OffMeshConCount;
-    ALevel *                    OwnerLevel;
+    AAINavigationMesh *         NavMesh;
 
     void process( struct dtNavMeshCreateParams * _Params, unsigned char * _PolyAreas, unsigned short * _PolyFlags ) override {
 
@@ -190,8 +192,8 @@ struct ADetourMeshProcess : public dtTileCacheMeshProcess {
         BvAxisAlignedBox conBoundingBox;
         const float margin = 0.2f;
         OffMeshConCount = 0;
-        for ( int i = 0 ; i < OwnerLevel->NavMeshConnections.Size() ; i++ ) {
-            SAINavMeshConnection const & con = OwnerLevel->NavMeshConnections[i];
+        for ( int i = 0 ; i < NavMesh->NavMeshConnections.Size() ; i++ ) {
+            SAINavMeshConnection const & con = NavMesh->NavMeshConnections[i];
 
             con.CalcBoundingBox( conBoundingBox );
             conBoundingBox.Mins -= margin;
@@ -258,7 +260,9 @@ protected:
 
 static ARecastContext RecastContext;
 
-AAINavigationMesh::AAINavigationMesh() {
+AAINavigationMesh::AAINavigationMesh( AWorld * InOwnerWorld )
+    : pOwnerWorld(InOwnerWorld)
+{
     NavQuery = nullptr;
     NavMesh = nullptr;
     //Crowd = nullptr;
@@ -274,30 +278,28 @@ AAINavigationMesh::~AAINavigationMesh() {
     Purge();
 }
 
-bool AAINavigationMesh::Initialize( ALevel * _OwnerLevel, SAINavMeshInitial const & _Initial ) {
+bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfig ) {
     dtStatus status;
 
     Purge();
 
-    OwnerLevel = _OwnerLevel;
-
-    if ( _Initial.BoundingBox.IsEmpty() ) {
+    if ( _NavigationConfig.BoundingBox.IsEmpty() ) {
         GLogger.Printf( "AAINavigationMesh::Initialize: empty bounding box\n" );
         return false;
     }
 
-    Initial = _Initial;
+    Initial = _NavigationConfig;
 
-    BoundingBox = _Initial.BoundingBox;
+    BoundingBox = _NavigationConfig.BoundingBox;
 
-    if ( Initial.NavVertsPerPoly < 3 ) {
+    if ( Initial.VertsPerPoly < 3 ) {
         GLogger.Printf( "NavVertsPerPoly < 3\n" );
 
-        Initial.NavVertsPerPoly = 3;
-    } else  if ( Initial.NavVertsPerPoly > DT_VERTS_PER_POLYGON ) {
+        Initial.VertsPerPoly = 3;
+    } else  if ( Initial.VertsPerPoly > DT_VERTS_PER_POLYGON ) {
         GLogger.Printf( "NavVertsPerPoly > NAV_MAX_VERTS_PER_POLYGON\n" );
 
-        Initial.NavVertsPerPoly = DT_VERTS_PER_POLYGON;
+        Initial.VertsPerPoly = DT_VERTS_PER_POLYGON;
     }
 
     if ( Initial.MaxLayers > MAX_LAYERS ) {
@@ -309,10 +311,10 @@ bool AAINavigationMesh::Initialize( ALevel * _OwnerLevel, SAINavMeshInitial cons
 
     rcCalcGridSize( (const float * )BoundingBox.Mins.ToPtr(),
                     (const float * )BoundingBox.Maxs.ToPtr(),
-                    Initial.NavCellSize, &gridWidth, &gridHeight );
+                    Initial.CellSize, &gridWidth, &gridHeight );
 
-    NumTilesX = ( gridWidth + Initial.NavTileSize - 1 ) / Initial.NavTileSize;
-    NumTilesZ = ( gridHeight + Initial.NavTileSize - 1 ) / Initial.NavTileSize;
+    NumTilesX = ( gridWidth + Initial.TileSize - 1 ) / Initial.TileSize;
+    NumTilesZ = ( gridHeight + Initial.TileSize - 1 ) / Initial.TileSize;
 
     // Max tiles and max polys affect how the tile IDs are caculated.
     // There are 22 bits available for identifying a tile and a polygon.
@@ -320,7 +322,7 @@ bool AAINavigationMesh::Initialize( ALevel * _OwnerLevel, SAINavMeshInitial cons
     const unsigned int maxTiles = 1 << tileBits;
     const unsigned int maxPolysPerTile = 1u << (22 - tileBits);
 
-    TileWidth = Initial.NavTileSize * Initial.NavCellSize;
+    TileWidth = Initial.TileSize * Initial.CellSize;
 
     dtNavMeshParams params;
     ZeroMem( &params, sizeof( params ) );
@@ -365,14 +367,14 @@ bool AAINavigationMesh::Initialize( ALevel * _OwnerLevel, SAINavMeshInitial cons
         dtTileCacheParams tileCacheParams;
         ZeroMem( &tileCacheParams, sizeof( tileCacheParams ) );
         rcVcopy( tileCacheParams.orig, (const float *)Initial.BoundingBox.Mins.ToPtr() );
-        tileCacheParams.cs = Initial.NavCellSize;
-        tileCacheParams.ch = Initial.NavCellHeight;
-        tileCacheParams.width = Initial.NavTileSize;
-        tileCacheParams.height = Initial.NavTileSize;
-        tileCacheParams.walkableHeight = Initial.NavWalkableHeight;
-        tileCacheParams.walkableRadius = Initial.NavWalkableRadius;
-        tileCacheParams.walkableClimb = Initial.NavWalkableClimb;
-        tileCacheParams.maxSimplificationError = Initial.NavEdgeMaxError;
+        tileCacheParams.cs = Initial.CellSize;
+        tileCacheParams.ch = Initial.CellHeight;
+        tileCacheParams.width = Initial.TileSize;
+        tileCacheParams.height = Initial.TileSize;
+        tileCacheParams.walkableHeight = Initial.WalkableHeight;
+        tileCacheParams.walkableRadius = Initial.WalkableRadius;
+        tileCacheParams.walkableClimb = Initial.WalkableClimb;
+        tileCacheParams.maxSimplificationError = Initial.EdgeMaxError;
         tileCacheParams.maxTiles = maxTiles * Initial.MaxLayers;
         tileCacheParams.maxObstacles = Initial.MaxDynamicObstacles;
 
@@ -388,7 +390,7 @@ bool AAINavigationMesh::Initialize( ALevel * _OwnerLevel, SAINavMeshInitial cons
         LinearAllocator = new ( GZoneMemory.Alloc( sizeof( ADetourLinearAllocator ), 1 ) ) ADetourLinearAllocator( MaxLinearAllocatorCapacity );
 
         MeshProcess = new ( GZoneMemory.Alloc( sizeof( ADetourMeshProcess ), 1 ) ) ADetourMeshProcess();
-        MeshProcess->OwnerLevel = OwnerLevel;
+        MeshProcess->NavMesh = this;
 
         status = TileCache->init( &tileCacheParams, LinearAllocator, &TileCompressorCallback, MeshProcess );
         if ( dtStatusFailed( status ) ) {
@@ -400,12 +402,16 @@ bool AAINavigationMesh::Initialize( ALevel * _OwnerLevel, SAINavMeshInitial cons
         // TODO: Add obstacles here?
     }
 
+    //bNavigationDirty = true;
+
     return true;
 }
 
 bool AAINavigationMesh::Build() {
     Int2 regionMins( 0, 0 );
     Int2 regionMaxs( NumTilesX - 1, NumTilesZ - 1 );
+
+    //bNavigationDirty = false;
 
     return BuildTiles( regionMins, regionMaxs );
 }
@@ -517,7 +523,7 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
     BvAxisAlignedBox tileWorldBounds;
     BvAxisAlignedBox tileWorldBoundsWithPadding;
 
-    AN_Assert( NavMesh );
+    AN_ASSERT( NavMesh );
 
     RemoveTile( _X, _Z );
 
@@ -525,23 +531,23 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
 
     rcConfig config;
     ZeroMem( &config, sizeof( config ) );
-    config.cs = Initial.NavCellSize;
-    config.ch = Initial.NavCellHeight;
-    config.walkableSlopeAngle = Initial.NavWalkableSlopeAngle;
-    config.walkableHeight = (int)Math::Ceil( Initial.NavWalkableHeight / config.ch );
-    config.walkableClimb = (int)Math::Floor( Initial.NavWalkableClimb / config.ch );
-    config.walkableRadius = (int)Math::Ceil( Initial.NavWalkableRadius / config.cs );
-    config.maxEdgeLen = (int)(Initial.NavEdgeMaxLength / Initial.NavCellSize);
-    config.maxSimplificationError = Initial.NavEdgeMaxError;
-    config.minRegionArea = (int)rcSqr( Initial.NavMinRegionSize );		// Note: area = size*size
-    config.mergeRegionArea = (int)rcSqr( Initial.NavMergeRegionSize );	// Note: area = size*size
-    config.detailSampleDist = Initial.NavDetailSampleDist < 0.9f ? 0 : Initial.NavCellSize * Initial.NavDetailSampleDist;
-    config.detailSampleMaxError = Initial.NavCellHeight * Initial.NavDetailSampleMaxError;
-    config.tileSize = Initial.NavTileSize;
+    config.cs = Initial.CellSize;
+    config.ch = Initial.CellHeight;
+    config.walkableSlopeAngle = Initial.WalkableSlopeAngle;
+    config.walkableHeight = (int)Math::Ceil( Initial.WalkableHeight / config.ch );
+    config.walkableClimb = (int)Math::Floor( Initial.WalkableClimb / config.ch );
+    config.walkableRadius = (int)Math::Ceil( Initial.WalkableRadius / config.cs );
+    config.maxEdgeLen = (int)(Initial.EdgeMaxLength / Initial.CellSize);
+    config.maxSimplificationError = Initial.EdgeMaxError;
+    config.minRegionArea = (int)rcSqr( Initial.MinRegionSize );		// Note: area = size*size
+    config.mergeRegionArea = (int)rcSqr( Initial.MergeRegionSize );	// Note: area = size*size
+    config.detailSampleDist = Initial.DetailSampleDist < 0.9f ? 0 : Initial.CellSize * Initial.DetailSampleDist;
+    config.detailSampleMaxError = Initial.CellHeight * Initial.DetailSampleMaxError;
+    config.tileSize = Initial.TileSize;
     config.borderSize = config.walkableRadius + 3; // radius + padding
     config.width = config.tileSize + config.borderSize * 2;
     config.height = config.tileSize + config.borderSize * 2;
-    config.maxVertsPerPoly = Initial.NavVertsPerPoly;
+    config.maxVertsPerPoly = Initial.VertsPerPoly;
 
     rcVcopy( config.bmin, (const float *)tileWorldBounds.Mins.ToPtr() );
     rcVcopy( config.bmax, (const float *)tileWorldBounds.Maxs.ToPtr() );
@@ -561,12 +567,16 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
     BvAxisAlignedBox boundingBox;
     TBitMask<> walkableMask;
 
-    OwnerLevel->GenerateSourceNavMesh( vertices, indices, walkableMask, boundingBox, &tileWorldBoundsWithPadding );
+    GatherNavigationGeometry( vertices, indices, walkableMask, boundingBox, &tileWorldBoundsWithPadding );
 
     if ( boundingBox.IsEmpty() || indices.IsEmpty() ) {
         // Empty tile
         return true;
     }
+//---------TEST-----------
+//walkableMask.Resize(indices.Size()/3);
+//walkableMask.MarkAll();
+//------------------------
 
     //rcVcopy( config.bmin, (const float *)boundingBox.Mins.ToPtr() );
     //rcVcopy( config.bmax, (const float *)boundingBox.Maxs.ToPtr() );
@@ -650,8 +660,8 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
     }
 #if 1
     BvAxisAlignedBox areaBoundingBox;
-    for ( int areaNum = 0; areaNum < OwnerLevel->NavigationAreas.Size() ; ++areaNum ) {
-        SAINavigationArea const & area = OwnerLevel->NavigationAreas[areaNum];
+    for ( int areaNum = 0; areaNum < NavigationAreas.Size() ; ++areaNum ) {
+        SAINavigationArea const & area = NavigationAreas[areaNum];
         rcCompactHeightfield const & chf = *temporal.CompactHeightfield;
 
         area.CalcBoundingBox( areaBoundingBox );
@@ -959,8 +969,8 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
         TPodArray< unsigned short > offMeshConFlags;
         TPodArray< unsigned int > offMeshConId;
         int offMeshConCount = 0;
-        for ( int i = 0 ; i < OwnerLevel->NavMeshConnections.Size() ; i++ ) {
-            SAINavMeshConnection const & con = OwnerLevel->NavMeshConnections[i];
+        for ( int i = 0 ; i < NavMeshConnections.Size() ; i++ ) {
+            SAINavMeshConnection const & con = NavMeshConnections[i];
 
             con.CalcBoundingBox( conBoundingBox );
             conBoundingBox.Mins -= margin;
@@ -1005,9 +1015,9 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
         params.offMeshConFlags = offMeshConFlags.ToPtr();
         params.offMeshConUserID = offMeshConId.ToPtr();
         params.offMeshConCount = offMeshConCount;
-        params.walkableHeight = Initial.NavWalkableHeight;
-        params.walkableRadius = Initial.NavWalkableRadius;
-        params.walkableClimb = Initial.NavWalkableClimb;
+        params.walkableHeight = Initial.WalkableHeight;
+        params.walkableRadius = Initial.WalkableRadius;
+        params.walkableClimb = Initial.WalkableClimb;
         params.tileX = _X;
         params.tileY = _Z;
         rcVcopy( params.bmin, temporal.PolyMesh->bmin );
@@ -1047,7 +1057,7 @@ void AAINavigationMesh::RemoveTile( int _X, int _Z ) {
 
     if ( Initial.bDynamicNavMesh ) {
 
-        AN_Assert( TileCache );
+        AN_ASSERT( TileCache );
 
         dtCompressedTileRef compressedTiles[MAX_LAYERS];
         int count = TileCache->getTilesAt( _X, _Z, compressedTiles, Initial.MaxLayers );
@@ -1076,7 +1086,7 @@ void AAINavigationMesh::RemoveTiles() {
 
     if ( Initial.bDynamicNavMesh ) {
 
-        AN_Assert( TileCache );
+        AN_ASSERT( TileCache );
 
         int numTiles = TileCache->getTileCount();
         for ( int i = 0 ; i < numTiles ; i++ ) {
@@ -1320,7 +1330,7 @@ void AAINavigationMesh::DrawDebug( ADebugDraw * _DebugDraw ) {
         duDebugDrawNavMeshNodes( &callback, *NavQuery );
     }
 
-    if ( RVDrawNavMeshWithClosedList ) {
+    if ( RVDrawNavMesh ) {
         duDebugDrawNavMeshWithClosedList( &callback, *NavMesh, *NavQuery, DU_DRAWNAVMESH_OFFMESHCONS|DU_DRAWNAVMESH_CLOSEDLIST|DU_DRAWNAVMESH_COLOR_TILES );
     }
     //duDebugDrawNavMeshPolysWithFlags( &callback, *NavMesh, AI_NAV_MESH_FLAGS_DISABLED/*AI_NAV_MESH_FLAGS_DISABLED*/, duRGBA(0,0,0,128));
@@ -1358,7 +1368,7 @@ void AAINavigationMesh::DrawDebug( ADebugDraw * _DebugDraw ) {
                 if ( IsTileExsist( x, z ) ) {
                     GetTileWorldBounds( x, z, boundingBox );
 
-                    _DebugDraw->DrawBox( boundingBox.Center(), boundingBox.HalfSize() );
+                    _DebugDraw->DrawAABB( boundingBox );
                 }
             }
         }
@@ -1786,7 +1796,7 @@ bool AAINavigationMesh::GetOffMeshConnectionPolyEndPoints( SNavPolyRef _PrevRef,
     return true;
 }
 
-void AAINavigationMesh::Tick( float _TimeStep ) {
+void AAINavigationMesh::Update( float _TimeStep ) {
     if ( TileCache ) {
         TileCache->update( _TimeStep, NavMesh );
     }
@@ -1904,3 +1914,222 @@ int ANavigationMeshComponent::FixupCorridor( SNavPolyRef * _Path, const int _NPa
 //        GLogger.Printf( "Failed on dtAllocCrowd\n" );
 //        return false;
 //    }
+
+
+void AAINavigationMesh::AddNavigationGeometry( APhysicalBody * InPhysicalBody ) {
+    if ( INTRUSIVE_EXISTS( InPhysicalBody, NextNavBody, PrevNavBody, NavigationGeometryList, NavigationGeometryListTail ) ) {
+        AN_ASSERT( 0 );
+        return;
+    }
+
+    INTRUSIVE_ADD( InPhysicalBody, NextNavBody, PrevNavBody, NavigationGeometryList, NavigationGeometryListTail );
+}
+
+void AAINavigationMesh::RemoveNavigationGeometry( APhysicalBody * InPhysicalBody ) {
+    INTRUSIVE_REMOVE( InPhysicalBody, NextNavBody, PrevNavBody, NavigationGeometryList, NavigationGeometryListTail );
+}
+
+void AAINavigationMesh::GatherNavigationGeometry( TPodArray< Float3 > & _Vertices,
+                                                  TPodArray< unsigned int > & _Indices,
+                                                  TBitMask<> & _WalkableTriangles,
+                                                  BvAxisAlignedBox & _ResultBoundingBox,
+                                                  BvAxisAlignedBox const * _ClipBoundingBox ) {
+    BvAxisAlignedBox clippedBounds;
+    TPodArray< Float3 > collisionVertices;
+    TPodArray< unsigned int > collisionIndices;
+    BvAxisAlignedBox worldBounds;
+    const Float3 padding(0.001f);
+
+    _Vertices.Clear();
+    _Indices.Clear();
+
+    _ResultBoundingBox.Clear();
+
+    for ( APhysicalBody * body = NavigationGeometryList ; body ; body = body->NextNavBody ) {
+
+        EAINavigationBehavior navigationBehavior = body->GetAINavigationBehavior();
+
+        bool bWalkable = !(   ( navigationBehavior == AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE )
+                           || ( navigationBehavior == AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE ) );
+
+//        if ( body->PhysicsBehavior != PB_STATIC ) {
+//            // Generate navmesh only for static geometry
+//            continue;
+//        }
+
+        body->GetCollisionWorldBounds( worldBounds );
+        if ( worldBounds.IsEmpty() ) {
+            // The body has no collision
+
+            GLogger.Printf( "AAINavigationMesh::GatherNavigationGeometry: the body has no collision\n" );
+            continue;
+        }
+//clippedBounds=worldBounds=Upcast< AMeshComponent >( body )->GetWorldBounds();
+//clippedBounds.Mins -= padding;
+//clippedBounds.Maxs += padding;
+//worldBounds.Mins -= padding;
+//worldBounds.Maxs += padding;
+        if ( _ClipBoundingBox ) {
+            if ( !BvGetBoxIntersection( worldBounds, *_ClipBoundingBox, clippedBounds ) ) {
+                //GLogger.Printf( "AAINavigationMesh::GatherNavigationGeometry: the body is outside of clipping box\n" );
+                continue;
+            }
+            // Apply a little padding
+            clippedBounds.Mins -= padding;
+            clippedBounds.Maxs += padding;
+            _ResultBoundingBox.AddAABB( clippedBounds );
+        } else {
+            worldBounds.Mins -= padding;
+            worldBounds.Maxs += padding;
+            _ResultBoundingBox.AddAABB( worldBounds );
+        }
+
+        collisionVertices.Clear();
+        collisionIndices.Clear();
+
+        body->CreateCollisionModel( collisionVertices, collisionIndices );
+
+        if ( collisionIndices.IsEmpty() ) {
+
+            // Try to get from mesh
+            AMeshComponent * mesh = Upcast< AMeshComponent >( body );
+
+            if ( mesh && !mesh->IsSkinnedMesh() && !mesh->bUseDynamicRange ) {
+
+                AIndexedMesh * indexedMesh = mesh->GetMesh();
+
+                if ( !indexedMesh->IsSkinned() ) {
+                    Float3x4 const & worldTransform = mesh->GetWorldTransformMatrix();
+
+                    SMeshVertex const * srcVertices = indexedMesh->GetVertices();
+                    unsigned int const * srcIndices = indexedMesh->GetIndices();
+
+                    int firstVertex = _Vertices.Size();
+                    int firstIndex = _Indices.Size();
+                    int firstTriangle = _Indices.Size() / 3;
+
+                    // indexCount may be different from indexedMesh->GetIndexCount()
+                    int indexCount = 0;
+                    for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
+                        indexCount += subpart->GetIndexCount();
+                    }
+
+                    _Vertices.Resize( firstVertex + indexedMesh->GetVertexCount() );
+                    _Indices.Resize( firstIndex + indexCount );
+                    _WalkableTriangles.Resize( firstTriangle + indexCount / 3 );
+
+                    Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
+                    unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
+
+                    for ( int i = 0 ; i < indexedMesh->GetVertexCount() ; i++ ) {
+                        pVertices[i] = worldTransform * srcVertices[i].Position;
+                    }
+
+                    if ( _ClipBoundingBox ) {
+                        // Clip triangles
+                        unsigned int i0, i1, i2;
+                        int triangleNum = 0;
+                        for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
+                            const int numTriangles = subpart->GetIndexCount() / 3;
+                            for ( int i = 0 ; i < numTriangles ; i++ ) {
+                                i0 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 0 ];
+                                i1 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 1 ];
+                                i2 = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 2 ];
+
+                                if ( BvBoxOverlapTriangle_FastApproximation( clippedBounds, _Vertices[i0], _Vertices[i1], _Vertices[i2] ) ) {
+                                    *pIndices++ = i0;
+                                    *pIndices++ = i1;
+                                    *pIndices++ = i2;
+
+                                    if ( bWalkable ) {
+                                        _WalkableTriangles.Mark( firstTriangle + triangleNum );
+                                    }
+                                    triangleNum++;
+                                }
+                            }
+                        }
+                        _Indices.Resize( firstIndex + triangleNum*3 );
+                        _WalkableTriangles.Resize( firstTriangle + triangleNum );
+                    } else {
+                        int triangleNum = 0;
+                        for ( AIndexedMeshSubpart const * subpart : indexedMesh->GetSubparts() ) {
+                            const int numTriangles = subpart->GetIndexCount() / 3;
+                            for ( int i = 0 ; i < numTriangles ; i++ ) {
+                                *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 0 ];
+                                *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 1 ];
+                                *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[ subpart->GetFirstIndex() + i*3 + 2 ];
+
+                                if ( bWalkable ) {
+                                    _WalkableTriangles.Mark( firstTriangle + triangleNum );
+                                }
+                                triangleNum++;
+                            }
+                        }
+                    }
+
+                    //for ( int i = 0 ; i < indexedMesh->GetVertexCount() ; i++ ) {
+                    //    pVertices[i].Y += 1; //debug
+                    //}
+                }
+            }
+        } else {
+            Float3 const * srcVertices = collisionVertices.ToPtr();
+            unsigned int const * srcIndices = collisionIndices.ToPtr();
+
+            int firstVertex = _Vertices.Size();
+            int firstIndex = _Indices.Size();
+            int firstTriangle = _Indices.Size() / 3;
+            int vertexCount = collisionVertices.Size();
+            int indexCount = collisionIndices.Size();
+
+            _Vertices.Resize( firstVertex + vertexCount );
+            _Indices.Resize( firstIndex + indexCount );
+            _WalkableTriangles.Resize( firstTriangle + indexCount / 3 );
+
+            Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
+            unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
+
+            memcpy( pVertices, srcVertices, vertexCount * sizeof( Float3 ) );
+
+            if ( _ClipBoundingBox ) {
+                // Clip triangles
+                unsigned int i0, i1, i2;
+                const int numTriangles = indexCount / 3;
+                int triangleNum = 0;
+                for ( int i = 0 ; i < numTriangles ; i++ ) {
+                    i0 = firstVertex + srcIndices[ i*3 + 0 ];
+                    i1 = firstVertex + srcIndices[ i*3 + 1 ];
+                    i2 = firstVertex + srcIndices[ i*3 + 2 ];
+
+                    if ( BvBoxOverlapTriangle_FastApproximation( clippedBounds, _Vertices[i0], _Vertices[i1], _Vertices[i2] ) ) {
+                        *pIndices++ = i0;
+                        *pIndices++ = i1;
+                        *pIndices++ = i2;
+
+                        if ( bWalkable ) {
+                            _WalkableTriangles.Mark( firstTriangle + triangleNum );
+                        }
+                        triangleNum++;
+                    }
+                }
+                _Indices.Resize( firstIndex + triangleNum * 3 );
+                _WalkableTriangles.Resize( firstTriangle + triangleNum );
+            } else {
+                const int numTriangles = indexCount / 3;
+                for ( int i = 0 ; i < numTriangles ; i++ ) {
+                    *pIndices++ = firstVertex + srcIndices[ i*3 + 0 ];
+                    *pIndices++ = firstVertex + srcIndices[ i*3 + 1 ];
+                    *pIndices++ = firstVertex + srcIndices[ i*3 + 2 ];
+
+                    if ( bWalkable ) {
+                        _WalkableTriangles.Mark( firstTriangle + i );
+                    }
+                }
+            }
+
+            //for ( int i = 0 ; i < vertexCount ; i++ ) {
+            //    pVertices[i].Y += 1; //debug
+            //}
+        }
+    }
+}

@@ -61,12 +61,12 @@ public:
     }
 
     float & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const float & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -415,7 +415,7 @@ public:
             break;
 
         default:                    // Silence a -Wswitch-default warning in GCC. Should never actually get here. Assert is just for sanity.
-            AN_Assert(false);
+            AN_ASSERT(false);
             break;
         }
     }

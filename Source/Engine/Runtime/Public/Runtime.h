@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/Atomic.h>
-#include <Engine/Core/Public/String.h>
-#include <Engine/Core/Public/PodQueue.h>
-#include <Engine/Core/Public/Utf8.h>
+#include <Core/Public/Atomic.h>
+#include <Core/Public/String.h>
+#include <Core/Public/PodQueue.h>
+#include <Core/Public/Utf8.h>
 #include "AsyncJobManager.h"
 
 //enum EVerticalSyncMode {
@@ -374,6 +374,9 @@ public:
 
     /** Return used frame memory on previous frame, in bytes */
     size_t GetFrameMemoryUsedPrev() const;
+
+    /** Return max frame memory usage since application start */
+    size_t GetMaxFrameMemoryUsage() const;
 
     // Is vertical synchronization control supported
     //bool IsVSyncSupported();

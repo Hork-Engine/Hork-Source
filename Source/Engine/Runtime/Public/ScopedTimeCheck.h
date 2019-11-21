@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Runtime/Public/RuntimeVariable.h>
+#include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 /**
 

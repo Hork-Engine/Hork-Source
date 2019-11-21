@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/CoreMath.h>
-#include <Engine/Core/Public/PodArray.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/Image.h>
+#include <Core/Public/CoreMath.h>
+#include <Core/Public/PodArray.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/Image.h>
 
 //
 // Common constants
@@ -343,7 +343,7 @@ struct STexturePixelFormat {
         }
 
         // TODO
-        AN_Assert( 0 );
+        AN_ASSERT( 0 );
         return 0;
     }
 

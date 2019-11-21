@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Alloc.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/CriticalError.h>
+#include <Core/Public/Alloc.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/CriticalError.h>
 
 #include <malloc.h>
 #include <memory.h>
@@ -135,7 +135,7 @@ AN_FORCEINLINE void * AlignPointer( void * _UnalignedPtr, int _Alignment ) {
 }
 
 void * AHeapMemory::HeapAlloc( size_t _BytesCount, int _Alignment ) {
-    AN_Assert( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
+    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
 
     if ( _BytesCount == 0 ) {
         // invalid bytes count
@@ -326,7 +326,7 @@ AN_FORCEINLINE bool HunkTrashTest( const SHunk * _Hunk ) {
 }
 
 void * AHunkMemory::HunkMemory( size_t _BytesCount, int _Alignment ) {
-    AN_Assert( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
+    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
 
     if ( !MemoryBuffer ) {
         CriticalError( "AHunkMemory::HunkMemory: Not initialized\n" );
@@ -925,7 +925,7 @@ SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
 }
 
 void * AZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
-    AN_Assert( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
+    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
 
     if ( !MemoryBuffer ) {
         CriticalError( "AZoneMemory::Alloc: Not initialized\n" );
@@ -982,7 +982,7 @@ void * AZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
 }
 
 void * AZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
-    AN_Assert( _NewAlignment <= 128 && IsPowerOfTwoConstexpr( _NewAlignment ) );
+    AN_ASSERT( _NewAlignment <= 128 && IsPowerOfTwoConstexpr( _NewAlignment ) );
 
     if ( !_Data ) {
         //MemLogger.Printf( "first alloc\n" );

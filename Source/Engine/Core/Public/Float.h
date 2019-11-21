@@ -364,7 +364,7 @@ public:
     Float Round4() const { return RoundN( 10000.0f ); }
 
     Float Snap( const float & _SnapValue ) const {
-        AN_ASSERT( _SnapValue > 0, "Snap" );
+        AN_ASSERT_( _SnapValue > 0, "Snap" );
         return Float( Value / _SnapValue ).Round() * _SnapValue;
     }
 
@@ -669,7 +669,7 @@ AN_FORCEINLINE float Round3( const float & _Self ) { return RoundN( _Self, 1000.
 AN_FORCEINLINE float Round4( const float & _Self ) { return RoundN( _Self, 10000.0f ); }
 
 AN_FORCEINLINE float Snap( const float & _Self, const float & _SnapValue ) {
-    AN_ASSERT( _SnapValue > 0, "Snap" );
+    AN_ASSERT_( _SnapValue > 0, "Snap" );
     return Round( _Self / _SnapValue ) * _SnapValue;
 }
 
@@ -783,12 +783,12 @@ public:
     }
 
     float & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const float & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -1051,7 +1051,7 @@ public:
     }
 
     Float2 Snap( const float &_SnapValue ) const {
-        AN_ASSERT( _SnapValue > 0, "Snap" );
+        AN_ASSERT_( _SnapValue > 0, "Snap" );
         Float2 SnapVector;
         SnapVector = *this / _SnapValue;
         SnapVector.X = Math::Round( SnapVector.X ) * _SnapValue;
@@ -1139,12 +1139,12 @@ public:
     }
 
     float & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const float & operator[]( const int & _Index ) const {
-        //AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        //AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -1528,7 +1528,7 @@ public:
     }
 
     Float3 Snap( const float &_SnapValue ) const {
-        AN_ASSERT( _SnapValue > 0, "Snap" );
+        AN_ASSERT_( _SnapValue > 0, "Snap" );
         Float3 SnapVector;
         SnapVector = *this / _SnapValue;
         SnapVector.X = Math::Round( SnapVector.X ) * _SnapValue;
@@ -1687,12 +1687,12 @@ public:
     }
 
     float & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const float & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -2004,7 +2004,7 @@ public:
     }
 
     Float4 Snap( const float &_SnapValue ) const {
-        AN_ASSERT( _SnapValue > 0, "Snap" );
+        AN_ASSERT_( _SnapValue > 0, "Snap" );
         Float4 SnapVector;
         SnapVector = *this / _SnapValue;
         SnapVector.X = Math::Round( SnapVector.X ) * _SnapValue;
@@ -2597,17 +2597,17 @@ public:
     }
 
     Float2 & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < 2, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 2, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     const Float2 & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 2, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 2, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     Float2 GetRow( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 2, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 2, "Index out of range" );
         return Float2( Col0[ _Index ], Col1[ _Index ] );
     }
 
@@ -2813,17 +2813,17 @@ public:
     }
 
     Float3 & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     const Float3 & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     Float3 GetRow( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return Float3( Col0[ _Index ], Col1[ _Index ], Col2[ _Index ] );
     }
 
@@ -3144,17 +3144,17 @@ public:
     }
 
     Float4 & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < 4, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 4, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     const Float4 & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 4, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 4, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     Float4 GetRow( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 4, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 4, "Index out of range" );
         return Float4( Col0[ _Index ], Col1[ _Index ], Col2[ _Index ], Col3[ _Index ] );
     }
 
@@ -3875,17 +3875,17 @@ public:
     }
 
     Float4 & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     const Float4 & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     Float3 GetRow( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 4, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 4, "Index out of range" );
         return Float3( Col0[ _Index ], Col1[ _Index ], Col2[ _Index ] );
     }
 

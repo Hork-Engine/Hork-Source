@@ -33,8 +33,8 @@ SOFTWARE.
 #include "GHIBasic.h"
 #include "GHIPipeline.h"
 
-#include <Engine/Core/Public/Hash.h>
-#include <Engine/Core/Public/PodArray.h>
+#include <Core/Public/Hash.h>
+#include <Core/Public/PodArray.h>
 
 namespace GHI {
 

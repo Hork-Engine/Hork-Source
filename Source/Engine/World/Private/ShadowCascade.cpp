@@ -1,6 +1,6 @@
 #include "ShadowCascade.h"
 
-#include <Engine/Runtime/Public/RuntimeVariable.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 ARuntimeVariable RVShadowCascadeBits( _CTS( "ShadowCascadeBits" ), _CTS( "24" ) );    // Allowed 16, 24 or 32 bits
 

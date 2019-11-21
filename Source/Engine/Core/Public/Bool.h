@@ -120,11 +120,11 @@ public:
     }
 
     Bool & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
     const Bool & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -193,11 +193,11 @@ public:
     }
 
     Bool & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
     const Bool & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -268,11 +268,11 @@ public:
     }
 
     Bool & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
     const Bool & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 

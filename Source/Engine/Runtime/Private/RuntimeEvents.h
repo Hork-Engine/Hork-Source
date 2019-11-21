@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/Runtime.h>
+#include <Runtime/Public/Runtime.h>
 
 extern AEventQueue GRuntimeEvents;
 extern AEventQueue GGameEvents;

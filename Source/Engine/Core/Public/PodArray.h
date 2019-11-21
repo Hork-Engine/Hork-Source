@@ -327,9 +327,9 @@ void TPodArrayTemplate::Reverse() {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Reverse( int _FirstIndex, int _LastIndex ) {
-    AN_ASSERT( _FirstIndex >= 0 && _FirstIndex < ArrayLength, "TPodArray::Reverse: array index is out of bounds" );
-    AN_ASSERT( _LastIndex >= 0 && _LastIndex <= ArrayLength, "TPodArray::Reverse: array index is out of bounds" );
-    AN_ASSERT( _FirstIndex < _LastIndex, "TPodArray::Reverse: invalid order" );
+    AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArrayLength, "TPodArray::Reverse: array index is out of bounds" );
+    AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArrayLength, "TPodArray::Reverse: array index is out of bounds" );
+    AN_ASSERT_( _FirstIndex < _LastIndex, "TPodArray::Reverse: invalid order" );
 
     const int HalfRangeLength = ( _LastIndex - _FirstIndex ) >> 1;
     const int LastIndexMinusOne = _LastIndex - 1;
@@ -349,7 +349,7 @@ void TPodArrayTemplate::Insert( int _Index, T const & _Element ) {
         return;
     }
 
-    AN_ASSERT( _Index >= 0 && _Index < ArrayLength, "TPodArray::Insert: array index is out of bounds" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::Insert: array index is out of bounds" );
 
     const int newLength = ArrayLength + 1;
     const int mod = newLength % GRANULARITY;
@@ -404,7 +404,7 @@ T & TPodArrayTemplate::Append() {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Remove( int _Index ) {
-    AN_ASSERT( _Index >= 0 && _Index < ArrayLength, "TPodArray::Remove: array index is out of bounds" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::Remove: array index is out of bounds" );
 
     memmove( ArrayData + _Index, ArrayData + _Index + 1, TYPE_SIZEOF * ( ArrayLength - _Index - 1 ) );
 
@@ -436,7 +436,7 @@ void TPodArrayTemplate::RemoveDuplicates() {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::RemoveSwap( int _Index ) {
-    AN_ASSERT( _Index >= 0 && _Index < ArrayLength, "TPodArray::RemoveSwap: array index is out of bounds" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::RemoveSwap: array index is out of bounds" );
 
     if ( ArrayLength > 0 ) {
         ArrayData[ _Index ] = ArrayData[ ArrayLength - 1 ];
@@ -446,9 +446,9 @@ void TPodArrayTemplate::RemoveSwap( int _Index ) {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Remove( int _FirstIndex, int _LastIndex ) {
-    AN_ASSERT( _FirstIndex >= 0 && _FirstIndex < ArrayLength, "TPodArray::Remove: array index is out of bounds" );
-    AN_ASSERT( _LastIndex >= 0 && _LastIndex <= ArrayLength, "TPodArray::Remove: array index is out of bounds" );
-    AN_ASSERT( _FirstIndex < _LastIndex, "TPodArray::Remove: invalid order" );
+    AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArrayLength, "TPodArray::Remove: array index is out of bounds" );
+    AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArrayLength, "TPodArray::Remove: array index is out of bounds" );
+    AN_ASSERT_( _FirstIndex < _LastIndex, "TPodArray::Remove: invalid order" );
 
     memmove( ArrayData + _FirstIndex, ArrayData + _LastIndex, TYPE_SIZEOF * ( ArrayLength - _LastIndex ) );
     ArrayLength -= _LastIndex - _FirstIndex;
@@ -461,37 +461,37 @@ bool TPodArrayTemplate::IsEmpty() const {
 
 TPodArrayTemplateDecorate
 T & TPodArrayTemplate::operator[]( int _Index ) {
-    AN_ASSERT( _Index >= 0 && _Index < ArrayLength, "TPodArray::operator[]" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::operator[]" );
     return ArrayData[ _Index ];
 }
 
 TPodArrayTemplateDecorate
 T const & TPodArrayTemplate::operator[]( int _Index ) const {
-    AN_ASSERT( _Index >= 0 && _Index < ArrayLength, "TPodArray::operator[]" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::operator[]" );
     return ArrayData[ _Index ];
 }
 
 TPodArrayTemplateDecorate
 T & TPodArrayTemplate::Last() {
-    AN_ASSERT( ArrayLength > 0, "TPodArray::Last" );
+    AN_ASSERT_( ArrayLength > 0, "TPodArray::Last" );
     return ArrayData[ ArrayLength - 1 ];
 }
 
 TPodArrayTemplateDecorate
 T const & TPodArrayTemplate::Last() const {
-    AN_ASSERT( ArrayLength > 0, "TPodArray::Last" );
+    AN_ASSERT_( ArrayLength > 0, "TPodArray::Last" );
     return ArrayData[ ArrayLength - 1 ];
 }
 
 TPodArrayTemplateDecorate
 T & TPodArrayTemplate::First() {
-    AN_ASSERT( ArrayLength > 0, "TPodArray::First" );
+    AN_ASSERT_( ArrayLength > 0, "TPodArray::First" );
     return ArrayData[ 0 ];
 }
 
 TPodArrayTemplateDecorate
 T const & TPodArrayTemplate::First() const {
-    AN_ASSERT( ArrayLength > 0, "TPodArray::First" );
+    AN_ASSERT_( ArrayLength > 0, "TPodArray::First" );
     return ArrayData[ 0 ];
 }
 
@@ -517,7 +517,7 @@ typename TPodArrayTemplate::ConstIterator TPodArrayTemplate::End() const {
 
 TPodArrayTemplateDecorate
 typename TPodArrayTemplate::Iterator TPodArrayTemplate::Erase( ConstIterator _Iterator ) {
-    AN_ASSERT( _Iterator >= ArrayData && _Iterator < ArrayData + ArrayLength, "TPodArray::Erase" );
+    AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArrayLength, "TPodArray::Erase" );
     int Index = _Iterator - ArrayData;
     memmove( ArrayData + Index, ArrayData + Index + 1, TYPE_SIZEOF * ( ArrayLength - Index - 1 ) );
     ArrayLength--;
@@ -526,7 +526,7 @@ typename TPodArrayTemplate::Iterator TPodArrayTemplate::Erase( ConstIterator _It
 
 TPodArrayTemplateDecorate
 typename TPodArrayTemplate::Iterator TPodArrayTemplate::EraseSwap( ConstIterator _Iterator ) {
-    AN_ASSERT( _Iterator >= ArrayData && _Iterator < ArrayData + ArrayLength, "TPodArray::Erase" );
+    AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArrayLength, "TPodArray::Erase" );
     int Index = _Iterator - ArrayData;
     ArrayData[ Index ] = ArrayData[ ArrayLength - 1 ];
     ArrayLength--;
@@ -535,7 +535,7 @@ typename TPodArrayTemplate::Iterator TPodArrayTemplate::EraseSwap( ConstIterator
 
 TPodArrayTemplateDecorate
 typename TPodArrayTemplate::Iterator TPodArrayTemplate::Insert( ConstIterator _Iterator, T const & _Element ) {
-    AN_ASSERT( _Iterator >= ArrayData && _Iterator <= ArrayData + ArrayLength, "TPodArray::Insert" );
+    AN_ASSERT_( _Iterator >= ArrayData && _Iterator <= ArrayData + ArrayLength, "TPodArray::Insert" );
     int Index = _Iterator - ArrayData;
     Insert( Index, _Element );
     return ArrayData + Index;

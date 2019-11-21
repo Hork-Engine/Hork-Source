@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/ConvexHull.h>
-#include <Engine/Core/Public/Logger.h>
+#include <Core/Public/ConvexHull.h>
+#include <Core/Public/Logger.h>
 
 AConvexHull * AConvexHull::Create( int _MaxPoints ) {
-    AN_Assert( _MaxPoints > 0 );
+    AN_ASSERT( _MaxPoints > 0 );
     int size = sizeof( AConvexHull ) - sizeof( Points ) + _MaxPoints * sizeof( Points[0] );
     AConvexHull * hull = ( AConvexHull * )GZoneMemory.Alloc( size, 1 );
     hull->MaxPoints = _MaxPoints;
@@ -376,7 +376,7 @@ EPlaneSide AConvexHull::Split( PlaneF const & _Plane, float _Epsilon, AConvexHul
             //newVertex.t = newVertex.t + dist * ( v.t - newVertex.t );
         }
 
-        AN_Assert( f->NumPoints < f->MaxPoints );
+        AN_ASSERT( f->NumPoints < f->MaxPoints );
         f->Points[ f->NumPoints++ ] = newVertex;
         b->Points[ b->NumPoints++ ] = newVertex;
     }

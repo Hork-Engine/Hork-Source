@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/MeshComponent.h>
-#include <Engine/World/Public/Components/SkinnedComponent.h>
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Resource/Public/ResourceManager.h>
+#include <World/Public/Components/MeshComponent.h>
+#include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/World.h>
+#include <World/Public/Base/ResourceManager.h>
 
 ARuntimeVariable RVDrawMeshBounds( _CTS( "DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
 
@@ -49,30 +49,30 @@ AMeshComponent::AMeshComponent() {
 }
 
 void AMeshComponent::InitializeComponent() {
+    ARenderWorld & RenderWorld = GetWorld()->GetRenderWorld();
+
     Super::InitializeComponent();
 
-    GetWorld()->AddMesh( this );
+    RenderWorld.AddMesh( this );
 
     if ( bCastShadow )
     {
-        GetWorld()->AddShadowCaster( this );
-    }
-    else
-    {
-        GetWorld()->RemoveShadowCaster( this );
+        RenderWorld.AddShadowCaster( this );
     }
 }
 
 void AMeshComponent::DeinitializeComponent() {
+    ARenderWorld & RenderWorld = GetWorld()->GetRenderWorld();
+
     Super::DeinitializeComponent();
 
     ClearMaterials();
 
-    GetWorld()->RemoveMesh( this );
+    RenderWorld.RemoveMesh( this );
 
     if ( bCastShadow )
     {
-        GetWorld()->RemoveShadowCaster( this );
+        RenderWorld.RemoveShadowCaster( this );
     }
 }
 
@@ -86,13 +86,15 @@ void AMeshComponent::SetCastShadow( bool _CastShadow ) {
 
     if ( IsInitialized() )
     {
+        ARenderWorld & RenderWorld = GetWorld()->GetRenderWorld();
+
         if ( bCastShadow )
         {
-            GetWorld()->AddShadowCaster( this );
+            RenderWorld.AddShadowCaster( this );
         }
         else
         {
-            GetWorld()->RemoveShadowCaster( this );
+            RenderWorld.RemoveShadowCaster( this );
         }
     }
 }
@@ -150,7 +152,7 @@ void AMeshComponent::CopyMaterialsFromMeshResource() {
 }
 
 void AMeshComponent::SetMaterialInstance( int _SubpartIndex, AMaterialInstance * _Instance ) {
-    AN_Assert( _SubpartIndex >= 0 );
+    AN_ASSERT( _SubpartIndex >= 0 );
 
     if ( _SubpartIndex >= Materials.Size() ) {
 
@@ -204,6 +206,15 @@ AMaterialInstance * AMeshComponent::GetMaterialInstance( int _SubpartIndex ) con
         pInstance = DefaultInstance.GetObject();
     }
     return pInstance;
+}
+
+BvAxisAlignedBox AMeshComponent::GetSubpartWorldBounds( int _SubpartIndex ) const {
+    AIndexedMeshSubpart const * subpart = const_cast< AMeshComponent * >( this )->Mesh->GetSubpart( _SubpartIndex );
+    if ( !subpart ) {
+        GLogger.Printf( "AMeshComponent::GetSubpartWorldBounds: invalid subpart index\n" );
+        return BvAxisAlignedBox::Empty();
+    }
+    return subpart->GetBoundingBox().Transform( GetWorldTransformMatrix() );
 }
 
 ACollisionBodyComposition const & AMeshComponent::DefaultBodyComposition() const {

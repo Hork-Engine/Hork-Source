@@ -32,9 +32,9 @@ SOFTWARE.
 
 #include "Controller.h"
 #include "HUD.h"
-#include <Engine/World/Public/Components/CameraComponent.h>
-#include <Engine/World/Public/CommandContext.h>
-#include <Engine/Audio/Public/AudioSystem.h>
+#include <World/Public/Components/CameraComponent.h>
+#include <World/Public/CommandContext.h>
+#include <World/Public/Audio/AudioSystem.h>
 
 class AInputMappings;
 
@@ -167,7 +167,6 @@ private:
     TWeakRef< ASceneComponent > AudioListener;
     TRef< APawn > Pawn;
     TWeakRef< AHUD > HUD;
-    //TPodArray< FViewActor * > ViewActors;
     Float2 ViewportPosition;
     Float2 ViewportSize;
 

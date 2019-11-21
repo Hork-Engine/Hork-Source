@@ -28,23 +28,23 @@ SOFTWARE.
 
 */
 
-#include <Engine/GameThread/Public/EngineInstance.h>
-#include <Engine/GameThread/Public/RenderFrontend.h>
-#include <Engine/Resource/Public/ResourceManager.h>
-#include <Engine/Audio/Public/AudioSystem.h>
-#include <Engine/Audio/Public/AudioCodec/OggVorbisDecoder.h>
-#include <Engine/Audio/Public/AudioCodec/Mp3Decoder.h>
-#include <Engine/Audio/Public/AudioCodec/WavDecoder.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/Actors/PlayerController.h>
-#include <Engine/World/Public/Components/InputComponent.h>
-#include <Engine/World/Public/Canvas.h>
+#include <GameThread/Public/EngineInstance.h>
+#include <GameThread/Public/RenderFrontend.h>
+#include <World/Public/Base/ResourceManager.h>
+#include <World/Public/Audio/AudioSystem.h>
+#include <World/Public/Audio/AudioCodec/OggVorbisDecoder.h>
+#include <World/Public/Audio/AudioCodec/Mp3Decoder.h>
+#include <World/Public/Audio/AudioCodec/WavDecoder.h>
+#include <World/Public/World.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/Actors/PlayerController.h>
+#include <World/Public/Components/InputComponent.h>
+#include <World/Public/Canvas.h>
 
-#include <Engine/Runtime/Public/Runtime.h>
+#include <Runtime/Public/Runtime.h>
 
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/CriticalError.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/CriticalError.h>
 
 #include <Bullet3Common/b3Logging.h>
 #include <Bullet3Common/b3AlignedAllocator.h>
@@ -59,11 +59,6 @@ SOFTWARE.
 ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
 
 AEngineInstance & GEngine = AEngineInstance::Inst();
-
-ACanvas GCanvas;
-
-static float FractAvg = 1;
-static float AxesFract = 1;
 
 AEngineInstance::AEngineInstance() {
     bInputFocus = false;
@@ -141,9 +136,10 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
 
     AFont::SetGlyphRanges( AFont::GetGlyphRangesCyrillic() );
 
-    GCanvas.Initialize();
+    Canvas.Initialize();
 
     GameModule = _CreateGameModuleCallback();
+    GameModule->AddRef();
 
     GLogger.Printf( "Created game module: %s\n", GameModule->FinalClassName() );
 
@@ -151,7 +147,6 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
 
     AxesFract = 1;
 
-    GameModule->AddRef();
     GameModule->OnGameStart();
 
 #ifdef IMGUI_CONTEXT
@@ -179,9 +174,10 @@ void AEngineInstance::Deinitialize() {
     ImguiContext = nullptr;
 #endif
 
-    GCanvas.Deinitialize();
+    Canvas.Deinitialize();
 
     GResourceManager.Deinitialize();
+
     GAudioSystem.PurgeChannels();
     GAudioSystem.UnregisterDecoders();
 
@@ -239,61 +235,62 @@ void AEngineInstance::UpdateFrame() {
 }
 
 void AEngineInstance::DrawCanvas() {
-    GCanvas.Begin( VideoMode.Width, VideoMode.Height );
+    Canvas.Begin( VideoMode.Width, VideoMode.Height );
 
-    if ( Desktop ) {
+    if ( Desktop )
+    {
+        // Draw desktop
         Desktop->SetSize( VideoMode.Width, VideoMode.Height );
         Desktop->GenerateWindowHoverEvents();
-        Desktop->GenerateDrawEvents( GCanvas );
+        Desktop->GenerateDrawEvents( Canvas );
 
-        // Draw console
+        // Draw halfscreen console
         GConsole.SetFullscreen( false );
-        GConsole.Draw( &GCanvas, FrameDurationInSeconds );
-
-    } else {
-
+        GConsole.Draw( &Canvas, FrameDurationInSeconds );
+    }
+    else
+    {
         // Draw fullscreen console
         GConsole.SetFullscreen( true );
-        GConsole.Draw( &GCanvas, FrameDurationInSeconds );
+        GConsole.Draw( &Canvas, FrameDurationInSeconds );
     }
 
-    // Show stats
-    if ( RVShowStat ) {
+    ShowStats();
+
+    Canvas.End();
+}
+
+void AEngineInstance::ShowStats() {
+    if ( RVShowStat )
+    {
         SRenderFrame * frameData = GRuntime.GetFrameData();
 
         Float2 pos( 8, 8 );
         const float y_step = 22;
         const int numLines = 12;
 
-        pos.Y = GCanvas.Height - numLines * y_step;
+        pos.Y = Canvas.Height - numLines * y_step;
 
         const size_t TotalMemorySizeInBytes = ( (GZoneMemory.GetZoneMemorySizeInMegabytes()<<20)
                                                 + (GHunkMemory.GetHunkMemorySizeInMegabytes()<<20)
                                                 + GRuntime.GetFrameMemorySize() );
 
-        static size_t MaxFrameMemoryUsage = 0;
-
-        MaxFrameMemoryUsage = Math::Max( MaxFrameMemoryUsage, GRuntime.GetFrameMemoryUsedPrev() );
-
         SRenderFrontendStat const & stat = GRenderFrontend.GetStat();
 
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, MaxFrameMemoryUsage/1024.0f ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
         /*- GZoneMemory.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Polycount: %d", stat.PolyCount ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
-        GCanvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) );
-
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Polycount: %d", stat.PolyCount ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) );
     }
-
-    GCanvas.End();
 }
 
 void AEngineInstance::Print( const char * _Message ) {
@@ -344,6 +341,7 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) 
             GConsole.KeyEvent( _Event, *commandContext, CommandProcessor );
         }
     }
+
     if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
         return;
     }
@@ -352,7 +350,7 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) 
         Desktop->GenerateKeyEvents( _Event, _TimeStamp );
     }
 
-    UpdateInputAxes( FractAvg );
+    UpdateInputAxes( AxesFractAvg );
 
     for ( AInputComponent * component = AInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
@@ -380,7 +378,7 @@ void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, doub
         Desktop->GenerateMouseButtonEvents( _Event, _TimeStamp );
     }
 
-    UpdateInputAxes( FractAvg );
+    UpdateInputAxes( AxesFractAvg );
 
     for ( AInputComponent * component = AInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
@@ -409,7 +407,7 @@ void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double
         Desktop->GenerateMouseWheelEvents( _Event, _TimeStamp );
     }
 
-    UpdateInputAxes( FractAvg );
+    UpdateInputAxes( AxesFractAvg );
 
     for ( AInputComponent * component = AInputComponent::GetInputComponents()
           ; component ; component = component->GetNext() ) {
@@ -442,7 +440,7 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
         float x = _Event.X * MouseSensitivity;
         float y = _Event.Y * MouseSensitivity;
 
-        AxesFract -= FractAvg;
+        AxesFract -= AxesFractAvg;
 
         for ( AInputComponent * component = AInputComponent::GetInputComponents()
               ; component ; component = component->GetNext() ) {
@@ -455,7 +453,7 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
                 component->SetMouseAxisState( x, y );
             }
 
-            component->UpdateAxes( FractAvg, FrameDurationInSeconds );
+            component->UpdateAxes( AxesFractAvg, FrameDurationInSeconds );
 
             if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
                 component->SetMouseAxisState( 0, 0 );
@@ -541,14 +539,8 @@ void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _E
 void AEngineInstance::ProcessEvent( SEvent const & _Event ) {
     switch ( _Event.Type ) {
     case ET_RuntimeUpdateEvent:
-
-        //GLogger.Printf( "AxesFract %f\n", AxesFract );
-        //AN_Assert( AxesFract >= 1.0f );
-
-        FractAvg = 1.0f / (_Event.Data.RuntimeUpdateEvent.InputEventCount + 1);
+        AxesFractAvg = 1.0f / (_Event.Data.RuntimeUpdateEvent.InputEventCount + 1);
         AxesFract = 1.0f;
-
-        //GLogger.Printf( "AxesFract %f FractAvg %f index %d\n", AxesFract, FractAvg, _Event.Data.InputTimeStampEvent.Index );
         break;
     case ET_KeyEvent:
         OnKeyEvent( _Event.Data.KeyEvent, _Event.TimeStamp );
@@ -606,7 +598,7 @@ void AEngineInstance::ProcessEvents() {
         ProcessEvent( *event );
     }
 
-    AN_Assert( eventQueue->IsEmpty() );
+    AN_ASSERT( eventQueue->IsEmpty() );
 }
 
 void AEngineInstance::SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, byte _RefreshRate, bool _Fullscreen, const char * _Backend ) {

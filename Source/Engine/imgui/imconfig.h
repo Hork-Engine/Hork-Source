@@ -13,11 +13,11 @@
 
 #pragma once
 
-#include <Engine/Core/Public/CoreMath.h>
-#include <Engine/Core/Public/Utf8.h>
+#include <Core/Public/CoreMath.h>
+#include <Core/Public/Utf8.h>
 
 //---- Define assertion handler. Defaults to calling assert().
-#define IM_ASSERT(_EXPR)  AN_Assert(_EXPR)
+#define IM_ASSERT(_EXPR)  AN_ASSERT(_EXPR)
 //#define IM_ASSERT(_EXPR)  ((void)(_EXPR))     // Disable asserts
 
 //---- Define attributes of all API symbols declarations, e.g. for DLL under Windows.

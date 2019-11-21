@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Document.h>
-#include <Engine/Core/Public/Alloc.h>
-#include <Engine/Core/Public/Logger.h>
+#include <Core/Public/Document.h>
+#include <Core/Public/Alloc.h>
+#include <Core/Public/Logger.h>
 
 ADocument::ADocument() {
 
@@ -593,7 +593,7 @@ int ADocument::CreateStringField( const char * _FieldName, const char * _FieldVa
 }
 
 void ADocument::AddFieldToObject( int _Object, int _Field ) {
-    AN_Assert( Values[ _Object ].Type == SDocumentValue::T_Object );
+    AN_ASSERT( Values[ _Object ].Type == SDocumentValue::T_Object );
     Fields[ _Field ].Prev = Values[ _Object ].FieldsTail;
     if ( Fields[ _Field ].Prev != -1 ) {
         Fields[ Fields[ _Field ].Prev ].Next = _Field;

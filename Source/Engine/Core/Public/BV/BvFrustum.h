@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/Plane.h>
+#include <Core/Public/Plane.h>
 #include "BvAxisAlignedBox.h"
 #include "BvOrientedBox.h"
 #include "BvSphere.h"
@@ -117,7 +117,7 @@ private:
 };
 
 AN_FORCEINLINE BvFrustumPlane const & BvFrustum::operator[]( int _Index ) const {
-    AN_ASSERT( (unsigned)_Index < 6, "BvFrustum[]" );
+    AN_ASSERT_( (unsigned)_Index < 6, "BvFrustum[]" );
     return Planes[_Index];
 }
 

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "CPUInfo.h"
 
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Core/Public/WindowsDefs.h>
 
 #ifdef AN_OS_LINUX
 

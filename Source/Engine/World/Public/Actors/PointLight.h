@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/Components/PointLightComponent.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/Components/PointLightComponent.h>
 
 class APointLight : public AActor {
     AN_ACTOR( APointLight, AActor )

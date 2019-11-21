@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#if 0
 #include "SpatialObject.h"
 
 /*
@@ -85,3 +86,4 @@ protected:
     static AClusteredObject * DirtyList;
     static AClusteredObject * DirtyListTail;
 };
+#endif

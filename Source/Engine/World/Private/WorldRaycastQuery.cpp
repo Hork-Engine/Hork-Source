@@ -28,13 +28,13 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/WorldRaycastQuery.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/World/Public/Components/MeshComponent.h>
+#include <World/Public/WorldRaycastQuery.h>
+#include <World/Public/RenderWorld.h>
+#include <World/Public/Components/MeshComponent.h>
 
 SWorldRaycastFilter AWorldRaycastQuery::DefaultRaycastFilter;
 
-bool AWorldRaycastQuery::Raycast( AWorld const * _World, SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
+bool AWorldRaycastQuery::Raycast( ARenderWorld const * _World, SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
     Float3 rayVec = _RayEnd - _RayStart;
     Float3 rayDir;
     Float3 invRayDir;
@@ -75,8 +75,6 @@ bool AWorldRaycastQuery::Raycast( AWorld const * _World, SWorldRaycastResult & _
             continue;
         }
 
-        AIndexedMesh * resource = mesh->GetMesh();
-
         if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
         }
@@ -102,14 +100,16 @@ bool AWorldRaycastQuery::Raycast( AWorld const * _World, SWorldRaycastResult & _
 
         int firstHit = _Result.Hits.Size();
 
+        AIndexedMesh * resource = mesh->GetMesh();
+
         if ( resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, _Result.Hits ) ) {
 
-            SWorldRaycastEntity & raycastEntity = _Result.Entities.Append();
+            SWorldRaycastDrawable & rcDrawable = _Result.Drawables.Append();
 
-            raycastEntity.Object = mesh;
-            raycastEntity.FirstHit = firstHit;
-            raycastEntity.NumHits = _Result.Hits.Size() - firstHit;
-            raycastEntity.ClosestHit = raycastEntity.FirstHit;
+            rcDrawable.Object = mesh;
+            rcDrawable.FirstHit = firstHit;
+            rcDrawable.NumHits = _Result.Hits.Size() - firstHit;
+            rcDrawable.ClosestHit = rcDrawable.FirstHit;
 
             // Convert hits to worldspace and find closest hit
 
@@ -118,22 +118,22 @@ bool AWorldRaycastQuery::Raycast( AWorld const * _World, SWorldRaycastResult & _
 
             transform.DecomposeNormalMatrix( normalMatrix );
 
-            for ( int i = 0 ; i < raycastEntity.NumHits ; i++ ) {
-                int hitNum = raycastEntity.FirstHit + i;
+            for ( int i = 0 ; i < rcDrawable.NumHits ; i++ ) {
+                int hitNum = rcDrawable.FirstHit + i;
                 STriangleHitResult & hitResult = _Result.Hits[hitNum];
 
                 hitResult.Location = transform * hitResult.Location;
                 hitResult.Normal = ( normalMatrix * hitResult.Normal ).Normalized();
                 hitResult.Distance = (hitResult.Location - _RayStart).Length();
 
-                if ( hitResult.Distance < _Result.Hits[ raycastEntity.ClosestHit ].Distance ) {
-                    raycastEntity.ClosestHit = hitNum;
+                if ( hitResult.Distance < _Result.Hits[ rcDrawable.ClosestHit ].Distance ) {
+                    rcDrawable.ClosestHit = hitNum;
                 }
             }
         }
     }
 
-    if ( _Result.Entities.IsEmpty() ) {
+    if ( _Result.Drawables.IsEmpty() ) {
         return false;
     }
 
@@ -144,7 +144,7 @@ bool AWorldRaycastQuery::Raycast( AWorld const * _World, SWorldRaycastResult & _
     return true;
 }
 
-bool AWorldRaycastQuery::RaycastAABB( AWorld const * _World, TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
+bool AWorldRaycastQuery::RaycastAABB( ARenderWorld const * _World, TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
     Float3 rayVec = _RayEnd - _RayStart;
     Float3 rayDir;
     Float3 invRayDir;
@@ -169,17 +169,17 @@ bool AWorldRaycastQuery::RaycastAABB( AWorld const * _World, TPodArray< SBoxHitR
 
     float boxMin, boxMax;
 
-    for ( AMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
+    for ( ADrawable * drawable = _World->GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
 
-        if ( mesh->bUseDynamicRange ) {
+        //if ( drawable->bUseDynamicRange ) {
+        //    continue;
+        //}
+
+        if ( !( drawable->RenderingGroup & _Filter->RenderingMask ) ) {
             continue;
         }
 
-        if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
-            continue;
-        }
-
-        if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
+        if ( !BvRayIntersectBox( _RayStart, invRayDir, drawable->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
         }
 
@@ -190,7 +190,7 @@ bool AWorldRaycastQuery::RaycastAABB( AWorld const * _World, TPodArray< SBoxHitR
 
         SBoxHitResult & hitResult = _Result.Append();
 
-        hitResult.Object = mesh;
+        hitResult.Object = drawable;
         hitResult.LocationMin = _RayStart + rayDir * boxMin;
         hitResult.LocationMax = _RayStart + rayDir * boxMax;
         hitResult.DistanceMin = boxMin;
@@ -214,7 +214,7 @@ bool AWorldRaycastQuery::RaycastAABB( AWorld const * _World, TPodArray< SBoxHitR
     return true;
 }
 
-bool AWorldRaycastQuery::RaycastClosest( AWorld const * _World, SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
+bool AWorldRaycastQuery::RaycastClosest( ARenderWorld const * _World, SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
     AMeshComponent * hitObject = nullptr;
     Float3 rayVec = _RayEnd - _RayStart;
     Float3 rayDir;
@@ -265,8 +265,6 @@ bool AWorldRaycastQuery::RaycastClosest( AWorld const * _World, SWorldRaycastClo
             continue;
         }
 
-        AIndexedMesh * resource = mesh->GetMesh();
-
         if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
         }
@@ -289,6 +287,8 @@ bool AWorldRaycastQuery::RaycastClosest( AWorld const * _World, SWorldRaycastClo
         }
 
         rayDirLocal /= hitDistanceLocal;
+
+        AIndexedMesh * resource = mesh->GetMesh();
 
         if ( resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, hitLocation, hitUV, hitDistance, indices, material ) ) {
             hitObject = mesh;
@@ -351,8 +351,8 @@ bool AWorldRaycastQuery::RaycastClosest( AWorld const * _World, SWorldRaycastClo
     return true;
 }
 
-bool AWorldRaycastQuery::RaycastClosestAABB( AWorld const * _World, SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
-    AMeshComponent * hitObject = nullptr;
+bool AWorldRaycastQuery::RaycastClosestAABB( ARenderWorld const * _World, SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) {
+    ADrawable * hitObject = nullptr;
     Float3 rayVec = _RayEnd - _RayStart;
     Float3 rayDir;
     Float3 invRayDir;
@@ -382,17 +382,17 @@ bool AWorldRaycastQuery::RaycastClosestAABB( AWorld const * _World, SBoxHitResul
     hitDistanceMin = rayLength;
     hitDistanceMax = rayLength;
 
-    for ( AMeshComponent * mesh = _World->GetMeshes() ; mesh ; mesh = mesh->GetNextMesh() ) {
+    for ( ADrawable * drawable = _World->GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
 
-        if ( mesh->bUseDynamicRange ) {
+        //if ( drawable->bUseDynamicRange ) {
+        //    continue;
+        //}
+
+        if ( !( drawable->RenderingGroup & _Filter->RenderingMask ) ) {
             continue;
         }
 
-        if ( !( mesh->RenderingGroup & _Filter->RenderingMask ) ) {
-            continue;
-        }
-
-        if ( !BvRayIntersectBox( _RayStart, invRayDir, mesh->GetWorldBounds(), boxMin, boxMax ) ) {
+        if ( !BvRayIntersectBox( _RayStart, invRayDir, drawable->GetWorldBounds(), boxMin, boxMax ) ) {
             continue;
         }
 
@@ -401,7 +401,7 @@ bool AWorldRaycastQuery::RaycastClosestAABB( AWorld const * _World, SBoxHitResul
             continue;
         }
 
-        hitObject = mesh;
+        hitObject = drawable;
         hitDistanceMin = boxMin;
         hitDistanceMax = boxMax;
 

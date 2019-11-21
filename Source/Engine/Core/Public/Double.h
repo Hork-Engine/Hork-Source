@@ -308,7 +308,7 @@ public:
     Double Round4() const { return RoundN( 10000.0 ); }
 
     Double Snap( const double & _SnapValue ) const {
-        AN_ASSERT( _SnapValue > 0, "Snap" );
+        AN_ASSERT_( _SnapValue > 0, "Snap" );
         return Double( Value / _SnapValue ).Round() * _SnapValue;
     }
 
@@ -439,12 +439,12 @@ public:
     }
 
     Double & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Double & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -707,7 +707,7 @@ public:
     }
 
     Double2 Snap( const double &_SnapValue ) const {
-        AN_ASSERT( _SnapValue > 0, "Snap" );
+        AN_ASSERT_( _SnapValue > 0, "Snap" );
         Double2 SnapVector;
         SnapVector = *this / _SnapValue;
         SnapVector.X = SnapVector.X.Round() * _SnapValue;
@@ -795,12 +795,12 @@ public:
     }
 
     Double & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Double & operator[]( const int & _Index ) const {
-        //AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        //AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -1184,7 +1184,7 @@ public:
     }
 
     Double3 Snap( const double &_SnapValue ) const {
-        AN_ASSERT( _SnapValue > 0, "Snap" );
+        AN_ASSERT_( _SnapValue > 0, "Snap" );
         Double3 SnapVector;
         SnapVector = *this / _SnapValue;
         SnapVector.X = SnapVector.X.Round() * _SnapValue;
@@ -1343,12 +1343,12 @@ public:
     }
 
     Double & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
     const Double & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
@@ -1660,7 +1660,7 @@ public:
     }
 
     Double4 Snap( const double &_SnapValue ) const {
-        AN_ASSERT( _SnapValue > 0, "Snap" );
+        AN_ASSERT_( _SnapValue > 0, "Snap" );
         Double4 SnapVector;
         SnapVector = *this / _SnapValue;
         SnapVector.X = SnapVector.X.Round() * _SnapValue;
@@ -2062,12 +2062,12 @@ public:
     }
 
     Double2 & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < 2, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 2, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     const Double2 & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 2, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 2, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
@@ -2273,12 +2273,12 @@ public:
     }
 
     Double3 & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     const Double3 & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
@@ -2599,12 +2599,12 @@ public:
     }
 
     Double4 & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < 4, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 4, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     const Double4 & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 4, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 4, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
@@ -3317,12 +3317,12 @@ public:
     }
 
     Double4 & operator[]( const int & _Index ) {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 
     const Double4 & operator[]( const int & _Index ) const {
-        AN_ASSERT( _Index >= 0 && _Index < 3, "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
 

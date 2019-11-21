@@ -610,7 +610,7 @@ void ACanvasPassRenderer::RenderInstances() {
                     Cmd.EndRenderPass();
 
                     // Render scene to viewport
-                    AN_Assert( cmd->ViewportIndex >= 0 && cmd->ViewportIndex < MAX_RENDER_VIEWS );
+                    AN_ASSERT( cmd->ViewportIndex >= 0 && cmd->ViewportIndex < MAX_RENDER_VIEWS );
 
                     SRenderView * renderView = &GFrameData->RenderViews[cmd->ViewportIndex];
 
@@ -643,11 +643,11 @@ void ACanvasPassRenderer::RenderInstances() {
 
                 case HUD_DRAW_CMD_MATERIAL:
                 {
-                    AN_Assert( cmd->MaterialFrameData );
+                    AN_ASSERT( cmd->MaterialFrameData );
 
                     AMaterialGPU * pMaterial = cmd->MaterialFrameData->Material;
 
-                    AN_Assert( pMaterial->MaterialType == MATERIAL_TYPE_HUD );
+                    AN_ASSERT( pMaterial->MaterialType == MATERIAL_TYPE_HUD );
 
                     Cmd.BindPipeline( &((AShadeModelHUD *)pMaterial->ShadeModel.HUD)->ColorPassHUD );
                     Cmd.BindVertexBuffer( 0, &VertexBuffer, 0 );

@@ -28,10 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/CriticalError.h>
-#include <Engine/Core/Public/Atomic.h>
-#include <Engine/Core/Public/Thread.h>
-#include <Engine/Core/Public/String.h>
+#include <Core/Public/CriticalError.h>
+#include <Core/Public/Atomic.h>
+#include <Core/Public/Thread.h>
+#include <Core/Public/String.h>
 
 thread_local jmp_buf CriticalErrorMark;
 static AAtomicBool bCriticalError( false );

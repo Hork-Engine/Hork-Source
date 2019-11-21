@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Image.h>
-#include <Engine/Core/Public/Color.h>
-#include <Engine/Core/Public/Logger.h>
+#include <Core/Public/Image.h>
+#include <Core/Public/Color.h>
+#include <Core/Public/Logger.h>
 
 #define STBI_MALLOC(sz)                     HugeAlloc( sz )
 #define STBI_FREE(p)                        HugeFree( p )
@@ -106,7 +106,7 @@ bool AImage::LoadLDRI( const char * _Path, bool _SRGB, bool _GenerateMipmaps, in
 }
 
 static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
-    AN_Assert( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
+    AN_ASSERT( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
 
     _Image.Free();
 
@@ -165,7 +165,7 @@ static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_cal
 }
 
 static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
-    AN_Assert( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
+    AN_ASSERT( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
 
     _Image.Free();
 

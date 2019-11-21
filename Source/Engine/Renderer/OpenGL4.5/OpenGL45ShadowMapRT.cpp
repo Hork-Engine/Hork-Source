@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "OpenGL45ShadowMapRT.h"
 
-#include <Engine/Runtime/Public/RuntimeVariable.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 using namespace GHI;
 
@@ -131,7 +131,7 @@ void AShadowMapRT::CreateFramebuffer() {
 }
 
 void AShadowMapRT::Realloc( int _MaxCascades ) {
-    AN_Assert( _MaxCascades > 0 );
+    AN_ASSERT( _MaxCascades > 0 );
     if ( CascadeSize != RVShadowCascadeResolution.GetInteger() || MaxCascades != _MaxCascades ) {
         CascadeSize = RVShadowCascadeResolution.GetInteger();
         MaxCascades = _MaxCascades;

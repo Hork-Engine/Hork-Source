@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Core/Public/PodArray.h>
+#include <Runtime/Public/Runtime.h>
+#include <Core/Public/PodArray.h>
 
 using APhysicalMonitorArray = TPodArray< SPhysicalMonitor *, 4 >;
 

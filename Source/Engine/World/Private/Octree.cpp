@@ -29,9 +29,9 @@ SOFTWARE.
 */
 
 
-#include <Engine/World/Public/Octree.h>
-#include <Engine/World/Public/Level.h>
-#include <Engine/Core/Public/Logger.h>
+#include <World/Public/Octree.h>
+#include <World/Public/Level.h>
+#include <Core/Public/Logger.h>
 
 AN_CLASS_META( ASpatialTree )
 AN_CLASS_META( AOctree )
@@ -69,7 +69,7 @@ void AOctree::Build() {
 //        Root->BoundingBox = boundingBox;
 }
 
-void AOctree::TreeAddObject( ASpatialObject * _Object ) {
+void AOctree::TreeAddObject( ADrawable * _Object ) {
     ObjectsInTree.Append( _Object );
     _Object->AddRef();
 
@@ -134,7 +134,7 @@ ASpatialTree::~ASpatialTree() {
     ClearPendingList();
 }
 
-int ASpatialTree::FindPendingObject( ASpatialObject * _Object ) {
+int ASpatialTree::FindPendingObject( ADrawable * _Object ) {
     for ( int i = 0 ; i < PendingObjects.Size() ; i++ ) {
         if ( PendingObjects[i].Object == _Object ) {
             return i;
@@ -143,7 +143,7 @@ int ASpatialTree::FindPendingObject( ASpatialObject * _Object ) {
     return -1;
 }
 
-void ASpatialTree::AddObject( ASpatialObject * _Object ) {
+void ASpatialTree::AddObject( ADrawable * _Object ) {
     int i = FindPendingObject( _Object );
     if ( i != -1 ) {
         SPendingObjectInfo & info = PendingObjects[i];
@@ -158,7 +158,7 @@ void ASpatialTree::AddObject( ASpatialObject * _Object ) {
     }
 }
 
-void ASpatialTree::RemoveObject( ASpatialObject * _Object ) {
+void ASpatialTree::RemoveObject( ADrawable * _Object ) {
     int i = FindPendingObject( _Object );
     if ( i != -1 ) {
         SPendingObjectInfo & info = PendingObjects[i];
@@ -173,7 +173,7 @@ void ASpatialTree::RemoveObject( ASpatialObject * _Object ) {
     }
 }
 
-void ASpatialTree::UpdateObject( ASpatialObject * _Object ) {
+void ASpatialTree::UpdateObject( ADrawable * _Object ) {
     int i = FindPendingObject( _Object );
     if ( i != -1 ) {
         SPendingObjectInfo & info = PendingObjects[i];

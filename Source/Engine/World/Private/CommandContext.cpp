@@ -29,8 +29,8 @@ SOFTWARE.
 */
 
 
-#include <Engine/World/Public/CommandContext.h>
-#include <Engine/Core/Public/Logger.h>
+#include <World/Public/CommandContext.h>
+#include <Core/Public/Logger.h>
 
 ACommandContext::ACommandContext() {
 
@@ -41,7 +41,7 @@ ACommandContext::~ACommandContext() {
 }
 
 void ACommandContext::ExecuteCommand( ARuntimeCommandProcessor const & _Proc ) {
-    AN_Assert( _Proc.GetArgsCount() > 0 );
+    AN_ASSERT( _Proc.GetArgsCount() > 0 );
 
     const char * name = _Proc.GetArg( 0 );
 

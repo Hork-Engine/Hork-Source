@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Actors/Controller.h>
+#include <World/Public/Actors/Controller.h>
 
 AN_CLASS_META( AController )
 

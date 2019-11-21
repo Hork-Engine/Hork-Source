@@ -107,7 +107,7 @@ AN_FORCEINLINE double DoubleSwap( const double & _Val ) {
 }
 
 AN_FORCEINLINE void BlockSwap( void * _Bytes, int _ElementSz, int _Count ) {
-    AN_ASSERT( _ElementSz > 0, "FEndian::BlockSwap" );
+    AN_ASSERT_( _ElementSz > 0, "FEndian::BlockSwap" );
     if ( _ElementSz == 1 ) {
         return;
     }

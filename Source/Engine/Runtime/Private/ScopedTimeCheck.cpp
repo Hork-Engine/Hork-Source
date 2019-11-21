@@ -28,6 +28,6 @@ SOFTWARE.
 
 */
 
-#include <Engine/Runtime/Public/ScopedTimeCheck.h>
+#include <Runtime/Public/ScopedTimeCheck.h>
 
 ARuntimeVariable RVScopedTimeCheck( _CTS( "ScopedTimeCheck" ), _CTS( "0" ) );

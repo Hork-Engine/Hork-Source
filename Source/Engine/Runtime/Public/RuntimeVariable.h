@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/String.h>
-#include <Engine/Core/Public/CompileTimeString.h>
+#include <Core/Public/String.h>
+#include <Core/Public/CompileTimeString.h>
 
 enum ERuntimeVariableFlags {
     VAR_LATCHED     = AN_BIT(0),

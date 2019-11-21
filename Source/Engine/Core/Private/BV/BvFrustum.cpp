@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/BV/BvFrustum.h>
+#include <Core/Public/BV/BvFrustum.h>
 
 BvFrustum::BvFrustum() {
     for ( int i = 0; i < 6; i++ ) {

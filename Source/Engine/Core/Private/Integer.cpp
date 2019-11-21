@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Integer.h>
+#include <Core/Public/Integer.h>
 
 #include "_math.h"
 

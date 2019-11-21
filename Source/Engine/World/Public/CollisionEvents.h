@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Base/Public/BaseObject.h>
+#include <World/Public/Base/BaseObject.h>
 
 class AActor;
 class APhysicalBody;

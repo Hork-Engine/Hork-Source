@@ -93,7 +93,7 @@ bool AColorPassRenderer::BindMaterial( SRenderInstance const * instance ) {
     Pipeline * pPipeline;
     Buffer * pSecondVertexBuffer = nullptr;
 
-    AN_Assert( pMaterial );
+    AN_ASSERT( pMaterial );
 
     bool bSkinned = instance->SkeletonSize > 0;
     bool bLightmap = instance->LightmapUVChannel != nullptr && instance->Lightmap;

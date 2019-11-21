@@ -29,8 +29,8 @@ SOFTWARE.
 */
 
 
-#include <Engine/World/Public/BSP.h>
-#include <Engine/Core/Public/Logger.h>
+#include <World/Public/BSP.h>
+#include <Core/Public/Logger.h>
 
 static int DrawSurfMarker = 0;
 

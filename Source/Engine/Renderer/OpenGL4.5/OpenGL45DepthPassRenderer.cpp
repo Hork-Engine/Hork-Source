@@ -65,7 +65,7 @@ bool ADepthPassRenderer::BindMaterial( SRenderInstance const * instance ) {
     AMaterialGPU * pMaterial = instance->Material;
     Pipeline * pPipeline;
 
-    AN_Assert( pMaterial );
+    AN_ASSERT( pMaterial );
 
     bool bSkinned = instance->SkeletonSize > 0;
 

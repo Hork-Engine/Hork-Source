@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "OpenGL45Common.h"
-#include <Engine/Core/Public/Logger.h>
+#include <Core/Public/Logger.h>
 
 namespace OpenGL45 {
 

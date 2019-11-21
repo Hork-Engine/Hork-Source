@@ -112,7 +112,7 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
 }
 
 static void MouseButtonCallback( GLFWwindow * _Window, int _Button, int _Action, int _Mods ) {
-    AN_Assert( _Action != GLFW_REPEAT ); // Is GLFW produce GLFW_REPEAT event for mouse buttons?
+    AN_ASSERT( _Action != GLFW_REPEAT ); // Is GLFW produce GLFW_REPEAT event for mouse buttons?
 
     if ( GInputEventsCount >= MAX_INPUT_EVENTS ) {
         GLogger.Printf( "Ignoring stalled buttons\n" );

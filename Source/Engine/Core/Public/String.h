@@ -342,12 +342,12 @@ AN_FORCEINLINE AString::~AString() {
 }
 
 AN_FORCEINLINE const char & AString::operator[]( int _Index ) const {
-    AN_ASSERT( ( _Index >= 0 ) && ( _Index <= StringLength ), "AString[]" );
+    AN_ASSERT_( ( _Index >= 0 ) && ( _Index <= StringLength ), "AString[]" );
     return StringData[ _Index ];
 }
 
 AN_FORCEINLINE char &AString::operator[]( int _Index ) {
-    AN_ASSERT( ( _Index >= 0 ) && ( _Index <= StringLength ), "AString[]" );
+    AN_ASSERT_( ( _Index >= 0 ) && ( _Index <= StringLength ), "AString[]" );
     return StringData[ _Index ];
 }
 
@@ -434,12 +434,12 @@ AN_FORCEINLINE bool operator==( AString const & _Str1, AString const & _Str2 ) {
 }
 
 AN_FORCEINLINE bool operator==( AString const & _Str1, const char * _Str2 ) {
-    AN_ASSERT( _Str2, "Strings comparison" );
+    AN_ASSERT_( _Str2, "Strings comparison" );
     return ( !AString::Cmp( _Str1.StringData, _Str2 ) );
 }
 
 AN_FORCEINLINE bool operator==( const char * _Str1, AString const & _Str2 ) {
-    AN_ASSERT( _Str1, "Strings comparison" );
+    AN_ASSERT_( _Str1, "Strings comparison" );
     return ( !AString::Cmp( _Str1, _Str2.StringData ) );
 }
 
@@ -456,22 +456,22 @@ AN_FORCEINLINE bool operator!=( const char * _Str1, AString const & _Str2 ) {
 }
 
 AN_FORCEINLINE int AString::Icmp( const char * _Str ) const {
-    AN_ASSERT( _Str, "AString::Icmp" );
+    AN_ASSERT_( _Str, "AString::Icmp" );
     return AString::Icmp( StringData, _Str );
 }
 
 AN_FORCEINLINE int AString::Cmp( const char * _Str ) const {
-    AN_ASSERT( _Str, "AString::Cmp" );
+    AN_ASSERT_( _Str, "AString::Cmp" );
     return AString::Cmp( StringData, _Str );
 }
 
 AN_FORCEINLINE int AString::IcmpN( const char * _Str, int _Num ) const {
-    AN_ASSERT( _Str, "AString::CmpN" );
+    AN_ASSERT_( _Str, "AString::CmpN" );
     return AString::IcmpN( StringData, _Str, _Num );
 }
 
 AN_FORCEINLINE int AString::CmpN( const char * _Str, int _Num ) const {
-    AN_ASSERT( _Str, "AString::CmpN" );
+    AN_ASSERT_( _Str, "AString::CmpN" );
     return AString::CmpN( StringData, _Str, _Num );
 }
 
@@ -528,12 +528,12 @@ AN_FORCEINLINE void AString::ReplaceExt( const char * _Extension ) {
 }
 
 AN_FORCEINLINE uint32_t AString::HexToUInt32( int _Len ) const {
-    AN_ASSERT( _Len <= StringLength, "AString::HexToUInt32" );
+    AN_ASSERT_( _Len <= StringLength, "AString::HexToUInt32" );
     return HexToUInt32( StringData, _Len );
 }
 
 AN_FORCEINLINE uint64_t AString::HexToUInt64( int _Len ) const {
-    AN_ASSERT( _Len <= StringLength, "AString::HexToUInt64" );
+    AN_ASSERT_( _Len <= StringLength, "AString::HexToUInt64" );
     return HexToUInt64( StringData, _Len );
 }
 

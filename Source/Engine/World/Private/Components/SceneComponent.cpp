@@ -28,12 +28,12 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/SceneComponent.h>
-#include <Engine/World/Public/Components/SkinnedComponent.h>
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/World.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/BV/BvIntersect.h>
+#include <World/Public/Components/SceneComponent.h>
+#include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/World.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/BV/BvIntersect.h>
 
 #include <algorithm>    // find
 
@@ -441,7 +441,7 @@ Float3 const & ASceneComponent::GetPosition() const {
 
 }
 
-const Quat & ASceneComponent::GetRotation() const {
+Quat const & ASceneComponent::GetRotation() const {
 
     return Rotation;
 

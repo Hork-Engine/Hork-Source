@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/IO.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Core/Public/IO.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/WindowsDefs.h>
 
 #ifdef AN_OS_WIN32
 #include <direct.h>     // _mkdir
@@ -166,7 +166,7 @@ bool AFileStream::Open( const char * _FileName, int _Mode ) {
 
     constexpr const char * fopen_mode[3] = { "rb", "wb", "ab" };
 
-    AN_ASSERT( _Mode >= 0 && _Mode < 3, "Invalid mode" );
+    AN_ASSERT_( _Mode >= 0 && _Mode < 3, "Invalid mode" );
 
     if ( _Mode == M_Write || _Mode == M_Append ) {
         Core::MakeDir( FileName.CStr(), true );

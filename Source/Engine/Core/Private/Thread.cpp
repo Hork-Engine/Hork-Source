@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Thread.h>
-#include <Engine/Core/Public/Std.h>
+#include <Core/Public/Thread.h>
+#include <Core/Public/Std.h>
 
 #ifdef AN_OS_WIN32
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Core/Public/WindowsDefs.h>
 #include <process.h>
 #endif
 

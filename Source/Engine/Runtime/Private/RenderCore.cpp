@@ -28,13 +28,13 @@ SOFTWARE.
 
 */
 
-#include <Engine/Runtime/Public/RenderCore.h>
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Runtime/Public/RuntimeVariable.h>
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/IntrusiveLinkedListMacro.h>
+#include <Runtime/Public/RenderCore.h>
+#include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/RuntimeVariable.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/IntrusiveLinkedListMacro.h>
 
-#include <Engine/Renderer/OpenGL4.5/OpenGL45RenderBackend.h>
+#include <Renderer/OpenGL4.5/OpenGL45RenderBackend.h>
 
 IRenderBackend * GRenderBackend = &OpenGL45::GOpenGL45RenderBackend;
 
@@ -42,7 +42,7 @@ AResourceGPU * AResourceGPU::GPUResources;
 AResourceGPU * AResourceGPU::GPUResourcesTail;
 
 void IRenderBackend::RegisterGPUResource( AResourceGPU * _Resource ) {
-    INTRUSIVE_ADD( _Resource, pNext, pPrev, AResourceGPU::GPUResources, AResourceGPU::GPUResourcesTail );
+    INTRUSIVE_ADD_UNIQUE( _Resource, pNext, pPrev, AResourceGPU::GPUResources, AResourceGPU::GPUResourcesTail );
 }
 
 void IRenderBackend::UnregisterGPUResource( AResourceGPU * _Resource ) {
@@ -150,7 +150,7 @@ Light/Probe/Decal voxelizer
 
 */
 
-#include <Engine/Core/Public/Atomic.h>
+#include <Core/Public/Atomic.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //

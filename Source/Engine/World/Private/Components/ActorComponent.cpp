@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Components/ActorComponent.h>
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/World.h>
+#include <World/Public/Components/ActorComponent.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/World.h>
 
 AN_BEGIN_CLASS_META( AActorComponent )
 AN_ATTRIBUTE_( bCanEverTick, AF_DEFAULT )
@@ -41,12 +41,12 @@ AActorComponent::AActorComponent() {
 }
 
 AWorld * AActorComponent::GetWorld() const {
-    AN_Assert( ParentActor != nullptr );
+    AN_ASSERT( ParentActor != nullptr );
     return ParentActor->GetWorld();
 }
 
 ALevel * AActorComponent::GetLevel() const {
-    AN_Assert( ParentActor != nullptr );
+    AN_ASSERT( ParentActor != nullptr );
     return ParentActor->GetLevel();
 }
 

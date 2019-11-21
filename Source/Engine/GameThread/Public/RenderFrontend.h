@@ -30,9 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Runtime/Public/RenderCore.h>
-#include <Engine/Base/Public/DebugDraw.h>
-#include <Engine/World/Public/Canvas.h>
+#include <Runtime/Public/RenderCore.h>
+#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Canvas.h>
 
 struct SRenderFrontendStat {
     int PolyCount;

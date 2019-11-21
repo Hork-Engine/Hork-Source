@@ -51,6 +51,13 @@ Intrusive linked list macro
     } \
 }
 
+#define INTRUSIVE_ADD_UNIQUE( _object, _next, _prev, _head, _tail ) \
+{ \
+    if ( !INTRUSIVE_EXISTS( _object, _next, _prev, _head, _tail ) ) { \
+        INTRUSIVE_ADD( _object, _next, _prev, _head, _tail ); \
+    } \
+}
+
 #define INTRUSIVE_REMOVE( _object, _next, _prev, _head, _tail ) \
 { \
     auto * __next = _object->_next; \

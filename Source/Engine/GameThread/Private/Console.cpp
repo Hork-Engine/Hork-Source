@@ -30,16 +30,16 @@ SOFTWARE.
 
 #include "Console.h"
 
-#include <Engine/GameThread/Public/EngineInstance.h>
+#include <GameThread/Public/EngineInstance.h>
 
-#include <Engine/World/Public/Canvas.h>
+#include <World/Public/Canvas.h>
 
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Runtime/Public/InputDefs.h>
-#include <Engine/Runtime/Public/RenderCore.h>
+#include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/InputDefs.h>
+#include <Runtime/Public/RenderCore.h>
 
-#include <Engine/Core/Public/Utf8.h>
-#include <Engine/Core/Public/Color.h>
+#include <Core/Public/Utf8.h>
+#include <Core/Public/Color.h>
 
 static const int CON_IMAGE_SIZE = 1024*1024;
 static const int MAX_CMD_LINE_CHARS = 256;

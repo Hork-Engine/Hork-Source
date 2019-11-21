@@ -42,7 +42,7 @@ SOFTWARE.
 #include "GHI/GHIPipeline.h"
 #include "GHI/GHIRenderPass.h"
 
-#include <Engine/Runtime/Public/RenderCore.h>
+#include <Runtime/Public/RenderCore.h>
 
 #define SCISSOR_TEST false
 #define DEPTH_PREPASS

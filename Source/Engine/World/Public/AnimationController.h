@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Base/Public/BaseObject.h>
+#include <World/Public/Base/BaseObject.h>
 
 class ASkeletalAnimation;
 class ASkinnedComponent;
@@ -107,14 +107,14 @@ protected:
     AAnimationController();
 
 private:
+    TRef< ASkeletalAnimation > Animation;
+    ASkinnedComponent * Owner;
     float TimeLine;
-    EAnimationPlayMode PlayMode;
     float Quantizer;
     float Weight;
-    bool bEnabled;
+    float Blend;
     int Frame;
     int NextFrame;
-    float Blend;
-    ASkinnedComponent * Owner;
-    TRef< ASkeletalAnimation > Animation;
+    EAnimationPlayMode PlayMode;
+    bool bEnabled;
 };

@@ -31,8 +31,8 @@ SOFTWARE.
 // EXPEREMENTAL!!!
 
 
-#include <Engine/World/Public/Components/SoftMeshComponent.h>
-#include <Engine/World/Public/World.h>
+#include <World/Public/Components/SoftMeshComponent.h>
+#include <World/Public/World.h>
 
 #include <BulletSoftBody/btSoftBody.h>
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
@@ -40,7 +40,7 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btSphereShape.h>
 //#include <BulletSoftBody/btSoftBodyHelpers.h>
 
-#include <Engine/BulletCompatibility/BulletCompatibility.h>
+#include "../BulletCompatibility/BulletCompatibility.h"
 
 ARuntimeVariable RVDrawSoftmeshFaces( _CTS( "DrawSoftmeshFaces" ), _CTS( "0" ), VAR_CHEAT );
 
@@ -67,7 +67,7 @@ void ASoftMeshComponent::DeinitializeComponent() {
     DetachAllVertices();
 
     if ( SoftBody ) {
-        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetPhysicsWorld();
+        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetDynamicsWorld();
         physicsWorld->removeSoftBody( SoftBody );
         b3Destroy( SoftBody );
         SoftBody = nullptr;
@@ -84,7 +84,7 @@ void ASoftMeshComponent::RecreateSoftBody() {
         return;
     }
 
-    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetPhysicsWorld();
+    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetDynamicsWorld();
 
     if ( SoftBody ) {
         physicsWorld->removeSoftBody( SoftBody );
@@ -283,7 +283,7 @@ void ASoftMeshComponent::UpdateAnchorPoints() {
 
     if ( bUpdateAnchors ) {
 
-        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetPhysicsWorld();
+        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetDynamicsWorld();
 
         // Remove old anchors. FIXME: is it correct?
         SoftBody->m_collisionDisabledObjects.clear();

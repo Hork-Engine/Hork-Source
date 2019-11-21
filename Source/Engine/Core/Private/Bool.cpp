@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Bool.h>
+#include <Core/Public/Bool.h>
 
 #include "_math.h"
 

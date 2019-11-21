@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Engine/Core/Public/Logger.h>
-#include <Engine/Core/Public/String.h>
+#include <Core/Public/Logger.h>
+#include <Core/Public/String.h>
 
 #if defined AN_COMPILER_MSVC && defined AN_DEBUG
-#include <Engine/Core/Public/WindowsDefs.h>
+#include <Core/Public/WindowsDefs.h>
 #endif
 
 #ifdef AN_OS_ANDROID

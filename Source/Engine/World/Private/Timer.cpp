@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Engine/World/Public/Timer.h>
-#include <Engine/World/Public/World.h>
+#include <World/Public/Timer.h>
+#include <World/Public/World.h>
 
 enum ETimerState {
     TS_Finished = 1,

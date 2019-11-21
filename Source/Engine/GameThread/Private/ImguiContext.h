@@ -30,9 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Base/Public/BaseObject.h>
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Resource/Public/FontAtlas.h>
+#include <World/Public/Base/BaseObject.h>
+#include <Runtime/Public/Runtime.h>
+#include <World/Public/Resource/FontAtlas.h>
 
 struct ImFontAtlas;
 struct ImGuiContext;

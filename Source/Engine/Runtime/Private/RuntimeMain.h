@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/Core/Public/String.h>
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Runtime/Public/EngineInterface.h>
-#include <Engine/Runtime/Public/RenderCore.h>
+#include <Core/Public/String.h>
+#include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/EngineInterface.h>
+#include <Runtime/Public/RenderCore.h>
 
 class ARuntimeMain {
     AN_SINGLETON( ARuntimeMain )
@@ -56,6 +56,7 @@ public:
     size_t          FrameMemorySize;
     size_t          FrameMemoryUsed;
     size_t          FrameMemoryUsedPrev;
+    size_t          MaxFrameMemoryUsage;
 
     IEngineInterface * Engine;
 

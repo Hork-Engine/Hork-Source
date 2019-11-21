@@ -36,7 +36,7 @@ using namespace GHI;
 namespace OpenGL45 {
 
 void APassRenderer::BindTextures( SMaterialFrameData * _MaterialInstance ) {
-    AN_Assert( _MaterialInstance );
+    AN_ASSERT( _MaterialInstance );
 
     ATextureGPU ** texture = _MaterialInstance->Textures;
 
@@ -63,8 +63,8 @@ void APassRenderer::BindVertexAndIndexBuffers( SRenderInstance const * _Instance
     Buffer * pVertexBuffer = GPUBufferHandle( _Instance->VertexBuffer );
     Buffer * pIndexBuffer = GPUBufferHandle( _Instance->IndexBuffer );
 
-    AN_Assert( pVertexBuffer );
-    AN_Assert( pIndexBuffer );
+    AN_ASSERT( pVertexBuffer );
+    AN_ASSERT( pIndexBuffer );
 
     Cmd.BindVertexBuffer( 0, pVertexBuffer, 0 );
     Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, 0 );
@@ -74,8 +74,8 @@ void APassRenderer::BindVertexAndIndexBuffers( SShadowRenderInstance const * _In
     Buffer * pVertexBuffer = GPUBufferHandle( _Instance->VertexBuffer );
     Buffer * pIndexBuffer = GPUBufferHandle( _Instance->IndexBuffer );
 
-    AN_Assert( pVertexBuffer );
-    AN_Assert( pIndexBuffer );
+    AN_ASSERT( pVertexBuffer );
+    AN_ASSERT( pIndexBuffer );
 
     Cmd.BindVertexBuffer( 0, pVertexBuffer, 0 );
     Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, 0 );
