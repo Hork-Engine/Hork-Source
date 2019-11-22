@@ -105,6 +105,7 @@ class ANGIE_API AWorld : public ABaseObject, public IPhysicsWorldInterface
 
     friend class AActor;
     friend class AActorComponent;
+    friend class ATimer;
 
 public:
     /** Scale audio volume in the entire world */
@@ -357,8 +358,8 @@ protected:
 private:
     void BroadcastActorSpawned( AActor * _SpawnedActor );
 
-    void RegisterTimer( ATimer * _Timer );      // friend AActor
-    void UnregisterTimer( ATimer * _Timer );    // friend AActor
+    void AddTimer( ATimer * _Timer );       // friend ATimer
+    void RemoveTimer( ATimer * _Timer );    // friend ATimer
 
     void KickoffPendingKillObjects();
 
@@ -390,8 +391,17 @@ private:
     int64_t GameplayTimeMicro;
     int64_t GameplayTimeMicroAfterTick;
 
+    struct STimerCmd {
+        enum { ADD, REMOVE } Command;
+        ATimer * TimerCb;
+    };
+
+    TPodArray< STimerCmd > TimerCmd;
+
     ATimer * TimerList;
     ATimer * TimerListTail;
+
+    bool bDuringTimerTick;
 
     int IndexInGameArrayOfWorlds = -1;
 

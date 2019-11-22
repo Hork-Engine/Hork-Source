@@ -45,7 +45,7 @@ class ARenderWorld {
     AN_FORBID_COPY( ARenderWorld )
 
 public:
-    ARenderWorld( AWorld * InOwnerWorld );
+    explicit ARenderWorld( AWorld * InOwnerWorld );
     ~ARenderWorld() {}
 
     void AddDrawable( ADrawable * _Drawable );

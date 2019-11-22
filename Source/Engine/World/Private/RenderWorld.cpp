@@ -44,12 +44,7 @@ ARenderWorld::ARenderWorld( AWorld * InOwnerWorld )
 }
 
 void ARenderWorld::AddDrawable( ADrawable * _Drawable ) {
-    if ( INTRUSIVE_EXISTS( _Drawable, Next, Prev, DrawableList, DrawableListTail ) ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-
-    INTRUSIVE_ADD( _Drawable, Next, Prev, DrawableList, DrawableListTail );
+    INTRUSIVE_ADD_UNIQUE( _Drawable, Next, Prev, DrawableList, DrawableListTail );
 }
 
 void ARenderWorld::RemoveDrawable( ADrawable * _Drawable ) {
@@ -57,12 +52,7 @@ void ARenderWorld::RemoveDrawable( ADrawable * _Drawable ) {
 }
 
 void ARenderWorld::AddMesh( AMeshComponent * _Mesh ) {
-    if ( INTRUSIVE_EXISTS( _Mesh, Next, Prev, MeshList, MeshListTail ) ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-
-    INTRUSIVE_ADD( _Mesh, Next, Prev, MeshList, MeshListTail );
+    INTRUSIVE_ADD_UNIQUE( _Mesh, Next, Prev, MeshList, MeshListTail );
 }
 
 void ARenderWorld::RemoveMesh( AMeshComponent * _Mesh ) {
@@ -70,12 +60,7 @@ void ARenderWorld::RemoveMesh( AMeshComponent * _Mesh ) {
 }
 
 void ARenderWorld::AddSkinnedMesh( ASkinnedComponent * _Skeleton ) {
-    if ( INTRUSIVE_EXISTS( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail ) ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-
-    INTRUSIVE_ADD( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+    INTRUSIVE_ADD_UNIQUE( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
 
 void ARenderWorld::RemoveSkinnedMesh( ASkinnedComponent * _Skeleton ) {
@@ -83,12 +68,7 @@ void ARenderWorld::RemoveSkinnedMesh( ASkinnedComponent * _Skeleton ) {
 }
 
 void ARenderWorld::AddShadowCaster( AMeshComponent * _Mesh ) {
-    if ( INTRUSIVE_EXISTS( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail ) ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-
-    INTRUSIVE_ADD( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
+    INTRUSIVE_ADD_UNIQUE( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
 }
 
 void ARenderWorld::RemoveShadowCaster( AMeshComponent * _Mesh ) {
@@ -96,12 +76,7 @@ void ARenderWorld::RemoveShadowCaster( AMeshComponent * _Mesh ) {
 }
 
 void ARenderWorld::AddDirectionalLight( ADirectionalLightComponent * _Light ) {
-    if ( INTRUSIVE_EXISTS( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail ) ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-
-    INTRUSIVE_ADD( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
+    INTRUSIVE_ADD_UNIQUE( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
 }
 
 void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * _Light ) {
@@ -109,12 +84,7 @@ void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * _Light )
 }
 
 void ARenderWorld::AddPointLight( APointLightComponent * _Light ) {
-    if ( INTRUSIVE_EXISTS( _Light, Next, Prev, PointLightList, PointLightListTail ) ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-
-    INTRUSIVE_ADD( _Light, Next, Prev, PointLightList, PointLightListTail );
+    INTRUSIVE_ADD_UNIQUE( _Light, Next, Prev, PointLightList, PointLightListTail );
 }
 
 void ARenderWorld::RemovePointLight( APointLightComponent * _Light ) {
@@ -122,12 +92,7 @@ void ARenderWorld::RemovePointLight( APointLightComponent * _Light ) {
 }
 
 void ARenderWorld::AddSpotLight( ASpotLightComponent * _Light ) {
-    if ( INTRUSIVE_EXISTS( _Light, Next, Prev, SpotLightList, SpotLightListTail ) ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-
-    INTRUSIVE_ADD( _Light, Next, Prev, SpotLightList, SpotLightListTail );
+    INTRUSIVE_ADD_UNIQUE( _Light, Next, Prev, SpotLightList, SpotLightListTail );
 }
 
 void ARenderWorld::RemoveSpotLight( ASpotLightComponent * _Light ) {

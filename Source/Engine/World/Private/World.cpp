@@ -358,10 +358,35 @@ void AWorld::UpdatePauseStatus() {
     }
 }
 
-void AWorld::UpdateTimers( float _TimeStep ) {
+void AWorld::UpdateTimers( float _TimeStep )
+{
+    bDuringTimerTick = true;
+    int i=0;
     for ( ATimer * timer = TimerList ; timer ; timer = timer->Next ) {
-        timer->Tick( this, _TimeStep );
+
+        if ( timer->GetRefCount() > 1 ) {
+            timer->Tick( _TimeStep );
+            i++;
+        } else {
+            // Timer has no owner, unregister it
+            timer->Unregister();
+        }
     }
+    GLogger.Printf( "Timers in world %d\n", i );
+    bDuringTimerTick = false;
+
+    for ( STimerCmd & cmd : TimerCmd )
+    {
+        if ( cmd.Command == STimerCmd::ADD )
+        {
+            INTRUSIVE_ADD_UNIQUE( cmd.TimerCb, Next, Prev, TimerList, TimerListTail );
+        }
+        else
+        {
+            INTRUSIVE_REMOVE( cmd.TimerCb, Next, Prev, TimerList, TimerListTail );
+        }
+    }
+    TimerCmd.Clear();
 }
 
 void AWorld::UpdateActors( float _TimeStep ) {
@@ -669,17 +694,32 @@ void AWorld::RemoveLevel( ALevel * _Level ) {
     _Level->RemoveRef();
 }
 
-void AWorld::RegisterTimer( ATimer * _Timer ) {
-    if ( INTRUSIVE_EXISTS( _Timer, Next, Prev, TimerList, TimerListTail ) ) {
-        AN_ASSERT( 0 );
-        return;
+void AWorld::AddTimer( ATimer * _Timer ) {
+    _Timer->AddRef();
+    if ( bDuringTimerTick )
+    {
+        GLogger.Printf( "AWorld::AddTimer: Add pending\n" );
+        TimerCmd.Append( { STimerCmd::ADD, _Timer } );
     }
-
-    INTRUSIVE_ADD( _Timer, Next, Prev, TimerList, TimerListTail );
+    else
+    {
+        GLogger.Printf( "AWorld::AddTimer: Add now\n" );
+        INTRUSIVE_ADD_UNIQUE( _Timer, Next, Prev, TimerList, TimerListTail );
+    }
 }
 
-void AWorld::UnregisterTimer( ATimer * _Timer ) {
-    INTRUSIVE_REMOVE( _Timer, Next, Prev, TimerList, TimerListTail );
+void AWorld::RemoveTimer( ATimer * _Timer ) {
+    _Timer->RemoveRef();
+    if ( bDuringTimerTick )
+    {
+        GLogger.Printf( "AWorld::RemoveTimer: Remove pending\n" );
+        TimerCmd.Append( { STimerCmd::REMOVE, _Timer } );
+    }
+    else
+    {
+        GLogger.Printf( "AWorld::RemoveTimer: Remove now\n" );
+        INTRUSIVE_REMOVE( _Timer, Next, Prev, TimerList, TimerListTail );
+    }
 }
 
 void AWorld::DrawDebug( ADebugDraw * _DebugDraw ) {

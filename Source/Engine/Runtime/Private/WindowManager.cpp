@@ -34,13 +34,13 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
-AWindowManager & GWindowManager = AWindowManager::Inst();
-
-static const int GLFWCursorMode[2] = { GLFW_CURSOR_NORMAL, GLFW_CURSOR_DISABLED };
-
 #define MAX_INPUT_EVENTS  200
 
 #define MOUSE_LOST (-999999999999.0)
+
+AWindowManager & GWindowManager = AWindowManager::Inst();
+
+static const int GLFWCursorMode[2] = { GLFW_CURSOR_NORMAL, GLFW_CURSOR_DISABLED };
 
 static double MousePositionX = MOUSE_LOST;
 static double MousePositionY = MOUSE_LOST;
@@ -72,10 +72,10 @@ static bool bIsWindowVisible = false;
 
 static GLFWwindow * Wnd = nullptr;
 
-static void SendChangedVideoModeEvent();
-
 static int PressedKeys[GLFW_KEY_LAST+1];
 static bool PressedMouseButtons[GLFW_MOUSE_BUTTON_LAST+1];
+
+static void SendChangedVideoModeEvent();
 
 static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Action, int _Mods ) {
     if ( _Key < 0 || _Key > GLFW_KEY_LAST ) {

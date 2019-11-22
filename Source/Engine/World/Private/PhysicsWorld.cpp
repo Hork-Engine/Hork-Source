@@ -32,8 +32,8 @@ SOFTWARE.
 #include <World/Public/Components/PhysicalBody.h>
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/World.h>
-#include <Runtime/Public/RuntimeVariable.h>
 #include <World/Public/Base/DebugDraw.h>
+#include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
@@ -57,6 +57,7 @@ ARuntimeVariable RVDrawCollisionShapeWireframe( _CTS( "DrawCollisionShapeWirefra
 ARuntimeVariable RVDrawContactPoints( _CTS( "DrawContactPoints" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawConstraints( _CTS( "DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawConstraintLimits( _CTS( "DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
+//ARuntimeVariable RVDrawCollisionShapeNormals( _CTS( "DrawCollisionShapeNormals" ), _CTS( "0" ), VAR_CHEAT );
 
 static SCollisionQueryFilter DefaultCollisionQueryFilter;
 

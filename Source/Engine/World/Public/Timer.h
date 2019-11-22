@@ -34,46 +34,58 @@ SOFTWARE.
 
 class AWorld;
 
-class ANGIE_API ATimer final {
-    AN_FORBID_COPY( ATimer )
+class ATimer : public ABaseObject {
+    AN_CLASS( ATimer, ABaseObject )
 
     friend class AWorld;
-    friend class AActor;
 
 public:
-    float FirstDelay = 0;
-    float SleepDelay = 0;
-    float PulseTime = 0;
-    bool bPaused = false;
-    bool bTickEvenWhenPaused = false;
-    int MaxPulses = 0;
+    float FirstDelay;
 
-    ATimer() {}
+    float SleepDelay;
+
+    float PulseTime;
+
+    int MaxPulses;
+
+    /** Pause the timer */
+    bool bPaused;
+
+    /** Tick timer even when game is paused */
+    bool bTickEvenWhenPaused;
+
+    TCallback< void() > Callback;
+
+    /** Register timer in a world. Call this in BeginPlay */
+    void Register( AWorld * InOwnerWorld );
+
+    /** Unregister timer if you want to stop timer ticking */
+    void Unregister();
+
     void Restart();
+
     void Stop();
+
     bool IsStopped() const;
 
-    template< typename T >
-    void SetCallback( T * _Object, void (T::*_Method)() ) {
-        SetCallback( { _Object, _Method } );
-    }
-
-    void SetCallback( TCallback< void() > const & _Callback ) {
-        Callback = _Callback;
-    }
-
     float GetElapsedTime() const { return ElapsedTime; }
+
     int GetPulseIndex() const { return NumPulses - 1; }
 
-private:
-    int State = 0;
-    int NumPulses = 0;
-    float ElapsedTime = 0;
-    TCallback< void() > Callback;
-    ATimer * P;         // List inside actor
-    ATimer * Next;      // List inside world
-    ATimer * Prev;      // List inside world
+protected:
+    ATimer();
+    ~ATimer();
 
-    void Tick( AWorld * _World, float _TimeStep );
+private:
+    AWorld * pOwnerWorld;
+    ATimer * Next;      // List inside a world
+    ATimer * Prev;      // List inside a world
+    int State;
+    int NumPulses;
+    float ElapsedTime;
+
+    /** The tick function is called by owner world */
+    void Tick( float InTimeStep );
+
     void Trigger();
 };

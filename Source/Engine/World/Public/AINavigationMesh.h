@@ -313,7 +313,7 @@ class AAINavigationMesh {
     AN_FORBID_COPY( AAINavigationMesh )
 
 public:
-    AAINavigationMesh( AWorld * InOwnerWorld );
+    explicit AAINavigationMesh( AWorld * InOwnerWorld );
     ~AAINavigationMesh();
 
     /** Default query filter */

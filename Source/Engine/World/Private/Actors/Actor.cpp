@@ -73,12 +73,6 @@ void AActor::Destroy() {
     NextPendingKillActor = ParentWorld->PendingKillActors;
     ParentWorld->PendingKillActors = this;
 
-    // Unregister timers
-    for ( ATimer * timer = Timers ; timer ; timer = timer->P ) {
-        ParentWorld->UnregisterTimer( timer );
-    }
-    Timers = nullptr;
-
     DestroyComponents();
 
     EndPlay();
@@ -218,15 +212,11 @@ void AActor::InitializeComponents() {
 
 void AActor::BeginPlayComponents() {
     for ( AActorComponent * component : Components ) {
-        component->BeginPlay();
+        if ( !component->IsPendingKill() ) {
+            component->BeginPlay();
+        }
     }
 }
-
-//void AActor::EndPlayComponents() {
-//    for ( AActorComponent * component : Components ) {
-//        component->EndPlay();
-//    }
-//}
 
 void AActor::TickComponents( float _TimeStep ) {
     for ( AActorComponent * component : Components ) {
@@ -340,16 +330,26 @@ AActorComponent * AActor::LoadComponent( ADocument const & _Document, int _Field
 }
 #endif
 
-void AActor::RegisterTimer( ATimer * _Timer ) {
-    if ( bDuringConstruction ) {
-        GLogger.Printf( "Use AActor::RegisterTimer() in BeginPlay()\n" );
+#if 0
+void AActor::InitializeTimer( ATimer & _Timer ) {
+    if ( !bDuringConstruction )
+    {
+        GLogger.Printf( "Call AActor::InitializeTimer() in constructor\n" );
         return;
     }
-    AN_ASSERT( ParentWorld != nullptr );
-    _Timer->P = Timers;
-    Timers = _Timer;
-    ParentWorld->RegisterTimer( _Timer );
+
+    if ( _Timer.bInitialized )
+    {
+        GLogger.Printf( "AActor::InitializeTimer: timer already initialized\n" );
+        return;
+    }
+
+    _Timer.P = Timers;
+    Timers = &_Timer;
+
+    _Timer.bInitialized = true;
 }
+#endif
 
 void AActor::DrawDebug( ADebugDraw * _DebugDraw ) {
     for ( AActorComponent * component : Components ) {
@@ -362,6 +362,9 @@ void AActor::DrawDebug( ADebugDraw * _DebugDraw ) {
             _DebugDraw->DrawAxis( RootComponent->GetWorldTransformMatrix(), false );
         }
     }
+}
+
+void AActor::BeginPlay() {
 }
 
 void AActor::EndPlay() {

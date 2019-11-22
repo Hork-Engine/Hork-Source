@@ -67,9 +67,19 @@ ALevel * AActorComponent::GetLevel() const {
 //}
 
 void AActorComponent::RegisterComponent() {
+    if ( bPendingKill ) {
+        return;
+    }
+
+    if ( IsInitialized() ) {
+        return;
+    }
+
     InitializeComponent();
+    bInitialized = true;
 
     // FIXME: Call BeginPlay() from here?
+    BeginPlay();
 }
 
 void AActorComponent::Destroy() {

@@ -39,7 +39,6 @@ class APawn;
 class ASceneComponent;
 class ACameraComponent;
 class AActorComponent;
-class ATimer;
 
 using AArrayOfActorComponents = TPodArray< AActorComponent *, 8 >;
 
@@ -149,8 +148,8 @@ protected:
 
     AActor();
 
-    /** Register actor's timer. Call this in BeginPlay or after. */
-    void RegisterTimer( ATimer * _Timer );
+    /** Initialize actor's timer. Call this in constructor. */
+    //void InitializeTimer( ATimer & _Timer );
 
 protected:
 
@@ -161,7 +160,7 @@ protected:
     virtual void PostInitializeComponents() {}
 
     /** Called when actor enters the game */
-    virtual void BeginPlay() {}
+    virtual void BeginPlay();
 
     /** Called only from Destroy() method */
     virtual void EndPlay();
@@ -209,9 +208,6 @@ private:
     int IndexInLevelArrayOfActors = -1;
 
     AActor * NextPendingKillActor;
-
-    /** List of timers */
-    ATimer * Timers;
 
     AWorld * ParentWorld;
 

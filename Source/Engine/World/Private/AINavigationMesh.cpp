@@ -1917,12 +1917,7 @@ int ANavigationMeshComponent::FixupCorridor( SNavPolyRef * _Path, const int _NPa
 
 
 void AAINavigationMesh::AddNavigationGeometry( APhysicalBody * InPhysicalBody ) {
-    if ( INTRUSIVE_EXISTS( InPhysicalBody, NextNavBody, PrevNavBody, NavigationGeometryList, NavigationGeometryListTail ) ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-
-    INTRUSIVE_ADD( InPhysicalBody, NextNavBody, PrevNavBody, NavigationGeometryList, NavigationGeometryListTail );
+    INTRUSIVE_ADD_UNIQUE( InPhysicalBody, NextNavBody, PrevNavBody, NavigationGeometryList, NavigationGeometryListTail );
 }
 
 void AAINavigationMesh::RemoveNavigationGeometry( APhysicalBody * InPhysicalBody ) {

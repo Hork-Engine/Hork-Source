@@ -63,6 +63,8 @@ public:
     /** Remove reference */
     void RemoveRef();
 
+    int GetRefCount() const { return RefCount; }
+
     /** Set object debug/editor or ingame name */
     void SetObjectName( AString const & _Name ) { Name = _Name; }
 
@@ -402,7 +404,7 @@ struct TCallback< TReturn( TArgs... ) > {
 
     ABaseObject * GetObject() { return Object.GetObject(); }
 
-private:
+protected:
     TWeakRef< ABaseObject > Object;
     TReturn ( ABaseObject::*Method )(TArgs...);
 };

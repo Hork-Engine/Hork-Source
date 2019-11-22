@@ -169,7 +169,7 @@ public:
 
     btSoftRigidDynamicsWorld * DynamicsWorld;
 
-    APhysicsWorld( IPhysicsWorldInterface * InOwnerWorld );
+    explicit APhysicsWorld( IPhysicsWorldInterface * InOwnerWorld );
     ~APhysicsWorld();
 
     /** Trace collision bodies */
