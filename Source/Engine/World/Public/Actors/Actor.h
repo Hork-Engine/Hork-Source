@@ -148,9 +148,6 @@ protected:
 
     AActor();
 
-    /** Initialize actor's timer. Call this in constructor. */
-    //void InitializeTimer( ATimer & _Timer );
-
 protected:
 
     /** Called before components initialized */

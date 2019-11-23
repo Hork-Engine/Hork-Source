@@ -134,6 +134,7 @@ public:
     /** Remove worlds, marked pending kill */
     static void KickoffPendingKillWorlds();
 
+    /** Bake AI nav mesh */
     void BuildNavigation( SAINavigationConfig const & _NavigationConfig );
 
     /** Spawn a new actor */
@@ -504,7 +505,7 @@ Iterate world actors
 
 Example:
 
-TActorIterator2< FMyActor > it( this );
+TActorIterator2< FMyActor > it( GetWorld() );
 for ( FMyActor * actor = it.First() ; actor ; actor = it.Next() ) {
     ...
 }

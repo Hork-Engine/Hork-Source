@@ -330,27 +330,6 @@ AActorComponent * AActor::LoadComponent( ADocument const & _Document, int _Field
 }
 #endif
 
-#if 0
-void AActor::InitializeTimer( ATimer & _Timer ) {
-    if ( !bDuringConstruction )
-    {
-        GLogger.Printf( "Call AActor::InitializeTimer() in constructor\n" );
-        return;
-    }
-
-    if ( _Timer.bInitialized )
-    {
-        GLogger.Printf( "AActor::InitializeTimer: timer already initialized\n" );
-        return;
-    }
-
-    _Timer.P = Timers;
-    Timers = &_Timer;
-
-    _Timer.bInitialized = true;
-}
-#endif
-
 void AActor::DrawDebug( ADebugDraw * _DebugDraw ) {
     for ( AActorComponent * component : Components ) {
         component->DrawDebug( _DebugDraw );
