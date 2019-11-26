@@ -30,9 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <World/Public/Base/GameModuleInterface.h>
 #include <Runtime/Public/EngineInterface.h>
 #include <Runtime/Public/RuntimeCommandProcessor.h>
+#include <World/Public/Base/GameModuleInterface.h>
 #include <World/Public/Resource/FontAtlas.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <World/Public/World.h>
@@ -164,11 +164,13 @@ private:
     /** IEngineInterface interface. Message print callback. This must be a thread-safe function. */
     void Print( const char * _Message ) override;
 
-    // Process runtime event
+    /** Process runtime event */
     void ProcessEvent( struct SEvent const & _Event );
+
+    /** Process runtime events */
     void ProcessEvents();
 
-    // Send event to runtime
+    /** Send event to runtime */
     SEvent & SendEvent();
 
     void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp );
@@ -178,31 +180,33 @@ private:
     void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp );
     void OnChangedVideoModeEvent( struct SChangedVideoModeEvent const & _Event );
 
-    public:void UpdateInputAxes( float _Fract );private: // !!! Temp solution !!!
+    void UpdateInputAxes( float _Fract );
 
-    // Used to debug some features. Must be removed from release.
+    /** Used to debug some features. Must be removed from release. */
     void DeveloperKeys( struct SKeyEvent const & _Event );
-
-    // Tick the game
-    void UpdateWorlds();
-
-    void KickoffPendingKillWorlds();
 
     void DrawCanvas();
 
-    void UpdateImgui();
+    //void UpdateImgui();
 
     void ResetVideoMode();
 
     void ShowStats();
 
     SVideoMode VideoMode;
+
     float VideoAspectRatio = 4.0f/3.0f;
+
     float FramebufferWidth;
     float FramebufferHeight;
-    Float2 RetinaScale; // scale coordinates for retina displays
+
+    /** scale coordinates for retina displays */
+    Float2 RetinaScale;
+
     bool bInputFocus;
+
     bool bIsWindowVisible;
+
     int WindowPosX;
     int WindowPosY;
 
@@ -211,16 +215,16 @@ private:
 
     //class AImguiContext * ImguiContext;
 
-    // Frame update number
+    /** Frame update number */
     int FrameNumber = 0;
 
-    // Frame update duration
+    /** Frame update duration */
     float FrameDurationInSeconds = 0;
 
-    // Frame duration in microseconds
+    /** Frame duration in microseconds */
     int64_t FrameDuration;
 
-    // System time at frame start
+    /** System time at frame start */
     int64_t FrameTimeStamp;
 
     IGameModule * GameModule;

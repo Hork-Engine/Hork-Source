@@ -249,7 +249,7 @@ void AEngineInstance::DrawCanvas() {
             Desktop->GenerateDrawEvents( Canvas );
             if ( Desktop->IsCursorVisible() )
             {
-                Desktop->DrawCursor( Canvas, true );
+                Desktop->DrawCursor( Canvas );
             }
 
             // Draw halfscreen console
