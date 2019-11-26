@@ -95,6 +95,21 @@ public:
         static AColor4 color(0.0f,0.0f,0.0f,1.0f);
         return color;
     }
+
+    static AColor4 const & Red() {
+        static AColor4 color(1.0f,0.0f,0.0f,1.0f);
+        return color;
+    }
+
+    static AColor4 const & Green() {
+        static AColor4 color(0.0f,1.0f,0.0f,1.0f);
+        return color;
+    }
+
+    static AColor4 const & Blue() {
+        static AColor4 color(0.0f,0.0f,1.0f,1.0f);
+        return color;
+    }
 };
 
 //#define SRGB_GAMMA_APPROX
