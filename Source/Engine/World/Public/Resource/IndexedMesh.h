@@ -216,12 +216,12 @@ class ALightmapUV : public ABaseObject, public IGPUResourceOwner {
     friend class AIndexedMesh;
 
 public:
-    SMeshLightmapUV * GetVertices() { return Vertices.ToPtr(); }
-    SMeshLightmapUV const * GetVertices() const { return Vertices.ToPtr(); }
+    SMeshVertexUV * GetVertices() { return Vertices.ToPtr(); }
+    SMeshVertexUV const * GetVertices() const { return Vertices.ToPtr(); }
     int GetVertexCount() const { return Vertices.Size(); }
 
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
-    bool WriteVertexData( SMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation );
+    bool WriteVertexData( SMeshVertexUV const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
     ABufferGPU * GetGPUResource() { return VertexBufferGPU; }
 
@@ -240,7 +240,7 @@ private:
     ABufferGPU * VertexBufferGPU;
     AIndexedMesh * OwnerMesh;
     int IndexInArrayOfUVs = -1;
-    TPodArrayHeap< SMeshLightmapUV > Vertices;
+    TPodArrayHeap< SMeshVertexUV > Vertices;
     bool bDynamicStorage;
 };
 
@@ -412,10 +412,10 @@ public:
     SMeshVertex const * GetVertices() const { return Vertices.ToPtr(); }
 
     /** Get weights for vertex skinning */
-    SMeshVertexJoint * GetWeights() { return Weights.ToPtr(); }
+    SMeshVertexSkin * GetWeights() { return Weights.ToPtr(); }
 
     /** Get weights for vertex skinning */
-    SMeshVertexJoint const * GetWeights() const { return Weights.ToPtr(); }
+    SMeshVertexSkin const * GetWeights() const { return Weights.ToPtr(); }
 
     /** Get mesh indices */
     unsigned int * GetIndices() { return Indices.ToPtr(); }
@@ -451,7 +451,7 @@ public:
     bool SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLocation );
 
     /** Write joint weights at location and send them to GPU */
-    bool WriteJointWeights( SMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation );
+    bool WriteJointWeights( SMeshVertexSkin const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
     /** Write indices at location and send them to GPU */
     bool SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation );
@@ -509,7 +509,7 @@ private:
     ALightmapUVChannels LightmapUVs;
     AVertexLightChannels VertexLightChannels;
     TPodArrayHeap< SMeshVertex > Vertices;
-    TPodArrayHeap< SMeshVertexJoint > Weights;
+    TPodArrayHeap< SMeshVertexSkin > Weights;
     TPodArrayHeap< unsigned int > Indices;
     TPodArray< ASocketDef * > Sockets;
     TRef< ASkeleton > Skeleton;
@@ -556,14 +556,14 @@ AN_FORCEINLINE Float3 CalcBinormal( Float3 const & _Tangent, Float3 const & _Nor
 }
 
 BvAxisAlignedBox CalcBindposeBounds( SMeshVertex const * InVertices,
-                                     SMeshVertexJoint const * InWeights,
+                                     SMeshVertexSkin const * InWeights,
                                      int InVertexCount,
                                      ASkin const * InSkin,
                                      SJoint * InJoints,
                                      int InJointsCount );
 
 void CalcBoundingBoxes( SMeshVertex const * InVertices,
-                        SMeshVertexJoint const * InWeights,
+                        SMeshVertexSkin const * InWeights,
                         int InVertexCount,
                         ASkin const * InSkin,
                         SJoint const *  InJoints,

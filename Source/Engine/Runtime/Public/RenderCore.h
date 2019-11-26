@@ -39,10 +39,79 @@ SOFTWARE.
 // Common constants
 //
 
+/** Max render views per frame */
 constexpr int MAX_RENDER_VIEWS                      = 16;
+
+/** Max skeleton joints */
 constexpr int MAX_SKINNED_MESH_JOINTS               = 256;
+
+/** Max skinned meshes per frame */
 constexpr int MAX_SKINNED_MESH_INSTANCES_PER_FRAME  = 256;
+
+/** Max textures per material */
 constexpr int MAX_MATERIAL_TEXTURES                 = 15;
+
+/** Max cascades per light */
+constexpr int MAX_SHADOW_CASCADES = 4;
+
+/** Max directional lights per frame */
+constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
+
+/** Frustum width */
+constexpr int MAX_FRUSTUM_CLUSTERS_X = 16;
+
+/** Frustum height */
+constexpr int MAX_FRUSTUM_CLUSTERS_Y = 8;
+
+/** Frustum depth */
+constexpr int MAX_FRUSTUM_CLUSTERS_Z = 24;
+
+/** Frustum projection matrix ZNear */
+constexpr float FRUSTUM_CLUSTER_ZNEAR = 0.0125f;
+
+/** Frustum projection matrix ZFar */
+constexpr float FRUSTUM_CLUSTER_ZFAR = 512;
+
+/** Frustum projection matrix ZRange */
+constexpr float FRUSTUM_CLUSTER_ZRANGE = FRUSTUM_CLUSTER_ZFAR - FRUSTUM_CLUSTER_ZNEAR;
+
+/** Width of single cluster */
+constexpr float FRUSTUM_CLUSTER_WIDTH = 2.0f / MAX_FRUSTUM_CLUSTERS_X;
+
+/** Height of single cluster */
+constexpr float FRUSTUM_CLUSTER_HEIGHT = 2.0f / MAX_FRUSTUM_CLUSTERS_Y;
+
+constexpr int FRUSTUM_SLICE_OFFSET = 20;
+
+extern float FRUSTUM_SLICE_SCALE;
+
+extern float FRUSTUM_SLICE_BIAS;
+
+extern float FRUSTUM_SLICE_ZCLIP[MAX_FRUSTUM_CLUSTERS_Z + 1];
+
+/** Max lights, Max decals, Max probes per cluster */
+constexpr int MAX_CLUSTER_ITEMS = 256;
+
+/** Max lights per cluster */
+constexpr int MAX_CLUSTER_LIGHTS = MAX_CLUSTER_ITEMS;
+
+/** Max decals per cluster */
+constexpr int MAX_CLUSTER_DECALS = MAX_CLUSTER_ITEMS;
+
+/** Max probes per cluster */
+constexpr int MAX_CLUSTER_PROBES = MAX_CLUSTER_ITEMS;
+
+/** Max lights per frame. Indexed by 12 bit integer, limited by shader max uniform buffer size. */
+constexpr int MAX_LIGHTS = 768;//1024
+
+/** Max decals per frame. Indexed by 12 bit integer. */
+constexpr int MAX_DECALS = 1024;
+
+/** Max probes per frame. Indexed by 8 bit integer */
+constexpr int MAX_PROBES = 256;
+
+/** Total max items per frame. */
+constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 
 
 //
@@ -75,36 +144,40 @@ struct SMeshVertex {
     }
 };
 
-struct SMeshLightmapUV {
+struct SMeshVertexUV {
     Float2 TexCoord;
 
-    static SMeshLightmapUV Lerp( SMeshLightmapUV const & _Vertex1, SMeshLightmapUV const & _Vertex2, float _Value = 0.5f );
+    static SMeshVertexUV Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value = 0.5f );
+
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteObject( TexCoord );
+    }
+
+    void Read( IStreamBase & _Stream ) {
+        _Stream.ReadObject( TexCoord );
+    }
 };
 
 struct SMeshVertexLight {
     uint32_t VertexLight;
 
     static SMeshVertexLight Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value = 0.5f );
+
+    void Write( IStreamBase & _Stream ) const {
+        _Stream.WriteUInt32( VertexLight );
+    }
+
+    void Read( IStreamBase & _Stream ) {
+        VertexLight = _Stream.ReadUInt32();
+    }
 };
 
-struct SMeshVertexJoint {
+struct SMeshVertexSkin {
     byte   JointIndices[4];
     byte   JointWeights[4];
 
     void Write( IStreamBase & _Stream ) const {
-#if 0
-        _Stream.WriteUInt8( _Vertex.JointIndices[0] );
-        _Stream.WriteUInt8( _Vertex.JointIndices[1] );
-        _Stream.WriteUInt8( _Vertex.JointIndices[2] );
-        _Stream.WriteUInt8( _Vertex.JointIndices[3] );
-
-        _Stream.WriteUInt8( _Vertex.JointWeights[0] );
-        _Stream.WriteUInt8( _Vertex.JointWeights[1] );
-        _Stream.WriteUInt8( _Vertex.JointWeights[2] );
-        _Stream.WriteUInt8( _Vertex.JointWeights[3] );
-#else
         _Stream.WriteBuffer( JointIndices, 8 );
-#endif
     }
 
     void Read( IStreamBase & _Stream ) {
@@ -128,15 +201,15 @@ AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMes
 
     Result.Position   = _Vertex1.Position.Lerp( _Vertex2.Position, _Value );
     Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
-    Result.Tangent    = _Vertex1.Tangent.Lerp( _Vertex2.Tangent, _Value ).Normalized(); // TODO: Use spherical lerp?
-    Result.Handedness = _Value >= 0.5f ? _Vertex2.Handedness : _Vertex1.Handedness; // FIXME
-    Result.Normal     = _Vertex1.Normal.Lerp( _Vertex2.Normal, _Value ).Normalized(); // TODO: Use spherical lerp?
+    Result.Tangent    = _Vertex1.Tangent.Lerp( _Vertex2.Tangent, _Value ).Normalized();
+    Result.Handedness = _Value >= 0.5f ? _Vertex2.Handedness : _Vertex1.Handedness;
+    Result.Normal     = _Vertex1.Normal.Lerp( _Vertex2.Normal, _Value ).Normalized();
 
     return Result;
 }
 
-AN_FORCEINLINE SMeshLightmapUV SMeshLightmapUV::Lerp( SMeshLightmapUV const & _Vertex1, SMeshLightmapUV const & _Vertex2, float _Value ) {
-    SMeshLightmapUV Result;
+AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value ) {
+    SMeshVertexUV Result;
 
     Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
 
@@ -645,9 +718,6 @@ struct SHUDDrawList {
     SHUDDrawList *  pNext;
 };
 
-constexpr int MAX_SHADOW_CASCADES = 4;
-constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
-
 struct SDirectionalLightDef {
     Float4   ColorAndAmbientIntensity;
     Float3x3 Matrix;            // Light rotation matrix
@@ -725,43 +795,6 @@ struct SShadowRenderInstance {
 //
 // Frustum cluster data
 //
-
-constexpr int MAX_FRUSTUM_CLUSTERS_X = 16;
-constexpr int MAX_FRUSTUM_CLUSTERS_Y = 8;
-constexpr int MAX_FRUSTUM_CLUSTERS_Z = 24;
-constexpr float FRUSTUM_CLUSTER_ZNEAR = 0.0125f;
-constexpr float FRUSTUM_CLUSTER_ZFAR = 512;
-constexpr float FRUSTUM_CLUSTER_ZRANGE = FRUSTUM_CLUSTER_ZFAR - FRUSTUM_CLUSTER_ZNEAR;
-constexpr int FRUSTUM_SLICE_OFFSET = 20;
-constexpr float FRUSTUM_CLUSTER_WIDTH = 2.0f / MAX_FRUSTUM_CLUSTERS_X;
-constexpr float FRUSTUM_CLUSTER_HEIGHT = 2.0f / MAX_FRUSTUM_CLUSTERS_Y;
-extern float FRUSTUM_SLICE_SCALE;
-extern float FRUSTUM_SLICE_BIAS;
-extern float FRUSTUM_SLICE_ZCLIP[MAX_FRUSTUM_CLUSTERS_Z + 1];
-
-/** Max lights, Max decals, Max probes per cluster */
-constexpr int MAX_CLUSTER_ITEMS = 256;
-
-/** Max lights per cluster */
-constexpr int MAX_CLUSTER_LIGHTS = MAX_CLUSTER_ITEMS;
-
-/** Max decals per cluster */
-constexpr int MAX_CLUSTER_DECALS = MAX_CLUSTER_ITEMS;
-
-/** Max probes per cluster */
-constexpr int MAX_CLUSTER_PROBES = MAX_CLUSTER_ITEMS;
-
-/** Max lights per frame. Indexed by 12 bit integer, limited by shader max uniform buffer size. */
-constexpr int MAX_LIGHTS = 768;//1024
-
-/** Max decals per frame. Indexed by 12 bit integer. */
-constexpr int MAX_DECALS = 1024;
-
-/** Max probes per frame. Indexed by 8 bit integer */
-constexpr int MAX_PROBES = 256;
-
-/** Total max items per frame. */
-constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 
 // texture3d RG32UI
 // ivec2 Offset = texelFetch( ClusterLookup, TexCoord ).xy;

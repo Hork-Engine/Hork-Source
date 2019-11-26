@@ -85,7 +85,7 @@ void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     GRenderBackend->InitializeBuffer( IndexBufferGPU, Indices.Size() * sizeof( unsigned int ), bDynamicStorage );
 
     if ( _SkinnedMesh ) {
-        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexJoint ), bDynamicStorage );
+        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexSkin ), bDynamicStorage );
     }
 
     //for ( ALightmapUV * channel : LightmapUVs ) {
@@ -333,7 +333,7 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
     GRenderBackend->InitializeBuffer( IndexBufferGPU, Indices.Size() * sizeof( unsigned int ), bDynamicStorage );
 
     if ( bSkinnedMesh ) {
-        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexJoint ), bDynamicStorage );
+        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexSkin ), bDynamicStorage );
     }
 
     SendVertexDataToGPU( Vertices.Size(), 0 );
@@ -500,12 +500,12 @@ bool AIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLo
         return false;
     }
 
-    GRenderBackend->WriteBuffer( WeightsBufferGPU, _StartVertexLocation * sizeof( SMeshVertexJoint ), _VerticesCount * sizeof( SMeshVertexJoint ), Weights.ToPtr() + _StartVertexLocation );
+    GRenderBackend->WriteBuffer( WeightsBufferGPU, _StartVertexLocation * sizeof( SMeshVertexSkin ), _VerticesCount * sizeof( SMeshVertexSkin ), Weights.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
-bool AIndexedMesh::WriteJointWeights( SMeshVertexJoint const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+bool AIndexedMesh::WriteJointWeights( SMeshVertexSkin const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
     if ( !bSkinnedMesh ) {
         GLogger.Printf( "AIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n" );
         return false;
@@ -520,7 +520,7 @@ bool AIndexedMesh::WriteJointWeights( SMeshVertexJoint const * _Vertices, int _V
         return false;
     }
 
-    memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexJoint ) );
+    memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexSkin ) );
 
     return SendJointWeightsToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -806,7 +806,7 @@ void ALightmapUV::OnInitialize( int _NumVertices ) {
 
     Vertices.ResizeInvalidate( _NumVertices );
 
-    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshLightmapUV ), bDynamicStorage );
+    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertexUV ), bDynamicStorage );
 }
 
 bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
@@ -819,12 +819,12 @@ bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocat
         return false;
     }
 
-    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshLightmapUV ), _VerticesCount * sizeof( SMeshLightmapUV ), Vertices.ToPtr() + _StartVertexLocation );
+    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexUV ), _VerticesCount * sizeof( SMeshVertexUV ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
 
-bool ALightmapUV::WriteVertexData( SMeshLightmapUV const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+bool ALightmapUV::WriteVertexData( SMeshVertexUV const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
     if ( !_VerticesCount ) {
         return true;
     }
@@ -834,7 +834,7 @@ bool ALightmapUV::WriteVertexData( SMeshLightmapUV const * _Vertices, int _Verti
         return false;
     }
 
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshLightmapUV ) );
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexUV ) );
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -1281,7 +1281,7 @@ void CalcTangentSpace( SMeshVertex * _VertexArray, unsigned int _NumVerts, unsig
 
 
 BvAxisAlignedBox CalcBindposeBounds( SMeshVertex const * InVertices,
-                                     SMeshVertexJoint const * InWeights,
+                                     SMeshVertexSkin const * InWeights,
                                      int InVertexCount,
                                      ASkin const * InSkin,
                                      SJoint * InJoints,
@@ -1309,7 +1309,7 @@ BvAxisAlignedBox CalcBindposeBounds( SMeshVertex const * InVertices,
 
     for ( int v = 0 ; v < InVertexCount ; v++ ) {
         Float4 const position = Float4( InVertices[v].Position, 1.0f );
-        SMeshVertexJoint const & w = InWeights[v];
+        SMeshVertexSkin const & w = InWeights[v];
 
         const float weights[4] = { w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f };
 
@@ -1336,7 +1336,7 @@ BvAxisAlignedBox CalcBindposeBounds( SMeshVertex const * InVertices,
 }
 
 void CalcBoundingBoxes( SMeshVertex const * InVertices,
-                        SMeshVertexJoint const * InWeights,
+                        SMeshVertexSkin const * InWeights,
                         int InVertexCount,
                         ASkin const * InSkin,
                         SJoint const *  InJoints,
@@ -1393,7 +1393,7 @@ void CalcBoundingBoxes( SMeshVertex const * InVertices,
 
         for ( int v = 0 ; v < InVertexCount ; v++ ) {
             Float4 const position = Float4( InVertices[v].Position, 1.0f );
-            SMeshVertexJoint const & w = InWeights[v];
+            SMeshVertexSkin const & w = InWeights[v];
 
             const float weights[4] = { w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f };
 

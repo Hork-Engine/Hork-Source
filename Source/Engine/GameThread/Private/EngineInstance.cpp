@@ -61,10 +61,6 @@ ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
 AEngineInstance & GEngine = AEngineInstance::Inst();
 
 AEngineInstance::AEngineInstance() {
-    bInputFocus = false;
-    bIsWindowVisible = false;
-    WindowPosX = 0;
-    WindowPosY = 0;
 }
 
 static void PhysModulePrintFunction( const char * _Message ) {

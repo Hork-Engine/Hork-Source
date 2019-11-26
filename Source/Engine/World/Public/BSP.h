@@ -104,7 +104,7 @@ struct SBinarySpaceData {
     TPodArray< SSurfaceDef >       Surfaces;
     TPodArray< int >               Marksurfaces;
     TPodArray< SMeshVertex >       Vertices;
-    TPodArray< SMeshLightmapUV >   LightmapVerts;
+    TPodArray< SMeshVertexUV >     LightmapVerts;
     TPodArray< SMeshVertexLight >  VertexLight;
     TPodArray< unsigned int >      Indices;
 

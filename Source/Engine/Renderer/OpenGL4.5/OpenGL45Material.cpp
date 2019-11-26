@@ -64,7 +64,7 @@ void ADepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( SMeshVertexJoint );
+    vertexBinding[1].Stride = sizeof( SMeshVertexSkin );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -114,7 +114,7 @@ void ADepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_UBYTE4,
             VAM_INTEGER,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( SMeshVertexJoint, JointIndices )
+            GHI_STRUCT_OFS( SMeshVertexSkin, JointIndices )
         },
         {
             "InJointWeights",
@@ -123,7 +123,7 @@ void ADepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( SMeshVertexJoint, JointWeights )
+            GHI_STRUCT_OFS( SMeshVertexSkin, JointWeights )
         }
     };
 
@@ -236,7 +236,7 @@ void AWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( SMeshVertexJoint );
+    vertexBinding[1].Stride = sizeof( SMeshVertexSkin );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -287,7 +287,7 @@ void AWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_UBYTE4,
                 VAM_INTEGER,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( SMeshVertexJoint, JointIndices )
+                GHI_STRUCT_OFS( SMeshVertexSkin, JointIndices )
             },
             {
                 "InJointWeights",
@@ -296,7 +296,7 @@ void AWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
                 VAT_UBYTE4N,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( SMeshVertexJoint, JointWeights )
+                GHI_STRUCT_OFS( SMeshVertexSkin, JointWeights )
             }
         };
 
@@ -563,7 +563,7 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( SMeshVertexJoint );
+    vertexBinding[1].Stride = sizeof( SMeshVertexSkin );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if ( _Skinned ) {
@@ -611,7 +611,7 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_UBYTE4,
                 VAM_INTEGER,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( SMeshVertexJoint, JointIndices )
+                GHI_STRUCT_OFS( SMeshVertexSkin, JointIndices )
             },
             {
                 "InJointWeights",
@@ -620,7 +620,7 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
                 VAT_UBYTE4N,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                GHI_STRUCT_OFS( SMeshVertexJoint, JointWeights )
+                GHI_STRUCT_OFS( SMeshVertexSkin, JointWeights )
             }
         };
 
@@ -776,7 +776,7 @@ void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( SMeshLightmapUV, TexCoord )
+            GHI_STRUCT_OFS( SMeshVertexUV, TexCoord )
         }
     };
 
@@ -829,7 +829,7 @@ void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( SMeshLightmapUV );
+    vertexBinding[1].Stride = sizeof( SMeshVertexUV );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
@@ -1006,7 +1006,7 @@ void AShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     vertexBinding[1].InputSlot = 1;
-    vertexBinding[1].Stride = sizeof( SMeshVertexJoint );
+    vertexBinding[1].Stride = sizeof( SMeshVertexSkin );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
@@ -1056,7 +1056,7 @@ void AShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_UBYTE4,
             VAM_INTEGER,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( SMeshVertexJoint, JointIndices )
+            GHI_STRUCT_OFS( SMeshVertexSkin, JointIndices )
         },
         {
             "InJointWeights",
@@ -1065,7 +1065,7 @@ void AShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( SMeshVertexJoint, JointWeights )
+            GHI_STRUCT_OFS( SMeshVertexSkin, JointWeights )
         }
     };
 

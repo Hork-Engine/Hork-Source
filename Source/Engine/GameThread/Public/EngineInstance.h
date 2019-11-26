@@ -203,12 +203,12 @@ private:
     /** scale coordinates for retina displays */
     Float2 RetinaScale;
 
-    bool bInputFocus;
+    bool bInputFocus = false;
 
-    bool bIsWindowVisible;
+    bool bIsWindowVisible = false;
 
-    int WindowPosX;
-    int WindowPosY;
+    int WindowPosX = 0;
+    int WindowPosY = 0;
 
     float DPI_X;
     float DPI_Y;

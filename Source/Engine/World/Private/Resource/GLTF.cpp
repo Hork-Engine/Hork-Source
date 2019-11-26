@@ -177,7 +177,7 @@ static void unpack_mat4_to_mat3x4( cgltf_accessor * acc, Float3x4 * output, size
     }
 }
 
-static void unpack_weights( cgltf_accessor * acc, SMeshVertexJoint * weights ) {
+static void unpack_weights( cgltf_accessor * acc, SMeshVertexSkin * weights ) {
     float weight[ 4 ];
 
     if ( !acc || acc->type != cgltf_type_vec4 ) {
@@ -196,7 +196,7 @@ static void unpack_weights( cgltf_accessor * acc, SMeshVertexJoint * weights ) {
     }
 }
 
-static void unpack_joints( cgltf_accessor * acc, SMeshVertexJoint * weights ) {
+static void unpack_joints( cgltf_accessor * acc, SMeshVertexSkin * weights ) {
     float indices[ 4 ];
 
     if ( !acc || acc->type != cgltf_type_vec4 ) {

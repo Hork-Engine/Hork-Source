@@ -189,7 +189,7 @@ private:
     struct cgltf_data * m_Data;
     bool m_bSkeletal;
     TPodArray< SMeshVertex > m_Vertices;
-    TPodArray< SMeshVertexJoint > m_Weights;
+    TPodArray< SMeshVertexSkin > m_Weights;
     TPodArray< unsigned int > m_Indices;
     TPodArray< MeshInfo > m_Meshes;
     TPodArray< TextureInfo > m_Textures;
