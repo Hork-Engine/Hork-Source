@@ -35,11 +35,11 @@ SOFTWARE.
 #include <World/Public/Audio/AudioCodec/OggVorbisDecoder.h>
 #include <World/Public/Audio/AudioCodec/Mp3Decoder.h>
 #include <World/Public/Audio/AudioCodec/WavDecoder.h>
-#include <World/Public/World.h>
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Components/InputComponent.h>
 #include <World/Public/Canvas.h>
+#include <World/Public/World.h>
 
 #include <Runtime/Public/Runtime.h>
 
@@ -157,7 +157,7 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
 void AEngineInstance::Deinitialize() {
     GameModule->OnGameEnd();
 
-    Desktop = nullptr;
+    Desktop.Reset();
 
     AWorld::DestroyWorlds();
     AWorld::KickoffPendingKillWorlds();

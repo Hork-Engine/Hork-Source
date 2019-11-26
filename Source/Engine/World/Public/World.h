@@ -31,10 +31,10 @@ SOFTWARE.
 #pragma once
 
 #include "Level.h"
-#include "WorldRaycastQuery.h"
 #include "PhysicsWorld.h"
-#include "RenderWorld.h"
 #include "AINavigationMesh.h"
+#include "Render/WorldRaycastQuery.h"
+#include "Render/RenderWorld.h"
 
 class AActor;
 class APawn;

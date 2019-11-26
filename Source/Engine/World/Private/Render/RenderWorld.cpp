@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <World/Public/RenderWorld.h>
+#include <World/Public/Render/RenderWorld.h>
 #include <World/Public/World.h>
 #include <World/Public/Components/SkinnedComponent.h>
 #include <World/Public/Components/DirectionalLightComponent.h>

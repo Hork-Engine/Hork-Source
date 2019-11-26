@@ -39,8 +39,6 @@ SOFTWARE.
 #include <Core/Public/BV/BvIntersect.h>
 #include <Runtime/Public/Runtime.h>
 
-#include "ShadowCascade.h"
-
 ARuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );

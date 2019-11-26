@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <World/Public/WorldRaycastQuery.h>
-#include <World/Public/RenderWorld.h>
+#include <World/Public/Render/WorldRaycastQuery.h>
+#include <World/Public/Render/RenderWorld.h>
 #include <World/Public/Components/MeshComponent.h>
 
 SWorldRaycastFilter AWorldRaycastQuery::DefaultRaycastFilter;

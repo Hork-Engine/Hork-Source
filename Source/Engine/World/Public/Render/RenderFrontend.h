@@ -34,8 +34,6 @@ SOFTWARE.
 #include <World/Public/Base/DebugRenderer.h>
 #include <World/Public/Canvas.h>
 
-class WDesktop;
-
 struct SRenderFrontendStat {
     int PolyCount;
     int ShadowMapPolyCount;
