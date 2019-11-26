@@ -28,18 +28,20 @@ SOFTWARE.
 
 */
 
-#include <GameThread/Public/RenderFrontend.h>
-#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/Render/RenderFrontend.h>
 #include <World/Public/World.h>
 #include <World/Public/Components/CameraComponent.h>
 #include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/Components/InputComponent.h>
 #include <World/Public/Actors/PlayerController.h>
+#include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 ARenderFrontend & GRenderFrontend = ARenderFrontend::Inst();
 
 ARenderFrontend::ARenderFrontend() {
+    FrameNumber = 0;
 }
 
 struct SInstanceSortFunction {
@@ -119,10 +121,10 @@ struct SShadowInstanceSortFunction {
     }
 } ShadowInstanceSortFunction;
 
-void ARenderFrontend::Render() {
+void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData = GRuntime.GetFrameData();
 
-    FrameData->FrameNumber = GEngine.GetFrameNumber();
+    FrameData->FrameNumber = FrameNumber;
     FrameData->DrawListHead = nullptr;
     FrameData->DrawListTail = nullptr;
 
@@ -134,41 +136,22 @@ void ARenderFrontend::Render() {
     MaxViewportHeight = 0;
     NumViewports = 0;
 
-    if ( GEngine.IsWindowVisible() )
-    {
-        VisMarker++;
+    VisMarker++;
 
-        // Render canvas
-        RenderCanvas( &GEngine.Canvas );
+    RenderCanvas( InCanvas );
 
-        // Draw cursor just right before rendering to reduce input latency
-        WDesktop * desktop = GEngine.GetDesktop();
-        if ( desktop && desktop->IsCursorVisible() )
-        {
-            GEngine.Canvas.Begin( GEngine.Canvas.Width, GEngine.Canvas.Height );
-            desktop->DrawCursor( GEngine.Canvas );
-            GEngine.Canvas.End();
-
-            // Render cursor
-            RenderCanvas( &GEngine.Canvas );
-        }
-
-        //RenderImgui();
-    }
+    //RenderImgui();
 
     FrameData->AllocSurfaceWidth = MaxViewportWidth;
     FrameData->AllocSurfaceHeight = MaxViewportHeight;
-    FrameData->CanvasWidth = GEngine.Canvas.Width;
-    FrameData->CanvasHeight = GEngine.Canvas.Height;
+    FrameData->CanvasWidth = InCanvas->Width;
+    FrameData->CanvasHeight = InCanvas->Height;
     FrameData->NumViews = NumViewports;
     FrameData->Instances.Clear();
     FrameData->ShadowInstances.Clear();
     FrameData->DirectionalLights.Clear();
     FrameData->Lights.Clear();
     FrameData->ShadowCascadePoolSize = 0;
-    FrameData->DbgVertices.Clear();
-    FrameData->DbgIndices.Clear();
-    FrameData->DbgCmds.Clear();
 
     DebugDraw.Reset();
 
@@ -177,14 +160,15 @@ void ARenderFrontend::Render() {
     }
 
     Stat.FrontendTime = GRuntime.SysMilliseconds() - Stat.FrontendTime;
+
+    FrameNumber++;
 }
 
 void ARenderFrontend::RenderView( int _Index ) {
     SViewport const * viewport = Viewports[ _Index ];
     APlayerController * controller = viewport->PlayerController;
-    ACameraComponent * camera = controller->GetViewCamera();
     ARenderingParameters * RP = controller->GetRenderingParameters();
-    AWorld * world = camera->GetWorld();
+    AWorld * world = controller->GetWorld();
     SRenderView * view = &FrameData->RenderViews[_Index];
 
     VisMarker++;
@@ -194,28 +178,41 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->ViewIndex = _Index;
     view->Width = viewport->Width;
     view->Height = viewport->Height;
-    view->ViewPosition = camera->GetWorldPosition();
-    view->ViewRotation = camera->GetWorldRotation();
-    view->ViewRightVec = camera->GetWorldRightVector();
-    view->ViewUpVec = camera->GetWorldUpVector();
-    view->ViewDir = camera->GetWorldForwardVector();
-    view->ViewMatrix = camera->GetViewMatrix();
-    view->ViewZNear = camera->GetZNear();
-    view->ViewZFar = camera->GetZFar();
-    view->ViewOrthoMins = camera->GetOrthoMins();
-    view->ViewOrthoMaxs = camera->GetOrthoMaxs();
-    camera->GetEffectiveFov( view->ViewFovX, view->ViewFovY );
-    view->bPerspective = camera->IsPerspective();
-    view->MaxVisibleDistance = camera->GetZFar(); // TODO: расчитать дальность до самой дальней точки на экране (по баундингам static&skinned mesh)
-    view->NormalToViewMatrix = Float3x3( view->ViewMatrix );
-    view->ProjectionMatrix = camera->GetProjectionMatrix();
-    view->InverseProjectionMatrix = camera->IsPerspective() ?
-                view->ProjectionMatrix.PerspectiveProjectionInverseFast()
-              : view->ProjectionMatrix.OrthoProjectionInverseFast();
+
+    ACameraComponent * camera = nullptr;
+    APawn * pawn = controller->GetPawn();
+    if ( pawn )
+    {
+        camera = pawn->GetPawnCamera();
+    }
+
+    if ( camera )
+    {
+        view->ViewPosition = camera->GetWorldPosition();
+        view->ViewRotation = camera->GetWorldRotation();
+        view->ViewRightVec = camera->GetWorldRightVector();
+        view->ViewUpVec = camera->GetWorldUpVector();
+        view->ViewDir = camera->GetWorldForwardVector();
+        view->ViewMatrix = camera->GetViewMatrix();
+        view->ViewZNear = camera->GetZNear();
+        view->ViewZFar = camera->GetZFar();
+        view->ViewOrthoMins = camera->GetOrthoMins();
+        view->ViewOrthoMaxs = camera->GetOrthoMaxs();
+        camera->GetEffectiveFov( view->ViewFovX, view->ViewFovY );
+        view->bPerspective = camera->IsPerspective();
+        view->MaxVisibleDistance = camera->GetZFar(); // TODO: расчитать дальность до самой дальней точки на экране (по баундингам static&skinned mesh)
+        view->NormalToViewMatrix = Float3x3( view->ViewMatrix );
+        view->ProjectionMatrix = camera->GetProjectionMatrix();
+        view->InverseProjectionMatrix = camera->IsPerspective() ?
+                    view->ProjectionMatrix.PerspectiveProjectionInverseFast()
+                  : view->ProjectionMatrix.OrthoProjectionInverseFast();
+        camera->MakeClusterProjectionMatrix( view->ClusterProjectionMatrix );
+    }
+
     view->ModelviewProjection = view->ProjectionMatrix * view->ViewMatrix;
     view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed();
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
-    camera->MakeClusterProjectionMatrix( view->ClusterProjectionMatrix );
+    
     view->BackgroundColor = RP ? RP->BackgroundColor.GetRGB() : Float3(1.0f);
     view->bClearBackground = RP ? RP->bClearBackground : true;
     view->bWireframe = RP ? RP->bWireframe : false;
@@ -230,61 +227,63 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
 
-    world->E_OnPrepareRenderFrontend.Dispatch( camera, VisMarker );
-
-    // Generate debug draw commands
-    if ( RP && RP->bDrawDebug )
+    if ( camera )
     {
-        DebugDraw.BeginRenderView( view );
-        world->DrawDebug( &DebugDraw );
-        DebugDraw.EndRenderView();
+        world->E_OnPrepareRenderFrontend.Dispatch( camera, VisMarker );
+
+        // Generate debug draw commands
+        if ( RP && RP->bDrawDebug )
+        {
+            DebugDraw.BeginRenderView( view );
+            world->DrawDebug( &DebugDraw );
+            DebugDraw.EndRenderView();
+        }
+
+        SRenderFrontendDef def;
+        def.View = view;
+        def.Frustum = &camera->GetFrustum();
+        def.RenderingMask = RP ? RP->RenderingMask : ~0;
+        def.VisMarker = VisMarker;
+        def.PolyCount = 0;
+        def.ShadowMapPolyCount = 0;
+
+        world->GetRenderWorld().RenderFrontend_AddInstances( &def );
+        world->GetRenderWorld().RenderFrontend_AddDirectionalShadowmapInstances( &def );
+
+        Stat.PolyCount += def.PolyCount;
+        Stat.ShadowMapPolyCount += def.ShadowMapPolyCount;
+
+        //int64_t t = GRuntime.SysMilliseconds();
+
+        StdSort( FrameData->Instances.Begin() + view->FirstInstance,
+                 FrameData->Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
+                 InstanceSortFunction );
+
+        StdSort( FrameData->ShadowInstances.Begin() + view->FirstShadowInstance,
+                 FrameData->ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
+                 ShadowInstanceSortFunction );
+
+        //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, RV->InstanceCount );
     }
-
-    SRenderFrontendDef def;
-    def.View = view;
-    def.Frustum = &camera->GetFrustum();
-    def.RenderingMask = RP ? RP->RenderingMask : ~0;
-    def.VisMarker = VisMarker;
-    def.PolyCount = 0;
-    def.ShadowMapPolyCount = 0;
-
-    world->GetRenderWorld().RenderFrontend_AddInstances( &def );
-    world->GetRenderWorld().RenderFrontend_AddDirectionalShadowmapInstances( &def );
-
-    Stat.PolyCount += def.PolyCount;
-    Stat.ShadowMapPolyCount += def.ShadowMapPolyCount;
-
-    //int64_t t = GRuntime.SysMilliseconds();
-
-    StdSort( FrameData->Instances.Begin() + view->FirstInstance,
-             FrameData->Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
-             InstanceSortFunction );
-
-    StdSort( FrameData->ShadowInstances.Begin() + view->FirstShadowInstance,
-             FrameData->ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
-             ShadowInstanceSortFunction );
-
-    //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, RV->InstanceCount );
 }
 
-void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
+void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
     SRenderFrame * frameData = GRuntime.GetFrameData();
 
-    ImDrawList const * srcList = &_Canvas->GetDrawList();
+    ImDrawList const * srcList = &InCanvas->GetDrawList();
 
     if ( srcList->VtxBuffer.empty() ) {
         return;
     }
 
+    // Allocate draw list
     SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime.AllocFrameMem( sizeof( SHUDDrawList ) );
     if ( !drawList ) {
         return;
     }
 
+    // Copy vertex data
     drawList->VerticesCount = srcList->VtxBuffer.size();
-    drawList->IndicesCount = srcList->IdxBuffer.size();
-    drawList->CommandsCount = srcList->CmdBuffer.size();
-
     int bytesCount = sizeof( SHUDDrawVert ) * drawList->VerticesCount;
     drawList->Vertices = ( SHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Vertices ) {
@@ -292,54 +291,86 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
     }
     memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
 
+    // Copy index data
+    drawList->IndicesCount = srcList->IdxBuffer.size();
     bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
     drawList->Indices = ( unsigned short * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Indices ) {
         return;
     }
-
     memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
 
+    // Allocate commands
+    drawList->CommandsCount = srcList->CmdBuffer.size();
     bytesCount = sizeof( SHUDDrawCmd ) * drawList->CommandsCount;
     drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
     if ( !drawList->Commands ) {
         return;
     }
 
-    int firstIndex = 0;
+    int startIndexLocation = 0;
 
+    // Parse ImDrawCmd, create HUDDrawCmd-s
     SHUDDrawCmd * dstCmd = drawList->Commands;
     for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
 
+        // Copy clip rect
         memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
+
+        // Copy index buffer offsets
         dstCmd->IndexCount = pCmd->ElemCount;
-        dstCmd->StartIndexLocation = firstIndex;
+        dstCmd->StartIndexLocation = startIndexLocation;
+
+        // Unpack command type
         dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
+
+        // Unpack blending type
         dstCmd->Blending = (EColorBlending)( ( pCmd->BlendingState >> 8 ) & 0xff );
+
+        // Unpack texture sampler type
         dstCmd->SamplerType = (EHUDSamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
 
-        firstIndex += pCmd->ElemCount;
+        // Calc index location for next command
+        startIndexLocation += pCmd->ElemCount;
 
-        AN_ASSERT( pCmd->TextureId );
+        // TextureId can contain a viewport index, material instance or gpu texture
+        if ( !pCmd->TextureId )
+        {
+            GLogger.Printf( "ARenderFrontend::RenderCanvas: invalid command (TextureId==0)\n" );
 
-        switch ( dstCmd->Type ) {
+            drawList->CommandsCount--;
+
+            continue;
+        }
+
+        switch ( dstCmd->Type )
+        {
         case HUD_DRAW_CMD_VIEWPORT:
         {
-            if ( NumViewports >= MAX_RENDER_VIEWS ) {
-                GLogger.Printf( "ARenderFrontend: MAX_RENDER_VIEWS hit\n" );
+            // Check MAX_RENDER_VIEWS limit
+            if ( NumViewports >= MAX_RENDER_VIEWS )
+            {
+                GLogger.Printf( "ARenderFrontend::RenderCanvas: MAX_RENDER_VIEWS hit\n" );
+
                 drawList->CommandsCount--;
+
                 continue;
             }
 
-            SViewport const * viewport = &_Canvas->GetViewports()[ (size_t)pCmd->TextureId - 1 ];
+            // Unpack viewport
+            SViewport const * viewport = &InCanvas->GetViewports()[ (size_t)pCmd->TextureId - 1 ];
 
+            // Compute viewport index in array of viewports
             dstCmd->ViewportIndex = NumViewports++;
 
+            // Save pointer to viewport to array of viewports
             Viewports[ dstCmd->ViewportIndex ] = viewport;
 
+            // Calc max viewport size
             MaxViewportWidth = Math::Max( MaxViewportWidth, viewport->Width );
             MaxViewportHeight = Math::Max( MaxViewportHeight, viewport->Height );
 
+            // Switch to next cmd
             dstCmd++;
 
             break;
@@ -347,21 +378,41 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
 
         case HUD_DRAW_CMD_MATERIAL:
         {
+            // Unpack material instance
             AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( pCmd->TextureId );
+
+            // In normal case materialInstance never be null
             AN_ASSERT( materialInstance );
 
+            // Get material
             AMaterial * material = materialInstance->GetMaterial();
+
+            // GetMaterial never return null
             AN_ASSERT( material );
 
-            if ( material->GetType() != MATERIAL_TYPE_HUD ) {
+            // Check material type
+            if ( material->GetType() != MATERIAL_TYPE_HUD )
+            {
+                GLogger.Printf( "ARenderFrontend::RenderCanvas: expected MATERIAL_TYPE_HUD\n" );
+
                 drawList->CommandsCount--;
+
                 continue;
             }
 
+            // Update material frame data
             dstCmd->MaterialFrameData = materialInstance->RenderFrontend_Update( VisMarker );
 
-            AN_ASSERT( dstCmd->MaterialFrameData );
+            if ( !dstCmd->MaterialFrameData )
+            {
+                // Out of frame memory?
 
+                drawList->CommandsCount--;
+
+                continue;
+            }
+
+            // Switch to next cmd
             dstCmd++;
 
             break;
@@ -369,7 +420,10 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
         case HUD_DRAW_CMD_TEXTURE:
         case HUD_DRAW_CMD_ALPHA:
         {
+            // Unpack texture
             dstCmd->Texture = (ATextureGPU *)pCmd->TextureId;
+
+            // Switch to next cmd
             dstCmd++;
             break;
         }
@@ -379,6 +433,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
         }
     }
 
+    // Add drawList to common list
     SHUDDrawList * prev = frameData->DrawListTail;
     drawList->pNext = nullptr;
     frameData->DrawListTail = drawList;
@@ -388,6 +443,8 @@ void ARenderFrontend::RenderCanvas( ACanvas * _Canvas ) {
         frameData->DrawListHead = drawList;
     }
 }
+
+#if 0
 
 void ARenderFrontend::RenderImgui() {
     ImDrawData * drawData = ImGui::GetDrawData();
@@ -417,7 +474,7 @@ void ARenderFrontend::RenderImgui() {
                 const ImU32 col_border = IM_COL32( 0, 0, 0, 255 );          // Black
                 const ImU32 col_fill = IM_COL32( 255, 255, 255, 255 );    // White
 
-                Float2 pos = GEngine.GetCursorPosition();
+                Float2 pos = AInputComponent::GetCursorPosition();
                 float scale = 1.0f;
 
                 ImFontAtlas* font_atlas = drawList->_Data->Font->ContainerAtlas;
@@ -482,19 +539,19 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         return;
     }
 
-    int firstIndex = 0;
+    int startIndexLocation = 0;
 
     SHUDDrawCmd * dstCmd = drawList->Commands;
     for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
 
         memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
         dstCmd->IndexCount = pCmd->ElemCount;
-        dstCmd->StartIndexLocation = firstIndex;
+        dstCmd->StartIndexLocation = startIndexLocation;
         dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
         dstCmd->Blending = (EColorBlending)( ( pCmd->BlendingState >> 8 ) & 0xff );
         dstCmd->SamplerType = (EHUDSamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
 
-        firstIndex += pCmd->ElemCount;
+        startIndexLocation += pCmd->ElemCount;
 
         AN_ASSERT( pCmd->TextureId );
 
@@ -547,3 +604,5 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         frameData->DrawListHead = drawList;
     }
 }
+
+#endif

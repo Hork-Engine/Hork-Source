@@ -290,6 +290,12 @@ public:
     AInputComponent * GetNext() { return Next; }
     AInputComponent * GetPrev() { return Prev; }
 
+    /** Set cursor position */
+    static void SetCursorPosition( float _X, float _Y ) { CursorPosition.X = _X; CursorPosition.Y = _Y; }
+
+    /** Get cursor position */
+    static Float2 const & GetCursorPosition() { return CursorPosition; }
+
     /** Used by EngineInstance during main game tick to update joystick state */
     static void SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected );
 
@@ -360,6 +366,8 @@ protected:
     // Array of pressed keys
     SPressedKey PressedKeys[ MAX_PRESSED_KEYS ];
     int NumPressedKeys;
+
+    static Float2 CursorPosition;
 
     // Index to PressedKeys array or -1 if button is up
     char * DeviceButtonDown[ MAX_INPUT_DEVICES ];

@@ -363,6 +363,8 @@ static AInputComponentStatic Static;
 AInputComponent * AInputComponent::InputComponents = nullptr;
 AInputComponent * AInputComponent::InputComponentsTail = nullptr;
 
+Float2 AInputComponent::CursorPosition( 0.0f );
+
 const char * AInputHelper::TranslateDevice( int _DevId ) {
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return "UNKNOWN";
@@ -1478,9 +1480,9 @@ AInputAxis::AInputAxis() {
 }
 
 void AInputAxis::Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId ) {
-    Parent->MapAxis( GetObjectNameConstChar(), _DevId, _KeyToken, _AxisScale, _ControllerId );
+    Parent->MapAxis( GetObjectNameCStr(), _DevId, _KeyToken, _AxisScale, _ControllerId );
 }
 
 void AInputAction::Map( int _DevId, int _KeyToken, int _ModMask, int _ControllerId ) {
-    Parent->MapAction( GetObjectNameConstChar(), _DevId, _KeyToken, _ModMask, _ControllerId );
+    Parent->MapAction( GetObjectNameCStr(), _DevId, _KeyToken, _ModMask, _ControllerId );
 }

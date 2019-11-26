@@ -31,8 +31,10 @@ SOFTWARE.
 #pragma once
 
 #include <Runtime/Public/RenderCore.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 #include <World/Public/Canvas.h>
+
+class WDesktop;
 
 struct SRenderFrontendStat {
     int PolyCount;
@@ -45,19 +47,22 @@ class ARenderFrontend
     AN_SINGLETON( ARenderFrontend )
 
 public:
-    void Render();
+    void Render( ACanvas * InCanvas );
+
+    //int GetFrameNumber() const { return FrameNumber; }
 
     SRenderFrontendStat const & GetStat() const { return Stat; }
 
 private:
-    void RenderCanvas( ACanvas * _Canvas );
-    void RenderImgui();
-    void RenderImgui( struct ImDrawList const * _DrawList );
+    void RenderCanvas( ACanvas * InCanvas );
+    //void RenderImgui();
+    //void RenderImgui( struct ImDrawList const * _DrawList );
     void RenderView( int _Index );
 
     SRenderFrame * FrameData;
-    ADebugDraw DebugDraw;
+    ADebugRenderer DebugDraw;
     int VisMarker = 0;
+    int FrameNumber;
 
     SRenderFrontendStat Stat;
 

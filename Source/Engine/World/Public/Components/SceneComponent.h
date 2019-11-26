@@ -252,7 +252,7 @@ protected:
 
     void DeinitializeComponent() override;
 
-    void DrawDebug( ADebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
 
     virtual void OnTransformDirty() {}
 

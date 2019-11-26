@@ -46,8 +46,6 @@ AN_CLASS_META( AVertexLight )
 AN_CLASS_META( ATreeAABB )
 AN_CLASS_META( ASocketDef )
 
-ARuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AIndexedMesh::AIndexedMesh() {
@@ -459,7 +457,7 @@ bool AIndexedMesh::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLoca
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "AIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -474,7 +472,7 @@ bool AIndexedMesh::WriteVertexData( SMeshVertex const * _Vertices, int _Vertices
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "AIndexedMesh::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -498,7 +496,7 @@ bool AIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLo
     }
 
     if ( _StartVertexLocation + _VerticesCount > Weights.Size() ) {
-        GLogger.Printf( "AIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -518,7 +516,7 @@ bool AIndexedMesh::WriteJointWeights( SMeshVertexJoint const * _Vertices, int _V
     }
 
     if ( _StartVertexLocation + _VerticesCount > Weights.Size() ) {
-        GLogger.Printf( "AIndexedMesh::WriteJointWeights: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::WriteJointWeights: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -533,7 +531,7 @@ bool AIndexedMesh::SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation 
     }
 
     if ( _StartIndexLocation + _IndexCount > Indices.Size() ) {
-        GLogger.Printf( "AIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -548,7 +546,7 @@ bool AIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCoun
     }
 
     if ( _StartIndexLocation + _IndexCount > Indices.Size() ) {
-        GLogger.Printf( "AIndexedMesh::WriteIndexData: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "AIndexedMesh::WriteIndexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -817,7 +815,7 @@ bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocat
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -832,7 +830,7 @@ bool ALightmapUV::WriteVertexData( SMeshLightmapUV const * _Vertices, int _Verti
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "ALightmapUV::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "ALightmapUV::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -876,7 +874,7 @@ bool AVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLoca
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "AVertexLight::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "AVertexLight::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -891,7 +889,7 @@ bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _Ver
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "AVertexLight::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameConstChar() );
+        GLogger.Printf( "AVertexLight::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
@@ -1214,25 +1212,26 @@ bool AIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _Ray
     return ret;
 }
 
-void AIndexedMesh::DrawDebug( ADebugDraw * _DebugDraw ) {
-    if ( RVDrawIndexedMeshBVH ) {
-        for ( AIndexedMeshSubpart * subpart : Subparts ) {
-            subpart->DrawBVH( _DebugDraw );
-        }
+void AIndexedMesh::DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix ) {
+    for ( AIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->DrawBVH( InRenderer, _TransformMatrix );
     }
 }
 
-void AIndexedMeshSubpart::DrawBVH( ADebugDraw * _DebugDraw ) {
+void AIndexedMeshSubpart::DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix ) {
     if ( !AABBTree ) {
         return;
     }
 
-    _DebugDraw->SetDepthTest( false );
-    _DebugDraw->SetColor( AColor4::White() );
+    InRenderer->SetDepthTest( false );
+    InRenderer->SetColor( AColor4::White() );
+
+    BvOrientedBox orientedBox;
 
     for ( SNodeAABB const & n : AABBTree->GetNodes() ) {
         if ( n.IsLeaf() ) {
-            _DebugDraw->DrawAABB( n.Bounds );
+            orientedBox.FromAxisAlignedBox( n.Bounds, _TransformMatrix );
+            InRenderer->DrawOBB( orientedBox );
         }
     }
 }

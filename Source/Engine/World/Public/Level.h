@@ -211,7 +211,7 @@ private:
     void Tick( float _TimeStep );
 
     // Draw debug. Called by owner world.
-    void DrawDebug( ADebugDraw * _DebugDraw );
+    void DrawDebug( ADebugRenderer * InRenderer );
 
     // Callback on add level to world. Called by owner world.
     void OnAddLevelToWorld();

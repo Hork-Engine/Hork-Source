@@ -91,7 +91,7 @@ protected:
     void OnMeshChanged() override;
     void OnLazyBoundsUpdate() override;
 
-    void DrawDebug( ADebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
 
 private:
     void UpdateControllersIfDirty();

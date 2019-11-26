@@ -35,19 +35,21 @@ SOFTWARE.
 #include <Core/Public/BV/BvAxisAlignedBox.h>
 #include <Core/Public/BV/BvOrientedBox.h>
 
-class ADebugDraw {
-    AN_FORBID_COPY( ADebugDraw )
+class ADebugRenderer {
+    AN_FORBID_COPY( ADebugRenderer )
 
 public:
-    ADebugDraw();
+    ADebugRenderer();
 
-    ~ADebugDraw();
+    ~ADebugRenderer();
 
     void Reset();
 
     void BeginRenderView( SRenderView * _View );
 
     void EndRenderView();
+
+    SRenderView const * GetRenderView() const { return pView; }
 
     void SetDepthTest( bool _DepthTest );
 

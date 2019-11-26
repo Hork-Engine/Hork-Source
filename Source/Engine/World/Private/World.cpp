@@ -108,23 +108,6 @@ void AWorld::Destroy() {
     NextPendingKillWorld = PendingKillWorlds;
     PendingKillWorlds = this;
 
-#if 0
-    for ( int i = 0 ; i < 2 ; i++ ) {
-        TPodArray< SCollisionContact > & currentContacts = CollisionContacts[ i ];
-        THash<> & contactHash = ContactHash[ i ];
-
-        for ( SCollisionContact & contact : currentContacts ) {
-            contact.ActorA->RemoveRef();
-            contact.ActorB->RemoveRef();
-            contact.ComponentA->RemoveRef();
-            contact.ComponentB->RemoveRef();
-        }
-
-        currentContacts.Clear();
-        contactHash.Clear();
-    }
-#endif
-
     DestroyActors();
     KickoffPendingKillObjects();
 
@@ -372,7 +355,7 @@ void AWorld::UpdateTimers( float _TimeStep )
             timer->Unregister();
         }
     }
-    GLogger.Printf( "Timers in world %d\n", i );
+    //GLogger.Printf( "Timers in world %d\n", i );
     bDuringTimerTick = false;
 
     for ( STimerCmd & cmd : TimerCmd )
@@ -722,19 +705,20 @@ void AWorld::RemoveTimer( ATimer * _Timer ) {
     }
 }
 
-void AWorld::DrawDebug( ADebugDraw * _DebugDraw ) {
-
+void AWorld::DrawDebug( ADebugRenderer * InRenderer ) {
     for ( ALevel * level : ArrayOfLevels ) {
-        level->DrawDebug( _DebugDraw );
+        level->DrawDebug( InRenderer );
     }
 
     for ( AActor * actor : Actors ) {
-        actor->DrawDebug( _DebugDraw );
+        actor->DrawDebug( InRenderer );
     }
 
-    PhysicsWorld.DrawDebug( _DebugDraw );
+    RenderWorld.DrawDebug( InRenderer );
 
-    NavigationMesh.DrawDebug( _DebugDraw );
+    PhysicsWorld.DrawDebug( InRenderer );
+
+    NavigationMesh.DrawDebug( InRenderer );
 }
 
 AWorld * AWorld::CreateWorld() {

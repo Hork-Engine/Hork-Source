@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <World/Public/Components/CameraComponent.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/ConvexHull.h>
@@ -45,7 +45,6 @@ SOFTWARE.
 #define DEFAULT_PERSPECTIVE_ADJUST CAMERA_ADJUST_FOV_X_ASPECT_RATIO
 
 ARuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawFrustumClusters( _CTS( "DrawFrustumClusters" ), _CTS( "1" ), VAR_CHEAT );
 
 AN_CLASS_META( ACameraComponent )
 
@@ -64,127 +63,6 @@ ACameraComponent::ACameraComponent() {
     bViewMatrixDirty = true;
     bFrustumDirty = true;
     bProjectionDirty = true;
-}
-
-void ACameraComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
-
-    if ( RVDrawCameraFrustum ) {
-        Float3 vectorTR;
-        Float3 vectorTL;
-        Float3 vectorBR;
-        Float3 vectorBL;
-        Float3 origin = GetWorldPosition();
-        Float3 v[4];
-        Float3 faces[4][3];
-        float rayLength = 32;
-
-        Frustum.CornerVector_TR( vectorTR );
-        Frustum.CornerVector_TL( vectorTL );
-        Frustum.CornerVector_BR( vectorBR );
-        Frustum.CornerVector_BL( vectorBL );
-
-        v[0] = origin + vectorTR * rayLength;
-        v[1] = origin + vectorBR * rayLength;
-        v[2] = origin + vectorBL * rayLength;
-        v[3] = origin + vectorTL * rayLength;      
-        
-        // top
-        faces[0][0] = origin;
-        faces[0][1] = v[0];
-        faces[0][2] = v[3];
-
-        // left
-        faces[1][0] = origin;
-        faces[1][1] = v[3];
-        faces[1][2] = v[2];
-
-        // bottom
-        faces[2][0] = origin;
-        faces[2][1] = v[2];
-        faces[2][2] = v[1];
-
-        // right
-        faces[3][0] = origin;
-        faces[3][1] = v[1];
-        faces[3][2] = v[0];
-
-        _DebugDraw->SetDepthTest( true );
-
-        _DebugDraw->SetColor( AColor4( 0, 1, 1, 1 ) );
-        _DebugDraw->DrawLine( origin, v[0] );
-        _DebugDraw->DrawLine( origin, v[3] );
-        _DebugDraw->DrawLine( origin, v[1] );
-        _DebugDraw->DrawLine( origin, v[2] );
-        _DebugDraw->DrawLine( v, 4, true );
-
-        _DebugDraw->SetColor( AColor4( 1, 1, 1, 0.3f ) );
-        _DebugDraw->DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
-        _DebugDraw->DrawConvexPoly( v, 4, false );
-    }
-
-    if ( RVDrawFrustumClusters ) {
-        Float3 clusterMins;
-        Float3 clusterMaxs;
-        Float4 p[ 8 ];
-        Float3 lineP[ 8 ];
-        Float4x4 projMat;
-
-        MakeClusterProjectionMatrix( projMat/*, ZNear, ZFar*/ );
-
-        Float4x4 ViewProj = projMat * GetViewMatrix();
-        Float4x4 ViewProjInv = ViewProj.Inversed();
-
-        float * zclip = GFrustumSlice.ZClip;
-
-        for ( int sliceIndex = 0 ; sliceIndex < SFrustumSlice::NUM_CLUSTERS_Z ; sliceIndex++ ) {
-
-            clusterMins.Z = zclip[ sliceIndex + 1 ];
-            clusterMaxs.Z = zclip[ sliceIndex ];
-
-            for ( int clusterY = 0 ; clusterY < SFrustumSlice::NUM_CLUSTERS_Y ; clusterY++ ) {
-
-                clusterMins.Y = clusterY * GFrustumSlice.DeltaY - 1.0f;
-                clusterMaxs.Y = clusterMins.Y + GFrustumSlice.DeltaY;
-
-                for ( int clusterX = 0 ; clusterX < SFrustumSlice::NUM_CLUSTERS_X ; clusterX++ ) {
-
-                    clusterMins.X = clusterX * GFrustumSlice.DeltaX - 1.0f;
-                    clusterMaxs.X = clusterMins.X + GFrustumSlice.DeltaX;
-
-                    if (   GFrustumSlice.Clusters[ sliceIndex ][ clusterY ][ clusterX ].LightsCount > 0
-                        || GFrustumSlice.Clusters[ sliceIndex ][ clusterY ][ clusterX ].DecalsCount > 0
-                        || GFrustumSlice.Clusters[ sliceIndex ][ clusterY ][ clusterX ].ProbesCount > 0 ) {
-                        p[ 0 ] = Float4( clusterMins.X, clusterMins.Y, clusterMins.Z, 1.0f );
-                        p[ 1 ] = Float4( clusterMaxs.X, clusterMins.Y, clusterMins.Z, 1.0f );
-                        p[ 2 ] = Float4( clusterMaxs.X, clusterMaxs.Y, clusterMins.Z, 1.0f );
-                        p[ 3 ] = Float4( clusterMins.X, clusterMaxs.Y, clusterMins.Z, 1.0f );
-                        p[ 4 ] = Float4( clusterMaxs.X, clusterMins.Y, clusterMaxs.Z, 1.0f );
-                        p[ 5 ] = Float4( clusterMins.X, clusterMins.Y, clusterMaxs.Z, 1.0f );
-                        p[ 6 ] = Float4( clusterMins.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f );
-                        p[ 7 ] = Float4( clusterMaxs.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f );
-                        for ( int i = 0 ; i < 8 ; i++ ) {
-                            p[ i ] = ViewProjInv * p[ i ];
-                            const float Denom = 1.0f / p[ i ].W;
-                            lineP[ i ].X = p[ i ].X * Denom;
-                            lineP[ i ].Y = p[ i ].Y * Denom;
-                            lineP[ i ].Z = p[ i ].Z * Denom;
-                        }
-                        //if ( RVClusterSSE )//if ( RVReverseNegativeZ )
-                        //    _DebugDraw->SetColor( AColor4( 0, 0, 1 ) );
-                        //else
-                            _DebugDraw->SetColor( AColor4( 1, 0, 0 ) );
-                        _DebugDraw->DrawLine( lineP, 4, true );
-                        _DebugDraw->DrawLine( lineP + 4, 4, true );
-                        _DebugDraw->DrawLine( lineP[ 0 ], lineP[ 5 ] );
-                        _DebugDraw->DrawLine( lineP[ 1 ], lineP[ 4 ] );
-                        _DebugDraw->DrawLine( lineP[ 2 ], lineP[ 7 ] );
-                        _DebugDraw->DrawLine( lineP[ 3 ], lineP[ 6 ] );
-                    }
-                }
-            }
-        }
-    }
 }
 
 void ACameraComponent::SetProjection( ECameraProjection _Projection ) {
@@ -300,31 +178,28 @@ void ACameraComponent::OnTransformDirty() {
     bViewMatrixDirty = true;
 }
 
-void ACameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix/*, const float _ClusterZNear, const float _ClusterZFar*/ ) const {
-    const float _ClusterZNear = GFrustumSlice.ZNear;
-    const float _ClusterZFar = GFrustumSlice.ZFar;
-
+void ACameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix ) const {
     // TODO: if ( ClusterProjectionDirty ...
     if ( Projection == CAMERA_PROJ_PERSPECTIVE ) {
         switch ( Adjust ) {
             //case CAMERA_ADJUST_FOV_X_VIEW_SIZE:
             //{
-            //    _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), float( Width ), float( Height ), _ClusterZNear, _ClusterZFar );
+            //    _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), float( Width ), float( Height ), FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
             //    break;
             //}
             case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
             {
-                _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, _ClusterZNear, _ClusterZFar );
+                _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
                 break;
             }
             case CAMERA_ADJUST_FOV_X_FOV_Y:
             {
-                _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), Math::Radians( FovY ), _ClusterZNear, _ClusterZFar );
+                _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), Math::Radians( FovY ), FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
                 break;
             }
         }
     } else {
-        _ProjectionMatrix = Float4x4::OrthoRevCC( OrthoMins, OrthoMaxs, _ClusterZNear, _ClusterZFar );
+        _ProjectionMatrix = Float4x4::OrthoRevCC( OrthoMins, OrthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
     }
 }
 
@@ -444,4 +319,62 @@ Float3x3 const & ACameraComponent::GetBillboardMatrix() const {
     GetViewMatrix();
 
     return BillboardMatrix;
+}
+
+void ACameraComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
+
+    if ( RVDrawCameraFrustum ) {
+        Float3 vectorTR;
+        Float3 vectorTL;
+        Float3 vectorBR;
+        Float3 vectorBL;
+        Float3 origin = GetWorldPosition();
+        Float3 v[4];
+        Float3 faces[4][3];
+        float rayLength = 32;
+
+        Frustum.CornerVector_TR( vectorTR );
+        Frustum.CornerVector_TL( vectorTL );
+        Frustum.CornerVector_BR( vectorBR );
+        Frustum.CornerVector_BL( vectorBL );
+
+        v[0] = origin + vectorTR * rayLength;
+        v[1] = origin + vectorBR * rayLength;
+        v[2] = origin + vectorBL * rayLength;
+        v[3] = origin + vectorTL * rayLength;
+
+        // top
+        faces[0][0] = origin;
+        faces[0][1] = v[0];
+        faces[0][2] = v[3];
+
+        // left
+        faces[1][0] = origin;
+        faces[1][1] = v[3];
+        faces[1][2] = v[2];
+
+        // bottom
+        faces[2][0] = origin;
+        faces[2][1] = v[2];
+        faces[2][2] = v[1];
+
+        // right
+        faces[3][0] = origin;
+        faces[3][1] = v[1];
+        faces[3][2] = v[0];
+
+        InRenderer->SetDepthTest( true );
+
+        InRenderer->SetColor( AColor4( 0, 1, 1, 1 ) );
+        InRenderer->DrawLine( origin, v[0] );
+        InRenderer->DrawLine( origin, v[3] );
+        InRenderer->DrawLine( origin, v[1] );
+        InRenderer->DrawLine( origin, v[2] );
+        InRenderer->DrawLine( v, 4, true );
+
+        InRenderer->SetColor( AColor4( 1, 1, 1, 0.3f ) );
+        InRenderer->DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
+        InRenderer->DrawConvexPoly( v, 4, false );
+    }
 }

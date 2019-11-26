@@ -30,45 +30,27 @@ SOFTWARE.
 
 #pragma once
 
-#include "Actor.h"
-#include "../Components/CameraComponent.h"
+#include <Runtime/Public/RenderCore.h>
 
-class AInputComponent;
-class ACommandContext;
-class AController;
-
-/*
-
-APawn
-
-Base class for players and monsters
-
-*/
-class ANGIE_API APawn : public AActor {
-    AN_ACTOR( APawn, AActor )
-
-    friend class AController;
-    friend class APlayerController;
-
+class ALightVoxelizer {
 public:
+    ALightVoxelizer();
+    ~ALightVoxelizer();
 
-    bool bGodMode;
+    bool bUseSSE;
 
-    ACameraComponent * GetPawnCamera() { return PawnCamera; }
+    struct SFrustumCluster {
+        unsigned short LightsCount;
+        unsigned short DecalsCount;
+        unsigned short ProbesCount;
+    };
 
-protected:
+    SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
 
-    TWeakRef< ACameraComponent > PawnCamera;
-
-    APawn();
-
-    // Override this function to setup input component
-    virtual void SetupPlayerInputComponent( AInputComponent * _Input ) {}
-
-    virtual void SetupRuntimeCommands( ACommandContext & _Ctx ) {}
-
-    AController * GetOwnerController() { return OwnerController; }
+    void Voxelize( SRenderFrame * Frame, SRenderView * RV );
 
 private:
-    AController * OwnerController;
+    SFrameLightData * LightData;
+
+    static void VoxelizeWork( void * _Data );
 };

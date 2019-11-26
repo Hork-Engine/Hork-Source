@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Components/DirectionalLightComponent.h>
 #include <World/Public/World.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 
 constexpr float DEFAULT_MAX_SHADOW_CASCADES = 4;
 
@@ -154,13 +154,13 @@ const Float4x4 & ADirectionalLightComponent::GetLightViewMatrix() const {
 }
 #endif
 
-void ADirectionalLightComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
+void ADirectionalLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
 
     if ( RVDrawDirectionalLights ) {
         Float3 pos = GetWorldPosition();
-        _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( AColor4( 1, 1, 1, 1 ) );
-        _DebugDraw->DrawLine( pos, pos + GetWorldDirection() * 10.0f );
+        InRenderer->SetDepthTest( false );
+        InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
+        InRenderer->DrawLine( pos, pos + GetWorldDirection() * 10.0f );
     }
 }

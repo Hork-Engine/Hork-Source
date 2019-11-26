@@ -37,7 +37,10 @@ AN_END_CLASS_META()
 
 uint64_t ABaseObject::TotalObjects = 0;
 
-ABaseObject::ABaseObject() {
+static uint64_t GUniqueIdGenerator = 0;
+
+ABaseObject::ABaseObject() : Id(++GUniqueIdGenerator)
+{
     TotalObjects++;
     AGarbageCollector::AddObject( this );
 }

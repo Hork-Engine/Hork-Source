@@ -33,7 +33,7 @@ SOFTWARE.
 #include "Pawn.h"
 
 
-/*
+/**
 
 AController
 
@@ -45,11 +45,19 @@ class ANGIE_API AController : public AActor {
 
 public:
 
-    virtual Float2 GetNormalizedCursorPos() const { return Float2::Zero(); }
+    void SetPawn( APawn * _Pawn );
+
+    APawn * GetPawn() const { return Pawn; }
 
 protected:
 
+    TRef< APawn > Pawn;
+
     AController();
+
+    void Tick( float _TimeStep ) override;
+
+    virtual void OnPawnChanged() {}
 
 private:
 

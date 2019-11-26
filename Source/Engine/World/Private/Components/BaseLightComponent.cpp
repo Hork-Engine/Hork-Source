@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Components/PointLightComponent.h>
 #include <World/Public/World.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 #include "TemperatureToColor.h"
 
 constexpr float DEFAULT_AMBIENT_INTENSITY   = 1.0f;
@@ -65,7 +65,7 @@ void ABaseLightComponent::SetAnimation( const char * _Pattern, float _Speed, flo
 }
 
 void ABaseLightComponent::SetAnimation( AAnimationPattern * _Animation ) {
-    if ( Animation == _Animation ) {
+    if ( IsSame( Animation, _Animation ) ) {
         return;
     }
 

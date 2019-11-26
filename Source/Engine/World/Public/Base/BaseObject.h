@@ -51,6 +51,9 @@ class ANGIE_API ABaseObject : public ADummy {
     friend class AWeakReference;
 
 public:
+    /** Object unique identifier */
+    const uint64_t Id;
+
     /** Serialize object to document data */
     virtual int Serialize( ADocument & _Doc );
 
@@ -72,7 +75,7 @@ public:
     AString const & GetObjectName() const { return Name; }
 
     /** Get object debug/editor or ingame name */
-    const char * GetObjectNameConstChar() const { return Name.CStr(); }
+    const char * GetObjectNameCStr() const { return Name.CStr(); }
 
     /** Get total existing objects */
     static uint64_t GetTotalObjects() { return TotalObjects; }
@@ -90,10 +93,11 @@ protected:
 
 private:
 
-    AString Name;
-
     /** Total existing objects */
     static uint64_t TotalObjects;
+
+    /** Custom object name */
+    AString Name;
 
     /** Current refs count for this object */
     int RefCount;
@@ -107,6 +111,15 @@ private:
 
 /**
 
+Utilites
+
+*/
+AN_FORCEINLINE bool IsSame( ABaseObject const * _First, ABaseObject const * _Second ) {
+    return ( ( !_First && !_Second ) || (_First && _Second && _First->Id == _Second->Id) );
+}
+
+/**
+
 AGarbageCollector
 
 Cares of garbage collecting and removing
@@ -115,6 +128,8 @@ Cares of garbage collecting and removing
 class AGarbageCollector final {
     AN_FORBID_COPY( AGarbageCollector )
 
+    friend class ABaseObject;
+
 public:
     /** Initialize garbage collector */
     static void Initialize();
@@ -122,14 +137,14 @@ public:
     /** Deinitialize garbage collector */
     static void Deinitialize();
 
-    /** Add object to remove it at next DeallocateObjects() call */
-    static void AddObject( ABaseObject * _Object );
-    static void RemoveObject( ABaseObject * _Object );
-
     /** Deallocates all collected objects */
     static void DeallocateObjects();
 
 private:
+    /** Add object to remove it at next DeallocateObjects() call */
+    static void AddObject( ABaseObject * _Object );
+    static void RemoveObject( ABaseObject * _Object );
+
     static ABaseObject * GarbageObjects;
     static ABaseObject * GarbageObjectsTail;
 };
@@ -464,6 +479,21 @@ struct TEvent {
             if ( Callbacks[ i ].IsValid() ) {
                 // Invoke
                 Callbacks[ i++ ]( StdForward< TArgs >( _Args )... );
+            } else {
+                // Cleanup
+                Callbacks.erase( Callbacks.begin() + i );
+            }
+        }
+    }
+
+    template< typename TConditionalCallback >
+    void DispatchConditional( TConditionalCallback const & _Condition, TArgs... _Args ) {
+        for ( int i = 0 ; i < Callbacks.size() ; ) {
+            if ( Callbacks[ i ].IsValid() ) {
+                // Invoke
+                if ( _Condition() ) {
+                    Callbacks[ i++ ]( StdForward< TArgs >( _Args )... );
+                }
             } else {
                 // Cleanup
                 Callbacks.erase( Callbacks.begin() + i );

@@ -37,6 +37,13 @@ SOFTWARE.
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
 #include "ShadowCascade.h"
+#include "LightVoxelizer.h"
+
+ARuntimeVariable RVDrawFrustumClusters( _CTS( "DrawFrustumClusters" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable RVFreezeFrustumClusters( _CTS( "FreezeFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVFixFrustumClusters( _CTS( "FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+
+static ALightVoxelizer LightVoxelizer;
 
 ARenderWorld::ARenderWorld( AWorld * InOwnerWorld )
     : pOwnerWorld( InOwnerWorld )
@@ -110,13 +117,13 @@ void ARenderWorld::RenderFrontend_AddInstances( SRenderFrontendDef * _Def ) {
     // Add directional lights
     for ( ADirectionalLightComponent * light = DirectionalLightList ; light ; light = light->Next ) {
 
+        if ( !light->IsEnabled() ) {
+            continue;
+        }
+
         if ( view->NumDirectionalLights > MAX_DIRECTIONAL_LIGHTS ) {
             GLogger.Printf( "MAX_DIRECTIONAL_LIGHTS hit\n" );
             break;
-        }
-
-        if ( !light->IsEnabled() ) {
-            continue;
         }
 
         SDirectionalLightDef * lightDef = (SDirectionalLightDef *)GRuntime.AllocFrameMem( sizeof( SDirectionalLightDef ) );
@@ -198,9 +205,11 @@ void ARenderWorld::RenderFrontend_AddInstances( SRenderFrontendDef * _Def ) {
         view->NumLights++;
     }
 
-    void Voxelize( SRenderFrame * Frame, SRenderView * RV );
 
-    Voxelize( frameData, view );
+    //GLogger.Printf( "FrameLightData %f KB\n", sizeof( SFrameLightData ) / 1024.0f );
+    if ( !RVFixFrustumClusters ) {
+        LightVoxelizer.Voxelize( frameData, view );
+    }
 }
 
 void ARenderWorld::RenderFrontend_AddDirectionalShadowmapInstances( SRenderFrontendDef * _Def ) {
@@ -365,6 +374,87 @@ void ARenderWorld::RenderFrontend_AddDirectionalShadowmapInstances( SRenderFront
                 // If component uses dynamic range, mesh has actually one subpart
                 break;
             }
+        }
+    }
+}
+
+void ARenderWorld::DrawDebug( ADebugRenderer * InRenderer )
+{
+    if ( RVDrawFrustumClusters ) {
+        static std::vector< Float3 > LinePoints;
+
+        if ( !RVFreezeFrustumClusters )
+        {
+            Float3 clusterMins;
+            Float3 clusterMaxs;
+            Float4 p[ 8 ];
+            Float3 * lineP;
+            Float4x4 projMat;
+
+            SRenderView const * view = InRenderer->GetRenderView();
+
+            projMat = view->ClusterProjectionMatrix;
+
+            Float4x4 ViewProj = projMat * view->ViewMatrix;
+            Float4x4 ViewProjInv = ViewProj.Inversed();
+
+            LinePoints.clear();
+
+            for ( int sliceIndex = 0 ; sliceIndex < MAX_FRUSTUM_CLUSTERS_Z ; sliceIndex++ ) {
+
+                clusterMins.Z = FRUSTUM_SLICE_ZCLIP[ sliceIndex + 1 ];
+                clusterMaxs.Z = FRUSTUM_SLICE_ZCLIP[ sliceIndex ];
+
+                for ( int clusterY = 0 ; clusterY < MAX_FRUSTUM_CLUSTERS_Y ; clusterY++ ) {
+
+                    clusterMins.Y = clusterY * FRUSTUM_CLUSTER_HEIGHT - 1.0f;
+                    clusterMaxs.Y = clusterMins.Y + FRUSTUM_CLUSTER_HEIGHT;
+
+                    for ( int clusterX = 0 ; clusterX < MAX_FRUSTUM_CLUSTERS_X ; clusterX++ ) {
+
+                        clusterMins.X = clusterX * FRUSTUM_CLUSTER_WIDTH - 1.0f;
+                        clusterMaxs.X = clusterMins.X + FRUSTUM_CLUSTER_WIDTH;
+
+                        if (   LightVoxelizer.ClusterData[ sliceIndex ][ clusterY ][ clusterX ].LightsCount > 0
+                            || LightVoxelizer.ClusterData[ sliceIndex ][ clusterY ][ clusterX ].DecalsCount > 0
+                            || LightVoxelizer.ClusterData[ sliceIndex ][ clusterY ][ clusterX ].ProbesCount > 0 ) {
+                            p[ 0 ] = Float4( clusterMins.X, clusterMins.Y, clusterMins.Z, 1.0f );
+                            p[ 1 ] = Float4( clusterMaxs.X, clusterMins.Y, clusterMins.Z, 1.0f );
+                            p[ 2 ] = Float4( clusterMaxs.X, clusterMaxs.Y, clusterMins.Z, 1.0f );
+                            p[ 3 ] = Float4( clusterMins.X, clusterMaxs.Y, clusterMins.Z, 1.0f );
+                            p[ 4 ] = Float4( clusterMaxs.X, clusterMins.Y, clusterMaxs.Z, 1.0f );
+                            p[ 5 ] = Float4( clusterMins.X, clusterMins.Y, clusterMaxs.Z, 1.0f );
+                            p[ 6 ] = Float4( clusterMins.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f );
+                            p[ 7 ] = Float4( clusterMaxs.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f );
+                            LinePoints.resize( LinePoints.size() + 8 );
+                            lineP = LinePoints.data() + LinePoints.size() - 8;
+                            for ( int i = 0 ; i < 8 ; i++ ) {
+                                p[ i ] = ViewProjInv * p[ i ];
+                                const float Denom = 1.0f / p[ i ].W;
+                                lineP[ i ].X = p[ i ].X * Denom;
+                                lineP[ i ].Y = p[ i ].Y * Denom;
+                                lineP[ i ].Z = p[ i ].Z * Denom;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if ( LightVoxelizer.bUseSSE )//if ( RVReverseNegativeZ )
+            InRenderer->SetColor( AColor4( 0, 0, 1 ) );
+        else
+            InRenderer->SetColor( AColor4( 1, 0, 0 ) );
+
+        int n = 0;
+        for ( Float3 * lineP = LinePoints.data() ; n < LinePoints.size() ; lineP += 8, n += 8 )
+        {
+            InRenderer->DrawLine( lineP, 4, true );
+            InRenderer->DrawLine( lineP + 4, 4, true );
+            InRenderer->DrawLine( lineP[ 0 ], lineP[ 5 ] );
+            InRenderer->DrawLine( lineP[ 1 ], lineP[ 4 ] );
+            InRenderer->DrawLine( lineP[ 2 ], lineP[ 7 ] );
+            InRenderer->DrawLine( lineP[ 3 ], lineP[ 6 ] );
         }
     }
 }

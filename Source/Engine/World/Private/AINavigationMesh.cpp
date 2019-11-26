@@ -1241,7 +1241,7 @@ void AAINavigationMesh::Purge() {
 
 struct SDebugDrawCallback : public duDebugDraw {
 
-    ADebugDraw * DD;
+    ADebugRenderer * DD;
     Float3 AccumVertices[3];
     int AccumIndex;
     duDebugDrawPrimitives Primitive;
@@ -1313,14 +1313,14 @@ struct SDebugDrawCallback : public duDebugDraw {
     }
 };
 
-void AAINavigationMesh::DrawDebug( ADebugDraw * _DebugDraw ) {
+void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
 
     if ( !NavMesh ) {
         return;
     }
 
     SDebugDrawCallback callback;
-    callback.DD = _DebugDraw;
+    callback.DD = InRenderer;
 
     if ( RVDrawNavMeshBVTree ) {
         duDebugDrawNavMeshBVTree( &callback, *NavMesh );
@@ -1361,14 +1361,14 @@ void AAINavigationMesh::DrawDebug( ADebugDraw * _DebugDraw ) {
 
     if ( RVDrawNavMeshTileBounds ) {
         BvAxisAlignedBox boundingBox;
-        _DebugDraw->SetDepthTest(false);
-        _DebugDraw->SetColor( AColor4( 1,1,1,1 ) );
+        InRenderer->SetDepthTest(false);
+        InRenderer->SetColor( AColor4( 1,1,1,1 ) );
         for ( int z = 0 ; z < NumTilesZ ; z++ ) {
             for ( int x = 0 ; x < NumTilesX ; x++ ) {
                 if ( IsTileExsist( x, z ) ) {
                     GetTileWorldBounds( x, z, boundingBox );
 
-                    _DebugDraw->DrawAABB( boundingBox );
+                    InRenderer->DrawAABB( boundingBox );
                 }
             }
         }

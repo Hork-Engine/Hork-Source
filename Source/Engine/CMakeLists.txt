@@ -60,6 +60,7 @@ file( GLOB WorldPublicResource World/Public/Resource/*.h World/Public/Resource/*
 file( GLOB WorldPublicMaterialGraph World/Public/MaterialGraph/*.h World/Public/MaterialGraph/*.cpp )
 file( GLOB WorldPublicAudio World/Public/Audio/*.h World/Public/Audio/*.cpp )
 file( GLOB WorldPublicAudioAudioCodec World/Public/Audio/AudioCodec/*.h World/Public/Audio/AudioCodec/*.cpp )
+file( GLOB WorldPublicRender World/Public/Render/*.h World/Public/Render/*.cpp )
 file( GLOB WorldPublicActors World/Public/Actors/*.h World/Public/Actors/*.cpp )
 file( GLOB WorldPublicComponents World/Public/Components/*.h World/Public/Components/*.cpp )
 file( GLOB WorldPublicWidgets World/Public/Widgets/*.h World/Public/Widgets/*.cpp )
@@ -70,9 +71,10 @@ source_group( "World\\Public\\Resource" FILES ${WorldPublicResource} )
 source_group( "World\\Public\\MaterialGraph" FILES ${WorldPublicMaterialGraph} )
 source_group( "World\\Public\\Audio" FILES ${WorldPublicAudio} )
 source_group( "World\\Public\\Audio\\AudioCodec" FILES ${WorldPublicAudioAudioCodec} )
+source_group( "World\\Public\\Render" FILES ${WorldPublicRender} )
 source_group( "World\\Public\\Actors" FILES ${WorldPublicActors} )
 source_group( "World\\Public\\Components" FILES ${WorldPublicComponents} )
-source_group( "World\\Public\\Widgets" FILES ${WidgetsPublic} )
+source_group( "World\\Public\\Widgets" FILES ${WorldPublicWidgets} )
 source_group( "World\\Public" FILES ${WorldPublic} )
 
 #---------------------------------------------------------------------
@@ -82,6 +84,7 @@ file( GLOB WorldPrivateResource World/Private/Resource/*.h World/Private/Resourc
 file( GLOB WorldPrivateMaterialGraph World/Private/MaterialGraph/*.h World/Private/MaterialGraph/*.cpp )
 file( GLOB WorldPrivateAudio World/Private/Audio/*.h World/Private/Audio/*.cpp )
 file( GLOB WorldPrivateAudioAudioCodec World/Private/Audio/AudioCodec/*.h World/Private/Audio/AudioCodec/*.cpp )
+file( GLOB WorldPrivateRender World/Private/Render/*.h World/Private/Render/*.cpp )
 file( GLOB WorldPrivateActors World/Private/Actors/*.h World/Private/Actors/*.cpp )
 file( GLOB WorldPrivateComponents World/Private/Components/*.h World/Private/Components/*.cpp )
 file( GLOB WorldPrivateWidgets World/Private/Widgets/*.h World/Private/Widgets/*.cpp )
@@ -93,6 +96,7 @@ source_group( "World\\Private\\Resource" FILES ${WorldPrivateResource} )
 source_group( "World\\Private\\MaterialGraph" FILES ${WorldPrivateMaterialGraph} )
 source_group( "World\\Private\\Audio" FILES ${WorldPrivateAudio} )
 source_group( "World\\Private\\Audio\\AudioCodec" FILES ${WorldPrivateAudioAudioCodec} )
+source_group( "World\\Private\\Render" FILES ${WorldPrivateRender} )
 source_group( "World\\Private\\Actors" FILES ${WorldPrivateActors} )
 source_group( "World\\Private\\Components" FILES ${WorldPrivateComponents} )
 source_group( "World\\Private\\Widgets" FILES ${WorldPrivateWidgets} )
@@ -135,6 +139,7 @@ ${WorldPublicResource}
 ${WorldPublicMaterialGraph}
 ${WorldPublicAudio}
 ${WorldPublicAudioAudioCodec}
+${WorldPublicRender}
 ${WorldPublicActors}
 ${WorldPublicComponents}
 ${WorldPublicWidgets}
@@ -144,6 +149,7 @@ ${WorldPrivateResource}
 ${WorldPrivateMaterialGraph}
 ${WorldPrivateAudio}
 ${WorldPrivateAudioAudioCodec}
+${WorldPrivateRender}
 ${WorldPrivateActors}
 ${WorldPrivateComponents}
 ${WorldPrivateWidgets}

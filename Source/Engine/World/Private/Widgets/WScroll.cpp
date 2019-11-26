@@ -48,7 +48,7 @@ WScroll::~WScroll() {
 }
 
 WScroll & WScroll::SetContentWidget( WWidget * _Content ) {
-    if ( _Content == this || _Content == Content ) {
+    if ( _Content == this || IsSame( _Content, Content ) ) {
         return *this;
     }
 

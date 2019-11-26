@@ -36,7 +36,7 @@ SOFTWARE.
 #include <World/Public/AnimationController.h>
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/World.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/Resource/Asset.h>
 #include <World/Public/Resource/Animation.h>
@@ -85,7 +85,7 @@ void ASkinnedComponent::OnMeshChanged() {
 
     ASkeleton * newSkeleton = GetMesh()->GetSkeleton();
 
-    if ( Skeleton == newSkeleton ) {
+    if ( IsSame( Skeleton, newSkeleton ) ) {
         return;
     }
 
@@ -130,7 +130,7 @@ void ASkinnedComponent::RemoveAnimationController( AAnimationController * _Contr
         return;
     }
     for ( int i = 0; i < AnimControllers.Size(); i++ ) {
-        if ( AnimControllers[ i ] == _Controller ) {
+        if ( AnimControllers[ i ]->Id == _Controller->Id ) {
             _Controller->Owner = nullptr;
             _Controller->RemoveRef();
             AnimControllers.Remove( i );
@@ -465,7 +465,7 @@ void ASkinnedComponent::UpdateJointTransforms( size_t & _SkeletonOffset, size_t 
     if ( UpdateFrameNumber == _FrameNumber ) {
         _SkeletonOffset = SkeletonOffset;
         _SkeletonSize = SkeletonSize;
-        GLogger.Printf( "Caching UpdateJointTransforms()\n" );
+        //GLogger.Printf( "Caching UpdateJointTransforms()\n" );
         return;
     }
 
@@ -509,13 +509,13 @@ Float3x4 const & ASkinnedComponent::GetJointTransform( int _JointIndex ) {
     return AbsoluteTransforms[_JointIndex+1];
 }
 
-void ASkinnedComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
+void ASkinnedComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
 
     // Draw skeleton
     if ( RVDrawSkeleton ) {
-        _DebugDraw->SetColor( AColor4( 1,0,0,1 ) );
-        _DebugDraw->SetDepthTest( false );
+        InRenderer->SetColor( AColor4( 1,0,0,1 ) );
+        InRenderer->SetDepthTest( false );
         TPodArray< SJoint > const & joints = Skeleton->GetJoints();
 
         for ( int i = 0 ; i < joints.Size() ; i++ ) {
@@ -524,11 +524,11 @@ void ASkinnedComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
             Float3x4 t = GetWorldTransformMatrix() * GetJointTransform( i );
             Float3 v1 = t.DecomposeTranslation();
 
-            _DebugDraw->DrawOrientedBox( v1, t.DecomposeRotation(), Float3(0.01f) );
+            InRenderer->DrawOrientedBox( v1, t.DecomposeRotation(), Float3(0.01f) );
 
             if ( joint.Parent >= 0 ) {
                 Float3 v0 = ( GetWorldTransformMatrix() * GetJointTransform( joint.Parent ) ).DecomposeTranslation();
-                _DebugDraw->DrawLine( v0, v1 );
+                InRenderer->DrawLine( v0, v1 );
             }
         }
     }

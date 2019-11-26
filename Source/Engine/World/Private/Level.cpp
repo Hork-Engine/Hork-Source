@@ -344,7 +344,7 @@ void ALevel::RemoveDrawable( ADrawable * _Drawable ) {
     }
 }
 
-void ALevel::DrawDebug( ADebugDraw * _DebugDraw ) {
+void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
 
 #if 0
     static TPodArray< Float3 > vertices;
@@ -357,63 +357,63 @@ void ALevel::DrawDebug( ADebugDraw * _DebugDraw ) {
         gen=true;
     }
 
-    _DebugDraw->SetDepthTest(true);
-    _DebugDraw->DrawTriangleSoup(vertices.ToPtr(),vertices.Length(),sizeof(Float3),indices.ToPtr(),indices.Length(),false);
+    InRenderer->SetDepthTest(true);
+    InRenderer->DrawTriangleSoup(vertices.ToPtr(),vertices.Length(),sizeof(Float3),indices.ToPtr(),indices.Length(),false);
     GLogger.Printf( "indices %d\n",indices.Length());
 #endif
 
     if ( RVDrawLevelAreaBounds ) {
 
 #if 0
-        _DebugDraw->SetDepthTest( true );
+        InRenderer->SetDepthTest( true );
         int i = 0;
         for ( ALevelArea * area : Areas ) {
-            //_DebugDraw->DrawAABB( area->Bounds );
+            //InRenderer->DrawAABB( area->Bounds );
 
             i++;
 
             float f = (float)( (i*12345) & 255 ) / 255.0f;
 
-            _DebugDraw->SetColor( AColor4( f,f,f,1 ) );
+            InRenderer->SetColor( AColor4( f,f,f,1 ) );
 
-            _DebugDraw->DrawBoxFilled( area->Bounds.Center(), area->Bounds.HalfSize(), true );
+            InRenderer->DrawBoxFilled( area->Bounds.Center(), area->Bounds.HalfSize(), true );
         }
 #endif
-        _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( AColor4( 0,1,0,0.5f) );
+        InRenderer->SetDepthTest( false );
+        InRenderer->SetColor( AColor4( 0,1,0,0.5f) );
         for ( ALevelArea * area : Areas ) {
-            _DebugDraw->DrawAABB( area->Bounds );
+            InRenderer->DrawAABB( area->Bounds );
         }
 
     }
 
     if ( RVDrawLevelPortals ) {
-//        _DebugDraw->SetDepthTest( false );
-//        _DebugDraw->SetColor(1,0,0,1);
+//        InRenderer->SetDepthTest( false );
+//        InRenderer->SetColor(1,0,0,1);
 //        for ( ALevelPortal * portal : Portals ) {
-//            _DebugDraw->DrawLine( portal->Hull->Points, portal->Hull->NumPoints, true );
+//            InRenderer->DrawLine( portal->Hull->Points, portal->Hull->NumPoints, true );
 //        }
 
-        _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( AColor4( 0,0,1,0.4f ) );
+        InRenderer->SetDepthTest( false );
+        InRenderer->SetColor( AColor4( 0,0,1,0.4f ) );
 
         if ( LastVisitedArea >= 0 && LastVisitedArea < Areas.Size() ) {
             ALevelArea * area = Areas[ LastVisitedArea ];
             SAreaPortal * portals = area->PortalList;
 
             for ( SAreaPortal * p = portals; p; p = p->Next ) {
-                _DebugDraw->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, true );
+                InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, true );
             }
         } else {
             for ( ALevelPortal * portal : Portals ) {
-                _DebugDraw->DrawConvexPoly( portal->Hull->Points, portal->Hull->NumPoints, true );
+                InRenderer->DrawConvexPoly( portal->Hull->Points, portal->Hull->NumPoints, true );
             }
         }
     }
 
     if ( RVDrawLevelIndoorBounds ) {
-        _DebugDraw->SetDepthTest( false );
-        _DebugDraw->DrawAABB( IndoorBounds );
+        InRenderer->SetDepthTest( false );
+        InRenderer->DrawAABB( IndoorBounds );
     }
 }
 

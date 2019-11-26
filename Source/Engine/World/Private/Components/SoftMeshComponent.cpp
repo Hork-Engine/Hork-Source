@@ -363,8 +363,8 @@ void ASoftMeshComponent::TickComponent( float _TimeStep ) {
     bUpdateAbsoluteTransforms = true;
 }
 
-void ASoftMeshComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
+void ASoftMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
 
     if ( !SoftBody ) {
         return;
@@ -373,21 +373,21 @@ void ASoftMeshComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
     // Draw AABB
     //btVector3 mins, maxs;
     //SoftBody->getCollisionShape()->getAabb( SoftBody->getWorldTransform(), mins, maxs );
-    //_DebugDraw->SetDepthTest( true );
-    //_DebugDraw->SetColor( 1, 1, 0, 1 );
-    //_DebugDraw->DrawAABB( BvAxisAlignedBox( btVectorToFloat3( mins ), btVectorToFloat3( maxs ) ) );
+    //InRenderer->SetDepthTest( true );
+    //InRenderer->SetColor( 1, 1, 0, 1 );
+    //InRenderer->DrawAABB( BvAxisAlignedBox( btVectorToFloat3( mins ), btVectorToFloat3( maxs ) ) );
 
     // Draw faces
     if ( RVDrawSoftmeshFaces ) {
-        _DebugDraw->SetDepthTest( true );
-        _DebugDraw->SetColor( AColor4( 1, 0, 0, 1 ) );
+        InRenderer->SetDepthTest( true );
+        InRenderer->SetColor( AColor4( 1, 0, 0, 1 ) );
         for ( int i = 0; i < SoftBody->m_faces.size(); i++ ) {
 
             btSoftBody::Face & f = SoftBody->m_faces[ i ];
 
-            _DebugDraw->SetColor( Float4( btVectorToFloat3( f.m_normal ) * 0.5f + 0.5f, 1.0f ) );
+            InRenderer->SetColor( Float4( btVectorToFloat3( f.m_normal ) * 0.5f + 0.5f, 1.0f ) );
 
-            _DebugDraw->DrawTriangle(
+            InRenderer->DrawTriangle(
                 btVectorToFloat3( f.m_n[ 0 ]->m_x ),
                 btVectorToFloat3( f.m_n[ 1 ]->m_x ),
                 btVectorToFloat3( f.m_n[ 2 ]->m_x ), true );

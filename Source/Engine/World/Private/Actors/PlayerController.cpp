@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Components/InputComponent.h>
+#include <World/Public/Components/CameraComponent.h>
 #include <World/Public/World.h>
 #include <Runtime/Public/Runtime.h>
-#include <GameThread/Public/EngineInstance.h> // TODO: Remove this dependency: GEngine.GetCursorPosition()
 
 AN_CLASS_META( APlayerController )
 AN_CLASS_META( ARenderingParameters )
@@ -75,30 +75,8 @@ void APlayerController::EndPlay() {
     }
 }
 
-void APlayerController::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
-
-    if ( Pawn && Pawn->IsPendingKill() ) {
-        SetPawn( nullptr );
-    }
-}
-
-void APlayerController::SetPawn( APawn * _Pawn ) {
-    if ( Pawn == _Pawn ) {
-        return;
-    }
-
-    if ( _Pawn && _Pawn->OwnerController ) {
-        GLogger.Printf( "Pawn already controlled by other controller\n" );
-        return;
-    }
-
-    if ( Pawn ) {
-        Pawn->OwnerController = nullptr;
-    }
-
-    Pawn = _Pawn;
-
+void APlayerController::OnPawnChanged()
+{
     InputComponent->UnbindAll();
 
     InputComponent->BindAction( "Pause", IE_Press, this, &APlayerController::TogglePause, true );
@@ -107,7 +85,6 @@ void APlayerController::SetPawn( APawn * _Pawn ) {
     InputComponent->BindAction( "ToggleDebugDraw", IE_Press, this, &APlayerController::ToggleDebugDraw, true );
 
     if ( Pawn ) {
-        Pawn->OwnerController = this;
         Pawn->SetupPlayerInputComponent( InputComponent );
         Pawn->SetupRuntimeCommands( CommandContext );
     }
@@ -117,9 +94,6 @@ void APlayerController::SetPawn( APawn * _Pawn ) {
     }
 }
 
-void APlayerController::SetViewCamera( ACameraComponent * _Camera ) {
-    CameraComponent = _Camera;
-}
 
 void APlayerController::SetViewport( Float2 const & _Position, Float2 const & _Size ) {
     ViewportPosition = _Position;
@@ -131,7 +105,7 @@ void APlayerController::SetAudioListener( ASceneComponent * _AudioListener ) {
 }
 
 void APlayerController::SetHUD( AHUD * _HUD ) {
-    if ( HUD == _HUD ) {
+    if ( IsSame( HUD, _HUD ) ) {
         return;
     }
 
@@ -223,6 +197,20 @@ void APlayerController::ToggleDebugDraw() {
     }
 }
 
+ASceneComponent * APlayerController::GetAudioListener() {
+    if ( AudioListener )
+    {
+        return AudioListener;
+    }
+
+    if ( Pawn )
+    {
+        return Pawn->GetPawnCamera();
+    }
+
+    return nullptr;
+}
+
 void APlayerController::SetCurrentAudioListener() {
     CurrentAudioListener = this;
 }
@@ -239,9 +227,17 @@ ACommandContext * APlayerController::GetCurrentCommandContext() {
     return CurrentCommandContext;
 }
 
-Float2 APlayerController::GetNormalizedCursorPos() const {
-    if ( ViewportSize.X > 0 && ViewportSize.Y > 0 ) {
-        Float2 pos = GEngine.GetCursorPosition();
+Float2 APlayerController::GetLocalCursorPosition() const {
+    Float2 pos = InputComponent->GetCursorPosition();
+    pos.X -= ViewportPosition.X;
+    pos.Y -= ViewportPosition.Y;
+    return pos;
+}
+
+Float2 APlayerController::GetNormalizedCursorPosition() const {
+    if ( ViewportSize.X > 0 && ViewportSize.Y > 0 )
+    {
+        Float2 pos = InputComponent->GetCursorPosition();
         pos.X -= ViewportPosition.X;
         pos.Y -= ViewportPosition.Y;
         pos.X /= ViewportSize.X;
@@ -249,7 +245,6 @@ Float2 APlayerController::GetNormalizedCursorPos() const {
         pos.X = Math::Saturate( pos.X );
         pos.Y = Math::Saturate( pos.Y );
         return pos;
-    } else {
-        return Float2::Zero();
     }
+    return Float2::Zero();
 }

@@ -316,7 +316,7 @@ protected:
 
     void OnTransformDirty() override;
 
-    void DrawDebug( ADebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
 
     virtual ACollisionBodyComposition const & DefaultBodyComposition() const { return BodyComposition; }
 

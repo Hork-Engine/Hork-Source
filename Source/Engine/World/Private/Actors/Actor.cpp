@@ -330,15 +330,15 @@ AActorComponent * AActor::LoadComponent( ADocument const & _Document, int _Field
 }
 #endif
 
-void AActor::DrawDebug( ADebugDraw * _DebugDraw ) {
+void AActor::DrawDebug( ADebugRenderer * InRenderer ) {
     for ( AActorComponent * component : Components ) {
-        component->DrawDebug( _DebugDraw );
+        component->DrawDebug( InRenderer );
     }
 
     if ( RVDrawRootComponentAxis ) {
         if ( RootComponent ) {
-            _DebugDraw->SetDepthTest( false );
-            _DebugDraw->DrawAxis( RootComponent->GetWorldTransformMatrix(), false );
+            InRenderer->SetDepthTest( false );
+            InRenderer->DrawAxis( RootComponent->GetWorldTransformMatrix(), false );
         }
     }
 }

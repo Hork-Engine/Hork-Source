@@ -41,7 +41,7 @@ class APawn;
 class AActorComponent;
 class ACameraComponent;
 class ATimer;
-class ADebugDraw;
+class ADebugRenderer;
 class IGameModule;
 
 /** Actor spawn parameters */
@@ -345,7 +345,7 @@ public:
 
     void UpdateDrawableArea( ADrawable * _Drawable );
 
-    void DrawDebug( ADebugDraw * _DebugDraw );
+    void DrawDebug( ADebugRenderer * InRenderer );
 
 protected:
     void BeginPlay();

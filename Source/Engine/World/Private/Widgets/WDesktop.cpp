@@ -64,7 +64,7 @@ WDesktop & WDesktop::AddWidget( WWidget * _Widget ) {
 }
 
 WDesktop & WDesktop::RemoveWidget( WWidget * _Widget ) {
-    if ( _Widget->GetParent() == Root ) {
+    if ( IsSame( _Widget->GetParent(), Root ) ) {
         _Widget->Unparent();
     }
     return *this;
@@ -302,7 +302,7 @@ void WDesktop::CancelDragging() {
 }
 
 void WDesktop::SetFocusWidget( WWidget * _Focus ) {
-    if ( _Focus == FocusWidget ) {
+    if ( IsSame( _Focus, FocusWidget ) ) {
         return;
     }
 
@@ -409,7 +409,7 @@ void WDesktop::GenerateMouseButtonEvents( struct SMouseButtonEvent const & _Even
 
             uint64_t newMouseTimeMsec = _TimeStamp * 1000.0;
             uint64_t clickTime = newMouseTimeMsec - MouseClickTime;
-            if ( MouseClickWidget == widget && clickTime < DOUBLECLICKTIME_MSEC
+            if ( IsSame( MouseClickWidget, widget ) && clickTime < DOUBLECLICKTIME_MSEC
                  && CursorPosition.X > MouseClickPos.X-DOUBLECLICKHALFSIZE && CursorPosition.X < MouseClickPos.X+DOUBLECLICKHALFSIZE
                  && CursorPosition.Y > MouseClickPos.Y-DOUBLECLICKHALFSIZE && CursorPosition.Y < MouseClickPos.Y+DOUBLECLICKHALFSIZE ) {
 
@@ -667,9 +667,5 @@ void WDesktop::OnDrawBackground( ACanvas & _Canvas ) {
 }
 
 void WDesktop::DrawCursor( ACanvas & _Canvas ) {
-#if 0
-    _Canvas.DrawCursor( Cursor, GEngine.GetCursorPosition(), AColor4::White(), AColor4( 0, 0, 0, 1 ), AColor4( 0, 0, 0, 28 / 255.0f ) );
-#else
     _Canvas.DrawCursor( Cursor, CursorPosition, AColor4::White(), AColor4( 0, 0, 0, 1 ), AColor4( 0, 0, 0, 0.3f ) );
-#endif
 }

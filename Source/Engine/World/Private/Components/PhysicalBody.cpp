@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Components/PhysicalBody.h>
 #include <World/Public/World.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 
@@ -113,6 +113,9 @@ void APhysicalBody::InitializeComponent() {
 
 void APhysicalBody::DeinitializeComponent() {
     DestroyRigidBody();
+
+    AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
+    NavigationMesh.RemoveNavigationGeometry( this );
 
     Super::DeinitializeComponent();
 }
@@ -1025,8 +1028,8 @@ void APhysicalBody::RemoveCollisionIgnoreActor( AActor * _Actor ) {
     }
 }
 
-void APhysicalBody::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
+void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
 
     if ( RVDrawCollisionModel ) {
         TPodArray< Float3 > collisionVertices;
@@ -1034,10 +1037,10 @@ void APhysicalBody::DrawDebug( ADebugDraw * _DebugDraw ) {
 
         CreateCollisionModel( collisionVertices, collisionIndices );
 
-        _DebugDraw->SetDepthTest(true);
-        _DebugDraw->SetColor( AColor4( (((size_t)GetParentActor()*123)&0xff)/255.0f, (((size_t)this*123)&0xff)/255.0f, 1.0f, 0.5f ) );
-        _DebugDraw->DrawTriangleSoup(collisionVertices.ToPtr(),collisionVertices.Size(),sizeof(Float3),collisionIndices.ToPtr(),collisionIndices.Size(),false);
-        _DebugDraw->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
+        InRenderer->SetDepthTest(true);
+        InRenderer->SetColor( AColor4( (((size_t)GetParentActor()*123)&0xff)/255.0f, (((size_t)this*123)&0xff)/255.0f, 1.0f, 0.5f ) );
+        InRenderer->DrawTriangleSoup(collisionVertices.ToPtr(),collisionVertices.Size(),sizeof(Float3),collisionIndices.ToPtr(),collisionIndices.Size(),false);
+        InRenderer->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
     }
 
     if ( RVDrawCollisionBounds ) {
@@ -1045,10 +1048,10 @@ void APhysicalBody::DrawDebug( ADebugDraw * _DebugDraw ) {
 
         GetCollisionBodiesWorldBounds( boundingBoxes );
 
-        _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( AColor4( 1, 1, 0, 1 ) );
+        InRenderer->SetDepthTest( false );
+        InRenderer->SetColor( AColor4( 1, 1, 0, 1 ) );
         for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
-            _DebugDraw->DrawAABB( bb );
+            InRenderer->DrawAABB( bb );
         }
     }
 
@@ -1056,9 +1059,9 @@ void APhysicalBody::DrawDebug( ADebugDraw * _DebugDraw ) {
         if ( RigidBody ) {
             Float3 centerOfMass = GetCenterOfMassWorldPosition();
 
-            _DebugDraw->SetDepthTest( false );
-            _DebugDraw->SetColor( AColor4( 1, 0, 0, 1 ) );
-            _DebugDraw->DrawBox( centerOfMass, Float3( 0.02f ) );
+            InRenderer->SetDepthTest( false );
+            InRenderer->SetColor( AColor4( 1, 0, 0, 1 ) );
+            InRenderer->DrawBox( centerOfMass, Float3( 0.02f ) );
         }
     }
 }

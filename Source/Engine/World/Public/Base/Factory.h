@@ -628,8 +628,7 @@ template< typename T > T * CreateInstanceOf() {
 
 template< typename T >
 T * Upcast( ADummy * _Object ) {
-    AN_ASSERT( _Object );
-    if ( _Object->FinalClassMeta().IsSubclassOf< T >() ) {
+    if ( _Object && _Object->FinalClassMeta().IsSubclassOf< T >() ) {
         return static_cast< T * >( _Object );
     }
     return nullptr;

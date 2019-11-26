@@ -165,37 +165,3 @@ private:
     EWidgetAlignment HorizontalAlignment;
     EWidgetAlignment VerticalAlignment;
 };
-
-#if 0
-class WViewportDecorate : public WDecorate {
-    AN_CLASS( WViewportDecorate, WDecorate )
-
-public:
-    WViewportDecorate & SetColor( AColor4 const & _Color );
-    WViewportDecorate & SetRounding( float _Rounding );
-    WViewportDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
-    WViewportDecorate & SetPlayerController( APlayerController * _PlayerController );
-    WViewportDecorate & SetColorBlending( EColorBlending _Blending );
-    WViewportDecorate & SetOffset( Float2 const & _Offset );
-    WViewportDecorate & SetSize( Float2 const & _Size );
-    WViewportDecorate & SetHorizontalAlignment( EWidgetAlignment _Alignment );
-    WViewportDecorate & SetVerticalAlignment( EWidgetAlignment _Alignment );
-
-protected:
-    WViewportDecorate();
-    ~WViewportDecorate();
-
-    void OnDrawEvent( ACanvas & _Canvas ) override;
-
-private:
-    AColor4 Color;
-    float Rounding;
-    EDrawCornerFlags RoundingCorners;
-    TRef< APlayerController > PlayerController;
-    EColorBlending ColorBlending;
-    Float2 Offset;
-    Float2 Size;
-    EWidgetAlignment HorizontalAlignment;
-    EWidgetAlignment VerticalAlignment;
-};
-#endif

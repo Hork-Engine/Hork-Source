@@ -137,12 +137,6 @@ public:
     /** Map coordinate from monitor space to window space */
     void UnmapWindowCoordinate( float & InOutX, float & InOutY ) const;
 
-    /** Set cursor position */
-    void SetCursorPosition( float _X, float _Y ) { CursorPosition.X = _X; CursorPosition.Y = _Y; }
-
-    /** Get cursor position */
-    Float2 const & GetCursorPosition() const { return CursorPosition; }
-
     /** Set game module */
     IGameModule * GetGameModule() { return GameModule; }
 
@@ -214,8 +208,6 @@ private:
 
     float DPI_X;
     float DPI_Y;
-
-    Float2 CursorPosition;
 
     //class AImguiContext * ImguiContext;
 

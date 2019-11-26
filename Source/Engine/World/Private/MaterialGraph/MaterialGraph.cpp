@@ -445,7 +445,7 @@ void MGMaterialStage::Compute( AMaterialBuildContext & _Context ) {
                     _Context.SourceCode += nsvName + " = vec4( " + connection->Expression + " );\n";
                     break;
                 default:
-                    GLogger.Printf( "%s: Invalid input type\n", GetObjectNameConstChar() );
+                    GLogger.Printf( "%s: Invalid input type\n", GetObjectNameCStr() );
                     break;
                 }
             }
@@ -464,7 +464,7 @@ void MGMaterialStage::Compute( AMaterialBuildContext & _Context ) {
                 _Context.SourceCode += nsvName + " = vec4( 0.0 );\n";
                 break;
             default:
-                GLogger.Printf( "%s: Invalid input type\n", GetObjectNameConstChar() );
+                GLogger.Printf( "%s: Invalid input type\n", GetObjectNameCStr() );
                 break;
             }
         }

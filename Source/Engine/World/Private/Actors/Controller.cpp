@@ -34,3 +34,34 @@ AN_CLASS_META( AController )
 
 AController::AController() {
 }
+
+void AController::Tick( float _TimeStep ) {
+    Super::Tick( _TimeStep );
+
+    if ( Pawn && Pawn->IsPendingKill() ) {
+        SetPawn( nullptr );
+    }
+}
+
+void AController::SetPawn( APawn * _Pawn ) {
+    if ( IsSame( Pawn, _Pawn ) ) {
+        return;
+    }
+
+    if ( _Pawn && _Pawn->OwnerController ) {
+        GLogger.Printf( "Pawn already controlled by other controller\n" );
+        return;
+    }
+
+    if ( Pawn ) {
+        Pawn->OwnerController = nullptr;
+    }
+
+    Pawn = _Pawn;
+
+    if ( Pawn ) {
+        Pawn->OwnerController = this;
+    }
+
+    OnPawnChanged();
+}

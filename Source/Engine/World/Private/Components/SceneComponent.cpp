@@ -79,7 +79,7 @@ void ASceneComponent::AttachTo( ASceneComponent * _Parent, const char * _Socket,
 }
 
 void ASceneComponent::_AttachTo( ASceneComponent * _Parent, bool _KeepWorldTransform ) {
-    if ( AttachParent == _Parent ) {
+    if ( IsSame( AttachParent, _Parent ) ) {
         // Already attached
         return;
     }
@@ -95,7 +95,7 @@ void ASceneComponent::_AttachTo( ASceneComponent * _Parent, bool _KeepWorldTrans
         return;
     }
 
-    if ( _Parent->GetParentActor() != GetParentActor() ) {
+    if ( !IsSame( _Parent->GetParentActor(), GetParentActor() ) ) {
         GLogger.Printf( "ASceneComponent::Attach: Parent and child are in different actors\n" );
         return;
     }
@@ -171,7 +171,7 @@ void ASceneComponent::DetachChilds( bool _bRecursive, bool _KeepWorldTransform )
 
 bool ASceneComponent::IsChild( ASceneComponent * _Child, bool _Recursive ) const {
     for ( ASceneComponent * child : Childs ) {
-        if ( child == _Child || ( _Recursive && child->IsChild( _Child, true ) ) ) {
+        if ( IsSame( child, _Child ) || ( _Recursive && child->IsChild( _Child, true ) ) ) {
             return true;
         }
     }
@@ -900,8 +900,8 @@ void ASceneComponent::Step( Float3 const & _Vector ) {
     MarkTransformDirty();
 }
 
-void ASceneComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
+void ASceneComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
 
     // Draw sockets
     if ( RVDrawSockets ) {
@@ -921,9 +921,9 @@ void ASceneComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
             transform.Compose( worldTransform * transform.DecomposeTranslation(),
                                worldRotation.ToMatrix(),
                                transform.DecomposeScale() * worldScale );
-            _DebugDraw->DrawAxis( transform, true );
+            InRenderer->DrawAxis( transform, true );
 #else
-            _DebugDraw->DrawAxis( GetWorldTransformMatrix() * transform, true );
+            InRenderer->DrawAxis( GetWorldTransformMatrix() * transform, true );
 #endif
         }
     }

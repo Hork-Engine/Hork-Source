@@ -65,7 +65,7 @@ WWidget & WWidget::SetParent( WWidget * _Parent ) {
         return *this;
     }
 
-    if ( Parent == _Parent ) {
+    if ( IsSame( Parent, _Parent ) ) {
         return *this;
     }
 
@@ -97,10 +97,6 @@ WWidget & WWidget::SetParent( WWidget * _Parent ) {
 }
 
 void WWidget::UpdateDesktop_r( WDesktop * _Desktop ) {
-    //if ( Desktop == _Desktop ) {
-    //    return;
-    //}
-
     Desktop = _Desktop;
     for ( WWidget * child : Childs ) {
         child->UpdateDesktop_r( _Desktop );

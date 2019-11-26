@@ -33,7 +33,7 @@ SOFTWARE.
 #include "CollisionEvents.h"
 #include "Components/PhysicalBody.h"
 
-class ADebugDraw;
+class ADebugRenderer;
 
 class btBroadphaseInterface;
 class btDefaultCollisionConfiguration;
@@ -133,7 +133,9 @@ struct SCollisionContact {
     bool bComponentBDispatchOverlapEvents;
 
     int Hash() const {
-        return ( size_t )ComponentA + ( size_t )ComponentB;
+        uint32_t hash = Core::PHHash( (const char *)&ComponentA->Id, sizeof( ComponentA->Id ) );
+        hash = Core::PHHash( (const char *)&ComponentB->Id, sizeof( ComponentB->Id ), hash );
+        return hash;
     }
 };
 
@@ -220,7 +222,7 @@ public:
     /** Simulate the physics */
     void Simulate( float _TimeStep );
 
-    void DrawDebug( ADebugDraw * _DebugDraw );
+    void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
     /** Add physical body to pending list */
@@ -235,6 +237,8 @@ private:
     void GenerateContactPoints( int _ContactIndex, SCollisionContact & _Contact );
 
     void DispatchContactAndOverlapEvents();
+
+    void RemoveCollisionContacts();
 
     static void OnPrePhysics( class btDynamicsWorld * _World, float _TimeStep );
     static void OnPostPhysics( class btDynamicsWorld * _World, float _TimeStep );

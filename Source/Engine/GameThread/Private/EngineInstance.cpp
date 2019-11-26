@@ -29,8 +29,8 @@ SOFTWARE.
 */
 
 #include <GameThread/Public/EngineInstance.h>
-#include <GameThread/Public/RenderFrontend.h>
 #include <World/Public/Base/ResourceManager.h>
+#include <World/Public/Render/RenderFrontend.h>
 #include <World/Public/Audio/AudioSystem.h>
 #include <World/Public/Audio/AudioCodec/OggVorbisDecoder.h>
 #include <World/Public/Audio/AudioCodec/Mp3Decoder.h>
@@ -195,7 +195,9 @@ void AEngineInstance::PrepareFrame() {
 
     UpdateInputAxes( AxesFract );
 
-    GRenderFrontend.Render();
+    DrawCanvas();
+
+    GRenderFrontend.Render( &Canvas );
 }
 
 void AEngineInstance::UpdateFrame() {
@@ -220,7 +222,7 @@ void AEngineInstance::UpdateFrame() {
     GAudioSystem.Update( APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
 
     // Build draw lists for canvas
-    DrawCanvas();
+    //DrawCanvas();
 
 #ifdef IMGUI_CONTEXT
     // Imgui test
@@ -237,25 +239,32 @@ void AEngineInstance::UpdateFrame() {
 void AEngineInstance::DrawCanvas() {
     Canvas.Begin( VideoMode.Width, VideoMode.Height );
 
-    if ( Desktop )
+    if ( IsWindowVisible() )
     {
-        // Draw desktop
-        Desktop->SetSize( VideoMode.Width, VideoMode.Height );
-        Desktop->GenerateWindowHoverEvents();
-        Desktop->GenerateDrawEvents( Canvas );
+        if ( Desktop )
+        {
+            // Draw desktop
+            Desktop->SetSize( VideoMode.Width, VideoMode.Height );
+            Desktop->GenerateWindowHoverEvents();
+            Desktop->GenerateDrawEvents( Canvas );
+            if ( Desktop->IsCursorVisible() )
+            {
+                Desktop->DrawCursor( Canvas, true );
+            }
 
-        // Draw halfscreen console
-        GConsole.SetFullscreen( false );
-        GConsole.Draw( &Canvas, FrameDurationInSeconds );
-    }
-    else
-    {
-        // Draw fullscreen console
-        GConsole.SetFullscreen( true );
-        GConsole.Draw( &Canvas, FrameDurationInSeconds );
-    }
+            // Draw halfscreen console
+            GConsole.SetFullscreen( false );
+            GConsole.Draw( &Canvas, FrameDurationInSeconds );
+        }
+        else
+        {
+            // Draw fullscreen console
+            GConsole.SetFullscreen( true );
+            GConsole.Draw( &Canvas, FrameDurationInSeconds );
+        }
 
-    ShowStats();
+        ShowStats();
+    }
 
     Canvas.End();
 }
@@ -461,6 +470,8 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
         }
     }
 
+    Float2 CursorPosition = AInputComponent::GetCursorPosition();
+
     // Simulate ballistics
     const bool bSimulateCursorBallistics = true;
     if ( bSimulateCursorBallistics ) {
@@ -471,6 +482,8 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
         CursorPosition.Y -= _Event.Y;
     }
     CursorPosition = CursorPosition.Clamp( Float2(0.0f), Float2( FramebufferWidth, FramebufferHeight ) );
+
+    AInputComponent::SetCursorPosition( CursorPosition.X, CursorPosition.Y );
 
     if ( Desktop ) {
         Desktop->SetCursorPosition( CursorPosition );

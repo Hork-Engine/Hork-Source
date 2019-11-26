@@ -33,7 +33,7 @@ SOFTWARE.
 // TODO: dynamic obstacles, areas, area connections, crowd
 
 #include <World/Public/Base/BaseObject.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 
 #include <Core/Public/BitMask.h>
 
@@ -368,7 +368,7 @@ public:
     void Update( float _TimeStep );
 
     /** Draw debug info */
-    void DrawDebug( ADebugDraw * _DebugDraw );
+    void DrawDebug( ADebugRenderer * InRenderer );
 
     /** Casts a 'walkability' ray along the surface of the navigation mesh from
     the start position toward the end position. */

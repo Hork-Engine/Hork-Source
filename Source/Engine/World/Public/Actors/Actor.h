@@ -175,7 +175,7 @@ protected:
     virtual void TickPostPhysics( float _TimeStep ) {}
 
     /** Draw debug primitives */
-    virtual void DrawDebug( ADebugDraw * _DebugDraw );
+    virtual void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
 

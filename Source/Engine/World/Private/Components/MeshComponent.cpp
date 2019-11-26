@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 
 ARuntimeVariable RVDrawMeshBounds( _CTS( "DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( AMeshComponent )
 
@@ -100,7 +101,7 @@ void AMeshComponent::SetCastShadow( bool _CastShadow ) {
 }
 
 void AMeshComponent::SetMesh( AIndexedMesh * _Mesh ) {
-    if ( Mesh == _Mesh ) {
+    if ( IsSame( Mesh, _Mesh ) ) {
         return;
     }
 
@@ -225,24 +226,27 @@ void AMeshComponent::NotifyMeshChanged() {
     OnMeshChanged();
 }
 
-void AMeshComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
+void AMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
 
-    Mesh->DrawDebug( _DebugDraw );
+    if ( RVDrawIndexedMeshBVH )
+    {
+        Mesh->DrawBVH( InRenderer, GetWorldTransformMatrix() );
+    }
 
     if ( RVDrawMeshBounds )
     {
-        _DebugDraw->SetDepthTest( true );
+        InRenderer->SetDepthTest( true );
 
         if ( IsSkinnedMesh() )
         {
-            _DebugDraw->SetColor( AColor4( 0.5f,0.5f,1,1 ) );
+            InRenderer->SetColor( AColor4( 0.5f,0.5f,1,1 ) );
         }
         else
         {
-            _DebugDraw->SetColor( AColor4( 1,1,1,1 ) );
+            InRenderer->SetColor( AColor4( 1,1,1,1 ) );
         }
 
-        _DebugDraw->DrawAABB( GetWorldBounds() );
+        InRenderer->DrawAABB( GetWorldBounds() );
     }
 }

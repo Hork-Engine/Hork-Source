@@ -723,6 +723,116 @@ struct SShadowRenderInstance {
 };
 
 //
+// Frustum cluster data
+//
+
+constexpr int MAX_FRUSTUM_CLUSTERS_X = 16;
+constexpr int MAX_FRUSTUM_CLUSTERS_Y = 8;
+constexpr int MAX_FRUSTUM_CLUSTERS_Z = 24;
+constexpr float FRUSTUM_CLUSTER_ZNEAR = 0.0125f;
+constexpr float FRUSTUM_CLUSTER_ZFAR = 512;
+constexpr float FRUSTUM_CLUSTER_ZRANGE = FRUSTUM_CLUSTER_ZFAR - FRUSTUM_CLUSTER_ZNEAR;
+constexpr int FRUSTUM_SLICE_OFFSET = 20;
+constexpr float FRUSTUM_CLUSTER_WIDTH = 2.0f / MAX_FRUSTUM_CLUSTERS_X;
+constexpr float FRUSTUM_CLUSTER_HEIGHT = 2.0f / MAX_FRUSTUM_CLUSTERS_Y;
+extern float FRUSTUM_SLICE_SCALE;
+extern float FRUSTUM_SLICE_BIAS;
+extern float FRUSTUM_SLICE_ZCLIP[MAX_FRUSTUM_CLUSTERS_Z + 1];
+
+/** Max lights, Max decals, Max probes per cluster */
+constexpr int MAX_CLUSTER_ITEMS = 256;
+
+/** Max lights per cluster */
+constexpr int MAX_CLUSTER_LIGHTS = MAX_CLUSTER_ITEMS;
+
+/** Max decals per cluster */
+constexpr int MAX_CLUSTER_DECALS = MAX_CLUSTER_ITEMS;
+
+/** Max probes per cluster */
+constexpr int MAX_CLUSTER_PROBES = MAX_CLUSTER_ITEMS;
+
+/** Max lights per frame. Indexed by 12 bit integer, limited by shader max uniform buffer size. */
+constexpr int MAX_LIGHTS = 768;//1024
+
+/** Max decals per frame. Indexed by 12 bit integer. */
+constexpr int MAX_DECALS = 1024;
+
+/** Max probes per frame. Indexed by 8 bit integer */
+constexpr int MAX_PROBES = 256;
+
+/** Total max items per frame. */
+constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
+
+// texture3d RG32UI
+// ivec2 Offset = texelFetch( ClusterLookup, TexCoord ).xy;
+// Offset.X  -- item offset
+// int NumProbes = Offest.Y & 0xff;
+// int NumDecals = ( Offest.Y >> 8 ) & 0xff;
+// int NumLights = ( Offest.Y >> 16 ) & 0xff;
+// int Unused = ( Offest.Y >> 24 ) & 0xff // can be used in future
+struct SClusterBuffer {
+    uint32_t ItemOffset;
+    byte NumProbes;
+    byte NumDecals;
+    byte NumLights;
+    byte Unused;
+};
+
+// texture1d R32UI
+struct SClusterItemBuffer {
+    /**
+    Packed light, decal and probe index:
+
+    Read indices in shader:
+        uint Indices = (uint)(texelFetch( ItemList, Offset.X ).X);
+
+    Unpack indices:
+        int LightIndex = Indices & 0x3ff;
+        int DecalIndex = ( Indices >> 12 ) & 0x3ff;
+        int ProbeIndex = Indices >> 24;
+    */
+    uint32_t Indices;
+};
+
+struct SClusterLight {
+    Float3 Position;     // For point and spot lights: position and radius
+    float  OuterRadius;
+
+    float LightType;
+    float InnerRadius;
+    float OuterConeAngle;
+    float InnerConeAngle;
+
+    Float3 SpotDirection;
+    float SpotExponent;
+
+    Float4 Color;    // RGB, alpha - ambient intensity
+
+    unsigned int RenderMask;
+    unsigned int Padding0;
+    unsigned int Padding1;
+    unsigned int Padding2;
+};
+
+struct SFrameLightData {
+    static constexpr int MAX_ITEM_BUFFER = 1024*128; // TODO: подобрать оптимальный размер
+
+    SClusterBuffer OffsetBuffer[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
+
+    SClusterItemBuffer ItemBuffer[MAX_ITEM_BUFFER + MAX_CLUSTER_ITEMS*3]; //  + MAX_CLUSTER_ITEMS*3 для возможного выхода за пределы массива на максимальное количество итемов в кластере
+    int TotalItems;
+
+    SClusterLight Lights[MAX_LIGHTS];
+    int TotalLights;
+
+    //SClusterDecal Probes[MAX_DECAL];
+    //int TotalDecals;
+
+    //SClusterProbe Probes[MAX_PROBES];
+    //int TotalProbes;
+};
+
+//
 // Render frame
 //
 
@@ -814,6 +924,8 @@ struct SRenderFrame {
     TPodArray< SDirectionalLightDef * > DirectionalLights;
     TPodArray< SLightDef * > Lights;
 
+    SFrameLightData LightData; // FIXME: move to renderview?
+
     SHUDDrawList * DrawListHead;
     SHUDDrawList * DrawListTail;
 
@@ -830,104 +942,6 @@ struct SRenderFrontendDef {
 
     int PolyCount;
     int ShadowMapPolyCount;
-};
-
-
-//
-// Frustum cluster data
-//
-
-struct SFrustumCluster {
-    unsigned short LightsCount;
-    unsigned short DecalsCount;
-    unsigned short ProbesCount;
-};
-
-struct SFrustumSlice {
-    static constexpr int NUM_CLUSTERS_X = 16;
-    static constexpr int NUM_CLUSTERS_Y = 8;
-    static constexpr int NUM_CLUSTERS_Z = 24;
-
-    const float ZNear = 0.0125f;
-    const float ZFar = 512;
-    const float ZRange = ZFar - ZNear;
-    const int NearOffset = 20;
-    const float DeltaX = 2.0f / NUM_CLUSTERS_X;
-    const float DeltaY = 2.0f / NUM_CLUSTERS_Y;
-    const float Scale = -(NUM_CLUSTERS_Z + NearOffset) / std::log2( (double)ZFar / ZNear );
-    const float Bias = std::log2( (double)ZFar ) * (NUM_CLUSTERS_Z + NearOffset) / std::log2( (double)ZFar / ZNear ) - NearOffset;
-    float ZClip[NUM_CLUSTERS_Z + 1];
-
-    static SFrustumCluster Clusters[SFrustumSlice::NUM_CLUSTERS_Z][SFrustumSlice::NUM_CLUSTERS_Y][SFrustumSlice::NUM_CLUSTERS_X];
-
-    SFrustumSlice();
-};
-
-extern SFrustumSlice GFrustumSlice;
-
-
-
-// texture3d RG32UI
-// ivec2 Offset = texelFetch( ClusterLookup, TexCoord ).xy;
-// Offset.X  -- item offset
-// int NumProbes = Offest.Y & 0xff;
-// int NumDecals = ( Offest.Y >> 8 ) & 0xff;
-// int NumLights = ( Offest.Y >> 16 ) & 0xff;
-// int Unused = ( Offest.Y >> 24 ) & 0xff // can be used in future
-struct SClusterBuffer {
-    uint32_t ItemOffset;
-    byte NumProbes;
-    byte NumDecals;
-    byte NumLights;
-    byte Unused;
-};
-
-// texture1d R32UI
-// uint ItemIndices = (uint)(texelFetch( ItemList, Offset.X ).X);
-// int LightIndex = ItemIndices & 0x3ff;
-// int DecalIndex = ( ItemIndices >> 12 ) & 0x3ff;
-// int ProbeIndex = ItemIndices >> 24;
-struct SClusterItemBuffer {
-    uint32_t Indices;
-};
-
-struct SClusterLight {
-    Float3 Position;     // For point and spot lights: position and radius
-    float  OuterRadius;
-
-    float LightType;
-    float InnerRadius;
-    float OuterConeAngle;
-    float InnerConeAngle;
-
-    Float3 SpotDirection;
-    float SpotExponent;
-
-    Float4 Color;    // RGB, alpha - ambient intensity
-
-    unsigned int RenderMask;
-    unsigned int Padding0;
-    unsigned int Padding1;
-    unsigned int Padding2;
-};
-
-struct SFrameLightData {
-    static constexpr int MAX_ITEM_BUFFER = 1024*128; // TODO: подобрать оптимальный размер
-    static constexpr int MAX_CLUSTER_ITEMS = 256;
-    static constexpr int MAX_LIGHTS = 768;//1024 // indexed by 12 bit integer, limited by shader max uniform buffer size
-    static constexpr int MAX_DECALS = 1024; // indexed by 12 bit integer
-    static constexpr int MAX_PROBES = 256;  // indexed by 8 bit integer
-
-    SClusterBuffer ClusterOffsetBuffer[SFrustumSlice::NUM_CLUSTERS_Z][SFrustumSlice::NUM_CLUSTERS_Y][SFrustumSlice::NUM_CLUSTERS_X];
-
-    SClusterItemBuffer ClusterItemBuffer[MAX_ITEM_BUFFER + MAX_CLUSTER_ITEMS*3]; //  + MAX_CLUSTER_ITEMS*3 для возможного выхода за пределы массива на максимальное количество итемов в кластере
-    int TotalItems;
-
-    SClusterLight Lights[MAX_LIGHTS];
-    int TotalLights;
-
-    //FClusterProbe Probes[MAX_PROBES];
-    //int TotalProbes;
 };
 
 

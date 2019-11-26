@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <World/Public/Components/DirectionalLightComponent.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 
 struct STemperatureToColor {
 

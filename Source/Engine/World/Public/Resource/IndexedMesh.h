@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <World/Public/Base/BaseObject.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 #include "Material.h"
 #include "CollisionBody.h"
 #include "Skeleton.h"
@@ -185,7 +185,7 @@ public:
     /** Check ray intersection */
     bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
 
-    void DrawBVH( ADebugDraw * _DebugDraw );
+    void DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix );
 
 protected:
     AIndexedMeshSubpart();
@@ -484,7 +484,7 @@ public:
 
     void GenerateSoftbodyLinksFromFaces();
 
-    void DrawDebug( ADebugDraw * _DebugDraw );
+    void DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix );
 
 protected:
     AIndexedMesh();

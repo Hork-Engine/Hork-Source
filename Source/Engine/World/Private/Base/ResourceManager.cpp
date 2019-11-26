@@ -240,7 +240,7 @@ AResource * AResourceManager::GetOrCreateResource( AClassMeta const &  _ClassMet
     }
 
     if ( resource ) {
-        //GLogger.Printf( "CACHING %s: Name %s, Physical path: \"%s\", Alias: \"%s\"\n", resource->GetObjectNameConstChar(), resource->FinalClassName(), resource->GetResourcePath().CStr(), resource->GetResourceAlias().CStr() );
+        //GLogger.Printf( "CACHING %s: Name %s, Physical path: \"%s\", Alias: \"%s\"\n", resource->GetObjectNameCStr(), resource->FinalClassName(), resource->GetResourcePath().CStr(), resource->GetResourceAlias().CStr() );
 
         return resource;
     }

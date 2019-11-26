@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Components/PointLightComponent.h>
 #include <World/Public/World.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 
 constexpr float DEFAULT_INNER_RADIUS = 0.5f;
 constexpr float DEFAULT_OUTER_RADIUS = 1.0f;
@@ -106,16 +106,16 @@ void APointLightComponent::UpdateBoundingBox() {
     OBBTransformInverse = OBBTransform.Inversed();
 }
 
-void APointLightComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
+void APointLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
 
     if ( RVDrawPointLights ) {
         Float3 pos = GetWorldPosition();
 
-        _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
-        _DebugDraw->DrawSphere( pos, InnerRadius );
-        _DebugDraw->SetColor( AColor4( 1, 1, 1, 1 ) );
-        _DebugDraw->DrawSphere( pos, OuterRadius );
+        InRenderer->SetDepthTest( false );
+        InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+        InRenderer->DrawSphere( pos, InnerRadius );
+        InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
+        InRenderer->DrawSphere( pos, OuterRadius );
     }
 }

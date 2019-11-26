@@ -30,7 +30,7 @@ SOFTWARE.
 
 #if 0
 #include <World/Public/Components/LightComponent.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 

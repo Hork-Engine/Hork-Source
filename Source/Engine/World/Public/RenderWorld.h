@@ -39,6 +39,7 @@ class ASkinnedComponent;
 class ADirectionalLightComponent;
 class APointLightComponent;
 class ASpotLightComponent;
+class ADebugRenderer;
 struct SRenderFrontendDef;
 
 class ARenderWorld {
@@ -98,6 +99,8 @@ public:
 
     void RenderFrontend_AddInstances( SRenderFrontendDef * _Def );
     void RenderFrontend_AddDirectionalShadowmapInstances( SRenderFrontendDef * _Def );
+
+    void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
     AWorld * pOwnerWorld;

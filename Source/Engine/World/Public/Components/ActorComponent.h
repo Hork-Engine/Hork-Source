@@ -36,7 +36,7 @@ SOFTWARE.
 class AWorld;
 class ALevel;
 class AActor;
-class ADebugDraw;
+class ADebugRenderer;
 
 #define AN_COMPONENT( _Class, _SuperClass ) \
     AN_FACTORY_CLASS( AActorComponent::Factory(), _Class, _SuperClass ) \
@@ -111,7 +111,7 @@ protected:
 
     virtual void TickComponent( float _TimeStep ) {}
 
-    virtual void DrawDebug( ADebugDraw * _DebugDraw ) {}
+    virtual void DrawDebug( ADebugRenderer * InRenderer ) {}
 
 private:
 

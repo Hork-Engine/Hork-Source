@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Components/SpotLightComponent.h>
 #include <World/Public/World.h>
-#include <World/Public/Base/DebugDraw.h>
+#include <World/Public/Base/DebugRenderer.h>
 
 constexpr float DEFAULT_INNER_RADIUS = 0.5f;
 constexpr float DEFAULT_OUTER_RADIUS = 1.0f;
@@ -194,16 +194,16 @@ void ASpotLightComponent::UpdateBoundingBox() {
     }
 }
 
-void ASpotLightComponent::DrawDebug( ADebugDraw * _DebugDraw ) {
-    Super::DrawDebug( _DebugDraw );
+void ASpotLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
 
     if ( RVDrawSpotLights ) {
         Float3 pos = GetWorldPosition();
         Float3x3 orient = GetWorldRotation().ToMatrix();
-        _DebugDraw->SetDepthTest( false );
-        _DebugDraw->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
-        _DebugDraw->DrawCone( pos, orient, OuterRadius, InnerConeAngle * 0.5f );
-        _DebugDraw->SetColor( AColor4( 1, 1, 1, 1 ) );
-        _DebugDraw->DrawCone( pos, orient, OuterRadius, OuterConeAngle * 0.5f );
+        InRenderer->SetDepthTest( false );
+        InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+        InRenderer->DrawCone( pos, orient, OuterRadius, InnerConeAngle * 0.5f );
+        InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
+        InRenderer->DrawCone( pos, orient, OuterRadius, OuterConeAngle * 0.5f );
     }
 }

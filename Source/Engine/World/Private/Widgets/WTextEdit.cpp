@@ -488,7 +488,7 @@ bool WTextEdit::HasSelection() const {
 }
 
 WScroll * WTextEdit::GetScroll() {
-    return GetParent() ? Upcast< WScroll >( GetParent() ) : nullptr;
+    return Upcast< WScroll >( GetParent() );
 }
 
 void WTextEdit::ScrollHome() {

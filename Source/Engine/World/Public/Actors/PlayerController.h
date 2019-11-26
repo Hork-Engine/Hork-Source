@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include "Controller.h"
 #include "HUD.h"
-#include <World/Public/Components/CameraComponent.h>
 #include <World/Public/CommandContext.h>
 #include <World/Public/Audio/AudioSystem.h>
 
@@ -49,7 +48,7 @@ public:
     int RenderingMask = ~0;
 
     // TODO:
-    //TRef< FTexture3D > ColorGradingLUT;
+    //TRef< ATexture > ColorGradingLUT;
 
 private:
     ARenderingParameters() {}
@@ -73,7 +72,7 @@ private:
     ~AAudioParameters() {}
 };
 
-/*
+/**
 
 APlayerController
 
@@ -84,73 +83,90 @@ class ANGIE_API APlayerController : public AController {
     AN_ACTOR( APlayerController, AController )
 
 public:
+    /** Player command context */
     ACommandContext CommandContext;
 
-    void SetPawn( APawn * _Pawn );
-
-    void SetViewCamera( ACameraComponent * _Camera );
-
+    /** Set viewport */
     void SetViewport( Float2 const & _Position, Float2 const & _Size );
 
+    /** Override listener location. If listener is not specified, pawn camera will be used. */
     void SetAudioListener( ASceneComponent * _AudioListener );
 
+    /** Set HUD actor */
     void SetHUD( AHUD * _HUD );
 
+    /** Set viewport rendering parameters */
     void SetRenderingParameters( ARenderingParameters * _RP );
 
+    /** Set audio rendering parameters */
     void SetAudioParameters( AAudioParameters * _AudioParameters );
 
-    // Forward setting input mappings to input component
+    /** Set input mappings for input component */
     void SetInputMappings( AInputMappings * _InputMappings );
 
+    /** Set controller player index */
     void SetPlayerIndex( int _ControllerId );
 
+    /** Set player controller as primary audio listener */
     void SetCurrentAudioListener();
 
+    /** Set player controller command context current */
     void SetCurrentCommandContext();
 
+    /** Activate or deactivate controller inputs */
     void SetActive( bool _Active );
 
-    //void AddViewActor( FViewActor * _ViewActor );
-
-    APawn * GetPawn() const { return Pawn; }    
-
-    ACameraComponent * GetViewCamera() const { return CameraComponent; }    
-
-    //SViewport const & GetViewport() const { return Viewport; }
+    /** Get viewport screen position */
     Float2 const & GetViewportPosition() const { return ViewportPosition; }
 
+    /** Get viewport screen size */
     Float2 const & GetViewportSize() const { return ViewportSize; }
 
-    ASceneComponent * GetAudioListener() { return AudioListener ? AudioListener.GetObject() : CameraComponent; }
+    /** Get current audio listener */
+    ASceneComponent * GetAudioListener();
 
+    /** Get HUD actor */
     AHUD * GetHUD() const { return HUD; }
 
+    /** Get viewport rendering parameters */
     ARenderingParameters * GetRenderingParameters() { return RenderingParameters; }
 
+    /** Get audio rendering parameters */
     AAudioParameters * GetAudioParameters() { return AudioParameters; }
 
+    /** Get input mappings of input component */
     AInputMappings * GetInputMappings();
 
+    /** Return input component */
     AInputComponent * GetInputComponent() const { return InputComponent; }
 
+    /** Get cursor location in viewport-relative coordinates */
+    Float2 GetLocalCursorPosition() const;
+
+    /** Get normalized cursor location in viewport-relative coordinates */
+    Float2 GetNormalizedCursorPosition() const;
+
+    /** Get controller player index */
     int GetPlayerIndex() const;
 
+    /** Active status of controller inputs */
     bool IsActive() const;
 
+    /** Primary audio listener */
     static APlayerController * GetCurrentAudioListener();
+
+    /** Current command context */
     static ACommandContext * GetCurrentCommandContext();
 
-    //void VisitViewActors();
-
-    Float2 GetNormalizedCursorPos() const override;
-
 protected:
+
+    AInputComponent * InputComponent;
 
     APlayerController();
 
     void EndPlay() override;
-    void Tick( float _TimeStep ) override;
+
+    void OnPawnChanged() override;
 
 private:
     void Quit( ARuntimeCommandProcessor const & _Proc );
@@ -162,10 +178,7 @@ private:
 
     TRef< ARenderingParameters > RenderingParameters;
     TRef< AAudioParameters > AudioParameters;
-    AInputComponent * InputComponent;
-    TWeakRef< ACameraComponent > CameraComponent;
     TWeakRef< ASceneComponent > AudioListener;
-    TRef< APawn > Pawn;
     TWeakRef< AHUD > HUD;
     Float2 ViewportPosition;
     Float2 ViewportSize;

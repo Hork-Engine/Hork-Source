@@ -54,7 +54,7 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
-    void DrawDebug( ADebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
 
 private:
     void UpdateBoundingBox();

@@ -159,7 +159,7 @@ protected:
 
     ACollisionBodyComposition const & DefaultBodyComposition() const override;
 
-    void DrawDebug( ADebugDraw * _DebugDraw ) override;
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
 
     virtual void OnMeshChanged() {}
 
