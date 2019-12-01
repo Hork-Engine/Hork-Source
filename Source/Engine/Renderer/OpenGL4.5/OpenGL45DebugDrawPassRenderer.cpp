@@ -300,6 +300,10 @@ void ADebugDrawPassRenderer::RenderInstances() {
         drawCmd.StartIndexLocation = cmd->FirstIndex;
 
         Cmd.Draw( &drawCmd );
+
+        if ( RVRenderSnapshot ) {
+            SaveSnapshot(GRenderTarget.GetFramebufferTexture());
+        }
     }
 
     Cmd.EndRenderPass();

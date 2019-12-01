@@ -60,7 +60,8 @@ SOFTWARE.
 #include <GLFW/glfw3.h>
 
 ARuntimeVariable RVRenderView( _CTS("RenderView"), _CTS("1"), VAR_CHEAT );
-ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
+ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("1"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
+ARuntimeVariable RVRenderSnapshot( _CTS("RenderSnapshot"), _CTS( "0" ), VAR_CHEAT );
 
 extern thread_local char LogBuffer[16384]; // Use existing log buffer
 
@@ -427,23 +428,18 @@ void ARenderBackend::SetGPUEvent() {
 }
 
 ATextureGPU * ARenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
-    void * pData = GZoneMemory.AllocCleared( sizeof( ATextureGPU ), 1 );
-    ATextureGPU * texture = new (pData) ATextureGPU;
-    texture->pOwner = _Owner;
+    ATextureGPU * texture = CreateResource< ATextureGPU >( _Owner );
     texture->pHandleGPU = GZoneMemory.AllocCleared( sizeof( GHI::Texture ), 1 );
     new (texture->pHandleGPU) GHI::Texture;
-    RegisterGPUResource( texture );
     return texture;
 }
 
 void ARenderBackend::DestroyTexture( ATextureGPU * _Texture ) {
     using namespace GHI;
-    UnregisterGPUResource( _Texture );
     GHI::Texture * texture = GPUTextureHandle( _Texture );
     texture->~Texture();
     GZoneMemory.Dealloc( _Texture->pHandleGPU );
-    _Texture->~ATextureGPU();
-    GZoneMemory.Dealloc( _Texture );
+    DestroyResource( _Texture );
 }
 
 void ARenderBackend::InitializeTexture1D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
@@ -581,23 +577,18 @@ void ARenderBackend::ReadTexture( ATextureGPU * _Texture, STextureRect const & _
 }
 
 ABufferGPU * ARenderBackend::CreateBuffer( IGPUResourceOwner * _Owner ) {
-    void * pData = GZoneMemory.AllocCleared( sizeof( ABufferGPU ), 1 );
-    ABufferGPU * buffer = new (pData) ABufferGPU;
-    buffer->pOwner = _Owner;
+    ABufferGPU * buffer = CreateResource< ABufferGPU >( _Owner );
     buffer->pHandleGPU = GZoneMemory.AllocCleared( sizeof( GHI::Buffer ), 1 );
     new (buffer->pHandleGPU) GHI::Buffer;
-    RegisterGPUResource( buffer );
     return buffer;
 }
 
 void ARenderBackend::DestroyBuffer( ABufferGPU * _Buffer ) {
     using namespace GHI;
-    UnregisterGPUResource( _Buffer );
     GHI::Buffer * texture = GPUBufferHandle( _Buffer );
     texture->~Buffer();
     GZoneMemory.Dealloc( _Buffer->pHandleGPU );
-    _Buffer->~ABufferGPU();
-    GZoneMemory.Dealloc( _Buffer );
+    DestroyResource( _Buffer );
 }
 
 void ARenderBackend::InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes, bool _DynamicStorage ) {
@@ -643,17 +634,11 @@ void ARenderBackend::ReadBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_
 }
 
 AMaterialGPU * ARenderBackend::CreateMaterial( IGPUResourceOwner * _Owner ) {
-    void * pData = GZoneMemory.AllocCleared( sizeof( AMaterialGPU ), 1 );
-    AMaterialGPU * material = new (pData) AMaterialGPU;
-    material->pOwner = _Owner;
-    RegisterGPUResource( material );
-    return material;
+    return CreateResource< AMaterialGPU >( _Owner );
 }
 
 void ARenderBackend::DestroyMaterial( AMaterialGPU * _Material ) {
     using namespace GHI;
-
-    UnregisterGPUResource( _Material );
 
     AShadeModelLit * Lit = (AShadeModelLit *)_Material->ShadeModel.Lit;
     AShadeModelUnlit* Unlit = (AShadeModelUnlit *)_Material->ShadeModel.Unlit;
@@ -674,8 +659,7 @@ void ARenderBackend::DestroyMaterial( AMaterialGPU * _Material ) {
         GZoneMemory.Dealloc( HUD );
     }
 
-    _Material->~AMaterialGPU();
-    GZoneMemory.Dealloc( _Material );
+    DestroyResource( _Material );
 }
 
 void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) {
@@ -865,6 +849,8 @@ void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
 
     SetGPUEvent();
     SwapBuffers();
+
+    RVRenderSnapshot = false;
 }
 
 void ARenderBackend::RenderView( SRenderView * _RenderView ) {

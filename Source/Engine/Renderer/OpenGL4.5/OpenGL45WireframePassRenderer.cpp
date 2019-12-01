@@ -174,6 +174,10 @@ void AWireframePassRenderer::RenderInstances() {
         drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
         Cmd.Draw( &drawCmd );
+
+        if ( RVRenderSnapshot ) {
+            SaveSnapshot(GRenderTarget.GetFramebufferTexture());
+        }
     }
 
     Cmd.EndRenderPass();

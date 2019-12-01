@@ -208,9 +208,18 @@ void AColorPassRenderer::RenderInstances() {
     vp.MaxDepth = 1;
     Cmd.SetViewport( vp );
 
-    if ( GRenderView->bClearBackground ) {
+//    bool bMakeSnapshot = RVRenderSnapshot;
+//    if ( bMakeSnapshot ) {
+//        RVRenderSnapshot = false;
+//    }
+
+    if ( GRenderView->bClearBackground || RVRenderSnapshot ) {
         unsigned int attachment = 0;
         Cmd.ClearFramebufferAttachments( GRenderTarget.GetFramebuffer(), &attachment, 1, &clearValue, nullptr, nullptr );
+
+        if ( RVRenderSnapshot ) {
+            SaveSnapshot(GRenderTarget.GetFramebufferTexture());
+        }
     }
 
     DrawIndexedCmd drawCmd;
@@ -245,6 +254,10 @@ void AColorPassRenderer::RenderInstances() {
         drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
         Cmd.Draw( &drawCmd );
+
+        if ( RVRenderSnapshot ) {
+            SaveSnapshot(GRenderTarget.GetFramebufferTexture());
+        }
     }
 
     Cmd.EndRenderPass();

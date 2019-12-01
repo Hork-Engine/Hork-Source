@@ -43,6 +43,7 @@ SOFTWARE.
 #include "GHI/GHIRenderPass.h"
 
 #include <Runtime/Public/RenderCore.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 #define SCISSOR_TEST false
 #define DEPTH_PREPASS
@@ -51,6 +52,8 @@ SOFTWARE.
 //#define SHADOWMAP_PCSS
 //#define SHADOWMAP_VSM
 //#define SHADOWMAP_EVSM
+
+extern ARuntimeVariable RVRenderSnapshot;
 
 namespace OpenGL45 {
 
@@ -67,5 +70,7 @@ AN_FORCEINLINE GHI::Buffer * GPUBufferHandle( ABufferGPU * _Buffer ) {
 AN_FORCEINLINE GHI::Texture * GPUTextureHandle( ATextureGPU * _Texture ) {
     return static_cast< GHI::Texture * >( _Texture->pHandleGPU );
 }
+
+void SaveSnapshot( GHI::Texture & _Texture );
 
 }
