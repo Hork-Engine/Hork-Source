@@ -33,29 +33,75 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
+#include <Core/Public/Image.h>
 
 #include <Renderer/OpenGL4.5/OpenGL45RenderBackend.h>
 
 IRenderBackend * GRenderBackend = &OpenGL45::GOpenGL45RenderBackend;
 
-AResourceGPU * AResourceGPU::GPUResources;
-AResourceGPU * AResourceGPU::GPUResourcesTail;
 
-void IRenderBackend::RegisterGPUResource( AResourceGPU * _Resource ) {
-    INTRUSIVE_ADD_UNIQUE( _Resource, pNext, pPrev, AResourceGPU::GPUResources, AResourceGPU::GPUResourcesTail );
+IGPUResourceOwner * IGPUResourceOwner::Resources = nullptr;
+IGPUResourceOwner * IGPUResourceOwner::ResourcesTail = nullptr;
+
+IGPUResourceOwner::IGPUResourceOwner()
+{
+    INTRUSIVE_ADD( this, pNext, pPrev, Resources, ResourcesTail );
 }
 
-void IRenderBackend::UnregisterGPUResource( AResourceGPU * _Resource ) {
-    INTRUSIVE_REMOVE( _Resource, pNext, pPrev, AResourceGPU::GPUResources, AResourceGPU::GPUResourcesTail );
+IGPUResourceOwner::~IGPUResourceOwner()
+{
+    INTRUSIVE_REMOVE( this, pNext, pPrev, Resources, ResourcesTail );
 }
 
-void IRenderBackend::UploadGPUResources() {
-    for ( AResourceGPU * resource = AResourceGPU::GPUResources ; resource ; resource = resource->pNext ) {
-        resource->pOwner->UploadResourceGPU( resource );
+void IGPUResourceOwner::InvalidateResources()
+{
+    for ( IGPUResourceOwner * resource = Resources ; resource ; resource = resource->pNext )
+    {
+        resource->UploadResourcesGPU();
     }
 }
 
-bool GetAppropriatePixelFormat( AImage const & _Image, STexturePixelFormat & _PixelFormat ) {
+
+AResourceGPU * AResourceGPU::GPUResources;
+AResourceGPU * AResourceGPU::GPUResourcesTail;
+
+AResourceGPU::AResourceGPU()
+{
+    INTRUSIVE_ADD( this, pNext, pPrev, GPUResources, GPUResourcesTail );
+}
+
+AResourceGPU::~AResourceGPU()
+{
+    INTRUSIVE_REMOVE( this, pNext, pPrev, GPUResources, GPUResourcesTail );
+}
+
+
+int STexturePixelFormat::SizeInBytesUncompressed() const {
+
+    if ( IsCompressed() ) {
+        GLogger.Printf( "SizeInBytesUncompressed: called for compressed pixel format\n" );
+        return 0;
+    }
+
+    int bytesPerChannel = 1 << ( Data & 3 );
+    int channelsCount = ( ( Data >> 2 ) & 3 ) + 1;
+
+    return bytesPerChannel * channelsCount;
+}
+
+int STexturePixelFormat::BlockSizeCompressed() const {
+
+    if ( !IsCompressed() ) {
+        GLogger.Printf( "BlockSizeCompressed: called for uncompressed pixel format\n" );
+        return 0;
+    }
+
+    // TODO
+    AN_ASSERT( 0 );
+    return 0;
+}
+
+bool STexturePixelFormat::GetAppropriatePixelFormat( AImage const & _Image, STexturePixelFormat & _PixelFormat ) {
     if ( _Image.bHDRI ) {
 
         if ( _Image.bHalf ) {
@@ -142,6 +188,7 @@ bool GetAppropriatePixelFormat( AImage const & _Image, STexturePixelFormat & _Pi
     return true;
 }
 
+// TODO: this can be computed at compile-time
 float FRUSTUM_SLICE_SCALE = -(MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET) / std::log2( (double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR );
 float FRUSTUM_SLICE_BIAS = std::log2( (double)FRUSTUM_CLUSTER_ZFAR ) * (MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET) / std::log2( (double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR ) - FRUSTUM_SLICE_OFFSET;
 float FRUSTUM_SLICE_ZCLIP[MAX_FRUSTUM_CLUSTERS_Z + 1];

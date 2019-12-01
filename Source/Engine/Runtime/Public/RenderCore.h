@@ -32,8 +32,6 @@ SOFTWARE.
 
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/PodArray.h>
-#include <Core/Public/Logger.h>
-#include <Core/Public/Image.h>
 
 //
 // Common constants
@@ -125,8 +123,6 @@ struct SMeshVertex {
     float  Handedness;
     Float3 Normal;
 
-    static SMeshVertex Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value = 0.5f );
-
     void Write( IStreamBase & _Stream ) const {
         _Stream.WriteObject( Position );
         _Stream.WriteObject( TexCoord );
@@ -142,12 +138,24 @@ struct SMeshVertex {
         Handedness = _Stream.ReadFloat();
         _Stream.ReadObject( Normal );
     }
+
+    static SMeshVertex Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value = 0.5f );
 };
+
+AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value ) {
+    SMeshVertex Result;
+
+    Result.Position   = _Vertex1.Position.Lerp( _Vertex2.Position, _Value );
+    Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
+    Result.Tangent    = _Vertex1.Tangent.Lerp( _Vertex2.Tangent, _Value ).Normalized();
+    Result.Handedness = _Value >= 0.5f ? _Vertex2.Handedness : _Vertex1.Handedness;
+    Result.Normal     = _Vertex1.Normal.Lerp( _Vertex2.Normal, _Value ).Normalized();
+
+    return Result;
+}
 
 struct SMeshVertexUV {
     Float2 TexCoord;
-
-    static SMeshVertexUV Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value = 0.5f );
 
     void Write( IStreamBase & _Stream ) const {
         _Stream.WriteObject( TexCoord );
@@ -156,12 +164,20 @@ struct SMeshVertexUV {
     void Read( IStreamBase & _Stream ) {
         _Stream.ReadObject( TexCoord );
     }
+
+    static SMeshVertexUV Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value = 0.5f );
 };
+
+AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value ) {
+    SMeshVertexUV Result;
+
+    Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
+
+    return Result;
+}
 
 struct SMeshVertexLight {
     uint32_t VertexLight;
-
-    static SMeshVertexLight Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value = 0.5f );
 
     void Write( IStreamBase & _Stream ) const {
         _Stream.WriteUInt32( VertexLight );
@@ -170,7 +186,24 @@ struct SMeshVertexLight {
     void Read( IStreamBase & _Stream ) {
         VertexLight = _Stream.ReadUInt32();
     }
+
+    static SMeshVertexLight Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value = 0.5f );
 };
+
+AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value ) {
+    SMeshVertexLight Result;
+
+    const byte * c0 = reinterpret_cast< const byte * >( &_Vertex1.VertexLight );
+    const byte * c1 = reinterpret_cast< const byte * >( &_Vertex2.VertexLight );
+    byte * r = reinterpret_cast< byte * >( &Result.VertexLight );
+
+    r[0] = ( c0[0] + c1[0] ) >> 1;
+    r[1] = ( c0[1] + c1[1] ) >> 1;
+    r[2] = ( c0[2] + c1[2] ) >> 1;
+    r[3] = ( c0[3] + c1[3] ) >> 1;
+
+    return Result;
+}
 
 struct SMeshVertexSkin {
     byte   JointIndices[4];
@@ -195,41 +228,6 @@ struct SDebugVertex {
     Float3 Position;
     uint32_t Color;
 };
-
-AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value ) {
-    SMeshVertex Result;
-
-    Result.Position   = _Vertex1.Position.Lerp( _Vertex2.Position, _Value );
-    Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
-    Result.Tangent    = _Vertex1.Tangent.Lerp( _Vertex2.Tangent, _Value ).Normalized();
-    Result.Handedness = _Value >= 0.5f ? _Vertex2.Handedness : _Vertex1.Handedness;
-    Result.Normal     = _Vertex1.Normal.Lerp( _Vertex2.Normal, _Value ).Normalized();
-
-    return Result;
-}
-
-AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value ) {
-    SMeshVertexUV Result;
-
-    Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
-
-    return Result;
-}
-
-AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value ) {
-    SMeshVertexLight Result;
-
-    const byte * c0 = reinterpret_cast< const byte * >( &_Vertex1.VertexLight );
-    const byte * c1 = reinterpret_cast< const byte * >( &_Vertex2.VertexLight );
-    byte * r = reinterpret_cast< byte * >( &Result.VertexLight );
-
-    r[0] = ( c0[0] + c1[0] ) >> 1;
-    r[1] = ( c0[1] + c1[1] ) >> 1;
-    r[2] = ( c0[2] + c1[2] ) >> 1;
-    r[3] = ( c0[3] + c1[3] ) >> 1;
-
-    return Result;
-}
 
 //
 // Texture formats
@@ -395,30 +393,9 @@ struct STexturePixelFormat {
         return ( Data >> 4 ) & 1;
     }
 
-    int SizeInBytesUncompressed() const {
+    int SizeInBytesUncompressed() const;
 
-        if ( IsCompressed() ) {
-            GLogger.Printf( "SizeInBytesUncompressed: called for compressed pixel format\n" );
-            return 0;
-        }
-
-        int bytesPerChannel = 1 << ( Data & 3 );
-        int channelsCount = ( ( Data >> 2 ) & 3 ) + 1;
-
-        return bytesPerChannel * channelsCount;
-    }
-
-    int BlockSizeCompressed() const {
-
-        if ( !IsCompressed() ) {
-            GLogger.Printf( "BlockSizeCompressed: called for uncompressed pixel format\n" );
-            return 0;
-        }
-
-        // TODO
-        AN_ASSERT( 0 );
-        return 0;
-    }
+    int BlockSizeCompressed() const;
 
     int NumComponents() const {
         return ( ( Data >> 2 ) & 3 ) + 1;
@@ -431,9 +408,9 @@ struct STexturePixelFormat {
     void Write( IStreamBase & _Stream ) const {
         _Stream.WriteUInt8( (uint8_t)Data );
     }
-};
 
-bool GetAppropriatePixelFormat( AImage const & _Image, STexturePixelFormat & _PixelFormat );
+    static bool GetAppropriatePixelFormat( class AImage const & _Image, STexturePixelFormat & _PixelFormat );
+};
 
 enum ETextureGroup {
 
@@ -562,17 +539,63 @@ struct SMaterialBuildData {
 // GPU Resources
 //
 
-class AResourceGPU;
-
 class IGPUResourceOwner {
 public:
-    virtual void UploadResourceGPU( AResourceGPU * _Resource ) = 0;
+    virtual void UploadResourcesGPU() = 0;
+
+    IGPUResourceOwner * GetNext() { return pNext; }
+    IGPUResourceOwner * GetPrev() { return pPrev; }
+
+    static void InvalidateResources();
+
+    static IGPUResourceOwner * GetResources() { return Resources; }
+
+protected:
+    IGPUResourceOwner();
+
+    ~IGPUResourceOwner();
+
+    IGPUResourceOwner * pNext;
+    IGPUResourceOwner * pPrev;
+
+private:
+    static IGPUResourceOwner * Resources;
+    static IGPUResourceOwner * ResourcesTail;
 };
 
 class AResourceGPU {
 public:
     IGPUResourceOwner * pOwner;
 
+    AResourceGPU * GetNext() { return pNext; }
+    AResourceGPU * GetPrev() { return pPrev; }
+
+    static AResourceGPU * GetResources() { return GPUResources; }
+
+private:
+    // Allow render backend to create and destroy GPU resources
+    friend class IRenderBackend;
+
+    template< typename T >
+    static T * CreateResource( IGPUResourceOwner * InOwner )
+    {
+        void * pData = GZoneMemory.AllocCleared( sizeof( T ), 1 );
+        AResourceGPU * resource = new (pData) T;  // compile time check: T must be derived from AResourceGPU
+        resource->pOwner = InOwner;
+        return static_cast< T * >( resource );
+    }
+
+    static void DestroyResource( AResourceGPU * InResource )
+    {
+        InResource->~AResourceGPU();
+        GZoneMemory.Dealloc( InResource );
+    }
+
+protected:
+    AResourceGPU();
+    virtual ~AResourceGPU();
+
+private:
     AResourceGPU * pNext;
     AResourceGPU * pPrev;
 
@@ -770,7 +793,8 @@ struct SRenderInstance {
     unsigned int        IndexCount;
     unsigned int        StartIndexLocation;
     int                 BaseVertexLocation;
-    byte                RenderingOrder;
+    uint64_t            SortKey;
+    //byte                RenderingOrder;
 };
 
 //
@@ -790,6 +814,7 @@ struct SShadowRenderInstance {
     unsigned int        StartIndexLocation;
     int                 BaseVertexLocation;
     uint16_t            CascadeMask;
+    uint64_t            SortKey;
 };
 
 //
@@ -1037,11 +1062,19 @@ public:
     virtual size_t AllocateJoints( size_t _JointsCount ) = 0;
     virtual void WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) = 0;
 
-    static void RegisterGPUResource( AResourceGPU * _Resource );
-    static void UnregisterGPUResource( AResourceGPU * _Resource );
-    static void UploadGPUResources();
-
     const char * GetName() { return BackendName; }
+
+protected:
+    template< typename T >
+    static T * CreateResource( IGPUResourceOwner * InOwner )
+    {
+        return AResourceGPU::CreateResource< T >( InOwner );
+    }
+
+    static void DestroyResource( AResourceGPU * InResource )
+    {
+        return AResourceGPU::DestroyResource( InResource );
+    }
 
 private:
     const char * BackendName = "Unnamed";
