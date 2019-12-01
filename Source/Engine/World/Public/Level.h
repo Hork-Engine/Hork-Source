@@ -41,6 +41,8 @@ SOFTWARE.
 class AActor;
 class ALevel;
 struct SAreaPortal;
+class ATexture;
+class AMeshComponent;
 
 class ALevelArea : public ABaseObject {
     AN_CLASS( ALevelArea, ABaseObject )
@@ -89,7 +91,7 @@ private:
     //       float AmbientVolume[4];
     //       int NumAmbients; // 0..4
 
-    TRef< ASpatialTree > Tree;
+    //TRef< ASpatialTree > Tree; TODO: octree?
 };
 
 class ALevelPortal : public ABaseObject {
@@ -138,54 +140,53 @@ struct SAreaPortal {
     ALevelPortal * Owner;
 };
 
-/*
+/**
 
 ALevel
 
-Logical subpart of a world
+Subpart of a world
 
 */
 class ANGIE_API ALevel : public ABaseObject {
     AN_CLASS( ALevel, ABaseObject )
 
     friend class AWorld;
-    friend class ADrawable;
 
 public:
-    // Level is persistent if created by world
+    /** Level is persistent if created by world */
     bool IsPersistentLevel() const { return bIsPersistent; }
 
-    // Get level world
+    /** Get level world */
     AWorld * GetOwnerWorld() const { return OwnerWorld; }
 
-    // Get actors in level
+    /** Get actors in level */
     TPodArray< AActor * > const & GetActors() const { return Actors; }
 
-    // Get level areas
+    /** Get level areas */
     TPodArray< ALevelArea * > const & GetAreas() const { return Areas; }
 
-    // Get level outdoor area
+    /** Get level outdoor area */
     ALevelArea * GetOutdoorArea() const { return OutdoorArea; }
 
-    // Get level indoor bounding box
+    /** Get level indoor bounding box */
     BvAxisAlignedBox const & GetIndoorBounds() const { return IndoorBounds; }
 
-    // Find visibility area
+    /** Find visibility area */
     int FindArea( Float3 const & _Position );
 
-    // Destroy all actors in level
+    /** Destroy all actors in level */
     void DestroyActors();
 
-    // Create vis area
+    /** Create vis area */
     ALevelArea * AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
 
-    // Create vis portal
+    /** Create vis portal */
     ALevelPortal * AddPortal( Float3 const * _HullPoints, int _NumHullPoints, ALevelArea * _Area1, ALevelArea * _Area2 );
 
-    // Destroy all vis areas and portals
+    /** Destroy all vis areas and portals */
     void DestroyPortalTree();
 
-    // Build level visibility
+    /** Build level visibility */
     void BuildPortals();
 
     // TODO: future:
@@ -198,8 +199,6 @@ public:
     void SetLightData( const byte * _Data, int _Size );
     /*const */byte * GetLightData() /*const */{ return LightData; }
 
-    void RenderFrontend_AddInstances( SRenderFrontendDef * _Def );
-
 protected:
 
     ALevel();
@@ -207,35 +206,34 @@ protected:
 
 private:
 
-    // Level ticking. Called by owner world.
+    /** Level ticking. Called by owner world. */
     void Tick( float _TimeStep );
 
-    // Draw debug. Called by owner world.
+    /** Draw debug. Called by owner world. */
     void DrawDebug( ADebugRenderer * InRenderer );
 
-    // Callback on add level to world. Called by owner world.
+    /** Callback on add level to world. Called by owner world. */
     void OnAddLevelToWorld();
 
-    // Callback on remove level to world. Called by owner world.
+    /** Callback on remove level to world. Called by owner world. */
     void OnRemoveLevelFromWorld();
 
 private:
+    // Allow mesh component to register self in level
+    friend class AMeshComponent;
+    void AddStaticMesh( AMeshComponent * InStaticMesh );
+    void RemoveStaticMesh( AMeshComponent * InStaticMesh );
+
+private:
+    void AddDrawable( ADrawable * _Drawable );
+    void RemoveDrawable( ADrawable * _Drawable );
+
     void PurgePortals();
 
     void AddDrawables();
     void RemoveDrawables();
 
-    void AddDrawable( ADrawable * _Drawable );
-    void RemoveDrawable( ADrawable * _Drawable );
-
     void AddDrawableToArea( int _AreaNum, ADrawable * _Drawable );
-
-    void CullInstances( SRenderFrontendDef * _Def );
-    void FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area );
-
-    void RenderArea( SRenderFrontendDef * _Def, ALevelArea * _Area, PlaneF const * _CullPlanes, int _CullPlanesCount );
-    void RenderDrawables( SRenderFrontendDef * _Def, TPodArray< ADrawable * > const & _Drawables, PlaneF const * _CullPlanes, int _CullPlanesCount );
-    void RenderMesh( SRenderFrontendDef * _Def, class AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
 
     AWorld * OwnerWorld;
     int IndexInArrayOfLevels = -1;
@@ -248,4 +246,6 @@ private:
     byte * LightData;
     BvAxisAlignedBox IndoorBounds;
     int LastVisitedArea;
+    AMeshComponent * StaticMeshList;
+    AMeshComponent * StaticMeshListTail;
 };

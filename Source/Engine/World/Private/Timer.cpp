@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Timer.h>
 #include <World/Public/World.h>
+#include <Core/Public/Logger.h>
 
 enum ETimerState {
     TIMER_STATE_FINISHED = 1,

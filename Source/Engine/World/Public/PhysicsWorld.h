@@ -133,8 +133,8 @@ struct SCollisionContact {
     bool bComponentBDispatchOverlapEvents;
 
     int Hash() const {
-        uint32_t hash = Core::PHHash( (const char *)&ComponentA->Id, sizeof( ComponentA->Id ) );
-        hash = Core::PHHash( (const char *)&ComponentB->Id, sizeof( ComponentB->Id ), hash );
+        uint32_t hash = Core::PHHash64( ComponentA->Id );
+        hash = Core::PHHash64( ComponentB->Id, hash );
         return hash;
     }
 };
@@ -213,16 +213,20 @@ public:
     /** Query objects in AABB */
     void QueryActors( TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
+    /** Simulate the physics */
+    void Simulate( float _TimeStep );
+
+    void DrawDebug( ADebugRenderer * InRenderer );
+
+private:
+    // Allow physical body to register self in PhysicsWorld
+    friend class APhysicalBody;
+
     /** Add or re-add physical body to the world */
     void AddPhysicalBody( APhysicalBody * InPhysicalBody );
 
     /** Remove physical body from the world */
     void RemovePhysicalBody( APhysicalBody * InPhysicalBody );
-
-    /** Simulate the physics */
-    void Simulate( float _TimeStep );
-
-    void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
     /** Add physical body to pending list */

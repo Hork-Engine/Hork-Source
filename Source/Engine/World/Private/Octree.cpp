@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-
+#if 0
 #include <World/Public/Octree.h>
 #include <World/Public/Level.h>
 #include <Core/Public/Logger.h>
@@ -197,3 +197,4 @@ void ASpatialTree::ClearPendingList() {
     }
     PendingObjects.Clear();
 }
+#endif

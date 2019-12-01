@@ -31,8 +31,12 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/BaseTypes.h>
+#include <Core/Public/PodArray.h>
+#include <Core/Public/Plane.h>
 
 class AWorld;
+class ALevel;
+class ALevelArea;
 class ADrawable;
 class AMeshComponent;
 class ASkinnedComponent;
@@ -42,33 +46,13 @@ class ASpotLightComponent;
 class ADebugRenderer;
 struct SRenderFrontendDef;
 
-class ARenderWorld {
+class ARenderWorld
+{
     AN_FORBID_COPY( ARenderWorld )
 
 public:
     explicit ARenderWorld( AWorld * InOwnerWorld );
     ~ARenderWorld() {}
-
-    void AddDrawable( ADrawable * _Drawable );
-    void RemoveDrawable( ADrawable * _Drawable );
-
-    void AddMesh( AMeshComponent * _Mesh );
-    void RemoveMesh( AMeshComponent * _Mesh );
-
-    void AddSkinnedMesh( ASkinnedComponent * _Skeleton );
-    void RemoveSkinnedMesh( ASkinnedComponent * _Skeleton );
-
-    void AddShadowCaster( AMeshComponent * _Mesh );
-    void RemoveShadowCaster( AMeshComponent * _Mesh );
-
-    void AddDirectionalLight( ADirectionalLightComponent * _Light );
-    void RemoveDirectionalLight( ADirectionalLightComponent * _Light );
-
-    void AddPointLight( APointLightComponent * _Light );
-    void RemovePointLight( APointLightComponent * _Light );
-
-    void AddSpotLight( ASpotLightComponent * _Light );
-    void RemoveSpotLight( ASpotLightComponent * _Light );
 
     /** Get all drawables in the world */
     ADrawable * GetDrawables() { return DrawableList; }
@@ -103,6 +87,45 @@ public:
     void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
+    friend class ADrawable;
+    void AddDrawable( ADrawable * _Drawable );
+    void RemoveDrawable( ADrawable * _Drawable );
+
+private:
+    friend class AMeshComponent;
+    void AddMesh( AMeshComponent * _Mesh );
+    void RemoveMesh( AMeshComponent * _Mesh );
+    void AddShadowCaster( AMeshComponent * _Mesh );
+    void RemoveShadowCaster( AMeshComponent * _Mesh );
+
+private:
+    friend class ASkinnedComponent;
+    void AddSkinnedMesh( ASkinnedComponent * _Skeleton );
+    void RemoveSkinnedMesh( ASkinnedComponent * _Skeleton );
+
+private:
+    friend class ADirectionalLightComponent;
+    void AddDirectionalLight( ADirectionalLightComponent * _Light );
+    void RemoveDirectionalLight( ADirectionalLightComponent * _Light );
+
+private:
+    friend class APointLightComponent;
+    void AddPointLight( APointLightComponent * _Light );
+    void RemovePointLight( APointLightComponent * _Light );
+
+private:
+    friend class ASpotLightComponent;
+    void AddSpotLight( ASpotLightComponent * _Light );
+    void RemoveSpotLight( ASpotLightComponent * _Light );
+
+private:
+    void RenderFrontend_AddLevelInstances( ALevel * InLevel, SRenderFrontendDef * _Def );
+    void CullInstances( ALevel * InLevel, int _AreaNum, SRenderFrontendDef * _Def );
+    void FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area );
+    void RenderArea( SRenderFrontendDef * _Def, ALevelArea * _Area, PlaneF const * _CullPlanes, int _CullPlanesCount );
+    void RenderDrawables( SRenderFrontendDef * _Def, TPodArray< ADrawable * > const & _Drawables, PlaneF const * _CullPlanes, int _CullPlanesCount );
+    void RenderMesh( SRenderFrontendDef * _Def, class AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
+
     AWorld * pOwnerWorld;
 
     ADrawable * DrawableList;

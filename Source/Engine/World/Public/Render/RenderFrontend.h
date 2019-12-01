@@ -60,7 +60,7 @@ private:
     SRenderFrame * FrameData;
     ADebugRenderer DebugDraw;
     int VisMarker = 0;
-    int FrameNumber;
+    int FrameNumber = 0;
 
     SRenderFrontendStat Stat;
 

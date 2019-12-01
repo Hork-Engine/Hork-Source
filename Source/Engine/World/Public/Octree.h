@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#if 0
 #include <World/Public/Base/BaseObject.h>
 #include <World/Public/Resource/IndexedMesh.h>
 
@@ -124,3 +125,4 @@ private:
 
     TPodArray< ADrawable * > ObjectsInTree;
 };
+#endif

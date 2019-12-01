@@ -234,7 +234,7 @@ protected:
     void OnInitialize( int _NumVertices );
 
     /** IGPUResourceOwner interface */
-    void UploadResourceGPU( AResourceGPU * _Resource ) override {}
+    void UploadResourcesGPU() override;
 
 private:
     ABufferGPU * VertexBufferGPU;
@@ -275,7 +275,7 @@ protected:
     void OnInitialize( int _NumVertices );
 
     /** IGPUResourceOwner interface */
-    void UploadResourceGPU( AResourceGPU * _Resource ) override {}
+    void UploadResourcesGPU() override;
 
 private:
     ABufferGPU * VertexBufferGPU;
@@ -499,7 +499,7 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Meshes/Box"; }
 
     /** IGPUResourceOwner interface */
-    void UploadResourceGPU( AResourceGPU * _Resource ) override {}
+    void UploadResourcesGPU() override;
 
 private:
     ABufferGPU * VertexBufferGPU;

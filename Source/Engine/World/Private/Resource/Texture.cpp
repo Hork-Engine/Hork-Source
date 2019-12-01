@@ -68,7 +68,7 @@ bool ATexture::InitializeFromImage( AImage const & _Image ) {
 
     STexturePixelFormat pixelFormat;
 
-    if ( !GetAppropriatePixelFormat( _Image, pixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Image, pixelFormat ) ) {
         return false;
     }
 
@@ -115,14 +115,14 @@ bool ATexture::InitializeCubemapFromImages( AImage const * _Faces[6] ) {
 
     STexturePixelFormat pixelFormat;
 
-    if ( !GetAppropriatePixelFormat( *_Faces[0], pixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( *_Faces[0], pixelFormat ) ) {
         return false;
     }
 
     for ( int i = 1 ; i < 6 ; i++ ) {
         STexturePixelFormat facePF;
 
-        if ( !GetAppropriatePixelFormat( *_Faces[i], facePF ) ) {
+        if ( !STexturePixelFormat::GetAppropriatePixelFormat( *_Faces[i], facePF ) ) {
             return false;
         }
 
@@ -858,4 +858,8 @@ bool ATexture::WriteArbitraryData( int _LocationX, int _LocationY, int _Location
     GRenderBackend->WriteTexture( TextureGPU, rect, PixelFormat.Data, sizeInBytes, 1, _SysMem );
 
     return true;
+}
+
+void ATexture::UploadResourcesGPU() {
+    GLogger.Printf( "ATexture::UploadResourcesGPU\n" );
 }

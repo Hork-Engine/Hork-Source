@@ -562,6 +562,10 @@ bool AIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCoun
     return SendIndexDataToGPU( _IndexCount, _StartIndexLocation );
 }
 
+void AIndexedMesh::UploadResourcesGPU() {
+    GLogger.Printf( "AIndexedMesh::UploadResourcesGPU\n" );
+}
+
 void AIndexedMesh::UpdateBoundingBox() {
     BoundingBox.Clear();
     for ( AIndexedMeshSubpart const * subpart : Subparts ) {
@@ -839,6 +843,10 @@ bool ALightmapUV::WriteVertexData( SMeshVertexUV const * _Vertices, int _Vertice
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
 
+void ALightmapUV::UploadResourcesGPU() {
+    GLogger.Printf( "ALightmapUV::UploadResourcesGPU\n" );
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AVertexLight::AVertexLight() {
@@ -896,6 +904,10 @@ bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _Ver
     memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexLight ) );
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
+}
+
+void AVertexLight::UploadResourcesGPU() {
+    GLogger.Printf( "AVertexLight::UploadResourcesGPU\n" );
 }
 
 void AIndexedMesh::GenerateRigidbodyCollisions() {

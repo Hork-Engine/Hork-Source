@@ -1373,6 +1373,20 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
             }
         }
     }
+
+#if 0
+    static TPodArray< Float3 > vertices;
+    static TPodArray< unsigned int > indices;
+    static BvAxisAlignedBox dummyBoundingBox;
+    static TBitMask<> walkableMask;
+    static bool gen=false;
+    if (!gen) {
+        GatherNavigationGeometry( vertices, indices, walkableMask, dummyBoundingBox, &BoundingBox );
+        //gen=true;
+    }
+    InRenderer->SetDepthTest(true);
+    InRenderer->DrawTriangleSoup(vertices.ToPtr(),vertices.Size(),sizeof(Float3),indices.ToPtr(),indices.Size(),false);
+#endif
 }
 
 ANavQueryFilter::ANavQueryFilter() {

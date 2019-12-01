@@ -103,10 +103,6 @@ class ANGIE_API AWorld : public ABaseObject, public IPhysicsWorldInterface
 {
     AN_CLASS( AWorld, ABaseObject )
 
-    friend class AActor;
-    friend class AActorComponent;
-    friend class ATimer;
-
 public:
     /** Scale audio volume in the entire world */
     float AudioVolume = 1.0f;
@@ -357,10 +353,23 @@ protected:
     AWorld();
 
 private:
-    void BroadcastActorSpawned( AActor * _SpawnedActor );
+    // Allow timer to register itself in the world
+    friend class ATimer;
+    void AddTimer( ATimer * _Timer );
+    void RemoveTimer( ATimer * _Timer );
 
-    void AddTimer( ATimer * _Timer );       // friend ATimer
-    void RemoveTimer( ATimer * _Timer );    // friend ATimer
+private:
+    // Allow actor to add self to pendingkill list
+    friend class AActor;
+    AActor * PendingKillActors;
+
+private:
+    // Allow actor component to add self to pendingkill list
+    friend class AActorComponent;
+    AActorComponent * PendingKillComponents;
+
+private:
+    void BroadcastActorSpawned( AActor * _SpawnedActor );
 
     void KickoffPendingKillObjects();
 
@@ -407,9 +416,6 @@ private:
     int IndexInGameArrayOfWorlds = -1;
 
     bool bPendingKill;
-
-    AActor * PendingKillActors; // friend AActor
-    AActorComponent * PendingKillComponents; // friend AActorComponent
 
     AWorld * NextPendingKillWorld;
     static AWorld * PendingKillWorlds;

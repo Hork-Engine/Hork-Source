@@ -31,13 +31,12 @@ SOFTWARE.
 #pragma once
 
 #include "SceneComponent.h"
-#include <World/Public/CollisionEvents.h>
 
+#include <World/Public/CollisionEvents.h>
 #include <World/Public/Resource/CollisionBody.h>
 
 class btRigidBody;
 class btSoftBody;
-class btCollisionObject;
 class SPhysicalBodyMotionState;
 
 enum ECollisionMask {
@@ -93,8 +92,8 @@ enum EAINavigationBehavior {
 class APhysicalBody : public ASceneComponent {
     AN_COMPONENT( APhysicalBody, ASceneComponent )
 
-    friend class SPhysicalBodyMotionState;
     friend struct SCollisionFilterCallback;
+    friend class SPhysicalBodyMotionState;
     friend class APhysicsWorld;
     friend class AAINavigationMesh;
 
@@ -106,20 +105,6 @@ public:
     AOverlapDelegate E_OnBeginOverlap;
     AOverlapDelegate E_OnEndOverlap;
     AOverlapDelegate E_OnUpdateOverlap;
-
-    /** Physics simulation. Set it before component initialization or call UpdatePhysicsAttribs() to apply property. */
-    EPhysicsBehavior PhysicsBehavior;
-
-    /** Collision group. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    See ECollisionMask. */
-    int CollisionGroup = CM_WORLD;
-
-    /** Collision mask. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    See ECollisionMask. */
-    int CollisionMask = CM_ALL;
-
-    /** Trigger can produce overlap events. Set it before component initialization or call UpdatePhysicsAttribs() to apply property. */
-    bool bTrigger;
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
     bool bDispatchContactEvents;
@@ -137,27 +122,59 @@ public:
     or call UpdatePhysicsAttribs() to apply property. */
     bool bUseDefaultBodyComposition;
 
-    /** Set to true to disable world gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    Only for PS_DYNAMIC */
-    bool bDisableGravity;
+    /** Set physics simulation type: static, dynamic, kinematic */
+    void SetPhysicsBehavior( EPhysicsBehavior _PhysicsBehavior );
 
-    /** Set to true to override world gravity and use self gravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    Only for PS_DYNAMIC */
-    bool bOverrideWorldGravity;
+    /** Get physics simulation type: static, dynamic, kinematic */
+    EPhysicsBehavior GetPhysicsBehavior() const { return PhysicsBehavior; }
 
-    /** Object self gravity, use with bOverrideWorldGravity. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    Only for PS_DYNAMIC */
-    Float3 SelfGravity;
+    /** Specifies how the body will be used by navigation mesh generator */
+    void SetAINavigationBehavior( EAINavigationBehavior _AINavigationBehavior );
 
-    /** Object mass. Set it before component initialization or call UpdatePhysicsAttribs() to apply property.
-    Only for PS_DYNAMIC */
-    float Mass = 1.0f;
+    /** How the body will be used to build AI navigation mesh */
+    EAINavigationBehavior GetAINavigationBehavior() const { return AINavigationBehavior; }
 
-    /** Set collision group. See ECollisionMask. */
+    /** Trigger can produce overlap events. */
+    void SetTrigger( bool _Trigger );
+
+    /** Trigger can produce overlap events. */
+    bool IsTrigger() const { return bTrigger; }
+
+    /** Set to true to disable world gravity. Only for PS_DYNAMIC */
+    void SetDisableGravity( bool _DisableGravity );
+
+    /** Return true if gravity is disabled for the object. */
+    bool IsGravityDisabled() const { return bDisableGravity; }
+
+    /** Set to true to override world gravity and use self gravity. Only for PS_DYNAMIC */
+    void SetOverrideWorldGravity( bool _OverrideWorldGravity );
+
+    /** Return true if gravity is overriden for the object. */
+    bool IsWorldGravityOverriden() const { return bOverrideWorldGravity; }
+
+    /** Object self gravity, use with bOverrideWorldGravity. Only for PS_DYNAMIC */
+    void SetSelfGravity( Float3 const & _SelfGravity );
+
+    /** Object self gravity, use with bOverrideWorldGravity. Only for PS_DYNAMIC */
+    Float3 const & GetSelfGravity() const { return SelfGravity; }
+
+    /** Object mass. Only for PS_DYNAMIC */
+    void SetMass( float _Mass );
+
+    /** Object mass. Only for PS_DYNAMIC */
+    float GetMass() const { return Mass; }
+
+    /** Set collision group/layer. See ECollisionMask. */
     void SetCollisionGroup( int _CollisionGroup );
+
+    /** Get collision group. See ECollisionMask. */
+    int GetCollisionGroup() const { return CollisionGroup; }
 
     /** Set collision mask. See ECollisionMask. */
     void SetCollisionMask( int _CollisionMask );
+
+    /** Get collision mask. See ECollisionMask. */
+    int GetCollisionMask() const { return CollisionMask; }
 
     /** Set collision group and mask. See ECollisionMask. */
     void SetCollisionFilter( int _CollisionGroup, int _CollisionMask );
@@ -167,9 +184,6 @@ public:
 
     /** Unset actor to ignore collisions with this component */
     void RemoveCollisionIgnoreActor( AActor * _Actor );
-
-    /** Specifies how the body will be used by navigation mesh generator */
-    void SetAINavigationBehavior( EAINavigationBehavior _AINavigationBehavior );
 
     /** Force physics activation */
     void ActivatePhysics();
@@ -183,12 +197,25 @@ public:
     /** Add value to current velocity */
     void AddLinearVelocity( Float3 const & _Velocity );
 
+    /** Get object velocity. For soft bodies use GetVertexVelocity in ASoftMeshComponent. */
+    Float3 GetLinearVelocity() const;
+
+    /** Get object velocity at local point. */
+    Float3 GetVelocityAtPoint( Float3 const & _Position ) const;
+
     /** Object linear velocity factor */
     void SetLinearFactor( Float3 const & _Factor );
 
+    /** Object linear velocity factor */
+    Float3 const & GetLinearFactor() const;
+
     void SetLinearSleepingThreshold( float _Threshold );
 
+    float GetLinearSleepingThreshold() const;
+
     void SetLinearDamping( float _Damping );
+
+    float GetLinearDamping() const;
 
     /** Object angular velocity */
     void SetAngularVelocity( Float3 const & _Velocity );
@@ -196,71 +223,56 @@ public:
     /** Add value to current velocity */
     void AddAngularVelocity( Float3 const & _Velocity );
 
+    /** Object angular velocity */
+    Float3 GetAngularVelocity() const;
+
     /** Object angular velocity factor */
     void SetAngularFactor( Float3 const & _Factor );
 
+    /** Object angular velocity factor */
+    Float3 const & GetAngularFactor() const;
+
     void SetAngularSleepingThreshold( float _Threshold );
+
+    float GetAngularSleepingThreshold() const;
 
     void SetAngularDamping( float _Damping );
 
+    float GetAngularDamping() const;
+
     void SetFriction( float _Friction );
 
+    float GetFriction() const;
+
     void SetAnisotropicFriction( Float3 const & _Friction );
+
+    Float3 const & GetAnisotropicFriction() const;
 
     /** The RollingFriction prevents rounded shapes, such as spheres, cylinders and capsules from rolling forever. */
     void SetRollingFriction( float _Friction );
 
+    /** The RollingFriction prevents rounded shapes, such as spheres, cylinders and capsules from rolling forever. */
+    float GetRollingFriction() const;
+
     /** Best simulation results using zero restitution. */
     void SetRestitution( float _Restitution );
+
+    /** Best simulation results using zero restitution. */
+    float GetRestitution() const;
 
     /** Keep ContactProcessingThreshold*ContactProcessingThreshold < FLT_MAX */
     void SetContactProcessingThreshold( float _Threshold );
 
+    float GetContactProcessingThreshold() const;
+
     /** Continuous collision detection swept radius */
     void SetCcdRadius( float _Radius );
 
+    /** Continuous collision detection swept radius */
+    float GetCcdRadius() const;
+
     /** Don't do continuous collision detection if the motion (in one step) is less then CcdMotionThreshold */
     void SetCcdMotionThreshold( float _Threshold );
-
-    /** Get collision group. See ECollisionMask. */
-    int GetCollisionGroup() const { return CollisionGroup; }
-
-    /** Get collision mask. See ECollisionMask. */
-    int GetCollisionMask() const { return CollisionMask; }
-
-    /** Is body can be used to build AI navigation mesh */
-    EAINavigationBehavior GetAINavigationBehavior() const { return AINavigationBehavior; }
-
-    /** Get object velocity. For soft bodies use GetVertexVelocity in ASoftMeshComponent. */
-    Float3 GetLinearVelocity() const;
-
-    Float3 const & GetLinearFactor() const;
-
-    Float3 GetVelocityAtPoint( Float3 const & _Position ) const;
-
-    float GetLinearSleepingThreshold() const;
-
-    float GetLinearDamping() const;
-
-    Float3 GetAngularVelocity() const;
-
-    Float3 const & GetAngularFactor() const;
-
-    float GetAngularSleepingThreshold() const;
-
-    float GetAngularDamping() const;
-
-    float GetFriction() const;
-
-    Float3 const & GetAnisotropicFriction() const;
-
-    float GetRollingFriction() const;
-
-    float GetRestitution() const;
-
-    float GetContactProcessingThreshold() const;
-
-    float GetCcdRadius() const;
 
     float GetCcdMotionThreshold() const;
 
@@ -336,6 +348,8 @@ private:
 
     TPodArray< AActor *, 1 > CollisionIgnoreActors;
 
+    float Mass = 1.0f;
+    Float3 SelfGravity;
     Float3 LinearFactor = Float3( 1 );
     float LinearDamping;
     Float3 AngularFactor = Float3( 1 );
@@ -350,7 +364,13 @@ private:
     float AngularSleepingThreshold = 1.0f;
     float CcdRadius;
     float CcdMotionThreshold;
+    int CollisionGroup = CM_WORLD;
+    int CollisionMask = CM_ALL;
+    EPhysicsBehavior PhysicsBehavior;
     EAINavigationBehavior AINavigationBehavior;
+    bool bTrigger;
+    bool bDisableGravity;
+    bool bOverrideWorldGravity;
     bool bInWorld;
 
     btRigidBody * RigidBody;

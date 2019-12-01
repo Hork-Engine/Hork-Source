@@ -33,6 +33,7 @@ SOFTWARE.
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/ResourceManager.h>
+#include <Core/Public/Logger.h>
 
 ARuntimeVariable RVDrawMeshBounds( _CTS( "DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
@@ -56,6 +57,14 @@ void AMeshComponent::InitializeComponent() {
 
     RenderWorld.AddMesh( this );
 
+    if ( bStatic )
+    {
+        ALevel * level = GetParentActor()->GetLevel();
+
+        level->AddStaticMesh( this );
+    }
+
+
     if ( bCastShadow )
     {
         RenderWorld.AddShadowCaster( this );
@@ -71,9 +80,39 @@ void AMeshComponent::DeinitializeComponent() {
 
     RenderWorld.RemoveMesh( this );
 
+    if ( bStatic )
+    {
+        ALevel * level = GetParentActor()->GetLevel();
+
+        level->RemoveStaticMesh( this );
+    }
+
     if ( bCastShadow )
     {
         RenderWorld.RemoveShadowCaster( this );
+    }
+}
+
+void AMeshComponent::SetStatic( bool _bStatic ) {
+    if ( bStatic == _bStatic )
+    {
+        return;
+    }
+
+    bStatic = _bStatic;
+
+    if ( IsInitialized() )
+    {
+        ALevel * level = GetParentActor()->GetLevel();
+
+        if ( bStatic )
+        {
+            level->AddStaticMesh( this );
+        }
+        else
+        {
+            level->RemoveStaticMesh( this );
+        }
     }
 }
 

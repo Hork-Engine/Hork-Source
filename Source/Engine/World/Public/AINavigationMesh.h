@@ -78,9 +78,12 @@ struct SAINavigationHitResult {
 };
 
 enum EAINavMeshPartition {
-    AI_NAV_MESH_PARTITION_WATERSHED,    // Best choice if you precompute the navmesh, use this if you have large open areas (default)
-    AI_NAV_MESH_PARTITION_MONOTONE,     // Use this if you want fast navmesh generation
-    AI_NAV_MESH_PARTITION_LAYERS        // Good choice to use for tiled navmesh with medium and small sized tiles
+    /** Best choice if you precompute the navmesh, use this if you have large open areas (default) */
+    AI_NAV_MESH_PARTITION_WATERSHED,
+    /** Use this if you want fast navmesh generation */
+    AI_NAV_MESH_PARTITION_MONOTONE,
+    /** Good choice to use for tiled navmesh with medium and small sized tiles */
+    AI_NAV_MESH_PARTITION_LAYERS
 };
 
 enum EAINavMeshArea {
@@ -93,28 +96,41 @@ enum EAINavMeshArea {
     // Define own areas AI_NAV_MESH_AREA_<AreaName>
 
     AI_NAV_MESH_AREA_GROUND = 63,
-    AI_NAV_MESH_AREA_MAX = 64               // Max areas. Must match DT_MAX_AREAS
+
+    /** Max areas. Must match DT_MAX_AREAS */
+    AI_NAV_MESH_AREA_MAX = 64
 };
 
 enum EAINavMeshAreaFlags {
-    AI_NAV_MESH_FLAGS_WALK      = 0x01,     // Ability to walk (ground, grass, road)
-    AI_NAV_MESH_FLAGS_SWIM      = 0x02,     // Ability to swim (water)
-    AI_NAV_MESH_FLAGS_DOOR      = 0x04,     // Ability to move through doors
-    AI_NAV_MESH_FLAGS_JUMP      = 0x08,     // Ability to jump
-    AI_NAV_MESH_FLAGS_DISABLED  = 0x10,     // Disabled polygon
-    AI_NAV_MESH_FLAGS_ALL       = 0xffff    // All abilities
+    /** Ability to walk (ground, grass, road) */
+    AI_NAV_MESH_FLAGS_WALK      = 0x01,
+    /** Ability to swim (water) */
+    AI_NAV_MESH_FLAGS_SWIM      = 0x02,
+    /** Ability to move through doors */
+    AI_NAV_MESH_FLAGS_DOOR      = 0x04,
+    /** Ability to jump */
+    AI_NAV_MESH_FLAGS_JUMP      = 0x08,
+    /** Disabled polygon */
+    AI_NAV_MESH_FLAGS_DISABLED  = 0x10,
+    /** All abilities */
+    AI_NAV_MESH_FLAGS_ALL       = 0xffff
 };
 
 enum EAINavMeshStraightFlags {
-    AI_NAV_MESH_STRAIGHTPATH_START = 0x01,              // The vertex is the start position in the path.
-    AI_NAV_MESH_STRAIGHTPATH_END   = 0x02,              // The vertex is the end position in the path.
-    AI_NAV_MESH_STRAIGHTPATH_OFFMESH_CONNECTION = 0x04  // The vertex is the start of an off-mesh connection.
+    /** The vertex is the start position in the path. */
+    AI_NAV_MESH_STRAIGHTPATH_START = 0x01,
+    /** The vertex is the end position in the path. */
+    AI_NAV_MESH_STRAIGHTPATH_END   = 0x02,
+    /** The vertex is the start of an off-mesh connection. */
+    AI_NAV_MESH_STRAIGHTPATH_OFFMESH_CONNECTION = 0x04
 };
 
 enum EAINavMeshStraightPathCrossing {
     AI_NAV_MESH_STRAIGHTPATH_DEFAULT         = 0,
-    AI_NAV_MESH_STRAIGHTPATH_AREA_CROSSINGS  = 0x01, // Add a vertex at every polygon edge crossing where area changes
-    AI_NAV_MESH_STRAIGHTPATH_ALL_CROSSINGS   = 0x02, // Add a vertex at every polygon edge crossing
+    /** Add a vertex at every polygon edge crossing where area changes */
+    AI_NAV_MESH_STRAIGHTPATH_AREA_CROSSINGS  = 0x01,
+    /** Add a vertex at every polygon edge crossing */
+    AI_NAV_MESH_STRAIGHTPATH_ALL_CROSSINGS   = 0x02,
 };
 
 struct SAINavMeshConnection {
@@ -309,7 +325,8 @@ struct SAINavigationConfig {
     BvAxisAlignedBox BoundingBox;
 };
 
-class AAINavigationMesh {
+class AAINavigationMesh
+{
     AN_FORBID_COPY( AAINavigationMesh )
 
 public:
@@ -331,12 +348,6 @@ public:
 
     /** Initialize empty nav mesh. You must rebuild nav mesh after that. */
     bool Initialize( SAINavigationConfig const & _NavigationConfig );
-
-    /** Add source geometry to build navigation mesh */
-    void AddNavigationGeometry( APhysicalBody * InPhysicalBody );
-
-    /** Remove source geometry to build navigation mesh */
-    void RemoveNavigationGeometry( APhysicalBody * InPhysicalBody );
 
     /** Build all tiles in nav mesh */
     bool Build();
@@ -494,6 +505,15 @@ public:
 
     int GetTileCountX() const { return NumTilesX; }
     int GetTileCountZ() const { return NumTilesZ; }
+
+private:
+    friend class APhysicalBody;
+
+    /** Add source geometry to build navigation mesh */
+    void AddNavigationGeometry( APhysicalBody * InPhysicalBody ) /*override*/;
+
+    /** Remove source geometry to build navigation mesh */
+    void RemoveNavigationGeometry( APhysicalBody * InPhysicalBody ) /*override*/;
 
 private:
     bool BuildTiles( Int2 const & _Mins, Int2 const & _Maxs );

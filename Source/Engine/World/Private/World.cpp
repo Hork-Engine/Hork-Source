@@ -443,10 +443,13 @@ void AWorld::UpdateDrawableAreas() {
     // First Pass: remove drawables from the areas
     for ( ADrawable * drawable = DrawableUpdateList ; drawable ; drawable = drawable->NextUpdDrawable )
     {
-        for ( ALevel * level : ArrayOfLevels )
-        {
-            level->RemoveDrawable( drawable );
+        while ( !drawable->InArea.IsEmpty() ) {
+            drawable->InArea.Last().Level->RemoveDrawable( drawable );
         }
+        //for ( ALevel * level : ArrayOfLevels )
+        //{
+        //    level->RemoveDrawable( drawable );
+        //}
     }
 
     // Second Pass: add drawable to the areas

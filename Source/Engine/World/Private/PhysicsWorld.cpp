@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Base/DebugRenderer.h>
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
+#include <Core/Public/Logger.h>
 
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
@@ -1297,12 +1298,12 @@ struct SQueryPhysicalBodiesCallback : public btCollisionWorld::ContactResultCall
         APhysicalBody * body;
 
         body = reinterpret_cast< APhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && Result.Find( body ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
+        if ( body && Result.Find( body ) == Result.End() && ( body->GetCollisionGroup() & QueryFilter.CollisionMask ) ) {
             Result.Append( body );
         }
 
         body = reinterpret_cast< APhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && Result.Find( body ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
+        if ( body && Result.Find( body ) == Result.End() && ( body->GetCollisionGroup() & QueryFilter.CollisionMask ) ) {
             Result.Append( body );
         }
 
@@ -1332,12 +1333,12 @@ struct SQueryActorsCallback : public btCollisionWorld::ContactResultCallback {
         APhysicalBody * body;
 
         body = reinterpret_cast< APhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
+        if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->GetCollisionGroup() & QueryFilter.CollisionMask ) ) {
             Result.Append( body->GetParentActor() );
         }
 
         body = reinterpret_cast< APhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & QueryFilter.CollisionMask ) ) {
+        if ( body && Result.Find( body->GetParentActor() ) == Result.End() && ( body->GetCollisionGroup() & QueryFilter.CollisionMask ) ) {
             Result.Append( body->GetParentActor() );
         }
 

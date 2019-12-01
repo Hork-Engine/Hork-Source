@@ -137,6 +137,10 @@ public:
 
     BvAxisAlignedBox GetSubpartWorldBounds( int _SubpartIndex ) const;
 
+    void SetStatic( bool _bStatic );
+
+    bool IsStatic() const { return bStatic; }
+
     /** Allow mesh to cast shadows on the world */
     void SetCastShadow( bool _CastShadow );
 
@@ -174,8 +178,12 @@ private:
     AMeshComponent * NextShadowCaster;
     AMeshComponent * PrevShadowCaster;
 
+    AMeshComponent * NextStaticMesh;
+    AMeshComponent * PrevStaticMesh;
+
     TRef< AIndexedMesh > Mesh;
     TPodArray< AMaterialInstance *, 1 > Materials;
 
+    bool bStatic;
     bool bCastShadow;
 };

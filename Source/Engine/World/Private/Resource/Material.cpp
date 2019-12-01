@@ -498,6 +498,11 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     LoadInternalResource( "/Default/Materials/Unlit" );
 }
 
+void AMaterial::UploadResourcesGPU() {
+    GLogger.Printf( "AMaterial::UploadResourcesGPU\n" );
+}
+
+
 AMaterialInstance::AMaterialInstance() {
     static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
     //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );

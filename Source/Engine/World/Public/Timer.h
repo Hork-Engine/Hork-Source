@@ -56,7 +56,7 @@ public:
 
     TCallback< void() > Callback;
 
-    /** Register timer in a world. Call this in BeginPlay */
+    /** Register timer in a world. Call this in/after BeginPlay */
     void Register( AWorld * InOwnerWorld );
 
     /** Unregister timer if you want to stop timer ticking */

@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Components/PhysicalBody.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
+#include <Core/Public/Logger.h>
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 
@@ -118,6 +119,20 @@ void APhysicalBody::DeinitializeComponent() {
     NavigationMesh.RemoveNavigationGeometry( this );
 
     Super::DeinitializeComponent();
+}
+
+void APhysicalBody::SetPhysicsBehavior( EPhysicsBehavior _PhysicsBehavior ) {
+    if ( PhysicsBehavior == _PhysicsBehavior )
+    {
+        return;
+    }
+
+    PhysicsBehavior = _PhysicsBehavior;
+
+    if ( IsInitialized() )
+    {
+        UpdatePhysicsAttribs();
+    }
 }
 
 void APhysicalBody::SetAINavigationBehavior( EAINavigationBehavior _AINavigationBehavior ) {
@@ -873,12 +888,12 @@ struct SContactQueryCallback : public btCollisionWorld::ContactResultCallback {
         APhysicalBody * body;
 
         body = reinterpret_cast< APhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && body != Self && Result.Find( body ) == Result.End() && ( body->CollisionGroup & CollisionMask ) ) {
+        if ( body && body != Self && Result.Find( body ) == Result.End() && ( body->GetCollisionGroup() & CollisionMask ) ) {
             Result.Append( body );
         }
 
         body = reinterpret_cast< APhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && body != Self && Result.Find( body ) == Result.End() && ( body->CollisionGroup & CollisionMask ) ) {
+        if ( body && body != Self && Result.Find( body ) == Result.End() && ( body->GetCollisionGroup() & CollisionMask ) ) {
             Result.Append( body );
         }
 
@@ -903,12 +918,12 @@ struct SContactQueryActorCallback : public btCollisionWorld::ContactResultCallba
         APhysicalBody * body;
 
         body = reinterpret_cast< APhysicalBody * >( colObj0Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && body->GetParentActor() != Self && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & CollisionMask ) ) {
+        if ( body && body->GetParentActor() != Self && Result.Find( body->GetParentActor() ) == Result.End() && ( body->GetCollisionGroup() & CollisionMask ) ) {
             Result.Append( body->GetParentActor() );
         }
 
         body = reinterpret_cast< APhysicalBody * >( colObj1Wrap->getCollisionObject()->getUserPointer() );
-        if ( body && body->GetParentActor() != Self && Result.Find( body->GetParentActor() ) == Result.End() && ( body->CollisionGroup & CollisionMask ) ) {
+        if ( body && body->GetParentActor() != Self && Result.Find( body->GetParentActor() ) == Result.End() && ( body->GetCollisionGroup() & CollisionMask ) ) {
             Result.Append( body->GetParentActor() );
         }
 
@@ -970,29 +985,123 @@ void APhysicalBody::EndPlay() {
     Super::EndPlay();
 }
 
-void APhysicalBody::SetCollisionGroup( int _CollisionGroup ) {
-    if ( CollisionGroup != _CollisionGroup ) {
-        CollisionGroup = _CollisionGroup;
+void APhysicalBody::SetTrigger( bool _Trigger )
+{
+    if ( bTrigger == _Trigger )
+    {
+        return;
+    }
 
+    bTrigger = _Trigger;
+
+    if ( IsInitialized() )
+    {
+        UpdatePhysicsAttribs();
+    }
+}
+
+void APhysicalBody::SetDisableGravity( bool _DisableGravity )
+{
+    if ( bDisableGravity == _DisableGravity )
+    {
+        return;
+    }
+
+    bDisableGravity = _DisableGravity;
+
+    if ( IsInitialized() )
+    {
+        UpdatePhysicsAttribs();
+    }
+}
+
+void APhysicalBody::SetOverrideWorldGravity( bool _OverrideWorldGravity )
+{
+    if ( bOverrideWorldGravity == _OverrideWorldGravity )
+    {
+        return;
+    }
+
+    bOverrideWorldGravity = _OverrideWorldGravity;
+
+    if ( IsInitialized() )
+    {
+        UpdatePhysicsAttribs();
+    }
+}
+
+void APhysicalBody::SetSelfGravity( Float3 const & _SelfGravity )
+{
+    if ( SelfGravity == _SelfGravity )
+    {
+        return;
+    }
+
+    SelfGravity = _SelfGravity;
+
+    if ( IsInitialized() )
+    {
+        UpdatePhysicsAttribs();
+    }
+}
+
+
+void APhysicalBody::SetMass( float _Mass )
+{
+    if ( Mass == _Mass )
+    {
+        return;
+    }
+
+    Mass = _Mass;
+
+    if ( IsInitialized() )
+    {
+        UpdatePhysicsAttribs();
+    }
+}
+
+void APhysicalBody::SetCollisionGroup( int _CollisionGroup ) {
+    if ( CollisionGroup == _CollisionGroup )
+    {
+        return;
+    }
+
+    CollisionGroup = _CollisionGroup;
+
+    if ( IsInitialized() )
+    {
         // Re-add rigid body to physics world
         AddPhysicalBodyToWorld();
     }
 }
 
 void APhysicalBody::SetCollisionMask( int _CollisionMask ) {
-    if ( CollisionMask != _CollisionMask ) {
-        CollisionMask = _CollisionMask;
+    if ( CollisionMask == _CollisionMask )
+    {
+        return;
+    }
 
+    CollisionMask = _CollisionMask;
+
+    if ( IsInitialized() )
+    {
         // Re-add rigid body to physics world
         AddPhysicalBodyToWorld();
     }
 }
 
 void APhysicalBody::SetCollisionFilter( int _CollisionGroup, int _CollisionMask ) {
-    if ( CollisionGroup != _CollisionGroup || CollisionMask != _CollisionMask ) {
-        CollisionGroup = _CollisionGroup;
-        CollisionMask = _CollisionMask;
+    if ( CollisionGroup == _CollisionGroup && CollisionMask == _CollisionMask )
+    {
+        return;
+    }
 
+    CollisionGroup = _CollisionGroup;
+    CollisionMask = _CollisionMask;
+
+    if ( IsInitialized() )
+    {
         // Re-add rigid body to physics world
         AddPhysicalBodyToWorld();
     }

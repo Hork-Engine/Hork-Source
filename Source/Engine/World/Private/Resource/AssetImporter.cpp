@@ -1555,7 +1555,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     }
 
     STexturePixelFormat texturePixelFormat;
-    if ( !GetAppropriatePixelFormat( image, texturePixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( image, texturePixelFormat ) ) {
         return;
     }
 
@@ -2150,7 +2150,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
     }
 
     STexturePixelFormat texturePixelFormat;
-    if ( !GetAppropriatePixelFormat( cubeFaces[0], texturePixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[0], texturePixelFormat ) ) {
         return false;
     }
 
@@ -2166,7 +2166,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
         // Check pixel format
         STexturePixelFormat facePF;
-        if ( !GetAppropriatePixelFormat( cubeFaces[i], facePF ) ) {
+        if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[i], facePF ) ) {
             return false;
         }
         if ( texturePixelFormat != facePF ) {

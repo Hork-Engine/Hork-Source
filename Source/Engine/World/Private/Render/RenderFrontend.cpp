@@ -41,83 +41,17 @@ SOFTWARE.
 ARenderFrontend & GRenderFrontend = ARenderFrontend::Inst();
 
 ARenderFrontend::ARenderFrontend() {
-    FrameNumber = 0;
 }
 
 struct SInstanceSortFunction {
     bool operator() ( SRenderInstance const * _A, SRenderInstance * _B ) {
-
-        // Sort by render order
-        if ( _A->RenderingOrder < _B->RenderingOrder ) {
-            return true;
-        }
-
-        if ( _A->RenderingOrder > _B->RenderingOrder ) {
-            return false;
-        }
-
-        // Sort by material
-        if ( _A->Material < _B->Material ) {
-            return true;
-        }
-
-        if ( _A->Material > _B->Material ) {
-            return false;
-        }
-
-        // Sort by material instance
-        if ( _A->MaterialInstance < _B->MaterialInstance ) {
-            return true;
-        }
-
-        if ( _A->MaterialInstance > _B->MaterialInstance ) {
-            return false;
-        }
-
-        // Sort by mesh
-        if ( _A->VertexBuffer < _B->VertexBuffer ) {
-            return true;
-        }
-
-        if ( _A->VertexBuffer > _B->VertexBuffer ) {
-            return false;
-        }
-
-        return false;
+        return _A->SortKey < _B->SortKey;
     }
 } InstanceSortFunction;
 
 struct SShadowInstanceSortFunction {
     bool operator() ( SShadowRenderInstance const * _A, SShadowRenderInstance * _B ) {
-
-        // Sort by material
-        if ( _A->Material < _B->Material ) {
-            return true;
-        }
-
-        if ( _A->Material > _B->Material ) {
-            return false;
-        }
-
-        // Sort by material instance
-        if ( _A->MaterialInstance < _B->MaterialInstance ) {
-            return true;
-        }
-
-        if ( _A->MaterialInstance > _B->MaterialInstance ) {
-            return false;
-        }
-
-        // Sort by mesh
-        if ( _A->VertexBuffer < _B->VertexBuffer ) {
-            return true;
-        }
-
-        if ( _A->VertexBuffer > _B->VertexBuffer ) {
-            return false;
-        }
-
-        return false;
+        return _A->SortKey < _B->SortKey;
     }
 } ShadowInstanceSortFunction;
 
@@ -158,6 +92,21 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     for ( int i = 0 ; i < NumViewports ; i++ ) {
         RenderView( i );
     }
+
+    //int64_t t = GRuntime.SysMilliseconds();
+    for ( int i = 0 ; i < NumViewports ; i++ ) {
+        SRenderView * view = &FrameData->RenderViews[i];
+
+        StdSort( FrameData->Instances.Begin() + view->FirstInstance,
+                 FrameData->Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
+                 InstanceSortFunction );
+
+        StdSort( FrameData->ShadowInstances.Begin() + view->FirstShadowInstance,
+                 FrameData->ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
+                 ShadowInstanceSortFunction );
+
+    }
+    //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData->Instances.Size() + FrameData->ShadowInstances.Size() );
 
     Stat.FrontendTime = GRuntime.SysMilliseconds() - Stat.FrontendTime;
 
@@ -252,18 +201,6 @@ void ARenderFrontend::RenderView( int _Index ) {
 
         Stat.PolyCount += def.PolyCount;
         Stat.ShadowMapPolyCount += def.ShadowMapPolyCount;
-
-        //int64_t t = GRuntime.SysMilliseconds();
-
-        StdSort( FrameData->Instances.Begin() + view->FirstInstance,
-                 FrameData->Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
-                 InstanceSortFunction );
-
-        StdSort( FrameData->ShadowInstances.Begin() + view->FirstShadowInstance,
-                 FrameData->ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
-                 ShadowInstanceSortFunction );
-
-        //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, RV->InstanceCount );
     }
 }
 

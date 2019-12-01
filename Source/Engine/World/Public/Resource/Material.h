@@ -66,7 +66,7 @@ protected:
     void LoadInternalResource( const char * _Path ) override;
 
     // IGPUResourceOwner interface
-    void UploadResourceGPU( AResourceGPU * _Resource ) override {}
+    void UploadResourcesGPU() override;
 
     const char * GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 

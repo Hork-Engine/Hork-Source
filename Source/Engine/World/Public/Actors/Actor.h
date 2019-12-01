@@ -36,9 +36,8 @@ SOFTWARE.
 
 class AWorld;
 class APawn;
-class ASceneComponent;
-class ACameraComponent;
 class AActorComponent;
+class ASceneComponent;
 
 using AArrayOfActorComponents = TPodArray< AActorComponent *, 8 >;
 
@@ -60,7 +59,7 @@ class ANGIE_API AActor : public ABaseObject {
     AN_ACTOR( AActor, ABaseObject )
 
     friend class AWorld;
-    friend class AActorComponent;
+
 public:
 
     // Actor events

@@ -140,8 +140,8 @@ void ASoftMeshComponent::RecreateSoftBody() {
     //}
 
     bool bFromFaces = false;
-    if ( Mass > 0.01f ) {
-        SoftBody->setTotalMass( Mass, bFromFaces );
+    if ( GetMass() > 0.01f ) {
+        SoftBody->setTotalMass( GetMass(), bFromFaces );
     } else {
         SoftBody->setTotalMass( 0.01f, bFromFaces );
     }

@@ -165,7 +165,7 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Textures/Default2D"; }
 
     // IGPUResourceOwner interface
-    void UploadResourceGPU( AResourceGPU * _Resource ) override {}
+    void UploadResourcesGPU() override;
 
     ATextureGPU * TextureGPU;
     int TextureType;

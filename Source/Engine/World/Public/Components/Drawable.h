@@ -157,7 +157,4 @@ protected:
 
     ADrawable * NextUpdDrawable;
     ADrawable * PrevUpdDrawable;
-
-    //static ADrawable * DrawableUpdateList;
-    //static ADrawable * DrawableUpdateListTail;
 };
