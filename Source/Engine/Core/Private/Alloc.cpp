@@ -1251,7 +1251,7 @@ void AZoneMemory::CheckMemoryLeaks() {
             cur = rover;
             if ( cur->Size < 0 ) {
                 MemLogger.Print( "==== Zone Memory Leak ====\n" );
-                MemLogger.Printf( "Chunk Address: %u Size: %d\n", (size_t)( cur + 1 ), (-cur->Size) );
+                MemLogger.Printf( "Chunk Address: %u (Local: %u) Size: %d\n", (size_t)( cur + 1 ), (size_t)( cur + 1 ) - (size_t)GetZoneMemoryAddress(), (-cur->Size) );
 
                 //int sz = -cur->Size;
                 //char * b = (char*)(cur+1);

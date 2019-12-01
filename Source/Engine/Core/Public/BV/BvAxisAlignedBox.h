@@ -81,6 +81,9 @@ public:
     float Radius() const;
     Float3 Size() const;
     Float3 HalfSize() const;
+    float LongestAxisSize() const;
+    float ShortestAxisSize() const;
+    void GetVertices( Float3 _Vertices[8] ) const;
 
     bool IsEmpty() const {
         return Mins.X >= Maxs.X || Mins.Y >= Maxs.Y || Mins.Z >= Maxs.Z;
@@ -232,6 +235,30 @@ AN_FORCEINLINE Float3 BvAxisAlignedBox::Size() const {
 
 AN_FORCEINLINE Float3 BvAxisAlignedBox::HalfSize() const {
     return ( Maxs - Mins ) * 0.5f;
+}
+
+AN_FORCEINLINE float BvAxisAlignedBox::LongestAxisSize() const {
+    Float3 size = Maxs - Mins;
+    float maxSize = size.X;
+    if ( size.Y > maxSize ) {
+        maxSize = size.Y;
+    }
+    if ( size.Z > maxSize ) {
+        maxSize = size.Z;
+    }
+    return maxSize;
+}
+
+AN_FORCEINLINE float BvAxisAlignedBox::ShortestAxisSize() const {
+    Float3 size = Maxs - Mins;
+    float minSize = size.X;
+    if ( size.Y < minSize ) {
+        minSize = size.Y;
+    }
+    if ( size.Z < minSize ) {
+        minSize = size.Z;
+    }
+    return minSize;
 }
 
 AN_FORCEINLINE float * BvAxisAlignedBox::ToPtr() {

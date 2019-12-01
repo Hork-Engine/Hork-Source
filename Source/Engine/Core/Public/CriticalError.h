@@ -32,22 +32,22 @@ SOFTWARE.
 
 #include <setjmp.h>
 
-// For internal use. Do not use CriticalErrorMark directly.
+/** For internal use. Do not use CriticalErrorMark directly. */
 extern thread_local jmp_buf CriticalErrorMark;
 
-// Set jump mark, returns ture if CriticalError was called from same thread.
+/** Set jump mark, returns ture if CriticalError was called from same thread. */
 #define SetCriticalMark() ( setjmp( CriticalErrorMark ) == 1 )
 
-// Returns critical error message and locks it.
+/** Returns critical error message and locks it. */
 const char * MapCriticalErrorMessage();
 
-// Unlocks critical error message.
+/** Unlocks critical error message. */
 void UnmapCriticalErrorMessage();
 
-// Set critical error and jump to mark passed by SetCriticalAbort in same thread.
+/** Set critical error and jump to mark passed by SetCriticalAbort in same thread. */
 void CriticalError( const char * _Format, ... );
 
-// Returns true if CriticalError was called from any thread.
+/** Returns true if CriticalError was called from any thread. */
 bool IsCriticalError();
 
 /*

@@ -41,6 +41,8 @@ public:
     BvOrientedBox() = default;
     BvOrientedBox( Float3 const & _Center, Float3 const & _HalfSize ) : Center(_Center), HalfSize(_HalfSize) {}
 
+    void GetVertices( Float3 _Vertices[8] ) const;
+
     // TODO: Check correcteness
 
     void FromAxisAlignedBox( BvAxisAlignedBox const & _AxisAlignedBox, Float3 const & _Origin, Float3x3 const & _Orient ) {

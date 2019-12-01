@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "PodArray.h"
 
-/*
+/**
 
 TBitMask
 

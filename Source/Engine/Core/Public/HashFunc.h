@@ -34,7 +34,7 @@ SOFTWARE.
 
 namespace Core {
 
-// Robert Sedgwicks Algorithms in C book
+/** Robert Sedgwicks Algorithms in C book */
 AN_FORCEINLINE uint32_t RSHash( const char * _Str, int _Length ) {
     const uint32_t b = 378551;
     uint32_t a = 63689;
@@ -48,7 +48,7 @@ AN_FORCEINLINE uint32_t RSHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Justin Sobels bitwise hash function
+/** Justin Sobels bitwise hash function */
 AN_FORCEINLINE uint32_t JSHash( const char * _Str, int _Length ) {
     uint32_t hash = 1315423911;
 
@@ -59,12 +59,12 @@ AN_FORCEINLINE uint32_t JSHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Peter J. Weinberger hash algorithm
+/** Peter J. Weinberger hash algorithm */
 AN_FORCEINLINE uint32_t PJWHash( const char * _Str, int _Length ) {
-    const uint32_t BitsInUnsignedInt = sizeof( uint32_t ) * 8;
-    const uint32_t ThreeQuarters = ( BitsInUnsignedInt * 3 ) / 4;
-    const uint32_t OneEighth = BitsInUnsignedInt / 8;
-    const uint32_t HighBits = uint32_t( 0xFFFFFFFF ) << ( BitsInUnsignedInt - OneEighth );
+    constexpr uint32_t BitsInUnsignedInt = sizeof( uint32_t ) * 8;
+    constexpr uint32_t ThreeQuarters = ( BitsInUnsignedInt * 3 ) / 4;
+    constexpr uint32_t OneEighth = BitsInUnsignedInt / 8;
+    constexpr uint32_t HighBits = uint32_t( 0xFFFFFFFF ) << ( BitsInUnsignedInt - OneEighth );
     uint32_t hash = 0;
     uint32_t test = 0;
 
@@ -79,7 +79,7 @@ AN_FORCEINLINE uint32_t PJWHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Similar to the PJW Hash function, but tweaked for 32-bit processors. Its the hash function widely used on most UNIX systems.
+/** Similar to the PJW Hash function, but tweaked for 32-bit processors. Its the hash function widely used on most UNIX systems. */
 AN_FORCEINLINE uint32_t ELFHash( const char * _Str, int _Length ) {
     uint32_t hash = 0;
     uint32_t x = 0;
@@ -95,7 +95,7 @@ AN_FORCEINLINE uint32_t ELFHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Brian Kernighan and Dennis Ritchie's (Book "The C Programming Language")
+/** Brian Kernighan and Dennis Ritchie's (Book "The C Programming Language") */
 AN_FORCEINLINE uint32_t BKDRHash( const char * _Str, int _Length ) {
     const uint32_t seed = 131; // 31 131 1313 13131 131313 etc..
     uint32_t hash = 0;
@@ -107,7 +107,7 @@ AN_FORCEINLINE uint32_t BKDRHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Algorithm is used in the open source SDBM project
+/** Algorithm is used in the open source SDBM project */
 AN_FORCEINLINE uint32_t SDBMHash( const char * _Str, int _Length ) {
     uint32_t hash = 0;
 
@@ -118,7 +118,7 @@ AN_FORCEINLINE uint32_t SDBMHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Algorithm produced by Professor Daniel J. Bernstein
+/** Algorithm produced by Professor Daniel J. Bernstein */
 AN_FORCEINLINE uint32_t DJBHash( const char * _Str, int _Length ) {
     uint32_t hash = 5381;
 
@@ -129,7 +129,7 @@ AN_FORCEINLINE uint32_t DJBHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Donald E. Knuth algorithm (The Art Of Computer Programming Volume 3)
+/** Donald E. Knuth algorithm (The Art Of Computer Programming Volume 3) */
 AN_FORCEINLINE uint32_t DEKHash( const char * _Str, int _Length ) {
     uint32_t hash = static_cast< uint32_t >( _Length );
 
@@ -140,7 +140,7 @@ AN_FORCEINLINE uint32_t DEKHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Arash Partow algorithm
+/** Arash Partow algorithm */
 AN_FORCEINLINE uint32_t APHash( const char * _Str, int _Length ) {
     uint32_t hash = 0;
 
@@ -151,8 +151,7 @@ AN_FORCEINLINE uint32_t APHash( const char * _Str, int _Length ) {
     return hash;
 }
 
-// Paul Hsieh hash
-// http://www.azillionmonkeys.com/qed/hash.html
+/** Paul Hsieh hash http://www.azillionmonkeys.com/qed/hash.html */
 #undef __get16
 #define __get16(p) ( (p)[0] | ((p)[1] << 8) )
 AN_FORCEINLINE uint32_t PHHash( const char * _Str, int _Length, uint32_t hash = 0 ) {
@@ -201,6 +200,7 @@ AN_FORCEINLINE uint32_t PHHash( const char * _Str, int _Length, uint32_t hash = 
     return hash;
 }
 
+/** Modified version PHHash for case-insensetive strings */
 AN_FORCEINLINE uint32_t PHHash_Case( const char * _Str, int _Length, uint32_t hash = 0 ) {
     uint32_t tmp;
     int rem;
@@ -259,6 +259,81 @@ AN_FORCEINLINE uint32_t PHHash_Case( const char * _Str, int _Length, uint32_t ha
     return hash;
 }
 #undef __get16
+
+/** Modified version PHHash for 32-bit integers */
+AN_FORCEINLINE uint32_t PHHash32( uint32_t p, uint32_t hash = 0 ) {
+    hash += (p>>24) | (((p>>16)&0xff) << 8);
+    hash = (hash << 16) ^ uint32_t(((((p>>8)&0xff) | (((p)&0xff) << 8)) << 11) ^ hash);
+    hash += hash >> 11;
+    hash ^= hash << 3;
+    hash += hash >> 5;
+    hash ^= hash << 4;
+    hash += hash >> 17;
+    hash ^= hash << 25;
+    hash += hash >> 6;
+    return hash;
+}
+
+/** Modified version PHHash for 64-bit integers */
+AN_FORCEINLINE uint32_t PHHash64( uint64_t p, uint32_t hash = 0 ) {
+    hash += (p>>56) | (((p>>48)&0xff) << 8);
+    hash = (hash << 16) ^ uint32_t(((((p>>40)&0xff) | (((p>>32)&0xff) << 8)) << 11) ^ hash);
+    hash += hash >> 11;
+    hash += ((p>>24)&0xff) | (((p>>16)&0xff) << 8);
+    hash = (hash << 16) ^ uint32_t(((((p>>8)&0xff) | (((p)&0xff) << 8)) << 11) ^ hash);
+    hash += hash >> 11;
+    hash ^= hash << 3;
+    hash += hash >> 5;
+    hash ^= hash << 4;
+    hash += hash >> 17;
+    hash ^= hash << 25;
+    hash += hash >> 6;
+    return hash;
+}
+
+/** Modified version MurMur3 hash for 32-bit integers */
+AN_FORCEINLINE uint32_t MurMur3Hash32( uint32_t k, uint32_t seed ) {
+    uint32_t h = seed;
+    k *= 0xcc9e2d51;
+    k = (k << 15) | (k >> 17);
+    k *= 0x1b873593;
+    h ^= k;
+    h = (h << 13) | (h >> 19);
+    h = h * 5 + 0xe6546b64;
+    h ^= 4;
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+    return h;
+}
+
+/** Modified version MurMur3 hash for 64-bit integers */
+AN_FORCEINLINE uint32_t MurMur3Hash64( uint64_t key, uint32_t seed ) {
+    uint32_t h = seed;
+    uint32_t k = key >> 32;
+    k *= 0xcc9e2d51;
+    k = (k << 15) | (k >> 17);
+    k *= 0x1b873593;
+    h ^= k;
+    h = (h << 13) | (h >> 19);
+    h = h * 5 + 0xe6546b64;
+    k = key & 0xffffffff;
+    k *= 0xcc9e2d51;
+    k = (k << 15) | (k >> 17);
+    k *= 0x1b873593;
+    h ^= k;
+    h = (h << 13) | (h >> 19);
+    h = h * 5 + 0xe6546b64;
+    h ^= 8;
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+    return h;
+}
 
 AN_FORCEINLINE int Hash( const char * _Str, int _Length ) {
     return PHHash( _Str, _Length );

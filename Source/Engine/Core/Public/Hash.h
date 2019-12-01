@@ -37,10 +37,10 @@ class THash final {
     AN_FORBID_COPY( THash )
 
 public:
-    // Change it to set up granularity. Granularity must be >= 1
+    /** Change it to set up granularity. Granularity must be >= 1 */
     int   Granularity = 1024;
 
-    // Change it to reallocate indices
+    /** Change it to reallocate indices */
     int   NumBucketIndices = 0;
 
     THash() {

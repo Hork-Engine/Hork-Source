@@ -48,7 +48,7 @@ public:
 
     bool IsTransparent() const { return W < 0.0001f; }
 
-    // Assume temperature is range between 1000 and 40000.
+    /** Assume temperature is range between 1000 and 40000. */
     void SetTemperature( float _Temperature );
 
     void SetByte( byte _Red, byte _Green, byte _Blue );
@@ -78,6 +78,7 @@ public:
     void SetCMYK( float _Cyan, float _Magenta, float _Yellow, float _Key );
     void GetCMYK( float & _Cyan, float & _Magenta, float & _Yellow, float & _Key ) const;
 
+    /** Assume color is in linear space */
     float GetLuminance() const;
 
     AColor4 ToLinear() const;
@@ -410,6 +411,5 @@ AN_FORCEINLINE void AColor4::GetCMYK( float & _Cyan, float & _Magenta, float & _
 }
 
 AN_FORCEINLINE float AColor4::GetLuminance() const {
-    // assume color is in linear space
     return X * 0.2126f + Y * 0.7152f + Z * 0.0722f;
 }

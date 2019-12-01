@@ -39,44 +39,50 @@ class ANGIE_API AFastLZCompressor {
 public:
     AFastLZCompressor() {}
 
-    // Compress a block of data in the input buffer and returns the size of 
-    // compressed block. The size of input buffer is specified by length. The 
-    // minimum input buffer size is 16.
+    /**
+    Compress a block of data in the input buffer and returns the size of
+    compressed block. The size of input buffer is specified by length. The
+    minimum input buffer size is 16.
 
-    // The output buffer must be at least 5% larger than the input buffer  
-    // and can not be smaller than 66 bytes.
+    The output buffer must be at least 5% larger than the input buffer
+    and can not be smaller than 66 bytes.
 
-    // The input buffer and the output buffer can not overlap.
-
+    The input buffer and the output buffer can not overlap.
+    */
     static size_t CalcAppropriateCompressedDataSize( size_t _SourceSize );
 
     bool CompressData( const byte * _Data, size_t _DataSz, byte * _CompressedData, size_t & _CompressedDataSz );
 
     enum ECompressionLevel {
-        Fastes = 1,     // the fastest compression and generally useful for short data
-        BetterRatio = 2 // slightly slower but it gives better compression ratio
+        /** The fastest compression and generally useful for short data */
+        Fastes = 1,
+        /** slightly slower but it gives better compression ratio */
+        BetterRatio = 2
     };
 
-    // Compress a block of data in the input buffer and returns the size of 
-    // compressed block. The size of input buffer is specified by length. The 
-    // minimum input buffer size is 16.
+    /**
+    Compress a block of data in the input buffer and returns the size of
+    compressed block. The size of input buffer is specified by length. The
+    minimum input buffer size is 16.
 
-    // The output buffer must be at least 5% larger than the input buffer  
-    // and can not be smaller than 66 bytes.
+    The output buffer must be at least 5% larger than the input buffer
+    and can not be smaller than 66 bytes.
 
-    // The input buffer and the output buffer can not overlap.
+    The input buffer and the output buffer can not overlap.
 
-    // Note that the compressed data, regardless of the level, can always be
-    // decompressed using the function DecompressData.
+    Note that the compressed data, regardless of the level, can always be
+    decompressed using the function DecompressData.
+    */
     bool CompressDataLevel( ECompressionLevel _Level, const byte * _Data, size_t _DataSz, byte * _CompressedData, size_t & _CompressedDataSz );
 
-    // Decompress a block of compressed data and returns the size of the 
-    // decompressed block.
+    /**
+    Decompress a block of compressed data and returns the size of the
+    decompressed block.
 
-    // The input buffer and the output buffer can not overlap.
+    The input buffer and the output buffer can not overlap.
 
-    // Decompression is memory safe and guaranteed not to write the output buffer
-    // more than what is specified in maxout.
-
+    Decompression is memory safe and guaranteed not to write the output buffer
+    more than what is specified in maxout.
+    */
     bool DecompressData( const byte * _CompressedData, size_t _CompressedDataSz, byte * _Data, size_t & _DataSz, int _MaxOut );
 };
