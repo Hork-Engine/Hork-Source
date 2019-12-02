@@ -30,21 +30,21 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/GameThread/Public/EngineInstance.h>
-#include <Engine/Resource/Public/IndexedMesh.h>
-#include <Engine/Resource/Public/Material.h>
+#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/Resource/IndexedMesh.h>
+#include <World/Public/Resource/Material.h>
 #include "MyPlayerController.h"
 
-class FModule final : public IGameModule {
-    AN_CLASS( FModule, IGameModule )
+class AModule final : public IGameModule {
+    AN_CLASS( AModule, IGameModule )
 
 public:
-    TRef< FRenderingParameters > RenderingParams;
-    TRef< FInputMappings > InputMappings;
-    FWorld * World;
-    FMyPlayerController * PlayerController;
+    TRef< ARenderingParameters > RenderingParams;
+    TRef< AInputMappings > InputMappings;
+    AWorld * World;
+    AMyPlayerController * PlayerController;
 
-    FModule() {}
+    AModule() {}
 
 private:
     //
@@ -53,10 +53,8 @@ private:
 
     void OnGameStart() override;
     void OnGameEnd() override {}
-    void OnPreGameTick( float _TimeStep ) override{}
-    void OnPostGameTick( float _TimeStep ) override{}
     void SetInputMappings();
     void CreateResources();
 };
 
-extern FModule * GModule;
+extern AModule * GModule;

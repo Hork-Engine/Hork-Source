@@ -30,16 +30,16 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actors/PlayerController.h>
+#include <World/Public/Actors/PlayerController.h>
 
-class ANGIE_API FMyPlayerController : public FPlayerController {
-    AN_ACTOR( FMyPlayerController, FPlayerController )
+class ANGIE_API AMyPlayerController : public APlayerController {
+    AN_ACTOR( AMyPlayerController, APlayerController )
 
 protected:
 
     void Tick( float _TimeStep ) override;
 
-    FMyPlayerController();
+    AMyPlayerController();
 
 private:
     void UpdateCameraAspectRatio();

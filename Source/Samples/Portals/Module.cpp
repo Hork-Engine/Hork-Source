@@ -32,34 +32,36 @@ SOFTWARE.
 #include "Player.h"
 #include "Checker.h"
 
-#include <Engine/World/Public/World.h>
-#include <Engine/World/Public/Components/InputComponent.h>
-#include <Engine/World/Public/Canvas.h>
-#include <Engine/Resource/Public/ResourceManager.h>
+#include <World/Public/World.h>
+#include <World/Public/Components/InputComponent.h>
+#include <World/Public/Canvas.h>
+#include <World/Public/Base/ResourceManager.h>
 
-AN_CLASS_META( FModule )
+AN_CLASS_META( AModule )
+
+const char * IGameModule::RootPath = "Samples/Portals";
 
 class WMyDesktop : public WDesktop {
     AN_CLASS( WMyDesktop, WDesktop )
 
 public:
-    TRef< FPlayerController > PlayerController;
+    TRef< APlayerController > PlayerController;
 
 protected:
     WMyDesktop() {
         SetDrawBackground( true );
     }
 
-    void OnDrawBackground( FCanvas & _Canvas ) override {
+    void OnDrawBackground( ACanvas & _Canvas ) override {
         _Canvas.DrawViewport( PlayerController, 0, 0, _Canvas.Width, _Canvas.Height );
     }
 };
 
 AN_CLASS_META( WMyDesktop )
 
-FModule * GModule;
+AModule * GModule;
 
-void FModule::OnGameStart() {
+void AModule::OnGameStart() {
 
     GModule = this;
 
@@ -73,13 +75,13 @@ void FModule::OnGameStart() {
     SetInputMappings();
     CreateResources();
 
-    World = FWorld::CreateWorld();
+    World = AWorld::CreateWorld();
 
-    FLevel * level = World->GetPersistentLevel();
-    FLevelArea * area1 = level->AddArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
-    FLevelArea * area2 = level->AddArea( Float3(-3,0,0), Float3(2.0f), Float3(-3,0,0) );
-    FLevelArea * area3 = level->AddArea( Float3(1,0,0), Float3(2.0f), Float3(1,0,0) );
-    FLevelArea * area4 = level->AddArea( Float3(1,0,3), Float3(2.0f,2.0f,4.0f), Float3(1,0,3) );
+    ALevel * level = World->GetPersistentLevel();
+    ALevelArea * area1 = level->AddArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
+    ALevelArea * area2 = level->AddArea( Float3(-3,0,0), Float3(2.0f), Float3(-3,0,0) );
+    ALevelArea * area3 = level->AddArea( Float3(1,0,0), Float3(2.0f), Float3(1,0,0) );
+    ALevelArea * area4 = level->AddArea( Float3(1,0,3), Float3(2.0f,2.0f,4.0f), Float3(1,0,3) );
 
     Float3 points[4] = {
         Float3( 0, 0.2f, -0.2f ),
@@ -87,28 +89,28 @@ void FModule::OnGameStart() {
         Float3( 0, 0.8f, 0.2f ),
         Float3( 0, 0.2f, 0.2f )
     };
-    FLevelPortal * p0 = level->AddPortal( points, 4, area1, area3 );
+    ALevelPortal * p0 = level->AddPortal( points, 4, area1, area3 );
     for ( int i = 0 ; i < 4 ; i++ ) {
         points[i].X -= 2;
     }
-    FLevelPortal * p1 = level->AddPortal( points, 4, area1, area2 );
+    ALevelPortal * p1 = level->AddPortal( points, 4, area1, area2 );
     Float3 points2[4] = {
         Float3( 0.2f, 0.2f, 1 ),
         Float3( 0.4f, 0.2f, 1 ),
         Float3( 0.4f, 0.8f, 1 ),
         Float3( 0.2f, 0.8f, 1 )
     };
-    FLevelPortal * p2 = level->AddPortal( points2, 4, area3, area4 );
+    ALevelPortal * p2 = level->AddPortal( points2, 4, area3, area4 );
 
     for ( int i = 0 ; i < 4 ; i++ ) {
         points[i].X -= 2;
     }
-    FLevelPortal * p3 = level->AddPortal( points, 4, NULL, area2 );
+    ALevelPortal * p3 = level->AddPortal( points, 4, NULL, area2 );
 
     for ( int i = 0 ; i < 4 ; i++ ) {
         points2[i].Z += 4;
     }
-    FLevelPortal * p4 = level->AddPortal( points2, 4, area4, NULL );
+    ALevelPortal * p4 = level->AddPortal( points2, 4, area4, NULL );
 
     AN_UNUSED(p0);
     AN_UNUSED(p1);
@@ -118,14 +120,14 @@ void FModule::OnGameStart() {
     level->BuildPortals();
 
     // Spawn HUD
-    //FHUD * hud = World->SpawnActor< FMyHUD >();
+    //AHUD * hud = World->SpawnActor< AMyHUD >();
 
-    RenderingParams = NewObject< FRenderingParameters >();
-    RenderingParams->BackgroundColor = FColor4(0.5f);
+    RenderingParams = NewObject< ARenderingParameters >();
+    RenderingParams->BackgroundColor = AColor4(0.5f);
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = true;
 
-    FTransform t;
+    ATransform t;
     t.Rotation = Quat::Identity();
     t.Scale = Float3(0.1f);
     //int n = 0;
@@ -139,11 +141,11 @@ void FModule::OnGameStart() {
 
                 t.Position = pos*0.25;//*0.2f;
 
-                World->SpawnActor< FChecker >( t );
+                World->SpawnActor< AChecker >( t );
                 //GLogger.Printf("n %d\n",++n);
             }
 
-    //GLogger.Printf( "sizeof FChecker %u sizeof FActor %u\n", sizeof(FChecker), sizeof(FActor) );
+    //GLogger.Printf( "sizeof AChecker %u sizeof AActor %u\n", sizeof(AChecker), sizeof(AActor) );
 
     Float3 center(0);
     for ( int i = 0 ; i < 4 ; i++ ) {
@@ -151,30 +153,29 @@ void FModule::OnGameStart() {
     }
     t.Position = center/4.0f;
     t.Scale = Float3(0.1f,0.1f,3);
-    World->SpawnActor< FChecker >( t );
+    World->SpawnActor< AChecker >( t );
 
-    FPlayer * player = World->SpawnActor< FPlayer >( Float3(0,0.2f,1), Quat::Identity() );
+    APlayer * player = World->SpawnActor< APlayer >( Float3(0,0.2f,1), Quat::Identity() );
 
     //World->SpawnActor< FAtmosphere >();
 
 
     // Spawn player controller
-    PlayerController = World->SpawnActor< FMyPlayerController >();
+    PlayerController = World->SpawnActor< AMyPlayerController >();
     PlayerController->SetPlayerIndex( CONTROLLER_PLAYER_1 );
     PlayerController->SetInputMappings( InputMappings );
     PlayerController->SetRenderingParameters( RenderingParams );
     //PlayerController->SetHUD( hud );
 
     PlayerController->SetPawn( player );
-    PlayerController->SetViewCamera( player->Camera );
 
     WMyDesktop * desktop = NewObject< WMyDesktop >();
     desktop->PlayerController = PlayerController;
     GEngine.SetDesktop( desktop );
 }
 
-void FModule::SetInputMappings() {
-    InputMappings = NewObject< FInputMappings >();
+void AModule::SetInputMappings() {
+    InputMappings = NewObject< AInputMappings >();
 
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_W, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_S, -1.0f, CONTROLLER_PLAYER_1 );
@@ -192,31 +193,29 @@ void FModule::SetInputMappings() {
     InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
 }
 
-void FModule::CreateResources() {
+void AModule::CreateResources() {
     // Texture Blank512
     {
-        GetOrCreateResource< FTexture2D >( "blank512.png", "Blank512" );
+        GetOrCreateResource< ATexture >( "Blank512", "/Common/blank512.png" );
     }
 
     // CheckerMaterialInstance
     {
-        static TStaticInternalResourceFinder< FMaterial > MaterialResource( _CTS( "FMaterial.Default" ) );
-        static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "Blank512" ) );
-        FMaterialInstance * CheckerMaterialInstance = NewObject< FMaterialInstance >();
+        static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
+        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "Blank512" ) );
+        AMaterialInstance * CheckerMaterialInstance = NewObject< AMaterialInstance >();
         CheckerMaterialInstance->SetMaterial( MaterialResource.GetObject() );
         CheckerMaterialInstance->SetTexture( 0, TextureResource.GetObject() );
-        CheckerMaterialInstance->SetName( "CheckerMaterialInstance" );
-        RegisterResource( CheckerMaterialInstance );
+        RegisterResource( CheckerMaterialInstance, "CheckerMaterialInstance" );
     }
 
     // Checker mesh
     {
-        static TStaticResourceFinder< FMaterialInstance > MaterialInst( _CTS( "CheckerMaterialInstance" ) );
-        FIndexedMesh * CheckerMesh = NewObject< FIndexedMesh >();
-        CheckerMesh->InitializeInternalResource( "FIndexedMesh.Sphere" );
-        CheckerMesh->SetName( "CheckerMesh" );
+        static TStaticResourceFinder< AMaterialInstance > MaterialInst( _CTS( "CheckerMaterialInstance" ) );
+        AIndexedMesh * CheckerMesh = NewObject< AIndexedMesh >();
+        CheckerMesh->InitializeFromFile( "/Default/Meshes/Sphere" );
         CheckerMesh->SetMaterialInstance( 0, MaterialInst.GetObject() );
-        RegisterResource( CheckerMesh );
+        RegisterResource( CheckerMesh, "CheckerMesh" );
     }
 
     // Skybox texture
@@ -229,8 +228,8 @@ void FModule::CreateResources() {
             "DarkSky/bk.tga",
             "DarkSky/ft.tga"
         };
-        FImage rt, lt, up, dn, bk, ft;
-        FImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
+        AImage rt, lt, up, dn, bk, ft;
+        AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
         rt.LoadHDRI( Cubemap[0], false, false, 3 );
         lt.LoadHDRI( Cubemap[1], false, false, 3 );
         up.LoadHDRI( Cubemap[2], false, false, 3 );
@@ -248,24 +247,22 @@ void FModule::CreateResources() {
         //        HDRI[j + 2] = pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
         //    }
         //}
-        FTextureCubemap * SkyboxTexture = NewObject< FTextureCubemap >();
+        ATexture * SkyboxTexture = NewObject< ATexture >();
         SkyboxTexture->InitializeCubemapFromImages( cubeFaces );
-        SkyboxTexture->SetName( "SkyboxTexture" );
-        RegisterResource( SkyboxTexture );
+        RegisterResource( SkyboxTexture, "SkyboxTexture" );
     }
 
     // Skybox material instance
     {
-        static TStaticInternalResourceFinder< FMaterial > SkyboxMaterial( _CTS( "FMaterial.Skybox" ) );
-        static TStaticResourceFinder< FTextureCubemap > SkyboxTexture( _CTS( "SkyboxTexture" ) );
-        FMaterialInstance * SkyboxMaterialInstance = NewObject< FMaterialInstance >();
-        SkyboxMaterialInstance->SetName( "SkyboxMaterialInstance" );
+        static TStaticResourceFinder< AMaterial > SkyboxMaterial( _CTS( "/Default/Materials/Skybox" ) );
+        static TStaticResourceFinder< ATexture > SkyboxTexture( _CTS( "SkyboxTexture" ) );
+        AMaterialInstance * SkyboxMaterialInstance = NewObject< AMaterialInstance >();
         SkyboxMaterialInstance->SetMaterial( SkyboxMaterial.GetObject() );
         SkyboxMaterialInstance->SetTexture( 0, SkyboxTexture.GetObject() );
-        RegisterResource( SkyboxMaterialInstance );
+        RegisterResource( SkyboxMaterialInstance, "SkyboxMaterialInstance" );
     }
 }
 
-#include <Engine/Runtime/Public/EntryDecl.h>
+#include <Runtime/Public/EntryDecl.h>
 
-AN_ENTRY_DECL( FModule )
+AN_ENTRY_DECL( AModule )

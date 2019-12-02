@@ -30,20 +30,22 @@ SOFTWARE.
 
 #include "Player.h"
 
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/World/Public/Components/InputComponent.h>
-#include <Engine/Resource/Public/ResourceManager.h>
+#include <Runtime/Public/Runtime.h>
+#include <World/Public/Components/InputComponent.h>
+#include <World/Public/Base/ResourceManager.h>
 
-AN_BEGIN_CLASS_META( FPlayer )
+AN_BEGIN_CLASS_META( APlayer )
 AN_END_CLASS_META()
 
-FPlayer::FPlayer() {
-    static TStaticResourceFinder< FIndexedMesh > CheckerMesh( _CTS( "CheckerMesh" ) );
+APlayer::APlayer() {
+    static TStaticResourceFinder< AIndexedMesh > CheckerMesh( _CTS( "CheckerMesh" ) );
 
-    Camera = AddComponent< FCameraComponent >( "Camera" );
+    Camera = CreateComponent< ACameraComponent >( "Camera" );
     RootComponent = Camera;
 
-    Box = AddComponent< FMeshComponent >( "checker" );
+    PawnCamera = Camera;
+
+    Box = CreateComponent< AMeshComponent >( "checker" );
     Box->SetMesh( CheckerMesh.GetObject() );
     Box->CopyMaterialsFromMeshResource();
     Box->SetPosition( 0, 0, -0.5f );
@@ -52,9 +54,9 @@ FPlayer::FPlayer() {
 
     bCanEverTick = true;
 
-    static TStaticInternalResourceFinder< FIndexedMesh > UnitBox( _CTS( "FIndexedMesh.Box" ) );
-    static TStaticResourceFinder< FMaterialInstance > SkyboxMaterialInst( _CTS( "SkyboxMaterialInstance" ) );
-    Skybox = AddComponent< FMeshComponent >( "Skybox" );
+    static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Box" ) );
+    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "SkyboxMaterialInstance" ) );
+    Skybox = CreateComponent< AMeshComponent >( "Skybox" );
     Skybox->SetMesh( UnitBox.GetObject() );
     Skybox->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
     Skybox->ForceOutdoor( true );
@@ -63,7 +65,7 @@ FPlayer::FPlayer() {
     Skybox->RenderingOrder = RENDER_ORDER_SKYBOX;
 }
 
-void FPlayer::BeginPlay() {
+void APlayer::BeginPlay() {
     Super::BeginPlay();
 
     Float3 vec = RootComponent->GetBackVector();
@@ -78,11 +80,11 @@ void FPlayer::BeginPlay() {
 
 //        } else {
             projected.NormalizeSelf();
-            Angles.Yaw = FMath::Degrees( atan2( projected.X, projected.Y ) ) + 90;
+            Angles.Yaw = Math::Degrees( atan2( projected.X, projected.Y ) ) + 90;
 //        }
     } else {
         projected.NormalizeSelf();
-        Angles.Yaw = FMath::Degrees( atan2( projected.X, projected.Y ) );
+        Angles.Yaw = Math::Degrees( atan2( projected.X, projected.Y ) );
     }
 
     Angles.Pitch = Angles.Roll = 0;
@@ -90,22 +92,22 @@ void FPlayer::BeginPlay() {
     RootComponent->SetAngles( Angles );
 }
 
-void FPlayer::EndPlay() {
+void APlayer::EndPlay() {
     Super::EndPlay();
 }
 
-void FPlayer::SetupPlayerInputComponent( FInputComponent * _Input ) {
-    _Input->BindAxis( "MoveForward", this, &FPlayer::MoveForward );
-    _Input->BindAxis( "MoveRight", this, &FPlayer::MoveRight );
-    _Input->BindAxis( "MoveUp", this, &FPlayer::MoveUp );
-    _Input->BindAxis( "MoveDown", this, &FPlayer::MoveDown );
-    _Input->BindAxis( "TurnRight", this, &FPlayer::TurnRight );
-    _Input->BindAxis( "TurnUp", this, &FPlayer::TurnUp );
-    _Input->BindAction( "Speed", IE_Press, this, &FPlayer::SpeedPress );
-    _Input->BindAction( "Speed", IE_Release, this, &FPlayer::SpeedRelease );
+void APlayer::SetupPlayerInputComponent( AInputComponent * _Input ) {
+    _Input->BindAxis( "MoveForward", this, &APlayer::MoveForward );
+    _Input->BindAxis( "MoveRight", this, &APlayer::MoveRight );
+    _Input->BindAxis( "MoveUp", this, &APlayer::MoveUp );
+    _Input->BindAxis( "MoveDown", this, &APlayer::MoveDown );
+    _Input->BindAxis( "TurnRight", this, &APlayer::TurnRight );
+    _Input->BindAxis( "TurnUp", this, &APlayer::TurnUp );
+    _Input->BindAction( "Speed", IE_Press, this, &APlayer::SpeedPress );
+    _Input->BindAction( "Speed", IE_Release, this, &APlayer::SpeedRelease );
 }
 
-void FPlayer::Tick( float _TimeStep ) {
+void APlayer::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
 
     constexpr float PLAYER_MOVE_SPEED = 1.5f; // Meters per second
@@ -121,38 +123,38 @@ void FPlayer::Tick( float _TimeStep ) {
     Box->TurnLeftFPS( _TimeStep );
 }
 
-void FPlayer::MoveForward( float _Value ) {
-    MoveVector += RootComponent->GetForwardVector() * FMath::Sign(_Value);
+void APlayer::MoveForward( float _Value ) {
+    MoveVector += RootComponent->GetForwardVector() * Math::Sign(_Value);
 }
 
-void FPlayer::MoveRight( float _Value ) {
-    MoveVector += RootComponent->GetRightVector() * FMath::Sign(_Value);
+void APlayer::MoveRight( float _Value ) {
+    MoveVector += RootComponent->GetRightVector() * Math::Sign(_Value);
 }
 
-void FPlayer::MoveUp( float _Value ) {
+void APlayer::MoveUp( float _Value ) {
     MoveVector.Y += 1;
 }
 
-void FPlayer::MoveDown( float _Value ) {
+void APlayer::MoveDown( float _Value ) {
     MoveVector.Y -= 1;
 }
 
-void FPlayer::TurnRight( float _Value ) {
+void APlayer::TurnRight( float _Value ) {
     Angles.Yaw -= _Value;
     Angles.Yaw = Angl::Normalize180( Angles.Yaw );
     RootComponent->SetAngles( Angles );
 }
 
-void FPlayer::TurnUp( float _Value ) {
+void APlayer::TurnUp( float _Value ) {
     Angles.Pitch += _Value;
-    Angles.Pitch = FMath::Clamp( Angles.Pitch, -90.0f, 90.0f );
+    Angles.Pitch = Math::Clamp( Angles.Pitch, -90.0f, 90.0f );
     RootComponent->SetAngles( Angles );
 }
 
-void FPlayer::SpeedPress() {
+void APlayer::SpeedPress() {
     bSpeed = true;
 }
 
-void FPlayer::SpeedRelease() {
+void APlayer::SpeedRelease() {
     bSpeed = false;
 }

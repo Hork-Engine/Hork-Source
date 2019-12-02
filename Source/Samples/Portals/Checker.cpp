@@ -30,15 +30,15 @@ SOFTWARE.
 
 #include "Checker.h"
 
-#include <Engine/World/Public/Components/MeshComponent.h>
-#include <Engine/Resource/Public/ResourceManager.h>
+#include <World/Public/Components/MeshComponent.h>
+#include <World/Public/Base/ResourceManager.h>
 
-AN_CLASS_META( FChecker )
+AN_CLASS_META( AChecker )
 
-FChecker::FChecker() {
-    static TStaticResourceFinder< FIndexedMesh > CheckerMesh( _CTS( "CheckerMesh" ) );
+AChecker::AChecker() {
+    static TStaticResourceFinder< AIndexedMesh > CheckerMesh( _CTS( "CheckerMesh" ) );
 
-    FMeshComponent * component = AddComponent< FMeshComponent >( "checker" );
+    AMeshComponent * component = CreateComponent< AMeshComponent >( "checker" );
     component->SetMesh( CheckerMesh.GetObject() );
     component->CopyMaterialsFromMeshResource();
 
@@ -48,6 +48,6 @@ FChecker::FChecker() {
     bCanEverTick = false;
 }
 
-void FChecker::Tick( float _TimeDelta ) {
+void AChecker::Tick( float _TimeDelta ) {
     RootComponent->TurnRightFPS(_TimeDelta);
 }

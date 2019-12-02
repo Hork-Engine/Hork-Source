@@ -30,14 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actors/Pawn.h>
+#include <World/Public/Actors/Pawn.h>
 
-class FChecker : public FPawn {
-    AN_ACTOR( FChecker, FPawn )
+class AChecker : public APawn {
+    AN_ACTOR( AChecker, APawn )
 
 
 protected:
-    FChecker();
+    AChecker();
 
     void Tick( float _TimeDelta ) override;
 };
