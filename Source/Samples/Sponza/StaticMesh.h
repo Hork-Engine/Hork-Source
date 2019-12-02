@@ -30,20 +30,33 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actors/Actor.h>
-#include <Engine/World/Public/Components/MeshComponent.h>
-#include <Engine/Resource/Public/IndexedMesh.h>
+#include <World/Public/Actors/Actor.h>
+#include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/Resource/IndexedMesh.h>
 
-class FStaticMesh : public FActor {
-    AN_ACTOR( FStaticMesh, FActor )
+class AStaticMesh : public AActor {
+    AN_ACTOR( AStaticMesh, AActor )
 
 public:
-    void SetMesh( FIndexedMesh * _Mesh );
+    void SetMesh( AIndexedMesh * _Mesh );
 
 protected:
-    FStaticMesh();
+    AStaticMesh();
 
 private:
-    FMeshComponent * MeshComponent;
+    AMeshComponent * MeshComponent;
     //FCollisionSharedTriangleSoupBVH * CollisionBody;
+};
+
+class ASkinnedMesh : public AActor {
+    AN_ACTOR( ASkinnedMesh, AActor )
+
+public:
+    void SetMesh( AIndexedMesh * _Mesh );
+
+protected:
+    ASkinnedMesh();
+
+private:
+    ASkinnedComponent * MeshComponent;
 };

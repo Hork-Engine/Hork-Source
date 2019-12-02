@@ -30,20 +30,20 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/GameThread/Public/EngineInstance.h>
-#include <Engine/Resource/Public/IndexedMesh.h>
+#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/Resource/IndexedMesh.h>
 #include "MyPlayerController.h"
 
-class FSponzaModel final : public IGameModule {
-    AN_CLASS( FSponzaModel, IGameModule )
+class ASponzaModel final : public IGameModule {
+    AN_CLASS( ASponzaModel, IGameModule )
 
 public:
-    TRef< FRenderingParameters > RenderingParams;
-    TRef< FInputMappings > InputMappings;
-    FWorld * World;
-    FMyPlayerController * PlayerController;
+    TRef< ARenderingParameters > RenderingParams;
+    TRef< AInputMappings > InputMappings;
+    AWorld * World;
+    AMyPlayerController * PlayerController;
 
-    FSponzaModel() {}
+    ASponzaModel() {}
 
 private:
     //
@@ -52,11 +52,9 @@ private:
 
     void OnGameStart() override;
     void OnGameEnd() override;
-    void OnPreGameTick( float _TimeStep ) override{}
-    void OnPostGameTick( float _TimeStep ) override{}
 
     void SetInputMappings();
     void LoadStaticMeshes();
 };
 
-extern FSponzaModel * GModule;
+extern ASponzaModel * GModule;

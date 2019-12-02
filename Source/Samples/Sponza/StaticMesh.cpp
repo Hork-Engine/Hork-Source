@@ -30,20 +30,33 @@ SOFTWARE.
 
 #include "StaticMesh.h"
 
-#include <Engine/GameThread/Public/EngineInstance.h>
-#include <Engine/World/Public/Components/MeshComponent.h>
+AN_CLASS_META( AStaticMesh )
+AN_CLASS_META( ASkinnedMesh )
 
-AN_CLASS_META( FStaticMesh )
-
-FStaticMesh::FStaticMesh() {
-    MeshComponent = AddComponent< FMeshComponent >( "StaticMesh" );
+AStaticMesh::AStaticMesh() {
+    MeshComponent = CreateComponent< AMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
 
-    MeshComponent->PhysicsBehavior = PB_STATIC;
+    MeshComponent->SetPhysicsBehavior( PB_STATIC );
+    MeshComponent->bUseDefaultBodyComposition = true;
+    MeshComponent->SetRestitution( 10.0f );
+}
+
+void AStaticMesh::SetMesh( AIndexedMesh * _Mesh ) {
+    MeshComponent->SetMesh( _Mesh );
+    MeshComponent->UpdatePhysicsAttribs();
+    MeshComponent->CopyMaterialsFromMeshResource();
+}
+
+ASkinnedMesh::ASkinnedMesh() {
+    MeshComponent = CreateComponent< ASkinnedComponent >( "SkinnedMesh" );
+    RootComponent = MeshComponent;
+
+    MeshComponent->SetPhysicsBehavior( PB_STATIC );
     MeshComponent->bUseDefaultBodyComposition = true;
 }
 
-void FStaticMesh::SetMesh( FIndexedMesh * _Mesh ) {
+void ASkinnedMesh::SetMesh( AIndexedMesh * _Mesh ) {
     MeshComponent->SetMesh( _Mesh );
     MeshComponent->UpdatePhysicsAttribs();
     MeshComponent->CopyMaterialsFromMeshResource();

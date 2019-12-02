@@ -30,24 +30,32 @@ SOFTWARE.
 
 #include "MyPlayerController.h"
 
-#include <Engine/GameThread/Public/EngineInstance.h>
+#include <GameThread/Public/EngineInstance.h>
 
-AN_CLASS_META( FMyPlayerController )
+AN_CLASS_META( AMyPlayerController )
 
-FMyPlayerController::FMyPlayerController() {
+AMyPlayerController::AMyPlayerController() {
     bCanEverTick = true;
 }
 
-void FMyPlayerController::Tick( float _TimeStep ) {
+void AMyPlayerController::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
 
     UpdateCameraAspectRatio();
 }
 
-void FMyPlayerController::UpdateCameraAspectRatio() {
-    FCameraComponent * camera = GetViewCamera();
-    if ( camera ) {
-        camera->SetAspectRatio( GEngine.GetVideoAspectRatio() );
-        camera->SetFovX( 100.0f );
+void AMyPlayerController::UpdateCameraAspectRatio() {
+    if ( !Pawn )
+    {
+        return;
     }
+
+    ACameraComponent * Camera = Pawn->GetPawnCamera();
+    if ( !Camera )
+    {
+        return;
+    }
+
+    Camera->SetAspectRatio( GEngine.GetVideoAspectRatio() );
+    Camera->SetFovX( 100.0f );
 }

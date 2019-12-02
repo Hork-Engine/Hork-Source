@@ -30,24 +30,25 @@ SOFTWARE.
 
 #pragma once
 
-#include <Engine/World/Public/Actors/Pawn.h>
-#include <Engine/World/Public/Components/MeshComponent.h>
-#include <Engine/World/Public/Components/CameraComponent.h>
+#include <World/Public/Actors/Pawn.h>
+#include <World/Public/Components/MeshComponent.h>
+#include <World/Public/Components/CameraComponent.h>
 
-class FPlayer : public FPawn {
-    AN_ACTOR( FPlayer, FPawn )
+class APlayer : public APawn {
+    AN_ACTOR( APlayer, APawn )
 
 public:
-    FCameraComponent * Camera;
-    FMeshComponent * SkyboxComponent;
+    ACameraComponent * Camera;
+    AMeshComponent * SkyboxComponent;
+    AMeshComponent * Weapon;
 
 protected:
 
-    FPlayer();
+    APlayer();
 
     void BeginPlay() override;
     void EndPlay() override;
-    void SetupPlayerInputComponent( FInputComponent * _Input ) override;
+    void SetupPlayerInputComponent( AInputComponent * _Input ) override;
     void Tick( float _TimeStep ) override;
 
 private:

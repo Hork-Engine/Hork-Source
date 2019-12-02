@@ -30,31 +30,41 @@ SOFTWARE.
 
 #include "Player.h"
 
-#include <Engine/Runtime/Public/Runtime.h>
-#include <Engine/Resource/Public/ResourceManager.h>
-#include <Engine/World/Public/Components/InputComponent.h>
+#include <Runtime/Public/Runtime.h>
+#include <World/Public/Base/ResourceManager.h>
+#include <World/Public/Components/InputComponent.h>
+#include <World/Public/Audio/AudioClip.h>
 
-AN_BEGIN_CLASS_META( FPlayer )
+AN_BEGIN_CLASS_META( APlayer )
 AN_END_CLASS_META()
 
-FPlayer::FPlayer() {
-    Camera = AddComponent< FCameraComponent >( "Camera" );
+APlayer::APlayer() {
+    Camera = CreateComponent< ACameraComponent >( "Camera" );
     RootComponent = Camera;
+
+    PawnCamera = Camera;
 
     bCanEverTick = true;
 
     // Create skybox
-    static TStaticInternalResourceFinder< FIndexedMesh > UnitBox( _CTS( "FIndexedMesh.Box" ) );
-    static TStaticResourceFinder< FMaterialInstance > SkyboxMaterialInst( _CTS( "SkyboxMaterialInstance" ) );
-    SkyboxComponent = AddComponent< FMeshComponent >( "Skybox" );
+    static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Box" ) );
+    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox/Skybox_MaterialInstance.asset" ) );
+    SkyboxComponent = CreateComponent< AMeshComponent >( "Skybox" );
     SkyboxComponent->SetMesh( UnitBox.GetObject() );
     SkyboxComponent->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
     SkyboxComponent->AttachTo( Camera );
     SkyboxComponent->SetAbsoluteRotation( true );
     SkyboxComponent->RenderingOrder = RENDER_ORDER_SKYBOX;
+
+    Weapon = CreateComponent< AMeshComponent >( "Weapon" );
+    Weapon->SetMesh( _CTS( "/Root/doom_plasma_rifle/scene_Mesh.asset" ) );
+    Weapon->CopyMaterialsFromMeshResource();
+    Weapon->AttachTo( Camera );
+    Weapon->SetPosition( 0.15f,-0.5f,-0.4f );
+    Weapon->SetCollisionGroup( CM_NOCOLLISION );
 }
 
-void FPlayer::BeginPlay() {
+void APlayer::BeginPlay() {
     Super::BeginPlay();
 
     Float3 vec = RootComponent->GetBackVector();
@@ -69,11 +79,11 @@ void FPlayer::BeginPlay() {
 
 //        } else {
             projected.NormalizeSelf();
-            Angles.Yaw = FMath::Degrees( atan2( projected.X, projected.Y ) ) + 90;
+            Angles.Yaw = Math::Degrees( atan2( projected.X, projected.Y ) ) + 90;
 //        }
     } else {
         projected.NormalizeSelf();
-        Angles.Yaw = FMath::Degrees( atan2( projected.X, projected.Y ) );
+        Angles.Yaw = Math::Degrees( atan2( projected.X, projected.Y ) );
     }
 
     Angles.Pitch = Angles.Roll = 0;
@@ -81,23 +91,23 @@ void FPlayer::BeginPlay() {
     RootComponent->SetAngles( Angles );
 }
 
-void FPlayer::EndPlay() {
+void APlayer::EndPlay() {
     Super::EndPlay();
 }
 
-void FPlayer::SetupPlayerInputComponent( FInputComponent * _Input ) {
-    _Input->BindAxis( "MoveForward", this, &FPlayer::MoveForward );
-    _Input->BindAxis( "MoveRight", this, &FPlayer::MoveRight );
-    _Input->BindAxis( "MoveUp", this, &FPlayer::MoveUp );
-    _Input->BindAxis( "MoveDown", this, &FPlayer::MoveDown );
-    _Input->BindAxis( "TurnRight", this, &FPlayer::TurnRight );
-    _Input->BindAxis( "TurnUp", this, &FPlayer::TurnUp );
-    _Input->BindAction( "Speed", IE_Press, this, &FPlayer::SpeedPress );
-    _Input->BindAction( "Speed", IE_Release, this, &FPlayer::SpeedRelease );
-    _Input->BindAction( "Attack", IE_Press, this, &FPlayer::AttackPress );
+void APlayer::SetupPlayerInputComponent( AInputComponent * _Input ) {
+    _Input->BindAxis( "MoveForward", this, &APlayer::MoveForward );
+    _Input->BindAxis( "MoveRight", this, &APlayer::MoveRight );
+    _Input->BindAxis( "MoveUp", this, &APlayer::MoveUp );
+    _Input->BindAxis( "MoveDown", this, &APlayer::MoveDown );
+    _Input->BindAxis( "TurnRight", this, &APlayer::TurnRight );
+    _Input->BindAxis( "TurnUp", this, &APlayer::TurnUp );
+    _Input->BindAction( "Speed", IE_Press, this, &APlayer::SpeedPress );
+    _Input->BindAction( "Speed", IE_Release, this, &APlayer::SpeedRelease );
+    _Input->BindAction( "Attack", IE_Press, this, &APlayer::AttackPress );
 }
 
-void FPlayer::Tick( float _TimeStep ) {
+void APlayer::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
 
     constexpr float PLAYER_MOVE_SPEED = 4; // Meters per second
@@ -121,39 +131,39 @@ void FPlayer::Tick( float _TimeStep ) {
     //unitBoxComponent->SetPosition(RootComponent->GetPosition());
 }
 
-void FPlayer::MoveForward( float _Value ) {
-    MoveVector += RootComponent->GetForwardVector() * FMath::Sign(_Value);
+void APlayer::MoveForward( float _Value ) {
+    MoveVector += RootComponent->GetForwardVector() * Math::Sign(_Value);
 }
 
-void FPlayer::MoveRight( float _Value ) {
-    MoveVector += RootComponent->GetRightVector() * FMath::Sign(_Value);
+void APlayer::MoveRight( float _Value ) {
+    MoveVector += RootComponent->GetRightVector() * Math::Sign(_Value);
 }
 
-void FPlayer::MoveUp( float _Value ) {
+void APlayer::MoveUp( float _Value ) {
     MoveVector.Y += 1;//_Value;
 }
 
-void FPlayer::MoveDown( float _Value ) {
+void APlayer::MoveDown( float _Value ) {
     MoveVector.Y -= 1;//_Value;
 }
 
-void FPlayer::TurnRight( float _Value ) {
+void APlayer::TurnRight( float _Value ) {
     Angles.Yaw -= _Value;
     Angles.Yaw = Angl::Normalize180( Angles.Yaw );
     RootComponent->SetAngles( Angles );
 }
 
-void FPlayer::TurnUp( float _Value ) {
+void APlayer::TurnUp( float _Value ) {
     Angles.Pitch += _Value;
-    Angles.Pitch = FMath::Clamp( Angles.Pitch, -90.0f, 90.0f );
+    Angles.Pitch = Math::Clamp( Angles.Pitch, -90.0f, 90.0f );
     RootComponent->SetAngles( Angles );
 }
 
-void FPlayer::SpeedPress() {
+void APlayer::SpeedPress() {
     bSpeed = true;
 }
 
-void FPlayer::SpeedRelease() {
+void APlayer::SpeedRelease() {
     bSpeed = false;
 }
 
@@ -161,24 +171,28 @@ void FPlayer::SpeedRelease() {
 
 
 #include"SponzaModel.h"
-#include <Engine/Resource/Public/ResourceManager.h>
-#include <Engine/World/Public/World.h>
+#include <World/Public/Base/ResourceManager.h>
+#include <World/Public/World.h>
 
-class FSphereActor : public FActor {
-    AN_ACTOR( FSphereActor, FActor )
+class ASphereActor : public AActor {
+    AN_ACTOR( ASphereActor, AActor )
 
 protected:
-    FSphereActor();
+    ASphereActor();
+
+    void BeginPlay();
 
 private:
-    FMeshComponent * MeshComponent;
+    void OnContact( SContactEvent const & Contact );
+
+    AMeshComponent * MeshComponent;
 };
 
-#include <Engine/MaterialGraph/Public/MaterialGraph.h>
-AN_CLASS_META( FSphereActor )
+#include <World/Public/MaterialGraph/MaterialGraph.h>
+AN_CLASS_META( ASphereActor )
 
-static FMaterial * GetOrCreateSphereMaterial() {
-    static FMaterial * material = nullptr;
+static AMaterial * GetOrCreateSphereMaterial() {
+    static AMaterial * material = nullptr;
     if ( !material )
     {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
@@ -214,52 +228,75 @@ static FMaterial * GetOrCreateSphereMaterial() {
         //materialFragmentStage->Ambient->Connect( ambientSampler, "R" );
         //materialFragmentStage->Emissive->Connect( emissiveSampler, "RGBA" );
 
-        FMaterialBuilder * builder = CreateInstanceOf< FMaterialBuilder >();
-        builder->VertexStage = materialVertexStage;
-        builder->FragmentStage = materialFragmentStage;
-        builder->MaterialType = MATERIAL_TYPE_PBR;
-        builder->RegisterTextureSlot( diffuseTexture );
+        graph->VertexStage = materialVertexStage;
+        graph->FragmentStage = materialFragmentStage;
+        graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->RegisterTextureSlot( diffuseTexture );
+
+        AMaterialBuilder * builder = CreateInstanceOf< AMaterialBuilder >();
+        builder->Graph = graph;
         material = builder->Build();
-        material->SetName( "SphereMaterial" );
-        RegisterResource( material );
+        RegisterResource( material, "SphereMaterial" );
     }
     return material;
 }
 
-FSphereActor::FSphereActor() {
-    static TStaticInternalResourceFinder< FIndexedMesh > MeshResource( _CTS( "FIndexedMesh.Sphere" ) );
-    static TStaticResourceFinder< FTexture2D > TextureResource( _CTS( "mipmapchecker.png" ) );
+ASphereActor::ASphereActor() {
+    static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Sphere" ) );
+    static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/mipmapchecker.png" ) );
 
     // Create material instance for mesh component
-    FMaterialInstance * matInst = NewObject< FMaterialInstance >();
+    AMaterialInstance * matInst = NewObject< AMaterialInstance >();
     matInst->SetMaterial( GetOrCreateSphereMaterial() );
     matInst->SetTexture( 0, TextureResource.GetObject() );
-    matInst->UniformVectors[0] = Float4( FMath::Rand(), FMath::Rand(), FMath::Rand(), 1.0f );
+    matInst->UniformVectors[0] = Float4( Math::Rand(), Math::Rand(), Math::Rand(), 1.0f );
 
     // Create mesh component and set it as root component
-    MeshComponent = AddComponent< FMeshComponent >( "StaticMesh" );
+    MeshComponent = CreateComponent< AMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
-    MeshComponent->PhysicsBehavior = PB_DYNAMIC;
+    MeshComponent->SetPhysicsBehavior( PB_DYNAMIC );
     MeshComponent->bUseDefaultBodyComposition = true;
-    MeshComponent->Mass = 1.0f;
+    MeshComponent->bDispatchContactEvents = true;
+    MeshComponent->bGenerateContactPoints = true;
+    //MeshComponent->Mass = 0.3f;
+    //MeshComponent->SetFriction( 1.0f );
+    //MeshComponent->SetRestitution( 10 );
+    //MeshComponent->SetCcdRadius( 0.2f );
+    //MeshComponent->SetCcdMotionThreshold( 1e-7f );
+    //MeshComponent->SetAngularFactor( Float3( 0.0f ) );
 
     // Set mesh and material resources for mesh component
     MeshComponent->SetMesh( MeshResource.GetObject() );
     MeshComponent->SetMaterialInstance( 0, matInst );
+
+    LifeSpan = 3;
 }
 
-void FPlayer::AttackPress() {
-    FActor * actor;
+void ASphereActor::BeginPlay() {
+    E_OnBeginContact.Add( this, &ASphereActor::OnContact );
 
-    FTransform transform;
+    MeshComponent->AddCollisionIgnoreActor( GetInstigator() );
+}
+
+void ASphereActor::OnContact( SContactEvent const & Contact ) {
+    //static TStaticResourceFinder< AAudioClip > AudioClip( _CTS( "/Root/Audio/qubodup.wav" ) );
+    static TStaticResourceFinder< AAudioClip > AudioClip( _CTS( "/Root/Audio/bounce.wav" ) );
+
+    GAudioSystem.PlaySoundAt( AudioClip.GetObject(), Contact.Points[0].Position/*RootComponent->GetPosition()*/, this );
+}
+
+void APlayer::AttackPress() {
+    AActor * actor;
+
+    ATransform transform;
 
     transform.Position = Camera->GetWorldPosition();// + Camera->GetWorldForwardVector() * 1.5f;
     transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
     //transform.SetScale( 0.3f );
 
-    actor = GetWorld()->SpawnActor< FSphereActor >( transform );
+    actor = GetWorld()->SpawnActor< ASphereActor >( transform );
 
-    FMeshComponent * mesh = actor->GetComponent< FMeshComponent >();
+    AMeshComponent * mesh = actor->GetComponent< AMeshComponent >();
     if ( mesh ) {
         mesh->ApplyCentralImpulse( Camera->GetWorldForwardVector() * 20.0f );
     }
