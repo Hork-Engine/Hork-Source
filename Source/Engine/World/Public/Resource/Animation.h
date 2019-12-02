@@ -116,17 +116,14 @@ private:
     TPodArray< SAnimationChannel > Channels;
     TPodArray< ATransform > Transforms;
     TPodArray< unsigned short > ChannelsMap;
+    TPodArray< BvAxisAlignedBox > Bounds;
     int     MinNodeIndex;
     int     MaxNodeIndex;
-
     int     FrameCount;         // frames count
     float   FrameDelta;         // fixed time delta between frames
     float   FrameRate;          // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
     float   DurationInSeconds;  // animation duration is FrameDelta * ( FrameCount - 1 )
     float   DurationNormalizer; // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
-
-    TPodArray< BvAxisAlignedBox > Bounds;
-
     bool    bIsAnimationValid;
 };
 
