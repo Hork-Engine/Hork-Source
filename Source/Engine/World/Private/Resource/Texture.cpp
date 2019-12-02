@@ -134,19 +134,8 @@ bool ATexture::InitializeCubemapFromImages( AImage const * _Faces[6] ) {
 
     InitializeCubemap( pixelFormat, 1, width );
 
-    int w;
-    //int pixelByteLength = ::UncompressedPixelByteLength( pixelFormat );
-
-    // TODO: Write lods?
-
-    int lod = 0;
-
     for ( int face = 0 ; face < 6 ; face++ ) {
-        byte * pSrc = ( byte * )faces[face];
-
-        w = Math::Max( 1, width >> lod );
-
-        WriteTextureDataCubemap( 0, 0, w, w, face, lod, pSrc );
+        WriteTextureDataCubemap( 0, 0, width, width, face, 0, (byte *)faces[face] );
     }
 
     return true;
@@ -217,7 +206,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !AString::Icmp( _Path, "/Default/Textures/DefaultCubemap" ) ) {
-        const Float3 dirs[6] = {
+        constexpr Float3 dirs[6] = {
             Float3( 1,0,0 ),
             Float3( -1,0,0 ),
             Float3( 0,1,0 ),
