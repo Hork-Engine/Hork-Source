@@ -42,8 +42,6 @@ public:
 
     virtual void OnGameStart();
     virtual void OnGameEnd();
-    virtual void OnPreGameTick( float _TimeStep );
-    virtual void OnPostGameTick( float _TimeStep );
     virtual void OnGameClose();
 
     template< typename T >

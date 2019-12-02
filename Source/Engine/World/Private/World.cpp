@@ -773,14 +773,12 @@ void AWorld::KickoffPendingKillWorlds() {
 }
 
 void AWorld::UpdateWorlds( IGameModule * _GameModule, float _TimeStep ) {
-    _GameModule->OnPreGameTick( _TimeStep );
     for ( AWorld * world : Worlds ) {
         if ( world->IsPendingKill() ) {
             continue;
         }
         world->Tick( _TimeStep );
     }
-    _GameModule->OnPostGameTick( _TimeStep );
 
     KickoffPendingKillWorlds();
 }

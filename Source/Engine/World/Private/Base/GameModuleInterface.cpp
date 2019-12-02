@@ -45,14 +45,6 @@ void IGameModule::OnGameEnd() {
 
 }
 
-void IGameModule::OnPreGameTick( float _TimeStep ) {
-
-}
-
-void IGameModule::OnPostGameTick( float _TimeStep ) {
-
-}
-
 void IGameModule::OnGameClose() {
     GRuntime.PostTerminateEvent();
 }
