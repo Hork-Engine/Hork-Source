@@ -136,8 +136,7 @@ protected:
     ~ATreeAABB() {}
 
 private:
-    void Subdivide( struct SAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf,
-        int & _PrimitiveIndex, const unsigned int * _Indices );
+    void Subdivide( struct SAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf, int & _PrimitiveIndex );
 
     TPodArray< SNodeAABB > Nodes;
     TPodArray< unsigned int > Indirection;

@@ -2162,8 +2162,7 @@ static SBestSplitResult FindBestSplitPrimitive( SAABBTreeBuild & _Build, int _Ax
     return result;
 }
 
-void ATreeAABB::Subdivide( SAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf,
-    int & _PrimitiveIndex, const unsigned int * _Indices )
+void ATreeAABB::Subdivide( SAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf, int & _PrimitiveIndex )
 {
     int primCount = _MaxPrimitive - _FirstPrimitive;
     int curNodeInex = Nodes.Size();
@@ -2192,8 +2191,8 @@ void ATreeAABB::Subdivide( SAABBTreeBuild & _Build, int _Axis, int _FirstPrimiti
 
         int mid = _FirstPrimitive + s.PrimitiveIndex;
 
-        Subdivide( _Build, s.Axis, _FirstPrimitive, mid, _PrimitivesPerLeaf, _PrimitiveIndex, _Indices );
-        Subdivide( _Build, s.Axis, mid, _MaxPrimitive, _PrimitivesPerLeaf, _PrimitiveIndex, _Indices );
+        Subdivide( _Build, s.Axis, _FirstPrimitive, mid, _PrimitivesPerLeaf, _PrimitiveIndex );
+        Subdivide( _Build, s.Axis, mid, _MaxPrimitive, _PrimitivesPerLeaf, _PrimitiveIndex );
 
         int nextNode = Nodes.Size() - curNodeInex;
         node.Index = -nextNode;
@@ -2247,7 +2246,7 @@ void ATreeAABB::Initialize( SMeshVertex const * _Vertices, unsigned int const * 
     }
 
     primitiveIndex = 0;
-    Subdivide( build, 0, 0, primCount, _PrimitivesPerLeaf, primitiveIndex, _Indices );
+    Subdivide( build, 0, 0, primCount, _PrimitivesPerLeaf, primitiveIndex );
     Nodes.ShrinkToFit();
 
     BoundingBox = Nodes[0].Bounds;
