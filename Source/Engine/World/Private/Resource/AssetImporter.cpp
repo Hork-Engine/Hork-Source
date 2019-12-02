@@ -410,15 +410,6 @@ static void sample_quat( cgltf_animation_sampler * sampler, float frameTime, Qua
     }
 }
 
-//static int FindJoint( cgltf_skin * Skin, cgltf_node * Node ) {
-//    for ( int i = 0; i < Skin->joints_count; i++ ) {
-//        if ( Skin->joints[ i ] == Node ) {
-//            return i;
-//        }
-//    }
-//    return -1;
-//}
-
 static const char * GetErrorString( cgltf_result code ) {
     switch ( code ) {
     case cgltf_result_success:
@@ -1718,7 +1709,7 @@ void AAssetImporter::WriteMaterial( MaterialInfo const & m ) {
 #endif
 }
 
-AString ValidateFileName( const char * FileName ) {
+static AString ValidateFileName( const char * FileName ) {
     AString ValidatedName = FileName;
 
     for ( int i = 0 ; i < ValidatedName.Length() ; i++ ) {
