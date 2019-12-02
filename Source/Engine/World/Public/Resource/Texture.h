@@ -89,6 +89,9 @@ public:
     /** Create empty NPOT texture (aka texture rect) */
     void Initialize2DNPOT( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
 
+    /** Fill texture data for any texture type. */
+    bool WriteArbitraryData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void * _SysMem );
+
     /** Helper. Fill texture data. */
     bool WriteTextureData1D( int _LocationX, int _Width, int _Lod, const void * _SysMem );
 
@@ -109,9 +112,6 @@ public:
 
     /** Helper. Fill texture data. */
     bool WriteTextureDataCubemapArray( int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _ArrayLayer, int _Lod, const void * _SysMem );
-
-    /** Helper. Fill texture data. */
-    bool WriteArbitraryData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void * _SysMem );
 
     ETextureType GetType() const { return (ETextureType)TextureType; }
 
