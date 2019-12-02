@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Core/Public/Alloc.h>
 #include <Core/Public/Hash.h>
+#include <Core/Public/HashFunc.h>
 #include <Core/Public/String.h>
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/PodArray.h>
@@ -421,7 +422,6 @@ protected:
     static const char * TypeNames[ (int)EAttributeType::T_Max ];
 };
 
-#include <Core/Public/HashFunc.h>
 class ANGIE_API APrecacheMeta {
     AN_FORBID_COPY( APrecacheMeta )
 
