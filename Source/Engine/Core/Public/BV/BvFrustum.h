@@ -49,10 +49,6 @@ enum EFrustumPlane {
     FPL_NEAR
 };
 
-struct BvFrustumPlane : PlaneF {
-    int CachedSignBits;
-};
-
 class ANGIE_API BvFrustum {
     AN_FORBID_COPY( BvFrustum )
 
@@ -61,9 +57,8 @@ public:
     ~BvFrustum();
 
     void FromMatrix( Float4x4 const & _Matrix );
-    void UpdateSignBits();
 
-    BvFrustumPlane const & operator[]( const int _Index ) const;
+    PlaneF const & operator[]( const int _Index ) const;
 
     bool IsPointVisible( Float3 const & _Point ) const;
     bool IsPointVisible_IgnoreZ( Float3 const & _Point ) const;
@@ -115,23 +110,17 @@ private:
     mutable sse_t * PlanesSSE;
 #endif
 
-    BvFrustumPlane Planes[6];
+    PlaneF Planes[6];
 };
 
-AN_FORCEINLINE BvFrustumPlane const & BvFrustum::operator[]( const int _Index ) const {
+AN_FORCEINLINE PlaneF const & BvFrustum::operator[]( const int _Index ) const {
     AN_ASSERT_( (unsigned)_Index < 6, "BvFrustum[]" );
     return Planes[_Index];
 }
 
-AN_FORCEINLINE void BvFrustum::UpdateSignBits() {
-    for ( BvFrustumPlane * p = Planes ; p < Planes + 6 ; p++ ) {
-        p->CachedSignBits = p->SignBits();
-    }
-}
-
 AN_FORCEINLINE bool BvFrustum::IsPointVisible( Float3 const & _Point ) const {
     bool inside = true;
-    for ( BvFrustumPlane const * p = Planes ; p < Planes + 6 ; p++ ) {
+    for ( PlaneF const * p = Planes ; p < Planes + 6 ; p++ ) {
         inside &= ( Math::Dot( p->Normal, _Point ) + p->D > 0.0f );
     }
     return inside;
@@ -139,7 +128,7 @@ AN_FORCEINLINE bool BvFrustum::IsPointVisible( Float3 const & _Point ) const {
 
 AN_FORCEINLINE bool BvFrustum::IsPointVisible_IgnoreZ( Float3 const & _Point ) const {
     bool inside = true;
-    for ( BvFrustumPlane const * p = Planes ; p < Planes + 4 ; p++ ) {
+    for ( PlaneF const * p = Planes ; p < Planes + 4 ; p++ ) {
         inside &= ( Math::Dot( p->Normal, _Point ) + p->D > 0.0f );
     }
     return inside;
@@ -151,7 +140,7 @@ AN_FORCEINLINE bool BvFrustum::IsSphereVisible( BvSphere const & _Sphere ) const
 
 AN_FORCEINLINE bool BvFrustum::IsSphereVisible( Float3 const & _Point, const float _Radius ) const {
     bool inside = true;
-    for ( BvFrustumPlane const * p = Planes ; p < Planes + 6 ; p++ ) {
+    for ( PlaneF const * p = Planes ; p < Planes + 6 ; p++ ) {
         inside &= ( Math::Dot( p->Normal, _Point ) + p->D > -_Radius );
     }
     return inside;
@@ -163,7 +152,7 @@ AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ( BvSphere const & _Sphere
 
 AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ( Float3 const & _Point, const float _Radius ) const {
     bool inside = true;
-    for ( BvFrustumPlane const * p = Planes ; p < Planes + 4 ; p++ ) {
+    for ( PlaneF const * p = Planes ; p < Planes + 4 ; p++ ) {
         inside &= ( Math::Dot( p->Normal, _Point ) + p->D > -_Radius );
     }
     return inside;
@@ -172,7 +161,7 @@ AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ( Float3 const & _Point, c
 AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float3 const & _Mins, Float3 const & _Maxs ) const {
     bool inside = true;
 
-    BvFrustumPlane const * p = Planes;
+    PlaneF const * p = Planes;
     inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
@@ -196,7 +185,7 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float3 const & _Mins, Float3 const 
 AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float4 const & _Mins, Float4 const & _Maxs ) const {
     bool inside = true;
 
-    BvFrustumPlane const * p = Planes;
+    PlaneF const * p = Planes;
     inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
@@ -224,7 +213,7 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible( BvAxisAlignedBox const & b ) const 
 AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float3 const & _Maxs ) const {
     bool inside = true;
 
-    BvFrustumPlane const * p = Planes;
+    PlaneF const * p = Planes;
     inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
@@ -242,7 +231,7 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float
 AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float4 const & _Mins, Float4 const & _Maxs ) const {
     bool inside = true;
 
-    BvFrustumPlane const * p = Planes;
+    PlaneF const * p = Planes;
     inside &= ( Math::Max( _Mins.X * p->Normal.X, _Maxs.X * p->Normal.X ) + Math::Max( _Mins.Y * p->Normal.Y, _Maxs.Y * p->Normal.Y ) + Math::Max( _Mins.Z * p->Normal.Z, _Maxs.Z * p->Normal.Z ) + p->D ) > 0.0f;
 
     ++p;
@@ -264,7 +253,7 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( BvAxisAlignedBox const & b 
 AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) const {
     Float3 point;
 
-    for ( BvFrustumPlane const * p = Planes; p < Planes + 6; p++ ) {
+    for ( PlaneF const * p = Planes; p < Planes + 6; p++ ) {
         const float x = b.Orient[ 0 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
         const float y = b.Orient[ 1 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
         const float z = b.Orient[ 2 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
@@ -282,7 +271,7 @@ AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) c
 AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible_IgnoreZ( BvOrientedBox const & b ) const {
     Float3 point;
 
-    for ( BvFrustumPlane const * p = Planes; p < Planes + 4; p++ ) {
+    for ( PlaneF const * p = Planes; p < Planes + 4; p++ ) {
         const float x = b.Orient[ 0 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
         const float y = b.Orient[ 1 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
         const float z = b.Orient[ 2 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];

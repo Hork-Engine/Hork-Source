@@ -31,9 +31,6 @@ SOFTWARE.
 #include <Core/Public/BV/BvFrustum.h>
 
 BvFrustum::BvFrustum() {
-    for ( int i = 0; i < 6; i++ ) {
-        Planes[ i ].CachedSignBits = 0;
-    }
     PlanesSSE = nullptr;
 }
 
@@ -79,8 +76,6 @@ void BvFrustum::FromMatrix( Float4x4 const & _Matrix ) {
     Planes[FPL_NEAR].Normal.Z = _Matrix[2][3] + _Matrix[2][2];
     Planes[FPL_NEAR].D = _Matrix[3][3] + _Matrix[3][2];
     Planes[FPL_NEAR].NormalizeSelf();
-
-    UpdateSignBits();
 
 #ifdef AN_FRUSTUM_USE_SSE
     if ( !PlanesSSE ) {
