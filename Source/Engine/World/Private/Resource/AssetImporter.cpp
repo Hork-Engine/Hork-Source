@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -584,9 +584,9 @@ bool AAssetImporter::ReadGLTF( cgltf_data * Data ) {
     m_Weights.Clear();
     m_Indices.Clear();
     m_Meshes.Clear();
-    m_Animations.clear();
+    m_Animations.Clear();
     m_Textures.Clear();
-    m_Materials.clear();
+    m_Materials.Clear();
     m_Joints.Clear();
     m_BindposeBounds.Clear();
     m_Skin.JointIndices.Clear();

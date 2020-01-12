@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -61,12 +61,13 @@ void ADebugRenderer::Reset() {
     pView = nullptr;
 }
 
-void ADebugRenderer::BeginRenderView( SRenderView * _View ) {
+void ADebugRenderer::BeginRenderView( SRenderView * InView, int InVisPass ) {
     AN_ASSERT( !pView );
 
-    pView = _View;
+    pView = InView;
     pView->FirstDebugDrawCommand = CommandsCount();
     pView->DebugDrawCommandCount = 0;
+    VisPass = InVisPass;
     SplitCommands();
 }
 

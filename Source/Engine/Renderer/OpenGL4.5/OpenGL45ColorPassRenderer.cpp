@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -34,6 +34,8 @@ SOFTWARE.
 #include "OpenGL45RenderTarget.h"
 #include "OpenGL45ShadowMapRT.h"
 #include "OpenGL45Material.h"
+
+#include <Engine/Core/Public/Logger.h>
 
 using namespace GHI;
 

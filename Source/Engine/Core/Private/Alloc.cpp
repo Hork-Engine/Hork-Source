@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -603,7 +603,7 @@ void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     MemoryBuffer->Size = sizeInBytes;
     MemoryBuffer->freeChunk = ( SZoneChunk * )( memoryBuffer + 1 );
     memset( MemoryBuffer->freeChunk, 0, sizeof( SZoneChunk ) );
-    MemoryBuffer->freeChunk->size = MemoryBuffer->Size - sizeof( SZoneBuffer );;
+    MemoryBuffer->freeChunk->size = MemoryBuffer->Size - sizeof( SZoneBuffer );
 #else
     MemoryBuffer = ( SZoneBuffer * )_MemoryAddress;
     MemoryBuffer->Size = sizeInBytes;

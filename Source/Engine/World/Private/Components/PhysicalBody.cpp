@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -43,7 +43,10 @@ SOFTWARE.
 #define MAX_MASS 1000.0f
 
 ARuntimeVariable RVDrawCollisionModel( _CTS( "DrawCollisionModel" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawCollisionBounds( _CTS( "DrawCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawStaticCollisionBounds( _CTS( "DrawStaticCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawDynamicCollisionBounds( _CTS( "DrawDynamicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawKinematicCollisionBounds( _CTS( "DrawKinematicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawTriggerBounds( _CTS( "DrawTriggerBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawCenterOfMass( _CTS( "DrawCenterOfMass" ), _CTS( "0" ), VAR_CHEAT );
 
 static constexpr bool bUseInternalEdgeUtility = true;
@@ -82,12 +85,17 @@ void SPhysicalBodyMotionState::getWorldTransform( btTransform & _CenterOfMassTra
 }
 
 void SPhysicalBodyMotionState::setWorldTransform( btTransform const & _CenterOfMassTransform ) {
-    bDuringMotionStateUpdate = true;
-    WorldRotation = btQuaternionToQuat( _CenterOfMassTransform.getRotation() );
-    WorldPosition = btVectorToFloat3( _CenterOfMassTransform.getOrigin() - _CenterOfMassTransform.getBasis() * btVectorToFloat3( CenterOfMass ) );
-    Self->SetWorldPosition( WorldPosition );
-    Self->SetWorldRotation( WorldRotation );
-    bDuringMotionStateUpdate = false;
+    if ( Self->PhysicsBehavior == PB_DYNAMIC )
+    {
+        bDuringMotionStateUpdate = true;
+        WorldRotation = btQuaternionToQuat( _CenterOfMassTransform.getRotation() );
+        WorldPosition = btVectorToFloat3( _CenterOfMassTransform.getOrigin() - _CenterOfMassTransform.getBasis() * btVectorToFloat3( CenterOfMass ) );
+        Self->SetWorldPosition( WorldPosition );
+        Self->SetWorldRotation( WorldRotation );
+        bDuringMotionStateUpdate = false;
+    } else {
+        GLogger.Printf( "SPhysicalBodyMotionState::setWorldTransform for non-dynamic %s\n", Self->GetObjectNameCStr() );
+    }
 }
 
 AN_CLASS_META( APhysicalBody )
@@ -259,6 +267,8 @@ void APhysicalBody::CreateRigidBody() {
 
     UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, PhysicsBehavior );
 
+    // transform already setup in motion state
+#if 0
     Quat worldRotation = GetWorldRotation();
     Float3 worldPosition = GetWorldPosition();
 
@@ -266,7 +276,7 @@ void APhysicalBody::CreateRigidBody() {
 
     centerOfMassTransform.setRotation( btQuaternionToQuat( worldRotation ) );
     centerOfMassTransform.setOrigin( btVectorToFloat3( worldPosition ) + centerOfMassTransform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
-
+#endif
     RigidBody->updateInertiaTensor();
 
     AddPhysicalBodyToWorld();
@@ -368,18 +378,23 @@ void APhysicalBody::OnTransformDirty() {
     Super::OnTransformDirty();
 
     if ( RigidBody ) {
-        if ( /*PhysicsBehavior == PB_DYNAMIC &&*/ !MotionState->bDuringMotionStateUpdate ) {
+        if ( !MotionState->bDuringMotionStateUpdate ) {
 
-            Float3 position = GetWorldPosition();
-            Quat rotation = GetWorldRotation();
+            if ( PhysicsBehavior != PB_KINEMATIC )
+            {
+                Float3 position = GetWorldPosition();
+                Quat rotation = GetWorldRotation();
 
-            if ( rotation != MotionState->WorldRotation ) {
-                MotionState->WorldRotation = rotation;
-                SetCenterOfMassRotation( rotation );
-            }
-            if ( position != MotionState->WorldPosition ) {
-                MotionState->WorldPosition = position;
-                SetCenterOfMassPosition( position );
+                if ( rotation != MotionState->WorldRotation ) {
+                    MotionState->WorldRotation = rotation;
+                    SetCenterOfMassRotation( rotation );
+                }
+                if ( position != MotionState->WorldPosition ) {
+                    MotionState->WorldPosition = position;
+                    SetCenterOfMassPosition( position );
+                }
+
+                GLogger.Printf( "Set transform for STATIC or DYNAMIC phys body %s\n", GetObjectNameCStr() );
             }
         }
 
@@ -1147,20 +1162,68 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
         CreateCollisionModel( collisionVertices, collisionIndices );
 
         InRenderer->SetDepthTest(true);
-        InRenderer->SetColor( AColor4( (((size_t)GetParentActor()*123)&0xff)/255.0f, (((size_t)this*123)&0xff)/255.0f, 1.0f, 0.5f ) );
+
+        switch ( PhysicsBehavior ) {
+        case PB_STATIC:
+            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+            break;
+        case PB_DYNAMIC:
+            InRenderer->SetColor( AColor4( 1, 0.5f, 0.5f, 1 ) );
+            break;
+        case PB_KINEMATIC:
+            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 1, 1 ) );
+            break;
+        }
+
         InRenderer->DrawTriangleSoup(collisionVertices.ToPtr(),collisionVertices.Size(),sizeof(Float3),collisionIndices.ToPtr(),collisionIndices.Size(),false);
         InRenderer->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
     }
 
-    if ( RVDrawCollisionBounds ) {
+    if ( bTrigger && RVDrawTriggerBounds ) {
         TPodArray< BvAxisAlignedBox > boundingBoxes;
 
         GetCollisionBodiesWorldBounds( boundingBoxes );
 
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 1, 1, 0, 1 ) );
+        InRenderer->SetColor( AColor4( 1, 0, 1, 1 ) );
         for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
             InRenderer->DrawAABB( bb );
+        }
+    } else {
+        if ( PhysicsBehavior == PB_STATIC && RVDrawStaticCollisionBounds ) {
+            TPodArray< BvAxisAlignedBox > boundingBoxes;
+
+            GetCollisionBodiesWorldBounds( boundingBoxes );
+
+            InRenderer->SetDepthTest( false );
+            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+            for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
+                InRenderer->DrawAABB( bb );
+            }
+        }
+
+        if ( PhysicsBehavior == PB_DYNAMIC && RVDrawDynamicCollisionBounds ) {
+            TPodArray< BvAxisAlignedBox > boundingBoxes;
+
+            GetCollisionBodiesWorldBounds( boundingBoxes );
+
+            InRenderer->SetDepthTest( false );
+            InRenderer->SetColor( IsPhysicsActive() ? AColor4( 0.1f, 1.0f, 0.1f, 1 ) : AColor4( 0.3f, 0.3f, 0.3f, 1 ) );
+            for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
+                InRenderer->DrawAABB( bb );
+            }
+        }
+
+        if ( PhysicsBehavior == PB_KINEMATIC && RVDrawKinematicCollisionBounds ) {
+            TPodArray< BvAxisAlignedBox > boundingBoxes;
+
+            GetCollisionBodiesWorldBounds( boundingBoxes );
+
+            InRenderer->SetDepthTest( false );
+            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 1, 1 ) );
+            for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
+                InRenderer->DrawAABB( bb );
+            }
         }
     }
 

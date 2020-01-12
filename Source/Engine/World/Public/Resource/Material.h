@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -119,7 +119,7 @@ public:
     }
 
     /** Internal. Used by render frontend */
-    SMaterialFrameData * RenderFrontend_Update( int _VisMarker );
+    SMaterialFrameData * RenderFrontend_Update( int _FrameNumber );
 
 protected:
     AMaterialInstance();
@@ -137,5 +137,5 @@ private:
     TRef< AMaterial > Material;
     SMaterialFrameData * FrameData;
     TRef< ATexture > Textures[ MAX_MATERIAL_TEXTURES ];
-    int VisMarker;
+    int VisFrame;
 };

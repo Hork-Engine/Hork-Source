@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -148,7 +148,7 @@ void ACollisionConvexHullData::Initialize( Float3 const * _Vertices, int _Vertex
 
     GZoneMemory.Dealloc( Data );
 
-    Data = ( btVector3 * )GZoneMemory.Alloc( sizeof( btVector3 ) * _VertexCount, 1 );
+    Data = ( btVector3 * )GZoneMemory.Alloc( sizeof( btVector3 ) * _VertexCount, 16 );
     for ( int i = 0 ; i < _VertexCount ; i++ ) {
         Data[i] = btVectorToFloat3( _Vertices[i] );
     }
@@ -1583,6 +1583,51 @@ params.m_convexhullDownsampling = 1;
     vhacd->Release();
 
     GHunkMemory.ClearToMark( hunkMark );
+}
+
+void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
+                                 int _VerticesCount,
+                                 int _VertexStride,
+                                 unsigned int const * _Indices,
+                                 int _IndicesCount,
+                                 ACollisionBodyComposition & _BodyComposition ) {
+
+    TPodArray< Float3 > HullVertices;
+    TPodArray< unsigned int > HullIndices;
+    TPodArray< SConvexHullDesc > Hulls;
+    Float3 CenterOfMass;
+
+    PerformConvexDecompositionVHACD( _Vertices,
+                                     _VerticesCount,
+                                     _VertexStride,
+                                     _Indices,
+                                     _IndicesCount,
+                                     HullVertices,
+                                     HullIndices,
+                                     Hulls,
+                                     CenterOfMass );
+
+    _BodyComposition.Clear();
+
+    for ( SConvexHullDesc const & hull : Hulls ) {
+
+        ACollisionConvexHullData * hullData = CreateInstanceOf< ACollisionConvexHullData >();
+
+#if 0
+        BakeCollisionMarginConvexHull( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, hullData->Vertices );
+#else
+        hullData->Initialize( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, HullIndices.ToPtr() + hull.FirstIndex, hull.IndexCount );
+        //hullData->Vertices.Resize( hull.VertexCount );
+        //memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
+#endif
+
+        ACollisionConvexHull * collisionBody = _BodyComposition.AddCollisionBody< ACollisionConvexHull >();
+        collisionBody->Position = hull.Centroid;
+        collisionBody->Margin = 0.01f;
+        collisionBody->HullData = hullData;
+    }
+
+    _BodyComposition.CenterOfMass = CenterOfMass;
 }
 
 void CreateCollisionShape( ACollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass ) {

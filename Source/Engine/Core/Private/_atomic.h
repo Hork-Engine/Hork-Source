@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#if !defined( FAtomicClass ) || !defined( FAtomicClass_N )
+#if !defined( AAtomicClass ) || !defined( AAtomicClass_N )
 #error "Do not include this file directly."
 #endif
 
-FAtomicClass::AtomicType FAtomicClass::LoadRelaxed() const {
+AAtomicClass::AtomicType AAtomicClass::LoadRelaxed() const {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return i;
 #else
@@ -40,7 +40,7 @@ FAtomicClass::AtomicType FAtomicClass::LoadRelaxed() const {
 #endif
 }
 
-void FAtomicClass::StoreRelaxed( AtomicType _i ) {
+void AAtomicClass::StoreRelaxed( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     i = _i;
 #else
@@ -48,7 +48,7 @@ void FAtomicClass::StoreRelaxed( AtomicType _i ) {
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::Load() const {
+AAtomicClass::AtomicType AAtomicClass::Load() const {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     return AtomicLoadAcquire( &i );
 #else
@@ -56,7 +56,7 @@ FAtomicClass::AtomicType FAtomicClass::Load() const {
 #endif
 }
 
-void FAtomicClass::Store( AtomicType _i ) {
+void AAtomicClass::Store( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
     AtomicStoreRelease( &i, _i );
 #else
@@ -64,131 +64,131 @@ void FAtomicClass::Store( AtomicType _i ) {
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::Increment() {
+AAtomicClass::AtomicType AAtomicClass::Increment() {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedIncrementAcquire )( &i );
+    return AAtomicClass_N( InterlockedIncrementAcquire )( &i );
 #else
     return i.fetch_add( 1, std::memory_order_acquire ) + 1;
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::FetchIncrement() {
+AAtomicClass::AtomicType AAtomicClass::FetchIncrement() {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedIncrementAcquire )( &i ) - 1;
+    return AAtomicClass_N( InterlockedIncrementAcquire )( &i ) - 1;
 #else
     return i.fetch_add( 1, std::memory_order_acquire );
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::Decrement() {
+AAtomicClass::AtomicType AAtomicClass::Decrement() {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedDecrementRelease )( &i );
+    return AAtomicClass_N( InterlockedDecrementRelease )( &i );
 #else
     return i.fetch_sub( 1, std::memory_order_release ) - 1;
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::FetchDecrement() {
+AAtomicClass::AtomicType AAtomicClass::FetchDecrement() {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedDecrementRelease )( &i ) + 1;
+    return AAtomicClass_N( InterlockedDecrementRelease )( &i ) + 1;
 #else
     return i.fetch_sub( 1, std::memory_order_release );
 #endif
 }
 
-#ifdef FAtomicClass_SupportAdd
-FAtomicClass::AtomicType FAtomicClass::Add( AtomicType _i ) {
+#ifdef AAtomicClass_SupportAdd
+AAtomicClass::AtomicType AAtomicClass::Add( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedAdd )( &i, _i );
+    return AAtomicClass_N( InterlockedAdd )( &i, _i );
 #else
     return i.fetch_add( _i ) + _i;
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::FetchAdd( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::FetchAdd( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedExchangeAdd )( &i, _i );
+    return AAtomicClass_N( InterlockedExchangeAdd )( &i, _i );
 #else
     return i.fetch_add( _i );
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::Sub( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::Sub( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedExchangeSubtract )( &i, _i ) - _i;
+    return AAtomicClass_N( InterlockedExchangeSubtract )( &i, _i ) - _i;
 #else
     return i.fetch_sub( _i ) - _i;
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::FetchSub( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::FetchSub( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedExchangeSubtract )( &i, _i );
+    return AAtomicClass_N( InterlockedExchangeSubtract )( &i, _i );
 #else
     return i.fetch_sub( _i );
 #endif
 }
-#endif // FAtomicClass_SupportAdd
+#endif // AAtomicClass_SupportAdd
 
-FAtomicClass::AtomicType FAtomicClass::And( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::And( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedAnd )( &i, _i ) & _i;
+    return AAtomicClass_N( InterlockedAnd )( &i, _i ) & _i;
 #else
     return i.fetch_and( _i ) & _i;
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::FetchAnd( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::FetchAnd( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedAnd )( &i, _i );
+    return AAtomicClass_N( InterlockedAnd )( &i, _i );
 #else
     return i.fetch_and( _i );
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::Or( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::Or( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedOr )( &i, _i ) | _i;
+    return AAtomicClass_N( InterlockedOr )( &i, _i ) | _i;
 #else
     return i.fetch_or( _i ) | _i;
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::FetchOr( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::FetchOr( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedOr )( &i, _i );
+    return AAtomicClass_N( InterlockedOr )( &i, _i );
 #else
     return i.fetch_or( _i );
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::Xor( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::Xor( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedXor )( &i, _i ) ^ _i;
+    return AAtomicClass_N( InterlockedXor )( &i, _i ) ^ _i;
 #else
     return i.fetch_xor( _i ) ^ _i;
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::FetchXor( AtomicType _i ) {
+AAtomicClass::AtomicType AAtomicClass::FetchXor( AtomicType _i ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedXor )( &i, _i );
+    return AAtomicClass_N( InterlockedXor )( &i, _i );
 #else
     return i.fetch_xor( _i );
 #endif
 }
 
-FAtomicClass::AtomicType FAtomicClass::Exchange( AtomicType _Exchange ) {
+AAtomicClass::AtomicType AAtomicClass::Exchange( AtomicType _Exchange ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedExchange )( &i, _Exchange );
+    return AAtomicClass_N( InterlockedExchange )( &i, _Exchange );
 #else
     return i.exchange( _Exchange );
 #endif
 }
 
-bool FAtomicClass::CompareExchange( AtomicType _Expected, AtomicType _Desired ) {
+bool AAtomicClass::CompareExchange( AtomicType _Expected, AtomicType _Desired ) {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-    return FAtomicClass_N( InterlockedCompareExchange )( &i, _Desired, _Expected ) == _Expected;
+    return AAtomicClass_N( InterlockedCompareExchange )( &i, _Desired, _Expected ) == _Expected;
 #else
     // FIXME: strong or weak?
     return i.compare_exchange_strong( _Expected, _Desired );

@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -33,7 +33,6 @@ SOFTWARE.
 #include "Level.h"
 #include "PhysicsWorld.h"
 #include "AINavigationMesh.h"
-#include "Render/WorldRaycastQuery.h"
 #include "Render/RenderWorld.h"
 
 class AActor;
@@ -95,6 +94,130 @@ struct TActorSpawnInfo : SActorSpawnInfo
     TActorSpawnInfo()
         : SActorSpawnInfo( &ActorType::ClassMeta() )
     {
+    }
+};
+
+struct SVisibilityQuery
+{
+    /** View frustum planes */
+    PlaneF const * FrustumPlanes[6];
+
+    /** View origin */
+    Float3 ViewPosition;
+
+    /** View right vector */
+    Float3 ViewRightVec;
+
+    /** View up vector */
+    Float3 ViewUpVec;
+
+    /** Result filter */
+    int VisibilityMask;
+
+    /** Result filter */
+    int QueryMask;
+
+    // FIXME: add bool bQueryPrimitives, bool bQuerySurfaces?
+};
+
+/** Box hit result */
+struct SBoxHitResult
+{
+    ASceneComponent * Object;
+    Float3 LocationMin;
+    Float3 LocationMax;
+    float DistanceMin;
+    float DistanceMax;
+    //float FractionMin;
+    //float FractionMax;
+
+    void Clear() {
+        memset( this, 0, sizeof( *this ) );
+    }
+};
+
+/** Raycast drawable */
+struct SWorldRaycastDrawable
+{
+    ASceneComponent * Object;
+    int FirstHit;
+    int NumHits;
+    int ClosestHit;
+};
+
+/** Raycast result */
+struct SWorldRaycastResult
+{
+    TPodArray< STriangleHitResult > Hits;
+    TPodArray< SWorldRaycastDrawable > Drawables;
+
+    void Sort() {
+
+        struct ASortDrawables {
+
+            TPodArray< STriangleHitResult > const & Hits;
+
+            ASortDrawables( TPodArray< STriangleHitResult > const & _Hits ) : Hits(_Hits) {}
+
+            bool operator() ( SWorldRaycastDrawable const & _A, SWorldRaycastDrawable const & _B ) {
+                const float hitDistanceA = Hits[_A.ClosestHit].Distance;
+                const float hitDistanceB = Hits[_B.ClosestHit].Distance;
+
+                return ( hitDistanceA < hitDistanceB );
+            }
+        } SortDrawables( Hits );
+
+        // Sort by drawables distance
+        StdSort( Drawables.ToPtr(), Drawables.ToPtr() + Drawables.Size(), SortDrawables );
+
+        struct ASortHit {
+            bool operator() ( STriangleHitResult const & _A, STriangleHitResult const & _B ) {
+                return ( _A.Distance < _B.Distance );
+            }
+        } SortHit;
+
+        // Sort by hit distance
+        for ( SWorldRaycastDrawable & drawable : Drawables ) {
+            StdSort( Hits.ToPtr() + drawable.FirstHit, Hits.ToPtr() + (drawable.FirstHit + drawable.NumHits), SortHit );
+            drawable.ClosestHit = drawable.FirstHit;
+        }
+    }
+
+    void Clear() {
+        Hits.Clear();
+        Drawables.Clear();
+    }
+};
+
+/** Closest hit result */
+struct SWorldRaycastClosestResult
+{
+    ASceneComponent * Object;
+    STriangleHitResult TriangleHit;
+
+    float Fraction;
+    Float3 Vertices[3];
+    Float2 Texcoord;
+
+    void Clear() {
+        memset( this, 0, sizeof( *this ) );
+    }
+};
+
+/** World raycast filter */
+struct SWorldRaycastFilter
+{
+    /** Filter objects by mask */
+    int VisibilityMask;
+    /** VSD query mask */
+    int QueryMask;
+    /** Sort result by the distance */
+    bool bSortByDistance;
+
+    SWorldRaycastFilter() {
+        VisibilityMask = ~0;
+        QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+        bSortByDistance = true;
     }
 };
 
@@ -237,24 +360,16 @@ public:
     bool IsPendingKill() const { return bPendingKill; }
 
     /** Per-triangle raycast */
-    bool Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const {
-        return AWorldRaycastQuery::Raycast( &RenderWorld, _Result, _RayStart, _RayEnd, _Filter );
-    }
+    bool Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const;
 
-    /** Per-AABB raycast */
-    bool RaycastAABB( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const {
-        return AWorldRaycastQuery::RaycastAABB( &RenderWorld, _Result, _RayStart, _RayEnd, _Filter );
-    }
+    /** Per-bounds raycast */
+    bool RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const;
 
     /** Per-triangle raycast */
-    bool RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const {
-        return AWorldRaycastQuery::RaycastClosest( &RenderWorld, _Result, _RayStart, _RayEnd, _Filter );
-    }
+    bool RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const;
 
-    /** Per-AABB raycast */
-    bool RaycastClosestAABB( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const {
-        return AWorldRaycastQuery::RaycastClosestAABB( &RenderWorld, _Result, _RayStart, _RayEnd, _Filter );
-    }
+    /** Per-bounds raycast */
+    bool RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const;
 
     /** Trace collision bodies */
     bool Trace( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
@@ -321,6 +436,9 @@ public:
         PhysicsWorld.QueryActors( _Result, _BoundingBox, _QueryFilter );
     }
 
+    /** Query visible primitives */
+    void QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery );
+
     /** Apply amount of damage in specified radius */
     void ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr );
 
@@ -339,7 +457,15 @@ public:
 
     btSoftBodyWorldInfo * GetSoftBodyWorldInfo() { return PhysicsWorld.SoftBodyWorldInfo; }
 
-    void UpdateDrawableArea( ADrawable * _Drawable );
+    void AddPrimitive( SPrimitiveDef * InPrimitive );
+    void RemovePrimitive( SPrimitiveDef * InPrimitive );
+    void MarkPrimitive( SPrimitiveDef * InPrimitive );
+
+    void UpdatePrimitiveLinks();
+
+    void MarkPrimitives();
+    void UnmarkPrimitives();
+    void RemovePrimitives();
 
     void DrawDebug( ADebugRenderer * InRenderer );
 
@@ -380,7 +506,6 @@ private:
     void UpdateActorsPostPhysics( float _TimeStep );
     void UpdateLevels( float _TimeStep );
     void UpdatePhysics( float _TimeStep );
-    void UpdateDrawableAreas();
 
     // IPhysicsWorldInterface
     void OnPrePhysics( float _TimeStep ) override;
@@ -430,10 +555,9 @@ private:
     ARenderWorld RenderWorld;
     AAINavigationMesh NavigationMesh;
 
-    ADrawable * DrawableUpdateList;
-    ADrawable * DrawableUpdateListTail;
+    SPrimitiveDef * PrimitiveUpdateList;
+    SPrimitiveDef * PrimitiveUpdateListTail;
 };
-
 
 #include "Actors/Actor.h"
 #include "Components/ActorComponent.h"

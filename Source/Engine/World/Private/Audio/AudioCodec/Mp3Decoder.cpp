@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -154,7 +154,7 @@ bool AMp3AudioTrack::InitializeFileStream( const char * _FileName ) {
     long sampleRate = 0;
     int encoding = 0;
 
-    assert( Handle == NULL );    
+    AN_ASSERT( Handle == NULL );
 
     if ( !LibMpg ) {
         return false;
@@ -210,7 +210,7 @@ bool AMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
     long sampleRate = 0;
     int encoding = 0;
 
-    assert( Handle == NULL );    
+    AN_ASSERT( Handle == NULL );
 
     if ( !LibMpg ) {
         return false;
@@ -357,7 +357,7 @@ bool AMp3Decoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
             GLogger.Printf( "Warning: Decoding ended prematurely because: %s\n", ( result == MPG123_ERR ? mpg_strerror( mh ) : mpg_plain_strerror( result ) ) );
         }
 
-        assert( checkSum == NumSamples * channels * sizeof( short ) );
+        AN_ASSERT( checkSum == NumSamples * channels * sizeof( short ) );
     }
 
     *_SamplesCount = NumSamples;

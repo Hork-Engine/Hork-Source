@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -30,13 +30,15 @@ SOFTWARE.
 
 #include "AudioSystemLocal.h"
 
-#include <World/Public/Audio/AudioClip.h>
 #include <Runtime/Public/Runtime.h>
-#include <Core/Public/Logger.h>
 
+#include <World/Public/Audio/AudioClip.h>
 #include <World/Public/World.h>
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/Actors/PlayerController.h>
+
+#include <Core/Public/Logger.h>
+#include <Core/Public/CriticalError.h>
 
 #include <AL/alc.h>
 
@@ -352,7 +354,7 @@ AAudioSystem::AAudioSystem() {
 }
 
 AAudioSystem::~AAudioSystem() {
-    assert( bInitialized == false );
+    AN_ASSERT( bInitialized == false );
 }
 
 void AAudioSystem::Initialize() {
@@ -461,7 +463,7 @@ void AAudioSystem::Initialize() {
         GLogger.Printf( "HRTF not supported\n" ); 
     }
 
-    EnableDefaultHRTF();
+    //EnableDefaultHRTF();
 
     if ( !alIsExtensionPresent( "AL_EXT_STEREO_ANGLES" ) ) {
         GLogger.Printf( "Rotated stereo not supported\n" );

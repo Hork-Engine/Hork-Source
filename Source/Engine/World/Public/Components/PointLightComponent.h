@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -31,22 +31,43 @@ SOFTWARE.
 #pragma once
 
 #include "BaseLightComponent.h"
+#include <World/Public/Level.h>
 
 class ANGIE_API APointLightComponent : public ABaseLightComponent {
     AN_COMPONENT( APointLightComponent, ABaseLightComponent )
 
+    friend class ALevel;
+    friend class AWorld;
     friend class ARenderWorld;
 
 public:
+    /** Internal. Used by Light Voxelizer. */
+    int ListIndex;
+
+    /** Rendering group to filter lights during rendering */
+    void SetVisibilityGroup( int InVisibilityGroup );
+
+    int GetVisibilityGroup() const;
+
+    void SetEnabled( bool _Enabled ) override;
+
+    void SetMovable( bool _Movable );
+
+    bool IsMovable() const;
+
     void SetInnerRadius( float _Radius );
-    float GetInnerRadius() const;
+    float GetInnerRadius() const { return InnerRadius; }
 
     void SetOuterRadius( float _Radius );
-    float GetOuterRadius() const;
+    float GetOuterRadius() const { return OuterRadius; }
 
-    BvAxisAlignedBox const & GetWorldBounds() const;
+    BvAxisAlignedBox const & GetWorldBounds() const { return AABBWorldBounds; }
+    BvSphere const & GetSphereWorldBounds() const { return SphereWorldBounds; }
 
     Float4x4 const GetOBBTransformInverse() const { return OBBTransformInverse; }
+
+    APointLightComponent * GetNext() { return Next; }
+    APointLightComponent * GetPrev() { return Prev; }
 
 protected:
     APointLightComponent();
@@ -57,7 +78,7 @@ protected:
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
 private:
-    void UpdateBoundingBox();
+    void UpdateWorldBounds();
 
     BvSphere SphereWorldBounds;
     BvAxisAlignedBox AABBWorldBounds;
@@ -68,4 +89,7 @@ private:
     float OuterRadius;
     APointLightComponent * Next;
     APointLightComponent * Prev;
+
+    //TRef< VSDPrimitive > Primitive;
+    SPrimitiveDef Primitive;
 };

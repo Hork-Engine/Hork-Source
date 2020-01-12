@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -206,8 +206,8 @@ AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const &
 }
 
 struct SMeshVertexSkin {
-    byte   JointIndices[4];
-    byte   JointWeights[4];
+    uint8_t JointIndices[4];
+    uint8_t JointWeights[4];
 
     void Write( IStreamBase & _Stream ) const {
         _Stream.WriteBuffer( JointIndices, 8 );
@@ -751,25 +751,25 @@ struct SDirectionalLightDef {
     bool     bCastShadow;
 };
 
-struct SClusterItem {
-    Float4x4 OBBTransformInverse;
-    BvAxisAlignedBox BoundingBox;
+//struct SClusterItem {
+//    Float4x4 OBBTransformInverse;
+//    BvAxisAlignedBox BoundingBox;
 
-    int     ListIndex;
-};
+//    int     ListIndex;
+//};
 
-struct SLightDef : SClusterItem {
-    Float4   ColorAndAmbientIntensity;
-    Float3   Position;
-    float    InnerRadius;
-    float    OuterRadius;
-    float    InnerConeAngle;
-    float    OuterConeAngle;
-    Float3   SpotDirection;
-    float    SpotExponent;
-    int      RenderMask;
-    bool     bSpot;
-};
+//struct SLightDef : SClusterItem {
+//    Float4   ColorAndAmbientIntensity;
+//    Float3   Position;
+//    float    InnerRadius;
+//    float    OuterRadius;
+//    float    InnerConeAngle;
+//    float    OuterConeAngle;
+//    Float3   SpotDirection;
+//    float    SpotExponent;
+//    int      RenderMask;
+//    bool     bSpot;
+//};
 
 
 //
@@ -794,7 +794,6 @@ struct SRenderInstance {
     unsigned int        StartIndexLocation;
     int                 BaseVertexLocation;
     uint64_t            SortKey;
-    //byte                RenderingOrder;
 };
 
 //
@@ -830,10 +829,10 @@ struct SShadowRenderInstance {
 // int Unused = ( Offest.Y >> 24 ) & 0xff // can be used in future
 struct SClusterBuffer {
     uint32_t ItemOffset;
-    byte NumProbes;
-    byte NumDecals;
-    byte NumLights;
-    byte Unused;
+    uint8_t NumProbes;
+    uint8_t NumDecals;
+    uint8_t NumLights;
+    uint8_t Unused;
 };
 
 // texture1d R32UI
@@ -894,9 +893,9 @@ struct SFrameLightData {
 // Render frame
 //
 
-using AArrayOfDebugVertices = TPodArray< SDebugVertex, 1024 >;
-using AArrayOfDebugIndices = TPodArray< unsigned int, 1024 >;
-using AArrayOfDebugDrawCmds = TPodArray< SDebugDrawCmd >;
+using AArrayOfDebugVertices = TPodArrayHeap< SDebugVertex, 1024 >;
+using AArrayOfDebugIndices = TPodArrayHeap< unsigned int, 1024 >;
+using AArrayOfDebugDrawCmds = TPodArrayHeap< SDebugDrawCmd >;
 
 struct SRenderView {
     // Current view index
@@ -950,8 +949,8 @@ struct SRenderView {
     int FirstDirectionalLight;
     int NumDirectionalLights;
 
-    int FirstLight;
-    int NumLights;
+    //int FirstLight;
+    //int NumLights;
 
     int FirstDebugDrawCommand;
     int DebugDrawCommandCount;
@@ -980,7 +979,7 @@ struct SRenderFrame {
     TPodArray< SRenderInstance *, 1024 > Instances;
     TPodArray< SShadowRenderInstance *, 1024 > ShadowInstances;
     TPodArray< SDirectionalLightDef * > DirectionalLights;
-    TPodArray< SLightDef * > Lights;
+    //TPodArray< SLightDef * > Lights;
 
     SFrameLightData LightData; // FIXME: move to renderview?
 
@@ -995,8 +994,7 @@ struct SRenderFrame {
 struct SRenderFrontendDef {
     SRenderView * View;
     BvFrustum const * Frustum;
-    int RenderingMask;
-    int VisMarker;
+    int VisibilityMask;
 
     int PolyCount;
     int ShadowMapPolyCount;

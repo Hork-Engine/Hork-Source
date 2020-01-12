@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -177,12 +177,12 @@ AN_INLINE void AtomicStoreRelease( volatile T * ptr, T value ) {
 
 #endif
 
-//#define FAtomicClass AAtomicBool
-//#define FAtomicClass_N( _A ) _A##8_ANGIE
-//#undef FAtomicClass_SupportAdd
+//#define AAtomicClass AAtomicBool
+//#define AAtomicClass_N( _A ) _A##8_ANGIE
+//#undef AAtomicClass_SupportAdd
 //#include "_atomic.h"
-//#undef FAtomicClass
-//#undef FAtomicClass_N
+//#undef AAtomicClass
+//#undef AAtomicClass_N
 
 AAtomicBool::AtomicType AAtomicBool::LoadRelaxed() const {
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
@@ -236,25 +236,25 @@ AAtomicBool::AtomicType AAtomicBool::Exchange( AtomicType _Exchange ) {
 //#endif
 //}
 
-#define FAtomicClass AAtomicShort
-#define FAtomicClass_N( _A ) _A##16_ANGIE
-#undef FAtomicClass_SupportAdd
+#define AAtomicClass AAtomicShort
+#define AAtomicClass_N( _A ) _A##16_ANGIE
+#undef AAtomicClass_SupportAdd
 #include "_atomic.h"
-#undef FAtomicClass
-#undef FAtomicClass_N
+#undef AAtomicClass
+#undef AAtomicClass_N
 
-#define FAtomicClass AAtomicInt
-#define FAtomicClass_N( _A ) _A##32_ANGIE
-#define FAtomicClass_SupportAdd
+#define AAtomicClass AAtomicInt
+#define AAtomicClass_N( _A ) _A##32_ANGIE
+#define AAtomicClass_SupportAdd
 #include "_atomic.h"
-#undef FAtomicClass
-#undef FAtomicClass_N
+#undef AAtomicClass
+#undef AAtomicClass_N
 
-#define FAtomicClass AAtomicLong
-#define FAtomicClass_N( _A ) _A##64_ANGIE
+#define AAtomicClass AAtomicLong
+#define AAtomicClass_N( _A ) _A##64_ANGIE
 #include "_atomic.h"
-#undef FAtomicClass
-#undef FAtomicClass_N
+#undef AAtomicClass
+#undef AAtomicClass_N
 
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
 

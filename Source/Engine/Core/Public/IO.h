@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -72,9 +72,14 @@ public:
     bool ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes );
 
     /** Read file to memory */
+    bool ReadFileToHeapMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes );
+
+    /** Read file to memory */
     bool ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, int * _HunkMark );
 
 private:
+    bool ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, bool _ZoneMemory );
+
     void * Handle;
 };
 

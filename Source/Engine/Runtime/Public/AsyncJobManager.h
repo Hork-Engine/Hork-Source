@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -86,6 +86,10 @@ private:
     SAsyncJob * SubmittedJobs;
     AThreadSync SubmitSync;
 
+    AAtomicInt SubmittedJobsCount;
+    AAtomicInt FetchCount;
+    //AAtomicInt FetchLock;
+
     ASyncEvent EventDone;
     bool       bSignalled;      // FIXME: must be atomic?
 };
@@ -111,11 +115,16 @@ public:
     /** Shutdown job manager */
     void Deinitialize();
 
+    void SubmitJobList( AAsyncJobList * InJobList );
+
     /** Wakeup worker threads for the new jobs */
     void NotifyThreads();
 
     /** Get job list by the index */
     AAsyncJobList * GetAsyncJobList( int _Index ) { AN_ASSERT( _Index >= 0 && _Index < NumJobLists ); return &JobList[_Index]; }
+
+    /** Get worker threads count */
+    int GetNumWorkerThreads() const { return NumWorkerThreads; }
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
     int GetNumActiveThreads() const { return NumActiveThreads.Load(); }
@@ -138,6 +147,8 @@ private:
 
     AAsyncJobList JobList[MAX_JOB_LISTS];
     int         NumJobLists;
+
+    AAtomicInt  TotalJobs;
 
     struct SContext {
         AAsyncJobManager * JobManager;

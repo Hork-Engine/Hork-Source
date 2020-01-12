@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -56,7 +56,7 @@ SOFTWARE.
 
 ARuntimeVariable RVDrawNavMeshBVTree( _CTS( "DrawNavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawNavMeshNodes( _CTS( "DrawNavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawNavMesh( _CTS( "DrawNavMesh" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable RVDrawNavMesh( _CTS( "DrawNavMesh" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawNavMeshTileBounds( _CTS( "DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
 
 static_assert( sizeof( SNavPolyRef ) == sizeof( dtPolyRef ), "Type sizeof check" );

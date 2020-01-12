@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -54,6 +54,8 @@ Oriented Box - Sphere (not tested)
 Oriented Box - Box (not tested)
 Oriented Box - Triangle (not tested, not optimized)
 Oriented Box - Triangle (approximation)
+Oriented Box - Convex volume (overlap)
+Oriented Box - Convex volume (box inside)
 Oriented Box - Plane
 
 Intersection tests:
@@ -370,11 +372,10 @@ AN_INLINE bool BvBoxOverlapConvex( BvAxisAlignedBox const & _AABB, PlaneF const 
     for ( int i = 0 ; i < _PlaneCount ; i++ ) {
         PlaneF const & plane = _Planes[i];
 
-        if ( EPlaneSide::Front ==
-             plane.SideOffset( { plane.Normal.X > 0.0f ? _AABB.Mins.X : _AABB.Maxs.X,
-                                 plane.Normal.Y > 0.0f ? _AABB.Mins.Y : _AABB.Maxs.Y,
-                                 plane.Normal.Z > 0.0f ? _AABB.Mins.Z : _AABB.Maxs.Z
-                               }, 0.0f ) )
+        if ( plane.Dist( { plane.Normal.X > 0.0f ? _AABB.Mins.X : _AABB.Maxs.X,
+                           plane.Normal.Y > 0.0f ? _AABB.Mins.Y : _AABB.Maxs.Y,
+                           plane.Normal.Z > 0.0f ? _AABB.Mins.Z : _AABB.Maxs.Z
+                         } ) > 0 )
         {
             return false;
         }
@@ -387,11 +388,10 @@ AN_INLINE bool BvBoxInsideConvex( BvAxisAlignedBox const & _AABB, PlaneF const *
     for ( int i = 0 ; i < _PlaneCount ; i++ ) {
         PlaneF const & plane = _Planes[i];
 
-        if ( EPlaneSide::Front ==
-             plane.SideOffset( { plane.Normal.X < 0.0f ? _AABB.Mins.X : _AABB.Maxs.X,
-                                 plane.Normal.Y < 0.0f ? _AABB.Mins.Y : _AABB.Maxs.Y,
-                                 plane.Normal.Z < 0.0f ? _AABB.Mins.Z : _AABB.Maxs.Z
-                               }, 0.0f ) )
+        if ( plane.Dist( { plane.Normal.X < 0.0f ? _AABB.Mins.X : _AABB.Maxs.X,
+                           plane.Normal.Y < 0.0f ? _AABB.Mins.Y : _AABB.Maxs.Y,
+                           plane.Normal.Z < 0.0f ? _AABB.Mins.Z : _AABB.Maxs.Z
+                         } ) > 0 )
         {
             return false;
         }
@@ -418,12 +418,147 @@ AN_INLINE bool BvBoxOverlapPlane( Float3 const * _BoxVertices, PlaneF const & _P
 }
 
 /** AABB overlap plane */
+AN_INLINE int BvBoxOverlapPlaneSideMask( Float3 const & _Mins, Float3 const & _Maxs, PlaneF const & _Plane ) {
+    int sideMask = 0;
+
+    if ( _Plane.Normal[0] * _Mins[0] + _Plane.Normal[1] * _Mins[1] + _Plane.Normal[2] * _Mins[2] + _Plane.D > 0 ) sideMask |= 1; else sideMask |= 2;
+    if ( _Plane.Normal[0] * _Maxs[0] + _Plane.Normal[1] * _Mins[1] + _Plane.Normal[2] * _Mins[2] + _Plane.D > 0 ) sideMask |= 1; else sideMask |= 2;
+    if ( _Plane.Normal[0] * _Mins[0] + _Plane.Normal[1] * _Maxs[1] + _Plane.Normal[2] * _Mins[2] + _Plane.D > 0 ) sideMask |= 1; else sideMask |= 2;
+    if ( _Plane.Normal[0] * _Maxs[0] + _Plane.Normal[1] * _Maxs[1] + _Plane.Normal[2] * _Mins[2] + _Plane.D > 0 ) sideMask |= 1; else sideMask |= 2;
+    if ( _Plane.Normal[0] * _Mins[0] + _Plane.Normal[1] * _Mins[1] + _Plane.Normal[2] * _Maxs[2] + _Plane.D > 0 ) sideMask |= 1; else sideMask |= 2;
+    if ( _Plane.Normal[0] * _Maxs[0] + _Plane.Normal[1] * _Mins[1] + _Plane.Normal[2] * _Maxs[2] + _Plane.D > 0 ) sideMask |= 1; else sideMask |= 2;
+    if ( _Plane.Normal[0] * _Mins[0] + _Plane.Normal[1] * _Maxs[1] + _Plane.Normal[2] * _Maxs[2] + _Plane.D > 0 ) sideMask |= 1; else sideMask |= 2;
+    if ( _Plane.Normal[0] * _Maxs[0] + _Plane.Normal[1] * _Maxs[1] + _Plane.Normal[2] * _Maxs[2] + _Plane.D > 0 ) sideMask |= 1; else sideMask |= 2;
+
+    return sideMask;
+}
+
+/** AABB overlap plane */
+AN_INLINE bool BvBoxOverlapPlane( Float3 const & _Mins, Float3 const & _Maxs, PlaneF const & _Plane ) {
+    return BvBoxOverlapPlaneSideMask( _Mins, _Maxs, _Plane ) == 3;
+}
+
+/** AABB overlap plane */
 AN_INLINE bool BvBoxOverlapPlane( BvAxisAlignedBox const & _AABB, PlaneF const & _Plane ) {
-    Float3 vertices[8];
+    return BvBoxOverlapPlane( _AABB.Mins, _AABB.Maxs, _Plane );
+}
 
-    _AABB.GetVertices( vertices );
+/** AABB overlap plane based on precomputed plane axial type and plane sign bits */
+AN_INLINE bool BvBoxOverlapPlaneFast( BvAxisAlignedBox const & _AABB, PlaneF const & _Plane, int _AxialType, int _SignBits ) {
+    const float dist = _Plane.Dist();
 
-    return BvBoxOverlapPlane( vertices, _Plane );
+    if ( _AxialType < 3 ) {
+        if ( dist < _AABB.Mins[_AxialType] ) {
+            return false;
+        }
+        if ( dist > _AABB.Maxs[_AxialType] ) {
+            return false;
+        }
+        return true;
+    }
+
+    float d1, d2;
+    switch ( _SignBits ) {
+    case 0:
+        d1 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        d2 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        break;
+    case 1:
+        d1 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        d2 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        break;
+    case 2:
+        d1 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        d2 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        break;
+    case 3:
+        d1 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        d2 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        break;
+    case 4:
+        d1 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        d2 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        break;
+    case 5:
+        d1 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        d2 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        break;
+    case 6:
+        d1 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        d2 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        break;
+    case 7:
+        d1 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        d2 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        break;
+    default:
+        d1 = d2 = 0;
+        break;
+    }
+
+    return ( d1 >= dist ) && ( d2 < dist );
+}
+
+/** AABB overlap plane based on precomputed plane axial type and plane sign bits */
+AN_INLINE int BvBoxOverlapPlaneSideMask( BvAxisAlignedBox const & _AABB, PlaneF const & _Plane, int _AxialType, int _SignBits ) {
+    const float dist = _Plane.Dist();
+
+    if ( _AxialType < 3 ) {
+        if ( dist <= _AABB.Mins[_AxialType] ) {
+            return 1;
+        }
+        if ( dist >= _AABB.Maxs[_AxialType] ) {
+            return 2;
+        }
+        return 3;
+    }
+
+    float d1, d2;
+    switch ( _SignBits ) {
+    case 0:
+        d1 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        d2 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        break;
+    case 1:
+        d1 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        d2 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        break;
+    case 2:
+        d1 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        d2 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        break;
+    case 3:
+        d1 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        d2 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        break;
+    case 4:
+        d1 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        d2 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        break;
+    case 5:
+        d1 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        d2 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        break;
+    case 6:
+        d1 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        d2 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        break;
+    case 7:
+        d1 = _Plane.Normal[0]*_AABB.Mins[0] + _Plane.Normal[1]*_AABB.Mins[1] + _Plane.Normal[2]*_AABB.Mins[2];
+        d2 = _Plane.Normal[0]*_AABB.Maxs[0] + _Plane.Normal[1]*_AABB.Maxs[1] + _Plane.Normal[2]*_AABB.Maxs[2];
+        break;
+    default:
+        d1 = d2 = 0;
+        break;
+    }
+
+    int sideMask = ( d1 >= dist );
+
+    if ( d2 < dist ) {
+        sideMask |= 2;
+    }
+
+    return sideMask;
 }
 
 
@@ -436,6 +571,8 @@ Oriented Box - Sphere (not tested)
 Oriented Box - Box (not tested)
 Oriented Box - Triangle (not tested, not optimized)
 Oriented Box - Triangle (approximation)
+Oriented Box - Convex volume (overlap)
+Oriented Box - Convex volume (box inside)
 Oriented Box - Plane
 
 */
@@ -756,6 +893,48 @@ AN_INLINE bool BvOrientedBoxOverlapTriangle_FastApproximation( BvOrientedBox con
     return BvOrientedBoxOverlapBox( _OBB, triangleBounds );
 }
 
+/** OBB overlap convex */
+AN_INLINE bool BvOrientedBoxOverlapConvex( BvOrientedBox const & b, PlaneF const * _Planes, int _PlaneCount ) {
+    Float3 point;
+
+    for ( int i = 0 ; i < _PlaneCount ; i++ ) {
+        PlaneF const & plane = _Planes[i];
+
+        const float x = b.Orient[ 0 ].Dot( plane.Normal ) > 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
+        const float y = b.Orient[ 1 ].Dot( plane.Normal ) > 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
+        const float z = b.Orient[ 2 ].Dot( plane.Normal ) > 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
+
+        point = b.Center + ( x*b.Orient[ 0 ] + y*b.Orient[ 1 ] + z*b.Orient[ 2 ] );
+
+        if ( plane.Dist( point ) > 0.0f ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/** OBB inside convex */
+AN_INLINE bool BvOrientedBoxInsideConvex( BvOrientedBox const & b, PlaneF const * _Planes, int _PlaneCount ) {
+    Float3 point;
+
+    for ( int i = 0 ; i < _PlaneCount ; i++ ) {
+        PlaneF const & plane = _Planes[i];
+
+        const float x = b.Orient[ 0 ].Dot( plane.Normal ) < 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
+        const float y = b.Orient[ 1 ].Dot( plane.Normal ) < 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
+        const float z = b.Orient[ 2 ].Dot( plane.Normal ) < 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
+
+        point = b.Center + ( x*b.Orient[ 0 ] + y*b.Orient[ 1 ] + z*b.Orient[ 2 ] );
+
+        if ( plane.Dist( point ) > 0.0f ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /** OBB overlap plane */
 AN_INLINE bool BvOrientedBoxOverlapPlane( BvOrientedBox const & _OBB, PlaneF const & _Plane ) {
     Float3 vertices[8];
@@ -972,12 +1151,12 @@ AN_INLINE bool BvRayIntersectOrientedBox( Float3 const & _RayStart, Float3 const
 
 /** Ray - triangle */
 AN_INLINE bool BvRayIntersectTriangle( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _Distance, float & _U, float & _V ) {
-    Float3 e1 = _P1 - _P0;
-    Float3 e2 = _P2 - _P0;
-    Float3 h = _RayDir.Cross( e2 );
+    const Float3 e1 = _P1 - _P0;
+    const Float3 e2 = _P2 - _P0;
+    const Float3 h = _RayDir.Cross( e2 );
 
     // calc determinant
-    float det = e1.Dot( h );
+    const float det = e1.Dot( h );
 
     // ray lies in plane of triangle, so there is no intersection
     if ( det > -0.00001 && det < 0.00001 ) {
@@ -985,10 +1164,10 @@ AN_INLINE bool BvRayIntersectTriangle( Float3 const & _RayStart, Float3 const & 
     }
 
     // calc inverse determinant to minimalize math divisions in next calculations
-    float invDet = 1 / det;
+    const float invDet = 1 / det;
 
     // calc vector from ray origin to P0
-    Float3 s = _RayStart - _P0;
+    const Float3 s = _RayStart - _P0;
 
     // calc U
     _U = invDet * s.Dot( h );
@@ -997,7 +1176,7 @@ AN_INLINE bool BvRayIntersectTriangle( Float3 const & _RayStart, Float3 const & 
     }
 
     // calc perpendicular to compute V
-    Float3 q = s.Cross( e1 );
+    const Float3 q = s.Cross( e1 );
 
     // calc V
     _V = invDet * _RayDir.Dot( q );
@@ -1082,6 +1261,57 @@ AN_INLINE bool BvPointInPoly2D( Float2 const * _Points, int _NumPoints, Float2 c
     return BvPointInPoly2D( _Points, _NumPoints, _Point.X, _Point.Y );
 }
 
+/**
+Check is point inside convex hull:
+InPoint - testing point (assumed point is on hull plane)
+InNormal - hull normal
+InPoints - hull vertices (CCW order required)
+InNumPoints - hull vertex count (more or equal 3)
+*/
+AN_INLINE bool BvPointInConvexHullCCW( Float3 const & InPoint, Float3 const & InNormal, Float3 const * InPoints, int InNumPoints )
+{
+    AN_ASSERT( InNumPoints >= 3 );
+
+    Float3 const * p = &InPoints[InNumPoints-1];
+
+    for ( int i = 0 ; i < InNumPoints ; p = &InPoints[i], i++ ) {
+        const Float3 edge = *p - InPoints[i];
+        const Float3 edgeNormal = Math::Cross( InNormal, edge );
+        float d = -Math::Dot( edgeNormal, InPoints[i] );
+        float dist = Math::Dot( edgeNormal, InPoint ) + d;
+        if ( dist > 0.0f ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+Check is point inside convex hull:
+InPoint - testing point (assumed point is on hull plane)
+InNormal - hull normal
+InPoints - hull vertices (CW order required)
+InNumPoints - hull vertex count (more or equal 3)
+*/
+AN_INLINE bool BvPointInConvexHullCW( Float3 const & InPoint, Float3 const & InNormal, Float3 const * InPoints, int InNumPoints )
+{
+    AN_ASSERT( InNumPoints >= 3 );
+
+    Float3 const * p = &InPoints[InNumPoints-1];
+
+    for ( int i = 0 ; i < InNumPoints ; p = &InPoints[i], i++ ) {
+        const Float3 edge = InPoints[i] - *p;
+        const Float3 edgeNormal = Math::Cross( InNormal, edge );
+        float d = -Math::Dot( edgeNormal, InPoints[i] );
+        float dist = Math::Dot( edgeNormal, InPoint ) + d;
+        if ( dist > 0.0f ) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 /** Square of shortest distance between Point and Segment */
 AN_INLINE float BvShortestDistanceSqr( Float3 const & _Point, Float3 const & _Start, Float3 const & _End ) {

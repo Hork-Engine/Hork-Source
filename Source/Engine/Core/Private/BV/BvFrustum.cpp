@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -135,59 +135,55 @@ void BvFrustum::CornerVector_BL( Float3 & _Vector ) const {
     _Vector = Planes[FPL_BOTTOM].Normal.Cross( Planes[FPL_LEFT].Normal ).Normalized();
 }
 
-void BvFrustum::CullSphere_Generic( BvSphereSSE const * _Bounds, int _NumObjects, int * _Result ) const {
-    bool cull;
+void BvFrustum::CullSphere_Generic( BvSphereSSE const * InBounds, const int InNumObjects, int * Result ) const {
+    bool inside;
     PlaneF const * p;
 
-    for ( BvSphereSSE const * Last = _Bounds + _NumObjects ; _Bounds < Last ; _Bounds++ ) {
-        cull = false;
+    for ( BvSphereSSE const * Last = InBounds + InNumObjects ; InBounds < Last ; InBounds++ ) {
+        inside = true;
         for ( p = Planes ; p < Planes + 6 ; p++ ) {
-            if ( Math::Dot( p->Normal, _Bounds->Center ) + p->D <= -_Bounds->Radius ) {
-                cull = true;
-            }
+            inside &= ( Math::Dot( p->Normal, InBounds->Center ) + p->D > -InBounds->Radius );
         }
-        *_Result++ = cull;
+        *Result++ = !inside;
     }
 }
 
-void BvFrustum::CullSphere_IgnoreZ_Generic( BvSphereSSE const * _Bounds, int _NumObjects, int * _Result ) const {
-    bool cull;
+void BvFrustum::CullSphere_IgnoreZ_Generic( BvSphereSSE const * InBounds, const int InNumObjects, int * Result ) const {
+    bool inside;
     PlaneF const * p;
 
-    for ( BvSphereSSE const * Last = _Bounds + _NumObjects ; _Bounds < Last ; _Bounds++ ) {
-        cull = false;
+    for ( BvSphereSSE const * Last = InBounds + InNumObjects ; InBounds < Last ; InBounds++ ) {
+        inside = true;
         for ( p = Planes ; p < Planes + 4 ; p++ ) {
-            if ( Math::Dot( p->Normal, _Bounds->Center ) + p->D <= -_Bounds->Radius ) {
-                cull = true;
-            }
+            inside &= ( Math::Dot( p->Normal, InBounds->Center ) + p->D > -InBounds->Radius );
         }
-        *_Result++ = cull;
+        *Result++ = !inside;
     }
 }
 
-void BvFrustum::CullBox_Generic( BvAxisAlignedBoxSSE const * _Bounds, int _NumObjects, int * _Result ) const {
-    for ( BvAxisAlignedBoxSSE const * Last = _Bounds + _NumObjects ; _Bounds < Last ; _Bounds++ ) {
-        *_Result++ = !IsBoxVisible( _Bounds->Mins, _Bounds->Maxs );
+void BvFrustum::CullBox_Generic( BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result ) const {
+    for ( BvAxisAlignedBoxSSE const * Last = InBounds + InNumObjects ; InBounds < Last ; InBounds++ ) {
+        *Result++ = !IsBoxVisible( InBounds->Mins, InBounds->Maxs );
     }
 }
 
-void BvFrustum::CullBox_IgnoreZ_Generic( BvAxisAlignedBoxSSE const * _Bounds, int _NumObjects, int * _Result ) const {
-    for ( BvAxisAlignedBoxSSE const * Last = _Bounds + _NumObjects ; _Bounds < Last ; _Bounds++ ) {
-        *_Result++ = !IsBoxVisible_IgnoreZ( _Bounds->Mins, _Bounds->Maxs );
+void BvFrustum::CullBox_IgnoreZ_Generic( BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result ) const {
+    for ( BvAxisAlignedBoxSSE const * Last = InBounds + InNumObjects ; InBounds < Last ; InBounds++ ) {
+        *Result++ = !IsBoxVisible_IgnoreZ( InBounds->Mins, InBounds->Maxs );
     }
 }
 
-void BvFrustum::CullSphere_SSE( BvSphereSSE const * _Bounds, int _NumObjects, int * _Result ) const {
+void BvFrustum::CullSphere_SSE( BvSphereSSE const * InBounds, const int InNumObjects, int * Result ) const {
 #ifdef AN_FRUSTUM_USE_SSE
-    const float *sphere_data_ptr = reinterpret_cast< const float * >(&_Bounds->Center[0]);
-    int *culling_res_sse = &_Result[0];
+    const float *sphere_data_ptr = reinterpret_cast< const float * >(&InBounds->Center[0]);
+    int *culling_res_sse = &Result[0];
 
     //to optimize calculations we gather xyzw elements in separate vectors
     __m128 zero_v = _mm_setzero_ps();
     int i, j;
 
     //we process 4 objects per step
-    for (i = 0; i < _NumObjects; i += 4)
+    for (i = 0; i < InNumObjects; i += 4)
     {
         //load bounding sphere data
         __m128 spheres_pos_x = _mm_load_ps(sphere_data_ptr);
@@ -225,21 +221,21 @@ void BvFrustum::CullSphere_SSE( BvSphereSSE const * _Bounds, int _NumObjects, in
         _mm_store_si128((__m128i *)&culling_res_sse[i], intersection_res_i);
     }
 #else
-    return CullSphere_Generic( _Bounds, _NumObjects, _Result );
+    return CullSphere_Generic( InBounds, InNumObjects, Result );
 #endif
 }
 
-void BvFrustum::CullSphere_IgnoreZ_SSE( BvSphereSSE const * _Bounds, int _NumObjects, int * _Result ) const {
+void BvFrustum::CullSphere_IgnoreZ_SSE( BvSphereSSE const * InBounds, const int InNumObjects, int * Result ) const {
 #ifdef AN_FRUSTUM_USE_SSE
-    const float *sphere_data_ptr = reinterpret_cast< const float * >(&_Bounds->Center[0]);
-    int *culling_res_sse = &_Result[0];
+    const float *sphere_data_ptr = reinterpret_cast< const float * >(&InBounds->Center[0]);
+    int *culling_res_sse = &Result[0];
 
     //to optimize calculations we gather xyzw elements in separate vectors
     __m128 zero_v = _mm_setzero_ps();
     int i, j;
 
     //we process 4 objects per step
-    for (i = 0; i < _NumObjects; i += 4)
+    for (i = 0; i < InNumObjects; i += 4)
     {
         //load bounding sphere data
         __m128 spheres_pos_x = _mm_load_ps(sphere_data_ptr);
@@ -277,146 +273,156 @@ void BvFrustum::CullSphere_IgnoreZ_SSE( BvSphereSSE const * _Bounds, int _NumObj
         _mm_store_si128((__m128i *)&culling_res_sse[i], intersection_res_i);
     }
 #else
-    return CullSphere_IgnoreZ_Generic( _Bounds, _NumObjects, _Result );
+    return CullSphere_IgnoreZ_Generic( InBounds, InNumObjects, Result );
 #endif
 }
 
-void BvFrustum::CullBox_SSE( BvAxisAlignedBoxSSE const * _Bounds, int _NumObjects, int * _Result ) const {
+void BvFrustum::CullBox_SSE( BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result ) const {
 #ifdef AN_FRUSTUM_USE_SSE
-    const float *aabb_data_ptr = reinterpret_cast< const float * >( &_Bounds->Mins.X );
-    int *culling_res_sse = &_Result[0];
-
-    //to optimize calculations we gather xyzw elements in separate vectors
-    //__m128 zero_v = _mm_setzero_ps();
+    const float * pBoundingBoxData = reinterpret_cast< const float * >(&InBounds->Mins.X);
+    int * pCullingResult = &Result[0];
     int i, j;
 
     __m128 zero = _mm_setzero_ps();
-    //we process 4 objects per step
-    for (i = 0; i < _NumObjects; i += 4)
+
+    // Process 4 objects per step
+    for ( i = 0; i < InNumObjects; i += 4 )
     {
-        //load objects data
-        //load aabb min
-        __m128 aabb_min_x = _mm_load_ps(aabb_data_ptr);
-        __m128 aabb_min_y = _mm_load_ps(aabb_data_ptr + 8);
-        __m128 aabb_min_z = _mm_load_ps(aabb_data_ptr + 16);
-        __m128 aabb_min_w = _mm_load_ps(aabb_data_ptr + 24);
+        // Load bounding mins
+        __m128 aabb_min_x = _mm_load_ps( pBoundingBoxData );
+        __m128 aabb_min_y = _mm_load_ps( pBoundingBoxData + 8 );
+        __m128 aabb_min_z = _mm_load_ps( pBoundingBoxData + 16 );
+        __m128 aabb_min_w = _mm_load_ps( pBoundingBoxData + 24 );
 
-        //load aabb max
-        __m128 aabb_max_x = _mm_load_ps(aabb_data_ptr + 4);
-        __m128 aabb_max_y = _mm_load_ps(aabb_data_ptr + 12);
-        __m128 aabb_max_z = _mm_load_ps(aabb_data_ptr + 20);
-        __m128 aabb_max_w = _mm_load_ps(aabb_data_ptr + 28);
+        // Load bounding maxs
+        __m128 aabb_max_x = _mm_load_ps( pBoundingBoxData + 4 );
+        __m128 aabb_max_y = _mm_load_ps( pBoundingBoxData + 12 );
+        __m128 aabb_max_z = _mm_load_ps( pBoundingBoxData + 20 );
+        __m128 aabb_max_w = _mm_load_ps( pBoundingBoxData + 28 );
 
-        aabb_data_ptr += 32;
+        pBoundingBoxData += 32;
 
-        //for now we have points in vectors aabb_min_x..w, but for calculations we need to xxxx yyyy zzzz vectors representation - just transpose data
-        _MM_TRANSPOSE4_PS(aabb_min_x, aabb_min_y, aabb_min_z, aabb_min_w);
-        _MM_TRANSPOSE4_PS(aabb_max_x, aabb_max_y, aabb_max_z, aabb_max_w);
+        // For now we have points in vectors aabb_min_x..w, but for calculations we need to xxxx yyyy zzzz vectors representation.
+        // Just transpose data.
+        _MM_TRANSPOSE4_PS( aabb_min_x, aabb_min_y, aabb_min_z, aabb_min_w );
+        _MM_TRANSPOSE4_PS( aabb_max_x, aabb_max_y, aabb_max_z, aabb_max_w );
 
+        // Set bitmask to zero
         __m128 intersection_res = _mm_setzero_ps();
-        for (j = 0; j < 6; j++) //plane index // TODO: uwrap
+
+        for ( j = 0; j < 6; j++ )
         {
-            //this code is similar to what we make in simple culling
-            //pick closest point to plane and check if it begind the plane. if yes - object outside frustum
+            // Pick closest point to plane and check if it begind the plane. if yes - object outside frustum
 
-            //dot product, separate for each coordinate, for min & max aabb points
-            __m128 aabbMin_frustumPlane_x = _mm_mul_ps(aabb_min_x, PlanesSSE->x[j]);
-            __m128 aabbMin_frustumPlane_y = _mm_mul_ps(aabb_min_y, PlanesSSE->y[j]);
-            __m128 aabbMin_frustumPlane_z = _mm_mul_ps(aabb_min_z, PlanesSSE->z[j]);
+            // Dot product, separate for each coordinate, for min & max aabb points
+            __m128 mins_mul_plane_x = _mm_mul_ps( aabb_min_x, PlanesSSE->x[j] );
+            __m128 mins_mul_plane_y = _mm_mul_ps( aabb_min_y, PlanesSSE->y[j] );
+            __m128 mins_mul_plane_z = _mm_mul_ps( aabb_min_z, PlanesSSE->z[j] );
 
-            __m128 aabbMax_frustumPlane_x = _mm_mul_ps(aabb_max_x, PlanesSSE->x[j]);
-            __m128 aabbMax_frustumPlane_y = _mm_mul_ps(aabb_max_y, PlanesSSE->y[j]);
-            __m128 aabbMax_frustumPlane_z = _mm_mul_ps(aabb_max_z, PlanesSSE->z[j]);
+            __m128 maxs_mul_plane_x = _mm_mul_ps( aabb_max_x, PlanesSSE->x[j] );
+            __m128 maxs_mul_plane_y = _mm_mul_ps( aabb_max_y, PlanesSSE->y[j] );
+            __m128 maxs_mul_plane_z = _mm_mul_ps( aabb_max_z, PlanesSSE->z[j] );
 
-            //we have 8 box points, but we need pick closest point to plane. Just take max
-            __m128 res_x = _mm_max_ps(aabbMin_frustumPlane_x, aabbMax_frustumPlane_x);
-            __m128 res_y = _mm_max_ps(aabbMin_frustumPlane_y, aabbMax_frustumPlane_y);
-            __m128 res_z = _mm_max_ps(aabbMin_frustumPlane_z, aabbMax_frustumPlane_z);
+            // We have 8 box points, but we need pick closest point to plane.
+            __m128 res_x = _mm_max_ps( mins_mul_plane_x, maxs_mul_plane_x );
+            __m128 res_y = _mm_max_ps( mins_mul_plane_y, maxs_mul_plane_y );
+            __m128 res_z = _mm_max_ps( mins_mul_plane_z, maxs_mul_plane_z );
 
-            //dist to plane = dot(aabb_point.Xyz, plane.Xyz) + plane.w
-            __m128 sum_xy = _mm_add_ps(res_x, res_y);
-            __m128 sum_zw = _mm_add_ps(res_z, PlanesSSE->d[j]);
-            __m128 distance_to_plane = _mm_add_ps(sum_xy, sum_zw);
+            // Distance to plane = dot( aabb_point.xyz, plane.xyz ) + plane.d
+            __m128 sum_xy = _mm_add_ps( res_x, res_y );
+            __m128 sum_zw = _mm_add_ps( res_z, PlanesSSE->d[j] );
+            __m128 distance_to_plane = _mm_add_ps( sum_xy, sum_zw );
 
-            __m128 plane_res = _mm_cmple_ps(distance_to_plane, zero); //dist from closest point to plane < 0 ?
-            intersection_res = _mm_or_ps(intersection_res, plane_res); //if yes - aabb behind the plane & outside frustum
+            // Dist from closest point to plane < 0 ?
+            __m128 plane_res = _mm_cmple_ps( distance_to_plane, zero );
+
+            // If yes - aabb behind the plane & outside frustum
+            intersection_res = _mm_or_ps( intersection_res, plane_res );
         }
 
-        //store result
-        __m128i intersection_res_i = _mm_cvtps_epi32(intersection_res);
-        _mm_store_si128((__m128i *)&culling_res_sse[i], intersection_res_i);
+        // Convert packed single-precision (32-bit) floating point elements to
+        // packed 32-bit integers
+        __m128i intersection_res_i = _mm_cvtps_epi32( intersection_res );
+
+        // Store result
+        _mm_store_si128( (__m128i *)&pCullingResult[i], intersection_res_i );
     }
 #else
-    return CullBox_Generic( _Bounds, _NumObjects, _Result );
+    return CullBox_Generic( InBounds, InNumObjects, Result );
 #endif
 }
 
-void BvFrustum::CullBox_IgnoreZ_SSE( BvAxisAlignedBoxSSE const * _Bounds, int _NumObjects, int * _Result ) const {
+void BvFrustum::CullBox_IgnoreZ_SSE( BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result ) const {
 #ifdef AN_FRUSTUM_USE_SSE
-    const float *aabb_data_ptr = reinterpret_cast< const float * >( &_Bounds->Mins.X );
-    int *culling_res_sse = &_Result[0];
-
-    //to optimize calculations we gather xyzw elements in separate vectors
-    //__m128 zero_v = _mm_setzero_ps();
+    const float * pBoundingBoxData = reinterpret_cast< const float * >(&InBounds->Mins.X);
+    int * pCullingResult = &Result[0];
     int i, j;
 
     __m128 zero = _mm_setzero_ps();
-    //we process 4 objects per step
-    for (i = 0; i < _NumObjects; i += 4)
+
+    // Process 4 objects per step
+    for ( i = 0; i < InNumObjects; i += 4 )
     {
-        //load objects data
-        //load aabb min
-        __m128 aabb_min_x = _mm_load_ps(aabb_data_ptr);
-        __m128 aabb_min_y = _mm_load_ps(aabb_data_ptr + 8);
-        __m128 aabb_min_z = _mm_load_ps(aabb_data_ptr + 16);
-        __m128 aabb_min_w = _mm_load_ps(aabb_data_ptr + 24);
+        // Load bounding mins
+        __m128 aabb_min_x = _mm_load_ps( pBoundingBoxData );
+        __m128 aabb_min_y = _mm_load_ps( pBoundingBoxData + 8 );
+        __m128 aabb_min_z = _mm_load_ps( pBoundingBoxData + 16 );
+        __m128 aabb_min_w = _mm_load_ps( pBoundingBoxData + 24 );
 
-        //load aabb max
-        __m128 aabb_max_x = _mm_load_ps(aabb_data_ptr + 4);
-        __m128 aabb_max_y = _mm_load_ps(aabb_data_ptr + 12);
-        __m128 aabb_max_z = _mm_load_ps(aabb_data_ptr + 20);
-        __m128 aabb_max_w = _mm_load_ps(aabb_data_ptr + 28);
+        // Load bounding maxs
+        __m128 aabb_max_x = _mm_load_ps( pBoundingBoxData + 4 );
+        __m128 aabb_max_y = _mm_load_ps( pBoundingBoxData + 12 );
+        __m128 aabb_max_z = _mm_load_ps( pBoundingBoxData + 20 );
+        __m128 aabb_max_w = _mm_load_ps( pBoundingBoxData + 28 );
 
-        aabb_data_ptr += 32;
+        pBoundingBoxData += 32;
 
-        //for now we have points in vectors aabb_min_x..w, but for calculations we need to xxxx yyyy zzzz vectors representation - just transpose data
-        _MM_TRANSPOSE4_PS(aabb_min_x, aabb_min_y, aabb_min_z, aabb_min_w);
-        _MM_TRANSPOSE4_PS(aabb_max_x, aabb_max_y, aabb_max_z, aabb_max_w);
+        // For now we have points in vectors aabb_min_x..w, but for calculations we need to xxxx yyyy zzzz vectors representation.
+        // Just transpose data.
+        _MM_TRANSPOSE4_PS( aabb_min_x, aabb_min_y, aabb_min_z, aabb_min_w );
+        _MM_TRANSPOSE4_PS( aabb_max_x, aabb_max_y, aabb_max_z, aabb_max_w );
 
+        // Set bitmask to zero
         __m128 intersection_res = _mm_setzero_ps();
-        for (j = 0; j < 4; j++) //plane index // TODO: uwrap
+
+        for ( j = 0; j < 4; j++ )
         {
-            //this code is similar to what we make in simple culling
-            //pick closest point to plane and check if it begind the plane. if yes - object outside frustum
+            // Pick closest point to plane and check if it begind the plane. if yes - object outside frustum
 
-            //dot product, separate for each coordinate, for min & max aabb points
-            __m128 aabbMin_frustumPlane_x = _mm_mul_ps(aabb_min_x, PlanesSSE->x[j]);
-            __m128 aabbMin_frustumPlane_y = _mm_mul_ps(aabb_min_y, PlanesSSE->y[j]);
-            __m128 aabbMin_frustumPlane_z = _mm_mul_ps(aabb_min_z, PlanesSSE->z[j]);
+            // Dot product, separate for each coordinate, for min & max aabb points
+            __m128 mins_mul_plane_x = _mm_mul_ps( aabb_min_x, PlanesSSE->x[j] );
+            __m128 mins_mul_plane_y = _mm_mul_ps( aabb_min_y, PlanesSSE->y[j] );
+            __m128 mins_mul_plane_z = _mm_mul_ps( aabb_min_z, PlanesSSE->z[j] );
 
-            __m128 aabbMax_frustumPlane_x = _mm_mul_ps(aabb_max_x, PlanesSSE->x[j]);
-            __m128 aabbMax_frustumPlane_y = _mm_mul_ps(aabb_max_y, PlanesSSE->y[j]);
-            __m128 aabbMax_frustumPlane_z = _mm_mul_ps(aabb_max_z, PlanesSSE->z[j]);
+            __m128 maxs_mul_plane_x = _mm_mul_ps( aabb_max_x, PlanesSSE->x[j] );
+            __m128 maxs_mul_plane_y = _mm_mul_ps( aabb_max_y, PlanesSSE->y[j] );
+            __m128 maxs_mul_plane_z = _mm_mul_ps( aabb_max_z, PlanesSSE->z[j] );
 
-            //we have 8 box points, but we need pick closest point to plane. Just take max
-            __m128 res_x = _mm_max_ps(aabbMin_frustumPlane_x, aabbMax_frustumPlane_x);
-            __m128 res_y = _mm_max_ps(aabbMin_frustumPlane_y, aabbMax_frustumPlane_y);
-            __m128 res_z = _mm_max_ps(aabbMin_frustumPlane_z, aabbMax_frustumPlane_z);
+            // We have 8 box points, but we need pick closest point to plane.
+            __m128 res_x = _mm_max_ps( mins_mul_plane_x, maxs_mul_plane_x );
+            __m128 res_y = _mm_max_ps( mins_mul_plane_y, maxs_mul_plane_y );
+            __m128 res_z = _mm_max_ps( mins_mul_plane_z, maxs_mul_plane_z );
 
-            //dist to plane = dot(aabb_point.Xyz, plane.Xyz) + plane.w
-            __m128 sum_xy = _mm_add_ps(res_x, res_y);
-            __m128 sum_zw = _mm_add_ps(res_z, PlanesSSE->d[j]);
-            __m128 distance_to_plane = _mm_add_ps(sum_xy, sum_zw);
+            // Distance to plane = dot( aabb_point.xyz, plane.xyz ) + plane.d
+            __m128 sum_xy = _mm_add_ps( res_x, res_y );
+            __m128 sum_zw = _mm_add_ps( res_z, PlanesSSE->d[j] );
+            __m128 distance_to_plane = _mm_add_ps( sum_xy, sum_zw );
 
-            __m128 plane_res = _mm_cmple_ps(distance_to_plane, zero); //dist from closest point to plane < 0 ?
-            intersection_res = _mm_or_ps(intersection_res, plane_res); //if yes - aabb behind the plane & outside frustum
+            // Dist from closest point to plane < 0 ?
+            __m128 plane_res = _mm_cmple_ps( distance_to_plane, zero );
+
+            // If yes - aabb behind the plane & outside frustum
+            intersection_res = _mm_or_ps( intersection_res, plane_res );
         }
 
-        //store result
-        __m128i intersection_res_i = _mm_cvtps_epi32(intersection_res);
-        _mm_store_si128((__m128i *)&culling_res_sse[i], intersection_res_i);
+        // Convert packed single-precision (32-bit) floating point elements to
+        // packed 32-bit integers
+        __m128i intersection_res_i = _mm_cvtps_epi32( intersection_res );
+
+        // Store result
+        _mm_store_si128( (__m128i *)&pCullingResult[i], intersection_res_i );
     }
 #else
-    return CullBox_IgnoreZ_Generic( _Bounds, _NumObjects, _Result );
+    return CullBox_IgnoreZ_Generic( InBounds, InNumObjects, Result );
 #endif
 }

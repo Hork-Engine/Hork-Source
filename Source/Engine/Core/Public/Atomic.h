@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -33,7 +33,7 @@ SOFTWARE.
 #include "BaseTypes.h"
 
 // Define AN_STD_ATOMIC to force using std::atomic
-//#define AN_STD_ATOMIC
+#define AN_STD_ATOMIC
 
 #if !defined AN_OS_WIN32 || defined AN_STD_ATOMIC
 #include <atomic>

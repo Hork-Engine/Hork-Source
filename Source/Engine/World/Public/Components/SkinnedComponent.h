@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -70,7 +70,7 @@ public:
     /** Step time delta on all animation tracks */
     void AddTimeDeltaBroadcast( float _TimeDelta );
 
-    /** Recompute bounding box. Don't use directly. Use GetBounds() instead, it will recompute bounding box automatically. */
+    /** Recompute bounding box. */
     void UpdateBounds();
 
     /** Get transform of the joint */
@@ -89,7 +89,7 @@ protected:
     void DeinitializeComponent() override;
 
     void OnMeshChanged() override;
-    void OnLazyBoundsUpdate() override;
+    //void OnLazyBoundsUpdate() override;
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
@@ -118,8 +118,7 @@ private:
     size_t SkeletonOffset;
     size_t SkeletonSize;
 
-    // Frame when UpdateJointTransforms was called
-    int UpdateFrameNumber;
+    int VisFrame;
 
     bool bUpdateBounds : 1;
     bool bUpdateControllers : 1;

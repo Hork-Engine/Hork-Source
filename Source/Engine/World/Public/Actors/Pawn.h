@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -37,7 +37,7 @@ class AInputComponent;
 class ACommandContext;
 class AController;
 
-/*
+/**
 
 APawn
 
@@ -62,7 +62,7 @@ protected:
 
     APawn();
 
-    // Override this function to setup input component
+    /** Override this function to setup input component */
     virtual void SetupPlayerInputComponent( AInputComponent * _Input ) {}
 
     virtual void SetupRuntimeCommands( ACommandContext & _Ctx ) {}

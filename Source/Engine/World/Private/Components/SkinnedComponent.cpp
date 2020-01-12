@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -56,6 +56,12 @@ ASkinnedComponent::ASkinnedComponent() {
     bSkinnedMesh = true;
     bLazyBoundsUpdate = true;
 
+    // Raycasting of skinned meshes is not supported yet
+    Primitive.RaycastCallback = nullptr;
+    Primitive.RaycastClosestCallback = nullptr;
+
+    VisFrame = -1;
+
     static TStaticResourceFinder< ASkeleton > SkeletonResource( _CTS( "/Default/Skeleton/Default" ) );
     Skeleton = SkeletonResource.GetObject();
 }
@@ -74,11 +80,11 @@ void ASkinnedComponent::DeinitializeComponent() {
     GetWorld()->GetRenderWorld().RemoveSkinnedMesh( this );
 }
 
-void ASkinnedComponent::OnLazyBoundsUpdate() {
-    Super::OnLazyBoundsUpdate();
+//void ASkinnedComponent::OnLazyBoundsUpdate() {
+//    Super::OnLazyBoundsUpdate();
 
-    UpdateBounds();
-}
+//    UpdateBounds();
+//}
 
 void ASkinnedComponent::OnMeshChanged() {
     Super::OnMeshChanged();
@@ -456,13 +462,13 @@ void ASkinnedComponent::UpdateBounds() {
     }
 
     // Mark to update world bounds
-    MarkWorldBoundsDirty();
+    UpdateWorldBounds();
 }
 
 static Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS]; // TODO: thread_local for multithreaded update
 
 void ASkinnedComponent::UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize, int _FrameNumber ) {
-    if ( UpdateFrameNumber == _FrameNumber ) {
+    if ( VisFrame == _FrameNumber ) {
         _SkeletonOffset = SkeletonOffset;
         _SkeletonSize = SkeletonSize;
         //GLogger.Printf( "Caching UpdateJointTransforms()\n" );
@@ -494,7 +500,7 @@ void ASkinnedComponent::UpdateJointTransforms( size_t & _SkeletonOffset, size_t 
 
     //}
 
-    UpdateFrameNumber = _FrameNumber;
+    VisFrame = _FrameNumber;
     SkeletonOffset = _SkeletonOffset;
     SkeletonSize = _SkeletonSize;
 }

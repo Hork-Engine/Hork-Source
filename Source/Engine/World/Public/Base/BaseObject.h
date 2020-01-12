@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -463,11 +463,11 @@ struct TEvent {
     }
 
     void RemoveAll() {
-        Callbacks.clear();
+        Callbacks.Clear();
     }
 
     bool HasCallbacks() const {
-        return !Callbacks.empty();
+        return !Callbacks.IsEmpty();
     }
 
     operator bool() const {
@@ -492,8 +492,9 @@ struct TEvent {
             if ( Callbacks[ i ].IsValid() ) {
                 // Invoke
                 if ( _Condition() ) {
-                    Callbacks[ i++ ]( StdForward< TArgs >( _Args )... );
+                    Callbacks[ i ]( StdForward< TArgs >( _Args )... );
                 }
+                i++;
             } else {
                 // Cleanup
                 Callbacks.erase( Callbacks.begin() + i );

@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -33,6 +33,13 @@ SOFTWARE.
 #include <Runtime/Public/RenderCore.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <World/Public/Canvas.h>
+#include <World/Public/Resource/IndexedMesh.h>
+#include <World/Public/World.h>
+
+//class ARenderWorld;
+//class VSDPrimitive;
+//struct SSurfaceDef;
+//class APointLightComponent;
 
 struct SRenderFrontendStat {
     int PolyCount;
@@ -40,11 +47,40 @@ struct SRenderFrontendStat {
     int FrontendTime;
 };
 
+//struct SSurfaceBatch
+//{
+//    /** Batch mesh */
+//    AIndexedMesh *  Mesh;
+
+//    /** Lightmap atlas index */
+//    int             LightmapBlock;
+
+//    /** Lighmap channel UV offset and scale */
+//    Float4          LightmapOffset;
+
+//    /** Lightmap UV channel */
+//    ALightmapUV *   LightmapUVChannel;
+
+//    /** Baked vertex light channel */
+//    AVertexLight *  VertexLightChannel;
+
+//    AMaterialInstance * MaterialInstance;
+
+//    unsigned int    IndexCount;
+
+//    unsigned int    StartIndexLocation;
+
+//    //int             BaseVertexLocation;
+//};
+
 class ARenderFrontend
 {
     AN_SINGLETON( ARenderFrontend )
 
 public:
+    void Initialize();
+    void Deinitialize();
+
     void Render( ACanvas * InCanvas );
 
     //int GetFrameNumber() const { return FrameNumber; }
@@ -57,9 +93,17 @@ private:
     //void RenderImgui( struct ImDrawList const * _DrawList );
     void RenderView( int _Index );
 
+    void AddLevelInstances( ARenderWorld * InWorld, SRenderFrontendDef * _Def );
+    void AddDirectionalShadowmapInstances( ARenderWorld * InWorld, SRenderFrontendDef * _Def );
+
+    void AddSurfaces( SRenderFrontendDef * RenderDef, SSurfaceDef * const * Surfaces, int SurfaceCount );
+    void AddSurface( SRenderFrontendDef * RenderDef, ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder );
+    void AddMesh( SRenderFrontendDef * RenderDef, AMeshComponent * Component );
+
+    void CreateDirectionalLightCascades( SRenderFrame * Frame, SRenderView * View );
+
     SRenderFrame * FrameData;
     ADebugRenderer DebugDraw;
-    int VisMarker = 0;
     int FrameNumber = 0;
 
     SRenderFrontendStat Stat;
@@ -68,6 +112,25 @@ private:
     int NumViewports = 0;
     int MaxViewportWidth = 0;
     int MaxViewportHeight = 0;
+
+    TPodArray< SPrimitiveDef * > VisPrimitives;
+    TPodArray< SSurfaceDef * > VisSurfaces;
+    TPodArray< APointLightComponent * > PointLights;
+    int VisPass = 0;
+
+    int numVerts;
+    int numIndices;
+
+    // TODO: BatchMesh,BatchLightmapUV,BatchVertexLight must live per view
+
+    /** Mesh for surface batching */
+    TRef< AIndexedMesh > BatchMesh;
+
+    /** Lightmap UV channel */
+    TRef< ALightmapUV > BatchLightmapUV;
+
+    /** Vertex light channel */
+    TRef< AVertexLight > BatchVertexLight;
 
 };
 

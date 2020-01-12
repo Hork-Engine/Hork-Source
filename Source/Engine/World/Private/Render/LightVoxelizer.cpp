@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -31,9 +31,13 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
+#include <World/Public/Components/PointLightComponent.h>
 
 ARuntimeVariable RVClusterSSE( _CTS( "ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVFreezeFrustumClusters( _CTS( "FreezeFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+
+ALightVoxelizer & GLightVoxelizer = ALightVoxelizer::Inst();
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -137,11 +141,11 @@ struct SItemInfo {
     Float4x4 ClipToBoxMat;
 
     // Тоже самое, только для SSE
-    //AN_ALIGN_SSE __m128 AabbMinsSSE;
-    //AN_ALIGN_SSE __m128 AabbMaxsSSE;
-    AN_ALIGN_SSE Float4x4SSE ClipToBoxMatSSE;
+    //alignas(16) __m128 AabbMinsSSE;
+    //alignas(16) __m128 AabbMaxsSSE;
+    alignas(16) Float4x4SSE ClipToBoxMatSSE;
 
-    SLightDef * Light;
+    APointLightComponent * Light;
     //FDecalDef * Decal;
     //FEnvProbeDef * Probe;
 };
@@ -158,9 +162,20 @@ static Float4x4 ViewProj;
 static Float4x4 ViewProjInv;
 static SItemInfo ItemInfos[MAX_ITEMS];
 static int ItemsCount;
-static ALightVoxelizer * Voxelizer;
 
-static void PackLight( SClusterLight * _Parameters, SLightDef * _Light );
+struct SFrustumCluster {
+    unsigned short LightsCount;
+    unsigned short DecalsCount;
+    unsigned short ProbesCount;
+};
+
+static SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
+
+static SFrameLightData * pLightData;
+static bool bUseSSE;
+
+static void VoxelizeWork( void * _Data );
+static void PackLight( SClusterLight * Parameters, APointLightComponent const * Light );
 
 ALightVoxelizer::ALightVoxelizer() {
     // Uniform box
@@ -170,11 +185,7 @@ ALightVoxelizer::ALightVoxelizer() {
     NDCMaxsSSE = _mm_set_ps( 0.0f, 1.0f, 1.0f, 1.0f );
 }
 
-ALightVoxelizer::~ALightVoxelizer() {
-
-}
-
-void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
+void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APointLightComponent * const * InPointLights, int InPointLightCount ) {
     Float4x4SSE ViewProjSSE;
     Float4x4SSE ViewProjInvSSE;
 
@@ -183,7 +194,7 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
 
     memset( ClusterData, 0, sizeof( ClusterData ) );
 
-    int lightsCount = RV->NumLights;
+    int lightsCount = InPointLightCount;
     int envProbesCount = 0;//RV->NumEnvProbes;
 
     if ( lightsCount > MAX_LIGHTS ) {
@@ -198,10 +209,9 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
 
     int ComponentListIndex[2] = { 0, 0 };
 
-    Voxelizer = this;
-
     bUseSSE = RVClusterSSE;
-    LightData = &Frame->LightData;
+
+    pLightData = &Frame->LightData;
 
     //int NumPackedProbes = 0;
     if ( bUseSSE ) {
@@ -217,18 +227,18 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
         __m128 v_yyyy_max_mul_col1;
         __m128 v_zzzz_min_mul_col2_add_col3;
         __m128 v_zzzz_max_mul_col2_add_col3;
-        AN_ALIGN_SSE Float4 bb_mins;
-        AN_ALIGN_SSE Float4 bb_maxs;
-        AN_ALIGN_SSE Float4 Point;
-        AN_ALIGN_SSE Float3 Mins, Maxs;
+        alignas(16) Float4 bb_mins;
+        alignas(16) Float4 bb_maxs;
+        alignas(16) Float4 Point;
+        alignas(16) Float3 Mins, Maxs;
 
         ViewProjSSE = ViewProj;
         ViewProjInvSSE = ViewProjInv;
 
         ItemsCount = 0;
 
-        SClusterItem ** ClusteredLists[] = {
-            (SClusterItem **)(Frame->Lights.ToPtr() + RV->FirstLight),
+        APointLightComponent * const * ClusteredLists[] = {
+            InPointLights,
             //Decals
             //EnvProbes
         };
@@ -241,24 +251,24 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
         const int numLists = AN_ARRAY_SIZE( ClusteredLists );
 
         for ( int list = 0 ; list < numLists ; list++ ) {
-            SClusterItem ** items = ClusteredLists[list];
+            APointLightComponent * const * items = ClusteredLists[list];
             int itemsCount = ClusteredListsSize[list];
             int & listIndex = ComponentListIndex[list];
 
             for ( int itemIndex = 0; itemIndex < itemsCount ; itemIndex++ ) {
 
-                SClusterItem * item = items[itemIndex];
+                APointLightComponent * item = items[itemIndex];
 
-                BvAxisAlignedBox const & AABB = item->BoundingBox;
+                BvAxisAlignedBox const & AABB = item->GetWorldBounds();
 
                 SItemInfo & ItemInfo = ItemInfos[ItemsCount++];
 
                 if ( list == 0 ) { // Light
-                    ItemInfo.Light = static_cast< SLightDef * >(item);
+                    ItemInfo.Light = static_cast< APointLightComponent * >(item);
                     //ItemInfo.Probe = NULL;
                     item->ListIndex = listIndex++;// & ( MAX_LIGHTS - 1 );
 
-                    PackLight( &LightData->Lights[item->ListIndex], ItemInfo.Light );
+                    PackLight( &pLightData->Lights[item->ListIndex], ItemInfo.Light );
 
                 } /*else if ( list == 1 ) { // Env Capture
                       ItemInfo.Probe = static_cast< FEnvCaptureComponent * >( item );
@@ -281,7 +291,7 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
                 ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
                 ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
 #else
-                ItemInfo.ClipToBoxMatSSE = item->OBBTransformInverse * ViewProjInv; // TODO: умножение сразу в SSE?
+                ItemInfo.ClipToBoxMatSSE = item->GetOBBTransformInverse() * ViewProjInv; // TODO: умножение сразу в SSE?
 #endif
 
                 // OBB to clipspace
@@ -353,9 +363,9 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
                     if ( std::isnan( Point.Y ) ) Point.Y = 1;
                     if ( std::isnan( Point.Z ) ) Point.Z = 1;
 
-                    //assert( !std::isnan( Point.X ) && !std::isinf( Point.X ) );
-                    //assert( !std::isnan( Point.Y ) && !std::isinf( Point.Y ) );
-                    //assert( !std::isnan( Point.Z ) && !std::isinf( Point.Z ) );
+                    //AN_ASSERT( !std::isnan( Point.X ) && !std::isinf( Point.X ) );
+                    //AN_ASSERT( !std::isnan( Point.Y ) && !std::isinf( Point.Y ) );
+                    //AN_ASSERT( !std::isnan( Point.Z ) && !std::isinf( Point.Z ) );
 
                     if ( Point.Z < 0.0 ) {
                         //Point.Z = 200;
@@ -399,7 +409,7 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
                 _mm_store_ps( &bb_mins.X, bbMins );
                 _mm_store_ps( &bb_maxs.X, bbMaxs );
 
-                assert( bb_mins.Z >= 0 );
+                AN_ASSERT( bb_mins.Z >= 0 );
 
                 ItemInfo.MaxSlice = ceilf ( std::log2f( bb_mins.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS );
                 ItemInfo.MinSlice = floorf( std::log2f( bb_maxs.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS );
@@ -413,11 +423,11 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
                 ItemInfo.MinSlice = Math::Max( ItemInfo.MinSlice, 0 );
                 ItemInfo.MaxSlice = Int( ItemInfo.MaxSlice ).Clamp( 1, MAX_FRUSTUM_CLUSTERS_Z );
 
-                assert( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z );
-                assert( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X );
-                assert( ItemInfo.MinClusterY >= 0 && ItemInfo.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
-                assert( ItemInfo.MaxClusterX >= 0 && ItemInfo.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X );
-                assert( ItemInfo.MaxClusterY >= 0 && ItemInfo.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
+                AN_ASSERT( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z );
+                AN_ASSERT( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X );
+                AN_ASSERT( ItemInfo.MinClusterY >= 0 && ItemInfo.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
+                AN_ASSERT( ItemInfo.MaxClusterX >= 0 && ItemInfo.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X );
+                AN_ASSERT( ItemInfo.MaxClusterY >= 0 && ItemInfo.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
             }
         }
     } else {
@@ -518,7 +528,7 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
             bb.Maxs.Y = Math::Clamp( bb.Maxs.Y, -1.0f, 1.0f );
             bb.Maxs.Z = Math::Clamp( bb.Maxs.Z, -1.0f, 1.0f );
 
-            assert( bb.Mins.Z >= 0 );
+            AN_ASSERT( bb.Mins.Z >= 0 );
 
             ItemInfo.MaxSlice = ceilf ( std::log2f( bb.Mins.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * Scale + Bias );
             ItemInfo.MinSlice = floorf( std::log2f( bb.Maxs.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * Scale + Bias );
@@ -538,11 +548,11 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
             //ItemInfo.MaxClusterX = Math::Min( ItemInfo.MaxClusterX, MAX_FRUSTUM_CLUSTERS_X );
             //ItemInfo.MaxClusterY = Math::Min( ItemInfo.MaxClusterY, MAX_FRUSTUM_CLUSTERS_Y );
 
-            assert( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z );
-            assert( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X );
-            assert( ItemInfo.MinClusterY >= 0 && ItemInfo.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
-            assert( ItemInfo.MaxClusterX >= 0 && ItemInfo.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X );
-            assert( ItemInfo.MaxClusterY >= 0 && ItemInfo.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
+            AN_ASSERT( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z );
+            AN_ASSERT( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X );
+            AN_ASSERT( ItemInfo.MinClusterY >= 0 && ItemInfo.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
+            AN_ASSERT( ItemInfo.MaxClusterX >= 0 && ItemInfo.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X );
+            AN_ASSERT( ItemInfo.MaxClusterY >= 0 && ItemInfo.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
         }
 #endif
     }
@@ -556,13 +566,13 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV ) {
     GRenderFrontendJobList->SubmitAndWait();
 }
 
-void ALightVoxelizer::VoxelizeWork( void * _Data ) {
+static void VoxelizeWork( void * _Data ) {
     int SliceIndex = (size_t)_Data;
 
     //GLogger.Printf( "Vox %d\n", SliceIndex );
 
-    AN_ALIGN_SSE Float3 ClusterMins;
-    AN_ALIGN_SSE Float3 ClusterMaxs;
+    alignas(16) Float3 ClusterMins;
+    alignas(16) Float3 ClusterMaxs;
 
     ClusterMins.Z = FRUSTUM_SLICE_ZCLIP[SliceIndex + 1];
     ClusterMaxs.Z = FRUSTUM_SLICE_ZCLIP[SliceIndex];
@@ -570,20 +580,21 @@ void ALightVoxelizer::VoxelizeWork( void * _Data ) {
     SFrustumCluster * pCluster;
     unsigned short * pClusterItem;
 
-    if ( Voxelizer->bUseSSE ) {
+    if ( bUseSSE ) {
         //__m128 Zero = _mm_setzero_ps();
         __m128 OutsidePosPlane;
         __m128 OutsideNegPlane;
         __m128 PointSSE;
         __m128 Outside;
-        __m128i OutsideI;
+        //__m128i OutsideI;
         __m128 v_xxxx_min_mul_col0;
         __m128 v_xxxx_max_mul_col0;
         __m128 v_yyyy_min_mul_col1;
         __m128 v_yyyy_max_mul_col1;
         __m128 v_zzzz_min_mul_col2_add_col3;
         __m128 v_zzzz_max_mul_col2_add_col3;
-        AN_ALIGN_SSE int CullingResult[4];
+        //alignas(16) int CullingResult[4];
+        //alignas(16) int CullingResult;
 
         for ( int ItemIndex = 0 ; ItemIndex < ItemsCount ; ItemIndex++ ) {
             SItemInfo & Info = ItemInfos[ItemIndex];
@@ -595,7 +606,7 @@ void ALightVoxelizer::VoxelizeWork( void * _Data ) {
             v_zzzz_min_mul_col2_add_col3 = _mm_add_ps( _mm_mul_ps( _mm_set_ps1( ClusterMins.Z ), Info.ClipToBoxMatSSE.col2 ), Info.ClipToBoxMatSSE.col3 );
             v_zzzz_max_mul_col2_add_col3 = _mm_add_ps( _mm_mul_ps( _mm_set_ps1( ClusterMaxs.Z ), Info.ClipToBoxMatSSE.col2 ), Info.ClipToBoxMatSSE.col3 );
 
-            pCluster = &Voxelizer->ClusterData[SliceIndex][Info.MinClusterY][0];
+            pCluster = &ClusterData[SliceIndex][Info.MinClusterY][0];
             pClusterItem = &Items[SliceIndex][Info.MinClusterY][0][0];
 
             for ( int ClusterY = Info.MinClusterY ; ClusterY < Info.MaxClusterY ; ClusterY++ ) {
@@ -666,6 +677,7 @@ void ALightVoxelizer::VoxelizeWork( void * _Data ) {
                     // combine outside
                     Outside = _mm_or_ps( OutsidePosPlane, OutsideNegPlane );
 
+#if 0
                     // store result
                     OutsideI = _mm_cvtps_epi32( Outside );
                     _mm_store_si128( (__m128i *)&CullingResult[0], OutsideI );
@@ -674,6 +686,12 @@ void ALightVoxelizer::VoxelizeWork( void * _Data ) {
                         // culled
                         continue;
                     }
+#else
+                    if ( _mm_movemask_ps( Outside ) & 0x7 ) {
+                        // culled
+                        continue;
+                    }
+#endif
 
                     if ( Info.Light ) {
                         pClusterItem[ClusterX * (MAX_CLUSTER_ITEMS * 3) + LIGHT_ITEMS_OFFSET + ((pCluster + ClusterX)->LightsCount++ & (MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
@@ -696,7 +714,7 @@ void ALightVoxelizer::VoxelizeWork( void * _Data ) {
                 continue;
             }
 
-            pCluster = &Voxelizer->ClusterData[SliceIndex][Info.MinClusterY][0];
+            pCluster = &ClusterData[SliceIndex][Info.MinClusterY][0];
             pClusterItem = &Items[SliceIndex][Info.MinClusterY][0][0];
 
             for ( int ClusterY = Info.MinClusterY ; ClusterY < Info.MaxClusterY ; ClusterY++ ) {
@@ -783,11 +801,11 @@ void ALightVoxelizer::VoxelizeWork( void * _Data ) {
     //    int i = 0;
     int NumClusterItems;
 
-    SClusterBuffer * pBuffer = &Voxelizer->LightData->OffsetBuffer[SliceIndex][0][0];
+    SClusterBuffer * pBuffer = &pLightData->OffsetBuffer[SliceIndex][0][0];
     SClusterItemBuffer * pItem;
     SItemInfo * pItemInfo;
 
-    pCluster = &Voxelizer->ClusterData[SliceIndex][0][0];
+    pCluster = &ClusterData[SliceIndex][0][0];
     pClusterItem = &Items[SliceIndex][0][0][0];
 
     for ( int ClusterY = 0 ; ClusterY < MAX_FRUSTUM_CLUSTERS_Y ; ClusterY++ ) {
@@ -803,7 +821,7 @@ void ALightVoxelizer::VoxelizeWork( void * _Data ) {
 
             pBuffer->ItemOffset = ItemOffset & (SFrameLightData::MAX_ITEM_BUFFER - 1);
 
-            pItem = &Voxelizer->LightData->ItemBuffer[pBuffer->ItemOffset];
+            pItem = &pLightData->ItemBuffer[pBuffer->ItemOffset];
 
             memset( pItem, 0, NumClusterItems * sizeof( SClusterItemBuffer ) );
 
@@ -842,25 +860,108 @@ void ALightVoxelizer::VoxelizeWork( void * _Data ) {
     }
 }
 
-static void PackLight( SClusterLight * _Parameters, SLightDef * _Light ) {
-    _Parameters->Position = Float3(/* WorldspaceToViewspace * */ _Light->Position );
-    _Parameters->OuterRadius = _Light->OuterRadius;
-    _Parameters->InnerRadius = Math::Min( _Light->InnerRadius, _Light->OuterRadius ); // TODO: do this check early
-    _Parameters->Color = _Light->ColorAndAmbientIntensity;
-    _Parameters->RenderMask = _Light->RenderMask;
+static void PackLight( SClusterLight * Parameters, APointLightComponent const * Light ) {
+    Parameters->Position = Float3(/* WorldspaceToViewspace * */ Light->GetWorldPosition() );
+    Parameters->OuterRadius = Light->GetOuterRadius();
+    Parameters->InnerRadius = Math::Min( Light->GetInnerRadius(), Light->GetOuterRadius() ); // TODO: do this check early
+    Parameters->Color = Light->GetEffectiveColor();
+    Parameters->RenderMask = ~0u;//Light->RenderMask;
 
-    if ( _Light->bSpot ) {
-        _Parameters->LightType = 1;
+#if 0
+    if ( Light->bSpot ) {
+        Parameters->LightType = 1;
 
         const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
 
-        _Parameters->OuterConeAngle = cos( _Light->OuterConeAngle * ToHalfAngleRadians );
-        _Parameters->InnerConeAngle = cos( Math::Min( _Light->InnerConeAngle, _Light->OuterConeAngle ) * ToHalfAngleRadians );
+        Parameters->OuterConeAngle = cos( Light->OuterConeAngle * ToHalfAngleRadians );
+        Parameters->InnerConeAngle = cos( Math::Min( Light->InnerConeAngle, Light->OuterConeAngle ) * ToHalfAngleRadians );
 
-        _Parameters->SpotDirection = /*RenderFrame.NormalToView **/ (-_Light->SpotDirection);
-        _Parameters->SpotExponent = _Light->SpotExponent;
+        Parameters->SpotDirection = /*RenderFrame.NormalToView **/ (-Light->SpotDirection);
+        Parameters->SpotExponent = Light->SpotExponent;
 
-    } else {
-        _Parameters->LightType = 0;
+    }
+    else
+#endif
+    {
+        Parameters->LightType = 0;
+    }
+}
+
+static void GatherVoxelGeometry( TStdVectorDefault< Float3 > & LinePoints, Float4x4 const & ViewProjectionInversed )
+{
+    Float3 clusterMins;
+    Float3 clusterMaxs;
+    Float4 p[ 8 ];
+    Float3 * lineP;
+
+    LinePoints.clear();
+
+    for ( int sliceIndex = 0 ; sliceIndex < MAX_FRUSTUM_CLUSTERS_Z ; sliceIndex++ ) {
+
+        clusterMins.Z = FRUSTUM_SLICE_ZCLIP[ sliceIndex + 1 ];
+        clusterMaxs.Z = FRUSTUM_SLICE_ZCLIP[ sliceIndex ];
+
+        for ( int clusterY = 0 ; clusterY < MAX_FRUSTUM_CLUSTERS_Y ; clusterY++ ) {
+
+            clusterMins.Y = clusterY * FRUSTUM_CLUSTER_HEIGHT - 1.0f;
+            clusterMaxs.Y = clusterMins.Y + FRUSTUM_CLUSTER_HEIGHT;
+
+            for ( int clusterX = 0 ; clusterX < MAX_FRUSTUM_CLUSTERS_X ; clusterX++ ) {
+
+                clusterMins.X = clusterX * FRUSTUM_CLUSTER_WIDTH - 1.0f;
+                clusterMaxs.X = clusterMins.X + FRUSTUM_CLUSTER_WIDTH;
+
+                if (   ClusterData[ sliceIndex ][ clusterY ][ clusterX ].LightsCount > 0
+                    || ClusterData[ sliceIndex ][ clusterY ][ clusterX ].DecalsCount > 0
+                    || ClusterData[ sliceIndex ][ clusterY ][ clusterX ].ProbesCount > 0 ) {
+                    p[ 0 ] = Float4( clusterMins.X, clusterMins.Y, clusterMins.Z, 1.0f );
+                    p[ 1 ] = Float4( clusterMaxs.X, clusterMins.Y, clusterMins.Z, 1.0f );
+                    p[ 2 ] = Float4( clusterMaxs.X, clusterMaxs.Y, clusterMins.Z, 1.0f );
+                    p[ 3 ] = Float4( clusterMins.X, clusterMaxs.Y, clusterMins.Z, 1.0f );
+                    p[ 4 ] = Float4( clusterMaxs.X, clusterMins.Y, clusterMaxs.Z, 1.0f );
+                    p[ 5 ] = Float4( clusterMins.X, clusterMins.Y, clusterMaxs.Z, 1.0f );
+                    p[ 6 ] = Float4( clusterMins.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f );
+                    p[ 7 ] = Float4( clusterMaxs.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f );
+                    LinePoints.resize( LinePoints.size() + 8 );
+                    lineP = LinePoints.data() + LinePoints.size() - 8;
+                    for ( int i = 0 ; i < 8 ; i++ ) {
+                        p[ i ] = ViewProjectionInversed * p[ i ];
+                        const float Denom = 1.0f / p[ i ].W;
+                        lineP[ i ].X = p[ i ].X * Denom;
+                        lineP[ i ].Y = p[ i ].Y * Denom;
+                        lineP[ i ].Z = p[ i ].Z * Denom;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer ) {
+    static TStdVectorDefault< Float3 > LinePoints;
+
+    if ( !RVFreezeFrustumClusters )
+    {
+        SRenderView const * view = InRenderer->GetRenderView();
+
+        const Float4x4 viewProjInv = ( view->ClusterProjectionMatrix * view->ViewMatrix ).Inversed();
+
+        GatherVoxelGeometry( LinePoints, viewProjInv );
+    }
+
+    if ( bUseSSE )
+        InRenderer->SetColor( AColor4( 0, 0, 1 ) );
+    else
+        InRenderer->SetColor( AColor4( 1, 0, 0 ) );
+
+    int n = 0;
+    for ( Float3 * lineP = LinePoints.data() ; n < LinePoints.size() ; lineP += 8, n += 8 )
+    {
+        InRenderer->DrawLine( lineP, 4, true );
+        InRenderer->DrawLine( lineP + 4, 4, true );
+        InRenderer->DrawLine( lineP[ 0 ], lineP[ 5 ] );
+        InRenderer->DrawLine( lineP[ 1 ], lineP[ 4 ] );
+        InRenderer->DrawLine( lineP[ 2 ], lineP[ 7 ] );
+        InRenderer->DrawLine( lineP[ 3 ], lineP[ 6 ] );
     }
 }

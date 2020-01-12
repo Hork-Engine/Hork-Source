@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -654,6 +654,14 @@ bool AArchive::GetCurrentFileInfo( char * _FileName, size_t _SizeofFileName ) {
 }
 
 bool AArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes ) {
+    return ReadFileToMemory( _FileName, _MemoryBuffer, _SizeInBytes, true );
+}
+
+bool AArchive::ReadFileToHeapMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes ) {
+    return ReadFileToMemory( _FileName, _MemoryBuffer, _SizeInBytes, false );
+}
+
+bool AArchive::ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, bool _ZoneMemory ) {
     int Result = Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) : UNZ_BADZIPFILE;
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Couldn't open file %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
@@ -674,7 +682,13 @@ bool AArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuff
         return false;
     }
 
-    void * data = GZoneMemory.Alloc( FileInfo.uncompressed_size, 1 );
+    void * data;
+    
+    if ( _ZoneMemory ) {
+        data = GZoneMemory.Alloc( FileInfo.uncompressed_size, 1 );
+    } else {
+        data = GHeapMemory.HeapAlloc( FileInfo.uncompressed_size, 1 );
+    }
     Result = unzReadCurrentFile( Handle, data, FileInfo.uncompressed_size );
     if ( (uLong)Result != FileInfo.uncompressed_size ) {
         GLogger.Printf( "Couldn't read file %s complete from archive: ", _FileName );
@@ -683,7 +697,11 @@ bool AArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuff
         } else {
             GLogger.Printf( "%s\n", GetUnzipErrorStr( Result ) );
         }
-        GZoneMemory.Dealloc( data );
+        if ( _ZoneMemory ) {
+            GZoneMemory.Dealloc( data );
+        } else {
+            GHeapMemory.HeapFree( data );
+        }
         unzCloseCurrentFile( Handle );
         return false;
     }
@@ -691,11 +709,15 @@ bool AArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuff
     Result = unzCloseCurrentFile( Handle );
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Error during reading file %s (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
-        GZoneMemory.Dealloc( data );
+        if ( _ZoneMemory ) {
+            GZoneMemory.Dealloc( data );
+        } else {
+            GHeapMemory.HeapFree( data );
+        }
         return false;
     }
 
-    *_MemoryBuffer = ( byte * )data;
+    *_MemoryBuffer = (byte *)data;
     *_SizeInBytes = FileInfo.uncompressed_size;
 
     return true;

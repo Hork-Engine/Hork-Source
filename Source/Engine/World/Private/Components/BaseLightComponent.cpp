@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -46,7 +46,6 @@ ABaseLightComponent::ABaseLightComponent() {
     Lumens = DEFAULT_LUMENS;
     EffectiveColor = Float4(0.0f,0.0f,0.0f,DEFAULT_AMBIENT_INTENSITY);
     bEffectiveColorDirty = true;
-    RenderingGroup = RENDERING_GROUP_DEFAULT;
     bCastShadow = false;
     bEnabled = true;
     AnimationBrightness = 1;

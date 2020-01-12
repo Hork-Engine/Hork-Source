@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -309,29 +309,25 @@ Allocator base interface
 template< typename T >
 class TTemplateAllocator {
 public:
-    template< int Alignment >
-    void * Alloc( size_t _BytesCount ) {
-        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
+    void * AllocAligned( size_t _BytesCount, int Alignment ) {
+        AN_ASSERT_( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
         return static_cast< T * >( this )->ImplAllocate( _BytesCount, Alignment );
     }
 
-    template< int Alignment >
-    void * AllocCleared( size_t _BytesCount, uint64_t _ClearValue = 0 ) {
-        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
+    void * AllocClearedAligned( size_t _BytesCount, uint64_t _ClearValue, int Alignment ) {
+        AN_ASSERT_( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
         void * bytes = static_cast< T * >( this )->ImplAllocate( _BytesCount, Alignment );
         ClearMemory8( bytes, _ClearValue, _BytesCount );
         return bytes;
     }
 
-    template< int Alignment >
-    void * Extend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) {
-        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
+    void * ExtendAligned( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, int Alignment ) {
+        AN_ASSERT_( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
         return static_cast< T * >( this )->ImplExtend( _Data, _BytesCount, _NewBytesCount, Alignment, _KeepOld );
     }
 
-    template< int Alignment >
-    void * ExtendCleared( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) {
-        static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
+    void * ExtendClearedAligned( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue, int Alignment ) {
+        AN_ASSERT_( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
         void * bytes = static_cast< T * >( this )->ImplExtend( _Data, _BytesCount, _NewBytesCount, Alignment, _KeepOld );
         if ( _KeepOld ) {
             if ( _NewBytesCount > _BytesCount ) {
@@ -347,21 +343,21 @@ public:
         static_cast< T * >( this )->ImplDeallocate( _Bytes );
     }
 
-    void * Alloc1( size_t _BytesCount ) { return Alloc< 1 >( _BytesCount ); }
-    void * Alloc16( size_t _BytesCount ) { return Alloc< 16 >( _BytesCount ); }
-    void * Alloc32( size_t _BytesCount ) { return Alloc< 32 >( _BytesCount ); }
+    void * Alloc1( size_t _BytesCount ) { return AllocAligned( _BytesCount, 1 ); }
+    void * Alloc16( size_t _BytesCount ) { return AllocAligned( _BytesCount, 16 ); }
+    void * Alloc32( size_t _BytesCount ) { return AllocAligned( _BytesCount, 32 ); }
 
-    void * AllocCleared1( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocCleared< 1 >( _BytesCount, _ClearValue ); }
-    void * AllocCleared16( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocCleared< 16 >( _BytesCount, _ClearValue ); }
-    void * AllocCleared32( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocCleared< 32 >( _BytesCount, _ClearValue ); }
+    void * AllocCleared1( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocClearedAligned( _BytesCount, _ClearValue, 1 ); }
+    void * AllocCleared16( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocClearedAligned( _BytesCount, _ClearValue, 16 ); }
+    void * AllocCleared32( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocClearedAligned( _BytesCount, _ClearValue, 32 ); }
 
-    void * Extend1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 1 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
-    void * Extend16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 16 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
-    void * Extend32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return Extend< 32 >( _Data, _BytesCount, _NewBytesCount, _KeepOld ); }
+    void * Extend1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return ExtendAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, 1 ); }
+    void * Extend16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return ExtendAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, 16 ); }
+    void * Extend32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return ExtendAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, 32 ); }
 
-    void * ExtendCleared1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 1 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
-    void * ExtendCleared16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 16 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
-    void * ExtendCleared32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendCleared< 32 >( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue ); }
+    void * ExtendCleared1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendClearedAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue, 1 ); }
+    void * ExtendCleared16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendClearedAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue, 16 ); }
+    void * ExtendCleared32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendClearedAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue, 32 ); }
 };
 
 /**

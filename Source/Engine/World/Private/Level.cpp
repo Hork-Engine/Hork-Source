@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -34,6 +34,7 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Components/SkinnedComponent.h>
 #include <World/Public/Components/CameraComponent.h>
+#include <World/Public/Components/PointLightComponent.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Resource/Texture.h>
 #include <Core/Public/BV/BvIntersect.h>
@@ -45,54 +46,103 @@ ARuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS(
 ARuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ALevel )
-AN_CLASS_META( ALevelArea )
-AN_CLASS_META( ALevelPortal )
 
-ALevel::ALevel() {
-    IndoorBounds.Clear();
+#define MAX_PRIMITIVE_LINKS 40000
 
-    OutdoorArea = NewObject< ALevelArea >();
-    OutdoorArea->Extents = Float3( CONVEX_HULL_MAX_BOUNDS * 2 );
-    OutdoorArea->ParentLevel = this;
-    OutdoorArea->Bounds.Mins = -OutdoorArea->Extents * 0.5f;
-    OutdoorArea->Bounds.Maxs = OutdoorArea->Extents * 0.5f;
-
-    //OutdoorArea->Tree = NewObject< AOctree >();
-    //OutdoorArea->Tree->Owner = OutdoorArea;
-    //OutdoorArea->Tree->Build();
-
-    LastVisitedArea = -1;
-}
-
-ALevel::~ALevel() {
-    ClearLightmaps();
-
-    HugeFree( LightData );
-
-    DestroyActors();
-
-    DestroyPortalTree();
-}
-
-void ALevel::AddStaticMesh( AMeshComponent * InStaticMesh ) {
-    //INTRUSIVE_ADD_UNIQUE( InStaticMesh, NextStaticMesh, PrevStaticMesh, StaticMeshList, StaticMeshListTail );
-}
-
-void ALevel::RemoveStaticMesh( AMeshComponent * InStaticMesh ) {
-    //INTRUSIVE_REMOVE( InStaticMesh, NextStaticMesh, PrevStaticMesh, StaticMeshList, StaticMeshListTail );
-}
-
-void ALevel::SetLightData( const byte * _Data, int _Size ) {
-    HugeFree( LightData );
-    LightData = (byte *)HugeAlloc( _Size );
-    memcpy( LightData, _Data, _Size );
-}
-
-void ALevel::ClearLightmaps() {
-    for ( ATexture * lightmap : Lightmaps ) {
-        lightmap->RemoveRef();
+class APrimitiveLinkPool {
+public:
+    APrimitiveLinkPool() {
+        int i;
+        memset( Pool, 0, sizeof( Pool ) );
+        FreeLinks = Pool;
+        for ( i = 0 ; i < MAX_PRIMITIVE_LINKS - 1 ; i++ ) {
+            FreeLinks[i].Next = &FreeLinks[ i + 1 ];
+        }
+        FreeLinks[i].Next = NULL;
+        UsedLinks = 0;
     }
-    Lightmaps.Free();
+
+    SPrimitiveLink * AllocateLink() {
+    #if 0
+        return new VSDPrimitiveLink;
+    #else
+        SPrimitiveLink * link = FreeLinks;
+        if ( !link ) {
+            GLogger.Printf( "APrimitiveLinkPool::AllocateLink: no free links (used %d from %d)\n", UsedLinks, MAX_PRIMITIVE_LINKS );
+            return nullptr;
+        }
+        FreeLinks = FreeLinks->Next;
+        ++UsedLinks;
+        //GLogger.Printf( "AllocateLink: %d\n", UsedLinks );
+        return link;
+    #endif
+    }
+
+    void FreeLink( SPrimitiveLink * Link ) {
+    #if 0
+        delete Link;
+    #else
+        Link->Next = FreeLinks;
+        FreeLinks = Link;
+        --UsedLinks;
+    #endif
+    }
+
+private:
+    SPrimitiveLink Pool[MAX_PRIMITIVE_LINKS];
+    SPrimitiveLink * FreeLinks;
+    int UsedLinks;
+};
+
+class ANGIE_API AWorldspawn : public AActor {
+    AN_ACTOR( AWorldspawn, AActor )
+
+public:
+
+protected:
+    AWorldspawn();
+
+    void PreInitializeComponents() override;
+    void PostInitializeComponents() override;
+    void BeginPlay() override;
+    void Tick( float _TimeStep ) override;
+
+    //void DrawDebug( ADebugRenderer * InRenderer ) override;
+
+private:
+    void UpdateAmbientVolume( float _TimeStep );
+
+    TStdVector< TRef< AAudioControlCallback > > AmbientControl;
+    ASceneComponent * AudioInstigator;
+    APhysicalBody * WorldCollision;
+};
+
+static APrimitiveLinkPool GPrimitiveLinkPool;
+
+static SPrimitiveLink ** LastLink;
+static SVisArea * TopArea;
+
+static void AddPrimitiveToArea( SVisArea * Area, SPrimitiveDef * Primitive ) {
+    if ( !TopArea ) {
+        TopArea = Area;
+    }
+
+    SPrimitiveLink * link = GPrimitiveLinkPool.AllocateLink();
+    if ( !link ) {
+        return;
+    }
+
+    link->Primitive = Primitive;
+
+    // Create the primitive link
+    *LastLink = link;
+    LastLink = &link->Next;
+    link->Next = nullptr;
+
+    // Create the leaf links
+    link->Area = Area;
+    link->NextArea = Area->Links;
+    Area->Links = link;
 }
 
 void ALevel::DestroyActors() {
@@ -102,304 +152,460 @@ void ALevel::DestroyActors() {
 }
 
 void ALevel::OnAddLevelToWorld() {
-    RemoveDrawables();
-    AddDrawables();
 }
 
 void ALevel::OnRemoveLevelFromWorld() {
-    RemoveDrawables();
 }
 
-ALevelArea * ALevel::AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
+int ALevel::AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
 
-    ALevelArea * area = NewObject< ALevelArea >();
-    area->AddRef();
-    area->Position = _Position;
-    area->Extents = _Extents;
+    SVisArea * area = &Areas.Append();
+
+    memset( area, 0, sizeof( *area ) );
     area->ReferencePoint = _ReferencePoint;
-    area->ParentLevel = this;
+    //area->ParentLevel = this;
+    Float3 halfExtents = _Extents * 0.5f;
+    area->Bounds.Mins = _Position - halfExtents;
+    area->Bounds.Maxs = _Position + halfExtents;
 
-    Float3 halfExtents = area->Extents * 0.5f;
-    for ( int i = 0 ; i < 3 ; i++ ) {
-        area->Bounds.Mins[i] = area->Position[i] - halfExtents[i];
-        area->Bounds.Maxs[i] = area->Position[i] + halfExtents[i];
-    }
-
-    //area->Tree = NewObject< AOctree >();
-    //area->Tree->Owner = area;
-    //area->Tree->Build();
-
-    Areas.Append( area );
-
-    return area;
+    return Areas.Size() - 1;
 }
 
-ALevelPortal * ALevel::AddPortal( Float3 const * _HullPoints, int _NumHullPoints, ALevelArea * _Area1, ALevelArea * _Area2 ) {
+int ALevel::AddPortal( Float3 const * _HullPoints, int _NumHullPoints, int _Area1, int _Area2 ) {
     if ( _Area1 == _Area2 ) {
-        return nullptr;
+        return -1;
     }
 
-    ALevelPortal * portal = NewObject< ALevelPortal >();
-    portal->AddRef();
+    SVisPortal * portal = &Portals.Append();
     portal->Hull = AConvexHull::CreateFromPoints( _HullPoints, _NumHullPoints );
     portal->Plane = portal->Hull->CalcPlane();
-    portal->Area1 = _Area1 ? _Area1 : OutdoorArea;
-    portal->Area2 = _Area2 ? _Area2 : OutdoorArea;
-    portal->ParentLevel = this;
-    Portals.Append( portal );
-    return portal;
+    portal->Area[0] = _Area1 >= 0 ? &Areas[_Area1] : &OutdoorArea;
+    portal->Area[1] = _Area2 >= 0 ? &Areas[_Area2] : &OutdoorArea;
+    //portal->ParentLevel = this;
+
+    return Portals.Size() - 1;
 }
 
-void ALevel::DestroyPortalTree() {
+void ALevel::Purge() {
+    DestroyActors();
+
+    if ( OwnerWorld )
+    {
+        OwnerWorld->RemovePrimitives();
+    }
+
+    if ( Worldspawn )
+    {
+        Worldspawn->Destroy();
+        Worldspawn = nullptr;
+    }
+
     PurgePortals();
 
-    for ( ALevelArea * area : Areas ) {
-        area->RemoveRef();
+    Areas.Free();
+
+    for ( SVisPortal & portal : Portals ) {
+        AConvexHull::Destroy( portal.Hull );
     }
 
-    Areas.Clear();
+    Portals.Free();
 
-    for ( ALevelPortal * portal : Portals ) {
-        portal->RemoveRef();
-    }
+    Nodes.Free();
 
-    Portals.Clear();
+    Leafs.Free();
+
+    SplitPlanes.Free();
 
     IndoorBounds.Clear();
-}
 
-void ALevel::AddDrawables() {
-    AWorld * pWorld = GetOwnerWorld();
-    ARenderWorld & RenderWorld = pWorld->GetRenderWorld();
+    PVSClustersCount = 0;
 
-    for ( ADrawable * drawable = RenderWorld.GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
-        AddDrawable( drawable );
-    }
-}
+    HugeFree( Visdata );
+    Visdata = nullptr;
 
-void ALevel::RemoveDrawables() {
-    for ( ALevelArea * area : Areas ) {
-        while ( !area->Drawables.IsEmpty() ) {
-            RemoveDrawable( area->Drawables[0] );
-        }
-    }
+    HugeFree( LightData );
+    LightData = nullptr;
 
-    while ( !OutdoorArea->Drawables.IsEmpty() ) {
-        RemoveDrawable( OutdoorArea->Drawables[0] );
+    AreaSurfaces.Free();
+
+    Model.Reset();
+
+    AudioAreas.Free();
+    AudioClips.Free();
+
+    Lightmaps.Free();
+
+    if ( OwnerWorld )
+    {
+        OwnerWorld->MarkPrimitives();
     }
 }
 
 void ALevel::PurgePortals() {
-    RemoveDrawables();
+    //RemovePrimitives();
 
-    for ( SAreaPortal & areaPortal : AreaPortals ) {
+    for ( SPortalLink & areaPortal : AreaPortals ) {
         AConvexHull::Destroy( areaPortal.Hull );
     }
 
-    AreaPortals.Clear();
+    AreaPortals.Free();
 }
 
-void ALevel::BuildPortals() {
+void ALevel::Initialize() {
 
     PurgePortals();
 
     IndoorBounds.Clear();
 
-//    Float3 halfExtents;
-    for ( ALevelArea * area : Areas ) {
-//        // Update area bounds
-//        halfExtents = area->Extents * 0.5f;
-//        for ( int i = 0 ; i < 3 ; i++ ) {
-//            area->Bounds.Mins[i] = area->Position[i] - halfExtents[i];
-//            area->Bounds.Maxs[i] = area->Position[i] + halfExtents[i];
-//        }
-
-        IndoorBounds.AddAABB( area->Bounds );
+    for ( SVisArea & area : Areas ) {
+        IndoorBounds.AddAABB( area.Bounds );
 
         // Clear area portals
-        area->PortalList = NULL;
+        area.PortalList = NULL;
     }
 
     AreaPortals.ResizeInvalidate( Portals.Size() << 1 );
 
     int areaPortalId = 0;
 
-    for ( ALevelPortal * portal : Portals ) {
-        ALevelArea * a1 = portal->Area1;
-        ALevelArea * a2 = portal->Area2;
+    for ( SVisPortal & portal : Portals ) {
+        SVisArea * a1 = portal.Area[0];
+        SVisArea * a2 = portal.Area[1];
 
-        if ( a1 == OutdoorArea ) {
+        if ( a1 == &OutdoorArea ) {
             StdSwap( a1, a2 );
         }
 
         // Check area position relative to portal plane
-        EPlaneSide offset = portal->Plane.SideOffset( a1->ReferencePoint, 0.0f );
+        EPlaneSide offset = portal.Plane.SideOffset( a1->ReferencePoint, 0.0f );
 
         // If area position is on back side of plane, then reverse hull vertices and plane
         int id = offset == EPlaneSide::Back ? 1 : 0;
 
-        SAreaPortal * areaPortal;
+        SPortalLink * portalLink;
 
-        areaPortal = &AreaPortals[ areaPortalId++ ];
-        portal->Portals[id] = areaPortal;
-        areaPortal->ToArea = a2;
+        portalLink = &AreaPortals[ areaPortalId++ ];
+        portal.Portals[id] = portalLink;
+        portalLink->ToArea = a2;
         if ( id & 1 ) {
-            areaPortal->Hull = portal->Hull->Reversed();
-            areaPortal->Plane = -portal->Plane;
+            portalLink->Hull = portal.Hull->Reversed();
+            portalLink->Plane = -portal.Plane;
         } else {
-            areaPortal->Hull = portal->Hull->Duplicate();
-            areaPortal->Plane = portal->Plane;
+            portalLink->Hull = portal.Hull->Duplicate();
+            portalLink->Plane = portal.Plane;
         }
-        areaPortal->Next = a1->PortalList;
-        areaPortal->Owner = portal;
-        a1->PortalList = areaPortal;
+        portalLink->Next = a1->PortalList;
+        portalLink->Portal = &portal;
+        a1->PortalList = portalLink;
 
         id = ( id + 1 ) & 1;
 
-        areaPortal = &AreaPortals[ areaPortalId++ ];
-        portal->Portals[id] = areaPortal;
-        areaPortal->ToArea = a1;
+        portalLink = &AreaPortals[ areaPortalId++ ];
+        portal.Portals[id] = portalLink;
+        portalLink->ToArea = a1;
         if ( id & 1 ) {
-            areaPortal->Hull = portal->Hull->Reversed();
-            areaPortal->Plane = -portal->Plane;
+            portalLink->Hull = portal.Hull->Reversed();
+            portalLink->Plane = -portal.Plane;
         } else {
-            areaPortal->Hull = portal->Hull->Duplicate();
-            areaPortal->Plane = portal->Plane;
+            portalLink->Hull = portal.Hull->Duplicate();
+            portalLink->Plane = portal.Plane;
         }
-        areaPortal->Next = a2->PortalList;
-        areaPortal->Owner = portal;
-        a2->PortalList = areaPortal;
+        portalLink->Next = a2->PortalList;
+        portalLink->Portal = &portal;
+        a2->PortalList = portalLink;
     }
 
-    AddDrawables();
-}
+    //AddPrimitives();
 
-void ALevel::AddDrawableToArea( int _AreaNum, ADrawable * _Drawable ) {
-    ALevelArea * area = _AreaNum >= 0 ? Areas[_AreaNum] : OutdoorArea;
-
-    area->Drawables.Append( _Drawable );
-    SAreaLink & areaLink = _Drawable->InArea.Append();
-    areaLink.AreaNum = _AreaNum;
-    areaLink.Index = area->Drawables.Size() - 1;
-    areaLink.Level = this;
-}
-
-void ALevel::AddDrawable( ADrawable * _Drawable ) {
-    BvAxisAlignedBox const & bounds = _Drawable->GetWorldBounds();
-    int numAreas = Areas.Size();
-    ALevelArea * area;
-
-    if ( _Drawable->IsOutdoor() ) {
-        // add to outdoor
-        AddDrawableToArea( -1, _Drawable );
-        return;
+    if ( Worldspawn )
+    {
+        Worldspawn->Destroy();
     }
 
-    bool bHaveIntersection = false;
-    if ( BvBoxOverlapBox( IndoorBounds, bounds ) ) {
-        // TODO: optimize it!
-        for ( int i = 0 ; i < numAreas ; i++ ) {
-            area = Areas[i];
+    Worldspawn = OwnerWorld->SpawnActor< AWorldspawn >( this );
 
-            if ( BvBoxOverlapBox( area->Bounds, bounds ) ) {
-                AddDrawableToArea( i, _Drawable );
+    ViewMark = 0;
+    ViewCluster = -1;
+}
 
-                bHaveIntersection = true;
-            }
+ALevel::ALevel() {
+    Visdata = nullptr;
+
+    ViewCluster = -1;
+
+    Float3 extents( CONVEX_HULL_MAX_BOUNDS * 2 );
+
+    memset( &OutdoorArea, 0, sizeof( OutdoorArea ) );
+
+    //OutdoorArea.ParentLevel = this;
+    OutdoorArea.Bounds.Mins = -extents * 0.5f;
+    OutdoorArea.Bounds.Maxs = extents * 0.5f;
+
+    IndoorBounds.Clear();
+}
+
+ALevel::~ALevel() {
+    Purge();
+
+    DestroyActors();
+}
+
+int ALevel::FindLeaf( Float3 const & _Position ) {
+    SBinarySpaceNode * node;
+    float d;
+    SBinarySpacePlane * plane;
+    int nodeIndex;
+
+    if ( !Nodes.Size() ) {
+        return -1;
+    }
+
+    node = Nodes.ToPtr();
+    while ( 1 ) {
+        plane = node->Plane;
+        if ( plane->Type < 3 ) {
+            //d = _Position[ plane->Type ] * plane->Normal[ plane->Type ] + plane->D;
+
+            d = _Position[ plane->Type ] + plane->D;
+        } else {
+            d = Math::Dot( _Position, plane->Normal ) + plane->D;
+        }
+
+        nodeIndex = node->ChildrenIdx[ ( d <= 0 ) ];
+        if ( nodeIndex == 0 ) {
+            // solid
+            return -1;
+        }
+
+        if ( nodeIndex < 0 ) {
+            return -1 - nodeIndex;
+        }
+
+        node = Nodes.ToPtr() + nodeIndex;
+    }
+    return -1;
+}
+
+SVisArea * ALevel::FindArea( Float3 const & _Position ) {
+    if ( !Nodes.IsEmpty() ) {
+        int leaf = FindLeaf( _Position );
+        if ( leaf < 0 ) {
+            // solid
+            return &OutdoorArea;
+        }
+        return Leafs[leaf].Area;
+    }
+
+    // Bruteforce
+    for ( int i = 0 ; i < Areas.Size() ; i++ ) {
+        if (    _Position.X >= Areas[i].Bounds.Mins.X
+             && _Position.Y >= Areas[i].Bounds.Mins.Y
+             && _Position.Z >= Areas[i].Bounds.Mins.Z
+             && _Position.X <  Areas[i].Bounds.Maxs.X
+             && _Position.Y <  Areas[i].Bounds.Maxs.Y
+             && _Position.Z <  Areas[i].Bounds.Maxs.Z ) {
+            return &Areas[i];
         }
     }
 
-    if ( !bHaveIntersection ) {
-        AddDrawableToArea( -1, _Drawable );
-    }
+    return &OutdoorArea;
 }
 
-void ALevel::RemoveDrawable( ADrawable * _Drawable ) {
-    ALevelArea * area;
+#define MAX_MAP_LEAFS 0x20000
 
-    // Remove renderables from any areas
-    for ( int i = 0 ; i < _Drawable->InArea.Size() ; ) {
-        SAreaLink & InArea = _Drawable->InArea[ i ];
+struct SEmptyVisData1 {
+    SEmptyVisData1();
 
-//        AN_ASSERT( InArea.Level == this );
-        if ( InArea.Level != this ) {
-            i++;
+    byte Data[ MAX_MAP_LEAFS / 8 ];
+};
+
+SEmptyVisData1::SEmptyVisData1() {
+    memset( Data, 0xff, sizeof( Data ) );
+}
+
+static SEmptyVisData1 EmptyVis;
+
+byte const * ALevel::DecompressVisdata( byte const * _Data ) {
+    static byte Decompressed[ MAX_MAP_LEAFS / 8 ];
+    int c;
+    byte *out;
+    int row;
+
+    row = ( Leafs.Size() + 7 ) >> 3;
+    out = Decompressed;
+
+    if ( !_Data ) { // no vis info, so make all visible
+        while ( row ) {
+            *out++ = 0xff;
+            row--;
+        }
+        return Decompressed;
+    }
+
+    do {
+        if ( *_Data ) {
+            *out++ = *_Data++;
             continue;
         }
 
-        AN_ASSERT( InArea.AreaNum < InArea.Level->Areas.Size() );
-        area = InArea.AreaNum >= 0 ? InArea.Level->Areas[ InArea.AreaNum ] : OutdoorArea;
+        c = _Data[ 1 ];
+        _Data += 2;
+        while ( c ) {
+            *out++ = 0;
+            c--;
+        }
+    } while ( out - Decompressed < row );
 
-        AN_ASSERT( area->Drawables[ InArea.Index ] == _Drawable );
+    return Decompressed;
+}
 
-        // Swap with last array element
-        area->Drawables.RemoveSwap( InArea.Index );
+byte const * ALevel::LeafPVS( SBinarySpaceLeaf const * _Leaf ) {
+    if ( bCompressedVisData ) {
+        if (_Leaf == Leafs.ToPtr() ) {
+            return EmptyVis.Data;
+        }
+        return DecompressVisdata( _Leaf->Visdata );
+    } else {
+        if ( !_Leaf->Visdata ) {
+            return EmptyVis.Data;
+        }
+        return _Leaf->Visdata;
+    }
+}
 
-        // Update swapped movable index
-        if ( InArea.Index < area->Drawables.Size() ) {
-            ADrawable * drawable = area->Drawables[ InArea.Index ];
-            for ( int j = 0 ; j < drawable->InArea.Size() ; j++ ) {
-                if ( drawable->InArea[ j ].Level == this && drawable->InArea[ j ].AreaNum == InArea.AreaNum ) {
-                    drawable->InArea[ j ].Index = InArea.Index;
+int ALevel::MarkLeafs( int _ViewLeaf ) {
+    if ( _ViewLeaf < 0 ) {
+        return ViewMark;
+    }
 
-                    AN_ASSERT( area->Drawables[ drawable->InArea[ j ].Index ] == drawable );
-                    break;
-                }
-            }
+    SBinarySpaceLeaf * viewLeaf = &Leafs[ _ViewLeaf ];
+
+    if ( ViewCluster == viewLeaf->Cluster ) {
+        return ViewMark;
+    }
+
+    ViewMark++;
+    ViewCluster = viewLeaf->Cluster;
+
+    byte const * vis = LeafPVS( viewLeaf );
+
+    int numLeafs = Leafs.Size();
+
+    int cluster;
+    for ( int i = 0 ; i < numLeafs ; i++ ) {
+        SBinarySpaceLeaf * Leaf = &Leafs[ i ];
+
+        cluster = Leaf->Cluster;
+        if ( cluster < 0 || cluster >= PVSClustersCount ) {
+            continue;
         }
 
-        _Drawable->InArea.RemoveSwap(i);
+        if ( !( vis[ cluster >> 3 ] & ( 1 << ( cluster & 7 ) ) ) ) {
+            continue;
+        }
+
+        // TODO: check for door connection here
+
+        SBinarySpaceNode * parent = ( SBinarySpaceNode* )Leaf;
+        do {
+            if ( parent->ViewMark == ViewMark ) {
+                break;
+            }
+            parent->ViewMark = ViewMark;
+            parent = parent->Parent;
+        } while ( parent );
     }
+
+    return ViewMark;
+}
+
+void ALevel::Tick( float _TimeStep ) {
+
 }
 
 void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
 
+    //AConvexHull * hull = AConvexHull::CreateForPlane( PlaneF(Float3(0,0,1), Float3(0.0f) ), 100.0f );
+
+    //InRenderer->SetDepthTest( false );
+    //InRenderer->SetColor( AColor4( 0, 1, 1, 0.5f ) );
+    //InRenderer->DrawConvexPoly( hull->Points, hull->NumPoints, false );
+
+    //Float3 normal = hull->CalcNormal();
+
+    //InRenderer->SetColor( AColor4::White() );
+    //InRenderer->DrawLine( Float3(0.0f), Float3( 0, 0, 1 )*100.0f );
+
+    //AConvexHull::Destroy( hull );
+
+
+
     if ( RVDrawLevelAreaBounds ) {
-
-#if 0
-        InRenderer->SetDepthTest( true );
-        int i = 0;
-        for ( ALevelArea * area : Areas ) {
-            //InRenderer->DrawAABB( area->Bounds );
-
-            i++;
-
-            float f = (float)( (i*12345) & 255 ) / 255.0f;
-
-            InRenderer->SetColor( AColor4( f,f,f,1 ) );
-
-            InRenderer->DrawBoxFilled( area->Bounds.Center(), area->Bounds.HalfSize(), true );
-        }
-#endif
         InRenderer->SetDepthTest( false );
         InRenderer->SetColor( AColor4( 0,1,0,0.5f) );
-        for ( ALevelArea * area : Areas ) {
-            InRenderer->DrawAABB( area->Bounds );
+        for ( SVisArea & area : Areas ) {
+            InRenderer->DrawAABB( area.Bounds );
         }
-
     }
 
     if ( RVDrawLevelPortals ) {
 //        InRenderer->SetDepthTest( false );
 //        InRenderer->SetColor(1,0,0,1);
-//        for ( ALevelPortal * portal : Portals ) {
-//            InRenderer->DrawLine( portal->Hull->Points, portal->Hull->NumPoints, true );
+//        for ( ALevelPortal & portal : Portals ) {
+//            InRenderer->DrawLine( portal.Hull->Points, portal.Hull->NumPoints, true );
 //        }
 
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 0,0,1,0.4f ) );
+        //InRenderer->SetColor( AColor4( 0,0,1,0.4f ) );
 
-        if ( LastVisitedArea >= 0 && LastVisitedArea < Areas.Size() ) {
-            ALevelArea * area = Areas[ LastVisitedArea ];
-            SAreaPortal * portals = area->PortalList;
+        /*if ( LastVisitedArea >= 0 && LastVisitedArea < Areas.Size() ) {
+            VSDArea * area = &Areas[ LastVisitedArea ];
+            VSDPortalLink * portals = area->PortalList;
 
-            for ( SAreaPortal * p = portals; p; p = p->Next ) {
+            for ( VSDPortalLink * p = portals; p; p = p->Next ) {
                 InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, true );
             }
-        } else {
-            for ( ALevelPortal * portal : Portals ) {
-                InRenderer->DrawConvexPoly( portal->Hull->Points, portal->Hull->NumPoints, true );
+        } else */{
+
+#if 0
+            for ( SVisPortal & portal : Portals ) {
+
+                if ( portal.VisMark == InRenderer->GetVisPass() ) {
+                    InRenderer->SetColor( AColor4( 1,0,0,0.4f ) );
+                } else {
+                    InRenderer->SetColor( AColor4( 0,1,0,0.4f ) );
+                }
+                InRenderer->DrawConvexPoly( portal.Hull->Points, portal.Hull->NumPoints, true );
             }
+#else
+            SPortalLink * portals = OutdoorArea.PortalList;
+
+            for ( SPortalLink * p = portals; p; p = p->Next ) {
+
+                if ( p->Portal->VisMark == InRenderer->GetVisPass() ) {
+                    InRenderer->SetColor( AColor4( 1, 0, 0, 0.4f ) );
+                } else {
+                    InRenderer->SetColor( AColor4( 0, 1, 0, 0.4f ) );
+                }
+
+                InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, false );
+            }
+
+            for ( SVisArea & area : Areas ) {
+                portals = area.PortalList;
+
+                for ( SPortalLink * p = portals; p; p = p->Next ) {
+
+                    if ( p->Portal->VisMark == InRenderer->GetVisPass() ) {
+                        InRenderer->SetColor( AColor4( 1, 0, 0, 0.4f ) );
+                    } else {
+                        InRenderer->SetColor( AColor4( 0, 1, 0, 0.4f ) );
+                    }
+
+                    InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, false );
+                }
+            }
+#endif
         }
     }
 
@@ -409,164 +615,351 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 }
 
-int ALevel::FindArea( Float3 const & _Position ) {
-    // TODO: ... binary tree?
+void ALevel::AddBoxRecursive( SPrimitiveDef * InPrimitive ) {
+    SBinarySpaceNode * node = Nodes.ToPtr();
 
-    LastVisitedArea = -1;
+    // TODO: precalc signbits
+    int sideMask = BvBoxOverlapPlaneSideMask( InPrimitive->Box, *node->Plane, node->Plane->Type, node->Plane->SignBits() );
 
-    if ( Areas.Size() == 0 ) {
-        return -1;
+    if ( sideMask & 1 ) {
+        AddBoxRecursive( node->ChildrenIdx[0], InPrimitive );
     }
 
-    for ( int i = 0 ; i < Areas.Size() ; i++ ) {
-        if (    _Position.X >= Areas[i]->Bounds.Mins.X
-             && _Position.Y >= Areas[i]->Bounds.Mins.Y
-             && _Position.Z >= Areas[i]->Bounds.Mins.Z
-             && _Position.X <  Areas[i]->Bounds.Maxs.X
-             && _Position.Y <  Areas[i]->Bounds.Maxs.Y
-             && _Position.Z <  Areas[i]->Bounds.Maxs.Z ) {
-            LastVisitedArea = i;
-            return i;
-        }
+    if ( sideMask & 2 ) {
+        AddBoxRecursive( node->ChildrenIdx[1], InPrimitive );
     }
-
-    return -1;
 }
 
-void ALevel::Tick( float _TimeStep ) {
-    //OutdoorArea->Tree->Update();
-    //for ( ALevelArea * area : Areas ) {
-    //    area->Tree->Update();
-    //}
-}
-
-#ifdef FUTURE
-void AddLight( FLightComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
-    if ( component->RenderMark == VisMarker ) {
+void ALevel::AddBoxRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive ) {
+    if ( _NodeIndex == 0 ) {
+        // Solid
         return;
     }
 
-    if ( ( component->RenderingGroup & RP->RenderingLayers ) == 0 ) {
-        component->RenderMark = VisMarker;
+    if ( _NodeIndex < 0 ) {
+        // leaf
+        AddPrimitiveToArea( Leafs[-1 - _NodeIndex].Area, InPrimitive );
         return;
     }
 
-    if ( component->VSDPasses & VSD_PASS_BOUNDS ) {
+    SBinarySpaceNode * node = &Nodes[ _NodeIndex ];
 
-        // TODO: use SSE cull
+    // TODO: precalc signbits
+    int sideMask = BvBoxOverlapPlaneSideMask( InPrimitive->Box, *node->Plane, node->Plane->Type, node->Plane->SignBits() );
 
-        switch ( Light->GetType() ) {
-        case FLightComponent::T_Point:
-        {
-            BvSphereSSE const & bounds = Light->GetSphereWorldBounds();
-            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
-                Dbg_CulledByLightBounds++;
-                return;
-            }
-            break;
-        }
-        case FLightComponent::T_Spot:
-        {
-            BvSphereSSE const & bounds = Light->GetSphereWorldBounds();
-            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
-                Dbg_CulledByLightBounds++;
-                return;
-            }
-            break;
-        }
-        case FLightComponent::T_Direction:
-        {
-            break;
-        }
-        }
+    if ( sideMask & 1 ) {
+        AddBoxRecursive( node->ChildrenIdx[0], InPrimitive );
     }
 
-    component->RenderMark = VisMarker;
-
-    if ( component->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
-
-        bool bVisible;
-        component->OnCustomVisibleStep( Camera, bVisible );
-
-        if ( !bVisible ) {
-            return;
-        }
+    if ( sideMask & 2 ) {
+        AddBoxRecursive( node->ChildrenIdx[1], InPrimitive );
     }
-
-    if ( component->VSDPasses & VSD_PASS_VIS_MARKER ) {
-        bool bVisible = component->VisMarker == VisMarker;
-        if ( !bVisible ) {
-            return;
-        }
-    }
-
-    // TODO: add to render view
-
-    RV->LightCount++;
 }
 
-void AddEnvCapture( FEnvCaptureComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
-    if ( component->RenderMark == VisMarker ) {
-        return;
+void ALevel::AddSphereRecursive( SPrimitiveDef * InPrimitive ) {
+    SBinarySpaceNode * node = Nodes.ToPtr();
+
+    float d;
+
+    if ( node->Plane->Type < 3 ) {
+        //d = InPrimitive->Sphere.Center[ node->Plane->Type ] * node->Plane->Normal[ node->Plane->Type ] + node->Plane->D;
+        d = InPrimitive->Sphere.Center[ node->Plane->Type ] + node->Plane->D;
+    } else {
+        d = Math::Dot( InPrimitive->Sphere.Center, node->Plane->Normal ) + node->Plane->D;
     }
 
-    if ( ( component->RenderingGroup & RP->RenderingLayers ) == 0 ) {
-        component->RenderMark = VisMarker;
-        return;
+    if ( d > -InPrimitive->Sphere.Radius ) {
+        AddSphereRecursive( node->ChildrenIdx[0], InPrimitive );
     }
 
-    if ( component->VSDPasses & VSD_PASS_BOUNDS ) {
-
-        // TODO: use SSE cull
-
-        switch ( component->GetShapeType() ) {
-        case FEnvCaptureComponent::SHAPE_BOX:
-        {
-            // Check OBB ?
-            BvAxisAlignedBox const & bounds = component->GetAABBWorldBounds();
-            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
-                Dbg_CulledByEnvCaptureBounds++;
-                return;
-            }
-            break;
-        }
-        case FEnvCaptureComponent::SHAPE_SPHERE:
-        {
-            BvSphereSSE const & bounds = component->GetSphereWorldBounds();
-            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
-                Dbg_CulledByEnvCaptureBounds++;
-                return;
-            }
-            break;
-        }
-        case FEnvCaptureComponent::SHAPE_GLOBAL:
-        {
-            break;
-        }
-        }
+    if ( d < InPrimitive->Sphere.Radius ) {
+        AddSphereRecursive( node->ChildrenIdx[1], InPrimitive );
     }
-
-    component->RenderMark = VisMarker;
-
-    if ( component->VSDPasses & VSD_PASS_CUSTOM_VISIBLE_STEP ) {
-
-        bool bVisible;
-        component->OnCustomVisibleStep( Camera, bVisible );
-
-        if ( !bVisible ) {
-            return;
-        }
-    }
-
-    if ( component->VSDPasses & VSD_PASS_VIS_MARKER ) {
-        bool bVisible = component->VisMarker == VisMarker;
-        if ( !bVisible ) {
-            return;
-        }
-    }
-
-    // TODO: add to render view
-
-    RV->EnvCaptureCount++;
 }
-#endif
+
+void ALevel::AddSphereRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive ) {
+    if ( _NodeIndex == 0 ) {
+        // Solid
+        return;
+    }
+
+    if ( _NodeIndex < 0 ) {
+        // leaf
+        AddPrimitiveToArea( Leafs[ -1 - _NodeIndex ].Area, InPrimitive );
+        return;
+    }
+
+    SBinarySpaceNode * node = &Nodes[ _NodeIndex ];
+
+    float d;
+
+    if ( node->Plane->Type < 3 ) {
+        //d = InPrimitive->Sphere.Center[ node->Plane->Type ] * node->Plane->Normal[ node->Plane->Type ] + node->Plane->D;
+        d = InPrimitive->Sphere.Center[ node->Plane->Type ] + node->Plane->D;
+    } else {
+        d = Math::Dot( InPrimitive->Sphere.Center, node->Plane->Normal ) + node->Plane->D;
+    }
+
+    if ( d > -InPrimitive->Sphere.Radius ) {
+        AddSphereRecursive( node->ChildrenIdx[0], InPrimitive );
+    }
+
+    if ( d < InPrimitive->Sphere.Radius ) {
+        AddSphereRecursive( node->ChildrenIdx[1], InPrimitive );
+    }
+}
+
+void ALevel::AddPrimitive( AWorld * InWorld, SPrimitiveDef * InPrimitive ) {
+
+    LastLink = &InPrimitive->Links;
+    TopArea = nullptr;
+
+    if ( !InPrimitive->bPendingRemove )
+    {
+        if ( InPrimitive->bMovable )
+        {
+            // Add movable primitives to all the levels
+            for ( ALevel * level : InWorld->GetArrayOfLevels() )
+            {
+                level->AddPrimitiveToLevel( InPrimitive );
+            }
+        }
+        else
+        {
+            ALevel * level = InPrimitive->Owner->GetLevel();
+
+            level->AddPrimitiveToLevel( InPrimitive );
+        }
+    }
+
+    InPrimitive->TopArea = TopArea;
+}
+
+void ALevel::AddPrimitiveToLevel( SPrimitiveDef * InPrimitive ) {
+
+    bool bHaveBinaryTree = Nodes.Size() > 0;
+
+    if ( bHaveBinaryTree ) {
+        switch ( InPrimitive->Type ) {
+            case VSD_PRIMITIVE_BOX:
+                AddBoxRecursive( InPrimitive );
+                break;
+            case VSD_PRIMITIVE_SPHERE:
+                AddSphereRecursive( InPrimitive );
+                break;
+        }
+    } else {
+
+        // No binary tree. Use bruteforce.
+
+        // TODO: remove this path
+
+        if ( InPrimitive->bIsOutdoor ) {
+            // add to outdoor
+            AddPrimitiveToArea( &OutdoorArea, InPrimitive );
+        }
+        else {
+            int numAreas = Areas.Size();
+            SVisArea * area;
+
+            bool bInsideIndoorArea = false;
+
+            switch( InPrimitive->Type ) {
+                case VSD_PRIMITIVE_BOX:
+                {
+                    if ( BvBoxOverlapBox( IndoorBounds, InPrimitive->Box ) ) {
+                        for ( int i = 0 ; i < numAreas ; i++ ) {
+                            area = &Areas[i];
+
+                            if ( BvBoxOverlapBox( area->Bounds, InPrimitive->Box ) ) {
+                                AddPrimitiveToArea( area, InPrimitive );
+
+                                bInsideIndoorArea = true;
+                            }
+                        }
+                    }
+                    break;
+                }
+
+                case VSD_PRIMITIVE_SPHERE:
+                {
+                    if ( BvBoxOverlapSphere( IndoorBounds, InPrimitive->Sphere ) ) {
+                        for ( int i = 0 ; i < numAreas ; i++ ) {
+                            area = &Areas[i];
+
+                            if ( BvBoxOverlapSphere( area->Bounds, InPrimitive->Sphere ) ) {
+                                AddPrimitiveToArea( area, InPrimitive );
+
+                                bInsideIndoorArea = true;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+
+            if ( !bInsideIndoorArea ) {
+                AddPrimitiveToArea( &OutdoorArea, InPrimitive );
+            }
+        }
+    }
+}
+
+void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
+    SPrimitiveLink * link = InPrimitive->Links;
+
+    while ( link ) {
+        SPrimitiveLink ** prev = &link->Area->Links;
+        while ( 1 ) {
+            SPrimitiveLink * walk = *prev;
+
+            if ( !walk ) {
+                break;
+            }
+
+            if ( walk == link ) {
+                // remove this link
+                *prev = link->NextArea;
+                break;
+            }
+
+            prev = &walk->NextArea;
+        }
+
+        SPrimitiveLink * free = link;
+        link = link->Next;
+
+        GPrimitiveLinkPool.FreeLink( free );
+    }
+
+    InPrimitive->Links = nullptr;
+}
+
+
+
+
+
+
+AN_CLASS_META( AWorldspawn )
+
+AWorldspawn::AWorldspawn() {
+    AudioInstigator = CreateComponent< ASceneComponent >( "AudioInstigator" );
+
+    WorldCollision = CreateComponent< APhysicalBody >( "WorldCollision" );
+    WorldCollision->SetPhysicsBehavior( PB_STATIC );
+    WorldCollision->SetCollisionGroup( CM_WORLD_STATIC );
+    WorldCollision->SetCollisionMask( CM_ALL );
+    WorldCollision->SetAINavigationBehavior( AI_NAVIGATION_BEHAVIOR_STATIC );
+
+    bCanEverTick = true;
+}
+
+void AWorldspawn::PreInitializeComponents() {
+    Super::PreInitializeComponents();
+
+    ALevel * level = GetLevel();
+
+    // Setup world collision
+    if ( level->Model ) {
+        level->Model->BodyComposition.Duplicate( WorldCollision->BodyComposition );
+    }
+
+    // Create ambient control
+    int ambientCount = level->AudioClips.Size();
+    AmbientControl.Resize( ambientCount );
+    for ( int i = 0 ; i < ambientCount ; i++ ) {
+        AmbientControl[i] = NewObject< AAudioControlCallback >();
+        AmbientControl[i]->VolumeScale = 0;
+    }
+}
+
+void AWorldspawn::PostInitializeComponents() {
+    Super::PostInitializeComponents();
+}
+
+void AWorldspawn::BeginPlay() {
+    Super::BeginPlay();
+
+    ALevel * level = GetLevel();
+
+    SSoundSpawnParameters ambient;
+
+    ambient.Location = AUDIO_STAY_BACKGROUND;
+    ambient.Priority = AUDIO_CHANNEL_PRIORITY_AMBIENT;
+    ambient.bVirtualizeWhenSilent = true;
+    ambient.Volume = 0.1f;// 0.02f;
+    ambient.Pitch = 1;
+    ambient.bLooping = true;
+    ambient.bStopWhenInstigatorDead = true;
+
+    int ambientCount = level->AudioClips.Size();
+
+    for ( int i = 0 ; i < ambientCount ; i++ ) {
+        ambient.ControlCallback = AmbientControl[i];
+        GAudioSystem.PlaySound( level->AudioClips[i], AudioInstigator, &ambient );
+    }
+}
+
+void AWorldspawn::Tick( float _TimeStep ) {
+    Super::Tick( _TimeStep );
+
+    UpdateAmbientVolume( _TimeStep );
+}
+
+void AWorldspawn::UpdateAmbientVolume( float _TimeStep ) {
+    ALevel * level = GetLevel();
+
+    int leaf = level->FindLeaf( GAudioSystem.GetListenerPosition() );
+
+    if ( leaf < 0 ) {
+        int ambientCount = AmbientControl.Size();
+
+        for ( int i = 0 ; i < ambientCount ; i++ ) {
+            AmbientControl[i]->VolumeScale = 0.0f;
+        }
+        return;
+    }
+
+    int audioAreaNum = level->Leafs[leaf].AudioArea;
+
+    SAudioArea const * audioArea = &level->AudioAreas[audioAreaNum];
+
+    const float step = _TimeStep;
+    for ( int i = 0 ; i < MAX_AMBIENT_SOUNDS_IN_AREA ; i++ ) {
+        uint16_t soundIndex = audioArea->AmbientSound[i];
+        float volume = (float)audioArea->AmbientVolume[i]/255.0f;
+
+        AAudioControlCallback * control = AmbientControl[soundIndex];
+
+        if ( control->VolumeScale < volume ) {
+            control->VolumeScale += step;
+
+            if ( control->VolumeScale > volume ) {
+                control->VolumeScale = volume;
+            }
+        } else if ( control->VolumeScale > volume ) {
+            control->VolumeScale -= step;
+
+            if ( control->VolumeScale < 0 ) {
+                control->VolumeScale = 0;
+            }
+        }
+    }
+}
+
+AN_CLASS_META( ABrushModel )
+void ABrushModel::Purge() {
+    Surfaces.Free();
+
+    Vertices.Free();
+
+    LightmapVerts.Free();
+
+    VertexLight.Free();
+
+    Indices.Free();
+
+    SurfaceMaterials.Free();
+
+    BodyComposition.Clear();
+}

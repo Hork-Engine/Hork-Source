@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -265,7 +265,7 @@ void ARuntimeMain::RuntimeMainLoop() {
         // Free frame memory for the next frame
         FrameMemoryUsed = 0;
 
-        // Run game logic for next frame (GPU process current frame now)
+        // Run game logic for the next frame (GPU process current frame now)
         Engine->UpdateFrame();
 
         if ( RVSyncGPU ) {
@@ -280,7 +280,7 @@ void ARuntimeMain::RuntimeMainLoop() {
     FrameData.Instances.Free();
     FrameData.ShadowInstances.Free();
     FrameData.DirectionalLights.Free();
-    FrameData.Lights.Free();
+    //FrameData.Lights.Free();
     FrameData.DbgVertices.Free();
     FrameData.DbgIndices.Free();
     FrameData.DbgCmds.Free();

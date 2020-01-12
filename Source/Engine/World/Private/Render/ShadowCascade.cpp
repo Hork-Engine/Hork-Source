@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -28,13 +28,13 @@ SOFTWARE.
 
 */
 
-#include "ShadowCascade.h"
+#include <World/Public/Render/RenderFrontend.h>
 
 #include <Runtime/Public/RuntimeVariable.h>
 
 ARuntimeVariable RVShadowCascadeBits( _CTS( "ShadowCascadeBits" ), _CTS( "24" ) );    // Allowed 16, 24 or 32 bits
 
-constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
+static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
 static constexpr Float4x4 ShadowMapBias = Float4x4(
     0.5f, 0.0f, 0.0f, 0.0f,
@@ -47,28 +47,31 @@ static constexpr Float4x4 ShadowMapBias = Float4x4(
 //
 // Temporary variables
 //
-struct SCascadeSplit { // TODO: move inside LightComponent.h
+struct SCascadeSplit { // TODO: move to DirectionalLightComponent.h
     float Distance;     // Distance from view
 };
 static SCascadeSplit CascadeSplits[ MAX_CASCADE_SPLITS ];   // TODO: move inside ADirectionalLightComponent?
 static Float4 LightSpaceVerts[ MAX_CASCADE_SPLITS ][ 4 ];    // Split corners in light space
-static Float3 CascadeBounds[ MAX_SHADOW_CASCADES ][ 2 ];     // Cascade bounding boxes
+static BvAxisAlignedBox CascadeBounds[ MAX_SHADOW_CASCADES ];     // Cascade bounding boxes
 static float PerspHalfWidth;
 static float PerspHalfHeight;
 static Float3 RV, UV;           // scaled right and up vectors in world space
 
 static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, SCascadeSplit * _CascadeSplits );
 
-void CreateDirectionalLightCascades( SRenderFrame * Frame, SRenderView * View ) {
+void ARenderFrontend::CreateDirectionalLightCascades( SRenderFrame * Frame, SRenderView * View ) {
     View->NumShadowMapCascades = 0;
     View->NumCascadedShadowMaps = 0;
 
-    if ( View->bPerspective ) {
+    if ( View->bPerspective )
+    {
         // for perspective camera
 
         PerspHalfWidth = std::tan( View->ViewFovX * 0.5f );
         PerspHalfHeight = std::tan( View->ViewFovY * 0.5f );
-    } else {
+    }
+    else
+    {
         // for ortho camera
 
         float orthoWidth = View->ViewOrthoMaxs.X - View->ViewOrthoMins.X;
@@ -130,8 +133,8 @@ static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, 
     Float4x4 CascadeProjectionMatrix;
     Float4x4 LightViewMatrix;
 
-    assert( _LightDef.MaxShadowCascades > 0 );
-    assert( _LightDef.MaxShadowCascades <= MAX_SHADOW_CASCADES );    
+    AN_ASSERT( _LightDef.MaxShadowCascades > 0 );
+    AN_ASSERT( _LightDef.MaxShadowCascades <= MAX_SHADOW_CASCADES );
 
     const float LightDist = 400.0f;
 
@@ -168,7 +171,7 @@ static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, 
         LightSpaceVerts[ NumVisibleSplits ][ 3 ] = LightViewMatrix * Float4( CenterWorldspace + RV - UV, 1.0f );
     }
 
-    assert( NumVisibleSplits >= 2 );
+    AN_ASSERT( NumVisibleSplits >= 2 );
 
     NumVisibleCascades = NumVisibleSplits - 1;
 
@@ -180,8 +183,8 @@ static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, 
     const float Extrusion = 0.0f;
 
     for ( int CascadeIndex = 0 ; CascadeIndex < NumVisibleCascades ; CascadeIndex++ ) {
-        Float3 & Mins = CascadeBounds[ CascadeIndex ][ 0 ];
-        Float3 & Maxs = CascadeBounds[ CascadeIndex ][ 1 ];
+        Float3 & Mins = CascadeBounds[ CascadeIndex ].Mins;
+        Float3 & Maxs = CascadeBounds[ CascadeIndex ].Maxs;
 
         const Float4 * pVerts = &LightSpaceVerts[ CascadeIndex ][ 0 ];
 

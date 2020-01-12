@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -32,6 +32,8 @@ SOFTWARE.
 #include "MonitorManager.h"
 #include "RuntimeEvents.h"
 
+#include <Core/Public/CriticalError.h>
+
 #include <GLFW/glfw3.h>
 
 #define MAX_INPUT_EVENTS  200
@@ -48,10 +50,10 @@ static double MousePositionY = MOUSE_LOST;
 static unsigned short VidWidth;
 static unsigned short VidHeight;
 static unsigned short VidPhysicalMonitor;
-static byte VidRefreshRate;
+static uint8_t VidRefreshRate;
 static bool VidFullscreen;
 static char VidRenderBackend[32];
-static byte WinOpacity;
+static uint8_t WinOpacity;
 static bool WinDecorated;
 static bool WinAutoIconify;
 static bool WinFloating;

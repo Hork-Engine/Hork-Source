@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -100,7 +100,7 @@ private:
 
     TPodArray< AResource * > ResourceCache;
     THash<> ResourceHash;
-    std::vector< std::pair< std::string, std::string > > ResourceGUID;
+    TStdVectorDefault< std::pair< std::string, std::string > > ResourceGUID;
     THash<> ResourceGUIDHash;
     AString RootPath;
 };

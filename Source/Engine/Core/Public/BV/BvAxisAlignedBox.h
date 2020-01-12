@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -32,14 +32,7 @@ SOFTWARE.
 
 #include <Core/Public/Float.h>
 
-class AN_ALIGN_SSE BvAxisAlignedBoxSSE {
-public:
-    Float4 Mins;
-    Float4 Maxs;
-};
-
-class BvAxisAlignedBox {
-public:
+struct BvAxisAlignedBox {
     Float3 Mins;
     Float3 Maxs;
 
@@ -127,6 +120,16 @@ public:
     void Read( IStreamBase & _Stream ) {
         Mins.Read( _Stream );
         Maxs.Read( _Stream );
+    }
+};
+
+struct alignas(16) BvAxisAlignedBoxSSE {
+    Float4 Mins;
+    Float4 Maxs;
+
+    void operator=( BvAxisAlignedBox const & _BoundingBox ) {
+        *( Float3 * )&Mins.X = _BoundingBox.Mins;
+        *( Float3 * )&Maxs.X = _BoundingBox.Maxs;
     }
 };
 

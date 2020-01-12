@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -248,25 +248,6 @@ Function signature
 */
 #define AN_UNUSED(x)    ((void)x)
 
-/*
-
-Memory alignment
-
-*/
-#ifdef AN_COMPILER_MSVC
-#define AN_ALIGN16( _StructName, _StructBlock ) __declspec(align(16)) struct _StructName _StructBlock;
-#define AN_ALIGN16_ADJ( _MaxSize, _StructName, _StructBlock ) __declspec(align(16)) struct _StructName _StructBlock; static_assert( sizeof( _StructName ) <= _MaxSize, "Max size overflow" );
-#define AN_ALIGN16_TYPEDEF( _Type, _Name ) typedef __declspec(align(16)) _Type _Name
-#define AN_ALIGN( x ) __declspec(align(x))
-#else
-#define AN_ALIGN16( _StructName, _StructBlock ) struct _StructName _StructBlock __attribute__ ((aligned (16)));
-#define AN_ALIGN16_ADJ( _MaxSize, _StructName, _StructBlock ) struct _StructName _StructBlock __attribute__ ((aligned (16))); static_assert( sizeof( _StructName ) <= _MaxSize, "Max size overflow" );
-#define AN_ALIGN16_TYPEDEF( _Type, _Name) typedef _Type _Name __attribute__((aligned(16)))
-#define AN_ALIGN( x ) __attribute__((aligned(x)))
-#endif
-#define AN_ALIGN_SSE AN_ALIGN( 16 )
-
-#include "CriticalError.h"
 
 /*
 
@@ -307,7 +288,6 @@ Forbid to copy object
 /*
 
 Singleton
-
 
 */
 #define AN_SINGLETON( _Class ) \
@@ -383,4 +363,12 @@ Power of two compile-time check
 
 */
 template< typename integral_type >
-constexpr bool IsPowerOfTwoConstexpr( const integral_type & _value ) { return (_value & (_value - 1)) == 0 && _value > 0; }
+constexpr bool IsPowerOfTwoConstexpr( const integral_type _Value ) { return (_Value & (_Value - 1)) == 0 && _Value > 0; }
+
+/*
+
+Alignment compile-time check
+
+*/
+template< typename integral_type >
+constexpr bool IsAligned( const integral_type _Value, const integral_type _Alignment ) { return (_Value & (_Alignment - 1)) == 0 && _Value > 0; }

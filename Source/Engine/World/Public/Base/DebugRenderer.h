@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -45,7 +45,7 @@ public:
 
     void Reset();
 
-    void BeginRenderView( SRenderView * _View );
+    void BeginRenderView( SRenderView * InView, int InVisPass );
 
     void EndRenderView();
 
@@ -131,6 +131,8 @@ public:
 
     int CommandsCount() const { return Cmds->Size(); }
 
+    int GetVisPass() const { return VisPass; }
+
 private:
     SDebugDrawCmd & SetDrawCmd( EDebugDrawCmd _Type );
     void PrimitiveReserve( int _NumVertices, int _NumIndices );
@@ -142,6 +144,7 @@ private:
     uint32_t CurrentColor;
     int FirstVertex;
     int FirstIndex;
+    int VisPass;
     bool bDepthTest;
     bool bSplit;
 };

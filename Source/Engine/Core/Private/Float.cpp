@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -284,7 +284,7 @@ void HalfToFloat( const uint16_t * _In, float * _Out, int _Count ) {
     }
 }
 
-float FromString( const char * _String ) {
+float FloatFromString( const char * _String ) {
     return StringToReal< float >( _String );
 }
 

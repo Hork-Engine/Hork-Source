@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -161,15 +161,13 @@ public:
     void SetVertexCount( int _VertexCount );
     void SetIndexCount( int _IndexCount );
     void SetMaterialInstance( AMaterialInstance * _MaterialInstance );
+    void SetBoundingBox( BvAxisAlignedBox const & _BoundingBox );
 
     int GetBaseVertex() const { return BaseVertex; }
     int GetFirstIndex() const { return FirstIndex; }
     int GetVertexCount() const { return VertexCount; }
     int GetIndexCount() const { return IndexCount; }
     AMaterialInstance * GetMaterialInstance() { return MaterialInstance; }
-
-    void SetBoundingBox( BvAxisAlignedBox const & _BoundingBox );
-
     BvAxisAlignedBox const & GetBoundingBox() const { return BoundingBox; }
 
     AIndexedMesh * GetOwner() { return OwnerMesh; }
@@ -230,7 +228,7 @@ protected:
     ALightmapUV();
     ~ALightmapUV();
 
-    void OnInitialize( int _NumVertices );
+    void ResizeChannel( int _NumVertices );
 
     /** IGPUResourceOwner interface */
     void UploadResourcesGPU() override;
@@ -271,7 +269,7 @@ protected:
     AVertexLight();
     ~AVertexLight();
 
-    void OnInitialize( int _NumVertices );
+    void ResizeChannel( int _NumVertices );
 
     /** IGPUResourceOwner interface */
     void UploadResourcesGPU() override;
@@ -501,6 +499,8 @@ protected:
     void UploadResourcesGPU() override;
 
 private:
+    void ResizeChannels();
+
     ABufferGPU * VertexBufferGPU;
     ABufferGPU * IndexBufferGPU;
     ABufferGPU * WeightsBufferGPU;

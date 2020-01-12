@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -509,6 +509,8 @@ AMaterialInstance::AMaterialInstance() {
     //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
     static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
 
+    VisFrame = -1;
+
     Material = MaterialResource.GetObject();
 
     SetTexture( 0, TextureResource.GetObject() );
@@ -638,12 +640,12 @@ void AMaterialInstance::SetTexture( int _TextureSlot, ATexture * _Texture ) {
     Textures[_TextureSlot] = _Texture;
 }
 
-SMaterialFrameData * AMaterialInstance::RenderFrontend_Update( int _VisMarker ) {
-    if ( VisMarker == _VisMarker ) {
+SMaterialFrameData * AMaterialInstance::RenderFrontend_Update( int _FrameNumber ) {
+    if ( VisFrame == _FrameNumber ) {
         return FrameData;
     }
 
-    VisMarker = _VisMarker;
+    VisFrame = _FrameNumber;
 
     FrameData = ( SMaterialFrameData * )GRuntime.AllocFrameMem( sizeof( SMaterialFrameData ) );
     if ( !FrameData ) {

@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -91,6 +91,8 @@ class ANGIE_API AClassMeta {
     friend class APrecacheMeta;
 
 public:
+    const uint64_t ClassId;
+
     const char * GetName() const { return ClassName; }
     uint64_t GetId() const { return ClassId; }
     AClassMeta const * SuperClass() const { return pSuperClass; }
@@ -128,10 +130,9 @@ public:
 
 protected:
     AClassMeta( AObjectFactory & _Factory, const char * _ClassName, AClassMeta const * _SuperClassMeta )
-        : ClassName( _ClassName )
+        : ClassId( _Factory.NumClasses + 1 ), ClassName( _ClassName )
     {
         AN_ASSERT_( _Factory.FindClass( _ClassName ) == NULL, "Class already defined" );
-        ClassId = _Factory.NumClasses + 1;
         pNext = _Factory.Classes;
         pSuperClass = _SuperClassMeta;
         AttributesHead = nullptr;
@@ -145,7 +146,6 @@ protected:
 
 private:
     const char * ClassName;
-    uint64_t ClassId;
     AClassMeta * pNext;
     AClassMeta const * pSuperClass;
     AObjectFactory const * pFactory;

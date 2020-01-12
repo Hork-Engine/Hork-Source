@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -578,7 +578,7 @@ void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
         }
 
         if ( !bIgnoreMouseEvents ) {
-            const byte mouseAxes = inputAxis->GetMouseAxes();
+            const uint8_t mouseAxes = inputAxis->GetMouseAxes();
             for ( int mouseAxis = 0 ; mouseAxis < MAX_MOUSE_AXES ; mouseAxis++ ) {
                 if ( mouseAxes & ( 1 << mouseAxis ) ) {
                     AInputMappings::SMapping & mapping = InputMappings->MouseAxisMappings[ mouseAxis ];
@@ -786,7 +786,7 @@ void AInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > c
     binding.Callback = _Callback;
     binding.AxisScale = 0.0f;
     binding.bExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
-    AxisBindings.push_back( binding );
+    AxisBindings.Append( binding );
 }
 
 void AInputComponent::UnbindAxis( const char * _Axis ) {
@@ -834,7 +834,7 @@ void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< v
     binding.Name = _Action;
     binding.Callback[ _Event ] = _Callback;
     binding.bExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
-    ActionBindings.push_back( binding );
+    ActionBindings.Append( binding );
 }
 
 void AInputComponent::UnbindAction( const char * _Action ) {
@@ -859,10 +859,10 @@ void AInputComponent::UnbindAction( const char * _Action ) {
 
 void AInputComponent::UnbindAll() {
     AxisBindingsHash.Clear();
-    AxisBindings.clear();
+    AxisBindings.Clear();
 
     ActionBindingsHash.Clear();
-    ActionBindings.clear();
+    ActionBindings.Clear();
 
     for ( SPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
         pressedKey->AxisBinding = -1;
@@ -1100,7 +1100,7 @@ void AInputMappings::LoadAxes( ADocument const & _Document, int _FieldsHead ) {
         int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.ToString().CStr() );
         int controllerId = AInputHelper::LookupController( controller.ToString().CStr() );
 
-        float scaleValue = Math::FromString( scale.ToString() );
+        float scaleValue = Math::FloatFromString( scale.ToString() );
 
         MapAxis( name.ToString().CStr(),
                  deviceId,

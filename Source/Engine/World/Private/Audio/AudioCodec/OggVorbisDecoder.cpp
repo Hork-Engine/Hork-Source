@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -61,14 +61,14 @@ AOggVorbisAudioTrack::~AOggVorbisAudioTrack() {
 }
 
 bool AOggVorbisAudioTrack::InitializeFileStream( const char * _FileName ) {
-    assert( Vorbis == NULL );
+    AN_ASSERT( Vorbis == NULL );
 
     Vorbis = stb_vorbis_open_filename( _FileName, NULL, NULL );
     return Vorbis != NULL;
 }
 
 bool AOggVorbisAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
-    assert( Vorbis == NULL );
+    AN_ASSERT( Vorbis == NULL );
 
     Vorbis = stb_vorbis_open_memory( _EncodedData, _EncodedDataLength, NULL, NULL );
     return Vorbis !=NULL;

@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -46,7 +46,7 @@ struct SVideoMode
     /** Phyisical monitor */
     unsigned short PhysicalMonitor;
     /** Display refresh rate */
-    byte RefreshRate;
+    uint8_t RefreshRate;
     /** Fullscreen or Windowed mode */
     bool bFullscreen;
     /** Render backend name */
@@ -85,7 +85,7 @@ public:
     int GetFrameNumber() const { return FrameNumber; }
 
     /** Change a video mode */
-    void SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, byte _RefreshRate, bool _Fullscreen, const char * _Backend );
+    void SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, uint8_t _RefreshRate, bool _Fullscreen, const char * _Backend );
 
     /** Change a video mode */
     void SetVideoMode( SVideoMode const & _VideoMode );

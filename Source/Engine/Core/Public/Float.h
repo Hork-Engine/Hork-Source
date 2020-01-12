@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -748,10 +748,10 @@ AN_FORCEINLINE AString ToHexString( const float & _Self, bool _LeadingZeros = fa
     return AString::ToHexString( _Self, _LeadingZeros, _Prefix );
 }
 
-float FromString( const char * _String );
+float FloatFromString( const char * _String );
 
-AN_FORCEINLINE float FromString( AString const & _String ) {
-    return FromString( _String.CStr() );
+AN_FORCEINLINE float FloatFromString( AString const & _String ) {
+    return FloatFromString( _String.CStr() );
 }
 
 }

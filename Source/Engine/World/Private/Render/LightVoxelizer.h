@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -31,26 +31,17 @@ SOFTWARE.
 #pragma once
 
 #include <Runtime/Public/RenderCore.h>
+#include <World/Public/Base/DebugRenderer.h>
+
+class APointLightComponent;
 
 class ALightVoxelizer {
+    AN_SINGLETON( ALightVoxelizer )
+
 public:
-    ALightVoxelizer();
-    ~ALightVoxelizer();
+    void Voxelize( SRenderFrame * Frame, SRenderView * RV, APointLightComponent * const * InPointLights, int InPointLightCount );
 
-    bool bUseSSE;
-
-    struct SFrustumCluster {
-        unsigned short LightsCount;
-        unsigned short DecalsCount;
-        unsigned short ProbesCount;
-    };
-
-    SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
-
-    void Voxelize( SRenderFrame * Frame, SRenderView * RV );
-
-private:
-    SFrameLightData * LightData;
-
-    static void VoxelizeWork( void * _Data );
+    void DrawVoxels( ADebugRenderer * InRenderer );
 };
+
+extern ALightVoxelizer & GLightVoxelizer;

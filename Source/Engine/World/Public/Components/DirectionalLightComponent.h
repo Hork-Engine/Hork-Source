@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -46,6 +46,9 @@ public:
 
     void SetMaxShadowCascades( int _MaxShadowCascades );
     int GetMaxShadowCascades() const;
+
+    ADirectionalLightComponent * GetNext() { return Next; }
+    ADirectionalLightComponent * GetPrev() { return Prev; }
 
 protected:
     ADirectionalLightComponent();

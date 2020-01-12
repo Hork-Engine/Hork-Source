@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -125,6 +125,8 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
 
     GResourceManager.Initialize();
 
+    GRenderFrontend.Initialize();
+
     GAudioSystem.Initialize();
     GAudioSystem.RegisterDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
     GAudioSystem.RegisterDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
@@ -171,6 +173,8 @@ void AEngineInstance::Deinitialize() {
 #endif
 
     Canvas.Deinitialize();
+
+    GRenderFrontend.Deinitialize();
 
     GResourceManager.Deinitialize();
 
@@ -610,7 +614,7 @@ void AEngineInstance::ProcessEvents() {
     AN_ASSERT( eventQueue->IsEmpty() );
 }
 
-void AEngineInstance::SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, byte _RefreshRate, bool _Fullscreen, const char * _Backend ) {
+void AEngineInstance::SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, uint8_t _RefreshRate, bool _Fullscreen, const char * _Backend ) {
     SEvent & event = SendEvent();
     event.Type = ET_SetVideoModeEvent;
     event.TimeStamp = GRuntime.SysSeconds_d();
@@ -857,7 +861,7 @@ void AEngineInstance::UpdateImgui() {
         for ( int i = 0 ; i < Worlds.Size() ; i++ ) {
             if ( ImGui::CollapsingHeader( "World" ) ) {
 
-                static byte childFrameId;
+                static uint8_t childFrameId;
                 ImVec2 contentRegion = ImGui::GetContentRegionAvail();
                 contentRegion.y *= 0.5f;
                 if ( ImGui::BeginChildFrame( ( ImGuiID )( size_t )&childFrameId, contentRegion ) ) {
@@ -887,7 +891,7 @@ void AEngineInstance::UpdateImgui() {
                 ImGui::EndChildFrame();
 
                 ImGui::Text( "Inspector" );
-                static byte childFrameId2;
+                static uint8_t childFrameId2;
                 contentRegion = ImGui::GetContentRegionAvail();
                 if ( ImGui::BeginChildFrame( ( ImGuiID )( size_t )&childFrameId2, contentRegion ) ) {
 

@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -456,6 +456,13 @@ void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       TPodArray< unsigned int > & _OutIndices,
                                       TPodArray< SConvexHullDesc > & _OutHulls,
                                       Float3 & _CenterOfMass );
+
+void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
+                                      int _VerticesCount,
+                                      int _VertexStride,
+                                      unsigned int const * _Indices,
+                                      int _IndicesCount,
+                                      ACollisionBodyComposition & _BodyComposition );
 
 void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices );
 

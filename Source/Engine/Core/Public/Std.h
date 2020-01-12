@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -63,7 +63,32 @@ template< typename T, typename U > bool operator!=( TStdAllocator< T > const &, 
 
 using AStdString = std::basic_string< char, std::char_traits< char >, TStdAllocator< char > >;
 
-template< typename T > using TStdVector = std::vector< T, TStdAllocator< T > >;
+template< typename T > class TStdVector : public std::vector< T, TStdAllocator< T > >
+{
+public:
+    using Super = std::vector< T, TStdAllocator< T > >;
+    int Size() const { return Super::size(); }
+    T * ToPtr() { return Super::data(); }
+    T * const ToPtr() const { return Super::data(); }
+    void Clear() { Super::clear(); }
+    void ResizeInvalidate( int _Size ) {
+        Super::clear();
+        Super::resize( _Size );
+    }
+    void Resize( int _Size ) { Super::resize( _Size ); }
+    void Reserve( int _Capacity ) { Super::reserve( _Capacity ); }
+    void ReserveInvalidate( int _Capacity ) {
+        Super::clear();
+        Super::reserve( _Capacity );
+    }
+    void Free() { Super::clear(); Super::shrink_to_fit(); }
+    bool IsEmpty() const { return Super::empty(); }
+    void Append( T const & _X ) { Super::push_back( _X ); }
+    void ShrinkToFit() { Super::shrink_to_fit(); }
+};
+
+//template< typename T > using TStdVector = std::vector< T, TStdAllocator< T > >;
+template< typename T > using TStdVectorDefault = std::vector< T >;
 
 template< typename T > using TStdNumericLimits = std::numeric_limits< T >;
 

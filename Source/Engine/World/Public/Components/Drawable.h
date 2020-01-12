@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -31,37 +31,16 @@ SOFTWARE.
 #pragma once
 
 #include "PhysicalBody.h"
+#include <World/Public/Level.h>
 
-class ALevel;
 struct SRenderFrontendDef;
 
 enum ERenderOrder
 {
     RENDER_ORDER_WEAPON = 0,
     RENDER_ORDER_DEFAULT = 1,
-    RENDER_ORDER_SKYBOX = 255,
+    RENDER_ORDER_SKYBOX = 255
 };
-
-enum EVSDPass
-{
-    VSD_PASS_IGNORE     = 0,
-    VSD_PASS_ALL        = ~0,
-    VSD_PASS_PORTALS    = 1,
-    VSD_PASS_FACE_CULL  = 2,
-    VSD_PASS_BOUNDS     = 4,
-    VSD_PASS_CUSTOM_VISIBLE_STEP = 8,
-    VSD_PASS_VIS_MARKER = 16,
-    VSD_PASS_DEFAULT    = VSD_PASS_PORTALS | VSD_PASS_BOUNDS,
-};
-
-struct SAreaLink
-{
-    ALevel * Level;
-    int AreaNum;
-    int Index;
-};
-
-using AAreaLinks = TPodArray< SAreaLink, 4 >;
 
 /**
 
@@ -78,27 +57,32 @@ class ANGIE_API ADrawable : public APhysicalBody {
     friend class ARenderWorld;
 
 public:
-    enum { RENDERING_GROUP_DEFAULT = 1 };
-
-    /** Rendering group to filter mesh during rendering */
-    int RenderingGroup;
-
     int RenderingOrder = RENDER_ORDER_DEFAULT;
 
-    /** Visible surface determination alogrithm */
-    int VSDPasses = VSD_PASS_DEFAULT;
+    /** Visibility group to filter drawables during rendering */
+    void SetVisibilityGroup( int InVisibilityGroup );
 
-    /** Marker for VSD_PASS_VIS_MARKER */
-    int VisMarker;
+    int GetVisibilityGroup() const;
 
-    /** Internal. Used by frontend to filter rendered meshes. */
-    int RenderMark;
+    void SetVisible( bool _Visible );
+
+    bool IsVisible() const;
+
+    /** Set hidden during main render pass */
+    void SetHiddenInLightPass( bool _HiddenInLightPass );
+
+    bool IsHiddenInLightPass() const;
+
+    void SetQueryGroup( int _UserQueryGroup );
+
+    void SetFaceCull( bool bFaceCull );
+
+    bool GetFaceCull() const;
 
     /** Used for VSD_FACE_CULL */
-    PlaneF FacePlane;
+    void SetFacePlane( PlaneF const & _Plane );
 
-    /** Render during main pass */
-    bool bLightPass;
+    PlaneF const & GetFacePlane() const;
 
     /** Helper. Return true if surface is skinned mesh */
     bool IsSkinnedMesh() const { return bSkinnedMesh; }
@@ -109,6 +93,16 @@ public:
     /** Set bounding box to override object bounds */
     void SetBoundsOverride( BvAxisAlignedBox const & _Bounds );
 
+    void ForceOutdoor( bool _OutdoorSurface );
+
+    bool IsOutdoor() const;
+
+    void SetMovable( bool _Movable );
+
+    bool IsMovable() const;
+
+    bool HasPreRenderUpdate() const { return bPreRenderUpdate; }
+
     /** Get overrided bounding box in local space */
     BvAxisAlignedBox const & GetBoundsOverride() const { return OverrideBoundingBox; }
 
@@ -118,17 +112,13 @@ public:
     /** Get current bounds in world space */
     BvAxisAlignedBox const & GetWorldBounds() const;
 
-    void ForceOutdoor( bool _OutdoorSurface );
-
-    bool IsOutdoor() const { return bIsOutdoor; }
-
-    // TODO: SetVisible, IsVisible ?
+    SPrimitiveDef const * GetPrimitive() const { return &Primitive; }
 
     ADrawable * GetNextDrawable() { return Next; }
     ADrawable * GetPrevDrawable() { return Prev; }
 
-    /** Used for VSD_PASS_CUSTOM_VISIBLE_STEP algorithm */
-    virtual void RenderFrontend_CustomVisibleStep( SRenderFrontendDef * _Def, bool & _OutVisibleFlag ) {}
+    /** Called before rendering if bPreRenderUpdate is true */
+    virtual void OnPreRenderUpdate( SRenderFrontendDef * _Def ) {}
 
 protected:
     ADrawable();
@@ -137,24 +127,21 @@ protected:
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
 
-    virtual void OnLazyBoundsUpdate() {}
+    //virtual void OnLazyBoundsUpdate() {}
 
-    void MarkWorldBoundsDirty();
+    void UpdateWorldBounds();
 
     mutable BvAxisAlignedBox Bounds;
     mutable BvAxisAlignedBox WorldBounds;
-    mutable bool            bWorldBoundsDirty;
     BvAxisAlignedBox        OverrideBoundingBox;
-    bool                    bOverrideBounds;
-
-    AAreaLinks              InArea; // list of intersected areas
-    bool                    bLazyBoundsUpdate;
-    bool                    bIsOutdoor;
-    bool                    bSkinnedMesh;
+    bool                    bOverrideBounds : 1;
+    bool                    bLazyBoundsUpdate : 1;
+    bool                    bSkinnedMesh : 1;
+    bool                    bPreRenderUpdate : 1;
 
     ADrawable * Next;
     ADrawable * Prev;
 
-    ADrawable * NextUpdDrawable;
-    ADrawable * PrevUpdDrawable;
+    //TRef< VSDPrimitive >    Primitive;
+    SPrimitiveDef Primitive;
 };

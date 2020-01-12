@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -39,16 +39,13 @@ SOFTWARE.
 
 ARuntimeVariable RVDrawSockets( _CTS( "DrawSockets" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_BEGIN_CLASS_META( ASceneComponent )
-AN_ATTRIBUTE_( Position, AF_DEFAULT )
-AN_ATTRIBUTE_( Rotation, AF_DEFAULT )
-AN_ATTRIBUTE_( Scale, AF_DEFAULT )
-AN_END_CLASS_META()
+AN_CLASS_META( ASceneComponent )
 
-ASceneComponent::ASceneComponent() {
-    Rotation = Quat( 1,0,0,0 );
-    Scale = Float3( 1 );
-    bTransformDirty = true;
+ASceneComponent::ASceneComponent()
+    : Rotation( 1,0,0,0 )
+    , Scale( 1 )
+    , bTransformDirty( true )
+{
 }
 
 void ASceneComponent::DeinitializeComponent() {
@@ -133,8 +130,6 @@ void ASceneComponent::_AttachTo( ASceneComponent * _Parent, bool _KeepWorldTrans
     } else {
         MarkTransformDirty();
     }
-
-    //GLogger.Printf( "%s attached to %s\n", FinalClassName(), _Parent->FinalClassName() );
 }
 
 void ASceneComponent::Detach( bool _KeepWorldTransform ) {
@@ -153,7 +148,6 @@ void ASceneComponent::Detach( bool _KeepWorldTransform ) {
 #endif
         }
     }
-    //GLogger.Printf( "%s detached from %s\n", FinalClassName(), AttachParent->FinalClassName() );
     AttachParent = nullptr;
     SocketIndex = -1;
     MarkTransformDirty();
@@ -201,11 +195,11 @@ ASceneComponent * ASceneComponent::FindChild( const char * _UniqueName, bool _Re
 }
 
 int ASceneComponent::FindSocket( const char * _Name ) const {
-//    for ( int socketIndex = 0 ; socketIndex < Sockets.Size() ; socketIndex++ ) {
-//        if ( !Sockets[socketIndex].SocketDef->GetName().Icmp( _Name ) ) {
-//            return socketIndex;
-//        }
-//    }
+    for ( int socketIndex = 0 ; socketIndex < Sockets.Size() ; socketIndex++ ) {
+        if ( !Sockets[socketIndex].SocketDef->GetObjectName().Icmp( _Name ) ) {
+            return socketIndex;
+        }
+    }
     GLogger.Printf( "Socket not found %s\n", _Name );
     return -1;
 }
@@ -218,8 +212,6 @@ void ASceneComponent::MarkTransformDirty() {
     while ( 1 ) {
 
         if ( node->bTransformDirty ) {
-            // Нода уже помечена как "грязная", поэтому помечать
-            // дочерние нет смысла, т.к. они уже помечены
             return;
         }
 
@@ -244,8 +236,6 @@ void ASceneComponent::MarkTransformDirty() {
         numChilds = node->Childs.Size();
         if ( numChilds > 0 ) {
 
-            // Обновить дочерние узлы, причем первый дочерний узел можно обновить
-            // не углубляясь в рекурсию
             nextNode = node->Childs[ 0 ];
 
             for ( int i = 1 ; i < numChilds ; i++ ) {

@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -242,7 +242,7 @@ struct SChangedVideoModeEvent {
     unsigned short Width;
     unsigned short Height;
     unsigned short PhysicalMonitor;
-    byte RefreshRate;
+    uint8_t RefreshRate;
     bool bFullscreen;
     char Backend[32];
 };
@@ -251,13 +251,13 @@ struct SSetVideoModeEvent {
     unsigned short Width;
     unsigned short Height;
     unsigned short PhysicalMonitor;
-    byte RefreshRate;
+    uint8_t RefreshRate;
     bool bFullscreen;
     char Backend[32];
 };
 
 struct SSetWindowDefsEvent {
-    byte Opacity;
+    uint8_t Opacity;
     bool bDecorated;
     bool bAutoIconify;
     bool bFloating;

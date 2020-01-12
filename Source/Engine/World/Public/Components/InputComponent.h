@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -95,7 +95,7 @@ public:
 
     void Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId );
 
-    byte GetMouseAxes() const { return MappedMouseAxes; }
+    uint8_t GetMouseAxes() const { return MappedMouseAxes; }
     uint32_t GetJoystickAxes( int _Joystick ) const { return MappedJoystickAxes[ _Joystick ]; }
 
 private:
@@ -109,7 +109,7 @@ private:
     TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
     /** Mouse axes mapped to this axis */
-    byte MappedMouseAxes;
+    uint8_t MappedMouseAxes;
 
     /** Joystick axes mapped to this axis */
     uint32_t MappedJoystickAxes[MAX_JOYSTICKS_COUNT];
@@ -178,7 +178,7 @@ private:
     struct SMapping {
         int AxisOrActionIndex;      // -1 if not mapped
         float AxisScale;
-        byte ControllerId;
+        uint8_t ControllerId;
         bool bAxis;
         byte ModMask;
     };
@@ -330,7 +330,7 @@ protected:
         short AxisBinding;
         short ActionBinding;
         float AxisScale;
-        byte DevId;
+        uint8_t DevId;
     };
 
     AInputComponent();

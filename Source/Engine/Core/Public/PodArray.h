@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -33,6 +33,12 @@ SOFTWARE.
 #include "Alloc.h"
 //#include "Integer.h"
 
+#define TPodArrayTemplateDecorate \
+    template< typename T, int BASE_CAPACITY, int GRANULARITY, typename Allocator, int Alignment > AN_FORCEINLINE
+
+#define TPodArrayTemplate \
+    TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator, Alignment >
+
 /*
 
 TPodArray
@@ -40,7 +46,7 @@ TPodArray
 Array for POD types
 
 */
-template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
+template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator, int Alignment = 1 >
 class TPodArray final {
 public:
     typedef T * Iterator;
@@ -74,7 +80,7 @@ public:
     void            Insert( int _Index, const T & _Element );
 
     void            Append( T const & _Element );
-    void            Append( TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array );
+    void            Append( TPodArrayTemplate const & _Array );
     void            Append( T const * _Elements, int _NumElements );
     T &             Append();
 
@@ -91,8 +97,8 @@ public:
 
     bool            IsEmpty() const;
 
-    T &             operator[]( int _Index );
-    T const &       operator[]( int _Index ) const;
+    T &             operator[]( const int _Index );
+    T const &       operator[]( const int _Index ) const;
 
     T &             Last();
     T const &       Last() const;
@@ -152,8 +158,10 @@ public:
 //    }
 
 private:
+    static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "Alignment Check" );
+
+    alignas( Alignment ) T StaticData[BASE_CAPACITY];
     T *             ArrayData;
-    T               StaticData[BASE_CAPACITY];
     int             ArrayLength;
     int             ArrayCapacity;
 };
@@ -161,14 +169,8 @@ private:
 template< typename T >
 using TPodArrayLite = TPodArray< T, 1 >;
 
-template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32 >
-using TPodArrayHeap = TPodArray< T, BASE_CAPACITY, GRANULARITY, AHeapAllocator >;
-
-#define TPodArrayTemplateDecorate \
-    template< typename T, int BASE_CAPACITY, int GRANULARITY, typename Allocator > AN_FORCEINLINE
-
-#define TPodArrayTemplate \
-    TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator >
+template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, int Alignment = 1 >
+using TPodArrayHeap = TPodArray< T, BASE_CAPACITY, GRANULARITY, AHeapAllocator, Alignment >;
 
 TPodArrayTemplateDecorate
 TPodArrayTemplate::TPodArray()
@@ -182,7 +184,7 @@ TPodArrayTemplate::TPodArray( TPodArrayTemplate const & _Array ) {
     ArrayLength = _Array.ArrayLength;
     if ( _Array.ArrayCapacity > BASE_CAPACITY ) {
         ArrayCapacity = _Array.ArrayCapacity;
-        ArrayData = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * ArrayCapacity );
+        ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArrayCapacity, Alignment );
     } else {
         ArrayCapacity = BASE_CAPACITY;
         ArrayData = StaticData;
@@ -196,7 +198,7 @@ TPodArrayTemplate::TPodArray( T const * _Elements, int _NumElements ) {
     if ( _NumElements > BASE_CAPACITY ) {
         const int mod = _NumElements % GRANULARITY;
         ArrayCapacity = mod ? _NumElements + GRANULARITY - mod : _NumElements;
-        ArrayData = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * ArrayCapacity );
+        ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArrayCapacity, Alignment );
     } else {
         ArrayCapacity = BASE_CAPACITY;
         ArrayData = StaticData;
@@ -242,7 +244,7 @@ void TPodArrayTemplate::ShrinkToFit() {
         return;
     }
 
-    T * data = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * ArrayLength );
+    T * data = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArrayLength, Alignment );
     memcpy( data, ArrayData, TYPE_SIZEOF * ArrayLength );
     Allocator::Inst().Dealloc( ArrayData );
     ArrayData = data;
@@ -255,10 +257,10 @@ void TPodArrayTemplate::Reserve( int _NewCapacity ) {
         return;
     }
     if ( ArrayData == StaticData ) {
-        ArrayData = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * _NewCapacity );
+        ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * _NewCapacity, Alignment );
         memcpy( ArrayData, StaticData, TYPE_SIZEOF * ArrayLength );
     } else {
-        ArrayData = ( T * )Allocator::Inst().Extend1( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, true );
+        ArrayData = ( T * )Allocator::Inst().ExtendAligned( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, true, Alignment );
     }
     ArrayCapacity = _NewCapacity;
 }
@@ -269,9 +271,9 @@ void TPodArrayTemplate::ReserveInvalidate( int _NewCapacity ) {
         return;
     }
     if ( ArrayData == StaticData ) {
-        ArrayData = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * _NewCapacity );
+        ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * _NewCapacity, Alignment );
     } else {
-        ArrayData = ( T * )Allocator::Inst().Extend1( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, false );
+        ArrayData = ( T * )Allocator::Inst().ExtendAligned( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, false, Alignment );
     }
     ArrayCapacity = _NewCapacity;
 }
@@ -356,7 +358,7 @@ void TPodArrayTemplate::Insert( int _Index, T const & _Element ) {
     const int capacity = mod ? newLength + GRANULARITY - mod : newLength;
 
     if ( capacity > ArrayCapacity ) {
-        T * data = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * capacity );
+        T * data = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * capacity, Alignment );
 
         memcpy( data, ArrayData, TYPE_SIZEOF * _Index );
         data[ _Index ] = _Element;
@@ -460,13 +462,13 @@ bool TPodArrayTemplate::IsEmpty() const {
 }
 
 TPodArrayTemplateDecorate
-T & TPodArrayTemplate::operator[]( int _Index ) {
+T & TPodArrayTemplate::operator[]( const int _Index ) {
     AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::operator[]" );
     return ArrayData[ _Index ];
 }
 
 TPodArrayTemplateDecorate
-T const & TPodArrayTemplate::operator[]( int _Index ) const {
+T const & TPodArrayTemplate::operator[]( const int _Index ) const {
     AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::operator[]" );
     return ArrayData[ _Index ];
 }

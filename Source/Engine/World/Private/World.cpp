@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -32,6 +32,9 @@ SOFTWARE.
 #include <World/Public/Actors/Pawn.h>
 #include <World/Public/Timer.h>
 #include <World/Public/Base/GameModuleInterface.h>
+#include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/Components/PointLightComponent.h>
+#include <World/Private/Render/VSD.h>
 #include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
@@ -434,44 +437,44 @@ void AWorld::UpdateLevels( float _TimeStep ) {
         level->Tick( _TimeStep );
     }
 
-    UpdateDrawableAreas();
+    UpdatePrimitiveLinks();
 }
 
-void AWorld::UpdateDrawableAreas() {
-    ADrawable * next;
+void AWorld::UpdatePrimitiveLinks() {
+    SPrimitiveDef * next;
 
-    // First Pass: remove drawables from the areas
-    for ( ADrawable * drawable = DrawableUpdateList ; drawable ; drawable = drawable->NextUpdDrawable )
+    // First Pass: remove primitives from the areas
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = primitive->NextUpd )
     {
-        while ( !drawable->InArea.IsEmpty() ) {
-            drawable->InArea.Last().Level->RemoveDrawable( drawable );
-        }
-        //for ( ALevel * level : ArrayOfLevels )
-        //{
-        //    level->RemoveDrawable( drawable );
-        //}
+        ALevel::RemovePrimitive( primitive );
     }
 
-    // Second Pass: add drawable to the areas
-    for ( ADrawable * drawable = DrawableUpdateList ; drawable ; drawable = next )
+    // Second Pass: add primitive to the areas
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
     {
-        if ( !drawable->IsPendingKill() )
-        {
-            for ( ALevel * level : ArrayOfLevels )
-            {
-                level->AddDrawable( drawable );
-            }
-        }
+        ALevel::AddPrimitive( this, primitive );
 
-        next = drawable->NextUpdDrawable;
-        drawable->PrevUpdDrawable = drawable->NextUpdDrawable = nullptr;
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
     }
 
-    DrawableUpdateList = DrawableUpdateListTail = nullptr;
+    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
 }
 
-void AWorld::UpdateDrawableArea( ADrawable * _Drawable ) {
-    INTRUSIVE_ADD_UNIQUE( _Drawable, NextUpdDrawable, PrevUpdDrawable, DrawableUpdateList, DrawableUpdateListTail );
+void AWorld::AddPrimitive( SPrimitiveDef * InPrimitive ) {
+    InPrimitive->bPendingRemove = false;
+
+    MarkPrimitive( InPrimitive );
+}
+
+void AWorld::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
+    InPrimitive->bPendingRemove = true;
+
+    MarkPrimitive( InPrimitive );
+}
+
+void AWorld::MarkPrimitive( SPrimitiveDef * InPrimitive ) {
+    INTRUSIVE_ADD_UNIQUE( InPrimitive, NextUpd, PrevUpd, PrimitiveUpdateList, PrimitiveUpdateListTail );
 }
 
 void AWorld::OnPrePhysics( float _TimeStep ) {
@@ -519,6 +522,10 @@ void AWorld::Tick( float _TimeStep ) {
     // Tick navigation
     NavigationMesh.Update( _TimeStep );
 
+    for ( ASkinnedComponent * skinnedMesh = RenderWorld.GetSkinnedMeshes() ; skinnedMesh ; skinnedMesh = skinnedMesh->GetNextSkinnedMesh() ) {
+        skinnedMesh->UpdateBounds();
+    }
+
     // Tick levels
     UpdateLevels( _TimeStep );
 
@@ -526,6 +533,26 @@ void AWorld::Tick( float _TimeStep ) {
 
     uint64_t frameDuration = (double)_TimeStep * 1000000;
     GameRunningTimeMicroAfterTick += frameDuration;
+}
+
+bool AWorld::Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter ) const {
+    return VSD_Raycast( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
+}
+
+bool AWorld::RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter ) const {
+    return VSD_RaycastBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
+}
+
+bool AWorld::RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter ) const {
+    return VSD_RaycastClosest( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
+}
+
+bool AWorld::RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter ) const {
+    return VSD_RaycastClosestBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
+}
+
+void AWorld::QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
+    VSD_QueryVisiblePrimitives( this, VisPrimitives, VisSurfs, VisPass, InQuery );
 }
 
 void AWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) {
@@ -647,11 +674,15 @@ void AWorld::AddLevel( ALevel * _Level ) {
         _Level->OwnerWorld->RemoveLevel( _Level );
     }
 
+    RemovePrimitives();
+
     _Level->OwnerWorld = this;
     _Level->IndexInArrayOfLevels = ArrayOfLevels.Size();
     _Level->AddRef();
     _Level->OnAddLevelToWorld();
     ArrayOfLevels.Append( _Level );
+
+    MarkPrimitives();
 }
 
 void AWorld::RemoveLevel( ALevel * _Level ) {
@@ -668,6 +699,9 @@ void AWorld::RemoveLevel( ALevel * _Level ) {
         GLogger.Printf( "AWorld::AddLevel: level is not in world\n" );
         return;
     }
+
+    RemovePrimitives();
+    MarkPrimitives();
 
     _Level->OnRemoveLevelFromWorld();
 
@@ -712,6 +746,8 @@ void AWorld::DrawDebug( ADebugRenderer * InRenderer ) {
     for ( ALevel * level : ArrayOfLevels ) {
         level->DrawDebug( InRenderer );
     }
+
+    VSD_DrawDebug( InRenderer );
 
     for ( AActor * actor : Actors ) {
         actor->DrawDebug( InRenderer );
@@ -781,4 +817,63 @@ void AWorld::UpdateWorlds( IGameModule * _GameModule, float _TimeStep ) {
     }
 
     KickoffPendingKillWorlds();
+}
+
+//void AWorld::ReAddPrimitives() {
+//    RemovePrimitives();
+//    AddPrimitives();
+//}
+
+//void AWorld::AddPrimitives() {
+//    for ( ALevel * level : ArrayOfLevels ) {
+//        for ( ADrawable * drawable = RenderWorld.GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
+//            level->AddPrimitive( drawable->Primitive );
+//        }
+
+//        for ( APointLightComponent * light = RenderWorld.GetPointLights() ; light ; light = light->GetNext() ) {
+//            level->AddPrimitive( light->Primitive );
+//        }
+//    }
+//}
+
+void AWorld::UnmarkPrimitives() {
+    SPrimitiveDef * next;
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
+    {
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
+    }
+    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
+}
+
+void AWorld::MarkPrimitives() {
+    UnmarkPrimitives();
+
+    for ( ADrawable * drawable = RenderWorld.GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
+        MarkPrimitive( &drawable->Primitive );
+    }
+
+    for ( APointLightComponent * light = RenderWorld.GetPointLights() ; light ; light = light->GetNext() ) {
+        MarkPrimitive( &light->Primitive );
+    }
+}
+
+void AWorld::RemovePrimitives() {
+    SPrimitiveDef * next;
+
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
+    {
+        ALevel::RemovePrimitive( primitive );
+
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
+    }
+
+    for ( ADrawable * drawable = RenderWorld.GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
+        ALevel::RemovePrimitive( &drawable->Primitive );
+    }
+
+    for ( APointLightComponent * light = RenderWorld.GetPointLights() ; light ; light = light->GetNext() ) {
+        ALevel::RemovePrimitive( &light->Primitive );
+    }
 }

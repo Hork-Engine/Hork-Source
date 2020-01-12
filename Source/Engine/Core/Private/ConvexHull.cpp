@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -30,6 +30,9 @@ SOFTWARE.
 
 #include <Core/Public/ConvexHull.h>
 #include <Core/Public/Logger.h>
+#include <Core/Public/CriticalError.h>
+
+//#define CONVEX_HULL_CW
 
 AConvexHull * AConvexHull::Create( int _MaxPoints ) {
     AN_ASSERT( _MaxPoints > 0 );
@@ -51,14 +54,24 @@ AConvexHull * AConvexHull::CreateForPlane( PlaneF const & _Plane, float _MaxExte
     AConvexHull * hull;
     hull = Create( 4 );
     hull->NumPoints = 4;
+    
+#ifdef CONVEX_HULL_CW
+    // CW
     hull->Points[ 0 ] = ( upVec - rightVec ) * _MaxExtents;
     hull->Points[ 1 ] = ( upVec + rightVec ) * _MaxExtents;
+#else
+    // CCW
+    hull->Points[ 0 ] = ( upVec - rightVec ) * _MaxExtents;
+    hull->Points[ 1 ] = (-upVec - rightVec ) * _MaxExtents;
+#endif
+
     hull->Points[ 2 ] = -hull->Points[ 0 ];
     hull->Points[ 3 ] = -hull->Points[ 1 ];
     hull->Points[ 0 ] += p;
     hull->Points[ 1 ] += p;
     hull->Points[ 2 ] += p;
     hull->Points[ 3 ] += p;
+
     return hull;
 }
 
@@ -211,7 +224,13 @@ Float3 AConvexHull::CalcNormal() const {
 
     Float3 center = CalcCenter();
 
+#ifdef CONVEX_HULL_CW
+    // CW
     return ( Points[1] - center ).Cross( Points[0] - center ).NormalizeFix();
+#else
+    // CCW
+    return ( Points[0] - center ).Cross( Points[1] - center ).NormalizeFix();
+#endif
 }
 
 PlaneF AConvexHull::CalcPlane() const {
@@ -225,7 +244,13 @@ PlaneF AConvexHull::CalcPlane() const {
 
     Float3 Center = CalcCenter();
 
+#ifdef CONVEX_HULL_CW
+    // CW
     plane.Normal = ( Points[1] - Center ).Cross( Points[0] - Center ).NormalizeFix();
+#else
+    // CCW
+    plane.Normal = ( Points[0] - Center ).Cross( Points[1] - Center ).NormalizeFix();
+#endif
     plane.D = -Points[0].Dot( plane.Normal );
     return plane;
 }

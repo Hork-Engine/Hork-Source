@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -65,6 +65,16 @@ AIndexedMesh::~AIndexedMesh() {
     GRenderBackend->DestroyBuffer( WeightsBufferGPU );
 
     Purge();
+
+    // Purge channels
+    for ( ALightmapUV * channel : LightmapUVs ) {
+        channel->OwnerMesh = nullptr;
+        channel->IndexInArrayOfUVs = -1;
+    }
+    for ( AVertexLight * channel : VertexLightChannels ) {
+        channel->OwnerMesh = nullptr;
+        channel->IndexInArrayOfChannels = -1;
+    }
 }
 
 void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh, bool _DynamicStorage ) {
@@ -88,14 +98,6 @@ void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
         GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexSkin ), bDynamicStorage );
     }
 
-    //for ( ALightmapUV * channel : LightmapUVs ) {
-    //    channel->OnInitialize( _NumVertices );
-    //}
-
-    //for ( AVertexLight * channel : VertexLightChannels ) {
-    //    channel->OnInitialize( _NumVertices );
-    //}
-
     if ( _NumSubparts <= 0 ) {
         _NumSubparts = 1;
     }
@@ -115,6 +117,8 @@ void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
         subpart->VertexCount = Vertices.Size();
         subpart->IndexCount = Indices.Size();
     }
+
+    ResizeChannels();
 }
 
 void AIndexedMesh::Purge() {
@@ -125,19 +129,19 @@ void AIndexedMesh::Purge() {
 
     Subparts.Clear();
 
-    for ( ALightmapUV * channel : LightmapUVs ) {
-        channel->OwnerMesh = nullptr;
-        channel->IndexInArrayOfUVs = -1;
-    }
+//    for ( ALightmapUV * channel : LightmapUVs ) {
+//        channel->OwnerMesh = nullptr;
+//        channel->IndexInArrayOfUVs = -1;
+//    }
 
-    LightmapUVs.Clear();
+//    LightmapUVs.Clear();
 
-    for ( AVertexLight * channel : VertexLightChannels ) {
-        channel->OwnerMesh = nullptr;
-        channel->IndexInArrayOfChannels = -1;
-    }
+//    for ( AVertexLight * channel : VertexLightChannels ) {
+//        channel->OwnerMesh = nullptr;
+//        channel->IndexInArrayOfChannels = -1;
+//    }
 
-    VertexLightChannels.Clear();
+//    VertexLightChannels.Clear();
 
     for ( ASocketDef * socket : Sockets ) {
         socket->RemoveRef();
@@ -149,6 +153,22 @@ void AIndexedMesh::Purge() {
     Skin.OffsetMatrices.Clear();
 
     BodyComposition.Clear();
+
+    Vertices.Free();
+    Weights.Free();
+    Indices.Free();
+}
+
+void AIndexedMesh::ResizeChannels() {
+    GLogger.Printf( "ResizeChannels()\n" );
+    for ( ALightmapUV * channel : LightmapUVs ) {
+        GLogger.Printf( "Resizing lightmapUV %d\n", Vertices.Size() );
+        channel->ResizeChannel( Vertices.Size() );
+    }
+
+    for ( AVertexLight * channel : VertexLightChannels ) {
+        channel->ResizeChannel( Vertices.Size() );
+    }
 }
 
 static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IStreamBase & f ) {
@@ -344,6 +364,8 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
 
     bBoundingBoxDirty = false;
 
+    ResizeChannels();
+
     if ( !bSkinnedMesh ) {
         GenerateRigidbodyCollisions();   // TODO: load collision from file
     }
@@ -359,7 +381,7 @@ ALightmapUV * AIndexedMesh::CreateLightmapUVChannel() {
 
     LightmapUVs.Append( channel );
 
-    channel->OnInitialize( Vertices.Size() );
+    channel->ResizeChannel( Vertices.Size() );
 
     return channel;
 }
@@ -372,7 +394,7 @@ AVertexLight * AIndexedMesh::CreateVertexLightChannel() {
 
     VertexLightChannels.Append( channel );
 
-    channel->OnInitialize( Vertices.Size() );
+    channel->ResizeChannel( Vertices.Size() );
 
     return channel;
 }
@@ -801,13 +823,14 @@ ALightmapUV::~ALightmapUV() {
     }
 }
 
-void ALightmapUV::OnInitialize( int _NumVertices ) {
+void ALightmapUV::ResizeChannel( int _NumVertices ) {
     if ( Vertices.Size() == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
         return;
     }
 
     bDynamicStorage = OwnerMesh->bDynamicStorage;
 
+    Vertices.Free();
     Vertices.ResizeInvalidate( _NumVertices );
 
     GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertexUV ), bDynamicStorage );
@@ -819,7 +842,7 @@ bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocat
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
+        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s) %d %d %d\n", GetObjectNameCStr(),_StartVertexLocation,_VerticesCount, Vertices.Size() );
         return false;
     }
 
@@ -864,13 +887,14 @@ AVertexLight::~AVertexLight() {
     }
 }
 
-void AVertexLight::OnInitialize( int _NumVertices ) {
+void AVertexLight::ResizeChannel( int _NumVertices ) {
     if ( Vertices.Size() == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
         return;
     }
 
     bDynamicStorage = OwnerMesh->bDynamicStorage;
 
+    Vertices.Free();
     Vertices.ResizeInvalidate( _NumVertices );
 
     GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertexLight ), bDynamicStorage );

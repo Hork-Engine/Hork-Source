@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -30,130 +30,480 @@ SOFTWARE.
 
 #pragma once
 
-#include "Octree.h"
 #include "AINavigationMesh.h"
-#include "Components/Drawable.h"
+#include "Resource/CollisionBody.h"
+#include "Resource/Material.h"
+#include "Resource/IndexedMesh.h"
+#include "Audio/AudioClip.h"
 
-#include <Core/Public/ConvexHull.h>
-#include <Core/Public/BitMask.h>
 #include <Runtime/Public/RenderCore.h>
 
 class AActor;
-class ALevel;
-struct SAreaPortal;
 class ATexture;
-class AMeshComponent;
+class ASceneComponent;
+class ABrushModel;
+class AConvexHull;
+struct SVisArea;
+struct SPrimitiveDef;
+struct SPortalLink;
+struct SPrimitiveLink;
 
-class ALevelArea : public ABaseObject {
-    AN_CLASS( ALevelArea, ABaseObject )
+enum VSD_PRIMITIVE
+{
+    VSD_PRIMITIVE_BOX,
+    VSD_PRIMITIVE_SPHERE
+};
 
-    friend class ALevel;
+enum VSD_QUERY_MASK
+{
+    VSD_QUERY_MASK_VISIBLE                  = 0x00000001,
+    VSD_QUERY_MASK_INVISIBLE                = 0x00000002,
 
-public:
+    VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS    = 0x00000004,
+    VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS  = 0x00000008,
 
-    SAreaPortal const * GetPortals() const { return PortalList; }
+    VSD_QUERY_MASK_SHADOW_CAST              = 0x00000010,
+    VSD_QUERY_MASK_NO_SHADOW_CAST           = 0x00000020,
 
-    TPodArray< ADrawable * > const & GetDrawables() const { return Drawables; }
+    // Reserved for future
+    VSD_QUERY_MASK_RESERVED0                = 0x00000040,
+    VSD_QUERY_MASK_RESERVED1                = 0x00000080,
+    VSD_QUERY_MASK_RESERVED2                = 0x00000100,
+    VSD_QUERY_MASK_RESERVED3                = 0x00000200,
+    VSD_QUERY_MASK_RESERVED4                = 0x00000400,
+    VSD_QUERY_MASK_RESERVED5                = 0x00000800,
+    VSD_QUERY_MASK_RESERVED6                = 0x00001000,
+    VSD_QUERY_MASK_RESERVED7                = 0x00002000,
+    VSD_QUERY_MASK_RESERVED8                = 0x00004000,
+    VSD_QUERY_MASK_RESERVED9                = 0x00008000,
 
-    //TPodArray< FLightComponent * > const & GetLights() const { return Lights; }
+    // User filter mask
+    VSD_QUERY_MASK_USER0                    = 0x00010000,
+    VSD_QUERY_MASK_USER1                    = 0x00020000,
+    VSD_QUERY_MASK_USER2                    = 0x00040000,
+    VSD_QUERY_MASK_USER3                    = 0x00080000,
+    VSD_QUERY_MASK_USER4                    = 0x00100000,
+    VSD_QUERY_MASK_USER5                    = 0x00200000,
+    VSD_QUERY_MASK_USER6                    = 0x00400000,
+    VSD_QUERY_MASK_USER7                    = 0x00800000,
+    VSD_QUERY_MASK_USER8                    = 0x01000000,
+    VSD_QUERY_MASK_USER9                    = 0x02000000,
+    VSD_QUERY_MASK_USER10                   = 0x04000000,
+    VSD_QUERY_MASK_USER11                   = 0x08000000,
+    VSD_QUERY_MASK_USER12                   = 0x10000000,
+    VSD_QUERY_MASK_USER13                   = 0x20000000,
+    VSD_QUERY_MASK_USER14                   = 0x40000000,
+    VSD_QUERY_MASK_USER15                   = 0x80000000,
+};
 
-    BvAxisAlignedBox const & GetBoundingBox() const { return Bounds; }
+enum VISIBILITY_GROUP
+{
+    VISIBILITY_GROUP_DEFAULT = 1
+};
 
-protected:
-    ALevelArea() {}
-    ~ALevelArea() {}
+constexpr int MAX_AMBIENT_SOUNDS_IN_AREA = 4;
 
-private:
-    // Area property
-    Float3 Position;
+struct SAudioArea
+{
+    /** Baked leaf audio clip */
+    uint16_t AmbientSound[MAX_AMBIENT_SOUNDS_IN_AREA];
 
-    // Area property
-    Float3 Extents;
+    /** Baked leaf audio volume */
+    uint8_t AmbientVolume[MAX_AMBIENT_SOUNDS_IN_AREA];
+};
 
-    // Area property
-    Float3 ReferencePoint;
+struct SBinarySpacePlane : PlaneF
+{
+    /** Plane axial type */
+    uint8_t Type;
+};
 
-    // Owner
-    ALevel * ParentLevel;
+struct SNodeBase
+{
+    /** Parent node */
+    struct SBinarySpaceNode * Parent;
 
-    // Objects in area
-    TPodArray< ADrawable * > Drawables;
-    //TPodArray< FLightComponent * > Lights;
-    //TPodArray< FEnvCaptureComponent * > EnvCaptures;
+    /** Visited mark */
+    int ViewMark;
 
-    // Linked portals
-    SAreaPortal * PortalList;
+    /** Node bounding box (for culling) */
+    BvAxisAlignedBox Bounds;
+};
 
-    // Area bounding box
+struct SBinarySpaceNode : SNodeBase
+{
+    /** Node split plane */
+    SBinarySpacePlane * Plane;
+
+    /** Child indices */
+    int ChildrenIdx[2];
+};
+
+enum EBinarySpaceLeafContents
+{
+    BSP_CONTENTS_NORMAL,
+    BSP_CONTENTS_INVISIBLE
+};
+
+struct SBinarySpaceLeaf : SNodeBase
+{
+    /** Leaf PVS cluster */
+    int Cluster;
+
+    /** Leaf PVS */
+    byte const * Visdata;
+
+    /** Leaf contents (e.g. Water, Slime) */
+    int Contents;       // EBinarySpaceLeafContents
+
+    /** Baked audio */
+    int AudioArea;
+
+    /** Visibility area */
+    SVisArea * Area;
+};
+
+enum ESurfaceGeometryType
+{
+    /** Triangle soup mesh */
+    SURF_TRISOUP,
+
+    /** Planar surface */
+    SURF_PLANAR,
+
+    /** Bezier patch */
+    //SURF_BEZIER_PATCH
+};
+
+constexpr int MAX_SURFACE_LIGHTMAPS = 4;
+
+struct SSurfaceDef
+{
+    /** Parent brush model */
+    ABrushModel * Model;
+
+    /** Bounding box of the surface */
     BvAxisAlignedBox Bounds;
 
-    // TODO: AAudioClip * Ambient[4];
-    //       float AmbientVolume[4];
-    //       int NumAmbients; // 0..4
+    /** Vertex offset */
+    int FirstVertex;
 
-    //TRef< ASpatialTree > Tree; TODO: octree?
+    /** Vertex count */
+    int NumVertices;
+
+    /** Index offset */
+    int FirstIndex;
+
+    /** Index count */
+    int NumIndices;
+#if 0
+    /** Patch size for the bezier surfaces */
+    int PatchWidth;
+    int PatchHeight;
+#endif
+    /** Index in array of materials */
+    uint32_t MaterialIndex;
+
+    /** Lightmap atlas index */
+    uint32_t LightmapBlock;
+
+    /** Sort key. Used for surface batching. */
+    uint32_t SortKey;
+
+    /** Surface geometry type */
+    ESurfaceGeometryType GeometryType;
+
+    /** Plane for planar surface */
+    PlaneF Face;
+
+    /** Size of the lightmap */
+    int LightmapWidth;
+
+    /** Size of the lightmap */
+    int LightmapHeight;
+
+    /** Offset in the lightmap */
+    int LightmapOffsetX;
+
+    /** Offset in the lightmap */
+    int LightmapOffsetY;
+
+    /** Byte offset to the lightmap data */
+    int LightDataOffset;
+
+    /** The influencing lights styles (for dynamic lightmap update) */
+    uint8_t LightStyles[MAX_SURFACE_LIGHTMAPS];
+
+    /** Visibility query group. See VSD_QUERY_MASK enum. */
+    int QueryGroup;
+
+    /** Visibility group. See VISIBILITY_GROUP enum. */
+    int VisGroup;
+
+    /** Visibility processed marker. Used by VSD. */
+    int VisMark;
+
+    /** Surface marked as visible. Used by VSD. */
+    int VisPass;
+
+    /** Drawable rendering order */
+    uint8_t RenderingOrder;
+
+    /** Generate sort key. Call this after RenderingOrder/Model/MaterialIndex/LightmapBlock have changed. */
+    void RegenerateSortKey() {
+        // NOTE: 8 bits are still unused. We can use it in future.
+        SortKey = ((uint64_t)(RenderingOrder & 0xffu) << 56u)
+                | ((uint64_t)(Core::PHHash64( (uint64_t)Model ) & 0xffffu) << 40u)
+                | ((uint64_t)(Core::PHHash32( MaterialIndex ) & 0xffffu) << 24u)
+                | ((uint64_t)(Core::PHHash32( LightmapBlock ) & 0xffffu) << 8u);
+    }
 };
 
-class ALevelPortal : public ABaseObject {
-    AN_CLASS( ALevelPortal, ABaseObject )
+struct SPrimitiveDef
+{
+    ASceneComponent * Owner;
 
-    friend class ALevel;
+    VSD_PRIMITIVE Type;
+
+    union
+    {
+        BvAxisAlignedBox Box;
+        BvSphere Sphere;
+    };
+
+    PlaneF Face;
+
+    /** Visibility query group. See VSD_QUERY_MASK enum. */
+    int QueryGroup;
+
+    /** Visibility group. See VISIBILITY_GROUP enum. */
+    int VisGroup;
+
+    /** Visibility processed marker. Used by VSD. */
+    int VisMark;
+
+    /** Primitve marked as visible. Used by VSD. */
+    int VisPass;
+
+    bool bFaceCull : 1;
+
+    bool bIsOutdoor : 1;
+
+    bool bPendingRemove : 1;
+
+    bool bMovable : 1;
+
+    SPrimitiveLink * Links;
+
+    SVisArea * TopArea;
+
+    SPrimitiveDef * NextUpd;
+    SPrimitiveDef * PrevUpd;
+
+    bool (*RaycastCallback)( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits );
+    bool (*RaycastClosestCallback)( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 & HitLocation, Float2 & HitUV, float & HitDistance, SMeshVertex const ** pVertices, unsigned int Indices[3], TRef< AMaterialInstance > & Material );
+};
+
+struct SPrimitiveLink
+{
+    SVisArea *        Area;
+    SPrimitiveLink *  NextArea;
+    SPrimitiveDef *   Primitive;
+    SPrimitiveLink *  Next;
+};
+
+struct SVisPortal
+{
+#if 0
+    /** Portal owner */
+    ALevel * ParentLevel;
+#endif
+
+    /** Linked areas */
+    SVisArea * Area[2];
+
+    /** Portal to areas */
+    SPortalLink * Portals[2];
+
+    /** Portal hull */
+    AConvexHull * Hull;
+
+    /** Portal plane */
+    PlaneF Plane;
+
+#if 0
+    /** Blocking bits for doors (TODO) */
+    int BlockingBits;
+#endif
+
+    /** Visibility marker */
+    int VisMark;
+};
+
+struct SPortalLink
+{
+    /** Area visible from the portal */
+    SVisArea * ToArea;
+
+    /** Portal hull */
+    AConvexHull * Hull;
+
+    /** Portal plane */
+    PlaneF Plane;
+
+    /** Next portal inside an area */
+    SPortalLink * Next;
+
+    /** Visibility portal */
+    SVisPortal * Portal;
+};
+
+struct SVisArea
+{
+    /** Reference point is used to determine the portal facing */
+    Float3 ReferencePoint;
+
+#if 0
+    /** Area owner */
+    ALevel * ParentLevel;
+#endif
+
+    /** Area bounding box */
+    BvAxisAlignedBox Bounds;  // FIXME: will be removed later?
+
+    /** Linked portals */
+    SPortalLink * PortalList;
+
+    /** Primitives inside the area */
+    SPrimitiveLink * Links;
+
+    /** Baked surfaces attached to the area */
+    int FirstSurface;
+
+    /** Count of the baked surfaces attached to the area */
+    int NumSurfaces;
+};
+
+class ALevel;
+
+class ABrushModel : public ABaseObject {
+    AN_CLASS( ABrushModel, ABaseObject )
 
 public:
 
-    // Vis marker. Set by render frontend.
-    mutable int VisMark;
+    /** Baked surface definitions */
+    TPodArrayHeap< SSurfaceDef > Surfaces;
+
+    /** Baked surface vertex data */
+    TPodArrayHeap< SMeshVertex > Vertices;
+
+    /** Baked surface vertex data */
+    TPodArrayHeap< SMeshVertexUV > LightmapVerts;
+
+    /** Baked surface vertex data */
+    TPodArrayHeap< SMeshVertexLight > VertexLight;
+
+    /** Baked surface triangle index data */
+    TPodArrayHeap< unsigned int > Indices;
+
+    /** Surface materials */
+    TStdVector< TRef< AMaterialInstance > > SurfaceMaterials;
+
+    /** Baked collision data */
+    ACollisionBodyComposition BodyComposition;
+
+    /** Lighting data will be used from that level. */
+    TWeakRef< ALevel > ParentLevel;
+
+    void Purge();
 
 protected:
-    ALevelPortal() {}
-
-    ~ALevelPortal() {
-        AConvexHull::Destroy( Hull );
-    }
-
-private:
-    // Owner
-    ALevel * ParentLevel;
-
-    // Linked areas
-    TRef< ALevelArea > Area1;
-    TRef< ALevelArea > Area2;
-
-    // Portal to areas
-    SAreaPortal * Portals[2];
-
-    // Portal hull
-    AConvexHull * Hull;
-
-    // Portal plane
-    PlaneF Plane;
-
-    // Blocking bits for doors (TODO)
-    //int BlockingBits;
+    ABrushModel() {}
+    ~ABrushModel() {}
 };
 
-struct SAreaPortal {
-    ALevelArea * ToArea;
-    AConvexHull * Hull;
-    PlaneF Plane;
-    SAreaPortal * Next; // Next portal inside area
-    ALevelPortal * Owner;
-};
 
 /**
 
 ALevel
 
-Subpart of a world
+Subpart of a world. Contains actors, level visibility, baked data like lightmaps, surfaces, collision, audio, etc.
 
 */
-class ANGIE_API ALevel : public ABaseObject {
+class ALevel : public ABaseObject {
     AN_CLASS( ALevel, ABaseObject )
 
     friend class AWorld;
 
 public:
-    /** Level is persistent if created by world */
+    using AArrayOfNodes = TPodArray< SBinarySpaceNode >;
+    using AArrayOfLeafs = TPodArray< SBinarySpaceLeaf >;
+
+    /** BSP nodes */
+    AArrayOfNodes Nodes;
+
+    /** BSP leafs */
+    AArrayOfLeafs Leafs;
+
+    /** Node split planes */
+    TPodArray< SBinarySpacePlane > SplitPlanes;
+
+    /** Level indoor areas */
+    TPodArray< SVisArea > Areas;
+
+    /** Level outdoor area */
+    SVisArea OutdoorArea;
+
+    /** Level portals */
+    TPodArray< SVisPortal > Portals;
+
+    /** Links between the portals and areas */
+    TPodArray< SPortalLink > AreaPortals;
+
+    /** Lightmap raw data */
+    byte * LightData;
+
+    /** PVS data */
+    byte * Visdata;
+
+    /** Is PVS data compressed or not */
+    bool bCompressedVisData;
+
+    /** Count of a clusters in PVS data */
+    int PVSClustersCount;
+
+    /** Surface to area attachments */
+    TPodArray< int > AreaSurfaces;
+
+    /** Baked audio */
+    TPodArray< SAudioArea > AudioAreas;
+
+    /** Audio clips */
+    TStdVector< TRef< AAudioClip > > AudioClips;
+
+    /** Baked surface data */
+    TRef< ABrushModel > Model;
+
+    /** Static lightmaps (experemental). Indexed by lightmap block. */
+    TStdVector< TRef< ATexture > > Lightmaps;
+
+    // TODO: Keep here static navigation geometry
+    // TODO: Octree for outdoor area
+    // TODO: combine AddArea/AddPortal/Initialize to Initialize() method
+
+    /** Create vis area */
+    int AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
+
+    /** Create vis portal. Don't create areas after portals! */
+    int AddPortal( Float3 const * _HullPoints, int _NumHullPoints, int _Area1, int _Area2 );
+
+    /** Build level visibility */
+    void Initialize();
+
+    /** Purge level data */
+    void Purge();
+
+    /** Level is persistent if created by owner world */
     bool IsPersistentLevel() const { return bIsPersistent; }
 
     /** Get level world */
@@ -162,49 +512,36 @@ public:
     /** Get actors in level */
     TPodArray< AActor * > const & GetActors() const { return Actors; }
 
-    /** Get level areas */
-    TPodArray< ALevelArea * > const & GetAreas() const { return Areas; }
-
-    /** Get level outdoor area */
-    ALevelArea * GetOutdoorArea() const { return OutdoorArea; }
-
     /** Get level indoor bounding box */
     BvAxisAlignedBox const & GetIndoorBounds() const { return IndoorBounds; }
 
-    /** Find visibility area */
-    int FindArea( Float3 const & _Position );
+    /** Get level areas */
+    TPodArray< SVisArea > const & GetAreas() const { return Areas; }
 
-    /** Destroy all actors in level */
+    /** Get level outdoor area */
+    SVisArea const * GetOutdoorArea() const { return &OutdoorArea; }
+
+    /** Find level leaf */
+    int FindLeaf( Float3 const & _Position );
+
+    /** Find level area */
+    SVisArea * FindArea( Float3 const & _Position );
+
+    /** Mark potentially visible leafs. Uses PVS */
+    int MarkLeafs( int _ViewLeaf );
+
+    /** Destroy all actors in the level */
     void DestroyActors();
 
-    /** Create vis area */
-    ALevelArea * AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
+    /** Add primitive to all the levels */
+    static void AddPrimitive( AWorld * InWorld, SPrimitiveDef * InPrimitive );
 
-    /** Create vis portal */
-    ALevelPortal * AddPortal( Float3 const * _HullPoints, int _NumHullPoints, ALevelArea * _Area1, ALevelArea * _Area2 );
-
-    /** Destroy all vis areas and portals */
-    void DestroyPortalTree();
-
-    /** Build level visibility */
-    void BuildPortals();
-
-    // TODO: future:
-    //void BuildLight();
-    //void BuildStaticBatching();
-
-    // Static lightmaps (experemental)
-    TPodArray< ATexture * > Lightmaps;    
-    void ClearLightmaps();
-    void SetLightData( const byte * _Data, int _Size );
-    /*const */byte * GetLightData() /*const */{ return LightData; }
+    /** Remove primitive from all the levels */
+    static void RemovePrimitive( SPrimitiveDef * InPrimitive );
 
 protected:
-
     ALevel();
     ~ALevel();
-
-private:
 
     /** Level ticking. Called by owner world. */
     void Tick( float _TimeStep );
@@ -212,40 +549,42 @@ private:
     /** Draw debug. Called by owner world. */
     void DrawDebug( ADebugRenderer * InRenderer );
 
+private:
     /** Callback on add level to world. Called by owner world. */
     void OnAddLevelToWorld();
 
-    /** Callback on remove level to world. Called by owner world. */
+    /** Callback on remove level from world. Called by owner world. */
     void OnRemoveLevelFromWorld();
 
-private:
-    // Allow mesh component to register self in level
-    friend class AMeshComponent;
-    void AddStaticMesh( AMeshComponent * InStaticMesh );
-    void RemoveStaticMesh( AMeshComponent * InStaticMesh );
+    void AddBoxRecursive( SPrimitiveDef * InPrimitive );
+    void AddSphereRecursive( SPrimitiveDef * InPrimitive );
+    void AddBoxRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive );
+    void AddSphereRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive );
+    void AddPrimitiveToLevel( SPrimitiveDef * InPrimitive );
 
-private:
-    void AddDrawable( ADrawable * _Drawable );
-    void RemoveDrawable( ADrawable * _Drawable );
+    byte const * LeafPVS( SBinarySpaceLeaf const * _Leaf );
+
+    byte const * DecompressVisdata( byte const * _Data );
 
     void PurgePortals();
 
-    void AddDrawables();
-    void RemoveDrawables();
-
-    void AddDrawableToArea( int _AreaNum, ADrawable * _Drawable );
-
+    /** Parent world */
     AWorld * OwnerWorld;
+
     int IndexInArrayOfLevels = -1;
+
     bool bIsPersistent;
+
+    /** Array of actors */
     TPodArray< AActor * > Actors;
-    TPodArray< ALevelArea * > Areas;
-    TRef< ALevelArea > OutdoorArea;
-    TPodArray< ALevelPortal * > Portals;
-    TPodArray< SAreaPortal > AreaPortals;
-    byte * LightData;
+
     BvAxisAlignedBox IndoorBounds;
-    int LastVisitedArea;
-    AMeshComponent * StaticMeshList;
-    AMeshComponent * StaticMeshListTail;
+
+    class AWorldspawn * Worldspawn;
+
+    /** Node visitor mark */
+    int ViewMark;
+
+    /** Cluster index for view origin */
+    int ViewCluster;
 };

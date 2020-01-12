@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -38,11 +38,6 @@ class ABaseLightComponent : public ASceneComponent {
     AN_COMPONENT( ABaseLightComponent, ASceneComponent )
 
 public:
-    enum { RENDERING_GROUP_DEFAULT = 1 };
-
-    /** Rendering group to filter lights during rendering */
-    int RenderingGroup;
-
     /** Only directional light supports shadow casting yet */
     bool bCastShadow;
 
@@ -62,7 +57,7 @@ public:
     void SetAmbientIntensity( float _Intensity );
     float GetAmbientIntensity() const;
 
-    void SetEnabled( bool _Enabled );
+    virtual void SetEnabled( bool _Enabled );
     bool IsEnabled() const { return bEnabled; }
 
     void SetAnimation( const char * _Pattern, float _Speed = 1.0f, float _Quantizer = 0.0f );

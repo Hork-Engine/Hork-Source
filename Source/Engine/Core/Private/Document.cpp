@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -51,7 +51,7 @@ void ADocument::Clear() {
 int ADocument::AllocateField() {
     if ( FieldsCount == FieldsMemReserved ) {
         FieldsMemReserved = FieldsMemReserved ? FieldsMemReserved<<1 : 1024;
-        Fields = ( SDocumentField * )Allocator::Inst().Extend< 1 >( Fields, FieldsCount * sizeof( SDocumentField ), sizeof( SDocumentField ) * FieldsMemReserved, true );
+        Fields = ( SDocumentField * )Allocator::Inst().Extend1( Fields, FieldsCount * sizeof( SDocumentField ), sizeof( SDocumentField ) * FieldsMemReserved, true );
     }
     SDocumentField * field = &Fields[ FieldsCount ];
     field->ValuesHead = -1;

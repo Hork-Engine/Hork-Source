@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -36,7 +36,6 @@ SOFTWARE.
 
 class AWorld;
 class ALevel;
-class ALevelArea;
 class ADrawable;
 class AMeshComponent;
 class ASkinnedComponent;
@@ -53,6 +52,8 @@ class ARenderWorld
 public:
     explicit ARenderWorld( AWorld * InOwnerWorld );
     ~ARenderWorld() {}
+
+    AWorld * GetOwnerWorld() { return pOwnerWorld; }
 
     /** Get all drawables in the world */
     ADrawable * GetDrawables() { return DrawableList; }
@@ -80,9 +81,6 @@ public:
 
     /** Get spot lights in the world */
     ASpotLightComponent * GetSpotLights() { return SpotLightList; }
-
-    void RenderFrontend_AddInstances( SRenderFrontendDef * _Def );
-    void RenderFrontend_AddDirectionalShadowmapInstances( SRenderFrontendDef * _Def );
 
     void DrawDebug( ADebugRenderer * InRenderer );
 
@@ -119,13 +117,6 @@ private:
     void RemoveSpotLight( ASpotLightComponent * _Light );
 
 private:
-    void RenderFrontend_AddLevelInstances( ALevel * InLevel, SRenderFrontendDef * _Def );
-    void CullInstances( ALevel * InLevel, int _AreaNum, SRenderFrontendDef * _Def );
-    void FlowThroughPortals_r( SRenderFrontendDef * _Def, ALevelArea * _Area );
-    void RenderArea( SRenderFrontendDef * _Def, ALevelArea * _Area, PlaneF const * _CullPlanes, int _CullPlanesCount );
-    void RenderDrawables( SRenderFrontendDef * _Def, TPodArray< ADrawable * > const & _Drawables, PlaneF const * _CullPlanes, int _CullPlanesCount );
-    void RenderMesh( SRenderFrontendDef * _Def, class AMeshComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount );
-
     AWorld * pOwnerWorld;
 
     ADrawable * DrawableList;

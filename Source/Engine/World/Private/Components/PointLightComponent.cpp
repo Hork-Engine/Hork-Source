@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -42,17 +42,19 @@ AN_CLASS_META( APointLightComponent )
 APointLightComponent::APointLightComponent() {
     InnerRadius = DEFAULT_INNER_RADIUS;
     OuterRadius = DEFAULT_OUTER_RADIUS;
-#ifdef FUTURE
-    SphereWorldBounds.Radius = OuterRadius;
-    SphereWorldBounds.Center = Float3(0);
-    AABBWorldBounds.Mins = SphereWorldBounds.Center - OuterRadius;
-    AABBWorldBounds.Maxs = SphereWorldBounds.Center + OuterRadius;
-#endif
-    UpdateBoundingBox();
+
+    Primitive.Owner = this;
+    Primitive.Type = VSD_PRIMITIVE_SPHERE;
+    Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
+    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+
+    UpdateWorldBounds();
 }
 
 void APointLightComponent::InitializeComponent() {
     Super::InitializeComponent();
+
+    GetWorld()->AddPrimitive( &Primitive );
 
     GetWorld()->GetRenderWorld().AddPointLight( this );
 }
@@ -60,39 +62,65 @@ void APointLightComponent::InitializeComponent() {
 void APointLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
+    GetWorld()->RemovePrimitive( &Primitive );
+
     GetWorld()->GetRenderWorld().RemovePointLight( this );
+}
+
+void APointLightComponent::SetVisibilityGroup( int InVisibilityGroup ) {
+    Primitive.VisGroup = InVisibilityGroup;
+}
+
+int APointLightComponent::GetVisibilityGroup() const {
+    return Primitive.VisGroup;
+}
+
+void APointLightComponent::SetEnabled( bool _Enabled ) {
+    Super::SetEnabled( _Enabled );
+
+    if ( _Enabled ) {
+        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
+        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
+    } else {
+        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
+        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
+    }
+}
+
+void APointLightComponent::SetMovable( bool _Movable ) {
+    if ( Primitive.bMovable == _Movable ) {
+        return;
+    }
+
+    Primitive.bMovable = _Movable;
+
+    if ( IsInitialized() )
+    {
+        GetWorld()->MarkPrimitive( &Primitive );
+    }
+}
+
+bool APointLightComponent::IsMovable() const {
+    return Primitive.bMovable;
 }
 
 void APointLightComponent::SetInnerRadius( float _Radius ) {
     InnerRadius = Math::Max( 0.001f, _Radius );
 }
 
-float APointLightComponent::GetInnerRadius() const {
-    return InnerRadius;
-}
-
 void APointLightComponent::SetOuterRadius( float _Radius ) {
     OuterRadius = Math::Max( 0.001f, _Radius );
 
-    UpdateBoundingBox();
-}
-
-float APointLightComponent::GetOuterRadius() const {
-    return OuterRadius;
-}
-
-BvAxisAlignedBox const & APointLightComponent::GetWorldBounds() const {
-    return AABBWorldBounds;
+    UpdateWorldBounds();
 }
 
 void APointLightComponent::OnTransformDirty() {
     Super::OnTransformDirty();
 
-    UpdateBoundingBox();
-    //MarkAreaDirty();
+    UpdateWorldBounds();
 }
 
-void APointLightComponent::UpdateBoundingBox() {
+void APointLightComponent::UpdateWorldBounds() {
     SphereWorldBounds.Radius = OuterRadius;
     SphereWorldBounds.Center = GetWorldPosition();
     AABBWorldBounds.Mins = SphereWorldBounds.Center - OuterRadius;
@@ -104,18 +132,29 @@ void APointLightComponent::UpdateBoundingBox() {
     // TODO: Optimize?
     Float4x4 OBBTransform = Float4x4::Translation( OBBWorldBounds.Center ) * Float4x4::Scale( OBBWorldBounds.HalfSize );
     OBBTransformInverse = OBBTransform.Inversed();
+
+    Primitive.Sphere = SphereWorldBounds;
+
+    if ( IsInitialized() )
+    {
+        GetWorld()->MarkPrimitive( &Primitive );
+    }
 }
 
 void APointLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( RVDrawPointLights ) {
-        Float3 pos = GetWorldPosition();
+    if ( RVDrawPointLights )
+    {
+        if ( Primitive.VisPass == InRenderer->GetVisPass() )
+        {
+            Float3 pos = GetWorldPosition();
 
-        InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
-        InRenderer->DrawSphere( pos, InnerRadius );
-        InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
-        InRenderer->DrawSphere( pos, OuterRadius );
+            InRenderer->SetDepthTest( false );
+            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+            InRenderer->DrawSphere( pos, InnerRadius );
+            InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
+            InRenderer->DrawSphere( pos, OuterRadius );
+        }
     }
 }

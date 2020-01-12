@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -83,10 +83,7 @@ public:
     bool            bCustomDepthStencilPass;
 
     /** Custom depth stencil value for the mesh */
-    byte            CustomDepthStencilValue;
-
-    /** Force ignoring component position/rotation/scale. FIXME: move this to super class SceneComponent? */
-    bool            bNoTransform;
+    uint8_t         CustomDepthStencilValue;
 
     bool            bOverrideMeshMaterials = true;
 
@@ -137,10 +134,6 @@ public:
 
     BvAxisAlignedBox GetSubpartWorldBounds( int _SubpartIndex ) const;
 
-    void SetStatic( bool _bStatic );
-
-    bool IsStatic() const { return bStatic; }
-
     /** Allow mesh to cast shadows on the world */
     void SetCastShadow( bool _CastShadow );
 
@@ -178,12 +171,38 @@ private:
     AMeshComponent * NextShadowCaster;
     AMeshComponent * PrevShadowCaster;
 
-    AMeshComponent * NextStaticMesh;
-    AMeshComponent * PrevStaticMesh;
-
     TRef< AIndexedMesh > Mesh;
     TPodArray< AMaterialInstance *, 1 > Materials;
 
-    bool bStatic;
     bool bCastShadow;
+};
+
+
+
+class ABrushComponent : public ADrawable {
+    AN_COMPONENT( ABrushComponent, ADrawable )
+
+public:
+    /** Brush surfaces */
+    int FirstSurface;
+
+    /** Count of the brush surfaces */
+    int NumSurfaces;
+
+    void SetModel( ABrushModel * InBrushModel )
+    {
+        Model = InBrushModel;
+    }
+
+    ABrushModel * GetModel() { return Model; }
+
+protected:
+    ABrushComponent();
+
+    //ACollisionBodyComposition const & DefaultBodyComposition() const override { return Model ? Model->BodyComposition : BodyComposition; }
+
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
+
+private:
+    TRef< ABrushModel > Model;
 };

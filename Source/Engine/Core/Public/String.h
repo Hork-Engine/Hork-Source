@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -51,8 +51,8 @@ public:
     AString( AString const & _Str );
     ~AString();
 
-    const char & operator[]( int _Index ) const;
-    char & operator[]( int _Index );
+    const char & operator[]( const int _Index ) const;
+    char & operator[]( const int _Index );
 
     void operator=( AString const & _Str );
     void operator=( const char * _Str );
@@ -341,12 +341,12 @@ AN_FORCEINLINE AString::~AString() {
     }
 }
 
-AN_FORCEINLINE const char & AString::operator[]( int _Index ) const {
+AN_FORCEINLINE const char & AString::operator[]( const int _Index ) const {
     AN_ASSERT_( ( _Index >= 0 ) && ( _Index <= StringLength ), "AString[]" );
     return StringData[ _Index ];
 }
 
-AN_FORCEINLINE char &AString::operator[]( int _Index ) {
+AN_FORCEINLINE char &AString::operator[]( const int _Index ) {
     AN_ASSERT_( ( _Index >= 0 ) && ( _Index <= StringLength ), "AString[]" );
     return StringData[ _Index ];
 }

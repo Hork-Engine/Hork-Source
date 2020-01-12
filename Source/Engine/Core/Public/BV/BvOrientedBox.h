@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -32,8 +32,7 @@ SOFTWARE.
 
 #include "BvAxisAlignedBox.h"
 
-class BvOrientedBox {
-public:
+struct BvOrientedBox {
     Float3      Center;
     Float3      HalfSize;
     Float3x3    Orient;

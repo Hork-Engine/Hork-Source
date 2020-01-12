@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -60,7 +60,7 @@ SOFTWARE.
 #include <GLFW/glfw3.h>
 
 ARuntimeVariable RVRenderView( _CTS("RenderView"), _CTS("1"), VAR_CHEAT );
-ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("1"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
+ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
 ARuntimeVariable RVRenderSnapshot( _CTS("RenderSnapshot"), _CTS( "0" ), VAR_CHEAT );
 
 extern thread_local char LogBuffer[16384]; // Use existing log buffer

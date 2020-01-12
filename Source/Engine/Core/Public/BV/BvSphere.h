@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -33,8 +33,7 @@ SOFTWARE.
 #include <Core/Public/Plane.h>
 #include "BvAxisAlignedBox.h"
 
-class BvSphere {
-public:
+struct BvSphere {
     Float3 Center;
     float  Radius;
 
@@ -266,4 +265,4 @@ AN_FORCEINLINE bool BvSphere::ContainsPoint( const Float3 & _Point ) const {
     return Center.DistSqr( _Point ) <= Radius * Radius;
 }
 
-AN_ALIGN16_TYPEDEF( BvSphere, BvSphereSSE );
+struct alignas(16) BvSphereSSE : public BvSphere {};

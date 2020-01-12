@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -39,12 +39,10 @@ enum class EPlaneSide {
     Cross = 2
 };
 
-class PlaneF;
-class PlaneD;
+struct PlaneD;
 
 // Plane equalation: Normal.X * X + Normal.Y * Y + Normal.Z * Z + D = 0
-class PlaneF /*final*/ {
-public:
+struct PlaneF /*final*/ {
     Float3  Normal;
     float   D;
 
@@ -248,8 +246,7 @@ AN_FORCEINLINE EPlaneSide PlaneF::SideOffset( Float3 const & _Point, float const
 //}
 
 
-class PlaneD /*final*/ {
-public:
+struct PlaneD /*final*/ {
     Double3 Normal;
     Double  D;
 

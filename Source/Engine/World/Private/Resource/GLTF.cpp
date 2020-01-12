@@ -5,7 +5,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -473,7 +473,7 @@ static void ReadMesh( SContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
         }
 
         if ( !material || material != prim->material ) {
-            MeshAsset.Subparts.push_back( SSubpart() );
+            MeshAsset.Subparts.Append( SSubpart() );
             subpart = &MeshAsset.Subparts.back();
             subpart->BoundingBox.Clear();
             subpart->BaseVertex = MeshAsset.Vertices.Size();
@@ -1013,7 +1013,7 @@ bool LoadGLTF( const char * FileName, SMeshAsset & MeshAsset, SSkeletonAsset & S
 
     MeshAsset.Clear();
     SkeletonAsset.Clear();
-    Animations.clear();
+    Animations.Clear();
 
     AString path = FileName;
     path.StripFilename();

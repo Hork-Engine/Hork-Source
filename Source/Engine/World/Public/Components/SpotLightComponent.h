@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -62,6 +62,9 @@ public:
     BvAxisAlignedBox const & GetWorldBounds() const;
 
     Float4x4 const & GetOBBTransformInverse() const { return OBBTransformInverse; }
+
+    ASpotLightComponent * GetNext() { return Next; }
+    ASpotLightComponent * GetPrev() { return Prev; }
 
 protected:
     ASpotLightComponent();

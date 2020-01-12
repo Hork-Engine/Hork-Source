@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <World/Public/MaterialGraph/MaterialGraph.h>
 #include <Core/Public/Logger.h>
+#include <Core/Public/CriticalError.h>
 
 static constexpr const char * AssemblyTypeStr[] = {
     "vec4",     // AT_Unknown

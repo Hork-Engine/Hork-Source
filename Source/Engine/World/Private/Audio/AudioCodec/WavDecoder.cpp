@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -70,8 +70,8 @@ AWavAudioTrack::~AWavAudioTrack() {
 }
 
 bool AWavAudioTrack::InitializeFileStream( const char * _FileName ) {
-    assert( !File.IsOpened() );
-    assert( WaveMemory == NULL );
+    AN_ASSERT( !File.IsOpened() );
+    AN_ASSERT( WaveMemory == NULL );
 
     if ( !File.OpenRead( _FileName ) ) {
         return false;
@@ -94,15 +94,15 @@ bool AWavAudioTrack::InitializeFileStream( const char * _FileName ) {
 }
 
 bool AWavAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
-    assert( !File.IsOpened() );
-    assert( WaveMemory == NULL );
+    AN_ASSERT( !File.IsOpened() );
+    AN_ASSERT( WaveMemory == NULL );
 
     Wave = *(SWaveFormat *)_EncodedData;
     WaveMemory = _EncodedData + sizeof( SWaveFormat );
     PCMDataOffset = 0;
     CurrentSample = 0;
 
-    assert( Wave.DataSize == _EncodedDataLength - sizeof( SWaveFormat ) );
+    AN_ASSERT( Wave.DataSize == _EncodedDataLength - sizeof( SWaveFormat ) );
 
     return true;
 }
@@ -172,8 +172,8 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
             case WAVE_FORMAT_DVI_ADPCM: {
 
                 if ( Wave.Channels == 2 ) {
-                    assert( (CurrentSample & 1) == 0 );
-                    assert( (Wave.SamplesPerBlock & 1) == 0 );
+                    AN_ASSERT( (CurrentSample & 1) == 0 );
+                    AN_ASSERT( (Wave.SamplesPerBlock & 1) == 0 );
                 }
 
                 int lastSample = CurrentSample + _NumShorts;
@@ -189,7 +189,7 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
                     int blocksCount = lastBlockIndex - firstBlockIndex + 1;
                     int samplesInsideBlock = lastSample - lastBlockIndex * Wave.SamplesPerBlock;
 
-                    assert( samplesInsideBlock <= Wave.SamplesPerBlock );
+                    AN_ASSERT( samplesInsideBlock <= Wave.SamplesPerBlock );
 
                     if ( samplesInsideBlock == 0 ) {
                         blocksCount--;
@@ -259,7 +259,7 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
                     int blocksCount = lastBlockIndex - firstBlockIndex + 1;
                     int samplesInsideBlock = lastSample - lastBlockIndex * Wave.SamplesPerBlock;
 
-                    assert( samplesInsideBlock <= Wave.SamplesPerBlock );
+                    AN_ASSERT( samplesInsideBlock <= Wave.SamplesPerBlock );
 
                     if ( samplesInsideBlock == 0 ) {
                         blocksCount--;
@@ -658,7 +658,7 @@ static bool IMAADPCMUnpack16_Stereo( signed short * _PCM, int _SamplesCount, int
                 }
             }
 
-            assert( _DataLength >= 0 );
+            AN_ASSERT( _DataLength >= 0 );
 
             sampleIndex += 16;
             if ( sampleIndex >= _SamplesCount ) {
@@ -825,7 +825,7 @@ static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSa
             }
             _IgnoreFirstNSamples = ignore;
 
-            assert( _DataLength >= 0 );
+            AN_ASSERT( _DataLength >= 0 );
 
             sampleIndex += 16 - offset;
             if ( sampleIndex >= _SamplesCount ) {
@@ -834,7 +834,7 @@ static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSa
             }
         }
     }
-    assert( sampleIndex <= _SamplesCount );
+    AN_ASSERT( sampleIndex <= _SamplesCount );
     //Out() << Int(SampleIndex) << _SamplesCount;
     return true;
 }

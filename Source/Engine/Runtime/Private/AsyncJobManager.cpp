@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -31,10 +31,6 @@ SOFTWARE.
 #include <Runtime/Public/AsyncJobManager.h>
 #include <Core/Public/Logger.h>
 
-#ifdef AN_COMPILER_MSVC
-#pragma warning( disable : 4701 )
-#endif
-
 constexpr int AAsyncJobManager::MAX_WORKER_THREADS;
 constexpr int AAsyncJobManager::MAX_JOB_LISTS;
 
@@ -59,6 +55,8 @@ void AAsyncJobManager::Initialize( int _NumWorkerThreads, int _NumJobLists ) {
     for ( int i = 0 ; i < NumJobLists ; i++ ) {
         JobList[i].JobManager = this;
     }
+
+    TotalJobs.Store( 0 );
 
     NumWorkerThreads = _NumWorkerThreads;
     for ( int i = 0 ; i < NumWorkerThreads ; i++ ) {
@@ -101,7 +99,7 @@ void AAsyncJobManager::_WorkerThreadRoutine( void * _Data ) {
 }
 
 void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
-    SAsyncJob job;
+    SAsyncJob job = {};
     bool haveJob;
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
@@ -113,19 +111,23 @@ void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
 #ifdef AN_ACTIVE_THREADS_COUNTERS
         NumActiveThreads.Decrement();
 #endif
+
+        //GLogger.Printf( "Thread waiting %d\n", _ThreadId );
+
         EventNotify[ _ThreadId ].Wait();
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
         NumActiveThreads.Increment();
 #endif
 
-        for ( int currentList = 0 ; currentList < NumJobLists ; currentList++ ) {
+        for ( int currentList = 0 ; TotalJobs.Load() > 0 ; currentList++ ) {
 
-            int fetchIndex = ( _ThreadId + currentList ) %  NumJobLists;
+            int fetchIndex = ( _ThreadId + currentList ) % NumJobLists;
 
             AAsyncJobList * jobList = &JobList[ fetchIndex ];
 
-            do {
+            // Check if list have a jobs
+            if ( jobList->FetchCount.Load() > 0 ) {
 
                 haveJob = false;
 
@@ -133,23 +135,41 @@ void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
                 {
                     ASyncGuard syncGuard( jobList->SubmitSync );
 
+                    //if ( jobList->FetchLock.Increment() == 1 )
+                    //{
                     if ( jobList->SubmittedJobs ) {
                         job = *jobList->SubmittedJobs;
                         jobList->SubmittedJobs = job.Next;
                         haveJob = true;
-                    } else {
-                        if ( !jobList->bSignalled ) {
-                            jobList->bSignalled = true;
-                            jobList->EventDone.Signal();
-                        }
+
+                        jobList->FetchCount.Decrement();
+                        TotalJobs.Decrement();
                     }
+                    //    jobList->FetchLock.Decrement();
+                    //} else {
+                    //    jobList->FetchLock.Decrement();
+                    //}
                 }
 
                 if ( haveJob ) {
                     job.Callback( job.Data );
-                }
 
-            } while ( /*haveJob*/ !jobList->bSignalled );
+                    // Check if this was last processed job in the list
+                    if ( jobList->SubmittedJobsCount.Decrement() == 0 ) {
+                        ASyncGuard syncGuard( jobList->SubmitSync );
+
+                        // Check for new submits
+                        if ( !jobList->SubmittedJobs && jobList->SubmittedJobsCount.Load() == 0 ) {
+
+                            // Check if already signalled from other thread
+                            if ( !jobList->bSignalled ) {
+                                jobList->bSignalled = true;
+                                jobList->EventDone.Signal();
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -163,6 +183,9 @@ void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
 AAsyncJobList::AAsyncJobList() {
     JobList = nullptr;
     SubmittedJobs = nullptr;
+    SubmittedJobsCount.Store( 0 );
+    FetchCount.Store( 0 );
+    //FetchLock.Store( 0 );
     NumPendingJobs = 0;
     bSignalled = false;
 }
@@ -175,6 +198,7 @@ void AAsyncJobList::SetMaxParallelJobs( int _MaxParallelJobs ) {
     AN_ASSERT( JobPool.IsEmpty() );
 
     JobPool.ReserveInvalidate( _MaxParallelJobs );
+    JobPool.Clear();
 }
 
 void AAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
@@ -194,34 +218,47 @@ void AAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
 }
 
 void AAsyncJobList::Submit() {
-    if ( !NumPendingJobs ) {
+    JobManager->SubmitJobList( this );
+}
+
+void AAsyncJobManager::SubmitJobList( AAsyncJobList * InJobList ) {
+    if ( !InJobList->NumPendingJobs ) {
         return;
     }
 
-    SAsyncJob * headJob = &JobPool[ JobPool.Size() - NumPendingJobs ];
+    SAsyncJob * headJob = &InJobList->JobPool[ InJobList->JobPool.Size() - InJobList->NumPendingJobs ];
     AN_ASSERT( headJob->Next == nullptr );
 
     // lock section
     {
-        ASyncGuard syncGuard( SubmitSync );
+        ASyncGuard syncGuard( InJobList->SubmitSync );
 
-        headJob->Next = SubmittedJobs;
-        SubmittedJobs = JobList;
+        headJob->Next = InJobList->SubmittedJobs;
+        InJobList->SubmittedJobs = InJobList->JobList;
 
-        bSignalled = false;
+        InJobList->SubmittedJobsCount.Add( InJobList->NumPendingJobs );
+        InJobList->FetchCount.Add( InJobList->NumPendingJobs );
+
+        TotalJobs.Add( InJobList->NumPendingJobs );
+
+        InJobList->bSignalled = false;
     }
 
-    JobManager->NotifyThreads();
-    JobList = nullptr;
-    NumPendingJobs = 0;
+    NotifyThreads();
+    InJobList->JobList = nullptr;
+    InJobList->NumPendingJobs = 0;
 }
 
 void AAsyncJobList::Wait() {
     int jobsCount = JobPool.Size() - NumPendingJobs;
 
     if ( jobsCount > 0 ) {
-        EventDone.Wait();
+        while ( !bSignalled ) {
+            EventDone.Wait();
+        }
 
+        AN_ASSERT( SubmittedJobsCount.Load() == 0 );
+        AN_ASSERT( FetchCount.Load() == 0 );
         AN_ASSERT( SubmittedJobs == nullptr );
 
         if ( NumPendingJobs > 0 ) {
@@ -382,4 +419,77 @@ void AAsyncStreamManager::ThreadRoutine( void * _Data ) {
 
 
 AAsyncStreamManager GStreamManager;
+#endif
+
+#if 0
+#include <mutex>
+struct SJob
+{
+    void (*Callback)( void * );
+    void *Data;
+};
+class AJobList {
+public:
+    AThreadPool * pool;
+    std::vector< SJob > jobs;
+    AAtomicInt fetchJob;
+    int summitJobCount;
+
+    AJobList() {
+        fetchJob = 0;
+    }
+
+
+    void AddJob( void (*_Callback)( void * ), void * _Data ) {
+        SJob job;
+        job.Callback = _Callback;
+        job.Data = _Data;
+        jobs.push_back( job );
+    }
+
+    void Submit() {
+        pool->SubmitMutex.lock();
+
+        summitJobCount = jobs.size();
+        fetchJob = 0;
+
+        pool->SubmitMutex.unlock();
+    }
+
+    void Wait() {
+
+    }
+};
+
+class AWorkerThread {
+public:
+    AThreadPool * pool;
+
+    void run() {
+        while ( 1 )
+        {
+
+        }
+    }
+};
+
+class AThreadPool {
+public:
+    void Initialize( int _NumJobLists ) {
+        JobLists.resize(_NumJobLists);
+        for ( AJobList & jobList : JobLists ) {
+            jobList.pool = this;
+        }
+
+        threads.resize(4);
+        for ( AWorkerThread & th : threads ) {
+            th.pool = this;
+        }
+    }
+
+    std::vector< AJobList > JobLists;
+    std::vector< AWorkerThread > threads;
+
+    std::mutex SubmitMutex;
+};
 #endif
