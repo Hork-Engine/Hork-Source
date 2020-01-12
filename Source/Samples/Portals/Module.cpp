@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -67,8 +67,9 @@ void AModule::OnGameStart() {
 
     //GEngine.MouseSensitivity = 0.15f;
     GEngine.MouseSensitivity = 0.4f;
-    //GEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    GEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    GEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
+    //GEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
+    //GEngine.SetVideoMode( 320,240,0,60,false,"OpenGL 4.5");
     GEngine.SetCursorEnabled( false );
     GEngine.SetWindowDefs(1,true,false,false,"AngieEngine: Portals");
 
@@ -77,11 +78,13 @@ void AModule::OnGameStart() {
 
     World = AWorld::CreateWorld();
 
-    ALevel * level = World->GetPersistentLevel();
-    ALevelArea * area1 = level->AddArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
-    ALevelArea * area2 = level->AddArea( Float3(-3,0,0), Float3(2.0f), Float3(-3,0,0) );
-    ALevelArea * area3 = level->AddArea( Float3(1,0,0), Float3(2.0f), Float3(1,0,0) );
-    ALevelArea * area4 = level->AddArea( Float3(1,0,3), Float3(2.0f,2.0f,4.0f), Float3(1,0,3) );
+    ALevel * level = NewObject< ALevel >();
+    World->AddLevel( level );
+    //ALevel * level = World->GetPersistentLevel();
+    int area1 = level->AddArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
+    int area2 = level->AddArea( Float3(-3,0,0), Float3(2.0f), Float3(-3,0,0) );
+    int area3 = level->AddArea( Float3(1,0,0), Float3(2.0f), Float3(1,0,0) );
+    int area4 = level->AddArea( Float3(1,0,3), Float3(2.0f,2.0f,4.0f), Float3(1,0,3) );
 
     Float3 points[4] = {
         Float3( 0, 0.2f, -0.2f ),
@@ -89,41 +92,37 @@ void AModule::OnGameStart() {
         Float3( 0, 0.8f, 0.2f ),
         Float3( 0, 0.2f, 0.2f )
     };
-    ALevelPortal * p0 = level->AddPortal( points, 4, area1, area3 );
+    level->AddPortal( points, 4, area1, area3 );
     for ( int i = 0 ; i < 4 ; i++ ) {
         points[i].X -= 2;
     }
-    ALevelPortal * p1 = level->AddPortal( points, 4, area1, area2 );
+    level->AddPortal( points, 4, area1, area2 );
     Float3 points2[4] = {
         Float3( 0.2f, 0.2f, 1 ),
         Float3( 0.4f, 0.2f, 1 ),
         Float3( 0.4f, 0.8f, 1 ),
         Float3( 0.2f, 0.8f, 1 )
     };
-    ALevelPortal * p2 = level->AddPortal( points2, 4, area3, area4 );
+    level->AddPortal( points2, 4, area3, area4 );
 
     for ( int i = 0 ; i < 4 ; i++ ) {
         points[i].X -= 2;
     }
-    ALevelPortal * p3 = level->AddPortal( points, 4, NULL, area2 );
+    level->AddPortal( points, 4, -1, area2 );
 
     for ( int i = 0 ; i < 4 ; i++ ) {
         points2[i].Z += 4;
     }
-    ALevelPortal * p4 = level->AddPortal( points2, 4, area4, NULL );
+    level->AddPortal( points2, 4, area4, -1 );
 
-    AN_UNUSED(p0);
-    AN_UNUSED(p1);
-    AN_UNUSED(p2);
-    AN_UNUSED(p3);
-    AN_UNUSED(p4);
-    level->BuildPortals();
+    level->Initialize();
 
     // Spawn HUD
     //AHUD * hud = World->SpawnActor< AMyHUD >();
 
     RenderingParams = NewObject< ARenderingParameters >();
-    RenderingParams->BackgroundColor = AColor4(0.5f);
+    RenderingParams->BackgroundColor = AColor4::Black();
+    RenderingParams->bClearBackground = true;
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = true;
 
@@ -131,9 +130,9 @@ void AModule::OnGameStart() {
     t.Rotation = Quat::Identity();
     t.Scale = Float3(0.1f);
     //int n = 0;
-    for ( int i = 0 ; i < 28 ; i++ )
+    for ( int i = 0 ; i < 30 ; i++ )
         for ( int j = 0 ; j < 14 ; j++ )
-            for ( int k = 0 ; k < 28 ; k++ ) {
+            for ( int k = 0 ; k < 30 ; k++ ) {
 
                 Float3 pos( i,j,k );
 
@@ -141,7 +140,7 @@ void AModule::OnGameStart() {
 
                 t.Position = pos*0.25;//*0.2f;
 
-                World->SpawnActor< AChecker >( t );
+                World->SpawnActor< AChecker >( t, level );
                 //GLogger.Printf("n %d\n",++n);
             }
 
@@ -153,9 +152,9 @@ void AModule::OnGameStart() {
     }
     t.Position = center/4.0f;
     t.Scale = Float3(0.1f,0.1f,3);
-    World->SpawnActor< AChecker >( t );
+    World->SpawnActor< AChecker >( t, level );
 
-    APlayer * player = World->SpawnActor< APlayer >( Float3(0,0.2f,1), Quat::Identity() );
+    APlayer * player = World->SpawnActor< APlayer >( Float3(0,0.2f,1), Quat::Identity(), level );
 
     //World->SpawnActor< FAtmosphere >();
 

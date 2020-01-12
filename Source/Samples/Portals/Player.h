@@ -4,7 +4,7 @@ Angie Engine Source Code
 
 MIT License
 
-Copyright (C) 2017-2019 Alexander Samusev.
+Copyright (C) 2017-2020 Alexander Samusev.
 
 This file is part of the Angie Engine Source Code.
 
@@ -48,6 +48,7 @@ protected:
     void EndPlay() override;
     void SetupPlayerInputComponent( AInputComponent * _Input ) override;
     void Tick( float _TimeStep ) override;
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
 
 private:
     void MoveForward( float _Value );
@@ -64,4 +65,7 @@ private:
     Angl Angles;
     Float3 MoveVector;
     bool bSpeed;
+    Float3 HitPos;
+    Float3 HitNormal;
+    Float3 Triangle[ 3 ];
 };
