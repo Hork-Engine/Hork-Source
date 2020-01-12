@@ -1235,7 +1235,7 @@ static void VSD_CullBoxAsync( void * InData ) {
     int * cullResult = CullingResult.ToPtr() + threadData.FirstObject;
 
     if ( RVFrustumCullingSSE ) {
-        VSD_CullBoxSSE( /**threadData.FrustumSSE, */threadData.JobCullPlanes, threadData.JobCullPlanesCount, boundingBoxes, threadData.NumObjects, cullResult );
+        VSD_CullBoxSSE( threadData.JobCullPlanes, threadData.JobCullPlanesCount, boundingBoxes, threadData.NumObjects, cullResult );
     } else {
         VSD_CullBoxGeneric( threadData.JobCullPlanes, threadData.JobCullPlanesCount, boundingBoxes, threadData.NumObjects, cullResult );
     }
@@ -1511,7 +1511,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
 
                     STriangleHitResult & hitResult = pRaycastResult->Hits.Append();
                     hitResult.Location = Raycast.RayStart + Raycast.RayDir * d;
-                    hitResult.Normal = Self->Face.Normal;//( v1 - v0 ).Cross( v2-v0 ).Normalized();
+                    hitResult.Normal = Self->Face.Normal;
                     hitResult.Distance = d;
                     hitResult.UV.X = u;
                     hitResult.UV.Y = v;
@@ -1519,6 +1519,11 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                     hitResult.Indices[1] = Self->FirstVertex+triangleIndices[1];
                     hitResult.Indices[2] = Self->FirstVertex+triangleIndices[2];
                     hitResult.Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
+
+                    SWorldRaycastPrimitive & rcPrimitive = pRaycastResult->Primitives.Append();
+                    rcPrimitive.Object = nullptr;
+                    rcPrimitive.FirstHit = rcPrimitive.ClosestHit = pRaycastResult->Hits.Size() - 1;
+                    rcPrimitive.NumHits = 1;
 
                     // Mark as visible
                     Self->VisPass = VisQueryMarker;
@@ -1580,6 +1585,9 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
         }
         else
         {
+            int firstHit = pRaycastResult->Hits.Size();
+            int closestHit = firstHit;
+
             for ( int i = 0 ; i < Self->NumIndices ; i += 3 ) {
 
                 unsigned int const * triangleIndices = pIndices + i;
@@ -1592,7 +1600,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                     if ( Raycast.RayLength > d ) {
                         STriangleHitResult & hitResult = pRaycastResult->Hits.Append();
                         hitResult.Location = Raycast.RayStart + Raycast.RayDir * d;
-                        hitResult.Normal = Self->Face.Normal;//( v1 - v0 ).Cross( v2-v0 ).Normalized();
+                        hitResult.Normal = ( v1 - v0 ).Cross( v2-v0 ).Normalized();
                         hitResult.Distance = d;
                         hitResult.UV.X = u;
                         hitResult.UV.Y = v;
@@ -1603,8 +1611,22 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
 
                         // Mark as visible
                         Self->VisPass = VisQueryMarker;
+
+                        // Find closest hit
+                        if ( d < pRaycastResult->Hits[closestHit].Distance ) {
+                            closestHit = pRaycastResult->Hits.Size() - 1;
+                        }
                     }
                 }
+            }
+
+            if ( Self->VisPass == VisQueryMarker )
+            {
+                SWorldRaycastPrimitive & rcPrimitive = pRaycastResult->Primitives.Append();
+                rcPrimitive.Object = nullptr;
+                rcPrimitive.FirstHit = firstHit;
+                rcPrimitive.NumHits = pRaycastResult->Hits.Size() - firstHit;
+                rcPrimitive.ClosestHit = closestHit;
             }
         }
 
@@ -1641,12 +1663,12 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
         int firstHit = pRaycastResult->Hits.Size();
         if ( Self->RaycastCallback && Self->RaycastCallback( Self, Raycast.RayStart, Raycast.RayEnd, pRaycastResult->Hits ) ) {
 
-            SWorldRaycastDrawable & rcDrawable = pRaycastResult->Drawables.Append();
+            SWorldRaycastPrimitive & rcPrimitive = pRaycastResult->Primitives.Append();
 
-            rcDrawable.Object = Self->Owner;
-            rcDrawable.FirstHit = firstHit;
-            rcDrawable.NumHits = pRaycastResult->Hits.Size() - firstHit;
-            rcDrawable.ClosestHit = rcDrawable.FirstHit;
+            rcPrimitive.Object = Self->Owner;
+            rcPrimitive.FirstHit = firstHit;
+            rcPrimitive.NumHits = pRaycastResult->Hits.Size() - firstHit;
+            rcPrimitive.ClosestHit = rcPrimitive.FirstHit;
 
             // Convert hits to worldspace and find closest hit
 
@@ -1655,16 +1677,16 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
 
             transform.DecomposeNormalMatrix( normalMatrix );
 
-            for ( int i = 0 ; i < rcDrawable.NumHits ; i++ ) {
-                int hitNum = rcDrawable.FirstHit + i;
+            for ( int i = 0 ; i < rcPrimitive.NumHits ; i++ ) {
+                int hitNum = rcPrimitive.FirstHit + i;
                 STriangleHitResult & hitResult = pRaycastResult->Hits[hitNum];
 
                 hitResult.Location = transform * hitResult.Location;
                 hitResult.Normal = ( normalMatrix * hitResult.Normal ).Normalized();
                 hitResult.Distance = (hitResult.Location - Raycast.RayStart).Length();
 
-                if ( hitResult.Distance < pRaycastResult->Hits[ rcDrawable.ClosestHit ].Distance ) {
-                    rcDrawable.ClosestHit = hitNum;
+                if ( hitResult.Distance < pRaycastResult->Hits[rcPrimitive.ClosestHit ].Distance ) {
+                    rcPrimitive.ClosestHit = hitNum;
                 }
             }
 
@@ -2296,7 +2318,7 @@ bool VSD_Raycast( AWorld * InWorld, SWorldRaycastResult & Result, Float3 const &
         }
     }
 
-    if ( Result.Drawables.IsEmpty() ) {
+    if ( Result.Primitives.IsEmpty() ) {
         return false;
     }
 

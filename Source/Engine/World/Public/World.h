@@ -136,39 +136,50 @@ struct SBoxHitResult
     }
 };
 
-/** Raycast drawable */
-struct SWorldRaycastDrawable
+/** Raycast primitive */
+struct SWorldRaycastPrimitive
 {
+    /** Primitive owner. Null for the surfaces. */
     ASceneComponent * Object;
+
+    /** First hit in array of hits */
     int FirstHit;
+
+    /** Hits count */
     int NumHits;
+
+    /** Closest hit num */
     int ClosestHit;
 };
 
 /** Raycast result */
 struct SWorldRaycastResult
 {
+    /** Array of hits */
     TPodArray< STriangleHitResult > Hits;
-    TPodArray< SWorldRaycastDrawable > Drawables;
 
+    /** Array of primitives and surfaces */
+    TPodArray< SWorldRaycastPrimitive > Primitives;
+
+    /** Sort raycast result by hit distance */
     void Sort() {
 
-        struct ASortDrawables {
+        struct ASortPrimitives {
 
             TPodArray< STriangleHitResult > const & Hits;
 
-            ASortDrawables( TPodArray< STriangleHitResult > const & _Hits ) : Hits(_Hits) {}
+            ASortPrimitives( TPodArray< STriangleHitResult > const & _Hits ) : Hits(_Hits) {}
 
-            bool operator() ( SWorldRaycastDrawable const & _A, SWorldRaycastDrawable const & _B ) {
+            bool operator() ( SWorldRaycastPrimitive const & _A, SWorldRaycastPrimitive const & _B ) {
                 const float hitDistanceA = Hits[_A.ClosestHit].Distance;
                 const float hitDistanceB = Hits[_B.ClosestHit].Distance;
 
                 return ( hitDistanceA < hitDistanceB );
             }
-        } SortDrawables( Hits );
+        } SortPrimitives( Hits );
 
-        // Sort by drawables distance
-        StdSort( Drawables.ToPtr(), Drawables.ToPtr() + Drawables.Size(), SortDrawables );
+        // Sort by primitives distance
+        StdSort( Primitives.ToPtr(), Primitives.ToPtr() + Primitives.Size(), SortPrimitives );
 
         struct ASortHit {
             bool operator() ( STriangleHitResult const & _A, STriangleHitResult const & _B ) {
@@ -177,28 +188,38 @@ struct SWorldRaycastResult
         } SortHit;
 
         // Sort by hit distance
-        for ( SWorldRaycastDrawable & drawable : Drawables ) {
-            StdSort( Hits.ToPtr() + drawable.FirstHit, Hits.ToPtr() + (drawable.FirstHit + drawable.NumHits), SortHit );
-            drawable.ClosestHit = drawable.FirstHit;
+        for ( SWorldRaycastPrimitive & primitive : Primitives ) {
+            StdSort( Hits.ToPtr() + primitive.FirstHit, Hits.ToPtr() + (primitive.FirstHit + primitive.NumHits), SortHit );
+            primitive.ClosestHit = primitive.FirstHit;
         }
     }
 
+    /** Clear raycast result */
     void Clear() {
         Hits.Clear();
-        Drawables.Clear();
+        Primitives.Clear();
     }
 };
 
 /** Closest hit result */
 struct SWorldRaycastClosestResult
 {
+    /** Primitive owner. Null for the surfaces. */
     ASceneComponent * Object;
+
+    /** Hit */
     STriangleHitResult TriangleHit;
 
+    /** Hit fraction */
     float Fraction;
+
+    /** Triangle vertices in world coordinates */
     Float3 Vertices[3];
+
+    /** Triangle texture coordinate for the hit */
     Float2 Texcoord;
 
+    /** Clear raycast result */
     void Clear() {
         memset( this, 0, sizeof( *this ) );
     }

@@ -842,7 +842,7 @@ bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocat
     }
 
     if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s) %d %d %d\n", GetObjectNameCStr(),_StartVertexLocation,_VerticesCount, Vertices.Size() );
+        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
         return false;
     }
 
