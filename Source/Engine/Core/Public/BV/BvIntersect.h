@@ -40,7 +40,7 @@ Overlap tests:
 
 Sphere - Sphere
 Sphere - Point
-Sphere - Triangle (not implemented)
+Sphere - Triangle (not tested)
 Sphere - Plane
 Box - Box
 Box - Sphere
@@ -81,7 +81,7 @@ Sphere overlap test
 
 Sphere - Sphere
 Sphere - Point
-Sphere - Triangle (not implemented yet)
+Sphere - Triangle (not tested)
 Sphere - Plane
 
 */
@@ -97,11 +97,190 @@ AN_INLINE bool BvSphereOverlapPoint( BvSphere const & _Sphere, Float3 const & _P
     return _Point.DistSqr( _Sphere.Center ) <= _Sphere.Radius * _Sphere.Radius;
 }
 
-// Sphere - Triangle
-//AN_INLINE bool BvSphereOverlapTriangle( BvSphere const & _Sphere, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2 ) {
-// TODO
-//}
+/** Sphere - Triangle */
+AN_INLINE bool bBvSphereOverlapTriangle( BvSphere const & _Sphere, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2 ) {
+    // based on OPCODE library
 
+    const float radiusSqr = _Sphere.Radius*_Sphere.Radius;
+
+    // Is vertices inside the sphere
+    if ( (_P2 - _Sphere.Center).LengthSqr() <= radiusSqr ) {
+        return true;
+    }
+
+    if ( (_P1 - _Sphere.Center).LengthSqr() <= radiusSqr ) {
+        return true;
+    }
+
+    const Float3 vec = _P0 - _Sphere.Center;
+    const float vecDistSqr = vec.LengthSqr();
+    if ( vecDistSqr <= radiusSqr ) {
+        return true;
+    }
+
+    // Full distance test
+    const Float3 e0 = _P1 - _P0;
+    const Float3 e1 = _P2 - _P0;
+
+    const float a00 = e0.LengthSqr();
+    const float a01 = e0.Dot( e1 );
+    const float a11 = e1.LengthSqr();
+    const float b0 = vec.Dot( e0 );
+    const float b1 = vec.Dot( e1 );
+    const float det = Math::Abs( a00 * a11 - a01 * a01 );
+    float u = a01 * b1 - a11 * b0;
+    float v = a01 * b0 - a00 * b1;
+    float distSqr;
+
+    if ( u + v <= det )
+    {
+        if ( u < 0.0f )
+        {
+            if ( v < 0.0f )  // region 4
+            {
+                if ( b0 < 0.0f )
+                {
+                    // v = 0.0f;
+                    if ( -b0 >= a00 ) {
+                        // u = 1.0f;
+                        distSqr = a00+2.0f*b0+vecDistSqr;
+                    } else {
+                        u = -b0/a00;
+                        distSqr = b0*u+vecDistSqr;
+                    }
+                } else {
+                    // u = 0.0f;
+                    if ( b1 >= 0.0f ) {
+                        // v = 0.0f;
+                        distSqr = vecDistSqr;
+                    } else if ( -b1 >= a11 ) {
+                        // v = 1.0f;
+                        distSqr = a11+2.0f*b1+vecDistSqr;
+                    } else {
+                        v = -b1/a11;
+                        distSqr = b1*v+vecDistSqr;
+                    }
+                }
+            } else {  // region 3
+                // u = 0.0f;
+                if ( b1 >= 0.0f ) {
+                    // v = 0.0f;
+                    distSqr = vecDistSqr;
+                } else if ( -b1 >= a11 ) {
+                    // v = 1.0f;
+                    distSqr = a11+2.0f*b1+vecDistSqr;
+                } else {
+                    v = -b1 / a11;
+                    distSqr = b1*v+vecDistSqr;
+                }
+            }
+        } else if ( v < 0.0f ) {  // region 5
+                                  // v = 0.0f;
+            if ( b0 >= 0.0f ) {
+                // u = 0.0f;
+                distSqr = vecDistSqr;
+            } else if ( -b0 >= a00 ) {
+                // u = 1.0f;
+                distSqr = a00+2.0f*b0+vecDistSqr;
+            } else {
+                u = -b0/a00;
+                distSqr = b0*u+vecDistSqr;
+            }
+        } else {  // region 0
+            // minimum at interior point
+            if ( det == 0.0f ) {
+                // u = 0.0f;
+                // v = 0.0f;
+                distSqr = Float::MaxValue();
+            } else {
+                float invDet = 1.0f / det;
+                u *= invDet;
+                v *= invDet;
+                distSqr = u*(a00*u+a01*v+2.0f*b0) + v*(a01*u+a11*v+2.0f*b1)+vecDistSqr;
+            }
+        }
+    } else {
+        float tmp0, tmp1, num, denom;
+
+        if ( u < 0.0f ) {  // region 2
+            tmp0 = a01 + b0;
+            tmp1 = a11 + b1;
+            if ( tmp1 > tmp0 ) {
+                num = tmp1 - tmp0;
+                denom = a00-2.0f*a01+a11;
+                if ( num >= denom ) {
+                    // u = 1.0f;
+                    // v = 0.0f;
+                    distSqr = a00+2.0f*b0+vecDistSqr;
+                } else {
+                    u = num/denom;
+                    v = 1.0f - u;
+                    distSqr = u*(a00*u+a01*v+2.0f*b0) + v*(a01*u+a11*v+2.0f*b1)+vecDistSqr;
+                }
+            } else {
+                // u = 0.0f;
+                if ( tmp1 <= 0.0f ) {
+                    // v = 1.0f;
+                    distSqr = a11+2.0f*b1+vecDistSqr;
+                } else if ( b1 >= 0.0f ) {
+                    // v = 0.0f;
+                    distSqr = vecDistSqr;
+                } else {
+                    v = -b1/a11;
+                    distSqr = b1*v+vecDistSqr;
+                }
+            }
+        } else if ( v < 0.0f ) {  // region 6
+            tmp0 = a01 + b1;
+            tmp1 = a00 + b0;
+            if ( tmp1 > tmp0 ) {
+                num = tmp1 - tmp0;
+                denom = a00-2.0f*a01+a11;
+                if ( num >= denom ) {
+                    // v = 1.0f;
+                    // u = 0.0f;
+                    distSqr = a11+2.0f*b1+vecDistSqr;
+                } else {
+                    v = num/denom;
+                    u = 1.0f - v;
+                    distSqr = u*(a00*u+a01*v+2.0f*b0) + v*(a01*u+a11*v+2.0f*b1)+vecDistSqr;
+                }
+            } else {
+                // v = 0.0f;
+                if ( tmp1 <= 0.0f ) {
+                    // u = 1.0f;
+                    distSqr = a00+2.0f*b0+vecDistSqr;
+                } else if ( b0 >= 0.0f ) {
+                    // u = 0.0f;
+                    distSqr = vecDistSqr;
+                } else {
+                    u = -b0/a00;
+                    distSqr = b0*u+vecDistSqr;
+                }
+            }
+        } else {  // region 1
+            num = a11 + b1 - a01 - b0;
+            if ( num <= 0.0f ) {
+                // u = 0.0f;
+                // v = 1.0f;
+                distSqr = a11+2.0f*b1+vecDistSqr;
+            } else {
+                denom = a00-2.0f*a01+a11;
+                if ( num >= denom ) {
+                    // u = 1.0f;
+                    // v = 0.0f;
+                    distSqr = a00+2.0f*b0+vecDistSqr;
+                } else {
+                    u = num/denom;
+                    v = 1.0f - u;
+                    distSqr = u*(a00*u+a01*v+2.0f*b0) + v*(a01*u+a11*v+2.0f*b1)+vecDistSqr;
+                }
+            }
+        }
+    }
+
+    return Math::Abs( distSqr ) < radiusSqr;
+}
 
 /** Sphere - Plane */
 AN_INLINE bool BvSphereOverlapPlane( BvSphere const & _Sphere, PlaneF const & _Plane ) {
@@ -1150,7 +1329,7 @@ AN_INLINE bool BvRayIntersectOrientedBox( Float3 const & _RayStart, Float3 const
 }
 
 /** Ray - triangle */
-AN_INLINE bool BvRayIntersectTriangle( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _Distance, float & _U, float & _V ) {
+AN_INLINE bool BvRayIntersectTriangle( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _Distance, float & _U, float & _V, bool _CullBackFace = true ) {
     const Float3 e1 = _P1 - _P0;
     const Float3 e2 = _P2 - _P0;
     const Float3 h = _RayDir.Cross( e2 );
@@ -1158,9 +1337,15 @@ AN_INLINE bool BvRayIntersectTriangle( Float3 const & _RayStart, Float3 const & 
     // calc determinant
     const float det = e1.Dot( h );
 
-    // ray lies in plane of triangle, so there is no intersection
-    if ( det > -0.00001 && det < 0.00001 ) {
-        return false;
+    if ( _CullBackFace ) {
+        if ( det < 0.00001 ) {
+            return false;
+        }
+    } else {
+        // ray lies in plane of triangle, so there is no intersection
+        if ( det > -0.00001 && det < 0.00001 ) {
+            return false;
+        }
     }
 
     // calc inverse determinant to minimalize math divisions in next calculations
