@@ -35,7 +35,7 @@ SOFTWARE.
 #include "OpenGL45ShadowMapRT.h"
 #include "OpenGL45Material.h"
 
-#include <Engine/Core/Public/Logger.h>
+#include <Core/Public/Logger.h>
 
 using namespace GHI;
 
