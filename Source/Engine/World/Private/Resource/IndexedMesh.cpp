@@ -872,7 +872,7 @@ void AVertexLight::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingL
     bDynamicStorage = InDynamicStorage;
     bInvalid = false;
 
-    IndexInArrayOfChannels = InSourceMesh->LightmapUVs.Size();
+    IndexInArrayOfChannels = InSourceMesh->VertexLightChannels.Size();
     InSourceMesh->VertexLightChannels.Append( this );
 
     Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
