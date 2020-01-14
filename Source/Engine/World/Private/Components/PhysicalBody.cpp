@@ -1175,7 +1175,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             break;
         }
 
-        InRenderer->DrawTriangleSoup(collisionVertices.ToPtr(),collisionVertices.Size(),sizeof(Float3),collisionIndices.ToPtr(),collisionIndices.Size(),false);
+        //InRenderer->DrawTriangleSoup(collisionVertices.ToPtr(),collisionVertices.Size(),sizeof(Float3),collisionIndices.ToPtr(),collisionIndices.Size(),false);
         InRenderer->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
     }
 

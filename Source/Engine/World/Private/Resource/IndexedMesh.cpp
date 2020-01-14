@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/Resource/Asset.h>
 #include <World/Public/Resource/GLTF.h>
+#include <World/Public/Level.h>
 #include <World/Public/Base/ResourceManager.h>
 
 #include <Runtime/Public/ScopedTimeCheck.h>
@@ -66,15 +67,8 @@ AIndexedMesh::~AIndexedMesh() {
 
     Purge();
 
-    // Purge channels
-    for ( ALightmapUV * channel : LightmapUVs ) {
-        channel->OwnerMesh = nullptr;
-        channel->IndexInArrayOfUVs = -1;
-    }
-    for ( AVertexLight * channel : VertexLightChannels ) {
-        channel->OwnerMesh = nullptr;
-        channel->IndexInArrayOfChannels = -1;
-    }
+    AN_ASSERT( LightmapUVs.IsEmpty() );
+    AN_ASSERT( VertexLightChannels.IsEmpty() );
 }
 
 void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh, bool _DynamicStorage ) {
@@ -118,7 +112,7 @@ void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
         subpart->IndexCount = Indices.Size();
     }
 
-    ResizeChannels();
+    InvalidateChannels();
 }
 
 void AIndexedMesh::Purge() {
@@ -129,19 +123,7 @@ void AIndexedMesh::Purge() {
 
     Subparts.Clear();
 
-//    for ( ALightmapUV * channel : LightmapUVs ) {
-//        channel->OwnerMesh = nullptr;
-//        channel->IndexInArrayOfUVs = -1;
-//    }
-
-//    LightmapUVs.Clear();
-
-//    for ( AVertexLight * channel : VertexLightChannels ) {
-//        channel->OwnerMesh = nullptr;
-//        channel->IndexInArrayOfChannels = -1;
-//    }
-
-//    VertexLightChannels.Clear();
+    InvalidateChannels();
 
     for ( ASocketDef * socket : Sockets ) {
         socket->RemoveRef();
@@ -159,15 +141,15 @@ void AIndexedMesh::Purge() {
     Indices.Free();
 }
 
-void AIndexedMesh::ResizeChannels() {
-    GLogger.Printf( "ResizeChannels()\n" );
+void AIndexedMesh::InvalidateChannels() {
+    GLogger.Printf( "InvalidateChannels()\n" );
+
     for ( ALightmapUV * channel : LightmapUVs ) {
-        GLogger.Printf( "Resizing lightmapUV %d\n", Vertices.Size() );
-        channel->ResizeChannel( Vertices.Size() );
+        channel->Invalidate();
     }
 
     for ( AVertexLight * channel : VertexLightChannels ) {
-        channel->ResizeChannel( Vertices.Size() );
+        channel->Invalidate();
     }
 }
 
@@ -364,39 +346,13 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
 
     bBoundingBoxDirty = false;
 
-    ResizeChannels();
+    InvalidateChannels();
 
     if ( !bSkinnedMesh ) {
         GenerateRigidbodyCollisions();   // TODO: load collision from file
     }
 
     return true;
-}
-
-ALightmapUV * AIndexedMesh::CreateLightmapUVChannel() {
-    ALightmapUV * channel = NewObject< ALightmapUV >();
-
-    channel->OwnerMesh = this;
-    channel->IndexInArrayOfUVs = LightmapUVs.Size();
-
-    LightmapUVs.Append( channel );
-
-    channel->ResizeChannel( Vertices.Size() );
-
-    return channel;
-}
-
-AVertexLight * AIndexedMesh::CreateVertexLightChannel() {
-    AVertexLight * channel = NewObject< AVertexLight >();
-
-    channel->OwnerMesh = this;
-    channel->IndexInArrayOfChannels = VertexLightChannels.Size();
-
-    VertexLightChannels.Append( channel );
-
-    channel->ResizeChannel( Vertices.Size() );
-
-    return channel;
 }
 
 void AIndexedMesh::AddSocket( ASocketDef * _Socket ) {
@@ -813,25 +769,37 @@ ALightmapUV::ALightmapUV() {
 }
 
 ALightmapUV::~ALightmapUV() {
-    GRenderBackend->DestroyBuffer( VertexBufferGPU );
+    Purge();
 
-    if ( OwnerMesh ) {
-        OwnerMesh->LightmapUVs[ IndexInArrayOfUVs ] = OwnerMesh->LightmapUVs[ OwnerMesh->LightmapUVs.Size() - 1 ];
-        OwnerMesh->LightmapUVs[ IndexInArrayOfUVs ]->IndexInArrayOfUVs = IndexInArrayOfUVs;
-        IndexInArrayOfUVs = -1;
-        OwnerMesh->LightmapUVs.RemoveLast();
-    }
+    GRenderBackend->DestroyBuffer( VertexBufferGPU );
 }
 
-void ALightmapUV::ResizeChannel( int _NumVertices ) {
-    if ( Vertices.Size() == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
-        return;
+void ALightmapUV::Purge() {
+    if ( SourceMesh ) {
+        SourceMesh->LightmapUVs[ IndexInArrayOfUVs ] = SourceMesh->LightmapUVs[ SourceMesh->LightmapUVs.Size() - 1 ];
+        SourceMesh->LightmapUVs[ IndexInArrayOfUVs ]->IndexInArrayOfUVs = IndexInArrayOfUVs;
+        IndexInArrayOfUVs = -1;
+        SourceMesh->LightmapUVs.RemoveLast();
+        SourceMesh.Reset();
     }
 
-    bDynamicStorage = OwnerMesh->bDynamicStorage;
+    LightingLevel.Reset();
 
     Vertices.Free();
-    Vertices.ResizeInvalidate( _NumVertices );
+}
+
+void ALightmapUV::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel, bool InDynamicStorage ) {
+    Purge();
+
+    SourceMesh = InSourceMesh;
+    LightingLevel = InLightingLevel;
+    bDynamicStorage = InDynamicStorage;
+    bInvalid = false;
+
+    IndexInArrayOfUVs = InSourceMesh->LightmapUVs.Size();
+    InSourceMesh->LightmapUVs.Append( this );
+
+    Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
 
     GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertexUV ), bDynamicStorage );
 }
@@ -877,25 +845,37 @@ AVertexLight::AVertexLight() {
 }
 
 AVertexLight::~AVertexLight() {
-    GRenderBackend->DestroyBuffer( VertexBufferGPU );
+    Purge();
 
-    if ( OwnerMesh ) {
-        OwnerMesh->VertexLightChannels[ IndexInArrayOfChannels ] = OwnerMesh->VertexLightChannels[ OwnerMesh->VertexLightChannels.Size() - 1 ];
-        OwnerMesh->VertexLightChannels[ IndexInArrayOfChannels ]->IndexInArrayOfChannels = IndexInArrayOfChannels;
-        IndexInArrayOfChannels = -1;
-        OwnerMesh->VertexLightChannels.RemoveLast();
-    }
+    GRenderBackend->DestroyBuffer( VertexBufferGPU );
 }
 
-void AVertexLight::ResizeChannel( int _NumVertices ) {
-    if ( Vertices.Size() == _NumVertices && bDynamicStorage == OwnerMesh->bDynamicStorage ) {
-        return;
+void AVertexLight::Purge() {
+    if ( SourceMesh ) {
+        SourceMesh->VertexLightChannels[ IndexInArrayOfChannels ] = SourceMesh->VertexLightChannels[ SourceMesh->VertexLightChannels.Size() - 1 ];
+        SourceMesh->VertexLightChannels[ IndexInArrayOfChannels ]->IndexInArrayOfChannels = IndexInArrayOfChannels;
+        IndexInArrayOfChannels = -1;
+        SourceMesh->VertexLightChannels.RemoveLast();
+        SourceMesh.Reset();
     }
 
-    bDynamicStorage = OwnerMesh->bDynamicStorage;
+    LightingLevel.Reset();
 
     Vertices.Free();
-    Vertices.ResizeInvalidate( _NumVertices );
+}
+
+void AVertexLight::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel, bool InDynamicStorage ) {
+    Purge();
+
+    SourceMesh = InSourceMesh;
+    LightingLevel = InLightingLevel;
+    bDynamicStorage = InDynamicStorage;
+    bInvalid = false;
+
+    IndexInArrayOfChannels = InSourceMesh->LightmapUVs.Size();
+    InSourceMesh->VertexLightChannels.Append( this );
+
+    Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
 
     GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertexLight ), bDynamicStorage );
 }

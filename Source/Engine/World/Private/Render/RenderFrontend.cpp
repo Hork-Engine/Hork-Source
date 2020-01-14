@@ -48,6 +48,9 @@ constexpr int MAX_SURFACE_VERTS = 32768*16;
 constexpr int MAX_SURFACE_INDICES = 32768*16;
 
 ARuntimeVariable RVFixFrustumClusters( _CTS( "FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVRenderView( _CTS( "RenderView" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable RVRenderSurfaces( _CTS( "RenderSurfaces" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable RVRenderMeshes( _CTS( "RenderMeshes" ), _CTS( "1" ), VAR_CHEAT );
 
 ARenderFrontend & GRenderFrontend = ARenderFrontend::Inst();
 
@@ -71,8 +74,12 @@ void ARenderFrontend::Initialize() {
 
     BatchMesh = CreateInstanceOf< AIndexedMesh >();
     BatchMesh->Initialize( MAX_SURFACE_VERTS, MAX_SURFACE_INDICES, 1, false, true );
-    BatchLightmapUV = BatchMesh->CreateLightmapUVChannel();
-    BatchVertexLight = BatchMesh->CreateVertexLightChannel();
+
+    BatchLightmapUV = CreateInstanceOf< ALightmapUV >();
+    BatchLightmapUV->Initialize( BatchMesh, nullptr, true );
+
+    BatchVertexLight = CreateInstanceOf< AVertexLight >();
+    BatchVertexLight->Initialize( BatchMesh, nullptr, true );
 }
 
 void ARenderFrontend::Deinitialize() {
@@ -205,6 +212,10 @@ void ARenderFrontend::RenderView( int _Index ) {
     //view->NumLights = 0;
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
+
+    if ( !RVRenderView ) {
+        return;
+    }
 
     if ( camera )
     {
@@ -662,11 +673,14 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
 
             if ( nullptr != (mesh = Upcast< AMeshComponent >( primitive->Owner )) )
             {
-                if ( mesh->HasPreRenderUpdate() ) {
-                    mesh->OnPreRenderUpdate( RenderDef );
-                }
+                if ( RVRenderMeshes )
+                {
+                    if ( mesh->HasPreRenderUpdate() ) {
+                        mesh->OnPreRenderUpdate( RenderDef );
+                    }
 
-                AddMesh( RenderDef, mesh );
+                    AddMesh( RenderDef, mesh );
+                }
             }
             else if ( nullptr != (brush = Upcast< ABrushComponent >( primitive->Owner )) )
             {
@@ -699,7 +713,7 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
             // TODO: Add other drawables (Sprite, ...)
         }
 
-        if ( !VisSurfaces.IsEmpty() ) {
+        if ( RVRenderSurfaces && !VisSurfaces.IsEmpty() ) {
             struct SSortFunction {
                 bool operator() ( SSurfaceDef const * _A, SSurfaceDef const * _B ) {
                     return ( _A->SortKey < _B->SortKey );

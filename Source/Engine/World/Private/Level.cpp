@@ -200,6 +200,9 @@ void ALevel::Purge() {
         Worldspawn = nullptr;
     }
 
+    RemoveLightmapUVChannels();
+    RemoveVertexLightChannels();
+
     PurgePortals();
 
     Areas.Free();
@@ -347,7 +350,7 @@ ALevel::ALevel() {
 ALevel::~ALevel() {
     Purge();
 
-    DestroyActors();
+    //DestroyActors();
 }
 
 int ALevel::FindLeaf( Float3 const & _Position ) {
@@ -835,7 +838,37 @@ void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
     InPrimitive->Links = nullptr;
 }
 
+ALightmapUV * ALevel::CreateLightmapUVChannel( AIndexedMesh * InSourceMesh ) {
+    ALightmapUV * lightmapUV = NewObject< ALightmapUV >();
+    lightmapUV->AddRef();
+    lightmapUV->Initialize( InSourceMesh, this, false );
+    LightmapUVs.Append( lightmapUV );
+    return lightmapUV;
+}
 
+void ALevel::RemoveLightmapUVChannels() {
+    for ( ALightmapUV * lightmapUV : LightmapUVs ) {
+        lightmapUV->Purge();
+        lightmapUV->RemoveRef();
+    }
+    LightmapUVs.Free();
+}
+
+AVertexLight * ALevel::CreateVertexLightChannel( AIndexedMesh * InSourceMesh ) {
+    AVertexLight * vertexLight = NewObject< AVertexLight >();
+    vertexLight->AddRef();
+    vertexLight->Initialize( InSourceMesh, this, false );
+    VertexLightChannels.Append( vertexLight );
+    return vertexLight;
+}
+
+void ALevel::RemoveVertexLightChannels() {
+    for ( AVertexLight * vertexLight : VertexLightChannels ) {
+        vertexLight->Purge();
+        vertexLight->RemoveRef();
+    }
+    VertexLightChannels.Free();
+}
 
 
 

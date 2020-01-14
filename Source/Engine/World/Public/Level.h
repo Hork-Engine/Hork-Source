@@ -30,19 +30,22 @@ SOFTWARE.
 
 #pragma once
 
-#include "AINavigationMesh.h"
 #include "Resource/CollisionBody.h"
 #include "Resource/Material.h"
-#include "Resource/IndexedMesh.h"
 #include "Audio/AudioClip.h"
-
+#include "HitTest.h"
 #include <Runtime/Public/RenderCore.h>
 
 class AActor;
+class AWorld;
 class ATexture;
 class ASceneComponent;
 class ABrushModel;
 class AConvexHull;
+class AIndexedMesh;
+class ALightmapUV;
+class AVertexLight;
+class ADebugRenderer;
 struct SVisArea;
 struct SPrimitiveDef;
 struct SPortalLink;
@@ -539,6 +542,24 @@ public:
     /** Remove primitive from all the levels */
     static void RemovePrimitive( SPrimitiveDef * InPrimitive );
 
+    /** Create lightmap channel for a mesh to store lighmap UVs */
+    ALightmapUV * CreateLightmapUVChannel( AIndexedMesh * InSourceMesh );
+
+    /** Create vertex light channel for a mesh to store light colors */
+    AVertexLight * CreateVertexLightChannel( AIndexedMesh * InSourceMesh );
+
+    /** Remove all lightmap channels inside the level */
+    void RemoveLightmapUVChannels();
+
+    /** Remove all vertex light channels inside the level */
+    void RemoveVertexLightChannels();
+
+    /** Get all lightmap channels inside the level */
+    TPodArray< ALightmapUV * > const & GetLightmapUVChannels() const { return LightmapUVs; }
+
+    /** Get all vertex light channels inside the level */
+    TPodArray< AVertexLight * > const & GetVertexLightChannels() const { return VertexLightChannels; }
+
 protected:
     ALevel();
     ~ALevel();
@@ -581,6 +602,9 @@ private:
     BvAxisAlignedBox IndoorBounds;
 
     class AWorldspawn * Worldspawn;
+
+    TPodArray< ALightmapUV * > LightmapUVs;
+    TPodArray< AVertexLight * > VertexLightChannels;
 
     /** Node visitor mark */
     int ViewMark;

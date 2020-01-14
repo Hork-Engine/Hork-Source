@@ -369,6 +369,7 @@ void AssertFunction( const char * _File, int _Line, const char * _Function, cons
     raise( SIGTRAP );
 #endif
 
+
     bNestedFunctionCall = false;
 }
 

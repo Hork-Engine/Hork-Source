@@ -59,7 +59,6 @@ SOFTWARE.
 
 #include <GLFW/glfw3.h>
 
-ARuntimeVariable RVRenderView( _CTS("RenderView"), _CTS("1"), VAR_CHEAT );
 ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
 ARuntimeVariable RVRenderSnapshot( _CTS("RenderSnapshot"), _CTS( "0" ), VAR_CHEAT );
 
@@ -855,10 +854,6 @@ void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
 
 void ARenderBackend::RenderView( SRenderView * _RenderView ) {
     GRenderView = _RenderView;
-
-    if ( !RVRenderView ) {
-        return;
-    }
 
     GFrameResources.UploadUniforms();
 

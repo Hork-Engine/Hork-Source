@@ -35,8 +35,10 @@ SOFTWARE.
 #include "Material.h"
 #include "CollisionBody.h"
 #include "Skeleton.h"
+#include <World/Public/Level.h>
 
 class AIndexedMesh;
+class ALevel;
 
 /**
 
@@ -58,22 +60,6 @@ protected:
     ASocketDef() : Position(0.0f), Scale(1.0f), Rotation(Quat::Identity()), JointIndex(-1)
     {
     }
-};
-
-/**
-
-STriangleHitResult
-
-Raycast hit result
-
-*/
-struct STriangleHitResult {
-    Float3 Location;
-    Float3 Normal;
-    Float2 UV;
-    float Distance;
-    unsigned int Indices[3];
-    AMaterialInstance * Material;
 };
 
 /**
@@ -213,6 +199,12 @@ class ALightmapUV : public ABaseObject, public IGPUResourceOwner {
     friend class AIndexedMesh;
 
 public:
+    void Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel, bool InDynamicStorage );
+    void Purge();
+
+    /** Dynamic storage is the mesh that updates every or almost every frame */
+    bool IsDynamicStorage() const { return bDynamicStorage; }
+
     SMeshVertexUV * GetVertices() { return Vertices.ToPtr(); }
     SMeshVertexUV const * GetVertices() const { return Vertices.ToPtr(); }
     int GetVertexCount() const { return Vertices.Size(); }
@@ -222,23 +214,27 @@ public:
 
     ABufferGPU * GetGPUResource() { return VertexBufferGPU; }
 
-    AIndexedMesh * GetOwner() { return OwnerMesh; }
+    AIndexedMesh * GetSourceMesh() { return SourceMesh; }
+
+    ALevel * GetLightingLevel() { return LightingLevel; }
 
 protected:
     ALightmapUV();
     ~ALightmapUV();
 
-    void ResizeChannel( int _NumVertices );
+    void Invalidate() { bInvalid = true; }
 
     /** IGPUResourceOwner interface */
     void UploadResourcesGPU() override;
 
 private:
     ABufferGPU * VertexBufferGPU;
-    AIndexedMesh * OwnerMesh;
+    TRef< AIndexedMesh > SourceMesh;
+    TWeakRef< ALevel > LightingLevel;
     int IndexInArrayOfUVs = -1;
     TPodArrayHeap< SMeshVertexUV > Vertices;
     bool bDynamicStorage;
+    bool bInvalid;
 };
 
 /**
@@ -254,6 +250,12 @@ class AVertexLight : public ABaseObject, public IGPUResourceOwner {
     friend class AIndexedMesh;
 
 public:
+    void Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel, bool InDynamicStorage );
+    void Purge();
+
+    /** Dynamic storage is the mesh that updates every or almost every frame */
+    bool IsDynamicStorage() const { return bDynamicStorage; }
+
     SMeshVertexLight * GetVertices() { return Vertices.ToPtr(); }
     SMeshVertexLight const * GetVertices() const { return Vertices.ToPtr(); }
     int GetVertexCount() const { return Vertices.Size(); }
@@ -263,23 +265,27 @@ public:
 
     ABufferGPU * GetGPUResource() { return VertexBufferGPU; }
 
-    AIndexedMesh * GetOwner() { return OwnerMesh; }
+    AIndexedMesh * GetSourceMesh() { return SourceMesh; }
+
+    ALevel * GetLightingLevel() { return LightingLevel; }
 
 protected:
     AVertexLight();
     ~AVertexLight();
 
-    void ResizeChannel( int _NumVertices );
+    void Invalidate() { bInvalid = true; }
 
     /** IGPUResourceOwner interface */
     void UploadResourcesGPU() override;
 
 private:
     ABufferGPU * VertexBufferGPU;
-    AIndexedMesh * OwnerMesh;
+    TRef< AIndexedMesh > SourceMesh;
+    TWeakRef< ALevel > LightingLevel;
     int IndexInArrayOfChannels = -1;
     TPodArrayHeap< SMeshVertexLight > Vertices;
     bool bDynamicStorage;
+    bool bInvalid;
 };
 
 using ALightmapUVChannels = TPodArray< ALightmapUV *, 1 >;
@@ -368,12 +374,6 @@ public:
     /** Get mesh part */
     AIndexedMeshSubpart * GetSubpart( int _SubpartIndex );
 
-    /** Create lightmap channel to store lighmap UVs */
-    ALightmapUV * CreateLightmapUVChannel();
-
-    /** Create vertex light channel to store light colors */
-    AVertexLight * CreateVertexLightChannel();
-
     /** Add the socket */
     void AddSocket( ASocketDef * _Socket );
     // TODO: RemoveSocket?
@@ -432,10 +432,10 @@ public:
     /** Max primitives per leaf. For raycasting */
     unsigned int GetRaycastPrimitivesPerLeaf() const { return RaycastPrimitivesPerLeaf; }
 
-    /** Get all lightmap channels */
+    /** Get all lightmap channels for the mesh */
     ALightmapUVChannels const & GetLightmapUVChannels() const { return LightmapUVs; }
 
-    /** Get all vertex light channels */
+    /** Get all vertex light channels for the mesh */
     AVertexLightChannels const & GetVertexLightChannels() const { return VertexLightChannels; }
 
     /** Write vertices at location and send them to GPU */
@@ -499,7 +499,7 @@ protected:
     void UploadResourcesGPU() override;
 
 private:
-    void ResizeChannels();
+    void InvalidateChannels();
 
     ABufferGPU * VertexBufferGPU;
     ABufferGPU * IndexBufferGPU;
