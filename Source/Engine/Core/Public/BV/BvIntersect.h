@@ -1378,13 +1378,77 @@ AN_INLINE bool BvRayIntersectTriangle( Float3 const & _RayStart, Float3 const & 
 
 /** Ray - Plane */
 AN_INLINE bool BvRayIntersectPlane( Float3 const & _RayStart, Float3 const & _RayDir, PlaneF const & _Plane, float & _Distance ) {
+    // Calculate distance from ray origin to plane
+    const float d1 = _RayStart.Dot( _Plane.Normal ) + _Plane.D;
+
+    // Ray origin is on plane
+    if ( d1 == 0.0f ) {
+        _Distance = 0.0f;
+        return true;
+    }
+
+    // Check ray direction
     const float d2 = _Plane.Normal.Dot( _RayDir );
-    if ( d2 == 0.0f ) {
-        // ray is parallel to plane
+    if ( Math::Abs( d2 ) < 0.0001f ) {
+        // ray is parallel
         return false;
     }
-    const float d1 = _Plane.Normal.Dot( _RayStart ) + _Plane.D;
+
+    // Calculate distance from ray origin to plane intersection
     _Distance = -( d1 / d2 );
+
+    return _Distance >= 0.0f;
+}
+
+/** Ray - Plane */
+AN_INLINE bool BvRayIntersectPlaneFront( Float3 const & _RayStart, Float3 const & _RayDir, PlaneF const & _Plane, float & _Distance ) {
+    // Calculate distance from ray origin to plane
+    const float d1 = _RayStart.Dot( _Plane.Normal ) + _Plane.D;
+
+    // Perform face culling
+    if ( d1 < 0.0f ) {
+        return false;
+    }
+
+    // Check ray direction
+    const float d2 = _Plane.Normal.Dot( _RayDir );
+    if ( d2 >= 0.0f ) {
+        // ray is parallel or has wrong direction
+        return false;
+    }
+
+    // Calculate distance from ray origin to plane intersection
+    _Distance = d1 / -d2;
+
+    return true;
+}
+
+/** Ray - Plane */
+AN_INLINE bool BvRayIntersectPlaneBack( Float3 const & _RayStart, Float3 const & _RayDir, PlaneF const & _Plane, float & _Distance ) {
+    // Calculate distance from ray origin to plane
+    const float d1 = _RayStart.Dot( _Plane.Normal ) + _Plane.D;
+
+    // Perform face culling
+    if ( d1 > 0.0f ) {
+        return false;
+    }
+
+    // Ray origin is on plane
+    if ( d1 == 0.0f ) {
+        _Distance = 0.0f;
+        return true;
+    }
+
+    // Check ray direction
+    const float d2 = _Plane.Normal.Dot( _RayDir );
+    if ( d2 <= 0.0f ) {
+        // ray is parallel or has wrong direction
+        return false;
+    }
+
+    // Calculate distance from ray origin to plane intersection
+    _Distance = -d1 / d2;
+
     return true;
 }
 

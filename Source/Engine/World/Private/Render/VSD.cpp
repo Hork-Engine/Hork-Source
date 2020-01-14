@@ -1411,7 +1411,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
         switch ( sidedType ) {
         case FRONT_SIDED:
             // Perform face culling
-            if ( d1 < 0.0f ) return;
+            if ( d1 <= 0.0f ) return;
 
             // Check ray direction
             d2 = Self->Face.Normal.Dot( Raycast.RayDir );
@@ -1422,7 +1422,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
             break;
         case BACK_SIDED:
             // Perform face culling
-            if ( d1 > 0.0f ) return;
+            if ( d1 >= 0.0f ) return;
 
             // Check ray direction
             d2 = Self->Face.Normal.Dot( Raycast.RayDir );
