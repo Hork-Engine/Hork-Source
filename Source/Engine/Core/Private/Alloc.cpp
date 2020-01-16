@@ -211,6 +211,19 @@ void AHeapMemory::HeapFree( void * _Bytes ) {
     }
 }
 
+void AHeapMemory::PointerTrashTest( void * _Bytes ) {
+    #ifdef ENABLE_TRASH_TEST
+    byte * bytes = (byte *)_Bytes;
+
+    SHeapChunk * heap = (SHeapChunk *)(bytes)-1;
+    bytes -= heap->Padding;
+
+    if ( *(TRASH_MARKER *)(bytes + heap->Size - sizeof( TRASH_MARKER )) != TrashMarker ) {
+        MemLogger.Print( "AHeapMemory::PointerTrashTest: Warning: memory was trashed\n" );
+    }
+    #endif
+}
+
 void AHeapMemory::CheckMemoryLeaks() {
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = heap->pNext ) {
         MemLogger.Print( "==== Heap Memory Leak ====\n" );

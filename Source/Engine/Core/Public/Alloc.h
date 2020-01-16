@@ -102,6 +102,9 @@ public:
     /** Heap memory deallocation (thread safe) */
     void HeapFree( void * _Bytes );
 
+    /** Check if memory was trashed (thread safe) */
+    void PointerTrashTest( void * _Bytes );
+
     /** Clearing whole heap memory (main thread only) */
     void Clear();
 
