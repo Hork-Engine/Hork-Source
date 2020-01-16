@@ -204,6 +204,11 @@ void AEngineInstance::UpdateFrame() {
     // Take current frame duration
     FrameDurationInSeconds = FrameDuration * 0.000001;
 
+    // Don't allow very slow frames
+    if ( FrameDurationInSeconds > 0.5f ) {
+        FrameDurationInSeconds = 0.0f;
+    }
+
     // Set current frame number
     FrameNumber++;
 
