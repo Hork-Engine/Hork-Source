@@ -243,7 +243,7 @@ struct SSurfaceDef
     /** Visibility group. See VISIBILITY_GROUP enum. */
     int VisGroup;
 
-    /** Visibility processed marker. Used by VSD. */
+    /** Visibility/raycast processed marker. Used by VSD. */
     int VisMark;
 
     /** Surface marked as visible. Used by VSD. */
@@ -282,7 +282,7 @@ struct SPrimitiveDef
     /** Visibility group. See VISIBILITY_GROUP enum. */
     int VisGroup;
 
-    /** Visibility processed marker. Used by VSD. */
+    /** Visibility/raycast processed marker. Used by VSD. */
     int VisMark;
 
     /** Primitve marked as visible. Used by VSD. */
@@ -385,6 +385,9 @@ struct SVisArea
 
     /** Count of the baked surfaces attached to the area */
     int NumSurfaces;
+
+    /** Visibility/raycast processed marker. Used by VSD. */
+    int VisMark;
 };
 
 class ALevel;
@@ -605,6 +608,8 @@ private:
 
     TPodArray< ALightmapUV * > LightmapUVs;
     TPodArray< AVertexLight * > VertexLightChannels;
+
+    byte * DecompressedVisData;
 
     /** Node visitor mark */
     int ViewMark;

@@ -1351,10 +1351,12 @@ static const SWorldRaycastFilter DefaultRaycastFilter;
 AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _U, float & _V );
 static void VSD_RaycastSurface( SSurfaceDef * Self );
 static void VSD_RaycastPrimitive( SPrimitiveDef * Self );
-static void VSD_RaycastPrimitives( SVisArea const * InArea );
-static void VSD_RaycastPrimitiveBounds( SVisArea const * InArea );
+static void VSD_RaycastPrimitives( SVisArea * InArea );
+static void VSD_RaycastPrimitiveBounds( SVisArea * InArea );
 static void VSD_LevelRaycast_r( int InNodeIndex );
+static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd );
 static void VSD_LevelRaycastBounds_r( int InNodeIndex );
+static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd );
 static void VSD_LevelRaycastPortals_r( SVisArea * InArea );
 static void VSD_LevelRaycastBoundsPortals_r( SVisArea * InArea );
 static void VSD_ProcessLevelRaycast( ALevel * InLevel );
@@ -1697,9 +1699,19 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
 }
 
 
-static void VSD_RaycastPrimitives( SVisArea const * InArea )
+static void VSD_RaycastPrimitives( SVisArea * InArea )
 {
     float boxMin, boxMax;
+
+    if ( InArea->VisMark == VisQueryMarker )
+    {
+        // Area raycast already processed
+        //GLogger.Printf( "Area raycast already processed\n" );
+        return;
+    }
+
+    // Mark area raycast processed
+    InArea->VisMark = VisQueryMarker;
 
     if ( InArea->NumSurfaces > 0 )
     {
@@ -1827,9 +1839,19 @@ static void VSD_RaycastPrimitives( SVisArea const * InArea )
     }
 }
 
-static void VSD_RaycastPrimitiveBounds( SVisArea const * InArea )
+static void VSD_RaycastPrimitiveBounds( SVisArea * InArea )
 {
     float boxMin, boxMax;
+
+    if ( InArea->VisMark == VisQueryMarker )
+    {
+        // Area raycast already processed
+        //GLogger.Printf( "Area raycast already processed\n" );
+        return;
+    }
+
+    // Mark area raycast processed
+    InArea->VisMark = VisQueryMarker;
 
     if ( InArea->NumSurfaces > 0 )
     {
@@ -2005,6 +2027,7 @@ static void VSD_RaycastPrimitiveBounds( SVisArea const * InArea )
     }
 }
 
+#if 0
 static void VSD_LevelRaycast_r( int InNodeIndex ) {
     SNodeBase const * node;
     float boxMin, boxMax;
@@ -2051,7 +2074,102 @@ static void VSD_LevelRaycast_r( int InNodeIndex ) {
 
     VSD_RaycastPrimitives( pleaf->Area );
 }
+#else
+static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd ) {
 
+    if ( InNodeIndex < 0 ) {
+
+        SBinarySpaceLeaf const * leaf = &CurLevel->Leafs[-1 - InNodeIndex];
+
+#if 0
+        float boxMin, boxMax;
+        if ( !BvRayIntersectBox( InRayStart, Raycast.InvRayDir, leaf->Bounds, boxMin, boxMax ) ) {
+            return false;
+        }
+
+        if ( boxMin >= Raycast.HitDistanceMin ) {
+            // Ray intersects the box, but box is too far
+            return false;
+        }
+#endif
+
+        VSD_RaycastPrimitives( leaf->Area );
+
+        if ( Raycast.RayLength > Raycast.HitDistanceMin ) {
+        //if ( d >= Raycast.HitDistanceMin ) {
+            // stop raycasting
+            return true;
+        }
+
+        // continue raycasting
+        return false;
+    }
+
+    SBinarySpaceNode const * node = CurLevel->Nodes.ToPtr() + InNodeIndex;
+
+    float d1, d2;
+
+    if ( node->Plane->Type < 3 )
+    {
+        // Calc front distance
+        d1 = InRayStart[node->Plane->Type] + node->Plane->D;
+
+        // Calc back distance
+        d2 = InRayEnd[node->Plane->Type] + node->Plane->D;
+    }
+    else
+    {
+        // Calc front distance
+        d1 = node->Plane->Dist( InRayStart );
+
+        // Calc back distance
+        d2 = node->Plane->Dist( InRayEnd );
+    }
+
+    int side = d1 < 0;
+
+    int front = node->ChildrenIdx[side];
+
+    if ( ( d2 < 0 ) == side ) // raystart & rayend on the same side of plane
+    {
+        if ( front == 0 ) {
+            // Solid
+            return false;
+        }
+
+        return VSD_LevelRaycast2_r( front, InRayStart, InRayEnd );
+    }
+
+    // Calc intersection point
+    float hitFraction;
+#if 0
+    #define DIST_EPSILON 0.03125f
+    if ( d1 < 0 ) {
+        hitFraction = ( d1 + DIST_EPSILON ) / ( d1 - d2 );
+    } else {
+        hitFraction = ( d1 - DIST_EPSILON ) / ( d1 - d2 );
+    }
+#else
+    hitFraction = d1 / ( d1 - d2 );
+#endif
+    hitFraction = Math::Clamp( hitFraction, 0.0f, 1.0f );
+
+    Float3 mid = InRayStart + ( InRayEnd - InRayStart ) * hitFraction;
+
+    // Traverse front side first
+    if ( front != 0 && VSD_LevelRaycast2_r( front, InRayStart, mid ) )
+    {
+        // Found closest ray intersection
+        return true;
+    }
+
+    // Traverse back side
+    int back = node->ChildrenIdx[ side ^ 1 ];
+    return back != 0 && VSD_LevelRaycast2_r( back, mid, InRayEnd );
+}
+#endif
+
+#if 0
 static void VSD_LevelRaycastBounds_r( int InNodeIndex ) {
     SNodeBase const * node;
     float boxMin, boxMax;
@@ -2098,6 +2216,100 @@ static void VSD_LevelRaycastBounds_r( int InNodeIndex ) {
 
     VSD_RaycastPrimitiveBounds( pleaf->Area );
 }
+#else
+static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd ) {
+
+    if ( InNodeIndex < 0 ) {
+
+        SBinarySpaceLeaf const * leaf = &CurLevel->Leafs[-1 - InNodeIndex];
+
+#if 0
+        float boxMin, boxMax;
+        if ( !BvRayIntersectBox( InRayStart, Raycast.InvRayDir, leaf->Bounds, boxMin, boxMax ) ) {
+            return false;
+        }
+
+        if ( boxMin >= Raycast.HitDistanceMin ) {
+            // Ray intersects the box, but box is too far
+            return false;
+        }
+#endif
+
+        VSD_RaycastPrimitiveBounds( leaf->Area );
+
+        if ( Raycast.RayLength > Raycast.HitDistanceMin ) {
+        //if ( d >= Raycast.HitDistanceMin ) {
+            // stop raycasting
+            return true;
+        }
+
+        // continue raycasting
+        return false;
+    }
+
+    SBinarySpaceNode const * node = CurLevel->Nodes.ToPtr() + InNodeIndex;
+
+    float d1, d2;
+
+    if ( node->Plane->Type < 3 )
+    {
+        // Calc front distance
+        d1 = InRayStart[node->Plane->Type] + node->Plane->D;
+
+        // Calc back distance
+        d2 = InRayEnd[node->Plane->Type] + node->Plane->D;
+    }
+    else
+    {
+        // Calc front distance
+        d1 = node->Plane->Dist( InRayStart );
+
+        // Calc back distance
+        d2 = node->Plane->Dist( InRayEnd );
+    }
+
+    int side = d1 < 0;
+
+    int front = node->ChildrenIdx[side];
+
+    if ( ( d2 < 0 ) == side ) // raystart & rayend on the same side of plane
+    {
+        if ( front == 0 ) {
+            // Solid
+            return false;
+        }
+
+        return VSD_LevelRaycastBounds2_r( front, InRayStart, InRayEnd );
+    }
+
+    // Calc intersection point
+    float hitFraction;
+#if 0
+    #define DIST_EPSILON 0.03125f
+    if ( d1 < 0 ) {
+        hitFraction = ( d1 + DIST_EPSILON ) / ( d1 - d2 );
+    } else {
+        hitFraction = ( d1 - DIST_EPSILON ) / ( d1 - d2 );
+    }
+#else
+    hitFraction = d1 / ( d1 - d2 );
+#endif
+    hitFraction = Math::Clamp( hitFraction, 0.0f, 1.0f );
+
+    Float3 mid = InRayStart + ( InRayEnd - InRayStart ) * hitFraction;
+
+    // Traverse front side first
+    if ( front != 0 && VSD_LevelRaycastBounds2_r( front, InRayStart, mid ) )
+    {
+        // Found closest ray intersection
+        return true;
+    }
+
+    // Traverse back side
+    int back = node->ChildrenIdx[ side ^ 1 ];
+    return back != 0 && VSD_LevelRaycastBounds2_r( back, mid, InRayEnd );
+}
+#endif
 
 static void VSD_LevelRaycastPortals_r( SVisArea * InArea ) {
 
@@ -2218,29 +2430,25 @@ static void VSD_LevelRaycastBoundsPortals_r( SVisArea * InArea ) {
 static void VSD_ProcessLevelRaycast( ALevel * InLevel ) {
     CurLevel = InLevel;
 
-    int leaf = InLevel->FindLeaf( Raycast.RayStart );
+    // TODO: check level bounds (ray/aabb overlap)?
 
     if ( InLevel->Visdata )
     {
         // Level has precomputed visibility
 
+#if 0
+        int leaf = InLevel->FindLeaf( Raycast.RayStart );
+
         NodeViewMark = InLevel->MarkLeafs( leaf );
 
         VSD_LevelRaycast_r( 0 );
+#else
+        VSD_LevelRaycast2_r( 0, Raycast.RayStart, Raycast.RayEnd );
+#endif
     }
     else
     {
-        SVisArea * area;
-
-        if ( leaf < 0 ) {
-            // Inside of solid or level has no nodes
-
-            area = InLevel->FindArea( Raycast.RayStart );
-        }
-        else
-        {
-            area = InLevel->Leafs[leaf].Area;
-        }
+        SVisArea * area = InLevel->FindArea( Raycast.RayStart );
 
         VSD_LevelRaycastPortals_r( area );
     }
@@ -2249,29 +2457,25 @@ static void VSD_ProcessLevelRaycast( ALevel * InLevel ) {
 static void VSD_ProcessLevelRaycastBounds( ALevel * InLevel ) {
     CurLevel = InLevel;
 
-    int leaf = InLevel->FindLeaf( Raycast.RayStart );
+    // TODO: check level bounds (ray/aabb overlap)?
 
     if ( InLevel->Visdata )
     {
         // Level has precomputed visibility
 
+#if 0
+        int leaf = InLevel->FindLeaf( Raycast.RayStart );
+
         NodeViewMark = InLevel->MarkLeafs( leaf );
 
         VSD_LevelRaycastBounds_r( 0 );
+#else
+        VSD_LevelRaycastBounds2_r( 0, Raycast.RayStart, Raycast.RayEnd );
+#endif
     }
     else
     {
-        SVisArea * area;
-
-        if ( leaf < 0 ) {
-            // Inside of solid or level has no nodes
-
-            area = InLevel->FindArea( Raycast.RayStart );
-        }
-        else
-        {
-            area = InLevel->Leafs[leaf].Area;
-        }
+        SVisArea * area = InLevel->FindArea( Raycast.RayStart );
 
         VSD_LevelRaycastBoundsPortals_r( area );
     }

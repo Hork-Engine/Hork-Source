@@ -226,6 +226,9 @@ void ALevel::Purge() {
     HugeFree( Visdata );
     Visdata = nullptr;
 
+    HugeFree( DecompressedVisData );
+    DecompressedVisData = nullptr;
+
     HugeFree( LightData );
     LightData = nullptr;
 
@@ -329,11 +332,18 @@ void ALevel::Initialize() {
 
     ViewMark = 0;
     ViewCluster = -1;
+
+    if ( bCompressedVisData && Visdata && PVSClustersCount > 0 )
+    {
+        // Allocate decompressed vis data
+        //DecompressedVisData = (byte *)HugeAlloc( 0x20000/*Leafs.Size() / 8 + 1*/ );
+
+        DecompressedVisData = (byte *)HugeAlloc( PVSClustersCount / 8 + 1 );
+        
+    }
 }
 
 ALevel::ALevel() {
-    Visdata = nullptr;
-
     ViewCluster = -1;
 
     Float3 extents( CONVEX_HULL_MAX_BOUNDS * 2 );
@@ -349,14 +359,12 @@ ALevel::ALevel() {
 
 ALevel::~ALevel() {
     Purge();
-
-    //DestroyActors();
 }
 
 int ALevel::FindLeaf( Float3 const & _Position ) {
     SBinarySpaceNode * node;
-    float d;
     SBinarySpacePlane * plane;
+    float d;
     int nodeIndex;
 
     if ( !Nodes.Size() ) {
@@ -366,21 +374,20 @@ int ALevel::FindLeaf( Float3 const & _Position ) {
     node = Nodes.ToPtr();
     while ( 1 ) {
         plane = node->Plane;
-        if ( plane->Type < 3 ) {
-            //d = _Position[ plane->Type ] * plane->Normal[ plane->Type ] + plane->D;
 
+        if ( plane->Type < 3 ) {
+            // Simple case for axial planes
             d = _Position[ plane->Type ] + plane->D;
         } else {
+            // General case for non-axial planes
             d = Math::Dot( _Position, plane->Normal ) + plane->D;
         }
 
+        // Choose child
         nodeIndex = node->ChildrenIdx[ ( d <= 0 ) ];
-        if ( nodeIndex == 0 ) {
-            // solid
-            return -1;
-        }
 
-        if ( nodeIndex < 0 ) {
+        if ( nodeIndex <= 0 ) {
+            // solid if node index == 0 or leaf if node index < 0
             return -1 - nodeIndex;
         }
 
@@ -399,7 +406,7 @@ SVisArea * ALevel::FindArea( Float3 const & _Position ) {
         return Leafs[leaf].Area;
     }
 
-    // Bruteforce
+    // Bruteforce TODO: remove this!
     for ( int i = 0 ; i < Areas.Size() ; i++ ) {
         if (    _Position.X >= Areas[i].Bounds.Mins.X
              && _Position.Y >= Areas[i].Bounds.Mins.Y
@@ -414,64 +421,42 @@ SVisArea * ALevel::FindArea( Float3 const & _Position ) {
     return &OutdoorArea;
 }
 
-#define MAX_MAP_LEAFS 0x20000
+byte const * ALevel::DecompressVisdata( byte const * InCompressedData ) {
+    int count;
 
-struct SEmptyVisData1 {
-    SEmptyVisData1();
-
-    byte Data[ MAX_MAP_LEAFS / 8 ];
-};
-
-SEmptyVisData1::SEmptyVisData1() {
-    memset( Data, 0xff, sizeof( Data ) );
-}
-
-static SEmptyVisData1 EmptyVis;
-
-byte const * ALevel::DecompressVisdata( byte const * _Data ) {
-    static byte Decompressed[ MAX_MAP_LEAFS / 8 ];
-    int c;
-    byte *out;
-    int row;
-
-    row = ( Leafs.Size() + 7 ) >> 3;
-    out = Decompressed;
-
-    if ( !_Data ) { // no vis info, so make all visible
-        while ( row ) {
-            *out++ = 0xff;
-            row--;
-        }
-        return Decompressed;
-    }
+    int row = ( PVSClustersCount + 7 ) >> 3;
+    byte * pDecompressed = DecompressedVisData;
 
     do {
-        if ( *_Data ) {
-            *out++ = *_Data++;
+        // Copy raw data
+        if ( *InCompressedData ) {
+            *pDecompressed++ = *InCompressedData++;
             continue;
         }
 
-        c = _Data[ 1 ];
-        _Data += 2;
-        while ( c ) {
-            *out++ = 0;
-            c--;
-        }
-    } while ( out - Decompressed < row );
+        // Zeros count
+        count = InCompressedData[ 1 ];
 
-    return Decompressed;
+        // Clamp zeros count if invalid
+        if ( pDecompressed - DecompressedVisData + count > row ) {
+            count = row - ( pDecompressed - DecompressedVisData );
+        }
+
+        // Move to the next sequence
+        InCompressedData += 2;
+
+        while ( count-- ) {
+            *pDecompressed++ = 0;
+        }
+    } while ( pDecompressed - DecompressedVisData < row );
+
+    return DecompressedVisData;
 }
 
 byte const * ALevel::LeafPVS( SBinarySpaceLeaf const * _Leaf ) {
     if ( bCompressedVisData ) {
-        if (_Leaf == Leafs.ToPtr() ) {
-            return EmptyVis.Data;
-        }
-        return DecompressVisdata( _Leaf->Visdata );
+        return _Leaf->Visdata ? DecompressVisdata( _Leaf->Visdata ) : nullptr;
     } else {
-        if ( !_Leaf->Visdata ) {
-            return EmptyVis.Data;
-        }
         return _Leaf->Visdata;
     }
 }
@@ -491,32 +476,48 @@ int ALevel::MarkLeafs( int _ViewLeaf ) {
     ViewCluster = viewLeaf->Cluster;
 
     byte const * vis = LeafPVS( viewLeaf );
+    if ( vis )
+    {
+        int cluster;
+        for ( SBinarySpaceLeaf & leaf : Leafs ) {
 
-    int numLeafs = Leafs.Size();
-
-    int cluster;
-    for ( int i = 0 ; i < numLeafs ; i++ ) {
-        SBinarySpaceLeaf * Leaf = &Leafs[ i ];
-
-        cluster = Leaf->Cluster;
-        if ( cluster < 0 || cluster >= PVSClustersCount ) {
-            continue;
-        }
-
-        if ( !( vis[ cluster >> 3 ] & ( 1 << ( cluster & 7 ) ) ) ) {
-            continue;
-        }
-
-        // TODO: check for door connection here
-
-        SBinarySpaceNode * parent = ( SBinarySpaceNode* )Leaf;
-        do {
-            if ( parent->ViewMark == ViewMark ) {
-                break;
+            cluster = leaf.Cluster;
+            if ( cluster < 0 || cluster >= PVSClustersCount ) {
+                continue;
             }
-            parent->ViewMark = ViewMark;
-            parent = parent->Parent;
-        } while ( parent );
+
+            if ( !( vis[ cluster >> 3 ] & ( 1 << ( cluster & 7 ) ) ) ) {
+                continue;
+            }
+
+            // TODO: check for door connection here
+
+            SBinarySpaceNode * parent = ( SBinarySpaceNode* )&leaf;
+            do {
+                if ( parent->ViewMark == ViewMark ) {
+                    break;
+                }
+                parent->ViewMark = ViewMark;
+                parent = parent->Parent;
+            } while ( parent );
+        }
+    } else {
+        // Mark all
+        int cluster;
+        for ( SBinarySpaceLeaf & leaf : Leafs ) {
+            cluster = leaf.Cluster;
+            if ( cluster < 0 || cluster >= PVSClustersCount ) {
+                continue;
+            }
+            SBinarySpaceNode * parent = ( SBinarySpaceNode* )&leaf;
+            do {
+                if ( parent->ViewMark == ViewMark ) {
+                    break;
+                }
+                parent->ViewMark = ViewMark;
+                parent = parent->Parent;
+            } while ( parent );
+        }
     }
 
     return ViewMark;
@@ -635,7 +636,7 @@ void ALevel::AddBoxRecursive( SPrimitiveDef * InPrimitive ) {
 
 void ALevel::AddBoxRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive ) {
     if ( _NodeIndex == 0 ) {
-        // Solid
+        // solid
         return;
     }
 
@@ -682,7 +683,7 @@ void ALevel::AddSphereRecursive( SPrimitiveDef * InPrimitive ) {
 
 void ALevel::AddSphereRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive ) {
     if ( _NodeIndex == 0 ) {
-        // Solid
+        // solid
         return;
     }
 
