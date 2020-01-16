@@ -47,7 +47,7 @@ constexpr int MAX_SKINNED_MESH_JOINTS               = 256;
 constexpr int MAX_SKINNED_MESH_INSTANCES_PER_FRAME  = 256;
 
 /** Max textures per material */
-constexpr int MAX_MATERIAL_TEXTURES                 = 15;
+constexpr int MAX_MATERIAL_TEXTURES                 = 12; // 3 textures reserved for lightmap, light clusterlookup, light cluster items, shadow map
 
 /** Max cascades per light */
 constexpr int MAX_SHADOW_CASCADES = 4;
@@ -827,7 +827,7 @@ struct SShadowRenderInstance {
 // int NumDecals = ( Offest.Y >> 8 ) & 0xff;
 // int NumLights = ( Offest.Y >> 16 ) & 0xff;
 // int Unused = ( Offest.Y >> 24 ) & 0xff // can be used in future
-struct SClusterBuffer {
+struct SClusterData {
     uint32_t ItemOffset;
     uint8_t NumProbes;
     uint8_t NumDecals;
@@ -874,12 +874,12 @@ struct SClusterLight {
 struct SFrameLightData {
     static constexpr int MAX_ITEM_BUFFER = 1024*128; // TODO: подобрать оптимальный размер
 
-    SClusterBuffer OffsetBuffer[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
+    SClusterData ClusterLookup[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
 
     SClusterItemBuffer ItemBuffer[MAX_ITEM_BUFFER + MAX_CLUSTER_ITEMS*3]; //  + MAX_CLUSTER_ITEMS*3 для возможного выхода за пределы массива на максимальное количество итемов в кластере
     int TotalItems;
 
-    SClusterLight Lights[MAX_LIGHTS];
+    SClusterLight LightBuffer[MAX_LIGHTS];
     int TotalLights;
 
     //SClusterDecal Probes[MAX_DECAL];
