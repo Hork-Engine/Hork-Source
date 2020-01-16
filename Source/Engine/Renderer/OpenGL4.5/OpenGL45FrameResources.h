@@ -111,13 +111,19 @@ public:
     GHI::Sampler EnvProbeSampler;
     GHI::BindlessSampler EnvProbeBindless;
     SViewUniformBuffer ViewUniformBufferUniformData;
+    GHI::Texture ClusterLookup;
+    GHI::Sampler ClusterLookupSampler;
+    GHI::Texture ClusterItemTBO;
+    GHI::Buffer  ClusterItemBuffer;
+    GHI::Buffer  LightBuffer;
 
     GHI::ShaderResources        Resources;
-    GHI::ShaderBufferBinding    BufferBinding[4];
+    GHI::ShaderBufferBinding    BufferBinding[5];
     GHI::ShaderBufferBinding *  ViewUniformBufferBinding;
     GHI::ShaderBufferBinding *  InstanceUniformBufferBinding;
     GHI::ShaderBufferBinding *  SkeletonBufferBinding;
     GHI::ShaderBufferBinding *  CascadeBufferBinding;
+    GHI::ShaderBufferBinding *  LightBufferBinding;
     GHI::ShaderTextureBinding   TextureBindings[16];
     GHI::ShaderSamplerBinding   SamplerBindings[16];
 

@@ -228,6 +228,18 @@ void AColorPassRenderer::RenderInstances() {
     drawCmd.InstanceCount = 1;
     drawCmd.StartInstanceLocation = 0;
 
+    // Bind cluster index buffer
+    GFrameResources.TextureBindings[13].pTexture = &GFrameResources.ClusterItemTBO;
+    GFrameResources.SamplerBindings[13].pSampler = GFrameResources.ClusterLookupSampler;
+
+    // Bind cluster lookup
+    GFrameResources.TextureBindings[14].pTexture = &GFrameResources.ClusterLookup;
+    GFrameResources.SamplerBindings[14].pSampler = GFrameResources.ClusterLookupSampler;
+
+    // Bind shadow map
+    GFrameResources.TextureBindings[15].pTexture = &GShadowMapRT.GetTexture();
+    GFrameResources.SamplerBindings[15].pSampler = GShadowMapPassRenderer.GetShadowDepthSampler();
+
     for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
         SRenderInstance const * instance = GFrameData->Instances[ GRenderView->FirstInstance + i ];
 
@@ -242,9 +254,9 @@ void AColorPassRenderer::RenderInstances() {
         // Bind skeleton
         BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
 
-        // Bind shadow map
-        GFrameResources.TextureBindings[15].pTexture = &GShadowMapRT.GetTexture();
-        GFrameResources.SamplerBindings[15].pSampler = GShadowMapPassRenderer.GetShadowDepthSampler();
+        //// Bind shadow map
+        //GFrameResources.TextureBindings[15].pTexture = &GShadowMapRT.GetTexture();
+        //GFrameResources.SamplerBindings[15].pSampler = GShadowMapPassRenderer.GetShadowDepthSampler();
 
         // Set instance uniforms
         SetInstanceUniforms( i );

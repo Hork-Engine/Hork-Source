@@ -66,6 +66,42 @@ void AFrameResources::Initialize() {
     streamBufferCI.SizeInBytes = ShadowInstanceUniformBufferSize * ShadowInstanceUniformBufferSizeof;
     ShadowInstanceUniformBuffer.Initialize( streamBufferCI );
 
+    {
+    GHI::TextureStorageCreateInfo createInfo = {};
+    createInfo.Type = GHI::TEXTURE_3D;
+    createInfo.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RG32UI;
+    createInfo.Resolution.Tex3D.Width = MAX_FRUSTUM_CLUSTERS_X;
+    createInfo.Resolution.Tex3D.Height = MAX_FRUSTUM_CLUSTERS_Y;
+    createInfo.Resolution.Tex3D.Depth = MAX_FRUSTUM_CLUSTERS_Z;
+    createInfo.NumLods = 1;
+    ClusterLookup.InitializeStorage( createInfo );
+
+    GHI::SamplerCreateInfo samplerCI = {};
+    samplerCI.SetDefaults();
+    samplerCI.Filter = FILTER_NEAREST;
+    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
+    ClusterLookupSampler = GDevice.GetOrCreateSampler( samplerCI );
+    }
+
+    {
+        GHI::BufferCreateInfo bufferCI = {};
+        bufferCI.bImmutableStorage = true;
+        bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
+        bufferCI.SizeInBytes = sizeof( SFrameLightData::ItemBuffer );
+        ClusterItemBuffer.Initialize( bufferCI );
+        ClusterItemTBO.InitializeTextureBuffer( GHI::BUFFER_DATA_UINT1, ClusterItemBuffer );
+    }
+
+    {
+        GHI::BufferCreateInfo bufferCI = {};
+        bufferCI.bImmutableStorage = true;
+        bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
+        bufferCI.SizeInBytes = sizeof( SFrameLightData::LightBuffer );
+        LightBuffer.Initialize( bufferCI );
+    }
+
     memset( BufferBinding, 0, sizeof( BufferBinding ) );
     memset( TextureBindings, 0, sizeof( TextureBindings ) );
     memset( SamplerBindings, 0, sizeof( SamplerBindings ) );
@@ -90,6 +126,11 @@ void AFrameResources::Initialize() {
     CascadeBufferBinding->SlotIndex = 3;
     CascadeBufferBinding->pBuffer = &CascadeViewProjectionBuffer;
 
+    LightBufferBinding = &BufferBinding[4];
+    LightBufferBinding->BufferType = UNIFORM_BUFFER;
+    LightBufferBinding->SlotIndex = 4;
+    LightBufferBinding->pBuffer = &LightBuffer;
+
     for ( int i = 0 ; i < 16 ; i++ ) {
         TextureBindings[i].SlotIndex = i;
         SamplerBindings[i].SlotIndex = i;
@@ -105,9 +146,13 @@ void AFrameResources::Initialize() {
     Resources.Samplers = SamplerBindings;
     Resources.NumSamplers = AN_ARRAY_SIZE( SamplerBindings );
 
+
+    
+
     /////////////////////////////////////////////////////////////////////
     // test
     /////////////////////////////////////////////////////////////////////
+    {
     const char * Cubemap[6] = {
         "ClearSky/rt.bmp",
         "ClearSky/lt.bmp",
@@ -195,10 +240,15 @@ void AFrameResources::Initialize() {
     EnvProbeSampler = GDevice.GetOrCreateSampler( samplerCI );
     EnvProbeBindless.Initialize( &EnvProbe, EnvProbeSampler );
     EnvProbeBindless.MakeResident();
+    }
     /////////////////////////////////////////////////////////////////////
 }
 
 void AFrameResources::Deinitialize() {
+    ClusterLookup.Deinitialize();
+    ClusterItemTBO.Deinitialize();
+    ClusterItemBuffer.Deinitialize();
+    LightBuffer.Deinitialize();
     EnvProbeBindless.MakeNonResident();
     EnvProbe.Deinitialize();
     CascadeViewProjectionBuffer.Deinitialize();
@@ -384,6 +434,19 @@ void AFrameResources::UploadUniforms() {
     //for ( int i = 0 ; i < GRenderView->NumShadowMapCascades ; i++ ) {
     //    GLogger.Printf( "---\n%s\n", GRenderView->LightViewProjectionMatrices[i].ToString().CStr() );
     //}
+
+    //for ( int i = 0; i<16; i++ )
+    //    for ( int j = 0; j<16; j++ )
+    //        for ( int k = 0; k<24; k++ )
+    //            GFrameData->LightData.ClusterLookup[k][j][i].NumLights = 1;
+
+    //memset( GFrameData->LightData.ClusterLookup, 0xff, sizeof( GFrameData->LightData.ClusterLookup  ) );
+
+
+    ClusterLookup.Write( 0, GHI::PIXEL_FORMAT_UINT_RG, sizeof( SClusterData )*MAX_FRUSTUM_CLUSTERS_X*MAX_FRUSTUM_CLUSTERS_Y*MAX_FRUSTUM_CLUSTERS_Z, 1, GFrameData->LightData.ClusterLookup );
+
+    ClusterItemBuffer.WriteRange( 0, sizeof( SClusterItemBuffer )*GFrameData->LightData.TotalItems, GFrameData->LightData.ItemBuffer );
+    LightBuffer.WriteRange( 0, sizeof( SClusterLight ) * GFrameData->LightData.TotalLights, GFrameData->LightData.LightBuffer );
 }
 
 }

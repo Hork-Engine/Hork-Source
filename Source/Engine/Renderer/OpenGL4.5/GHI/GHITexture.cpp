@@ -503,10 +503,16 @@ void Texture::CreateTextureLod( TextureCreateInfo const & _CreateInfo, uint16_t 
         }
         break;
     case TEXTURE_3D:
+        glGetError();
         if ( bCompressed ) {
             glCompressedTexImage3D( target, 0, format, lodWidth, lodHeight, lodDepth, 0, compressedDataByteLength, sysMem );
         } else {
             glTexImage3D( target, 0, internalFormat, lodWidth, lodHeight, lodDepth, 0, format, pixelType, sysMem );
+        }
+        // FIXME: wtf this error?
+        {
+            int error = glGetError();
+            LogPrintf( "Error %d\n", error );
         }
         break;
     case TEXTURE_2D_ARRAY:
