@@ -34,7 +34,7 @@ SOFTWARE.
 #include <World/Public/Components/PointLightComponent.h>
 
 ARuntimeVariable RVClusterSSE( _CTS( "ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVFreezeFrustumClusters( _CTS( "FreezeFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 
 ALightVoxelizer & GLightVoxelizer = ALightVoxelizer::Inst();
@@ -158,6 +158,7 @@ static constexpr Float3 UniformBoxMins = Float3( -1.0f );
 static constexpr Float3 UniformBoxMaxs = Float3( 1.0f );
 static unsigned short Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
 static AAtomicInt ItemCounter;
+static SRenderView * RenderView;
 static Float4x4 ViewProj;
 static Float4x4 ViewProjInv;
 static SItemInfo ItemInfos[MAX_ITEMS];
@@ -189,6 +190,7 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APointLi
     Float4x4SSE ViewProjSSE;
     Float4x4SSE ViewProjInvSSE;
 
+    RenderView = RV;
     ViewProj = RV->ClusterProjectionMatrix * RV->ViewMatrix;
     ViewProjInv = ViewProj.Inversed();
 
@@ -268,7 +270,7 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APointLi
                     //ItemInfo.Probe = NULL;
                     item->ListIndex = listIndex++;// & ( MAX_LIGHTS - 1 );
 
-                    PackLight( &pLightData->Lights[item->ListIndex], ItemInfo.Light );
+                    PackLight( &pLightData->LightBuffer[item->ListIndex], ItemInfo.Light );
 
                 } /*else if ( list == 1 ) { // Env Capture
                       ItemInfo.Probe = static_cast< FEnvCaptureComponent * >( item );
@@ -564,6 +566,14 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APointLi
     }
 
     GRenderFrontendJobList->SubmitAndWait();
+
+    pLightData->TotalLights = ComponentListIndex[0];
+    pLightData->TotalItems = ItemCounter.Load();
+
+    if ( pLightData->TotalItems > SFrameLightData::MAX_ITEM_BUFFER ) {
+        GLogger.Printf( "MAX_ITEM_BUFFER hit\n" );
+        pLightData->TotalItems = SFrameLightData::MAX_ITEM_BUFFER;
+    }
 }
 
 static void VoxelizeWork( void * _Data ) {
@@ -801,7 +811,7 @@ static void VoxelizeWork( void * _Data ) {
     //    int i = 0;
     int NumClusterItems;
 
-    SClusterBuffer * pBuffer = &pLightData->OffsetBuffer[SliceIndex][0][0];
+    SClusterData * pBuffer = &pLightData->ClusterLookup[SliceIndex][0][0];
     SClusterItemBuffer * pItem;
     SItemInfo * pItemInfo;
 
@@ -861,7 +871,7 @@ static void VoxelizeWork( void * _Data ) {
 }
 
 static void PackLight( SClusterLight * Parameters, APointLightComponent const * Light ) {
-    Parameters->Position = Float3(/* WorldspaceToViewspace * */ Light->GetWorldPosition() );
+    Parameters->Position = Float3( RenderView->ViewMatrix * Light->GetWorldPosition() );
     Parameters->OuterRadius = Light->GetOuterRadius();
     Parameters->InnerRadius = Math::Min( Light->GetInnerRadius(), Light->GetOuterRadius() ); // TODO: do this check early
     Parameters->Color = Light->GetEffectiveColor();
