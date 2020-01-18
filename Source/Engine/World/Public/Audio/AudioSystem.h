@@ -34,6 +34,7 @@ SOFTWARE.
 
 class AAudioClip;
 class AActor;
+class APawn;
 class ASceneComponent;
 class APlayerController;
 
@@ -61,10 +62,10 @@ protected:
     AAudioGroup() {}
 };
 
-enum EAudioLocation {
-    AUDIO_STAY_AT_SPAWN_LOCATION,
-    AUDIO_STAY_BACKGROUND,
-    AUDIO_FOLLOW_INSIGATOR
+enum EAudioSourceType {
+    AUDIO_SOURCE_STATIC,
+    AUDIO_SOURCE_BACKGROUND,
+    AUDIO_SOURCE_FOLLOW_INSIGATOR
 };
 
 enum EAudioChannelPriority {
@@ -108,8 +109,8 @@ struct SSoundAttenuationParameters {
 
 struct SSoundSpawnParameters {
 
-    /** Sound location behavior */
-    EAudioLocation Location = AUDIO_STAY_AT_SPAWN_LOCATION;
+    /** Audio source type/behavior */
+    EAudioSourceType SourceType = AUDIO_SOURCE_STATIC;
 
     /** Priority to play the sound */
     int         Priority = AUDIO_CHANNEL_PRIORITY_ONESHOT;
@@ -125,6 +126,9 @@ struct SSoundSpawnParameters {
 
     /** Use velocity from physical body */
     bool        bUsePhysicalVelocity = false;
+
+    /** If audio client is not specified, audio will be hearable for all listeners */
+    APawn *     AudioClient = nullptr;
 
     /** Audio group */
     AAudioGroup * Group = nullptr;

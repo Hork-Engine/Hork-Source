@@ -179,6 +179,7 @@ static float MasterVolume = 1.0f;
 static Float3 ListenerPosition(0);
 static bool bSourceSpatialize = false;
 static int NumHRTFs = 0;
+static uint64_t AudioListenerId = 0;
 
 static void InitializeChannels();
 
@@ -674,7 +675,7 @@ struct SAudioChannel {
     float       RolloffFactor;
     bool        bLooping;
     bool        bStopWhenInstigatorDead;
-    EAudioLocation Location;
+    EAudioSourceType SourceType;
     bool        bStreamed;
     AAudioClip * Clip;
     int         ClipSerialId;
@@ -686,6 +687,7 @@ struct SAudioChannel {
     float       LifeSpan;
     bool        bPlayEvenWhenPaused;
     AAudioControlCallback * ControlCallback;
+    uint64_t    AudioClient;
     AAudioGroup * Group;
     ASceneComponent * Instigator;
     APhysicalBody * PhysicalBody;
@@ -786,6 +788,8 @@ static void FreeChannel( SAudioChannel * channel ) {
         channel->ControlCallback = nullptr;
     }
 
+    channel->AudioClient = 0;
+
     if ( channel->Group ) {
         channel->Group->RemoveRef();
         channel->Group = nullptr;
@@ -864,7 +868,7 @@ static bool DevirtualizeChannel( SAudioChannel * _VirtualChannel ) {
     channel->RolloffFactor = _VirtualChannel->RolloffFactor;
     channel->bLooping = _VirtualChannel->bLooping;
     channel->bStopWhenInstigatorDead = _VirtualChannel->bStopWhenInstigatorDead;
-    channel->Location = _VirtualChannel->Location;
+    channel->SourceType = _VirtualChannel->SourceType;
     channel->bStreamed = _VirtualChannel->bStreamed;
     channel->Clip = _VirtualChannel->Clip;
     channel->ClipSerialId = _VirtualChannel->ClipSerialId;
@@ -876,6 +880,7 @@ static bool DevirtualizeChannel( SAudioChannel * _VirtualChannel ) {
     channel->ConeOuterAngle = _VirtualChannel->ConeOuterAngle;
     channel->Direction = _VirtualChannel->Direction;
     channel->ControlCallback = _VirtualChannel->ControlCallback;
+    channel->AudioClient = _VirtualChannel->AudioClient;
     channel->Group = _VirtualChannel->Group;
     channel->Instigator = _VirtualChannel->Instigator;
     channel->PhysicalBody = _VirtualChannel->PhysicalBody;
@@ -1021,6 +1026,12 @@ AN_FORCEINLINE float GetGraceDistance( float _MaxDistance ) {
 
 static float CalcAudioVolume( SAudioChannel * _Channel ) {
 
+    if ( _Channel->AudioClient ) {
+        if ( AudioListenerId != _Channel->AudioClient ) {
+            return 0.0f;
+        }
+    }
+
     float volume = MasterVolume * _Channel->Volume * ( _Channel->Group ? _Channel->Group->Volume : 1.0f );
 
     if ( _Channel->World ) {
@@ -1031,7 +1042,7 @@ static float CalcAudioVolume( SAudioChannel * _Channel ) {
         volume *= _Channel->ControlCallback->VolumeScale;
     }
 
-    if ( _Channel->Location == AUDIO_STAY_BACKGROUND ) {
+    if ( _Channel->SourceType == AUDIO_SOURCE_BACKGROUND ) {
         return volume;
     }
 
@@ -1068,7 +1079,7 @@ static void PlayChannel( SAudioChannel * channel, float _PlayOffset ) {
     AL_SAFE( alSourcef( channel->SourceId, AL_GAIN, channel->CurVolume ) );
     AL_SAFE( alSourcefv( channel->SourceId, AL_VELOCITY, (float *)channel->Velocity.ToPtr() ) );
 
-    if ( channel->Location == AUDIO_STAY_BACKGROUND ) {
+    if ( channel->SourceType == AUDIO_SOURCE_BACKGROUND ) {
         AL_SAFE( alSourcei( channel->SourceId, AL_SOURCE_RELATIVE, AL_TRUE ) );
 
         AL_SAFE( alSourcef( channel->SourceId, AL_REFERENCE_DISTANCE, channel->ReferenceDistance ) );
@@ -1165,8 +1176,12 @@ static void PlayChannel( SAudioChannel * channel, float _PlayOffset ) {
     }
 }
 
-static void CreateSound( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, EAudioLocation _Location, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
+static void CreateSound( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, EAudioSourceType _Location, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters ) {
     if ( !_AudioClip ) {
+        return;
+    }
+
+    if ( _SpawnParameters->AudioClient && _SpawnParameters->AudioClient->IsPendingKill() ) {
         return;
     }
 
@@ -1180,7 +1195,7 @@ static void CreateSound( AAudioClip * _AudioClip, Float3 const & _SpawnPosition,
 
     bool bVirtualizeWhenSilent = _SpawnParameters->bVirtualizeWhenSilent || _SpawnParameters->bLooping;
 
-    bool bSilent = _Location != AUDIO_STAY_BACKGROUND && /*numActiveChannels > 8 &&*/
+    bool bSilent = _Location != AUDIO_SOURCE_BACKGROUND && /*numActiveChannels > 8 &&*/
             ListenerPosition.DistSqr( _SpawnPosition ) >= (maxDist+graceDist)*(maxDist+graceDist);
 
     if ( bSilent && !bVirtualizeWhenSilent ) {
@@ -1234,7 +1249,7 @@ static void CreateSound( AAudioClip * _AudioClip, Float3 const & _SpawnPosition,
     channel->RolloffFactor = atten.RolloffRate;
     channel->bLooping = _SpawnParameters->bLooping;
     channel->bStopWhenInstigatorDead = _SpawnParameters->bStopWhenInstigatorDead;
-    channel->Location = _Location;
+    channel->SourceType = _Location;
     channel->bStreamed = _AudioClip->GetStreamType() != SOUND_STREAM_DISABLED;
     channel->Clip = _AudioClip;
     channel->ClipSerialId = _AudioClip->GetSerialId();
@@ -1242,7 +1257,7 @@ static void CreateSound( AAudioClip * _AudioClip, Float3 const & _SpawnPosition,
     channel->Priority = _SpawnParameters->Priority;
     channel->bPlayEvenWhenPaused = _SpawnParameters->bPlayEvenWhenPaused;
 
-    if ( _Location == AUDIO_STAY_BACKGROUND ) {
+    if ( _Location == AUDIO_SOURCE_BACKGROUND ) {
         channel->bDirectional = false;
         channel->Direction.Clear();
     } else {
@@ -1250,14 +1265,15 @@ static void CreateSound( AAudioClip * _AudioClip, Float3 const & _SpawnPosition,
         channel->ConeInnerAngle = Math::Clamp( _SpawnParameters->ConeInnerAngle, 0.0f, 360.0f );
         channel->ConeOuterAngle = Math::Clamp( _SpawnParameters->ConeOuterAngle, _SpawnParameters->ConeInnerAngle, 360.0f );
 
-        if ( _Location == AUDIO_STAY_AT_SPAWN_LOCATION ) {
+        if ( _Location == AUDIO_SOURCE_STATIC ) {
             channel->Direction = _SpawnParameters->Direction;
-        } else if ( _Location == AUDIO_FOLLOW_INSIGATOR ) {
+        } else if ( _Location == AUDIO_SOURCE_FOLLOW_INSIGATOR ) {
             channel->Direction = _Instigator ? _Instigator->GetWorldForwardVector() : _SpawnParameters->Direction;
         }
     }
 
     channel->ControlCallback = _SpawnParameters->ControlCallback;
+    channel->AudioClient = _SpawnParameters->AudioClient ? _SpawnParameters->AudioClient->Id : 0;
     channel->Group = _SpawnParameters->Group;
     channel->Instigator = _Instigator;
     channel->PhysicalBody = nullptr;
@@ -1320,25 +1336,25 @@ void AAudioSystem::PlaySound( AAudioClip * _AudioClip, ASceneComponent * _Instig
         return;
     }
 
-    if ( _SpawnParameters->Location == AUDIO_STAY_AT_SPAWN_LOCATION ) {
+    if ( _SpawnParameters->SourceType == AUDIO_SOURCE_STATIC ) {
 
         if ( _Instigator ) {
-            CreateSound( _AudioClip, _Instigator->GetWorldPosition(), AUDIO_STAY_AT_SPAWN_LOCATION, _Instigator, _SpawnParameters );
+            CreateSound( _AudioClip, _Instigator->GetWorldPosition(), AUDIO_SOURCE_STATIC, _Instigator, _SpawnParameters );
         } else {
             GLogger.Printf( "AAudioSystem::PlaySound: no spawn location specified with flag AUDIO_STAY_AT_SPAWN_LOCATION\n" );
         }
 
-    } else if ( _SpawnParameters->Location == AUDIO_FOLLOW_INSIGATOR ) {
+    } else if ( _SpawnParameters->SourceType == AUDIO_SOURCE_FOLLOW_INSIGATOR ) {
 
         if ( _Instigator ) {
-            CreateSound( _AudioClip, _Instigator->GetWorldPosition(), AUDIO_FOLLOW_INSIGATOR, _Instigator, _SpawnParameters );
+            CreateSound( _AudioClip, _Instigator->GetWorldPosition(), AUDIO_SOURCE_FOLLOW_INSIGATOR, _Instigator, _SpawnParameters );
         } else {
             GLogger.Printf( "AAudioSystem::PlaySound: no instigator specified with flag AUDIO_FOLLOW_INSIGATOR\n" );
         }
 
-    } else if ( _SpawnParameters->Location == AUDIO_STAY_BACKGROUND ) {
+    } else if ( _SpawnParameters->SourceType == AUDIO_SOURCE_BACKGROUND ) {
 
-        CreateSound( _AudioClip, Float3( 0 ), AUDIO_STAY_BACKGROUND, _Instigator, _SpawnParameters );
+        CreateSound( _AudioClip, Float3( 0 ), AUDIO_SOURCE_BACKGROUND, _Instigator, _SpawnParameters );
 
     } else {
         GLogger.Printf( "AAudioSystem::PlaySound: unknown spawn location\n" );
@@ -1356,7 +1372,7 @@ void AAudioSystem::PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPo
         return;
     }
 
-    CreateSound( _AudioClip, _SpawnPosition, AUDIO_STAY_AT_SPAWN_LOCATION, _Instigator, _SpawnParameters );
+    CreateSound( _AudioClip, _SpawnPosition, AUDIO_SOURCE_STATIC, _Instigator, _SpawnParameters );
 }
 
 static void UpdateChannelStreaming( SAudioChannel * _Channel ) {
@@ -1422,7 +1438,7 @@ static void UpdateChannel( SAudioChannel * Channel, float _TimeStep ) {
     bool bUpdateSoundVelocity = false;
     bool bUpdateSoundDirection = false;
 
-    if ( Channel->Location == AUDIO_FOLLOW_INSIGATOR ) {
+    if ( Channel->SourceType == AUDIO_SOURCE_FOLLOW_INSIGATOR ) {
 
         if ( Channel->Instigator && !Channel->Instigator->IsPendingKill() ) {
             Channel->PrevSoundPosition = Channel->SoundPosition;
@@ -1551,51 +1567,54 @@ Float3 const & AAudioSystem::GetListenerPosition() const {
 
 void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep ) {
 
-    if ( _Controller ) {
-        ASceneComponent * audioListener = _Controller->GetAudioListener();
-        AAudioParameters * audioParameters = _Controller->GetAudioParameters();
+    ASceneComponent * audioListener = _Controller ? _Controller->GetAudioListener() : nullptr;
+    AAudioParameters * audioParameters = _Controller ? _Controller->GetAudioParameters() : nullptr;
 
-        if ( audioListener ) {
+    if ( audioListener ) {
 
-            Float3x4 const & TransformMatrix = audioListener->GetWorldTransformMatrix();
+        Float3x4 const & TransformMatrix = audioListener->GetWorldTransformMatrix();
 
-            ListenerPosition = TransformMatrix.DecomposeTranslation();
+        ListenerPosition = TransformMatrix.DecomposeTranslation();
 
-            const Float3x3 ListenerRotation = TransformMatrix.DecomposeRotation();
+        const Float3x3 ListenerRotation = TransformMatrix.DecomposeRotation();
 
-            const ALfloat Orient[] = { -ListenerRotation[2].X, -ListenerRotation[2].Y, -ListenerRotation[2].Z, // Look at
-                                        ListenerRotation[1].X,  ListenerRotation[1].Y,  ListenerRotation[1].Z  // up
-                                     };
+        const ALfloat Orient[] = { -ListenerRotation[2].X, -ListenerRotation[2].Y, -ListenerRotation[2].Z, // Look at
+                                   ListenerRotation[1].X,  ListenerRotation[1].Y,  ListenerRotation[1].Z  // up
+                                 };
 
-            AL_SAFE( alListenerfv( AL_ORIENTATION, Orient ) );
-        } else {
-            ListenerPosition.Clear();
+        AL_SAFE( alListenerfv( AL_ORIENTATION, Orient ) );
 
-            const ALfloat Orient[] = {  0, 0, -1, // Look at
-                                        0, 1,  0  // up
-                                     };
+        AudioListenerId = audioListener->GetParentActor()->Id;
 
-            AL_SAFE( alListenerfv( AL_ORIENTATION, Orient ) );
-        }
+    } else {
+        ListenerPosition.Clear();
 
-        AL_SAFE( alListenerfv( AL_POSITION, (float *)ListenerPosition.ToPtr() ) );
+        const ALfloat Orient[] = {  0, 0, -1, // Look at
+                                    0, 1,  0  // up
+                                 };
 
-        if ( audioParameters ) {
-            AL_SAFE( alListenerfv( AL_VELOCITY, &audioParameters->Velocity.X ) );
-            AL_SAFE( alDopplerFactor( audioParameters->DopplerFactor ) );
-            AL_SAFE( alDopplerVelocity( audioParameters->DopplerVelocity ) );
-            AL_SAFE( alSpeedOfSound( audioParameters->SpeedOfSound ) );
-            AL_SAFE( alDistanceModel( 0xD001 + audioParameters->DistanceModel ) );
-            MasterVolume = audioParameters->Volume;
-        } else {
-            // set defaults
-            AL_SAFE( alListenerfv( AL_VELOCITY, (float *)Float3::Zero().ToPtr() ) );
-            AL_SAFE( alDopplerFactor( 1 ) );
-            AL_SAFE( alDopplerVelocity( 1 ) );
-            AL_SAFE( alSpeedOfSound( 343.3f ) );
-            AL_SAFE( alDistanceModel( AL_INVERSE_DISTANCE_CLAMPED ) );
-            MasterVolume = 1;
-        }
+        AL_SAFE( alListenerfv( AL_ORIENTATION, Orient ) );
+
+        AudioListenerId = 0;
+    }
+
+    AL_SAFE( alListenerfv( AL_POSITION, (float *)ListenerPosition.ToPtr() ) );
+
+    if ( audioParameters ) {
+        AL_SAFE( alListenerfv( AL_VELOCITY, &audioParameters->Velocity.X ) );
+        AL_SAFE( alDopplerFactor( audioParameters->DopplerFactor ) );
+        AL_SAFE( alDopplerVelocity( audioParameters->DopplerVelocity ) );
+        AL_SAFE( alSpeedOfSound( audioParameters->SpeedOfSound ) );
+        AL_SAFE( alDistanceModel( 0xD001 + audioParameters->DistanceModel ) );
+        MasterVolume = audioParameters->Volume;
+    } else {
+        // set defaults
+        AL_SAFE( alListenerfv( AL_VELOCITY, (float *)Float3::Zero().ToPtr() ) );
+        AL_SAFE( alDopplerFactor( 1 ) );
+        AL_SAFE( alDopplerVelocity( 1 ) );
+        AL_SAFE( alSpeedOfSound( 343.3f ) );
+        AL_SAFE( alDistanceModel( AL_INVERSE_DISTANCE_CLAMPED ) );
+        MasterVolume = 1;
     }
 
     //GLogger.Printf( "Total active audio channels %d (total %d free %d)\n", GetNumActiveChannels(), NumAudioChannels, NumFreeAudioChannels );
@@ -1611,7 +1630,7 @@ void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep ) {
 
                 float graceDist = GetGraceDistance( channel->MaxDistance );
 
-                bool bSilent = channel->Location != AUDIO_STAY_BACKGROUND
+                bool bSilent = channel->SourceType != AUDIO_SOURCE_BACKGROUND
                         && ListenerPosition.DistSqr( channel->SoundPosition ) >= (channel->MaxDistance+graceDist)*(channel->MaxDistance+graceDist);
 
                 if ( bSilent ) {
