@@ -82,7 +82,7 @@ void AColorPassRenderer::Initialize() {
     samplerCI.AddressU = SAMPLER_ADDRESS_WRAP;
     samplerCI.AddressV = SAMPLER_ADDRESS_WRAP;
     samplerCI.AddressW = SAMPLER_ADDRESS_WRAP;
-    samplerCI.MaxAnisotropy = 16;
+    samplerCI.MaxAnisotropy = 0;//16;
     LightmapSampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 
@@ -127,7 +127,7 @@ bool AColorPassRenderer::BindMaterial( SRenderInstance const * instance ) {
 
             // lightmap is in last sample
             GFrameResources.TextureBindings[pMaterial->LightmapSlot].pTexture = GPUTextureHandle( instance->Lightmap );
-            GFrameResources.SamplerBindings[pMaterial->LightmapSlot].pSampler = &LightmapSampler;
+            GFrameResources.SamplerBindings[pMaterial->LightmapSlot].pSampler = LightmapSampler;
 
         } else if ( bVertexLight ) {
 
