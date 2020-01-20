@@ -238,7 +238,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         materialFragmentStage->Normal->Connect( normalSampler, "XYZ" );
         materialFragmentStage->Metallic->Connect( metallicRoughnessSampler, "B" );
         materialFragmentStage->Roughness->Connect( metallicRoughnessSampler, "G" );
-        materialFragmentStage->Ambient->Connect( ambientSampler, "R" );
+        materialFragmentStage->AmbientOcclusion->Connect( ambientSampler, "R" );
         materialFragmentStage->Emissive->Connect( emissiveSampler, "RGBA" );
 
         graph->VertexStage = materialVertexStage;
@@ -341,7 +341,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         materialFragmentStage->Normal->Connect( normalSampler, "XYZ" );
         materialFragmentStage->Metallic->Connect( metallicMul, "Result" );
         materialFragmentStage->Roughness->Connect( roughnessMul, "Result" );
-        materialFragmentStage->Ambient->Connect( ambientSampler, "R" );
+        materialFragmentStage->AmbientOcclusion->Connect( ambientSampler, "R" );
         materialFragmentStage->Emissive->Connect( emissiveMul, "Result" );
 
         graph->VertexStage = materialVertexStage;
