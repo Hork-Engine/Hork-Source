@@ -251,7 +251,8 @@ public:
     MGNodeInput * Normal;
     MGNodeInput * Metallic;
     MGNodeInput * Roughness;
-    MGNodeInput * Ambient;
+    MGNodeInput * AmbientOcclusion;
+    MGNodeInput * AmbientLight; // EXPEREMENTAL! Not tested with PBR
     MGNodeInput * Emissive;
 
 protected:
