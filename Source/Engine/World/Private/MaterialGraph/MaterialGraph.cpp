@@ -555,7 +555,8 @@ MGFragmentStage::MGFragmentStage() : Super( "Material Fragment Stage" ) {
     Normal = AddInput( "Normal" );
     Metallic = AddInput( "Metallic" );
     Roughness = AddInput( "Roughness" );
-    Ambient = AddInput( "Ambient" );
+    AmbientOcclusion = AddInput( "AmbientOcclusion" );
+    AmbientLight = AddInput( "AmbientLight" );
     Emissive = AddInput( "Emissive" );
 }
 
@@ -673,6 +674,44 @@ void MGFragmentStage::Compute( AMaterialBuildContext & _Context ) {
                 _Context.SourceCode += "vec3 MaterialEmissive = vec3(0);\n";
             }
         }
+
+
+        // Ambient Light
+        {
+            MGNodeOutput * ambientCon = AmbientLight->GetConnection();
+
+            bool bValid = true;
+
+            if ( ambientCon && AmbientLight->ConnectedBlock()->Build( _Context ) ) {
+
+                switch ( ambientCon->Type ) {
+                case AT_Float1:
+                    _Context.SourceCode += "vec3 MaterialAmbientLight = vec3(" + ambientCon->Expression + ");\n";
+                    break;
+                case AT_Float2:
+                    _Context.SourceCode += "vec3 MaterialAmbientLight = vec3(" + ambientCon->Expression + ", 0.0 );\n";
+                    break;
+                case AT_Float3:
+                    _Context.SourceCode += "vec3 MaterialAmbientLight = " + ambientCon->Expression + ";\n";
+                    break;
+                case AT_Float4:
+                    _Context.SourceCode += "vec3 MaterialAmbientLight = " + ambientCon->Expression + ".xyz;\n";
+                    break;
+                default:
+                    bValid = false;
+                    break;
+                }
+
+            } else {
+                bValid = false;
+            }
+
+            if ( !bValid ) {
+                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
+
+                _Context.SourceCode += "vec3 MaterialAmbientLight = vec3(0.0);\n";
+            }
+        }
     }
 
 
@@ -744,22 +783,22 @@ void MGFragmentStage::Compute( AMaterialBuildContext & _Context ) {
             }
         }
 
-        // Ambient
+        // Ambient Occlusion
         {
-            MGNodeOutput * ambientCon = Ambient->GetConnection();
+            MGNodeOutput * ambientCon = AmbientOcclusion->GetConnection();
 
             bool bValid = true;
 
-            if ( ambientCon && Ambient->ConnectedBlock()->Build( _Context ) ) {
+            if ( ambientCon && AmbientOcclusion->ConnectedBlock()->Build( _Context ) ) {
 
                 switch ( ambientCon->Type ) {
                 case AT_Float1:
-                    _Context.SourceCode += "float MaterialAmbient = " + ambientCon->Expression + ";\n";
+                    _Context.SourceCode += "float MaterialAmbientOcclusion = " + ambientCon->Expression + ";\n";
                     break;
                 case AT_Float2:
                 case AT_Float3:
                 case AT_Float4:
-                    _Context.SourceCode += "float MaterialAmbient = " + ambientCon->Expression + ".x;\n";
+                    _Context.SourceCode += "float MaterialAmbientOcclusion = " + ambientCon->Expression + ".x;\n";
                     break;
                 default:
                     bValid = false;
@@ -773,9 +812,11 @@ void MGFragmentStage::Compute( AMaterialBuildContext & _Context ) {
             if ( !bValid ) {
                 //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
 
-                _Context.SourceCode += "float MaterialAmbient = 1;\n";
+                _Context.SourceCode += "float MaterialAmbientOcclusion = 1;\n";
             }
         }
+
+        
 
     }
 }
