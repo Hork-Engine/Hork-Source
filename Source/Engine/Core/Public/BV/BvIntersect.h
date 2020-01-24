@@ -98,7 +98,7 @@ AN_INLINE bool BvSphereOverlapPoint( BvSphere const & _Sphere, Float3 const & _P
 }
 
 /** Sphere - Triangle */
-AN_INLINE bool bBvSphereOverlapTriangle( BvSphere const & _Sphere, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2 ) {
+AN_INLINE bool BvSphereOverlapTriangle( BvSphere const & _Sphere, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2 ) {
     // based on OPCODE library
 
     const float radiusSqr = _Sphere.Radius*_Sphere.Radius;
