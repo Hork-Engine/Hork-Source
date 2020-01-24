@@ -33,7 +33,7 @@ SOFTWARE.
 // Portal cull / Area PVS = for indoor
 // Occluders (inverse kind of frustum culling) = for indoor & outdoor
 // Software occluder rasterizer + HIZ occludee culling
-// AABB-tree for static outdoor geometry
+// AABB-tree for static outdoor/indoor geometry
 
 // FIXME: Replace AABB culling to OBB culling?
 
@@ -792,9 +792,6 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
         }
     }
 
-//    SPrimitiveLink * const * Links = &InArea->Links;
-//    SPrimitiveLink * link;
-//    for ( ; ( link = *Links ) != nullptr ; Links = &link->NextArea ) {
     for ( SPrimitiveLink * link = InArea->Links ; link ; link = link->NextInArea ) {
 
         AN_ASSERT( link->Area == InArea );
@@ -1744,9 +1741,6 @@ static void VSD_RaycastArea( SVisArea * InArea )
         }
     }
 
-    //SPrimitiveLink * const * Links = &InArea->Links;
-    //SPrimitiveLink * link;
-    //for ( ; (link = *Links) != nullptr ; Links = &link->NextArea ) {
     for ( SPrimitiveLink * link = InArea->Links ; link ; link = link->NextInArea ) {
         SPrimitiveDef * primitive = link->Primitive;
 
@@ -1925,9 +1919,6 @@ static void VSD_RaycastPrimitiveBounds( SVisArea * InArea )
         }
     }
 
-    //SPrimitiveLink * const * Links = &InArea->Links;
-    //SPrimitiveLink * link;
-    //for ( ; (link = *Links) != nullptr ; Links = &link->NextArea ) {
     for ( SPrimitiveLink * link = InArea->Links ; link ; link = link->NextInArea ) {
         SPrimitiveDef * primitive = link->Primitive;
 

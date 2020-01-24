@@ -70,6 +70,7 @@ struct BvAxisAlignedBox {
     void AddPoint( float const & _X, float const & _Y, float const & _Z );
     void AddAABB( BvAxisAlignedBox const & _Other );
     void AddAABB( Float3 const & _Mins, Float3 const & _Maxs );
+    void AddSphere( Float3 const & _Position, float _Radius );
     Float3 Center() const;
     float Radius() const;
     Float3 Size() const;
@@ -77,6 +78,7 @@ struct BvAxisAlignedBox {
     float LongestAxisSize() const;
     float ShortestAxisSize() const;
     void GetVertices( Float3 _Vertices[8] ) const;
+    void FromSphere( Float3 const & _Position, float _Radius );
 
     bool IsEmpty() const {
         return Mins.X >= Maxs.X || Mins.Y >= Maxs.Y || Mins.Z >= Maxs.Z;
@@ -217,6 +219,24 @@ AN_FORCEINLINE void BvAxisAlignedBox::AddAABB( Float3 const & _Mins, Float3 cons
     Maxs.Y = Math::Max( _Maxs.Y, Maxs.Y );
     Mins.Z = Math::Min( _Mins.Z, Mins.Z );
     Maxs.Z = Math::Max( _Maxs.Z, Maxs.Z );
+}
+
+AN_FORCEINLINE void BvAxisAlignedBox::AddSphere( Float3 const & _Position, float _Radius ) {
+    Mins.X = Math::Min( _Position.X - _Radius, Mins.X );
+    Maxs.X = Math::Max( _Position.X + _Radius, Maxs.X );
+    Mins.Y = Math::Min( _Position.Y - _Radius, Mins.Y );
+    Maxs.Y = Math::Max( _Position.Y + _Radius, Maxs.Y );
+    Mins.Z = Math::Min( _Position.Z - _Radius, Mins.Z );
+    Maxs.Z = Math::Max( _Position.Z + _Radius, Maxs.Z );
+}
+
+AN_FORCEINLINE void BvAxisAlignedBox::FromSphere( Float3 const & _Position, float _Radius ) {
+    Mins.X = _Position.X - _Radius;
+    Maxs.X = _Position.X + _Radius;
+    Mins.Y = _Position.Y - _Radius;
+    Maxs.Y = _Position.Y + _Radius;
+    Mins.Z = _Position.Z - _Radius;
+    Maxs.Z = _Position.Z + _Radius;
 }
 
 AN_FORCEINLINE void BvAxisAlignedBox::Clear() {

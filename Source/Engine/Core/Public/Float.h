@@ -2520,6 +2520,19 @@ AN_FORCEINLINE float Dot( const Float4 & _Left, const Float4 & _Right ) { return
 
 AN_FORCEINLINE Float3 Cross( const Float3 & _Left, const Float3 & _Right ) { return _Left.Cross( _Right ); }
 
+AN_FORCEINLINE Float3 Reflect( Float3 const & _IncidentVector, Float3 const & _Normal ) {
+    return _IncidentVector - 2 * Dot( _Normal, _IncidentVector ) * _Normal;
+}
+
+AN_FORCEINLINE Float3 Refract( Float3 const & _IncidentVector, Float3 const & _Normal, const float _Eta ) {
+    const float NdotI = Dot( _Normal, _IncidentVector );
+    const float k = 1.0f - _Eta*_Eta * (1.0f - NdotI*NdotI);
+    if ( k < 0.0f ) {
+        return Float3( 0.0f );
+    }
+    return _IncidentVector * _Eta - _Normal * (_Eta * NdotI + sqrt(k));
+}
+
 AN_FORCEINLINE constexpr float Degrees( const float & _Rad ) { return _Rad * _RAD2DEG; }
 AN_FORCEINLINE constexpr float Radians( const float & _Deg ) { return _Deg * _DEG2RAD; }
 
