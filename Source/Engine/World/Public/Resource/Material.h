@@ -111,6 +111,8 @@ public:
     /** Set texture for the slot */
     void SetTexture( int _TextureSlot, ATexture * _Texture );
 
+    ATexture * GetTexture( int _TextureSlot );
+
     /** Helper. Set texture for the slot */
     template< char... Chars >
     void SetTexture( int _TextureSlot, TCompileTimeString<Chars...> const & _Alias ) {

@@ -640,6 +640,10 @@ void AMaterialInstance::SetTexture( int _TextureSlot, ATexture * _Texture ) {
     Textures[_TextureSlot] = _Texture;
 }
 
+ATexture * AMaterialInstance::GetTexture( int _TextureSlot ) {
+    return Textures[_TextureSlot];
+}
+
 SMaterialFrameData * AMaterialInstance::RenderFrontend_Update( int _FrameNumber ) {
     if ( VisFrame == _FrameNumber ) {
         return FrameData;
