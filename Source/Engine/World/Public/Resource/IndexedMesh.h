@@ -100,7 +100,9 @@ class ATreeAABB : public ABaseObject {
     AN_CLASS( ATreeAABB, ABaseObject )
 
 public:
-    void Initialize( SMeshVertex const * _Vertices, unsigned int const * _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf );
+    void InitializeTriangleSoup( SMeshVertex const * _Vertices, unsigned int const * _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf );
+
+    void InitializePrimitiveSoup( SPrimitiveDef const * _Primitives, unsigned int _PrimitiveCount, unsigned int _PrimitivesPerLeaf );
 
     void Purge();
 

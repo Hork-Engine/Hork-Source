@@ -1916,7 +1916,7 @@ void AAssetImporter::WriteSingleModel() {
         for ( MeshInfo const & meshInfo : m_Meshes ) {
             // Generate subpart BVH
 
-            aabbTree->Initialize( m_Vertices.ToPtr(), m_Indices.ToPtr() + meshInfo.FirstIndex, meshInfo.IndexCount, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf );
+            aabbTree->InitializeTriangleSoup( m_Vertices.ToPtr(), m_Indices.ToPtr() + meshInfo.FirstIndex, meshInfo.IndexCount, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf );
 
             // Write subpart BVH
             aabbTree->Write( f );
@@ -2057,7 +2057,7 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     if ( bRaycastBVH ) {
         // Generate subpart BVH
         ATreeAABB * aabbTree = CreateInstanceOf< ATreeAABB >();
-        aabbTree->Initialize( m_Vertices.ToPtr() + Mesh.BaseVertex,
+        aabbTree->InitializeTriangleSoup( m_Vertices.ToPtr() + Mesh.BaseVertex,
                               m_Indices.ToPtr() + Mesh.FirstIndex,
                               Mesh.IndexCount,
                               0,
