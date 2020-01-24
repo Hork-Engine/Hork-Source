@@ -219,6 +219,8 @@ struct SWorldRaycastClosestResult
     /** Triangle texture coordinate for the hit */
     Float2 Texcoord;
 
+    Float3 LightmapSample_Experemental;
+
     /** Clear raycast result */
     void Clear() {
         memset( this, 0, sizeof( *this ) );

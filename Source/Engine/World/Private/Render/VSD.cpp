@@ -33,6 +33,9 @@ SOFTWARE.
 // Portal cull / Area PVS = for indoor
 // Occluders (inverse kind of frustum culling) = for indoor & outdoor
 // Software occluder rasterizer + HIZ occludee culling
+// AABB-tree for static outdoor geometry
+
+// FIXME: Replace AABB culling to OBB culling?
 
 #include "VSD.h"
 
@@ -142,7 +145,6 @@ static int Dbg_CullMiss;
 static int Dbg_CulledBySurfaceBounds;
 static int Dbg_CulledByPrimitiveBounds;
 static int Dbg_TotalPrimitiveBounds;
-static int64_t Dbg_FrustumCullingTime;
 
 //
 // Culling, SSE, multithreading
@@ -248,6 +250,8 @@ static void VSD_ProcessLevelVisibility( ALevel * InLevel ) {
 }
 
 void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
+    int QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds();
+
     ++VisQueryMarker;
 
     if ( VisPass ) {
@@ -282,7 +286,6 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     Dbg_CulledBySurfaceBounds = 0;
     Dbg_CulledByPrimitiveBounds = 0;
     Dbg_TotalPrimitiveBounds = 0;
-    Dbg_FrustumCullingTime = 0;
 
 #ifdef DEBUG_PORTAL_SCISSORS
     DebugScissors.Clear();
@@ -319,18 +322,12 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     PortalStack[ 0 ].Scissor.MaxX = -x;
     PortalStack[ 0 ].Scissor.MaxY = -y;
 
-    {
-        AScopedTimeCheck TimeCheck( "VSD_FlowThroughPortals_r" );
-
-        for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-            VSD_ProcessLevelVisibility( level );
-        }
+    for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
+        VSD_ProcessLevelVisibility( level );
     }
 
     if ( RVFrustumCullingType.GetInteger() == CULLING_TYPE_COMBINED ) {
         CullingResult.ResizeInvalidate( BoundingBoxesSSE.Size() );
-
-        Dbg_FrustumCullingTime = GRuntime.SysMicroseconds();
 
         for ( SCullJobSubmit & submit : CullSubmits ) {
             VSD_SubmitCullingJobs( submit );
@@ -340,8 +337,6 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
 
         // Wait when it's done
         GRenderFrontendJobList->Wait();
-
-        Dbg_FrustumCullingTime = GRuntime.SysMicroseconds() - Dbg_FrustumCullingTime;
 
         {
             AScopedTimeCheck TimeCheck( "Evaluate submits" );
@@ -388,6 +383,10 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     GLogger.Printf( "VSD: CullMiss: %d\n", Dbg_CullMiss );
 #endif
 
+    QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds() - QueryVisiblePrimitivesTime;
+
+    //GLogger.Printf( "QueryVisiblePrimitivesTime: %d microsec\n", QueryVisiblePrimitivesTime );
+
     //GLogger.Printf( "Frustum culling time %d microsec. Culled %d from %d primitives. Submits %d\n", Dbg_FrustumCullingTime, Dbg_CulledByPrimitiveBounds, Dbg_TotalPrimitiveBounds, CullSubmits.Size() );
 }
 
@@ -416,6 +415,8 @@ static void VSD_FlowThroughPortals_r( SVisArea const * InArea ) {
         //    #endif
         //    continue;
         //}
+
+        // TODO: here check portal doors
 
         if ( !VSD_CalcPortalStack( stack, prevStack, portal ) ) {
             continue;
@@ -791,9 +792,13 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
         }
     }
 
-    SPrimitiveLink * const * Links = &InArea->Links;
-    SPrimitiveLink * link;
-    for ( ; ( link = *Links ) != nullptr ; Links = &link->NextArea ) {
+//    SPrimitiveLink * const * Links = &InArea->Links;
+//    SPrimitiveLink * link;
+//    for ( ; ( link = *Links ) != nullptr ; Links = &link->NextArea ) {
+    for ( SPrimitiveLink * link = InArea->Links ; link ; link = link->NextInArea ) {
+
+        AN_ASSERT( link->Area == InArea );
+
         SPrimitiveDef * primitive = link->Primitive;
 
         if ( primitive->VisMark == VisQueryMarker )
@@ -840,20 +845,14 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
             {
                 if ( RVFrustumCullingType.GetInteger() == CULLING_TYPE_SIMPLE )
                 {
-                    Dbg_FrustumCullingTime -= GRuntime.SysMicroseconds();
-
                     if ( VSD_CullBoxSingle( InCullPlanes, InCullPlanesCount, primitive->Box ) ) {
 
                         #ifdef DEBUG_TRAVERSING_COUNTERS
                         Dbg_CulledByPrimitiveBounds++;
                         #endif
 
-                        Dbg_FrustumCullingTime += GRuntime.SysMicroseconds();
-
                         continue;
                     }
-
-                    Dbg_FrustumCullingTime += GRuntime.SysMicroseconds();
                 }
                 else
                 {
@@ -910,14 +909,10 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
 
         if ( RVFrustumCullingType.GetInteger() == CULLING_TYPE_SEPARATE )
         {
-            Dbg_FrustumCullingTime -= GRuntime.SysMicroseconds();
-
             VSD_SubmitCullingJobs( submit );
 
             // Wait when it's done
             GRenderFrontendJobList->Wait();
-
-            Dbg_FrustumCullingTime += GRuntime.SysMicroseconds();
 
             Dbg_TotalPrimitiveBounds += numBoxes;
 
@@ -1079,9 +1074,9 @@ static void VSD_LevelTraverse_r( int InNodeIndex, int InCullBits ) {
             break;
         }
 
-        VSD_LevelTraverse_r( ((SBinarySpaceNode *)node)->ChildrenIdx[0], InCullBits );
+        VSD_LevelTraverse_r( static_cast< SBinarySpaceNode const * >( node )->ChildrenIdx[0], InCullBits );
 
-        InNodeIndex = ((SBinarySpaceNode *)node)->ChildrenIdx[1];
+        InNodeIndex = static_cast< SBinarySpaceNode const * >( node )->ChildrenIdx[1];
     }
 
     SBinarySpaceLeaf const * pleaf = static_cast< SBinarySpaceLeaf const * >( node );
@@ -1334,6 +1329,9 @@ struct SRaycast
     Float3 HitLocation;
     Float2 HitUV;
     SMeshVertex const * pVertices;
+    SMeshVertexUV const * pLightmapVerts;
+    int LightmapBlock;
+    ALevel const * LightingLevel;
     unsigned int Indices[3];
     AMaterialInstance * Material;
 
@@ -1351,7 +1349,7 @@ static const SWorldRaycastFilter DefaultRaycastFilter;
 AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _U, float & _V );
 static void VSD_RaycastSurface( SSurfaceDef * Self );
 static void VSD_RaycastPrimitive( SPrimitiveDef * Self );
-static void VSD_RaycastPrimitives( SVisArea * InArea );
+static void VSD_RaycastArea( SVisArea * InArea );
 static void VSD_RaycastPrimitiveBounds( SVisArea * InArea );
 static void VSD_LevelRaycast_r( int InNodeIndex );
 static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd );
@@ -1370,6 +1368,10 @@ AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const 
 
     // calc determinant
     const float det = e1.Dot( h );
+
+    if ( det > -0.00001 && det < 0.00001 ) {
+        return false;
+    }
 
     // calc inverse determinant to minimalize math divisions in next calculations
     const float invDet = 1 / det;
@@ -1391,7 +1393,7 @@ AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const 
     if ( _V < 0.0f || _U + _V > 1.0f ) {
         return false;
     }
-
+ 
     return true;
 }
 
@@ -1467,6 +1469,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
 #endif
         ABrushModel const * brushModel = Self->Model;
 
+        SMeshVertex const * pVertices = brushModel->Vertices.ToPtr() + Self->FirstVertex;
         unsigned int const * pIndices = brushModel->Indices.ToPtr() + Self->FirstIndex;
 
         if ( Raycast.bClosest )
@@ -1474,12 +1477,11 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
             for ( int i = 0 ; i < Self->NumIndices ; i += 3 ) {
                 unsigned int const * triangleIndices = pIndices + i;
 
-                Float3 const & v0 = brushModel->Vertices[Self->FirstVertex+triangleIndices[0]].Position;
-                Float3 const & v1 = brushModel->Vertices[Self->FirstVertex+triangleIndices[1]].Position;
-                Float3 const & v2 = brushModel->Vertices[Self->FirstVertex+triangleIndices[2]].Position;
+                Float3 const & v0 = pVertices[triangleIndices[0]].Position;
+                Float3 const & v1 = pVertices[triangleIndices[1]].Position;
+                Float3 const & v2 = pVertices[triangleIndices[2]].Position;
 
                 if ( RayIntersectTriangleFast( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, u, v ) ) {
-
                     Raycast.HitPrimitive = nullptr;
                     Raycast.HitSurface = Self;
                     Raycast.HitLocation = Raycast.RayStart + Raycast.RayDir * d;
@@ -1487,9 +1489,12 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                     Raycast.HitUV.X = u;
                     Raycast.HitUV.Y = v;
                     Raycast.pVertices = brushModel->Vertices.ToPtr();
-                    Raycast.Indices[0] = Self->FirstVertex+triangleIndices[0];
-                    Raycast.Indices[1] = Self->FirstVertex+triangleIndices[1];
-                    Raycast.Indices[2] = Self->FirstVertex+triangleIndices[2];
+                    Raycast.pLightmapVerts = brushModel->LightmapVerts.ToPtr();
+                    Raycast.LightmapBlock = Self->LightmapBlock;
+                    Raycast.LightingLevel = brushModel->ParentLevel.GetObject();
+                    Raycast.Indices[0] = Self->FirstVertex + triangleIndices[0];
+                    Raycast.Indices[1] = Self->FirstVertex + triangleIndices[1];
+                    Raycast.Indices[2] = Self->FirstVertex + triangleIndices[2];
                     Raycast.Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
 
                     // Mark as visible
@@ -1505,9 +1510,9 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
 
                 unsigned int const * triangleIndices = pIndices + i;
 
-                Float3 const & v0 = brushModel->Vertices[Self->FirstVertex+triangleIndices[0]].Position;
-                Float3 const & v1 = brushModel->Vertices[Self->FirstVertex+triangleIndices[1]].Position;
-                Float3 const & v2 = brushModel->Vertices[Self->FirstVertex+triangleIndices[2]].Position;
+                Float3 const & v0 = pVertices[triangleIndices[0]].Position;
+                Float3 const & v1 = pVertices[triangleIndices[1]].Position;
+                Float3 const & v2 = pVertices[triangleIndices[2]].Position;
 
                 if ( RayIntersectTriangleFast( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, u, v ) ) {
 
@@ -1517,9 +1522,9 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                     hitResult.Distance = d;
                     hitResult.UV.X = u;
                     hitResult.UV.Y = v;
-                    hitResult.Indices[0] = Self->FirstVertex+triangleIndices[0];
-                    hitResult.Indices[1] = Self->FirstVertex+triangleIndices[1];
-                    hitResult.Indices[2] = Self->FirstVertex+triangleIndices[2];
+                    hitResult.Indices[0] = Self->FirstVertex + triangleIndices[0];
+                    hitResult.Indices[1] = Self->FirstVertex + triangleIndices[1];
+                    hitResult.Indices[2] = Self->FirstVertex + triangleIndices[2];
                     hitResult.Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
 
                     SWorldRaycastPrimitive & rcPrimitive = pRaycastResult->Primitives.Append();
@@ -1553,6 +1558,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
 
         ABrushModel const * brushModel = Self->Model;
 
+        SMeshVertex const * pVertices = brushModel->Vertices.ToPtr() + Self->FirstVertex;
         unsigned int const * pIndices = brushModel->Indices.ToPtr() + Self->FirstIndex;
 
         if ( Raycast.bClosest )
@@ -1560,9 +1566,9 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
             for ( int i = 0 ; i < Self->NumIndices ; i += 3 ) {
                 unsigned int const * triangleIndices = pIndices + i;
 
-                Float3 const & v0 = brushModel->Vertices[Self->FirstVertex+triangleIndices[0]].Position;
-                Float3 const & v1 = brushModel->Vertices[Self->FirstVertex+triangleIndices[1]].Position;
-                Float3 const & v2 = brushModel->Vertices[Self->FirstVertex+triangleIndices[2]].Position;
+                Float3 const & v0 = pVertices[triangleIndices[0]].Position;
+                Float3 const & v1 = pVertices[triangleIndices[1]].Position;
+                Float3 const & v2 = pVertices[triangleIndices[2]].Position;
 
                 if ( BvRayIntersectTriangle( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, d, u, v ) ) {
                     if ( Raycast.HitDistanceMin > d ) {
@@ -1574,9 +1580,12 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                         Raycast.HitUV.X = u;
                         Raycast.HitUV.Y = v;
                         Raycast.pVertices = brushModel->Vertices.ToPtr();
-                        Raycast.Indices[0] = Self->FirstVertex+triangleIndices[0];
-                        Raycast.Indices[1] = Self->FirstVertex+triangleIndices[1];
-                        Raycast.Indices[2] = Self->FirstVertex+triangleIndices[2];
+                        Raycast.pLightmapVerts = brushModel->LightmapVerts.ToPtr();
+                        Raycast.LightmapBlock = Self->LightmapBlock;
+                        Raycast.LightingLevel = brushModel->ParentLevel.GetObject();
+                        Raycast.Indices[0] = Self->FirstVertex + triangleIndices[0];
+                        Raycast.Indices[1] = Self->FirstVertex + triangleIndices[1];
+                        Raycast.Indices[2] = Self->FirstVertex + triangleIndices[2];
                         Raycast.Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
 
                         // Mark as visible
@@ -1594,9 +1603,9 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
 
                 unsigned int const * triangleIndices = pIndices + i;
 
-                Float3 const & v0 = brushModel->Vertices[Self->FirstVertex+triangleIndices[0]].Position;
-                Float3 const & v1 = brushModel->Vertices[Self->FirstVertex+triangleIndices[1]].Position;
-                Float3 const & v2 = brushModel->Vertices[Self->FirstVertex+triangleIndices[2]].Position;
+                Float3 const & v0 = pVertices[triangleIndices[0]].Position;
+                Float3 const & v1 = pVertices[triangleIndices[1]].Position;
+                Float3 const & v2 = pVertices[triangleIndices[2]].Position;
 
                 if ( BvRayIntersectTriangle( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, d, u, v ) ) {
                     if ( Raycast.RayLength > d ) {
@@ -1606,9 +1615,9 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                         hitResult.Distance = d;
                         hitResult.UV.X = u;
                         hitResult.UV.Y = v;
-                        hitResult.Indices[0] = Self->FirstVertex+triangleIndices[0];
-                        hitResult.Indices[1] = Self->FirstVertex+triangleIndices[1];
-                        hitResult.Indices[2] = Self->FirstVertex+triangleIndices[2];
+                        hitResult.Indices[0] = Self->FirstVertex + triangleIndices[0];
+                        hitResult.Indices[1] = Self->FirstVertex + triangleIndices[1];
+                        hitResult.Indices[2] = Self->FirstVertex + triangleIndices[2];
                         hitResult.Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
 
                         // Mark as visible
@@ -1648,13 +1657,12 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
 
             Raycast.HitSurface = nullptr;
 
-            // Transform hit location to world space
-            Raycast.HitLocation = Self->Owner->GetWorldTransformMatrix() * Raycast.HitLocation;
-
-            // Recalc hit distance in world space
-            Raycast.HitDistanceMin = (Raycast.HitLocation - Raycast.RayStart).Length();
-
             Raycast.Material = material;
+
+            // TODO:
+            //Raycast.pLightmapVerts = Self->Owner->LightmapUVChannel->GetVertices();
+            //Raycast.LightmapBlock = Self->Owner->LightmapBlock;
+            //Raycast.LightingLevel = Self->Owner->ParentLevel.GetObject();
 
             // Mark primitive visible
             Self->VisPass = VisQueryMarker;
@@ -1663,34 +1671,15 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
     else
     {
         int firstHit = pRaycastResult->Hits.Size();
-        if ( Self->RaycastCallback && Self->RaycastCallback( Self, Raycast.RayStart, Raycast.RayEnd, pRaycastResult->Hits ) ) {
+        int closestHit;
+        if ( Self->RaycastCallback && Self->RaycastCallback( Self, Raycast.RayStart, Raycast.RayEnd, pRaycastResult->Hits, closestHit ) ) {
 
             SWorldRaycastPrimitive & rcPrimitive = pRaycastResult->Primitives.Append();
 
             rcPrimitive.Object = Self->Owner;
             rcPrimitive.FirstHit = firstHit;
             rcPrimitive.NumHits = pRaycastResult->Hits.Size() - firstHit;
-            rcPrimitive.ClosestHit = rcPrimitive.FirstHit;
-
-            // Convert hits to worldspace and find closest hit
-
-            Float3x4 const & transform = Self->Owner->GetWorldTransformMatrix();
-            Float3x3 normalMatrix;
-
-            transform.DecomposeNormalMatrix( normalMatrix );
-
-            for ( int i = 0 ; i < rcPrimitive.NumHits ; i++ ) {
-                int hitNum = rcPrimitive.FirstHit + i;
-                STriangleHitResult & hitResult = pRaycastResult->Hits[hitNum];
-
-                hitResult.Location = transform * hitResult.Location;
-                hitResult.Normal = ( normalMatrix * hitResult.Normal ).Normalized();
-                hitResult.Distance = (hitResult.Location - Raycast.RayStart).Length();
-
-                if ( hitResult.Distance < pRaycastResult->Hits[rcPrimitive.ClosestHit ].Distance ) {
-                    rcPrimitive.ClosestHit = hitNum;
-                }
-            }
+            rcPrimitive.ClosestHit = closestHit;
 
             // Mark primitive visible
             Self->VisPass = VisQueryMarker;
@@ -1699,7 +1688,7 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
 }
 
 
-static void VSD_RaycastPrimitives( SVisArea * InArea )
+static void VSD_RaycastArea( SVisArea * InArea )
 {
     float boxMin, boxMax;
 
@@ -1755,9 +1744,10 @@ static void VSD_RaycastPrimitives( SVisArea * InArea )
         }
     }
 
-    SPrimitiveLink * const * Links = &InArea->Links;
-    SPrimitiveLink * link;
-    for ( ; (link = *Links) != nullptr ; Links = &link->NextArea ) {
+    //SPrimitiveLink * const * Links = &InArea->Links;
+    //SPrimitiveLink * link;
+    //for ( ; (link = *Links) != nullptr ; Links = &link->NextArea ) {
+    for ( SPrimitiveLink * link = InArea->Links ; link ; link = link->NextInArea ) {
         SPrimitiveDef * primitive = link->Primitive;
 
         if ( primitive->VisMark == VisQueryMarker )
@@ -1935,9 +1925,10 @@ static void VSD_RaycastPrimitiveBounds( SVisArea * InArea )
         }
     }
 
-    SPrimitiveLink * const * Links = &InArea->Links;
-    SPrimitiveLink * link;
-    for ( ; (link = *Links) != nullptr ; Links = &link->NextArea ) {
+    //SPrimitiveLink * const * Links = &InArea->Links;
+    //SPrimitiveLink * link;
+    //for ( ; (link = *Links) != nullptr ; Links = &link->NextArea ) {
+    for ( SPrimitiveLink * link = InArea->Links ; link ; link = link->NextInArea ) {
         SPrimitiveDef * primitive = link->Primitive;
 
         if ( primitive->VisMark == VisQueryMarker )
@@ -2082,18 +2073,18 @@ static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Flo
         SBinarySpaceLeaf const * leaf = &CurLevel->Leafs[-1 - InNodeIndex];
 
 #if 0
+        // FIXME: Add this additional checks?
         float boxMin, boxMax;
-        if ( !BvRayIntersectBox( InRayStart, Raycast.InvRayDir, leaf->Bounds, boxMin, boxMax ) ) {
+        if ( !BvRayIntersectBox( Raycast.RayStart, Raycast.InvRayDir, leaf->Bounds, boxMin, boxMax ) ) {
             return false;
         }
-
         if ( boxMin >= Raycast.HitDistanceMin ) {
             // Ray intersects the box, but box is too far
             return false;
         }
 #endif
 
-        VSD_RaycastPrimitives( leaf->Area );
+        VSD_RaycastArea( leaf->Area );
 
         if ( Raycast.RayLength > Raycast.HitDistanceMin ) {
         //if ( d >= Raycast.HitDistanceMin ) {
@@ -2313,7 +2304,7 @@ static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStar
 
 static void VSD_LevelRaycastPortals_r( SVisArea * InArea ) {
 
-    VSD_RaycastPrimitives( InArea );
+    VSD_RaycastArea( InArea );
 
     for ( SPortalLink const * portal = InArea->PortalList; portal; portal = portal->Next ) {
 
@@ -2514,12 +2505,8 @@ bool VSD_Raycast( AWorld * InWorld, SWorldRaycastResult & Result, Float3 const &
     // Set view position for face culling
     ViewPosition = Raycast.RayStart;
 
-    {
-        AScopedTimeCheck TimeCheck( "VSD_ProcessLevelRaycast" );
-
-        for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-            VSD_ProcessLevelRaycast( level );
-        }
+    for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
+        VSD_ProcessLevelRaycast( level );
     }
 
     if ( Result.Primitives.IsEmpty() ) {
@@ -2564,23 +2551,21 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
     Raycast.HitLocation = InRayEnd;
     Raycast.HitDistanceMin = Raycast.RayLength;
     Raycast.bClosest = true;
+    Raycast.pVertices = nullptr;
+    Raycast.pLightmapVerts = nullptr;
 
     // Set view position for face culling
     ViewPosition = Raycast.RayStart;
 
-    {
-        AScopedTimeCheck TimeCheck( "VSD_ProcessLevelRaycast" );
-
-        for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-            VSD_ProcessLevelRaycast( level );
+    for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
+        VSD_ProcessLevelRaycast( level );
 
 #ifdef CLOSE_ENOUGH_EARLY_OUT
-            // hit is close enough to stop ray casting?
-            if ( Raycast.HitDistanceMin < 0.0001f ) {
-                break;
-            }
-#endif
+        // hit is close enough to stop ray casting?
+        if ( Raycast.HitDistanceMin < 0.0001f ) {
+            break;
         }
+#endif
     }
 
     if ( !Raycast.HitPrimitive && !Raycast.HitSurface ) {
@@ -2631,11 +2616,26 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
 
     Result.Fraction = Raycast.HitDistanceMin / Raycast.RayLength;
 
+    const float hitW = 1.0f - Raycast.HitUV[0] - Raycast.HitUV[1];
+
     // calc texcoord
     Float2 const & uv0 = vertices[Raycast.Indices[0]].TexCoord;
     Float2 const & uv1 = vertices[Raycast.Indices[1]].TexCoord;
     Float2 const & uv2 = vertices[Raycast.Indices[2]].TexCoord;
-    Result.Texcoord = uv0 * Raycast.HitUV[0] + uv1 * Raycast.HitUV[1] + uv2 * ( 1.0f - Raycast.HitUV[0] - Raycast.HitUV[1] );
+    Result.Texcoord = uv0 * hitW + uv1 * Raycast.HitUV[0] + uv2 * Raycast.HitUV[1];
+
+    if ( Raycast.pLightmapVerts && Raycast.LightingLevel && Raycast.LightmapBlock >= 0 ) {
+        Float2 const & lm0 = Raycast.pLightmapVerts[Raycast.Indices[0]].TexCoord;
+        Float2 const & lm1 = Raycast.pLightmapVerts[Raycast.Indices[1]].TexCoord;
+        Float2 const & lm2 = Raycast.pLightmapVerts[Raycast.Indices[2]].TexCoord;
+        Float2 lighmapTexcoord = lm0 * hitW + lm1 * Raycast.HitUV[0] + lm2 * Raycast.HitUV[1];
+
+        ALevel const * level = Raycast.LightingLevel;
+
+        Result.LightmapSample_Experemental = level->SampleLight( Raycast.LightmapBlock, lighmapTexcoord );
+    } else {
+        Result.LightmapSample_Experemental.Clear();
+    }
 
     return true;
 }
@@ -2670,12 +2670,8 @@ bool VSD_RaycastBounds( AWorld * InWorld, TPodArray< SBoxHitResult > & Result, F
     Raycast.HitDistanceMin = Raycast.RayLength;
     Raycast.bClosest = false;
 
-    {
-        AScopedTimeCheck TimeCheck( "VSD_ProcessLevelRaycastBounds" );
-
-        for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-            VSD_ProcessLevelRaycastBounds( level );
-        }
+    for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
+        VSD_ProcessLevelRaycastBounds( level );
     }
 
     if ( Result.IsEmpty() ) {
@@ -2726,19 +2722,15 @@ bool VSD_RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float3 
     Raycast.HitDistanceMax = Raycast.RayLength;
     Raycast.bClosest = true;
 
-    {
-        AScopedTimeCheck TimeCheck( "VSD_ProcessLevelRaycastBounds" );
-
-        for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-            VSD_ProcessLevelRaycastBounds( level );
+    for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
+        VSD_ProcessLevelRaycastBounds( level );
 
 #ifdef CLOSE_ENOUGH_EARLY_OUT
-            // hit is close enough to stop ray casting?
-            if ( Raycast.HitDistanceMin < 0.0001f ) {
-                break;
-            }
-#endif
+        // hit is close enough to stop ray casting?
+        if ( Raycast.HitDistanceMin < 0.0001f ) {
+            break;
         }
+#endif
     }
 
     if ( !Raycast.HitPrimitive && !Raycast.HitSurface ) {

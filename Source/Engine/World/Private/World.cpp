@@ -38,6 +38,7 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
+#include "PrimitiveLinkPool.h"
 
 AN_CLASS_META( AWorld )
 
@@ -817,6 +818,8 @@ void AWorld::UpdateWorlds( IGameModule * _GameModule, float _TimeStep ) {
     }
 
     KickoffPendingKillWorlds();
+
+    GPrimitiveLinkPool.CleanupEmptyBlocks();
 }
 
 //void AWorld::ReAddPrimitives() {

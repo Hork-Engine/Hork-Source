@@ -41,6 +41,8 @@ SOFTWARE.
 #include <World/Public/Canvas.h>
 #include <World/Public/World.h>
 
+#include <World/Private/PrimitiveLinkPool.h>
+
 #include <Runtime/Public/Runtime.h>
 
 #include <Core/Public/Logger.h>
@@ -174,6 +176,8 @@ void AEngineInstance::Deinitialize() {
 
     Canvas.Deinitialize();
 
+    GPrimitiveLinkPool.Free();
+
     GRenderFrontend.Deinitialize();
 
     GResourceManager.Deinitialize();
@@ -206,7 +210,7 @@ void AEngineInstance::UpdateFrame() {
 
     // Don't allow very slow frames
     if ( FrameDurationInSeconds > 0.5f ) {
-        FrameDurationInSeconds = 0.0f;
+        FrameDurationInSeconds = 0.5f;
     }
 
     // Set current frame number
@@ -291,7 +295,18 @@ void AEngineInstance::ShowStats() {
 
         SRenderFrontendStat const & stat = GRenderFrontend.GetStat();
 
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("FPS: %d", int(1.0f / FrameDurationInSeconds) ) ); pos.Y += y_step;
+        enum { FPS_BUF = 16 };
+        static float fpsavg[FPS_BUF];
+        static int n = 0;
+        fpsavg[n & (FPS_BUF-1)] = FrameDurationInSeconds;
+        n++;
+        float fps = 0;
+        for ( int i = 0 ; i < FPS_BUF ; i++ )
+            fps += fpsavg[i];
+        fps /= FPS_BUF;
+        fps = 1.0f / ( fps > 0.0f ? fps : 1.0f );
+
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ) ); pos.Y += y_step;

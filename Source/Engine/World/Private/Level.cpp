@@ -40,59 +40,13 @@ SOFTWARE.
 #include <Core/Public/BV/BvIntersect.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
+#include "PrimitiveLinkPool.h"
 
 ARuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ALevel )
-
-#define MAX_PRIMITIVE_LINKS 40000
-
-class APrimitiveLinkPool {
-public:
-    APrimitiveLinkPool() {
-        int i;
-        memset( Pool, 0, sizeof( Pool ) );
-        FreeLinks = Pool;
-        for ( i = 0 ; i < MAX_PRIMITIVE_LINKS - 1 ; i++ ) {
-            FreeLinks[i].Next = &FreeLinks[ i + 1 ];
-        }
-        FreeLinks[i].Next = NULL;
-        UsedLinks = 0;
-    }
-
-    SPrimitiveLink * AllocateLink() {
-    #if 0
-        return new VSDPrimitiveLink;
-    #else
-        SPrimitiveLink * link = FreeLinks;
-        if ( !link ) {
-            GLogger.Printf( "APrimitiveLinkPool::AllocateLink: no free links (used %d from %d)\n", UsedLinks, MAX_PRIMITIVE_LINKS );
-            return nullptr;
-        }
-        FreeLinks = FreeLinks->Next;
-        ++UsedLinks;
-        //GLogger.Printf( "AllocateLink: %d\n", UsedLinks );
-        return link;
-    #endif
-    }
-
-    void FreeLink( SPrimitiveLink * Link ) {
-    #if 0
-        delete Link;
-    #else
-        Link->Next = FreeLinks;
-        FreeLinks = Link;
-        --UsedLinks;
-    #endif
-    }
-
-private:
-    SPrimitiveLink Pool[MAX_PRIMITIVE_LINKS];
-    SPrimitiveLink * FreeLinks;
-    int UsedLinks;
-};
 
 class ANGIE_API AWorldspawn : public AActor {
     AN_ACTOR( AWorldspawn, AActor )
@@ -116,34 +70,6 @@ private:
     ASceneComponent * AudioInstigator;
     APhysicalBody * WorldCollision;
 };
-
-static APrimitiveLinkPool GPrimitiveLinkPool;
-
-static SPrimitiveLink ** LastLink;
-static SVisArea * TopArea;
-
-static void AddPrimitiveToArea( SVisArea * Area, SPrimitiveDef * Primitive ) {
-    if ( !TopArea ) {
-        TopArea = Area;
-    }
-
-    SPrimitiveLink * link = GPrimitiveLinkPool.AllocateLink();
-    if ( !link ) {
-        return;
-    }
-
-    link->Primitive = Primitive;
-
-    // Create the primitive link
-    *LastLink = link;
-    LastLink = &link->Next;
-    link->Next = nullptr;
-
-    // Create the leaf links
-    link->Area = Area;
-    link->NextArea = Area->Links;
-    Area->Links = link;
-}
 
 void ALevel::DestroyActors() {
     for ( AActor * actor : Actors ) {
@@ -248,8 +174,6 @@ void ALevel::Purge() {
 }
 
 void ALevel::PurgePortals() {
-    //RemovePrimitives();
-
     for ( SPortalLink & areaPortal : AreaPortals ) {
         AConvexHull::Destroy( areaPortal.Hull );
     }
@@ -336,10 +260,7 @@ void ALevel::Initialize() {
     if ( bCompressedVisData && Visdata && PVSClustersCount > 0 )
     {
         // Allocate decompressed vis data
-        //DecompressedVisData = (byte *)HugeAlloc( 0x20000/*Leafs.Size() / 8 + 1*/ );
-
-        DecompressedVisData = (byte *)HugeAlloc( PVSClustersCount / 8 + 1 );
-        
+        DecompressedVisData = (byte *)HugeAlloc( ( PVSClustersCount + 7 ) >> 3 );
     }
 }
 
@@ -361,27 +282,18 @@ ALevel::~ALevel() {
     Purge();
 }
 
-int ALevel::FindLeaf( Float3 const & _Position ) {
+int ALevel::FindLeaf( Float3 const & InPosition ) {
     SBinarySpaceNode * node;
-    SBinarySpacePlane * plane;
     float d;
     int nodeIndex;
 
-    if ( !Nodes.Size() ) {
+    if ( Nodes.IsEmpty() ) {
         return -1;
     }
 
     node = Nodes.ToPtr();
     while ( 1 ) {
-        plane = node->Plane;
-
-        if ( plane->Type < 3 ) {
-            // Simple case for axial planes
-            d = _Position[ plane->Type ] + plane->D;
-        } else {
-            // General case for non-axial planes
-            d = Math::Dot( _Position, plane->Normal ) + plane->D;
-        }
+        d = node->Plane->DistFast( InPosition );
 
         // Choose child
         nodeIndex = node->ChildrenIdx[ ( d <= 0 ) ];
@@ -396,9 +308,9 @@ int ALevel::FindLeaf( Float3 const & _Position ) {
     return -1;
 }
 
-SVisArea * ALevel::FindArea( Float3 const & _Position ) {
+SVisArea * ALevel::FindArea( Float3 const & InPosition ) {
     if ( !Nodes.IsEmpty() ) {
-        int leaf = FindLeaf( _Position );
+        int leaf = FindLeaf( InPosition );
         if ( leaf < 0 ) {
             // solid
             return &OutdoorArea;
@@ -408,12 +320,12 @@ SVisArea * ALevel::FindArea( Float3 const & _Position ) {
 
     // Bruteforce TODO: remove this!
     for ( int i = 0 ; i < Areas.Size() ; i++ ) {
-        if (    _Position.X >= Areas[i].Bounds.Mins.X
-             && _Position.Y >= Areas[i].Bounds.Mins.Y
-             && _Position.Z >= Areas[i].Bounds.Mins.Z
-             && _Position.X <  Areas[i].Bounds.Maxs.X
-             && _Position.Y <  Areas[i].Bounds.Maxs.Y
-             && _Position.Z <  Areas[i].Bounds.Maxs.Z ) {
+        if (    InPosition.X >= Areas[i].Bounds.Mins.X
+             && InPosition.Y >= Areas[i].Bounds.Mins.Y
+             && InPosition.Z >= Areas[i].Bounds.Mins.Z
+             && InPosition.X <  Areas[i].Bounds.Maxs.X
+             && InPosition.Y <  Areas[i].Bounds.Maxs.Y
+             && InPosition.Z <  Areas[i].Bounds.Maxs.Z ) {
             return &Areas[i];
         }
     }
@@ -437,7 +349,7 @@ byte const * ALevel::DecompressVisdata( byte const * InCompressedData ) {
         // Zeros count
         count = InCompressedData[ 1 ];
 
-        // Clamp zeros count if invalid
+        // Clamp zeros count if invalid. This can be moved to preprocess stage.
         if ( pDecompressed - DecompressedVisData + count > row ) {
             count = row - ( pDecompressed - DecompressedVisData );
         }
@@ -453,46 +365,44 @@ byte const * ALevel::DecompressVisdata( byte const * InCompressedData ) {
     return DecompressedVisData;
 }
 
-byte const * ALevel::LeafPVS( SBinarySpaceLeaf const * _Leaf ) {
+byte const * ALevel::LeafPVS( SBinarySpaceLeaf const * InLeaf ) {
     if ( bCompressedVisData ) {
-        return _Leaf->Visdata ? DecompressVisdata( _Leaf->Visdata ) : nullptr;
+        return InLeaf->Visdata ? DecompressVisdata( InLeaf->Visdata ) : nullptr;
     } else {
-        return _Leaf->Visdata;
+        return InLeaf->Visdata;
     }
 }
 
-int ALevel::MarkLeafs( int _ViewLeaf ) {
-    if ( _ViewLeaf < 0 ) {
+int ALevel::MarkLeafs( int InViewLeaf ) {
+    if ( InViewLeaf < 0 ) {
         return ViewMark;
     }
 
-    SBinarySpaceLeaf * viewLeaf = &Leafs[ _ViewLeaf ];
+    SBinarySpaceLeaf * pLeaf = &Leafs[ InViewLeaf ];
 
-    if ( ViewCluster == viewLeaf->Cluster ) {
+    if ( ViewCluster == pLeaf->PVSCluster ) {
         return ViewMark;
     }
 
     ViewMark++;
-    ViewCluster = viewLeaf->Cluster;
+    ViewCluster = pLeaf->PVSCluster;
 
-    byte const * vis = LeafPVS( viewLeaf );
-    if ( vis )
+    byte const * pVisibility = LeafPVS( pLeaf );
+    if ( pVisibility )
     {
         int cluster;
         for ( SBinarySpaceLeaf & leaf : Leafs ) {
 
-            cluster = leaf.Cluster;
-            if ( cluster < 0 || cluster >= PVSClustersCount ) {
+            cluster = leaf.PVSCluster;
+
+            if ( cluster < 0 || cluster >= PVSClustersCount
+                 || !( pVisibility[ cluster >> 3 ] & ( 1 << ( cluster & 7 ) ) ) ) {
                 continue;
             }
 
-            if ( !( vis[ cluster >> 3 ] & ( 1 << ( cluster & 7 ) ) ) ) {
-                continue;
-            }
+            // TODO: check doors here
 
-            // TODO: check for door connection here
-
-            SBinarySpaceNode * parent = ( SBinarySpaceNode* )&leaf;
+            SNodeBase * parent = &leaf;
             do {
                 if ( parent->ViewMark == ViewMark ) {
                     break;
@@ -501,15 +411,18 @@ int ALevel::MarkLeafs( int _ViewLeaf ) {
                 parent = parent->Parent;
             } while ( parent );
         }
-    } else {
+    }
+    else
+    {
         // Mark all
         int cluster;
         for ( SBinarySpaceLeaf & leaf : Leafs ) {
-            cluster = leaf.Cluster;
+            cluster = leaf.PVSCluster;
             if ( cluster < 0 || cluster >= PVSClustersCount ) {
                 continue;
             }
-            SBinarySpaceNode * parent = ( SBinarySpaceNode* )&leaf;
+
+            SNodeBase * parent = &leaf;
             do {
                 if ( parent->ViewMark == ViewMark ) {
                     break;
@@ -524,7 +437,72 @@ int ALevel::MarkLeafs( int _ViewLeaf ) {
 }
 
 void ALevel::Tick( float _TimeStep ) {
+}
 
+AN_FORCEINLINE float HalfToFloat( const unsigned short _Half ) {
+    float f;
+    *reinterpret_cast< uint32_t * >( &f ) = Math::HalfToFloat( _Half );
+    return f;
+}
+
+Float3 ALevel::SampleLight( int InLightmapBlock, Float2 const & InLighmapTexcoord ) const {
+    if ( !LightData ) {
+        return Float3( 1.0f );
+    }
+
+    AN_ASSERT( InLightmapBlock >= 0 && InLightmapBlock < Lightmaps.Size() );
+
+    int numChannels = ( LightmapFormat == LIGHTMAP_GRAYSCALED_HALF ) ? 1 : 3;
+    int blockSize = LightmapBlockWidth * LightmapBlockHeight * numChannels;
+
+    const unsigned short * src = (const unsigned short *)LightData + InLightmapBlock * blockSize;
+
+    const float sx = Math::Clamp( InLighmapTexcoord.X, 0.0f, 1.0f ) * (LightmapBlockWidth-1);
+    const float sy = Math::Clamp( InLighmapTexcoord.Y, 0.0f, 1.0f ) * (LightmapBlockHeight-1);
+    const Float2 lerp( Math::Fract( sx ), Math::Fract( sy ) );
+
+    const int x0 = Math::ToIntFast( sx );
+    const int y0 = Math::ToIntFast( sy );
+    int x1 = x0 + 1;
+    if ( x1 >= LightmapBlockWidth )
+        x1 = LightmapBlockWidth - 1;
+    int y1 = y0 + 1;
+    if ( y1 >= LightmapBlockHeight )
+        y1 = LightmapBlockHeight - 1;
+
+    const int offset00 = ( y0 * LightmapBlockWidth + x0 ) * numChannels;
+    const int offset10 = ( y0 * LightmapBlockWidth + x1 ) * numChannels;
+    const int offset01 = ( y1 * LightmapBlockWidth + x0 ) * numChannels;
+    const int offset11 = ( y1 * LightmapBlockWidth + x1 ) * numChannels;
+
+    const unsigned short * src00 = src + offset00;
+    const unsigned short * src10 = src + offset10;
+    const unsigned short * src01 = src + offset01;
+    const unsigned short * src11 = src + offset11;
+
+    Float3 light(0);
+
+    switch ( LightmapFormat ) {
+    case LIGHTMAP_GRAYSCALED_HALF:
+    {
+        //light[0] = light[1] = light[2] = HalfToFloat(src00[0]);
+        light[0] = light[1] = light[2] = lerp.Bilerp( HalfToFloat( src00[0] ), HalfToFloat( src10[0] ), HalfToFloat( src01[0] ), HalfToFloat( src11[0] ) );
+        break;
+    }
+    case LIGHTMAP_BGR_HALF:
+    {
+        for ( int i = 0 ; i < 3 ; i++ ) {
+            //light[2-i] = HalfToFloat(src00[i]);
+            light[2-i] = lerp.Bilerp( HalfToFloat(src00[i]), HalfToFloat(src10[i]), HalfToFloat(src01[i]), HalfToFloat(src11[i]) );
+        }
+        break;
+    }
+    default:
+        GLogger.Printf( "ALevel::SampleLight: Unknown lightmap format\n" );
+        break;
+    }
+
+    return light;
 }
 
 void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
@@ -619,104 +597,171 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 }
 
-void ALevel::AddBoxRecursive( SPrimitiveDef * InPrimitive ) {
-    SBinarySpaceNode * node = Nodes.ToPtr();
+void ALevel::QueryOverplapAreas_r( int InNodeIndex, BvAxisAlignedBox const & InBounds, TPodArray< SVisArea * > & OutAreas ) {
+    do {
+        if ( InNodeIndex < 0 ) {
+            // leaf
+            SVisArea * area = Leafs[ -1 - InNodeIndex ].Area;
+            if ( !OutAreas.IsExist( area ) ) {
+                OutAreas.Append( area );
+            }
+            return;
+        }
 
-    // TODO: precalc signbits
-    int sideMask = BvBoxOverlapPlaneSideMask( InPrimitive->Box, *node->Plane, node->Plane->Type, node->Plane->SignBits() );
+        SBinarySpaceNode * node = &Nodes[ InNodeIndex ];
 
-    if ( sideMask & 1 ) {
-        AddBoxRecursive( node->ChildrenIdx[0], InPrimitive );
-    }
+        // TODO: precalc signbits
+        int sideMask = BvBoxOverlapPlaneSideMask( InBounds, *node->Plane, node->Plane->Type, node->Plane->SignBits() );
 
-    if ( sideMask & 2 ) {
-        AddBoxRecursive( node->ChildrenIdx[1], InPrimitive );
-    }
+        if ( sideMask == 1 ) {
+            InNodeIndex = node->ChildrenIdx[0];
+        } else if ( sideMask == 2 ) {
+            InNodeIndex = node->ChildrenIdx[1];
+        } else {
+            if ( node->ChildrenIdx[1] != 0 ) {
+                QueryOverplapAreas_r( node->ChildrenIdx[1], InBounds, OutAreas );
+            }
+            InNodeIndex = node->ChildrenIdx[0];
+        }
+    } while ( InNodeIndex != 0 );
 }
 
-void ALevel::AddBoxRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive ) {
-    if ( _NodeIndex == 0 ) {
-        // solid
-        return;
-    }
+void ALevel::QueryOverplapAreas_r( int InNodeIndex, BvSphere const & InBounds, TPodArray< SVisArea * > & OutAreas ) {
+    do {
+        if ( InNodeIndex < 0 ) {
+            // leaf
+            SVisArea * area = Leafs[ -1 - InNodeIndex ].Area;
+            if ( !OutAreas.IsExist( area ) ) {
+                OutAreas.Append( area );
+            }
+            return;
+        }
 
-    if ( _NodeIndex < 0 ) {
-        // leaf
-        AddPrimitiveToArea( Leafs[-1 - _NodeIndex].Area, InPrimitive );
-        return;
-    }
+        SBinarySpaceNode * node = &Nodes[ InNodeIndex ];
 
-    SBinarySpaceNode * node = &Nodes[ _NodeIndex ];
+        float d = node->Plane->DistFast( InBounds.Center );
 
-    // TODO: precalc signbits
-    int sideMask = BvBoxOverlapPlaneSideMask( InPrimitive->Box, *node->Plane, node->Plane->Type, node->Plane->SignBits() );
-
-    if ( sideMask & 1 ) {
-        AddBoxRecursive( node->ChildrenIdx[0], InPrimitive );
-    }
-
-    if ( sideMask & 2 ) {
-        AddBoxRecursive( node->ChildrenIdx[1], InPrimitive );
-    }
+        if ( d > InBounds.Radius ) {
+            InNodeIndex = node->ChildrenIdx[0];
+        } else if ( d < -InBounds.Radius ) {
+            InNodeIndex = node->ChildrenIdx[1];
+        } else {
+            if ( node->ChildrenIdx[1] != 0 ) {
+                QueryOverplapAreas_r( node->ChildrenIdx[1], InBounds, OutAreas );
+            }
+            InNodeIndex = node->ChildrenIdx[0];
+        }
+    } while ( InNodeIndex != 0 );
 }
 
-void ALevel::AddSphereRecursive( SPrimitiveDef * InPrimitive ) {
-    SBinarySpaceNode * node = Nodes.ToPtr();
+void ALevel::QueryOverplapAreas( BvAxisAlignedBox const & InBounds, TPodArray< SVisArea * > & OutAreas ) {
+    OutAreas.Clear();
 
-    float d;
-
-    if ( node->Plane->Type < 3 ) {
-        //d = InPrimitive->Sphere.Center[ node->Plane->Type ] * node->Plane->Normal[ node->Plane->Type ] + node->Plane->D;
-        d = InPrimitive->Sphere.Center[ node->Plane->Type ] + node->Plane->D;
-    } else {
-        d = Math::Dot( InPrimitive->Sphere.Center, node->Plane->Normal ) + node->Plane->D;
+    if ( Nodes.IsEmpty() ) {
+        return;
     }
 
-    if ( d > -InPrimitive->Sphere.Radius ) {
-        AddSphereRecursive( node->ChildrenIdx[0], InPrimitive );
-    }
-
-    if ( d < InPrimitive->Sphere.Radius ) {
-        AddSphereRecursive( node->ChildrenIdx[1], InPrimitive );
-    }
+    QueryOverplapAreas_r( 0, InBounds, OutAreas );
 }
 
-void ALevel::AddSphereRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive ) {
-    if ( _NodeIndex == 0 ) {
-        // solid
+void ALevel::QueryOverplapAreas( BvSphere const & InBounds, TPodArray< SVisArea * > & OutAreas ) {
+    OutAreas.Clear();
+
+    if ( Nodes.IsEmpty() ) {
         return;
     }
 
-    if ( _NodeIndex < 0 ) {
-        // leaf
-        AddPrimitiveToArea( Leafs[ -1 - _NodeIndex ].Area, InPrimitive );
+    QueryOverplapAreas_r( 0, InBounds, OutAreas );
+}
+
+static SPrimitiveLink ** LastLink;
+
+static AN_FORCEINLINE bool IsPrimitiveInArea( SPrimitiveDef const * InPrimitive, SVisArea const * InArea ) {
+    for ( SPrimitiveLink const * link = InPrimitive->Links ; link ; link = link->Next ) {
+        if ( link->Area == InArea ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void AddPrimitiveToArea( SVisArea * Area, SPrimitiveDef * Primitive ) {
+    if ( IsPrimitiveInArea( Primitive, Area ) ) {
         return;
     }
 
-    SBinarySpaceNode * node = &Nodes[ _NodeIndex ];
-
-    float d;
-
-    if ( node->Plane->Type < 3 ) {
-        //d = InPrimitive->Sphere.Center[ node->Plane->Type ] * node->Plane->Normal[ node->Plane->Type ] + node->Plane->D;
-        d = InPrimitive->Sphere.Center[ node->Plane->Type ] + node->Plane->D;
-    } else {
-        d = Math::Dot( InPrimitive->Sphere.Center, node->Plane->Normal ) + node->Plane->D;
+    SPrimitiveLink * link = GPrimitiveLinkPool.AllocateLink();
+    if ( !link ) {
+        return;
     }
 
-    if ( d > -InPrimitive->Sphere.Radius ) {
-        AddSphereRecursive( node->ChildrenIdx[0], InPrimitive );
-    }
+    link->Primitive = Primitive;
 
-    if ( d < InPrimitive->Sphere.Radius ) {
-        AddSphereRecursive( node->ChildrenIdx[1], InPrimitive );
-    }
+    // Create the primitive link
+    *LastLink = link;
+    LastLink = &link->Next;
+    link->Next = nullptr;
+
+    // Create the area links
+    link->Area = Area;
+    link->NextInArea = Area->Links;
+    Area->Links = link;
+}
+
+void ALevel::AddBoxRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive ) {
+    do {
+        if ( InNodeIndex < 0 ) {
+            // leaf
+            AddPrimitiveToArea( Leafs[ -1 - InNodeIndex ].Area, InPrimitive );
+            return;
+        }
+
+        SBinarySpaceNode * node = &Nodes[ InNodeIndex ];
+
+        // TODO: precalc signbits
+        int sideMask = BvBoxOverlapPlaneSideMask( InPrimitive->Box, *node->Plane, node->Plane->Type, node->Plane->SignBits() );
+
+        if ( sideMask == 1 ) {
+            InNodeIndex = node->ChildrenIdx[0];
+        } else if ( sideMask == 2 ) {
+            InNodeIndex = node->ChildrenIdx[1];
+        } else {
+            if ( node->ChildrenIdx[1] != 0 ) {
+                AddBoxRecursive( node->ChildrenIdx[1], InPrimitive );
+            }
+            InNodeIndex = node->ChildrenIdx[0];
+        }
+    } while ( InNodeIndex != 0 );
+}
+
+void ALevel::AddSphereRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive ) {
+    do {
+        if ( InNodeIndex < 0 ) {
+            // leaf
+            AddPrimitiveToArea( Leafs[ -1 - InNodeIndex ].Area, InPrimitive );
+            return;
+        }
+
+        SBinarySpaceNode * node = &Nodes[ InNodeIndex ];
+
+        float d = node->Plane->DistFast( InPrimitive->Sphere.Center );
+
+        if ( d > InPrimitive->Sphere.Radius ) {
+            InNodeIndex = node->ChildrenIdx[0];
+        } else if ( d < -InPrimitive->Sphere.Radius ) {
+            InNodeIndex = node->ChildrenIdx[1];
+        } else {
+            if ( node->ChildrenIdx[1] != 0 ) {
+                AddSphereRecursive( node->ChildrenIdx[1], InPrimitive );
+            }
+            InNodeIndex = node->ChildrenIdx[0];
+        }
+    } while ( InNodeIndex != 0 );
 }
 
 void ALevel::AddPrimitive( AWorld * InWorld, SPrimitiveDef * InPrimitive ) {
 
     LastLink = &InPrimitive->Links;
-    TopArea = nullptr;
 
     if ( !InPrimitive->bPendingRemove )
     {
@@ -735,8 +780,6 @@ void ALevel::AddPrimitive( AWorld * InWorld, SPrimitiveDef * InPrimitive ) {
             level->AddPrimitiveToLevel( InPrimitive );
         }
     }
-
-    InPrimitive->TopArea = TopArea;
 }
 
 void ALevel::AddPrimitiveToLevel( SPrimitiveDef * InPrimitive ) {
@@ -746,10 +789,10 @@ void ALevel::AddPrimitiveToLevel( SPrimitiveDef * InPrimitive ) {
     if ( bHaveBinaryTree ) {
         switch ( InPrimitive->Type ) {
             case VSD_PRIMITIVE_BOX:
-                AddBoxRecursive( InPrimitive );
+                AddBoxRecursive( 0, InPrimitive );
                 break;
             case VSD_PRIMITIVE_SPHERE:
-                AddSphereRecursive( InPrimitive );
+                AddSphereRecursive( 0, InPrimitive );
                 break;
         }
     } else {
@@ -823,11 +866,11 @@ void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
 
             if ( walk == link ) {
                 // remove this link
-                *prev = link->NextArea;
+                *prev = link->NextInArea;
                 break;
             }
 
-            prev = &walk->NextArea;
+            prev = &walk->NextInArea;
         }
 
         SPrimitiveLink * free = link;
@@ -837,6 +880,53 @@ void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
     }
 
     InPrimitive->Links = nullptr;
+}
+
+
+void ALevel::RemovePrimitiveFromLevel( SPrimitiveDef * InPrimitive ) {
+#if 0
+    SPrimitiveLink * prev = nullptr;
+    SPrimitiveLink * next;
+    for ( SPrimitiveLink * link = InPrimitive->Links ; link ; link = next ) {
+        next = link->Next;
+
+        SVisArea * area = link->Area;
+        if ( area->Level != this ) {
+            prev = link;
+            continue;
+        }
+
+        // Перебираем все ссылки на примитивы в area, чтобы найти удаляемый примитив
+        SPrimitiveLink ** last = &area->Links;
+        while ( 1 ) {
+            SPrimitiveLink * walk = *last;
+
+            if ( !walk ) {
+                break;
+            }
+
+            if ( walk == link ) {
+                // remove this link
+                *last = link->NextInArea;
+                break;
+            }
+
+            last = &walk->NextInArea;
+        }
+
+        if ( link == InPrimitive->Links ) {
+            InPrimitive->Links = next;
+        }
+
+        if ( prev ) {
+            prev->Next = next;
+        } else {
+            InPrimitive->Links = next;
+        }
+
+        GPrimitiveLinkPool.FreeLink( link );
+    }
+#endif
 }
 
 ALightmapUV * ALevel::CreateLightmapUVChannel( AIndexedMesh * InSourceMesh ) {
@@ -918,7 +1008,7 @@ void AWorldspawn::BeginPlay() {
 
     SSoundSpawnParameters ambient;
 
-    ambient.Location = AUDIO_STAY_BACKGROUND;
+    ambient.SourceType = AUDIO_SOURCE_BACKGROUND;
     ambient.Priority = AUDIO_CHANNEL_PRIORITY_AMBIENT;
     ambient.bVirtualizeWhenSilent = true;
     ambient.Volume = 0.1f;// 0.02f;
@@ -997,3 +1087,237 @@ void ABrushModel::Purge() {
 
     BodyComposition.Clear();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if 0
+template< typename T, int MAX_BLOCK_SIZE = 1024 >
+class ADynamicPool {
+    struct Entry : T {
+        Entry * Next;
+    };
+
+    struct SBlock {
+        Entry Pool[MAX_BLOCK_SIZE];
+        Entry * FreeList;
+        int Allocated;
+        SBlock * Next;
+    };
+    SBlock * Blocks;
+    int TotalAllocated;
+    int TotalBlocks;
+
+public:
+    ADynamicPool() {
+        Blocks = nullptr;
+        TotalAllocated = 0;
+        TotalBlocks = 0;
+    }
+
+    void Free() {
+        SBlock * next;
+        for ( SBlock * block = Blocks ; block ; block = next ) {
+            next = block->Next;
+
+            GHeapMemory.HeapFree( block );
+        }
+        Blocks = nullptr;
+        TotalAllocated = 0;
+        TotalBlocks = 0;
+    }
+
+    void CleanupEmptyBlocks() {
+        SBlock * prev = nullptr;
+        SBlock * next;
+        for ( SBlock * block = Blocks ; block ; block = next ) {
+            next = block->Next;
+
+            if ( block->Allocated == 0 && TotalBlocks > 1 ) { // keep at least one block allocated
+                if ( prev ) {
+                    prev->Next = next;
+                } else {
+                    Blocks = next;
+                }
+                GHeapMemory.HeapFree( block );
+                TotalBlocks--;
+            } else {
+                prev = block;
+            }
+        }
+    }
+
+    SBlock * AllocateBlock() {
+        int i;
+        SBlock * block = ( SBlock * )GHeapMemory.HeapAlloc( sizeof( SBlock ), 1 );
+        //memset( block->Pool, 0, sizeof( block->Pool ) );
+        block->FreeList = block->Pool;
+        for ( i = 0 ; i < MAX_BLOCK_SIZE - 1 ; i++ ) {
+            block->FreeList[i].Next = &block->FreeList[ i + 1 ];
+        }
+        block->FreeList[i].Next = NULL;
+        block->Allocated = 0;
+        block->Next = Blocks;
+        Blocks = block;
+        TotalBlocks++;
+        GLogger.Printf( "ADynamicPool::AllocateBlock: allocated a new block\n" );
+        return block;
+    }
+
+    T * Allocate() {
+        Entry * p;
+        SBlock * freeBlock = nullptr;
+
+        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
+            if ( block->FreeList ) {
+                freeBlock = block;
+                break;
+            }
+        }
+
+        if ( !freeBlock ) {
+            freeBlock = AllocateBlock();
+        }
+
+        p = freeBlock->FreeList;
+        freeBlock->FreeList = freeBlock->FreeList->Next;
+        ++freeBlock->Allocated;
+        ++TotalAllocated;
+        GLogger.Printf( "ADynamicPool::Allocate: total blocks %d total %d\n", TotalBlocks, TotalAllocated );
+        return p;
+    }
+
+    void Free( T * InPtr ) {
+        Entry * p = static_cast< Entry * >( InPtr );
+        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
+            // Find block
+            if ( p >= &block->Pool[0] && p < &block->Pool[MAX_BLOCK_SIZE] ) {
+                // free
+                p->Next = block->FreeList;
+                block->FreeList = p;
+                --block->Allocated;
+                --TotalAllocated;
+                return;
+            }
+        }
+    }
+};
+
+template< typename T, int MAX_BLOCK_SIZE = 1024 >
+class ADynamicPool {
+    struct SBlock {
+        T Pool[MAX_BLOCK_SIZE];
+        T * NextFree[MAX_BLOCK_SIZE];
+        T * FreeList;
+        int Allocated;
+        SBlock * Next;
+    };
+    SBlock * Blocks;
+    int TotalAllocated;
+    int TotalBlocks;
+
+public:
+    ADynamicPool() {
+        Blocks = nullptr;
+        TotalAllocated = 0;
+        TotalBlocks = 0;
+    }
+
+    void Free() {
+        SBlock * next;
+        for ( SBlock * block = Blocks ; block ; block = next ) {
+            next = block->Next;
+
+            GHeapMemory.HeapFree( block );
+        }
+        Blocks = nullptr;
+        TotalAllocated = 0;
+        TotalBlocks = 0;
+    }
+
+    void CleanupEmptyBlocks() {
+        SBlock * prev = nullptr;
+        SBlock * next;
+        for ( SBlock * block = Blocks ; block ; block = next ) {
+            next = block->Next;
+
+            if ( block->Allocated == 0 && TotalBlocks > 1 ) { // keep at least one block allocated
+                if ( prev ) {
+                    prev->Next = next;
+                } else {
+                    Blocks = next;
+                }
+                GHeapMemory.HeapFree( block );
+                TotalBlocks--;
+            } else {
+                prev = block;
+            }
+        }
+    }
+
+    SBlock * AllocateBlock() {
+        int i;
+        SBlock * block = ( SBlock * )GHeapMemory.HeapAlloc( sizeof( SBlock ), 1 );
+        //memset( block->Pool, 0, sizeof( block->Pool ) );
+        block->FreeList = block->Pool;
+        for ( i = 0 ; i < MAX_BLOCK_SIZE - 1 ; i++ ) {
+            block->NextFree[i] = &block->FreeList[ i + 1 ];
+        }
+        block->NextFree[i] = NULL;
+        block->Allocated = 0;
+        block->Next = Blocks;
+        Blocks = block;
+        TotalBlocks++;
+        GLogger.Printf( "ADynamicPool::AllocateBlock: allocated a new block\n" );
+        return block;
+    }
+
+    T * Allocate() {
+        T * p;
+        SBlock * freeBlock = nullptr;
+
+        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
+            if ( block->FreeList ) {
+                freeBlock = block;
+                break;
+            }
+        }
+
+        if ( !freeBlock ) {
+            freeBlock = AllocateBlock();
+        }
+
+        p = freeBlock->FreeList;
+        freeBlock->FreeList = freeBlock->FreeList->Next;
+        ++freeBlock->Allocated;
+        ++TotalAllocated;
+        GLogger.Printf( "ADynamicPool::Allocate: total blocks %d total %d\n", TotalBlocks, TotalAllocated );
+        return p;
+    }
+
+    void Free( T * InPtr ) {
+        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
+            // Find block
+            if ( InPtr >= &block->Pool[0] && InPtr < &block->Pool[MAX_BLOCK_SIZE] ) {
+                // free
+                int i = InPtr - &block->Pool[0];
+                block->NextFree[i] = block->FreeList;
+                block->FreeList = InPtr;
+                --block->Allocated;
+                --TotalAllocated;
+                return;
+            }
+        }
+    }
+};
+#endif

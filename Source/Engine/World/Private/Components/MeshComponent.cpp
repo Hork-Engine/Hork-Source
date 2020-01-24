@@ -42,7 +42,7 @@ ARuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" )
 AN_CLASS_META( AMeshComponent )
 AN_CLASS_META( ABrushComponent )
 
-static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) {
+static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit ) {
     AMeshComponent const * mesh = static_cast< AMeshComponent const * >( Self->Owner );
 
     if ( mesh->bUseDynamicRange ) {
@@ -66,7 +66,37 @@ static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRaySta
 
     AIndexedMesh * resource = mesh->GetMesh();
 
-    return resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, Hits );
+    int firstHit = Hits.Size();
+
+    if ( !resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, Hits ) ) {
+        return false;
+    }
+
+    // Convert hits to worldspace and find closest hit
+
+    Float3x4 const & transform = mesh->GetWorldTransformMatrix();
+    Float3x3 normalMatrix;
+
+    transform.DecomposeNormalMatrix( normalMatrix );
+
+    int numHits = Hits.Size() - firstHit;
+
+    ClosestHit = firstHit;
+
+    for ( int i = 0 ; i < numHits ; i++ ) {
+        int hitNum = firstHit + i;
+        STriangleHitResult & hitResult = Hits[hitNum];
+
+        hitResult.Location = transform * hitResult.Location;
+        hitResult.Normal = ( normalMatrix * hitResult.Normal ).Normalized();
+        hitResult.Distance = (hitResult.Location - InRayStart).Length();
+
+        if ( hitResult.Distance < Hits[ ClosestHit ].Distance ) {
+            ClosestHit = hitNum;
+        }
+    }
+
+    return true;
 }
 
 static bool RaycastClosestCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 & HitLocation, Float2 & HitUV, float & HitDistance, SMeshVertex const ** pVertices, unsigned int Indices[3], TRef< AMaterialInstance > & Material ) {
@@ -98,6 +128,12 @@ static bool RaycastClosestCallback( SPrimitiveDef const * Self, Float3 const & I
     }
 
     *pVertices = resource->GetVertices();
+
+    // Transform hit location to world space
+    HitLocation = Self->Owner->GetWorldTransformMatrix() * HitLocation;
+
+    // Recalc hit distance in world space
+    HitDistance = (HitLocation - InRayStart).Length();
 
     return true;
 }
@@ -336,7 +372,7 @@ void AMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
 }
 
 
-static bool BrushRaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) {
+static bool BrushRaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit ) {
     ABrushComponent const * brush = static_cast< ABrushComponent const * >(Self->Owner);
 
 #if 0

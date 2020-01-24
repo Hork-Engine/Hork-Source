@@ -68,8 +68,9 @@ enum VSD_QUERY_MASK
     VSD_QUERY_MASK_SHADOW_CAST              = 0x00000010,
     VSD_QUERY_MASK_NO_SHADOW_CAST           = 0x00000020,
 
+    VSD_QUERY_LIGHTMAP_EXPEREMENTAL         = 0x00000040,
+
     // Reserved for future
-    VSD_QUERY_MASK_RESERVED0                = 0x00000040,
     VSD_QUERY_MASK_RESERVED1                = 0x00000080,
     VSD_QUERY_MASK_RESERVED2                = 0x00000100,
     VSD_QUERY_MASK_RESERVED3                = 0x00000200,
@@ -119,6 +120,10 @@ struct SBinarySpacePlane : PlaneF
 {
     /** Plane axial type */
     uint8_t Type;
+
+    AN_FORCEINLINE float DistFast( Float3 const & InPoint ) const {
+        return ( Type < 3 ) ? ( InPoint[ Type ] + D ) : ( Math::Dot( InPoint, Normal ) + D );
+    }
 };
 
 struct SNodeBase
@@ -151,7 +156,7 @@ enum EBinarySpaceLeafContents
 struct SBinarySpaceLeaf : SNodeBase
 {
     /** Leaf PVS cluster */
-    int Cluster;
+    int PVSCluster;
 
     /** Leaf PVS */
     byte const * Visdata;
@@ -177,8 +182,6 @@ enum ESurfaceGeometryType
     /** Bezier patch */
     //SURF_BEZIER_PATCH
 };
-
-constexpr int MAX_SURFACE_LIGHTMAPS = 4;
 
 struct SSurfaceDef
 {
@@ -207,9 +210,6 @@ struct SSurfaceDef
     /** Index in array of materials */
     uint32_t MaterialIndex;
 
-    /** Lightmap atlas index */
-    uint32_t LightmapBlock;
-
     /** Sort key. Used for surface batching. */
     uint32_t SortKey;
 
@@ -218,6 +218,9 @@ struct SSurfaceDef
 
     /** Plane for planar surface */
     PlaneF Face;
+
+    /** Lightmap atlas index */
+    uint32_t LightmapBlock;
 
     /** Size of the lightmap */
     int LightmapWidth;
@@ -230,12 +233,6 @@ struct SSurfaceDef
 
     /** Offset in the lightmap */
     int LightmapOffsetY;
-
-    /** Byte offset to the lightmap data */
-    int LightDataOffset;
-
-    /** The influencing lights styles (for dynamic lightmap update) */
-    uint8_t LightStyles[MAX_SURFACE_LIGHTMAPS];
 
     /** Visibility query group. See VSD_QUERY_MASK enum. */
     int QueryGroup;
@@ -298,20 +295,25 @@ struct SPrimitiveDef
 
     SPrimitiveLink * Links;
 
-    SVisArea * TopArea;
-
     SPrimitiveDef * NextUpd;
     SPrimitiveDef * PrevUpd;
 
-    bool (*RaycastCallback)( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits );
+    bool (*RaycastCallback)( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit );
     bool (*RaycastClosestCallback)( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 & HitLocation, Float2 & HitUV, float & HitDistance, SMeshVertex const ** pVertices, unsigned int Indices[3], TRef< AMaterialInstance > & Material );
 };
 
 struct SPrimitiveLink
 {
+    /** The area */
     SVisArea *        Area;
-    SPrimitiveLink *  NextArea;
+
+    /** The primitive */
     SPrimitiveDef *   Primitive;
+
+    /** Next primitive in the area */
+    SPrimitiveLink *  NextInArea;
+
+    /** Next link for the primitive */
     SPrimitiveLink *  Next;
 };
 
@@ -429,6 +431,12 @@ protected:
 };
 
 
+enum ELightmapFormat {
+    LIGHTMAP_GRAYSCALED_HALF,
+    LIGHTMAP_BGR_HALF
+};
+
+
 /**
 
 ALevel
@@ -466,13 +474,19 @@ public:
     /** Links between the portals and areas */
     TPodArray< SPortalLink > AreaPortals;
 
+    ELightmapFormat LightmapFormat;
+
+    int LightmapBlockWidth;
+
+    int LightmapBlockHeight;
+
     /** Lightmap raw data */
-    byte * LightData;
+    void * LightData;
 
     /** PVS data */
     byte * Visdata;
 
-    /** Is PVS data compressed or not */
+    /** Is PVS data compressed or not (ZRLE) */
     bool bCompressedVisData;
 
     /** Count of a clusters in PVS data */
@@ -494,7 +508,7 @@ public:
     TStdVector< TRef< ATexture > > Lightmaps;
 
     // TODO: Keep here static navigation geometry
-    // TODO: Octree for outdoor area
+    // TODO: Octree/AABBtree for outdoor area
     // TODO: combine AddArea/AddPortal/Initialize to Initialize() method
 
     /** Create vis area */
@@ -563,6 +577,15 @@ public:
     /** Get all vertex light channels inside the level */
     TPodArray< AVertexLight * > const & GetVertexLightChannels() const { return VertexLightChannels; }
 
+    /** Sample lightmap by texture coordinate */
+    Float3 SampleLight( int InLightmapBlock, Float2 const & InLighmapTexcoord ) const;
+
+    /** Query vis areas by bounding box */
+    void QueryOverplapAreas( BvAxisAlignedBox const & InBounds, TPodArray< SVisArea * > & Areas );
+
+    /** Query vis areas by bounding sphere */
+    void QueryOverplapAreas( BvSphere const & InBounds, TPodArray< SVisArea * > & Areas );
+
 protected:
     ALevel();
     ~ALevel();
@@ -580,11 +603,14 @@ private:
     /** Callback on remove level from world. Called by owner world. */
     void OnRemoveLevelFromWorld();
 
-    void AddBoxRecursive( SPrimitiveDef * InPrimitive );
-    void AddSphereRecursive( SPrimitiveDef * InPrimitive );
-    void AddBoxRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive );
-    void AddSphereRecursive( int _NodeIndex, SPrimitiveDef * InPrimitive );
+    void QueryOverplapAreas_r( int InNodeIndex, BvAxisAlignedBox const & InBounds, TPodArray< SVisArea * > & Areas );
+    void QueryOverplapAreas_r( int InNodeIndex, BvSphere const & InBounds, TPodArray< SVisArea * > & Areas );
+
+    void AddBoxRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive );
+    void AddSphereRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive );
+
     void AddPrimitiveToLevel( SPrimitiveDef * InPrimitive );
+    void RemovePrimitiveFromLevel( SPrimitiveDef * InPrimitive );
 
     byte const * LeafPVS( SBinarySpaceLeaf const * _Leaf );
 
