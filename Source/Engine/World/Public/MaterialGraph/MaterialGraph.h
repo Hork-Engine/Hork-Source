@@ -430,11 +430,11 @@ protected:
     }
 };
 
-class MGDivBlock : public MGArithmeticNode {
-    AN_CLASS( MGDivBlock, MGArithmeticNode )
+class MGDivNode : public MGArithmeticNode {
+    AN_CLASS( MGDivNode, MGArithmeticNode )
 
 protected:
-    MGDivBlock() : Super( "Div A / B" ){
+    MGDivNode() : Super( "Div A / B" ){
         ArithmeticOp = Div;
     }
 };
@@ -565,6 +565,58 @@ public:
 
 protected:
     MGClamp();
+
+    void Compute( AMaterialBuildContext & _Context ) override;
+};
+
+class MGMin : public MGNode {
+    AN_CLASS( MGMin, MGNode )
+
+public:
+    MGNodeInput * ValueA;
+    MGNodeInput * ValueB;
+    MGNodeOutput * Result;
+
+protected:
+    MGMin();
+
+    void Compute( AMaterialBuildContext & _Context ) override;
+};
+
+class MGMax : public MGNode {
+    AN_CLASS( MGMax, MGNode )
+
+public:
+    MGNodeInput * ValueA;
+    MGNodeInput * ValueB;
+    MGNodeOutput * Result;
+
+protected:
+    MGMax();
+
+    void Compute( AMaterialBuildContext & _Context ) override;
+};
+
+class MGPINode : public MGNode {
+    AN_CLASS( MGPINode, MGNode )
+
+public:
+    MGNodeOutput * OutValue;
+
+protected:
+    MGPINode();
+
+    void Compute( AMaterialBuildContext & _Context ) override;
+};
+
+class MG2PINode : public MGNode {
+    AN_CLASS( MG2PINode, MGNode )
+
+public:
+    MGNodeOutput * OutValue;
+
+protected:
+    MG2PINode();
 
     void Compute( AMaterialBuildContext & _Context ) override;
 };
