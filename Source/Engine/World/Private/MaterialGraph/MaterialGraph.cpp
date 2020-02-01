@@ -40,7 +40,7 @@ static constexpr const char * AssemblyTypeStr[] = {
     "vec4"      // AT_Float4
 };
 
-static AString EvaluateVectorCast( AString const & _Expression, EMGNodeType _TypeFrom, EMGNodeType _TypeTo, float _DefX, float _DefY, float _DefZ, float _DefW ) {
+static AString MakeVectorCast( AString const & _Expression, EMGNodeType _TypeFrom, EMGNodeType _TypeTo, float _DefX, float _DefY, float _DefZ, float _DefW ) {
 
     if ( _TypeFrom == _TypeTo || _TypeTo == AT_Unknown ) {
         return _Expression;
@@ -121,7 +121,7 @@ static AString EvaluateVectorCast( AString const & _Expression, EMGNodeType _Typ
 int AMaterialBuildContext::BuildSerial = 1;
 
 AString AMaterialBuildContext::GenerateVariableName() const {
-    return AString( "v" ) + Int( VariableName++ ).ToString();
+    return AString( "v" ) + Math::ToString( VariableName++ );
 }
 
 void AMaterialBuildContext::GenerateSourceCode( MGNodeOutput * _Slot, AString const & _Expression, bool _AddBrackets ) {
@@ -185,7 +185,7 @@ int MGNodeInput::Serialize( ADocument & _Doc ) {
 
     if ( Block ) {
         _Doc.AddStringField( object, "Slot", _Doc.ProxyBuffer.NewString( Slot ).CStr() );
-        _Doc.AddStringField( object, "Block", _Doc.ProxyBuffer.NewString( UInt( Block->GetId() ).ToString() ).CStr() );
+        _Doc.AddStringField( object, "Block", _Doc.ProxyBuffer.NewString( Math::ToString( Block->GetId() ) ).CStr() );
     }
 
     return object;
@@ -220,7 +220,7 @@ int MGNextStageVariable::Serialize( ADocument & _Doc ) {
 
     if ( Block ) {
         _Doc.AddStringField( object, "Slot", _Doc.ProxyBuffer.NewString( Slot ).CStr() );
-        _Doc.AddStringField( object, "Block", _Doc.ProxyBuffer.NewString( UInt( Block->GetId() ).ToString() ).CStr() );
+        _Doc.AddStringField( object, "Block", _Doc.ProxyBuffer.NewString( Math::ToString( Block->GetId() ) ).CStr() );
     }
 
     return object;
@@ -338,7 +338,7 @@ int MGNode::Serialize( ADocument & _Doc ) {
     int object = Super::Serialize(_Doc);
 #endif
 
-    _Doc.AddStringField( object, "ID", _Doc.ProxyBuffer.NewString( UInt( ID ).ToString() ).CStr() );
+    _Doc.AddStringField( object, "ID", _Doc.ProxyBuffer.NewString( Math::ToString( ID ) ).CStr() );
 
     if ( !Inputs.IsEmpty() ) {
         int array = _Doc.AddArray( object, "Inputs" );
@@ -368,7 +368,7 @@ MGNextStageVariable * MGMaterialStage::AddNextStageVariable( const char * _Name,
     MGNextStageVariable * nsv = NewObject< MGNextStageVariable >();
     nsv->AddRef();
     nsv->SetObjectName( _Name );
-    nsv->Expression = "nsv_" + NsvPrefix + Int(NextStageVariables.Size()).ToString() + "_" + nsv->GetObjectName();
+    nsv->Expression = "nsv_" + NsvPrefix + Math::ToString(NextStageVariables.Size()) + "_" + nsv->GetObjectName();
     nsv->Type = _Type;
     NextStageVariables.Append( nsv );
 
@@ -388,7 +388,7 @@ AString MGMaterialStage::NSV_OutputSection() {
     AString s;
     uint32_t location = 0;
     for ( MGNextStageVariable * nsv : NextStageVariables ) {
-        s += "layout( location = " + UInt(location++).ToString() + " ) out " + AssemblyTypeStr[nsv->Type] + " " + nsv->Expression + ";\n";
+        s += "layout( location = " + Math::ToString(location++) + " ) out " + AssemblyTypeStr[nsv->Type] + " " + nsv->Expression + ";\n";
     }
     return s;
 }
@@ -397,7 +397,7 @@ AString MGMaterialStage::NSV_InputSection() {
     AString s;
     uint32_t location = 0;
     for ( MGNextStageVariable * nsv : NextStageVariables ) {
-        s += "layout( location = " + UInt(location++).ToString() + " ) in " + AssemblyTypeStr[nsv->Type] + " " + nsv->Expression + ";\n";
+        s += "layout( location = " + Math::ToString(location++) + " ) in " + AssemblyTypeStr[nsv->Type] + " " + nsv->Expression + ";\n";
     }
     return s;
 }
@@ -1246,7 +1246,7 @@ void MGArithmeticNode::Compute( AMaterialBuildContext & _Context ) {
         Result->Type = connectionA->Type;
 
         if ( connectionA->Type != connectionB->Type && connectionB->Type != AT_Float1 ) {
-            _Context.GenerateSourceCode( Result, connectionA->Expression + op + EvaluateVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ), true );
+            _Context.GenerateSourceCode( Result, connectionA->Expression + op + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ), true );
         } else {
             _Context.GenerateSourceCode( Result, connectionA->Expression + op + connectionB->Expression, true );
         }
@@ -1261,7 +1261,7 @@ void MGArithmeticNode::Compute( AMaterialBuildContext & _Context ) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AN_CLASS_META( MGMulNode )
-AN_CLASS_META( MGDivBlock )
+AN_CLASS_META( MGDivNode )
 AN_CLASS_META( MGAddNode )
 AN_CLASS_META( MGSubNode )
 
@@ -1293,13 +1293,13 @@ void MGMADNode::Compute( AMaterialBuildContext & _Context ) {
         AString expression;
 
         if ( connectionA->Type != connectionB->Type && connectionB->Type != AT_Float1 ) {
-            expression = connectionA->Expression + " * " + EvaluateVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " + ";
+            expression = connectionA->Expression + " * " + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " + ";
         } else {
             expression = connectionA->Expression + " * " + connectionB->Expression + " + ";
         }
 
         if ( connectionA->Type != connectionC->Type && connectionC->Type != AT_Float1 ) {
-            expression += EvaluateVectorCast( connectionC->Expression, connectionC->Type, Result->Type, 0,0,0,0 );
+            expression += MakeVectorCast( connectionC->Expression, connectionC->Type, Result->Type, 0,0,0,0 );
         } else {
             expression += connectionC->Expression;
         }
@@ -1338,7 +1338,7 @@ void MGStepNode::Compute( AMaterialBuildContext & _Context ) {
         Result->Type = connectionA->Type;
 
         if ( connectionA->Type != connectionB->Type ) {
-            expression = "step( " + connectionA->Expression + ", " + EvaluateVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " )";
+            expression = "step( " + connectionA->Expression + ", " + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " )";
         } else {
             expression = "step( " + connectionA->Expression + ", " + connectionB->Expression + " )";
         }
@@ -1376,7 +1376,7 @@ void MGPowNode::Compute( AMaterialBuildContext & _Context ) {
         Result->Type = connectionA->Type;
 
         if ( connectionA->Type != connectionB->Type ) {
-            expression = "pow( " + connectionA->Expression + ", " + EvaluateVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " )";
+            expression = "pow( " + connectionA->Expression + ", " + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " )";
         } else {
             expression = "pow( " + connectionA->Expression + ", " + connectionB->Expression + " )";
         }
@@ -1415,8 +1415,8 @@ void MGLerpNode::Compute( AMaterialBuildContext & _Context ) {
         Result->Type = connectionA->Type;
 
         AString expression =
-                "mix( " + connectionA->Expression + ", " + EvaluateVectorCast( connectionB->Expression, connectionB->Type, connectionA->Type, 0,0,0,0 ) + ", "
-                + EvaluateVectorCast( connectionC->Expression, connectionC->Type, connectionA->Type, 0,0,0,0 ) + " )";
+                "mix( " + connectionA->Expression + ", " + MakeVectorCast( connectionB->Expression, connectionB->Type, connectionA->Type, 0,0,0,0 ) + ", "
+                + MakeVectorCast( connectionC->Expression, connectionC->Type, connectionA->Type, 0,0,0,0 ) + " )";
 
         _Context.GenerateSourceCode( Result, expression, true );
 
@@ -1444,7 +1444,7 @@ void MGSpheremapCoord::Compute( AMaterialBuildContext & _Context ) {
     if ( connectionDir && Dir->ConnectedBlock()->Build( _Context ) )
     {
         AString expression =
-                "builtin_spheremap_coord( " + EvaluateVectorCast( connectionDir->Expression, connectionDir->Type, AT_Float3, 0,0,0,0 ) + " )";
+                "builtin_spheremap_coord( " + MakeVectorCast( connectionDir->Expression, connectionDir->Type, AT_Float3, 0,0,0,0 ) + " )";
 
         _Context.GenerateSourceCode( TexCoord, expression, true );
 
@@ -1476,7 +1476,7 @@ void MGLuminance::Compute( AMaterialBuildContext & _Context ) {
             break;
         default:
             // calculate luminance
-            _Context.GenerateSourceCode( Luminance, "builtin_luminance( " + EvaluateVectorCast( connectionColor->Expression, connectionColor->Type, AT_Float4, 0,0,0,0 ) + " )", true );
+            _Context.GenerateSourceCode( Luminance, "builtin_luminance( " + MakeVectorCast( connectionColor->Expression, connectionColor->Type, AT_Float4, 0,0,0,0 ) + " )", true );
             break;
         }
 
@@ -1514,6 +1514,8 @@ void MGSaturate::Compute( AMaterialBuildContext & _Context ) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AN_CLASS_META( MGClamp )
+AN_CLASS_META( MGMin )
+AN_CLASS_META( MGMax )
 
 MGClamp::MGClamp() : Super( "Clamp" ) {
     Stages = ANY_STAGE_BIT;
@@ -1536,8 +1538,8 @@ void MGClamp::Compute( AMaterialBuildContext & _Context ) {
         Result->Type = connectionValue->Type;
 
         AString expression =
-                "clamp( " + connectionValue->Expression + ", " + EvaluateVectorCast( connectionMin->Expression, connectionMin->Type, connectionValue->Type, 0,0,0,0 ) + ", "
-                + EvaluateVectorCast( connectionMax->Expression, connectionMax->Type, connectionValue->Type, 0,0,0,0 ) + " )";
+                "clamp( " + connectionValue->Expression + ", " + MakeVectorCast( connectionMin->Expression, connectionMin->Type, connectionValue->Type, 0,0,0,0 ) + ", "
+                + MakeVectorCast( connectionMax->Expression, connectionMax->Type, connectionValue->Type, 0,0,0,0 ) + " )";
 
         _Context.GenerateSourceCode( Result, expression, true );
 
@@ -1546,6 +1548,93 @@ void MGClamp::Compute( AMaterialBuildContext & _Context ) {
 
         _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+MGMin::MGMin() : Super( "Clamp" ) {
+    Stages = ANY_STAGE_BIT;
+
+    ValueA = AddInput( "ValueA" );
+    ValueB = AddInput( "ValueB" );
+    Result = AddOutput( "Result", AT_Unknown );
+}
+
+void MGMin::Compute( AMaterialBuildContext & _Context ) {
+    MGNodeOutput * connectionValueA = ValueA->GetConnection();
+    MGNodeOutput * connectionValueB = ValueB->GetConnection();
+
+    if ( connectionValueA && ValueA->ConnectedBlock()->Build( _Context )
+         && connectionValueB && ValueB->ConnectedBlock()->Build( _Context ) ) {
+
+        Result->Type = connectionValueA->Type;
+
+        AString expression =
+            "min( " + connectionValueA->Expression + ", " + MakeVectorCast( connectionValueB->Expression, connectionValueB->Type, connectionValueA->Type, 0, 0, 0, 0 ) + " )";
+
+        _Context.GenerateSourceCode( Result, expression, true );
+
+    } else {
+        Result->Type = AT_Float4;
+
+        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
+    }
+}
+
+MGMax::MGMax() : Super( "Clamp" ) {
+    Stages = ANY_STAGE_BIT;
+
+    ValueA = AddInput( "ValueA" );
+    ValueB = AddInput( "ValueB" );
+    Result = AddOutput( "Result", AT_Unknown );
+}
+
+void MGMax::Compute( AMaterialBuildContext & _Context ) {
+    MGNodeOutput * connectionValueA = ValueA->GetConnection();
+    MGNodeOutput * connectionValueB = ValueB->GetConnection();
+
+    if ( connectionValueA && ValueA->ConnectedBlock()->Build( _Context )
+         && connectionValueB && ValueB->ConnectedBlock()->Build( _Context ) ) {
+
+        Result->Type = connectionValueA->Type;
+
+        AString expression =
+            "max( " + connectionValueA->Expression + ", " + MakeVectorCast( connectionValueB->Expression, connectionValueB->Type, connectionValueA->Type, 0, 0, 0, 0 ) + " )";
+
+        _Context.GenerateSourceCode( Result, expression, true );
+
+    } else {
+        Result->Type = AT_Float4;
+
+        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
+    }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_BEGIN_CLASS_META( MGPINode )
+AN_END_CLASS_META()
+
+MGPINode::MGPINode() : Super( "PI" ) {
+    Stages = ANY_STAGE_BIT;
+    OutValue = AddOutput( "Value", AT_Float1 );
+}
+
+void MGPINode::Compute( AMaterialBuildContext & _Context ) {
+    OutValue->Expression = "3.1415926";
+}
+
+AN_BEGIN_CLASS_META( MG2PINode )
+AN_END_CLASS_META()
+
+MG2PINode::MG2PINode() : Super( "2PI" ) {
+    Stages = ANY_STAGE_BIT;
+    OutValue = AddOutput( "Value", AT_Float1 );
+}
+
+void MG2PINode::Compute( AMaterialBuildContext & _Context ) {
+    OutValue->Expression = "6.2831853";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1632,7 +1721,7 @@ MGTextureSlot::MGTextureSlot() : Super( "Texture Slot" ) {
 
 void MGTextureSlot::Compute( AMaterialBuildContext & _Context ) {
     if ( GetSlotIndex() >= 0 ) {
-        Value->Expression = "tslot_" + UInt( GetSlotIndex() ).ToString();
+        Value->Expression = "tslot_" + Math::ToString( GetSlotIndex() );
 
         _Context.bHasTextures = true;
         _Context.MaxTextureSlot = Math::Max( _Context.MaxTextureSlot, GetSlotIndex() );
@@ -1675,11 +1764,11 @@ MGUniformAddress::MGUniformAddress() : Super( "Texture Slot" ) {
 void MGUniformAddress::Compute( AMaterialBuildContext & _Context ) {
     if ( Address >= 0 ) {
 
-        int addr = Int(Address).Clamp( 0, 15 );
+        int addr = Math::Clamp( Address, 0, 15 );
         int location = addr / 4;
 
         Value->Type = Type;
-        Value->Expression = "uaddr_" + Int(location).ToString();
+        Value->Expression = "uaddr_" + Math::ToString(location);
         switch ( Type ) {
             case AT_Float1:
                 switch ( addr & 3 ) {
@@ -1805,7 +1894,7 @@ void MGSampler::Compute( AMaterialBuildContext & _Context ) {
                 AN_ASSERT(0);
             };
 
-            Int slotIndex = texSlot->GetSlotIndex();
+            int32_t slotIndex = texSlot->GetSlotIndex();
             if ( slotIndex != -1 ) {
 
                 MGNodeOutput * texCoordCon = TexCoord->GetConnection();
@@ -1817,7 +1906,7 @@ void MGSampler::Compute( AMaterialBuildContext & _Context ) {
                     const char * sampleFunc = ChooseSampleFunction( ColorSpace );
 
                     RGBA->Expression = _Context.GenerateVariableName();
-                    _Context.SourceCode += "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( tslot_" + slotIndex.ToString() + ", " + EvaluateVectorCast( texCoordCon->Expression, texCoordCon->Type, sampleType, 0, 0, 0, 0 ) + " )" + swizzleStr + ";\n";
+                    _Context.SourceCode += "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( tslot_" + Math::ToString( slotIndex ) + ", " + MakeVectorCast( texCoordCon->Expression, texCoordCon->Type, sampleType, 0, 0, 0, 0 ) + " )" + swizzleStr + ";\n";
                     bValid = true;
                 }
             }
@@ -1923,7 +2012,7 @@ void MGNormalSampler::Compute( AMaterialBuildContext & _Context ) {
                 AN_ASSERT(0);
             };
 
-            Int slotIndex = texSlot->GetSlotIndex();
+            int32_t slotIndex = texSlot->GetSlotIndex();
             if ( slotIndex != -1 ) {
 
                 MGNodeOutput * texCoordCon = TexCoord->GetConnection();
@@ -1933,7 +2022,7 @@ void MGNormalSampler::Compute( AMaterialBuildContext & _Context ) {
                     const char * sampleFunc = ChooseSampleFunction( Compression );
 
                     XYZ->Expression = _Context.GenerateVariableName();
-                    _Context.SourceCode += "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( tslot_" + slotIndex.ToString() + ", " + EvaluateVectorCast( texCoordCon->Expression, texCoordCon->Type, sampleType, 0,0,0,0 ) + " );\n";
+                    _Context.SourceCode += "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( tslot_" + Math::ToString( slotIndex ) + ", " + MakeVectorCast( texCoordCon->Expression, texCoordCon->Type, sampleType, 0,0,0,0 ) + " );\n";
                     bValid = true;
                 }
             }
@@ -2190,7 +2279,7 @@ AString AMaterialBuilder::SamplersString( int _MaxtextureSlot ) const {
 
     for ( MGTextureSlot * slot : Graph->GetTextureSlots() ) {
         if ( slot->GetSlotIndex() <= _MaxtextureSlot ) {
-            bindingStr = UInt(slot->GetSlotIndex()).ToString();
+            bindingStr = Math::ToString(slot->GetSlotIndex());
             s += "layout( binding = " + bindingStr + " ) uniform " + GetShaderType( slot->SamplerDesc.TextureType ) + " tslot_" + bindingStr + ";\n";
         }
     }
@@ -2538,7 +2627,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
     bool bShadowMapPassTextureFetch = false;
     bool bShadowMapMasking = false;
     bool bNoCastShadow = false;
-    UInt lightmapSlot = 0;
+    uint32_t lightmapSlot = 0;
     int maxTextureSlot = -1;
     int maxUniformAddress = -1;
     bool bHasVertexDeform = false;
@@ -2686,17 +2775,17 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
 
         int locationIndex = VertexStage->NumNextStageVariables();
 
-        UInt bakedLightLocation = locationIndex++;
-        UInt tangentLocation    = locationIndex++;
-        UInt binormalLocation   = locationIndex++;
-        UInt normalLocation     = locationIndex++;
-        UInt positionLocation   = locationIndex++;
+        uint32_t bakedLightLocation = locationIndex++;
+        uint32_t tangentLocation    = locationIndex++;
+        uint32_t binormalLocation   = locationIndex++;
+        uint32_t normalLocation     = locationIndex++;
+        uint32_t positionLocation   = locationIndex++;
 
-        predefines += "#define BAKED_LIGHT_LOCATION " + bakedLightLocation.ToString() + "\n";
-        predefines += "#define TANGENT_LOCATION "     + tangentLocation.ToString()    + "\n";
-        predefines += "#define BINORMAL_LOCATION "    + binormalLocation.ToString()   + "\n";
-        predefines += "#define NORMAL_LOCATION "      + normalLocation.ToString()     + "\n";
-        predefines += "#define POSITION_LOCATION "    + positionLocation.ToString()   + "\n";
+        predefines += "#define BAKED_LIGHT_LOCATION " + Math::ToString(bakedLightLocation) + "\n";
+        predefines += "#define TANGENT_LOCATION "     + Math::ToString(tangentLocation)    + "\n";
+        predefines += "#define BINORMAL_LOCATION "    + Math::ToString(binormalLocation)   + "\n";
+        predefines += "#define NORMAL_LOCATION "      + Math::ToString(normalLocation)     + "\n";
+        predefines += "#define POSITION_LOCATION "    + Math::ToString(positionLocation)   + "\n";
 
         code.Replace( "$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", VertexStage->NSV_OutputSection().CStr() );
         code.Replace( "$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString( context.MaxTextureSlot ).CStr() );
@@ -2718,7 +2807,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
 
         lightmapSlot = context.MaxTextureSlot + 1;
 
-        predefines += "#define LIGHTMAP_SLOT " + lightmapSlot.ToString() + "\n";
+        predefines += "#define LIGHTMAP_SLOT " + Math::ToString(lightmapSlot) + "\n";
 
         code.Replace( "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", VertexStage->NSV_InputSection().CStr() );
         code.Replace( "$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString( context.MaxTextureSlot ).CStr() );
@@ -2747,11 +2836,11 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
 
     code.Replace( "$PREDEFINES$", predefines.CStr() );
 
-//    {
-//    AFileStream fs;
-//    fs.OpenWrite("test.txt");
-//    fs.Write( code.CStr(), code.Length() + 1 );
-//    }
+    {
+    AFileStream fs;
+    fs.OpenWrite("test.txt");
+    fs.WriteBuffer( code.CStr(), code.Length() + 1 );
+    }
     //GLogger.Print( "=== shader ===\n" );
     //GLogger.Print( code.CStr() );
     //GLogger.Print( "==============\n" );
