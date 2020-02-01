@@ -55,6 +55,12 @@ AZoneMemory GZoneMemory;
 #define ENABLE_TRASH_TEST
 #define ENABLE_BLOCK_SIZE_ALIGN
 
+#ifdef AN_MULTITHREADED_ALLOC
+#define SYNC_GUARD ASyncGuard syncGuard( Sync );
+#else
+#define SYNC_GUARD
+#endif
+
 typedef uint16_t TRASH_MARKER;
 
 static const TRASH_MARKER TrashMarker = 0xfeee;
@@ -125,13 +131,14 @@ AN_FORCEINLINE void * AlignPointer( void * _UnalignedPtr, int _Alignment ) {
         };
     };
     SAligner aligner;
-    const size_t bitMask = ~( _Alignment - 1 );
     aligner.p = _UnalignedPtr;
-    aligner.i += _Alignment - 1;
-    aligner.i &= bitMask;
+    aligner.i = Align( aligner.i, _Alignment );
     return aligner.p;
+#else
+    //return ( void * )( ( (size_t)_UnalignedPtr + _Alignment - 1 ) & ~( _Alignment - 1 ) );
+
+    return ( void * )( Align( (size_t)_UnalignedPtr, _Alignment ) );
 #endif
-    return ( void * )( ( (size_t)_UnalignedPtr + _Alignment - 1 ) & ~( _Alignment - 1 ) );
 }
 
 void * AHeapMemory::HeapAlloc( size_t _BytesCount, int _Alignment ) {
@@ -164,12 +171,13 @@ void * AHeapMemory::HeapAlloc( size_t _BytesCount, int _Alignment ) {
         heap->Size = realAllocatedBytes;
         heap->Padding = aligned - bytes;
 
-        Sync.BeginScope();
-        heap->pNext = HeapChain.pNext;
-        heap->pPrev = &HeapChain;
-        HeapChain.pNext->pPrev = heap;
-        HeapChain.pNext = heap;
-        Sync.EndScope();
+        {
+            SYNC_GUARD
+            heap->pNext = HeapChain.pNext;
+            heap->pPrev = &HeapChain;
+            HeapChain.pNext->pPrev = heap;
+            HeapChain.pNext = heap;
+        }
 
 #ifdef CLEAR_ALLOCATED_MEMORY
         ClearMemory8( aligned, 0, _BytesCount );
@@ -200,10 +208,11 @@ void AHeapMemory::HeapFree( void * _Bytes ) {
         }
 #endif
 
-        Sync.BeginScope();
-        heap->pPrev->pNext = heap->pNext;
-        heap->pNext->pPrev = heap->pPrev;
-        Sync.EndScope();
+        {
+            SYNC_GUARD
+            heap->pPrev->pNext = heap->pNext;
+            heap->pNext->pPrev = heap->pPrev;
+        }
 
         DecMemoryStatisticsOnHeap( heap->Size, heap->Padding );
 
@@ -647,7 +656,7 @@ void AZoneMemory::Clear() {
         return;
     }
 
-    Sync.BeginScope();
+    SYNC_GUARD
 
 #ifdef FREE_LIST_BASED
     MemoryBuffer->freeChunk = ( SZoneChunk * )( MemoryBuffer + 1 );
@@ -663,8 +672,6 @@ void AZoneMemory::Clear() {
     TotalMemoryUsage.Store( 0 );
     TotalMemoryOverhead.Store( 0 );
     MaxMemoryUsage.Store( 0 );
-
-    Sync.EndScope();
 
     // Allocated "on heap" memory is still present
 }
@@ -949,7 +956,7 @@ void * AZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
         CriticalError( "AZoneMemory::Alloc: Invalid bytes count\n" );
     }
 
-    ASyncGuard syncGuard( Sync );
+    SYNC_GUARD
 
     size_t requiredSize = AdjustChunkSize( _BytesCount, _Alignment );
 
@@ -1035,7 +1042,7 @@ void * AZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
     // Check freed
     bool bFreed;
     {
-        ASyncGuard syncGuard( Sync );
+        SYNC_GUARD
         bFreed = chunk->Size > 0;
 
 #ifdef ALLOW_ALLOCATE_ON_HEAP
@@ -1050,7 +1057,7 @@ void * AZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
         return Alloc( _NewBytesCount, _NewAlignment );
     }
 
-    ASyncGuard syncGuard( Sync );
+    SYNC_GUARD
 
     if ( ChunkTrashTest( chunk ) ) {
         MemLogger.Print( "AZoneMemory::ExtendAlloc: Warning: memory was trashed\n" );
@@ -1190,7 +1197,7 @@ void AZoneMemory::Dealloc( void * _Bytes ) {
         return;
     }
 
-    ASyncGuard syncGuard( Sync );
+    SYNC_GUARD
 
     byte * bytes = ( byte * )_Bytes;
     int padding = *(bytes - 1);
@@ -1253,7 +1260,7 @@ void AZoneMemory::Dealloc( void * _Bytes ) {
 }
 
 void AZoneMemory::CheckMemoryLeaks() {
-    ASyncGuard syncGuard( Sync );
+    SYNC_GUARD
 
     if ( TotalMemoryUsage.Load() > 0 ) {
         SZoneChunk * rover = MemoryBuffer->Rover;
