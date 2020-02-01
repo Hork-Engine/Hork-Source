@@ -641,13 +641,13 @@ static Float3 ApplyColorGrading( SColorGradingPreset const & p, AColor4 const & 
 
     mult.SetTemperature( Math::Clamp( p.ColorTemperature, 1000.0f, 40000.0f ) );
 
-    AColor4 c =_Color.GetRGB().Lerp( _Color.GetRGB() * mult.GetRGB(), p.ColorTemperatureStrength );
+    AColor4 c = Math::Lerp( _Color.GetRGB(), _Color.GetRGB() * mult.GetRGB(), p.ColorTemperatureStrength );
 
     float newLum = c.GetLuminance();
 
-    c *= Math::Lerp( 1.0, ( newLum > 1e-6 ) ? ( lum / newLum ) : 1.0, p.ColorTemperatureBrightnessNormalization );
+    c *= Math::Lerp( 1.0f, ( newLum > 1e-6 ) ? ( lum / newLum ) : 1.0f, p.ColorTemperatureBrightnessNormalization );
 
-    c = Float3( c.GetLuminance() ).Lerp( c.GetRGB(), p.Presaturation );
+    c = Math::Lerp( Float3( c.GetLuminance() ), c.GetRGB(), p.Presaturation );
 
     Float3 t = ( p.Gain * 2.0f ) * ( c.GetRGB() + ( ( p.Lift * 2.0f - 1.0 ) * ( Float3( 1.0 ) - c.GetRGB() ) ) );
 

@@ -176,8 +176,6 @@ void AEngineInstance::Deinitialize() {
 
     Canvas.Deinitialize();
 
-    GPrimitiveLinkPool.Free();
-
     GRenderFrontend.Deinitialize();
 
     GResourceManager.Deinitialize();
@@ -186,6 +184,8 @@ void AEngineInstance::Deinitialize() {
     GAudioSystem.UnregisterDecoders();
 
     AGarbageCollector::Deinitialize();
+
+    GPrimitiveLinkPool.Free();
 
     GAudioSystem.Deinitialize();
 

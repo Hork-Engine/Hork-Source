@@ -329,18 +329,18 @@ static bool LoadOpenAL() {
 
 void AL_CheckError( const char * _Text ) {
 #ifndef AN_NO_OPENAL
-    Int Error = alGetError();
+    int32_t Error = alGetError();
     if ( Error != AL_NO_ERROR ) {
-        GLogger.Printf( "AL ERROR: %s %s\n", _Text, Error.ToHexString().CStr() );
+        GLogger.Printf( "AL ERROR: %s %s\n", _Text, AString::ToHexString( Error ).CStr() );
     }
 #endif
 }
 
 static void ALC_CheckError( const char * _Text ) {
 #ifndef AN_NO_OPENAL
-    Int Error = malcGetError( ALCDevice );
+    int32_t Error = malcGetError( ALCDevice );
     if ( Error != ALC_NO_ERROR ) {
-        GLogger.Printf( "ALC ERROR: %s %s\n", _Text, Error.ToHexString().CStr() );
+        GLogger.Printf( "ALC ERROR: %s %s\n", _Text, AString::ToHexString( Error ).CStr() );
     }
 #endif
 }

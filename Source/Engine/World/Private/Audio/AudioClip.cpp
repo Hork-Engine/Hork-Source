@@ -77,7 +77,7 @@ ESoundStreamType AAudioClip::GetStreamType() const {
 }
 
 void AAudioClip::SetBufferSize( int _BufferSize ) {
-    BufferSize = Math::Clamp( _BufferSize, AUDIO_MIN_PCM_BUFFER_SIZE, AUDIO_MAX_PCM_BUFFER_SIZE );
+    BufferSize = Math::Clamp< int >( _BufferSize, AUDIO_MIN_PCM_BUFFER_SIZE, AUDIO_MAX_PCM_BUFFER_SIZE );
 }
 
 int AAudioClip::GetBufferSize() const {

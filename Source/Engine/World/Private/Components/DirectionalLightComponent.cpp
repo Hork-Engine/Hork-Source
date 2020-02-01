@@ -88,7 +88,7 @@ Float3 ADirectionalLightComponent::GetWorldDirection() const {
 }
 
 void ADirectionalLightComponent::SetMaxShadowCascades( int _MaxShadowCascades ) {
-    MaxShadowCascades = Int( _MaxShadowCascades ).Clamp( 1, MAX_SHADOW_CASCADES );
+    MaxShadowCascades = Math::Clamp( _MaxShadowCascades, 1, MAX_SHADOW_CASCADES );
 }
 
 int ADirectionalLightComponent::GetMaxShadowCascades() const {

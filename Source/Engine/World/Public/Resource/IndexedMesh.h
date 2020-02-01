@@ -549,11 +549,11 @@ void CalcTangentSpace( SMeshVertex * _VertexArray, unsigned int _NumVerts, unsig
 
 /** binormal = cross( normal, tangent ) * handedness */
 AN_FORCEINLINE float CalcHandedness( Float3 const & _Tangent, Float3 const & _Binormal, Float3 const & _Normal ) {
-    return ( _Normal.Cross( _Tangent ).Dot( _Binormal ) < 0.0f ) ? -1.0f : 1.0f;
+    return ( Math::Dot( Math::Cross( _Normal, _Tangent ), _Binormal ) < 0.0f ) ? -1.0f : 1.0f;
 }
 
 AN_FORCEINLINE Float3 CalcBinormal( Float3 const & _Tangent, Float3 const & _Normal, float _Handedness ) {
-    return _Normal.Cross( _Tangent ).Normalized() * _Handedness;
+    return Math::Cross( _Normal, _Tangent ).Normalized() * _Handedness;
 }
 
 BvAxisAlignedBox CalcBindposeBounds( SMeshVertex const * InVertices,

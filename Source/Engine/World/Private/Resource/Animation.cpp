@@ -74,7 +74,7 @@ void ASkeletalAnimation::Initialize( int _FrameCount, float _FrameDelta, ATransf
     memcpy( Bounds.ToPtr(), _Bounds, sizeof( Bounds[0] ) * _FrameCount );
 
     if ( !Channels.IsEmpty() ) {
-        MinNodeIndex = Int().MaxValue();
+        MinNodeIndex = Math::MaxValue< int32_t >();
         MaxNodeIndex = 0;
 
         for ( int i = 0; i < Channels.Size(); i++ ) {

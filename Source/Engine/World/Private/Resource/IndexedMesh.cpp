@@ -1055,7 +1055,7 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
                         if ( _Distance > d ) {
                             STriangleHitResult & hitResult = _HitResult.Append();
                             hitResult.Location = _RayStart + _RayDir * d;
-                            hitResult.Normal = (v1 - v0).Cross( v2-v0 ).Normalized();
+                            hitResult.Normal = Math::Cross( v1 - v0, v2-v0 ).Normalized();
                             hitResult.Distance = d;
                             hitResult.UV.X = u;
                             hitResult.UV.Y = v;
@@ -1089,7 +1089,7 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
                 if ( _Distance > d ) {
                     STriangleHitResult & hitResult = _HitResult.Append();
                     hitResult.Location = _RayStart + _RayDir * d;
-                    hitResult.Normal = ( v1 - v0 ).Cross( v2-v0 ).Normalized();
+                    hitResult.Normal = Math::Cross( v1 - v0, v2-v0 ).Normalized();
                     hitResult.Distance = d;
                     hitResult.UV.X = u;
                     hitResult.UV.Y = v;
@@ -1332,20 +1332,20 @@ BvAxisAlignedBox CalcBindposeBounds( SMeshVertex const * InVertices,
         Float4 const * t = &vertexTransforms[0][0];
 
         BindposeBounds.AddPoint(
-                    ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
+         Math::Dot( ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
                     + t[ w.JointIndices[1] * 3 + 0 ] * weights[1]
                     + t[ w.JointIndices[2] * 3 + 0 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ).Dot( position ),
+                    + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ), position ),
 
-                    ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
+         Math::Dot( ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
                     + t[ w.JointIndices[1] * 3 + 1 ] * weights[1]
                     + t[ w.JointIndices[2] * 3 + 1 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ).Dot( position ),
+                    + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ), position ),
 
-                    ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
+         Math::Dot( ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
                     + t[ w.JointIndices[1] * 3 + 2 ] * weights[1]
                     + t[ w.JointIndices[2] * 3 + 2 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ).Dot( position ) );
+                    + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ), position ) );
     }
 
     return BindposeBounds;
@@ -1416,20 +1416,20 @@ void CalcBoundingBoxes( SMeshVertex const * InVertices,
             Float4 const * t = &vertexTransforms[0][0];
 
             bounds.AddPoint(
-                    ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
-                    + t[ w.JointIndices[1] * 3 + 0 ] * weights[1]
-                    + t[ w.JointIndices[2] * 3 + 0 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ).Dot( position ),
+             Math::Dot( ( t[ w.JointIndices[0] * 3 + 0 ] * weights[0]
+                        + t[ w.JointIndices[1] * 3 + 0 ] * weights[1]
+                        + t[ w.JointIndices[2] * 3 + 0 ] * weights[2]
+                        + t[ w.JointIndices[3] * 3 + 0 ] * weights[3] ), position ),
 
-                    ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
-                    + t[ w.JointIndices[1] * 3 + 1 ] * weights[1]
-                    + t[ w.JointIndices[2] * 3 + 1 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ).Dot( position ),
+             Math::Dot( ( t[ w.JointIndices[0] * 3 + 1 ] * weights[0]
+                        + t[ w.JointIndices[1] * 3 + 1 ] * weights[1]
+                        + t[ w.JointIndices[2] * 3 + 1 ] * weights[2]
+                        + t[ w.JointIndices[3] * 3 + 1 ] * weights[3] ), position ),
 
-                    ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
-                    + t[ w.JointIndices[1] * 3 + 2 ] * weights[1]
-                    + t[ w.JointIndices[2] * 3 + 2 ] * weights[2]
-                    + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ).Dot( position ) );
+             Math::Dot( ( t[ w.JointIndices[0] * 3 + 2 ] * weights[0]
+                        + t[ w.JointIndices[1] * 3 + 2 ] * weights[1]
+                        + t[ w.JointIndices[2] * 3 + 2 ] * weights[2]
+                        + t[ w.JointIndices[3] * 3 + 2 ] * weights[3] ), position ) );
         }
     }
 }
@@ -1587,12 +1587,12 @@ void CreateSphereMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned
 
     for ( y = 0, verticalAngle = -Math::_HALF_PI; y <= _NumVerticalSubdivs; y++ ) {
         float h, r;
-        Math::RadSinCos( verticalAngle, h, r );
+        Math::SinCos( verticalAngle, h, r );
         const float scaledH = h * _Radius;
         const float scaledR = r * _Radius;
         for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
             float s, c;
-            Math::RadSinCos( horizontalAngle, s, c );
+            Math::SinCos( horizontalAngle, s, c );
             pVert->Position = Float3( scaledR*c, scaledH, scaledR*s );
             pVert->TexCoord = Float2( 1.0f - static_cast< float >( x ) * horizontalScale, 1.0f - static_cast< float >( y ) * verticalScale ) * _TexCoordScale;
             pVert->Normal.X = r*c;
@@ -1669,7 +1669,7 @@ void CreatePatchMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned 
     const int vertexCount = _NumHorizontalSubdivs * _NumVerticalSubdivs;
     const int indexCount = ( _NumHorizontalSubdivs - 1 ) * ( _NumVerticalSubdivs - 1 ) * 6;
 
-    Float3 normal = ( Corner10 - Corner00 ).Cross( Corner01 - Corner00 ).Normalized();
+    Float3 normal = Math::Cross( Corner10 - Corner00, Corner01 - Corner00 ).Normalized();
 
     _Vertices.ResizeInvalidate( _TwoSided ? vertexCount << 1 : vertexCount );
     _Indices.ResizeInvalidate( _TwoSided ? indexCount << 1 : indexCount );
@@ -1679,14 +1679,14 @@ void CreatePatchMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned 
 
     for ( int y = 0; y < _NumVerticalSubdivs; ++y ) {
         const float lerpY = y * scaleY;
-        const Float3 py0 = Corner00.Lerp( Corner01, lerpY );
-        const Float3 py1 = Corner10.Lerp( Corner11, lerpY );
+        const Float3 py0 = Math::Lerp( Corner00, Corner01, lerpY );
+        const Float3 py1 = Math::Lerp( Corner10, Corner11, lerpY );
         const float ty = lerpY * _TexCoordScale;
 
         for ( int x = 0; x < _NumHorizontalSubdivs; ++x ) {
             const float lerpX = x * scaleX;
 
-            pVert->Position = py0.Lerp( py1, lerpX );
+            pVert->Position = Math::Lerp( py0, py1, lerpX );
             pVert->TexCoord.X = lerpX * _TexCoordScale;
             pVert->TexCoord.Y = ty;
             pVert->Normal = normal;
@@ -1700,14 +1700,14 @@ void CreatePatchMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned 
 
         for ( int y = 0; y < _NumVerticalSubdivs; ++y ) {
             const float lerpY = y * scaleY;
-            const Float3 py0 = Corner00.Lerp( Corner01, lerpY );
-            const Float3 py1 = Corner10.Lerp( Corner11, lerpY );
+            const Float3 py0 = Math::Lerp( Corner00, Corner01, lerpY );
+            const Float3 py1 = Math::Lerp( Corner10, Corner11, lerpY );
             const float ty = lerpY * _TexCoordScale;
 
             for ( int x = 0; x < _NumHorizontalSubdivs; ++x ) {
                 const float lerpX = x * scaleX;
 
-                pVert->Position = py0.Lerp( py1, lerpX );
+                pVert->Position = Math::Lerp( py0, py1, lerpX );
                 pVert->TexCoord.X = lerpX * _TexCoordScale;
                 pVert->TexCoord.Y = ty;
                 pVert->Normal = normal;
@@ -1807,7 +1807,7 @@ void CreateCylinderMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsign
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        Math::RadSinCos( angle, s, c );
+        Math::SinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, -halfHeight, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 1.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
@@ -1817,7 +1817,7 @@ void CreateCylinderMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsign
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        Math::RadSinCos( angle, s, c );
+        Math::SinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, -halfHeight, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 1.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
@@ -1827,7 +1827,7 @@ void CreateCylinderMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsign
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        Math::RadSinCos( angle, s, c );
+        Math::SinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, halfHeight, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 0.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
@@ -1837,7 +1837,7 @@ void CreateCylinderMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsign
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        Math::RadSinCos( angle, s, c );
+        Math::SinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, halfHeight, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 0.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( 0, 1.0f, 0 );
@@ -1911,7 +1911,7 @@ void CreateConeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned i
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        Math::RadSinCos( angle, s, c );
+        Math::SinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, 0.0f, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( j * invSubdivs, 1.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( 0, -1.0f, 0 );
@@ -1921,7 +1921,7 @@ void CreateConeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned i
 
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        Math::RadSinCos( angle, s, c );
+        Math::SinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( _Radius*c, 0.0f, _Radius*s );
         pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 1.0f ) * _TexCoordScale;
         pVerts[ firstVertex + j ].Normal = Float3( c, 0.0f, s );
@@ -1934,7 +1934,7 @@ void CreateConeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned i
     Float3 v;
     for ( j = 0, angle = 0; j <= _NumSubdivs; j++ ) {
         float s, c;
-        Math::RadSinCos( angle, s, c );
+        Math::SinCos( angle, s, c );
         pVerts[ firstVertex + j ].Position = Float3( 0, _Height, 0 );
         pVerts[ firstVertex + j ].TexCoord = Float2( 1.0f - j * invSubdivs, 0.0f ) * _TexCoordScale;
 
@@ -2005,13 +2005,13 @@ void CreateCapsuleMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigne
 
     for ( y = 0, verticalAngle = -Math::_HALF_PI; y <= halfVerticalSubdivs; y++, tcY++ ) {
         float h, r;
-        Math::RadSinCos( verticalAngle, h, r );
+        Math::SinCos( verticalAngle, h, r );
         const float scaledH = h * _Radius;
         const float scaledR = r * _Radius;
         const float posY = scaledH - halfHeight;
         for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
             float s, c;
-            Math::RadSinCos( horizontalAngle, s, c );
+            Math::SinCos( horizontalAngle, s, c );
             pVert->Position.X = scaledR * c;
             pVert->Position.Y = posY;
             pVert->Position.Z = scaledR * s;
@@ -2028,13 +2028,13 @@ void CreateCapsuleMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigne
 
     for ( y = 0, verticalAngle = 0; y <= halfVerticalSubdivs; y++, tcY++ ) {
         float h, r;
-        Math::RadSinCos( verticalAngle, h, r );
+        Math::SinCos( verticalAngle, h, r );
         const float scaledH = h * _Radius;
         const float scaledR = r * _Radius;
         const float posY = scaledH + halfHeight;
         for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
             float s, c;
-            Math::RadSinCos( horizontalAngle, s, c );
+            Math::SinCos( horizontalAngle, s, c );
             pVert->Position.X = scaledR * c;
             pVert->Position.Y = posY;
             pVert->Position.Z = scaledR * s;
@@ -2133,7 +2133,7 @@ static SBestSplitResult FindBestSplitPrimitive( SAABBTreeBuild & _Build, int _Ax
     SBestSplitResult result;
     result.Axis = -1;
 
-    float bestSAH = Float::MaxValue(); // Surface area heuristic
+    float bestSAH = Math::MaxValue< float >(); // Surface area heuristic
 
     const float emptyCost = 1.0f;
 
@@ -2161,7 +2161,7 @@ static SBestSplitResult FindBestSplitPrimitive( SAABBTreeBuild & _Build, int _Ax
         }
     }
 
-    AN_ASSERT( ( result.Axis != -1 ) && ( bestSAH < Float::MaxValue() ) );
+    AN_ASSERT( ( result.Axis != -1 ) && ( bestSAH < Math::MaxValue< float >() ) );
 
     return result;
 }

@@ -510,7 +510,7 @@ void ADebugRenderer::DrawSpherePatch( Float3 const & _Position, Float3 const & _
     Float3 spole = _Position - _Up * _Radius;
     Float3 arcStart;
     float step = Math::Radians( _StepDegrees );
-    Float3 backVec = _Up.Cross( _Right );
+    Float3 backVec = Math::Cross( _Up, _Right );
     bool drawN = false;
     bool drawS = false;
     if ( _MinTh <= -Math::_HALF_PI ) {
@@ -546,14 +546,14 @@ void ADebugRenderer::DrawSpherePatch( Float3 const & _Position, Float3 const & _
         float th = _MinTh + float( i ) * step_h;
         float sth;
         float cth;
-        Math::RadSinCos( th, sth, cth );
+        Math::SinCos( th, sth, cth );
         sth *= _Radius;
         cth *= _Radius;
         for ( int j = 0; j < n_vert; j++ ) {
             float psi = _MinPs + float( j ) * step_v;
             float sps;
             float cps;
-            Math::RadSinCos( psi, sps, cps );
+            Math::SinCos( psi, sps, cps );
             pvB[ j ] = _Position + cth * cps * _Right + cth * sps * backVec + sth * _Up;
             if ( i ) {
                 DrawLine( pvA[ j ], pvB[ j ] );

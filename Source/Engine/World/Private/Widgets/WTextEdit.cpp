@@ -687,21 +687,21 @@ void WTextEdit::ScrollToCursor() {
 
     Float2 pageSize = scroll->GetAvailableSize();
 
-    pageSize.Y = Math::Snap( pageSize.Y, font->GetFontSize() );
+    pageSize.Y = Math::Snap< float >( pageSize.Y, font->GetFontSize() );
 
     if ( cursor.X < scrollMins.X ) {
-        scrollPosition.X = Math::Snap( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
+        scrollPosition.X = Math::Snap< float >( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
         bUpdateScroll = true;
     } else if ( cursor.X > scrollMaxs.X ) {
-        scrollPosition.X = Math::Snap( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
+        scrollPosition.X = Math::Snap< float >( -cursorOffset.X + pageSize.X*0.5f, font->GetFontSize() );
         bUpdateScroll = true;
     }
 
     if ( cursor.Y < scrollMins.Y ) {
-        scrollPosition.Y = Math::Snap( -cursorOffset.Y, font->GetFontSize() );
+        scrollPosition.Y = Math::Snap< float >( -cursorOffset.Y, font->GetFontSize() );
         bUpdateScroll = true;
     } else if ( cursor.Y + font->GetFontSize()*2 > scrollMaxs.Y ) {
-        scrollPosition.Y = Math::Snap( -cursorOffset.Y - font->GetFontSize()*2 + pageSize.Y, font->GetFontSize() );
+        scrollPosition.Y = Math::Snap< float >( -cursorOffset.Y - font->GetFontSize()*2 + pageSize.Y, font->GetFontSize() );
         bUpdateScroll = true;
     }
 

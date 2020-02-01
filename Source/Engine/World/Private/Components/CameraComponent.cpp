@@ -245,6 +245,7 @@ void ACameraComponent::MakeRay( float _NormalizedX, float _NormalizedY, Float3 &
 
     // TODO: cache ModelViewProjectionInversed
     Float4x4 ModelViewProjectionInversed = ( ProjectionMatrix * ViewMatrix ).Inversed();
+    // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
 
     MakeRay( ModelViewProjectionInversed, _NormalizedX, _NormalizedY, _RayStart, _RayEnd );
 }

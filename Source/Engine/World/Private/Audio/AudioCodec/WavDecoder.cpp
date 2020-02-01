@@ -964,19 +964,17 @@ static bool WaveReadHeader( IStreamBase & _File, SWaveFormat & _Wave ) {
         }
         /* wave format chunk */
         else if ( !CheckID( &chunk.Id, RIFF_WaveFmtID ) && !wave->Format ) {
-            Int Dummy;
-
-            _File.ReadObject( wave->Format );
-            _File.ReadObject( wave->Channels );
-            _File.ReadObject( wave->SampleRate );
-            _File.ReadObject( Dummy );
-            _File.ReadObject( wave->BlockAlign );
+            wave->Format = _File.ReadInt16();
+            wave->Channels = _File.ReadInt16();
+            wave->SampleRate = _File.ReadInt32();
+            _File.ReadInt32();
+            wave->BlockAlign = _File.ReadInt16();
 
             if ( wave->Format != WAVE_FORMAT_PCM && wave->Format != WAVE_FORMAT_DVI_ADPCM ) {
                 return false;
             }
 
-            _File.ReadObject( wave->BitsPerSample );
+            wave->BitsPerSample = _File.ReadInt16();
 
             /* skip any other format specific fields */
             _File.SeekCur( PAD2( chunk.SizeInBytes - 16 ) );

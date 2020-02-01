@@ -39,11 +39,11 @@ AN_CLASS_META( AActor )
 
 ARuntimeVariable RVDrawRootComponentAxis( _CTS( "DrawRootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
 
-static UInt UniqueName = 0;
+static uint32_t UniqueName = 0;
 
 AActor::AActor() {
     //GUID.Generate();
-    SetObjectName( "Actor" + UniqueName.ToString() );
+    SetObjectName( "Actor" + Math::ToString( UniqueName ) );
     UniqueName++;
 }
 

@@ -318,7 +318,8 @@ bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfi
 
     // Max tiles and max polys affect how the tile IDs are caculated.
     // There are 22 bits available for identifying a tile and a polygon.
-    const unsigned int tileBits = Math::Min< unsigned int >( UInt( NumTilesX * NumTilesZ ).ToGreaterPowerOfTwo().Log2(), 14 );
+    uint64_t powOf2 = Math::ToGreaterPowerOfTwo( NumTilesX * NumTilesZ );
+    const unsigned int tileBits = Math::Min( Math::Log2( powOf2 ), 14 );
     const unsigned int maxTiles = 1 << tileBits;
     const unsigned int maxPolysPerTile = 1u << (22 - tileBits);
 
@@ -476,7 +477,7 @@ static void MarkWalkableTriangles( const float _WalkableSlopeAngle, Float3 const
         if ( _WalkableMask.IsMarked( triangleNum ) ) {
             unsigned int const * tri = &_Indices[ triangleNum * 3 ];
 
-            perpendicular = (_Vertices[tri[1]] - _Vertices[tri[0]]).Cross( _Vertices[tri[2]] - _Vertices[tri[0]] );
+            perpendicular = Math::Cross( _Vertices[tri[1]] - _Vertices[tri[0]], _Vertices[tri[2]] - _Vertices[tri[0]] );
             perpendicularLength = perpendicular.Length();
             if ( perpendicularLength > 0 && perpendicular[1] > WalkableThreshold * perpendicularLength ) {
                 _Areas[i] = RC_WALKABLE_AREA;

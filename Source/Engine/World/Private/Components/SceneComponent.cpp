@@ -849,7 +849,7 @@ void ASceneComponent::TurnDownFPS( float _DeltaAngleRad ) {
 void ASceneComponent::TurnAroundAxis( float _DeltaAngleRad, Float3 const & _NormalizedAxis ) {
     float s, c;
 
-    Math::RadSinCos( _DeltaAngleRad * 0.5f, s, c );
+    Math::SinCos( _DeltaAngleRad * 0.5f, s, c );
 
     Rotation = Quat( c, s * _NormalizedAxis.X, s * _NormalizedAxis.Y, s * _NormalizedAxis.Z ) * Rotation;
 

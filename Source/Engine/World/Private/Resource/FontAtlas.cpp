@@ -89,9 +89,9 @@ bool AFont::LoadResource( AString const & _Path ) {
 
     int i = _Path.FindExtWithoutDot();
     const char * n = &_Path[i];
-    UInt sizePixels;
+    uint32_t sizePixels;
     
-    sizePixels.FromString( n );
+    sizePixels = Math::ToInt< uint32_t >( n );
     if ( sizePixels < 8 ) {
         sizePixels = 8;
     }

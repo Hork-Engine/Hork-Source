@@ -1100,7 +1100,7 @@ void AInputMappings::LoadAxes( ADocument const & _Document, int _FieldsHead ) {
         int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.ToString().CStr() );
         int controllerId = AInputHelper::LookupController( controller.ToString().CStr() );
 
-        float scaleValue = Math::FloatFromString( scale.ToString() );
+        float scaleValue = Math::ToFloat( scale.ToString() );
 
         MapAxis( name.ToString().CStr(),
                  deviceId,
@@ -1138,10 +1138,10 @@ void AInputMappings::LoadActions( ADocument const & _Document, int _FieldsHead )
             continue;
         }
 
-        Int modMask = 0;
+        int32_t modMask = 0;
         SDocumentField * modMaskField = _Document.FindField( value->FieldsHead, "ModMask" );
         if ( modMaskField ) {
-            modMask.FromString( _Document.Values[ nameField->ValuesHead ].Token.ToString() );
+            modMask = Math::ToInt< int32_t >( _Document.Values[ nameField->ValuesHead ].Token.ToString() );
         }
 
         SToken const & name = _Document.Values[ nameField->ValuesHead ].Token;

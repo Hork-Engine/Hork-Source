@@ -54,7 +54,6 @@ AN_CLASS_META( ASkinnedComponent )
 ASkinnedComponent::ASkinnedComponent() {
     bUpdateControllers = true;
     bSkinnedMesh = true;
-    bLazyBoundsUpdate = true;
 
     // Raycasting of skinned meshes is not supported yet
     Primitive.RaycastCallback = nullptr;
@@ -79,12 +78,6 @@ void ASkinnedComponent::DeinitializeComponent() {
 
     GetWorld()->GetRenderWorld().RemoveSkinnedMesh( this );
 }
-
-//void ASkinnedComponent::OnLazyBoundsUpdate() {
-//    Super::OnLazyBoundsUpdate();
-
-//    UpdateBounds();
-//}
 
 void ASkinnedComponent::OnMeshChanged() {
     Super::OnMeshChanged();
@@ -253,9 +246,9 @@ void ASkinnedComponent::UpdateTransforms() {
                 ATransform const & frame1 = transforms[ jointAnim.TransformOffset + controller->Frame ];
                 ATransform const & frame2 = transforms[ jointAnim.TransformOffset + controller->NextFrame ];
 
-                transform.Position = frame1.Position.Lerp( frame2.Position, controller->Blend );
+                transform.Position = Math::Lerp( frame1.Position, frame2.Position, controller->Blend );
                 transform.Rotation = frame1.Rotation.Slerp( frame2.Rotation, controller->Blend );
-                transform.Scale = frame1.Scale.Lerp( frame2.Scale, controller->Blend );
+                transform.Scale = Math::Lerp( frame1.Scale, frame2.Scale, controller->Blend );
             }
 
             sumWeight += controller->Weight;

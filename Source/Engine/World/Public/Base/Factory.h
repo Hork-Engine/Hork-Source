@@ -216,14 +216,14 @@ AN_FORCEINLINE EAttributeType GetAttributeType< AString const & >() { return EAt
 template<>
 AN_FORCEINLINE EAttributeType GetAttributeType< AString >() { return EAttributeType::T_String; }
 
-AN_FORCEINLINE AString AttrToString( byte const & v ) { return Byte( v ).ToString(); }
-AN_FORCEINLINE AString AttrToString( bool const & v ) { return Byte( v ).ToString(); }
-AN_FORCEINLINE AString AttrToString( int const & v ) { return Int( v ).ToString(); }
-AN_FORCEINLINE AString AttrToString( float const & v ) { return Int( *( (int *)&v ) ).ToString(); }
-AN_FORCEINLINE AString AttrToString( Float2 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString(); }
-AN_FORCEINLINE AString AttrToString( Float3 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString(); }
-AN_FORCEINLINE AString AttrToString( Float4 const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString() + " " + Int( *( (int *)&v.W ) ).ToString(); }
-AN_FORCEINLINE AString AttrToString( Quat const & v ) { return Int( *( (int *)&v.X ) ).ToString() + " " + Int( *( (int *)&v.Y ) ).ToString() + " " + Int( *( (int *)&v.Z ) ).ToString() + " " + Int( *( (int *)&v.W ) ).ToString(); }
+AN_FORCEINLINE AString AttrToString( byte const & v ) { return Math::ToString( v ); }
+AN_FORCEINLINE AString AttrToString( bool const & v ) { return Math::ToString( v ); }
+AN_FORCEINLINE AString AttrToString( int const & v ) { return Math::ToString( v ); }
+AN_FORCEINLINE AString AttrToString( float const & v ) { return Math::ToString( *( (int *)&v ) ); }
+AN_FORCEINLINE AString AttrToString( Float2 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ); }
+AN_FORCEINLINE AString AttrToString( Float3 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ); }
+AN_FORCEINLINE AString AttrToString( Float4 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ) + " " + Math::ToString( *( (int *)&v.W ) ); }
+AN_FORCEINLINE AString AttrToString( Quat const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ) + " " + Math::ToString( *( (int *)&v.W ) ); }
 AN_FORCEINLINE AString AttrToString( AString const & v ) { return v; }
 
 template< typename T >
@@ -231,22 +231,22 @@ template< typename T >
 
 template<>
 AN_FORCEINLINE byte AttrFromString< byte >( AString const & v ) {
-    return Byte().FromString( v );
+    return Math::ToInt< uint8_t >( v );
 }
 
 template<>
 AN_FORCEINLINE bool AttrFromString< bool >( AString const & v ) {
-    return Bool().FromString( v );
+    return Math::ToInt< uint8_t >( v );
 }
 
 template<>
 AN_FORCEINLINE int AttrFromString< int >( AString const & v ) {
-    return Int().FromString( v );
+    return Math::ToInt< int32_t >( v );
 }
 
 template<>
 AN_FORCEINLINE float AttrFromString< float >( AString const & v ) {
-    int i = Int().FromString( v );
+    int i = Math::ToInt< int32_t >( v );
     return *( float * )&i;
 }
 

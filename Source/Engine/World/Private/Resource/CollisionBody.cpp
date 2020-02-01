@@ -484,11 +484,11 @@ void ACollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
 
     for ( int stack = 0; stack <= numStacks; ++stack ) {
         const float theta = stack * Math::_PI / numStacks;
-        Math::RadSinCos( theta, sinTheta, cosTheta );
+        Math::SinCos( theta, sinTheta, cosTheta );
 
         for ( int slice = 0; slice < numSlices; ++slice ) {            
             const float phi = slice * Math::_2PI / numSlices;
-            Math::RadSinCos( phi, sinPhi, cosPhi );
+            Math::SinCos( phi, sinPhi, cosPhi );
 
             *pVertices++ = Float3( cosPhi * sinTheta, cosTheta, sinPhi * sinTheta ) * Radius + Position;
 
@@ -536,11 +536,11 @@ void ACollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPo
 
     for ( int stack = 0; stack <= numStacks; ++stack ) {
         const float theta = stack * Math::_PI / numStacks;
-        Math::RadSinCos( theta, sinTheta, cosTheta );
+        Math::SinCos( theta, sinTheta, cosTheta );
 
         for ( int slice = 0; slice < numSlices; ++slice ) {
             const float phi = slice * Math::_2PI / numSlices;
-            Math::RadSinCos( phi, sinPhi, cosPhi );
+            Math::SinCos( phi, sinPhi, cosPhi );
 
             *pVertices++ = Rotation * ( Float3( cosPhi * sinTheta, cosTheta, sinPhi * sinTheta ) * Radius ) + Position;
         }
@@ -631,7 +631,7 @@ void ACollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
     Float3 vert;
 
     for ( int slice = 0; slice < numSlices; slice++, pVertices++ ) {
-        Math::RadSinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
+        Math::SinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * HalfExtents[idxRadius];
         vert[idxRadius2] = sinPhi * HalfExtents[idxRadius];
@@ -723,7 +723,7 @@ void ACollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
     vert[idxHeight] = 0;
 
     for ( int slice = 0; slice < numSlices; slice++ ) {
-        Math::RadSinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
+        Math::SinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * Radius;
         vert[idxRadius2] = sinPhi * Radius;
@@ -797,7 +797,7 @@ void ACollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
     const float halfOfTotalHeight = Height*0.5f + Radius;
 
     for ( int slice = 0; slice < numSlices; slice++, pVertices++ ) {
-        Math::RadSinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
+        Math::SinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
 
         vert[idxRadius] = cosPhi * Radius;
         vert[idxRadius2] = sinPhi * Radius;
@@ -868,13 +868,13 @@ void ACollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
 
     for ( y = 0, verticalAngle = -Math::_HALF_PI; y <= halfVerticalSubdivs; y++ ) {
         float h, r;
-        Math::RadSinCos( verticalAngle, h, r );
+        Math::SinCos( verticalAngle, h, r );
         h = h * Radius - halfHeight;
         r *= Radius;
         for ( x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++ ) {
             float s, c;
             Float3 & v = *pVertices++;
-            Math::RadSinCos( horizontalAngle, s, c );
+            Math::SinCos( horizontalAngle, s, c );
             v[ idxRadius ] = r * c;
             v[ idxRadius2 ] = r * s;
             v[ idxHeight ] = h;
@@ -886,13 +886,13 @@ void ACollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
 
     for ( y = 0, verticalAngle = 0; y <= halfVerticalSubdivs; y++ ) {
         float h, r;
-        Math::RadSinCos( verticalAngle, h, r );
+        Math::SinCos( verticalAngle, h, r );
         h = h * Radius + halfHeight;
         r *= Radius;
         for ( x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++ ) {
             float s, c;
             Float3 & v = *pVertices++;
-            Math::RadSinCos( horizontalAngle, s, c );
+            Math::SinCos( horizontalAngle, s, c );
             v[ idxRadius ] = r * c;
             v[ idxRadius2 ] = r * s;
             v[ idxHeight ] = h;
@@ -1049,7 +1049,7 @@ void ACollisionBodyComposition::CreateGeometry( TPodArray< Float3 > & _Vertices,
 
 AN_FORCEINLINE bool IsPointInsideConvexHull( Float3 const & _Point, PlaneF const * _Planes, int _NumPlanes, float _Margin ) {
     for ( int i = 0 ; i < _NumPlanes ; i++ ) {
-        if ( _Planes[ i ].Normal.Dot( _Point ) + _Planes[ i ].D - _Margin > 0 ) {
+        if ( Math::Dot( _Planes[ i ].Normal, _Point ) + _Planes[ i ].D - _Margin > 0 ) {
             return false;
         }
     }
@@ -1058,7 +1058,7 @@ AN_FORCEINLINE bool IsPointInsideConvexHull( Float3 const & _Point, PlaneF const
 
 static int FindPlane( PlaneF const & _Plane , PlaneF const * _Planes, int _NumPlanes ) {
     for ( int i = 0 ; i < _NumPlanes ; i++ ) {
-        if ( _Plane.Normal.Dot( _Planes[i].Normal ) > 0.999f ) {
+        if ( Math::Dot( _Plane.Normal, _Planes[i].Normal ) > 0.999f ) {
             return i;
         }
     }
@@ -1067,7 +1067,7 @@ static int FindPlane( PlaneF const & _Plane , PlaneF const * _Planes, int _NumPl
 
 static bool AreVerticesBehindPlane( PlaneF const & _Plane, Float3 const * _Vertices, int _NumVertices, float _Margin ) {
     for ( int i = 0 ; i < _NumVertices ; i++ ) {
-        float dist = _Plane.Normal.Dot( _Vertices[i] ) + _Plane.D - _Margin;
+        float dist = Math::Dot( _Plane.Normal, _Vertices[i] ) + _Plane.D - _Margin;
         if ( dist > 0.0f ) {
             return false;
         }
@@ -1099,12 +1099,12 @@ void ConvexHullPlanesFromVertices( Float3 const * _Vertices, int _NumVertices, T
                 float normalSign = 1;
 
                 for ( int ww = 0 ; ww < 2 ; ww++ ) {
-                    plane.Normal = normalSign * edge0.Cross( edge1 );
+                    plane.Normal = normalSign * Math::Cross( edge0, edge1 );
                     if ( plane.Normal.LengthSqr() > 0.0001f ) {
                         plane.Normal.NormalizeSelf();
 
                         if ( FindPlane( plane, _Planes.ToPtr(), _Planes.Size() ) == -1 ) {
-                            plane.D = -plane.Normal.Dot( normal1 );
+                            plane.D = -Math::Dot( plane.Normal, normal1 );
 
                             if ( AreVerticesBehindPlane( plane, _Vertices, _NumVertices, margin ) ) {
                                 _Planes.Append( plane );
@@ -1131,17 +1131,17 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
         for ( int j = i + 1 ; j < _NumPlanes ; j++ ) {
             Float3 const & normal2 = _Planes[ j ].Normal;
 
-            Float3 n1n2 = normal1.Cross( normal2 );
+            Float3 n1n2 = Math::Cross( normal1, normal2 );
 
             if ( n1n2.LengthSqr() > tolerance ) {
                 for ( int k = j + 1 ; k < _NumPlanes ; k++ ) {
                     Float3 const & normal3 = _Planes[ k ].Normal;
 
-                    Float3 n2n3 = normal2.Cross( normal3 );
-                    Float3 n3n1 = normal3.Cross( normal1 );
+                    Float3 n2n3 = Math::Cross( normal2, normal3 );
+                    Float3 n3n1 = Math::Cross( normal3, normal1 );
 
                     if ( ( n2n3.LengthSqr() > tolerance ) && ( n3n1.LengthSqr() > tolerance ) ) {
-                        float quotient = normal1.Dot( n2n3 );
+                        float quotient = Math::Dot( normal1, n2n3 );
                         if ( fabs( quotient ) > quotientTolerance ) {
                             quotient = -1 / quotient;
 
