@@ -132,7 +132,16 @@ void Device::Initialize( AllocatorCallback const * _Allocator, HashCallback _Has
     MaxTextureBufferSize = GL_GetInteger( GL_MAX_TEXTURE_BUFFER_SIZE );
 
     TextureBufferOffsetAlignment = GL_GetInteger( GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT );
-    UniformBufferOffsetAlignment = GL_GetInteger( GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
+    if ( !TextureBufferOffsetAlignment ) {
+        LogPrintf( "Warning: TextureBufferOffsetAlignment == 0, using default alignment (256)\n" );
+        TextureBufferOffsetAlignment = 256;
+    }
+
+    UniformBufferOffsetAlignment = GL_GetInteger( GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT );    
+    if ( !UniformBufferOffsetAlignment ) {
+        LogPrintf( "Warning: UniformBufferOffsetAlignment == 0, using default alignment (256)\n" );
+        UniformBufferOffsetAlignment = 256;
+    }
 
     MaxBufferBindings[UNIFORM_BUFFER] = GL_GetInteger( GL_MAX_UNIFORM_BUFFER_BINDINGS );
     MaxBufferBindings[SHADER_STORAGE_BUFFER] = GL_GetInteger( GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS );

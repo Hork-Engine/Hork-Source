@@ -52,10 +52,10 @@ static void CreateSphere( int _HDiv, int _VDiv, TPodArray< Float3 > & _Vertices,
 
     for ( i = 0, a1 = Math::_PI / _HDiv; i < (_HDiv - 1); i++ ) {
         float y, r;
-        Math::RadSinCos( a1, r, y );
+        Math::SinCos( a1, r, y );
         for ( j = 0, a2 = 0; j < _VDiv; j++ ) {
             float s, c;
-            Math::RadSinCos( a2, s, c );
+            Math::SinCos( a2, s, c );
             _Vertices[i*_VDiv + j] = Float3( r*c, -y, r*s );
             a2 += Math::_2PI / (_VDiv - 1);
         }

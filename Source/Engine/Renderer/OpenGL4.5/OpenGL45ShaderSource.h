@@ -89,8 +89,8 @@ struct AShaderSources {
         };
 
         AString predefines = predefine[_ShaderType];
-        predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Int( MAX_DIRECTIONAL_LIGHTS ).ToString() + "\n";
-        predefines += "#define MAX_SHADOW_CASCADES " + Int( MAX_SHADOW_CASCADES ).ToString() + "\n";
+        predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Math::ToString( MAX_DIRECTIONAL_LIGHTS ) + "\n";
+        predefines += "#define MAX_SHADOW_CASCADES " + Math::ToString( MAX_SHADOW_CASCADES ) + "\n";
 
         #ifdef SHADOWMAP_PCF
         predefines += "#define SHADOWMAP_PCF\n";

@@ -88,13 +88,13 @@ void APassRenderer::BindSkeleton( size_t _Offset, size_t _Size ) {
 
 void APassRenderer::SetInstanceUniforms( int _Index ) {
     GFrameResources.InstanceUniformBufferBinding->pBuffer = &GFrameResources.InstanceUniformBuffer;
-    GFrameResources.InstanceUniformBufferBinding->BindingOffset = _Index * InstanceUniformBufferSizeof;
+    GFrameResources.InstanceUniformBufferBinding->BindingOffset = _Index * GFrameResources.InstanceUniformBufferSizeof;
     GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( SInstanceUniformBuffer );
 }
 
 void APassRenderer::SetShadowInstanceUniforms( int _Index ) {
     GFrameResources.InstanceUniformBufferBinding->pBuffer = &GFrameResources.ShadowInstanceUniformBuffer;
-    GFrameResources.InstanceUniformBufferBinding->BindingOffset = _Index * ShadowInstanceUniformBufferSizeof;
+    GFrameResources.InstanceUniformBufferBinding->BindingOffset = _Index * GFrameResources.ShadowInstanceUniformBufferSizeof;
     GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( SShadowInstanceUniformBuffer );
 }
 

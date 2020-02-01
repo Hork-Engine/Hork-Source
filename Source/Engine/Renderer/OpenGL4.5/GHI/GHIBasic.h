@@ -36,8 +36,7 @@ SOFTWARE.
 
 namespace GHI {
 
-#define	GHI_STRUCT_OFS_PTR(type, a)  (&((type *)0)->a)
-#define	GHI_STRUCT_OFS(type, a)  ((size_t)GHI_STRUCT_OFS_PTR( type, a ))
+#define	GHI_STRUCT_OFS(type, a)  offsetof( type, a )
 
 class NonCopyable {
 public:

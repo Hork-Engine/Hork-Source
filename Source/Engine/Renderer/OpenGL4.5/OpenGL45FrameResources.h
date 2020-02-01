@@ -64,7 +64,7 @@ struct SViewUniformBuffer {
 
     Float4 LightDirs[MAX_DIRECTIONAL_LIGHTS];            // Direction, W-channel is not used
     Float4 LightColors[MAX_DIRECTIONAL_LIGHTS];          // RGB, alpha - ambient intensity
-    UInt4  LightParameters[MAX_DIRECTIONAL_LIGHTS];      // RenderMask, FirstCascade, NumCascades, W-channel is not used
+    uint32_t LightParameters[MAX_DIRECTIONAL_LIGHTS][4];      // RenderMask, FirstCascade, NumCascades, W-channel is not used
     
     //Float4 Viewport;                     // x,y,width,height
     //Float3x4 PositionToViewSpace;
@@ -81,8 +81,6 @@ struct SInstanceUniformBuffer {
     Float4 uaddr_3;
 };
 
-constexpr size_t InstanceUniformBufferSizeof = GHI::UBOAligned( sizeof( SInstanceUniformBuffer ) );
-
 struct SShadowInstanceUniformBuffer {
     Float4x4 TransformMatrix; // TODO: 3x4
     // For material with vertex deformations:
@@ -92,8 +90,6 @@ struct SShadowInstanceUniformBuffer {
     Float4 uaddr_3;
 };
 
-constexpr size_t ShadowInstanceUniformBufferSizeof = GHI::UBOAligned( sizeof( SShadowInstanceUniformBuffer ) );
-
 class AFrameResources {
 public:
     void Initialize();
@@ -102,10 +98,15 @@ public:
     void UploadUniforms();
 
     GHI::Buffer ViewUniformBuffer;
+
     GHI::Buffer InstanceUniformBuffer;
     int         InstanceUniformBufferSize;
+    int         InstanceUniformBufferSizeof;
+
     GHI::Buffer ShadowInstanceUniformBuffer;
     int         ShadowInstanceUniformBufferSize;
+    int         ShadowInstanceUniformBufferSizeof;
+
     GHI::Buffer CascadeViewProjectionBuffer;
     GHI::Texture EnvProbe;
     GHI::Sampler EnvProbeSampler;

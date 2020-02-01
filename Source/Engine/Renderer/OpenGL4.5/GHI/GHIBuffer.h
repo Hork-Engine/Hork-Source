@@ -169,14 +169,6 @@ struct BufferCreateInfo {
     size_t                        SizeInBytes;            /// size of buffer in bytes
 };
 
-constexpr size_t UBOAligned( size_t _Size ) {
-
-    // TODO: Use Device::UniformBufferOffsetAlignment
-    // ( _Size + ( UniformBufferOffsetAlignment - 1 ) ) & ~( UniformBufferOffsetAlignment - 1 )
-
-    return ((_Size + 255) / 256) * 256;
-}
-
 class Buffer final : public NonCopyable, IObjectInterface {
 
     friend class CommandBuffer;

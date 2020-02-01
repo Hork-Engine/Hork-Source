@@ -55,7 +55,11 @@ void AFrameResources::Initialize() {
     ViewUniformBuffer.Initialize( uniformBufferCI );
 
     InstanceUniformBufferSize = 1024;
+    InstanceUniformBufferSizeof = Align( sizeof( SInstanceUniformBuffer ), GDevice.GetUniformBufferOffsetAlignment() );
+
     ShadowInstanceUniformBufferSize = 1024;
+    ShadowInstanceUniformBufferSizeof = Align( sizeof( SShadowInstanceUniformBuffer ), GDevice.GetUniformBufferOffsetAlignment() );
+
     GHI::BufferCreateInfo streamBufferCI = {};
     streamBufferCI.bImmutableStorage = false;
     streamBufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
@@ -321,9 +325,9 @@ void AFrameResources::SetViewUniforms() {
 
         uniformData->LightDirs[i] = Float4( GRenderView->NormalToViewMatrix * (light->Matrix[2]), 0.0f );
         uniformData->LightColors[i] = light->ColorAndAmbientIntensity;
-        uniformData->LightParameters[i].X = light->RenderMask;
-        uniformData->LightParameters[i].Y = light->FirstCascade;
-        uniformData->LightParameters[i].Z = light->NumCascades;
+        uniformData->LightParameters[i][0] = light->RenderMask;
+        uniformData->LightParameters[i][1] = light->FirstCascade;
+        uniformData->LightParameters[i][2] = light->NumCascades;
     }
 
     ViewUniformBuffer.Write( uniformData );

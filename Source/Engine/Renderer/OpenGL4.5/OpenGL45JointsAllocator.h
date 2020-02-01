@@ -73,7 +73,7 @@ public:
         }
         size_t Ofs = Offset;
         Offset += SizeInBytes;
-        Offset = GHI::UBOAligned( Offset );
+        Offset = Align( Offset, GDevice.GetUniformBufferOffsetAlignment() );
         MaxUsage = Math::Max( MaxUsage, Ofs + SizeInBytes );
         //GLogger.Printf( "AllocJoints: Allocated %u bytes. Max usage %u bytes\n", SizeInBytes, MaxUsage );
         return Ofs;

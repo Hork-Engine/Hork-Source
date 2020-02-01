@@ -69,6 +69,9 @@ public:
 
     Sampler const GetOrCreateSampler( struct SamplerCreateInfo const & _CreateInfo );
 
+    unsigned int GetTextureBufferOffsetAlignment() const { return TextureBufferOffsetAlignment; }
+    unsigned int GetUniformBufferOffsetAlignment() const { return UniformBufferOffsetAlignment; }
+
 private:
     BlendingStateInfo const * CachedBlendingState( BlendingStateInfo const & _BlendingState );
     RasterizerStateInfo const * CachedRasterizerState( RasterizerStateInfo const & _RasterizerState );
