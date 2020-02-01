@@ -410,7 +410,7 @@ static void ProcessEvent( SEvent const & _Event ) {
     case ET_SetVideoModeEvent:
         VidWidth = Math::Max< unsigned short >( 1, _Event.Data.SetVideoModeEvent.Width );
         VidHeight = Math::Max< unsigned short >( 1, _Event.Data.SetVideoModeEvent.Height );
-        VidPhysicalMonitor = Int( _Event.Data.SetVideoModeEvent.PhysicalMonitor ).Clamp( 0, GMonitorManager.GetMonitors().Size() - 1 );
+        VidPhysicalMonitor = Math::Clamp< unsigned short >( _Event.Data.SetVideoModeEvent.PhysicalMonitor, 0, GMonitorManager.GetMonitors().Size() - 1 );
         VidRefreshRate = _Event.Data.SetVideoModeEvent.RefreshRate;
         VidFullscreen = _Event.Data.SetVideoModeEvent.bFullscreen;
 

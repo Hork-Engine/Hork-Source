@@ -53,8 +53,8 @@ ARuntimeVariable * ARuntimeVariable::FindVariable( const char * _Name ) {
 void ARuntimeVariable::AllocateVariables() {
     for ( ARuntimeVariable * var = GlobalVars ; var ; var = var->Next ) {
         var->Value = var->DefaultValue;
-        var->I32 = Int().FromString( var->Value );
-        var->F32 = Float().FromString( var->Value );
+        var->I32 = Math::ToInt< int32_t >( var->Value );
+        var->F32 = Math::ToFloat( var->Value );
     }
     GVariableAllocated = true;
 }
@@ -152,17 +152,17 @@ void ARuntimeVariable::SetBool( bool _Bool ) {
 }
 
 void ARuntimeVariable::SetInteger( int32_t _Integer ) {
-    SetString( Int(_Integer).ToString() );
+    SetString( Math::ToString( _Integer ) );
 }
 
 void ARuntimeVariable::SetFloat( float _Float ) {
-    SetString( Float(_Float).ToString() );
+    SetString( Math::ToString( _Float ) );
 }
 
 void ARuntimeVariable::ForceString( const char * _String ) {
     Value = _String;
-    I32 = Int().FromString( Value );
-    F32 = Float().FromString( Value );
+    I32 = Math::ToInt< int32_t >( Value );
+    F32 = Math::ToFloat( Value );
     LatchedValue.Clear();
     MarkModified();
 }
@@ -176,11 +176,11 @@ void ARuntimeVariable::ForceBool( bool _Bool ) {
 }
 
 void ARuntimeVariable::ForceInteger( int32_t _Integer ) {
-    ForceString( Int(_Integer).ToString() );
+    ForceString( Math::ToString( _Integer ) );
 }
 
 void ARuntimeVariable::ForceFloat( float _Float ) {
-    ForceString( Float(_Float).ToString() );
+    ForceString( Math::ToString( _Float ) );
 }
 
 void ARuntimeVariable::SetLatched() {

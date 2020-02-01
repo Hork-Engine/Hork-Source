@@ -145,11 +145,11 @@ struct SMeshVertex {
 AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value ) {
     SMeshVertex Result;
 
-    Result.Position   = _Vertex1.Position.Lerp( _Vertex2.Position, _Value );
-    Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
-    Result.Tangent    = _Vertex1.Tangent.Lerp( _Vertex2.Tangent, _Value ).Normalized();
+    Result.Position   = Math::Lerp( _Vertex1.Position, _Vertex2.Position, _Value );
+    Result.TexCoord   = Math::Lerp( _Vertex1.TexCoord, _Vertex2.TexCoord, _Value );
+    Result.Tangent    = Math::Lerp( _Vertex1.Tangent, _Vertex2.Tangent, _Value ).Normalized();
     Result.Handedness = _Value >= 0.5f ? _Vertex2.Handedness : _Vertex1.Handedness;
-    Result.Normal     = _Vertex1.Normal.Lerp( _Vertex2.Normal, _Value ).Normalized();
+    Result.Normal     = Math::Lerp( _Vertex1.Normal, _Vertex2.Normal, _Value ).Normalized();
 
     return Result;
 }
@@ -171,7 +171,7 @@ struct SMeshVertexUV {
 AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value ) {
     SMeshVertexUV Result;
 
-    Result.TexCoord   = _Vertex1.TexCoord.Lerp( _Vertex2.TexCoord, _Value );
+    Result.TexCoord   = Math::Lerp( _Vertex1.TexCoord, _Vertex2.TexCoord, _Value );
 
     return Result;
 }
@@ -751,26 +751,6 @@ struct SDirectionalLightDef {
     bool     bCastShadow;
 };
 
-//struct SClusterItem {
-//    Float4x4 OBBTransformInverse;
-//    BvAxisAlignedBox BoundingBox;
-
-//    int     ListIndex;
-//};
-
-//struct SLightDef : SClusterItem {
-//    Float4   ColorAndAmbientIntensity;
-//    Float3   Position;
-//    float    InnerRadius;
-//    float    OuterRadius;
-//    float    InnerConeAngle;
-//    float    OuterConeAngle;
-//    Float3   SpotDirection;
-//    float    SpotExponent;
-//    int      RenderMask;
-//    bool     bSpot;
-//};
-
 
 //
 // Render instance
@@ -851,11 +831,16 @@ struct SClusterItemBuffer {
     uint32_t Indices;
 };
 
+enum EClusterLightType {
+    CLUSTER_LIGHT_POINT,
+    CLUSTER_LIGHT_SPOT,
+};
+
 struct SClusterLight {
     Float3 Position;     // For point and spot lights: position and radius
     float  OuterRadius;
 
-    float LightType;
+    float LightType;     // EClusterLightType
     float InnerRadius;
     float OuterConeAngle;
     float InnerConeAngle;
