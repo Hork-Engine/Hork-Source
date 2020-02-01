@@ -46,35 +46,26 @@ AN_FORCEINLINE constexpr bool IsBigEndian() {
     return !IsLittleEndian();
 }
 
-AN_FORCEINLINE word WordSwap( const word & _Val ) {
-    const byte b1 = _Val&0xff;
-    const byte b2 = (_Val>>8)&0xff;
-    return (b1<<8) + b2;
+AN_FORCEINLINE constexpr word WordSwap( word const & _Val ) {
+    return ((_Val & 0xff) << 8) | ((_Val >> 8) & 0xff);
 }
 
-AN_FORCEINLINE dword DWordSwap( const dword & _Val ) {
-    const byte b1 = (byte)(_Val&0xff);
-    const byte b2 = (byte)((_Val>>8)&0xff);
-    const byte b3 = (byte)((_Val>>16)&0xff);
-    const byte b4 = (byte)((_Val>>24)&0xff);
-    return ((dword)b1<<24) + ((dword)b2<<16) + ((dword)b3<<8) + b4;
+AN_FORCEINLINE constexpr dword DWordSwap( dword const & _Val ) {
+    return ((_Val & 0xff) << 24) | (((_Val >> 8) & 0xff) << 16) | (((_Val >> 16) & 0xff) << 8) | ((_Val >> 24) & 0xff);
 }
 
-AN_FORCEINLINE ddword DDWordSwap( const ddword & _Val ) {
-    const byte b1 = (byte)(_Val&0xff);
-    const byte b2 = (byte)((_Val>>8)&0xff);
-    const byte b3 = (byte)((_Val>>16)&0xff);
-    const byte b4 = (byte)((_Val>>24)&0xff);
-    const byte b5 = (byte)((_Val>>32)&0xff);
-    const byte b6 = (byte)((_Val>>40)&0xff);
-    const byte b7 = (byte)((_Val>>48)&0xff);
-    const byte b8 = (byte)((_Val>>56)&0xff);
-
-    return ((ddword)b1<<56) + ((ddword)b2<<48) + ((ddword)b3<<40) + ((ddword)b4<<32)
-         + ((ddword)b5<<24) + ((ddword)b6<<16) + ((ddword)b7<<8) + b8;
+AN_FORCEINLINE constexpr ddword DDWordSwap( ddword const & _Val ) {
+    return (((_Val) & 0xff) << 56)
+        | (((_Val >> 8) & 0xff) << 48)
+        | (((_Val >> 16) & 0xff) << 40)
+        | (((_Val >> 24) & 0xff) << 32)
+        | (((_Val >> 32) & 0xff) << 24)
+        | (((_Val >> 40) & 0xff) << 16)
+        | (((_Val >> 48) & 0xff) << 8)
+        | (((_Val >> 56) & 0xff));
 }
 
-AN_FORCEINLINE float FloatSwap( const float & _Val ) {
+AN_FORCEINLINE float FloatSwap( float const & _Val ) {
     union {
         float f;
         byte  b[4];
@@ -88,7 +79,7 @@ AN_FORCEINLINE float FloatSwap( const float & _Val ) {
     return dat2.f;
 }
 
-AN_FORCEINLINE double DoubleSwap( const double & _Val ) {
+AN_FORCEINLINE double DoubleSwap( double const & _Val ) {
     union {
         double f;
         byte   b[8];
@@ -107,7 +98,7 @@ AN_FORCEINLINE double DoubleSwap( const double & _Val ) {
 }
 
 AN_FORCEINLINE void BlockSwap( void * _Bytes, int _ElementSz, int _Count ) {
-    AN_ASSERT_( _ElementSz > 0, "FEndian::BlockSwap" );
+    AN_ASSERT_( _ElementSz > 0, "BlockSwap" );
     if ( _ElementSz == 1 ) {
         return;
     }
@@ -123,7 +114,7 @@ AN_FORCEINLINE void BlockSwap( void * _Bytes, int _ElementSz, int _Count ) {
     }
 }
 
-AN_FORCEINLINE word BigWord( const word & _Val ) {
+AN_FORCEINLINE constexpr word BigWord( word const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return WordSwap( _Val );
 #else
@@ -131,7 +122,7 @@ AN_FORCEINLINE word BigWord( const word & _Val ) {
 #endif
 }
 
-AN_FORCEINLINE dword BigDWord( const dword & _Val ) {
+AN_FORCEINLINE constexpr dword BigDWord( dword const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return DWordSwap( _Val );
 #else
@@ -139,7 +130,7 @@ AN_FORCEINLINE dword BigDWord( const dword & _Val ) {
 #endif
 }
 
-AN_FORCEINLINE ddword BigDDWord( const ddword & _Val ) {
+AN_FORCEINLINE constexpr ddword BigDDWord( ddword const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return DDWordSwap( _Val );
 #else
@@ -147,7 +138,7 @@ AN_FORCEINLINE ddword BigDDWord( const ddword & _Val ) {
 #endif
 }
 
-AN_FORCEINLINE float BigFloat( const float & _Val ) {
+AN_FORCEINLINE float BigFloat( float const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return FloatSwap( _Val );
 #else
@@ -155,7 +146,7 @@ AN_FORCEINLINE float BigFloat( const float & _Val ) {
 #endif
 }
 
-AN_FORCEINLINE double BigDouble( const double & _Val ) {
+AN_FORCEINLINE double BigDouble( double const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return DoubleSwap( _Val );
 #else
@@ -169,7 +160,7 @@ AN_FORCEINLINE void BigBlock( void * _Bytes, int _ElementSz, int _Count ) {
 #endif
 }
 
-AN_FORCEINLINE word LittleWord( const word & _Val ) {
+AN_FORCEINLINE constexpr word LittleWord( word const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
@@ -177,7 +168,7 @@ AN_FORCEINLINE word LittleWord( const word & _Val ) {
 #endif
 }
 
-AN_FORCEINLINE dword LittleDWord( const dword & _Val ) {
+AN_FORCEINLINE constexpr dword LittleDWord( dword const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
@@ -185,7 +176,7 @@ AN_FORCEINLINE dword LittleDWord( const dword & _Val ) {
 #endif
 }
 
-AN_FORCEINLINE ddword LittleDDWord( const ddword & _Val ) {
+AN_FORCEINLINE constexpr ddword LittleDDWord( ddword const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
@@ -193,7 +184,7 @@ AN_FORCEINLINE ddword LittleDDWord( const ddword & _Val ) {
 #endif
 }
 
-AN_FORCEINLINE float LittleFloat( const float & _Val ) {
+AN_FORCEINLINE float LittleFloat( float const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
@@ -201,7 +192,7 @@ AN_FORCEINLINE float LittleFloat( const float & _Val ) {
 #endif
 }
 
-AN_FORCEINLINE double LittleDouble( const double & _Val ) {
+AN_FORCEINLINE double LittleDouble( double const & _Val ) {
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
@@ -216,5 +207,3 @@ AN_FORCEINLINE void LittleBlock( void * _Bytes, int _ElementSz, int _Count ) {
 }
 
 } // namespace Core
-
-

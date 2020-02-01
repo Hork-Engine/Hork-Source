@@ -265,4 +265,4 @@ AN_FORCEINLINE bool BvSphere::ContainsPoint( const Float3 & _Point ) const {
     return Center.DistSqr( _Point ) <= Radius * Radius;
 }
 
-struct alignas(16) BvSphereSSE : public BvSphere {};
+struct alignas(16) BvSphereSSE : BvSphere {};

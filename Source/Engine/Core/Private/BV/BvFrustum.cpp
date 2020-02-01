@@ -115,19 +115,19 @@ void BvFrustum::FromMatrix( Float4x4 const & _Matrix ) {
 }
 
 void BvFrustum::CornerVector_TR( Float3 & _Vector ) const {
-    _Vector = Planes[FPL_TOP].Normal.Cross( Planes[FPL_RIGHT].Normal ).Normalized();
+    _Vector = Math::Cross( Planes[FPL_TOP].Normal, Planes[FPL_RIGHT].Normal ).Normalized();
 }
 
 void BvFrustum::CornerVector_TL( Float3 & _Vector ) const {
-    _Vector = Planes[FPL_LEFT].Normal.Cross( Planes[FPL_TOP].Normal ).Normalized();
+    _Vector = Math::Cross( Planes[FPL_LEFT].Normal, Planes[FPL_TOP].Normal ).Normalized();
 }
 
 void BvFrustum::CornerVector_BR( Float3 & _Vector ) const {
-    _Vector = Planes[FPL_RIGHT].Normal.Cross( Planes[FPL_BOTTOM].Normal ).Normalized();
+    _Vector = Math::Cross( Planes[FPL_RIGHT].Normal, Planes[FPL_BOTTOM].Normal ).Normalized();
 }
 
 void BvFrustum::CornerVector_BL( Float3 & _Vector ) const {
-    _Vector = Planes[FPL_BOTTOM].Normal.Cross( Planes[FPL_LEFT].Normal ).Normalized();
+    _Vector = Math::Cross( Planes[FPL_BOTTOM].Normal, Planes[FPL_LEFT].Normal ).Normalized();
 }
 
 void BvFrustum::CullSphere_Generic( BvSphereSSE const * InBounds, const int InNumObjects, int * Result ) const {

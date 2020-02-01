@@ -256,8 +256,8 @@ public:
     static void Concat( char * _Dest, const char * _Src );
     static void Copy( char * _Dest, const char * _Src );
 
-    template< typename Type >
-    static AString ToHexString( Type const & _Val, bool _LeadingZeros = false, bool _Prefix = false );
+    template< typename T >
+    static AString ToHexString( T const & _Val, bool _LeadingZeros = false, bool _Prefix = false );
 
     // The output is always null-terminated and truncated if necessary. The return value is either the number of characters stored or -1 if truncation occurs.
     static int Sprintf( char * _Buffer, int _Size, const char * _Format, ... );
@@ -625,15 +625,16 @@ AN_FORCEINLINE AString const & AString::NullFString() {
 #define AN_INT64_HIGH_INT( i64 )   int32_t( uint64_t(i64) >> 32 )
 #define AN_INT64_LOW_INT( i64 )    int32_t( uint64_t(i64) & 0xFFFFFFFF )
 
-template< typename Type >
-AString AString::ToHexString( Type const & _Val, bool _LeadingZeros, bool _Prefix ) {
+template< typename T >
+AString AString::ToHexString( T const & _Val, bool _LeadingZeros, bool _Prefix ) {
     TSprintfBuffer< 32 > value;
     TSprintfBuffer< 32 > format;
     const char * PrefixStr = _Prefix ? "0x" : "";
 
-    static_assert( sizeof( Type ) == 1 || sizeof( Type ) == 2 || sizeof( Type ) == 4 || sizeof( Type ) == 8, "ToHexString" );
+    constexpr size_t typeSize = sizeof( T );
+    static_assert( typeSize == 1 || typeSize == 2 || typeSize == 4 || typeSize == 8, "ToHexString" );
 
-    switch( sizeof( Type ) ) {
+    switch( typeSize ) {
     case 1:
         format.Sprintf( _LeadingZeros ? "%s%%02x" : "%s%%x", PrefixStr );
         return value.Sprintf( format.Data, *reinterpret_cast< const uint8_t * > ( &_Val ) );

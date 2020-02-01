@@ -30,86 +30,21 @@ SOFTWARE.
 
 #pragma once
 
-#include "String.h"
-#include "IO.h"
+#include "BaseMath.h"
 
-class Bool final {
-public:
-    bool Value;
-
-    Bool() = default;
-    //Bool( const bool & _Value ) : Value( _Value ) {}
-    constexpr Bool( const bool & _Value ) : Value( _Value ) {}
-
-    Bool * ToPtr() {
-        return this;
-    }
-
-    const Bool * ToPtr() const {
-        return this;
-    }
-
-    operator bool() const {
-        return Value;
-    }
-
-    Bool & operator=( const bool & _Other ) {
-        Value = _Other;
-        return *this;
-    }
-
-    Bool operator==( const Bool & _Other ) const { return Value == _Other.Value; }
-    Bool operator!=( const Bool & _Other ) const { return Value != _Other.Value; }
-
-    Bool Any() const { return Value; }
-    Bool All() const { return Value; }
-
-    // String conversions
-    AString ToString() const {
-        static constexpr const char * s[2] = { "false", "true" };
-        return s[ Value ];
-    }
-
-    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return AString::ToHexString( Value, _LeadingZeros, _Prefix );
-    }
-
-    Bool & FromString( const AString & _String ) {
-        return FromString( _String.CStr() );
-    }
-
-    Bool & FromString( const char * _String );
-
-
-    // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
-        _Stream.WriteBool( Value );
-    }
-
-    void Read( IStreamBase & _Stream ) {
-        Value = _Stream.ReadBool();
-    }
-
-    // Static methods
-    static constexpr int NumComponents() { return 1; }
-    static constexpr Bool MinValue() { return TStdNumericLimits< bool >::min(); }
-    static constexpr Bool MaxValue() { return TStdNumericLimits< bool >::max(); }
-};
-
-class Bool2 final {
-public:
-    Bool X;
-    Bool Y;
+struct Bool2 final {
+    bool X;
+    bool Y;
 
     Bool2() = default;
     explicit constexpr Bool2( const bool & _Value ) : X( _Value ), Y( _Value ) {}
     constexpr Bool2( const bool & _X, const bool & _Y ) : X( _X ), Y( _Y ) {}
 
-    Bool * ToPtr() {
+    bool * ToPtr() {
         return &X;
     }
 
-    const Bool * ToPtr() const {
+    const bool * ToPtr() const {
         return &X;
     }
 
@@ -119,42 +54,42 @@ public:
         return *this;
     }
 
-    Bool & operator[]( const int & _Index ) {
+    bool & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
-    const Bool & operator[]( const int & _Index ) const {
+    const bool & operator[]( const int & _Index ) const {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
-    Bool operator==( const Bool2 & _Other ) const { return X == _Other.X && Y == _Other.Y; }
-    Bool operator!=( const Bool2 & _Other ) const { return X != _Other.X || Y != _Other.Y; }
+    constexpr bool operator==( const Bool2 & _Other ) const { return X == _Other.X && Y == _Other.Y; }
+    constexpr bool operator!=( const Bool2 & _Other ) const { return X != _Other.X || Y != _Other.Y; }
 
-    //Bool Any() const { return ( X || Y ); }
-    //Bool All() const { return ( X && Y ); }
+    //constexpr bool Any() const { return ( X || Y ); }
+    //constexpr bool All() const { return ( X && Y ); }
 
-    Bool Any() const { return ( X | Y ); }
-    Bool All() const { return ( X & Y ); }
+    constexpr bool Any() const { return ( X | Y ); }
+    constexpr bool All() const { return ( X & Y ); }
 
     // String conversions
     AString ToString() const {
-        return AString( "( " ) + X.ToString() + " " + Y.ToString() + " )";
+        return AString( "( " ) + Math::ToString( X ) + " " + Math::ToString( Y ) + " )";
     }
 
     AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " )";
+        return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
     void Write( IStreamBase & _Stream ) const {
-        X.Write( _Stream );
-        Y.Write( _Stream );
+        _Stream.WriteBool( X );
+        _Stream.WriteBool( Y );
     }
 
     void Read( IStreamBase & _Stream ) {
-        X.Read( _Stream );
-        Y.Read( _Stream );
+        X = _Stream.ReadBool();
+        Y = _Stream.ReadBool();
     }
 
     // Static methods
@@ -167,21 +102,20 @@ public:
     }
 };
 
-class Bool3 final {
-public:
-    Bool X;
-    Bool Y;
-    Bool Z;
+struct Bool3 final {
+    bool X;
+    bool Y;
+    bool Z;
 
     Bool3() = default;
     explicit constexpr Bool3( const bool & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
     constexpr Bool3( const bool & _X, const bool & _Y, const bool & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
-    Bool * ToPtr() {
+    bool * ToPtr() {
         return &X;
     }
 
-    const Bool * ToPtr() const {
+    const bool * ToPtr() const {
         return &X;
     }
 
@@ -192,44 +126,44 @@ public:
         return *this;
     }
 
-    Bool & operator[]( const int & _Index ) {
+    bool & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
-    const Bool & operator[]( const int & _Index ) const {
+    const bool & operator[]( const int & _Index ) const {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
-    Bool operator==( const Bool3 & _Other ) const { return X == _Other.X && Y == _Other.Y && Z == _Other.Z; }
-    Bool operator!=( const Bool3 & _Other ) const { return X != _Other.X || Y != _Other.Y || Z != _Other.Z; }
+    constexpr bool operator==( const Bool3 & _Other ) const { return X == _Other.X && Y == _Other.Y && Z == _Other.Z; }
+    constexpr bool operator!=( const Bool3 & _Other ) const { return X != _Other.X || Y != _Other.Y || Z != _Other.Z; }
 
-    //Bool Any() const { return ( X || Y || Z ); }
-    //Bool All() const { return ( X && Y && Z ); }
+    //constexpr bool Any() const { return ( X || Y || Z ); }
+    //constexpr bool All() const { return ( X && Y && Z ); }
 
-    Bool Any() const { return ( X | Y | Z ); }
-    Bool All() const { return ( X & Y & Z ); }
+    constexpr bool Any() const { return ( X | Y | Z ); }
+    constexpr bool All() const { return ( X & Y & Z ); }
 
     // String conversions
     AString ToString() const {
-        return AString( "( " ) + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + " )";
+        return AString( "( " ) + Math::ToString( X ) + " " + Math::ToString( Y ) + " " + Math::ToString( Z ) + " )";
     }
 
     AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " )";
+        return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Z, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
     void Write( IStreamBase & _Stream ) const {
-        X.Write( _Stream );
-        Y.Write( _Stream );
-        Z.Write( _Stream );
+        _Stream.WriteBool( X );
+        _Stream.WriteBool( Y );
+        _Stream.WriteBool( Z );
     }
 
     void Read( IStreamBase & _Stream ) {
-        X.Read( _Stream );
-        Y.Read( _Stream );
-        Z.Read( _Stream );
+        X = _Stream.ReadBool();
+        Y = _Stream.ReadBool();
+        Z = _Stream.ReadBool();
     }
 
     // Static methods
@@ -240,22 +174,21 @@ public:
     }
 };
 
-class Bool4 final {
-public:
-    Bool X;
-    Bool Y;
-    Bool Z;
-    Bool W;
+struct Bool4 final {
+    bool X;
+    bool Y;
+    bool Z;
+    bool W;
 
     Bool4() = default;
     explicit constexpr Bool4( const bool & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
     constexpr Bool4( const bool & _X, const bool & _Y, const bool & _Z, const bool & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
-    Bool * ToPtr() {
+    bool * ToPtr() {
         return &X;
     }
 
-    const Bool * ToPtr() const {
+    const bool * ToPtr() const {
         return &X;
     }
 
@@ -267,45 +200,45 @@ public:
         return *this;
     }
 
-    Bool & operator[]( const int & _Index ) {
+    bool & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
-    const Bool & operator[]( const int & _Index ) const {
+    const bool & operator[]( const int & _Index ) const {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
-    Bool operator==( const Bool4 & _Other ) const { return X == _Other.X && Y == _Other.Y && Z == _Other.Z && W == _Other.W; }
-    Bool operator!=( const Bool4 & _Other ) const { return X != _Other.X || Y != _Other.Y || Z != _Other.Z || W != _Other.W; }
+    constexpr bool operator==( const Bool4 & _Other ) const { return X == _Other.X && Y == _Other.Y && Z == _Other.Z && W == _Other.W; }
+    constexpr bool operator!=( const Bool4 & _Other ) const { return X != _Other.X || Y != _Other.Y || Z != _Other.Z || W != _Other.W; }
 
-    //Bool Any() const { return ( X || Y || Z || W ); }
-    //Bool All() const { return ( X && Y && Z && W ); }
-    Bool Any() const { return ( X | Y | Z | W ); }
-    Bool All() const { return ( X & Y & Z & W ); }
+    //constexpr bool Any() const { return ( X || Y || Z || W ); }
+    //constexpr bool All() const { return ( X && Y && Z && W ); }
+    constexpr bool Any() const { return ( X | Y | Z | W ); }
+    constexpr bool All() const { return ( X & Y & Z & W ); }
 
     // String conversions
     AString ToString() const {
-        return AString( "( " ) + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + " " + W.ToString() + " )";
+        return AString( "( " ) + Math::ToString( X ) + " " + Math::ToString( Y ) + " " + Math::ToString( Z ) + " " + Math::ToString( W ) + " )";
     }
 
     AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return AString( "( " ) + X.ToHexString( _LeadingZeros, _Prefix ) + " " + Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Z.ToHexString( _LeadingZeros, _Prefix ) + " " + W.ToHexString( _LeadingZeros, _Prefix ) + " )";
+        return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Z, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( W, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
     void Write( IStreamBase & _Stream ) const {
-        X.Write( _Stream );
-        Y.Write( _Stream );
-        Z.Write( _Stream );
-        W.Write( _Stream );
+        _Stream.WriteBool( X );
+        _Stream.WriteBool( Y );
+        _Stream.WriteBool( Z );
+        _Stream.WriteBool( W );
     }
 
     void Read( IStreamBase & _Stream ) {
-        X.Read( _Stream );
-        Y.Read( _Stream );
-        Z.Read( _Stream );
-        W.Read( _Stream );
+        X = _Stream.ReadBool();
+        Y = _Stream.ReadBool();
+        Z = _Stream.ReadBool();
+        W = _Stream.ReadBool();
     }
 
     // Static methods

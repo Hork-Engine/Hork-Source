@@ -33,6 +33,8 @@ SOFTWARE.
 #include "Atomic.h"
 #include "Thread.h"
 
+//#define AN_MULTITHREADED_ALLOC
+
 /*
 
 Memory utilites
@@ -129,7 +131,9 @@ private:
 
     SHeapChunk HeapChain;
 
+#ifdef AN_MULTITHREADED_ALLOC
     AThreadSync Sync;
+#endif
 };
 
 AN_FORCEINLINE void * AHeapMemory::HeapAllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
@@ -281,7 +285,9 @@ private:
     AAtomicLong TotalMemoryOverhead;
     AAtomicLong MaxMemoryUsage;
 
+#ifdef AN_MULTITHREADED_ALLOC
     AThreadSync Sync;
+#endif
 };
 
 AN_FORCEINLINE void * AZoneMemory::AllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {

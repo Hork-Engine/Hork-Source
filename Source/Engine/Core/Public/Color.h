@@ -32,8 +32,7 @@ SOFTWARE.
 
 #include "Float.h"
 
-class AColor4 : public Float4 {
-public:
+struct AColor4 : Float4 {
     AColor4() = default;
     explicit constexpr AColor4( const float & _Value ) : Float4( _Value ) {}
     constexpr AColor4( const float & _X, const float & _Y, const float & _Z ) : Float4( _X, _Y, _Z, 1.0f ) {}

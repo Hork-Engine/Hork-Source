@@ -60,10 +60,10 @@ struct BvAxisAlignedBox {
     BvAxisAlignedBox operator+( Float3 const & _Vec ) const;
     BvAxisAlignedBox operator-( Float3 const & _Vec ) const;
 
-    Bool Compare( BvAxisAlignedBox const & _Other ) const;
-    Bool CompareEps( BvAxisAlignedBox const & _Other, float const & _Epsilon ) const;
-    Bool operator==( BvAxisAlignedBox const & _Other ) const;
-    Bool operator!=( BvAxisAlignedBox const & _Other ) const;
+    bool Compare( BvAxisAlignedBox const & _Other ) const;
+    bool CompareEps( BvAxisAlignedBox const & _Other, float const & _Epsilon ) const;
+    bool operator==( BvAxisAlignedBox const & _Other ) const;
+    bool operator!=( BvAxisAlignedBox const & _Other ) const;
 
     void Clear();
     void AddPoint( Float3 const & _Point );
@@ -169,19 +169,19 @@ AN_FORCEINLINE BvAxisAlignedBox BvAxisAlignedBox::operator-( Float3 const & _Vec
     return BvAxisAlignedBox( Mins - _Vec, Maxs - _Vec );
 }
 
-AN_FORCEINLINE Bool BvAxisAlignedBox::Compare( BvAxisAlignedBox const & _Other ) const {
+AN_FORCEINLINE bool BvAxisAlignedBox::Compare( BvAxisAlignedBox const & _Other ) const {
     return Mins.Compare( _Other.Mins ) && Maxs.Compare( _Other.Maxs );
 }
 
-AN_FORCEINLINE Bool BvAxisAlignedBox::CompareEps( BvAxisAlignedBox const & _Other, float const & _Epsilon ) const {
+AN_FORCEINLINE bool BvAxisAlignedBox::CompareEps( BvAxisAlignedBox const & _Other, float const & _Epsilon ) const {
     return Mins.CompareEps( _Other.Mins, _Epsilon ) && Maxs.CompareEps( _Other.Maxs, _Epsilon );
 }
 
-AN_FORCEINLINE Bool BvAxisAlignedBox::operator==( BvAxisAlignedBox const & _Other ) const {
+AN_FORCEINLINE bool BvAxisAlignedBox::operator==( BvAxisAlignedBox const & _Other ) const {
     return Compare( _Other );
 }
 
-AN_FORCEINLINE Bool BvAxisAlignedBox::operator!=( BvAxisAlignedBox const & _Other ) const {
+AN_FORCEINLINE bool BvAxisAlignedBox::operator!=( BvAxisAlignedBox const & _Other ) const {
     return !Compare( _Other );
 }
 

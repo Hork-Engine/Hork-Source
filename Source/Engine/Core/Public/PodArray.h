@@ -31,7 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include "Alloc.h"
-//#include "Integer.h"
 
 #define TPodArrayTemplateDecorate \
     template< typename T, int BASE_CAPACITY, int GRANULARITY, typename Allocator, int Alignment > AN_FORCEINLINE
@@ -158,7 +157,8 @@ public:
 //    }
 
 private:
-    static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "Alignment Check" );
+    static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "Alignment check" );
+    //static_assert( IsAligned( sizeof( T ), Alignment ), "Alignment check" );
 
     alignas( Alignment ) T StaticData[BASE_CAPACITY];
     T *             ArrayData;

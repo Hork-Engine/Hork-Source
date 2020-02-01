@@ -201,7 +201,7 @@ bool AConvexHull::IsHuge() const {
 float AConvexHull::CalcArea() const {
     float Area = 0;
     for ( int i = 2 ; i < NumPoints ; i++ ) {
-        Area += ( Points[i - 1] - Points[0] ).Cross( Points[i] - Points[0] ).Length();
+        Area += Math::Cross( Points[i - 1] - Points[0], Points[i] - Points[0] ).Length();
     }
     return Area * 0.5f;
 }
@@ -226,10 +226,10 @@ Float3 AConvexHull::CalcNormal() const {
 
 #ifdef CONVEX_HULL_CW
     // CW
-    return ( Points[1] - center ).Cross( Points[0] - center ).NormalizeFix();
+    return Math::Cross( Points[1] - center, Points[0] - center ).NormalizeFix();
 #else
     // CCW
-    return ( Points[0] - center ).Cross( Points[1] - center ).NormalizeFix();
+    return Math::Cross( Points[0] - center, Points[1] - center ).NormalizeFix();
 #endif
 }
 
@@ -246,12 +246,12 @@ PlaneF AConvexHull::CalcPlane() const {
 
 #ifdef CONVEX_HULL_CW
     // CW
-    plane.Normal = ( Points[1] - Center ).Cross( Points[0] - Center ).NormalizeFix();
+    plane.Normal = Math::Cross( Points[1] - Center, Points[0] - Center ).NormalizeFix();
 #else
     // CCW
-    plane.Normal = ( Points[0] - Center ).Cross( Points[1] - Center ).NormalizeFix();
+    plane.Normal = Math::Cross( Points[0] - Center, Points[1] - Center ).NormalizeFix();
 #endif
-    plane.D = -Points[0].Dot( plane.Normal );
+    plane.D = -Math::Dot( Points[0], plane.Normal );
     return plane;
 }
 
@@ -295,7 +295,7 @@ EPlaneSide AConvexHull::Split( PlaneF const & _Plane, float _Epsilon, AConvexHul
 
     // Определить с какой стороны находится каждая точка исходного полигона
     for ( i = 0 ; i < NumPoints ; i++ ) {
-        float dist = Points[i].Dot( _Plane.Normal ) + _Plane.D;
+        float dist = Math::Dot( Points[i], _Plane.Normal ) + _Plane.D;
 
         distances[ i ] = dist;
 
@@ -319,7 +319,7 @@ EPlaneSide AConvexHull::Split( PlaneF const & _Plane, float _Epsilon, AConvexHul
 
         // По направлению нормали определить, куда можно отнести новый плейн
 
-        if ( hullNormal.Dot( _Plane.Normal ) > 0 ) {
+        if ( Math::Dot( hullNormal, _Plane.Normal ) > 0 ) {
             // Все точки находятся по фронтальную сторону плоскости
             *_Front = Duplicate();
             return EPlaneSide::Front;
@@ -425,7 +425,7 @@ EPlaneSide AConvexHull::Clip( PlaneF const & _Plane, float _Epsilon, AConvexHull
 
     // Определить с какой стороны находится каждая точка исходного полигона
     for ( i = 0 ; i < NumPoints ; i++ ) {
-        float dist = Points[i].Dot( _Plane.Normal ) + _Plane.D;
+        float dist = Math::Dot( Points[i], _Plane.Normal ) + _Plane.D;
 
         distances[ i ] = dist;
 

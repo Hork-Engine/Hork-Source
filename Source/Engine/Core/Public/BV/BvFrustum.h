@@ -254,13 +254,13 @@ AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) c
     Float3 point;
 
     for ( PlaneF const * p = Planes; p < Planes + 6; p++ ) {
-        const float x = b.Orient[ 0 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
-        const float y = b.Orient[ 1 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
-        const float z = b.Orient[ 2 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
+        const float x = Math::Dot( b.Orient[ 0 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
+        const float y = Math::Dot( b.Orient[ 1 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
+        const float z = Math::Dot( b.Orient[ 2 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
 
         point = b.Center + ( x*b.Orient[ 0 ] + y*b.Orient[ 1 ] + z*b.Orient[ 2 ] );
 
-        if ( point.Dot( p->Normal ) + p->D >= 0.0f ) {
+        if ( Math::Dot( point, p->Normal ) + p->D >= 0.0f ) {
             return false;
         }
     }
@@ -272,13 +272,13 @@ AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible_IgnoreZ( BvOrientedBox const
     Float3 point;
 
     for ( PlaneF const * p = Planes; p < Planes + 4; p++ ) {
-        const float x = b.Orient[ 0 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
-        const float y = b.Orient[ 1 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
-        const float z = b.Orient[ 2 ].Dot( p->Normal ) >= 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
+        const float x = Math::Dot( b.Orient[ 0 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
+        const float y = Math::Dot( b.Orient[ 1 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
+        const float z = Math::Dot( b.Orient[ 2 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
 
         point = b.Center + ( x*b.Orient[ 0 ] + y*b.Orient[ 1 ] + z*b.Orient[ 2 ] );
 
-        if ( point.Dot( p->Normal ) + p->D >= 0.0f ) {
+        if ( Math::Dot( point, p->Normal ) + p->D >= 0.0f ) {
             return false;
         }
     }

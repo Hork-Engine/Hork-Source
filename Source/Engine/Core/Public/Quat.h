@@ -32,8 +32,7 @@ SOFTWARE.
 
 #include "Float.h"
 
-class Quat final {
-public:
+struct Quat final {
     float X;
     float Y;
     float Z;
@@ -70,8 +69,8 @@ public:
         return (&X)[ _Index ];
     }
 
-    Bool operator==( const Quat & _Other ) const { return Compare( _Other ); }
-    Bool operator!=( const Quat & _Other ) const { return !Compare( _Other ); }
+    bool operator==( const Quat & _Other ) const { return Compare( _Other ); }
+    bool operator!=( const Quat & _Other ) const { return !Compare( _Other ); }
 
     // Math operators
     Quat operator+() const {
@@ -153,11 +152,11 @@ public:
         return Bool4( Math::NotEqual( X, _Other.X ), Math::NotEqual( Y, _Other.Y ), Math::NotEqual( Z, _Other.Z ), Math::NotEqual( W, _Other.W ) );
     }
 
-    Bool Compare( const Quat & _Other ) const {
+    bool Compare( const Quat & _Other ) const {
         return !NotEqual( _Other ).Any();
     }
 
-    Bool CompareEps( const Quat & _Other, const float & _Epsilon ) const {
+    bool CompareEps( const Quat & _Other, const float & _Epsilon ) const {
         return Bool4( Math::Dist( X, _Other.X ) < _Epsilon,
                       Math::Dist( Y, _Other.Y ) < _Epsilon,
                       Math::Dist( Z, _Other.Z ) < _Epsilon,
@@ -238,7 +237,7 @@ public:
     // Return rotation around normalized axis
     static Quat RotationAroundNormal( const float & _AngleRad, const Float3 & _Normal ) {
         float s, c;
-        Math::RadSinCos( _AngleRad * 0.5f, s, c );
+        Math::SinCos( _AngleRad * 0.5f, s, c );
         return Quat( c, s * _Normal.X, s * _Normal.Y, s * _Normal.Z );
     }
 
@@ -250,7 +249,7 @@ public:
     // Return rotation around X axis
     static Quat RotationX( const float & _AngleRad ) {
         Quat Result;
-        Math::RadSinCos( _AngleRad * 0.5f, Result.X, Result.W );
+        Math::SinCos( _AngleRad * 0.5f, Result.X, Result.W );
         Result.Y = 0;
         Result.Z = 0;
         return Result;
@@ -259,7 +258,7 @@ public:
     // Return rotation around Y axis
     static Quat RotationY( const float & _AngleRad ) {
         Quat Result;
-        Math::RadSinCos( _AngleRad * 0.5f, Result.Y, Result.W );
+        Math::SinCos( _AngleRad * 0.5f, Result.Y, Result.W );
         Result.X = 0;
         Result.Z = 0;
         return Result;
@@ -268,7 +267,7 @@ public:
     // Return rotation around Z axis
     static Quat RotationZ( const float & _AngleRad ) {
         Quat Result;
-        Math::RadSinCos( _AngleRad * 0.5f, Result.Z, Result.W );
+        Math::SinCos( _AngleRad * 0.5f, Result.Z, Result.W );
         Result.X = 0;
         Result.Y = 0;
         return Result;
@@ -276,7 +275,7 @@ public:
 
     Quat RotateAroundNormal( const float & _AngleRad, const Float3 & _Normal ) const {
         float s, c;
-        Math::RadSinCos( _AngleRad * 0.5f, s, c );
+        Math::SinCos( _AngleRad * 0.5f, s, c );
         return *this * Quat( c, s * _Normal.X, s * _Normal.Y, s * _Normal.Z );
         // FIXME: or? return Quat( c, s * _Normal.X, s * _Normal.Y, s * _Normal.Z ) * (*this);
     }
@@ -294,9 +293,9 @@ public:
         const float yw2 = Y*W*2.0f;
         const float yz2 = Y*Z*2.0f;
         const float zw2 = Z*W*2.0f;
-        return Float3( _Vec.Dot( Float3( xxzz + wwyy, xy2 + zw2, xz2 - yw2 ) ),
-                       _Vec.Dot( Float3( xy2 - zw2, Y*Y+W*W-X*X-Z*Z, yz2 + xw2 ) ),
-                       _Vec.Dot( Float3( xz2 + yw2, yz2 - xw2, wwyy - xxzz ) ) );
+        return Float3( Math::Dot( _Vec, Float3( xxzz + wwyy, xy2 + zw2, xz2 - yw2 ) ),
+                       Math::Dot( _Vec, Float3( xy2 - zw2, Y*Y+W*W-X*X-Z*Z, yz2 + xw2 ) ),
+                       Math::Dot( _Vec, Float3( xz2 + yw2, yz2 - xw2, wwyy - xxzz ) ) );
     }
 
     void ToAngles( float & _PitchRad, float & _YawRad, float & _RollRad ) const {
@@ -315,9 +314,9 @@ public:
     void FromAngles( const float & _PitchRad, const float & _YawRad, const float & _RollRad ) {
         float sx, sy, sz, cx, cy, cz;
 
-        Math::RadSinCos( _PitchRad * 0.5f, sx, cx );
-        Math::RadSinCos( _YawRad * 0.5f, sy, cy );
-        Math::RadSinCos( _RollRad * 0.5f, sz, cz );
+        Math::SinCos( _PitchRad * 0.5f, sx, cx );
+        Math::SinCos( _YawRad * 0.5f, sy, cy );
+        Math::SinCos( _RollRad * 0.5f, sz, cz );
 
         const float w = cy * cx;
         const float x = cy * sx;

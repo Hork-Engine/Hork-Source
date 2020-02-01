@@ -64,14 +64,14 @@ struct PlaneF /*final*/ {
     PlaneF operator-() const;
     PlaneF & operator=( const PlaneF & p );
 
-    Bool operator==( PlaneF const & _Other ) const { return Compare( _Other ); }
-    Bool operator!=( PlaneF const & _Other ) const { return !Compare( _Other ); }
+    bool operator==( PlaneF const & _Other ) const { return Compare( _Other ); }
+    bool operator!=( PlaneF const & _Other ) const { return !Compare( _Other ); }
 
-    Bool Compare( PlaneF const & _Other ) const {
+    bool Compare( PlaneF const & _Other ) const {
         return ToVec4() == _Other.ToVec4();
     }
 
-    Bool CompareEps( const PlaneF & _Other, float const & _NormalEpsilon, float const & _DistEpsilon ) const {
+    bool CompareEps( const PlaneF & _Other, float const & _NormalEpsilon, float const & _DistEpsilon ) const {
         return Bool4( Math::Dist( Normal.X, _Other.Normal.X ) < _NormalEpsilon,
                       Math::Dist( Normal.Y, _Other.Normal.Y ) < _NormalEpsilon,
                       Math::Dist( Normal.Z, _Other.Normal.Z ) < _NormalEpsilon,
@@ -165,7 +165,7 @@ AN_FORCEINLINE PlaneF::PlaneF( Float3 const & _Normal, float const & _Dist )
 }
 
 AN_FORCEINLINE PlaneF::PlaneF( Float3 const & _Normal, Float3 const & _PointOnPlane )
-    : Normal( _Normal ), D( -_PointOnPlane.Dot( _Normal ) )
+    : Normal( _Normal ), D( -Math::Dot( _PointOnPlane, _Normal ) )
 {
 }
 
@@ -204,8 +204,8 @@ AN_FORCEINLINE PlaneF PlaneF::operator-() const {
 }
 
 AN_FORCEINLINE void PlaneF::FromPoints( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2 ) {
-    Normal = ( _P0 - _P1 ).Cross( _P2 - _P1 ).Normalized();
-    D = -Normal.Dot( _P1 );
+    Normal = Math::Cross( _P0 - _P1, _P2 - _P1 ).Normalized();
+    D = -Math::Dot( Normal, _P1 );
 }
 
 AN_FORCEINLINE void PlaneF::FromPoints( Float3 const _Points[3] ) {
@@ -213,7 +213,7 @@ AN_FORCEINLINE void PlaneF::FromPoints( Float3 const _Points[3] ) {
 }
 
 AN_FORCEINLINE float PlaneF::Dist( Float3 const & _Point ) const {
-    return _Point.Dot( Normal ) + D;
+    return Math::Dot( _Point, Normal ) + D;
 }
 
 AN_FORCEINLINE EPlaneSide PlaneF::SideOffset( Float3 const & _Point, float const & _Epsilon ) const {
@@ -231,7 +231,7 @@ AN_FORCEINLINE EPlaneSide PlaneF::SideOffset( Float3 const & _Point, float const
 //AN_FORCEINLINE Float3 PlaneF::ProjectPoint( Float3 const & _Point ) const {
 //    const float OneOverLengthSqr = 1.0f / Normal.LengthSqr();
 //    const Float3 N = Normal * OneOverLengthSqr;
-//    return _Point - ( Normal.Dot( _Point ) * OneOverLengthSqr ) * N;
+//    return _Point - ( Math::Dot( Normal, _Point ) * OneOverLengthSqr ) * N;
 //}
 
 //namespace Math {
@@ -240,7 +240,7 @@ AN_FORCEINLINE EPlaneSide PlaneF::SideOffset( Float3 const & _Point, float const
 //AN_FORCEINLINE Float3 ProjectPointOnPlane( Float3 const & _Point, Float3 const & _Normal ) {
 //    const float OneOverLengthSqr = 1.0f / _Normal.LengthSqr();
 //    const Float3 N = _Normal * OneOverLengthSqr;
-//    return _Point - ( _Normal.Dot( _Point ) * OneOverLengthSqr ) * N;
+//    return _Point - ( Math::Dot( _Normal, _Point ) * OneOverLengthSqr ) * N;
 //}
 
 //}
@@ -248,43 +248,43 @@ AN_FORCEINLINE EPlaneSide PlaneF::SideOffset( Float3 const & _Point, float const
 
 struct PlaneD /*final*/ {
     Double3 Normal;
-    Double  D;
+    double  D;
 
     PlaneD() = default;
     PlaneD( Double3 const & _P0, Double3 const & _P1, Double3 const & _P2 );
-    PlaneD( Double const & _A, Double const & _B, Double const & _C, Double const & _D );
-    PlaneD( Double3 const & _Normal, Double const  & _Dist );
+    PlaneD( double const & _A, double const & _B, double const & _C, double const & _D );
+    PlaneD( Double3 const & _Normal, double const  & _Dist );
     PlaneD( Double3 const & _Normal, Double3 const & _PointOnPlane );
     explicit PlaneD( PlaneF const & _Plane );
 
-    Double * ToPtr() {
+    double * ToPtr() {
         return &Normal.X;
     }
 
-    Double const * ToPtr() const {
+    double const * ToPtr() const {
         return &Normal.X;
     }
 
     PlaneD operator-() const;
     PlaneD & operator=( PlaneD const & p );
 
-    Bool operator==( PlaneD const & _Other ) const { return Compare( _Other ); }
-    Bool operator!=( PlaneD const & _Other ) const { return !Compare( _Other ); }
+    bool operator==( PlaneD const & _Other ) const { return Compare( _Other ); }
+    bool operator!=( PlaneD const & _Other ) const { return !Compare( _Other ); }
 
-    Bool Compare( PlaneD const & _Other ) const {
+    bool Compare( PlaneD const & _Other ) const {
         return ToVec4() == _Other.ToVec4();
     }
 
-    Bool CompareEps( PlaneD const & _Other, Double const & _NormalEpsilon, Double const & _DistEpsilon ) const {
-        return Bool4( Normal.X.Dist( _Other.Normal.X ) < _NormalEpsilon,
-                      Normal.Y.Dist( _Other.Normal.Y ) < _NormalEpsilon,
-                      Normal.Z.Dist( _Other.Normal.Z ) < _NormalEpsilon,
-                      D.Dist( _Other.D ) < _DistEpsilon ).All();
+    bool CompareEps( PlaneD const & _Other, double const & _NormalEpsilon, double const & _DistEpsilon ) const {
+        return Bool4( Math::Dist( Normal.X, _Other.Normal.X ) < _NormalEpsilon,
+                      Math::Dist( Normal.Y, _Other.Normal.Y ) < _NormalEpsilon,
+                      Math::Dist( Normal.Z, _Other.Normal.Z ) < _NormalEpsilon,
+                      Math::Dist( D, _Other.D ) < _DistEpsilon ).All();
     }
 
     void Clear();
 
-    Double Dist() const;
+    double Dist() const;
 
     void SetDist( const double & _Dist );
 
@@ -297,9 +297,9 @@ struct PlaneD /*final*/ {
     void FromPoints( Double3 const & _P1, Double3 const & _P2, Double3 const & _P3 );
     void FromPoints( Double3 const _Points[3] );
 
-    Double Dist( Double3 const & _Point ) const;
+    double Dist( Double3 const & _Point ) const;
 
-    EPlaneSide SideOffset( Double3 const & _Point, Double const & _Epsilon ) const;
+    EPlaneSide SideOffset( Double3 const & _Point, double const & _Epsilon ) const;
 
     void NormalizeSelf() {
         const double NormalLength = Normal.Length();
@@ -321,8 +321,8 @@ struct PlaneD /*final*/ {
 
     PlaneD Snap( const double & _NormalEpsilon, const double & _DistEpsilon ) const {
         PlaneD SnapPlane( Normal.SnapNormal( _NormalEpsilon ), D );
-        const double SnapD = D.Round();
-        if ( ( D - SnapD ).Abs() < _DistEpsilon ) {
+        const double SnapD = Math::Round( D );
+        if ( Math::Abs( D - SnapD ) < _DistEpsilon ) {
             SnapPlane.D = SnapD;
         }
         return SnapPlane;
@@ -335,11 +335,11 @@ struct PlaneD /*final*/ {
 
     // String conversions
     AString ToString( int _Precision = - 1 ) const {
-        return AString( "( " ) + Normal.X.ToString( _Precision ) + " " + Normal.Y.ToString( _Precision ) + " " + Normal.Z.ToString( _Precision ) + " " + D.ToString( _Precision ) + " )";
+        return AString( "( " ) + Math::ToString( Normal.X, _Precision ) + " " + Math::ToString( Normal.Y, _Precision ) + " " + Math::ToString( Normal.Z, _Precision ) + " " + Math::ToString( D, _Precision ) + " )";
     }
 
     AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
-        return AString( "( " ) + Normal.X.ToHexString( _LeadingZeros, _Prefix ) + " " + Normal.Y.ToHexString( _LeadingZeros, _Prefix ) + " " + Normal.Z.ToHexString( _LeadingZeros, _Prefix ) + " " + D.ToHexString( _LeadingZeros, _Prefix ) + " )";
+        return AString( "( " ) + Math::ToHexString( Normal.X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Normal.Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Normal.Z, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( D, _LeadingZeros, _Prefix ) + " )";
     }
 };
 
@@ -347,18 +347,18 @@ AN_FORCEINLINE PlaneD::PlaneD( Double3 const & _P0, Double3 const & _P1, Double3
     FromPoints( _P0, _P1, _P2 );
 }
 
-AN_FORCEINLINE PlaneD::PlaneD( Double const & _A, Double const & _B, Double const & _C, Double const & _D )
+AN_FORCEINLINE PlaneD::PlaneD( double const & _A, double const & _B, double const & _C, double const & _D )
     : Normal( _A, _B, _C ), D( _D )
 {
 }
 
-AN_FORCEINLINE PlaneD::PlaneD( Double3 const & _Normal, Double const & _Dist )
+AN_FORCEINLINE PlaneD::PlaneD( Double3 const & _Normal, double const & _Dist )
     : Normal( _Normal ), D( -_Dist )
 {
 }
 
 AN_FORCEINLINE PlaneD::PlaneD( Double3 const & _Normal, Double3 const & _PointOnPlane )
-    : Normal( _Normal ), D( -_PointOnPlane.Dot( _Normal ) )
+    : Normal( _Normal ), D( -Math::Dot( _PointOnPlane, _Normal ) )
 {
 }
 
@@ -366,7 +366,7 @@ AN_FORCEINLINE void PlaneD::Clear() {
     Normal.X = Normal.Y = Normal.Z = D = 0;
 }
 
-AN_FORCEINLINE Double PlaneD::Dist() const {
+AN_FORCEINLINE double PlaneD::Dist() const {
     return -D;
 }
 
@@ -397,19 +397,19 @@ AN_FORCEINLINE PlaneD PlaneD::operator-() const {
 }
 
 AN_FORCEINLINE void PlaneD::FromPoints( Double3 const & _P0, Double3 const & _P1, Double3 const & _P2 ) {
-    Normal = ( _P0 - _P1 ).Cross( _P2 - _P1 ).Normalized();
-    D = -Normal.Dot( _P1 );
+    Normal = Math::Cross( _P0 - _P1, _P2 - _P1 ).Normalized();
+    D = -Math::Dot( Normal, _P1 );
 }
 
 AN_FORCEINLINE void PlaneD::FromPoints( Double3 const _Points[3] ) {
     FromPoints( _Points[0], _Points[1], _Points[2] );
 }
 
-AN_FORCEINLINE Double PlaneD::Dist( Double3 const & _Point ) const {
-    return _Point.Dot( Normal ) + D;
+AN_FORCEINLINE double PlaneD::Dist( Double3 const & _Point ) const {
+    return Math::Dot( _Point, Normal ) + D;
 }
 
-AN_FORCEINLINE EPlaneSide PlaneD::SideOffset( Double3 const & _Point, Double const & _Epsilon ) const {
+AN_FORCEINLINE EPlaneSide PlaneD::SideOffset( Double3 const & _Point, double const & _Epsilon ) const {
     const double Distance = Dist( _Point );
     if ( Distance > _Epsilon ) {
         return EPlaneSide::Front;

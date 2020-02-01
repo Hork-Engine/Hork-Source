@@ -110,13 +110,3 @@ using AStdThread = std::thread;
 #define StdSin      std::sin
 #define StdCos      std::cos
 #define StdFloor    std::floor
-
-/*
-
-enable_if_t for C++11 workaround
-
-*/
-template< bool C, class T = void >
-using TEnableIf = typename std::enable_if< C, T >::type;
-
-

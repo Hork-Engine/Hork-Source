@@ -32,8 +32,7 @@ SOFTWARE.
 
 #include "Quat.h"
 
-class Angl final {
-public:
+struct Angl final {
     float Pitch;
     float Yaw;
     float Roll;
@@ -75,8 +74,8 @@ public:
         return (&Pitch)[ _Index ];
     }
 
-    Bool operator==( const Angl & _Other ) const { return Compare( _Other ); }
-    Bool operator!=( const Angl & _Other ) const { return !Compare( _Other ); }
+    bool operator==( const Angl & _Other ) const { return Compare( _Other ); }
+    bool operator!=( const Angl & _Other ) const { return !Compare( _Other ); }
 
     // Math operators
     Angl operator+() const {
@@ -153,11 +152,11 @@ public:
         return Bool3( Math::NotEqual( Pitch, _Other.Pitch ), Math::NotEqual( Yaw, _Other.Yaw ), Math::NotEqual( Roll, _Other.Roll ) );
     }
 
-    Bool Compare( const Angl & _Other ) const {
+    bool Compare( const Angl & _Other ) const {
         return !NotEqual( _Other ).Any();
     }
 
-    Bool CompareEps( const Angl & _Other, const float & _Epsilon ) const {
+    bool CompareEps( const Angl & _Other, const float & _Epsilon ) const {
         return Bool3( Math::CompareEps( Pitch, _Other.Pitch, _Epsilon ),
                       Math::CompareEps( Yaw, _Other.Yaw, _Epsilon ),
                       Math::CompareEps( Roll, _Other.Roll, _Epsilon ) ).All();
@@ -256,7 +255,7 @@ public:
         return Math::ToIntFast( _Angle * ( 256.0f / 360.0f ) ) & 255;
     }
 
-    static UShort PackShort( const float & _Angle ) {
+    static uint16_t PackShort( const float & _Angle ) {
         return Math::ToIntFast( _Angle * ( 65536.0f / 360.0f ) ) & 65535;
     }
 

@@ -30,8 +30,6 @@ SOFTWARE.
 
 #include <Core/Public/Float.h>
 
-#include "_math.h"
-
 #ifdef AN_COMPILER_MSVC
 #pragma warning( disable : 4756 ) // overlow
 #endif
@@ -44,11 +42,13 @@ static float FloatToHalfOverflow() {
     return f;
 }
 
+namespace Math {
+
 //-----------------------------------------------------
 // Float-to-half conversion -- general case, including
 // zeroes, denormalized numbers and exponent overflows.
 //-----------------------------------------------------
-UShort Float::FloatToHalf( const UInt & _I ) {
+uint16_t _FloatToHalf( const uint32_t & _I ) {
     //
     // Our floating point number, f, is represented by the bit
     // pattern in integer _I.  Disassemble that bit pattern into
@@ -176,7 +176,7 @@ UShort Float::FloatToHalf( const UInt & _I ) {
 }
 
 // Taken from OpenEXR
-UInt Float::HalfToFloat( const UShort & _I ) {
+uint32_t _HalfToFloat( const uint16_t & _I ) {
     int s = (_I >> 15) & 0x00000001;
     int e = (_I >> 10) & 0x0000001f;
     int m =  _I        & 0x000003ff;
@@ -241,51 +241,18 @@ UInt Float::HalfToFloat( const UShort & _I ) {
     return (s << 31) | (e << 23) | m;
 }
 
-void Float::FloatToHalf( const float * _In, uint16_t * _Out, int _Count ) {
-    const float *pIn = _In;
-    while ( pIn < &_In[ _Count ] ) {
-        *_Out++ = FloatToHalf( *reinterpret_cast< const uint32_t * >( pIn++ ) );
-    }
-}
-
-void Float::HalfToFloat( const uint16_t * _In, float * _Out, int _Count ) {
-    const unsigned short *pIn = _In;
-    while ( pIn < &_In[ _Count ] ) {
-        *reinterpret_cast< uint32_t * >( _Out++ ) = HalfToFloat( *pIn++ );
-    }
-}
-
-Float & Float::FromString( const char * _String ) {
-    Value = StringToReal< float >( _String );
-    return *this;
-}
-
-namespace  Math {
-
-UShort FloatToHalf( const UInt & _I ) {
-    return Float::FloatToHalf( _I );
-}
-
-UInt HalfToFloat( const UShort & _I ) {
-    return Float::HalfToFloat( _I );
-}
-
 void FloatToHalf( const float * _In, uint16_t * _Out, int _Count ) {
     const float *pIn = _In;
     while ( pIn < &_In[ _Count ] ) {
-        *_Out++ = FloatToHalf( *reinterpret_cast< const uint32_t * >( pIn++ ) );
+        *_Out++ = _FloatToHalf( *reinterpret_cast< const uint32_t * >( pIn++ ) );
     }
 }
 
 void HalfToFloat( const uint16_t * _In, float * _Out, int _Count ) {
     const unsigned short *pIn = _In;
     while ( pIn < &_In[ _Count ] ) {
-        *reinterpret_cast< uint32_t * >( _Out++ ) = HalfToFloat( *pIn++ );
+        *reinterpret_cast< uint32_t * >( _Out++ ) = _HalfToFloat( *pIn++ );
     }
-}
-
-float FloatFromString( const char * _String ) {
-    return StringToReal< float >( _String );
 }
 
 }

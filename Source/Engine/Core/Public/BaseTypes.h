@@ -272,7 +272,7 @@ extern void AssertFunction( const char * _File, int _Line, const char * _Functio
 #define AN_HASBITi(v,bit_i)             ((v) & (1<<(bit_i)))
 #define AN_HASBIT64i(v,bit_i)           ((v) & (uint64_t(1)<<(bit_i)))
 #define AN_HASFLAG(v,flag)              (((v) & (flag)) == (flag))
-#define AN_OFS(type, name)              (&(( type * )0)->name)
+#define AN_OFS(type, name)              offsetof( type, name )//(&(( type * )0)->name)
 #define AN_ARRAY_SIZE( Array )          ( sizeof( Array ) / sizeof( Array[0] ) )
 
 /*
@@ -359,16 +359,31 @@ static_assert( (char)-1 < 0, "signed char mismatch" );
 
 /*
 
-Power of two compile-time check
+enable_if_t for C++11 workaround
 
 */
-template< typename integral_type >
-constexpr bool IsPowerOfTwoConstexpr( const integral_type _Value ) { return (_Value & (_Value - 1)) == 0 && _Value > 0; }
+template< bool C, class T = void >
+using TStdEnableIf = typename std::enable_if< C, T >::type;
 
 /*
 
-Alignment compile-time check
+Power of two compile-time check
 
 */
-template< typename integral_type >
-constexpr bool IsAligned( const integral_type _Value, const integral_type _Alignment ) { return (_Value & (_Alignment - 1)) == 0 && _Value > 0; }
+template< typename T, typename = TStdEnableIf< std::is_integral<T>::value > >
+constexpr bool IsPowerOfTwoConstexpr( const T _Value ) {
+    return (_Value & (_Value - 1)) == 0 && _Value > 0;
+}
+
+/*
+
+Alignment stuff
+
+*/
+constexpr bool IsAligned( size_t _Value, size_t _Alignment ) {
+    return (_Value & (_Alignment - 1)) == 0 && _Value > 0;
+}
+
+constexpr size_t Align( size_t N, size_t Alignment ) {
+    return ( N + ( Alignment - 1 ) ) & ~( Alignment - 1 );
+}
