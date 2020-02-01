@@ -115,10 +115,7 @@ int ALevel::AddPortal( Float3 const * _HullPoints, int _NumHullPoints, int _Area
 void ALevel::Purge() {
     DestroyActors();
 
-    if ( OwnerWorld )
-    {
-        OwnerWorld->RemovePrimitives();
-    }
+    RemovePrimitives();
 
     if ( Worldspawn )
     {
@@ -166,11 +163,6 @@ void ALevel::Purge() {
     AudioClips.Free();
 
     Lightmaps.Free();
-
-    if ( OwnerWorld )
-    {
-        OwnerWorld->MarkPrimitives();
-    }
 }
 
 void ALevel::PurgePortals() {
@@ -437,12 +429,7 @@ int ALevel::MarkLeafs( int InViewLeaf ) {
 }
 
 void ALevel::Tick( float _TimeStep ) {
-}
-
-AN_FORCEINLINE float HalfToFloat( const unsigned short _Half ) {
-    float f;
-    *reinterpret_cast< uint32_t * >( &f ) = Math::HalfToFloat( _Half );
-    return f;
+    UpdatePrimitiveLinks();
 }
 
 Float3 ALevel::SampleLight( int InLightmapBlock, Float2 const & InLighmapTexcoord ) const {
@@ -486,14 +473,14 @@ Float3 ALevel::SampleLight( int InLightmapBlock, Float2 const & InLighmapTexcoor
     case LIGHTMAP_GRAYSCALED_HALF:
     {
         //light[0] = light[1] = light[2] = HalfToFloat(src00[0]);
-        light[0] = light[1] = light[2] = lerp.Bilerp( HalfToFloat( src00[0] ), HalfToFloat( src10[0] ), HalfToFloat( src01[0] ), HalfToFloat( src11[0] ) );
+        light[0] = light[1] = light[2] = Math::Bilerp( Math::HalfToFloat( src00[0] ), Math::HalfToFloat( src10[0] ), Math::HalfToFloat( src01[0] ), Math::HalfToFloat( src11[0] ), lerp );
         break;
     }
     case LIGHTMAP_BGR_HALF:
     {
         for ( int i = 0 ; i < 3 ; i++ ) {
-            //light[2-i] = HalfToFloat(src00[i]);
-            light[2-i] = lerp.Bilerp( HalfToFloat(src00[i]), HalfToFloat(src10[i]), HalfToFloat(src01[i]), HalfToFloat(src11[i]) );
+            //light[2-i] = Math::HalfToFloat(src00[i]);
+            light[2-i] = Math::Bilerp( Math::HalfToFloat(src00[i]), Math::HalfToFloat(src10[i]), Math::HalfToFloat(src01[i]), Math::HalfToFloat(src11[i]), lerp );
         }
         break;
     }
@@ -520,7 +507,23 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
 
     //AConvexHull::Destroy( hull );
 
+#if 0
+    TPodArray< BvAxisAlignedBox > clusters;
+    clusters.Resize( PVSClustersCount );
+    for ( BvAxisAlignedBox & box : clusters ) {
+        box.Clear();
+    }
+    for ( SBinarySpaceLeaf const & leaf : Leafs ) {
+        if ( leaf.PVSCluster >= 0 && leaf.PVSCluster < PVSClustersCount ) {
+            clusters[leaf.PVSCluster].AddAABB( leaf.Bounds );
+        }
+    }
 
+    for ( BvAxisAlignedBox const & box : clusters ) {
+        InRenderer->DrawAABB( box );
+    }
+    //GLogger.Printf( "leafs %d clusters %d\n", Leafs.Size(), clusters.Size() );
+#endif
 
     if ( RVDrawLevelAreaBounds ) {
         InRenderer->SetDepthTest( false );
@@ -690,7 +693,7 @@ static void AddPrimitiveToArea( SVisArea * Area, SPrimitiveDef * Primitive ) {
         return;
     }
 
-    SPrimitiveLink * link = GPrimitiveLinkPool.AllocateLink();
+    SPrimitiveLink * link = GPrimitiveLinkPool.Allocate();
     if ( !link ) {
         return;
     }
@@ -759,30 +762,13 @@ void ALevel::AddSphereRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive ) 
     } while ( InNodeIndex != 0 );
 }
 
-void ALevel::AddPrimitive( AWorld * InWorld, SPrimitiveDef * InPrimitive ) {
+void ALevel::LinkPrimitive( SPrimitiveDef * InPrimitive ) {
 
     LastLink = &InPrimitive->Links;
 
-    if ( !InPrimitive->bPendingRemove )
-    {
-        if ( InPrimitive->bMovable )
-        {
-            // Add movable primitives to all the levels
-            for ( ALevel * level : InWorld->GetArrayOfLevels() )
-            {
-                level->AddPrimitiveToLevel( InPrimitive );
-            }
-        }
-        else
-        {
-            ALevel * level = InPrimitive->Owner->GetLevel();
-
-            level->AddPrimitiveToLevel( InPrimitive );
-        }
+    if ( InPrimitive->bPendingRemove ) {
+        return;
     }
-}
-
-void ALevel::AddPrimitiveToLevel( SPrimitiveDef * InPrimitive ) {
 
     bool bHaveBinaryTree = Nodes.Size() > 0;
 
@@ -852,7 +838,7 @@ void ALevel::AddPrimitiveToLevel( SPrimitiveDef * InPrimitive ) {
     }
 }
 
-void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
+void ALevel::UnlinkPrimitive( SPrimitiveDef * InPrimitive ) {
     SPrimitiveLink * link = InPrimitive->Links;
 
     while ( link ) {
@@ -876,57 +862,10 @@ void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
         SPrimitiveLink * free = link;
         link = link->Next;
 
-        GPrimitiveLinkPool.FreeLink( free );
+        GPrimitiveLinkPool.Deallocate( free );
     }
 
     InPrimitive->Links = nullptr;
-}
-
-
-void ALevel::RemovePrimitiveFromLevel( SPrimitiveDef * InPrimitive ) {
-#if 0
-    SPrimitiveLink * prev = nullptr;
-    SPrimitiveLink * next;
-    for ( SPrimitiveLink * link = InPrimitive->Links ; link ; link = next ) {
-        next = link->Next;
-
-        SVisArea * area = link->Area;
-        if ( area->Level != this ) {
-            prev = link;
-            continue;
-        }
-
-        // Перебираем все ссылки на примитивы в area, чтобы найти удаляемый примитив
-        SPrimitiveLink ** last = &area->Links;
-        while ( 1 ) {
-            SPrimitiveLink * walk = *last;
-
-            if ( !walk ) {
-                break;
-            }
-
-            if ( walk == link ) {
-                // remove this link
-                *last = link->NextInArea;
-                break;
-            }
-
-            last = &walk->NextInArea;
-        }
-
-        if ( link == InPrimitive->Links ) {
-            InPrimitive->Links = next;
-        }
-
-        if ( prev ) {
-            prev->Next = next;
-        } else {
-            InPrimitive->Links = next;
-        }
-
-        GPrimitiveLinkPool.FreeLink( link );
-    }
-#endif
 }
 
 ALightmapUV * ALevel::CreateLightmapUVChannel( AIndexedMesh * InSourceMesh ) {
@@ -1071,7 +1010,90 @@ void AWorldspawn::UpdateAmbientVolume( float _TimeStep ) {
     }
 }
 
+void ALevel::UpdatePrimitiveLinks() {
+    SPrimitiveDef * next;
+
+    // First Pass: remove primitives from the areas
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = primitive->NextUpd )
+    {
+        UnlinkPrimitive( primitive );
+    }
+
+    // Second Pass: add primitive to the areas
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
+    {
+        LinkPrimitive( primitive );
+
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
+    }
+
+    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
+}
+
+void ALevel::MarkPrimitives() {
+    for ( SPrimitiveDef * primitive = PrimitiveList ; primitive ; primitive = primitive->Next ) {
+        MarkPrimitive( primitive );
+    }
+}
+
+void ALevel::UnmarkPrimitives() {
+    SPrimitiveDef * next;
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
+    {
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
+    }
+    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
+}
+
+void ALevel::RemovePrimitives() {
+#if 1
+    GLogger.Printf("Before RemovePrimitives this %d\n",size_t(this));
+    SPrimitiveDef * next;
+
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
+    {
+        UnlinkPrimitive( primitive );
+
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
+    }
+
+    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
+    GLogger.Printf("After RemovePrimitives\n");
+#else
+    UnmarkPrimitives();
+
+    for ( SPrimitiveDef * primitive = PrimitiveList ; primitive ; primitive = primitive->Next ) {
+        UnlinkPrimitive( primitive );
+    }
+#endif
+}
+
+void ALevel::AddPrimitive( SPrimitiveDef * InPrimitive ) {
+    INTRUSIVE_ADD_UNIQUE( InPrimitive, Next, Prev, PrimitiveList, PrimitiveListTail );
+
+    InPrimitive->bPendingRemove = false;
+
+    MarkPrimitive( InPrimitive );
+}
+
+void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
+    INTRUSIVE_REMOVE( InPrimitive, Next, Prev, PrimitiveList, PrimitiveListTail );
+
+    InPrimitive->bPendingRemove = true;
+
+    MarkPrimitive( InPrimitive );
+}
+
+void ALevel::MarkPrimitive( SPrimitiveDef * InPrimitive ) {
+    INTRUSIVE_ADD_UNIQUE( InPrimitive, NextUpd, PrevUpd, PrimitiveUpdateList, PrimitiveUpdateListTail );
+}
+
+
 AN_CLASS_META( ABrushModel )
+
 void ABrushModel::Purge() {
     Surfaces.Free();
 
@@ -1087,237 +1109,3 @@ void ABrushModel::Purge() {
 
     BodyComposition.Clear();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-template< typename T, int MAX_BLOCK_SIZE = 1024 >
-class ADynamicPool {
-    struct Entry : T {
-        Entry * Next;
-    };
-
-    struct SBlock {
-        Entry Pool[MAX_BLOCK_SIZE];
-        Entry * FreeList;
-        int Allocated;
-        SBlock * Next;
-    };
-    SBlock * Blocks;
-    int TotalAllocated;
-    int TotalBlocks;
-
-public:
-    ADynamicPool() {
-        Blocks = nullptr;
-        TotalAllocated = 0;
-        TotalBlocks = 0;
-    }
-
-    void Free() {
-        SBlock * next;
-        for ( SBlock * block = Blocks ; block ; block = next ) {
-            next = block->Next;
-
-            GHeapMemory.HeapFree( block );
-        }
-        Blocks = nullptr;
-        TotalAllocated = 0;
-        TotalBlocks = 0;
-    }
-
-    void CleanupEmptyBlocks() {
-        SBlock * prev = nullptr;
-        SBlock * next;
-        for ( SBlock * block = Blocks ; block ; block = next ) {
-            next = block->Next;
-
-            if ( block->Allocated == 0 && TotalBlocks > 1 ) { // keep at least one block allocated
-                if ( prev ) {
-                    prev->Next = next;
-                } else {
-                    Blocks = next;
-                }
-                GHeapMemory.HeapFree( block );
-                TotalBlocks--;
-            } else {
-                prev = block;
-            }
-        }
-    }
-
-    SBlock * AllocateBlock() {
-        int i;
-        SBlock * block = ( SBlock * )GHeapMemory.HeapAlloc( sizeof( SBlock ), 1 );
-        //memset( block->Pool, 0, sizeof( block->Pool ) );
-        block->FreeList = block->Pool;
-        for ( i = 0 ; i < MAX_BLOCK_SIZE - 1 ; i++ ) {
-            block->FreeList[i].Next = &block->FreeList[ i + 1 ];
-        }
-        block->FreeList[i].Next = NULL;
-        block->Allocated = 0;
-        block->Next = Blocks;
-        Blocks = block;
-        TotalBlocks++;
-        GLogger.Printf( "ADynamicPool::AllocateBlock: allocated a new block\n" );
-        return block;
-    }
-
-    T * Allocate() {
-        Entry * p;
-        SBlock * freeBlock = nullptr;
-
-        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
-            if ( block->FreeList ) {
-                freeBlock = block;
-                break;
-            }
-        }
-
-        if ( !freeBlock ) {
-            freeBlock = AllocateBlock();
-        }
-
-        p = freeBlock->FreeList;
-        freeBlock->FreeList = freeBlock->FreeList->Next;
-        ++freeBlock->Allocated;
-        ++TotalAllocated;
-        GLogger.Printf( "ADynamicPool::Allocate: total blocks %d total %d\n", TotalBlocks, TotalAllocated );
-        return p;
-    }
-
-    void Free( T * InPtr ) {
-        Entry * p = static_cast< Entry * >( InPtr );
-        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
-            // Find block
-            if ( p >= &block->Pool[0] && p < &block->Pool[MAX_BLOCK_SIZE] ) {
-                // free
-                p->Next = block->FreeList;
-                block->FreeList = p;
-                --block->Allocated;
-                --TotalAllocated;
-                return;
-            }
-        }
-    }
-};
-
-template< typename T, int MAX_BLOCK_SIZE = 1024 >
-class ADynamicPool {
-    struct SBlock {
-        T Pool[MAX_BLOCK_SIZE];
-        T * NextFree[MAX_BLOCK_SIZE];
-        T * FreeList;
-        int Allocated;
-        SBlock * Next;
-    };
-    SBlock * Blocks;
-    int TotalAllocated;
-    int TotalBlocks;
-
-public:
-    ADynamicPool() {
-        Blocks = nullptr;
-        TotalAllocated = 0;
-        TotalBlocks = 0;
-    }
-
-    void Free() {
-        SBlock * next;
-        for ( SBlock * block = Blocks ; block ; block = next ) {
-            next = block->Next;
-
-            GHeapMemory.HeapFree( block );
-        }
-        Blocks = nullptr;
-        TotalAllocated = 0;
-        TotalBlocks = 0;
-    }
-
-    void CleanupEmptyBlocks() {
-        SBlock * prev = nullptr;
-        SBlock * next;
-        for ( SBlock * block = Blocks ; block ; block = next ) {
-            next = block->Next;
-
-            if ( block->Allocated == 0 && TotalBlocks > 1 ) { // keep at least one block allocated
-                if ( prev ) {
-                    prev->Next = next;
-                } else {
-                    Blocks = next;
-                }
-                GHeapMemory.HeapFree( block );
-                TotalBlocks--;
-            } else {
-                prev = block;
-            }
-        }
-    }
-
-    SBlock * AllocateBlock() {
-        int i;
-        SBlock * block = ( SBlock * )GHeapMemory.HeapAlloc( sizeof( SBlock ), 1 );
-        //memset( block->Pool, 0, sizeof( block->Pool ) );
-        block->FreeList = block->Pool;
-        for ( i = 0 ; i < MAX_BLOCK_SIZE - 1 ; i++ ) {
-            block->NextFree[i] = &block->FreeList[ i + 1 ];
-        }
-        block->NextFree[i] = NULL;
-        block->Allocated = 0;
-        block->Next = Blocks;
-        Blocks = block;
-        TotalBlocks++;
-        GLogger.Printf( "ADynamicPool::AllocateBlock: allocated a new block\n" );
-        return block;
-    }
-
-    T * Allocate() {
-        T * p;
-        SBlock * freeBlock = nullptr;
-
-        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
-            if ( block->FreeList ) {
-                freeBlock = block;
-                break;
-            }
-        }
-
-        if ( !freeBlock ) {
-            freeBlock = AllocateBlock();
-        }
-
-        p = freeBlock->FreeList;
-        freeBlock->FreeList = freeBlock->FreeList->Next;
-        ++freeBlock->Allocated;
-        ++TotalAllocated;
-        GLogger.Printf( "ADynamicPool::Allocate: total blocks %d total %d\n", TotalBlocks, TotalAllocated );
-        return p;
-    }
-
-    void Free( T * InPtr ) {
-        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
-            // Find block
-            if ( InPtr >= &block->Pool[0] && InPtr < &block->Pool[MAX_BLOCK_SIZE] ) {
-                // free
-                int i = InPtr - &block->Pool[0];
-                block->NextFree[i] = block->FreeList;
-                block->FreeList = InPtr;
-                --block->Allocated;
-                --TotalAllocated;
-                return;
-            }
-        }
-    }
-};
-#endif

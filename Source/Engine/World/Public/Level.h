@@ -45,6 +45,7 @@ class AConvexHull;
 class AIndexedMesh;
 class ALightmapUV;
 class AVertexLight;
+class ATreeAABB;
 class ADebugRenderer;
 struct SVisArea;
 struct SPrimitiveDef;
@@ -220,7 +221,7 @@ struct SSurfaceDef
     PlaneF Face;
 
     /** Lightmap atlas index */
-    uint32_t LightmapBlock;
+    int LightmapBlock;
 
     /** Size of the lightmap */
     int LightmapWidth;
@@ -285,6 +286,8 @@ struct SPrimitiveDef
     /** Primitve marked as visible. Used by VSD. */
     int VisPass;
 
+    int BakeIndex;
+
     bool bFaceCull : 1;
 
     bool bIsOutdoor : 1;
@@ -295,6 +298,8 @@ struct SPrimitiveDef
 
     SPrimitiveLink * Links;
 
+    SPrimitiveDef * Next;
+    SPrimitiveDef * Prev;
     SPrimitiveDef * NextUpd;
     SPrimitiveDef * PrevUpd;
 
@@ -379,8 +384,14 @@ struct SVisArea
     /** Linked portals */
     SPortalLink * PortalList;
 
-    /** Primitives inside the area */
+    /** Movable primitives inside the area */
     SPrimitiveLink * Links;
+
+    /** Non-movable primitives if AABB tree is not present */
+    //SPrimitiveLink * NonMovableLinks;
+
+    /** AABB tree for non-movable primitives */
+    //ATreeAABB * AABBTree;
 
     /** Baked surfaces attached to the area */
     int FirstSurface;
@@ -474,10 +485,13 @@ public:
     /** Links between the portals and areas */
     TPodArray< SPortalLink > AreaPortals;
 
+    /** Lightmap pixel format */
     ELightmapFormat LightmapFormat;
 
+    /** Lightmap atlas resolution */
     int LightmapBlockWidth;
 
+    /** Lightmap atlas resolution */
     int LightmapBlockHeight;
 
     /** Lightmap raw data */
@@ -506,6 +520,9 @@ public:
 
     /** Static lightmaps (experemental). Indexed by lightmap block. */
     TStdVector< TRef< ATexture > > Lightmaps;
+
+    /** Not movable primitives */
+    //TPodArray< SPrimitiveDef * > BakedPrimitives;
 
     // TODO: Keep here static navigation geometry
     // TODO: Octree/AABBtree for outdoor area
@@ -553,12 +570,6 @@ public:
     /** Destroy all actors in the level */
     void DestroyActors();
 
-    /** Add primitive to all the levels */
-    static void AddPrimitive( AWorld * InWorld, SPrimitiveDef * InPrimitive );
-
-    /** Remove primitive from all the levels */
-    static void RemovePrimitive( SPrimitiveDef * InPrimitive );
-
     /** Create lightmap channel for a mesh to store lighmap UVs */
     ALightmapUV * CreateLightmapUVChannel( AIndexedMesh * InSourceMesh );
 
@@ -586,6 +597,15 @@ public:
     /** Query vis areas by bounding sphere */
     void QueryOverplapAreas( BvSphere const & InBounds, TPodArray< SVisArea * > & Areas );
 
+    /** Add primitive to the level */
+    void AddPrimitive( SPrimitiveDef * InPrimitive );
+
+    /** Add primitive from the level */
+    void RemovePrimitive( SPrimitiveDef * InPrimitive );
+
+    /** Mark primitive dirty */
+    void MarkPrimitive( SPrimitiveDef * InPrimitive );
+
 protected:
     ALevel();
     ~ALevel();
@@ -609,14 +629,27 @@ private:
     void AddBoxRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive );
     void AddSphereRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive );
 
-    void AddPrimitiveToLevel( SPrimitiveDef * InPrimitive );
-    void RemovePrimitiveFromLevel( SPrimitiveDef * InPrimitive );
+    /** Link primitive to the level areas */
+    void LinkPrimitive( SPrimitiveDef * InPrimitive );
+
+    /** Unlink primitive from the level areas */
+    void UnlinkPrimitive( SPrimitiveDef * InPrimitive );
+
+    /** Mark all primitives in the level */
+    void MarkPrimitives();
+
+    /** Unmark all primitives in the level */
+    void UnmarkPrimitives();
+
+    void RemovePrimitives();
 
     byte const * LeafPVS( SBinarySpaceLeaf const * _Leaf );
 
     byte const * DecompressVisdata( byte const * _Data );
 
     void PurgePortals();
+
+    void UpdatePrimitiveLinks();
 
     /** Parent world */
     AWorld * OwnerWorld;
@@ -642,4 +675,9 @@ private:
 
     /** Cluster index for view origin */
     int ViewCluster;
+
+    SPrimitiveDef * PrimitiveList;
+    SPrimitiveDef * PrimitiveListTail;
+    SPrimitiveDef * PrimitiveUpdateList;
+    SPrimitiveDef * PrimitiveUpdateListTail;
 };

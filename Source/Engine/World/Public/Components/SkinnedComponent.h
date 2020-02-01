@@ -89,7 +89,6 @@ protected:
     void DeinitializeComponent() override;
 
     void OnMeshChanged() override;
-    //void OnLazyBoundsUpdate() override;
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 

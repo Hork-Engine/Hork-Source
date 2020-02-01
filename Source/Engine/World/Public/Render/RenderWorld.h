@@ -35,15 +35,10 @@ SOFTWARE.
 #include <Core/Public/Plane.h>
 
 class AWorld;
-class ALevel;
-class ADrawable;
 class AMeshComponent;
 class ASkinnedComponent;
 class ADirectionalLightComponent;
-class APointLightComponent;
-class ASpotLightComponent;
 class ADebugRenderer;
-struct SRenderFrontendDef;
 
 class ARenderWorld
 {
@@ -55,18 +50,6 @@ public:
 
     AWorld * GetOwnerWorld() { return pOwnerWorld; }
 
-    /** Get all drawables in the world */
-    ADrawable * GetDrawables() { return DrawableList; }
-
-    /** Get all drawables in the world */
-    ADrawable * GetDrawables() const { return DrawableList; }
-
-    /** Get static and skinned meshes in the world */
-    AMeshComponent * GetMeshes() { return MeshList; }
-
-    /** Get static and skinned meshes in the world */
-    AMeshComponent * GetMeshes() const { return MeshList; }
-
     /** Get skinned meshes in the world */
     ASkinnedComponent * GetSkinnedMeshes() { return SkinnedMeshList; }
 
@@ -76,23 +59,10 @@ public:
     /** Get directional lights in the world */
     ADirectionalLightComponent * GetDirectionalLights() { return DirectionalLightList; }
 
-    /** Get point lights in the world */
-    APointLightComponent * GetPointLights() { return PointLightList; }
-
-    /** Get spot lights in the world */
-    ASpotLightComponent * GetSpotLights() { return SpotLightList; }
-
     void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
-    friend class ADrawable;
-    void AddDrawable( ADrawable * _Drawable );
-    void RemoveDrawable( ADrawable * _Drawable );
-
-private:
     friend class AMeshComponent;
-    void AddMesh( AMeshComponent * _Mesh );
-    void RemoveMesh( AMeshComponent * _Mesh );
     void AddShadowCaster( AMeshComponent * _Mesh );
     void RemoveShadowCaster( AMeshComponent * _Mesh );
 
@@ -107,30 +77,12 @@ private:
     void RemoveDirectionalLight( ADirectionalLightComponent * _Light );
 
 private:
-    friend class APointLightComponent;
-    void AddPointLight( APointLightComponent * _Light );
-    void RemovePointLight( APointLightComponent * _Light );
-
-private:
-    friend class ASpotLightComponent;
-    void AddSpotLight( ASpotLightComponent * _Light );
-    void RemoveSpotLight( ASpotLightComponent * _Light );
-
-private:
     AWorld * pOwnerWorld;
 
-    ADrawable * DrawableList;
-    ADrawable * DrawableListTail;
-    AMeshComponent * MeshList;
-    AMeshComponent * MeshListTail;
     ASkinnedComponent * SkinnedMeshList;
     ASkinnedComponent * SkinnedMeshListTail;
     AMeshComponent * ShadowCasters;
     AMeshComponent * ShadowCastersTail;
     ADirectionalLightComponent * DirectionalLightList;
     ADirectionalLightComponent * DirectionalLightListTail;
-    APointLightComponent * PointLightList;
-    APointLightComponent * PointLightListTail;
-    ASpotLightComponent * SpotLightList;
-    ASpotLightComponent * SpotLightListTail;
 };

@@ -36,42 +36,13 @@ SOFTWARE.
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/World.h>
 
-//class ARenderWorld;
-//class VSDPrimitive;
-//struct SSurfaceDef;
-//class APointLightComponent;
+class ABaseLightComponent;
 
 struct SRenderFrontendStat {
     int PolyCount;
     int ShadowMapPolyCount;
     int FrontendTime;
 };
-
-//struct SSurfaceBatch
-//{
-//    /** Batch mesh */
-//    AIndexedMesh *  Mesh;
-
-//    /** Lightmap atlas index */
-//    int             LightmapBlock;
-
-//    /** Lighmap channel UV offset and scale */
-//    Float4          LightmapOffset;
-
-//    /** Lightmap UV channel */
-//    ALightmapUV *   LightmapUVChannel;
-
-//    /** Baked vertex light channel */
-//    AVertexLight *  VertexLightChannel;
-
-//    AMaterialInstance * MaterialInstance;
-
-//    unsigned int    IndexCount;
-
-//    unsigned int    StartIndexLocation;
-
-//    //int             BaseVertexLocation;
-//};
 
 class ARenderFrontend
 {
@@ -115,22 +86,22 @@ private:
 
     TPodArray< SPrimitiveDef * > VisPrimitives;
     TPodArray< SSurfaceDef * > VisSurfaces;
-    TPodArray< APointLightComponent * > PointLights;
+    TPodArray< ABaseLightComponent * > Lights;
     int VisPass = 0;
 
     int numVerts;
     int numIndices;
 
-    // TODO: BatchMesh,BatchLightmapUV,BatchVertexLight must live per view
+    // TODO: SurfaceMesh,SurfaceLightmapUV,SurfaceVertexLight must live per view
 
     /** Mesh for surface batching */
-    TRef< AIndexedMesh > BatchMesh;
+    TRef< AIndexedMesh > SurfaceMesh;
 
     /** Lightmap UV channel */
-    TRef< ALightmapUV > BatchLightmapUV;
+    TRef< ALightmapUV > SurfaceLightmapUV;
 
     /** Vertex light channel */
-    TRef< AVertexLight > BatchVertexLight;
+    TRef< AVertexLight > SurfaceVertexLight;
 
 };
 

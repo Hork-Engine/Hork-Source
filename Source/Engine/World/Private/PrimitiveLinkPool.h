@@ -30,34 +30,9 @@ SOFTWARE.
 
 #pragma once
 
+#include <Core/Public/PoolAllocator.h>
 #include <World/Public/Level.h>
 
-class APrimitiveLinkPool {
-    enum { MAX_BLOCK_SIZE = 1024 };
-
-    struct SBlock {
-        SPrimitiveLink Pool[MAX_BLOCK_SIZE];
-        SPrimitiveLink * FreeLinks;
-        int Allocated;
-        SBlock * Next;
-    };
-    SBlock * Blocks;
-    int TotalAllocated;
-    int TotalBlocks;
-
-public:
-    APrimitiveLinkPool();
-    ~APrimitiveLinkPool();
-
-    void Free();
-
-    void CleanupEmptyBlocks();
-
-    SBlock * AllocateBlock();
-
-    SPrimitiveLink * AllocateLink();
-
-    void FreeLink( SPrimitiveLink * Link );
-};
+using APrimitiveLinkPool = TPoolAllocator< SPrimitiveLink >;
 
 extern APrimitiveLinkPool GPrimitiveLinkPool;

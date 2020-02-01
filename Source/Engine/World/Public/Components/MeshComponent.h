@@ -140,10 +140,6 @@ public:
     /** Is cast shadows enabled */
     bool IsCastShadow() const { return bCastShadow; }
 
-    /** Iterate meshes in parent world */
-    AMeshComponent * GetNextMesh() { return Next; }
-    AMeshComponent * GetPrevMesh() { return Prev; }
-
     /** Iterate shadow casters in parent world */
     AMeshComponent * GetNextShadowCaster() { return NextShadowCaster; }
     AMeshComponent * GetPrevShadowCaster() { return PrevShadowCaster; }
@@ -164,9 +160,6 @@ private:
     void NotifyMeshChanged();
 
     AMaterialInstance * GetMaterialInstanceUnsafe( int _SubpartIndex ) const;
-
-    AMeshComponent * Next;
-    AMeshComponent * Prev;
 
     AMeshComponent * NextShadowCaster;
     AMeshComponent * PrevShadowCaster;

@@ -121,18 +121,7 @@ void ADrawable::SetBoundsOverride( BvAxisAlignedBox const & _Bounds ) {
 }
 
 BvAxisAlignedBox const & ADrawable::GetBounds() const {
-
-    if ( bOverrideBounds ) {
-        return OverrideBoundingBox;
-    }
-
-//    // TODO: Remove this!!!
-//    if ( bLazyBoundsUpdate ) {
-//        // Some components like skinned mesh has lazy bounds update
-//        const_cast< ADrawable * >( this )->OnLazyBoundsUpdate();
-//    }
-
-    return Bounds;
+    return bOverrideBounds ? OverrideBoundingBox : Bounds;
 }
 
 BvAxisAlignedBox const & ADrawable::GetWorldBounds() const {
@@ -146,27 +135,19 @@ void ADrawable::OnTransformDirty() {
 }
 
 void ADrawable::InitializeComponent() {
-    AWorld * pWorld = GetWorld();
-    ARenderWorld & RenderWorld = pWorld->GetRenderWorld();
-
     Super::InitializeComponent();
 
-    pWorld->AddPrimitive( &Primitive );
+    //Primitive.IndexInArrayOfBakedPrimitives = GetLevel()->FindBackedPrimitive()
 
-    RenderWorld.AddDrawable( this );
+    GetLevel()->AddPrimitive( &Primitive );
 
     UpdateWorldBounds();
 }
 
 void ADrawable::DeinitializeComponent() {
-    AWorld * pWorld = GetWorld();
-    ARenderWorld & RenderWorld = pWorld->GetRenderWorld();
-
     Super::DeinitializeComponent();
 
-    pWorld->RemovePrimitive( &Primitive );
-
-    RenderWorld.RemoveDrawable( this );
+    GetLevel()->RemovePrimitive( &Primitive );
 }
 
 void ADrawable::UpdateWorldBounds() {
@@ -178,7 +159,7 @@ void ADrawable::UpdateWorldBounds() {
 
     if ( IsInitialized() )
     {
-        GetWorld()->MarkPrimitive( &Primitive );
+        GetLevel()->MarkPrimitive( &Primitive );
     }
 }
 
@@ -191,7 +172,7 @@ void ADrawable::ForceOutdoor( bool _OutdoorSurface ) {
 
     if ( IsInitialized() )
     {
-        GetWorld()->MarkPrimitive( &Primitive );
+        GetLevel()->MarkPrimitive( &Primitive );
     }
 }
 
@@ -208,7 +189,7 @@ void ADrawable::SetMovable( bool _Movable ) {
 
     if ( IsInitialized() )
     {
-        GetWorld()->MarkPrimitive( &Primitive );
+        GetLevel()->MarkPrimitive( &Primitive );
     }
 }
 

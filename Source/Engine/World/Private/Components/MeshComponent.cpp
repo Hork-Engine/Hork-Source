@@ -157,8 +157,6 @@ void AMeshComponent::InitializeComponent() {
 
     Super::InitializeComponent();
 
-    RenderWorld.AddMesh( this );
-
     if ( bCastShadow )
     {
         RenderWorld.AddShadowCaster( this );
@@ -171,8 +169,6 @@ void AMeshComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     ClearMaterials();
-
-    RenderWorld.RemoveMesh( this );
 
     if ( bCastShadow )
     {

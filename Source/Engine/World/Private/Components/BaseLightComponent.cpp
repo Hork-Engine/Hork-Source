@@ -144,3 +144,7 @@ void ABaseLightComponent::TickComponent( float _TimeStep ) {
     AnimTime += _TimeStep;
     bEffectiveColorDirty = true;
 }
+
+void ABaseLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) {
+
+}

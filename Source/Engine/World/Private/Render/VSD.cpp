@@ -169,7 +169,7 @@ static TPodArray< SCullJobSubmit > CullSubmits;
 static TPodArray< SPrimitiveDef * > BoxPrimitives;
 using AArrayOfBoundingBoxesSSE = TPodArray< BvAxisAlignedBoxSSE, 32, 32, AHeapAllocator, 16 >;
 static AArrayOfBoundingBoxesSSE BoundingBoxesSSE;
-static TPodArray< int, 32, 32, AHeapAllocator, 16 > CullingResult;
+static TPodArray< int32_t, 32, 32, AHeapAllocator, 16 > CullingResult;
 
 
 //
@@ -327,7 +327,7 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     }
 
     if ( RVFrustumCullingType.GetInteger() == CULLING_TYPE_COMBINED ) {
-        CullingResult.ResizeInvalidate( BoundingBoxesSSE.Size() );
+        CullingResult.ResizeInvalidate( Align( BoundingBoxesSSE.Size(), 4 ) );
 
         for ( SCullJobSubmit & submit : CullSubmits ) {
             VSD_SubmitCullingJobs( submit );
@@ -559,7 +559,7 @@ static bool VSD_ClipPolygonFast( Float3 const * InPoints, const int InNumPoints,
 
     // Determine on which side of the plane each point is.
     for ( i = 0; i < InNumPoints; i++ ) {
-        Dist = InPoints[ i ].Dot( InClipPlane.Normal ) + InClipPlane.D;
+        Dist = Math::Dot( InPoints[ i ], InClipPlane.Normal ) + InClipPlane.D;
 
         ClipDistances[ i ] = Dist;
 
@@ -913,7 +913,7 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
 
             Dbg_TotalPrimitiveBounds += numBoxes;
 
-            CullingResult.ResizeInvalidate( BoundingBoxesSSE.Size() );
+            CullingResult.ResizeInvalidate( Align( BoundingBoxesSSE.Size(), 4 ) );
 
             SPrimitiveDef ** boxes = BoxPrimitives.ToPtr() + submit.First;
             const int * cullResult = CullingResult.ToPtr() + submit.First;
@@ -1257,7 +1257,7 @@ static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
             VSD_CullBoxSSE( InSubmit.JobCullPlanes,
                             InSubmit.JobCullPlanesCount,
                             BoundingBoxesSSE.ToPtr() + InSubmit.First,
-                            (InSubmit.NumObjects & 3) ? (InSubmit.NumObjects & ~3) + 4 : InSubmit.NumObjects,
+                            Align( InSubmit.NumObjects, 4 ),
                             CullingResult.ToPtr() + InSubmit.First );
         } else {
             VSD_CullBoxGeneric( InSubmit.JobCullPlanes,
@@ -1290,7 +1290,7 @@ static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
             VSD_CullBoxSSE( InSubmit.JobCullPlanes,
                             InSubmit.JobCullPlanesCount,
                             BoundingBoxesSSE.ToPtr() + InSubmit.First + firstObject,
-                            (Residual & 3) ? (Residual & ~3) + 4 : Residual,
+                            Align( Residual, 4 ),
                             CullingResult.ToPtr() + InSubmit.First + firstObject );
         } else {
             VSD_CullBoxGeneric( InSubmit.JobCullPlanes,
@@ -1361,10 +1361,10 @@ static void VSD_ProcessLevelRaycastBounds( ALevel * InLevel );
 AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _U, float & _V ) {
     const Float3 e1 = _P1 - _P0;
     const Float3 e2 = _P2 - _P0;
-    const Float3 h = _RayDir.Cross( e2 );
+    const Float3 h = Math::Cross( _RayDir, e2 );
 
     // calc determinant
-    const float det = e1.Dot( h );
+    const float det = Math::Dot( e1, h );
 
     if ( det > -0.00001 && det < 0.00001 ) {
         return false;
@@ -1377,16 +1377,16 @@ AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const 
     const Float3 s = _RayStart - _P0;
 
     // calc U
-    _U = invDet * s.Dot( h );
+    _U = invDet * Math::Dot( s, h );
     if ( _U < 0.0f || _U > 1.0f ) {
         return false;
     }
 
     // calc perpendicular to compute V
-    const Float3 q = s.Cross( e1 );
+    const Float3 q = Math::Cross( s, e1 );
 
     // calc V
-    _V = invDet * _RayDir.Dot( q );
+    _V = invDet * Math::Dot( _RayDir, q );
     if ( _V < 0.0f || _U + _V > 1.0f ) {
         return false;
     }
@@ -1406,7 +1406,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
         const int sidedType = FRONT_SIDED;//FRONT_SIDED; // TODO: must came from the surface
 
         // Calculate distance from ray origin to plane
-        const float d1 = Raycast.RayStart.Dot( Self->Face.Normal ) + Self->Face.D;
+        const float d1 = Math::Dot( Raycast.RayStart, Self->Face.Normal ) + Self->Face.D;
         float d2;
 
         switch ( sidedType ) {
@@ -1415,7 +1415,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
             if ( d1 <= 0.0f ) return;
 
             // Check ray direction
-            d2 = Self->Face.Normal.Dot( Raycast.RayDir );
+            d2 = Math::Dot( Self->Face.Normal, Raycast.RayDir );
             if ( d2 >= 0.0f ) {
                 // ray is parallel or has wrong direction
                 return;
@@ -1426,7 +1426,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
             if ( d1 >= 0.0f ) return;
 
             // Check ray direction
-            d2 = Self->Face.Normal.Dot( Raycast.RayDir );
+            d2 = Math::Dot( Self->Face.Normal, Raycast.RayDir );
             if ( d2 <= 0.0f ) {
                 // ray is parallel or has wrong direction
                 return;
@@ -1434,7 +1434,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
             break;
         default:
             // Check ray direction
-            d2 = Self->Face.Normal.Dot( Raycast.RayDir );
+            d2 = Math::Dot( Self->Face.Normal, Raycast.RayDir );
             if ( Math::Abs( d2 ) < 0.0001f ) {
                 // ray is parallel
                 return;
@@ -1608,7 +1608,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                     if ( Raycast.RayLength > d ) {
                         STriangleHitResult & hitResult = pRaycastResult->Hits.Append();
                         hitResult.Location = Raycast.RayStart + Raycast.RayDir * d;
-                        hitResult.Normal = ( v1 - v0 ).Cross( v2-v0 ).Normalized();
+                        hitResult.Normal = Math::Cross( v1 - v0, v2-v0 ).Normalized();
                         hitResult.Distance = d;
                         hitResult.UV.X = u;
                         hitResult.UV.Y = v;
@@ -2316,7 +2316,7 @@ static void VSD_LevelRaycastPortals_r( SVisArea * InArea ) {
         }
 
         // Check ray direction
-        const float d2 = portal->Plane.Normal.Dot( Raycast.RayDir );
+        const float d2 = Math::Dot( portal->Plane.Normal, Raycast.RayDir );
         if ( d2 >= 0.0f ) {
             // ray is parallel or has wrong direction
             continue;
@@ -2374,7 +2374,7 @@ static void VSD_LevelRaycastBoundsPortals_r( SVisArea * InArea ) {
         }
 
         // Check ray direction
-        const float d2 = portal->Plane.Normal.Dot( Raycast.RayDir );
+        const float d2 = Math::Dot( portal->Plane.Normal, Raycast.RayDir );
         if ( d2 >= 0.0f ) {
             // ray is parallel or has wrong direction
             continue;
@@ -2591,11 +2591,11 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
 
     STriangleHitResult & triangleHit = Result.TriangleHit;
 #if 1
-    triangleHit.Normal = ( Result.Vertices[1]-Result.Vertices[0] ).Cross( Result.Vertices[2]-Result.Vertices[0] ).Normalized();
+    triangleHit.Normal = Math::Cross( Result.Vertices[1]-Result.Vertices[0], Result.Vertices[2]-Result.Vertices[0] ).Normalized();
 #else
     Float3x3 normalMat;
     transform.DecomposeNormalMatrix( normalMat );
-    triangleHit.Normal = (normalMat * (v1-v0).Cross( v2-v0 )).Normalized();
+    triangleHit.Normal = (normalMat * Math::Cross(v1-v0,v2-v0)).Normalized();
 #endif
     triangleHit.Location = Raycast.HitLocation;
     triangleHit.Distance = Raycast.HitDistanceMin;

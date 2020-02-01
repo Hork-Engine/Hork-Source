@@ -36,14 +36,7 @@ SOFTWARE.
 class ANGIE_API APointLightComponent : public ABaseLightComponent {
     AN_COMPONENT( APointLightComponent, ABaseLightComponent )
 
-    friend class ALevel;
-    friend class AWorld;
-    friend class ARenderWorld;
-
 public:
-    /** Internal. Used by Light Voxelizer. */
-    int ListIndex;
-
     /** Rendering group to filter lights during rendering */
     void SetVisibilityGroup( int InVisibilityGroup );
 
@@ -61,13 +54,9 @@ public:
     void SetOuterRadius( float _Radius );
     float GetOuterRadius() const { return OuterRadius; }
 
-    BvAxisAlignedBox const & GetWorldBounds() const { return AABBWorldBounds; }
     BvSphere const & GetSphereWorldBounds() const { return SphereWorldBounds; }
 
-    Float4x4 const GetOBBTransformInverse() const { return OBBTransformInverse; }
-
-    APointLightComponent * GetNext() { return Next; }
-    APointLightComponent * GetPrev() { return Prev; }
+    void PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) override;
 
 protected:
     APointLightComponent();
@@ -81,15 +70,10 @@ private:
     void UpdateWorldBounds();
 
     BvSphere SphereWorldBounds;
-    BvAxisAlignedBox AABBWorldBounds;
     BvOrientedBox OBBWorldBounds;
-    Float4x4 OBBTransformInverse;
 
     float InnerRadius;
     float OuterRadius;
-    APointLightComponent * Next;
-    APointLightComponent * Prev;
 
-    //TRef< VSDPrimitive > Primitive;
     SPrimitiveDef Primitive;
 };

@@ -54,17 +54,13 @@ APointLightComponent::APointLightComponent() {
 void APointLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    GetWorld()->AddPrimitive( &Primitive );
-
-    GetWorld()->GetRenderWorld().AddPointLight( this );
+    GetLevel()->AddPrimitive( &Primitive );
 }
 
 void APointLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    GetWorld()->RemovePrimitive( &Primitive );
-
-    GetWorld()->GetRenderWorld().RemovePointLight( this );
+    GetLevel()->RemovePrimitive( &Primitive );
 }
 
 void APointLightComponent::SetVisibilityGroup( int InVisibilityGroup ) {
@@ -96,7 +92,7 @@ void APointLightComponent::SetMovable( bool _Movable ) {
 
     if ( IsInitialized() )
     {
-        GetWorld()->MarkPrimitive( &Primitive );
+        GetLevel()->MarkPrimitive( &Primitive );
     }
 }
 
@@ -137,7 +133,7 @@ void APointLightComponent::UpdateWorldBounds() {
 
     if ( IsInitialized() )
     {
-        GetWorld()->MarkPrimitive( &Primitive );
+        GetLevel()->MarkPrimitive( &Primitive );
     }
 }
 
@@ -157,4 +153,13 @@ void APointLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
             InRenderer->DrawSphere( pos, OuterRadius );
         }
     }
+}
+
+void APointLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) {
+    Light.Position = Float3( InViewMatrix * GetWorldPosition() );
+    Light.OuterRadius = OuterRadius;
+    Light.InnerRadius = Math::Min( InnerRadius, OuterRadius );
+    Light.Color = GetEffectiveColor();
+    Light.RenderMask = ~0u;//RenderMask;
+    Light.LightType = CLUSTER_LIGHT_POINT;
 }

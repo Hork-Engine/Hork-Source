@@ -31,7 +31,7 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
-#include <World/Public/Components/PointLightComponent.h>
+#include <World/Public/Components/BaseLightComponent.h>
 
 ARuntimeVariable RVClusterSSE( _CTS( "ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "1" ), VAR_CHEAT );
@@ -138,6 +138,8 @@ struct SItemInfo {
     // OBB before transform (повернутый OBB, который получается после умножения OBB на OBBTransformInv)
     //Float3 AabbMins;
     //Float3 AabbMaxs;
+    alignas(16) Float3 Mins;
+    alignas(16) Float3 Maxs;
     Float4x4 ClipToBoxMat;
 
     // Тоже самое, только для SSE
@@ -145,17 +147,11 @@ struct SItemInfo {
     //alignas(16) __m128 AabbMaxsSSE;
     alignas(16) Float4x4SSE ClipToBoxMatSSE;
 
-    APointLightComponent * Light;
-    //FDecalDef * Decal;
-    //FEnvProbeDef * Probe;
+    ABaseLightComponent * Light;
+    //ADecalComponent * Decal;
+    //AEnvProbeComponent * Probe;
 };
 
-static __m128 UniformBoxMinsSSE;
-static __m128 UniformBoxMaxsSSE;
-static __m128 NDCMinsSSE;
-static __m128 NDCMaxsSSE;
-static constexpr Float3 UniformBoxMins = Float3( -1.0f );
-static constexpr Float3 UniformBoxMaxs = Float3( 1.0f );
 static unsigned short Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
 static AAtomicInt ItemCounter;
 static SRenderView * RenderView;
@@ -176,387 +172,369 @@ static SFrameLightData * pLightData;
 static bool bUseSSE;
 
 static void VoxelizeWork( void * _Data );
-static void PackLight( SClusterLight * Parameters, APointLightComponent const * Light );
 
 ALightVoxelizer::ALightVoxelizer() {
-    // Uniform box
-    UniformBoxMinsSSE = _mm_set_ps( 0.0f, -1.0f, -1.0f, -1.0f );
-    UniformBoxMaxsSSE = _mm_set_ps( 0.0f, 1.0f, 1.0f, 1.0f );
-    NDCMinsSSE = _mm_set_ps( 0.0f, -1.0f, -1.0f, -1.0f );
-    NDCMaxsSSE = _mm_set_ps( 0.0f, 1.0f, 1.0f, 1.0f );
 }
 
-void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APointLightComponent * const * InPointLights, int InPointLightCount ) {
+static void PackLights( ABaseLightComponent * const * InLights, int InLightCount ) {
+    for ( int i = 0; i < InLightCount ; i++ ) {
+        ABaseLightComponent * light = InLights[i];
+        light->ListIndex = i;
+
+        SItemInfo & info = ItemInfos[ItemsCount++];
+
+        info.Light = light;
+        info.Light->PackLight( RenderView->ViewMatrix, pLightData->LightBuffer[light->ListIndex] );
+
+        /*// Env Capture
+                  info.Probe = probe;
+                  probe->ListIndex = ListIndex++;// & ( MAX_PROBES - 1 );
+
+                  PackProbe( &Probes[ probe->ListIndex ], ItemInfo.Probe );
+                  */
+
+        BvAxisAlignedBox const & AABB = light->GetWorldBounds();
+        info.Mins = AABB.Mins;
+        info.Maxs = AABB.Maxs;
+
+        if ( bUseSSE )
+        {
+#if 0
+            ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
+            ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
+
+            ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
+            ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
+            ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
+            ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
+#else
+            info.ClipToBoxMatSSE = light->GetOBBTransformInverse() * ViewProjInv; // TODO: умножение сразу в SSE?
+#endif
+        }
+        else
+        {
+            info.ClipToBoxMat = light->GetOBBTransformInverse() * ViewProjInv;
+        }
+    }
+}
+
+static void TransformItemsSSE() {
     Float4x4SSE ViewProjSSE;
     Float4x4SSE ViewProjInvSSE;
 
+    __m128 BoxPointsSSE[8];
+    //__m128 Zero = _mm_setzero_ps();
+    __m128 NDCMinsSSE = _mm_set_ps( 0.0f, -1.0f, -1.0f, -1.0f );
+    __m128 NDCMaxsSSE = _mm_set_ps( 0.0f, 1.0f, 1.0f, 1.0f );
+    __m128 ExtendNeg = _mm_set_ps( 0.0f, 0.0f, -2.0f, -2.0f );
+    __m128 ExtendPos = _mm_set_ps( 0.0f, 0.0f, 4.0f, 4.0f );
+    __m128 bbMins, bbMaxs;
+    __m128 PointSSE;
+    __m128 v_xxxx_min_mul_col0;
+    __m128 v_xxxx_max_mul_col0;
+    __m128 v_yyyy_min_mul_col1;
+    __m128 v_yyyy_max_mul_col1;
+    __m128 v_zzzz_min_mul_col2_add_col3;
+    __m128 v_zzzz_max_mul_col2_add_col3;
+    alignas(16) Float4 bb_mins;
+    alignas(16) Float4 bb_maxs;
+    alignas(16) Float4 Point;
+
+    ViewProjSSE = ViewProj;
+    ViewProjInvSSE = ViewProjInv;
+
+    for ( int itemNum = 0 ; itemNum < ItemsCount ; itemNum++ ) {
+        SItemInfo & info = ItemInfos[itemNum];
+
+        // OBB to clipspace
+
+        v_xxxx_min_mul_col0 = _mm_mul_ps( _mm_set_ps1( info.Mins.X ), ViewProjSSE.col0 );
+        v_xxxx_max_mul_col0 = _mm_mul_ps( _mm_set_ps1( info.Maxs.X ), ViewProjSSE.col0 );
+
+        v_yyyy_min_mul_col1 = _mm_mul_ps( _mm_set_ps1( info.Mins.Y ), ViewProjSSE.col1 );
+        v_yyyy_max_mul_col1 = _mm_mul_ps( _mm_set_ps1( info.Maxs.Y ), ViewProjSSE.col1 );
+
+        v_zzzz_min_mul_col2_add_col3 = _mm_add_ps( _mm_mul_ps( _mm_set_ps1( info.Mins.Z ), ViewProjSSE.col2 ), ViewProjSSE.col3 );
+        v_zzzz_max_mul_col2_add_col3 = _mm_add_ps( _mm_mul_ps( _mm_set_ps1( info.Maxs.Z ), ViewProjSSE.col2 ), ViewProjSSE.col3 );
+
+        //__m128 MinVec = _mm_set_ps( 0.0000001f, 0.0000001f, 0.0000001f, 0.0000001f );
+        //BoxPointsSSE[ i ] = _mm_div_ps( PointSSE, _mm_max_ps( _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ), MinVec ) );  // Point /= Point.W
+
+        PointSSE = sum_ps_3( v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3 );
+        BoxPointsSSE[0] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
+
+        PointSSE = sum_ps_3( v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3 );
+        BoxPointsSSE[1] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
+
+        PointSSE = sum_ps_3( v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3 );
+        BoxPointsSSE[2] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
+
+        PointSSE = sum_ps_3( v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3 );
+        BoxPointsSSE[3] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
+
+        PointSSE = sum_ps_3( v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3 );
+        BoxPointsSSE[4] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
+
+        PointSSE = sum_ps_3( v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3 );
+        BoxPointsSSE[5] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
+
+        PointSSE = sum_ps_3( v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3 );
+        BoxPointsSSE[6] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
+
+        PointSSE = sum_ps_3( v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3 );
+        BoxPointsSSE[7] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
+
+#if 0
+        // Alternative way to multiple matrix by vector
+        Float4x4SSE Test;
+        Test.set( Math::Transpose( ViewProj ) );
+        for ( int c = 0 ; c < 8 ; c++ ) {
+            __m128 Vec = _mm_loadu_ps( (const float*)&BoxPoints[c] );
+            __m128 x = _mm_dp_ps( Test.col0, Vec, 0b11110001 );
+            __m128 y = _mm_dp_ps( Test.col1, Vec, 0b11110010 );
+            __m128 z = _mm_dp_ps( Test.col2, Vec, 0b11110100 );
+            __m128 w = _mm_dp_ps( Test.col3, Vec, 0b11111000 );
+            __m128 result = _mm_add_ps( _mm_add_ps( x, y ), _mm_add_ps( z, w ) );
+            BoxPointsSSE[c] = _mm_div_ps( result, _mm_shuffle_ps( result, result, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // result /= result.W
+        }
+#endif
+
+        // compute bounds
+
+        bbMins = _mm_set_ps1( 8192.0f );
+        bbMaxs = _mm_set_ps1( -8192.0f );
+
+        for ( int i = 0; i < 8; i++ ) {
+
+            PointSSE = BoxPointsSSE[i];
+
+            _mm_store_ps( &Point.X, PointSSE );
+
+            // Take care of nan received by division 0/0
+            if ( std::isnan( Point.X ) ) Point.X = 1;
+            if ( std::isnan( Point.Y ) ) Point.Y = 1;
+            if ( std::isnan( Point.Z ) ) Point.Z = 1;
+
+            //AN_ASSERT( !std::isnan( Point.X ) && !std::isinf( Point.X ) );
+            //AN_ASSERT( !std::isnan( Point.Y ) && !std::isinf( Point.Y ) );
+            //AN_ASSERT( !std::isnan( Point.Z ) && !std::isinf( Point.Z ) );
+
+            if ( Point.Z < 0.0 ) {
+                //Point.Z = 200;
+
+                if ( RVReverseNegativeZ ) {
+
+                    PointSSE = _mm_set_ps( 0.0f, 200.0f, -Point.Y, -Point.X );
+
+                    // extend bounds
+                    PointSSE = _mm_add_ps( PointSSE, ExtendNeg );
+
+                    bbMaxs = _mm_max_ps( bbMaxs, PointSSE );
+                    bbMins = _mm_min_ps( bbMins, PointSSE );
+
+                    PointSSE = _mm_add_ps( PointSSE, ExtendPos );
+
+                    bbMaxs = _mm_max_ps( bbMaxs, PointSSE );
+                    bbMins = _mm_min_ps( bbMins, PointSSE );
+                } else {
+
+                    PointSSE = _mm_set_ps( 0.0f, 200.0f, Point.Y, Point.X );
+
+                    bbMaxs = _mm_max_ps( bbMaxs, PointSSE );
+                    bbMins = _mm_min_ps( bbMins, PointSSE );
+                }
+
+            } else
+            {
+                PointSSE = _mm_loadu_ps( &Point.X );
+                bbMaxs = _mm_max_ps( bbMaxs, PointSSE );
+                bbMins = _mm_min_ps( bbMins, PointSSE );
+            }
+        }
+
+        // Take care +-inf received by division w=0
+        bbMaxs = _mm_min_ps( bbMaxs, NDCMaxsSSE );
+        bbMaxs = _mm_max_ps( bbMaxs, NDCMinsSSE );
+        bbMins = _mm_max_ps( bbMins, NDCMinsSSE );
+        bbMins = _mm_min_ps( bbMins, NDCMaxsSSE );
+
+        _mm_store_ps( &bb_mins.X, bbMins );
+        _mm_store_ps( &bb_maxs.X, bbMaxs );
+
+        AN_ASSERT( bb_mins.Z >= 0 );
+
+        info.MaxSlice = ceilf ( std::log2f( bb_mins.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS );
+        info.MinSlice = floorf( std::log2f( bb_maxs.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS );
+
+        info.MinClusterX = floorf( (bb_mins.X + 1.0f) * (0.5f * MAX_FRUSTUM_CLUSTERS_X) );
+        info.MaxClusterX = ceilf ( (bb_maxs.X + 1.0f) * (0.5f * MAX_FRUSTUM_CLUSTERS_X) );
+
+        info.MinClusterY = floorf( (bb_mins.Y + 1.0f) * (0.5f * MAX_FRUSTUM_CLUSTERS_Y) );
+        info.MaxClusterY = ceilf ( (bb_maxs.Y + 1.0f) * (0.5f * MAX_FRUSTUM_CLUSTERS_Y) );
+
+        info.MinSlice = Math::Max( info.MinSlice, 0 );
+        info.MaxSlice = Math::Clamp( info.MaxSlice, 1, MAX_FRUSTUM_CLUSTERS_Z );
+
+        AN_ASSERT( info.MinSlice >= 0 && info.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z );
+        AN_ASSERT( info.MinClusterX >= 0 && info.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X );
+        AN_ASSERT( info.MinClusterY >= 0 && info.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
+        AN_ASSERT( info.MaxClusterX >= 0 && info.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X );
+        AN_ASSERT( info.MaxClusterY >= 0 && info.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
+    }
+}
+
+static void TransformItemsGeneric() {
+    BvAxisAlignedBox bb;
+    Float4 BoxPoints[8];
+
+    for ( int itemNum = 0 ; itemNum < ItemsCount ; itemNum++ ) {
+        SItemInfo & info = ItemInfos[itemNum];
+
+#if 0
+        constexpr Float3 Mins( -1.0f );
+        constexpr Float3 Maxs( 1.0f );
+
+        Float4x4 OBBTransform = Math::Inverse( Light->GetOBBTransformInverse() );
+
+        BoxPoints[0] = ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Maxs.Z, 1.0f );
+        BoxPoints[1] = ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Maxs.Z, 1.0f );
+        BoxPoints[2] = ViewProj * OBBTransform * Float4( Maxs.X, Maxs.Y, Maxs.Z, 1.0f );
+        BoxPoints[3] = ViewProj * OBBTransform * Float4( Mins.X, Maxs.Y, Maxs.Z, 1.0f );
+        BoxPoints[4] = ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Mins.Z, 1.0f );
+        BoxPoints[5] = ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Mins.Z, 1.0f );
+        BoxPoints[6] = ViewProj * OBBTransform * Float4( Mins.X, Maxs.Y, Mins.Z, 1.0f );
+        BoxPoints[7] = ViewProj * OBBTransform * Float4( Maxs.X, Maxs.Y, Mins.Z, 1.0f );
+#else
+        // This produces a better culling results than code above for spot lights
+
+        Float3 const & Mins = info.Mins;
+        Float3 const & Maxs = info.Maxs;
+
+        BoxPoints[0] = ViewProj * Float4( Mins.X, Mins.Y, Maxs.Z, 1.0f );
+        BoxPoints[1] = ViewProj * Float4( Maxs.X, Mins.Y, Maxs.Z, 1.0f );
+        BoxPoints[2] = ViewProj * Float4( Maxs.X, Maxs.Y, Maxs.Z, 1.0f );
+        BoxPoints[3] = ViewProj * Float4( Mins.X, Maxs.Y, Maxs.Z, 1.0f );
+        BoxPoints[4] = ViewProj * Float4( Maxs.X, Mins.Y, Mins.Z, 1.0f );
+        BoxPoints[5] = ViewProj * Float4( Mins.X, Mins.Y, Mins.Z, 1.0f );
+        BoxPoints[6] = ViewProj * Float4( Mins.X, Maxs.Y, Mins.Z, 1.0f );
+        BoxPoints[7] = ViewProj * Float4( Maxs.X, Maxs.Y, Mins.Z, 1.0f );
+#endif
+
+        bb.Clear();
+
+        // OBB to clipspace
+        for ( int i = 0; i < 8; i++ ) {
+
+            const float Denom = 1.0f / BoxPoints[i].W;
+            Float3 & Point = *reinterpret_cast< Float3 * >(&BoxPoints[i]);
+            Point.X *= Denom;
+            Point.Y *= Denom;
+            Point.Z *= Denom;
+
+            if ( Point.Z < 0.0 ) {
+                Point.Z = 200;
+                if ( RVReverseNegativeZ ) {
+                    Point.X = -Point.X;
+                    Point.Y = -Point.Y;
+
+                    // extend bounds
+                    Point.X -= 2;
+                    Point.Y -= 2;
+                    bb.AddPoint( Point );
+                    Point.X += 4;
+                    Point.Y += 4;
+                    bb.AddPoint( Point );
+                } else {
+                    bb.AddPoint( Point );
+                }
+
+            } else {
+                bb.AddPoint( Point );
+            }
+        }
+
+        // Take care +-inf received by division w=0
+        bb.Mins.X = Math::Clamp( bb.Mins.X, -1.0f, 1.0f );
+        bb.Mins.Y = Math::Clamp( bb.Mins.Y, -1.0f, 1.0f );
+        bb.Mins.Z = Math::Clamp( bb.Mins.Z, -1.0f, 1.0f );
+        bb.Maxs.X = Math::Clamp( bb.Maxs.X, -1.0f, 1.0f );
+        bb.Maxs.Y = Math::Clamp( bb.Maxs.Y, -1.0f, 1.0f );
+        bb.Maxs.Z = Math::Clamp( bb.Maxs.Z, -1.0f, 1.0f );
+
+        AN_ASSERT( bb.Mins.Z >= 0 );
+
+        info.MaxSlice = ceilf ( std::log2f( bb.Mins.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS );
+        info.MinSlice = floorf( std::log2f( bb.Maxs.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS );
+
+        info.MinClusterX = floorf( (bb.Mins.X + 1.0f) * 0.5f * MAX_FRUSTUM_CLUSTERS_X );
+        info.MaxClusterX = ceilf ( (bb.Maxs.X + 1.0f) * 0.5f * MAX_FRUSTUM_CLUSTERS_X );
+
+        info.MinClusterY = floorf( (bb.Mins.Y + 1.0f) * 0.5f * MAX_FRUSTUM_CLUSTERS_Y );
+        info.MaxClusterY = ceilf ( (bb.Maxs.Y + 1.0f) * 0.5f * MAX_FRUSTUM_CLUSTERS_Y );
+
+        info.MinSlice = Math::Max( info.MinSlice, 0 );
+        //info.MinClusterX = Math::Max( info.MinClusterX, 0 );
+        //info.MinClusterY = Math::Max( info.MinClusterY, 0 );
+
+        info.MaxSlice = Math::Clamp( info.MaxSlice, 1, MAX_FRUSTUM_CLUSTERS_Z );
+        //info.MaxSlice = Math::Max( info.MaxSlice, 1 );
+        //info.MaxClusterX = Math::Min( info.MaxClusterX, MAX_FRUSTUM_CLUSTERS_X );
+        //info.MaxClusterY = Math::Min( info.MaxClusterY, MAX_FRUSTUM_CLUSTERS_Y );
+
+        AN_ASSERT( info.MinSlice >= 0 && info.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z );
+        AN_ASSERT( info.MinClusterX >= 0 && info.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X );
+        AN_ASSERT( info.MinClusterY >= 0 && info.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
+        AN_ASSERT( info.MaxClusterX >= 0 && info.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X );
+        AN_ASSERT( info.MaxClusterY >= 0 && info.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
+    }
+}
+
+void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, ABaseLightComponent * const * InLights, int InLightCount ) {
     RenderView = RV;
-    ViewProj = RV->ClusterProjectionMatrix * RV->ViewMatrix;
+    ViewProj = RV->ClusterProjectionMatrix * RV->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
     ViewProjInv = ViewProj.Inversed();
 
     memset( ClusterData, 0, sizeof( ClusterData ) );
 
-    int lightsCount = InPointLightCount;
-    int envProbesCount = 0;//RV->NumEnvProbes;
+    int InProbesCount = 0; // TODO
+    int InDecalsCount = 0; // TODO
 
-    if ( lightsCount > MAX_LIGHTS ) {
+    if ( InLightCount > MAX_LIGHTS ) {
+        InLightCount = MAX_LIGHTS;
+
         GLogger.Printf( "MAX_LIGHTS hit\n" );
-        lightsCount = MAX_LIGHTS;
     }
 
-    if ( envProbesCount > MAX_PROBES ) {
+    if ( InProbesCount > MAX_PROBES ) {
+        InProbesCount = MAX_PROBES;
+
         GLogger.Printf( "MAX_PROBES hit\n" );
-        envProbesCount = MAX_PROBES;
     }
 
-    int ComponentListIndex[2] = { 0, 0 };
+    if ( InDecalsCount > MAX_DECALS ) {
+        InDecalsCount = MAX_DECALS;
+
+        GLogger.Printf( "MAX_DECALS hit\n" );
+    }
 
     bUseSSE = RVClusterSSE;
 
     pLightData = &Frame->LightData;
 
-    //int NumPackedProbes = 0;
+    // Pack items
+    ItemsCount = 0;
+    PackLights( InLights, InLightCount );
+    //PackDecals( InDecals, InDecalsCount );
+    //PackProbes( InProbes, InProbesCount );
+
+    pLightData->TotalLights = InLightCount;
+    //pLightData->TotalDecals = InDecalsCount;
+    //pLightData->TotalProbes = InProbesCount;
+
     if ( bUseSSE ) {
-        __m128 BoxPointsSSE[8];
-        //__m128 Zero = _mm_setzero_ps();
-        __m128 ExtendNeg = _mm_set_ps( 0.0f, 0.0f, -2.0f, -2.0f );
-        __m128 ExtendPos = _mm_set_ps( 0.0f, 0.0f, 4.0f, 4.0f );
-        __m128 bbMins, bbMaxs;
-        __m128 PointSSE;
-        __m128 v_xxxx_min_mul_col0;
-        __m128 v_xxxx_max_mul_col0;
-        __m128 v_yyyy_min_mul_col1;
-        __m128 v_yyyy_max_mul_col1;
-        __m128 v_zzzz_min_mul_col2_add_col3;
-        __m128 v_zzzz_max_mul_col2_add_col3;
-        alignas(16) Float4 bb_mins;
-        alignas(16) Float4 bb_maxs;
-        alignas(16) Float4 Point;
-        alignas(16) Float3 Mins, Maxs;
-
-        ViewProjSSE = ViewProj;
-        ViewProjInvSSE = ViewProjInv;
-
-        ItemsCount = 0;
-
-        APointLightComponent * const * ClusteredLists[] = {
-            InPointLights,
-            //Decals
-            //EnvProbes
-        };
-        const int ClusteredListsSize[] = {
-            lightsCount,
-            //decalsCount
-            //envProbesCount
-        };
-
-        const int numLists = AN_ARRAY_SIZE( ClusteredLists );
-
-        for ( int list = 0 ; list < numLists ; list++ ) {
-            APointLightComponent * const * items = ClusteredLists[list];
-            int itemsCount = ClusteredListsSize[list];
-            int & listIndex = ComponentListIndex[list];
-
-            for ( int itemIndex = 0; itemIndex < itemsCount ; itemIndex++ ) {
-
-                APointLightComponent * item = items[itemIndex];
-
-                BvAxisAlignedBox const & AABB = item->GetWorldBounds();
-
-                SItemInfo & ItemInfo = ItemInfos[ItemsCount++];
-
-                if ( list == 0 ) { // Light
-                    ItemInfo.Light = static_cast< APointLightComponent * >(item);
-                    //ItemInfo.Probe = NULL;
-                    item->ListIndex = listIndex++;// & ( MAX_LIGHTS - 1 );
-
-                    PackLight( &pLightData->LightBuffer[item->ListIndex], ItemInfo.Light );
-
-                } /*else if ( list == 1 ) { // Env Capture
-                      ItemInfo.Probe = static_cast< FEnvCaptureComponent * >( item );
-                      ItemInfo.Light = NULL;
-                      item->ListIndex = ListIndex++;// & ( MAX_PROBES - 1 );
-
-                      PackProbe( &Probes[ item->ListIndex ], ItemInfo.Probe );
-                      //NumPackedProbes++;
-                      }*/
-
-                Mins = AABB.Mins;
-                Maxs = AABB.Maxs;
-
-#if 0
-                ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
-                ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
-
-                ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
-                ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
-                ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
-                ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
-#else
-                ItemInfo.ClipToBoxMatSSE = item->GetOBBTransformInverse() * ViewProjInv; // TODO: умножение сразу в SSE?
-#endif
-
-                // OBB to clipspace
-
-                v_xxxx_min_mul_col0 = _mm_mul_ps( _mm_set_ps1( Mins.X ), ViewProjSSE.col0 );
-                v_xxxx_max_mul_col0 = _mm_mul_ps( _mm_set_ps1( Maxs.X ), ViewProjSSE.col0 );
-
-                v_yyyy_min_mul_col1 = _mm_mul_ps( _mm_set_ps1( Mins.Y ), ViewProjSSE.col1 );
-                v_yyyy_max_mul_col1 = _mm_mul_ps( _mm_set_ps1( Maxs.Y ), ViewProjSSE.col1 );
-
-                v_zzzz_min_mul_col2_add_col3 = _mm_add_ps( _mm_mul_ps( _mm_set_ps1( Mins.Z ), ViewProjSSE.col2 ), ViewProjSSE.col3 );
-                v_zzzz_max_mul_col2_add_col3 = _mm_add_ps( _mm_mul_ps( _mm_set_ps1( Maxs.Z ), ViewProjSSE.col2 ), ViewProjSSE.col3 );
-
-                //__m128 MinVec = _mm_set_ps( 0.0000001f, 0.0000001f, 0.0000001f, 0.0000001f );
-                //BoxPointsSSE[ i ] = _mm_div_ps( PointSSE, _mm_max_ps( _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ), MinVec ) );  // Point /= Point.W
-
-                PointSSE = sum_ps_3( v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3 );
-                BoxPointsSSE[0] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
-
-                PointSSE = sum_ps_3( v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_max_mul_col2_add_col3 );
-                BoxPointsSSE[1] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
-
-                PointSSE = sum_ps_3( v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3 );
-                BoxPointsSSE[2] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
-
-                PointSSE = sum_ps_3( v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_max_mul_col2_add_col3 );
-                BoxPointsSSE[3] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
-
-                PointSSE = sum_ps_3( v_xxxx_max_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3 );
-                BoxPointsSSE[4] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
-
-                PointSSE = sum_ps_3( v_xxxx_min_mul_col0, v_yyyy_min_mul_col1, v_zzzz_min_mul_col2_add_col3 );
-                BoxPointsSSE[5] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
-
-                PointSSE = sum_ps_3( v_xxxx_min_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3 );
-                BoxPointsSSE[6] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
-
-                PointSSE = sum_ps_3( v_xxxx_max_mul_col0, v_yyyy_max_mul_col1, v_zzzz_min_mul_col2_add_col3 );
-                BoxPointsSSE[7] = _mm_div_ps( PointSSE, _mm_shuffle_ps( PointSSE, PointSSE, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // Point /= Point.W
-
-#if 0
-                // Alternative way to multiple matrix by vector
-                Float4x4SSE Test;
-                Test.set( Math::Transpose( ViewProj ) );
-                for ( int c = 0 ; c < 8 ; c++ ) {
-                    __m128 Vec = _mm_loadu_ps( (const float*)&BoxPoints[c] );
-                    __m128 x = _mm_dp_ps( Test.col0, Vec, 0b11110001 );
-                    __m128 y = _mm_dp_ps( Test.col1, Vec, 0b11110010 );
-                    __m128 z = _mm_dp_ps( Test.col2, Vec, 0b11110100 );
-                    __m128 w = _mm_dp_ps( Test.col3, Vec, 0b11111000 );
-                    __m128 result = _mm_add_ps( _mm_add_ps( x, y ), _mm_add_ps( z, w ) );
-                    BoxPointsSSE[c] = _mm_div_ps( result, _mm_shuffle_ps( result, result, _MM_SHUFFLE( 3, 3, 3, 3 ) ) );  // result /= result.W
-                }
-#endif
-
-                // compute bounds
-
-                bbMins = _mm_set_ps1( 8192.0f );
-                bbMaxs = _mm_set_ps1( -8192.0f );
-
-                for ( int i = 0; i < 8; i++ ) {
-
-                    PointSSE = BoxPointsSSE[i];
-
-                    _mm_store_ps( &Point.X, PointSSE );
-
-                    // Take care of nan received by division 0/0
-                    if ( std::isnan( Point.X ) ) Point.X = 1;
-                    if ( std::isnan( Point.Y ) ) Point.Y = 1;
-                    if ( std::isnan( Point.Z ) ) Point.Z = 1;
-
-                    //AN_ASSERT( !std::isnan( Point.X ) && !std::isinf( Point.X ) );
-                    //AN_ASSERT( !std::isnan( Point.Y ) && !std::isinf( Point.Y ) );
-                    //AN_ASSERT( !std::isnan( Point.Z ) && !std::isinf( Point.Z ) );
-
-                    if ( Point.Z < 0.0 ) {
-                        //Point.Z = 200;
-
-                        if ( RVReverseNegativeZ ) {
-
-                            PointSSE = _mm_set_ps( 0.0f, 200.0f, -Point.Y, -Point.X );
-
-                            // extend bounds
-                            PointSSE = _mm_add_ps( PointSSE, ExtendNeg );
-
-                            bbMaxs = _mm_max_ps( bbMaxs, PointSSE );
-                            bbMins = _mm_min_ps( bbMins, PointSSE );
-
-                            PointSSE = _mm_add_ps( PointSSE, ExtendPos );
-
-                            bbMaxs = _mm_max_ps( bbMaxs, PointSSE );
-                            bbMins = _mm_min_ps( bbMins, PointSSE );
-                        } else {
-
-                            PointSSE = _mm_set_ps( 0.0f, 200.0f, Point.Y, Point.X );
-
-                            bbMaxs = _mm_max_ps( bbMaxs, PointSSE );
-                            bbMins = _mm_min_ps( bbMins, PointSSE );
-                        }
-
-                    } else
-                    {
-                        PointSSE = _mm_loadu_ps( &Point.X );
-                        bbMaxs = _mm_max_ps( bbMaxs, PointSSE );
-                        bbMins = _mm_min_ps( bbMins, PointSSE );
-                    }
-                }
-
-                // Take care +-inf received by division w=0
-                bbMaxs = _mm_min_ps( bbMaxs, NDCMaxsSSE );
-                bbMaxs = _mm_max_ps( bbMaxs, NDCMinsSSE );
-                bbMins = _mm_max_ps( bbMins, NDCMinsSSE );
-                bbMins = _mm_min_ps( bbMins, NDCMaxsSSE );
-
-                _mm_store_ps( &bb_mins.X, bbMins );
-                _mm_store_ps( &bb_maxs.X, bbMaxs );
-
-                AN_ASSERT( bb_mins.Z >= 0 );
-
-                ItemInfo.MaxSlice = ceilf ( std::log2f( bb_mins.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS );
-                ItemInfo.MinSlice = floorf( std::log2f( bb_maxs.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS );
-
-                ItemInfo.MinClusterX = floorf( (bb_mins.X + 1.0f) * (0.5f * MAX_FRUSTUM_CLUSTERS_X) );
-                ItemInfo.MaxClusterX = ceilf ( (bb_maxs.X + 1.0f) * (0.5f * MAX_FRUSTUM_CLUSTERS_X) );
-
-                ItemInfo.MinClusterY = floorf( (bb_mins.Y + 1.0f) * (0.5f * MAX_FRUSTUM_CLUSTERS_Y) );
-                ItemInfo.MaxClusterY = ceilf ( (bb_maxs.Y + 1.0f) * (0.5f * MAX_FRUSTUM_CLUSTERS_Y) );
-
-                ItemInfo.MinSlice = Math::Max( ItemInfo.MinSlice, 0 );
-                ItemInfo.MaxSlice = Int( ItemInfo.MaxSlice ).Clamp( 1, MAX_FRUSTUM_CLUSTERS_Z );
-
-                AN_ASSERT( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z );
-                AN_ASSERT( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X );
-                AN_ASSERT( ItemInfo.MinClusterY >= 0 && ItemInfo.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
-                AN_ASSERT( ItemInfo.MaxClusterX >= 0 && ItemInfo.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X );
-                AN_ASSERT( ItemInfo.MaxClusterY >= 0 && ItemInfo.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
-            }
-        }
+        TransformItemsSSE();
     } else {
-#if 0
-        BvAxisAlignedBox bb;
-        Float4 BoxPoints[8];
-        Float3 Mins, Maxs;
-        ItemsCount = 0;
-        for ( int LightIndex = 0; LightIndex < _NumVisibleLights ; LightIndex++ ) {
-
-            FLightComponent * Light = _VisibleLights[LightIndex];
-
-            SItemInfo & ItemInfo = ItemInfos[ItemsCount++];
-
-            ItemInfo.Light = Light;
-            Light->ListIndex = ListIndex++ & (MAX_LIGHTS - 1);
-
-            PackLight( &Lights[Light->ListIndex], Light );
-
-#if 0
-            ItemInfo.AabbMins = AABB.Mins;
-            ItemInfo.AabbMaxs = AABB.Maxs;
-            ItemInfo.ClipToBoxMat = ViewProjInv;
-#else
-            ItemInfo.ClipToBoxMat = Light->GetOBBTransformInverse() * ViewProjInv;
-#endif
-
-#if 0
-            Mins = Float3( -1.0f );
-            Maxs = Float3( 1.0f );
-
-            Float4x4 OBBTransform = Math::Inverse( Light->GetOBBTransformInverse() );
-
-            BoxPoints[0] = ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Maxs.Z, 1.0f );
-            BoxPoints[1] = ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Maxs.Z, 1.0f );
-            BoxPoints[2] = ViewProj * OBBTransform * Float4( Maxs.X, Maxs.Y, Maxs.Z, 1.0f );
-            BoxPoints[3] = ViewProj * OBBTransform * Float4( Mins.X, Maxs.Y, Maxs.Z, 1.0f );
-            BoxPoints[4] = ViewProj * OBBTransform * Float4( Maxs.X, Mins.Y, Mins.Z, 1.0f );
-            BoxPoints[5] = ViewProj * OBBTransform * Float4( Mins.X, Mins.Y, Mins.Z, 1.0f );
-            BoxPoints[6] = ViewProj * OBBTransform * Float4( Mins.X, Maxs.Y, Mins.Z, 1.0f );
-            BoxPoints[7] = ViewProj * OBBTransform * Float4( Maxs.X, Maxs.Y, Mins.Z, 1.0f );
-#else
-            // This produces better culling results than code above for spot lights
-
-            const BvAxisAlignedBox & AABB = Light->GetAABBWorldBounds();
-
-            Mins = AABB.Mins;
-            Maxs = AABB.Maxs;
-
-            BoxPoints[0] = ViewProj * Float4( Mins.X, Mins.Y, Maxs.Z, 1.0f );
-            BoxPoints[1] = ViewProj * Float4( Maxs.X, Mins.Y, Maxs.Z, 1.0f );
-            BoxPoints[2] = ViewProj * Float4( Maxs.X, Maxs.Y, Maxs.Z, 1.0f );
-            BoxPoints[3] = ViewProj * Float4( Mins.X, Maxs.Y, Maxs.Z, 1.0f );
-            BoxPoints[4] = ViewProj * Float4( Maxs.X, Mins.Y, Mins.Z, 1.0f );
-            BoxPoints[5] = ViewProj * Float4( Mins.X, Mins.Y, Mins.Z, 1.0f );
-            BoxPoints[6] = ViewProj * Float4( Mins.X, Maxs.Y, Mins.Z, 1.0f );
-            BoxPoints[7] = ViewProj * Float4( Maxs.X, Maxs.Y, Mins.Z, 1.0f );
-#endif
-
-            bb.Clear();
-
-            // OBB to clipspace
-            for ( int i = 0; i < 8; i++ ) {
-
-                const float Denom = 1.0f / BoxPoints[i].W;
-                Float3 & Point = *reinterpret_cast< Float3 * >(&BoxPoints[i]);
-                Point.X *= Denom;
-                Point.Y *= Denom;
-                Point.Z *= Denom;
-
-                if ( Point.Z < 0.0 ) {
-                    Point.Z = 200;
-                    if ( RVReverseNegativeZ ) {
-                        Point.X = -Point.X;
-                        Point.Y = -Point.Y;
-
-                        // extend bounds
-                        Point.X -= 2;
-                        Point.Y -= 2;
-                        bb.AddPoint( Point );
-                        Point.X += 4;
-                        Point.Y += 4;
-                        bb.AddPoint( Point );
-                    } else {
-                        bb.AddPoint( Point );
-                    }
-
-                } else {
-                    bb.AddPoint( Point );
-                }
-            }
-
-            // Take care +-inf received by division w=0
-            bb.Mins.X = Math::Clamp( bb.Mins.X, -1.0f, 1.0f );
-            bb.Mins.Y = Math::Clamp( bb.Mins.Y, -1.0f, 1.0f );
-            bb.Mins.Z = Math::Clamp( bb.Mins.Z, -1.0f, 1.0f );
-            bb.Maxs.X = Math::Clamp( bb.Maxs.X, -1.0f, 1.0f );
-            bb.Maxs.Y = Math::Clamp( bb.Maxs.Y, -1.0f, 1.0f );
-            bb.Maxs.Z = Math::Clamp( bb.Maxs.Z, -1.0f, 1.0f );
-
-            AN_ASSERT( bb.Mins.Z >= 0 );
-
-            ItemInfo.MaxSlice = ceilf ( std::log2f( bb.Mins.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * Scale + Bias );
-            ItemInfo.MinSlice = floorf( std::log2f( bb.Maxs.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR ) * Scale + Bias );
-
-            ItemInfo.MinClusterX = floorf( (bb.Mins.X + 1.0f) * 0.5f * MAX_FRUSTUM_CLUSTERS_X );
-            ItemInfo.MaxClusterX = ceilf ( (bb.Maxs.X + 1.0f) * 0.5f * MAX_FRUSTUM_CLUSTERS_X );
-
-            ItemInfo.MinClusterY = floorf( (bb.Mins.Y + 1.0f) * 0.5f * MAX_FRUSTUM_CLUSTERS_Y );
-            ItemInfo.MaxClusterY = ceilf ( (bb.Maxs.Y + 1.0f) * 0.5f * MAX_FRUSTUM_CLUSTERS_Y );
-
-            ItemInfo.MinSlice = Math::Max( ItemInfo.MinSlice, 0 );
-            //ItemInfo.MinClusterX = Math::Max( ItemInfo.MinClusterX, 0 );
-            //ItemInfo.MinClusterY = Math::Max( ItemInfo.MinClusterY, 0 );
-
-            ItemInfo.MaxSlice = Math::Clamp( ItemInfo.MaxSlice, 1, MAX_FRUSTUM_CLUSTERS_Z );
-            //ItemInfo.MaxSlice = Math::Max( ItemInfo.MaxSlice, 1 );
-            //ItemInfo.MaxClusterX = Math::Min( ItemInfo.MaxClusterX, MAX_FRUSTUM_CLUSTERS_X );
-            //ItemInfo.MaxClusterY = Math::Min( ItemInfo.MaxClusterY, MAX_FRUSTUM_CLUSTERS_Y );
-
-            AN_ASSERT( ItemInfo.MinSlice >= 0 && ItemInfo.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z );
-            AN_ASSERT( ItemInfo.MinClusterX >= 0 && ItemInfo.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X );
-            AN_ASSERT( ItemInfo.MinClusterY >= 0 && ItemInfo.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
-            AN_ASSERT( ItemInfo.MaxClusterX >= 0 && ItemInfo.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X );
-            AN_ASSERT( ItemInfo.MaxClusterY >= 0 && ItemInfo.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y );
-        }
-#endif
+        TransformItemsGeneric();
     }
 
     ItemCounter.StoreRelaxed( 0 );
@@ -567,12 +545,12 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APointLi
 
     GRenderFrontendJobList->SubmitAndWait();
 
-    pLightData->TotalLights = ComponentListIndex[0];
     pLightData->TotalItems = ItemCounter.Load();
 
     if ( pLightData->TotalItems > SFrameLightData::MAX_ITEM_BUFFER ) {
-        GLogger.Printf( "MAX_ITEM_BUFFER hit\n" );
         pLightData->TotalItems = SFrameLightData::MAX_ITEM_BUFFER;
+
+        GLogger.Printf( "MAX_ITEM_BUFFER hit\n" );
     }
 }
 
@@ -605,6 +583,8 @@ static void VoxelizeWork( void * _Data ) {
         __m128 v_zzzz_max_mul_col2_add_col3;
         //alignas(16) int CullingResult[4];
         //alignas(16) int CullingResult;
+        __m128 UniformBoxMinsSSE = _mm_set_ps( 0.0f, -1.0f, -1.0f, -1.0f );
+        __m128 UniformBoxMaxsSSE = _mm_set_ps( 0.0f, 1.0f, 1.0f, 1.0f );
 
         for ( int ItemIndex = 0 ; ItemIndex < ItemsCount ; ItemIndex++ ) {
             SItemInfo & Info = ItemInfos[ItemIndex];
@@ -715,6 +695,9 @@ static void VoxelizeWork( void * _Data ) {
             }
         }
     } else {
+        constexpr Float3 UniformBoxMins = Float3( -1.0f );
+        constexpr Float3 UniformBoxMaxs = Float3( 1.0f );
+
         Float4 BoxPoints[8];
 
         for ( int ItemIndex = 0 ; ItemIndex < ItemsCount ; ItemIndex++ ) {
@@ -870,33 +853,6 @@ static void VoxelizeWork( void * _Data ) {
     }
 }
 
-static void PackLight( SClusterLight * Parameters, APointLightComponent const * Light ) {
-    Parameters->Position = Float3( RenderView->ViewMatrix * Light->GetWorldPosition() );
-    Parameters->OuterRadius = Light->GetOuterRadius();
-    Parameters->InnerRadius = Math::Min( Light->GetInnerRadius(), Light->GetOuterRadius() ); // TODO: do this check early
-    Parameters->Color = Light->GetEffectiveColor();
-    Parameters->RenderMask = ~0u;//Light->RenderMask;
-
-#if 0
-    if ( Light->bSpot ) {
-        Parameters->LightType = 1;
-
-        const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
-
-        Parameters->OuterConeAngle = cos( Light->OuterConeAngle * ToHalfAngleRadians );
-        Parameters->InnerConeAngle = cos( Math::Min( Light->InnerConeAngle, Light->OuterConeAngle ) * ToHalfAngleRadians );
-
-        Parameters->SpotDirection = /*RenderFrame.NormalToView **/ (-Light->SpotDirection);
-        Parameters->SpotExponent = Light->SpotExponent;
-
-    }
-    else
-#endif
-    {
-        Parameters->LightType = 0;
-    }
-}
-
 static void GatherVoxelGeometry( TStdVectorDefault< Float3 > & LinePoints, Float4x4 const & ViewProjectionInversed )
 {
     Float3 clusterMins;
@@ -955,6 +911,7 @@ void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer ) {
         SRenderView const * view = InRenderer->GetRenderView();
 
         const Float4x4 viewProjInv = ( view->ClusterProjectionMatrix * view->ViewMatrix ).Inversed();
+        // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
 
         GatherVoxelGeometry( LinePoints, viewProjInv );
     }

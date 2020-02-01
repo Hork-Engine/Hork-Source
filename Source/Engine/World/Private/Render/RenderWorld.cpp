@@ -45,22 +45,6 @@ ARenderWorld::ARenderWorld( AWorld * InOwnerWorld )
 {
 }
 
-void ARenderWorld::AddDrawable( ADrawable * _Drawable ) {
-    INTRUSIVE_ADD_UNIQUE( _Drawable, Next, Prev, DrawableList, DrawableListTail );
-}
-
-void ARenderWorld::RemoveDrawable( ADrawable * _Drawable ) {
-    INTRUSIVE_REMOVE( _Drawable, Next, Prev, DrawableList, DrawableListTail );
-}
-
-void ARenderWorld::AddMesh( AMeshComponent * _Mesh ) {
-    INTRUSIVE_ADD_UNIQUE( _Mesh, Next, Prev, MeshList, MeshListTail );
-}
-
-void ARenderWorld::RemoveMesh( AMeshComponent * _Mesh ) {
-    INTRUSIVE_REMOVE( _Mesh, Next, Prev, MeshList, MeshListTail );
-}
-
 void ARenderWorld::AddSkinnedMesh( ASkinnedComponent * _Skeleton ) {
     INTRUSIVE_ADD_UNIQUE( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
@@ -83,22 +67,6 @@ void ARenderWorld::AddDirectionalLight( ADirectionalLightComponent * _Light ) {
 
 void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * _Light ) {
     INTRUSIVE_REMOVE( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
-}
-
-void ARenderWorld::AddPointLight( APointLightComponent * _Light ) {
-    INTRUSIVE_ADD_UNIQUE( _Light, Next, Prev, PointLightList, PointLightListTail );
-}
-
-void ARenderWorld::RemovePointLight( APointLightComponent * _Light ) {
-    INTRUSIVE_REMOVE( _Light, Next, Prev, PointLightList, PointLightListTail );
-}
-
-void ARenderWorld::AddSpotLight( ASpotLightComponent * _Light ) {
-    INTRUSIVE_ADD_UNIQUE( _Light, Next, Prev, SpotLightList, SpotLightListTail );
-}
-
-void ARenderWorld::RemoveSpotLight( ASpotLightComponent * _Light ) {
-    INTRUSIVE_REMOVE( _Light, Next, Prev, SpotLightList, SpotLightListTail );
 }
 
 void ARenderWorld::DrawDebug( ADebugRenderer * InRenderer )

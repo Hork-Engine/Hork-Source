@@ -31,13 +31,24 @@ SOFTWARE.
 #pragma once
 
 #include "BaseLightComponent.h"
+#include <World/Public/Level.h>
 
+// TODO: Merge spot and point light to one class
 class ASpotLightComponent : public ABaseLightComponent {
     AN_COMPONENT( ASpotLightComponent, ABaseLightComponent )
 
-    friend class ARenderWorld;
-
 public:
+    /** Rendering group to filter lights during rendering */
+    void SetVisibilityGroup( int InVisibilityGroup );
+
+    int GetVisibilityGroup() const;
+
+    void SetEnabled( bool _Enabled ) override;
+
+    void SetMovable( bool _Movable );
+
+    bool IsMovable() const;
+
     void SetInnerRadius( float _Radius );
     float GetInnerRadius() const;
 
@@ -59,12 +70,7 @@ public:
     void SetWorldDirection( Float3 const & _Direction );
     Float3 GetWorldDirection() const;
 
-    BvAxisAlignedBox const & GetWorldBounds() const;
-
-    Float4x4 const & GetOBBTransformInverse() const { return OBBTransformInverse; }
-
-    ASpotLightComponent * GetNext() { return Next; }
-    ASpotLightComponent * GetPrev() { return Prev; }
+    void PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) override;
 
 protected:
     ASpotLightComponent();
@@ -75,18 +81,16 @@ protected:
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
 private:
-    void UpdateBoundingBox();
+    void UpdateWorldBounds();
 
     BvSphere SphereWorldBounds;
-    BvAxisAlignedBox AABBWorldBounds;
     BvOrientedBox OBBWorldBounds;
-    Float4x4 OBBTransformInverse;
 
     float InnerRadius;
     float OuterRadius;
     float InnerConeAngle;
     float OuterConeAngle;
     float SpotExponent;
-    ASpotLightComponent * Next;
-    ASpotLightComponent * Prev;
+
+    SPrimitiveDef Primitive;
 };

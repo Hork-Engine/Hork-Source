@@ -52,10 +52,6 @@ Base class for drawing surfaces
 class ANGIE_API ADrawable : public APhysicalBody {
     AN_COMPONENT( ADrawable, APhysicalBody )
 
-    friend class ALevel;
-    friend class AWorld;
-    friend class ARenderWorld;
-
 public:
     int RenderingOrder = RENDER_ORDER_DEFAULT;
 
@@ -79,7 +75,7 @@ public:
 
     bool GetFaceCull() const;
 
-    /** Used for VSD_FACE_CULL */
+    /** Used for face culling */
     void SetFacePlane( PlaneF const & _Plane );
 
     PlaneF const & GetFacePlane() const;
@@ -114,9 +110,6 @@ public:
 
     SPrimitiveDef const * GetPrimitive() const { return &Primitive; }
 
-    ADrawable * GetNextDrawable() { return Next; }
-    ADrawable * GetPrevDrawable() { return Prev; }
-
     /** Called before rendering if bPreRenderUpdate is true */
     virtual void OnPreRenderUpdate( SRenderFrontendDef * _Def ) {}
 
@@ -127,21 +120,14 @@ protected:
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
 
-    //virtual void OnLazyBoundsUpdate() {}
-
     void UpdateWorldBounds();
 
     mutable BvAxisAlignedBox Bounds;
     mutable BvAxisAlignedBox WorldBounds;
     BvAxisAlignedBox        OverrideBoundingBox;
     bool                    bOverrideBounds : 1;
-    bool                    bLazyBoundsUpdate : 1;
     bool                    bSkinnedMesh : 1;
     bool                    bPreRenderUpdate : 1;
 
-    ADrawable * Next;
-    ADrawable * Prev;
-
-    //TRef< VSDPrimitive >    Primitive;
     SPrimitiveDef Primitive;
 };

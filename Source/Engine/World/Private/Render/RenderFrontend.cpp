@@ -33,8 +33,6 @@ SOFTWARE.
 #include <World/Public/Components/CameraComponent.h>
 #include <World/Public/Components/SkinnedComponent.h>
 #include <World/Public/Components/DirectionalLightComponent.h>
-#include <World/Public/Components/PointLightComponent.h>
-#include <World/Public/Components/SpotLightComponent.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
@@ -44,8 +42,8 @@ SOFTWARE.
 #include "VSD.h"
 #include "LightVoxelizer.h"
 
-constexpr int MAX_SURFACE_VERTS = 32768*16;
-constexpr int MAX_SURFACE_INDICES = 32768*16;
+constexpr int MAX_SURFACE_VERTS = 16384;
+constexpr int MAX_SURFACE_INDICES = 32768;
 
 ARuntimeVariable RVFixFrustumClusters( _CTS( "FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVRenderView( _CTS( "RenderView" ), _CTS( "1" ), VAR_CHEAT );
@@ -72,26 +70,26 @@ struct SShadowInstanceSortFunction {
 void ARenderFrontend::Initialize() {
     VSD_Initialize();
 
-    BatchMesh = CreateInstanceOf< AIndexedMesh >();
-    BatchMesh->Initialize( MAX_SURFACE_VERTS, MAX_SURFACE_INDICES, 1, false, true );
+    SurfaceMesh = CreateInstanceOf< AIndexedMesh >();
+    SurfaceMesh->Initialize( MAX_SURFACE_VERTS, MAX_SURFACE_INDICES, 1, false, true );
 
-    BatchLightmapUV = CreateInstanceOf< ALightmapUV >();
-    BatchLightmapUV->Initialize( BatchMesh, nullptr, true );
+    SurfaceLightmapUV = CreateInstanceOf< ALightmapUV >();
+    SurfaceLightmapUV->Initialize( SurfaceMesh, nullptr, true );
 
-    BatchVertexLight = CreateInstanceOf< AVertexLight >();
-    BatchVertexLight->Initialize( BatchMesh, nullptr, true );
+    SurfaceVertexLight = CreateInstanceOf< AVertexLight >();
+    SurfaceVertexLight->Initialize( SurfaceMesh, nullptr, true );
 }
 
 void ARenderFrontend::Deinitialize() {
     VSD_Deinitialize();
 
-    PointLights.Free();
+    Lights.Free();
     VisPrimitives.Free();
     VisSurfaces.Free();
 
-    BatchMesh.Reset();
-    BatchLightmapUV.Reset();
-    BatchVertexLight.Reset();
+    SurfaceMesh.Reset();
+    SurfaceLightmapUV.Reset();
+    SurfaceVertexLight.Reset();
 }
 
 void ARenderFrontend::Render( ACanvas * InCanvas ) {
@@ -194,7 +192,7 @@ void ARenderFrontend::RenderView( int _Index ) {
     }
 
     view->ModelviewProjection = view->ProjectionMatrix * view->ViewMatrix;
-    view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed();
+    view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed(); // TODO: Check with ViewInverseFast
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
     
     view->BackgroundColor = RP ? RP->BackgroundColor.GetRGB() : Float3(1.0f);
@@ -602,47 +600,6 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
     SRenderFrame * frameData = GRuntime.GetFrameData();
     SRenderView * view = RenderDef->View;
 
-#if 0
-    // Add spot lights
-    for ( ASpotLightComponent * light = InWorld->GetSpotLights() ; light ; light = light->GetNext() ) {
-
-        if ( view->NumLights > MAX_LIGHTS ) {
-            GLogger.Printf( "MAX_LIGHTS hit\n" );
-            break;
-        }
-
-        if ( !light->IsEnabled() ) {
-            continue;
-        }
-
-        // TODO: cull light
-
-        SLightDef * lightDef = (SLightDef *)GRuntime.AllocFrameMem( sizeof( SLightDef ) );
-        if ( !lightDef ) {
-            break;
-        }
-
-        frameData->Lights.Append( lightDef );
-
-        lightDef->bSpot = true;
-        lightDef->BoundingBox = light->GetWorldBounds();
-        lightDef->ColorAndAmbientIntensity = light->GetEffectiveColor();
-        lightDef->Position = light->GetWorldPosition();
-        lightDef->RenderMask = light->RenderingGroup;
-        lightDef->InnerRadius = light->GetInnerRadius();
-        lightDef->OuterRadius = light->GetOuterRadius();
-        lightDef->InnerConeAngle = light->GetInnerConeAngle();
-        lightDef->OuterConeAngle = light->GetOuterConeAngle();
-        lightDef->SpotDirection = light->GetWorldDirection();
-        lightDef->SpotExponent = light->GetSpotExponent();
-        lightDef->OBBTransformInverse = light->GetOBBTransformInverse();
-
-        view->NumLights++;
-    }
-#endif
-
-
-
     {
         AScopedTimeCheck TimeCheck( "VSD_QueryVisiblePrimitives & AddDrawable" );
 
@@ -661,9 +618,9 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
 
         AMeshComponent * mesh;
         ABrushComponent * brush;
-        APointLightComponent * pointLight;
+        ABaseLightComponent * light;
 
-        PointLights.Clear();
+        Lights.Clear();
 
         for ( SPrimitiveDef * primitive : VisPrimitives ) {
 
@@ -701,9 +658,9 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
                     VisSurfaces.Append( surf );
                 }
             }
-            else if ( nullptr != (pointLight = Upcast< APointLightComponent >( primitive->Owner )) )
+            else if ( nullptr != (light = Upcast< ABaseLightComponent >( primitive->Owner )) )
             {
-                PointLights.Append( pointLight );
+                Lights.Append( light );
             }
             else
             {
@@ -722,19 +679,52 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
 
             StdSort( VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction );
 
+            int totalVerts = 0;
+            int totalIndices = 0;
+            for ( int i = 0 ; i < VisSurfaces.Size() ; i++ ) {
+                SSurfaceDef const * surfDef = VisSurfaces[i];
+
+                totalVerts += surfDef->NumVertices;
+                totalIndices += surfDef->NumIndices;
+            }
+
+            if ( totalVerts > SurfaceMesh->GetVertexCount()
+                 || totalIndices > SurfaceMesh->GetIndexCount() ) {
+                // Rallocate mesh
+
+                const int GRANULARITY = 1024;
+
+                int mod;
+
+                mod = totalVerts % GRANULARITY;
+                totalVerts = mod ? totalVerts + GRANULARITY - mod : totalVerts;
+
+                mod = totalIndices % GRANULARITY;
+                totalIndices = mod ? totalIndices + GRANULARITY - mod : totalIndices;
+
+                totalVerts = Math::Max( totalVerts, SurfaceMesh->GetVertexCount() );
+                totalIndices = Math::Max( totalIndices, SurfaceMesh->GetIndexCount() );
+
+                GLogger.Printf( "Reallocating surface mesh %d verts %d indices\n", totalVerts, totalIndices );
+
+                SurfaceMesh->Initialize( totalVerts, totalIndices, 1, false, true );
+                SurfaceVertexLight->Initialize( SurfaceMesh, nullptr, true );
+                SurfaceLightmapUV->Initialize( SurfaceMesh, nullptr, true );
+            }
+
             numVerts = 0;
             numIndices = 0;
 
             AddSurfaces( RenderDef, VisSurfaces.ToPtr(), VisSurfaces.Size() );
 
-            AN_ASSERT( numVerts <= BatchMesh->GetVertexCount() );
-            AN_ASSERT( numIndices <= BatchMesh->GetIndexCount() );
+            AN_ASSERT( numVerts <= SurfaceMesh->GetVertexCount() );
+            AN_ASSERT( numIndices <= SurfaceMesh->GetIndexCount() );
 
             if ( numVerts > 0 ) {
-                BatchMesh->SendVertexDataToGPU( numVerts, 0 );
-                BatchMesh->SendIndexDataToGPU( numIndices, 0 );
-                BatchLightmapUV->SendVertexDataToGPU( numVerts, 0 );
-                BatchVertexLight->SendVertexDataToGPU( numVerts, 0 );
+                SurfaceMesh->SendVertexDataToGPU( numVerts, 0 );
+                SurfaceMesh->SendIndexDataToGPU( numIndices, 0 );
+                SurfaceLightmapUV->SendVertexDataToGPU( numVerts, 0 );
+                SurfaceVertexLight->SendVertexDataToGPU( numVerts, 0 );
             }
         }
     }
@@ -771,7 +761,7 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
 
     //GLogger.Printf( "FrameLightData %f KB\n", sizeof( SFrameLightData ) / 1024.0f );
     if ( !RVFixFrustumClusters ) {
-        GLightVoxelizer.Voxelize( frameData, view, PointLights.ToPtr(), PointLights.Size() );
+        GLightVoxelizer.Voxelize( frameData, view, Lights.ToPtr(), Lights.Size() );
     }
 }
 
@@ -873,32 +863,6 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld, 
     }
 }
 
-//void ARenderFrontend::AddPointLight( APointLightComponent * InLight, SRenderFrontendDef * RenderDef ) {
-
-//    if ( RenderDef->View->NumLights > MAX_LIGHTS ) {
-//        GLogger.Printf( "MAX_LIGHTS hit\n" );
-//        return;
-//    }
-
-//    SLightDef * lightDef = (SLightDef *)GRuntime.AllocFrameMem( sizeof( SLightDef ) );
-//    if ( !lightDef ) {
-//        return;
-//    }
-
-//    GRuntime.GetFrameData()->Lights.Append( lightDef );
-
-//    lightDef->bSpot = false;
-//    lightDef->BoundingBox = InLight->GetWorldBounds();
-//    lightDef->ColorAndAmbientIntensity = InLight->GetEffectiveColor();
-//    lightDef->Position = InLight->GetWorldPosition();
-//    lightDef->RenderMask = InLight->RenderingGroup;
-//    lightDef->InnerRadius = InLight->GetInnerRadius();
-//    lightDef->OuterRadius = InLight->GetOuterRadius();
-//    lightDef->OBBTransformInverse = InLight->GetOBBTransformInverse();
-
-//    RenderDef->View->NumLights++;
-//}
-
 #ifdef FUTURE
 void AddEnvCapture( AEnvCaptureComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
     if ( component->RenderMark == VisMarker ) {
@@ -958,14 +922,10 @@ AN_FORCEINLINE bool CanMergeSurfaces( SSurfaceDef const * InFirst, SSurfaceDef c
 void ARenderFrontend::AddSurfaces( SRenderFrontendDef * RenderDef, SSurfaceDef * const * Surfaces, int SurfaceCount ) {
     int batchFirstIndex = numIndices;
 
-    AIndexedMesh * batchMesh = BatchMesh;
-    ALightmapUV * batchLightmapUV = BatchLightmapUV;
-    AVertexLight * batchVertexLight = BatchVertexLight;
-
-    SMeshVertex * dstVerts = batchMesh->GetVertices();
-    SMeshVertexUV * dstLM = batchLightmapUV->GetVertices();
-    SMeshVertexLight * dstVL = batchVertexLight->GetVertices();
-    unsigned int * dstIndices = batchMesh->GetIndices() + numIndices;
+    SMeshVertex * dstVerts = SurfaceMesh->GetVertices();
+    SMeshVertexUV * dstLM = SurfaceLightmapUV->GetVertices();
+    SMeshVertexLight * dstVL = SurfaceVertexLight->GetVertices();
+    unsigned int * dstIndices = SurfaceMesh->GetIndices() + numIndices;
 
     if ( !SurfaceCount ) {
         return;
@@ -976,8 +936,6 @@ void ARenderFrontend::AddSurfaces( SRenderFrontendDef * RenderDef, SSurfaceDef *
 
     for ( int i = 0 ; i < SurfaceCount ; i++ ) {
         SSurfaceDef const * surfDef = Surfaces[i];
-
-        //UpdateSurfaceLight( surfDef );
 
         if ( !CanMergeSurfaces( merge, surfDef ) ) {
 
@@ -1030,9 +988,9 @@ void ARenderFrontend::AddSurfaces( SRenderFrontendDef * RenderDef, SSurfaceDef *
 }
 
 void ARenderFrontend::AddSurface( SRenderFrontendDef * RenderDef, ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder ) {
-    AIndexedMesh * mesh = BatchMesh;
-    ALightmapUV * lightmapUVChannel = BatchLightmapUV;
-    AVertexLight * vertexLightChannel = BatchVertexLight;
+    AIndexedMesh * mesh = SurfaceMesh;
+    ALightmapUV * lightmapUVChannel = SurfaceLightmapUV;
+    AVertexLight * vertexLightChannel = SurfaceVertexLight;
 
     AMaterial * material = MaterialInstance->GetMaterial();
 

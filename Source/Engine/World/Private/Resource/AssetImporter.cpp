@@ -33,65 +33,17 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 #include <Core/Public/Guid.h>
 #include <Core/Public/Logger.h>
+#include <Core/Public/LinearAllocator.h>
 
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 
-#define MAX_MEMORY_GLTF     (16<<20) // enough?
+constexpr int MAX_MEMORY_GLTF = 16<<20;
 
-struct ALinearAllocator {
-
-    ALinearAllocator() {
-
-    }
-
-    ~ALinearAllocator() {
-        GLogger.Printf( "Total allocs: %d\n", totalAllocs );
-        Purge();
-    }
-
-    void * Alloc( size_t _SizeInBytes );
-
-    void Purge() {
-        for ( memchunk_t * chunk = chunks ; chunk ; ) {
-            memchunk_t * next = chunk->next;
-            GHeapMemory.HeapFree( chunk );
-            chunk = next;
-        }
-        chunks = nullptr;
-    }
-
-private:
-
-    struct memchunk_t {
-        size_t totalAllocated;
-        memchunk_t * next;
-    };
-
-    size_t totalAllocs = 0;
-    memchunk_t * chunks = nullptr;
-};
-
-void * ALinearAllocator::Alloc( size_t _SizeInBytes ) {
-    memchunk_t * chunk = chunks;
-
-    if ( !chunk || chunk->totalAllocated + _SizeInBytes >= MAX_MEMORY_GLTF ) {
-        size_t chunkSize = Math::Max< size_t >( _SizeInBytes, MAX_MEMORY_GLTF );
-        chunk = (memchunk_t*)GHeapMemory.HeapAlloc( chunkSize + sizeof( memchunk_t ), 1 );
-        chunk->next = chunks;
-        chunk->totalAllocated = 0;
-        chunks = chunk;
-        totalAllocs++;
-    }
-
-    void * ptr = reinterpret_cast< byte * >( chunk + 1 ) + chunk->totalAllocated;
-    chunk->totalAllocated += _SizeInBytes;
-
-    return ptr;
-}
+using ALinearAllocatorGLTF = TLinearAllocator< MAX_MEMORY_GLTF >;
 
 static void * cgltf_alloc( void * user, cgltf_size size ) {
-    ALinearAllocator & Allocator = *static_cast< ALinearAllocator * >( user );
+    ALinearAllocatorGLTF & Allocator = *static_cast< ALinearAllocatorGLTF * >( user );
     return Allocator.Alloc( size );
 }
 
@@ -301,7 +253,7 @@ static void sample_vec3( cgltf_animation_sampler * sampler, float frameTime, Flo
                     float dur = nt - ct;
                     float fract = ( frameTime - ct ) / dur;
                     AN_ASSERT( fract >= 0.0f && fract <= 1.0f );
-                    vec = p0.Lerp( p1, fract );
+                    vec = Math::Lerp( p0, p1, fract );
                 }
             } else if ( sampler->interpolation == cgltf_interpolation_type_step ) {
                 cgltf_accessor_read_float( animdata, t, ( float * )vec.ToPtr(), 3 );
@@ -506,7 +458,7 @@ bool AAssetImporter::ImportGLTF( SAssetImportSettings const & InSettings ) {
     f.ReadBuffer( buf, size );
 
     //void * memoryBuffer = GHunkMemory.HunkMemory( MAX_MEMORY_GLTF, 1 );
-    ALinearAllocator allocator;
+    ALinearAllocatorGLTF allocator;
 
     cgltf_options options;
 
@@ -1745,7 +1697,7 @@ AString AAssetImporter::GeneratePhysicalPath( const char * DesiredName ) {
     int uniqueNumber = 0;
 
     while ( Core::IsFileExists( ( GResourceManager.GetRootPath() + result ).CStr() ) ) {
-        result = path + "_" + Int( ++uniqueNumber ).ToString() + ".asset";
+        result = path + "_" + Math::ToString( ++uniqueNumber ) + ".asset";
     }
 
     return result;
@@ -1892,12 +1844,12 @@ void AAssetImporter::WriteSingleModel() {
 
     // Write subparts
     f.WriteUInt32( m_Meshes.Size() ); // subparts count
-    UInt n = 0;
+    uint32_t n = 0;
     for ( MeshInfo const & meshInfo : m_Meshes ) {
         if ( meshInfo.Mesh->name ) {
             f.WriteString( meshInfo.Mesh->name );
         } else {
-            f.WriteString( AString( "Subpart_" ) + n.ToString() );
+            f.WriteString( AString( "Subpart_" ) + Math::ToString( n ) );
         }
         f.WriteInt32( meshInfo.BaseVertex );
         f.WriteUInt32( meshInfo.FirstIndex );

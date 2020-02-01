@@ -480,16 +480,6 @@ public:
 
     btSoftBodyWorldInfo * GetSoftBodyWorldInfo() { return PhysicsWorld.SoftBodyWorldInfo; }
 
-    void AddPrimitive( SPrimitiveDef * InPrimitive );
-    void RemovePrimitive( SPrimitiveDef * InPrimitive );
-    void MarkPrimitive( SPrimitiveDef * InPrimitive );
-
-    void UpdatePrimitiveLinks();
-
-    void MarkPrimitives();
-    void UnmarkPrimitives();
-    void RemovePrimitives();
-
     void DrawDebug( ADebugRenderer * InRenderer );
 
 protected:
@@ -529,6 +519,7 @@ private:
     void UpdateActorsPostPhysics( float _TimeStep );
     void UpdateLevels( float _TimeStep );
     void UpdatePhysics( float _TimeStep );
+    void UpdateSkinning();
 
     // IPhysicsWorldInterface
     void OnPrePhysics( float _TimeStep ) override;
@@ -577,9 +568,6 @@ private:
     APhysicsWorld PhysicsWorld;
     ARenderWorld RenderWorld;
     AAINavigationMesh NavigationMesh;
-
-    SPrimitiveDef * PrimitiveUpdateList;
-    SPrimitiveDef * PrimitiveUpdateListTail;
 };
 
 #include "Actors/Actor.h"

@@ -33,13 +33,13 @@ SOFTWARE.
 #include <Runtime/Public/RenderCore.h>
 #include <World/Public/Base/DebugRenderer.h>
 
-class APointLightComponent;
+class ABaseLightComponent;
 
 class ALightVoxelizer {
     AN_SINGLETON( ALightVoxelizer )
 
 public:
-    void Voxelize( SRenderFrame * Frame, SRenderView * RV, APointLightComponent * const * InPointLights, int InPointLightCount );
+    void Voxelize( SRenderFrame * Frame, SRenderView * RV, ABaseLightComponent * const * InLights, int InLightCount );
 
     void DrawVoxels( ADebugRenderer * InRenderer );
 };

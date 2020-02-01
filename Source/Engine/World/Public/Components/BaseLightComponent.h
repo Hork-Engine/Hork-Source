@@ -41,6 +41,9 @@ public:
     /** Only directional light supports shadow casting yet */
     bool bCastShadow;
 
+    /** Internal. Used by Light Voxelizer. */
+    int ListIndex;
+
     void SetColor( Float3 const & _Color );
     void SetColor( float _R, float _G, float _B );
     Float3 const & GetColor() const;
@@ -64,10 +67,19 @@ public:
     void SetAnimation( AAnimationPattern * _Animation );
     AAnimationPattern * GetAnimation() { return Animation; }
 
+    BvAxisAlignedBox const & GetWorldBounds() const { return AABBWorldBounds; }
+
+    Float4x4 const & GetOBBTransformInverse() const { return OBBTransformInverse; }
+
+    virtual void PackLight( Float4x4 const & InViewMatrix, struct SClusterLight & Light );
+
 protected:
     ABaseLightComponent();
 
     void TickComponent( float _TimeStep ) override;
+
+    BvAxisAlignedBox AABBWorldBounds;
+    Float4x4       OBBTransformInverse;
 
 private:
     Float3         Color;

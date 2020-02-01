@@ -437,45 +437,6 @@ void AWorld::UpdateLevels( float _TimeStep ) {
     for ( ALevel * level : ArrayOfLevels ) {
         level->Tick( _TimeStep );
     }
-
-    UpdatePrimitiveLinks();
-}
-
-void AWorld::UpdatePrimitiveLinks() {
-    SPrimitiveDef * next;
-
-    // First Pass: remove primitives from the areas
-    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = primitive->NextUpd )
-    {
-        ALevel::RemovePrimitive( primitive );
-    }
-
-    // Second Pass: add primitive to the areas
-    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
-    {
-        ALevel::AddPrimitive( this, primitive );
-
-        next = primitive->NextUpd;
-        primitive->PrevUpd = primitive->NextUpd = nullptr;
-    }
-
-    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
-}
-
-void AWorld::AddPrimitive( SPrimitiveDef * InPrimitive ) {
-    InPrimitive->bPendingRemove = false;
-
-    MarkPrimitive( InPrimitive );
-}
-
-void AWorld::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
-    InPrimitive->bPendingRemove = true;
-
-    MarkPrimitive( InPrimitive );
-}
-
-void AWorld::MarkPrimitive( SPrimitiveDef * InPrimitive ) {
-    INTRUSIVE_ADD_UNIQUE( InPrimitive, NextUpd, PrevUpd, PrimitiveUpdateList, PrimitiveUpdateListTail );
 }
 
 void AWorld::OnPrePhysics( float _TimeStep ) {
@@ -505,6 +466,12 @@ void AWorld::UpdatePhysics( float _TimeStep ) {
     PhysicsWorld.Simulate( _TimeStep );
 }
 
+void AWorld::UpdateSkinning() {
+    for ( ASkinnedComponent * skinnedMesh = RenderWorld.GetSkinnedMeshes() ; skinnedMesh ; skinnedMesh = skinnedMesh->GetNextSkinnedMesh() ) {
+        skinnedMesh->UpdateBounds();
+    }
+}
+
 void AWorld::Tick( float _TimeStep ) {
     GameRunningTimeMicro = GameRunningTimeMicroAfterTick;
     GameplayTimeMicro = GameplayTimeMicroAfterTick;
@@ -523,9 +490,8 @@ void AWorld::Tick( float _TimeStep ) {
     // Tick navigation
     NavigationMesh.Update( _TimeStep );
 
-    for ( ASkinnedComponent * skinnedMesh = RenderWorld.GetSkinnedMeshes() ; skinnedMesh ; skinnedMesh = skinnedMesh->GetNextSkinnedMesh() ) {
-        skinnedMesh->UpdateBounds();
-    }
+    // Tick skinning
+    UpdateSkinning();
 
     // Tick levels
     UpdateLevels( _TimeStep );
@@ -675,15 +641,11 @@ void AWorld::AddLevel( ALevel * _Level ) {
         _Level->OwnerWorld->RemoveLevel( _Level );
     }
 
-    RemovePrimitives();
-
     _Level->OwnerWorld = this;
     _Level->IndexInArrayOfLevels = ArrayOfLevels.Size();
     _Level->AddRef();
     _Level->OnAddLevelToWorld();
     ArrayOfLevels.Append( _Level );
-
-    MarkPrimitives();
 }
 
 void AWorld::RemoveLevel( ALevel * _Level ) {
@@ -700,9 +662,6 @@ void AWorld::RemoveLevel( ALevel * _Level ) {
         GLogger.Printf( "AWorld::AddLevel: level is not in world\n" );
         return;
     }
-
-    RemovePrimitives();
-    MarkPrimitives();
 
     _Level->OnRemoveLevelFromWorld();
 
@@ -820,63 +779,4 @@ void AWorld::UpdateWorlds( IGameModule * _GameModule, float _TimeStep ) {
     KickoffPendingKillWorlds();
 
     GPrimitiveLinkPool.CleanupEmptyBlocks();
-}
-
-//void AWorld::ReAddPrimitives() {
-//    RemovePrimitives();
-//    AddPrimitives();
-//}
-
-//void AWorld::AddPrimitives() {
-//    for ( ALevel * level : ArrayOfLevels ) {
-//        for ( ADrawable * drawable = RenderWorld.GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
-//            level->AddPrimitive( drawable->Primitive );
-//        }
-
-//        for ( APointLightComponent * light = RenderWorld.GetPointLights() ; light ; light = light->GetNext() ) {
-//            level->AddPrimitive( light->Primitive );
-//        }
-//    }
-//}
-
-void AWorld::UnmarkPrimitives() {
-    SPrimitiveDef * next;
-    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
-    {
-        next = primitive->NextUpd;
-        primitive->PrevUpd = primitive->NextUpd = nullptr;
-    }
-    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
-}
-
-void AWorld::MarkPrimitives() {
-    UnmarkPrimitives();
-
-    for ( ADrawable * drawable = RenderWorld.GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
-        MarkPrimitive( &drawable->Primitive );
-    }
-
-    for ( APointLightComponent * light = RenderWorld.GetPointLights() ; light ; light = light->GetNext() ) {
-        MarkPrimitive( &light->Primitive );
-    }
-}
-
-void AWorld::RemovePrimitives() {
-    SPrimitiveDef * next;
-
-    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
-    {
-        ALevel::RemovePrimitive( primitive );
-
-        next = primitive->NextUpd;
-        primitive->PrevUpd = primitive->NextUpd = nullptr;
-    }
-
-    for ( ADrawable * drawable = RenderWorld.GetDrawables() ; drawable ; drawable = drawable->GetNextDrawable() ) {
-        ALevel::RemovePrimitive( &drawable->Primitive );
-    }
-
-    for ( APointLightComponent * light = RenderWorld.GetPointLights() ; light ; light = light->GetNext() ) {
-        ALevel::RemovePrimitive( &light->Primitive );
-    }
 }

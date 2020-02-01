@@ -48,25 +48,62 @@ ASpotLightComponent::ASpotLightComponent() {
     InnerConeAngle = DEFAULT_INNER_CONE_ANGLE;
     OuterConeAngle = DEFAULT_OUTER_CONE_ANGLE;
     SpotExponent = DEFAULT_SPOT_EXPONENT;
-#ifdef FUTURE
-    SphereWorldBounds.Radius = OuterRadius;
-    SphereWorldBounds.Center = Float3(0);
-    AABBWorldBounds.Mins = SphereWorldBounds.Center - OuterRadius;
-    AABBWorldBounds.Maxs = SphereWorldBounds.Center + OuterRadius;
-#endif
-    UpdateBoundingBox();
+
+    Primitive.Owner = this;
+    Primitive.Type = VSD_PRIMITIVE_SPHERE;
+    Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
+    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+
+    UpdateWorldBounds();
 }
 
 void ASpotLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    GetWorld()->GetRenderWorld().AddSpotLight( this );
+    GetLevel()->AddPrimitive( &Primitive );
 }
 
 void ASpotLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    GetWorld()->GetRenderWorld().RemoveSpotLight( this );
+    GetLevel()->RemovePrimitive( &Primitive );
+}
+
+void ASpotLightComponent::SetVisibilityGroup( int InVisibilityGroup ) {
+    Primitive.VisGroup = InVisibilityGroup;
+}
+
+int ASpotLightComponent::GetVisibilityGroup() const {
+    return Primitive.VisGroup;
+}
+
+void ASpotLightComponent::SetEnabled( bool _Enabled ) {
+    Super::SetEnabled( _Enabled );
+
+    if ( _Enabled ) {
+        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
+        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
+    } else {
+        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
+        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
+    }
+}
+
+void ASpotLightComponent::SetMovable( bool _Movable ) {
+    if ( Primitive.bMovable == _Movable ) {
+        return;
+    }
+
+    Primitive.bMovable = _Movable;
+
+    if ( IsInitialized() )
+    {
+        GetLevel()->MarkPrimitive( &Primitive );
+    }
+}
+
+bool ASpotLightComponent::IsMovable() const {
+    return Primitive.bMovable;
 }
 
 void ASpotLightComponent::SetInnerRadius( float _Radius ) {
@@ -80,7 +117,7 @@ float ASpotLightComponent::GetInnerRadius() const {
 void ASpotLightComponent::SetOuterRadius( float _Radius ) {
     OuterRadius = Math::Max( 0.001f, _Radius );
 
-    UpdateBoundingBox();
+    UpdateWorldBounds();
 }
 
 float ASpotLightComponent::GetOuterRadius() const {
@@ -98,7 +135,7 @@ float ASpotLightComponent::GetInnerConeAngle() const {
 void ASpotLightComponent::SetOuterConeAngle( float _Angle ) {
     OuterConeAngle = Math::Clamp( _Angle, 0.0001f, 180.0f );
 
-    UpdateBoundingBox();
+    UpdateWorldBounds();
 }
 
 float ASpotLightComponent::GetOuterConeAngle() const {
@@ -142,18 +179,13 @@ Float3 ASpotLightComponent::GetWorldDirection() const {
     return GetWorldForwardVector();
 }
 
-BvAxisAlignedBox const & ASpotLightComponent::GetWorldBounds() const {
-    return AABBWorldBounds;
-}
-
 void ASpotLightComponent::OnTransformDirty() {
     Super::OnTransformDirty();
 
-    UpdateBoundingBox();
-    //MarkAreaDirty();
+    UpdateWorldBounds();
 }
 
-void ASpotLightComponent::UpdateBoundingBox() {
+void ASpotLightComponent::UpdateWorldBounds() {
     const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
     const float HalfConeAngle = OuterConeAngle * ToHalfAngleRadians;
     const Float3 WorldPos = GetWorldPosition();
@@ -192,18 +224,46 @@ void ASpotLightComponent::UpdateBoundingBox() {
         SphereWorldBounds.Radius = OuterRadius / ( 2.0 * cos( HalfConeAngle ) );
         SphereWorldBounds.Center = WorldPos + SpotDir * SphereWorldBounds.Radius;
     }
+
+    Primitive.Sphere = SphereWorldBounds;
+
+    if ( IsInitialized() )
+    {
+        GetLevel()->MarkPrimitive( &Primitive );
+    }
 }
 
 void ASpotLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( RVDrawSpotLights ) {
-        Float3 pos = GetWorldPosition();
-        Float3x3 orient = GetWorldRotation().ToMatrix();
-        InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
-        InRenderer->DrawCone( pos, orient, OuterRadius, InnerConeAngle * 0.5f );
-        InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
-        InRenderer->DrawCone( pos, orient, OuterRadius, OuterConeAngle * 0.5f );
+    if ( RVDrawSpotLights )
+    {
+        if ( Primitive.VisPass == InRenderer->GetVisPass() )
+        {
+            Float3 pos = GetWorldPosition();
+            Float3x3 orient = GetWorldRotation().ToMatrix();
+            InRenderer->SetDepthTest( false );
+            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+            InRenderer->DrawCone( pos, orient, OuterRadius, InnerConeAngle * 0.5f );
+            InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
+            InRenderer->DrawCone( pos, orient, OuterRadius, OuterConeAngle * 0.5f );
+        }
     }
+}
+
+void ASpotLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) {
+    Light.Position = Float3( InViewMatrix * GetWorldPosition() );
+    Light.OuterRadius = GetOuterRadius();
+    Light.InnerRadius = Math::Min( InnerRadius, OuterRadius );
+    Light.Color = GetEffectiveColor();
+    Light.RenderMask = ~0u;//RenderMask;
+    Light.LightType = CLUSTER_LIGHT_SPOT;
+
+    constexpr float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
+
+    Light.OuterConeAngle = cos( OuterConeAngle * ToHalfAngleRadians );
+    Light.InnerConeAngle = cos( Math::Min( InnerConeAngle, OuterConeAngle ) * ToHalfAngleRadians );
+
+    Light.SpotDirection = InViewMatrix.TransformAsFloat3x3( -GetWorldDirection() );
+    Light.SpotExponent = SpotExponent;
 }
