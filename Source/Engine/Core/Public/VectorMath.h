@@ -258,23 +258,23 @@ struct TVector2 {
 
     TVector2() = default;
 
-    explicit constexpr TVector2( T const & _Value ) : X( _Value ), Y( _Value ) {}
+    constexpr explicit TVector2( T const & _Value ) : X( _Value ), Y( _Value ) {}
 
     constexpr TVector2( T const & _X, T const & _Y ) : X( _X ), Y( _Y ) {}
 
-    explicit TVector2( TVector3< T > const & _Value ) : X( _Value.X ), Y( _Value.Y ) {}
-    explicit TVector2( TVector4< T > const & _Value ) : X( _Value.X ), Y( _Value.Y ) {}
+    constexpr explicit TVector2( TVector3< T > const & _Value ) : X( _Value.X ), Y( _Value.Y ) {}
+    constexpr explicit TVector2( TVector4< T > const & _Value ) : X( _Value.X ), Y( _Value.Y ) {}
 
     template< typename T2 >
-    explicit constexpr TVector2< T >( TVector2< T2 > const & _Value )
+    constexpr explicit TVector2< T >( TVector2< T2 > const & _Value )
         : X( _Value.X ), Y( _Value.Y ) {}
 
     template< typename T2 >
-    explicit constexpr TVector2< T >( TVector3< T2 > const & _Value )
+    constexpr explicit TVector2< T >( TVector3< T2 > const & _Value )
         : X( _Value.X ), Y( _Value.Y ) {}
 
     template< typename T2 >
-    explicit constexpr TVector2< T >( TVector4< T2 > const & _Value )
+    constexpr explicit TVector2< T >( TVector4< T2 > const & _Value )
         : X( _Value.X ), Y( _Value.Y ) {}
 
     T * ToPtr() {
@@ -301,24 +301,25 @@ struct TVector2 {
         return (&X)[ _Index ];
     }
 
-    constexpr T const & Get( const int & _Index ) const {
-        static_assert( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+    template< int Index >
+    constexpr T const & Get() const {
+        static_assert( Index >= 0 && Index < NumComponents(), "Index out of range" );
+        return (&X)[ Index ];
     }
 
     template< int _Shuffle >
     constexpr TVector2< T > Shuffle2() const {
-        return TVector2< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3) );
+        return TVector2< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>() );
     }
 
     template< int _Shuffle >
     constexpr TVector3< T > Shuffle3() const {
-        return TVector3< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3), Get(( _Shuffle >> 2 ) & 3) );
+        return TVector3< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>(), Get<(_Shuffle >> 2) & 3>() );
     }
 
     template< int _Shuffle >
     constexpr TVector4< T > Shuffle4() const {
-        return TVector4< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3), Get(( _Shuffle >> 2 ) & 3), Get(_Shuffle & 3) );
+        return TVector4< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>(), Get<(_Shuffle >> 2) & 3>(), Get<_Shuffle & 3>() );
     }
 
     constexpr bool operator==( TVector2 const & _Other ) const { return Compare( _Other ); }
@@ -572,12 +573,8 @@ struct TVector2 {
         return ( Math::Abs( Y ) < T(0.00001) ) ? Math::AxialX : Math::NonAxial;
     }
 
-    static constexpr int GetPrecision() {
-        return sizeof( T ) == 4 ? FLT_DIG : DBL_DIG;
-    }
-
     // String conversions
-    AString ToString( int _Precision = GetPrecision() ) const {
+    AString ToString( int _Precision = Math::FloatingPointPrecision< T >() ) const {
         return AString( "( " ) + Math::ToString( X, _Precision ) + " " + Math::ToString( Y, _Precision ) + " )";
     }
 
@@ -632,20 +629,20 @@ struct TVector3 {
 
     TVector3() = default;
 
-    explicit constexpr TVector3( T const & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
+    constexpr explicit TVector3( T const & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
 
     constexpr TVector3( T const & _X, T const & _Y, T const & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
 
     template< typename T2 >
-    explicit constexpr TVector3< T >( TVector2< T2 > const & _Value, T2 const & _Z = T2(0) )
+    constexpr explicit TVector3< T >( TVector2< T2 > const & _Value, T2 const & _Z = T2(0) )
         : X(_Value.X), Y(_Value.Y), Z(_Z) {}
 
     template< typename T2 >
-    explicit constexpr TVector3< T >( TVector3< T2 > const & _Value )
+    constexpr explicit TVector3< T >( TVector3< T2 > const & _Value )
         : X(_Value.X), Y(_Value.Y), Z(_Value.Z) {}
 
     template< typename T2 >
-    explicit constexpr TVector3< T >( TVector4< T2 > const & _Value )
+    constexpr explicit TVector3< T >( TVector4< T2 > const & _Value )
         : X(_Value.X), Y(_Value.Y), Z(_Value.Z) {}
 
     T * ToPtr() {
@@ -669,28 +666,29 @@ struct TVector3 {
     }
 
     T const & operator[]( const int & _Index ) const {
-        //AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
+        AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
         return (&X)[ _Index ];
     }
 
-    constexpr T const & Get( const int & _Index ) const {
-        //static_assert( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+    template< int Index >
+    constexpr T const & Get() const {
+        static_assert( Index >= 0 && Index < NumComponents(), "Index out of range" );
+        return (&X)[ Index ];
     }
 
     template< int _Shuffle >
     constexpr TVector2< T > Shuffle2() const {
-        return TVector2< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3) );
+        return TVector2< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>() );
     }
 
     template< int _Shuffle >
     constexpr TVector3< T > Shuffle3() const {
-        return TVector3< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3), Get(( _Shuffle >> 2 ) & 3) );
+        return TVector3< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>(), Get<(_Shuffle >> 2) & 3>() );
     }
 
     template< int _Shuffle >
     constexpr TVector4< T > Shuffle4() const {
-        return TVector4< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3), Get(( _Shuffle >> 2 ) & 3), Get(_Shuffle & 3) );
+        return TVector4< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>(), Get<(_Shuffle >> 2) & 3>(), Get<_Shuffle & 3>() );
     }
 
     constexpr bool operator==( TVector3 const & _Other ) const { return Compare( _Other ); }
@@ -1136,12 +1134,8 @@ struct TVector3 {
         _XVec = Math::Cross( _YVec, *this );
     }
 
-    static constexpr int GetPrecision() {
-        return sizeof( T ) == 4 ? FLT_DIG : DBL_DIG;
-    }
-
     // String conversions
-    AString ToString( int _Precision = GetPrecision() ) const {
+    AString ToString( int _Precision = Math::FloatingPointPrecision< T >() ) const {
         return AString( "( " ) + Math::ToString( X, _Precision ) + " " + Math::ToString( Y, _Precision ) + " " + Math::ToString( Z, _Precision ) + " )";
     }
 
@@ -1199,20 +1193,20 @@ struct TVector4 {
 
     TVector4() = default;
 
-    explicit constexpr TVector4( T const & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
+    constexpr explicit TVector4( T const & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
 
     constexpr TVector4( T const & _X, T const & _Y, T const & _Z, T const & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
     template< typename T2 >
-    explicit constexpr TVector4< T >( TVector2< T2 > const & _Value, T2 const & _Z = T2( 0 ), T2 const & _W = T2( 0 ) )
+    constexpr explicit TVector4< T >( TVector2< T2 > const & _Value, T2 const & _Z = T2( 0 ), T2 const & _W = T2( 0 ) )
         : X( _Value.X ), Y( _Value.Y ), Z( _Z ), W( _W ) {}
 
     template< typename T2 >
-    explicit constexpr TVector4< T >( TVector3< T2 > const & _Value, T const & _W = T( 0 ) )
+    constexpr explicit TVector4< T >( TVector3< T2 > const & _Value, T const & _W = T( 0 ) )
         : X( _Value.X ), Y( _Value.Y ), Z( _Value.Z ), W( _W ) {}
 
     template< typename T2 >
-    explicit constexpr TVector4< T >( TVector4< T2 > const & _Value )
+    constexpr explicit TVector4< T >( TVector4< T2 > const & _Value )
         : X( _Value.X ), Y( _Value.Y ), Z( _Value.Z ) {}
 
     T * ToPtr() {
@@ -1241,24 +1235,25 @@ struct TVector4 {
         return (&X)[ _Index ];
     }
 
-    constexpr T const & Get( const int & _Index ) const {
-//        static_assert( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+    template< int Index >
+    constexpr T const & Get() const {
+        static_assert( Index >= 0 && Index < NumComponents(), "Index out of range" );
+        return (&X)[ Index ];
     }
 
     template< int _Shuffle >
     constexpr TVector2< T > Shuffle2() const {
-        return TVector2< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3) );
+        return TVector2< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>() );
     }
 
     template< int _Shuffle >
     constexpr TVector3< T > Shuffle3() const {
-        return TVector3< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3), Get(( _Shuffle >> 2 ) & 3) );
+        return TVector3< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>(), Get<(_Shuffle >> 2) & 3>() );
     }
 
     template< int _Shuffle >
     constexpr TVector4< T > Shuffle4() const {
-        return TVector4< T >( Get(_Shuffle >> 6), Get(( _Shuffle >> 4 ) & 3), Get(( _Shuffle >> 2 ) & 3), Get(_Shuffle & 3) );
+        return TVector4< T >( Get<(_Shuffle >> 6)>(), Get<(_Shuffle >> 4) & 3>(), Get<(_Shuffle >> 2) & 3>(), Get<_Shuffle & 3>() );
     }
 
     constexpr bool operator==( TVector4 const & _Other ) const { return Compare( _Other ); }
@@ -1595,12 +1590,8 @@ struct TVector4 {
         return Math::NonAxial;
     }
 
-    static constexpr int GetPrecision() {
-        return sizeof( T ) == 4 ? FLT_DIG : DBL_DIG;
-    }
-
     // String conversions
-    AString ToString( int _Precision = GetPrecision() ) const {
+    AString ToString( int _Precision = Math::FloatingPointPrecision< T >() ) const {
         return AString( "( " ) + Math::ToString( X, _Precision ) + " " + Math::ToString( Y, _Precision ) + " " + Math::ToString( Z, _Precision ) + " " + Math::ToString( W, _Precision ) + " )";
     }
 

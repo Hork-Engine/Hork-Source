@@ -68,6 +68,19 @@ constexpr int BitsCount() {
     return sizeof( T ) * 8;
 }
 
+template< typename T >
+constexpr int FloatingPointPrecision();
+
+template<>
+constexpr int FloatingPointPrecision< float >() {
+    return FLT_DIG;
+}
+
+template<>
+constexpr int FloatingPointPrecision< double >() {
+    return DBL_DIG;
+}
+
 template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
 T Abs( T const & Value ) {
     const T Mask = Value >> ( BitsCount< T >() - 1 );
@@ -983,27 +996,8 @@ AString ToString( T const & _Value ) {
     return buffer.Sprintf( format, _Value );
 }
 
-AN_FORCEINLINE AString ToString( float const & _Value, int _Precision = FLT_DIG ) {
-    TSprintfBuffer< 64 > value;
-    if ( _Precision >= 0 ) {
-        TSprintfBuffer< 64 > format;
-        value.Sprintf( format.Sprintf( "%%.%df", _Precision ), _Value );
-    } else {
-        value.Sprintf( "%f", _Value );
-    }
-    for ( char * p = &value.Data[ AString::Length( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
-        if ( *p != '0' ) {
-            if ( *p != '.' ) {
-                p++;
-            }
-            *p = '\0';
-            return value.Data;
-        }
-    }
-    return value.Data;
-}
-
-AN_FORCEINLINE AString ToString( double const & _Value, int _Precision = DBL_DIG ) {
+template< typename T, typename = TStdEnableIf< IsReal<T>() > >
+AN_FORCEINLINE AString ToString( T const & _Value, int _Precision = FloatingPointPrecision< T >() ) {
     TSprintfBuffer< 64 > value;
     if ( _Precision >= 0 ) {
         TSprintfBuffer< 64 > format;

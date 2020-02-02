@@ -220,7 +220,7 @@ struct Float2x2 final {
     }
 
     // String conversions
-    AString ToString( int _Precision = FLT_DIG ) const {
+    AString ToString( int _Precision = Math::FloatingPointPrecision< float >() ) const {
         return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " )";
     }
 
@@ -545,7 +545,7 @@ struct Float3x3 final {
     }
 
     // String conversions
-    AString ToString( int _Precision = FLT_DIG ) const {
+    AString ToString( int _Precision = Math::FloatingPointPrecision< float >() ) const {
         return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
     }
 
@@ -1127,7 +1127,7 @@ struct Float4x4 final {
     }
 
     // String conversions
-    AString ToString( int _Precision = FLT_DIG ) const {
+    AString ToString( int _Precision = Math::FloatingPointPrecision< float >() ) const {
         return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " " + Col3.ToString( _Precision ) + " )";
     }
 
@@ -1741,7 +1741,7 @@ struct Float3x4 final {
     }
 
     // String conversions
-    AString ToString( int _Precision = FLT_DIG ) const {
+    AString ToString( int _Precision = Math::FloatingPointPrecision< float >() ) const {
         return AString( "( " ) + Col0.ToString( _Precision ) + " " + Col1.ToString( _Precision ) + " " + Col2.ToString( _Precision ) + " )";
     }
 
