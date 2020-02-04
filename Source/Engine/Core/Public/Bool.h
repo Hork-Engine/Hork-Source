@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "BaseMath.h"
 
-struct Bool2 final {
+struct Bool2 {
     bool X;
     bool Y;
 
@@ -102,7 +102,7 @@ struct Bool2 final {
     }
 };
 
-struct Bool3 final {
+struct Bool3 {
     bool X;
     bool Y;
     bool Z;
@@ -174,7 +174,7 @@ struct Bool3 final {
     }
 };
 
-struct Bool4 final {
+struct Bool4 {
     bool X;
     bool Y;
     bool Z;

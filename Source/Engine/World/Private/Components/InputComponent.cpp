@@ -1061,7 +1061,7 @@ void AInputMappings::LoadAxes( ADocument const & _Document, int _FieldsHead ) {
     SDocumentField * field = &_Document.Fields[ _FieldsHead ];
     for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
         SDocumentValue * value = &_Document.Values[ i ];
-        if ( value->Type != SDocumentValue::T_Object ) {
+        if ( value->Type != SDocumentValue::TYPE_OBJECT ) {
             continue;
         }
 
@@ -1114,7 +1114,7 @@ void AInputMappings::LoadActions( ADocument const & _Document, int _FieldsHead )
     SDocumentField * field = &_Document.Fields[ _FieldsHead ];
     for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
         SDocumentValue * value = &_Document.Values[ i ];
-        if ( value->Type != SDocumentValue::T_Object ) {
+        if ( value->Type != SDocumentValue::TYPE_OBJECT ) {
             continue;
         }
 

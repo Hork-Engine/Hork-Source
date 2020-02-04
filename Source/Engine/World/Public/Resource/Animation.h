@@ -83,12 +83,12 @@ class ASkeletalAnimation : public AResource {
     AN_CLASS( ASkeletalAnimation, AResource )
 
 public:
-    void Initialize( int _FrameCount, float _FrameDelta, ATransform const * _Transforms, int _TransformsCount, SAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds );
+    void Initialize( int _FrameCount, float _FrameDelta, STransform const * _Transforms, int _TransformsCount, SAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds );
 
     void Purge();
 
     TPodArray< SAnimationChannel > const & GetChannels() const { return Channels; }
-    TPodArray< ATransform > const & GetTransforms() const { return Transforms; }
+    TPodArray< STransform > const & GetTransforms() const { return Transforms; }
 
     unsigned short GetChannelIndex( int _JointIndex ) const;
 
@@ -114,7 +114,7 @@ protected:
 
 private:
     TPodArray< SAnimationChannel > Channels;
-    TPodArray< ATransform > Transforms;
+    TPodArray< STransform > Transforms;
     TPodArray< unsigned short > ChannelsMap;
     TPodArray< BvAxisAlignedBox > Bounds;
     int     MinNodeIndex;

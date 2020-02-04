@@ -155,7 +155,7 @@ private:
         float FrameDelta;       // fixed time delta between frames
         uint32_t FrameCount;         // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
         TPodArray< SAnimationChannel > Channels;
-        TPodArray< ATransform > Transforms;
+        TPodArray< STransform > Transforms;
         TPodArray< BvAxisAlignedBox > Bounds;
     };
 

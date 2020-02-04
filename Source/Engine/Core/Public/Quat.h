@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "Float.h"
 
-struct Quat final {
+struct Quat {
     float X;
     float Y;
     float Z;
@@ -51,13 +51,13 @@ struct Quat final {
         return &X;
     }
 
-    Quat & operator=( const Quat & _Other ) {
-        X = _Other.X;
-        Y = _Other.Y;
-        Z = _Other.Z;
-        W = _Other.W;
-        return *this;
-    }
+//    Quat & operator=( const Quat & _Other ) {
+//        X = _Other.X;
+//        Y = _Other.Y;
+//        Z = _Other.Z;
+//        W = _Other.W;
+//        return *this;
+//    }
 
     float & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );

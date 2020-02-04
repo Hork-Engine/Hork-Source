@@ -687,8 +687,8 @@ void ADebugRenderer::DrawCapsule( Float3 const & _Position, Float3x3 const & _Or
 
     for ( int angle = 0; angle < 360; angle += stepDegrees ) {
         float r = Math::Radians( float( angle ) );
-        capEnd[ ( _UpAxis + 1 ) % 3 ] = capStart[ ( _UpAxis + 1 ) % 3 ] = StdSin( r ) * _Radius;
-        capEnd[ ( _UpAxis + 2 ) % 3 ] = capStart[ ( _UpAxis + 2 ) % 3 ] = StdCos( r ) * _Radius;
+        capEnd[ ( _UpAxis + 1 ) % 3 ] = capStart[ ( _UpAxis + 1 ) % 3 ] = Math::Sin( r ) * _Radius;
+        capEnd[ ( _UpAxis + 2 ) % 3 ] = capStart[ ( _UpAxis + 2 ) % 3 ] = Math::Cos( r ) * _Radius;
         DrawLine( _Position + _Orientation * capStart, _Position + _Orientation * capEnd );
     }
 }

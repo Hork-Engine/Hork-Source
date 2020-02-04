@@ -199,10 +199,10 @@ void ALevel::Initialize() {
         }
 
         // Check area position relative to portal plane
-        EPlaneSide offset = portal.Plane.SideOffset( a1->ReferencePoint, 0.0f );
+        float d = portal.Plane.Dist( a1->ReferencePoint );
 
         // If area position is on back side of plane, then reverse hull vertices and plane
-        int id = offset == EPlaneSide::Back ? 1 : 0;
+        int id = d < 0.0f;
 
         SPortalLink * portalLink;
 
@@ -1049,7 +1049,6 @@ void ALevel::UnmarkPrimitives() {
 
 void ALevel::RemovePrimitives() {
 #if 1
-    GLogger.Printf("Before RemovePrimitives this %d\n",size_t(this));
     SPrimitiveDef * next;
 
     for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
@@ -1061,7 +1060,6 @@ void ALevel::RemovePrimitives() {
     }
 
     PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
-    GLogger.Printf("After RemovePrimitives\n");
 #else
     UnmarkPrimitives();
 

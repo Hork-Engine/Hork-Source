@@ -55,11 +55,11 @@ private:
 };
 
 enum ETokenType {
-    TT_Unknown,
-    TT_EOF,
-    TT_Bracket,
-    TT_Field,
-    TT_String
+    TOKEN_TYPE_UNKNOWN,
+    TOKEN_TYPE_EOF,
+    TOKEN_TYPE_BRACKET,
+    TOKEN_TYPE_FIELD,
+    TOKEN_TYPE_STRING
 };
 
 struct SToken final {
@@ -76,7 +76,7 @@ struct SToken final {
 struct SDocumentField;
 
 struct SDocumentValue final {
-    enum { T_String, T_Object };
+    enum { TYPE_STRING, TYPE_OBJECT };
     int Type;
     SToken Token;   // for T_String
     int FieldsHead; // for T_Object list of fields

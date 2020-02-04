@@ -291,7 +291,7 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
     }
 #endif
 
-    ATransform spawnTransform;
+    STransform spawnTransform;
 
     spawnTransform.Position = ReadFloat3( _Document, _FieldsHead, "SpawnPosition", Float3(0.0f) );
     spawnTransform.Rotation = ReadQuat( _Document, _FieldsHead, "SpawnRotation", Quat::Identity() );

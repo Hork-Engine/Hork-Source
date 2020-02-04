@@ -190,7 +190,7 @@ AActorComponent * AActor::GetComponent( AClassMeta const * _ClassMeta ) {
 //    return nullptr;
 //}
 
-void AActor::Initialize( ATransform const & _SpawnTransform ) {
+void AActor::Initialize( STransform const & _SpawnTransform ) {
     if ( RootComponent ) {
         RootComponent->SetTransform( _SpawnTransform );
     }

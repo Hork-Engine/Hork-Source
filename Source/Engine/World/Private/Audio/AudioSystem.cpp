@@ -1068,7 +1068,7 @@ static float CalcAudioVolume( SAudioChannel * _Channel ) {
 
 static void PlayChannel( SAudioChannel * channel, float _PlayOffset ) {
 
-    float playOffsetMod = StdFmod( _PlayOffset, channel->Clip->GetDurationInSecounds() );
+    float playOffsetMod = Math::FMod( _PlayOffset, channel->Clip->GetDurationInSecounds() );
 
     if ( channel->bIsVirtual ) {
         channel->VirtualTime = _PlayOffset > 0 ? playOffsetMod : 0;
@@ -1515,7 +1515,7 @@ static void UpdateChannel( SAudioChannel * Channel, float _TimeStep ) {
 
         if ( Channel->VirtualTime >= Channel->Clip->GetDurationInSecounds() ) {
             if ( Channel->bLooping ) {
-                Channel->VirtualTime = StdFmod( Channel->VirtualTime, Channel->Clip->GetDurationInSecounds() );
+                Channel->VirtualTime = Math::FMod( Channel->VirtualTime, Channel->Clip->GetDurationInSecounds() );
             } else {
                 // Stopped
                 FreeChannel( Channel );

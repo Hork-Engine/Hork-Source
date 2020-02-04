@@ -734,6 +734,30 @@ AN_FORCEINLINE float RSqrt( const float & _Value ) {
     return Result;
 }
 
+AN_FORCEINLINE float FMod( float _X, float _Y ) {
+    return std::fmod( _X, _Y );
+}
+
+AN_FORCEINLINE double FMod( double _X, double _Y ) {
+    return std::fmod( _X, _Y );
+}
+
+template< typename T >
+AN_INLINE T GreaterCommonDivisor( T m, T n ) {
+    return ( m < T(0.0001) ) ? n : GreaterCommonDivisor( FMod( n, m ), m );
+}
+
+template< typename T >
+AN_FORCEINLINE T HermiteCubicSpline( T const & p0, T const & m0, T const & p1, T const & m1, float t ) {
+    const float tt = t * t;
+    const float ttt = tt * t;
+    const float s2 = -2 * ttt + 3 * tt;
+    const float s3 = ttt - tt;
+    const float s0 = 1 - s2;
+    const float s1 = s3 - tt + t;
+    return s0 * p0 + s1 * m0 * t + s2 * p1 + s3 * m1 * t;
+}
+
 enum EAxialType {
     AxialX = 0,
     AxialY,
@@ -782,21 +806,21 @@ template< typename T >
 constexpr T Radians( T const & _Deg ) { return _Deg * T(_DEG2RAD_DBL); }
 
 template< typename T >
-AN_FORCEINLINE T Sin( T const & _Rad ) { return StdSin( _Rad ); }
+AN_FORCEINLINE T Sin( T const & _Rad ) { return std::sin( _Rad ); }
 
 template< typename T >
-AN_FORCEINLINE T Cos( T const & _Rad ) { return StdCos( _Rad ); }
+AN_FORCEINLINE T Cos( T const & _Rad ) { return std::cos( _Rad ); }
 
 template< typename T >
-AN_FORCEINLINE T DegSin( T const & _Deg ) { return StdSin( Radians( _Deg ) ); }
+AN_FORCEINLINE T DegSin( T const & _Deg ) { return std::sin( Radians( _Deg ) ); }
 
 template< typename T >
-AN_FORCEINLINE T DegCos( T const & _Deg ) { return StdCos( Radians( _Deg ) ); }
+AN_FORCEINLINE T DegCos( T const & _Deg ) { return std::cos( Radians( _Deg ) ); }
 
 template< typename T >
 AN_FORCEINLINE void SinCos( T const & _Rad, T & _Sin, T & _Cos ) {
-    _Sin = StdSin( _Rad );
-    _Cos = StdCos( _Rad );
+    _Sin = std::sin( _Rad );
+    _Cos = std::cos( _Rad );
 }
 
 template< typename T >
@@ -804,20 +828,17 @@ AN_FORCEINLINE void DegSinCos( T const & _Deg, T & _Sin, T & _Cos ) {
     SinCos( Radians( _Deg ), _Sin, _Cos );
 }
 
-template< typename T >
-AN_INLINE T GreaterCommonDivisor( T m, T n ) {
-    return ( m < T(0.0001) ) ? n : GreaterCommonDivisor( StdFmod( n, m ), m );
+
+AN_FORCEINLINE float Atan2( float _Y, float _X ) {
+    return std::atan2( _Y, _X );
 }
 
-template< typename T >
-AN_FORCEINLINE T HermiteCubicSpline( T const & p0, T const & m0, T const & p1, T const & m1, float t ) {
-    const float tt = t * t;
-    const float ttt = tt * t;
-    const float s2 = -2 * ttt + 3 * tt;
-    const float s3 = ttt - tt;
-    const float s0 = 1 - s2;
-    const float s1 = s3 - tt + t;
-    return s0 * p0 + s1 * m0 * t + s2 * p1 + s3 * m1 * t;
+AN_FORCEINLINE float Atan2Fast( float _Y, float _X ) {
+    const float k1 = _PI / 4.0f;
+    const float k2 = 3.0f * k1;
+    const float absY = Abs( _Y );
+    const float angle = _X >= 0.0f ? ( k1 - k1 * ((_X - absY) / (_X + absY)) ) : ( k2 - k1 * ((_X + absY) / (absY - _X)) );
+    return _Y < 0.0f ? -angle : angle;
 }
 
 
@@ -825,21 +846,15 @@ AN_FORCEINLINE T HermiteCubicSpline( T const & p0, T const & m0, T const & p1, T
 
 template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
 AN_FORCEINLINE T ToInt( const char * _String ) {
-    uint64_t val;
-    uint64_t sign;
+    T val;
+    T sign;
     char c;
 
-    constexpr size_t integral_type_size = sizeof( T );
-    constexpr uint64_t sign_bit = 1 << ( integral_type_size - 1 );
-
-    static_assert( integral_type_size <= 8, "integral type check" );
-
     if ( *_String == '-' ) {
-        sign = sign_bit;
+        sign = IsSigned< T >() ? -1 : 1;
         _String++;
-    }
-    else {
-        sign = 0;
+    } else {
+        sign = 1;
     }
 
     val = 0;
@@ -851,28 +866,25 @@ AN_FORCEINLINE T ToInt( const char * _String ) {
             c = *_String++;
             if ( c >= '0' && c <= '9' ) {
                 val = (val<<4) + c - '0';
-            }
-            else if ( c >= 'a' && c <= 'f' ) {
+            } else if ( c >= 'a' && c <= 'f' ) {
                 val = (val<<4) + c - 'a' + 10;
-            }
-            else if ( c >= 'A' && c <= 'F' ) {
+            } else if ( c >= 'A' && c <= 'F' ) {
                 val = (val<<4) + c - 'A' + 10;
-            }
-            else {
-                return val|sign;
+            } else {
+                return val*sign;
             }
         }
     }
 
     // check for character
     if ( _String[0] == '\'' ) {
-        return sign|_String[1];
+        return sign*T( _String[1] );
     }
 
     while ( 1 ) {
         c = *_String++;
         if ( c < '0' || c > '9' ) {
-            return val|sign;
+            return val*sign;
         }
         val = val*10 + c - '0';
     }

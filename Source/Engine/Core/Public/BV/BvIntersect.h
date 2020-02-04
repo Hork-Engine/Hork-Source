@@ -291,6 +291,17 @@ AN_INLINE bool BvSphereOverlapPlane( BvSphere const & _Sphere, PlaneF const & _P
     return true;
 }
 
+/** Sphere - Plane */
+AN_INLINE int BvSphereOverlapPlaneSideMask( BvSphere const & _Sphere, PlaneF const & _Plane ) {
+    float dist = _Plane.Dist( _Sphere.Center );
+    if ( dist > _Sphere.Radius ) {
+        return 1; // front
+    } else if ( dist < -_Sphere.Radius ) {
+        return 2; // back
+    }
+    return 3; // overlap
+}
+
 
 /*
 

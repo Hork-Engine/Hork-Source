@@ -200,7 +200,7 @@ void ASkinnedComponent::UpdateTransforms() {
     SJoint const * joints = Skeleton->GetJoints().ToPtr();
     int jointsCount = Skeleton->GetJoints().Size();
 
-    TPodArray< ATransform > tempTransforms;
+    TPodArray< STransform > tempTransforms;
     TPodArray< float > weights;
 
     tempTransforms.Resize( AnimControllers.Size() );
@@ -234,17 +234,17 @@ void ASkinnedComponent::UpdateTransforms() {
 
             SAnimationChannel const & jointAnim = animJoints[ channelIndex ];
 
-            TPodArray< ATransform > const & transforms = animation->GetTransforms();
+            TPodArray< STransform > const & transforms = animation->GetTransforms();
 
-            ATransform & transform = tempTransforms[ n ];
+            STransform & transform = tempTransforms[ n ];
             weights[ n ] = controller->Weight;
             n++;
 
             if ( controller->Frame == controller->NextFrame || controller->Blend < 0.0001f ) {
                 transform = transforms[ jointAnim.TransformOffset + controller->Frame ];
             } else {
-                ATransform const & frame1 = transforms[ jointAnim.TransformOffset + controller->Frame ];
-                ATransform const & frame2 = transforms[ jointAnim.TransformOffset + controller->NextFrame ];
+                STransform const & frame1 = transforms[ jointAnim.TransformOffset + controller->Frame ];
+                STransform const & frame2 = transforms[ jointAnim.TransformOffset + controller->NextFrame ];
 
                 transform.Position = Math::Lerp( frame1.Position, frame2.Position, controller->Blend );
                 transform.Rotation = frame1.Rotation.Slerp( frame2.Rotation, controller->Blend );

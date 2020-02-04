@@ -38,7 +38,7 @@ struct Float4x4;
 struct Float3x4;
 
 // Column-major matrix 2x2
-struct Float2x2 final {
+struct Float2x2 {
     Float2 Col0;
     Float2 Col1;
 
@@ -61,11 +61,11 @@ struct Float2x2 final {
         return &Col0.X;
     }
 
-    Float2x2 & operator=( const Float2x2 & _Other ) {
-        Col0 = _Other.Col0;
-        Col1 = _Other.Col1;
-        return *this;
-    }
+//    Float2x2 & operator=( const Float2x2 & _Other ) {
+//        Col0 = _Other.Col0;
+//        Col1 = _Other.Col1;
+//        return *this;
+//    }
 
     Float2 & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < 2, "Index out of range" );
@@ -249,7 +249,7 @@ struct Float2x2 final {
 };
 
 // Column-major matrix 3x3
-struct Float3x3 final {
+struct Float3x3 {
     Float3 Col0;
     Float3 Col1;
     Float3 Col2;
@@ -274,13 +274,13 @@ struct Float3x3 final {
         return &Col0.X;
     }
 
-    Float3x3 & operator=( const Float3x3 & _Other ) {
-        //Col0 = _Other.Col0;
-        //Col1 = _Other.Col1;
-        //Col2 = _Other.Col2;
-        memcpy( this, &_Other, sizeof( *this ) );
-        return *this;
-    }
+//    Float3x3 & operator=( const Float3x3 & _Other ) {
+//        //Col0 = _Other.Col0;
+//        //Col1 = _Other.Col1;
+//        //Col2 = _Other.Col2;
+//        memcpy( this, &_Other, sizeof( *this ) );
+//        return *this;
+//    }
 
     Float3 & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
@@ -576,7 +576,7 @@ struct Float3x3 final {
 };
 
 // Column-major matrix 4x4
-struct Float4x4 final {
+struct Float4x4 {
     Float4 Col0;
     Float4 Col1;
     Float4 Col2;
@@ -603,14 +603,14 @@ struct Float4x4 final {
         return &Col0.X;
     }
 
-    Float4x4 & operator=( const Float4x4 & _Other ) {
-        //Col0 = _Other.Col0;
-        //Col1 = _Other.Col1;
-        //Col2 = _Other.Col2;
-        //Col3 = _Other.Col3;
-        memcpy( this, &_Other, sizeof( *this ) );
-        return *this;
-    }
+//    Float4x4 & operator=( const Float4x4 & _Other ) {
+//        //Col0 = _Other.Col0;
+//        //Col1 = _Other.Col1;
+//        //Col2 = _Other.Col2;
+//        //Col3 = _Other.Col3;
+//        memcpy( this, &_Other, sizeof( *this ) );
+//        return *this;
+//    }
 
     Float4 & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < 4, "Index out of range" );
@@ -1347,7 +1347,7 @@ struct Float4x4 final {
 
 // Column-major matrix 3x4
 // Keep transformations transposed
-struct Float3x4 final {
+struct Float3x4 {
     Float4 Col0;
     Float4 Col1;
     Float4 Col2;
@@ -1372,13 +1372,13 @@ struct Float3x4 final {
         return &Col0.X;
     }
 
-    Float3x4 & operator=( const Float3x4 & _Other ) {
-        //Col0 = _Other.Col0;
-        //Col1 = _Other.Col1;
-        //Col2 = _Other.Col2;
-        memcpy( this, &_Other, sizeof( *this ) );
-        return *this;
-    }
+//    Float3x4 & operator=( const Float3x4 & _Other ) {
+//        //Col0 = _Other.Col0;
+//        //Col1 = _Other.Col1;
+//        //Col2 = _Other.Col2;
+//        memcpy( this, &_Other, sizeof( *this ) );
+//        return *this;
+//    }
 
     Float4 & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );

@@ -500,6 +500,20 @@ protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
+class MGModNode : public MGNode {
+    AN_CLASS( MGModNode, MGNode )
+
+public:
+    MGNodeInput * ValueA;
+    MGNodeInput * ValueB;
+    MGNodeOutput * Result;
+
+protected:
+    MGModNode();
+
+    void Compute( AMaterialBuildContext & _Context ) override;
+};
+
 class MGLerpNode : public MGNode {
     AN_CLASS( MGLerpNode, MGNode )
 

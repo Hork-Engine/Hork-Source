@@ -145,7 +145,7 @@ public:
     void SetTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
 
     /** Set local transform */
-    void SetTransform( ATransform const & _Transform );
+    void SetTransform( STransform const & _Transform );
 
     /** Set local transform */
     void SetTransform( ASceneComponent const * _Transform );
@@ -172,7 +172,7 @@ public:
     void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
 
     /** Set world transform */
-    void SetWorldTransform( ATransform const & _Transform );
+    void SetWorldTransform( STransform const & _Transform );
 
     /** Get local position */
     Float3 const & GetPosition() const;

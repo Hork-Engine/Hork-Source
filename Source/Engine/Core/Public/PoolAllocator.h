@@ -116,7 +116,7 @@ AN_INLINE void TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::CleanupEmptyBlock
     SBlock * prev = nullptr;
     SBlock * next;
 
-    //GLogger.Printf( "TotalBlocks %d\n", TotalBlocks );
+    //GLogger.Printf( "TPoolAllocator: total blocks %d\n", TotalBlocks );
 
     // Keep at least one block allocated
     for ( SBlock * block = Blocks ; block && TotalBlocks > 1 ; block = next ) {
@@ -169,7 +169,7 @@ AN_INLINE typename TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::SBlock * TPoo
     Blocks = block;
     CurBlock = block;
     ++TotalBlocks;
-    GLogger.Printf( "APoolAllocator::AllocateBlock: allocated a new block\n" );
+    GLogger.Printf( "TPoolAllocator::AllocateBlock: allocated a new block\n" );
     return block;
 }
 

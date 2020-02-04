@@ -1389,6 +1389,46 @@ void MGPowNode::Compute( AMaterialBuildContext & _Context ) {
 
     _Context.GenerateSourceCode( Result, expression, false );
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_CLASS_META( MGModNode )
+
+MGModNode::MGModNode() : Super( "Mod (A,B)" ) {
+    Stages = ANY_STAGE_BIT;
+
+    ValueA = AddInput( "A" );
+    ValueB = AddInput( "B" );
+
+    Result = AddOutput( "Result", AT_Unknown );
+}
+
+void MGModNode::Compute( AMaterialBuildContext & _Context ) {
+    MGNodeOutput * connectionA = ValueA->GetConnection();
+    MGNodeOutput * connectionB = ValueB->GetConnection();
+
+    AString expression;
+
+    if ( connectionA && ValueA->ConnectedBlock()->Build( _Context )
+         && connectionB && ValueB->ConnectedBlock()->Build( _Context ) ) {
+
+        Result->Type = connectionA->Type;
+
+        if ( connectionA->Type != connectionB->Type ) {
+            expression = "mod( " + connectionA->Expression + ", " + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " )";
+        } else {
+            expression = "mod( " + connectionA->Expression + ", " + connectionB->Expression + " )";
+        }
+
+    } else {
+        Result->Type = AT_Float4;
+
+        expression = "vec4( 0.0 )";
+    }
+
+    _Context.GenerateSourceCode( Result, expression, false );
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AN_CLASS_META( MGLerpNode )

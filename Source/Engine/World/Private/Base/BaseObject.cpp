@@ -127,7 +127,7 @@ void ABaseObject::LoadAttributes( ADocument const & _Document, int _FieldsHead )
         if ( field ) {
             for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
                 SDocumentValue * attributeObject = &_Document.Values[ i ];
-                if ( attributeObject->Type == SDocumentValue::T_Object ) {
+                if ( attributeObject->Type == SDocumentValue::TYPE_OBJECT ) {
                     for ( int j = attributeObject->FieldsHead ; j != -1 ; j = _Document.Fields[ j ].Next ) {
                         SDocumentField const * attributeName = &_Document.Fields[ j ];
                         AAttributeMeta const * attrMeta = meta->FindAttribute( attributeName->Name.ToString().CStr(), false );

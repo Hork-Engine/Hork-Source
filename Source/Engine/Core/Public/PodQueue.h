@@ -63,6 +63,8 @@ public:
     TPodQueue & operator=( TPodQueue const & _Queue );
 
 private:
+    static_assert( std::is_trivial< T >::value, "Expected POD type" );
+
     T   StaticData[ MAX_QUEUE_LENGTH ];
     T * pQueue;
     int QueueHead;

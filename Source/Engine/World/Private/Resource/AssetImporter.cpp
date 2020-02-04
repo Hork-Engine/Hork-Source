@@ -1351,7 +1351,7 @@ void AAssetImporter::ReadAnimation( cgltf_animation * Anim, AnimationInfo & Anim
             m_Joints[nodeIndex].LocalTransform.DecomposeAll( position, rotation, scale );
             q.FromMatrix( rotation );
             for ( int f = 0; f < numFrames; f++ ) {
-                ATransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
+                STransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
                 transform.Position = position;
                 transform.Scale = scale;
                 transform.Rotation = q;
@@ -1363,7 +1363,7 @@ void AAssetImporter::ReadAnimation( cgltf_animation * Anim, AnimationInfo & Anim
             jointAnim->bHasPosition = true;
 
             for ( int f = 0; f < numFrames; f++ ) {
-                ATransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
+                STransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
                 sample_vec3( sampler, f * frameDelta, transform.Position );
 
@@ -1375,7 +1375,7 @@ void AAssetImporter::ReadAnimation( cgltf_animation * Anim, AnimationInfo & Anim
             jointAnim->bHasRotation = true;
 
             for ( int f = 0; f < numFrames; f++ ) {
-                ATransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
+                STransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
                 sample_quat( sampler, f * frameDelta, transform.Rotation );
             }
@@ -1385,7 +1385,7 @@ void AAssetImporter::ReadAnimation( cgltf_animation * Anim, AnimationInfo & Anim
             jointAnim->bHasScale = true;
 
             for ( int f = 0; f < numFrames; f++ ) {
-                ATransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
+                STransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
                 sample_vec3( sampler, f * frameDelta, transform.Scale );
             }
@@ -1397,7 +1397,7 @@ void AAssetImporter::ReadAnimation( cgltf_animation * Anim, AnimationInfo & Anim
         }
 
         for ( int f = 0; f < numFrames; f++ ) {
-            ATransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
+            STransform & transform = Animation.Transforms[jointAnim->TransformOffset + f];
 
             float frameTime = f * frameDelta;
 
@@ -1426,7 +1426,7 @@ void AAssetImporter::ReadAnimation( cgltf_animation * Anim, AnimationInfo & Anim
         if ( jointAnim->JointIndex == 0 && jointAnim->bHasRotation ) {
             for ( int frameIndex = 0 ; frameIndex < numFrames ; frameIndex++ ) {
 
-                ATransform & transform = Animation.Transforms[jointAnim->TransformOffset + frameIndex];
+                STransform & transform = Animation.Transforms[jointAnim->TransformOffset + frameIndex];
 
                 transform.Rotation = m_Settings.Rotation * transform.Rotation;
             }

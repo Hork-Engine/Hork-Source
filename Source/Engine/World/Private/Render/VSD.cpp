@@ -550,37 +550,37 @@ static float ClipDistances[ MAX_HULL_POINTS ];
 static EPlaneSide ClipSides[ MAX_HULL_POINTS ];
 
 static bool VSD_ClipPolygonFast( Float3 const * InPoints, const int InNumPoints, SPortalHull * Out, PlaneF const & InClipPlane, const float InEpsilon ) {
-    int Front = 0;
-    int Back = 0;
+    int front = 0;
+    int back = 0;
     int i;
-    float Dist;
+    float d;
 
     AN_ASSERT( InNumPoints + 4 <= MAX_HULL_POINTS );
 
-    // Determine on which side of the plane each point is.
+    // Classify hull points
     for ( i = 0; i < InNumPoints; i++ ) {
-        Dist = Math::Dot( InPoints[ i ], InClipPlane.Normal ) + InClipPlane.D;
+        d = InClipPlane.Dist( InPoints[ i ] );
 
-        ClipDistances[ i ] = Dist;
+        ClipDistances[ i ] = d;
 
-        if ( Dist > InEpsilon ) {
+        if ( d > InEpsilon ) {
             ClipSides[ i ] = EPlaneSide::Front;
-            Front++;
-        } else if ( Dist < -InEpsilon ) {
+            front++;
+        } else if ( d < -InEpsilon ) {
             ClipSides[ i ] = EPlaneSide::Back;
-            Back++;
+            back++;
         } else {
             ClipSides[ i ] = EPlaneSide::On;
         }
     }
 
-    if ( !Front ) {
+    if ( !front ) {
         // All points are behind the plane
         Out->NumPoints = 0;
         return true;
     }
 
-    if ( !Back ) {
+    if ( !back ) {
         // All points are on the front
         return false;
     }
@@ -594,35 +594,27 @@ static bool VSD_ClipPolygonFast( Float3 const * InPoints, const int InNumPoints,
         Float3 const & v = InPoints[ i ];
 
         if ( ClipSides[ i ] == EPlaneSide::On ) {
-            Out->Points[Out->NumPoints++ ] = v;
+            Out->Points[ Out->NumPoints++ ] = v;
             continue;
         }
 
         if ( ClipSides[ i ] == EPlaneSide::Front ) {
-            Out->Points[Out->NumPoints++ ] = v;
+            Out->Points[ Out->NumPoints++ ] = v;
         }
 
-        EPlaneSide NextSide = ClipSides[ i + 1 ];
+        EPlaneSide nextSide = ClipSides[ i + 1 ];
 
-        if ( NextSide == EPlaneSide::On || NextSide == ClipSides[ i ] ) {
+        if ( nextSide == EPlaneSide::On || nextSide == ClipSides[ i ] ) {
             continue;
         }
 
-        Float3 & NewVertex = Out->Points[Out->NumPoints++ ];
+        Float3 & newVertex = Out->Points[ Out->NumPoints++ ];
 
-        NewVertex = InPoints[ ( i + 1 ) % InNumPoints];
+        newVertex = InPoints[ ( i + 1 ) % InNumPoints ];
 
-        Dist = ClipDistances[ i ] / ( ClipDistances[ i ] - ClipDistances[ i + 1 ] );
-        //for ( int j = 0 ; j < 3 ; j++ ) {
-        //	if ( InClipPlane.Normal[ j ] == 1 ) {
-        //		NewVertex[ j ] = -InClipPlane.D;
-        //	} else if ( InClipPlane.Normal[ j ] == -1 ) {
-        //		NewVertex[ j ] = InClipPlane.D;
-        //	} else {
-        //		NewVertex[ j ] = v[ j ] + Dist * ( NewVertex[j] - v[j] );
-        //	}
-        //}
-        NewVertex = v + Dist * ( NewVertex - v );
+        d = ClipDistances[ i ] / ( ClipDistances[ i ] - ClipDistances[ i + 1 ] );
+
+        newVertex = v + d * ( newVertex - v );
     }
 
     return true;

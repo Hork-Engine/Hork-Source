@@ -249,19 +249,19 @@ void ATokenizer::NextToken( ATokenBuffer & _Buffer ) {
             if ( *s == 0 ) {
                 // unexpected eof
                 CurToken.Begin = CurToken.End = "";
-                CurToken.Type = TT_Unknown;
+                CurToken.Type = TOKEN_TYPE_UNKNOWN;
                 return;
             }
             if ( *s == '\n' ) {
                 // unexpected eol
                 CurToken.Begin = CurToken.End = "";
-                CurToken.Type = TT_Unknown;
+                CurToken.Type = TOKEN_TYPE_UNKNOWN;
                 return;
             }
             s++;
         }
         CurToken.End = s++;
-        CurToken.Type = TT_String;
+        CurToken.Type = TOKEN_TYPE_STRING;
         return;
     }
 
@@ -269,7 +269,7 @@ void ATokenizer::NextToken( ATokenBuffer & _Buffer ) {
     if ( *s == '{' || *s == '}' || *s == '[' || *s == ']' ) {
         CurToken.Begin = s;
         CurToken.End = ++s;
-        CurToken.Type = TT_Bracket;
+        CurToken.Type = TOKEN_TYPE_BRACKET;
         return;
     }
 
@@ -282,13 +282,13 @@ void ATokenizer::NextToken( ATokenBuffer & _Buffer ) {
     if ( CurToken.Begin == CurToken.End ) {
         if ( *s ) {
             GLogger.Print( "undefined symbols\n" );
-            CurToken.Type = TT_Unknown;
+            CurToken.Type = TOKEN_TYPE_UNKNOWN;
         } else {
-            CurToken.Type = TT_EOF;
+            CurToken.Type = TOKEN_TYPE_EOF;
         }
         return;
     } else {
-        CurToken.Type = TT_Field;
+        CurToken.Type = TOKEN_TYPE_FIELD;
     }
 }
 
@@ -310,7 +310,7 @@ static void ParseArray( ATokenizer & _Tokenizer, ADocument & _Doc, int & _ArrayH
     while ( 1 ) {
         SToken token = _Tokenizer.GetToken();
 
-        if ( token.Type == TT_Bracket ) {
+        if ( token.Type == TOKEN_TYPE_BRACKET ) {
             if ( *token.Begin == ']' ) {
                 _Tokenizer.NextToken( _Doc.Buffer );
                 if ( _ArrayHead == -1 ) {
@@ -342,11 +342,11 @@ static void ParseArray( ATokenizer & _Tokenizer, ADocument & _Doc, int & _ArrayH
             continue;
         }
 
-        if ( token.Type == TT_String ) {
+        if ( token.Type == TOKEN_TYPE_STRING ) {
             // array element is string
 
             int value = _Doc.AllocateValue();
-            _Doc.Values[ value ].Type = SDocumentValue::T_String;
+            _Doc.Values[ value ].Type = SDocumentValue::TYPE_STRING;
             _Doc.Values[ value ].Token = token;
             _Doc.Values[ value ].Prev = _ArrayTail;
             if ( _Doc.Values[ value ].Prev != -1 ) {
@@ -370,12 +370,12 @@ static void ParseArray( ATokenizer & _Tokenizer, ADocument & _Doc, int & _ArrayH
 static int ParseObject( ATokenizer & _Tokenizer, ADocument & _Doc ) {
 
     int value = _Doc.AllocateValue();
-    _Doc.Values[ value ].Type = SDocumentValue::T_Object;
+    _Doc.Values[ value ].Type = SDocumentValue::TYPE_OBJECT;
 
     while ( 1 ) {
         SToken token = _Tokenizer.GetToken();
 
-        if ( token.Type == TT_Bracket ) {
+        if ( token.Type == TOKEN_TYPE_BRACKET ) {
             if ( *token.Begin == '}' ) {
                 if ( _Doc.Values[ value ].FieldsTail == -1 ) {
                     GLogger.Print( "empty object\n" );
@@ -389,7 +389,7 @@ static int ParseObject( ATokenizer & _Tokenizer, ADocument & _Doc ) {
             return -1;
         }
 
-        if ( !Expect( TT_Field, token ) ) {
+        if ( !Expect( TOKEN_TYPE_FIELD, token ) ) {
             //error
             return -1;
         }
@@ -415,7 +415,7 @@ static int ParseObject( ATokenizer & _Tokenizer, ADocument & _Doc ) {
 static int ParseField( ATokenizer & _Tokenizer, ADocument & _Doc, SToken & _FieldToken ) {
     SToken token = _Tokenizer.GetToken();
 
-    if ( token.Type == TT_Bracket ) {
+    if ( token.Type == TOKEN_TYPE_BRACKET ) {
         if ( *token.Begin == '[' ) {
             // value is array
             _Tokenizer.NextToken( _Doc.Buffer );
@@ -450,12 +450,12 @@ static int ParseField( ATokenizer & _Tokenizer, ADocument & _Doc, SToken & _Fiel
         return -1;
     }
 
-    if ( token.Type == TT_String ) {
+    if ( token.Type == TOKEN_TYPE_STRING ) {
         _Tokenizer.NextToken( _Doc.Buffer );
 
         // value is string
         int value = _Doc.AllocateValue();
-        _Doc.Values[ value ].Type = SDocumentValue::T_String;
+        _Doc.Values[ value ].Type = SDocumentValue::TYPE_STRING;
         _Doc.Values[ value ].Token = token;
 
         int field = _Doc.AllocateField();
@@ -474,8 +474,8 @@ static void PrintField( const ADocument & _Doc, int i );
 static void PrintValue( const ADocument & _Doc, int i ) {
     const SDocumentValue * value = &_Doc.Values[ i ];
 
-    GLogger.Printf( "Type: %s\n", value->Type == SDocumentValue::T_String ? "STRING" : "OBJECT" );
-    if ( value->Type == SDocumentValue::T_String ) {
+    GLogger.Printf( "Type: %s\n", value->Type == SDocumentValue::TYPE_STRING ? "STRING" : "OBJECT" );
+    if ( value->Type == SDocumentValue::TYPE_STRING ) {
         GLogger.Printf( "%s\n", value->Token.ToString().CStr() );
         return;
     }
@@ -516,11 +516,11 @@ void ADocument::FromString( const char * _Script, bool _InSitu ) {
 
     while ( 1 ) {
         SToken token = tokenizer.GetToken();
-        if ( token.Type == TT_EOF || token.Type == TT_Unknown ) {
+        if ( token.Type == TOKEN_TYPE_EOF || token.Type == TOKEN_TYPE_UNKNOWN ) {
             break;
         }
 
-        if ( !Expect( TT_Field, token ) ) {
+        if ( !Expect( TOKEN_TYPE_FIELD, token ) ) {
             //error
             Clear();
             break;
@@ -564,14 +564,14 @@ int ADocument::CreateField( const char * _FieldName ) {
 
 int ADocument::CreateStringValue( const char * _Value ) {
     int value = AllocateValue();
-    Values[ value ].Type = SDocumentValue::T_String;
+    Values[ value ].Type = SDocumentValue::TYPE_STRING;
     Values[ value ].Token.FromString( _Value );
     return value;
 }
 
 int ADocument::CreateObjectValue() {
     int value = AllocateValue();
-    Values[ value ].Type = SDocumentValue::T_Object;
+    Values[ value ].Type = SDocumentValue::TYPE_OBJECT;
     return value;
 }
 
@@ -593,7 +593,7 @@ int ADocument::CreateStringField( const char * _FieldName, const char * _FieldVa
 }
 
 void ADocument::AddFieldToObject( int _Object, int _Field ) {
-    AN_ASSERT( Values[ _Object ].Type == SDocumentValue::T_Object );
+    AN_ASSERT( Values[ _Object ].Type == SDocumentValue::TYPE_OBJECT );
     Fields[ _Field ].Prev = Values[ _Object ].FieldsTail;
     if ( Fields[ _Field ].Prev != -1 ) {
         Fields[ Fields[ _Field ].Prev ].Next = _Field;
@@ -642,7 +642,7 @@ static AString ValueToString( const ADocument & _Doc, int i ) {
 
     AString s;
 
-    if ( value->Type == SDocumentValue::T_String ) {
+    if ( value->Type == SDocumentValue::TYPE_STRING ) {
         s += "\"" + value->Token.ToString() + "\"";
         return s;
     }
@@ -731,7 +731,7 @@ static AString ObjectToStringCompact( const ADocument & _Doc, int _FieldsHead );
 
 static AString ValueToStringCompact( const ADocument & _Doc, int i ) {
     const SDocumentValue * value = &_Doc.Values[ i ];
-    if ( value->Type == SDocumentValue::T_String ) {
+    if ( value->Type == SDocumentValue::TYPE_STRING ) {
         return AString( "\"" ) + value->Token.ToString() + "\"";
     }
     return AString( "{" ) + ObjectToStringCompact( _Doc, value->FieldsHead ) + "}";

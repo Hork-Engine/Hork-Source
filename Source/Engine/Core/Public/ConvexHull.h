@@ -36,6 +36,13 @@ SOFTWARE.
 #define CONVEX_HULL_MAX_BOUNDS        ( 5*1024 )//99999999999.0f
 #define CONVEX_HULL_MIN_BOUNDS        ( -5*1024 )//99999999999.0f
 
+enum class EPlaneSide {
+    Back = -1,
+    Front = 1,
+    On = 0,
+    Cross = 2
+};
+
 class AConvexHull final {
     AN_FORBID_COPY( AConvexHull )
 

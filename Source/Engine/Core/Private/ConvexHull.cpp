@@ -130,20 +130,19 @@ AConvexHull * AConvexHull::Reversed() const {
 }
 
 EPlaneSide AConvexHull::Classify( PlaneF const & _Plane, float _Epsilon ) const {
-    EPlaneSide side;
     int front = 0;
     int back = 0;
     int onplane = 0;
 
     for ( int i = 0 ; i < NumPoints ; i++ ) {
         const Float3 & point = Points[ i ];
-        side = _Plane.SideOffset( point, _Epsilon );
-        if ( side == EPlaneSide::Front ) {
+        const float d = _Plane.Dist( point );
+        if ( d > _Epsilon ) {
             if ( back > 0 || onplane > 0 ) {
                 return EPlaneSide::Cross;
             }
             front++;
-        } else if ( side == EPlaneSide::Back ) {
+        } else if ( d < -_Epsilon ) {
             if ( front > 0 || onplane > 0 ) {
                 return EPlaneSide::Cross;
             }

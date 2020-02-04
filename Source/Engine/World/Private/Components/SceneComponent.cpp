@@ -348,7 +348,7 @@ void ASceneComponent::SetTransform( Float3 const & _Position, Quat const & _Rota
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetTransform( ATransform const & _Transform ) {
+void ASceneComponent::SetTransform( STransform const & _Transform ) {
     SetTransform( _Transform.Position, _Transform.Rotation, _Transform.Scale );
 }
 
@@ -421,7 +421,7 @@ void ASceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & 
 
 }
 
-void ASceneComponent::SetWorldTransform( ATransform const & _Transform ) {
+void ASceneComponent::SetWorldTransform( STransform const & _Transform ) {
     SetWorldTransform( _Transform.Position, _Transform.Rotation, _Transform.Scale );
 }
 

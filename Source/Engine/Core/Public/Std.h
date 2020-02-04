@@ -106,7 +106,3 @@ using AStdThread = std::thread;
 #define StdSwap     std::swap
 #define StdMax      std::max
 #define StdMin      std::min
-#define StdFmod     std::fmod
-#define StdSin      std::sin
-#define StdCos      std::cos
-#define StdFloor    std::floor

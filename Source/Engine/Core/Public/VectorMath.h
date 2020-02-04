@@ -285,11 +285,11 @@ struct TVector2 {
         return &X;
     }
 
-    TVector2 & operator=( TVector2 const & _Other ) {
-        X = _Other.X;
-        Y = _Other.Y;
-        return *this;
-    }
+//    TVector2 & operator=( TVector2 const & _Other ) {
+//        X = _Other.X;
+//        Y = _Other.Y;
+//        return *this;
+//    }
 
     T & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
@@ -653,12 +653,12 @@ struct TVector3 {
         return &X;
     }
 
-    TVector3 & operator=( TVector3 const & _Other ) {
-        X = _Other.X;
-        Y = _Other.Y;
-        Z = _Other.Z;
-        return *this;
-    }
+//    TVector3 & operator=( TVector3 const & _Other ) {
+//        X = _Other.X;
+//        Y = _Other.Y;
+//        Z = _Other.Z;
+//        return *this;
+//    }
 
     T & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
@@ -1217,13 +1217,13 @@ struct TVector4 {
         return &X;
     }
 
-    TVector4 & operator=( TVector4 const & _Other ) {
-        X = _Other.X;
-        Y = _Other.Y;
-        Z = _Other.Z;
-        W = _Other.W;
-        return *this;
-    }
+//    TVector4 & operator=( TVector4 const & _Other ) {
+//        X = _Other.X;
+//        Y = _Other.Y;
+//        Z = _Other.Z;
+//        W = _Other.W;
+//        return *this;
+//    }
 
     T & operator[]( const int & _Index ) {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );

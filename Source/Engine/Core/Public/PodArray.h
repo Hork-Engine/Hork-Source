@@ -157,6 +157,7 @@ public:
 //    }
 
 private:
+    static_assert( std::is_trivial< T >::value, "Expected POD type" );
     static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "Alignment check" );
     //static_assert( IsAligned( sizeof( T ), Alignment ), "Alignment check" );
 

@@ -572,5 +572,5 @@ void CalcBoundingBoxes( SMeshVertex const * InVertices,
                         uint32_t FrameCount,
                         struct SAnimationChannel const * InChannels,
                         int InChannelsCount,
-                        ATransform const * InTransforms,
+                        STransform const * InTransforms,
                         TPodArray< BvAxisAlignedBox > & Bounds );

@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "Quat.h"
 
-struct Angl final {
+struct Angl {
     float Pitch;
     float Yaw;
     float Roll;
@@ -208,7 +208,7 @@ struct Angl final {
 
     static float Normalize360( const float & _Angle ) {
         //return (360.0f/65536) * (static_cast< int >(_Angle*(65536/360.0f)) & 65535);
-        float Norm = StdFmod( _Angle, 360.0f );
+        float Norm = Math::FMod( _Angle, 360.0f );
         if ( Norm < 0.0f ) {
             Norm += 360.0f;
         }

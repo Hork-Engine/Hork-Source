@@ -61,7 +61,7 @@ void ASkeletalAnimation::Purge() {
     DurationNormalizer = 1.0f;
 }
 
-void ASkeletalAnimation::Initialize( int _FrameCount, float _FrameDelta, ATransform const * _Transforms, int _TransformsCount, SAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds ) {
+void ASkeletalAnimation::Initialize( int _FrameCount, float _FrameDelta, STransform const * _Transforms, int _TransformsCount, SAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds ) {
     AN_ASSERT( _TransformsCount == _FrameCount * _NumAnimatedJoints );
 
     Channels.ResizeInvalidate( _NumAnimatedJoints );
@@ -123,7 +123,7 @@ bool ASkeletalAnimation::LoadResource( AString const & _Path ) {
     AString guid;
 
     TPodArray< SAnimationChannel > channels;
-    TPodArray< ATransform > transforms;
+    TPodArray< STransform > transforms;
     TPodArray< BvAxisAlignedBox > bounds;
 
     uint32_t fileFormat = f.ReadUInt32();

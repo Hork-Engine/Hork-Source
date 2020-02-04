@@ -142,7 +142,7 @@ void AIndexedMesh::Purge() {
 }
 
 void AIndexedMesh::InvalidateChannels() {
-    GLogger.Printf( "InvalidateChannels()\n" );
+    //GLogger.Printf( "InvalidateChannels()\n" );
 
     for ( ALightmapUV * channel : LightmapUVs ) {
         channel->Invalidate();
@@ -1360,7 +1360,7 @@ void CalcBoundingBoxes( SMeshVertex const * InVertices,
                         uint32_t FrameCount,
                         SAnimationChannel const * InChannels,
                         int InChannelsCount,
-                        ATransform const * InTransforms,
+                        STransform const * InTransforms,
                         TPodArray< BvAxisAlignedBox > & Bounds )
 {
     Float3x4 absoluteTransforms[ASkeleton::MAX_JOINTS+1];
@@ -1376,7 +1376,7 @@ void CalcBoundingBoxes( SMeshVertex const * InVertices,
 
         for ( int frameNum = 0; frameNum < FrameCount ; frameNum++ ) {
 
-            ATransform const & transform = InTransforms[ anim.TransformOffset + frameNum ];
+            STransform const & transform = InTransforms[ anim.TransformOffset + frameNum ];
 
             transform.ComputeTransformMatrix( relativeTransforms[anim.JointIndex][frameNum] );
         }

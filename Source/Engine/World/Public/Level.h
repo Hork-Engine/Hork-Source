@@ -286,7 +286,7 @@ struct SPrimitiveDef
     /** Primitve marked as visible. Used by VSD. */
     int VisPass;
 
-    int BakeIndex;
+    //int BakeIndex;
 
     bool bFaceCull : 1;
 

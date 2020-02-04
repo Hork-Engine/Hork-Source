@@ -370,23 +370,23 @@ void AEnvProbeGenerator::GenerateArray( Texture & _CubemapArray, int _MaxLod, in
     textureCI.NumLods = _MaxLod + 1;
     _CubemapArray.InitializeStorage( textureCI );
 
-    TPodArray< GHI::Framebuffer > framebuffers;
-    framebuffers.Resize( textureCI.NumLods );
-    for ( int i = 0 ; i < framebuffers.Size() ; i++ ) {
-        int lodWidth = size >> i;
+    //GHI::Framebuffer framebuffers[textureCI.NumLods];
 
-        FramebufferAttachmentInfo attachment = {};
-        attachment.pTexture = &_CubemapArray;
-        attachment.LodNum = i;
+    //for ( int i = 0 ; i < textureCI.NumLods ; i++ ) {
+    //    int lodWidth = size >> i;
 
-        FramebufferCreateInfo framebufferCI = {};
-        framebufferCI.Width = lodWidth;
-        framebufferCI.Height = lodWidth;
-        framebufferCI.NumColorAttachments = 1;
-        framebufferCI.pColorAttachments = &attachment;
+    //    FramebufferAttachmentInfo attachment = {};
+    //    attachment.pTexture = &_CubemapArray;
+    //    attachment.LodNum = i;
 
-        framebuffers[i].Initialize( framebufferCI );
-    }
+    //    FramebufferCreateInfo framebufferCI = {};
+    //    framebufferCI.Width = lodWidth;
+    //    framebufferCI.Height = lodWidth;
+    //    framebufferCI.NumColorAttachments = 1;
+    //    framebufferCI.pColorAttachments = &attachment;
+
+    //    framebuffers[i].Initialize( framebufferCI );
+    //}
 
     ShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
@@ -421,8 +421,22 @@ void AEnvProbeGenerator::GenerateArray( Texture & _CubemapArray, int _MaxLod, in
 
     for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
 
+        GHI::Framebuffer framebuffer;
+
+        FramebufferAttachmentInfo attachment = {};
+        attachment.pTexture = &_CubemapArray;
+        attachment.LodNum = Lod;
+
+        FramebufferCreateInfo framebufferCI = {};
+        framebufferCI.Width = lodWidth;
+        framebufferCI.Height = lodWidth;
+        framebufferCI.NumColorAttachments = 1;
+        framebufferCI.pColorAttachments = &attachment;
+
+        framebuffer.Initialize( framebufferCI );
+
         RenderPassBegin renderPassBegin = {};
-        renderPassBegin.pFramebuffer = &framebuffers[Lod];
+        renderPassBegin.pFramebuffer = &framebuffer;
         renderPassBegin.pRenderPass = &m_RP;
         renderPassBegin.RenderArea.Width = lodWidth;
         renderPassBegin.RenderArea.Height = lodWidth;
@@ -467,23 +481,23 @@ void AEnvProbeGenerator::Generate( Texture & _Cubemap, int _MaxLod, Texture * _S
     textureCI.NumLods = _MaxLod + 1;
     _Cubemap.InitializeStorage( textureCI );
 
-    TPodArray< GHI::Framebuffer > framebuffers;
-    framebuffers.Resize( textureCI.NumLods );
-    for ( int i = 0 ; i < framebuffers.Size() ; i++ ) {
-        int lodWidth = size >> i;
+    //GHI::Framebuffer framebuffers[textureCI.NumLods];
 
-        FramebufferAttachmentInfo attachment = {};
-        attachment.pTexture = &_Cubemap;
-        attachment.LodNum = i;
+    //for ( int i = 0 ; i < textureCI.NumLods ; i++ ) {
+    //    int lodWidth = size >> i;
 
-        FramebufferCreateInfo framebufferCI = {};
-        framebufferCI.Width = lodWidth;
-        framebufferCI.Height = lodWidth;
-        framebufferCI.NumColorAttachments = 1;
-        framebufferCI.pColorAttachments = &attachment;
+    //    FramebufferAttachmentInfo attachment = {};
+    //    attachment.pTexture = &_Cubemap;
+    //    attachment.LodNum = i;
 
-        framebuffers[i].Initialize( framebufferCI );
-    }
+    //    FramebufferCreateInfo framebufferCI = {};
+    //    framebufferCI.Width = lodWidth;
+    //    framebufferCI.Height = lodWidth;
+    //    framebufferCI.NumColorAttachments = 1;
+    //    framebufferCI.pColorAttachments = &attachment;
+
+    //    framebuffers[i].Initialize( framebufferCI );
+    //}
 
     ShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
@@ -520,8 +534,22 @@ void AEnvProbeGenerator::Generate( Texture & _Cubemap, int _MaxLod, Texture * _S
 
     for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
 
+        GHI::Framebuffer framebuffer;
+
+        FramebufferAttachmentInfo attachment = {};
+        attachment.pTexture = &_Cubemap;
+        attachment.LodNum = Lod;
+
+        FramebufferCreateInfo framebufferCI = {};
+        framebufferCI.Width = lodWidth;
+        framebufferCI.Height = lodWidth;
+        framebufferCI.NumColorAttachments = 1;
+        framebufferCI.pColorAttachments = &attachment;
+
+        framebuffer.Initialize( framebufferCI );
+
         RenderPassBegin renderPassBegin = {};
-        renderPassBegin.pFramebuffer = &framebuffers[Lod];
+        renderPassBegin.pFramebuffer = &framebuffer;
         renderPassBegin.pRenderPass = &m_RP;
         renderPassBegin.RenderArea.Width = lodWidth;
         renderPassBegin.RenderArea.Height = lodWidth;

@@ -178,7 +178,7 @@ protected:
 
 private:
 
-    void Initialize( ATransform const & _SpawnTransform );
+    void Initialize( STransform const & _SpawnTransform );
 
     void InitializeComponents();
 

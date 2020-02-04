@@ -47,7 +47,7 @@ class IGameModule;
 struct SActorSpawnInfo {
 
     /** Initial actor transform */
-    ATransform SpawnTransform;
+    STransform SpawnTransform;
 
     /** Level for actor spawn */
     ALevel * Level;
@@ -58,7 +58,8 @@ struct SActorSpawnInfo {
     SActorSpawnInfo() = delete;
 
     SActorSpawnInfo( AClassMeta const * _ActorTypeClassMeta )
-        : Level( nullptr )
+        : SpawnTransform( Float3::Zero(), Quat::Identity() )
+        , Level( nullptr )
         , Instigator( nullptr )
         , Template( nullptr )
         , ActorTypeClassMeta( _ActorTypeClassMeta )
@@ -299,7 +300,7 @@ public:
 
     /** Spawn a new actor */
     template< typename ActorType >
-    ActorType * SpawnActor( ATransform const & _SpawnTransform, ALevel * _Level = nullptr ) {
+    ActorType * SpawnActor( STransform const & _SpawnTransform, ALevel * _Level = nullptr ) {
         TActorSpawnInfo< ActorType > spawnParameters;
         spawnParameters.SpawnTransform = _SpawnTransform;
         spawnParameters.Level = _Level;

@@ -29,13 +29,13 @@ SOFTWARE.
 */
 
 #include <Core/Public/FastLZCompressor.h>
-#include <Core/Public/Std.h>
+#include <Core/Public/BaseMath.h>
 #include <fastlz.h>
 
 size_t AFastLZCompressor::CalcAppropriateCompressedDataSize( size_t _SourceSize ) {
     // The output buffer must be at least 5% larger than the input buffer
     // and can not be smaller than 66 bytes.
-    size_t size = StdFloor( _SourceSize * 1.05 + 0.5 );
+    size_t size = Math::Floor( _SourceSize * 1.05 + 0.5 );
     if ( size < 66 ) {
         size = 66;
     }
