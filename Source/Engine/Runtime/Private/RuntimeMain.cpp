@@ -530,9 +530,9 @@ static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize ) {
 }
 
 void ARuntimeMain::InitializeMemory() {
-    const size_t ZoneSizeInMegabytes = 256;//8;
+    const size_t ZoneSizeInMegabytes = 256;
     const size_t HunkSizeInMegabytes = 32;
-    const size_t FrameMemorySizeInMegabytes = 256;//128;
+    const size_t FrameMemorySizeInMegabytes = 16;
 
     const size_t TotalMemorySizeInBytes = ( ZoneSizeInMegabytes + HunkSizeInMegabytes + FrameMemorySizeInMegabytes ) << 20;
 

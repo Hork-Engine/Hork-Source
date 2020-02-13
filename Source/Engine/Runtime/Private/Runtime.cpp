@@ -375,13 +375,7 @@ void * ARuntime::AllocFrameMem( size_t _SizeInBytes ) {
         return nullptr;
     }
 
-    void * pMemory;
-
-//    if ( WriteIndex & 1 ) {
-//        pMemory = (byte *)GRuntimeMain.FrameMemoryAddress - GRuntimeMain.FrameMemoryUsed - _SizeInBytes;
-//    } else {
-        pMemory = (byte *)GRuntimeMain.FrameMemoryAddress + GRuntimeMain.FrameMemoryUsed;
-//    }
+    void * pMemory = (byte *)GRuntimeMain.FrameMemoryAddress + GRuntimeMain.FrameMemoryUsed;
 
     GRuntimeMain.FrameMemoryUsed += _SizeInBytes;
 

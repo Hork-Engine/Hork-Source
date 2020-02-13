@@ -40,22 +40,22 @@ SOFTWARE.
 IRenderBackend * GRenderBackend = &OpenGL45::GOpenGL45RenderBackend;
 
 
-IGPUResourceOwner * IGPUResourceOwner::Resources = nullptr;
-IGPUResourceOwner * IGPUResourceOwner::ResourcesTail = nullptr;
+IGPUResourceOwner * IGPUResourceOwner::ResourceOwners = nullptr;
+IGPUResourceOwner * IGPUResourceOwner::ResourceOwnersTail = nullptr;
 
 IGPUResourceOwner::IGPUResourceOwner()
 {
-    INTRUSIVE_ADD( this, pNext, pPrev, Resources, ResourcesTail );
+    INTRUSIVE_ADD( this, pNext, pPrev, ResourceOwners, ResourceOwnersTail );
 }
 
 IGPUResourceOwner::~IGPUResourceOwner()
 {
-    INTRUSIVE_REMOVE( this, pNext, pPrev, Resources, ResourcesTail );
+    INTRUSIVE_REMOVE( this, pNext, pPrev, ResourceOwners, ResourceOwnersTail );
 }
 
-void IGPUResourceOwner::InvalidateResources()
+void IGPUResourceOwner::UploadResources()
 {
-    for ( IGPUResourceOwner * resource = Resources ; resource ; resource = resource->pNext )
+    for ( IGPUResourceOwner * resource = ResourceOwners ; resource ; resource = resource->pNext )
     {
         resource->UploadResourcesGPU();
     }

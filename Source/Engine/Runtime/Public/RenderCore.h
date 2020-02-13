@@ -117,6 +117,8 @@ constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 //
 
 struct SMeshVertex {
+    // TODO: Pack to 32 byte length!
+
     Float3 Position;
     Float2 TexCoord;
     Float3 Tangent;
@@ -541,36 +543,47 @@ struct SMaterialBuildData {
 
 class IGPUResourceOwner {
 public:
+    /** GPU resource owner must override this to upload resources to GPU */
     virtual void UploadResourcesGPU() = 0;
 
+    /** Upload all GPU resources */
+    static void UploadResources();
+
+    /** Get list of GPU resource owners */
+    static IGPUResourceOwner * GetResourceOwners() { return ResourceOwners; }
+
+    /** Intrusive iterator */
     IGPUResourceOwner * GetNext() { return pNext; }
+
+    /** Intrusive iterator */
     IGPUResourceOwner * GetPrev() { return pPrev; }
-
-    static void InvalidateResources();
-
-    static IGPUResourceOwner * GetResources() { return Resources; }
 
 protected:
     IGPUResourceOwner();
 
     ~IGPUResourceOwner();
 
+private:
     IGPUResourceOwner * pNext;
     IGPUResourceOwner * pPrev;
 
-private:
-    static IGPUResourceOwner * Resources;
-    static IGPUResourceOwner * ResourcesTail;
+    static IGPUResourceOwner * ResourceOwners;
+    static IGPUResourceOwner * ResourceOwnersTail;
 };
 
 class AResourceGPU {
 public:
-    IGPUResourceOwner * pOwner;
+    /** Get resource owner */
+    IGPUResourceOwner * GetOwner() { return pOwner; }
 
-    AResourceGPU * GetNext() { return pNext; }
-    AResourceGPU * GetPrev() { return pPrev; }
-
+    /** Get list of all GPU resources */
     static AResourceGPU * GetResources() { return GPUResources; }
+
+    /** Intrusive iterator */
+    AResourceGPU * GetNext() { return pNext; }
+
+    /** Intrusive iterator */
+    AResourceGPU * GetPrev() { return pPrev; }
 
 private:
     // Allow render backend to create and destroy GPU resources
@@ -596,9 +609,12 @@ protected:
     virtual ~AResourceGPU();
 
 private:
+    IGPUResourceOwner * pOwner;
+
     AResourceGPU * pNext;
     AResourceGPU * pPrev;
 
+    // All GPU resources in one place
     static AResourceGPU * GPUResources;
     static AResourceGPU * GPUResourcesTail;
 };
@@ -759,11 +775,22 @@ struct SDirectionalLightDef {
 struct SRenderInstance {
     AMaterialGPU *      Material;
     SMaterialFrameData *MaterialInstance;
+
     ABufferGPU *        VertexBuffer;
+    size_t              VertexBufferOffset;
+
     ABufferGPU *        IndexBuffer;
+    size_t              IndexBufferOffset;
+
     ABufferGPU *        WeightsBuffer;
+    size_t              WeightsBufferOffset;
+
     ABufferGPU *        VertexLightChannel;
+    size_t              VertexLightOffset;
+
     ABufferGPU *        LightmapUVChannel;
+    size_t              LightmapUVOffset;
+
     ATextureGPU *       Lightmap;
     Float4              LightmapOffset;
     Float4x4            Matrix;
@@ -784,8 +811,11 @@ struct SShadowRenderInstance {
     AMaterialGPU *      Material;
     SMaterialFrameData *MaterialInstance;
     ABufferGPU *        VertexBuffer;
+    size_t              VertexBufferOffset;
     ABufferGPU *        IndexBuffer;
+    size_t              IndexBufferOffset;
     ABufferGPU *        WeightsBuffer;
+    size_t              WeightsBufferOffset;
     Float3x4            WorldTransformMatrix;
     size_t              SkeletonOffset;
     size_t              SkeletonSize;
@@ -942,6 +972,8 @@ struct SRenderView {
 
     Float4x4 LightViewProjectionMatrices[MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES];
     Float4x4 ShadowMapMatrices[MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES];
+
+    SFrameLightData LightData;
 };
 
 struct SRenderFrame {
@@ -964,9 +996,6 @@ struct SRenderFrame {
     TPodArray< SRenderInstance *, 1024 > Instances;
     TPodArray< SShadowRenderInstance *, 1024 > ShadowInstances;
     TPodArray< SDirectionalLightDef * > DirectionalLights;
-    //TPodArray< SLightDef * > Lights;
-
-    SFrameLightData LightData; // FIXME: move to renderview?
 
     SHUDDrawList * DrawListHead;
     SHUDDrawList * DrawListTail;
