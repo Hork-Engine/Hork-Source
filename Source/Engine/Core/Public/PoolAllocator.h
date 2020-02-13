@@ -49,7 +49,7 @@ public:
     T * Allocate();
 
     /** Deallocate object from pool */
-    void Deallocate( T * _Bytes );
+    void Deallocate( void * _Bytes );
 
     /** Free pool */
     void Free();
@@ -197,7 +197,7 @@ AN_INLINE T * TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::Allocate() {
 }
 
 template< typename T, int MAX_BLOCK_SIZE, int ALIGNMENT >
-AN_INLINE void TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::Deallocate( T * _Bytes ) {
+AN_INLINE void TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::Deallocate( void * _Bytes ) {
     SChunk * chunk = ( SChunk * )_Bytes;
     CurBlock = nullptr;
     for ( SBlock * block = Blocks ; block ; block = block->Next ) {

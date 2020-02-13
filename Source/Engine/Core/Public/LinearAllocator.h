@@ -47,7 +47,7 @@ public:
         Free();
     }
 
-    void * Alloc( size_t _SizeInBytes );
+    void * Allocate( size_t _SizeInBytes );
 
     void Free() {
         for ( SChunk * chunk = Chunks ; chunk ; ) {
@@ -62,6 +62,7 @@ public:
 private:
     struct SChunk {
         size_t TotalAllocated;
+        size_t Size;
         SChunk * Next;
     };
     SChunk * Chunks;
@@ -69,13 +70,14 @@ private:
 };
 
 template< int MIN_BLOCK_SIZE >
-void * TLinearAllocator< MIN_BLOCK_SIZE >::Alloc( size_t _SizeInBytes ) {
+void * TLinearAllocator< MIN_BLOCK_SIZE >::Allocate( size_t _SizeInBytes ) {
     SChunk * chunk = Chunks;
 
-    if ( !chunk || chunk->TotalAllocated + _SizeInBytes > MIN_BLOCK_SIZE ) {
+    if ( !chunk || chunk->TotalAllocated + _SizeInBytes > chunk->Size ) {
         size_t chunkSize = Math::Max< size_t >( _SizeInBytes, MIN_BLOCK_SIZE );
         chunk = ( SChunk * )GHeapMemory.HeapAlloc( chunkSize + sizeof( SChunk ), 1 );
         chunk->TotalAllocated = 0;
+        chunk->Size = chunkSize;
         chunk->Next = Chunks;
         Chunks = chunk;
         TotalAllocs++;
@@ -83,6 +85,8 @@ void * TLinearAllocator< MIN_BLOCK_SIZE >::Alloc( size_t _SizeInBytes ) {
 
     void * ptr = reinterpret_cast< byte * >( chunk + 1 ) + chunk->TotalAllocated;
     chunk->TotalAllocated += _SizeInBytes;
+
+    // TODO: Alignment
 
     return ptr;
 }

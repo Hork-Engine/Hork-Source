@@ -375,8 +375,9 @@ struct Float3x3 {
     }
 
     void SetIdentity() {
-        Clear();
-        Col0.X = Col1.Y = Col2.Z = 1;
+        //Clear();
+        //Col0.X = Col1.Y = Col2.Z = 1;
+        *this = Identity();
     }
 
     static Float3x3 Scale( const Float3 & _Scale  ) {
@@ -779,8 +780,9 @@ struct Float4x4 {
     }
 
     void SetIdentity() {
-        Clear();
-        Col0.X = Col1.Y = Col2.Z = Col3.W = 1;
+        //Clear();
+        //Col0.X = Col1.Y = Col2.Z = Col3.W = 1;
+        *this = Identity();
     }
 
     static Float4x4 Translation( const Float3 & _Vec ) {
@@ -1602,8 +1604,9 @@ struct Float3x4 {
     }
 
     void SetIdentity() {
-        Clear();
-        Col0.X = Col1.Y = Col2.Z = 1;
+        //Clear();
+        //Col0.X = Col1.Y = Col2.Z = 1;
+        *this = Identity();
     }
 
     static Float3x4 Translation( const Float3 & _Vec ) {
