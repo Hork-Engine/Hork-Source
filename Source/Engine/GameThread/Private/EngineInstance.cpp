@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <GameThread/Public/EngineInstance.h>
 #include <World/Public/Base/ResourceManager.h>
+#include <World/Public/Resource/VertexAllocator.h>
 #include <World/Public/Render/RenderFrontend.h>
 #include <World/Public/Audio/AudioSystem.h>
 #include <World/Public/Audio/AudioCodec/OggVorbisDecoder.h>
@@ -127,6 +128,9 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
 
     GResourceManager.Initialize();
 
+    GVertexAllocator.Initialize();
+    GDynamicVertexAllocator.Initialize();
+
     GRenderFrontend.Initialize();
 
     GAudioSystem.Initialize();
@@ -178,6 +182,9 @@ void AEngineInstance::Deinitialize() {
 
     GRenderFrontend.Deinitialize();
 
+    GVertexAllocator.Purge();
+    GDynamicVertexAllocator.Purge();
+
     GResourceManager.Deinitialize();
 
     GAudioSystem.PurgeChannels();
@@ -215,6 +222,8 @@ void AEngineInstance::UpdateFrame() {
 
     // Set current frame number
     FrameNumber++;
+
+    GDynamicVertexAllocator.SwapFrames();
 
     // Garbage collect from previuous frames
     AGarbageCollector::DeallocateObjects();
@@ -306,7 +315,6 @@ void AEngineInstance::ShowStats() {
         fps /= FPS_BUF;
         fps = 1.0f / ( fps > 0.0f ? fps : 1.0f );
 
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ) ); pos.Y += y_step;
@@ -318,7 +326,9 @@ void AEngineInstance::ShowStats() {
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Polycount: %d", stat.PolyCount ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) );
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos+Float2(1.0f), AColor4::White(), AString::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
+        Canvas.DrawTextUTF8( pos, AColor4::Blue(), AString::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
     }
 }
 
