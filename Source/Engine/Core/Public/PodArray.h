@@ -142,8 +142,8 @@ public:
 
 //    // Byte serialization
 //    void Write( IStreamBase & _Stream ) const {
-//        _Stream.WriteUInt32( ArrayLength );
-//        for ( int i = 0 ; i < ArrayLength ; i++ ) {
+//        _Stream.WriteUInt32( ArraySize );
+//        for ( int i = 0 ; i < ArraySize ; i++ ) {
 //            ArrayData[i].Write( _Stream );
 //        }
 //    }
@@ -151,7 +151,7 @@ public:
 //    void Read( IStreamBase & _Stream ) {
 //        int newLength = _Stream.ReadUInt32();
 //        ResizeInvalidate( newLength );
-//        for ( int i = 0 ; i < ArrayLength ; i++ ) {
+//        for ( int i = 0 ; i < ArraySize ; i++ ) {
 //            ArrayData[i].Read( _Stream );
 //        }
 //    }
@@ -163,7 +163,7 @@ private:
 
     alignas( Alignment ) T StaticData[BASE_CAPACITY];
     T *             ArrayData;
-    int             ArrayLength;
+    int             ArraySize;
     int             ArrayCapacity;
 };
 
@@ -175,14 +175,14 @@ using TPodArrayHeap = TPodArray< T, BASE_CAPACITY, GRANULARITY, AHeapAllocator, 
 
 TPodArrayTemplateDecorate
 TPodArrayTemplate::TPodArray()
-    : ArrayData( StaticData ), ArrayLength( 0 ), ArrayCapacity( BASE_CAPACITY )
+    : ArrayData( StaticData ), ArraySize( 0 ), ArrayCapacity( BASE_CAPACITY )
 {
     static_assert( BASE_CAPACITY > 0, "TPodArray: Invalid BASE_CAPACITY" );
 }
 
 TPodArrayTemplateDecorate
 TPodArrayTemplate::TPodArray( TPodArrayTemplate const & _Array ) {
-    ArrayLength = _Array.ArrayLength;
+    ArraySize = _Array.ArraySize;
     if ( _Array.ArrayCapacity > BASE_CAPACITY ) {
         ArrayCapacity = _Array.ArrayCapacity;
         ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArrayCapacity, Alignment );
@@ -190,12 +190,12 @@ TPodArrayTemplate::TPodArray( TPodArrayTemplate const & _Array ) {
         ArrayCapacity = BASE_CAPACITY;
         ArrayData = StaticData;
     }
-    memcpy( ArrayData, _Array.ArrayData, TYPE_SIZEOF * ArrayLength );
+    memcpy( ArrayData, _Array.ArrayData, TYPE_SIZEOF * ArraySize );
 }
 
 TPodArrayTemplateDecorate
 TPodArrayTemplate::TPodArray( T const * _Elements, int _NumElements ) {
-    ArrayLength = _NumElements;
+    ArraySize = _NumElements;
     if ( _NumElements > BASE_CAPACITY ) {
         const int mod = _NumElements % GRANULARITY;
         ArrayCapacity = mod ? _NumElements + GRANULARITY - mod : _NumElements;
@@ -204,7 +204,7 @@ TPodArrayTemplate::TPodArray( T const * _Elements, int _NumElements ) {
         ArrayCapacity = BASE_CAPACITY;
         ArrayData = StaticData;
     }
-    memcpy( ArrayData, _Elements, TYPE_SIZEOF * ArrayLength );
+    memcpy( ArrayData, _Elements, TYPE_SIZEOF * ArraySize );
 }
 
 TPodArrayTemplateDecorate
@@ -216,7 +216,7 @@ TPodArrayTemplate::~TPodArray() {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Clear() {
-    ArrayLength = 0;
+    ArraySize = 0;
 }
 
 TPodArrayTemplateDecorate
@@ -225,19 +225,19 @@ void TPodArrayTemplate::Free() {
         Allocator::Inst().Dealloc( ArrayData );
         ArrayData = StaticData;
     }
-    ArrayLength = 0;
+    ArraySize = 0;
     ArrayCapacity = BASE_CAPACITY;
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::ShrinkToFit() {
-    if ( ArrayData == StaticData || ArrayCapacity == ArrayLength ) {
+    if ( ArrayData == StaticData || ArrayCapacity == ArraySize ) {
         return;
     }
 
-    if ( ArrayLength <= BASE_CAPACITY ) {
-        if ( ArrayLength > 0 ) {
-            memcpy( StaticData, ArrayData, TYPE_SIZEOF * ArrayLength );
+    if ( ArraySize <= BASE_CAPACITY ) {
+        if ( ArraySize > 0 ) {
+            memcpy( StaticData, ArrayData, TYPE_SIZEOF * ArraySize );
         }
         Allocator::Inst().Dealloc( ArrayData );
         ArrayData = StaticData;
@@ -245,11 +245,11 @@ void TPodArrayTemplate::ShrinkToFit() {
         return;
     }
 
-    T * data = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArrayLength, Alignment );
-    memcpy( data, ArrayData, TYPE_SIZEOF * ArrayLength );
+    T * data = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArraySize, Alignment );
+    memcpy( data, ArrayData, TYPE_SIZEOF * ArraySize );
     Allocator::Inst().Dealloc( ArrayData );
     ArrayData = data;
-    ArrayCapacity = ArrayLength;
+    ArrayCapacity = ArraySize;
 }
 
 TPodArrayTemplateDecorate
@@ -259,7 +259,7 @@ void TPodArrayTemplate::Reserve( int _NewCapacity ) {
     }
     if ( ArrayData == StaticData ) {
         ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * _NewCapacity, Alignment );
-        memcpy( ArrayData, StaticData, TYPE_SIZEOF * ArrayLength );
+        memcpy( ArrayData, StaticData, TYPE_SIZEOF * ArraySize );
     } else {
         ArrayData = ( T * )Allocator::Inst().ExtendAligned( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, true, Alignment );
     }
@@ -286,7 +286,7 @@ void TPodArrayTemplate::Resize( int _NumElements ) {
         const int capacity = mod ? _NumElements + GRANULARITY - mod : _NumElements;
         Reserve( capacity );
     }
-    ArrayLength = _NumElements;
+    ArraySize = _NumElements;
 }
 
 TPodArrayTemplateDecorate
@@ -296,12 +296,12 @@ void TPodArrayTemplate::ResizeInvalidate( int _NumElements ) {
         const int capacity = mod ? _NumElements + GRANULARITY - mod : _NumElements;
         ReserveInvalidate( capacity );
     }
-    ArrayLength = _NumElements;
+    ArraySize = _NumElements;
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Memset( const int _Value ) {
-    memset( ArrayData, _Value, TYPE_SIZEOF * ArrayLength );
+    memset( ArrayData, _Value, TYPE_SIZEOF * ArraySize );
 }
 
 TPodArrayTemplateDecorate
@@ -318,8 +318,8 @@ void TPodArrayTemplate::Swap( int _Index1, int _Index2 ) {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Reverse() {
-    const int HalfArrayLength = ArrayLength >> 1;
-    const int ArrayLengthMinusOne = ArrayLength - 1;
+    const int HalfArrayLength = ArraySize >> 1;
+    const int ArrayLengthMinusOne = ArraySize - 1;
     T tmp;
     for ( int i = 0 ; i < HalfArrayLength ; i++ ) {
         tmp = ArrayData[ i ];
@@ -330,8 +330,8 @@ void TPodArrayTemplate::Reverse() {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Reverse( int _FirstIndex, int _LastIndex ) {
-    AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArrayLength, "TPodArray::Reverse: array index is out of bounds" );
-    AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArrayLength, "TPodArray::Reverse: array index is out of bounds" );
+    AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodArray::Reverse: array index is out of bounds" );
+    AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArraySize, "TPodArray::Reverse: array index is out of bounds" );
     AN_ASSERT_( _FirstIndex < _LastIndex, "TPodArray::Reverse: invalid order" );
 
     const int HalfRangeLength = ( _LastIndex - _FirstIndex ) >> 1;
@@ -347,14 +347,14 @@ void TPodArrayTemplate::Reverse( int _FirstIndex, int _LastIndex ) {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Insert( int _Index, T const & _Element ) {
-    if ( _Index == ArrayLength ) {
+    if ( _Index == ArraySize ) {
         Append( _Element );
         return;
     }
 
-    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::Insert: array index is out of bounds" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::Insert: array index is out of bounds" );
 
-    const int newLength = ArrayLength + 1;
+    const int newLength = ArraySize + 1;
     const int mod = newLength % GRANULARITY;
     const int capacity = mod ? newLength + GRANULARITY - mod : newLength;
 
@@ -363,7 +363,7 @@ void TPodArrayTemplate::Insert( int _Index, T const & _Element ) {
 
         memcpy( data, ArrayData, TYPE_SIZEOF * _Index );
         data[ _Index ] = _Element;
-        const int elementsToMove = ArrayLength - _Index;
+        const int elementsToMove = ArraySize - _Index;
         memcpy( &data[ _Index + 1 ], &ArrayData[ _Index ], TYPE_SIZEOF * elementsToMove );
 
         if ( ArrayData != StaticData ) {
@@ -371,67 +371,67 @@ void TPodArrayTemplate::Insert( int _Index, T const & _Element ) {
         }
         ArrayData = data;
         ArrayCapacity = capacity;
-        ArrayLength = newLength;
+        ArraySize = newLength;
         return;
     }
 
-    memmove( ArrayData + _Index + 1, ArrayData + _Index, TYPE_SIZEOF * ( ArrayLength - _Index ) );
+    memmove( ArrayData + _Index + 1, ArrayData + _Index, TYPE_SIZEOF * ( ArraySize - _Index ) );
     ArrayData[ _Index ] = _Element;
-    ArrayLength = newLength;
+    ArraySize = newLength;
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Append( T const & _Element ) {
-    Resize( ArrayLength + 1 );
-    ArrayData[ ArrayLength - 1 ] = _Element;
+    Resize( ArraySize + 1 );
+    ArrayData[ ArraySize - 1 ] = _Element;
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Append( TPodArrayTemplate const & _Array ) {
-    Append( _Array.ArrayData, _Array.ArrayLength );
+    Append( _Array.ArrayData, _Array.ArraySize );
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Append( T const * _Elements, int _NumElements ) {
-    int length = ArrayLength;
+    int length = ArraySize;
 
-    Resize( ArrayLength + _NumElements );
+    Resize( ArraySize + _NumElements );
     memcpy( &ArrayData[ length ], _Elements, TYPE_SIZEOF * _NumElements );
 }
 
 TPodArrayTemplateDecorate
 T & TPodArrayTemplate::Append() {
-    Resize( ArrayLength + 1 );
-    return ArrayData[ ArrayLength - 1 ];
+    Resize( ArraySize + 1 );
+    return ArrayData[ ArraySize - 1 ];
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Remove( int _Index ) {
-    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::Remove: array index is out of bounds" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::Remove: array index is out of bounds" );
 
-    memmove( ArrayData + _Index, ArrayData + _Index + 1, TYPE_SIZEOF * ( ArrayLength - _Index - 1 ) );
+    memmove( ArrayData + _Index, ArrayData + _Index + 1, TYPE_SIZEOF * ( ArraySize - _Index - 1 ) );
 
-    ArrayLength--;
+    ArraySize--;
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::RemoveLast() {
-    if ( ArrayLength > 0 ) {
-        ArrayLength--;
+    if ( ArraySize > 0 ) {
+        ArraySize--;
     }
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::RemoveDuplicates() {
 
-    for ( int i = 0 ; i < ArrayLength ; i++ ) {
-        for ( int j = ArrayLength-1 ; j > i ; j-- ) {
+    for ( int i = 0 ; i < ArraySize ; i++ ) {
+        for ( int j = ArraySize-1 ; j > i ; j-- ) {
 
             if ( ArrayData[j] == ArrayData[i] ) {
                 // duplicate found
 
-                memmove( ArrayData + j, ArrayData + j + 1, TYPE_SIZEOF * ( ArrayLength - j - 1 ) );
-                ArrayLength--;
+                memmove( ArrayData + j, ArrayData + j + 1, TYPE_SIZEOF * ( ArraySize - j - 1 ) );
+                ArraySize--;
             }
         }
     }
@@ -439,62 +439,62 @@ void TPodArrayTemplate::RemoveDuplicates() {
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::RemoveSwap( int _Index ) {
-    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::RemoveSwap: array index is out of bounds" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::RemoveSwap: array index is out of bounds" );
 
-    if ( ArrayLength > 0 ) {
-        ArrayData[ _Index ] = ArrayData[ ArrayLength - 1 ];
-        ArrayLength--;
+    if ( ArraySize > 0 ) {
+        ArrayData[ _Index ] = ArrayData[ ArraySize - 1 ];
+        ArraySize--;
     }
 }
 
 TPodArrayTemplateDecorate
 void TPodArrayTemplate::Remove( int _FirstIndex, int _LastIndex ) {
-    AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArrayLength, "TPodArray::Remove: array index is out of bounds" );
-    AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArrayLength, "TPodArray::Remove: array index is out of bounds" );
+    AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodArray::Remove: array index is out of bounds" );
+    AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArraySize, "TPodArray::Remove: array index is out of bounds" );
     AN_ASSERT_( _FirstIndex < _LastIndex, "TPodArray::Remove: invalid order" );
 
-    memmove( ArrayData + _FirstIndex, ArrayData + _LastIndex, TYPE_SIZEOF * ( ArrayLength - _LastIndex ) );
-    ArrayLength -= _LastIndex - _FirstIndex;
+    memmove( ArrayData + _FirstIndex, ArrayData + _LastIndex, TYPE_SIZEOF * ( ArraySize - _LastIndex ) );
+    ArraySize -= _LastIndex - _FirstIndex;
 }
 
 TPodArrayTemplateDecorate
 bool TPodArrayTemplate::IsEmpty() const {
-    return ArrayLength == 0;
+    return ArraySize == 0;
 }
 
 TPodArrayTemplateDecorate
 T & TPodArrayTemplate::operator[]( const int _Index ) {
-    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::operator[]" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::operator[]" );
     return ArrayData[ _Index ];
 }
 
 TPodArrayTemplateDecorate
 T const & TPodArrayTemplate::operator[]( const int _Index ) const {
-    AN_ASSERT_( _Index >= 0 && _Index < ArrayLength, "TPodArray::operator[]" );
+    AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::operator[]" );
     return ArrayData[ _Index ];
 }
 
 TPodArrayTemplateDecorate
 T & TPodArrayTemplate::Last() {
-    AN_ASSERT_( ArrayLength > 0, "TPodArray::Last" );
-    return ArrayData[ ArrayLength - 1 ];
+    AN_ASSERT_( ArraySize > 0, "TPodArray::Last" );
+    return ArrayData[ ArraySize - 1 ];
 }
 
 TPodArrayTemplateDecorate
 T const & TPodArrayTemplate::Last() const {
-    AN_ASSERT_( ArrayLength > 0, "TPodArray::Last" );
-    return ArrayData[ ArrayLength - 1 ];
+    AN_ASSERT_( ArraySize > 0, "TPodArray::Last" );
+    return ArrayData[ ArraySize - 1 ];
 }
 
 TPodArrayTemplateDecorate
 T & TPodArrayTemplate::First() {
-    AN_ASSERT_( ArrayLength > 0, "TPodArray::First" );
+    AN_ASSERT_( ArraySize > 0, "TPodArray::First" );
     return ArrayData[ 0 ];
 }
 
 TPodArrayTemplateDecorate
 T const & TPodArrayTemplate::First() const {
-    AN_ASSERT_( ArrayLength > 0, "TPodArray::First" );
+    AN_ASSERT_( ArraySize > 0, "TPodArray::First" );
     return ArrayData[ 0 ];
 }
 
@@ -510,35 +510,35 @@ typename TPodArrayTemplate::ConstIterator TPodArrayTemplate::Begin() const {
 
 TPodArrayTemplateDecorate
 typename TPodArrayTemplate::Iterator TPodArrayTemplate::End() {
-    return ArrayData + ArrayLength;
+    return ArrayData + ArraySize;
 }
 
 TPodArrayTemplateDecorate
 typename TPodArrayTemplate::ConstIterator TPodArrayTemplate::End() const {
-    return ArrayData + ArrayLength;
+    return ArrayData + ArraySize;
 }
 
 TPodArrayTemplateDecorate
 typename TPodArrayTemplate::Iterator TPodArrayTemplate::Erase( ConstIterator _Iterator ) {
-    AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArrayLength, "TPodArray::Erase" );
+    AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodArray::Erase" );
     int Index = _Iterator - ArrayData;
-    memmove( ArrayData + Index, ArrayData + Index + 1, TYPE_SIZEOF * ( ArrayLength - Index - 1 ) );
-    ArrayLength--;
+    memmove( ArrayData + Index, ArrayData + Index + 1, TYPE_SIZEOF * ( ArraySize - Index - 1 ) );
+    ArraySize--;
     return ArrayData + Index;
 }
 
 TPodArrayTemplateDecorate
 typename TPodArrayTemplate::Iterator TPodArrayTemplate::EraseSwap( ConstIterator _Iterator ) {
-    AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArrayLength, "TPodArray::Erase" );
+    AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodArray::Erase" );
     int Index = _Iterator - ArrayData;
-    ArrayData[ Index ] = ArrayData[ ArrayLength - 1 ];
-    ArrayLength--;
+    ArrayData[ Index ] = ArrayData[ ArraySize - 1 ];
+    ArraySize--;
     return ArrayData + Index;
 }
 
 TPodArrayTemplateDecorate
 typename TPodArrayTemplate::Iterator TPodArrayTemplate::Insert( ConstIterator _Iterator, T const & _Element ) {
-    AN_ASSERT_( _Iterator >= ArrayData && _Iterator <= ArrayData + ArrayLength, "TPodArray::Insert" );
+    AN_ASSERT_( _Iterator >= ArrayData && _Iterator <= ArrayData + ArraySize, "TPodArray::Insert" );
     int Index = _Iterator - ArrayData;
     Insert( Index, _Element );
     return ArrayData + Index;
@@ -561,7 +561,7 @@ typename TPodArrayTemplate::ConstIterator TPodArrayTemplate::Find( ConstIterator
 
 TPodArrayTemplateDecorate
 bool TPodArrayTemplate::IsExist( T const & _Element ) const {
-    for ( int i = 0 ; i < ArrayLength ; i++ ) {
+    for ( int i = 0 ; i < ArraySize ; i++ ) {
         if ( ArrayData[i] == _Element ) {
             return true;
         }
@@ -571,7 +571,7 @@ bool TPodArrayTemplate::IsExist( T const & _Element ) const {
 
 TPodArrayTemplateDecorate
 int TPodArrayTemplate::IndexOf( T const & _Element ) const {
-    for ( int i = 0 ; i < ArrayLength ; i++ ) {
+    for ( int i = 0 ; i < ArraySize ; i++ ) {
         if ( ArrayData[i] == _Element ) {
             return i;
         }
@@ -591,7 +591,7 @@ T const * TPodArrayTemplate::ToPtr() const {
 
 TPodArrayTemplateDecorate
 int TPodArrayTemplate::Size() const {
-    return ArrayLength;
+    return ArraySize;
 }
 
 TPodArrayTemplateDecorate
@@ -601,7 +601,7 @@ int TPodArrayTemplate::Reserved() const {
 
 TPodArrayTemplateDecorate
 TPodArrayTemplate & TPodArrayTemplate::operator=( TPodArrayTemplate const & _Array ) {
-    Set( _Array.ArrayData, _Array.ArrayLength );
+    Set( _Array.ArrayData, _Array.ArraySize );
     return *this;
 }
 
