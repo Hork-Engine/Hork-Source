@@ -380,8 +380,13 @@ constexpr bool IsPowerOfTwoConstexpr( const T _Value ) {
 Alignment stuff
 
 */
-constexpr bool IsAligned( size_t _Value, size_t _Alignment ) {
-    return (_Value & (_Alignment - 1)) == 0 && _Value > 0;
+
+constexpr bool IsAligned( size_t N, size_t Alignment ) {
+    return (N & (Alignment - 1)) == 0 && N > 0;
+}
+
+constexpr size_t IsSSEAligned( size_t N ) {
+    return IsAligned( N, 16 );
 }
 
 constexpr size_t Align( size_t N, size_t Alignment ) {

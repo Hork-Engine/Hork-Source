@@ -124,8 +124,8 @@ public:
         return i;
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayInt8( TPodArray< int8_t, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayInt8( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         ReadBuffer( _Array.ToPtr(), _Array.Size() );
@@ -137,8 +137,8 @@ public:
         return i;
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayUInt8( TPodArray< uint8_t, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayUInt8( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         ReadBuffer( _Array.ToPtr(), _Array.Size() );
@@ -150,8 +150,8 @@ public:
         return Core::LittleWord( i );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayInt16( TPodArray< int16_t, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayInt16( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -165,8 +165,8 @@ public:
         return Core::LittleWord( i );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayUInt16( TPodArray< uint16_t, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayUInt16( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -180,8 +180,8 @@ public:
         return Core::LittleDWord( i );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayInt32( TPodArray< int32_t, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayInt32( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -195,8 +195,8 @@ public:
         return Core::LittleDWord( i );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayUInt32( TPodArray< uint32_t, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayUInt32( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -210,8 +210,8 @@ public:
         return Core::LittleDDWord( i );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayInt64( TPodArray< int64_t, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayInt64( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -225,8 +225,8 @@ public:
         return Core::LittleDDWord( i );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayUInt64( TPodArray< uint64_t, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayUInt64( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -239,8 +239,8 @@ public:
         return *(float *)&i;
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayFloat( TPodArray< float, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayFloat( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -253,8 +253,8 @@ public:
         return *(double *)&i;
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayDouble( TPodArray< double, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayDouble( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -271,8 +271,8 @@ public:
         _Object.Read( *this );
     }
 
-    template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void ReadArrayOfStructs( TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator > & _Array ) {
+    template< typename T >
+    void ReadArrayOfStructs( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
@@ -299,8 +299,8 @@ public:
         WriteBuffer( &i, sizeof( i ) );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayInt8( TPodArray< int8_t, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayInt8( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         WriteBuffer( _Array.ToPtr(), _Array.Size() );
     }
@@ -309,20 +309,19 @@ public:
         WriteBuffer( &i, sizeof( i ) );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayUInt8( TPodArray< uint8_t, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayUInt8( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         WriteBuffer( _Array.ToPtr(), _Array.Size() );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
     void WriteInt16( int16_t i ) {
         i = Core::LittleWord( i );
         WriteBuffer( &i, sizeof( i ) );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayInt16( TPodArray< int16_t, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayInt16( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteInt16( _Array[i] );
@@ -334,8 +333,8 @@ public:
         WriteBuffer( &i, sizeof( i ) );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayUInt16( TPodArray< uint16_t, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayUInt16( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteUInt16( _Array[i] );
@@ -347,8 +346,8 @@ public:
         WriteBuffer( &i, sizeof( i ) );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayInt32( TPodArray< int32_t, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayInt32( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteInt32( _Array[i] );
@@ -360,8 +359,8 @@ public:
         WriteBuffer( &i, sizeof( i ) );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayUInt32( TPodArray< uint32_t, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayUInt32( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteUInt32( _Array[i] );
@@ -373,8 +372,8 @@ public:
         WriteBuffer( &i, sizeof( i ) );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayInt64( TPodArray< int64_t, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayInt64( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteInt64( _Array[i] );
@@ -386,8 +385,8 @@ public:
         WriteBuffer( &i, sizeof( i ) );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayUInt64( TPodArray< uint64_t, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayUInt64( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteUInt64( _Array[i] );
@@ -398,8 +397,8 @@ public:
         WriteUInt32( *(uint32_t *)&f );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayFloat( TPodArray< float, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayFloat( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteFloat( _Array[i] );
@@ -410,8 +409,8 @@ public:
         WriteUInt64( *(uint64_t *)&f );
     }
 
-    template< int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayDouble( TPodArray< double, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayDouble( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteDouble( _Array[i] );
@@ -427,8 +426,8 @@ public:
         _Object.Write( *this );
     }
 
-    template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-    void WriteArrayOfStructs( TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    template< typename T >
+    void WriteArrayOfStructs( T const & _Array ) {
         WriteUInt32( _Array.Size() );
         for ( int i = 0 ; i < _Array.Size() ; i++ ) {
             WriteObject( _Array[i] );
