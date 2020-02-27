@@ -31,7 +31,7 @@ SOFTWARE.
 #include <World/Public/Audio/AudioCodec/WavDecoder.h>
 #include <Core/Public/Alloc.h>
 #include <Core/Public/IO.h>
-#include <Core/Public/EndianSwap.h>
+#include <Core/Public/Logger.h>
 
 #ifdef AN_COMPILER_MSVC
 #pragma warning( disable : 4505 )
@@ -49,10 +49,10 @@ static bool IMAADPCMUnpack16_Stereo( signed short * _PCM, int _SamplesCount, int
 static bool IMAADPCMUnpack16Ext_Mono( signed short * _PCM, int _IgnoreFirstNSamples, int _SamplesCount, const byte * _ADPCM, int _DataLength, int _BlockAlign );
 static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSamples, int _SamplesCount, int _ChannelsCount, const byte * _ADPCM, int _DataLength, int _BlockAlign );
 
-static bool WaveReadHeader( IStreamBase & _File, SWaveFormat & _Wave );
-static int WaveReadFile( IStreamBase & _File, void * _Buffer, int _BufferLength, SWaveFormat *_Wave );
-static void WaveRewindFile( IStreamBase & _File, SWaveFormat *_Wave );
-static int WaveSeekFile( IStreamBase & _File, int _Offset, SWaveFormat *_Wave );
+static bool ReadWaveHeader( IStreamBase & _File, SWaveFormat & _Wave );
+static int WaveRead( IStreamBase & _File, void * _Buffer, int _SizeInBytes, SWaveFormat *_Wave );
+static void WaveRewind( IStreamBase & _File, SWaveFormat *_Wave );
+static int WaveSeek( IStreamBase & _File, int _Offset, SWaveFormat *_Wave );
 
 AN_CLASS_META( AWavAudioTrack )
 AN_CLASS_META( AWavDecoder )
@@ -77,12 +77,12 @@ bool AWavAudioTrack::InitializeFileStream( const char * _FileName ) {
         return false;
     }
 
-    if ( !WaveReadHeader( File, Wave ) ) {
+    if ( !ReadWaveHeader( File, Wave ) ) {
         File.Close();
         return false;
     }
 
-    if ( WaveSeekFile( File, 0, &Wave ) != 0 ) {
+    if ( WaveSeek( File, 0, &Wave ) != 0 ) {
         File.Close();
         return false;
     }
@@ -112,7 +112,7 @@ void AWavAudioTrack::StreamRewind() {
     CurrentSample = 0;
 
     if ( File.IsOpened() ) {
-        WaveRewindFile( File, &Wave );
+        WaveRewind( File, &Wave );
     }
 }
 
@@ -141,7 +141,7 @@ void AWavAudioTrack::StreamSeek( int _PositionInSamples ) {
 
             PCMDataOffset = CurrentSample * bytesPerSample;
 
-            WaveSeekFile( File, PCMDataOffset, &Wave );
+            WaveSeek( File, PCMDataOffset, &Wave );
         } else if ( Wave.Format == WAVE_FORMAT_DVI_ADPCM ) {
             CurrentSample = Math::Min( _PositionInSamples * Wave.Channels, (int)Wave.NumSamples );
         }
@@ -231,7 +231,7 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
                     dataLength = Wave.DataSize - PCMDataOffset;
                 }
                 if ( dataLength > 0 ) {
-                    dataLength = WaveReadFile( File, (char *)_Buffer, dataLength, &Wave );
+                    dataLength = WaveRead( File, (char *)_Buffer, dataLength, &Wave );
 
                     PCMDataOffset += dataLength;
                 } else {
@@ -272,8 +272,8 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
                         ADPCMBufferLength = readBytesCount;
                     }
 
-                    WaveSeekFile( File, firstBlockIndex * Wave.BlockLength, &Wave );
-                    WaveReadFile( File, ADPCM, readBytesCount, &Wave );
+                    WaveSeek( File, firstBlockIndex * Wave.BlockLength, &Wave );
+                    WaveRead( File, ADPCM, readBytesCount, &Wave );
 
                     int samplesCount = (blocksCount - 1) * Wave.SamplesPerBlock + samplesInsideBlock;
 
@@ -325,12 +325,12 @@ bool AWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
         return false;
     }
 
-    if ( !WaveReadHeader( f, inf ) ) {
+    if ( !ReadWaveHeader( f, inf ) ) {
         return false;
     }
 
     if ( _PCM ) {
-        if ( WaveSeekFile( f, 0, &inf ) != 0 ) {
+        if ( WaveSeek( f, 0, &inf ) != 0 ) {
             return false;
         }
 
@@ -339,7 +339,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
             return false;
         }
 
-        if ( WaveReadFile( f, (char *)*_PCM, inf.DataSize, &inf ) != (int)inf.DataSize ) {
+        if ( WaveRead( f, (char *)*_PCM, inf.DataSize, &inf ) != (int)inf.DataSize ) {
             GZoneMemory.Dealloc( *_PCM );
             *_PCM = NULL;
             return false;
@@ -379,12 +379,12 @@ bool AWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
         return false;
     }
 
-    if ( !WaveReadHeader( f, inf ) ) {
+    if ( !ReadWaveHeader( f, inf ) ) {
         return false;
     }
 
     if ( _PCM ) {
-        if ( WaveSeekFile( f, 0, &inf ) != 0 ) {
+        if ( WaveSeek( f, 0, &inf ) != 0 ) {
             return false;
         }
 
@@ -393,7 +393,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
             return false;
         }
 
-        if ( WaveReadFile( f, (char *)*_PCM, inf.DataSize, &inf ) != (int)inf.DataSize ) {
+        if ( WaveRead( f, (char *)*_PCM, inf.DataSize, &inf ) != (int)inf.DataSize ) {
             GZoneMemory.Dealloc( *_PCM );
             *_PCM = NULL;
             return false;
@@ -433,11 +433,11 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
         return false;
     }
 
-    if ( !WaveReadHeader( f, inf ) ) {
+    if ( !ReadWaveHeader( f, inf ) ) {
         return false;
     }
 
-    if ( WaveSeekFile( f, 0, &inf ) != 0 ) {
+    if ( WaveSeek( f, 0, &inf ) != 0 ) {
         return false;
     }
 
@@ -446,7 +446,7 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
         return false;
     }
 
-    if ( WaveReadFile( f, ( char * )*_EncodedData + sizeof( SWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
+    if ( WaveRead( f, ( char * )*_EncodedData + sizeof( SWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
         GZoneMemory.Dealloc( *_EncodedData );
         *_EncodedData = NULL;
         return false;
@@ -478,11 +478,11 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_
         return false;
     }
 
-    if ( !WaveReadHeader( f, inf ) ) {
+    if ( !ReadWaveHeader( f, inf ) ) {
         return false;
     }
 
-    if ( WaveSeekFile( f, 0, &inf ) != 0 ) {
+    if ( WaveSeek( f, 0, &inf ) != 0 ) {
         return false;
     }
 
@@ -491,7 +491,7 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_
         return false;
     }
 
-    if ( WaveReadFile( f, ( char * )*_EncodedData + sizeof( SWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
+    if ( WaveRead( f, ( char * )*_EncodedData + sizeof( SWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
         GZoneMemory.Dealloc( *_EncodedData );
         *_EncodedData = NULL;
         return false;
@@ -835,224 +835,128 @@ static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSa
         }
     }
     AN_ASSERT( sampleIndex <= _SamplesCount );
-    //Out() << Int(SampleIndex) << _SamplesCount;
+
     return true;
 }
 
-// Code based on wave.c from libaudio
+static bool ReadWaveHeader( IStreamBase & InFile, SWaveFormat & Wave ) {
+    struct SRiffChunk {
+        uint32_t Id;
+        int32_t SizeInBytes;
+    };
 
-/*
- * Copyright 1993 Network Computing Devices, Inc.
- *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name Network Computing Devices, Inc. not be
- * used in advertising or publicity pertaining to distribution of this
- * software without specific, written prior permission.
- *
- * THIS SOFTWARE IS PROVIDED 'AS-IS'.  NETWORK COMPUTING DEVICES, INC.,
- * DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING WITHOUT
- * LIMITATION ALL IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
- * PARTICULAR PURPOSE, OR NONINFRINGEMENT.  IN NO EVENT SHALL NETWORK
- * COMPUTING DEVICES, INC., BE LIABLE FOR ANY DAMAGES WHATSOEVER, INCLUDING
- * SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES, INCLUDING LOSS OF USE, DATA,
- * OR PROFITS, EVEN IF ADVISED OF THE POSSIBILITY THEREOF, AND REGARDLESS OF
- * WHETHER IN AN ACTION IN CONTRACT, TORT OR NEGLIGENCE, ARISING OUT OF OR IN
- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- * $NCDId: @(#)wave.c,v 1.26 1996/04/29 21:48:08 greg Exp $
- */
+    SRiffChunk chunk;
+    uint32_t type;
+    int32_t paddedSize;
 
+    chunk.Id = InFile.ReadUInt32();
+    chunk.SizeInBytes = InFile.ReadInt32();
 
-#define RIFF_RiffID			"RIFF"
-#define RIFF_WaveID			"WAVE"
-#define RIFF_ListID			"LIST"
-#define RIFF_ListInfoID	    "INFO"
-#define RIFF_InfoIcmtID		"ICMT"
-#define RIFF_WaveFmtID		"fmt "
-#define RIFF_WaveFmtSize	16
-#define RIFF_WaveDataID		"data"
+    paddedSize = Align( chunk.SizeInBytes, 2 );
 
-typedef uint32_t RIFF_FOURCC;
-
-struct RiffChunk {
-    RIFF_FOURCC Id;
-    int32_t SizeInBytes;
-};
-
-#define CheckID(_x, _y) strncmp((const char *) (_x), (const char *) (_y), sizeof(RIFF_FOURCC))
-#define PAD2(_x)	    (((_x) + 1) & ~1)
-
-static int ReadChunk( IStreamBase & _File, RiffChunk * _Chunk ) {
-    _File.ReadBuffer( _Chunk, sizeof( RiffChunk ) );
-    if ( _File.GetReadBytesCount() ) {
-        _Chunk->SizeInBytes = Core::LittleDWord( _Chunk->SizeInBytes );
-    }
-    return _File.GetReadBytesCount();
-}
-
-static bool WaveReadHeader( IStreamBase & _File, SWaveFormat & _Wave ) {
-    RiffChunk       chunk;
-    RIFF_FOURCC     id;
-    int32_t         fileSize;
-    SWaveFormat *   wave = &_Wave;
-
-    wave->DataBase = 0;
-    wave->Format = 0;
-
-    if ( !ReadChunk( _File, &chunk ) ) {
+    if ( memcmp( &chunk.Id, "RIFF", 4 ) ) {
+        GLogger.Printf( "AWavAudioTrack: Unexpected chunk id (expected RIFF)\n" );
         return false;
     }
 
-    if ( CheckID( &chunk.Id, RIFF_RiffID ) ) {
+    type = InFile.ReadUInt32();
+
+    if ( memcmp( &type, "WAVE", 4 ) ) {
+        GLogger.Printf( "AWavAudioTrack: Expected WAVE list\n" );
         return false;
     }
 
-    _File.ReadBuffer( &id, sizeof( RIFF_FOURCC ) );
-    if ( !_File.GetReadBytesCount() ) {
-        return false;
-    }
+    int64_t curSize = paddedSize;
 
-    if ( CheckID( &id, RIFF_WaveID ) ) {
-        return false;
-    }
+    curSize -= sizeof( uint32_t );
 
-    fileSize = PAD2( chunk.SizeInBytes ) - sizeof( RIFF_FOURCC );
+    memset( &Wave, 0, sizeof( Wave ) );
 
-    bool bHasFormat = false;
-    bool bHasData = false;
+    while ( curSize >= sizeof( SRiffChunk ) ) {
 
-    while ( fileSize >= ( int32_t )sizeof( RiffChunk ) ) {
-        if ( bHasData && bHasFormat ) {
+        chunk.Id = InFile.ReadUInt32();
+        chunk.SizeInBytes = InFile.ReadInt32();
+
+        paddedSize = Align( chunk.SizeInBytes, 2 );
+
+        curSize -= sizeof( SRiffChunk );
+        curSize -= paddedSize;
+
+        long offset = InFile.Tell();
+
+        if ( !memcmp( &chunk.Id, "fmt ", 4 ) && !Wave.Format ) {
+            Wave.Format = InFile.ReadInt16();
+            Wave.Channels = InFile.ReadInt16();
+            Wave.SampleRate = InFile.ReadInt32();
+            InFile.ReadInt32(); // byte rate
+            Wave.BlockAlign = InFile.ReadInt16();
+            Wave.BitsPerSample = InFile.ReadInt16();
+        }
+        else if ( !memcmp( &chunk.Id, "data", 4 ) && !Wave.DataBase ) {
+            Wave.DataBase = offset;
+            Wave.DataSize = chunk.SizeInBytes;
+        }
+
+        if ( Wave.Format && Wave.DataBase ) {
             break;
         }
 
-        if ( !ReadChunk( _File, &chunk ) )
-            return false;
-
-        fileSize -= sizeof( RiffChunk ) + PAD2( chunk.SizeInBytes );
-
-        /* LIST chunk */
-        if ( !CheckID( &chunk.Id, RIFF_ListID ) ) {
-
-            _File.ReadBuffer( &id, sizeof( RIFF_FOURCC ) );
-            if ( !_File.GetReadBytesCount() ) {
-                return false;
-            }
-
-            /* INFO chunk */
-            if ( !CheckID( &id, RIFF_ListInfoID ) ) {
-                chunk.SizeInBytes -= sizeof( RIFF_FOURCC );
-
-                while ( chunk.SizeInBytes ) {
-                    RiffChunk       c;
-
-                    if ( !ReadChunk( _File, &c ) )
-                        return false;
-
-                    /* skip unknown chunk */
-                    _File.SeekCur( PAD2( c.SizeInBytes ) );
-
-                    chunk.SizeInBytes -= sizeof( RiffChunk ) + PAD2( c.SizeInBytes );
-                }
-            } else {
-                /* skip unknown chunk */
-                _File.SeekCur( PAD2( chunk.SizeInBytes ) - sizeof( RIFF_FOURCC ) );
-            }
-        }
-        /* wave format chunk */
-        else if ( !CheckID( &chunk.Id, RIFF_WaveFmtID ) && !wave->Format ) {
-            wave->Format = _File.ReadInt16();
-            wave->Channels = _File.ReadInt16();
-            wave->SampleRate = _File.ReadInt32();
-            _File.ReadInt32();
-            wave->BlockAlign = _File.ReadInt16();
-
-            if ( wave->Format != WAVE_FORMAT_PCM && wave->Format != WAVE_FORMAT_DVI_ADPCM ) {
-                return false;
-            }
-
-            wave->BitsPerSample = _File.ReadInt16();
-
-            /* skip any other format specific fields */
-            _File.SeekCur( PAD2( chunk.SizeInBytes - 16 ) );
-
-            bHasFormat = true;
-        }
-        /* wave data chunk */
-        else if ( !CheckID( &chunk.Id, RIFF_WaveDataID ) && !wave->DataBase ) {
-            long endOfFile;
-
-            wave->DataBase = _File.Tell();
-            wave->DataSize = chunk.SizeInBytes;
-            _File.SeekEnd( 0 );
-            endOfFile = _File.Tell();
-
-            if ( _File.SeekSet( wave->DataBase + PAD2( chunk.SizeInBytes ) ) || _File.Tell() > endOfFile ) {
-                /* the seek failed, assume the size is bogus */
-                _File.SeekEnd( 0 );
-                wave->DataSize = _File.Tell() - wave->DataBase;
-            }
-
-            wave->DataBase -= sizeof( long );
-
-            bHasData = true;
-        } else {
-            /* skip unknown chunk */
-            _File.SeekCur( PAD2( chunk.SizeInBytes ) );
-        }
+        // Move to next chunk
+        InFile.SeekSet( offset + paddedSize );
     }
 
-    if ( !wave->DataBase ) {
+    const uint32_t minDataSize = 4;
+    if ( Wave.DataBase < minDataSize ) {
+        GLogger.Printf( "AWavAudioTrack: Audio data was not found\n" );
         return false;
     }
 
-    if ( wave->Format == WAVE_FORMAT_DVI_ADPCM ) {
+    InFile.SeekEnd( 0 );
+    long fileLen = InFile.Tell();
 
-        if ( wave->BitsPerSample != 4 ) {   // Other bits per samples are not supported
+    if ( Wave.DataBase + Wave.DataSize > fileLen ) {
+        GLogger.Printf( "AWavAudioTrack: Audio size is bogus\n" );
+        return false;
+    }
+
+    if ( Wave.Format == WAVE_FORMAT_DVI_ADPCM ) {
+
+        if ( Wave.BitsPerSample != 4 ) {
+            GLogger.Printf( "AWavAudioTrack: Expected 4 bits per sample for DVI ADPCM format\n" );
             return false;
         }
 
-        wave->SamplesPerBlock = ( wave->BlockAlign - 4 * wave->Channels ) * 2;
-        wave->BlockLength = wave->BlockAlign;
-        wave->BlocksCount = wave->DataSize / wave->BlockLength;
-        wave->NumSamples = wave->SamplesPerBlock * wave->BlocksCount;
-        wave->DataSize = wave->BlocksCount * wave->BlockLength;    // align data size
-    } else {
-        wave->NumSamples = wave->DataSize / ( wave->BitsPerSample >> 3 );
+        Wave.SamplesPerBlock = ( Wave.BlockAlign - 4 * Wave.Channels ) * 2;
+        Wave.BlockLength = Wave.BlockAlign;
+        Wave.BlocksCount = Wave.DataSize / Wave.BlockLength;
+        Wave.NumSamples = Wave.SamplesPerBlock * Wave.BlocksCount;
+        Wave.DataSize = Wave.BlocksCount * Wave.BlockLength;    // align data size
+
+    } else if ( Wave.Format == WAVE_FORMAT_PCM ){
+        Wave.NumSamples = Wave.DataSize / ( Wave.BitsPerSample >> 3 );
 
         // correct data size
-        wave->DataSize = wave->NumSamples * ( wave->BitsPerSample >> 3 );
+        Wave.DataSize = Wave.NumSamples * ( Wave.BitsPerSample >> 3 );
+
+    } else {
+        GLogger.Printf( "AWavAudioTrack: Unexpected audio format (only PCM, DVI ADPCM supported)\n" );
+        return false;
     }
 
-    WaveRewindFile( _File, wave );
+    WaveRewind( InFile, &Wave );
 
     return true;
 }
 
-static int WaveReadFile( IStreamBase & _File, void * _Buffer, int _BufferLength, SWaveFormat *_Wave ) {
-    _File.ReadBuffer( _Buffer, _BufferLength );
+static int WaveRead( IStreamBase & _File, void * _Buffer, int _SizeInBytes, SWaveFormat * _Wave ) {
+    _File.ReadBuffer( _Buffer, _SizeInBytes );
     return _File.GetReadBytesCount();
 }
 
-static void WaveRewindFile( IStreamBase & _File, SWaveFormat *_Wave ) {
-    _File.SeekSet( _Wave->DataBase + sizeof( long ) );
+static void WaveRewind( IStreamBase & _File, SWaveFormat * _Wave ) {
+    _File.SeekSet( _Wave->DataBase );
 }
 
-static int WaveSeekFile( IStreamBase & _File, int _Offset, SWaveFormat *_Wave ) {
-    return _File.SeekSet( _Wave->DataBase + sizeof( long ) + _Offset );
+static int WaveSeek( IStreamBase & _File, int _Offset, SWaveFormat * _Wave ) {
+    return _File.SeekSet( _Wave->DataBase + _Offset );
 }
-
-//int
-//WaveTellFile(FWaveFormat *_Wave)
-//{
-//    return ftell(_Wave->fp) - _Wave->DataBase - sizeof(long);
-//}
-//
-//int
-//WaveFlushFile(FWaveFormat *_Wave)
-//{
-//    return fflush(_Wave->fp);
-//}
