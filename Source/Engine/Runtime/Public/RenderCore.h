@@ -44,7 +44,7 @@ constexpr int MAX_RENDER_VIEWS                      = 16;
 constexpr int MAX_SKINNED_MESH_JOINTS               = 256;
 
 /** Max skinned meshes per frame */
-constexpr int MAX_SKINNED_MESH_INSTANCES_PER_FRAME  = 256;
+//constexpr int MAX_SKINNED_MESH_INSTANCES_PER_FRAME  = 256;
 
 /** Max textures per material */
 constexpr int MAX_MATERIAL_TEXTURES                 = 12; // 3 textures reserved for lightmap, light clusterlookup, light cluster items, shadow map
@@ -482,12 +482,6 @@ enum EMaterialType {
     MATERIAL_TYPE_POSTPROCESS
 };
 
-enum EMaterialFacing {
-    MATERIAL_FACE_FRONT,
-    MATERIAL_FACE_BACK,
-    MATERIAL_FACE_FRONT_AND_BACK
-};
-
 enum EMaterialDepthHack {
     MATERIAL_DEPTH_HACK_NONE,
     MATERIAL_DEPTH_HACK_WEAPON,
@@ -498,11 +492,8 @@ struct SMaterialBuildData {
     /** Size of allocated memory for this structure (in bytes) */
     int SizeInBytes;
 
-    /** Material type */
+    /** Material type (Unlit,baselight,pbr,etc) */
     EMaterialType Type;
-
-    /** Facing */
-    EMaterialFacing Facing;
 
     /** Lightmap binding unit */
     int LightmapSlot;
@@ -526,6 +517,9 @@ struct SMaterialBuildData {
 
     /** Enable shadow map masking */
     bool bShadowMapMasking;
+
+    /** Translusent materials with alpha test */
+    bool bTranslucent;
 
     int NumUniformVectors;
 
@@ -748,10 +742,12 @@ struct SHUDDrawCmd {
 };
 
 struct SHUDDrawList {
-    int             VerticesCount;
-    int             IndicesCount;
-    SHUDDrawVert *  Vertices;
-    unsigned short* Indices;
+    //int             VerticesCount;
+    //int             IndicesCount;
+    size_t          VertexStreamOffset;
+    size_t          IndexStreamOffset;
+    //SHUDDrawVert *  Vertices;
+    //unsigned short* Indices;
     int             CommandsCount;
     SHUDDrawCmd *   Commands;
     SHUDDrawList *  pNext;
@@ -908,10 +904,6 @@ struct SFrameLightData {
 // Render frame
 //
 
-using AArrayOfDebugVertices = TPodArrayHeap< SDebugVertex, 1024 >;
-using AArrayOfDebugIndices = TPodArrayHeap< unsigned int, 1024 >;
-using AArrayOfDebugDrawCmds = TPodArrayHeap< SDebugDrawCmd >;
-
 struct SRenderView {
     // Current view index
     int ViewIndex;
@@ -958,6 +950,9 @@ struct SRenderView {
     int FirstInstance;
     int InstanceCount;
 
+    int FirstTranslucentInstance;
+    int TranslucentInstanceCount;
+
     int FirstShadowInstance;
     int ShadowInstanceCount;
 
@@ -994,22 +989,25 @@ struct SRenderFrame {
     int ShadowCascadePoolSize;
 
     TPodArray< SRenderInstance *, 1024 > Instances;
+    TPodArray< SRenderInstance *, 1024 > TranslucentInstances;
     TPodArray< SShadowRenderInstance *, 1024 > ShadowInstances;
     TPodArray< SDirectionalLightDef * > DirectionalLights;
 
     SHUDDrawList * DrawListHead;
     SHUDDrawList * DrawListTail;
 
-    AArrayOfDebugVertices DbgVertices;
-    AArrayOfDebugIndices  DbgIndices;
-    AArrayOfDebugDrawCmds DbgCmds;
+    SDebugDrawCmd const * DbgCmds;
+    size_t DbgVertexStreamOffset;
+    size_t DbgIndexStreamOffset;
+
+    ABufferGPU * StreamBuffer;
 };
 
 struct SRenderFrontendDef {
     SRenderView * View;
     BvFrustum const * Frustum;
     int VisibilityMask;
-
+    int FrameNumber;
     int PolyCount;
     int ShadowMapPolyCount;
 };
@@ -1046,7 +1044,11 @@ public:
     virtual void Deinitialize() = 0;
 
     virtual void RenderFrame( SRenderFrame * _FrameData ) = 0;
+    virtual void SwapBuffers() = 0;
     virtual void WaitGPU() = 0;
+    virtual void * FenceSync() = 0;
+    virtual void RemoveSync( void * _Sync ) = 0;
+    virtual void WaitSync( void * _Sync ) = 0;
 
     virtual ATextureGPU * CreateTexture( IGPUResourceOwner * _Owner ) = 0;
     virtual void DestroyTexture( ATextureGPU * _Texture ) = 0;
@@ -1063,16 +1065,18 @@ public:
 
     virtual ABufferGPU * CreateBuffer( IGPUResourceOwner * _Owner ) = 0;
     virtual void DestroyBuffer( ABufferGPU * _Buffer ) = 0;
-    virtual void InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes, bool _DynamicStorage ) = 0;
+    virtual void InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) = 0;
+    virtual void * InitializePersistentMappedBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) = 0;
     virtual void WriteBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) = 0;
     virtual void ReadBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) = 0;
+    virtual void OrphanBuffer( ABufferGPU * _Buffer ) = 0;
 
     virtual AMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) = 0;
     virtual void DestroyMaterial( AMaterialGPU * _Material ) = 0;
     virtual void InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) = 0;
 
-    virtual size_t AllocateJoints( size_t _JointsCount ) = 0;
-    virtual void WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) = 0;
+//    virtual size_t AllocateJoints( size_t _JointsCount ) = 0;
+//    virtual void WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) = 0;
 
     const char * GetName() { return BackendName; }
 

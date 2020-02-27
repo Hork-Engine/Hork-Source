@@ -51,17 +51,17 @@ public:
 
 class AColorPass : public GHI::Pipeline {
 public:
-    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest );
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent );
 };
 
 class AColorPassLightmap : public GHI::Pipeline {
 public:
-    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest );
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent );
 };
 
 class AColorPassVertexLight : public GHI::Pipeline {
 public:
-    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest );
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent );
 };
 
 class AShadowMapPass : public GHI::Pipeline {

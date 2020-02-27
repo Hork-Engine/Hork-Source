@@ -59,7 +59,7 @@ enum EFrustumCullingType {
 // Portal stack
 //
 
-#define MAX_PORTAL_STACK 64
+#define MAX_PORTAL_STACK 128// 64
 #define MAX_CULL_PLANES 4
 
 struct SPortalScissor {
@@ -416,7 +416,10 @@ static void VSD_FlowThroughPortals_r( SVisArea const * InArea ) {
         //    continue;
         //}
 
-        // TODO: here check portal doors
+        if ( portal->Portal->bBlocked ) {
+            // Portal is closed
+            continue;
+        }
 
         if ( !VSD_CalcPortalStack( stack, prevStack, portal ) ) {
             continue;
@@ -2299,6 +2302,10 @@ static void VSD_LevelRaycastPortals_r( SVisArea * InArea ) {
         // Mark visited
         portal->Portal->VisMark = VisQueryMarker;
 
+        if ( portal->Portal->bBlocked ) {
+            // Portal is closed
+            continue;
+        }
 #if 1
         // Calculate distance from ray origin to plane
         const float d1 = portal->Plane.Dist( Raycast.RayStart );
@@ -2356,6 +2363,11 @@ static void VSD_LevelRaycastBoundsPortals_r( SVisArea * InArea ) {
 
         // Mark visited
         portal->Portal->VisMark = VisQueryMarker;
+
+        if ( portal->Portal->bBlocked ) {
+            // Portal is closed
+            continue;
+        }
 
 #if 1
         // Calculate distance from ray origin to plane

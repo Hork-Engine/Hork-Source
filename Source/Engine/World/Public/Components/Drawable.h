@@ -42,6 +42,14 @@ enum ERenderOrder
     RENDER_ORDER_SKYBOX = 255
 };
 
+enum EDrawableType
+{
+    DRAWABLE_UNKNOWN,
+    DRAWABLE_STATIC_MESH,
+    DRAWABLE_SKINNED_MESH,
+    DRAWABLE_PROCEDURAL_MESH
+};
+
 /**
 
 ADrawable
@@ -52,8 +60,16 @@ Base class for drawing surfaces
 class ANGIE_API ADrawable : public APhysicalBody {
     AN_COMPONENT( ADrawable, APhysicalBody )
 
+    friend class ARenderWorld;
+
 public:
     int RenderingOrder = RENDER_ORDER_DEFAULT;
+
+    /** Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled */
+    bool bCustomDepthStencilPass;
+
+    /** Custom depth stencil value for the mesh */
+    uint8_t CustomDepthStencilValue;
 
     /** Visibility group to filter drawables during rendering */
     void SetVisibilityGroup( int InVisibilityGroup );
@@ -68,6 +84,12 @@ public:
     void SetHiddenInLightPass( bool _HiddenInLightPass );
 
     bool IsHiddenInLightPass() const;
+
+    /** Allow mesh to cast shadows on the world */
+    void SetCastShadow( bool _CastShadow );
+
+    /** Is cast shadows enabled */
+    bool IsCastShadow() const { return bCastShadow; }
 
     void SetQueryGroup( int _UserQueryGroup );
 
@@ -97,8 +119,6 @@ public:
 
     bool IsMovable() const;
 
-    bool HasPreRenderUpdate() const { return bPreRenderUpdate; }
-
     /** Get overrided bounding box in local space */
     BvAxisAlignedBox const & GetBoundsOverride() const { return OverrideBoundingBox; }
 
@@ -108,10 +128,27 @@ public:
     /** Get current bounds in world space */
     BvAxisAlignedBox const & GetWorldBounds() const;
 
+    /** Allow raycasting */
+    virtual void SetAllowRaycast( bool _AllowRaycast ) {}
+
+    bool IsRaycastAllowed() const { return bAllowRaycast; }
+
+    /** Raycast the drawable */
+    bool Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit );
+
+    /** Raycast the drawable */
+    bool RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit );
+
     SPrimitiveDef const * GetPrimitive() const { return &Primitive; }
 
-    /** Called before rendering if bPreRenderUpdate is true */
-    virtual void OnPreRenderUpdate( SRenderFrontendDef * _Def ) {}
+    EDrawableType GetDrawableType() const { return DrawableType; }
+
+    /** Called before rendering. Don't call directly. */
+    void PreRenderUpdate( SRenderFrontendDef const * _Def );
+
+    /** Iterate shadow casters in parent world */
+    ADrawable * GetNextShadowCaster() { return NextShadowCaster; }
+    ADrawable * GetPrevShadowCaster() { return PrevShadowCaster; }
 
 protected:
     ADrawable();
@@ -122,12 +159,23 @@ protected:
 
     void UpdateWorldBounds();
 
-    mutable BvAxisAlignedBox Bounds;
-    mutable BvAxisAlignedBox WorldBounds;
-    BvAxisAlignedBox        OverrideBoundingBox;
-    bool                    bOverrideBounds : 1;
-    bool                    bSkinnedMesh : 1;
-    bool                    bPreRenderUpdate : 1;
+    /** Override to dynamic update mesh data */
+    virtual void OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {}
+
+    EDrawableType DrawableType;
+
+    ADrawable * NextShadowCaster;
+    ADrawable * PrevShadowCaster;
 
     SPrimitiveDef Primitive;
+
+    int VisFrame;
+
+    mutable BvAxisAlignedBox Bounds;
+    mutable BvAxisAlignedBox WorldBounds;
+    BvAxisAlignedBox OverrideBoundingBox;
+    bool bOverrideBounds : 1;
+    bool bSkinnedMesh : 1;
+    bool bCastShadow : 1;
+    bool bAllowRaycast : 1;
 };

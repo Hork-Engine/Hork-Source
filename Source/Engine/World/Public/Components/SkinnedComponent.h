@@ -49,6 +49,9 @@ class ASkinnedComponent : public AMeshComponent {
     friend class AAnimationController;
 
 public:
+    /** Allow raycasting */
+    void SetAllowRaycast( bool _AllowRaycast ) override {}
+
     /** Get skeleton. Never return null */
     ASkeleton * GetSkeleton() { return Skeleton; }
 
@@ -80,7 +83,7 @@ public:
     ASkinnedComponent * GetNextSkinnedMesh() { return Next; }
     ASkinnedComponent * GetPrevSkinnedMesh() { return Prev; }
 
-    void UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize, int _FrameNumber );
+    void GetSkeletonHandle( size_t & _SkeletonOffset, size_t & _SkeletonSize );
 
 protected:
     ASkinnedComponent();
@@ -91,6 +94,8 @@ protected:
     void OnMeshChanged() override;
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
+
+    void OnPreRenderUpdate( SRenderFrontendDef const * _Def ) override;
 
 private:
     void UpdateControllersIfDirty();
@@ -116,8 +121,6 @@ private:
     // Memory offset/size for the skeleton animation snapshot
     size_t SkeletonOffset;
     size_t SkeletonSize;
-
-    int VisFrame;
 
     bool bUpdateBounds : 1;
     bool bUpdateControllers : 1;

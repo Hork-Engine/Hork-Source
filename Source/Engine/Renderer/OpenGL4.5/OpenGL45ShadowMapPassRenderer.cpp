@@ -2,6 +2,9 @@
 #include "OpenGL45Material.h"
 #include "OpenGL45FrameResources.h"
 #include "OpenGL45ShadowMapRT.h"
+#include "OpenGL45ShaderSource.h"
+
+#include <Core/Public/CriticalError.h>
 
 using namespace GHI;
 
@@ -18,10 +21,12 @@ static const Float4 VSM_ClearValue( 1.0f );
 void AShadowMapPassRenderer::Initialize() {
     CreateShadowDepthSamplers();
     CreateRenderPass();
+    CreatePipeline();
 }
 
 void AShadowMapPassRenderer::Deinitialize() {
     DepthPass.Deinitialize();
+    StaticShadowCasterPipeline.Deinitialize();
 }
 
 void AShadowMapPassRenderer::CreateRenderPass() {
@@ -129,41 +134,170 @@ void AShadowMapPassRenderer::CreateShadowDepthSamplers() {
 }
 #endif
 
-bool AShadowMapPassRenderer::BindMaterial( SShadowRenderInstance const * instance ) {
-    AMaterialGPU * pMaterial = instance->Material;
-    Pipeline * pPipeline;
+void AShadowMapPassRenderer::CreatePipeline() {
+    AString code;
+    // TODO: move load to other place
+    AFileStream f;
+    if ( !f.OpenRead( "ShadowCast.glsl" ) ) {
+        CriticalError( "Failed to load ShadowCast.glsl\n" );
+    }
+    f.ReadWholeFileToString( code );
 
-    AN_ASSERT( pMaterial );
+    PipelineCreateInfo pipelineCI = {};
 
-    bool bSkinned = instance->SkeletonSize > 0;
+    RasterizerStateInfo rsd;
+    rsd.SetDefaults();
+    rsd.bScissorEnable = SCISSOR_TEST;
+#if defined SHADOWMAP_VSM
+    //Desc.CullMode = POLYGON_CULL_FRONT; // Less light bleeding
+    Desc.CullMode = POLYGON_CULL_DISABLED;
+#else
+    //rsd.CullMode = POLYGON_CULL_BACK;
+    //rsd.CullMode = POLYGON_CULL_DISABLED; // Less light bleeding
+    rsd.CullMode = POLYGON_CULL_FRONT;
+#endif
+    //rsd.CullMode = POLYGON_CULL_DISABLED;
 
-    // Choose pipeline
-    switch ( pMaterial->MaterialType ) {
-    case MATERIAL_TYPE_PBR:
-    case MATERIAL_TYPE_BASELIGHT:
-        pPipeline = bSkinned ? &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPassSkinned
-                             : &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPass;
-        break;
-    case MATERIAL_TYPE_UNLIT:
-        pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPassSkinned
-                             : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPass;
-        break;
-    default:
-        return false;
+    BlendingStateInfo bsd;
+    bsd.SetDefaults();
+    //bsd.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;  // FIXME: there is no fragment shader, so we realy need to disable color mask?
+#if defined SHADOWMAP_VSM
+    bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_NO_BLEND );
+#endif
+
+    DepthStencilStateInfo dssd;
+    dssd.SetDefaults();
+    dssd.DepthFunc = CMPFUNC_LESS;
+
+    VertexBindingInfo vertexBinding[1] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( Float3 );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    pipelineCI.NumVertexBindings = 1;
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    constexpr VertexAttribInfo vertexAttribs[] = {
+        {
+            "InPosition",
+            0,              // location
+            0,              // buffer input slot
+            VAT_FLOAT3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            0
+        }
+    };
+
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.pVertexAttribs = vertexAttribs;
+
+    PipelineInputAssemblyInfo inputAssembly = {};
+    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    inputAssembly.bPrimitiveRestart = false;
+
+    pipelineCI.pInputAssembly = &inputAssembly;
+    pipelineCI.pBlending = &bsd;
+    pipelineCI.pRasterizer = &rsd;
+    pipelineCI.pDepthStencil = &dssd;
+
+    ShaderStageInfo stages[3] = {};
+
+    pipelineCI.NumStages = 0;
+
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+
+    ShaderModule vertexShaderModule;
+    ShaderModule geometryShaderModule;
+    ShaderModule fragmentShaderModule;
+
+    GShaderSources.Clear();
+    //GShaderSources.Add( "#define SKINNED_MESH\n" );
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
+    GShaderSources.Add( code.CStr() );
+    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
+
+    ShaderStageInfo & vs = stages[pipelineCI.NumStages++];
+    vs.Stage = SHADER_STAGE_VERTEX_BIT;
+    vs.pModule = &vertexShaderModule;
+
+    GShaderSources.Clear();
+    //GShaderSources.Add( "#define SKINNED_MESH\n" );
+    GShaderSources.Add( code.CStr() );
+    GShaderSources.Build( GEOMETRY_SHADER, &geometryShaderModule );
+
+    ShaderStageInfo & gs = stages[pipelineCI.NumStages++];
+    gs.Stage = SHADER_STAGE_GEOMETRY_BIT;
+    gs.pModule = &geometryShaderModule;
+
+    bool bVSM = false;
+
+#if defined SHADOWMAP_VSM || defined SHADOWMAP_EVSM
+    bVSM = true;
+#endif
+
+    if ( /*_ShadowMasking || */bVSM ) {
+        GShaderSources.Clear();
+        //GShaderSources.Add( "#define SHADOW_MASKING\n" );
+        //GShaderSources.Add( "#define SKINNED_MESH\n" );
+        GShaderSources.Add( code.CStr() );
+        GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
+
+        ShaderStageInfo & fs = stages[pipelineCI.NumStages++];
+        fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
+        fs.pModule = &fragmentShaderModule;
     }
 
-    // Bind pipeline
-    Cmd.BindPipeline( pPipeline );
+    pipelineCI.pStages = stages;
+    pipelineCI.pRenderPass = GetRenderPass();
+    pipelineCI.Subpass = 0;
 
-    // Bind second vertex buffer
-    Buffer * pSecondVertexBuffer = bSkinned ? GPUBufferHandle( instance->WeightsBuffer ) : nullptr;
-    Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, 0 );
+    StaticShadowCasterPipeline.Initialize( pipelineCI );
+}
 
-    // Set samplers
-    if ( pMaterial->bShadowMapPassTextureFetch ) {
-        for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-            GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
+bool AShadowMapPassRenderer::BindMaterial( SShadowRenderInstance const * instance ) {
+    AMaterialGPU * pMaterial = instance->Material;
+
+    if ( pMaterial ) {
+        bool bSkinned = instance->SkeletonSize > 0;
+        Pipeline * pPipeline;
+
+        // Choose pipeline
+        switch ( pMaterial->MaterialType ) {
+        case MATERIAL_TYPE_PBR:
+        case MATERIAL_TYPE_BASELIGHT:
+            pPipeline = bSkinned ? &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPassSkinned
+                                 : &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPass;
+            break;
+        case MATERIAL_TYPE_UNLIT:
+            pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPassSkinned
+                                 : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPass;
+            break;
+        default:
+            return false;
         }
+
+        // Bind pipeline
+        Cmd.BindPipeline( pPipeline );
+
+        // Bind second vertex buffer
+        if ( bSkinned ) {
+            Buffer * pSecondVertexBuffer = GPUBufferHandle( instance->WeightsBuffer );
+            Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, instance->WeightsBufferOffset );
+        } else {
+            Cmd.BindVertexBuffer( 1, nullptr, 0 );
+        }
+
+        // Set samplers
+        if ( pMaterial->bShadowMapPassTextureFetch ) {
+            for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
+                GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
+            }
+        }
+    } else {
+        Cmd.BindPipeline( &StaticShadowCasterPipeline );
+        Cmd.BindVertexBuffer( 1, nullptr, 0 );
     }
 
     // Bind vertex and index buffers
@@ -173,7 +307,7 @@ bool AShadowMapPassRenderer::BindMaterial( SShadowRenderInstance const * instanc
 }
 
 void AShadowMapPassRenderer::BindTexturesShadowMapPass( SMaterialFrameData * _Instance ) {
-    if ( !_Instance->Material->bShadowMapPassTextureFetch ) {
+    if ( !_Instance || !_Instance->Material->bShadowMapPassTextureFetch ) {
         return;
     }
 
@@ -190,9 +324,7 @@ void AShadowMapPassRenderer::RenderInstances() {
         return;
     }
 
-    if ( GShadowMapRT.GetMaxCascades() < GFrameData->ShadowCascadePoolSize ) {
-        GShadowMapRT.Realloc( GFrameData->ShadowCascadePoolSize );
-    }
+    GShadowMapRT.Realloc( GFrameData->ShadowCascadePoolSize );
 
     // TODO: Bind uniform buffer:
     //Cmd.SetBuffers( UNIFORM_BUFFER, SHADOW_MATRIX_BUFFER_UNIFORM_BINDING, 1, &CascadeViewProjectionBuffer );

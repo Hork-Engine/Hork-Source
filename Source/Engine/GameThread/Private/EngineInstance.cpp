@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include <GameThread/Public/EngineInstance.h>
 #include <World/Public/Base/ResourceManager.h>
-#include <World/Public/Resource/VertexAllocator.h>
 #include <World/Public/Render/RenderFrontend.h>
 #include <World/Public/Audio/AudioSystem.h>
 #include <World/Public/Audio/AudioCodec/OggVorbisDecoder.h>
@@ -45,6 +44,7 @@ SOFTWARE.
 #include <World/Private/PrimitiveLinkPool.h>
 
 #include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/VertexMemoryGPU.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>
@@ -59,7 +59,7 @@ SOFTWARE.
 
 //#define IMGUI_CONTEXT
 
-ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
+ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "1" ) );
 
 AEngineInstance & GEngine = AEngineInstance::Inst();
 
@@ -99,7 +99,7 @@ static void NavModuleFree( void * _Bytes ) {
 }
 
 static void *ImguiModuleAlloc( size_t _BytesCount, void * ) {
-    return GZoneMemory.Alloc( _BytesCount, 1 );
+    return GZoneMemory.Alloc( _BytesCount, 16 );
 }
 
 static void ImguiModuleFree( void * _Bytes, void * ) {
@@ -128,8 +128,8 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
 
     GResourceManager.Initialize();
 
-    GVertexAllocator.Initialize();
-    GDynamicVertexAllocator.Initialize();
+    GVertexMemoryGPU.Initialize();
+    GStreamedMemoryGPU.Initialize();
 
     GRenderFrontend.Initialize();
 
@@ -182,9 +182,6 @@ void AEngineInstance::Deinitialize() {
 
     GRenderFrontend.Deinitialize();
 
-    GVertexAllocator.Purge();
-    GDynamicVertexAllocator.Purge();
-
     GResourceManager.Deinitialize();
 
     GAudioSystem.PurgeChannels();
@@ -192,6 +189,8 @@ void AEngineInstance::Deinitialize() {
 
     AGarbageCollector::Deinitialize();
 
+    GVertexMemoryGPU.Deinitialize();
+    GStreamedMemoryGPU.Deinitialize();
     GPrimitiveLinkPool.Free();
 
     GAudioSystem.Deinitialize();
@@ -222,8 +221,6 @@ void AEngineInstance::UpdateFrame() {
 
     // Set current frame number
     FrameNumber++;
-
-    GDynamicVertexAllocator.SwapFrames();
 
     // Garbage collect from previuous frames
     AGarbageCollector::DeallocateObjects();
@@ -294,7 +291,7 @@ void AEngineInstance::ShowStats() {
 
         Float2 pos( 8, 8 );
         const float y_step = 22;
-        const int numLines = 12;
+        const int numLines = 14;
 
         pos.Y = Canvas.Height - numLines * y_step;
 
@@ -318,6 +315,8 @@ void AEngineInstance::ShowStats() {
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", GStreamedMemoryGPU.GetUsedMemoryPrev()/1024.0f, GStreamedMemoryGPU.GetAllocatedMemory()>>20, GStreamedMemoryGPU.GetMaxMemoryUsage()/1024.0f ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", GVertexMemoryGPU.GetUsedMemory()/1024.0f, GVertexMemoryGPU.GetAllocatedMemory()>>20 ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
         /*- GZoneMemory.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;

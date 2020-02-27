@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Core/Public/Plane.h>
 
 class AWorld;
-class AMeshComponent;
+class ADrawable;
 class ASkinnedComponent;
 class ADirectionalLightComponent;
 class ADebugRenderer;
@@ -54,7 +54,7 @@ public:
     ASkinnedComponent * GetSkinnedMeshes() { return SkinnedMeshList; }
 
     /** Get all shadow casters in the world */
-    AMeshComponent * GetShadowCasters() { return ShadowCasters; }
+    ADrawable * GetShadowCasters() { return ShadowCasters; }
 
     /** Get directional lights in the world */
     ADirectionalLightComponent * GetDirectionalLights() { return DirectionalLightList; }
@@ -62,9 +62,9 @@ public:
     void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
-    friend class AMeshComponent;
-    void AddShadowCaster( AMeshComponent * _Mesh );
-    void RemoveShadowCaster( AMeshComponent * _Mesh );
+    friend class ADrawable;
+    void AddShadowCaster( ADrawable * _Mesh );
+    void RemoveShadowCaster( ADrawable * _Mesh );
 
 private:
     friend class ASkinnedComponent;
@@ -81,8 +81,8 @@ private:
 
     ASkinnedComponent * SkinnedMeshList;
     ASkinnedComponent * SkinnedMeshListTail;
-    AMeshComponent * ShadowCasters;
-    AMeshComponent * ShadowCastersTail;
+    ADrawable * ShadowCasters;
+    ADrawable * ShadowCastersTail;
     ADirectionalLightComponent * DirectionalLightList;
     ADirectionalLightComponent * DirectionalLightListTail;
 };

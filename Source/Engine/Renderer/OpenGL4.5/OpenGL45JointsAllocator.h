@@ -35,51 +35,51 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-// NOTE: We can use TBO to increase max joints and draw instanced
-class AJointAllocator {
-public:
-    GHI::Buffer Buffer;
-    size_t Offset;
-    size_t MaxUsage;
+//// NOTE: We can use TBO to increase max joints and draw instanced
+//class AJointAllocator {
+//public:
+//    GHI::Buffer Buffer;
+//    size_t Offset;
+//    size_t MaxUsage;
 
-    void Initialize() {
-        Offset = 0;
-        MaxUsage = 0;
+//    void Initialize() {
+//        Offset = 0;
+//        MaxUsage = 0;
 
-        GHI::BufferCreateInfo bufferCI = {};
-        bufferCI.ImmutableStorageFlags = GHI::IMMUTABLE_DYNAMIC_STORAGE;
-        bufferCI.bImmutableStorage = true;
-        bufferCI.SizeInBytes = sizeof( Float3x4 ) * MAX_SKINNED_MESH_JOINTS * MAX_SKINNED_MESH_INSTANCES_PER_FRAME;
+//        GHI::BufferCreateInfo bufferCI = {};
+//        bufferCI.ImmutableStorageFlags = GHI::IMMUTABLE_DYNAMIC_STORAGE;
+//        bufferCI.bImmutableStorage = true;
+//        bufferCI.SizeInBytes = sizeof( Float3x4 ) * MAX_SKINNED_MESH_JOINTS * MAX_SKINNED_MESH_INSTANCES_PER_FRAME;
 
-        Buffer.Initialize( bufferCI );
+//        Buffer.Initialize( bufferCI );
 
-        GLogger.Printf( "Allocated %u bytes for joints\n", bufferCI.SizeInBytes );
-    }
+//        GLogger.Printf( "Allocated %u bytes for joints\n", bufferCI.SizeInBytes );
+//    }
 
-    void Deinitialize() {
-        Buffer.Deinitialize();
-    }
+//    void Deinitialize() {
+//        Buffer.Deinitialize();
+//    }
 
-    void Reset() {
-        Offset = 0;
-    }
+//    void Reset() {
+//        Offset = 0;
+//    }
 
-    size_t AllocJoints( size_t _Count ) {
-        size_t SizeInBytes = _Count * sizeof( Float3x4 );
-        if ( Offset + SizeInBytes > Buffer.GetSizeInBytes() ) {
-            GLogger.Printf( "AJointAllocator::AllocJoints: overflow\n" );
-            // TODO: allocate new buffer?
-            return 0;
-        }
-        size_t Ofs = Offset;
-        Offset += SizeInBytes;
-        Offset = Align( Offset, GDevice.GetUniformBufferOffsetAlignment() );
-        MaxUsage = Math::Max( MaxUsage, Ofs + SizeInBytes );
-        //GLogger.Printf( "AllocJoints: Allocated %u bytes. Max usage %u bytes\n", SizeInBytes, MaxUsage );
-        return Ofs;
-    }
-};
+//    size_t AllocJoints( size_t _Count ) {
+//        size_t SizeInBytes = _Count * sizeof( Float3x4 );
+//        if ( Offset + SizeInBytes > Buffer.GetSizeInBytes() ) {
+//            GLogger.Printf( "AJointAllocator::AllocJoints: overflow\n" );
+//            // TODO: allocate new buffer?
+//            return 0;
+//        }
+//        size_t Ofs = Offset;
+//        Offset += SizeInBytes;
+//        Offset = Align( Offset, GDevice.GetUniformBufferOffsetAlignment() );
+//        MaxUsage = Math::Max( MaxUsage, Ofs + SizeInBytes );
+//        //GLogger.Printf( "AllocJoints: Allocated %u bytes. Max usage %u bytes\n", SizeInBytes, MaxUsage );
+//        return Ofs;
+//    }
+//};
 
-extern AJointAllocator GJointsAllocator;
+//extern AJointAllocator GJointsAllocator;
 
 }

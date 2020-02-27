@@ -53,11 +53,11 @@ void ARenderWorld::RemoveSkinnedMesh( ASkinnedComponent * _Skeleton ) {
     INTRUSIVE_REMOVE( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
 
-void ARenderWorld::AddShadowCaster( AMeshComponent * _Mesh ) {
+void ARenderWorld::AddShadowCaster( ADrawable * _Mesh ) {
     INTRUSIVE_ADD_UNIQUE( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
 }
 
-void ARenderWorld::RemoveShadowCaster( AMeshComponent * _Mesh ) {
+void ARenderWorld::RemoveShadowCaster( ADrawable * _Mesh ) {
     INTRUSIVE_REMOVE( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
 }
 

@@ -232,20 +232,20 @@ void ADebugDrawPassRenderer::Initialize() {
     // Create buffers
     //
 
-    VertexBufferSize = 1024;
-    IndexBufferSize = 1024;
+//    VertexBufferSize = 1024;
+//    IndexBufferSize = 1024;
 
-    GHI::BufferCreateInfo streamBufferCI = {};
-    streamBufferCI.bImmutableStorage = false;
-    streamBufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
-    streamBufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
-    streamBufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
+//    GHI::BufferCreateInfo streamBufferCI = {};
+//    streamBufferCI.bImmutableStorage = false;
+//    streamBufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
+//    streamBufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
+//    streamBufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
 
-    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( SDebugVertex );
-    VertexBuffer.Initialize( streamBufferCI );
+//    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( SDebugVertex );
+//    VertexBuffer.Initialize( streamBufferCI );
 
-    streamBufferCI.SizeInBytes = IndexBufferSize * sizeof( unsigned int );
-    IndexBuffer.Initialize( streamBufferCI );
+//    streamBufferCI.SizeInBytes = IndexBufferSize * sizeof( unsigned int );
+//    IndexBuffer.Initialize( streamBufferCI );
 }
 
 void ADebugDrawPassRenderer::Deinitialize() {
@@ -255,8 +255,8 @@ void ADebugDrawPassRenderer::Deinitialize() {
         Pipelines[i].Deinitialize();
     }
 
-    VertexBuffer.Deinitialize();
-    IndexBuffer.Deinitialize();
+//    VertexBuffer.Deinitialize();
+//    IndexBuffer.Deinitialize();
 }
 
 void ADebugDrawPassRenderer::RenderInstances() {
@@ -289,12 +289,14 @@ void ADebugDrawPassRenderer::RenderInstances() {
     drawCmd.StartInstanceLocation = 0;
     drawCmd.BaseVertexLocation = 0;
 
+    Buffer * streamBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
+
     for ( int i = 0 ; i < GRenderView->DebugDrawCommandCount ; i++ ) {
-        SDebugDrawCmd * cmd = &GFrameData->DbgCmds[GRenderView->FirstDebugDrawCommand + i];
+        SDebugDrawCmd const * cmd = &GFrameData->DbgCmds[GRenderView->FirstDebugDrawCommand + i];
 
         Cmd.BindPipeline( &Pipelines[cmd->Type] );
-        Cmd.BindVertexBuffer( 0, &VertexBuffer, 0 );
-        Cmd.BindIndexBuffer( &IndexBuffer, INDEX_TYPE_UINT32, 0 );
+        Cmd.BindVertexBuffer( 0, streamBuffer, GFrameData->DbgVertexStreamOffset );
+        Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT32, GFrameData->DbgIndexStreamOffset );
 
         drawCmd.IndexCountPerInstance = cmd->NumIndices;
         drawCmd.StartIndexLocation = cmd->FirstIndex;
@@ -311,20 +313,20 @@ void ADebugDrawPassRenderer::RenderInstances() {
 
 void ADebugDrawPassRenderer::UploadBuffers() {
     // Upload debug geometry
-    int vertexCount = GFrameData->DbgVertices.Size();
-    int indexCount = GFrameData->DbgIndices.Size();
-    if ( VertexBufferSize < vertexCount ) {
-        VertexBufferSize = vertexCount;
-        VertexBuffer.Realloc( VertexBufferSize * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
-    } else {
-        VertexBuffer.WriteRange( 0, vertexCount * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
-    }
-    if ( IndexBufferSize < indexCount ) {
-        IndexBufferSize = indexCount;
-        IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
-    } else {
-        IndexBuffer.WriteRange( 0, indexCount * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
-    }
+//    int vertexCount = GFrameData->DbgVertices.Size();
+//    int indexCount = GFrameData->DbgIndices.Size();
+//    if ( VertexBufferSize < vertexCount ) {
+//        VertexBufferSize = vertexCount;
+//        VertexBuffer.Realloc( VertexBufferSize * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
+//    } else {
+//        VertexBuffer.WriteRange( 0, vertexCount * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
+//    }
+//    if ( IndexBufferSize < indexCount ) {
+//        IndexBufferSize = indexCount;
+//        IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
+//    } else {
+//        IndexBuffer.WriteRange( 0, indexCount * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
+//    }
 }
 
 }

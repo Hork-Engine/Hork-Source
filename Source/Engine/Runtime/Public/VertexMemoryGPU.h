@@ -33,20 +33,25 @@ SOFTWARE.
 #include <Core/Public/PoolAllocator.h>
 #include <Runtime/Public/RenderCore.h>
 
-constexpr size_t VERTEX_ALLOCATOR_BLOCK_SIZE = 32<<20; // 32 MB
+constexpr size_t VERTEX_MEMORY_GPU_BLOCK_SIZE = 32<<20; // 32 MB
+constexpr size_t VERTEX_MEMORY_GPU_BLOCK_COUNT = 256;   // max memory VERTEX_MEMORY_GPU_BLOCK_SIZE * VERTEX_MEMORY_GPU_BLOCK_COUNT = 8 GB
+constexpr size_t VERTEX_MEMORY_GPU_BLOCK_INDEX_MASK = 0xff00000000000000;
+constexpr size_t VERTEX_MEMORY_GPU_BLOCK_INDEX_SHIFT = 56;
+constexpr size_t VERTEX_MEMORY_GPU_BLOCK_OFFSET_MASK = 0x00ffffffffffffff;
+constexpr int VERTEX_MEMORY_GPU_CHUNK_OFFSET_ALIGNMENT = 32;
 
-typedef void *(*SGetMemoryCallback)( void * _UserPointer );
+constexpr size_t STREAMED_MEMORY_GPU_BLOCK_SIZE = 32<<20; // 32 MB
+constexpr int STREAMED_MEMORY_GPU_BUFFERS_COUNT = 3;    // required STREAMED_MEMORY_GPU_BLOCK_SIZE * STREAMED_MEMORY_GPU_BUFFERS_COUNT = 96 MB in use
 
-constexpr size_t MAX_BLOCK_COUNT = 256;
-constexpr size_t BLOCK_INDEX_MASK = 0xff00000000000000;
-constexpr size_t BLOCK_INDEX_SHIFT = 56;
-constexpr size_t BLOCK_OFFSET_MASK = 0x00ffffffffffffff;
 constexpr int VERTEX_SIZE_ALIGN = 32;
 constexpr int INDEX_SIZE_ALIGN = 16;
 constexpr int JOINT_SIZE_ALIGN = 16;
-constexpr int CHUNK_OFFSET_ALIGNMENT = 32;
 
-struct SVertexHandle {
+typedef void *(*SGetMemoryCallback)( void * _UserPointer );
+
+/** SVertexHandle holds internal data. Don't modify it outside of AVertexMemoryGPU */
+struct SVertexHandle
+{
     size_t Address;
     size_t Size;
     SGetMemoryCallback GetMemoryCB;
@@ -54,40 +59,41 @@ struct SVertexHandle {
 
     /** Pack memory address */
     void MakeAddress( int BlockIndex, size_t Offset ) {
-        AN_ASSERT( BlockIndex < MAX_BLOCK_COUNT );
-        AN_ASSERT( Offset <= BLOCK_OFFSET_MASK );
-        Address = ( ( size_t(BlockIndex) & 0xff ) << BLOCK_INDEX_SHIFT ) | ( Offset & BLOCK_OFFSET_MASK );
+        AN_ASSERT( BlockIndex < VERTEX_MEMORY_GPU_BLOCK_COUNT );
+        AN_ASSERT( Offset <= VERTEX_MEMORY_GPU_BLOCK_OFFSET_MASK );
+        Address = ( ( size_t(BlockIndex) & 0xff ) << VERTEX_MEMORY_GPU_BLOCK_INDEX_SHIFT ) | ( Offset & VERTEX_MEMORY_GPU_BLOCK_OFFSET_MASK );
     }
 
     /** Unpack block index */
-    int GetBlockIndex() const { return ( Address & BLOCK_INDEX_MASK ) >> BLOCK_INDEX_SHIFT; }
+    int GetBlockIndex() const { return ( Address & VERTEX_MEMORY_GPU_BLOCK_INDEX_MASK ) >> VERTEX_MEMORY_GPU_BLOCK_INDEX_SHIFT; }
 
     /** Unpack offset in memory block */
-    size_t GetBlockOffset() const { return Address & BLOCK_OFFSET_MASK; }
+    size_t GetBlockOffset() const { return Address & VERTEX_MEMORY_GPU_BLOCK_OFFSET_MASK; }
 
-    bool IsHuge() const { return Size > VERTEX_ALLOCATOR_BLOCK_SIZE; }
+    /** Huge chunks are in separate GPU buffers */
+    bool IsHuge() const { return Size > VERTEX_MEMORY_GPU_BLOCK_SIZE; }
 };
 
-class AVertexAllocator : public IGPUResourceOwner {
-    AN_FORBID_COPY( AVertexAllocator )
+class AVertexMemoryGPU : public IGPUResourceOwner {
+    AN_FORBID_COPY( AVertexMemoryGPU )
 
 public:
     /** Allow auto defragmentation */
     bool bAutoDefrag = true;
 
-    /** Allow to allocate huge chunks > VERTEX_ALLOCATOR_BLOCK_SIZE */
+    /** Allow to allocate huge chunks > VERTEX_MEMORY_GPU_BLOCK_SIZE */
     bool bAllowHugeAllocs = true;
 
     /** Max blocks count. */
     uint8_t MaxBlocks = 0;
 
-    AVertexAllocator();
+    AVertexMemoryGPU();
 
-    ~AVertexAllocator();
+    ~AVertexMemoryGPU();
 
     void Initialize();
 
-    void Purge();
+    void Deinitialize();
 
     /** Allocate vertex data */
     SVertexHandle * AllocateVertex( size_t _SizeInBytes, const void * _Data, SGetMemoryCallback _GetMemoryCB, void * _UserPointer );
@@ -102,13 +108,13 @@ public:
     void Update( SVertexHandle * _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void * _Data );
 
     /** Memory defragmentation */
-    void Defragment( bool bDeallocateEmptyBlocks );
+    void Defragment( bool bDeallocateEmptyBlocks, bool bForceUpload );
 
     /** GPU buffer and offset from handle */
-    void GetHandleBuffer( SVertexHandle * _Handle, ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetPhysicalBufferAndOffset( SVertexHandle * _Handle, ABufferGPU ** _Buffer, size_t * _Offset );
 
     /** Total allocated GPU memory for blocks */
-    size_t GetAllocatedMemory() const { return Blocks.Size() * VERTEX_ALLOCATOR_BLOCK_SIZE; }
+    size_t GetAllocatedMemory() const { return Blocks.Size() * VERTEX_MEMORY_GPU_BLOCK_SIZE; }
 
     /** Used memory */
     size_t GetUsedMemory() const { return UsedMemory; }
@@ -137,21 +143,32 @@ protected:
 
 private:
 
+    /** Find a free block */
     int FindBlock( size_t _RequiredSize );
 
+    /** Allocate function */
     SVertexHandle * Allocate( size_t _SizeInBytes, const void * _Data, SGetMemoryCallback _GetMemoryCB, void * _UserPointer );
 
+    /** Allocate a separate huge chunk > VERTEX_MEMORY_GPU_BLOCK_SIZE */
     SVertexHandle * AllocateHuge( size_t _SizeInBytes, const void * _Data, SGetMemoryCallback _GetMemoryCB, void * _UserPointer );
 
+    /** Deallocate separate huge chunk */
     void DeallocateHuge( SVertexHandle * _Handle );
 
+    /** Update vertex data */
     void UpdateHuge( SVertexHandle * _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void * _Data );
 
+    /** Upload data to GPU */
     void UploadBuffers();
 
+    /** Upload data to GPU */
     void UploadBuffersHuge();
 
+    /** Add a new GPU buffer */
     void AddGPUBuffer();
+
+    /** Check leaks */
+    void CheckMemoryLeaks();
 
     struct SBlock {
         size_t AllocOffset;
@@ -168,25 +185,25 @@ private:
     size_t UsedMemoryHuge;
 };
 
-
-constexpr size_t DYNAMIC_VERTEX_ALLOCATOR_BLOCK_SIZE = 32<<20; // 32 MB
-
-class ADynamicVertexAllocator : public IGPUResourceOwner {
-    AN_FORBID_COPY( ADynamicVertexAllocator )
+class AStreamedMemoryGPU : public IGPUResourceOwner {
+    AN_FORBID_COPY( AStreamedMemoryGPU )
 
 public:
-    ADynamicVertexAllocator();
+    AStreamedMemoryGPU();
 
-    ~ADynamicVertexAllocator();
+    ~AStreamedMemoryGPU();
 
     void Initialize();
 
-    void Purge();
+    void Deinitialize();
 
+    /** Allocate vertex data. Return stream handle. Stream handle is actual during current frame. */
     size_t AllocateVertex( size_t _SizeInBytes, const void * _Data );
 
+    /** Allocate index data. Return stream handle. Stream handle is actual during current frame. */
     size_t AllocateIndex( size_t _SizeInBytes, const void * _Data );
 
+    /** Allocate joint data. Return stream handle. Stream handle is actual during current frame. */
     size_t AllocateJoint( size_t _SizeInBytes, const void * _Data );
 
     int GetVertexBufferAlignment() const;
@@ -195,20 +212,37 @@ public:
 
     int GetJointBufferAlignment() const;
 
-    void Update( size_t _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void * _Data );
+    /** Map data. Mapped data is actual during current frame. */
+    void * Map( size_t _StreamHandle );
 
-    void GetHandleBuffer( size_t _Handle, ABufferGPU ** _Buffer, size_t * _Offset );
+    /** Get physical buffer and offset */
+    void GetPhysicalBufferAndOffset( size_t _StreamHandle, ABufferGPU ** _Buffer, size_t * _Offset );
 
+    /** Get physical buffer */
+    ABufferGPU * GetBufferGPU();
+
+    /** Internal. Wait buffer before filling. */
+    void WaitBuffer();
+
+    /** Internal. Swap write buffers. */
     void SwapFrames();
 
-    size_t GetAllocatedMemory() const { return DYNAMIC_VERTEX_ALLOCATOR_BLOCK_SIZE; }
+    /** Get total allocated memory */
+    size_t GetAllocatedMemory() const { return STREAMED_MEMORY_GPU_BLOCK_SIZE; }
 
+    /** Get total used memory */
     size_t GetUsedMemory() const { return FrameData[FrameWrite].UsedMemory; }
 
+    /** Get total used memory on previous frame */
+    size_t GetUsedMemoryPrev() const { return FrameData[(FrameWrite+STREAMED_MEMORY_GPU_BUFFERS_COUNT-1)%STREAMED_MEMORY_GPU_BUFFERS_COUNT].UsedMemory; }
+
+    /** Get free memory */
     size_t GetUnusedMemory() const { return GetAllocatedMemory() - GetUsedMemory(); }
 
+    /** Get max memory usage since initialization */
     size_t GetMaxMemoryUsage() const { return MaxMemoryUsage; }
 
+    /** Get stream handles count */
     int GetHandlesCount() const { return FrameData[FrameWrite].HandlesCount; }
 
 protected:
@@ -219,15 +253,17 @@ private:
     size_t Allocate( size_t _SizeInBytes, int _Alignment, const void * _Data );
 
     struct SFrameData {
-        ABufferGPU * Buffer;
         size_t UsedMemory;
         int HandlesCount;
+        void * Sync;
     };
 
-    SFrameData FrameData[2];
+    SFrameData FrameData[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
+    ABufferGPU * Buffer;
+    void * pMappedMemory;
     int FrameWrite;
     size_t MaxMemoryUsage;
 };
 
-extern AVertexAllocator GVertexAllocator;
-extern ADynamicVertexAllocator GDynamicVertexAllocator;
+extern AVertexMemoryGPU GVertexMemoryGPU;
+extern AStreamedMemoryGPU GStreamedMemoryGPU;

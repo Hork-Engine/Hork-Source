@@ -123,7 +123,7 @@ void AFrameResources::Initialize() {
     SkeletonBufferBinding = &BufferBinding[2];
     SkeletonBufferBinding->BufferType = UNIFORM_BUFFER;
     SkeletonBufferBinding->SlotIndex = 2;
-    SkeletonBufferBinding->pBuffer = &GJointsAllocator.Buffer;
+    SkeletonBufferBinding->pBuffer = nullptr;//&GJointsAllocator.Buffer;
 
     CascadeBufferBinding = &BufferBinding[3];
     CascadeBufferBinding->BufferType = UNIFORM_BUFFER;
@@ -373,21 +373,20 @@ AN_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed( Float3x4 const & _In, Flo
 }
 
 void AFrameResources::UploadUniforms() {
+    SkeletonBufferBinding->pBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
+
     SetViewUniforms();
 
+    int totalInstanceCount = GRenderView->InstanceCount + GRenderView->TranslucentInstanceCount;
+
     // Set Instances Uniforms
-    if ( InstanceUniformBufferSize < GRenderView->InstanceCount ) {
-        InstanceUniformBufferSize = GRenderView->InstanceCount;
+    if ( InstanceUniformBufferSize < totalInstanceCount ) {
+        InstanceUniformBufferSize = totalInstanceCount;
         InstanceUniformBuffer.Realloc( InstanceUniformBufferSize * InstanceUniformBufferSizeof/*, data*/ );
-    }/* else {
-        InstanceUniformBuffer.WriteRange( 0, GRenderView->InstanceCount * UniformBufferSizeof, data );
-    }*/
+    }
 
+    TempData.ResizeInvalidate( totalInstanceCount * InstanceUniformBufferSizeof );
 
-    //InstanceUniformBuffer.MapRange( 0, GRenderView->InstanceCount * UniformBufferSizeof, MAP_TRANSFER_WRITE, MAP_INVALIDATE_ENTIRE_BUFFER, MAP_NON_PERSISTENT, false, false );
-    TempData.ResizeInvalidate( GRenderView->InstanceCount * InstanceUniformBufferSizeof );
-
-    // FIXME: Map?
     for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
         SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
@@ -400,14 +399,20 @@ void AFrameResources::UploadUniforms() {
 
         //InstanceUniformBuffer.WriteRange( i * InstanceUniformBufferSizeof, UniformBufferSizeof, pUniformBuf );
     }
-    InstanceUniformBuffer.WriteRange( 0, GRenderView->InstanceCount * InstanceUniformBufferSizeof, TempData.ToPtr() );
-    //Cmd.Barrier( UNIFORM_BARRIER_BIT );
+    int uniformTranslucentOffset = GRenderView->InstanceCount;
+    for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
+        SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
 
+        SInstanceUniformBuffer * pUniformBuf = reinterpret_cast< SInstanceUniformBuffer * >(TempData.ToPtr() + (uniformTranslucentOffset+i)*InstanceUniformBufferSizeof);
 
+        memcpy( &pUniformBuf->TransformMatrix, &instance->Matrix, sizeof( pUniformBuf->TransformMatrix ) );
+        StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, pUniformBuf->ModelNormalToViewSpace );
+        memcpy( &pUniformBuf->LightmapOffset, &instance->LightmapOffset, sizeof( pUniformBuf->LightmapOffset ) );
+        memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
 
-
-
-
+        //InstanceUniformBuffer.WriteRange( i * InstanceUniformBufferSizeof, UniformBufferSizeof, pUniformBuf );
+    }
+    InstanceUniformBuffer.WriteRange( 0, totalInstanceCount * InstanceUniformBufferSizeof, TempData.ToPtr() );
 
 
     // Set Instances Uniforms
@@ -423,7 +428,10 @@ void AFrameResources::UploadUniforms() {
         SShadowInstanceUniformBuffer * pUniformBuf = reinterpret_cast< SShadowInstanceUniformBuffer * >(TempData.ToPtr() + i*ShadowInstanceUniformBufferSizeof);
 
         StoreFloat3x4AsFloat4x4Transposed( instance->WorldTransformMatrix, pUniformBuf->TransformMatrix );
-        memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
+
+        if ( instance->MaterialInstance ) {
+            memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
+        }
     }
 
     ShadowInstanceUniformBuffer.WriteRange( 0, GRenderView->ShadowInstanceCount * ShadowInstanceUniformBufferSizeof, TempData.ToPtr() );
@@ -434,23 +442,20 @@ void AFrameResources::UploadUniforms() {
         sizeof( Float4x4 ) * GRenderView->NumShadowMapCascades, GRenderView->ShadowMapMatrices );
     
 
-    //GLogger.Printf( "NumShadowMapCascades: %d\n", GRenderView->NumShadowMapCascades );
-    //for ( int i = 0 ; i < GRenderView->NumShadowMapCascades ; i++ ) {
-    //    GLogger.Printf( "---\n%s\n", GRenderView->LightViewProjectionMatrices[i].ToString().CStr() );
-    //}
+    // Write cluster data
+    ClusterLookup.Write( 0,
+                         GHI::PIXEL_FORMAT_UINT_RG,
+                         sizeof( SClusterData )*MAX_FRUSTUM_CLUSTERS_X*MAX_FRUSTUM_CLUSTERS_Y*MAX_FRUSTUM_CLUSTERS_Z,
+                         1,
+                         GRenderView->LightData.ClusterLookup );
 
-    //for ( int i = 0; i<16; i++ )
-    //    for ( int j = 0; j<16; j++ )
-    //        for ( int k = 0; k<24; k++ )
-    //            GFrameData->LightData.ClusterLookup[k][j][i].NumLights = 1;
+    ClusterItemBuffer.WriteRange( 0,
+                                  sizeof( SClusterItemBuffer )*GRenderView->LightData.TotalItems,
+                                  GRenderView->LightData.ItemBuffer );
 
-    //memset( GFrameData->LightData.ClusterLookup, 0xff, sizeof( GFrameData->LightData.ClusterLookup  ) );
-
-
-    ClusterLookup.Write( 0, GHI::PIXEL_FORMAT_UINT_RG, sizeof( SClusterData )*MAX_FRUSTUM_CLUSTERS_X*MAX_FRUSTUM_CLUSTERS_Y*MAX_FRUSTUM_CLUSTERS_Z, 1, GFrameData->LightData.ClusterLookup );
-
-    ClusterItemBuffer.WriteRange( 0, sizeof( SClusterItemBuffer )*GFrameData->LightData.TotalItems, GFrameData->LightData.ItemBuffer );
-    LightBuffer.WriteRange( 0, sizeof( SClusterLight ) * GFrameData->LightData.TotalLights, GFrameData->LightData.LightBuffer );
+    LightBuffer.WriteRange( 0,
+                            sizeof( SClusterLight ) * GRenderView->LightData.TotalLights,
+                            GRenderView->LightData.LightBuffer );
 }
 
 }

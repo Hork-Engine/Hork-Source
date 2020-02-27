@@ -108,6 +108,7 @@ void Buffer::Initialize( BufferCreateInfo const & _CreateInfo, const void * _Sys
     UID = pDevice->GenerateUID();
 
     pDevice->TotalBuffers++;
+    pDevice->BufferMemoryAllocated += CreateInfo.SizeInBytes;
 
     // NOTE: текущие параметры буфера можно получить с помощью следующих функций:
     // glGetBufferParameteri64v        glGetNamedBufferParameteri64v
@@ -122,6 +123,7 @@ void Buffer::Deinitialize() {
     GLuint id = GL_HANDLE( Handle );
     glDeleteBuffers( 1, &id );
     pDevice->TotalBuffers--;
+    pDevice->BufferMemoryAllocated -= CreateInfo.SizeInBytes;
 
     pDevice = nullptr;
     Handle = nullptr;
@@ -136,6 +138,17 @@ bool Buffer::Realloc( size_t _NewByteLength, const void * _SysMem ) {
     CreateInfo.SizeInBytes = _NewByteLength;
 
     glNamedBufferData( GL_HANDLE( Handle ), _NewByteLength, _SysMem, ChooseBufferUsageHint( CreateInfo.MutableClientAccess, CreateInfo.MutableUsage ) ); // 4.5
+
+    return true;
+}
+
+bool Buffer::Orphan() {
+    if ( CreateInfo.bImmutableStorage ) {
+        LogPrintf( "Buffer::Orphan: expected mutable buffer\n" );
+        return false;
+    }
+
+    glNamedBufferData( GL_HANDLE( Handle ), CreateInfo.SizeInBytes, nullptr, ChooseBufferUsageHint( CreateInfo.MutableClientAccess, CreateInfo.MutableUsage ) ); // 4.5
 
     return true;
 }

@@ -44,7 +44,7 @@ public:
     GHI::RenderPass * GetRenderPass() { return &ColorPass; }
 
 private:
-    bool BindMaterial( SRenderInstance const * instance );
+    bool BindMaterial( SRenderInstance const * Instance );
     void BindTexturesColorPass( SMaterialFrameData * _Instance );
 
     GHI::RenderPass ColorPass;

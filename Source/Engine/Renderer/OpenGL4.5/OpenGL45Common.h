@@ -64,6 +64,7 @@ extern SRenderFrame *       GFrameData;
 extern SRenderView *        GRenderView;
 
 AN_FORCEINLINE GHI::Buffer * GPUBufferHandle( ABufferGPU * _Buffer ) {
+ 
     return static_cast< GHI::Buffer * >( _Buffer->pHandleGPU );
 }
 

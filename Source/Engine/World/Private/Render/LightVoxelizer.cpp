@@ -519,7 +519,7 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, ABaseLig
 
     bUseSSE = RVClusterSSE;
 
-    pLightData = &Frame->LightData;
+    pLightData = &RV->LightData;
 
     // Pack items
     ItemsCount = 0;

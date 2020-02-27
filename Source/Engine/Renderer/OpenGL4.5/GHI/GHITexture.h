@@ -386,6 +386,9 @@ struct TextureViewCreateInfo {
 };
 
 class Texture final : public NonCopyable, IObjectInterface {
+
+    friend class CommandBuffer;
+
 public:
     Texture();
     ~Texture();
@@ -487,6 +490,7 @@ private:
 
     Device * pDevice;
     void * Handle;
+    uint32_t UID;
     TextureCreateInfo CreateInfo;
     bool bImmutableStorage;
     bool bTextureBuffer;

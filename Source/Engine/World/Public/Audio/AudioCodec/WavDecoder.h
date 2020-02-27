@@ -33,16 +33,16 @@ SOFTWARE.
 #include <World/Public/Audio/AudioDecoderInterface.h>
 
 struct SWaveFormat {
-    int16_t       Format;
-    int16_t       Channels;
-    int16_t       BitsPerSample;
-    int32_t         SampleRate;
-    uint32_t        NumSamples;
-    uint32_t        DataSize;
-    uint32_t        DataBase;
+    int16_t     Format;
+    int16_t     Channels;
+    int16_t     BitsPerSample;
+    int32_t     SampleRate;
+    uint32_t    NumSamples;
+    uint32_t    DataSize;
+    uint32_t    DataBase;
 
     // ADPCM
-    int16_t       BlockAlign;
+    int16_t     BlockAlign;
     int         SamplesPerBlock;
     int         BlockLength;
     int         BlocksCount;

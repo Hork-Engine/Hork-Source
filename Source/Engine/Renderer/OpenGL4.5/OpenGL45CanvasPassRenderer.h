@@ -58,10 +58,10 @@ private:
     GHI::Pipeline AlphaPipeline[COLOR_BLENDING_MAX];
     GHI::Sampler Samplers[HUD_SAMPLER_MAX];
     GHI::Sampler PresentViewSampler;
-    GHI::Buffer VertexBuffer;
-    GHI::Buffer IndexBuffer;
-    int VertexBufferSize;
-    int IndexBufferSize;
+    //GHI::Buffer VertexBuffer;
+    //GHI::Buffer IndexBuffer;
+    //int VertexBufferSize;
+    //int IndexBufferSize;
 };
 
 extern ACanvasPassRenderer GCanvasPassRenderer;

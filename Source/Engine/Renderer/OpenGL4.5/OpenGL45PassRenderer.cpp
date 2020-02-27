@@ -66,8 +66,8 @@ void APassRenderer::BindVertexAndIndexBuffers( SRenderInstance const * _Instance
     AN_ASSERT( pVertexBuffer );
     AN_ASSERT( pIndexBuffer );
 
-    Cmd.BindVertexBuffer( 0, pVertexBuffer, 0 );
-    Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, 0 );
+    Cmd.BindVertexBuffer( 0, pVertexBuffer, _Instance->VertexBufferOffset );
+    Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, _Instance->IndexBufferOffset );
 }
 
 void APassRenderer::BindVertexAndIndexBuffers( SShadowRenderInstance const * _Instance ) {
@@ -77,8 +77,8 @@ void APassRenderer::BindVertexAndIndexBuffers( SShadowRenderInstance const * _In
     AN_ASSERT( pVertexBuffer );
     AN_ASSERT( pIndexBuffer );
 
-    Cmd.BindVertexBuffer( 0, pVertexBuffer, 0 );
-    Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, 0 );
+    Cmd.BindVertexBuffer( 0, pVertexBuffer, _Instance->VertexBufferOffset );
+    Cmd.BindIndexBuffer( pIndexBuffer, INDEX_TYPE_UINT32, _Instance->IndexBufferOffset );
 }
 
 void APassRenderer::BindSkeleton( size_t _Offset, size_t _Size ) {

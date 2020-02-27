@@ -38,6 +38,7 @@ SOFTWARE.
 
 class AActor;
 class AWorld;
+class ALevel;
 class ATexture;
 class ASceneComponent;
 class ABrushModel;
@@ -262,16 +263,55 @@ struct SSurfaceDef
 
 struct SPrimitiveDef
 {
+    /** Owner component */
     ASceneComponent * Owner;
 
+    /** List of areas where primitive located */
+    SPrimitiveLink * Links;
+
+    /** Next primitive in level */
+    SPrimitiveDef * Next;
+
+    /** Prev primitive in level */
+    SPrimitiveDef * Prev;
+
+    /** Next primitive in update list */
+    SPrimitiveDef * NextUpd;
+
+    /** Prev primitive in update list */
+    SPrimitiveDef * PrevUpd;
+
+    /** Callback for local raycast */
+    bool (*RaycastCallback)( SPrimitiveDef const * Self,
+                             Float3 const & InRayStart,
+                             Float3 const & InRayEnd,
+                             TPodArray< STriangleHitResult > & Hits,
+                             int & ClosestHit );
+
+    /** Callback for closest local raycast */
+    bool (*RaycastClosestCallback)( SPrimitiveDef const * Self,
+                                    Float3 const & InRayStart,
+                                    Float3 & HitLocation,
+                                    Float2 & HitUV,
+                                    float & HitDistance,
+                                    SMeshVertex const ** pVertices,
+                                    unsigned int Indices[3],
+                                    TRef< AMaterialInstance > & Material );
+
+    /** Primitive type */
     VSD_PRIMITIVE Type;
 
+    /** Primitive bounding shape */
     union
     {
+        /** Used if type = VSD_PRIMITIVE_BOX */
         BvAxisAlignedBox Box;
+
+        /** Used if type = VSD_PRIMITIVE_SPHERE */
         BvSphere Sphere;
     };
 
+    /** Face plane. Used for face culling (when bFaceCull=true) */
     PlaneF Face;
 
     /** Visibility query group. See VSD_QUERY_MASK enum. */
@@ -288,23 +328,17 @@ struct SPrimitiveDef
 
     //int BakeIndex;
 
+    /** Use face culling */
     bool bFaceCull : 1;
 
+    /** Is primitive outdoor/indoor */
     bool bIsOutdoor : 1;
 
+    /** Is primitive pending to remove from level */
     bool bPendingRemove : 1;
 
-    bool bMovable : 1;
-
-    SPrimitiveLink * Links;
-
-    SPrimitiveDef * Next;
-    SPrimitiveDef * Prev;
-    SPrimitiveDef * NextUpd;
-    SPrimitiveDef * PrevUpd;
-
-    bool (*RaycastCallback)( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit );
-    bool (*RaycastClosestCallback)( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 & HitLocation, Float2 & HitUV, float & HitDistance, SMeshVertex const ** pVertices, unsigned int Indices[3], TRef< AMaterialInstance > & Material );
+    /** Is primitive movable */
+    bool bMovable : 1; // FIXME: This is not used!
 };
 
 struct SPrimitiveLink
@@ -322,32 +356,28 @@ struct SPrimitiveLink
     SPrimitiveLink *  Next;
 };
 
+struct SPortalDef
+{
+    /** First hull vertex in array of vertices */
+    int FirstVert;
+
+    /** Hull vertex count */
+    int NumVerts;
+
+    /** Linked areas (front and back) */
+    int Areas[2];
+};
+
 struct SVisPortal
 {
-#if 0
-    /** Portal owner */
-    ALevel * ParentLevel;
-#endif
-
-    /** Linked areas */
-    SVisArea * Area[2];
-
     /** Portal to areas */
     SPortalLink * Portals[2];
 
-    /** Portal hull */
-    AConvexHull * Hull;
-
-    /** Portal plane */
-    PlaneF Plane;
-
-#if 0
-    /** Blocking bits for doors (TODO) */
-    int BlockingBits;
-#endif
-
     /** Visibility marker */
     int VisMark;
+
+    /** Block visibility (for doors) */
+    bool bBlocked;
 };
 
 struct SPortalLink
@@ -370,14 +400,6 @@ struct SPortalLink
 
 struct SVisArea
 {
-    /** Reference point is used to determine the portal facing */
-    Float3 ReferencePoint;
-
-#if 0
-    /** Area owner */
-    ALevel * ParentLevel;
-#endif
-
     /** Area bounding box */
     BvAxisAlignedBox Bounds;  // FIXME: will be removed later?
 
@@ -403,13 +425,10 @@ struct SVisArea
     int VisMark;
 };
 
-class ALevel;
-
 class ABrushModel : public ABaseObject {
     AN_CLASS( ABrushModel, ABaseObject )
 
 public:
-
     /** Baked surface definitions */
     TPodArrayHeap< SSurfaceDef > Surfaces;
 
@@ -455,10 +474,11 @@ ALevel
 Subpart of a world. Contains actors, level visibility, baked data like lightmaps, surfaces, collision, audio, etc.
 
 */
-class ALevel : public ABaseObject {
+class ALevel : public ABaseObject, public IGPUResourceOwner {
     AN_CLASS( ALevel, ABaseObject )
 
     friend class AWorld;
+    friend class AActor;
 
 public:
     using AArrayOfNodes = TPodArray< SBinarySpaceNode >;
@@ -483,7 +503,7 @@ public:
     TPodArray< SVisPortal > Portals;
 
     /** Links between the portals and areas */
-    TPodArray< SPortalLink > AreaPortals;
+    TPodArray< SPortalLink > AreaLinks;
 
     /** Lightmap pixel format */
     ELightmapFormat LightmapFormat;
@@ -521,18 +541,22 @@ public:
     /** Static lightmaps (experemental). Indexed by lightmap block. */
     TStdVector< TRef< ATexture > > Lightmaps;
 
+    /** Vertex buffer for baked static shadow casters
+    FUTURE: split to chunks for culling
+    */
+    TPodArray< Float3 > ShadowCasterVerts;
+
+    /** Index buffer for baked static shadow casters */
+    TPodArray< unsigned int > ShadowCasterIndices;
+
     /** Not movable primitives */
     //TPodArray< SPrimitiveDef * > BakedPrimitives;
 
     // TODO: Keep here static navigation geometry
     // TODO: Octree/AABBtree for outdoor area
-    // TODO: combine AddArea/AddPortal/Initialize to Initialize() method
 
-    /** Create vis area */
-    int AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint );
-
-    /** Create vis portal. Don't create areas after portals! */
-    int AddPortal( Float3 const * _HullPoints, int _NumHullPoints, int _Area1, int _Area2 );
+    /** Create and link portals */
+    void CreatePortals( SPortalDef const * InPortals, int InPortalsCount, Float3 const * InHullVertices );
 
     /** Build level visibility */
     void Initialize();
@@ -606,6 +630,10 @@ public:
     /** Mark primitive dirty */
     void MarkPrimitive( SPrimitiveDef * InPrimitive );
 
+    /** Get shadow caster GPU buffers */
+    ABufferGPU * GetShadowCasterVB() { return ShadowCasterVB; }
+    ABufferGPU * GetShadowCasterIB() { return ShadowCasterIB; }
+
 protected:
     ALevel();
     ~ALevel();
@@ -615,6 +643,8 @@ protected:
 
     /** Draw debug. Called by owner world. */
     void DrawDebug( ADebugRenderer * InRenderer );
+
+    void UploadResourcesGPU() override;
 
 private:
     /** Callback on add level to world. Called by owner world. */
@@ -675,6 +705,9 @@ private:
 
     /** Cluster index for view origin */
     int ViewCluster;
+
+    ABufferGPU * ShadowCasterVB;
+    ABufferGPU * ShadowCasterIB;
 
     SPrimitiveDef * PrimitiveList;
     SPrimitiveDef * PrimitiveListTail;

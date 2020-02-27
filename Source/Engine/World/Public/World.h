@@ -124,7 +124,9 @@ struct SVisibilityQuery
 /** Box hit result */
 struct SBoxHitResult
 {
+    /** Box owner. Null for the surfaces. */
     ASceneComponent * Object;
+
     Float3 LocationMin;
     Float3 LocationMax;
     float DistanceMin;

@@ -35,6 +35,10 @@ SOFTWARE.
 #include <Core/Public/BV/BvAxisAlignedBox.h>
 #include <Core/Public/BV/BvOrientedBox.h>
 
+using AArrayOfDebugVertices = TPodArrayHeap< SDebugVertex, 1024, 1024, 16 >;
+using AArrayOfDebugIndices = TPodArrayHeap< unsigned int, 1024, 1024, 16 >;
+using AArrayOfDebugDrawCmds = TPodArrayHeap< SDebugDrawCmd >;
+
 class ADebugRenderer {
     AN_FORBID_COPY( ADebugRenderer )
 
@@ -42,6 +46,8 @@ public:
     ADebugRenderer();
 
     ~ADebugRenderer();
+
+    void Free();
 
     void Reset();
 
@@ -129,18 +135,22 @@ public:
 
     void SplitCommands();
 
-    int CommandsCount() const { return Cmds->Size(); }
+    int CommandsCount() const { return Cmds.Size(); }
 
     int GetVisPass() const { return VisPass; }
+
+    AArrayOfDebugVertices const & GetVertices() const { return Vertices; }
+    AArrayOfDebugIndices const & GetIndices() const { return Indices; }
+    AArrayOfDebugDrawCmds const & GetCmds() const { return Cmds; }
 
 private:
     SDebugDrawCmd & SetDrawCmd( EDebugDrawCmd _Type );
     void PrimitiveReserve( int _NumVertices, int _NumIndices );
 
     SRenderView * pView;
-    AArrayOfDebugVertices * Vertices;
-    AArrayOfDebugIndices * Indices;
-    AArrayOfDebugDrawCmds * Cmds;
+    AArrayOfDebugVertices Vertices;
+    AArrayOfDebugIndices  Indices;
+    AArrayOfDebugDrawCmds Cmds;
     uint32_t CurrentColor;
     int FirstVertex;
     int FirstIndex;

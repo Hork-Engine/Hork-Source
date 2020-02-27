@@ -40,19 +40,21 @@ ADebugRenderer::ADebugRenderer() {
 ADebugRenderer::~ADebugRenderer() {
 }
 
+void ADebugRenderer::Free() {
+    Reset();
+
+    Vertices.Free();
+    Indices.Free();
+    Cmds.Free();
+}
+
 void ADebugRenderer::Reset() {
     CurrentColor = 0xffffffff;
     bDepthTest = false;
 
-    SRenderFrame * frameData = GRuntime.GetFrameData();
-
-    Vertices = &frameData->DbgVertices;
-    Indices = &frameData->DbgIndices;
-    Cmds = &frameData->DbgCmds;
-
-    Vertices->Clear();
-    Indices->Clear();
-    Cmds->Clear();
+    Vertices.Clear();
+    Indices.Clear();
+    Cmds.Clear();
 
     FirstVertex = 0;
     FirstIndex = 0;
@@ -102,8 +104,8 @@ void ADebugRenderer::SplitCommands() {
 SDebugDrawCmd & ADebugRenderer::SetDrawCmd( EDebugDrawCmd _Type ) {
 
     // Create first cmd
-    if ( Cmds->IsEmpty() || bSplit ) {
-        SDebugDrawCmd & cmd = Cmds->Append();
+    if ( Cmds.IsEmpty() || bSplit ) {
+        SDebugDrawCmd & cmd = Cmds.Append();
         cmd.Type = _Type;
         cmd.FirstVertex = FirstVertex;
         cmd.FirstIndex = FirstIndex;
@@ -114,8 +116,8 @@ SDebugDrawCmd & ADebugRenderer::SetDrawCmd( EDebugDrawCmd _Type ) {
     }
 
     // If last cmd has no indices, use it
-    if ( Cmds->Last().NumIndices == 0 ) {
-        SDebugDrawCmd & cmd = Cmds->Last();
+    if ( Cmds.Last().NumIndices == 0 ) {
+        SDebugDrawCmd & cmd = Cmds.Last();
         cmd.Type = _Type;
         cmd.FirstVertex = FirstVertex;
         cmd.FirstIndex = FirstIndex;
@@ -124,8 +126,8 @@ SDebugDrawCmd & ADebugRenderer::SetDrawCmd( EDebugDrawCmd _Type ) {
     }
 
     // If last cmd has other type
-    if ( Cmds->Last().Type != _Type ) {
-        SDebugDrawCmd & cmd = Cmds->Append();
+    if ( Cmds.Last().Type != _Type ) {
+        SDebugDrawCmd & cmd = Cmds.Append();
         cmd.Type = _Type;
         cmd.FirstVertex = FirstVertex;
         cmd.FirstIndex = FirstIndex;
@@ -134,12 +136,12 @@ SDebugDrawCmd & ADebugRenderer::SetDrawCmd( EDebugDrawCmd _Type ) {
         return cmd;
     }
 
-    return Cmds->Last();
+    return Cmds.Last();
 }
 
 void ADebugRenderer::PrimitiveReserve( int _NumVertices, int _NumIndices ) {
-    Vertices->Resize( Vertices->Size() + _NumVertices );
-    Indices->Resize( Indices->Size() + _NumIndices );
+    Vertices.Resize( Vertices.Size() + _NumVertices );
+    Indices.Resize( Indices.Size() + _NumIndices );
 }
 
 void ADebugRenderer::DrawPoint( Float3 const & _Position ) {
@@ -147,8 +149,8 @@ void ADebugRenderer::DrawPoint( Float3 const & _Position ) {
 
     PrimitiveReserve( 1, 1 );
 
-    SDebugVertex * verts = Vertices->ToPtr() + FirstVertex;
-    unsigned int * indices = Indices->ToPtr() + FirstIndex;
+    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
+    unsigned int * indices = Indices.ToPtr() + FirstIndex;
 
     verts->Position = _Position;
     verts->Color = CurrentColor;
@@ -167,8 +169,8 @@ void ADebugRenderer::DrawPoints( Float3 const * _Points, int _NumPoints, int _St
 
     PrimitiveReserve( _NumPoints, _NumPoints );
 
-    SDebugVertex * verts = Vertices->ToPtr() + FirstVertex;
-    unsigned int * indices = Indices->ToPtr() + FirstIndex;
+    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
+    unsigned int * indices = Indices.ToPtr() + FirstIndex;
 
     byte * pPoints = ( byte * )_Points;
 
@@ -192,8 +194,8 @@ void ADebugRenderer::DrawLine( Float3 const & _P0, Float3 const & _P1 ) {
 
     PrimitiveReserve( 2, 3 );
 
-    SDebugVertex * verts = Vertices->ToPtr() + FirstVertex;
-    unsigned int * indices = Indices->ToPtr() + FirstIndex;
+    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
+    unsigned int * indices = Indices.ToPtr() + FirstIndex;
 
     verts[0].Position = _P0;
     verts[0].Color = CurrentColor;
@@ -238,8 +240,8 @@ void ADebugRenderer::DrawLine( Float3 const * _Points, int _NumPoints, bool _Clo
 
     PrimitiveReserve( _NumPoints, numIndices );
 
-    SDebugVertex * verts = Vertices->ToPtr() + FirstVertex;
-    unsigned int * indices = Indices->ToPtr() + FirstIndex;
+    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
+    unsigned int * indices = Indices.ToPtr() + FirstIndex;
 
     for ( int i = 0 ; i < _NumPoints ; i++, verts++, indices++ ) {
         verts->Position = _Points[i];
@@ -276,8 +278,8 @@ void ADebugRenderer::DrawConvexPoly( Float3 const * _Points, int _NumPoints, boo
 
     PrimitiveReserve( _NumPoints, numIndices );
 
-    SDebugVertex * verts = Vertices->ToPtr() + FirstVertex;
-    unsigned int * indices = Indices->ToPtr() + FirstIndex;
+    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
+    unsigned int * indices = Indices.ToPtr() + FirstIndex;
 
     for ( int i = 0 ; i < _NumPoints ; i++, verts++ ) {
         verts->Position = _Points[i];
@@ -316,8 +318,8 @@ void ADebugRenderer::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, i
 
     PrimitiveReserve( _NumPoints, numIndices );
 
-    SDebugVertex * verts = Vertices->ToPtr() + FirstVertex;
-    unsigned int * indices = Indices->ToPtr() + FirstIndex;
+    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
+    unsigned int * indices = Indices.ToPtr() + FirstIndex;
 
     byte * pPoints = ( byte * )_Points;
 
@@ -377,8 +379,8 @@ void ADebugRenderer::DrawTriangles( Float3 const * _Triangles, int _NumTriangles
 
     PrimitiveReserve( numPoints, totalIndices );
 
-    SDebugVertex * verts = Vertices->ToPtr() + FirstVertex;
-    unsigned int * indices = Indices->ToPtr() + FirstIndex;
+    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
+    unsigned int * indices = Indices.ToPtr() + FirstIndex;
 
     byte * pPoints = ( byte * )_Triangles;
 

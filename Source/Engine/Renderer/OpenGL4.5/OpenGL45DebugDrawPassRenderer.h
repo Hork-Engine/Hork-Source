@@ -47,10 +47,10 @@ public:
 private:
     GHI::RenderPass DebugDrawPass;
     GHI::Pipeline Pipelines[DBG_DRAW_CMD_MAX];
-    GHI::Buffer VertexBuffer;
-    GHI::Buffer IndexBuffer;
-    int VertexBufferSize;
-    int IndexBufferSize;
+//    GHI::Buffer VertexBuffer;
+//    GHI::Buffer IndexBuffer;
+//    int VertexBufferSize;
+//    int IndexBufferSize;
 };
 
 extern ADebugDrawPassRenderer GDebugDrawPassRenderer;

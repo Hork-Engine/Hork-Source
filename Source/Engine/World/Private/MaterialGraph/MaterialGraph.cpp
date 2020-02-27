@@ -32,6 +32,42 @@ SOFTWARE.
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>
 
+class AMaterialBuildContext {
+public:
+    mutable AString SourceCode;
+    bool bHasTextures;
+    int MaxTextureSlot;
+    int MaxUniformAddress;
+
+    void Reset( MGMaterialGraph const * _Graph, EMaterialPass _Pass ) {
+        ++BuildSerial;
+        Graph = _Graph;
+        MaterialPass = _Pass;
+    }
+
+    int GetBuildSerial() const { return BuildSerial; }
+
+    AString GenerateVariableName() const;
+    void GenerateSourceCode( MGNodeOutput * _Slot, AString const & _Expression, bool _AddBrackets );
+
+    void SetStage( EMaterialStage _Stage );
+    EMaterialStage GetStage() const { return Stage; }
+    int GetStageMask() const { return 1 << Stage; }
+
+    EMaterialType GetMaterialType() const { return Graph->MaterialType; }
+    EMaterialPass GetMaterialPass() const { return MaterialPass; }
+
+    MGMaterialGraph const * GetGraph() { return Graph; }
+
+private:
+    mutable int VariableName = 0;
+    static int BuildSerial;
+    EMaterialStage Stage;
+    EMaterialType MaterialType;
+    EMaterialPass MaterialPass;
+    MGMaterialGraph const * Graph;
+};
+
 static constexpr const char * AssemblyTypeStr[] = {
     "vec4",     // AT_Unknown
     "float",    // AT_Float1
@@ -558,6 +594,8 @@ MGFragmentStage::MGFragmentStage() : Super( "Material Fragment Stage" ) {
     AmbientOcclusion = AddInput( "AmbientOcclusion" );
     AmbientLight = AddInput( "AmbientLight" );
     Emissive = AddInput( "Emissive" );
+    Specular = AddInput( "Specular" );
+    Opacity = AddInput( "Opacity" );
 }
 
 MGFragmentStage::~MGFragmentStage() {
@@ -675,6 +713,42 @@ void MGFragmentStage::Compute( AMaterialBuildContext & _Context ) {
             }
         }
 
+        // Specular
+        {
+            MGNodeOutput * specCon = Specular->GetConnection();
+
+            bool bValid = true;
+
+            if ( specCon && Specular->ConnectedBlock()->Build( _Context ) ) {
+
+                switch ( specCon->Type ) {
+                case AT_Float1:
+                    _Context.SourceCode += "vec3 MaterialSpecular = vec3(" + specCon->Expression + ", 0.0, 0.0 );\n";
+                    break;
+                case AT_Float2:
+                    _Context.SourceCode += "vec3 MaterialSpecular = vec3(" + specCon->Expression + ", 0.0 );\n";
+                    break;
+                case AT_Float3:
+                    _Context.SourceCode += "vec3 MaterialSpecular = " + specCon->Expression + ";\n";
+                    break;
+                case AT_Float4:
+                    _Context.SourceCode += "vec3 MaterialSpecular = " + specCon->Expression + ".xyz;\n";
+                    break;
+                default:
+                    bValid = false;
+                    break;
+                }
+
+            } else {
+                bValid = false;
+            }
+
+            if ( !bValid ) {
+                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
+
+                _Context.SourceCode += "vec3 MaterialSpecular = vec3(0);\n";
+            }
+        }
 
         // Ambient Light
         {
@@ -815,9 +889,42 @@ void MGFragmentStage::Compute( AMaterialBuildContext & _Context ) {
                 _Context.SourceCode += "float MaterialAmbientOcclusion = 1;\n";
             }
         }
+    }
 
-        
+    // Opacity
+    if ( _Context.GetGraph()->bTranslucent )
+    {
+        MGNodeOutput * opacityCon = Opacity->GetConnection();
 
+        bool bValid = true;
+
+        if ( opacityCon && Opacity->ConnectedBlock()->Build( _Context ) ) {
+
+            switch ( opacityCon->Type ) {
+            case AT_Float1:
+                _Context.SourceCode += "float Opacity = " + opacityCon->Expression + ";\n";
+                break;
+            case AT_Float2:
+            case AT_Float3:
+            case AT_Float4:
+                _Context.SourceCode += "float Opacity = " + opacityCon->Expression + ".x;\n";
+                break;
+            default:
+                bValid = false;
+                break;
+            }
+
+        } else {
+            bValid = false;
+        }
+
+        if ( !bValid ) {
+            //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
+
+            _Context.SourceCode += "float Opacity = 1;\n";
+        }
+    } else {
+        _Context.SourceCode += "float Opacity = 1;\n";
     }
 }
 
@@ -2677,12 +2784,8 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
     if ( !f.OpenRead( "Shader.glsl" ) ) {
         CriticalError( "Failed to load Shader.glsl\n" );
     }
-    size_t len = f.SizeInBytes();
-    char * baseShader = (char *)GHunkMemory.HunkMemory( len + 1, 1 );
-    f.ReadBuffer( baseShader, len );
-    baseShader[len] = 0;
-    AString code = baseShader;
-    GHunkMemory.ClearLastHunk();
+    AString code;
+    f.ReadWholeFileToString( code );
     //-------------------------------------------------
 
     AString buildinSource;
@@ -2718,7 +2821,11 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         bNoCastShadow = true;
     }
 
-    if ( !Graph->bDepthTest ) {
+    if ( Graph->bTranslucent ) {
+        predefines += "#define TRANSLUCENT\n";
+    }
+
+    if ( !Graph->bDepthTest /*|| Graph->bTranslucent */) {
         bNoCastShadow = true;
     }
 
@@ -2733,7 +2840,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
     }
 
     // Create depth pass
-    context.Reset( Graph->MaterialType, MATERIAL_PASS_DEPTH );
+    context.Reset( Graph, MATERIAL_PASS_DEPTH );
     {
         // Depth pass. Vertex stage
         context.SetStage( VERTEX_STAGE );
@@ -2755,7 +2862,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
     }
 
     // Create shadowmap pass
-    context.Reset( Graph->MaterialType, MATERIAL_PASS_SHADOWMAP );
+    context.Reset( Graph, MATERIAL_PASS_SHADOWMAP );
     {
         // Shadowmap pass. Vertex stage
         context.SetStage( VERTEX_STAGE );
@@ -2798,7 +2905,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
     }
 
     // Create color pass
-    context.Reset( Graph->MaterialType, MATERIAL_PASS_COLOR );
+    context.Reset( Graph, MATERIAL_PASS_COLOR );
     {
         // Color pass. Vertex stage
         context.SetStage( VERTEX_STAGE );
@@ -2855,7 +2962,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
     }
 
     // Create wireframe pass
-    context.Reset( Graph->MaterialType, MATERIAL_PASS_WIREFRAME );
+    context.Reset( Graph, MATERIAL_PASS_WIREFRAME );
     {
         // Wireframe pass. Vertex stage
         context.SetStage( VERTEX_STAGE );
@@ -2891,16 +2998,16 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
 
     data->SizeInBytes         = sizeInBytes;
     data->Type                = Graph->MaterialType;
-    data->Facing              = Graph->MaterialFacing;
     data->LightmapSlot        = lightmapSlot;
     data->bDepthPassTextureFetch     = bDepthPassTextureFetch;
     data->bColorPassTextureFetch     = bColorPassTextureFetch;
     data->bWireframePassTextureFetch = bWireframePassTextureFetch;
     data->bShadowMapPassTextureFetch = bShadowMapPassTextureFetch;
     data->bHasVertexDeform    = bHasVertexDeform;
-    data->bDepthTest_EXPEREMENTAL          = Graph->bDepthTest;
+    data->bDepthTest_EXPEREMENTAL = Graph->bDepthTest;
     data->bNoCastShadow       = bNoCastShadow;
     data->bShadowMapMasking   = bShadowMapMasking;
+    data->bTranslucent        = Graph->bTranslucent;
     data->NumUniformVectors   = maxUniformAddress + 1;
     data->NumSamplers         = maxTextureSlot + 1;
 

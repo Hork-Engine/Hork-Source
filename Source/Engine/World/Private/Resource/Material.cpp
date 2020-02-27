@@ -50,6 +50,7 @@ AMaterial::~AMaterial() {
 void AMaterial::Initialize( SMaterialBuildData const * _Data ) {
     NumUniformVectors = _Data->NumUniformVectors;
     Type = _Data->Type;
+    bTranslucent = _Data->bTranslucent;
 
     GRenderBackend->InitializeMaterial( MaterialGPU, _Data );
 }
@@ -426,7 +427,6 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         graph->VertexStage = materialVertexStage;
         graph->FragmentStage = materialFragmentStage;
         graph->MaterialType = MATERIAL_TYPE_UNLIT;
-        graph->MaterialFacing = MATERIAL_FACE_BACK;
         graph->DepthHack = MATERIAL_DEPTH_HACK_SKYBOX;
         graph->RegisterTextureSlot( cubemapTexture );
 
@@ -520,6 +520,17 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
     if ( !AString::Icmp( _Path, "/Default/MaterialInstance/Default" ) )
     {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
+        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
+        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
+        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
+
+        Material = MaterialResource.GetObject();
+
+        SetTexture( 0, TextureResource.GetObject() );
+        return;
+    }
+    if ( !AString::Icmp( _Path, "/Default/MaterialInstance/BaseLight" ) ) {
+        static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/BaseLight" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
         static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
@@ -644,7 +655,7 @@ ATexture * AMaterialInstance::GetTexture( int _TextureSlot ) {
     return Textures[_TextureSlot];
 }
 
-SMaterialFrameData * AMaterialInstance::RenderFrontend_Update( int _FrameNumber ) {
+SMaterialFrameData * AMaterialInstance::PreRenderUpdate( int _FrameNumber ) {
     if ( VisFrame == _FrameNumber ) {
         return FrameData;
     }

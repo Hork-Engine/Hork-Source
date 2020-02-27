@@ -80,9 +80,9 @@ source_group( "World\\Public" FILES ${WorldPublic} )
 #---------------------------------------------------------------------
 # World private
 file( GLOB WorldPrivateBase World/Private/Base/*.h World/Private/Base/*.cpp )
-file( GLOB WorldPrivateResource World/Private/Resource/*.h World/Private/Resource/*.cpp )
+file( GLOB WorldPrivateResource World/Private/Resource/*.h World/Private/Resource/*.cpp World/Private/Resource/*.c )
 file( GLOB WorldPrivateMaterialGraph World/Private/MaterialGraph/*.h World/Private/MaterialGraph/*.cpp )
-file( GLOB WorldPrivateAudio World/Private/Audio/*.h World/Private/Audio/*.cpp )
+file( GLOB WorldPrivateAudio World/Private/Audio/*.h World/Private/Audio/*.cpp World/Private/Audio/*.c )
 file( GLOB WorldPrivateAudioAudioCodec World/Private/Audio/AudioCodec/*.h World/Private/Audio/AudioCodec/*.cpp )
 file( GLOB WorldPrivateRender World/Private/Render/*.h World/Private/Render/*.cpp )
 file( GLOB WorldPrivateActors World/Private/Actors/*.h World/Private/Actors/*.cpp )
@@ -171,7 +171,7 @@ else()
 set( AN_OS_LIBS uuid )
 endif()
 
-target_link_libraries( ${PROJECT} ${AN_BULLET_LIBS} ${AN_OPENGL_LIBS} ${Vulkan_LIBRARIES} ${AN_OS_LIBS} ${ZLIB_LIBRARY} minizip fastlz vhacd Recast )
+target_link_libraries( ${PROJECT} ${AN_BULLET_LIBS} ${AN_OPENGL_LIBS} ${Vulkan_LIBRARIES} ${AN_OS_LIBS} ${ZLIB_LIBRARY} minizip fastlz vhacd Recast SDL2-static )
 
 set_target_properties( ${PROJECT}
     PROPERTIES

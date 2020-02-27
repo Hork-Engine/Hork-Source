@@ -44,6 +44,7 @@ SOFTWARE.
 
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/WindowsDefs.h>
+#include <Core/Public/CriticalError.h>
 
 #include <GL/glew.h>
 
@@ -387,7 +388,7 @@ void ARenderBackend::Initialize( void * _NativeWindowHandle ) {
     //    INTERNAL_PIXEL_FORMAT_RGB9_E5,        // RGB   9  9  9     5
 
 
-    GJointsAllocator.Initialize();
+    //GJointsAllocator.Initialize();
     GRenderTarget.Initialize();
     GShadowMapRT.Initialize();
     GShadowMapPassRenderer.Initialize();
@@ -402,7 +403,7 @@ void ARenderBackend::Initialize( void * _NativeWindowHandle ) {
 void ARenderBackend::Deinitialize() {
     GLogger.Printf( "Deinitializing OpenGL backend...\n" );
 
-    GJointsAllocator.Deinitialize();
+    //GJointsAllocator.Deinitialize();
     GRenderTarget.Deinitialize();
     GShadowMapRT.Deinitialize();
     GShadowMapPassRenderer.Deinitialize();
@@ -424,6 +425,26 @@ void ARenderBackend::WaitGPU() {
 
 void ARenderBackend::SetGPUEvent() {
     GOpenGL45GPUSync.SetEvent();
+}
+
+void * ARenderBackend::FenceSync() {
+    return Cmd.FenceSync();
+}
+
+void ARenderBackend::RemoveSync( void * _Sync ) {
+    if ( _Sync ) {
+        Cmd.RemoveSync( (GHI::SyncObject)_Sync );
+    }
+}
+
+void ARenderBackend::WaitSync( void * _Sync ) {
+    const uint64_t timeOutNanoseconds = 1;
+    if ( _Sync ) {
+        GHI::CLIENT_WAIT_STATUS status;
+        do {
+            status = Cmd.ClientWait( (GHI::SyncObject)_Sync, timeOutNanoseconds );
+        } while ( status != GHI::CLIENT_WAIT_ALREADY_SIGNALED && status != GHI::CLIENT_WAIT_CONDITION_SATISFIED );
+    }
 }
 
 ATextureGPU * ARenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
@@ -584,40 +605,76 @@ ABufferGPU * ARenderBackend::CreateBuffer( IGPUResourceOwner * _Owner ) {
 
 void ARenderBackend::DestroyBuffer( ABufferGPU * _Buffer ) {
     using namespace GHI;
-    GHI::Buffer * texture = GPUBufferHandle( _Buffer );
-    texture->~Buffer();
+    GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
+    buffer->~Buffer();
     GZoneMemory.Dealloc( _Buffer->pHandleGPU );
     DestroyResource( _Buffer );
 }
 
-void ARenderBackend::InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes, bool _DynamicStorage ) {
+void ARenderBackend::InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) {
     GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
 
     GHI::BufferCreateInfo bufferCI = {};
-    if ( _DynamicStorage ) {
-        bufferCI.ImmutableStorageFlags = GHI::IMMUTABLE_DYNAMIC_STORAGE;
-        bufferCI.bImmutableStorage = true;
-
-        //bufferCI.bImmutableStorage = false;
-        //bufferCI.MutableClientAccess = GHI::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
-        //bufferCI.MutableUsage = GHI::MUTABLE_STORAGE_STREAM;
-        //bufferCI.ImmutableStorageFlags = (GHI::IMMUTABLE_STORAGE_FLAGS)0;
-    } else {
-        bufferCI.MutableClientAccess = GHI::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
-        bufferCI.MutableUsage = GHI::MUTABLE_STORAGE_STATIC;
-#if 1
-        // Mutable storage with flag MUTABLE_STORAGE_STATIC is much faster during rendering (tested on NVidia GeForce GTX 770)
-        bufferCI.ImmutableStorageFlags = (GHI::IMMUTABLE_STORAGE_FLAGS)0;
-        bufferCI.bImmutableStorage = false;
-#else
-        bufferCI.ImmutableStorageFlags = GHI_ImmutableMapWrite | GHI_ImmutableMapPersistent | GHI_ImmutableMapCoherent;
-        bufferCI.bImmutableStorage = true;
-#endif
-    }
 
     bufferCI.SizeInBytes = _SizeInBytes;
 
+    const bool bDynamicStorage = false;
+    if ( bDynamicStorage ) {
+#if 1
+        // Seems to be faster
+        bufferCI.ImmutableStorageFlags = GHI::IMMUTABLE_DYNAMIC_STORAGE;
+        bufferCI.bImmutableStorage = true;
+
+        buffer->Initialize( bufferCI );
+#else
+        bufferCI.MutableClientAccess = GHI::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
+        bufferCI.MutableUsage = GHI::MUTABLE_STORAGE_STREAM;
+        bufferCI.ImmutableStorageFlags = (GHI::IMMUTABLE_STORAGE_FLAGS)0;
+        bufferCI.bImmutableStorage = false;
+
+        buffer->Initialize( bufferCI );
+#endif
+    } else {
+#if 1
+        // Mutable storage with flag MUTABLE_STORAGE_STATIC is much faster during rendering (tested on NVidia GeForce GTX 770)
+        bufferCI.MutableClientAccess = GHI::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
+        bufferCI.MutableUsage = GHI::MUTABLE_STORAGE_STATIC;
+        bufferCI.ImmutableStorageFlags = (GHI::IMMUTABLE_STORAGE_FLAGS)0;
+        bufferCI.bImmutableStorage = false;
+#else
+        bufferCI.ImmutableStorageFlags = GHI::IMMUTABLE_DYNAMIC_STORAGE;
+        bufferCI.bImmutableStorage = true;
+#endif
+
+        buffer->Initialize( bufferCI );
+    }
+}
+
+void * ARenderBackend::InitializePersistentMappedBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) {
+    GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
+
+    GHI::BufferCreateInfo bufferCI = {};
+
+    bufferCI.SizeInBytes = _SizeInBytes;
+
+    bufferCI.ImmutableStorageFlags = (GHI::IMMUTABLE_STORAGE_FLAGS)
+            ( GHI::IMMUTABLE_MAP_WRITE | GHI::IMMUTABLE_MAP_PERSISTENT | GHI::IMMUTABLE_MAP_COHERENT );
+    bufferCI.bImmutableStorage = true;
+
     buffer->Initialize( bufferCI );
+
+    void * pMappedMemory = buffer->Map( GHI::MAP_TRANSFER_WRITE,
+                                        GHI::MAP_NO_INVALIDATE,//GHI::MAP_INVALIDATE_ENTIRE_BUFFER,
+                                        GHI::MAP_PERSISTENT_COHERENT,
+                                        false, // flush explicit
+                                        false  // unsynchronized
+                                      );
+
+    if ( !pMappedMemory ) {
+        CriticalError( "ARenderBackend::InitializePersistentMappedBuffer: cannot initialize persistent mapped buffer size %d\n", _SizeInBytes );
+    }
+
+    return pMappedMemory;
 }
 
 void ARenderBackend::WriteBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) {
@@ -630,6 +687,12 @@ void ARenderBackend::ReadBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_
     GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
 
     buffer->ReadRange( _ByteOffset, _SizeInBytes, _SysMem );
+}
+
+void ARenderBackend::OrphanBuffer( ABufferGPU * _Buffer ) {
+    GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
+
+    buffer->Orphan();
 }
 
 AMaterialGPU * ARenderBackend::CreateMaterial( IGPUResourceOwner * _Owner ) {
@@ -681,7 +744,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
         POLYGON_CULL_DISABLED
     };
 
-    POLYGON_CULL cullMode = PolygonCullLUT[_BuildData->Facing];
+    POLYGON_CULL cullMode = POLYGON_CULL_FRONT;//PolygonCullLUT[_BuildData->Facing];
 
     AShadeModelLit   * Lit   = (AShadeModelLit *)_Material->ShadeModel.Lit;
     AShadeModelUnlit * Unlit = (AShadeModelUnlit *)_Material->ShadeModel.Unlit;
@@ -712,11 +775,11 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
         Lit = new (pMem) AShadeModelLit();
         _Material->ShadeModel.Lit = Lit;
 
-        Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL );
-        Lit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL );
+        Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
+        Lit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
 
-        Lit->ColorPassLightmap.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL );
-        Lit->ColorPassVertexLight.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL );
+        Lit->ColorPassLightmap.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
+        Lit->ColorPassVertexLight.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
 
         Lit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
         Lit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
@@ -734,8 +797,8 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
         Unlit = new (pMem) AShadeModelUnlit();
         _Material->ShadeModel.Unlit = Unlit;
 
-        Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL );
-        Unlit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL );
+        Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
+        Unlit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
 
         Unlit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
         Unlit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
@@ -814,18 +877,18 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
     }
 }
 
-size_t ARenderBackend::AllocateJoints( size_t _JointsCount ) {
-    return GJointsAllocator.AllocJoints( _JointsCount );
-}
+//size_t ARenderBackend::AllocateJoints( size_t _JointsCount ) {
+//    return GJointsAllocator.AllocJoints( _JointsCount );
+//}
 
-void ARenderBackend::WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) {
-    GJointsAllocator.Buffer.WriteRange( _Offset, _JointsCount * sizeof( Float3x4 ), _Matrices );
-}
+//void ARenderBackend::WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) {
+//    GJointsAllocator.Buffer.WriteRange( _Offset, _JointsCount * sizeof( Float3x4 ), _Matrices );
+//}
 
 void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
     GFrameData = _FrameData;
 
-    GJointsAllocator.Reset();
+    //GJointsAllocator.Reset();
 
     GState.SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 
@@ -847,7 +910,7 @@ void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
     GCanvasPassRenderer.RenderInstances();
 
     SetGPUEvent();
-    SwapBuffers();
+    //SwapBuffers();
 
     RVRenderSnapshot = false;
 }

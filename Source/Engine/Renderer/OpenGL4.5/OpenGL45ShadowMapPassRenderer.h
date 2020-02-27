@@ -19,12 +19,14 @@ public:
 private:
     void CreateShadowDepthSamplers();
     void CreateRenderPass();
+    void CreatePipeline();
     bool BindMaterial( SShadowRenderInstance const * instance );
     void BindTexturesShadowMapPass( SMaterialFrameData * _Instance );
 
     GHI::Sampler ShadowDepthSampler0;
     GHI::Sampler ShadowDepthSampler1;
     GHI::RenderPass DepthPass;
+    GHI::Pipeline StaticShadowCasterPipeline;
 };
 
 extern AShadowMapPassRenderer GShadowMapPassRenderer;

@@ -54,6 +54,16 @@ Texture::~Texture() {
     Deinitialize();
 }
 
+static size_t CalcTextureRequiredMemory( TextureCreateInfo const & _CreateInfo ) {
+    // TODO: calculate!
+    return 0;
+}
+
+static size_t CalcTextureRequiredMemory( TextureStorageCreateInfo const & _CreateInfo ) {
+    // TODO: calculate!
+    return 0;
+}
+
 void Texture::Initialize( TextureCreateInfo const & _CreateInfo, TextureInitialData const * _InitialData ) {
     State * state = GetCurrentState();
     GLuint id;
@@ -72,13 +82,16 @@ void Texture::Initialize( TextureCreateInfo const & _CreateInfo, TextureInitialD
 
     glBindTexture( target, currentBinding );
 
+    pDevice = state->GetDevice();
+    pDevice->TotalTextures++;
+    pDevice->TextureMemoryAllocated += CalcTextureRequiredMemory( _CreateInfo );
+
     Handle = ( void * )( size_t )id;
+    UID = pDevice->GenerateUID();
     CreateInfo = _CreateInfo;
     bImmutableStorage = false;
     bTextureBuffer = false;
     bTextureView = false;
-    pDevice = state->GetDevice();
-    pDevice->TotalTextures++;
 }
 
 void Texture::InitializeStorage( TextureStorageCreateInfo const & _CreateInfo ) {
@@ -133,6 +146,10 @@ void Texture::InitializeStorage( TextureStorageCreateInfo const & _CreateInfo ) 
         break;
     }
 
+    pDevice = state->GetDevice();
+    pDevice->TotalTextures++;
+    pDevice->TextureMemoryAllocated += CalcTextureRequiredMemory( _CreateInfo );
+
     //int param;
     //glGetTextureParameteriv( id, GL_TEXTURE_IMMUTABLE_FORMAT, &param );
     bImmutableStorage = true;//param != 0;
@@ -141,8 +158,7 @@ void Texture::InitializeStorage( TextureStorageCreateInfo const & _CreateInfo ) 
     bTextureView = false;
 
     Handle = ( void * )( size_t )id;
-    pDevice = state->GetDevice();
-    pDevice->TotalTextures++;
+    UID = pDevice->GenerateUID();
 }
 
 void Texture::InitializeTextureBuffer( BUFFER_DATA_TYPE _DataType, Buffer const & _Buffer ) {
@@ -169,6 +185,9 @@ void Texture::InitializeTextureBuffer( BUFFER_DATA_TYPE _DataType, Buffer const 
 
     glTextureBuffer( textureId, type->InternalFormat, bufferId );
 
+    pDevice = state->GetDevice();
+    pDevice->TotalTextures++;
+
     memset( &CreateInfo, 0, sizeof( CreateInfo ) );
     CreateInfo.InternalFormat = type->IPF;
 
@@ -177,8 +196,7 @@ void Texture::InitializeTextureBuffer( BUFFER_DATA_TYPE _DataType, Buffer const 
     bTextureView = false;
 
     Handle = ( void * )( size_t )textureId;
-    pDevice = state->GetDevice();
-    pDevice->TotalTextures++;
+    UID = pDevice->GenerateUID();
 }
 
 void Texture::InitializeTextureBuffer( BUFFER_DATA_TYPE _DataType, Buffer const & _Buffer,
@@ -210,6 +228,9 @@ void Texture::InitializeTextureBuffer( BUFFER_DATA_TYPE _DataType, Buffer const 
 
     glTextureBufferRange( textureId, type->InternalFormat, bufferId, _Offset, _SizeInBytes );
 
+    pDevice = state->GetDevice();
+    pDevice->TotalTextures++;
+
     memset( &CreateInfo, 0, sizeof( CreateInfo ) );
     CreateInfo.InternalFormat = type->IPF;
 
@@ -218,8 +239,7 @@ void Texture::InitializeTextureBuffer( BUFFER_DATA_TYPE _DataType, Buffer const 
     bTextureView = false;
 
     Handle = ( void * )( size_t )textureId;
-    pDevice = state->GetDevice();
-    pDevice->TotalTextures++;
+    UID = pDevice->GenerateUID();
 }
 
 static bool IsTextureViewCompatible( TEXTURE_TYPE _OriginalType, TEXTURE_TYPE _ViewType ) {
@@ -295,7 +315,11 @@ bool Texture::InitializeView( TextureViewCreateInfo const & _CreateInfo ) {
 
     //glBindTexture( target, currentBinding );
 
+    pDevice = state->GetDevice();
+    pDevice->TotalTextures++;
+
     Handle = ( void * )( size_t )id;
+    UID = pDevice->GenerateUID();
     CreateInfo = _CreateInfo.pOriginalTexture->CreateInfo;
     CreateInfo.Type = _CreateInfo.Type;
     CreateInfo.InternalFormat = _CreateInfo.InternalFormat;
@@ -303,9 +327,6 @@ bool Texture::InitializeView( TextureViewCreateInfo const & _CreateInfo ) {
     bImmutableStorage = true;
     bTextureBuffer = false;
     bTextureView = true;
-
-    pDevice = state->GetDevice();
-    pDevice->TotalTextures++;
 
     return true;
 }
@@ -359,6 +380,10 @@ void Texture::Deinitialize() {
     GLuint id = GL_HANDLE( Handle );
     glDeleteTextures( 1, &id );
     pDevice->TotalTextures--;
+
+    if ( !bTextureBuffer && !bTextureView ) {
+        pDevice->TextureMemoryAllocated -= CalcTextureRequiredMemory( CreateInfo );
+    }
 
     pDevice = nullptr;
     Handle = nullptr;

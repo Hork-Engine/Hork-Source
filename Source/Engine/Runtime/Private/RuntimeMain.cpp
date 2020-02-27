@@ -42,6 +42,7 @@ SOFTWARE.
 
 #include <Runtime/Public/RuntimeCommandProcessor.h>
 #include <Runtime/Public/RuntimeVariable.h>
+#include <Runtime/Public/VertexMemoryGPU.h>
 
 #include <chrono>
 
@@ -62,7 +63,7 @@ SOFTWARE.
 #define PROCESS_ALREADY_EXISTS       2
 #define PROCESS_UNIQUE               3
 
-static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "1" ) );
+static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "0" ) );
 static ARuntimeVariable RVTestInput( _CTS( "TestInput" ),  _CTS( "0" ) );
 
 ARuntimeMain & GRuntimeMain = ARuntimeMain::Inst();
@@ -252,11 +253,19 @@ void ARuntimeMain::RuntimeMainLoop() {
         // Process game events, pump runtime events
         RuntimeUpdate();
 
+        //GStreamedMemoryGPU.WaitBuffer();
+
         // Refresh frame data (camera, cursor), prepare frame data for render backend
         Engine->PrepareFrame();
 
         // Generate GPU commands, SwapBuffers
         GRenderBackend->RenderFrame( &FrameData );
+
+        GStreamedMemoryGPU.SwapFrames();
+
+        GRenderBackend->SwapBuffers();
+
+        GStreamedMemoryGPU.WaitBuffer();
 
         // Keep memory statistics
         MaxFrameMemoryUsage = Math::Max( MaxFrameMemoryUsage, FrameMemoryUsed );
@@ -278,12 +287,9 @@ void ARuntimeMain::RuntimeMainLoop() {
     Engine->Deinitialize();
 
     FrameData.Instances.Free();
+    FrameData.TranslucentInstances.Free();
     FrameData.ShadowInstances.Free();
     FrameData.DirectionalLights.Free();
-    //FrameData.Lights.Free();
-    FrameData.DbgVertices.Free();
-    FrameData.DbgIndices.Free();
-    FrameData.DbgCmds.Free();
 }
 
 void ARuntimeMain::RuntimeUpdate() {

@@ -697,10 +697,19 @@ void CommandBuffer::BindShaderResources( ShaderResources const * _Resources ) {
 
         GLenum target = BufferTargetLUT[ slot->BufferType ].Target;
 
-        unsigned int id = slot->pBuffer ? GL_HANDLE( slot->pBuffer->GetHandle() ) : 0;
+        unsigned int id;
+        uint32_t uid;
 
-        if ( state->BufferBindings[ slot->SlotIndex ] != id || slot->BindingSize > 0 ) {
-            state->BufferBindings[ slot->SlotIndex ] = id;
+        if ( slot->pBuffer ) {
+            id = GL_HANDLE( slot->pBuffer->GetHandle() );
+            uid = slot->pBuffer->UID;
+        } else {
+            id = 0;
+            uid = 0;
+        }
+
+        if ( state->BufferBindings[ slot->SlotIndex ] != uid || slot->BindingSize > 0 ) {
+            state->BufferBindings[ slot->SlotIndex ] = uid;
 
             if ( id && slot->BindingSize > 0 ) {
                 glBindBufferRange( target, slot->SlotIndex, id, slot->BindingOffset, slot->BindingSize ); // 3.0 or GL_ARB_uniform_buffer_object
@@ -727,10 +736,19 @@ void CommandBuffer::BindShaderResources( ShaderResources const * _Resources ) {
 
         assert( slot->SlotIndex < MAX_SAMPLER_SLOTS );
 
-        unsigned int id = slot->pTexture ? GL_HANDLE( slot->pTexture->GetHandle() ) : 0;
+        unsigned int id;
+        uint32_t uid;
+        
+        if ( slot->pTexture ) {
+            id = GL_HANDLE( slot->pTexture->GetHandle() );
+            uid = slot->pTexture->UID;
+        } else {
+            id = 0;
+            uid = 0;
+        }
 
-        if ( state->TextureBindings[ slot->SlotIndex ] != id ) {
-            state->TextureBindings[ slot->SlotIndex ] = id;
+        if ( state->TextureBindings[ slot->SlotIndex ] != uid ) {
+            state->TextureBindings[ slot->SlotIndex ] = uid;
 
             glBindTextureUnit( slot->SlotIndex, id ); // 4.5
         }
@@ -1127,7 +1145,7 @@ void CommandBuffer::Draw( DrawIndexedCmd const * _Cmd ) {
     }
 
     const GLubyte * offset = reinterpret_cast<const GLubyte *>( 0 ) + _Cmd->StartIndexLocation * pipeline->IndexBufferTypeSizeOf
-        + pipeline->IndexBufferOffset; // FIXME: check this IndexBufferOffset
+        + pipeline->IndexBufferOffset;
 
     if ( _Cmd->InstanceCount == 1 && _Cmd->StartInstanceLocation == 0 ) {
         if ( _Cmd->BaseVertexLocation == 0 ) {
@@ -1325,7 +1343,7 @@ void CommandBuffer::MultiDrawIndirect( unsigned int _DrawCount, DrawIndirectCmd 
     glMultiDrawArraysIndirect( pipeline->PrimitiveTopology,
                                _Cmds,
                                _DrawCount,
-                               _Stride); // 4.3 or GL_ARB_multi_draw_indirect
+                               _Stride ); // 4.3 or GL_ARB_multi_draw_indirect
 
 
 // Эквивалентный код:
@@ -1880,26 +1898,26 @@ void CommandBuffer::EndTransformFeedback() {
     glEndTransformFeedback(); // 3.0
 }
 
-FSync CommandBuffer::FenceSync() {
-    FSync sync = reinterpret_cast< FSync >( glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 ) );
+SyncObject CommandBuffer::FenceSync() {
+    SyncObject sync = reinterpret_cast< SyncObject >( glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 ) );
     return sync;
 }
 
-void CommandBuffer::RemoveSync( FSync _Sync ) {
+void CommandBuffer::RemoveSync( SyncObject _Sync ) {
     glDeleteSync( reinterpret_cast< GLsync >( _Sync ) );
 }
 
-CLIENT_WAIT_STATUS CommandBuffer::ClientWait( FSync _Sync, uint64_t _TimeOutNanoseconds ) {
+CLIENT_WAIT_STATUS CommandBuffer::ClientWait( SyncObject _Sync, uint64_t _TimeOutNanoseconds ) {
     static_assert( 0xFFFFFFFFFFFFFFFF == GL_TIMEOUT_IGNORED, "Constant check" );
     return static_cast< CLIENT_WAIT_STATUS >(
                 glClientWaitSync( reinterpret_cast< GLsync >( _Sync ), GL_SYNC_FLUSH_COMMANDS_BIT, _TimeOutNanoseconds ) - GL_ALREADY_SIGNALED );
 }
 
-void CommandBuffer::ServerWait( FSync _Sync ) {
+void CommandBuffer::ServerWait( SyncObject _Sync ) {
     glWaitSync( reinterpret_cast< GLsync >( _Sync ), 0, GL_TIMEOUT_IGNORED );
 }
 
-bool CommandBuffer::IsSignaled( FSync _Sync ) {
+bool CommandBuffer::IsSignaled( SyncObject _Sync ) {
     GLint value;
     glGetSynciv( reinterpret_cast< GLsync >( _Sync ),
                  GL_SYNC_STATUS,

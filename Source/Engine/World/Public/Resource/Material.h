@@ -51,6 +51,8 @@ public:
     /** Get material type */
     EMaterialType GetType() const { return Type; }
 
+    bool IsTranslucent() const { return bTranslucent; }
+
     AMaterialGPU * GetGPUResource() { return MaterialGPU; }
 
     int GetNumUniformVectors() const { return NumUniformVectors; }
@@ -74,6 +76,7 @@ private:
     AMaterialGPU * MaterialGPU;
     EMaterialType Type;
     int NumUniformVectors;
+    bool bTranslucent;
 };
 
 
@@ -121,7 +124,7 @@ public:
     }
 
     /** Internal. Used by render frontend */
-    SMaterialFrameData * RenderFrontend_Update( int _FrameNumber );
+    SMaterialFrameData * PreRenderUpdate( int _FrameNumber );
 
 protected:
     AMaterialInstance();

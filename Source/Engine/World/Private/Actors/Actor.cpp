@@ -81,6 +81,14 @@ void AActor::Destroy() {
         Instigator->RemoveRef();
         Instigator = nullptr;
     }
+
+    // Remove actor from level array of actors
+    ALevel * level = Level;
+    level->Actors[ IndexInLevelArrayOfActors ] = level->Actors[ level->Actors.Size() - 1 ];
+    level->Actors[ IndexInLevelArrayOfActors ]->IndexInLevelArrayOfActors = IndexInLevelArrayOfActors;
+    level->Actors.RemoveLast();
+    IndexInLevelArrayOfActors = -1;
+    Level = nullptr;
 }
 
 void AActor::DestroyComponents() {

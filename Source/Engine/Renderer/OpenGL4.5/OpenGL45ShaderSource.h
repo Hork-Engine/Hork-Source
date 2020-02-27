@@ -77,7 +77,7 @@ struct AShaderSources {
     void Build( GHI::SHADER_TYPE _ShaderType, GHI::ShaderModule * _Module ) {
         using namespace GHI;
 
-        char * Log;
+        char * Log = nullptr;
 
         const char * predefine[] = {
             "#define VERTEX_SHADER\n",
@@ -111,7 +111,7 @@ struct AShaderSources {
 
         _Module->InitializeFromCode( _ShaderType, NumSources, Sources, &Log );
 
-        if ( *Log ) {
+        if ( Log && *Log ) {
             //for ( int i = 0 ; i < NumSources ; i++ ) {
             //    GLogger.Print( Sources[i] );
             //}
@@ -135,6 +135,12 @@ struct AShaderSources {
                 GLogger.Printf( "CS: %s\n", Log );
                 break;
             }
+        }
+    }
+
+    void PrintSources() {
+        for ( int i = 0 ; i < NumSources ; i++ ) {
+            GLogger.Printf( "%s\n", i, Sources[i] );
         }
     }
 };

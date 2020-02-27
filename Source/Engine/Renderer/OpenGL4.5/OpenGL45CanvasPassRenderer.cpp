@@ -94,8 +94,8 @@ void ACanvasPassRenderer::Deinitialize() {
         AlphaPipeline[i].Deinitialize();
     }
 
-    VertexBuffer.Deinitialize();
-    IndexBuffer.Deinitialize();
+//    VertexBuffer.Deinitialize();
+//    IndexBuffer.Deinitialize();
 }
 
 void ACanvasPassRenderer::CreatePresentViewPipeline() {
@@ -524,20 +524,20 @@ void ACanvasPassRenderer::CreateSamplers() {
 }
 
 void ACanvasPassRenderer::CreateBuffers() {
-    VertexBufferSize = 1024;
-    IndexBufferSize = 1024;
+//    VertexBufferSize = 1024;
+//    IndexBufferSize = 1024;
 
-    GHI::BufferCreateInfo streamBufferCI = {};
-    streamBufferCI.bImmutableStorage = false;
-    streamBufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
-    streamBufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
-    streamBufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
+//    GHI::BufferCreateInfo streamBufferCI = {};
+//    streamBufferCI.bImmutableStorage = false;
+//    streamBufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
+//    streamBufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
+//    streamBufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
 
-    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( SHUDDrawVert );
-    VertexBuffer.Initialize( streamBufferCI );
+//    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( SHUDDrawVert );
+//    VertexBuffer.Initialize( streamBufferCI );
 
-    streamBufferCI.SizeInBytes = IndexBufferSize * sizeof( unsigned short );
-    IndexBuffer.Initialize( streamBufferCI );
+//    streamBufferCI.SizeInBytes = IndexBufferSize * sizeof( unsigned short );
+//    IndexBuffer.Initialize( streamBufferCI );
 }
 
 void ACanvasPassRenderer::BeginCanvasPass() {
@@ -579,25 +579,27 @@ void ACanvasPassRenderer::RenderInstances() {
     drawCmd.StartInstanceLocation = 0;
     drawCmd.BaseVertexLocation = 0;
 
+    Buffer * streamBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
+
     for ( SHUDDrawList * drawList = GFrameData->DrawListHead ; drawList ; drawList = drawList->pNext ) {
 
         Cmd.Barrier( VERTEX_ATTRIB_ARRAY_BARRIER_BIT | ELEMENT_ARRAY_BARRIER_BIT );
 
-        // Upload vertices
-        if ( VertexBufferSize < drawList->VerticesCount ) {
-            VertexBufferSize = drawList->VerticesCount;
-            VertexBuffer.Realloc( VertexBufferSize * sizeof( SHUDDrawVert ), drawList->Vertices );
-        } else {
-            VertexBuffer.WriteRange( 0, drawList->VerticesCount * sizeof( SHUDDrawVert ), drawList->Vertices );
-        }
+//        // Upload vertices
+//        if ( VertexBufferSize < drawList->VerticesCount ) {
+//            VertexBufferSize = drawList->VerticesCount;
+//            VertexBuffer.Realloc( VertexBufferSize * sizeof( SHUDDrawVert ), drawList->Vertices );
+//        } else {
+//            VertexBuffer.WriteRange( 0, drawList->VerticesCount * sizeof( SHUDDrawVert ), drawList->Vertices );
+//        }
 
-        // Upload indices
-        if ( IndexBufferSize < drawList->IndicesCount ) {
-            IndexBufferSize = drawList->IndicesCount;
-            IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned short ), drawList->Indices );
-        } else {
-            IndexBuffer.WriteRange( 0, drawList->IndicesCount * sizeof( unsigned short ), drawList->Indices );
-        }
+//        // Upload indices
+//        if ( IndexBufferSize < drawList->IndicesCount ) {
+//            IndexBufferSize = drawList->IndicesCount;
+//            IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned short ), drawList->Indices );
+//        } else {
+//            IndexBuffer.WriteRange( 0, drawList->IndicesCount * sizeof( unsigned short ), drawList->Indices );
+//        }
 
         // Process render commands
         for ( SHUDDrawCmd * cmd = drawList->Commands ; cmd < &drawList->Commands[drawList->CommandsCount] ; cmd++ ) {
@@ -621,8 +623,8 @@ void ACanvasPassRenderer::RenderInstances() {
 
                     // Draw just rendered scene on the canvas
                     Cmd.BindPipeline( &PresentViewPipeline[cmd->Blending] );
-                    Cmd.BindVertexBuffer( 0, &VertexBuffer, 0 );
-                    Cmd.BindIndexBuffer( &IndexBuffer, INDEX_TYPE_UINT16, 0 );
+                    Cmd.BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
+                    Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
                     GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.GetFramebufferTexture();
                     GFrameResources.SamplerBindings[0].pSampler = &PresentViewSampler;
@@ -650,8 +652,8 @@ void ACanvasPassRenderer::RenderInstances() {
                     AN_ASSERT( pMaterial->MaterialType == MATERIAL_TYPE_HUD );
 
                     Cmd.BindPipeline( &((AShadeModelHUD *)pMaterial->ShadeModel.HUD)->ColorPassHUD );
-                    Cmd.BindVertexBuffer( 0, &VertexBuffer, 0 );
-                    Cmd.BindIndexBuffer( &IndexBuffer, INDEX_TYPE_UINT16, 0 );
+                    Cmd.BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
+                    Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
                     for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
                         GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
@@ -680,8 +682,8 @@ void ACanvasPassRenderer::RenderInstances() {
                     Pipeline * pPipeline = ( cmd->Type == HUD_DRAW_CMD_ALPHA ) ? &AlphaPipeline[cmd->Blending] : &Pipelines[cmd->Blending];
 
                     Cmd.BindPipeline( pPipeline );
-                    Cmd.BindVertexBuffer( 0, &VertexBuffer, 0 );
-                    Cmd.BindIndexBuffer( &IndexBuffer, INDEX_TYPE_UINT16, 0 );
+                    Cmd.BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
+                    Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
                     GFrameResources.TextureBindings[0].pTexture = GPUTextureHandle( cmd->Texture );
                     GFrameResources.SamplerBindings[0].pSampler = &Samplers[cmd->SamplerType];

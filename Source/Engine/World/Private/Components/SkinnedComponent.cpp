@@ -42,6 +42,7 @@ SOFTWARE.
 #include <World/Public/Resource/Animation.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
+#include <Runtime/Public/VertexMemoryGPU.h>
 
 #include <BulletSoftBody/btSoftBody.h>
 
@@ -52,14 +53,14 @@ ARuntimeVariable RVDrawSkeleton( _CTS( "DrawSkeleton" ), _CTS( "0" ), VAR_CHEAT 
 AN_CLASS_META( ASkinnedComponent )
 
 ASkinnedComponent::ASkinnedComponent() {
+    DrawableType = DRAWABLE_SKINNED_MESH;
+
     bUpdateControllers = true;
     bSkinnedMesh = true;
 
     // Raycasting of skinned meshes is not supported yet
     Primitive.RaycastCallback = nullptr;
     Primitive.RaycastClosestCallback = nullptr;
-
-    VisFrame = -1;
 
     static TStaticResourceFinder< ASkeleton > SkeletonResource( _CTS( "/Default/Skeleton/Default" ) );
     Skeleton = SkeletonResource.GetObject();
@@ -460,42 +461,26 @@ void ASkinnedComponent::UpdateBounds() {
 
 static Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS]; // TODO: thread_local for multithreaded update
 
-void ASkinnedComponent::UpdateJointTransforms( size_t & _SkeletonOffset, size_t & _SkeletonSize, int _FrameNumber ) {
-    if ( VisFrame == _FrameNumber ) {
-        _SkeletonOffset = SkeletonOffset;
-        _SkeletonSize = SkeletonSize;
-        //GLogger.Printf( "Caching UpdateJointTransforms()\n" );
-        return;
-    }
+void ASkinnedComponent::GetSkeletonHandle( size_t & _SkeletonOffset, size_t & _SkeletonSize ) {
+    _SkeletonOffset = SkeletonOffset;
+    _SkeletonSize = SkeletonSize;
+}
 
-    _SkeletonOffset = 0;
-    _SkeletonSize = 0;
-
+void ASkinnedComponent::OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {
     MergeJointAnimations();
 
-    //if ( bWriteTransforms ) {
-        ASkin const & skin = GetMesh()->GetSkin();
-        TPodArray< SJoint > const & joints = Skeleton->GetJoints();
+    ASkin const & skin = GetMesh()->GetSkin();
+    TPodArray< SJoint > const & joints = Skeleton->GetJoints();
 
-        if ( !joints.IsEmpty() ) {
-            for ( int j = 0 ; j < skin.JointIndices.Size() ; j++ ) {
-                int jointIndex = skin.JointIndices[j];
-                JointsBufferData[j] = AbsoluteTransforms[jointIndex + 1] * skin.OffsetMatrices[j];
-            }
+    if ( !joints.IsEmpty() ) {
+        for ( int j = 0 ; j < skin.JointIndices.Size() ; j++ ) {
+            int jointIndex = skin.JointIndices[j];
+            JointsBufferData[j] = AbsoluteTransforms[jointIndex + 1] * skin.OffsetMatrices[j];
         }
+    }
 
-        _SkeletonOffset = GRenderBackend->AllocateJoints( joints.Size() );
-        GRenderBackend->WriteJoints( _SkeletonOffset, joints.Size(), JointsBufferData );
-
-        _SkeletonSize = joints.Size() * sizeof( Float3x4 );
-
-        //bWriteTransforms = false;
-
-    //}
-
-    VisFrame = _FrameNumber;
-    SkeletonOffset = _SkeletonOffset;
-    SkeletonSize = _SkeletonSize;
+    SkeletonSize = joints.Size() * sizeof( Float3x4 );
+    SkeletonOffset = GStreamedMemoryGPU.AllocateJoint( SkeletonSize, JointsBufferData );
 }
 
 Float3x4 const & ASkinnedComponent::GetJointTransform( int _JointIndex ) {

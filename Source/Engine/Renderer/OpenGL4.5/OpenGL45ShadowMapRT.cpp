@@ -132,7 +132,7 @@ void AShadowMapRT::CreateFramebuffer() {
 
 void AShadowMapRT::Realloc( int _MaxCascades ) {
     AN_ASSERT( _MaxCascades > 0 );
-    if ( CascadeSize != RVShadowCascadeResolution.GetInteger() || MaxCascades != _MaxCascades ) {
+    if ( CascadeSize != RVShadowCascadeResolution.GetInteger() || MaxCascades < _MaxCascades ) {
         CascadeSize = RVShadowCascadeResolution.GetInteger();
         MaxCascades = _MaxCascades;
         CreateFramebuffer();

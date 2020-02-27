@@ -40,15 +40,9 @@ ARuntimeVariable RVDrawBrushBounds( _CTS( "DrawBrushBounds" ), _CTS( "0" ), VAR_
 ARuntimeVariable RVDrawIndexedMeshBVH( _CTS( "DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( AMeshComponent )
-AN_CLASS_META( ABrushComponent )
 
 static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit ) {
     AMeshComponent const * mesh = static_cast< AMeshComponent const * >( Self->Owner );
-
-    if ( mesh->bUseDynamicRange ) {
-        // Raycasting of meshes with dynamic range is not supported yet
-        return false;
-    }
 
     Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
 
@@ -68,8 +62,47 @@ static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRaySta
 
     int firstHit = Hits.Size();
 
-    if ( !resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, Hits ) ) {
-        return false;
+    if ( mesh->bOverrideMeshMaterials ) {
+        bool ret = false;
+
+        float boxMin, boxMax;
+
+        Float3 invRayDir;
+
+        invRayDir.X = 1.0f / rayDirLocal.X;
+        invRayDir.Y = 1.0f / rayDirLocal.Y;
+        invRayDir.Z = 1.0f / rayDirLocal.Z;
+
+        if ( !BvRayIntersectBox( rayStartLocal, invRayDir, resource->GetBoundingBox(), boxMin, boxMax ) || boxMin >= hitDistanceLocal ) {
+            return false;
+        }
+
+        AIndexedMeshSubpartArray const & subparts = resource->GetSubparts();
+        for ( int i = 0 ; i < subparts.Size() ; i++ ) {
+
+            int first = Hits.Size();
+
+            // Raycast subpart
+            AIndexedMeshSubpart * subpart = subparts[i];
+            ret |= subpart->Raycast( rayStartLocal, rayDirLocal, invRayDir, hitDistanceLocal, Hits );
+
+            // Correct material
+            int num = Hits.Size() - first;
+            if ( num ) {
+                AMaterialInstance * material = mesh->GetMaterialInstance( i );
+                for ( int j = 0 ; j < num ; j++ ) {
+                    Hits[ first + j ].Material = material;
+                }
+            }
+        }
+
+        if ( !ret ) {
+            return false;
+        }
+    } else {
+        if ( !resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, Hits ) ) {
+            return false;
+        }
     }
 
     // Convert hits to worldspace and find closest hit
@@ -102,11 +135,6 @@ static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRaySta
 static bool RaycastClosestCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 & HitLocation, Float2 & HitUV, float & HitDistance, SMeshVertex const ** pVertices, unsigned int Indices[3], TRef< AMaterialInstance > & Material ) {
     AMeshComponent const * mesh = static_cast< AMeshComponent const * >( Self->Owner );
 
-    if ( mesh->bUseDynamicRange ) {
-        // Raycasting of meshes with dynamic range is not supported yet
-        return false;
-    }
-
     Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
 
     // transform ray to object space
@@ -123,9 +151,13 @@ static bool RaycastClosestCallback( SPrimitiveDef const * Self, Float3 const & I
 
     AIndexedMesh * resource = mesh->GetMesh();
 
-    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, HitLocation, HitUV, HitDistance, Indices, Material ) ) {
+    int subpartIndex;
+
+    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, HitLocation, HitUV, HitDistance, Indices, subpartIndex ) ) {
         return false;
     }
+
+    Material = mesh->GetMaterialInstance( subpartIndex );
 
     *pVertices = resource->GetVertices();
 
@@ -139,11 +171,12 @@ static bool RaycastClosestCallback( SPrimitiveDef const * Self, Float3 const & I
 }
 
 AMeshComponent::AMeshComponent() {
-    bCastShadow = true;
+    DrawableType = DRAWABLE_STATIC_MESH;
 
-    Primitive.QueryGroup |= VSD_QUERY_MASK_SHADOW_CAST;
     Primitive.RaycastCallback = RaycastCallback;
     Primitive.RaycastClosestCallback = RaycastClosestCallback;
+
+    bAllowRaycast = true;
 
     LightmapOffset.Z = LightmapOffset.W = 1;
 
@@ -153,61 +186,24 @@ AMeshComponent::AMeshComponent() {
 }
 
 void AMeshComponent::InitializeComponent() {
-    ARenderWorld & RenderWorld = GetWorld()->GetRenderWorld();
-
     Super::InitializeComponent();
-
-    if ( bCastShadow )
-    {
-        RenderWorld.AddShadowCaster( this );
-    }
 }
 
 void AMeshComponent::DeinitializeComponent() {
-    ARenderWorld & RenderWorld = GetWorld()->GetRenderWorld();
-
     Super::DeinitializeComponent();
 
     ClearMaterials();
-
-    if ( bCastShadow )
-    {
-        RenderWorld.RemoveShadowCaster( this );
-    }
 }
 
-void AMeshComponent::SetCastShadow( bool _CastShadow ) {
-    if ( bCastShadow == _CastShadow )
-    {
-        return;
+void AMeshComponent::SetAllowRaycast( bool _AllowRaycast ) {
+    if ( _AllowRaycast ) {
+        Primitive.RaycastCallback = RaycastCallback;
+        Primitive.RaycastClosestCallback = RaycastClosestCallback;
+    } else {
+        Primitive.RaycastCallback = nullptr;
+        Primitive.RaycastClosestCallback = nullptr;
     }
-
-    bCastShadow = _CastShadow;
-
-    if ( bCastShadow )
-    {
-        Primitive.QueryGroup |= VSD_QUERY_MASK_SHADOW_CAST;
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_NO_SHADOW_CAST;
-    }
-    else
-    {
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_SHADOW_CAST;
-        Primitive.QueryGroup |= VSD_QUERY_MASK_NO_SHADOW_CAST;
-    }
-
-    if ( IsInitialized() )
-    {
-        ARenderWorld & RenderWorld = GetWorld()->GetRenderWorld();
-
-        if ( bCastShadow )
-        {
-            RenderWorld.AddShadowCaster( this );
-        }
-        else
-        {
-            RenderWorld.RemoveShadowCaster( this );
-        }
-    }
+    bAllowRaycast = _AllowRaycast;
 }
 
 void AMeshComponent::SetMesh( AIndexedMesh * _Mesh ) {
@@ -367,6 +363,8 @@ void AMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 }
 
+#if 0
+AN_CLASS_META( ABrushComponent )
 
 static bool BrushRaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit ) {
     ABrushComponent const * brush = static_cast< ABrushComponent const * >(Self->Owner);
@@ -450,4 +448,171 @@ void ABrushComponent::DrawDebug( ADebugRenderer * InRenderer ) {
             InRenderer->DrawAABB( WorldBounds );
         }
     }
+}
+#endif
+
+
+
+
+
+
+AN_CLASS_META( AProceduralMeshComponent )
+
+static bool RaycastCallback_Procedural( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit ) {
+    AProceduralMeshComponent const * mesh = static_cast< AProceduralMeshComponent const * >( Self->Owner );
+
+    Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
+
+    // transform ray to object space
+    Float3 rayStartLocal = transformInverse * InRayStart;
+    Float3 rayEndLocal = transformInverse * InRayEnd;
+    Float3 rayDirLocal = rayEndLocal - rayStartLocal;
+
+    float hitDistanceLocal = rayDirLocal.Length();
+    if ( hitDistanceLocal < 0.0001f ) {
+        return false;
+    }
+
+    rayDirLocal /= hitDistanceLocal;
+
+    AProceduralMesh * resource = mesh->GetMesh();
+    if ( !resource ) {
+        // No resource associated with procedural mesh component
+        return false;
+    }
+
+    int firstHit = Hits.Size();
+
+    if ( !resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, Hits ) ) {
+        return false;
+    }
+
+    // Convert hits to worldspace and find closest hit
+
+    Float3x4 const & transform = mesh->GetWorldTransformMatrix();
+    Float3x3 normalMatrix;
+
+    transform.DecomposeNormalMatrix( normalMatrix );
+
+    int numHits = Hits.Size() - firstHit;
+
+    ClosestHit = firstHit;
+
+    AMaterialInstance * material = mesh->GetMaterialInstance();
+
+    for ( int i = 0 ; i < numHits ; i++ ) {
+        int hitNum = firstHit + i;
+        STriangleHitResult & hitResult = Hits[hitNum];
+
+        hitResult.Location = transform * hitResult.Location;
+        hitResult.Normal = ( normalMatrix * hitResult.Normal ).Normalized();
+        hitResult.Distance = (hitResult.Location - InRayStart).Length();
+
+        if ( hitResult.Distance < Hits[ ClosestHit ].Distance ) {
+            ClosestHit = hitNum;
+        }
+
+        hitResult.Material = material;
+    }
+
+    return true;
+}
+
+static bool RaycastClosestCallback_Procedural( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 & HitLocation, Float2 & HitUV, float & HitDistance, SMeshVertex const ** pVertices, unsigned int Indices[3], TRef< AMaterialInstance > & Material ) {
+    AProceduralMeshComponent const * mesh = static_cast< AProceduralMeshComponent const * >( Self->Owner );
+
+    Float3x4 transformInverse = mesh->ComputeWorldTransformInverse();
+
+    // transform ray to object space
+    Float3 rayStartLocal = transformInverse * InRayStart;
+    Float3 rayEndLocal = transformInverse * HitLocation;
+    Float3 rayDirLocal = rayEndLocal - rayStartLocal;
+
+    float hitDistanceLocal = rayDirLocal.Length();
+    if ( hitDistanceLocal < 0.0001f ) {
+        return false;
+    }
+
+    rayDirLocal /= hitDistanceLocal;
+
+    AProceduralMesh * resource = mesh->GetMesh();
+    if ( !resource ) {
+        // No resource associated with procedural mesh component
+        return false;
+    }
+
+    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, HitLocation, HitUV, HitDistance, Indices ) ) {
+        return false;
+    }
+
+    Material = mesh->GetMaterialInstance();
+
+    *pVertices = resource->VertexCache.ToPtr();
+
+    // Transform hit location to world space
+    HitLocation = Self->Owner->GetWorldTransformMatrix() * HitLocation;
+
+    // Recalc hit distance in world space
+    HitDistance = (HitLocation - InRayStart).Length();
+
+    return true;
+}
+
+AProceduralMeshComponent::AProceduralMeshComponent() {
+    DrawableType = DRAWABLE_PROCEDURAL_MESH;
+
+    Primitive.RaycastCallback = RaycastCallback_Procedural;
+    Primitive.RaycastClosestCallback = RaycastClosestCallback_Procedural;
+
+    bAllowRaycast = true;
+
+    //LightmapOffset.Z = LightmapOffset.W = 1;
+
+    //static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Box" ) );
+    //Mesh = MeshResource.GetObject();
+    //Bounds = Mesh->GetBoundingBox();
+}
+
+void AProceduralMeshComponent::InitializeComponent() {
+    Super::InitializeComponent();
+}
+
+void AProceduralMeshComponent::DeinitializeComponent() {
+    Super::DeinitializeComponent();
+
+    //ClearMaterials();
+}
+
+void AProceduralMeshComponent::SetAllowRaycast( bool _AllowRaycast ) {
+    if ( _AllowRaycast ) {
+        Primitive.RaycastCallback = RaycastCallback_Procedural;
+        Primitive.RaycastClosestCallback = RaycastClosestCallback_Procedural;
+    } else {
+        Primitive.RaycastCallback = nullptr;
+        Primitive.RaycastClosestCallback = nullptr;
+    }
+    bAllowRaycast = _AllowRaycast;
+}
+
+void AProceduralMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+    Super::DrawDebug( InRenderer );
+
+    if ( RVDrawMeshBounds )
+    {
+        if ( Primitive.VisPass == InRenderer->GetVisPass() )
+        {
+            InRenderer->SetDepthTest( false );
+            InRenderer->SetColor( AColor4( 0.5f,1,0.5f,1 ) );
+            InRenderer->DrawAABB( WorldBounds );
+        }
+    }
+}
+
+AMaterialInstance * AProceduralMeshComponent::GetMaterialInstance() const {
+    AMaterialInstance * pInstance = MaterialInstance;
+    if ( !pInstance ) {
+        static TStaticResourceFinder< AMaterialInstance > DefaultInstance( _CTS( "/Default/MaterialInstance/Default" ) );
+        pInstance = DefaultInstance.GetObject();
+    }
+    return pInstance;
 }

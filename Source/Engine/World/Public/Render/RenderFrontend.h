@@ -37,6 +37,9 @@ SOFTWARE.
 #include <World/Public/World.h>
 
 class ABaseLightComponent;
+class AMeshComponent;
+class ASkinnedComponent;
+class AProceduralMeshComponent;
 
 struct SRenderFrontendStat {
     int PolyCount;
@@ -64,12 +67,20 @@ private:
     //void RenderImgui( struct ImDrawList const * _DrawList );
     void RenderView( int _Index );
 
-    void AddLevelInstances( ARenderWorld * InWorld, SRenderFrontendDef * _Def );
-    void AddDirectionalShadowmapInstances( ARenderWorld * InWorld, SRenderFrontendDef * _Def );
+    void QueryVisiblePrimitives( ARenderWorld * InWorld );
+    void AddRenderInstances( ARenderWorld * InWorld );
+    void AddDrawable( ADrawable * InComponent );
+    void AddStaticMesh( AMeshComponent * InComponent );
+    void AddSkinnedMesh( ASkinnedComponent * InComponent );
+    void AddProceduralMesh( AProceduralMeshComponent * InComponent );
+    void AddDirectionalShadowmapInstances( ARenderWorld * InWorld );
+    void AddDirectionalShadowmap_StaticMesh( AMeshComponent * InComponent );
+    void AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * InComponent );
+    void AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshComponent * InComponent );
 
-    void AddSurfaces( SRenderFrontendDef * RenderDef, SSurfaceDef * const * Surfaces, int SurfaceCount );
-    void AddSurface( SRenderFrontendDef * RenderDef, ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder );
-    void AddMesh( SRenderFrontendDef * RenderDef, AMeshComponent * Component );
+    void AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCount );
+    void AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder );
+    
 
     void CreateDirectionalLightCascades( SRenderFrame * Frame, SRenderView * View );
 
@@ -89,20 +100,16 @@ private:
     TPodArray< ABaseLightComponent * > Lights;
     int VisPass = 0;
 
-    int numVerts;
-    int numIndices;
+    struct SSurfaceStream {
+        size_t VertexAddr;
+        size_t VertexLightAddr;
+        size_t VertexUVAddr;
+        size_t IndexAddr;
+    };
 
-    // TODO: SurfaceMesh,SurfaceLightmapUV,SurfaceVertexLight must live per view
+    SSurfaceStream SurfaceStream;
 
-    /** Mesh for surface batching */
-    TRef< AIndexedMesh > SurfaceMesh;
-
-    /** Lightmap UV channel */
-    TRef< ALightmapUV > SurfaceLightmapUV;
-
-    /** Vertex light channel */
-    TRef< AVertexLight > SurfaceVertexLight;
-
+    SRenderFrontendDef RenderDef;
 };
 
 extern ARenderFrontend & GRenderFrontend;

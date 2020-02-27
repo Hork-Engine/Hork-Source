@@ -94,8 +94,11 @@ bool ADepthPassRenderer::BindMaterial( SRenderInstance const * instance ) {
     Cmd.BindPipeline( pPipeline );
 
     // Bind second vertex buffer
-    Buffer * pSecondVertexBuffer = bSkinned ? GPUBufferHandle( instance->WeightsBuffer ) : nullptr;
-    Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, 0 );
+    if ( bSkinned ) {
+        Cmd.BindVertexBuffer( 1, GPUBufferHandle( instance->WeightsBuffer ), instance->WeightsBufferOffset );
+    } else {
+        Cmd.BindVertexBuffer( 1, nullptr, 0 );
+    }
 
     // Set samplers
     if ( pMaterial->bDepthPassTextureFetch ) {

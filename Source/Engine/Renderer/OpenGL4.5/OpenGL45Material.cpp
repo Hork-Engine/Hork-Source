@@ -510,7 +510,7 @@ void AColorPassHUD::Create( const char * _SourceCode ) {
     Initialize( pipelineCI );
 }
 
-void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest ) {
+void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -520,13 +520,20 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
 
     BlendingStateInfo bsd;
     bsd.SetDefaults();
+    if ( _Translucent ) {
+        bsd.RenderTargetSlots[0].SetBlendingPreset( GHI::BLENDING_ALPHA );
+    }
 
     DepthStencilStateInfo dssd;
     dssd.SetDefaults();
 
 #ifdef DEPTH_PREPASS
     dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
-    dssd.DepthFunc = CMPFUNC_EQUAL;
+    if ( _Translucent ) {
+        dssd.DepthFunc = CMPFUNC_GREATER;
+    } else {
+        dssd.DepthFunc = CMPFUNC_EQUAL;
+    }
 #else
     dssd.DepthFunc = CMPFUNC_GREATER;
 #endif
@@ -710,7 +717,7 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
 }
 
 
-void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
+void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -720,13 +727,20 @@ void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
 
     BlendingStateInfo bsd;
     bsd.SetDefaults();
+    if ( _Translucent ) {
+        bsd.RenderTargetSlots[0].SetBlendingPreset( GHI::BLENDING_ALPHA );
+    }
 
     DepthStencilStateInfo dssd;
     dssd.SetDefaults();
 
 #ifdef DEPTH_PREPASS
     dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
-    dssd.DepthFunc = CMPFUNC_EQUAL;
+    if ( _Translucent ) {
+        dssd.DepthFunc = CMPFUNC_GREATER;
+    } else {
+        dssd.DepthFunc = CMPFUNC_EQUAL;
+    }
 #else
     dssd.DepthFunc = CMPFUNC_GREATER;
 #endif
@@ -841,7 +855,7 @@ void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
     Initialize( pipelineCI );
 }
 
-void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest ) {
+void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -851,13 +865,20 @@ void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
 
     BlendingStateInfo bsd;
     bsd.SetDefaults();
+    if ( _Translucent ) {
+        bsd.RenderTargetSlots[0].SetBlendingPreset( GHI::BLENDING_ALPHA );
+    }
 
     DepthStencilStateInfo dssd;
     dssd.SetDefaults();
 
 #ifdef DEPTH_PREPASS
     dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
-    dssd.DepthFunc = CMPFUNC_EQUAL;
+    if ( _Translucent ) {
+        dssd.DepthFunc = CMPFUNC_GREATER;
+    } else {
+        dssd.DepthFunc = CMPFUNC_EQUAL;
+    }
 #else
     dssd.DepthFunc = CMPFUNC_GREATER;
 #endif

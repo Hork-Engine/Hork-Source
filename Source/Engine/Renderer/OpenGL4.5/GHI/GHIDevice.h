@@ -72,6 +72,15 @@ public:
     unsigned int GetTextureBufferOffsetAlignment() const { return TextureBufferOffsetAlignment; }
     unsigned int GetUniformBufferOffsetAlignment() const { return UniformBufferOffsetAlignment; }
 
+    unsigned int GetTotalStates() const { return TotalStates; }
+    unsigned int GetTotalBuffers() const { return TotalBuffers; }
+    unsigned int GetTotalTextures() const { return TotalTextures; }
+    unsigned int GetTotalSamplers() const { return SamplerCache.Size(); }
+    unsigned int GetTotalBlendingStates() const { return BlendingStateCache.Size(); }
+    unsigned int GetTotalRasterizerStates() const { return RasterizerStateCache.Size(); }
+    unsigned int GetTotalDepthStencilStates() const { return DepthStencilStateCache.Size(); }
+    unsigned int GetTotalShaderModules() const { return TotalShaderModules; }
+
 private:
     BlendingStateInfo const * CachedBlendingState( BlendingStateInfo const & _BlendingState );
     RasterizerStateInfo const * CachedRasterizerState( RasterizerStateInfo const & _RasterizerState );
@@ -91,6 +100,7 @@ private:
     unsigned int MaxTextureBufferSize;
     unsigned int TextureBufferOffsetAlignment;
     unsigned int UniformBufferOffsetAlignment;
+    unsigned int ShaderStorageBufferOffsetAlignment;
     unsigned int MaxBufferBindings[4]; // uniform buffer, shader storage buffer, transform feedback buffer, atomic counter buffer
     unsigned int MaxTextureAnisotropy;
 
@@ -98,8 +108,9 @@ private:
     unsigned int TotalStates;
     unsigned int TotalBuffers;
     unsigned int TotalTextures;
-    unsigned int TotalSamplers;
     unsigned int TotalShaderModules;
+    size_t BufferMemoryAllocated;
+    size_t TextureMemoryAllocated;
     uint32_t UIDGen;
 
     AllocatorCallback Allocator;

@@ -100,7 +100,7 @@ enum MAP_INVALIDATE : uint8_t {
                               /// Data within this range are undefined with the exception of subsequently written data.
                               /// No error is generated if subsequent GL operations access unwritten data,
                               /// but the result is undefined and system errors (possibly including program termination) may occur.
-                              /// This flag may not be used in combination with MAP_TRANSFER_READ or MAP_TRANSFER_WRITE.
+                              /// This flag may not be used in combination with MAP_TRANSFER_READ or MAP_TRANSFER_RW.
 
     MAP_INVALIDATE_ENTIRE_BUFFER  /// Indicates that the previous contents of the entire buffer may be discarded.
                                   /// Data within the entire buffer are undefined with the exception of subsequently written data.
@@ -166,7 +166,7 @@ struct BufferCreateInfo {
     MUTABLE_STORAGE_CLIENT_ACCESS MutableClientAccess;   /// only for mutable buffers
     MUTABLE_STORAGE_USAGE         MutableUsage;          /// only for mutable buffers
     IMMUTABLE_STORAGE_FLAGS       ImmutableStorageFlags; /// make sense only with ImmutableStorage = true
-    size_t                        SizeInBytes;            /// size of buffer in bytes
+    size_t                        SizeInBytes;           /// size of buffer in bytes
 };
 
 class Buffer final : public NonCopyable, IObjectInterface {
@@ -193,6 +193,9 @@ public:
 
     /// Only for mutable buffers
     bool Realloc( size_t _NewByteLength, const void * _SysMem = nullptr );
+
+    /// Allocate new storage for the buffer
+    bool Orphan();
 
     /// Client-side call function
     void Read( void * _SysMem );

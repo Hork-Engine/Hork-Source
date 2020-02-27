@@ -42,8 +42,14 @@ ADrawable::ADrawable() {
     Primitive.Owner = this;
     Primitive.Type = VSD_PRIMITIVE_BOX;
     Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
-    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS | VSD_QUERY_MASK_SHADOW_CAST;
+
+    bAllowRaycast = false;
+    bCastShadow = true;
+
     //Primitive.bMovable = true;
+
+    VisFrame = -1;
 }
 
 void ADrawable::SetVisibilityGroup( int InVisibilityGroup ) {
@@ -137,17 +143,57 @@ void ADrawable::OnTransformDirty() {
 void ADrawable::InitializeComponent() {
     Super::InitializeComponent();
 
-    //Primitive.IndexInArrayOfBakedPrimitives = GetLevel()->FindBackedPrimitive()
-
     GetLevel()->AddPrimitive( &Primitive );
 
     UpdateWorldBounds();
+
+    if ( bCastShadow )
+    {
+        GetWorld()->GetRenderWorld().AddShadowCaster( this );
+    }
 }
 
 void ADrawable::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     GetLevel()->RemovePrimitive( &Primitive );
+
+    if ( bCastShadow )
+    {
+        GetWorld()->GetRenderWorld().RemoveShadowCaster( this );
+    }
+}
+
+void ADrawable::SetCastShadow( bool _CastShadow ) {
+    if ( bCastShadow == _CastShadow )
+    {
+        return;
+    }
+
+    bCastShadow = _CastShadow;
+
+    if ( bCastShadow )
+    {
+        Primitive.QueryGroup |= VSD_QUERY_MASK_SHADOW_CAST;
+        Primitive.QueryGroup &= ~VSD_QUERY_MASK_NO_SHADOW_CAST;
+    } else
+    {
+        Primitive.QueryGroup &= ~VSD_QUERY_MASK_SHADOW_CAST;
+        Primitive.QueryGroup |= VSD_QUERY_MASK_NO_SHADOW_CAST;
+    }
+
+    if ( IsInitialized() )
+    {
+        ARenderWorld & RenderWorld = GetWorld()->GetRenderWorld();
+
+        if ( bCastShadow )
+        {
+            RenderWorld.AddShadowCaster( this );
+        } else
+        {
+            RenderWorld.RemoveShadowCaster( this );
+        }
+    }
 }
 
 void ADrawable::UpdateWorldBounds() {
@@ -195,4 +241,56 @@ void ADrawable::SetMovable( bool _Movable ) {
 
 bool ADrawable::IsMovable() const {
     return Primitive.bMovable;
+}
+
+void ADrawable::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
+    if ( VisFrame != _Def->FrameNumber ) {
+        VisFrame = _Def->FrameNumber;
+
+        OnPreRenderUpdate( _Def );
+    }
+}
+
+bool ADrawable::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit ) {
+    if ( !Primitive.RaycastCallback ) {
+        return false;
+    }
+
+    Hits.Clear();
+
+    return Primitive.RaycastCallback( &Primitive, InRayStart, InRayEnd, Hits, ClosestHit );
+}
+
+bool ADrawable::RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) {
+    if ( !Primitive.RaycastClosestCallback ) {
+        return false;
+    }
+
+    Hit.Location = InRayEnd;
+    Hit.Distance = ( InRayStart - InRayEnd ).Length();
+
+    SMeshVertex const * pVertices;
+    TRef< AMaterialInstance > material;
+
+    if ( !Primitive.RaycastClosestCallback( &Primitive, InRayStart, Hit.Location, Hit.UV, Hit.Distance, &pVertices, Hit.Indices, material ) ) {
+        return false;
+    }
+
+    Hit.Material = material;
+
+    Float3 const & v0 = pVertices[Hit.Indices[0]].Position;
+    Float3 const & v1 = pVertices[Hit.Indices[1]].Position;
+    Float3 const & v2 = pVertices[Hit.Indices[2]].Position;
+
+    Float3x4 const & transform = GetWorldTransformMatrix();
+
+    // calc triangle vertices
+    Float3 tv0 = transform * v0;
+    Float3 tv1 = transform * v1;
+    Float3 tv2 = transform * v2;
+
+    // calc normal
+    Hit.Normal = Math::Cross( tv1-tv0, tv2-tv0 ).Normalized();
+
+    return true;
 }

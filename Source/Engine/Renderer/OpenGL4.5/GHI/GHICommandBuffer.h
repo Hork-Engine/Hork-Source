@@ -94,7 +94,7 @@ enum CONDITIONAL_RENDER_MODE : uint8_t {
     CONDITIONAL_RENDER_QUERY_BY_REGION_NO_WAIT_INVERTED
 };
 
-typedef struct _FSync * FSync;
+typedef struct _SyncObject * SyncObject;
 
 struct BufferCopy {
     size_t    SrcOffset;
@@ -381,15 +381,15 @@ public:
     // Synchronization
     //
 
-    FSync FenceSync();
+    SyncObject FenceSync();
 
-    void RemoveSync( FSync _Sync );
+    void RemoveSync( SyncObject _Sync );
 
-    CLIENT_WAIT_STATUS ClientWait( FSync _Sync, /* optional */ uint64_t _TimeOutNanoseconds = 0xFFFFFFFFFFFFFFFF );
+    CLIENT_WAIT_STATUS ClientWait( SyncObject _Sync, /* optional */ uint64_t _TimeOutNanoseconds = 0xFFFFFFFFFFFFFFFF );
 
-    void ServerWait( FSync _Sync );
+    void ServerWait( SyncObject _Sync );
 
-    bool IsSignaled( FSync _Sync );
+    bool IsSignaled( SyncObject _Sync );
 
     void Flush();
 

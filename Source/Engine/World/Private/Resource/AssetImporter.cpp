@@ -44,7 +44,7 @@ using ALinearAllocatorGLTF = TLinearAllocator< MAX_MEMORY_GLTF >;
 
 static void * cgltf_alloc( void * user, cgltf_size size ) {
     ALinearAllocatorGLTF & Allocator = *static_cast< ALinearAllocatorGLTF * >( user );
-    return Allocator.Alloc( size );
+    return Allocator.Allocate( size );
 }
 
 static void cgltf_free( void * user, void * ptr ) {
@@ -806,7 +806,6 @@ void AAssetImporter::ReadMaterial( cgltf_material * Material, MaterialInfo & Inf
             graph->VertexStage = materialVertexStage;
             graph->FragmentStage = materialFragmentStage;
             graph->MaterialType = MATERIAL_TYPE_UNLIT;
-            graph->MaterialFacing = Material->double_sided ? MATERIAL_FACE_FRONT_AND_BACK : MATERIAL_FACE_FRONT;
             graph->RegisterTextureSlot( diffuseTexture );
 
             Info.Graph = graph;
@@ -2248,4 +2247,482 @@ void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
     f.Printf( "\"%s\"\n", SkyboxTextureGUID.CStr() );
     f.Printf( "]\n" );
 #endif
+}
+
+
+
+
+
+#include "lwo2.h"
+
+#define MAX_MEMORY_LWO (16<<10)
+
+using ALinearAllocatorLWO = TLinearAllocator< MAX_MEMORY_LWO >;
+
+static void *lwAlloc( void * _Allocator, size_t _Size ) {
+    ALinearAllocatorLWO & Allocator = *static_cast< ALinearAllocatorLWO * >( _Allocator );
+    void * ptr = Allocator.Allocate( _Size );
+    ZeroMem( ptr, _Size );
+    return ptr;
+}
+
+static void lwFree( void * _Allocator, void * _Bytes ) {
+
+}
+
+static size_t lwRead( void * _Buffer, size_t _ElementSize, size_t _ElementCount, struct st_lwFile * _Stream ) {
+    IStreamBase * stream = (IStreamBase *)_Stream->UserData;
+
+    size_t total = _ElementSize * _ElementCount;
+
+    stream->ReadBuffer( _Buffer, total );
+    return stream->GetReadBytesCount() / _ElementSize;
+}
+
+static int lwSeek( struct st_lwFile * _Stream, long _Offset, int _Origin ) {
+    IStreamBase * stream = (IStreamBase *)_Stream->UserData;
+
+    switch ( _Origin ) {
+    case SEEK_CUR:
+        return stream->SeekCur( _Offset );
+    case SEEK_SET:
+        return stream->SeekSet( _Offset );
+    case SEEK_END:
+        return stream->SeekEnd( _Offset );
+    }
+
+    return -1;
+}
+
+static long lwTell( struct st_lwFile * _Stream ) {
+    IStreamBase * stream = (IStreamBase *)_Stream->UserData;
+
+    return stream->Tell();
+}
+
+static int lwGetc( struct st_lwFile * _Stream ) {
+    IStreamBase * stream = (IStreamBase *)_Stream->UserData;
+
+    uint8_t c = stream->ReadInt8();
+
+    if ( stream->GetReadBytesCount() == 0 ) {
+        _Stream->error = 1;
+        return EOF;
+    }
+
+    return c;
+}
+
+struct SFace {
+    BvAxisAlignedBox Bounds;
+
+    int FirstVertex;
+    int NumVertices;
+
+    int FirstIndex;
+    int NumIndices;
+
+    AMaterialInstance * MaterialInst;
+};
+
+static bool CreateIndexedMeshFromSurfaces( SFace const * InSurfaces, int InSurfaceCount, SMeshVertex const * InVertices, unsigned int const * InIndices, AIndexedMesh ** IndexedMesh )
+{
+    int totalVerts = 0;
+    int totalIndices = 0;
+    int totalSubparts = 0;
+
+    if ( !InSurfaceCount ) {
+        return false;
+    }
+
+    TPodArray< SFace const * > surfaces;
+    for ( int j = 0 ; j < InSurfaceCount ; j++ ) {
+        surfaces.Append( &InSurfaces[j] );
+    }
+
+    struct SSortFunction {
+        bool operator() ( SFace const * _A, SFace const * _B ) {
+            return (_A->MaterialInst < _B->MaterialInst);
+        }
+    } SortFunction;
+
+    auto CanMergeSurfaces = []( SFace const * InFirst, SFace const * InSecond ) -> bool {
+        return (InFirst->MaterialInst == InSecond->MaterialInst);
+    };
+
+    StdSort( surfaces.Begin(), surfaces.End(), SortFunction );
+
+    SFace const * merge = surfaces[0];
+    totalSubparts = 1;
+    for ( int j = 0 ; j < surfaces.Size() ; j++ ) {
+        SFace const * surf = surfaces[j];
+
+        totalVerts += surf->NumVertices;
+        totalIndices += surf->NumIndices;
+
+        if ( !CanMergeSurfaces( surf, merge ) ) {
+            totalSubparts++;
+            merge = surf;
+        }
+    }
+
+    //Float3x3 normalMatrix;
+    //InPretransform.DecomposeNormalMatrix( normalMatrix );
+
+    AIndexedMesh * indexedMesh = CreateInstanceOf< AIndexedMesh >();
+    indexedMesh->Initialize( totalVerts, totalIndices, totalSubparts, false );
+
+    SMeshVertex * verts = indexedMesh->GetVertices();
+    unsigned int * indices = indexedMesh->GetIndices();
+
+    int baseVertex = 0;
+    int firstIndex = 0;
+    int subpartVertexCount = 0;
+    int subpartIndexCount = 0;
+    BvAxisAlignedBox subpartBounds;
+
+    merge = surfaces[0];
+    int subpartIndex = 0;
+    subpartBounds.Clear();
+    for ( int j = 0 ; j < surfaces.Size() ; j++ ) {
+        SFace const * surf = surfaces[j];
+
+        if ( !CanMergeSurfaces( surf, merge ) ) {
+
+            AIndexedMeshSubpart * subpart = indexedMesh->GetSubpart( subpartIndex );
+            subpart->SetBaseVertex( baseVertex );
+            subpart->SetFirstIndex( firstIndex );
+            subpart->SetVertexCount( subpartVertexCount );
+            subpart->SetIndexCount( subpartIndexCount );
+            subpart->SetMaterialInstance( merge->MaterialInst );
+            subpart->SetBoundingBox( subpartBounds );
+
+            CalcTangentSpace( indexedMesh->GetVertices() + baseVertex, subpartVertexCount, indexedMesh->GetIndices() + firstIndex, subpartIndexCount );
+
+            // Begin new subpart
+            firstIndex += subpartIndexCount;
+            baseVertex += subpartVertexCount;
+            subpartIndexCount = 0;
+            subpartVertexCount = 0;
+            merge = surfaces[j];
+            subpartIndex++;
+            subpartBounds.Clear();
+        }
+
+        for ( int v = 0 ; v < surf->NumVertices ; v++, verts++ ) {
+            *verts = InVertices[surf->FirstVertex + v];
+            subpartBounds.AddPoint( verts->Position );
+        }
+
+        for ( int v = 0 ; v < surf->NumIndices ; ) {
+            *indices++ = subpartVertexCount + InIndices[surf->FirstIndex + v++];// - surf->FirstVertex;
+            *indices++ = subpartVertexCount + InIndices[surf->FirstIndex + v++];// - surf->FirstVertex;
+            *indices++ = subpartVertexCount + InIndices[surf->FirstIndex + v++];// - surf->FirstVertex;
+        }
+
+        subpartVertexCount += surf->NumVertices;
+        subpartIndexCount += surf->NumIndices;
+    }
+
+    AIndexedMeshSubpart * subpart = indexedMesh->GetSubpart( subpartIndex );
+    subpart->SetBaseVertex( baseVertex );
+    subpart->SetFirstIndex( firstIndex );
+    subpart->SetVertexCount( subpartVertexCount );
+    subpart->SetIndexCount( subpartIndexCount );
+    subpart->SetMaterialInstance( merge->MaterialInst );
+    subpart->SetBoundingBox( subpartBounds );
+
+    CalcTangentSpace( indexedMesh->GetVertices() + baseVertex, subpartVertexCount, indexedMesh->GetIndices() + firstIndex, subpartIndexCount );
+
+    indexedMesh->SendVertexDataToGPU( totalVerts, 0 );
+    indexedMesh->SendIndexDataToGPU( totalIndices, 0 );
+
+    *IndexedMesh = indexedMesh;
+
+    return true;
+}
+
+static bool CreateLWOMesh( lwObject * lwo, float InScale, AMaterialInstance * (*GetMaterial)( const char * _Name ), AIndexedMesh ** IndexedMesh ) {
+#define USE_COLOR
+
+    lwSurface * lwoSurf;
+    int j, k;
+    Float3 normal;
+
+#ifdef USE_COLOR
+    byte color[4];
+#endif
+
+    if ( !lwo->surf ) {
+        return false;
+    }
+
+    if ( !lwo->layer ) {
+        return false;
+    }
+
+    lwLayer *layer = lwo->layer;
+
+    if ( layer->point.count <= 0 ) {
+        // no vertex data
+        return false;
+    }
+
+    TPodArray< Float3 > verts;
+
+    verts.Resize( layer->point.count );
+    for ( j = 0; j < layer->point.count; j++ ) {
+        verts[j].X = layer->point.pt[j].pos[0];
+        verts[j].Y = layer->point.pt[j].pos[1];
+        verts[j].Z = -layer->point.pt[j].pos[2];
+    }
+
+    int numUVs = 0;
+    if ( layer->nvmaps ) {
+        for ( lwVMap *vm = layer->vmap; vm; vm = vm->next ) {
+            if ( vm->type == LWID_( 'T', 'X', 'U', 'V' ) ) {
+                numUVs += vm->nverts;
+            }
+        }
+    }
+
+    TPodArray< Float2 > texCoors;
+    texCoors.Resize( numUVs );
+    int offset = 0;
+    for ( lwVMap *vm = layer->vmap; vm; vm = vm->next ) {
+        if ( vm->type == LWID_( 'T', 'X', 'U', 'V' ) ) {
+            vm->offset = offset;
+            for ( k = 0; k < vm->nverts; k++ ) {
+                texCoors[k + offset].X = vm->val[k][0];
+                texCoors[k + offset].Y = 1.0f - vm->val[k][1];
+            }
+            offset += vm->nverts;
+        }
+    }
+    if ( !numUVs ) {
+        texCoors.Resize( 1 );
+        texCoors[0] = Float2(0.0f);
+        numUVs = 1;
+    }
+
+    TPodArray< int > vertexMap;
+    TPodArray< int > texcoordMap;
+
+    vertexMap.Resize( layer->point.count );
+    for ( j = 0; j < layer->point.count; j++ ) {
+        vertexMap[j] = j;
+    }
+
+    texcoordMap.Resize( numUVs );
+    for ( j = 0; j < numUVs; j++ ) {
+        texcoordMap[j] = j;
+    }
+
+    struct SMatchVert {
+        int v;
+        int uv;
+        Float3 normal;
+        #ifdef USE_COLOR
+        byte color[4];
+        #endif
+        SMatchVert * next;
+    };
+
+    TPodArray< SMatchVert * > matchHash;
+    TPodArray< SMatchVert > tempVertices;
+    SMatchVert * lastmv, *mv;
+
+    TPodArray< SFace > faces;
+    TPodArray< SMeshVertex > modelVertices;
+    TPodArray< unsigned int > modelIndices;
+
+    int numFaces = 0;
+    for ( lwoSurf = lwo->surf ; lwoSurf; lwoSurf = lwoSurf->next ) {
+        if ( layer->polygon.count > 0 ) {
+            numFaces++;
+        }
+    }
+
+    faces.Resize( numFaces );
+
+    int faceIndex = 0;
+
+    for ( lwoSurf = lwo->surf ; lwoSurf; lwoSurf = lwoSurf->next ) {
+        bool bMatchNormals = true;
+
+        if ( layer->polygon.count <= 0 ) {
+            continue;
+        }
+
+        SFace & face = faces[faceIndex++];
+
+        int firstVert = modelVertices.Size();
+        int firstIndex = modelIndices.Size();
+        int numVertices = 0;
+        int numIndices = 0;
+
+        tempVertices.ResizeInvalidate( layer->polygon.count * 3 );
+        tempVertices.ZeroMem();
+
+        modelIndices.Resize( firstIndex + layer->polygon.count * 3 );
+
+        unsigned int * pindices = modelIndices.ToPtr() + firstIndex;
+
+        matchHash.ResizeInvalidate( layer->point.count );
+        matchHash.ZeroMem();
+
+        for ( j = 0; j < layer->polygon.count; j++ ) {
+            lwPolygon *poly = &layer->polygon.pol[j];
+
+            if ( poly->surf != lwoSurf ) {
+                continue;
+            }
+
+            if ( poly->nverts != 3 ) {
+                GLogger.Printf( "CreateLWOMesh: polygon has %d verts, expected triangle\n", poly->nverts );
+                continue;
+            }
+
+            for ( k = 0; k < 3; k++ ) {
+
+                int v = vertexMap[poly->v[k].index];
+                normal.X = poly->v[k].norm[0];
+                normal.Y = poly->v[k].norm[1];
+                normal.Z = -poly->v[k].norm[2];
+                normal.NormalizeFix();
+
+                int uv = 0;
+
+                #ifdef USE_COLOR
+                color[0] = lwoSurf->color.rgb[0] * 255;
+                color[1] = lwoSurf->color.rgb[1] * 255;
+                color[2] = lwoSurf->color.rgb[2] * 255;
+                color[3] = 255;
+                #endif
+
+                // Set attributes from the vertex
+                lwPoint	*pt = &layer->point.pt[poly->v[k].index];
+                for ( int nvm = 0; nvm < pt->nvmaps; nvm++ ) {
+                    lwVMapPt *vm = &pt->vm[nvm];
+
+                    if ( vm->vmap->type == LWID_( 'T', 'X', 'U', 'V' ) ) {
+                        uv = texcoordMap[vm->index + vm->vmap->offset];
+                    }
+                    #ifdef USE_COLOR
+                    if ( vm->vmap->type == LWID_( 'R', 'G', 'B', 'A' ) ) {
+                        for ( int chan = 0; chan < 4; chan++ ) {
+                            color[chan] = 255 * vm->vmap->val[vm->index][chan];
+                        }
+                    }
+                    #endif
+                }
+
+                // Override with polygon attributes
+                for ( int nvm = 0; nvm < poly->v[k].nvmaps; nvm++ ) {
+                    lwVMapPt *vm = &poly->v[k].vm[nvm];
+
+                    if ( vm->vmap->type == LWID_( 'T', 'X', 'U', 'V' ) ) {
+                        uv = texcoordMap[vm->index + vm->vmap->offset];
+                    }
+                    #ifdef USE_COLOR
+                    if ( vm->vmap->type == LWID_( 'R', 'G', 'B', 'A' ) ) {
+                        for ( int chan = 0; chan < 4; chan++ ) {
+                            color[chan] = 255 * vm->vmap->val[vm->index][chan];
+                        }
+                    }
+                    #endif
+                }
+
+                // find a matching vert
+                for ( lastmv = NULL, mv = matchHash[v]; mv != NULL; lastmv = mv, mv = mv->next ) {
+                    if ( mv->uv != uv ) {
+                        continue;
+                    }
+                    #ifdef USE_COLOR
+                    if ( *(unsigned *)mv->color != *(unsigned *)color ) {
+                        continue;
+                    }
+                    #endif
+                    if ( !bMatchNormals || mv->normal.CompareEps( normal, 0.0001f ) ) {
+                    //if ( mv->normal * normal > normalEpsilon ) {
+                        break;
+                    }
+                }
+                if ( !mv ) {
+                    // allocate a new match vert and link to hash chain
+                    mv = &tempVertices[numVertices++];
+                    mv->v = v;
+                    mv->uv = uv;
+                    mv->normal = normal;
+                    #ifdef USE_COLOR
+                    *(unsigned *)mv->color = *(unsigned *)color;
+                    #endif
+                    mv->next = NULL;
+                    if ( lastmv ) {
+                        lastmv->next = mv;
+                    } else {
+                        matchHash[v] = mv;
+                    }
+                }
+
+                pindices[numIndices++] = mv - tempVertices.ToPtr();//pindices;
+            }
+        }
+
+        for ( j = 0 ; j < numIndices ; j+=3 ) {
+            StdSwap( pindices[j], pindices[j+2] );
+        }
+
+        modelVertices.Resize( firstVert + numVertices );
+
+        face.Bounds.Clear();
+
+        // Copy vertices
+        SMeshVertex * pvert = modelVertices.ToPtr() + firstVert;
+        for ( j = 0; j < numVertices; j++, pvert++ ) {
+            mv = &tempVertices[j];
+            pvert->Position = verts[mv->v];
+            pvert->TexCoord = texCoors[mv->uv];
+            pvert->Normal = mv->normal;
+            pvert->Position *= InScale;
+            //*(unsigned *)pvert->color = *(unsigned *)mv->color;
+            face.Bounds.AddPoint( pvert->Position );
+        }
+
+        face.FirstVertex = firstVert;
+        face.FirstIndex = firstIndex;
+        face.NumVertices = numVertices;
+        face.NumIndices = numIndices;
+        face.MaterialInst = GetMaterial( lwoSurf->name );
+    }
+
+    return CreateIndexedMeshFromSurfaces( faces.ToPtr(), faces.Size(), modelVertices.ToPtr(), modelIndices.ToPtr(), IndexedMesh );
+}
+
+bool LoadLWO( IStreamBase & InStream, float InScale, AMaterialInstance * (*GetMaterial)( const char * _Name ), AIndexedMesh ** IndexedMesh ) {
+    lwFile file;
+    unsigned int failID;
+    int failPos;
+    ALinearAllocatorLWO Allocator;
+
+    file.Read = lwRead;
+    file.Seek = lwSeek;
+    file.Tell = lwTell;
+    file.Getc = lwGetc;
+    file.Alloc = lwAlloc;
+    file.Free = lwFree;
+    file.UserData = &InStream;
+    file.Allocator = &Allocator;
+    file.error = 0;
+
+    lwObject * lwo = lwGetObject( &file, &failID, &failPos );
+    if ( !lwo ) {
+        return false;
+    }
+
+    bool ret = CreateLWOMesh( lwo, InScale, GetMaterial, IndexedMesh );
+
+    //lwFreeObject( lwo );
+
+    return ret;
 }

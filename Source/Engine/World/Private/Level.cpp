@@ -61,8 +61,6 @@ protected:
     void BeginPlay() override;
     void Tick( float _TimeStep ) override;
 
-    //void DrawDebug( ADebugRenderer * InRenderer ) override;
-
 private:
     void UpdateAmbientVolume( float _TimeStep );
 
@@ -71,45 +69,70 @@ private:
     APhysicalBody * WorldCollision;
 };
 
-void ALevel::DestroyActors() {
-    for ( AActor * actor : Actors ) {
-        actor->Destroy();
-    }
+ALevel::ALevel() {
+    ViewCluster = -1;
+
+    Float3 extents( CONVEX_HULL_MAX_BOUNDS * 2 );
+
+    memset( &OutdoorArea, 0, sizeof( OutdoorArea ) );
+
+    OutdoorArea.Bounds.Mins = -extents * 0.5f;
+    OutdoorArea.Bounds.Maxs = extents * 0.5f;
+
+    IndoorBounds.Clear();
+
+    ShadowCasterVB = GRenderBackend->CreateBuffer( this );
+    ShadowCasterIB = GRenderBackend->CreateBuffer( this );
+}
+
+ALevel::~ALevel() {
+    Purge();
+
+    GRenderBackend->DestroyBuffer( ShadowCasterVB );
+    GRenderBackend->DestroyBuffer( ShadowCasterIB );
 }
 
 void ALevel::OnAddLevelToWorld() {
+    GLogger.Printf( "OnAddLevelToWorld\n" );
 }
 
 void ALevel::OnRemoveLevelFromWorld() {
+    GLogger.Printf( "OnRemoveLevelFromWorld\n" );
 }
 
-int ALevel::AddArea( Float3 const & _Position, Float3 const & _Extents, Float3 const & _ReferencePoint ) {
-
-    SVisArea * area = &Areas.Append();
-
-    memset( area, 0, sizeof( *area ) );
-    area->ReferencePoint = _ReferencePoint;
-    //area->ParentLevel = this;
-    Float3 halfExtents = _Extents * 0.5f;
-    area->Bounds.Mins = _Position - halfExtents;
-    area->Bounds.Maxs = _Position + halfExtents;
-
-    return Areas.Size() - 1;
-}
-
-int ALevel::AddPortal( Float3 const * _HullPoints, int _NumHullPoints, int _Area1, int _Area2 ) {
-    if ( _Area1 == _Area2 ) {
-        return -1;
+void ALevel::Initialize() {
+    // Calc indoor bounding box
+    IndoorBounds.Clear();
+    for ( SVisArea & area : Areas ) {
+        IndoorBounds.AddAABB( area.Bounds );
     }
 
-    SVisPortal * portal = &Portals.Append();
-    portal->Hull = AConvexHull::CreateFromPoints( _HullPoints, _NumHullPoints );
-    portal->Plane = portal->Hull->CalcPlane();
-    portal->Area[0] = _Area1 >= 0 ? &Areas[_Area1] : &OutdoorArea;
-    portal->Area[1] = _Area2 >= 0 ? &Areas[_Area2] : &OutdoorArea;
-    //portal->ParentLevel = this;
+    if ( Worldspawn )
+    {
+        Worldspawn->Destroy();
+    }
 
-    return Portals.Size() - 1;
+    Worldspawn = OwnerWorld->SpawnActor< AWorldspawn >( this );
+
+    ViewMark = 0;
+    ViewCluster = -1;
+
+    if ( bCompressedVisData && Visdata && PVSClustersCount > 0 )
+    {
+        // Allocate decompressed vis data
+        DecompressedVisData = (byte *)HugeAlloc( ( PVSClustersCount + 7 ) >> 3 );
+    }
+
+    // FIXME: Use AVertexMemoryGPU?
+    GRenderBackend->InitializeBuffer( ShadowCasterVB, ShadowCasterVerts.Size() * sizeof( Float3 ) );
+    GRenderBackend->InitializeBuffer( ShadowCasterIB, ShadowCasterIndices.Size() * sizeof( unsigned int ) );
+
+    UploadResourcesGPU();
+}
+
+void ALevel::UploadResourcesGPU() {
+    GRenderBackend->WriteBuffer( ShadowCasterVB, 0, ShadowCasterVerts.Size() * sizeof( Float3 ), ShadowCasterVerts.ToPtr() );
+    GRenderBackend->WriteBuffer( ShadowCasterIB, 0, ShadowCasterIndices.Size() * sizeof( unsigned int ), ShadowCasterIndices.ToPtr() );
 }
 
 void ALevel::Purge() {
@@ -117,24 +140,12 @@ void ALevel::Purge() {
 
     RemovePrimitives();
 
-    if ( Worldspawn )
-    {
-        Worldspawn->Destroy();
-        Worldspawn = nullptr;
-    }
-
     RemoveLightmapUVChannels();
     RemoveVertexLightChannels();
 
-    PurgePortals();
-
     Areas.Free();
 
-    for ( SVisPortal & portal : Portals ) {
-        AConvexHull::Destroy( portal.Hull );
-    }
-
-    Portals.Free();
+    PurgePortals();
 
     Nodes.Free();
 
@@ -163,37 +174,54 @@ void ALevel::Purge() {
     AudioClips.Free();
 
     Lightmaps.Free();
+
+    ShadowCasterVerts.Free();
+    ShadowCasterIndices.Free();
+    // FIXME: free GPU buffers?
+}
+
+void ALevel::DestroyActors() {
+    while ( !Actors.IsEmpty() ) {
+        AActor * actor = Actors.Last();
+        actor->Destroy();
+    }
+    Worldspawn = nullptr;
 }
 
 void ALevel::PurgePortals() {
-    for ( SPortalLink & areaPortal : AreaPortals ) {
-        AConvexHull::Destroy( areaPortal.Hull );
+    for ( SPortalLink & portalLink : AreaLinks ) {
+        AConvexHull::Destroy( portalLink.Hull );
     }
 
-    AreaPortals.Free();
+    // Clear area portals
+    for ( SVisArea & area : Areas ) {
+        area.PortalList = nullptr;
+    }
+
+    AreaLinks.Free();
+    Portals.Free();
 }
 
-void ALevel::Initialize() {
+void ALevel::CreatePortals( SPortalDef const * InPortals, int InPortalsCount, Float3 const * InHullVertices ) {
+    AConvexHull * hull;
+    PlaneF hullPlane;
+    SPortalLink * portalLink;
+    int portalLinkNum;
 
     PurgePortals();
 
-    IndoorBounds.Clear();
+    Portals.ResizeInvalidate( InPortalsCount );
+    AreaLinks.ResizeInvalidate( Portals.Size() << 1 );
 
-    for ( SVisArea & area : Areas ) {
-        IndoorBounds.AddAABB( area.Bounds );
+    portalLinkNum = 0;
 
-        // Clear area portals
-        area.PortalList = NULL;
-    }
+    for ( int i = 0 ; i < InPortalsCount ; i++ ) {
+        SPortalDef const * def = InPortals + i;
+        SVisPortal & portal = Portals[i];
 
-    AreaPortals.ResizeInvalidate( Portals.Size() << 1 );
-
-    int areaPortalId = 0;
-
-    for ( SVisPortal & portal : Portals ) {
-        SVisArea * a1 = portal.Area[0];
-        SVisArea * a2 = portal.Area[1];
-
+        SVisArea * a1 = def->Areas[0] >= 0 ? &Areas[def->Areas[0]] : &OutdoorArea;
+        SVisArea * a2 = def->Areas[1] >= 0 ? &Areas[def->Areas[1]] : &OutdoorArea;
+#if 0
         if ( a1 == &OutdoorArea ) {
             StdSwap( a1, a2 );
         }
@@ -203,18 +231,22 @@ void ALevel::Initialize() {
 
         // If area position is on back side of plane, then reverse hull vertices and plane
         int id = d < 0.0f;
+#else
+        int id = 0;
+#endif
 
-        SPortalLink * portalLink;
+        hull = AConvexHull::CreateFromPoints( InHullVertices + def->FirstVert, def->NumVerts );
+        hullPlane = hull->CalcPlane();
 
-        portalLink = &AreaPortals[ areaPortalId++ ];
+        portalLink = &AreaLinks[ portalLinkNum++ ];
         portal.Portals[id] = portalLink;
         portalLink->ToArea = a2;
         if ( id & 1 ) {
-            portalLink->Hull = portal.Hull->Reversed();
-            portalLink->Plane = -portal.Plane;
+            portalLink->Hull = hull;
+            portalLink->Plane = hullPlane;
         } else {
-            portalLink->Hull = portal.Hull->Duplicate();
-            portalLink->Plane = portal.Plane;
+            portalLink->Hull = hull->Reversed();
+            portalLink->Plane = -hullPlane;
         }
         portalLink->Next = a1->PortalList;
         portalLink->Portal = &portal;
@@ -222,56 +254,22 @@ void ALevel::Initialize() {
 
         id = ( id + 1 ) & 1;
 
-        portalLink = &AreaPortals[ areaPortalId++ ];
+        portalLink = &AreaLinks[ portalLinkNum++ ];
         portal.Portals[id] = portalLink;
         portalLink->ToArea = a1;
         if ( id & 1 ) {
-            portalLink->Hull = portal.Hull->Reversed();
-            portalLink->Plane = -portal.Plane;
+            portalLink->Hull = hull;
+            portalLink->Plane = hullPlane;
         } else {
-            portalLink->Hull = portal.Hull->Duplicate();
-            portalLink->Plane = portal.Plane;
+            portalLink->Hull = hull->Reversed();
+            portalLink->Plane = -hullPlane;
         }
         portalLink->Next = a2->PortalList;
         portalLink->Portal = &portal;
         a2->PortalList = portalLink;
+
+        portal.bBlocked = false;
     }
-
-    //AddPrimitives();
-
-    if ( Worldspawn )
-    {
-        Worldspawn->Destroy();
-    }
-
-    Worldspawn = OwnerWorld->SpawnActor< AWorldspawn >( this );
-
-    ViewMark = 0;
-    ViewCluster = -1;
-
-    if ( bCompressedVisData && Visdata && PVSClustersCount > 0 )
-    {
-        // Allocate decompressed vis data
-        DecompressedVisData = (byte *)HugeAlloc( ( PVSClustersCount + 7 ) >> 3 );
-    }
-}
-
-ALevel::ALevel() {
-    ViewCluster = -1;
-
-    Float3 extents( CONVEX_HULL_MAX_BOUNDS * 2 );
-
-    memset( &OutdoorArea, 0, sizeof( OutdoorArea ) );
-
-    //OutdoorArea.ParentLevel = this;
-    OutdoorArea.Bounds.Mins = -extents * 0.5f;
-    OutdoorArea.Bounds.Maxs = extents * 0.5f;
-
-    IndoorBounds.Clear();
-}
-
-ALevel::~ALevel() {
-    Purge();
 }
 
 int ALevel::FindLeaf( Float3 const & InPosition ) {
@@ -288,7 +286,7 @@ int ALevel::FindLeaf( Float3 const & InPosition ) {
         d = node->Plane->DistFast( InPosition );
 
         // Choose child
-        nodeIndex = node->ChildrenIdx[ ( d <= 0 ) ];
+        nodeIndex = node->ChildrenIdx[ d <= 0 ];
 
         if ( nodeIndex <= 0 ) {
             // solid if node index == 0 or leaf if node index < 0
@@ -871,7 +869,7 @@ void ALevel::UnlinkPrimitive( SPrimitiveDef * InPrimitive ) {
 ALightmapUV * ALevel::CreateLightmapUVChannel( AIndexedMesh * InSourceMesh ) {
     ALightmapUV * lightmapUV = NewObject< ALightmapUV >();
     lightmapUV->AddRef();
-    lightmapUV->Initialize( InSourceMesh, this, false );
+    lightmapUV->Initialize( InSourceMesh, this );
     LightmapUVs.Append( lightmapUV );
     return lightmapUV;
 }
@@ -887,7 +885,7 @@ void ALevel::RemoveLightmapUVChannels() {
 AVertexLight * ALevel::CreateVertexLightChannel( AIndexedMesh * InSourceMesh ) {
     AVertexLight * vertexLight = NewObject< AVertexLight >();
     vertexLight->AddRef();
-    vertexLight->Initialize( InSourceMesh, this, false );
+    vertexLight->Initialize( InSourceMesh, this );
     VertexLightChannels.Append( vertexLight );
     return vertexLight;
 }
@@ -900,8 +898,103 @@ void ALevel::RemoveVertexLightChannels() {
     VertexLightChannels.Free();
 }
 
+void ALevel::UpdatePrimitiveLinks() {
+    SPrimitiveDef * next;
+
+    // First Pass: remove primitives from the areas
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = primitive->NextUpd )
+    {
+        UnlinkPrimitive( primitive );
+    }
+
+    // Second Pass: add primitive to the areas
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
+    {
+        LinkPrimitive( primitive );
+
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
+    }
+
+    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
+}
+
+void ALevel::MarkPrimitives() {
+    for ( SPrimitiveDef * primitive = PrimitiveList ; primitive ; primitive = primitive->Next ) {
+        MarkPrimitive( primitive );
+    }
+}
+
+void ALevel::UnmarkPrimitives() {
+    SPrimitiveDef * next;
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
+    {
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
+    }
+    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
+}
+
+void ALevel::RemovePrimitives() {
+#if 1
+    SPrimitiveDef * next;
+
+    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
+    {
+        UnlinkPrimitive( primitive );
+
+        next = primitive->NextUpd;
+        primitive->PrevUpd = primitive->NextUpd = nullptr;
+    }
+
+    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
+#else
+    UnmarkPrimitives();
+
+    for ( SPrimitiveDef * primitive = PrimitiveList ; primitive ; primitive = primitive->Next ) {
+        UnlinkPrimitive( primitive );
+    }
+#endif
+}
+
+void ALevel::AddPrimitive( SPrimitiveDef * InPrimitive ) {
+    INTRUSIVE_ADD_UNIQUE( InPrimitive, Next, Prev, PrimitiveList, PrimitiveListTail );
+
+    InPrimitive->bPendingRemove = false;
+
+    MarkPrimitive( InPrimitive );
+}
+
+void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
+    INTRUSIVE_REMOVE( InPrimitive, Next, Prev, PrimitiveList, PrimitiveListTail );
+
+    InPrimitive->bPendingRemove = true;
+
+    MarkPrimitive( InPrimitive );
+}
+
+void ALevel::MarkPrimitive( SPrimitiveDef * InPrimitive ) {
+    INTRUSIVE_ADD_UNIQUE( InPrimitive, NextUpd, PrevUpd, PrimitiveUpdateList, PrimitiveUpdateListTail );
+}
 
 
+AN_CLASS_META( ABrushModel )
+
+void ABrushModel::Purge() {
+    Surfaces.Free();
+
+    Vertices.Free();
+
+    LightmapVerts.Free();
+
+    VertexLight.Free();
+
+    Indices.Free();
+
+    SurfaceMaterials.Free();
+
+    BodyComposition.Clear();
+}
 
 AN_CLASS_META( AWorldspawn )
 
@@ -1008,102 +1101,4 @@ void AWorldspawn::UpdateAmbientVolume( float _TimeStep ) {
             }
         }
     }
-}
-
-void ALevel::UpdatePrimitiveLinks() {
-    SPrimitiveDef * next;
-
-    // First Pass: remove primitives from the areas
-    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = primitive->NextUpd )
-    {
-        UnlinkPrimitive( primitive );
-    }
-
-    // Second Pass: add primitive to the areas
-    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
-    {
-        LinkPrimitive( primitive );
-
-        next = primitive->NextUpd;
-        primitive->PrevUpd = primitive->NextUpd = nullptr;
-    }
-
-    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
-}
-
-void ALevel::MarkPrimitives() {
-    for ( SPrimitiveDef * primitive = PrimitiveList ; primitive ; primitive = primitive->Next ) {
-        MarkPrimitive( primitive );
-    }
-}
-
-void ALevel::UnmarkPrimitives() {
-    SPrimitiveDef * next;
-    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
-    {
-        next = primitive->NextUpd;
-        primitive->PrevUpd = primitive->NextUpd = nullptr;
-    }
-    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
-}
-
-void ALevel::RemovePrimitives() {
-#if 1
-    SPrimitiveDef * next;
-
-    for ( SPrimitiveDef * primitive = PrimitiveUpdateList ; primitive ; primitive = next )
-    {
-        UnlinkPrimitive( primitive );
-
-        next = primitive->NextUpd;
-        primitive->PrevUpd = primitive->NextUpd = nullptr;
-    }
-
-    PrimitiveUpdateList = PrimitiveUpdateListTail = nullptr;
-#else
-    UnmarkPrimitives();
-
-    for ( SPrimitiveDef * primitive = PrimitiveList ; primitive ; primitive = primitive->Next ) {
-        UnlinkPrimitive( primitive );
-    }
-#endif
-}
-
-void ALevel::AddPrimitive( SPrimitiveDef * InPrimitive ) {
-    INTRUSIVE_ADD_UNIQUE( InPrimitive, Next, Prev, PrimitiveList, PrimitiveListTail );
-
-    InPrimitive->bPendingRemove = false;
-
-    MarkPrimitive( InPrimitive );
-}
-
-void ALevel::RemovePrimitive( SPrimitiveDef * InPrimitive ) {
-    INTRUSIVE_REMOVE( InPrimitive, Next, Prev, PrimitiveList, PrimitiveListTail );
-
-    InPrimitive->bPendingRemove = true;
-
-    MarkPrimitive( InPrimitive );
-}
-
-void ALevel::MarkPrimitive( SPrimitiveDef * InPrimitive ) {
-    INTRUSIVE_ADD_UNIQUE( InPrimitive, NextUpd, PrevUpd, PrimitiveUpdateList, PrimitiveUpdateListTail );
-}
-
-
-AN_CLASS_META( ABrushModel )
-
-void ABrushModel::Purge() {
-    Surfaces.Free();
-
-    Vertices.Free();
-
-    LightmapVerts.Free();
-
-    VertexLight.Free();
-
-    Indices.Free();
-
-    SurfaceMaterials.Free();
-
-    BodyComposition.Clear();
 }

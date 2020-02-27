@@ -90,16 +90,17 @@ void AColorPassRenderer::Deinitialize() {
     ColorPass.Deinitialize();
 }
 
-bool AColorPassRenderer::BindMaterial( SRenderInstance const * instance ) {
-    AMaterialGPU * pMaterial = instance->Material;
+bool AColorPassRenderer::BindMaterial( SRenderInstance const * Instance ) {
+    AMaterialGPU * pMaterial = Instance->Material;
     Pipeline * pPipeline;
     Buffer * pSecondVertexBuffer = nullptr;
+    size_t secondBufferOffset = 0;
 
     AN_ASSERT( pMaterial );
 
-    bool bSkinned = instance->SkeletonSize > 0;
-    bool bLightmap = instance->LightmapUVChannel != nullptr && instance->Lightmap;
-    bool bVertexLight = instance->VertexLightChannel != nullptr;
+    bool bSkinned = Instance->SkeletonSize > 0;
+    bool bLightmap = Instance->LightmapUVChannel != nullptr && Instance->Lightmap;
+    bool bVertexLight = Instance->VertexLightChannel != nullptr;
 
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
@@ -107,7 +108,11 @@ bool AColorPassRenderer::BindMaterial( SRenderInstance const * instance ) {
         pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ColorPassSkinned
                              : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ColorPassSimple;
 
-        pSecondVertexBuffer = bSkinned ? GPUBufferHandle( instance->WeightsBuffer ) : nullptr;
+        if ( bSkinned ) {
+            pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
+            secondBufferOffset = Instance->WeightsBufferOffset;
+        }
+
         break;
 
     case MATERIAL_TYPE_PBR:
@@ -117,23 +122,26 @@ bool AColorPassRenderer::BindMaterial( SRenderInstance const * instance ) {
 
             pPipeline = &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassSkinned;
 
-            pSecondVertexBuffer = GPUBufferHandle( instance->WeightsBuffer );
+            pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
+            secondBufferOffset = Instance->WeightsBufferOffset;
 
         } else if ( bLightmap ) {
 
             pPipeline = &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassLightmap;
 
-            pSecondVertexBuffer = GPUBufferHandle( instance->LightmapUVChannel );
+            pSecondVertexBuffer = GPUBufferHandle( Instance->LightmapUVChannel );
+            secondBufferOffset = Instance->LightmapUVOffset;
 
             // lightmap is in last sample
-            GFrameResources.TextureBindings[pMaterial->LightmapSlot].pTexture = GPUTextureHandle( instance->Lightmap );
+            GFrameResources.TextureBindings[pMaterial->LightmapSlot].pTexture = GPUTextureHandle( Instance->Lightmap );
             GFrameResources.SamplerBindings[pMaterial->LightmapSlot].pSampler = LightmapSampler;
 
         } else if ( bVertexLight ) {
 
             pPipeline = &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ColorPassVertexLight;
 
-            pSecondVertexBuffer = GPUBufferHandle( instance->VertexLightChannel );
+            pSecondVertexBuffer = GPUBufferHandle( Instance->VertexLightChannel );
+            secondBufferOffset = Instance->VertexLightOffset;
 
         } else {
 
@@ -152,7 +160,7 @@ bool AColorPassRenderer::BindMaterial( SRenderInstance const * instance ) {
     Cmd.BindPipeline( pPipeline );
 
     // Bind second vertex buffer
-    Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, 0 );
+    Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, secondBufferOffset );
 
     // Set samplers
     if ( pMaterial->bColorPassTextureFetch ) {
@@ -162,7 +170,7 @@ bool AColorPassRenderer::BindMaterial( SRenderInstance const * instance ) {
     }
 
     // Bind vertex and index buffers
-    BindVertexAndIndexBuffers( instance );
+    BindVertexAndIndexBuffers( Instance );
 
     return true;
 }
@@ -224,9 +232,15 @@ void AColorPassRenderer::RenderInstances() {
         }
     }
 
+#if 1
     DrawIndexedCmd drawCmd;
     drawCmd.InstanceCount = 1;
     drawCmd.StartInstanceLocation = 0;
+#else
+    DrawIndexedIndirectCmd drawIndexedIndirectCmd;
+    drawIndexedIndirectCmd.InstanceCount = 1;
+    drawIndexedIndirectCmd.StartInstanceLocation = 0;
+#endif
 
     // Bind cluster index buffer
     GFrameResources.TextureBindings[13].pTexture = &GFrameResources.ClusterItemTBO;
@@ -263,14 +277,66 @@ void AColorPassRenderer::RenderInstances() {
 
         Cmd.BindShaderResources( &GFrameResources.Resources );
 
+#if 1
         drawCmd.IndexCountPerInstance = instance->IndexCount;
         drawCmd.StartIndexLocation = instance->StartIndexLocation;
         drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
         Cmd.Draw( &drawCmd );
+#else
+        drawIndexedIndirectCmd.IndexCountPerInstance = instance->IndexCount;
+        drawIndexedIndirectCmd.StartIndexLocation = instance->StartIndexLocation + instance->IndexBufferOffset / sizeof(unsigned int);//pipeline->IndexBufferTypeSizeOf;
+        drawIndexedIndirectCmd.BaseVertexLocation = instance->BaseVertexLocation;
+
+        Cmd.DrawIndirct( &drawIndexedIndirectCmd );
+#endif
 
         if ( RVRenderSnapshot ) {
             SaveSnapshot(GRenderTarget.GetFramebufferTexture());
+        }
+    }
+
+    int translucentUniformOffset = GRenderView->InstanceCount;
+
+    for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
+        SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
+
+        // Choose pipeline and second vertex buffer
+        if ( !BindMaterial( instance ) ) {
+            continue;
+        }
+
+        // Set material data (textures, uniforms)
+        BindTexturesColorPass( instance->MaterialInstance );
+
+        // Bind skeleton
+        BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
+
+        //// Bind shadow map
+        //GFrameResources.TextureBindings[15].pTexture = &GShadowMapRT.GetTexture();
+        //GFrameResources.SamplerBindings[15].pSampler = GShadowMapPassRenderer.GetShadowDepthSampler();
+
+        // Set instance uniforms
+        SetInstanceUniforms( translucentUniformOffset + i );
+
+        Cmd.BindShaderResources( &GFrameResources.Resources );
+
+#if 1
+        drawCmd.IndexCountPerInstance = instance->IndexCount;
+        drawCmd.StartIndexLocation = instance->StartIndexLocation;
+        drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+
+        Cmd.Draw( &drawCmd );
+#else
+        drawIndexedIndirectCmd.IndexCountPerInstance = instance->IndexCount;
+        drawIndexedIndirectCmd.StartIndexLocation = instance->StartIndexLocation + instance->IndexBufferOffset / sizeof( unsigned int );//pipeline->IndexBufferTypeSizeOf;
+        drawIndexedIndirectCmd.BaseVertexLocation = instance->BaseVertexLocation;
+
+        Cmd.DrawIndirct( &drawIndexedIndirectCmd );
+#endif
+
+        if ( RVRenderSnapshot ) {
+            SaveSnapshot( GRenderTarget.GetFramebufferTexture() );
         }
     }
 

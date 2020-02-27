@@ -43,7 +43,11 @@ public:
     void Deinitialize() override;
 
     void RenderFrame( SRenderFrame * _FrameData ) override;
+    void SwapBuffers() override;
     void WaitGPU() override;
+    void * FenceSync() override;
+    void RemoveSync( void * _Sync ) override;
+    void WaitSync( void * _Sync ) override;
 
     ATextureGPU * CreateTexture( IGPUResourceOwner * _Owner ) override;
     void DestroyTexture( ATextureGPU * _Texture ) override;
@@ -60,20 +64,21 @@ public:
 
     ABufferGPU * CreateBuffer( IGPUResourceOwner * _Owner ) override;
     void DestroyBuffer( ABufferGPU * _Buffer ) override;
-    void InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes, bool _DynamicStorage ) override;
+    void InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) override;
+    void * InitializePersistentMappedBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) override;
     void WriteBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) override;
     void ReadBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) override;
+    void OrphanBuffer( ABufferGPU * _Buffer ) override;
 
     AMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) override;
     void DestroyMaterial( AMaterialGPU * _Material ) override;
     void InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) override;
 
-    size_t AllocateJoints( size_t _JointsCount ) override;
-    void WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) override;
+    //size_t AllocateJoints( size_t _JointsCount ) override;
+    //void WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) override;
 
 private:
     void SetGPUEvent();
-    void SwapBuffers();
     void RenderView( SRenderView * _RenderView );
 
     friend void OpenGL45RenderView( SRenderView * _RenderView );

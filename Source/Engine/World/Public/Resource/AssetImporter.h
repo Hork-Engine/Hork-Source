@@ -200,3 +200,6 @@ private:
     BvAxisAlignedBox m_BindposeBounds;
     AGUID m_SkeletonGUID;
 };
+
+
+bool LoadLWO( IStreamBase & InStream, float InScale, AMaterialInstance * (*GetMaterial)( const char * _Name ), AIndexedMesh ** IndexedMesh );

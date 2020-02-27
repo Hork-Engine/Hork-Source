@@ -37,13 +37,11 @@ SOFTWARE.
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
+#include <Runtime/Public/VertexMemoryGPU.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 #include "VSD.h"
 #include "LightVoxelizer.h"
-
-constexpr int MAX_SURFACE_VERTS = 16384;
-constexpr int MAX_SURFACE_INDICES = 32768;
 
 ARuntimeVariable RVFixFrustumClusters( _CTS( "FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVRenderView( _CTS( "RenderView" ), _CTS( "1" ), VAR_CHEAT );
@@ -69,15 +67,6 @@ struct SShadowInstanceSortFunction {
 
 void ARenderFrontend::Initialize() {
     VSD_Initialize();
-
-    SurfaceMesh = CreateInstanceOf< AIndexedMesh >();
-    SurfaceMesh->Initialize( MAX_SURFACE_VERTS, MAX_SURFACE_INDICES, 1, false, true );
-
-    SurfaceLightmapUV = CreateInstanceOf< ALightmapUV >();
-    SurfaceLightmapUV->Initialize( SurfaceMesh, nullptr, true );
-
-    SurfaceVertexLight = CreateInstanceOf< AVertexLight >();
-    SurfaceVertexLight->Initialize( SurfaceMesh, nullptr, true );
 }
 
 void ARenderFrontend::Deinitialize() {
@@ -87,9 +76,7 @@ void ARenderFrontend::Deinitialize() {
     VisPrimitives.Free();
     VisSurfaces.Free();
 
-    SurfaceMesh.Reset();
-    SurfaceLightmapUV.Reset();
-    SurfaceVertexLight.Reset();
+    DebugDraw.Free();
 }
 
 void ARenderFrontend::Render( ACanvas * InCanvas ) {
@@ -117,10 +104,12 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData->CanvasHeight = InCanvas->Height;
     FrameData->NumViews = NumViewports;
     FrameData->Instances.Clear();
+    FrameData->TranslucentInstances.Clear();
     FrameData->ShadowInstances.Clear();
     FrameData->DirectionalLights.Clear();
     //FrameData->Lights.Clear();
     FrameData->ShadowCascadePoolSize = 0;
+    FrameData->StreamBuffer = GStreamedMemoryGPU.GetBufferGPU();
 
     DebugDraw.Reset();
 
@@ -136,12 +125,40 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
                  FrameData->Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
                  InstanceSortFunction );
 
+        StdSort( FrameData->TranslucentInstances.Begin() + view->FirstTranslucentInstance,
+                 FrameData->TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
+                 InstanceSortFunction );
+
         StdSort( FrameData->ShadowInstances.Begin() + view->FirstShadowInstance,
                  FrameData->ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
                  ShadowInstanceSortFunction );
 
     }
     //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData->Instances.Size() + FrameData->ShadowInstances.Size() );
+
+
+    if ( DebugDraw.CommandsCount() > 0 ) {
+        FrameData->DbgCmds = DebugDraw.GetCmds().ToPtr();
+        FrameData->DbgVertexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
+        FrameData->DbgIndexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned int ), DebugDraw.GetIndices().ToPtr() );
+    }
+
+
+    //    int vertexCount = GFrameData->DbgVertices.Size();
+    //    int indexCount = GFrameData->DbgIndices.Size();
+    //    if ( VertexBufferSize < vertexCount ) {
+    //        VertexBufferSize = vertexCount;
+    //        VertexBuffer.Realloc( VertexBufferSize * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
+    //    } else {
+    //        VertexBuffer.WriteRange( 0, vertexCount * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
+    //    }
+    //    if ( IndexBufferSize < indexCount ) {
+    //        IndexBufferSize = indexCount;
+    //        IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
+    //    } else {
+    //        IndexBuffer.WriteRange( 0, indexCount * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
+    //    }
+
 
     Stat.FrontendTime = GRuntime.SysMilliseconds() - Stat.FrontendTime;
 
@@ -202,12 +219,12 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->NumCascadedShadowMaps = 0;
     view->FirstInstance = FrameData->Instances.Size();
     view->InstanceCount = 0;
+    view->FirstTranslucentInstance = FrameData->TranslucentInstances.Size();
+    view->TranslucentInstanceCount = 0;
     view->FirstShadowInstance = FrameData->ShadowInstances.Size();
     view->ShadowInstanceCount = 0;
     view->FirstDirectionalLight = FrameData->DirectionalLights.Size();
     view->NumDirectionalLights = 0;
-    //view->FirstLight = FrameData->Lights.Size();
-    //view->NumLights = 0;
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
 
@@ -219,30 +236,23 @@ void ARenderFrontend::RenderView( int _Index ) {
     {
         world->E_OnPrepareRenderFrontend.Dispatch( camera, FrameNumber );
 
-        SRenderFrontendDef def;
-        def.View = view;
-        def.Frustum = &camera->GetFrustum();
-        def.VisibilityMask = RP ? RP->VisibilityMask : ~0;
-        def.PolyCount = 0;
-        def.ShadowMapPolyCount = 0;
+        RenderDef.FrameNumber = FrameNumber;
+        RenderDef.View = view;
+        RenderDef.Frustum = &camera->GetFrustum();
+        RenderDef.VisibilityMask = RP ? RP->VisibilityMask : ~0;
+        RenderDef.PolyCount = 0;
+        RenderDef.ShadowMapPolyCount = 0;
 
         ARenderWorld & renderWorld = world->GetRenderWorld();
 
-        AddLevelInstances( &renderWorld, &def );
+        AddRenderInstances( &renderWorld );
 
-        {
-            //AScopedTimeCheck TimeCheck( "CreateDirectionalLightCascades" );
+        CreateDirectionalLightCascades( FrameData, view );
 
-            CreateDirectionalLightCascades( FrameData, view );
+        AddDirectionalShadowmapInstances( &renderWorld );
 
-            AddDirectionalShadowmapInstances( &renderWorld, &def );
-        }
-
-
-
-
-        Stat.PolyCount += def.PolyCount;
-        Stat.ShadowMapPolyCount += def.ShadowMapPolyCount;
+        Stat.PolyCount += RenderDef.PolyCount;
+        Stat.ShadowMapPolyCount += RenderDef.ShadowMapPolyCount;
 
         // Generate debug draw commands
         if ( RP && RP->bDrawDebug )
@@ -271,27 +281,12 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
     }
 
     // Copy vertex data
-    drawList->VerticesCount = srcList->VtxBuffer.size();
-    int bytesCount = sizeof( SHUDDrawVert ) * drawList->VerticesCount;
-    drawList->Vertices = ( SHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
-    if ( !drawList->Vertices ) {
-        return;
-    }
-    memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
-
-    // Copy index data
-    drawList->IndicesCount = srcList->IdxBuffer.size();
-    bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
-    drawList->Indices = ( unsigned short * )GRuntime.AllocFrameMem( bytesCount );
-    if ( !drawList->Indices ) {
-        return;
-    }
-    memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
+    drawList->VertexStreamOffset = GStreamedMemoryGPU.AllocateVertex( sizeof( SHUDDrawVert ) * srcList->VtxBuffer.Size, srcList->VtxBuffer.Data );
+    drawList->IndexStreamOffset = GStreamedMemoryGPU.AllocateIndex( sizeof( unsigned short ) * srcList->IdxBuffer.Size, srcList->IdxBuffer.Data );
 
     // Allocate commands
     drawList->CommandsCount = srcList->CmdBuffer.size();
-    bytesCount = sizeof( SHUDDrawCmd ) * drawList->CommandsCount;
-    drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
+    drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( sizeof( SHUDDrawCmd ) * drawList->CommandsCount );
     if ( !drawList->Commands ) {
         return;
     }
@@ -389,7 +384,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
             }
 
             // Update material frame data
-            dstCmd->MaterialFrameData = materialInstance->RenderFrontend_Update( FrameNumber );
+            dstCmd->MaterialFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
             if ( !dstCmd->MaterialFrameData )
             {
@@ -563,7 +558,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
                 continue;
             }
 
-            dstCmd->MaterialFrameData = materialInstance->RenderFrontend_Update( FrameNumber );
+            dstCmd->MaterialFrameData = materialInstance->PreRenderUpdate( FrameNumber );
             AN_ASSERT( dstCmd->MaterialFrameData );
 
             dstCmd++;
@@ -595,149 +590,72 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
 
 #endif
 
-void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontendDef * RenderDef )
+void ARenderFrontend::QueryVisiblePrimitives( ARenderWorld * InWorld ) {
+    SVisibilityQuery query;
+
+    for ( int i = 0 ; i < 6 ; i++ ) {
+        query.FrustumPlanes[i] = &(*RenderDef.Frustum)[i];
+    }
+    query.ViewPosition = RenderDef.View->ViewPosition;
+    query.ViewRightVec = RenderDef.View->ViewRightVec;
+    query.ViewUpVec = RenderDef.View->ViewUpVec;
+    query.VisibilityMask = RenderDef.VisibilityMask;
+    query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;// | VSD_QUERY_MASK_SHADOW_CAST;
+
+    VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
+}
+
+void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 {
+    AScopedTimeCheck TimeCheck( "AddRenderInstances" );
+
     SRenderFrame * frameData = GRuntime.GetFrameData();
-    SRenderView * view = RenderDef->View;
+    SRenderView * view = RenderDef.View;
+    ADrawable * drawable;
+    ABaseLightComponent * light;
 
-    {
-        AScopedTimeCheck TimeCheck( "VSD_QueryVisiblePrimitives & AddDrawable" );
+    Lights.Clear();
 
-        SVisibilityQuery query;
+    QueryVisiblePrimitives( InWorld  );
 
-        for ( int i = 0 ; i < 6 ; i++ ) {
-            query.FrustumPlanes[i] = &(*RenderDef->Frustum)[i];
-        }
-        query.ViewPosition = RenderDef->View->ViewPosition;
-        query.ViewRightVec = RenderDef->View->ViewRightVec;
-        query.ViewUpVec = RenderDef->View->ViewUpVec;
-        query.VisibilityMask = RenderDef->VisibilityMask;
-        query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;// | VSD_QUERY_MASK_SHADOW_CAST;
+    for ( SPrimitiveDef * primitive : VisPrimitives ) {
 
-        VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
+        // TODO: Replace upcasting by something better (virtual function?)
 
-        AMeshComponent * mesh;
-        ABrushComponent * brush;
-        ABaseLightComponent * light;
-
-        Lights.Clear();
-
-        for ( SPrimitiveDef * primitive : VisPrimitives ) {
-
-            // TODO: Replace upcasting by something better (virtual function?)
-
-            //primitive->Owner->OnBecameVisible();
-
-            if ( nullptr != (mesh = Upcast< AMeshComponent >( primitive->Owner )) )
-            {
-                if ( RVRenderMeshes )
-                {
-                    if ( mesh->HasPreRenderUpdate() ) {
-                        mesh->OnPreRenderUpdate( RenderDef );
-                    }
-
-                    AddMesh( RenderDef, mesh );
-                }
-            }
-            else if ( nullptr != (brush = Upcast< ABrushComponent >( primitive->Owner )) )
-            {
-                if ( brush->HasPreRenderUpdate() ) {
-                    brush->OnPreRenderUpdate( RenderDef );
-                }
-
-                ABrushModel * model = brush->GetModel();
-
-                for ( int i = 0 ; i < brush->NumSurfaces ; i++ ) {
-
-                    // TODO: Cull surface?
-
-                    SSurfaceDef * surf = &model->Surfaces[brush->FirstSurface + i];
-
-                    surf->VisPass = VisPass;
-
-                    VisSurfaces.Append( surf );
-                }
-            }
-            else if ( nullptr != (light = Upcast< ABaseLightComponent >( primitive->Owner )) )
-            {
-                Lights.Append( light );
-            }
-            else
-            {
-                GLogger.Printf( "Unknown drawable class\n" );
-            }
-
-            // TODO: Add other drawables (Sprite, ...)
+        if ( nullptr != (drawable = Upcast< ADrawable >( primitive->Owner )) ) {
+            AddDrawable( drawable );
+            continue;
         }
 
-        if ( RVRenderSurfaces && !VisSurfaces.IsEmpty() ) {
-            struct SSortFunction {
-                bool operator() ( SSurfaceDef const * _A, SSurfaceDef const * _B ) {
-                    return ( _A->SortKey < _B->SortKey );
-                }
-            } SortFunction;
-
-            StdSort( VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction );
-
-            int totalVerts = 0;
-            int totalIndices = 0;
-            for ( int i = 0 ; i < VisSurfaces.Size() ; i++ ) {
-                SSurfaceDef const * surfDef = VisSurfaces[i];
-
-                totalVerts += surfDef->NumVertices;
-                totalIndices += surfDef->NumIndices;
-            }
-
-            if ( totalVerts > SurfaceMesh->GetVertexCount()
-                 || totalIndices > SurfaceMesh->GetIndexCount() ) {
-                // Rallocate mesh
-
-                const int GRANULARITY = 1024;
-
-                int mod;
-
-                mod = totalVerts % GRANULARITY;
-                totalVerts = mod ? totalVerts + GRANULARITY - mod : totalVerts;
-
-                mod = totalIndices % GRANULARITY;
-                totalIndices = mod ? totalIndices + GRANULARITY - mod : totalIndices;
-
-                totalVerts = Math::Max( totalVerts, SurfaceMesh->GetVertexCount() );
-                totalIndices = Math::Max( totalIndices, SurfaceMesh->GetIndexCount() );
-
-                GLogger.Printf( "Reallocating surface mesh %d verts %d indices\n", totalVerts, totalIndices );
-
-                SurfaceMesh->Initialize( totalVerts, totalIndices, 1, false, true );
-                SurfaceVertexLight->Initialize( SurfaceMesh, nullptr, true );
-                SurfaceLightmapUV->Initialize( SurfaceMesh, nullptr, true );
-            }
-
-            numVerts = 0;
-            numIndices = 0;
-
-            AddSurfaces( RenderDef, VisSurfaces.ToPtr(), VisSurfaces.Size() );
-
-            AN_ASSERT( numVerts <= SurfaceMesh->GetVertexCount() );
-            AN_ASSERT( numIndices <= SurfaceMesh->GetIndexCount() );
-
-            if ( numVerts > 0 ) {
-                SurfaceMesh->SendVertexDataToGPU( numVerts, 0 );
-                SurfaceMesh->SendIndexDataToGPU( numIndices, 0 );
-                SurfaceLightmapUV->SendVertexDataToGPU( numVerts, 0 );
-                SurfaceVertexLight->SendVertexDataToGPU( numVerts, 0 );
-            }
+        if ( nullptr != (light = Upcast< ABaseLightComponent >( primitive->Owner )) ) {
+            Lights.Append( light );
+            continue;
         }
+
+        GLogger.Printf( "Unhandles primitive\n" );
+    }
+
+    if ( RVRenderSurfaces && !VisSurfaces.IsEmpty() ) {
+        struct SSortFunction {
+            bool operator() ( SSurfaceDef const * _A, SSurfaceDef const * _B ) {
+                return (_A->SortKey < _B->SortKey);
+            }
+        } SortFunction;
+
+        StdSort( VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction );
+
+        AddSurfaces( VisSurfaces.ToPtr(), VisSurfaces.Size() );
     }
 
     // Add directional lights
-    for ( ADirectionalLightComponent * light = InWorld->GetDirectionalLights() ; light ; light = light->GetNext() ) {
+    for ( ADirectionalLightComponent * dirlight = InWorld->GetDirectionalLights() ; dirlight ; dirlight = dirlight->GetNext() ) {
 
         if ( view->NumDirectionalLights > MAX_DIRECTIONAL_LIGHTS ) {
             GLogger.Printf( "MAX_DIRECTIONAL_LIGHTS hit\n" );
             break;
         }
 
-        if ( !light->IsEnabled() ) {
+        if ( !dirlight->IsEnabled() ) {
             continue;
         }
 
@@ -748,13 +666,13 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
 
         frameData->DirectionalLights.Append( lightDef );
 
-        lightDef->ColorAndAmbientIntensity = light->GetEffectiveColor();
-        lightDef->Matrix = light->GetWorldRotation().ToMatrix();
-        lightDef->MaxShadowCascades = light->GetMaxShadowCascades();
-        lightDef->RenderMask = ~0;//light->RenderingGroup;
+        lightDef->ColorAndAmbientIntensity = dirlight->GetEffectiveColor();
+        lightDef->Matrix = dirlight->GetWorldRotation().ToMatrix();
+        lightDef->MaxShadowCascades = dirlight->GetMaxShadowCascades();
+        lightDef->RenderMask = ~0;//dirlight->RenderingGroup;
         lightDef->NumCascades = 0;  // this will be calculated later
         lightDef->FirstCascade = 0; // this will be calculated later
-        lightDef->bCastShadow = light->bCastShadow;
+        lightDef->bCastShadow = dirlight->bCastShadow;
 
         view->NumDirectionalLights++;
     }
@@ -765,152 +683,604 @@ void ARenderFrontend::AddLevelInstances( ARenderWorld * InWorld, SRenderFrontend
     }
 }
 
-void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld, SRenderFrontendDef * RenderDef ) {
-    SRenderFrame * frameData = GRuntime.GetFrameData();
+void ARenderFrontend::AddDrawable( ADrawable * InComponent ) {
+    switch ( InComponent->GetDrawableType() ) {
+    case DRAWABLE_STATIC_MESH:
+        AddStaticMesh( static_cast< AMeshComponent * >(InComponent) );
+        break;
+    case DRAWABLE_SKINNED_MESH:
+        AddSkinnedMesh( static_cast< ASkinnedComponent * >(InComponent) );
+        break;
+    case DRAWABLE_PROCEDURAL_MESH:
+        AddProceduralMesh( static_cast< AProceduralMeshComponent * >(InComponent) );
+        break;
+    default:
+        break;
+    }
+}
 
-    if ( !RenderDef->View->NumShadowMapCascades ) {
+void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
+    AIndexedMesh * mesh = InComponent->GetMesh();
+
+    if ( !RVRenderMeshes ) {
         return;
     }
 
-    // TODO: Add shadow surfaces
+    InComponent->PreRenderUpdate( &RenderDef );
 
-    // Create shadow instances
+    Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
 
-    for ( AMeshComponent * component = InWorld->GetShadowCasters() ; component ; component = component->GetNextShadowCaster() ) {
+    Float4x4 instanceMatrix = RenderDef.View->ModelviewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
 
-        // TODO: Perform culling for each shadow cascade, set CascadeMask
+    ALevel * level = InComponent->GetLevel();
 
-        if ( (component->GetVisibilityGroup() & RenderDef->VisibilityMask) == 0 ) {
+    AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+
+    bool bHasLightmap = InComponent->LightmapUVChannel
+            && InComponent->LightmapBlock >= 0
+            && InComponent->LightmapBlock < level->Lightmaps.Size();
+
+    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+
+        AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+
+        AMaterialInstance * materialInstance = InComponent->GetMaterialInstance( subpartIndex );
+        AN_ASSERT( materialInstance );
+
+        AMaterial * material = materialInstance->GetMaterial();
+
+        SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
+
+        // Add render instance
+        SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
+        if ( !instance ) {
+            return;
+        }
+
+        if ( material->IsTranslucent() ) {
+            GRuntime.GetFrameData()->TranslucentInstances.Append( instance );
+            RenderDef.View->TranslucentInstanceCount++;
+        } else {
+            GRuntime.GetFrameData()->Instances.Append( instance );
+            RenderDef.View->InstanceCount++;
+        }
+
+        instance->Material = material->GetGPUResource();
+        instance->MaterialInstance = materialInstanceFrameData;
+
+        mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
+        mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
+        mesh->GetWeightsBufferGPU( &instance->WeightsBuffer, &instance->WeightsBufferOffset );
+
+        if ( bHasLightmap ) {
+            InComponent->LightmapUVChannel->GetVertexBufferGPU( &instance->LightmapUVChannel, &instance->LightmapUVOffset );
+            instance->LightmapOffset = InComponent->LightmapOffset;
+            instance->Lightmap = level->Lightmaps[InComponent->LightmapBlock]->GetGPUResource();
+        } else {
+            instance->LightmapUVChannel = nullptr;
+            instance->Lightmap = nullptr;
+        }
+
+        if ( InComponent->VertexLightChannel ) {
+            InComponent->VertexLightChannel->GetVertexBufferGPU( &instance->VertexLightChannel, &instance->VertexLightOffset );
+        } else {
+            instance->VertexLightChannel = nullptr;
+        }
+
+        instance->IndexCount = subpart->GetIndexCount();
+        instance->StartIndexLocation = subpart->GetFirstIndex();
+        instance->BaseVertexLocation = subpart->GetBaseVertex() + InComponent->SubpartBaseVertexOffset;
+        instance->SkeletonOffset = 0;
+        instance->SkeletonSize = 0;
+        instance->Matrix = instanceMatrix;
+
+        if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
+            instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
+        }
+
+        // Generate sort key.
+        // NOTE: 8 bits are still unused. We can use it in future.
+        instance->SortKey =
+            ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh/*instance->VertexBuffer*/ ) & 0xffffu) << 8u);
+
+        RenderDef.PolyCount += instance->IndexCount / 3;
+    }
+}
+
+void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
+    AIndexedMesh * mesh = InComponent->GetMesh();
+
+    if ( !RVRenderMeshes ) {
+        return;
+    }
+
+    InComponent->PreRenderUpdate( &RenderDef );
+
+    size_t skeletonOffset = 0;
+    size_t skeletonSize = 0;
+
+    InComponent->GetSkeletonHandle( skeletonOffset, skeletonSize );
+
+    Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
+
+    Float4x4 instanceMatrix = RenderDef.View->ModelviewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
+
+    AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+
+    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+
+        AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+
+        AMaterialInstance * materialInstance = InComponent->GetMaterialInstance( subpartIndex );
+        AN_ASSERT( materialInstance );
+
+        AMaterial * material = materialInstance->GetMaterial();
+
+        SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
+
+        // Add render instance
+        SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
+        if ( !instance ) {
+            return;
+        }
+
+        if ( material->IsTranslucent() ) {
+            GRuntime.GetFrameData()->TranslucentInstances.Append( instance );
+            RenderDef.View->TranslucentInstanceCount++;
+        } else {
+            GRuntime.GetFrameData()->Instances.Append( instance );
+            RenderDef.View->InstanceCount++;
+        }
+
+        instance->Material = material->GetGPUResource();
+        instance->MaterialInstance = materialInstanceFrameData;
+        //instance->VertexBuffer = mesh->GetVertexBufferGPU();
+        //instance->IndexBuffer = mesh->GetIndexBufferGPU();
+        //instance->WeightsBuffer = mesh->GetWeightsBufferGPU();
+
+        mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
+        mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
+        mesh->GetWeightsBufferGPU( &instance->WeightsBuffer, &instance->WeightsBufferOffset );
+
+        instance->LightmapUVChannel = nullptr;
+        instance->Lightmap = nullptr;
+        instance->VertexLightChannel = nullptr;
+        instance->IndexCount = subpart->GetIndexCount();
+        instance->StartIndexLocation = subpart->GetFirstIndex();
+        instance->BaseVertexLocation = subpart->GetBaseVertex();
+        instance->SkeletonOffset = skeletonOffset;
+        instance->SkeletonSize = skeletonSize;
+        instance->Matrix = instanceMatrix;
+
+        if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
+            instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
+        }
+
+        // Generate sort key.
+        // NOTE: 8 bits are still unused. We can use it in future.
+        instance->SortKey =
+            ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh/*instance->VertexBuffer*/ ) & 0xffffu) << 8u);
+
+        RenderDef.PolyCount += instance->IndexCount / 3;
+    }
+}
+
+void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent ) {
+    // TODO
+
+    if ( !RVRenderMeshes ) {
+        return;
+    }
+
+    InComponent->PreRenderUpdate( &RenderDef );
+
+    AProceduralMesh * mesh = InComponent->GetMesh();
+
+    if ( !mesh ) {
+        return;
+    }
+
+    mesh->PreRenderUpdate( &RenderDef );
+
+    if ( mesh->IndexCache.IsEmpty() ) {
+        return;
+    }
+
+    Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
+
+    Float4x4 instanceMatrix = RenderDef.View->ModelviewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
+
+    //ALevel * level = InComponent->GetLevel();
+
+    //AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+
+    //bool bHasLightmap = InComponent->LightmapUVChannel
+    //        && InComponent->LightmapBlock >= 0
+    //        && InComponent->LightmapBlock < level->Lightmaps.Size();
+
+//    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+
+//        AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+
+        AMaterialInstance * materialInstance = InComponent->GetMaterialInstance();
+        AN_ASSERT( materialInstance );
+
+        AMaterial * material = materialInstance->GetMaterial();
+
+        SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
+
+        // Add render instance
+        SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
+        if ( !instance ) {
+            return;
+        }
+
+        if ( material->IsTranslucent() ) {
+            GRuntime.GetFrameData()->TranslucentInstances.Append( instance );
+            RenderDef.View->TranslucentInstanceCount++;
+        } else {
+            GRuntime.GetFrameData()->Instances.Append( instance );
+            RenderDef.View->InstanceCount++;
+        }
+
+        instance->Material = material->GetGPUResource();
+        instance->MaterialInstance = materialInstanceFrameData;
+
+        mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
+        mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
+
+        instance->WeightsBuffer = nullptr;
+        instance->WeightsBufferOffset = 0;
+
+        //if ( bHasLightmap ) {
+        //    InComponent->LightmapUVChannel->GetVertexBufferGPU( &instance->LightmapUVChannel, &instance->LightmapUVOffset );
+        //    instance->LightmapOffset = InComponent->LightmapOffset;
+        //    instance->Lightmap = level->Lightmaps[InComponent->LightmapBlock]->GetGPUResource();
+        //} else {
+            instance->LightmapUVChannel = nullptr;
+            instance->Lightmap = nullptr;
+        //}
+
+        //if ( InComponent->VertexLightChannel ) {
+        //    InComponent->VertexLightChannel->GetVertexBufferGPU( &instance->VertexLightChannel, &instance->VertexLightOffset );
+        //} else {
+            instance->VertexLightChannel = nullptr;
+        //}
+
+        instance->IndexCount = mesh->IndexCache.Size();//subpart->GetIndexCount();
+        instance->StartIndexLocation = 0;//subpart->GetFirstIndex();
+        instance->BaseVertexLocation = 0;//subpart->GetBaseVertex() + InComponent->SubpartBaseVertexOffset;
+        instance->SkeletonOffset = 0;
+        instance->SkeletonSize = 0;
+        instance->Matrix = instanceMatrix;
+
+        if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
+            instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
+        }
+
+        // Generate sort key.
+        // NOTE: 8 bits are still unused. We can use it in future.
+        instance->SortKey =
+            ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
+
+        RenderDef.PolyCount += instance->IndexCount / 3;
+
+    //}
+}
+
+void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( AMeshComponent * InComponent ) {
+    if ( !RVRenderMeshes ) {
+        return;
+    }
+
+    SRenderFrame * frameData = GRuntime.GetFrameData();
+
+    InComponent->PreRenderUpdate( &RenderDef );
+
+    AIndexedMesh * mesh = InComponent->GetMesh();
+
+    Float3x4 const & instanceMatrix = InComponent->GetWorldTransformMatrix();
+
+    AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+
+    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+
+        // FIXME: check subpart bounding box here
+
+        AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+
+        AMaterialInstance * materialInstance = InComponent->GetMaterialInstance( subpartIndex );
+        AN_ASSERT( materialInstance );
+
+        AMaterial * material = materialInstance->GetMaterial();
+
+        // Prevent rendering of instances with disabled shadow casting
+        if ( material->GetGPUResource()->bNoCastShadow ) {
             continue;
         }
 
-        AIndexedMesh * mesh = component->GetMesh();
+        SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
-        size_t skeletonOffset = 0;
-        size_t skeletonSize = 0;
-        if ( mesh->IsSkinned() && component->IsSkinnedMesh() ) {
-            ASkinnedComponent * skeleton = static_cast< ASkinnedComponent * >(component);
-            skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize, frameData->FrameNumber );
+        // Add render instance
+        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+        if ( !instance ) {
+            break;
         }
 
-        Float3x4 const & instanceMatrix = component->GetWorldTransformMatrix();
+        frameData->ShadowInstances.Append( instance );
 
-        AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+        instance->Material = material->GetGPUResource();
+        instance->MaterialInstance = materialInstanceFrameData;
 
-        for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+        mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
+        mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
+        mesh->GetWeightsBufferGPU( &instance->WeightsBuffer, &instance->WeightsBufferOffset );
 
-            // FIXME: check subpart bounding box here
+        instance->IndexCount = subpart->GetIndexCount();
+        instance->StartIndexLocation = subpart->GetFirstIndex();
+        instance->BaseVertexLocation = subpart->GetBaseVertex() + InComponent->SubpartBaseVertexOffset;
+        instance->SkeletonOffset = 0;
+        instance->SkeletonSize = 0;
+        instance->WorldTransformMatrix = instanceMatrix;
+        instance->CascadeMask = 0xffff; // TODO: Calculate!!!
 
-            AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+        // Generate sort key.
+        // NOTE: 8 bits are still unused. We can use it in future.
+        instance->SortKey = ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
 
-            AMaterialInstance * materialInstance = component->GetMaterialInstance( subpartIndex );
-            AN_ASSERT( materialInstance );
+        RenderDef.View->ShadowInstanceCount++;
 
-            AMaterial * material = materialInstance->GetMaterial();
-
-            // Prevent rendering of instances with disabled shadow casting
-            if ( material->GetGPUResource()->bNoCastShadow ) {
-                continue;
-            }
-
-            SMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( FrameNumber );
-
-            // Add render instance
-            SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
-            if ( !instance ) {
-                break;
-            }
-
-            frameData->ShadowInstances.Append( instance );
-
-            instance->Material = material->GetGPUResource();
-            instance->MaterialInstance = materialInstanceFrameData;
-            instance->VertexBuffer = mesh->GetVertexBufferGPU();
-            instance->IndexBuffer = mesh->GetIndexBufferGPU();
-            instance->WeightsBuffer = mesh->GetWeightsBufferGPU();
-
-            if ( component->bUseDynamicRange ) {
-                instance->IndexCount = component->DynamicRangeIndexCount;
-                instance->StartIndexLocation = component->DynamicRangeStartIndexLocation;
-                instance->BaseVertexLocation = component->DynamicRangeBaseVertexLocation;
-            } else {
-                instance->IndexCount = subpart->GetIndexCount();
-                instance->StartIndexLocation = subpart->GetFirstIndex();
-                instance->BaseVertexLocation = subpart->GetBaseVertex() + component->SubpartBaseVertexOffset;
-            }
-
-            instance->SkeletonOffset = skeletonOffset;
-            instance->SkeletonSize = skeletonSize;
-            instance->WorldTransformMatrix = instanceMatrix;
-            instance->CascadeMask = 0xffff; // TODO: Calculate!!!
-
-            // Generate sort key.
-            // NOTE: 8 bits are still unused. We can use it in future.
-            instance->SortKey =   ((uint64_t)(component->RenderingOrder & 0xffu) << 56u)
-                                | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-                                | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-                                | ((uint64_t)(Core::PHHash64( (uint64_t)instance->VertexBuffer ) & 0xffffu) << 8u);
-
-            RenderDef->View->ShadowInstanceCount++;
-
-            RenderDef->ShadowMapPolyCount += instance->IndexCount / 3;
-
-            if ( component->bUseDynamicRange ) {
-                // If component uses dynamic range, mesh has actually one subpart
-                break;
-            }
-        }
+        RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
     }
 }
 
-#ifdef FUTURE
-void AddEnvCapture( AEnvCaptureComponent * component, PlaneF const * _CullPlanes, int _CullPlanesCount ) {
-    if ( component->RenderMark == VisMarker ) {
+void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * InComponent ) {
+    if ( !RVRenderMeshes ) {
         return;
     }
 
-    if ( ( component->RenderingGroup & RP->RenderingLayers ) == 0 ) {
-        component->RenderMark = VisMarker;
-        return;
-    }
+    SRenderFrame * frameData = GRuntime.GetFrameData();
 
-    switch ( component->GetShapeType() ) {
-        case AEnvCaptureComponent::SHAPE_BOX:
-        {
-            // Check OBB ?
-            BvAxisAlignedBox const & bounds = component->GetAABBWorldBounds();
-            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
-                Dbg_CulledByEnvCaptureBounds++;
-                return;
-            }
+    InComponent->PreRenderUpdate( &RenderDef );
+
+    AIndexedMesh * mesh = InComponent->GetMesh();
+
+    size_t skeletonOffset = 0;
+    size_t skeletonSize = 0;
+
+    InComponent->GetSkeletonHandle( skeletonOffset, skeletonSize );
+
+    Float3x4 const & instanceMatrix = InComponent->GetWorldTransformMatrix();
+
+    AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+
+    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+
+        // FIXME: check subpart bounding box here
+
+        AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+
+        AMaterialInstance * materialInstance = InComponent->GetMaterialInstance( subpartIndex );
+        AN_ASSERT( materialInstance );
+
+        AMaterial * material = materialInstance->GetMaterial();
+
+        // Prevent rendering of instances with disabled shadow casting
+        if ( material->GetGPUResource()->bNoCastShadow ) {
+            continue;
+        }
+
+        SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
+
+        // Add render instance
+        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+        if ( !instance ) {
             break;
         }
-        case AEnvCaptureComponent::SHAPE_SPHERE:
-        {
-            BvSphereSSE const & bounds = component->GetSphereWorldBounds();
-            if ( Cull( _CullPlanes, _CullPlanesCount, bounds ) ) {
-                Dbg_CulledByEnvCaptureBounds++;
-                return;
-            }
-            break;
-        }
-        case AEnvCaptureComponent::SHAPE_GLOBAL:
-        {
-            break;
-        }
+
+        frameData->ShadowInstances.Append( instance );
+
+        instance->Material = material->GetGPUResource();
+        instance->MaterialInstance = materialInstanceFrameData;
+
+        mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
+        mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
+        mesh->GetWeightsBufferGPU( &instance->WeightsBuffer, &instance->WeightsBufferOffset );
+
+        instance->IndexCount = subpart->GetIndexCount();
+        instance->StartIndexLocation = subpart->GetFirstIndex();
+        instance->BaseVertexLocation = subpart->GetBaseVertex();
+
+        instance->SkeletonOffset = skeletonOffset;
+        instance->SkeletonSize = skeletonSize;
+        instance->WorldTransformMatrix = instanceMatrix;
+        instance->CascadeMask = 0xffff; // TODO: Calculate!!!
+
+        // Generate sort key.
+        // NOTE: 8 bits are still unused. We can use it in future.
+        instance->SortKey = ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
+
+        RenderDef.View->ShadowInstanceCount++;
+
+        RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
     }
-
-    component->RenderMark = VisMarker;
-
-    if ( component->bPreRenderUpdate ) {
-        component->OnPreRenderUpdate( Camera );
-    }
-
-    // TODO: add to render view
-
-    RV->EnvCaptureCount++;
 }
-#endif
+
+void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshComponent * InComponent ) {
+    // TODO
+
+    if ( !RVRenderMeshes ) {
+        return;
+    }
+
+    InComponent->PreRenderUpdate( &RenderDef );
+
+    AProceduralMesh * mesh = InComponent->GetMesh();
+
+    if ( !mesh ) {
+        return;
+    }
+
+    mesh->PreRenderUpdate( &RenderDef );
+
+    if ( mesh->IndexCache.IsEmpty() ) {
+        return;
+    }
+
+    Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
+
+    //ALevel * level = InComponent->GetLevel();
+
+    //AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+
+    //bool bHasLightmap = InComponent->LightmapUVChannel
+    //        && InComponent->LightmapBlock >= 0
+    //        && InComponent->LightmapBlock < level->Lightmaps.Size();
+
+//    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+
+//        AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+
+        AMaterialInstance * materialInstance = InComponent->GetMaterialInstance();
+        AN_ASSERT( materialInstance );
+
+        AMaterial * material = materialInstance->GetMaterial();
+
+        SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
+
+        // Add render instance
+        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+        if ( !instance ) {
+            return;
+        }
+
+        GRuntime.GetFrameData()->ShadowInstances.Append( instance );
+
+        instance->Material = material->GetGPUResource();
+        instance->MaterialInstance = materialInstanceFrameData;
+
+        mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
+        mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
+
+        instance->WeightsBuffer = nullptr;
+        instance->WeightsBufferOffset = 0;
+
+        instance->IndexCount = mesh->IndexCache.Size();//subpart->GetIndexCount();
+        instance->StartIndexLocation = 0;//subpart->GetFirstIndex();
+        instance->BaseVertexLocation = 0;//subpart->GetBaseVertex() + InComponent->SubpartBaseVertexOffset;
+        instance->SkeletonOffset = 0;
+        instance->SkeletonSize = 0;
+        instance->WorldTransformMatrix = componentWorldTransform;
+        instance->CascadeMask = 0xffff; // TODO: Calculate!!!
+
+        // Generate sort key.
+        // NOTE: 8 bits are still unused. We can use it in future.
+        instance->SortKey =
+            ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
+            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
+
+        RenderDef.View->ShadowInstanceCount++;
+
+        RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+
+    //}
+}
+
+void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld ) {
+    SRenderFrame * frameData = GRuntime.GetFrameData();
+
+    if ( !RenderDef.View->NumShadowMapCascades ) {
+        return;
+    }
+
+    // Create shadow instances
+
+    for ( ADrawable * component = InWorld->GetShadowCasters() ; component ; component = component->GetNextShadowCaster() ) {
+
+        // TODO: Perform culling for each shadow cascade, set CascadeMask
+
+        if ( (component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0 ) {
+            continue;
+        }
+
+        switch ( component->GetDrawableType() ) {
+        case DRAWABLE_STATIC_MESH:
+            AddDirectionalShadowmap_StaticMesh( static_cast< AMeshComponent * >( component ) );
+            break;
+        case DRAWABLE_SKINNED_MESH:
+            AddDirectionalShadowmap_SkinnedMesh( static_cast< ASkinnedComponent * >(component) );
+            break;
+        case DRAWABLE_PROCEDURAL_MESH:
+            AddDirectionalShadowmap_ProceduralMesh( static_cast< AProceduralMeshComponent * >(component) );
+            break;
+        default:
+            break;
+        }
+    }
+
+    // Add static shadow casters
+    AWorld * world = InWorld->GetOwnerWorld();
+    for ( ALevel * level : world->GetArrayOfLevels() ) {
+
+        // TODO: Perform culling for each shadow cascade, set CascadeMask
+
+        if ( level->ShadowCasterVerts.IsEmpty() ) {
+            continue;
+        }
+
+        // Add render instance
+        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+        if ( !instance ) {
+            break;
+        }
+
+        frameData->ShadowInstances.Append( instance );
+
+        instance->Material = nullptr;
+        instance->MaterialInstance = nullptr;
+        instance->VertexBuffer = level->GetShadowCasterVB();
+        instance->VertexBufferOffset = 0;
+        instance->IndexBuffer = level->GetShadowCasterIB();
+        instance->IndexBufferOffset = 0;
+        instance->WeightsBuffer = nullptr;
+        instance->WeightsBufferOffset = 0;
+        instance->IndexCount = level->ShadowCasterIndices.Size();
+        instance->StartIndexLocation = 0;
+        instance->BaseVertexLocation = 0;
+        instance->SkeletonOffset = 0;
+        instance->SkeletonSize = 0;
+        instance->WorldTransformMatrix.SetIdentity();
+        instance->CascadeMask = 0xffff; // TODO: Calculate!!!
+
+        // Generate sort key.
+        // NOTE: 8 bits are still unused. We can use it in future.
+        instance->SortKey = 0;/*  ((uint64_t)(component->RenderingOrder & 0xffu) << 56u)
+                            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
+                            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
+                            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->VertexBuffer ) & 0xffffu) << 8u);*/
+
+        RenderDef.View->ShadowInstanceCount++;
+
+        RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+    }
+}
 
 AN_FORCEINLINE bool CanMergeSurfaces( SSurfaceDef const * InFirst, SSurfaceDef const * InSecond ) {
     return (    InFirst->Model->Id == InSecond->Model->Id
@@ -919,17 +1289,38 @@ AN_FORCEINLINE bool CanMergeSurfaces( SSurfaceDef const * InFirst, SSurfaceDef c
              && InFirst->RenderingOrder == InSecond->RenderingOrder );
 }
 
-void ARenderFrontend::AddSurfaces( SRenderFrontendDef * RenderDef, SSurfaceDef * const * Surfaces, int SurfaceCount ) {
-    int batchFirstIndex = numIndices;
-
-    SMeshVertex * dstVerts = SurfaceMesh->GetVertices();
-    SMeshVertexUV * dstLM = SurfaceLightmapUV->GetVertices();
-    SMeshVertexLight * dstVL = SurfaceVertexLight->GetVertices();
-    unsigned int * dstIndices = SurfaceMesh->GetIndices() + numIndices;
-
+void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCount ) {
     if ( !SurfaceCount ) {
         return;
     }
+
+    int totalVerts = 0;
+    int totalIndices = 0;
+    for ( int i = 0 ; i < VisSurfaces.Size() ; i++ ) {
+        SSurfaceDef const * surfDef = VisSurfaces[i];
+
+        totalVerts += surfDef->NumVertices;
+        totalIndices += surfDef->NumIndices;
+    }
+
+    if ( totalVerts == 0 || totalIndices < 3 ) {
+        // Degenerate surfaces
+        return;
+    }
+
+    SurfaceStream.VertexAddr = GStreamedMemoryGPU.AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
+    SurfaceStream.VertexLightAddr = GStreamedMemoryGPU.AllocateVertex( totalVerts * sizeof( SMeshVertexLight ), nullptr );
+    SurfaceStream.VertexUVAddr = GStreamedMemoryGPU.AllocateVertex( totalVerts * sizeof( SMeshVertexUV ), nullptr );
+    SurfaceStream.IndexAddr = GStreamedMemoryGPU.AllocateIndex( totalIndices * sizeof( unsigned int ), nullptr );
+
+    SMeshVertex * vertices = (SMeshVertex *)GStreamedMemoryGPU.Map( SurfaceStream.VertexAddr );
+    SMeshVertexLight * vertexLight = (SMeshVertexLight *)GStreamedMemoryGPU.Map( SurfaceStream.VertexLightAddr );
+    SMeshVertexUV * vertexUV = (SMeshVertexUV *)GStreamedMemoryGPU.Map( SurfaceStream.VertexUVAddr );
+    unsigned int * indices = (unsigned int *)GStreamedMemoryGPU.Map( SurfaceStream.IndexAddr );
+
+    int numVerts = 0;
+    int numIndices = 0;
+    int firstIndex = 0;
 
     SSurfaceDef const * merge = Surfaces[0];
     ABrushModel const * model = merge->Model;
@@ -940,17 +1331,16 @@ void ARenderFrontend::AddSurfaces( SRenderFrontendDef * RenderDef, SSurfaceDef *
         if ( !CanMergeSurfaces( merge, surfDef ) ) {
 
             // Flush merged surfaces
-            AddSurface( RenderDef,
-                        model->ParentLevel,
+            AddSurface( model->ParentLevel,
                         model->SurfaceMaterials[merge->MaterialIndex],
                         merge->LightmapBlock,
-                        numIndices - batchFirstIndex,
-                        batchFirstIndex,
+                        numIndices - firstIndex,
+                        firstIndex,
                         merge->RenderingOrder );
 
             merge = surfDef;
             model = merge->Model;
-            batchFirstIndex = numIndices;
+            firstIndex = numIndices;
         }
 
         SMeshVertex const * srcVerts = model->Vertices.ToPtr() + surfDef->FirstVertex;
@@ -958,43 +1348,38 @@ void ARenderFrontend::AddSurfaces( SRenderFrontendDef * RenderDef, SSurfaceDef *
         SMeshVertexLight const * srcVL = model->VertexLight.ToPtr() + surfDef->FirstVertex;
         unsigned int const * srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
 
-        // NOTE: Here we can do a beautiful things, e.g. CPU subdivision for bezier surfaces, texcoord and vertex deformation
+        // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
 
         AN_ASSERT( surfDef->FirstVertex + surfDef->NumVertices <= model->VertexLight.Size() );
         AN_ASSERT( surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size() );
 
-        {
-            memcpy( dstVerts + numVerts, srcVerts, sizeof( SMeshVertex ) * surfDef->NumVertices );
-            memcpy( dstLM    + numVerts, srcLM   , sizeof( SMeshVertexUV ) * surfDef->NumVertices );
-            memcpy( dstVL    + numVerts, srcVL   , sizeof( SMeshVertexLight ) * surfDef->NumVertices );
+        memcpy( vertices    + numVerts, srcVerts, sizeof( SMeshVertex ) * surfDef->NumVertices );
+        memcpy( vertexUV    + numVerts, srcLM   , sizeof( SMeshVertexUV ) * surfDef->NumVertices );
+        memcpy( vertexLight + numVerts, srcVL   , sizeof( SMeshVertexLight ) * surfDef->NumVertices );
 
-            for ( int ind = 0 ; ind < surfDef->NumIndices ; ind++ ) {
-                *dstIndices++ = numVerts + srcIndices[ind];
-            }
-
-            numVerts += surfDef->NumVertices;
-            numIndices += surfDef->NumIndices;
+        for ( int ind = 0 ; ind < surfDef->NumIndices ; ind++ ) {
+            *indices++ = numVerts + srcIndices[ind];
         }
+
+        numVerts += surfDef->NumVertices;
+        numIndices += surfDef->NumIndices;
     }
 
     // Flush merged surfaces
-    AddSurface( RenderDef,
-                model->ParentLevel,
+    AddSurface( model->ParentLevel,
                 model->SurfaceMaterials[merge->MaterialIndex],
                 merge->LightmapBlock,
-                numIndices - batchFirstIndex,
-                batchFirstIndex,
+                numIndices - firstIndex,
+                firstIndex,
                 merge->RenderingOrder );
+
+    AN_ASSERT( numVerts == totalVerts );
+    AN_ASSERT( numIndices == totalIndices );
 }
 
-void ARenderFrontend::AddSurface( SRenderFrontendDef * RenderDef, ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder ) {
-    AIndexedMesh * mesh = SurfaceMesh;
-    ALightmapUV * lightmapUVChannel = SurfaceLightmapUV;
-    AVertexLight * vertexLightChannel = SurfaceVertexLight;
-
+void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder ) {
     AMaterial * material = MaterialInstance->GetMaterial();
-
-    SMaterialFrameData * materialInstanceFrameData = MaterialInstance->RenderFrontend_Update( FrameNumber );
+    SMaterialFrameData * materialInstanceFrameData = MaterialInstance->PreRenderUpdate( FrameNumber );
 
     // Add render instance
     SRenderInstance * instance = ( SRenderInstance * )GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
@@ -1002,34 +1387,46 @@ void ARenderFrontend::AddSurface( SRenderFrontendDef * RenderDef, ALevel * Level
         return;
     }
 
-    GRuntime.GetFrameData()->Instances.Append( instance );
+    if ( material->IsTranslucent() ) {
+        GRuntime.GetFrameData()->TranslucentInstances.Append( instance );
+        RenderDef.View->TranslucentInstanceCount++;
+    } else {
+        GRuntime.GetFrameData()->Instances.Append( instance );
+        RenderDef.View->InstanceCount++;
+    }
 
     instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
-    instance->VertexBuffer = mesh->GetVertexBufferGPU();
-    instance->IndexBuffer = mesh->GetIndexBufferGPU();
-    instance->WeightsBuffer = mesh->GetWeightsBufferGPU();
+
+    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
+    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );
+
+    instance->WeightsBuffer = nullptr;
+
     instance->LightmapOffset.X = 0;
     instance->LightmapOffset.Y = 0;
     instance->LightmapOffset.Z = 1;
     instance->LightmapOffset.W = 1;
     if ( _LightmapBlock >= 0 && _LightmapBlock < Level->Lightmaps.Size() ) {
         instance->Lightmap = Level->Lightmaps[ _LightmapBlock ]->GetGPUResource();
-        instance->LightmapUVChannel = lightmapUVChannel->GetGPUResource();
+
+        GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.VertexUVAddr, &instance->LightmapUVChannel, &instance->LightmapUVOffset );
     } else {
         instance->Lightmap = nullptr;
         instance->LightmapUVChannel = nullptr;
     }
-    instance->VertexLightChannel = vertexLightChannel->GetGPUResource();
+
+    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.VertexLightAddr, &instance->VertexLightChannel, &instance->VertexLightOffset );
+
     instance->IndexCount = _NumIndices;
     instance->StartIndexLocation = _FirstIndex;
     instance->BaseVertexLocation = 0;
     instance->SkeletonOffset = 0;
     instance->SkeletonSize = 0;
-    instance->Matrix = RenderDef->View->ModelviewProjection;
+    instance->Matrix = RenderDef.View->ModelviewProjection;
 
     if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
-        instance->ModelNormalToViewSpace = RenderDef->View->NormalToViewMatrix;
+        instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix;
     }
 
     // Generate sort key.
@@ -1038,105 +1435,7 @@ void ARenderFrontend::AddSurface( SRenderFrontendDef * RenderDef, ALevel * Level
             ((uint64_t)(_RenderingOrder & 0xffu) << 56u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->VertexBuffer ) & 0xffffu) << 8u);
+            | ((uint64_t)(Core::PHHash64( (uint64_t)SurfaceStream.VertexAddr/*instance->VertexBuffer*/ ) & 0xffffu) << 8u);
 
-    RenderDef->View->InstanceCount++;
-
-    RenderDef->PolyCount += instance->IndexCount / 3;
-}
-
-void ARenderFrontend::AddMesh( SRenderFrontendDef * RenderDef, AMeshComponent * Component ) {
-    AIndexedMesh * mesh = Component->GetMesh();
-
-    size_t skeletonOffset = 0;
-    size_t skeletonSize = 0;
-    if ( mesh->IsSkinned() && Component->IsSkinnedMesh() ) {
-        ASkinnedComponent * skeleton = static_cast< ASkinnedComponent * >( Component );
-        skeleton->UpdateJointTransforms( skeletonOffset, skeletonSize, FrameNumber );
-    }
-
-    Float3x4 const & componentWorldTransform = Component->GetWorldTransformMatrix();
-
-    Float4x4 instanceMatrix = RenderDef->View->ModelviewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
-
-    AActor * actor = Component->GetParentActor();
-    ALevel * level = actor->GetLevel();
-
-    AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
-
-    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
-
-        AIndexedMeshSubpart * subpart = subparts[ subpartIndex ];
-
-        AMaterialInstance * materialInstance = Component->GetMaterialInstance( subpartIndex );
-        AN_ASSERT( materialInstance );
-
-        AMaterial * material = materialInstance->GetMaterial();
-
-        SMaterialFrameData * materialInstanceFrameData = materialInstance->RenderFrontend_Update( FrameNumber );
-
-        // Add render instance
-        SRenderInstance * instance = ( SRenderInstance * )GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
-        if ( !instance ) {
-            return;
-        }
-
-        GRuntime.GetFrameData()->Instances.Append( instance );
-
-        instance->Material = material->GetGPUResource();
-        instance->MaterialInstance = materialInstanceFrameData;
-        instance->VertexBuffer = mesh->GetVertexBufferGPU();
-        instance->IndexBuffer = mesh->GetIndexBufferGPU();
-        instance->WeightsBuffer = mesh->GetWeightsBufferGPU();
-
-        if ( Component->LightmapUVChannel && Component->LightmapBlock >= 0 && Component->LightmapBlock < level->Lightmaps.Size() ) {
-            instance->LightmapUVChannel = Component->LightmapUVChannel->GetGPUResource();
-            instance->LightmapOffset = Component->LightmapOffset;
-            instance->Lightmap = level->Lightmaps[ Component->LightmapBlock ]->GetGPUResource();
-        } else {
-            instance->LightmapUVChannel = nullptr;
-            instance->Lightmap = nullptr;
-        }
-
-        if ( Component->VertexLightChannel ) {
-            instance->VertexLightChannel = Component->VertexLightChannel->GetGPUResource();
-        } else {
-            instance->VertexLightChannel = nullptr;
-        }
-
-        if ( Component->bUseDynamicRange ) {
-            instance->IndexCount = Component->DynamicRangeIndexCount;
-            instance->StartIndexLocation = Component->DynamicRangeStartIndexLocation;
-            instance->BaseVertexLocation = Component->DynamicRangeBaseVertexLocation;
-        } else {
-            instance->IndexCount = subpart->GetIndexCount();
-            instance->StartIndexLocation = subpart->GetFirstIndex();
-            instance->BaseVertexLocation = subpart->GetBaseVertex() + Component->SubpartBaseVertexOffset;
-        }
-
-        instance->SkeletonOffset = skeletonOffset;
-        instance->SkeletonSize = skeletonSize;
-        instance->Matrix = instanceMatrix;
-
-        if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
-            instance->ModelNormalToViewSpace = RenderDef->View->NormalToViewMatrix * Component->GetWorldRotation().ToMatrix();
-        }
-
-        // Generate sort key.
-        // NOTE: 8 bits are still unused. We can use it in future.
-        instance->SortKey =
-                ((uint64_t)(Component->RenderingOrder & 0xffu) << 56u)
-              | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-              | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-              | ((uint64_t)(Core::PHHash64( (uint64_t)instance->VertexBuffer ) & 0xffffu) << 8u);
-
-        RenderDef->View->InstanceCount++;
-
-        RenderDef->PolyCount += instance->IndexCount / 3;
-
-        if ( Component->bUseDynamicRange ) {
-            // If component uses dynamic range, mesh has actually one subpart
-            break;
-        }
-    }
+    RenderDef.PolyCount += instance->IndexCount / 3;
 }

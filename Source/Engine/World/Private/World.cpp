@@ -575,13 +575,13 @@ void AWorld::KickoffPendingKillObjects() {
             actor->IndexInWorldArrayOfActors = -1;
             actor->ParentWorld = nullptr;
 
-            // Remove actor from level array of actors
-            ALevel * level = actor->Level;
-            level->Actors[ actor->IndexInLevelArrayOfActors ] = level->Actors[ level->Actors.Size() - 1 ];
-            level->Actors[ actor->IndexInLevelArrayOfActors ]->IndexInLevelArrayOfActors = actor->IndexInLevelArrayOfActors;
-            level->Actors.RemoveLast();
-            actor->IndexInLevelArrayOfActors = -1;
-            actor->Level = nullptr;
+//            // Remove actor from level array of actors
+//            ALevel * level = actor->Level;
+//            level->Actors[ actor->IndexInLevelArrayOfActors ] = level->Actors[ level->Actors.Size() - 1 ];
+//            level->Actors[ actor->IndexInLevelArrayOfActors ]->IndexInLevelArrayOfActors = actor->IndexInLevelArrayOfActors;
+//            level->Actors.RemoveLast();
+//            actor->IndexInLevelArrayOfActors = -1;
+//            actor->Level = nullptr;
 
             actor->RemoveRef();
 

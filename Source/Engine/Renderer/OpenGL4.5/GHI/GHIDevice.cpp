@@ -53,8 +53,9 @@ Device::Device() {
     TotalStates = 0;
     TotalBuffers = 0;
     TotalTextures = 0;
-    TotalSamplers = 0;
     TotalShaderModules = 0;
+    BufferMemoryAllocated = 0;
+    TextureMemoryAllocated = 0;
 }
 
 Device::~Device() {
@@ -143,6 +144,12 @@ void Device::Initialize( AllocatorCallback const * _Allocator, HashCallback _Has
         UniformBufferOffsetAlignment = 256;
     }
 
+    ShaderStorageBufferOffsetAlignment = GL_GetInteger( GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT );
+    if ( !ShaderStorageBufferOffsetAlignment ) {
+        LogPrintf( "Warning: ShaderStorageBufferOffsetAlignment == 0, using default alignment (256)\n" );
+        ShaderStorageBufferOffsetAlignment = 256;
+    }
+
     MaxBufferBindings[UNIFORM_BUFFER] = GL_GetInteger( GL_MAX_UNIFORM_BUFFER_BINDINGS );
     MaxBufferBindings[SHADER_STORAGE_BUFFER] = GL_GetInteger( GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS );
     MaxBufferBindings[TRANSFORM_FEEDBACK_BUFFER] = GL_GetInteger( GL_MAX_TRANSFORM_FEEDBACK_BUFFERS );
@@ -195,7 +202,6 @@ void Device::Deinitialize() {
     assert( TotalStates == 0 );
     assert( TotalBuffers == 0 );
     assert( TotalTextures == 0 );
-    assert( TotalSamplers == 0 );
     assert( TotalShaderModules == 0 );
 }
 

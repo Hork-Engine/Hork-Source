@@ -78,6 +78,12 @@ public:
 
     Device * GetDevice() { return pDevice; }
 
+    unsigned int GetTotalPipelines() const { return TotalPipelines; }
+    unsigned int GetTotalRenderPasses() const { return TotalRenderPasses; }
+    unsigned int GetTotalFramebuffers() const { return TotalFramebuffers; }
+    unsigned int GetTotalTransformFeedbacks() const { return TotalTransformFeedbacks; }
+    unsigned int GetTotalQueryPools() const { return TotalQueryPools; }
+
 private:
     void PolygonOffsetClampSafe( float _Slope, int _Bias, float _Clamp );
     void PackAlignment( unsigned int _Alignment );

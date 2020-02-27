@@ -449,7 +449,7 @@ struct VertexAttribInfo {
 
 template< typename TString >
 TString ShaderStringForVertexAttribs( VertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs ) {
-    // TODO: modify to compile time?
+    // TODO: modify for compile time?
 
     TString s;
     const char * attribType;

@@ -207,7 +207,8 @@ private:
 
     AWorld * ParentWorld;
 
-    TRef< ALevel > Level;
+    //TRef< ALevel > Level;
+    TWeakRef< ALevel > Level;
 
     //TWeakRef< AActor > Attach; // TODO: Attach actor to another actor
 

@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 
 #include <Runtime/Public/ScopedTimeCheck.h>
+#include <Runtime/Public/VertexMemoryGPU.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
@@ -46,14 +47,11 @@ AN_CLASS_META( ALightmapUV )
 AN_CLASS_META( AVertexLight )
 AN_CLASS_META( ATreeAABB )
 AN_CLASS_META( ASocketDef )
+AN_CLASS_META( AProceduralMesh )
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AIndexedMesh::AIndexedMesh() {
-    VertexBufferGPU = GRenderBackend->CreateBuffer( this );
-    IndexBufferGPU = GRenderBackend->CreateBuffer( this );
-    WeightsBufferGPU = GRenderBackend->CreateBuffer( this );
-
     static TStaticResourceFinder< ASkeleton > SkeletonResource( _CTS( "/Default/Skeleton/Default" ) );
     Skeleton = SkeletonResource.GetObject();
 
@@ -61,40 +59,31 @@ AIndexedMesh::AIndexedMesh() {
 }
 
 AIndexedMesh::~AIndexedMesh() {
-    GRenderBackend->DestroyBuffer( VertexBufferGPU );
-    GRenderBackend->DestroyBuffer( IndexBufferGPU );
-    GRenderBackend->DestroyBuffer( WeightsBufferGPU );
-
     Purge();
 
     AN_ASSERT( LightmapUVs.IsEmpty() );
     AN_ASSERT( VertexLightChannels.IsEmpty() );
 }
 
-void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh, bool _DynamicStorage ) {
+void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh ) {
     Purge();
 
     bSkinnedMesh = _SkinnedMesh;
-    bDynamicStorage = _DynamicStorage;
     bBoundingBoxDirty = true;
     BoundingBox.Clear();
 
     Vertices.ResizeInvalidate( _NumVertices );
-    if ( bSkinnedMesh ) {
-        Weights.ResizeInvalidate( _NumVertices );
-    }
     Indices.ResizeInvalidate( _NumIndices );
 
-    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertex ), bDynamicStorage );
-    GRenderBackend->InitializeBuffer( IndexBufferGPU, Indices.Size() * sizeof( unsigned int ), bDynamicStorage );
+    VertexHandle = GVertexMemoryGPU.AllocateVertex( Vertices.Size() * sizeof( SMeshVertex ), nullptr, GetVertexMemory, this );
+    IndexHandle = GVertexMemoryGPU.AllocateIndex( Indices.Size() * sizeof( unsigned int ), nullptr, GetIndexMemory, this );
 
-    if ( _SkinnedMesh ) {
-        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexSkin ), bDynamicStorage );
+    if ( bSkinnedMesh ) {
+        Weights.ResizeInvalidate( _NumVertices );
+        WeightsHandle = GVertexMemoryGPU.AllocateVertex( Weights.Size() * sizeof( SMeshVertexSkin ), nullptr, GetWeightMemory, this );
     }
 
-    if ( _NumSubparts <= 0 ) {
-        _NumSubparts = 1;
-    }
+    _NumSubparts = _NumSubparts < 1 ? 1 : _NumSubparts;
 
     Subparts.ResizeInvalidate( _NumSubparts );
     for ( int i = 0 ; i < _NumSubparts ; i++ ) {
@@ -139,11 +128,18 @@ void AIndexedMesh::Purge() {
     Vertices.Free();
     Weights.Free();
     Indices.Free();
+
+    GVertexMemoryGPU.Deallocate( VertexHandle );
+    VertexHandle = nullptr;
+
+    GVertexMemoryGPU.Deallocate( IndexHandle );
+    IndexHandle = nullptr;
+
+    GVertexMemoryGPU.Deallocate( WeightsHandle );
+    WeightsHandle = nullptr;
 }
 
 void AIndexedMesh::InvalidateChannels() {
-    //GLogger.Printf( "InvalidateChannels()\n" );
-
     for ( ALightmapUV * channel : LightmapUVs ) {
         channel->Invalidate();
     }
@@ -287,7 +283,7 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
     f.ReadString( guidStr );
 
     bSkinnedMesh = f.ReadBool();
-    bDynamicStorage = f.ReadBool();
+    f.ReadBool(); // dummy (TODO: remove in the future)
     f.ReadObject( BoundingBox );
     f.ReadArrayUInt32( Indices );
     f.ReadArrayOfStructs( Vertices );
@@ -331,11 +327,11 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
 
     SetSkeleton( GetOrCreateResource< ASkeleton >( skeleton.CStr() ) );
 
-    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertex ), bDynamicStorage );
-    GRenderBackend->InitializeBuffer( IndexBufferGPU, Indices.Size() * sizeof( unsigned int ), bDynamicStorage );
+    VertexHandle = GVertexMemoryGPU.AllocateVertex( Vertices.Size() * sizeof( SMeshVertex ), nullptr, GetVertexMemory, this );
+    IndexHandle = GVertexMemoryGPU.AllocateIndex( Indices.Size() * sizeof( unsigned int ), nullptr, GetIndexMemory, this );
 
     if ( bSkinnedMesh ) {
-        GRenderBackend->InitializeBuffer( WeightsBufferGPU, Weights.Size() * sizeof( SMeshVertexSkin ), bDynamicStorage );
+        WeightsHandle = GVertexMemoryGPU.AllocateVertex( Weights.Size() * sizeof( SMeshVertexSkin ), nullptr, GetWeightMemory, this );
     }
 
     SendVertexDataToGPU( Vertices.Size(), 0 );
@@ -353,6 +349,36 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
     }
 
     return true;
+}
+
+void *AIndexedMesh::GetVertexMemory( void * _This ) {
+    return static_cast< AIndexedMesh * >( _This )->GetVertices();
+}
+
+void *AIndexedMesh::GetIndexMemory( void * _This ) {
+    return static_cast< AIndexedMesh * >(_This)->GetIndices();
+}
+
+void *AIndexedMesh::GetWeightMemory( void * _This ) {
+    return static_cast< AIndexedMesh * >(_This)->GetWeights();
+}
+
+void AIndexedMesh::GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+    if ( VertexHandle ) {
+        GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexHandle, _Buffer, _Offset );
+    }
+}
+
+void AIndexedMesh::GetIndexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+    if ( IndexHandle ) {
+        GVertexMemoryGPU.GetPhysicalBufferAndOffset( IndexHandle, _Buffer, _Offset );
+    }
+}
+
+void AIndexedMesh::GetWeightsBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+    if ( WeightsHandle ) {
+        GVertexMemoryGPU.GetPhysicalBufferAndOffset( WeightsHandle, _Buffer, _Offset );
+    }
 }
 
 void AIndexedMesh::AddSocket( ASocketDef * _Socket ) {
@@ -439,7 +465,7 @@ bool AIndexedMesh::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLoca
         return false;
     }
 
-    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertex ), _VerticesCount * sizeof( SMeshVertex ), Vertices.ToPtr() + _StartVertexLocation );
+    GVertexMemoryGPU.Update( VertexHandle, _StartVertexLocation * sizeof( SMeshVertex ), _VerticesCount * sizeof( SMeshVertex ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
@@ -478,7 +504,7 @@ bool AIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLo
         return false;
     }
 
-    GRenderBackend->WriteBuffer( WeightsBufferGPU, _StartVertexLocation * sizeof( SMeshVertexSkin ), _VerticesCount * sizeof( SMeshVertexSkin ), Weights.ToPtr() + _StartVertexLocation );
+    GVertexMemoryGPU.Update( WeightsHandle, _StartVertexLocation * sizeof( SMeshVertexSkin ), _VerticesCount * sizeof( SMeshVertexSkin ), Weights.ToPtr() + _StartVertexLocation );
 
     return true;
 }
@@ -513,7 +539,7 @@ bool AIndexedMesh::SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation 
         return false;
     }
 
-    GRenderBackend->WriteBuffer( IndexBufferGPU, _StartIndexLocation * sizeof( unsigned int ), _IndexCount * sizeof( unsigned int ), Indices.ToPtr() + _StartIndexLocation );
+    GVertexMemoryGPU.Update( IndexHandle, _StartIndexLocation * sizeof( unsigned int ), _IndexCount * sizeof( unsigned int ), Indices.ToPtr() + _StartIndexLocation );
 
     return true;
 }
@@ -538,10 +564,6 @@ bool AIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCoun
     }
 
     return SendIndexDataToGPU( _IndexCount, _StartIndexLocation );
-}
-
-void AIndexedMesh::UploadResourcesGPU() {
-    GLogger.Printf( "AIndexedMesh::UploadResourcesGPU\n" );
 }
 
 void AIndexedMesh::UpdateBoundingBox() {
@@ -659,6 +681,34 @@ void AIndexedMesh::InitializeCapsuleMesh( float _Radius, float _Height, float _T
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
+void AIndexedMesh::InitializeSkyboxMesh( const Float3 & _Size, float _TexCoordScale ) {
+    TPodArray< SMeshVertex > vertices;
+    TPodArray< unsigned int > indices;
+    BvAxisAlignedBox bounds;
+
+    CreateSkyboxMesh( vertices, indices, bounds, _Size, _TexCoordScale );
+
+    Initialize( vertices.Size(), indices.Size(), 1 );
+    WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
+    WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
+
+    Subparts[0]->BoundingBox = bounds;
+}
+
+void AIndexedMesh::InitializeSkydomeMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere ) {
+    TPodArray< SMeshVertex > vertices;
+    TPodArray< unsigned int > indices;
+    BvAxisAlignedBox bounds;
+
+    CreateSkydomeMesh( vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs, _Hemisphere );
+
+    Initialize( vertices.Size(), indices.Size(), 1 );
+    WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
+    WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
+
+    Subparts[0]->BoundingBox = bounds;
+}
+
 void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 
     if ( !AString::Icmp( _Path, "/Default/Meshes/Box" ) ) {
@@ -708,210 +758,24 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
+    if ( !AString::Icmp( _Path, "/Default/Meshes/Skybox" ) ) {
+        InitializeSkyboxMesh( Float3( 1 ), 1 );
+        return;
+    }
+
+    if ( !AString::Icmp( _Path, "/Default/Meshes/Skydome" ) ) {
+        InitializeSkydomeMesh( 0.5f, 1, 32, 32, false );
+        return;
+    }
+
+    if ( !AString::Icmp( _Path, "/Default/Meshes/SkydomeHemisphere" ) ) {
+        InitializeSkydomeMesh( 0.5f, 1, 16, 32, true );
+        return;
+    }    
+
     GLogger.Printf( "Unknown internal mesh %s\n", _Path );
 
     LoadInternalResource( "/Default/Meshes/Box" );
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-AIndexedMeshSubpart::AIndexedMeshSubpart() {
-    BoundingBox.Clear();
-
-    static TStaticResourceFinder< AMaterialInstance > DefaultMaterialInstance( _CTS( "/Default/MaterialInstance/Default" ) );
-    MaterialInstance = DefaultMaterialInstance.GetObject();
-}
-
-AIndexedMeshSubpart::~AIndexedMeshSubpart() {
-}
-
-void AIndexedMeshSubpart::SetBaseVertex( int _BaseVertex ) {
-    BaseVertex = _BaseVertex;
-    bAABBTreeDirty = true;
-}
-
-void AIndexedMeshSubpart::SetFirstIndex( int _FirstIndex ) {
-    FirstIndex = _FirstIndex;
-    bAABBTreeDirty = true;
-}
-
-void AIndexedMeshSubpart::SetVertexCount( int _VertexCount ) {
-    VertexCount = _VertexCount;
-}
-
-void AIndexedMeshSubpart::SetIndexCount( int _IndexCount ) {
-    IndexCount = _IndexCount;
-    bAABBTreeDirty = true;
-}
-
-void AIndexedMeshSubpart::SetMaterialInstance( AMaterialInstance * _MaterialInstance ) {
-    MaterialInstance = _MaterialInstance;
-
-    if ( !MaterialInstance ) {
-        static TStaticResourceFinder< AMaterialInstance > DefaultMaterialInstance( _CTS( "/Default/MaterialInstance/Default" ) );
-        MaterialInstance = DefaultMaterialInstance.GetObject();
-    }
-}
-
-void AIndexedMeshSubpart::SetBoundingBox( BvAxisAlignedBox const & _BoundingBox ) {
-    BoundingBox = _BoundingBox;
-
-    if ( OwnerMesh ) {
-        OwnerMesh->bBoundingBoxDirty = true;
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ALightmapUV::ALightmapUV() {
-    VertexBufferGPU = GRenderBackend->CreateBuffer( this );
-}
-
-ALightmapUV::~ALightmapUV() {
-    Purge();
-
-    GRenderBackend->DestroyBuffer( VertexBufferGPU );
-}
-
-void ALightmapUV::Purge() {
-    if ( SourceMesh ) {
-        SourceMesh->LightmapUVs[ IndexInArrayOfUVs ] = SourceMesh->LightmapUVs[ SourceMesh->LightmapUVs.Size() - 1 ];
-        SourceMesh->LightmapUVs[ IndexInArrayOfUVs ]->IndexInArrayOfUVs = IndexInArrayOfUVs;
-        IndexInArrayOfUVs = -1;
-        SourceMesh->LightmapUVs.RemoveLast();
-        SourceMesh.Reset();
-    }
-
-    LightingLevel.Reset();
-
-    Vertices.Free();
-}
-
-void ALightmapUV::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel, bool InDynamicStorage ) {
-    Purge();
-
-    SourceMesh = InSourceMesh;
-    LightingLevel = InLightingLevel;
-    bDynamicStorage = InDynamicStorage;
-    bInvalid = false;
-
-    IndexInArrayOfUVs = InSourceMesh->LightmapUVs.Size();
-    InSourceMesh->LightmapUVs.Append( this );
-
-    Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
-
-    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertexUV ), bDynamicStorage );
-}
-
-bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount ) {
-        return true;
-    }
-
-    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
-        return false;
-    }
-
-    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexUV ), _VerticesCount * sizeof( SMeshVertexUV ), Vertices.ToPtr() + _StartVertexLocation );
-
-    return true;
-}
-
-bool ALightmapUV::WriteVertexData( SMeshVertexUV const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount ) {
-        return true;
-    }
-
-    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "ALightmapUV::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
-        return false;
-    }
-
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexUV ) );
-
-    return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
-}
-
-void ALightmapUV::UploadResourcesGPU() {
-    GLogger.Printf( "ALightmapUV::UploadResourcesGPU\n" );
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-AVertexLight::AVertexLight() {
-    VertexBufferGPU = GRenderBackend->CreateBuffer( this );
-}
-
-AVertexLight::~AVertexLight() {
-    Purge();
-
-    GRenderBackend->DestroyBuffer( VertexBufferGPU );
-}
-
-void AVertexLight::Purge() {
-    if ( SourceMesh ) {
-        SourceMesh->VertexLightChannels[ IndexInArrayOfChannels ] = SourceMesh->VertexLightChannels[ SourceMesh->VertexLightChannels.Size() - 1 ];
-        SourceMesh->VertexLightChannels[ IndexInArrayOfChannels ]->IndexInArrayOfChannels = IndexInArrayOfChannels;
-        IndexInArrayOfChannels = -1;
-        SourceMesh->VertexLightChannels.RemoveLast();
-        SourceMesh.Reset();
-    }
-
-    LightingLevel.Reset();
-
-    Vertices.Free();
-}
-
-void AVertexLight::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel, bool InDynamicStorage ) {
-    Purge();
-
-    SourceMesh = InSourceMesh;
-    LightingLevel = InLightingLevel;
-    bDynamicStorage = InDynamicStorage;
-    bInvalid = false;
-
-    IndexInArrayOfChannels = InSourceMesh->VertexLightChannels.Size();
-    InSourceMesh->VertexLightChannels.Append( this );
-
-    Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
-
-    GRenderBackend->InitializeBuffer( VertexBufferGPU, Vertices.Size() * sizeof( SMeshVertexLight ), bDynamicStorage );
-}
-
-bool AVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount ) {
-        return true;
-    }
-
-    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "AVertexLight::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
-        return false;
-    }
-
-    GRenderBackend->WriteBuffer( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexLight ), _VerticesCount * sizeof( SMeshVertexLight ), Vertices.ToPtr() + _StartVertexLocation );
-
-    return true;
-}
-
-bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
-    if ( !_VerticesCount ) {
-        return true;
-    }
-
-    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
-        GLogger.Printf( "AVertexLight::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
-        return false;
-    }
-
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexLight ) );
-
-    return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
-}
-
-void AVertexLight::UploadResourcesGPU() {
-    GLogger.Printf( "AVertexLight::UploadResourcesGPU\n" );
 }
 
 void AIndexedMesh::GenerateRigidbodyCollisions() {
@@ -992,6 +856,108 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces() {
     }
 }
 
+bool AIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
+    bool ret = false;
+
+    float boxMin, boxMax;
+
+    Float3 invRayDir;
+
+    invRayDir.X = 1.0f / _RayDir.X;
+    invRayDir.Y = 1.0f / _RayDir.Y;
+    invRayDir.Z = 1.0f / _RayDir.Z;
+
+    if ( !BvRayIntersectBox( _RayStart, invRayDir, GetBoundingBox(), boxMin, boxMax ) || boxMin >= _Distance ) {
+        return false;
+    }
+
+    for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
+        AIndexedMeshSubpart * subpart = Subparts[i];
+        ret |= subpart->Raycast( _RayStart, _RayDir, invRayDir, _Distance, _HitResult );
+    }
+    return ret;
+}
+
+bool AIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], int & _SubpartIndex ) const {
+    bool ret = false;
+
+    float boxMin, boxMax;
+
+    Float3 invRayDir;
+
+    invRayDir.X = 1.0f / _RayDir.X;
+    invRayDir.Y = 1.0f / _RayDir.Y;
+    invRayDir.Z = 1.0f / _RayDir.Z;
+
+    if ( !BvRayIntersectBox( _RayStart, invRayDir, GetBoundingBox(), boxMin, boxMax ) || boxMin >= _HitDistance ) {
+        return false;
+    }
+
+    for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
+        AIndexedMeshSubpart * subpart = Subparts[i];
+        if ( subpart->RaycastClosest( _RayStart, _RayDir, invRayDir, _Distance, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {
+            _SubpartIndex = i;
+            _Distance = _HitDistance;
+            ret = true;
+        }
+    }
+
+    return ret;
+}
+
+void AIndexedMesh::DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix ) {
+    for ( AIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->DrawBVH( InRenderer, _TransformMatrix );
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AIndexedMeshSubpart::AIndexedMeshSubpart() {
+    BoundingBox.Clear();
+
+    static TStaticResourceFinder< AMaterialInstance > DefaultMaterialInstance( _CTS( "/Default/MaterialInstance/Default" ) );
+    MaterialInstance = DefaultMaterialInstance.GetObject();
+}
+
+AIndexedMeshSubpart::~AIndexedMeshSubpart() {
+}
+
+void AIndexedMeshSubpart::SetBaseVertex( int _BaseVertex ) {
+    BaseVertex = _BaseVertex;
+    bAABBTreeDirty = true;
+}
+
+void AIndexedMeshSubpart::SetFirstIndex( int _FirstIndex ) {
+    FirstIndex = _FirstIndex;
+    bAABBTreeDirty = true;
+}
+
+void AIndexedMeshSubpart::SetVertexCount( int _VertexCount ) {
+    VertexCount = _VertexCount;
+}
+
+void AIndexedMeshSubpart::SetIndexCount( int _IndexCount ) {
+    IndexCount = _IndexCount;
+    bAABBTreeDirty = true;
+}
+
+void AIndexedMeshSubpart::SetMaterialInstance( AMaterialInstance * _MaterialInstance ) {
+    MaterialInstance = _MaterialInstance;
+
+    if ( !MaterialInstance ) {
+        static TStaticResourceFinder< AMaterialInstance > DefaultMaterialInstance( _CTS( "/Default/MaterialInstance/Default" ) );
+        MaterialInstance = DefaultMaterialInstance.GetObject();
+    }
+}
+
+void AIndexedMeshSubpart::SetBoundingBox( BvAxisAlignedBox const & _BoundingBox ) {
+    BoundingBox = _BoundingBox;
+
+    if ( OwnerMesh ) {
+        OwnerMesh->bBoundingBoxDirty = true;
+    }
+}
 
 void AIndexedMeshSubpart::GenerateBVH( unsigned int PrimitivesPerLeaf ) {
     // TODO: Try KD-tree
@@ -1009,7 +975,7 @@ void AIndexedMeshSubpart::SetBVH( ATreeAABB * BVH ) {
     bAABBTreeDirty = false;
 }
 
-bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
+bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
     bool ret = false;
     float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
@@ -1025,11 +991,6 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
             return false;
         }
 
-        Float3 invRayDir;
-        invRayDir.X = 1.0f / _RayDir.X;
-        invRayDir.Y = 1.0f / _RayDir.Y;
-        invRayDir.Z = 1.0f / _RayDir.Z;
-
         TPodArray< SNodeAABB > const & nodes = AABBTree->GetNodes();
         unsigned int const * indirection = AABBTree->GetIndirection();
 
@@ -1038,7 +999,7 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
         for ( int nodeIndex = 0; nodeIndex < nodes.Size(); ) {
             SNodeAABB const * node = &nodes[nodeIndex];
 
-            const bool bOverlap = BvRayIntersectBox( _RayStart, invRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= _Distance;
+            const bool bOverlap = BvRayIntersectBox( _RayStart, _InvRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= _Distance;
             const bool bLeaf = node->IsLeaf();
 
             if ( bLeaf && bOverlap ) {
@@ -1072,7 +1033,11 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
             nodeIndex += (bOverlap || bLeaf) ? 1 : (-node->Index);
         }
     } else {
-        // TODO: check subpart AABB
+        float hitMin, hitMax;
+
+        if ( !BvRayIntersectBox( _RayStart, _InvRayDir, BoundingBox, hitMin, hitMax ) || hitMin >= _Distance ) {
+            return false;
+        }
 
         const int primCount = IndexCount / 3;
 
@@ -1105,7 +1070,7 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
     return ret;
 }
 
-bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
+bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
     bool ret = false;
     float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
@@ -1115,18 +1080,11 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
         return false;
     }
 
-    float minDist = _Distance;
-
     if ( AABBTree ) {
         if ( bAABBTreeDirty ) {
             GLogger.Printf( "AIndexedMeshSubpart::RaycastClosest: bvh is outdated\n" );
             return false;
         }
-
-        Float3 invRayDir;
-        invRayDir.X = 1.0f / _RayDir.X;
-        invRayDir.Y = 1.0f / _RayDir.Y;
-        invRayDir.Z = 1.0f / _RayDir.Z;
 
         TPodArray< SNodeAABB > const & nodes = AABBTree->GetNodes();
         unsigned int const * indirection = AABBTree->GetIndirection();
@@ -1136,7 +1094,7 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
         for ( int nodeIndex = 0; nodeIndex < nodes.Size(); ) {
             SNodeAABB const * node = &nodes[nodeIndex];
 
-            const bool bOverlap = BvRayIntersectBox( _RayStart, invRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= _Distance;
+            const bool bOverlap = BvRayIntersectBox( _RayStart, _InvRayDir, node->Bounds, hitMin, hitMax ) && hitMin <= _Distance;
             const bool bLeaf = node->IsLeaf();
 
             if ( bLeaf && bOverlap ) {
@@ -1150,10 +1108,10 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
                     Float3 const & v1 = vertices[i1].Position;
                     Float3 const & v2 = vertices[i2].Position;
                     if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
-                        if ( minDist > d ) {
-                            minDist = d;
-                            _HitLocation = _RayStart + _RayDir * d;
+                        if ( _Distance > d ) {
+                            _Distance = d;
                             _HitDistance = d;
+                            _HitLocation = _RayStart + _RayDir * d;
                             _HitUV.X = u;
                             _HitUV.Y = v;
                             _Indices[0] = i0;
@@ -1168,7 +1126,11 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
             nodeIndex += (bOverlap || bLeaf) ? 1 : (-node->Index);
         }
     } else {
-        // TODO: check subpart AABB
+        float hitMin, hitMax;
+
+        if ( !BvRayIntersectBox( _RayStart, _InvRayDir, BoundingBox, hitMin, hitMax ) || hitMin >= _Distance ) {
+            return false;
+        }
 
         const int primCount = IndexCount / 3;
 
@@ -1182,10 +1144,10 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
             Float3 const & v2 = vertices[i2].Position;
 
             if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
-                if ( minDist > d ) {
-                    minDist = d;
-                    _HitLocation = _RayStart + _RayDir * d;
+                if ( _Distance > d ) {
+                    _Distance = d;
                     _HitDistance = d;
+                    _HitLocation = _RayStart + _RayDir * d;
                     _HitUV.X = u;
                     _HitUV.Y = v;
                     _Indices[0] = i0;
@@ -1197,41 +1159,6 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
         }
     }
     return ret;
-}
-
-bool AIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
-    bool ret = false;
-
-    // TODO: check mesh AABB?
-
-    for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
-        AIndexedMeshSubpart * subpart = Subparts[i];
-        ret |= subpart->Raycast( _RayStart, _RayDir, _Distance, _HitResult );
-    }
-    return ret;
-}
-
-bool AIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< AMaterialInstance > & _Material ) const {
-    bool ret = false;
-
-    // TODO: check mesh AABB?
-
-    for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
-        AIndexedMeshSubpart * subpart = Subparts[i];
-        if ( subpart->RaycastClosest( _RayStart, _RayDir, _Distance, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {
-            _Material = subpart->MaterialInstance;
-            _Distance = _HitDistance;
-            ret = true;
-        }
-    }
-
-    return ret;
-}
-
-void AIndexedMesh::DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix ) {
-    for ( AIndexedMeshSubpart * subpart : Subparts ) {
-        subpart->DrawBVH( InRenderer, _TransformMatrix );
-    }
 }
 
 void AIndexedMeshSubpart::DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix ) {
@@ -1252,15 +1179,320 @@ void AIndexedMeshSubpart::DrawBVH( ADebugRenderer * InRenderer, Float3x4 const &
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ALightmapUV::ALightmapUV() {
+}
+
+ALightmapUV::~ALightmapUV() {
+    Purge();
+}
+
+void ALightmapUV::Purge() {
+    if ( SourceMesh ) {
+        SourceMesh->LightmapUVs[ IndexInArrayOfUVs ] = SourceMesh->LightmapUVs[ SourceMesh->LightmapUVs.Size() - 1 ];
+        SourceMesh->LightmapUVs[ IndexInArrayOfUVs ]->IndexInArrayOfUVs = IndexInArrayOfUVs;
+        IndexInArrayOfUVs = -1;
+        SourceMesh->LightmapUVs.RemoveLast();
+        SourceMesh.Reset();
+    }
+
+    LightingLevel.Reset();
+
+    Vertices.Free();
+
+    GVertexMemoryGPU.Deallocate( VertexBufferGPU );
+    VertexBufferGPU = nullptr;
+}
+
+void ALightmapUV::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel ) {
+    Purge();
+
+    SourceMesh = InSourceMesh;
+    LightingLevel = InLightingLevel;
+    bInvalid = false;
+
+    IndexInArrayOfUVs = InSourceMesh->LightmapUVs.Size();
+    InSourceMesh->LightmapUVs.Append( this );
+
+    Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
+
+    VertexBufferGPU = GVertexMemoryGPU.AllocateVertex( Vertices.Size() * sizeof( SMeshVertexUV ), nullptr, GetVertexMemory, this );
+}
+
+bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
+        return false;
+    }
+
+    GVertexMemoryGPU.Update( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexUV ), _VerticesCount * sizeof( SMeshVertexUV ), Vertices.ToPtr() + _StartVertexLocation );
+
+    return true;
+}
+
+bool ALightmapUV::WriteVertexData( SMeshVertexUV const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "ALightmapUV::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
+        return false;
+    }
+
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexUV ) );
+
+    return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
+}
+
+void ALightmapUV::GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+    if ( VertexBufferGPU ) {
+        GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexBufferGPU, _Buffer, _Offset );
+    }
+}
+
+void *ALightmapUV::GetVertexMemory( void * _This ) {
+    return static_cast< ALightmapUV * >( _This )->GetVertices();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AVertexLight::AVertexLight() {
+}
+
+AVertexLight::~AVertexLight() {
+    Purge();
+}
+
+void AVertexLight::Purge() {
+    if ( SourceMesh ) {
+        SourceMesh->VertexLightChannels[ IndexInArrayOfChannels ] = SourceMesh->VertexLightChannels[ SourceMesh->VertexLightChannels.Size() - 1 ];
+        SourceMesh->VertexLightChannels[ IndexInArrayOfChannels ]->IndexInArrayOfChannels = IndexInArrayOfChannels;
+        IndexInArrayOfChannels = -1;
+        SourceMesh->VertexLightChannels.RemoveLast();
+        SourceMesh.Reset();
+    }
+
+    LightingLevel.Reset();
+
+    Vertices.Free();
+
+    GVertexMemoryGPU.Deallocate( VertexBufferGPU );
+    VertexBufferGPU = nullptr;
+}
+
+void AVertexLight::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel ) {
+    Purge();
+
+    SourceMesh = InSourceMesh;
+    LightingLevel = InLightingLevel;
+    bInvalid = false;
+
+    IndexInArrayOfChannels = InSourceMesh->VertexLightChannels.Size();
+    InSourceMesh->VertexLightChannels.Append( this );
+
+    Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
+
+    VertexBufferGPU = GVertexMemoryGPU.AllocateVertex( Vertices.Size() * sizeof( SMeshVertexLight ), nullptr, GetVertexMemory, this );
+}
+
+bool AVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "AVertexLight::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
+        return false;
+    }
+
+    GVertexMemoryGPU.Update( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexLight ), _VerticesCount * sizeof( SMeshVertexLight ), Vertices.ToPtr() + _StartVertexLocation );
+
+    return true;
+}
+
+bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation ) {
+    if ( !_VerticesCount ) {
+        return true;
+    }
+
+    if ( _StartVertexLocation + _VerticesCount > Vertices.Size() ) {
+        GLogger.Printf( "AVertexLight::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr() );
+        return false;
+    }
+
+    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexLight ) );
+
+    return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
+}
+
+void AVertexLight::GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+    if ( VertexBufferGPU ) {
+        GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexBufferGPU, _Buffer, _Offset );
+    }
+}
+
+void *AVertexLight::GetVertexMemory( void * _This ) {
+    return static_cast< AVertexLight * >( _This )->GetVertices();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AProceduralMesh::AProceduralMesh() {
+
+}
+
+AProceduralMesh::~AProceduralMesh() {
+
+}
+
+void AProceduralMesh::GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( VertexStream, _Buffer, _Offset );
+}
+
+void AProceduralMesh::GetIndexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( IndexSteam, _Buffer, _Offset );
+}
+
+void AProceduralMesh::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
+    if ( VisFrame == _Def->FrameNumber ) {
+        return;
+    }
+
+    VisFrame = _Def->FrameNumber;
+
+    if ( !VertexCache.IsEmpty() && !IndexCache.IsEmpty() ) {
+        VertexStream = GStreamedMemoryGPU.AllocateVertex( sizeof( SMeshVertex ) * VertexCache.Size(), VertexCache.ToPtr() );
+        IndexSteam = GStreamedMemoryGPU.AllocateIndex( sizeof( unsigned int ) * IndexCache.Size(), IndexCache.ToPtr() );
+    }
+}
+
+bool AProceduralMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
+    if ( _Distance < 0.0001f ) {
+        return false;
+    }
+
+    float boxMin, boxMax;
+
+    Float3 invRayDir;
+
+    invRayDir.X = 1.0f / _RayDir.X;
+    invRayDir.Y = 1.0f / _RayDir.Y;
+    invRayDir.Z = 1.0f / _RayDir.Z;
+
+    if ( !BvRayIntersectBox( _RayStart, invRayDir, BoundingBox, boxMin, boxMax ) || boxMin >= _Distance ) {
+        return false;
+    }
+
+    const int FirstIndex = 0;
+    const int BaseVertex = 0;
+
+    bool ret = false;
+    float d, u, v;
+    unsigned int const * indices = IndexCache.ToPtr() + FirstIndex;
+    SMeshVertex const * vertices = VertexCache.ToPtr();
+
+    const int primCount = IndexCache.Size() / 3;
+
+    for ( int tri = 0 ; tri < primCount; tri++, indices+=3 ) {
+        const unsigned int i0 = BaseVertex + indices[ 0 ];
+        const unsigned int i1 = BaseVertex + indices[ 1 ];
+        const unsigned int i2 = BaseVertex + indices[ 2 ];
+
+        Float3 const & v0 = vertices[i0].Position;
+        Float3 const & v1 = vertices[i1].Position;
+        Float3 const & v2 = vertices[i2].Position;
+
+        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+            if ( _Distance > d ) {
+                STriangleHitResult & hitResult = _HitResult.Append();
+                hitResult.Location = _RayStart + _RayDir * d;
+                hitResult.Normal = Math::Cross( v1 - v0, v2-v0 ).Normalized();
+                hitResult.Distance = d;
+                hitResult.UV.X = u;
+                hitResult.UV.Y = v;
+                hitResult.Indices[0] = i0;
+                hitResult.Indices[1] = i1;
+                hitResult.Indices[2] = i2;
+                hitResult.Material = nullptr;
+                ret = true;
+            }
+        }
+    }
+
+    return ret;
+}
+
+bool AProceduralMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
+    if ( _Distance < 0.0001f ) {
+        return false;
+    }
+
+    float boxMin, boxMax;
+
+    Float3 invRayDir;
+
+    invRayDir.X = 1.0f / _RayDir.X;
+    invRayDir.Y = 1.0f / _RayDir.Y;
+    invRayDir.Z = 1.0f / _RayDir.Z;
+
+    if ( !BvRayIntersectBox( _RayStart, invRayDir, BoundingBox, boxMin, boxMax ) || boxMin >= _Distance ) {
+        return false;
+    }
+
+    const int FirstIndex = 0;
+    const int BaseVertex = 0;
+
+    bool ret = false;
+    float d, u, v;
+    unsigned int const * indices = IndexCache.ToPtr() + FirstIndex;
+    SMeshVertex const * vertices = VertexCache.ToPtr();
+
+    const int primCount = IndexCache.Size() / 3;
+
+    for ( int tri = 0 ; tri < primCount; tri++, indices+=3 ) {
+        const unsigned int i0 = BaseVertex + indices[ 0 ];
+        const unsigned int i1 = BaseVertex + indices[ 1 ];
+        const unsigned int i2 = BaseVertex + indices[ 2 ];
+
+        Float3 const & v0 = vertices[i0].Position;
+        Float3 const & v1 = vertices[i1].Position;
+        Float3 const & v2 = vertices[i2].Position;
+
+        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+            if ( _Distance > d ) {
+                _Distance = d;
+                _HitLocation = _RayStart + _RayDir * d;
+                _HitDistance = d;
+                _HitUV.X = u;
+                _HitUV.Y = v;
+                _Indices[0] = i0;
+                _Indices[1] = i1;
+                _Indices[2] = i2;
+                ret = true;
+            }
+        }
+    }
+
+    return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void CalcTangentSpace( SMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices ) {
     Float3 binormal, tangent;
 
     TPodArray< Float3 > binormals;
     binormals.ResizeInvalidate( _NumVerts );
+    binormals.ZeroMem();
 
     for ( int i = 0; i < _NumVerts; i++ ) {
         _VertexArray[ i ].Tangent = Float3( 0 );
-        binormals[ i ] = Float3( 0 );
     }
 
     for ( unsigned int i = 0; i < _NumIndices; i += 3 ) {
@@ -2072,6 +2304,207 @@ void CreateCapsuleMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigne
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
+void CreateSkyboxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
+    constexpr unsigned int indices[6 * 6] =
+    {
+        0, 1, 2, 2, 3, 0, // front face
+        4, 5, 6, 6, 7, 4, // back face
+        5 + 8 * 1, 0 + 8 * 1, 3 + 8 * 1, 3 + 8 * 1, 6 + 8 * 1, 5 + 8 * 1, // left face
+
+        1 + 8 * 1, 4 + 8 * 1, 7 + 8 * 1, 7 + 8 * 1, 2 + 8 * 1, 1 + 8 * 1, // right face
+        3 + 8 * 2, 2 + 8 * 2, 7 + 8 * 2, 7 + 8 * 2, 6 + 8 * 2, 3 + 8 * 2, // top face
+        1 + 8 * 2, 0 + 8 * 2, 5 + 8 * 2, 5 + 8 * 2, 4 + 8 * 2, 1 + 8 * 2, // bottom face
+    };
+
+    _Vertices.ResizeInvalidate( 24 );
+    _Indices.ResizeInvalidate( 36 );
+
+    for ( int i = 0 ; i < 36 ; i+=3 ) {
+        _Indices[i  ] = indices[i+2];
+        _Indices[i+1] = indices[i+1];
+        _Indices[i+2] = indices[i ];
+    }
+
+    const Float3 halfSize = _Size * 0.5f;
+
+    _Bounds.Mins = -halfSize;
+    _Bounds.Maxs = halfSize;
+
+    const Float3 & mins = _Bounds.Mins;
+    const Float3 & maxs = _Bounds.Maxs;
+
+    SMeshVertex * pVerts = _Vertices.ToPtr();
+
+    pVerts[0 + 8 * 0].Position = Float3( mins.X, mins.Y, maxs.Z ); // 0
+    pVerts[0 + 8 * 0].Normal = Float3( 0, 0, -1 );
+    pVerts[0 + 8 * 0].TexCoord = Float2( 0, 1 )*_TexCoordScale;
+
+    pVerts[1 + 8 * 0].Position = Float3( maxs.X, mins.Y, maxs.Z ); // 1
+    pVerts[1 + 8 * 0].Normal = Float3( 0, 0, -1 );
+    pVerts[1 + 8 * 0].TexCoord = Float2( 1, 1 )*_TexCoordScale;
+
+    pVerts[2 + 8 * 0].Position = Float3( maxs.X, maxs.Y, maxs.Z ); // 2
+    pVerts[2 + 8 * 0].Normal = Float3( 0, 0, -1 );
+    pVerts[2 + 8 * 0].TexCoord = Float2( 1, 0 )*_TexCoordScale;
+
+    pVerts[3 + 8 * 0].Position = Float3( mins.X, maxs.Y, maxs.Z ); // 3
+    pVerts[3 + 8 * 0].Normal = Float3( 0, 0, -1 );
+    pVerts[3 + 8 * 0].TexCoord = Float2( 0, 0 )*_TexCoordScale;
+
+
+    pVerts[4 + 8 * 0].Position = Float3( maxs.X, mins.Y, mins.Z ); // 4
+    pVerts[4 + 8 * 0].Normal = Float3( 0, 0, 1 );
+    pVerts[4 + 8 * 0].TexCoord = Float2( 0, 1 )*_TexCoordScale;
+
+    pVerts[5 + 8 * 0].Position = Float3( mins.X, mins.Y, mins.Z ); // 5
+    pVerts[5 + 8 * 0].Normal = Float3( 0, 0, 1 );
+    pVerts[5 + 8 * 0].TexCoord = Float2( 1, 1 )*_TexCoordScale;
+
+    pVerts[6 + 8 * 0].Position = Float3( mins.X, maxs.Y, mins.Z ); // 6
+    pVerts[6 + 8 * 0].Normal = Float3( 0, 0, 1 );
+    pVerts[6 + 8 * 0].TexCoord = Float2( 1, 0 )*_TexCoordScale;
+
+    pVerts[7 + 8 * 0].Position = Float3( maxs.X, maxs.Y, mins.Z ); // 7
+    pVerts[7 + 8 * 0].Normal = Float3( 0, 0, 1 );
+    pVerts[7 + 8 * 0].TexCoord = Float2( 0, 0 )*_TexCoordScale;
+
+
+    pVerts[0 + 8 * 1].Position = Float3( mins.X, mins.Y, maxs.Z ); // 0
+    pVerts[0 + 8 * 1].Normal = Float3( 1, 0, 0 );
+    pVerts[0 + 8 * 1].TexCoord = Float2( 1, 1 )*_TexCoordScale;
+
+    pVerts[1 + 8 * 1].Position = Float3( maxs.X, mins.Y, maxs.Z ); // 1
+    pVerts[1 + 8 * 1].Normal = Float3( -1, 0, 0 );
+    pVerts[1 + 8 * 1].TexCoord = Float2( 0, 1 )*_TexCoordScale;
+
+    pVerts[2 + 8 * 1].Position = Float3( maxs.X, maxs.Y, maxs.Z ); // 2
+    pVerts[2 + 8 * 1].Normal = Float3( -1, 0, 0 );
+    pVerts[2 + 8 * 1].TexCoord = Float2( 0, 0 )*_TexCoordScale;
+
+    pVerts[3 + 8 * 1].Position = Float3( mins.X, maxs.Y, maxs.Z ); // 3
+    pVerts[3 + 8 * 1].Normal = Float3( 1, 0, 0 );
+    pVerts[3 + 8 * 1].TexCoord = Float2( 1, 0 )*_TexCoordScale;
+
+
+    pVerts[4 + 8 * 1].Position = Float3( maxs.X, mins.Y, mins.Z ); // 4
+    pVerts[4 + 8 * 1].Normal = Float3( -1, 0, 0 );
+    pVerts[4 + 8 * 1].TexCoord = Float2( 1, 1 )*_TexCoordScale;
+
+    pVerts[5 + 8 * 1].Position = Float3( mins.X, mins.Y, mins.Z ); // 5
+    pVerts[5 + 8 * 1].Normal = Float3( 1, 0, 0 );
+    pVerts[5 + 8 * 1].TexCoord = Float2( 0, 1 )*_TexCoordScale;
+
+    pVerts[6 + 8 * 1].Position = Float3( mins.X, maxs.Y, mins.Z ); // 6
+    pVerts[6 + 8 * 1].Normal = Float3( 1, 0, 0 );
+    pVerts[6 + 8 * 1].TexCoord = Float2( 0, 0 )*_TexCoordScale;
+
+    pVerts[7 + 8 * 1].Position = Float3( maxs.X, maxs.Y, mins.Z ); // 7
+    pVerts[7 + 8 * 1].Normal = Float3( -1, 0, 0 );
+    pVerts[7 + 8 * 1].TexCoord = Float2( 1, 0 )*_TexCoordScale;
+
+
+    pVerts[1 + 8 * 2].Position = Float3( maxs.X, mins.Y, maxs.Z ); // 1
+    pVerts[1 + 8 * 2].Normal = Float3( 0, 1, 0 );
+    pVerts[1 + 8 * 2].TexCoord = Float2( 1, 0 )*_TexCoordScale;
+
+    pVerts[0 + 8 * 2].Position = Float3( mins.X, mins.Y, maxs.Z ); // 0
+    pVerts[0 + 8 * 2].Normal = Float3( 0, 1, 0 );
+    pVerts[0 + 8 * 2].TexCoord = Float2( 0, 0 )*_TexCoordScale;
+
+    pVerts[5 + 8 * 2].Position = Float3( mins.X, mins.Y, mins.Z ); // 5
+    pVerts[5 + 8 * 2].Normal = Float3( 0, 1, 0 );
+    pVerts[5 + 8 * 2].TexCoord = Float2( 0, 1 )*_TexCoordScale;
+
+    pVerts[4 + 8 * 2].Position = Float3( maxs.X, mins.Y, mins.Z ); // 4
+    pVerts[4 + 8 * 2].Normal = Float3( 0, 1, 0 );
+    pVerts[4 + 8 * 2].TexCoord = Float2( 1, 1 )*_TexCoordScale;
+
+
+    pVerts[3 + 8 * 2].Position = Float3( mins.X, maxs.Y, maxs.Z ); // 3
+    pVerts[3 + 8 * 2].Normal = Float3( 0, -1, 0 );
+    pVerts[3 + 8 * 2].TexCoord = Float2( 0, 1 )*_TexCoordScale;
+
+    pVerts[2 + 8 * 2].Position = Float3( maxs.X, maxs.Y, maxs.Z ); // 2
+    pVerts[2 + 8 * 2].Normal = Float3( 0, -1, 0 );
+    pVerts[2 + 8 * 2].TexCoord = Float2( 1, 1 )*_TexCoordScale;
+
+    pVerts[7 + 8 * 2].Position = Float3( maxs.X, maxs.Y, mins.Z ); // 7
+    pVerts[7 + 8 * 2].Normal = Float3( 0, -1, 0 );
+    pVerts[7 + 8 * 2].TexCoord = Float2( 1, 0 )*_TexCoordScale;
+
+    pVerts[6 + 8 * 2].Position = Float3( mins.X, maxs.Y, mins.Z ); // 6
+    pVerts[6 + 8 * 2].Normal = Float3( 0, -1, 0 );
+    pVerts[6 + 8 * 2].TexCoord = Float2( 0, 0 )*_TexCoordScale;
+
+    CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+}
+
+void CreateSkydomeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere ) {
+    int x, y;
+    float verticalAngle, horizontalAngle;
+    unsigned int quad[4];
+
+    _NumVerticalSubdivs = Math::Max( _NumVerticalSubdivs, 4 );
+    _NumHorizontalSubdivs = Math::Max( _NumHorizontalSubdivs, 4 );
+
+    _Vertices.ResizeInvalidate( (_NumHorizontalSubdivs + 1)*(_NumVerticalSubdivs + 1) );
+    _Indices.ResizeInvalidate( _NumHorizontalSubdivs * _NumVerticalSubdivs * 6 );
+
+    _Bounds.Mins.X = _Bounds.Mins.Y = _Bounds.Mins.Z = -_Radius;
+    _Bounds.Maxs.X = _Bounds.Maxs.Y = _Bounds.Maxs.Z = _Radius;
+
+    SMeshVertex * pVert = _Vertices.ToPtr();
+
+    const float verticalRange = _Hemisphere ? Math::_HALF_PI : Math::_PI;
+    const float verticalStep = verticalRange / _NumVerticalSubdivs;
+    const float horizontalStep = Math::_2PI / _NumHorizontalSubdivs;
+    const float verticalScale = 1.0f / _NumVerticalSubdivs;
+    const float horizontalScale = 1.0f / _NumHorizontalSubdivs;
+
+    for ( y = 0, verticalAngle = _Hemisphere ? 0 : -Math::_HALF_PI; y <= _NumVerticalSubdivs; y++ ) {
+        float h, r;
+        Math::SinCos( verticalAngle, h, r );
+        const float scaledH = h * _Radius;
+        const float scaledR = r * _Radius;
+        for ( x = 0, horizontalAngle = 0; x <= _NumHorizontalSubdivs; x++ ) {
+            float s, c;
+            Math::SinCos( horizontalAngle, s, c );
+            pVert->Position = Float3( scaledR*c, scaledH, scaledR*s );
+            pVert->TexCoord = Float2( 1.0f - static_cast< float >(x) * horizontalScale, 1.0f - static_cast< float >(y) * verticalScale ) * _TexCoordScale;
+            pVert->Normal.X = -r*c;
+            pVert->Normal.Y = -h;
+            pVert->Normal.Z = -r*s;
+            pVert++;
+            horizontalAngle += horizontalStep;
+        }
+        verticalAngle += verticalStep;
+    }
+
+    unsigned int * pIndices = _Indices.ToPtr();
+    for ( y = 0; y < _NumVerticalSubdivs; y++ ) {
+        const int y2 = y + 1;
+        for ( x = 0; x < _NumHorizontalSubdivs; x++ ) {
+            const int x2 = x + 1;
+
+            quad[0] = y  * (_NumHorizontalSubdivs + 1) + x;
+            quad[1] = y  * (_NumHorizontalSubdivs + 1) + x2;
+            quad[2] = y2 * (_NumHorizontalSubdivs + 1) + x2;
+            quad[3] = y2 * (_NumHorizontalSubdivs + 1) + x;            
+
+            *pIndices++ = quad[0];
+            *pIndices++ = quad[1];
+            *pIndices++ = quad[2];
+            *pIndices++ = quad[2];
+            *pIndices++ = quad[3];
+            *pIndices++ = quad[0];
+        }
+    }
+
+    CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 struct SPrimitiveBounds {
     BvAxisAlignedBox Bounds;
     int PrimitiveIndex;
@@ -2164,43 +2597,6 @@ static SBestSplitResult FindBestSplitPrimitive( SAABBTreeBuild & _Build, int _Ax
     AN_ASSERT( ( result.Axis != -1 ) && ( bestSAH < Math::MaxValue< float >() ) );
 
     return result;
-}
-
-void ATreeAABB::Subdivide( SAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf, int & _PrimitiveIndex )
-{
-    int primCount = _MaxPrimitive - _FirstPrimitive;
-    int curNodeInex = Nodes.Size();
-
-    SPrimitiveBounds * pPrimitives = _Build.Primitives[_Axis].ToPtr() + _FirstPrimitive;
-
-    SNodeAABB & node = Nodes.Append();
-
-    CalcNodeBounds( pPrimitives, primCount, node.Bounds );
-
-    if ( primCount <= _PrimitivesPerLeaf ) {
-        // Leaf
-
-        node.Index = _PrimitiveIndex;
-        node.PrimitiveCount = primCount;
-
-        for ( int i = 0; i < primCount; ++i ) {
-            Indirection[ _PrimitiveIndex + i ] = pPrimitives[ i ].PrimitiveIndex;// * 3; // FIXME * 3
-        }
-
-        _PrimitiveIndex += primCount;
-
-    } else {
-        // Node
-        SBestSplitResult s = FindBestSplitPrimitive( _Build, _Axis, _FirstPrimitive, primCount );
-
-        int mid = _FirstPrimitive + s.PrimitiveIndex;
-
-        Subdivide( _Build, s.Axis, _FirstPrimitive, mid, _PrimitivesPerLeaf, _PrimitiveIndex );
-        Subdivide( _Build, s.Axis, mid, _MaxPrimitive, _PrimitivesPerLeaf, _PrimitiveIndex );
-
-        int nextNode = Nodes.Size() - curNodeInex;
-        node.Index = -nextNode;
-    }
 }
 
 ATreeAABB::ATreeAABB() {
@@ -2387,4 +2783,41 @@ void ATreeAABB::Write( IStreamBase & _Stream ) const {
     _Stream.WriteArrayOfStructs( Nodes );
     _Stream.WriteArrayUInt32( Indirection );
     _Stream.WriteObject( BoundingBox );
+}
+
+void ATreeAABB::Subdivide( SAABBTreeBuild & _Build, int _Axis, int _FirstPrimitive, int _MaxPrimitive, unsigned int _PrimitivesPerLeaf, int & _PrimitiveIndex )
+{
+    int primCount = _MaxPrimitive - _FirstPrimitive;
+    int curNodeInex = Nodes.Size();
+
+    SPrimitiveBounds * pPrimitives = _Build.Primitives[_Axis].ToPtr() + _FirstPrimitive;
+
+    SNodeAABB & node = Nodes.Append();
+
+    CalcNodeBounds( pPrimitives, primCount, node.Bounds );
+
+    if ( primCount <= _PrimitivesPerLeaf ) {
+        // Leaf
+
+        node.Index = _PrimitiveIndex;
+        node.PrimitiveCount = primCount;
+
+        for ( int i = 0; i < primCount; ++i ) {
+            Indirection[ _PrimitiveIndex + i ] = pPrimitives[ i ].PrimitiveIndex;// * 3; // FIXME * 3
+        }
+
+        _PrimitiveIndex += primCount;
+
+    } else {
+        // Node
+        SBestSplitResult s = FindBestSplitPrimitive( _Build, _Axis, _FirstPrimitive, primCount );
+
+        int mid = _FirstPrimitive + s.PrimitiveIndex;
+
+        Subdivide( _Build, s.Axis, _FirstPrimitive, mid, _PrimitivesPerLeaf, _PrimitiveIndex );
+        Subdivide( _Build, s.Axis, mid, _MaxPrimitive, _PrimitivesPerLeaf, _PrimitiveIndex );
+
+        int nextNode = Nodes.Size() - curNodeInex;
+        node.Index = -nextNode;
+    }
 }

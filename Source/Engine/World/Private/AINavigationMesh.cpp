@@ -2004,7 +2004,7 @@ void AAINavigationMesh::GatherNavigationGeometry( TPodArray< Float3 > & _Vertice
             // Try to get from mesh
             AMeshComponent * mesh = Upcast< AMeshComponent >( body );
 
-            if ( mesh && !mesh->IsSkinnedMesh() && !mesh->bUseDynamicRange ) {
+            if ( mesh && !mesh->IsSkinnedMesh() ) {
 
                 AIndexedMesh * indexedMesh = mesh->GetMesh();
 

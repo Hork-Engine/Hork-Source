@@ -39,6 +39,7 @@ SOFTWARE.
 
 class AIndexedMesh;
 class ALevel;
+struct SVertexHandle;
 
 /**
 
@@ -165,10 +166,10 @@ public:
     void SetBVH( ATreeAABB * BVH );
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;
+    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;
 
     /** Check ray intersection */
-    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
 
     void DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix );
 
@@ -195,17 +196,14 @@ ALightmapUV
 Lightmap UV channel
 
 */
-class ALightmapUV : public ABaseObject, public IGPUResourceOwner {
+class ALightmapUV : public ABaseObject {
     AN_CLASS( ALightmapUV, ABaseObject )
 
     friend class AIndexedMesh;
 
 public:
-    void Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel, bool InDynamicStorage );
+    void Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel );
     void Purge();
-
-    /** Dynamic storage is the mesh that updates every or almost every frame */
-    bool IsDynamicStorage() const { return bDynamicStorage; }
 
     SMeshVertexUV * GetVertices() { return Vertices.ToPtr(); }
     SMeshVertexUV const * GetVertices() const { return Vertices.ToPtr(); }
@@ -214,7 +212,7 @@ public:
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( SMeshVertexUV const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
-    ABufferGPU * GetGPUResource() { return VertexBufferGPU; }
+    void GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
 
     AIndexedMesh * GetSourceMesh() { return SourceMesh; }
 
@@ -226,16 +224,14 @@ protected:
 
     void Invalidate() { bInvalid = true; }
 
-    /** IGPUResourceOwner interface */
-    void UploadResourcesGPU() override;
-
 private:
-    ABufferGPU * VertexBufferGPU;
+    static void * GetVertexMemory( void * _This );
+
+    SVertexHandle * VertexBufferGPU;
     TRef< AIndexedMesh > SourceMesh;
     TWeakRef< ALevel > LightingLevel;
     int IndexInArrayOfUVs = -1;
     TPodArrayHeap< SMeshVertexUV > Vertices;
-    bool bDynamicStorage;
     bool bInvalid;
 };
 
@@ -246,17 +242,14 @@ AVertexLight
 Vertex light channel
 
 */
-class AVertexLight : public ABaseObject, public IGPUResourceOwner {
+class AVertexLight : public ABaseObject {
     AN_CLASS( AVertexLight, ABaseObject )
 
     friend class AIndexedMesh;
 
 public:
-    void Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel, bool InDynamicStorage );
+    void Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLevel );
     void Purge();
-
-    /** Dynamic storage is the mesh that updates every or almost every frame */
-    bool IsDynamicStorage() const { return bDynamicStorage; }
 
     SMeshVertexLight * GetVertices() { return Vertices.ToPtr(); }
     SMeshVertexLight const * GetVertices() const { return Vertices.ToPtr(); }
@@ -265,7 +258,7 @@ public:
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( SMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
-    ABufferGPU * GetGPUResource() { return VertexBufferGPU; }
+    void GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
 
     AIndexedMesh * GetSourceMesh() { return SourceMesh; }
 
@@ -277,16 +270,14 @@ protected:
 
     void Invalidate() { bInvalid = true; }
 
-    /** IGPUResourceOwner interface */
-    void UploadResourcesGPU() override;
-
 private:
-    ABufferGPU * VertexBufferGPU;
+    static void * GetVertexMemory( void * _This );
+
+    SVertexHandle * VertexBufferGPU;
     TRef< AIndexedMesh > SourceMesh;
     TWeakRef< ALevel > LightingLevel;
     int IndexInArrayOfChannels = -1;
     TPodArrayHeap< SMeshVertexLight > Vertices;
-    bool bDynamicStorage;
     bool bInvalid;
 };
 
@@ -322,10 +313,10 @@ struct ASkin
 
 AIndexedMesh
 
-Triangulated 3d surface with indexed vertices
+Triangulated 3d surfaces with indexed vertices
 
 */
-class AIndexedMesh : public AResource, public IGPUResourceOwner {
+class AIndexedMesh : public AResource {
     AN_CLASS( AIndexedMesh, AResource )
 
     friend class ALightmapUV;
@@ -341,7 +332,7 @@ public:
     TPodArray< SSoftbodyFace > SoftbodyFaces;
 
     /** Allocate mesh */
-    void Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false, bool _DynamicStorage = false );
+    void Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false );
 
     /** Helper. Create box mesh */
     void InitializeBoxMesh( Float3 const & _Size, float _TexCoordScale );
@@ -364,14 +355,17 @@ public:
     /** Helper. Create capsule mesh */
     void InitializeCapsuleMesh( float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8 );
 
+    /** Helper. Create skybox mesh */
+    void InitializeSkyboxMesh( Float3 const & _Size, float _TexCoordScale );
+
+    /** Helper. Create skydome mesh */
+    void InitializeSkydomeMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32, bool _Hemisphere = true );
+
     /** Purge model data */
     void Purge();
 
     /** Skinned mesh have 4 weights for each vertex */
     bool IsSkinned() const { return bSkinnedMesh; }
-
-    /** Dynamic storage is the mesh that updates every or almost every frame */
-    bool IsDynamicStorage() const { return bDynamicStorage; }
 
     /** Get mesh part */
     AIndexedMeshSubpart * GetSubpart( int _SubpartIndex );
@@ -463,15 +457,15 @@ public:
     BvAxisAlignedBox const & GetBoundingBox() const;
 
     /** Get mesh GPU buffers */
-    ABufferGPU * GetVertexBufferGPU() { return VertexBufferGPU; }
-    ABufferGPU * GetIndexBufferGPU() { return IndexBufferGPU; }
-    ABufferGPU * GetWeightsBufferGPU() { return WeightsBufferGPU; }
+    void GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetIndexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetWeightsBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
 
     /** Check ray intersection. Result is unordered by distance to save performance */
     bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;
 
     /** Check ray intersection */
-    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], TRef< AMaterialInstance > & _Material ) const;
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], int & _SubpartIndex ) const;
 
     /** Create BVH for raycast optimization */
     void GenerateBVH( unsigned int PrimitivesPerLeaf = 16 );
@@ -497,15 +491,16 @@ protected:
 
     const char * GetDefaultResourcePath() const override { return "/Default/Meshes/Box"; }
 
-    /** IGPUResourceOwner interface */
-    void UploadResourcesGPU() override;
-
 private:
     void InvalidateChannels();
 
-    ABufferGPU * VertexBufferGPU;
-    ABufferGPU * IndexBufferGPU;
-    ABufferGPU * WeightsBufferGPU;
+    static void * GetVertexMemory( void * _This );
+    static void * GetIndexMemory( void * _This );
+    static void * GetWeightMemory( void * _This );
+
+    SVertexHandle * VertexHandle;
+    SVertexHandle * IndexHandle;
+    SVertexHandle * WeightsHandle;
     AIndexedMeshSubpartArray Subparts;
     ALightmapUVChannels LightmapUVs;
     AVertexLightChannels VertexLightChannels;
@@ -518,9 +513,58 @@ private:
     BvAxisAlignedBox BoundingBox;
     uint16_t RaycastPrimitivesPerLeaf;
     bool bSkinnedMesh;
-    bool bDynamicStorage;
     mutable bool bBoundingBoxDirty;
 };
+
+
+/**
+
+AProceduralMesh
+
+Runtime-generated procedural mesh.
+
+*/
+class AProceduralMesh : public ABaseObject {
+    AN_CLASS( AProceduralMesh, ABaseObject )
+
+public:
+    /** Update vertex cache occasionally or every frame */
+    TPodArrayHeap< SMeshVertex, 32, 32, 16 > VertexCache;
+
+    /** Update index cache occasionally or every frame */
+    TPodArrayHeap< unsigned int, 32, 32, 16 > IndexCache;
+
+    /** Bounding box is used for raycast early exit and VSD culling */
+    BvAxisAlignedBox BoundingBox;
+
+    /** Get mesh GPU buffers */
+    void GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+
+    /** Get mesh GPU buffers */
+    void GetIndexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+
+    /** Check ray intersection. Result is unordered by distance to save performance */
+    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;
+
+    /** Check ray intersection */
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
+
+    /** Called before rendering. Don't call directly. */
+    void PreRenderUpdate( SRenderFrontendDef const * _Def );
+
+    // TODO: Add methods like AddTriangle, AddQuad, etc.
+
+protected:
+    AProceduralMesh();
+    ~AProceduralMesh();
+
+private:
+    size_t VertexStream;
+    size_t IndexSteam;
+
+    int VisFrame;
+};
+
 
 
 /*
@@ -544,6 +588,10 @@ void CreateCylinderMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsign
 void CreateConeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32 );
 
 void CreateCapsuleMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8 );
+
+void CreateSkyboxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, Float3 const & _Size, float _TexCoordScale );
+
+void CreateSkydomeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32, bool _Hemisphere = true );
 
 void CalcTangentSpace( SMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices );
 

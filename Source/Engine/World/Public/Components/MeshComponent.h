@@ -49,8 +49,6 @@ Mesh component without skinning
 class ANGIE_API AMeshComponent : public ADrawable {
     AN_COMPONENT( AMeshComponent, ADrawable )
 
-    friend class ARenderWorld;
-
 public:
     /** Lightmap atlas index */
     int             LightmapBlock;
@@ -64,28 +62,13 @@ public:
     /** Baked vertex light channel */
     TRef< AVertexLight >  VertexLightChannel;
 
-    /** Force using dynamic range */
-    bool            bUseDynamicRange;
-
-    /** Dynamic range property */
-    unsigned int    DynamicRangeIndexCount;
-
-    /** Dynamic range property */
-    unsigned int    DynamicRangeStartIndexLocation;
-
-    /** Dynamic range property */
-    int             DynamicRangeBaseVertexLocation;
-
     /** Flipbook animation page offset */
     unsigned int    SubpartBaseVertexOffset;
 
-    /** Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled */
-    bool            bCustomDepthStencilPass;
-
-    /** Custom depth stencil value for the mesh */
-    uint8_t         CustomDepthStencilValue;
-
     bool            bOverrideMeshMaterials = true;
+
+    /** Allow raycasting */
+    void SetAllowRaycast( bool _AllowRaycast ) override;
 
     /** Set indexed mesh for the component */
     void SetMesh( AIndexedMesh * _Mesh );
@@ -134,16 +117,6 @@ public:
 
     BvAxisAlignedBox GetSubpartWorldBounds( int _SubpartIndex ) const;
 
-    /** Allow mesh to cast shadows on the world */
-    void SetCastShadow( bool _CastShadow );
-
-    /** Is cast shadows enabled */
-    bool IsCastShadow() const { return bCastShadow; }
-
-    /** Iterate shadow casters in parent world */
-    AMeshComponent * GetNextShadowCaster() { return NextShadowCaster; }
-    AMeshComponent * GetPrevShadowCaster() { return PrevShadowCaster; }
-
 protected:
     AMeshComponent();
 
@@ -161,17 +134,45 @@ private:
 
     AMaterialInstance * GetMaterialInstanceUnsafe( int _SubpartIndex ) const;
 
-    AMeshComponent * NextShadowCaster;
-    AMeshComponent * PrevShadowCaster;
-
     TRef< AIndexedMesh > Mesh;
     TPodArray< AMaterialInstance *, 1 > Materials;
-
-    bool bCastShadow;
 };
 
+class AProceduralMeshComponent : public ADrawable {
+    AN_COMPONENT( AProceduralMeshComponent, ADrawable )
 
+public:        
+    /** Allow raycasting */
+    void SetAllowRaycast( bool _AllowRaycast ) override;
 
+    void SetMesh( AProceduralMesh * _Mesh ) {
+        ProceduralMesh = _Mesh;
+    }
+
+    AProceduralMesh * GetMesh() const {
+        return ProceduralMesh;
+    }
+
+    void SetMaterialInstance( AMaterialInstance * _MaterialInstance ) {
+        MaterialInstance = _MaterialInstance;
+    }
+
+    AMaterialInstance * GetMaterialInstance() const;
+
+protected:
+    AProceduralMeshComponent();
+
+    void InitializeComponent() override;
+    void DeinitializeComponent() override;
+
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
+
+    TRef< AProceduralMesh > ProceduralMesh;
+    TRef< AMaterialInstance > MaterialInstance;
+
+};
+
+#if 0
 class ABrushComponent : public ADrawable {
     AN_COMPONENT( ABrushComponent, ADrawable )
 
@@ -199,3 +200,4 @@ protected:
 private:
     TRef< ABrushModel > Model;
 };
+#endif

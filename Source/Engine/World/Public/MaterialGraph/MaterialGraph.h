@@ -36,6 +36,8 @@ SOFTWARE.
 #include <World/Public/Resource/Material.h>
 
 class MGNode;
+class MGMaterialGraph;
+class AMaterialBuildContext;
 
 enum EMGNodeType {
     AT_Unknown = 0,
@@ -68,36 +70,6 @@ enum EMaterialPass {
     MATERIAL_PASS_WIREFRAME,
     MATERIAL_PASS_SHADOWMAP,
     MATERIAL_PASS_MAX
-};
-
-class MGNodeOutput;
-
-class AMaterialBuildContext {
-public:
-    mutable AString SourceCode;
-    bool bHasTextures;
-    int MaxTextureSlot;
-    int MaxUniformAddress;
-
-    void Reset( EMaterialType _Type, EMaterialPass _Pass ) { ++BuildSerial; MaterialType = _Type; MaterialPass = _Pass; }
-    int GetBuildSerial() const { return BuildSerial; }
-
-    AString GenerateVariableName() const;
-    void GenerateSourceCode( MGNodeOutput * _Slot, AString const & _Expression, bool _AddBrackets );
-
-    void SetStage( EMaterialStage _Stage );
-    EMaterialStage GetStage() const { return Stage; }
-    int GetStageMask() const { return 1 << Stage; }
-
-    EMaterialType GetMaterialType() const { return MaterialType; }
-    EMaterialPass GetMaterialPass() const { return MaterialPass; }
-
-private:
-    mutable int VariableName = 0;
-    static int BuildSerial;
-    EMaterialStage Stage;
-    EMaterialType MaterialType;
-    EMaterialPass MaterialPass;
 };
 
 class MGNodeOutput : public ABaseObject {
@@ -254,6 +226,8 @@ public:
     MGNodeInput * AmbientOcclusion;
     MGNodeInput * AmbientLight; // EXPEREMENTAL! Not tested with PBR
     MGNodeInput * Emissive;
+    MGNodeInput * Specular;
+    MGNodeInput * Opacity;
 
 protected:
     MGFragmentStage();
@@ -884,9 +858,9 @@ public:
     TRef< MGFragmentStage > FragmentStage;
     TRef< MGShadowCastStage > ShadowCastStage;
     EMaterialType       MaterialType;
-    EMaterialFacing     MaterialFacing = MATERIAL_FACE_FRONT;
     EMaterialDepthHack  DepthHack = MATERIAL_DEPTH_HACK_NONE;
     bool                bDepthTest = true; // Experemental
+    bool                bTranslucent = false;
 
     void RegisterTextureSlot( MGTextureSlot * _Slot );
 

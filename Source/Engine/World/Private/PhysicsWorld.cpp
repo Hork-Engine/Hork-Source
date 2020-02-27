@@ -61,6 +61,7 @@ ARuntimeVariable RVDrawContactPoints( _CTS( "DrawContactPoints" ), _CTS( "0" ), 
 ARuntimeVariable RVDrawConstraints( _CTS( "DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawConstraintLimits( _CTS( "DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
 //ARuntimeVariable RVDrawCollisionShapeNormals( _CTS( "DrawCollisionShapeNormals" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVNoPhysicsSimulation( _CTS( "NoPhysicsSimulation" ), _CTS( "0" ), VAR_CHEAT );
 
 static SCollisionQueryFilter DefaultCollisionQueryFilter;
 
@@ -909,37 +910,40 @@ void APhysicsWorld::OnPostPhysics( btDynamicsWorld * _World, float _TimeStep ) {
 
 void APhysicsWorld::Simulate( float _TimeStep )
 {
-    const float FixedTimeStep = 1.0f / PhysicsHertz;
+    if ( !RVNoPhysicsSimulation )
+    {
+        const float FixedTimeStep = 1.0f / PhysicsHertz;
 
-    int numSimulationSteps = Math::Floor( _TimeStep * PhysicsHertz ) + 1.0f;
-    //numSimulationSteps = Math::Min( numSimulationSteps, MAX_SIMULATION_STEPS );
+        int numSimulationSteps = Math::Floor( _TimeStep * PhysicsHertz ) + 1.0f;
+        //numSimulationSteps = Math::Min( numSimulationSteps, MAX_SIMULATION_STEPS );
 
-    btContactSolverInfo & contactSolverInfo = DynamicsWorld->getSolverInfo();
-    contactSolverInfo.m_numIterations = Math::Clamp( NumContactSolverIterations, 1, 256 );
-    contactSolverInfo.m_splitImpulse = bContactSolverSplitImpulse;
+        btContactSolverInfo & contactSolverInfo = DynamicsWorld->getSolverInfo();
+        contactSolverInfo.m_numIterations = Math::Clamp( NumContactSolverIterations, 1, 256 );
+        contactSolverInfo.m_splitImpulse = bContactSolverSplitImpulse;
 
-    if ( bGravityDirty ) {
-        DynamicsWorld->setGravity( btVectorToFloat3( GravityVector ) );
-        bGravityDirty = false;
-    }
-
-    bDuringPhysicsUpdate = true;
-
-    if ( bEnablePhysicsInterpolation ) {
-        TimeAccumulation = 0;
-        DynamicsWorld->stepSimulation( _TimeStep, numSimulationSteps, FixedTimeStep );
-    } else {
-        TimeAccumulation += _TimeStep;
-        while ( TimeAccumulation >= FixedTimeStep && numSimulationSteps > 0 ) {
-            DynamicsWorld->stepSimulation( FixedTimeStep, 0, FixedTimeStep );
-            TimeAccumulation -= FixedTimeStep;
-            --numSimulationSteps;
+        if ( bGravityDirty ) {
+            DynamicsWorld->setGravity( btVectorToFloat3( GravityVector ) );
+            bGravityDirty = false;
         }
+
+        bDuringPhysicsUpdate = true;
+
+        if ( bEnablePhysicsInterpolation ) {
+            TimeAccumulation = 0;
+            DynamicsWorld->stepSimulation( _TimeStep, numSimulationSteps, FixedTimeStep );
+        } else {
+            TimeAccumulation += _TimeStep;
+            while ( TimeAccumulation >= FixedTimeStep && numSimulationSteps > 0 ) {
+                DynamicsWorld->stepSimulation( FixedTimeStep, 0, FixedTimeStep );
+                TimeAccumulation -= FixedTimeStep;
+                --numSimulationSteps;
+            }
+        }
+
+        bDuringPhysicsUpdate = false;
+
+        SoftBodyWorldInfo->m_sparsesdf.GarbageCollect();
     }
-
-    bDuringPhysicsUpdate = false;
-
-    SoftBodyWorldInfo->m_sparsesdf.GarbageCollect();
 }
 
 void APhysicsWorld::DrawDebug( ADebugRenderer * InRenderer ) {
