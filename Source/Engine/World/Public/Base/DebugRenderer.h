@@ -36,7 +36,7 @@ SOFTWARE.
 #include <Core/Public/BV/BvOrientedBox.h>
 
 using AArrayOfDebugVertices = TPodArrayHeap< SDebugVertex, 1024, 1024, 16 >;
-using AArrayOfDebugIndices = TPodArrayHeap< unsigned int, 1024, 1024, 16 >;
+using AArrayOfDebugIndices = TPodArrayHeap< unsigned short, 1024, 1024, 16 >;
 using AArrayOfDebugDrawCmds = TPodArrayHeap< SDebugDrawCmd >;
 
 class ADebugRenderer {
@@ -79,7 +79,11 @@ public:
 
     void DrawTriangleSoup( Float3 const * _Points, int _NumPoints, int _Stride, unsigned int const * _Indices, int _NumIndices, bool _TwoSided = false );
 
+    void DrawTriangleSoup( Float3 const * _Points, int _NumPoints, int _Stride, unsigned short const * _Indices, int _NumIndices, bool _TwoSided = false );
+
     void DrawTriangleSoupWireframe( Float3 const * _Points, int _Stride, unsigned int const * _Indices, int _NumIndices );
+
+    void DrawTriangleSoupWireframe( Float3 const * _Points, int _Stride, unsigned short const * _Indices, int _NumIndices );
 
     void DrawTriangle( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, bool _TwoSided = false );
 
@@ -144,8 +148,7 @@ public:
     AArrayOfDebugDrawCmds const & GetCmds() const { return Cmds; }
 
 private:
-    SDebugDrawCmd & SetDrawCmd( EDebugDrawCmd _Type );
-    void PrimitiveReserve( int _NumVertices, int _NumIndices );
+    void PrimitiveReserve( EDebugDrawCmd _CmdName, int _NumVertices, int _NumIndices, SDebugDrawCmd ** _Cmd, SDebugVertex ** _Verts, unsigned short ** _Indices );
 
     SRenderView * pView;
     AArrayOfDebugVertices Vertices;

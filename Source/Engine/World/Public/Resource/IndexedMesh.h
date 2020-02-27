@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include <World/Public/Base/BaseObject.h>
 #include <World/Public/Base/DebugRenderer.h>
+#include <World/Public/Level.h>
 #include "Material.h"
 #include "CollisionBody.h"
 #include "Skeleton.h"
-#include <World/Public/Level.h>
 
 class AIndexedMesh;
 class ALevel;

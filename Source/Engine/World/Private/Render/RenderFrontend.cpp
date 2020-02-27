@@ -140,7 +140,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     if ( DebugDraw.CommandsCount() > 0 ) {
         FrameData->DbgCmds = DebugDraw.GetCmds().ToPtr();
         FrameData->DbgVertexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
-        FrameData->DbgIndexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned int ), DebugDraw.GetIndices().ToPtr() );
+        FrameData->DbgIndexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned short ), DebugDraw.GetIndices().ToPtr() );
     }
 
 

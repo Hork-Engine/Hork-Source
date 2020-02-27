@@ -30,9 +30,12 @@ SOFTWARE.
 
 #include <World/Public/Base/DebugRenderer.h>
 #include <Core/Public/Color.h>
+#include <Core/Public/CriticalError.h>
 #include <Runtime/Public/Runtime.h>
 
-#define PRIMITIVE_RESTART_INDEX    0xffffffff
+//#define PRIMITIVE_RESTART_INDEX    0xffffffff
+#define PRIMITIVE_RESTART_INDEX    0xffff
+#define MAX_PRIMITIVE_VERTS        0xfffe
 
 ADebugRenderer::ADebugRenderer() {
 }
@@ -101,116 +104,116 @@ void ADebugRenderer::SplitCommands() {
     bSplit = true;
 }
 
-SDebugDrawCmd & ADebugRenderer::SetDrawCmd( EDebugDrawCmd _Type ) {
+void ADebugRenderer::PrimitiveReserve( EDebugDrawCmd _CmdName, int _NumVertices, int _NumIndices, SDebugDrawCmd ** _Cmd, SDebugVertex ** _Verts, unsigned short ** _Indices ) {
+    if ( _NumVertices > MAX_PRIMITIVE_VERTS ) {
+        // TODO: split to several primitives
+        CriticalError( "ADebugRenderer::PrimitiveReserve: primitive has too many vertices\n" );
+    }
 
-    // Create first cmd
+    if ( !Cmds.IsEmpty() ) {
+        SDebugDrawCmd & cmd = Cmds.Last();
+
+        if ( cmd.NumVertices + _NumVertices > MAX_PRIMITIVE_VERTS ) {
+            SplitCommands();
+        }
+    }
+
+    Vertices.Resize( Vertices.Size() + _NumVertices );
+    Indices.Resize( Indices.Size() + _NumIndices );
+
+    *_Verts = Vertices.ToPtr() + FirstVertex;
+    *_Indices = Indices.ToPtr() + FirstIndex;
+
     if ( Cmds.IsEmpty() || bSplit ) {
+        // Create first cmd or split
         SDebugDrawCmd & cmd = Cmds.Append();
-        cmd.Type = _Type;
+        cmd.Type = _CmdName;
         cmd.FirstVertex = FirstVertex;
         cmd.FirstIndex = FirstIndex;
         cmd.NumVertices = 0;
         cmd.NumIndices = 0;
         bSplit = false;
-        return cmd;
-    }
-
-    // If last cmd has no indices, use it
-    if ( Cmds.Last().NumIndices == 0 ) {
+    } else if ( Cmds.Last().NumIndices == 0 ) {
+        // If last cmd has no indices, use it
         SDebugDrawCmd & cmd = Cmds.Last();
-        cmd.Type = _Type;
+        cmd.Type = _CmdName;
         cmd.FirstVertex = FirstVertex;
         cmd.FirstIndex = FirstIndex;
         cmd.NumVertices = 0;
-        return cmd;
-    }
-
-    // If last cmd has other type
-    if ( Cmds.Last().Type != _Type ) {
+    } else if ( Cmds.Last().Type != _CmdName ) {
+        // If last cmd has other type, create a new cmd
         SDebugDrawCmd & cmd = Cmds.Append();
-        cmd.Type = _Type;
+        cmd.Type = _CmdName;
         cmd.FirstVertex = FirstVertex;
         cmd.FirstIndex = FirstIndex;
         cmd.NumVertices = 0;
         cmd.NumIndices = 0;
-        return cmd;
     }
 
-    return Cmds.Last();
-}
+    *_Cmd = &Cmds.Last();
 
-void ADebugRenderer::PrimitiveReserve( int _NumVertices, int _NumIndices ) {
-    Vertices.Resize( Vertices.Size() + _NumVertices );
-    Indices.Resize( Indices.Size() + _NumIndices );
+    FirstVertex += _NumVertices;
+    FirstIndex += _NumIndices;
 }
 
 void ADebugRenderer::DrawPoint( Float3 const & _Position ) {
-    SDebugDrawCmd & cmd = SetDrawCmd( bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS );
+    EDebugDrawCmd cmdName = bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS;
+    SDebugDrawCmd * cmd;
+    SDebugVertex * verts;
+    unsigned short * indices;
 
-    PrimitiveReserve( 1, 1 );
-
-    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
-    unsigned int * indices = Indices.ToPtr() + FirstIndex;
+    PrimitiveReserve( cmdName, 1, 1, &cmd, &verts, &indices );
 
     verts->Position = _Position;
     verts->Color = CurrentColor;
 
-    indices[0] = FirstVertex;
+    indices[0] = cmd->NumVertices;
 
-    FirstVertex++;
-    FirstIndex++;
-
-    cmd.NumVertices++;
-    cmd.NumIndices++;
+    cmd->NumVertices++;
+    cmd->NumIndices++;
 }
 
 void ADebugRenderer::DrawPoints( Float3 const * _Points, int _NumPoints, int _Stride ) {
-    SDebugDrawCmd & cmd = SetDrawCmd( bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS );
+    EDebugDrawCmd cmdName = bDepthTest ? DBG_DRAW_CMD_POINTS_DEPTH_TEST : DBG_DRAW_CMD_POINTS;
+    SDebugDrawCmd * cmd;
+    SDebugVertex * verts;
+    unsigned short * indices;
 
-    PrimitiveReserve( _NumPoints, _NumPoints );
-
-    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
-    unsigned int * indices = Indices.ToPtr() + FirstIndex;
+    PrimitiveReserve( cmdName, _NumPoints, _NumPoints, &cmd, &verts, &indices );
 
     byte * pPoints = ( byte * )_Points;
 
     for ( int i = 0 ; i < _NumPoints ; i++, verts++, indices++ ) {
         verts->Position = *( Float3 * )pPoints;
         verts->Color = CurrentColor;
-        *indices = FirstVertex + i;
+        *indices = cmd->NumVertices + i;
 
         pPoints += _Stride;
     }
 
-    FirstVertex += _NumPoints;
-    FirstIndex += _NumPoints;
-
-    cmd.NumVertices += _NumPoints;
-    cmd.NumIndices += _NumPoints;
+    cmd->NumVertices += _NumPoints;
+    cmd->NumIndices += _NumPoints;
 }
 
 void ADebugRenderer::DrawLine( Float3 const & _P0, Float3 const & _P1 ) {
-    SDebugDrawCmd & cmd = SetDrawCmd( bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES );
+    EDebugDrawCmd cmdName = bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
+    SDebugDrawCmd * cmd;
+    SDebugVertex * verts;
+    unsigned short * indices;
 
-    PrimitiveReserve( 2, 3 );
-
-    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
-    unsigned int * indices = Indices.ToPtr() + FirstIndex;
+    PrimitiveReserve( cmdName, 2, 3, &cmd, &verts, &indices );
 
     verts[0].Position = _P0;
     verts[0].Color = CurrentColor;
     verts[1].Position = _P1;
     verts[1].Color = CurrentColor;
 
-    indices[0] = FirstVertex;
-    indices[1] = FirstVertex + 1;
+    indices[0] = cmd->NumVertices;
+    indices[1] = cmd->NumVertices + 1;
     indices[2] = PRIMITIVE_RESTART_INDEX;
 
-    FirstVertex += 2;
-    FirstIndex += 3;
-
-    cmd.NumVertices += 2;
-    cmd.NumIndices += 3;
+    cmd->NumVertices += 2;
+    cmd->NumIndices += 3;
 }
 
 void ADebugRenderer::DrawDottedLine( Float3 const & _P0, Float3 const & _P1, float _Step ) {
@@ -234,40 +237,35 @@ void ADebugRenderer::DrawLine( Float3 const * _Points, int _NumPoints, bool _Clo
         return;
     }
 
-    SDebugDrawCmd & cmd = SetDrawCmd( bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES );
-
     int numIndices = _Closed ? _NumPoints + 2 : _NumPoints + 1;
 
-    PrimitiveReserve( _NumPoints, numIndices );
+    EDebugDrawCmd cmdName = bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
+    SDebugDrawCmd * cmd;
+    SDebugVertex * verts;
+    unsigned short * indices;
 
-    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
-    unsigned int * indices = Indices.ToPtr() + FirstIndex;
+    PrimitiveReserve( cmdName, _NumPoints, numIndices, &cmd, &verts, &indices );
 
     for ( int i = 0 ; i < _NumPoints ; i++, verts++, indices++ ) {
         verts->Position = _Points[i];
         verts->Color = CurrentColor;
-        *indices = FirstVertex + i;
+        *indices = cmd->NumVertices + i;
     }
 
     if ( _Closed ) {
-        *indices++ = FirstVertex;
+        *indices++ = cmd->NumVertices;
     }
 
     *indices = PRIMITIVE_RESTART_INDEX;
 
-    FirstVertex += _NumPoints;
-    FirstIndex += numIndices;
-
-    cmd.NumVertices += _NumPoints;
-    cmd.NumIndices += numIndices;
+    cmd->NumVertices += _NumPoints;
+    cmd->NumIndices += numIndices;
 }
 
 void ADebugRenderer::DrawConvexPoly( Float3 const * _Points, int _NumPoints, bool _TwoSided ) {
     if ( _NumPoints < 3 ) {
         return;
     }
-
-    SDebugDrawCmd & cmd = SetDrawCmd( bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP );
 
     int numTriangles = _NumPoints - 2;
     int numIndices = numTriangles * 3;
@@ -276,10 +274,12 @@ void ADebugRenderer::DrawConvexPoly( Float3 const * _Points, int _NumPoints, boo
         numIndices <<= 1;
     }
 
-    PrimitiveReserve( _NumPoints, numIndices );
+    EDebugDrawCmd cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
+    SDebugDrawCmd * cmd;
+    SDebugVertex * verts;
+    unsigned short * indices;
 
-    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
-    unsigned int * indices = Indices.ToPtr() + FirstIndex;
+    PrimitiveReserve( cmdName, _NumPoints, numIndices, &cmd, &verts, &indices );
 
     for ( int i = 0 ; i < _NumPoints ; i++, verts++ ) {
         verts->Position = _Points[i];
@@ -287,39 +287,36 @@ void ADebugRenderer::DrawConvexPoly( Float3 const * _Points, int _NumPoints, boo
     }
 
     for ( int i = 0 ; i < numTriangles ; i++ ) {
-        *indices++ = FirstVertex + 0;
-        *indices++ = FirstVertex + i + 1;
-        *indices++ = FirstVertex + i + 2;
+        *indices++ = cmd->NumVertices + 0;
+        *indices++ = cmd->NumVertices + i + 1;
+        *indices++ = cmd->NumVertices + i + 2;
     }
 
     if ( _TwoSided ) {
         for ( int i = numTriangles-1 ; i >= 0 ; i-- ) {
-            *indices++ = FirstVertex + 0;
-            *indices++ = FirstVertex + i + 2;
-            *indices++ = FirstVertex + i + 1;
+            *indices++ = cmd->NumVertices + 0;
+            *indices++ = cmd->NumVertices + i + 2;
+            *indices++ = cmd->NumVertices + i + 1;
         }
     }
 
-    FirstVertex += _NumPoints;
-    FirstIndex += numIndices;
-
-    cmd.NumVertices += _NumPoints;
-    cmd.NumIndices += numIndices;
+    cmd->NumVertices += _NumPoints;
+    cmd->NumIndices += numIndices;
 }
 
 void ADebugRenderer::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, int _Stride, unsigned int const * _Indices, int _NumIndices, bool _TwoSided ) {
-    SDebugDrawCmd & cmd = SetDrawCmd( bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP );
-
     int numIndices = _NumIndices;
 
     if ( _TwoSided ) {
         numIndices <<= 1;
     }
 
-    PrimitiveReserve( _NumPoints, numIndices );
+    EDebugDrawCmd cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
+    SDebugDrawCmd * cmd;
+    SDebugVertex * verts;
+    unsigned short * indices;
 
-    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
-    unsigned int * indices = Indices.ToPtr() + FirstIndex;
+    PrimitiveReserve( cmdName, _NumPoints, numIndices, &cmd, &verts, &indices );
 
     byte * pPoints = ( byte * )_Points;
 
@@ -336,21 +333,61 @@ void ADebugRenderer::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, i
     }
 
     for ( int i = 0 ; i < _NumIndices ; i++ ) {
-        *indices++ = FirstVertex + _Indices[i];
+        *indices++ = cmd->NumVertices + _Indices[i];
     }
 
     if ( _TwoSided ) {
         _Indices += _NumIndices;
         for ( int i = _NumIndices-1 ; i >= 0 ; i-- ) {
-            *indices++ = FirstVertex + *--_Indices;
+            *indices++ = cmd->NumVertices + *--_Indices;
         }
     }
 
-    FirstVertex += _NumPoints;
-    FirstIndex += numIndices;
+    cmd->NumVertices += _NumPoints;
+    cmd->NumIndices += numIndices;
+}
 
-    cmd.NumVertices += _NumPoints;
-    cmd.NumIndices += numIndices;
+void ADebugRenderer::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, int _Stride, unsigned short const * _Indices, int _NumIndices, bool _TwoSided ) {
+    int numIndices = _NumIndices;
+
+    if ( _TwoSided ) {
+        numIndices <<= 1;
+    }
+
+    EDebugDrawCmd cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
+    SDebugDrawCmd * cmd;
+    SDebugVertex * verts;
+    unsigned short * indices;
+
+    PrimitiveReserve( cmdName, _NumPoints, numIndices, &cmd, &verts, &indices );
+
+    byte * pPoints = (byte *)_Points;
+
+    for ( int i = 0 ; i < _NumPoints ; i++, verts++ ) {
+        verts->Position = *(Float3 *)pPoints;
+        verts->Color = CurrentColor;
+
+        //#define VISUALIE_VERTICES
+#ifdef VISUALIE_VERTICES
+        verts->Color = AColor4( Float4( i%255, i%255, i%255, 255 )/255.0f ).GetDWord();
+#endif
+
+        pPoints += _Stride;
+    }
+
+    for ( int i = 0 ; i < _NumIndices ; i++ ) {
+        *indices++ = cmd->NumVertices + _Indices[i];
+    }
+
+    if ( _TwoSided ) {
+        _Indices += _NumIndices;
+        for ( int i = _NumIndices-1 ; i >= 0 ; i-- ) {
+            *indices++ = cmd->NumVertices + *--_Indices;
+        }
+    }
+
+    cmd->NumVertices += _NumPoints;
+    cmd->NumIndices += numIndices;
 }
 
 void ADebugRenderer::DrawTriangleSoupWireframe( Float3 const * _Points, int _Stride, unsigned int const * _Indices, int _NumIndices ) {
@@ -362,7 +399,17 @@ void ADebugRenderer::DrawTriangleSoupWireframe( Float3 const * _Points, int _Str
         points[2] = *(Float3 *)(pPoints + _Stride * _Indices[i+2]);
         DrawLine( points, 3, true );
     }
+}
 
+void ADebugRenderer::DrawTriangleSoupWireframe( Float3 const * _Points, int _Stride, unsigned short const * _Indices, int _NumIndices ) {
+    Float3 points[3];
+    byte * pPoints = (byte *)_Points;
+    for ( int i = 0 ; i < _NumIndices ; i += 3 ) {
+        points[0] = *(Float3 *)(pPoints + _Stride * _Indices[i+0]);
+        points[1] = *(Float3 *)(pPoints + _Stride * _Indices[i+1]);
+        points[2] = *(Float3 *)(pPoints + _Stride * _Indices[i+2]);
+        DrawLine( points, 3, true );
+    }
 }
 
 void ADebugRenderer::DrawTriangle( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, bool _TwoSided ) {
@@ -371,16 +418,15 @@ void ADebugRenderer::DrawTriangle( Float3 const & _P0, Float3 const & _P1, Float
 }
 
 void ADebugRenderer::DrawTriangles( Float3 const * _Triangles, int _NumTriangles, int _Stride, bool _TwoSided ) {
-    SDebugDrawCmd & cmd = SetDrawCmd( bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP );
-
     int numPoints = _NumTriangles * 3;
     int numIndices = _NumTriangles * 3;
     int totalIndices = _TwoSided ? numIndices << 1 : numIndices;
+    EDebugDrawCmd cmdName = bDepthTest ? DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST : DBG_DRAW_CMD_TRIANGLE_SOUP;
+    SDebugDrawCmd * cmd;
+    SDebugVertex * verts;
+    unsigned short * indices;
 
-    PrimitiveReserve( numPoints, totalIndices );
-
-    SDebugVertex * verts = Vertices.ToPtr() + FirstVertex;
-    unsigned int * indices = Indices.ToPtr() + FirstIndex;
+    PrimitiveReserve( cmdName, numPoints, totalIndices, &cmd, &verts, &indices );
 
     byte * pPoints = ( byte * )_Triangles;
 
@@ -392,20 +438,17 @@ void ADebugRenderer::DrawTriangles( Float3 const * _Triangles, int _NumTriangles
     }
 
     for ( int i = 0 ; i < numIndices ; i++ ) {
-        *indices++ = FirstVertex + i;
+        *indices++ = cmd->NumVertices + i;
     }
 
     if ( _TwoSided ) {
         for ( int i = numIndices-1 ; i >= 0 ; i-- ) {
-            *indices++ = FirstVertex + i;
+            *indices++ = cmd->NumVertices + i;
         }
     }
 
-    FirstVertex += numPoints;
-    FirstIndex += totalIndices;
-
-    cmd.NumVertices += numPoints;
-    cmd.NumIndices += totalIndices;
+    cmd->NumVertices += numPoints;
+    cmd->NumIndices += totalIndices;
 }
 
 void ADebugRenderer::DrawBox( Float3 const & _Position, Float3 const & _HalfExtents ) {
@@ -445,7 +488,7 @@ void ADebugRenderer::DrawBoxFilled( Float3 const & _Position, Float3 const & _Ha
         Float3( -_HalfExtents.X, -_HalfExtents.Y,  _HalfExtents.Z ) + _Position
     };
 
-    unsigned int const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
+    unsigned short const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
 
     DrawTriangleSoup( points, 8, sizeof( Float3 ), indices, 36, _TwoSided );
 }
@@ -487,7 +530,7 @@ void ADebugRenderer::DrawOrientedBoxFilled( Float3 const & _Position, Float3x3 c
         _Orientation * Float3( -_HalfExtents.X, -_HalfExtents.Y,  _HalfExtents.Z ) + _Position
     };
 
-    unsigned int const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
+    unsigned short const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
 
     DrawTriangleSoup( points, 8, sizeof( Float3 ), indices, 36, _TwoSided );
 }

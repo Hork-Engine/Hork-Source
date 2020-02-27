@@ -287,7 +287,7 @@ void ADebugDrawPassRenderer::RenderInstances() {
     DrawIndexedCmd drawCmd;
     drawCmd.InstanceCount = 1;
     drawCmd.StartInstanceLocation = 0;
-    drawCmd.BaseVertexLocation = 0;
+    //drawCmd.BaseVertexLocation = 0;
 
     Buffer * streamBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
 
@@ -296,8 +296,9 @@ void ADebugDrawPassRenderer::RenderInstances() {
 
         Cmd.BindPipeline( &Pipelines[cmd->Type] );
         Cmd.BindVertexBuffer( 0, streamBuffer, GFrameData->DbgVertexStreamOffset );
-        Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT32, GFrameData->DbgIndexStreamOffset );
+        Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, GFrameData->DbgIndexStreamOffset );
 
+        drawCmd.BaseVertexLocation = cmd->FirstVertex;
         drawCmd.IndexCountPerInstance = cmd->NumIndices;
         drawCmd.StartIndexLocation = cmd->FirstIndex;
 
