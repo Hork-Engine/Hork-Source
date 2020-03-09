@@ -576,13 +576,9 @@ enum STBVorbisError
 #undef malloc	
 #undef free	
 #undef realloc	
-#define malloc(s) GZoneMemory.Alloc(s,1)	
+#define malloc(s) GZoneMemory.Alloc(s)	
 #define free(s) GZoneMemory.Dealloc(s)	
-static void * ZoneRealloc( void * _Data, size_t _NewSize ) {
-    GZoneMemory.Dealloc( _Data );
-    return GZoneMemory.Alloc( _NewSize, 1 );
-}
-#define realloc(d,s) ZoneRealloc(d,s)
+#define realloc(d,s) GZoneMemory.Realloc(d,s,true)
 
 #include <limits.h>
 
