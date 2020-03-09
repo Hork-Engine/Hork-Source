@@ -51,12 +51,12 @@ void SaveSnapshot( GHI::Texture & _Texture ) {
 
     int hunkMark = GHunkMemory.SetHunkMark();
 
-    byte * data = (byte *)GHunkMemory.HunkMemory( size, 1 );
+    byte * data = (byte *)GHunkMemory.Alloc( size );
 
 #if 0
     _Texture.Read( 0, GHI::PIXEL_FORMAT_BYTE_RGB, size, 1, data );
 #else
-    float * fdata = (float *)GHunkMemory.HunkMemory( size*sizeof(float), 1 );
+    float * fdata = (float *)GHunkMemory.Alloc( size*sizeof(float) );
     _Texture.Read( 0, GHI::PIXEL_FORMAT_FLOAT_RGB, size*sizeof(float), 1, fdata );
     // to sRGB
     for ( int i = 0 ; i < size ; i++ ) {

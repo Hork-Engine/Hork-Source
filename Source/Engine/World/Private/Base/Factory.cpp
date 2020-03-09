@@ -106,7 +106,7 @@ const AClassMeta * AObjectFactory::LookupClass( uint64_t _ClassId ) const {
 
     if ( !IdTable ) {
         // init lookup table
-        IdTable = ( AClassMeta ** )GZoneMemory.Alloc( ( NumClasses + 1 ) * sizeof( *IdTable ), 1 );
+        IdTable = ( AClassMeta ** )GZoneMemory.Alloc( ( NumClasses + 1 ) * sizeof( *IdTable ) );
         IdTable[ 0 ] = nullptr;
         for ( AClassMeta * n = Classes ; n ; n = n->pNext ) {
             IdTable[ n->GetId() ] = n;

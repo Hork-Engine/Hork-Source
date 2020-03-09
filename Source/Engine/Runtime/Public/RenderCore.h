@@ -488,12 +488,28 @@ enum EMaterialDepthHack {
     MATERIAL_DEPTH_HACK_SKYBOX
 };
 
+enum EColorBlending {
+    COLOR_BLENDING_ALPHA,
+    COLOR_BLENDING_DISABLED,
+    COLOR_BLENDING_PREMULTIPLIED_ALPHA,
+    COLOR_BLENDING_COLOR_ADD,
+    COLOR_BLENDING_MULTIPLY,
+    COLOR_BLENDING_SOURCE_TO_DEST,
+    COLOR_BLENDING_ADD_MUL,
+    COLOR_BLENDING_ADD_ALPHA,
+
+    COLOR_BLENDING_MAX
+};
+
 struct SMaterialBuildData {
     /** Size of allocated memory for this structure (in bytes) */
     int SizeInBytes;
 
     /** Material type (Unlit,baselight,pbr,etc) */
     EMaterialType Type;
+
+    /** Blending mode (FIXME: only for UNLIT materials?) */
+    EColorBlending Blending;
 
     /** Lightmap binding unit */
     int LightmapSlot;
@@ -586,7 +602,7 @@ private:
     template< typename T >
     static T * CreateResource( IGPUResourceOwner * InOwner )
     {
-        void * pData = GZoneMemory.AllocCleared( sizeof( T ), 1 );
+        void * pData = GZoneMemory.ClearedAlloc( sizeof( T ) );
         AResourceGPU * resource = new (pData) T;  // compile time check: T must be derived from AResourceGPU
         resource->pOwner = InOwner;
         return static_cast< T * >( resource );
@@ -711,18 +727,6 @@ enum EHUDSamplerType {
     HUD_SAMPLER_MIRROR_ONCE_NEAREST,
 
     HUD_SAMPLER_MAX
-};
-
-enum EColorBlending {
-    COLOR_BLENDING_ALPHA,
-    COLOR_BLENDING_DISABLED,
-    COLOR_BLENDING_COLOR_ADD,
-    COLOR_BLENDING_MULTIPLY,
-    COLOR_BLENDING_SOURCE_TO_DEST,
-    COLOR_BLENDING_ADD_MUL,
-    COLOR_BLENDING_ADD_ALPHA,
-
-    COLOR_BLENDING_MAX
 };
 
 struct SHUDDrawCmd {

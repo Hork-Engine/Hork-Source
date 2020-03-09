@@ -378,6 +378,9 @@ void * ARuntime::AllocFrameMem( size_t _SizeInBytes ) {
     void * pMemory = (byte *)GRuntimeMain.FrameMemoryAddress + GRuntimeMain.FrameMemoryUsed;
 
     GRuntimeMain.FrameMemoryUsed += _SizeInBytes;
+    GRuntimeMain.FrameMemoryUsed = Align( GRuntimeMain.FrameMemoryUsed, 16 );
+
+    AN_ASSERT( IsAlignedPtr( pMemory, 16 ) );
 
     //GLogger.Printf( "Allocated %u, Used %u\n", _SizeInBytes, GRuntimeMain.FrameMemoryUsed );
 

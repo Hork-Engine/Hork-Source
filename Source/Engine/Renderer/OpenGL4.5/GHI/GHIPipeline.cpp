@@ -139,6 +139,13 @@ void RenderTargetBlendingInfo::SetBlendingPreset( BLENDING_PRESET _Preset ) {
         Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_INV_SRC_ALPHA;
         Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
         break;
+    case BLENDING_PREMULTIPLIED_ALPHA:
+        bBlendEnable = true;
+        ColorWriteMask = COLOR_WRITE_RGBA;
+        Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_ONE;
+        Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_INV_SRC_ALPHA;
+        Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+        break;
     case BLENDING_COLOR_ADD:
         bBlendEnable = true;
         ColorWriteMask = COLOR_WRITE_RGBA;

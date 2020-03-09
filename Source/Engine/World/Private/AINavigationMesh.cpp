@@ -119,7 +119,7 @@ struct ADetourLinearAllocator : public dtTileCacheAlloc {
     int High;
 
     ADetourLinearAllocator( const int _Capacity ) : Data(0), Capacity(0), Top(0), High(0) {
-        Data = ( byte * )GZoneMemory.Alloc( _Capacity, 1 );
+        Data = ( byte * )GZoneMemory.Alloc( _Capacity );
         Capacity = _Capacity;
     }
 
@@ -388,9 +388,9 @@ bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfi
 
         const size_t MaxLinearAllocatorCapacity = 32 << 10; // 32 KB
 
-        LinearAllocator = new ( GZoneMemory.Alloc( sizeof( ADetourLinearAllocator ), 1 ) ) ADetourLinearAllocator( MaxLinearAllocatorCapacity );
+        LinearAllocator = new ( GZoneMemory.Alloc( sizeof( ADetourLinearAllocator ) ) ) ADetourLinearAllocator( MaxLinearAllocatorCapacity );
 
-        MeshProcess = new ( GZoneMemory.Alloc( sizeof( ADetourMeshProcess ), 1 ) ) ADetourMeshProcess();
+        MeshProcess = new ( GZoneMemory.Alloc( sizeof( ADetourMeshProcess ) ) ) ADetourMeshProcess();
         MeshProcess->NavMesh = this;
 
         status = TileCache->init( &tileCacheParams, LinearAllocator, &TileCompressorCallback, MeshProcess );
@@ -607,7 +607,7 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
     // Allocate array that can hold triangle area types.
     // If you have multiple meshes you need to process, allocate
     // and array which can hold the max number of triangles you need to process.
-    unsigned char * triangleAreaTypes = ( unsigned char * )GHunkMemory.HunkMemoryCleared( trianglesCount, 1 );
+    unsigned char * triangleAreaTypes = ( unsigned char * )GHunkMemory.ClearedAlloc( trianglesCount );
 
     // Find triangles which are walkable based on their slope and rasterize them.
     // If your input data is multiple meshes, you can transform them here, calculate
@@ -1391,7 +1391,7 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
 }
 
 ANavQueryFilter::ANavQueryFilter() {
-    Filter = new ( GZoneMemory.Alloc( sizeof( dtQueryFilter ), 1 ) ) dtQueryFilter();
+    Filter = new ( GZoneMemory.Alloc( sizeof( dtQueryFilter ) ) ) dtQueryFilter();
 }
 
 ANavQueryFilter::~ANavQueryFilter() {

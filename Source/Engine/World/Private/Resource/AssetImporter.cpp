@@ -454,10 +454,10 @@ bool AAssetImporter::ImportGLTF( SAssetImportSettings const & InSettings ) {
 
     int hunkMark = GHunkMemory.SetHunkMark();
 
-    void * buf = GHunkMemory.HunkMemory( size, 1 );
+    void * buf = GHunkMemory.Alloc( size );
     f.ReadBuffer( buf, size );
 
-    //void * memoryBuffer = GHunkMemory.HunkMemory( MAX_MEMORY_GLTF, 1 );
+    //void * memoryBuffer = GHunkMemory.Alloc( MAX_MEMORY_GLTF );
     ALinearAllocatorGLTF allocator;
 
     cgltf_options options;

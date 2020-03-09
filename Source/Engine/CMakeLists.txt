@@ -171,7 +171,18 @@ else()
 set( AN_OS_LIBS uuid )
 endif()
 
-target_link_libraries( ${PROJECT} ${AN_BULLET_LIBS} ${AN_OPENGL_LIBS} ${Vulkan_LIBRARIES} ${AN_OS_LIBS} ${ZLIB_LIBRARY} minizip fastlz vhacd Recast SDL2-static )
+target_link_libraries( ${PROJECT}
+    ${AN_BULLET_LIBS}
+    ${AN_OPENGL_LIBS}
+    ${Vulkan_LIBRARIES}
+    ${AN_OS_LIBS}
+    ${ZLIB_LIBRARY}
+    minizip
+    fastlz
+    vhacd
+    Recast
+#    SDL2-static
+)
 
 set_target_properties( ${PROJECT}
     PROPERTIES

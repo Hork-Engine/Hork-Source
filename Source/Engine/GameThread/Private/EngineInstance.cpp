@@ -78,12 +78,13 @@ static void PhysModuleErrorFunction( const char * _Message ) {
     GLogger.Error( "PhysModule: %s", _Message );
 }
 
-static void *PhysModuleAlignedAlloc( size_t _BytesCount, int _Alignement ) {
-    return GZoneMemory.Alloc( _BytesCount, _Alignement );
+static void *PhysModuleAlignedAlloc( size_t _BytesCount, int _Alignment ) {
+    AN_ASSERT( _Alignment <= 16 );
+    return GZoneMemory.Alloc( _BytesCount );
 }
 
 static void *PhysModuleAlloc( size_t _BytesCount ) {
-    return GZoneMemory.Alloc( _BytesCount, 1 );
+    return GZoneMemory.Alloc( _BytesCount );
 }
 
 static void PhysModuleDealloc( void * _Bytes ) {
@@ -91,7 +92,7 @@ static void PhysModuleDealloc( void * _Bytes ) {
 }
 
 static void * NavModuleAlloc( size_t _BytesCount, dtAllocHint _Hint ) {
-    return GZoneMemory.Alloc( _BytesCount, 1 );
+    return GZoneMemory.Alloc( _BytesCount );
 }
 
 static void NavModuleFree( void * _Bytes ) {
@@ -99,7 +100,7 @@ static void NavModuleFree( void * _Bytes ) {
 }
 
 static void *ImguiModuleAlloc( size_t _BytesCount, void * ) {
-    return GZoneMemory.Alloc( _BytesCount, 16 );
+    return GZoneMemory.Alloc( _BytesCount );
 }
 
 static void ImguiModuleFree( void * _Bytes, void * ) {

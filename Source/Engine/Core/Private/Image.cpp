@@ -563,3 +563,102 @@ void ASoftwareMipmapGenerator::GenerateMipmaps( void * _Data ) {
         ::GenerateMipmaps( (const byte *)SourceImage, Width, Height, NumChannels, bLinearSpace, (byte *)_Data );
     }
 }
+
+static void MemSwap( byte * Block, const size_t BlockSz, byte * _Ptr1, byte * _Ptr2, const size_t _Size ) {
+    const size_t blockCount = _Size / BlockSz;
+    size_t i;
+    for ( i = 0; i < blockCount; i++ ) {
+        memcpy( Block, _Ptr1, BlockSz );
+        memcpy( _Ptr1, _Ptr2, BlockSz );
+        memcpy( _Ptr2, Block, BlockSz );
+        _Ptr2 += BlockSz;
+        _Ptr1 += BlockSz;
+    }
+    i = _Size - i*BlockSz;
+    if ( i > 0 ) {
+        memcpy( Block, _Ptr1, i );
+        memcpy( _Ptr1, _Ptr2, i );
+        memcpy( _Ptr2, Block, i );
+    }
+}
+
+void FlipImageX( void * _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine ) {
+    int lineWidth = _Width * _BytesPerPixel;
+    int halfWidth = _Width >> 1;
+    byte * temp = (byte *)StackAlloc( _BytesPerPixel );
+    byte * image = (byte *)_ImageData;
+    for ( int y = 0 ; y < _Height ; y++ ) {
+        byte * s = image;
+        byte * e = image + lineWidth;
+        for ( int x = 0; x < halfWidth; x++ ) {
+            e -= _BytesPerPixel;
+            memcpy( temp, s, _BytesPerPixel );
+            memcpy( s, e, _BytesPerPixel );
+            memcpy( e, temp, _BytesPerPixel );
+            s += _BytesPerPixel;
+        }
+        image += _BytesPerLine;
+    }
+}
+
+void FlipImageY( void * _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine ) {
+    const size_t blockSizeInBytes = 4096;
+    byte block[blockSizeInBytes];
+    int lineWidth = _Width * _BytesPerPixel;
+    int halfHeight = _Height >> 1;
+    byte * image = (byte *)_ImageData;
+    byte * e = image + _Height * _BytesPerLine;
+    for ( int y = 0; y < halfHeight; y++ ) {
+        e -= _BytesPerLine;
+        MemSwap( block, blockSizeInBytes, image, e, lineWidth );
+        image += _BytesPerLine;
+    }
+}
+
+void ConvertToPrimultipliedAlpha( const float * SourceImage,
+                                  int Width,
+                                  int Height,
+                                  bool bOverbright,
+                                  float fOverbright,
+                                  bool bReplaceAlpha,
+                                  float fReplaceAlpha,
+                                  byte * sRGB ) {
+
+    float * src = ( float * )SourceImage;
+    byte * dst = sRGB;
+
+    int pixCount = Width * Height;
+
+    byte replaceAlpha = FloatToByte( fReplaceAlpha );
+
+    for ( int i = 0 ; i < pixCount ; i++, src += 4, dst += 4 ) {
+        //if ( i<(pixCount>>1) ){
+        src[ 0 ] *= src[3];
+        src[ 1 ] *= src[3];
+        src[ 2 ] *= src[3];
+
+        if ( bOverbright ) {
+            src[ 0 ] *= fOverbright;
+            src[ 1 ] *= fOverbright;
+            src[ 2 ] *= fOverbright;
+#if 1
+            float m = Math::Max( src[0], src[1], src[2] );
+            if ( m > 1.0f ) {
+                m = 1.0f / m;
+                src[0] *= m;
+                src[1] *= m;
+                src[2] *= m;
+            }
+#else
+            if ( src[ 0 ] > 1.0f ) src[ 0 ] = 1.0f;
+            if ( src[ 1 ] > 1.0f ) src[ 1 ] = 1.0f;
+            if ( src[ 2 ] > 1.0f ) src[ 2 ] = 1.0f;
+#endif
+        }
+//}
+        dst[0] = ConvertToSRGB_UB( src[0] );
+        dst[1] = ConvertToSRGB_UB( src[1] );
+        dst[2] = ConvertToSRGB_UB( src[2] );
+        dst[3] = bReplaceAlpha ? replaceAlpha : FloatToByte( src[3] );
+    }
+}

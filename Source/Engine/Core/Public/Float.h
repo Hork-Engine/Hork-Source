@@ -43,15 +43,15 @@ struct Float2x2 {
     Float2 Col1;
 
     Float2x2() = default;
-    explicit Float2x2( const Float3x3 & _Value );
-    explicit Float2x2( const Float3x4 & _Value );
-    explicit Float2x2( const Float4x4 & _Value );
-    constexpr Float2x2( const Float2 & _Col0, const Float2 & _Col1 ) : Col0( _Col0 ), Col1( _Col1 ) {}
-    constexpr Float2x2( const float & _00, const float & _01,
-                        const float & _10, const float & _11 )
+    explicit Float2x2( Float3x3 const & _Value );
+    explicit Float2x2( Float3x4 const & _Value );
+    explicit Float2x2( Float4x4 const & _Value );
+    constexpr Float2x2( Float2 const & _Col0, Float2 const & _Col1 ) : Col0( _Col0 ), Col1( _Col1 ) {}
+    constexpr Float2x2( float const & _00, float const & _01,
+                        float const & _10, float const & _11 )
         : Col0( _00, _01 ), Col1( _10, _11 ) {}
-    constexpr explicit Float2x2( const float & _Diagonal ) : Col0( _Diagonal, 0 ), Col1( 0, _Diagonal ) {}
-    constexpr explicit Float2x2( const Float2 & _Diagonal ) : Col0( _Diagonal.X, 0 ), Col1( 0, _Diagonal.Y ) {}
+    constexpr explicit Float2x2( float const & _Diagonal ) : Col0( _Diagonal, 0 ), Col1( 0, _Diagonal ) {}
+    constexpr explicit Float2x2( Float2 const & _Diagonal ) : Col0( _Diagonal.X, 0 ), Col1( 0, _Diagonal.Y ) {}
 
     float * ToPtr() {
         return &Col0.X;
@@ -61,7 +61,7 @@ struct Float2x2 {
         return &Col0.X;
     }
 
-//    Float2x2 & operator=( const Float2x2 & _Other ) {
+//    Float2x2 & operator=( Float2x2 const & _Other ) {
 //        Col0 = _Other.Col0;
 //        Col1 = _Other.Col1;
 //        return *this;
@@ -72,7 +72,7 @@ struct Float2x2 {
         return (&Col0)[ _Index ];
     }
 
-    const Float2 & operator[]( const int & _Index ) const {
+    Float2 const & operator[]( const int & _Index ) const {
         AN_ASSERT_( _Index >= 0 && _Index < 2, "Index out of range" );
         return (&Col0)[ _Index ];
     }
@@ -82,10 +82,10 @@ struct Float2x2 {
         return Float2( Col0[ _Index ], Col1[ _Index ] );
     }
 
-    bool operator==( const Float2x2 & _Other ) const { return Compare( _Other ); }
-    bool operator!=( const Float2x2 & _Other ) const { return !Compare( _Other ); }
+    bool operator==( Float2x2 const & _Other ) const { return Compare( _Other ); }
+    bool operator!=( Float2x2 const & _Other ) const { return !Compare( _Other ); }
 
-    bool Compare( const Float2x2 & _Other ) const {
+    bool Compare( Float2x2 const & _Other ) const {
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 4 ; i++ ) {
@@ -96,7 +96,7 @@ struct Float2x2 {
         return true;
     }
 
-    bool CompareEps( const Float2x2 & _Other, const float & _Epsilon ) const {
+    bool CompareEps( Float2x2 const & _Other, float const & _Epsilon ) const {
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 4 ; i++ ) {
@@ -144,50 +144,51 @@ struct Float2x2 {
         Col0.X = Col1.Y = 1;
     }
 
-    static Float2x2 Scale( const Float2 & _Scale  ) {
+    static Float2x2 Scale( Float2 const & _Scale  ) {
         return Float2x2( _Scale );
     }
 
-    Float2x2 Scaled( const Float2 & _Scale ) const {
+    Float2x2 Scaled( Float2 const & _Scale ) const {
         return Float2x2( Col0 * _Scale[0], Col1 * _Scale[1] );
     }
 
     // Return rotation around Z axis
-    static Float2x2 Rotation( const float & _AngleRad ) {
+    static Float2x2 Rotation( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float2x2( c, s,
                         -s, c );
     }
 
-    Float2x2 operator*( const float & _Value ) const {
+    Float2x2 operator*( float const & _Value ) const {
         return Float2x2( Col0 * _Value,
                          Col1 * _Value );
     }
 
-    void operator*=( const float & _Value ) {
+    void operator*=( float const & _Value ) {
         Col0 *= _Value;
         Col1 *= _Value;
     }
 
-    Float2x2 operator/( const float & _Value ) const {
+    Float2x2 operator/( float const & _Value ) const {
         const float OneOverValue = 1.0f / _Value;
         return Float2x2( Col0 * OneOverValue,
                          Col1 * OneOverValue );
     }
 
-    void operator/=( const float & _Value ) {
+    void operator/=( float const & _Value ) {
         const float OneOverValue = 1.0f / _Value;
         Col0 *= OneOverValue;
         Col1 *= OneOverValue;
     }
 
-    Float2 operator*( const Float2 & _Vec ) const {
-        return Float2( Col0[0] * _Vec.X + Col1[0] * _Vec.Y,
-                       Col0[1] * _Vec.X + Col1[1] * _Vec.Y );
+    template< typename T >
+    TVector2< T > operator*( TVector2< T > const & _Vec ) const {
+        return TVector2< T >( Col0[0] * _Vec.X + Col1[0] * _Vec.Y,
+                              Col0[1] * _Vec.X + Col1[1] * _Vec.Y );
     }
 
-    Float2x2 operator*( const Float2x2 & _Mat ) const {
+    Float2x2 operator*( Float2x2 const & _Mat ) const {
         const float & L00 = Col0[0];
         const float & L01 = Col0[1];
         const float & L10 = Col1[0];
@@ -202,7 +203,7 @@ struct Float2x2 {
                          L01 * R10 + L11 * R11 );
     }
 
-    void operator*=( const Float2x2 & _Mat ) {
+    void operator*=( Float2x2 const & _Mat ) {
         //*this = *this * _Mat;
 
         const float L00 = Col0[0];
@@ -241,7 +242,7 @@ struct Float2x2 {
 
     // Static methods
 
-    static const Float2x2 & Identity() {
+    static Float2x2 const & Identity() {
         static constexpr Float2x2 IdentityMat( 1 );
         return IdentityMat;
     }
@@ -255,16 +256,16 @@ struct Float3x3 {
     Float3 Col2;
 
     Float3x3() = default;
-    explicit Float3x3( const Float2x2 & _Value );
-    explicit Float3x3( const Float3x4 & _Value );
-    explicit Float3x3( const Float4x4 & _Value );
-    constexpr Float3x3( const Float3 & _Col0, const Float3 & _Col1, const Float3 & _Col2 ) : Col0( _Col0 ), Col1( _Col1 ), Col2( _Col2 ) {}
-    constexpr Float3x3( const float & _00, const float & _01, const float & _02,
-          const float & _10, const float & _11, const float & _12,
-          const float & _20, const float & _21, const float & _22 )
+    explicit Float3x3( Float2x2 const & _Value );
+    explicit Float3x3( Float3x4 const & _Value );
+    explicit Float3x3( Float4x4 const & _Value );
+    constexpr Float3x3( Float3 const & _Col0, Float3 const & _Col1, Float3 const & _Col2 ) : Col0( _Col0 ), Col1( _Col1 ), Col2( _Col2 ) {}
+    constexpr Float3x3( float const & _00, float const & _01, float const & _02,
+          float const & _10, float const & _11, float const & _12,
+          float const & _20, float const & _21, float const & _22 )
         : Col0( _00, _01, _02 ), Col1( _10, _11, _12 ), Col2( _20, _21, _22 ) {}
-    constexpr explicit Float3x3( const float & _Diagonal ) : Col0( _Diagonal, 0, 0 ), Col1( 0, _Diagonal, 0 ), Col2( 0, 0, _Diagonal ) {}
-    constexpr explicit Float3x3( const Float3 & _Diagonal ) : Col0( _Diagonal.X, 0, 0 ), Col1( 0, _Diagonal.Y, 0 ), Col2( 0, 0, _Diagonal.Z ) {}
+    constexpr explicit Float3x3( float const & _Diagonal ) : Col0( _Diagonal, 0, 0 ), Col1( 0, _Diagonal, 0 ), Col2( 0, 0, _Diagonal ) {}
+    constexpr explicit Float3x3( Float3 const & _Diagonal ) : Col0( _Diagonal.X, 0, 0 ), Col1( 0, _Diagonal.Y, 0 ), Col2( 0, 0, _Diagonal.Z ) {}
 
     float * ToPtr() {
         return &Col0.X;
@@ -274,7 +275,7 @@ struct Float3x3 {
         return &Col0.X;
     }
 
-//    Float3x3 & operator=( const Float3x3 & _Other ) {
+//    Float3x3 & operator=( Float3x3 const & _Other ) {
 //        //Col0 = _Other.Col0;
 //        //Col1 = _Other.Col1;
 //        //Col2 = _Other.Col2;
@@ -287,7 +288,7 @@ struct Float3x3 {
         return (&Col0)[ _Index ];
     }
 
-    const Float3 & operator[]( const int & _Index ) const {
+    Float3 const & operator[]( const int & _Index ) const {
         AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
@@ -297,10 +298,10 @@ struct Float3x3 {
         return Float3( Col0[ _Index ], Col1[ _Index ], Col2[ _Index ] );
     }
 
-    bool operator==( const Float3x3 & _Other ) const { return Compare( _Other ); }
-    bool operator!=( const Float3x3 & _Other ) const { return !Compare( _Other ); }
+    bool operator==( Float3x3 const & _Other ) const { return Compare( _Other ); }
+    bool operator!=( Float3x3 const & _Other ) const { return !Compare( _Other ); }
 
-    bool Compare( const Float3x3 & _Other ) const {
+    bool Compare( Float3x3 const & _Other ) const {
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 9 ; i++ ) {
@@ -311,7 +312,7 @@ struct Float3x3 {
         return true;
     }
 
-    bool CompareEps( const Float3x3 & _Other, const float & _Epsilon ) const {
+    bool CompareEps( Float3x3 const & _Other, float const & _Epsilon ) const {
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 9 ; i++ ) {
@@ -345,7 +346,7 @@ struct Float3x3 {
     }
 
     Float3x3 Inversed() const {
-        const Float3x3 & m = *this;
+        Float3x3 const & m = *this;
         const float A = m[1][1] * m[2][2] - m[2][1] * m[1][2];
         const float B = m[0][1] * m[2][2] - m[2][1] * m[0][2];
         const float C = m[0][1] * m[1][2] - m[1][1] * m[0][2];
@@ -380,16 +381,16 @@ struct Float3x3 {
         *this = Identity();
     }
 
-    static Float3x3 Scale( const Float3 & _Scale  ) {
+    static Float3x3 Scale( Float3 const & _Scale  ) {
         return Float3x3( _Scale );
     }
 
-    Float3x3 Scaled( const Float3 & _Scale ) const {
+    Float3x3 Scaled( Float3 const & _Scale ) const {
         return Float3x3( Col0 * _Scale[0], Col1 * _Scale[1], Col2 * _Scale[2] );
     }
 
     // Return rotation around normalized axis
-    static Float3x3 RotationAroundNormal( const float & _AngleRad, const Float3 & _Normal ) {
+    static Float3x3 RotationAroundNormal( float const & _AngleRad, Float3 const & _Normal ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         const Float3 Temp = ( 1.0f - c ) * _Normal;
@@ -400,7 +401,7 @@ struct Float3x3 {
     }
 
     // Return rotation around normalized axis
-    Float3x3 RotateAroundNormal( const float & _AngleRad, const Float3 & _Normal ) const {
+    Float3x3 RotateAroundNormal( float const & _AngleRad, Float3 const & _Normal ) const {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         Float3 Temp = ( 1.0f - c ) * _Normal;
@@ -411,17 +412,17 @@ struct Float3x3 {
     }
 
     // Return rotation around unnormalized vector
-    static Float3x3 RotationAroundVector( const float & _AngleRad, const Float3 & _Vector ) {
+    static Float3x3 RotationAroundVector( float const & _AngleRad, Float3 const & _Vector ) {
         return RotationAroundNormal( _AngleRad, _Vector.Normalized() );
     }
 
     // Return rotation around unnormalized vector
-    Float3x3 RotateAroundVector( const float & _AngleRad, const Float3 & _Vector ) const {
+    Float3x3 RotateAroundVector( float const & _AngleRad, Float3 const & _Vector ) const {
         return RotateAroundNormal( _AngleRad, _Vector.Normalized() );
     }
 
     // Return rotation around X axis
-    static Float3x3 RotationX( const float & _AngleRad ) {
+    static Float3x3 RotationX( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float3x3( 1, 0, 0,
@@ -430,7 +431,7 @@ struct Float3x3 {
     }
 
     // Return rotation around Y axis
-    static Float3x3 RotationY( const float & _AngleRad ) {
+    static Float3x3 RotationY( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float3x3( c, 0,-s,
@@ -439,7 +440,7 @@ struct Float3x3 {
     }
 
     // Return rotation around Z axis
-    static Float3x3 RotationZ( const float & _AngleRad ) {
+    static Float3x3 RotationZ( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float3x3( c, s, 0,
@@ -447,39 +448,40 @@ struct Float3x3 {
                          0, 0, 1 );
     }
 
-    Float3x3 operator*( const float & _Value ) const {
+    Float3x3 operator*( float const & _Value ) const {
         return Float3x3( Col0 * _Value,
                          Col1 * _Value,
                          Col2 * _Value );
     }
 
-    void operator*=( const float & _Value ) {
+    void operator*=( float const & _Value ) {
         Col0 *= _Value;
         Col1 *= _Value;
         Col2 *= _Value;
     }
 
-    Float3x3 operator/( const float & _Value ) const {
+    Float3x3 operator/( float const & _Value ) const {
         const float OneOverValue = 1.0f / _Value;
         return Float3x3( Col0 * OneOverValue,
                          Col1 * OneOverValue,
                          Col2 * OneOverValue );
     }
 
-    void operator/=( const float & _Value ) {
+    void operator/=( float const & _Value ) {
         const float OneOverValue = 1.0f / _Value;
         Col0 *= OneOverValue;
         Col1 *= OneOverValue;
         Col2 *= OneOverValue;
     }
 
-    Float3 operator*( const Float3 & _Vec ) const {
-        return Float3( Col0[0] * _Vec.X + Col1[0] * _Vec.Y + Col2[0] * _Vec.Z,
-                       Col0[1] * _Vec.X + Col1[1] * _Vec.Y + Col2[1] * _Vec.Z,
-                       Col0[2] * _Vec.X + Col1[2] * _Vec.Y + Col2[2] * _Vec.Z );
+    template< typename T >
+    TVector3< T > operator*( TVector3< T > const & _Vec ) const {
+        return TVector3< T >( Col0[0] * _Vec.X + Col1[0] * _Vec.Y + Col2[0] * _Vec.Z,
+                              Col0[1] * _Vec.X + Col1[1] * _Vec.Y + Col2[1] * _Vec.Z,
+                              Col0[2] * _Vec.X + Col1[2] * _Vec.Y + Col2[2] * _Vec.Z );
     }
 
-    Float3x3 operator*( const Float3x3 & _Mat ) const {
+    Float3x3 operator*( Float3x3 const & _Mat ) const {
         const float & L00 = Col0[0];
         const float & L01 = Col0[1];
         const float & L02 = Col0[2];
@@ -509,7 +511,7 @@ struct Float3x3 {
                          L02 * R20 + L12 * R21 + L22 * R22 );
     }
 
-    void operator*=( const Float3x3 & _Mat ) {
+    void operator*=( Float3x3 const & _Mat ) {
         //*this = *this * _Mat;
 
         const float L00 = Col0[0];
@@ -569,7 +571,7 @@ struct Float3x3 {
 
     // Static methods
 
-    static const Float3x3 & Identity() {
+    static Float3x3 const & Identity() {
         static constexpr Float3x3 IdentityMat( 1 );
         return IdentityMat;
     }
@@ -584,17 +586,17 @@ struct Float4x4 {
     Float4 Col3;
 
     Float4x4() = default;
-    explicit Float4x4( const Float2x2 & _Value );
-    explicit Float4x4( const Float3x3 & _Value );
-    explicit Float4x4( const Float3x4 & _Value );
-    constexpr Float4x4( const Float4 & _Col0, const Float4 & _Col1, const Float4 & _Col2, const Float4 & _Col3 ) : Col0( _Col0 ), Col1( _Col1 ), Col2( _Col2 ), Col3( _Col3 ) {}
-    constexpr Float4x4( const float & _00, const float & _01, const float & _02, const float & _03,
-                        const float & _10, const float & _11, const float & _12, const float & _13,
-                        const float & _20, const float & _21, const float & _22, const float & _23,
-                        const float & _30, const float & _31, const float & _32, const float & _33 )
+    explicit Float4x4( Float2x2 const & _Value );
+    explicit Float4x4( Float3x3 const & _Value );
+    explicit Float4x4( Float3x4 const & _Value );
+    constexpr Float4x4( Float4 const & _Col0, Float4 const & _Col1, Float4 const & _Col2, Float4 const & _Col3 ) : Col0( _Col0 ), Col1( _Col1 ), Col2( _Col2 ), Col3( _Col3 ) {}
+    constexpr Float4x4( float const & _00, float const & _01, float const & _02, float const & _03,
+                        float const & _10, float const & _11, float const & _12, float const & _13,
+                        float const & _20, float const & _21, float const & _22, float const & _23,
+                        float const & _30, float const & _31, float const & _32, float const & _33 )
         : Col0( _00, _01, _02, _03 ), Col1( _10, _11, _12, _13 ), Col2( _20, _21, _22, _23 ), Col3( _30, _31, _32, _33 ) {}
-    constexpr explicit Float4x4( const float & _Diagonal ) : Col0( _Diagonal, 0, 0, 0 ), Col1( 0, _Diagonal, 0, 0 ), Col2( 0, 0, _Diagonal, 0 ), Col3( 0, 0, 0, _Diagonal ) {}
-    constexpr explicit Float4x4( const Float4 & _Diagonal ) : Col0( _Diagonal.X, 0, 0, 0 ), Col1( 0, _Diagonal.Y, 0, 0 ), Col2( 0, 0, _Diagonal.Z, 0 ), Col3( 0, 0, 0, _Diagonal.W ) {}
+    constexpr explicit Float4x4( float const & _Diagonal ) : Col0( _Diagonal, 0, 0, 0 ), Col1( 0, _Diagonal, 0, 0 ), Col2( 0, 0, _Diagonal, 0 ), Col3( 0, 0, 0, _Diagonal ) {}
+    constexpr explicit Float4x4( Float4 const & _Diagonal ) : Col0( _Diagonal.X, 0, 0, 0 ), Col1( 0, _Diagonal.Y, 0, 0 ), Col2( 0, 0, _Diagonal.Z, 0 ), Col3( 0, 0, 0, _Diagonal.W ) {}
 
     float * ToPtr() {
         return &Col0.X;
@@ -604,7 +606,7 @@ struct Float4x4 {
         return &Col0.X;
     }
 
-//    Float4x4 & operator=( const Float4x4 & _Other ) {
+//    Float4x4 & operator=( Float4x4 const & _Other ) {
 //        //Col0 = _Other.Col0;
 //        //Col1 = _Other.Col1;
 //        //Col2 = _Other.Col2;
@@ -618,7 +620,7 @@ struct Float4x4 {
         return (&Col0)[ _Index ];
     }
 
-    const Float4 & operator[]( const int & _Index ) const {
+    Float4 const & operator[]( const int & _Index ) const {
         AN_ASSERT_( _Index >= 0 && _Index < 4, "Index out of range" );
         return (&Col0)[ _Index ];
     }
@@ -628,10 +630,10 @@ struct Float4x4 {
         return Float4( Col0[ _Index ], Col1[ _Index ], Col2[ _Index ], Col3[ _Index ] );
     }
 
-    bool operator==( const Float4x4 & _Other ) const { return Compare( _Other ); }
-    bool operator!=( const Float4x4 & _Other ) const { return !Compare( _Other ); }
+    bool operator==( Float4x4 const & _Other ) const { return Compare( _Other ); }
+    bool operator!=( Float4x4 const & _Other ) const { return !Compare( _Other ); }
 
-    bool Compare( const Float4x4 & _Other ) const {
+    bool Compare( Float4x4 const & _Other ) const {
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 16 ; i++ ) {
@@ -642,7 +644,7 @@ struct Float4x4 {
         return true;
     }
 
-    bool CompareEps( const Float4x4 & _Other, const float & _Epsilon ) const {
+    bool CompareEps( Float4x4 const & _Other, float const & _Epsilon ) const {
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 16 ; i++ ) {
@@ -700,7 +702,7 @@ struct Float4x4 {
     }
 
     Float4x4 Inversed() const {
-        const Float4x4 & m = *this;
+        Float4x4 const & m = *this;
 
         const float Coef00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
         const float Coef02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
@@ -785,31 +787,31 @@ struct Float4x4 {
         *this = Identity();
     }
 
-    static Float4x4 Translation( const Float3 & _Vec ) {
+    static Float4x4 Translation( Float3 const & _Vec ) {
         return Float4x4( Float4( 1,0,0,0 ),
                          Float4( 0,1,0,0 ),
                          Float4( 0,0,1,0 ),
                          Float4( _Vec[0], _Vec[1], _Vec[2], 1 ) );
     }
 
-    Float4x4 Translated( const Float3 & _Vec ) const {
+    Float4x4 Translated( Float3 const & _Vec ) const {
         return Float4x4( Col0, Col1, Col2, Col0 * _Vec[0] + Col1 * _Vec[1] + Col2 * _Vec[2] + Col3 );
     }
 
-    static Float4x4 Scale( const Float3 & _Scale  ) {
+    static Float4x4 Scale( Float3 const & _Scale  ) {
         return Float4x4( Float4( _Scale[0],0,0,0 ),
                          Float4( 0,_Scale[1],0,0 ),
                          Float4( 0,0,_Scale[2],0 ),
                          Float4( 0,0,0,1 ) );
     }
 
-    Float4x4 Scaled( const Float3 & _Scale ) const {
+    Float4x4 Scaled( Float3 const & _Scale ) const {
         return Float4x4( Col0 * _Scale[0], Col1 * _Scale[1], Col2 * _Scale[2], Col3 );
     }
 
 
     // Return rotation around normalized axis
-    static Float4x4 RotationAroundNormal( const float & _AngleRad, const Float3 & _Normal ) {
+    static Float4x4 RotationAroundNormal( float const & _AngleRad, Float3 const & _Normal ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         const Float3 Temp = ( 1.0f - c ) * _Normal;
@@ -821,7 +823,7 @@ struct Float4x4 {
     }
 
     // Return rotation around normalized axis
-    Float4x4 RotateAroundNormal( const float & _AngleRad, const Float3 & _Normal ) const {
+    Float4x4 RotateAroundNormal( float const & _AngleRad, Float3 const & _Normal ) const {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         Float3 Temp = ( 1.0f - c ) * _Normal;
@@ -833,17 +835,17 @@ struct Float4x4 {
     }
 
     // Return rotation around unnormalized vector
-    static Float4x4 RotationAroundVector( const float & _AngleRad, const Float3 & _Vector ) {
+    static Float4x4 RotationAroundVector( float const & _AngleRad, Float3 const & _Vector ) {
         return RotationAroundNormal( _AngleRad, _Vector.Normalized() );
     }
 
     // Return rotation around unnormalized vector
-    Float4x4 RotateAroundVector( const float & _AngleRad, const Float3 & _Vector ) const {
+    Float4x4 RotateAroundVector( float const & _AngleRad, Float3 const & _Vector ) const {
         return RotateAroundNormal( _AngleRad, _Vector.Normalized() );
     }
 
     // Return rotation around X axis
-    static Float4x4 RotationX( const float & _AngleRad ) {
+    static Float4x4 RotationX( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float4x4( 1, 0, 0, 0,
@@ -853,7 +855,7 @@ struct Float4x4 {
     }
 
     // Return rotation around Y axis
-    static Float4x4 RotationY( const float & _AngleRad ) {
+    static Float4x4 RotationY( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float4x4( c, 0,-s, 0,
@@ -863,7 +865,7 @@ struct Float4x4 {
     }
 
     // Return rotation around Z axis
-    static Float4x4 RotationZ( const float & _AngleRad ) {
+    static Float4x4 RotationZ( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float4x4( c, s, 0, 0,
@@ -872,30 +874,32 @@ struct Float4x4 {
                          0, 0, 0, 1 );
     }
 
-    Float4 operator*( const Float4 & _Vec ) const {
-        return Float4( Col0[0] * _Vec.X + Col1[0] * _Vec.Y + Col2[0] * _Vec.Z + Col3[0] * _Vec.W,
-                       Col0[1] * _Vec.X + Col1[1] * _Vec.Y + Col2[1] * _Vec.Z + Col3[1] * _Vec.W,
-                       Col0[2] * _Vec.X + Col1[2] * _Vec.Y + Col2[2] * _Vec.Z + Col3[2] * _Vec.W,
-                       Col0[3] * _Vec.X + Col1[3] * _Vec.Y + Col2[3] * _Vec.Z + Col3[3] * _Vec.W );
+    template< typename T >
+    TVector4< T > operator*( TVector4< T > const & _Vec ) const {
+        return TVector4< T >( Col0[0] * _Vec.X + Col1[0] * _Vec.Y + Col2[0] * _Vec.Z + Col3[0] * _Vec.W,
+                              Col0[1] * _Vec.X + Col1[1] * _Vec.Y + Col2[1] * _Vec.Z + Col3[1] * _Vec.W,
+                              Col0[2] * _Vec.X + Col1[2] * _Vec.Y + Col2[2] * _Vec.Z + Col3[2] * _Vec.W,
+                              Col0[3] * _Vec.X + Col1[3] * _Vec.Y + Col2[3] * _Vec.Z + Col3[3] * _Vec.W );
     }
 
     // Assume _Vec.W = 1
-    Float4 operator*( const Float3 & _Vec ) const {
-        return Float4( Col0[ 0 ] * _Vec.X + Col1[ 0 ] * _Vec.Y + Col2[ 0 ] * _Vec.Z + Col3[ 0 ],
-            Col0[ 1 ] * _Vec.X + Col1[ 1 ] * _Vec.Y + Col2[ 1 ] * _Vec.Z + Col3[ 1 ],
-            Col0[ 2 ] * _Vec.X + Col1[ 2 ] * _Vec.Y + Col2[ 2 ] * _Vec.Z + Col3[ 2 ],
-            Col0[ 3 ] * _Vec.X + Col1[ 3 ] * _Vec.Y + Col2[ 3 ] * _Vec.Z + Col3[ 3 ] );
+    template< typename T >
+    TVector4< T > operator*( TVector3< T > const & _Vec ) const {
+        return TVector4< T >( Col0[ 0 ] * _Vec.X + Col1[ 0 ] * _Vec.Y + Col2[ 0 ] * _Vec.Z + Col3[ 0 ],
+                              Col0[ 1 ] * _Vec.X + Col1[ 1 ] * _Vec.Y + Col2[ 1 ] * _Vec.Z + Col3[ 1 ],
+                              Col0[ 2 ] * _Vec.X + Col1[ 2 ] * _Vec.Y + Col2[ 2 ] * _Vec.Z + Col3[ 2 ],
+                              Col0[ 3 ] * _Vec.X + Col1[ 3 ] * _Vec.Y + Col2[ 3 ] * _Vec.Z + Col3[ 3 ] );
     }
 
     // Same as Float3x3(*this)*_Vec
-    Float3 TransformAsFloat3x3( const Float3 & _Vec ) const {
+    Float3 TransformAsFloat3x3( Float3 const & _Vec ) const {
         return Float3( Col0[0] * _Vec.X + Col1[0] * _Vec.Y + Col2[0] * _Vec.Z,
                        Col0[1] * _Vec.X + Col1[1] * _Vec.Y + Col2[1] * _Vec.Z,
                        Col0[2] * _Vec.X + Col1[2] * _Vec.Y + Col2[2] * _Vec.Z );
     }
 
     // Same as Float3x3(*this)*_Mat
-    Float3x3 TransformAsFloat3x3( const Float3x3 & _Mat ) const {
+    Float3x3 TransformAsFloat3x3( Float3x3 const & _Mat ) const {
         const float & L00 = Col0[0];
         const float & L01 = Col0[1];
         const float & L02 = Col0[2];
@@ -925,21 +929,21 @@ struct Float4x4 {
                          L02 * R20 + L12 * R21 + L22 * R22 );
     }
 
-    Float4x4 operator*( const float & _Value ) const {
+    Float4x4 operator*( float const & _Value ) const {
         return Float4x4( Col0 * _Value,
                          Col1 * _Value,
                          Col2 * _Value,
                          Col3 * _Value );
     }
 
-    void operator*=( const float & _Value ) {
+    void operator*=( float const & _Value ) {
         Col0 *= _Value;
         Col1 *= _Value;
         Col2 *= _Value;
         Col3 *= _Value;
     }
 
-    Float4x4 operator/( const float & _Value ) const {
+    Float4x4 operator/( float const & _Value ) const {
         const float OneOverValue = 1.0f / _Value;
         return Float4x4( Col0 * OneOverValue,
                          Col1 * OneOverValue,
@@ -947,7 +951,7 @@ struct Float4x4 {
                          Col3 * OneOverValue );
     }
 
-    void operator/=( const float & _Value ) {
+    void operator/=( float const & _Value ) {
         const float OneOverValue = 1.0f / _Value;
         Col0 *= OneOverValue;
         Col1 *= OneOverValue;
@@ -955,7 +959,7 @@ struct Float4x4 {
         Col3 *= OneOverValue;
     }
 
-    Float4x4 operator*( const Float4x4 & _Mat ) const {
+    Float4x4 operator*( Float4x4 const & _Mat ) const {
         const float & L00 = Col0[0];
         const float & L01 = Col0[1];
         const float & L02 = Col0[2];
@@ -1006,7 +1010,7 @@ struct Float4x4 {
                          L03 * R30 + L13 * R31 + L23 * R32 + L33 * R33 );
     }
 
-    void operator*=( const Float4x4 & _Mat ) {
+    void operator*=( Float4x4 const & _Mat ) {
         //*this = *this * _Mat;
 
         const float L00 = Col0[0];
@@ -1059,9 +1063,9 @@ struct Float4x4 {
         Col3[3] = L03 * R30 + L13 * R31 + L23 * R32 + L33 * R33;
     }
 
-    Float4x4 operator*( const Float3x4 & _Mat ) const;
+    Float4x4 operator*( Float3x4 const & _Mat ) const;
 
-    void operator*=( const Float3x4 & _Mat );
+    void operator*=( Float3x4 const & _Mat );
 
     Float4x4 ViewInverseFast() const {
         Float4x4 Inversed;
@@ -1154,13 +1158,13 @@ struct Float4x4 {
 
     // Static methods
 
-    static const Float4x4 & Identity() {
+    static Float4x4 const & Identity() {
         static constexpr Float4x4 IdentityMat( 1 );
         return IdentityMat;
     }
 
     // Conversion from standard projection matrix to clip control "upper-left & zero-to-one"
-    static AN_FORCEINLINE const Float4x4 & ClipControl_UpperLeft_ZeroToOne() {
+    static AN_FORCEINLINE Float4x4 const & ClipControl_UpperLeft_ZeroToOne() {
         static constexpr float ClipTransform[] = {
             1,        0,        0,        0,
             0,       -1,        0,        0,
@@ -1168,7 +1172,7 @@ struct Float4x4 {
             0,        0,      0.5f,       1
         };
 
-        return *reinterpret_cast< const Float4x4 * >( &ClipTransform[0] );
+        return *reinterpret_cast< Float4x4 const * >( &ClipTransform[0] );
 
         // Same
         //return Float4x4::Identity().Scaled(Float3(1.0f,1.0f,0.5f)).Translated(Float3(0,0,0.5)).Scaled(Float3(1,-1,1));
@@ -1245,7 +1249,7 @@ struct Float4x4 {
     }
 
     // Standard OpenGL perspective projection
-    static AN_FORCEINLINE Float4x4 Perspective( const float & _FovXRad, const float & _Width, const float & _Height, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 Perspective( float const & _FovXRad, float const & _Width, float const & _Height, float const & _ZNear, float const & _ZFar ) {
         const float TanHalfFovX = tan( _FovXRad * 0.5f );
         const float HalfFovY = (float)(atan2( _Height, _Width / TanHalfFovX ) );
         const float TanHalfFovY = tan( HalfFovY );
@@ -1255,7 +1259,7 @@ struct Float4x4 {
                          0,                0,               2 * _ZFar * _ZNear / ( _ZNear - _ZFar ), 0 );
     }
 
-    static AN_FORCEINLINE Float4x4 Perspective( const float & _FovXRad, const float & _FovYRad, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 Perspective( float const & _FovXRad, float const & _FovYRad, float const & _ZNear, float const & _ZFar ) {
         const float TanHalfFovX = tan( _FovXRad * 0.5f );
         const float TanHalfFovY = tan( _FovYRad * 0.5f );
         return Float4x4( 1 / TanHalfFovX,  0,               0,                          0,
@@ -1265,14 +1269,14 @@ struct Float4x4 {
     }
 
     // OpenGL perspective projection with clip control "upper-left & zero-to-one"
-    static AN_FORCEINLINE Float4x4 PerspectiveCC( const float & _FovXRad, const float & _Width, const float & _Height, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 PerspectiveCC( float const & _FovXRad, float const & _Width, float const & _Height, float const & _ZNear, float const & _ZFar ) {
         // TODO: Optimize multiplication
 
         // Transform according to clip control
         return ClipControl_UpperLeft_ZeroToOne() * Perspective( _FovXRad, _Width, _Height, _ZNear, _ZFar );
     }
 
-    static AN_FORCEINLINE Float4x4 PerspectiveCC( const float & _FovXRad, const float & _FovYRad, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 PerspectiveCC( float const & _FovXRad, float const & _FovYRad, float const & _ZNear, float const & _ZFar ) {
         // TODO: Optimize multiplication
 
         // Transform according to clip control
@@ -1280,7 +1284,7 @@ struct Float4x4 {
     }
 
     // Reversed-depth OpenGL perspective projection
-    static AN_FORCEINLINE Float4x4 PerspectiveRev( const float & _FovXRad, const float & _Width, const float & _Height, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 PerspectiveRev( float const & _FovXRad, float const & _Width, float const & _Height, float const & _ZNear, float const & _ZFar ) {
         const float TanHalfFovX = tan( _FovXRad * 0.5f );
         const float HalfFovY = (float)(atan2( _Height, _Width / TanHalfFovX ) );
         const float TanHalfFovY = tan( HalfFovY );
@@ -1290,7 +1294,7 @@ struct Float4x4 {
                          0,                0,               2 * _ZNear * _ZFar / ( _ZFar - _ZNear ), 0 );
     }
 
-    static AN_FORCEINLINE Float4x4 PerspectiveRev( const float & _FovXRad, const float & _FovYRad, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 PerspectiveRev( float const & _FovXRad, float const & _FovYRad, float const & _ZNear, float const & _ZFar ) {
         const float TanHalfFovX = tan( _FovXRad * 0.5f );
         const float TanHalfFovY = tan( _FovYRad * 0.5f );
         return Float4x4( 1 / TanHalfFovX,  0,               0,                          0,
@@ -1300,7 +1304,7 @@ struct Float4x4 {
     }
 
     // Reversed-depth with clip control "upper-left & zero-to-one" OpenGL perspective projection
-    static AN_FORCEINLINE Float4x4 PerspectiveRevCC( const float & _FovXRad, const float & _Width, const float & _Height, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 PerspectiveRevCC( float const & _FovXRad, float const & _Width, float const & _Height, float const & _ZNear, float const & _ZFar ) {
         const float TanHalfFovX = tan( _FovXRad * 0.5f );
         const float HalfFovY = (float)(atan2( _Height, _Width / TanHalfFovX ) );
         const float TanHalfFovY = tan( HalfFovY );
@@ -1310,7 +1314,7 @@ struct Float4x4 {
                          0,               0,               _ZNear * _ZFar / ( _ZFar - _ZNear ),       0 );
     }
 
-    static AN_FORCEINLINE Float4x4 PerspectiveRevCC( const float & _FovXRad, const float & _FovYRad, const float & _ZNear, const float & _ZFar ) {
+    static AN_FORCEINLINE Float4x4 PerspectiveRevCC( float const & _FovXRad, float const & _FovYRad, float const & _ZNear, float const & _ZFar ) {
         const float TanHalfFovX = tan( _FovXRad * 0.5f );
         const float TanHalfFovY = tan( _FovYRad * 0.5f );
         return Float4x4( 1 / TanHalfFovX, 0,               0,                                         0,
@@ -1333,9 +1337,9 @@ struct Float4x4 {
         _NegativeZ = Float4x4::RotationZ( Math::_PI );
     }
 
-    static AN_FORCEINLINE const Float4x4 * GetCubeFaceMatrices() {
+    static AN_FORCEINLINE Float4x4 const * GetCubeFaceMatrices() {
         // TODO: Precompute this matrices
-        static const Float4x4 CubeFaceMatrices[6] = {
+        static Float4x4 const CubeFaceMatrices[6] = {
             Float4x4::RotationZ( Math::_PI ).RotateAroundNormal( Math::_HALF_PI, Float3(0,1,0) ),
             Float4x4::RotationZ( Math::_PI ).RotateAroundNormal( -Math::_HALF_PI, Float3(0,1,0) ),
             Float4x4::RotationX( -Math::_HALF_PI ),
@@ -1355,16 +1359,16 @@ struct Float3x4 {
     Float4 Col2;
 
     Float3x4() = default;
-    explicit Float3x4( const Float2x2 & _Value );
-    explicit Float3x4( const Float3x3 & _Value );
-    explicit Float3x4( const Float4x4 & _Value );
-    constexpr Float3x4( const Float4 & _Col0, const Float4 & _Col1, const Float4 & _Col2 ) : Col0( _Col0 ), Col1( _Col1 ), Col2( _Col2 ) {}
-    constexpr Float3x4( const float & _00, const float & _01, const float & _02, const float & _03,
-                        const float & _10, const float & _11, const float & _12, const float & _13,
-                        const float & _20, const float & _21, const float & _22, const float & _23 )
+    explicit Float3x4( Float2x2 const & _Value );
+    explicit Float3x4( Float3x3 const & _Value );
+    explicit Float3x4( Float4x4 const & _Value );
+    constexpr Float3x4( Float4 const & _Col0, Float4 const & _Col1, Float4 const & _Col2 ) : Col0( _Col0 ), Col1( _Col1 ), Col2( _Col2 ) {}
+    constexpr Float3x4( float const & _00, float const & _01, float const & _02, float const & _03,
+                        float const & _10, float const & _11, float const & _12, float const & _13,
+                        float const & _20, float const & _21, float const & _22, float const & _23 )
         : Col0( _00, _01, _02, _03 ), Col1( _10, _11, _12, _13 ), Col2( _20, _21, _22, _23 ) {}
-    constexpr explicit Float3x4( const float & _Diagonal ) : Col0( _Diagonal, 0, 0, 0 ), Col1( 0, _Diagonal, 0, 0 ), Col2( 0, 0, _Diagonal, 0 ) {}
-    constexpr explicit Float3x4( const Float3 & _Diagonal ) : Col0( _Diagonal.X, 0, 0, 0 ), Col1( 0, _Diagonal.Y, 0, 0 ), Col2( 0, 0, _Diagonal.Z, 0 ) {}
+    constexpr explicit Float3x4( float const & _Diagonal ) : Col0( _Diagonal, 0, 0, 0 ), Col1( 0, _Diagonal, 0, 0 ), Col2( 0, 0, _Diagonal, 0 ) {}
+    constexpr explicit Float3x4( Float3 const & _Diagonal ) : Col0( _Diagonal.X, 0, 0, 0 ), Col1( 0, _Diagonal.Y, 0, 0 ), Col2( 0, 0, _Diagonal.Z, 0 ) {}
 
     float * ToPtr() {
         return &Col0.X;
@@ -1374,7 +1378,7 @@ struct Float3x4 {
         return &Col0.X;
     }
 
-//    Float3x4 & operator=( const Float3x4 & _Other ) {
+//    Float3x4 & operator=( Float3x4 const & _Other ) {
 //        //Col0 = _Other.Col0;
 //        //Col1 = _Other.Col1;
 //        //Col2 = _Other.Col2;
@@ -1387,7 +1391,7 @@ struct Float3x4 {
         return (&Col0)[ _Index ];
     }
 
-    const Float4 & operator[]( const int & _Index ) const {
+    Float4 const & operator[]( const int & _Index ) const {
         AN_ASSERT_( _Index >= 0 && _Index < 3, "Index out of range" );
         return (&Col0)[ _Index ];
     }
@@ -1397,10 +1401,10 @@ struct Float3x4 {
         return Float3( Col0[ _Index ], Col1[ _Index ], Col2[ _Index ] );
     }
 
-    bool operator==( const Float3x4 & _Other ) const { return Compare( _Other ); }
-    bool operator!=( const Float3x4 & _Other ) const { return !Compare( _Other ); }
+    bool operator==( Float3x4 const & _Other ) const { return Compare( _Other ); }
+    bool operator!=( Float3x4 const & _Other ) const { return !Compare( _Other ); }
 
-    bool Compare( const Float3x4 & _Other ) const {
+    bool Compare( Float3x4 const & _Other ) const {
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 12 ; i++ ) {
@@ -1411,7 +1415,7 @@ struct Float3x4 {
         return true;
     }
 
-    bool CompareEps( const Float3x4 & _Other, const float & _Epsilon ) const {
+    bool CompareEps( Float3x4 const & _Other, float const & _Epsilon ) const {
         const float * pm1 = ToPtr();
         const float * pm2 = _Other.ToPtr();
         for ( int i = 0 ; i < 12 ; i++ ) {
@@ -1424,7 +1428,7 @@ struct Float3x4 {
 
     // Math operators
 
-    void Compose( const Float3 & _Translation, const Float3x3 & _Rotation, const Float3 & _Scale ) {
+    void Compose( Float3 const & _Translation, Float3x3 const & _Rotation, Float3 const & _Scale ) {
         Col0[3] = _Translation.X;
         Col1[3] = _Translation.Y;
         Col2[3] = _Translation.Z;
@@ -1442,7 +1446,7 @@ struct Float3x4 {
         Col2[2] = _Rotation[2][2] * _Scale.Z;
     }
 
-    void Compose( const Float3 & _Translation, const Float3x3 & _Rotation ) {
+    void Compose( Float3 const & _Translation, Float3x3 const & _Rotation ) {
         Col0[3] = _Translation.X;
         Col1[3] = _Translation.Y;
         Col2[3] = _Translation.Z;
@@ -1460,7 +1464,7 @@ struct Float3x4 {
         Col2[2] = _Rotation[2][2];
     }
 
-    void SetTranslation( const Float3 & _Translation ) {
+    void SetTranslation( Float3 const & _Translation ) {
         Col0[3] = _Translation.X;
         Col1[3] = _Translation.Y;
         Col2[3] = _Translation.Z;
@@ -1531,7 +1535,7 @@ struct Float3x4 {
     }
 
     void DecomposeNormalMatrix( Float3x3 & _NormalMatrix ) const {
-        const Float3x4 & m = *this;
+        Float3x4 const & m = *this;
 
         const float Determinant = m[0][0] * m[1][1] * m[2][2] +
                                   m[1][0] * m[2][1] * m[0][2] +
@@ -1563,7 +1567,7 @@ struct Float3x4 {
     }
 
     Float3x4 Inversed() const {
-        const Float3x4 & m = *this;
+        Float3x4 const & m = *this;
 
         const float Determinant = m[0][0] * m[1][1] * m[2][2] +
                                   m[1][0] * m[2][1] * m[0][2] +
@@ -1609,20 +1613,20 @@ struct Float3x4 {
         *this = Identity();
     }
 
-    static Float3x4 Translation( const Float3 & _Vec ) {
+    static Float3x4 Translation( Float3 const & _Vec ) {
         return Float3x4( Float4( 1,0,0,_Vec[0] ),
                          Float4( 0,1,0,_Vec[1] ),
                          Float4( 0,0,1,_Vec[2] ) );
     }
 
-    static Float3x4 Scale( const Float3 & _Scale  ) {
+    static Float3x4 Scale( Float3 const & _Scale  ) {
         return Float3x4( Float4( _Scale[0],0,0,0 ),
                          Float4( 0,_Scale[1],0,0 ),
                          Float4( 0,0,_Scale[2],0 ) );
     }
 
     // Return rotation around normalized axis
-    static Float3x4 RotationAroundNormal( const float & _AngleRad, const Float3 & _Normal ) {
+    static Float3x4 RotationAroundNormal( float const & _AngleRad, Float3 const & _Normal ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         const Float3 Temp = ( 1.0f - c ) * _Normal;
@@ -1633,12 +1637,12 @@ struct Float3x4 {
     }
 
     // Return rotation around unnormalized vector
-    static Float3x4 RotationAroundVector( const float & _AngleRad, const Float3 & _Vector ) {
+    static Float3x4 RotationAroundVector( float const & _AngleRad, Float3 const & _Vector ) {
         return RotationAroundNormal( _AngleRad, _Vector.Normalized() );
     }
 
     // Return rotation around X axis
-    static Float3x4 RotationX( const float & _AngleRad ) {
+    static Float3x4 RotationX( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float3x4( 1, 0, 0, 0,
@@ -1647,7 +1651,7 @@ struct Float3x4 {
     }
 
     // Return rotation around Y axis
-    static Float3x4 RotationY( const float & _AngleRad ) {
+    static Float3x4 RotationY( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float3x4( c, 0, s, 0,
@@ -1656,7 +1660,7 @@ struct Float3x4 {
     }
 
     // Return rotation around Z axis
-    static Float3x4 RotationZ( const float & _AngleRad ) {
+    static Float3x4 RotationZ( float const & _AngleRad ) {
         float s, c;
         Math::SinCos( _AngleRad, s, c );
         return Float3x4( c,-s, 0, 0,
@@ -1665,51 +1669,53 @@ struct Float3x4 {
     }
 
     // Assume _Vec.W = 1
-    Float3 operator*( const Float3 & _Vec ) const {
-        return Float3( Col0[0] * _Vec.X + Col0[1] * _Vec.Y + Col0[2] * _Vec.Z + Col0[3],
-                       Col1[0] * _Vec.X + Col1[1] * _Vec.Y + Col1[2] * _Vec.Z + Col1[3],
-                       Col2[0] * _Vec.X + Col2[1] * _Vec.Y + Col2[2] * _Vec.Z + Col2[3] );
+    template< typename T >
+    TVector3< T > operator*( TVector3< T > const & _Vec ) const {
+        return TVector3< T >( Col0[0] * _Vec.X + Col0[1] * _Vec.Y + Col0[2] * _Vec.Z + Col0[3],
+                              Col1[0] * _Vec.X + Col1[1] * _Vec.Y + Col1[2] * _Vec.Z + Col1[3],
+                              Col2[0] * _Vec.X + Col2[1] * _Vec.Y + Col2[2] * _Vec.Z + Col2[3] );
     }
 
     // Assume _Vec.Z = 0, _Vec.W = 1
-    Float3 operator*( const Float2 & _Vec ) const {
-        return Float3( Col0[0] * _Vec.X + Col0[1] * _Vec.Y + Col0[3],
-                       Col1[0] * _Vec.X + Col1[1] * _Vec.Y + Col1[3],
-                       Col2[0] * _Vec.X + Col2[1] * _Vec.Y + Col2[3] );
+    template< typename T >
+    TVector3< T > operator*( TVector2< T > const & _Vec ) const {
+        return TVector3< T >( Col0[0] * _Vec.X + Col0[1] * _Vec.Y + Col0[3],
+                              Col1[0] * _Vec.X + Col1[1] * _Vec.Y + Col1[3],
+                              Col2[0] * _Vec.X + Col2[1] * _Vec.Y + Col2[3] );
     }
 
-    Float2 Mult_Vec2_IgnoreZ( const Float2 & _Vec ) {
+    Float2 Mult_Vec2_IgnoreZ( Float2 const & _Vec ) {
         return Float2( Col0[0] * _Vec.X + Col0[1] * _Vec.Y + Col0[3],
                        Col1[0] * _Vec.X + Col1[1] * _Vec.Y + Col1[3] );
     }
 
-    Float3x4 operator*( const float & _Value ) const {
+    Float3x4 operator*( float const & _Value ) const {
         return Float3x4( Col0 * _Value,
                          Col1 * _Value,
                          Col2 * _Value );
     }
 
-    void operator*=( const float & _Value ) {
+    void operator*=( float const & _Value ) {
         Col0 *= _Value;
         Col1 *= _Value;
         Col2 *= _Value;
     }
 
-    Float3x4 operator/( const float & _Value ) const {
+    Float3x4 operator/( float const & _Value ) const {
         const float OneOverValue = 1.0f / _Value;
         return Float3x4( Col0 * OneOverValue,
                          Col1 * OneOverValue,
                          Col2 * OneOverValue);
     }
 
-    void operator/=( const float & _Value ) {
+    void operator/=( float const & _Value ) {
         const float OneOverValue = 1.0f / _Value;
         Col0 *= OneOverValue;
         Col1 *= OneOverValue;
         Col2 *= OneOverValue;
     }
 
-    Float3x4 operator*( const Float3x4 & _Mat ) const {
+    Float3x4 operator*( Float3x4 const & _Mat ) const {
         return Float3x4( Col0[0] * _Mat[0][0] + Col0[1] * _Mat[1][0] + Col0[2] * _Mat[2][0],
                          Col0[0] * _Mat[0][1] + Col0[1] * _Mat[1][1] + Col0[2] * _Mat[2][1],
                          Col0[0] * _Mat[0][2] + Col0[1] * _Mat[1][2] + Col0[2] * _Mat[2][2],
@@ -1726,7 +1732,7 @@ struct Float3x4 {
                          Col2[0] * _Mat[0][3] + Col2[1] * _Mat[1][3] + Col2[2] * _Mat[2][3] + Col2[3] );
     }
 
-    void operator*=( const Float3x4 & _Mat ) {
+    void operator*=( Float3x4 const & _Mat ) {
         *this = Float3x4( Col0[0] * _Mat[0][0] + Col0[1] * _Mat[1][0] + Col0[2] * _Mat[2][0],
                           Col0[0] * _Mat[0][1] + Col0[1] * _Mat[1][1] + Col0[2] * _Mat[2][1],
                           Col0[0] * _Mat[0][2] + Col0[1] * _Mat[1][2] + Col0[2] * _Mat[2][2],
@@ -1767,7 +1773,7 @@ struct Float3x4 {
 
     // Static methods
 
-    static const Float3x4 & Identity() {
+    static Float3x4 const & Identity() {
         static constexpr Float3x4 IdentityMat( 1 );
         return IdentityMat;
     }
@@ -1776,64 +1782,67 @@ struct Float3x4 {
 // Type conversion
 
 // Float3x3 to Float2x2
-AN_FORCEINLINE Float2x2::Float2x2( const Float3x3 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ) {}
+AN_FORCEINLINE Float2x2::Float2x2( Float3x3 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ) {}
 
 // Float3x4 to Float2x2
-AN_FORCEINLINE Float2x2::Float2x2( const Float3x4 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ) {}
+AN_FORCEINLINE Float2x2::Float2x2( Float3x4 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ) {}
 
 // Float4x4 to Float2x2
-AN_FORCEINLINE Float2x2::Float2x2( const Float4x4 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ) {}
+AN_FORCEINLINE Float2x2::Float2x2( Float4x4 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ) {}
 
 // Float2x2 to Float3x3
-AN_FORCEINLINE Float3x3::Float3x3( const Float2x2 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( 0,0,1 ) {}
+AN_FORCEINLINE Float3x3::Float3x3( Float2x2 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( 0,0,1 ) {}
 
 // Float3x4 to Float3x3
-AN_FORCEINLINE Float3x3::Float3x3( const Float3x4 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ) {}
+AN_FORCEINLINE Float3x3::Float3x3( Float3x4 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ) {}
 
 // Float4x4 to Float3x3
-AN_FORCEINLINE Float3x3::Float3x3( const Float4x4 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ) {}
+AN_FORCEINLINE Float3x3::Float3x3( Float4x4 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ) {}
 
 // Float2x2 to Float4x4
-AN_FORCEINLINE Float4x4::Float4x4( const Float2x2 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( 0,0,1,0 ), Col3( 0,0,0,1 ) {}
+AN_FORCEINLINE Float4x4::Float4x4( Float2x2 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( 0,0,1,0 ), Col3( 0,0,0,1 ) {}
 
 // Float3x3 to Float4x4
-AN_FORCEINLINE Float4x4::Float4x4( const Float3x3 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ), Col3( 0,0,0,1 ) {}
+AN_FORCEINLINE Float4x4::Float4x4( Float3x3 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ), Col3( 0,0,0,1 ) {}
 
 // Float3x4 to Float4x4
-AN_FORCEINLINE Float4x4::Float4x4( const Float3x4 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ), Col3( 0,0,0,1 ) {}
+AN_FORCEINLINE Float4x4::Float4x4( Float3x4 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ), Col3( 0,0,0,1 ) {}
 
 // Float2x2 to Float3x4
-AN_FORCEINLINE Float3x4::Float3x4( const Float2x2 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( 0.0f ) {}
+AN_FORCEINLINE Float3x4::Float3x4( Float2x2 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( 0.0f ) {}
 
 // Float3x3 to Float3x4
-AN_FORCEINLINE Float3x4::Float3x4( const Float3x3 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ) {}
+AN_FORCEINLINE Float3x4::Float3x4( Float3x3 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ) {}
 
 // Float4x4 to Float3x4
-AN_FORCEINLINE Float3x4::Float3x4( const Float4x4 & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ) {}
+AN_FORCEINLINE Float3x4::Float3x4( Float4x4 const & _Value ) : Col0( _Value.Col0 ), Col1( _Value.Col1 ), Col2( _Value.Col2 ) {}
 
 
-AN_FORCEINLINE Float2 operator*( const Float2 & _Vec, const Float2x2 & _Mat ) {
-    return Float2( _Mat[0][0] * _Vec.X + _Mat[0][1] * _Vec.Y,
-                   _Mat[1][0] * _Vec.X + _Mat[1][1] * _Vec.Y );
+template< typename T >
+AN_FORCEINLINE TVector2< T > operator*( TVector2< T > const & _Vec, Float2x2 const & _Mat ) {
+    return TVector2< T >( _Mat[0][0] * _Vec.X + _Mat[0][1] * _Vec.Y,
+                          _Mat[1][0] * _Vec.X + _Mat[1][1] * _Vec.Y );
 }
 
-AN_FORCEINLINE Float3 operator*( const Float3 & _Vec, const Float3x3 & _Mat ) {
-    return Float3( _Mat[0][0] * _Vec.X + _Mat[0][1] * _Vec.Y + _Mat[0][2] * _Vec.Z,
-                   _Mat[1][0] * _Vec.X + _Mat[1][1] * _Vec.Y + _Mat[1][2] * _Vec.Z,
-                   _Mat[2][0] * _Vec.X + _Mat[2][1] * _Vec.Y + _Mat[2][2] * _Vec.Z);
+template< typename T >
+AN_FORCEINLINE TVector3< T > operator*( TVector3< T > const & _Vec, Float3x3 const & _Mat ) {
+    return TVector3< T >( _Mat[0][0] * _Vec.X + _Mat[0][1] * _Vec.Y + _Mat[0][2] * _Vec.Z,
+                          _Mat[1][0] * _Vec.X + _Mat[1][1] * _Vec.Y + _Mat[1][2] * _Vec.Z,
+                          _Mat[2][0] * _Vec.X + _Mat[2][1] * _Vec.Y + _Mat[2][2] * _Vec.Z);
 }
 
-AN_FORCEINLINE Float4 operator*( const Float4 & _Vec, const Float4x4 & _Mat ) {
-    return Float4( _Mat[0][0] * _Vec.X + _Mat[0][1] * _Vec.Y + _Mat[0][2] * _Vec.Z + _Mat[0][3] * _Vec.W,
-                   _Mat[1][0] * _Vec.X + _Mat[1][1] * _Vec.Y + _Mat[1][2] * _Vec.Z + _Mat[1][3] * _Vec.W,
-                   _Mat[2][0] * _Vec.X + _Mat[2][1] * _Vec.Y + _Mat[2][2] * _Vec.Z + _Mat[2][3] * _Vec.W,
-                   _Mat[3][0] * _Vec.X + _Mat[3][1] * _Vec.Y + _Mat[3][2] * _Vec.Z + _Mat[3][3] * _Vec.W );
+template< typename T >
+AN_FORCEINLINE TVector4< T > operator*( TVector4< T > const & _Vec, Float4x4 const & _Mat ) {
+    return TVector4< T >( _Mat[0][0] * _Vec.X + _Mat[0][1] * _Vec.Y + _Mat[0][2] * _Vec.Z + _Mat[0][3] * _Vec.W,
+                          _Mat[1][0] * _Vec.X + _Mat[1][1] * _Vec.Y + _Mat[1][2] * _Vec.Z + _Mat[1][3] * _Vec.W,
+                          _Mat[2][0] * _Vec.X + _Mat[2][1] * _Vec.Y + _Mat[2][2] * _Vec.Z + _Mat[2][3] * _Vec.W,
+                          _Mat[3][0] * _Vec.X + _Mat[3][1] * _Vec.Y + _Mat[3][2] * _Vec.Z + _Mat[3][3] * _Vec.W );
 }
 
-AN_FORCEINLINE Float4x4 Float4x4::operator*( const Float3x4 & _Mat ) const {
-    const Float4 & SrcB0 = _Mat.Col0;
-    const Float4 & SrcB1 = _Mat.Col1;
-    const Float4 & SrcB2 = _Mat.Col2;
+AN_FORCEINLINE Float4x4 Float4x4::operator*( Float3x4 const & _Mat ) const {
+    Float4 const & SrcB0 = _Mat.Col0;
+    Float4 const & SrcB1 = _Mat.Col1;
+    Float4 const & SrcB2 = _Mat.Col2;
 
     return Float4x4( Col0 * SrcB0[0] + Col1 * SrcB1[0] + Col2 * SrcB2[0],
                      Col0 * SrcB0[1] + Col1 * SrcB1[1] + Col2 * SrcB2[1],
@@ -1841,10 +1850,10 @@ AN_FORCEINLINE Float4x4 Float4x4::operator*( const Float3x4 & _Mat ) const {
                      Col0 * SrcB0[3] + Col1 * SrcB1[3] + Col2 * SrcB2[3] + Col3 );
 }
 
-AN_FORCEINLINE void Float4x4::operator*=( const Float3x4 & _Mat ) {
-    const Float4 & SrcB0 = _Mat.Col0;
-    const Float4 & SrcB1 = _Mat.Col1;
-    const Float4 & SrcB2 = _Mat.Col2;
+AN_FORCEINLINE void Float4x4::operator*=( Float3x4 const & _Mat ) {
+    Float4 const & SrcB0 = _Mat.Col0;
+    Float4 const & SrcB1 = _Mat.Col1;
+    Float4 const & SrcB2 = _Mat.Col2;
 
     *this = Float4x4( Col0 * SrcB0[0] + Col1 * SrcB1[0] + Col2 * SrcB2[0],
                       Col0 * SrcB0[1] + Col1 * SrcB1[1] + Col2 * SrcB2[1],
@@ -1854,7 +1863,7 @@ AN_FORCEINLINE void Float4x4::operator*=( const Float3x4 & _Mat ) {
 
 namespace Math {
 
-    /*static*/ AN_FORCEINLINE bool Unproject( const Float4x4 & _ModelViewProjectionInversed, const float _Viewport[4], const Float3 & _Coord, Float3 & _Result ) {
+    /*static*/ AN_FORCEINLINE bool Unproject( Float4x4 const & _ModelViewProjectionInversed, const float _Viewport[4], Float3 const & _Coord, Float3 & _Result ) {
         Float4 In( _Coord, 1.0f );
 
         // Map x and y from window coordinates
@@ -1880,7 +1889,7 @@ namespace Math {
         return true;
     }
 
-    /*static*/ AN_FORCEINLINE bool UnprojectRay( const Float4x4 & _ModelViewProjectionInversed, const float _Viewport[4], const float & _X, const float & _Y, Float3 & _RayStart, Float3 & _RayEnd ) {
+    /*static*/ AN_FORCEINLINE bool UnprojectRay( Float4x4 const & _ModelViewProjectionInversed, const float _Viewport[4], float const & _X, float const & _Y, Float3 & _RayStart, Float3 & _RayEnd ) {
         Float3 Coord;
 
         Coord.X = _X;
@@ -1899,7 +1908,7 @@ namespace Math {
         return true;
     }
 
-    /*static*/ AN_FORCEINLINE bool UnprojectRayDir( const Float4x4 & _ModelViewProjectionInversed, const float _Viewport[4], const float & _X, const float & _Y, Float3 & _RayStart, Float3 & _RayDir ) {
+    /*static*/ AN_FORCEINLINE bool UnprojectRayDir( Float4x4 const & _ModelViewProjectionInversed, const float _Viewport[4], float const & _X, float const & _Y, Float3 & _RayStart, Float3 & _RayDir ) {
         Float3 Coord;
 
         Coord.X = _X;
@@ -1921,10 +1930,10 @@ namespace Math {
         return true;
     }
 
-    /*static*/ AN_FORCEINLINE bool UnprojectPoint( const Float4x4 & _ModelViewProjectionInversed,
-                                               const float _Viewport[4],
-                                               const float & _X, const float & _Y, const float & _Depth,
-                                               Float3 & _Result )
+    /*static*/ AN_FORCEINLINE bool UnprojectPoint( Float4x4 const & _ModelViewProjectionInversed,
+                                                   const float _Viewport[4],
+                                                   float const & _X, float const & _Y, float const & _Depth,
+                                                   Float3 & _Result )
     {
         return Unproject( _ModelViewProjectionInversed, _Viewport, Float3( _X, _Y, _Depth ), _Result );
     }

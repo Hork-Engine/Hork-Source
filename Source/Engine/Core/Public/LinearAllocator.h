@@ -38,7 +38,7 @@ class TLinearAllocator {
 
 public:
     TLinearAllocator() {
-        Chunks = nullptr;
+        Blocks = nullptr;
         TotalAllocs = 0;
     }
 
@@ -50,43 +50,46 @@ public:
     void * Allocate( size_t _SizeInBytes );
 
     void Free() {
-        for ( SChunk * chunk = Chunks ; chunk ; ) {
-            SChunk * next = chunk->Next;
-            GHeapMemory.HeapFree( chunk );
-            chunk = next;
+        for ( SBlock * block = Blocks ; block ; ) {
+            SBlock * next = block->Next;
+            GHeapMemory.Dealloc( block );
+            block = next;
         }
-        Chunks = nullptr;
+        Blocks = nullptr;
         TotalAllocs = 0;
     }
 
 private:
-    struct SChunk {
+    struct alignas( 16 ) SBlock {
         size_t TotalAllocated;
         size_t Size;
-        SChunk * Next;
+        SBlock * Next;
     };
-    SChunk * Chunks;
+    SBlock * Blocks;
     size_t TotalAllocs;
+
+    static_assert( sizeof(SBlock) == 32, "Sizeof check" );
 };
 
 template< int MIN_BLOCK_SIZE >
 void * TLinearAllocator< MIN_BLOCK_SIZE >::Allocate( size_t _SizeInBytes ) {
-    SChunk * chunk = Chunks;
+    SBlock * block = Blocks;
 
-    if ( !chunk || chunk->TotalAllocated + _SizeInBytes > chunk->Size ) {
-        size_t chunkSize = Math::Max< size_t >( _SizeInBytes, MIN_BLOCK_SIZE );
-        chunk = ( SChunk * )GHeapMemory.HeapAlloc( chunkSize + sizeof( SChunk ), 1 );
-        chunk->TotalAllocated = 0;
-        chunk->Size = chunkSize;
-        chunk->Next = Chunks;
-        Chunks = chunk;
+    if ( !block || block->TotalAllocated + _SizeInBytes > block->Size ) {
+        size_t blockSize = Math::Max< size_t >( _SizeInBytes, MIN_BLOCK_SIZE );
+        block = ( SBlock * )GHeapMemory.Alloc( blockSize + sizeof( SBlock ), 16 );
+        block->TotalAllocated = 0;
+        block->Size = blockSize;
+        block->Next = Blocks;
+        Blocks = block;
         TotalAllocs++;
     }
 
-    void * ptr = reinterpret_cast< byte * >( chunk + 1 ) + chunk->TotalAllocated;
-    chunk->TotalAllocated += _SizeInBytes;
+    void * ptr = reinterpret_cast< byte * >( block + 1 ) + block->TotalAllocated;
+    block->TotalAllocated += _SizeInBytes;
+    block->TotalAllocated = Align( block->TotalAllocated, 16 );
 
-    // TODO: Alignment
+    AN_ASSERT( IsAlignedPtr( ptr, 16 ) );
 
     return ptr;
 }

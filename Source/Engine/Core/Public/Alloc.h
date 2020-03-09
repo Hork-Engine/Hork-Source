@@ -33,31 +33,11 @@ SOFTWARE.
 #include "Atomic.h"
 #include "Thread.h"
 
-//#define AN_MULTITHREADED_ALLOC
-
 /*
 
 Memory utilites
 
 */
-
-/** Clear memory with size aligned to 8 byte block length */
-AN_FORCEINLINE void ClearMemory8( void * _Buffer, uint64_t _ClearValue, size_t _Size ) {
-    size_t count = ( ( _Size + 7 ) & ~7 ) >> 3;
-    uint64_t * data = ( uint64_t * )_Buffer;
-    while ( count-- ) {
-        *data++ = _ClearValue;
-    }
-}
-
-/** Clear memory with size aligned to 8 byte block length */
-AN_FORCEINLINE void ZeroMemory8( void * _Buffer, size_t _Size ) {
-    size_t count = ( ( _Size + 7 ) & ~7 ) >> 3;
-    uint64_t * data = ( uint64_t * )_Buffer;
-    while ( count-- ) {
-        *data++ = 0;
-    }
-}
 
 /** Built-in memset function replacement */
 AN_FORCEINLINE void Memset( void * d, int v, size_t sz ) {
@@ -73,6 +53,20 @@ AN_FORCEINLINE void ZeroMem( void * d, size_t sz ) {
     while ( sz-- ) {
         *p++ = 0;
     }
+}
+
+void _MemcpySSE( byte * _Dst, const byte * _Src, size_t _SizeInBytes );
+void _ZeroMemSSE( byte * _Dst, size_t _SizeInBytes );
+void _MemsetSSE( byte * _Dst, int _Val, size_t _SizeInBytes );
+
+AN_FORCEINLINE void MemcpySSE( void * _Dst, const void * _Src, size_t _SizeInBytes ) {
+    _MemcpySSE( ( byte * )_Dst, ( const byte * )_Src, _SizeInBytes );
+}
+AN_FORCEINLINE void ZeroMemSSE( void * _Dst, size_t _SizeInBytes ) {
+    _ZeroMemSSE( ( byte * )_Dst, _SizeInBytes );
+}
+AN_FORCEINLINE void MemsetSSE( void * _Dst, int  _Val, size_t _SizeInBytes ) {
+    _MemsetSSE( (byte *)_Dst, _Val, _SizeInBytes );
 }
 
 /**
@@ -95,14 +89,17 @@ public:
     /** Deinitialize memory (main thread only) */
     void Deinitialize();
 
-    /** Heap memory allocation (thread safe) */
-    void * HeapAlloc( size_t _BytesCount, int _Alignment );
+    /** Heap memory allocation (thread safe). Minimal alignment is 16. */
+    void * Alloc( size_t _BytesCount, int _Alignment = 16 );
 
     /** Heap memory allocation (thread safe) */
-    void * HeapAllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue = 0 );
+    void * ClearedAlloc( size_t _BytesCount, int _Alignment = 16 );
+
+    /** Tries to realloc existing buffer */
+    void * Realloc( void * _Data, int _NewBytesCount, bool _KeepOld );
 
     /** Heap memory deallocation (thread safe) */
-    void HeapFree( void * _Bytes );
+    void Dealloc( void * _Bytes );
 
     /** Check if memory was trashed (thread safe) */
     void PointerTrashTest( void * _Bytes );
@@ -123,10 +120,12 @@ private:
     void CheckMemoryLeaks();
 
     struct SHeapChunk {
-        uint32_t Size;
         SHeapChunk * pNext;
         SHeapChunk * pPrev;
-        int16_t Padding; // to keep heap aligned
+        uint32_t Size;
+        uint32_t DataSize;
+        uint32_t AlignOffset; // to keep heap aligned (one byte is enough for it)
+        uint32_t Alignment;   // one byte is enough for it
     };
 
     SHeapChunk HeapChain;
@@ -136,9 +135,9 @@ private:
 #endif
 };
 
-AN_FORCEINLINE void * AHeapMemory::HeapAllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
-    void * bytes = HeapAlloc( _BytesCount, _Alignment );
-    ClearMemory8( bytes, _ClearValue, _BytesCount );
+AN_FORCEINLINE void * AHeapMemory::ClearedAlloc( size_t _BytesCount, int _Alignment ) {
+    void * bytes = Alloc( _BytesCount, _Alignment );
+    ZeroMemSSE( bytes, _BytesCount );
     return bytes;
 }
 
@@ -152,11 +151,14 @@ Example:
 
 int Mark = HunkMemory.SetHunkMark();
 
-byte * buffer1 = HunkMemory.HunkMemory( bufferSize1 );
-byte * buffer2 = HunkMemory.HunkMemory( bufferSize2 );
+byte * buffer1 = HunkMemory.Alloc( bufferSize1 );
+byte * buffer2 = HunkMemory.Alloc( bufferSize2 );
 ...
 
 HunkMemory.ClearToMark( Mark ); // here all buffers allocated after SetHunkMark will be deallocated
+
+Allocated chunks are aligned at 16-byte boundary.
+If you need other alignment, do it on top of the allocator.
 
 */
 class ANGIE_API AHunkMemory final {
@@ -175,10 +177,10 @@ public:
     int GetHunkMemorySizeInMegabytes() const;
 
     /** Hunk memory allocation */
-    void * HunkMemory( size_t _BytesCount, int _Alignment );
+    void * Alloc( size_t _BytesCount );
 
     /** Hunk memory allocation */
-    void * HunkMemoryCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue = 0 );
+    void * ClearedAlloc( size_t _BytesCount );
 
     /** Memory control functions */
     int SetHunkMark();
@@ -213,9 +215,9 @@ private:
     size_t MaxMemoryUsage = 0;
 };
 
-AN_FORCEINLINE void * AHunkMemory::HunkMemoryCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
-    void * bytes = HunkMemory( _BytesCount, _Alignment );
-    ClearMemory8( bytes, _ClearValue, _BytesCount );
+AN_FORCEINLINE void * AHunkMemory::ClearedAlloc( size_t _BytesCount ) {
+    void * bytes = Alloc( _BytesCount );
+    ZeroMemSSE( bytes, _BytesCount );
     return bytes;
 }
 
@@ -223,7 +225,9 @@ AN_FORCEINLINE void * AHunkMemory::HunkMemoryCleared( size_t _BytesCount, int _A
 
 AZoneMemory
 
-For small blocks, objects or strings
+For small blocks, objects or strings.
+Allocated chunks are aligned at 16-byte boundary.
+If you need other alignment, do it on top of the allocator.
 
 */
 class ANGIE_API AZoneMemory final {
@@ -242,16 +246,13 @@ public:
     int GetZoneMemorySizeInMegabytes() const;
 
     /** Zone memory allocation */
-    void * Alloc( size_t _BytesCount, int _Alignment );
+    void * Alloc( size_t _BytesCount );
 
     /** Zone memory allocation */
-    void * AllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue = 0 );
+    void * ClearedAlloc( size_t _BytesCount );
 
-    /** Tries to extend existing buffer */
-    void * Extend( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld );
-
-    /** Tries to extend existing buffer */
-    void * ExtendCleared( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld, uint64_t _ClearValue = 0 );
+    /** Tries to realloc existing buffer */
+    void * Realloc( void * _Data, int _NewBytesCount, bool _KeepOld );
 
     /** Zone memory deallocation */
     void Dealloc( void * _Bytes );
@@ -290,21 +291,9 @@ private:
 #endif
 };
 
-AN_FORCEINLINE void * AZoneMemory::AllocCleared( size_t _BytesCount, int _Alignment, uint64_t _ClearValue ) {
-    void * bytes = Alloc( _BytesCount, _Alignment );
-    ClearMemory8( bytes, _ClearValue, _BytesCount );
-    return bytes;
-}
-
-AN_FORCEINLINE void * AZoneMemory::ExtendCleared( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld, uint64_t _ClearValue ) {
-    void * bytes = Extend( _Data, _BytesCount, _NewBytesCount, _NewAlignment, _KeepOld );
-    if ( _KeepOld ) {
-        if ( _NewBytesCount > _BytesCount ) {
-            ClearMemory8( ( byte * )bytes + _BytesCount, _ClearValue, _NewBytesCount - _BytesCount );
-        }
-    } else {
-        ClearMemory8( bytes, _ClearValue, _NewBytesCount );
-    }
+AN_FORCEINLINE void * AZoneMemory::ClearedAlloc( size_t _BytesCount ) {
+    void * bytes = Alloc( _BytesCount );
+    ZeroMemSSE( bytes, _BytesCount );
     return bytes;
 }
 
@@ -318,55 +307,23 @@ Allocator base interface
 template< typename T >
 class TTemplateAllocator {
 public:
-    void * AllocAligned( size_t _BytesCount, int Alignment ) {
-        AN_ASSERT_( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
-        return static_cast< T * >( this )->ImplAllocate( _BytesCount, Alignment );
+    void * Alloc( size_t _BytesCount ) {
+        return static_cast< T * >( this )->ImplAllocate( _BytesCount );
     }
 
-    void * AllocClearedAligned( size_t _BytesCount, uint64_t _ClearValue, int Alignment ) {
-        AN_ASSERT_( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
-        void * bytes = static_cast< T * >( this )->ImplAllocate( _BytesCount, Alignment );
-        ClearMemory8( bytes, _ClearValue, _BytesCount );
+    void * ClearedAlloc( size_t _BytesCount ) {
+        void * bytes = static_cast< T * >( this )->ImplAllocate( _BytesCount );
+        ZeroMemSSE( bytes, _BytesCount );
         return bytes;
     }
 
-    void * ExtendAligned( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, int Alignment ) {
-        AN_ASSERT_( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
-        return static_cast< T * >( this )->ImplExtend( _Data, _BytesCount, _NewBytesCount, Alignment, _KeepOld );
-    }
-
-    void * ExtendClearedAligned( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue, int Alignment ) {
-        AN_ASSERT_( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "alignment must be power of two" );
-        void * bytes = static_cast< T * >( this )->ImplExtend( _Data, _BytesCount, _NewBytesCount, Alignment, _KeepOld );
-        if ( _KeepOld ) {
-            if ( _NewBytesCount > _BytesCount ) {
-                ClearMemory8( ( byte * )bytes + _BytesCount, _ClearValue, _NewBytesCount - _BytesCount );
-            }
-        } else {
-            ClearMemory8( bytes, _ClearValue, _NewBytesCount );
-        }
-        return bytes;
+    void * Realloc( void * _Data, size_t _NewBytesCount, bool _KeepOld ) {
+        return static_cast< T * >( this )->ImplRealloc( _Data, _NewBytesCount, _KeepOld );
     }
 
     void Dealloc( void * _Bytes ) {
         static_cast< T * >( this )->ImplDeallocate( _Bytes );
     }
-
-    void * Alloc1( size_t _BytesCount ) { return AllocAligned( _BytesCount, 1 ); }
-    void * Alloc16( size_t _BytesCount ) { return AllocAligned( _BytesCount, 16 ); }
-    void * Alloc32( size_t _BytesCount ) { return AllocAligned( _BytesCount, 32 ); }
-
-    void * AllocCleared1( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocClearedAligned( _BytesCount, _ClearValue, 1 ); }
-    void * AllocCleared16( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocClearedAligned( _BytesCount, _ClearValue, 16 ); }
-    void * AllocCleared32( size_t _BytesCount, uint64_t _ClearValue = 0 ) { return AllocClearedAligned( _BytesCount, _ClearValue, 32 ); }
-
-    void * Extend1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return ExtendAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, 1 ); }
-    void * Extend16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return ExtendAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, 16 ); }
-    void * Extend32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld ) { return ExtendAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, 32 ); }
-
-    void * ExtendCleared1( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendClearedAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue, 1 ); }
-    void * ExtendCleared16( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendClearedAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue, 16 ); }
-    void * ExtendCleared32( void * _Data, size_t _BytesCount, size_t _NewBytesCount, bool _KeepOld, uint64_t _ClearValue = 0 ) { return ExtendClearedAligned( _Data, _BytesCount, _NewBytesCount, _KeepOld, _ClearValue, 32 ); }
 };
 
 /**
@@ -382,8 +339,8 @@ class ANGIE_API AZoneAllocator final : public TTemplateAllocator< AZoneAllocator
 public:
     AZoneAllocator() {}
     static AZoneAllocator & Inst() { static AZoneAllocator inst; return inst; }
-    void * ImplAllocate( size_t _BytesCount, int _Alignment );
-    void * ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld );
+    void * ImplAllocate( size_t _BytesCount );
+    void * ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld );
     void ImplDeallocate( void * _Bytes );
 };
 
@@ -400,8 +357,8 @@ class ANGIE_API AHeapAllocator final : public TTemplateAllocator< AHeapAllocator
 public:
     AHeapAllocator() {}
     static AHeapAllocator & Inst() { static AHeapAllocator inst; return inst; }
-    void * ImplAllocate( size_t _BytesCount, int _Alignment );
-    void * ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld );
+    void * ImplAllocate( size_t _BytesCount );
+    void * ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld );
     void ImplDeallocate( void * _Bytes );
 };
 

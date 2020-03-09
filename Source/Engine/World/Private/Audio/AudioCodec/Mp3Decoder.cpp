@@ -342,7 +342,7 @@ bool AMp3Decoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
     if ( _PCM ) {
         int readBlockSize = mpg_outblock( mh );
 
-        *_PCM = (short *)GZoneMemory.Alloc( NumSamples * channels * sizeof( short ), 1 );
+        *_PCM = (short *)GZoneMemory.Alloc( NumSamples * channels * sizeof( short ) );
         byte * buffer = (byte *) *_PCM;
 
         size_t bytesRead = 0;
@@ -430,7 +430,7 @@ bool AMp3Decoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
 
     file.SeekEnd( 0 );
     int BufferLength = file.Tell();
-    byte * Buffer = ( byte * )GZoneMemory.Alloc( BufferLength, 1 );
+    byte * Buffer = ( byte * )GZoneMemory.Alloc( BufferLength );
     file.SeekSet( 0 );
     file.ReadBuffer( Buffer, BufferLength );
 

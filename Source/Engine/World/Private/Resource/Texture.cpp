@@ -405,7 +405,7 @@ bool ATexture::LoadResource( AString const & _Path ) {
         size_t pixelSize = texturePixelFormat.SizeInBytesUncompressed();
         size_t maxSize = w * h * d * pixelSize;
         //byte * lodData = (byte *)GHunkMemory.HunkMemory( maxSize, 1 );
-        byte * lodData = (byte *)GHeapMemory.HeapAlloc( maxSize, 1 );
+        byte * lodData = (byte *)GHeapMemory.Alloc( maxSize, 1 );
 
         //int numLayers = 1;
 
@@ -435,7 +435,7 @@ bool ATexture::LoadResource( AString const & _Path ) {
         //}
 
         //GHunkMemory.ClearLastHunk();
-        GHeapMemory.HeapFree( lodData );
+        GHeapMemory.Dealloc( lodData );
 
 #if 0
         byte * buf = (byte *)GHeapMemory.HeapAlloc( size, 1 );

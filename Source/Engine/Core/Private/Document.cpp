@@ -51,7 +51,7 @@ void ADocument::Clear() {
 int ADocument::AllocateField() {
     if ( FieldsCount == FieldsMemReserved ) {
         FieldsMemReserved = FieldsMemReserved ? FieldsMemReserved<<1 : 1024;
-        Fields = ( SDocumentField * )Allocator::Inst().Extend1( Fields, FieldsCount * sizeof( SDocumentField ), sizeof( SDocumentField ) * FieldsMemReserved, true );
+        Fields = ( SDocumentField * )Allocator::Inst().Realloc( Fields, sizeof( SDocumentField ) * FieldsMemReserved, true );
     }
     SDocumentField * field = &Fields[ FieldsCount ];
     field->ValuesHead = -1;
@@ -65,7 +65,7 @@ int ADocument::AllocateField() {
 int ADocument::AllocateValue() {
     if ( ValuesCount == ValuesMemReserved ) {
         ValuesMemReserved = ValuesMemReserved ? ValuesMemReserved<<1 : 1024;
-        Values = ( SDocumentValue * )Allocator::Inst().Extend1( Values, ValuesCount * sizeof( SDocumentValue ), sizeof( SDocumentValue ) * ValuesMemReserved, true );
+        Values = ( SDocumentValue * )Allocator::Inst().Realloc( Values, sizeof( SDocumentValue ) * ValuesMemReserved, true );
     }
     SDocumentValue * value = &Values[ ValuesCount ];
     value->FieldsHead = -1;
@@ -95,7 +95,7 @@ void ATokenBuffer::Initialize( const char * _String, bool _InSitu ) {
     if ( bInSitu ) {
         Start = const_cast< char * >( _String );
     } else {
-        Start = ( char * )Allocator::Inst().Alloc1( AString::Length( _String ) + 1 );
+        Start = ( char * )Allocator::Inst().Alloc( AString::Length( _String ) + 1 );
         AString::Copy( Start, _String );
     }
     Cur = Start;
@@ -126,7 +126,7 @@ ADocumentProxyBuffer::~ADocumentProxyBuffer() {
 }
 
 AString & ADocumentProxyBuffer::NewString() {
-    void * pMemory = Allocator::Inst().Alloc1( sizeof( AStringList ) );
+    void * pMemory = Allocator::Inst().Alloc( sizeof( AStringList ) );
     AStringList * node = new ( pMemory ) AStringList;
     node->Next = StringList;
     StringList = node;
@@ -134,7 +134,7 @@ AString & ADocumentProxyBuffer::NewString() {
 }
 
 AString & ADocumentProxyBuffer::NewString( const char * _String ) {
-    void * pMemory = Allocator::Inst().Alloc1( sizeof( AStringList ) );
+    void * pMemory = Allocator::Inst().Alloc( sizeof( AStringList ) );
     AStringList * node = new ( pMemory ) AStringList( _String );
     node->Next = StringList;
     StringList = node;
@@ -142,7 +142,7 @@ AString & ADocumentProxyBuffer::NewString( const char * _String ) {
 }
 
 AString & ADocumentProxyBuffer::NewString( const AString & _String ) {
-    void * pMemory = Allocator::Inst().Alloc1( sizeof( AStringList ) );
+    void * pMemory = Allocator::Inst().Alloc( sizeof( AStringList ) );
     AStringList * node = new ( pMemory ) AStringList( _String );
     node->Next = StringList;
     StringList = node;

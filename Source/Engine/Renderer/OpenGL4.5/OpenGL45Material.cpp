@@ -510,7 +510,31 @@ void AColorPassHUD::Create( const char * _SourceCode ) {
     Initialize( pipelineCI );
 }
 
-void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent ) {
+static GHI::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending ) {
+    switch ( _Blending ) {
+    case COLOR_BLENDING_ALPHA:
+        return GHI::BLENDING_ALPHA;
+    case COLOR_BLENDING_DISABLED:
+        return GHI::BLENDING_NO_BLEND;
+    case COLOR_BLENDING_PREMULTIPLIED_ALPHA:
+        return GHI::BLENDING_PREMULTIPLIED_ALPHA;
+    case COLOR_BLENDING_COLOR_ADD:
+        return GHI::BLENDING_COLOR_ADD;
+    case COLOR_BLENDING_MULTIPLY:
+        return GHI::BLENDING_MULTIPLY;
+    case COLOR_BLENDING_SOURCE_TO_DEST:
+        return GHI::BLENDING_SOURCE_TO_DEST;
+    case COLOR_BLENDING_ADD_MUL:
+        return GHI::BLENDING_ADD_MUL;
+    case COLOR_BLENDING_ADD_ALPHA:
+        return GHI::BLENDING_ADD_ALPHA;
+    default:
+        AN_ASSERT( 0 );
+    }
+    return GHI::BLENDING_NO_BLEND;
+}
+
+void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -520,8 +544,8 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
 
     BlendingStateInfo bsd;
     bsd.SetDefaults();
-    if ( _Translucent ) {
-        bsd.RenderTargetSlots[0].SetBlendingPreset( GHI::BLENDING_ALPHA );
+    if ( _Translucent ) {        
+        bsd.RenderTargetSlots[0].SetBlendingPreset( GetBlendingPreset( _Blending ) );
     }
 
     DepthStencilStateInfo dssd;
@@ -716,8 +740,7 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     Initialize( pipelineCI );
 }
 
-
-void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent ) {
+void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -728,7 +751,7 @@ void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
     BlendingStateInfo bsd;
     bsd.SetDefaults();
     if ( _Translucent ) {
-        bsd.RenderTargetSlots[0].SetBlendingPreset( GHI::BLENDING_ALPHA );
+        bsd.RenderTargetSlots[0].SetBlendingPreset( GetBlendingPreset( _Blending ) );
     }
 
     DepthStencilStateInfo dssd;
@@ -855,7 +878,7 @@ void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
     Initialize( pipelineCI );
 }
 
-void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent ) {
+void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending ) {
     PipelineCreateInfo pipelineCI = {};
 
     RasterizerStateInfo rsd;
@@ -866,7 +889,7 @@ void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
     BlendingStateInfo bsd;
     bsd.SetDefaults();
     if ( _Translucent ) {
-        bsd.RenderTargetSlots[0].SetBlendingPreset( GHI::BLENDING_ALPHA );
+        bsd.RenderTargetSlots[0].SetBlendingPreset( GetBlendingPreset( _Blending ) );
     }
 
     DepthStencilStateInfo dssd;

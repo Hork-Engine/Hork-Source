@@ -77,6 +77,7 @@ struct TPlane {
     }
 
     constexpr TPlane operator-() const {
+        // construct from normal and distance. D = -distance
         return TPlane( -Normal, D );
     }
 

@@ -385,10 +385,31 @@ constexpr bool IsAligned( size_t N, size_t Alignment ) {
     return (N & (Alignment - 1)) == 0 && N > 0;
 }
 
+constexpr bool IsAlignedPtr( void * Ptr, size_t Alignment ) {
+    return ((size_t)Ptr & (Alignment - 1)) == 0 && (size_t)Ptr > 0;
+}
+
 constexpr size_t IsSSEAligned( size_t N ) {
     return IsAligned( N, 16 );
 }
 
 constexpr size_t Align( size_t N, size_t Alignment ) {
     return ( N + ( Alignment - 1 ) ) & ~( Alignment - 1 );
+}
+
+constexpr void * AlignPtr( void * Ptr, size_t Alignment ) {
+#if 0
+    struct SAligner {
+        union {
+            void * p;
+            size_t i;
+        };
+    };
+    SAligner aligner;
+    aligner.p = _UnalignedPtr;
+    aligner.i = Align( aligner.i, _Alignment );
+    return aligner.p;
+#else
+    return ( void * )( Align( (size_t)Ptr, Alignment ) );
+#endif
 }

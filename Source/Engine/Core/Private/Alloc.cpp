@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <malloc.h>
 #include <memory.h>
+#include <xmmintrin.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -51,9 +52,7 @@ AZoneMemory GZoneMemory;
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-//#define CLEAR_ALLOCATED_MEMORY
 #define ENABLE_TRASH_TEST
-#define ENABLE_BLOCK_SIZE_ALIGN
 
 #ifdef AN_MULTITHREADED_ALLOC
 #define SYNC_GUARD ASyncGuard syncGuard( Sync );
@@ -90,16 +89,10 @@ AN_FORCEINLINE void DecMemoryStatisticsOnHeap( size_t _MemoryUsage, size_t _Over
     HeapTotalMemoryOverhead -= _Overhead;
 }
 
-AN_FORCEINLINE void * UnalignedMalloc( size_t _Size ) {
-    return malloc( _Size );
-}
-
-AN_FORCEINLINE void UnalignedFree( void * _Ptr ) {
-    free( _Ptr );
-}
-
 AHeapMemory::AHeapMemory() {
     HeapChain.pNext = HeapChain.pPrev = &HeapChain;
+
+    static_assert( sizeof( SHeapChunk ) == 32, "Sizeof check" );
 }
 
 AHeapMemory::~AHeapMemory() {
@@ -118,58 +111,66 @@ void AHeapMemory::Clear() {
     SHeapChunk * nextHeap;
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = nextHeap ) {
         nextHeap = heap->pNext;
-        HeapFree( heap + 1 );
+        Dealloc( heap + 1 );
     }
 }
 
-AN_FORCEINLINE void * AlignPointer( void * _UnalignedPtr, int _Alignment ) {
-#if 0
-    struct SAligner {
-        union {
-            void * p;
-            size_t i;
-        };
-    };
-    SAligner aligner;
-    aligner.p = _UnalignedPtr;
-    aligner.i = Align( aligner.i, _Alignment );
-    return aligner.p;
+AN_FORCEINLINE void * SysAlloc( size_t _SizeInBytes, int _Alignment ) {
+#ifdef AN_COMPILER_MSVC
+    return _aligned_malloc( _SizeInBytes, _Alignment );
 #else
-    //return ( void * )( ( (size_t)_UnalignedPtr + _Alignment - 1 ) & ~( _Alignment - 1 ) );
-
-    return ( void * )( Align( (size_t)_UnalignedPtr, _Alignment ) );
+    return aligned_alloc( _Alignment, _SizeInBytes );
 #endif
 }
 
-void * AHeapMemory::HeapAlloc( size_t _BytesCount, int _Alignment ) {
-    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
+AN_FORCEINLINE void SysFree( void * _Bytes ) {
+#ifdef AN_COMPILER_MSVC
+    return _aligned_free( _Bytes );
+#else
+    return free( _Bytes );
+#endif
+}
 
+void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment ) {
+#if 0
+    return SysAlloc( Align(_BytesCount,16), 16 );
+#else
     if ( _BytesCount == 0 ) {
         // invalid bytes count
         CriticalError( "AHeapMemory::HeapAlloc: Invalid bytes count\n" );
     }
 
-#ifdef ENABLE_BLOCK_SIZE_ALIGN
-    _BytesCount = ( _BytesCount + 7 ) & ~7;
-#endif
-
-    size_t realAllocatedBytes = _BytesCount + sizeof( SHeapChunk ) + _Alignment - 1;
+    size_t chunkSizeInBytes = _BytesCount + sizeof( SHeapChunk );
 
 #ifdef ENABLE_TRASH_TEST
-    realAllocatedBytes += sizeof( TRASH_MARKER );
+    chunkSizeInBytes += sizeof( TRASH_MARKER );
 #endif
 
     byte * bytes;
+    byte * aligned;
 
-    bytes = ( byte * )UnalignedMalloc( realAllocatedBytes );
+    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
+
+    if ( _Alignment <= 16 ) {
+        _Alignment = 16;
+        chunkSizeInBytes = Align( chunkSizeInBytes, 16 );
+        bytes = ( byte * )SysAlloc( chunkSizeInBytes, 16 );
+        aligned = bytes + sizeof( SHeapChunk );
+    } else {
+        chunkSizeInBytes += _Alignment - 1;
+        chunkSizeInBytes = Align( chunkSizeInBytes, sizeof(void *) );
+        bytes = ( byte * )SysAlloc( chunkSizeInBytes, sizeof(void *) );
+        aligned = ( byte * )AlignPtr( bytes + sizeof( SHeapChunk ), _Alignment );
+    }
+
+    AN_ASSERT( IsAlignedPtr( aligned, 16 ) );
 
     if ( bytes ) {
-        byte * aligned = ( byte * )AlignPointer( bytes + sizeof( SHeapChunk ), _Alignment );
-
-        //heap_t * heap = ( heap_t * )( bytes + padding );
         SHeapChunk * heap = ( SHeapChunk * )( aligned ) - 1;
-        heap->Size = realAllocatedBytes;
-        heap->Padding = aligned - bytes;
+        heap->Size = chunkSizeInBytes;
+        heap->DataSize = _BytesCount;
+        heap->Alignment = _Alignment;
+        heap->AlignOffset = aligned - bytes;
 
         {
             SYNC_GUARD
@@ -179,34 +180,37 @@ void * AHeapMemory::HeapAlloc( size_t _BytesCount, int _Alignment ) {
             HeapChain.pNext = heap;
         }
 
-#ifdef CLEAR_ALLOCATED_MEMORY
-        ClearMemory8( aligned, 0, _BytesCount );
-#endif
 #ifdef ENABLE_TRASH_TEST
-        *( TRASH_MARKER * )( bytes + realAllocatedBytes - sizeof( TRASH_MARKER ) ) = TrashMarker;
+        *( TRASH_MARKER * )( aligned + heap->DataSize ) = TrashMarker;
 #endif
-        IncMemoryStatisticsOnHeap( realAllocatedBytes, heap->Padding );
+
+        IncMemoryStatisticsOnHeap( heap->Size, heap->Size - heap->DataSize );
 
         return aligned;
     }
 
     CriticalError( "AHeapMemory::HeapAlloc: Failed on allocation of %u bytes\n", _BytesCount );
     return nullptr;
+#endif
 }
 
-void AHeapMemory::HeapFree( void * _Bytes ) {
+void AHeapMemory::Dealloc( void * _Bytes ) {
+#if 0
+    return SysFree( _Bytes );
+#else
     if ( _Bytes ) {
         byte * bytes = ( byte * )_Bytes;
 
         SHeapChunk * heap = ( SHeapChunk * )( bytes ) - 1;
-        bytes -= heap->Padding;
 
 #ifdef ENABLE_TRASH_TEST
-        if ( *( TRASH_MARKER * )( bytes + heap->Size - sizeof( TRASH_MARKER ) ) != TrashMarker ) {
+        if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
             MemLogger.Print( "AHeapMemory::HeapFree: Warning: memory was trashed\n" );
             // error()
         }
 #endif
+
+        bytes -= heap->AlignOffset;
 
         {
             SYNC_GUARD
@@ -214,29 +218,74 @@ void AHeapMemory::HeapFree( void * _Bytes ) {
             heap->pNext->pPrev = heap->pPrev;
         }
 
-        DecMemoryStatisticsOnHeap( heap->Size, heap->Padding );
+        DecMemoryStatisticsOnHeap( heap->Size, heap->Size - heap->DataSize );
 
-        UnalignedFree( bytes );
+        SysFree( bytes );
     }
+#endif
+}
+
+void * AHeapMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
+#if 0
+    void * bytes;
+    if ( _KeepOld ) {
+        bytes = SysAlloc( Align(_NewBytesCount,16), 16 );
+        memcpy( bytes, _Data, _NewBytesCount );
+        SysFree( _Data );
+    } else {
+        SysFree( _Data );
+        bytes = SysAlloc( Align(_NewBytesCount,16), 16 );
+    }
+    return bytes;
+#else
+    if ( !_Data ) {
+        // first alloc, use default alignment
+        return Alloc( _NewBytesCount, 16 );
+    }
+
+    byte * bytes = ( byte * )_Data;
+
+    SHeapChunk * heap = ( SHeapChunk * )( bytes ) - 1;
+
+    int alignment = heap->Alignment;
+
+#ifdef ENABLE_TRASH_TEST
+    if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
+        MemLogger.Print( "AHeapMemory::Realloc: Warning: memory was trashed\n" );
+    }
+#endif
+    if ( heap->DataSize >= _NewBytesCount ) {
+        // big enough
+        return _Data;
+    }
+    // reallocate
+    if ( _KeepOld ) {
+        bytes = ( byte * )Alloc( _NewBytesCount, alignment );
+        MemcpySSE( bytes, _Data, heap->DataSize );
+        Dealloc( _Data );
+        return bytes;
+    }
+    Dealloc( _Data );
+    return Alloc( _NewBytesCount, alignment );
+#endif
 }
 
 void AHeapMemory::PointerTrashTest( void * _Bytes ) {
-    #ifdef ENABLE_TRASH_TEST
+#ifdef ENABLE_TRASH_TEST
     byte * bytes = (byte *)_Bytes;
 
-    SHeapChunk * heap = (SHeapChunk *)(bytes)-1;
-    bytes -= heap->Padding;
+    SHeapChunk * heap = ( SHeapChunk * )( bytes )-1;
 
-    if ( *(TRASH_MARKER *)(bytes + heap->Size - sizeof( TRASH_MARKER )) != TrashMarker ) {
+    if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
         MemLogger.Print( "AHeapMemory::PointerTrashTest: Warning: memory was trashed\n" );
     }
-    #endif
+#endif
 }
 
 void AHeapMemory::CheckMemoryLeaks() {
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = heap->pNext ) {
         MemLogger.Print( "==== Heap Memory Leak ====\n" );
-        MemLogger.Printf( "Heap Address: %u Size: %d\n", (size_t)( heap + 1 ), heap->Size );
+        MemLogger.Printf( "Heap Address: %u Size: %d\n", (size_t)( heap + 1 ), heap->DataSize );
     }
 }
 
@@ -271,6 +320,7 @@ struct SHunkMemory {
     SHunk * Hunk; // pointer to next hunk
     SHunk * Cur; // pointer to current hunk
     int32_t Mark;
+    int32_t Pad;
 };
 
 void * AHunkMemory::GetHunkMemoryAddress() const { return MemoryBuffer; }
@@ -294,6 +344,13 @@ void AHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     TotalMemoryUsage = 0;
     MaxMemoryUsage = 0;
     TotalMemoryOverhead = 0;
+
+    static_assert( sizeof( SHunkMemory ) == 32, "Sizeof check" );
+    static_assert( sizeof( SHunk ) == 16, "Sizeof check" );
+
+    if ( !IsAlignedPtr( MemoryBuffer->Hunk, 16 ) ) {
+        CriticalError( "AHunkMemory::Initialize: chunk mest be at 16 byte boundary\n" );
+    }
 }
 
 void AHunkMemory::Deinitialize() {
@@ -322,17 +379,6 @@ int AHunkMemory::SetHunkMark() {
     return ++MemoryBuffer->Mark;
 }
 
-AN_FORCEINLINE size_t AdjustHunkSize( size_t _BytesCount, int _Alignment ) {
-#ifdef ENABLE_BLOCK_SIZE_ALIGN
-    _BytesCount = ( _BytesCount + 7 ) & ~7;
-#endif
-    size_t requiredSize = _BytesCount + sizeof( SHunk ) + _Alignment - 1;
-#ifdef ENABLE_TRASH_TEST
-    requiredSize += sizeof( TRASH_MARKER );
-#endif
-    return requiredSize;
-}
-
 AN_FORCEINLINE void SetTrashMarker( SHunk * _Hunk ) {
 #ifdef ENABLE_TRASH_TEST
     *( TRASH_MARKER * )( ( byte * )( _Hunk ) + _Hunk->Size - sizeof( TRASH_MARKER ) ) = TrashMarker;
@@ -347,34 +393,44 @@ AN_FORCEINLINE bool HunkTrashTest( const SHunk * _Hunk ) {
 #endif
 }
 
-void * AHunkMemory::HunkMemory( size_t _BytesCount, int _Alignment ) {
-    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
-
+void * AHunkMemory::Alloc( size_t _BytesCount ) {
     if ( !MemoryBuffer ) {
-        CriticalError( "AHunkMemory::HunkMemory: Not initialized\n" );
+        CriticalError( "AHunkMemory::Alloc: Not initialized\n" );
     }
 
     if ( _BytesCount == 0 ) {
         // invalid bytes count
-        CriticalError( "AHunkMemory::HunkMemory: Invalid bytes count\n" );
+        CriticalError( "AHunkMemory::Alloc: Invalid bytes count\n" );
     }
 
     // check memory trash
     if ( MemoryBuffer->Cur && HunkTrashTest( MemoryBuffer->Cur ) ) {
-        CriticalError( "AHunkMemory::HunkMemory: Memory was trashed\n" );
+        CriticalError( "AHunkMemory::Alloc: Memory was trashed\n" );
     }
 
     SHunk * hunk = MemoryBuffer->Hunk;
 
     if ( hunk->Mark != -1 ) {
         // not enough memory
-        CriticalError( "AHunkMemory::HunkMemory: Failed on allocation of %u bytes\n", _BytesCount );
+        CriticalError( "AHunkMemory::Alloc: Failed on allocation of %u bytes\n", _BytesCount );
     }
 
-    int requiredSize = AdjustHunkSize( _BytesCount, _Alignment );
+    int requiredSize = _BytesCount;
+
+    // Add chunk header
+    requiredSize += sizeof( SHunk );
+
+    // Add trash marker
+#ifdef ENABLE_TRASH_TEST
+    requiredSize += sizeof( TRASH_MARKER );
+#endif
+
+    // Align chunk to 16-byte boundary
+    requiredSize = Align( requiredSize, 16 );
+
     if ( requiredSize > hunk->Size ) {
         // not enough memory
-        CriticalError( "AHunkMemory::HunkMemory: Failed on allocation of %u bytes\n", _BytesCount );
+        CriticalError( "AHunkMemory::Alloc: Failed on allocation of %u bytes\n", _BytesCount );
     }
 
     hunk->Mark = MemoryBuffer->Mark;
@@ -395,10 +451,9 @@ void * AHunkMemory::HunkMemory( size_t _BytesCount, int _Alignment ) {
 
     IncMemoryStatistics( hunk->Size, sizeof( SHunk ) );
 
-    void * aligned = AlignPointer( hunk + 1, _Alignment );
-#ifdef CLEAR_ALLOCATED_MEMORY
-    ClearMemory8( aligned, 0, _BytesCount );
-#endif
+    void * aligned = hunk + 1;
+
+    AN_ASSERT( IsAlignedPtr( aligned, 16 ) );
 
     return aligned;
 }
@@ -505,50 +560,41 @@ void AHunkMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-//#define FREE_LIST_BASED
-//#define ALLOW_ALLOCATE_ON_HEAP
-#define HEAP_ALIGN            4 // FIXME: change if need
-
-#ifdef FREE_LIST_BASED
-// TODO: Align chunk header structure if need
 struct SZoneChunk {
-    SZoneChunk * next;
-    SZoneChunk * prev;
-    SZoneChunk * used_next;
-    SZoneChunk * used_prev;
-    int32_t size;
-};
-struct memoryBuffer_t {
-    SZoneChunk * freeChunk; // pointer to last freed chunk
-    int32_t size;
-};
-#else
-// TODO: Align chunk header structure if need
-struct SZoneChunk {
-    SZoneChunk * pNext; // FIXME: можно избавиться от next, так как next легко вычилслить как ((byte*)chunk) + chunk->size
+    SZoneChunk * pNext; // NOTE: We can remove next, becouse next = (SZoneChunk*)(((byte*)chunk) + chunk->size)
     SZoneChunk * pPrev;
     int32_t Size;
+    int32_t DataSize;
+    byte Pad[8];
 };
-// TODO: Align header if need
+
 struct SZoneBuffer {
     SZoneChunk * Rover;
     SZoneChunk ChunkList;
     int32_t Size;
+    byte Pad[16];
 };
-#endif
+
+static_assert( sizeof( SZoneChunk ) == 32, "Sizeof check" );
+static_assert( sizeof( SZoneBuffer ) == 64, "Sizeof check" );
 
 static const int ChunkHeaderLength = sizeof( SZoneChunk );
 static const int MinZoneFragmentLength = 64; // Must be > ChunkHeaderLength
 
-AN_FORCEINLINE size_t AdjustChunkSize( size_t _BytesCount, int _Alignment ) {
-#ifdef ENABLE_BLOCK_SIZE_ALIGN
-    _BytesCount = ( _BytesCount + 7 ) & ~7;
-#endif
-    size_t requiredSize = _BytesCount + ChunkHeaderLength + _Alignment - 1 + 1; // + 1 for one byte that keeps padding
+AN_FORCEINLINE size_t AdjustChunkSize( size_t _BytesCount ) {
+
+    // Add chunk header
+    _BytesCount += ChunkHeaderLength;
+
+    // Add trash marker
 #ifdef ENABLE_TRASH_TEST
-    requiredSize += sizeof( TRASH_MARKER );
+    _BytesCount += sizeof( TRASH_MARKER );
 #endif
-    return requiredSize;
+
+    // Align chunk to 16-byte boundary
+    _BytesCount = Align( _BytesCount, 16 );
+
+    return _BytesCount;
 }
 
 AN_FORCEINLINE void SetTrashMarker( SZoneChunk * _Chunk ) {
@@ -565,51 +611,6 @@ AN_FORCEINLINE bool ChunkTrashTest( const SZoneChunk * _Chunk ) {
 #endif
 }
 
-static void * AllocateOnHeap( size_t _BytesCount, int _Alignment ) {
-    size_t requiredSize;
-    byte * bytes;
-    byte * pointer;
-    byte * aligned;
-    SZoneChunk * heapChunk;
-    int padding;
-
-    if ( _BytesCount == 0 ) {
-        // invalid bytes count
-        CriticalError( "AllocateOnHeap: Invalid bytes count\n" );
-    }
-
-    requiredSize = AdjustChunkSize( _BytesCount, _Alignment );
-    bytes = reinterpret_cast< byte * >( UnalignedMalloc( requiredSize ) );
-
-    if ( bytes ) {
-        pointer = bytes + sizeof( SZoneChunk ) + 1;
-        aligned = ( byte * )AlignPointer( pointer, _Alignment );
-        padding = aligned - pointer + 1;
-        *(aligned - 1) = padding;
-
-        heapChunk = (SZoneChunk *)bytes;
-
-        heapChunk->pNext = (SZoneChunk *)(size_t)0xdeaddead;
-        heapChunk->pPrev = (SZoneChunk *)(size_t)0xdeaddead;
-#ifdef FREE_LIST_BASED
-        heapChunk->used_next = (SZoneChunk *)0xdeaddead;
-        heapChunk->used_prev = (SZoneChunk *)0xdeaddead;
-#endif
-        heapChunk->Size = -(int32_t)requiredSize;
-        SetTrashMarker( heapChunk );
-
-#ifdef CLEAR_ALLOCATED_MEMORY
-        ClearMemory8( aligned, 0, _BytesCount );
-#endif
-        IncMemoryStatisticsOnHeap( requiredSize, ChunkHeaderLength + padding );
-
-        return aligned;
-    }
-
-    CriticalError( "AllocateOnHeap: Failed on allocation of %u bytes\n", _BytesCount );
-    return nullptr;
-}
-
 void * AZoneMemory::GetZoneMemoryAddress() const { return MemoryBuffer; }
 int AZoneMemory::GetZoneMemorySizeInMegabytes() const { return MemoryBuffer ? MemoryBuffer->Size >> 10 >> 10 : 0; }
 size_t AZoneMemory::GetTotalMemoryUsage() const { return TotalMemoryUsage.Load(); }
@@ -620,13 +621,6 @@ size_t AZoneMemory::GetMaxMemoryUsage() const { return MaxMemoryUsage.Load(); }
 void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     size_t sizeInBytes = _SizeInMegabytes << 20;
 
-#ifdef FREE_LIST_BASED
-    MemoryBuffer = ( SZoneBuffer * )_MemoryAddress;
-    MemoryBuffer->Size = sizeInBytes;
-    MemoryBuffer->freeChunk = ( SZoneChunk * )( memoryBuffer + 1 );
-    memset( MemoryBuffer->freeChunk, 0, sizeof( SZoneChunk ) );
-    MemoryBuffer->freeChunk->size = MemoryBuffer->Size - sizeof( SZoneBuffer );
-#else
     MemoryBuffer = ( SZoneBuffer * )_MemoryAddress;
     MemoryBuffer->Size = sizeInBytes;
     MemoryBuffer->ChunkList.pPrev = MemoryBuffer->ChunkList.pNext = MemoryBuffer->Rover = ( SZoneChunk * )( MemoryBuffer + 1 );
@@ -634,7 +628,10 @@ void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     MemoryBuffer->Rover->Size = MemoryBuffer->Size - sizeof( SZoneBuffer );
     MemoryBuffer->Rover->pNext = &MemoryBuffer->ChunkList;
     MemoryBuffer->Rover->pPrev = &MemoryBuffer->ChunkList;
-#endif
+
+    if ( !IsAlignedPtr( MemoryBuffer->Rover, 16 ) ) {
+        CriticalError( "AZoneMemory::Initialize: chunk mest be at 16 byte boundary\n" );
+    }
 
     TotalMemoryUsage.StoreRelaxed( 0 );
     TotalMemoryOverhead.StoreRelaxed( 0 );
@@ -658,16 +655,11 @@ void AZoneMemory::Clear() {
 
     SYNC_GUARD
 
-#ifdef FREE_LIST_BASED
-    MemoryBuffer->freeChunk = ( SZoneChunk * )( MemoryBuffer + 1 );
-    MemoryBuffer->freeChunk->size = MemoryBuffer->Size - sizeof( SZoneBuffer );
-#else
     MemoryBuffer->ChunkList.pPrev = MemoryBuffer->ChunkList.pNext = MemoryBuffer->Rover = ( SZoneChunk * )( MemoryBuffer + 1 );
     MemoryBuffer->ChunkList.Size = 0;
     MemoryBuffer->Rover->Size = MemoryBuffer->Size - sizeof( SZoneBuffer );
     MemoryBuffer->Rover->pNext = &MemoryBuffer->ChunkList;
     MemoryBuffer->Rover->pPrev = &MemoryBuffer->ChunkList;
-#endif
 
     TotalMemoryUsage.Store( 0 );
     TotalMemoryOverhead.Store( 0 );
@@ -689,245 +681,6 @@ void AZoneMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
     TotalMemoryOverhead.FetchSub( _Overhead );
 }
 
-#ifdef FREE_LIST_BASED
-SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
-    SZoneChunk * cur = FreeChunk;
-
-    if ( !cur ) {
-        // there is no free chunks
-        return nullptr;
-    }
-
-    while ( cur->size < _RequiredSize ) {
-        cur = cur->next; // find in right branch
-
-        if ( !cur ) {
-
-            // find in left brunch
-            cur = FreeChunk->prev;
-            if ( !cur ) {
-                // no free chunks
-                return nullptr;
-            }
-
-            while ( cur->size < _RequiredSize ) {
-                cur = cur->prev;
-
-                if ( !cur ) {
-                    // no free chunks
-                    return nullptr;
-                }
-            }
-        }
-    }
-
-    return cur;
-}
-
-byte * AZoneMemory::AllocateBytes( size_t _BytesCount ) {
-
-    if ( _BytesCount == 0 ) {
-        // invalid bytes count
-        return nullptr;
-    }
-
-    size_t requiredSize = AdjustChunkSize( _BytesCount );
-
-    SZoneChunk * cur = FindFreeChunk( requiredSize );
-    if ( !cur ) {
-        // no free chunks
-#ifdef ALLOW_ALLOCATE_ON_HEAP
-        return AllocateOnHeap( _BytesCount );
-#else
-        return nullptr;
-#endif
-    }
-
-    int chunkNewSize = cur->size - requiredSize;
-    if ( chunkNewSize < MinZoneFragmentLength ) {
-        // Not enough space for free chunk, so add recidual space to used chunk
-
-        requiredSize += chunkNewSize;
-
-        // Remove current chunk from freed list
-        FreeChunk = nullptr;
-        if ( cur->prev ) {
-            cur->prev->next = cur->next;
-            FreeChunk = cur->prev;
-        }
-        if ( cur->next ) {
-            cur->next->prev = cur->prev;
-            FreeChunk = cur->next;
-        }
-
-    } else {
-        FreeChunk = ( SZoneChunk * )( ( byte * )( cur ) + requiredSize );
-        FreeChunk->size = chunkNewSize;
-        FreeChunk->prev = cur->prev;
-        FreeChunk->next = cur->next;
-        if ( cur->prev ) {
-            cur->prev->next = FreeChunk;
-        }
-        if ( cur->next ) {
-            cur->next->prev = FreeChunk;
-        }
-        FreeChunk->used_next = cur->used_next;
-        FreeChunk->used_prev = cur;
-        if ( FreeChunk->used_next ) {
-            FreeChunk->used_next->used_prev = FreeChunk;
-        }
-
-        cur->used_next = FreeChunk;
-    }
-
-    cur->next = nullptr;
-    cur->prev = nullptr;
-    cur->size = -requiredSize; // Set size to negative to mark chunk used
-    SetTrashMarker( cur );
-
-    byte * bytes = ( byte * )( cur + 1 );
-#ifdef CLEAR_ALLOCATED_MEMORY
-    ClearMemory8( bytes, 0, _BytesCount );
-#endif
-
-    IncMemoryStatistics( requiredSize, ChunkHeaderLength );
-
-    return bytes;
-}
-
-void AZoneMemory::Dealloc( byte * _Bytes ) {
-    if ( !_Bytes ) {
-        return;
-    }
-
-    SZoneChunk * chunk = ( SZoneChunk * )( _Bytes - ChunkHeaderLength );
-
-    if ( chunk->size > 0 ) {
-        // freed pointer
-        return;
-    }
-
-    if ( ChunkTrashTest( chunk ) ) {
-        MemLogger.Print( "AZoneMemory::Dealloc: Warning: memory was trashed\n" );
-        // error()
-    }
-
-    int chunkSize = -chunk->size;
-
-#ifdef ALLOW_ALLOCATE_ON_HEAP
-    if ( chunk->next == (SZoneChunk *)0xdeaddead ) {
-        chunk->size = chunkSize;
-
-        // Was allocated on heap
-        AlignedFree( chunk );
-
-        DecMemoryStatisticsOnHeap( chunkSize, ChunkHeaderLength );
-
-        return;
-    }
-#endif
-
-    SZoneChunk * prevChunk = chunk->used_prev;
-    SZoneChunk * nextChunk = chunk->used_next;
-
-    if ( prevChunk && nextChunk && prevChunk->size > 0 && nextChunk->size > 0 ) {
-        // Merge prev, current and next chunks to one free chunk
-
-        FreeChunk = prevChunk;
-        FreeChunk->size = prevChunk->size + nextChunk->size + chunkSize;
-        FreeChunk->next = nextChunk->next;
-        FreeChunk->used_next = nextChunk->used_next;
-        if ( nextChunk->next ) {
-            nextChunk->next->prev = FreeChunk;
-        }
-        if ( nextChunk->used_next ) {
-            nextChunk->used_next->used_prev = FreeChunk;
-        }
-
-    } else if ( prevChunk && prevChunk->size > 0 ) {
-        // Merge prev and current chunks to one free chunk
-
-        FreeChunk = prevChunk;
-        FreeChunk->size = prevChunk->size + chunkSize;
-        FreeChunk->next = chunk->next;
-        FreeChunk->used_next = chunk->used_next;
-        if ( chunk->next ) {
-            chunk->next->prev = FreeChunk;
-        }
-        if ( chunk->used_next ) {
-            chunk->used_next->used_prev = FreeChunk;
-        }
-
-    } else if ( nextChunk && nextChunk->size > 0 ) {
-        // Merge current and next chunks to one free chunk
-
-        FreeChunk = chunk;
-        FreeChunk->size = nextChunk->size + chunkSize;
-        FreeChunk->next = nextChunk->next;
-        FreeChunk->used_next = nextChunk->used_next;
-        if ( nextChunk->next ) {
-            nextChunk->next->prev = FreeChunk;
-        }
-        if ( nextChunk->used_next ) {
-            nextChunk->used_next->used_prev = FreeChunk;
-        }
-    } else {
-        // Nothing to merge
-
-        chunk->size = chunkSize;
-
-        // Find nearest free chunk to keep sequence ordered
-        // FIXME: is there faster way to do this?
-        if ( FreeChunk ) {
-            SZoneChunk * cur = FreeChunk;
-            if ( FreeChunk < chunk ) {
-                SZoneChunk * next = FreeChunk->next;
-                while ( 1 ) {
-                    if ( !next ) {
-                        // add to back
-                        chunk->prev = cur;
-                        cur->next = chunk;
-                        break;
-                    }
-                    if ( next > chunk ) {
-                        // insert free chunk
-                        chunk->prev = cur;
-                        chunk->next = next;
-                        next->prev = chunk;
-                        cur->next = chunk;
-                        break;
-                    }
-                    next = next->next;
-                }
-            } else {
-                SZoneChunk * prev = FreeChunk->prev;
-                while ( 1 ) {
-                    if ( !prev ) {
-                        // add to front
-                        chunk->next = cur;
-                        cur->prev = chunk;
-                        break;
-                    }
-                    if ( prev < chunk ) {
-                        // insert free chunk
-                        chunk->next = cur;
-                        chunk->prev = prev;
-                        prev->next = chunk;
-                        cur->prev = chunk;
-                        break;
-                    }
-                    prev = prev->prev;
-                }
-            }
-        }
-        FreeChunk = chunk;
-    }
-
-    DecMemoryStatistics( chunkSize, ChunkHeaderLength );
-}
-
-#else
-
 SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
     SZoneChunk * rover = MemoryBuffer->Rover;
     SZoneChunk * start = rover->pPrev;
@@ -944,9 +697,10 @@ SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
     return cur;
 }
 
-void * AZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
-    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
-
+void * AZoneMemory::Alloc( size_t _BytesCount ) {
+#if 0
+    return SysAlloc( Align(_BytesCount,16), 16 );
+#else
     if ( !MemoryBuffer ) {
         CriticalError( "AZoneMemory::Alloc: Not initialized\n" );
     }
@@ -958,21 +712,18 @@ void * AZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
 
     SYNC_GUARD
 
-    size_t requiredSize = AdjustChunkSize( _BytesCount, _Alignment );
+    size_t requiredSize = AdjustChunkSize( _BytesCount );
 
     SZoneChunk * cur = FindFreeChunk( requiredSize );
     if ( !cur ) {
         // no free chunks
-#ifdef ALLOW_ALLOCATE_ON_HEAP
-        return AllocateOnHeap( _BytesCount, _Alignment );
-#else
         CriticalError( "AZoneMemory::Alloc: Failed on allocation of %u bytes\n", _BytesCount );
-#endif
     }
 
     int recidualChunkSpace = cur->Size - requiredSize;
-    if ( recidualChunkSpace >= MinZoneFragmentLength ) {
+    if ( recidualChunkSpace >= MinZoneFragmentLength ) { // don't allow to create very small chunks
         SZoneChunk * newChunk = ( SZoneChunk * )( ( byte * )( cur ) + requiredSize );
+        AN_ASSERT( IsAlignedPtr( newChunk, 16 ) );
         newChunk->Size = recidualChunkSpace;
         newChunk->pPrev = cur;
         newChunk->pNext = cur->pNext;
@@ -981,129 +732,204 @@ void * AZoneMemory::Alloc( size_t _BytesCount, int _Alignment ) {
         cur->Size = requiredSize;
     }
 
-    byte * pointer = ( byte * )cur + sizeof( SZoneChunk ) + 1;
-    byte * aligned = ( byte * )AlignPointer( pointer, _Alignment );
-    int padding = aligned - pointer + 1;
-    *(aligned - 1) = padding;
+    byte * pointer = ( byte * )( cur + 1 );
 
-    IncMemoryStatistics( cur->Size, ChunkHeaderLength + padding );
+    AN_ASSERT( IsAlignedPtr( cur, 16 ) );
+    AN_ASSERT( IsAlignedPtr( pointer, 16 ) );
+
+    IncMemoryStatistics( cur->Size, cur->Size - _BytesCount );
 
     cur->Size = -cur->Size; // Set size to negative to mark chunk used
+    cur->DataSize = _BytesCount;
     MemoryBuffer->Rover = cur->pNext;
 
     SetTrashMarker( cur );
 
-    byte * bytes = aligned;//( byte * )( cur + 1 );
-#ifdef CLEAR_ALLOCATED_MEMORY
-    ClearMemory8( bytes, 0, _BytesCount );
+    return pointer;
 #endif
-
-    return bytes;
 }
 
-void * AZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
-    AN_ASSERT( _NewAlignment <= 128 && IsPowerOfTwoConstexpr( _NewAlignment ) );
-
+void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
     if ( !_Data ) {
-        //MemLogger.Printf( "first alloc\n" );
-        return Alloc( _NewBytesCount, _NewAlignment );
+        return Alloc( _NewBytesCount );
     }
 
-    // Check alignment changed
-    if ( (size_t)_Data % _NewAlignment != 0 ) {
-        void * temp;
-        if ( _KeepOld ) {
-            temp = Alloc( _NewBytesCount, _NewAlignment );
-            memcpy( temp, _Data, _BytesCount );
-#ifdef CLEAR_ALLOCATED_MEMORY
-            ClearMemory8( (byte*)temp + _BytesCount, 0, _NewBytesCount - _BytesCount );
-#endif
-            Dealloc( _Data );
-        } else {
-            // Prefer to deallocate first
-            Dealloc( _Data );
-            temp = Alloc( _NewBytesCount, _NewAlignment );
-        }
-        //MemLogger.Printf( "alignment change\n" );
-        return temp;
-    }
+    SZoneChunk * chunk = ( SZoneChunk * )( _Data ) - 1;
 
-    if ( _BytesCount >= _NewBytesCount ) {
+    if ( chunk->DataSize >= _NewBytesCount ) {
         // data is big enough
         //MemLogger.Printf( "_BytesCount >= _NewBytesCount\n" );
         return _Data;
     }
 
-    byte * bytes = ( byte * )_Data;
-    int padding = *(bytes - 1);
-
-    SZoneChunk * chunk = ( SZoneChunk * )( bytes - ChunkHeaderLength - padding );
-
     // Check freed
-    bool bFreed;
-    {
-        SYNC_GUARD
-        bFreed = chunk->Size > 0;
-
-#ifdef ALLOW_ALLOCATE_ON_HEAP
-        if ( chunk->next == (SZoneChunk *)0xdeaddead ) {
-            TODO ...
-        }
-#endif
-    }
+    bool bFreed = chunk->Size > 0;
 
     if ( bFreed ) {
         //MemLogger.Printf( "freed pointer\n" );
-        return Alloc( _NewBytesCount, _NewAlignment );
+        return Alloc( _NewBytesCount );
+    }
+
+    if ( !_KeepOld ) {
+        Dealloc( _Data );
+        return Alloc( _NewBytesCount );
+    }
+
+#if 0
+    int sz = chunk->DataSize;
+    Dealloc( _Data );
+    void * pNewData = Alloc( _NewBytesCount );
+    if  ( pNewData != _Data ) {
+        memcpy( pNewData, _Data, sz );
+    } else {
+        GLogger.Printf( "Caching memcpy\n" );
+    }
+#else
+    int sz = chunk->DataSize;
+    void * temp = GHunkMemory.Alloc( sz );
+    MemcpySSE( temp, _Data, sz );
+    Dealloc( _Data );
+    void * pNewData = Alloc( _NewBytesCount );
+    if ( pNewData != _Data ) {
+        MemcpySSE( pNewData, temp, sz );
+    } else {
+        GLogger.Printf( "Caching memcpy\n" );
+    }
+    GHunkMemory.ClearLastHunk();
+#endif
+    return pNewData;
+
+#if 0
+
+#if 0
+    return SysRealloc( _Data, _NewBytesCount, 16 );
+#else
+    if ( !_Data ) {
+        return Alloc( _NewBytesCount );
+    }
+
+    SZoneChunk * chunk = ( SZoneChunk * )( _Data ) - 1;
+
+    if ( chunk->DataSize >= _NewBytesCount ) {
+        // data is big enough
+        //MemLogger.Printf( "_BytesCount >= _NewBytesCount\n" );
+        return _Data;
+    }
+
+    // Check freed
+    bool bFreed = chunk->Size > 0;
+
+    if ( bFreed ) {
+        //MemLogger.Printf( "freed pointer\n" );
+        return Alloc( _NewBytesCount );
     }
 
     SYNC_GUARD
 
+    size_t oldSize = chunk->DataSize;
+
     if ( ChunkTrashTest( chunk ) ) {
-        MemLogger.Print( "AZoneMemory::ExtendAlloc: Warning: memory was trashed\n" );
+        MemLogger.Print( "AZoneMemory::Realloc: Warning: memory was trashed\n" );
         // error()
     }
 
-    int requiredSize = AdjustChunkSize( _NewBytesCount, _NewAlignment );
+    int requiredSize = AdjustChunkSize( _NewBytesCount );
     if ( requiredSize <= -chunk->Size ) {
         // data is big enough
         //MemLogger.Printf( "data is big enough\n" );
         return _Data;
     }
 
+    // restore positive chunk size
     chunk->Size = -chunk->Size;
 
     // try to use next chunk
     SZoneChunk * cur = chunk->pNext;
     if ( cur->Size > 0 && cur->Size + chunk->Size >= requiredSize ) {
+
+#if 1
         requiredSize -= chunk->Size;
         int recidualChunkSpace = cur->Size - requiredSize;
         if ( recidualChunkSpace >= MinZoneFragmentLength ) {
+#if 1
             SZoneChunk * newChunk = ( SZoneChunk * )( ( byte * )( cur ) + requiredSize );
+            AN_ASSERT( IsAlignedPtr( newChunk, 16 ) );
             newChunk->Size = recidualChunkSpace;
             newChunk->pPrev = chunk;
             newChunk->pNext = cur->pNext;
             newChunk->pNext->pPrev = newChunk;
             chunk->pNext = newChunk;
             chunk->Size += requiredSize;
-            IncMemoryStatistics( requiredSize, 0 );
+            IncMemoryStatistics( requiredSize, requiredSize - _NewBytesCount );
+#else
+            chunk->Size = -chunk->Size;
+            void * d = malloc( _NewBytesCount );
+            memcpy( d, _Data, oldSize );
+            Dealloc( _Data );
+            _Data = Alloc( _NewBytesCount );
+            memcpy( _Data, d, _NewBytesCount );
+            free( d );
+            return _Data;
+#endif
         } else {
+#if 1
             chunk->pNext = cur->pNext;
             chunk->pNext->pPrev = chunk;
             chunk->Size += cur->Size;
-            IncMemoryStatistics( cur->Size, 0 );
+            IncMemoryStatistics( cur->Size, cur->Size - _NewBytesCount );
+#else
+//            chunk->Size = -chunk->Size;
+//            void * d = malloc( oldSize );
+//            memcpy( d, _Data, oldSize );
+//            Dealloc( _Data );
+//            _Data = Alloc( _NewBytesCount );
+//            memcpy( _Data, d, oldSize );
+//            free( d );
+//            return _Data;
+            chunk->Size = -chunk->Size;
+            void * d = malloc( _NewBytesCount );
+            memcpy( d, _Data, oldSize );
+            Dealloc( _Data );
+            _Data = Alloc( _NewBytesCount );
+            memcpy( _Data, d, _NewBytesCount );
+            free( d );
+            return _Data;
+#endif
         }
 
-        chunk->Size = -chunk->Size; // Set size to negative to mark chunk used
+        // Set size to negative to mark chunk used
+        chunk->Size = -chunk->Size;
+        chunk->DataSize = _NewBytesCount;
         MemoryBuffer->Rover = chunk->pNext;
 
         SetTrashMarker( chunk );
 
         //MemLogger.Printf( "using next chunk\n" );
 
+        AN_ASSERT( _Data == chunk+1 );
+
         return _Data;
+#else
+        chunk->Size = -chunk->Size;
+        void * d = malloc( _NewBytesCount );
+        memcpy( d, _Data, oldSize );
+        Dealloc( _Data );
+        _Data = Alloc( _NewBytesCount );
+        memcpy( _Data, d, _NewBytesCount );
+        free( d );
+        return _Data;
+#endif
     } else {
 
+        //chunk->Size = -chunk->Size;
+        //void * d = malloc( _NewBytesCount );
+        //memcpy(d,_Data, oldSize );
+        //Dealloc(_Data);
+        //_Data=Alloc(_NewBytesCount);
+        //memcpy(_Data,d,_NewBytesCount);
+        //free(d);
+        //return _Data;
+#if 1
         //MemLogger.Printf( "reallocating new chunk with copy\n" );
 
         cur = FindFreeChunk( requiredSize );
@@ -1113,14 +939,15 @@ void * AZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
 
             // no free chunks
 
-            CriticalError( "AZoneMemory::Extend: Failed on allocation of %u bytes\n", _NewBytesCount );
+            CriticalError( "AZoneMemory::Realloc: Failed on allocation of %u bytes\n", _NewBytesCount );
         }
 
-        DecMemoryStatistics( chunk->Size, ChunkHeaderLength + padding );
+        DecMemoryStatistics( chunk->Size, chunk->Size - chunk->DataSize );
 
         int recidualChunkSpace = cur->Size - requiredSize;
         if ( recidualChunkSpace >= MinZoneFragmentLength ) {
             SZoneChunk * newChunk = ( SZoneChunk * )( ( byte * )( cur ) + requiredSize );
+            AN_ASSERT( IsAlignedPtr( newChunk, 16 ) );
             newChunk->Size = recidualChunkSpace;
             newChunk->pPrev = cur;
             newChunk->pNext = cur->pNext;
@@ -1129,29 +956,21 @@ void * AZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
             cur->Size = requiredSize;
         }
 
-        byte * pointer = ( byte * )cur + sizeof( SZoneChunk ) + 1;
-        byte * aligned = ( byte * )AlignPointer( pointer, _NewAlignment );
-        padding = aligned - pointer + 1;
-        *(aligned - 1) = padding;
+        byte * pointer = ( byte * )( cur + 1 );
 
-        IncMemoryStatistics( cur->Size, ChunkHeaderLength + padding );
+        AN_ASSERT( IsAlignedPtr( cur, 16 ) );
+        AN_ASSERT( IsAlignedPtr( pointer, 16 ) );
+
+        IncMemoryStatistics( cur->Size, cur->Size - _NewBytesCount );
 
         cur->Size = -cur->Size; // Set size to negative to mark chunk used
+        cur->DataSize = _NewBytesCount;
         MemoryBuffer->Rover = cur->pNext;
 
         SetTrashMarker( cur );
 
-        bytes = aligned;//( byte * )( cur + 1 );
-
         if ( _KeepOld ) {
-            memcpy( bytes, _Data, _BytesCount );
-#ifdef CLEAR_ALLOCATED_MEMORY
-            ClearMemory8( bytes + _BytesCount, 0, _NewBytesCount - _BytesCount );
-#endif
-        } else {
-#ifdef CLEAR_ALLOCATED_MEMORY
-            ClearMemory8( bytes, 0, _NewBytesCount );
-#endif
+            MemcpySSE( pointer, _Data, oldSize );
         }
 
         // Deallocate old chunk
@@ -1184,11 +1003,18 @@ void * AZoneMemory::Extend( void * _Data, int _BytesCount, int _NewBytesCount, i
             }
         }
 
-        return bytes;
+        return pointer;
+#endif
     }
+#endif
+
+#endif
 }
 
 void AZoneMemory::Dealloc( void * _Bytes ) {
+#if 0
+    SysFree( _Bytes );
+#else
     if ( !MemoryBuffer ) {
         return;
     }
@@ -1199,10 +1025,7 @@ void AZoneMemory::Dealloc( void * _Bytes ) {
 
     SYNC_GUARD
 
-    byte * bytes = ( byte * )_Bytes;
-    int padding = *(bytes - 1);
-
-    SZoneChunk * chunk = ( SZoneChunk * )( bytes - ChunkHeaderLength - padding );
+    SZoneChunk * chunk = ( SZoneChunk * )( _Bytes ) - 1;
 
     if ( chunk->Size > 0 ) {
         // freed pointer
@@ -1216,19 +1039,7 @@ void AZoneMemory::Dealloc( void * _Bytes ) {
 
     chunk->Size = -chunk->Size;
 
-#ifdef ALLOW_ALLOCATE_ON_HEAP
-    if ( chunk->next == (SZoneChunk *)0xdeaddead ) {
-
-        // Was allocated on heap
-        UnalignedFree( chunk );
-
-        DecMemoryStatisticsOnHeap( chunk->size, ChunkHeaderLength + padding );
-
-        return;
-    }
-#endif
-
-    DecMemoryStatistics( chunk->Size, ChunkHeaderLength + padding );
+    DecMemoryStatistics( chunk->Size, chunk->Size - chunk->DataSize );
 
     SZoneChunk * prevChunk = chunk->pPrev;
     SZoneChunk * nextChunk = chunk->pNext;
@@ -1257,6 +1068,7 @@ void AZoneMemory::Dealloc( void * _Bytes ) {
             MemoryBuffer->Rover = chunk;
         }
     }
+#endif
 }
 
 void AZoneMemory::CheckMemoryLeaks() {
@@ -1290,8 +1102,6 @@ void AZoneMemory::CheckMemoryLeaks() {
     }
 }
 
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -1309,15 +1119,15 @@ static void PrintMemoryStatistics( T & _Manager, const char * _Message ) {
 // Zone allocator
 //
 
-void * AZoneAllocator::ImplAllocate( size_t _BytesCount, int _Alignment ) {
-    void * bytes = GZoneMemory.Alloc( _BytesCount, _Alignment );
-    //PrintMemoryStatistics( GZoneMemory, "AllocateBytes" );
+void * AZoneAllocator::ImplAllocate( size_t _BytesCount ) {
+    void * bytes = GZoneMemory.Alloc( _BytesCount );
+    //PrintMemoryStatistics( GZoneMemory, "Allocate" );
     return bytes;
 }
 
-void * AZoneAllocator::ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
-    void * bytes = GZoneMemory.Extend( _Data, _BytesCount, _NewBytesCount, _NewAlignment, _KeepOld );
-    //PrintMemoryStatistics( GZoneMemory, "ExtendAlloc" );
+void * AZoneAllocator::ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld ) {
+    void * bytes = GZoneMemory.Realloc( _Data, _NewBytesCount, _KeepOld );
+    //PrintMemoryStatistics( GZoneMemory, "Realloc" );
     return bytes;
 }
 
@@ -1326,64 +1136,244 @@ void AZoneAllocator::ImplDeallocate( void * _Bytes ) {
     //PrintMemoryStatistics( GZoneMemory, "Dealloc" );
 }
 
-void * AHeapAllocator::ImplAllocate( size_t _BytesCount, int _Alignment ) {
-    void * bytes = GHeapMemory.HeapAlloc( _BytesCount, _Alignment );
-    //PrintMemoryStatistics( GMainHeapMemory, "AllocateBytes" );
-    return bytes;
-}
-
 //
 // Heap allocator
 //
 
-void * AHeapAllocator::ImplExtend( void * _Data, size_t _BytesCount, size_t _NewBytesCount, int _NewAlignment, bool _KeepOld ) {
-    void * bytes;
-    if ( !_Data ) {
-        // first alloc
-        bytes = GHeapMemory.HeapAlloc( _NewBytesCount, _NewAlignment );
-    } else if ( (size_t)_Data % _NewAlignment != 0 ) {
-        // alignment changed
-        if ( _KeepOld ) {
-            bytes = GHeapMemory.HeapAlloc( _NewBytesCount, _NewAlignment );
-            memcpy( bytes, _Data, _BytesCount );
-#ifdef CLEAR_ALLOCATED_MEMORY
-            ClearMemory8( (byte*)bytes + _BytesCount, 0, _NewBytesCount - _BytesCount );
-#endif
-            GHeapMemory.HeapFree( _Data );
-        } else {
-            GHeapMemory.HeapFree( _Data );
-            bytes = GHeapMemory.HeapAlloc( _NewBytesCount, _NewAlignment );
-        }
-    } else if ( _BytesCount >= _NewBytesCount ) {
-        // big enough
-        bytes = _Data;
-    } else {
-        // reallocate
-        if ( _KeepOld ) {
-            bytes = GHeapMemory.HeapAlloc( _NewBytesCount, _NewAlignment );
-            memcpy( bytes, _Data, _BytesCount );
-#ifdef CLEAR_ALLOCATED_MEMORY
-            ClearMemory8( (byte*)bytes + _BytesCount, 0, _NewBytesCount - _BytesCount );
-#endif
-            GHeapMemory.HeapFree( _Data );
-        } else {
-            GHeapMemory.HeapFree( _Data );
-            bytes = GHeapMemory.HeapAlloc( _NewBytesCount, _NewAlignment );
-        }
-    }
-    //PrintMemoryStatistics( GMainHeapMemory, "ExtendAlloc" );
+void * AHeapAllocator::ImplAllocate( size_t _BytesCount ) {
+    void * bytes = GHeapMemory.Alloc( _BytesCount, 16 );
+    //PrintMemoryStatistics( GHeapMemory, "Allocate" );
+    return bytes;
+}
+
+void * AHeapAllocator::ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld ) {
+    void * bytes = GHeapMemory.Realloc( _Data, _NewBytesCount, _KeepOld );
+    //PrintMemoryStatistics( GHeapMemory, "Realloc" );
     return bytes;
 }
 
 void AHeapAllocator::ImplDeallocate( void * _Bytes ) {
-    GHeapMemory.HeapFree( _Bytes );
-    //PrintMemoryStatistics( GMainHeapMemory, "Dealloc" );
+    GHeapMemory.Dealloc( _Bytes );
+    //PrintMemoryStatistics( GHeapMemory, "Dealloc" );
 }
 
 void * HugeAlloc( size_t _Size ) {
-    return GHeapMemory.HeapAlloc( _Size, 1 );
+    return GHeapMemory.Alloc( _Size );
 }
 
 void HugeFree( void * _Data ) {
-    GHeapMemory.HeapFree( _Data );
+    GHeapMemory.Dealloc( _Data );
+}
+
+void _MemcpySSE( byte * _Dst, const byte * _Src, size_t _SizeInBytes ) {
+#if 0
+    memcpy(_Dst,_Src,_SizeInBytes);
+#else
+    AN_ASSERT( IsSSEAligned( (size_t)_Dst ) );
+    AN_ASSERT( IsSSEAligned( (size_t)_Src ) );
+
+    int n = 0;
+
+    while ( n + 256 <= _SizeInBytes ) {
+        __m128i d0 = _mm_load_si128( (__m128i *)&_Src[n + 0*16] );
+        __m128i d1 = _mm_load_si128( (__m128i *)&_Src[n + 1*16] );
+        __m128i d2 = _mm_load_si128( (__m128i *)&_Src[n + 2*16] );
+        __m128i d3 = _mm_load_si128( (__m128i *)&_Src[n + 3*16] );
+        __m128i d4 = _mm_load_si128( (__m128i *)&_Src[n + 4*16] );
+        __m128i d5 = _mm_load_si128( (__m128i *)&_Src[n + 5*16] );
+        __m128i d6 = _mm_load_si128( (__m128i *)&_Src[n + 6*16] );
+        __m128i d7 = _mm_load_si128( (__m128i *)&_Src[n + 7*16] );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 0*16], d0 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 1*16], d1 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 2*16], d2 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 3*16], d3 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 4*16], d4 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 5*16], d5 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 6*16], d6 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 7*16], d7 );
+        d0 = _mm_load_si128( (__m128i *)&_Src[n +  8*16] );
+        d1 = _mm_load_si128( (__m128i *)&_Src[n +  9*16] );
+        d2 = _mm_load_si128( (__m128i *)&_Src[n + 10*16] );
+        d3 = _mm_load_si128( (__m128i *)&_Src[n + 11*16] );
+        d4 = _mm_load_si128( (__m128i *)&_Src[n + 12*16] );
+        d5 = _mm_load_si128( (__m128i *)&_Src[n + 13*16] );
+        d6 = _mm_load_si128( (__m128i *)&_Src[n + 14*16] );
+        d7 = _mm_load_si128( (__m128i *)&_Src[n + 15*16] );
+        _mm_stream_si128( (__m128i *)&_Dst[n +  8*16], d0 );
+        _mm_stream_si128( (__m128i *)&_Dst[n +  9*16], d1 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 10*16], d2 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 11*16], d3 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 12*16], d4 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 13*16], d5 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 14*16], d6 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 15*16], d7 );
+        n += 256;
+    }
+
+    while ( n + 128 <= _SizeInBytes ) {
+        __m128i d0 = _mm_load_si128( (__m128i *)&_Src[n + 0*16] );
+        __m128i d1 = _mm_load_si128( (__m128i *)&_Src[n + 1*16] );
+        __m128i d2 = _mm_load_si128( (__m128i *)&_Src[n + 2*16] );
+        __m128i d3 = _mm_load_si128( (__m128i *)&_Src[n + 3*16] );
+        __m128i d4 = _mm_load_si128( (__m128i *)&_Src[n + 4*16] );
+        __m128i d5 = _mm_load_si128( (__m128i *)&_Src[n + 5*16] );
+        __m128i d6 = _mm_load_si128( (__m128i *)&_Src[n + 6*16] );
+        __m128i d7 = _mm_load_si128( (__m128i *)&_Src[n + 7*16] );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 0*16], d0 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 1*16], d1 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 2*16], d2 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 3*16], d3 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 4*16], d4 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 5*16], d5 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 6*16], d6 );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 7*16], d7 );
+        n += 128;
+    }
+
+    while ( n + 16 <= _SizeInBytes ) {
+        __m128i d0 = _mm_load_si128( (__m128i *)&_Src[n] );
+        _mm_stream_si128( (__m128i *)&_Dst[n], d0 );
+        n += 16;
+    }
+
+    while ( n + 4 <= _SizeInBytes ) {
+        *(uint32_t *)&_Dst[n] = *(const uint32_t *)&_Src[n];
+        n += 4;
+    }
+
+    while ( n < _SizeInBytes ) {
+        _Dst[n] = _Src[n];
+        n++;
+    }
+
+    _mm_sfence();
+#endif
+}
+
+void _ZeroMemSSE( byte * _Dst, size_t _SizeInBytes ) {
+#if 0
+    ZeroMem( _Dst, _SizeInBytes );
+#else
+    AN_ASSERT( IsSSEAligned( (size_t)_Dst ) );
+
+    int n = 0;
+
+    __m128i zero = _mm_setzero_si128();
+
+    while ( n + 256 <= _SizeInBytes ) {
+        _mm_stream_si128( (__m128i *)&_Dst[n + 0*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 1*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 2*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 3*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 4*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 5*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 6*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 7*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 8*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 9*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 10*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 11*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 12*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 13*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 14*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 15*16], zero );
+        n += 256;
+    }
+
+    while ( n + 128 <= _SizeInBytes ) {
+        _mm_stream_si128( (__m128i *)&_Dst[n + 0*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 1*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 2*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 3*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 4*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 5*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 6*16], zero );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 7*16], zero );
+        n += 128;
+    }
+
+    while ( n + 16 <= _SizeInBytes ) {
+        _mm_stream_si128( (__m128i *)&_Dst[n], zero );
+        n += 16;
+    }
+
+    while ( n + 4 <= _SizeInBytes ) {
+        *(uint32_t *)&_Dst[n] = 0;
+        n += 4;
+    }
+
+    while ( n < _SizeInBytes ) {
+        _Dst[n] = 0;
+        n++;
+    }
+
+    _mm_sfence();
+#endif
+}
+
+void _MemsetSSE( byte * _Dst, int _Val, size_t _SizeInBytes ) {
+    AN_ASSERT( IsSSEAligned( (size_t)_Dst ) );
+
+#if 0
+    Memset( _Dst, _Val, _SizeInBytes );
+#else
+
+    alignas(16) int32_t data[4];
+
+    memset( data, _Val, sizeof( data ) );
+
+    __m128i val = _mm_load_si128( (__m128i *)&data[0] );
+
+    int n = 0;
+
+    while ( n + 256 <= _SizeInBytes ) {
+        _mm_stream_si128( (__m128i *)&_Dst[n + 0*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 1*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 2*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 3*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 4*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 5*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 6*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 7*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 8*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 9*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 10*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 11*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 12*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 13*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 14*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 15*16], val );
+        n += 256;
+    }
+
+    while ( n + 128 <= _SizeInBytes ) {
+        _mm_stream_si128( (__m128i *)&_Dst[n + 0*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 1*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 2*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 3*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 4*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 5*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 6*16], val );
+        _mm_stream_si128( (__m128i *)&_Dst[n + 7*16], val );
+        n += 128;
+    }
+
+    while ( n + 16 <= _SizeInBytes ) {
+        _mm_stream_si128( (__m128i *)&_Dst[n], val );
+        n += 16;
+    }
+
+    while ( n + 4 <= _SizeInBytes ) {
+        *(uint32_t *)&_Dst[n] = data[0];
+        n += 4;
+    }
+
+    while ( n < _SizeInBytes ) {
+        _Dst[n] = data[0];
+        n++;
+    }
+
+    _mm_sfence();
+
+#endif
 }

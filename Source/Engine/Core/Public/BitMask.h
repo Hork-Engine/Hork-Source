@@ -39,7 +39,7 @@ TBitMask
 Variable size bit mask
 
 */
-template< int BASE_CAPACITY_IN_BITS = 1024, int GRANULARITY_IN_BITS = 1024 >
+template< int BASE_CAPACITY_IN_BITS = 1024, int GRANULARITY_IN_BITS = 1024, typename Allocator = AZoneAllocator >
 class TBitMask {
 public:
     using T = uint32_t;
@@ -154,6 +154,6 @@ public:
     }
 
 private:
-    TPodArray< T, BaseCapacityInBytes, BaseGranularityInBytes > Bits;
+    TPodArray< T, BaseCapacityInBytes, BaseGranularityInBytes, Allocator > Bits;
     int NumBits;
 };

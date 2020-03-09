@@ -85,7 +85,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
     }
 
     int physMonitorSizeOf = sizeof( SPhysicalMonitor ) + sizeof( SMonitorVideoMode ) * (videoModesCount - 1);
-    SPhysicalMonitor * physMonitor = (SPhysicalMonitor *)GZoneMemory.AllocCleared( physMonitorSizeOf, 1 );
+    SPhysicalMonitor * physMonitor = (SPhysicalMonitor *)GZoneMemory.ClearedAlloc( physMonitorSizeOf );
 
     PhysicalMonitors.Append( physMonitor );
 

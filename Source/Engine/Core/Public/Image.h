@@ -34,7 +34,7 @@ SOFTWARE.
 
 /** Software mipmap generator */
 struct ASoftwareMipmapGenerator {
-    void * SourceImage;
+    const void * SourceImage;
     int Width;
     int Height;
     int NumChannels;
@@ -72,3 +72,22 @@ public:
 
     void Free();
 };
+
+/*
+
+Utilites
+
+*/
+
+void FlipImageX( void * _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine );
+
+void FlipImageY( void * _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine );
+
+void ConvertToPrimultipliedAlpha( const float * SourceImage,
+                                  int Width,
+                                  int Height,
+                                  bool bOverbright,
+                                  float fOverbright,
+                                  bool bReplaceAlpha,
+                                  float fReplaceAlpha,
+                                  byte * sRGB );

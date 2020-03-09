@@ -79,7 +79,7 @@ void BvFrustum::FromMatrix( Float4x4 const & _Matrix ) {
 
 #ifdef AN_FRUSTUM_USE_SSE
     if ( !PlanesSSE ) {
-        PlanesSSE = ( sse_t * )GZoneMemory.Alloc( sizeof( sse_t ), 16 );
+        PlanesSSE = ( sse_t * )GZoneMemory.Alloc( sizeof( sse_t ) );
     }
 
     PlanesSSE->x[0] = _mm_set1_ps(Planes[0].Normal.X);

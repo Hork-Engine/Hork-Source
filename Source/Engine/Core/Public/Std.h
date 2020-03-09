@@ -51,7 +51,7 @@ struct TStdAllocator {
         //if ( _Count > TStdNumericLimits< std::size_t >::max() / sizeof( T ) ) {
         //    CriticalError( "TStdAllocator: Invalid size\n" );
         //}
-        return static_cast< T * >( GZoneMemory.Alloc( _Count * sizeof( T ), 1 ) );
+        return static_cast< T * >( GZoneMemory.Alloc( _Count * sizeof( T ) ) );
     }
 
     void deallocate( T * _Bytes, std::size_t _Count ) noexcept {
@@ -69,7 +69,7 @@ public:
     using Super = std::vector< T, TStdAllocator< T > >;
     int Size() const { return Super::size(); }
     T * ToPtr() { return Super::data(); }
-    T * const ToPtr() const { return Super::data(); }
+    T const * ToPtr() const { return Super::data(); }
     void Clear() { Super::clear(); }
     void ResizeInvalidate( int _Size ) {
         Super::clear();

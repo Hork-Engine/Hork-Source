@@ -106,7 +106,7 @@ static int GHIImport_Hash( const unsigned char * _Data, int _Size ) {
 }
 
 static void * GHIImport_Allocate( size_t _BytesCount ) {
-    return GZoneMemory.Alloc( _BytesCount, 1 );
+    return GZoneMemory.Alloc( _BytesCount );
 }
 
 static void GHIImport_Deallocate( void * _Bytes ) {
@@ -449,7 +449,7 @@ void ARenderBackend::WaitSync( void * _Sync ) {
 
 ATextureGPU * ARenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
     ATextureGPU * texture = CreateResource< ATextureGPU >( _Owner );
-    texture->pHandleGPU = GZoneMemory.AllocCleared( sizeof( GHI::Texture ), 1 );
+    texture->pHandleGPU = GZoneMemory.ClearedAlloc( sizeof( GHI::Texture ) );
     new (texture->pHandleGPU) GHI::Texture;
     return texture;
 }
@@ -598,7 +598,7 @@ void ARenderBackend::ReadTexture( ATextureGPU * _Texture, STextureRect const & _
 
 ABufferGPU * ARenderBackend::CreateBuffer( IGPUResourceOwner * _Owner ) {
     ABufferGPU * buffer = CreateResource< ABufferGPU >( _Owner );
-    buffer->pHandleGPU = GZoneMemory.AllocCleared( sizeof( GHI::Buffer ), 1 );
+    buffer->pHandleGPU = GZoneMemory.ClearedAlloc( sizeof( GHI::Buffer ) );
     new (buffer->pHandleGPU) GHI::Buffer;
     return buffer;
 }
@@ -738,11 +738,11 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
     _Material->bShadowMapMasking= _BuildData->bShadowMapMasking;
     _Material->NumSamplers      = _BuildData->NumSamplers;
 
-    static constexpr POLYGON_CULL PolygonCullLUT[] = {
-        POLYGON_CULL_FRONT,
-        POLYGON_CULL_BACK,
-        POLYGON_CULL_DISABLED
-    };
+//    static constexpr POLYGON_CULL PolygonCullLUT[] = {
+//        POLYGON_CULL_FRONT,
+//        POLYGON_CULL_BACK,
+//        POLYGON_CULL_DISABLED
+//    };
 
     POLYGON_CULL cullMode = POLYGON_CULL_FRONT;//PolygonCullLUT[_BuildData->Facing];
 
@@ -771,15 +771,15 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
     switch ( _Material->MaterialType ) {
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT: {
-        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelLit ), 1 );
+        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelLit ) );
         Lit = new (pMem) AShadeModelLit();
         _Material->ShadeModel.Lit = Lit;
 
-        Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
-        Lit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
+        Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Lit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
 
-        Lit->ColorPassLightmap.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
-        Lit->ColorPassVertexLight.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
+        Lit->ColorPassLightmap.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Lit->ColorPassVertexLight.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
 
         Lit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
         Lit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
@@ -793,12 +793,12 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
     }
 
     case MATERIAL_TYPE_UNLIT: {
-        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelUnlit ), 1 );
+        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelUnlit ) );
         Unlit = new (pMem) AShadeModelUnlit();
         _Material->ShadeModel.Unlit = Unlit;
 
-        Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
-        Unlit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent );
+        Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Unlit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
 
         Unlit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
         Unlit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
@@ -813,7 +813,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
 
     case MATERIAL_TYPE_HUD:
     case MATERIAL_TYPE_POSTPROCESS: {
-        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelHUD ), 1 );
+        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelHUD ) );
         HUD = new (pMem) AShadeModelHUD();
         _Material->ShadeModel.HUD = HUD;
         HUD->ColorPassHUD.Create( _BuildData->ShaderData );

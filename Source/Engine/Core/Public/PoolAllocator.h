@@ -32,12 +32,12 @@ SOFTWARE.
 
 #include "Logger.h"
 
-template< typename T, int MAX_BLOCK_SIZE = 1024, int ALIGNMENT = 1 >
+template< typename T, int MAX_BLOCK_SIZE = 1024, int ALIGNMENT = 16 >
 class TPoolAllocator {
     AN_FORBID_COPY( TPoolAllocator )
 
     static_assert( MAX_BLOCK_SIZE >= 1, "Invalid MAX_BLOCK_SIZE" );
-    static_assert( ALIGNMENT <= 128 && IsPowerOfTwoConstexpr( ALIGNMENT ), "Alignment Check" );
+    static_assert( ALIGNMENT >= 16 && ALIGNMENT <= 128 && IsPowerOfTwoConstexpr( ALIGNMENT ), "Alignment Check" );
 
     constexpr static int CHUNK_SIZE = Align( sizeof( T ) < sizeof( size_t ) ? sizeof( size_t ) : sizeof( T ), ALIGNMENT );
 
@@ -103,7 +103,7 @@ AN_INLINE void TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::Free() {
     while ( Blocks ) {
         SBlock * block = Blocks;
         Blocks = block->Next;
-        GHeapMemory.HeapFree( block );
+        GHeapMemory.Dealloc( block );
     }
     CurBlock = nullptr;
     //FreeList = nullptr;
@@ -131,7 +131,7 @@ AN_INLINE void TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::CleanupEmptyBlock
             if ( CurBlock == block ) {
                 CurBlock = nullptr;
             }
-            GHeapMemory.HeapFree( block );
+            GHeapMemory.Dealloc( block );
             TotalBlocks--;
         } else {
             prev = block;
@@ -150,7 +150,7 @@ AN_INLINE void TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::CleanupEmptyBlock
 
 template< typename T, int MAX_BLOCK_SIZE, int ALIGNMENT >
 AN_INLINE typename TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::SBlock * TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::AllocateBlock() {
-    SBlock * block = ( SBlock * )GHeapMemory.HeapAlloc( sizeof( SBlock ), ALIGNMENT );
+    SBlock * block = ( SBlock * )GHeapMemory.Alloc( sizeof( SBlock ), ALIGNMENT );
     block->FreeList = block->Chunks;
 #if 0
     for ( int i = 0 ; i < MAX_BLOCK_SIZE ; ++i ) {

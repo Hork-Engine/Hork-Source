@@ -574,7 +574,8 @@ void ARuntimeMain::InitializeMemory() {
 
     GHeapMemory.Initialize();
 
-    MemoryHeap = GHeapMemory.HeapAllocCleared( TotalMemorySizeInBytes, 16 );
+    MemoryHeap = GHeapMemory.Alloc( TotalMemorySizeInBytes, 16 );
+    ZeroMemSSE( MemoryHeap, TotalMemorySizeInBytes );
 
     //TouchMemoryPages( MemoryHeap, TotalMemorySizeInBytes );
 
@@ -591,7 +592,7 @@ void ARuntimeMain::InitializeMemory() {
 void ARuntimeMain::DeinitializeMemory() {
     GZoneMemory.Deinitialize();
     GHunkMemory.Deinitialize();
-    GHeapMemory.HeapFree( MemoryHeap );
+    GHeapMemory.Dealloc( MemoryHeap );
     GHeapMemory.Deinitialize();
 }
 

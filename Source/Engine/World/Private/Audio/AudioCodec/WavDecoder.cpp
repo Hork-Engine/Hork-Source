@@ -268,7 +268,7 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
 
                     int readBytesCount = blocksCount * Wave.BlockLength;
                     if ( ADPCMBufferLength < readBytesCount ) {
-                        ADPCM = ( byte * )GZoneMemory.Extend( ADPCM, ADPCMBufferLength, readBytesCount, 1, false );
+                        ADPCM = ( byte * )GZoneMemory.Realloc( ADPCM, readBytesCount, false );
                         ADPCMBufferLength = readBytesCount;
                     }
 
@@ -334,7 +334,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
             return false;
         }
 
-        *_PCM = (short *)GZoneMemory.Alloc( inf.DataSize, 1 );
+        *_PCM = (short *)GZoneMemory.Alloc( inf.DataSize );
         if ( !*_PCM ) {
             return false;
         }
@@ -347,7 +347,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
 
         if ( inf.Format == WAVE_FORMAT_DVI_ADPCM ) {
             byte * encodedADPCM = (byte *)*_PCM;
-            *_PCM = (short *)GZoneMemory.Alloc( inf.NumSamples * sizeof( short ), 1 );
+            *_PCM = (short *)GZoneMemory.Alloc( inf.NumSamples * sizeof( short ) );
             if ( inf.Channels == 2 )
                 IMAADPCMUnpack16_Stereo( *_PCM, inf.NumSamples, inf.Channels, encodedADPCM, inf.DataSize, inf.BlockAlign );
             else
@@ -388,7 +388,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
             return false;
         }
 
-        *_PCM = (short *)GZoneMemory.Alloc( inf.DataSize, 1 );
+        *_PCM = (short *)GZoneMemory.Alloc( inf.DataSize );
         if ( !*_PCM ) {
             return false;
         }
@@ -401,7 +401,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
 
         if ( inf.Format == WAVE_FORMAT_DVI_ADPCM ) {
             byte * encodedADPCM = (byte *)*_PCM;
-            *_PCM = (short *)GZoneMemory.Alloc( inf.NumSamples * sizeof( short ), 1 );
+            *_PCM = (short *)GZoneMemory.Alloc( inf.NumSamples * sizeof( short ) );
             if ( inf.Channels == 2 )
                 IMAADPCMUnpack16_Stereo( *_PCM, inf.NumSamples, inf.Channels, encodedADPCM, inf.DataSize, inf.BlockAlign );
             else
@@ -441,7 +441,7 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
         return false;
     }
 
-    *_EncodedData = ( byte * )GZoneMemory.Alloc( inf.DataSize + sizeof( SWaveFormat ), 1 );
+    *_EncodedData = ( byte * )GZoneMemory.Alloc( inf.DataSize + sizeof( SWaveFormat ) );
     if ( !*_EncodedData ) {
         return false;
     }
@@ -486,7 +486,7 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_
         return false;
     }
 
-    *_EncodedData = ( byte * )GZoneMemory.Alloc( inf.DataSize + sizeof( SWaveFormat ), 1 );
+    *_EncodedData = ( byte * )GZoneMemory.Alloc( inf.DataSize + sizeof( SWaveFormat ) );
     if ( !*_EncodedData ) {
         return false;
     }

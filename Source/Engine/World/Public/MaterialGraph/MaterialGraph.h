@@ -858,6 +858,7 @@ public:
     TRef< MGFragmentStage > FragmentStage;
     TRef< MGShadowCastStage > ShadowCastStage;
     EMaterialType       MaterialType;
+    EColorBlending      Blending = COLOR_BLENDING_DISABLED;
     EMaterialDepthHack  DepthHack = MATERIAL_DEPTH_HACK_NONE;
     bool                bDepthTest = true; // Experemental
     bool                bTranslucent = false;

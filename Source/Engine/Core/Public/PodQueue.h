@@ -192,13 +192,13 @@ T * TPodQueueTemplate::Push() {
     const int queueLength = Size();
     if ( QueueTail == 0 ) {
         if ( pQueue == StaticData ) {
-            pQueue = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * MaxQueueLength );
+            pQueue = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * MaxQueueLength );
             memcpy( pQueue, StaticData, TYPE_SIZEOF * queueLength );
         } else {
-            pQueue = ( T * )Allocator::Inst().Extend1( pQueue, TYPE_SIZEOF * queueLength, TYPE_SIZEOF * MaxQueueLength, true );
+            pQueue = ( T * )Allocator::Inst().Realloc( pQueue, TYPE_SIZEOF * MaxQueueLength, true );
         }
     } else {
-        T * data = ( T * )Allocator::Inst().Alloc1( TYPE_SIZEOF * MaxQueueLength );
+        T * data = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * MaxQueueLength );
         for ( int i = 0 ; i < queueLength ; i++ ) {
             data[i] = pQueue[ ( i + QueueTail ) & WrapMask ];
         }

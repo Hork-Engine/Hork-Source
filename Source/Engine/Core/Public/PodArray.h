@@ -33,10 +33,10 @@ SOFTWARE.
 #include "Alloc.h"
 
 #define TPodArrayTemplateDecorate \
-    template< typename T, int BASE_CAPACITY, int GRANULARITY, typename Allocator, int Alignment > AN_FORCEINLINE
+    template< typename T, int BASE_CAPACITY, int GRANULARITY, typename Allocator > AN_FORCEINLINE
 
 #define TPodArrayTemplate \
-    TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator, Alignment >
+    TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator >
 
 /*
 
@@ -45,7 +45,7 @@ TPodArray
 Array for POD types
 
 */
-template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator, int Alignment = 1 >
+template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
 class TPodArray final {
 public:
     typedef T * Iterator;
@@ -157,27 +157,27 @@ public:
 //    }
 
 private:
-    static_assert( std::is_trivial< T >::value, "Expected POD type" );
-    static_assert( Alignment <= 128 && IsPowerOfTwoConstexpr( Alignment ), "Alignment check" );
-    //static_assert( IsAligned( sizeof( T ), Alignment ), "Alignment check" );
-
-    alignas( Alignment ) T StaticData[BASE_CAPACITY];
+    alignas( 16 ) T StaticData[BASE_CAPACITY];
     T *             ArrayData;
     int             ArraySize;
     int             ArrayCapacity;
+
+    static_assert( std::is_trivial< T >::value, "Expected POD type" );
+    //static_assert( IsAligned( sizeof( T ), Alignment ), "Alignment check" );
 };
 
 template< typename T >
 using TPodArrayLite = TPodArray< T, 1 >;
 
-template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, int Alignment = 1 >
-using TPodArrayHeap = TPodArray< T, BASE_CAPACITY, GRANULARITY, AHeapAllocator, Alignment >;
+template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32 >
+using TPodArrayHeap = TPodArray< T, BASE_CAPACITY, GRANULARITY, AHeapAllocator >;
 
 TPodArrayTemplateDecorate
 TPodArrayTemplate::TPodArray()
     : ArrayData( StaticData ), ArraySize( 0 ), ArrayCapacity( BASE_CAPACITY )
 {
     static_assert( BASE_CAPACITY > 0, "TPodArray: Invalid BASE_CAPACITY" );
+    AN_ASSERT( IsAlignedPtr( StaticData, 16 ) );
 }
 
 TPodArrayTemplateDecorate
@@ -185,7 +185,7 @@ TPodArrayTemplate::TPodArray( TPodArrayTemplate const & _Array ) {
     ArraySize = _Array.ArraySize;
     if ( _Array.ArrayCapacity > BASE_CAPACITY ) {
         ArrayCapacity = _Array.ArrayCapacity;
-        ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArrayCapacity, Alignment );
+        ArrayData = ( T * )Allocator::Inst().ClearedAlloc( TYPE_SIZEOF * ArrayCapacity );
     } else {
         ArrayCapacity = BASE_CAPACITY;
         ArrayData = StaticData;
@@ -199,7 +199,7 @@ TPodArrayTemplate::TPodArray( T const * _Elements, int _NumElements ) {
     if ( _NumElements > BASE_CAPACITY ) {
         const int mod = _NumElements % GRANULARITY;
         ArrayCapacity = mod ? _NumElements + GRANULARITY - mod : _NumElements;
-        ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArrayCapacity, Alignment );
+        ArrayData = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * ArrayCapacity );
     } else {
         ArrayCapacity = BASE_CAPACITY;
         ArrayData = StaticData;
@@ -245,8 +245,8 @@ void TPodArrayTemplate::ShrinkToFit() {
         return;
     }
 
-    T * data = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * ArraySize, Alignment );
-    memcpy( data, ArrayData, TYPE_SIZEOF * ArraySize );
+    T * data = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * ArraySize );
+    MemcpySSE( data, ArrayData, TYPE_SIZEOF * ArraySize );
     Allocator::Inst().Dealloc( ArrayData );
     ArrayData = data;
     ArrayCapacity = ArraySize;
@@ -258,10 +258,10 @@ void TPodArrayTemplate::Reserve( int _NewCapacity ) {
         return;
     }
     if ( ArrayData == StaticData ) {
-        ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * _NewCapacity, Alignment );
+        ArrayData = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * _NewCapacity );
         memcpy( ArrayData, StaticData, TYPE_SIZEOF * ArraySize );
     } else {
-        ArrayData = ( T * )Allocator::Inst().ExtendAligned( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, true, Alignment );
+        ArrayData = ( T * )Allocator::Inst().Realloc( ArrayData, TYPE_SIZEOF * _NewCapacity, true );
     }
     ArrayCapacity = _NewCapacity;
 }
@@ -272,9 +272,9 @@ void TPodArrayTemplate::ReserveInvalidate( int _NewCapacity ) {
         return;
     }
     if ( ArrayData == StaticData ) {
-        ArrayData = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * _NewCapacity, Alignment );
+        ArrayData = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * _NewCapacity );
     } else {
-        ArrayData = ( T * )Allocator::Inst().ExtendAligned( ArrayData, TYPE_SIZEOF * ArrayCapacity, TYPE_SIZEOF * _NewCapacity, false, Alignment );
+        ArrayData = ( T * )Allocator::Inst().Realloc( ArrayData, TYPE_SIZEOF * _NewCapacity, false );
     }
     ArrayCapacity = _NewCapacity;
 }
@@ -359,7 +359,7 @@ void TPodArrayTemplate::Insert( int _Index, T const & _Element ) {
     const int capacity = mod ? newLength + GRANULARITY - mod : newLength;
 
     if ( capacity > ArrayCapacity ) {
-        T * data = ( T * )Allocator::Inst().AllocAligned( TYPE_SIZEOF * capacity, Alignment );
+        T * data = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * capacity );
 
         memcpy( data, ArrayData, TYPE_SIZEOF * _Index );
         data[ _Index ] = _Element;

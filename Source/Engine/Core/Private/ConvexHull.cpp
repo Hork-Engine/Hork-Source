@@ -37,7 +37,7 @@ SOFTWARE.
 AConvexHull * AConvexHull::Create( int _MaxPoints ) {
     AN_ASSERT( _MaxPoints > 0 );
     int size = sizeof( AConvexHull ) - sizeof( Points ) + _MaxPoints * sizeof( Points[0] );
-    AConvexHull * hull = ( AConvexHull * )GZoneMemory.Alloc( size, 1 );
+    AConvexHull * hull = ( AConvexHull * )GZoneMemory.Alloc( size );
     hull->MaxPoints = _MaxPoints;
     hull->NumPoints = 0;
     return hull;
@@ -96,7 +96,7 @@ AConvexHull * AConvexHull::RecreateFromPoints( AConvexHull * _OldHull, Float3 co
         // resize hull
         int oldSize = sizeof( AConvexHull ) - sizeof( Points ) + _OldHull->MaxPoints * sizeof( Points[0] );
         int newSize = oldSize + ( _NumPoints - _OldHull->MaxPoints ) * sizeof( Points[0] );
-        AConvexHull * hull = ( AConvexHull * )GZoneMemory.Extend( _OldHull, oldSize, newSize, 1, false );
+        AConvexHull * hull = ( AConvexHull * )GZoneMemory.Realloc( _OldHull, newSize, false );
         hull->MaxPoints = _NumPoints;
         hull->NumPoints = _NumPoints;
         memcpy( hull->Points, _Points, _NumPoints * sizeof( Float3 ) );

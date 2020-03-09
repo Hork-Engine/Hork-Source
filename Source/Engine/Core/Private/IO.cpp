@@ -64,7 +64,7 @@ void MakeDir( const char * _Directory, bool _FileName ) {
     if ( !strLen ) {
         return;
     }
-    char * tmpStr = ( char * )GZoneMemory.Alloc( strLen + 1, 1 );
+    char * tmpStr = ( char * )GZoneMemory.Alloc( strLen + 1 );
     memcpy( tmpStr, _Directory, strLen+1 );
     char * p = tmpStr;
     #ifdef AN_OS_WIN32
@@ -419,7 +419,7 @@ bool AMemoryStream::OpenWrite( const char * _FileName, byte * _MemoryBuffer, siz
 bool AMemoryStream::OpenWrite( const char * _FileName, size_t _ReservedSize ) {
     Close();
     FileName = _FileName;
-    MemoryBuffer = ( byte * )GZoneMemory.Alloc( _ReservedSize, 1 );
+    MemoryBuffer = ( byte * )GZoneMemory.Alloc( _ReservedSize );
     MemoryBufferSize = _ReservedSize;
     bMemoryBufferOwner = true;
     MemoryBufferOffset = 0;
@@ -481,7 +481,7 @@ int AMemoryStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
         if ( mod ) {
             newLength = newLength + GRANULARITY - mod;
         }
-        MemoryBuffer = ( byte * )GZoneMemory.Extend( MemoryBuffer, MemoryBufferSize, newLength, 1, true );
+        MemoryBuffer = ( byte * )GZoneMemory.Realloc( MemoryBuffer, newLength, true );
         MemoryBufferSize = newLength;
     }
     memcpy( MemoryBuffer + MemoryBufferOffset, _Buffer, _SizeInBytes );
@@ -685,9 +685,9 @@ bool AArchive::ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, 
     void * data;
     
     if ( _ZoneMemory ) {
-        data = GZoneMemory.Alloc( FileInfo.uncompressed_size, 1 );
+        data = GZoneMemory.Alloc( FileInfo.uncompressed_size );
     } else {
-        data = GHeapMemory.HeapAlloc( FileInfo.uncompressed_size, 1 );
+        data = GHeapMemory.Alloc( FileInfo.uncompressed_size, 1 );
     }
     Result = unzReadCurrentFile( Handle, data, FileInfo.uncompressed_size );
     if ( (uLong)Result != FileInfo.uncompressed_size ) {
@@ -700,7 +700,7 @@ bool AArchive::ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, 
         if ( _ZoneMemory ) {
             GZoneMemory.Dealloc( data );
         } else {
-            GHeapMemory.HeapFree( data );
+            GHeapMemory.Dealloc( data );
         }
         unzCloseCurrentFile( Handle );
         return false;
@@ -712,7 +712,7 @@ bool AArchive::ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, 
         if ( _ZoneMemory ) {
             GZoneMemory.Dealloc( data );
         } else {
-            GHeapMemory.HeapFree( data );
+            GHeapMemory.Dealloc( data );
         }
         return false;
     }
@@ -746,7 +746,7 @@ bool AArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuff
 
     *_HunkMark = GHunkMemory.SetHunkMark();
 
-    void * data = GHunkMemory.HunkMemory( FileInfo.uncompressed_size, 1 );
+    void * data = GHunkMemory.Alloc( FileInfo.uncompressed_size );
     Result = unzReadCurrentFile( Handle, data, FileInfo.uncompressed_size );
     if ( (uLong)Result != FileInfo.uncompressed_size ) {
         GLogger.Printf( "Couldn't read file %s complete from archive: ", _FileName );

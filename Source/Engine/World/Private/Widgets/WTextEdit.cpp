@@ -748,7 +748,7 @@ bool WTextEdit::Copy() {
 
     const int clipboardDataLen = Core::WideStrUTF8Bytes( start, end ) + 1;
 
-    char * pClipboardData = ( char * )GZoneMemory.Alloc( clipboardDataLen, 1 );
+    char * pClipboardData = ( char * )GZoneMemory.Alloc( clipboardDataLen );
 
     Core::WideStrEncodeUTF8( pClipboardData, clipboardDataLen, start, end );
 

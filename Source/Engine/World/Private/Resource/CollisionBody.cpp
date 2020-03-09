@@ -148,7 +148,7 @@ void ACollisionConvexHullData::Initialize( Float3 const * _Vertices, int _Vertex
 
     GZoneMemory.Dealloc( Data );
 
-    Data = ( btVector3 * )GZoneMemory.Alloc( sizeof( btVector3 ) * _VertexCount, 16 );
+    Data = ( btVector3 * )GZoneMemory.Alloc( sizeof( btVector3 ) * _VertexCount );
     for ( int i = 0 ; i < _VertexCount ; i++ ) {
         Data[i] = btVectorToFloat3( _Vertices[i] );
     }
@@ -1271,10 +1271,10 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
     int hunkMark = GHunkMemory.SetHunkMark();
 
     HACD::Vec3< HACD::Real > * points =
-            ( HACD::Vec3< HACD::Real > * )GHunkMemory.HunkMemory( _VerticesCount * sizeof( HACD::Vec3< HACD::Real > ), 1 );
+            ( HACD::Vec3< HACD::Real > * )GHunkMemory.Alloc( _VerticesCount * sizeof( HACD::Vec3< HACD::Real > ) );
 
     HACD::Vec3< long > * triangles =
-            ( HACD::Vec3< long > * )GHunkMemory.HunkMemory( ( _IndicesCount / 3 ) * sizeof( HACD::Vec3< long > ), 1 );
+            ( HACD::Vec3< long > * )GHunkMemory.Alloc( ( _IndicesCount / 3 ) * sizeof( HACD::Vec3< long > ) );
 
     byte const * srcVertices = ( byte const * )_Vertices;
     for ( int i = 0 ; i < _VerticesCount ; i++ ) {
@@ -1333,10 +1333,10 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
     }
 
     HACD::Vec3< HACD::Real > * hullPoints =
-            ( HACD::Vec3< HACD::Real > * )GHunkMemory.HunkMemory( maxPointsPerCluster * sizeof( HACD::Vec3< HACD::Real > ), 1 );
+            ( HACD::Vec3< HACD::Real > * )GHunkMemory.Alloc( maxPointsPerCluster * sizeof( HACD::Vec3< HACD::Real > ) );
 
     HACD::Vec3< long > * hullTriangles =
-            ( HACD::Vec3< long > * )GHunkMemory.HunkMemory( maxTrianglesPerCluster * sizeof( HACD::Vec3< long > ), 1 );
+            ( HACD::Vec3< long > * )GHunkMemory.Alloc( maxTrianglesPerCluster * sizeof( HACD::Vec3< long > ) );
 
 
     _OutHulls.ResizeInvalidate( numClusters );
@@ -1507,7 +1507,7 @@ params.m_convexhullDownsampling = 1;
 
     int hunkMark = GHunkMemory.SetHunkMark();
 
-    Double3 * tempVertices = ( Double3 * )GHunkMemory.HunkMemory( _VerticesCount * sizeof( Double3 ), 1 );
+    Double3 * tempVertices = ( Double3 * )GHunkMemory.Alloc( _VerticesCount * sizeof( Double3 ) );
 
     byte const * srcVertices = ( byte const * )_Vertices;
     for ( int i = 0 ; i < _VerticesCount ; i++ ) {

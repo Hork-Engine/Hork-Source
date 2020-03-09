@@ -185,6 +185,13 @@ enum ESurfaceGeometryType
     //SURF_BEZIER_PATCH
 };
 
+enum ERenderOrder
+{
+    RENDER_ORDER_WEAPON = 0,
+    RENDER_ORDER_DEFAULT = 1,
+    RENDER_ORDER_SKYBOX = 255
+};
+
 struct SSurfaceDef
 {
     /** Parent brush model */
@@ -499,12 +506,6 @@ public:
     /** Level outdoor area */
     SVisArea OutdoorArea;
 
-    /** Level portals */
-    TPodArray< SVisPortal > Portals;
-
-    /** Links between the portals and areas */
-    TPodArray< SPortalLink > AreaLinks;
-
     /** Lightmap pixel format */
     ELightmapFormat LightmapFormat;
 
@@ -544,10 +545,10 @@ public:
     /** Vertex buffer for baked static shadow casters
     FUTURE: split to chunks for culling
     */
-    TPodArray< Float3 > ShadowCasterVerts;
+    TPodArrayHeap< Float3 > ShadowCasterVerts;
 
     /** Index buffer for baked static shadow casters */
-    TPodArray< unsigned int > ShadowCasterIndices;
+    TPodArrayHeap< unsigned int > ShadowCasterIndices;
 
     /** Not movable primitives */
     //TPodArray< SPrimitiveDef * > BakedPrimitives;
@@ -642,7 +643,7 @@ protected:
     void Tick( float _TimeStep );
 
     /** Draw debug. Called by owner world. */
-    void DrawDebug( ADebugRenderer * InRenderer );
+    virtual void DrawDebug( ADebugRenderer * InRenderer );
 
     void UploadResourcesGPU() override;
 
@@ -687,6 +688,12 @@ private:
     int IndexInArrayOfLevels = -1;
 
     bool bIsPersistent;
+
+    /** Level portals */
+    TPodArray< SVisPortal > Portals;
+
+    /** Links between the portals and areas */
+    TPodArray< SPortalLink > AreaLinks;
 
     /** Array of actors */
     TPodArray< AActor * > Actors;

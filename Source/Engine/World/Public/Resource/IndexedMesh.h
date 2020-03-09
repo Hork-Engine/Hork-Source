@@ -529,10 +529,10 @@ class AProceduralMesh : public ABaseObject {
 
 public:
     /** Update vertex cache occasionally or every frame */
-    TPodArrayHeap< SMeshVertex, 32, 32, 16 > VertexCache;
+    TPodArrayHeap< SMeshVertex, 32, 32 > VertexCache;
 
     /** Update index cache occasionally or every frame */
-    TPodArrayHeap< unsigned int, 32, 32, 16 > IndexCache;
+    TPodArrayHeap< unsigned int, 32, 32 > IndexCache;
 
     /** Bounding box is used for raycast early exit and VSD culling */
     BvAxisAlignedBox BoundingBox;

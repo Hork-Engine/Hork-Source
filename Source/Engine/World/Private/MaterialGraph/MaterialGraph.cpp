@@ -2829,6 +2829,10 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         bNoCastShadow = true;
     }
 
+    if ( Graph->Blending == COLOR_BLENDING_PREMULTIPLIED_ALPHA ) {
+        predefines += "#define PREMULTIPLIED_ALPHA\n";
+    }
+
     code.Replace( "$BUILTIN_CODE$", buildinSource.CStr() );
 
     MGVertexStage * VertexStage = Graph->VertexStage;
@@ -2994,10 +2998,11 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
 
     int sizeInBytes = sizeof( SMaterialBuildData ) - sizeof( SMaterialBuildData::ShaderData ) + code.Length();
 
-    SMaterialBuildData * data = ( SMaterialBuildData * )GZoneMemory.AllocCleared( sizeInBytes, 1 );
+    SMaterialBuildData * data = ( SMaterialBuildData * )GZoneMemory.ClearedAlloc( sizeInBytes );
 
     data->SizeInBytes         = sizeInBytes;
     data->Type                = Graph->MaterialType;
+    data->Blending            = Graph->Blending;
     data->LightmapSlot        = lightmapSlot;
     data->bDepthPassTextureFetch     = bDepthPassTextureFetch;
     data->bColorPassTextureFetch     = bColorPassTextureFetch;

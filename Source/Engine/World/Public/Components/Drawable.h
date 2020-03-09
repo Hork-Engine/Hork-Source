@@ -35,13 +35,6 @@ SOFTWARE.
 
 struct SRenderFrontendDef;
 
-enum ERenderOrder
-{
-    RENDER_ORDER_WEAPON = 0,
-    RENDER_ORDER_DEFAULT = 1,
-    RENDER_ORDER_SKYBOX = 255
-};
-
 enum EDrawableType
 {
     DRAWABLE_UNKNOWN,

@@ -62,7 +62,7 @@ public:
 
     void Clear() {
         if ( HashBuckets != InvalidHashIndex ) {
-            ClearMemory8( HashBuckets, 0xffffffffffffffff, HashBucketsCount * sizeof( *HashBuckets ) );
+            MemsetSSE( HashBuckets, 0xff, HashBucketsCount * sizeof( *HashBuckets ) );
         }
     }
 
@@ -85,7 +85,9 @@ public:
 
         if ( HashBuckets == InvalidHashIndex ) {
             // first allocation
-            HashBuckets = ( int * )Allocator::Inst().AllocCleared1( HashBucketsCount * sizeof( *HashBuckets ), 0xffffffffffffffff );
+            //HashBuckets = ( int * )Allocator::Inst().AllocCleared1( HashBucketsCount * sizeof( *HashBuckets ), 0xffffffffffffffff );
+            HashBuckets = (int *)Allocator::Inst().Alloc( HashBucketsCount * sizeof( *HashBuckets ) );
+            MemsetSSE( HashBuckets, 0xff, HashBucketsCount * sizeof( *HashBuckets ) );
             LookupMask = ~0;
         }
 
@@ -203,9 +205,19 @@ private:
 
     void GrowIndexChain( int _NewIndexChainLength ) {
         if ( IndexChain == InvalidHashIndex ) {
-            IndexChain = ( int * )Allocator::Inst().AllocCleared1( _NewIndexChainLength * sizeof( *IndexChain ), 0xffffffffffffffff );
+            //IndexChain = ( int * )Allocator::Inst().AllocCleared1( _NewIndexChainLength * sizeof( *IndexChain ), 0xffffffffffffffff );
+            IndexChain = (int *)Allocator::Inst().Alloc( _NewIndexChainLength * sizeof( *IndexChain ) );
+            MemsetSSE( IndexChain, 0xff, _NewIndexChainLength * sizeof( *IndexChain ) );
         } else {
-            IndexChain = ( int * )Allocator::Inst().ExtendCleared1( IndexChain, IndexChainLength * sizeof( *IndexChain ), _NewIndexChainLength * sizeof( *IndexChain ), true, 0xffffffffffffffff );
+            //IndexChain = ( int * )Allocator::Inst().ExtendCleared1( IndexChain, IndexChainLength * sizeof( *IndexChain ), _NewIndexChainLength * sizeof( *IndexChain ), true, 0xffffffffffffffff );
+            IndexChain = (int *)Allocator::Inst().Realloc( IndexChain, _NewIndexChainLength * sizeof( *IndexChain ), true );
+
+            int * pIndexChain = IndexChain + IndexChainLength * sizeof( *IndexChain );
+            if ( IsAlignedPtr( pIndexChain, 16 ) ) {
+                MemsetSSE( pIndexChain, 0xff, (_NewIndexChainLength-IndexChainLength) * sizeof( *IndexChain ) );
+            } else {
+                memset( pIndexChain, 0xff, (_NewIndexChainLength-IndexChainLength) * sizeof( *IndexChain ) );
+            }
         }
         IndexChainLength = _NewIndexChainLength;
     }

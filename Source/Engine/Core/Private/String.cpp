@@ -77,7 +77,7 @@ void AString::ReallocIfNeed( int _Alloc, bool _CopyOld ) {
     }
 
     if ( StringData == StaticData ) {
-        StringData = ( char * )Allocator::Inst().Alloc1( _Alloc );
+        StringData = ( char * )Allocator::Inst().Alloc( _Alloc );
 
         if ( _CopyOld ) {
             memcpy( StringData, StaticData, StringLength );
@@ -90,7 +90,8 @@ void AString::ReallocIfNeed( int _Alloc, bool _CopyOld ) {
         return;
     }
 
-    StringData = ( char * )Allocator::Inst().Extend1( StringData, Allocated, _Alloc, _CopyOld );
+    StringData = ( char * )Allocator::Inst().Realloc( StringData, _Alloc, _CopyOld );
+//memset(&StringData[Allocated],0,_Alloc-Allocated);
     Allocated = _Alloc;
 
     if ( !_CopyOld ) {

@@ -167,9 +167,9 @@ struct SCullJobSubmit {
 
 static TPodArray< SCullJobSubmit > CullSubmits;
 static TPodArray< SPrimitiveDef * > BoxPrimitives;
-using AArrayOfBoundingBoxesSSE = TPodArray< BvAxisAlignedBoxSSE, 32, 32, AHeapAllocator, 16 >;
+using AArrayOfBoundingBoxesSSE = TPodArray< BvAxisAlignedBoxSSE, 32, 32, AHeapAllocator >;
 static AArrayOfBoundingBoxesSSE BoundingBoxesSSE;
-static TPodArray< int32_t, 32, 32, AHeapAllocator, 16 > CullingResult;
+static TPodArray< int32_t, 32, 32, AHeapAllocator > CullingResult;
 
 
 //

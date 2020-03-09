@@ -39,7 +39,7 @@ TPodStack
 Stack for POD types
 
 */
-template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32 >
+template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
 class TPodStack final {
 public:
     enum { TYPE_SIZEOF = sizeof( T ) };
@@ -70,7 +70,7 @@ public:
     void            Set( T const * _Elements, int _NumElements );
 
 private:
-    TPodArray< T, BASE_CAPACITY, GRANULARITY > Array;
+    TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator > Array;
 };
 
 template< typename T >

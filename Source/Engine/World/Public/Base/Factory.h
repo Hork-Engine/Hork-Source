@@ -612,7 +612,7 @@ public:
     };
     template< typename T >
     static T * NewObject() {
-        void * data = T::Allocator::Inst().AllocCleared1( sizeof( T ) );
+        void * data = T::Allocator::Inst().ClearedAlloc( sizeof( T ) );
         ADummy * object = new (data) T;
         return static_cast< T * >( object );
     }
