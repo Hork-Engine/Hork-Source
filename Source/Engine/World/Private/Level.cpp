@@ -74,7 +74,7 @@ ALevel::ALevel() {
 
     Float3 extents( CONVEX_HULL_MAX_BOUNDS * 2 );
 
-    memset( &OutdoorArea, 0, sizeof( OutdoorArea ) );
+    Core::ZeroMem( &OutdoorArea, sizeof( OutdoorArea ) );
 
     OutdoorArea.Bounds.Mins = -extents * 0.5f;
     OutdoorArea.Bounds.Maxs = extents * 0.5f;
@@ -120,7 +120,7 @@ void ALevel::Initialize() {
     if ( bCompressedVisData && Visdata && PVSClustersCount > 0 )
     {
         // Allocate decompressed vis data
-        DecompressedVisData = (byte *)HugeAlloc( ( PVSClustersCount + 7 ) >> 3 );
+        DecompressedVisData = (byte *)GHeapMemory.Alloc( ( PVSClustersCount + 7 ) >> 3 );
     }
 
     // FIXME: Use AVertexMemoryGPU?
@@ -157,13 +157,13 @@ void ALevel::Purge() {
 
     PVSClustersCount = 0;
 
-    HugeFree( Visdata );
+    GHeapMemory.Free( Visdata );
     Visdata = nullptr;
 
-    HugeFree( DecompressedVisData );
+    GHeapMemory.Free( DecompressedVisData );
     DecompressedVisData = nullptr;
 
-    HugeFree( LightData );
+    GHeapMemory.Free( LightData );
     LightData = nullptr;
 
     AreaSurfaces.Free();
@@ -190,7 +190,7 @@ void ALevel::DestroyActors() {
 
 void ALevel::PurgePortals() {
     for ( SPortalLink & portalLink : AreaLinks ) {
-        AConvexHull::Destroy( portalLink.Hull );
+        portalLink.Hull->Destroy();
     }
 
     // Clear area portals
@@ -503,7 +503,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
     //InRenderer->SetColor( AColor4::White() );
     //InRenderer->DrawLine( Float3(0.0f), Float3( 0, 0, 1 )*100.0f );
 
-    //AConvexHull::Destroy( hull );
+    //hull->Destroy();
 
 #if 0
     TPodArray< BvAxisAlignedBox > clusters;
@@ -571,7 +571,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
                     InRenderer->SetColor( AColor4( 0, 1, 0, 0.4f ) );
                 }
 
-                InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, false );
+                InRenderer->DrawConvexPoly( p->Hull->GetPoints(), p->Hull->GetNumPoints(), false );
             }
 
             for ( SVisArea & area : Areas ) {
@@ -585,7 +585,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
                         InRenderer->SetColor( AColor4( 0, 1, 0, 0.4f ) );
                     }
 
-                    InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, false );
+                    InRenderer->DrawConvexPoly( p->Hull->GetPoints(), p->Hull->GetNumPoints(), false );
                 }
             }
 #endif

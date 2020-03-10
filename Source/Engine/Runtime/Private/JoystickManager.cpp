@@ -51,9 +51,9 @@ AJoystickManager::AJoystickManager() {
 }
 
 void AJoystickManager::Initialize() {
-    memset( Joysticks, 0, sizeof( Joysticks ) );
-    memset( JoystickButtonState, 0, sizeof( JoystickButtonState ) );
-    memset( JoystickAxisState, 0, sizeof( JoystickAxisState ) );
+    Core::ZeroMem( Joysticks, sizeof( Joysticks ) );
+    Core::ZeroMem( JoystickButtonState, sizeof( JoystickButtonState ) );
+    Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
 
     for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
         Joysticks[i].Id = i;
@@ -89,8 +89,8 @@ static void RegisterJoystick( int _Joystick ) {
     joystick.bGamePad = glfwJoystickIsGamepad( _Joystick );
     joystick.bConnected = true;
 
-    memset( JoystickButtonState[_Joystick], 0, sizeof( JoystickButtonState[0][0] ) * joystick.NumButtons );
-    memset( JoystickAxisState[_Joystick], 0, sizeof( JoystickAxisState[0][0] ) * joystick.NumAxes );
+    Core::ZeroMem( JoystickButtonState[_Joystick], sizeof( JoystickButtonState[0][0] ) * joystick.NumButtons );
+    Core::ZeroMem( JoystickAxisState[_Joystick], sizeof( JoystickAxisState[0][0] ) * joystick.NumAxes );
 
     SEvent * event = GRuntimeEvents.Push();
     event->TimeStamp = GRuntime.SysSeconds_d();

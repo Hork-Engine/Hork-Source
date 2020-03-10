@@ -625,7 +625,7 @@ public:
     /** Add primitive to the level */
     void AddPrimitive( SPrimitiveDef * InPrimitive );
 
-    /** Add primitive from the level */
+    /** Remove primitive from the level */
     void RemovePrimitive( SPrimitiveDef * InPrimitive );
 
     /** Mark primitive dirty */

@@ -611,7 +611,7 @@ private:
     static void DestroyResource( AResourceGPU * InResource )
     {
         InResource->~AResourceGPU();
-        GZoneMemory.Dealloc( InResource );
+        GZoneMemory.Free( InResource );
     }
 
 protected:

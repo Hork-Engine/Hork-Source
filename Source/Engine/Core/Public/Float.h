@@ -136,7 +136,7 @@ struct Float2x2 {
     }
 
     void Clear() {
-        ZeroMem( this, sizeof( *this) );
+        Core::ZeroMem( this, sizeof( *this) );
     }
 
     void SetIdentity() {
@@ -279,7 +279,7 @@ struct Float3x3 {
 //        //Col0 = _Other.Col0;
 //        //Col1 = _Other.Col1;
 //        //Col2 = _Other.Col2;
-//        memcpy( this, &_Other, sizeof( *this ) );
+//        Core::Memcpy( this, &_Other, sizeof( *this ) );
 //        return *this;
 //    }
 
@@ -372,7 +372,7 @@ struct Float3x3 {
     }
 
     void Clear() {
-        ZeroMem( this, sizeof( *this) );
+        Core::ZeroMem( this, sizeof( *this) );
     }
 
     void SetIdentity() {
@@ -611,7 +611,7 @@ struct Float4x4 {
 //        //Col1 = _Other.Col1;
 //        //Col2 = _Other.Col2;
 //        //Col3 = _Other.Col3;
-//        memcpy( this, &_Other, sizeof( *this ) );
+//        Core::Memcpy( this, &_Other, sizeof( *this ) );
 //        return *this;
 //    }
 
@@ -778,7 +778,7 @@ struct Float4x4 {
     }
 
     void Clear() {
-        ZeroMem( this, sizeof( *this) );
+        Core::ZeroMem( this, sizeof( *this) );
     }
 
     void SetIdentity() {
@@ -892,10 +892,11 @@ struct Float4x4 {
     }
 
     // Same as Float3x3(*this)*_Vec
-    Float3 TransformAsFloat3x3( Float3 const & _Vec ) const {
-        return Float3( Col0[0] * _Vec.X + Col1[0] * _Vec.Y + Col2[0] * _Vec.Z,
-                       Col0[1] * _Vec.X + Col1[1] * _Vec.Y + Col2[1] * _Vec.Z,
-                       Col0[2] * _Vec.X + Col1[2] * _Vec.Y + Col2[2] * _Vec.Z );
+    template< typename T >
+    TVector3< T > TransformAsFloat3x3( TVector3< T > const & _Vec ) const {
+        return TVector3< T >( Col0[0] * _Vec.X + Col1[0] * _Vec.Y + Col2[0] * _Vec.Z,
+                              Col0[1] * _Vec.X + Col1[1] * _Vec.Y + Col2[1] * _Vec.Z,
+                              Col0[2] * _Vec.X + Col1[2] * _Vec.Y + Col2[2] * _Vec.Z );
     }
 
     // Same as Float3x3(*this)*_Mat
@@ -1382,7 +1383,7 @@ struct Float3x4 {
 //        //Col0 = _Other.Col0;
 //        //Col1 = _Other.Col1;
 //        //Col2 = _Other.Col2;
-//        memcpy( this, &_Other, sizeof( *this ) );
+//        Core::Memcpy( this, &_Other, sizeof( *this ) );
 //        return *this;
 //    }
 
@@ -1604,7 +1605,7 @@ struct Float3x4 {
     }
 
     void Clear() {
-        ZeroMem( this, sizeof( *this) );
+        Core::ZeroMem( this, sizeof( *this) );
     }
 
     void SetIdentity() {
@@ -1684,9 +1685,10 @@ struct Float3x4 {
                               Col2[0] * _Vec.X + Col2[1] * _Vec.Y + Col2[3] );
     }
 
-    Float2 Mult_Vec2_IgnoreZ( Float2 const & _Vec ) {
-        return Float2( Col0[0] * _Vec.X + Col0[1] * _Vec.Y + Col0[3],
-                       Col1[0] * _Vec.X + Col1[1] * _Vec.Y + Col1[3] );
+    template< typename T >
+    TVector2< T > Mult_Vec2_IgnoreZ( TVector2< T > const & _Vec ) {
+        return TVector2< T >( Col0[0] * _Vec.X + Col0[1] * _Vec.Y + Col0[3],
+                              Col1[0] * _Vec.X + Col1[1] * _Vec.Y + Col1[3] );
     }
 
     Float3x4 operator*( float const & _Value ) const {

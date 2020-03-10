@@ -175,7 +175,7 @@ void APlayerController::TakeScreenshot() {
     };
 
     SScreenshotParameters screenshotParams;
-    memset( &screenshotParams, 0, sizeof( screenshotParams ) );
+    Core::ZeroMem( &screenshotParams, sizeof( screenshotParams ) );
 
     GRuntime.TakeScreenshot( screenshotParams );
 

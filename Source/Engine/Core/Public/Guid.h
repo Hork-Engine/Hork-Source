@@ -68,12 +68,12 @@ struct AGUID {
     }
 
     const char * CStr() const {
-        return AString::Fmt( "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-                             HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
-                             HiBytes[4], HiBytes[5],
-                             HiBytes[6], HiBytes[7],
-                             LoBytes[0], LoBytes[1],
-                             LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7] );
+        return Core::Fmt( "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+                          HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
+                          HiBytes[4], HiBytes[5],
+                          HiBytes[6], HiBytes[7],
+                          LoBytes[0], LoBytes[1],
+                          LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7] );
     }
 
     AGUID & FromString( AString const & _String ) {

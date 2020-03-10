@@ -131,7 +131,7 @@ bool AAudioClip::LoadResource( AString const & _Path ) {
                     } else {
                         AL_UploadBuffer( BufferId, Format, PCM, SamplesCount * Channels * sizeof( byte ), Frequency );
                     }
-                    GZoneMemory.Dealloc( PCM );
+                    GZoneMemory.Free( PCM );
 
                     bLoaded = true;
                 } else {
@@ -219,7 +219,7 @@ bool AAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
                     } else {
                         AL_UploadBuffer( BufferId, Format, PCM, SamplesCount * Channels * sizeof( byte ), Frequency );
                     }
-                    GZoneMemory.Dealloc( PCM );
+                    GZoneMemory.Free( PCM );
 
                     bLoaded = true;
                 } else {
@@ -292,7 +292,7 @@ void AAudioClip::Purge() {
         BufferId = 0;
     }
 
-    GZoneMemory.Dealloc( EncodedData );
+    GZoneMemory.Free( EncodedData );
     EncodedData = NULL;
 
     EncodedDataLength = 0;

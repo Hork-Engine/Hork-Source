@@ -52,7 +52,7 @@ public:
     void Free() {
         for ( SBlock * block = Blocks ; block ; ) {
             SBlock * next = block->Next;
-            GHeapMemory.Dealloc( block );
+            GHeapMemory.Free( block );
             block = next;
         }
         Blocks = nullptr;

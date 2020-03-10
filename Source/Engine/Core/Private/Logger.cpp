@@ -46,7 +46,7 @@ thread_local char LogBuffer[16384];
 void ALogger::Critical( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevCritical, LogBuffer );
 }
@@ -54,7 +54,7 @@ void ALogger::Critical( const char * _Format, ... ) {
 void ALogger::Error( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevError, LogBuffer );
 }
@@ -62,7 +62,7 @@ void ALogger::Error( const char * _Format, ... ) {
 void ALogger::Warning( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevWarning, LogBuffer );
 }
@@ -71,7 +71,7 @@ void ALogger::DebugMessage( const char * _Format, ... ) {
 #ifdef AN_DEBUG
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevMessage, LogBuffer );
 #endif
@@ -80,7 +80,7 @@ void ALogger::DebugMessage( const char * _Format, ... ) {
 void ALogger::Printf( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( LevMessage, LogBuffer );
 }
@@ -92,7 +92,7 @@ void ALogger::Print( const char * _Message ) {
 void ALogger::_Printf( int _Level, const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     MessageCallback( _Level, LogBuffer );
 }

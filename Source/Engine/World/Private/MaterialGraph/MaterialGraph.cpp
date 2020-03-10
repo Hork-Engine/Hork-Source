@@ -2581,44 +2581,44 @@ static const char * builtin_saturate =
 
 static void GenerateBuiltinSource( AString & _BuiltIn ) {
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += AString::Fmt( texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        _BuiltIn += Core::Fmt( texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
 
     _BuiltIn += builtin_spheremap_coord;
     _BuiltIn += builtin_luminance;
 
     for ( int i = AT_Float1 ; i <= AT_Float4 ; i++ ) {
-        _BuiltIn += AString::Fmt( builtin_saturate, AssemblyTypeStr[i], AssemblyTypeStr[i], AssemblyTypeStr[i], AssemblyTypeStr[i] );
+        _BuiltIn += Core::Fmt( builtin_saturate, AssemblyTypeStr[i], AssemblyTypeStr[i], AssemblyTypeStr[i], AssemblyTypeStr[i] );
     }
 }
 
@@ -2761,7 +2761,7 @@ AMaterial * AMaterialBuilder::Build() {
     AMaterial * material = NewObject< AMaterial >();
     material->Initialize( buildData );
 
-    GZoneMemory.Dealloc( buildData );
+    GZoneMemory.Free( buildData );
 
     return material;
 }
@@ -3020,7 +3020,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         data->Samplers[i] = Graph->GetTextureSlots()[i]->SamplerDesc;
     }
 
-    memcpy( data->ShaderData, code.CStr(), code.Length() + 1 );
+    Core::Memcpy( data->ShaderData, code.CStr(), code.Length() + 1 );
 
     return data;
 }

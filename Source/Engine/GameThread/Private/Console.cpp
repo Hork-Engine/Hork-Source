@@ -78,7 +78,7 @@ AConsole::AConsole() {
 void AConsole::Clear() {
     ASyncGuard syncGuard( ConSync );
 
-    memset( pImage, 0, sizeof( *pImage ) * CON_IMAGE_SIZE );
+    Core::ZeroMem( pImage, sizeof( *pImage ) * CON_IMAGE_SIZE );
 
     Scroll = 0;
 }
@@ -109,7 +109,7 @@ static void _Resize( int _VidWidth ) {
 
     FWideChar * pNewImage = ( pImage == ImageData[0] ) ? ImageData[1] : ImageData[0];
 
-    memset( pNewImage, 0, sizeof( *pNewImage ) * CON_IMAGE_SIZE );
+    Core::ZeroMem( pNewImage, sizeof( *pNewImage ) * CON_IMAGE_SIZE );
 
     const int width = Math::Min( prevMaxLineChars, MaxLineChars );
     const int height = Math::Min( prevMaxLines, MaxLines );
@@ -118,7 +118,7 @@ static void _Resize( int _VidWidth ) {
         const int newOffset = ( MaxLines - i - 1 ) * MaxLineChars;
         const int oldOffset = ( ( prevMaxLines + PrintLine - i ) % prevMaxLines ) * prevMaxLineChars;
 
-        memcpy( &pNewImage[ newOffset ], &pImage[ oldOffset ], width * sizeof( *pNewImage ) );
+        Core::Memcpy( &pNewImage[ newOffset ], &pImage[ oldOffset ], width * sizeof( *pNewImage ) );
     }
 
     pImage = pNewImage;
@@ -314,7 +314,7 @@ static void CopyStoryLine( FWideChar const * _StoryLine ) {
 
 static void AddStoryLine( FWideChar * _Text, int _Length ) {
     FWideChar * storyLine = StoryLines[NumStoryLines++ & ( MAX_STORY_LINES - 1 )];
-    memcpy( storyLine, _Text, sizeof( _Text[0] ) * Math::Min( _Length, MAX_CMD_LINE_CHARS ) );
+    Core::Memcpy( storyLine, _Text, sizeof( _Text[0] ) * Math::Min( _Length, MAX_CMD_LINE_CHARS ) );
     if ( _Length < MAX_CMD_LINE_CHARS ) {
         storyLine[_Length] = 0;
     }
@@ -329,7 +329,7 @@ static void InsertUTF8Text( const char * _Utf8 ) {
     }
 
     if ( len && CmdLinePos != CmdLineLength ) {
-        memmove( &CmdLine[CmdLinePos+len], &CmdLine[CmdLinePos], sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
+        Core::Memmove( &CmdLine[CmdLinePos+len], &CmdLine[CmdLinePos], sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
     }
 
     CmdLineLength += len;
@@ -454,14 +454,14 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
             break;
         case KEY_BACKSPACE:
             if ( CmdLinePos > 0 ) {
-                memmove( CmdLine + CmdLinePos - 1, CmdLine + CmdLinePos, sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
+                Core::Memmove( CmdLine + CmdLinePos - 1, CmdLine + CmdLinePos, sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
                 CmdLineLength--;
                 CmdLinePos--;
             }
             break;
         case KEY_DELETE:
             if ( CmdLinePos < CmdLineLength ) {
-                memmove( CmdLine + CmdLinePos, CmdLine + CmdLinePos + 1, sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos - 1 ) );
+                Core::Memmove( CmdLine + CmdLinePos, CmdLine + CmdLinePos + 1, sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos - 1 ) );
                 CmdLineLength--;
             }
             break;
@@ -544,7 +544,7 @@ void AConsole::CharEvent( SCharEvent const & _Event ) {
 
     if ( CmdLineLength < MAX_CMD_LINE_CHARS ) {
         if ( CmdLinePos != CmdLineLength ) {
-            memmove( &CmdLine[CmdLinePos+1], &CmdLine[CmdLinePos], sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
+            Core::Memmove( &CmdLine[CmdLinePos+1], &CmdLine[CmdLinePos], sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
         }
         CmdLine[ CmdLinePos ] = _Event.UnicodeCharacter;
         CmdLineLength++;

@@ -94,7 +94,7 @@ public:
         Bits.Resize( newsize );
 
         if ( _NumBits > NumBits ) {
-            memset( Bits.ToPtr() + oldsize, 0, ( newsize - oldsize ) * sizeof( T ) );
+            Core::ZeroMem( Bits.ToPtr() + oldsize, ( newsize - oldsize ) * sizeof( T ) );
 
             const int clearBitsInWord = oldsize * BitCount;
             for ( int i = NumBits ; i < clearBitsInWord ; i++ ) {
@@ -113,8 +113,8 @@ public:
         return NumBits;
     }
 
-    int Reserved() const {
-        return Bits.Reserved() * BitCount;
+    int Capacity() const {
+        return Bits.Capacity() * BitCount;
     }
 
     void MarkAll() {

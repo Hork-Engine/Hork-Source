@@ -75,7 +75,7 @@ void AResourceManager::LoadResourceGUID() {
 
         while ( f.Gets( buf, sizeof( buf ) ) )
         {
-            if ( AString::Length( buf ) < 36 )
+            if ( Core::Strlen( buf ) < 36 )
             {
                 // Invalid GUID
                 continue;
@@ -84,7 +84,7 @@ void AResourceManager::LoadResourceGUID() {
             buf[36] = 0;
             path = &buf[37];
 
-            pathLength = AString::Length( path );
+            pathLength = Core::Strlen( path );
             if ( !pathLength )
             {
                 // Path is empty
@@ -134,7 +134,7 @@ void AResourceManager::SaveResourceGUID() {
 }
 
 AResource * AResourceManager::FindResource( AClassMeta const & _ClassMeta, const char * _Alias, bool & _bMetadataMismatch, int & _Hash ) {
-    _Hash = Core::HashCase( _Alias, AString::Length( _Alias ) );
+    _Hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
 
     _bMetadataMismatch = false;
 
@@ -152,7 +152,7 @@ AResource * AResourceManager::FindResource( AClassMeta const & _ClassMeta, const
 }
 
 AResource * AResourceManager::FindResourceByAlias( const char * _Alias ) {
-    int hash = Core::HashCase( _Alias, AString::Length( _Alias ) );
+    int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
         if ( !ResourceCache[i]->GetResourceAlias().Icmp( _Alias ) ) {
@@ -164,7 +164,7 @@ AResource * AResourceManager::FindResourceByAlias( const char * _Alias ) {
 }
 
 AResource * AResourceManager::GetResource( AClassMeta const & _ClassMeta, const char * _Alias, bool * _bResourceFoundResult, bool * _bMetadataMismatch ) {
-    int hash = Core::HashCase( _Alias, AString::Length( _Alias ) );
+    int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
 
     if ( _bResourceFoundResult ) {
         *_bResourceFoundResult = false;
@@ -202,7 +202,7 @@ AResource * AResourceManager::GetResource( AClassMeta const & _ClassMeta, const 
 }
 
 AClassMeta const * AResourceManager::GetResourceInfo( const char * _Alias ) {
-    int hash = Core::HashCase( _Alias, AString::Length( _Alias ) );
+    int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
         if ( !ResourceCache[i]->GetResourceAlias().Icmp( _Alias ) ) {
@@ -218,10 +218,10 @@ AResource * AResourceManager::GetOrCreateResource( AClassMeta const &  _ClassMet
     bool bMetadataMismatch;
     AString alias = _Alias;
 
-    if ( *_Alias == '/' && AString::IcmpN( _Alias, "/Default/", 9 ) ) {
+    if ( *_Alias == '/' && Core::StricmpN( _Alias, "/Default/", 9 ) ) {
         // Used physical path, try to find alias. TODO: Use hash?
         for ( std::pair< std::string, std::string > const & p : ResourceGUID ) {
-            if ( !AString::Icmp( _Alias, p.second.c_str() ) ) {
+            if ( !Core::Stricmp( _Alias, p.second.c_str() ) ) {
                 alias = p.first.c_str();
                 break;
             }
@@ -337,7 +337,7 @@ void AResourceManager::SetResourceGUID( AString const & _GUID, const char * _Phy
     int i;
 
     for ( i = ResourceGUIDHash.First( hash ) ; i != -1 ; i = ResourceGUIDHash.Next( i ) ) {
-        if ( !AString::Icmp( ResourceGUID[i].first.c_str(), _GUID.CStr() ) ) {
+        if ( !Core::Stricmp( ResourceGUID[i].first.c_str(), _GUID.CStr() ) ) {
             break;
         }
     }
@@ -357,11 +357,11 @@ void AResourceManager::RestorePhysicalPathFromAlias( const char * _Alias, AStrin
         return;
     }
 
-    int hash = Core::HashCase( _Alias, AString::Length( _Alias ) );
+    int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
     int i;
 
     for ( i = ResourceGUIDHash.First( hash ) ; i != -1 ; i = ResourceGUIDHash.Next( i ) ) {
-        if ( !AString::Icmp( ResourceGUID[i].first.c_str(), _Alias ) ) {
+        if ( !Core::Stricmp( ResourceGUID[i].first.c_str(), _Alias ) ) {
             _PhysicalPath = ResourceGUID[i].second.c_str();
             return;
         }

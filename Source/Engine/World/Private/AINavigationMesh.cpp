@@ -68,7 +68,7 @@ static const bool RECAST_ENABLE_TIMINGS = true;
 enum { MAX_POLYS = 2048 };
 static SNavPolyRef TmpPolys[ MAX_POLYS ];
 static SNavPolyRef TmpPathPolys[ MAX_POLYS ];
-static Float3 TmpPathPoints[ MAX_POLYS ];
+alignas( 16 ) static Float3 TmpPathPoints[ MAX_POLYS ];
 static unsigned char TmpPathFlags[ MAX_POLYS ];
 
 struct STileCacheData {
@@ -124,7 +124,7 @@ struct ADetourLinearAllocator : public dtTileCacheAlloc {
     }
 
     ~ADetourLinearAllocator() {
-        GZoneMemory.Dealloc( Data );
+        GZoneMemory.Free( Data );
     }
 
     void reset() override {
@@ -326,7 +326,7 @@ bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfi
     TileWidth = Initial.TileSize * Initial.CellSize;
 
     dtNavMeshParams params;
-    ZeroMem( &params, sizeof( params ) );
+    Core::ZeroMem( &params, sizeof( params ) );
     rcVcopy( params.orig, (const float * )BoundingBox.Mins.ToPtr() );
     params.tileWidth = TileWidth;
     params.tileHeight = TileWidth;
@@ -366,7 +366,7 @@ bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfi
         // Create tile cache
 
         dtTileCacheParams tileCacheParams;
-        ZeroMem( &tileCacheParams, sizeof( tileCacheParams ) );
+        Core::ZeroMem( &tileCacheParams, sizeof( tileCacheParams ) );
         rcVcopy( tileCacheParams.orig, (const float *)Initial.BoundingBox.Mins.ToPtr() );
         tileCacheParams.cs = Initial.CellSize;
         tileCacheParams.ch = Initial.CellHeight;
@@ -508,7 +508,7 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
         rcHeightfieldLayerSet * LayerSet;
 
         TemportalData() {
-            ZeroMem( this, sizeof( *this ) );
+            Core::ZeroMem( this, sizeof( *this ) );
         }
 
         ~TemportalData() {
@@ -531,7 +531,7 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
     GetTileWorldBounds( _X, _Z, tileWorldBounds );
 
     rcConfig config;
-    ZeroMem( &config, sizeof( config ) );
+    Core::ZeroMem( &config, sizeof( config ) );
     config.cs = Initial.CellSize;
     config.ch = Initial.CellHeight;
     config.walkableSlopeAngle = Initial.WalkableSlopeAngle;
@@ -996,7 +996,7 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
         // Create Detour data from poly mesh.
 
         dtNavMeshCreateParams params;
-        ZeroMem( &params, sizeof( params ) );
+        Core::ZeroMem( &params, sizeof( params ) );
         params.verts = temporal.PolyMesh->verts;
         params.vertCount = temporal.PolyMesh->nverts;
         params.polys = temporal.PolyMesh->polys;
@@ -1226,13 +1226,13 @@ void AAINavigationMesh::Purge() {
 
     if ( LinearAllocator ) {
         LinearAllocator->~ADetourLinearAllocator();
-        GZoneMemory.Dealloc( LinearAllocator );
+        GZoneMemory.Free( LinearAllocator );
         LinearAllocator = nullptr;
     }
 
     if ( MeshProcess ) {
         MeshProcess->~ADetourMeshProcess();
-        GZoneMemory.Dealloc( MeshProcess );
+        GZoneMemory.Free( MeshProcess );
         MeshProcess = nullptr;
     }
 
@@ -1396,7 +1396,7 @@ ANavQueryFilter::ANavQueryFilter() {
 
 ANavQueryFilter::~ANavQueryFilter() {
     Filter->~dtQueryFilter();
-    GZoneMemory.Dealloc( Filter );
+    GZoneMemory.Free( Filter );
 }
 
 void ANavQueryFilter::SetAreaCost( int _AreaId, float _Cost ) {
@@ -1732,7 +1732,7 @@ bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndP
 
     _PathPoints.Resize( PathLength );
 
-    memcpy( _PathPoints.ToPtr(), TmpPathPoints, sizeof( Float3 ) * PathLength );
+    Core::MemcpySSE( _PathPoints.ToPtr(), TmpPathPoints, sizeof( Float3 ) * PathLength );
 
     return true;
 }
@@ -1913,7 +1913,7 @@ int ANavigationMeshComponent::FixupCorridor( SNavPolyRef * _Path, const int _NPa
     if (req+size > _MaxPath)
         size = _MaxPath-req;
     if (size)
-        memmove(_Path+req, _Path+orig, size*sizeof(SNavPolyRef));
+        Core::Memmove(_Path+req, _Path+orig, size*sizeof(SNavPolyRef));
 
     // Store visited
     for (int i = 0; i < req; ++i)
@@ -2099,7 +2099,7 @@ void AAINavigationMesh::GatherNavigationGeometry( TPodArray< Float3 > & _Vertice
             Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
             unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
-            memcpy( pVertices, srcVertices, vertexCount * sizeof( Float3 ) );
+            Core::Memcpy( pVertices, srcVertices, vertexCount * sizeof( Float3 ) );
 
             if ( _ClipBoundingBox ) {
                 // Clip triangles

@@ -72,27 +72,25 @@ static ALogger MemLogger;
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-static size_t HeapTotalMemoryUsage = 0;
-static size_t HeapTotalMemoryOverhead = 0;
-static size_t HeapMaxMemoryUsage = 0;
+static AAtomicLong HeapTotalMemoryUsage( 0 );
+static AAtomicLong HeapTotalMemoryOverhead( 0 );
+static AAtomicLong HeapMaxMemoryUsage( 0 );
 
 AN_FORCEINLINE void IncMemoryStatisticsOnHeap( size_t _MemoryUsage, size_t _Overhead ) {
-    // TODO: atomic increment for multithreading
-    HeapTotalMemoryUsage += _MemoryUsage;
-    HeapTotalMemoryOverhead += _Overhead;
-    HeapMaxMemoryUsage = StdMax( HeapMaxMemoryUsage, HeapTotalMemoryUsage );
+    HeapTotalMemoryUsage.FetchAdd( _MemoryUsage );
+    HeapTotalMemoryOverhead.FetchAdd( _Overhead );
+    HeapMaxMemoryUsage.Store( StdMax( HeapMaxMemoryUsage.Load(), HeapTotalMemoryUsage.Load() ) );
 }
 
 AN_FORCEINLINE void DecMemoryStatisticsOnHeap( size_t _MemoryUsage, size_t _Overhead ) {
-    // TODO: atomic decrement for multithreading
-    HeapTotalMemoryUsage -= _MemoryUsage;
-    HeapTotalMemoryOverhead -= _Overhead;
+    HeapTotalMemoryUsage.FetchSub( _MemoryUsage );
+    HeapTotalMemoryOverhead.FetchSub( _Overhead );
 }
 
 AHeapMemory::AHeapMemory() {
     HeapChain.pNext = HeapChain.pPrev = &HeapChain;
 
-    static_assert( sizeof( SHeapChunk ) == 32, "Sizeof check" );
+    AN_SIZEOF_STATIC_CHECK( SHeapChunk, 32 );
 }
 
 AHeapMemory::~AHeapMemory() {
@@ -111,7 +109,7 @@ void AHeapMemory::Clear() {
     SHeapChunk * nextHeap;
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = nextHeap ) {
         nextHeap = heap->pNext;
-        Dealloc( heap + 1 );
+        Free( heap + 1 );
     }
 }
 
@@ -137,7 +135,7 @@ void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment ) {
 #else
     if ( _BytesCount == 0 ) {
         // invalid bytes count
-        CriticalError( "AHeapMemory::HeapAlloc: Invalid bytes count\n" );
+        CriticalError( "AHeapMemory::Alloc: Invalid bytes count\n" );
     }
 
     size_t chunkSizeInBytes = _BytesCount + sizeof( SHeapChunk );
@@ -189,12 +187,12 @@ void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment ) {
         return aligned;
     }
 
-    CriticalError( "AHeapMemory::HeapAlloc: Failed on allocation of %u bytes\n", _BytesCount );
+    CriticalError( "AHeapMemory::Alloc: Failed on allocation of %u bytes\n", _BytesCount );
     return nullptr;
 #endif
 }
 
-void AHeapMemory::Dealloc( void * _Bytes ) {
+void AHeapMemory::Free( void * _Bytes ) {
 #if 0
     return SysFree( _Bytes );
 #else
@@ -230,7 +228,7 @@ void * AHeapMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
     void * bytes;
     if ( _KeepOld ) {
         bytes = SysAlloc( Align(_NewBytesCount,16), 16 );
-        memcpy( bytes, _Data, _NewBytesCount );
+        Core::Memcpy( bytes, _Data, _NewBytesCount );
         SysFree( _Data );
     } else {
         SysFree( _Data );
@@ -261,11 +259,11 @@ void * AHeapMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
     // reallocate
     if ( _KeepOld ) {
         bytes = ( byte * )Alloc( _NewBytesCount, alignment );
-        MemcpySSE( bytes, _Data, heap->DataSize );
-        Dealloc( _Data );
+        Core::MemcpySSE( bytes, _Data, heap->DataSize );
+        Free( _Data );
         return bytes;
     }
-    Dealloc( _Data );
+    Free( _Data );
     return Alloc( _NewBytesCount, alignment );
 #endif
 }
@@ -290,15 +288,15 @@ void AHeapMemory::CheckMemoryLeaks() {
 }
 
 size_t AHeapMemory::GetTotalMemoryUsage() {
-    return HeapTotalMemoryUsage;
+    return HeapTotalMemoryUsage.Load();
 }
 
 size_t AHeapMemory::GetTotalMemoryOverhead() {
-    return HeapTotalMemoryOverhead;
+    return HeapTotalMemoryOverhead.Load();
 }
 
 size_t AHeapMemory::GetMaxMemoryUsage() {
-    return HeapMaxMemoryUsage;
+    return HeapMaxMemoryUsage.Load();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -307,7 +305,7 @@ size_t AHeapMemory::GetMaxMemoryUsage() {
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-static const int MinHunkFragmentLength = 64; // Must be > sizeof( hunk_t )
+static const int MinHunkFragmentLength = 64; // Must be > sizeof( SHunk )
 
 struct SHunk {
     int32_t Size;
@@ -345,8 +343,8 @@ void AHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     MaxMemoryUsage = 0;
     TotalMemoryOverhead = 0;
 
-    static_assert( sizeof( SHunkMemory ) == 32, "Sizeof check" );
-    static_assert( sizeof( SHunk ) == 16, "Sizeof check" );
+    AN_SIZEOF_STATIC_CHECK( SHunkMemory, 32 );
+    AN_SIZEOF_STATIC_CHECK( SHunk, 16 );
 
     if ( !IsAlignedPtr( MemoryBuffer->Hunk, 16 ) ) {
         CriticalError( "AHunkMemory::Initialize: chunk mest be at 16 byte boundary\n" );
@@ -542,14 +540,12 @@ void AHunkMemory::CheckMemoryLeaks() {
 }
 
 void AHunkMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
-    // TODO: atomic increment for multithreading
     TotalMemoryUsage += _MemoryUsage;
     TotalMemoryOverhead += _Overhead;
     MaxMemoryUsage = StdMax( MaxMemoryUsage, TotalMemoryUsage );
 }
 
 void AHunkMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
-    // TODO: atomic decrement for multithreading
     TotalMemoryUsage -= _MemoryUsage;
     TotalMemoryOverhead -= _Overhead;
 }
@@ -575,8 +571,8 @@ struct SZoneBuffer {
     byte Pad[16];
 };
 
-static_assert( sizeof( SZoneChunk ) == 32, "Sizeof check" );
-static_assert( sizeof( SZoneBuffer ) == 64, "Sizeof check" );
+AN_SIZEOF_STATIC_CHECK( SZoneChunk, 32 );
+AN_SIZEOF_STATIC_CHECK( SZoneBuffer, 64 );
 
 static const int ChunkHeaderLength = sizeof( SZoneChunk );
 static const int MinZoneFragmentLength = 64; // Must be > ChunkHeaderLength
@@ -611,12 +607,29 @@ AN_FORCEINLINE bool ChunkTrashTest( const SZoneChunk * _Chunk ) {
 #endif
 }
 
-void * AZoneMemory::GetZoneMemoryAddress() const { return MemoryBuffer; }
-int AZoneMemory::GetZoneMemorySizeInMegabytes() const { return MemoryBuffer ? MemoryBuffer->Size >> 10 >> 10 : 0; }
-size_t AZoneMemory::GetTotalMemoryUsage() const { return TotalMemoryUsage.Load(); }
-size_t AZoneMemory::GetTotalMemoryOverhead() const { return TotalMemoryOverhead.Load(); }
-size_t AZoneMemory::GetTotalFreeMemory() const { return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage.Load() : 0; }
-size_t AZoneMemory::GetMaxMemoryUsage() const { return MaxMemoryUsage.Load(); }
+void * AZoneMemory::GetZoneMemoryAddress() const {
+    return MemoryBuffer;
+}
+
+int AZoneMemory::GetZoneMemorySizeInMegabytes() const {
+    return MemoryBuffer ? MemoryBuffer->Size >> 10 >> 10 : 0;
+}
+
+size_t AZoneMemory::GetTotalMemoryUsage() const {
+    return TotalMemoryUsage.Load();
+}
+
+size_t AZoneMemory::GetTotalMemoryOverhead() const {
+    return TotalMemoryOverhead.Load();
+}
+
+size_t AZoneMemory::GetTotalFreeMemory() const {
+    return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage.Load() : 0;
+}
+
+size_t AZoneMemory::GetMaxMemoryUsage() const {
+    return MaxMemoryUsage.Load();
+}
 
 void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     size_t sizeInBytes = _SizeInMegabytes << 20;
@@ -669,14 +682,12 @@ void AZoneMemory::Clear() {
 }
 
 void AZoneMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
-    // TODO: atomic increment for multithreading
     TotalMemoryUsage.FetchAdd( _MemoryUsage );
     TotalMemoryOverhead.FetchAdd( _Overhead );
     MaxMemoryUsage.Store( StdMax( MaxMemoryUsage.Load(), TotalMemoryUsage.Load() ) );
 }
 
 void AZoneMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
-    // TODO: atomic decrement for multithreading
     TotalMemoryUsage.FetchSub( _MemoryUsage );
     TotalMemoryOverhead.FetchSub( _Overhead );
 }
@@ -771,29 +782,29 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
     }
 
     if ( !_KeepOld ) {
-        Dealloc( _Data );
+        Free( _Data );
         return Alloc( _NewBytesCount );
     }
 
 #if 0
     int sz = chunk->DataSize;
-    Dealloc( _Data );
+    Free( _Data );
     void * pNewData = Alloc( _NewBytesCount );
     if  ( pNewData != _Data ) {
-        memcpy( pNewData, _Data, sz );
+        Core::Memcpy( pNewData, _Data, sz );
     } else {
-        GLogger.Printf( "Caching memcpy\n" );
+        MemLogger.Printf( "Caching memcpy\n" );
     }
 #else
     int sz = chunk->DataSize;
     void * temp = GHunkMemory.Alloc( sz );
-    MemcpySSE( temp, _Data, sz );
-    Dealloc( _Data );
+    Core::MemcpySSE( temp, _Data, sz );
+    Free( _Data );
     void * pNewData = Alloc( _NewBytesCount );
     if ( pNewData != _Data ) {
-        MemcpySSE( pNewData, temp, sz );
+        Core::MemcpySSE( pNewData, temp, sz );
     } else {
-        GLogger.Printf( "Caching memcpy\n" );
+        MemLogger.Printf( "Caching memcpy\n" );
     }
     GHunkMemory.ClearLastHunk();
 #endif
@@ -864,10 +875,10 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 #else
             chunk->Size = -chunk->Size;
             void * d = malloc( _NewBytesCount );
-            memcpy( d, _Data, oldSize );
-            Dealloc( _Data );
+            Core::Memcpy( d, _Data, oldSize );
+            Free( _Data );
             _Data = Alloc( _NewBytesCount );
-            memcpy( _Data, d, _NewBytesCount );
+            Core::Memcpy( _Data, d, _NewBytesCount );
             free( d );
             return _Data;
 #endif
@@ -880,18 +891,18 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 #else
 //            chunk->Size = -chunk->Size;
 //            void * d = malloc( oldSize );
-//            memcpy( d, _Data, oldSize );
-//            Dealloc( _Data );
+//            Core::Memcpy( d, _Data, oldSize );
+//            Free( _Data );
 //            _Data = Alloc( _NewBytesCount );
-//            memcpy( _Data, d, oldSize );
+//            Core::Memcpy( _Data, d, oldSize );
 //            free( d );
 //            return _Data;
             chunk->Size = -chunk->Size;
             void * d = malloc( _NewBytesCount );
-            memcpy( d, _Data, oldSize );
-            Dealloc( _Data );
+            Core::Memcpy( d, _Data, oldSize );
+            Free( _Data );
             _Data = Alloc( _NewBytesCount );
-            memcpy( _Data, d, _NewBytesCount );
+            Core::Memcpy( _Data, d, _NewBytesCount );
             free( d );
             return _Data;
 #endif
@@ -912,10 +923,10 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 #else
         chunk->Size = -chunk->Size;
         void * d = malloc( _NewBytesCount );
-        memcpy( d, _Data, oldSize );
-        Dealloc( _Data );
+        Core::Memcpy( d, _Data, oldSize );
+        Free( _Data );
         _Data = Alloc( _NewBytesCount );
-        memcpy( _Data, d, _NewBytesCount );
+        Core::Memcpy( _Data, d, _NewBytesCount );
         free( d );
         return _Data;
 #endif
@@ -923,10 +934,10 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 
         //chunk->Size = -chunk->Size;
         //void * d = malloc( _NewBytesCount );
-        //memcpy(d,_Data, oldSize );
-        //Dealloc(_Data);
+        //Core::Memcpy(d,_Data, oldSize );
+        //Free(_Data);
         //_Data=Alloc(_NewBytesCount);
-        //memcpy(_Data,d,_NewBytesCount);
+        //Core::Memcpy(_Data,d,_NewBytesCount);
         //free(d);
         //return _Data;
 #if 1
@@ -970,7 +981,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
         SetTrashMarker( cur );
 
         if ( _KeepOld ) {
-            MemcpySSE( pointer, _Data, oldSize );
+            Core::MemcpySSE( pointer, _Data, oldSize );
         }
 
         // Deallocate old chunk
@@ -1011,7 +1022,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 #endif
 }
 
-void AZoneMemory::Dealloc( void * _Bytes ) {
+void AZoneMemory::Free( void * _Bytes ) {
 #if 0
     SysFree( _Bytes );
 #else
@@ -1033,7 +1044,7 @@ void AZoneMemory::Dealloc( void * _Bytes ) {
     }
 
     if ( ChunkTrashTest( chunk ) ) {
-        MemLogger.Print( "AZoneMemory::Dealloc: Warning: memory was trashed\n" );
+        MemLogger.Print( "AZoneMemory::Free: Warning: memory was trashed\n" );
         // error()
     }
 
@@ -1119,9 +1130,9 @@ static void PrintMemoryStatistics( T & _Manager, const char * _Message ) {
 // Zone allocator
 //
 
-void * AZoneAllocator::ImplAllocate( size_t _BytesCount ) {
+void * AZoneAllocator::ImplAlloc( size_t _BytesCount ) {
     void * bytes = GZoneMemory.Alloc( _BytesCount );
-    //PrintMemoryStatistics( GZoneMemory, "Allocate" );
+    //PrintMemoryStatistics( GZoneMemory, "Alloc" );
     return bytes;
 }
 
@@ -1131,18 +1142,18 @@ void * AZoneAllocator::ImplRealloc( void * _Data, size_t _NewBytesCount, bool _K
     return bytes;
 }
 
-void AZoneAllocator::ImplDeallocate( void * _Bytes ) {
-    GZoneMemory.Dealloc( _Bytes );
-    //PrintMemoryStatistics( GZoneMemory, "Dealloc" );
+void AZoneAllocator::ImplFree( void * _Bytes ) {
+    GZoneMemory.Free( _Bytes );
+    //PrintMemoryStatistics( GZoneMemory, "Free" );
 }
 
 //
 // Heap allocator
 //
 
-void * AHeapAllocator::ImplAllocate( size_t _BytesCount ) {
+void * AHeapAllocator::ImplAlloc( size_t _BytesCount ) {
     void * bytes = GHeapMemory.Alloc( _BytesCount, 16 );
-    //PrintMemoryStatistics( GHeapMemory, "Allocate" );
+    //PrintMemoryStatistics( GHeapMemory, "Alloc" );
     return bytes;
 }
 
@@ -1152,18 +1163,18 @@ void * AHeapAllocator::ImplRealloc( void * _Data, size_t _NewBytesCount, bool _K
     return bytes;
 }
 
-void AHeapAllocator::ImplDeallocate( void * _Bytes ) {
-    GHeapMemory.Dealloc( _Bytes );
-    //PrintMemoryStatistics( GHeapMemory, "Dealloc" );
+void AHeapAllocator::ImplFree( void * _Bytes ) {
+    GHeapMemory.Free( _Bytes );
+    //PrintMemoryStatistics( GHeapMemory, "Free" );
 }
 
-void * HugeAlloc( size_t _Size ) {
-    return GHeapMemory.Alloc( _Size );
-}
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+// Utilites
+//
+//////////////////////////////////////////////////////////////////////////////////////////
 
-void HugeFree( void * _Data ) {
-    GHeapMemory.Dealloc( _Data );
-}
+namespace Core {
 
 void _MemcpySSE( byte * _Dst, const byte * _Src, size_t _SizeInBytes ) {
 #if 0
@@ -1376,4 +1387,6 @@ void _MemsetSSE( byte * _Dst, int _Val, size_t _SizeInBytes ) {
     _mm_sfence();
 
 #endif
+}
+
 }

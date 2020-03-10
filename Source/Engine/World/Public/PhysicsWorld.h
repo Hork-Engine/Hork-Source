@@ -59,7 +59,7 @@ struct SCollisionTraceResult
     /** Clear trace result */
     void Clear()
     {
-        memset( this, 0, sizeof( *this ) );
+        Core::ZeroMem( this, sizeof( *this ) );
     }
 };
 

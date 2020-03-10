@@ -87,8 +87,8 @@ static void *PhysModuleAlloc( size_t _BytesCount ) {
     return GZoneMemory.Alloc( _BytesCount );
 }
 
-static void PhysModuleDealloc( void * _Bytes ) {
-    GZoneMemory.Dealloc( _Bytes );
+static void PhysModuleFree( void * _Bytes ) {
+    GZoneMemory.Free( _Bytes );
 }
 
 static void * NavModuleAlloc( size_t _BytesCount, dtAllocHint _Hint ) {
@@ -96,7 +96,7 @@ static void * NavModuleAlloc( size_t _BytesCount, dtAllocHint _Hint ) {
 }
 
 static void NavModuleFree( void * _Bytes ) {
-    GZoneMemory.Dealloc( _Bytes );
+    GZoneMemory.Free( _Bytes );
 }
 
 static void *ImguiModuleAlloc( size_t _BytesCount, void * ) {
@@ -104,7 +104,7 @@ static void *ImguiModuleAlloc( size_t _BytesCount, void * ) {
 }
 
 static void ImguiModuleFree( void * _Bytes, void * ) {
-    GZoneMemory.Dealloc( _Bytes );
+    GZoneMemory.Free( _Bytes );
 }
 
 void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCallback ) {
@@ -118,8 +118,8 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
     b3SetCustomPrintfFunc( PhysModulePrintFunction );
     b3SetCustomWarningMessageFunc( PhysModuleWarningFunction );
     b3SetCustomErrorMessageFunc( PhysModuleErrorFunction );
-    b3AlignedAllocSetCustom( PhysModuleAlloc, PhysModuleDealloc );
-    b3AlignedAllocSetCustomAligned( PhysModuleAlignedAlloc, PhysModuleDealloc );
+    b3AlignedAllocSetCustom( PhysModuleAlloc, PhysModuleFree );
+    b3AlignedAllocSetCustomAligned( PhysModuleAlignedAlloc, PhysModuleFree );
 
     // Init recast navigation module
     dtAllocSetCustom( NavModuleAlloc, NavModuleFree );
@@ -313,22 +313,22 @@ void AEngineInstance::ShowStats() {
         fps /= FPS_BUF;
         fps = 1.0f / ( fps > 0.0f ? fps : 1.0f );
 
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", GStreamedMemoryGPU.GetUsedMemoryPrev()/1024.0f, GStreamedMemoryGPU.GetAllocatedMemory()>>20, GStreamedMemoryGPU.GetMaxMemoryUsage()/1024.0f ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", GVertexMemoryGPU.GetUsedMemory()/1024.0f, GVertexMemoryGPU.GetAllocatedMemory()>>20 ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", GStreamedMemoryGPU.GetUsedMemoryPrev()/1024.0f, GStreamedMemoryGPU.GetAllocatedMemory()>>20, GStreamedMemoryGPU.GetMaxMemoryUsage()/1024.0f ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", GVertexMemoryGPU.GetUsedMemory()/1024.0f, GVertexMemoryGPU.GetAllocatedMemory()>>20 ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
         /*- GZoneMemory.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Polycount: %d", stat.PolyCount ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), AString::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos+Float2(1.0f), AColor4::White(), AString::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
-        Canvas.DrawTextUTF8( pos, AColor4::Blue(), AString::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Polycount: %d", stat.PolyCount ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos+Float2(1.0f), AColor4::White(), Core::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
+        Canvas.DrawTextUTF8( pos, AColor4::Blue(), Core::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
     }
 }
 
@@ -340,15 +340,15 @@ void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event ) {
 //    if ( _Event.Action == IE_Press ) {
 //        if ( _Event.Key == KEY_F1 ) {
 //            GLogger.Printf( "OpenGL Backend Test\n" );
-//            AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "OpenGL 4.5" );
+//            Core::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "OpenGL 4.5" );
 //            ResetVideoMode();
 //        } else if ( _Event.Key == KEY_F2 ) {
 //            GLogger.Printf( "Vulkan Backend Test\n" );
-//            AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Vulkan" );
+//            Core::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Vulkan" );
 //            ResetVideoMode();
 //        } else if ( _Event.Key == KEY_F3 ) {
 //            GLogger.Printf( "Null Backend Test\n" );
-//            AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Null" );
+//            Core::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Null" );
 //            ResetVideoMode();
 //        }
 //    }
@@ -554,7 +554,7 @@ void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _E
     VideoMode.PhysicalMonitor = _Event.PhysicalMonitor;
     VideoMode.RefreshRate = _Event.RefreshRate;
     VideoMode.bFullscreen = _Event.bFullscreen;
-    AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), _Event.Backend );
+    Core::Strcpy( VideoMode.Backend, sizeof( VideoMode.Backend ), _Event.Backend );
 
     FramebufferWidth = VideoMode.Width; // TODO
     FramebufferHeight = VideoMode.Height; // TODO
@@ -654,14 +654,14 @@ void AEngineInstance::SetVideoMode( unsigned short _Width, unsigned short _Heigh
     data.PhysicalMonitor = _PhysicalMonitor;
     data.RefreshRate = _RefreshRate;
     data.bFullscreen = _Fullscreen;
-    AString::CopySafe( data.Backend, sizeof( data.Backend ), _Backend );
+    Core::Strcpy( data.Backend, sizeof( data.Backend ), _Backend );
 
     VideoMode.Width = _Width;
     VideoMode.Height = _Height;
     VideoMode.PhysicalMonitor = _PhysicalMonitor;
     VideoMode.RefreshRate = _RefreshRate;
     VideoMode.bFullscreen = _Fullscreen;
-    AString::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), _Backend );
+    Core::Strcpy( VideoMode.Backend, sizeof( VideoMode.Backend ), _Backend );
 }
 
 void AEngineInstance::SetVideoMode( SVideoMode const & _VideoMode ) {
@@ -685,7 +685,7 @@ void AEngineInstance::SetWindowDefs( float _Opacity, bool _Decorated, bool _Auto
     data.bDecorated = _Decorated;
     data.bAutoIconify = _AutoIconify;
     data.bFloating = _Floating;
-    AString::CopySafe( data.Title, sizeof( data.Title ), _Title );
+    Core::Strcpy( data.Title, sizeof( data.Title ), _Title );
 }
 
 void AEngineInstance::SetWindowPos( int _X, int _Y ) {
@@ -941,7 +941,7 @@ void AEngineInstance::UpdateImgui() {
 
                             AActorComponent * component = a->GetComponents()[ k ];
 
-                            if ( ImGui::CollapsingHeader( AString::Fmt( "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) ) {
+                            if ( ImGui::CollapsingHeader( Core::Fmt( "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) ) {
 
                                 AClassMeta const & componentMeta = component->FinalClassMeta();
 

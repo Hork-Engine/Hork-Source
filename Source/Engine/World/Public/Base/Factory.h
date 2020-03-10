@@ -436,7 +436,7 @@ public:
     APrecacheMeta( AClassMeta const & _ClassMeta, AClassMeta const & _ResourceClassMeta, const char * _Path )
         : ResourceClassMeta( _ResourceClassMeta )
         , Path( _Path )
-        , Hash( Core::HashCase( _Path, AString::Length( _Path ) ) )
+        , Hash( Core::HashCase( _Path, Core::Strlen( _Path ) ) )
     {
         AClassMeta & classMeta = const_cast< AClassMeta & >( _ClassMeta );
         pNext = nullptr;
@@ -477,7 +477,7 @@ public:
 //        Getter = [_Getter]( ADummy * _Object, void * _DataPtr ) {
 //            ObjectType * object = static_cast< ObjectType * >( _Object );
 //            AttributeType Value = (*object.*_Getter)();
-//            memcpy( ( AttributeType * )_DataPtr, &Value, sizeof( Value ) );
+//            Core::Memcpy( ( AttributeType * )_DataPtr, &Value, sizeof( Value ) );
 //        };
 
         FromString = [_Setter]( ADummy * _Object, AString const & _Value ) {
@@ -550,7 +550,7 @@ public:\
         } \
         void DestroyInstance( ADummy * _Object ) const override { \
             _Object->~ADummy(); \
-            _Allocator::Inst().Dealloc( _Object ); \
+            _Allocator::Inst().Free( _Object ); \
         } \
     private: \
         void RegisterAttributes(); \
@@ -605,7 +605,7 @@ public:
         }
         void DestroyInstance( ADummy * _Object ) const override {
             _Object->~ADummy();
-            Allocator::Inst().Dealloc( _Object );
+            Allocator::Inst().Free( _Object );
         }
     private:
         void RegisterAttributes();

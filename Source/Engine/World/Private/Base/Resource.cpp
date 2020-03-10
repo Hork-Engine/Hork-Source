@@ -39,12 +39,12 @@ void AResource::InitializeDefaultObject() {
 }
 
 void AResource::InitializeFromFile( const char * _Path ) {
-    if ( !AString::IcmpN( _Path, "/Default/", 9 ) ) {
+    if ( !Core::StricmpN( _Path, "/Default/", 9 ) ) {
         LoadInternalResource( _Path );
         return;
     }
 
-    if ( !AString::IcmpN( _Path, "/Root/", 6 ) ) {
+    if ( !Core::StricmpN( _Path, "/Root/", 6 ) ) {
         _Path += 6;
 
         AString fileSystemPath = GResourceManager.GetRootPath() + _Path;
@@ -55,7 +55,7 @@ void AResource::InitializeFromFile( const char * _Path ) {
 
         return;
 
-    } else if ( !AString::IcmpN( _Path, "/Common/", 6 ) ) {
+    } else if ( !Core::StricmpN( _Path, "/Common/", 6 ) ) {
         _Path += 1;
 
         if ( !LoadResource( _Path ) ) {

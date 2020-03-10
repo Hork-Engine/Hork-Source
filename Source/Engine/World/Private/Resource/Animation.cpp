@@ -65,13 +65,13 @@ void ASkeletalAnimation::Initialize( int _FrameCount, float _FrameDelta, STransf
     AN_ASSERT( _TransformsCount == _FrameCount * _NumAnimatedJoints );
 
     Channels.ResizeInvalidate( _NumAnimatedJoints );
-    memcpy( Channels.ToPtr(), _AnimatedJoints, sizeof( Channels[0] ) * _NumAnimatedJoints );
+    Core::Memcpy( Channels.ToPtr(), _AnimatedJoints, sizeof( Channels[0] ) * _NumAnimatedJoints );
 
     Transforms.ResizeInvalidate( _TransformsCount );
-    memcpy( Transforms.ToPtr(), _Transforms, sizeof( Transforms[0] ) * _TransformsCount );
+    Core::Memcpy( Transforms.ToPtr(), _Transforms, sizeof( Transforms[0] ) * _TransformsCount );
 
     Bounds.ResizeInvalidate( _FrameCount );
-    memcpy( Bounds.ToPtr(), _Bounds, sizeof( Bounds[0] ) * _FrameCount );
+    Core::Memcpy( Bounds.ToPtr(), _Bounds, sizeof( Bounds[0] ) * _FrameCount );
 
     if ( !Channels.IsEmpty() ) {
         MinNodeIndex = Math::MaxValue< int32_t >();

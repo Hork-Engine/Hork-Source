@@ -73,7 +73,7 @@ static void unpack_vec2_or_vec3( cgltf_accessor * acc, Float3 * output, size_t s
     for ( int i = 0; i < acc->count; i++ ) {
         cgltf_accessor_read_float( acc, i, position, num_elements );
 
-        memcpy( ptr, position, sizeof( float ) * 3 );
+        Core::Memcpy( ptr, position, sizeof( float ) * 3 );
 
         ptr += stride;
     }
@@ -160,7 +160,7 @@ static void unpack_mat4_to_mat3x4( cgltf_accessor * acc, Float3x4 * output, size
     for ( int i = 0; i < acc->count; i++ ) {
         cgltf_accessor_read_float( acc, i, ( float * )temp.ToPtr(), 16 );
 
-        memcpy( ptr, temp.Transposed().ToPtr(), sizeof( Float3x4 ) );
+        Core::Memcpy( ptr, temp.Transposed().ToPtr(), sizeof( Float3x4 ) );
 
         ptr += stride;
     }
@@ -462,7 +462,7 @@ bool AAssetImporter::ImportGLTF( SAssetImportSettings const & InSettings ) {
 
     cgltf_options options;
 
-    memset( &options, 0, sizeof( options ) );
+    Core::ZeroMem( &options, sizeof( options ) );
 
     options.memory_alloc = cgltf_alloc;
     options.memory_free = cgltf_free;
@@ -509,9 +509,9 @@ void AAssetImporter::ReadSkeleton( cgltf_node * node, int parentIndex ) {
     joint.LocalTransform = Float3x4( localTransform.Transposed() );
 
     if ( node->name ) {
-        AString::CopySafe( joint.Name, sizeof( joint.Name ), node->name );
+        Core::Strcpy( joint.Name, sizeof( joint.Name ), node->name );
     } else {
-        AString::CopySafe( joint.Name, sizeof( joint.Name ), AString::Fmt( "unnamed_%d", m_Joints.Size()-1 ) );
+        Core::Strcpy( joint.Name, sizeof( joint.Name ), Core::Fmt( "unnamed_%d", m_Joints.Size()-1 ) );
     }
 
     GLogger.Printf( "ReadSkeleton: %s\n", node->name );
@@ -622,7 +622,7 @@ bool AAssetImporter::ReadGLTF( cgltf_data * Data ) {
                 SJoint & joint = m_Joints.Append();
 
                 joint.LocalTransform.SetIdentity();
-                AString::CopySafe( joint.Name, sizeof( joint.Name ), AString::Fmt( "generated_root" ) );
+                Core::Strcpy( joint.Name, sizeof( joint.Name ), Core::Fmt( "generated_root" ) );
 
                 joint.Parent = -1;
 
@@ -748,7 +748,7 @@ void AAssetImporter::ReadMaterial( cgltf_material * Material, MaterialInfo & Inf
     Info.Material = Material;
     Info.DefaultMaterial = "/Default/Materials/Unlit";
     Info.NumTextures = 0;
-    memset( Info.Uniforms, 0, sizeof(Info.Uniforms) );
+    Core::ZeroMem( Info.Uniforms, sizeof(Info.Uniforms) );
 
     if ( Material->unlit && m_Settings.bAllowUnlitMaterials ) {
         Info.DefaultMaterial = "/Default/Materials/Unlit";
@@ -1319,7 +1319,7 @@ void AAssetImporter::ReadAnimation( cgltf_animation * Anim, AnimationInfo & Anim
         }
 
         // just for debug
-        //if ( channel->target_node->name && AString::Icmp( channel->target_node->name, "L_arm_029" ) ) {
+        //if ( channel->target_node->name && Core::Icmp( channel->target_node->name, "L_arm_029" ) ) {
         //    continue;
         //}
 
@@ -2262,7 +2262,7 @@ using ALinearAllocatorLWO = TLinearAllocator< MAX_MEMORY_LWO >;
 static void *lwAlloc( void * _Allocator, size_t _Size ) {
     ALinearAllocatorLWO & Allocator = *static_cast< ALinearAllocatorLWO * >( _Allocator );
     void * ptr = Allocator.Allocate( _Size );
-    ZeroMem( ptr, _Size );
+    Core::ZeroMem( ptr, _Size );
     return ptr;
 }
 

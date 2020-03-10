@@ -95,7 +95,7 @@ private:
 };
 
 AN_FORCEINLINE int AAsyncJobList::GetMaxParallelJobs() const {
-    return JobPool.Reserved();
+    return JobPool.Capacity();
 }
 
 /** Job manager */

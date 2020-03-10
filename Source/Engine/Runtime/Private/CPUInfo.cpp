@@ -81,7 +81,7 @@ void GetCPUInfo( SCPUInfo & _Info ) {
     int32_t cpuInfo[4];
     char vendor[13];
 
-    memset( &_Info, 0, sizeof( _Info ) );
+    Core::ZeroMem( &_Info, sizeof( _Info ) );
 
 #ifdef AN_OS_WIN32
 #ifdef _M_X64
@@ -109,14 +109,14 @@ void GetCPUInfo( SCPUInfo & _Info ) {
     }
 
     CPUID( cpuInfo, 0 );
-    memcpy( vendor + 0, &cpuInfo[1], 4 );
-    memcpy( vendor + 4, &cpuInfo[3], 4 );
-    memcpy( vendor + 8, &cpuInfo[2], 4 );
+    Core::Memcpy( vendor + 0, &cpuInfo[1], 4 );
+    Core::Memcpy( vendor + 4, &cpuInfo[3], 4 );
+    Core::Memcpy( vendor + 8, &cpuInfo[2], 4 );
     vendor[12] = '\0';
 
-    if ( !AString::Cmp( vendor, "GenuineIntel" ) ){
+    if ( !Core::Strcmp( vendor, "GenuineIntel" ) ){
         _Info.Intel = true;
-    } else if ( !AString::Cmp( vendor, "AuthenticAMD" ) ){
+    } else if ( !Core::Strcmp( vendor, "AuthenticAMD" ) ){
         _Info.AMD = true;
     }
 

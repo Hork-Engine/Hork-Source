@@ -63,7 +63,7 @@ struct SAINavigationTraceResult {
     float HitFraction;
 
     void Clear() {
-        memset( this, 0, sizeof( *this ) );
+        Core::ZeroMem( this, sizeof( *this ) );
     }
 };
 
@@ -73,7 +73,7 @@ struct SAINavigationHitResult {
     float Distance;
 
     void Clear() {
-        memset( this, 0, sizeof( *this ) );
+        Core::ZeroMem( this, sizeof( *this ) );
     }
 };
 

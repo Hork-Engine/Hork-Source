@@ -136,17 +136,17 @@ ACollisionConvexHullData::ACollisionConvexHullData() {
 }
 
 ACollisionConvexHullData::~ACollisionConvexHullData() {
-    GZoneMemory.Dealloc( Data );
+    GZoneMemory.Free( Data );
 }
 
 void ACollisionConvexHullData::Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount ) {
     Vertices.Resize( _VertexCount );
     Indices.Resize( _IndexCount );
 
-    memcpy( Vertices.ToPtr(), _Vertices, _VertexCount * sizeof( Float3 ) );
-    memcpy( Indices.ToPtr(), _Indices, _IndexCount * sizeof( unsigned int ) );
+    Core::Memcpy( Vertices.ToPtr(), _Vertices, _VertexCount * sizeof( Float3 ) );
+    Core::Memcpy( Indices.ToPtr(), _Indices, _IndexCount * sizeof( unsigned int ) );
 
-    GZoneMemory.Dealloc( Data );
+    GZoneMemory.Free( Data );
 
     Data = ( btVector3 * )GZoneMemory.Alloc( sizeof( btVector3 ) * _VertexCount );
     for ( int i = 0 ; i < _VertexCount ; i++ ) {
@@ -391,16 +391,16 @@ void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
     Subparts.ResizeInvalidate( _SubpartsCount );
 
     if ( _VertexStride == sizeof( Vertices[0] ) ) {
-        memcpy( Vertices.ToPtr(), _Vertices, sizeof( Vertices[0] ) * _VertexCount );
+        Core::Memcpy( Vertices.ToPtr(), _Vertices, sizeof( Vertices[0] ) * _VertexCount );
     } else {
         byte const * ptr = (byte const *)_Vertices;
         for ( int i = 0 ; i < _VertexCount ; i++ ) {
-            memcpy( Vertices.ToPtr() + i, ptr, sizeof( Vertices[0] ) );
+            Core::Memcpy( Vertices.ToPtr() + i, ptr, sizeof( Vertices[0] ) );
             ptr += _VertexStride;
         }
     }
 
-    memcpy( Indices.ToPtr(), _Indices, sizeof( Indices[0] ) * _IndexCount );
+    Core::Memcpy( Indices.ToPtr(), _Indices, sizeof( Indices[0] ) * _IndexCount );
 
     BoundingBox.Clear();
     for ( int i = 0 ; i < _SubpartsCount ; i++ ) {
@@ -418,16 +418,16 @@ void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
     Subparts.ResizeInvalidate( _SubpartsCount );
 
     if ( _VertexStride == sizeof( Vertices[0] ) ) {
-        memcpy( Vertices.ToPtr(), _Vertices, sizeof( Vertices[0] ) * _VertexCount );
+        Core::Memcpy( Vertices.ToPtr(), _Vertices, sizeof( Vertices[0] ) * _VertexCount );
     } else {
         byte const * ptr = (byte const *)_Vertices;
         for ( int i = 0 ; i < _VertexCount ; i++ ) {
-            memcpy( Vertices.ToPtr() + i, ptr, sizeof( Vertices[0] ) );
+            Core::Memcpy( Vertices.ToPtr() + i, ptr, sizeof( Vertices[0] ) );
             ptr += _VertexStride;
         }
     }
 
-    memcpy( Indices.ToPtr(), _Indices, sizeof( Indices[0] ) * _IndexCount );
+    Core::Memcpy( Indices.ToPtr(), _Indices, sizeof( Indices[0] ) * _IndexCount );
 
     BoundingBox = _BoundingBox;
     for ( int i = 0 ; i < _SubpartsCount ; i++ ) {
@@ -444,16 +444,16 @@ void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
     Subparts.ResizeInvalidate( 1 );
 
     if ( _VertexStride == sizeof( Vertices[0] ) ) {
-        memcpy( Vertices.ToPtr(), _Vertices, sizeof( Vertices[0] ) * _VertexCount );
+        Core::Memcpy( Vertices.ToPtr(), _Vertices, sizeof( Vertices[0] ) * _VertexCount );
     } else {
         byte const * ptr = (byte const *)_Vertices;
         for ( int i = 0 ; i < _VertexCount ; i++ ) {
-            memcpy( Vertices.ToPtr() + i, ptr, sizeof( Vertices[0] ) );
+            Core::Memcpy( Vertices.ToPtr() + i, ptr, sizeof( Vertices[0] ) );
             ptr += _VertexStride;
         }
     }
 
-    memcpy( Indices.ToPtr(), _Indices, sizeof( Indices[0] ) * _IndexCount );
+    Core::Memcpy( Indices.ToPtr(), _Indices, sizeof( Indices[0] ) * _IndexCount );
 
     BoundingBox = _BoundingBox;
     Subparts[0].BaseVertex  = 0;
@@ -1211,8 +1211,8 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
 //        Vertices.Resize( Vertices.Length() + hull.VertexCount );
 //        Indices.Resize( Indices.Length() + hull.IndexCount );
 
-//        memcpy( &Vertices[ hull.FirstVertex ], _Result.mHullVertices, hull.VertexCount * (sizeof( float ) * 3) );
-//        memcpy( &Indices[ hull.FirstIndex ], _Result.mHullIndices, hull.IndexCount * sizeof( unsigned int ) );
+//        Core::Memcpy( &Vertices[ hull.FirstVertex ], _Result.mHullVertices, hull.VertexCount * (sizeof( float ) * 3) );
+//        Core::Memcpy( &Indices[ hull.FirstIndex ], _Result.mHullIndices, hull.IndexCount * sizeof( unsigned int ) );
 
 
 
@@ -1422,7 +1422,7 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
 #else
         hullData->Initialize( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, HullIndices.ToPtr() + hull.FirstIndex, hull.IndexCount );
         //hullData->Vertices.Resize( hull.VertexCount );
-        //memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
+        //Core::Memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
 #endif
 
         ACollisionConvexHull * collisionBody = _BodyComposition.AddCollisionBody< ACollisionConvexHull >();
@@ -1618,7 +1618,7 @@ void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
 #else
         hullData->Initialize( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, HullIndices.ToPtr() + hull.FirstIndex, hull.IndexCount );
         //hullData->Vertices.Resize( hull.VertexCount );
-        //memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
+        //Core::Memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
 #endif
 
         ACollisionConvexHull * collisionBody = _BodyComposition.AddCollisionBody< ACollisionConvexHull >();

@@ -32,80 +32,78 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
-// Массив должен быть отсортирован по возрастанию
-
 namespace Core {
 
-// Ищет последний элемент массива, который меньше заданного значения
-template< typename type >
-AN_FORCEINLINE int BinSearchLess( const type * _Array, const int _ArrayLength, const type & _Value ) {
-    int Len = _ArrayLength;
-    int Mid = Len;
-    int Offset = 0;
-    while ( Mid > 0 ) {
-        Mid = Len >> 1;
-        if ( _Array[Offset+Mid] < _Value ) {
-            Offset += Mid;
+/** Find last element less than _Value in sorted array */
+template< typename T >
+AN_FORCEINLINE int BinSearchLess( T const * _Array, const int _ArrayLength, T const & _Value ) {
+    int len = _ArrayLength;
+    int mid = len;
+    int offset = 0;
+    while ( mid > 0 ) {
+        mid = len >> 1;
+        if ( _Array[offset+mid] < _Value ) {
+            offset += mid;
         }
-        Len -= Mid;
+        len -= mid;
     }
-    return Offset;
+    return offset;
 }
 
-// Ищет последний элемент массива, который меньше или равен заданному значению
-template< typename type >
-AN_FORCEINLINE int BinSearchLequal( const type * _Array, const int _ArrayLength, const type & _Value ) {
-    int Len = _ArrayLength;
-    int Mid = Len;
-    int Offset = 0;
-    while ( Mid > 0 ) {
-        Mid = Len >> 1;
-        if ( _Array[Offset+Mid] <= _Value ) {
-            Offset += Mid;
+/** Find last element less or equal than _Value in sorted array */
+template< typename T >
+AN_FORCEINLINE int BinSearchLequal( T const * _Array, const int _ArrayLength, T const & _Value ) {
+    int len = _ArrayLength;
+    int mid = len;
+    int offset = 0;
+    while ( mid > 0 ) {
+        mid = len >> 1;
+        if ( _Array[offset+mid] <= _Value ) {
+            offset += mid;
         }
-        Len -= Mid;
+        len -= mid;
     }
-    return Offset;
+    return offset;
 }
 
-// Ищет первый элемент массива, который больше заданного значения
-template< typename type >
-AN_FORCEINLINE int BinSearchGreater( const type * _Array, const int _ArrayLength, const type & _Value ) {
-    int Len = _ArrayLength;
-    int Mid = Len;
-    int Offset = 0;
-    int Res = 0;
-    while ( Mid > 0 ) {
-        Mid = Len >> 1;
-        if ( _Array[Offset+Mid] > _Value ) {
-            Res = 0;
+/** Find first element greater than _Value in sorted array */
+template< typename T >
+AN_FORCEINLINE int BinSearchGreater( T const * _Array, const int _ArrayLength, T const & _Value ) {
+    int len = _ArrayLength;
+    int mid = len;
+    int offset = 0;
+    int res = 0;
+    while ( mid > 0 ) {
+        mid = len >> 1;
+        if ( _Array[offset+mid] > _Value ) {
+            res = 0;
         } else {
-            Offset += Mid;
-            Res = 1;
+            offset += mid;
+            res = 1;
         }
-        Len -= Mid;
+        len -= mid;
     }
-    return Offset+Res;
+    return offset+res;
 }
 
-// Ищет первый элемент массива, который больше или равен заданному значению
-template< typename type >
-AN_FORCEINLINE int BinSearchGequal( const type * _Array, const int _ArrayLength, const type & _Value ) {
-    int Len = _ArrayLength;
-    int Mid = Len;
-    int Offset = 0;
-    int Res = 0;
-    while ( Mid > 0 ) {
-        Mid = Len >> 1;
-        if ( _Array[Offset+Mid] >= _Value ) {
-            Res = 0;
+/** Find first element greater or equal than _Value in sorted array */
+template< typename T >
+AN_FORCEINLINE int BinSearchGequal( T const * _Array, const int _ArrayLength, T const & _Value ) {
+    int len = _ArrayLength;
+    int mid = len;
+    int offset = 0;
+    int res = 0;
+    while ( mid > 0 ) {
+        mid = len >> 1;
+        if ( _Array[offset+mid] >= _Value ) {
+            res = 0;
         } else {
-            Offset += Mid;
-            Res = 1;
+            offset += mid;
+            res = 1;
         }
-        Len -= Mid;
+        len -= mid;
     }
-    return Offset+Res;
+    return offset+res;
 }
 
 }

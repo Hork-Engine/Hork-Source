@@ -166,7 +166,7 @@ struct SFrustumCluster {
     unsigned short ProbesCount;
 };
 
-static SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
+alignas( 16 ) static SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
 
 static SFrameLightData * pLightData;
 static bool bUseSSE;
@@ -494,7 +494,7 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, ABaseLig
     ViewProj = RV->ClusterProjectionMatrix * RV->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
     ViewProjInv = ViewProj.Inversed();
 
-    memset( ClusterData, 0, sizeof( ClusterData ) );
+    Core::ZeroMemSSE( ClusterData, sizeof( ClusterData ) );
 
     int InProbesCount = 0; // TODO
     int InDecalsCount = 0; // TODO
@@ -816,7 +816,7 @@ static void VoxelizeWork( void * _Data ) {
 
             pItem = &pLightData->ItemBuffer[pBuffer->ItemOffset];
 
-            memset( pItem, 0, NumClusterItems * sizeof( SClusterItemBuffer ) );
+            Core::ZeroMem( pItem, NumClusterItems * sizeof( SClusterItemBuffer ) );
 
             for ( int t = 0 ; t < pBuffer->NumLights ; t++ ) {
                 pItemInfo = ItemInfos + pClusterItem[LIGHT_ITEMS_OFFSET + t];

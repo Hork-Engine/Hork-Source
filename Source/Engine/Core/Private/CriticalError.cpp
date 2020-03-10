@@ -57,14 +57,14 @@ void CriticalError( const char * _Format, ... ) {
 
     CriticalErrorMutex.BeginScope();
 
-    int criticalErrorMessageLength = AString::Length( CriticalErrorMessage );
+    int criticalErrorMessageLength = Core::Strlen( CriticalErrorMessage );
 
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( &CriticalErrorMessage[ criticalErrorMessageLength ],
-                        sizeof( CriticalErrorMessage ) - criticalErrorMessageLength,
-                        _Format,
-                        VaList );
+    Core::VSprintf( &CriticalErrorMessage[ criticalErrorMessageLength ],
+                     sizeof( CriticalErrorMessage ) - criticalErrorMessageLength,
+                     _Format,
+                     VaList );
     va_end( VaList );
 
     CriticalErrorMutex.EndScope();

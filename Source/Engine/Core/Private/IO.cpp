@@ -65,7 +65,7 @@ void MakeDir( const char * _Directory, bool _FileName ) {
         return;
     }
     char * tmpStr = ( char * )GZoneMemory.Alloc( strLen + 1 );
-    memcpy( tmpStr, _Directory, strLen+1 );
+    Core::Memcpy( tmpStr, _Directory, strLen+1 );
     char * p = tmpStr;
     #ifdef AN_OS_WIN32
     if ( strLen >= 3 && _Directory[1] == ':' ) {
@@ -74,7 +74,7 @@ void MakeDir( const char * _Directory, bool _FileName ) {
     }
     #endif
     for ( ; *_Directory ; p++, _Directory++ ) {
-        if ( AString::IsPathSeparator( *p ) ) {
+        if ( Core::IsPathSeparator( *p ) ) {
             *p = 0;
             #ifdef AN_COMPILER_MSVC
             mkdir( tmpStr );
@@ -91,7 +91,7 @@ void MakeDir( const char * _Directory, bool _FileName ) {
         mkdir( tmpStr, S_IRWXU | S_IRWXG | S_IRWXO );
         #endif
     }
-    GZoneMemory.Dealloc( tmpStr );
+    GZoneMemory.Free( tmpStr );
 }
 
 bool IsFileExists( const char * _FileName ) {
@@ -435,7 +435,7 @@ void AMemoryStream::Close() {
     Mode = M_Closed;
 
     if ( bMemoryBufferOwner ) {
-        GZoneMemory.Dealloc( MemoryBuffer );
+        GZoneMemory.Free( MemoryBuffer );
     }
 }
 
@@ -456,7 +456,7 @@ int AMemoryStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
     }
 
     if ( bytesCount > 0 ) {
-        memcpy( _Buffer, MemoryBuffer + MemoryBufferOffset, bytesCount );
+        Core::Memcpy( _Buffer, MemoryBuffer + MemoryBufferOffset, bytesCount );
         MemoryBufferOffset += bytesCount;
     }
 
@@ -484,7 +484,7 @@ int AMemoryStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
         MemoryBuffer = ( byte * )GZoneMemory.Realloc( MemoryBuffer, newLength, true );
         MemoryBufferSize = newLength;
     }
-    memcpy( MemoryBuffer + MemoryBufferOffset, _Buffer, _SizeInBytes );
+    Core::Memcpy( MemoryBuffer + MemoryBufferOffset, _Buffer, _SizeInBytes );
     MemoryBufferOffset += _SizeInBytes;
     return _SizeInBytes;
 }
@@ -698,9 +698,9 @@ bool AArchive::ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, 
             GLogger.Printf( "%s\n", GetUnzipErrorStr( Result ) );
         }
         if ( _ZoneMemory ) {
-            GZoneMemory.Dealloc( data );
+            GZoneMemory.Free( data );
         } else {
-            GHeapMemory.Dealloc( data );
+            GHeapMemory.Free( data );
         }
         unzCloseCurrentFile( Handle );
         return false;
@@ -710,9 +710,9 @@ bool AArchive::ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, 
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Error during reading file %s (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
         if ( _ZoneMemory ) {
-            GZoneMemory.Dealloc( data );
+            GZoneMemory.Free( data );
         } else {
-            GHeapMemory.Dealloc( data );
+            GHeapMemory.Free( data );
         }
         return false;
     }
@@ -970,8 +970,8 @@ void FDiskScanner::ScanDir_r( const char * _Directory, bool _SubDirs, bool _Fold
     HANDLE find = FindFirstFileA( path.Str(), &findData );
     if ( find != INVALID_HANDLE_VALUE ) {
         do {
-            if ( !(AString::Cmp( findData.cFileName, "." )
-                   && AString::Cmp( findData.cFileName, ".." )) ) {
+            if ( !(Core::Cmp( findData.cFileName, "." )
+                   && Core::Cmp( findData.cFileName, ".." )) ) {
                 continue;
             }
 
@@ -1014,8 +1014,8 @@ void FDiskScanner::ScanDir_r( const char * _Directory, bool _SubDirs, bool _Fold
         HANDLE find = FindFirstFileA( path.Str(), &findData );
         if ( find != INVALID_HANDLE_VALUE ) {
             do {
-                if ( !(AString::Cmp( findData.cFileName, "." )
-                       && AString::Cmp( findData.cFileName, ".." )) ) {
+                if ( !(Core::Cmp( findData.cFileName, "." )
+                       && Core::Cmp( findData.cFileName, ".." )) ) {
                     continue;
                 }
 
@@ -1055,8 +1055,8 @@ void FDiskScanner::ScanDir_r( const char * _Directory, bool _SubDirs, bool _Fold
         HANDLE find = FindFirstFileA( path.Str(), &findData );
         if ( find != INVALID_HANDLE_VALUE ) {
             do {
-                if ( !(AString::Cmp( findData.cFileName, "." )
-                       && AString::Cmp( findData.cFileName, ".." )) ) {
+                if ( !(Core::Cmp( findData.cFileName, "." )
+                       && Core::Cmp( findData.cFileName, ".." )) ) {
                     continue;
                 }
 
@@ -1090,8 +1090,8 @@ bool RemoveDir( const char * _Directory, bool _SubDirs ) {
     if ( find != INVALID_HANDLE_VALUE ) {
         ret = true;
         do {
-            if ( !(AString::Cmp( findData.cFileName, "." )
-                   && AString::Cmp( findData.cFileName, ".." )) ) {
+            if ( !(Core::Cmp( findData.cFileName, "." )
+                   && Core::Cmp( findData.cFileName, ".." )) ) {
                 continue;
             }
 

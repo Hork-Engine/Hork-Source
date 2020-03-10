@@ -381,12 +381,12 @@ void AWindowManager::Initialize() {
     VidPhysicalMonitor = 0;
     VidRefreshRate = 120;
     VidFullscreen = false;
-    AString::CopySafe( VidRenderBackend, sizeof( VidRenderBackend ), "OpenGL 4.5" );
+    Core::Strcpy( VidRenderBackend, sizeof( VidRenderBackend ), "OpenGL 4.5" );
     WinOpacity = 255;
     WinDecorated = true;
     WinAutoIconify = false;
     WinFloating = false;
-    AString::CopySafe( WinTitle, sizeof( WinTitle ), "Game" );
+    Core::Strcpy( WinTitle, sizeof( WinTitle ), "Game" );
     WinPositionX = 100;
     WinPositionY = 100;
     WinDisabledCursor = false;
@@ -395,8 +395,8 @@ void AWindowManager::Initialize() {
     //    GLogger.Printf( "Found renderer backend: %s\n", backend->Name );
     //}
 
-    memset( PressedKeys, 0, sizeof( PressedKeys ) );
-    memset( PressedMouseButtons, 0, sizeof( PressedMouseButtons ) );
+    Core::ZeroMem( PressedKeys, sizeof( PressedKeys ) );
+    Core::ZeroMem( PressedMouseButtons, sizeof( PressedMouseButtons ) );
 
     CreateDisplays();
 }
@@ -414,8 +414,8 @@ static void ProcessEvent( SEvent const & _Event ) {
         VidRefreshRate = _Event.Data.SetVideoModeEvent.RefreshRate;
         VidFullscreen = _Event.Data.SetVideoModeEvent.bFullscreen;
 
-        if ( AString::Icmp( VidRenderBackend, _Event.Data.SetVideoModeEvent.Backend ) ) {
-            AString::CopySafe( VidRenderBackend, sizeof( VidRenderBackend ), _Event.Data.SetVideoModeEvent.Backend );
+        if ( Core::Stricmp( VidRenderBackend, _Event.Data.SetVideoModeEvent.Backend ) ) {
+            Core::Strcpy( VidRenderBackend, sizeof( VidRenderBackend ), _Event.Data.SetVideoModeEvent.Backend );
             bSetRenderBackend = true;
         }
 
@@ -426,7 +426,7 @@ static void ProcessEvent( SEvent const & _Event ) {
         WinDecorated = _Event.Data.SetWindowDefsEvent.bDecorated;
         WinAutoIconify = _Event.Data.SetWindowDefsEvent.bAutoIconify;
         WinFloating = _Event.Data.SetWindowDefsEvent.bFloating;
-        AString::CopySafe( WinTitle, sizeof( WinTitle ), _Event.Data.SetWindowDefsEvent.Title );
+        Core::Strcpy( WinTitle, sizeof( WinTitle ), _Event.Data.SetWindowDefsEvent.Title );
         bSetWindowDefs = true;
         break;
     case ET_SetWindowPosEvent:
@@ -469,7 +469,7 @@ static void SendChangedVideoModeEvent() {
     data.PhysicalMonitor = VidPhysicalMonitor;
     data.RefreshRate = VidRefreshRate;
     data.bFullscreen = VidFullscreen;
-    AString::CopySafe( data.Backend, sizeof( data.Backend ), GRenderBackend->GetName() );
+    Core::Strcpy( data.Backend, sizeof( data.Backend ), GRenderBackend->GetName() );
 }
 
 void AWindowManager::Update( AEventQueue & _EventQueue ) {

@@ -349,8 +349,8 @@ struct AInputComponentStatic {
         InitController( CONTROLLER_PLAYER_15 );
         InitController( CONTROLLER_PLAYER_16 );
 
-        ZeroMem( Joysticks, sizeof( Joysticks ) );
-        ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
+        Core::ZeroMem( Joysticks, sizeof( Joysticks ) );
+        Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
 
         for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
             Joysticks[i].Id = i;
@@ -423,7 +423,7 @@ const char * AInputHelper::TranslateController( int _ControllerId ) {
 
 int AInputHelper::LookupDevice( const char * _Device ) {
     for ( int i = 0 ; i < MAX_INPUT_DEVICES ; i++ ) {
-        if ( !AString::Icmp( Static.DeviceNames[i], _Device ) ) {
+        if ( !Core::Stricmp( Static.DeviceNames[i], _Device ) ) {
             return i;
         }
     }
@@ -432,7 +432,7 @@ int AInputHelper::LookupDevice( const char * _Device ) {
 
 int AInputHelper::LookupModifier( const char * _Modifier ) {
     for ( int i = 0 ; i < MAX_MODIFIERS ; i++ ) {
-        if ( !AString::Icmp( Static.ModifierNames[i], _Modifier ) ) {
+        if ( !Core::Stricmp( Static.ModifierNames[i], _Modifier ) ) {
             return i;
         }
     }
@@ -443,19 +443,19 @@ int AInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
     switch ( _DevId ) {
     case ID_KEYBOARD:
         for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
-            if ( !AString::Icmp( Static.KeyNames[i], _Key ) ) {
+            if ( !Core::Stricmp( Static.KeyNames[i], _Key ) ) {
                 return i;
             }
         }
         return -1;
     case ID_MOUSE:
         for ( int i = 0 ; i < MAX_MOUSE_BUTTONS ; i++ ) {
-            if ( !AString::Icmp( Static.MouseButtonNames[i], _Key ) ) {
+            if ( !Core::Stricmp( Static.MouseButtonNames[i], _Key ) ) {
                 return MOUSE_BUTTON_BASE + i;
             }
         }
         for ( int i = 0 ; i < MAX_MOUSE_AXES ; i++ ) {
-            if ( !AString::Icmp( Static.MouseAxisNames[i], _Key ) ) {
+            if ( !Core::Stricmp( Static.MouseAxisNames[i], _Key ) ) {
                 return MOUSE_AXIS_BASE + i;
             }
         }
@@ -463,12 +463,12 @@ int AInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
     }
     if ( _DevId >= ID_JOYSTICK_1 && _DevId <= ID_JOYSTICK_16 ) {
         for ( int i = 0 ; i < MAX_JOYSTICK_BUTTONS ; i++ ) {
-            if ( !AString::Icmp( Static.JoystickButtonNames[i], _Key ) ) {
+            if ( !Core::Stricmp( Static.JoystickButtonNames[i], _Key ) ) {
                 return JOY_BUTTON_BASE + i;
             }
         }
         for ( int i = 0 ; i < MAX_JOYSTICK_AXES ; i++ ) {
-            if ( !AString::Icmp( Static.JoystickAxisNames[i], _Key ) ) {
+            if ( !Core::Stricmp( Static.JoystickAxisNames[i], _Key ) ) {
                 return JOY_AXIS_BASE + i;
             }
         }
@@ -478,7 +478,7 @@ int AInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
 
 int AInputHelper::LookupController( const char * _Controller ) {
     for ( int i = 0 ; i < MAX_INPUT_CONTROLLERS ; i++ ) {
-        if ( !AString::Icmp( Static.ControllerNames[i], _Controller ) ) {
+        if ( !Core::Stricmp( Static.ControllerNames[i], _Controller ) ) {
             return i;
         }
     }
@@ -491,9 +491,9 @@ AInputComponent::AInputComponent() {
     for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
         DeviceButtonDown[ ID_JOYSTICK_1 + i ] = JoystickButtonDown[ i ];
     }
-    Memset( KeyboardButtonDown, 0xff, sizeof( KeyboardButtonDown ) );
-    Memset( MouseButtonDown, 0xff, sizeof( MouseButtonDown ) );
-    Memset( JoystickButtonDown, 0xff, sizeof( JoystickButtonDown ) );
+    Core::Memset( KeyboardButtonDown, 0xff, sizeof( KeyboardButtonDown ) );
+    Core::Memset( MouseButtonDown, 0xff, sizeof( MouseButtonDown ) );
+    Core::Memset( JoystickButtonDown, 0xff, sizeof( JoystickButtonDown ) );
 
     MouseAxisStateX = MouseAxisStateY = 0;
 
@@ -766,7 +766,7 @@ const SJoystick * AInputComponent::GetJoysticks() {
 }
 
 void AInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
-    int hash = Core::HashCase( _Axis, AString::Length( _Axis ) );
+    int hash = Core::HashCase( _Axis, Core::Strlen( _Axis ) );
 
     for ( int i = AxisBindingsHash.First( hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
         if ( !AxisBindings[i].Name.Icmp( _Axis ) ) {
@@ -790,7 +790,7 @@ void AInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > c
 }
 
 void AInputComponent::UnbindAxis( const char * _Axis ) {
-    int hash = Core::HashCase( _Axis, AString::Length( _Axis ) );
+    int hash = Core::HashCase( _Axis, Core::Strlen( _Axis ) );
 
     for ( int i = AxisBindingsHash.First( hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
         if ( !AxisBindings[i].Name.Icmp( _Axis ) ) {
@@ -815,7 +815,7 @@ void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< v
         return;
     }
 
-    int hash = Core::HashCase( _Action, AString::Length( _Action ) );
+    int hash = Core::HashCase( _Action, Core::Strlen( _Action ) );
 
     for ( int i = ActionBindingsHash.First( hash ) ; i != -1 ; i = ActionBindingsHash.Next( i ) ) {
         if ( !ActionBindings[i].Name.Icmp( _Action ) ) {
@@ -838,7 +838,7 @@ void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< v
 }
 
 void AInputComponent::UnbindAction( const char * _Action ) {
-    int hash = Core::HashCase( _Action, AString::Length( _Action ) );
+    int hash = Core::HashCase( _Action, Core::Strlen( _Action ) );
 
     for ( int i = ActionBindingsHash.First( hash ) ; i != -1 ; i = ActionBindingsHash.Next( i ) ) {
         if ( !ActionBindings[i].Name.Icmp( _Action ) ) {
@@ -880,7 +880,7 @@ void AInputComponent::UnsetCharacterCallback() {
 }
 
 int AInputComponent::GetAxisBinding( const char * _Axis ) const {
-    return GetAxisBindingHash( _Axis, Core::HashCase( _Axis, AString::Length( _Axis ) ) );
+    return GetAxisBindingHash( _Axis, Core::HashCase( _Axis, Core::Strlen( _Axis ) ) );
 }
 
 int AInputComponent::GetAxisBinding( const AInputAxis * _Axis ) const {
@@ -897,7 +897,7 @@ int AInputComponent::GetAxisBindingHash( const char * _Axis, int _Hash ) const {
 }
 
 int AInputComponent::GetActionBinding( const char * _Action ) const {
-    return GetActionBindingHash( _Action, Core::HashCase( _Action, AString::Length( _Action ) ) );
+    return GetActionBindingHash( _Action, Core::HashCase( _Action, Core::Strlen( _Action ) ) );
 }
 
 int AInputComponent::GetActionBinding( const AInputAction * _Action ) const {
@@ -914,11 +914,11 @@ int AInputComponent::GetActionBindingHash( const char * _Action, int _Hash ) con
 }
 
 AInputMappings::AInputMappings() {
-    Memset( KeyboardMappings, 0xff, sizeof( KeyboardMappings ) );
-    Memset( MouseMappings, 0xff, sizeof( MouseMappings ) );
-    Memset( MouseAxisMappings, 0xff, sizeof( MouseAxisMappings ) );
-    Memset( JoystickMappings, 0xff, sizeof( JoystickMappings ) );
-    Memset( JoystickAxisMappings, 0xff, sizeof( JoystickAxisMappings ) );
+    Core::Memset( KeyboardMappings, 0xff, sizeof( KeyboardMappings ) );
+    Core::Memset( MouseMappings, 0xff, sizeof( MouseMappings ) );
+    Core::Memset( MouseAxisMappings, 0xff, sizeof( MouseAxisMappings ) );
+    Core::Memset( JoystickMappings, 0xff, sizeof( JoystickMappings ) );
+    Core::Memset( JoystickAxisMappings, 0xff, sizeof( JoystickAxisMappings ) );
 }
 
 AInputMappings::~AInputMappings() {
@@ -1442,11 +1442,11 @@ void AInputMappings::UnmapAll() {
     }
     Axes.Clear();
     Actions.Clear();
-    Memset( KeyboardMappings, 0xff, sizeof( KeyboardMappings ) );
-    Memset( MouseMappings, 0xff, sizeof( MouseMappings ) );
-    Memset( MouseAxisMappings, 0xff, sizeof( MouseAxisMappings ) );
-    Memset( JoystickMappings, 0xff, sizeof( JoystickMappings ) );
-    Memset( JoystickAxisMappings, 0xff, sizeof( JoystickAxisMappings ) );
+    Core::Memset( KeyboardMappings, 0xff, sizeof( KeyboardMappings ) );
+    Core::Memset( MouseMappings, 0xff, sizeof( MouseMappings ) );
+    Core::Memset( MouseAxisMappings, 0xff, sizeof( MouseAxisMappings ) );
+    Core::Memset( JoystickMappings, 0xff, sizeof( JoystickMappings ) );
+    Core::Memset( JoystickAxisMappings, 0xff, sizeof( JoystickAxisMappings ) );
 }
 
 AInputMappings::SMapping * AInputMappings::GetMapping( int _DevId, int _KeyToken ) {
@@ -1476,7 +1476,7 @@ AInputMappings::SMapping * AInputMappings::GetMapping( int _DevId, int _KeyToken
 
 AInputAxis::AInputAxis() {
     MappedMouseAxes = 0;
-    ZeroMem( MappedJoystickAxes,  sizeof( MappedJoystickAxes ) );
+    Core::ZeroMem( MappedJoystickAxes,  sizeof( MappedJoystickAxes ) );
 }
 
 void AInputAxis::Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId ) {

@@ -285,7 +285,7 @@ WWidget & WWidget::SetMaxSize( Float2 const & _Size ) {
 WWidget & WWidget::SetShape( Float2 const * _Vertices, int _NumVertices ) {
     if ( _NumVertices > 0 ) {
         Shape.ResizeInvalidate( _NumVertices );
-        memcpy( Shape.ToPtr(), _Vertices, _NumVertices * sizeof( Shape[0] ) );
+        Core::Memcpy( Shape.ToPtr(), _Vertices, _NumVertices * sizeof( Shape[0] ) );
     } else {
         Shape.Clear();
     }
@@ -296,7 +296,7 @@ WWidget & WWidget::SetShape( Float2 const * _Vertices, int _NumVertices ) {
 WWidget & WWidget::SetDragShape( Float2 const * _Vertices, int _NumVertices ) {
     if ( _NumVertices > 0 ) {
         DragShape.ResizeInvalidate( _NumVertices );
-        memcpy( DragShape.ToPtr(), _Vertices, _NumVertices * sizeof( DragShape[0] ) );
+        Core::Memcpy( DragShape.ToPtr(), _Vertices, _NumVertices * sizeof( DragShape[0] ) );
     } else {
         DragShape.Clear();
     }
@@ -952,7 +952,7 @@ WWidget & WWidget::SetColumnWidth( int _ColumnIndex, float _Width ) {
     if ( oldSize <= _ColumnIndex ) {
         Columns.Resize( _ColumnIndex + 1 );
 
-        memset( Columns.ToPtr() + oldSize, 0, ( Columns.Size() - oldSize ) * sizeof( Columns[0] ) );
+        Core::ZeroMem( Columns.ToPtr() + oldSize, ( Columns.Size() - oldSize ) * sizeof( Columns[0] ) );
     }
 
     Columns[ _ColumnIndex ].Size = Math::Max( _Width, 0.0f );
@@ -972,7 +972,7 @@ WWidget & WWidget::SetRowWidth( int _RowIndex, float _Width ) {
     if ( oldSize <= _RowIndex ) {
         Rows.Resize( _RowIndex + 1 );
 
-        memset( Rows.ToPtr() + oldSize, 0, ( Rows.Size() - oldSize ) * sizeof( Rows[0] ) );
+        Core::ZeroMem( Rows.ToPtr() + oldSize, ( Rows.Size() - oldSize ) * sizeof( Rows[0] ) );
     }
 
     Rows[ _RowIndex ].Size = Math::Max( _Width, 0.0f );
@@ -1766,7 +1766,7 @@ WWidget & ScrollTest() {
     for (int i =0;i<100;i++ ) {
         contentWidget[
                 WWidget::New< WTextButton >()
-                .SetText( AString::Fmt( "test button %d", i ) )
+                .SetText( Core::Fmt( "test button %d", i ) )
                 .SetSize( 400, 32 )
                 .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
                 .SetStyle( WIDGET_STYLE_BACKGROUND )

@@ -47,18 +47,19 @@ class AConvexHull final {
     AN_FORBID_COPY( AConvexHull )
 
 private:
+    int MaxPoints;
+    int NumPoints;
+    Float3 Points[4];
+
     AConvexHull() {}
     ~AConvexHull() {}
 
 public:
-    static AConvexHull * Create( int _MaxPoints );
-
+    static AConvexHull * CreateEmpty( int _MaxPoints );
     static AConvexHull * CreateForPlane( PlaneF const & _Plane, float _MaxExtents = CONVEX_HULL_MAX_BOUNDS );
-
     static AConvexHull * CreateFromPoints( Float3 const * _Points, int _NumPoints );
-    static AConvexHull * RecreateFromPoints( AConvexHull * _OldHull, Float3 const * _Points, int _NumPoints );
 
-    static void Destroy( AConvexHull * _Hull );
+    void Destroy();
 
     AConvexHull * Duplicate() const;
 
@@ -86,7 +87,7 @@ public:
 
     EPlaneSide Clip( PlaneF const & _Plane, float _Epsilon, AConvexHull ** _Front ) const;
 
-    int NumPoints;
-    int MaxPoints;
-    Float3 Points[4];
+    Float3 * GetPoints() { return Points; }
+
+    int GetNumPoints() const { return NumPoints; }
 };

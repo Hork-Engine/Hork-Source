@@ -202,11 +202,11 @@ void AAsyncJobList::SetMaxParallelJobs( int _MaxParallelJobs ) {
 }
 
 void AAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
-    if ( JobPool.Size() == JobPool.Reserved() ) {
-        GLogger.Printf( "Warning: AAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size %d)\n", JobPool.Reserved() );
+    if ( JobPool.Size() == JobPool.Capacity() ) {
+        GLogger.Printf( "Warning: AAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size %d)\n", JobPool.Capacity() );
 
         SubmitAndWait();
-        SetMaxParallelJobs( JobPool.Reserved() * 2 );
+        SetMaxParallelJobs( JobPool.Capacity() * 2 );
     }
 
     SAsyncJob & job = JobPool.Append();

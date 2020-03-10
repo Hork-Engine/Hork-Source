@@ -32,7 +32,16 @@ SOFTWARE.
 
 #include <World/Public/Audio/AudioSystem.h>
 
+//#define USE_MOJOAL
+
+#ifndef USE_MOJOAL
 #define AL_NO_PROTOTYPES
+#else
+#define AL_API //__declspec(dllexport)
+#define ALC_API //__declspec(dllexport)
+#define ALC_APIENTRY __cdecl
+#endif
+
 #include <AL/al.h>
 
 #ifndef AN_NO_OPENAL
@@ -42,6 +51,8 @@ SOFTWARE.
 #define AL_SAFE( Instruction )
 #define ALC_SAFE( Instruction )
 #endif
+
+#ifndef USE_MOJOAL
 
 extern LPALENABLE alEnable;
 extern LPALDISABLE alDisable;
@@ -116,6 +127,8 @@ extern LPALDOPPLERFACTOR alDopplerFactor;
 extern LPALDOPPLERVELOCITY alDopplerVelocity;
 extern LPALSPEEDOFSOUND alSpeedOfSound;
 extern LPALDISTANCEMODEL alDistanceModel;
+
+#endif
 
 void AL_CheckError( const char * _Text );
 unsigned int AL_CreateBuffer();

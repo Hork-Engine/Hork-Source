@@ -84,7 +84,7 @@ static void unpack_vec2_or_vec3( cgltf_accessor * acc, Float3 * output, size_t s
     for ( int i = 0; i < acc->count; i++ ) {
         cgltf_accessor_read_float( acc, i, position, num_elements );
 
-        memcpy( ptr, position, sizeof( float ) * 3 );
+        Core::Memcpy( ptr, position, sizeof( float ) * 3 );
 
         ptr += stride;
     }
@@ -171,7 +171,7 @@ static void unpack_mat4_to_mat3x4( cgltf_accessor * acc, Float3x4 * output, size
     for ( int i = 0; i < acc->count; i++ ) {
         cgltf_accessor_read_float( acc, i, ( float * )temp.ToPtr(), 16 );
 
-        memcpy( ptr, temp.Transposed().ToPtr(), sizeof( Float3x4 ) );
+        Core::Memcpy( ptr, temp.Transposed().ToPtr(), sizeof( Float3x4 ) );
 
         ptr += stride;
     }
@@ -618,9 +618,9 @@ static void ReadSkeleton_r( SContextGLTF & Ctx, cgltf_skin * Skin, cgltf_node * 
     SJoint * joint = &Asset.Joints[ jointIndex ];
 
     if ( Node->name ) {
-        AString::CopySafe( joint->Name, sizeof( joint->Name ), Node->name );
+        Core::CopySafe( joint->Name, sizeof( joint->Name ), Node->name );
     } else {
-        AString::CopySafe( joint->Name, sizeof( joint->Name ), "unnamed" );
+        Core::CopySafe( joint->Name, sizeof( joint->Name ), "unnamed" );
     }
 
     joint->Parent = ParentNum;
@@ -1036,7 +1036,7 @@ bool LoadGLTF( const char * FileName, SMeshAsset & MeshAsset, SSkeletonAsset & S
 
     cgltf_options options;
 
-    memset( &options, 0, sizeof( options ) );
+    Core::ZeroMem( &options, sizeof( options ) );
 
     options.memory_alloc = cgltf_alloc;
     options.memory_free = cgltf_free;
@@ -1098,7 +1098,7 @@ bool LoadGeometryGLTF( const char * FileName, SMeshAsset & MeshAsset ) {
 
     cgltf_options options;
 
-    memset( &options, 0, sizeof( options ) );
+    Core::ZeroMem( &options, sizeof( options ) );
 
     options.memory_alloc = cgltf_alloc;
     options.memory_free = cgltf_free;

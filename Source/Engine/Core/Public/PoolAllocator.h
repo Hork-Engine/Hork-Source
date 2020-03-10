@@ -103,7 +103,7 @@ AN_INLINE void TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::Free() {
     while ( Blocks ) {
         SBlock * block = Blocks;
         Blocks = block->Next;
-        GHeapMemory.Dealloc( block );
+        GHeapMemory.Free( block );
     }
     CurBlock = nullptr;
     //FreeList = nullptr;
@@ -131,7 +131,7 @@ AN_INLINE void TPoolAllocator< T, MAX_BLOCK_SIZE, ALIGNMENT >::CleanupEmptyBlock
             if ( CurBlock == block ) {
                 CurBlock = nullptr;
             }
-            GHeapMemory.Dealloc( block );
+            GHeapMemory.Free( block );
             TotalBlocks--;
         } else {
             prev = block;

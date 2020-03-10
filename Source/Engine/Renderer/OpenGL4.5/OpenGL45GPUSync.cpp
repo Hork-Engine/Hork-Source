@@ -47,7 +47,7 @@ void AGPUSync::Wait() {
         textureCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA8;
 
         byte data[2*2*4];
-        memset( data, 128, sizeof( data ) );
+        Core::Memset( data, 128, sizeof( data ) );
 
         TextureInitialData initial;
         initial.PixelFormat = PIXEL_FORMAT_UBYTE_RGBA;

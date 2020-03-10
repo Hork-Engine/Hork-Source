@@ -207,7 +207,7 @@ void ASkinnedComponent::UpdateTransforms() {
     tempTransforms.Resize( AnimControllers.Size() );
     weights.Resize( AnimControllers.Size() );
 
-    memset( RelativeTransforms.ToPtr(), 0, sizeof( RelativeTransforms[0] ) * jointsCount );
+    Core::ZeroMemSSE( RelativeTransforms.ToPtr(), sizeof( RelativeTransforms[0] ) * jointsCount );
 
     for ( int jointIndex = 0; jointIndex < jointsCount; jointIndex++ ) {
 

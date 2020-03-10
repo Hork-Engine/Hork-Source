@@ -50,7 +50,7 @@ void InitializeFactories() {
 
 void DeinitializeFactories() {
     for ( AObjectFactory * factory = AObjectFactory::FactoryList ; factory ; factory = factory->NextFactory ) {
-        GZoneMemory.Dealloc( factory->IdTable );
+        GZoneMemory.Free( factory->IdTable );
         factory->IdTable = nullptr;
         factory->NameTable.Free();
     }
@@ -72,7 +72,7 @@ const AClassMeta * AObjectFactory::FindClass( const char * _ClassName ) const {
         return NULL;
     }
     for ( AClassMeta const * n = Classes ; n ; n = n->pNext ) {
-        if ( !AString::Cmp( n->GetName(), _ClassName ) ) {
+        if ( !Core::Strcmp( n->GetName(), _ClassName ) ) {
             return n;
         }
     }
@@ -83,14 +83,14 @@ const AClassMeta * AObjectFactory::LookupClass( const char * _ClassName ) const 
     if ( !NameTable.IsAllocated() ) {
         // init name table
         for ( AClassMeta * n = Classes ; n ; n = n->pNext ) {
-            NameTable.Insert( Core::Hash( n->GetName(), AString::Length( n->GetName() ) ), n->GetId() );
+            NameTable.Insert( Core::Hash( n->GetName(), Core::Strlen( n->GetName() ) ), n->GetId() );
         }
     }
 
-    int i = NameTable.First( Core::Hash( _ClassName, AString::Length( _ClassName ) ) );
+    int i = NameTable.First( Core::Hash( _ClassName, Core::Strlen( _ClassName ) ) );
     for ( ; i != -1 ; i = NameTable.Next( i ) ) {
         AClassMeta const * classMeta = LookupClass( i );
-        if ( classMeta && !AString::Cmp( classMeta->GetName(), _ClassName ) ) {
+        if ( classMeta && !Core::Strcmp( classMeta->GetName(), _ClassName ) ) {
              return classMeta;
         }
     }
@@ -118,7 +118,7 @@ const AClassMeta * AObjectFactory::LookupClass( uint64_t _ClassId ) const {
 
 AAttributeMeta const * AClassMeta::FindAttribute( const char * _Name, bool _Recursive ) const {
     for ( AAttributeMeta const * attrib = AttributesHead ; attrib ; attrib = attrib->Next() ) {
-        if ( !AString::Cmp( attrib->GetName(), _Name ) ) {
+        if ( !Core::Strcmp( attrib->GetName(), _Name ) ) {
             return attrib;
         }
     }

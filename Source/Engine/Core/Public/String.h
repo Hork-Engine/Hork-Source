@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "Std.h"
 #include "HashFunc.h"
-#include <stdarg.h>
+#include "CString.h"
 
 /**
 
@@ -44,7 +44,7 @@ class ANGIE_API AString final {
 
 public:
     static const int GRANULARITY = 32;
-    static const int BASE_ALLOC = 32;
+    static const int BASE_CAPACITY = 32;
 
     AString();
     AString( const char * _Str );
@@ -75,10 +75,10 @@ public:
     friend bool operator!=( AString const & _Str1, const char * _Str2 );
     friend bool operator!=( const char * _Str1, AString const & _Str2 );
 
-    /** Clear the string but not free the memory */
+    /** Clear string but not free a memory */
     void Clear();
 
-    /** Clear the string and free memory */
+    /** Clear string and free a memory */
     void Free();
 
     /** Set a new length for the string */
@@ -111,8 +111,8 @@ public:
     /** Get raw pointer */
     char * ToPtr() const;
 
-    /** Copy substring */
-    void CopyN( const char * _Str, int _Num );
+    /** Build from c-string */
+    void FromCStr( const char * _Str, int _Num );
 
     /** Append the string */
     void Concat( AString const & _Str );
@@ -196,8 +196,10 @@ public:
     /** Path utility. Fix OS-specific separator. */
     void FixSeparator();
 
-    /** Path utility. Optimize path string. */
-    void OptimizePath();
+    /** Path utility.
+    Fix path string insitu: replace separator \\ to /, skip series of /,
+    skip redunant sequinces of dir/../dir2 -> dir. */
+    void FixPath();
 
     /** Path utility. Cut the path. */
     void StripPath();
@@ -227,161 +229,99 @@ public:
     int FindExtWithoutDot() const;
 
     /** Get string hash */
-    int Hash() const { return Core::Hash( StringData, StringLength ); }
+    int Hash() const { return Core::Hash( Data, Size ); }
 
     /** Get string hash case insensitive */
-    int HashCase() const { return Core::HashCase( StringData, StringLength ); }
+    int HashCase() const { return Core::HashCase( Data, Size ); }
 
-    /*
+    static const char * NullCString() { return ""; }
 
-    Static utilites
-
-    */
-
-    static int Icmp( const char * _S1, const char * _S2 );
-    static int IcmpN( const char * _S1, const char * _S2, int _Num );
-    static int Cmp( const char * _S1, const char * _S2 );
-    static int CmpN( const char * _S1, const char * _S2, int _Num );
-    static int CmpPath( const char * _S1, const char * _S2 );
-    static int CmpPathN( const char * _S1, const char * _S2, int _Num );
-
-    static int Length( const char * _Str );
-    static char * ToLower( char * _Str );
-    static char * ToUpper( char * _Str );
-    static uint32_t HexToUInt32( const char * _Str, int _Len );
-    static uint64_t HexToUInt64( const char * _Str, int _Len );
-    static void ConcatSafe( char * _Dest, size_t _DestSz, const char * _Src );
-    static void CopySafe( char * _Dest, size_t _DestSz, const char * _Src );
-    static void CopySafeN( char * _Dest, size_t _DestSz, const char * _Src, size_t _Num );
-    static void Concat( char * _Dest, const char * _Src );
-    static void Copy( char * _Dest, const char * _Src );
-
-    template< typename T >
-    static AString ToHexString( T const & _Val, bool _LeadingZeros = false, bool _Prefix = false );
-
-    // The output is always null-terminated and truncated if necessary. The return value is either the number of characters stored or -1 if truncation occurs.
-    static int Sprintf( char * _Buffer, int _Size, const char * _Format, ... );
-    static int SprintfUnsafe( char * _Buffer, const char * _Format, ... );
-    static int vsnprintf( char * _Buffer, int _Size, const char * _Format, va_list _VaList );
-    static const char * NullCString();
-    static AString const & NullFString();
-    static void FixSeparator( char * _String );
-    static void OptimizePath( char * _Path );
-    static int FindPath( const char * _Str );
-    static int FindExt( const char * _Str );
-    static int FindExtWithoutDot( const char * _Str );
-    static int Contains( const char* _String, char _Ch );
-    static char * Fmt( const char * _Format, ... );
-    static bool IsPathSeparator( const char & _Char );
+    static AString const & NullString() { return NullStr; }
 
 private:
-    void ReallocIfNeed( int _Alloc, bool _CopyOld );
-
-    static const char __NullCString[];
-    static const AString __NullFString;
+    void GrowCapacity( int _Capacity, bool _CopyOld );
 
 protected:
-    char * StringData;
-    int Allocated;
-    int StringLength;
-    char StaticData[BASE_ALLOC];
-};
+    char Base[BASE_CAPACITY];
+    char * Data;
+    int Capacity;
+    int Size;
 
-/**
-
-TSprintfBuffer
-
-Usage:
-
-TSprintfBuffer< 128 > buffer;
-buffer.Sprintf( "%d %f", 10, 15.1f );
-
-AString s = TSprintfBuffer< 128 >().Sprintf( "%d %f", 10, 15.1f );
-
-*/
-template< int Size >
-struct TSprintfBuffer {
-    char Data[ Size ];
-
-    char * Sprintf( const char * _Format, ... ) {
-        static_assert( Size > 0, "Invalid buffer size" );
-        va_list VaList;
-        va_start( VaList, _Format );
-        AString::vsnprintf( Data, Size, _Format, VaList );
-        va_end( VaList );
-        return Data;
-    }
+private:
+    static const AString NullStr;
 };
 
 AN_FORCEINLINE AString::AString()
-    : StringData( StaticData ), Allocated(BASE_ALLOC), StringLength(0)
+    : Data( Base )
+    , Capacity( BASE_CAPACITY )
+    , Size( 0 )
 {
-    StaticData[0] = 0;
+    Base[0] = 0;
 }
 
-AN_FORCEINLINE AString::AString( const char * _Str ) : AString() {
-    int tmpLen = Length( _Str );
-    ReallocIfNeed( tmpLen + 1, false );
-    memcpy( StringData, _Str, tmpLen );
-    StringData[tmpLen] = '\0';
-    StringLength = static_cast< int >( tmpLen );
+AN_FORCEINLINE AString::AString( const char * _Str )
+    : AString()
+{
+    if ( _Str ) {
+        const int newLen = Core::Strlen( _Str );
+        GrowCapacity( newLen + 1, false );
+        Core::Memcpy( Data, _Str, newLen + 1 );
+        Size = newLen;
+    }
 }
 
-AN_FORCEINLINE AString::AString( AString const & _Str ) : AString() {
-    int tmpLen = _Str.Length();
-    ReallocIfNeed( tmpLen + 1, false );
-    memcpy( StringData, _Str.StringData, tmpLen );
-    StringData[tmpLen] = '\0';
-    StringLength = static_cast< int >( tmpLen );
+AN_FORCEINLINE AString::AString( AString const & _Str )
+    : AString()
+{
+    const int newLen = _Str.Length();
+    GrowCapacity( newLen + 1, false );
+    Core::Memcpy( Data, _Str.Data, newLen + 1 );
+    Size = newLen;
 }
 
 AN_FORCEINLINE AString::~AString() {
-    if ( StringData != StaticData ) {
-        Allocator::Inst().Dealloc( StringData );
+    if ( Data != Base ) {
+        Allocator::Inst().Free( Data );
     }
 }
 
 AN_FORCEINLINE const char & AString::operator[]( const int _Index ) const {
-    AN_ASSERT_( ( _Index >= 0 ) && ( _Index <= StringLength ), "AString[]" );
-    return StringData[ _Index ];
+    AN_ASSERT_( ( _Index >= 0 ) && ( _Index <= Size ), "AString[]" );
+    return Data[ _Index ];
 }
 
 AN_FORCEINLINE char &AString::operator[]( const int _Index ) {
-    AN_ASSERT_( ( _Index >= 0 ) && ( _Index <= StringLength ), "AString[]" );
-    return StringData[ _Index ];
+    AN_ASSERT_( ( _Index >= 0 ) && ( _Index <= Size ), "AString[]" );
+    return Data[ _Index ];
 }
 
 AN_FORCEINLINE void AString::operator=( AString const & _Str ) {
-    int newlength;
-    newlength = _Str.Length();
-    ReallocIfNeed( newlength+1, false );
-    memcpy( StringData, _Str.StringData, newlength );
-    StringData[newlength] = '\0';
-    StringLength = newlength;
+    const int newLen = _Str.Length();
+    GrowCapacity( newLen+1, false );
+    Core::Memcpy( Data, _Str.Data, newLen + 1 );
+    Size = newLen;
 }
 
 AN_FORCEINLINE void AString::operator=( AStdString const & _Str ) {
-    int newlength;
-    newlength = _Str.length();
-    ReallocIfNeed( newlength+1, false );
-    memcpy( StringData, _Str.data(), newlength );
-    StringData[newlength] = '\0';
-    StringLength = newlength;
+    const int newLen = _Str.length();
+    GrowCapacity( newLen+1, false );
+    Core::Memcpy( Data, _Str.data(), newLen + 1 );
+    Size = newLen;
 }
 
 AN_FORCEINLINE void AString::Clear() {
-    StringLength = 0;
-    StringData[0] = '\0';
+    Size = 0;
+    Data[0] = '\0';
 }
 
 AN_FORCEINLINE void AString::Free() {
-    if ( StringData != StaticData ) {
-        Allocator::Inst().Dealloc( StringData );
-        StringData = StaticData;
-        Allocated = BASE_ALLOC;
+    if ( Data != Base ) {
+        Allocator::Inst().Free( Data );
+        Data = Base;
+        Capacity = BASE_CAPACITY;
     }
-    StringLength = 0;
-    StringData[0] = '\0';
+    Size = 0;
+    Data[0] = '\0';
 }
 
 AN_FORCEINLINE AString operator+( AString const & _Str1, AString const & _Str2 ) {
@@ -430,17 +370,15 @@ AN_FORCEINLINE AString & AString::operator+=( char _Char ) {
 }
 
 AN_FORCEINLINE bool operator==( AString const & _Str1, AString const & _Str2 ) {
-    return ( !AString::Cmp( _Str1.StringData, _Str2.StringData ) );
+    return ( !Core::Strcmp( _Str1.Data, _Str2.Data ) );
 }
 
 AN_FORCEINLINE bool operator==( AString const & _Str1, const char * _Str2 ) {
-    AN_ASSERT_( _Str2, "Strings comparison" );
-    return ( !AString::Cmp( _Str1.StringData, _Str2 ) );
+    return ( !Core::Strcmp( _Str1.Data, _Str2 ) );
 }
 
 AN_FORCEINLINE bool operator==( const char * _Str1, AString const & _Str2 ) {
-    AN_ASSERT_( _Str1, "Strings comparison" );
-    return ( !AString::Cmp( _Str1, _Str2.StringData ) );
+    return ( !Core::Strcmp( _Str1, _Str2.Data ) );
 }
 
 AN_FORCEINLINE bool operator!=( AString const & _Str1, AString const & _Str2 ) {
@@ -456,70 +394,72 @@ AN_FORCEINLINE bool operator!=( const char * _Str1, AString const & _Str2 ) {
 }
 
 AN_FORCEINLINE int AString::Icmp( const char * _Str ) const {
-    AN_ASSERT_( _Str, "AString::Icmp" );
-    return AString::Icmp( StringData, _Str );
+    return Core::Stricmp( Data, _Str );
 }
 
 AN_FORCEINLINE int AString::Cmp( const char * _Str ) const {
-    AN_ASSERT_( _Str, "AString::Cmp" );
-    return AString::Cmp( StringData, _Str );
+    return Core::Strcmp( Data, _Str );
 }
 
 AN_FORCEINLINE int AString::IcmpN( const char * _Str, int _Num ) const {
-    AN_ASSERT_( _Str, "AString::CmpN" );
-    return AString::IcmpN( StringData, _Str, _Num );
+    return Core::StricmpN( Data, _Str, _Num );
 }
 
 AN_FORCEINLINE int AString::CmpN( const char * _Str, int _Num ) const {
-    AN_ASSERT_( _Str, "AString::CmpN" );
-    return AString::CmpN( StringData, _Str, _Num );
+    return Core::StrcmpN( Data, _Str, _Num );
 }
 
 AN_FORCEINLINE const char * AString::CStr() const {
-    return StringData;
+    return Data;
 }
 
 AN_FORCEINLINE const char * AString::Begin() const {
-    return StringData;
+    return Data;
 }
 AN_FORCEINLINE const char * AString::End() const {
-    return StringData + StringLength;
+    return Data + Size;
 }
 
 AN_FORCEINLINE int AString::Length() const {
-    return StringLength;
+    return Size;
 }
 
 AN_FORCEINLINE bool AString::IsEmpty() const {
-    return StringLength == 0;
+    return Size == 0;
 }
 
 AN_FORCEINLINE char * AString::ToPtr() const {
-    return StringData;
+    return Data;
 }
 
 AN_FORCEINLINE void AString::Resize( int _Length ) {
-    ReallocIfNeed( _Length+1, true );
-    StringLength = _Length;
-    StringData[StringLength] = 0;
+    GrowCapacity( _Length+1, true );
+    if ( _Length > Size ) {
+        Core::Memset( &Data[Size], ' ', _Length - Size );
+    }
+    Size = _Length;
+    Data[Size] = 0;
 }
 
 AN_FORCEINLINE void AString::ResizeInvalidate( int _Length ) {
-    ReallocIfNeed( _Length+1, false );
-    StringLength = _Length;
-    StringData[StringLength] = 0;
+    GrowCapacity( _Length+1, false );
+    Core::Memset( Data, ' ', _Length );
+    Size = _Length;
+    Data[Size] = 0;
 }
 
 AN_FORCEINLINE void AString::Reserve( int _Capacity ) {
-    ReallocIfNeed( _Capacity, true );
+    GrowCapacity( _Capacity, true );
 }
 
 AN_FORCEINLINE void AString::ReserveInvalidate( int _Capacity ) {
-    ReallocIfNeed( _Capacity, false );
+    GrowCapacity( _Capacity, false );
+    Size = 0;
+    Data[0] = 0;
 }
 
 AN_FORCEINLINE void AString::FixSeparator() {
-    FixSeparator( StringData );
+    Core::FixSeparator( Data );
 }
 
 AN_FORCEINLINE void AString::ReplaceExt( const char * _Extension ) {
@@ -528,130 +468,47 @@ AN_FORCEINLINE void AString::ReplaceExt( const char * _Extension ) {
 }
 
 AN_FORCEINLINE uint32_t AString::HexToUInt32( int _Len ) const {
-    AN_ASSERT_( _Len <= StringLength, "AString::HexToUInt32" );
-    return HexToUInt32( StringData, _Len );
+    AN_ASSERT_( _Len <= Size, "AString::HexToUInt32" );
+    return Core::HexToUInt32( Data, _Len );
 }
 
 AN_FORCEINLINE uint64_t AString::HexToUInt64( int _Len ) const {
-    AN_ASSERT_( _Len <= StringLength, "AString::HexToUInt64" );
-    return HexToUInt64( StringData, _Len );
+    AN_ASSERT_( _Len <= Size, "AString::HexToUInt64" );
+    return Core::HexToUInt64( Data, _Len );
 }
 
 AN_FORCEINLINE uint32_t AString::HexToUInt32() const {
-    return HexToUInt32( StringData, StdMin( StringLength, 8 ) );
+    return Core::HexToUInt32( Data, StdMin( Size, 8 ) );
 }
 
 AN_FORCEINLINE uint64_t AString::HexToUInt64() const {
-    return HexToUInt64( StringData, StdMin( StringLength, 16 ) );
+    return Core::HexToUInt64( Data, StdMin( Size, 16 ) );
 }
 
-AN_FORCEINLINE void AString::ConcatSafe( char * _Dest, size_t _DestSz, const char * _Src ) {
-    if ( !_Src ) {
-        return;
+
+/**
+
+TSprintfBuffer
+
+Usage:
+
+TSprintfBuffer< 128 > buffer;
+buffer.Sprintf( "%d %f", 10, 15.1f );
+
+AString s = TSprintfBuffer< 128 >().Sprintf( "%d %f", 10, 15.1f );
+
+*/
+template< int Size >
+struct TSprintfBuffer {
+    char Data[ Size ];
+
+    char * Sprintf( const char * _Format, ... ) {
+        static_assert( Size > 0, "Invalid buffer size" );
+        AN_ASSERT( _Format );
+        va_list VaList;
+        va_start( VaList, _Format );
+        Core::VSprintf( Data, Size, _Format, VaList );
+        va_end( VaList );
+        return Data;
     }
-#ifdef AN_COMPILER_MSVC
-    strcat_s( _Dest, _DestSz, _Src );
-#else
-    size_t destLength = Length( _Dest );
-    if ( destLength >= _DestSz ) {
-        return;
-    }
-    CopySafe( _Dest + destLength, _DestSz - destLength, _Src );
-#endif
-}
-
-AN_FORCEINLINE void AString::CopySafe( char * _Dest, size_t _DestSz, const char * _Src ) {
-    if ( !_Src ) {
-        _Src = "null";
-    }
-#ifdef AN_COMPILER_MSVC
-    strcpy_s( _Dest, _DestSz, _Src );
-#else
-    if ( _DestSz > 0 ) {
-        while ( *_Src && --_DestSz != 0 ) {
-            *_Dest++ = *_Src++;
-        }
-        *_Dest = 0;
-    }
-#endif
-}
-
-AN_FORCEINLINE void AString::CopySafeN( char * _Dest, size_t _DestSz, const char * _Src, size_t _Num ) {
-    if ( !_Src ) {
-        _Src = "null";
-    }
-#ifdef AN_COMPILER_MSVC
-    strncpy_s( _Dest, _DestSz, _Src, _Num );
-#else
-    if ( _DestSz > 0 && _Num > 0 ) {
-        while ( *_Src && --_DestSz != 0 && --_Num != static_cast< size_t >( -1 ) ) {
-            *_Dest++ = *_Src++;
-        }
-        *_Dest = 0;
-    }
-#endif
-}
-
-AN_FORCEINLINE void AString::Concat( char * _Dest, const char * _Src ) {
-    if ( !_Src ) {
-        return;
-    }
-    strcat( _Dest, _Src );
-}
-
-AN_FORCEINLINE void AString::Copy( char * _Dest, const char * _Src ) {
-    if ( !_Src ) {
-        _Src = "null";
-    }
-    strcpy( _Dest, _Src );
-}
-
-AN_FORCEINLINE bool AString::IsPathSeparator( const char & _Char ) {
-#ifdef AN_OS_WIN32
-    return _Char == '/' || _Char == '\\';
-#else
-    return _Char == '/';
-#endif
-}
-
-AN_FORCEINLINE const char * AString::NullCString() {
-    return __NullCString;
-}
-
-AN_FORCEINLINE AString const & AString::NullFString() {
-    return __NullFString;
-}
-
-#define AN_INT64_HIGH_INT( i64 )   int32_t( uint64_t(i64) >> 32 )
-#define AN_INT64_LOW_INT( i64 )    int32_t( uint64_t(i64) & 0xFFFFFFFF )
-
-template< typename T >
-AString AString::ToHexString( T const & _Val, bool _LeadingZeros, bool _Prefix ) {
-    TSprintfBuffer< 32 > value;
-    TSprintfBuffer< 32 > format;
-    const char * PrefixStr = _Prefix ? "0x" : "";
-
-    constexpr size_t typeSize = sizeof( T );
-    static_assert( typeSize == 1 || typeSize == 2 || typeSize == 4 || typeSize == 8, "ToHexString" );
-
-    switch( typeSize ) {
-    case 1:
-        format.Sprintf( _LeadingZeros ? "%s%%02x" : "%s%%x", PrefixStr );
-        return value.Sprintf( format.Data, *reinterpret_cast< const uint8_t * > ( &_Val ) );
-    case 2:
-        format.Sprintf( _LeadingZeros ? "%s%%04x" : "%s%%x", PrefixStr );
-        return value.Sprintf( format.Data, *reinterpret_cast< const uint16_t * > ( &_Val ) );
-    case 4:
-        format.Sprintf( _LeadingZeros ? "%s%%08x" : "%s%%x", PrefixStr );
-        return value.Sprintf( format.Data, *reinterpret_cast< const uint32_t * > ( &_Val ) );
-    case 8: {
-            uint64_t Temp = *reinterpret_cast< const uint64_t * > ( &_Val );
-            if ( _LeadingZeros ) {
-                return value.Sprintf( "%s%08x%08x", PrefixStr, AN_INT64_HIGH_INT( Temp ), AN_INT64_LOW_INT( Temp ) );
-            } else {
-                return value.Sprintf( "%s%I64x", PrefixStr, Temp );
-            }
-        }
-    }
-    return "";
-}
+};

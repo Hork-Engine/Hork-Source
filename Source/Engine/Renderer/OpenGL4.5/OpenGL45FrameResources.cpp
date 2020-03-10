@@ -106,9 +106,9 @@ void AFrameResources::Initialize() {
         LightBuffer.Initialize( bufferCI );
     }
 
-    memset( BufferBinding, 0, sizeof( BufferBinding ) );
-    memset( TextureBindings, 0, sizeof( TextureBindings ) );
-    memset( SamplerBindings, 0, sizeof( SamplerBindings ) );
+    Core::ZeroMem( BufferBinding, sizeof( BufferBinding ) );
+    Core::ZeroMem( TextureBindings, sizeof( TextureBindings ) );
+    Core::ZeroMem( SamplerBindings, sizeof( SamplerBindings ) );
 
     ViewUniformBufferBinding = &BufferBinding[0];
     ViewUniformBufferBinding->BufferType = UNIFORM_BUFFER;
@@ -140,7 +140,7 @@ void AFrameResources::Initialize() {
         SamplerBindings[i].SlotIndex = i;
     }
 
-    memset( &Resources, 0, sizeof( Resources ) );
+    Core::ZeroMem( &Resources, sizeof( Resources ) );
     Resources.Buffers = BufferBinding;
     Resources.NumBuffers = AN_ARRAY_SIZE( BufferBinding );
 
@@ -392,10 +392,10 @@ void AFrameResources::UploadUniforms() {
 
         SInstanceUniformBuffer * pUniformBuf = reinterpret_cast< SInstanceUniformBuffer * >( TempData.ToPtr() + i*InstanceUniformBufferSizeof );
 
-        memcpy( &pUniformBuf->TransformMatrix, &instance->Matrix, sizeof( pUniformBuf->TransformMatrix ) );
+        Core::Memcpy( &pUniformBuf->TransformMatrix, &instance->Matrix, sizeof( pUniformBuf->TransformMatrix ) );
         StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, pUniformBuf->ModelNormalToViewSpace );
-        memcpy( &pUniformBuf->LightmapOffset, &instance->LightmapOffset, sizeof( pUniformBuf->LightmapOffset ) );
-        memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
+        Core::Memcpy( &pUniformBuf->LightmapOffset, &instance->LightmapOffset, sizeof( pUniformBuf->LightmapOffset ) );
+        Core::Memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
 
         //InstanceUniformBuffer.WriteRange( i * InstanceUniformBufferSizeof, UniformBufferSizeof, pUniformBuf );
     }
@@ -405,10 +405,10 @@ void AFrameResources::UploadUniforms() {
 
         SInstanceUniformBuffer * pUniformBuf = reinterpret_cast< SInstanceUniformBuffer * >(TempData.ToPtr() + (uniformTranslucentOffset+i)*InstanceUniformBufferSizeof);
 
-        memcpy( &pUniformBuf->TransformMatrix, &instance->Matrix, sizeof( pUniformBuf->TransformMatrix ) );
+        Core::Memcpy( &pUniformBuf->TransformMatrix, &instance->Matrix, sizeof( pUniformBuf->TransformMatrix ) );
         StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, pUniformBuf->ModelNormalToViewSpace );
-        memcpy( &pUniformBuf->LightmapOffset, &instance->LightmapOffset, sizeof( pUniformBuf->LightmapOffset ) );
-        memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
+        Core::Memcpy( &pUniformBuf->LightmapOffset, &instance->LightmapOffset, sizeof( pUniformBuf->LightmapOffset ) );
+        Core::Memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
 
         //InstanceUniformBuffer.WriteRange( i * InstanceUniformBufferSizeof, UniformBufferSizeof, pUniformBuf );
     }
@@ -430,7 +430,7 @@ void AFrameResources::UploadUniforms() {
         StoreFloat3x4AsFloat4x4Transposed( instance->WorldTransformMatrix, pUniformBuf->TransformMatrix );
 
         if ( instance->MaterialInstance ) {
-            memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
+            Core::Memcpy( &pUniformBuf->uaddr_0, instance->MaterialInstance->UniformVectors, sizeof( Float4 )*instance->MaterialInstance->NumUniformVectors );
         }
     }
 

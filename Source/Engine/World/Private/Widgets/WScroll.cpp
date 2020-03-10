@@ -168,7 +168,7 @@ void WScroll::UpdateScrollbarGeometry() {
 
     Float4 const & margin = GetMargin();
 
-    memset( &Geometry, 0, sizeof( Geometry ) );
+    Core::ZeroMem( &Geometry, sizeof( Geometry ) );
 
     Geometry.bDrawHScrollbar = margin.W > 0.0f;
     Geometry.bDrawVScrollbar = margin.Z > 0.0f;

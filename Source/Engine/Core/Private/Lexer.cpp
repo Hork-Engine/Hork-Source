@@ -81,7 +81,7 @@ void ALexer::MakeString( AString & Str, int InMessage, const char * InText ) {
 }
 
 void ALexer::ErrorPrint( int _Err ) {
-    AString	str;
+    AString str;
     MakeString( str, MSG_ERROR, GetError(_Err) );
     str += "\n";
     GLogger.Print( str.CStr() );
@@ -91,7 +91,7 @@ void ALexer::ErrorPrintf( const char * _Format, ... ) {
     char text[4096];
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( text, sizeof( text ), _Format, VaList );
+    Core::VSprintf( text, sizeof( text ), _Format, VaList );
     va_end( VaList );
 
     AString str;
@@ -103,7 +103,7 @@ void ALexer::WarnPrintf( const char * _Format, ... ) {
     char text[4096];
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( text, sizeof( text ), _Format, VaList );
+    Core::VSprintf( text, sizeof( text ), _Format, VaList );
     va_end( VaList );
 
     AString str;
@@ -114,7 +114,7 @@ void ALexer::WarnPrintf( const char * _Format, ... ) {
 void ALexer::AddOperator( const char * _String ) {
     SOperator Op;
 
-    AString::CopySafe( Op.Str, sizeof( Op.Str ), _String );
+    Core::Strcpy( Op.Str, sizeof( Op.Str ), _String );
     Op.Len = static_cast< int >( strlen( Op.Str ) );
 
     Operators.Append( Op );
@@ -122,9 +122,9 @@ void ALexer::AddOperator( const char * _String ) {
 
 int ALexer::CheckOperator( const char * _Ptr ) const {
     int NumOperators = Operators.Size();
-	if ( NumOperators > 0 ) {
+    if ( NumOperators > 0 ) {
         for ( const SOperator * op = &Operators[0] ; op < &Operators[NumOperators] ; op++ ) {
-            if ( !AString::CmpN( _Ptr, op->Str, op->Len ) ) {
+            if ( !Core::StrcmpN( _Ptr, op->Str, op->Len ) ) {
                 return op->Len;
             }
         }
@@ -132,7 +132,7 @@ int ALexer::CheckOperator( const char * _Ptr ) const {
     }
 
     // Default operators
-	if ( _Ptr[0] == '{' || _Ptr[0] == '}'
+    if ( _Ptr[0] == '{' || _Ptr[0] == '}'
         || _Ptr[0] == '[' || _Ptr[0] == ']'
         || _Ptr[0] == '(' || _Ptr[0] == ')'
         || _Ptr[0] == ',' || _Ptr[0] == '.'
@@ -142,7 +142,7 @@ int ALexer::CheckOperator( const char * _Ptr ) const {
         return 1;
     }
 
-	if ( _Ptr[0] == '+' || _Ptr[0] == '-'
+    if ( _Ptr[0] == '+' || _Ptr[0] == '-'
         || _Ptr[0] == '*' || _Ptr[0] == '/'
         || _Ptr[0] == '|' || _Ptr[0] == '&' || _Ptr[0] == '^'
         || _Ptr[0] == '=' || _Ptr[0] == '>' || _Ptr[0] == '<')
@@ -150,7 +150,7 @@ int ALexer::CheckOperator( const char * _Ptr ) const {
         return ( _Ptr[1] == '=' ) ? 2 : 1;
     }
 
-	return 0;
+    return 0;
 }
 
 void ALexer::PrevToken() {
@@ -392,8 +392,8 @@ int ALexer::Expect( const char * _Str, int _TokenType, bool _MatchCase ) {
         return ErrorCode;
     }
 
-    bool compare = _MatchCase ? !AString::Cmp( _Str, CurToken )
-                              : !AString::Icmp( _Str, CurToken );
+    bool compare = _MatchCase ? !Core::Strcmp( _Str, CurToken )
+                              : !Core::Stricmp( _Str, CurToken );
 
     ErrorCode = compare ? ERROR_NO : ERROR_UNEXPECTED_TOKEN_FOUND;
 
@@ -403,7 +403,7 @@ int ALexer::Expect( const char * _Str, int _TokenType, bool _MatchCase ) {
 int ALexer::SkipBlock() {
     int numBrackets = 1;
     while ( numBrackets != 0 ) {
-      	int	err = NextToken();
+        int err = NextToken();
         if ( err != ERROR_NO ) {
             ErrorPrint( err );
             return err;
@@ -431,11 +431,11 @@ void ALexer::SkipRestOfLine() {
 }
 
 int ALexer::GetRestOfLine( char * _Dest, int _DestSz, bool _FixPos ) {
-	const	char	*p;
-	char	*d;
+    const char *p;
+    char *d;
 
     p = Ptr;
-	d = _Dest;
+    d = _Dest;
 
     while ( *p && d-_Dest != _DestSz-1 )     {
         if ( *p == '\n' || *p == '\r' )     {
@@ -450,7 +450,7 @@ int ALexer::GetRestOfLine( char * _Dest, int _DestSz, bool _FixPos ) {
 
     *d = 0;
 
-	if ( !_FixPos ) {
+    if ( !_FixPos ) {
         Ptr = p;
     }
 
@@ -478,7 +478,7 @@ const char *ALexer::GetError( int _Error ) const {
     if ( _Error < 0 || _Error >= ERROR_MAX ) {
         return "unknown error";
     }
-	return __ErrorStr[_Error];
+    return __ErrorStr[_Error];
 }
 
 const char *ALexer::GetError() const {
@@ -489,7 +489,7 @@ const char *ALexer::GetError() const {
 }
 
 const char *ALexer::GetIdentifier( bool _CrossLine ) {
-	int	err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         return AString::NullCString();
     }
@@ -505,11 +505,11 @@ const char *ALexer::GetIdentifier( bool _CrossLine ) {
         ErrorPrintf( "expected identifier, found '%s'\n", Token() );
         return AString::NullCString();
     }
-	return Token ();
+    return Token ();
 }
 
 const char *ALexer::GetInteger( bool _CrossLine ) {
-	int	err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         return AString::NullCString();
     }
@@ -525,11 +525,11 @@ const char *ALexer::GetInteger( bool _CrossLine ) {
         ErrorPrintf( "expected integer, found '%s'\n", Token() );
         return AString::NullCString();
     }
-	return Token ();
+    return Token ();
 }
 
 const char *ALexer::ExpectIdentifier( bool _CrossLine ) {
-	int err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
     } else if ( err == ERROR_EOL ) {
@@ -544,11 +544,11 @@ const char *ALexer::ExpectIdentifier( bool _CrossLine ) {
         ErrorPrintf( "expected token, found '%s'\n", Token() );
         return AString::NullCString();
     }
-	return Token();
+    return Token();
 }
 
 const char *ALexer::GetString( bool _CrossLine ) {
-	int err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         return AString::NullCString();
     }
@@ -565,11 +565,11 @@ const char *ALexer::GetString( bool _CrossLine ) {
         return AString::NullCString();
     }
 
-	return Token();
+    return Token();
 }
 
 const char *ALexer::ExpectString( bool _CrossLine ) {
-	int	err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
     } else if ( err == ERROR_EOL ) {
@@ -584,11 +584,11 @@ const char *ALexer::ExpectString( bool _CrossLine ) {
         ErrorPrintf( "expected string, found '%s'\n", Token() );
         return AString::NullCString();
     }
-	return Token ();
+    return Token ();
 }
 
 int32_t ALexer::ExpectInteger( bool _CrossLine ) {
-	int	err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
     } else if ( err == ERROR_EOL ) {
@@ -607,12 +607,12 @@ int32_t ALexer::ExpectInteger( bool _CrossLine ) {
         return (int32_t)Math::ToFloat( Token() );
     }
 
-	ErrorPrintf( "expected integer, found '%s'\n", Token() );
-	return 0;
+    ErrorPrintf( "expected integer, found '%s'\n", Token() );
+    return 0;
 }
 
 bool ALexer::ExpectBoolean( bool _CrossLine ) {
-	int	err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
     } else if ( err == ERROR_EOL ) {
@@ -627,10 +627,10 @@ bool ALexer::ExpectBoolean( bool _CrossLine ) {
         return Math::ToInt< int32_t >( Token() ) != 0;
     }
     if ( GetTokenType() == TOKEN_TYPE_IDENTIFIER ) {
-        if ( !AString::Icmp( Token(), "true" ) ) {
+        if ( !Core::Stricmp( Token(), "true" ) ) {
             return true;
         }
-        if ( !AString::Icmp( Token(), "false" ) ) {
+        if ( !Core::Stricmp( Token(), "false" ) ) {
             return false;
         }
     }
@@ -640,12 +640,12 @@ bool ALexer::ExpectBoolean( bool _CrossLine ) {
         return (int32_t)Math::ToFloat( Token() ) != 0;
     }
 
-	ErrorPrintf( "expected boolean, found '%s'\n", Token() );
-	return false;
+    ErrorPrintf( "expected boolean, found '%s'\n", Token() );
+    return false;
 }
 
 float ALexer::ExpectFloat( bool _CrossLine ) {
-	int	err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
     } else if ( err == ERROR_EOL ) {
@@ -664,7 +664,7 @@ float ALexer::ExpectFloat( bool _CrossLine ) {
 }
 
 double ALexer::ExpectDouble( bool _CrossLine ) {
-	int	err = NextToken( _CrossLine );
+    int err = NextToken( _CrossLine );
     if ( err == ERROR_EOF ) {
         ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
     } else if ( err == ERROR_EOL ) {
@@ -700,7 +700,7 @@ bool ALexer::ExpectVector( Float4 & _DestVector, bool _CrossLine ) {
 
 bool ALexer::ExpectVector( float * _DestVector, int _NumComponents, bool _CrossLine ) {
     for ( int i = 0 ; i < _NumComponents ; i++ ) {
-        int	err = NextToken( _CrossLine );
+        int err = NextToken( _CrossLine );
         if ( err == ERROR_EOF ) {
             ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
         } else if ( err == ERROR_EOL ) {
@@ -712,7 +712,7 @@ bool ALexer::ExpectVector( float * _DestVector, int _NumComponents, bool _CrossL
             return false;
         }
 
-        // певый проход
+        // first pass
         if ( i==0 && GetTokenType() == TOKEN_TYPE_IDENTIFIER ) {
             if ( Token()[0] == '(' ) {
                 if ( !ExpectVector( _DestVector, _NumComponents, _CrossLine ) )
@@ -740,7 +740,7 @@ bool ALexer::ExpectVector( float * _DestVector, int _NumComponents, bool _CrossL
 
 bool ALexer::ExpectDVector( double * _DestVector, int _NumComponents, bool _CrossLine ) {
     for ( int i = 0 ; i < _NumComponents ; i++ ) {
-        int	err = NextToken( _CrossLine );
+        int err = NextToken( _CrossLine );
         if ( err == ERROR_EOF ) {
             ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
         } else if ( err == ERROR_EOL ) {
@@ -752,7 +752,7 @@ bool ALexer::ExpectDVector( double * _DestVector, int _NumComponents, bool _Cros
             return false;
         }
 
-        // певый проход
+        // first pass
         if ( i==0 && GetTokenType() == TOKEN_TYPE_IDENTIFIER ) {
             if ( Token()[0] == '(' ) {
                 if ( !ExpectDVector( _DestVector, _NumComponents, _CrossLine ) )
@@ -780,7 +780,7 @@ bool ALexer::ExpectDVector( double * _DestVector, int _NumComponents, bool _Cros
 
 bool ALexer::ExpectIVector( int * _DestVector, int _NumComponents, bool _CrossLine ) {
     for ( int i = 0 ; i < _NumComponents ; i++ ) {
-        int	err = NextToken( _CrossLine );
+        int err = NextToken( _CrossLine );
         if ( err == ERROR_EOF ) {
             ErrorPrint( ERROR_UNEXPECTED_EOF_FOUND );
         } else if ( err == ERROR_EOL ) {
@@ -792,7 +792,7 @@ bool ALexer::ExpectIVector( int * _DestVector, int _NumComponents, bool _CrossLi
             return false;
         }
 
-        // певый проход
+        // first pass
         if ( i==0 && GetTokenType() == TOKEN_TYPE_IDENTIFIER ) {
             if ( Token()[0] == '(' ) {
                 if ( !ExpectIVector( _DestVector, _NumComponents, _CrossLine ) )
@@ -823,10 +823,10 @@ bool ALexer::ExpectAngles( Angl & _DestAngles, bool _CrossLine ){
 }
 
 bool ALexer::GoToNearest( const char * _Identifier ) {
-	const char * str;
-	int	err;
+    const char * str;
+    int err;
 
-	do {
+    do {
         str = GetIdentifier();
         err = GetErrorCode();
 
@@ -841,8 +841,8 @@ bool ALexer::GoToNearest( const char * _Identifier ) {
             ErrorPrint( err );
             return false;
         }
-    } while ( AString::Icmp( str, _Identifier ) );
+    } while ( Core::Stricmp( str, _Identifier ) );
 
     // Token found
-	return true;
+    return true;
 }

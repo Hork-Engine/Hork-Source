@@ -135,7 +135,7 @@ struct SBoxHitResult
     //float FractionMax;
 
     void Clear() {
-        memset( this, 0, sizeof( *this ) );
+        Core::ZeroMem( this, sizeof( *this ) );
     }
 };
 
@@ -226,7 +226,7 @@ struct SWorldRaycastClosestResult
 
     /** Clear raycast result */
     void Clear() {
-        memset( this, 0, sizeof( *this ) );
+        Core::ZeroMem( this, sizeof( *this ) );
     }
 };
 

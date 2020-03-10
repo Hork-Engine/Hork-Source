@@ -43,7 +43,7 @@ ARuntimeVariable * ARuntimeVariable::GlobalVariableList() {
 
 ARuntimeVariable * ARuntimeVariable::FindVariable( const char * _Name ) {
     for ( ARuntimeVariable * var = GlobalVars ; var ; var = var->GetNext() ) {
-        if ( !AString::Icmp( var->GetName(), _Name ) ) {
+        if ( !Core::Stricmp( var->GetName(), _Name ) ) {
             return var;
         }
     }

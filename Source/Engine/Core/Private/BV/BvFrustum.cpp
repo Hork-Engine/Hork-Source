@@ -36,7 +36,7 @@ BvFrustum::BvFrustum() {
 
 BvFrustum::~BvFrustum() {
 #ifdef AN_FRUSTUM_USE_SSE
-    GZoneMemory.Dealloc( PlanesSSE );
+    GZoneMemory.Free( PlanesSSE );
 #endif
 }
 

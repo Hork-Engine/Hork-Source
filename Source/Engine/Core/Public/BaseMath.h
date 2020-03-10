@@ -966,10 +966,10 @@ AN_FORCEINLINE T ToReal( const char * _String ) {
 }
 
 AN_FORCEINLINE bool ToBool( const char * _String ) {
-    if ( !AString::Cmp( _String, "0" )
-         || !AString::Cmp( _String, "false" ) ) {
+    if ( !Core::Strcmp( _String, "0" )
+         || !Core::Strcmp( _String, "false" ) ) {
         return false;
-    } else if ( !AString::Cmp( _String, "true" ) ) {
+    } else if ( !Core::Strcmp( _String, "true" ) ) {
         return true;
     } else {
         return Math::ToInt< int >( _String ) != 0;
@@ -1017,7 +1017,7 @@ AN_FORCEINLINE AString ToString( T const & _Value, int _Precision = FloatingPoin
     } else {
         value.Sprintf( "%f", _Value );
     }
-    for ( char * p = &value.Data[ AString::Length( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
+    for ( char * p = &value.Data[ Core::Strlen( value.Data ) - 1 ] ; p >= &value.Data[0] ; p-- ) {
         if ( *p != '0' ) {
             if ( *p != '.' ) {
                 p++;
@@ -1034,9 +1034,43 @@ AN_FORCEINLINE AString ToString( bool _Value ) {
     return s[ _Value ];
 }
 
+constexpr int32_t INT64_HIGH_INT( uint64_t i64 ) {
+    return i64 >> 32;
+}
+
+constexpr int32_t INT64_LOW_INT( uint64_t i64 ) {
+    return i64 & 0xFFFFFFFF;
+}
+
 template< typename T >
 AN_FORCEINLINE AString ToHexString( T const & _Value, bool _LeadingZeros = false, bool _Prefix = false ) {
-    return AString::ToHexString( _Value, _LeadingZeros, _Prefix );
+    TSprintfBuffer< 32 > value;
+    TSprintfBuffer< 32 > format;
+    const char * prefixStr = _Prefix ? "0x" : "";
+
+    constexpr size_t typeSize = sizeof( T );
+    static_assert( typeSize == 1 || typeSize == 2 || typeSize == 4 || typeSize == 8, "ToHexString" );
+
+    switch( typeSize ) {
+    case 1:
+        format.Sprintf( _LeadingZeros ? "%s%%02x" : "%s%%x", prefixStr );
+        return value.Sprintf( format.Data, *reinterpret_cast< const uint8_t * > ( &_Value ) );
+    case 2:
+        format.Sprintf( _LeadingZeros ? "%s%%04x" : "%s%%x", prefixStr );
+        return value.Sprintf( format.Data, *reinterpret_cast< const uint16_t * > ( &_Value ) );
+    case 4:
+        format.Sprintf( _LeadingZeros ? "%s%%08x" : "%s%%x", prefixStr );
+        return value.Sprintf( format.Data, *reinterpret_cast< const uint32_t * > ( &_Value ) );
+    case 8: {
+            uint64_t Temp = *reinterpret_cast< const uint64_t * > ( &_Value );
+            if ( _LeadingZeros ) {
+                return value.Sprintf( "%s%08x%08x", prefixStr, INT64_HIGH_INT( Temp ), INT64_LOW_INT( Temp ) );
+            } else {
+                return value.Sprintf( "%s%I64x", prefixStr, Temp );
+            }
+        }
+    }
+    return "";
 }
 
 }

@@ -55,7 +55,7 @@ struct TStdAllocator {
     }
 
     void deallocate( T * _Bytes, std::size_t _Count ) noexcept {
-        GZoneMemory.Dealloc( _Bytes );
+        GZoneMemory.Free( _Bytes );
     }
 };
 template< typename T, typename U > bool operator==( TStdAllocator< T > const &, TStdAllocator< U > const & ) { return true; }
@@ -78,9 +78,12 @@ public:
     void Resize( int _Size ) { Super::resize( _Size ); }
     void Reserve( int _Capacity ) { Super::reserve( _Capacity ); }
     void ReserveInvalidate( int _Capacity ) {
+        int curSize = Size();
         Super::clear();
         Super::reserve( _Capacity );
+        Super::resize( curSize );
     }
+    int Capacity() const { return Super::capacity(); }
     void Free() { Super::clear(); Super::shrink_to_fit(); }
     bool IsEmpty() const { return Super::empty(); }
     void Append( T const & _X ) { Super::push_back( _X ); }

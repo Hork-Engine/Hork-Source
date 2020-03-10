@@ -240,5 +240,5 @@ SWeakRefCounter * AWeakReference::AllocateWeakRefCounter() {
 void AWeakReference::DeallocateWeakRefCounter( SWeakRefCounter * _RefCounter ) {
     // Own allocator couldn't handle destruction of static objects :(
     delete _RefCounter;
-    //GZoneMemory.Dealloc( _RefCounter );
+    //GZoneMemory.Free( _RefCounter );
 }

@@ -310,7 +310,7 @@ void ARuntimeMain::RuntimeUpdate() {
     TestInput();
 
     // It may happen if game thread is too busy
-    if ( event->Type == ET_RuntimeUpdateEvent && GRuntimeEvents.Size() != GRuntimeEvents.MaxSize() ) {
+    if ( event->Type == ET_RuntimeUpdateEvent && GRuntimeEvents.Size() != GRuntimeEvents.Capacity() ) {
         event->Data.RuntimeUpdateEvent.InputEventCount = GInputEventsCount;
     } else {
         GLogger.Printf( "Warning: Runtime queue was overflowed\n" );
@@ -414,11 +414,11 @@ void ARuntimeMain::InitializeProcess() {
     }
     Executable[ len ] = 0;
 
-    AString::FixSeparator( Executable );
+    Core::FixSeparator( Executable );
 
     uint32_t appHash = Core::SDBMHash( Executable, len );
 
-    ProcessMutex = CreateMutexA( NULL, FALSE, AString::Fmt( "angie_%u", appHash ) );
+    ProcessMutex = CreateMutexA( NULL, FALSE, Core::Fmt( "angie_%u", appHash ) );
     if ( !ProcessMutex ) {
         ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
     } else if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
@@ -447,7 +447,7 @@ void ARuntimeMain::InitializeProcess() {
     Executable[ len ] = 0;
 
     uint32_t appHash = Core::SDBMHash( Executable, len );
-    int f = open( AString::Fmt( "/tmp/angie_%u.pid", appHash ), O_RDWR | O_CREAT, 0666 );
+    int f = open( Core::Fmt( "/tmp/angie_%u.pid", appHash ), O_RDWR | O_CREAT, 0666 );
     int locked = flock( f, LOCK_EX | LOCK_NB );
     if ( locked ) {
         if ( errno == EWOULDBLOCK ) {
@@ -496,7 +496,7 @@ struct SMemoryInfo {
 static SMemoryInfo GetPhysMemoryInfo() {
     SMemoryInfo info;
 
-    memset( &info, 0, sizeof( info ) );
+    Core::ZeroMem( &info, sizeof( info ) );
 
 #if defined AN_OS_WIN32
     MEMORYSTATUS memstat;
@@ -575,7 +575,7 @@ void ARuntimeMain::InitializeMemory() {
     GHeapMemory.Initialize();
 
     MemoryHeap = GHeapMemory.Alloc( TotalMemorySizeInBytes, 16 );
-    ZeroMemSSE( MemoryHeap, TotalMemorySizeInBytes );
+    Core::ZeroMemSSE( MemoryHeap, TotalMemorySizeInBytes );
 
     //TouchMemoryPages( MemoryHeap, TotalMemorySizeInBytes );
 
@@ -592,7 +592,7 @@ void ARuntimeMain::InitializeMemory() {
 void ARuntimeMain::DeinitializeMemory() {
     GZoneMemory.Deinitialize();
     GHunkMemory.Deinitialize();
-    GHeapMemory.Dealloc( MemoryHeap );
+    GHeapMemory.Free( MemoryHeap );
     GHeapMemory.Deinitialize();
 }
 
@@ -675,7 +675,7 @@ static void TestInput() {
 
 int ARuntimeMain::CheckArg( const char * _Arg ) {
     for ( int i = 0 ; i < NumArguments ; i++ ) {
-        if ( !AString::Icmp( Arguments[ i ], _Arg ) ) {
+        if ( !Core::Stricmp( Arguments[ i ], _Arg ) ) {
             return i;
         }
     }
@@ -774,14 +774,14 @@ ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _Cr
         return;
     }
     bApplicationRun = true;
-    AString::CopySafe( CmdLineBuffer, sizeof( CmdLineBuffer ), _CommandLine );
+    Core::Strcpy( CmdLineBuffer, sizeof( CmdLineBuffer ), _CommandLine );
     AllocCommandLineArgs( CmdLineBuffer, &GRuntimeMain.NumArguments, &GRuntimeMain.Arguments );
     if ( GRuntimeMain.NumArguments < 1 ) {
         AN_ASSERT( 0 );
         return;
     }
     // Fix executable path separator
-    AString::FixSeparator( GRuntimeMain.Arguments[ 0 ] );
+    Core::FixSeparator( GRuntimeMain.Arguments[ 0 ] );
     GRuntimeMain.Run( _CreateGameModule );
     FreeCommandLineArgs( GRuntimeMain.Arguments );
 }
@@ -799,7 +799,7 @@ ANGIE_API void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _Cre
         return;
     }
     // Fix executable path separator
-    AString::FixSeparator( GRuntimeMain.Arguments[ 0 ] );
+    Core::FixSeparator( GRuntimeMain.Arguments[ 0 ] );
     GRuntimeMain.Run( _CreateGameModule );
 }
 

@@ -42,6 +42,12 @@ SOFTWARE.
 
 #include <AL/alc.h>
 
+//#ifdef USE_MOJOAL
+//#undef AL_API
+//#undef ALC_API
+//#include "mojoal.h"
+//#endif
+
 AN_CLASS_META( AAudioControlCallback )
 AN_CLASS_META( AAudioGroup )
 
@@ -49,6 +55,7 @@ static void * LibOpenAL = NULL;
 static ALCdevice * ALCDevice = NULL;
 static ALCcontext * ALCContext = NULL;
 
+#ifndef USE_MOJOAL
 LPALENABLE alEnable = NULL;
 LPALDISABLE alDisable = NULL;
 LPALISENABLED alIsEnabled = NULL;
@@ -122,20 +129,21 @@ LPALDOPPLERFACTOR alDopplerFactor = NULL;
 LPALDOPPLERVELOCITY alDopplerVelocity = NULL;
 LPALSPEEDOFSOUND alSpeedOfSound = NULL;
 LPALDISTANCEMODEL alDistanceModel = NULL;
+#endif
 
 static LPALCCREATECONTEXT malcCreateContext = NULL;
 static LPALCMAKECONTEXTCURRENT malcMakeContextCurrent = NULL;
 static LPALCPROCESSCONTEXT malcProcessContext = NULL;
 static LPALCSUSPENDCONTEXT malcSuspendContext = NULL;
 static LPALCDESTROYCONTEXT malcDestroyContext = NULL;
-static LPALCGETCURRENTCONTEXT malcGetCurrentContext = NULL;
-static LPALCGETCONTEXTSDEVICE malcGetContextsDevice = NULL;
+//static LPALCGETCURRENTCONTEXT malcGetCurrentContext = NULL;
+//static LPALCGETCONTEXTSDEVICE malcGetContextsDevice = NULL;
 static LPALCOPENDEVICE malcOpenDevice = NULL;
 static LPALCCLOSEDEVICE malcCloseDevice = NULL;
 static LPALCGETERROR malcGetError = NULL;
 static LPALCISEXTENSIONPRESENT malcIsExtensionPresent = NULL;
-static LPALCGETPROCADDRESS malcGetProcAddress = NULL;
-static LPALCGETENUMVALUE malcGetEnumValue = NULL;
+//static LPALCGETPROCADDRESS malcGetProcAddress = NULL;
+//static LPALCGETENUMVALUE malcGetEnumValue = NULL;
 static LPALCGETSTRING malcGetString = NULL;
 static LPALCGETINTEGERV malcGetIntegerv = NULL;
 static LPALCCAPTUREOPENDEVICE malcCaptureOpenDevice = NULL;
@@ -194,6 +202,7 @@ template< class type > AN_FORCEINLINE bool AL_GetProcAddress( type ** _ProcPtr, 
 static bool LoadOpenAL() {
     UnloadOpenAL();
 
+#ifndef USE_MOJOAL
 #ifdef AN_OS_LINUX
     LibOpenAL = GRuntime.LoadDynamicLib( "libopenal" );
 #else
@@ -203,15 +212,20 @@ static bool LoadOpenAL() {
         GLogger.Printf( "Failed to load OpenAL library\n" );
         return false;
     }
+#endif
 
     bool bError = false;
 
+#ifdef USE_MOJOAL
+    #define GET_PROC_ADDRESS( Proc )
+#else
     #define GET_PROC_ADDRESS( Proc ) { \
         if ( !GRuntime.GetProcAddress( LibOpenAL, &Proc, AN_STRINGIFY( Proc ) ) ) { \
             GLogger.Printf( "Failed to load %s\n", AN_STRINGIFY(Proc) ); \
             bError = true; \
         } \
     }
+#endif
 
     GET_PROC_ADDRESS( alEnable );
     GET_PROC_ADDRESS( alDisable );
@@ -288,36 +302,46 @@ static bool LoadOpenAL() {
     GET_PROC_ADDRESS( alDistanceModel );
 
     #undef GET_PROC_ADDRESS
+
+#ifdef USE_MOJOAL
+#define GET_PROC_ADDRESS( Proc ) { \
+        m##Proc = Proc; \
+    }
+#else
     #define GET_PROC_ADDRESS( Proc ) { \
-        if ( !GRuntime.GetProcAddress( LibOpenAL, &Proc, AN_STRINGIFY( Proc )+1 ) ) { \
-            GLogger.Printf( "Failed to load %s\n", (AN_STRINGIFY(Proc)+1) ); \
+        if ( !GRuntime.GetProcAddress( LibOpenAL, &m##Proc, AN_STRINGIFY( Proc ) ) ) { \
+            GLogger.Printf( "Failed to load %s\n", AN_STRINGIFY( Proc ) ); \
             bError = true; \
         } \
     }
+#endif
 
-    GET_PROC_ADDRESS( malcCreateContext );
-    GET_PROC_ADDRESS( malcMakeContextCurrent );
-    GET_PROC_ADDRESS( malcProcessContext );
-    GET_PROC_ADDRESS( malcSuspendContext );
-    GET_PROC_ADDRESS( malcDestroyContext );
-    GET_PROC_ADDRESS( malcGetCurrentContext );
-    GET_PROC_ADDRESS( malcGetContextsDevice );
-    GET_PROC_ADDRESS( malcOpenDevice );
-    GET_PROC_ADDRESS( malcCloseDevice );
-    GET_PROC_ADDRESS( malcGetError );
-    GET_PROC_ADDRESS( malcIsExtensionPresent );
-    GET_PROC_ADDRESS( malcGetProcAddress );
-    GET_PROC_ADDRESS( malcGetEnumValue );
-    GET_PROC_ADDRESS( malcGetString );
-    GET_PROC_ADDRESS( malcGetIntegerv );
-    GET_PROC_ADDRESS( malcCaptureOpenDevice );
-    GET_PROC_ADDRESS( malcCaptureCloseDevice );
-    GET_PROC_ADDRESS( malcCaptureStart );
-    GET_PROC_ADDRESS( malcCaptureStop );
-    GET_PROC_ADDRESS( malcCaptureSamples );
-
-    GET_PROC_ADDRESS( malcGetStringiSOFT );
-    GET_PROC_ADDRESS( malcResetDeviceSOFT );
+    GET_PROC_ADDRESS( alcCreateContext );
+    GET_PROC_ADDRESS( alcMakeContextCurrent );
+    GET_PROC_ADDRESS( alcProcessContext );
+    GET_PROC_ADDRESS( alcSuspendContext );
+    GET_PROC_ADDRESS( alcDestroyContext );
+    //GET_PROC_ADDRESS( alcGetCurrentContext );
+    //GET_PROC_ADDRESS( alcGetContextsDevice );
+    GET_PROC_ADDRESS( alcOpenDevice );
+    GET_PROC_ADDRESS( alcCloseDevice );
+    GET_PROC_ADDRESS( alcGetError );
+    GET_PROC_ADDRESS( alcIsExtensionPresent );
+    //GET_PROC_ADDRESS( alcGetProcAddress );
+    //GET_PROC_ADDRESS( alcGetEnumValue );
+    GET_PROC_ADDRESS( alcGetString );
+#ifndef USE_MOJOAL
+    GET_PROC_ADDRESS( alcGetIntegerv );
+#endif
+    GET_PROC_ADDRESS( alcCaptureOpenDevice );
+    GET_PROC_ADDRESS( alcCaptureCloseDevice );
+    GET_PROC_ADDRESS( alcCaptureStart );
+    GET_PROC_ADDRESS( alcCaptureStop );
+    GET_PROC_ADDRESS( alcCaptureSamples );
+#ifndef USE_MOJOAL
+    GET_PROC_ADDRESS( alcGetStringiSOFT );
+    GET_PROC_ADDRESS( alcResetDeviceSOFT );
+#endif
 
     if ( bError ) {
         UnloadOpenAL();
@@ -331,7 +355,7 @@ void AL_CheckError( const char * _Text ) {
 #ifndef AN_NO_OPENAL
     int32_t Error = alGetError();
     if ( Error != AL_NO_ERROR ) {
-        GLogger.Printf( "AL ERROR: %s %s\n", _Text, AString::ToHexString( Error ).CStr() );
+        GLogger.Printf( "AL ERROR: %s %s\n", _Text, Math::ToHexString( Error ).CStr() );
     }
 #endif
 }
@@ -340,7 +364,7 @@ static void ALC_CheckError( const char * _Text ) {
 #ifndef AN_NO_OPENAL
     int32_t Error = malcGetError( ALCDevice );
     if ( Error != ALC_NO_ERROR ) {
-        GLogger.Printf( "ALC ERROR: %s %s\n", _Text, AString::ToHexString( Error ).CStr() );
+        GLogger.Printf( "ALC ERROR: %s %s\n", _Text, Math::ToHexString( Error ).CStr() );
     }
 #endif
 }
@@ -381,6 +405,14 @@ void AAudioSystem::Initialize() {
 
         CriticalError( "AAudioSystem::Initialize: Failed to create context\n" );
     }
+
+    //ALCint freq,r,s;
+    //malcGetIntegerv( ALCDevice, ALC_FREQUENCY, 1, &freq );
+    //malcGetIntegerv( ALCDevice, ALC_REFRESH, 1, &r );
+    //malcGetIntegerv( ALCDevice, ALC_SYNC, 1, &s );
+
+    //GLogger.Printf( "Freq %d refr %d sync %d\n", freq,r,s);
+
 
     ALCboolean Result = ALC_FALSE;
     ALC_SAFE( Result = malcMakeContextCurrent( ALCContext ) );
@@ -432,12 +464,12 @@ void AAudioSystem::Initialize() {
     GLogger.Printf( "Audio vendor: %s/%s (version %s)\n", pVendor, pRenderer, pVersion );
     GLogger.Printf( "%s\n", pExtensions );
 
-    ALCint MaxMonoSources = 0;
-    ALCint MaxStereoSources = 0;
-    ALC_SAFE( malcGetIntegerv( ALCDevice, ALC_MONO_SOURCES, 1, &MaxMonoSources ) );
-    ALC_SAFE( malcGetIntegerv( ALCDevice, ALC_STEREO_SOURCES, 1, &MaxStereoSources ) );
-    GLogger.Printf( "ALC_MONO_SOURCES: %d\n", MaxMonoSources );
-    GLogger.Printf( "ALC_STEREO_SOURCES: %d\n", MaxStereoSources );
+    //ALCint MaxMonoSources = 0;
+    //ALCint MaxStereoSources = 0;
+    //ALC_SAFE( malcGetIntegerv( ALCDevice, ALC_MONO_SOURCES, 1, &MaxMonoSources ) );
+    //ALC_SAFE( malcGetIntegerv( ALCDevice, ALC_STEREO_SOURCES, 1, &MaxStereoSources ) );
+    //GLogger.Printf( "ALC_MONO_SOURCES: %d\n", MaxMonoSources );
+    //GLogger.Printf( "ALC_STEREO_SOURCES: %d\n", MaxStereoSources );
 #endif
 
     NumHRTFs = 0;
@@ -528,6 +560,10 @@ void AAudioSystem::EnableHRTF( int _Index ) {
         return;
     }
 
+    if ( !malcResetDeviceSOFT ) {
+        return;
+    }
+
     GLogger.Printf( "Selecting HRTF %d...\n", _Index );
 
     const ALCint attr[] = { ALC_HRTF_SOFT, ALC_TRUE,
@@ -545,6 +581,10 @@ void AAudioSystem::EnableHRTF( int _Index ) {
 
 void AAudioSystem::EnableDefaultHRTF() {
     if ( !NumHRTFs ) {
+        return;
+    }
+
+    if ( !malcResetDeviceSOFT ) {
         return;
     }
 
@@ -566,6 +606,10 @@ void AAudioSystem::DisableHRTF() {
         return;
     }
 
+    if ( !malcResetDeviceSOFT ) {
+        return;
+    }
+
     GLogger.Printf( "Disabling HRTF...\n" );
 
     constexpr ALCint attr[] = { ALC_HRTF_SOFT, ALC_FALSE, 0 };
@@ -584,6 +628,10 @@ int AAudioSystem::GetNumHRTFs() const {
 }
 
 const char * AAudioSystem::GetHRTF( int _Index ) const {
+    if ( !malcGetStringiSOFT ) {
+        return AString::NullCString();
+    }
+
     if ( _Index >= 0 && _Index < NumHRTFs ) {
         const ALCchar * name;
         ALC_SAFE( name = malcGetStringiSOFT( ALCDevice, ALC_HRTF_SPECIFIER_SOFT, _Index ) );
@@ -594,7 +642,7 @@ const char * AAudioSystem::GetHRTF( int _Index ) const {
 
 void AAudioSystem::RegisterDecoder( const char * _Extension, IAudioDecoderInterface * _Interface ) {
     for ( Entry & e : Decoders ) {
-        if ( !AString::Icmp( _Extension, e.Extension ) ) {
+        if ( !Core::Stricmp( _Extension, e.Extension ) ) {
             e.Decoder->RemoveRef();
             e.Decoder = _Interface;
             _Interface->AddRef();
@@ -602,7 +650,7 @@ void AAudioSystem::RegisterDecoder( const char * _Extension, IAudioDecoderInterf
         }
     }
     Entry e;
-    AString::CopySafe( e.Extension, sizeof( e.Extension ), _Extension );
+    Core::Strcpy( e.Extension, sizeof( e.Extension ), _Extension );
     e.Decoder = _Interface;
     _Interface->AddRef();
     Decoders.Append( e );
@@ -611,7 +659,7 @@ void AAudioSystem::RegisterDecoder( const char * _Extension, IAudioDecoderInterf
 void AAudioSystem::UnregisterDecoder( const char * _Extension ) {
     for ( int i = 0 ; i < Decoders.Size() ; i++ ) {
         Entry & e =  Decoders[i];
-        if ( !AString::Icmp( _Extension, e.Extension ) ) {
+        if ( !Core::Stricmp( _Extension, e.Extension ) ) {
             e.Decoder->RemoveRef();
             Decoders.Remove( i );
             return;
@@ -627,9 +675,9 @@ void AAudioSystem::UnregisterDecoders() {
 }
 
 IAudioDecoderInterface * AAudioSystem::FindDecoder( const char * _FileName ) {
-    int i = AString::FindExtWithoutDot( _FileName );
+    int i = Core::FindExtWithoutDot( _FileName );
     for ( Entry & e : Decoders ) {
-        if ( !AString::Icmp( _FileName + i, e.Extension ) ) {
+        if ( !Core::Stricmp( _FileName + i, e.Extension ) ) {
             return e.Decoder;
         }
     }
@@ -665,48 +713,48 @@ static SSoundSpawnParameters DefaultSpawnParameters;
 struct SAudioChannel {
     ALuint      SourceId;
     int         ChannelIndex;
+    int         Priority;   // EAudioChannelPriority
+    EAudioSourceType SourceType;
+    uint64_t    AudioClient;
     int64_t     PlayTimeStamp;
+    AWorld *    World;
+    IAudioStreamInterface * StreamInterface; // Audio streaming interface
+    AAudioControlCallback * ControlCallback;
+    AAudioGroup * Group;
+    ASceneComponent * Instigator;
+    APhysicalBody * PhysicalBody;
+    AAudioClip* Clip;
+    int         ClipSerialId;
+    int         NumStreamBuffers;
+    unsigned int StreamBuffers[2];
+    int         PlaybackPosition; // Playback position in samples for streamed audio
     Float3      SpawnPosition;
+    Float3      SoundPosition; // current position
+    Float3      PrevSoundPosition; // position on previous frame
+    Float3      Velocity;
+    Float3      Direction;
     float       Pitch;
     float       Volume;
     float       CurVolume;
     float       ReferenceDistance;
     float       MaxDistance;
     float       RolloffFactor;
-    bool        bLooping;
-    bool        bStopWhenInstigatorDead;
-    EAudioSourceType SourceType;
-    bool        bStreamed;
-    AAudioClip * Clip;
-    int         ClipSerialId;
-    int         NumStreamBuffers;
-    unsigned int StreamBuffers[2];
-    int         PlaybackPosition; // Playback position in samples for streamed audio
-    IAudioStreamInterface * StreamInterface; // Audio streaming interface
-    int         Priority;   // EAudioChannelPriority
-    float       LifeSpan;
-    bool        bPlayEvenWhenPaused;
-    AAudioControlCallback * ControlCallback;
-    uint64_t    AudioClient;
-    AAudioGroup * Group;
-    ASceneComponent * Instigator;
-    APhysicalBody * PhysicalBody;
-    AWorld *    World;
-    bool        bFree;
-    bool        bPausedByGame;
-    bool        bLocked;
-    bool        bVirtualizeWhenSilent;
-    bool        bIsVirtual;
-    float       VirtualTime;
-    Float3      SoundPosition; // current position
-    Float3      PrevSoundPosition; // position on previous frame
-    Float3      Velocity;
-    bool        bUseVelocity;
-    bool        bUsePhysicalVelocity;
-    bool        bDirectional;
     float       ConeInnerAngle;
     float       ConeOuterAngle;
-    Float3      Direction;
+    float       LifeSpan;
+    float       VirtualTime;
+    bool        bLooping : 1;
+    bool        bStopWhenInstigatorDead : 1;
+    bool        bStreamed : 1;
+    bool        bPlayEvenWhenPaused : 1;
+    bool        bFree : 1;
+    bool        bPausedByGame : 1;
+    bool        bLocked : 1;
+    bool        bVirtualizeWhenSilent : 1;
+    bool        bIsVirtual : 1;
+    bool        bUseVelocity : 1;
+    bool        bUsePhysicalVelocity : 1;
+    bool        bDirectional : 1;
 };
 
 static SAudioChannel AudioChannels[ MAX_AUDIO_CHANNELS ];
@@ -725,7 +773,7 @@ static void PlayChannel( SAudioChannel * channel, float _PlayOffset );
 static float CalcAudioVolume( SAudioChannel * _Channel );
 
 static void InitializeChannels() {
-    memset( AudioChannels, 0, sizeof( AudioChannels ) );
+    Core::ZeroMem( AudioChannels, sizeof( AudioChannels ) );
 }
 
 void AAudioSystem::PurgeChannels() {
@@ -741,7 +789,7 @@ void AAudioSystem::PurgeChannels() {
         // Remove data used for streaming
         if ( channel->StreamBuffers[0] ) {
             AL_SAFE( alDeleteBuffers( 2, channel->StreamBuffers ) );
-            memset( channel->StreamBuffers, 0, sizeof( channel->StreamBuffers ) );
+            Core::ZeroMem( channel->StreamBuffers, sizeof( channel->StreamBuffers ) );
         }
     }
 
@@ -816,7 +864,7 @@ static void VirtualizeChannel( SAudioChannel * _Channel ) {
         return;
     }
 
-    GLogger.Printf( "Virtualize channel\n" );
+    //GLogger.Printf( "Virtualize channel\n" );
 
     AN_ASSERT( !_Channel->bIsVirtual );
 
@@ -846,7 +894,7 @@ static void VirtualizeChannel( SAudioChannel * _Channel ) {
 static bool DevirtualizeChannel( SAudioChannel * _VirtualChannel ) {
     AN_ASSERT( _VirtualChannel->bIsVirtual );
 
-    GLogger.Printf( "Devirtualize channel\n" );
+    //GLogger.Printf( "Devirtualize channel\n" );
 
     SAudioChannel * channel = AllocateChannel( _VirtualChannel->Priority );
     if ( !channel ) {
@@ -1160,7 +1208,7 @@ static void PlayChannel( SAudioChannel * channel, float _PlayOffset ) {
         // Remove data used for streaming
         if ( channel->StreamBuffers[0] ) {
             AL_SAFE( alDeleteBuffers( 2, channel->StreamBuffers ) );
-            memset( channel->StreamBuffers, 0, sizeof( channel->StreamBuffers ) );
+            Core::ZeroMem( channel->StreamBuffers, sizeof( channel->StreamBuffers ) );
         }
 
         if ( _PlayOffset > 0 ) {
@@ -1221,7 +1269,7 @@ static void CreateSound( AAudioClip * _AudioClip, Float3 const & _SpawnPosition,
         channel->bIsVirtual = true;
         channel->bFree = false;
         channel->ChannelIndex = VirtualChannels.Size() - 1;
-        GLogger.Printf( "ChannelIndex %d\n", channel->ChannelIndex );
+        //GLogger.Printf( "ChannelIndex %d\n", channel->ChannelIndex );
     } else {
         channel = AllocateChannel( _SpawnParameters->Priority );
         if ( !channel ) {

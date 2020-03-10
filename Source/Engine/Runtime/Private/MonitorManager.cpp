@@ -92,7 +92,7 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
     int handle = PhysicalMonitors.Size() - 1;
     glfwSetMonitorUserPointer( _Monitor, ( void * )( size_t )handle );
 
-    AString::CopySafe( physMonitor->MonitorName, sizeof( physMonitor->MonitorName ), glfwGetMonitorName( _Monitor ) );
+    Core::Strcpy( physMonitor->MonitorName, sizeof( physMonitor->MonitorName ), glfwGetMonitorName( _Monitor ) );
     glfwGetMonitorPos( _Monitor, &physMonitor->PositionX, &physMonitor->PositionY );
     glfwGetMonitorPhysicalSize( _Monitor, &physMonitor->PhysicalWidthMM, &physMonitor->PhysicalHeightMM );
 
@@ -118,10 +118,10 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
 
     const GLFWgammaramp * gammaRamp = glfwGetGammaRamp( _Monitor );
     AN_ASSERT( gammaRamp && gammaRamp->size <= GAMMA_RAMP_SIZE );
-    memcpy( &physMonitor->Internal.InitialGammaRamp[0], gammaRamp->red, gammaRamp->size * sizeof( unsigned short ) );
-    memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size], gammaRamp->green, gammaRamp->size * sizeof( unsigned short ) );
-    memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size * 2], gammaRamp->blue, gammaRamp->size * sizeof( unsigned short ) );
-    memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * gammaRamp->size * 3 );
+    Core::Memcpy( &physMonitor->Internal.InitialGammaRamp[0], gammaRamp->red, gammaRamp->size * sizeof( unsigned short ) );
+    Core::Memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size], gammaRamp->green, gammaRamp->size * sizeof( unsigned short ) );
+    Core::Memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size * 2], gammaRamp->blue, gammaRamp->size * sizeof( unsigned short ) );
+    Core::Memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * gammaRamp->size * 3 );
     physMonitor->GammaRampSize = gammaRamp->size;
     physMonitor->Internal.bGammaRampDirty = false;
 
@@ -161,7 +161,7 @@ void AMonitorManager::Deinitialize() {
     glfwSetMonitorCallback( nullptr );
 
     for ( SPhysicalMonitor * physMonitor : PhysicalMonitors ) {
-        GZoneMemory.Dealloc( physMonitor );
+        GZoneMemory.Free( physMonitor );
     }
     PhysicalMonitors.Free();
 }
@@ -190,7 +190,7 @@ void AMonitorManager::UpdateMonitors() {
 
 SPhysicalMonitor * AMonitorManager::FindMonitor( const char * _MonitorName ) {
     for ( SPhysicalMonitor * physMonitor : PhysicalMonitors ) {
-        if ( !AString::Cmp( physMonitor->MonitorName, _MonitorName ) ) {
+        if ( !Core::Strcmp( physMonitor->MonitorName, _MonitorName ) ) {
             return physMonitor;
         }
     }

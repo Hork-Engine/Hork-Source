@@ -66,7 +66,7 @@ AWavAudioTrack::AWavAudioTrack() {
 }
 
 AWavAudioTrack::~AWavAudioTrack() {
-    GZoneMemory.Dealloc( ADPCM );
+    GZoneMemory.Free( ADPCM );
 }
 
 bool AWavAudioTrack::InitializeFileStream( const char * _FileName ) {
@@ -157,7 +157,7 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
                     dataLength = Wave.DataSize - PCMDataOffset;
                 }
                 if ( dataLength > 0 ) {
-                    memcpy( _Buffer, WaveMemory + PCMDataOffset, dataLength );
+                    Core::Memcpy( _Buffer, WaveMemory + PCMDataOffset, dataLength );
                     PCMDataOffset += dataLength;
                 } else {
                     return 0;
@@ -208,7 +208,7 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
 #else
                     short * PCM = ( short * )GMainHunkMemory.HunkMemory( sizeof( short ) * SamplesCount );
                     IMAADPCMUnpack16_Mono( PCM, SamplesCount, WaveMemory + FirstBlockIndex * Wave.BlockLength, BlocksCount * Wave.BlockLength, Wave.BlockAlign );
-                    memcpy( _Buffer, PCM + (SamplesCount - NumSamples), NumSamples * 2 );
+                    Core::Memcpy( _Buffer, PCM + (SamplesCount - NumSamples), NumSamples * 2 );
                     GMainHunkMemory.ClearLastHunk();
 #endif
 
@@ -286,7 +286,7 @@ int AWavAudioTrack::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
 #else
                     short * PCM = ( short * )GMainHunkMemory.HunkMemory( sizeof( short ) * SamplesCount );
                     IMAADPCMUnpack16_Mono( PCM, SamplesCount, ADPCM, BlocksCount * Wave.BlockLength, Wave.BlockAlign );
-                    memcpy( _Buffer, PCM + (SamplesCount - NumSamples), NumSamples * 2 );
+                    Core::Memcpy( _Buffer, PCM + (SamplesCount - NumSamples), NumSamples * 2 );
                     GMainHunkMemory.ClearLastHunk();
 #endif
 
@@ -340,7 +340,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
         }
 
         if ( WaveRead( f, (char *)*_PCM, inf.DataSize, &inf ) != (int)inf.DataSize ) {
-            GZoneMemory.Dealloc( *_PCM );
+            GZoneMemory.Free( *_PCM );
             *_PCM = NULL;
             return false;
         }
@@ -352,7 +352,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
                 IMAADPCMUnpack16_Stereo( *_PCM, inf.NumSamples, inf.Channels, encodedADPCM, inf.DataSize, inf.BlockAlign );
             else
                 IMAADPCMUnpack16_Mono( *_PCM, inf.NumSamples, encodedADPCM, inf.DataSize, inf.BlockAlign );
-            GZoneMemory.Dealloc( encodedADPCM );
+            GZoneMemory.Free( encodedADPCM );
         }
     }
 
@@ -394,7 +394,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
         }
 
         if ( WaveRead( f, (char *)*_PCM, inf.DataSize, &inf ) != (int)inf.DataSize ) {
-            GZoneMemory.Dealloc( *_PCM );
+            GZoneMemory.Free( *_PCM );
             *_PCM = NULL;
             return false;
         }
@@ -406,7 +406,7 @@ bool AWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
                 IMAADPCMUnpack16_Stereo( *_PCM, inf.NumSamples, inf.Channels, encodedADPCM, inf.DataSize, inf.BlockAlign );
             else
                 IMAADPCMUnpack16_Mono( *_PCM, inf.NumSamples, encodedADPCM, inf.DataSize, inf.BlockAlign );
-            GZoneMemory.Dealloc( encodedADPCM );
+            GZoneMemory.Free( encodedADPCM );
         }
     }
 
@@ -447,12 +447,12 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
     }
 
     if ( WaveRead( f, ( char * )*_EncodedData + sizeof( SWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
-        GZoneMemory.Dealloc( *_EncodedData );
+        GZoneMemory.Free( *_EncodedData );
         *_EncodedData = NULL;
         return false;
     }
 
-    memcpy( *_EncodedData, &inf, sizeof( SWaveFormat ) );
+    Core::Memcpy( *_EncodedData, &inf, sizeof( SWaveFormat ) );
 
     *_EncodedDataLength = inf.DataSize + sizeof( SWaveFormat );
     *_SamplesCount = inf.NumSamples / inf.Channels;
@@ -492,12 +492,12 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_
     }
 
     if ( WaveRead( f, ( char * )*_EncodedData + sizeof( SWaveFormat ), inf.DataSize, &inf ) != (int)inf.DataSize ) {
-        GZoneMemory.Dealloc( *_EncodedData );
+        GZoneMemory.Free( *_EncodedData );
         *_EncodedData = NULL;
         return false;
     }
 
-    memcpy( *_EncodedData, &inf, sizeof( SWaveFormat ) );
+    Core::Memcpy( *_EncodedData, &inf, sizeof( SWaveFormat ) );
 
     *_EncodedDataLength = inf.DataSize + sizeof( SWaveFormat );
     *_SamplesCount = inf.NumSamples / inf.Channels;
@@ -870,7 +870,7 @@ static bool ReadWaveHeader( IStreamBase & InFile, SWaveFormat & Wave ) {
 
     curSize -= sizeof( uint32_t );
 
-    memset( &Wave, 0, sizeof( Wave ) );
+    Core::ZeroMem( &Wave, sizeof( Wave ) );
 
     while ( curSize >= sizeof( SRiffChunk ) ) {
 

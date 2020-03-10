@@ -121,20 +121,20 @@ void ARuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRa
         return;
     }
 
-    memcpy( physMonitor->Internal.GammaRamp, _GammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
+    Core::Memcpy( physMonitor->Internal.GammaRamp, _GammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
     physMonitor->Internal.bGammaRampDirty = true;
 }
 
 void ARuntime::GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, int & _GammaRampSize ) {
     SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
     if ( !physMonitor ) {
-        memset( _GammaRamp, 0, sizeof( SPhysicalMonitorInternal::GammaRamp ) );
+        Core::ZeroMem( _GammaRamp, sizeof( SPhysicalMonitorInternal::GammaRamp ) );
         return;
     }
 
     _GammaRampSize = physMonitor->GammaRampSize;
 
-    memcpy( _GammaRamp, physMonitor->Internal.GammaRamp, sizeof( unsigned short ) * _GammaRampSize * 3 );
+    Core::Memcpy( _GammaRamp, physMonitor->Internal.GammaRamp, sizeof( unsigned short ) * _GammaRampSize * 3 );
 }
 
 void ARuntime::RestoreMonitorGamma( int _Handle ) {
@@ -143,7 +143,7 @@ void ARuntime::RestoreMonitorGamma( int _Handle ) {
         return;
     }
 
-    memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
+    Core::Memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
     physMonitor->Internal.bGammaRampDirty = true;
 }
 

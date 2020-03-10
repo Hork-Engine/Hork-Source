@@ -60,7 +60,7 @@ void ASkeleton::Initialize( SJoint * _Joints, int _JointsCount, BvAxisAlignedBox
     // Copy joints
     Joints.ResizeInvalidate( _JointsCount );
     if ( _JointsCount > 0 ) {
-        memcpy( Joints.ToPtr(), _Joints, sizeof( *_Joints ) * _JointsCount );
+        Core::Memcpy( Joints.ToPtr(), _Joints, sizeof( *_Joints ) * _JointsCount );
     }
 
     BindposeBounds = _BindposeBounds;
@@ -69,7 +69,7 @@ void ASkeleton::Initialize( SJoint * _Joints, int _JointsCount, BvAxisAlignedBox
 void ASkeleton::LoadInternalResource( const char * _Path ) {
     Purge();
 
-    if ( !AString::Icmp( _Path, "/Default/Skeleton/Default" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Skeleton/Default" ) ) {
         Initialize( nullptr, 0, BvAxisAlignedBox::Empty() );
         return;
     }
@@ -113,7 +113,7 @@ bool ASkeleton::LoadResource( AString const & _Path ) {
 
 int ASkeleton::FindJoint( const char * _Name ) const {
     for ( int j = 0 ; j < Joints.Size() ; j++ ) {
-        if ( !AString::Icmp( Joints[j].Name, _Name ) ) {
+        if ( !Core::Stricmp( Joints[j].Name, _Name ) ) {
             return j;
         }
     }

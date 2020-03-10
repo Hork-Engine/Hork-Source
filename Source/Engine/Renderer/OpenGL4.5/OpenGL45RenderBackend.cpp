@@ -79,7 +79,7 @@ State * GetCurrentState() {
 void LogPrintf( const char * _Format, ... ) {
     va_list VaList;
     va_start( VaList, _Format );
-    AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+    Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
     va_end( VaList );
     GLogger.Print( LogBuffer );
 }
@@ -110,7 +110,7 @@ static void * GHIImport_Allocate( size_t _BytesCount ) {
 }
 
 static void GHIImport_Deallocate( void * _Bytes ) {
-    GZoneMemory.Dealloc( _Bytes );
+    GZoneMemory.Free( _Bytes );
 }
 
 void ARenderBackend::PreInit() {
@@ -222,8 +222,8 @@ void ARenderBackend::Initialize( void * _NativeWindowHandle ) {
 
     SetCurrentState( &GState );
 
-    ZeroMem( PixelFormatTable, sizeof( PixelFormatTable ) );
-    ZeroMem( InternalPixelFormatTable, sizeof( InternalPixelFormatTable ) );
+    Core::ZeroMem( PixelFormatTable, sizeof( PixelFormatTable ) );
+    Core::ZeroMem( InternalPixelFormatTable, sizeof( InternalPixelFormatTable ) );
 
     PixelFormatTable[TEXTURE_PF_R8_SIGNED] = PIXEL_FORMAT_BYTE_R;
     PixelFormatTable[TEXTURE_PF_RG8_SIGNED] = PIXEL_FORMAT_BYTE_RG;
@@ -458,7 +458,7 @@ void ARenderBackend::DestroyTexture( ATextureGPU * _Texture ) {
     using namespace GHI;
     GHI::Texture * texture = GPUTextureHandle( _Texture );
     texture->~Texture();
-    GZoneMemory.Dealloc( _Texture->pHandleGPU );
+    GZoneMemory.Free( _Texture->pHandleGPU );
     DestroyResource( _Texture );
 }
 
@@ -607,7 +607,7 @@ void ARenderBackend::DestroyBuffer( ABufferGPU * _Buffer ) {
     using namespace GHI;
     GHI::Buffer * buffer = GPUBufferHandle( _Buffer );
     buffer->~Buffer();
-    GZoneMemory.Dealloc( _Buffer->pHandleGPU );
+    GZoneMemory.Free( _Buffer->pHandleGPU );
     DestroyResource( _Buffer );
 }
 
@@ -708,17 +708,17 @@ void ARenderBackend::DestroyMaterial( AMaterialGPU * _Material ) {
 
     if ( Lit ) {
         Lit->~AShadeModelLit();
-        GZoneMemory.Dealloc( Lit );
+        GZoneMemory.Free( Lit );
     }
 
     if ( Unlit ) {
         Unlit->~AShadeModelUnlit();
-        GZoneMemory.Dealloc( Unlit );
+        GZoneMemory.Free( Unlit );
     }
 
     if ( HUD ) {
         HUD->~AShadeModelHUD();
-        GZoneMemory.Dealloc( HUD );
+        GZoneMemory.Free( HUD );
     }
 
     DestroyResource( _Material );
@@ -752,19 +752,19 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
 
     if ( Lit ) {
         Lit->~AShadeModelLit();
-        GZoneMemory.Dealloc( Lit );
+        GZoneMemory.Free( Lit );
         _Material->ShadeModel.Lit = nullptr;
     }
 
     if ( Unlit ) {
         Unlit->~AShadeModelUnlit();
-        GZoneMemory.Dealloc( Unlit );
+        GZoneMemory.Free( Unlit );
         _Material->ShadeModel.Unlit = nullptr;
     }
 
     if ( HUD ) {
         HUD->~AShadeModelHUD();
-        GZoneMemory.Dealloc( HUD );
+        GZoneMemory.Free( HUD );
         _Material->ShadeModel.HUD = nullptr;
     }
 
@@ -841,7 +841,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
     samplerCI.MinLOD = -1000;
     samplerCI.MaxLOD = 1000;
 
-    memset( _Material->pSampler, 0, sizeof( _Material->pSampler ) );
+    Core::ZeroMem( _Material->pSampler, sizeof( _Material->pSampler ) );
 
     static constexpr SAMPLER_FILTER SamplerFilterLUT[] = {
         FILTER_LINEAR,

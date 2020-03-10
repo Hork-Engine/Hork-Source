@@ -72,7 +72,7 @@ void AFont::InitializeFromMemoryCompressedBase85TTF( const char * _SysMem, float
 void AFont::LoadInternalResource( const char * _Path ) {
     Purge();
 
-    if ( !AString::Icmp( _Path, "/Default/Fonts/Default" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Fonts/Default" ) ) {
         Atlas.AddFontDefault();
 
         CreateTexture();

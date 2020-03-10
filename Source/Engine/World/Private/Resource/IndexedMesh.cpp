@@ -202,7 +202,7 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
 
 #if 0
     int i = _Path.FindExt();
-    if ( !AString::Icmp( &_Path[i], ".gltf" ) ) {
+    if ( !Core::Icmp( &_Path[i], ".gltf" ) ) {
         SMeshAsset asset;
 
         if ( !LoadGeometryGLTF( _Path.CStr(), asset ) ) {
@@ -430,8 +430,8 @@ void AIndexedMesh::SetSkin( int32_t const * _JointIndices, Float3x4 const * _Off
     Skin.JointIndices.ResizeInvalidate( _JointsCount );
     Skin.OffsetMatrices.ResizeInvalidate( _JointsCount );
 
-    memcpy( Skin.JointIndices.ToPtr(), _JointIndices, _JointsCount * sizeof(*_JointIndices) );
-    memcpy( Skin.OffsetMatrices.ToPtr(), _OffsetMatrices, _JointsCount * sizeof(*_OffsetMatrices) );
+    Core::Memcpy( Skin.JointIndices.ToPtr(), _JointIndices, _JointsCount * sizeof(*_JointIndices) );
+    Core::Memcpy( Skin.OffsetMatrices.ToPtr(), _OffsetMatrices, _JointsCount * sizeof(*_OffsetMatrices) );
 }
 
 void AIndexedMesh::SetMaterialInstance( int _SubpartIndex, AMaterialInstance * _MaterialInstance ) {
@@ -480,7 +480,7 @@ bool AIndexedMesh::WriteVertexData( SMeshVertex const * _Vertices, int _Vertices
         return false;
     }
 
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertex ) );
+    Core::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertex ) );
 
     for ( AIndexedMeshSubpart * subpart : Subparts ) {
         subpart->bAABBTreeDirty = true;
@@ -524,7 +524,7 @@ bool AIndexedMesh::WriteJointWeights( SMeshVertexSkin const * _Vertices, int _Ve
         return false;
     }
 
-    memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexSkin ) );
+    Core::Memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexSkin ) );
 
     return SendJointWeightsToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -554,7 +554,7 @@ bool AIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCoun
         return false;
     }
 
-    memcpy( Indices.ToPtr() + _StartIndexLocation, _Indices, _IndexCount * sizeof( unsigned int ) );
+    Core::Memcpy( Indices.ToPtr() + _StartIndexLocation, _Indices, _IndexCount * sizeof( unsigned int ) );
 
     for ( AIndexedMeshSubpart * subpart : Subparts ) {
         if ( _StartIndexLocation >= subpart->FirstIndex
@@ -711,28 +711,28 @@ void AIndexedMesh::InitializeSkydomeMesh( float _Radius, float _TexCoordScale, i
 
 void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/Box" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/Box" ) ) {
         InitializeBoxMesh( Float3(1), 1 );
         ACollisionBox * collisionBody = BodyComposition.AddCollisionBody< ACollisionBox >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/Sphere" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/Sphere" ) ) {
         InitializeSphereMesh( 0.5f, 1 );
         ACollisionSphere * collisionBody = BodyComposition.AddCollisionBody< ACollisionSphere >();
         collisionBody->Radius = 0.5f;
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/Cylinder" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/Cylinder" ) ) {
         InitializeCylinderMesh( 0.5f, 1, 1 );
         ACollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< ACollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/Cone" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/Cone" ) ) {
         InitializeConeMesh( 0.5f, 1, 1 );
         ACollisionCone * collisionBody = BodyComposition.AddCollisionBody< ACollisionCone >();
         collisionBody->Radius = 0.5f;
@@ -740,7 +740,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/Capsule" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/Capsule" ) ) {
         InitializeCapsuleMesh( 0.5f, 1.0f, 1 );
         ACollisionCapsule * collisionBody = BodyComposition.AddCollisionBody< ACollisionCapsule >();
         collisionBody->Radius = 0.5f;
@@ -748,7 +748,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/Plane") ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/Plane") ) {
         InitializePlaneMesh( 256, 256, 256 );
         ACollisionBox * box = BodyComposition.AddCollisionBody< ACollisionBox >();
         box->HalfExtents.X = 128;
@@ -758,17 +758,17 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/Skybox" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/Skybox" ) ) {
         InitializeSkyboxMesh( Float3( 1 ), 1 );
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/Skydome" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/Skydome" ) ) {
         InitializeSkydomeMesh( 0.5f, 1, 32, 32, false );
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Meshes/SkydomeHemisphere" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/SkydomeHemisphere" ) ) {
         InitializeSkydomeMesh( 0.5f, 1, 16, 32, true );
         return;
     }    
@@ -1245,7 +1245,7 @@ bool ALightmapUV::WriteVertexData( SMeshVertexUV const * _Vertices, int _Vertice
         return false;
     }
 
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexUV ) );
+    Core::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexUV ) );
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -1326,7 +1326,7 @@ bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _Ver
         return false;
     }
 
-    memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexLight ) );
+    Core::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexLight ) );
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -1680,7 +1680,7 @@ void CreateBoxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned in
     _Vertices.ResizeInvalidate( 24 );
     _Indices.ResizeInvalidate( 36 );
 
-    memcpy( _Indices.ToPtr(), indices, sizeof( indices ) );
+    Core::Memcpy( _Indices.ToPtr(), indices, sizeof( indices ) );
 
     const Float3 halfSize = _Size * 0.5f;
 
@@ -1873,10 +1873,10 @@ void CreatePlaneMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned 
         { Float3( halfWidth,0,-halfHeight ), Float2( _TexCoordScale,0 ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) }
     };
 
-    memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( SMeshVertex ) );
+    Core::Memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( SMeshVertex ) );
 
     constexpr unsigned int indices[ 6 ] = { 0,1,2,2,3,0 };
-    memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
+    Core::Memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
 
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 
@@ -2556,7 +2556,7 @@ static SBestSplitResult FindBestSplitPrimitive( SAABBTreeBuild & _Build, int _Ax
 
     for ( int i = 0; i < 3; i++ ) {
         if ( i != _Axis ) {
-            memcpy( primitives[ i ], primitives[ _Axis ], sizeof( SPrimitiveBounds ) * _PrimCount );
+            Core::Memcpy( primitives[ i ], primitives[ _Axis ], sizeof( SPrimitiveBounds ) * _PrimCount );
         }
     }
 

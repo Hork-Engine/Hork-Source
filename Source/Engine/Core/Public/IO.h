@@ -290,7 +290,7 @@ public:
     }
 
     void WriteString( const char * _Str ) {
-        int len = AString::Length( _Str );
+        int len = Core::Strlen( _Str );
         WriteUInt32( len );
         WriteBuffer( _Str, len );
     }
@@ -474,7 +474,7 @@ public:
         extern  thread_local char LogBuffer[16384]; // Use existing log buffer
         va_list VaList;
         va_start( VaList, _Format );
-        int len = AString::vsnprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
+        int len = Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
         va_end( VaList );
         WriteBuffer( LogBuffer, len );
     }

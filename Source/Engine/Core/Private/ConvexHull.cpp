@@ -34,7 +34,7 @@ SOFTWARE.
 
 //#define CONVEX_HULL_CW
 
-AConvexHull * AConvexHull::Create( int _MaxPoints ) {
+AConvexHull * AConvexHull::CreateEmpty( int _MaxPoints ) {
     AN_ASSERT( _MaxPoints > 0 );
     int size = sizeof( AConvexHull ) - sizeof( Points ) + _MaxPoints * sizeof( Points[0] );
     AConvexHull * hull = ( AConvexHull * )GZoneMemory.Alloc( size );
@@ -52,7 +52,7 @@ AConvexHull * AConvexHull::CreateForPlane( PlaneF const & _Plane, float _MaxExte
     Float3 p = _Plane.Normal * _Plane.Dist(); // point on plane
 
     AConvexHull * hull;
-    hull = Create( 4 );
+    hull = CreateEmpty( 4 );
     hull->NumPoints = 4;
     
 #ifdef CONVEX_HULL_CW
@@ -77,18 +77,19 @@ AConvexHull * AConvexHull::CreateForPlane( PlaneF const & _Plane, float _MaxExte
 
 AConvexHull * AConvexHull::CreateFromPoints( Float3 const * _Points, int _NumPoints ) {
     AConvexHull * hull;
-    hull = Create( _NumPoints );
+    hull = CreateEmpty( _NumPoints );
     hull->NumPoints = _NumPoints;
-    memcpy( hull->Points, _Points, sizeof( Float3 ) * _NumPoints );
+    Core::Memcpy( hull->Points, _Points, sizeof( Float3 ) * _NumPoints );
     return hull;
 }
 
+#if 0
 AConvexHull * AConvexHull::RecreateFromPoints( AConvexHull * _OldHull, Float3 const * _Points, int _NumPoints ) {
     if ( _OldHull ) {
 
         // hull capacity is big enough
         if ( _OldHull->MaxPoints >= _NumPoints ) {
-            memcpy( _OldHull->Points, _Points, _NumPoints * sizeof( Float3 ) );
+            Core::Memcpy( _OldHull->Points, _Points, _NumPoints * sizeof( Float3 ) );
             _OldHull->NumPoints = _NumPoints;
             return _OldHull;
         }
@@ -99,28 +100,29 @@ AConvexHull * AConvexHull::RecreateFromPoints( AConvexHull * _OldHull, Float3 co
         AConvexHull * hull = ( AConvexHull * )GZoneMemory.Realloc( _OldHull, newSize, false );
         hull->MaxPoints = _NumPoints;
         hull->NumPoints = _NumPoints;
-        memcpy( hull->Points, _Points, _NumPoints * sizeof( Float3 ) );
+        Core::Memcpy( hull->Points, _Points, _NumPoints * sizeof( Float3 ) );
         return hull;
     }
 
     return CreateFromPoints( _Points, _NumPoints );
 }
+#endif
 
-void AConvexHull::Destroy( AConvexHull * _Hull ) {
-    GZoneMemory.Dealloc( _Hull );
+void AConvexHull::Destroy() {
+    GZoneMemory.Free( this );
 }
 
 AConvexHull * AConvexHull::Duplicate() const {
     AConvexHull * hull;
-    hull = Create( MaxPoints );
+    hull = CreateEmpty( MaxPoints );
     hull->NumPoints = NumPoints;
-    memcpy( hull->Points, Points, sizeof( Float3 ) * NumPoints );
+    Core::Memcpy( hull->Points, Points, sizeof( Float3 ) * NumPoints );
     return hull;
 }
 
 AConvexHull * AConvexHull::Reversed() const {
     AConvexHull * hull;
-    hull = Create( MaxPoints );
+    hull = CreateEmpty( MaxPoints );
     hull->NumPoints = NumPoints;
     const int numPointsMinusOne = NumPoints - 1;
     for ( int i = 0 ; i < NumPoints ; i++ ) {
@@ -208,8 +210,13 @@ float AConvexHull::CalcArea() const {
 BvAxisAlignedBox AConvexHull::CalcBounds() const {
     BvAxisAlignedBox bounds;
 
-    bounds.Clear();
-    for ( int i = 0 ; i < NumPoints ; i++ ) {
+    if ( NumPoints ) {
+        bounds.Mins = bounds.Maxs = Points[ 0 ];
+    } else {
+        bounds.Clear();
+    }
+
+    for ( int i = 1 ; i < NumPoints ; i++ ) {
         bounds.AddPoint( Points[ i ] );
     }
     return bounds;
@@ -341,8 +348,8 @@ EPlaneSide AConvexHull::Split( PlaneF const & _Plane, float _Epsilon, AConvexHul
         return EPlaneSide::Front;
     }
 
-    *_Front = Create( NumPoints + 4 );
-    *_Back = Create( NumPoints + 4 );
+    *_Front = CreateEmpty( NumPoints + 4 );
+    *_Back = CreateEmpty( NumPoints + 4 );
 
     AConvexHull * f = *_Front;
     AConvexHull * b = *_Back;
@@ -453,7 +460,7 @@ EPlaneSide AConvexHull::Clip( PlaneF const & _Plane, float _Epsilon, AConvexHull
         return EPlaneSide::Front;
     }
 
-    *_Front = Create( NumPoints + 4 );
+    *_Front = CreateEmpty( NumPoints + 4 );
 
     AConvexHull * f = *_Front;
 

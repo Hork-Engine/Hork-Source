@@ -32,20 +32,10 @@ SOFTWARE.
 #include <Core/Public/Color.h>
 #include <Core/Public/Logger.h>
 
-#define STBI_MALLOC(sz)                     HugeAlloc( sz )
-#define STBI_FREE(p)                        HugeFree( p )
-#define STBI_REALLOC_SIZED(p,oldsz,newsz)   stb_realloc_impl(p,newsz,oldsz)
-
-static void * stb_realloc_impl( void * p, size_t newsz, size_t oldsz = 0 ) {
-    void * newp = HugeAlloc( newsz );
-    if ( oldsz ) {
-        memcpy( newp, p, Math::Min( oldsz, newsz ) );
-    }
-    HugeFree( p );
-    return newp;
-}
-
-#define STBI_REALLOC(p,newsz) stb_realloc_impl(p, newsz)
+#define STBI_MALLOC(sz)                     GHeapMemory.Alloc( sz )
+#define STBI_FREE(p)                        GHeapMemory.Free( p )
+#define STBI_REALLOC(p,newsz)               GHeapMemory.Realloc( p, newsz, true )
+#define STBI_REALLOC_SIZED(p,oldsz,newsz)   STBI_REALLOC( p, newsz )
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 //#define STBI_NO_STDIO
@@ -152,11 +142,11 @@ static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_cal
         int requiredMemorySize;
         mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, _Image.NumLods );
 
-        _Image.pRawData = HugeAlloc( requiredMemorySize );
+        _Image.pRawData = GHeapMemory.Alloc( requiredMemorySize );
 
         mipmapGen.GenerateMipmaps( _Image.pRawData );
 
-        HugeFree( data );
+        GHeapMemory.Free( data );
     } else {
         _Image.pRawData = data;
     }
@@ -204,11 +194,11 @@ static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io
         int requiredMemorySize;
         mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, _Image.NumLods );
 
-        void * tmp = HugeAlloc( requiredMemorySize );
+        void * tmp = GHeapMemory.Alloc( requiredMemorySize );
 
         mipmapGen.GenerateMipmaps( tmp );
 
-        HugeFree( data );
+        GHeapMemory.Free( data );
         data = ( float * )tmp;
     }
 
@@ -224,9 +214,9 @@ static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io
         }
         imageSize *= _Image.NumChannels;
 
-        uint16_t * tmp = ( uint16_t * )HugeAlloc( imageSize * sizeof( uint16_t ) );
+        uint16_t * tmp = ( uint16_t * )GHeapMemory.Alloc( imageSize * sizeof( uint16_t ) );
         Math::FloatToHalf( data, tmp, imageSize );
-        HugeFree( data );
+        GHeapMemory.Free( data );
         data = ( float * )tmp;
     }
 
@@ -291,20 +281,20 @@ void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _
         int requiredMemorySize;
         mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, NumLods );
 
-        pRawData = HugeAlloc( requiredMemorySize );
+        pRawData = GHeapMemory.Alloc( requiredMemorySize );
 
         mipmapGen.GenerateMipmaps( pRawData );
     } else {
         size_t sizeInBytes = _Width * _Height * NumChannels;
 
-        pRawData = HugeAlloc( sizeInBytes );
-        memcpy( pRawData, _Data, sizeInBytes );
+        pRawData = GHeapMemory.Alloc( sizeInBytes );
+        Core::Memcpy( pRawData, _Data, sizeInBytes );
     }
 }
 
 void AImage::Free() {
     if ( pRawData ) {
-        HugeFree( pRawData );
+        GHeapMemory.Free( pRawData );
         pRawData = nullptr;
     }
     Width = 0;
@@ -338,7 +328,7 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
     int Bpp = _NumChannels;
 
     if ( _CurWidth == _NewWidth && _CurHeight == _NewHeight ) {
-        memcpy( _DstData, _SrcData, _NewWidth*_NewHeight*Bpp );
+        Core::Memcpy( _DstData, _SrcData, _NewWidth*_NewHeight*Bpp );
         return;
     }
 
@@ -426,7 +416,7 @@ static void DownscaleSimpleAverageHDRI( int _CurWidth, int _CurHeight, int _NewW
     int Bpp = _NumChannels;
 
     if ( _CurWidth == _NewWidth && _CurHeight == _NewHeight ) {
-        memcpy( _DstData, _SrcData, _NewWidth*_NewHeight*Bpp*sizeof( float ) );
+        Core::Memcpy( _DstData, _SrcData, _NewWidth*_NewHeight*Bpp*sizeof( float ) );
         return;
     }
 
@@ -478,7 +468,7 @@ static void DownscaleSimpleAverageHDRI( int _CurWidth, int _CurHeight, int _NewW
 }
 
 static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHeight, int _NumChannels, bool _LinearSpace, byte * _Dest ) {
-    memcpy( _Dest, ImageData, ImageWidth * ImageHeight * _NumChannels );
+    Core::Memcpy( _Dest, ImageData, ImageWidth * ImageHeight * _NumChannels );
 
     int MemoryOffset = ImageWidth * ImageHeight * _NumChannels;
 
@@ -508,7 +498,7 @@ static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHe
 }
 
 static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int ImageHeight, int _NumChannels, float * _Dest ) {
-    memcpy( _Dest, ImageData, ImageWidth * ImageHeight * _NumChannels * sizeof( float ) );
+    Core::Memcpy( _Dest, ImageData, ImageWidth * ImageHeight * _NumChannels * sizeof( float ) );
 
     int MemoryOffset = ImageWidth * ImageHeight * _NumChannels;
 
@@ -568,17 +558,17 @@ static void MemSwap( byte * Block, const size_t BlockSz, byte * _Ptr1, byte * _P
     const size_t blockCount = _Size / BlockSz;
     size_t i;
     for ( i = 0; i < blockCount; i++ ) {
-        memcpy( Block, _Ptr1, BlockSz );
-        memcpy( _Ptr1, _Ptr2, BlockSz );
-        memcpy( _Ptr2, Block, BlockSz );
+        Core::Memcpy( Block, _Ptr1, BlockSz );
+        Core::Memcpy( _Ptr1, _Ptr2, BlockSz );
+        Core::Memcpy( _Ptr2, Block, BlockSz );
         _Ptr2 += BlockSz;
         _Ptr1 += BlockSz;
     }
     i = _Size - i*BlockSz;
     if ( i > 0 ) {
-        memcpy( Block, _Ptr1, i );
-        memcpy( _Ptr1, _Ptr2, i );
-        memcpy( _Ptr2, Block, i );
+        Core::Memcpy( Block, _Ptr1, i );
+        Core::Memcpy( _Ptr1, _Ptr2, i );
+        Core::Memcpy( _Ptr2, Block, i );
     }
 }
 
@@ -592,9 +582,9 @@ void FlipImageX( void * _ImageData, int _Width, int _Height, int _BytesPerPixel,
         byte * e = image + lineWidth;
         for ( int x = 0; x < halfWidth; x++ ) {
             e -= _BytesPerPixel;
-            memcpy( temp, s, _BytesPerPixel );
-            memcpy( s, e, _BytesPerPixel );
-            memcpy( e, temp, _BytesPerPixel );
+            Core::Memcpy( temp, s, _BytesPerPixel );
+            Core::Memcpy( s, e, _BytesPerPixel );
+            Core::Memcpy( e, temp, _BytesPerPixel );
             s += _BytesPerPixel;
         }
         image += _BytesPerLine;

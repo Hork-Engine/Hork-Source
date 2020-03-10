@@ -116,7 +116,7 @@ void WSlider::UpdateSliderGeometry() {
 
     GetDesktopRect( mins, maxs, false );
 
-    memset( &Geometry, 0, sizeof( Geometry ) );
+    Core::ZeroMem( &Geometry, sizeof( Geometry ) );
 
     if ( bVerticalOrientation ) {
         float AvailableWidth = maxs.Y - mins.Y;

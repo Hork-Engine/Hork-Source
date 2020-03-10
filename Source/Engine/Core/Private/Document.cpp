@@ -37,8 +37,8 @@ ADocument::ADocument() {
 }
 
 ADocument::~ADocument() {
-    Allocator::Inst().Dealloc( Fields );
-    Allocator::Inst().Dealloc( Values );
+    Allocator::Inst().Free( Fields );
+    Allocator::Inst().Free( Values );
 }
 
 void ADocument::Clear() {
@@ -84,7 +84,7 @@ ATokenBuffer::ATokenBuffer() {
 
 ATokenBuffer::~ATokenBuffer() {
     if ( !bInSitu ) {
-        Allocator::Inst().Dealloc( Start );
+        Allocator::Inst().Free( Start );
     }
 }
 
@@ -95,8 +95,9 @@ void ATokenBuffer::Initialize( const char * _String, bool _InSitu ) {
     if ( bInSitu ) {
         Start = const_cast< char * >( _String );
     } else {
-        Start = ( char * )Allocator::Inst().Alloc( AString::Length( _String ) + 1 );
-        AString::Copy( Start, _String );
+        int n = Core::Strlen( _String ) + 1;
+        Start = ( char * )Allocator::Inst().Alloc( n );
+        Core::Memcpy( Start, _String, n );
     }
     Cur = Start;
     LineNumber = 1;
@@ -104,7 +105,7 @@ void ATokenBuffer::Initialize( const char * _String, bool _InSitu ) {
 
 void ATokenBuffer::Deinitialize() {
     if ( !bInSitu ) {
-        Allocator::Inst().Dealloc( Start );
+        Allocator::Inst().Free( Start );
         Cur = Start = (char *)"";
         LineNumber = 1;
         bInSitu = true;
@@ -121,7 +122,7 @@ ADocumentProxyBuffer::~ADocumentProxyBuffer() {
     for ( AStringList * node = StringList ; node ; node = next ) {
         next = node->Next;
         node->~AStringList();
-        Allocator::Inst().Dealloc( node );
+        Allocator::Inst().Free( node );
     }
 }
 
@@ -171,13 +172,13 @@ bool SToken::CompareToString( const char * _Str ) const {
 
 void SToken::FromString( const char * _Str ) {
     Begin = _Str;
-    End = Begin + AString::Length( _Str );
+    End = Begin + Core::Strlen( _Str );
 }
 
 AString SToken::ToString() const {
     AString str;
     str.Resize( End - Begin );
-    memcpy( str.ToPtr(), Begin, str.Length() );
+    Core::Memcpy( str.ToPtr(), Begin, str.Length() );
     return str;
 }
 

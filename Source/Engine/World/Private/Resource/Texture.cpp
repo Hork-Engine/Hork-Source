@@ -142,9 +142,9 @@ bool ATexture::InitializeCubemapFromImages( AImage const * _Faces[6] ) {
 }
 
 void ATexture::LoadInternalResource( const char * _Path ) {
-    if ( !AString::Icmp( _Path, "/Default/Textures/White" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/White" ) ) {
         byte data[ 1 * 1 * 3 ];
-        memset( data, 0xff, sizeof( data ) );
+        Core::Memset( data, 0xff, sizeof( data ) );
 
         Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
@@ -152,9 +152,9 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/Black" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/Black" ) ) {
         byte data[ 1 * 1 * 3 ];
-        memset( data, 0x0, sizeof( data ) );
+        Core::ZeroMem( data, sizeof( data ) );
 
         Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
@@ -162,9 +162,9 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/Gray" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/Gray" ) ) {
         byte data[ 1 * 1 * 3 ];
-        memset( data, 127, sizeof( data ) );
+        Core::Memset( data, 127, sizeof( data ) );
 
         Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
@@ -172,10 +172,10 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/BaseColorWhite" )
-         || !AString::Icmp( _Path, "/Default/Textures/Default2D" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/BaseColorWhite" )
+         || !Core::Stricmp( _Path, "/Default/Textures/Default2D" ) ) {
         byte data[ 1 * 1 * 3 ];
-        memset( data, 240, sizeof( data ) );
+        Core::Memset( data, 240, sizeof( data ) );
 
         Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
@@ -183,9 +183,9 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/BaseColorBlack" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/BaseColorBlack" ) ) {
         byte data[ 1 * 1 * 3 ];
-        memset( data, 30, sizeof( data ) );
+        Core::Memset( data, 30, sizeof( data ) );
 
         Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
@@ -193,7 +193,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/Normal" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/Normal" ) ) {
         byte data[ 1 * 1 * 3 ];
         data[ 0 ] = 255; // z
         data[ 1 ] = 127; // y
@@ -205,7 +205,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/DefaultCubemap" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/DefaultCubemap" ) ) {
         constexpr Float3 dirs[6] = {
             Float3( 1,0,0 ),
             Float3( -1,0,0 ),
@@ -230,8 +230,8 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/LUT1" )
-        || !AString::Icmp( _Path, "/Default/Textures/Default3D" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/LUT1" )
+        || !Core::Stricmp( _Path, "/Default/Textures/Default3D" ) ) {
 
         constexpr SColorGradingPreset ColorGradingPreset1 = {
             Float3( 0.5f ),   // Gain
@@ -248,7 +248,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/LUT2" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/LUT2" ) ) {
         constexpr SColorGradingPreset ColorGradingPreset2 = {
             Float3( 0.5f ),   // Gain
             Float3( 0.5f ),   // Gamma
@@ -264,7 +264,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/LUT3" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/LUT3" ) ) {
         constexpr SColorGradingPreset ColorGradingPreset3 = {
             Float3( 0.51f, 0.55f, 0.53f ), // Gain
             Float3( 0.45f, 0.57f, 0.55f ), // Gamma
@@ -280,7 +280,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !AString::Icmp( _Path, "/Default/Textures/LUT_Luminance" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/LUT_Luminance" ) ) {
         byte data[ 16 ][ 16 ][ 16 ][ 3 ];
         for ( int z = 0 ; z < 16 ; z++ ) {
             for ( int y = 0 ; y < 16 ; y++ ) {
@@ -308,19 +308,19 @@ bool ATexture::LoadResource( AString const & _Path ) {
     AImage image;
 
     int i = _Path.FindExt();
-    if ( !AString::Icmp( &_Path[i], ".jpg" )
-         || !AString::Icmp( &_Path[i], ".jpeg" )
-         || !AString::Icmp( &_Path[i], ".png" )
-         || !AString::Icmp( &_Path[i], ".tga" )
-         || !AString::Icmp( &_Path[i], ".psd" )
-         || !AString::Icmp( &_Path[i], ".gif" )
-         || !AString::Icmp( &_Path[i], ".hdr" )
-         || !AString::Icmp( &_Path[i], ".pic" )
-         || !AString::Icmp( &_Path[i], ".pnm" )
-         || !AString::Icmp( &_Path[i], ".ppm" )
-         || !AString::Icmp( &_Path[i], ".pgm" ) ) {
+    if ( !Core::Stricmp( &_Path[i], ".jpg" )
+         || !Core::Stricmp( &_Path[i], ".jpeg" )
+         || !Core::Stricmp( &_Path[i], ".png" )
+         || !Core::Stricmp( &_Path[i], ".tga" )
+         || !Core::Stricmp( &_Path[i], ".psd" )
+         || !Core::Stricmp( &_Path[i], ".gif" )
+         || !Core::Stricmp( &_Path[i], ".hdr" )
+         || !Core::Stricmp( &_Path[i], ".pic" )
+         || !Core::Stricmp( &_Path[i], ".pnm" )
+         || !Core::Stricmp( &_Path[i], ".ppm" )
+         || !Core::Stricmp( &_Path[i], ".pgm" ) ) {
 
-        if ( !AString::Icmp( &_Path[i], ".hdr" ) ) {
+        if ( !Core::Stricmp( &_Path[i], ".hdr" ) ) {
             if ( !image.LoadHDRI( _Path.CStr(), true, true ) ) {
                 return false;
             }
@@ -435,7 +435,7 @@ bool ATexture::LoadResource( AString const & _Path ) {
         //}
 
         //GHunkMemory.ClearLastHunk();
-        GHeapMemory.Dealloc( lodData );
+        GHeapMemory.Free( lodData );
 
 #if 0
         byte * buf = (byte *)GHeapMemory.HeapAlloc( size, 1 );
@@ -621,7 +621,7 @@ void ATexture::InitializeColorGradingLUT( const char * _Path ) {
 
         for ( int z = 0 ; z < 16 ; z++ ) {
             for ( int y = 0 ; y < 16 ; y++ ) {
-                memcpy( &data[ z ][ y ][ 0 ][ 0 ], static_cast< byte * >(image.pRawData) + ( z * 16 * 16 * 3 + y * 16 * 3 ), 16 * 3 );
+                Core::Memcpy( &data[ z ][ y ][ 0 ][ 0 ], static_cast< byte * >(image.pRawData) + ( z * 16 * 16 * 3 + y * 16 * 3 ), 16 * 3 );
             }
         }
 

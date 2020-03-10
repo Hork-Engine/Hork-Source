@@ -374,7 +374,7 @@ void AVertexMemoryGPU::CheckMemoryLeaks() {
 }
 
 AStreamedMemoryGPU::AStreamedMemoryGPU() {
-    memset( FrameData, 0, sizeof( SFrameData ) );
+    Core::ZeroMem( FrameData, sizeof( SFrameData ) );
 
     Buffer = nullptr;
     pMappedMemory = nullptr;
@@ -496,7 +496,7 @@ size_t AStreamedMemoryGPU::Allocate( size_t _SizeInBytes, int _Alignment, const 
 
     if ( _Data ) {
         if ( RVWriteDynamicData ) {
-            MemcpySSE( (byte *)pMappedMemory + alignedOffset, _Data, _SizeInBytes );
+            Core::MemcpySSE( (byte *)pMappedMemory + alignedOffset, _Data, _SizeInBytes );
         }
     }
 

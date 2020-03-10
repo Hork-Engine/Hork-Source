@@ -83,7 +83,7 @@ void SaveSnapshot( GHI::Texture & _Texture ) {
         Core::MakeDir( "snapshots", false );
     }
 
-    stbi_write_png( AString::Fmt( "snapshots/%d.png", n ), w, h, bpp, data, w*bpp );
+    stbi_write_png( Core::Fmt( "snapshots/%d.png", n ), w, h, bpp, data, w*bpp );
 
     n++;
 

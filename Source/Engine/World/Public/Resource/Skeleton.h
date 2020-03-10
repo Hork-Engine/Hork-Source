@@ -63,7 +63,7 @@ struct SJoint {
 
         AString jointName;
         _Stream.ReadString( jointName );
-        AString::CopySafe( Name, sizeof( Name ), jointName.CStr() );
+        Core::Strcpy( Name, sizeof( Name ), jointName.CStr() );
     }
 };
 

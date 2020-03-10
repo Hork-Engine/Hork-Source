@@ -75,7 +75,7 @@ static bool LoadLibMpg123() {
     bool bError = false;
 
     #define GET_PROC_ADDRESS( Proc ) { \
-        if ( !GRuntime.GetProcAddress( LibMpg, &Proc, AString::Fmt( "mpg123%s", AN_STRINGIFY( Proc )+3 ) ) ) { \
+        if ( !GRuntime.GetProcAddress( LibMpg, &Proc, Core::Fmt( "mpg123%s", AN_STRINGIFY( Proc )+3 ) ) ) { \
             GLogger.Printf( "Failed to load %s\n", AN_STRINGIFY(Proc) ); \
             bError = true; \
         } \
