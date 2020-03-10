@@ -98,9 +98,9 @@ public:
 
     void ScrollToCursor();
 
-    FWideChar * GetText() { return TextData.ToPtr(); }
+    SWideChar * GetText() { return TextData.ToPtr(); }
 
-    FWideChar const * GetText() const { return TextData.ToPtr(); }
+    SWideChar const * GetText() const { return TextData.ToPtr(); }
 
     int GetTextLength() const;
 
@@ -116,14 +116,14 @@ public:
     // WTextEdit & SetSyntaxHighlighter( ISyntaxHighlighter * _SyntaxHighlighterInterface );
     // class ISyntaxHighlighter {
     // public:
-    //     virtual AColor4 const & GetWordColor( FWideChar * _WordStart, FWideChar * _WordEnd ) = 0;
+    //     virtual AColor4 const & GetWordColor( SWideChar * _WordStart, SWideChar * _WordEnd ) = 0;
     // };
 
 protected:
     WTextEdit();
     ~WTextEdit();
 
-    virtual bool OnFilterCharacter( FWideChar & _Char ) { return true; }
+    virtual bool OnFilterCharacter( SWideChar & _Char ) { return true; }
 
     void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) override;
 
@@ -147,11 +147,11 @@ protected:
 
 private:
     void PressKey( int _Key );
-    bool FilterCharacter( FWideChar & _Char );
+    bool FilterCharacter( SWideChar & _Char );
     void UpdateWidgetSize();
-    bool InsertCharsProxy( int _Offset, FWideChar const * _Text, int _TextLength );
+    bool InsertCharsProxy( int _Offset, SWideChar const * _Text, int _TextLength );
     void DeleteCharsProxy( int _First, int _Count );
-    bool FindLineStartEnd( int _Cursor, FWideChar ** _LineStart, FWideChar ** _LineEnd );
+    bool FindLineStartEnd( int _Cursor, SWideChar ** _LineStart, SWideChar ** _LineEnd );
     WScroll * GetScroll();
 
     AColor4 SelectionColor;
@@ -159,7 +159,7 @@ private:
 
     TRef< AFont > Font;
 
-    TPodArray< FWideChar > TextData;
+    TPodArray< SWideChar > TextData;
     int CurTextLength;
     int MaxChars;
     int CharacterFilter;

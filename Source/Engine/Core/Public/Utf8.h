@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
-typedef unsigned short FWideChar;
+typedef unsigned short SWideChar;
 
 namespace Core {
 
@@ -43,19 +43,19 @@ int UTF8CharByteLength( const char * _Unicode );
 int UTF8StrLength( const char * _Unicode );
 
 /** Decode utf8 character to wide char */
-int WideCharDecodeUTF8( const char * _Unicode, FWideChar & _Ch );
+int WideCharDecodeUTF8( const char * _Unicode, SWideChar & _Ch );
 
 /** Decode utf8 character to wide char */
-int WideCharDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, FWideChar & _Ch );
+int WideCharDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, SWideChar & _Ch );
 
 /** Decode utf8 string to wide string */
-int WideStrDecodeUTF8( const char * _Unicode, FWideChar * _Str, int _MaxLength );
+int WideStrDecodeUTF8( const char * _Unicode, SWideChar * _Str, int _MaxLength );
 
 /** Decode utf8 string to wide string */
-int WideStrDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, FWideChar * _Str, int _MaxLength );
+int WideStrDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, SWideChar * _Str, int _MaxLength );
 
 /** Length of utf8 character in bytes */
-AN_FORCEINLINE int WideCharUTF8Bytes( FWideChar _Ch ) {
+AN_FORCEINLINE int WideCharUTF8Bytes( SWideChar _Ch ) {
     if ( _Ch < 0x80 ) return 1;
     if ( _Ch < 0x800 ) return 2;
     if ( _Ch >= 0xdc00 && _Ch < 0xe000 ) return 0;
@@ -64,21 +64,21 @@ AN_FORCEINLINE int WideCharUTF8Bytes( FWideChar _Ch ) {
 }
 
 /** Length of utf8 string in bytes */
-int WideStrUTF8Bytes( FWideChar const * _Str, FWideChar const * _StrEnd = nullptr );
+int WideStrUTF8Bytes( SWideChar const * _Str, SWideChar const * _StrEnd = nullptr );
 
 /** Length of wide string */
-int WideStrLength( FWideChar const * _Str );
+int WideStrLength( SWideChar const * _Str );
 
 /** Encode wide character to utf8 char */
 int WideCharEncodeUTF8( char * _Buf, int _BufSize, unsigned int _Ch );
 
 /** Encode wide string to utf8 string */
-int WideStrEncodeUTF8( char * _Buf, int _BufSize, FWideChar const * _Str, FWideChar const * _StrEnd = nullptr );
+int WideStrEncodeUTF8( char * _Buf, int _BufSize, SWideChar const * _Str, SWideChar const * _StrEnd = nullptr );
 
 /** Check wide char is blank */
-AN_FORCEINLINE bool WideCharIsBlank( FWideChar _Ch )  { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
+AN_FORCEINLINE bool WideCharIsBlank( SWideChar _Ch )  { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
 
 /** Check ascii char is blank */
-AN_FORCEINLINE bool CharIsBlank( char _Ch )  { return _Ch == ' ' || _Ch == '\t'; }
+AN_FORCEINLINE bool CharIsBlank( char _Ch ) { return _Ch == ' ' || _Ch == '\t'; }
 
 }

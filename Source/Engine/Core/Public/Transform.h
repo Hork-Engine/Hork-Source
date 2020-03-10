@@ -158,12 +158,12 @@ AN_FORCEINLINE float STransform::GetRoll() const {
 AN_FORCEINLINE Float3 STransform::GetRightVector() const {
     //return Math::ToMat3(Rotation)[0];
 
-    float qyy(Rotation.Y * Rotation.Y);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxz(Rotation.X * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qwy(Rotation.W * Rotation.Y);
-    float qwz(Rotation.W * Rotation.Z);
+    const float qyy(Rotation.Y * Rotation.Y);
+    const float qzz(Rotation.Z * Rotation.Z);
+    const float qxz(Rotation.X * Rotation.Z);
+    const float qxy(Rotation.X * Rotation.Y);
+    const float qwy(Rotation.W * Rotation.Y);
+    const float qwz(Rotation.W * Rotation.Z);
 
     return Float3( 1 - 2 * (qyy +  qzz), 2 * (qxy + qwz), 2 * (qxz - qwy) );
 }
@@ -171,12 +171,12 @@ AN_FORCEINLINE Float3 STransform::GetRightVector() const {
 AN_FORCEINLINE Float3 STransform::GetLeftVector() const {
     //return -Math::ToMat3(Rotation)[0];
 
-    float qyy(Rotation.Y * Rotation.Y);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxz(Rotation.X * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qwy(Rotation.W * Rotation.Y);
-    float qwz(Rotation.W * Rotation.Z);
+    const float qyy(Rotation.Y * Rotation.Y);
+    const float qzz(Rotation.Z * Rotation.Z);
+    const float qxz(Rotation.X * Rotation.Z);
+    const float qxy(Rotation.X * Rotation.Y);
+    const float qwy(Rotation.W * Rotation.Y);
+    const float qwz(Rotation.W * Rotation.Z);
 
     return Float3( -1 + 2 * (qyy +  qzz), -2 * (qxy + qwz), -2 * (qxz - qwy) );
 }
@@ -184,12 +184,12 @@ AN_FORCEINLINE Float3 STransform::GetLeftVector() const {
 AN_FORCEINLINE Float3 STransform::GetUpVector() const {
     //return Math::ToMat3(Rotation)[1];
 
-    float qxx(Rotation.X * Rotation.X);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwz(Rotation.W * Rotation.Z);
+    const float qxx(Rotation.X * Rotation.X);
+    const float qzz(Rotation.Z * Rotation.Z);
+    const float qxy(Rotation.X * Rotation.Y);
+    const float qyz(Rotation.Y * Rotation.Z);
+    const float qwx(Rotation.W * Rotation.X);
+    const float qwz(Rotation.W * Rotation.Z);
 
     return Float3( 2 * (qxy - qwz), 1 - 2 * (qxx +  qzz), 2 * (qyz + qwx) );
 }
@@ -197,12 +197,12 @@ AN_FORCEINLINE Float3 STransform::GetUpVector() const {
 AN_FORCEINLINE Float3 STransform::GetDownVector() const {
     //return -Math::ToMat3(Rotation)[1];
 
-    float qxx(Rotation.X * Rotation.X);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwz(Rotation.W * Rotation.Z);
+    const float qxx(Rotation.X * Rotation.X);
+    const float qzz(Rotation.Z * Rotation.Z);
+    const float qxy(Rotation.X * Rotation.Y);
+    const float qyz(Rotation.Y * Rotation.Z);
+    const float qwx(Rotation.W * Rotation.X);
+    const float qwz(Rotation.W * Rotation.Z);
 
     return Float3( -2 * (qxy - qwz), -1 + 2 * (qxx +  qzz), -2 * (qyz + qwx) );
 }
@@ -210,12 +210,12 @@ AN_FORCEINLINE Float3 STransform::GetDownVector() const {
 AN_FORCEINLINE Float3 STransform::GetBackVector() const {
     //return Math::ToMat3(Rotation)[2];
 
-    float qxx(Rotation.X * Rotation.X);
-    float qyy(Rotation.Y * Rotation.Y);
-    float qxz(Rotation.X * Rotation.Z);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwy(Rotation.W * Rotation.Y);
+    const float qxx(Rotation.X * Rotation.X);
+    const float qyy(Rotation.Y * Rotation.Y);
+    const float qxz(Rotation.X * Rotation.Z);
+    const float qyz(Rotation.Y * Rotation.Z);
+    const float qwx(Rotation.W * Rotation.X);
+    const float qwy(Rotation.W * Rotation.Y);
 
     return Float3( 2 * (qxz + qwy), 2 * (qyz - qwx), 1 - 2 * (qxx +  qyy) );
 }
@@ -223,12 +223,12 @@ AN_FORCEINLINE Float3 STransform::GetBackVector() const {
 AN_FORCEINLINE Float3 STransform::GetForwardVector() const {
     //return -Math::ToMat3(Rotation)[2];
 
-    float qxx(Rotation.X * Rotation.X);
-    float qyy(Rotation.Y * Rotation.Y);
-    float qxz(Rotation.X * Rotation.Z);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwy(Rotation.W * Rotation.Y);
+    const float qxx(Rotation.X * Rotation.X);
+    const float qyy(Rotation.Y * Rotation.Y);
+    const float qxz(Rotation.X * Rotation.Z);
+    const float qyz(Rotation.Y * Rotation.Z);
+    const float qwx(Rotation.W * Rotation.X);
+    const float qwy(Rotation.W * Rotation.Y);
 
     return Float3( -2 * (qxz + qwy), -2 * (qyz - qwx), -1 + 2 * (qxx +  qyy) );
 }
@@ -239,15 +239,15 @@ AN_FORCEINLINE void STransform::GetVectors( Float3 * _Right, Float3 * _Up, Float
     //if ( _Back ) *_Back = Math::ToMat3(Rotation)[2];
     //return;
 
-    float qxx(Rotation.X * Rotation.X);
-    float qyy(Rotation.Y * Rotation.Y);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxz(Rotation.X * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwy(Rotation.W * Rotation.Y);
-    float qwz(Rotation.W * Rotation.Z);
+    const float qxx(Rotation.X * Rotation.X);
+    const float qyy(Rotation.Y * Rotation.Y);
+    const float qzz(Rotation.Z * Rotation.Z);
+    const float qxz(Rotation.X * Rotation.Z);
+    const float qxy(Rotation.X * Rotation.Y);
+    const float qyz(Rotation.Y * Rotation.Z);
+    const float qwx(Rotation.W * Rotation.X);
+    const float qwy(Rotation.W * Rotation.Y);
+    const float qwz(Rotation.W * Rotation.Z);
 
     if ( _Right ) {
         _Right->X = 1 - 2 * (qyy +  qzz);
@@ -346,7 +346,7 @@ AN_FORCEINLINE void STransform::InverseSelf() {
     ComputeTransformMatrix( M );
     Position = M.Inversed().DecomposeTranslation();
     Rotation.InverseSelf();
-    Scale = Float3(1.0) / Scale;
+    Scale = Float3(1.0f) / Scale;
 }
 
 AN_FORCEINLINE void STransform::Write( IStreamBase & _Stream ) const {

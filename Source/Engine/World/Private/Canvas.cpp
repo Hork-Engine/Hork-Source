@@ -310,7 +310,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         }
 
         float charWidth = 0.0f;
-        if ( const ImFontGlyph * glyph = _Font->FindGlyph( (FWideChar)c ) ) {
+        if ( const ImFontGlyph * glyph = _Font->FindGlyph( (SWideChar)c ) ) {
             charWidth = glyph->AdvanceX * scale;
 
             // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
@@ -396,7 +396,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     DrawList._VtxCurrentIdx = (unsigned int)DrawList.VtxBuffer.Size;
 }
 
-void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, FWideChar const * _TextBegin, FWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
+void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
 
     AN_ASSERT( _Font && _FontSize > 0.0f );
 
@@ -440,13 +440,13 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     const float scale = _FontSize / _Font->GetFontSize();
     const float lineHeight = _FontSize;
     const bool bWordWrap = ( _WrapWidth > 0.0f );
-    FWideChar const * wordWrapEOL = NULL;
+    SWideChar const * wordWrapEOL = NULL;
 
     // Fast-forward to first visible line
-    FWideChar const * s = _TextBegin;
+    SWideChar const * s = _TextBegin;
     if ( y + lineHeight < clipRect.Y && !bWordWrap ) {
         while ( y + lineHeight < clipRect.Y && s < _TextEnd ) {
-            s = ( FWideChar const * )memchr( s, '\n', _TextEnd - s );
+            s = ( SWideChar const * )memchr( s, '\n', _TextEnd - s );
             s = s ? s + 1 : _TextEnd;
             y += lineHeight;
         }
@@ -455,10 +455,10 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     // For large text, scan for the last visible line in order to avoid over-reserving in the call to PrimReserve()
     // Note that very large horizontal line will still be affected by the issue (e.g. a one megabyte string buffer without a newline will likely crash atm)
     if ( _TextEnd - s > 10000 && !bWordWrap ) {
-        FWideChar const * s_end = s;
+        SWideChar const * s_end = s;
         float y_end = y;
         while ( y_end < clipRect.W && s_end < _TextEnd ) {
-            s_end = ( FWideChar const * )memchr( s_end, '\n', _TextEnd - s_end );
+            s_end = ( SWideChar const * )memchr( s_end, '\n', _TextEnd - s_end );
             s_end = s_end ? s_end + 1 : _TextEnd;
             y_end += lineHeight;
         }
@@ -517,7 +517,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         //    if ( c == 0 ) // Malformed UTF-8?
         //        break;
         //}
-        FWideChar c = *s;
+        SWideChar c = *s;
         s++;
 
         if ( c < 32 ) {
@@ -623,7 +623,7 @@ void ACanvas::DrawChar( AFont const * _Font, char _Ch, int _X, int _Y, float _Sc
     DrawWChar( _Font, _Ch, _X, _Y, _Scale, _Color );
 }
 
-void ACanvas::DrawWChar( AFont const * _Font, FWideChar _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
+void ACanvas::DrawWChar( AFont const * _Font, SWideChar _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -645,7 +645,7 @@ void ACanvas::DrawCharUTF8( AFont const * _Font, const char * _Ch, int _X, int _
         return;
     }
 
-    FWideChar ch;
+    SWideChar ch;
 
     if ( !Core::WideCharDecodeUTF8( _Ch, ch ) ) {
         return;

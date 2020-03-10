@@ -68,7 +68,7 @@ private:
     SBlock * Blocks;
     size_t TotalAllocs;
 
-    static_assert( sizeof(SBlock) == 32, "Sizeof check" );
+    AN_SIZEOF_STATIC_CHECK( SBlock, 32 );
 };
 
 template< int MIN_BLOCK_SIZE >

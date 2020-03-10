@@ -50,8 +50,8 @@ static const int CharacterWidth = 8;
 static const int CharacterHeight = 16;
 static const float DropSpeed = 10;
 
-static FWideChar ImageData[2][CON_IMAGE_SIZE];
-static FWideChar * pImage = ImageData[0];
+static SWideChar ImageData[2][CON_IMAGE_SIZE];
+static SWideChar * pImage = ImageData[0];
 static int MaxLineChars = 0;
 static int PrintLine = 0;
 static int CurWidth = 0;
@@ -63,10 +63,10 @@ static int Scroll = 0;
 static bool ConDown = false;
 static bool ConFullscreen = false;
 static float ConHeight = 0;
-static FWideChar CmdLine[MAX_CMD_LINE_CHARS];
+static SWideChar CmdLine[MAX_CMD_LINE_CHARS];
 static int CmdLineLength = 0;
 static int CmdLinePos = 0;
-static FWideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
+static SWideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
 static int NumStoryLines = 0;
 static int CurStoryLine = 0;
 
@@ -107,7 +107,7 @@ static void _Resize( int _VidWidth ) {
         NumLines = MaxLines;
     }
 
-    FWideChar * pNewImage = ( pImage == ImageData[0] ) ? ImageData[1] : ImageData[0];
+    SWideChar * pNewImage = ( pImage == ImageData[0] ) ? ImageData[1] : ImageData[0];
 
     Core::ZeroMem( pNewImage, sizeof( *pNewImage ) * CON_IMAGE_SIZE );
 
@@ -136,7 +136,7 @@ void AConsole::Resize( int _VidWidth ) {
 void AConsole::Print( const char * _Text ) {
     const char * wordStr;
     int wordLength;
-    FWideChar ch;
+    SWideChar ch;
     int byteLen;
 
     ASyncGuard syncGuard( ConSync );
@@ -225,8 +225,8 @@ void AConsole::Print( const char * _Text ) {
     }
 }
 
-void AConsole::WidePrint( FWideChar const * _Text ) {
-    FWideChar const * wordStr;
+void AConsole::WidePrint( SWideChar const * _Text ) {
+    SWideChar const * wordStr;
     int wordLength;
 
     ASyncGuard syncGuard( ConSync );
@@ -304,7 +304,7 @@ void AConsole::WidePrint( FWideChar const * _Text ) {
     }
 }
 
-static void CopyStoryLine( FWideChar const * _StoryLine ) {
+static void CopyStoryLine( SWideChar const * _StoryLine ) {
     CmdLineLength = 0;
     while ( *_StoryLine && CmdLineLength < MAX_CMD_LINE_CHARS ) {
         CmdLine[ CmdLineLength++ ] = *_StoryLine++;
@@ -312,8 +312,8 @@ static void CopyStoryLine( FWideChar const * _StoryLine ) {
     CmdLinePos = CmdLineLength;
 }
 
-static void AddStoryLine( FWideChar * _Text, int _Length ) {
-    FWideChar * storyLine = StoryLines[NumStoryLines++ & ( MAX_STORY_LINES - 1 )];
+static void AddStoryLine( SWideChar * _Text, int _Length ) {
+    SWideChar * storyLine = StoryLines[NumStoryLines++ & ( MAX_STORY_LINES - 1 )];
     Core::Memcpy( storyLine, _Text, sizeof( _Text[0] ) * Math::Min( _Length, MAX_CMD_LINE_CHARS ) );
     if ( _Length < MAX_CMD_LINE_CHARS ) {
         storyLine[_Length] = 0;
@@ -334,7 +334,7 @@ static void InsertUTF8Text( const char * _Utf8 ) {
 
     CmdLineLength += len;
 
-    FWideChar ch;
+    SWideChar ch;
     int byteLen;
     while ( len-- > 0 ) {
         byteLen = Core::WideCharDecodeUTF8( _Utf8, ch );
@@ -466,7 +466,7 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
             }
             break;
         case KEY_ENTER: {
-            char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
+            char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case SWideChar transforms to 4 bytes,
                                                          // one additional byte is reserved for trailing '\0'
 
             Core::WideStrEncodeUTF8( result, sizeof( result ), CmdLine, CmdLine + CmdLineLength );
@@ -519,7 +519,7 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
             }
             break;
         case KEY_TAB: {
-            char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
+            char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case SWideChar transforms to 4 bytes,
                                                          // one additional byte is reserved for trailing '\0'
 
             Core::WideStrEncodeUTF8( result, sizeof( result ), CmdLine, CmdLine + CmdLinePos );
@@ -594,7 +594,7 @@ static void DrawCmdLine( ACanvas * _Canvas, int x, int y ) {
             break;
         }
 
-        FWideChar ch = CmdLine[n];
+        SWideChar ch = CmdLine[n];
 
         if ( ch <= ' ' ) {
             cx += CharacterWidth;
@@ -670,7 +670,7 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep ) {
         }
 
         const int offset = ( ( MaxLines + PrintLine - n - 1 ) % MaxLines ) * MaxLineChars;
-        FWideChar * line = &pImage[ offset ];
+        SWideChar * line = &pImage[ offset ];
 
         for ( int j = 0 ; j < MaxLineChars && *line ; j++ ) {
             _Canvas->DrawWChar( font, *line++, x, y, scale, charColor );
@@ -695,7 +695,7 @@ void AConsole::WriteStoryLines() {
         return;
     }
 
-    char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case FWideChar transforms to 4 bytes,
+    char result[ MAX_CMD_LINE_CHARS * 4 + 1 ];   // In worst case SWideChar transforms to 4 bytes,
                                                  // one additional byte is reserved for trailing '\0'
 
     int numLines = Math::Min( MAX_STORY_LINES, NumStoryLines );
@@ -710,9 +710,9 @@ void AConsole::WriteStoryLines() {
 }
 
 void AConsole::ReadStoryLines() {
-    FWideChar wideStr[ MAX_CMD_LINE_CHARS ];
+    SWideChar wideStr[ MAX_CMD_LINE_CHARS ];
     int wideStrLength;
-    char buf[ MAX_CMD_LINE_CHARS * 3 + 2 ]; // In worst case FWideChar transforms to 3 bytes,
+    char buf[ MAX_CMD_LINE_CHARS * 3 + 2 ]; // In worst case SWideChar transforms to 3 bytes,
                                             // two additional bytes are reserved for trailing '\n\0'
 
     AFileStream f;

@@ -100,7 +100,7 @@ constexpr int INTERNAL_SIZEOF = sizeof( CRITICAL_SECTION );
 
 AThreadSync::AThreadSync() {
 #ifdef AN_OS_WIN32
-    static_assert( sizeof( Internal ) == INTERNAL_SIZEOF, "Critical section sizeof check" );
+    AN_SIZEOF_STATIC_CHECK( Internal, INTERNAL_SIZEOF );
     InitializeCriticalSection( ( CRITICAL_SECTION * )&Internal[0] );
 #endif
 }

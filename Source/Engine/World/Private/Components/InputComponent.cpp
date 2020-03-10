@@ -717,7 +717,7 @@ bool AInputComponent::IsJoyDown( const SJoystick * _Joystick, int _Button ) cons
     return GetButtonState( ID_JOYSTICK_1 + _Joystick->Id, _Button );
 }
 
-void AInputComponent::NotifyUnicodeCharacter( FWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp ) {
+void AInputComponent::NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp ) {
     if ( !CharacterCallback.IsValid() ) {
         return;
     }
@@ -870,7 +870,7 @@ void AInputComponent::UnbindAll() {
     }
 }
 
-void AInputComponent::SetCharacterCallback( TCallback< void( FWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
+void AInputComponent::SetCharacterCallback( TCallback< void( SWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
     CharacterCallback = _Callback;
     bCharacterCallbackExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
 }

@@ -36,12 +36,12 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 
 // Forward decl
-static Float2 CalcTextRect( AFont const * _Font, FWideChar const * _TextBegin, FWideChar const * _TextEnd, const FWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine );
+static Float2 CalcTextRect( AFont const * _Font, SWideChar const * _TextBegin, SWideChar const * _TextEnd, const SWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine );
 
 #undef STB_TEXTEDIT_STRING
 #undef STB_TEXTEDIT_CHARTYPE
 #define STB_TEXTEDIT_STRING             WTextEdit
-#define STB_TEXTEDIT_CHARTYPE           FWideChar
+#define STB_TEXTEDIT_CHARTYPE           SWideChar
 #define STB_TEXTEDIT_GETWIDTH_NEWLINE   -1.0f
 #define STB_TEXTEDIT_UNDOSTATECOUNT     99
 #define STB_TEXTEDIT_UNDOCHARCOUNT      999
@@ -62,7 +62,7 @@ static Float2 CalcTextRect( AFont const * _Font, FWideChar const * _TextBegin, F
 #define STB_TEXTEDIT_K_WORDRIGHT    0x1000D // keyboard input to move cursor right one word
 #define STB_TEXTEDIT_K_SHIFT        0x20000 // a power of two that is or'd in to a keyboard input to represent the shift key
 
-static FWideChar STB_TEXTEDIT_NEWLINE = '\n';
+static SWideChar STB_TEXTEDIT_NEWLINE = '\n';
 
 #define STB_TEXTEDIT_STRINGLEN( _Obj ) _Obj->GetTextLength()
 
@@ -71,8 +71,8 @@ static FWideChar STB_TEXTEDIT_NEWLINE = '\n';
 static int STB_TEXTEDIT_KEYTOTEXT( int _Key ) { return _Key >= 0x10000 ? 0 : _Key; }
 
 static void STB_TEXTEDIT_LAYOUTROW( StbTexteditRow * _Row, WTextEdit * _Obj, int _LineStartIndex ) {
-    FWideChar const * text = _Obj->GetText();
-    FWideChar const * text_remaining = NULL;
+    SWideChar const * text = _Obj->GetText();
+    SWideChar const * text_remaining = NULL;
     const Float2 size = CalcTextRect( _Obj->GetFont(), text + _LineStartIndex, text + _Obj->GetTextLength(), &text_remaining, NULL, true );
     _Row->x0 = 0.0f;
     _Row->x1 = size.X;
@@ -83,7 +83,7 @@ static void STB_TEXTEDIT_LAYOUTROW( StbTexteditRow * _Row, WTextEdit * _Obj, int
 }
 
 static float STB_TEXTEDIT_GETWIDTH( WTextEdit * _Obj, int _LineStartIndex, int _CharIndex ) {
-    FWideChar c = _Obj->GetText()[ _LineStartIndex + _CharIndex ];
+    SWideChar c = _Obj->GetText()[ _LineStartIndex + _CharIndex ];
     if ( c == '\n' )
         return STB_TEXTEDIT_GETWIDTH_NEWLINE;
 
@@ -94,7 +94,7 @@ class WTextEditProxy {
 public:
     WTextEditProxy( WTextEdit * _Self ) : Self( _Self ) {}
 
-    bool InsertCharsProxy( int _Offset, FWideChar const * _Text, int _TextLength ) {
+    bool InsertCharsProxy( int _Offset, SWideChar const * _Text, int _TextLength ) {
         return Self->InsertCharsProxy( _Offset, _Text, _TextLength );
     }
 
@@ -110,7 +110,7 @@ private:
 
 #define STB_TEXTEDIT_INSERTCHARS( _Obj, _Offset, _Text, _TextLength ) WTextEditProxy(_Obj).InsertCharsProxy( _Offset, _Text, _TextLength )
 
-AN_FORCEINLINE bool IsSeparator( FWideChar c ) {
+AN_FORCEINLINE bool IsSeparator( SWideChar c ) {
     return     c == ','
             || c == '.'
             || c == ';'
@@ -147,7 +147,7 @@ AN_FORCEINLINE bool IsSeparator( FWideChar c ) {
             || c == '\n';
 }
 
-static bool IsWordBoundary( FWideChar * s ) {
+static bool IsWordBoundary( SWideChar * s ) {
     if ( Core::WideCharIsBlank( s[-1] ) && !Core::WideCharIsBlank( s[0] ) ) {
         return true;
     }
@@ -168,7 +168,7 @@ static bool IsWordBoundary( FWideChar * s ) {
 static int NextWord( WTextEdit * _Obj, int i ) {
     i++;
     int len = _Obj->GetTextLength();
-    FWideChar * s = _Obj->GetText() + i;
+    SWideChar * s = _Obj->GetText() + i;
     while ( i < len && !IsWordBoundary( s ) ) {
         i++;
         s++;
@@ -178,7 +178,7 @@ static int NextWord( WTextEdit * _Obj, int i ) {
 
 static int PrevWord( WTextEdit * _Obj, int i ) {
     i--;
-    FWideChar * s = _Obj->GetText() + i;
+    SWideChar * s = _Obj->GetText() + i;
     while ( i > 0 && !IsWordBoundary( s ) ) {
         i--;
         s--;
@@ -202,14 +202,14 @@ enum FCharacterFilter {
     CHARS_SCIENTIFIC    = AN_BIT( 4 ),   // 0123456789.+-*/eE (Scientific notation input)
 };
 
-static Float2 CalcTextRect( AFont const * _Font, FWideChar const * _TextBegin, FWideChar const * _TextEnd, const FWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine ) {
+static Float2 CalcTextRect( AFont const * _Font, SWideChar const * _TextBegin, SWideChar const * _TextEnd, const SWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine ) {
     const float lineHeight = _Font->GetFontSize();
     Float2 rectSize( 0, 0 );
     float lineWidth = 0.0f;
 
-    FWideChar const * s = _TextBegin;
+    SWideChar const * s = _TextBegin;
     while ( s < _TextEnd ) {
-        FWideChar c = *s++;
+        SWideChar c = *s++;
         if ( c == '\n' ) {
             rectSize.X = Math::Max( rectSize.X, lineWidth );
             rectSize.Y += lineHeight;
@@ -244,14 +244,14 @@ static Float2 CalcTextRect( AFont const * _Font, FWideChar const * _TextBegin, F
     return rectSize;
 }
 
-static Float2 CalcCursorOffset( AFont const * _Font, FWideChar * _Text, int _Cursor, const FWideChar ** _Remaining ) {
+static Float2 CalcCursorOffset( AFont const * _Font, SWideChar * _Text, int _Cursor, const SWideChar ** _Remaining ) {
     const float lineHeight = _Font->GetFontSize();
     Float2 offset( 0 );
     float lineWidth = 0.0f;
-    FWideChar const * s = _Text;
-    FWideChar const * end = _Text + _Cursor;
+    SWideChar const * s = _Text;
+    SWideChar const * end = _Text + _Cursor;
     while ( s < end ) {
-        FWideChar c = *s++;
+        SWideChar c = *s++;
         if ( c == '\n' ) {
             offset.Y += lineHeight;
             lineWidth = 0.0f;
@@ -412,7 +412,7 @@ int WTextEdit::GetSelectionEnd() const {
     return Math::Max( Stb.select_start, Stb.select_end );
 }
 
-bool WTextEdit::InsertCharsProxy( int _Offset, FWideChar const * _Text, int _TextLength ) {
+bool WTextEdit::InsertCharsProxy( int _Offset, SWideChar const * _Text, int _TextLength ) {
     if ( _Offset > CurTextLength ) {
         return false;
     }
@@ -429,11 +429,11 @@ bool WTextEdit::InsertCharsProxy( int _Offset, FWideChar const * _Text, int _Tex
         TextData.Resize( CurTextLength + _TextLength + 1 );
     }
 
-    FWideChar * text = TextData.ToPtr();
+    SWideChar * text = TextData.ToPtr();
     if ( _Offset != CurTextLength ) {
-        Core::Memmove( text + _Offset + _TextLength, text + _Offset, ( size_t )( CurTextLength - _Offset ) * sizeof( FWideChar ) );
+        Core::Memmove( text + _Offset + _TextLength, text + _Offset, ( size_t )( CurTextLength - _Offset ) * sizeof( SWideChar ) );
     }
-    Core::Memcpy( text + _Offset, _Text, ( size_t )_TextLength * sizeof( FWideChar ) );
+    Core::Memcpy( text + _Offset, _Text, ( size_t )_TextLength * sizeof( SWideChar ) );
 
     CurTextLength += _TextLength;
     TextData[ CurTextLength ] = '\0';
@@ -456,12 +456,12 @@ void WTextEdit::DeleteCharsProxy( int _First, int _Count ) {
         _Count = CurTextLength - _First - 1;
     }
 
-    FWideChar * dst = TextData.ToPtr() + _First;
-    FWideChar const * src = TextData.ToPtr() + _First + _Count;
+    SWideChar * dst = TextData.ToPtr() + _First;
+    SWideChar const * src = TextData.ToPtr() + _First + _Count;
 
     CurTextLength -= _Count;
 
-    Core::Memmove( dst, src, ( CurTextLength - _First ) * sizeof( FWideChar ) );
+    Core::Memmove( dst, src, ( CurTextLength - _First ) * sizeof( SWideChar ) );
     dst[ CurTextLength ] = '\0';
 
     UpdateWidgetSize();
@@ -601,15 +601,15 @@ void WTextEdit::ScrollLineStart() {
     }
 }
 
-bool WTextEdit::FindLineStartEnd( int _Cursor, FWideChar ** _LineStart, FWideChar ** _LineEnd ) {
+bool WTextEdit::FindLineStartEnd( int _Cursor, SWideChar ** _LineStart, SWideChar ** _LineEnd ) {
     if ( _Cursor < 0 || _Cursor >= CurTextLength ) {
         return false;
     }
 
-    FWideChar * text = TextData.ToPtr();
-    FWideChar * textEnd = TextData.ToPtr() + CurTextLength;
-    FWideChar * lineStart = text + Stb.cursor;
-    FWideChar * lineEnd = text + Stb.cursor + 1;
+    SWideChar * text = TextData.ToPtr();
+    SWideChar * textEnd = TextData.ToPtr() + CurTextLength;
+    SWideChar * lineStart = text + Stb.cursor;
+    SWideChar * lineEnd = text + Stb.cursor + 1;
 
     if ( *lineStart != '\n' ) {
         while ( lineEnd < textEnd ) {
@@ -643,12 +643,12 @@ void WTextEdit::ScrollLineEnd() {
     }
 
     AFont const * font = GetFont();
-    FWideChar * lineStart;
-    FWideChar * lineEnd;
+    SWideChar * lineStart;
+    SWideChar * lineEnd;
 
     if ( FindLineStartEnd( Stb.cursor, &lineStart, &lineEnd ) ) {
         float lineWidth = 0;
-        for ( FWideChar * s = lineStart ; s < lineEnd ; s++ ) {
+        for ( SWideChar * s = lineStart ; s < lineEnd ; s++ ) {
             lineWidth += font->GetCharAdvance( *s );
         }
 
@@ -743,8 +743,8 @@ bool WTextEdit::Copy() {
 
     const int startOfs = bHasSelection ? GetSelectionStart() : 0;
     const int endOfs = bHasSelection ? GetSelectionEnd() : CurTextLength;
-    FWideChar * const start = TextData.ToPtr() + startOfs;
-    FWideChar * const end = TextData.ToPtr() + endOfs;
+    SWideChar * const start = TextData.ToPtr() + startOfs;
+    SWideChar * const end = TextData.ToPtr() + endOfs;
 
     const int clipboardDataLen = Core::WideStrUTF8Bytes( start, end ) + 1;
 
@@ -771,10 +771,10 @@ bool WTextEdit::Paste() {
 
     int len = Core::UTF8StrLength( s );
 
-    TPodArray< FWideChar > wideStr;
+    TPodArray< SWideChar > wideStr;
     wideStr.Resize( len );
 
-    FWideChar ch;
+    SWideChar ch;
     int i, byteLen;
     i = 0;
     while ( len-- > 0 ) {
@@ -944,7 +944,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
             if ( bSingleLine || ( bCtrlEnterForNewLine && !bCtrl ) || ( !bCtrlEnterForNewLine && bCtrl ) ) {
                 E_OnEnterPress.Dispatch();
             } else if ( !bReadOnly ) {
-                FWideChar ch = '\n';
+                SWideChar ch = '\n';
                 if ( FilterCharacter( ch ) ) {
                     PressKey( (int)ch );
                     ScrollToCursor();
@@ -961,7 +961,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
 
             if ( bAllowTabInput && !bReadOnly && !bCtrl && !bShift && !bAlt ) {
                 if ( InsertSpacesOnTab > 0 ) {
-                    FWideChar ch = ' ';
+                    SWideChar ch = ' ';
                     if ( FilterCharacter( ch ) ) {
                         for ( int i = 0 ; i < InsertSpacesOnTab ; i++ ) {
                             PressKey( ( int )ch );
@@ -969,7 +969,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
                         ScrollToCursor();
                     }
                 } else {
-                    FWideChar ch = '\t';
+                    SWideChar ch = '\t';
                     if ( FilterCharacter( ch ) ) {
                         PressKey( ( int )ch );
                         ScrollToCursor();
@@ -1129,7 +1129,7 @@ void WTextEdit::OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp
         return;
     }
 
-    FWideChar ch = _Event.UnicodeCharacter;
+    SWideChar ch = _Event.UnicodeCharacter;
     if ( !FilterCharacter( ch ) ) {
         return;
     }
@@ -1175,14 +1175,14 @@ void WTextEdit::OnDrawEvent( ACanvas & _Canvas ) {
         int start = GetSelectionStart();
         int end = GetSelectionEnd();
 
-        FWideChar const * seltext;
+        SWideChar const * seltext;
         Float2 selstart = CalcCursorOffset( font, TextData.ToPtr(), start, &seltext );
         const float lineHeight = fontSize;
         float lineWidth = 0.0f;
-        FWideChar const * s = seltext;
-        FWideChar const * s_end = TextData.ToPtr() + end;
+        SWideChar const * s = seltext;
+        SWideChar const * s_end = TextData.ToPtr() + end;
         while ( s < s_end ) {
-            FWideChar c = *s++;
+            SWideChar c = *s++;
             if ( c == '\n' ) {
                 lineWidth = Math::Max( lineWidth, font->GetCharAdvance(' ') * 0.4f );
                 _Canvas.DrawRectFilled( mins + selstart, mins + selstart + Float2( lineWidth, lineHeight ), SelectionColor );
@@ -1222,10 +1222,10 @@ void WTextEdit::UpdateWidgetSize() {
     const float lineHeight = font->GetFontSize();
     Float2 size( 0.0f, lineHeight );
     float lineWidth = 0.0f;
-    FWideChar const * s = TextData.ToPtr();
-    FWideChar const * s_end = TextData.ToPtr() + CurTextLength;
+    SWideChar const * s = TextData.ToPtr();
+    SWideChar const * s_end = TextData.ToPtr() + CurTextLength;
     while ( s < s_end ) {
-        FWideChar c = *s++;
+        SWideChar c = *s++;
         if ( c == '\n' ) {
             size.X = Math::Max( size.X, lineWidth );
             size.Y += lineHeight;
@@ -1259,8 +1259,8 @@ void WTextEdit::UpdateWidgetSize() {
     }
 }
 
-bool WTextEdit::FilterCharacter( FWideChar & _Char ) {
-    FWideChar c = _Char;
+bool WTextEdit::FilterCharacter( SWideChar & _Char ) {
+    SWideChar c = _Char;
 
     if ( c < 128 && c != ' ' && !isprint( ( int )( c & 0xFF ) ) ) {
         if ( ( c != '\n' || bSingleLine ) && ( c != '\t' || !bAllowTabInput ) ) {

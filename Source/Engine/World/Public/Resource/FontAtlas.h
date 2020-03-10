@@ -53,15 +53,15 @@ public:
 
     int GetFontSize() const;
 
-    ImFontGlyph const * FindGlyph( FWideChar c ) const;
+    ImFontGlyph const * FindGlyph( SWideChar c ) const;
 
-    float GetCharAdvance( FWideChar c ) const;
+    float GetCharAdvance( SWideChar c ) const;
 
     Float2 CalcTextSizeA( float _Size, float _MaxWidth, float _WrapWidth, const char * _TextBegin, const char * _TextEnd = nullptr, const char** _Remaining = nullptr ) const; // utf8
 
     const char * CalcWordWrapPositionA( float _Scale, const char * _Text, const char * _TextEnd, float _WrapWidth ) const;
 
-    FWideChar const * CalcWordWrapPositionW( float _Scale, FWideChar const * _Text, FWideChar const * _TextEnd, float _WrapWidth ) const;
+    SWideChar const * CalcWordWrapPositionW( float _Scale, SWideChar const * _Text, SWideChar const * _TextEnd, float _WrapWidth ) const;
 
     void SetDisplayOffset( Float2 const & _Offset );
 

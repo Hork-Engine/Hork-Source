@@ -44,7 +44,7 @@ public:
     int   NumBucketIndices = 0;
 
     THash() {
-        static_assert( IsPowerOfTwoConstexpr( HashBucketsCount ), "Buckets count must be power of two" );
+        static_assert( IsPowerOfTwo( HashBucketsCount ), "Buckets count must be power of two" );
 
         HashBuckets = const_cast< int * >( InvalidHashIndex );
         IndexChain = const_cast< int * >( InvalidHashIndex );

@@ -160,16 +160,16 @@ int ARuntime::GetPhysicalMonitorsCount() {
 
 #ifdef AN_OS_WIN32
 
-struct waitableTimer_t {
-    HANDLE handle = nullptr;
-    ~waitableTimer_t() {
-        if ( handle ) {
-            CloseHandle( handle );
+struct SWaitableTimer {
+    HANDLE Handle = nullptr;
+    ~SWaitableTimer() {
+        if ( Handle ) {
+            CloseHandle( Handle );
         }
     }
 };
 
-static waitableTimer_t WaitableTimer;
+static SWaitableTimer WaitableTimer;
 static LARGE_INTEGER WaitTime;
 
 //#include <thread>
@@ -180,12 +180,12 @@ static void WaitMicrosecondsWIN32( int _Microseconds ) {
 #else
     WaitTime.QuadPart = -10 * _Microseconds;
 
-    if ( !WaitableTimer.handle ) {
-        WaitableTimer.handle = CreateWaitableTimer( NULL, TRUE, NULL );
+    if ( !WaitableTimer.Handle ) {
+        WaitableTimer.Handle = CreateWaitableTimer( NULL, TRUE, NULL );
     }
 
-    SetWaitableTimer( WaitableTimer.handle, &WaitTime, 0, NULL, NULL, FALSE );
-    WaitForSingleObject( WaitableTimer.handle, INFINITE );
+    SetWaitableTimer( WaitableTimer.Handle, &WaitTime, 0, NULL, NULL, FALSE );
+    WaitForSingleObject( WaitableTimer.Handle, INFINITE );
     //CloseHandle( WaitableTimer );
 #endif
 }

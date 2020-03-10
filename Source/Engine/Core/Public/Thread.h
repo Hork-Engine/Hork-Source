@@ -32,6 +32,13 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
+/**
+
+AThread
+
+Thread.
+
+*/
 class AThread final {
     AN_FORBID_COPY( AThread )
 
@@ -66,7 +73,7 @@ private:
     static void EmptyRoutine( void * ) {}
 };
 
-/*
+/**
 
 AThreadSync
 
@@ -96,7 +103,7 @@ private:
 #endif
 };
 
-/*
+/**
 
 ASyncGuard
 
@@ -123,7 +130,7 @@ AN_FORCEINLINE ASyncGuard::~ASyncGuard() {
     Sync.EndScope();
 }
 
-/*
+/**
 
 ASyncGuardCond
 
@@ -156,7 +163,7 @@ AN_FORCEINLINE ASyncGuardCond::~ASyncGuardCond() {
     }
 }
 
-/*
+/**
 
 ASyncEvent
 
@@ -170,13 +177,13 @@ public:
     ASyncEvent();
     ~ASyncEvent();
 
-    // Waits until the event is in the signaled state.
+    /** Waits until the event is in the signaled state. */
     void Wait();
 
-    // Waits until the event is in the signaled state or the timeout interval elapses.
+    /** Waits until the event is in the signaled state or the timeout interval elapses. */
     void WaitTimeout( int _Milliseconds, bool & _TimedOut );
 
-    // Set event to the signaled state.
+    /** Set event to the signaled state. */
     void Signal();
 
 private:

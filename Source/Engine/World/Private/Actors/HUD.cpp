@@ -60,7 +60,7 @@ void AHUD::DrawText( AFont * _Font, int x, int y, AColor4 const & color, const c
 
     const char * s = _Text;
     int byteLen;
-    FWideChar ch;
+    SWideChar ch;
     int cx = x;
 
     while ( *s ) {

@@ -371,7 +371,7 @@ Power of two compile-time check
 
 */
 template< typename T, typename = TStdEnableIf< std::is_integral<T>::value > >
-constexpr bool IsPowerOfTwoConstexpr( const T _Value ) {
+constexpr bool IsPowerOfTwo( const T _Value ) {
     return (_Value & (_Value - 1)) == 0 && _Value > 0;
 }
 

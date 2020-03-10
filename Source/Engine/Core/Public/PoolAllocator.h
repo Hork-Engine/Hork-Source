@@ -37,7 +37,7 @@ class TPoolAllocator {
     AN_FORBID_COPY( TPoolAllocator )
 
     static_assert( MAX_BLOCK_SIZE >= 1, "Invalid MAX_BLOCK_SIZE" );
-    static_assert( ALIGNMENT >= 16 && ALIGNMENT <= 128 && IsPowerOfTwoConstexpr( ALIGNMENT ), "Alignment Check" );
+    static_assert( ALIGNMENT >= 16 && ALIGNMENT <= 128 && IsPowerOfTwo( ALIGNMENT ), "Alignment Check" );
 
     constexpr static int CHUNK_SIZE = Align( sizeof( T ) < sizeof( size_t ) ? sizeof( size_t ) : sizeof( T ), ALIGNMENT );
 

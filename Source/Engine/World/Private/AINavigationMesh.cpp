@@ -59,7 +59,7 @@ ARuntimeVariable RVDrawNavMeshNodes( _CTS( "DrawNavMeshNodes" ), _CTS( "0" ), VA
 ARuntimeVariable RVDrawNavMesh( _CTS( "DrawNavMesh" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawNavMeshTileBounds( _CTS( "DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
 
-static_assert( sizeof( SNavPolyRef ) == sizeof( dtPolyRef ), "Type sizeof check" );
+AN_SIZEOF_STATIC_CHECK( SNavPolyRef, sizeof( dtPolyRef ) );
 
 static const int MAX_LAYERS = 255;
 static const bool RECAST_ENABLE_LOGGING = true;

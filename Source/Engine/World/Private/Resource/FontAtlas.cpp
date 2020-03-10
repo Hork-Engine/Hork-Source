@@ -123,14 +123,14 @@ int AFont::GetFontSize() const {
     return Font ? Font->FontSize : 8;
 }
 
-ImFontGlyph const * AFont::FindGlyph( FWideChar c ) const {
+ImFontGlyph const * AFont::FindGlyph( SWideChar c ) const {
     if ( !Font ) {
         return nullptr;
     }
     return Font->FindGlyph( c );
 }
 
-float AFont::GetCharAdvance( FWideChar c ) const {
+float AFont::GetCharAdvance( SWideChar c ) const {
     if ( !Font ) {
         return 0.0f;
     }
@@ -151,7 +151,7 @@ const char * AFont::CalcWordWrapPositionA( float _Scale, const char * _Text, con
     return Font->CalcWordWrapPositionA( _Scale, _Text, _TextEnd, _WrapWidth );
 }
 
-FWideChar const * AFont::CalcWordWrapPositionW( float _Scale, FWideChar const * _Text, FWideChar const * _TextEnd, float _WrapWidth ) const {
+SWideChar const * AFont::CalcWordWrapPositionW( float _Scale, SWideChar const * _Text, SWideChar const * _TextEnd, float _WrapWidth ) const {
     if ( !Font ) {
         return _Text;
     }

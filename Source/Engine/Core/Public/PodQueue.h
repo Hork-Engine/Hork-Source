@@ -48,7 +48,7 @@ public:
     TPodQueue()
         : pQueue(StaticData), QueueHead(0), QueueTail(0), MaxQueueLength(MAX_QUEUE_LENGTH)
     {
-        static_assert( IsPowerOfTwoConstexpr( MAX_QUEUE_LENGTH ), "Queue length must be power of two" );
+        static_assert( IsPowerOfTwo( MAX_QUEUE_LENGTH ), "Queue length must be power of two" );
     }
 
     TPodQueue( TPodQueue const & _Queue ) {
@@ -102,7 +102,7 @@ public:
         }
 
         if ( FIXED_LENGTH ) {
-            GLogger.Printf( "TStaticQueue::Push: queue overflow\n" );
+            GLogger.Printf( "TPodQueue::Push: queue overflow\n" );
             QueueTail++;
             QueueHead++;
             return &pQueue[ ( QueueHead - 1 ) & ( MaxQueueLength - 1 ) ];

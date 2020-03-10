@@ -213,7 +213,7 @@ struct SJoystickStateEvent {
 };
 
 struct SCharEvent {
-    FWideChar UnicodeCharacter;
+    SWideChar UnicodeCharacter;
     int ModMask;
 };
 

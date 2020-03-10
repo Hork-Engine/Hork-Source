@@ -147,7 +147,7 @@ void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment ) {
     byte * bytes;
     byte * aligned;
 
-    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwoConstexpr( _Alignment ) );
+    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwo( _Alignment ) );
 
     if ( _Alignment <= 16 ) {
         _Alignment = 16;

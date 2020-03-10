@@ -257,12 +257,12 @@ public:
 
     /** Set callback for input characters */
     template< typename T >
-    void SetCharacterCallback( T * _Object, void (T::*_Method)( FWideChar, int, double ), bool _ExecuteEvenWhenPaused = false ) {
+    void SetCharacterCallback( T * _Object, void (T::*_Method)( SWideChar, int, double ), bool _ExecuteEvenWhenPaused = false ) {
         SetCharacterCallback( { _Object, _Method }, _ExecuteEvenWhenPaused );
     }
 
     /** Set callback for input characters */
-    void SetCharacterCallback( TCallback< void( FWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused = false );
+    void SetCharacterCallback( TCallback< void( SWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused = false );
 
     void UnsetCharacterCallback();
 
@@ -285,7 +285,7 @@ public:
 
     float GetMouseAxisState( int _Axis );
 
-    void NotifyUnicodeCharacter( FWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp );
+    void NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp );
 
     AInputComponent * GetNext() { return Next; }
     AInputComponent * GetPrev() { return Prev; }
@@ -378,7 +378,7 @@ protected:
     float MouseAxisStateX;
     float MouseAxisStateY;
 
-    TCallback< void( FWideChar, int, double ) > CharacterCallback;
+    TCallback< void( SWideChar, int, double ) > CharacterCallback;
     bool bCharacterCallbackExecuteEvenWhenPaused;
 
     AInputComponent * Next;

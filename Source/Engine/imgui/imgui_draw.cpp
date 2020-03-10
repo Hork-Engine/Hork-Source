@@ -2726,7 +2726,7 @@ const char* ImFont::CalcWordWrapPositionA(float scale, const char* text, const c
 }
 
 // 0xc0de:
-FWideChar const * ImFont::CalcWordWrapPositionW( float scale, FWideChar const * text, FWideChar const * text_end, float wrap_width ) const
+SWideChar const * ImFont::CalcWordWrapPositionW( float scale, SWideChar const * text, SWideChar const * text_end, float wrap_width ) const
 {
     // Simple word-wrapping for English, not full-featured. Please submit failing cases!
     // FIXME: Much possible improvements (don't cut things like "word !", "word!!!" but cut within "word,,,,", more sensible support for punctuations, support for Unicode punctuations, etc.)
@@ -2748,19 +2748,19 @@ FWideChar const * ImFont::CalcWordWrapPositionW( float scale, FWideChar const * 
     float blank_width = 0.0f;
     wrap_width /= scale; // We work with unscaled widths to avoid scaling every characters
 
-    FWideChar const * word_end = text;
-    FWideChar const * prev_word_end = NULL;
+    SWideChar const * word_end = text;
+    SWideChar const * prev_word_end = NULL;
     bool inside_word = true;
 
-    FWideChar const * s = text;
+    SWideChar const * s = text;
     while ( s < text_end )
     {
-        FWideChar c = *s;
+        SWideChar c = *s;
 
         if ( c == 0 )
             break;
 
-        FWideChar const * next_s = s + 1;
+        SWideChar const * next_s = s + 1;
 
         if ( c < 32 )
         {

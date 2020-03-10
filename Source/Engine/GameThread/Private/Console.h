@@ -47,7 +47,7 @@ public:
     void SetFullscreen( bool _Fullscreen );
     void Resize( int _VidWidth );
     void Print( const char * _Text );
-    void WidePrint( FWideChar const * _Text );
+    void WidePrint( SWideChar const * _Text );
     void KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor );
     void CharEvent( SCharEvent const & _Event );
     void MouseWheelEvent( SMouseWheelEvent const & _Event );
