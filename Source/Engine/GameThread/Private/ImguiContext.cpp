@@ -147,7 +147,8 @@ void AImguiContext::SetFont( AFont * _Font ) {
 
 void AImguiContext::BeginFrame( float _TimeStep ) {
     SVideoMode const & videoMode = GEngine.GetVideoMode();
-    Float2 const & cursorPosition = AInputComponent::GetCursorPosition();
+    //Float2 const & cursorPosition = AInputComponent::GetCursorPosition();
+    Float2 cursorPosition(0); // TODO: = Desktop->GetCursorPosition();
 
     ImGuiIO & IO = ImGui::GetIO();
 
@@ -161,7 +162,8 @@ void AImguiContext::BeginFrame( float _TimeStep ) {
     ImGui::NewFrame();
 
     if ( IO.WantSetMousePos ) {
-        AInputComponent::SetCursorPosition( IO.MousePos.x, IO.MousePos.y );
+        //AInputComponent::SetCursorPosition( IO.MousePos.x, IO.MousePos.y );
+        // TODO: Desktop->SetCursorPosition( IO.MousePos.x, IO.MousePos.y );
     }
 }
 

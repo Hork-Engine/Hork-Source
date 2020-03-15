@@ -56,8 +56,6 @@ public:
 
     bool InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) override;
 
-    void StreamRewind() override;
-
     void StreamSeek( int _PositionInSamples ) override;
 
     int StreamDecodePCM( short * _Buffer, int _NumShorts ) override;

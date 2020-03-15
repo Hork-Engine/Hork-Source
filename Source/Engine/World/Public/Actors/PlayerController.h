@@ -36,6 +36,7 @@ SOFTWARE.
 #include <World/Public/Audio/AudioSystem.h>
 
 class AInputMappings;
+class WViewport;
 
 class ANGIE_API ARenderingParameters final : public ABaseObject {
     AN_CLASS( ARenderingParameters, ABaseObject )
@@ -86,8 +87,7 @@ public:
     /** Player command context */
     ACommandContext CommandContext;
 
-    /** Set viewport */
-    void SetViewport( Float2 const & _Position, Float2 const & _Size );
+    TWeakRef< WViewport > Viewport;
 
     /** Override listener location. If listener is not specified, pawn camera will be used. */
     void SetAudioListener( ASceneComponent * _AudioListener );
@@ -113,14 +113,7 @@ public:
     /** Set player controller command context current */
     void SetCurrentCommandContext();
 
-    /** Activate or deactivate controller inputs */
-    void SetActive( bool _Active );
-
-    /** Get viewport screen position */
-    Float2 const & GetViewportPosition() const { return ViewportPosition; }
-
-    /** Get viewport screen size */
-    Float2 const & GetViewportSize() const { return ViewportSize; }
+    float GetViewportAspectRatio() const;
 
     /** Get current audio listener */
     ASceneComponent * GetAudioListener();
@@ -149,9 +142,6 @@ public:
     /** Get controller player index */
     int GetPlayerIndex() const;
 
-    /** Active status of controller inputs */
-    bool IsActive() const;
-
     /** Primary audio listener */
     static APlayerController * GetCurrentAudioListener();
 
@@ -179,8 +169,6 @@ private:
     TRef< AAudioParameters > AudioParameters;
     TWeakRef< ASceneComponent > AudioListener;
     TWeakRef< AHUD > HUD;
-    Float2 ViewportPosition;
-    Float2 ViewportSize;
 
     static APlayerController * CurrentAudioListener;
     static ACommandContext * CurrentCommandContext;

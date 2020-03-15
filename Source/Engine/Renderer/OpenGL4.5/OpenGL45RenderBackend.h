@@ -38,9 +38,10 @@ class ARenderBackend : public IRenderBackend {
 public:
     ARenderBackend() : IRenderBackend( "OpenGL 4.5" ) {}
 
-    void PreInit() override;
-    void Initialize( void * _NativeWindowHandle ) override;
+    void Initialize( SVideoModeInfo const & _Info ) override;
     void Deinitialize() override;
+
+    void * GetMainWindow() override;
 
     void RenderFrame( SRenderFrame * _FrameData ) override;
     void SwapBuffers() override;

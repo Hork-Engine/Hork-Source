@@ -47,12 +47,13 @@ static const int GLFWCursorMode[2] = { GLFW_CURSOR_NORMAL, GLFW_CURSOR_DISABLED 
 static double MousePositionX = MOUSE_LOST;
 static double MousePositionY = MOUSE_LOST;
 
-static unsigned short VidWidth;
-static unsigned short VidHeight;
-static unsigned short VidPhysicalMonitor;
+static int VidWidth;
+static int VidHeight;
+static int VidPhysicalMonitor;
 static uint8_t VidRefreshRate;
 static bool VidFullscreen;
 static char VidRenderBackend[32];
+
 static uint8_t WinOpacity;
 static bool WinDecorated;
 static bool WinAutoIconify;
@@ -61,13 +62,6 @@ static char WinTitle[32];
 static int WinPositionX;
 static int WinPositionY;
 static bool WinDisabledCursor;
-
-static bool bSetRenderBackend = false;
-static bool bSetVideoMode = false;
-static bool bSetWindowDefs = false;
-static bool bSetWindowPos = false;
-static bool bSetFocus = false;
-
 static bool bIsWindowFocused = false;
 static bool bIsWindowIconified = false;
 static bool bIsWindowVisible = false;
@@ -257,26 +251,7 @@ static void ScrollCallback( GLFWwindow * _Window, double _WheelX, double _WheelY
 static void DropCallback( GLFWwindow *, int, const char** ) {
 }
 
-static void CreateDisplays() {
-    //GRenderBackend = FindRenderBackend( VidRenderBackend );
-    //if ( !GRenderBackend ) {
-    //    CriticalError( "Unknown rendering backend \"%s\"\n", VidRenderBackend );
-    //}
-
-    GRenderBackend->PreInit();
-
-    glfwWindowHint( GLFW_VISIBLE, GLFW_FALSE );
-    glfwWindowHint( GLFW_FOCUS_ON_SHOW, GLFW_TRUE );
-    glfwWindowHint( GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE );
-    glfwWindowHint( GLFW_CENTER_CURSOR, GLFW_TRUE );
-    glfwWindowHint( GLFW_FOCUSED, GLFW_TRUE );
-    glfwWindowHint( GLFW_RESIZABLE, GLFW_FALSE );
-    glfwWindowHint( GLFW_DECORATED, WinDecorated );
-    glfwWindowHint( GLFW_AUTO_ICONIFY, WinAutoIconify );
-    glfwWindowHint( GLFW_FLOATING, WinFloating );
-    glfwWindowHint( GLFW_MAXIMIZED, GLFW_FALSE );
-    glfwWindowHint( GLFW_REFRESH_RATE, VidRefreshRate );
-
+static void InitRenderer() {
     GLFWmonitor * monitor = nullptr;
     if ( VidFullscreen ) {
         APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
@@ -284,19 +259,29 @@ static void CreateDisplays() {
         monitor = ( GLFWmonitor * )physMonitor->Internal.Pointer;
     }
 
-    Wnd = glfwCreateWindow( VidWidth, VidHeight, WinTitle, monitor, nullptr );
-    if ( !Wnd ) {
-        CriticalError( "Failed to initialize game display\n" );
-    }
+    SVideoModeInfo desiredMode = {};
 
+    desiredMode.Width = VidWidth;
+    desiredMode.Height = VidHeight;
+    desiredMode.RefreshRate = VidRefreshRate;
+    desiredMode.Monitor = monitor;
+    desiredMode.Title = WinTitle;
+    desiredMode.bDecorated = WinDecorated;
+    desiredMode.bAutoIconify = WinAutoIconify;
+    desiredMode.bFloating = WinFloating;
+
+    GRenderBackend->Initialize( desiredMode );
+
+    Wnd = (GLFWwindow *)GRenderBackend->GetMainWindow();
+
+    // Store real video mode
+    glfwGetWindowSize( Wnd, &VidWidth, &VidHeight );
+    monitor = glfwGetWindowMonitor( Wnd );
     if ( monitor ) {
         const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
-
-        // Store real refresh rate
         VidRefreshRate = videoMode->refreshRate;
     }
-
-    VidFullscreen = glfwGetWindowMonitor( Wnd ) != nullptr;
+    VidFullscreen = monitor != nullptr;
 
     // Disable cursor to discard any mouse moving
     bool bDisabledCursor = WinDisabledCursor;
@@ -336,21 +321,11 @@ static void CreateDisplays() {
     }
     WinDisabledCursor = bDisabledCursor;
 
-    GRenderBackend->Initialize( Wnd );
-
-    bSetRenderBackend = false;
-    bSetVideoMode = false;
-    bSetWindowDefs = false;
-    bSetWindowPos = false;
-    bSetFocus = false;
-
     SendChangedVideoModeEvent();
 }
 
-static void DestroyDisplays() {
+static void DeinitRenderer() {
     GRenderBackend->Deinitialize();
-
-    glfwDestroyWindow( Wnd );
 
     // Unpress all pressed keys
     for ( int i = 0 ; i <= GLFW_KEY_LAST ; i++ ) {
@@ -398,11 +373,57 @@ void AWindowManager::Initialize() {
     Core::ZeroMem( PressedKeys, sizeof( PressedKeys ) );
     Core::ZeroMem( PressedMouseButtons, sizeof( PressedMouseButtons ) );
 
-    CreateDisplays();
+    InitRenderer();
 }
 
 void AWindowManager::Deinitialize() {
-    DestroyDisplays();
+    DeinitRenderer();
+}
+
+static void SetVideoMode() {
+    if ( VidFullscreen ) {
+        APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
+        SPhysicalMonitor * physMonitor = physicalMonitors[ VidPhysicalMonitor ];
+        GLFWmonitor * monitor = ( GLFWmonitor * )physMonitor->Internal.Pointer;
+
+        glfwSetWindowMonitor( Wnd,
+                              monitor,                      // switch to fullscreen mode
+                              WinPositionX, WinPositionY,   // position is ignored
+                              VidWidth,
+                              VidHeight,
+                              VidRefreshRate );
+
+        glfwGetWindowSize( Wnd, &VidWidth, &VidHeight );
+        monitor = glfwGetWindowMonitor( Wnd );
+        if ( monitor ) {
+            const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
+            VidRefreshRate = videoMode->refreshRate;
+        }
+        VidFullscreen = monitor != nullptr;
+
+        if ( VidFullscreen ) {
+            glfwFocusWindow( Wnd );
+        }
+
+    } else {
+        glfwSetWindowMonitor( Wnd,
+            nullptr,  // switch to windowed mode
+            WinPositionX, WinPositionY,
+            VidWidth,
+            VidHeight,
+            0         // refresh rate is ignored
+        );
+
+        glfwFocusWindow( Wnd );
+
+        if ( !glfwGetWindowAttrib( Wnd, GLFW_VISIBLE ) ) {
+            glfwShowWindow( Wnd );
+        }
+    }
+
+    MousePositionX = MOUSE_LOST;
+
+    SendChangedVideoModeEvent();
 }
 
 static void ProcessEvent( SEvent const & _Event ) {
@@ -416,10 +437,12 @@ static void ProcessEvent( SEvent const & _Event ) {
 
         if ( Core::Stricmp( VidRenderBackend, _Event.Data.SetVideoModeEvent.Backend ) ) {
             Core::Strcpy( VidRenderBackend, sizeof( VidRenderBackend ), _Event.Data.SetVideoModeEvent.Backend );
-            bSetRenderBackend = true;
-        }
 
-        bSetVideoMode = true;
+            DeinitRenderer();
+            InitRenderer();
+        } else {
+            SetVideoMode();
+        }
         break;
     case ET_SetWindowDefsEvent:
         WinOpacity = _Event.Data.SetWindowDefsEvent.Opacity;
@@ -427,24 +450,23 @@ static void ProcessEvent( SEvent const & _Event ) {
         WinAutoIconify = _Event.Data.SetWindowDefsEvent.bAutoIconify;
         WinFloating = _Event.Data.SetWindowDefsEvent.bFloating;
         Core::Strcpy( WinTitle, sizeof( WinTitle ), _Event.Data.SetWindowDefsEvent.Title );
-        bSetWindowDefs = true;
+
+        glfwSetWindowOpacity( Wnd, WinOpacity / 255.0f );
+        glfwSetWindowAttrib( Wnd, GLFW_DECORATED, WinDecorated );
+        glfwSetWindowAttrib( Wnd, GLFW_AUTO_ICONIFY, WinAutoIconify );
+        glfwSetWindowAttrib( Wnd, GLFW_FLOATING, WinFloating );
+        glfwSetWindowTitle( Wnd, WinTitle );
         break;
     case ET_SetWindowPosEvent:
         WinPositionX = _Event.Data.SetWindowPosEvent.PositionX;
         WinPositionY = _Event.Data.SetWindowPosEvent.PositionY;
-        bSetWindowPos = true;
+        if ( !VidFullscreen ) {
+            glfwSetWindowPos( Wnd, WinPositionX, WinPositionY );
+        }
         break;
     case ET_SetInputFocusEvent:
-        bSetFocus = true;
+        glfwFocusWindow( Wnd );
         break;
-//    case ET_SetRenderFeaturesEvent:
-//        VSyncMode = Int( _Event.Data.SetRenderFeaturesEvent.VSyncMode ).Clamp( VSync_Disabled, VSync_Half );
-//        {
-//            FRenderFeatures features;
-//            features.VSyncMode = VSyncMode;
-//            GRenderBackend->SetRenderFeatures( features );
-//        }
-//        break;
     case ET_SetCursorModeEvent:
         if ( WinDisabledCursor != _Event.Data.SetCursorModeEvent.bDisabledCursor ) {
             WinDisabledCursor = _Event.Data.SetCursorModeEvent.bDisabledCursor;
@@ -470,6 +492,10 @@ static void SendChangedVideoModeEvent() {
     data.RefreshRate = VidRefreshRate;
     data.bFullscreen = VidFullscreen;
     Core::Strcpy( data.Backend, sizeof( data.Backend ), GRenderBackend->GetName() );
+    int framebufferWidth, framebufferHeight;
+    glfwGetFramebufferSize( Wnd, &framebufferWidth, &framebufferHeight );
+    data.FramebufferWidth = framebufferWidth;
+    data.FramebufferHeight = framebufferHeight;
 }
 
 void AWindowManager::Update( AEventQueue & _EventQueue ) {
@@ -478,94 +504,7 @@ void AWindowManager::Update( AEventQueue & _EventQueue ) {
         ProcessEvent( *event );
     }
 
-    if ( bSetRenderBackend ) {
-        bSetRenderBackend = false;
-
-        DestroyDisplays();
-        CreateDisplays();
-    }
-
-    if ( bSetVideoMode ) {
-        bSetVideoMode = false;
-
-        if ( VidFullscreen ) {
-            APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
-            SPhysicalMonitor * physMonitor = physicalMonitors[ VidPhysicalMonitor ];
-            GLFWmonitor * monitor = ( GLFWmonitor * )physMonitor->Internal.Pointer;
-            bool bIsMonitorConnected = monitor != nullptr;
-
-            glfwSetWindowMonitor( Wnd,
-                                  monitor,                      // switch to fullscreen mode
-                                  WinPositionX, WinPositionY,   // position is ignored
-                                  VidWidth,
-                                  VidHeight,
-                                  VidRefreshRate );
-
-            bSetWindowPos = false;
-
-            if ( bIsMonitorConnected ) {
-                // Store real refresh rate
-                const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
-                VidRefreshRate = videoMode->refreshRate;
-
-                glfwFocusWindow( Wnd );
-                bSetFocus = false;
-            }
-
-            if ( !glfwGetWindowMonitor( Wnd ) ) {
-                VidFullscreen = false;
-            }
-
-        } else {
-            glfwSetWindowMonitor( Wnd,
-                nullptr,  // switch to windowed mode
-                WinPositionX, WinPositionY,
-                VidWidth,
-                VidHeight,
-                0         // refresh rate is ignored
-            );
-
-            bSetWindowPos = false;
-
-            glfwFocusWindow( Wnd );
-            bSetFocus = false;
-
-            if ( !glfwGetWindowAttrib( Wnd, GLFW_VISIBLE ) ) {
-                glfwShowWindow( Wnd );
-            }
-        }
-
-        MousePositionX = MOUSE_LOST;
-
-        SendChangedVideoModeEvent();
-    }
-
-    if ( bSetWindowDefs ) {
-        bSetWindowDefs = false;
-
-        glfwSetWindowOpacity( Wnd, WinOpacity / 255.0f );
-        glfwSetWindowAttrib( Wnd, GLFW_DECORATED, WinDecorated );
-        glfwSetWindowAttrib( Wnd, GLFW_AUTO_ICONIFY, WinAutoIconify );
-        glfwSetWindowAttrib( Wnd, GLFW_FLOATING, WinFloating );
-        glfwSetWindowTitle( Wnd, WinTitle );
-    }
-
-    if ( bSetWindowPos ) {
-        bSetWindowPos = false;
-
-        if ( !VidFullscreen ) {
-            glfwSetWindowPos( Wnd, WinPositionX, WinPositionY );
-        }
-    }
-
-    if ( bSetFocus ) {
-        bSetFocus = false;
-
-        glfwFocusWindow( Wnd );
-    }
-
     bool bCheck;
-
     bCheck = bIsWindowVisible;
     bIsWindowVisible = glfwGetWindowAttrib( Wnd, GLFW_VISIBLE );
     if ( bIsWindowVisible != bCheck ) {

@@ -42,10 +42,6 @@ bool IAudioStreamInterface::InitializeMemoryStream( const byte * _EncodedData, i
     return false;
 }
 
-void IAudioStreamInterface::StreamRewind() {
-
-}
-
 void IAudioStreamInterface::StreamSeek( int _PositionInSamples ) {
 
 }

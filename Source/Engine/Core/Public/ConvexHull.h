@@ -48,9 +48,12 @@ class AConvexHull final {
 
 private:
     int MaxPoints;
-    int NumPoints;
-    Float3 Points[4];
 
+public:
+    int NumPoints;
+    Float3 Points[1];
+
+private:
     AConvexHull() {}
     ~AConvexHull() {}
 
@@ -87,7 +90,5 @@ public:
 
     EPlaneSide Clip( PlaneF const & _Plane, float _Epsilon, AConvexHull ** _Front ) const;
 
-    Float3 * GetPoints() { return Points; }
-
-    int GetNumPoints() const { return NumPoints; }
+    int GetMaxPoints() const { return MaxPoints; }
 };

@@ -422,30 +422,17 @@ void AStreamedMemoryGPU::Deinitialize() {
 }
 
 size_t AStreamedMemoryGPU::AllocateVertex( size_t _SizeInBytes, const void * _Data ) {
-    //AN_ASSERT( IsAligned( _SizeInBytes, VERTEX_SIZE_ALIGN ) );
-    return Allocate( _SizeInBytes, GetVertexBufferAlignment(), _Data );
+    const int VertexBufferAlignment = 32; // TODO: Get from driver!!!
+    return Allocate( _SizeInBytes, VertexBufferAlignment, _Data );
 }
 
 size_t AStreamedMemoryGPU::AllocateIndex( size_t _SizeInBytes, const void * _Data ) {
-    //AN_ASSERT( IsAligned( _SizeInBytes, INDEX_SIZE_ALIGN ) );
-    return Allocate( _SizeInBytes, GetIndexBufferAlignment(), _Data );
+    const int IndexBufferAlignment = 16; // TODO: Get from driver!!!
+    return Allocate( _SizeInBytes, IndexBufferAlignment, _Data );
 }
 
 size_t AStreamedMemoryGPU::AllocateJoint( size_t _SizeInBytes, const void * _Data ) {
-    //AN_ASSERT( IsAligned( _SizeInBytes, JOINT_SIZE_ALIGN ) );
-    return Allocate( _SizeInBytes, GetJointBufferAlignment(), _Data );
-}
-
-int AStreamedMemoryGPU::GetVertexBufferAlignment() const {
-    return 32; // TODO: Get from driver!!!
-}
-
-int AStreamedMemoryGPU::GetIndexBufferAlignment() const {
-    return 16; // TODO: Get from driver!!!
-}
-
-int AStreamedMemoryGPU::GetJointBufferAlignment() const {
-    return 256; // TODO: Get from driver!!!
+    return Allocate( _SizeInBytes, GRenderBackend->GetUniformBufferOffsetAlignment(), _Data );
 }
 
 void * AStreamedMemoryGPU::Map( size_t _StreamHandle ) {

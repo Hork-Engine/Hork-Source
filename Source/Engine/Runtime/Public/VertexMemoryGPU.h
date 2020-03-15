@@ -206,12 +206,6 @@ public:
     /** Allocate joint data. Return stream handle. Stream handle is actual during current frame. */
     size_t AllocateJoint( size_t _SizeInBytes, const void * _Data );
 
-    int GetVertexBufferAlignment() const;
-
-    int GetIndexBufferAlignment() const;
-
-    int GetJointBufferAlignment() const;
-
     /** Map data. Mapped data is actual during current frame. */
     void * Map( size_t _StreamHandle );
 

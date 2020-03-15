@@ -28,6 +28,7 @@ SOFTWARE.
 
 */
 
+#include <World/Public/Audio/AudioSystem.h>
 #include "AudioSystemLocal.h"
 
 #include <Runtime/Public/Runtime.h>
@@ -40,6 +41,17 @@ SOFTWARE.
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>
 
+//#define USE_MOJOAL
+
+#ifndef USE_MOJOAL
+#define AL_NO_PROTOTYPES
+#else
+#define AL_API //__declspec(dllexport)
+#define ALC_API //__declspec(dllexport)
+#define ALC_APIENTRY __cdecl
+#endif
+
+#include <AL/al.h>
 #include <AL/alc.h>
 
 //#ifdef USE_MOJOAL
@@ -47,6 +59,14 @@ SOFTWARE.
 //#undef ALC_API
 //#include "mojoal.h"
 //#endif
+
+#ifndef AN_NO_OPENAL
+#define AL_SAFE( Instruction ) {Instruction;AL_CheckError( AN_STRINGIFY( Instruction ) );}
+#define ALC_SAFE( Instruction ) {Instruction;ALC_CheckError( AN_STRINGIFY( Instruction ) );}
+#else
+#define AL_SAFE( Instruction )
+#define ALC_SAFE( Instruction )
+#endif
 
 AN_CLASS_META( AAudioControlCallback )
 AN_CLASS_META( AAudioGroup )
@@ -56,79 +76,79 @@ static ALCdevice * ALCDevice = NULL;
 static ALCcontext * ALCContext = NULL;
 
 #ifndef USE_MOJOAL
-LPALENABLE alEnable = NULL;
-LPALDISABLE alDisable = NULL;
-LPALISENABLED alIsEnabled = NULL;
-LPALGETSTRING alGetString = NULL;
-LPALGETBOOLEANV alGetBooleanv = NULL;
-LPALGETINTEGERV alGetIntegerv = NULL;
-LPALGETFLOATV alGetFloatv = NULL;
-LPALGETDOUBLEV alGetDoublev = NULL;
-LPALGETBOOLEAN alGetBoolean = NULL;
-LPALGETINTEGER alGetInteger = NULL;
-LPALGETFLOAT alGetFloat = NULL;
-LPALGETDOUBLE alGetDouble = NULL;
-LPALGETERROR alGetError = NULL;
-LPALISEXTENSIONPRESENT alIsExtensionPresent = NULL;
-LPALGETPROCADDRESS alGetProcAddress = NULL;
-LPALGETENUMVALUE alGetEnumValue = NULL;
-LPALLISTENERF alListenerf = NULL;
-LPALLISTENER3F alListener3f = NULL;
-LPALLISTENERFV alListenerfv = NULL;
-LPALLISTENERI alListeneri = NULL;
-LPALLISTENER3I alListener3i = NULL;
-LPALLISTENERIV alListeneriv = NULL;
-LPALGETLISTENERF alGetListenerf = NULL;
-LPALGETLISTENER3F alGetListener3f = NULL;
-LPALGETLISTENERFV alGetListenerfv = NULL;
-LPALGETLISTENERI alGetListeneri = NULL;
-LPALGETLISTENER3I alGetListener3i = NULL;
-LPALGETLISTENERIV alGetListeneriv = NULL;
-LPALGENSOURCES alGenSources = NULL;
-LPALDELETESOURCES alDeleteSources = NULL;
-LPALISSOURCE alIsSource = NULL;
-LPALSOURCEF alSourcef = NULL;
-LPALSOURCE3F alSource3f = NULL;
-LPALSOURCEFV alSourcefv = NULL;
-LPALSOURCEI alSourcei = NULL;
-LPALSOURCE3I alSource3i = NULL;
-LPALSOURCEIV alSourceiv = NULL;
-LPALGETSOURCEF alGetSourcef = NULL;
-LPALGETSOURCE3F alGetSource3f = NULL;
-LPALGETSOURCEFV alGetSourcefv = NULL;
-LPALGETSOURCEI alGetSourcei = NULL;
-LPALGETSOURCE3I alGetSource3i = NULL;
-LPALGETSOURCEIV alGetSourceiv = NULL;
-LPALSOURCEPLAYV alSourcePlayv = NULL;
-LPALSOURCESTOPV alSourceStopv = NULL;
-LPALSOURCEREWINDV alSourceRewindv = NULL;
-LPALSOURCEPAUSEV alSourcePausev = NULL;
-LPALSOURCEPLAY alSourcePlay = NULL;
-LPALSOURCESTOP alSourceStop = NULL;
-LPALSOURCEREWIND alSourceRewind = NULL;
-LPALSOURCEPAUSE alSourcePause = NULL;
-LPALSOURCEQUEUEBUFFERS alSourceQueueBuffers = NULL;
-LPALSOURCEUNQUEUEBUFFERS alSourceUnqueueBuffers = NULL;
-LPALGENBUFFERS alGenBuffers = NULL;
-LPALDELETEBUFFERS alDeleteBuffers = NULL;
-LPALISBUFFER alIsBuffer = NULL;
-LPALBUFFERDATA alBufferData = NULL;
-LPALBUFFERF alBufferf = NULL;
-LPALBUFFER3F alBuffer3f = NULL;
-LPALBUFFERFV alBufferfv = NULL;
-LPALBUFFERI alBufferi = NULL;
-LPALBUFFER3I alBuffer3i = NULL;
-LPALBUFFERIV alBufferiv = NULL;
-LPALGETBUFFERF alGetBufferf = NULL;
-LPALGETBUFFER3F alGetBuffer3f = NULL;
-LPALGETBUFFERFV alGetBufferfv = NULL;
-LPALGETBUFFERI alGetBufferi = NULL;
-LPALGETBUFFER3I alGetBuffer3i = NULL;
-LPALGETBUFFERIV alGetBufferiv = NULL;
-LPALDOPPLERFACTOR alDopplerFactor = NULL;
-LPALDOPPLERVELOCITY alDopplerVelocity = NULL;
-LPALSPEEDOFSOUND alSpeedOfSound = NULL;
-LPALDISTANCEMODEL alDistanceModel = NULL;
+static LPALENABLE alEnable = NULL;
+static LPALDISABLE alDisable = NULL;
+static LPALISENABLED alIsEnabled = NULL;
+static LPALGETSTRING alGetString = NULL;
+static LPALGETBOOLEANV alGetBooleanv = NULL;
+static LPALGETINTEGERV alGetIntegerv = NULL;
+static LPALGETFLOATV alGetFloatv = NULL;
+static LPALGETDOUBLEV alGetDoublev = NULL;
+static LPALGETBOOLEAN alGetBoolean = NULL;
+static LPALGETINTEGER alGetInteger = NULL;
+static LPALGETFLOAT alGetFloat = NULL;
+static LPALGETDOUBLE alGetDouble = NULL;
+static LPALGETERROR alGetError = NULL;
+static LPALISEXTENSIONPRESENT alIsExtensionPresent = NULL;
+static LPALGETPROCADDRESS alGetProcAddress = NULL;
+static LPALGETENUMVALUE alGetEnumValue = NULL;
+static LPALLISTENERF alListenerf = NULL;
+static LPALLISTENER3F alListener3f = NULL;
+static LPALLISTENERFV alListenerfv = NULL;
+static LPALLISTENERI alListeneri = NULL;
+static LPALLISTENER3I alListener3i = NULL;
+static LPALLISTENERIV alListeneriv = NULL;
+static LPALGETLISTENERF alGetListenerf = NULL;
+static LPALGETLISTENER3F alGetListener3f = NULL;
+static LPALGETLISTENERFV alGetListenerfv = NULL;
+static LPALGETLISTENERI alGetListeneri = NULL;
+static LPALGETLISTENER3I alGetListener3i = NULL;
+static LPALGETLISTENERIV alGetListeneriv = NULL;
+static LPALGENSOURCES alGenSources = NULL;
+static LPALDELETESOURCES alDeleteSources = NULL;
+static LPALISSOURCE alIsSource = NULL;
+static LPALSOURCEF alSourcef = NULL;
+static LPALSOURCE3F alSource3f = NULL;
+static LPALSOURCEFV alSourcefv = NULL;
+static LPALSOURCEI alSourcei = NULL;
+static LPALSOURCE3I alSource3i = NULL;
+static LPALSOURCEIV alSourceiv = NULL;
+static LPALGETSOURCEF alGetSourcef = NULL;
+static LPALGETSOURCE3F alGetSource3f = NULL;
+static LPALGETSOURCEFV alGetSourcefv = NULL;
+static LPALGETSOURCEI alGetSourcei = NULL;
+static LPALGETSOURCE3I alGetSource3i = NULL;
+static LPALGETSOURCEIV alGetSourceiv = NULL;
+static LPALSOURCEPLAYV alSourcePlayv = NULL;
+static LPALSOURCESTOPV alSourceStopv = NULL;
+static LPALSOURCEREWINDV alSourceRewindv = NULL;
+static LPALSOURCEPAUSEV alSourcePausev = NULL;
+static LPALSOURCEPLAY alSourcePlay = NULL;
+static LPALSOURCESTOP alSourceStop = NULL;
+static LPALSOURCEREWIND alSourceRewind = NULL;
+static LPALSOURCEPAUSE alSourcePause = NULL;
+static LPALSOURCEQUEUEBUFFERS alSourceQueueBuffers = NULL;
+static LPALSOURCEUNQUEUEBUFFERS alSourceUnqueueBuffers = NULL;
+static LPALGENBUFFERS alGenBuffers = NULL;
+static LPALDELETEBUFFERS alDeleteBuffers = NULL;
+static LPALISBUFFER alIsBuffer = NULL;
+static LPALBUFFERDATA alBufferData = NULL;
+static LPALBUFFERF alBufferf = NULL;
+static LPALBUFFER3F alBuffer3f = NULL;
+static LPALBUFFERFV alBufferfv = NULL;
+static LPALBUFFERI alBufferi = NULL;
+static LPALBUFFER3I alBuffer3i = NULL;
+static LPALBUFFERIV alBufferiv = NULL;
+static LPALGETBUFFERF alGetBufferf = NULL;
+static LPALGETBUFFER3F alGetBuffer3f = NULL;
+static LPALGETBUFFERFV alGetBufferfv = NULL;
+static LPALGETBUFFERI alGetBufferi = NULL;
+static LPALGETBUFFER3I alGetBuffer3i = NULL;
+static LPALGETBUFFERIV alGetBufferiv = NULL;
+static LPALDOPPLERFACTOR alDopplerFactor = NULL;
+static LPALDOPPLERVELOCITY alDopplerVelocity = NULL;
+static LPALSPEEDOFSOUND alSpeedOfSound = NULL;
+static LPALDISTANCEMODEL alDistanceModel = NULL;
 #endif
 
 static LPALCCREATECONTEXT malcCreateContext = NULL;
@@ -878,6 +898,9 @@ static void VirtualizeChannel( SAudioChannel * _Channel ) {
     virtualChannel->bIsVirtual = true;
 
     if ( _Channel->bStreamed ) {
+        // FIXME: PlaybackPosition на самом деле находитс€ немного в будущем, т.к.
+        // инкрементируетс€ сразу после отправки буфера на воспроизведение.
+        // TODO: Ќужно определить реальный playback position!
         virtualChannel->VirtualTime = (float)virtualChannel->PlaybackPosition / virtualChannel->Clip->GetFrequency();
     } else {
         AL_SAFE( alGetSourcef( _Channel->SourceId, AL_SEC_OFFSET, &virtualChannel->VirtualTime ) );
@@ -1048,22 +1071,24 @@ static SAudioChannel * AllocateChannel( int _Priority ) {
 static bool StreamToBuffer( SAudioChannel * channel, int _BufferId ) {
     AAudioClip * Clip = channel->Clip;
 
-    const int RequiredBufferSize = Clip->GetBufferSize();
+    const int requiredBufferSize = Clip->GetBufferSize();
 
-    AN_ASSERT( RequiredBufferSize <= AUDIO_MAX_PCM_BUFFER_SIZE );
+    AN_ASSERT( requiredBufferSize <= AUDIO_MAX_PCM_BUFFER_SIZE );
 
-    int TotalSamples = channel->StreamInterface->StreamDecodePCM( PCM, RequiredBufferSize );
-    if ( TotalSamples == 0 ) {
+    int totalSamples = channel->StreamInterface->StreamDecodePCM( PCM, requiredBufferSize );
+    if ( totalSamples == 0 ) {
         return false;
     }
 
-    if ( Clip->GetBitsPerSample() == 16 ) {
-        AL_SAFE( alBufferData( _BufferId, Clip->GetFormat(), PCM, TotalSamples * sizeof( short ), Clip->GetFrequency() ) );
-    } else {
-        AL_SAFE( alBufferData( _BufferId, Clip->GetFormat(), PCM, TotalSamples * sizeof( byte ), Clip->GetFrequency() ) );
-    }
+    SAudioBufferUpload upload = {};
+    upload.SamplesCount = totalSamples / Clip->GetChannels();
+    upload.BitsPerSample = Clip->GetBitsPerSample();
+    upload.Frequency = Clip->GetFrequency();
+    upload.PCM = PCM;
+    upload.bStereo = Clip->GetChannels() == 2;
+    UploadAudioBuffer( _BufferId, &upload );
 
-    channel->PlaybackPosition += Clip->GetChannels() == 1 ? TotalSamples : TotalSamples >> 1;
+    channel->PlaybackPosition += upload.SamplesCount;
 
     return true;
 }
@@ -1165,20 +1190,20 @@ static void PlayChannel( SAudioChannel * channel, float _PlayOffset ) {
 
         IAudioStreamInterface * streamInterface = channel->StreamInterface;
 
-        streamInterface->StreamRewind();
-
         if ( !channel->StreamBuffers[0] ) {
             AL_SAFE( alGenBuffers( 2, channel->StreamBuffers ) );
         }
 
         AL_SAFE( alSourcei( channel->SourceId, AL_LOOPING, AL_FALSE ) );
 
-        channel->PlaybackPosition = 0;
         if ( _PlayOffset > 0 ) {
             // TODO: check this
             int PositionInSamples = playOffsetMod * channel->Clip->GetFrequency();
             streamInterface->StreamSeek( PositionInSamples );
             channel->PlaybackPosition = PositionInSamples;
+        } else {
+            streamInterface->StreamRewind();
+            channel->PlaybackPosition = 0;
         }
 
         // Play
@@ -1203,7 +1228,7 @@ static void PlayChannel( SAudioChannel * channel, float _PlayOffset ) {
 
     } else {
         AL_SAFE( alSourcei( channel->SourceId, AL_LOOPING, channel->bLooping ) );
-        AL_SAFE( alSourcei( channel->SourceId, AL_BUFFER, channel->Clip->GetBufferId() ) );
+        AL_SAFE( alSourcei( channel->SourceId, AL_BUFFER, channel->Clip->GetBufferHandle() ) );
 
         // Remove data used for streaming
         if ( channel->StreamBuffers[0] ) {
@@ -1428,13 +1453,13 @@ static void UpdateChannelStreaming( SAudioChannel * _Channel ) {
         return;
     }
 
-    ALint Processed = 0;
+    ALint processed = 0;
 
-    AL_SAFE( alGetSourcei( _Channel->SourceId, AL_BUFFERS_PROCESSED, &Processed ) );
+    AL_SAFE( alGetSourcei( _Channel->SourceId, AL_BUFFERS_PROCESSED, &processed ) );
 
-    bool bPlay = ( Processed == _Channel->NumStreamBuffers );
+    bool bPlay = ( processed == _Channel->NumStreamBuffers );
 
-    while ( Processed-- ) {
+    while ( processed-- ) {
         ALuint buffer = 0;
 
         AL_SAFE( alSourceUnqueueBuffers( _Channel->SourceId, 1, &buffer ) );
@@ -1461,22 +1486,22 @@ static void UpdateChannelStreaming( SAudioChannel * _Channel ) {
     }
 }
 
-static void UpdateChannel( SAudioChannel * Channel, float _TimeStep ) {
-    if ( Channel->bFree ) {
+static void UpdateChannel( SAudioChannel * InChannel, float InTimeStep ) {
+    if ( InChannel->bFree ) {
         return;
     }
 
-    if ( Channel->ClipSerialId != Channel->Clip->GetSerialId() ) {
+    if ( InChannel->ClipSerialId != InChannel->Clip->GetSerialId() ) {
         // audio clip was modified
-        FreeChannel( Channel );
+        FreeChannel( InChannel );
         //DevirtualizeOneChannel();
         // TODO: ReloadChannelAudio( i )
         return;
     }
 
-    if ( Channel->bStopWhenInstigatorDead ) {
-        if ( Channel->Instigator && Channel->Instigator->IsPendingKill() ) {
-            FreeChannel( Channel );
+    if ( InChannel->bStopWhenInstigatorDead ) {
+        if ( InChannel->Instigator && InChannel->Instigator->IsPendingKill() ) {
+            FreeChannel( InChannel );
             //DevirtualizeOneChannel();
             return;
         }
@@ -1486,87 +1511,98 @@ static void UpdateChannel( SAudioChannel * Channel, float _TimeStep ) {
     bool bUpdateSoundVelocity = false;
     bool bUpdateSoundDirection = false;
 
-    if ( Channel->SourceType == AUDIO_SOURCE_FOLLOW_INSIGATOR ) {
+    if ( InChannel->SourceType == AUDIO_SOURCE_FOLLOW_INSIGATOR ) {
 
-        if ( Channel->Instigator && !Channel->Instigator->IsPendingKill() ) {
-            Channel->PrevSoundPosition = Channel->SoundPosition;
-            Channel->SoundPosition = Channel->Instigator->GetWorldPosition();
+        if ( InChannel->Instigator && !InChannel->Instigator->IsPendingKill() ) {
+            InChannel->PrevSoundPosition = InChannel->SoundPosition;
+            InChannel->SoundPosition = InChannel->Instigator->GetWorldPosition();
 
             bUpdateSoundPosition = true;
 
-            if ( Channel->bUsePhysicalVelocity ) {
-                if ( Channel->PhysicalBody ) {
-                    Channel->Velocity = Channel->PhysicalBody->GetLinearVelocity();
+            if ( InChannel->bUsePhysicalVelocity ) {
+                if ( InChannel->PhysicalBody ) {
+                    InChannel->Velocity = InChannel->PhysicalBody->GetLinearVelocity();
                     bUpdateSoundVelocity = true;
                 }
-            } else if ( Channel->bUseVelocity ) {
-                Channel->Velocity = ( Channel->SoundPosition - Channel->PrevSoundPosition ) / _TimeStep;
+            } else if ( InChannel->bUseVelocity ) {
+                InChannel->Velocity = ( InChannel->SoundPosition - InChannel->PrevSoundPosition ) / InTimeStep;
                 bUpdateSoundVelocity = true;
             }
 
-            if ( Channel->bDirectional ) {
-                Channel->Direction = Channel->Instigator->GetWorldForwardVector();
+            if ( InChannel->bDirectional ) {
+                InChannel->Direction = InChannel->Instigator->GetWorldForwardVector();
                 bUpdateSoundDirection = true;
             }
         }
     }
 
-    if ( !Channel->bIsVirtual ) {
-        int State;
-        alGetSourcei( Channel->SourceId, AL_SOURCE_STATE, &State );
-        if ( State == AL_STOPPED ) {
-            FreeChannel( Channel );
-            //DevirtualizeOneChannel();
-            return;
+    if ( !InChannel->bIsVirtual ) {
+        if ( !InChannel->bStreamed ) {
+            int State;
+            alGetSourcei( InChannel->SourceId, AL_SOURCE_STATE, &State );
+            if ( State == AL_STOPPED ) {
+                FreeChannel( InChannel );
+                return;
+            }
+        } else {
+            if ( !InChannel->bLooping ) {
+                // FIXME: PlaybackPosition на самом деле находитс€ немного в будущем, т.к.
+                // инкрементируетс€ сразу после отправки буфера на воспроизведение.
+                // TODO: Ќужно определить реальный playback position!
+                if ( InChannel->PlaybackPosition >= InChannel->Clip->GetSamplesCount() ) {
+                    FreeChannel( InChannel );
+                    return;
+                }
+            }
         }
     }
 
-    AWorld * world = Channel->World;
-    if ( world && !Channel->bPlayEvenWhenPaused ) {
+    AWorld * world = InChannel->World;
+    if ( world && !InChannel->bPlayEvenWhenPaused ) {
         if ( world->IsPaused() ) {
-            if ( !Channel->bPausedByGame ) {
-                Channel->bPausedByGame = true;
+            if ( !InChannel->bPausedByGame ) {
+                InChannel->bPausedByGame = true;
 
-                if ( !Channel->bIsVirtual ) {
-                    alSourcePause( Channel->SourceId );
+                if ( !InChannel->bIsVirtual ) {
+                    alSourcePause( InChannel->SourceId );
                 }
             }
         } else {
-            if ( Channel->bPausedByGame ) {
-                Channel->bPausedByGame = false;
+            if ( InChannel->bPausedByGame ) {
+                InChannel->bPausedByGame = false;
 
-                if ( !Channel->bIsVirtual ) {
-                    alSourcePlay( Channel->SourceId );
+                if ( !InChannel->bIsVirtual ) {
+                    alSourcePlay( InChannel->SourceId );
                 }
             }
         }
     }
 
-    if ( Channel->bPausedByGame ) {
+    if ( InChannel->bPausedByGame ) {
         return;
     }
 
-    if ( Channel->LifeSpan > 0 ) {
-        Channel->LifeSpan -= _TimeStep;
+    if ( InChannel->LifeSpan > 0 ) {
+        InChannel->LifeSpan -= InTimeStep;
 
-        if ( Channel->LifeSpan < 0 ) {
-            FreeChannel( Channel );
+        if ( InChannel->LifeSpan < 0 ) {
+            FreeChannel( InChannel );
             //DevirtualizeOneChannel();
             return;
         }
     }
 
-    if ( Channel->bIsVirtual ) {
+    if ( InChannel->bIsVirtual ) {
         // Update playback position
 
-        Channel->VirtualTime += _TimeStep;
+        InChannel->VirtualTime += InTimeStep;
 
-        if ( Channel->VirtualTime >= Channel->Clip->GetDurationInSecounds() ) {
-            if ( Channel->bLooping ) {
-                Channel->VirtualTime = Math::FMod( Channel->VirtualTime, Channel->Clip->GetDurationInSecounds() );
+        if ( InChannel->VirtualTime >= InChannel->Clip->GetDurationInSecounds() ) {
+            if ( InChannel->bLooping ) {
+                InChannel->VirtualTime = Math::FMod( InChannel->VirtualTime, InChannel->Clip->GetDurationInSecounds() );
             } else {
                 // Stopped
-                FreeChannel( Channel );
+                FreeChannel( InChannel );
                 //DevirtualizeOneChannel();
                 return;
             }
@@ -1576,33 +1612,33 @@ static void UpdateChannel( SAudioChannel * Channel, float _TimeStep ) {
 
         // Update world position
         if ( bUpdateSoundPosition ) {
-            AL_SAFE( alSourcefv( Channel->SourceId, AL_POSITION, ( float * )Channel->SoundPosition.ToPtr() ) );
+            AL_SAFE( alSourcefv( InChannel->SourceId, AL_POSITION, ( float * )InChannel->SoundPosition.ToPtr() ) );
         }
 
         // Update velocity
         if ( bUpdateSoundVelocity ) {
-            AL_SAFE( alSourcefv( Channel->SourceId, AL_VELOCITY, ( float * )Channel->Velocity.ToPtr() ) );
+            AL_SAFE( alSourcefv( InChannel->SourceId, AL_VELOCITY, ( float * )InChannel->Velocity.ToPtr() ) );
         }
 
         // Update direction
         if ( bUpdateSoundDirection ) {
-            AL_SAFE( alSourcefv( Channel->SourceId, AL_DIRECTION, ( float * )Channel->Direction.ToPtr() ) );
+            AL_SAFE( alSourcefv( InChannel->SourceId, AL_DIRECTION, ( float * )InChannel->Direction.ToPtr() ) );
         }
 
         // Update volume
-        float volume = CalcAudioVolume( Channel );
-        if ( Channel->CurVolume != volume ) {
-            Channel->CurVolume = volume;
+        float volume = CalcAudioVolume( InChannel );
+        if ( InChannel->CurVolume != volume ) {
+            InChannel->CurVolume = volume;
 
-            if ( Channel->CurVolume == 0.0f ) {
-                FreeOrVirtualizeChannel( Channel );
+            if ( InChannel->CurVolume == 0.0f ) {
+                FreeOrVirtualizeChannel( InChannel );
             } else {
-                AL_SAFE( alSourcef( Channel->SourceId, AL_GAIN, volume ) );
+                AL_SAFE( alSourcef( InChannel->SourceId, AL_GAIN, volume ) );
             }
         }
     }
 
-    UpdateChannelStreaming( Channel );
+    UpdateChannelStreaming( InChannel );
 }
 
 int AAudioSystem::GetNumActiveChannels() const {
@@ -1732,16 +1768,38 @@ void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep ) {
     }
 }
 
-unsigned int AL_CreateBuffer() {
-    unsigned int id;
+SAudioBufferHandle CreateAudioBuffer( SAudioBufferUpload const * Upload ) {
+    SAudioBufferHandle id;
     AL_SAFE( alGenBuffers( 1, &id ) );
+    UploadAudioBuffer( id, Upload );
     return id;
 }
 
-void AL_DeleteBuffer( unsigned int _Id ) {
-    AL_SAFE( alDeleteBuffers( 1, &_Id ) );
+void DeleteAudioBuffer( SAudioBufferHandle BufferId ) {
+    AL_SAFE( alDeleteBuffers( 1, &BufferId ) );
 }
 
-void AL_UploadBuffer( unsigned int _Id, int _Format, void * _Data, size_t _Size, int _Frequency ) {
-    AL_SAFE( alBufferData( _Id, _Format, _Data, _Size, _Frequency ) );
+void UploadAudioBuffer( SAudioBufferHandle BufferId, SAudioBufferUpload const * Upload ) {
+    ALenum format;
+    size_t size;
+
+    switch ( Upload->BitsPerSample ) {
+    case 16:
+        format = Upload->bStereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
+        break;
+    case 8:
+        format = Upload->bStereo ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
+        break;
+    default:
+        CriticalError( "UploadAudioBuffer: Unsupported bits per sample: %d\n", Upload->BitsPerSample );
+        return;
+    }
+
+    size = Upload->SamplesCount * (Upload->BitsPerSample >> 3);
+
+    if ( Upload->bStereo ) {
+        size <<= 1;
+    }
+
+    AL_SAFE( alBufferData( BufferId, format, Upload->PCM, size, Upload->Frequency ) );
 }

@@ -202,10 +202,6 @@ class ANGIE_API AInputComponent final : public AActorComponent {
     AN_COMPONENT( AInputComponent, AActorComponent )
 
 public:
-
-    // Set displays to receive input
-    //int ReceiveInputMask = RI_ALL_DISPLAYS;
-
     /** Filter keyboard events */
     bool bIgnoreKeyboardEvents;
 
@@ -218,7 +214,8 @@ public:
     /** Filter character events */
     bool bIgnoreCharEvents;
 
-    bool bActive = true;
+    /** Mouse sensitivity factor */
+    float MouseSensitivity = 1.0f;
 
     int ControllerId;
 
@@ -266,7 +263,7 @@ public:
 
     void UnsetCharacterCallback();
 
-    void UpdateAxes( float _Fract, float _TimeStep );
+    void UpdateAxes( float _TimeStep );
 
     bool IsKeyDown( int _Key ) const { return GetButtonState( ID_KEYBOARD, _Key ); }
     bool IsMouseDown( int _Button ) const { return GetButtonState( ID_MOUSE, _Button ); }
@@ -290,12 +287,6 @@ public:
     AInputComponent * GetNext() { return Next; }
     AInputComponent * GetPrev() { return Prev; }
 
-    /** Set cursor position */
-    static void SetCursorPosition( float _X, float _Y ) { CursorPosition.X = _X; CursorPosition.Y = _Y; }
-
-    /** Get cursor position */
-    static Float2 const & GetCursorPosition() { return CursorPosition; }
-
     /** Used by EngineInstance during main game tick to update joystick state */
     static void SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected );
 
@@ -313,15 +304,22 @@ public:
 
 protected:
     struct SAxisBinding {
-        AString Name;                           // axis name
-        TCallback< void( float ) > Callback;    // binding callback
-        float AxisScale;                        // final axis value that will be passed to binding callback
+        /** Axis name */
+        AString Name;
+        /** Binding callback */
+        TCallback< void( float ) > Callback;
+        /** Final axis value that will be passed to binding callback */
+        float AxisScale;
+        /** Execute binding even when paused */
         bool bExecuteEvenWhenPaused;
     };
 
     struct SActionBinding {
-        AString Name;                           // action name
-        TCallback< void() > Callback[2];        // binding callback
+        /** Action name */
+        AString Name;
+        /** Binding callback */
+        TCallback< void() > Callback[2];
+        /** Execute binding even when paused */
         bool bExecuteEvenWhenPaused;
     };
 
@@ -331,6 +329,14 @@ protected:
         short ActionBinding;
         float AxisScale;
         uint8_t DevId;
+
+        bool HasAxis() const {
+            return AxisBinding != -1;
+        }
+
+        bool HasAction() const {
+            return ActionBinding != -1;
+        }
     };
 
     AInputComponent();
@@ -363,11 +369,9 @@ protected:
     THash<> ActionBindingsHash;
     TStdVector< SActionBinding > ActionBindings;
 
-    // Array of pressed keys
+    /** Array of pressed keys */
     SPressedKey PressedKeys[ MAX_PRESSED_KEYS ];
     int NumPressedKeys;
-
-    static Float2 CursorPosition;
 
     // Index to PressedKeys array or -1 if button is up
     char * DeviceButtonDown[ MAX_INPUT_DEVICES ];

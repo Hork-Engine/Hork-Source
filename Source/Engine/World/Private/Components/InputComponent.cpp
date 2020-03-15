@@ -40,7 +40,6 @@ AN_CLASS_META( AInputAction )
 AN_CLASS_META( AInputMappings )
 
 AN_BEGIN_CLASS_META( AInputComponent )
-//AN_ATTRIBUTE_( ReceiveInputMask, AF_DEFAULT )
 AN_ATTRIBUTE_( bIgnoreKeyboardEvents, AF_DEFAULT )
 AN_ATTRIBUTE_( bIgnoreMouseEvents, AF_DEFAULT )
 AN_ATTRIBUTE_( bIgnoreJoystickEvents, AF_DEFAULT )
@@ -363,8 +362,6 @@ static AInputComponentStatic Static;
 AInputComponent * AInputComponent::InputComponents = nullptr;
 AInputComponent * AInputComponent::InputComponentsTail = nullptr;
 
-Float2 AInputComponent::CursorPosition( 0.0f );
-
 const char * AInputHelper::TranslateDevice( int _DevId ) {
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return "UNKNOWN";
@@ -516,31 +513,24 @@ AInputMappings * AInputComponent::GetInputMappings() {
     return InputMappings;
 }
 
-void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
-    AN_ASSERT( _Fract > 0.0f );
-    AN_ASSERT( _Fract <= 1.0f );
-
+void AInputComponent::UpdateAxes( float _TimeStep ) {
     if ( !InputMappings ) {
         return;
     }
 
     bool bPaused = GetWorld()->IsPaused();
 
-    _Fract *= _TimeStep;
-
     for ( SAxisBinding & binding : AxisBindings ) {
         binding.AxisScale = 0.0f;
     }
 
     for ( SPressedKey * key = PressedKeys ; key < &PressedKeys[ NumPressedKeys ] ; key++ ) {
-        if ( key->AxisBinding != -1 ) {
-            AxisBindings[ key->AxisBinding ].AxisScale += key->AxisScale * _Fract;
-        } else {
-            // Key is pressed, but has no binding
+        if ( key->HasAxis() ) {
+            AxisBindings[ key->AxisBinding ].AxisScale += key->AxisScale * _TimeStep;
         }
     }
 
-    const TPodArray< AInputAxis * > & inputAxes = InputMappings->GetAxes();
+    TPodArray< AInputAxis * > const & inputAxes = InputMappings->GetAxes();
     for ( int i = 0 ; i < inputAxes.Size() ; i++ ) {
         AInputAxis * inputAxis = inputAxes[i];
 
@@ -570,7 +560,7 @@ void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
                         AN_ASSERT( mapping.AxisOrActionIndex == i );
 
                         if ( mapping.ControllerId == ControllerId ) {
-                            binding.AxisScale += Static.JoystickAxisState[ joyNum ][ joystickAxis ] * mapping.AxisScale * _Fract;
+                            binding.AxisScale += Static.JoystickAxisState[ joyNum ][ joystickAxis ] * mapping.AxisScale * _TimeStep;
                         }
                     }
                 }
@@ -592,10 +582,12 @@ void AInputComponent::UpdateAxes( float _Fract, float _TimeStep ) {
             }
         }
 
-        //if ( binding.AxisScale != 0.0f ) {
-            binding.Callback( binding.AxisScale );
-        //}
+        binding.Callback( binding.AxisScale );
     }
+
+    // Reset mouse axes
+    MouseAxisStateX = 0;
+    MouseAxisStateY = 0;
 }
 
 void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp ) {
@@ -730,8 +722,8 @@ void AInputComponent::NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _
 }
 
 void AInputComponent::SetMouseAxisState( float _X, float _Y ) {
-    MouseAxisStateX = _X;
-    MouseAxisStateY = _Y;
+    MouseAxisStateX += _X * MouseSensitivity;
+    MouseAxisStateY += _Y * MouseSensitivity;
 }
 
 float AInputComponent::GetMouseAxisState( int _Axis ) {

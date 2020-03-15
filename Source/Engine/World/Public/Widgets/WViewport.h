@@ -44,9 +44,15 @@ protected:
 
     void OnTransformDirty() override;
 
+    void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) override;
+
     void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
+    void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) override;
+
     void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
+
+    void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) override;
 
     void OnFocusLost() override;
 
@@ -55,7 +61,5 @@ protected:
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    void UpdatePlayerControllerViewport();
-
     TRef< APlayerController > PlayerController;
 };

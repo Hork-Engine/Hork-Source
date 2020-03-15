@@ -46,8 +46,6 @@ public:
 
     bool InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) override;
 
-    void StreamRewind() override;
-
     void StreamSeek( int _PositionInSamples ) override;
 
     int StreamDecodePCM( short * _Buffer, int _NumShorts ) override;
@@ -60,6 +58,7 @@ private:
     mpg123_handle_struct * Handle;
     int BlockSize;
     int NumChannels;
+    AMemoryStream MemoryStream;
 };
 
 class ANGIE_API AMp3Decoder : public IAudioDecoderInterface {

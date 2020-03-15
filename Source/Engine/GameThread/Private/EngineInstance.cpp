@@ -150,8 +150,6 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
 
     ProcessEvents();
 
-    AxesFract = 1;
-
     GameModule->OnGameStart();
 
 #ifdef IMGUI_CONTEXT
@@ -204,7 +202,9 @@ void AEngineInstance::Deinitialize() {
 void AEngineInstance::PrepareFrame() {
     ProcessEvents();
 
-    UpdateInputAxes( AxesFract );
+    for ( AInputComponent * component = AInputComponent::GetInputComponents() ; component ; component = component->GetNext() ) {
+        component->UpdateAxes( FrameDurationInSeconds );
+    }
 
     DrawCanvas();
 
@@ -388,20 +388,6 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) 
     if ( Desktop ) {
         Desktop->GenerateKeyEvents( _Event, _TimeStamp );
     }
-
-    UpdateInputAxes( AxesFractAvg );
-
-    for ( AInputComponent * component = AInputComponent::GetInputComponents()
-          ; component ; component = component->GetNext() ) {
-
-        if ( !component->bActive ) {
-            continue;
-        }
-
-        if ( !component->bIgnoreKeyboardEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
-            component->SetButtonState( ID_KEYBOARD, _Event.Key, _Event.Action, _Event.ModMask, _TimeStamp );
-        }
-    }
 }
 
 void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
@@ -415,20 +401,6 @@ void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, doub
 
     if ( Desktop ) {
         Desktop->GenerateMouseButtonEvents( _Event, _TimeStamp );
-    }
-
-    UpdateInputAxes( AxesFractAvg );
-
-    for ( AInputComponent * component = AInputComponent::GetInputComponents()
-          ; component ; component = component->GetNext() ) {
-
-        if ( !component->bActive ) {
-            continue;
-        }
-
-        if ( !component->bIgnoreJoystickEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
-            component->SetButtonState( ID_MOUSE, _Event.Button, _Event.Action, _Event.ModMask, _TimeStamp );
-        }
     }
 }
 
@@ -445,79 +417,28 @@ void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double
     if ( Desktop ) {
         Desktop->GenerateMouseWheelEvents( _Event, _TimeStamp );
     }
-
-    UpdateInputAxes( AxesFractAvg );
-
-    for ( AInputComponent * component = AInputComponent::GetInputComponents()
-          ; component ; component = component->GetNext() ) {
-
-        if ( !component->bActive ) {
-            continue;
-        }
-
-        if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
-            if ( _Event.WheelX < 0.0 ) {
-                component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Press, 0, _TimeStamp );
-                component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Release, 0, _TimeStamp );
-            } else if ( _Event.WheelX > 0.0 ) {
-                component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Press, 0, _TimeStamp );
-                component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Release, 0, _TimeStamp );
-            }
-            if ( _Event.WheelY < 0.0 ) {
-                component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Press, 0, _TimeStamp );
-                component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Release, 0, _TimeStamp );
-            } else if ( _Event.WheelY > 0.0 ) {
-                component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Press, 0, _TimeStamp );
-                component->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Release, 0, _TimeStamp );
-            }
-        }
-    }
 }
 
 void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStamp ) {
-    if ( !GConsole.IsActive() ) {
-        float x = _Event.X * MouseSensitivity;
-        float y = _Event.Y * MouseSensitivity;
-
-        AxesFract -= AxesFractAvg;
-
-        for ( AInputComponent * component = AInputComponent::GetInputComponents()
-              ; component ; component = component->GetNext() ) {
-
-            if ( !component->bActive ) {
-                continue;
-            }
-
-            if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
-                component->SetMouseAxisState( x, y );
-            }
-
-            component->UpdateAxes( AxesFractAvg, FrameDurationInSeconds );
-
-            if ( !component->bIgnoreMouseEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
-                component->SetMouseAxisState( 0, 0 );
-            }
-        }
-    }
-
-    Float2 CursorPosition = AInputComponent::GetCursorPosition();
-
-    // Simulate ballistics
-    const bool bSimulateCursorBallistics = true;
-    if ( bSimulateCursorBallistics ) {
-        CursorPosition.X += _Event.X / VideoMode.RefreshRate * DPI_X;
-        CursorPosition.Y -= _Event.Y / VideoMode.RefreshRate * DPI_Y;
-    } else {
-        CursorPosition.X += _Event.X;
-        CursorPosition.Y -= _Event.Y;
-    }
-    CursorPosition = CursorPosition.Clamp( Float2(0.0f), Float2( FramebufferWidth, FramebufferHeight ) );
-
-    AInputComponent::SetCursorPosition( CursorPosition.X, CursorPosition.Y );
-
     if ( Desktop ) {
-        Desktop->SetCursorPosition( CursorPosition );
-        Desktop->GenerateMouseMoveEvents( _Event, _TimeStamp );
+        Float2 cursorPosition = Desktop->GetCursorPosition();
+
+        // Simulate ballistics
+        const bool bSimulateCursorBallistics = true;
+        if ( bSimulateCursorBallistics ) {
+            cursorPosition.X += _Event.X / VideoMode.RefreshRate * DPI_X;
+            cursorPosition.Y -= _Event.Y / VideoMode.RefreshRate * DPI_Y;
+        } else {
+            cursorPosition.X += _Event.X;
+            cursorPosition.Y -= _Event.Y;
+        }
+        cursorPosition = cursorPosition.Clamp( Float2(0.0f), Float2( FramebufferWidth-1, FramebufferHeight-1 ) );
+
+        Desktop->SetCursorPosition( cursorPosition );
+
+        if ( !GConsole.IsActive() ) {
+            Desktop->GenerateMouseMoveEvents( _Event, _TimeStamp );
+        }
     }
 }
 
@@ -534,18 +455,6 @@ void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp 
     if ( Desktop ) {
         Desktop->GenerateCharEvents( _Event, _TimeStamp );
     }
-
-    for ( AInputComponent * component = AInputComponent::GetInputComponents()
-          ; component ; component = component->GetNext() ) {
-
-        if ( !component->bActive ) {
-            continue;
-        }
-
-        if ( !component->bIgnoreCharEvents /*&& ( component->ReceiveInputMask & RI_Mask )*/ ) {
-            component->NotifyUnicodeCharacter( _Event.UnicodeCharacter, _Event.ModMask, _TimeStamp );
-        }
-    }
 }
 
 void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _Event ) {
@@ -556,8 +465,8 @@ void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _E
     VideoMode.bFullscreen = _Event.bFullscreen;
     Core::Strcpy( VideoMode.Backend, sizeof( VideoMode.Backend ), _Event.Backend );
 
-    FramebufferWidth = VideoMode.Width; // TODO
-    FramebufferHeight = VideoMode.Height; // TODO
+    FramebufferWidth = _Event.FramebufferWidth;
+    FramebufferHeight = _Event.FramebufferHeight;
     RetinaScale = Float2( FramebufferWidth / VideoMode.Width, FramebufferHeight / VideoMode.Height );
 
     if ( _Event.bFullscreen ) {
@@ -581,10 +490,6 @@ void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _E
 
 void AEngineInstance::ProcessEvent( SEvent const & _Event ) {
     switch ( _Event.Type ) {
-    case ET_RuntimeUpdateEvent:
-        AxesFractAvg = 1.0f / (_Event.Data.RuntimeUpdateEvent.InputEventCount + 1);
-        AxesFract = 1.0f;
-        break;
     case ET_KeyEvent:
         OnKeyEvent( _Event.Data.KeyEvent, _Event.TimeStamp );
         break;
@@ -708,14 +613,6 @@ void AEngineInstance::SetInputFocus() {
     event.TimeStamp = GRuntime.SysSeconds_d();
 }
 
-//void AEngineInstance::SetRenderFeatures( int _VSyncMode ) {
-//    SEvent & event = SendEvent();
-//    event.Type = ET_SetRenderFeaturesEvent;
-//    event.TimeStamp = GRuntime.SysSeconds_d();
-//    SSetRenderFeaturesEvent & data = event.Data.SetRenderFeaturesEvent;
-//    data.VSyncMode = _VSyncMode;
-//}
-
 void AEngineInstance::SetCursorEnabled( bool _Enabled ) {
     SEvent & event = SendEvent();
     event.Type = ET_SetCursorModeEvent;
@@ -737,24 +634,6 @@ void AEngineInstance::MapWindowCoordinate( float & InOutX, float & InOutY ) cons
 void AEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) const {
     InOutX -= WindowPosX;
     InOutY -= WindowPosY;
-}
-
-void AEngineInstance::UpdateInputAxes( float _Fract ) {
-    if ( _Fract <= 0 ) {
-        return;
-    }
-
-    AxesFract -= _Fract;
-
-    for ( AInputComponent * component = AInputComponent::GetInputComponents()
-          ; component ; component = component->GetNext() ) {
-
-        if ( !component->bActive ) {
-            continue;
-        }
-
-        component->UpdateAxes( _Fract, FrameDurationInSeconds );
-    }
 }
 
 void AEngineInstance::SetDesktop( WDesktop * _Desktop ) {

@@ -64,6 +64,14 @@ void AResource::InitializeFromFile( const char * _Path ) {
 
         return;
 
+    } else if ( !Core::StricmpN( _Path, "/FS/", 4 ) ) {
+        _Path += 4;
+
+        if ( !LoadResource( _Path ) ) {
+            InitializeDefaultObject();
+        }
+
+        return;
     }
 
     // Invalid path

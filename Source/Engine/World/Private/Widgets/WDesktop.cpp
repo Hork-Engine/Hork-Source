@@ -60,6 +60,9 @@ WDesktop::~WDesktop() {
 
 WDesktop & WDesktop::AddWidget( WWidget * _Widget ) {
     _Widget->SetParent( Root );
+    if ( _Widget->bSetFocusOnAddToDesktop ) {
+        _Widget->SetFocus();
+    }
     return *this;
 }
 

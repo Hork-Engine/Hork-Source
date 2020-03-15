@@ -36,14 +36,19 @@ class ANGIE_API IAudioStreamInterface : public ABaseObject {
     AN_CLASS( IAudioStreamInterface, ABaseObject )
 
 public:
+    /** Initialize and use file as source */
     virtual bool InitializeFileStream( const char * _FileName );
 
+    /** Initialize and use encoded data as source */
     virtual bool InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength );
 
-    virtual void StreamRewind();
+    /** Seek to first sample */
+    void StreamRewind() { StreamSeek( 0 ); }
 
+    /** Seek to sample */
     virtual void StreamSeek( int _PositionInSamples );
 
+    /** Return total samples (samples * channels) */
     virtual int StreamDecodePCM( short * _Buffer, int _NumShorts );
 
 protected:
@@ -53,7 +58,7 @@ protected:
 class ANGIE_API IAudioDecoderInterface : public ABaseObject {
     AN_CLASS( IAudioDecoderInterface, ABaseObject )
 
-public:        
+public:
     virtual IAudioStreamInterface * CreateAudioStream();
 
     /** Decode file to memory */

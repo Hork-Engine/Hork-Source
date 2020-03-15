@@ -67,9 +67,6 @@ public:
     /** Allow to drop down the console */
     bool bAllowConsole = true;
 
-    /** Global mouse sensitivity */
-    float MouseSensitivity = 1.0f;
-
     ACanvas Canvas;
 
     /** Helper. Create a new world */
@@ -180,8 +177,6 @@ private:
     void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp );
     void OnChangedVideoModeEvent( struct SChangedVideoModeEvent const & _Event );
 
-    void UpdateInputAxes( float _Fract );
-
     /** Used to debug some features. Must be removed from release. */
     void DeveloperKeys( struct SKeyEvent const & _Event );
 
@@ -232,9 +227,6 @@ private:
     TRef< WDesktop > Desktop;
 
     ARuntimeCommandProcessor CommandProcessor;
-
-    float AxesFractAvg = 1;
-    float AxesFract = 1;
 };
 
 extern ANGIE_API AEngineInstance & GEngine;

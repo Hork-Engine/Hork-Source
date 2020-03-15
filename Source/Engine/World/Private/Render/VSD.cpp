@@ -629,12 +629,12 @@ static SPortalHull * VSD_CalcPortalWinding( SPortalLink const * InPortal, SPorta
     int flip = 0;
 
     // Clip portal hull by view plane
-    if ( !VSD_ClipPolygonFast( InPortal->Hull->GetPoints(), InPortal->Hull->GetNumPoints(), &PortalHull[ flip ], ViewPlane, 0.0f ) ) {
+    if ( !VSD_ClipPolygonFast( InPortal->Hull->Points, InPortal->Hull->NumPoints, &PortalHull[ flip ], ViewPlane, 0.0f ) ) {
 
-        AN_ASSERT( InPortal->Hull->GetNumPoints() <= MAX_HULL_POINTS );
+        AN_ASSERT( InPortal->Hull->NumPoints <= MAX_HULL_POINTS );
 
-        Core::Memcpy( PortalHull[ flip ].Points, InPortal->Hull->GetPoints(), InPortal->Hull->GetNumPoints() * sizeof( Float3 ) );
-        PortalHull[ flip ].NumPoints = InPortal->Hull->GetNumPoints();
+        Core::Memcpy( PortalHull[ flip ].Points, InPortal->Hull->Points, InPortal->Hull->NumPoints * sizeof( Float3 ) );
+        PortalHull[ flip ].NumPoints = InPortal->Hull->NumPoints;
     }
 
     if ( PortalHull[ flip ].NumPoints >= 3 ) {
@@ -2342,7 +2342,7 @@ static void VSD_LevelRaycastPortals_r( SVisArea * InArea ) {
 
         const Float3 p = Raycast.RayStart + Raycast.RayDir * dist;
 
-        if ( !BvPointInConvexHullCCW( p, portal->Plane.Normal, portal->Hull->GetPoints(), portal->Hull->GetNumPoints() ) ) {
+        if ( !BvPointInConvexHullCCW( p, portal->Plane.Normal, portal->Hull->Points, portal->Hull->NumPoints ) ) {
             continue;
         }
 
@@ -2405,7 +2405,7 @@ static void VSD_LevelRaycastBoundsPortals_r( SVisArea * InArea ) {
 
         const Float3 p = Raycast.RayStart + Raycast.RayDir * dist;
 
-        if ( !BvPointInConvexHullCCW( p, portal->Plane.Normal, portal->Hull->GetPoints(), portal->Hull->GetNumPoints() ) ) {
+        if ( !BvPointInConvexHullCCW( p, portal->Plane.Normal, portal->Hull->Points, portal->Hull->NumPoints ) ) {
             continue;
         }
 

@@ -40,11 +40,11 @@ SOFTWARE.
 #include "OpenGL45ColorPassRenderer.h"
 #include "OpenGL45WireframePassRenderer.h"
 #include "OpenGL45DebugDrawPassRenderer.h"
-#include "OpenGL45JointsAllocator.h"
 
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/WindowsDefs.h>
 #include <Core/Public/CriticalError.h>
+#include <Core/Public/Logger.h>
 
 #include <GL/glew.h>
 
@@ -74,6 +74,10 @@ void SetCurrentState( State * _State ) {
 
 State * GetCurrentState() {
     return CurrentState;
+}
+
+ghi_state_t * ghi_get_current_state() { // experemental
+    return nullptr;
 }
 
 void LogPrintf( const char * _Format, ... ) {
@@ -113,7 +117,11 @@ static void GHIImport_Deallocate( void * _Bytes ) {
     GZoneMemory.Free( _Bytes );
 }
 
-void ARenderBackend::PreInit() {
+void ARenderBackend::Initialize( SVideoModeInfo const & _Info ) {
+    using namespace GHI;
+
+    GLogger.Printf( "Initializing OpenGL backend...\n" );
+
     glfwWindowHint( GLFW_CLIENT_API, GLFW_OPENGL_API );
     // Possible APIs: GLFW_OPENGL_ES_API
 
@@ -148,14 +156,23 @@ void ARenderBackend::PreInit() {
     glfwWindowHint( GLFW_SRGB_CAPABLE, 1 );
     glfwWindowHint( GLFW_SAMPLES, 0 );
     glfwWindowHint( GLFW_STEREO, 0 );
-}
 
-void ARenderBackend::Initialize( void * _NativeWindowHandle ) {
-    using namespace GHI;
+    glfwWindowHint( GLFW_VISIBLE, GLFW_FALSE );
+    glfwWindowHint( GLFW_FOCUS_ON_SHOW, GLFW_TRUE );
+    glfwWindowHint( GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE );
+    glfwWindowHint( GLFW_CENTER_CURSOR, GLFW_TRUE );
+    glfwWindowHint( GLFW_FOCUSED, GLFW_TRUE );
+    glfwWindowHint( GLFW_RESIZABLE, GLFW_FALSE );
+    glfwWindowHint( GLFW_DECORATED, _Info.bDecorated );
+    glfwWindowHint( GLFW_AUTO_ICONIFY, _Info.bAutoIconify );
+    glfwWindowHint( GLFW_FLOATING, _Info.bFloating );
+    glfwWindowHint( GLFW_MAXIMIZED, GLFW_FALSE );
+    glfwWindowHint( GLFW_REFRESH_RATE, _Info.RefreshRate );
 
-    GLogger.Printf( "Initializing OpenGL backend...\n" );
-
-    WindowHandle = (GLFWwindow *)_NativeWindowHandle;
+    WindowHandle = glfwCreateWindow( _Info.Width, _Info.Height, _Info.Title, (GLFWmonitor *)_Info.Monitor, nullptr );
+    if ( !WindowHandle ) {
+        CriticalError( "Failed to initialize game display\n" );
+    }
 
     // Set context for primary display
     glfwMakeContextCurrent( WindowHandle );
@@ -213,6 +230,8 @@ void ARenderBackend::Initialize( void * _NativeWindowHandle ) {
     allocator.Deallocate = GHIImport_Deallocate;
 
     GDevice.Initialize( &allocator, GHIImport_Hash );
+
+    UniformBufferOffsetAlignment = GDevice.GetUniformBufferOffsetAlignment();
 
     StateCreateInfo stateCreateInfo = {};
     stateCreateInfo.ClipControl = CLIP_CONTROL_DIRECTX;
@@ -388,7 +407,6 @@ void ARenderBackend::Initialize( void * _NativeWindowHandle ) {
     //    INTERNAL_PIXEL_FORMAT_RGB9_E5,        // RGB   9  9  9     5
 
 
-    //GJointsAllocator.Initialize();
     GRenderTarget.Initialize();
     GShadowMapRT.Initialize();
     GShadowMapPassRenderer.Initialize();
@@ -403,7 +421,6 @@ void ARenderBackend::Initialize( void * _NativeWindowHandle ) {
 void ARenderBackend::Deinitialize() {
     GLogger.Printf( "Deinitializing OpenGL backend...\n" );
 
-    //GJointsAllocator.Deinitialize();
     GRenderTarget.Deinitialize();
     GShadowMapRT.Deinitialize();
     GShadowMapPassRenderer.Deinitialize();
@@ -417,6 +434,13 @@ void ARenderBackend::Deinitialize() {
 
     GState.Deinitialize();
     GDevice.Deinitialize();
+
+    glfwDestroyWindow( WindowHandle );
+    WindowHandle = nullptr;
+}
+
+void * ARenderBackend::GetMainWindow() {
+    return WindowHandle;
 }
 
 void ARenderBackend::WaitGPU() {
@@ -877,18 +901,8 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
     }
 }
 
-//size_t ARenderBackend::AllocateJoints( size_t _JointsCount ) {
-//    return GJointsAllocator.AllocJoints( _JointsCount );
-//}
-
-//void ARenderBackend::WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) {
-//    GJointsAllocator.Buffer.WriteRange( _Offset, _JointsCount * sizeof( Float3x4 ), _Matrices );
-//}
-
 void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
     GFrameData = _FrameData;
-
-    //GJointsAllocator.Reset();
 
     GState.SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 

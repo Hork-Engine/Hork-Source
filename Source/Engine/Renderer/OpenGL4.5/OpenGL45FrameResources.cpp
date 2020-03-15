@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "OpenGL45FrameResources.h"
-#include "OpenGL45JointsAllocator.h"
 #include "OpenGL45EnvProbeGenerator.h"
 
 #include <Core/Public/Image.h>
@@ -123,7 +122,7 @@ void AFrameResources::Initialize() {
     SkeletonBufferBinding = &BufferBinding[2];
     SkeletonBufferBinding->BufferType = UNIFORM_BUFFER;
     SkeletonBufferBinding->SlotIndex = 2;
-    SkeletonBufferBinding->pBuffer = nullptr;//&GJointsAllocator.Buffer;
+    SkeletonBufferBinding->pBuffer = nullptr;
 
     CascadeBufferBinding = &BufferBinding[3];
     CascadeBufferBinding->BufferType = UNIFORM_BUFFER;

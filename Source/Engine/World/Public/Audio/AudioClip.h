@@ -42,6 +42,8 @@ enum ESoundStreamType {
 enum { AUDIO_MIN_PCM_BUFFER_SIZE = 1024 * 24 };
 enum { AUDIO_MAX_PCM_BUFFER_SIZE = 1024 * 256 };
 
+using SAudioBufferHandle = unsigned int;
+
 class AAudioClip : public AResource {
     AN_CLASS( AAudioClip, AResource )
 
@@ -81,10 +83,10 @@ public:
 
     AString const & GetFileName() const { return FileName; }
 
-    int GetFormat() const { return Format; }
+    /** Internal. Used by audio system to switch a buffer. */
+    SAudioBufferHandle GetBufferHandle() const { return BufferHandle; }
 
-    unsigned int GetBufferId() const { return BufferId; }
-
+    /** Internal. Used by audio system to determine when audio data changed. */
     int GetSerialId() const { return SerialId; }
 
 protected:
@@ -100,23 +102,18 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 
 private:
-    unsigned int BufferId;
+    SAudioBufferHandle BufferHandle;
     ESoundStreamType CurStreamType;
     int    Frequency;
     int    BitsPerSample;
     int    Channels;
     int    SamplesCount;
     float  DurationInSeconds;
-    int    Format;
     int    BufferSize;
     byte * EncodedData;
     size_t EncodedDataLength;
     bool   bLoaded;
     TRef< IAudioDecoderInterface > Decoder;
-
-    // Serial id нужен для того, чтобы объекты, использующие ресурс могли узнать, что
-    // ресурс перезагружен
-    int SerialId;
-
+    int    SerialId;
     AString FileName;
 };

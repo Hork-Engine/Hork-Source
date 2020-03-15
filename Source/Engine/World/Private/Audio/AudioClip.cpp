@@ -84,17 +84,6 @@ int AAudioClip::GetBufferSize() const {
     return BufferSize;
 }
 
-static int GetAppropriateFormat( short _Channels, short _BitsPerSample ) {
-    bool bStereo = ( _Channels > 1 );
-    switch ( _BitsPerSample ) {
-    case 16:
-        return ( bStereo ) ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
-    case 8:
-        return ( bStereo ) ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
-    }
-    return -1;
-}
-
 void AAudioClip::LoadInternalResource( const char * _Path ) {
     Purge();
 
@@ -104,80 +93,58 @@ void AAudioClip::LoadInternalResource( const char * _Path ) {
 bool AAudioClip::LoadResource( AString const & _Path ) {
     Purge();
 
+    AN_ASSERT( BufferHandle == 0 );
+
     FileName = _Path;
 
-    // Mark resource was changed
-    SerialId = ++ResourceSerialIdGen;
-
     Decoder = GAudioSystem.FindDecoder( _Path.CStr() );
-    if ( Decoder ) {
-
-        CurStreamType = StreamType;
-
-        switch ( CurStreamType ) {
-        case SOUND_STREAM_DISABLED:
-            {
-                short * PCM;
-                Decoder->DecodePCM( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM );
-
-                if ( SamplesCount > 0 ) {
-                    Format = GetAppropriateFormat( Channels, BitsPerSample );
-                    if ( !BufferId ) {
-                        // create buffer if not exists
-                        BufferId = AL_CreateBuffer();
-                    }
-                    if ( BitsPerSample == 16 ) {
-                        AL_UploadBuffer( BufferId, Format, PCM, SamplesCount * Channels * sizeof( short ), Frequency );
-                    } else {
-                        AL_UploadBuffer( BufferId, Format, PCM, SamplesCount * Channels * sizeof( byte ), Frequency );
-                    }
-                    GZoneMemory.Free( PCM );
-
-                    bLoaded = true;
-                } else {
-                    // delete buffer if exists
-                    if ( BufferId ) {
-                        AL_DeleteBuffer( BufferId );
-                        BufferId = 0;
-                    }
-                }
-            }
-            break;
-        case SOUND_STREAM_FILE:
-            {
-                if ( BufferId ) {
-                    AL_DeleteBuffer( BufferId );
-                    BufferId = 0;
-                }
-
-                bool bDecodeResult = Decoder->DecodePCM( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, NULL );
-                if ( bDecodeResult ) {
-                    Format = GetAppropriateFormat( Channels, BitsPerSample );
-                    bLoaded = true;
-                }
-            }
-            break;
-        case SOUND_STREAM_MEMORY:
-            {
-                if ( BufferId ) {
-                    AL_DeleteBuffer( BufferId );
-                    BufferId = 0;
-                }
-
-                bool bResult = Decoder->ReadEncoded( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, &EncodedData, &EncodedDataLength );
-                if ( bResult ) {
-                    Format = GetAppropriateFormat( Channels, BitsPerSample );
-                    bLoaded = true;
-                }
-            }
-            break;
-        }
-    }
-
-    if ( !bLoaded ) {
+    if ( !Decoder ) {
         return false;
     }
 
+    CurStreamType = StreamType;
+
+    switch ( CurStreamType ) {
+    case SOUND_STREAM_DISABLED:
+    {
+        short * PCM;
+        if ( !Decoder->DecodePCM( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM ) ) {
+            return false;
+        }
+
+        AN_ASSERT( SamplesCount > 0 );
+
+        SAudioBufferUpload upload = {};
+        upload.SamplesCount = SamplesCount;
+        upload.BitsPerSample = BitsPerSample;
+        upload.Frequency = Frequency;
+        upload.PCM = PCM;
+        upload.bStereo = Channels == 2;
+        BufferHandle = CreateAudioBuffer( &upload );
+
+        GZoneMemory.Free( PCM );
+        break;
+    }
+    case SOUND_STREAM_FILE:
+    {
+        if ( !Decoder->DecodePCM( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, nullptr ) ) {
+            return false;
+        }
+        break;
+    }
+    case SOUND_STREAM_MEMORY:
+    {
+        if ( !Decoder->ReadEncoded( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, &EncodedData, &EncodedDataLength ) ) {
+            return false;
+        }
+        break;
+    }
+    default:
+        AN_ASSERT(0);
+        return false;
+    }
+
+    bLoaded = true;
     DurationInSeconds = (float)SamplesCount / Frequency;
 
     return true;
@@ -187,74 +154,56 @@ bool AAudioClip::LoadResource( AString const & _Path ) {
 bool AAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength ) {
     Purge();
 
+    AN_ASSERT( BufferHandle == 0 );
+
     FileName = _Path;
 
-    // Mark resource was changed
-    SerialId = ++ResourceSerialIdGen;
-
     Decoder = _Decoder;
-    if ( Decoder ) {
-
-        CurStreamType = StreamType;
-        if ( CurStreamType == SOUND_STREAM_FILE ) {
-            CurStreamType = SOUND_STREAM_MEMORY;
-
-            GLogger.Printf( "Using MemoryStreamed instead of FileStreamed because file data is already in memory\n" );
-        }
-
-        switch ( CurStreamType ) {
-        case SOUND_STREAM_DISABLED:
-            {
-                short * PCM;
-                Decoder->DecodePCM( _Path, _Data, _DataLength, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM );
-
-                if ( SamplesCount > 0 ) {
-                    Format = GetAppropriateFormat( Channels, BitsPerSample );
-                    if ( !BufferId ) {
-                        // create buffer if not exists
-                        BufferId = AL_CreateBuffer();
-                    }
-                    if ( BitsPerSample == 16 ) {
-                        AL_UploadBuffer( BufferId, Format, PCM, SamplesCount * Channels * sizeof( short ), Frequency );
-                    } else {
-                        AL_UploadBuffer( BufferId, Format, PCM, SamplesCount * Channels * sizeof( byte ), Frequency );
-                    }
-                    GZoneMemory.Free( PCM );
-
-                    bLoaded = true;
-                } else {
-                    // delete buffer if exists
-                    if ( BufferId ) {
-                        AL_DeleteBuffer( BufferId );
-                        BufferId = 0;
-                    }
-                }
-            }
-            break;
-        case SOUND_STREAM_MEMORY:
-            {
-                if ( BufferId ) {
-                    AL_DeleteBuffer( BufferId );
-                    BufferId = 0;
-                }
-
-                bool bResult = Decoder->ReadEncoded( _Path, _Data, _DataLength, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &EncodedData, &EncodedDataLength );
-                if ( bResult ) {
-                    Format = GetAppropriateFormat( Channels, BitsPerSample );
-                    bLoaded = true;
-                }
-            }
-            break;
-        default:
-            AN_ASSERT(0);
-            break;
-        }
-    }
-
-    if ( !bLoaded ) {
+    if ( !Decoder ) {
         return false;
     }
 
+    CurStreamType = StreamType;
+    if ( CurStreamType == SOUND_STREAM_FILE ) {
+        CurStreamType = SOUND_STREAM_MEMORY;
+
+        GLogger.Printf( "Using MemoryStreamed instead of FileStreamed becouse file data is already in memory\n" );
+    }
+
+    switch ( CurStreamType ) {
+    case SOUND_STREAM_DISABLED:
+    {
+        short * PCM;
+        if ( !Decoder->DecodePCM( _Path, _Data, _DataLength, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM ) ) {
+            return false;
+        }
+
+        AN_ASSERT( SamplesCount > 0 );
+
+        SAudioBufferUpload upload = {};
+        upload.SamplesCount = SamplesCount;
+        upload.BitsPerSample = BitsPerSample;
+        upload.Frequency = Frequency;
+        upload.PCM = PCM;
+        upload.bStereo = Channels == 2;
+        BufferHandle = CreateAudioBuffer( &upload );
+
+        GZoneMemory.Free( PCM );
+        break;
+    }
+    case SOUND_STREAM_MEMORY:
+    {
+        if ( !Decoder->ReadEncoded( _Path, _Data, _DataLength, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &EncodedData, &EncodedDataLength ) ) {
+            return false;
+        }
+        break;
+    }
+    default:
+        AN_ASSERT(0);
+        return false;
+    }
+
+    bLoaded = true;
     DurationInSeconds = (float)SamplesCount / Frequency;
 
     return true;
@@ -287,13 +236,13 @@ IAudioStreamInterface * AAudioClip::CreateAudioStreamInstance() {
 }
 
 void AAudioClip::Purge() {
-    if ( BufferId ) {
-        AL_DeleteBuffer( BufferId );
-        BufferId = 0;
+    if ( BufferHandle ) {
+        DeleteAudioBuffer( BufferHandle );
+        BufferHandle = 0;
     }
 
     GZoneMemory.Free( EncodedData );
-    EncodedData = NULL;
+    EncodedData = nullptr;
 
     EncodedDataLength = 0;
 
@@ -303,6 +252,6 @@ void AAudioClip::Purge() {
 
     Decoder = nullptr;
 
-    // Пометить, что ресурс изменен
+    // Mark resource was changed
     SerialId = ++ResourceSerialIdGen;
 }

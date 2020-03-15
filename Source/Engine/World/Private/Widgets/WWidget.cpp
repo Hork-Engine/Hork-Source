@@ -189,8 +189,11 @@ WWidget & WWidget::SetStyle( int _Style ) {
 
 WWidget & WWidget::SetFocus() {
     if ( !Desktop ) {
+        bSetFocusOnAddToDesktop = true;
         return *this;
     }
+
+    bSetFocusOnAddToDesktop = false;
 
     Desktop->SetFocusWidget( this );
 
@@ -621,6 +624,18 @@ void WWidget::FromDesktopToClient( Float2 & InOut ) const {
 
 void WWidget::FromDesktopToWidget( Float2 & InOut ) const {
     InOut -= GetDesktopPosition();
+}
+
+Float2 WWidget::GetLocalCursorPosition() const {
+    if ( Desktop ) {
+        Float2 pos = Desktop->GetCursorPosition();
+
+        FromDesktopToClient( pos );
+
+        return pos;
+    }
+
+    return Float2(0.0f);
 }
 
 void WWidget::GetGridOffset( int & _Column, int & _Row ) const {

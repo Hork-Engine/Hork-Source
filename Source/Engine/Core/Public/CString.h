@@ -118,7 +118,7 @@ int CmpPathN( const char * _Path1, const char * _Path2, int _Num );
 void FixSeparator( char * _Path );
 
 /** Fix path string insitu: replace separator \\ to /, skip series of /,
-skip redunant sequinces of dir/../dir2 -> dir.
+skip redunant sequinces of dir/../dir2 -> dir2.
 Return length of optimized path. */
 int FixPath( char * _Path, int _Length );
 

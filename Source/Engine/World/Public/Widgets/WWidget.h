@@ -379,6 +379,9 @@ public:
     /** From desktop to widget coordinate */
     void FromDesktopToWidget( Float2 & InOut ) const;
 
+    /** Get cursor position relative to top-left corner */
+    Float2 GetLocalCursorPosition() const;
+
     /** Set widget on top of other widgets */
     WWidget & BringOnTop( bool _RecursiveForParents = true );
 
@@ -496,6 +499,7 @@ private:
     bool bLayoutDirty;
     bool bTransformDirty;
     bool bFocus;
+    bool bSetFocusOnAddToDesktop;
 };
 
 #if 0

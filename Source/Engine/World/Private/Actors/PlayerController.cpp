@@ -32,6 +32,7 @@ SOFTWARE.
 #include <World/Public/Components/InputComponent.h>
 #include <World/Public/Components/CameraComponent.h>
 #include <World/Public/World.h>
+#include <World/Public/Widgets/WViewport.h>
 #include <Runtime/Public/Runtime.h>
 
 AN_CLASS_META( APlayerController )
@@ -45,8 +46,8 @@ APlayerController::APlayerController() {
 
     bCanEverTick = true;
 
-    ViewportSize.X = 512;
-    ViewportSize.Y = 512;
+    //ViewportSize.X = 512;
+    //ViewportSize.Y = 512;
 
     if ( !CurrentAudioListener ) {
         CurrentAudioListener = this;
@@ -92,12 +93,6 @@ void APlayerController::OnPawnChanged()
     if ( HUD ) {
         HUD->OwnerPawn = Pawn;
     }
-}
-
-
-void APlayerController::SetViewport( Float2 const & _Position, Float2 const & _Size ) {
-    ViewportPosition = _Position;
-    ViewportSize = _Size;
 }
 
 void APlayerController::SetAudioListener( ASceneComponent * _AudioListener ) {
@@ -148,14 +143,6 @@ void APlayerController::SetPlayerIndex( int _ControllerId ) {
 
 int APlayerController::GetPlayerIndex() const {
     return InputComponent->ControllerId;
-}
-
-void APlayerController::SetActive( bool _Active ) {
-    InputComponent->bActive = _Active;
-}
-
-bool APlayerController::IsActive() const {
-    return InputComponent->bActive;
 }
 
 void APlayerController::TogglePause() {
@@ -227,24 +214,33 @@ ACommandContext * APlayerController::GetCurrentCommandContext() {
     return CurrentCommandContext;
 }
 
+float APlayerController::GetViewportAspectRatio() const {
+    if ( Viewport ) {
+        Float2 size = Viewport->GetAvailableSize();
+        if ( size.X > 0 && size.Y > 0 ) {
+            return size.X / size.Y;
+        }
+    }
+    return 1.0f;
+}
+
 Float2 APlayerController::GetLocalCursorPosition() const {
-    Float2 pos = InputComponent->GetCursorPosition();
-    pos.X -= ViewportPosition.X;
-    pos.Y -= ViewportPosition.Y;
-    return pos;
+    return Viewport ? Viewport->GetLocalCursorPosition()
+                    : Float2::Zero();
 }
 
 Float2 APlayerController::GetNormalizedCursorPosition() const {
-    if ( ViewportSize.X > 0 && ViewportSize.Y > 0 )
-    {
-        Float2 pos = InputComponent->GetCursorPosition();
-        pos.X -= ViewportPosition.X;
-        pos.Y -= ViewportPosition.Y;
-        pos.X /= ViewportSize.X;
-        pos.Y /= ViewportSize.Y;
-        pos.X = Math::Saturate( pos.X );
-        pos.Y = Math::Saturate( pos.Y );
-        return pos;
+    if ( Viewport ) {
+        Float2 size = Viewport->GetAvailableSize();
+        if ( size.X > 0 && size.Y > 0 )
+        {
+            Float2 pos = GetLocalCursorPosition();
+            pos.X /= size.X;
+            pos.Y /= size.Y;
+            pos.X = Math::Saturate( pos.X );
+            pos.Y = Math::Saturate( pos.Y );
+            return pos;
+        }
     }
     return Float2::Zero();
 }

@@ -84,8 +84,8 @@ class AThreadSync final {
     AN_FORBID_COPY( AThreadSync )
 
     friend class ASyncEvent;
-public:
 
+public:
     AThreadSync();
     ~AThreadSync();
 
@@ -172,8 +172,8 @@ Thread event.
 */
 class ASyncEvent final {
     AN_FORBID_COPY( ASyncEvent )
-public:
 
+public:
     ASyncEvent();
     ~ASyncEvent();
 

@@ -107,16 +107,9 @@ bool AWavAudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
     return true;
 }
 
-void AWavAudioTrack::StreamRewind() {
-    PCMDataOffset = 0;
-    CurrentSample = 0;
-
-    if ( File.IsOpened() ) {
-        WaveRewind( File, &Wave );
-    }
-}
-
 void AWavAudioTrack::StreamSeek( int _PositionInSamples ) {
+    _PositionInSamples = Math::Max( 0, _PositionInSamples );
+
     if ( WaveMemory ) {
         if ( Wave.Format == WAVE_FORMAT_PCM ) {
             int bytesPerSample = Wave.BitsPerSample >> 3;
@@ -356,6 +349,11 @@ bool AWavDecoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
         }
     }
 
+    if ( inf.Format == WAVE_FORMAT_DVI_ADPCM ) {
+        // force BitsPerSample to 16
+        inf.BitsPerSample = 16;
+    }
+
     *_SamplesCount = inf.NumSamples / inf.Channels;
     *_Channels = inf.Channels;
     *_SampleRate = inf.SampleRate;
@@ -410,6 +408,11 @@ bool AWavDecoder::DecodePCM( const char * _FileName, const byte * _Data, size_t 
         }
     }
 
+    if ( inf.Format == WAVE_FORMAT_DVI_ADPCM ) {
+        // force BitsPerSample to 16
+        inf.BitsPerSample = 16;
+    }
+
     *_SamplesCount = inf.NumSamples / inf.Channels;
     *_Channels = inf.Channels;
     *_SampleRate = inf.SampleRate;
@@ -450,6 +453,11 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount, int 
         GZoneMemory.Free( *_EncodedData );
         *_EncodedData = NULL;
         return false;
+    }
+
+    if ( inf.Format == WAVE_FORMAT_DVI_ADPCM ) {
+        // Force 16 bit
+        inf.BitsPerSample = 16;
     }
 
     Core::Memcpy( *_EncodedData, &inf, sizeof( SWaveFormat ) );
@@ -495,6 +503,11 @@ bool AWavDecoder::ReadEncoded( const char * _FileName, const byte * _Data, size_
         GZoneMemory.Free( *_EncodedData );
         *_EncodedData = NULL;
         return false;
+    }
+
+    if ( inf.Format == WAVE_FORMAT_DVI_ADPCM ) {
+        // Force 16 bit
+        inf.BitsPerSample = 16;
     }
 
     Core::Memcpy( *_EncodedData, &inf, sizeof( SWaveFormat ) );
@@ -849,7 +862,7 @@ static bool ReadWaveHeader( IStreamBase & InFile, SWaveFormat & Wave ) {
     uint32_t type;
     int32_t paddedSize;
 
-    chunk.Id = InFile.ReadUInt32();
+    chunk.Id = InFile.ReadUInt32(); // big endian
     chunk.SizeInBytes = InFile.ReadInt32();
 
     paddedSize = Align( chunk.SizeInBytes, 2 );
@@ -874,7 +887,7 @@ static bool ReadWaveHeader( IStreamBase & InFile, SWaveFormat & Wave ) {
 
     while ( curSize >= sizeof( SRiffChunk ) ) {
 
-        chunk.Id = InFile.ReadUInt32();
+        chunk.Id = InFile.ReadUInt32(); // big endian
         chunk.SizeInBytes = InFile.ReadInt32();
 
         paddedSize = Align( chunk.SizeInBytes, 2 );

@@ -1039,13 +1039,25 @@ struct STextureRect {
     STextureDimension Dimension;
 };
 
+struct SVideoModeInfo {
+    int Width;
+    int Height;
+    int RefreshRate;
+    void * Monitor;
+    const char * Title;
+    bool bDecorated;
+    bool bAutoIconify;
+    bool bFloating;
+};
+
 class IRenderBackend {
 public:
     IRenderBackend( const char * _BackendName ) : BackendName( _BackendName ) {}
 
-    virtual void PreInit() = 0;
-    virtual void Initialize( void * _NativeWindowHandle ) = 0;
+    virtual void Initialize( SVideoModeInfo const & _Info ) = 0;
     virtual void Deinitialize() = 0;
+
+    virtual void * GetMainWindow() = 0;
 
     virtual void RenderFrame( SRenderFrame * _FrameData ) = 0;
     virtual void SwapBuffers() = 0;
@@ -1079,10 +1091,9 @@ public:
     virtual void DestroyMaterial( AMaterialGPU * _Material ) = 0;
     virtual void InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) = 0;
 
-//    virtual size_t AllocateJoints( size_t _JointsCount ) = 0;
-//    virtual void WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) = 0;
-
     const char * GetName() { return BackendName; }
+
+    int GetUniformBufferOffsetAlignment() const { return UniformBufferOffsetAlignment; }
 
 protected:
     template< typename T >
@@ -1095,6 +1106,8 @@ protected:
     {
         return AResourceGPU::DestroyResource( InResource );
     }
+
+    int UniformBufferOffsetAlignment;
 
 private:
     const char * BackendName = "Unnamed";

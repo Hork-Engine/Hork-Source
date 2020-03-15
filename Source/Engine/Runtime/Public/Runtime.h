@@ -135,7 +135,6 @@ struct SCPUInfo {
 
 enum EEventType {
     ET_Unknown,
-    ET_RuntimeUpdateEvent,
     ET_KeyEvent,
     ET_MouseButtonEvent,
     ET_MouseWheelEvent,
@@ -155,7 +154,6 @@ enum EEventType {
     ET_SetWindowDefsEvent,
     ET_SetWindowPosEvent,
     ET_SetInputFocusEvent,
-    //ET_SetRenderFeaturesEvent,
     ET_SetCursorModeEvent
 };
 
@@ -163,10 +161,6 @@ enum EInputEvent {
     IE_Release,
     IE_Press,
     IE_Repeat
-};
-
-struct SRuntimeUpdateEvent {
-    int InputEventCount;
 };
 
 struct SKeyEvent {
@@ -242,6 +236,8 @@ struct SChangedVideoModeEvent {
     unsigned short Width;
     unsigned short Height;
     unsigned short PhysicalMonitor;
+    unsigned short FramebufferWidth;
+    unsigned short FramebufferHeight;
     uint8_t RefreshRate;
     bool bFullscreen;
     char Backend[32];
@@ -273,10 +269,6 @@ struct SSetInputFocusEvent {
 
 };
 
-//struct SSetRenderFeaturesEvent {
-//    int VSyncMode;
-//};
-
 struct SSetCursorModeEvent {
     bool bDisabledCursor;
 };
@@ -287,7 +279,6 @@ struct SEvent {
 
     union {
         // Runtime output events
-        SRuntimeUpdateEvent RuntimeUpdateEvent;
         SKeyEvent KeyEvent;
         SMouseButtonEvent MouseButtonEvent;
         SMouseWheelEvent MouseWheelEvent;
@@ -308,7 +299,6 @@ struct SEvent {
         SSetWindowDefsEvent SetWindowDefsEvent;
         SSetWindowPosEvent SetWindowPosEvent;
         SSetInputFocusEvent SetInputFocusEvent;
-        //SSetRenderFeaturesEvent SetRenderFeaturesEvent;
         SSetCursorModeEvent SetCursorModeEvent;
     } Data;
 };

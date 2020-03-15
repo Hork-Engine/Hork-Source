@@ -29,6 +29,8 @@ SOFTWARE.
 */
 
 #include <World/Public/Widgets/WViewport.h>
+#include <World/Public/Components/InputComponent.h>
+#include <Runtime/Public/Runtime.h>
 
 AN_CLASS_META( WViewport )
 
@@ -38,47 +40,84 @@ WViewport::WViewport() {
 WViewport::~WViewport() {
 }
 
-void WViewport::UpdatePlayerControllerViewport() {
-    Float2 mins, maxs;
-    GetDesktopRect( mins, maxs, false );
-
-    if ( PlayerController ) {
-        PlayerController->SetViewport( mins, maxs - mins );
-        PlayerController->SetActive( IsFocus() );
-    }
-}
-
 void WViewport::OnTransformDirty() {
     Super::OnTransformDirty();
-
-    UpdatePlayerControllerViewport();
 }
 
 WViewport & WViewport::SetPlayerController( APlayerController * _PlayerController ) {
     PlayerController = _PlayerController;
-
-    UpdatePlayerControllerViewport();
+    PlayerController->Viewport = this;
 
     return *this;
 }
 
+void WViewport::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) {
+    if ( PlayerController ) {
+        AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+        if ( !inputComponent->bIgnoreKeyboardEvents ) {
+            inputComponent->SetButtonState( ID_KEYBOARD, _Event.Key, _Event.Action, _Event.ModMask, _TimeStamp );
+        }
+    }
+}
+
 void WViewport::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
-    
+    if ( PlayerController ) {
+        AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+        if ( !inputComponent->bIgnoreMouseEvents ) {
+            inputComponent->SetButtonState( ID_MOUSE, _Event.Button, _Event.Action, _Event.ModMask, _TimeStamp );
+        }
+    }
+}
+
+void WViewport::OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) {
+    if ( PlayerController ) {
+        AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+        if ( !inputComponent->bIgnoreMouseEvents ) {
+            if ( _Event.WheelX < 0.0 ) {
+                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Press, 0, _TimeStamp );
+                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Release, 0, _TimeStamp );
+            } else if ( _Event.WheelX > 0.0 ) {
+                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Press, 0, _TimeStamp );
+                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Release, 0, _TimeStamp );
+            }
+            if ( _Event.WheelY < 0.0 ) {
+                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Press, 0, _TimeStamp );
+                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Release, 0, _TimeStamp );
+            } else if ( _Event.WheelY > 0.0 ) {
+                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Press, 0, _TimeStamp );
+                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Release, 0, _TimeStamp );
+            }
+        }
+    }
 }
 
 void WViewport::OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) {
+    if ( PlayerController ) {
+        AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+        if ( !inputComponent->bIgnoreMouseEvents ) {
+            inputComponent->SetMouseAxisState( _Event.X, _Event.Y );
+        }
+    }
+}
+
+void WViewport::OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) {
+    if ( PlayerController ) {
+        AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+        if ( !inputComponent->bIgnoreCharEvents ) {
+            inputComponent->NotifyUnicodeCharacter( _Event.UnicodeCharacter, _Event.ModMask, _TimeStamp );
+        }
+    }
 }
 
 void WViewport::OnFocusLost() {
-    if ( PlayerController ) {
-        PlayerController->SetActive( false );
-    }
 }
 
 void WViewport::OnFocusReceive() {
-    if ( PlayerController ) {
-        PlayerController->SetActive( true );
-    }
 }
 
 void WViewport::OnDrawEvent( ACanvas & _Canvas ) {

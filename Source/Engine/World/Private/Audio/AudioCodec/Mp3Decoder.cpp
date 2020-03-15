@@ -216,9 +216,7 @@ bool AMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
         return false;
     }
 
-    AMemoryStream file;
-
-    if ( !file.OpenRead( "mpg", _EncodedData, _EncodedDataLength ) ) {
+    if ( !MemoryStream.OpenRead( "mpg", _EncodedData, _EncodedDataLength ) ) {
         return false;
     }
 
@@ -234,7 +232,7 @@ bool AMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
         return false;
     }
 
-    if ( mpg_open_handle( Handle, &file ) != MPG123_OK ) {
+    if ( mpg_open_handle( Handle, &MemoryStream ) != MPG123_OK ) {
         GLogger.Printf( "Failed to open handle: %s\n", mpg_strerror( Handle ) );
         mpg_delete( Handle );
         Handle = NULL;
@@ -254,15 +252,9 @@ bool AMp3AudioTrack::InitializeMemoryStream( const byte * _EncodedData, int _Enc
     return true;
 }
 
-void AMp3AudioTrack::StreamRewind() {
-    if ( Handle ) {
-        mpg_seek( Handle, 0, SEEK_SET );
-    }
-}
-
 void AMp3AudioTrack::StreamSeek( int _PositionInSamples ) {
     if ( Handle ) {
-        mpg_seek( Handle, _PositionInSamples, SEEK_CUR );
+        mpg_seek( Handle, Math::Max( 0, _PositionInSamples ), SEEK_SET );
     }
 }
 
@@ -333,16 +325,16 @@ bool AMp3Decoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
     }
 
 #if 0
-    off_t NumSamples = mpg_length( mh ); // FIXME?
+    off_t numSamples = mpg_length( mh ); // FIXME?
 #else
-    off_t NumSamples = mpg_seek( mh, 0, SEEK_END );
+    off_t numSamples = mpg_seek( mh, 0, SEEK_END );
     mpg_seek( mh, 0, SEEK_SET );
 #endif
 
     if ( _PCM ) {
         int readBlockSize = mpg_outblock( mh );
 
-        *_PCM = (short *)GZoneMemory.Alloc( NumSamples * channels * sizeof( short ) );
+        *_PCM = (short *)GZoneMemory.Alloc( numSamples * channels * sizeof( short ) );
         byte * buffer = (byte *) *_PCM;
 
         size_t bytesRead = 0;
@@ -357,10 +349,10 @@ bool AMp3Decoder::DecodePCM( const char * _FileName, int * _SamplesCount, int * 
             GLogger.Printf( "Warning: Decoding ended prematurely because: %s\n", ( result == MPG123_ERR ? mpg_strerror( mh ) : mpg_plain_strerror( result ) ) );
         }
 
-        AN_ASSERT( checkSum == NumSamples * channels * sizeof( short ) );
+        AN_ASSERT( checkSum == numSamples * channels * sizeof( short ) );
     }
 
-    *_SamplesCount = NumSamples;
+    *_SamplesCount = numSamples;
     *_Channels = channels;
     *_SampleRate = sampleRate;
     *_BitsPerSample = 16;

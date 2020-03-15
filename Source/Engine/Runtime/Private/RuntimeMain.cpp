@@ -293,9 +293,6 @@ void ARuntimeMain::RuntimeMainLoop() {
 }
 
 void ARuntimeMain::RuntimeUpdate() {
-    SEvent * event = GRuntimeEvents.Push();
-    event->Type = ET_RuntimeUpdateEvent;
-    event->TimeStamp = GRuntime.SysSeconds_d();
     GInputEventsCount = 0;
 
     GMonitorManager.UpdateMonitors();
@@ -308,15 +305,6 @@ void ARuntimeMain::RuntimeUpdate() {
     glfwPollEvents();
 
     TestInput();
-
-    // It may happen if game thread is too busy
-    if ( event->Type == ET_RuntimeUpdateEvent && GRuntimeEvents.Size() != GRuntimeEvents.Capacity() ) {
-        event->Data.RuntimeUpdateEvent.InputEventCount = GInputEventsCount;
-    } else {
-        GLogger.Printf( "Warning: Runtime queue was overflowed\n" );
-
-        GRuntimeEvents.Clear();
-    }
 }
 
 struct SProcessLog {
@@ -374,7 +362,6 @@ void AssertFunction( const char * _File, int _Line, const char * _Function, cons
 #else
     raise( SIGTRAP );
 #endif
-
 
     bNestedFunctionCall = false;
 }

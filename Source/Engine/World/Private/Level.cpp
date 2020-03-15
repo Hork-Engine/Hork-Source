@@ -571,7 +571,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
                     InRenderer->SetColor( AColor4( 0, 1, 0, 0.4f ) );
                 }
 
-                InRenderer->DrawConvexPoly( p->Hull->GetPoints(), p->Hull->GetNumPoints(), false );
+                InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, false );
             }
 
             for ( SVisArea & area : Areas ) {
@@ -585,7 +585,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
                         InRenderer->SetColor( AColor4( 0, 1, 0, 0.4f ) );
                     }
 
-                    InRenderer->DrawConvexPoly( p->Hull->GetPoints(), p->Hull->GetNumPoints(), false );
+                    InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, false );
                 }
             }
 #endif

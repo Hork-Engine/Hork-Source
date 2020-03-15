@@ -71,14 +71,13 @@ bool AOggVorbisAudioTrack::InitializeMemoryStream( const byte * _EncodedData, in
     AN_ASSERT( Vorbis == NULL );
 
     Vorbis = stb_vorbis_open_memory( _EncodedData, _EncodedDataLength, NULL, NULL );
-    return Vorbis !=NULL;
-}
-
-void AOggVorbisAudioTrack::StreamRewind() {
-    stb_vorbis_seek_start( Vorbis );
+    return Vorbis != NULL;
 }
 
 void AOggVorbisAudioTrack::StreamSeek( int _PositionInSamples ) {
+    if ( _PositionInSamples <= 0 ) {
+        stb_vorbis_seek_start( Vorbis );
+    }
     stb_vorbis_seek( Vorbis, _PositionInSamples );
 }
 
@@ -152,8 +151,9 @@ bool AOggVorbisDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount
         return false;
     }
 
-    stb_vorbis * tmpVorbis = stb_vorbis_open_file( f, TRUE, NULL, NULL );
+    stb_vorbis * tmpVorbis = stb_vorbis_open_file( f, FALSE, NULL, NULL );
     if ( !tmpVorbis ) {
+        fclose( f );
         return false;
     }
 
@@ -171,5 +171,6 @@ bool AOggVorbisDecoder::ReadEncoded( const char * _FileName, int * _SamplesCount
     }
 
     stb_vorbis_close( tmpVorbis );
+    fclose( f );
     return true;
 }
