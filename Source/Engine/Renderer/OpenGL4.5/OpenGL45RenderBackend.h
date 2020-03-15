@@ -49,6 +49,7 @@ public:
     void * FenceSync() override;
     void RemoveSync( void * _Sync ) override;
     void WaitSync( void * _Sync ) override;
+    void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) override;
 
     ATextureGPU * CreateTexture( IGPUResourceOwner * _Owner ) override;
     void DestroyTexture( ATextureGPU * _Texture ) override;

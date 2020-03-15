@@ -30,9 +30,7 @@ SOFTWARE.
 
 #include "OpenGL45Common.h"
 #include <Core/Public/Color.h>
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+#include <Core/Public/Image.h>
 
 namespace OpenGL45 {
 
@@ -46,8 +44,8 @@ void SaveSnapshot( GHI::Texture & _Texture ) {
 
     const int w = _Texture.GetWidth();
     const int h = _Texture.GetHeight();
-    const int bpp = 3;
-    const int size = w * h * bpp;
+    const int numchannels = 3;
+    const int size = w * h * numchannels;
 
     int hunkMark = GHunkMemory.SetHunkMark();
 
@@ -64,26 +62,14 @@ void SaveSnapshot( GHI::Texture & _Texture ) {
     }
 #endif
 
-    // Flip vertical
-    int halfHeight = h >> 1;
-    for ( int i = 0 ; i < halfHeight ; i++ ) {
-        byte * line1 = &data[i*w*bpp];
-        byte * line2 = &data[(h-i-1)*w*bpp];
-        for ( int x = 0 ; x < w ; x++ ) {
-            StdSwap( line1[0], line2[0] );
-            StdSwap( line1[1], line2[1] );
-            StdSwap( line1[2], line2[2] );
-            line1 += bpp;
-            line2 += bpp;
-        }
-    }
-
+    FlipImageY( data, w, h, numchannels, w * numchannels );
+    
     static int n = 0;
     if ( n == 0 ) {
         Core::MakeDir( "snapshots", false );
     }
 
-    stbi_write_png( Core::Fmt( "snapshots/%d.png", n ), w, h, bpp, data, w*bpp );
+    WritePNG( Core::Fmt( "snapshots/%d.png", n ), w, h, numchannels, data, w*numchannels );
 
     n++;
 

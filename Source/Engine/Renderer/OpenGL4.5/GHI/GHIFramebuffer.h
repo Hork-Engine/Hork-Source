@@ -109,6 +109,7 @@ struct FramebufferCreateInfo {
 class Framebuffer final : public NonCopyable, IObjectInterface {
 
     friend class CommandBuffer;
+    friend class State;
 
 public:
     Framebuffer();
@@ -162,6 +163,8 @@ private:
 
     bool bHasDepthStencilAttachment;
     FramebufferAttachmentInfo DepthStencilAttachment;
+
+    bool bDefault;
 };
 
 }

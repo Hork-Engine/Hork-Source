@@ -70,8 +70,8 @@ enum {
 
 enum COLOR_CLAMP : uint8_t
 {
-    COLOR_CLAMP_ALWAYS_OFF,    // Clamping is always off, no matter what the format​ or type​ parameters of the read pixels call.
-    COLOR_CLAMP_ALWAYS_ON,     // Clamping is always on, no matter what the format​ or type​ parameters of the read pixels call.
+    COLOR_CLAMP_OFF,    // Clamping is always off, no matter what the format​ or type​ parameters of the read pixels call.
+    COLOR_CLAMP_ON,     // Clamping is always on, no matter what the format​ or type​ parameters of the read pixels call.
     COLOR_CLAMP_FIXED_ONLY     // Clamping is only on if the type of the image being read is a normalized signed or unsigned value.
 };
 

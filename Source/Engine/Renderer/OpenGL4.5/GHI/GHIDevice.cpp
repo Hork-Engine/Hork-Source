@@ -345,4 +345,252 @@ DepthStencilStateInfo const * Device::CachedDepthStencilState( DepthStencilState
     return state;
 }
 
+
+
+
+
+
+using ghi_sampler_t = Sampler;
+
+void ghi_create_device( ghi_device_t * device, AllocatorCallback const * _Allocator, HashCallback _Hash ) {
+    memset( device, 0, sizeof( ghi_device_t ) );
+
+    bool NV_half_float = FindExtension( "GL_NV_half_float" );
+
+    device->bHalfFloatVertexSupported = FindExtension( "GL_ARB_half_float_vertex" ) || NV_half_float;
+    device->bHalfFloatPixelSupported = FindExtension( "GL_ARB_half_float_pixel" ) || NV_half_float;
+    device->bTextureCompressionS3tcSupported = FindExtension( "GL_EXT_texture_compression_s3tc" );
+    device->bTextureAnisotropySupported = FindExtension( "GL_EXT_texture_filter_anisotropic" );
+
+    device->MaxVertexBufferSlots = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_BINDINGS ); // TODO: check if 0 ???
+
+    // GL_MAX_VERTEX_ATTRIB_STRIDE sinse GL v4.4
+    device->MaxVertexAttribStride = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_STRIDE );
+    //if ( GL vertsion < 4.4 ) {
+    //    storage->MaxVertexAttribStride = 2048;
+    //}
+    device->MaxVertexAttribRelativeOffset = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET );
+
+    device->MaxCombinedTextureImageUnits = GL_GetInteger( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS );
+
+    device->MaxImageUnits = GL_GetInteger( GL_MAX_IMAGE_UNITS );
+
+    device->MaxTextureBufferSize = GL_GetInteger( GL_MAX_TEXTURE_BUFFER_SIZE );
+
+    device->TextureBufferOffsetAlignment = GL_GetInteger( GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT );
+    if ( !device->TextureBufferOffsetAlignment ) {
+        LogPrintf( "Warning: TextureBufferOffsetAlignment == 0, using default alignment (256)\n" );
+        device->TextureBufferOffsetAlignment = 256;
+    }
+
+    device->UniformBufferOffsetAlignment = GL_GetInteger( GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
+    if ( !device->UniformBufferOffsetAlignment ) {
+        LogPrintf( "Warning: UniformBufferOffsetAlignment == 0, using default alignment (256)\n" );
+        device->UniformBufferOffsetAlignment = 256;
+    }
+
+    device->ShaderStorageBufferOffsetAlignment = GL_GetInteger( GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT );
+    if ( !device->ShaderStorageBufferOffsetAlignment ) {
+        LogPrintf( "Warning: ShaderStorageBufferOffsetAlignment == 0, using default alignment (256)\n" );
+        device->ShaderStorageBufferOffsetAlignment = 256;
+    }
+
+    device->MaxBufferBindings[UNIFORM_BUFFER] = GL_GetInteger( GL_MAX_UNIFORM_BUFFER_BINDINGS );
+    device->MaxBufferBindings[SHADER_STORAGE_BUFFER] = GL_GetInteger( GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS );
+    device->MaxBufferBindings[TRANSFORM_FEEDBACK_BUFFER] = GL_GetInteger( GL_MAX_TRANSFORM_FEEDBACK_BUFFERS );
+    device->MaxBufferBindings[ATOMIC_COUNTER_BUFFER] = GL_GetInteger( GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS );
+
+    if ( device->bTextureAnisotropySupported ) {
+        device->MaxTextureAnisotropy = (unsigned int)GL_GetFloat( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT );
+    } else {
+        device->MaxTextureAnisotropy = 0;
+    }
+
+    device->UIDGen = 0;
+
+    device->Allocator = _Allocator ? *_Allocator : DefaultAllocator;
+    device->Hash = _Hash ? _Hash : SDBM_Hash;
+}
+
+void ghi_destroy_device( ghi_device_t * device ) {
+    for ( SamplerInfo * sampler : device->SamplerCache ) {
+
+        GLuint id = GL_HANDLE( sampler->Handle );
+        glDeleteSamplers( 1, &id );
+
+        device->Allocator.Deallocate( sampler );
+    }
+
+    for ( BlendingStateInfo * state : device->BlendingStateCache ) {
+        device->Allocator.Deallocate( state );
+    }
+
+    for ( RasterizerStateInfo * state : device->RasterizerStateCache ) {
+        device->Allocator.Deallocate( state );
+    }
+
+    for ( DepthStencilStateInfo * state : device->DepthStencilStateCache ) {
+        device->Allocator.Deallocate( state );
+    }
+
+    device->SamplerCache.Free();
+    device->BlendingStateCache.Free();
+    device->RasterizerStateCache.Free();
+    device->DepthStencilStateCache.Free();
+
+    device->SamplerHash.Free();
+    device->BlendingHash.Free();
+    device->RasterizerHash.Free();
+    device->DepthStencilHash.Free();
+
+    assert( device->TotalStates == 0 );
+    assert( device->TotalBuffers == 0 );
+    assert( device->TotalTextures == 0 );
+    assert( device->TotalShaderModules == 0 );
+}
+
+ghi_sampler_t const ghi_device_get_sampler( ghi_device_t * device, struct SamplerCreateInfo const & _CreateInfo ) {
+    int hash = device->Hash( (unsigned char *)&_CreateInfo, sizeof( _CreateInfo ) );
+
+    int i = device->SamplerHash.First( hash );
+    for ( ; i != -1 ; i = device->SamplerHash.Next( i ) ) {
+
+        SamplerInfo const * sampler = device->SamplerCache[i];
+
+        if ( !memcmp( &sampler->CreateInfo, &_CreateInfo, sizeof( sampler->CreateInfo ) ) ) {
+            //LogPrintf( "Caching sampler\n" );
+            return sampler->Handle;
+        }
+    }
+
+    SamplerInfo * sampler = static_cast< SamplerInfo * >( device->Allocator.Allocate( sizeof( SamplerInfo ) ) );
+    memcpy( &sampler->CreateInfo, &_CreateInfo, sizeof( sampler->CreateInfo ) );
+
+    i = device->SamplerCache.Size();
+
+    device->SamplerHash.Insert( hash, i );
+    device->SamplerCache.Append( sampler );
+
+    //LogPrintf( "Total samplers %d\n", i+1 );
+
+    // 3.3 or GL_ARB_sampler_objects
+
+    GLuint id;
+
+    glCreateSamplers( 1, &id ); // 4.5
+
+    glSamplerParameteri( id, GL_TEXTURE_MIN_FILTER, SamplerFilterModeLUT[_CreateInfo.Filter].Min );
+    glSamplerParameteri( id, GL_TEXTURE_MAG_FILTER, SamplerFilterModeLUT[_CreateInfo.Filter].Mag );
+    glSamplerParameteri( id, GL_TEXTURE_WRAP_S, SamplerAddressModeLUT[_CreateInfo.AddressU] );
+    glSamplerParameteri( id, GL_TEXTURE_WRAP_T, SamplerAddressModeLUT[_CreateInfo.AddressV] );
+    glSamplerParameteri( id, GL_TEXTURE_WRAP_R, SamplerAddressModeLUT[_CreateInfo.AddressW] );
+    glSamplerParameterf( id, GL_TEXTURE_LOD_BIAS, _CreateInfo.MipLODBias );
+    if ( device->bTextureAnisotropySupported ) {
+        glSamplerParameteri( id, GL_TEXTURE_MAX_ANISOTROPY_EXT, clamp< unsigned int >( _CreateInfo.MaxAnisotropy, 0u, device->MaxTextureAnisotropy ) );
+    }
+    if ( _CreateInfo.bCompareRefToTexture ) {
+        glSamplerParameteri( id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
+    }
+    glSamplerParameteri( id, GL_TEXTURE_COMPARE_FUNC, ComparisonFuncLUT[_CreateInfo.ComparisonFunc] );
+    glSamplerParameterfv( id, GL_TEXTURE_BORDER_COLOR, _CreateInfo.BorderColor );
+    glSamplerParameterf( id, GL_TEXTURE_MIN_LOD, _CreateInfo.MinLOD );
+    glSamplerParameterf( id, GL_TEXTURE_MAX_LOD, _CreateInfo.MaxLOD );
+    glSamplerParameteri( id, GL_TEXTURE_CUBE_MAP_SEAMLESS, _CreateInfo.bCubemapSeamless );
+
+    // We can use also these functions to retrieve sampler parameters:
+    //glGetSamplerParameterfv
+    //glGetSamplerParameterIiv
+    //glGetSamplerParameterIuiv
+    //glGetSamplerParameteriv
+
+    sampler->Handle = (void *)(size_t)id;
+
+    return sampler->Handle;
+}
+
+BlendingStateInfo const * ghi_internal_CachedBlendingState( ghi_device_t * device, BlendingStateInfo const & _BlendingState ) {
+    int hash = device->Hash( ( unsigned char * )&_BlendingState, sizeof( _BlendingState ) );
+
+    int i = device->BlendingHash.First( hash );
+    for ( ; i != -1 ; i = device->BlendingHash.Next( i ) ) {
+
+        BlendingStateInfo const * state = device->BlendingStateCache[ i ];
+
+        if ( !memcmp( state, &_BlendingState, sizeof( *state ) ) ) {
+            //LogPrintf( "Caching blending state\n" );
+            return state;
+        }
+    }
+
+    BlendingStateInfo * state = static_cast< BlendingStateInfo * >( device->Allocator.Allocate( sizeof( BlendingStateInfo ) ) );
+    memcpy( state, &_BlendingState, sizeof( *state ) );
+
+    i = device->BlendingStateCache.Size();
+
+    device->BlendingHash.Insert( hash, i );
+    device->BlendingStateCache.Append( state );
+
+    //LogPrintf( "Total blending states %d\n", i+1 );
+
+    return state;
+}
+
+RasterizerStateInfo const * ghi_internal_CachedRasterizerState( ghi_device_t * device, RasterizerStateInfo const & _RasterizerState ) {
+    int hash = device->Hash( ( unsigned char * )&_RasterizerState, sizeof( _RasterizerState ) );
+
+    int i = device->RasterizerHash.First( hash );
+    for ( ; i != -1 ; i = device->RasterizerHash.Next( i ) ) {
+
+        RasterizerStateInfo const * state = device->RasterizerStateCache[ i ];
+
+        if ( !memcmp( state, &_RasterizerState, sizeof( *state ) ) ) {
+            //LogPrintf( "Caching rasterizer state\n" );
+            return state;
+        }
+    }
+
+    RasterizerStateInfo * state = static_cast< RasterizerStateInfo * >( device->Allocator.Allocate( sizeof( RasterizerStateInfo ) ) );
+    memcpy( state, &_RasterizerState, sizeof( *state ) );
+
+    i = device->RasterizerStateCache.Size();
+
+    device->RasterizerHash.Insert( hash, i );
+    device->RasterizerStateCache.Append( state );
+
+    //LogPrintf( "Total rasterizer states %d\n", i+1 );
+
+    return state;
+}
+
+DepthStencilStateInfo const * ghi_internal_CachedDepthStencilState( ghi_device_t * device, DepthStencilStateInfo const & _DepthStencilState ) {
+    int hash = device->Hash( ( unsigned char * )&_DepthStencilState, sizeof( _DepthStencilState ) );
+
+    int i = device->DepthStencilHash.First( hash );
+    for ( ; i != -1 ; i = device->DepthStencilHash.Next( i ) ) {
+
+        DepthStencilStateInfo const * state = device->DepthStencilStateCache[ i ];
+
+        if ( !memcmp( state, &_DepthStencilState, sizeof( *state ) ) ) {
+            //LogPrintf( "Caching depth stencil state\n" );
+            return state;
+        }
+    }
+
+    DepthStencilStateInfo * state = static_cast< DepthStencilStateInfo * >( device->Allocator.Allocate( sizeof( DepthStencilStateInfo ) ) );
+    memcpy( state, &_DepthStencilState, sizeof( *state ) );
+
+    i = device->DepthStencilStateCache.Size();
+
+    device->DepthStencilHash.Insert( hash, i );
+    device->DepthStencilStateCache.Append( state );
+
+    //LogPrintf( "Total depth stencil states %d\n", i+1 );
+
+    return state;
+}
+
+uint32_t ghi_internal_GenerateUID( ghi_device_t * device ) {
+    return ++device->UIDGen;
+}
+
 }

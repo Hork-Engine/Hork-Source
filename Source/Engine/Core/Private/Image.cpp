@@ -49,6 +49,9 @@ SOFTWARE.
 #pragma warning( pop )
 #endif
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 AImage::AImage() {
     pRawData = nullptr;
     Width = 0;
@@ -651,4 +654,24 @@ void ConvertToPrimultipliedAlpha( const float * SourceImage,
         dst[2] = ConvertToSRGB_UB( src[2] );
         dst[3] = bReplaceAlpha ? replaceAlpha : FloatToByte( src[3] );
     }
+}
+
+void WritePNG( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine ) {
+    stbi_write_png( _FileName, _Width, _Height, _NumChannels, _ImageData, _BytesPerLine );
+}
+
+void WriteBMP( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData ) {
+    stbi_write_bmp( _FileName, _Width, _Height, _NumChannels, _ImageData );
+}
+
+void WriteTGA( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData ) {
+    stbi_write_tga( _FileName, _Width, _Height, _NumChannels, _ImageData );
+}
+
+void WriteJPG( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _Quality ) {
+    stbi_write_jpg( _FileName, _Width, _Height, _NumChannels, _ImageData, _Quality );
+}
+
+void WriteHDR( const char * _FileName, int _Width, int _Height, int _NumChannels, const float * _ImageData ) {
+    stbi_write_hdr( _FileName, _Width, _Height, _NumChannels, _ImageData );
 }

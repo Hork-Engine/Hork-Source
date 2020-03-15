@@ -76,6 +76,8 @@ public:
 
     VIEWPORT_ORIGIN GetViewportOrigin() const { return ViewportOrigin; }
 
+    Framebuffer * GetDefaultFramebuffer() { return &DefaultFramebuffer; }
+
     Device * GetDevice() { return pDevice; }
 
     unsigned int GetTotalPipelines() const { return TotalPipelines; }
@@ -95,6 +97,8 @@ private:
                                           uint32_t NumVertexAttribs );
 
     Device *                  pDevice;
+
+    Framebuffer               DefaultFramebuffer;
 
     CLIP_CONTROL              ClipControl;
     VIEWPORT_ORIGIN           ViewportOrigin;
@@ -173,6 +177,103 @@ private:
 
 void SetCurrentState( State * _State );
 State * GetCurrentState();
+
+typedef struct ghi_state_s {
+    ghi_device_t * device;
+
+    CLIP_CONTROL              ClipControl;
+    VIEWPORT_ORIGIN           ViewportOrigin;
+
+    unsigned int *            TmpHandles;
+    ptrdiff_t *               TmpPointers;
+    ptrdiff_t *               TmpPointers2;
+
+    unsigned int              BufferBindings[MAX_BUFFER_SLOTS];
+    unsigned int              SampleBindings[MAX_SAMPLER_SLOTS];
+    unsigned int              TextureBindings[MAX_SAMPLER_SLOTS];
+
+    Pipeline *                CurrentPipeline;
+    struct VertexArrayObject * CurrentVAO;
+    uint8_t                   NumPatchVertices;       // count of patch vertices to set by glPatchParameteri
+
+    struct {
+        unsigned int          PackAlignment;
+        unsigned int          UnpackAlignment;
+    } PixelStore;
+
+    // current binding state
+    struct {
+        unsigned int          ReadFramebuffer;
+        unsigned int          DrawFramebuffer;
+        unsigned short        DrawFramebufferWidth;
+        unsigned short        DrawFramebufferHeight;
+        unsigned int          DrawInderectBuffer;
+        unsigned int          DispatchIndirectBuffer;
+        BlendingStateInfo const *     BlendState;             // current blend state binding
+        RasterizerStateInfo const *   RasterizerState;        // current rasterizer state binding
+        DepthStencilStateInfo const * DepthStencilState;      // current depth-stencil state binding
+    } Binding;
+
+    unsigned int              BufferBinding[ 2 ];
+
+    COLOR_CLAMP               ColorClamp;
+
+    BlendingStateInfo         BlendState;             // current blend state
+    float                     BlendColor[4];
+    unsigned int              SampleMask[4];
+    bool                      bSampleMaskEnabled;
+    bool                      bLogicOpEnabled;
+
+    RasterizerStateInfo       RasterizerState;       // current rasterizer state
+    bool                      bPolygonOffsetEnabled;
+
+    DepthStencilStateInfo     DepthStencilState;     // current depth-stencil state
+    unsigned int              StencilRef;
+
+    RenderPass const *        CurrentRenderPass;
+    Rect2D                    CurrentRenderPassRenderArea;
+
+    Rect2D                    CurrentScissor;
+
+    bool                      bPrimitiveRestartEnabled;
+
+    int                       SwapChainWidth;
+    int                       SwapChainHeight;
+
+    THash<>                   VAOHash;
+    TPodArray< struct VertexArrayObject * > VAOCache;
+
+    unsigned int              TotalPipelines;
+    unsigned int              TotalRenderPasses;
+    unsigned int              TotalFramebuffers;
+    unsigned int              TotalTransformFeedbacks;
+    unsigned int              TotalQueryPools;
+
+    ghi_state_s *                   Next;
+    ghi_state_s *                   Prev;
+
+    static ghi_state_s *            StateHead;
+    static ghi_state_s *            StateTail;
+} ghi_state_t;
+
+void ghi_set_current_state( ghi_state_t * _State );
+
+ghi_state_t * ghi_get_current_state();
+
+void ghi_create_state( ghi_state_t * state, ghi_device_t * _Device, StateCreateInfo const & _CreateInfo );
+void ghi_destroy_state( ghi_state_t * state );
+void ghi_state_set_swap_chain_resolution( ghi_state_t * state, int _Width, int _Height );
+
+void ghi_state_internal_PolygonOffsetClampSafe( ghi_state_t * state, float _Slope, int _Bias, float _Clamp );
+void ghi_state_internal_PackAlignment( ghi_state_t * state, unsigned int _Alignment );
+void ghi_state_internal_UnpackAlignment( ghi_state_t * state, unsigned int _Alignment );
+void ghi_state_internal_ClampReadColor( ghi_state_t * state, COLOR_CLAMP _ColorClamp );
+struct VertexArrayObject * ghi_state_internal_CachedVAO( ghi_state_t * state,
+                                                         VertexBindingInfo const * pVertexBindings,
+                                                         uint32_t NumVertexBindings,
+                                                         VertexAttribInfo const * pVertexAttribs,
+                                                         uint32_t NumVertexAttribs );
+
 
 /*
 

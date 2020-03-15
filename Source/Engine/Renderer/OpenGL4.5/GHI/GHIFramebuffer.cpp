@@ -43,6 +43,11 @@ namespace GHI {
 Framebuffer::Framebuffer() {
     pDevice = nullptr;
     Handle = nullptr;
+    Width = 0;
+    Height = 0;
+    NumColorAttachments = 0;
+    bHasDepthStencilAttachment = 0;
+    bDefault = false;
 }
 
 Framebuffer::~Framebuffer() {
@@ -50,6 +55,10 @@ Framebuffer::~Framebuffer() {
 }
 
 void Framebuffer::Initialize( FramebufferCreateInfo const & _CreateInfo ) {
+    if ( bDefault ) {
+        return;
+    }
+
     State * state = GetCurrentState();
 
     GLuint framebufferId;
@@ -166,6 +175,10 @@ void Framebuffer::Initialize( FramebufferCreateInfo const & _CreateInfo ) {
 }
 
 void Framebuffer::Deinitialize() {
+    if ( bDefault ) {
+        return;
+    }
+
     if ( !Handle ) {
         return;
     }
@@ -191,11 +204,10 @@ void Framebuffer::Deinitialize() {
 bool Framebuffer::ChooseReadBuffer( FRAMEBUFFER_ATTACHMENT _Attachment ) {
 
     GLuint framebufferId = GL_HANDLE( Handle );
-    bool isDefaultFramebuffer = false;//IsDefaultFramebuffer( framebuffer );
 
     if ( _Attachment < FB_DEPTH_ATTACHMENT ) {
 
-        if ( isDefaultFramebuffer ) {
+        if ( bDefault ) {
             return false;
         }
 
@@ -204,7 +216,7 @@ bool Framebuffer::ChooseReadBuffer( FRAMEBUFFER_ATTACHMENT _Attachment ) {
         glNamedFramebufferReadBuffer( framebufferId, GL_COLOR_ATTACHMENT0 + _Attachment );
     } else if ( _Attachment <= FB_DEPTH_STENCIL_ATTACHMENT ) {
 
-        if ( isDefaultFramebuffer ) {
+        if ( bDefault ) {
             return false;
         }
 
@@ -213,7 +225,7 @@ bool Framebuffer::ChooseReadBuffer( FRAMEBUFFER_ATTACHMENT _Attachment ) {
 
     } else {
 
-        if ( !isDefaultFramebuffer ) {
+        if ( !bDefault ) {
             return false;
         }
 

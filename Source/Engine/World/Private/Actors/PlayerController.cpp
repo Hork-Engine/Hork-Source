@@ -33,6 +33,7 @@ SOFTWARE.
 #include <World/Public/Components/CameraComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Widgets/WViewport.h>
+#include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
 
 AN_CLASS_META( APlayerController )
@@ -45,9 +46,6 @@ APlayerController::APlayerController() {
     InputComponent = CreateComponent< AInputComponent >( "PlayerControllerInput" );
 
     bCanEverTick = true;
-
-    //ViewportSize.X = 512;
-    //ViewportSize.Y = 512;
 
     if ( !CurrentAudioListener ) {
         CurrentAudioListener = this;
@@ -150,26 +148,27 @@ void APlayerController::TogglePause() {
 }
 
 void APlayerController::TakeScreenshot() {
-    /*
 
-    TODO: something like this?
+    if ( Viewport ) {
+        WDesktop * desktop = Viewport->GetDesktop();
 
-    struct SScreenshotParameters {
-        int Width;          // Screenshot custom width or zero to use display width
-        int Height;         // Screenshot custom height or zero to use display height
-        bool bJpeg;         // Use JPEG compression instead of PNG
-        int Number;         // Custom screenshot number. Set to zero to generate unique number.
-    };
-
-    SScreenshotParameters screenshotParams;
-    Core::ZeroMem( &screenshotParams, sizeof( screenshotParams ) );
-
-    GRuntime.TakeScreenshot( screenshotParams );
-
-    Screenshot path example: /Screenshots/Year-Month-Day/Display1/ShotNNNN.png
-    Where NNNN is screenshot number.
-
-    */
+        if ( desktop ) {
+            int w = desktop->GetWidth();
+            int h = desktop->GetHeight();
+            size_t sz = w*h*4;
+            if ( sz > 0 ) {
+                void * p = GHunkMemory.Alloc( sz );
+                GRenderBackend->ReadScreenPixels( 0, 0, w, h, sz, 1, p );
+                FlipImageY( p, w, h, 4, w * 4 );
+                static int n = 0;
+                if ( n == 0 ) {
+                    Core::MakeDir( "screenshots", false );
+                }
+                WritePNG( Core::Fmt( "screenshots/%d.png", n++ ), w, h, 4, p, w*4 );
+                GHunkMemory.ClearLastHunk();
+            }
+        }
+    }
 }
 
 void APlayerController::ToggleWireframe() {

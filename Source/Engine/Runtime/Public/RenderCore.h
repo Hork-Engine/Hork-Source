@@ -1065,6 +1065,7 @@ public:
     virtual void * FenceSync() = 0;
     virtual void RemoveSync( void * _Sync ) = 0;
     virtual void WaitSync( void * _Sync ) = 0;
+    virtual void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) = 0;
 
     virtual ATextureGPU * CreateTexture( IGPUResourceOwner * _Owner ) = 0;
     virtual void DestroyTexture( ATextureGPU * _Texture ) = 0;

@@ -278,5 +278,52 @@ private:
     uint32_t UID;
 };
 
-}
 
+
+using ghi_buffer_create_info_t = BufferCreateInfo;
+
+struct ghi_device_s;
+typedef ghi_device_s ghi_device_t;
+
+typedef struct {
+    ghi_device_t * device;
+    void * handle;
+    uint32_t uid;
+    bool immutable;
+    IMMUTABLE_STORAGE_FLAGS immutable_flags;
+    MUTABLE_STORAGE_CLIENT_ACCESS mutable_client_access;
+    MUTABLE_STORAGE_USAGE mutable_usage;
+    size_t size;
+} ghi_buffer_t;
+
+void ghi_create_buffer( ghi_buffer_t * buffer, ghi_buffer_create_info_t const * create_info, const void * sys_mem );
+
+void ghi_destroy_buffer( ghi_buffer_t * buffer );
+
+bool ghi_buffer_realloc( ghi_buffer_t * buffer, size_t size, const void * sys_mem );
+
+bool ghi_buffer_orphan( ghi_buffer_t * buffer );
+
+void ghi_buffer_read( ghi_buffer_t * buffer, void * sys_mem );
+
+void ghi_buffer_read_range( ghi_buffer_t * buffer, size_t offset, size_t size, void * sys_mem );
+
+void ghi_buffer_write( ghi_buffer_t * buffer, const void * sys_mem );
+
+void ghi_buffer_write_range( ghi_buffer_t * buffer, size_t offset, size_t size, const void * sys_mem );
+
+void * ghi_buffer_map_range( ghi_buffer_t * buffer, size_t offset, size_t size, MAP_TRANSFER transfer, MAP_INVALIDATE invalidate, MAP_PERSISTENCE persistence, bool flush_explicit, bool unsynchronized );
+
+void * ghi_buffer_map( ghi_buffer_t * buffer, MAP_TRANSFER transfer, MAP_INVALIDATE invalidate, MAP_PERSISTENCE persistence, bool flush_explicit, bool unsynchronized );
+
+void ghi_buffer_unmap( ghi_buffer_t * buffer );
+
+void * ghi_buffer_get_map_pointer( ghi_buffer_t * buffer );
+
+void ghi_buffer_invalidate( ghi_buffer_t * buffer );
+
+void ghi_buffer_invalidate_range( ghi_buffer_t * buffer, size_t offset, size_t size );
+
+void ghi_buffer_flush_mapped_range( ghi_buffer_t * buffer, size_t offset, size_t size );
+
+}

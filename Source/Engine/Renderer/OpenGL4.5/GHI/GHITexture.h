@@ -461,9 +461,9 @@ public:
     /// Only for TEXTURE_1D TEXTURE_1D_ARRAY TEXTURE_2D TEXTURE_2D_ARRAY TEXTURE_3D
     /// Client-side call function. Write data from client memory.
     bool WriteRect( TextureRect const & _Rectangle,
-                    TEXTURE_PIXEL_FORMAT _PixelFormat, // Specifies a pixel format for the input data
+                    TEXTURE_PIXEL_FORMAT _PixelFormat, /// Specifies a pixel format for the input data
                     size_t _SizeInBytes,
-                    unsigned int _Alignment,               // Specifies alignment of source data
+                    unsigned int _Alignment,               /// Specifies alignment of source data
                     const void * _SysMem );
 
     void Invalidate( uint16_t _Lod );

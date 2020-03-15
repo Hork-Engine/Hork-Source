@@ -1691,7 +1691,7 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
     state->CurrentRenderPass = renderPass;
     state->CurrentRenderPassRenderArea = _RenderPassBegin.RenderArea;
 
-    if ( !framebuffer ) {
+    if ( !framebuffer->Handle ) {
         // default framebuffer
         BeginRenderPassDefaultFramebuffer( _RenderPassBegin );
         return;
@@ -2455,8 +2455,6 @@ bool CommandBuffer::CopyFramebufferToTexture( Framebuffer & _SrcFramebuffer,
     }
 
     state->PackAlignment( _Alignment );
-
-    //BindingStackPointer_t binding;
 
     _SrcFramebuffer.BindReadFramebuffer();
 

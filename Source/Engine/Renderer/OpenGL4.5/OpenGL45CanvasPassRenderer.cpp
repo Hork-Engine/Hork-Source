@@ -544,7 +544,7 @@ void ACanvasPassRenderer::BeginCanvasPass() {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &CanvasPass;
-    renderPassBegin.pFramebuffer = NULL;
+    renderPassBegin.pFramebuffer = GState.GetDefaultFramebuffer();
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
     renderPassBegin.RenderArea.Width = GFrameData->CanvasWidth;

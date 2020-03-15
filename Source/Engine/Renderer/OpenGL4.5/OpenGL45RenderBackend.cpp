@@ -471,6 +471,18 @@ void ARenderBackend::WaitSync( void * _Sync ) {
     }
 }
 
+void ARenderBackend::ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) {
+    GHI::Rect2D rect;
+    rect.X = _X;
+    rect.Y = _Y;
+    rect.Width = _Width;
+    rect.Height = _Height;
+
+    GHI::Framebuffer * framebuffer = GState.GetDefaultFramebuffer();
+
+    framebuffer->Read( GHI::FB_BACK_DEFAULT, rect, GHI::FB_RGBA_CHANNEL, GHI::FB_UBYTE, GHI::COLOR_CLAMP_ON, _SizeInBytes, _Alignment, _SysMem );
+}
+
 ATextureGPU * ARenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
     ATextureGPU * texture = CreateResource< ATextureGPU >( _Owner );
     texture->pHandleGPU = GZoneMemory.ClearedAlloc( sizeof( GHI::Texture ) );

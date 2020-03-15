@@ -91,3 +91,9 @@ void ConvertToPrimultipliedAlpha( const float * SourceImage,
                                   bool bReplaceAlpha,
                                   float fReplaceAlpha,
                                   byte * sRGB );
+
+void WritePNG( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine );
+void WriteBMP( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData );
+void WriteTGA( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData );
+void WriteJPG( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _Quality );
+void WriteHDR( const char * _FileName, int _Width, int _Height, int _NumChannels, const float * _ImageData );

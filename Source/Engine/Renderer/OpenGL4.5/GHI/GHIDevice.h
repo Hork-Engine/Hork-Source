@@ -129,4 +129,65 @@ private:
     TPodArray< DepthStencilStateInfo * > DepthStencilStateCache;
 };
 
+
+
+using ghi_sampler_t = Sampler;
+
+typedef struct ghi_device_s {
+    bool bHalfFloatVertexSupported;
+    bool bHalfFloatPixelSupported;
+    bool bTextureCompressionS3tcSupported;
+    bool bTextureAnisotropySupported;
+
+    unsigned int MaxVertexBufferSlots;
+    unsigned int MaxVertexAttribStride;
+    unsigned int MaxVertexAttribRelativeOffset;
+    unsigned int MaxCombinedTextureImageUnits;
+    unsigned int MaxImageUnits;
+    unsigned int MaxTextureBufferSize;
+    unsigned int TextureBufferOffsetAlignment;
+    unsigned int UniformBufferOffsetAlignment;
+    unsigned int ShaderStorageBufferOffsetAlignment;
+    unsigned int MaxBufferBindings[4]; // uniform buffer, shader storage buffer, transform feedback buffer, atomic counter buffer
+    unsigned int MaxTextureAnisotropy;
+
+    // TODO: atomics:
+    unsigned int TotalStates;
+    unsigned int TotalBuffers;
+    unsigned int TotalTextures;
+    unsigned int TotalShaderModules;
+    size_t BufferMemoryAllocated;
+    size_t TextureMemoryAllocated;
+    uint32_t UIDGen;
+
+    AllocatorCallback Allocator;
+    HashCallback Hash;
+
+    THash<> SamplerHash;
+    TPodArray< struct SamplerInfo * > SamplerCache;
+
+    THash<> BlendingHash;
+    TPodArray< BlendingStateInfo * > BlendingStateCache;
+
+    THash<> RasterizerHash;
+    TPodArray< RasterizerStateInfo * > RasterizerStateCache;
+
+    THash<> DepthStencilHash;
+    TPodArray< DepthStencilStateInfo * > DepthStencilStateCache;
+} ghi_device_t;
+
+
+void ghi_create_device( ghi_device_t * device, AllocatorCallback const * _Allocator = nullptr, HashCallback _Hash = nullptr );
+void ghi_destroy_device( ghi_device_t * device );
+
+ghi_sampler_t const ghi_device_get_sampler( ghi_device_t * device, struct SamplerCreateInfo const & _CreateInfo );
+
+BlendingStateInfo const * ghi_internal_CachedBlendingState( ghi_device_t * device, BlendingStateInfo const & _BlendingState );
+
+RasterizerStateInfo const * ghi_internal_CachedRasterizerState( ghi_device_t * device, RasterizerStateInfo const & _RasterizerState );
+
+DepthStencilStateInfo const * ghi_internal_CachedDepthStencilState( ghi_device_t * device, DepthStencilStateInfo const & _DepthStencilState );
+
+uint32_t ghi_internal_GenerateUID( ghi_device_t * device );
+
 }
