@@ -63,13 +63,9 @@ SOFTWARE.
 #define PROCESS_ALREADY_EXISTS       2
 #define PROCESS_UNIQUE               3
 
-static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "0" ) );
-static ARuntimeVariable RVTestInput( _CTS( "TestInput" ),  _CTS( "0" ) );
-
 ARuntimeMain & GRuntimeMain = ARuntimeMain::Inst();
 
 static void LoggerMessageCallback( int _Level, const char * _Message );
-static void TestInput();
 
 ARuntimeMain::ARuntimeMain() {
     NumArguments = 0;
@@ -88,6 +84,8 @@ void ARuntimeMain::Run( ACreateGameModuleCallback _CreateGameModule ) {
     SysStartMilliseconds = SysStartMicroseconds * 0.001;
     SysStartSeconds = SysStartMicroseconds * 0.000001;
     SysFrameTimeStamp = SysStartMicroseconds;
+    SysFrameDuration = 1000000.0 / 60;
+    SysFrameNumber = 0;
 
     CreateGameModuleCallback = _CreateGameModule;
 
@@ -205,7 +203,7 @@ void ARuntimeMain::Run( ACreateGameModuleCallback _CreateGameModule ) {
 
     GWindowManager.Initialize();
 
-    RuntimeMainLoop();
+    Engine->Run( CreateGameModuleCallback );
 
     ARuntimeVariable::FreeVariables();
 
@@ -230,82 +228,18 @@ void ARuntimeMain::Run( ACreateGameModuleCallback _CreateGameModule ) {
     DeinitializeProcess();
 }
 
-void ARuntimeMain::RuntimeMainLoop() {
+//void ARuntimeMain::RuntimeUpdate() {
+//    GInputEventsCount = 0;
 
-    // Pump initial events
-    RuntimeUpdate();
+//    GMonitorManager.UpdateMonitors();
 
-    Engine->Initialize( CreateGameModuleCallback );
+//    GWindowManager.Update( GGameEvents );
 
-    if ( SetCriticalMark() ) {
-        return;
-    }
+//    // Pump joystick events before any input
+//    GJoystickManager.PollEvents();
 
-    do
-    {
-        SysFrameTimeStamp = GRuntime.SysMicroseconds();
-
-        if ( IsCriticalError() ) {
-            // Critical error in other thread was occured
-            return;
-        }
-
-        // Process game events, pump runtime events
-        RuntimeUpdate();
-
-        //GStreamedMemoryGPU.WaitBuffer();
-
-        // Refresh frame data (camera, cursor), prepare frame data for render backend
-        Engine->PrepareFrame();
-
-        // Generate GPU commands, SwapBuffers
-        GRenderBackend->RenderFrame( &FrameData );
-
-        GStreamedMemoryGPU.SwapFrames();
-
-        GRenderBackend->SwapBuffers();
-
-        GStreamedMemoryGPU.WaitBuffer();
-
-        // Keep memory statistics
-        MaxFrameMemoryUsage = Math::Max( MaxFrameMemoryUsage, FrameMemoryUsed );
-        FrameMemoryUsedPrev = FrameMemoryUsed;
-
-        // Free frame memory for the next frame
-        FrameMemoryUsed = 0;
-
-        // Run game logic for the next frame (GPU process current frame now)
-        Engine->UpdateFrame();
-
-        if ( RVSyncGPU ) {
-            // Wait GPU to prevent "input lag"
-            GRenderBackend->WaitGPU();
-        }
-
-    } while ( !bTerminate );
-
-    Engine->Deinitialize();
-
-    FrameData.Instances.Free();
-    FrameData.TranslucentInstances.Free();
-    FrameData.ShadowInstances.Free();
-    FrameData.DirectionalLights.Free();
-}
-
-void ARuntimeMain::RuntimeUpdate() {
-    GInputEventsCount = 0;
-
-    GMonitorManager.UpdateMonitors();
-
-    GWindowManager.Update( GGameEvents );
-
-    // Pump joystick events before any input
-    GJoystickManager.PollEvents();
-
-    glfwPollEvents();
-
-    TestInput();
-}
+//    glfwPollEvents();
+//}
 
 struct SProcessLog {
     FILE * File = nullptr;
@@ -620,44 +554,6 @@ void ARuntimeMain::EmergencyExit() {
 
     std::quick_exit( 0 );
     //std::abort();
-}
-
-static void TestInput() {
-    if ( RVTestInput ) {
-        RVTestInput = false;
-
-        SEvent * event;
-
-        event = GRuntimeEvents.Push();
-        event->Type = ET_MouseMoveEvent;
-        event->TimeStamp = GRuntime.SysSeconds_d();
-        event->Data.MouseMoveEvent.X = 10;
-        event->Data.MouseMoveEvent.Y = 0;
-        GInputEventsCount++;
-
-        event = GRuntimeEvents.Push();
-        event->Type = ET_MouseButtonEvent;
-        event->TimeStamp = GRuntime.SysSeconds_d();
-        event->Data.MouseButtonEvent.Action = IE_Press;
-        event->Data.MouseButtonEvent.Button = 0;
-        event->Data.MouseButtonEvent.ModMask = 0;
-        GInputEventsCount++;
-
-        event = GRuntimeEvents.Push();
-        event->Type = ET_MouseButtonEvent;
-        event->TimeStamp = GRuntime.SysSeconds_d();
-        event->Data.MouseButtonEvent.Action = IE_Release;
-        event->Data.MouseButtonEvent.Button = 0;
-        event->Data.MouseButtonEvent.ModMask = 0;
-        GInputEventsCount++;
-
-        event = GRuntimeEvents.Push();
-        event->Type = ET_MouseMoveEvent;
-        event->TimeStamp = GRuntime.SysSeconds_d();
-        event->Data.MouseMoveEvent.X = 10;
-        event->Data.MouseMoveEvent.Y = 0;
-        GInputEventsCount++;
-    }
 }
 
 int ARuntimeMain::CheckArg( const char * _Arg ) {

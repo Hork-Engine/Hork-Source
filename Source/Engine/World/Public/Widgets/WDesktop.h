@@ -119,6 +119,10 @@ public:
     // Перемещает курсор на указанную дельта. Осуществляет перемещение текущего захваченного окна.
     void GenerateMouseMoveEvents( struct SMouseMoveEvent const & _Event, double _TimeStamp );
 
+    void GenerateJoystickButtonEvents( struct SJoystickButtonEvent const & _Event, double _TimeStamp );
+
+    void GenerateJoystickAxisEvents( struct SJoystickAxisEvent const & _Event, double _TimeStamp );
+
     // Создает событие CharEvent у окна, которое
     // в данный момент в фокусе.
     void GenerateCharEvents( struct SCharEvent const & _Event, double _TimeStamp );
@@ -128,6 +132,8 @@ public:
     // Создает событие DrawEvent для всех видимых окон графического интерфейса.
     // События вызываются начиная с нижних уровней до высоких.
     void GenerateDrawEvents( ACanvas & _Canvas );
+
+    void MarkTransformDirty();
 
     virtual void DrawCursor( ACanvas & _Canvas );
 

@@ -78,9 +78,6 @@ public:
     /** Helper. Get all existing worlds */
     TPodArray< AWorld * > const & GetWorld() { return AWorld::GetWorlds(); }
 
-    /** Get current frame update number */
-    int GetFrameNumber() const { return FrameNumber; }
-
     /** Change a video mode */
     void SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, uint8_t _RefreshRate, bool _Fullscreen, const char * _Backend );
 
@@ -94,10 +91,10 @@ public:
     float GetVideoAspectRatio() const { return VideoAspectRatio; }
 
     /** Get framebuffer size */
-    float GetFramebufferWidth() const { return FramebufferWidth; }
+    int GetFramebufferWidth() const { return FramebufferWidth; }
 
     /** Get framebuffer size */
-    float GetFramebufferHeight() const { return FramebufferHeight; }
+    int GetFramebufferHeight() const { return FramebufferHeight; }
 
     /** Get scale for retina displays */
     Float2 const & GetRetinaScale() const { return RetinaScale; }
@@ -126,8 +123,6 @@ public:
     /** Get window visible status */
     bool IsWindowVisible() const { return bIsWindowVisible; }
 
-    void SetCursorEnabled( bool _Enabled );    
-
     /** Map coordinate from window space to monitor space */
     void MapWindowCoordinate( float & InOutX, float & InOutY ) const;
 
@@ -146,20 +141,14 @@ public:
     ARuntimeCommandProcessor & GetCommandProcessor() { return CommandProcessor; }
 
 private:
-    /** IEngineInterface interface. Initialize the engine */
-    void Initialize( ACreateGameModuleCallback _CreateGameModuleCallback ) override;
-
-    /** IEngineInterface interface. Shutdown the engine */
-    void Deinitialize() override;
-
-    /** IEngineInterface interface. Prepare a frame for rendering */
-    void PrepareFrame() override;
-
-    /** IEngineInterface interface. Update game frame */
-    void UpdateFrame() override;
+    /** IEngineInterface interface. Run the engine */
+    void Run( ACreateGameModuleCallback _CreateGameModuleCallback ) override;
 
     /** IEngineInterface interface. Message print callback. This must be a thread-safe function. */
     void Print( const char * _Message ) override;
+
+    /** Update input */
+    void UpdateInputAxes();
 
     /** Process runtime event */
     void ProcessEvent( struct SEvent const & _Event );
@@ -174,6 +163,8 @@ private:
     void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp );
     void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp );
     void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp );
+    void OnJoystickButtonEvent( struct SJoystickButtonEvent const & _Event, double _TimeStamp );
+    void OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp );
     void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp );
     void OnChangedVideoModeEvent( struct SChangedVideoModeEvent const & _Event );
 
@@ -192,8 +183,8 @@ private:
 
     float VideoAspectRatio = 4.0f/3.0f;
 
-    float FramebufferWidth;
-    float FramebufferHeight;
+    int FramebufferWidth;
+    int FramebufferHeight;
 
     /** scale coordinates for retina displays */
     Float2 RetinaScale;
@@ -210,17 +201,8 @@ private:
 
     //class AImguiContext * ImguiContext;
 
-    /** Frame update number */
-    int FrameNumber = 0;
-
     /** Frame update duration */
     float FrameDurationInSeconds = 0;
-
-    /** Frame duration in microseconds */
-    int64_t FrameDuration;
-
-    /** System time at frame start */
-    int64_t FrameTimeStamp;
 
     IGameModule * GameModule;
 

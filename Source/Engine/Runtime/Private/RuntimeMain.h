@@ -49,8 +49,8 @@ public:
     int64_t         SysStartMilliseconds;
     int64_t         SysStartMicroseconds;
     int64_t         SysFrameTimeStamp;
-
-    SRenderFrame    FrameData;
+    int64_t         SysFrameDuration;
+    int             SysFrameNumber;
 
     void *          FrameMemoryAddress;
     size_t          FrameMemorySize;
@@ -71,9 +71,9 @@ public:
     int CheckArg( const char * _Arg );
 
 private:
-    void RuntimeMainLoop();
+    //void RuntimeMainLoop();
 
-    void RuntimeUpdate();
+    //void RuntimeUpdate();
 
     void EmergencyExit();
 

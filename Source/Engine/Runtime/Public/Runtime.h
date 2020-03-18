@@ -58,7 +58,6 @@ struct SPhysicalMonitorInternal {
     void * Pointer;
     unsigned short InitialGammaRamp[ GAMMA_RAMP_SIZE * 3 ];
     unsigned short GammaRamp[ GAMMA_RAMP_SIZE * 3 ];
-    bool bGammaRampDirty;
 };
 
 struct SPhysicalMonitor {
@@ -269,10 +268,6 @@ struct SSetInputFocusEvent {
 
 };
 
-struct SSetCursorModeEvent {
-    bool bDisabledCursor;
-};
-
 struct SEvent {
     int Type;
     double TimeStamp;   // in seconds
@@ -299,7 +294,6 @@ struct SEvent {
         SSetWindowDefsEvent SetWindowDefsEvent;
         SSetWindowPosEvent SetWindowPosEvent;
         SSetInputFocusEvent SetInputFocusEvent;
-        SSetCursorModeEvent SetCursorModeEvent;
     } Data;
 };
 
@@ -349,9 +343,6 @@ public:
 
     /** Return event queue for writing */
     AEventQueue * WriteEvents_GameThread();
-
-    /** Get render frame data */
-    SRenderFrame * GetFrameData();
 
     /** Allocate frame memory */
     void * AllocFrameMem( size_t _SizeInBytes );
@@ -443,6 +434,12 @@ public:
     /** Get time stamp at beggining of the frame */
     int64_t SysFrameTimeStamp();
 
+    /** Get frame duration in microseconds */
+    int64_t SysFrameDuration();
+
+    /** Get current frame update number */
+    int SysFrameNumber() const;
+
     /** Load dynamic library (.dll or .so) */
     void * LoadDynamicLib( const char * _LibraryName );
 
@@ -469,6 +466,15 @@ public:
 
     /** Terminate the application */
     void PostTerminateEvent();
+
+    bool IsPendingTerminate();
+
+    /** Pump runtime events */
+    void PumpEvents();
+
+    void NewFrame();
+
+    void SetCursorEnabled( bool _Enabled );
 };
 
 extern ANGIE_API ARuntime & GRuntime;

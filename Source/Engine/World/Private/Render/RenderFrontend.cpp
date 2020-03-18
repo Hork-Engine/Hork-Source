@@ -77,14 +77,17 @@ void ARenderFrontend::Deinitialize() {
     VisSurfaces.Free();
 
     DebugDraw.Free();
+
+    FrameData.Instances.Free();
+    FrameData.TranslucentInstances.Free();
+    FrameData.ShadowInstances.Free();
+    FrameData.DirectionalLights.Free();
 }
 
 void ARenderFrontend::Render( ACanvas * InCanvas ) {
-    FrameData = GRuntime.GetFrameData();
-
-    FrameData->FrameNumber = FrameNumber;
-    FrameData->DrawListHead = nullptr;
-    FrameData->DrawListTail = nullptr;
+    FrameData.FrameNumber = FrameNumber = GRuntime.SysFrameNumber();
+    FrameData.DrawListHead = nullptr;
+    FrameData.DrawListTail = nullptr;
 
     Stat.FrontendTime = GRuntime.SysMilliseconds();
     Stat.PolyCount = 0;
@@ -98,18 +101,18 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
 
     //RenderImgui();
 
-    FrameData->AllocSurfaceWidth = MaxViewportWidth;
-    FrameData->AllocSurfaceHeight = MaxViewportHeight;
-    FrameData->CanvasWidth = InCanvas->Width;
-    FrameData->CanvasHeight = InCanvas->Height;
-    FrameData->NumViews = NumViewports;
-    FrameData->Instances.Clear();
-    FrameData->TranslucentInstances.Clear();
-    FrameData->ShadowInstances.Clear();
-    FrameData->DirectionalLights.Clear();
-    //FrameData->Lights.Clear();
-    FrameData->ShadowCascadePoolSize = 0;
-    FrameData->StreamBuffer = GStreamedMemoryGPU.GetBufferGPU();
+    FrameData.AllocSurfaceWidth = MaxViewportWidth;
+    FrameData.AllocSurfaceHeight = MaxViewportHeight;
+    FrameData.CanvasWidth = InCanvas->Width;
+    FrameData.CanvasHeight = InCanvas->Height;
+    FrameData.NumViews = NumViewports;
+    FrameData.Instances.Clear();
+    FrameData.TranslucentInstances.Clear();
+    FrameData.ShadowInstances.Clear();
+    FrameData.DirectionalLights.Clear();
+    //FrameData.Lights.Clear();
+    FrameData.ShadowCascadePoolSize = 0;
+    FrameData.StreamBuffer = GStreamedMemoryGPU.GetBufferGPU();
 
     DebugDraw.Reset();
 
@@ -119,71 +122,64 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
 
     //int64_t t = GRuntime.SysMilliseconds();
     for ( int i = 0 ; i < NumViewports ; i++ ) {
-        SRenderView * view = &FrameData->RenderViews[i];
+        SRenderView * view = &FrameData.RenderViews[i];
 
-        StdSort( FrameData->Instances.Begin() + view->FirstInstance,
-                 FrameData->Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
+        StdSort( FrameData.Instances.Begin() + view->FirstInstance,
+                 FrameData.Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
                  InstanceSortFunction );
 
-        StdSort( FrameData->TranslucentInstances.Begin() + view->FirstTranslucentInstance,
-                 FrameData->TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
+        StdSort( FrameData.TranslucentInstances.Begin() + view->FirstTranslucentInstance,
+                 FrameData.TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
                  InstanceSortFunction );
 
-        StdSort( FrameData->ShadowInstances.Begin() + view->FirstShadowInstance,
-                 FrameData->ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
+        StdSort( FrameData.ShadowInstances.Begin() + view->FirstShadowInstance,
+                 FrameData.ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
                  ShadowInstanceSortFunction );
 
     }
-    //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData->Instances.Size() + FrameData->ShadowInstances.Size() );
+    //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
 
 
     if ( DebugDraw.CommandsCount() > 0 ) {
-        FrameData->DbgCmds = DebugDraw.GetCmds().ToPtr();
-        FrameData->DbgVertexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
-        FrameData->DbgIndexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned short ), DebugDraw.GetIndices().ToPtr() );
+        FrameData.DbgCmds = DebugDraw.GetCmds().ToPtr();
+        FrameData.DbgVertexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
+        FrameData.DbgIndexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned short ), DebugDraw.GetIndices().ToPtr() );
     }
 
 
-    //    int vertexCount = GFrameData->DbgVertices.Size();
-    //    int indexCount = GFrameData->DbgIndices.Size();
+    //    int vertexCount = GFrameData.DbgVertices.Size();
+    //    int indexCount = GFrameData.DbgIndices.Size();
     //    if ( VertexBufferSize < vertexCount ) {
     //        VertexBufferSize = vertexCount;
-    //        VertexBuffer.Realloc( VertexBufferSize * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
+    //        VertexBuffer.Realloc( VertexBufferSize * sizeof( SDebugVertex ), GFrameData.DbgVertices.ToPtr() );
     //    } else {
-    //        VertexBuffer.WriteRange( 0, vertexCount * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
+    //        VertexBuffer.WriteRange( 0, vertexCount * sizeof( SDebugVertex ), GFrameData.DbgVertices.ToPtr() );
     //    }
     //    if ( IndexBufferSize < indexCount ) {
     //        IndexBufferSize = indexCount;
-    //        IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
+    //        IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned int ), GFrameData.DbgIndices.ToPtr() );
     //    } else {
-    //        IndexBuffer.WriteRange( 0, indexCount * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
+    //        IndexBuffer.WriteRange( 0, indexCount * sizeof( unsigned int ), GFrameData.DbgIndices.ToPtr() );
     //    }
 
 
     Stat.FrontendTime = GRuntime.SysMilliseconds() - Stat.FrontendTime;
 
-    FrameNumber++;
+    //FrameNumber++;
 }
 
 void ARenderFrontend::RenderView( int _Index ) {
     SViewport const * viewport = Viewports[ _Index ];
-    APlayerController * controller = viewport->PlayerController;
-    ARenderingParameters * RP = controller->GetRenderingParameters();
-    AWorld * world = controller->GetWorld();
-    SRenderView * view = &FrameData->RenderViews[_Index];
+    ARenderingParameters * RP = viewport->RenderingParams;
+    ACameraComponent * camera = viewport->Camera;
+    AWorld * world = camera->GetWorld();
+    SRenderView * view = &FrameData.RenderViews[_Index];
 
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
     view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
     view->ViewIndex = _Index;
     view->Width = viewport->Width;
     view->Height = viewport->Height;
-
-    ACameraComponent * camera = nullptr;
-    APawn * pawn = controller->GetPawn();
-    if ( pawn )
-    {
-        camera = pawn->GetPawnCamera();
-    }
 
     if ( camera )
     {
@@ -217,13 +213,13 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->bWireframe = RP ? RP->bWireframe : false;
     view->NumShadowMapCascades = 0;
     view->NumCascadedShadowMaps = 0;
-    view->FirstInstance = FrameData->Instances.Size();
+    view->FirstInstance = FrameData.Instances.Size();
     view->InstanceCount = 0;
-    view->FirstTranslucentInstance = FrameData->TranslucentInstances.Size();
+    view->FirstTranslucentInstance = FrameData.TranslucentInstances.Size();
     view->TranslucentInstanceCount = 0;
-    view->FirstShadowInstance = FrameData->ShadowInstances.Size();
+    view->FirstShadowInstance = FrameData.ShadowInstances.Size();
     view->ShadowInstanceCount = 0;
-    view->FirstDirectionalLight = FrameData->DirectionalLights.Size();
+    view->FirstDirectionalLight = FrameData.DirectionalLights.Size();
     view->NumDirectionalLights = 0;
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
@@ -247,7 +243,7 @@ void ARenderFrontend::RenderView( int _Index ) {
 
         AddRenderInstances( &renderWorld );
 
-        CreateDirectionalLightCascades( FrameData, view );
+        CreateDirectionalLightCascades( view );
 
         AddDirectionalShadowmapInstances( &renderWorld );
 
@@ -266,8 +262,6 @@ void ARenderFrontend::RenderView( int _Index ) {
 }
 
 void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
-    SRenderFrame * frameData = GRuntime.GetFrameData();
-
     ImDrawList const * srcList = &InCanvas->GetDrawList();
 
     if ( srcList->VtxBuffer.empty() ) {
@@ -417,13 +411,13 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
     }
 
     // Add drawList to common list
-    SHUDDrawList * prev = frameData->DrawListTail;
+    SHUDDrawList * prev = FrameData.DrawListTail;
     drawList->pNext = nullptr;
-    frameData->DrawListTail = drawList;
+    FrameData.DrawListTail = drawList;
     if ( prev ) {
         prev->pNext = drawList;
     } else {
-        frameData->DrawListHead = drawList;
+        FrameData.DrawListHead = drawList;
     }
 }
 
@@ -484,8 +478,6 @@ void ARenderFrontend::RenderImgui() {
 }
 
 void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
-    SRenderFrame * frameData = GRuntime.GetFrameData();
-
     ImDrawList const * srcList = _DrawList;
 
     if ( srcList->VtxBuffer.empty() ) {
@@ -578,13 +570,13 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         }
     }
 
-    SHUDDrawList * prev = frameData->DrawListTail;
+    SHUDDrawList * prev = FrameData.DrawListTail;
     drawList->pNext = nullptr;
-    frameData->DrawListTail = drawList;
+    FrameData.DrawListTail = drawList;
     if ( prev ) {
         prev->pNext = drawList;
     } else {
-        frameData->DrawListHead = drawList;
+        FrameData.DrawListHead = drawList;
     }
 }
 
@@ -609,7 +601,6 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 {
     AScopedTimeCheck TimeCheck( "AddRenderInstances" );
 
-    SRenderFrame * frameData = GRuntime.GetFrameData();
     SRenderView * view = RenderDef.View;
     ADrawable * drawable;
     ABaseLightComponent * light;
@@ -664,7 +655,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
             break;
         }
 
-        frameData->DirectionalLights.Append( lightDef );
+        FrameData.DirectionalLights.Append( lightDef );
 
         lightDef->ColorAndAmbientIntensity = dirlight->GetEffectiveColor();
         lightDef->Matrix = dirlight->GetWorldRotation().ToMatrix();
@@ -679,7 +670,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 
     //GLogger.Printf( "FrameLightData %f KB\n", sizeof( SFrameLightData ) / 1024.0f );
     if ( !RVFixFrustumClusters ) {
-        GLightVoxelizer.Voxelize( frameData, view, Lights.ToPtr(), Lights.Size() );
+        GLightVoxelizer.Voxelize( &FrameData, view, Lights.ToPtr(), Lights.Size() );
     }
 }
 
@@ -738,10 +729,10 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
         }
 
         if ( material->IsTranslucent() ) {
-            GRuntime.GetFrameData()->TranslucentInstances.Append( instance );
+            FrameData.TranslucentInstances.Append( instance );
             RenderDef.View->TranslucentInstanceCount++;
         } else {
-            GRuntime.GetFrameData()->Instances.Append( instance );
+            FrameData.Instances.Append( instance );
             RenderDef.View->InstanceCount++;
         }
 
@@ -828,10 +819,10 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
         }
 
         if ( material->IsTranslucent() ) {
-            GRuntime.GetFrameData()->TranslucentInstances.Append( instance );
+            FrameData.TranslucentInstances.Append( instance );
             RenderDef.View->TranslucentInstanceCount++;
         } else {
-            GRuntime.GetFrameData()->Instances.Append( instance );
+            FrameData.Instances.Append( instance );
             RenderDef.View->InstanceCount++;
         }
 
@@ -922,10 +913,10 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
         }
 
         if ( material->IsTranslucent() ) {
-            GRuntime.GetFrameData()->TranslucentInstances.Append( instance );
+            FrameData.TranslucentInstances.Append( instance );
             RenderDef.View->TranslucentInstanceCount++;
         } else {
-            GRuntime.GetFrameData()->Instances.Append( instance );
+            FrameData.Instances.Append( instance );
             RenderDef.View->InstanceCount++;
         }
 
@@ -982,8 +973,6 @@ void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( AMeshComponent * InCom
         return;
     }
 
-    SRenderFrame * frameData = GRuntime.GetFrameData();
-
     InComponent->PreRenderUpdate( &RenderDef );
 
     AIndexedMesh * mesh = InComponent->GetMesh();
@@ -1016,7 +1005,7 @@ void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( AMeshComponent * InCom
             break;
         }
 
-        frameData->ShadowInstances.Append( instance );
+        FrameData.ShadowInstances.Append( instance );
 
         instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
@@ -1050,8 +1039,6 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * I
     if ( !RVRenderMeshes ) {
         return;
     }
-
-    SRenderFrame * frameData = GRuntime.GetFrameData();
 
     InComponent->PreRenderUpdate( &RenderDef );
 
@@ -1090,7 +1077,7 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * I
             break;
         }
 
-        frameData->ShadowInstances.Append( instance );
+        FrameData.ShadowInstances.Append( instance );
 
         instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
@@ -1169,7 +1156,7 @@ void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshCom
             return;
         }
 
-        GRuntime.GetFrameData()->ShadowInstances.Append( instance );
+        FrameData.ShadowInstances.Append( instance );
 
         instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
@@ -1204,8 +1191,6 @@ void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshCom
 }
 
 void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld ) {
-    SRenderFrame * frameData = GRuntime.GetFrameData();
-
     if ( !RenderDef.View->NumShadowMapCascades ) {
         return;
     }
@@ -1251,7 +1236,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
             break;
         }
 
-        frameData->ShadowInstances.Append( instance );
+        FrameData.ShadowInstances.Append( instance );
 
         instance->Material = nullptr;
         instance->MaterialInstance = nullptr;
@@ -1388,10 +1373,10 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     }
 
     if ( material->IsTranslucent() ) {
-        GRuntime.GetFrameData()->TranslucentInstances.Append( instance );
+        FrameData.TranslucentInstances.Append( instance );
         RenderDef.View->TranslucentInstanceCount++;
     } else {
-        GRuntime.GetFrameData()->Instances.Append( instance );
+        FrameData.Instances.Append( instance );
         RenderDef.View->InstanceCount++;
     }
 

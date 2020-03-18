@@ -95,7 +95,8 @@ void ARuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
         physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize] =
         physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize * 2] = (unsigned short)val;
     }
-    physMonitor->Internal.bGammaRampDirty = true;
+
+    GMonitorManager.UpdateMonitorGamma( physMonitor );
 }
 
 void ARuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
@@ -112,7 +113,8 @@ void ARuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
         physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize] = val;
         physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize * 2] = val;
     }
-    physMonitor->Internal.bGammaRampDirty = true;
+
+    GMonitorManager.UpdateMonitorGamma( physMonitor );
 }
 
 void ARuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRamp ) {
@@ -122,7 +124,8 @@ void ARuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRa
     }
 
     Core::Memcpy( physMonitor->Internal.GammaRamp, _GammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
-    physMonitor->Internal.bGammaRampDirty = true;
+
+    GMonitorManager.UpdateMonitorGamma( physMonitor );
 }
 
 void ARuntime::GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, int & _GammaRampSize ) {
@@ -144,7 +147,8 @@ void ARuntime::RestoreMonitorGamma( int _Handle ) {
     }
 
     Core::Memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
-    physMonitor->Internal.bGammaRampDirty = true;
+
+    GMonitorManager.UpdateMonitorGamma( physMonitor );
 }
 
 SCPUInfo const & ARuntime::GetCPUInfo() const {
@@ -286,6 +290,14 @@ int64_t ARuntime::SysFrameTimeStamp() {
     return GRuntimeMain.SysFrameTimeStamp;
 }
 
+int64_t ARuntime::SysFrameDuration() {
+    return GRuntimeMain.SysFrameDuration;
+}
+
+int ARuntime::SysFrameNumber() const {
+    return GRuntimeMain.SysFrameNumber;
+}
+
 void * ARuntime::LoadDynamicLib( const char * _LibraryName ) {
     AString name( _LibraryName );
 #if defined AN_OS_WIN32
@@ -357,10 +369,6 @@ const char * ARuntime::GetClipboard() {
     return glfwGetClipboardString( NULL );
 }
 
-SRenderFrame * ARuntime::GetFrameData() {
-    return &GRuntimeMain.FrameData;
-}
-
 AEventQueue * ARuntime::ReadEvents_GameThread() {
     return &GRuntimeEvents;
 }
@@ -407,6 +415,44 @@ void ARuntime::PostTerminateEvent() {
     GRuntimeMain.bTerminate = true;
 }
 
+bool ARuntime::IsPendingTerminate() {
+    return GRuntimeMain.bTerminate;
+}
+
+void ARuntime::PumpEvents() {
+    GInputEventsCount = 0;
+
+    // Pump joystick events before any input
+    GJoystickManager.PollEvents();
+
+    // Pump input events and other
+    glfwPollEvents();
+}
+
+void ARuntime::NewFrame() {
+    int64_t prevTimeStamp = GRuntimeMain.SysFrameTimeStamp;
+    GRuntimeMain.SysFrameTimeStamp = SysMicroseconds();
+    if ( prevTimeStamp == GRuntimeMain.SysStartMicroseconds ) {
+        GRuntimeMain.SysFrameDuration = 1000000.0 / 60;
+    } else {
+        GRuntimeMain.SysFrameDuration = GRuntimeMain.SysFrameTimeStamp - prevTimeStamp;
+    }
+
+    GRuntimeMain.SysFrameNumber++;
+
+    // Keep memory statistics
+    GRuntimeMain.MaxFrameMemoryUsage = Math::Max( GRuntimeMain.MaxFrameMemoryUsage, GRuntimeMain.FrameMemoryUsed );
+    GRuntimeMain.FrameMemoryUsedPrev = GRuntimeMain.FrameMemoryUsed;
+
+    // Free frame memory for new frame
+    GRuntimeMain.FrameMemoryUsed = 0;
+
+    GWindowManager.ProcessEvents( GGameEvents );
+}
+
+void ARuntime::SetCursorEnabled( bool _Enabled ) {
+    GWindowManager.SetCursorEnabled( _Enabled );
+}
 
 #if 0
 

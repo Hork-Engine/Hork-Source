@@ -43,7 +43,7 @@ public:
 
     void Deinitialize();
 
-    void UpdateMonitors();
+    void UpdateMonitorGamma( SPhysicalMonitor * _Monitor );
 
     SPhysicalMonitor * FindMonitor( const char * _MonitorName );
 

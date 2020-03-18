@@ -41,7 +41,9 @@ public:
 
     void Deinitialize();
 
-    void Update( AEventQueue & _EventQueue );
+    void SetCursorEnabled( bool _Enabled );
+
+    void ProcessEvents( AEventQueue & _EventQueue );
 };
 
 extern AWindowManager & GWindowManager;

@@ -79,6 +79,7 @@ WDesktop & WDesktop::RemoveWidgets() {
 }
 
 WDesktop & WDesktop::SetSize( float _Width, float _Height ) {
+    GLogger.Printf("WDesktop::SetSize: %f %f\n",_Width,_Height);
     return SetSize( Float2( _Width, _Height ) );
 }
 
@@ -618,6 +619,56 @@ void WDesktop::GenerateMouseMoveEvents( struct SMouseMoveEvent const & _Event, d
     }
 }
 
+void WDesktop::GenerateJoystickButtonEvents( SJoystickButtonEvent const & _Event, double _TimeStamp ) {
+    if ( DraggingWidget ) {
+        // Don't allow joystick buttons when dragging
+        return;
+    }
+
+    if ( Popup ) {
+        // TODO: Use joystick/gamepad buttons to control popup menu
+#if 0
+        if ( _Event.Action == IE_Press || _Event.Action ==  IE_Repeat ) {
+            if ( _Event.Key == KEY_ESCAPE ) {
+                ClosePopupMenu();
+            } else if ( _Event.Key == KEY_DOWN ) {
+                Popup->SelectNextItem();
+            } else if ( _Event.Key == KEY_UP ) {
+                Popup->SelectPrevItem();
+            } else if ( _Event.Key == KEY_RIGHT ) {
+                Popup->SelectNextSubMenu();
+            } else if ( _Event.Key == KEY_LEFT ) {
+                Popup->SelectPrevSubMenu();
+            } else if ( _Event.Key == KEY_HOME ) {
+                Popup->SelectFirstItem();
+            } else if ( _Event.Key == KEY_END ) {
+                Popup->SelectLastItem();
+            }
+        }
+#endif
+        return;
+    }
+
+    if ( FocusWidget && FocusWidget->IsVisible() && !FocusWidget->IsDisabled() ) {
+        FocusWidget->OnJoystickButtonEvent( _Event, _TimeStamp );
+    }
+}
+
+void WDesktop::GenerateJoystickAxisEvents( SJoystickAxisEvent const & _Event, double _TimeStamp ) {
+    if ( DraggingWidget ) {
+        // Don't allow joystick buttons when dragging
+        return;
+    }
+
+    if ( Popup ) {
+        return;
+    }
+
+    if ( FocusWidget && FocusWidget->IsVisible() && !FocusWidget->IsDisabled() ) {
+        FocusWidget->OnJoystickAxisEvent( _Event, _TimeStamp );
+    }
+}
+
 void WDesktop::GenerateCharEvents( struct SCharEvent const & _Event, double _TimeStamp ) {
     if ( DraggingWidget ) {
         // Ignore when dragging
@@ -665,8 +716,13 @@ void WDesktop::GenerateDrawEvents( ACanvas & _Canvas ) {
     _Canvas.PopClipRect();
 }
 
+void WDesktop::MarkTransformDirty() {
+    Root->MarkTransformDirty();
+}
+
 void WDesktop::OnDrawBackground( ACanvas & _Canvas ) {
-    _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4::Black() );
+    _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4(0.03f,0.2f,0.2f,1.0f) );
+    //_Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4::Black() );
 }
 
 void WDesktop::DrawCursor( ACanvas & _Canvas ) {

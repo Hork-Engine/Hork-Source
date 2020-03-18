@@ -42,76 +42,113 @@ WViewport::~WViewport() {
 
 void WViewport::OnTransformDirty() {
     Super::OnTransformDirty();
+
+    if ( PlayerController ) {
+        PlayerController->OnViewportUpdate();
+    }
 }
 
 WViewport & WViewport::SetPlayerController( APlayerController * _PlayerController ) {
+    // Unset old viewport
+    if ( PlayerController ) {
+        if ( PlayerController->Viewport ) {
+            PlayerController->Viewport->PlayerController = nullptr;
+            PlayerController->Viewport = nullptr;
+        }
+        if ( !_PlayerController ) {
+            PlayerController->OnViewportUpdate();
+        }
+    }
+
+    // Set new viewport
     PlayerController = _PlayerController;
-    PlayerController->Viewport = this;
+    if ( PlayerController ) {
+        PlayerController->Viewport = this;
+        PlayerController->OnViewportUpdate();
+    }
 
     return *this;
 }
 
 void WViewport::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) {
-    if ( PlayerController ) {
-        AInputComponent * inputComponent = PlayerController->GetInputComponent();
-
-        if ( !inputComponent->bIgnoreKeyboardEvents ) {
-            inputComponent->SetButtonState( ID_KEYBOARD, _Event.Key, _Event.Action, _Event.ModMask, _TimeStamp );
-        }
+    if ( !PlayerController ) {
+        return;
     }
+
+    AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+    inputComponent->SetButtonState( ID_KEYBOARD, _Event.Key, _Event.Action, _Event.ModMask, _TimeStamp );
 }
 
 void WViewport::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
-    if ( PlayerController ) {
-        AInputComponent * inputComponent = PlayerController->GetInputComponent();
-
-        if ( !inputComponent->bIgnoreMouseEvents ) {
-            inputComponent->SetButtonState( ID_MOUSE, _Event.Button, _Event.Action, _Event.ModMask, _TimeStamp );
-        }
+    if ( !PlayerController ) {
+        return;
     }
+
+    AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+    inputComponent->SetButtonState( ID_MOUSE, _Event.Button, _Event.Action, _Event.ModMask, _TimeStamp );
 }
 
 void WViewport::OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) {
-    if ( PlayerController ) {
-        AInputComponent * inputComponent = PlayerController->GetInputComponent();
+    if ( !PlayerController ) {
+        return;
+    }
 
-        if ( !inputComponent->bIgnoreMouseEvents ) {
-            if ( _Event.WheelX < 0.0 ) {
-                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Press, 0, _TimeStamp );
-                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Release, 0, _TimeStamp );
-            } else if ( _Event.WheelX > 0.0 ) {
-                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Press, 0, _TimeStamp );
-                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Release, 0, _TimeStamp );
-            }
-            if ( _Event.WheelY < 0.0 ) {
-                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Press, 0, _TimeStamp );
-                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Release, 0, _TimeStamp );
-            } else if ( _Event.WheelY > 0.0 ) {
-                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Press, 0, _TimeStamp );
-                inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Release, 0, _TimeStamp );
-            }
-        }
+    AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+    if ( _Event.WheelX < 0.0 ) {
+        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Press, 0, _TimeStamp );
+        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Release, 0, _TimeStamp );
+    } else if ( _Event.WheelX > 0.0 ) {
+        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Press, 0, _TimeStamp );
+        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Release, 0, _TimeStamp );
+    }
+    if ( _Event.WheelY < 0.0 ) {
+        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Press, 0, _TimeStamp );
+        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Release, 0, _TimeStamp );
+    } else if ( _Event.WheelY > 0.0 ) {
+        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Press, 0, _TimeStamp );
+        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Release, 0, _TimeStamp );
     }
 }
 
 void WViewport::OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) {
-    if ( PlayerController ) {
-        AInputComponent * inputComponent = PlayerController->GetInputComponent();
-
-        if ( !inputComponent->bIgnoreMouseEvents ) {
-            inputComponent->SetMouseAxisState( _Event.X, _Event.Y );
-        }
+    if ( !PlayerController ) {
+        return;
     }
+
+    AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+    inputComponent->SetMouseAxisState( _Event.X, _Event.Y );
+}
+
+void WViewport::OnJoystickButtonEvent( struct SJoystickButtonEvent const & _Event, double _TimeStamp ) {
+    if ( !PlayerController ) {
+        return;
+    }
+
+    AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+    inputComponent->SetButtonState( ID_JOYSTICK_1 + _Event.Joystick, _Event.Button, _Event.Action, 0, _TimeStamp );
+}
+
+void WViewport::OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) {
+    if ( !PlayerController ) {
+        return;
+    }
+
+    AInputComponent::SetJoystickAxisState( _Event.Joystick, _Event.Axis, _Event.Value );
 }
 
 void WViewport::OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) {
-    if ( PlayerController ) {
-        AInputComponent * inputComponent = PlayerController->GetInputComponent();
-
-        if ( !inputComponent->bIgnoreCharEvents ) {
-            inputComponent->NotifyUnicodeCharacter( _Event.UnicodeCharacter, _Event.ModMask, _TimeStamp );
-        }
+    if ( !PlayerController ) {
+        return;
     }
+
+    AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+    inputComponent->NotifyUnicodeCharacter( _Event.UnicodeCharacter, _Event.ModMask, _TimeStamp );
 }
 
 void WViewport::OnFocusLost() {
@@ -120,13 +157,27 @@ void WViewport::OnFocusLost() {
 void WViewport::OnFocusReceive() {
 }
 
-void WViewport::OnDrawEvent( ACanvas & _Canvas ) {
-    if ( PlayerController ) {
-        Float2 mins, maxs;
-        GetDesktopRect( mins, maxs, false );
+void WViewport::OnDrawEvent( ACanvas & InCanvas ) {
+    if ( !PlayerController ) {
+        return;
+    }
 
-        Float2 const & pos = mins;
-        Float2 const & size = maxs-mins;
-        _Canvas.DrawViewport( PlayerController, pos.X, pos.Y, size.X, size.Y, AColor4::White(), 0, -1, COLOR_BLENDING_DISABLED );
+    Float2 mins, maxs;
+    GetDesktopRect( mins, maxs, false );
+
+    Float2 const & pos = mins;
+    Float2 const & size = maxs-mins;
+
+    APawn * pawn = PlayerController->GetPawn();
+    if ( pawn ) {
+        InCanvas.DrawViewport( pawn->GetPawnCamera(), PlayerController->GetRenderingParameters(),
+                               pos.X, pos.Y, size.X, size.Y, AColor4::White(), 0, -1, COLOR_BLENDING_DISABLED );
+    }
+
+    AHUD * hud = PlayerController->GetHUD();
+    if ( hud ) {
+        InCanvas.PushClipRect( mins, maxs, true );
+        hud->Draw( &InCanvas, pos.X, pos.Y, size.X, size.Y );
+        InCanvas.PopClipRect();
     }
 }

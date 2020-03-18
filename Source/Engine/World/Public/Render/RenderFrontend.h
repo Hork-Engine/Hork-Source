@@ -59,6 +59,9 @@ public:
 
     //int GetFrameNumber() const { return FrameNumber; }
 
+    /** Get render frame data */
+    SRenderFrame * GetFrameData() { return &FrameData; }
+
     SRenderFrontendStat const & GetStat() const { return Stat; }
 
 private:
@@ -82,9 +85,9 @@ private:
     void AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder );
     
 
-    void CreateDirectionalLightCascades( SRenderFrame * Frame, SRenderView * View );
+    void CreateDirectionalLightCascades( SRenderView * View );
 
-    SRenderFrame * FrameData;
+    SRenderFrame   FrameData;
     ADebugRenderer DebugDraw;
     int FrameNumber = 0;
 

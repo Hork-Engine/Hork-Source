@@ -83,10 +83,6 @@ static void KeyCallback( GLFWwindow * _Window, int _Key, int _Scancode, int _Act
         return;
     }
 
-    //if ( _Action == GLFW_REPEAT ) {
-    //    return;
-    //}
-
     if ( _Action == GLFW_RELEASE && !PressedKeys[_Key] ) {
         return;
     }
@@ -275,7 +271,7 @@ static void InitRenderer() {
     Wnd = (GLFWwindow *)GRenderBackend->GetMainWindow();
 
     // Store real video mode
-    glfwGetWindowSize( Wnd, &VidWidth, &VidHeight );
+    //glfwGetWindowSize( Wnd, &VidWidth, &VidHeight );
     monitor = glfwGetWindowMonitor( Wnd );
     if ( monitor ) {
         const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
@@ -345,11 +341,6 @@ AWindowManager::AWindowManager() {
 }
 
 void AWindowManager::Initialize() {
-
-    //REGISTER_RENDER_BACKEND( OpenGLBackend );
-    //REGISTER_RENDER_BACKEND( VulkanBackend );
-    //REGISTER_RENDER_BACKEND( NullBackend );
-
     // TODO: load this from config:
     VidWidth = 640;
     VidHeight = 480;
@@ -365,10 +356,6 @@ void AWindowManager::Initialize() {
     WinPositionX = 100;
     WinPositionY = 100;
     WinDisabledCursor = false;
-
-    //for ( ARenderBackend const * backend = GetRenderBackends() ; backend ; backend = backend->Next ) {
-    //    GLogger.Printf( "Found renderer backend: %s\n", backend->Name );
-    //}
 
     Core::ZeroMem( PressedKeys, sizeof( PressedKeys ) );
     Core::ZeroMem( PressedMouseButtons, sizeof( PressedMouseButtons ) );
@@ -393,7 +380,7 @@ static void SetVideoMode() {
                               VidHeight,
                               VidRefreshRate );
 
-        glfwGetWindowSize( Wnd, &VidWidth, &VidHeight );
+        //glfwGetWindowSize( Wnd, &VidWidth, &VidHeight );
         monitor = glfwGetWindowMonitor( Wnd );
         if ( monitor ) {
             const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
@@ -414,11 +401,11 @@ static void SetVideoMode() {
             0         // refresh rate is ignored
         );
 
+        glfwShowWindow( Wnd );
+        glfwPostEmptyEvent();
+        glfwPollEvents();
+        glfwWaitEvents();
         glfwFocusWindow( Wnd );
-
-        if ( !glfwGetWindowAttrib( Wnd, GLFW_VISIBLE ) ) {
-            glfwShowWindow( Wnd );
-        }
     }
 
     MousePositionX = MOUSE_LOST;
@@ -467,17 +454,19 @@ static void ProcessEvent( SEvent const & _Event ) {
     case ET_SetInputFocusEvent:
         glfwFocusWindow( Wnd );
         break;
-    case ET_SetCursorModeEvent:
-        if ( WinDisabledCursor != _Event.Data.SetCursorModeEvent.bDisabledCursor ) {
-            WinDisabledCursor = _Event.Data.SetCursorModeEvent.bDisabledCursor;
-            glfwSetInputMode( Wnd, GLFW_CURSOR, GLFWCursorMode[ WinDisabledCursor ] );
-            if ( WinDisabledCursor ) {
-                //glfwGetCursorPos( Wnd, &MousePositionX, &MousePositionY );
-                MousePositionX = MOUSE_LOST;
-            }
-        }
+    }
+}
 
-        break;
+void AWindowManager::SetCursorEnabled( bool _Enabled ) {
+    bool bDisabledCursor = !_Enabled;
+
+    if ( WinDisabledCursor != bDisabledCursor ) {
+        WinDisabledCursor = bDisabledCursor;
+        glfwSetInputMode( Wnd, GLFW_CURSOR, GLFWCursorMode[ WinDisabledCursor ] );
+        if ( WinDisabledCursor ) {
+            //glfwGetCursorPos( Wnd, &MousePositionX, &MousePositionY );
+            MousePositionX = MOUSE_LOST;
+        }
     }
 }
 
@@ -498,7 +487,7 @@ static void SendChangedVideoModeEvent() {
     data.FramebufferHeight = framebufferHeight;
 }
 
-void AWindowManager::Update( AEventQueue & _EventQueue ) {
+void AWindowManager::ProcessEvents( AEventQueue & _EventQueue ) {
     SEvent * event;
     while ( nullptr != ( event = _EventQueue.Pop() ) ) {
         ProcessEvent( *event );

@@ -36,12 +36,14 @@ SOFTWARE.
 
 #include <imgui/imgui_internal.h>
 
-class APlayerController;
+class ACameraComponent;
+class ARenderingParameters;
 class ATexture;
 class AMaterialInstance;
 
 struct SViewport {
-    APlayerController * PlayerController;
+    ACameraComponent * Camera;
+    ARenderingParameters * RenderingParams;
     int X;
     int Y;
     int Width;
@@ -140,7 +142,7 @@ public:
     void DrawMaterialRounded( AMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, AColor4 const & _Color, float _Rounding, int _RoundingCorners = CORNER_ROUND_ALL );
 
     // Viewport
-    void DrawViewport( APlayerController * _PlayerController, int _X, int _Y, int _W, int _H, AColor4 const & _Color = AColor4::White(), float _Rounding = 0.0f, int _RoundingCorners = CORNER_ROUND_ALL, EColorBlending _Blending = COLOR_BLENDING_DISABLED );
+    void DrawViewport( ACameraComponent * _Camera, ARenderingParameters * _RP, int _X, int _Y, int _W, int _H, AColor4 const & _Color = AColor4::White(), float _Rounding = 0.0f, int _RoundingCorners = CORNER_ROUND_ALL, EColorBlending _Blending = COLOR_BLENDING_DISABLED );
 
     // Cursor
     void DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, AColor4 const & _Color, AColor4 const & _BorderColor, AColor4 const & _ShadowColor, const float _Scale = 1.0f );

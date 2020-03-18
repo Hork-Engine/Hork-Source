@@ -593,6 +593,16 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
 void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp ) {
     AN_ASSERT( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
 
+    if ( _DevId == ID_KEYBOARD && bIgnoreKeyboardEvents ) {
+        return;
+    }
+    if ( _DevId == ID_MOUSE && bIgnoreMouseEvents ) {
+        return;
+    }
+    if ( _DevId >= ID_JOYSTICK_1 && _DevId <= ID_JOYSTICK_16 && bIgnoreJoystickEvents ) {
+        return;
+    }
+
     char * ButtonIndex = DeviceButtonDown[ _DevId ];
 
 #ifdef AN_DEBUG
@@ -710,6 +720,10 @@ bool AInputComponent::IsJoyDown( const SJoystick * _Joystick, int _Button ) cons
 }
 
 void AInputComponent::NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp ) {
+    if ( bIgnoreCharEvents ) {
+        return;
+    }
+
     if ( !CharacterCallback.IsValid() ) {
         return;
     }
@@ -722,6 +736,10 @@ void AInputComponent::NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _
 }
 
 void AInputComponent::SetMouseAxisState( float _X, float _Y ) {
+    if ( bIgnoreMouseEvents ) {
+        return;
+    }
+
     MouseAxisStateX += _X * MouseSensitivity;
     MouseAxisStateY += _Y * MouseSensitivity;
 }
@@ -735,14 +753,6 @@ void AInputComponent::SetJoystickState( int _Joystick, int _NumAxes, int _NumBut
     Static.Joysticks[_Joystick].NumButtons = _NumButtons;
     Static.Joysticks[_Joystick].bGamePad = _bGamePad;
     Static.Joysticks[_Joystick].bConnected = _bConnected;
-}
-
-void AInputComponent::SetJoystickButtonState( int _Joystick, int _Button, int _Action, double _TimeStamp ) {
-    INTRUSIVE_FOREACH( component, InputComponents, Next ) {
-        if ( !component->bIgnoreJoystickEvents ) {
-            component->SetButtonState( ID_JOYSTICK_1 + _Joystick, _Button, _Action, 0, _TimeStamp );
-        }
-    }
 }
 
 void AInputComponent::SetJoystickAxisState( int _Joystick, int _Axis, float _Value ) {

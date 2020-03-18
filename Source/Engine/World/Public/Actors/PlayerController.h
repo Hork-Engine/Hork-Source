@@ -87,6 +87,7 @@ public:
     /** Player command context */
     ACommandContext CommandContext;
 
+    /** Player viewport. Don't change directly, use WViewport::SetPlayerController to attach controller to viewport. */
     TWeakRef< WViewport > Viewport;
 
     /** Override listener location. If listener is not specified, pawn camera will be used. */
@@ -114,6 +115,9 @@ public:
     void SetCurrentCommandContext();
 
     float GetViewportAspectRatio() const;
+
+    int GetViewportWidth() const { return ViewportWidth; }
+    int GetViewportHeight() const { return ViewportHeight; }
 
     /** Get current audio listener */
     ASceneComponent * GetAudioListener();
@@ -148,6 +152,10 @@ public:
     /** Current command context */
     static ACommandContext * GetCurrentCommandContext();
 
+    virtual void OnViewportUpdate();
+
+    virtual void UpdatePawnCamera();
+
 protected:
     AInputComponent * InputComponent;
 
@@ -169,6 +177,9 @@ private:
     TRef< AAudioParameters > AudioParameters;
     TWeakRef< ASceneComponent > AudioListener;
     TWeakRef< AHUD > HUD;
+    float ViewportAspectRatio;
+    int ViewportWidth;
+    int ViewportHeight;
 
     static APlayerController * CurrentAudioListener;
     static ACommandContext * CurrentCommandContext;

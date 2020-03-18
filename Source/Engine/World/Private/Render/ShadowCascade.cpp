@@ -59,7 +59,7 @@ static Float3 RV, UV;           // scaled right and up vectors in world space
 
 static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, SCascadeSplit * _CascadeSplits );
 
-void ARenderFrontend::CreateDirectionalLightCascades( SRenderFrame * Frame, SRenderView * View ) {
+void ARenderFrontend::CreateDirectionalLightCascades( SRenderView * View ) {
     View->NumShadowMapCascades = 0;
     View->NumCascadedShadowMaps = 0;
 
@@ -82,7 +82,7 @@ void ARenderFrontend::CreateDirectionalLightCascades( SRenderFrame * Frame, SRen
     }
 
     for ( int i = 0 ; i < View->NumDirectionalLights ; i++ ) {
-        SDirectionalLightDef & lightDef = *Frame->DirectionalLights[ View->FirstDirectionalLight + i ];
+        SDirectionalLightDef & lightDef = *FrameData.DirectionalLights[ View->FirstDirectionalLight + i ];
 
         if ( !lightDef.bCastShadow ) {
             continue;
@@ -122,7 +122,7 @@ void ARenderFrontend::CreateDirectionalLightCascades( SRenderFrame * Frame, SRen
         }
     }
 
-    Frame->ShadowCascadePoolSize = Math::Max( Frame->ShadowCascadePoolSize, View->NumShadowMapCascades );
+    FrameData.ShadowCascadePoolSize = Math::Max( FrameData.ShadowCascadePoolSize, View->NumShadowMapCascades );
 }
 
 static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, SCascadeSplit * _CascadeSplits ) {

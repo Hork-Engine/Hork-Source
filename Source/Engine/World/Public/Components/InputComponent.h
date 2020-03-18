@@ -269,7 +269,6 @@ public:
     bool IsMouseDown( int _Button ) const { return GetButtonState( ID_MOUSE, _Button ); }
     bool IsJoyDown( const struct SJoystick * _Joystick, int _Button ) const;
 
-    /** Used by EngineInstance during main game tick to notfiy input component for button press/release */
     void SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp );
 
     /** Return is button pressed or not */
@@ -287,13 +286,8 @@ public:
     AInputComponent * GetNext() { return Next; }
     AInputComponent * GetPrev() { return Prev; }
 
-    /** Used by EngineInstance during main game tick to update joystick state */
     static void SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected );
 
-    /** Used by EngineInstance during main game tick to notfiy input component for button press/release */
-    static void SetJoystickButtonState( int _Joystick, int _Button, int _Action, double _TimeStamp );
-
-    /** Used by EngineInstance during main game tick to update joystick axis state */
     static void SetJoystickAxisState( int _Joystick, int _Axis, float _Value );
 
     static float GetJoystickAxisState( int _Joystick, int _Axis );

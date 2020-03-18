@@ -886,6 +886,14 @@ void WWidget::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStam
 
 }
 
+void WWidget::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event, double _TimeStamp ) {
+
+}
+
+void WWidget::OnJoystickAxisEvent( SJoystickAxisEvent const & _Event, double _TimeStamp ) {
+
+}
+
 void WWidget::OnCharEvent( SCharEvent const & _Event, double _TimeStamp ) {
 
 }

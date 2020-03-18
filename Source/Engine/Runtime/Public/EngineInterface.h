@@ -38,17 +38,8 @@ class IEngineInterface
 public:
     virtual ~IEngineInterface() {}
 
-    /** Initialize the engine */
-    virtual void Initialize( ACreateGameModuleCallback _CreateGameModuleCallback ) = 0;
-
-    /** Shutdown the engine */
-    virtual void Deinitialize() = 0;
-
-    /** Prepare a frame for rendering */
-    virtual void PrepareFrame() = 0;
-
-    /** Update game frame */
-    virtual void UpdateFrame() = 0;
+    /** Run the engine */
+    virtual void Run( ACreateGameModuleCallback _CreateGameModuleCallback ) = 0;
 
     /** Print callback */
     virtual void Print( const char * _Message ) = 0;

@@ -678,7 +678,15 @@ void ACanvas::DrawMaterialRounded( AMaterialInstance * _MaterialInstance, int _X
     DrawList.AddImageRounded( _MaterialInstance, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_MATERIAL );
 }
 
-void ACanvas::DrawViewport( APlayerController * _PlayerController, int _X, int _Y, int _W, int _H, AColor4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending ) {
+void ACanvas::DrawViewport( ACameraComponent * _Camera, ARenderingParameters * _RP, int _X, int _Y, int _W, int _H, AColor4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending ) {
+    if ( !_Camera ) {
+        return;
+    }
+
+    if ( !_RP ) {
+        return;
+    }
+
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -690,7 +698,7 @@ void ACanvas::DrawViewport( APlayerController * _PlayerController, int _X, int _
          || _Y > clipMax.Y
          || _X + _W < clipMin.X
          || _Y + _H < clipMin.Y ) {
-        // Perfrom viewport clipping
+        // Perform viewport clipping
         return;
     }
 
@@ -704,17 +712,8 @@ void ACanvas::DrawViewport( APlayerController * _PlayerController, int _X, int _
     viewport.Y = _Y;
     viewport.Width = _W;
     viewport.Height = _H;
-    viewport.PlayerController = _PlayerController;
-
-    AHUD * hud = _PlayerController->GetHUD();
-    if ( hud ) {
-
-        PushClipRect( a, b, true );
-
-        hud->Draw( this, _X, _Y, _W, _H );
-
-        PopClipRect();
-    }
+    viewport.Camera = _Camera;
+    viewport.RenderingParams = _RP;
 }
 
 void ACanvas::DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, AColor4 const & _Color, AColor4 const & _BorderColor, AColor4 const & _ShadowColor, const float _Scale ) {

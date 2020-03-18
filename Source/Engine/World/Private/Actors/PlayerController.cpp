@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WViewport.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
+#include <GameThread/Public/EngineInstance.h>
 
 AN_CLASS_META( APlayerController )
 AN_CLASS_META( ARenderingParameters )
@@ -91,6 +92,8 @@ void APlayerController::OnPawnChanged()
     if ( HUD ) {
         HUD->OwnerPawn = Pawn;
     }
+
+    UpdatePawnCamera();
 }
 
 void APlayerController::SetAudioListener( ASceneComponent * _AudioListener ) {
@@ -148,7 +151,6 @@ void APlayerController::TogglePause() {
 }
 
 void APlayerController::TakeScreenshot() {
-
     if ( Viewport ) {
         WDesktop * desktop = Viewport->GetDesktop();
 
@@ -214,13 +216,7 @@ ACommandContext * APlayerController::GetCurrentCommandContext() {
 }
 
 float APlayerController::GetViewportAspectRatio() const {
-    if ( Viewport ) {
-        Float2 size = Viewport->GetAvailableSize();
-        if ( size.X > 0 && size.Y > 0 ) {
-            return size.X / size.Y;
-        }
-    }
-    return 1.0f;
+    return ViewportAspectRatio;
 }
 
 Float2 APlayerController::GetLocalCursorPosition() const {
@@ -242,4 +238,59 @@ Float2 APlayerController::GetNormalizedCursorPosition() const {
         }
     }
     return Float2::Zero();
+}
+
+void APlayerController::OnViewportUpdate() {
+    if ( Viewport )
+    {
+        Float2 size = Viewport->GetAvailableSize();
+        if ( size.X > 0 && size.Y > 0 ) {
+            ViewportAspectRatio =  size.X / size.Y;
+        }
+
+        ViewportWidth = size.X;
+        ViewportHeight = size.Y;
+    }
+    else
+    {
+        // Set default
+        ViewportAspectRatio = 1.0f;
+        ViewportWidth = 512;
+        ViewportHeight = 512;
+    }
+
+    UpdatePawnCamera();
+}
+
+void APlayerController::UpdatePawnCamera() {
+    if ( !Pawn )
+    {
+        return;
+    }
+
+    ACameraComponent * camera = Pawn->GetPawnCamera();
+    if ( !camera )
+    {
+        return;
+    }
+
+    SVideoMode const & vidMode = GEngine.GetVideoMode();
+    if ( vidMode.bFullscreen )
+    {
+        SPhysicalMonitor const * monitor = GRuntime.GetMonitor( vidMode.PhysicalMonitor );
+
+        float x = ( float )monitor->PhysicalWidthMM / GEngine.GetFramebufferWidth();
+        float y = ( float )monitor->PhysicalHeightMM / GEngine.GetFramebufferHeight();
+
+        float viewportWidthMM = ViewportWidth * x;
+        float viewportHeightMM = ViewportHeight * y;
+
+        float aspect = viewportWidthMM / viewportHeightMM;
+
+        camera->SetAspectRatio( aspect );
+    }
+    else
+    {
+        camera->SetAspectRatio( ViewportAspectRatio );
+    }
 }

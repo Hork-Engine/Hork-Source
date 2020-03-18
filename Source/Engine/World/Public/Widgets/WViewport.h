@@ -52,6 +52,10 @@ protected:
 
     void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
 
+    void OnJoystickButtonEvent( struct SJoystickButtonEvent const & _Event, double _TimeStamp ) override;
+
+    void OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) override;
+
     void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) override;
 
     void OnFocusLost() override;

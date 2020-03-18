@@ -399,6 +399,10 @@ protected:
 
     virtual void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp );
 
+    virtual void OnJoystickButtonEvent( struct SJoystickButtonEvent const & _Event, double _TimeStamp );
+
+    virtual void OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp );
+
     virtual void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp );
 
     virtual void OnDragEvent( Float2 & _Position );

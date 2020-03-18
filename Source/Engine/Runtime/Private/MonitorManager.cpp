@@ -123,7 +123,6 @@ static void RegisterMonitor( GLFWmonitor * _Monitor ) {
     Core::Memcpy( &physMonitor->Internal.InitialGammaRamp[gammaRamp->size * 2], gammaRamp->blue, gammaRamp->size * sizeof( unsigned short ) );
     Core::Memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * gammaRamp->size * 3 );
     physMonitor->GammaRampSize = gammaRamp->size;
-    physMonitor->Internal.bGammaRampDirty = false;
 
     UpdatePrimaryMonitor();
 
@@ -166,26 +165,13 @@ void AMonitorManager::Deinitialize() {
     PhysicalMonitors.Free();
 }
 
-static void UpdateMonitorGamma( SPhysicalMonitor * _PhysMonitor ) {
+void AMonitorManager::UpdateMonitorGamma( SPhysicalMonitor * _Monitor ) {
     GLFWgammaramp ramp;
-    ramp.size = _PhysMonitor->GammaRampSize;
-    ramp.red = _PhysMonitor->Internal.GammaRamp;
+    ramp.size = _Monitor->GammaRampSize;
+    ramp.red = _Monitor->Internal.GammaRamp;
     ramp.green = ramp.red + ramp.size;
     ramp.blue = ramp.green + ramp.size;
-    glfwSetGammaRamp( ( GLFWmonitor * )_PhysMonitor->Internal.Pointer, &ramp );
-    _PhysMonitor->Internal.bGammaRampDirty = false;
-}
-
-void AMonitorManager::UpdateMonitors() {
-    for ( SPhysicalMonitor * physMonitor : PhysicalMonitors ) {
-        if ( !physMonitor->Internal.Pointer ) {
-            // not connected
-            continue;
-        }
-        if ( physMonitor->Internal.bGammaRampDirty ) {
-            UpdateMonitorGamma( physMonitor );
-        }
-    }
+    glfwSetGammaRamp( ( GLFWmonitor * )_Monitor->Internal.Pointer, &ramp );
 }
 
 SPhysicalMonitor * AMonitorManager::FindMonitor( const char * _MonitorName ) {

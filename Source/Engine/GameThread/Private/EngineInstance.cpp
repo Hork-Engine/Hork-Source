@@ -59,7 +59,8 @@ SOFTWARE.
 
 //#define IMGUI_CONTEXT
 
-ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "1" ) );
+static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "0" ) );
+static ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "1" ) );
 
 AEngineInstance & GEngine = AEngineInstance::Inst();
 
@@ -107,7 +108,10 @@ static void ImguiModuleFree( void * _Bytes, void * ) {
     GZoneMemory.Free( _Bytes );
 }
 
-void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCallback ) {
+void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback ) {
+    // Pump initial events
+    GRuntime.PumpEvents();
+
     GConsole.ReadStoryLines();
 
     InitializeFactories();
@@ -158,10 +162,81 @@ void AEngineInstance::Initialize( ACreateGameModuleCallback _CreateGameModuleCal
     ImguiContext->AddRef();
 #endif
 
-    FrameDuration = 1000000.0 / 60;
-}
+    if ( SetCriticalMark() ) {
+        return;
+    }
 
-void AEngineInstance::Deinitialize() {
+    do
+    {
+        if ( IsCriticalError() ) {
+            // Critical error in other thread was occured
+            return;
+        }
+
+        // Set new frame, process game events
+        GRuntime.NewFrame();
+
+        // Take current frame duration
+        FrameDurationInSeconds = GRuntime.SysFrameDuration() * 0.000001;
+
+        // Don't allow very slow frames
+        if ( FrameDurationInSeconds > 0.5f ) {
+            FrameDurationInSeconds = 0.5f;
+        }
+
+        // Garbage collect from previuous frames
+        AGarbageCollector::DeallocateObjects();
+
+        // Execute console commands
+        ACommandContext * commandContext = APlayerController::GetCurrentCommandContext();
+        if ( commandContext ) {
+            CommandProcessor.Execute( *commandContext );
+        }
+
+        // Tick worlds
+        AWorld::UpdateWorlds( GameModule, FrameDurationInSeconds );
+
+        // Update audio system
+        GAudioSystem.Update( APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
+
+        // Sync with GPU to prevent "input lag"
+        if ( RVSyncGPU ) {
+            GRenderBackend->WaitGPU();
+        }
+
+        // Pump runtime events
+        GRuntime.PumpEvents();
+
+        // Process runtime events
+        ProcessEvents();
+
+        // Update input
+        UpdateInputAxes();
+
+#ifdef IMGUI_CONTEXT
+        // Imgui test
+        UpdateImgui();
+#endif
+        // Draw widgets, HUD, etc
+        DrawCanvas();
+
+        // Build frame data for rendering
+        GRenderFrontend.Render( &Canvas );
+
+        // Generate GPU commands
+        GRenderBackend->RenderFrame( GRenderFrontend.GetFrameData() );
+
+        // Swap buffers for streamed memory
+        GStreamedMemoryGPU.SwapFrames();
+
+        // Swap screen buffers
+        GRenderBackend->SwapBuffers();
+
+        // Wait for free streamed buffer
+        GStreamedMemoryGPU.WaitBuffer();
+
+    } while ( !GRuntime.IsPendingTerminate() );
+
     GameModule->OnGameEnd();
 
     Desktop.Reset();
@@ -199,59 +274,6 @@ void AEngineInstance::Deinitialize() {
     GConsole.WriteStoryLines();
 }
 
-void AEngineInstance::PrepareFrame() {
-    ProcessEvents();
-
-    for ( AInputComponent * component = AInputComponent::GetInputComponents() ; component ; component = component->GetNext() ) {
-        component->UpdateAxes( FrameDurationInSeconds );
-    }
-
-    DrawCanvas();
-
-    GRenderFrontend.Render( &Canvas );
-}
-
-void AEngineInstance::UpdateFrame() {
-    // Take current frame duration
-    FrameDurationInSeconds = FrameDuration * 0.000001;
-
-    // Don't allow very slow frames
-    if ( FrameDurationInSeconds > 0.5f ) {
-        FrameDurationInSeconds = 0.5f;
-    }
-
-    // Set current frame number
-    FrameNumber++;
-
-    // Garbage collect from previuous frames
-    AGarbageCollector::DeallocateObjects();
-
-    ACommandContext * commandContext = APlayerController::GetCurrentCommandContext();
-    if ( commandContext ) {
-        CommandProcessor.Execute( *commandContext );
-    }
-
-    // Tick worlds
-    AWorld::UpdateWorlds( GameModule, FrameDurationInSeconds );
-
-    // Update audio system
-    GAudioSystem.Update( APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
-
-    // Build draw lists for canvas
-    //DrawCanvas();
-
-#ifdef IMGUI_CONTEXT
-    // Imgui test
-    UpdateImgui();
-#endif
-
-    // Set next frame duration
-    FrameDuration = GRuntime.SysMicroseconds() - FrameTimeStamp;
-
-    // Set next frame time stamp
-    FrameTimeStamp = GRuntime.SysMicroseconds();
-}
-
 void AEngineInstance::DrawCanvas() {
     Canvas.Begin( VideoMode.Width, VideoMode.Height );
 
@@ -260,7 +282,6 @@ void AEngineInstance::DrawCanvas() {
         if ( Desktop )
         {
             // Draw desktop
-            Desktop->SetSize( VideoMode.Width, VideoMode.Height );
             Desktop->GenerateWindowHoverEvents();
             Desktop->GenerateDrawEvents( Canvas );
             if ( Desktop->IsCursorVisible() )
@@ -288,7 +309,7 @@ void AEngineInstance::DrawCanvas() {
 void AEngineInstance::ShowStats() {
     if ( RVShowStat )
     {
-        SRenderFrame * frameData = GRuntime.GetFrameData();
+        SRenderFrame * frameData = GRenderFrontend.GetFrameData();
 
         Float2 pos( 8, 8 );
         const float y_step = 22;
@@ -395,7 +416,7 @@ void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, doub
     ImguiContext->OnMouseButtonEvent( _Event );
 #endif
 
-    if ( GConsole.IsActive() ) {
+    if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
         return;
     }
 
@@ -442,6 +463,22 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
     }
 }
 
+void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event, double _TimeStamp ) {
+    if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
+        return;
+    }
+
+    if ( Desktop ) {
+        Desktop->GenerateJoystickButtonEvents( _Event, _TimeStamp );
+    }
+}
+
+void AEngineInstance::OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) {
+    if ( Desktop ) {
+        Desktop->GenerateJoystickAxisEvents( _Event, _TimeStamp );
+    }
+}
+
 void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp ) {
 #ifdef IMGUI_CONTEXT
     ImguiContext->OnCharEvent( _Event );
@@ -467,8 +504,8 @@ void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _E
 
     FramebufferWidth = _Event.FramebufferWidth;
     FramebufferHeight = _Event.FramebufferHeight;
-    RetinaScale = Float2( FramebufferWidth / VideoMode.Width, FramebufferHeight / VideoMode.Height );
-
+    RetinaScale = Float2( (float)FramebufferWidth / VideoMode.Width, (float)FramebufferHeight / VideoMode.Height );
+GLogger.Printf( "OnChangedVideoModeEvent: %d %d %d %d\n",FramebufferWidth,FramebufferHeight,_Event.Width,_Event.Height);
     if ( _Event.bFullscreen ) {
         SPhysicalMonitor const * monitor = GRuntime.GetMonitor( _Event.PhysicalMonitor );
         VideoAspectRatio = ( float )monitor->PhysicalWidthMM / monitor->PhysicalHeightMM;
@@ -479,13 +516,21 @@ void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _E
     } else {
         SPhysicalMonitor const * monitor = GRuntime.GetPrimaryMonitor();//GRuntime.GetMonitor( _Event.PhysicalMonitor );
 
-        VideoAspectRatio = ( float )_Event.Width / _Event.Height;
+        VideoAspectRatio = ( float )FramebufferWidth / FramebufferHeight;
 
         DPI_X = monitor->DPI_X;
         DPI_Y = monitor->DPI_Y;
     }
 
     GConsole.Resize( VideoMode.Width );
+
+    if ( Desktop ) {
+        // Force update transform
+        Desktop->MarkTransformDirty();
+
+        // Set size
+        Desktop->SetSize( FramebufferWidth, FramebufferHeight );
+    }
 }
 
 void AEngineInstance::ProcessEvent( SEvent const & _Event ) {
@@ -506,10 +551,10 @@ void AEngineInstance::ProcessEvent( SEvent const & _Event ) {
         AInputComponent::SetJoystickState( _Event.Data.JoystickStateEvent.Joystick, _Event.Data.JoystickStateEvent.NumAxes, _Event.Data.JoystickStateEvent.NumButtons, _Event.Data.JoystickStateEvent.bGamePad, _Event.Data.JoystickStateEvent.bConnected );
         break;
     case ET_JoystickButtonEvent:
-        AInputComponent::SetJoystickButtonState( _Event.Data.JoystickButtonEvent.Joystick, _Event.Data.JoystickButtonEvent.Button, _Event.Data.JoystickButtonEvent.Action, _Event.TimeStamp );
+        OnJoystickButtonEvent( _Event.Data.JoystickButtonEvent, _Event.TimeStamp );
         break;
     case ET_JoystickAxisEvent:
-        AInputComponent::SetJoystickAxisState( _Event.Data.JoystickAxisEvent.Joystick, _Event.Data.JoystickAxisEvent.Axis, _Event.Data.JoystickAxisEvent.Value );
+        OnJoystickAxisEvent( _Event.Data.JoystickAxisEvent, _Event.TimeStamp );
         break;
     case ET_CharEvent:
         OnCharEvent( _Event.Data.CharEvent, _Event.TimeStamp );
@@ -546,7 +591,17 @@ void AEngineInstance::ProcessEvents() {
         ProcessEvent( *event );
     }
 
-    AN_ASSERT( eventQueue->IsEmpty() );
+    if ( !VideoMode.bFullscreen && GConsole.IsActive() ) {
+        GRuntime.SetCursorEnabled( true );
+    } else {
+        GRuntime.SetCursorEnabled( false );
+    }
+}
+
+void AEngineInstance::UpdateInputAxes() {
+    for ( AInputComponent * component = AInputComponent::GetInputComponents() ; component ; component = component->GetNext() ) {
+        component->UpdateAxes( FrameDurationInSeconds );
+    }
 }
 
 void AEngineInstance::SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, uint8_t _RefreshRate, bool _Fullscreen, const char * _Backend ) {
@@ -613,14 +668,6 @@ void AEngineInstance::SetInputFocus() {
     event.TimeStamp = GRuntime.SysSeconds_d();
 }
 
-void AEngineInstance::SetCursorEnabled( bool _Enabled ) {
-    SEvent & event = SendEvent();
-    event.Type = ET_SetCursorModeEvent;
-    event.TimeStamp = GRuntime.SysSeconds_d();
-    SSetCursorModeEvent & data = event.Data.SetCursorModeEvent;
-    data.bDisabledCursor = !_Enabled;
-}
-
 SEvent & AEngineInstance::SendEvent() {
     AEventQueue * queue = GRuntime.WriteEvents_GameThread();
     return *queue->Push();
@@ -638,6 +685,13 @@ void AEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) co
 
 void AEngineInstance::SetDesktop( WDesktop * _Desktop ) {
     Desktop = _Desktop;
+    if ( Desktop ) {
+        // Force update transform
+        Desktop->MarkTransformDirty();
+
+        // Set size
+        Desktop->SetSize( FramebufferWidth, FramebufferHeight );
+    }
 }
 
 IEngineInterface * GetEngineInstance() {
