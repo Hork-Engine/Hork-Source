@@ -38,18 +38,16 @@ SOFTWARE.
 #define STBI_REALLOC_SIZED(p,oldsz,newsz)   STBI_REALLOC( p, newsz )
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
-//#define STBI_NO_STDIO
-
-#ifdef AN_COMPILER_MSVC
-#pragma warning( push )
-#pragma warning( disable : 4456 )
-#endif
+#define STBI_NO_STDIO
 #include <stb_image.h>
-#ifdef AN_COMPILER_MSVC
-#pragma warning( pop )
-#endif
 
+#define STBIW_MALLOC(sz)                    GHeapMemory.Alloc( sz )
+#define STBIW_FREE(p)                       GHeapMemory.Free( p )
+#define STBIW_REALLOC(p,newsz)              GHeapMemory.Realloc( p, newsz, true )
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_STATIC
+#define STBIW_WINDOWS_UTF8
+#define STBI_WINDOWS_UTF8
 #include <stb_image_write.h>
 
 AImage::AImage() {
@@ -625,7 +623,6 @@ void ConvertToPrimultipliedAlpha( const float * SourceImage,
     byte replaceAlpha = FloatToByte( fReplaceAlpha );
 
     for ( int i = 0 ; i < pixCount ; i++, src += 4, dst += 4 ) {
-        //if ( i<(pixCount>>1) ){
         src[ 0 ] *= src[3];
         src[ 1 ] *= src[3];
         src[ 2 ] *= src[3];
@@ -648,7 +645,7 @@ void ConvertToPrimultipliedAlpha( const float * SourceImage,
             if ( src[ 2 ] > 1.0f ) src[ 2 ] = 1.0f;
 #endif
         }
-//}
+
         dst[0] = ConvertToSRGB_UB( src[0] );
         dst[1] = ConvertToSRGB_UB( src[1] );
         dst[2] = ConvertToSRGB_UB( src[2] );
