@@ -34,6 +34,8 @@ SOFTWARE.
 AN_CLASS_META( AController )
 
 AController::AController() {
+    bCanEverTick = true;
+    bTickEvenWhenPaused = true;
 }
 
 void AController::Tick( float _TimeStep ) {
