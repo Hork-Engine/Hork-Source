@@ -35,13 +35,10 @@ SOFTWARE.
 #include <Core/Public/BV/BvFrustum.h>
 
 enum ECameraProjection : uint8_t {
-    CAMERA_PROJ_ORTHOGRAPHIC,
-    CAMERA_PROJ_PERSPECTIVE,
-};
-
-enum ECameraPerspectiveAdjust : uint8_t {
-    CAMERA_ADJUST_FOV_X_ASPECT_RATIO,
-    CAMERA_ADJUST_FOV_X_FOV_Y,
+    CAMERA_PROJ_ORTHO_RECT,
+    CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO,
+    CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y,
+    CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO,
 };
 
 class ANGIE_API ACameraComponent : public ASceneComponent {
@@ -49,12 +46,6 @@ class ANGIE_API ACameraComponent : public ASceneComponent {
 
 public:
     void SetProjection( ECameraProjection _Projection );
-
-    void SetPerspective() { SetProjection( CAMERA_PROJ_PERSPECTIVE ); }
-
-    void SetOrthographic() { SetProjection( CAMERA_PROJ_ORTHOGRAPHIC ); }
-
-    void SetPerspectiveAdjust( ECameraPerspectiveAdjust _Adjust );
 
     void SetZNear( float _ZNear );
 
@@ -67,22 +58,15 @@ public:
     /** Perspective aspect ratio. For example 4/3, 16/9 */
     void SetAspectRatio( float _AspectRatio );
 
-    /** Use aspect ratio from monitor geometry. Use it for fullscreen video mode. */
-    void SetMonitorAspectRatio( struct SPhysicalMonitor const * _Monitor );
-
-    // Use aspect ratio from window geometry. Use it for windowed mode.
-    // Call this on each window resize to update aspect ratio.
-    //void SetWindowAspectRatio( FWindow const * _Window );
-
     void SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs );
+
+    void SetOrthoZoom( float _Zoom );
 
     ECameraProjection GetProjection() const { return Projection; }
 
-    bool IsPerspective() const { return Projection == CAMERA_PROJ_PERSPECTIVE; }
+    bool IsPerspective() const { return Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y; }
 
-    bool IsOrthographic() const { return Projection == CAMERA_PROJ_ORTHOGRAPHIC; }
-
-    ECameraPerspectiveAdjust GetPerspectiveAdjust() const { return Adjust; }
+    bool IsOrthographic() const { return Projection == CAMERA_PROJ_ORTHO_RECT || Projection == CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO; }
 
     float GetZNear() const { return ZNear; }
 
@@ -133,13 +117,13 @@ private:
     float               ZFar;
     float               AspectRatio;
     Float2              OrthoMins;
-    Float2              OrthoMaxs;    
+    Float2              OrthoMaxs;
+    float               OrthoZoom;
     mutable Float4x4    ViewMatrix;
     mutable Float3x3    BillboardMatrix;    
     mutable Float4x4    ProjectionMatrix;    
     mutable BvFrustum   Frustum;
     ECameraProjection   Projection;
-    ECameraPerspectiveAdjust Adjust;
     mutable bool        bViewMatrixDirty;
     mutable bool        bProjectionDirty;
     mutable bool        bFrustumDirty;

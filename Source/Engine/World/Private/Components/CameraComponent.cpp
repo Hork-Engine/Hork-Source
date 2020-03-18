@@ -36,13 +36,13 @@ SOFTWARE.
 
 #include <Runtime/Public/Runtime.h>
 
-#define DEFAULT_PROJECTION CAMERA_PROJ_PERSPECTIVE
+#define DEFAULT_PROJECTION CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO
 #define DEFAULT_ZNEAR 0.04f//0.1f
 #define DEFAULT_ZFAR 99999.0f
-#define DEFAULT_FOVX 90.0f
-#define DEFAULT_FOVY 90.0f
+#define DEFAULT_FOVX 100.0f
+#define DEFAULT_FOVY 100.0f
 #define DEFAULT_ASPECT_RATIO (4.0f / 3.0f)
-#define DEFAULT_PERSPECTIVE_ADJUST CAMERA_ADJUST_FOV_X_ASPECT_RATIO
+#define DEFAULT_ORTHO_ZOOM 30.0f
 
 ARuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
 
@@ -55,11 +55,11 @@ ACameraComponent::ACameraComponent() {
     FovX = DEFAULT_FOVX;
     FovY = DEFAULT_FOVY;
     AspectRatio = DEFAULT_ASPECT_RATIO;
-    Adjust = DEFAULT_PERSPECTIVE_ADJUST;
     OrthoMins.X = -1;
     OrthoMins.Y = -1;
     OrthoMaxs.X = 1;
     OrthoMaxs.Y = 1;
+    OrthoZoom = DEFAULT_ORTHO_ZOOM;
     bViewMatrixDirty = true;
     bFrustumDirty = true;
     bProjectionDirty = true;
@@ -107,53 +107,35 @@ void ACameraComponent::SetAspectRatio( float _AspectRatio ) {
     }
 }
 
-void ACameraComponent::SetMonitorAspectRatio( const SPhysicalMonitor * _Monitor ) {
-    const float MonitorAspectRatio = ( float )_Monitor->PhysicalWidthMM / _Monitor->PhysicalHeightMM;
-    SetAspectRatio( MonitorAspectRatio );
-}
-
-//void ACameraComponent::SetWindowAspectRatio( FWindow const * _Window ) {
-//    const int w = _Window->GetWidth();
-//    const int h = _Window->GetHeight();
-//    const float WindowAspectRatio = h > 0 ? ( float )w / h : DEFAULT_ASPECT_RATIO;
-//    SetAspectRatio( WindowAspectRatio );
-//}
-
-void ACameraComponent::SetPerspectiveAdjust( ECameraPerspectiveAdjust _Adjust ) {
-    if ( Adjust != _Adjust ) {
-        Adjust = _Adjust;
-        bProjectionDirty = true;
-    }
-}
-
 void ACameraComponent::GetEffectiveFov( float & _FovX, float & _FovY ) const {
-    _FovX = Math::Radians( FovX );
-
-    switch ( Adjust ) {
-        //case ADJ_FOV_X_VIEW_SIZE:
-        //{
-        //    const float TanHalfFovX = tan( _FovX * 0.5f );
-        //    _FovY = atan2( static_cast< float >( Height ), Width / TanHalfFovX ) * 2.0f;
-        //    break;
-        //}
-        case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
-        {
-            const float TanHalfFovX = tan( _FovX * 0.5f );
-
-            _FovY = atan2( 1.0f, AspectRatio / TanHalfFovX ) * 2.0f;
-            break;
-        }
-        case CAMERA_ADJUST_FOV_X_FOV_Y:
-        {
-            _FovY = Math::Radians( FovY );
-            break;
-        }
+    _FovX = 0;
+    _FovY = 0;
+    switch ( Projection ) {
+    case CAMERA_PROJ_ORTHO_RECT:
+    case CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO:
+        break;
+    case CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y:
+        _FovX = Math::Radians( FovX );
+        _FovY = Math::Radians( FovY );
+        break;
+    case CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO:
+        _FovX = Math::Radians( FovX );
+        _FovY = atan2( 1.0f, AspectRatio / tan( _FovX * 0.5f ) ) * 2.0f;
+        break;
     }
 }
 
 void ACameraComponent::SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs ) {
     OrthoMins = _Mins;
     OrthoMaxs = _Maxs;
+
+    if ( IsOrthographic() ) {
+        bProjectionDirty = true;
+    }
+}
+
+void ACameraComponent::SetOrthoZoom( float _Zoom ) {
+    OrthoZoom = _Zoom;
 
     if ( IsOrthographic() ) {
         bProjectionDirty = true;
@@ -180,53 +162,44 @@ void ACameraComponent::OnTransformDirty() {
 
 void ACameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix ) const {
     // TODO: if ( ClusterProjectionDirty ...
-    if ( Projection == CAMERA_PROJ_PERSPECTIVE ) {
-        switch ( Adjust ) {
-            //case CAMERA_ADJUST_FOV_X_VIEW_SIZE:
-            //{
-            //    _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), float( Width ), float( Height ), FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
-            //    break;
-            //}
-            case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
-            {
-                _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
-                break;
-            }
-            case CAMERA_ADJUST_FOV_X_FOV_Y:
-            {
-                _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), Math::Radians( FovY ), FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
-                break;
-            }
-        }
-    } else {
+
+    switch ( Projection ) {
+    case CAMERA_PROJ_ORTHO_RECT:
         _ProjectionMatrix = Float4x4::OrthoRevCC( OrthoMins, OrthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
+        break;
+    case CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO: {
+        Float2 orthoMins, orthoMaxs;
+        ACameraComponent::MakeOrthoRect( AspectRatio, 1.0f / OrthoZoom, orthoMins, orthoMaxs );
+        _ProjectionMatrix = Float4x4::OrthoRevCC( orthoMins, orthoMaxs, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
+        break;
+    }
+    case CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y:
+        _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), Math::Radians( FovY ), FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
+        break;
+    case CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO:
+        _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
+        break;
     }
 }
 
 Float4x4 const & ACameraComponent::GetProjectionMatrix() const {
-
     if ( bProjectionDirty ) {
-
-        if ( Projection == CAMERA_PROJ_PERSPECTIVE ) {
-            switch ( Adjust ) {
-                //case CAMERA_ADJUST_FOV_X_VIEW_SIZE:
-                //{
-                //    ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), float( Width ), float( Height ), ZNear, ZFar );
-                //    break;
-                //}
-                case CAMERA_ADJUST_FOV_X_ASPECT_RATIO:
-                {
-                    ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, ZNear, ZFar );
-                    break;
-                }
-                case CAMERA_ADJUST_FOV_X_FOV_Y:
-                {
-                    ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), Math::Radians( FovY ), ZNear, ZFar );
-                    break;
-                }
-            }
-        } else {
+        switch ( Projection ) {
+        case CAMERA_PROJ_ORTHO_RECT:
             ProjectionMatrix = Float4x4::OrthoRevCC( OrthoMins, OrthoMaxs, ZNear, ZFar );
+            break;
+        case CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO: {
+            Float2 orthoMins, orthoMaxs;
+            ACameraComponent::MakeOrthoRect( AspectRatio, 1.0f / OrthoZoom, orthoMins, orthoMaxs );
+            ProjectionMatrix = Float4x4::OrthoRevCC( orthoMins, orthoMaxs, ZNear, ZFar );
+            break;
+        }
+        case CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y:
+            ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), Math::Radians( FovY ), ZNear, ZFar );
+            break;
+        case CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO:
+            ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, ZNear, ZFar );
+            break;
         }
 
         bProjectionDirty = false;
