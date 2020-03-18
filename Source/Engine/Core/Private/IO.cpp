@@ -141,16 +141,31 @@ bool AFileStream::OpenAppend( const char * _FileName ) {
     return Open( _FileName, M_Append );
 }
 
+static FILE * OpenFile( const char * filename, const char * mode )
+{
+    FILE *f;
+#if defined(_MSC_VER)
+    wchar_t wMode[64];
+    wchar_t wFilename[1024];
+    if ( 0 == MultiByteToWideChar( 65001 /* UTF8 */, 0, filename, -1, wFilename, sizeof( wFilename ) ) )
+        return 0;
+    if ( 0 == MultiByteToWideChar( 65001 /* UTF8 */, 0, mode, -1, wMode, sizeof( wMode ) ) )
+        return 0;
+#if _MSC_VER >= 1400
+    if ( 0 != _wfopen_s( &f, wFilename, wMode ) )
+        f = 0;
+#else
+    f = _wfopen( wFilename, wMode );
+#endif
+#else
+    f = fopen( filename, mode );
+#endif
+    return f;
+}
+
 bool AFileStream::Open( const char * _FileName, int _Mode ) {
     Close();
 
-#ifdef AN_OS_ANDROID
-    if ( _Mode != M_Read ) {
-        Out() << "AFileStream::Open: only read mode is supported on current platform";
-        return false;
-    }
-    AAsset * f = AAssetManager_open( __AssetManager, UpdatePathSeparator( _Url ).c_str(), _Access );
-#else
     FileName = _FileName;
     FileName.FixSeparator();
     if ( FileName.Length() && FileName[ FileName.Length() - 1 ] == '/' ) {
@@ -172,7 +187,10 @@ bool AFileStream::Open( const char * _FileName, int _Mode ) {
         Core::MakeDir( FileName.CStr(), true );
     }
 
-    FILE * f = fopen( FileName.CStr(), fopen_mode[ _Mode ] );
+#ifdef AN_OS_ANDROID
+    AAsset * f = AAssetManager_open( __AssetManager, FileName.CStr(), _Access );
+#else
+    FILE * f = OpenFile( FileName.CStr(), fopen_mode[ _Mode ] );
 #endif
 
     if ( !f ) {
