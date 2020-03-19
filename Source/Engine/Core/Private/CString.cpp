@@ -37,7 +37,7 @@ SOFTWARE.
 #ifdef AN_COMPILER_GCC
 #pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #endif
-#include <stb_sprintf.h>
+#include "stb/stb_sprintf.h"
 
 namespace Core {
 

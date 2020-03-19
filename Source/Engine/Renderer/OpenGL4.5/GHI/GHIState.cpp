@@ -39,7 +39,7 @@ SOFTWARE.
 #include <assert.h>
 #include <memory.h>
 #include <math.h>
-#include <GL/glew.h>
+#include "GL/glew.h"
 
 #define DEFAULT_STENCIL_REF 0
 

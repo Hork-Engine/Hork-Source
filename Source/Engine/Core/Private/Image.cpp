@@ -39,7 +39,7 @@ SOFTWARE.
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #define STBI_NO_STDIO
-#include <stb_image.h>
+#include "stb/stb_image.h"
 
 #define STBIW_MALLOC(sz)                    GHeapMemory.Alloc( sz )
 #define STBIW_FREE(p)                       GHeapMemory.Free( p )
@@ -48,7 +48,7 @@ SOFTWARE.
 #define STB_IMAGE_WRITE_STATIC
 #define STBIW_WINDOWS_UTF8
 #define STBI_WINDOWS_UTF8
-#include <stb_image_write.h>
+#include "stb/stb_image_write.h"
 
 AImage::AImage() {
     pRawData = nullptr;
@@ -320,8 +320,8 @@ AN_FORCEINLINE byte FloatToByte( const float & _Color ) {
     return ClampByte( Math::Floor( _Color * 255.0f + 0.5f ) ); // round to nearest
 }
 
-AN_FORCEINLINE byte ConvertToSRGB_UB( const float & _lRGB ) {
-    return FloatToByte( ConvertToSRGB( _lRGB ) );
+AN_FORCEINLINE byte LinearToSRGB_Byte( const float & _lRGB ) {
+    return FloatToByte( LinearToSRGB( _lRGB ) );
 }
 
 // TODO: Add other mipmap filters
@@ -380,8 +380,8 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
                         x = i;
                         y = j << 1;
 
-                        a = ConvertToRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
-                        c = ConvertToRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x)*Bpp + ch ] ) );
+                        a = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
+                        c = LinearFromSRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x)*Bpp + ch ] ) );
 
                         avg = ( a + c ) * 0.5f;
 
@@ -389,8 +389,8 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
                         x = i << 1;
                         y = j;
 
-                        a = ConvertToRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
-                        b = ConvertToRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x + 1)*Bpp + ch ] ) );
+                        a = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
+                        b = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x + 1)*Bpp + ch ] ) );
 
                         avg = ( a + b ) * 0.5f;
 
@@ -398,15 +398,15 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
                         x = i << 1;
                         y = j << 1;
 
-                        a = ConvertToRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
-                        b = ConvertToRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x + 1)*Bpp + ch ] ) );
-                        c = ConvertToRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x)*Bpp + ch ] ) );
-                        d = ConvertToRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x + 1)*Bpp + ch ] ) );
+                        a = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
+                        b = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x + 1)*Bpp + ch ] ) );
+                        c = LinearFromSRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x)*Bpp + ch ] ) );
+                        d = LinearFromSRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x + 1)*Bpp + ch ] ) );
 
                         avg = ( a + b + c + d ) * 0.25f;
                     }
 
-                    _DstData[ idx * Bpp + ch ] = ConvertToSRGB_UB( avg );
+                    _DstData[ idx * Bpp + ch ] = LinearToSRGB_Byte( avg );
                 }
             }
         }
@@ -646,9 +646,9 @@ void ConvertToPrimultipliedAlpha( const float * SourceImage,
 #endif
         }
 
-        dst[0] = ConvertToSRGB_UB( src[0] );
-        dst[1] = ConvertToSRGB_UB( src[1] );
-        dst[2] = ConvertToSRGB_UB( src[2] );
+        dst[0] = LinearToSRGB_Byte( src[0] );
+        dst[1] = LinearToSRGB_Byte( src[1] );
+        dst[2] = LinearToSRGB_Byte( src[2] );
         dst[3] = bReplaceAlpha ? replaceAlpha : FloatToByte( src[3] );
     }
 }

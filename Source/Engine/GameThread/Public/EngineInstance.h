@@ -87,16 +87,13 @@ public:
     /** Get current video mode */
     SVideoMode const & GetVideoMode() const;
 
-    /** Get video mode aspect ratio */
-    float GetVideoAspectRatio() const { return VideoAspectRatio; }
-
     /** Get framebuffer size */
     int GetFramebufferWidth() const { return FramebufferWidth; }
 
     /** Get framebuffer size */
     int GetFramebufferHeight() const { return FramebufferHeight; }
 
-    /** Get scale for retina displays */
+    /** Get scale for Retina displays */
     Float2 const & GetRetinaScale() const { return RetinaScale; }
 
     /** Get dots per inch for current video mode */
@@ -181,12 +178,10 @@ private:
 
     SVideoMode VideoMode;
 
-    float VideoAspectRatio = 4.0f/3.0f;
-
     int FramebufferWidth;
     int FramebufferHeight;
 
-    /** scale coordinates for retina displays */
+    /** scale coordinates for Retina displays */
     Float2 RetinaScale;
 
     bool bInputFocus = false;

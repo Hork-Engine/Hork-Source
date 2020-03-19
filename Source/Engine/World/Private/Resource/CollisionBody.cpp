@@ -1171,7 +1171,7 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
 //};
 
 //#include <bullet3/Extras/ConvexDecomposition/ConvexDecomposition.h>
-#include <bullet3/Extras/HACD/hacdHACD.h>
+#include <ThirdParty/bullet3/Extras/HACD/hacdHACD.h>
 
 //class MyConvexDecompInterface : public ConvexDecomposition::ConvexDecompInterface {
 //public:

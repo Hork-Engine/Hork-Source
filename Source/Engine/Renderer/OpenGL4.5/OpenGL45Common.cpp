@@ -58,7 +58,7 @@ void SaveSnapshot( GHI::Texture & _Texture ) {
     _Texture.Read( 0, GHI::PIXEL_FORMAT_FLOAT_RGB, size*sizeof(float), 1, fdata );
     // to sRGB
     for ( int i = 0 ; i < size ; i++ ) {
-        data[i] = ConvertToSRGB( fdata[i] )*255.0f;
+        data[i] = LinearToSRGB( fdata[i] )*255.0f;
     }
 #endif
 

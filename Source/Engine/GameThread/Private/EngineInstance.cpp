@@ -275,7 +275,7 @@ void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback )
 }
 
 void AEngineInstance::DrawCanvas() {
-    Canvas.Begin( VideoMode.Width, VideoMode.Height );
+    Canvas.Begin( FramebufferWidth, FramebufferHeight );
 
     if ( IsWindowVisible() )
     {
@@ -505,10 +505,11 @@ void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _E
     FramebufferWidth = _Event.FramebufferWidth;
     FramebufferHeight = _Event.FramebufferHeight;
     RetinaScale = Float2( (float)FramebufferWidth / VideoMode.Width, (float)FramebufferHeight / VideoMode.Height );
-GLogger.Printf( "OnChangedVideoModeEvent: %d %d %d %d\n",FramebufferWidth,FramebufferHeight,_Event.Width,_Event.Height);
+
+    GLogger.Printf( "OnChangedVideoModeEvent: %d %d %d %d\n",FramebufferWidth,FramebufferHeight,_Event.Width,_Event.Height);
+
     if ( _Event.bFullscreen ) {
         SPhysicalMonitor const * monitor = GRuntime.GetMonitor( _Event.PhysicalMonitor );
-        VideoAspectRatio = ( float )monitor->PhysicalWidthMM / monitor->PhysicalHeightMM;
 
         const float MM_To_Inch = 0.0393701f;
         DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
@@ -516,13 +517,12 @@ GLogger.Printf( "OnChangedVideoModeEvent: %d %d %d %d\n",FramebufferWidth,Frameb
     } else {
         SPhysicalMonitor const * monitor = GRuntime.GetPrimaryMonitor();//GRuntime.GetMonitor( _Event.PhysicalMonitor );
 
-        VideoAspectRatio = ( float )FramebufferWidth / FramebufferHeight;
-
         DPI_X = monitor->DPI_X;
         DPI_Y = monitor->DPI_Y;
     }
 
-    GConsole.Resize( VideoMode.Width );
+    GLogger.Printf( "Console resize %d\n",FramebufferWidth);
+    GConsole.Resize( FramebufferWidth );
 
     if ( Desktop ) {
         // Force update transform

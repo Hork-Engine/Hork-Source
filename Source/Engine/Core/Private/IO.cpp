@@ -41,15 +41,7 @@ SOFTWARE.
 #include <unistd.h>     // access
 #endif
 
-#include <unzip.h>
-
-//#ifdef AN_OS_ANDROID
-//#include <android/asset_manager_jni.h>
-//#endif
-
-#ifdef AN_OS_ANDROID
-extern AAssetManager * __AssetManager;
-#endif
+#include "miniz/miniz.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -617,11 +609,26 @@ AArchive::~AArchive() {
 bool AArchive::Open( const char * _ArchiveName ) {
     Close();
 
-    Handle = unzOpen( _ArchiveName );
-    if ( !Handle ) {
+    mz_zip_archive arch;
+
+    Core::ZeroMem( &arch, sizeof( arch ) );
+
+    mz_bool status = mz_zip_reader_init_file( &arch, _ArchiveName, 0 );
+    if ( !status ) {
         GLogger.Printf( "AArchive::Open: couldn't open %s\n", _ArchiveName );
         return false;
     }
+
+    Handle = GZoneMemory.Alloc( sizeof( mz_zip_archive ) );
+    Core::Memcpy( Handle, &arch, sizeof( arch ) );
+
+    ((mz_zip_archive *)Handle)->m_pIO_opaque = Handle;
+
+    //Handle = unzOpen( _ArchiveName );
+    //if ( !Handle ) {
+    //    GLogger.Printf( "AArchive::Open: couldn't open %s\n", _ArchiveName );
+    //    return false;
+    //}
 
     return true;
 }
@@ -631,45 +638,73 @@ void AArchive::Close() {
         return;
     }
 
-    unzClose( Handle );
+    mz_zip_reader_end( (mz_zip_archive *)Handle );
+
+    GZoneMemory.Free( Handle );
+
+    //unzClose( Handle );
     Handle = nullptr;
 }
 
-static const char * GetUnzipErrorStr( int _ErrorCode ) {
-    switch( _ErrorCode ) {
-    case UNZ_OK:
-        return "UNZ_OK";
-    case UNZ_END_OF_LIST_OF_FILE:
-        return "file not found";
-    case UNZ_ERRNO:
-        return "UNZ_ERRNO";
-    case UNZ_PARAMERROR:
-        return "UNZ_PARAMERROR";
-    case UNZ_BADZIPFILE:
-        return "bad Zip file";
-    case UNZ_INTERNALERROR:
-        return "UNZ_INTERNALERROR";
-    case UNZ_CRCERROR:
-        return "CRC error";
-    }
-    return "unknown error";
-}
+//static const char * GetUnzipErrorStr( int _ErrorCode ) {
+//    switch( _ErrorCode ) {
+//    case UNZ_OK:
+//        return "UNZ_OK";
+//    case UNZ_END_OF_LIST_OF_FILE:
+//        return "file not found";
+//    case UNZ_ERRNO:
+//        return "UNZ_ERRNO";
+//    case UNZ_PARAMERROR:
+//        return "UNZ_PARAMERROR";
+//    case UNZ_BADZIPFILE:
+//        return "bad Zip file";
+//    case UNZ_INTERNALERROR:
+//        return "UNZ_INTERNALERROR";
+//    case UNZ_CRCERROR:
+//        return "CRC error";
+//    }
+//    return "unknown error";
+//}
 
-bool AArchive::LocateFile( const char * _FileName ) const {
-    return Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) == UNZ_OK : false;
-}
+//bool AArchive::LocateFile( const char * _FileName ) const {
+//    if ( !Handle ) {
+//        return false;
+//    }
 
-bool AArchive::GoToFirstFile() {
-    return Handle ? unzGoToFirstFile( Handle ) == UNZ_OK : false;
-}
+//    Index = mz_zip_reader_locate_file( Handle, _FileName, NULL, 0 );
 
-bool AArchive::GoToNextFile() {
-    return Handle ? unzGoToNextFile( Handle ) == UNZ_OK : false;
-}
+//    return Index != -1;
+//    //return Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) == UNZ_OK : false;
+//}
 
-bool AArchive::GetCurrentFileInfo( char * _FileName, size_t _SizeofFileName ) {
-    return Handle ? unzGetCurrentFileInfo( Handle, NULL, _FileName, _SizeofFileName, NULL, 0, NULL, 0 ) == UNZ_OK : false;
-}
+//bool AArchive::GoToFirstFile() {
+//    if ( !Handle ) {
+//        return false;
+//    }
+//    Index = 0;
+//    return true;
+//    //return Handle ? unzGoToFirstFile( Handle ) == UNZ_OK : false;
+//}
+
+//bool AArchive::GoToNextFile() {
+//    if ( !Handle ) {
+//        return false;
+//    }
+
+//    if ( Index < ((mz_zip_archive *)Handle)->m_total_files-1 ) {
+//        Index++;
+//        return true;
+//    }
+
+//    return false;
+
+//    //return Handle ? unzGoToNextFile( Handle ) == UNZ_OK : false;
+//}
+
+//bool AArchive::GetCurrentFileInfo( char * _FileName, size_t _SizeofFileName ) {
+//    mz_zip_reader_file_stat()
+//    return Handle ? unzGetCurrentFileInfo( Handle, NULL, _FileName, _SizeofFileName, NULL, 0, NULL, 0 ) == UNZ_OK : false;
+//}
 
 bool AArchive::ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes ) {
     return ReadFileToMemory( _FileName, _MemoryBuffer, _SizeInBytes, true );
@@ -679,7 +714,105 @@ bool AArchive::ReadFileToHeapMemory( const char * _FileName, byte ** _MemoryBuff
     return ReadFileToMemory( _FileName, _MemoryBuffer, _SizeInBytes, false );
 }
 
+extern "C" {
+
+typedef void * (*fun_alloc)( size_t size );
+typedef void (*fun_free)( void * p );
+
+mz_bool mz_zip_set_error( mz_zip_archive *pZip, mz_zip_error err_num );
+const mz_uint8 *mz_zip_get_cdh( mz_zip_archive *pZip, mz_uint file_index );
+
+#define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS 20
+#define MZ_ZIP_CDH_DECOMPRESSED_SIZE_OFS 24
+
+static void *mz_zip_reader_extract_to_heap_custom(mz_zip_archive *pZip, mz_uint file_index, size_t *pSize, mz_uint flags, fun_alloc falloc, fun_free ffree)
+{
+    mz_uint64 comp_size, uncomp_size, alloc_size;
+    const mz_uint8 *p = mz_zip_get_cdh(pZip, file_index);
+    void *pBuf;
+
+    if (pSize)
+        *pSize = 0;
+
+    if (!p)
+    {
+        mz_zip_set_error(pZip, MZ_ZIP_INVALID_PARAMETER);
+        return NULL;
+    }
+
+    comp_size = MZ_READ_LE32(p + MZ_ZIP_CDH_COMPRESSED_SIZE_OFS);
+    uncomp_size = MZ_READ_LE32(p + MZ_ZIP_CDH_DECOMPRESSED_SIZE_OFS);
+
+    alloc_size = (flags & MZ_ZIP_FLAG_COMPRESSED_DATA) ? comp_size : uncomp_size;
+    if (((sizeof(size_t) == sizeof(mz_uint32))) && (alloc_size > 0x7FFFFFFF))
+    {
+        mz_zip_set_error(pZip, MZ_ZIP_INTERNAL_ERROR);
+        return NULL;
+    }
+
+    if (NULL == (pBuf = falloc((size_t)alloc_size)))
+    {
+        mz_zip_set_error(pZip, MZ_ZIP_ALLOC_FAILED);
+        return NULL;
+    }
+
+    if (!mz_zip_reader_extract_to_mem(pZip, file_index, pBuf, (size_t)alloc_size, flags))
+    {
+        ffree(pBuf);
+        return NULL;
+    }
+
+    if (pSize)
+        *pSize = (size_t)alloc_size;
+    return pBuf;
+}
+
+static void *mz_zip_reader_extract_file_to_heap_custom(mz_zip_archive *pZip, const char *pFilename, size_t *pSize, mz_uint flags, fun_alloc alloc, fun_free free)
+{
+    mz_uint32 file_index;
+    if (!mz_zip_reader_locate_file_v2(pZip, pFilename, NULL, flags, &file_index))
+    {
+        if (pSize)
+            *pSize = 0;
+        return MZ_FALSE;
+    }
+    return mz_zip_reader_extract_to_heap_custom(pZip, file_index, pSize, flags, alloc, free );
+}
+
+}
+
+static void * ZoneAlloc( size_t _Size ) {
+    return GZoneMemory.Alloc( _Size );
+}
+
+static void ZoneFree( void * _Data ) {
+    return GZoneMemory.Free( _Data );
+}
+
+static void * HeapAlloc( size_t _Size ) {
+    return GHeapMemory.Alloc( _Size );
+}
+
+static void HeapFree( void * _Data ) {
+    return GHeapMemory.Free( _Data );
+}
+
+static void * HunkAlloc( size_t _Size ) {
+    return GHunkMemory.Alloc( _Size );
+}
+
+static void HunkFree( void * _Data ) {
+}
+
 bool AArchive::ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, bool _ZoneMemory ) {
+    size_t uncomp_size;
+
+    *_MemoryBuffer = _ZoneMemory ? (byte *)mz_zip_reader_extract_file_to_heap_custom( (mz_zip_archive *)Handle, _FileName, &uncomp_size, 0, ZoneAlloc, ZoneFree )
+                                 : (byte *)mz_zip_reader_extract_file_to_heap_custom( (mz_zip_archive *)Handle, _FileName, &uncomp_size, 0, HeapAlloc, HeapFree );
+    *_SizeInBytes = uncomp_size;
+
+    return *_MemoryBuffer != nullptr;
+#if 0
     int Result = Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) : UNZ_BADZIPFILE;
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Couldn't open file %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
@@ -739,9 +872,24 @@ bool AArchive::ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, 
     *_SizeInBytes = FileInfo.uncompressed_size;
 
     return true;
+#endif
 }
 
 bool AArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, int * _HunkMark ) {
+    size_t uncomp_size;
+
+    *_HunkMark = GHunkMemory.SetHunkMark();
+
+    *_MemoryBuffer = ( byte * )mz_zip_reader_extract_file_to_heap_custom( (mz_zip_archive *)Handle, _FileName, &uncomp_size, 0, HunkAlloc, HunkFree );
+    *_SizeInBytes = uncomp_size;
+
+    if ( !*_MemoryBuffer ) {
+        GHunkMemory.ClearToMark( *_HunkMark );
+    }
+
+    return *_MemoryBuffer != nullptr;
+
+#if 0
     int Result = Handle ? unzLocateFile( Handle, _FileName, Case_Strcmpi ) : UNZ_BADZIPFILE;
     if ( Result != UNZ_OK ) {
         GLogger.Printf( "Couldn't open file %s from archive (%s)\n", _FileName, GetUnzipErrorStr( Result ) );
@@ -789,6 +937,7 @@ bool AArchive::ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuff
     *_SizeInBytes = FileInfo.uncompressed_size;
 
     return true;
+#endif
 }
 
 #if 0

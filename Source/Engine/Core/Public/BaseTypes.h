@@ -182,29 +182,6 @@ Microsoft Visual Studio versions
 
 /*
 
-Disable some warnings
-Move this to CMakeLists.txt?
-
-*/
-#ifdef AN_COMPILER_MSVC
-#pragma warning( disable : 4996 )   // warning: deprecated functions
-#pragma warning( disable : 4018 )   // warning: signed/unsigned mismatch
-#pragma warning( disable : 4244 )   // warning: type conversion, possible loss of data
-#pragma warning( disable : 4267 )   // warning: type conversion, possible loss of data
-#pragma warning( disable : 4251 )   // warning: ...needs to have dll-interface to be used by clients of class...
-#pragma warning( disable : 4505 )   // warning: unused local function
-#pragma warning( disable : 4800 )
-#endif
-
-#ifdef AN_COMPILER_GCC
-#pragma GCC diagnostic ignored "-Wsign-compare"    // warning: comparison between signed and unsigned integer
-#pragma GCC diagnostic ignored "-Wunused-function" // warning: unused local function
-#pragma GCC diagnostic ignored "-Wstrict-aliasing" // warning: strict-aliasing rules
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
-/*
-
 Inline defines
 
 */

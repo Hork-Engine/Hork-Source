@@ -56,18 +56,6 @@ public:
 
     bool IsOpened() const;
 
-    /** Check is file present in archive and set offset to this file */
-    bool LocateFile( const char * _FileName ) const;
-
-    /** Set offset to first file in archive */
-    bool GoToFirstFile();
-
-    /** Set offset to next first file in archive */
-    bool GoToNextFile();
-
-    /** Get current located file info */
-    bool GetCurrentFileInfo( char * _FileName, size_t _SizeofFileName );
-
     /** Read file to memory */
     bool ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes );
 
@@ -81,6 +69,7 @@ private:
     bool ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, bool _ZoneMemory );
 
     void * Handle;
+    //int Index;
 };
 
 AN_FORCEINLINE bool AArchive::IsOpened() const {
@@ -263,7 +252,7 @@ public:
     }
 
     bool ReadBool() {
-        return ReadUInt8();
+        return !!ReadUInt8();
     }
 
     template< typename T >

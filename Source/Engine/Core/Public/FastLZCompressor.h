@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Core/Public/BaseTypes.h>
 
-// Lightning-fast lossless compression
+/** Lightning-fast lossless compression */
 class ANGIE_API AFastLZCompressor {
     AN_FORBID_COPY( AFastLZCompressor )
 

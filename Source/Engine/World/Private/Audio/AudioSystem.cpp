@@ -51,8 +51,8 @@ SOFTWARE.
 #define ALC_APIENTRY __cdecl
 #endif
 
-#include <AL/al.h>
-#include <AL/alc.h>
+#include "AL/al.h"
+#include "AL/alc.h"
 
 //#ifdef USE_MOJOAL
 //#undef AL_API
@@ -513,7 +513,7 @@ void AAudioSystem::Initialize() {
         }
 
     } else {
-        GLogger.Printf( "HRTF not supported\n" ); 
+        GLogger.Printf( "HRTF not supported\n" );
     }
 
     //EnableDefaultHRTF();
@@ -524,13 +524,13 @@ void AAudioSystem::Initialize() {
         GLogger.Printf( "Rotated stereo supported\n" );
     }
 
-    bSourceSpatialize = alIsExtensionPresent( "AL_SOFT_source_spatialize" );
+    bSourceSpatialize = !!alIsExtensionPresent( "AL_SOFT_source_spatialize" );
     if ( !bSourceSpatialize ) {
         GLogger.Printf( "Source spatialize not supported\n" );
     } else {
         GLogger.Printf( "Source spatialize supported\n" );
     }
-     
+
     AL_SAFE( alListenerf( AL_GAIN, 1.0f ) );
 
     InitializeChannels();
@@ -898,9 +898,9 @@ static void VirtualizeChannel( SAudioChannel * _Channel ) {
     virtualChannel->bIsVirtual = true;
 
     if ( _Channel->bStreamed ) {
-        // FIXME: PlaybackPosition íà ñàìîì äåëå íàõîäèòñÿ íåìíîãî â áóäóùåì, ò.ê.
-        // èíêðåìåíòèðóåòñÿ ñðàçó ïîñëå îòïðàâêè áóôåðà íà âîñïðîèçâåäåíèå.
-        // TODO: Íóæíî îïðåäåëèòü ðåàëüíûé playback position!
+        // FIXME: PlaybackPosition Ð½Ð° ÑÐ°Ð¼Ð¾Ð¼ Ð´ÐµÐ»Ðµ Ð½Ð°Ñ…Ð¾Ð´Ð¸Ñ‚ÑÑ Ð½ÐµÐ¼Ð½Ð¾Ð³Ð¾ Ð² Ð±ÑƒÐ´ÑƒÑ‰ÐµÐ¼, Ñ‚.Ðº.
+        // Ð¸Ð½ÐºÑ€ÐµÐ¼ÐµÐ½Ñ‚Ð¸Ñ€ÑƒÐµÑ‚ÑÑ ÑÑ€Ð°Ð·Ñƒ Ð¿Ð¾ÑÐ»Ðµ Ð¾Ñ‚Ð¿Ñ€Ð°Ð²ÐºÐ¸ Ð±ÑƒÑ„ÐµÑ€Ð° Ð½Ð° Ð²Ð¾ÑÐ¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ.
+        // TODO: ÐÑƒÐ¶Ð½Ð¾ Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ð¸Ñ‚ÑŒ Ñ€ÐµÐ°Ð»ÑŒÐ½Ñ‹Ð¹ playback position!
         virtualChannel->VirtualTime = (float)virtualChannel->PlaybackPosition / virtualChannel->Clip->GetFrequency();
     } else {
         AL_SAFE( alGetSourcef( _Channel->SourceId, AL_SEC_OFFSET, &virtualChannel->VirtualTime ) );
@@ -945,7 +945,7 @@ static bool DevirtualizeChannel( SAudioChannel * _VirtualChannel ) {
     channel->ClipSerialId = _VirtualChannel->ClipSerialId;
     channel->StreamInterface = _VirtualChannel->StreamInterface;
     channel->Priority = _VirtualChannel->Priority;
-    channel->bPlayEvenWhenPaused = _VirtualChannel->bPlayEvenWhenPaused;    
+    channel->bPlayEvenWhenPaused = _VirtualChannel->bPlayEvenWhenPaused;
     channel->bDirectional = _VirtualChannel->bDirectional;
     channel->ConeInnerAngle = _VirtualChannel->ConeInnerAngle;
     channel->ConeOuterAngle = _VirtualChannel->ConeOuterAngle;
@@ -1546,9 +1546,9 @@ static void UpdateChannel( SAudioChannel * InChannel, float InTimeStep ) {
             }
         } else {
             if ( !InChannel->bLooping ) {
-                // FIXME: PlaybackPosition íà ñàìîì äåëå íàõîäèòñÿ íåìíîãî â áóäóùåì, ò.ê.
-                // èíêðåìåíòèðóåòñÿ ñðàçó ïîñëå îòïðàâêè áóôåðà íà âîñïðîèçâåäåíèå.
-                // TODO: Íóæíî îïðåäåëèòü ðåàëüíûé playback position!
+                // FIXME: PlaybackPosition Ð½Ð° ÑÐ°Ð¼Ð¾Ð¼ Ð´ÐµÐ»Ðµ Ð½Ð°Ñ…Ð¾Ð´Ð¸Ñ‚ÑÑ Ð½ÐµÐ¼Ð½Ð¾Ð³Ð¾ Ð² Ð±ÑƒÐ´ÑƒÑ‰ÐµÐ¼, Ñ‚.Ðº.
+                // Ð¸Ð½ÐºÑ€ÐµÐ¼ÐµÐ½Ñ‚Ð¸Ñ€ÑƒÐµÑ‚ÑÑ ÑÑ€Ð°Ð·Ñƒ Ð¿Ð¾ÑÐ»Ðµ Ð¾Ñ‚Ð¿Ñ€Ð°Ð²ÐºÐ¸ Ð±ÑƒÑ„ÐµÑ€Ð° Ð½Ð° Ð²Ð¾ÑÐ¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ.
+                // TODO: ÐÑƒÐ¶Ð½Ð¾ Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ð¸Ñ‚ÑŒ Ñ€ÐµÐ°Ð»ÑŒÐ½Ñ‹Ð¹ playback position!
                 if ( InChannel->PlaybackPosition >= InChannel->Clip->GetSamplesCount() ) {
                     FreeChannel( InChannel );
                     return;

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Audio/AudioCodec/Mp3Decoder.h>
 
-#include "ThirdParty/libmpg123/mpg123.h"
+#include "libmpg123/mpg123.h"
 
 #include <Core/Public/Alloc.h>
 #include <Core/Public/Logger.h>

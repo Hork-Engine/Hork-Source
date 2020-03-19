@@ -114,34 +114,34 @@ struct AColor4 : Float4 {
 
 //#define SRGB_GAMMA_APPROX
 
-AN_FORCEINLINE float ConvertToRGB( const float & _sRGB ) {
+AN_FORCEINLINE float LinearFromSRGB( const float & _sRGB ) {
 #ifdef SRGB_GAMMA_APPROX
-    return pow( _sRGB, 2.2f );
+    return StdPow( _sRGB, 2.2f );
 #else
     if ( _sRGB < 0.0f ) return 0.0f;
     if ( _sRGB > 1.0f ) return 1.0f;
     if ( _sRGB <= 0.04045 ) return _sRGB / 12.92f;
-    return pow( ( _sRGB + 0.055f ) / 1.055f, 2.4f );
+    return StdPow( ( _sRGB + 0.055f ) / 1.055f, 2.4f );
 #endif
 }
 
-AN_FORCEINLINE float ConvertToSRGB( const float & _lRGB ) {
+AN_FORCEINLINE float LinearToSRGB( const float & _lRGB ) {
 #ifdef SRGB_GAMMA_APPROX
-    return pow( _lRGB, 1.0f / 2.2f );
+    return StdPow( _lRGB, 1.0f / 2.2f );
 #else
     if ( _lRGB < 0.0f ) return 0.0f;
     if ( _lRGB > 1.0f ) return 1.0f;
     if ( _lRGB <= 0.0031308 ) return _lRGB * 12.92f;
-    return 1.055f * pow( _lRGB, 1.0f / 2.4f ) - 0.055f;
+    return 1.055f * StdPow( _lRGB, 1.0f / 2.4f ) - 0.055f;
 #endif
 }
 
 AN_FORCEINLINE AColor4 AColor4::ToLinear() const {
-    return AColor4( ConvertToRGB( X ), ConvertToRGB( Y ), ConvertToRGB( Z ), W );
+    return AColor4( LinearFromSRGB( X ), LinearFromSRGB( Y ), LinearFromSRGB( Z ), W );
 }
 
 AN_FORCEINLINE AColor4 AColor4::ToSRGB() const {
-    return AColor4( ConvertToSRGB( X ), ConvertToSRGB( Y ), ConvertToSRGB( Z ), W );
+    return AColor4( LinearToSRGB( X ), LinearToSRGB( Y ), LinearToSRGB( Z ), W );
 }
 
 AN_FORCEINLINE void AColor4::SwapRGB() {

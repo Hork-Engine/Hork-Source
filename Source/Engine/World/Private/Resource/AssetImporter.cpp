@@ -36,7 +36,7 @@ SOFTWARE.
 #include <Core/Public/LinearAllocator.h>
 
 #define CGLTF_IMPLEMENTATION
-#include "cgltf.h"
+#include "gltf/cgltf.h"
 
 constexpr int MAX_MEMORY_GLTF = 16<<20;
 
@@ -2077,9 +2077,9 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
                 float * HDRI = (float*)cubeFaces[i].pRawData;
                 int count = cubeFaces[i].Width*cubeFaces[i].Height*3;
                 for ( int j = 0; j < count ; j += 3 ) {
-                    HDRI[j] = std::pow( HDRI[j + 0] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
-                    HDRI[j + 1] = std::pow( HDRI[j + 1] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
-                    HDRI[j + 2] = std::pow( HDRI[j + 2] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
+                    HDRI[j] = StdPow( HDRI[j + 0] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
+                    HDRI[j + 1] = StdPow( HDRI[j + 1] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
+                    HDRI[j + 2] = StdPow( HDRI[j + 2] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
                 }
             }
         }
@@ -2253,7 +2253,7 @@ void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
 
 
 
-#include "lwo2.h"
+#include "lwo/lwo2.h"
 
 #define MAX_MEMORY_LWO (16<<10)
 

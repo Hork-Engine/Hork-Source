@@ -186,9 +186,9 @@ void AFrameResources::Initialize() {
         float * HDRI = (float*)cubeFaces[i]->pRawData;
         int count = cubeFaces[i]->Width*cubeFaces[i]->Height*3;
         for ( int j = 0; j < count ; j += 3 ) {
-            HDRI[j] = pow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
-            HDRI[j + 1] = pow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
-            HDRI[j + 2] = pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
+            HDRI[j] = StdPow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
+            HDRI[j + 1] = StdPow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
+            HDRI[j + 2] = StdPow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
         }
     }
     int w = cubeFaces[0]->Width;

@@ -30,8 +30,6 @@ SOFTWARE.
 
 #include <Core/Public/Atomic.h>
 
-#include <posh.h>
-
 // Compiler barriers.
 // See: http://en.wikipedia.org/wiki/Memory_ordering
 #ifdef AN_COMPILER_MSVC
@@ -112,6 +110,27 @@ SOFTWARE.
 
 #include <Core/Public/WindowsDefs.h>
 
+// Macroses from posh.h
+#if defined __X86__ || defined __i386__ || defined i386 || defined _M_IX86 || defined __386__ || defined __x86_64__ || defined _M_X64
+#  define POSH_CPU_X86 1
+#  if defined __x86_64__ || defined _M_X64
+#     define POSH_CPU_X86_64 1
+#  endif
+#endif
+#if defined ARM || defined __arm__ || defined _ARM
+#  define POSH_CPU_STRONGARM 1
+#endif
+#if defined __aarch64__
+#  define POSH_CPU_AARCH64 1
+#endif
+#if defined __PPC__ || defined __POWERPC__  || defined powerpc || defined _POWER || defined __ppc__ || defined __powerpc__ || defined _M_PPC
+#  if !defined GEKKO && !defined mc68000 && !defined m68k && !defined __MC68K__ && !defined m68000
+#    if defined __powerpc64__
+#       define POSH_CPU_PPC64 1
+#    endif
+#  endif
+#endif
+
 template< typename T >
 AN_INLINE T AtomicLoadAcquire( const volatile T * ptr ) {
     // This function based on Ignacio Castano code from nvidia texture tools library (public domain)
@@ -126,7 +145,7 @@ AN_INLINE T AtomicLoadAcquire( const volatile T * ptr ) {
 #elif POSH_CPU_STRONGARM || POSH_CPU_AARCH64
     // need more specific cpu type for armv7?
     // also utilizes a full barrier
-    // currently treating laod like x86 - this could be wrong
+    // currently treating load like x86 - this could be wrong
 
     // this is the easiest but slowest way to do this
     Sys_ReadWriteBarrier();

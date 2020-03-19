@@ -236,7 +236,7 @@ AN_FORCEINLINE byte AttrFromString< byte >( AString const & v ) {
 
 template<>
 AN_FORCEINLINE bool AttrFromString< bool >( AString const & v ) {
-    return Math::ToInt< uint8_t >( v );
+    return !!Math::ToInt< uint8_t >( v );
 }
 
 template<>

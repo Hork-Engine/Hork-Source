@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Core/Public/FastLZCompressor.h>
 #include <Core/Public/BaseMath.h>
-#include <fastlz.h>
+#include "fastlz/fastlz.h"
 
 size_t AFastLZCompressor::CalcAppropriateCompressedDataSize( size_t _SourceSize ) {
     // The output buffer must be at least 5% larger than the input buffer

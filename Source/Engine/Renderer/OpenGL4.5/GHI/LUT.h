@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "GHITexture.h"
 
-#include <GL/glew.h>
+#include "GL/glew.h"
 
 namespace GHI {
 

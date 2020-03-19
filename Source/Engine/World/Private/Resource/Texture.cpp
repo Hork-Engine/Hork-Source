@@ -651,9 +651,9 @@ static Float3 ApplyColorGrading( SColorGradingPreset const & p, AColor4 const & 
 
     Float3 t = ( p.Gain * 2.0f ) * ( c.GetRGB() + ( ( p.Lift * 2.0f - 1.0 ) * ( Float3( 1.0 ) - c.GetRGB() ) ) );
 
-    t.X = std::pow( t.X, 0.5f / p.Gamma.X );
-    t.Y = std::pow( t.Y, 0.5f / p.Gamma.Y );
-    t.Z = std::pow( t.Z, 0.5f / p.Gamma.Z );
+    t.X = StdPow( t.X, 0.5f / p.Gamma.X );
+    t.Y = StdPow( t.Y, 0.5f / p.Gamma.Y );
+    t.Z = StdPow( t.Z, 0.5f / p.Gamma.Z );
 
     return t;
 }

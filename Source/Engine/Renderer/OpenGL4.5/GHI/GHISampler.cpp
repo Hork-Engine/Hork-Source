@@ -34,7 +34,7 @@ SOFTWARE.
 #include "LUT.h"
 
 #include <algorithm>
-#include <GL/glew.h>
+#include "GL/glew.h"
 
 namespace GHI {
 

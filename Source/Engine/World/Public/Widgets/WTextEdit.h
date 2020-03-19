@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include "WWidget.h"
 
-#undef INCLUDE_STB_TEXTEDIT_H
-#include <stb/stb_textedit.h>
-
 class WScroll;
+
+struct STB_TexteditState_s;
+typedef STB_TexteditState_s STB_TexteditState;
 
 class ANGIE_API WTextEdit : public WWidget {
     AN_CLASS( WTextEdit, WWidget )
@@ -172,6 +172,6 @@ private:
     bool bAllowUndo;
     bool bCustomCharFilter;
     bool bStartDragging;
-    STB_TexteditState Stb;
+    STB_TexteditState * Stb;
     int TempCursor;
 };

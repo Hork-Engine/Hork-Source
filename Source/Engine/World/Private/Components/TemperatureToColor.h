@@ -81,11 +81,11 @@ struct STemperatureToColor {
 
         } else {
             // Note: the R-squared value for this approximation is .988
-            Value = ( 329.698727446 / 255.0 ) * pow(_Temperature - 60, -0.1332047592);
+            Value = ( 329.698727446 / 255.0 ) * StdPow(_Temperature - 60, -0.1332047592);
             Result.X = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
 
             // Note: the R-squared value for this approximation is .987
-            Value = (288.1221695283/255.0) * pow(_Temperature - 60, -0.0755148492);
+            Value = (288.1221695283/255.0) * StdPow(_Temperature - 60, -0.0755148492);
             Result.Y = Value;//Math::Clamp( Value, 0.0f, 1.0f );
         }
 

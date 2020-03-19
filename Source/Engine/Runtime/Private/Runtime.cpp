@@ -89,7 +89,7 @@ void ARuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
     const double InvGamma = 1.0 / _Gamma;
 
     for( int i = 0 ; i < physMonitor->GammaRampSize ; i++ ) {
-        double val = pow( i * scale, InvGamma ) * 65535.0 + 0.5;
+        double val = StdPow( i * scale, InvGamma ) * 65535.0 + 0.5;
         if ( val > 65535.0 ) val = 65535.0;
         physMonitor->Internal.GammaRamp[i] =
         physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize] =

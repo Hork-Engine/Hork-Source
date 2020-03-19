@@ -86,7 +86,7 @@ static void RegisterJoystick( int _Joystick ) {
     glfwGetJoystickButtons( _Joystick, &numButtons );
     joystick.NumAxes = Math::Min( numAxes, MAX_JOYSTICK_AXES );
     joystick.NumButtons = Math::Min( numButtons, MAX_JOYSTICK_BUTTONS );
-    joystick.bGamePad = glfwJoystickIsGamepad( _Joystick );
+    joystick.bGamePad = !!glfwJoystickIsGamepad( _Joystick );
     joystick.bConnected = true;
 
     Core::ZeroMem( JoystickButtonState[_Joystick], sizeof( JoystickButtonState[0][0] ) * joystick.NumButtons );

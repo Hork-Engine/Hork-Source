@@ -43,7 +43,7 @@ SOFTWARE.
 #pragma GCC diagnostic ignored "-Wunused-value"
 #endif
 
-#include <stb_vorbis.c>
+#include "stb/stb_vorbis.h"
 
 #ifdef AN_COMPILER_MSVC
 #pragma warning( pop )

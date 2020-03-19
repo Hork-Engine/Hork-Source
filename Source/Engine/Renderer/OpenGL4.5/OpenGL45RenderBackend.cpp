@@ -46,11 +46,11 @@ SOFTWARE.
 #include <Core/Public/CriticalError.h>
 #include <Core/Public/Logger.h>
 
-#include <GL/glew.h>
+#include "GHI/GL/glew.h"
 
 #ifdef AN_OS_WIN32
 #define GLFW_EXPOSE_NATIVE_WGL
-#include <GL/wglew.h>
+#include "GHI/GL/wglew.h"
 #endif
 
 #ifdef AN_OS_LINUX

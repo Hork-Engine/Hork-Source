@@ -279,11 +279,11 @@ void APlayerController::UpdatePawnCamera() {
     {
         SPhysicalMonitor const * monitor = GRuntime.GetMonitor( vidMode.PhysicalMonitor );
 
-        float x = ( float )monitor->PhysicalWidthMM / GEngine.GetFramebufferWidth();
-        float y = ( float )monitor->PhysicalHeightMM / GEngine.GetFramebufferHeight();
+        float sx = ( float )monitor->PhysicalWidthMM / GEngine.GetFramebufferWidth();
+        float sy = ( float )monitor->PhysicalHeightMM / GEngine.GetFramebufferHeight();
 
-        float viewportWidthMM = ViewportWidth * x;
-        float viewportHeightMM = ViewportHeight * y;
+        float viewportWidthMM = ViewportWidth * sx;
+        float viewportHeightMM = ViewportHeight * sy;
 
         float aspect = viewportWidthMM / viewportHeightMM;
 

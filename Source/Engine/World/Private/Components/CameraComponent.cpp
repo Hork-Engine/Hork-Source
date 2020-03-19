@@ -31,10 +31,10 @@ SOFTWARE.
 #include <World/Public/Components/CameraComponent.h>
 #include <World/Public/Base/DebugRenderer.h>
 
-#include <Core/Public/Logger.h>
-#include <Core/Public/ConvexHull.h>
+//#include <Core/Public/Logger.h>
+//#include <Core/Public/ConvexHull.h>
 
-#include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 #define DEFAULT_PROJECTION CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO
 #define DEFAULT_ZNEAR 0.04f//0.1f
@@ -273,13 +273,13 @@ Float4x4 const & ACameraComponent::GetViewMatrix() const {
     if ( bViewMatrixDirty ) {
         BillboardMatrix = GetWorldRotation().ToMatrix();
 
-        Float3x3 Basis = BillboardMatrix.Transposed();
-        Float3 Origin = Basis * (-GetWorldPosition());
+        Float3x3 basis = BillboardMatrix.Transposed();
+        Float3 origin = basis * (-GetWorldPosition());
 
-        ViewMatrix[0] = Float4( Basis[0], 0.0f );
-        ViewMatrix[1] = Float4( Basis[1], 0.0f );
-        ViewMatrix[2] = Float4( Basis[2], 0.0f );
-        ViewMatrix[3] = Float4( Origin, 1.0f );
+        ViewMatrix[0] = Float4( basis[0], 0.0f );
+        ViewMatrix[1] = Float4( basis[1], 0.0f );
+        ViewMatrix[2] = Float4( basis[2], 0.0f );
+        ViewMatrix[3] = Float4( origin, 1.0f );
 
         bViewMatrixDirty = false;
         bFrustumDirty = true;

@@ -38,6 +38,9 @@ SOFTWARE.
 // Forward decl
 static Float2 CalcTextRect( AFont const * _Font, SWideChar const * _TextBegin, SWideChar const * _TextEnd, const SWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine );
 
+#undef INCLUDE_STB_TEXTEDIT_H
+#include "stb_textedit.h"
+
 #undef STB_TEXTEDIT_STRING
 #undef STB_TEXTEDIT_CHARTYPE
 #define STB_TEXTEDIT_STRING             WTextEdit
@@ -190,7 +193,7 @@ static int PrevWord( WTextEdit * _Obj, int i ) {
 #define STB_TEXTEDIT_MOVEWORDLEFT   PrevWord
 
 #define STB_TEXTEDIT_IMPLEMENTATION
-#include <stb/stb_textedit.h>
+#include "stb_textedit.h"
 
 static const bool bOSX = false;
 
@@ -272,7 +275,8 @@ static Float2 CalcCursorOffset( AFont const * _Font, SWideChar * _Text, int _Cur
 AN_CLASS_META( WTextEdit )
 
 WTextEdit::WTextEdit() {
-    stb_textedit_initialize_state( &Stb, bSingleLine );
+    Stb = ( STB_TexteditState * )GZoneMemory.Alloc( sizeof( STB_TexteditState ) );
+    stb_textedit_initialize_state( Stb, bSingleLine );
 
     bAllowUndo = true;
     bAllowTabInput = true;
@@ -284,6 +288,7 @@ WTextEdit::WTextEdit() {
 }
 
 WTextEdit::~WTextEdit() {
+    GZoneMemory.Free( Stb );
 }
 
 WTextEdit & WTextEdit::SetFont( AFont * _Font ) {
@@ -353,7 +358,7 @@ WTextEdit & WTextEdit::SetInsertSpacesOnTab( int _NumSpaces ) {
 
 WTextEdit & WTextEdit::SetSingleLine( bool _Enabled ) {
     bSingleLine = _Enabled;
-    stb_textedit_initialize_state( &Stb, bSingleLine );
+    stb_textedit_initialize_state( Stb, bSingleLine );
     return *this;
 }
 
@@ -401,15 +406,15 @@ int WTextEdit::GetTextLength() const {
 }
 
 int WTextEdit::GetCursorPosition() const {
-    return Stb.cursor;
+    return Stb->cursor;
 }
 
 int WTextEdit::GetSelectionStart() const {
-    return Math::Min( Stb.select_start, Stb.select_end );
+    return Math::Min( Stb->select_start, Stb->select_end );
 }
 
 int WTextEdit::GetSelectionEnd() const {
-    return Math::Max( Stb.select_start, Stb.select_end );
+    return Math::Max( Stb->select_start, Stb->select_end );
 }
 
 bool WTextEdit::InsertCharsProxy( int _Offset, SWideChar const * _Text, int _TextLength ) {
@@ -469,22 +474,22 @@ void WTextEdit::DeleteCharsProxy( int _First, int _Count ) {
 
 void WTextEdit::PressKey( int _Key ) {
     if ( _Key ) {
-        stb_textedit_key( this, &Stb, _Key );
+        stb_textedit_key( this, Stb, _Key );
     }
 }
 
 void WTextEdit::ClearSelection() {
-    Stb.select_start = Stb.select_end = Stb.cursor;
+    Stb->select_start = Stb->select_end = Stb->cursor;
 }
 
 void WTextEdit::SelectAll() {
-    Stb.select_start = 0;
-    Stb.cursor = Stb.select_end = CurTextLength;
-    Stb.has_preferred_x = 0;
+    Stb->select_start = 0;
+    Stb->cursor = Stb->select_end = CurTextLength;
+    Stb->has_preferred_x = 0;
 }
 
 bool WTextEdit::HasSelection() const {
-    return Stb.select_start != Stb.select_end;
+    return Stb->select_start != Stb->select_end;
 }
 
 WScroll * WTextEdit::GetScroll() {
@@ -608,8 +613,8 @@ bool WTextEdit::FindLineStartEnd( int _Cursor, SWideChar ** _LineStart, SWideCha
 
     SWideChar * text = TextData.ToPtr();
     SWideChar * textEnd = TextData.ToPtr() + CurTextLength;
-    SWideChar * lineStart = text + Stb.cursor;
-    SWideChar * lineEnd = text + Stb.cursor + 1;
+    SWideChar * lineStart = text + Stb->cursor;
+    SWideChar * lineEnd = text + Stb->cursor + 1;
 
     if ( *lineStart != '\n' ) {
         while ( lineEnd < textEnd ) {
@@ -646,7 +651,7 @@ void WTextEdit::ScrollLineEnd() {
     SWideChar * lineStart;
     SWideChar * lineEnd;
 
-    if ( FindLineStartEnd( Stb.cursor, &lineStart, &lineEnd ) ) {
+    if ( FindLineStartEnd( Stb->cursor, &lineStart, &lineEnd ) ) {
         float lineWidth = 0;
         for ( SWideChar * s = lineStart ; s < lineEnd ; s++ ) {
             lineWidth += font->GetCharAdvance( *s );
@@ -679,7 +684,7 @@ void WTextEdit::ScrollToCursor() {
     GetDesktopRect( mins, maxs, false );
     scroll->GetDesktopRect( scrollMins, scrollMaxs, true );
 
-    Float2 cursorOffset = CalcCursorOffset( font, TextData.ToPtr(), Stb.cursor, nullptr );
+    Float2 cursorOffset = CalcCursorOffset( font, TextData.ToPtr(), Stb->cursor, nullptr );
     Float2 cursor = mins + cursorOffset;
 
     Float2 scrollPosition = scroll->GetScrollPosition();
@@ -723,7 +728,7 @@ bool WTextEdit::Cut() {
     if ( !HasSelection() ) {
         SelectAll();
     }
-    stb_textedit_cut( this, &Stb );
+    stb_textedit_cut( this, Stb );
 
     return true;
 }
@@ -790,7 +795,7 @@ bool WTextEdit::Paste() {
 
     }
     if ( i > 0 ) {
-        stb_textedit_paste( this, &Stb, wideStr.ToPtr(), i );
+        stb_textedit_paste( this, Stb, wideStr.ToPtr(), i );
     }
 
     return true;
@@ -809,7 +814,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
         const bool bShiftShortcutOSX = bOSX && (_Event.ModMask & MOD_MASK_SUPER) && (_Event.ModMask & MOD_MASK_SHIFT) && !(_Event.ModMask & MOD_MASK_CONTROL) && !(_Event.ModMask & MOD_MASK_ALT);
 
         // OS X style: Text editing cursor movement using Alt instead of Ctrl
-        const bool bWordmoveKeyDown = bOSX ? (_Event.ModMask & MOD_MASK_ALT) : (_Event.ModMask & MOD_MASK_CONTROL);
+        const bool bWordmoveKeyDown = bOSX ? !!(_Event.ModMask & MOD_MASK_ALT) : !!(_Event.ModMask & MOD_MASK_CONTROL);
 
         // OS X style: Line/Text Start and End using Cmd+Arrows instead of Home/End
         const bool bStartEndKeyDown = bOSX && (_Event.ModMask & MOD_MASK_SUPER) && !(_Event.ModMask & MOD_MASK_CONTROL) && !(_Event.ModMask & MOD_MASK_ALT);
@@ -1053,24 +1058,24 @@ void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
         FromDesktopToWidget( CursorPos );
 
         if ( !HasSelection() ) {
-            TempCursor = Stb.cursor;
+            TempCursor = Stb->cursor;
         }
 
         if ( _Event.Button == 0 && ( _Event.ModMask & MOD_MASK_SHIFT ) ) {
 
-            stb_textedit_click( this, &Stb, CursorPos.X, CursorPos.Y );
+            stb_textedit_click( this, Stb, CursorPos.X, CursorPos.Y );
 
-            Stb.select_start = TempCursor > CurTextLength ? Stb.cursor : TempCursor;
-            Stb.select_end = Stb.cursor;
+            Stb->select_start = TempCursor > CurTextLength ? Stb->cursor : TempCursor;
+            Stb->select_end = Stb->cursor;
 
-            if ( Stb.select_start > Stb.select_end ) {
-                StdSwap( Stb.select_start, Stb.select_end );
+            if ( Stb->select_start > Stb->select_end ) {
+                StdSwap( Stb->select_start, Stb->select_end );
             }
 
         } else {
-            stb_textedit_click( this, &Stb, CursorPos.X, CursorPos.Y );
+            stb_textedit_click( this, Stb, CursorPos.X, CursorPos.Y );
 
-            TempCursor = Stb.cursor;
+            TempCursor = Stb->cursor;
         }
     }
 
@@ -1109,7 +1114,7 @@ void WTextEdit::OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double 
 
         FromDesktopToWidget( CursorPos );
 
-        stb_textedit_drag( this, &Stb, CursorPos.X, CursorPos.Y );
+        stb_textedit_drag( this, Stb, CursorPos.X, CursorPos.Y );
 
         ScrollToCursor();
     }
@@ -1134,7 +1139,7 @@ void WTextEdit::OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp
         return;
     }
 
-    stb_textedit_key( this, &Stb, (int)ch );
+    stb_textedit_key( this, Stb, (int)ch );
 
     ScrollToCursor();
 }
@@ -1157,7 +1162,7 @@ void WTextEdit::OnWindowHovered( bool _Hovered ) {
 
 void WTextEdit::OnDrawEvent( ACanvas & _Canvas ) {
 
-    //Stb.insert_mode = true;//GRuntime.GlobalInsertMode(); // TODO
+    //Stb->insert_mode = true;//GRuntime.GlobalInsertMode(); // TODO
 
     DrawDecorates( _Canvas );
 
@@ -1201,10 +1206,10 @@ void WTextEdit::OnDrawEvent( ACanvas & _Canvas ) {
 
     if ( IsFocus() ) {
         if ( ( GRuntime.SysFrameTimeStamp() >> 18 ) & 1 ) {
-            Float2 cursor = mins + CalcCursorOffset( font, TextData.ToPtr(), Stb.cursor, nullptr );
+            Float2 cursor = mins + CalcCursorOffset( font, TextData.ToPtr(), Stb->cursor, nullptr );
 
-            if ( Stb.insert_mode ) {
-                float w = Stb.cursor < CurTextLength ? font->GetCharAdvance( TextData[Stb.cursor] ) : font->GetCharAdvance( ' ' );
+            if ( Stb->insert_mode ) {
+                float w = Stb->cursor < CurTextLength ? font->GetCharAdvance( TextData[Stb->cursor] ) : font->GetCharAdvance( ' ' );
 
                 _Canvas.DrawRectFilled( cursor, Float2( cursor.X + w, cursor.Y + fontSize ), TextColor );
             } else {

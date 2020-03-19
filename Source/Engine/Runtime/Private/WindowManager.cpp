@@ -49,6 +49,8 @@ static double MousePositionY = MOUSE_LOST;
 
 static int VidWidth;
 static int VidHeight;
+static int VidFramebufferWidth;
+static int VidFramebufferHeight;
 static int VidPhysicalMonitor;
 static uint8_t VidRefreshRate;
 static bool VidFullscreen;
@@ -122,7 +124,7 @@ static void MouseButtonCallback( GLFWwindow * _Window, int _Button, int _Action,
     mouseEvent.Button = _Button;
     mouseEvent.ModMask = _Mods;
     mouseEvent.Action = _Action;
-    PressedMouseButtons[_Button] = _Action;
+    PressedMouseButtons[_Button] = _Action != 0;
     GInputEventsCount++;
 }
 
@@ -199,7 +201,11 @@ static void WindowIconifyCallback( GLFWwindow * _Window, int _Iconified ) {
     bIsWindowIconified = !!_Iconified;
 }
 
-static void FramebufferSizeCallback( GLFWwindow *, int, int ) {
+static void FramebufferSizeCallback( GLFWwindow *, int _FramebufferWidth, int _FramebufferHeight ) {
+    GLogger.Printf( "Framebuffer size %d %d\n", _FramebufferWidth, _FramebufferHeight );
+
+    VidFramebufferWidth = _FramebufferWidth;
+    VidFramebufferHeight = _FramebufferHeight;
 }
 
 static void CharCallback( GLFWwindow *, unsigned int ) {
@@ -247,6 +253,14 @@ static void ScrollCallback( GLFWwindow * _Window, double _WheelX, double _WheelY
 static void DropCallback( GLFWwindow *, int, const char** ) {
 }
 
+static void ExecCallbacks() {
+    // Workaround on Linux, to get correct framebuffer size (glfwGetFramebufferSize) after
+    // window resizing
+    glfwPostEmptyEvent();
+    glfwPollEvents();
+    glfwWaitEvents();
+}
+
 static void InitRenderer() {
     GLFWmonitor * monitor = nullptr;
     if ( VidFullscreen ) {
@@ -271,7 +285,8 @@ static void InitRenderer() {
     Wnd = (GLFWwindow *)GRenderBackend->GetMainWindow();
 
     // Store real video mode
-    //glfwGetWindowSize( Wnd, &VidWidth, &VidHeight );
+    glfwGetWindowSize( Wnd, &VidWidth, &VidHeight );
+    glfwGetFramebufferSize( Wnd, &VidFramebufferWidth, &VidFramebufferHeight );
     monitor = glfwGetWindowMonitor( Wnd );
     if ( monitor ) {
         const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
@@ -388,6 +403,8 @@ static void SetVideoMode() {
         }
         VidFullscreen = monitor != nullptr;
 
+        ExecCallbacks();
+
         if ( VidFullscreen ) {
             glfwFocusWindow( Wnd );
         }
@@ -400,11 +417,11 @@ static void SetVideoMode() {
             VidHeight,
             0         // refresh rate is ignored
         );
-
+        //glfwSetWindowSize(Wnd,VidWidth,VidHeight);
         glfwShowWindow( Wnd );
-        glfwPostEmptyEvent();
-        glfwPollEvents();
-        glfwWaitEvents();
+
+        ExecCallbacks();
+
         glfwFocusWindow( Wnd );
     }
 
@@ -481,10 +498,9 @@ static void SendChangedVideoModeEvent() {
     data.RefreshRate = VidRefreshRate;
     data.bFullscreen = VidFullscreen;
     Core::Strcpy( data.Backend, sizeof( data.Backend ), GRenderBackend->GetName() );
-    int framebufferWidth, framebufferHeight;
-    glfwGetFramebufferSize( Wnd, &framebufferWidth, &framebufferHeight );
-    data.FramebufferWidth = framebufferWidth;
-    data.FramebufferHeight = framebufferHeight;
+    //glfwGetFramebufferSize( Wnd, &VidFramebufferWidth, &VidFramebufferHeight );
+    data.FramebufferWidth = VidFramebufferWidth;
+    data.FramebufferHeight = VidFramebufferHeight;
 }
 
 void AWindowManager::ProcessEvents( AEventQueue & _EventQueue ) {
@@ -495,7 +511,7 @@ void AWindowManager::ProcessEvents( AEventQueue & _EventQueue ) {
 
     bool bCheck;
     bCheck = bIsWindowVisible;
-    bIsWindowVisible = glfwGetWindowAttrib( Wnd, GLFW_VISIBLE );
+    bIsWindowVisible = glfwGetWindowAttrib( Wnd, GLFW_VISIBLE ) != 0;
     if ( bIsWindowVisible != bCheck ) {
         event = GRuntimeEvents.Push();
         event->Type = ET_VisibleEvent;

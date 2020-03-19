@@ -36,7 +36,7 @@ SOFTWARE.
 
 #include <assert.h>
 #include <memory.h>
-#include <GL/glew.h>
+#include "GL/glew.h"
 
 namespace GHI {
 

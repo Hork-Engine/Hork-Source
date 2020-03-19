@@ -45,21 +45,28 @@ class ANGIE_API ACameraComponent : public ASceneComponent {
     AN_COMPONENT( ACameraComponent, ASceneComponent )
 
 public:
+    /** Set view projection */
     void SetProjection( ECameraProjection _Projection );
 
+    /** Near clip distance */
     void SetZNear( float _ZNear );
 
+    /** Far clip distance */
     void SetZFar( float _ZFar );
 
-    void SetFovX( float _FieldOfView );
-
-    void SetFovY( float _FieldOfView );
-
-    /** Perspective aspect ratio. For example 4/3, 16/9 */
+    /** Viewport aspect ratio. For example 4/3, 16/9 */
     void SetAspectRatio( float _AspectRatio );
 
+    /** Horizontal FOV for perspective projection */
+    void SetFovX( float _FieldOfView );
+
+    /** Vertical FOV for perspective projection */
+    void SetFovY( float _FieldOfView );
+
+    /** Rectangle for orthogonal projection */
     void SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs );
 
+    /** Zoom for orthogonal projection */
     void SetOrthoZoom( float _Zoom );
 
     ECameraProjection GetProjection() const { return Projection; }
@@ -72,13 +79,13 @@ public:
 
     float GetZFar() const { return ZFar; }
 
+    float GetAspectRatio() const { return AspectRatio; }
+
     float GetFovX() const { return FovX; }
 
     float GetFovY() const { return FovY; }
 
-    float GetAspectRatio() const { return AspectRatio; }
-
-    /** Computes real camera field of view in radians */
+    /** Computes real camera field of view in radians for perspective projection */
     void GetEffectiveFov( float & _FovX, float & _FovY ) const;
 
     Float2 const & GetOrthoMins() const { return OrthoMins; }
