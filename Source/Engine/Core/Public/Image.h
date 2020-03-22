@@ -66,9 +66,6 @@ struct SSoftwareMipmapGenerator
     bool bLinearSpace = false;
     bool bPremultipliedAlpha = false;
     bool bHDRI = false;
-
-    void ComputeRequiredMemorySize( int & _RequiredMemory, int & _NumLods ) const;
-    void GenerateMipmaps( void * _Data );
 };
 
 /** Image loader */
@@ -121,8 +118,23 @@ void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
                                      float fReplaceAlpha,
                                      byte * sRGB );
 
+/** Calculate required size in bytes for mipmapped image */
+void ComputeRequiredMemorySize( SSoftwareMipmapGenerator const & _Config, int & _RequiredMemory, int & _NumLods );
+
+/** Generate image mipmaps */
+void GenerateMipmaps( SSoftwareMipmapGenerator const & _Config, void * _Data );
+
+/** Write image in PNG format */
 bool WritePNG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine );
+
+/** Write image in BMP format */
 bool WriteBMP( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData );
+
+/** Write image in TGA format */
 bool WriteTGA( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData );
+
+/** Write image in JPG format */
 bool WriteJPG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _Quality );
+
+/** Write image in HDR format */
 bool WriteHDR( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const float * _ImageData );

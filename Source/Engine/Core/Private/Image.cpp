@@ -151,11 +151,11 @@ static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_cal
         mipmapGen.bHDRI = false;
 
         int requiredMemorySize;
-        mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, _Image.NumLods );
+        ComputeRequiredMemorySize( mipmapGen, requiredMemorySize, _Image.NumLods );
 
         _Image.pRawData = GHeapMemory.Alloc( requiredMemorySize );
 
-        mipmapGen.GenerateMipmaps( _Image.pRawData );
+        GenerateMipmaps( mipmapGen, _Image.pRawData );
 
         GHeapMemory.Free( data );
     } else {
@@ -204,11 +204,11 @@ static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io
         mipmapGen.bHDRI = true;
 
         int requiredMemorySize;
-        mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, _Image.NumLods );
+        ComputeRequiredMemorySize( mipmapGen, requiredMemorySize, _Image.NumLods );
 
         void * tmp = GHeapMemory.Alloc( requiredMemorySize );
 
-        mipmapGen.GenerateMipmaps( tmp );
+        GenerateMipmaps( mipmapGen, tmp );
 
         GHeapMemory.Free( data );
         data = ( float * )tmp;
@@ -292,11 +292,11 @@ void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _
         mipmapGen.bHDRI = bHDRI;
 
         int requiredMemorySize;
-        mipmapGen.ComputeRequiredMemorySize( requiredMemorySize, NumLods );
+        ComputeRequiredMemorySize( mipmapGen, requiredMemorySize, NumLods );
 
         pRawData = GHeapMemory.Alloc( requiredMemorySize );
 
-        mipmapGen.GenerateMipmaps( pRawData );
+        GenerateMipmaps( mipmapGen, pRawData );
     } else {
         size_t sizeInBytes = _Width * _Height * NumChannels;
 
@@ -572,13 +572,13 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
     }
 }
 
-void SSoftwareMipmapGenerator::ComputeRequiredMemorySize( int & _RequiredMemory, int & _NumLods ) const {
+void ComputeRequiredMemorySize( SSoftwareMipmapGenerator const & _Config, int & _RequiredMemory, int & _NumLods ) {
     _RequiredMemory = 0;
     _NumLods = 0;
 
     for ( int i = 0 ; ; i++ ) {
-        int LodWidth = Math::Max( 1, Width >> i );
-        int LodHeight = Math::Max( 1, Height >> i );
+        int LodWidth = Math::Max( 1, _Config.Width >> i );
+        int LodHeight = Math::Max( 1, _Config.Height >> i );
         _RequiredMemory += LodWidth * LodHeight;
         _NumLods++;
         if ( LodWidth == 1 && LodHeight == 1 ) {
@@ -586,18 +586,18 @@ void SSoftwareMipmapGenerator::ComputeRequiredMemorySize( int & _RequiredMemory,
         }
     }
 
-    _RequiredMemory *= NumChannels;
+    _RequiredMemory *= _Config.NumChannels;
 
-    if ( bHDRI ) {
+    if ( _Config.bHDRI ) {
         _RequiredMemory *= sizeof( float );
     }
 }
 
-void SSoftwareMipmapGenerator::GenerateMipmaps( void * _Data ) {
-    if ( bHDRI ) {
-        ::GenerateMipmapsHDRI( (const float *)SourceImage, Width, Height, NumChannels, EdgeMode, Filter, bPremultipliedAlpha, (float *)_Data );
+void GenerateMipmaps( SSoftwareMipmapGenerator const & _Config, void * _Data ) {
+    if ( _Config.bHDRI ) {
+        ::GenerateMipmapsHDRI( (const float *)_Config.SourceImage, _Config.Width, _Config.Height, _Config.NumChannels, _Config.EdgeMode, _Config.Filter, _Config.bPremultipliedAlpha, (float *)_Data );
     } else {
-        ::GenerateMipmaps( (const byte *)SourceImage, Width, Height, NumChannels, EdgeMode, Filter, bLinearSpace, bPremultipliedAlpha, (byte *)_Data );
+        ::GenerateMipmaps( (const byte *)_Config.SourceImage, _Config.Width, _Config.Height, _Config.NumChannels, _Config.EdgeMode, _Config.Filter, _Config.bLinearSpace, _Config.bPremultipliedAlpha, (byte *)_Data );
     }
 }
 
