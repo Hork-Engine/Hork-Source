@@ -488,7 +488,7 @@ static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHe
     int CurWidth = ImageWidth;
     int CurHeight = ImageHeight;
 
-    int AlphaChannel = -1;//NumChannels == 4 ? 3 : -1;
+    int AlphaChannel = NumChannels == 4 ? 3 : -1;
 
     for ( int i = 1 ; ; i++ ) {
         int LodWidth = Math::Max( 1, ImageWidth >> i );
