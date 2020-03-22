@@ -1493,7 +1493,11 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     }
 
     AImage image;
-    if ( !image.LoadLDRI( sourceFileName.CStr(), tex.bSRGB, true ) ) {
+    SImageMipmapConfig mipmapGen;
+    mipmapGen.EdgeMode = MIPMAP_EDGE_WRAP;
+    mipmapGen.Filter = MIPMAP_FILTER_MITCHELL;
+    mipmapGen.bPremultipliedAlpha = false;
+    if ( !image.LoadLDRI( sourceFileName.CStr(), tex.bSRGB, &mipmapGen ) ) {
         return;
     }
 

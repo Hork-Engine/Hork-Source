@@ -68,6 +68,12 @@ struct SSoftwareMipmapGenerator
     bool bHDRI = false;
 };
 
+struct SImageMipmapConfig {
+    EMipmapEdgeMode EdgeMode = MIPMAP_EDGE_WRAP;
+    EMipmapFilter Filter = MIPMAP_FILTER_MITCHELL;
+    bool bPremultipliedAlpha = false;
+};
+
 /** Image loader */
 class AImage {
 public:
@@ -84,14 +90,14 @@ public:
     ~AImage();
 
     // Load image as byte*
-    bool LoadLDRI( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadLDRI( IBinaryStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+    bool LoadLDRI( const char * _Path, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels = 0 );
+    bool LoadLDRI( IBinaryStream & _Stream, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels = 0 );
 
     // Load image as float* in linear space
-    bool LoadHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadHDRI( IBinaryStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+    bool LoadHDRI( const char * _Path, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels = 0 );
+    bool LoadHDRI( IBinaryStream & _Stream, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels = 0 );
 
-    void FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _NumChannels, bool _SRGB, bool _GenerateMipmaps );
+    void FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _NumChannels, bool _SRGB, SImageMipmapConfig const * _MipmapGen );
 
     void Free();
 };

@@ -321,12 +321,17 @@ bool ATexture::LoadResource( AString const & _Path ) {
          || !Core::Stricmp( &_Path[i], ".ppm" )
          || !Core::Stricmp( &_Path[i], ".pgm" ) ) {
 
+        SImageMipmapConfig mipmapGen;
+        mipmapGen.EdgeMode = MIPMAP_EDGE_WRAP;
+        mipmapGen.Filter = MIPMAP_FILTER_MITCHELL;
+        mipmapGen.bPremultipliedAlpha = false;
+
         if ( !Core::Stricmp( &_Path[i], ".hdr" ) ) {
-            if ( !image.LoadHDRI( _Path.CStr(), true, true ) ) {
+            if ( !image.LoadHDRI( _Path.CStr(), true, &mipmapGen ) ) {
                 return false;
             }
         } else {
-            if ( !image.LoadLDRI( _Path.CStr(), true, true ) ) {
+            if ( !image.LoadLDRI( _Path.CStr(), true, &mipmapGen ) ) {
                 return false;
             }
         }

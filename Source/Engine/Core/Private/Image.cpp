@@ -93,7 +93,7 @@ static void Stbi_Write( void *context, void *data, int size ) {
     stream->WriteBuffer( data, size );
 }
 
-bool AImage::LoadLDRI( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+bool AImage::LoadLDRI( const char * _Path, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
     AFileStream stream;
 
     Free();
@@ -102,10 +102,10 @@ bool AImage::LoadLDRI( const char * _Path, bool _SRGB, bool _GenerateMipmaps, in
         return false;
     }
 
-    return LoadLDRI( stream, _SRGB, _GenerateMipmaps, _NumDesiredChannels );
+    return LoadLDRI( stream, _SRGB, _MipmapGen, _NumDesiredChannels );
 }
 
-static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
     AN_ASSERT( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
 
     _Image.Free();
@@ -139,7 +139,7 @@ static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_cal
         }
     }
 
-    if ( _GenerateMipmaps ) {
+    if ( _MipmapGen ) {
         SSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = data;
@@ -147,7 +147,9 @@ static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_cal
         mipmapGen.Height = _Image.Height;
         mipmapGen.NumChannels = _Image.NumChannels;
         mipmapGen.bLinearSpace = _Image.bLinearSpace;
-        mipmapGen.bPremultipliedAlpha = false;
+        mipmapGen.EdgeMode = _MipmapGen->EdgeMode;
+        mipmapGen.Filter = _MipmapGen->Filter;
+        mipmapGen.bPremultipliedAlpha = _MipmapGen->bPremultipliedAlpha;
         mipmapGen.bHDRI = false;
 
         int requiredMemorySize;
@@ -165,7 +167,7 @@ static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_cal
     return true;
 }
 
-static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
     AN_ASSERT( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
 
     _Image.Free();
@@ -192,7 +194,7 @@ static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io
         }
     }
 
-    if ( _GenerateMipmaps ) {
+    if ( _MipmapGen ) {
         SSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = data;
@@ -200,7 +202,9 @@ static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io
         mipmapGen.Height = _Image.Height;
         mipmapGen.NumChannels = _Image.NumChannels;
         mipmapGen.bLinearSpace = _Image.bLinearSpace;
-        mipmapGen.bPremultipliedAlpha = false;
+        mipmapGen.EdgeMode = _MipmapGen->EdgeMode;
+        mipmapGen.Filter = _MipmapGen->Filter;
+        mipmapGen.bPremultipliedAlpha = _MipmapGen->bPremultipliedAlpha;
         mipmapGen.bHDRI = true;
 
         int requiredMemorySize;
@@ -237,17 +241,17 @@ static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io
     return true;
 }
 
-bool AImage::LoadLDRI( IBinaryStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+bool AImage::LoadLDRI( IBinaryStream & _Stream, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
     const stbi_io_callbacks callbacks = {
         Stbi_Read,
         Stbi_Skip,
         Stbi_Eof
     };
 
-    return ::LoadRawImage( _Stream.GetFileName(), *this, &callbacks, &_Stream, _SRGB, _GenerateMipmaps, _NumDesiredChannels );
+    return ::LoadRawImage( _Stream.GetFileName(), *this, &callbacks, &_Stream, _SRGB, _MipmapGen, _NumDesiredChannels );
 }
 
-bool AImage::LoadHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+bool AImage::LoadHDRI( const char * _Path, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
     AFileStream stream;
 
     Free();
@@ -256,20 +260,20 @@ bool AImage::LoadHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmap
         return false;
     }
 
-    return LoadHDRI( stream, _HalfFloat, _GenerateMipmaps, _NumDesiredChannels );
+    return LoadHDRI( stream, _HalfFloat, _MipmapGen, _NumDesiredChannels );
 }
 
-bool AImage::LoadHDRI( IBinaryStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+bool AImage::LoadHDRI( IBinaryStream & _Stream, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
     const stbi_io_callbacks callbacks = {
         Stbi_Read,
         Stbi_Skip,
         Stbi_Eof
     };
 
-    return ::LoadRawImageHDRI( _Stream.GetFileName(), *this, &callbacks, &_Stream, _HalfFloat, _GenerateMipmaps, _NumDesiredChannels );
+    return ::LoadRawImageHDRI( _Stream.GetFileName(), *this, &callbacks, &_Stream, _HalfFloat, _MipmapGen, _NumDesiredChannels );
 }
 
-void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _NumChannels, bool _SRGB, bool _GenerateMipmaps ) {
+void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _NumChannels, bool _SRGB, SImageMipmapConfig const * _MipmapGen ) {
     Free();
 
     Width = _Width;
@@ -280,7 +284,7 @@ void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _
     bHalf = false;
     NumLods = 1;
 
-    if ( _GenerateMipmaps ) {
+    if ( _MipmapGen ) {
         SSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = (void *)_Data;
@@ -288,7 +292,9 @@ void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _
         mipmapGen.Height = Height;
         mipmapGen.NumChannels = NumChannels;
         mipmapGen.bLinearSpace = bLinearSpace;
-        mipmapGen.bPremultipliedAlpha = false;
+        mipmapGen.EdgeMode = _MipmapGen->EdgeMode;
+        mipmapGen.Filter = _MipmapGen->Filter;
+        mipmapGen.bPremultipliedAlpha = _MipmapGen->bPremultipliedAlpha;
         mipmapGen.bHDRI = bHDRI;
 
         int requiredMemorySize;
@@ -336,7 +342,6 @@ AN_FORCEINLINE byte LinearToSRGB_Byte( const float & _lRGB ) {
     return FloatToByte( LinearToSRGB( _lRGB ) );
 }
 
-// TODO: Add other mipmap filters
 static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth, int _NewHeight, int _NumChannels, int _AlphaChannel, bool _LinearSpace, const byte * _SrcData, byte * _DstData ) {
     int Bpp = _NumChannels;
 
