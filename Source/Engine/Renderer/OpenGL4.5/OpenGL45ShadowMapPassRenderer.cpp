@@ -141,7 +141,7 @@ void AShadowMapPassRenderer::CreatePipeline() {
     if ( !f.OpenRead( "ShadowCast.glsl" ) ) {
         CriticalError( "Failed to load ShadowCast.glsl\n" );
     }
-    f.ReadWholeFileToString( code );
+    code.FromFile( f );
 
     PipelineCreateInfo pipelineCI = {};
 

@@ -140,7 +140,7 @@ bool ASkeletalAnimation::LoadResource( AString const & _Path ) {
         return false;
     }
 
-    f.ReadString( guid );
+    f.ReadObject( guid );
 
     float frameDelta = f.ReadFloat();
     uint32_t frameCount = f.ReadUInt32();

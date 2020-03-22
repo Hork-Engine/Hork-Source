@@ -77,13 +77,13 @@ struct SNodeAABB {
         return Index >= 0;
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         _Stream.ReadObject( Bounds );
         Index = _Stream.ReadInt32();
         PrimitiveCount = _Stream.ReadInt32();
     }
 
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteObject( Bounds );
         _Stream.WriteInt32( Index );
         _Stream.WriteInt32( PrimitiveCount );
@@ -117,8 +117,8 @@ public:
 
     BvAxisAlignedBox const & GetBoundingBox() const { return BoundingBox; }
 
-    void Read( IStreamBase & _Stream );
-    void Write( IStreamBase & _Stream ) const;
+    void Read( IBinaryStream & _Stream );
+    void Write( IBinaryStream & _Stream ) const;
 
 protected:
     ATreeAABB();

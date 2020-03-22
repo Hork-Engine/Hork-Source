@@ -86,12 +86,12 @@ struct AGUID {
     byte * GetBytes() { return &HiBytes[0]; }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteUInt64( Hi );
         _Stream.WriteUInt64( Lo );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Hi = _Stream.ReadUInt64();
         Lo = _Stream.ReadUInt64();
     }

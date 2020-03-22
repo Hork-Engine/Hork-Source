@@ -186,14 +186,14 @@ bool AMp3AudioTrack::InitializeFileStream( const char * _FileName ) {
 }
 
 static ssize_t ReadFile( void * _File, void * _Buffer, size_t _BufferLength ) {
-    IStreamBase * file = static_cast< IStreamBase * >( _File );
+    IBinaryStream * file = static_cast< IBinaryStream * >( _File );
 
     file->ReadBuffer( _Buffer, _BufferLength );
     return file->GetReadBytesCount();
 }
 
 static off_t SeekFile( void * _File, off_t _Offset, int _Origin ) {
-    IStreamBase * file = static_cast< IStreamBase * >( _File );
+    IBinaryStream * file = static_cast< IBinaryStream * >( _File );
     int Result = -1;
 
     switch ( _Origin ) {

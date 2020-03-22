@@ -583,14 +583,14 @@ struct TVector2 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
 
         struct Writer {
-            Writer( IStreamBase & _Stream, const float & _Value ) {
+            Writer( IBinaryStream & _Stream, const float & _Value ) {
                 _Stream.WriteFloat( _Value );
             }
 
-            Writer( IStreamBase & _Stream, const double & _Value ) {
+            Writer( IBinaryStream & _Stream, const double & _Value ) {
                 _Stream.WriteDouble( _Value );
             }
         };
@@ -598,14 +598,14 @@ struct TVector2 {
         Writer( _Stream, Y );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
 
         struct Reader {
-            Reader( IStreamBase & _Stream, float & _Value ) {
+            Reader( IBinaryStream & _Stream, float & _Value ) {
                 _Value = _Stream.ReadFloat();
             }
 
-            Reader( IStreamBase & _Stream, double & _Value ) {
+            Reader( IBinaryStream & _Stream, double & _Value ) {
                 _Value = _Stream.ReadDouble();
             }
         };
@@ -1144,14 +1144,14 @@ struct TVector3 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
 
         struct Writer {
-            Writer( IStreamBase & _Stream, const float & _Value ) {
+            Writer( IBinaryStream & _Stream, const float & _Value ) {
                 _Stream.WriteFloat( _Value );
             }
 
-            Writer( IStreamBase & _Stream, const double & _Value ) {
+            Writer( IBinaryStream & _Stream, const double & _Value ) {
                 _Stream.WriteDouble( _Value );
             }
         };
@@ -1160,14 +1160,14 @@ struct TVector3 {
         Writer( _Stream, Z );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
 
         struct Reader {
-            Reader( IStreamBase & _Stream, float & _Value ) {
+            Reader( IBinaryStream & _Stream, float & _Value ) {
                 _Value = _Stream.ReadFloat();
             }
 
-            Reader( IStreamBase & _Stream, double & _Value ) {
+            Reader( IBinaryStream & _Stream, double & _Value ) {
                 _Value = _Stream.ReadDouble();
             }
         };
@@ -1600,14 +1600,14 @@ struct TVector4 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
 
         struct Writer {
-            Writer( IStreamBase & _Stream, const float & _Value ) {
+            Writer( IBinaryStream & _Stream, const float & _Value ) {
                 _Stream.WriteFloat( _Value );
             }
 
-            Writer( IStreamBase & _Stream, const double & _Value ) {
+            Writer( IBinaryStream & _Stream, const double & _Value ) {
                 _Stream.WriteDouble( _Value );
             }
         };
@@ -1617,14 +1617,14 @@ struct TVector4 {
         Writer( _Stream, W );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
 
         struct Reader {
-            Reader( IStreamBase & _Stream, float & _Value ) {
+            Reader( IBinaryStream & _Stream, float & _Value ) {
                 _Value = _Stream.ReadFloat();
             }
 
-            Reader( IStreamBase & _Stream, double & _Value ) {
+            Reader( IBinaryStream & _Stream, double & _Value ) {
                 _Value = _Stream.ReadDouble();
             }
         };

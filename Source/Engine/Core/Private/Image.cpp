@@ -39,6 +39,7 @@ SOFTWARE.
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #define STBI_NO_STDIO
+#define STBI_NO_GIF  // Maybe in future gif will be used, but not now
 #include "stb/stb_image.h"
 
 #define STBIW_MALLOC(sz)                    GHeapMemory.Alloc( sz )
@@ -46,9 +47,15 @@ SOFTWARE.
 #define STBIW_REALLOC(p,newsz)              GHeapMemory.Realloc( p, newsz, true )
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
-#define STBIW_WINDOWS_UTF8
-#define STBI_WINDOWS_UTF8
+#define STBI_WRITE_NO_STDIO
 #include "stb/stb_image_write.h"
+
+#define STBIR_MALLOC(sz,context)            GHunkMemory.Alloc( sz )
+#define STBIR_FREE(p,context)
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#define STB_IMAGE_RESIZE_STATIC
+#define STBIR_MAX_CHANNELS                  4
+#include "stb/stb_image_resize.h"
 
 AImage::AImage() {
     pRawData = nullptr;
@@ -66,22 +73,24 @@ AImage::~AImage() {
 }
 
 static int Stbi_Read( void *user, char *data, int size ) {
-    IStreamBase & stream = *(IStreamBase * )user;
-
-    stream.ReadBuffer( data, size );
-    return stream.GetReadBytesCount();
+    IBinaryStream * stream = (IBinaryStream * )user;
+    stream->ReadBuffer( data, size );
+    return stream->GetReadBytesCount();
 }
 
 static void Stbi_Skip( void *user, int n ) {
-    IStreamBase & stream = *(IStreamBase * )user;
-
-    stream.SeekCur( n );
+    IBinaryStream * stream = (IBinaryStream * )user;
+    stream->SeekCur( n );
 }
 
 static int Stbi_Eof( void *user ) {
-    IStreamBase & stream = *(IStreamBase * )user;
+    IBinaryStream * stream = (IBinaryStream * )user;
+    return stream->Eof();
+}
 
-    return stream.Eof();
+static void Stbi_Write( void *context, void *data, int size ) {
+    IBinaryStream * stream = (IBinaryStream * )context;
+    stream->WriteBuffer( data, size );
 }
 
 bool AImage::LoadLDRI( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
@@ -131,13 +140,14 @@ static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_cal
     }
 
     if ( _GenerateMipmaps ) {
-        ASoftwareMipmapGenerator mipmapGen;
+        SSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = data;
         mipmapGen.Width = _Image.Width;
         mipmapGen.Height = _Image.Height;
         mipmapGen.NumChannels = _Image.NumChannels;
         mipmapGen.bLinearSpace = _Image.bLinearSpace;
+        mipmapGen.bPremultipliedAlpha = false;
         mipmapGen.bHDRI = false;
 
         int requiredMemorySize;
@@ -183,13 +193,14 @@ static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io
     }
 
     if ( _GenerateMipmaps ) {
-        ASoftwareMipmapGenerator mipmapGen;
+        SSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = data;
         mipmapGen.Width = _Image.Width;
         mipmapGen.Height = _Image.Height;
         mipmapGen.NumChannels = _Image.NumChannels;
         mipmapGen.bLinearSpace = _Image.bLinearSpace;
+        mipmapGen.bPremultipliedAlpha = false;
         mipmapGen.bHDRI = true;
 
         int requiredMemorySize;
@@ -226,7 +237,7 @@ static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io
     return true;
 }
 
-bool AImage::LoadLDRI( IStreamBase & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+bool AImage::LoadLDRI( IBinaryStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels ) {
     const stbi_io_callbacks callbacks = {
         Stbi_Read,
         Stbi_Skip,
@@ -248,7 +259,7 @@ bool AImage::LoadHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmap
     return LoadHDRI( stream, _HalfFloat, _GenerateMipmaps, _NumDesiredChannels );
 }
 
-bool AImage::LoadHDRI( IStreamBase & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
+bool AImage::LoadHDRI( IBinaryStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels ) {
     const stbi_io_callbacks callbacks = {
         Stbi_Read,
         Stbi_Skip,
@@ -270,13 +281,14 @@ void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _
     NumLods = 1;
 
     if ( _GenerateMipmaps ) {
-        ASoftwareMipmapGenerator mipmapGen;
+        SSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = (void *)_Data;
         mipmapGen.Width = Width;
         mipmapGen.Height = Height;
         mipmapGen.NumChannels = NumChannels;
         mipmapGen.bLinearSpace = bLinearSpace;
+        mipmapGen.bPremultipliedAlpha = false;
         mipmapGen.bHDRI = bHDRI;
 
         int requiredMemorySize;
@@ -468,24 +480,41 @@ static void DownscaleSimpleAverageHDRI( int _CurWidth, int _CurHeight, int _NewW
     }
 }
 
-static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHeight, int _NumChannels, bool _LinearSpace, byte * _Dest ) {
-    Core::Memcpy( _Dest, ImageData, ImageWidth * ImageHeight * _NumChannels );
+static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHeight, int NumChannels, EMipmapEdgeMode EdgeMode, EMipmapFilter Filter, bool bLinearSpace, bool bPremultipliedAlpha, byte * Dest ) {
+    Core::Memcpy( Dest, ImageData, ImageWidth * ImageHeight * NumChannels );
 
-    int MemoryOffset = ImageWidth * ImageHeight * _NumChannels;
+    int MemoryOffset = ImageWidth * ImageHeight * NumChannels;
 
     int CurWidth = ImageWidth;
     int CurHeight = ImageHeight;
 
-    int AlphaChannel = _NumChannels == 4 ? 3 : -1;
+    int AlphaChannel = -1;//NumChannels == 4 ? 3 : -1;
 
     for ( int i = 1 ; ; i++ ) {
         int LodWidth = Math::Max( 1, ImageWidth >> i );
         int LodHeight = Math::Max( 1, ImageHeight >> i );
 
-        byte * LodData = _Dest + MemoryOffset;
-        MemoryOffset += LodWidth * LodHeight * _NumChannels;
+        byte * LodData = Dest + MemoryOffset;
+        MemoryOffset += LodWidth * LodHeight * NumChannels;
 
-        DownscaleSimpleAverage( CurWidth, CurHeight, LodWidth, LodHeight, _NumChannels, AlphaChannel, _LinearSpace, ImageData, LodData );
+#if 1
+        int hunkMark = GHunkMemory.SetHunkMark();
+
+        stbir_resize( ImageData, CurWidth, CurHeight, NumChannels * CurWidth,
+                      LodData, LodWidth, LodHeight, NumChannels * LodWidth,
+                      STBIR_TYPE_UINT8,
+                      NumChannels,
+                      AlphaChannel,
+                      bPremultipliedAlpha ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0,
+                      (stbir_edge)EdgeMode, (stbir_edge)EdgeMode,
+                      (stbir_filter)Filter, (stbir_filter)Filter,
+                      bLinearSpace ? STBIR_COLORSPACE_LINEAR : STBIR_COLORSPACE_SRGB,
+                      NULL );
+
+        GHunkMemory.ClearToMark( hunkMark );
+#else
+        DownscaleSimpleAverage( CurWidth, CurHeight, LodWidth, LodHeight, NumChannels, AlphaChannel, bLinearSpace, ImageData, LodData );
+#endif
 
         ImageData = LodData;
 
@@ -498,10 +527,10 @@ static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHe
     }
 }
 
-static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int ImageHeight, int _NumChannels, float * _Dest ) {
-    Core::Memcpy( _Dest, ImageData, ImageWidth * ImageHeight * _NumChannels * sizeof( float ) );
+static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int ImageHeight, int NumChannels, EMipmapEdgeMode EdgeMode, EMipmapFilter Filter, bool bPremultipliedAlpha, float * _Dest ) {
+    Core::Memcpy( _Dest, ImageData, ImageWidth * ImageHeight * NumChannels * sizeof( float ) );
 
-    int MemoryOffset = ImageWidth * ImageHeight * _NumChannels;
+    int MemoryOffset = ImageWidth * ImageHeight * NumChannels;
 
     int CurWidth = ImageWidth;
     int CurHeight = ImageHeight;
@@ -511,9 +540,26 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
         int LodHeight = Math::Max( 1, ImageHeight >> i );
 
         float * LodData = _Dest + MemoryOffset;
-        MemoryOffset += LodWidth * LodHeight * _NumChannels;
+        MemoryOffset += LodWidth * LodHeight * NumChannels;
 
-        DownscaleSimpleAverageHDRI( CurWidth, CurHeight, LodWidth, LodHeight, _NumChannels, ImageData, LodData );
+#if 1
+        int hunkMark = GHunkMemory.SetHunkMark();
+
+        stbir_resize( ImageData, CurWidth, CurHeight, NumChannels * CurWidth * sizeof( float ),
+                      LodData, LodWidth, LodHeight, NumChannels * LodWidth * sizeof( float ),
+                      STBIR_TYPE_FLOAT,
+                      NumChannels,
+                      -1,
+                      bPremultipliedAlpha ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0,
+                      (stbir_edge)EdgeMode, (stbir_edge)EdgeMode,
+                      (stbir_filter)Filter, (stbir_filter)Filter,
+                      STBIR_COLORSPACE_LINEAR,
+                      NULL );
+
+        GHunkMemory.ClearToMark( hunkMark );
+#else
+        DownscaleSimpleAverageHDRI( CurWidth, CurHeight, LodWidth, LodHeight, NumChannels, ImageData, LodData );
+#endif
 
         ImageData = LodData;
 
@@ -526,7 +572,7 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
     }
 }
 
-void ASoftwareMipmapGenerator::ComputeRequiredMemorySize( int & _RequiredMemory, int & _NumLods ) const {
+void SSoftwareMipmapGenerator::ComputeRequiredMemorySize( int & _RequiredMemory, int & _NumLods ) const {
     _RequiredMemory = 0;
     _NumLods = 0;
 
@@ -547,11 +593,11 @@ void ASoftwareMipmapGenerator::ComputeRequiredMemorySize( int & _RequiredMemory,
     }
 }
 
-void ASoftwareMipmapGenerator::GenerateMipmaps( void * _Data ) {
+void SSoftwareMipmapGenerator::GenerateMipmaps( void * _Data ) {
     if ( bHDRI ) {
-        ::GenerateMipmapsHDRI( (const float *)SourceImage, Width, Height, NumChannels, (float *)_Data );
+        ::GenerateMipmapsHDRI( (const float *)SourceImage, Width, Height, NumChannels, EdgeMode, Filter, bPremultipliedAlpha, (float *)_Data );
     } else {
-        ::GenerateMipmaps( (const byte *)SourceImage, Width, Height, NumChannels, bLinearSpace, (byte *)_Data );
+        ::GenerateMipmaps( (const byte *)SourceImage, Width, Height, NumChannels, EdgeMode, Filter, bLinearSpace, bPremultipliedAlpha, (byte *)_Data );
     }
 }
 
@@ -606,69 +652,70 @@ void FlipImageY( void * _ImageData, int _Width, int _Height, int _BytesPerPixel,
     }
 }
 
-void ConvertToPrimultipliedAlpha( const float * SourceImage,
-                                  int Width,
-                                  int Height,
-                                  bool bOverbright,
-                                  float fOverbright,
-                                  bool bReplaceAlpha,
-                                  float fReplaceAlpha,
-                                  byte * sRGB ) {
+void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
+                                    int Width,
+                                    int Height,
+                                    bool bOverbright,
+                                    float fOverbright,
+                                    bool bReplaceAlpha,
+                                    float fReplaceAlpha,
+                                    byte * sRGB ) {
 
-    float * src = ( float * )SourceImage;
+    const float * src = SourceImage;
     byte * dst = sRGB;
+    float r, g, b;
 
     int pixCount = Width * Height;
 
     byte replaceAlpha = FloatToByte( fReplaceAlpha );
 
     for ( int i = 0 ; i < pixCount ; i++, src += 4, dst += 4 ) {
-        src[ 0 ] *= src[3];
-        src[ 1 ] *= src[3];
-        src[ 2 ] *= src[3];
+        r = src[ 0 ] * src[3];
+        g = src[ 1 ] * src[3];
+        b = src[ 2 ] * src[3];
 
         if ( bOverbright ) {
-            src[ 0 ] *= fOverbright;
-            src[ 1 ] *= fOverbright;
-            src[ 2 ] *= fOverbright;
+            r *= fOverbright;
+            g *= fOverbright;
+            b *= fOverbright;
 #if 1
-            float m = Math::Max( src[0], src[1], src[2] );
+            float m = Math::Max( r, g, b );
             if ( m > 1.0f ) {
                 m = 1.0f / m;
-                src[0] *= m;
-                src[1] *= m;
-                src[2] *= m;
+                r *= m;
+                g *= m;
+                b *= m;
             }
 #else
-            if ( src[ 0 ] > 1.0f ) src[ 0 ] = 1.0f;
-            if ( src[ 1 ] > 1.0f ) src[ 1 ] = 1.0f;
-            if ( src[ 2 ] > 1.0f ) src[ 2 ] = 1.0f;
+            if ( r > 1.0f ) r = 1.0f;
+            if ( g > 1.0f ) g = 1.0f;
+            if ( b > 1.0f ) b = 1.0f;
 #endif
         }
 
-        dst[0] = LinearToSRGB_Byte( src[0] );
-        dst[1] = LinearToSRGB_Byte( src[1] );
-        dst[2] = LinearToSRGB_Byte( src[2] );
+        dst[0] = LinearToSRGB_Byte( r );
+        dst[1] = LinearToSRGB_Byte( g );
+        dst[2] = LinearToSRGB_Byte( b );
         dst[3] = bReplaceAlpha ? replaceAlpha : FloatToByte( src[3] );
     }
 }
 
-void WritePNG( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine ) {
-    stbi_write_png( _FileName, _Width, _Height, _NumChannels, _ImageData, _BytesPerLine );
+bool WritePNG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine ) {
+    return !!stbi_write_png_to_func( Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData, _BytesPerLine );
 }
 
-void WriteBMP( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData ) {
-    stbi_write_bmp( _FileName, _Width, _Height, _NumChannels, _ImageData );
+bool WriteBMP( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData ) {
+    return !!stbi_write_bmp_to_func( Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData );
 }
 
-void WriteTGA( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData ) {
-    stbi_write_tga( _FileName, _Width, _Height, _NumChannels, _ImageData );
+bool WriteTGA( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData ) {
+    return !!stbi_write_tga_to_func( Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData );
 }
 
-void WriteJPG( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _Quality ) {
-    stbi_write_jpg( _FileName, _Width, _Height, _NumChannels, _ImageData, _Quality );
+bool WriteJPG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _Quality ) {
+    return !!stbi_write_jpg_to_func( Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData, _Quality );
 }
 
-void WriteHDR( const char * _FileName, int _Width, int _Height, int _NumChannels, const float * _ImageData ) {
-    stbi_write_hdr( _FileName, _Width, _Height, _NumChannels, _ImageData );
+bool WriteHDR( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const float * _ImageData ) {
+    return !!stbi_write_hdr_to_func( Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData );
 }

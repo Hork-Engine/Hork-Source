@@ -37,19 +37,15 @@ SOFTWARE.
 #include <limits.h>
 
 #ifdef _MSC_VER
-#pragma warning( disable : 4018 )
 #pragma warning( disable : 4057 )
-#pragma warning( disable : 4267 )
 #pragma warning( disable : 4311 )
 #pragma warning( disable : 4312 )
-#pragma warning( disable : 4996 )
 #endif
 
 #if defined __GNUC__ && !defined __clang__
 #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
-#pragma GCC diagnostic ignored "-Wsign-compare"
 #endif
 
 /*

@@ -143,12 +143,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteUInt32( NumBits );
         _Stream.WriteArrayUInt32( Bits );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         NumBits = _Stream.ReadUInt32();
         _Stream.ReadArrayUInt32( Bits );
     }

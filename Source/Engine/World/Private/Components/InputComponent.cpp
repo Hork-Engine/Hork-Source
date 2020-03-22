@@ -715,7 +715,22 @@ bool AInputComponent::GetButtonState( int _DevId, int _Button ) const {
     return DeviceButtonDown[ _DevId ][ _Button ] != -1;
 }
 
-bool AInputComponent::IsJoyDown( const SJoystick * _Joystick, int _Button ) const {
+void AInputComponent::UnpressButtons() {
+    double timeStamp = GRuntime.SysSeconds_d();
+    for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
+        SetButtonState( ID_KEYBOARD, i, IE_Release, 0, timeStamp );
+    }
+    for ( int i = 0 ; i < MAX_MOUSE_BUTTONS ; i++ ) {
+        SetButtonState( ID_MOUSE, i, IE_Release, 0, timeStamp );
+    }
+    for ( int j = 0 ; j < MAX_JOYSTICKS_COUNT ; j++ ) {
+        for ( int i = 0 ; i < MAX_JOYSTICK_BUTTONS ; i++ ) {
+            SetButtonState( ID_JOYSTICK_1 + j, i, IE_Release, 0, timeStamp );
+        }
+    }
+}
+
+bool AInputComponent::IsJoyDown( SJoystick const * _Joystick, int _Button ) const {
     return GetButtonState( ID_JOYSTICK_1 + _Joystick->Id, _Button );
 }
 

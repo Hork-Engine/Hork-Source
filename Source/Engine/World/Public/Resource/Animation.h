@@ -52,7 +52,7 @@ struct SAnimationChannel {
     bool bHasRotation : 1;
     bool bHasScale : 1;
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         JointIndex = _Stream.ReadInt32();
         TransformOffset = _Stream.ReadInt32();
 
@@ -63,7 +63,7 @@ struct SAnimationChannel {
         bHasScale    = (bitMask>>2) & 1;
     }
 
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteInt32( JointIndex );
         _Stream.WriteInt32( TransformOffset );
         _Stream.WriteUInt8(   ( uint8_t(bHasPosition) << 0 )

@@ -288,8 +288,8 @@ public:
     void BuildBVH( bool bForceQuantizedAabbCompression = false );
     //void BuildQuantizedBVH();
 
-    //void Read( IStreamBase & _Stream );
-    //void Write( IStreamBase & _Stream ) const;
+    //void Read( IBinaryStream & _Stream );
+    //void Write( IBinaryStream & _Stream ) const;
 
     bool UsedQuantizedAabbCompression() const;
 

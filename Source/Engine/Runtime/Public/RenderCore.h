@@ -125,7 +125,7 @@ struct SMeshVertex {
     float  Handedness;
     Float3 Normal;
 
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteObject( Position );
         _Stream.WriteObject( TexCoord );
         _Stream.WriteObject( Tangent );
@@ -133,7 +133,7 @@ struct SMeshVertex {
         _Stream.WriteObject( Normal );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         _Stream.ReadObject( Position );
         _Stream.ReadObject( TexCoord );
         _Stream.ReadObject( Tangent );
@@ -159,11 +159,11 @@ AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMes
 struct SMeshVertexUV {
     Float2 TexCoord;
 
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteObject( TexCoord );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         _Stream.ReadObject( TexCoord );
     }
 
@@ -181,11 +181,11 @@ AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1
 struct SMeshVertexLight {
     uint32_t VertexLight;
 
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteUInt32( VertexLight );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         VertexLight = _Stream.ReadUInt32();
     }
 
@@ -211,11 +211,11 @@ struct SMeshVertexSkin {
     uint8_t JointIndices[4];
     uint8_t JointWeights[4];
 
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteBuffer( JointIndices, 8 );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         _Stream.ReadBuffer( JointIndices, 8 );
     }
 };
@@ -403,11 +403,11 @@ struct STexturePixelFormat {
         return ( ( Data >> 2 ) & 3 ) + 1;
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Data = (ETexturePixelFormat)_Stream.ReadUInt8();
     }
 
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteUInt8( (uint8_t)Data );
     }
 

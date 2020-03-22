@@ -1114,12 +1114,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
     }
@@ -1147,12 +1147,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
     }
@@ -1180,12 +1180,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
     }
@@ -1213,12 +1213,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
     }
@@ -1246,12 +1246,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
     }
@@ -1279,12 +1279,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
     }
@@ -1312,12 +1312,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
     }
@@ -1345,12 +1345,12 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
     }
@@ -1379,13 +1379,13 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1415,13 +1415,13 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1451,13 +1451,13 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1487,13 +1487,13 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1523,13 +1523,13 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1559,13 +1559,13 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1595,13 +1595,13 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1631,13 +1631,13 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1668,14 +1668,14 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
         W.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1707,14 +1707,14 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
         W.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1746,14 +1746,14 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
         W.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1785,14 +1785,14 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
         W.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1824,14 +1824,14 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
         W.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1863,14 +1863,14 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
         W.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1902,14 +1902,14 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
         W.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );
@@ -1941,14 +1941,14 @@ public:
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         X.Write( _Stream );
         Y.Write( _Stream );
         Z.Write( _Stream );
         W.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X.Read( _Stream );
         Y.Read( _Stream );
         Z.Read( _Stream );

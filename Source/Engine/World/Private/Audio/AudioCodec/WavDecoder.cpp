@@ -33,10 +33,6 @@ SOFTWARE.
 #include <Core/Public/IO.h>
 #include <Core/Public/Logger.h>
 
-#ifdef AN_COMPILER_MSVC
-#pragma warning( disable : 4505 )
-#endif
-
 // http://audiocoding.ru/assets/meta/2008-05-22-wav-file-structure/wav_formats.txt
 // http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/Docs/RIFFNEW.pdf
 enum EWaveEncoding {
@@ -49,10 +45,10 @@ static bool IMAADPCMUnpack16_Stereo( signed short * _PCM, int _SamplesCount, int
 static bool IMAADPCMUnpack16Ext_Mono( signed short * _PCM, int _IgnoreFirstNSamples, int _SamplesCount, const byte * _ADPCM, int _DataLength, int _BlockAlign );
 static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSamples, int _SamplesCount, int _ChannelsCount, const byte * _ADPCM, int _DataLength, int _BlockAlign );
 
-static bool ReadWaveHeader( IStreamBase & _File, SWaveFormat & _Wave );
-static int WaveRead( IStreamBase & _File, void * _Buffer, int _SizeInBytes, SWaveFormat *_Wave );
-static void WaveRewind( IStreamBase & _File, SWaveFormat *_Wave );
-static int WaveSeek( IStreamBase & _File, int _Offset, SWaveFormat *_Wave );
+static bool ReadWaveHeader( IBinaryStream & _File, SWaveFormat & _Wave );
+static int WaveRead( IBinaryStream & _File, void * _Buffer, int _SizeInBytes, SWaveFormat *_Wave );
+static void WaveRewind( IBinaryStream & _File, SWaveFormat *_Wave );
+static int WaveSeek( IBinaryStream & _File, int _Offset, SWaveFormat *_Wave );
 
 AN_CLASS_META( AWavAudioTrack )
 AN_CLASS_META( AWavDecoder )
@@ -852,7 +848,7 @@ static bool IMAADPCMUnpack16Ext_Stereo( signed short * _PCM, int _IgnoreFirstNSa
     return true;
 }
 
-static bool ReadWaveHeader( IStreamBase & InFile, SWaveFormat & Wave ) {
+static bool ReadWaveHeader( IBinaryStream & InFile, SWaveFormat & Wave ) {
     struct SRiffChunk {
         uint32_t Id;
         int32_t SizeInBytes;
@@ -961,15 +957,15 @@ static bool ReadWaveHeader( IStreamBase & InFile, SWaveFormat & Wave ) {
     return true;
 }
 
-static int WaveRead( IStreamBase & _File, void * _Buffer, int _SizeInBytes, SWaveFormat * _Wave ) {
+static int WaveRead( IBinaryStream & _File, void * _Buffer, int _SizeInBytes, SWaveFormat * _Wave ) {
     _File.ReadBuffer( _Buffer, _SizeInBytes );
     return _File.GetReadBytesCount();
 }
 
-static void WaveRewind( IStreamBase & _File, SWaveFormat * _Wave ) {
+static void WaveRewind( IBinaryStream & _File, SWaveFormat * _Wave ) {
     _File.SeekSet( _Wave->DataBase );
 }
 
-static int WaveSeek( IStreamBase & _File, int _Offset, SWaveFormat * _Wave ) {
+static int WaveSeek( IBinaryStream & _File, int _Offset, SWaveFormat * _Wave ) {
     return _File.SeekSet( _Wave->DataBase + _Offset );
 }

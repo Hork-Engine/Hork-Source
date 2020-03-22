@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Angl.h"
+#include "PodArray.h"
 
 class ALexer {
     AN_FORBID_COPY( ALexer )

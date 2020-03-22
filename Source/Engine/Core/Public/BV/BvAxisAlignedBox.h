@@ -114,12 +114,12 @@ struct BvAxisAlignedBox {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         Mins.Write( _Stream );
         Maxs.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Mins.Read( _Stream );
         Maxs.Read( _Stream );
     }

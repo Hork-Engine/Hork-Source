@@ -65,16 +65,12 @@ void SaveSnapshot( GHI::Texture & _Texture ) {
     FlipImageY( data, w, h, numchannels, w * numchannels );
     
     static int n = 0;
-    if ( n == 0 ) {
-        Core::MakeDir( "snapshots", false );
+    AFileStream f;
+    if ( f.OpenWrite( Core::Fmt( "snapshots/%d.png", n++ ) ) ) {
+         WritePNG( f, w, h, numchannels, data, w*numchannels );
     }
-
-    WritePNG( Core::Fmt( "snapshots/%d.png", n ), w, h, numchannels, data, w*numchannels );
-
-    n++;
 
     GHunkMemory.ClearToMark( hunkMark );
 }
-
 
 }

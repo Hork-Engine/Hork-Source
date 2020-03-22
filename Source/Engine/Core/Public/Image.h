@@ -32,14 +32,40 @@ SOFTWARE.
 
 #include "IO.h"
 
+enum EMipmapEdgeMode
+{
+    MIPMAP_EDGE_CLAMP = 1,
+    MIPMAP_EDGE_REFLECT = 2,
+    MIPMAP_EDGE_WRAP = 3,
+    MIPMAP_EDGE_ZERO = 4,
+};
+
+enum EMipmapFilter
+{
+    /** A trapezoid w/1-pixel wide ramps, same result as box for integer scale ratios */
+    MIPMAP_FILTER_BOX = 1,
+    /** On upsampling, produces same results as bilinear texture filtering */
+    MIPMAP_FILTER_TRIANGLE = 2,
+    /** The cubic b-spline (aka Mitchell-Netrevalli with B=1,C=0), gaussian-esque */
+    MIPMAP_FILTER_CUBICBSPLINE = 3,
+    /** An interpolating cubic spline */
+    MIPMAP_FILTER_CATMULLROM = 4,
+    /** Mitchell-Netrevalli filter with B=1/3, C=1/3 */
+    MIPMAP_FILTER_MITCHELL = 5
+};
+
 /** Software mipmap generator */
-struct ASoftwareMipmapGenerator {
-    const void * SourceImage;
-    int Width;
-    int Height;
-    int NumChannels;
-    bool bLinearSpace;
-    bool bHDRI;
+struct SSoftwareMipmapGenerator
+{
+    const void * SourceImage = nullptr;
+    int Width = 0;
+    int Height = 0;
+    int NumChannels = 0;
+    EMipmapEdgeMode EdgeMode = MIPMAP_EDGE_WRAP;
+    EMipmapFilter Filter = MIPMAP_FILTER_MITCHELL;
+    bool bLinearSpace = false;
+    bool bPremultipliedAlpha = false;
+    bool bHDRI = false;
 
     void ComputeRequiredMemorySize( int & _RequiredMemory, int & _NumLods ) const;
     void GenerateMipmaps( void * _Data );
@@ -62,11 +88,11 @@ public:
 
     // Load image as byte*
     bool LoadLDRI( const char * _Path, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadLDRI( IStreamBase & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+    bool LoadLDRI( IBinaryStream & _Stream, bool _SRGB, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
 
     // Load image as float* in linear space
     bool LoadHDRI( const char * _Path, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
-    bool LoadHDRI( IStreamBase & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
+    bool LoadHDRI( IBinaryStream & _Stream, bool _HalfFloat, bool _GenerateMipmaps, int _NumDesiredChannels = 0 );
 
     void FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _NumChannels, bool _SRGB, bool _GenerateMipmaps );
 
@@ -79,21 +105,24 @@ Utilites
 
 */
 
+/** Flip image horizontally */
 void FlipImageX( void * _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine );
 
+/** Flip image vertically */
 void FlipImageY( void * _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine );
 
-void ConvertToPrimultipliedAlpha( const float * SourceImage,
-                                  int Width,
-                                  int Height,
-                                  bool bOverbright,
-                                  float fOverbright,
-                                  bool bReplaceAlpha,
-                                  float fReplaceAlpha,
-                                  byte * sRGB );
+/** Convert linear image to premultiplied alpha sRGB */
+void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
+                                     int Width,
+                                     int Height,
+                                     bool bOverbright,
+                                     float fOverbright,
+                                     bool bReplaceAlpha,
+                                     float fReplaceAlpha,
+                                     byte * sRGB );
 
-void WritePNG( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine );
-void WriteBMP( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData );
-void WriteTGA( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData );
-void WriteJPG( const char * _FileName, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _Quality );
-void WriteHDR( const char * _FileName, int _Width, int _Height, int _NumChannels, const float * _ImageData );
+bool WritePNG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine );
+bool WriteBMP( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData );
+bool WriteTGA( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData );
+bool WriteJPG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _Quality );
+bool WriteHDR( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const float * _ImageData );

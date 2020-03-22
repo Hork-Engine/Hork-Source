@@ -3369,7 +3369,7 @@ static mz_bool mz_zip_set_file_times(const char *pFilename, MZ_TIME_T access_tim
 #endif /* #ifndef MINIZ_NO_STDIO */
 #endif /* #ifndef MINIZ_NO_TIME */
 
-/*static MZ_FORCEINLINE */mz_bool mz_zip_set_error(mz_zip_archive *pZip, mz_zip_error err_num)
+static MZ_FORCEINLINE mz_bool mz_zip_set_error(mz_zip_archive *pZip, mz_zip_error err_num)
 {
     if (pZip)
         pZip->m_last_error = err_num;

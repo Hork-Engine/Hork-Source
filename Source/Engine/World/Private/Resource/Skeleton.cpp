@@ -104,7 +104,7 @@ bool ASkeleton::LoadResource( AString const & _Path ) {
 
     AString guid;
 
-    f.ReadString( guid );
+    f.ReadObject( guid );
     f.ReadArrayOfStructs( Joints );
     f.ReadObject( BindposeBounds );
 

@@ -67,6 +67,8 @@ WViewport & WViewport::SetPlayerController( APlayerController * _PlayerControlle
         PlayerController->OnViewportUpdate();
     }
 
+    // FIXME: Unpress buttons?
+
     return *this;
 }
 
@@ -152,6 +154,13 @@ void WViewport::OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp
 }
 
 void WViewport::OnFocusLost() {
+    if ( !PlayerController ) {
+        return;
+    }
+
+    AInputComponent * inputComponent = PlayerController->GetInputComponent();
+
+    inputComponent->UnpressButtons();
 }
 
 void WViewport::OnFocusReceive() {

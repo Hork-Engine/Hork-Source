@@ -82,12 +82,12 @@ struct Bool2 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteBool( X );
         _Stream.WriteBool( Y );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X = _Stream.ReadBool();
         Y = _Stream.ReadBool();
     }
@@ -154,13 +154,13 @@ struct Bool3 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteBool( X );
         _Stream.WriteBool( Y );
         _Stream.WriteBool( Z );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X = _Stream.ReadBool();
         Y = _Stream.ReadBool();
         Z = _Stream.ReadBool();
@@ -227,14 +227,14 @@ struct Bool4 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteBool( X );
         _Stream.WriteBool( Y );
         _Stream.WriteBool( Z );
         _Stream.WriteBool( W );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         X = _Stream.ReadBool();
         Y = _Stream.ReadBool();
         Z = _Stream.ReadBool();

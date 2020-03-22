@@ -36,6 +36,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
 #include <GameThread/Public/EngineInstance.h>
+#include <Core/Public/Image.h>
 
 AN_CLASS_META( APlayerController )
 AN_CLASS_META( ARenderingParameters )
@@ -163,10 +164,10 @@ void APlayerController::TakeScreenshot() {
                 GRenderBackend->ReadScreenPixels( 0, 0, w, h, sz, 1, p );
                 FlipImageY( p, w, h, 4, w * 4 );
                 static int n = 0;
-                if ( n == 0 ) {
-                    Core::MakeDir( "screenshots", false );
+                AFileStream f;
+                if ( f.OpenWrite( Core::Fmt( "screenshots/%d.png", n++ ) ) ) {
+                    WritePNG( f, w, h, 4, p, w*4 );
                 }
-                WritePNG( Core::Fmt( "screenshots/%d.png", n++ ), w, h, 4, p, w*4 );
                 GHunkMemory.ClearLastHunk();
             }
         }

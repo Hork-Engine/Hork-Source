@@ -721,7 +721,7 @@ void WDesktop::MarkTransformDirty() {
 }
 
 void WDesktop::OnDrawBackground( ACanvas & _Canvas ) {
-    _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4(0.03f,0.2f,0.2f,1.0f) );
+    _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4(0.03f,0.03f,0.03f,1.0f) );
     //_Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4::Black() );
 }
 

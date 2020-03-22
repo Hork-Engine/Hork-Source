@@ -51,19 +51,16 @@ struct SJoint {
     /** Joint name */
     char     Name[64];
 
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteInt32( Parent );
         _Stream.WriteObject( LocalTransform );
-        _Stream.WriteString( Name );
+        _Stream.WriteCString( Name );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Parent = _Stream.ReadInt32();
         _Stream.ReadObject( LocalTransform );
-
-        AString jointName;
-        _Stream.ReadString( jointName );
-        Core::Strcpy( Name, sizeof( Name ), jointName.CStr() );
+        _Stream.ReadCString( Name, sizeof( Name ) );
     }
 };
 

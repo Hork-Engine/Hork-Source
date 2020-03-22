@@ -267,12 +267,14 @@ public:
 
     bool IsKeyDown( int _Key ) const { return GetButtonState( ID_KEYBOARD, _Key ); }
     bool IsMouseDown( int _Button ) const { return GetButtonState( ID_MOUSE, _Button ); }
-    bool IsJoyDown( const struct SJoystick * _Joystick, int _Button ) const;
+    bool IsJoyDown( struct SJoystick const * _Joystick, int _Button ) const;
 
     void SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp );
 
     /** Return is button pressed or not */
     bool GetButtonState( int _DevId, int _Button ) const;
+
+    void UnpressButtons();
 
     void SetMouseAxisState( float _X, float _Y );
 

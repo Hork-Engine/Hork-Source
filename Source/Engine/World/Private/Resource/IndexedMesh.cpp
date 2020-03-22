@@ -149,7 +149,7 @@ void AIndexedMesh::InvalidateChannels() {
     }
 }
 
-static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IStreamBase & f ) {
+static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IBinaryStream & f ) {
     AString Name;
     int32_t BaseVertex;
     uint32_t FirstIndex;
@@ -158,12 +158,12 @@ static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IStreamBase & f ) {
     AString MaterialInstance;
     BvAxisAlignedBox BoundingBox;
 
-    f.ReadString( Name );
+    f.ReadObject( Name );
     BaseVertex = f.ReadInt32();
     FirstIndex = f.ReadUInt32();
     VertexCount = f.ReadUInt32();
     IndexCount = f.ReadUInt32();
-    f.ReadString( MaterialInstance );
+    f.ReadObject( MaterialInstance );
     f.ReadObject( BoundingBox );
 
     AIndexedMeshSubpart * Subpart = CreateInstanceOf< AIndexedMeshSubpart >();
@@ -178,11 +178,11 @@ static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IStreamBase & f ) {
     return Subpart;
 }
 
-static ASocketDef * ReadSocket( IStreamBase & f ) {
+static ASocketDef * ReadSocket( IBinaryStream & f ) {
     AString Name;
     uint32_t JointIndex;
 
-    f.ReadString( Name );
+    f.ReadObject( Name );
     JointIndex = f.ReadUInt32();
 
     ASocketDef * Socket = CreateInstanceOf< ASocketDef >();
@@ -280,7 +280,7 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
     bool bRaycastBVH;
 
     AString guidStr;
-    f.ReadString( guidStr );
+    f.ReadObject( guidStr );
 
     bSkinnedMesh = f.ReadBool();
     f.ReadBool(); // dummy (TODO: remove in the future)
@@ -314,7 +314,7 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
     }
 
     AString skeleton;
-    f.ReadString( skeleton );
+    f.ReadObject( skeleton );
 
     if ( bSkinnedMesh ) {
         f.ReadArrayInt32( Skin.JointIndices );
@@ -2773,13 +2773,13 @@ int ATreeAABB::MarkRayOverlappingLeafs( Float3 const & _RayStart, Float3 const &
     return n;
 }
 
-void ATreeAABB::Read( IStreamBase & _Stream ) {
+void ATreeAABB::Read( IBinaryStream & _Stream ) {
     _Stream.ReadArrayOfStructs( Nodes );
     _Stream.ReadArrayUInt32( Indirection );
     _Stream.ReadObject( BoundingBox );
 }
 
-void ATreeAABB::Write( IStreamBase & _Stream ) const {
+void ATreeAABB::Write( IBinaryStream & _Stream ) const {
     _Stream.WriteArrayOfStructs( Nodes );
     _Stream.WriteArrayUInt32( Indirection );
     _Stream.WriteObject( BoundingBox );

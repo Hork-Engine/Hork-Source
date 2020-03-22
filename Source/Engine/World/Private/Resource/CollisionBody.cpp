@@ -336,7 +336,7 @@ void ACollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompressio
 #if 0
 #include <bullet3/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.h>
 
-void ACollisionTriangleSoupBVHData::Read( IStreamBase & _Stream ) {
+void ACollisionTriangleSoupBVHData::Read( IBinaryStream & _Stream ) {
     uint32_t bufferSize;
     _Stream >> bufferSize;
     byte * buffer = (byte *)GHeapMemory.HeapAlloc( bufferSize, 1 );
@@ -351,7 +351,7 @@ void ACollisionTriangleSoupBVHData::Read( IStreamBase & _Stream ) {
     GHeapMemory.HeapFree( buffer );
 }
 
-void ACollisionTriangleSoupBVHData::Write( IStreamBase & _Stream ) const {
+void ACollisionTriangleSoupBVHData::Write( IBinaryStream & _Stream ) const {
     if ( Data ) {
         btDefaultSerializer Serializer;
 

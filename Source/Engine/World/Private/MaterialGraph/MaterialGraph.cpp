@@ -2785,7 +2785,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         CriticalError( "Failed to load Shader.glsl\n" );
     }
     AString code;
-    f.ReadWholeFileToString( code );
+    code.FromFile( f );
     //-------------------------------------------------
 
     AString buildinSource;

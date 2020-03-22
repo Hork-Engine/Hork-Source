@@ -77,12 +77,7 @@ public:
     }
     void Resize( int _Size ) { Super::resize( _Size ); }
     void Reserve( int _Capacity ) { Super::reserve( _Capacity ); }
-    void ReserveInvalidate( int _Capacity ) {
-        int curSize = Size();
-        Super::clear();
-        Super::reserve( _Capacity );
-        Super::resize( curSize );
-    }
+    void ReserveInvalidate( int _Capacity ) { Super::reserve( _Capacity ); }
     int Capacity() const { return Super::capacity(); }
     void Free() { Super::clear(); Super::shrink_to_fit(); }
     bool IsEmpty() const { return Super::empty(); }

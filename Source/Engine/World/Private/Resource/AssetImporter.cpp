@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Core/Public/Guid.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/LinearAllocator.h>
+#include <Core/Public/Image.h>
 
 #define CGLTF_IMPLEMENTATION
 #include "gltf/cgltf.h"
@@ -1508,7 +1509,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
 
     f.WriteUInt32( FMT_FILE_TYPE_TEXTURE );
     f.WriteUInt32( FMT_VERSION_TEXTURE );
-    f.WriteString( tex.GUID.CStr() );
+    f.WriteCString( tex.GUID.CStr() );
     f.WriteUInt32( textureType );
     f.WriteObject( texturePixelFormat );
     f.WriteUInt32( w );
@@ -1535,7 +1536,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     }
 
     f.WriteUInt32( 1 ); // num source files
-    f.WriteString( sourceFileName );
+    f.WriteObject( sourceFileName );
 
 #if 0
     //
@@ -1609,16 +1610,16 @@ void AAssetImporter::WriteMaterial( MaterialInfo const & m ) {
 
     f.WriteUInt32( FMT_FILE_TYPE_MATERIAL_INSTANCE );
     f.WriteUInt32( FMT_VERSION_MATERIAL_INSTANCE );
-    f.WriteString( m.GUID.CStr() );
-    f.WriteString( m.DefaultMaterial ); // material GUID
+    f.WriteCString( m.GUID.CStr() );
+    f.WriteCString( m.DefaultMaterial ); // material GUID
 
     f.WriteUInt32( m.NumTextures );
 
     for ( int i = 0 ; i < m.NumTextures ; i++ ) {
         if ( m.Textures[i] ) {
-            f.WriteString( m.Textures[i]->GUID.CStr() );
+            f.WriteCString( m.Textures[i]->GUID.CStr() );
         } else {
-            f.WriteString( m.DefaultTexture[i] );
+            f.WriteCString( m.DefaultTexture[i] );
         }
     }
 
@@ -1727,7 +1728,7 @@ void AAssetImporter::WriteSkeleton() {
 
         f.WriteUInt32( FMT_FILE_TYPE_SKELETON );
         f.WriteUInt32( FMT_VERSION_SKELETON );
-        f.WriteString( m_SkeletonGUID.ToString() );
+        f.WriteCString( m_SkeletonGUID.CStr() );
         f.WriteArrayOfStructs( m_Joints );
         f.WriteObject( m_BindposeBounds );
 #if 0
@@ -1770,7 +1771,7 @@ void AAssetImporter::WriteAnimation( AnimationInfo const & Animation ) {
 
     f.WriteUInt32( FMT_FILE_TYPE_ANIMATION );
     f.WriteUInt32( FMT_VERSION_ANIMATION );
-    f.WriteString( Animation.GUID.ToString() );
+    f.WriteCString( Animation.GUID.CStr() );
     f.WriteFloat( Animation.FrameDelta );
     f.WriteUInt32( Animation.FrameCount );
     f.WriteArrayOfStructs( Animation.Channels );
@@ -1827,7 +1828,7 @@ void AAssetImporter::WriteSingleModel() {
 
     f.WriteUInt32( FMT_FILE_TYPE_MESH );
     f.WriteUInt32( FMT_VERSION_MESH );
-    f.WriteString( GUID.ToString() );
+    f.WriteCString( GUID.CStr() );
     f.WriteBool(bSkinnedMesh );
     f.WriteBool( false );         // dynamic storage
     f.WriteObject( BoundingBox );
@@ -1846,15 +1847,16 @@ void AAssetImporter::WriteSingleModel() {
     uint32_t n = 0;
     for ( MeshInfo const & meshInfo : m_Meshes ) {
         if ( meshInfo.Mesh->name ) {
-            f.WriteString( meshInfo.Mesh->name );
+            f.WriteCString( meshInfo.Mesh->name );
         } else {
-            f.WriteString( AString( "Subpart_" ) + Math::ToString( n ) );
+            AString s = AString( "Subpart_" ) + Math::ToString( n );
+            f.WriteObject( s );
         }
         f.WriteInt32( meshInfo.BaseVertex );
         f.WriteUInt32( meshInfo.FirstIndex );
         f.WriteUInt32( meshInfo.VertexCount );
         f.WriteUInt32( meshInfo.IndexCount );
-        f.WriteString( GetMaterialGUID( meshInfo.Material ) );
+        GetMaterialGUID( meshInfo.Material ).Write( f );
         f.WriteObject( meshInfo.BoundingBox );
 
         n++;
@@ -1877,11 +1879,11 @@ void AAssetImporter::WriteSingleModel() {
     f.WriteUInt32( 0 ); // sockets count
 
     if ( bSkinnedMesh ) {
-        f.WriteString( m_SkeletonGUID.ToString() );
+        f.WriteCString( m_SkeletonGUID.CStr() );
         f.WriteArrayInt32( m_Skin.JointIndices );
         f.WriteArrayOfStructs( m_Skin.OffsetMatrices );
     } else {
-        f.WriteString( "/Default/Skeleton/Default" );
+        f.WriteCString( "/Default/Skeleton/Default" );
     }
 
     //if ( m_Settings.bGenerateStaticCollisions ) {
@@ -1961,7 +1963,7 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
 
     f.WriteUInt32( FMT_FILE_TYPE_MESH );
     f.WriteUInt32( FMT_VERSION_MESH );
-    f.WriteString( Mesh.GUID.ToString() );
+    f.WriteCString( Mesh.GUID.CStr() );
     f.WriteBool( bSkinnedMesh );
     f.WriteBool( false );         // dynamic storage
     f.WriteObject( Mesh.BoundingBox );
@@ -1994,15 +1996,15 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     f.WriteUInt16( m_Settings.RaycastPrimitivesPerLeaf );
     f.WriteUInt32( 1 ); // subparts count
     if ( Mesh.Mesh->name ) {
-        f.WriteString( Mesh.Mesh->name );
+        f.WriteCString( Mesh.Mesh->name );
     } else {
-        f.WriteString( "Subpart_1" );
+        f.WriteCString( "Subpart_1" );
     }
     f.WriteInt32( 0 ); // base vertex
     f.WriteUInt32( 0 ); // first index
     f.WriteUInt32( Mesh.VertexCount );
     f.WriteUInt32( Mesh.IndexCount );
-    f.WriteString( GetMaterialGUID( Mesh.Material ) );
+    GetMaterialGUID( Mesh.Material ).Write( f );
     f.WriteObject( Mesh.BoundingBox );
 
     if ( bRaycastBVH ) {
@@ -2021,11 +2023,11 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     f.WriteUInt32( 0 ); // sockets count
 
     if ( bSkinnedMesh ) {
-        f.WriteString( m_SkeletonGUID.ToString() );
+        f.WriteCString( m_SkeletonGUID.CStr() );
         f.WriteArrayInt32( m_Skin.JointIndices );
         f.WriteArrayOfStructs( m_Skin.OffsetMatrices );
     } else {
-        f.WriteString( "/Default/Skeleton/Default" );
+        f.WriteCString( "/Default/Skeleton/Default" );
     }
 #if 0
     //
@@ -2136,7 +2138,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
     f.WriteUInt32( FMT_FILE_TYPE_TEXTURE );
     f.WriteUInt32( FMT_VERSION_TEXTURE );
-    f.WriteString( TextureGUID.CStr() );
+    f.WriteCString( TextureGUID.CStr() );
     f.WriteUInt32( textureType );
     f.WriteObject( texturePixelFormat );
     f.WriteUInt32( w );
@@ -2163,7 +2165,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
     f.WriteUInt32( 6 ); // num source files
     for ( int i = 0 ; i < 6 ; i++ ) {
-        f.WriteString( _Settings.ExplicitSkyboxFaces[i] ); // source file
+        f.WriteCString( _Settings.ExplicitSkyboxFaces[i] ); // source file
     }
 #if 0
     //
@@ -2213,13 +2215,13 @@ void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
 
     f.WriteUInt32( FMT_FILE_TYPE_MATERIAL_INSTANCE );
     f.WriteUInt32( FMT_VERSION_MATERIAL_INSTANCE );
-    f.WriteString( GUID.CStr() );
-    f.WriteString( "/Default/Materials/Skybox" ); // material GUID
+    f.WriteCString( GUID.CStr() );
+    f.WriteCString( "/Default/Materials/Skybox" ); // material GUID
 
     f.WriteUInt32( 1 ); // textures count
 
     // texture
-    f.WriteString( SkyboxTextureGUID.CStr() );
+    f.WriteCString( SkyboxTextureGUID.CStr() );
 
     // Uniforms
     for ( int i = 0 ; i < MAX_MATERIAL_UNIFORMS ; i++ ) {
@@ -2271,7 +2273,7 @@ static void lwFree( void * _Allocator, void * _Bytes ) {
 }
 
 static size_t lwRead( void * _Buffer, size_t _ElementSize, size_t _ElementCount, struct st_lwFile * _Stream ) {
-    IStreamBase * stream = (IStreamBase *)_Stream->UserData;
+    IBinaryStream * stream = (IBinaryStream *)_Stream->UserData;
 
     size_t total = _ElementSize * _ElementCount;
 
@@ -2280,7 +2282,7 @@ static size_t lwRead( void * _Buffer, size_t _ElementSize, size_t _ElementCount,
 }
 
 static int lwSeek( struct st_lwFile * _Stream, long _Offset, int _Origin ) {
-    IStreamBase * stream = (IStreamBase *)_Stream->UserData;
+    IBinaryStream * stream = (IBinaryStream *)_Stream->UserData;
 
     switch ( _Origin ) {
     case SEEK_CUR:
@@ -2295,13 +2297,13 @@ static int lwSeek( struct st_lwFile * _Stream, long _Offset, int _Origin ) {
 }
 
 static long lwTell( struct st_lwFile * _Stream ) {
-    IStreamBase * stream = (IStreamBase *)_Stream->UserData;
+    IBinaryStream * stream = (IBinaryStream *)_Stream->UserData;
 
     return stream->Tell();
 }
 
 static int lwGetc( struct st_lwFile * _Stream ) {
-    IStreamBase * stream = (IStreamBase *)_Stream->UserData;
+    IBinaryStream * stream = (IBinaryStream *)_Stream->UserData;
 
     uint8_t c = stream->ReadInt8();
 
@@ -2699,7 +2701,7 @@ static bool CreateLWOMesh( lwObject * lwo, float InScale, AMaterialInstance * (*
     return CreateIndexedMeshFromSurfaces( faces.ToPtr(), faces.Size(), modelVertices.ToPtr(), modelIndices.ToPtr(), IndexedMesh );
 }
 
-bool LoadLWO( IStreamBase & InStream, float InScale, AMaterialInstance * (*GetMaterial)( const char * _Name ), AIndexedMesh ** IndexedMesh ) {
+bool LoadLWO( IBinaryStream & InStream, float InScale, AMaterialInstance * (*GetMaterial)( const char * _Name ), AIndexedMesh ** IndexedMesh ) {
     lwFile file;
     unsigned int failID;
     int failPos;
@@ -2722,7 +2724,7 @@ bool LoadLWO( IStreamBase & InStream, float InScale, AMaterialInstance * (*GetMa
 
     bool ret = CreateLWOMesh( lwo, InScale, GetMaterial, IndexedMesh );
 
-    //lwFreeObject( lwo );
+    // We don't call lwFreeObject becouse our liner allocator frees it automatically.
 
     return ret;
 }

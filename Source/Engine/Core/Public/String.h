@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "Std.h"
 #include "HashFunc.h"
-#include "CString.h"
+#include "BinaryStream.h"
 
 /**
 
@@ -83,15 +83,6 @@ public:
 
     /** Set a new length for the string */
     void Resize( int _Length );
-
-    /** Set a new length for the string and discard previous content */
-    void ResizeInvalidate( int _Length );
-
-    /** Reserve memory for the string */
-    void Reserve( int _Length );
-
-    /** Reserve memory and discard content */
-    void ReserveInvalidate( int _Length );
 
     /** Return is string empty or not */
     bool IsEmpty() const;
@@ -233,6 +224,12 @@ public:
 
     /** Get string hash case insensitive */
     int HashCase() const { return Core::HashCase( Data, Size ); }
+
+    void FromFile( IBinaryStream & _Stream );
+
+    void Write( IBinaryStream & _Stream );
+
+    void Read( IBinaryStream & _Stream );
 
     static const char * NullCString() { return ""; }
 
@@ -441,23 +438,6 @@ AN_FORCEINLINE void AString::Resize( int _Length ) {
     Data[Size] = 0;
 }
 
-AN_FORCEINLINE void AString::ResizeInvalidate( int _Length ) {
-    GrowCapacity( _Length+1, false );
-    Core::Memset( Data, ' ', _Length );
-    Size = _Length;
-    Data[Size] = 0;
-}
-
-AN_FORCEINLINE void AString::Reserve( int _Capacity ) {
-    GrowCapacity( _Capacity, true );
-}
-
-AN_FORCEINLINE void AString::ReserveInvalidate( int _Capacity ) {
-    GrowCapacity( _Capacity, false );
-    Size = 0;
-    Data[0] = 0;
-}
-
 AN_FORCEINLINE void AString::FixSeparator() {
     Core::FixSeparator( Data );
 }
@@ -483,6 +463,29 @@ AN_FORCEINLINE uint32_t AString::HexToUInt32() const {
 
 AN_FORCEINLINE uint64_t AString::HexToUInt64() const {
     return Core::HexToUInt64( Data, StdMin( Size, 16 ) );
+}
+
+AN_FORCEINLINE void AString::FromFile( IBinaryStream & _Stream ) {
+    _Stream.SeekEnd( 0 );
+    long fileSz = _Stream.Tell();
+    _Stream.SeekSet( 0 );
+    GrowCapacity( fileSz + 1, false );
+    _Stream.ReadBuffer( Data, fileSz );
+    Data[fileSz] = 0;
+    Size = fileSz;
+}
+
+AN_FORCEINLINE void AString::Write( IBinaryStream & _Stream ) {
+    _Stream.WriteUInt32( Size );
+    _Stream.WriteBuffer( Data, Size );
+}
+
+AN_FORCEINLINE void AString::Read( IBinaryStream & _Stream ) {
+    int len = _Stream.ReadUInt32();
+    GrowCapacity( len + 1, false );
+    _Stream.ReadBuffer( Data, len );
+    Data[len] = 0;
+    Size = len;
 }
 
 

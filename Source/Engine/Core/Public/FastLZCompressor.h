@@ -49,9 +49,9 @@ public:
 
     The input buffer and the output buffer can not overlap.
     */
-    static size_t CalcAppropriateCompressedDataSize( size_t _SourceSize );
-
     bool CompressData( const byte * _Data, size_t _DataSz, byte * _CompressedData, size_t & _CompressedDataSz );
+
+    static size_t CalcAppropriateCompressedDataSize( size_t _SourceSize );
 
     enum ECompressionLevel {
         /** The fastest compression and generally useful for short data */

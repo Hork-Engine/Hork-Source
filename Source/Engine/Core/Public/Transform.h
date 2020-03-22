@@ -79,8 +79,8 @@ struct STransform {
     void InverseSelf();
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const;
-    void Read( IStreamBase & _Stream );
+    void Write( IBinaryStream & _Stream ) const;
+    void Read( IBinaryStream & _Stream );
 };
 
 //AN_FORCEINLINE STransform::STransform()
@@ -349,13 +349,13 @@ AN_FORCEINLINE void STransform::InverseSelf() {
     Scale = Float3(1.0f) / Scale;
 }
 
-AN_FORCEINLINE void STransform::Write( IStreamBase & _Stream ) const {
+AN_FORCEINLINE void STransform::Write( IBinaryStream & _Stream ) const {
     Position.Write( _Stream );
     Rotation.Write( _Stream );
     Scale.Write( _Stream );
 }
 
-AN_FORCEINLINE void STransform::Read( IStreamBase & _Stream ) {
+AN_FORCEINLINE void STransform::Read( IBinaryStream & _Stream ) {
     Position.Read( _Stream );
     Rotation.Read( _Stream );
     Scale.Read( _Stream );

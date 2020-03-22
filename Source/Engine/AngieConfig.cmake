@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.8)
-#cmake_minimum_required(VERSION 3.7.2)
+#cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.7.2)
 
 # Only generate Debug and Release configuration types.
 set( CMAKE_CONFIGURATION_TYPES Debug Release )
@@ -97,10 +97,10 @@ if(UNIX)
         -Werror                         # Treat warnings as errors
         -Wall                           # Enable all warnings
         -Wno-unused-parameter           # Don't warn about unused parameters
-		-Wunused-function               # Don't warn about unused local function
-        -Wsign-compare                  # Warn about mixed signed/unsigned type comparisons
-		-Wstrict-aliasing               # Strict-aliasing rules
-		-Wmaybe-uninitialized
+        -Wno-unused-function            # Don't warn about unused local function
+        -Wno-sign-compare               # Don't warn about about mixed signed/unsigned type comparisons
+        -Wno-strict-aliasing            # Don't warn about strict-aliasing rules
+        -Wno-maybe-uninitialized
         )
     set( AN_COMPILER_DEFINES "" )
 	

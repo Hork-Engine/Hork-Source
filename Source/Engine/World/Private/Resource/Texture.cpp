@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Runtime/Public/ScopedTimeCheck.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
+#include <Core/Public/Image.h>
 
 static const char * TextureTypeName[] =
 {
@@ -363,7 +364,7 @@ bool ATexture::LoadResource( AString const & _Path ) {
         STexturePixelFormat texturePixelFormat;
         uint32_t w, h, d, numLods;
 
-        f.ReadString( guid );
+        f.ReadObject( guid );
         textureType = f.ReadUInt32();
         f.ReadObject( texturePixelFormat );
         w = f.ReadUInt32();

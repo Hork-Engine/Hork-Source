@@ -30,10 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseTypes.h"
+#include "BinaryStream.h"
 #include "String.h"
-#include "EndianSwap.h"
-#include "PodArray.h"
 
 /**
 
@@ -52,442 +50,34 @@ public:
     /** Open archive */
     bool Open( const char * _ArchiveName );
 
+    /** Close archive */
     void Close();
 
-    bool IsOpened() const;
+    /** Check is archive opened */
+    bool IsOpened() const { return !!Handle; }
 
-    /** Read file to memory */
-    bool ReadFileToZoneMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes );
+    /** Get total files in archive */
+    int GetNumFiles() const;
 
-    /** Read file to memory */
-    bool ReadFileToHeapMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes );
+    /** Get file index. Return -1 if file wasn't found */
+    int LocateFile( const char * _FileName );
 
-    /** Read file to memory */
-    bool ReadFileToHunkMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, int * _HunkMark );
+    /** Get file compressed and uncompressed size */
+    bool GetFileSize( int _FileIndex, size_t * _CompressedSize, size_t * _UncompressedSize );
+
+    /** Decompress file to memory buffer */
+    bool ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t _SizeInBytes );
+
+    /** Decompress file to heap memory */
+    bool ExtractFileToHeapMemory( const char * _FileName, byte ** _HeapMemoryPtr, int * _SizeInBytes );
+
+    /** Decompress file to hunk memory */
+    bool ExtractFileToHunkMemory( const char * _FileName, byte ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark );
 
 private:
-    bool ReadFileToMemory( const char * _FileName, byte ** _MemoryBuffer, int * _SizeInBytes, bool _ZoneMemory );
-
     void * Handle;
-    //int Index;
 };
 
-AN_FORCEINLINE bool AArchive::IsOpened() const {
-    return Handle != nullptr;
-}
-
-/**
-
-IStreamBase
-
-Interface class for AFileStream and AMemoryStream
-
-*/
-class IStreamBase {
-public:
-    const char * GetFileName() const {
-        return Impl_GetFileName();
-    }
-
-    void ReadBuffer( void * _Buffer, int _SizeInBytes ) {
-        ReadBytesCount = Impl_Read( _Buffer, _SizeInBytes );
-    }
-
-    void ReadWholeFileToString( AString & _Str ) {
-        SeekEnd( 0 );
-        long fileSz = Tell();
-        SeekSet( 0 );
-        _Str.ResizeInvalidate( fileSz );
-        ReadBuffer( _Str.ToPtr(), fileSz );
-    }
-
-    void ReadString( AString & _Str ) {
-        int len = ReadUInt32();
-        _Str.ResizeInvalidate( len );
-        ReadBuffer( _Str.ToPtr(), len );
-    }
-
-    int8_t ReadInt8() {
-        int8_t i;
-        ReadBuffer( &i, sizeof( i ) );
-        return i;
-    }
-
-    template< typename T >
-    void ReadArrayInt8( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        ReadBuffer( _Array.ToPtr(), _Array.Size() );
-    }
-
-    uint8_t ReadUInt8() {
-        uint8_t i;
-        ReadBuffer( &i, sizeof( i ) );
-        return i;
-    }
-
-    template< typename T >
-    void ReadArrayUInt8( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        ReadBuffer( _Array.ToPtr(), _Array.Size() );
-    }
-
-    int16_t ReadInt16() {
-        int16_t i;
-        ReadBuffer( &i, sizeof( i ) );
-        return Core::LittleWord( i );
-    }
-
-    template< typename T >
-    void ReadArrayInt16( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadInt16();
-        }
-    }
-
-    uint16_t ReadUInt16() {
-        uint16_t i;
-        ReadBuffer( &i, sizeof( i ) );
-        return Core::LittleWord( i );
-    }
-
-    template< typename T >
-    void ReadArrayUInt16( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadUInt16();
-        }
-    }
-
-    int32_t ReadInt32() {
-        int32_t i;
-        ReadBuffer( &i, sizeof( i ) );
-        return Core::LittleDWord( i );
-    }
-
-    template< typename T >
-    void ReadArrayInt32( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadInt32();
-        }
-    }
-
-    uint32_t ReadUInt32() {
-        uint32_t i;
-        ReadBuffer( &i, sizeof( i ) );
-        return Core::LittleDWord( i );
-    }
-
-    template< typename T >
-    void ReadArrayUInt32( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadUInt32();
-        }
-    }
-
-    int64_t ReadInt64() {
-        int64_t i;
-        ReadBuffer( &i, sizeof( i ) );
-        return Core::LittleDDWord( i );
-    }
-
-    template< typename T >
-    void ReadArrayInt64( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadInt64();
-        }
-    }
-
-    uint64_t ReadUInt64() {
-        uint64_t i;
-        ReadBuffer( &i, sizeof( i ) );
-        return Core::LittleDDWord( i );
-    }
-
-    template< typename T >
-    void ReadArrayUInt64( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadUInt64();
-        }
-    }
-
-    float ReadFloat() {
-        uint32_t i = ReadUInt32();
-        return *(float *)&i;
-    }
-
-    template< typename T >
-    void ReadArrayFloat( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadFloat();
-        }
-    }
-
-    double ReadDouble() {
-        uint64_t i = ReadUInt64();
-        return *(double *)&i;
-    }
-
-    template< typename T >
-    void ReadArrayDouble( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadDouble();
-        }
-    }
-
-    bool ReadBool() {
-        return !!ReadUInt8();
-    }
-
-    template< typename T >
-    void ReadObject( T & _Object ) {
-        _Object.Read( *this );
-    }
-
-    template< typename T >
-    void ReadArrayOfStructs( T & _Array ) {
-        uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            ReadObject( _Array[i] );
-        }
-    }
-
-    void WriteBuffer( const void *_Buffer, int _SizeInBytes ) {
-        WriteBytesCount = Impl_Write( _Buffer, _SizeInBytes );
-    }
-
-    void WriteString( AString const & _Str ) {
-        WriteUInt32( _Str.Length() );
-        WriteBuffer( _Str.CStr(), _Str.Length() );
-    }
-
-    void WriteString( const char * _Str ) {
-        int len = Core::Strlen( _Str );
-        WriteUInt32( len );
-        WriteBuffer( _Str, len );
-    }
-
-    void WriteInt8( int8_t i ) {
-        WriteBuffer( &i, sizeof( i ) );
-    }
-
-    template< typename T >
-    void WriteArrayInt8( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        WriteBuffer( _Array.ToPtr(), _Array.Size() );
-    }
-
-    void WriteUInt8( uint8_t i ) {
-        WriteBuffer( &i, sizeof( i ) );
-    }
-
-    template< typename T >
-    void WriteArrayUInt8( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        WriteBuffer( _Array.ToPtr(), _Array.Size() );
-    }
-
-    void WriteInt16( int16_t i ) {
-        i = Core::LittleWord( i );
-        WriteBuffer( &i, sizeof( i ) );
-    }
-
-    template< typename T >
-    void WriteArrayInt16( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteInt16( _Array[i] );
-        }
-    }
-
-    void WriteUInt16( uint16_t i ) {
-        i = Core::LittleWord( i );
-        WriteBuffer( &i, sizeof( i ) );
-    }
-
-    template< typename T >
-    void WriteArrayUInt16( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteUInt16( _Array[i] );
-        }
-    }
-
-    void WriteInt32( int32_t i ) {
-        i = Core::LittleDWord( i );
-        WriteBuffer( &i, sizeof( i ) );
-    }
-
-    template< typename T >
-    void WriteArrayInt32( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteInt32( _Array[i] );
-        }
-    }
-
-    void WriteUInt32( uint32_t i ) {
-        i = Core::LittleDWord( i );
-        WriteBuffer( &i, sizeof( i ) );
-    }
-
-    template< typename T >
-    void WriteArrayUInt32( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteUInt32( _Array[i] );
-        }
-    }
-
-    void WriteInt64( int64_t i ) {
-        i = Core::LittleDDWord( i );
-        WriteBuffer( &i, sizeof( i ) );
-    }
-
-    template< typename T >
-    void WriteArrayInt64( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteInt64( _Array[i] );
-        }
-    }
-
-    void WriteUInt64( uint64_t i ) {
-        i = Core::LittleDDWord( i );
-        WriteBuffer( &i, sizeof( i ) );
-    }
-
-    template< typename T >
-    void WriteArrayUInt64( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteUInt64( _Array[i] );
-        }
-    }
-
-    void WriteFloat( float f ) {
-        WriteUInt32( *(uint32_t *)&f );
-    }
-
-    template< typename T >
-    void WriteArrayFloat( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteFloat( _Array[i] );
-        }
-    }
-
-    void WriteDouble( double f ) {
-        WriteUInt64( *(uint64_t *)&f );
-    }
-
-    template< typename T >
-    void WriteArrayDouble( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteDouble( _Array[i] );
-        }
-    }
-
-    void WriteBool( bool b ) {
-        WriteUInt8( uint8_t(b) );
-    }
-
-    template< typename T >
-    void WriteObject( T & _Object ) {
-        _Object.Write( *this );
-    }
-
-    template< typename T >
-    void WriteArrayOfStructs( T const & _Array ) {
-        WriteUInt32( _Array.Size() );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            WriteObject( _Array[i] );
-        }
-    }
-
-    char * Gets( char * _StrBuf, int _StrSz ) {
-        return Impl_Gets( _StrBuf, _StrSz );
-    }
-
-    void Flush() {
-        Impl_Flush();
-    }
-
-    long Tell() {
-        return Impl_Tell();
-    }
-
-    void Rewind() {
-        SeekSet( 0 );
-    }
-
-    int SeekSet( long _Offset ) {
-        return Impl_SeekSet( _Offset );
-    }
-
-    int SeekCur( long _Offset ) {
-        return Impl_SeekCur( _Offset );
-    }
-
-    int SeekEnd( long _Offset ) {
-        return Impl_SeekEnd( _Offset );
-    }
-
-    long SizeInBytes() {
-        return Impl_SizeInBytes();
-    }
-
-    bool Eof() {
-        return Impl_Eof();
-    }
-
-    void Printf( const char * _Format, ... ) {
-        extern  thread_local char LogBuffer[16384]; // Use existing log buffer
-        va_list VaList;
-        va_start( VaList, _Format );
-        int len = Core::VSprintf( LogBuffer, sizeof( LogBuffer ), _Format, VaList );
-        va_end( VaList );
-        WriteBuffer( LogBuffer, len );
-    }
-
-    int GetReadBytesCount() const { return ReadBytesCount; }
-    int GetWriteBytesCount() const { return WriteBytesCount; }
-
-protected:
-    virtual const char * Impl_GetFileName() const = 0;
-    virtual int Impl_Read( void * _Buffer, int _SizeInBytes ) = 0;
-    virtual int	Impl_Write( const void *_Buffer, int _SizeInBytes ) = 0;
-    virtual char * Impl_Gets( char * _StrBuf, int _StrSz ) = 0;
-    virtual void Impl_Flush() = 0;
-    virtual long Impl_Tell() = 0;
-    virtual int Impl_SeekSet( long _Offset ) = 0;
-    virtual int Impl_SeekCur( long _Offset ) = 0;
-    virtual int Impl_SeekEnd( long _Offset ) = 0;
-    virtual long Impl_SizeInBytes() = 0;
-    virtual bool Impl_Eof() = 0;
-
-private:
-    int ReadBytesCount = 0;
-    int WriteBytesCount = 0;
-};
 
 /*
 
@@ -496,33 +86,33 @@ AFileStream
 Read/Write to file
 
 */
-class ANGIE_API AFileStream final : public IStreamBase {
+class ANGIE_API AFileStream final : public IBinaryStream {
     AN_FORBID_COPY( AFileStream )
 
 public:
-    /** File access mode (for Android platforms)  */
-    enum EAccess {
-        A_Random	= 1,    // Чтение кусками из файла, перемещение по файлу вперед/назад
-        A_Streaming	= 2,    // Последовательное чтение из файла, редкий Seek()
-        A_Buffer	= 3     // Пытается загрузить содержимое в память, для быстрых небольших считываний
-    };
-
-    EAccess Access = A_Random;     // set this before open
-    bool    bVerbose = true;
-
     AFileStream();
     ~AFileStream();
 
+    /** Open file for read form specified path */
     bool OpenRead( const char * _FileName );
+    /** Open file for read form specified path */
     bool OpenRead( AString const & _FileName ) { return OpenRead( _FileName.CStr() ); }
+
+    /** Open file for write */
     bool OpenWrite( const char * _FileName );
+    /** Open file for write */
     bool OpenWrite( AString const & _FileName ) { return OpenWrite( _FileName.CStr() ); }
+
+    /** Open file for append */
     bool OpenAppend( const char * _FileName );
+    /** Open file for append */
     bool OpenAppend( AString const & _FileName ) { return OpenAppend( _FileName.CStr() ); }
 
+    /** Close file */
     void Close();
 
-    bool IsOpened() const;
+    /** Check is file opened */
+    bool IsOpened() const { return Mode != M_Closed; }
 
 protected:
     const char * Impl_GetFileName() const override;
@@ -547,14 +137,11 @@ private:
         M_Closed
     };
 
-    AString FileName;
-    void *  FileHandle = nullptr;
+    AString Name;
+    void *  Handle;
     int     Mode;
 };
 
-AN_FORCEINLINE bool AFileStream::IsOpened() const {
-    return Mode != M_Closed;
-}
 
 /**
 
@@ -563,30 +150,43 @@ AMemoryStream
 Read/Write to memory
 
 */
-class ANGIE_API AMemoryStream final : public IStreamBase {
+class ANGIE_API AMemoryStream final : public IBinaryStream {
     AN_FORBID_COPY( AMemoryStream )
 
 public:
     AMemoryStream();
     ~AMemoryStream();
 
+    /** Read from specified memory buffer */
     bool OpenRead( const char * _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes );
+    /** Read from specified memory buffer */
     bool OpenRead( AString const & _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes );
 
+    /** Read file from archive */
     bool OpenRead( const char * _FileName, AArchive & _Archive );
+    /** Read file from archive */
     bool OpenRead( AString const & _FileName, AArchive & _Archive );
 
+    /** Write to specified memory buffer */
     bool OpenWrite( const char * _FileName, byte * _MemoryBuffer, size_t _SizeInBytes );
+    /** Write to specified memory buffer */
     bool OpenWrite( AString const & _FileName, byte * _MemoryBuffer, size_t _SizeInBytes );
 
+    /** Write to inner memory buffer */
     bool OpenWrite( const char * _FileName, size_t _ReservedSize = 32 );
+    /** Write to inner memory buffer */
     bool OpenWrite( AString const & _FileName, size_t _ReservedSize = 32 );
 
+    /** Close file */
     void Close();
 
-    bool IsOpened() const;
+    /** Check is file opened */
+    bool IsOpened() const { return Mode != M_Closed; }
 
+    /** Grab memory buffer */
     byte * GrabMemory();
+
+    void SetGrowGranularity( int _Granularity ) { Granularity = _Granularity; }
 
 protected:
     const char * Impl_GetFileName() const override;
@@ -605,26 +205,32 @@ private:
     enum EMode {
         M_Read,
         M_Write,
-        //M_Append,
         M_Closed
     };
 
-    AString FileName;
+    void * Alloc( size_t _SizeInBytes );
+    void * Realloc( void * _Data, size_t _SizeInBytes );
+    void Free( void * _Data );
+
+    AString Name;
     int     Mode;
     byte *  MemoryBuffer;
     int     MemoryBufferSize;
     bool    bMemoryBufferOwner;
     int     MemoryBufferOffset;
+    int     Granularity;
 };
 
-AN_FORCEINLINE bool AMemoryStream::IsOpened() const {
-    return Mode != M_Closed;
-}
 
 namespace Core {
 
+/** Make file system directory */
 void MakeDir( const char * _Directory, bool _FileName );
+
+/** Check is file exists */
 bool IsFileExists( const char * _FileName );
+
+/** Remove file from disk */
 void RemoveFile( const char * _FileName );
 
 }

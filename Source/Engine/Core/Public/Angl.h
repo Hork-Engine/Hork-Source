@@ -277,13 +277,13 @@ struct Angl {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteFloat( Pitch );
         _Stream.WriteFloat( Yaw );
         _Stream.WriteFloat( Roll );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Pitch = _Stream.ReadFloat();
         Yaw   = _Stream.ReadFloat();
         Roll  = _Stream.ReadFloat();

@@ -230,12 +230,12 @@ struct Float2x2 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         Col0.Write( _Stream );
         Col1.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Col0.Read( _Stream );
         Col1.Read( _Stream );
     }
@@ -557,13 +557,13 @@ struct Float3x3 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         Col0.Write( _Stream );
         Col1.Write( _Stream );
         Col2.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Col0.Read( _Stream );
         Col1.Read( _Stream );
         Col2.Read( _Stream );
@@ -1143,14 +1143,14 @@ struct Float4x4 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         Col0.Write( _Stream );
         Col1.Write( _Stream );
         Col2.Write( _Stream );
         Col3.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Col0.Read( _Stream );
         Col1.Read( _Stream );
         Col2.Read( _Stream );
@@ -1761,13 +1761,13 @@ struct Float3x4 {
     }
 
     // Byte serialization
-    void Write( IStreamBase & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const {
         Col0.Write( _Stream );
         Col1.Write( _Stream );
         Col2.Write( _Stream );
     }
 
-    void Read( IStreamBase & _Stream ) {
+    void Read( IBinaryStream & _Stream ) {
         Col0.Read( _Stream );
         Col1.Read( _Stream );
         Col2.Read( _Stream );

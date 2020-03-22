@@ -202,4 +202,4 @@ private:
 };
 
 
-bool LoadLWO( IStreamBase & InStream, float InScale, AMaterialInstance * (*GetMaterial)( const char * _Name ), AIndexedMesh ** IndexedMesh );
+bool LoadLWO( IBinaryStream & InStream, float InScale, AMaterialInstance * (*GetMaterial)( const char * _Name ), AIndexedMesh ** IndexedMesh );

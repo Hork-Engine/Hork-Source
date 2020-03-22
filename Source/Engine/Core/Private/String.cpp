@@ -33,7 +33,7 @@ SOFTWARE.
 const AString AString::NullStr;
 
 void AString::GrowCapacity( int _Capacity, bool _CopyOld ) {
-    AN_ASSERT_( _Capacity > 0, "Invalid capacity" );
+    AN_ASSERT( _Capacity > 0 );
 
     if ( _Capacity <= Capacity ) {
         return;
@@ -69,7 +69,7 @@ void AString::operator=( const char * _Str ) {
     // check if we're aliasing
     if ( _Str >= Data && _Str <= Data + Size ) {
         diff = _Str - Data;
-        AN_ASSERT_( Core::Strlen( _Str ) < Size, "AString=" );
+        AN_ASSERT( Core::Strlen( _Str ) < Size );
         for ( i = 0; _Str[ i ]; i++ ) {
             Data[ i ] = _Str[ i ];
         }
@@ -98,14 +98,12 @@ void AString::FromCStr( const char * _Str, int _Num ) {
 
     // check if we're aliasing
     if ( _Str >= Data && _Str <= Data + Size ) {
-        //int diff = _Str - StringData;
-        AN_ASSERT_( Core::Strlen(_Str ) < Size, "AString::CopyN" );
+        AN_ASSERT( Core::Strlen(_Str ) );
         for ( i = 0 ; _Str[ i ] && i < _Num ; i++ ) {
             Data[ i ] = _Str[ i ];
         }
         Data[ i ] = '\0';
         Size = i;
-        //StringLength -= diff;
         return;
     }
 
@@ -171,6 +169,7 @@ void AString::Insert( AString const & _Str, int _Index ) {
 }
 
 void AString::Insert( const char * _Str, int _Index ) {
+    AN_ASSERT( _Str < Data || _Str > Data + Size + 1 );
     int i;
     if ( !_Str ) {
         return;
@@ -386,6 +385,8 @@ void AString::FixPath() {
 }
 
 int AString::Substring( const char * _Substring ) const {
+    AN_ASSERT( _Substring < Data || _Substring > Data + Size + 1 );
+
     return Core::Substring( Data, _Substring );
 }
 

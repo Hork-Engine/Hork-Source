@@ -30,9 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Image.h>
 #include <World/Public/Base/Resource.h>
 #include <Runtime/Public/RenderCore.h>
+
+class AImage;
 
 struct SColorGradingPreset {
     Float3 Gain;

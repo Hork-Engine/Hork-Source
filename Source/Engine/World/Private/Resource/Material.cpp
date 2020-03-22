@@ -605,12 +605,12 @@ bool AMaterialInstance::LoadResource( AString const & _Path ) {
     AString materialGUID;
     AString textureGUID;
 
-    f.ReadString( guidStr );
-    f.ReadString( materialGUID );
+    f.ReadObject( guidStr );
+    f.ReadObject( materialGUID );
 
     int texCount = f.ReadUInt32();
     for ( int i = 0 ; i < texCount ; i++ ) {
-        f.ReadString( textureGUID );
+        f.ReadObject( textureGUID );
 
         SetTexture( i, GetOrCreateResource< ATexture >( textureGUID.CStr() ) );
     }
