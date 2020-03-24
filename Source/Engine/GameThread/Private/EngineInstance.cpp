@@ -991,7 +991,7 @@ AWorld * AEngineInstance::SpawnWorld( FWorldSpawnParameters const & _SpawnParame
                 continue;
             }
 
-            FActorSpawnParameters spawnParameters( &templateActor->FinalClassMeta() );
+            SActorSpawnInfo spawnParameters( &templateActor->FinalClassMeta() );
             spawnParameters.SetTemplate( templateActor );
             //spawnParameters->SpawnTransform = templateActor->GetTransform();
             world->SpawnActor( spawnParameters );

@@ -232,15 +232,15 @@ Misc
 
 */
 
-//#ifdef AN_DEBUG
+#ifdef AN_DEBUG
 #define AN_ALLOW_ASSERTS
-//#endif
+#endif
 
 #ifdef AN_ALLOW_ASSERTS
 #define AN_ASSERT_(assertion,comment)  ((assertion) ? static_cast<void>(0) : AssertFunction(__FILE__,__LINE__,AN_FUNCSIG,AN_STRINGIFY(assertion),comment))
 extern void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment );
 #else
-#define AN_ASSERT_(assertion,comment)
+#define AN_ASSERT_(assertion,comment)   ((void)(assertion))
 #endif
 #define AN_ASSERT(assertion)            AN_ASSERT_(assertion,nullptr)
 #define AN_STRINGIFY(text)              #text

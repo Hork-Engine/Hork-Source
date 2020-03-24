@@ -171,7 +171,7 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
     AActor const * templateActor = _SpawnParameters.GetTemplate();
 
     if ( templateActor && classMeta != &templateActor->FinalClassMeta() ) {
-        GLogger.Printf( "AWorld::SpawnActor: FActorSpawnParameters::Template class doesn't match meta data\n" );
+        GLogger.Printf( "AWorld::SpawnActor: SActorSpawnInfo::Template class doesn't match meta data\n" );
         return nullptr;
     }
 

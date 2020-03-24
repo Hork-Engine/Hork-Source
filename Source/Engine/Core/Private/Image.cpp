@@ -110,13 +110,13 @@ static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_cal
 
     _Image.Free();
 
-    if ( _SRGB ) {
-        if ( _NumDesiredChannels == 1 ) {
-            _NumDesiredChannels = 3;
-        } else if ( _NumDesiredChannels == 2 || _NumDesiredChannels == 0 ) {
-            _NumDesiredChannels = 4;
-        }
-    }
+    //if ( _SRGB ) {
+    //    if ( _NumDesiredChannels == 1 ) {
+    //        _NumDesiredChannels = 3;
+    //    } else if ( _NumDesiredChannels == 2 || _NumDesiredChannels == 0 ) {
+    //        _NumDesiredChannels = 4;
+    //    }
+    //}
 
     stbi_uc * data = stbi_load_from_callbacks( _Callbacks, _User, &_Image.Width, &_Image.Height, &_Image.NumChannels, _NumDesiredChannels );
     if ( !data ) {
