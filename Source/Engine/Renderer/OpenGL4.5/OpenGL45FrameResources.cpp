@@ -174,12 +174,12 @@ void AFrameResources::Initialize() {
     };
     AImage rt, lt, up, dn, bk, ft;
     AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
-    rt.LoadHDRI( Cubemap[0], false, false, 3 );
-    lt.LoadHDRI( Cubemap[1], false, false, 3 );
-    up.LoadHDRI( Cubemap[2], false, false, 3 );
-    dn.LoadHDRI( Cubemap[3], false, false, 3 );
-    bk.LoadHDRI( Cubemap[4], false, false, 3 );
-    ft.LoadHDRI( Cubemap[5], false, false, 3 );
+    rt.LoadHDRI( Cubemap[0], false, nullptr, 3 );
+    lt.LoadHDRI( Cubemap[1], false, nullptr, 3 );
+    up.LoadHDRI( Cubemap[2], false, nullptr, 3 );
+    dn.LoadHDRI( Cubemap[3], false, nullptr, 3 );
+    bk.LoadHDRI( Cubemap[4], false, nullptr, 3 );
+    ft.LoadHDRI( Cubemap[5], false, nullptr, 3 );
     const float HDRI_Scale = 4.0f;
     const float HDRI_Pow = 1.1f;
     for ( int i = 0 ; i < 6 ; i++ ) {
@@ -210,12 +210,12 @@ void AFrameResources::Initialize() {
 
         cubemap.WriteRect( rect, PIXEL_FORMAT_FLOAT_BGR, w*w*3*sizeof( float ), 1, pSrc );
     }
-    rt.LoadHDRI( Cubemap2[0], false, false, 3 );
-    lt.LoadHDRI( Cubemap2[1], false, false, 3 );
-    up.LoadHDRI( Cubemap2[2], false, false, 3 );
-    dn.LoadHDRI( Cubemap2[3], false, false, 3 );
-    bk.LoadHDRI( Cubemap2[4], false, false, 3 );
-    ft.LoadHDRI( Cubemap2[5], false, false, 3 );
+    rt.LoadHDRI( Cubemap2[0], false, nullptr, 3 );
+    lt.LoadHDRI( Cubemap2[1], false, nullptr, 3 );
+    up.LoadHDRI( Cubemap2[2], false, nullptr, 3 );
+    dn.LoadHDRI( Cubemap2[3], false, nullptr, 3 );
+    bk.LoadHDRI( Cubemap2[4], false, nullptr, 3 );
+    ft.LoadHDRI( Cubemap2[5], false, nullptr, 3 );
     w = cubeFaces[0]->Width;
     cubemapCI.Resolution.TexCubemap.Width = w;
     cubemapCI.NumLods = 1;
