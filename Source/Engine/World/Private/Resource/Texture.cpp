@@ -622,7 +622,7 @@ void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int
 void ATexture::InitializeColorGradingLUT( const char * _Path ) {
     AImage image;
 
-    if ( image.LoadLDRI( _Path, true, false, 3 ) ) {
+    if ( image.LoadLDRI( _Path, true, nullptr, 3 ) ) {
         byte data[ 16 ][ 16 ][ 16 ][ 3 ];
 
         for ( int z = 0 ; z < 16 ; z++ ) {

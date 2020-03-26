@@ -2074,7 +2074,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
     if ( _Settings.bSkyboxHDRI ) {
         for ( int i = 0 ; i < 6 ; i++ ) {
-            if ( !cubeFaces[i].LoadHDRI( _Settings.ExplicitSkyboxFaces[i], false, false, 3 ) ) {
+            if ( !cubeFaces[i].LoadHDRI( _Settings.ExplicitSkyboxFaces[i], false, nullptr, 3 ) ) {
                 return false;
             }
         }
@@ -2091,7 +2091,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
         }
     } else {
         for ( int i = 0 ; i < 6 ; i++ ) {
-            if ( !cubeFaces[i].LoadLDRI( _Settings.ExplicitSkyboxFaces[i], true, false, 3 ) ) {
+            if ( !cubeFaces[i].LoadLDRI( _Settings.ExplicitSkyboxFaces[i], true, nullptr, 3 ) ) {
                 return false;
             }
         }

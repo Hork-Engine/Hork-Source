@@ -40,6 +40,9 @@ constexpr Float3 DEFAULT_COLOR(1.0f);
 
 AN_CLASS_META( ABaseLightComponent )
 
+constexpr float STemperatureToColor::MIN_TEMPERATURE;
+constexpr float STemperatureToColor::MAX_TEMPERATURE;
+
 ABaseLightComponent::ABaseLightComponent() {
     Color = DEFAULT_COLOR;
     Temperature = DEFAULT_TEMPERATURE;

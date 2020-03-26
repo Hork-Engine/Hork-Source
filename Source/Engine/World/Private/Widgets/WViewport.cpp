@@ -93,26 +93,6 @@ void WViewport::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
 }
 
 void WViewport::OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) {
-    if ( !PlayerController ) {
-        return;
-    }
-
-    AInputComponent * inputComponent = PlayerController->GetInputComponent();
-
-    if ( _Event.WheelX < 0.0 ) {
-        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Press, 0, _TimeStamp );
-        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_LEFT, IE_Release, 0, _TimeStamp );
-    } else if ( _Event.WheelX > 0.0 ) {
-        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Press, 0, _TimeStamp );
-        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_RIGHT, IE_Release, 0, _TimeStamp );
-    }
-    if ( _Event.WheelY < 0.0 ) {
-        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Press, 0, _TimeStamp );
-        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_DOWN, IE_Release, 0, _TimeStamp );
-    } else if ( _Event.WheelY > 0.0 ) {
-        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Press, 0, _TimeStamp );
-        inputComponent->SetButtonState( ID_MOUSE, MOUSE_WHEEL_UP, IE_Release, 0, _TimeStamp );
-    }
 }
 
 void WViewport::OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) {

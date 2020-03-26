@@ -35,6 +35,9 @@ SOFTWARE.
 
 AN_CLASS_META( WWidget )
 
+constexpr int WWidget::MAX_COLUMNS;
+constexpr int WWidget::MAX_ROWS;
+
 WWidget::WWidget() {
     Size = Float2( 32, 32 );
     Visibility = WIDGET_VISIBILITY_VISIBLE;
