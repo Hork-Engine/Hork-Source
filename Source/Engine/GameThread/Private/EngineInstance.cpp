@@ -530,23 +530,6 @@ void AEngineInstance::OnResize() {
     }
 }
 
-//void AEngineInstance::ProcessEvent( SEvent const & _Event ) {
-//    switch ( _Event.Type ) {
-//    case ET_JoystickStateEvent:
-//        AInputComponent::SetJoystickState( _Event.Data.JoystickStateEvent.Joystick, _Event.Data.JoystickStateEvent.NumAxes, _Event.Data.JoystickStateEvent.NumButtons, _Event.Data.JoystickStateEvent.bGamePad, _Event.Data.JoystickStateEvent.bConnected );
-//        break;
-//    case ET_JoystickButtonEvent:
-//        OnJoystickButtonEvent( _Event.Data.JoystickButtonEvent, _Event.TimeStamp );
-//        break;
-//    case ET_JoystickAxisEvent:
-//        OnJoystickAxisEvent( _Event.Data.JoystickAxisEvent, _Event.TimeStamp );
-//        break;
-//    default:
-//        GLogger.Printf( "Warning: unhandled runtime event %d\n", _Event.Type );
-//        break;
-//    }
-//}
-
 void AEngineInstance::UpdateInput() {
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
 

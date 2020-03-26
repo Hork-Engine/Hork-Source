@@ -58,7 +58,7 @@ struct AInputComponentStatic {
     const char * ControllerNames[ MAX_INPUT_CONTROLLERS ];
 
     int DeviceButtonLimits[ MAX_INPUT_DEVICES ];
-    SJoystick Joysticks[ MAX_JOYSTICKS_COUNT ];
+    //SJoystick Joysticks[ MAX_JOYSTICKS_COUNT ];
     float JoystickAxisState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 
     AInputComponentStatic() {
@@ -345,12 +345,12 @@ struct AInputComponentStatic {
         InitController( CONTROLLER_PLAYER_15 );
         InitController( CONTROLLER_PLAYER_16 );
 
-        Core::ZeroMem( Joysticks, sizeof( Joysticks ) );
+        //Core::ZeroMem( Joysticks, sizeof( Joysticks ) );
         Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
 
-        for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
-            Joysticks[i].Id = i;
-        }
+        //for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
+        //    Joysticks[i].Id = i;
+        //}
     }
 };
 
@@ -544,9 +544,9 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
 
         if ( !bIgnoreJoystickEvents ) {
             for ( int joyNum = 0 ; joyNum < MAX_JOYSTICKS_COUNT ; joyNum++ ) {
-                if ( !Static.Joysticks[joyNum].bConnected ) {
-                    continue;
-                }
+                //if ( !Static.Joysticks[joyNum].bConnected ) {
+                //    continue;
+                //}
 
                 const uint32_t joystickAxes = inputAxis->GetJoystickAxes( joyNum );
                 for ( int joystickAxis = 0 ; joystickAxis < MAX_JOYSTICK_AXES ; joystickAxis++ ) {
@@ -760,12 +760,12 @@ float AInputComponent::GetMouseAxisState( int _Axis ) {
     return (&MouseAxisStateX)[_Axis];
 }
 
-void AInputComponent::SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected ) {
-    Static.Joysticks[_Joystick].NumAxes = _NumAxes;
-    Static.Joysticks[_Joystick].NumButtons = _NumButtons;
-    Static.Joysticks[_Joystick].bGamePad = _bGamePad;
-    Static.Joysticks[_Joystick].bConnected = _bConnected;
-}
+//void AInputComponent::SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected ) {
+//    Static.Joysticks[_Joystick].NumAxes = _NumAxes;
+//    Static.Joysticks[_Joystick].NumButtons = _NumButtons;
+//    Static.Joysticks[_Joystick].bGamePad = _bGamePad;
+//    Static.Joysticks[_Joystick].bConnected = _bConnected;
+//}
 
 void AInputComponent::SetJoystickAxisState( int _Joystick, int _Axis, float _Value ) {
     Static.JoystickAxisState[_Joystick][_Axis] = _Value;
@@ -775,9 +775,9 @@ float AInputComponent::GetJoystickAxisState( int _Joystick, int _Axis ) {
     return Static.JoystickAxisState[_Joystick][_Axis];
 }
 
-const SJoystick * AInputComponent::GetJoysticks() {
-    return Static.Joysticks;
-}
+//const SJoystick * AInputComponent::GetJoysticks() {
+//    return Static.Joysticks;
+//}
 
 void AInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
     int hash = Core::HashCase( _Axis, Core::Strlen( _Axis ) );

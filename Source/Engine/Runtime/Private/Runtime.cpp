@@ -189,8 +189,6 @@ void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
     GLogger.Printf( "Working directory: %s\n", WorkingDir.CStr() );
     GLogger.Printf( "Executable: %s\n", Executable );
 
-    GLogger.Printf( "Привет, Вася\n" );
-
     SDL_LogSetOutputFunction(
                 [](void *userdata, int category, SDL_LogPriority priority, const char *message) {
                     GLogger.Printf( "SDL: %d : %s\n", category, message );
@@ -215,10 +213,6 @@ void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
     Core::ZeroMem( JoystickButtonState, sizeof( JoystickButtonState ) );
     Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
     Core::ZeroMem( JoystickAdded, sizeof( JoystickAdded ) );
-
-#if 0
-    GMonitorManager.Initialize();
-#endif
 
     // TODO: load this from config:
     SVideoMode desiredMode = {};
@@ -245,10 +239,6 @@ void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
 
     DeinitializeRenderer();
 
-#if 0
-    GMonitorManager.Deinitialize();
-#endif
-
     WorkingDir.Free();
 
     if ( Clipboard ) {
@@ -263,10 +253,10 @@ void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
 }
 
 struct SProcessLog {
-    FILE * File = nullptr;
+    FILE * File;
 };
 
-static SProcessLog ProcessLog;
+static SProcessLog ProcessLog = {};
 static AThreadSync LoggerSync;
 
 static void LoggerMessageCallback( int _Level, const char * _Message ) {
@@ -412,7 +402,7 @@ void ARuntime::InitializeProcess() {
         ProcessAttribute = PROCESS_UNIQUE;
     }
 #else
-#error "Not implemented under current platform"
+#   error "Not implemented under current platform"
 #endif
 
     ProcessLog.File = nullptr;
@@ -464,7 +454,7 @@ static SMemoryInfo GetPhysMemoryInfo() {
     info.TotalAvailableMegabytes = ( TotalPages * PageSize ) >> 20;
     info.CurrentAvailableMegabytes = ( AvailPages * PageSize ) >> 20;
 #else
-    #warning "GetPhysMemoryInfo not implemented under current platform"
+#   error "GetPhysMemoryInfo not implemented under current platform"
 #endif
     return info;
 }
@@ -510,7 +500,7 @@ void ARuntime::InitializeMemory() {
 #elif defined AN_OS_LINUX
     pageSize = sysconf( _SC_PAGE_SIZE );
 #else
-    #warning "GetPageSize not implemented under current platform"
+#   error "GetPageSize not implemented under current platform"
 #endif
 
     GLogger.Printf( "Memory page size: %d bytes\n", pageSize );
@@ -559,7 +549,7 @@ void ARuntime::InitializeWorkingDirectory() {
 #elif defined AN_OS_LINUX
     chdir( WorkingDir.CStr() );
 #else
-    #warning "InitializeWorkingDirectory not implemented under current platform"
+#   error "InitializeWorkingDirectory not implemented under current platform"
 #endif
 }
 
@@ -1947,15 +1937,9 @@ void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
     {
         // Backend does not changed, so we just change video mode
 
-//        SDL_DisplayMode mode = {};
-//        mode.w = VidWidth;
-//        mode.h = VidHeight;
-//        mode.refresh_rate = VidRefreshRate;
-
         Core::Memcpy( &VideoMode, &_DesiredMode, sizeof( VideoMode ) );
 
         SDL_Window * wnd = (SDL_Window *)GRenderBackend->GetMainWindow();
-
 
         // Set refresh rate
         SDL_DisplayMode mode = {};

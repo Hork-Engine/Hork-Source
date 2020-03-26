@@ -288,13 +288,13 @@ public:
     AInputComponent * GetNext() { return Next; }
     AInputComponent * GetPrev() { return Prev; }
 
-    static void SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected );
+    //static void SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected );
 
     static void SetJoystickAxisState( int _Joystick, int _Axis, float _Value );
 
     static float GetJoystickAxisState( int _Joystick, int _Axis );
 
-    static struct SJoystick const * GetJoysticks();
+    //static struct SJoystick const * GetJoysticks();
 
     static AInputComponent * GetInputComponents() { return InputComponents; }
 
