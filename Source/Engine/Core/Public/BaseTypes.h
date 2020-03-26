@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #if defined( DEBUG ) || defined( _DEBUG )
-#define _CRTDBG_MAP_ALLOC
+#   define _CRTDBG_MAP_ALLOC
 #endif
 
 #include <cmath>
@@ -68,69 +68,75 @@ AN_OS_STRING       - Operating system name (string)
 
 */
 
-#if defined( DEBUG ) || defined( _DEBUG )
-#ifndef AN_DEBUG
-#define AN_DEBUG
-#endif
-#endif
-
-#if !defined( AN_DEBUG )
-#define AN_RELEASE
-#endif
-
 #if defined( AN_BIG_ENDIAN )
-#define AN_ENDIAN_STRING "Big"
+#   define AN_ENDIAN_STRING "Big"
 #endif
 
 #if defined( AN_LITTLE_ENDIAN )
-#define AN_ENDIAN_STRING "Little"
+#   define AN_ENDIAN_STRING "Little"
 #endif
 
 #if !defined( AN_ENDIAN_STRING )
-#error "Unknown endianness"
+#   error "Unknown endianness"
 #endif
 
 #if defined _MSC_VER
-#  define AN_COMPILER_STRING "Microsoft Visual C++"
-#  define AN_COMPILER_MSVC
+#   define AN_COMPILER_STRING "Microsoft Visual C++"
+#   define AN_COMPILER_MSVC
 #endif
 
 #if defined __GNUC__ && !defined __clang__
-#  define AN_COMPILER_STRING "Gnu GCC"
-#  define AN_COMPILER_GCC 1
+#   define AN_COMPILER_STRING "Gnu GCC"
+#   define AN_COMPILER_GCC 1
 #endif
 
 #if !defined AN_COMPILER_STRING
-#  define AN_COMPILER_STRING "Unknown compiler"
+#   define AN_COMPILER_STRING "Unknown compiler"
 #endif
 
 #if defined _XBOX || defined _XBOX_VER
-#  define AN_OS_XBOX
-#  define AN_OS_STRING "XBOX"
+#   define AN_OS_XBOX
+#   define AN_OS_STRING "XBOX"
 #endif
 
 #if defined _WIN32 || defined WIN32 || defined __NT__ || defined __WIN32__
-#  define AN_OS_WIN32
-#  if !defined AN_OS_XBOX
-#     if defined _WIN64
-#        define AN_OS_WIN64
-#        define AN_OS_STRING "Win64"
-#     else
-#        if !defined AN_OS_STRING
-#           define AN_OS_STRING "Win32"
-#        endif
-#     endif
-#  endif
+#   define AN_OS_WIN32
+#   if !defined AN_OS_XBOX
+#       if defined _WIN64
+#           define AN_OS_WIN64
+#           define AN_OS_STRING "Win64"
+#       else
+#           if !defined AN_OS_STRING
+#               define AN_OS_STRING "Win32"
+#           endif
+#       endif
+#   endif
 #endif
 
 #if defined linux || defined __linux__
-#  define AN_OS_LINUX
-#  define AN_OS_STRING "Linux"
+#   define AN_OS_LINUX
+#   define AN_OS_STRING "Linux"
 #endif
 
 #if !defined AN_OS_STRING
-#  define AN_OS_UNKNOWN
-#  define AN_OS_STRING "Unknown"
+#   define AN_OS_UNKNOWN
+#   define AN_OS_STRING "Unknown"
+#endif
+
+#ifdef AN_COMPILER_MSVC
+#   if defined( DEBUG ) || defined( _DEBUG )
+#       define AN_DEBUG
+#   endif
+#endif
+
+#ifdef AN_COMPILER_GCC
+#   if !defined( NDEBUG )
+#       define AN_DEBUG
+#   endif
+#endif
+
+#if !defined( AN_DEBUG )
+#   define AN_RELEASE
 #endif
 
 /*
@@ -151,21 +157,21 @@ ANGIE_TEMPLATE       - Export or Import class template
 
 */
 #ifdef ANGIE_STATIC_LIBRARY
-#define ANGIE_API
-#define ANGIE_TEMPLATE
+#   define ANGIE_API
+#   define ANGIE_TEMPLATE
 #else
-#ifdef AN_COMPILER_MSVC
-#ifdef ANGIE_ENGINE_EXPORTS
-#define ANGIE_API __declspec(dllexport)
-#define ANGIE_TEMPLATE
-#else
-#define ANGIE_API __declspec(dllimport)
-#define ANGIE_TEMPLATE extern
-#endif
-#else
-#define ANGIE_API __attribute__ ((visibility("default")))
-#define ANGIE_TEMPLATE
-#endif
+#   ifdef AN_COMPILER_MSVC
+#       ifdef ANGIE_ENGINE_EXPORTS
+#           define ANGIE_API __declspec(dllexport)
+#           define ANGIE_TEMPLATE
+#       else
+#           define ANGIE_API __declspec(dllimport)
+#           define ANGIE_TEMPLATE extern
+#       endif
+#   else
+#       define ANGIE_API __attribute__ ((visibility("default")))
+#       define ANGIE_TEMPLATE
+#   endif
 #endif
 
 /*
@@ -186,10 +192,11 @@ Inline defines
 
 */
 #ifdef AN_COMPILER_MSVC
-#define AN_FORCEINLINE  __forceinline
+#   define AN_FORCEINLINE  __forceinline
 #else
-#define AN_FORCEINLINE  inline __attribute__((always_inline))
+#   define AN_FORCEINLINE  inline __attribute__((always_inline))
 #endif
+
 #define AN_INLINE       inline
 
 /*
@@ -198,9 +205,9 @@ Deprecated code marker
 
 */
 #ifdef AN_COMPILER_MSVC
-#define AN_DEPRECATED __declspec(deprecated)
+#   define AN_DEPRECATED __declspec(deprecated)
 #else
-#define AN_DEPRECATED __attribute__((__deprecated__))
+#   define AN_DEPRECATED __attribute__((__deprecated__))
 #endif
 
 /*
@@ -209,18 +216,18 @@ Function signature
 
 */
 #if defined( AN_COMPILER_MSVC )
-#define AN_FUNCSIG __FUNCSIG__
+#   define AN_FUNCSIG __FUNCSIG__
 #elif defined( __GNUC__ )
-#define AN_FUNCSIG __PRETTY_FUNCTION__
+#   define AN_FUNCSIG __PRETTY_FUNCTION__
 #elif __STDC_VERSION__ >= 199901L
-#define AN_FUNCSIG __func__
+#   define AN_FUNCSIG __func__
 #else
-#define AN_FUNCSIG "[Function name unavailable]"
+#   define AN_FUNCSIG "[Function name unavailable]"
 #endif
 
 /*
 
-"Unused variable" warning suppress
+Suppress "Unused variable" warning
 
 */
 #define AN_UNUSED(x)    ((void)x)
@@ -233,14 +240,14 @@ Misc
 */
 
 #ifdef AN_DEBUG
-#define AN_ALLOW_ASSERTS
+#   define AN_ALLOW_ASSERTS
 #endif
 
 #ifdef AN_ALLOW_ASSERTS
-#define AN_ASSERT_(assertion,comment)  ((assertion) ? static_cast<void>(0) : AssertFunction(__FILE__,__LINE__,AN_FUNCSIG,AN_STRINGIFY(assertion),comment))
-extern void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment );
+#   define AN_ASSERT_(assertion,comment)  ((assertion) ? static_cast<void>(0) : AssertFunction(__FILE__,__LINE__,AN_FUNCSIG,AN_STRINGIFY(assertion),comment))
+    extern void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment );
 #else
-#define AN_ASSERT_(assertion,comment)   ((void)(assertion))
+#   define AN_ASSERT_(assertion,comment)   ((void)(assertion))
 #endif
 #define AN_ASSERT(assertion)            AN_ASSERT_(assertion,nullptr)
 #define AN_STRINGIFY(text)              #text
@@ -284,7 +291,7 @@ NULL declaration
 
 */
 #ifndef NULL
-#define NULL 0
+#   define NULL 0
 #endif
 
 /*
