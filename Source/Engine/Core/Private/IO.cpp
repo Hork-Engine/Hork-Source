@@ -65,24 +65,31 @@ bool AFileStream::OpenAppend( const char * _FileName ) {
     return Open( _FileName, M_Append );
 }
 
-static FILE * OpenFile( const char * filename, const char * mode )
-{
+static FILE * OpenFile( const char * _FileName, const char * _Mode ) {
     FILE *f;
 #if defined(_MSC_VER)
     wchar_t wMode[64];
-    wchar_t wFilename[1024];
-    if ( 0 == MultiByteToWideChar( 65001 /* UTF8 */, 0, filename, -1, wFilename, sizeof( wFilename ) ) )
-        return 0;
-    if ( 0 == MultiByteToWideChar( 65001 /* UTF8 */, 0, mode, -1, wMode, sizeof( wMode ) ) )
-        return 0;
+
+    if ( 0 == MultiByteToWideChar( CP_UTF8, 0, _Mode, -1, wMode, AN_ARRAY_SIZE( wMode ) ) )
+        return NULL;
+
+    int n = MultiByteToWideChar( CP_UTF8, 0, _FileName, -1, NULL, 0 );
+    if ( 0 == n ) {
+        return NULL;
+    }
+
+    wchar_t * wFilename = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
+
+    MultiByteToWideChar( CP_UTF8, 0, _FileName, -1, wFilename, n );
+
 #if _MSC_VER >= 1400
     if ( 0 != _wfopen_s( &f, wFilename, wMode ) )
-        f = 0;
+        f = NULL;
 #else
     f = _wfopen( wFilename, wMode );
 #endif
 #else
-    f = fopen( filename, mode );
+    f = fopen( _FileName, _Mode );
 #endif
     return f;
 }
@@ -651,13 +658,20 @@ bool IsFileExists( const char * _FileName ) {
 
 void RemoveFile( const char * _FileName ) {
     AString s = _FileName;
-    s.FixSeparator();
+    s.FixPath();
 #if defined AN_OS_LINUX
-    ::remove( _FileName );
+    ::remove( s.CStr() );
 #elif defined AN_OS_WIN32
-    ::DeleteFileA( _FileName );
+    int n = MultiByteToWideChar( CP_UTF8, 0, s.CStr(), -1, NULL, 0 );
+    if ( 0 != n ) {
+        wchar_t * wFilename = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
+
+        MultiByteToWideChar( CP_UTF8, 0, s.CStr(), -1, wFilename, n );
+
+        ::DeleteFile( wFilename );
+    }
 #else
-    static_assert( 0, "RemoveFile not implemented" );
+    static_assert( 0, "TODO: Implement RemoveFile for current build settings" );
 #endif
 }
 
