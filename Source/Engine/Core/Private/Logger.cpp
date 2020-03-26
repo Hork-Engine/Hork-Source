@@ -102,14 +102,25 @@ void ALogger::SetMessageCallback( void (*_MessageCallback)( int, const char * ) 
 }
 
 void ALogger::DefaultMessageCallback( int, const char * _Message ) {
-#if defined AN_COMPILER_MSVC && defined AN_DEBUG
-    OutputDebugStringA( _Message );
-#else
-#ifdef AN_OS_ANDROID
-    __android_log_print( ANDROID_LOG_INFO, "Angie Engine", _Message );
-#else
-    fprintf( stdout, "%s", _Message );
-    fflush( stdout );
-#endif
-#endif
+    #if defined AN_DEBUG
+        #if defined AN_COMPILER_MSVC
+        {
+            int n = MultiByteToWideChar( CP_UTF8, 0, _Message, -1, NULL, 0 );
+            if ( 0 != n ) {
+                wchar_t * chars = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
+
+                MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
+
+                OutputDebugString( chars );
+            }
+        }
+        #else
+            #ifdef AN_OS_ANDROID
+                __android_log_print( ANDROID_LOG_INFO, "Angie Engine", _Message );
+            #else
+                fprintf( stdout, "%s", _Message );
+                fflush( stdout );
+            #endif
+        #endif
+    #endif
 }
