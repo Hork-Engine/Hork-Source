@@ -329,14 +329,14 @@ void WDesktop::SetFocusWidget( WWidget * _Focus ) {
 
 void WDesktop::GenerateKeyEvents( SKeyEvent const & _Event, double _TimeStamp ) {
     if ( DraggingWidget ) {
-        if ( _Event.Key == KEY_ESCAPE && _Event.Action == IE_Press ) {
+        if ( _Event.Key == KEY_ESCAPE && _Event.Action == IA_Press ) {
             CancelDragging();
         }
         return;
     }
 
     if ( Popup ) {
-        if ( _Event.Action == IE_Press || _Event.Action ==  IE_Repeat ) {
+        if ( _Event.Action == IA_Press || _Event.Action ==  IA_Repeat ) {
             if ( _Event.Key == KEY_ESCAPE ) {
                 ClosePopupMenu();
             } else if ( _Event.Key == KEY_DOWN ) {
@@ -368,7 +368,7 @@ void WDesktop::GenerateMouseButtonEvents( struct SMouseButtonEvent const & _Even
     MouseFocusWidget = nullptr;
 
     if ( DraggingWidget ) {
-        if ( _Event.Button == DraggingButton && _Event.Action == IE_Release ) {
+        if ( _Event.Button == DraggingButton && _Event.Action == IA_Release ) {
             // Stop dragging
             DraggingWidget = nullptr;
         }
@@ -376,7 +376,7 @@ void WDesktop::GenerateMouseButtonEvents( struct SMouseButtonEvent const & _Even
         return;
     }
 
-    if ( _Event.Action == IE_Press ) {
+    if ( _Event.Action == IA_Press ) {
 
         if ( Popup ) {
             Float2 mins, maxs;

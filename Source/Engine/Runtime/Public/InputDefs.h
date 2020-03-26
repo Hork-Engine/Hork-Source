@@ -41,7 +41,7 @@ SOFTWARE.
 
 enum {
     /* The unknown key */
-    KEY_UNKNOWN            = -1,
+    //KEY_UNKNOWN            = -1,
 
     /* Printable keys */
     KEY_SPACE              = 32,
@@ -92,8 +92,6 @@ enum {
     KEY_BACKSLASH          = 92,  /* \ */
     KEY_RIGHT_BRACKET      = 93,  /* ] */
     KEY_GRAVE_ACCENT       = 96,  /* ` */
-    KEY_WORLD_1            = 161, /* non-US #1 */
-    KEY_WORLD_2            = 162, /* non-US #2 */
 
     /* Function keys */
     KEY_ESCAPE             = 256,
@@ -139,7 +137,6 @@ enum {
     KEY_F22                = 311,
     KEY_F23                = 312,
     KEY_F24                = 313,
-    KEY_F25                = 314,
     KEY_KP_0               = 320,
     KEY_KP_1               = 321,
     KEY_KP_2               = 322,

@@ -38,7 +38,7 @@ class ARenderBackend : public IRenderBackend {
 public:
     ARenderBackend() : IRenderBackend( "OpenGL 4.5" ) {}
 
-    void Initialize( SVideoModeInfo const & _Info ) override;
+    void Initialize( struct SVideoMode const & _VideoMode ) override;
     void Deinitialize() override;
 
     void * GetMainWindow() override;

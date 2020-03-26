@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Core/Public/PodQueue.h>
 #include <Core/Public/Utf8.h>
 #include "AsyncJobManager.h"
+#include "GameModuleCallback.h"
 
 //enum EVerticalSyncMode {
 //    VSync_Disabled,
@@ -43,6 +44,47 @@ SOFTWARE.
 //    VSync_Half
 //};
 
+struct SVideoMode
+{
+    /** Horizontal position on display (read only) */
+    int X;
+    /** Vertical position on display (read only) */
+    int Y;
+    /** Horizontal position on display in windowed mode. */
+    int WindowedX;
+    /** Vertical position on display in windowed mode. */
+    int WindowedY;
+    /** Horizontal display resolution */
+    int Width;
+    /** Vertical display resolution */
+    int Height;
+    /** Video mode framebuffer width (for Retina displays, read only) */
+    int FramebufferWidth;
+    /** Video mode framebuffer width (for Retina displays, read only) */
+    int FramebufferHeight;
+    /** Physical monitor (read only) */
+    int DisplayIndex;
+    /** Display refresh rate (read only) */
+    int RefreshRate;                                    // TODO: Read/Write
+    /** Display dots per inch (read only) */
+    float DPI_X;
+    /** Display dots per inch (read only) */
+    float DPI_Y;
+    /** Viewport aspect ratio scale (read only) */
+    float AspectScale;
+    /** Window opacity */
+    float Opacity;
+    /** Fullscreen or Windowed mode */
+    bool bFullscreen;
+    /** Move window to center of the screen. WindowedX and WindowedY will be ignored. */
+    bool bCentrized;
+    /** Render backend name */
+    char Backend[32];
+    /** Window title */
+    char Title[32];
+};
+
+#if 0
 struct SMonitorVideoMode {
     int Width;
     int Height;
@@ -73,6 +115,7 @@ struct SPhysicalMonitor {
     int VideoModesCount;
     SMonitorVideoMode VideoModes[1];
 };
+#endif
 
 struct SJoystick {
     int NumAxes;
@@ -132,6 +175,7 @@ struct SCPUInfo {
     bool PREFETCHWT1 : 1;
 };
 
+#if 0
 enum EEventType {
     ET_Unknown,
     ET_KeyEvent,
@@ -155,24 +199,25 @@ enum EEventType {
     ET_SetInputFocusEvent,
     ET_SetCursorModeEvent
 };
+#endif
 
-enum EInputEvent {
-    IE_Release,
-    IE_Press,
-    IE_Repeat
+enum EInputAction {
+    IA_Release,
+    IA_Press,
+    IA_Repeat
 };
 
 struct SKeyEvent {
     int Key;
     int Scancode;       // Not used, reserved for future
     int ModMask;
-    int Action;         // EInputEvent
+    int Action;         // EInputAction
 };
 
 struct SMouseButtonEvent {
     int Button;
     int ModMask;
-    int Action;         // EInputEvent
+    int Action;         // EInputAction
 };
 
 struct SMouseWheelEvent {
@@ -194,7 +239,7 @@ struct SJoystickAxisEvent {
 struct SJoystickButtonEvent {
     int Joystick;
     int Button;
-    int Action;         // EInputEvent
+    int Action;         // EInputAction
 };
 
 struct SJoystickStateEvent {
@@ -210,6 +255,7 @@ struct SCharEvent {
     int ModMask;
 };
 
+#if 0
 struct SMonitorConnectionEvent {
     int Handle;
     bool bConnected;
@@ -243,6 +289,8 @@ struct SChangedVideoModeEvent {
 };
 
 struct SSetVideoModeEvent {
+    unsigned short X;
+    unsigned short Y;
     unsigned short Width;
     unsigned short Height;
     unsigned short PhysicalMonitor;
@@ -298,6 +346,7 @@ struct SEvent {
 };
 
 using AEventQueue = TPodQueue< SEvent >;
+#endif
 
 enum
 {
@@ -338,12 +387,6 @@ public:
     /** Return application exacutable name */
     const char * GetExecutableName();
 
-    /** Return event queue for reading */
-    AEventQueue * ReadEvents_GameThread();
-
-    /** Return event queue for writing */
-    AEventQueue * WriteEvents_GameThread();
-
     /** Allocate frame memory */
     void * AllocFrameMem( size_t _SizeInBytes );
 
@@ -367,7 +410,7 @@ public:
 
     /** Get CPU info */
     SCPUInfo const & GetCPUInfo() const;
-
+#if 0
     /** Get physical monitors count */
     int GetPhysicalMonitorsCount();
 
@@ -398,12 +441,7 @@ public:
     /** Restore original monitor gamma */
     void RestoreMonitorGamma( int _Handle );
 
-    /** Get joystick name by handle */
-    AString GetJoystickName( int _Joystick );
-
-    /** Get joystick name */
-    AString GetJoystickName( const SJoystick * _Joystick ) { return GetJoystickName( _Joystick->Id ); }
-
+#endif
     /** Sleep current thread */
     void WaitSeconds( int _Seconds );
 
@@ -464,17 +502,90 @@ public:
     /** Get clipboard text */
     const char * GetClipboard();
 
+    /** Current video mode */
+    SVideoMode const & GetVideoMode() const;
+
+    /** Change a video mode */
+    void PostChangeVideoMode( SVideoMode const & _DesiredMode );
+
     /** Terminate the application */
     void PostTerminateEvent();
 
     bool IsPendingTerminate();
 
-    /** Pump runtime events */
-    void PumpEvents();
-
+    /** Begin a new frame */
     void NewFrame();
 
+    /** Poll runtime events */
+    void PollEvents();
+
     void SetCursorEnabled( bool _Enabled );
+
+    bool IsCursorEnabled();
+
+    void GetCursorPosition( int * _X, int * _Y );
+
+private:
+
+    int             NumArguments;
+    char **         Arguments;
+
+    AString         WorkingDir;
+    char *          Executable;
+
+    int64_t         StartSeconds;
+    int64_t         StartMilliseconds;
+    int64_t         StartMicroseconds;
+    int64_t         FrameTimeStamp;
+    int64_t         FrameDuration;
+    int             FrameNumber;
+
+    void *          FrameMemoryAddress;
+    size_t          FrameMemorySize;
+    size_t          FrameMemoryUsed;
+    size_t          FrameMemoryUsedPrev;
+    size_t          MaxFrameMemoryUsage;
+
+    char *          Clipboard;
+
+    class IEngineInterface * Engine;
+
+    ACreateGameModuleCallback CreateGameModuleCallback;
+
+    SCPUInfo        CPUInfo;
+
+    SVideoMode      VideoMode;
+    SVideoMode      DesiredMode;
+    bool            bResetVideoMode;
+
+    bool            bTerminate;
+
+    int             ProcessAttribute;
+
+    void Run( ACreateGameModuleCallback _CreateGameModule );
+
+    void InitializeRenderer( SVideoMode const & _DesiredMode );
+
+    void DeinitializeRenderer();
+
+    void SetVideoMode( SVideoMode const & _DesiredMode );
+
+    void EmergencyExit();
+
+    void DisplayCriticalMessage( const char * _Message );
+
+    void InitializeProcess();
+
+    void DeinitializeProcess();
+
+    void InitializeMemory();
+
+    void DeinitializeMemory();
+
+    void InitializeWorkingDirectory();
+
+    friend void Runtime( const char * _CommandLine, ACreateGameModuleCallback _CreateGameModule );
+    friend void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _CreateGameModule );
 };
 
 extern ANGIE_API ARuntime & GRuntime;

@@ -42,6 +42,7 @@ SOFTWARE.
 #include "OpenGL45DebugDrawPassRenderer.h"
 
 #include <Runtime/Public/RuntimeVariable.h>
+#include <Runtime/Public/Runtime.h>
 #include <Core/Public/WindowsDefs.h>
 #include <Core/Public/CriticalError.h>
 #include <Core/Public/Logger.h>
@@ -49,16 +50,14 @@ SOFTWARE.
 #include "GHI/GL/glew.h"
 
 #ifdef AN_OS_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
 #include "GHI/GL/wglew.h"
 #endif
 
 #ifdef AN_OS_LINUX
 #include <GL/glxew.h>
-#define GLFW_EXPOSE_NATIVE_GLX
 #endif
 
-#include <GLFW/glfw3.h>
+#include <SDL.h>
 
 ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
 ARuntimeVariable RVRenderSnapshot( _CTS("RenderSnapshot"), _CTS( "0" ), VAR_CHEAT );
@@ -97,7 +96,8 @@ ARenderBackend GOpenGL45RenderBackend;
 static GHI::TEXTURE_PIXEL_FORMAT PixelFormatTable[256];
 static GHI::INTERNAL_PIXEL_FORMAT InternalPixelFormatTable[256];
 
-static GLFWwindow * WindowHandle;
+static SDL_Window * WindowHandle;
+static SDL_GLContext WindowCtx;
 static bool bSwapControl = false;
 static bool bSwapControlTear = false;
 
@@ -117,67 +117,73 @@ static void GHIImport_Deallocate( void * _Bytes ) {
     GZoneMemory.Free( _Bytes );
 }
 
-void ARenderBackend::Initialize( SVideoModeInfo const & _Info ) {
+void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     using namespace GHI;
 
     GLogger.Printf( "Initializing OpenGL backend...\n" );
 
-    glfwWindowHint( GLFW_CLIENT_API, GLFW_OPENGL_API );
-    // Possible APIs: GLFW_OPENGL_ES_API
+    SDL_InitSubSystem( SDL_INIT_VIDEO );
 
-    glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-    // Possible profiles: GLFW_OPENGL_ANY_PROFILE, GLFW_OPENGL_COMPAT_PROFILE
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_EGL, 0 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE | SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
+    SDL_GL_SetAttribute( SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0 );
+    SDL_GL_SetAttribute( SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1 );
+    //    SDL_GL_SetAttribute( SDL_GL_CONTEXT_RELEASE_BEHAVIOR,  );
+    //    SDL_GL_SetAttribute( SDL_GL_CONTEXT_RESET_NOTIFICATION,  );
+    //    SDL_GL_SetAttribute( SDL_GL_CONTEXT_NO_ERROR,  );
+    SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
+    SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
+    SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
+    SDL_GL_SetAttribute( SDL_GL_ALPHA_SIZE, 8 );
+    SDL_GL_SetAttribute( SDL_GL_BUFFER_SIZE, 0 );
+    SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+    SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 0 );
+    SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 0 );
+    SDL_GL_SetAttribute( SDL_GL_ACCUM_RED_SIZE, 0 );
+    SDL_GL_SetAttribute( SDL_GL_ACCUM_GREEN_SIZE, 0 );
+    SDL_GL_SetAttribute( SDL_GL_ACCUM_BLUE_SIZE, 0 );
+    SDL_GL_SetAttribute( SDL_GL_ACCUM_ALPHA_SIZE, 0 );
+    SDL_GL_SetAttribute( SDL_GL_STEREO, 0 );
+    SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 0 );
+    SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 0 );
+//    SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL,  );
+//    SDL_GL_SetAttribute( SDL_GL_RETAINED_BACKING,  );
 
-    glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE );
-    glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GLFW_FALSE );
+//    glfwWindowHint( GLFW_AUX_BUFFERS, 0 );
 
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 5 );
+//    glfwWindowHint( GLFW_REFRESH_RATE, _Info.RefreshRate );
 
-    //GLFW_CONTEXT_RELEASE_BEHAVIOR = GLFW_ANY_RELEASE_BEHAVIOR/GLFW_RELEASE_BEHAVIOR_FLUSH/GLFW_RELEASE_BEHAVIOR_NONE
-    //GLFW_CONTEXT_NO_ERROR         = false/true
-    //GLFW_CONTEXT_CREATION_API     = GLFW_NATIVE_CONTEXT_API/GLFW_EGL_CONTEXT_API
-    //GLFW_CONTEXT_REVISION           (read only, glfwGetWindowAttrib)
-    //GLFW_CONTEXT_ROBUSTNESS       = GLFW_NO_ROBUSTNESS/GLFW_NO_RESET_NOTIFICATION/GLFW_LOSE_CONTEXT_ON_RESET
+    int flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
+    int x, y;
 
-    glfwWindowHint( GLFW_RED_BITS, 8 );
-    glfwWindowHint( GLFW_GREEN_BITS, 8 );
-    glfwWindowHint( GLFW_BLUE_BITS, 8 );
-    glfwWindowHint( GLFW_ALPHA_BITS, 8 );
-    glfwWindowHint( GLFW_DEPTH_BITS, 0 );   // 24
-    glfwWindowHint( GLFW_STENCIL_BITS, 0 ); // 8
-    glfwWindowHint( GLFW_ACCUM_RED_BITS, 0 );
-    glfwWindowHint( GLFW_ACCUM_GREEN_BITS, 0 );
-    glfwWindowHint( GLFW_ACCUM_BLUE_BITS, 0 );
-    glfwWindowHint( GLFW_ACCUM_ALPHA_BITS, 0 );
-    glfwWindowHint( GLFW_AUX_BUFFERS, 0 );
-    glfwWindowHint( GLFW_DOUBLEBUFFER, 1 );
-
-    glfwWindowHint( GLFW_SRGB_CAPABLE, 1 );
-    glfwWindowHint( GLFW_SAMPLES, 0 );
-    glfwWindowHint( GLFW_STEREO, 0 );
-
-    glfwWindowHint( GLFW_VISIBLE, GLFW_FALSE );
-    glfwWindowHint( GLFW_FOCUS_ON_SHOW, GLFW_TRUE );
-    glfwWindowHint( GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE );
-    glfwWindowHint( GLFW_CENTER_CURSOR, GLFW_TRUE );
-    glfwWindowHint( GLFW_FOCUSED, GLFW_TRUE );
-    glfwWindowHint( GLFW_RESIZABLE, GLFW_FALSE );
-    glfwWindowHint( GLFW_DECORATED, _Info.bDecorated );
-    glfwWindowHint( GLFW_AUTO_ICONIFY, _Info.bAutoIconify );
-    glfwWindowHint( GLFW_FLOATING, _Info.bFloating );
-    glfwWindowHint( GLFW_MAXIMIZED, GLFW_FALSE );
-    glfwWindowHint( GLFW_REFRESH_RATE, _Info.RefreshRate );
-
-    WindowHandle = glfwCreateWindow( _Info.Width, _Info.Height, _Info.Title, (GLFWmonitor *)_Info.Monitor, nullptr );
-    if ( !WindowHandle ) {
-        CriticalError( "Failed to initialize game display\n" );
+    if ( _VideoMode.bFullscreen ) {
+        flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
+        x = y = 0;
+    } else {
+        if ( _VideoMode.bCentrized ) {
+            x = SDL_WINDOWPOS_CENTERED;
+            y = SDL_WINDOWPOS_CENTERED;
+        } else {
+            x = _VideoMode.WindowedX;
+            y = _VideoMode.WindowedY;
+        }
     }
 
-    // Set context for primary display
-    glfwMakeContextCurrent( WindowHandle );
+    WindowHandle = SDL_CreateWindow( _VideoMode.Title, x, y, _VideoMode.Width, _VideoMode.Height, flags );
 
-    glfwSwapInterval(0);
+    SDL_DisplayMode mode = {};
+    mode.format = SDL_PIXELFORMAT_RGB888;
+    mode.w = _VideoMode.Width;
+    mode.h = _VideoMode.Height;
+    mode.refresh_rate = _VideoMode.RefreshRate;
+    SDL_SetWindowDisplayMode( WindowHandle, &mode );
+
+    WindowCtx = SDL_GL_CreateContext( WindowHandle );
+    SDL_GL_MakeCurrent( WindowHandle, WindowCtx );
+    SDL_GL_SetSwapInterval( 0 );
 
     glewExperimental = true;
     GLenum result = glewInit();
@@ -191,6 +197,9 @@ void ARenderBackend::Initialize( SVideoModeInfo const & _Info ) {
 
     const char * adapterString = (const char *)glGetString( GL_RENDERER );
     adapterString = adapterString ? adapterString : "Unknown";
+
+    const char * driverVersion = (const char *)glGetString( GL_VERSION );
+    driverVersion = driverVersion ? driverVersion : "Unknown";
 #if 0
     if ( strstr( vendorString, "NVIDIA" ) != NULL ) {
         GPUVendor = GPU_VENDOR_NVIDIA;
@@ -205,6 +214,7 @@ void ARenderBackend::Initialize( SVideoModeInfo const & _Info ) {
 #endif
     GLogger.Printf( "Graphics vendor: %s\n", vendorString );
     GLogger.Printf( "Graphics adapter: %s\n", adapterString );
+    GLogger.Printf( "Driver version: %s\n", driverVersion );
 #if 0
     SMemoryInfo gpuMemoryInfo = GetGPUMemoryInfo();
 
@@ -435,7 +445,9 @@ void ARenderBackend::Deinitialize() {
     GState.Deinitialize();
     GDevice.Deinitialize();
 
-    glfwDestroyWindow( WindowHandle );
+    SDL_GL_DeleteContext( WindowCtx );
+    SDL_DestroyWindow( WindowHandle );
+    SDL_QuitSubSystem( SDL_INIT_VIDEO );
     WindowHandle = nullptr;
 }
 
@@ -973,10 +985,10 @@ void ARenderBackend::SwapBuffers() {
             // Tearing not supported
             i = 0;
         }
-        glfwSwapInterval( i );
+        SDL_GL_SetSwapInterval( i );
     }
 
-    glfwSwapBuffers( WindowHandle );
+    SDL_GL_SwapWindow( WindowHandle );
 }
 
 }

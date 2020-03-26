@@ -110,7 +110,7 @@ static void ImguiModuleFree( void * _Bytes, void * ) {
 
 void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback ) {
     // Pump initial events
-    GRuntime.PumpEvents();
+    GRuntime.PollEvents();
 
     GConsole.ReadStoryLines();
 
@@ -151,8 +151,6 @@ void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback )
     GameModule->AddRef();
 
     GLogger.Printf( "Created game module: %s\n", GameModule->FinalClassName() );
-
-    ProcessEvents();
 
     GameModule->OnGameStart();
 
@@ -204,14 +202,11 @@ void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback )
             GRenderBackend->WaitGPU();
         }
 
-        // Pump runtime events
-        GRuntime.PumpEvents();
-
-        // Process runtime events
-        ProcessEvents();
+        // Poll runtime events
+        GRuntime.PollEvents();
 
         // Update input
-        UpdateInputAxes();
+        UpdateInput();
 
 #ifdef IMGUI_CONTEXT
         // Imgui test
@@ -275,7 +270,9 @@ void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback )
 }
 
 void AEngineInstance::DrawCanvas() {
-    Canvas.Begin( FramebufferWidth, FramebufferHeight );
+    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+
+    Canvas.Begin( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
 
     if ( IsWindowVisible() )
     {
@@ -284,7 +281,7 @@ void AEngineInstance::DrawCanvas() {
             // Draw desktop
             Desktop->GenerateWindowHoverEvents();
             Desktop->GenerateDrawEvents( Canvas );
-            if ( Desktop->IsCursorVisible() )
+            if ( Desktop->IsCursorVisible() && !GRuntime.IsCursorEnabled() )
             {
                 Desktop->DrawCursor( Canvas );
             }
@@ -376,16 +373,16 @@ void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event ) {
 }
 
 void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) {
-    if ( bQuitOnEscape && _Event.Action == IE_Press && _Event.Key == KEY_ESCAPE ) {
+    if ( bQuitOnEscape && _Event.Action == IA_Press && _Event.Key == KEY_ESCAPE ) {
         GameModule->OnGameClose();
     }
 
     // Check Alt+Enter to toggle fullscreen/windowed mode
     if ( bToggleFullscreenAltEnter ) {
-        if ( _Event.Action == IE_Press && _Event.Key == KEY_ENTER && ( HAS_MODIFIER( _Event.ModMask, MOD_ALT ) ) ) {
-            VideoMode.bFullscreen = !VideoMode.bFullscreen;
-            VideoMode.PhysicalMonitor = 0;
-            ResetVideoMode();
+        if ( _Event.Action == IA_Press && _Event.Key == KEY_ENTER && ( HAS_MODIFIER( _Event.ModMask, MOD_ALT ) ) ) {
+            SVideoMode videoMode = GRuntime.GetVideoMode();
+            videoMode.bFullscreen = !videoMode.bFullscreen;
+            GRuntime.PostChangeVideoMode( videoMode );
         }
     }
 
@@ -402,7 +399,7 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) 
         }
     }
 
-    if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
+    if ( GConsole.IsActive() && _Event.Action != IA_Release ) {
         return;
     }
 
@@ -416,7 +413,7 @@ void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, doub
     ImguiContext->OnMouseButtonEvent( _Event );
 #endif
 
-    if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
+    if ( GConsole.IsActive() && _Event.Action != IA_Release ) {
         return;
     }
 
@@ -442,20 +439,35 @@ void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double
 
 void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStamp ) {
     if ( Desktop ) {
-        Float2 cursorPosition = Desktop->GetCursorPosition();
+        SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
-        // Simulate ballistics
-        const bool bSimulateCursorBallistics = true;
-        if ( bSimulateCursorBallistics ) {
-            cursorPosition.X += _Event.X / VideoMode.RefreshRate * DPI_X;
-            cursorPosition.Y -= _Event.Y / VideoMode.RefreshRate * DPI_Y;
+        if ( GRuntime.IsCursorEnabled() ) {
+            Float2 cursorPosition;
+            int x, y;
+
+            GRuntime.GetCursorPosition( &x, &y );
+
+            cursorPosition.X = Math::Clamp( x, 0, videoMode.FramebufferWidth-1 );
+            cursorPosition.Y = Math::Clamp( y, 0, videoMode.FramebufferHeight-1 );
+
+            Desktop->SetCursorPosition( cursorPosition );
         } else {
-            cursorPosition.X += _Event.X;
-            cursorPosition.Y -= _Event.Y;
-        }
-        cursorPosition = cursorPosition.Clamp( Float2(0.0f), Float2( FramebufferWidth-1, FramebufferHeight-1 ) );
 
-        Desktop->SetCursorPosition( cursorPosition );
+            Float2 cursorPosition = Desktop->GetCursorPosition();
+
+            // Simulate ballistics
+            const bool bSimulateCursorBallistics = true;
+            if ( bSimulateCursorBallistics ) {
+                cursorPosition.X += _Event.X / videoMode.RefreshRate * videoMode.DPI_X;
+                cursorPosition.Y -= _Event.Y / videoMode.RefreshRate * videoMode.DPI_Y;
+            } else {
+                cursorPosition.X += _Event.X;
+                cursorPosition.Y -= _Event.Y;
+            }
+            cursorPosition = cursorPosition.Clamp( Float2(0.0f), Float2( videoMode.FramebufferWidth-1, videoMode.FramebufferHeight-1 ) );
+
+            Desktop->SetCursorPosition( cursorPosition );
+        }
 
         if ( !GConsole.IsActive() ) {
             Desktop->GenerateMouseMoveEvents( _Event, _TimeStamp );
@@ -464,7 +476,7 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
 }
 
 void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event, double _TimeStamp ) {
-    if ( GConsole.IsActive() && _Event.Action != IE_Release ) {
+    if ( GConsole.IsActive() && _Event.Action != IA_Release ) {
         return;
     }
 
@@ -494,203 +506,83 @@ void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp 
     }
 }
 
-void AEngineInstance::OnChangedVideoModeEvent( SChangedVideoModeEvent const & _Event ) {
-    VideoMode.Width = _Event.Width;
-    VideoMode.Height = _Event.Height;
-    VideoMode.PhysicalMonitor = _Event.PhysicalMonitor;
-    VideoMode.RefreshRate = _Event.RefreshRate;
-    VideoMode.bFullscreen = _Event.bFullscreen;
-    Core::Strcpy( VideoMode.Backend, sizeof( VideoMode.Backend ), _Event.Backend );
+void AEngineInstance::OnWindowVisible( bool _Visible ) {
+    bIsWindowVisible = _Visible;
+}
 
-    FramebufferWidth = _Event.FramebufferWidth;
-    FramebufferHeight = _Event.FramebufferHeight;
-    RetinaScale = Float2( (float)FramebufferWidth / VideoMode.Width, (float)FramebufferHeight / VideoMode.Height );
+void AEngineInstance::OnCloseEvent() {
+    GameModule->OnGameClose();
+}
 
-    GLogger.Printf( "OnChangedVideoModeEvent: %d %d %d %d\n",FramebufferWidth,FramebufferHeight,_Event.Width,_Event.Height);
+void AEngineInstance::OnResize() {
+    SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
-    if ( _Event.bFullscreen ) {
-        SPhysicalMonitor const * monitor = GRuntime.GetMonitor( _Event.PhysicalMonitor );
+    RetinaScale = Float2( (float)videoMode.FramebufferWidth / videoMode.Width, (float)videoMode.FramebufferHeight / videoMode.Height );
 
-        const float MM_To_Inch = 0.0393701f;
-        DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
-        DPI_Y = (float)VideoMode.Height / (monitor->PhysicalHeightMM*MM_To_Inch);
-    } else {
-        SPhysicalMonitor const * monitor = GRuntime.GetPrimaryMonitor();//GRuntime.GetMonitor( _Event.PhysicalMonitor );
-
-        DPI_X = monitor->DPI_X;
-        DPI_Y = monitor->DPI_Y;
-    }
-
-    GLogger.Printf( "Console resize %d\n",FramebufferWidth);
-    GConsole.Resize( FramebufferWidth );
+    GConsole.Resize( videoMode.FramebufferWidth );
 
     if ( Desktop ) {
         // Force update transform
         Desktop->MarkTransformDirty();
 
         // Set size
-        Desktop->SetSize( FramebufferWidth, FramebufferHeight );
+        Desktop->SetSize( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
     }
 }
 
-void AEngineInstance::ProcessEvent( SEvent const & _Event ) {
-    switch ( _Event.Type ) {
-    case ET_KeyEvent:
-        OnKeyEvent( _Event.Data.KeyEvent, _Event.TimeStamp );
-        break;
-    case ET_MouseButtonEvent:
-        OnMouseButtonEvent( _Event.Data.MouseButtonEvent, _Event.TimeStamp );
-        break;
-    case ET_MouseWheelEvent:
-        OnMouseWheelEvent( _Event.Data.MouseWheelEvent, _Event.TimeStamp );
-        break;
-    case ET_MouseMoveEvent:
-        OnMouseMoveEvent( _Event.Data.MouseMoveEvent, _Event.TimeStamp );
-        break;
-    case ET_JoystickStateEvent:
-        AInputComponent::SetJoystickState( _Event.Data.JoystickStateEvent.Joystick, _Event.Data.JoystickStateEvent.NumAxes, _Event.Data.JoystickStateEvent.NumButtons, _Event.Data.JoystickStateEvent.bGamePad, _Event.Data.JoystickStateEvent.bConnected );
-        break;
-    case ET_JoystickButtonEvent:
-        OnJoystickButtonEvent( _Event.Data.JoystickButtonEvent, _Event.TimeStamp );
-        break;
-    case ET_JoystickAxisEvent:
-        OnJoystickAxisEvent( _Event.Data.JoystickAxisEvent, _Event.TimeStamp );
-        break;
-    case ET_CharEvent:
-        OnCharEvent( _Event.Data.CharEvent, _Event.TimeStamp );
-        break;
-    case ET_MonitorConnectionEvent:
-        break;
-    case ET_CloseEvent:
-        GameModule->OnGameClose();
-        break;
-    case ET_FocusEvent:
-        bInputFocus = _Event.Data.FocusEvent.bFocused;
-        break;
-    case ET_VisibleEvent:
-        bIsWindowVisible = _Event.Data.VisibleEvent.bVisible;
-        break;
-    case ET_WindowPosEvent:
-        WindowPosX = _Event.Data.WindowPosEvent.PositionX;
-        WindowPosY = _Event.Data.WindowPosEvent.PositionY;
-        break;
-    case ET_ChangedVideoModeEvent:
-        OnChangedVideoModeEvent( _Event.Data.ChangedVideoModeEvent );
-        break;
-    default:
-        GLogger.Printf( "Warning: unhandled runtime event %d\n", _Event.Type );
-        break;
-    }
-}
+//void AEngineInstance::ProcessEvent( SEvent const & _Event ) {
+//    switch ( _Event.Type ) {
+//    case ET_JoystickStateEvent:
+//        AInputComponent::SetJoystickState( _Event.Data.JoystickStateEvent.Joystick, _Event.Data.JoystickStateEvent.NumAxes, _Event.Data.JoystickStateEvent.NumButtons, _Event.Data.JoystickStateEvent.bGamePad, _Event.Data.JoystickStateEvent.bConnected );
+//        break;
+//    case ET_JoystickButtonEvent:
+//        OnJoystickButtonEvent( _Event.Data.JoystickButtonEvent, _Event.TimeStamp );
+//        break;
+//    case ET_JoystickAxisEvent:
+//        OnJoystickAxisEvent( _Event.Data.JoystickAxisEvent, _Event.TimeStamp );
+//        break;
+//    default:
+//        GLogger.Printf( "Warning: unhandled runtime event %d\n", _Event.Type );
+//        break;
+//    }
+//}
 
-void AEngineInstance::ProcessEvents() {
-    AEventQueue * eventQueue = GRuntime.ReadEvents_GameThread();
+void AEngineInstance::UpdateInput() {
+    SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
-    SEvent const * event;
-    while ( nullptr != ( event = eventQueue->Pop() ) ) {
-        ProcessEvent( *event );
-    }
-
-    if ( !VideoMode.bFullscreen && GConsole.IsActive() ) {
+    if ( !videoMode.bFullscreen && GConsole.IsActive() ) {
         GRuntime.SetCursorEnabled( true );
     } else {
         GRuntime.SetCursorEnabled( false );
     }
-}
 
-void AEngineInstance::UpdateInputAxes() {
     for ( AInputComponent * component = AInputComponent::GetInputComponents() ; component ; component = component->GetNext() ) {
         component->UpdateAxes( FrameDurationInSeconds );
     }
 }
 
-void AEngineInstance::SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, uint8_t _RefreshRate, bool _Fullscreen, const char * _Backend ) {
-    SEvent & event = SendEvent();
-    event.Type = ET_SetVideoModeEvent;
-    event.TimeStamp = GRuntime.SysSeconds_d();
-    SSetVideoModeEvent & data = event.Data.SetVideoModeEvent;
-    data.Width = _Width;
-    data.Height = _Height;
-    data.PhysicalMonitor = _PhysicalMonitor;
-    data.RefreshRate = _RefreshRate;
-    data.bFullscreen = _Fullscreen;
-    Core::Strcpy( data.Backend, sizeof( data.Backend ), _Backend );
-
-    VideoMode.Width = _Width;
-    VideoMode.Height = _Height;
-    VideoMode.PhysicalMonitor = _PhysicalMonitor;
-    VideoMode.RefreshRate = _RefreshRate;
-    VideoMode.bFullscreen = _Fullscreen;
-    Core::Strcpy( VideoMode.Backend, sizeof( VideoMode.Backend ), _Backend );
-}
-
-void AEngineInstance::SetVideoMode( SVideoMode const & _VideoMode ) {
-    SetVideoMode( _VideoMode.Width, _VideoMode.Height, _VideoMode.PhysicalMonitor, _VideoMode.RefreshRate, _VideoMode.bFullscreen, _VideoMode.Backend );
-}
-
-void AEngineInstance::ResetVideoMode() {
-    SetVideoMode( VideoMode );
-}
-
-SVideoMode const & AEngineInstance::GetVideoMode() const {
-    return VideoMode;
-}
-
-void AEngineInstance::SetWindowDefs( float _Opacity, bool _Decorated, bool _AutoIconify, bool _Floating, const char * _Title ) {
-    SEvent & event = SendEvent();
-    event.Type = ET_SetWindowDefsEvent;
-    event.TimeStamp = GRuntime.SysSeconds_d();
-    SSetWindowDefsEvent & data = event.Data.SetWindowDefsEvent;
-    data.Opacity = Math::Clamp( _Opacity, 0.0f, 1.0f ) * 255.0f;
-    data.bDecorated = _Decorated;
-    data.bAutoIconify = _AutoIconify;
-    data.bFloating = _Floating;
-    Core::Strcpy( data.Title, sizeof( data.Title ), _Title );
-}
-
-void AEngineInstance::SetWindowPos( int _X, int _Y ) {
-    SEvent & event = SendEvent();
-    event.Type = ET_SetWindowPosEvent;
-    event.TimeStamp = GRuntime.SysSeconds_d();
-    SSetWindowPosEvent & data = event.Data.SetWindowPosEvent;
-    data.PositionX = WindowPosX = _X;
-    data.PositionY = WindowPosY = _Y;
-}
-
-void AEngineInstance::GetWindowPos( int & _X, int & _Y ) {
-    _X = WindowPosX;
-    _Y = WindowPosY;
-}
-
-void AEngineInstance::SetInputFocus() {
-    SEvent & event = SendEvent();
-    event.Type = ET_SetInputFocusEvent;
-    event.TimeStamp = GRuntime.SysSeconds_d();
-}
-
-SEvent & AEngineInstance::SendEvent() {
-    AEventQueue * queue = GRuntime.WriteEvents_GameThread();
-    return *queue->Push();
-}
-
 void AEngineInstance::MapWindowCoordinate( float & InOutX, float & InOutY ) const {
-    InOutX += WindowPosX;
-    InOutY += WindowPosY;
+    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    InOutX += videoMode.X;
+    InOutY += videoMode.Y;
 }
 
 void AEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) const {
-    InOutX -= WindowPosX;
-    InOutY -= WindowPosY;
+    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    InOutX -= videoMode.X;
+    InOutY -= videoMode.Y;
 }
 
 void AEngineInstance::SetDesktop( WDesktop * _Desktop ) {
+    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+
     Desktop = _Desktop;
     if ( Desktop ) {
         // Force update transform
         Desktop->MarkTransformDirty();
 
         // Set size
-        Desktop->SetSize( FramebufferWidth, FramebufferHeight );
+        Desktop->SetSize( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
     }
 }
 

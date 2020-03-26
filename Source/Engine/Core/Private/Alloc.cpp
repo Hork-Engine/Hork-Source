@@ -759,8 +759,9 @@ void * AZoneMemory::Alloc( size_t _BytesCount ) {
     return pointer;
 #endif
 }
-
+//#pragma warning(disable:4702)
 void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
+#if 1
     if ( !_Data ) {
         return Alloc( _NewBytesCount );
     }
@@ -786,16 +787,6 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
         return Alloc( _NewBytesCount );
     }
 
-#if 0
-    int sz = chunk->DataSize;
-    Free( _Data );
-    void * pNewData = Alloc( _NewBytesCount );
-    if  ( pNewData != _Data ) {
-        Core::Memcpy( pNewData, _Data, sz );
-    } else {
-        MemLogger.Printf( "Caching memcpy\n" );
-    }
-#else
     int sz = chunk->DataSize;
     void * temp = GHunkMemory.Alloc( sz );
     Core::MemcpySSE( temp, _Data, sz );
@@ -804,13 +795,13 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
     if ( pNewData != _Data ) {
         Core::MemcpySSE( pNewData, temp, sz );
     } else {
-        MemLogger.Printf( "Caching memcpy\n" );
+        //MemLogger.Printf( "Caching memcpy\n" );
     }
     GHunkMemory.ClearLastHunk();
-#endif
+
     return pNewData;
 
-#if 0
+#else
 
 #if 0
     return SysRealloc( _Data, _NewBytesCount, 16 );
@@ -854,6 +845,8 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
     // restore positive chunk size
     chunk->Size = -chunk->Size;
 
+    AN_ASSERT( chunk->Size > 0 );
+
     // try to use next chunk
     SZoneChunk * cur = chunk->pNext;
     if ( cur->Size > 0 && cur->Size + chunk->Size >= requiredSize ) {
@@ -862,7 +855,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
         requiredSize -= chunk->Size;
         int recidualChunkSpace = cur->Size - requiredSize;
         if ( recidualChunkSpace >= MinZoneFragmentLength ) {
-#if 1
+#if 0
             SZoneChunk * newChunk = ( SZoneChunk * )( ( byte * )( cur ) + requiredSize );
             AN_ASSERT( IsAlignedPtr( newChunk, 16 ) );
             newChunk->Size = recidualChunkSpace;
@@ -888,6 +881,8 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
             chunk->pNext->pPrev = chunk;
             chunk->Size += cur->Size;
             IncMemoryStatistics( cur->Size, cur->Size - _NewBytesCount );
+
+            //Core::Memset( (byte *)_Data + chunk->DataSize, 0, _NewBytesCount - chunk->DataSize );
 #else
 //            chunk->Size = -chunk->Size;
 //            void * d = malloc( oldSize );
@@ -902,7 +897,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
             Core::Memcpy( d, _Data, oldSize );
             Free( _Data );
             _Data = Alloc( _NewBytesCount );
-            Core::Memcpy( _Data, d, _NewBytesCount );
+            Core::Memcpy( _Data, d, oldSize );
             free( d );
             return _Data;
 #endif

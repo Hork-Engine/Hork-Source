@@ -42,15 +42,20 @@ ANGIE_API void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _Cre
 
 #ifdef AN_OS_WIN32
 #include <Core/Public/WindowsDefs.h>
-static void RunEngineWin32( HINSTANCE hInstance, ACreateGameModuleCallback _CreateGameModule ) {
+#include <shellapi.h>
+static void RunEngineWin32( ACreateGameModuleCallback _CreateGameModule ) {
 #if defined( AN_DEBUG ) && defined( AN_COMPILER_MSVC )
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
+    //int argc;
+    //LPWSTR * argv = ::CommandLineToArgvW( ::GetCommandLineW(), &argc );
     Runtime( ::GetCommandLineA(), _CreateGameModule );
+    //Runtime( argc, argv, _CreateGameModule );
+    //LocalFree( argv );
 }
 #define AN_ENTRY_DECL( _GameModuleClass ) \
 int APIENTRY wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow ) { \
-    RunEngineWin32( hInstance, IGameModule::CreateGameModule< _GameModuleClass > ); \
+    RunEngineWin32( IGameModule::CreateGameModule< _GameModuleClass > ); \
     return 0; \
 }
 #else

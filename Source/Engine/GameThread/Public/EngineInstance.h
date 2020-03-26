@@ -37,22 +37,6 @@ SOFTWARE.
 #include <World/Public/Widgets/WDesktop.h>
 #include <World/Public/World.h>
 
-struct SVideoMode
-{
-    /** Horizontal display resolution */
-    unsigned short Width;
-    /** Vertical display resolution */
-    unsigned short Height;
-    /** Phyisical monitor */
-    unsigned short PhysicalMonitor;
-    /** Display refresh rate */
-    uint8_t RefreshRate;
-    /** Fullscreen or Windowed mode */
-    bool bFullscreen;
-    /** Render backend name */
-    char Backend[32];
-};
-
 class ANGIE_API AEngineInstance : public IEngineInterface
 {
     AN_SINGLETON( AEngineInstance )
@@ -78,44 +62,8 @@ public:
     /** Helper. Get all existing worlds */
     TPodArray< AWorld * > const & GetWorld() { return AWorld::GetWorlds(); }
 
-    /** Change a video mode */
-    void SetVideoMode( unsigned short _Width, unsigned short _Height, unsigned short _PhysicalMonitor, uint8_t _RefreshRate, bool _Fullscreen, const char * _Backend );
-
-    /** Change a video mode */
-    void SetVideoMode( SVideoMode const & _VideoMode );
-
-    /** Get current video mode */
-    SVideoMode const & GetVideoMode() const;
-
-    /** Get framebuffer size */
-    int GetFramebufferWidth() const { return FramebufferWidth; }
-
-    /** Get framebuffer size */
-    int GetFramebufferHeight() const { return FramebufferHeight; }
-
     /** Get scale for Retina displays */
     Float2 const & GetRetinaScale() const { return RetinaScale; }
-
-    /** Get dots per inch for current video mode */
-    float GetDPIX() const { return DPI_X; }
-
-    /** Get dots per inch for current video mode */
-    float GetDPIY() const { return DPI_Y; }
-
-    /** Change window parameters */
-    void SetWindowDefs( float _Opacity, bool _Decorated, bool _AutoIconify, bool _Floating, const char * _Title );
-
-    /** Change window position */
-    void SetWindowPos( int _X, int _Y );
-
-    /** Get current window position */
-    void GetWindowPos( int & _X, int & _Y );
-
-    /** Set window in focus */
-    void SetInputFocus();
-
-    /** Is window in focus */
-    bool IsInputFocus() const { return bInputFocus; }
 
     /** Get window visible status */
     bool IsWindowVisible() const { return bIsWindowVisible; }
@@ -144,26 +92,38 @@ private:
     /** IEngineInterface interface. Message print callback. This must be a thread-safe function. */
     void Print( const char * _Message ) override;
 
-    /** Update input */
-    void UpdateInputAxes();
+    /** IEngineInterface interface. */
+    void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) override;
 
-    /** Process runtime event */
-    void ProcessEvent( struct SEvent const & _Event );
+    /** IEngineInterface interface. */
+    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
 
-    /** Process runtime events */
-    void ProcessEvents();
+    /** IEngineInterface interface. */
+    void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) override;
 
-    /** Send event to runtime */
-    SEvent & SendEvent();
+    /** IEngineInterface interface. */
+    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
 
-    void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp );
-    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp );
-    void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp );
-    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp );
+    /** IEngineInterface interface. */
+    void OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) override;
+
+    /** IEngineInterface interface. */
     void OnJoystickButtonEvent( struct SJoystickButtonEvent const & _Event, double _TimeStamp );
-    void OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp );
-    void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp );
-    void OnChangedVideoModeEvent( struct SChangedVideoModeEvent const & _Event );
+
+    /** IEngineInterface interface. */
+    void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) override;
+
+    /** IEngineInterface interface. */
+    void OnWindowVisible( bool _Visible ) override;
+
+    /** IEngineInterface interface. */
+    void OnCloseEvent() override;
+
+    /** IEngineInterface interface. */
+    void OnResize() override;
+
+    /** Update input */
+    void UpdateInput();
 
     /** Used to debug some features. Must be removed from release. */
     void DeveloperKeys( struct SKeyEvent const & _Event );
@@ -172,27 +132,12 @@ private:
 
     //void UpdateImgui();
 
-    void ResetVideoMode();
-
     void ShowStats();
-
-    SVideoMode VideoMode;
-
-    int FramebufferWidth;
-    int FramebufferHeight;
 
     /** scale coordinates for Retina displays */
     Float2 RetinaScale;
 
-    bool bInputFocus = false;
-
     bool bIsWindowVisible = false;
-
-    int WindowPosX = 0;
-    int WindowPosY = 0;
-
-    float DPI_X;
-    float DPI_Y;
 
     //class AImguiContext * ImguiContext;
 

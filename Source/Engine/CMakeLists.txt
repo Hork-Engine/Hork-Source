@@ -20,18 +20,11 @@ include_directories( ${Vulkan_INCLUDE_DIRS} )
 #########################################################################################
 
 #########################################################################################
-# GLFW
-message( "========== GLFW ==========" )
-option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
-option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
-option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
-option(GLFW_INSTALL "Generate installation target" OFF)
-option(GLFW_VULKAN_STATIC "Use the Vulkan loader statically linked into application" ON)
-option(GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF)
-include_directories( ThirdParty/glfw/include )
-add_definitions( -DAN_GLFW_EXTENSION )
-add_subdirectory( ThirdParty/glfw )
-set_target_properties( glfw PROPERTIES FOLDER "ThirdParty" )
+# SDL2
+message( "========== SDL2 ==========" )
+set(SDL_RENDER OFF)
+add_subdirectory( ThirdParty/SDL2 )
+set_target_properties( SDL2-static PROPERTIES FOLDER "ThirdParty" )
 #########################################################################################
 
 #########################################################################################
@@ -281,7 +274,7 @@ ${RuntimePrivate}
 ${RendererOpenGL45}
 ${RendererOpenGL45GHI}
 ${RendererOpenGL45GHIGL}
-${RendererVulkan}
+#${RendererVulkan}
 ${RendererNull}
 
 ${Imgui}
@@ -324,10 +317,9 @@ set( LIBRARIES
         ${AN_BULLET_LIBS}
         ${OPENGL_gl_LIBRARY}
         ${Vulkan_LIBRARIES}
-        glfw
         vhacd
         Recast
-#    SDL2-static
+        SDL2-static
 #    poly2tri Clipper glutess Box2D
 )
 

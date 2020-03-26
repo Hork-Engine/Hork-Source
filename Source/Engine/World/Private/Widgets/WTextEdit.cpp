@@ -803,7 +803,7 @@ bool WTextEdit::Paste() {
 
 void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) {
 
-    if ( _Event.Action != IE_Release ) {
+    if ( _Event.Action != IA_Release ) {
 
         int key = 0;
 
@@ -1052,7 +1052,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
 }
 
 void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
-    if ( _Event.Action == IE_Press ) {
+    if ( _Event.Action == IA_Press ) {
         Float2 CursorPos = GetDesktop()->GetCursorPosition();
 
         FromDesktopToWidget( CursorPos );
@@ -1079,7 +1079,7 @@ void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
         }
     }
 
-    bStartDragging = ( _Event.Action == IE_Press ) && _Event.Button == 0;
+    bStartDragging = ( _Event.Action == IA_Press ) && _Event.Button == 0;
 }
 
 void WTextEdit::OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint64_t _ClickTime ) {

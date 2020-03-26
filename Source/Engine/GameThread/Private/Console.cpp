@@ -372,7 +372,7 @@ static void CompleteString( ACommandContext & _CommandCtx, const char * _Str ) {
 }
 
 void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor ) {
-    if ( _Event.Action == IE_Press ) {
+    if ( _Event.Action == IA_Press ) {
         if ( !ConFullscreen && _Event.Key == KEY_GRAVE_ACCENT ) {
             ConDown = !ConDown;
 
@@ -383,7 +383,7 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
         }
     }
 
-    if ( IsActive() && ( _Event.Action == IE_Press || _Event.Action == IE_Repeat ) ) {
+    if ( IsActive() && ( _Event.Action == IA_Press || _Event.Action == IA_Repeat ) ) {
 
         // Scrolling (protected by mutex)
         {

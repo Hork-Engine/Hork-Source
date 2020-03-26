@@ -1039,22 +1039,11 @@ struct STextureRect {
     STextureDimension Dimension;
 };
 
-struct SVideoModeInfo {
-    int Width;
-    int Height;
-    int RefreshRate;
-    void * Monitor;
-    const char * Title;
-    bool bDecorated;
-    bool bAutoIconify;
-    bool bFloating;
-};
-
 class IRenderBackend {
 public:
     IRenderBackend( const char * _BackendName ) : BackendName( _BackendName ) {}
 
-    virtual void Initialize( SVideoModeInfo const & _Info ) = 0;
+    virtual void Initialize( struct SVideoMode const & _VideoMode ) = 0;
     virtual void Deinitialize() = 0;
 
     virtual void * GetMainWindow() = 0;

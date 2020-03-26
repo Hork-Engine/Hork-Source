@@ -80,10 +80,10 @@ void APlayerController::OnPawnChanged()
 {
     InputComponent->UnbindAll();
 
-    InputComponent->BindAction( "Pause", IE_Press, this, &APlayerController::TogglePause, true );
-    InputComponent->BindAction( "TakeScreenshot", IE_Press, this, &APlayerController::TakeScreenshot, true );
-    InputComponent->BindAction( "ToggleWireframe", IE_Press, this, &APlayerController::ToggleWireframe, true );
-    InputComponent->BindAction( "ToggleDebugDraw", IE_Press, this, &APlayerController::ToggleDebugDraw, true );
+    InputComponent->BindAction( "Pause", IA_Press, this, &APlayerController::TogglePause, true );
+    InputComponent->BindAction( "TakeScreenshot", IA_Press, this, &APlayerController::TakeScreenshot, true );
+    InputComponent->BindAction( "ToggleWireframe", IA_Press, this, &APlayerController::ToggleWireframe, true );
+    InputComponent->BindAction( "ToggleDebugDraw", IA_Press, this, &APlayerController::ToggleDebugDraw, true );
 
     if ( Pawn ) {
         Pawn->SetupPlayerInputComponent( InputComponent );
@@ -275,23 +275,7 @@ void APlayerController::UpdatePawnCamera() {
         return;
     }
 
-    SVideoMode const & vidMode = GEngine.GetVideoMode();
-    if ( vidMode.bFullscreen )
-    {
-        SPhysicalMonitor const * monitor = GRuntime.GetMonitor( vidMode.PhysicalMonitor );
+    SVideoMode const & vidMode = GRuntime.GetVideoMode();
 
-        float sx = ( float )monitor->PhysicalWidthMM / GEngine.GetFramebufferWidth();
-        float sy = ( float )monitor->PhysicalHeightMM / GEngine.GetFramebufferHeight();
-
-        float viewportWidthMM = ViewportWidth * sx;
-        float viewportHeightMM = ViewportHeight * sy;
-
-        float aspect = viewportWidthMM / viewportHeightMM;
-
-        camera->SetAspectRatio( aspect );
-    }
-    else
-    {
-        camera->SetAspectRatio( ViewportAspectRatio );
-    }
+    camera->SetAspectRatio( ViewportAspectRatio * vidMode.AspectScale );
 }
