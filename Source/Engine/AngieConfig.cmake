@@ -126,6 +126,7 @@ if(WIN32)
         /wd4714       # Ignore "force inline warning"
 		/wd4996       # Ignore "deprecated functions"
         /Zc:threadSafeInit-  # Don't generate thread-safe statics
+		/utf-8
         )
 
     set( AN_COMPILER_DEFINES
