@@ -40,6 +40,8 @@ SOFTWARE.
 #include <World/Public/Resource/Asset.h>
 #include <World/Public/Resource/AssetImporter.h>
 #include <World/Public/Base/ResourceManager.h>
+#include <World/Public/Widgets/WViewport.h>
+#include <Runtime/Public/Runtime.h>
 
 AN_CLASS_META( ASponzaModel )
 
@@ -47,35 +49,21 @@ const char * IGameModule::RootPath = "Samples/Sponza";
 
 ASponzaModel * GModule;
 
-class WMyDesktop : public WDesktop {
-    AN_CLASS( WMyDesktop, WDesktop )
-
-public:
-    TRef< APlayerController > PlayerController;
-
-protected:
-    WMyDesktop() {
-        SetDrawBackground( true );
-    }
-
-    void OnDrawBackground( ACanvas & _Canvas ) override {
-        _Canvas.DrawViewport( PlayerController, 0, 0, _Canvas.Width, _Canvas.Height );
-    }
-};
-
-AN_CLASS_META( WMyDesktop )
-
 void ASponzaModel::OnGameStart() {
 
     GModule = this;
 
     GEngine.bAllowConsole = true;
-    //GEngine.MouseSensitivity = 0.15f;
-    GEngine.MouseSensitivity = 0.3f;
-    GEngine.SetWindowDefs( 1, true, false, false, "AngieEngine: Sponza" );
-    //GEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    GEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
-    GEngine.SetCursorEnabled( false );
+
+    SVideoMode videoMode = GRuntime.GetVideoMode();
+    videoMode.Width = 1280;
+    videoMode.Height = 720;
+    videoMode.RefreshRate = 60;
+    videoMode.Opacity = 1.0f;
+    videoMode.bFullscreen = false;
+    Core::Strcpy( videoMode.Backend, sizeof( videoMode.Backend ), "OpenGL 4.5" );
+    Core::Strcpy( videoMode.Title, sizeof( videoMode.Title ), "AngieEngine: Sponza" );
+    GRuntime.PostChangeVideoMode( videoMode );
 
     SetInputMappings();
 
@@ -135,9 +123,9 @@ void ASponzaModel::OnGameStart() {
             float * HDRI = (float*)cubeFaces[i]->pRawData;
             int count = cubeFaces[i]->Width*cubeFaces[i]->Height*3;
             for ( int j = 0; j < count ; j += 3 ) {
-                HDRI[j] = pow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
-                HDRI[j + 1] = pow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
-                HDRI[j + 2] = pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
+                HDRI[j] = StdPow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
+                HDRI[j + 1] = StdPow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
+                HDRI[j + 2] = StdPow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
             }
         }
         ATexture* SkyboxTexture = NewObject< ATexture >();
@@ -177,17 +165,25 @@ void ASponzaModel::OnGameStart() {
     dirlight->LightComponent->SetDirection( Float3( -0.5f, -2, -0.5f ) );
 
     // Spawn player controller
-    PlayerController = World->SpawnActor< AMyPlayerController >();
+    PlayerController = World->SpawnActor< APlayerController >();
     PlayerController->SetPlayerIndex( CONTROLLER_PLAYER_1 );
     PlayerController->SetInputMappings( InputMappings );
     PlayerController->SetRenderingParameters( RenderingParams );
     //PlayerController->SetHUD( hud );
+    PlayerController->GetInputComponent()->MouseSensitivity = 0.3f;
 
     PlayerController->SetPawn( player );
 
-    WMyDesktop * desktop = NewObject< WMyDesktop >();
-    desktop->PlayerController = PlayerController;
+    WDesktop * desktop = NewObject< WDesktop >();
     GEngine.SetDesktop( desktop );
+
+    desktop->AddWidget(
+        &WWidget::New< WViewport >()
+        .SetPlayerController( PlayerController )
+        .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+        .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
+        .SetFocus()
+    );
 }
 
 void ASponzaModel::OnGameEnd() {
@@ -1001,7 +997,7 @@ void ASponzaModel::LoadStaticMeshes() {
         actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Sponza2/Sponza_Mesh.asset" ) );
         for ( int i = 1; i <= 24; i++ ) {
             actor = World->SpawnActor< AStaticMesh >();
-            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( ( AString("/Root/Sponza2/Sponza_Mesh_") + Int(i).ToString() + ".asset" ).CStr() ) );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( ( AString("/Root/Sponza2/Sponza_Mesh_") + Math::ToString(i) + ".asset" ).CStr() ) );
         }
     }
 

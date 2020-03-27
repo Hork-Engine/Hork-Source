@@ -47,7 +47,7 @@ APlayer::APlayer() {
     bCanEverTick = true;
 
     // Create skybox
-    static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Box" ) );
+    static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Skybox" ) );
     static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox/Skybox_MaterialInstance.asset" ) );
     SkyboxComponent = CreateComponent< AMeshComponent >( "Skybox" );
     SkyboxComponent->SetMesh( UnitBox.GetObject() );
@@ -102,9 +102,9 @@ void APlayer::SetupPlayerInputComponent( AInputComponent * _Input ) {
     _Input->BindAxis( "MoveDown", this, &APlayer::MoveDown );
     _Input->BindAxis( "TurnRight", this, &APlayer::TurnRight );
     _Input->BindAxis( "TurnUp", this, &APlayer::TurnUp );
-    _Input->BindAction( "Speed", IE_Press, this, &APlayer::SpeedPress );
-    _Input->BindAction( "Speed", IE_Release, this, &APlayer::SpeedRelease );
-    _Input->BindAction( "Attack", IE_Press, this, &APlayer::AttackPress );
+    _Input->BindAction( "Speed", IA_Press, this, &APlayer::SpeedPress );
+    _Input->BindAction( "Speed", IA_Release, this, &APlayer::SpeedRelease );
+    _Input->BindAction( "Attack", IA_Press, this, &APlayer::AttackPress );
 }
 
 void APlayer::Tick( float _TimeStep ) {
@@ -288,11 +288,11 @@ void ASphereActor::OnContact( SContactEvent const & Contact ) {
 void APlayer::AttackPress() {
     AActor * actor;
 
-    ATransform transform;
+    STransform transform;
 
     transform.Position = Camera->GetWorldPosition();// + Camera->GetWorldForwardVector() * 1.5f;
     transform.Rotation = Angl( 45.0f, 45.0f, 45.0f ).ToQuat();
-    //transform.SetScale( 0.3f );
+    transform.SetScale( 1 );
 
     actor = GetWorld()->SpawnActor< ASphereActor >( transform );
 

@@ -40,22 +40,4 @@ AMyPlayerController::AMyPlayerController() {
 
 void AMyPlayerController::Tick( float _TimeStep ) {
     Super::Tick( _TimeStep );
-
-    UpdateCameraAspectRatio();
-}
-
-void AMyPlayerController::UpdateCameraAspectRatio() {
-    if ( !Pawn )
-    {
-        return;
-    }
-
-    ACameraComponent * Camera = Pawn->GetPawnCamera();
-    if ( !Camera )
-    {
-        return;
-    }
-
-    Camera->SetAspectRatio( GEngine.GetVideoAspectRatio() );
-    Camera->SetFovX( 100.0f );
 }
