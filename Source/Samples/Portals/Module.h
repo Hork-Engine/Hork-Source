@@ -42,7 +42,7 @@ public:
     TRef< ARenderingParameters > RenderingParams;
     TRef< AInputMappings > InputMappings;
     AWorld * World;
-    AMyPlayerController * PlayerController;
+    APlayerController * PlayerController;
 
     AModule() {}
 

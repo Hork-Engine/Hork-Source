@@ -40,7 +40,4 @@ protected:
     void Tick( float _TimeStep ) override;
 
     AMyPlayerController();
-
-private:
-    void UpdateCameraAspectRatio();
 };

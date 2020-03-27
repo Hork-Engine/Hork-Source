@@ -36,28 +36,14 @@ SOFTWARE.
 #include <World/Public/Components/InputComponent.h>
 #include <World/Public/Canvas.h>
 #include <World/Public/Base/ResourceManager.h>
+#include <World/Public/Widgets/WViewport.h>
+
+#include <Core/Public/Image.h>
+#include <Runtime/Public/Runtime.h>
 
 AN_CLASS_META( AModule )
 
 const char * IGameModule::RootPath = "Samples/Portals";
-
-class WMyDesktop : public WDesktop {
-    AN_CLASS( WMyDesktop, WDesktop )
-
-public:
-    TRef< APlayerController > PlayerController;
-
-protected:
-    WMyDesktop() {
-        SetDrawBackground( true );
-    }
-
-    void OnDrawBackground( ACanvas & _Canvas ) override {
-        _Canvas.DrawViewport( PlayerController, 0, 0, _Canvas.Width, _Canvas.Height );
-    }
-};
-
-AN_CLASS_META( WMyDesktop )
 
 AModule * GModule;
 
@@ -65,26 +51,56 @@ void AModule::OnGameStart() {
 
     GModule = this;
 
-    //GEngine.MouseSensitivity = 0.15f;
-    GEngine.MouseSensitivity = 0.4f;
-    GEngine.SetVideoMode( 640,480,0,60,false,"OpenGL 4.5");
-    //GEngine.SetVideoMode( 1920,1080,0,60,false,"OpenGL 4.5");
-    //GEngine.SetVideoMode( 320,240,0,60,false,"OpenGL 4.5");
-    GEngine.SetCursorEnabled( false );
-    GEngine.SetWindowDefs(1,true,false,false,"AngieEngine: Portals");
+    SVideoMode videoMode = GRuntime.GetVideoMode();
+    videoMode.Width = 1280;
+    videoMode.Height = 720;
+    videoMode.RefreshRate = 60;
+    videoMode.Opacity = 1.0f;
+    videoMode.bFullscreen = false;
+    Core::Strcpy( videoMode.Backend, sizeof( videoMode.Backend ), "OpenGL 4.5" );
+    Core::Strcpy( videoMode.Title, sizeof( videoMode.Title ), "AngieEngine: Portals" );
+    GRuntime.PostChangeVideoMode( videoMode );
 
     SetInputMappings();
     CreateResources();
 
     World = AWorld::CreateWorld();
 
+    TPodArray< SPortalDef > portals;
+    TPodArray< Float3 > hullVerts;
+
+    portals.Resize( 5 );
+
     ALevel * level = NewObject< ALevel >();
     World->AddLevel( level );
     //ALevel * level = World->GetPersistentLevel();
-    int area1 = level->AddArea( Float3(-1,0,0), Float3(2.0f), Float3(-1,0,0) );
-    int area2 = level->AddArea( Float3(-3,0,0), Float3(2.0f), Float3(-3,0,0) );
-    int area3 = level->AddArea( Float3(1,0,0), Float3(2.0f), Float3(1,0,0) );
-    int area4 = level->AddArea( Float3(1,0,3), Float3(2.0f,2.0f,4.0f), Float3(1,0,3) );
+
+    Float3 position;
+    Float3 halfExtents;
+
+    level->Areas.Resize( 4 );
+    level->Areas.ZeroMem();
+
+    position = Float3(-1,0,0);
+    halfExtents = Float3(2.0f) * 0.5f;
+    level->Areas[0].Bounds.Mins = position - halfExtents;
+    level->Areas[0].Bounds.Maxs = position + halfExtents;
+
+    position = Float3(-3,0,0);
+    halfExtents = Float3(2.0f) * 0.5f;
+    level->Areas[1].Bounds.Mins = position - halfExtents;
+    level->Areas[1].Bounds.Maxs = position + halfExtents;
+
+    position = Float3(1,0,0);
+    halfExtents = Float3(2.0f) * 0.5f;
+    level->Areas[2].Bounds.Mins = position - halfExtents;
+    level->Areas[2].Bounds.Maxs = position + halfExtents;
+
+    position = Float3(1,0,3);
+    halfExtents = Float3(2,2,4) * 0.5f;
+    level->Areas[3].Bounds.Mins = position - halfExtents;
+    level->Areas[3].Bounds.Maxs = position + halfExtents;
+
 
     Float3 points[4] = {
         Float3( 0, 0.2f, -0.2f ),
@@ -92,29 +108,52 @@ void AModule::OnGameStart() {
         Float3( 0, 0.8f, 0.2f ),
         Float3( 0, 0.2f, 0.2f )
     };
-    level->AddPortal( points, 4, area1, area3 );
+    portals[0].FirstVert = hullVerts.Size();
+    portals[0].NumVerts = 4;
+    portals[0].Areas[0] = 0;
+    portals[0].Areas[1] = 2;
+    hullVerts.Append( points, 4 );
+
     for ( int i = 0 ; i < 4 ; i++ ) {
         points[i].X -= 2;
     }
-    level->AddPortal( points, 4, area1, area2 );
+    portals[1].FirstVert = hullVerts.Size();
+    portals[1].NumVerts = 4;
+    portals[1].Areas[0] = 0;
+    portals[1].Areas[1] = 1;
+    hullVerts.Append( points, 4 );
+
     Float3 points2[4] = {
         Float3( 0.2f, 0.2f, 1 ),
         Float3( 0.4f, 0.2f, 1 ),
         Float3( 0.4f, 0.8f, 1 ),
         Float3( 0.2f, 0.8f, 1 )
     };
-    level->AddPortal( points2, 4, area3, area4 );
+    portals[2].FirstVert = hullVerts.Size();
+    portals[2].NumVerts = 4;
+    portals[2].Areas[0] = 2;
+    portals[2].Areas[1] = 3;
+    hullVerts.Append( points2, 4 );
 
     for ( int i = 0 ; i < 4 ; i++ ) {
         points[i].X -= 2;
     }
-    level->AddPortal( points, 4, -1, area2 );
+    portals[3].FirstVert = hullVerts.Size();
+    portals[3].NumVerts = 4;
+    portals[3].Areas[0] = -1;
+    portals[3].Areas[1] = 1;
+    hullVerts.Append( points, 4 );
 
     for ( int i = 0 ; i < 4 ; i++ ) {
         points2[i].Z += 4;
     }
-    level->AddPortal( points2, 4, area4, -1 );
+    portals[4].FirstVert = hullVerts.Size();
+    portals[4].NumVerts = 4;
+    portals[4].Areas[0] = 3;
+    portals[4].Areas[1] = -1;
+    hullVerts.Append( points2, 4 );
 
+    level->CreatePortals( portals.ToPtr(), portals.Size(), hullVerts.ToPtr() );
     level->Initialize();
 
     // Spawn HUD
@@ -126,7 +165,7 @@ void AModule::OnGameStart() {
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = true;
 
-    ATransform t;
+    STransform t;
     t.Rotation = Quat::Identity();
     t.Scale = Float3(0.1f);
     //int n = 0;
@@ -160,17 +199,25 @@ void AModule::OnGameStart() {
 
 
     // Spawn player controller
-    PlayerController = World->SpawnActor< AMyPlayerController >();
+    PlayerController = World->SpawnActor< APlayerController >();
     PlayerController->SetPlayerIndex( CONTROLLER_PLAYER_1 );
     PlayerController->SetInputMappings( InputMappings );
     PlayerController->SetRenderingParameters( RenderingParams );
     //PlayerController->SetHUD( hud );
+    PlayerController->GetInputComponent()->MouseSensitivity = 0.3f;
 
     PlayerController->SetPawn( player );
 
-    WMyDesktop * desktop = NewObject< WMyDesktop >();
-    desktop->PlayerController = PlayerController;
+    WDesktop * desktop = NewObject< WDesktop >();
     GEngine.SetDesktop( desktop );
+
+    desktop->AddWidget(
+        &WWidget::New< WViewport >()
+        .SetPlayerController( PlayerController )
+        .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
+        .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
+        .SetFocus()
+    );
 }
 
 void AModule::SetInputMappings() {
@@ -229,21 +276,21 @@ void AModule::CreateResources() {
         };
         AImage rt, lt, up, dn, bk, ft;
         AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
-        rt.LoadHDRI( Cubemap[0], false, false, 3 );
-        lt.LoadHDRI( Cubemap[1], false, false, 3 );
-        up.LoadHDRI( Cubemap[2], false, false, 3 );
-        dn.LoadHDRI( Cubemap[3], false, false, 3 );
-        bk.LoadHDRI( Cubemap[4], false, false, 3 );
-        ft.LoadHDRI( Cubemap[5], false, false, 3 );
+        rt.LoadHDRI( Cubemap[0], false, nullptr, 3 );
+        lt.LoadHDRI( Cubemap[1], false, nullptr, 3 );
+        up.LoadHDRI( Cubemap[2], false, nullptr, 3 );
+        dn.LoadHDRI( Cubemap[3], false, nullptr, 3 );
+        bk.LoadHDRI( Cubemap[4], false, nullptr, 3 );
+        ft.LoadHDRI( Cubemap[5], false, nullptr, 3 );
         //const float HDRI_Scale = 4.0f;
         //const float HDRI_Pow = 1.1f;
         //for ( int i = 0 ; i < 6 ; i++ ) {
         //    float * HDRI = (float*)cubeFaces[i]->pRawData;
         //    int count = cubeFaces[i]->Width*cubeFaces[i]->Height*3;
         //    for ( int j = 0; j < count ; j += 3 ) {
-        //        HDRI[j] = pow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
-        //        HDRI[j + 1] = pow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
-        //        HDRI[j + 2] = pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
+        //        HDRI[j] = StdPow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
+        //        HDRI[j + 1] = StdPow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
+        //        HDRI[j + 2] = StdPow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
         //    }
         //}
         ATexture * SkyboxTexture = NewObject< ATexture >();
