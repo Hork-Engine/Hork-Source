@@ -124,7 +124,7 @@ protected:
     int Impl_SeekSet( long _Offset ) override;
     int Impl_SeekCur( long _Offset ) override;
     int Impl_SeekEnd( long _Offset ) override;
-    long Impl_SizeInBytes() override;
+    size_t Impl_SizeInBytes() override;
     bool Impl_Eof() override;
 
 private:
@@ -198,7 +198,7 @@ protected:
     int Impl_SeekSet( long _Offset ) override;
     int Impl_SeekCur( long _Offset ) override;
     int Impl_SeekEnd( long _Offset ) override;
-    long Impl_SizeInBytes() override;
+    size_t Impl_SizeInBytes() override;
     bool Impl_Eof() override;
 
 private:

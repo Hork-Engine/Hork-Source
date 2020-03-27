@@ -229,12 +229,12 @@ int AFileStream::Impl_SeekEnd( long _Offset ) {
     return fseek( ( FILE * )Handle, _Offset, SEEK_END );
 }
 
-long AFileStream::Impl_SizeInBytes() {
+size_t AFileStream::Impl_SizeInBytes() {
     long offset = Tell();
     SeekEnd( 0 );
     long sizeInBytes = Tell();
     SeekSet( offset );
-    return sizeInBytes;
+    return (size_t)sizeInBytes;
 }
 
 bool AFileStream::Impl_Eof() {
@@ -463,8 +463,8 @@ int AMemoryStream::Impl_SeekEnd( long _Offset ) {
     return 0;
 }
 
-long AMemoryStream::Impl_SizeInBytes() {
-    return static_cast< long >(MemoryBufferSize);
+size_t AMemoryStream::Impl_SizeInBytes() {
+    return static_cast< size_t >(MemoryBufferSize);
 }
 
 bool AMemoryStream::Impl_Eof() {

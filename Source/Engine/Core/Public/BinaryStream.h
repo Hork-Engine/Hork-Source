@@ -403,7 +403,7 @@ public:
         return Impl_SeekEnd( _Offset );
     }
 
-    long SizeInBytes() {
+    size_t SizeInBytes() {
         return Impl_SizeInBytes();
     }
 
@@ -436,7 +436,7 @@ protected:
     virtual int Impl_SeekSet( long _Offset ) = 0;
     virtual int Impl_SeekCur( long _Offset ) = 0;
     virtual int Impl_SeekEnd( long _Offset ) = 0;
-    virtual long Impl_SizeInBytes() = 0;
+    virtual size_t Impl_SizeInBytes() = 0;
     virtual bool Impl_Eof() = 0;
 
 private:
