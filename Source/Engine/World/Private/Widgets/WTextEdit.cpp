@@ -38,9 +38,6 @@ SOFTWARE.
 // Forward decl
 static Float2 CalcTextRect( AFont const * _Font, SWideChar const * _TextBegin, SWideChar const * _TextEnd, const SWideChar** _Remaining, Float2 * _OutOffset, bool _StopOnNewLine );
 
-#undef INCLUDE_STB_TEXTEDIT_H
-#include "stb_textedit.h"
-
 #undef STB_TEXTEDIT_STRING
 #undef STB_TEXTEDIT_CHARTYPE
 #define STB_TEXTEDIT_STRING             WTextEdit
@@ -64,6 +61,9 @@ static Float2 CalcTextRect( AFont const * _Font, SWideChar const * _TextBegin, S
 #define STB_TEXTEDIT_K_WORDLEFT     0x1000C // keyboard input to move cursor left one word
 #define STB_TEXTEDIT_K_WORDRIGHT    0x1000D // keyboard input to move cursor right one word
 #define STB_TEXTEDIT_K_SHIFT        0x20000 // a power of two that is or'd in to a keyboard input to represent the shift key
+
+#undef INCLUDE_STB_TEXTEDIT_H
+#include "stb_textedit.h"
 
 static SWideChar STB_TEXTEDIT_NEWLINE = '\n';
 
