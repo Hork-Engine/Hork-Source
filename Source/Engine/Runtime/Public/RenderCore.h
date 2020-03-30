@@ -732,6 +732,7 @@ enum EHUDSamplerType {
 struct SHUDDrawCmd {
     unsigned int    IndexCount;
     unsigned int    StartIndexLocation;
+    unsigned int    BaseVertexLocation;
     Float2          ClipMins;
     Float2          ClipMaxs;
     EHUDDrawCmd     Type;
