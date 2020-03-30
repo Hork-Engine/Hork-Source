@@ -829,7 +829,6 @@ static void WaitMicrosecondsWIN32( int _Microseconds ) {
 
     SetWaitableTimer( WaitableTimer.Handle, &WaitTime, 0, NULL, NULL, FALSE );
     WaitForSingleObject( WaitableTimer.Handle, INFINITE );
-    //CloseHandle( WaitableTimer );
 #endif
 }
 
