@@ -127,10 +127,10 @@ void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback )
 
     // Init recast navigation module
     dtAllocSetCustom( NavModuleAlloc, NavModuleFree );
-
+#if 0
     // Init Imgui allocators
     ImGui::SetAllocatorFunctions( ImguiModuleAlloc, ImguiModuleFree, NULL );
-
+#endif
     GResourceManager.Initialize();
 
     GVertexMemoryGPU.Initialize();
@@ -143,7 +143,7 @@ void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback )
     GAudioSystem.RegisterDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
     GAudioSystem.RegisterDecoder( "wav", CreateInstanceOf< AWavDecoder >() );
 
-    AFont::SetGlyphRanges( AFont::GetGlyphRangesCyrillic() );
+    AFont::SetGlyphRanges( GLYPH_RANGE_CYRILLIC );
 
     Canvas.Initialize();
 

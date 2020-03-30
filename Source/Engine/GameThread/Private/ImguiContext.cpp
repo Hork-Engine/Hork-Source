@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 */
-
+#if 0
 #include "ImguiContext.h"
 
 #include <GameThread/Public/EngineInstance.h>
@@ -170,3 +170,4 @@ void AImguiContext::BeginFrame( float _TimeStep ) {
 void AImguiContext::EndFrame() {
     ImGui::Render();
 }
+#endif

@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #pragma once
-
+#if 0
 #include <World/Public/Base/BaseObject.h>
 #include <Runtime/Public/Runtime.h>
 #include <World/Public/Resource/FontAtlas.h>
@@ -56,3 +56,4 @@ protected:
 
     ImGuiContext * GUIContext;
 };
+#endif

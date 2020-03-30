@@ -180,9 +180,9 @@ source_group( "Renderer\\Null" FILES ${RendererNull} )
 
 #---------------------------------------------------------------------
 # Imgui third party library
-file( GLOB Imgui imgui/*.h imgui/*.cpp )
+#file( GLOB Imgui imgui/*.h imgui/*.cpp )
 
-source_group( "imgui" FILES ${Imgui} )
+#source_group( "imgui" FILES ${Imgui} )
 
 #---------------------------------------------------------------------
 # World public

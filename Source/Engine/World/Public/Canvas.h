@@ -33,15 +33,15 @@ SOFTWARE.
 #include <Runtime/Public/RenderCore.h>
 #include <Core/Public/PodArray.h>
 #include <World/Public/Resource/FontAtlas.h>
-
-#include <imgui/imgui_internal.h>
+#include "imdrawlist.h"
 
 class ACameraComponent;
 class ARenderingParameters;
 class ATexture;
 class AMaterialInstance;
 
-struct SViewport {
+struct SViewport
+{
     ACameraComponent * Camera;
     ARenderingParameters * RenderingParams;
     int X;
@@ -50,7 +50,8 @@ struct SViewport {
     int Height;
 };
 
-enum EDrawCornerFlags {
+enum EDrawCornerFlags
+{
     CORNER_ROUND_TOP_LEFT       = 1 << 0,
     CORNER_ROUND_TOP_RIGHT      = 1 << 1,
     CORNER_ROUND_BOTTOM_LEFT    = 1 << 2,
@@ -63,17 +64,6 @@ enum EDrawCornerFlags {
     CORNER_ROUND_NONE           = 0
 };
 
-enum EDrawCursor {
-    DRAW_CURSOR_ARROW,
-    DRAW_CURSOR_TEXT_INPUT,
-    DRAW_CURSOR_RESIZE_ALL,
-    DRAW_CURSOR_RESIZE_NS,
-    DRAW_CURSOR_RESIZE_EW,
-    DRAW_CURSOR_RESIZE_NESW,
-    DRAW_CURSOR_RESIZE_NWSE,
-    DRAW_CURSOR_RESIZE_HAND
-};
-
 class ACanvas {
     AN_FORBID_COPY( ACanvas )
 
@@ -81,7 +71,7 @@ public:
     int Width;
     int Height;
 
-    ACanvas() {}
+    ACanvas();
 
     void Initialize();
     void Deinitialize();

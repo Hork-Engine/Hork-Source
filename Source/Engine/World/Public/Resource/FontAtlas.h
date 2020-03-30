@@ -31,20 +31,107 @@ SOFTWARE.
 #pragma once
 
 #include "Texture.h"
-#include <imgui/imgui.h>
+
+#include <Core/Public/Utf8.h>
+
+enum EDrawCursor
+{
+    DRAW_CURSOR_ARROW,
+    DRAW_CURSOR_TEXT_INPUT,
+    DRAW_CURSOR_RESIZE_ALL,
+    DRAW_CURSOR_RESIZE_NS,
+    DRAW_CURSOR_RESIZE_EW,
+    DRAW_CURSOR_RESIZE_NESW,
+    DRAW_CURSOR_RESIZE_NWSE,
+    DRAW_CURSOR_RESIZE_HAND
+};
+
+struct SFontGlyph
+{
+    /** 0x0000..0xFFFF */
+    SWideChar Codepoint;
+    /** Distance to next character (data from font + GlyphExtraSpacing.X baked in). */
+    float AdvanceX;
+    /** Glyph corners. */
+    float X0, Y0, X1, Y1;
+    /** Texture coordinates. */
+    float U0, V0, U1, V1;
+};
+
+struct SFontCustomRect
+{
+    /**  User ID. Use < 0x110000 to map into a font glyph, >= 0x110000 for other/internal/custom texture data. */
+    unsigned int Id;
+    /** Rectangle width. */
+    unsigned short Width;
+    /** Rectangle height. */
+    unsigned short Height;
+    /** Packed position in Atlas. (read only) */
+    unsigned short X;
+    /** Packed position in Atlas. (read only) */
+    unsigned short Y;
+    /** For custom font glyphs only (ID < 0x110000): glyph xadvance. */
+    float GlyphAdvanceX;
+    /** For custom font glyphs only (ID < 0x110000): glyph display offset. */
+    Float2 GlyphOffset;
+};
+
+enum EGlyphRange {
+    /** Basic Latin, Extended Latin */
+    GLYPH_RANGE_DEFAULT,
+    /** Default + Korean characters */
+    GLYPH_RANGE_KOREAN,
+    /** Default + Hiragana, Katakana, Half-Width, Selection of 1946 Ideographs */
+    GLYPH_RANGE_JAPANESE,
+    /** Default + Half-Width + Japanese Hiragana/Katakana + full set of about 21000 CJK Unified Ideographs */
+    GLYPH_RANGE_CHINESE_FULL,
+    /** Default + Half-Width + Japanese Hiragana/Katakana + set of 2500 CJK Unified Ideographs for common simplified Chinese */
+    GLYPH_RANGE_CHINESE_SIMPLIFIED_COMMON,
+    /** Default + about 400 Cyrillic characters */
+    GLYPH_RANGE_CYRILLIC,
+    /** Default + Thai characters */
+    GLYPH_RANGE_THAI,
+    /** Default + Vietname characters */
+    GLYPH_RANGE_VIETNAMESE
+};
+
+struct SFontCreateInfo {
+    /** Index of font within TTF/OTF file. Default 0. */
+    int FontNum;
+    /** Size in pixels for rasterizer (more or less maps to the resulting font height). Default 13. */
+    float SizePixels;
+    /** Rasterize at higher quality for sub-pixel positioning. Default 3. */
+    int OversampleH;
+    /** Rasterize at higher quality for sub-pixel positioning. We don't use sub-pixel positions on the Y axis. Default 1. */
+    int OversampleV;
+    /** Align every glyph to pixel boundary. Useful e.g. if you are merging a non-pixel aligned font with the default font. If enabled, you can set OversampleH/V to 1. Default false. */
+    bool bPixelSnapH;
+    /** Extra spacing (in pixels) between glyphs. Only X axis is supported for now. Default (0,0). */
+    Float2 GlyphExtraSpacing;
+    /** Offset all glyphs from this font input. Default (0,0). */
+    Float2 GlyphOffset;
+    /** Unicode range. */
+    EGlyphRange GlyphRange;
+    /** Minimum AdvanceX for glyphs, set Min to align font icons, set both Min/Max to enforce mono-space font. Default 0. */
+    float GlyphMinAdvanceX;
+    /** Maximum AdvanceX for glyphs. Default FLT_MAX. */
+    float GlyphMaxAdvanceX;
+    /** Brighten (>1.0f) or darken (<1.0f) font output. Brightening small fonts may be a good workaround to make them more readable. Default 1. */
+    float RasterizerMultiply;
+};
 
 class AFont : public AResource {
     AN_CLASS( AFont, AResource )
 
 public:
     /** Initialize from memory */
-    void InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
+    void InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo const * _CreateInfo = nullptr );
 
     /** Initialize from memory compressed */
-    void InitializeFromMemoryCompressedTTF( const void * _SysMem, size_t _SizeInBytes, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
+    void InitializeFromMemoryCompressedTTF( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo const * _CreateInfo = nullptr );
 
     /** Initialize from memory compressed base85 */
-    void InitializeFromMemoryCompressedBase85TTF( const char * _SysMem, float _SizePixels, unsigned short const * _GlyphRanges = nullptr );
+    void InitializeFromMemoryCompressedBase85TTF( const char * _SysMem, SFontCreateInfo const * _CreateInfo = nullptr );
 
     /** Purge font data */
     void Purge();
@@ -53,7 +140,9 @@ public:
 
     int GetFontSize() const;
 
-    ImFontGlyph const * FindGlyph( SWideChar c ) const;
+    Float2 const & GetUVWhitePixel() const;
+
+    SFontGlyph const * FindGlyph( SWideChar c ) const;
 
     float GetCharAdvance( SWideChar c ) const;
 
@@ -67,33 +156,15 @@ public:
 
     Float2 const & GetDisplayOffset() const;
 
-    void * GetImguiFontAtlas() { return &Atlas; }
+    bool GetMouseCursorTexData( EDrawCursor cursor_type, Float2* out_offset, Float2* out_size, Float2 out_uv_border[2], Float2 out_uv_fill[2] ) const;
 
     ATexture * GetTexture() { return AtlasTexture; }
 
-    static void SetGlyphRanges( const unsigned short * _GlyphRanges );
-
-    // Helpers.
-
-    /** Basic Latin, Extended Latin */
-    static const unsigned short * GetGlyphRangesDefault();
-    /** Default + Korean characters */
-    static const unsigned short * GetGlyphRangesKorean();
-    /** Default + Hiragana, Katakana, Half-Width, Selection of 1946 Ideographs */
-    static const unsigned short * GetGlyphRangesJapanese();
-    /** Default + Half-Width + Japanese Hiragana/Katakana + full set of about 21000 CJK Unified Ideographs */
-    static const unsigned short * GetGlyphRangesChineseFull();
-    /** Default + Half-Width + Japanese Hiragana/Katakana + set of 2500 CJK Unified Ideographs for common simplified Chinese */
-    static const unsigned short * GetGlyphRangesChineseSimplifiedCommon();
-    /** Default + about 400 Cyrillic characters */
-    static const unsigned short * GetGlyphRangesCyrillic();
-    /** Default + Thai characters */
-    static const unsigned short * GetGlyphRangesThai();
-    /** Default + Vietname characters */
-    static const unsigned short * GetGlyphRangesVietnamese();
+    static void SetGlyphRanges( EGlyphRange _GlyphRange );
 
 protected:
-    AFont() {}
+    AFont();
+    ~AFont();
 
     /** Load resource from file */
     bool LoadResource( AString const & _Path ) override;
@@ -104,9 +175,36 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Fonts/Default"; }
 
 private:
-    void CreateTexture();
+    bool Build( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo const * _CreateInfo );
+    void AddGlyph( SFontCreateInfo const & cfg, SWideChar c, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float advance_x );
+    int AddCustomRect( unsigned int id, int width, int height );
 
-    ImFontAtlas Atlas;
-    ImFont * Font;
+    // Cache-friendly glyph advanceX
+    TPodArray< float > WideCharAdvanceX;
+    // AdvanceX for fallback character
+    float FallbackAdvanceX;
+    // Indexed by widechar, holds indices for corresponding glyphs
+    TPodArray< unsigned short > WideCharToGlyph;
+    // Font glyphs
+    TPodArray< SFontGlyph > Glyphs;
+    // Glyph for fallback character
+    SFontGlyph const * FallbackGlyph;
+    // Font size in pixels
+    float FontSize;
+    // Offset for font rendering in pixels
+    Float2 DisplayOffset;
+    // Texture raw data
+    byte * TexPixelsAlpha8;
+    // Texture width
+    int TexWidth;
+    // Texture height
+    int TexHeight;
+    // 1.0f/TexWidth, 1.0f/TexHeight
+    Float2 TexUvScale;
+    // Texture coordinates to a white pixel
+    Float2 TexUvWhitePixel;
+    // Texture object
     TRef< ATexture > AtlasTexture;
+    // Rectangles for packing custom texture data into the atlas.
+    TPodArray< SFontCustomRect > CustomRects;
 };

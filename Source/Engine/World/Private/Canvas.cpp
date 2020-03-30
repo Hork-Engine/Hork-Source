@@ -39,6 +39,12 @@ SOFTWARE.
 
 #include <World/Public/Base/ResourceManager.h>
 
+ACanvas::ACanvas()
+    : DrawList( &DrawListSharedData )
+{
+
+}
+
 void ACanvas::Initialize() {
     GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/DroidSansMono.ttf.16" );
 
@@ -104,10 +110,9 @@ void ACanvas::PopBlendingState() {
 
 void ACanvas::SetCurrentFont( AFont * _Font ) {
     if ( _Font ) {
-        ImFontAtlas * atlas = (ImFontAtlas *)_Font->GetImguiFontAtlas();
-        DrawListSharedData.TexUvWhitePixel = atlas->TexUvWhitePixel;
+        DrawListSharedData.TexUvWhitePixel = _Font->GetUVWhitePixel();
         DrawListSharedData.FontSize = _Font->GetFontSize();
-        DrawListSharedData.Font = !atlas->Fonts.empty() ? atlas->Fonts[0] : nullptr;
+        DrawListSharedData.Font = _Font;
     } else {
         DrawListSharedData.TexUvWhitePixel = Float2::Zero();
         DrawListSharedData.FontSize = 16;
@@ -176,7 +181,6 @@ void ACanvas::DrawTextUTF8( Float2 const & pos, AColor4 const & col, const char*
 }
 
 void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
-
     AN_ASSERT( _Font && _FontSize > 0.0f );
 
     if ( _Color.IsTransparent() ) {
@@ -188,6 +192,10 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     }
 
     if ( _TextBegin == _TextEnd ) {
+        return;
+    }
+
+    if ( !_Font->IsValid() ) {
         return;
     }
 
@@ -274,7 +282,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
                 // Wrapping skips upcoming blanks
                 while ( s < _TextEnd ) {
                     const char c = *s;
-                    if ( ImCharIsBlankA(c) ) {
+                    if ( Core::CharIsBlank(c) ) {
                         s++;
                     } else if (c == '\n') {
                         s++;
@@ -288,11 +296,11 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         }
 
         // Decode and advance source
-        unsigned int c = (unsigned int)*s;
+        SWideChar c = (SWideChar)*s;
         if ( c < 0x80 ) {
             s += 1;
         } else {
-            s += ImTextCharFromUtf8( &c, s, _TextEnd );
+            s += Core::WideCharDecodeUTF8( s, _TextEnd, c );
             if ( c == 0 ) // Malformed UTF-8?
                 break;
         }
@@ -305,82 +313,80 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
                     break; // break out of main loop
                 continue;
             }
-            if (c == '\r')
+            if ( c == '\r' )
                 continue;
         }
 
-        float charWidth = 0.0f;
-        if ( const ImFontGlyph * glyph = _Font->FindGlyph( (SWideChar)c ) ) {
-            charWidth = glyph->AdvanceX * scale;
+        SFontGlyph const * glyph = _Font->FindGlyph( c );
+        float charWidth = glyph->AdvanceX * scale;
 
-            // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
-            if ( c != ' ' && c != '\t' ) {
-                // We don't do a second finer clipping test on the Y axis as we've already skipped anything before clipRect.Y and exit once we pass clipRect.W
-                float x1 = x + glyph->X0 * scale;
-                float x2 = x + glyph->X1 * scale;
-                float y1 = y + glyph->Y0 * scale;
-                float y2 = y + glyph->Y1 * scale;
-                if ( x1 <= clipRect.Z && x2 >= clipRect.X ) {
-                    // Render a character
-                    float u1 = glyph->U0;
-                    float v1 = glyph->V0;
-                    float u2 = glyph->U1;
-                    float v2 = glyph->V1;
+        // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
+        if ( c != ' ' && c != '\t' ) {
+            // We don't do a second finer clipping test on the Y axis as we've already skipped anything before clipRect.Y and exit once we pass clipRect.W
+            float x1 = x + glyph->X0 * scale;
+            float x2 = x + glyph->X1 * scale;
+            float y1 = y + glyph->Y0 * scale;
+            float y2 = y + glyph->Y1 * scale;
+            if ( x1 <= clipRect.Z && x2 >= clipRect.X ) {
+                // Render a character
+                float u1 = glyph->U0;
+                float v1 = glyph->V0;
+                float u2 = glyph->U1;
+                float v2 = glyph->V1;
 
-                    // CPU side clipping used to fit text in their frame when the frame is too small. Only does clipping for axis aligned quads.
-                    if ( _CPUFineClipRect ) {
-                        if ( x1 < clipRect.X ) {
-                            u1 = u1 + (1.0f - (x2 - clipRect.X) / (x2 - x1)) * (u2 - u1);
-                            x1 = clipRect.X;
-                        }
-                        if ( y1 < clipRect.Y ) {
-                            v1 = v1 + (1.0f - (y2 - clipRect.Y) / (y2 - y1)) * (v2 - v1);
-                            y1 = clipRect.Y;
-                        }
-                        if ( x2 > clipRect.Z ) {
-                            u2 = u1 + ((clipRect.Z - x1) / (x2 - x1)) * (u2 - u1);
-                            x2 = clipRect.Z;
-                        }
-                        if ( y2 > clipRect.W ) {
-                            v2 = v1 + ((clipRect.W - y1) / (y2 - y1)) * (v2 - v1);
-                            y2 = clipRect.W;
-                        }
-                        if ( y1 >= y2 ) {
-                            x += charWidth;
-                            continue;
-                        }
+                // CPU side clipping used to fit text in their frame when the frame is too small. Only does clipping for axis aligned quads.
+                if ( _CPUFineClipRect ) {
+                    if ( x1 < clipRect.X ) {
+                        u1 = u1 + (1.0f - (x2 - clipRect.X) / (x2 - x1)) * (u2 - u1);
+                        x1 = clipRect.X;
                     }
-
-                    pIndices[0] = firstVertex;
-                    pIndices[1] = firstVertex+1;
-                    pIndices[2] = firstVertex+2;
-                    pIndices[3] = firstVertex;
-                    pIndices[4] = firstVertex+2;
-                    pIndices[5] = firstVertex+3;
-                    pVertices[0].pos.x = x1;
-                    pVertices[0].pos.y = y1;
-                    pVertices[0].col = color;
-                    pVertices[0].uv.x = u1;
-                    pVertices[0].uv.y = v1;
-                    pVertices[1].pos.x = x2;
-                    pVertices[1].pos.y = y1;
-                    pVertices[1].col = color;
-                    pVertices[1].uv.x = u2;
-                    pVertices[1].uv.y = v1;
-                    pVertices[2].pos.x = x2;
-                    pVertices[2].pos.y = y2;
-                    pVertices[2].col = color;
-                    pVertices[2].uv.x = u2;
-                    pVertices[2].uv.y = v2;
-                    pVertices[3].pos.x = x1;
-                    pVertices[3].pos.y = y2;
-                    pVertices[3].col = color;
-                    pVertices[3].uv.x = u1;
-                    pVertices[3].uv.y = v2;
-                    pVertices += 4;
-                    firstVertex += 4;
-                    pIndices += 6;
+                    if ( y1 < clipRect.Y ) {
+                        v1 = v1 + (1.0f - (y2 - clipRect.Y) / (y2 - y1)) * (v2 - v1);
+                        y1 = clipRect.Y;
+                    }
+                    if ( x2 > clipRect.Z ) {
+                        u2 = u1 + ((clipRect.Z - x1) / (x2 - x1)) * (u2 - u1);
+                        x2 = clipRect.Z;
+                    }
+                    if ( y2 > clipRect.W ) {
+                        v2 = v1 + ((clipRect.W - y1) / (y2 - y1)) * (v2 - v1);
+                        y2 = clipRect.W;
+                    }
+                    if ( y1 >= y2 ) {
+                        x += charWidth;
+                        continue;
+                    }
                 }
+
+                pIndices[0] = firstVertex;
+                pIndices[1] = firstVertex+1;
+                pIndices[2] = firstVertex+2;
+                pIndices[3] = firstVertex;
+                pIndices[4] = firstVertex+2;
+                pIndices[5] = firstVertex+3;
+                pVertices[0].pos.x = x1;
+                pVertices[0].pos.y = y1;
+                pVertices[0].col = color;
+                pVertices[0].uv.x = u1;
+                pVertices[0].uv.y = v1;
+                pVertices[1].pos.x = x2;
+                pVertices[1].pos.y = y1;
+                pVertices[1].col = color;
+                pVertices[1].uv.x = u2;
+                pVertices[1].uv.y = v1;
+                pVertices[2].pos.x = x2;
+                pVertices[2].pos.y = y2;
+                pVertices[2].col = color;
+                pVertices[2].uv.x = u2;
+                pVertices[2].uv.y = v2;
+                pVertices[3].pos.x = x1;
+                pVertices[3].pos.y = y2;
+                pVertices[3].col = color;
+                pVertices[3].uv.x = u1;
+                pVertices[3].uv.y = v2;
+                pVertices += 4;
+                firstVertex += 4;
+                pIndices += 6;
             }
         }
 
@@ -397,7 +403,6 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
 }
 
 void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
-
     AN_ASSERT( _Font && _FontSize > 0.0f );
 
     if ( _Color.IsTransparent() ) {
@@ -409,6 +414,10 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     }
 
     if ( _TextBegin == _TextEnd ) {
+        return;
+    }
+
+    if ( !_Font->IsValid() ) {
         return;
     }
 
@@ -495,7 +504,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
                 // Wrapping skips upcoming blanks
                 while ( s < _TextEnd ) {
                     const char c = *s;
-                    if ( ImCharIsBlankA( c ) ) {
+                    if ( Core::CharIsBlank( c ) ) {
                         s++;
                     } else if ( c == '\n' ) {
                         s++;
@@ -532,78 +541,76 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
                 continue;
         }
 
-        float charWidth = 0.0f;
-        if ( const ImFontGlyph * glyph = _Font->FindGlyph( c ) ) {
-            charWidth = glyph->AdvanceX * scale;
+        SFontGlyph const * glyph = _Font->FindGlyph( c );
+        float charWidth = glyph->AdvanceX * scale;
 
-            // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
-            if ( c != ' ' && c != '\t' ) {
-                // We don't do a second finer clipping test on the Y axis as we've already skipped anything before clipRect.Y and exit once we pass clipRect.W
-                float x1 = x + glyph->X0 * scale;
-                float x2 = x + glyph->X1 * scale;
-                float y1 = y + glyph->Y0 * scale;
-                float y2 = y + glyph->Y1 * scale;
-                if ( x1 <= clipRect.Z && x2 >= clipRect.X ) {
-                    // Render a character
-                    float u1 = glyph->U0;
-                    float v1 = glyph->V0;
-                    float u2 = glyph->U1;
-                    float v2 = glyph->V1;
+        // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
+        if ( c != ' ' && c != '\t' ) {
+            // We don't do a second finer clipping test on the Y axis as we've already skipped anything before clipRect.Y and exit once we pass clipRect.W
+            float x1 = x + glyph->X0 * scale;
+            float x2 = x + glyph->X1 * scale;
+            float y1 = y + glyph->Y0 * scale;
+            float y2 = y + glyph->Y1 * scale;
+            if ( x1 <= clipRect.Z && x2 >= clipRect.X ) {
+                // Render a character
+                float u1 = glyph->U0;
+                float v1 = glyph->V0;
+                float u2 = glyph->U1;
+                float v2 = glyph->V1;
 
-                    // CPU side clipping used to fit text in their frame when the frame is too small. Only does clipping for axis aligned quads.
-                    if ( _CPUFineClipRect ) {
-                        if ( x1 < clipRect.X ) {
-                            u1 = u1 + ( 1.0f - ( x2 - clipRect.X ) / ( x2 - x1 ) ) * ( u2 - u1 );
-                            x1 = clipRect.X;
-                        }
-                        if ( y1 < clipRect.Y ) {
-                            v1 = v1 + ( 1.0f - ( y2 - clipRect.Y ) / ( y2 - y1 ) ) * ( v2 - v1 );
-                            y1 = clipRect.Y;
-                        }
-                        if ( x2 > clipRect.Z ) {
-                            u2 = u1 + ( ( clipRect.Z - x1 ) / ( x2 - x1 ) ) * ( u2 - u1 );
-                            x2 = clipRect.Z;
-                        }
-                        if ( y2 > clipRect.W ) {
-                            v2 = v1 + ( ( clipRect.W - y1 ) / ( y2 - y1 ) ) * ( v2 - v1 );
-                            y2 = clipRect.W;
-                        }
-                        if ( y1 >= y2 ) {
-                            x += charWidth;
-                            continue;
-                        }
+                // CPU side clipping used to fit text in their frame when the frame is too small. Only does clipping for axis aligned quads.
+                if ( _CPUFineClipRect ) {
+                    if ( x1 < clipRect.X ) {
+                        u1 = u1 + (1.0f - (x2 - clipRect.X) / (x2 - x1)) * (u2 - u1);
+                        x1 = clipRect.X;
                     }
-
-                    pIndices[ 0 ] = firstVertex;
-                    pIndices[ 1 ] = firstVertex + 1;
-                    pIndices[ 2 ] = firstVertex + 2;
-                    pIndices[ 3 ] = firstVertex;
-                    pIndices[ 4 ] = firstVertex + 2;
-                    pIndices[ 5 ] = firstVertex + 3;
-                    pVertices[ 0 ].pos.x = x1;
-                    pVertices[ 0 ].pos.y = y1;
-                    pVertices[ 0 ].col = color;
-                    pVertices[ 0 ].uv.x = u1;
-                    pVertices[ 0 ].uv.y = v1;
-                    pVertices[ 1 ].pos.x = x2;
-                    pVertices[ 1 ].pos.y = y1;
-                    pVertices[ 1 ].col = color;
-                    pVertices[ 1 ].uv.x = u2;
-                    pVertices[ 1 ].uv.y = v1;
-                    pVertices[ 2 ].pos.x = x2;
-                    pVertices[ 2 ].pos.y = y2;
-                    pVertices[ 2 ].col = color;
-                    pVertices[ 2 ].uv.x = u2;
-                    pVertices[ 2 ].uv.y = v2;
-                    pVertices[ 3 ].pos.x = x1;
-                    pVertices[ 3 ].pos.y = y2;
-                    pVertices[ 3 ].col = color;
-                    pVertices[ 3 ].uv.x = u1;
-                    pVertices[ 3 ].uv.y = v2;
-                    pVertices += 4;
-                    firstVertex += 4;
-                    pIndices += 6;
+                    if ( y1 < clipRect.Y ) {
+                        v1 = v1 + (1.0f - (y2 - clipRect.Y) / (y2 - y1)) * (v2 - v1);
+                        y1 = clipRect.Y;
+                    }
+                    if ( x2 > clipRect.Z ) {
+                        u2 = u1 + ((clipRect.Z - x1) / (x2 - x1)) * (u2 - u1);
+                        x2 = clipRect.Z;
+                    }
+                    if ( y2 > clipRect.W ) {
+                        v2 = v1 + ((clipRect.W - y1) / (y2 - y1)) * (v2 - v1);
+                        y2 = clipRect.W;
+                    }
+                    if ( y1 >= y2 ) {
+                        x += charWidth;
+                        continue;
+                    }
                 }
+
+                pIndices[0] = firstVertex;
+                pIndices[1] = firstVertex + 1;
+                pIndices[2] = firstVertex + 2;
+                pIndices[3] = firstVertex;
+                pIndices[4] = firstVertex + 2;
+                pIndices[5] = firstVertex + 3;
+                pVertices[0].pos.x = x1;
+                pVertices[0].pos.y = y1;
+                pVertices[0].col = color;
+                pVertices[0].uv.x = u1;
+                pVertices[0].uv.y = v1;
+                pVertices[1].pos.x = x2;
+                pVertices[1].pos.y = y1;
+                pVertices[1].col = color;
+                pVertices[1].uv.x = u2;
+                pVertices[1].uv.y = v1;
+                pVertices[2].pos.x = x2;
+                pVertices[2].pos.y = y2;
+                pVertices[2].col = color;
+                pVertices[2].uv.x = u2;
+                pVertices[2].uv.y = v2;
+                pVertices[3].pos.x = x1;
+                pVertices[3].pos.y = y2;
+                pVertices[3].col = color;
+                pVertices[3].uv.x = u1;
+                pVertices[3].uv.y = v2;
+                pVertices += 4;
+                firstVertex += 4;
+                pIndices += 6;
             }
         }
 
@@ -628,16 +635,19 @@ void ACanvas::DrawWChar( AFont const * _Font, SWideChar _Ch, int _X, int _Y, flo
         return;
     }
 
-    const ImFontGlyph * glyph = _Font->FindGlyph( _Ch );
-    if ( glyph ) {
-        Float2 const & fontOffset = _Font->GetDisplayOffset();
-
-        const Float2 a( _X + glyph->X0 * _Scale + fontOffset.X, _Y + glyph->Y0 * _Scale + fontOffset.Y );
-        const Float2 b( _X + glyph->X1 * _Scale + fontOffset.X, _Y + glyph->Y1 * _Scale + fontOffset.Y );
-
-        DrawList.PrimReserve( 6, 4 );
-        DrawList.PrimRectUV( a, b, Float2( glyph->U0, glyph->V0 ), Float2( glyph->U1, glyph->V1 ), _Color.GetDWord() );
+    if ( !_Font->IsValid() ) {
+        return;
     }
+
+    SFontGlyph const * glyph = _Font->FindGlyph( _Ch );
+
+    Float2 const & fontOffset = _Font->GetDisplayOffset();
+
+    const Float2 a( _X + glyph->X0 * _Scale + fontOffset.X, _Y + glyph->Y0 * _Scale + fontOffset.Y );
+    const Float2 b( _X + glyph->X1 * _Scale + fontOffset.X, _Y + glyph->Y1 * _Scale + fontOffset.Y );
+
+    DrawList.PrimReserve( 6, 4 );
+    DrawList.PrimRectUV( a, b, Float2( glyph->U0, glyph->V0 ), Float2( glyph->U1, glyph->V1 ), _Color.GetDWord() );
 }
 
 void ACanvas::DrawCharUTF8( AFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
@@ -659,11 +669,11 @@ void ACanvas::DrawTexture( ATexture * _Texture, int _X, int _Y, int _W, int _H, 
 }
 
 void ACanvas::DrawTextureQuad( ATexture * _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0, Float2 const & _UV1, Float2 const & _UV2, Float2 const & _UV3, AColor4 const & _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
-    DrawList.AddImageQuad( _Texture, ImVec2(_X0,_Y0), ImVec2(_X1,_Y1), ImVec2(_X2,_Y2), ImVec2(_X3,_Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
+    DrawList.AddImageQuad( _Texture->GetGPUResource(), ImVec2(_X0,_Y0), ImVec2(_X1,_Y1), ImVec2(_X2,_Y2), ImVec2(_X3,_Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
 }
 
 void ACanvas::DrawTextureRounded( ATexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, AColor4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
-    DrawList.AddImageRounded( _Texture, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
+    DrawList.AddImageRounded( _Texture->GetGPUResource(), ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
 }
 
 void ACanvas::DrawMaterial( AMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, AColor4 const & _Color ) {
@@ -717,12 +727,12 @@ void ACanvas::DrawViewport( ACameraComponent * _Camera, ARenderingParameters * _
 }
 
 void ACanvas::DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, AColor4 const & _Color, AColor4 const & _BorderColor, AColor4 const & _ShadowColor, const float _Scale ) {
-    ImFontAtlas * fontAtlas = DrawList._Data->Font->ContainerAtlas;
+    AFont * font = DrawList._Data->Font;
     Float2 offset, size, uv[ 4 ];
 
-    if ( fontAtlas->GetMouseCursorTexData( _Cursor, ( ImVec2* )&offset, ( ImVec2* )&size, ( ImVec2* )&uv[ 0 ], ( ImVec2* )&uv[ 2 ] ) ) {
+    if ( font->GetMouseCursorTexData( _Cursor, &offset, &size, &uv[ 0 ], &uv[ 2 ] ) ) {
         Float2 pos = _Position.Floor() - offset;
-        const ImTextureID textureId = fontAtlas->TexID;
+        ATextureGPU * textureId = font->GetTexture()->GetGPUResource();
         const uint32_t shadow = _ShadowColor.GetDWord();
         DrawList.PushClipRectFullScreen();
         DrawList.AddImage( textureId, pos + Float2( 1, 0 )*_Scale, pos + Float2( 1, 0 )*_Scale + size*_Scale, uv[ 2 ], uv[ 3 ], shadow );
