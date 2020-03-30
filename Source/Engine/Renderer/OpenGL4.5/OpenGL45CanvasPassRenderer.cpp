@@ -77,12 +77,6 @@ void ACanvasPassRenderer::Initialize() {
     //
 
     CreateSamplers();
-
-    //
-    // Create buffers
-    //
-
-    CreateBuffers();
 }
 
 void ACanvasPassRenderer::Deinitialize() {
@@ -93,9 +87,6 @@ void ACanvasPassRenderer::Deinitialize() {
         Pipelines[i].Deinitialize();
         AlphaPipeline[i].Deinitialize();
     }
-
-//    VertexBuffer.Deinitialize();
-//    IndexBuffer.Deinitialize();
 }
 
 void ACanvasPassRenderer::CreatePresentViewPipeline() {
@@ -523,23 +514,6 @@ void ACanvasPassRenderer::CreateSamplers() {
     }
 }
 
-void ACanvasPassRenderer::CreateBuffers() {
-//    VertexBufferSize = 1024;
-//    IndexBufferSize = 1024;
-
-//    GHI::BufferCreateInfo streamBufferCI = {};
-//    streamBufferCI.bImmutableStorage = false;
-//    streamBufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
-//    streamBufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
-//    streamBufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
-
-//    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( SHUDDrawVert );
-//    VertexBuffer.Initialize( streamBufferCI );
-
-//    streamBufferCI.SizeInBytes = IndexBufferSize * sizeof( unsigned short );
-//    IndexBuffer.Initialize( streamBufferCI );
-}
-
 void ACanvasPassRenderer::BeginCanvasPass() {
     RenderPassBegin renderPassBegin = {};
 
@@ -583,23 +557,7 @@ void ACanvasPassRenderer::RenderInstances() {
 
     for ( SHUDDrawList * drawList = GFrameData->DrawListHead ; drawList ; drawList = drawList->pNext ) {
 
-        Cmd.Barrier( VERTEX_ATTRIB_ARRAY_BARRIER_BIT | ELEMENT_ARRAY_BARRIER_BIT );
-
-//        // Upload vertices
-//        if ( VertexBufferSize < drawList->VerticesCount ) {
-//            VertexBufferSize = drawList->VerticesCount;
-//            VertexBuffer.Realloc( VertexBufferSize * sizeof( SHUDDrawVert ), drawList->Vertices );
-//        } else {
-//            VertexBuffer.WriteRange( 0, drawList->VerticesCount * sizeof( SHUDDrawVert ), drawList->Vertices );
-//        }
-
-//        // Upload indices
-//        if ( IndexBufferSize < drawList->IndicesCount ) {
-//            IndexBufferSize = drawList->IndicesCount;
-//            IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned short ), drawList->Indices );
-//        } else {
-//            IndexBuffer.WriteRange( 0, drawList->IndicesCount * sizeof( unsigned short ), drawList->Indices );
-//        }
+        //Cmd.Barrier( VERTEX_ATTRIB_ARRAY_BARRIER_BIT | ELEMENT_ARRAY_BARRIER_BIT );
 
         // Process render commands
         for ( SHUDDrawCmd * cmd = drawList->Commands ; cmd < &drawList->Commands[drawList->CommandsCount] ; cmd++ ) {
@@ -639,6 +597,7 @@ void ACanvasPassRenderer::RenderInstances() {
 
                     drawCmd.IndexCountPerInstance = cmd->IndexCount;
                     drawCmd.StartIndexLocation = cmd->StartIndexLocation;
+                    drawCmd.BaseVertexLocation = cmd->BaseVertexLocation;
                     Cmd.Draw( &drawCmd );
                     break;
                 }
@@ -673,6 +632,7 @@ void ACanvasPassRenderer::RenderInstances() {
 
                     drawCmd.IndexCountPerInstance = cmd->IndexCount;
                     drawCmd.StartIndexLocation = cmd->StartIndexLocation;
+                    drawCmd.BaseVertexLocation = cmd->BaseVertexLocation;
                     Cmd.Draw( &drawCmd );
                     break;
                 }
@@ -698,6 +658,7 @@ void ACanvasPassRenderer::RenderInstances() {
 
                     drawCmd.IndexCountPerInstance = cmd->IndexCount;
                     drawCmd.StartIndexLocation = cmd->StartIndexLocation;
+                    drawCmd.BaseVertexLocation = cmd->BaseVertexLocation;
                     Cmd.Draw( &drawCmd );
                     break;
                 }

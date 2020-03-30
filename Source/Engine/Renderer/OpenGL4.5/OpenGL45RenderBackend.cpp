@@ -127,8 +127,10 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_EGL, 0 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, 0 );
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG );
-    SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE | SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
+    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE | SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
     SDL_GL_SetAttribute( SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0 );
     SDL_GL_SetAttribute( SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1 );
     //    SDL_GL_SetAttribute( SDL_GL_CONTEXT_RELEASE_BEHAVIOR,  );
@@ -200,18 +202,7 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
 
     const char * driverVersion = (const char *)glGetString( GL_VERSION );
     driverVersion = driverVersion ? driverVersion : "Unknown";
-#if 0
-    if ( strstr( vendorString, "NVIDIA" ) != NULL ) {
-        GPUVendor = GPU_VENDOR_NVIDIA;
-    } else if ( strstr( vendorString, "ATI" ) != NULL
-             || strstr( vendorString, "AMD" ) != NULL ) {
-        GPUVendor = GPU_VENDOR_ATI;
-    } else if ( strstr( vendorString, "INTEL" ) != NULL ) {
-        GPUVendor = GPU_VENDOR_INTEL;
-    } else {
-        GPUVendor = GPU_VENDOR_OTHER;
-    }
-#endif
+
     GLogger.Printf( "Graphics vendor: %s\n", vendorString );
     GLogger.Printf( "Graphics adapter: %s\n", adapterString );
     GLogger.Printf( "Driver version: %s\n", driverVersion );
