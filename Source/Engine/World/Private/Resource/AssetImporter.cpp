@@ -1565,7 +1565,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     // Write original image
     AFileStream imageData;
     if ( imageData.OpenRead( m_Path + tex.Image->uri ) ) {
-        long size = imageData.SizeInBytes();
+        size_t size = imageData.SizeInBytes();
         byte * buf = (byte *)GHeapMemory.HeapAlloc( size, 1 );
         imageData.Read( buf, size );
         f << size_t(size);
@@ -1583,7 +1583,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     if ( !imageData.OpenRead( m_Path + tex.Image->uri ) ) {
         return;
     }
-    long size = imageData.SizeInBytes();
+    size_t size = imageData.SizeInBytes();
     byte * buf = (byte *)GHeapMemory.HeapAlloc( size, 1 );
     imageData.Read( buf, size );
     AFileStream imageOutput;
