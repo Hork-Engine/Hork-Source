@@ -240,7 +240,7 @@ int Strlen( const char * _Str ) {
     }
     return p - _Str;
 
-    //return strlen( _Str );
+    //return (int)strlen( _Str );
 }
 
 int StrContains( const char * _String, char _Ch ) {
