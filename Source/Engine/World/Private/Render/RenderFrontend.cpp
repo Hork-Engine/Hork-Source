@@ -297,6 +297,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
         // Copy index buffer offsets
         dstCmd->IndexCount = pCmd->ElemCount;
         dstCmd->StartIndexLocation = startIndexLocation;
+        dstCmd->BaseVertexLocation = pCmd->VtxOffset;
 
         // Unpack command type
         dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
