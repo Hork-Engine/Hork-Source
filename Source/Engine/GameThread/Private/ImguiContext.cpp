@@ -106,7 +106,7 @@ void AImguiContext::OnKeyEvent( SKeyEvent const & _Event ) {
     ImGuiIO & IO = ImGui::GetIO();
 
     if ( _Event.Key >= 0 && _Event.Key < AN_ARRAY_SIZE(IO.KeysDown) ) {
-        IO.KeysDown[_Event.Key] = ( _Event.Action != IA_Release );
+        IO.KeysDown[_Event.Key] = ( _Event.Action != IA_RELEASE );
     }
 
     IO.KeyCtrl = IO.KeysDown[ KEY_LEFT_CONTROL ] || IO.KeysDown[ KEY_RIGHT_CONTROL ];
@@ -125,7 +125,7 @@ void AImguiContext::OnMouseButtonEvent( SMouseButtonEvent const & _Event ) {
     ImGuiIO & IO = ImGui::GetIO();
 
     if ( _Event.Button < 5 ) {
-        IO.MouseDown[ _Event.Button ] = ( _Event.Action != IA_Release );
+        IO.MouseDown[ _Event.Button ] = ( _Event.Action != IA_RELEASE );
     }
 }
 

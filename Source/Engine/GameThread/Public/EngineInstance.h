@@ -87,7 +87,7 @@ public:
 
 private:
     /** IEngineInterface interface. Run the engine */
-    void Run( ACreateGameModuleCallback _CreateGameModuleCallback ) override;
+    void Run( SEntryDecl const & _EntryDecl ) override;
 
     /** IEngineInterface interface. Message print callback. This must be a thread-safe function. */
     void Print( const char * _Message ) override;

@@ -57,10 +57,12 @@ SOFTWARE.
 #include "Console.h"
 #include "ImguiContext.h"
 
+#include <Runtime/Public/EntryDecl.h>
+
 //#define IMGUI_CONTEXT
 
 static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "0" ) );
-static ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "1" ) );
+static ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
 
 AEngineInstance & GEngine = AEngineInstance::Inst();
 
@@ -100,6 +102,7 @@ static void NavModuleFree( void * _Bytes ) {
     GZoneMemory.Free( _Bytes );
 }
 
+#if 0
 static void *ImguiModuleAlloc( size_t _BytesCount, void * ) {
     return GZoneMemory.Alloc( _BytesCount );
 }
@@ -107,8 +110,16 @@ static void *ImguiModuleAlloc( size_t _BytesCount, void * ) {
 static void ImguiModuleFree( void * _Bytes, void * ) {
     GZoneMemory.Free( _Bytes );
 }
+#endif
 
-void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback ) {
+static IGameModule * CreateGameModule( AClassMeta const * _Meta ) {
+    if ( !_Meta->IsSubclassOf< IGameModule >() ) {
+        CriticalError( "CreateGameModule: game module is not subclass of IGameModule\n" );
+    }
+    return static_cast< IGameModule * >(_Meta->CreateInstance());
+}
+
+void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
     // Pump initial events
     GRuntime.PollEvents();
 
@@ -147,7 +158,7 @@ void AEngineInstance::Run( ACreateGameModuleCallback _CreateGameModuleCallback )
 
     Canvas.Initialize();
 
-    GameModule = _CreateGameModuleCallback();
+    GameModule = CreateGameModule( _EntryDecl.ModuleClass );
     GameModule->AddRef();
 
     GLogger.Printf( "Created game module: %s\n", GameModule->FinalClassName() );
@@ -304,6 +315,17 @@ void AEngineInstance::DrawCanvas() {
 }
 
 void AEngineInstance::ShowStats() {
+    enum { FPS_BUF = 16 };
+    static float fpsavg[FPS_BUF];
+    static int n = 0;
+    fpsavg[n & (FPS_BUF-1)] = FrameDurationInSeconds;
+    n++;
+    float fps = 0;
+    for ( int i = 0 ; i < FPS_BUF ; i++ )
+        fps += fpsavg[i];
+    fps /= FPS_BUF;
+    fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
+
     if ( RVShowStat )
     {
         SRenderFrame * frameData = GRenderFrontend.GetFrameData();
@@ -319,17 +341,6 @@ void AEngineInstance::ShowStats() {
                                                 + GRuntime.GetFrameMemorySize() );
 
         SRenderFrontendStat const & stat = GRenderFrontend.GetStat();
-
-        enum { FPS_BUF = 16 };
-        static float fpsavg[FPS_BUF];
-        static int n = 0;
-        fpsavg[n & (FPS_BUF-1)] = FrameDurationInSeconds;
-        n++;
-        float fps = 0;
-        for ( int i = 0 ; i < FPS_BUF ; i++ )
-            fps += fpsavg[i];
-        fps /= FPS_BUF;
-        fps = 1.0f / ( fps > 0.0f ? fps : 1.0f );
 
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
@@ -347,6 +358,10 @@ void AEngineInstance::ShowStats() {
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos+Float2(1.0f), AColor4::White(), Core::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
         Canvas.DrawTextUTF8( pos, AColor4::Blue(), Core::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
+    }
+    else
+    {
+        Canvas.DrawTextUTF8( Float2( 10, 10 ), AColor4::White(), Core::Fmt( "Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int( 1.0f / FrameDurationInSeconds ), int( fps+0.5f ) ) );
     }
 }
 
@@ -373,13 +388,13 @@ void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event ) {
 }
 
 void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) {
-    if ( bQuitOnEscape && _Event.Action == IA_Press && _Event.Key == KEY_ESCAPE ) {
+    if ( bQuitOnEscape && _Event.Action == IA_PRESS && _Event.Key == KEY_ESCAPE ) {
         GameModule->OnGameClose();
     }
 
     // Check Alt+Enter to toggle fullscreen/windowed mode
     if ( bToggleFullscreenAltEnter ) {
-        if ( _Event.Action == IA_Press && _Event.Key == KEY_ENTER && ( HAS_MODIFIER( _Event.ModMask, MOD_ALT ) ) ) {
+        if ( _Event.Action == IA_PRESS && _Event.Key == KEY_ENTER && ( HAS_MODIFIER( _Event.ModMask, KMOD_ALT ) ) ) {
             SVideoMode videoMode = GRuntime.GetVideoMode();
             videoMode.bFullscreen = !videoMode.bFullscreen;
             GRuntime.PostChangeVideoMode( videoMode );
@@ -399,7 +414,7 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) 
         }
     }
 
-    if ( GConsole.IsActive() && _Event.Action != IA_Release ) {
+    if ( GConsole.IsActive() && _Event.Action != IA_RELEASE ) {
         return;
     }
 
@@ -413,7 +428,7 @@ void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, doub
     ImguiContext->OnMouseButtonEvent( _Event );
 #endif
 
-    if ( GConsole.IsActive() && _Event.Action != IA_Release ) {
+    if ( GConsole.IsActive() && _Event.Action != IA_RELEASE ) {
         return;
     }
 
@@ -476,7 +491,7 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
 }
 
 void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event, double _TimeStamp ) {
-    if ( GConsole.IsActive() && _Event.Action != IA_Release ) {
+    if ( GConsole.IsActive() && _Event.Action != IA_RELEASE ) {
         return;
     }
 

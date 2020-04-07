@@ -372,7 +372,7 @@ static void CompleteString( ACommandContext & _CommandCtx, const char * _Str ) {
 }
 
 void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor ) {
-    if ( _Event.Action == IA_Press ) {
+    if ( _Event.Action == IA_PRESS ) {
         if ( !ConFullscreen && _Event.Key == KEY_GRAVE_ACCENT ) {
             ConDown = !ConDown;
 
@@ -383,14 +383,14 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
         }
     }
 
-    if ( IsActive() && ( _Event.Action == IA_Press || _Event.Action == IA_Repeat ) ) {
+    if ( IsActive() && ( _Event.Action == IA_PRESS || _Event.Action == IA_REPEAT ) ) {
 
         // Scrolling (protected by mutex)
         {
             ASyncGuard syncGuard( ConSync );
 
             int scrollDelta = 1;
-            if ( _Event.ModMask & MOD_MASK_CONTROL ) {
+            if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
                 if ( _Event.Key == KEY_HOME ) {
                     Scroll = NumLines-1;
                 } else if ( _Event.Key == KEY_END ) {
@@ -418,7 +418,7 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
         // Command line keys
         switch ( _Event.Key ) {
         case KEY_LEFT:
-            if ( _Event.ModMask & MOD_MASK_CONTROL ) {
+            if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
                 while ( CmdLinePos > 0 && CmdLinePos <= CmdLineLength && CmdLine[ CmdLinePos-1 ] == ' ') {
                     CmdLinePos--;
                 }
@@ -433,7 +433,7 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
             }
             break;
         case KEY_RIGHT:
-            if ( _Event.ModMask & MOD_MASK_CONTROL ) {
+            if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
                 while ( CmdLinePos < CmdLineLength && CmdLine[ CmdLinePos ] != ' ') {
                     CmdLinePos++;
                 }
@@ -514,7 +514,7 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
             break;
         }
         case KEY_V:
-            if ( _Event.ModMask & MOD_MASK_CONTROL ) {
+            if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
                 InsertClipboardText();
             }
             break;
