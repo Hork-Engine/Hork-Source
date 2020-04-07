@@ -43,23 +43,11 @@ SOFTWARE.
 
 AN_CLASS_META( AModule )
 
-const char * IGameModule::RootPath = "Samples/Portals";
-
 AModule * GModule;
 
 void AModule::OnGameStart() {
 
     GModule = this;
-
-    SVideoMode videoMode = GRuntime.GetVideoMode();
-    videoMode.Width = 1280;
-    videoMode.Height = 720;
-    videoMode.RefreshRate = 60;
-    videoMode.Opacity = 1.0f;
-    videoMode.bFullscreen = false;
-    Core::Strcpy( videoMode.Backend, sizeof( videoMode.Backend ), "OpenGL 4.5" );
-    Core::Strcpy( videoMode.Title, sizeof( videoMode.Title ), "AngieEngine: Portals" );
-    GRuntime.PostChangeVideoMode( videoMode );
 
     SetInputMappings();
     CreateResources();
@@ -311,4 +299,14 @@ void AModule::CreateResources() {
 
 #include <Runtime/Public/EntryDecl.h>
 
-AN_ENTRY_DECL( AModule )
+static SEntryDecl ModuleDecl = {
+    // Game title
+    "AngieEngine: Portals",
+    // Root path
+    "Samples/Portals",
+    // Module class
+    &AModule::ClassMeta()
+};
+
+AN_ENTRY_DECL( ModuleDecl )
+
