@@ -241,8 +241,8 @@ Sampler const Device::GetOrCreateSampler( SamplerCreateInfo const & _CreateInfo 
     glSamplerParameteri( id, GL_TEXTURE_WRAP_T, SamplerAddressModeLUT[_CreateInfo.AddressV] );
     glSamplerParameteri( id, GL_TEXTURE_WRAP_R, SamplerAddressModeLUT[_CreateInfo.AddressW] );
     glSamplerParameterf( id, GL_TEXTURE_LOD_BIAS, _CreateInfo.MipLODBias );
-    if ( IsTextureAnisotropySupported() ) {
-        glSamplerParameteri( id, GL_TEXTURE_MAX_ANISOTROPY_EXT, clamp< unsigned int >( _CreateInfo.MaxAnisotropy, 0u, MaxTextureAnisotropy ) );
+    if ( IsTextureAnisotropySupported() && _CreateInfo.MaxAnisotropy > 0 ) {
+        glSamplerParameteri( id, GL_TEXTURE_MAX_ANISOTROPY_EXT, clamp< unsigned int >( _CreateInfo.MaxAnisotropy, 1u, MaxTextureAnisotropy ) );
     }
     if ( _CreateInfo.bCompareRefToTexture ) {
         glSamplerParameteri( id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );

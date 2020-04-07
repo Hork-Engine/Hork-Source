@@ -420,12 +420,18 @@ void CommandBuffer::BindPipeline( Pipeline * _Pipeline ) {
             DepthStencilStateInfo const & desc = _Pipeline->DepthStencilState;
 
             if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
-                glStencilFunc( __ComparisonFunc[ desc.FrontFace.StencilFunc ],
-                               _StencilRef,
-                               desc.StencilReadMask );
+                glStencilFuncSeparate( GL_FRONT_AND_BACK,
+                                       ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                       _StencilRef,
+                                       desc.StencilReadMask );
             } else {
-                glStencilFuncSeparate( __ComparisonFunc[ desc.FrontFace.StencilFunc ],
-                                       __ComparisonFunc[ desc.BackFace.StencilFunc ],
+                glStencilFuncSeparate( GL_FRONT,
+                                       ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                       _StencilRef,
+                                       desc.StencilReadMask );
+
+                glStencilFuncSeparate( GL_BACK,
+                                       ComparisonFuncLUT[desc.BackFace.StencilFunc],
                                        _StencilRef,
                                        desc.StencilReadMask );
             }
@@ -476,15 +482,30 @@ void CommandBuffer::BindPipeline( Pipeline * _Pipeline ) {
              || state->DepthStencilState.BackFace.StencilFunc != desc.BackFace.StencilFunc
              /*|| state->StencilRef != _StencilRef*/ ) {
 
+#if 0
             if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
                 glStencilFunc( ComparisonFuncLUT[ desc.FrontFace.StencilFunc ],
                                state->StencilRef,//_StencilRef,
                                desc.StencilReadMask );
-            } else {
-                glStencilFuncSeparate( ComparisonFuncLUT[ desc.FrontFace.StencilFunc ],
-                                       ComparisonFuncLUT[ desc.BackFace.StencilFunc ],
-                                       state->StencilRef,//_StencilRef,
-                                       desc.StencilReadMask );
+            } else
+#endif
+            {
+                if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
+                    glStencilFuncSeparate( GL_FRONT_AND_BACK,
+                                           ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                           state->StencilRef,//_StencilRef,
+                                           desc.StencilReadMask );
+                } else {
+                    glStencilFuncSeparate( GL_FRONT,
+                                           ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                           state->StencilRef,//_StencilRef,
+                                           desc.StencilReadMask );
+
+                    glStencilFuncSeparate( GL_BACK,
+                                           ComparisonFuncLUT[ desc.BackFace.StencilFunc ],
+                                           state->StencilRef,//_StencilRef,
+                                           desc.StencilReadMask );
+                }
             }
 
             state->DepthStencilState.StencilReadMask = desc.StencilReadMask;
@@ -542,12 +563,18 @@ void CommandBuffer::BindPipeline( Pipeline * _Pipeline ) {
 
 void CommandBuffer::BindRenderPassSubPass( State * _State, RenderPass * _RenderPass, int _Subpass ) {
 
+    const GLuint framebufferId = _State->Binding.DrawFramebuffer;
+
+    if ( framebufferId == 0 ) {
+        //glDrawBuffer(GL_BACK);
+        //glNamedFramebufferDrawBuffer( 0, GL_BACK );
+        return;
+    }
+
     assert( _RenderPass != nullptr );
     assert( _Subpass < _RenderPass->NumSubpasses );
 
-    RenderSubpass const * subpass = &_RenderPass->Subpasses[ _Subpass ];
-
-    const GLuint framebufferId = _State->Binding.DrawFramebuffer;
+    RenderSubpass const * subpass = &_RenderPass->Subpasses[_Subpass];
 
     if ( subpass->NumColorAttachments > 0 ) {
         for ( uint32_t i = 0 ; i < subpass->NumColorAttachments ; i++ ) {
@@ -1699,11 +1726,6 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
 
     GLuint framebufferId = GL_HANDLE( framebuffer->GetHandle() );
 
-    if ( !framebufferId ) {
-        LogPrintf( "Buffer::BeginRenderPass: invalid framebuffer\n" );
-        return;
-    }
-
     if ( state->Binding.DrawFramebuffer != framebufferId ) {
 
         glBindFramebuffer( GL_DRAW_FRAMEBUFFER, framebufferId );
@@ -1717,6 +1739,12 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
     bool bRasterizerDiscard = state->RasterizerState.bRasterizerDiscard;
 
     FramebufferAttachmentInfo const * framebufferColorAttachments = framebuffer->GetColorAttachments();
+
+    // We must set draw buffers to clear attachment :(
+    for ( uint32_t i = 0 ; i < renderPass->NumColorAttachments ; i++ ) {
+        Attachments[i] = GL_COLOR_ATTACHMENT0 + i;
+    }
+    glNamedFramebufferDrawBuffers( framebufferId, renderPass->NumColorAttachments, Attachments );
 
     for ( unsigned int i = 0 ; i < renderPass->NumColorAttachments ; i++ ) {
 
@@ -1746,10 +1774,6 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
             if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
                 glColorMaski( i, 1, 1, 1, 1 );
             }
-
-            // We must set draw buffers to clear attachment :(
-            GLenum attachments[ 1 ] = { GL_COLOR_ATTACHMENT0 + i };
-            glNamedFramebufferDrawBuffers( framebufferId, 1, attachments );
 
             // Clear attachment
             switch ( InternalFormatLUT[ framebufferAttachment->pTexture->GetInternalPixelFormat() ].ClearType ) {
@@ -1995,15 +2019,31 @@ void CommandBuffer::DynamicState_StencilRef( uint32_t _StencilRef ) {
 
             DepthStencilStateInfo const & desc = *pipeline->DepthStencilState;
 
+#if 0
             if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
                 glStencilFunc( ComparisonFuncLUT[ desc.FrontFace.StencilFunc ],
                                _StencilRef,
                                desc.StencilReadMask );
-            } else {
-                glStencilFuncSeparate( ComparisonFuncLUT[ desc.FrontFace.StencilFunc ],
-                                       ComparisonFuncLUT[ desc.BackFace.StencilFunc ],
-                                       _StencilRef,
-                                       desc.StencilReadMask );
+            }
+            else
+#endif
+            {
+                if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
+                    glStencilFuncSeparate( GL_FRONT_AND_BACK,
+                                           ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                           _StencilRef,
+                                           desc.StencilReadMask );
+                } else {
+                    glStencilFuncSeparate( GL_FRONT,
+                                           ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                           _StencilRef,
+                                           desc.StencilReadMask );
+
+                    glStencilFuncSeparate( GL_BACK,
+                                           ComparisonFuncLUT[desc.BackFace.StencilFunc],
+                                           _StencilRef,
+                                           desc.StencilReadMask );
+                }
             }
 
             state->StencilRef = _StencilRef;
@@ -2762,8 +2802,8 @@ void CommandBuffer::ClearTextureRect( Texture & _Texture,
 void CommandBuffer::ClearFramebufferAttachments( Framebuffer & _Framebuffer,
                                                  /* optional */ unsigned int * _ColorAttachments,
                                                  /* optional */ unsigned int _NumColorAttachments,
-                                                 /* optional */ ClearColorValue * _ColorClearValues,
-                                                 /* optional */ ClearDepthStencilValue * _DepthStencilClearValue,
+                                                 /* optional */ ClearColorValue const * _ColorClearValues,
+                                                 /* optional */ ClearDepthStencilValue const * _DepthStencilClearValue,
                                                  /* optional */ Rect2D const * _Rect ) {
     State * state = GetCurrentState();
 
@@ -2806,6 +2846,14 @@ void CommandBuffer::ClearFramebufferAttachments( Framebuffer & _Framebuffer,
     }
 
     if ( _ColorAttachments ) {
+        // We must set draw buffers to clear attachment :(
+        for ( unsigned int i = 0 ; i < _NumColorAttachments ; i++ ) {
+            unsigned int attachmentIndex = _ColorAttachments[i];
+
+            Attachments[i] = GL_COLOR_ATTACHMENT0 + attachmentIndex;
+        }
+        glNamedFramebufferDrawBuffers( framebufferId, _NumColorAttachments, Attachments );
+
         for ( unsigned int i = 0 ; i < _NumColorAttachments ; i++ ) {
 
             unsigned int attachmentIndex = _ColorAttachments[ i ];
@@ -2819,31 +2867,27 @@ void CommandBuffer::ClearFramebufferAttachments( Framebuffer & _Framebuffer,
 
             RenderTargetBlendingInfo const & currentState = state->BlendState.RenderTargetSlots[ attachmentIndex ];
             if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
-                glColorMaski( attachmentIndex, 1, 1, 1, 1 );
+                glColorMaski( i, 1, 1, 1, 1 );
             }
-
-            // We must set draw buffers to clear attachment :(
-            GLenum attachments[ 1 ] = { GL_COLOR_ATTACHMENT0 + i };
-            glNamedFramebufferDrawBuffers( framebufferId, 1, attachments );
 
             // Clear attchment
             switch ( InternalFormatLUT[ framebufferAttachment->pTexture->GetInternalPixelFormat() ].ClearType ) {
             case CLEAR_TYPE_FLOAT32:
                 glClearNamedFramebufferfv( framebufferId,
                                            GL_COLOR,
-                                           attachmentIndex,
+                                           i,
                                            clearValue->Float32 );
                 break;
             case CLEAR_TYPE_INT32:
                 glClearNamedFramebufferiv( framebufferId,
                                            GL_COLOR,
-                                           attachmentIndex,
+                                           i,
                                            clearValue->Int32 );
                 break;
             case CLEAR_TYPE_UINT32:
                 glClearNamedFramebufferuiv( framebufferId,
                                             GL_COLOR,
-                                            attachmentIndex,
+                                            i,
                                             clearValue->UInt32 );
                 break;
             default:
@@ -2853,9 +2897,9 @@ void CommandBuffer::ClearFramebufferAttachments( Framebuffer & _Framebuffer,
             // Restore color mask
             if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
                 if ( currentState.ColorWriteMask == COLOR_WRITE_DISABLED ) {
-                    glColorMaski( attachmentIndex, 0, 0, 0, 0 );
+                    glColorMaski( i, 0, 0, 0, 0 );
                 } else {
-                    glColorMaski( attachmentIndex,
+                    glColorMaski( i,
                                   !!(currentState.ColorWriteMask & COLOR_WRITE_R_BIT),
                                   !!(currentState.ColorWriteMask & COLOR_WRITE_G_BIT),
                                   !!(currentState.ColorWriteMask & COLOR_WRITE_B_BIT),

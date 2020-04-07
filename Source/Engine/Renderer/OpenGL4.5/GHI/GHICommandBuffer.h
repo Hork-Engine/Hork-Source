@@ -508,8 +508,8 @@ public:
     void ClearFramebufferAttachments( Framebuffer & _Framebuffer,
                                       /* optional */ unsigned int * _ColorAttachments,
                                       /* optional */ unsigned int _NumColorAttachments,
-                                      /* optional */ ClearColorValue * _ColorClearValues,
-                                      /* optional */ ClearDepthStencilValue * _DepthStencilClearValue,
+                                      /* optional */ ClearColorValue const * _ColorClearValues,
+                                      /* optional */ ClearDepthStencilValue const * _DepthStencilClearValue,
                                       /* optional */ Rect2D const * _Rect );
 
 private:

@@ -292,8 +292,8 @@ bool Texture::InitializeView( TextureViewCreateInfo const & _CreateInfo ) {
     // TODO: Check texture resolution compatibility
     // TODO: Lods/Layers compatibility
 
-    // Avoid previous errors
-    glGetError();
+    // Avoid previous errors if any
+    (void)glGetError();
 
     glCreateTextures( target, 1, &id ); // 4.5
 
@@ -528,7 +528,8 @@ void Texture::CreateTextureLod( TextureCreateInfo const & _CreateInfo, uint16_t 
         }
         break;
     case TEXTURE_3D:
-        glGetError();
+        // Avoid previous errors if any
+        (void)glGetError();
         if ( bCompressed ) {
             glCompressedTexImage3D( target, 0, format, lodWidth, lodHeight, lodDepth, 0, compressedDataByteLength, sysMem );
         } else {

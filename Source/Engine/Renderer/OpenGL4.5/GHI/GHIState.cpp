@@ -47,7 +47,10 @@ namespace GHI {
 
 State * State::StateHead = nullptr, * State::StateTail = nullptr; // FIXME: thread_local?
 
-#define IntrusiveAddToList( _object, _next, _prev, _head, _tail ) \
+#define INTRUSIVE_EXISTS( _object, _next, _prev, _head, _tail ) \
+    ( _object->_prev || _object->_next || _head == _object )
+
+#define INTRUSIVE_ADD( _object, _next, _prev, _head, _tail ) \
 { \
     _object->_prev = _tail; \
     _object->_next = nullptr; \
@@ -59,7 +62,14 @@ State * State::StateHead = nullptr, * State::StateTail = nullptr; // FIXME: thre
     } \
 }
 
-#define IntrusiveRemoveFromList( _object, _next, _prev, _head, _tail ) \
+#define INTRUSIVE_ADD_UNIQUE( _object, _next, _prev, _head, _tail ) \
+{ \
+    if ( !INTRUSIVE_EXISTS( _object, _next, _prev, _head, _tail ) ) { \
+        INTRUSIVE_ADD( _object, _next, _prev, _head, _tail ); \
+    } \
+}
+
+#define INTRUSIVE_REMOVE( _object, _next, _prev, _head, _tail ) \
 { \
     auto * __next = _object->_next; \
     auto * __prev = _object->_prev; \
@@ -79,6 +89,9 @@ State * State::StateHead = nullptr, * State::StateTail = nullptr; // FIXME: thre
         _object->_prev = nullptr; \
     } \
 }
+
+#define INTRUSIVE_FOREACH( object, head_or_tail, next_or_prev ) \
+    for ( auto * object = head_or_tail ; object ; object = object->next_or_prev )
 
 State::State() {
     pDevice = nullptr;
@@ -154,11 +167,17 @@ void State::Initialize( Device * _Device, StateCreateInfo const & _CreateInfo ) 
     glDisable( GL_COLOR_LOGIC_OP );
     glLogicOp( GL_COPY );
     memset( BlendColor, 0, sizeof( BlendColor ) );
+
+    GLint maxSampleMaskWords = 0;
+    glGetIntegerv( GL_MAX_SAMPLE_MASK_WORDS, &maxSampleMaskWords );
+    if ( maxSampleMaskWords > 4 ) {
+        maxSampleMaskWords = 4;
+    }    
     SampleMask[ 0 ] = 0xffffffff;
     SampleMask[ 1 ] = 0;
     SampleMask[ 2 ] = 0;
     SampleMask[ 3 ] = 0;
-    for ( int i = 0 ; i < 4 ; i++ ) {
+    for ( int i = 0 ; i < maxSampleMaskWords ; i++ ) {
         glSampleMaski( i, SampleMask[ i ] );
     }
     bSampleMaskEnabled = false;
@@ -192,7 +211,7 @@ void State::Initialize( Device * _Device, StateCreateInfo const & _CreateInfo ) 
     glDisable( GL_STENCIL_TEST );
     glStencilMask( DEFAULT_STENCIL_WRITE_MASK );
     glStencilOpSeparate( GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP );
-    glStencilFuncSeparate( GL_ALWAYS, GL_ALWAYS, StencilRef, DEFAULT_STENCIL_READ_MASK );
+    glStencilFuncSeparate( GL_FRONT_AND_BACK, GL_ALWAYS, StencilRef, DEFAULT_STENCIL_READ_MASK );
 
     ColorClamp = COLOR_CLAMP_OFF;
     glClampColor( GL_CLAMP_READ_COLOR, GL_FALSE );
@@ -229,7 +248,7 @@ void State::Initialize( Device * _Device, StateCreateInfo const & _CreateInfo ) 
 
     _Device->TotalStates++;
 
-    IntrusiveAddToList( this, Next, Prev, StateHead, StateTail );
+    INTRUSIVE_ADD( this, Next, Prev, StateHead, StateTail );
 
     FramebufferCreateInfo framebufferCI = {};
     DefaultFramebuffer.bDefault = true;
@@ -252,7 +271,7 @@ void State::Deinitialize() {
     pDevice->Allocator.Deallocate( TmpHandles );
     pDevice->Allocator.Deallocate( TmpPointers );
 
-    IntrusiveRemoveFromList( this, Next, Prev, StateHead, StateTail );
+    INTRUSIVE_REMOVE( this, Next, Prev, StateHead, StateTail );
 
     pDevice->TotalStates--;
 
@@ -555,7 +574,7 @@ void ghi_create_state( ghi_state_t * state, ghi_device_t * _Device, StateCreateI
     glDisable( GL_STENCIL_TEST );
     glStencilMask( DEFAULT_STENCIL_WRITE_MASK );
     glStencilOpSeparate( GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP );
-    glStencilFuncSeparate( GL_ALWAYS, GL_ALWAYS, state->StencilRef, DEFAULT_STENCIL_READ_MASK );
+    glStencilFuncSeparate( GL_FRONT_AND_BACK, GL_ALWAYS, state->StencilRef, DEFAULT_STENCIL_READ_MASK );
 
     state->ColorClamp = COLOR_CLAMP_OFF;
     glClampColor( GL_CLAMP_READ_COLOR, GL_FALSE );
@@ -592,7 +611,7 @@ void ghi_create_state( ghi_state_t * state, ghi_device_t * _Device, StateCreateI
 
     _Device->TotalStates++;
 
-    IntrusiveAddToList( state, Next, Prev, state->StateHead, state->StateTail );
+    INTRUSIVE_ADD( state, Next, Prev, state->StateHead, state->StateTail );
 }
 
 void ghi_destroy_state( ghi_state_t * state ) {
@@ -609,7 +628,7 @@ void ghi_destroy_state( ghi_state_t * state ) {
     state->device->Allocator.Deallocate( state->TmpHandles );
     state->device->Allocator.Deallocate( state->TmpPointers );
 
-    IntrusiveRemoveFromList( state, Next, Prev, state->StateHead, state->StateTail );
+    INTRUSIVE_REMOVE( state, Next, Prev, state->StateHead, state->StateTail );
 
     state->device->TotalStates--;
 
