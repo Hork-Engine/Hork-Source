@@ -41,11 +41,11 @@ WButton::~WButton() {
 }
 
 void WButton::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
-    if ( _Event.Action == IA_Press ) {
+    if ( _Event.Action == IA_PRESS ) {
         if ( _Event.Button == 0 ) {
             State = ST_PRESSED;
         }
-    } else if ( _Event.Action == IA_Release ) {
+    } else if ( _Event.Action == IA_RELEASE ) {
         if ( _Event.Button == 0 && State == ST_PRESSED && IsHoveredByCursor() ) {
 
             State = ST_RELEASED;

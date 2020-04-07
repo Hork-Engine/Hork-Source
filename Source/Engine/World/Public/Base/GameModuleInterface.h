@@ -38,14 +38,7 @@ class IGameModule : public ABaseObject {
 public:
     IGameModule();
 
-    static const char * RootPath;
-
     virtual void OnGameStart();
     virtual void OnGameEnd();
     virtual void OnGameClose();
-
-    template< typename T >
-    static IGameModule * CreateGameModule() {
-        return NewObject< T >();
-    }
 };

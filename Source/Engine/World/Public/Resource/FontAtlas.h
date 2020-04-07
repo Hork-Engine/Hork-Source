@@ -76,7 +76,8 @@ struct SFontCustomRect
     Float2 GlyphOffset;
 };
 
-enum EGlyphRange {
+enum EGlyphRange
+{
     /** Basic Latin, Extended Latin */
     GLYPH_RANGE_DEFAULT,
     /** Default + Korean characters */
@@ -95,7 +96,8 @@ enum EGlyphRange {
     GLYPH_RANGE_VIETNAMESE
 };
 
-struct SFontCreateInfo {
+struct SFontCreateInfo
+{
     /** Index of font within TTF/OTF file. Default 0. */
     int FontNum;
     /** Size in pixels for rasterizer (more or less maps to the resulting font height). Default 13. */
@@ -136,29 +138,43 @@ public:
     /** Purge font data */
     void Purge();
 
-    bool IsValid() const;
+    bool IsValid() const {
+        return AtlasTexture.GetObject() != nullptr;
+    }
 
-    int GetFontSize() const;
+    int GetFontSize() const {
+        return FontSize;
+    }
 
-    Float2 const & GetUVWhitePixel() const;
+    void SetDrawOffset( Float2 const & _Offset );
 
-    SFontGlyph const * FindGlyph( SWideChar c ) const;
+    Float2 const & GetDrawOffset() const {
+        return DrawOffset;
+    }
 
-    float GetCharAdvance( SWideChar c ) const;
+    Float2 const & GetUVWhitePixel() const {
+        return TexUvWhitePixel;
+    }
+
+    SFontGlyph const * GetGlyph( SWideChar c ) const {
+        return ((int)c < WideCharToGlyph.Size()) ? Glyphs.ToPtr() + WideCharToGlyph[(int)c] : FallbackGlyph;
+    }
+
+    float GetCharAdvance( SWideChar c ) const {
+        return ((int)c < WideCharAdvanceX.Size()) ? WideCharAdvanceX[(int)c] : FallbackAdvanceX;
+    }
+
+    ATexture * GetTexture() {
+        return AtlasTexture;
+    }
+
+    bool GetMouseCursorTexData( EDrawCursor cursor_type, Float2* out_offset, Float2* out_size, Float2 out_uv_border[2], Float2 out_uv_fill[2] ) const;
 
     Float2 CalcTextSizeA( float _Size, float _MaxWidth, float _WrapWidth, const char * _TextBegin, const char * _TextEnd = nullptr, const char** _Remaining = nullptr ) const; // utf8
 
     const char * CalcWordWrapPositionA( float _Scale, const char * _Text, const char * _TextEnd, float _WrapWidth ) const;
 
     SWideChar const * CalcWordWrapPositionW( float _Scale, SWideChar const * _Text, SWideChar const * _TextEnd, float _WrapWidth ) const;
-
-    void SetDisplayOffset( Float2 const & _Offset );
-
-    Float2 const & GetDisplayOffset() const;
-
-    bool GetMouseCursorTexData( EDrawCursor cursor_type, Float2* out_offset, Float2* out_size, Float2 out_uv_border[2], Float2 out_uv_fill[2] ) const;
-
-    ATexture * GetTexture() { return AtlasTexture; }
 
     static void SetGlyphRanges( EGlyphRange _GlyphRange );
 
@@ -176,7 +192,9 @@ protected:
 
 private:
     bool Build( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo const * _CreateInfo );
+
     void AddGlyph( SFontCreateInfo const & cfg, SWideChar c, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float advance_x );
+
     int AddCustomRect( unsigned int id, int width, int height );
 
     // Cache-friendly glyph advanceX
@@ -192,7 +210,7 @@ private:
     // Font size in pixels
     float FontSize;
     // Offset for font rendering in pixels
-    Float2 DisplayOffset;
+    Float2 DrawOffset;
     // Texture raw data
     byte * TexPixelsAlpha8;
     // Texture width

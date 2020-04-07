@@ -321,12 +321,12 @@ struct AInputComponentStatic {
         InitJoyAxis( JOY_AXIS_31 );
         InitJoyAxis( JOY_AXIS_32 );
 
-        InitModifier( MOD_SHIFT );
-        InitModifier( MOD_CONTROL );
-        InitModifier( MOD_ALT );
-        InitModifier( MOD_SUPER );
-        InitModifier( MOD_CAPS_LOCK );
-        InitModifier( MOD_NUM_LOCK );
+        InitModifier( KMOD_SHIFT );
+        InitModifier( KMOD_CONTROL );
+        InitModifier( KMOD_ALT );
+        InitModifier( KMOD_SUPER );
+        InitModifier( KMOD_CAPS_LOCK );
+        InitModifier( KMOD_NUM_LOCK );
 
         InitController( CONTROLLER_PLAYER_1 );
         InitController( CONTROLLER_PLAYER_2 );
@@ -367,7 +367,7 @@ const char * AInputHelper::TranslateDevice( int _DevId ) {
 }
 
 const char * AInputHelper::TranslateModifier( int _Modifier ) {
-    if ( _Modifier < 0 || _Modifier > MOD_LAST ) {
+    if ( _Modifier < 0 || _Modifier > KMOD_LAST ) {
         return "UNKNOWN";
     }
     return Static.ModifierNames[ _Modifier ];
@@ -616,7 +616,7 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
     }
 #endif
 
-    if ( _Action == IA_Press ) {
+    if ( _Action == IA_PRESS ) {
         if ( ButtonIndex[ _Button ] == -1 ) {
             if ( NumPressedKeys < MAX_PRESSED_KEYS ) {
                 SPressedKey & pressedKey = PressedKeys[ NumPressedKeys ];
@@ -664,7 +664,7 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
                     if ( GetWorld()->IsPaused() && !binding.bExecuteEvenWhenPaused ) {
                         pressedKey.ActionBinding = -1;
                     } else {
-                        binding.Callback[ IA_Press ]();
+                        binding.Callback[ IA_PRESS ]();
                     }
                 }
 
@@ -678,7 +678,7 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
             //AN_ASSERT( 0 );
 
         }
-    } else if ( _Action == IA_Release ) {
+    } else if ( _Action == IA_RELEASE ) {
         if ( ButtonIndex[ _Button ] != -1 ) {
 
             int index = ButtonIndex[ _Button ];
@@ -700,7 +700,7 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
             AN_ASSERT( NumPressedKeys >= 0 );
 
             if ( actionBinding != -1 /*&& !PressedKeys[ index ].bMarkedReleased*/ ) {
-                ActionBindings[ actionBinding ].Callback[ IA_Release ]();
+                ActionBindings[ actionBinding ].Callback[ IA_RELEASE ]();
             }
         }
     }
@@ -715,20 +715,24 @@ bool AInputComponent::GetButtonState( int _DevId, int _Button ) const {
 void AInputComponent::UnpressButtons() {
     double timeStamp = GRuntime.SysSeconds_d();
     for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
-        SetButtonState( ID_KEYBOARD, i, IA_Release, 0, timeStamp );
+        SetButtonState( ID_KEYBOARD, i, IA_RELEASE, 0, timeStamp );
     }
     for ( int i = 0 ; i < MAX_MOUSE_BUTTONS ; i++ ) {
-        SetButtonState( ID_MOUSE, i, IA_Release, 0, timeStamp );
+        SetButtonState( ID_MOUSE, i, IA_RELEASE, 0, timeStamp );
     }
     for ( int j = 0 ; j < MAX_JOYSTICKS_COUNT ; j++ ) {
         for ( int i = 0 ; i < MAX_JOYSTICK_BUTTONS ; i++ ) {
-            SetButtonState( ID_JOYSTICK_1 + j, i, IA_Release, 0, timeStamp );
+            SetButtonState( ID_JOYSTICK_1 + j, i, IA_RELEASE, 0, timeStamp );
         }
     }
 }
 
-bool AInputComponent::IsJoyDown( SJoystick const * _Joystick, int _Button ) const {
-    return GetButtonState( ID_JOYSTICK_1 + _Joystick->Id, _Button );
+//bool AInputComponent::IsJoyDown( SJoystick const * _Joystick, int _Button ) const {
+//    return GetButtonState( ID_JOYSTICK_1 + _Joystick->Id, _Button );
+//}
+
+bool AInputComponent::IsJoyDown( int _JoystickId, int _Button ) const {
+    return GetButtonState( ID_JOYSTICK_1 + _JoystickId, _Button );
 }
 
 void AInputComponent::NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp ) {
@@ -824,7 +828,7 @@ void AInputComponent::UnbindAxis( const char * _Axis ) {
 }
 
 void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< void() > const & _Callback, bool _ExecuteEvenWhenPaused ) {
-    if ( _Event != IA_Press && _Event != IA_Release ) {
+    if ( _Event != IA_PRESS && _Event != IA_RELEASE ) {
         GLogger.Printf( "AInputComponent::BindAction: expected IE_Press or IE_Release event\n" );
         return;
     }

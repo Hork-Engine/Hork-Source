@@ -89,8 +89,6 @@ public:
     void SetResourceGUID( AGUID const & _GUID, const char * _PhysicalPath );
     void SetResourceGUID( AString const & _GUID, const char * _PhysicalPath );
 
-    AString const & GetRootPath() const { return RootPath; }
-
     void RestorePhysicalPathFromAlias( const char * _Alias, AString & _PhysicalPath ) const;
 
 private:
@@ -102,7 +100,6 @@ private:
     THash<> ResourceHash;
     TStdVectorDefault< std::pair< std::string, std::string > > ResourceGUID;
     THash<> ResourceGUIDHash;
-    AString RootPath;
 };
 
 extern AResourceManager & GResourceManager;

@@ -194,7 +194,7 @@ AN_FORCEINLINE bool InRect( Float2 const & _Mins, Float2 const & _Maxs, Float2 c
 void WSlider::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
     Action = A_NONE;
 
-    if ( _Event.Action != IA_Press ) {
+    if ( _Event.Action != IA_PRESS ) {
         return;
     }
 

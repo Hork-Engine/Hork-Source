@@ -195,7 +195,7 @@ struct ImDrawCmd
     unsigned int    IdxOffset;              // Start offset in index buffer. Always equal to sum of ElemCount drawn so far.
     ImDrawCallback  UserCallback;           // If != NULL, call the function instead of rendering the vertices. clip_rect and texture_id will be set normally.
     void*           UserCallbackData;       // The draw callback code can access this.
-    int             BlendingState;
+    uint32_t        BlendingState;
 
     ImDrawCmd() { ElemCount = 0; TextureId = (ImTextureID)NULL; VtxOffset = IdxOffset = 0;  UserCallback = NULL; UserCallbackData = NULL; BlendingState = 0; }
 };
@@ -271,7 +271,7 @@ struct ImDrawList
     ImDrawIdx*              _IdxWritePtr;       // [Internal] point within IdxBuffer.Data after each add command (to avoid using the ImVector<> operators too much)
     ImVector<ImVec4>        _ClipRectStack;     // [Internal]
     ImVector<ImTextureID>   _TextureIdStack;    // [Internal]
-    ImVector<int>           _BlendingStack;
+    ImVector<uint32_t>      _BlendingStack;
     ImVector<ImVec2>        _Path;              // [Internal] current path building
     ImDrawListSplitter      _Splitter;          // [Internal] for channels api
 
@@ -281,7 +281,7 @@ struct ImDrawList
     void  PushClipRect( ImVec2 clip_rect_min, ImVec2 clip_rect_max, bool intersect_with_current_clip_rect = false );  // Render-level scissoring. This is passed down to your render function but not used for CPU-side coarse clipping. Prefer using higher-level ImGui::PushClipRect() to affect logic (hit-testing and widget culling)
     void  PushClipRectFullScreen();
     void  PopClipRect();
-    void  PushBlendingState( int blending );
+    void  PushBlendingState( uint32_t blending );
     void  PopBlendingState();
     void  PushTextureID( ImTextureID texture_id );
     void  PopTextureID();
@@ -313,9 +313,9 @@ struct ImDrawList
     // - Read FAQ to understand what ImTextureID is.
     // - "p_min" and "p_max" represent the upper-left and lower-right corners of the rectangle.
     // - "uv_min" and "uv_max" represent the normalized texture coordinates to use for those corners. Using (0,0)->(1,1) texture coordinates will generally display the entire texture.
-    void  AddImage( ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min = ImVec2( 0, 0 ), const ImVec2& uv_max = ImVec2( 1, 1 ), uint32_t col = 0xFFFFFFFF, int blend = 0 );
-    void  AddImageQuad( ImTextureID user_texture_id, const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, const ImVec2& uv1 = ImVec2( 0, 0 ), const ImVec2& uv2 = ImVec2( 1, 0 ), const ImVec2& uv3 = ImVec2( 1, 1 ), const ImVec2& uv4 = ImVec2( 0, 1 ), uint32_t col = 0xFFFFFFFF, int blend = 0 );
-    void  AddImageRounded( ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min, const ImVec2& uv_max, uint32_t col, float rounding, ImDrawCornerFlags rounding_corners = ImDrawCornerFlags_All, int blend = 0 );
+    void  AddImage( ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min = ImVec2( 0, 0 ), const ImVec2& uv_max = ImVec2( 1, 1 ), uint32_t col = 0xFFFFFFFF, uint32_t blend = 0 );
+    void  AddImageQuad( ImTextureID user_texture_id, const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, const ImVec2& uv1 = ImVec2( 0, 0 ), const ImVec2& uv2 = ImVec2( 1, 0 ), const ImVec2& uv3 = ImVec2( 1, 1 ), const ImVec2& uv4 = ImVec2( 0, 1 ), uint32_t col = 0xFFFFFFFF, uint32_t blend = 0 );
+    void  AddImageRounded( ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min, const ImVec2& uv_max, uint32_t col, float rounding, ImDrawCornerFlags rounding_corners = ImDrawCornerFlags_All, uint32_t blend = 0 );
 
     // Stateful path API, add points then finish with PathFillConvex() or PathStroke()
     inline    void  PathClear() { _Path.Size = 0; }

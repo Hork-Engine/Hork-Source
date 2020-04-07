@@ -339,7 +339,7 @@ void ACollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompressio
 void ACollisionTriangleSoupBVHData::Read( IBinaryStream & _Stream ) {
     uint32_t bufferSize;
     _Stream >> bufferSize;
-    byte * buffer = (byte *)GHeapMemory.HeapAlloc( bufferSize, 1 );
+    byte * buffer = (byte *)GHeapMemory.Alloc( bufferSize );
     _Stream.Read( buffer, bufferSize );
 
 

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Base/Resource.h>
 #include <World/Public/Base/ResourceManager.h>
+#include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
 
 AN_CLASS_META( AResource )
@@ -47,7 +48,7 @@ void AResource::InitializeFromFile( const char * _Path ) {
     if ( !Core::StricmpN( _Path, "/Root/", 6 ) ) {
         _Path += 6;
 
-        AString fileSystemPath = GResourceManager.GetRootPath() + _Path;
+        AString fileSystemPath = GRuntime.GetRootPath() + _Path;
 
         if ( !LoadResource( fileSystemPath ) ) {
             InitializeDefaultObject();

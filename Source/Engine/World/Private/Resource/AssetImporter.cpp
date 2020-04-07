@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Resource/AssetImporter.h>
 #include <World/Public/Resource/Asset.h>
 #include <World/Public/Base/ResourceManager.h>
+#include <Runtime/Public/Runtime.h>
 #include <Core/Public/Guid.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/LinearAllocator.h>
@@ -1485,7 +1486,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( tex.Image->name && *tex.Image->name ? tex.Image->name : "Texture" );
     AString sourceFileName = m_Path + tex.Image->uri;
-    AString fileSystemPath = GResourceManager.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1566,7 +1567,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     AFileStream imageData;
     if ( imageData.OpenRead( m_Path + tex.Image->uri ) ) {
         size_t size = imageData.SizeInBytes();
-        byte * buf = (byte *)GHeapMemory.HeapAlloc( size, 1 );
+        byte * buf = (byte *)GHeapMemory.Alloc( size );
         imageData.Read( buf, size );
         f << size_t(size);
         f.Write( buf, size );
@@ -1584,7 +1585,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
         return;
     }
     size_t size = imageData.SizeInBytes();
-    byte * buf = (byte *)GHeapMemory.HeapAlloc( size, 1 );
+    byte * buf = (byte *)GHeapMemory.Alloc( size );
     imageData.Read( buf, size );
     AFileStream imageOutput;
     if ( imageOutput.OpenWrite( fileName + ext ) ) {
@@ -1603,7 +1604,7 @@ void AAssetImporter::WriteMaterials() {
 void AAssetImporter::WriteMaterial( MaterialInfo const & m ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( "MaterialInstance" );
-    AString fileSystemPath = GResourceManager.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1700,7 +1701,7 @@ AString AAssetImporter::GeneratePhysicalPath( const char * DesiredName ) {
 
     int uniqueNumber = 0;
 
-    while ( Core::IsFileExists( ( GResourceManager.GetRootPath() + result ).CStr() ) ) {
+    while ( Core::IsFileExists( (GRuntime.GetRootPath() + result ).CStr() ) ) {
         result = path + "_" + Math::ToString( ++uniqueNumber ) + ".asset";
     }
 
@@ -1721,7 +1722,7 @@ void AAssetImporter::WriteSkeleton() {
     if ( !m_Joints.IsEmpty() ) {
         AFileStream f;
         AString fileName = GeneratePhysicalPath( "Skeleton" );
-        AString fileSystemPath = GResourceManager.GetRootPath() + fileName;
+        AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
         if ( !f.OpenWrite( fileSystemPath ) ) {
             GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1764,7 +1765,7 @@ void AAssetImporter::WriteAnimations() {
 void AAssetImporter::WriteAnimation( AnimationInfo const & Animation ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( Animation.Name.CStr() );
-    AString fileSystemPath = GResourceManager.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1808,7 +1809,7 @@ void AAssetImporter::WriteSingleModel() {
 
     AFileStream f;
     AString fileName = GeneratePhysicalPath( "Mesh" );
-    AString fileSystemPath = GResourceManager.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1951,7 +1952,7 @@ void AAssetImporter::WriteMeshes() {
 void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( Mesh.Mesh->name ? Mesh.Mesh->name : "Mesh" );
-    AString fileSystemPath = GResourceManager.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -2125,7 +2126,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
     AFileStream f;
     AString fileName = GeneratePhysicalPath( "Texture" );
-    AString fileSystemPath = GResourceManager.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -2205,7 +2206,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( "MaterialInstance" );
-    AString fileSystemPath = GResourceManager.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );

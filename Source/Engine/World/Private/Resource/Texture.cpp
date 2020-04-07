@@ -444,7 +444,7 @@ bool ATexture::LoadResource( AString const & _Path ) {
         GHeapMemory.Free( lodData );
 
 #if 0
-        byte * buf = (byte *)GHeapMemory.HeapAlloc( size, 1 );
+        byte * buf = (byte *)GHeapMemory.Alloc( size );
 
         f.Read( buf, size );
 

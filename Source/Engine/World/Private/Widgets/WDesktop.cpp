@@ -79,7 +79,6 @@ WDesktop & WDesktop::RemoveWidgets() {
 }
 
 WDesktop & WDesktop::SetSize( float _Width, float _Height ) {
-    GLogger.Printf("WDesktop::SetSize: %f %f\n",_Width,_Height);
     return SetSize( Float2( _Width, _Height ) );
 }
 
@@ -329,14 +328,14 @@ void WDesktop::SetFocusWidget( WWidget * _Focus ) {
 
 void WDesktop::GenerateKeyEvents( SKeyEvent const & _Event, double _TimeStamp ) {
     if ( DraggingWidget ) {
-        if ( _Event.Key == KEY_ESCAPE && _Event.Action == IA_Press ) {
+        if ( _Event.Key == KEY_ESCAPE && _Event.Action == IA_PRESS ) {
             CancelDragging();
         }
         return;
     }
 
     if ( Popup ) {
-        if ( _Event.Action == IA_Press || _Event.Action ==  IA_Repeat ) {
+        if ( _Event.Action == IA_PRESS || _Event.Action ==  IA_REPEAT ) {
             if ( _Event.Key == KEY_ESCAPE ) {
                 ClosePopupMenu();
             } else if ( _Event.Key == KEY_DOWN ) {
@@ -368,7 +367,7 @@ void WDesktop::GenerateMouseButtonEvents( struct SMouseButtonEvent const & _Even
     MouseFocusWidget = nullptr;
 
     if ( DraggingWidget ) {
-        if ( _Event.Button == DraggingButton && _Event.Action == IA_Release ) {
+        if ( _Event.Button == DraggingButton && _Event.Action == IA_RELEASE ) {
             // Stop dragging
             DraggingWidget = nullptr;
         }
@@ -376,7 +375,7 @@ void WDesktop::GenerateMouseButtonEvents( struct SMouseButtonEvent const & _Even
         return;
     }
 
-    if ( _Event.Action == IA_Press ) {
+    if ( _Event.Action == IA_PRESS ) {
 
         if ( Popup ) {
             Float2 mins, maxs;

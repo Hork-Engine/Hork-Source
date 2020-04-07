@@ -803,23 +803,23 @@ bool WTextEdit::Paste() {
 
 void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) {
 
-    if ( _Event.Action != IA_Release ) {
+    if ( _Event.Action != IA_RELEASE ) {
 
         int key = 0;
 
         // OS X style: Shortcuts using Cmd/Super instead of Ctrl
-        const bool bShortcutKey = (bOSX ? ( (_Event.ModMask & MOD_MASK_SUPER) && !(_Event.ModMask & MOD_MASK_CONTROL) )
-                                        : ( (_Event.ModMask & MOD_MASK_CONTROL) && !(_Event.ModMask & MOD_MASK_SUPER) ) ) && !(_Event.ModMask & MOD_MASK_ALT) && !(_Event.ModMask & MOD_MASK_SHIFT);
+        const bool bShortcutKey = (bOSX ? ( (_Event.ModMask & KMOD_MASK_SUPER) && !(_Event.ModMask & KMOD_MASK_CONTROL) )
+                                        : ( (_Event.ModMask & KMOD_MASK_CONTROL) && !(_Event.ModMask & KMOD_MASK_SUPER) ) ) && !(_Event.ModMask & KMOD_MASK_ALT) && !(_Event.ModMask & KMOD_MASK_SHIFT);
 
-        const bool bShiftShortcutOSX = bOSX && (_Event.ModMask & MOD_MASK_SUPER) && (_Event.ModMask & MOD_MASK_SHIFT) && !(_Event.ModMask & MOD_MASK_CONTROL) && !(_Event.ModMask & MOD_MASK_ALT);
+        const bool bShiftShortcutOSX = bOSX && (_Event.ModMask & KMOD_MASK_SUPER) && (_Event.ModMask & KMOD_MASK_SHIFT) && !(_Event.ModMask & KMOD_MASK_CONTROL) && !(_Event.ModMask & KMOD_MASK_ALT);
 
         // OS X style: Text editing cursor movement using Alt instead of Ctrl
-        const bool bWordmoveKeyDown = bOSX ? !!(_Event.ModMask & MOD_MASK_ALT) : !!(_Event.ModMask & MOD_MASK_CONTROL);
+        const bool bWordmoveKeyDown = bOSX ? !!(_Event.ModMask & KMOD_MASK_ALT) : !!(_Event.ModMask & KMOD_MASK_CONTROL);
 
         // OS X style: Line/Text Start and End using Cmd+Arrows instead of Home/End
-        const bool bStartEndKeyDown = bOSX && (_Event.ModMask & MOD_MASK_SUPER) && !(_Event.ModMask & MOD_MASK_CONTROL) && !(_Event.ModMask & MOD_MASK_ALT);
+        const bool bStartEndKeyDown = bOSX && (_Event.ModMask & KMOD_MASK_SUPER) && !(_Event.ModMask & KMOD_MASK_CONTROL) && !(_Event.ModMask & KMOD_MASK_ALT);
 
-        const int KeyMask = ( _Event.ModMask & MOD_MASK_SHIFT ) ? STB_TEXTEDIT_K_SHIFT : 0;
+        const int KeyMask = ( _Event.ModMask & KMOD_MASK_SHIFT ) ? STB_TEXTEDIT_K_SHIFT : 0;
 
         switch ( _Event.Key ) {
         case KEY_LEFT:
@@ -850,7 +850,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
 
         case KEY_UP:
             if ( !bSingleLine ) {
-                if ( _Event.ModMask & MOD_MASK_CONTROL ) {
+                if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
                     ScrollLineUp();
                 } else {
                     if ( bStartEndKeyDown ) {
@@ -867,7 +867,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
 
         case KEY_DOWN:
             if ( !bSingleLine ) {
-                if ( _Event.ModMask & MOD_MASK_CONTROL ) {
+                if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
                     ScrollLineDown();
                 } else {
                     if ( bStartEndKeyDown ) {
@@ -884,7 +884,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
             break;
 
         case KEY_HOME:
-            if ( _Event.ModMask & MOD_MASK_CONTROL ) {
+            if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
                 key = STB_TEXTEDIT_K_TEXTSTART | KeyMask;
 
                 ScrollHome();
@@ -897,7 +897,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
             break;
 
         case KEY_END:
-            if ( _Event.ModMask & MOD_MASK_CONTROL ) {
+            if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
                 key = STB_TEXTEDIT_K_TEXTEND | KeyMask;
 
                 ScrollEnd();
@@ -934,7 +934,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
                 if ( !HasSelection() ) {
                     if ( bWordmoveKeyDown ) {
                         PressKey( STB_TEXTEDIT_K_WORDLEFT | STB_TEXTEDIT_K_SHIFT );
-                    } else if ( bOSX && ( _Event.ModMask & MOD_MASK_SUPER ) && !( _Event.ModMask & MOD_MASK_ALT ) && !( _Event.ModMask & MOD_MASK_CONTROL ) ) {
+                    } else if ( bOSX && ( _Event.ModMask & KMOD_MASK_SUPER ) && !( _Event.ModMask & KMOD_MASK_ALT ) && !( _Event.ModMask & KMOD_MASK_CONTROL ) ) {
                         PressKey( STB_TEXTEDIT_K_LINESTART | STB_TEXTEDIT_K_SHIFT );
                     }
                 }
@@ -944,7 +944,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
             break;
 
         case KEY_ENTER: {
-            const bool bCtrl = !!(_Event.ModMask & MOD_MASK_CONTROL);
+            const bool bCtrl = !!(_Event.ModMask & KMOD_MASK_CONTROL);
 
             if ( bSingleLine || ( bCtrlEnterForNewLine && !bCtrl ) || ( !bCtrlEnterForNewLine && bCtrl ) ) {
                 E_OnEnterPress.Dispatch();
@@ -960,9 +960,9 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
             }
 
         case KEY_TAB: {
-            bool bCtrl = !!(_Event.ModMask & MOD_MASK_CONTROL);
-            bool bShift = !!(_Event.ModMask & MOD_MASK_SHIFT);
-            bool bAlt = !!(_Event.ModMask & MOD_MASK_ALT);
+            bool bCtrl = !!(_Event.ModMask & KMOD_MASK_CONTROL);
+            bool bShift = !!(_Event.ModMask & KMOD_MASK_SHIFT);
+            bool bAlt = !!(_Event.ModMask & KMOD_MASK_ALT);
 
             if ( bAllowTabInput && !bReadOnly && !bCtrl && !bShift && !bAlt ) {
                 if ( InsertSpacesOnTab > 0 ) {
@@ -1002,7 +1002,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
                     ScrollToCursor();
 
                 } else if ( bShiftShortcutOSX
-                            || ( _Event.ModMask & (MOD_MASK_SHIFT|MOD_MASK_CONTROL) ) == (MOD_MASK_SHIFT|MOD_MASK_CONTROL) ) {
+                            || ( _Event.ModMask & (KMOD_MASK_SHIFT|KMOD_MASK_CONTROL) ) == (KMOD_MASK_SHIFT|KMOD_MASK_CONTROL) ) {
 
                     GLogger.Printf( "Redo\n");
 
@@ -1035,8 +1035,8 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
 
         }
 
-        const bool bCtrlOnly = ( _Event.ModMask & MOD_MASK_CONTROL ) && !( _Event.ModMask & MOD_MASK_SHIFT ) && !( _Event.ModMask & MOD_MASK_ALT ) && !( _Event.ModMask & MOD_MASK_SUPER );
-        const bool bShiftOnly = ( _Event.ModMask & MOD_MASK_SHIFT ) && !( _Event.ModMask & MOD_MASK_CONTROL ) && !( _Event.ModMask & MOD_MASK_ALT ) && !( _Event.ModMask & MOD_MASK_SUPER );
+        const bool bCtrlOnly = ( _Event.ModMask & KMOD_MASK_CONTROL ) && !( _Event.ModMask & KMOD_MASK_SHIFT ) && !( _Event.ModMask & KMOD_MASK_ALT ) && !( _Event.ModMask & KMOD_MASK_SUPER );
+        const bool bShiftOnly = ( _Event.ModMask & KMOD_MASK_SHIFT ) && !( _Event.ModMask & KMOD_MASK_CONTROL ) && !( _Event.ModMask & KMOD_MASK_ALT ) && !( _Event.ModMask & KMOD_MASK_SUPER );
 
         if ( ( bShortcutKey && _Event.Key == KEY_X ) || ( bShiftOnly && _Event.Key == KEY_DELETE ) ) {
             Cut();
@@ -1052,7 +1052,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
 }
 
 void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
-    if ( _Event.Action == IA_Press ) {
+    if ( _Event.Action == IA_PRESS ) {
         Float2 CursorPos = GetDesktop()->GetCursorPosition();
 
         FromDesktopToWidget( CursorPos );
@@ -1061,7 +1061,7 @@ void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
             TempCursor = Stb->cursor;
         }
 
-        if ( _Event.Button == 0 && ( _Event.ModMask & MOD_MASK_SHIFT ) ) {
+        if ( _Event.Button == 0 && ( _Event.ModMask & KMOD_MASK_SHIFT ) ) {
 
             stb_textedit_click( this, Stb, CursorPos.X, CursorPos.Y );
 
@@ -1079,7 +1079,7 @@ void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
         }
     }
 
-    bStartDragging = ( _Event.Action == IA_Press ) && _Event.Button == 0;
+    bStartDragging = ( _Event.Action == IA_PRESS ) && _Event.Button == 0;
 }
 
 void WTextEdit::OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint64_t _ClickTime ) {
@@ -1126,11 +1126,11 @@ void WTextEdit::OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp
     }
 
     // We ignore CTRL inputs, but need to allow ALT+CTRL as some keyboards (e.g. German) use AltGR (which _is_ Alt+Ctrl) to input certain characters.
-    if ( (_Event.ModMask & MOD_MASK_CONTROL) && !(_Event.ModMask & MOD_MASK_ALT) ) {
+    if ( (_Event.ModMask & KMOD_MASK_CONTROL) && !(_Event.ModMask & KMOD_MASK_ALT) ) {
         return;
     }
 
-    if ( bOSX && (_Event.ModMask & MOD_MASK_SUPER) ) {
+    if ( bOSX && (_Event.ModMask & KMOD_MASK_SUPER) ) {
         return;
     }
 

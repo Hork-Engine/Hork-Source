@@ -41,6 +41,8 @@ static const int TabSize = 4;
 
 static const bool bTexNoPowerOfTwoHeight = false;
 
+static const float DefaultFontSize = 13;
+
 // Replacement character if a glyph isn't found
 static const SWideChar FallbackChar = (SWideChar)'?';
 
@@ -49,7 +51,7 @@ static EGlyphRange GGlyphRange = GLYPH_RANGE_DEFAULT;
 // 2 value per range, values are inclusive, zero-terminated list
 static const unsigned short * GetGlyphRange( EGlyphRange _GlyphRange );
 
-#ifndef STB_RECT_PACK_IMPLEMENTATION                        // in case the user already have an implementation in the _same_ compilation unit (e.g. unity builds)
+#ifndef STB_RECT_PACK_IMPLEMENTATION
 #define STBRP_STATIC
 #define STBRP_ASSERT(x)     AN_ASSERT(x)
 #define STBRP_SORT          qsort
@@ -57,7 +59,7 @@ static const unsigned short * GetGlyphRange( EGlyphRange _GlyphRange );
 #include "stb_rect_pack.h"
 #endif
 
-#ifndef STB_TRUETYPE_IMPLEMENTATION                         // in case the user already have an implementation in the _same_ compilation unit (e.g. unity builds)
+#ifndef STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_malloc(x,u)   ((void)(u), GZoneMemory.Alloc(x))
 #define STBTT_free(x,u)     ((void)(u), GZoneMemory.Free(x))
 #define STBTT_assert(x)     AN_ASSERT(x)
@@ -745,7 +747,7 @@ void AFont::InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, 
     if ( !_CreateInfo ) {
         _CreateInfo = &defaultCreateInfo;
 
-        defaultCreateInfo.SizePixels = 13;
+        defaultCreateInfo.SizePixels = DefaultFontSize;
         defaultCreateInfo.GlyphRange = GGlyphRange;
         defaultCreateInfo.OversampleH = 3; // FIXME: 2 may be a better default?
         defaultCreateInfo.OversampleV = 1;
@@ -791,10 +793,10 @@ void AFont::InitializeFromMemoryCompressedBase85TTF( const char * _SysMem, SFont
 void AFont::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Fonts/Default" ) ) {
 
-        // Load embedded ProggyClean.ttf at size 13, disable oversampling
+        // Load embedded ProggyClean.ttf, disable oversampling
         SFontCreateInfo createInfo = {};
         createInfo.FontNum = 0;
-        createInfo.SizePixels = 13;
+        createInfo.SizePixels = DefaultFontSize;
         createInfo.GlyphRange = GGlyphRange;
         createInfo.OversampleH = 1;
         createInfo.OversampleV = 1;
@@ -807,7 +809,7 @@ void AFont::LoadInternalResource( const char * _Path ) {
 
         const char* ttf_compressed_base85 = GetDefaultCompressedFontDataTTFBase85();
         InitializeFromMemoryCompressedBase85TTF( ttf_compressed_base85, &createInfo );
-        DisplayOffset.Y = 1.0f;
+        DrawOffset.Y = 1.0f;
         return;
     }
 
@@ -886,26 +888,6 @@ void AFont::Purge() {
         GHeapMemory.Free( TexPixelsAlpha8 );
         TexPixelsAlpha8 = nullptr;
     }
-}
-
-bool AFont::IsValid() const {
-    return AtlasTexture.GetObject() != nullptr;
-}
-
-int AFont::GetFontSize() const {
-    return IsValid() ? FontSize : 8;
-}
-
-Float2 const & AFont::GetUVWhitePixel() const {
-    return TexUvWhitePixel;
-}
-
-SFontGlyph const * AFont::FindGlyph( SWideChar c ) const {
-    return ((int)c < WideCharToGlyph.Size()) ? Glyphs.ToPtr() + WideCharToGlyph[(int)c] : FallbackGlyph;
-}
-
-float AFont::GetCharAdvance( SWideChar c ) const {
-    return ((int)c < WideCharAdvanceX.Size()) ? WideCharAdvanceX[(int)c] : FallbackAdvanceX;
 }
 
 Float2 AFont::CalcTextSizeA( float _Size, float _MaxWidth, float _WrapWidth, const char * _TextBegin, const char * _TextEnd, const char** _Remaining ) const {
@@ -1202,12 +1184,8 @@ SWideChar const * AFont::CalcWordWrapPositionW( float _Scale, SWideChar const * 
     return s;
 }
 
-void AFont::SetDisplayOffset( Float2 const & _Offset ) {
-    DisplayOffset = _Offset;
-}
-
-Float2 const & AFont::GetDisplayOffset() const {
-    return DisplayOffset;
+void AFont::SetDrawOffset( Float2 const & _Offset ) {
+    DrawOffset = _Offset;
 }
 
 bool AFont::GetMouseCursorTexData( EDrawCursor cursor_type, Float2* out_offset, Float2* out_size, Float2 out_uv_border[2], Float2 out_uv_fill[2] ) const {

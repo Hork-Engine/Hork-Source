@@ -80,10 +80,10 @@ void APlayerController::OnPawnChanged()
 {
     InputComponent->UnbindAll();
 
-    InputComponent->BindAction( "Pause", IA_Press, this, &APlayerController::TogglePause, true );
-    InputComponent->BindAction( "TakeScreenshot", IA_Press, this, &APlayerController::TakeScreenshot, true );
-    InputComponent->BindAction( "ToggleWireframe", IA_Press, this, &APlayerController::ToggleWireframe, true );
-    InputComponent->BindAction( "ToggleDebugDraw", IA_Press, this, &APlayerController::ToggleDebugDraw, true );
+    InputComponent->BindAction( "Pause", IA_PRESS, this, &APlayerController::TogglePause, true );
+    InputComponent->BindAction( "TakeScreenshot", IA_PRESS, this, &APlayerController::TakeScreenshot, true );
+    InputComponent->BindAction( "ToggleWireframe", IA_PRESS, this, &APlayerController::ToggleWireframe, true );
+    InputComponent->BindAction( "ToggleDebugDraw", IA_PRESS, this, &APlayerController::ToggleDebugDraw, true );
 
     if ( Pawn ) {
         Pawn->SetupPlayerInputComponent( InputComponent );

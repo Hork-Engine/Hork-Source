@@ -47,6 +47,8 @@ ARuntimeVariable RVFixFrustumClusters( _CTS( "FixFrustumClusters" ), _CTS( "0" )
 ARuntimeVariable RVRenderView( _CTS( "RenderView" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVRenderSurfaces( _CTS( "RenderSurfaces" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVRenderMeshes( _CTS( "RenderMeshes" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable RVResolutionScaleX( _CTS( "ResolutionScaleX" ), _CTS( "1" ) );
+ARuntimeVariable RVResolutionScaleY( _CTS( "ResolutionScaleY" ), _CTS( "1" ) );
 
 ARenderFrontend & GRenderFrontend = ARenderFrontend::Inst();
 
@@ -93,8 +95,8 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     Stat.PolyCount = 0;
     Stat.ShadowMapPolyCount = 0;
 
-    MaxViewportWidth = 0;
-    MaxViewportHeight = 0;
+    MaxViewportWidth = 1;
+    MaxViewportHeight = 1;
     NumViewports = 0;
 
     RenderCanvas( InCanvas );
@@ -110,7 +112,6 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData.TranslucentInstances.Clear();
     FrameData.ShadowInstances.Clear();
     FrameData.DirectionalLights.Clear();
-    //FrameData.Lights.Clear();
     FrameData.ShadowCascadePoolSize = 0;
     FrameData.StreamBuffer = GStreamedMemoryGPU.GetBufferGPU();
 
@@ -139,33 +140,13 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     }
     //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
 
-
     if ( DebugDraw.CommandsCount() > 0 ) {
         FrameData.DbgCmds = DebugDraw.GetCmds().ToPtr();
         FrameData.DbgVertexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
         FrameData.DbgIndexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned short ), DebugDraw.GetIndices().ToPtr() );
     }
 
-
-    //    int vertexCount = GFrameData.DbgVertices.Size();
-    //    int indexCount = GFrameData.DbgIndices.Size();
-    //    if ( VertexBufferSize < vertexCount ) {
-    //        VertexBufferSize = vertexCount;
-    //        VertexBuffer.Realloc( VertexBufferSize * sizeof( SDebugVertex ), GFrameData.DbgVertices.ToPtr() );
-    //    } else {
-    //        VertexBuffer.WriteRange( 0, vertexCount * sizeof( SDebugVertex ), GFrameData.DbgVertices.ToPtr() );
-    //    }
-    //    if ( IndexBufferSize < indexCount ) {
-    //        IndexBufferSize = indexCount;
-    //        IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned int ), GFrameData.DbgIndices.ToPtr() );
-    //    } else {
-    //        IndexBuffer.WriteRange( 0, indexCount * sizeof( unsigned int ), GFrameData.DbgIndices.ToPtr() );
-    //    }
-
-
     Stat.FrontendTime = GRuntime.SysMilliseconds() - Stat.FrontendTime;
-
-    //FrameNumber++;
 }
 
 void ARenderFrontend::RenderView( int _Index ) {
@@ -178,8 +159,8 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
     view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
     view->ViewIndex = _Index;
-    view->Width = viewport->Width;
-    view->Height = viewport->Height;
+    view->Width = viewport->Width * RVResolutionScaleX.GetFloat();
+    view->Height = viewport->Height * RVResolutionScaleY.GetFloat();
 
     if ( camera )
     {
@@ -279,64 +260,43 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
     drawList->IndexStreamOffset = GStreamedMemoryGPU.AllocateIndex( sizeof( unsigned short ) * srcList->IdxBuffer.Size, srcList->IdxBuffer.Data );
 
     // Allocate commands
-    drawList->CommandsCount = srcList->CmdBuffer.size();
-    drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( sizeof( SHUDDrawCmd ) * drawList->CommandsCount );
+    drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( sizeof( SHUDDrawCmd ) * srcList->CmdBuffer.Size );
     if ( !drawList->Commands ) {
         return;
     }
 
-    int startIndexLocation = 0;
+    drawList->CommandsCount = 0;
 
     // Parse ImDrawCmd, create HUDDrawCmd-s
     SHUDDrawCmd * dstCmd = drawList->Commands;
-    for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
-
-        // Copy clip rect
-        Core::Memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
-
-        // Copy index buffer offsets
-        dstCmd->IndexCount = pCmd->ElemCount;
-        dstCmd->StartIndexLocation = startIndexLocation;
-        dstCmd->BaseVertexLocation = pCmd->VtxOffset;
-
-        // Unpack command type
-        dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
-
-        // Unpack blending type
-        dstCmd->Blending = (EColorBlending)( ( pCmd->BlendingState >> 8 ) & 0xff );
-
-        // Unpack texture sampler type
-        dstCmd->SamplerType = (EHUDSamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
-
-        // Calc index location for next command
-        startIndexLocation += pCmd->ElemCount;
-
+    for ( ImDrawCmd const & cmd : srcList->CmdBuffer )
+    {
         // TextureId can contain a viewport index, material instance or gpu texture
-        if ( !pCmd->TextureId )
+        if ( !cmd.TextureId )
         {
             GLogger.Printf( "ARenderFrontend::RenderCanvas: invalid command (TextureId==0)\n" );
-
-            drawList->CommandsCount--;
-
             continue;
         }
 
-        switch ( dstCmd->Type )
-        {
-        case HUD_DRAW_CMD_VIEWPORT:
-        {
+        Core::Memcpy( &dstCmd->ClipMins, &cmd.ClipRect, sizeof( Float4 ) );
+        dstCmd->IndexCount = cmd.ElemCount;
+        dstCmd->StartIndexLocation = cmd.IdxOffset;
+        dstCmd->BaseVertexLocation = cmd.VtxOffset;
+        dstCmd->Type = (EHUDDrawCmd)( cmd.BlendingState & 0xff );
+        dstCmd->Blending = (EColorBlending)( ( cmd.BlendingState >> 8 ) & 0xff );
+        dstCmd->SamplerType = (EHUDSamplerType)( ( cmd.BlendingState >> 16 ) & 0xff );
+
+        switch ( dstCmd->Type ) {
+        case HUD_DRAW_CMD_VIEWPORT: {
             // Check MAX_RENDER_VIEWS limit
             if ( NumViewports >= MAX_RENDER_VIEWS )
             {
                 GLogger.Printf( "ARenderFrontend::RenderCanvas: MAX_RENDER_VIEWS hit\n" );
-
-                drawList->CommandsCount--;
-
                 continue;
             }
 
             // Unpack viewport
-            SViewport const * viewport = &InCanvas->GetViewports()[ (size_t)pCmd->TextureId - 1 ];
+            SViewport const * viewport = &InCanvas->GetViewports()[ (size_t)cmd.TextureId - 1 ];
 
             // Compute viewport index in array of viewports
             dstCmd->ViewportIndex = NumViewports++;
@@ -348,16 +308,12 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
             MaxViewportWidth = Math::Max( MaxViewportWidth, viewport->Width );
             MaxViewportHeight = Math::Max( MaxViewportHeight, viewport->Height );
 
-            // Switch to next cmd
-            dstCmd++;
-
             break;
         }
 
-        case HUD_DRAW_CMD_MATERIAL:
-        {
+        case HUD_DRAW_CMD_MATERIAL: {
             // Unpack material instance
-            AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( pCmd->TextureId );
+            AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( cmd.TextureId );
 
             // In normal case materialInstance never be null
             AN_ASSERT( materialInstance );
@@ -372,9 +328,6 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
             if ( material->GetType() != MATERIAL_TYPE_HUD )
             {
                 GLogger.Printf( "ARenderFrontend::RenderCanvas: expected MATERIAL_TYPE_HUD\n" );
-
-                drawList->CommandsCount--;
-
                 continue;
             }
 
@@ -384,34 +337,30 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
             if ( !dstCmd->MaterialFrameData )
             {
                 // Out of frame memory?
-
-                drawList->CommandsCount--;
-
                 continue;
             }
 
-            // Switch to next cmd
-            dstCmd++;
-
             break;
         }
+
         case HUD_DRAW_CMD_TEXTURE:
-        case HUD_DRAW_CMD_ALPHA:
-        {
+        case HUD_DRAW_CMD_ALPHA: {
             // Unpack texture
-            dstCmd->Texture = (ATextureGPU *)pCmd->TextureId;
+            dstCmd->Texture = (ATextureGPU *)cmd.TextureId;
+            break;
+        }
 
-            // Switch to next cmd
-            dstCmd++;
-            break;
-        }
         default:
-            AN_ASSERT( 0 );
-            break;
+            GLogger.Printf( "ARenderFrontend::RenderCanvas: unknown command type\n" );
+            continue;
         }
+
+        // Switch to next cmd
+        dstCmd++;
+        drawList->CommandsCount++;
     }
 
-    // Add drawList to common list
+    // Add drawList
     SHUDDrawList * prev = FrameData.DrawListTail;
     drawList->pNext = nullptr;
     FrameData.DrawListTail = drawList;

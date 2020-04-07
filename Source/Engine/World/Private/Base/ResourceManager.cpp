@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/Base/GameModuleInterface.h>
+#include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
 
 AResourceManager & GResourceManager = AResourceManager::Inst();
@@ -37,15 +38,6 @@ AResourceManager & GResourceManager = AResourceManager::Inst();
 AResourceManager::AResourceManager() {}
 
 void AResourceManager::Initialize() {
-    RootPath = IGameModule::RootPath;
-    if ( RootPath.IsEmpty() ) {
-        RootPath = "Data/";
-    } else {
-        RootPath.FixSeparator();
-        if ( RootPath[RootPath.Length()-1] != '/' ) {
-            RootPath += '/';
-        }
-    }
     LoadResourceGUID();
 }
 
@@ -60,14 +52,12 @@ void AResourceManager::Deinitialize() {
 
     ResourceGUID.clear();
     ResourceGUIDHash.Free();
-
-    RootPath.Free();
 }
 
 void AResourceManager::LoadResourceGUID() {
     AFileStream f;
 
-    if ( f.OpenRead( RootPath + "ResourceGUID.bin" ) )
+    if ( f.OpenRead( GRuntime.GetRootPath() + "ResourceGUID.bin" ) )
     {
         char buf[8192];
         char * path;
@@ -124,7 +114,7 @@ void AResourceManager::LoadResourceGUID() {
 
 void AResourceManager::SaveResourceGUID() {
     AFileStream f;
-    if ( f.OpenWrite( RootPath + "ResourceGUID.bin" ) ) {
+    if ( f.OpenWrite( GRuntime.GetRootPath() + "ResourceGUID.bin" ) ) {
         int count = ResourceGUID.size();
 
         for ( int i = 0 ; i < count ; i++ ) {

@@ -115,7 +115,7 @@ void ACanvas::SetCurrentFont( AFont * _Font ) {
         DrawListSharedData.Font = _Font;
     } else {
         DrawListSharedData.TexUvWhitePixel = Float2::Zero();
-        DrawListSharedData.FontSize = 16;
+        DrawListSharedData.FontSize = 13;
         DrawListSharedData.Font = nullptr;
     }
 }
@@ -213,7 +213,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
 
     //_Font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
 
-    Float2 const & fontOffset = _Font->GetDisplayOffset();
+    Float2 const & fontOffset = _Font->GetDrawOffset();
 
     // Align to be pixel perfect
     Float2 pos;
@@ -317,7 +317,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
                 continue;
         }
 
-        SFontGlyph const * glyph = _Font->FindGlyph( c );
+        SFontGlyph const * glyph = _Font->GetGlyph( c );
         float charWidth = glyph->AdvanceX * scale;
 
         // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
@@ -435,7 +435,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
 
     //_Font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
 
-    Float2 const & fontOffset = _Font->GetDisplayOffset();
+    Float2 const & fontOffset = _Font->GetDrawOffset();
 
     // Align to be pixel perfect
     Float2 pos;
@@ -541,7 +541,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
                 continue;
         }
 
-        SFontGlyph const * glyph = _Font->FindGlyph( c );
+        SFontGlyph const * glyph = _Font->GetGlyph( c );
         float charWidth = glyph->AdvanceX * scale;
 
         // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
@@ -639,9 +639,9 @@ void ACanvas::DrawWChar( AFont const * _Font, SWideChar _Ch, int _X, int _Y, flo
         return;
     }
 
-    SFontGlyph const * glyph = _Font->FindGlyph( _Ch );
+    SFontGlyph const * glyph = _Font->GetGlyph( _Ch );
 
-    Float2 const & fontOffset = _Font->GetDisplayOffset();
+    Float2 const & fontOffset = _Font->GetDrawOffset();
 
     const Float2 a( _X + glyph->X0 * _Scale + fontOffset.X, _Y + glyph->Y0 * _Scale + fontOffset.Y );
     const Float2 b( _X + glyph->X1 * _Scale + fontOffset.X, _Y + glyph->Y1 * _Scale + fontOffset.Y );
@@ -715,7 +715,9 @@ void ACanvas::DrawViewport( ACameraComponent * _Camera, ARenderingParameters * _
     Float2 a(_X,_Y);
     Float2 b(_X+_W,_Y+_H);
 
-    DrawList.AddImageRounded( (void*)(size_t)(Viewports.Size()+1), a, b, a, a, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_VIEWPORT | ( _Blending << 8 ) );
+    //DrawList.AddImageRounded( (void*)(size_t)(Viewports.Size()+1), a, b, a, a, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_VIEWPORT | ( _Blending << 8 ) );
+
+    DrawList.AddImageRounded( (void*)(size_t)(Viewports.Size()+1), a, b, Float2(0.0f), Float2(1.0f), _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_VIEWPORT | (_Blending << 8) );
 
     SViewport & viewport = Viewports.Append();
     viewport.X = _X;

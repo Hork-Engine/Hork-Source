@@ -215,7 +215,7 @@ void ImDrawList::UpdateClipRect()
 void ImDrawList::UpdateBlendingState()
 {
     // If current command is used with different settings we need to add a new command
-    const int curr_blending = GetCurrentBlending();
+    const uint32_t curr_blending = GetCurrentBlending();
     ImDrawCmd* curr_cmd = CmdBuffer.Size ? &CmdBuffer.back() : NULL;
     if ( !curr_cmd || (curr_cmd->ElemCount != 0 && curr_cmd->BlendingState != curr_blending) || curr_cmd->UserCallback != NULL )
     {
@@ -284,7 +284,7 @@ void ImDrawList::PopClipRect()
     UpdateClipRect();
 }
 
-void ImDrawList::PushBlendingState( int _Blending )
+void ImDrawList::PushBlendingState( uint32_t _Blending )
 {
     _BlendingStack.push_back( _Blending );
     UpdateBlendingState();
@@ -963,7 +963,7 @@ void ImDrawList::AddBezierCurve( const ImVec2& p1, const ImVec2& p2, const ImVec
     PathStroke( col, false, thickness );
 }
 
-void ImDrawList::AddImage( ImTextureID user_texture_id, const ImVec2& a, const ImVec2& b, const ImVec2& uv_a, const ImVec2& uv_b, uint32_t col, int blend )
+void ImDrawList::AddImage( ImTextureID user_texture_id, const ImVec2& a, const ImVec2& b, const ImVec2& uv_a, const ImVec2& uv_b, uint32_t col, uint32_t blend )
 {
     if ( (col & IM_COL32_A_MASK) == 0 )
         return;
@@ -986,7 +986,7 @@ void ImDrawList::AddImage( ImTextureID user_texture_id, const ImVec2& a, const I
         PopTextureID();
 }
 
-void ImDrawList::AddImageQuad( ImTextureID user_texture_id, const ImVec2& a, const ImVec2& b, const ImVec2& c, const ImVec2& d, const ImVec2& uv_a, const ImVec2& uv_b, const ImVec2& uv_c, const ImVec2& uv_d, uint32_t col, int blend )
+void ImDrawList::AddImageQuad( ImTextureID user_texture_id, const ImVec2& a, const ImVec2& b, const ImVec2& c, const ImVec2& d, const ImVec2& uv_a, const ImVec2& uv_b, const ImVec2& uv_c, const ImVec2& uv_d, uint32_t col, uint32_t blend )
 {
     if ( (col & IM_COL32_A_MASK) == 0 )
         return;
@@ -1033,7 +1033,7 @@ void ShadeVertsLinearUV( ImDrawList* draw_list, int vert_start_idx, int vert_end
     }
 }
 
-void ImDrawList::AddImageRounded( ImTextureID user_texture_id, const ImVec2& a, const ImVec2& b, const ImVec2& uv_a, const ImVec2& uv_b, uint32_t col, float rounding, int rounding_corners, int blend )
+void ImDrawList::AddImageRounded( ImTextureID user_texture_id, const ImVec2& a, const ImVec2& b, const ImVec2& uv_a, const ImVec2& uv_b, uint32_t col, float rounding, int rounding_corners, uint32_t blend )
 {
     if ( (col & IM_COL32_A_MASK) == 0 )
         return;

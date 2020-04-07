@@ -267,7 +267,8 @@ public:
 
     bool IsKeyDown( int _Key ) const { return GetButtonState( ID_KEYBOARD, _Key ); }
     bool IsMouseDown( int _Button ) const { return GetButtonState( ID_MOUSE, _Button ); }
-    bool IsJoyDown( struct SJoystick const * _Joystick, int _Button ) const;
+    //bool IsJoyDown( struct SJoystick const * _Joystick, int _Button ) const;
+    bool IsJoyDown( int _JoystickId, int _Button ) const;
 
     void SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp );
 
