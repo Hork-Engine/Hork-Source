@@ -102,9 +102,9 @@ void APlayer::SetupPlayerInputComponent( AInputComponent * _Input ) {
     _Input->BindAxis( "MoveDown", this, &APlayer::MoveDown );
     _Input->BindAxis( "TurnRight", this, &APlayer::TurnRight );
     _Input->BindAxis( "TurnUp", this, &APlayer::TurnUp );
-    _Input->BindAction( "Speed", IA_Press, this, &APlayer::SpeedPress );
-    _Input->BindAction( "Speed", IA_Release, this, &APlayer::SpeedRelease );
-    _Input->BindAction( "Attack", IA_Press, this, &APlayer::AttackPress );
+    _Input->BindAction( "Speed", IA_PRESS, this, &APlayer::SpeedPress );
+    _Input->BindAction( "Speed", IA_RELEASE, this, &APlayer::SpeedRelease );
+    _Input->BindAction( "Attack", IA_PRESS, this, &APlayer::AttackPress );
 }
 
 void APlayer::Tick( float _TimeStep ) {

@@ -45,8 +45,6 @@ SOFTWARE.
 
 AN_CLASS_META( ASponzaModel )
 
-const char * IGameModule::RootPath = "Samples/Sponza";
-
 ASponzaModel * GModule;
 
 void ASponzaModel::OnGameStart() {
@@ -55,15 +53,15 @@ void ASponzaModel::OnGameStart() {
 
     GEngine.bAllowConsole = true;
 
-    SVideoMode videoMode = GRuntime.GetVideoMode();
-    videoMode.Width = 1280;
-    videoMode.Height = 720;
-    videoMode.RefreshRate = 60;
-    videoMode.Opacity = 1.0f;
-    videoMode.bFullscreen = false;
-    Core::Strcpy( videoMode.Backend, sizeof( videoMode.Backend ), "OpenGL 4.5" );
-    Core::Strcpy( videoMode.Title, sizeof( videoMode.Title ), "AngieEngine: Sponza" );
-    GRuntime.PostChangeVideoMode( videoMode );
+    //SVideoMode videoMode = GRuntime.GetVideoMode();
+    //videoMode.Width = 1280;
+    //videoMode.Height = 720;
+    //videoMode.RefreshRate = 60;
+    //videoMode.Opacity = 1.0f;
+    //videoMode.bFullscreen = false;
+    //Core::Strcpy( videoMode.Backend, sizeof( videoMode.Backend ), "OpenGL 4.5" );
+    //Core::Strcpy( videoMode.Title, sizeof( videoMode.Title ), "AngieEngine: Sponza" );
+    //GRuntime.PostChangeVideoMode( videoMode );
 
     SetInputMappings();
 
@@ -1049,8 +1047,16 @@ void ASponzaModel::SetInputMappings() {
 
 #include <Runtime/Public/EntryDecl.h>
 
-AN_ENTRY_DECL( ASponzaModel )
+static SEntryDecl ModuleDecl = {
+    // Game title
+    "AngieEngine: Sponza",
+    // Root path
+    "Samples/Sponza",
+    // Module class
+    &ASponzaModel::ClassMeta()
+};
 
+AN_ENTRY_DECL( ModuleDecl )
 
 //EXPORT COLLISIONS
 //EXPORT RAYCAST BVH
