@@ -57,6 +57,8 @@ SOFTWARE.
 #include <android/log.h>
 #endif
 
+#include <Runtime/Public/EntryDecl.h>
+
 #define PROCESS_COULDNT_CHECK_UNIQUE 1
 #define PROCESS_ALREADY_EXISTS       2
 #define PROCESS_UNIQUE               3
@@ -66,6 +68,14 @@ ARuntime & GRuntime = ARuntime::Inst();
 AAsyncJobManager GAsyncJobManager;
 AAsyncJobList * GRenderFrontendJobList;
 AAsyncJobList * GRenderBackendJobList;
+
+ARuntimeVariable RVVidWidth( _CTS( "VidWidth" ), _CTS( "1600" ) );
+ARuntimeVariable RVVidHeight( _CTS( "VidHeight" ), _CTS( "900" ) );
+#ifdef AN_DEBUG
+ARuntimeVariable RVVidFullscreen( _CTS( "VidFullscreen" ), _CTS( "0" ) );
+#else
+ARuntimeVariable RVVidFullscreen( _CTS( "VidFullscreen" ), _CTS( "1" ) );
+#endif
 
 static int PressedKeys[KEY_LAST+1];
 static bool PressedMouseButtons[MOUSE_BUTTON_8+1];
@@ -90,7 +100,7 @@ ARuntime::ARuntime() {
     ProcessAttribute = 0;
 }
 
-void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
+void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
 
     // Synchronize SDL ticks with our start time
     (void)SDL_GetTicks();
@@ -102,7 +112,7 @@ void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
     FrameDuration = 1000000.0 / 60;
     FrameNumber = 0;
 
-    CreateGameModuleCallback = _CreateGameModule;
+    pModuleDecl = &_EntryDecl;
 
     Engine = GetEngineInstance();
 
@@ -187,6 +197,7 @@ void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
     ARuntimeVariable::AllocateVariables();
 
     GLogger.Printf( "Working directory: %s\n", WorkingDir.CStr() );
+    GLogger.Printf( "Root path: %s\n", RootPath.CStr() );
     GLogger.Printf( "Executable: %s\n", Executable );
 
     SDL_LogSetOutputFunction(
@@ -216,20 +227,53 @@ void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
     Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
     Core::ZeroMem( JoystickAdded, sizeof( JoystickAdded ) );
 
-    // TODO: load this from config:
+    {
+        AString configFile = GetRootPath() + "config.cfg";
+        AFileStream f;
+        if ( f.OpenRead( configFile ) ) {
+            AString data;
+
+            data.FromFile( f );
+
+            ARuntimeCommandProcessor cmdProcessor;
+
+            cmdProcessor.Add( data.CStr() );
+
+            class CommandContext : public IRuntimeCommandContext {
+            public:
+                void ExecuteCommand( ARuntimeCommandProcessor const & _Proc ) override {
+                    AN_ASSERT( _Proc.GetArgsCount() > 0 );
+
+                    const char * name = _Proc.GetArg( 0 );
+                    ARuntimeVariable * var;
+                    if ( nullptr != (var = ARuntimeVariable::FindVariable( name )) ) {
+                        if ( _Proc.GetArgsCount() < 2 ) {
+                            var->Print();
+                        } else {
+                            var->SetString( _Proc.GetArg( 1 ) );
+                        }
+                     }
+                }
+            };
+
+            CommandContext context;
+
+            cmdProcessor.Execute( context );
+        }
+    }
+
     SVideoMode desiredMode = {};
-    desiredMode.Width = 640;
-    desiredMode.Height = 480;
-    desiredMode.RefreshRate = 120;
+    desiredMode.Width = RVVidWidth.GetInteger();
+    desiredMode.Height = RVVidHeight.GetInteger();
     desiredMode.Opacity = 1;
-    desiredMode.bFullscreen = false;
+    desiredMode.bFullscreen = RVVidFullscreen;
     desiredMode.bCentrized = true;
     Core::Strcpy( desiredMode.Backend, sizeof( desiredMode.Backend ), "OpenGL 4.5" );
-    Core::Strcpy( desiredMode.Title, sizeof( desiredMode.Title ), "Game" );
+    Core::Strcpy( desiredMode.Title, sizeof( desiredMode.Title ), _EntryDecl.GameTitle );
 
     InitializeRenderer( desiredMode );
 
-    Engine->Run( CreateGameModuleCallback );
+    Engine->Run( _EntryDecl );
 
     ARuntimeVariable::FreeVariables();
 
@@ -242,6 +286,7 @@ void ARuntime::Run( ACreateGameModuleCallback _CreateGameModule ) {
     DeinitializeRenderer();
 
     WorkingDir.Free();
+    RootPath.Free();
 
     if ( Clipboard ) {
         SDL_free( Clipboard );
@@ -553,6 +598,16 @@ void ARuntime::InitializeWorkingDirectory() {
 #else
 #   error "InitializeWorkingDirectory not implemented under current platform"
 #endif
+
+    RootPath = pModuleDecl->RootPath;
+    if ( RootPath.IsEmpty() ) {
+        RootPath = "Data/";
+    } else {
+        RootPath.FixSeparator();
+        if ( RootPath[RootPath.Length()-1] != '/' ) {
+            RootPath += '/';
+        }
+    }
 }
 
 void ARuntime::DisplayCriticalMessage( const char * _Message ) {
@@ -700,7 +755,7 @@ static void FreeCommandLineArgs( char ** _Arguments ) {
 static char CmdLineBuffer[ MAX_COMMAND_LINE_LENGTH ];
 static bool bApplicationRun = false;
 
-ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _CreateGameModule ) {
+ANGIE_API void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl ) {
     if ( bApplicationRun ) {
         AN_ASSERT( 0 );
         return;
@@ -714,11 +769,11 @@ ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _Cr
     }
     // Fix executable path separator
     Core::FixSeparator( GRuntime.Arguments[ 0 ] );
-    GRuntime.Run( _CreateGameModule );
+    GRuntime.Run( _EntryDecl );
     FreeCommandLineArgs( GRuntime.Arguments );
 }
 
-ANGIE_API void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _CreateGameModule ) {
+ANGIE_API void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl ) {
     if ( bApplicationRun ) {
         AN_ASSERT( 0 );
         return;
@@ -732,7 +787,7 @@ ANGIE_API void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _Cre
     }
     // Fix executable path separator
     Core::FixSeparator( GRuntime.Arguments[ 0 ] );
-    GRuntime.Run( _CreateGameModule );
+    GRuntime.Run( _EntryDecl );
 }
 
 #if defined( AN_DEBUG ) && defined( AN_COMPILER_MSVC )
@@ -757,6 +812,10 @@ const char * const *ARuntime::GetArgv() {
 
 AString const & ARuntime::GetWorkingDir() {
     return WorkingDir;
+}
+
+AString const & ARuntime::GetRootPath() {
+    return RootPath;
 }
 
 const char * ARuntime::GetExecutableName() {
@@ -1221,27 +1280,27 @@ static AN_FORCEINLINE int FromKeymodSDL( Uint16 Mod ) {
     int modMask = 0;
 
     if ( Mod & (KMOD_LSHIFT|KMOD_RSHIFT) ) {
-        modMask |= MOD_MASK_SHIFT;
+        modMask |= KMOD_MASK_SHIFT;
     }
 
     if ( Mod & (KMOD_LCTRL|KMOD_RCTRL) ) {
-        modMask |= MOD_MASK_CONTROL;
+        modMask |= KMOD_MASK_CONTROL;
     }
 
     if ( Mod & (KMOD_LALT|KMOD_RALT) ) {
-        modMask |= MOD_MASK_ALT;
+        modMask |= KMOD_MASK_ALT;
     }
 
     if ( Mod & (KMOD_LGUI|KMOD_RGUI) ) {
-        modMask |= MOD_MASK_SUPER;
+        modMask |= KMOD_MASK_SUPER;
     }
 
     if ( Mod & KMOD_CAPS ) {
-        modMask |= MOD_MASK_CAPS_LOCK;
+        modMask |= KMOD_MASK_CAPS_LOCK;
     }
 
     if ( Mod & KMOD_NUM ) {
-        modMask |= MOD_MASK_NUM_LOCK;
+        modMask |= KMOD_MASK_NUM_LOCK;
     }
 
     return modMask;
@@ -1250,7 +1309,7 @@ static AN_FORCEINLINE int FromKeymodSDL( Uint16 Mod ) {
 static void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp ) {
     SJoystickButtonEvent buttonEvent;
     buttonEvent.Joystick = _JoystickNum;
-    buttonEvent.Action = IA_Release;
+    buttonEvent.Action = IA_RELEASE;
     for ( int i = 0 ; i < MAX_JOYSTICK_BUTTONS ; i++ ) {
         if ( JoystickButtonState[_JoystickNum][i] ) {
             JoystickButtonState[_JoystickNum][i] = SDL_RELEASED;
@@ -1277,10 +1336,10 @@ static void UnpressKeysAndButtons() {
     SKeyEvent keyEvent;
     SMouseButtonEvent mouseEvent;
 
-    keyEvent.Action = IA_Release;
+    keyEvent.Action = IA_RELEASE;
     keyEvent.ModMask = 0;
 
-    mouseEvent.Action = IA_Release;
+    mouseEvent.Action = IA_RELEASE;
     mouseEvent.ModMask = 0;
 
     double timeStamp = GRuntime.SysSeconds_d();
@@ -1517,15 +1576,15 @@ void ARuntime::PollEvents() {
             SKeyEvent keyEvent;
             keyEvent.Key = SDLKeyMappings[ event.key.keysym.scancode ];
             keyEvent.Scancode = event.key.keysym.scancode;
-            keyEvent.Action = ( event.type == SDL_KEYDOWN ) ? ( PressedKeys[keyEvent.Key] ? IA_Repeat : IA_Press ) : IA_Release;
+            keyEvent.Action = ( event.type == SDL_KEYDOWN ) ? ( PressedKeys[keyEvent.Key] ? IA_REPEAT : IA_PRESS ) : IA_RELEASE;
             keyEvent.ModMask = FromKeymodSDL( event.key.keysym.mod );
             if ( keyEvent.Key ) {
-                if ( ( keyEvent.Action == IA_Release && !PressedKeys[keyEvent.Key] )
-                     || ( keyEvent.Action == IA_Press && PressedKeys[keyEvent.Key] ) ) {
+                if ( ( keyEvent.Action == IA_RELEASE && !PressedKeys[keyEvent.Key] )
+                     || ( keyEvent.Action == IA_PRESS && PressedKeys[keyEvent.Key] ) ) {
 
                     // State does not changed
                 } else {
-                    PressedKeys[keyEvent.Key] = ( keyEvent.Action == IA_Release ) ? 0 : keyEvent.Scancode + 1;
+                    PressedKeys[keyEvent.Key] = ( keyEvent.Action == IA_RELEASE ) ? 0 : keyEvent.Scancode + 1;
 
                     Engine->OnKeyEvent( keyEvent, FROM_SDL_TIMESTAMP(event.key) );
                 }
@@ -1572,8 +1631,18 @@ void ARuntime::PollEvents() {
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP: {
             SMouseButtonEvent mouseEvent;
-            mouseEvent.Button = event.button.button - 1;
-            mouseEvent.Action = event.type == SDL_MOUSEBUTTONDOWN ? IA_Press : IA_Release;
+            switch ( event.button.button ) {
+            case 2:
+                mouseEvent.Button = MOUSE_BUTTON_3;
+                break;
+            case 3:
+                mouseEvent.Button = MOUSE_BUTTON_2;
+                break;
+            default:
+                mouseEvent.Button = MOUSE_BUTTON_1 + event.button.button - 1;
+                break;
+            }
+            mouseEvent.Action = event.type == SDL_MOUSEBUTTONDOWN ? IA_PRESS : IA_RELEASE;
             mouseEvent.ModMask = FromKeymodSDL( SDL_GetModState() );
 
             if ( mouseEvent.Button >= MOUSE_BUTTON_1 && mouseEvent.Button <= MOUSE_BUTTON_8 ) {
@@ -1581,7 +1650,7 @@ void ARuntime::PollEvents() {
 
                     // State does not changed
                 } else {
-                    PressedMouseButtons[mouseEvent.Button] = mouseEvent.Action != IA_Release;
+                    PressedMouseButtons[mouseEvent.Button] = mouseEvent.Action != IA_RELEASE;
 
                     Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.button) );
                 }
@@ -1602,36 +1671,36 @@ void ARuntime::PollEvents() {
             if ( wheelEvent.WheelX < 0.0 ) {
                 mouseEvent.Button = MOUSE_WHEEL_LEFT;
 
-                mouseEvent.Action = IA_Press;
+                mouseEvent.Action = IA_PRESS;
                 Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.wheel) );
 
-                mouseEvent.Action = IA_Release;
+                mouseEvent.Action = IA_RELEASE;
                 Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.wheel) );
 
             } else if ( wheelEvent.WheelX > 0.0 ) {
                 mouseEvent.Button = MOUSE_WHEEL_RIGHT;
 
-                mouseEvent.Action = IA_Press;
+                mouseEvent.Action = IA_PRESS;
                 Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.wheel) );
 
-                mouseEvent.Action = IA_Release;
+                mouseEvent.Action = IA_RELEASE;
                 Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.wheel) );
             }
             if ( wheelEvent.WheelY < 0.0 ) {
                 mouseEvent.Button = MOUSE_WHEEL_DOWN;
 
-                mouseEvent.Action = IA_Press;
+                mouseEvent.Action = IA_PRESS;
                 Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.wheel) );
 
-                mouseEvent.Action = IA_Release;
+                mouseEvent.Action = IA_RELEASE;
                 Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.wheel) );
             } else if ( wheelEvent.WheelY > 0.0 ) {
                 mouseEvent.Button = MOUSE_WHEEL_UP;
 
-                mouseEvent.Action = IA_Press;
+                mouseEvent.Action = IA_PRESS;
                 Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.wheel) );
 
-                mouseEvent.Action = IA_Release;
+                mouseEvent.Action = IA_RELEASE;
                 Engine->OnMouseButtonEvent( mouseEvent, FROM_SDL_TIMESTAMP(event.wheel) );
             }
             break;
@@ -1681,7 +1750,7 @@ void ARuntime::PollEvents() {
                         SJoystickButtonEvent buttonEvent;
                         buttonEvent.Joystick = event.jbutton.which;
                         buttonEvent.Button = JOY_BUTTON_1 + event.jbutton.button;
-                        buttonEvent.Action = event.jbutton.state == SDL_PRESSED ? IA_Press : IA_Release;
+                        buttonEvent.Action = event.jbutton.state == SDL_PRESSED ? IA_PRESS : IA_RELEASE;
                         Engine->OnJoystickButtonEvent( buttonEvent, FROM_SDL_TIMESTAMP(event.jbutton) );
                     }
                 } else {
@@ -1860,8 +1929,6 @@ static void TestDisplays() {
 
             if ( mode.format == SDL_PIXELFORMAT_RGB888 ) {
                 GLogger.Printf( "Mode %d: %d %d %d hz\n", m, mode.w, mode.h, mode.refresh_rate );
-            } else {
-                GLogger.Printf( "Mode %d: %d %d %d hz (uncompatible pixel format)\n", mode.w, mode.h, mode.refresh_rate );
             }
         }
     }
@@ -1878,32 +1945,7 @@ void ARuntime::InitializeRenderer( SVideoMode const & _DesiredMode ) {
 
     GRenderBackend->Initialize( _DesiredMode );
 
-    SDL_Window * wnd = (SDL_Window *)GRenderBackend->GetMainWindow();
-
-    VideoMode.Opacity = Math::Clamp( VideoMode.Opacity, 0.0f, 1.0f );
-
-    if ( VideoMode.Opacity < 1.0f ) {
-        SDL_SetWindowOpacity( wnd, VideoMode.Opacity );
-    }
-
-    // Store real video mode
-    SDL_GetWindowSize( wnd, &VideoMode.Width, &VideoMode.Height );
-    SDL_GL_GetDrawableSize( wnd, &VideoMode.FramebufferWidth, &VideoMode.FramebufferHeight );
-    VideoMode.bFullscreen = !!(SDL_GetWindowFlags( wnd ) & SDL_WINDOW_FULLSCREEN);
-
-    VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( wnd );
-    /*if ( VideoMode.bFullscreen ) {
-        const float MM_To_Inch = 0.0393701f;
-        VideoMode.DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
-        VideoMode.DPI_Y = (float)VideoMode.Height / (monitor->PhysicalHeightMM*MM_To_Inch);
-
-    } else */{
-        SDL_GetDisplayDPI( VideoMode.DisplayIndex, NULL, &VideoMode.DPI_X, &VideoMode.DPI_Y );
-    }
-
-    SDL_DisplayMode mode;
-    SDL_GetWindowDisplayMode( wnd, &mode );
-    VideoMode.RefreshRate = mode.refresh_rate;
+    SetVideoMode( _DesiredMode );
 }
 
 void ARuntime::DeinitializeRenderer() {
@@ -1928,12 +1970,12 @@ void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
         SDL_Window * wnd = (SDL_Window *)GRenderBackend->GetMainWindow();
 
         // Set refresh rate
-        SDL_DisplayMode mode = {};
-        mode.format = SDL_PIXELFORMAT_RGB888;
-        mode.w = _DesiredMode.Width;
-        mode.h = _DesiredMode.Height;
-        mode.refresh_rate = _DesiredMode.RefreshRate;
-        SDL_SetWindowDisplayMode( wnd, &mode );
+        //SDL_DisplayMode mode = {};
+        //mode.format = SDL_PIXELFORMAT_RGB888;
+        //mode.w = _DesiredMode.Width;
+        //mode.h = _DesiredMode.Height;
+        //mode.refresh_rate = _DesiredMode.RefreshRate;
+        //SDL_SetWindowDisplayMode( wnd, &mode );
 
         SDL_SetWindowFullscreen( wnd, _DesiredMode.bFullscreen ? SDL_WINDOW_FULLSCREEN : 0 );
         SDL_SetWindowSize( wnd, _DesiredMode.Width, _DesiredMode.Height );
@@ -1967,10 +2009,13 @@ void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
             SDL_GetDisplayDPI( VideoMode.DisplayIndex, NULL, &VideoMode.DPI_X, &VideoMode.DPI_Y );
         }
 
-//        SDL_DisplayMode mode;
+        SDL_DisplayMode mode;
         SDL_GetWindowDisplayMode( wnd, &mode );
         VideoMode.RefreshRate = mode.refresh_rate;
     }
+
+    // Swap buffers to prevent flickering
+    GRenderBackend->SwapBuffers();
 }
 
 void ARuntime::SetCursorEnabled( bool _Enabled ) {
@@ -1986,54 +2031,7 @@ void ARuntime::GetCursorPosition( int * _X, int * _Y ) {
     (void)SDL_GetMouseState( _X, _Y );
 }
 
-
-
-
-
-
-
-
-
-
 #if 0
-SPhysicalMonitor const * ARuntime::GetPrimaryMonitor() {
-#if 0
-    return GMonitorManager.GetPrimaryMonitor();
-#else
-    return nullptr;
-#endif
-}
-
-SPhysicalMonitor const * ARuntime::GetMonitor( int _Handle ) {
-#if 0
-    APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
-    return ( (unsigned)_Handle < physicalMonitors.Size() ) ? physicalMonitors[ _Handle ] : nullptr;
-#else
-    return nullptr;
-#endif
-}
-
-SPhysicalMonitor const * ARuntime::GetMonitor( const char * _MonitorName ) {
-#if 0
-    return GMonitorManager.FindMonitor( _MonitorName );
-#else
-    return nullptr;
-#endif
-}
-
-bool ARuntime::IsMonitorConnected( int _Handle ) {
-#if 0
-    bool bConnected = false;
-    APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
-    if ( (unsigned)_Handle < physicalMonitors.Size() ) {
-        bConnected = physicalMonitors[ _Handle ]->Internal.Pointer != nullptr;
-    }
-    return bConnected;
-#else
-    return false;
-#endif
-}
-
 void ARuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
 #if 0
     SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
@@ -2079,56 +2077,4 @@ void ARuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
     GMonitorManager.UpdateMonitorGamma( physMonitor );
 #endif
 }
-
-void ARuntime::SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRamp ) {
-#if 0
-    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
-    if ( !physMonitor ) {
-        return;
-    }
-
-    Core::Memcpy( physMonitor->Internal.GammaRamp, _GammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
-
-    GMonitorManager.UpdateMonitorGamma( physMonitor );
-#endif
-}
-
-void ARuntime::GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, int & _GammaRampSize ) {
-#if 0
-    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
-    if ( !physMonitor ) {
-        Core::ZeroMem( _GammaRamp, sizeof( SPhysicalMonitorInternal::GammaRamp ) );
-        return;
-    }
-
-    _GammaRampSize = physMonitor->GammaRampSize;
-
-    Core::Memcpy( _GammaRamp, physMonitor->Internal.GammaRamp, sizeof( unsigned short ) * _GammaRampSize * 3 );
-#endif
-}
-
-void ARuntime::RestoreMonitorGamma( int _Handle ) {
-#if 0
-    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
-    if ( !physMonitor ) {
-        return;
-    }
-
-    Core::Memcpy( physMonitor->Internal.GammaRamp, physMonitor->Internal.InitialGammaRamp, sizeof( unsigned short ) * physMonitor->GammaRampSize * 3 );
-
-    GMonitorManager.UpdateMonitorGamma( physMonitor );
-#endif
-}
-
-int ARuntime::GetPhysicalMonitorsCount() {
-#if 0
-    int count;
-    APhysicalMonitorArray const & physicalMonitors = GMonitorManager.GetMonitors();
-    count = physicalMonitors.Size();
-    return count;
-#else
-    return 1;
-#endif
-}
-
 #endif

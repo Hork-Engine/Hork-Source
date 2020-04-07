@@ -34,34 +34,41 @@ SOFTWARE.
 
 #include <Core/Public/BaseTypes.h>
 
-/** Runtime entry point */
-ANGIE_API void Runtime( const char * _CommandLine, ACreateGameModuleCallback _CreateGameModule );
+struct SEntryDecl
+{
+    const char * GameTitle;
+    const char * RootPath;
+    AClassMeta const * ModuleClass;
+};
 
 /** Runtime entry point */
-ANGIE_API void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _CreateGameModule );
+ANGIE_API void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
+
+/** Runtime entry point */
+ANGIE_API void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
 
 #ifdef AN_OS_WIN32
 #include <Core/Public/WindowsDefs.h>
 #include <shellapi.h>
-static void RunEngineWin32( ACreateGameModuleCallback _CreateGameModule ) {
+static void RunEngineWin32( SEntryDecl const & _EntryDecl ) {
 #if defined( AN_DEBUG ) && defined( AN_COMPILER_MSVC )
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
     //int argc;
     //LPWSTR * argv = ::CommandLineToArgvW( ::GetCommandLineW(), &argc );
-    Runtime( ::GetCommandLineA(), _CreateGameModule );
+    Runtime( ::GetCommandLineA(), _EntryDecl );
     //Runtime( argc, argv, _CreateGameModule );
     //LocalFree( argv );
 }
-#define AN_ENTRY_DECL( _GameModuleClass ) \
+#define AN_ENTRY_DECL( _EntryDecl ) \
 int APIENTRY wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow ) { \
-    RunEngineWin32( IGameModule::CreateGameModule< _GameModuleClass > ); \
+    RunEngineWin32( _EntryDecl ); \
     return 0; \
 }
 #else
-#define AN_ENTRY_DECL( _GameModuleClass ) \
+#define AN_ENTRY_DECL( _EntryDecl ) \
 int main( int argc, char *argv[] ) { \
-    Runtime( argc, argv, IGameModule::CreateGameModule< _GameModuleClass > ); \
+    Runtime( argc, argv, _EntryDecl ); \
     return 0; \
 }
 #endif

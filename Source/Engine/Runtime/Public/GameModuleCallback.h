@@ -31,4 +31,5 @@ SOFTWARE.
 #pragma once
 
 class IGameModule;
-typedef IGameModule * (*ACreateGameModuleCallback)();
+class AClassMeta;
+typedef IGameModule * (*ACreateGameModuleCallback)( AClassMeta * _Meta );

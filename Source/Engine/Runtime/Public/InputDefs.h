@@ -166,20 +166,20 @@ enum {
     KEY_LAST               = KEY_MENU,
 
     /* Modifiers */
-    MOD_SHIFT              = 0,
-    MOD_CONTROL            = 1,
-    MOD_ALT                = 2,
-    MOD_SUPER              = 3,
-    MOD_CAPS_LOCK          = 4,
-    MOD_NUM_LOCK           = 5,
-    MOD_LAST               = MOD_NUM_LOCK,
+    KMOD_SHIFT              = 0,
+    KMOD_CONTROL            = 1,
+    KMOD_ALT                = 2,
+    KMOD_SUPER              = 3,
+    KMOD_CAPS_LOCK          = 4,
+    KMOD_NUM_LOCK           = 5,
+    KMOD_LAST               = KMOD_NUM_LOCK,
 
-    MOD_MASK_SHIFT         = 1 << MOD_SHIFT,
-    MOD_MASK_CONTROL       = 1 << MOD_CONTROL,
-    MOD_MASK_ALT           = 1 << MOD_ALT,
-    MOD_MASK_SUPER         = 1 << MOD_SUPER,
-    MOD_MASK_CAPS_LOCK     = 1 << MOD_CAPS_LOCK,
-    MOD_MASK_NUM_LOCK      = 1 << MOD_NUM_LOCK,
+    KMOD_MASK_SHIFT         = 1 << KMOD_SHIFT,
+    KMOD_MASK_CONTROL       = 1 << KMOD_CONTROL,
+    KMOD_MASK_ALT           = 1 << KMOD_ALT,
+    KMOD_MASK_SUPER         = 1 << KMOD_SUPER,
+    KMOD_MASK_CAPS_LOCK     = 1 << KMOD_CAPS_LOCK,
+    KMOD_MASK_NUM_LOCK      = 1 << KMOD_NUM_LOCK,
 
     #define HAS_MODIFIER( _ModifierMask, _Modifier )  ( !!( (_ModifierMask) & ( 1 << (_Modifier) ) ) )
 

@@ -414,6 +414,7 @@ struct STexturePixelFormat {
     static bool GetAppropriatePixelFormat( class AImage const & _Image, STexturePixelFormat & _PixelFormat );
 };
 
+#if 0
 enum ETextureGroup {
 
     //
@@ -468,7 +469,7 @@ enum ETextureGroup {
     //UnsignedInteger,      // Unnormalized, uncompressed R,RG,RGB,RGBA/8,16,32
 
 };
-
+#endif
 
 //
 // Material
@@ -794,13 +795,17 @@ struct SRenderInstance {
 
     ATextureGPU *       Lightmap;
     Float4              LightmapOffset;
+
     Float4x4            Matrix;
     Float3x3            ModelNormalToViewSpace;
+
     size_t              SkeletonOffset;
     size_t              SkeletonSize;
+
     unsigned int        IndexCount;
     unsigned int        StartIndexLocation;
     int                 BaseVertexLocation;
+
     uint64_t            SortKey;
 };
 
@@ -898,7 +903,7 @@ struct SFrameLightData {
     SClusterLight LightBuffer[MAX_LIGHTS];
     int TotalLights;
 
-    //SClusterDecal Probes[MAX_DECAL];
+    //SClusterDecal Decals[MAX_DECAL];
     //int TotalDecals;
 
     //SClusterProbe Probes[MAX_PROBES];

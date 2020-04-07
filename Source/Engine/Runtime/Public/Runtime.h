@@ -37,13 +37,6 @@ SOFTWARE.
 #include "AsyncJobManager.h"
 #include "GameModuleCallback.h"
 
-//enum EVerticalSyncMode {
-//    VSync_Disabled,
-//    VSync_Adaptive,
-//    VSync_Fixed,
-//    VSync_Half
-//};
-
 struct SVideoMode
 {
     /** Horizontal position on display (read only) */
@@ -65,7 +58,7 @@ struct SVideoMode
     /** Physical monitor (read only) */
     int DisplayIndex;
     /** Display refresh rate (read only) */
-    int RefreshRate;                                    // TODO: Read/Write
+    int RefreshRate;
     /** Display dots per inch (read only) */
     float DPI_X;
     /** Display dots per inch (read only) */
@@ -84,46 +77,13 @@ struct SVideoMode
     char Title[32];
 };
 
-#if 0
-struct SMonitorVideoMode {
-    int Width;
-    int Height;
-    int RedBits;
-    int GreenBits;
-    int BlueBits;
-    int RefreshRate;
-};
-
-#define GAMMA_RAMP_SIZE 1024
-
-struct SPhysicalMonitorInternal {
-    void * Pointer;
-    unsigned short InitialGammaRamp[ GAMMA_RAMP_SIZE * 3 ];
-    unsigned short GammaRamp[ GAMMA_RAMP_SIZE * 3 ];
-};
-
-struct SPhysicalMonitor {
-    char MonitorName[128];
-    int PhysicalWidthMM;
-    int PhysicalHeightMM;
-    float DPI_X;
-    float DPI_Y;
-    int PositionX;
-    int PositionY;
-    int GammaRampSize;
-    SPhysicalMonitorInternal Internal; // for internal use
-    int VideoModesCount;
-    SMonitorVideoMode VideoModes[1];
-};
-#endif
-
-struct SJoystick {
-    int NumAxes;
-    int NumButtons;
-    bool bGamePad;
-    bool bConnected;
-    int Id;
-};
+//struct SJoystick {
+//    int NumAxes;
+//    int NumButtons;
+//    bool bGamePad;
+//    bool bConnected;
+//    int Id;
+//};
 
 /** CPU features */
 struct SCPUInfo {
@@ -175,36 +135,10 @@ struct SCPUInfo {
     bool PREFETCHWT1 : 1;
 };
 
-#if 0
-enum EEventType {
-    ET_Unknown,
-    ET_KeyEvent,
-    ET_MouseButtonEvent,
-    ET_MouseWheelEvent,
-    ET_MouseMoveEvent,
-    ET_JoystickAxisEvent,
-    ET_JoystickButtonEvent,
-    ET_JoystickStateEvent,
-    ET_CharEvent,
-    ET_MonitorConnectionEvent,
-    ET_CloseEvent,
-    ET_FocusEvent,
-    ET_VisibleEvent,
-    ET_WindowPosEvent,
-    ET_ChangedVideoModeEvent,
-
-    ET_SetVideoModeEvent,
-    ET_SetWindowDefsEvent,
-    ET_SetWindowPosEvent,
-    ET_SetInputFocusEvent,
-    ET_SetCursorModeEvent
-};
-#endif
-
 enum EInputAction {
-    IA_Release,
-    IA_Press,
-    IA_Repeat
+    IA_RELEASE,
+    IA_PRESS,
+    IA_REPEAT
 };
 
 struct SKeyEvent {
@@ -242,111 +176,18 @@ struct SJoystickButtonEvent {
     int Action;         // EInputAction
 };
 
-struct SJoystickStateEvent {
-    int Joystick;
-    int NumAxes;
-    int NumButtons;
-    bool bGamePad;
-    bool bConnected;
-};
+//struct SJoystickStateEvent {
+//    int Joystick;
+//    int NumAxes;
+//    int NumButtons;
+//    bool bGamePad;
+//    bool bConnected;
+//};
 
 struct SCharEvent {
     SWideChar UnicodeCharacter;
     int ModMask;
 };
-
-#if 0
-struct SMonitorConnectionEvent {
-    int Handle;
-    bool bConnected;
-};
-
-struct SCloseEvent {
-};
-
-struct SFocusEvent {
-    bool bFocused;
-};
-
-struct SVisibleEvent {
-    bool bVisible;
-};
-
-struct SWindowPosEvent {
-    int PositionX;
-    int PositionY;
-};
-
-struct SChangedVideoModeEvent {
-    unsigned short Width;
-    unsigned short Height;
-    unsigned short PhysicalMonitor;
-    unsigned short FramebufferWidth;
-    unsigned short FramebufferHeight;
-    uint8_t RefreshRate;
-    bool bFullscreen;
-    char Backend[32];
-};
-
-struct SSetVideoModeEvent {
-    unsigned short X;
-    unsigned short Y;
-    unsigned short Width;
-    unsigned short Height;
-    unsigned short PhysicalMonitor;
-    uint8_t RefreshRate;
-    bool bFullscreen;
-    char Backend[32];
-};
-
-struct SSetWindowDefsEvent {
-    uint8_t Opacity;
-    bool bDecorated;
-    bool bAutoIconify;
-    bool bFloating;
-    char Title[32];
-};
-
-struct SSetWindowPosEvent {
-    int PositionX;
-    int PositionY;
-};
-
-struct SSetInputFocusEvent {
-
-};
-
-struct SEvent {
-    int Type;
-    double TimeStamp;   // in seconds
-
-    union {
-        // Runtime output events
-        SKeyEvent KeyEvent;
-        SMouseButtonEvent MouseButtonEvent;
-        SMouseWheelEvent MouseWheelEvent;
-        SMouseMoveEvent MouseMoveEvent;
-        SCharEvent CharEvent;
-        SJoystickAxisEvent JoystickAxisEvent;
-        SJoystickButtonEvent JoystickButtonEvent;
-        SJoystickStateEvent JoystickStateEvent;
-        SMonitorConnectionEvent MonitorConnectionEvent;
-        SCloseEvent CloseEvent;
-        SFocusEvent FocusEvent;
-        SVisibleEvent VisibleEvent;
-        SWindowPosEvent WindowPosEvent;
-        SChangedVideoModeEvent ChangedVideoModeEvent;
-
-        // Runtime input events
-        SSetVideoModeEvent SetVideoModeEvent;
-        SSetWindowDefsEvent SetWindowDefsEvent;
-        SSetWindowPosEvent SetWindowPosEvent;
-        SSetInputFocusEvent SetInputFocusEvent;
-    } Data;
-};
-
-using AEventQueue = TPodQueue< SEvent >;
-#endif
 
 enum
 {
@@ -384,6 +225,9 @@ public:
     /** Return application working directory */
     AString const & GetWorkingDir();
 
+    /** Return game module root directory */
+    AString const & GetRootPath();
+
     /** Return application exacutable name */
     const char * GetExecutableName();
 
@@ -402,46 +246,9 @@ public:
     /** Return max frame memory usage since application start */
     size_t GetMaxFrameMemoryUsage() const;
 
-    // Is vertical synchronization control supported
-    //bool IsVSyncSupported();
-
-    // Is vertical synchronization tearing supported
-    //bool IsAdaptiveVSyncSupported();
-
     /** Get CPU info */
     SCPUInfo const & GetCPUInfo() const;
-#if 0
-    /** Get physical monitors count */
-    int GetPhysicalMonitorsCount();
 
-    /** Return primary monitor */
-    SPhysicalMonitor const * GetPrimaryMonitor();
-
-    /** Get physical monitor by handle */
-    SPhysicalMonitor const * GetMonitor( int _Handle );
-
-    /** Get physical monitor by name */
-    SPhysicalMonitor const * GetMonitor( const char * _MonitorName );
-
-    /** Check is monitor connected */
-    bool IsMonitorConnected( int _Handle );
-
-    /** Change monitor gamma */
-    void SetMonitorGammaCurve( int _Handle, float _Gamma );
-
-    /** Change monitor gamma */
-    void SetMonitorGamma( int _Handle, float _Gamma );
-
-    /** Change monitor gamma */
-    void SetMonitorGammaRamp( int _Handle, const unsigned short * _GammaRamp );
-
-    /** Get current monitor gamma */
-    void GetMonitorGammaRamp( int _Handle, unsigned short * _GammaRamp, int & _GammaRampSize );
-
-    /** Restore original monitor gamma */
-    void RestoreMonitorGamma( int _Handle );
-
-#endif
     /** Sleep current thread */
     void WaitSeconds( int _Seconds );
 
@@ -531,6 +338,7 @@ private:
     char **         Arguments;
 
     AString         WorkingDir;
+    AString         RootPath;
     char *          Executable;
 
     int64_t         StartSeconds;
@@ -548,9 +356,9 @@ private:
 
     char *          Clipboard;
 
-    class IEngineInterface * Engine;
+    struct SEntryDecl const * pModuleDecl;
 
-    ACreateGameModuleCallback CreateGameModuleCallback;
+    class IEngineInterface * Engine;
 
     SCPUInfo        CPUInfo;
 
@@ -562,7 +370,7 @@ private:
 
     int             ProcessAttribute;
 
-    void Run( ACreateGameModuleCallback _CreateGameModule );
+    void Run( struct SEntryDecl const & _EntryDecl );
 
     void InitializeRenderer( SVideoMode const & _DesiredMode );
 
@@ -584,8 +392,8 @@ private:
 
     void InitializeWorkingDirectory();
 
-    friend void Runtime( const char * _CommandLine, ACreateGameModuleCallback _CreateGameModule );
-    friend void Runtime( int _Argc, char ** _Argv, ACreateGameModuleCallback _CreateGameModule );
+    friend void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
+    friend void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
 };
 
 extern ANGIE_API ARuntime & GRuntime;

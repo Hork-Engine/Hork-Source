@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "GameModuleCallback.h"
 
+struct SEntryDecl;
+
 /** Engine interface */
 class IEngineInterface
 {
@@ -39,7 +41,7 @@ public:
     virtual ~IEngineInterface() {}
 
     /** Run the engine */
-    virtual void Run( ACreateGameModuleCallback _CreateGameModuleCallback ) = 0;
+    virtual void Run( SEntryDecl const & _EntryDecl ) = 0;
 
     /** Print callback */
     virtual void Print( const char * _Message ) = 0;

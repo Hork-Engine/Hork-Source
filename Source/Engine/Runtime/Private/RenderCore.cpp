@@ -170,14 +170,20 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( AImage const & _Image, STex
         } else {
 
             switch ( _Image.NumChannels ) {
+            case 1:
+                _PixelFormat = TEXTURE_PF_R8;
+                GLogger.Printf( "GetAppropriatePixelFormat: Waring: sRGB one channel format (perform sRGB conversion in material)\n" );
+                break;
+            case 2:
+                _PixelFormat = TEXTURE_PF_RG8;
+                GLogger.Printf( "GetAppropriatePixelFormat: Waring: sRGB two channel format (perform sRGB conversion in material)\n" );
+                break;
             case 3:
                 _PixelFormat = TEXTURE_PF_BGR8_SRGB;
                 break;
             case 4:
                 _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
                 break;
-            case 1:
-            case 2:
             default:
                 GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
                 return false;
