@@ -70,22 +70,22 @@ void AFrameResources::Initialize() {
     ShadowInstanceUniformBuffer.Initialize( streamBufferCI );
 
     {
-    GHI::TextureStorageCreateInfo createInfo = {};
-    createInfo.Type = GHI::TEXTURE_3D;
-    createInfo.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RG32UI;
-    createInfo.Resolution.Tex3D.Width = MAX_FRUSTUM_CLUSTERS_X;
-    createInfo.Resolution.Tex3D.Height = MAX_FRUSTUM_CLUSTERS_Y;
-    createInfo.Resolution.Tex3D.Depth = MAX_FRUSTUM_CLUSTERS_Z;
-    createInfo.NumLods = 1;
-    ClusterLookup.InitializeStorage( createInfo );
+        GHI::TextureStorageCreateInfo createInfo = {};
+        createInfo.Type = GHI::TEXTURE_3D;
+        createInfo.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RG32UI;
+        createInfo.Resolution.Tex3D.Width = MAX_FRUSTUM_CLUSTERS_X;
+        createInfo.Resolution.Tex3D.Height = MAX_FRUSTUM_CLUSTERS_Y;
+        createInfo.Resolution.Tex3D.Depth = MAX_FRUSTUM_CLUSTERS_Z;
+        createInfo.NumLods = 1;
+        ClusterLookup.InitializeStorage( createInfo );
 
-    GHI::SamplerCreateInfo samplerCI = {};
-    samplerCI.SetDefaults();
-    samplerCI.Filter = FILTER_NEAREST;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    ClusterLookupSampler = GDevice.GetOrCreateSampler( samplerCI );
+        GHI::SamplerCreateInfo samplerCI = {};
+        samplerCI.SetDefaults();
+        samplerCI.Filter = FILTER_NEAREST;
+        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
+        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
+        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
+        ClusterLookupSampler = GDevice.GetOrCreateSampler( samplerCI );
     }
 
     {
@@ -103,6 +103,20 @@ void AFrameResources::Initialize() {
         bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
         bufferCI.SizeInBytes = sizeof( SFrameLightData::LightBuffer );
         LightBuffer.Initialize( bufferCI );
+    }
+
+    {
+        constexpr Float2 saqVertices[4] = {
+            { Float2( -1.0f,  1.0f ) },
+            { Float2(  1.0f,  1.0f ) },
+            { Float2( -1.0f, -1.0f ) },
+            { Float2(  1.0f, -1.0f ) }
+        };
+
+        BufferCreateInfo bufferCI = {};
+        bufferCI.bImmutableStorage = true;
+        bufferCI.SizeInBytes = sizeof( saqVertices );
+        Saq.Initialize( bufferCI, saqVertices );
     }
 
     Core::ZeroMem( BufferBinding, sizeof( BufferBinding ) );
@@ -248,6 +262,7 @@ void AFrameResources::Initialize() {
 }
 
 void AFrameResources::Deinitialize() {
+    Saq.Deinitialize();
     ClusterLookup.Deinitialize();
     ClusterItemTBO.Deinitialize();
     ClusterItemBuffer.Deinitialize();
@@ -310,6 +325,10 @@ void AFrameResources::SetViewUniforms() {
 
     uniformData->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
     uniformData->GameplayTimeSeconds = GRenderView->GameplayTimeSeconds;
+
+    uniformData->ScaleToSurfaceX = (float)GRenderView->Width / GFrameData->AllocSurfaceWidth;
+    uniformData->ScaleToSurfaceY = (float)GRenderView->Height / GFrameData->AllocSurfaceHeight;
+
     uniformData->ViewPostion = GRenderView->ViewPosition;
 
     uniformData->EnvProbeSampler = GFrameResources.EnvProbeBindless.GetHandle();

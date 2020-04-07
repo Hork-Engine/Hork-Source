@@ -390,7 +390,7 @@ void AEnvProbeGenerator::GenerateArray( Texture & _CubemapArray, int _MaxLod, in
 
     ShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
-    samplerBinding.pSampler = &m_Sampler;
+    samplerBinding.pSampler = m_Sampler;
 
     ShaderTextureBinding textureBinding;
     textureBinding.SlotIndex = 0;
@@ -501,7 +501,7 @@ void AEnvProbeGenerator::Generate( Texture & _Cubemap, int _MaxLod, Texture * _S
 
     ShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
-    samplerBinding.pSampler = &m_Sampler;
+    samplerBinding.pSampler = m_Sampler;
 
     ShaderTextureBinding textureBinding;
     textureBinding.SlotIndex = 0;

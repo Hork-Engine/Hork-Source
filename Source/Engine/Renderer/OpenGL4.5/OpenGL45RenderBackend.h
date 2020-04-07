@@ -76,9 +76,6 @@ public:
     void DestroyMaterial( AMaterialGPU * _Material ) override;
     void InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) override;
 
-    //size_t AllocateJoints( size_t _JointsCount ) override;
-    //void WriteJoints( size_t _Offset, size_t _JointsCount, Float3x4 const * _Matrices ) override;
-
 private:
     void SetGPUEvent();
     void RenderView( SRenderView * _RenderView );

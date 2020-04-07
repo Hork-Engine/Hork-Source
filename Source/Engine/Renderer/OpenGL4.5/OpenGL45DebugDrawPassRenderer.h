@@ -39,18 +39,13 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void UploadBuffers();
-    void RenderInstances();
+    void RenderInstances( GHI::Framebuffer * _Framebuffer );
 
     GHI::RenderPass * GetRenderPass() { return &DebugDrawPass; }
 
 private:
     GHI::RenderPass DebugDrawPass;
     GHI::Pipeline Pipelines[DBG_DRAW_CMD_MAX];
-//    GHI::Buffer VertexBuffer;
-//    GHI::Buffer IndexBuffer;
-//    int VertexBufferSize;
-//    int IndexBufferSize;
 };
 
 extern ADebugDrawPassRenderer GDebugDrawPassRenderer;

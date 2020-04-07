@@ -40,6 +40,8 @@ SOFTWARE.
 #include "OpenGL45ColorPassRenderer.h"
 #include "OpenGL45WireframePassRenderer.h"
 #include "OpenGL45DebugDrawPassRenderer.h"
+#include "OpenGL45PostprocessPassRenderer.h"
+#include "OpenGL45FxaaPassRenderer.h"
 
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
@@ -105,16 +107,106 @@ static bool bSwapControlTear = false;
 // GHI import
 //
 
+static int TotalAllocatedGHI = 0;
+
 static int GHIImport_Hash( const unsigned char * _Data, int _Size ) {
     return Core::Hash( ( const char * )_Data, _Size );
 }
 
 static void * GHIImport_Allocate( size_t _BytesCount ) {
+    TotalAllocatedGHI++;
     return GZoneMemory.Alloc( _BytesCount );
 }
 
 static void GHIImport_Deallocate( void * _Bytes ) {
+    TotalAllocatedGHI--;
     GZoneMemory.Free( _Bytes );
+}
+
+static void DebugMessageCallback( GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void * userParam ) {
+    const char * sourceStr;
+    switch ( source ) {
+    case GL_DEBUG_SOURCE_API:
+        sourceStr = "API";
+        break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+        sourceStr = "WINDOW SYSTEM";
+        break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER:
+        sourceStr = "SHADER COMPILER";
+        break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY:
+        sourceStr = "THIRD PARTY";
+        break;
+    case GL_DEBUG_SOURCE_APPLICATION:
+        sourceStr = "APPLICATION";
+        break;
+    case GL_DEBUG_SOURCE_OTHER:
+        sourceStr = "OTHER";
+        break;
+    default:
+        sourceStr = "UNKNOWN";
+        break;
+    }
+
+    const char * typeStr;
+    switch ( type ) {
+    case GL_DEBUG_TYPE_ERROR:
+        typeStr = "ERROR";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        typeStr = "DEPRECATED BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        typeStr = "UNDEFINED BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        typeStr = "PORTABILITY";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        typeStr = "PERFORMANCE";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        typeStr = "MISC";
+        break;
+    case GL_DEBUG_TYPE_MARKER:
+        typeStr = "MARKER";
+        break;
+    case GL_DEBUG_TYPE_PUSH_GROUP:
+        typeStr = "PUSH GROUP";
+        break;
+    case GL_DEBUG_TYPE_POP_GROUP:
+        typeStr = "POP GROUP";
+        break;
+    default:
+        typeStr = "UNKNOWN";
+        break;
+    }
+
+    const char * severityStr;
+    switch ( severity ) {
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+        severityStr = "NOTIFICATION";
+        break;
+    case GL_DEBUG_SEVERITY_LOW:
+        severityStr = "LOW";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severityStr = "MEDIUM";
+        break;
+    case GL_DEBUG_SEVERITY_HIGH:
+        severityStr = "HIGH";
+        break;
+    default:
+        severityStr = "UNKNOWN";
+        break;
+    }
+
+    GLogger.Printf( "-----------------------------------\n"
+                    "%s %s\n"
+                    "%s: %s (Id %d)\n"
+                    "-----------------------------------\n",
+                    sourceStr, typeStr, severityStr, message, id );
 }
 
 void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
@@ -128,7 +220,12 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_EGL, 0 );
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, 0 );
-    SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS,
+                         SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
+#ifdef AN_DEBUG
+                         | SDL_GL_CONTEXT_DEBUG_FLAG
+#endif
+    );
     //SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE | SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
     SDL_GL_SetAttribute( SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0 );
@@ -162,7 +259,7 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     int x, y;
 
     if ( _VideoMode.bFullscreen ) {
-        flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
+        flags |= SDL_WINDOW_FULLSCREEN;// | SDL_WINDOW_BORDERLESS;
         x = y = 0;
     } else {
         if ( _VideoMode.bCentrized ) {
@@ -176,12 +273,12 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
 
     WindowHandle = SDL_CreateWindow( _VideoMode.Title, x, y, _VideoMode.Width, _VideoMode.Height, flags );
 
-    SDL_DisplayMode mode = {};
-    mode.format = SDL_PIXELFORMAT_RGB888;
-    mode.w = _VideoMode.Width;
-    mode.h = _VideoMode.Height;
-    mode.refresh_rate = _VideoMode.RefreshRate;
-    SDL_SetWindowDisplayMode( WindowHandle, &mode );
+    //SDL_DisplayMode mode = {};
+    //mode.format = SDL_PIXELFORMAT_RGB888;
+    //mode.w = _VideoMode.Width;
+    //mode.h = _VideoMode.Height;
+    //mode.refresh_rate = _VideoMode.RefreshRate;
+    //SDL_SetWindowDisplayMode( WindowHandle, &mode );
 
     WindowCtx = SDL_GL_CreateContext( WindowHandle );
     SDL_GL_MakeCurrent( WindowHandle, WindowCtx );
@@ -190,9 +287,25 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     glewExperimental = true;
     GLenum result = glewInit();
     if ( result != GLEW_OK ) {
-        GLogger.Printf( "Failed to load OpenGL functions\n" );
-        // ...
+        CriticalError( "Failed to load OpenGL functions\n" );
     }
+
+    // One important thing left to mention is that GLEW has a long-existing bug
+    // where calling glewInit() always sets the GL_INVALID_ENUM error flag and
+    // thus the first glGetError will always return an error code which can throw
+    // you completely off guard.
+    // To fix this it's advised to simply call glGetError after glewInit to clear the flag.
+    (void)glGetError();
+
+#ifdef AN_DEBUG
+    GLint contextFlags;
+    glGetIntegerv( GL_CONTEXT_FLAGS, &contextFlags );
+    if ( contextFlags & GL_CONTEXT_FLAG_DEBUG_BIT ) {
+        glEnable( GL_DEBUG_OUTPUT );
+        glEnable( GL_DEBUG_OUTPUT_SYNCHRONOUS );
+        glDebugMessageCallback( DebugMessageCallback, NULL );
+    }
+#endif
 
     const char * vendorString = (const char *)glGetString( GL_VENDOR );
     vendorString = vendorString ? vendorString : AString::NullCString();
@@ -415,8 +528,14 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     GColorPassRenderer.Initialize();
     GWireframePassRenderer.Initialize();
     GDebugDrawPassRenderer.Initialize();
+    GPostprocessPassRenderer.Initialize();
+    GFxaaPassRenderer.Initialize();
     GCanvasPassRenderer.Initialize();
     GFrameResources.Initialize();
+
+    glClearColor( 0,0,0,0 );
+    glClear(GL_COLOR_BUFFER_BIT);
+    SDL_GL_SwapWindow( WindowHandle );
 }
 
 void ARenderBackend::Deinitialize() {
@@ -429,6 +548,8 @@ void ARenderBackend::Deinitialize() {
     GColorPassRenderer.Deinitialize();
     GWireframePassRenderer.Deinitialize();
     GDebugDrawPassRenderer.Deinitialize();
+    GPostprocessPassRenderer.Deinitialize();
+    GFxaaPassRenderer.Deinitialize();
     GCanvasPassRenderer.Deinitialize();
     GFrameResources.Deinitialize();
     GOpenGL45GPUSync.Release();
@@ -440,6 +561,8 @@ void ARenderBackend::Deinitialize() {
     SDL_DestroyWindow( WindowHandle );
     SDL_QuitSubSystem( SDL_INIT_VIDEO );
     WindowHandle = nullptr;
+
+    GLogger.Printf( "TotalAllocatedGHI: %d\n", TotalAllocatedGHI );
 }
 
 void * ARenderBackend::GetMainWindow() {
@@ -923,8 +1046,6 @@ void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
 
     glEnable( GL_FRAMEBUFFER_SRGB );
 
-    GDebugDrawPassRenderer.UploadBuffers();
-
     GRenderTarget.ReallocSurface( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
 
     // Calc canvas projection matrix
@@ -939,7 +1060,6 @@ void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
     GCanvasPassRenderer.RenderInstances();
 
     SetGPUEvent();
-    //SwapBuffers();
 
     RVRenderSnapshot = false;
 }
@@ -956,12 +1076,16 @@ void ARenderBackend::RenderView( SRenderView * _RenderView ) {
 #endif
     GColorPassRenderer.RenderInstances();
 
+    GPostprocessPassRenderer.Render();
+
+    GFxaaPassRenderer.Render();
+
     if ( GRenderView->bWireframe ) {
-        GWireframePassRenderer.RenderInstances();
+        GWireframePassRenderer.RenderInstances( &GRenderTarget.GetFxaaFramebuffer() );
     }
 
     if ( GRenderView->DebugDrawCommandCount > 0 ) {
-        GDebugDrawPassRenderer.RenderInstances();
+        GDebugDrawPassRenderer.RenderInstances( &GRenderTarget.GetFxaaFramebuffer() );
     }
 }
 

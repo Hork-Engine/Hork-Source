@@ -48,7 +48,7 @@ void AColorPassRenderer::Initialize() {
     renderPassCI.NumColorAttachments = 1;
 
     AttachmentInfo colorAttachment = {};
-    colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_LOAD;
+    colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_DONT_CARE;
     //colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_CLEAR;
     renderPassCI.pColorAttachments = &colorAttachment;
 
@@ -223,6 +223,8 @@ void AColorPassRenderer::RenderInstances() {
 //        RVRenderSnapshot = false;
 //    }
 
+    // Clearing don't work properly with dynamic resolution scale :(
+#if 0
     if ( GRenderView->bClearBackground || RVRenderSnapshot ) {
         unsigned int attachment = 0;
         Cmd.ClearFramebufferAttachments( GRenderTarget.GetFramebuffer(), &attachment, 1, &clearValue, nullptr, nullptr );
@@ -231,6 +233,7 @@ void AColorPassRenderer::RenderInstances() {
             SaveSnapshot(GRenderTarget.GetFramebufferTexture());
         }
     }
+#endif
 
 #if 1
     DrawIndexedCmd drawCmd;

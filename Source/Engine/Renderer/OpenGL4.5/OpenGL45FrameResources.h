@@ -48,8 +48,8 @@ struct SViewUniformBuffer {
     // Timers
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
-    float Padding0;
-    float Padding1;
+    float ScaleToSurfaceX;
+    float ScaleToSurfaceY;
 
     Float3 ViewPostion;
     float Padding2;
@@ -117,6 +117,7 @@ public:
     GHI::Texture ClusterItemTBO;
     GHI::Buffer  ClusterItemBuffer;
     GHI::Buffer  LightBuffer;
+    GHI::Buffer  Saq;
 
     GHI::ShaderResources        Resources;
     GHI::ShaderBufferBinding    BufferBinding[5];

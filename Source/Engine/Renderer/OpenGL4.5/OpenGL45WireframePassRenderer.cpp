@@ -128,11 +128,11 @@ void AWireframePassRenderer::BindTexturesWireframePass( SMaterialFrameData * _In
     BindTextures( _Instance );
 }
 
-void AWireframePassRenderer::RenderInstances() {
+void AWireframePassRenderer::RenderInstances( GHI::Framebuffer * _Framebuffer ) {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &WireframePass;
-    renderPassBegin.pFramebuffer = &GRenderTarget.GetFramebuffer();
+    renderPassBegin.pFramebuffer = _Framebuffer;
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
     renderPassBegin.RenderArea.Width = GRenderView->Width;

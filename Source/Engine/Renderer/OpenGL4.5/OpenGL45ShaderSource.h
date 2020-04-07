@@ -46,14 +46,14 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     vec4 WorldNormalToViewSpace1;
     vec4 WorldNormalToViewSpace2;
     vec4 ViewportParams;  // 1/width, 1/height, znear, zfar
-    vec4 Timers;
+    vec4 Timers;        // x,y - timers, zw - scale to surface
     vec4 ViewPostion;
     uvec2 EnvProbeSampler;
     int  NumDirectionalLights;
     vec4 LightDirs[MAX_DIRECTIONAL_LIGHTS];            // Direction, W-channel is not used
     vec4 LightColors[MAX_DIRECTIONAL_LIGHTS];          // RGB, alpha - ambient intensity
     uvec4 LightParameters[MAX_DIRECTIONAL_LIGHTS];    // RenderMask, FirstCascade, NumCascades, W-channel is not used
-};
+};\n
 
 );
 

@@ -39,19 +39,30 @@ ARenderTarget GRenderTarget;
 void ARenderTarget::Initialize() {
     FramebufferWidth = 0;
     FramebufferHeight = 0;
-    //CreateFramebuffer();
 }
 
 void ARenderTarget::Deinitialize() {
     Framebuffer.Deinitialize();
     FramebufferTexture.Deinitialize();
     FramebufferDepth.Deinitialize();
+
+    PostprocessFramebuffer.Deinitialize();
+    PostprocessTexture.Deinitialize();
+
+    FxaaFramebuffer.Deinitialize();
+    FxaaTexture.Deinitialize();
 }
 
 void ARenderTarget::CreateFramebuffer() {
     Framebuffer.Deinitialize();
     FramebufferTexture.Deinitialize();
     FramebufferDepth.Deinitialize();
+
+    PostprocessFramebuffer.Deinitialize();
+    PostprocessTexture.Deinitialize();
+
+    FxaaFramebuffer.Deinitialize();
+    FxaaTexture.Deinitialize();
 
     TextureStorageCreateInfo texStorageCI = {};
     texStorageCI.Type = GHI::TEXTURE_2D;
@@ -62,30 +73,72 @@ void ARenderTarget::CreateFramebuffer() {
     texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA16F;
     FramebufferTexture.InitializeStorage( texStorageCI );
 
+    texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA16F;
+    //texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA8;
+    PostprocessTexture.InitializeStorage( texStorageCI );
+
+    texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA16F;
+    //texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA8;
+    FxaaTexture.InitializeStorage( texStorageCI );
+
     texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_DEPTH24_STENCIL8;
     //texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_DEPTH32F_STENCIL8;
     FramebufferDepth.InitializeStorage( texStorageCI );
 
-    FramebufferCreateInfo framebufferCI = {};
-    framebufferCI.Width = FramebufferWidth;
-    framebufferCI.Height = FramebufferHeight;
-    framebufferCI.NumColorAttachments = 1;
+    {
+        FramebufferCreateInfo framebufferCI = {};
+        framebufferCI.Width = FramebufferWidth;
+        framebufferCI.Height = FramebufferHeight;
+        framebufferCI.NumColorAttachments = 1;
 
-    FramebufferAttachmentInfo colorAttachment = {};
-    colorAttachment.pTexture = &FramebufferTexture;
-    colorAttachment.bLayered = false;
-    colorAttachment.LayerNum = 0;
-    colorAttachment.LodNum = 0;
-    framebufferCI.pColorAttachments = &colorAttachment;
+        FramebufferAttachmentInfo colorAttachment = {};
+        colorAttachment.pTexture = &FramebufferTexture;
+        colorAttachment.bLayered = false;
+        colorAttachment.LayerNum = 0;
+        colorAttachment.LodNum = 0;
+        framebufferCI.pColorAttachments = &colorAttachment;
 
-    FramebufferAttachmentInfo depthAttachment = {};
-    depthAttachment.pTexture = &FramebufferDepth;
-    depthAttachment.bLayered = false;
-    depthAttachment.LayerNum = 0;
-    depthAttachment.LodNum = 0;
-    framebufferCI.pDepthStencilAttachment = &depthAttachment;
+        FramebufferAttachmentInfo depthAttachment = {};
+        depthAttachment.pTexture = &FramebufferDepth;
+        depthAttachment.bLayered = false;
+        depthAttachment.LayerNum = 0;
+        depthAttachment.LodNum = 0;
+        framebufferCI.pDepthStencilAttachment = &depthAttachment;
 
-    Framebuffer.Initialize( framebufferCI );
+        Framebuffer.Initialize( framebufferCI );
+    }
+
+    {
+        FramebufferCreateInfo framebufferCI = {};
+        framebufferCI.Width = FramebufferWidth;
+        framebufferCI.Height = FramebufferHeight;
+        framebufferCI.NumColorAttachments = 1;
+
+        FramebufferAttachmentInfo colorAttachment = {};
+        colorAttachment.pTexture = &PostprocessTexture;
+        colorAttachment.bLayered = false;
+        colorAttachment.LayerNum = 0;
+        colorAttachment.LodNum = 0;
+        framebufferCI.pColorAttachments = &colorAttachment;
+
+        PostprocessFramebuffer.Initialize( framebufferCI );
+    }
+
+    {
+        FramebufferCreateInfo framebufferCI = {};
+        framebufferCI.Width = FramebufferWidth;
+        framebufferCI.Height = FramebufferHeight;
+        framebufferCI.NumColorAttachments = 1;
+
+        FramebufferAttachmentInfo colorAttachment = {};
+        colorAttachment.pTexture = &FxaaTexture;
+        colorAttachment.bLayered = false;
+        colorAttachment.LayerNum = 0;
+        colorAttachment.LodNum = 0;
+        framebufferCI.pColorAttachments = &colorAttachment;
+
+        FxaaFramebuffer.Initialize( framebufferCI );
+    }
 }
 
 void ARenderTarget::ReallocSurface( int _AllocSurfaceWidth, int _AllocSurfaceHeight ) {

@@ -44,14 +44,24 @@ public:
     GHI::Framebuffer & GetFramebuffer() { return Framebuffer; }
     GHI::Texture & GetFramebufferTexture() { return FramebufferTexture; }
 
+    GHI::Framebuffer & GetPostprocessFramebuffer() { return PostprocessFramebuffer; }
+    GHI::Texture & GetPostprocessTexture() { return PostprocessTexture; }
+
+    GHI::Framebuffer & GetFxaaFramebuffer() { return FxaaFramebuffer; }
+    GHI::Texture & GetFxaaTexture() { return FxaaTexture; }
+
 private:
     void CreateFramebuffer();
 
     GHI::Framebuffer Framebuffer;
+    GHI::Framebuffer PostprocessFramebuffer;
+    GHI::Framebuffer FxaaFramebuffer;
     int FramebufferWidth;
     int FramebufferHeight;
     GHI::Texture FramebufferTexture;
     GHI::Texture FramebufferDepth;
+    GHI::Texture PostprocessTexture;
+    GHI::Texture FxaaTexture;
 };
 
 extern ARenderTarget GRenderTarget;

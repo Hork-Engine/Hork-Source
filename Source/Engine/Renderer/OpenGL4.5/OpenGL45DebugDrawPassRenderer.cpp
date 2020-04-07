@@ -186,6 +186,8 @@ void ADebugDrawPassRenderer::Initialize() {
 
     for ( int i = 0 ; i < DBG_DRAW_CMD_MAX ; i++ ) {
 
+        rsd.bAntialiasedLineEnable = false;
+
         switch ( i ) {
         case DBG_DRAW_CMD_POINTS:
             inputAssembly.Topology = PRIMITIVE_POINTS;
@@ -204,12 +206,14 @@ void ADebugDrawPassRenderer::Initialize() {
             inputAssembly.bPrimitiveRestart = true;
             dssd.bDepthEnable = false;
             dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+            rsd.bAntialiasedLineEnable = true;
             break;
         case DBG_DRAW_CMD_LINES_DEPTH_TEST:
             inputAssembly.Topology = PRIMITIVE_LINE_STRIP;
             inputAssembly.bPrimitiveRestart = true;
             dssd.bDepthEnable = true;
             dssd.DepthWriteMask = DEPTH_WRITE_ENABLE;
+            rsd.bAntialiasedLineEnable = true;
             break;
         case DBG_DRAW_CMD_TRIANGLE_SOUP:
             inputAssembly.Topology = PRIMITIVE_TRIANGLES;
@@ -227,25 +231,6 @@ void ADebugDrawPassRenderer::Initialize() {
 
         Pipelines[i].Initialize( pipelineCI );
     }
-
-    //
-    // Create buffers
-    //
-
-//    VertexBufferSize = 1024;
-//    IndexBufferSize = 1024;
-
-//    GHI::BufferCreateInfo streamBufferCI = {};
-//    streamBufferCI.bImmutableStorage = false;
-//    streamBufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
-//    streamBufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
-//    streamBufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
-
-//    streamBufferCI.SizeInBytes = VertexBufferSize * sizeof( SDebugVertex );
-//    VertexBuffer.Initialize( streamBufferCI );
-
-//    streamBufferCI.SizeInBytes = IndexBufferSize * sizeof( unsigned int );
-//    IndexBuffer.Initialize( streamBufferCI );
 }
 
 void ADebugDrawPassRenderer::Deinitialize() {
@@ -254,16 +239,13 @@ void ADebugDrawPassRenderer::Deinitialize() {
     for ( int i = 0 ; i < DBG_DRAW_CMD_MAX ; i++ ) {
         Pipelines[i].Deinitialize();
     }
-
-//    VertexBuffer.Deinitialize();
-//    IndexBuffer.Deinitialize();
 }
 
-void ADebugDrawPassRenderer::RenderInstances() {
+void ADebugDrawPassRenderer::RenderInstances( GHI::Framebuffer * _Framebuffer ) {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &DebugDrawPass;
-    renderPassBegin.pFramebuffer = &GRenderTarget.GetFramebuffer();
+    renderPassBegin.pFramebuffer = _Framebuffer;
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
     renderPassBegin.RenderArea.Width =  GRenderView->Width;
@@ -310,24 +292,6 @@ void ADebugDrawPassRenderer::RenderInstances() {
     }
 
     Cmd.EndRenderPass();
-}
-
-void ADebugDrawPassRenderer::UploadBuffers() {
-    // Upload debug geometry
-//    int vertexCount = GFrameData->DbgVertices.Size();
-//    int indexCount = GFrameData->DbgIndices.Size();
-//    if ( VertexBufferSize < vertexCount ) {
-//        VertexBufferSize = vertexCount;
-//        VertexBuffer.Realloc( VertexBufferSize * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
-//    } else {
-//        VertexBuffer.WriteRange( 0, vertexCount * sizeof( SDebugVertex ), GFrameData->DbgVertices.ToPtr() );
-//    }
-//    if ( IndexBufferSize < indexCount ) {
-//        IndexBufferSize = indexCount;
-//        IndexBuffer.Realloc( IndexBufferSize * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
-//    } else {
-//        IndexBuffer.WriteRange( 0, indexCount * sizeof( unsigned int ), GFrameData->DbgIndices.ToPtr() );
-//    }
 }
 
 }

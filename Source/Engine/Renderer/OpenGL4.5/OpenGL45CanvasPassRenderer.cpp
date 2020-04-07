@@ -36,6 +36,8 @@ SOFTWARE.
 
 using namespace GHI;
 
+static ARuntimeVariable RVFxaa( _CTS("FXAA"), _CTS("1") );
+
 namespace OpenGL45 {
 
 ACanvasPassRenderer GCanvasPassRenderer;
@@ -55,12 +57,12 @@ void ACanvasPassRenderer::Initialize() {
     AttachmentRef colorAttachmentRef = {};
     colorAttachmentRef.Attachment = 0;
 
-    SubpassInfo subpass = {};
-    subpass.NumColorAttachments = 1;
-    subpass.pColorAttachmentRefs = &colorAttachmentRef;
+    //SubpassInfo subpass = {};
+    //subpass.NumColorAttachments = 1;
+    //subpass.pColorAttachmentRefs = &colorAttachmentRef;
 
-    renderPassCI.NumSubpasses = 1;
-    renderPassCI.pSubpasses = &subpass;
+    renderPassCI.NumSubpasses = 0;// 1;
+    renderPassCI.pSubpasses = NULL;//&subpass;
 
     CanvasPass.Initialize( renderPassCI );
 
@@ -139,18 +141,20 @@ void ACanvasPassRenderer::CreatePresentViewPipeline() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
+#if 0
     const char * vertexSourceCode =
-            "out gl_PerVertex\n"
-            "{\n"
-            "    vec4 gl_Position;\n"
-            "};\n"
-            "layout( location = 0 ) flat out vec2 VS_TexCoord;\n"
-            "layout( location = 1 ) out vec4 VS_Color;\n"
-            "void main() {\n"
-            "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
-            "  VS_TexCoord = InTexCoord;\n"
-            "  VS_Color = InColor;\n"
-            "}\n";
+        "out gl_PerVertex\n"
+        "{\n"
+        "    vec4 gl_Position;\n"
+        "};\n"
+        "layout( location = 0 ) flat out vec2 VS_TexCoord;\n"
+        "layout( location = 1 ) out vec4 VS_Color;\n"
+        "void main() {\n"
+        "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
+        "  VS_TexCoord = InTexCoord;\n"
+        "  VS_Color = InColor;\n"
+        "}\n";
+
     const char * fragmentSourceCode =
             "layout( origin_upper_left ) in vec4 gl_FragCoord;\n"
             "layout( binding = 0 ) uniform sampler2D tslot0;\n"
@@ -161,9 +165,31 @@ void ACanvasPassRenderer::CreatePresentViewPipeline() {
             "  ivec2 fragCoord = ivec2( gl_FragCoord.xy - VS_TexCoord );\n"
             "  fragCoord.y = textureSize( tslot0, 0 ).y - fragCoord.y - 1;\n"
             "  FS_FragColor = VS_Color * texelFetch( tslot0, fragCoord, 0 );\n"
-            //"  FS_FragColor = VS_Color * texture( tslot0, VS_TexCoord );\n"
-            //"  FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );\n"
             "}\n";
+#else
+    const char * vertexSourceCode =
+        "out gl_PerVertex\n"
+        "{\n"
+        "    vec4 gl_Position;\n"
+        "};\n"
+        "layout( location = 0 ) centroid noperspective out vec2 VS_TexCoord;\n"
+        "layout( location = 1 ) out vec4 VS_Color;\n"
+        "void main() {\n"
+        "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
+        "  VS_TexCoord = InTexCoord * Timers.zw;\n"
+        "  VS_TexCoord.y = 1.0 - VS_TexCoord.y;\n"
+        "  VS_Color = InColor;\n"
+        "}\n";
+
+    const char * fragmentSourceCode =
+        "layout( binding = 0 ) uniform sampler2D tslot0;\n"
+        "layout( location = 0 ) centroid noperspective in vec2 VS_TexCoord;\n"
+        "layout( location = 1 ) in vec4 VS_Color;\n"
+        "layout( location = 0 ) out vec4 FS_FragColor;\n"
+        "void main() {\n"
+        "  FS_FragColor = VS_Color * texture( tslot0, VS_TexCoord );\n"
+        "}\n";
+#endif
 
     GShaderSources.Clear();
     GShaderSources.Add( UniformStr );
@@ -282,6 +308,8 @@ void ACanvasPassRenderer::CreatePipelines() {
             "out gl_PerVertex\n"
             "{\n"
             "    vec4 gl_Position;\n"
+            //"    float gl_PointSize;\n"
+            //"    float gl_ClipDistance[];\n"
             "};\n"
             "layout( location = 0 ) out vec2 VS_TexCoord;\n"
             "layout( location = 1 ) out vec4 VS_Color;\n"
@@ -501,7 +529,7 @@ void ACanvasPassRenderer::CreateAlphaPipelines() {
 void ACanvasPassRenderer::CreateSamplers() {
     SamplerCreateInfo samplerCI;
     samplerCI.SetDefaults();
-    samplerCI.Filter = FILTER_NEAREST;
+    samplerCI.Filter = FILTER_LINEAR;//FILTER_NEAREST;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
@@ -584,8 +612,9 @@ void ACanvasPassRenderer::RenderInstances() {
                     Cmd.BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
                     Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.GetFramebufferTexture();
-                    GFrameResources.SamplerBindings[0].pSampler = &PresentViewSampler;
+                    //GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.GetFramebufferTexture();
+                    GFrameResources.TextureBindings[0].pTexture = RVFxaa ? &GRenderTarget.GetFxaaTexture() : &GRenderTarget.GetPostprocessTexture();
+                    GFrameResources.SamplerBindings[0].pSampler = PresentViewSampler;
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;
@@ -646,7 +675,7 @@ void ACanvasPassRenderer::RenderInstances() {
                     Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
                     GFrameResources.TextureBindings[0].pTexture = GPUTextureHandle( cmd->Texture );
-                    GFrameResources.SamplerBindings[0].pSampler = &Samplers[cmd->SamplerType];
+                    GFrameResources.SamplerBindings[0].pSampler = Samplers[cmd->SamplerType];
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;
