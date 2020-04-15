@@ -68,6 +68,9 @@ public:
 
     void * GetHandle() const { return Handle; }
 
+    // Experemental
+    void SetUniform2f( int location, float v0, float v1 );
+
     //
     // Utilites
     //
