@@ -58,12 +58,12 @@ int Stricmp( const char * _S1, const char * _S2 ) {
                 c2 -= ('a' - 'A');
             }
             if ( c1 != c2 ) {
-                return c1 < c2 ? -1 : 1;        // strings not equal
+                return c1 < c2 ? -1 : 1;
             }
         }
     } while ( c1 );
 
-    return 0;        // strings are equal
+    return 0;
 }
 
 int StricmpN( const char * _S1, const char * _S2, int _Num ) {
@@ -76,7 +76,7 @@ int StricmpN( const char * _S1, const char * _S2, int _Num ) {
         c2 = *_S2++;
 
         if ( !_Num-- ) {
-            return 0;        // strings are equal until end point
+            return 0;
         }
 
         if ( c1 != c2 ) {
@@ -87,25 +87,24 @@ int StricmpN( const char * _S1, const char * _S2, int _Num ) {
                 c2 -= ('a' - 'A');
             }
             if ( c1 != c2 ) {
-                return c1 < c2 ? -1 : 1;        // strings not equal
+                return c1 < c2 ? -1 : 1;
             }
         }
     } while ( c1 );
 
-    return 0;        // strings are equal
+    return 0;
 }
 
 int Strcmp( const char * _S1, const char * _S2 ) {
     AN_ASSERT( _S1 && _S2 );
 
     while ( *_S1 == *_S2 ) {
-        if ( !*_S1 ) {        // strings are equal
+        if ( !*_S1 ) {
             return 0;
         }
         _S1++;
         _S2++;
     }
-    // strings not equal
     return *_S1 < *_S2 ? -1 : 1;
 }
 
@@ -119,7 +118,7 @@ int StrcmpN( const char * _S1, const char * _S2, int _Num ) {
         c2 = *_S2++;
 
         if ( !_Num-- ) {
-            return 0;        // strings are equal until end point
+            return 0;
         }
 
         if ( c1 != c2 ) {
@@ -128,7 +127,7 @@ int StrcmpN( const char * _S1, const char * _S2, int _Num ) {
 
     } while ( c1 );
 
-    return 0;        // strings are equal
+    return 0;
 }
 
 int Sprintf( char * _Buffer, int _Size, const char * _Format, ... ) {
@@ -159,15 +158,15 @@ void Strcat( char * _Dest, size_t _DestCapacity, const char * _Src ) {
     if ( !_Dest || !_Src ) {
         return;
     }
-#ifdef AN_COMPILER_MSVC
-    strcat_s( _Dest, _DestCapacity, _Src );
-#else
+//#ifdef AN_COMPILER_MSVC
+//    strcat_s( _Dest, _DestCapacity, _Src );
+//#else
     size_t destLength = Strlen( _Dest );
     if ( destLength >= _DestCapacity ) {
         return;
     }
     Strcpy( _Dest + destLength, _DestCapacity - destLength, _Src );
-#endif
+//#endif
 }
 
 void Strcpy( char * _Dest, size_t _DestCapacity, const char * _Src ) {
@@ -177,16 +176,16 @@ void Strcpy( char * _Dest, size_t _DestCapacity, const char * _Src ) {
     if ( !_Src ) {
         _Src = "";
     }
-#ifdef AN_COMPILER_MSVC
-    strcpy_s( _Dest, _DestCapacity, _Src );
-#else
+//#ifdef AN_COMPILER_MSVC
+//    strcpy_s( _Dest, _DestCapacity, _Src );
+//#else
     if ( _DestCapacity > 0 ) {
         while ( *_Src && --_DestCapacity != 0 ) {
             *_Dest++ = *_Src++;
         }
         *_Dest = 0;
     }
-#endif
+//#endif
 }
 
 void StrcpyN( char * _Dest, size_t _DestCapacity, const char * _Src, size_t _Num ) {
@@ -196,16 +195,16 @@ void StrcpyN( char * _Dest, size_t _DestCapacity, const char * _Src, size_t _Num
     if ( !_Src ) {
         _Src = "";
     }
-#ifdef AN_COMPILER_MSVC
-    strncpy_s( _Dest, _DestCapacity, _Src, _Num );
-#else
+//#ifdef AN_COMPILER_MSVC
+//    strncpy_s( _Dest, _DestCapacity, _Src, _Num );
+//#else
     if ( _DestCapacity > 0 && _Num > 0 ) {
         while ( *_Src && --_DestCapacity != 0 && --_Num != static_cast< size_t >( -1 ) ) {
             *_Dest++ = *_Src++;
         }
         *_Dest = 0;
     }
-#endif
+//#endif
 }
 
 char * ToLower( char * _Str ) {
@@ -338,12 +337,12 @@ int CmpPath( const char * _Path1, const char * _Path2 ) {
                 c2 = '/';
             }
             if ( c1 != c2 ) {
-                return c1 < c2 ? -1 : 1;        // strings not equal
+                return c1 < c2 ? -1 : 1;
             }
         }
     } while ( c1 );
 
-    return 0;        // strings are equal
+    return 0;
 }
 
 int CmpPathN( const char * _Path1, const char * _Path2, int _Num ) {
@@ -356,7 +355,7 @@ int CmpPathN( const char * _Path1, const char * _Path2, int _Num ) {
         c2 = *_Path2++;
 
         if ( !_Num-- ) {
-            return 0;        // strings are equal until end point
+            return 0;
         }
 
         if ( c1 != c2 ) {
@@ -371,12 +370,12 @@ int CmpPathN( const char * _Path1, const char * _Path2, int _Num ) {
                 c2 = '/';
             }
             if ( c1 != c2 ) {
-                return c1 < c2 ? -1 : 1;        // strings not equal
+                return c1 < c2 ? -1 : 1;
             }
         }
     } while ( c1 );
 
-    return 0;        // strings are equal
+    return 0;
 }
 
 void FixSeparator( char * _Path ) {
