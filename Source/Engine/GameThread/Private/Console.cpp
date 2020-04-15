@@ -47,7 +47,7 @@ static const int MAX_STORY_LINES = 32;
 
 static const int Padding = 8;
 static const int CharacterWidth = 8;
-static const int CharacterHeight = 16;
+//static const int CharacterHeight = 16;
 static const float DropSpeed = 10;
 
 static SWideChar ImageData[2][CON_IMAGE_SIZE];
@@ -574,7 +574,7 @@ static void DrawCmdLine( ACanvas * _Canvas, int x, int y ) {
 
     AFont * font = _Canvas->GetCurrentFont();
 
-    const float scale = (float)CharacterHeight / font->GetFontSize();
+    const float scale = 1;//(float)CharacterHeight / font->GetFontSize();
 
     int cx = x;
 
@@ -634,7 +634,10 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep ) {
         ConHeight = 2;
     }
 
-    const int fontVStride = CharacterHeight + 4;
+    AFont * font = _Canvas->GetCurrentFont();
+
+    const int fontVStride = font->GetFontSize() + 4;
+    //const int fontVStride = CharacterHeight + 4;
     const int cmdLineH = fontVStride;
     const float halfVidHeight = ( _Canvas->Height >> 1 ) * ConHeight;
     const int numVisLines = Math::Ceil( ( halfVidHeight - cmdLineH ) / fontVStride );
@@ -653,9 +656,7 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep ) {
     int x = Padding;
     int y = halfVidHeight - fontVStride;
 
-    AFont * font = _Canvas->GetCurrentFont();
-
-    const float scale = (float)CharacterHeight / font->GetFontSize();
+    const float scale = 1;//(float)CharacterHeight / font->GetFontSize();
 
     ConSync.BeginScope();
 
