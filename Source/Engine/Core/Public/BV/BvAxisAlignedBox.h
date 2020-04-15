@@ -108,6 +108,13 @@ struct BvAxisAlignedBox {
         return BvAxisAlignedBox( OutCenter - OutEdge, OutCenter + OutEdge );
     }
 
+    BvAxisAlignedBox FromOrientedBox( Float3 const & _Origin, Float3 const & _HalfSize, Float3x3 const & _Orient ) const {
+        const Float3 OutEdge( Math::Abs( _Orient[0][0] ) * _HalfSize.X + Math::Abs( _Orient[1][0] ) * _HalfSize.Y + Math::Abs( _Orient[2][0] ) * _HalfSize.Z,
+                              Math::Abs( _Orient[0][1] ) * _HalfSize.X + Math::Abs( _Orient[1][1] ) * _HalfSize.Y + Math::Abs( _Orient[2][1] ) * _HalfSize.Z,
+                              Math::Abs( _Orient[0][2] ) * _HalfSize.X + Math::Abs( _Orient[1][2] ) * _HalfSize.Y + Math::Abs( _Orient[2][2] ) * _HalfSize.Z );
+        return BvAxisAlignedBox( _Origin - OutEdge, _Origin + OutEdge );
+    }
+
     static BvAxisAlignedBox const & Empty() {
         static BvAxisAlignedBox EmptyBox( Float3(9999999999.0f), Float3(-9999999999.0f) );
         return EmptyBox;
