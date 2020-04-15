@@ -47,7 +47,6 @@ ACanvas::ACanvas()
 
 void ACanvas::Initialize() {
     GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/DroidSansMono.ttf.16" );
-
     DrawList._Data = &DrawListSharedData;
 }
 
@@ -57,7 +56,11 @@ void ACanvas::Deinitialize() {
 }
 
 AFont * ACanvas::GetDefaultFont() {
+#if 1
     static TStaticResourceFinder< AFont > FontResource( _CTS( "CanvasFont" ) );
+#else
+    static TStaticResourceFinder< AFont > Resource( _CTS( "/Default/Fonts/Default" ) );
+#endif
     return FontResource.GetObject();
 }
 

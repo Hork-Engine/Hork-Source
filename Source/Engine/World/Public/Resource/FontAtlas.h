@@ -129,10 +129,10 @@ public:
     /** Initialize from memory */
     void InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo const * _CreateInfo = nullptr );
 
-    /** Initialize from memory compressed */
+    /** Initialize from memory compressed (source is zlib compressed) */
     void InitializeFromMemoryCompressedTTF( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo const * _CreateInfo = nullptr );
 
-    /** Initialize from memory compressed base85 */
+    /** Initialize from memory compressed base85 (source is zlib compressed and encoded to base85) */
     void InitializeFromMemoryCompressedBase85TTF( const char * _SysMem, SFontCreateInfo const * _CreateInfo = nullptr );
 
     /** Purge font data */
