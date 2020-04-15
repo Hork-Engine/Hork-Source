@@ -106,7 +106,7 @@ void ADebugDrawPassRenderer::Initialize() {
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
-    const char * vertesSourceCode = AN_STRINGIFY(
+    const char * vertesSourceCode = R"(
 
             out gl_PerVertex
             {
@@ -123,9 +123,9 @@ void ADebugDrawPassRenderer::Initialize() {
                 //gl_PointSize = 10;
             }
 
-            );
+            )";
 
-    const char * fragmentSourceCode = AN_STRINGIFY(
+    const char * fragmentSourceCode = R"(
 
             layout( location = 0 ) in vec4 VS_Color;
             layout( location = 0 ) out vec4 FS_FragColor;
@@ -134,7 +134,7 @@ void ADebugDrawPassRenderer::Initialize() {
                 FS_FragColor = VS_Color;
             }
 
-            );
+            )";
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
@@ -269,7 +269,6 @@ void ADebugDrawPassRenderer::RenderInstances( GHI::Framebuffer * _Framebuffer ) 
     DrawIndexedCmd drawCmd;
     drawCmd.InstanceCount = 1;
     drawCmd.StartInstanceLocation = 0;
-    //drawCmd.BaseVertexLocation = 0;
 
     Buffer * streamBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
 
@@ -280,9 +279,9 @@ void ADebugDrawPassRenderer::RenderInstances( GHI::Framebuffer * _Framebuffer ) 
         Cmd.BindVertexBuffer( 0, streamBuffer, GFrameData->DbgVertexStreamOffset );
         Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, GFrameData->DbgIndexStreamOffset );
 
-        drawCmd.BaseVertexLocation = cmd->FirstVertex;
         drawCmd.IndexCountPerInstance = cmd->NumIndices;
         drawCmd.StartIndexLocation = cmd->FirstIndex;
+        drawCmd.BaseVertexLocation = cmd->FirstVertex;
 
         Cmd.Draw( &drawCmd );
 
