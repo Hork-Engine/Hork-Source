@@ -33,7 +33,7 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Components/MeshComponent.h>
 #include <Core/Public/Logger.h>
-#include <Core/Public/FastLZCompressor.h>
+#include <Core/Public/Compress.h>
 #include <Core/Public/BV/BvIntersect.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
@@ -78,15 +78,15 @@ struct STileCacheData {
 
 struct STileCompressorCallback : public dtTileCacheCompressor {
     int maxCompressedSize( const int bufferSize ) override {
-        return AFastLZCompressor::CalcAppropriateCompressedDataSize( bufferSize );
+        return Core::FastLZMaxCompressedSize( bufferSize );
     }
 
     dtStatus compress(const unsigned char* buffer, const int bufferSize, unsigned char* compressed, const int /*maxCompressedSize*/, int* compressedSize) override {
-        AFastLZCompressor compressor;
-
         size_t size;
 
-        if ( !compressor.CompressData( buffer, bufferSize, compressed, size ) ) {
+        *compressedSize = 0;
+
+        if ( !Core::FastLZCompress( compressed, &size, buffer, bufferSize ) ) {
             return DT_FAILURE;
         }
 
@@ -96,11 +96,11 @@ struct STileCompressorCallback : public dtTileCacheCompressor {
     }
 
     dtStatus decompress(const unsigned char* compressed, const int compressedSize, unsigned char* buffer, const int maxBufferSize, int* bufferSize) override {
-        AFastLZCompressor compressor;
-
         size_t size;
 
-        if ( !compressor.DecompressData( compressed, compressedSize, buffer, size, maxBufferSize ) ) {
+        *bufferSize = 0;
+
+        if ( !Core::FastLZDecompress( compressed, compressedSize, buffer, &size, maxBufferSize ) ) {
             return DT_FAILURE;
         }
 
