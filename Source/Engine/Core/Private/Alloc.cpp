@@ -122,11 +122,13 @@ AN_FORCEINLINE void * SysAlloc( size_t _SizeInBytes, int _Alignment ) {
 }
 
 AN_FORCEINLINE void SysFree( void * _Bytes ) {
+    if ( _Bytes ) {
 #ifdef AN_COMPILER_MSVC
-    return _aligned_free( _Bytes );
+        _aligned_free( _Bytes );
 #else
-    return free( _Bytes );
+        free( _Bytes );
 #endif
+    }
 }
 
 void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment ) {
