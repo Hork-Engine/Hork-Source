@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/PodArray.h>
+#include <Core/Public/Image.h>
 
 //
 // Common constants
@@ -411,7 +412,7 @@ struct STexturePixelFormat {
         _Stream.WriteUInt8( (uint8_t)Data );
     }
 
-    static bool GetAppropriatePixelFormat( class AImage const & _Image, STexturePixelFormat & _PixelFormat );
+    static bool GetAppropriatePixelFormat( EImagePixelFormat const & _ImagePixelFormat, STexturePixelFormat & _PixelFormat );
 };
 
 #if 0
@@ -925,6 +926,7 @@ struct SRenderView {
     // Time parameters
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
+    float GameplayTimeStep;
 
     // View parameters
     Float3 ViewPosition;

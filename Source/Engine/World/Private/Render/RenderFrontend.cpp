@@ -158,9 +158,10 @@ void ARenderFrontend::RenderView( int _Index ) {
 
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
     view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
+    view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max( GRuntime.SysFrameDuration() * 0.000001f, 0.0001f );
     view->ViewIndex = _Index;
-    view->Width = viewport->Width * RVResolutionScaleX.GetFloat();
-    view->Height = viewport->Height * RVResolutionScaleY.GetFloat();
+    view->Width = Align( (size_t)(viewport->Width * RVResolutionScaleX.GetFloat()), 2 );
+    view->Height = Align( (size_t)(viewport->Height * RVResolutionScaleY.GetFloat()), 2 );
 
     if ( camera )
     {

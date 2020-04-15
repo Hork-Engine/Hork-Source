@@ -34,9 +34,11 @@ SOFTWARE.
 #include "OpenGL45RenderTarget.h"
 #include "OpenGL45Material.h"
 
+//#define SHOW_DEBUG_IMAGE
+
 using namespace GHI;
 
-static ARuntimeVariable RVFxaa( _CTS("FXAA"), _CTS("1") );
+ARuntimeVariable RVFxaa( _CTS("FXAA"), _CTS("1") );
 
 namespace OpenGL45 {
 
@@ -172,23 +174,33 @@ void ACanvasPassRenderer::CreatePresentViewPipeline() {
         "{\n"
         "    vec4 gl_Position;\n"
         "};\n"
-        "layout( location = 0 ) centroid noperspective out vec2 VS_TexCoord;\n"
+        "layout( location = 0 ) /*centroid*/ noperspective out vec2 VS_TexCoord;\n"
         "layout( location = 1 ) out vec4 VS_Color;\n"
         "void main() {\n"
         "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
-        "  VS_TexCoord = InTexCoord * Timers.zw;\n"
-        "  VS_TexCoord.y = 1.0 - VS_TexCoord.y;\n"
+        "  VS_TexCoord = InTexCoord;\n"
+        //"  VS_TexCoord = InTexCoord * Timers.zw;\n"
+        //"  VS_TexCoord.y = 1.0 - VS_TexCoord.y;\n"
         "  VS_Color = InColor;\n"
+
+#ifdef SHOW_DEBUG_IMAGE
+        "  VS_TexCoord.x = InTexCoord.x;\n"
+        "  VS_TexCoord.y = 1.0-InTexCoord.y;\n"
+#endif
+
         "}\n";
 
-    const char * fragmentSourceCode =
-        "layout( binding = 0 ) uniform sampler2D tslot0;\n"
-        "layout( location = 0 ) centroid noperspective in vec2 VS_TexCoord;\n"
-        "layout( location = 1 ) in vec4 VS_Color;\n"
-        "layout( location = 0 ) out vec4 FS_FragColor;\n"
-        "void main() {\n"
-        "  FS_FragColor = VS_Color * texture( tslot0, VS_TexCoord );\n"
-        "}\n";
+    const char * fragmentSourceCode = R"(
+        layout( binding = 0 ) uniform sampler2D tslot0;
+        layout( location = 0 ) centroid noperspective in vec2 VS_TexCoord;
+        layout( location = 1 ) in vec4 VS_Color;
+        layout( location = 0 ) out vec4 FS_FragColor;
+        void main() {
+          vec2 tc = min( VS_TexCoord, vec2(1.0) - ViewportParams.xy ) * Timers.zw;
+          tc.y = 1.0 - tc.y;
+          FS_FragColor = VS_Color * texture( tslot0, tc );
+        }
+    )";
 #endif
 
     GShaderSources.Clear();
@@ -304,29 +316,29 @@ void ACanvasPassRenderer::CreatePipelines() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    const char * vertexSourceCode =
-            "out gl_PerVertex\n"
-            "{\n"
-            "    vec4 gl_Position;\n"
-            //"    float gl_PointSize;\n"
-            //"    float gl_ClipDistance[];\n"
-            "};\n"
-            "layout( location = 0 ) out vec2 VS_TexCoord;\n"
-            "layout( location = 1 ) out vec4 VS_Color;\n"
-            "void main() {\n"
-            "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
-            "  VS_TexCoord = InTexCoord;\n"
-            "  VS_Color = InColor;\n"
-            "}\n";
-    const char * fragmentSourceCode =
-            "layout( binding = 0 ) uniform sampler2D tslot0;\n"
-            "layout( location = 0 ) in vec2 VS_TexCoord;\n"
-            "layout( location = 1 ) in vec4 VS_Color;\n"
-            "layout( location = 0 ) out vec4 FS_FragColor;\n"
-            "void main() {\n"
-            "  FS_FragColor = VS_Color * texture( tslot0, VS_TexCoord );\n"
-            //"  FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );\n"
-            "}\n";
+    const char * vertexSourceCode = R"(
+            out gl_PerVertex
+            {
+                vec4 gl_Position;
+            };
+            layout( location = 0 ) out vec2 VS_TexCoord;
+            layout( location = 1 ) out vec4 VS_Color;
+            void main() {
+              gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
+              VS_TexCoord = InTexCoord;
+              VS_Color = InColor;
+            }
+    )";
+    const char * fragmentSourceCode = R"(
+            layout( binding = 0 ) uniform sampler2D tslot0;
+            layout( location = 0 ) in vec2 VS_TexCoord;
+            layout( location = 1 ) in vec4 VS_Color;
+            layout( location = 0 ) out vec4 FS_FragColor;
+            void main() {
+              FS_FragColor = VS_Color * texture( tslot0, VS_TexCoord );
+            //  FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );
+            }
+    )";
 
     GShaderSources.Clear();
     GShaderSources.Add( UniformStr );
@@ -441,27 +453,29 @@ void ACanvasPassRenderer::CreateAlphaPipelines() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    const char * vertexSourceCode =
-            "out gl_PerVertex\n"
-            "{\n"
-            "    vec4 gl_Position;\n"
-            "};\n"
-            "layout( location = 0 ) out vec2 VS_TexCoord;\n"
-            "layout( location = 1 ) out vec4 VS_Color;\n"
-            "void main() {\n"
-            "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
-            "  VS_TexCoord = InTexCoord;\n"
-            "  VS_Color = InColor;\n"
-            "}\n";
-    const char * fragmentSourceCode =
-            "layout( binding = 0 ) uniform sampler2D tslot0;\n"
-            "layout( location = 0 ) in vec2 VS_TexCoord;\n"
-            "layout( location = 1 ) in vec4 VS_Color;\n"
-            "layout( location = 0 ) out vec4 FS_FragColor;\n"
-            "void main() {\n"
-            "  FS_FragColor = VS_Color * vec4(texture( tslot0, VS_TexCoord ).r);\n"
-            //"  FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );\n"
-            "}\n";
+    const char * vertexSourceCode = R"(
+            out gl_PerVertex
+            {
+                vec4 gl_Position;
+            };
+            layout( location = 0 ) out vec2 VS_TexCoord;
+            layout( location = 1 ) out vec4 VS_Color;
+            void main() {
+              gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
+              VS_TexCoord = InTexCoord;
+              VS_Color = InColor;
+            }
+    )";
+    const char * fragmentSourceCode = R"(
+            layout( binding = 0 ) uniform sampler2D tslot0;
+            layout( location = 0 ) in vec2 VS_TexCoord;
+            layout( location = 1 ) in vec4 VS_Color;
+            layout( location = 0 ) out vec4 FS_FragColor;
+            void main() {
+              FS_FragColor = VS_Color * vec4(texture( tslot0, VS_TexCoord ).r);
+            //  FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );
+            }
+    )";
 
     GShaderSources.Clear();
     GShaderSources.Add( UniformStr );
@@ -612,9 +626,15 @@ void ACanvasPassRenderer::RenderInstances() {
                     Cmd.BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
                     Cmd.BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
+#ifdef SHOW_DEBUG_IMAGE
+                    GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.GetBloomTexture().Textures_6[0];
+                    //GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.AdaptiveLuminance;
+                    GFrameResources.SamplerBindings[0].pSampler = Samplers[HUD_SAMPLER_CLAMPED_NEAREST];
+#else
                     //GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.GetFramebufferTexture();
                     GFrameResources.TextureBindings[0].pTexture = RVFxaa ? &GRenderTarget.GetFxaaTexture() : &GRenderTarget.GetPostprocessTexture();
                     GFrameResources.SamplerBindings[0].pSampler = PresentViewSampler;
+#endif
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;

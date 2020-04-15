@@ -68,10 +68,41 @@ struct SSoftwareMipmapGenerator
     bool bHDRI = false;
 };
 
-struct SImageMipmapConfig {
+struct SImageMipmapConfig
+{
     EMipmapEdgeMode EdgeMode = MIPMAP_EDGE_WRAP;
     EMipmapFilter Filter = MIPMAP_FILTER_MITCHELL;
     bool bPremultipliedAlpha = false;
+};
+
+enum EImagePixelFormat
+{
+    IMAGE_PF_AUTO,
+    IMAGE_PF_AUTO_GAMMA2,
+    IMAGE_PF_AUTO_16F,
+    IMAGE_PF_AUTO_32F,
+    IMAGE_PF_R,
+    IMAGE_PF_R16F,
+    IMAGE_PF_R32F,
+    IMAGE_PF_RG,
+    IMAGE_PF_RG16F,
+    IMAGE_PF_RG32F,
+    IMAGE_PF_RGB,
+    IMAGE_PF_RGB_GAMMA2,
+    IMAGE_PF_RGB16F,
+    IMAGE_PF_RGB32F,    
+    IMAGE_PF_RGBA,
+    IMAGE_PF_RGBA_GAMMA2,
+    IMAGE_PF_RGBA16F,
+    IMAGE_PF_RGBA32F,
+    IMAGE_PF_BGR,
+    IMAGE_PF_BGR_GAMMA2,
+    IMAGE_PF_BGR16F,
+    IMAGE_PF_BGR32F,
+    IMAGE_PF_BGRA,
+    IMAGE_PF_BGRA_GAMMA2,
+    IMAGE_PF_BGRA16F,
+    IMAGE_PF_BGRA32F
 };
 
 /** Image loader */
@@ -80,26 +111,22 @@ public:
     void * pRawData;
     int Width;
     int Height;
-    int NumChannels;
-    bool bHDRI;
-    bool bLinearSpace;
-    bool bHalf; // Only for HDRI images
     int NumLods;
+    EImagePixelFormat PixelFormat;
 
     AImage();
     ~AImage();
 
-    // Load image as byte*
-    bool LoadLDRI( const char * _Path, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels = 0 );
-    bool LoadLDRI( IBinaryStream & _Stream, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels = 0 );
+    bool Load( const char * _Path, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2 );
+    bool Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2 );
 
-    // Load image as float* in linear space
-    bool LoadHDRI( const char * _Path, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels = 0 );
-    bool LoadHDRI( IBinaryStream & _Stream, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels = 0 );
-
-    void FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _NumChannels, bool _SRGB, SImageMipmapConfig const * _MipmapGen );
+    /** Source data must be float* or byte* according to specified pixel format */
+    void FromRawData( const void * _Source, int _Width, int _Height, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat );
 
     void Free();
+
+private:
+    void FromRawData( const void * _Source, int _Width, int _Height, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat, bool bReuseSourceBuffer );
 };
 
 /*

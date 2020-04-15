@@ -51,8 +51,16 @@ struct SViewUniformBuffer {
     float ScaleToSurfaceX;
     float ScaleToSurfaceY;
 
-    Float3 ViewPostion;
-    float Padding2;
+    Float3 ViewPosition;
+    float TimeDelta;
+
+    Float4 PostprocessBloomMix;
+    Float4 PostprocessAttrib;             // x - bloom enabled/disabled, y - tone mapping exposure, z - color grading. w - FXAA
+    Float4 VignetteColorIntensity;        // rgb, intensity
+    float VignetteOuterRadiusSqr;
+    float VignetteInnerRadiusSqr;
+    float ViewBrightness;
+    float Padding6;
 
     uint64_t EnvProbeSampler;
     uint64_t Padding3;

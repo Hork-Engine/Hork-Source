@@ -40,6 +40,7 @@ SOFTWARE.
 #include "OpenGL45ColorPassRenderer.h"
 #include "OpenGL45WireframePassRenderer.h"
 #include "OpenGL45DebugDrawPassRenderer.h"
+#include "OpenGL45BrightPassRenderer.h"
 #include "OpenGL45PostprocessPassRenderer.h"
 #include "OpenGL45FxaaPassRenderer.h"
 
@@ -48,6 +49,7 @@ SOFTWARE.
 #include <Core/Public/WindowsDefs.h>
 #include <Core/Public/CriticalError.h>
 #include <Core/Public/Logger.h>
+#include <Core/Public/Image.h>
 
 #include "GHI/GL/glew.h"
 
@@ -272,15 +274,15 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     }
 
     WindowHandle = SDL_CreateWindow( _VideoMode.Title, x, y, _VideoMode.Width, _VideoMode.Height, flags );
-
-    //SDL_DisplayMode mode = {};
-    //mode.format = SDL_PIXELFORMAT_RGB888;
-    //mode.w = _VideoMode.Width;
-    //mode.h = _VideoMode.Height;
-    //mode.refresh_rate = _VideoMode.RefreshRate;
-    //SDL_SetWindowDisplayMode( WindowHandle, &mode );
+    if ( !WindowHandle ) {
+        CriticalError( "Failed to create main window\n" );
+    }
 
     WindowCtx = SDL_GL_CreateContext( WindowHandle );
+    if ( !WindowCtx ) {
+        CriticalError( "Failed to initialize OpenGL context\n" );
+    }
+
     SDL_GL_MakeCurrent( WindowHandle, WindowCtx );
     SDL_GL_SetSwapInterval( 0 );
 
@@ -319,9 +321,9 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     GLogger.Printf( "Graphics vendor: %s\n", vendorString );
     GLogger.Printf( "Graphics adapter: %s\n", adapterString );
     GLogger.Printf( "Driver version: %s\n", driverVersion );
+
 #if 0
     SMemoryInfo gpuMemoryInfo = GetGPUMemoryInfo();
-
     if ( gpuMemoryInfo.TotalAvailableMegabytes > 0 && gpuMemoryInfo.CurrentAvailableMegabytes > 0 ) {
         GLogger.Printf( "Total available GPU memory: %d Megs\n", gpuMemoryInfo.TotalAvailableMegabytes );
         GLogger.Printf( "Current available GPU memory: %d Megs\n", gpuMemoryInfo.CurrentAvailableMegabytes );
@@ -354,6 +356,10 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     GState.Initialize( &GDevice, stateCreateInfo );
 
     SetCurrentState( &GState );
+
+    glClearColor( 0, 0, 0, 0 );
+    glClear( GL_COLOR_BUFFER_BIT );
+    SDL_GL_SwapWindow( WindowHandle );
 
     Core::ZeroMem( PixelFormatTable, sizeof( PixelFormatTable ) );
     Core::ZeroMem( InternalPixelFormatTable, sizeof( InternalPixelFormatTable ) );
@@ -418,9 +424,6 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     PixelFormatTable[TEXTURE_PF_COMPRESSED_SRGB_ALPHA_BPTC_UNORM] = PIXEL_FORMAT_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
     PixelFormatTable[TEXTURE_PF_COMPRESSED_RGB_BPTC_SIGNED_FLOAT] = PIXEL_FORMAT_COMPRESSED_RGB_BPTC_SIGNED_FLOAT;
     PixelFormatTable[TEXTURE_PF_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT] = PIXEL_FORMAT_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT;
-
-
-
 
     // FIXME: ?
     //    INTERNAL_PIXEL_FORMAT_R8_SNORM,       // RED   s8
@@ -528,19 +531,31 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     GColorPassRenderer.Initialize();
     GWireframePassRenderer.Initialize();
     GDebugDrawPassRenderer.Initialize();
+    GBrightPassRenderer.Initialize();
     GPostprocessPassRenderer.Initialize();
     GFxaaPassRenderer.Initialize();
     GCanvasPassRenderer.Initialize();
     GFrameResources.Initialize();
 
-    glClearColor( 0,0,0,0 );
-    glClear(GL_COLOR_BUFFER_BIT);
-    SDL_GL_SwapWindow( WindowHandle );
+    // TODO: dither.png encode to Base85 and move to source code?
+    AImage image;
+    if ( !image.Load( "dither.png", nullptr, IMAGE_PF_R ) ) {
+        CriticalError( "Couldn't load dither.png\n" );
+    }
+    GHI::TextureStorageCreateInfo texStorageCI = {};
+    texStorageCI.Type = GHI::TEXTURE_2D;
+    texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_R8;
+    texStorageCI.Resolution.Tex2D.Width = image.Width;
+    texStorageCI.Resolution.Tex2D.Height = image.Height;
+    texStorageCI.NumLods = 1;
+    DitherTexture.InitializeStorage( texStorageCI );
+    DitherTexture.Write( 0, GHI::PIXEL_FORMAT_UBYTE_R, image.Width * image.Height * 1, 1, image.pRawData );
 }
 
 void ARenderBackend::Deinitialize() {
     GLogger.Printf( "Deinitializing OpenGL backend...\n" );
 
+    DitherTexture.Deinitialize();
     GRenderTarget.Deinitialize();
     GShadowMapRT.Deinitialize();
     GShadowMapPassRenderer.Deinitialize();
@@ -548,6 +563,7 @@ void ARenderBackend::Deinitialize() {
     GColorPassRenderer.Deinitialize();
     GWireframePassRenderer.Deinitialize();
     GDebugDrawPassRenderer.Deinitialize();
+    GBrightPassRenderer.Deinitialize();
     GPostprocessPassRenderer.Deinitialize();
     GFxaaPassRenderer.Deinitialize();
     GCanvasPassRenderer.Deinitialize();
@@ -1075,6 +1091,8 @@ void ARenderBackend::RenderView( SRenderView * _RenderView ) {
     GDepthPassRenderer.RenderInstances();
 #endif
     GColorPassRenderer.RenderInstances();
+
+    GBrightPassRenderer.Render( GRenderTarget.GetFramebufferTexture() );
 
     GPostprocessPassRenderer.Render();
 

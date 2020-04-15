@@ -50,6 +50,9 @@ private:
     GHI::RenderPass PostprocessPass;
     GHI::Pipeline PostprocessPipeline;
     GHI::Sampler PostprocessSampler;
+    GHI::Sampler DitherSampler;
+    GHI::Sampler BloomSampler;
+    GHI::Sampler LuminanceSampler;
 };
 
 extern APostprocessPassRenderer GPostprocessPassRenderer;

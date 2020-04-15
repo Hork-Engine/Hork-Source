@@ -1498,12 +1498,12 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     mipmapGen.EdgeMode = MIPMAP_EDGE_WRAP;
     mipmapGen.Filter = MIPMAP_FILTER_MITCHELL;
     mipmapGen.bPremultipliedAlpha = false;
-    if ( !image.LoadLDRI( sourceFileName.CStr(), tex.bSRGB, &mipmapGen ) ) {
+    if ( !image.Load( sourceFileName.CStr(), &mipmapGen, tex.bSRGB ? IMAGE_PF_AUTO_GAMMA2 : IMAGE_PF_AUTO ) ) {
         return;
     }
 
     STexturePixelFormat texturePixelFormat;
-    if ( !STexturePixelFormat::GetAppropriatePixelFormat( image, texturePixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( image.PixelFormat, texturePixelFormat ) ) {
         return;
     }
 
@@ -2075,7 +2075,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
     if ( _Settings.bSkyboxHDRI ) {
         for ( int i = 0 ; i < 6 ; i++ ) {
-            if ( !cubeFaces[i].LoadHDRI( _Settings.ExplicitSkyboxFaces[i], false, nullptr, 3 ) ) {
+            if ( !cubeFaces[i].Load( _Settings.ExplicitSkyboxFaces[i], nullptr, IMAGE_PF_BGR32F ) ) {
                 return false;
             }
         }
@@ -2090,16 +2090,17 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
                 }
             }
         }
+        // TODO: Convert to 16F
     } else {
         for ( int i = 0 ; i < 6 ; i++ ) {
-            if ( !cubeFaces[i].LoadLDRI( _Settings.ExplicitSkyboxFaces[i], true, nullptr, 3 ) ) {
+            if ( !cubeFaces[i].Load( _Settings.ExplicitSkyboxFaces[i], nullptr, IMAGE_PF_BGR_GAMMA2 ) ) {
                 return false;
             }
         }
     }
 
     STexturePixelFormat texturePixelFormat;
-    if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[0], texturePixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[0].PixelFormat, texturePixelFormat ) ) {
         return false;
     }
 
@@ -2115,7 +2116,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
         // Check pixel format
         STexturePixelFormat facePF;
-        if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[i], facePF ) ) {
+        if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[i].PixelFormat, facePF ) ) {
             return false;
         }
         if ( texturePixelFormat != facePF ) {

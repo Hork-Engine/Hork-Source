@@ -363,6 +363,7 @@ void AssertFunction( const char * _File, int _Line, const char * _Function, cons
 #ifdef AN_OS_WIN32
     DebugBreak();
 #else
+    //__asm__( "int $3" );
     raise( SIGTRAP );
 #endif
 

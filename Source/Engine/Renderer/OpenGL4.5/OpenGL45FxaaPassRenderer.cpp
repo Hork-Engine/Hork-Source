@@ -77,7 +77,7 @@ void AFxaaPassRenderer::CreatePipeline() {
     RasterizerStateInfo rsd;
     rsd.SetDefaults();
     rsd.CullMode = POLYGON_CULL_FRONT;
-    rsd.bScissorEnable = false;//true;
+    rsd.bScissorEnable = false;
 
     BlendingStateInfo bsd;
     bsd.SetDefaults();
@@ -104,20 +104,21 @@ void AFxaaPassRenderer::CreatePipeline() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    const char * vertexSourceCode =
-            "out gl_PerVertex\n"
-            "{\n"
-            "    vec4 gl_Position;\n"
-            "};\n"
-            "layout( location = 0 ) centroid noperspective out vec2 VS_TexCoord;\n"
-            "void main() {\n"
-            "  gl_Position = vec4( InPosition, 0.0, 1.0 );\n"
-            "  VS_TexCoord = InPosition * 0.5 + 0.5;\n"
-            "  VS_TexCoord *= Timers.zw;\n"
-            "  VS_TexCoord.y = 1.0 - VS_TexCoord.y;\n"
-            "}\n";
+    const char * vertexSourceCode = R"(
+            out gl_PerVertex
+            {
+                vec4 gl_Position;
+            };
+            layout( location = 0 ) centroid noperspective out vec2 VS_TexCoord;
+            void main() {
+              gl_Position = vec4( InPosition, 0.0, 1.0 );
+              VS_TexCoord = InPosition * 0.5 + 0.5;
+//              VS_TexCoord *= Timers.zw;
+//              VS_TexCoord.y = 1.0 - VS_TexCoord.y;
+            }
+    )";
 
-    const char * fragmentShader = AN_STRINGIFY(
+    const char * fragmentShader = R"(
 
     //layout( origin_upper_left ) in vec4 gl_FragCoord;
 
@@ -127,10 +128,12 @@ void AFxaaPassRenderer::CreatePipeline() {
     layout( binding = 0 ) uniform sampler2D imageTexture;
 
     void main() {
+        vec2 tc = min( VS_TexCoord, vec2(1.0) - ViewportParams.xy ) * Timers.zw;
+        tc.y = 1.0 - tc.y;
         FS_FragColor = FxaaPixelShader(
             // Use noperspective interpolation here (turn off perspective interpolation).
             // {xy} = center of pixel
-            VS_TexCoord,
+            tc,
                         // Used only for FXAA Console, and not used on the 360 version.
                         // Use noperspective interpolation here (turn off perspective interpolation).
                         // {xy__} = upper left of pixel
@@ -246,13 +249,15 @@ void AFxaaPassRenderer::CreatePipeline() {
         );
     }
 
-    );
-    const char * fxaaPredefines =
-        "#define FXAA_PC 1\n"
-        "#define FXAA_GLSL_130 1\n"
-        //"#define FXAA_QUALITY__PRESET 12\n"
-        "#define FXAA_QUALITY__PRESET 39\n"
-        "#define FXAA_GATHER4_ALPHA 1\n";
+    )";
+
+    const char * fxaaPredefines = R"(
+        #define FXAA_PC 1
+        #define FXAA_GLSL_130 1
+        //#define FXAA_QUALITY__PRESET 12
+        #define FXAA_QUALITY__PRESET 39
+        #define FXAA_GATHER4_ALPHA 1
+    )";
 
     AFileStream f;
     if ( !f.OpenRead( "FXAA_3_11.h" ) ) {
@@ -327,7 +332,6 @@ void AFxaaPassRenderer::CreateSampler() {
 }
 
 void AFxaaPassRenderer::Render() {
-    // Begin render pass
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &FxaaPass;
@@ -355,25 +359,14 @@ void AFxaaPassRenderer::Render() {
     drawCmd.InstanceCount = 1;
     drawCmd.StartVertexLocation = 0;
     drawCmd.StartInstanceLocation = 0;
-    
-    Cmd.BindPipeline( &FxaaPipeline );
-    Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
-    Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
 
     GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.GetPostprocessTexture();
     GFrameResources.SamplerBindings[0].pSampler = FxaaSampler;
 
-#if 0
-    Rect2D scissorRect;
-    scissorRect.X = cmd->ClipMins.X;
-    scissorRect.Y = cmd->ClipMins.Y;
-    scissorRect.Width = cmd->ClipMaxs.X - cmd->ClipMins.X;
-    scissorRect.Height = cmd->ClipMaxs.Y - cmd->ClipMins.Y;
-    Cmd.SetScissor( scissorRect );
-#endif
-
+    Cmd.BindPipeline( &FxaaPipeline );
+    Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
+    Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
-
     Cmd.Draw( &drawCmd );
 
     Cmd.EndRenderPass();

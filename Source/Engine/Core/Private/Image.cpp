@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Core/Public/Image.h>
 #include <Core/Public/Color.h>
 #include <Core/Public/Logger.h>
+#include <Core/Public/Compress.h>
 
 #define STBI_MALLOC(sz)                     GHeapMemory.Alloc( sz )
 #define STBI_FREE(p)                        GHeapMemory.Free( p )
@@ -48,6 +49,27 @@ SOFTWARE.
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
 #define STBI_WRITE_NO_STDIO
+#define STBIW_ZLIB_COMPRESS                 stbi_zlib_compress_override // Override compression method
+#define STBIW_CRC32(buffer,len)             Core::Crc32( Core::CRC32_INITIAL, buffer, len ) // Override crc32 method
+
+// Miniz mz_compress2 provides better compression than default stb compression method
+static unsigned char * stbi_zlib_compress_override( unsigned char * data, int data_len, int * out_len, int quality )
+{
+    size_t buflen = Core::ZMaxCompressedSize( data_len );
+    unsigned char * buf = ( unsigned char * )STBIW_MALLOC( buflen );
+    if ( buf == NULL )
+    {
+        return NULL;
+    }
+    if ( !Core::ZCompress( buf, &buflen, data, data_len, quality ) )
+    {
+        STBIW_FREE( buf );
+        return NULL;
+    }
+    *out_len = buflen;
+    return buf;
+}
+
 #include "stb/stb_image_write.h"
 
 #define STBIR_MALLOC(sz,context)            GHunkMemory.Alloc( sz )
@@ -61,11 +83,8 @@ AImage::AImage() {
     pRawData = nullptr;
     Width = 0;
     Height = 0;
-    NumChannels = 0;
-    bHDRI = false;
-    bLinearSpace = false;
-    bHalf = false;
     NumLods = 0;
+    PixelFormat = IMAGE_PF_AUTO_GAMMA2;
 }
 
 AImage::~AImage() {
@@ -93,7 +112,139 @@ static void Stbi_Write( void *context, void *data, int size ) {
     stream->WriteBuffer( data, size );
 }
 
-bool AImage::LoadLDRI( const char * _Path, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
+static AN_FORCEINLINE bool IsAuto( EImagePixelFormat _PixelFormat ) {
+    switch ( _PixelFormat ) {
+    case IMAGE_PF_AUTO:
+    case IMAGE_PF_AUTO_GAMMA2:
+    case IMAGE_PF_AUTO_16F:
+    case IMAGE_PF_AUTO_32F:
+        return true;
+    }
+    return false;
+}
+
+static AN_FORCEINLINE int GetNumChannels( EImagePixelFormat _PixelFormat ) {
+    switch ( _PixelFormat ) {
+    case IMAGE_PF_AUTO:
+    case IMAGE_PF_AUTO_GAMMA2:
+    case IMAGE_PF_AUTO_16F:
+    case IMAGE_PF_AUTO_32F:
+        return 0;
+    case IMAGE_PF_R:
+    case IMAGE_PF_R16F:
+    case IMAGE_PF_R32F:
+        return 1;
+    case IMAGE_PF_RG:
+    case IMAGE_PF_RG16F:
+    case IMAGE_PF_RG32F:
+        return 2;
+    case IMAGE_PF_RGB:
+    case IMAGE_PF_RGB_GAMMA2:
+    case IMAGE_PF_RGB16F:
+    case IMAGE_PF_RGB32F:
+        return 3;
+    case IMAGE_PF_RGBA:
+    case IMAGE_PF_RGBA_GAMMA2:
+    case IMAGE_PF_RGBA16F:
+    case IMAGE_PF_RGBA32F:
+        return 4;
+    case IMAGE_PF_BGR:
+    case IMAGE_PF_BGR_GAMMA2:
+    case IMAGE_PF_BGR16F:
+    case IMAGE_PF_BGR32F:
+        return 3;
+    case IMAGE_PF_BGRA:
+    case IMAGE_PF_BGRA_GAMMA2:
+    case IMAGE_PF_BGRA16F:
+    case IMAGE_PF_BGRA32F:
+        return 4;
+    }
+    AN_ASSERT( 0 );
+    return 0;
+}
+
+static AN_FORCEINLINE bool IsHalfFloat( EImagePixelFormat _PixelFormat ) {
+    switch ( _PixelFormat ) {
+    case IMAGE_PF_AUTO_16F:
+    case IMAGE_PF_R16F:
+    case IMAGE_PF_RG16F:
+    case IMAGE_PF_RGB16F:
+    case IMAGE_PF_RGBA16F:
+    case IMAGE_PF_BGR16F:
+    case IMAGE_PF_BGRA16F:
+        return true;
+    }
+    return false;
+}
+
+static AN_FORCEINLINE bool IsFloat( EImagePixelFormat _PixelFormat ) {
+    switch ( _PixelFormat ) {
+    case IMAGE_PF_AUTO_32F:
+    case IMAGE_PF_R32F:
+    case IMAGE_PF_RG32F:
+    case IMAGE_PF_RGB32F:
+    case IMAGE_PF_RGBA32F:
+    case IMAGE_PF_BGR32F:
+    case IMAGE_PF_BGRA32F:
+        return true;
+    }
+    return false;
+}
+
+static AN_FORCEINLINE bool IsHDRI( EImagePixelFormat _PixelFormat ) {
+    return IsHalfFloat( _PixelFormat ) || IsFloat( _PixelFormat );
+}
+
+static AN_FORCEINLINE int IsGamma2( EImagePixelFormat _PixelFormat ) {
+    switch ( _PixelFormat ) {
+    case IMAGE_PF_AUTO_GAMMA2:
+    case IMAGE_PF_RGB_GAMMA2:
+    case IMAGE_PF_RGBA_GAMMA2:
+    case IMAGE_PF_BGR_GAMMA2:
+    case IMAGE_PF_BGRA_GAMMA2:
+        return true;
+    }
+    return false;
+}
+
+static AN_FORCEINLINE bool IsBGR( EImagePixelFormat _PixelFormat ) {
+    switch ( _PixelFormat ) {
+    case IMAGE_PF_AUTO:
+    case IMAGE_PF_AUTO_GAMMA2:
+    case IMAGE_PF_AUTO_16F:
+    case IMAGE_PF_AUTO_32F:
+        // BGR is by default
+        return true;
+    case IMAGE_PF_R:
+    case IMAGE_PF_R16F:
+    case IMAGE_PF_R32F:
+    case IMAGE_PF_RG:
+    case IMAGE_PF_RG16F:
+    case IMAGE_PF_RG32F:
+    case IMAGE_PF_RGB:
+    case IMAGE_PF_RGB_GAMMA2:
+    case IMAGE_PF_RGB16F:
+    case IMAGE_PF_RGB32F:
+    case IMAGE_PF_RGBA:
+    case IMAGE_PF_RGBA_GAMMA2:
+    case IMAGE_PF_RGBA16F:
+    case IMAGE_PF_RGBA32F:
+        return false;
+    case IMAGE_PF_BGR:
+    case IMAGE_PF_BGR_GAMMA2:
+    case IMAGE_PF_BGR16F:
+    case IMAGE_PF_BGR32F:
+    case IMAGE_PF_BGRA:
+    case IMAGE_PF_BGRA_GAMMA2:
+    case IMAGE_PF_BGRA16F:
+    case IMAGE_PF_BGRA32F:
+        return true;
+    }
+    AN_ASSERT( 0 );
+    return false;
+}
+
+bool AImage::Load( const char * _Path, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat ) {
     AFileStream stream;
 
     Free();
@@ -102,195 +253,168 @@ bool AImage::LoadLDRI( const char * _Path, bool _SRGB, SImageMipmapConfig const 
         return false;
     }
 
-    return LoadLDRI( stream, _SRGB, _MipmapGen, _NumDesiredChannels );
+    return Load( stream, _MipmapGen, _PixelFormat );
 }
 
-static bool LoadRawImage( const char * _Name, AImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
-    AN_ASSERT( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
+bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat ) {
+    const stbi_io_callbacks callbacks = { Stbi_Read, Stbi_Skip, Stbi_Eof };
+    int w, h, numChannels, numRequiredChannels;
+    bool bHDRI = IsHDRI( _PixelFormat );
+    void * source;
 
-    _Image.Free();
+    numRequiredChannels = GetNumChannels( _PixelFormat );
 
-    //if ( _SRGB ) {
-    //    if ( _NumDesiredChannels == 1 ) {
-    //        _NumDesiredChannels = 3;
-    //    } else if ( _NumDesiredChannels == 2 || _NumDesiredChannels == 0 ) {
-    //        _NumDesiredChannels = 4;
-    //    }
-    //}
-
-    stbi_uc * data = stbi_load_from_callbacks( _Callbacks, _User, &_Image.Width, &_Image.Height, &_Image.NumChannels, _NumDesiredChannels );
-    if ( !data ) {
-        GLogger.Printf( "AImage::LoadRawImage: couldn't load %s\n", _Name );
-        return false;
-    }
-    _Image.bHDRI = false;
-    _Image.bLinearSpace = !_SRGB;
-    _Image.bHalf = false;
-    _Image.NumLods = 1;
-    if ( _NumDesiredChannels > 0 ) {
-        _Image.NumChannels = _NumDesiredChannels;
-    }
-
-    if ( _Image.NumChannels > 2 ) {
-        // swap r & b channels to store image as BGR
-        int count = _Image.Width * _Image.Height * _Image.NumChannels;
-        for ( int i = 0 ; i < count ; i += _Image.NumChannels ) {
-            StdSwap( data[i], data[i+2] );
-        }
-    }
-
-    if ( _MipmapGen ) {
-        SSoftwareMipmapGenerator mipmapGen;
-
-        mipmapGen.SourceImage = data;
-        mipmapGen.Width = _Image.Width;
-        mipmapGen.Height = _Image.Height;
-        mipmapGen.NumChannels = _Image.NumChannels;
-        mipmapGen.bLinearSpace = _Image.bLinearSpace;
-        mipmapGen.EdgeMode = _MipmapGen->EdgeMode;
-        mipmapGen.Filter = _MipmapGen->Filter;
-        mipmapGen.bPremultipliedAlpha = _MipmapGen->bPremultipliedAlpha;
-        mipmapGen.bHDRI = false;
-
-        int requiredMemorySize;
-        ComputeRequiredMemorySize( mipmapGen, requiredMemorySize, _Image.NumLods );
-
-        _Image.pRawData = GHeapMemory.Alloc( requiredMemorySize );
-
-        GenerateMipmaps( mipmapGen, _Image.pRawData );
-
-        GHeapMemory.Free( data );
+    if ( bHDRI ) {
+        source = stbi_loadf_from_callbacks( &callbacks, &_Stream, &w, &h, &numChannels, numRequiredChannels );
     } else {
-        _Image.pRawData = data;
+        source = stbi_load_from_callbacks( &callbacks, &_Stream, &w, &h, &numChannels, numRequiredChannels );
     }
 
-    return true;
-}
-
-static bool LoadRawImageHDRI( const char * _Name, AImage & _Image, const stbi_io_callbacks * _Callbacks, void * _User, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
-    AN_ASSERT( _NumDesiredChannels >= 0 && _NumDesiredChannels <= 4 );
-
-    _Image.Free();
-
-    float * data = stbi_loadf_from_callbacks( _Callbacks, _User, &_Image.Width, &_Image.Height, &_Image.NumChannels, _NumDesiredChannels );
-    if ( !data ) {
-        GLogger.Printf( "AImage::LoadRawImageHDRI: couldn't load %s\n", _Name );
+    if ( !source ) {
+        GLogger.Printf( "AImage::Load: couldn't load %s\n", _Stream.GetFileName() );
         return false;
     }
-    _Image.bHDRI = true;
-    _Image.bLinearSpace = true;
-    _Image.bHalf = _HalfFloat;
-    _Image.NumLods = 1;
 
-    if ( _NumDesiredChannels > 0 ) {
-        _Image.NumChannels = _NumDesiredChannels;
-    }
+    numChannels = numRequiredChannels ? numRequiredChannels : numChannels;
 
-    if ( _Image.NumChannels > 2 ) {
-        // swap r & b channels to store image as BGR
-        int count = _Image.Width * _Image.Height * _Image.NumChannels;
-        for ( int i = 0 ; i < count ; i += _Image.NumChannels ) {
-            StdSwap( data[i], data[i+2] );
+    switch ( _PixelFormat ) {
+    case IMAGE_PF_AUTO:
+        switch ( numChannels ) {
+        case 1:
+            _PixelFormat = IMAGE_PF_R;
+            break;
+        case 2:
+            _PixelFormat = IMAGE_PF_RG;
+            break;
+        case 3:
+            _PixelFormat = IMAGE_PF_BGR;
+            break;
+        case 4:
+            _PixelFormat = IMAGE_PF_BGRA;
+            break;
+        default:
+            AN_ASSERT( 0 );
+            _PixelFormat = IMAGE_PF_BGRA;
+            break;
         }
+        break;
+    case IMAGE_PF_AUTO_GAMMA2:
+        switch ( numChannels ) {
+        case 1:
+            _PixelFormat = IMAGE_PF_R; // FIXME: support R_GAMMA?
+            break;
+        case 2:
+            _PixelFormat = IMAGE_PF_RG; // FIXME: support RG_GAMMA?
+            break;
+        case 3:
+            _PixelFormat = IMAGE_PF_BGR_GAMMA2;
+            break;
+        case 4:
+            _PixelFormat = IMAGE_PF_BGRA_GAMMA2;
+            break;
+        default:
+            AN_ASSERT( 0 );
+            _PixelFormat = IMAGE_PF_BGRA_GAMMA2;
+            break;
+        }
+        break;
+    case IMAGE_PF_AUTO_16F:
+        switch ( numChannels ) {
+        case 1:
+            _PixelFormat = IMAGE_PF_R16F;
+            break;
+        case 2:
+            _PixelFormat = IMAGE_PF_RG16F;
+            break;
+        case 3:
+            _PixelFormat = IMAGE_PF_BGR16F;
+            break;
+        case 4:
+            _PixelFormat = IMAGE_PF_BGRA16F;
+            break;
+        default:
+            AN_ASSERT( 0 );
+            _PixelFormat = IMAGE_PF_BGRA16F;
+            break;
+        }
+        break;
+    case IMAGE_PF_AUTO_32F:
+        switch ( numChannels ) {
+        case 1:
+            _PixelFormat = IMAGE_PF_R32F;
+            break;
+        case 2:
+            _PixelFormat = IMAGE_PF_RG32F;
+            break;
+        case 3:
+            _PixelFormat = IMAGE_PF_BGR32F;
+            break;
+        case 4:
+            _PixelFormat = IMAGE_PF_BGRA32F;
+            break;
+        default:
+            AN_ASSERT( 0 );
+            _PixelFormat = IMAGE_PF_BGRA32F;
+            break;
+        }
+        break;
+    default:
+        break;
     }
 
-    if ( _MipmapGen ) {
-        SSoftwareMipmapGenerator mipmapGen;
-
-        mipmapGen.SourceImage = data;
-        mipmapGen.Width = _Image.Width;
-        mipmapGen.Height = _Image.Height;
-        mipmapGen.NumChannels = _Image.NumChannels;
-        mipmapGen.bLinearSpace = _Image.bLinearSpace;
-        mipmapGen.EdgeMode = _MipmapGen->EdgeMode;
-        mipmapGen.Filter = _MipmapGen->Filter;
-        mipmapGen.bPremultipliedAlpha = _MipmapGen->bPremultipliedAlpha;
-        mipmapGen.bHDRI = true;
-
-        int requiredMemorySize;
-        ComputeRequiredMemorySize( mipmapGen, requiredMemorySize, _Image.NumLods );
-
-        void * tmp = GHeapMemory.Alloc( requiredMemorySize );
-
-        GenerateMipmaps( mipmapGen, tmp );
-
-        GHeapMemory.Free( data );
-        data = ( float * )tmp;
-    }
-
-    if ( _HalfFloat ) {
-        int imageSize = 0;
-        for ( int i = 0 ; ; i++ ) {
-            int w = Math::Max( 1, _Image.Width >> i );
-            int h = Math::Max( 1, _Image.Height >> i );
-            imageSize += w * h;
-            if ( w == 1 && h == 1 ) {
-                break;
+    if ( IsBGR( _PixelFormat ) ) {
+        // swap r & b channels to store image as BGR
+        int count = w * h * numChannels;
+        if ( bHDRI ) {
+            float * pSource = (float *)source;
+            for ( int i = 0 ; i < count ; i += numChannels ) {
+                StdSwap( pSource[i], pSource[i+2] );
+            }
+        } else {
+            byte * pSource = (byte *)source;
+            for ( int i = 0 ; i < count ; i += numChannels ) {
+                StdSwap( pSource[i], pSource[i+2] );
             }
         }
-        imageSize *= _Image.NumChannels;
-
-        uint16_t * tmp = ( uint16_t * )GHeapMemory.Alloc( imageSize * sizeof( uint16_t ) );
-        Math::FloatToHalf( data, tmp, imageSize );
-        GHeapMemory.Free( data );
-        data = ( float * )tmp;
     }
 
-    _Image.pRawData = data;
+    FromRawData( source, w, h, _MipmapGen, _PixelFormat, true );
 
     return true;
 }
 
-bool AImage::LoadLDRI( IBinaryStream & _Stream, bool _SRGB, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
-    const stbi_io_callbacks callbacks = {
-        Stbi_Read,
-        Stbi_Skip,
-        Stbi_Eof
-    };
-
-    return ::LoadRawImage( _Stream.GetFileName(), *this, &callbacks, &_Stream, _SRGB, _MipmapGen, _NumDesiredChannels );
+void AImage::FromRawData( const void * _Source, int _Width, int _Height, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat ) {
+    FromRawData( _Source, _Width, _Height, _MipmapGen, _PixelFormat, false );
 }
 
-bool AImage::LoadHDRI( const char * _Path, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
-    AFileStream stream;
+void AImage::FromRawData( const void * _Source, int _Width, int _Height, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat, bool bReuseSourceBuffer ) {
+    bool bHDRI = IsHDRI( _PixelFormat );
+    bool bLinearSpace = bHDRI || !IsGamma2( _PixelFormat );
+    bool bHalf = IsHalfFloat( _PixelFormat );
+    int numChannels = GetNumChannels( _PixelFormat );
 
-    Free();
-
-    if ( !stream.OpenRead( _Path ) ) {
-        return false;
-    }
-
-    return LoadHDRI( stream, _HalfFloat, _MipmapGen, _NumDesiredChannels );
-}
-
-bool AImage::LoadHDRI( IBinaryStream & _Stream, bool _HalfFloat, SImageMipmapConfig const * _MipmapGen, int _NumDesiredChannels ) {
-    const stbi_io_callbacks callbacks = {
-        Stbi_Read,
-        Stbi_Skip,
-        Stbi_Eof
-    };
-
-    return ::LoadRawImageHDRI( _Stream.GetFileName(), *this, &callbacks, &_Stream, _HalfFloat, _MipmapGen, _NumDesiredChannels );
-}
-
-void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _NumChannels, bool _SRGB, SImageMipmapConfig const * _MipmapGen ) {
     Free();
 
     Width = _Width;
     Height = _Height;
-    NumChannels = _NumChannels;
-    bLinearSpace = !_SRGB;
-    bHDRI = false;
-    bHalf = false;
     NumLods = 1;
+    PixelFormat = _PixelFormat;
+
+    if ( bReuseSourceBuffer ) {
+        pRawData = const_cast< void * >( _Source );
+    } else {
+        size_t sizeInBytes = Width * Height * numChannels * ( bHDRI ? 4 : 1 );
+        pRawData = GHeapMemory.Alloc( sizeInBytes );
+        Core::Memcpy( pRawData, _Source, sizeInBytes );
+    }
 
     if ( _MipmapGen ) {
         SSoftwareMipmapGenerator mipmapGen;
 
-        mipmapGen.SourceImage = (void *)_Data;
+        mipmapGen.SourceImage = pRawData;
         mipmapGen.Width = Width;
         mipmapGen.Height = Height;
-        mipmapGen.NumChannels = NumChannels;
+        mipmapGen.NumChannels = numChannels;
         mipmapGen.bLinearSpace = bLinearSpace;
         mipmapGen.EdgeMode = _MipmapGen->EdgeMode;
         mipmapGen.Filter = _MipmapGen->Filter;
@@ -300,29 +424,40 @@ void AImage::FromRawDataLDRI( const byte * _Data, int _Width, int _Height, int _
         int requiredMemorySize;
         ComputeRequiredMemorySize( mipmapGen, requiredMemorySize, NumLods );
 
-        pRawData = GHeapMemory.Alloc( requiredMemorySize );
+        void * tmp = GHeapMemory.Alloc( requiredMemorySize );
 
-        GenerateMipmaps( mipmapGen, pRawData );
-    } else {
-        size_t sizeInBytes = _Width * _Height * NumChannels;
+        GenerateMipmaps( mipmapGen, tmp );
 
-        pRawData = GHeapMemory.Alloc( sizeInBytes );
-        Core::Memcpy( pRawData, _Data, sizeInBytes );
+        GHeapMemory.Free( pRawData );
+        pRawData = tmp;
+    }
+
+    if ( bHalf ) {
+        int imageSize = 0;
+        for ( int i = 0 ; ; i++ ) {
+            int w = Math::Max( 1, Width >> i );
+            int h = Math::Max( 1, Height >> i );
+            imageSize += w * h;
+            if ( w == 1 && h == 1 ) {
+                break;
+            }
+        }
+        imageSize *= numChannels;
+
+        uint16_t * tmp = (uint16_t *)GHeapMemory.Alloc( imageSize * sizeof( uint16_t ) );
+        Math::FloatToHalf( (float *)pRawData, tmp, imageSize );
+        GHeapMemory.Free( pRawData );
+        pRawData = tmp;
     }
 }
 
 void AImage::Free() {
-    if ( pRawData ) {
-        GHeapMemory.Free( pRawData );
-        pRawData = nullptr;
-    }
+    GHeapMemory.Free( pRawData );
+    pRawData = nullptr;
     Width = 0;
     Height = 0;
-    NumChannels = 0;
-    bHDRI = false;
-    bLinearSpace = false;
-    bHalf = false;
     NumLods = 0;
+    PixelFormat = IMAGE_PF_AUTO_GAMMA2;
 }
 
 AN_FORCEINLINE float ClampByte( const float & _Value ) {

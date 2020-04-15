@@ -35,6 +35,12 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 
 ARuntimeVariable RVDebugRenderMode( _CTS( "DebugRenderMode" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVPostprocessBloomScale( _CTS( "PostprocessBloomScale" ), _CTS( "1" ) );
+ARuntimeVariable RVPostprocessBloom( _CTS( "PostprocessBloom" ), _CTS( "1" ) );
+ARuntimeVariable RVPostprocessToneExposure( _CTS( "PostprocessToneExposure" ), _CTS( "0.05" ) );
+ARuntimeVariable RVPostprocessColorGrading( _CTS( "PostprocessColorGrading" ), _CTS( "1" ) );
+ARuntimeVariable RVBrightness( _CTS( "Brightness" ), _CTS( "1" ) );
+extern ARuntimeVariable RVFxaa;
 
 using namespace GHI;
 
@@ -188,12 +194,12 @@ void AFrameResources::Initialize() {
     };
     AImage rt, lt, up, dn, bk, ft;
     AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
-    rt.LoadHDRI( Cubemap[0], false, nullptr, 3 );
-    lt.LoadHDRI( Cubemap[1], false, nullptr, 3 );
-    up.LoadHDRI( Cubemap[2], false, nullptr, 3 );
-    dn.LoadHDRI( Cubemap[3], false, nullptr, 3 );
-    bk.LoadHDRI( Cubemap[4], false, nullptr, 3 );
-    ft.LoadHDRI( Cubemap[5], false, nullptr, 3 );
+    rt.Load( Cubemap[0], nullptr, IMAGE_PF_BGR32F );
+    lt.Load( Cubemap[1], nullptr, IMAGE_PF_BGR32F );
+    up.Load( Cubemap[2], nullptr, IMAGE_PF_BGR32F );
+    dn.Load( Cubemap[3], nullptr, IMAGE_PF_BGR32F );
+    bk.Load( Cubemap[4], nullptr, IMAGE_PF_BGR32F );
+    ft.Load( Cubemap[5], nullptr, IMAGE_PF_BGR32F );
     const float HDRI_Scale = 4.0f;
     const float HDRI_Pow = 1.1f;
     for ( int i = 0 ; i < 6 ; i++ ) {
@@ -224,12 +230,12 @@ void AFrameResources::Initialize() {
 
         cubemap.WriteRect( rect, PIXEL_FORMAT_FLOAT_BGR, w*w*3*sizeof( float ), 1, pSrc );
     }
-    rt.LoadHDRI( Cubemap2[0], false, nullptr, 3 );
-    lt.LoadHDRI( Cubemap2[1], false, nullptr, 3 );
-    up.LoadHDRI( Cubemap2[2], false, nullptr, 3 );
-    dn.LoadHDRI( Cubemap2[3], false, nullptr, 3 );
-    bk.LoadHDRI( Cubemap2[4], false, nullptr, 3 );
-    ft.LoadHDRI( Cubemap2[5], false, nullptr, 3 );
+    rt.Load( Cubemap2[0], nullptr, IMAGE_PF_BGR32F );
+    lt.Load( Cubemap2[1], nullptr, IMAGE_PF_BGR32F );
+    up.Load( Cubemap2[2], nullptr, IMAGE_PF_BGR32F );
+    dn.Load( Cubemap2[3], nullptr, IMAGE_PF_BGR32F );
+    bk.Load( Cubemap2[4], nullptr, IMAGE_PF_BGR32F );
+    ft.Load( Cubemap2[5], nullptr, IMAGE_PF_BGR32F );
     w = cubeFaces[0]->Width;
     cubemapCI.Resolution.TexCubemap.Width = w;
     cubemapCI.NumLods = 1;
@@ -328,8 +334,21 @@ void AFrameResources::SetViewUniforms() {
 
     uniformData->ScaleToSurfaceX = (float)GRenderView->Width / GFrameData->AllocSurfaceWidth;
     uniformData->ScaleToSurfaceY = (float)GRenderView->Height / GFrameData->AllocSurfaceHeight;
+    //uniformData->ScaleToSurfaceX = (float)(GRenderView->Width-1) / (GFrameData->AllocSurfaceWidth-1);
+    //uniformData->ScaleToSurfaceY = (float)(GRenderView->Height-1) / (GFrameData->AllocSurfaceHeight-1);
 
-    uniformData->ViewPostion = GRenderView->ViewPosition;
+    uniformData->ViewPosition = GRenderView->ViewPosition;
+    uniformData->TimeDelta = GRenderView->GameplayTimeStep;
+
+    uniformData->PostprocessBloomMix = Float4( 0.5f, 0.3f, 0.1f, 0.1f ) * RVPostprocessBloomScale.GetFloat(); // TODO: Get from GRenderView 
+    uniformData->PostprocessAttrib.X = RVPostprocessBloom;  // TODO: Get from GRenderView
+    uniformData->PostprocessAttrib.Y = RVPostprocessToneExposure.GetFloat();  // TODO: Get from GRenderView
+    uniformData->PostprocessAttrib.Z = RVPostprocessColorGrading;  // TODO: Get from GRenderView
+    uniformData->PostprocessAttrib.W = RVFxaa;
+    uniformData->VignetteColorIntensity = Float4( 0,0,0, 0.9f );        // rgb, intensity
+    uniformData->VignetteOuterRadiusSqr = 0.7f*0.7f;//GRenderView->VignetteOuterRadiusSqr;
+    uniformData->VignetteInnerRadiusSqr = 0.6f*0.6f;//GRenderView->VignetteInnerRadiusSqr;
+    uniformData->ViewBrightness = RVBrightness.GetFloat();//GRenderView->VignetteInnerBrightness;
 
     uniformData->EnvProbeSampler = GFrameResources.EnvProbeBindless.GetHandle();
 

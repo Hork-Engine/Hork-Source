@@ -35,7 +35,7 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-constexpr const char * UniformStr = AN_STRINGIFY(
+constexpr const char * UniformStr = R"(
 
 layout( binding = 0, std140 ) uniform UniformBuffer0
 {
@@ -47,15 +47,19 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     vec4 WorldNormalToViewSpace2;
     vec4 ViewportParams;  // 1/width, 1/height, znear, zfar
     vec4 Timers;        // x,y - timers, zw - scale to surface
-    vec4 ViewPostion;
+    vec4 ViewPosition;   // w - frametime delta
+    vec4 PostprocessBloomMix;
+    vec4 PostprocessAttrib;             // x - bloom enable / disable, y - tone mapping exposure, z - color grading. w - FXAA
+    vec4 VignetteColorIntensity;        // rgb, intensity
+    vec4 VignetteOuterInnerRadiusSqr;   // x - outer radius^2, y - inner radius^2, z - brightness, w - unused
     uvec2 EnvProbeSampler;
     int  NumDirectionalLights;
     vec4 LightDirs[MAX_DIRECTIONAL_LIGHTS];            // Direction, W-channel is not used
     vec4 LightColors[MAX_DIRECTIONAL_LIGHTS];          // RGB, alpha - ambient intensity
     uvec4 LightParameters[MAX_DIRECTIONAL_LIGHTS];    // RenderMask, FirstCascade, NumCascades, W-channel is not used
-};\n
+};
 
-);
+)";
 
 struct AShaderSources {
     enum { MAX_SOURCES = 10 };

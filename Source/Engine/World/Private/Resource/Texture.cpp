@@ -69,7 +69,7 @@ bool ATexture::InitializeFromImage( AImage const & _Image ) {
 
     STexturePixelFormat pixelFormat;
 
-    if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Image, pixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Image.PixelFormat, pixelFormat ) ) {
         return false;
     }
 
@@ -116,14 +116,14 @@ bool ATexture::InitializeCubemapFromImages( AImage const * _Faces[6] ) {
 
     STexturePixelFormat pixelFormat;
 
-    if ( !STexturePixelFormat::GetAppropriatePixelFormat( *_Faces[0], pixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Faces[0]->PixelFormat, pixelFormat ) ) {
         return false;
     }
 
     for ( int i = 1 ; i < 6 ; i++ ) {
         STexturePixelFormat facePF;
 
-        if ( !STexturePixelFormat::GetAppropriatePixelFormat( *_Faces[i], facePF ) ) {
+        if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Faces[i]->PixelFormat, facePF ) ) {
             return false;
         }
 
@@ -327,11 +327,11 @@ bool ATexture::LoadResource( AString const & _Path ) {
         mipmapGen.bPremultipliedAlpha = false;
 
         if ( !Core::Stricmp( &_Path[i], ".hdr" ) ) {
-            if ( !image.LoadHDRI( _Path.CStr(), true, &mipmapGen ) ) {
+            if ( !image.Load( _Path.CStr(), &mipmapGen, IMAGE_PF_AUTO_16F ) ) {
                 return false;
             }
         } else {
-            if ( !image.LoadLDRI( _Path.CStr(), true, &mipmapGen ) ) {
+            if ( !image.Load( _Path.CStr(), &mipmapGen, IMAGE_PF_AUTO_GAMMA2 ) ) {
                 return false;
             }
         }
@@ -622,7 +622,7 @@ void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int
 void ATexture::InitializeColorGradingLUT( const char * _Path ) {
     AImage image;
 
-    if ( image.LoadLDRI( _Path, true, nullptr, 3 ) ) {
+    if ( image.Load( _Path, nullptr, IMAGE_PF_BGR_GAMMA2 ) ) {
         byte data[ 16 ][ 16 ][ 16 ][ 3 ];
 
         for ( int z = 0 ; z < 16 ; z++ ) {
