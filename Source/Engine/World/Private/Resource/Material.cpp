@@ -454,7 +454,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         NSV_TexCoord->Connect( inTexCoord, "Value" );
 
         //
-        // VS_Dir = InPosition - ViewPostion.xyz;
+        // VS_Dir = InPosition - ViewPosition.xyz;
         //
         MGInViewPosition * inViewPosition = graph->AddNode< MGInViewPosition >();
         MGSubNode * positionMinusViewPosition = graph->AddNode< MGSubNode >();

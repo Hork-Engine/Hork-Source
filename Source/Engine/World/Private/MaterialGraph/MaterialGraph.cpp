@@ -2313,7 +2313,7 @@ MGInViewPosition::MGInViewPosition() : Super( "InViewPosition" ) {
     Stages = ANY_STAGE_BIT;
 
     MGNodeOutput * Val = AddOutput( "Value", AT_Float3 );
-    Val->Expression = "ViewPostion.xyz";
+    Val->Expression = "ViewPosition.xyz";
 }
 
 void MGInViewPosition::Compute( AMaterialBuildContext & _Context ) {
@@ -2623,15 +2623,15 @@ static void GenerateBuiltinSource( AString & _BuiltIn ) {
 }
 
 #if 0
-static const char * AtmosphereShader = AN_STRINGIFY(
+static const char * AtmosphereShader = R"(
 //
 // Atmosphere scattering
 // based on https://github.com/wwwtyro/glsl-atmosphere in public domain
 // Very slow for realtime, but can by used to generate skybox
-\n#define iSteps 16\n
-\n#define jSteps 8\n
+#define iSteps 16
+#define jSteps 8
 
-\n#define PI          3.1415926\n
+#define PI          3.1415926
 
 vec2 rsi(vec3 r0, vec3 rd, float sr) {
     // ray-sphere intersection that assumes
@@ -2749,9 +2749,9 @@ vec3 atmosphere( in vec3 _RayDirNormalized, in vec3 _SunPosNormalized ) {
     //    1.2e3,                          // Mie scale height
     //    0.758                           // Mie preferred scattering direction
     //);
-}\n
+}
 
-);
+)";
 #endif
 
 AMaterial * AMaterialBuilder::Build() {
