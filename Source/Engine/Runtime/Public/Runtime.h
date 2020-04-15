@@ -74,7 +74,7 @@ struct SVideoMode
     /** Render backend name */
     char Backend[32];
     /** Window title */
-    char Title[32];
+    char Title[128];
 };
 
 //struct SJoystick {
