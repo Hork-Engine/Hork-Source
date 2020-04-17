@@ -65,16 +65,16 @@ static size_t CalcTextureRequiredMemory( TextureStorageCreateInfo const & _Creat
 }
 
 static void SetSwizzleParams( GLuint _Id, TextureSwizzle const & _Swizzle ) {
-    if ( _Swizzle.R != SAMPLER_SWIZZLE_IDENTITY ) {
+    if ( _Swizzle.R != TEXTURE_SWIZZLE_IDENTITY ) {
         glTextureParameteri( _Id, GL_TEXTURE_SWIZZLE_R, SwizzleLUT[_Swizzle.R] );
     }
-    if ( _Swizzle.G != SAMPLER_SWIZZLE_IDENTITY ) {
+    if ( _Swizzle.G != TEXTURE_SWIZZLE_IDENTITY ) {
         glTextureParameteri( _Id, GL_TEXTURE_SWIZZLE_G, SwizzleLUT[_Swizzle.G] );
     }
-    if ( _Swizzle.B != SAMPLER_SWIZZLE_IDENTITY ) {
+    if ( _Swizzle.B != TEXTURE_SWIZZLE_IDENTITY ) {
         glTextureParameteri( _Id, GL_TEXTURE_SWIZZLE_B, SwizzleLUT[_Swizzle.B] );
     }
-    if ( _Swizzle.A != SAMPLER_SWIZZLE_IDENTITY ) {
+    if ( _Swizzle.A != TEXTURE_SWIZZLE_IDENTITY ) {
         glTextureParameteri( _Id, GL_TEXTURE_SWIZZLE_A, SwizzleLUT[_Swizzle.A] );
     }
 }

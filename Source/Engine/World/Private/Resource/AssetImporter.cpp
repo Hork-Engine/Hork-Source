@@ -2730,7 +2730,7 @@ bool LoadLWO( IBinaryStream & InStream, float InScale, AMaterialInstance * (*Get
 
     bool ret = CreateLWOMesh( lwo, InScale, GetMaterial, IndexedMesh );
 
-    // We don't call lwFreeObject becouse our liner allocator frees it automatically.
+    // We don't call lwFreeObject becouse our linear allocator frees it automatically.
 
     return ret;
 }

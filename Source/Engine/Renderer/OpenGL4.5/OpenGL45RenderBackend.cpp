@@ -644,25 +644,25 @@ static void SetTextureSwizzle( ETexturePixelFormat _PixelFormat, GHI::TextureSwi
     switch ( STexturePixelFormat( _PixelFormat ).NumComponents() ) {
     case 1:
         // Apply texture swizzle for one channel textures
-        _Swizzle.R = GHI::SAMPLER_SWIZZLE_R;
-        _Swizzle.G = GHI::SAMPLER_SWIZZLE_R;
-        _Swizzle.B = GHI::SAMPLER_SWIZZLE_R;
-        _Swizzle.A = GHI::SAMPLER_SWIZZLE_R;
+        _Swizzle.R = GHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.G = GHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.B = GHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.A = GHI::TEXTURE_SWIZZLE_R;
         break;
 #if 0
     case 2:
         // Apply texture swizzle for two channel textures
-        _Swizzle.R = GHI::SAMPLER_SWIZZLE_R;
-        _Swizzle.G = GHI::SAMPLER_SWIZZLE_G;
-        _Swizzle.B = GHI::SAMPLER_SWIZZLE_R;
-        _Swizzle.A = GHI::SAMPLER_SWIZZLE_G;
+        _Swizzle.R = GHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.G = GHI::TEXTURE_SWIZZLE_G;
+        _Swizzle.B = GHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.A = GHI::TEXTURE_SWIZZLE_G;
         break;
     case 3:
         // Apply texture swizzle for three channel textures
-        _Swizzle.R = GHI::SAMPLER_SWIZZLE_R;
-        _Swizzle.G = GHI::SAMPLER_SWIZZLE_G;
-        _Swizzle.B = GHI::SAMPLER_SWIZZLE_B;
-        _Swizzle.A = GHI::SAMPLER_SWIZZLE_ONE;
+        _Swizzle.R = GHI::TEXTURE_SWIZZLE_R;
+        _Swizzle.G = GHI::TEXTURE_SWIZZLE_G;
+        _Swizzle.B = GHI::TEXTURE_SWIZZLE_B;
+        _Swizzle.A = GHI::TEXTURE_SWIZZLE_ONE;
         break;
 #endif
     }
