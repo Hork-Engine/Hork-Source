@@ -127,6 +127,7 @@ if(WIN32)
 		/wd4996       # Ignore "deprecated functions"
         /Zc:threadSafeInit-  # Don't generate thread-safe statics
 		/utf-8
+		/FC           # __FILE__ contains full path
         )
 
     set( AN_COMPILER_DEFINES
