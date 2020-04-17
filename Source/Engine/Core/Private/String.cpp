@@ -117,12 +117,9 @@ void AString::FromCStr( const char * _Str, int _Num ) {
 }
 
 void AString::Concat( AString const & _Str ) {
-    int i;
-
     const int newLen = Size + _Str.Size;
     GrowCapacity( newLen+1, true );
-    for ( i = 0; i < _Str.Size; i++ )
-        Data[ Size + i ] = _Str.Data[i];
+    Core::Memcpy( &Data[Size], _Str.Data, _Str.Size );
     Size = newLen;
     Data[Size] = '\0';
 }
@@ -135,9 +132,7 @@ void AString::ConcatN( AString const & _Str, int _Num ) {
 
     const int newLen = Size + len;
     GrowCapacity( newLen+1, true );
-    for ( int i = 0 ; i < len ; i++ ) {
-        Data[ Size + i ] = _Str.Data[i];
-    }
+    Core::Memcpy( &Data[Size], _Str.Data, len );
     Size = newLen;
     Data[Size] = '\0';
 }
@@ -147,11 +142,10 @@ void AString::Concat( const char * _Str ) {
         return;
     }
 
-    const int newLen = Size + Core::Strlen( _Str );
+    int len = Core::Strlen( _Str );
+    const int newLen = Size + len;
     GrowCapacity( newLen+1, true );
-    for ( int i = 0 ; _Str[i] ; i++ ) {
-        Data[Size + i] = _Str[i];
-    }
+    Core::Memcpy( &Data[Size], _Str, len );
     Size = newLen;
     Data[Size] = '\0';
 }
@@ -168,9 +162,7 @@ void AString::ConcatN( const char * _Str, int _Num ) {
 
     const int newLen = Size + len;
     GrowCapacity( newLen+1, true );
-    for ( int i = 0 ; i < len ; i++ ) {
-        Data[Size + i] = _Str[i];
-    }
+    Core::Memcpy( &Data[Size], _Str, len );
     Size = newLen;
     Data[Size] = '\0';
 }
@@ -245,9 +237,7 @@ void AString::Replace( AString const & _Str, int _Index ) {
 
     const int newLen = _Index + _Str.Size;
     GrowCapacity( newLen+1, true );
-    for ( int i = 0; i < _Str.Size; i++ ) {
-        Data[ _Index + i ] = _Str[i];
-    }
+    Core::Memcpy( &Data[_Index], _Str.Data, _Str.Size );
     Size = newLen;
     Data[Size] = '\0';
 }
@@ -260,11 +250,10 @@ void AString::Replace( const char * _Str, int _Index ) {
         return;
     }
 
-    const int newLen = _Index + Core::Strlen( _Str );
+    int len = Core::Strlen( _Str );
+    const int newLen = _Index + len;
     GrowCapacity( newLen+1, true );
-    for ( int i = 0 ; _Str[i] ; i++ ) {
-        Data[ _Index + i ] = _Str[i];
-    }
+    Core::Memcpy( &Data[_Index], _Str, len );
     Size = newLen;
     Data[Size] = '\0';
 }
