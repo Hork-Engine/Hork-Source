@@ -254,6 +254,16 @@ enum TEXTURE_TYPE : uint8_t
     // TODO: Add proxy???
 };
 
+enum TEXTURE_SWIZZLE : uint8_t {
+    TEXTURE_SWIZZLE_IDENTITY = 0,
+    TEXTURE_SWIZZLE_ZERO = 1,
+    TEXTURE_SWIZZLE_ONE = 2,
+    TEXTURE_SWIZZLE_R = 3,
+    TEXTURE_SWIZZLE_G = 4,
+    TEXTURE_SWIZZLE_B = 5,
+    TEXTURE_SWIZZLE_A = 6
+};
+
 struct TextureResolution1D {
     uint32_t Width;
 };
@@ -344,11 +354,19 @@ struct TextureMultisampleInfo {
                                     /// and the sample locations will not depend on the internal format or size of the image
 };
 
+struct TextureSwizzle {
+    uint8_t R;
+    uint8_t G;
+    uint8_t B;
+    uint8_t A;
+};
+
 struct TextureCreateInfo {
     TEXTURE_TYPE           Type;
     INTERNAL_PIXEL_FORMAT  InternalFormat;  /// Internal data format, ignored for compressed input data.
     TextureResolution      Resolution;
     TextureMultisampleInfo Multisample;     /// for TEXTURE_2D_MULTISAMPLE and TEXTURE_2D_ARRAY_MULTISAMPLE
+    TextureSwizzle         Swizzle;
 };
 
 struct TextureStorageCreateInfo {
@@ -356,6 +374,7 @@ struct TextureStorageCreateInfo {
     INTERNAL_PIXEL_FORMAT   InternalFormat;
     TextureResolution       Resolution;
     TextureMultisampleInfo  Multisample;
+    TextureSwizzle          Swizzle;
     uint16_t                NumLods;
 };
 

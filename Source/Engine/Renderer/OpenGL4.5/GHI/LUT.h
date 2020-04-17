@@ -733,4 +733,20 @@ constexpr GLenum TableConditionalRenderMode[] = {
     GL_QUERY_BY_REGION_NO_WAIT_INVERTED
 };
 
+/*
+
+Conversion from SAMPLER_SWIZZLE
+
+*/
+
+constexpr GLenum SwizzleLUT[] = {
+    0,
+    GL_ZERO,
+    GL_ONE,
+    GL_RED,
+    GL_GREEN,
+    GL_BLUE,
+    GL_ALPHA
+};
+
 }

@@ -64,6 +64,21 @@ static size_t CalcTextureRequiredMemory( TextureStorageCreateInfo const & _Creat
     return 0;
 }
 
+static void SetSwizzleParams( GLuint _Id, TextureSwizzle const & _Swizzle ) {
+    if ( _Swizzle.R != SAMPLER_SWIZZLE_IDENTITY ) {
+        glTextureParameteri( _Id, GL_TEXTURE_SWIZZLE_R, SwizzleLUT[_Swizzle.R] );
+    }
+    if ( _Swizzle.G != SAMPLER_SWIZZLE_IDENTITY ) {
+        glTextureParameteri( _Id, GL_TEXTURE_SWIZZLE_G, SwizzleLUT[_Swizzle.G] );
+    }
+    if ( _Swizzle.B != SAMPLER_SWIZZLE_IDENTITY ) {
+        glTextureParameteri( _Id, GL_TEXTURE_SWIZZLE_B, SwizzleLUT[_Swizzle.B] );
+    }
+    if ( _Swizzle.A != SAMPLER_SWIZZLE_IDENTITY ) {
+        glTextureParameteri( _Id, GL_TEXTURE_SWIZZLE_A, SwizzleLUT[_Swizzle.A] );
+    }
+}
+
 void Texture::Initialize( TextureCreateInfo const & _CreateInfo, TextureInitialData const * _InitialData ) {
     State * state = GetCurrentState();
     GLuint id;
@@ -76,6 +91,9 @@ void Texture::Initialize( TextureCreateInfo const & _CreateInfo, TextureInitialD
     glGetIntegerv( TextureTargetLUT[ _CreateInfo.Type ].Binding, &currentBinding );
 
     glCreateTextures( target, 1, &id ); // 4.5
+
+    SetSwizzleParams( id, _CreateInfo.Swizzle );
+
     glBindTexture( target, id );
 
     CreateTextureLod( _CreateInfo, 0, _InitialData );
@@ -108,6 +126,8 @@ void Texture::InitializeStorage( TextureStorageCreateInfo const & _CreateInfo ) 
     CreateInfo.Resolution = _CreateInfo.Resolution;
 
     glCreateTextures( target, 1, &id );
+
+    SetSwizzleParams( id, _CreateInfo.Swizzle );
 
     switch ( _CreateInfo.Type ) {
     case TEXTURE_1D:
