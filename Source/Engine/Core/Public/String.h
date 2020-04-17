@@ -107,11 +107,11 @@ public:
 
     /** Append the string */
     void Concat( AString const & _Str );
-    //void ConcatN( AString const & _Str, int _Num ); todo
+    void ConcatN( AString const & _Str, int _Num );
 
     /** Append the string */
     void Concat( const char * _Str );
-    //void ConcatN( const char * _Str, int _Num ); todo
+    void ConcatN( const char * _Str, int _Num );
 
     /** Append the character */
     void Concat( char _Char );

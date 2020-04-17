@@ -131,9 +131,14 @@ int StrcmpN( const char * _S1, const char * _S2, int _Num ) {
 }
 
 int Sprintf( char * _Buffer, int _Size, const char * _Format, ... ) {
-    AN_ASSERT( _Buffer && _Format );
+    int result;
+    va_list va;
 
-    return stbsp_snprintf( _Buffer, _Size, _Format );
+    va_start( va, _Format );
+    result = stbsp_vsnprintf( _Buffer, _Size, _Format, va );
+    va_end( va );
+
+    return result;
 }
 
 int VSprintf( char * _Buffer, int _Size, const char * _Format, va_list _VaList ) {
@@ -169,6 +174,24 @@ void Strcat( char * _Dest, size_t _DestCapacity, const char * _Src ) {
 //#endif
 }
 
+void StrcatN( char * _Dest, size_t _DestCapacity, const char * _Src, int _Num ) {
+    if ( !_Dest || !_Src ) {
+        return;
+    }
+
+    size_t destLength = Strlen( _Dest );
+    if ( destLength >= _DestCapacity ) {
+        return;
+    }
+
+    int len = Strlen( _Src );
+    if ( len > _Num ) {
+        len = _Num;
+    }
+
+    StrcpyN( _Dest + destLength, _DestCapacity - destLength, _Src, _Num );
+}
+
 void Strcpy( char * _Dest, size_t _DestCapacity, const char * _Src ) {
     if ( !_Dest ) {
         return;
@@ -188,7 +211,7 @@ void Strcpy( char * _Dest, size_t _DestCapacity, const char * _Src ) {
 //#endif
 }
 
-void StrcpyN( char * _Dest, size_t _DestCapacity, const char * _Src, size_t _Num ) {
+void StrcpyN( char * _Dest, size_t _DestCapacity, const char * _Src, int _Num ) {
     if ( !_Dest ) {
         return;
     }
@@ -199,7 +222,7 @@ void StrcpyN( char * _Dest, size_t _DestCapacity, const char * _Src, size_t _Num
 //    strncpy_s( _Dest, _DestCapacity, _Src, _Num );
 //#else
     if ( _DestCapacity > 0 && _Num > 0 ) {
-        while ( *_Src && --_DestCapacity != 0 && --_Num != static_cast< size_t >( -1 ) ) {
+        while ( *_Src && --_DestCapacity != 0 && --_Num != -1 ) {
             *_Dest++ = *_Src++;
         }
         *_Dest = 0;

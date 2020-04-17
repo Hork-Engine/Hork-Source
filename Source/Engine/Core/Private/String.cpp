@@ -122,7 +122,22 @@ void AString::Concat( AString const & _Str ) {
     const int newLen = Size + _Str.Size;
     GrowCapacity( newLen+1, true );
     for ( i = 0; i < _Str.Size; i++ )
-        Data[ Size + i ] = _Str[i];
+        Data[ Size + i ] = _Str.Data[i];
+    Size = newLen;
+    Data[Size] = '\0';
+}
+
+void AString::ConcatN( AString const & _Str, int _Num ) {
+    int len = _Str.Size;
+    if ( len > _Num ) {
+        len = _Num;
+    }
+
+    const int newLen = Size + len;
+    GrowCapacity( newLen+1, true );
+    for ( int i = 0 ; i < len ; i++ ) {
+        Data[ Size + i ] = _Str.Data[i];
+    }
     Size = newLen;
     Data[Size] = '\0';
 }
@@ -135,6 +150,25 @@ void AString::Concat( const char * _Str ) {
     const int newLen = Size + Core::Strlen( _Str );
     GrowCapacity( newLen+1, true );
     for ( int i = 0 ; _Str[i] ; i++ ) {
+        Data[Size + i] = _Str[i];
+    }
+    Size = newLen;
+    Data[Size] = '\0';
+}
+
+void AString::ConcatN( const char * _Str, int _Num ) {
+    if ( !_Str ) {
+        return;
+    }
+
+    int len = Core::Strlen( _Str );
+    if ( len > _Num ) {
+        len = _Num;
+    }
+
+    const int newLen = Size + len;
+    GrowCapacity( newLen+1, true );
+    for ( int i = 0 ; i < len ; i++ ) {
         Data[Size + i] = _Str[i];
     }
     Size = newLen;

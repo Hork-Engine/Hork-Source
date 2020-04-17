@@ -73,11 +73,14 @@ char * Fmt( const char * _Format, ... );
 /** Concatenate strings */
 void Strcat( char * _Dest, size_t _DestCapacity, const char * _Src );
 
+/** Concatenate strings */
+void StrcatN( char * _Dest, size_t _DestCapacity, const char * _Src, int _Num );
+
 /** Copy string */
 void Strcpy( char * _Dest, size_t _DestCapacity, const char * _Src );
 
 /** Copy string */
-void StrcpyN( char * _Dest, size_t _DestCapacity, const char * _Src, size_t _Num );
+void StrcpyN( char * _Dest, size_t _DestCapacity, const char * _Src, int _Num );
 
 /** Convert string to lowercase */
 char * ToLower( char * _Str );

@@ -193,8 +193,9 @@ struct ATokenizer {
     void NextToken( ATokenBuffer & buffer );
 };
 
-static void SkipWhiteSpaces( ATokenBuffer & _Buffer ) {
+static void SkipWhitespaces( ATokenBuffer & _Buffer ) {
     const char *& s = _Buffer.Cur;
+start:
     while ( *s == ' ' || *s == '\t' || *s == '\n' || *s == '\r' ) {
         if ( *s == '\n' ) {
             _Buffer.LineNumber++;
@@ -207,8 +208,7 @@ static void SkipWhiteSpaces( ATokenBuffer & _Buffer ) {
             // go to next line
             while ( *s && *s != '\n' )
                 s++;
-            SkipWhiteSpaces( _Buffer );
-            return;
+            goto start;
         }
         if ( *(s+1) == '*' ) {
             s += 2;
@@ -217,8 +217,7 @@ static void SkipWhiteSpaces( ATokenBuffer & _Buffer ) {
                     _Buffer.LineNumber++;
                 } else if ( *s == '*' && *(s+1) == '/' ) {
                     s += 2;
-                    SkipWhiteSpaces( _Buffer );
-                    return;
+                    goto start;
                 }
                 s++;
             }
@@ -234,7 +233,7 @@ const SToken & ATokenizer::GetToken() const {
 
 void ATokenizer::NextToken( ATokenBuffer & _Buffer ) {
     // Skip white spaces, tabs and comments
-    SkipWhiteSpaces( _Buffer );
+    SkipWhitespaces( _Buffer );
 
     const char *& s = _Buffer.Cur;
 
