@@ -47,7 +47,7 @@ AMaterial::~AMaterial() {
     GRenderBackend->DestroyMaterial( MaterialGPU );
 }
 
-void AMaterial::Initialize( SMaterialBuildData const * _Data ) {
+void AMaterial::Initialize( SMaterialDef const * _Data ) {
     NumUniformVectors = _Data->NumUniformVectors;
     Type = _Data->Type;
     bTranslucent = _Data->bTranslucent;
@@ -88,9 +88,9 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
         AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
         builder->Graph = graph;
-        SMaterialBuildData * buildData = builder->BuildData();
-        Initialize( buildData );
-        GZoneMemory.Free( buildData );
+        SMaterialDef def;
+        builder->BuildData( def );
+        Initialize( &def );
         return;
     }
 
@@ -121,9 +121,9 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
         AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
         builder->Graph = graph;
-        SMaterialBuildData * buildData = builder->BuildData();
-        Initialize( buildData );
-        GZoneMemory.Free( buildData );
+        SMaterialDef def;
+        builder->BuildData( def );
+        Initialize( &def );
         return;
     }
 
@@ -182,9 +182,10 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
         AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
         builder->Graph = graph;
-        SMaterialBuildData * buildData = builder->BuildData();
-        Initialize( buildData );
-        GZoneMemory.Free( buildData );
+
+        SMaterialDef def;
+        builder->BuildData( def );
+        Initialize( &def );
         return;
     }
 
@@ -253,9 +254,10 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
         AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
         builder->Graph = graph;
-        SMaterialBuildData * buildData = builder->BuildData();
-        Initialize( buildData );
-        GZoneMemory.Free( buildData );
+
+        SMaterialDef def;
+        builder->BuildData( def );
+        Initialize( &def );
         return;
     }
 
@@ -356,9 +358,10 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
         AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
         builder->Graph = graph;
-        SMaterialBuildData * buildData = builder->BuildData();
-        Initialize( buildData );
-        GZoneMemory.Free( buildData );
+
+        SMaterialDef def;
+        builder->BuildData( def );
+        Initialize( &def );
         return;
     }
 
@@ -392,9 +395,10 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
         AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
         builder->Graph = graph;
-        SMaterialBuildData * buildData = builder->BuildData();
-        Initialize( buildData );
-        GZoneMemory.Free( buildData );
+
+        SMaterialDef def;
+        builder->BuildData( def );
+        Initialize( &def );
         return;
     }
 
@@ -432,9 +436,10 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
         AMaterialBuilder * builder = NewObject< AMaterialBuilder >();
         builder->Graph = graph;
-        SMaterialBuildData * buildData = builder->BuildData();
-        Initialize( buildData );
-        GZoneMemory.Free( buildData );
+
+        SMaterialDef def;
+        builder->BuildData( def );
+        Initialize( &def );
 #else
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
@@ -486,9 +491,9 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         builder->MaterialType = MATERIAL_TYPE_UNLIT;
         builder->RegisterTextureSlot( skyTexture );
 
-        SMaterialBuildData * buildData = builder->BuildData();
-        Initialize( buildData );
-        GZoneMemory.Free( buildData );
+        SMaterialDef def;
+        builder->BuildData( def );
+        Initialize( &def );
 #endif
         return;
     }

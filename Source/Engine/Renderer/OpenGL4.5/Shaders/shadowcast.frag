@@ -28,35 +28,54 @@ SOFTWARE.
 
 */
 
-#pragma once
 
-#include "OpenGL45PassRenderer.h"
+layout( location = 0 ) out vec4 FS_FragColor;
 
-namespace OpenGL45 {
+#ifdef SHADOW_MASKING
+    layout( location = 1 ) in vec2 InTexCoord;
+#endif
 
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
 
-    void RenderInstances();
+#if defined SHADOWMAP_EVSM
 
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
+    void main() {
 
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
+        #ifdef SHADOW_MASKING
+            // TODO: sample mask
+        #endif
 
-    void BeginCanvasPass();
+        const float EVSM_positiveExponent = 40.0;
+        const float EVSM_negativeExponent = 5.0;
 
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
-};
+        float Depth = 2.0 * gl_FragCoord.z - 1.0;
+        vec2 WarpDepth = vec2( exp( EVSM_positiveExponent * Depth ), -exp( -EVSM_negativeExponent * Depth ) );
+        FS_FragColor = vec4( WarpDepth, WarpDepth * WarpDepth );
+    }
 
-extern ACanvasPassRenderer GCanvasPassRenderer;
+#elif defined SHADOWMAP_VSM
 
-}
+    void main() {
+
+        #ifdef SHADOW_MASKING
+            // TODO: sample mask
+        #endif
+
+        float depth = gl_FragCoord.z;
+        //float depth = GS_Position.z / GS_Position.w;
+
+        // Adjusting moments (this is sort of bias per pixel) using partial derivative
+        float dx = dFdx( depth );
+        float dy = dFdy( depth );
+
+        FS_FragColor = vec4( depth, depth * depth + 0.25*( dx*dx + dy*dy ), 0.0, 0.0 );
+    }
+
+#else
+
+    void main() {
+        #ifdef SHADOW_MASKING
+            // TODO: sample mask
+        #endif
+    }
+
+#endif

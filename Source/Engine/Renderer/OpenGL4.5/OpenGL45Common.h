@@ -74,4 +74,7 @@ AN_FORCEINLINE GHI::Texture * GPUTextureHandle( ATextureGPU * _Texture ) {
 
 void SaveSnapshot( GHI::Texture & _Texture );
 
+AString LoadShader( const char * FileName, SMaterialShader const * Predefined = nullptr );
+AString LoadShaderFromString( const char * FileName, const char * Source, SMaterialShader const * Predefined = nullptr );
+
 }

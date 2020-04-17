@@ -28,35 +28,25 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include "viewuniforms.glsl"
 
-#include "OpenGL45PassRenderer.h"
-
-namespace OpenGL45 {
-
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void RenderInstances();
-
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
-
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
-
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
+out gl_PerVertex
+{
+	vec4 gl_Position;
 };
 
-extern ACanvasPassRenderer GCanvasPassRenderer;
+layout( location = 0 ) noperspective out vec4 VS_TexCoord;
+layout( location = 1 ) flat out float VS_Exposure;
 
+layout( binding = 6 ) uniform sampler2D luminanceTexture;
+
+void main() {
+	gl_Position = vec4( InPosition, 0.0, 1.0 );
+	VS_TexCoord.xy = InPosition * 0.5 + 0.5;
+	VS_TexCoord.xy *= GetDynamicResolutionRatio();
+	VS_TexCoord.y = 1.0 - VS_TexCoord.y;
+	VS_TexCoord.zw = InPosition * vec2(0.5,-0.5) + 0.5;
+	VS_Exposure = texelFetch( luminanceTexture, ivec2( 0 ), 0 ).x;
+	VS_Exposure = GetPostprocessExposure() / VS_Exposure;
+	//!!!   VS_Exposure = GetPostprocessExposure() / pow(VS_Exposure,2);
 }

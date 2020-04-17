@@ -28,35 +28,10 @@ SOFTWARE.
 
 */
 
-#pragma once
+layout( location = 0 ) out vec4 FS_FragColor;
 
-#include "OpenGL45PassRenderer.h"
+layout( location = 0 ) in vec4 VS_Color;
 
-namespace OpenGL45 {
-
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void RenderInstances();
-
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
-
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
-
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
-};
-
-extern ACanvasPassRenderer GCanvasPassRenderer;
-
+void main() {
+	FS_FragColor = VS_Color;
 }

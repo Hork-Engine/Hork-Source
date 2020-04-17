@@ -2579,47 +2579,52 @@ static const char * builtin_saturate =
         "  return clamp( color, %s(0.0), %s(1.0) );\n"
         "}\n";
 
-static void GenerateBuiltinSource( AString & _BuiltIn ) {
+static void GenerateBuiltinSource() {
+    AString builtin;
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        _BuiltIn += Core::Fmt( texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Core::Fmt( texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
 
-    _BuiltIn += builtin_spheremap_coord;
-    _BuiltIn += builtin_luminance;
+    builtin += builtin_spheremap_coord;
+    builtin += builtin_luminance;
 
     for ( int i = AT_Float1 ; i <= AT_Float4 ; i++ ) {
-        _BuiltIn += Core::Fmt( builtin_saturate, AssemblyTypeStr[i], AssemblyTypeStr[i], AssemblyTypeStr[i], AssemblyTypeStr[i] );
+        builtin += Core::Fmt( builtin_saturate, AssemblyTypeStr[i], AssemblyTypeStr[i], AssemblyTypeStr[i], AssemblyTypeStr[i] );
     }
+
+    AFileStream f;
+    f.OpenWrite( "material_builtin.glsl" );
+    f.WriteBuffer(builtin.CStr(),builtin.Length());
 }
 
 #if 0
@@ -2756,17 +2761,17 @@ vec3 atmosphere( in vec3 _RayDirNormalized, in vec3 _SunPosNormalized ) {
 
 AMaterial * AMaterialBuilder::Build() {
 
-    SMaterialBuildData * buildData = BuildData();
+    SMaterialDef def;
+    
+    BuildData( def );
 
     AMaterial * material = NewObject< AMaterial >();
-    material->Initialize( buildData );
-
-    GZoneMemory.Free( buildData );
+    material->Initialize( &def );
 
     return material;
 }
 
-SMaterialBuildData * AMaterialBuilder::BuildData() {
+void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
     AMaterialBuildContext context;
     bool bDepthPassTextureFetch = false;
     bool bColorPassTextureFetch = false;
@@ -2779,19 +2784,7 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
     int maxUniformAddress = -1;
     bool bHasVertexDeform = false;
 
-    // Load base shader script. TODO: Do it once!
-    AFileStream f;
-    if ( !f.OpenRead( "Shader.glsl" ) ) {
-        CriticalError( "Failed to load Shader.glsl\n" );
-    }
-    AString code;
-    code.FromFile( f );
-    //-------------------------------------------------
-
-    AString buildinSource;
     AString predefines;
-
-    GenerateBuiltinSource( buildinSource );
 
     switch ( Graph->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
@@ -2833,8 +2826,6 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         predefines += "#define PREMULTIPLIED_ALPHA\n";
     }
 
-    code.Replace( "$BUILTIN_CODE$", buildinSource.CStr() );
-
     MGVertexStage * VertexStage = Graph->VertexStage;
     MGFragmentStage * FragmentStage = Graph->FragmentStage;
     MGShadowCastStage * ShadowCastStage = Graph->ShadowCastStage;
@@ -2852,8 +2843,8 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         VertexStage->TouchConnections( context );
         VertexStage->Build( context );
 
-        code.Replace( "$DEPTH_PASS_SAMPLERS$", SamplersString( context.MaxTextureSlot ).CStr() );
-        code.Replace( "$DEPTH_PASS_VERTEX_CODE$", context.SourceCode.CStr() );
+        Def.AddShader( "$DEPTH_PASS_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
+        Def.AddShader( "$DEPTH_PASS_VERTEX_CODE$", context.SourceCode );
 
         bDepthPassTextureFetch = context.bHasTextures;
 
@@ -2874,8 +2865,8 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         VertexStage->TouchConnections( context );
         VertexStage->Build( context );
 
-        code.Replace( "$SHADOWMAP_PASS_SAMPLERS$", SamplersString( context.MaxTextureSlot ).CStr() );
-        code.Replace( "$SHADOWMAP_PASS_VERTEX_CODE$", context.SourceCode.CStr() );
+        Def.AddShader( "$SHADOWMAP_PASS_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
+        Def.AddShader( "$SHADOWMAP_PASS_VERTEX_CODE$", context.SourceCode );
 
         bShadowMapPassTextureFetch |= context.bHasTextures;
 
@@ -2890,21 +2881,21 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
 
             bShadowMapMasking = !context.SourceCode.IsEmpty();
 
-            code.Replace( "$SHADOWMAP_PASS_FRAGMENT_CODE$", context.SourceCode.CStr() );
+            Def.AddShader( "$SHADOWMAP_PASS_FRAGMENT_CODE$", context.SourceCode );
 
             if ( bShadowMapMasking ) {
                 bShadowMapPassTextureFetch |= context.bHasTextures;
 
-                code.Replace( "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString( context.MaxTextureSlot ).CStr() );
+                Def.AddShader( "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
 
                 maxTextureSlot = Math::Max( maxTextureSlot, context.MaxTextureSlot );
                 maxUniformAddress = Math::Max( maxUniformAddress, context.MaxUniformAddress );
             } else {
-                code.Replace( "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", "" );
+                Def.AddShader( "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", "" );
             }
         } else {
-            code.Replace( "$SHADOWMAP_PASS_FRAGMENT_CODE$", "" );
-            code.Replace( "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", "" );
+            Def.AddShader( "$SHADOWMAP_PASS_FRAGMENT_CODE$", "" );
+            Def.AddShader( "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", "" );
         }
     }
 
@@ -2938,9 +2929,9 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         predefines += "#define NORMAL_LOCATION "      + Math::ToString(normalLocation)     + "\n";
         predefines += "#define POSITION_LOCATION "    + Math::ToString(positionLocation)   + "\n";
 
-        code.Replace( "$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", VertexStage->NSV_OutputSection().CStr() );
-        code.Replace( "$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString( context.MaxTextureSlot ).CStr() );
-        code.Replace( "$COLOR_PASS_VERTEX_CODE$", context.SourceCode.CStr() );
+        Def.AddShader( "$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", VertexStage->NSV_OutputSection() );
+        Def.AddShader( "$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
+        Def.AddShader( "$COLOR_PASS_VERTEX_CODE$", context.SourceCode );
 
         // Color pass. Fragment stage
         context.SetStage( FRAGMENT_STAGE );
@@ -2960,9 +2951,9 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
 
         predefines += "#define LIGHTMAP_SLOT " + Math::ToString(lightmapSlot) + "\n";
 
-        code.Replace( "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", VertexStage->NSV_InputSection().CStr() );
-        code.Replace( "$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString( context.MaxTextureSlot ).CStr() );
-        code.Replace( "$COLOR_PASS_FRAGMENT_CODE$", context.SourceCode.CStr() );
+        Def.AddShader( "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", VertexStage->NSV_InputSection() );
+        Def.AddShader( "$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
+        Def.AddShader( "$COLOR_PASS_FRAGMENT_CODE$", context.SourceCode );
     }
 
     // Create wireframe pass
@@ -2979,50 +2970,32 @@ SMaterialBuildData * AMaterialBuilder::BuildData() {
         maxTextureSlot = Math::Max( maxTextureSlot, context.MaxTextureSlot );
         maxUniformAddress = Math::Max( maxUniformAddress, context.MaxUniformAddress );
 
-        code.Replace( "$WIREFRAME_PASS_SAMPLERS$", SamplersString( context.MaxTextureSlot ).CStr() );
-        code.Replace( "$WIREFRAME_PASS_VERTEX_CODE$", context.SourceCode.CStr() );
+        Def.AddShader( "$WIREFRAME_PASS_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
+        Def.AddShader( "$WIREFRAME_PASS_VERTEX_CODE$", context.SourceCode );
     }
 
     // TODO: Shadowmap pass?
 
-    code.Replace( "$PREDEFINES$", predefines.CStr() );
+    Def.AddShader( "$PREDEFINES$", predefines );
 
-    {
-    AFileStream fs;
-    fs.OpenWrite("test.txt");
-    fs.WriteBuffer( code.CStr(), code.Length() + 1 );
+    Def.Type                = Graph->MaterialType;
+    Def.Blending            = Graph->Blending;
+    Def.LightmapSlot        = lightmapSlot;
+    Def.bDepthPassTextureFetch     = bDepthPassTextureFetch;
+    Def.bColorPassTextureFetch     = bColorPassTextureFetch;
+    Def.bWireframePassTextureFetch = bWireframePassTextureFetch;
+    Def.bShadowMapPassTextureFetch = bShadowMapPassTextureFetch;
+    Def.bHasVertexDeform    = bHasVertexDeform;
+    Def.bDepthTest_EXPEREMENTAL = Graph->bDepthTest;
+    Def.bNoCastShadow       = bNoCastShadow;
+    Def.bShadowMapMasking   = bShadowMapMasking;
+    Def.bTranslucent        = Graph->bTranslucent;
+    Def.NumUniformVectors   = maxUniformAddress + 1;
+    Def.NumSamplers         = maxTextureSlot + 1;
+
+    for ( int i = 0 ; i < Def.NumSamplers ; i++ ) {
+        Def.Samplers[i] = Graph->GetTextureSlots()[i]->SamplerDesc;
     }
-    //GLogger.Print( "=== shader ===\n" );
-    //GLogger.Print( code.CStr() );
-    //GLogger.Print( "==============\n" );
-
-    int sizeInBytes = sizeof( SMaterialBuildData ) - sizeof( SMaterialBuildData::ShaderData ) + code.Length();
-
-    SMaterialBuildData * data = ( SMaterialBuildData * )GZoneMemory.ClearedAlloc( sizeInBytes );
-
-    data->SizeInBytes         = sizeInBytes;
-    data->Type                = Graph->MaterialType;
-    data->Blending            = Graph->Blending;
-    data->LightmapSlot        = lightmapSlot;
-    data->bDepthPassTextureFetch     = bDepthPassTextureFetch;
-    data->bColorPassTextureFetch     = bColorPassTextureFetch;
-    data->bWireframePassTextureFetch = bWireframePassTextureFetch;
-    data->bShadowMapPassTextureFetch = bShadowMapPassTextureFetch;
-    data->bHasVertexDeform    = bHasVertexDeform;
-    data->bDepthTest_EXPEREMENTAL = Graph->bDepthTest;
-    data->bNoCastShadow       = bNoCastShadow;
-    data->bShadowMapMasking   = bShadowMapMasking;
-    data->bTranslucent        = Graph->bTranslucent;
-    data->NumUniformVectors   = maxUniformAddress + 1;
-    data->NumSamplers         = maxTextureSlot + 1;
-
-    for ( int i = 0 ; i < data->NumSamplers ; i++ ) {
-        data->Samplers[i] = Graph->GetTextureSlots()[i]->SamplerDesc;
-    }
-
-    Core::Memcpy( data->ShaderData, code.CStr(), code.Length() + 1 );
-
-    return data;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3067,5 +3040,3 @@ int MGMaterialGraph::Serialize( ADocument & _Doc ) {
 
     return object;
 }
-
-

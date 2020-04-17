@@ -28,35 +28,33 @@ SOFTWARE.
 
 */
 
-#pragma once
+in gl_PerVertex
+{
+    vec4 gl_Position;
+} gl_in[];
 
-#include "OpenGL45PassRenderer.h"
-
-namespace OpenGL45 {
-
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void RenderInstances();
-
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
-
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
-
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
+out gl_PerVertex
+{
+    vec4 gl_Position;
 };
 
-extern ACanvasPassRenderer GCanvasPassRenderer;
+#ifdef SHADOW_MASKING
+    layout( location = 1 ) in vec2 VS_TexCoord[];
+    layout( location = 1 ) out vec2 InTexCoord[];
+#endif
 
+layout( triangles ) in;
+layout( triangle_strip, max_vertices = 3 ) out;
+layout( location = 0 ) in flat int VS_InstanceID[];
+
+void main() {
+    gl_Layer = VS_InstanceID[ 0 ];
+    for ( int i = 0; i < gl_in.length(); i++ ) {
+        gl_Position = gl_in[ i ].gl_Position;
+        #ifdef SHADOW_MASKING
+            InTexCoord[i] = VS_TexCoord[i];
+        #endif
+        EmitVertex();
+    }
+    EndPrimitive();
 }

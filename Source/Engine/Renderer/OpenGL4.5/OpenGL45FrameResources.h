@@ -36,7 +36,7 @@ namespace OpenGL45 {
 
 struct SViewUniformBuffer {
     Float4x4 OrthoProjection;
-    Float4x4 ModelviewProjection;
+    Float4x4 ViewProjection;
     Float4x4 InverseProjectionMatrix;
     Float3x4 WorldNormalToViewSpace;
 
@@ -48,8 +48,8 @@ struct SViewUniformBuffer {
     // Timers
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
-    float ScaleToSurfaceX;
-    float ScaleToSurfaceY;
+    float DynamicResolutionRatioX;
+    float DynamicResolutionRatioY;
 
     Float3 ViewPosition;
     float TimeDelta;

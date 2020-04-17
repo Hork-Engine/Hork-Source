@@ -291,7 +291,7 @@ void AFrameResources::SetViewUniforms() {
 //    ViewUniformBlock->Viewport.W = RenderFrame.TargetTex->CurrentHeight;
     
 
-    uniformData->ModelviewProjection = GRenderView->ModelviewProjection;
+    uniformData->ViewProjection = GRenderView->ViewProjection;
     uniformData->InverseProjectionMatrix = GRenderView->InverseProjectionMatrix;
 
 //    ViewUniformBlock->PositionToViewSpace[0].X = RenderFrame.TranslateViewMatrix[0].X;
@@ -332,10 +332,8 @@ void AFrameResources::SetViewUniforms() {
     uniformData->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
     uniformData->GameplayTimeSeconds = GRenderView->GameplayTimeSeconds;
 
-    uniformData->ScaleToSurfaceX = (float)GRenderView->Width / GFrameData->AllocSurfaceWidth;
-    uniformData->ScaleToSurfaceY = (float)GRenderView->Height / GFrameData->AllocSurfaceHeight;
-    //uniformData->ScaleToSurfaceX = (float)(GRenderView->Width-1) / (GFrameData->AllocSurfaceWidth-1);
-    //uniformData->ScaleToSurfaceY = (float)(GRenderView->Height-1) / (GFrameData->AllocSurfaceHeight-1);
+    uniformData->DynamicResolutionRatioX = (float)GRenderView->Width / GFrameData->AllocSurfaceWidth;
+    uniformData->DynamicResolutionRatioY = (float)GRenderView->Height / GFrameData->AllocSurfaceHeight;
 
     uniformData->ViewPosition = GRenderView->ViewPosition;
     uniformData->TimeDelta = GRenderView->GameplayTimeStep;

@@ -209,3 +209,32 @@ struct SFrustumSliceZClipInitializer {
 };
 
 static SFrustumSliceZClipInitializer FrustumSliceZClipInitializer;
+
+SMaterialShader * AddMaterialShader( SMaterialShader ** List, const char * SourceName, AString const & SourceCode ) {
+    SMaterialShader * s = (SMaterialShader *)GZoneMemory.Alloc( sizeof( SMaterialShader ) + SourceCode.Length() );
+
+    s->SourceName = SourceName;
+    Core::Memcpy( s->Code, SourceCode.CStr(), SourceCode.Length() + 1 );
+
+    if ( !*List ) {
+        *List = s;
+        s->Next = NULL;
+    } else {
+        s->Next = *List;
+        *List = s;
+    }
+
+    return s;
+}
+
+void FreeMaterialShaders( SMaterialShader ** List ) {
+    if ( !*List ) {
+        return;
+    }
+    SMaterialShader * next;
+    for ( SMaterialShader * s = *List ; s ; s = next ) {
+        next = s->Next;
+        GZoneMemory.Free( s );
+    }
+    *List = NULL;
+}

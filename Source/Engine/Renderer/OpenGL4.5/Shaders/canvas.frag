@@ -28,35 +28,13 @@ SOFTWARE.
 
 */
 
-#pragma once
+layout( location = 0 ) out vec4 FS_FragColor;
 
-#include "OpenGL45PassRenderer.h"
+layout( location = 0 ) noperspective in vec2 VS_TexCoord;
+layout( location = 1 ) in vec4 VS_Color;
 
-namespace OpenGL45 {
+layout( binding = 0 ) uniform sampler2D Smp_Source;
 
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void RenderInstances();
-
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
-
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
-
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
-};
-
-extern ACanvasPassRenderer GCanvasPassRenderer;
-
+void main() {
+	FS_FragColor = VS_Color * texture( Smp_Source, VS_TexCoord );
 }

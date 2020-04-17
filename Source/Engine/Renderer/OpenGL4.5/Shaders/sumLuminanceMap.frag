@@ -28,35 +28,17 @@ SOFTWARE.
 
 */
 
-#pragma once
+layout( location = 0 ) out vec2 FS_FragColor;
 
-#include "OpenGL45PassRenderer.h"
+layout( location = 0 ) noperspective in vec2 VS_TexCoord;
+        
+layout( binding = 0 ) uniform sampler2D Smp_Input;
 
-namespace OpenGL45 {
-
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void RenderInstances();
-
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
-
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
-
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
-};
-
-extern ACanvasPassRenderer GCanvasPassRenderer;
-
+void main() {
+	ivec2 Coord = ivec2( floor( gl_FragCoord.xy ) * 2.0 );
+    vec2 a = texelFetch( Smp_Input, Coord, 0 ).rg;
+    vec2 b = texelFetch( Smp_Input, Coord + ivec2( 1, 0 ), 0 ).rg;
+    vec2 c = texelFetch( Smp_Input, Coord + ivec2( 1, 1 ), 0 ).rg;
+    vec2 d = texelFetch( Smp_Input, Coord + ivec2( 0, 1 ), 0 ).rg;
+    FS_FragColor = vec2( a.x + b.x + c.x + d.x, max( max( a.y, b.y ), max( c.y, d.y ) ) );
 }

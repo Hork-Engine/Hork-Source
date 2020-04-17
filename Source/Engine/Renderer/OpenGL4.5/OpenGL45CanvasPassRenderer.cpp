@@ -74,7 +74,6 @@ void ACanvasPassRenderer::Initialize() {
 
     CreatePresentViewPipeline();
     CreatePipelines();
-    CreateAlphaPipelines();
 
     //
     // Create samplers
@@ -89,7 +88,6 @@ void ACanvasPassRenderer::Deinitialize() {
     for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
         PresentViewPipeline[i].Deinitialize();
         Pipelines[i].Deinitialize();
-        AlphaPipeline[i].Deinitialize();
     }
 }
 
@@ -143,75 +141,16 @@ void ACanvasPassRenderer::CreatePresentViewPipeline() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-#if 0
-    const char * vertexSourceCode =
-        "out gl_PerVertex\n"
-        "{\n"
-        "    vec4 gl_Position;\n"
-        "};\n"
-        "layout( location = 0 ) flat out vec2 VS_TexCoord;\n"
-        "layout( location = 1 ) out vec4 VS_Color;\n"
-        "void main() {\n"
-        "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
-        "  VS_TexCoord = InTexCoord;\n"
-        "  VS_Color = InColor;\n"
-        "}\n";
-
-    const char * fragmentSourceCode =
-            "layout( origin_upper_left ) in vec4 gl_FragCoord;\n"
-            "layout( binding = 0 ) uniform sampler2D tslot0;\n"
-            "layout( location = 0 ) flat in vec2 VS_TexCoord;\n"
-            "layout( location = 1 ) in vec4 VS_Color;\n"
-            "layout( location = 0 ) out vec4 FS_FragColor;\n"
-            "void main() {\n"
-            "  ivec2 fragCoord = ivec2( gl_FragCoord.xy - VS_TexCoord );\n"
-            "  fragCoord.y = textureSize( tslot0, 0 ).y - fragCoord.y - 1;\n"
-            "  FS_FragColor = VS_Color * texelFetch( tslot0, fragCoord, 0 );\n"
-            "}\n";
-#else
-    const char * vertexSourceCode =
-        "out gl_PerVertex\n"
-        "{\n"
-        "    vec4 gl_Position;\n"
-        "};\n"
-        "layout( location = 0 ) /*centroid*/ noperspective out vec2 VS_TexCoord;\n"
-        "layout( location = 1 ) out vec4 VS_Color;\n"
-        "void main() {\n"
-        "  gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );\n"
-        "  VS_TexCoord = InTexCoord;\n"
-        //"  VS_TexCoord = InTexCoord * Timers.zw;\n"
-        //"  VS_TexCoord.y = 1.0 - VS_TexCoord.y;\n"
-        "  VS_Color = InColor;\n"
-
-#ifdef SHOW_DEBUG_IMAGE
-        "  VS_TexCoord.x = InTexCoord.x;\n"
-        "  VS_TexCoord.y = 1.0-InTexCoord.y;\n"
-#endif
-
-        "}\n";
-
-    const char * fragmentSourceCode = R"(
-        layout( binding = 0 ) uniform sampler2D tslot0;
-        layout( location = 0 ) centroid noperspective in vec2 VS_TexCoord;
-        layout( location = 1 ) in vec4 VS_Color;
-        layout( location = 0 ) out vec4 FS_FragColor;
-        void main() {
-          vec2 tc = min( VS_TexCoord, vec2(1.0) - ViewportParams.xy ) * Timers.zw;
-          tc.y = 1.0 - tc.y;
-          FS_FragColor = VS_Color * texture( tslot0, tc );
-        }
-    )";
-#endif
+    AString vertexSourceCode = LoadShader( "presentview.vert" );
+    AString fragmentSourceCode = LoadShader( "presentview.frag" );
 
     GShaderSources.Clear();
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSourceCode );
+    GShaderSources.Add( vertexSourceCode.CStr() );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( UniformStr );
-    GShaderSources.Add( fragmentSourceCode );
+    GShaderSources.Add( fragmentSourceCode.CStr() );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
     PipelineCreateInfo pipelineCI = {};
@@ -316,39 +255,16 @@ void ACanvasPassRenderer::CreatePipelines() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    const char * vertexSourceCode = R"(
-            out gl_PerVertex
-            {
-                vec4 gl_Position;
-            };
-            layout( location = 0 ) out vec2 VS_TexCoord;
-            layout( location = 1 ) out vec4 VS_Color;
-            void main() {
-              gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
-              VS_TexCoord = InTexCoord;
-              VS_Color = InColor;
-            }
-    )";
-    const char * fragmentSourceCode = R"(
-            layout( binding = 0 ) uniform sampler2D tslot0;
-            layout( location = 0 ) in vec2 VS_TexCoord;
-            layout( location = 1 ) in vec4 VS_Color;
-            layout( location = 0 ) out vec4 FS_FragColor;
-            void main() {
-              FS_FragColor = VS_Color * texture( tslot0, VS_TexCoord );
-            //  FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );
-            }
-    )";
+    AString vertexSourceCode = LoadShader( "canvas.vert" );
+    AString fragmentSourceCode = LoadShader( "canvas.frag" );
 
     GShaderSources.Clear();
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSourceCode );
+    GShaderSources.Add( vertexSourceCode.CStr() );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( UniformStr );
-    GShaderSources.Add( fragmentSourceCode );
+    GShaderSources.Add( fragmentSourceCode.CStr() );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
     PipelineCreateInfo pipelineCI = {};
@@ -403,155 +319,18 @@ void ACanvasPassRenderer::CreatePipelines() {
     }
 }
 
-void ACanvasPassRenderer::CreateAlphaPipelines() {
-    RasterizerStateInfo rsd;
-    rsd.SetDefaults();
-    rsd.CullMode = POLYGON_CULL_DISABLED;
-    rsd.bScissorEnable = true;
-
-    BlendingStateInfo bsd;
-    bsd.SetDefaults();
-
-    DepthStencilStateInfo dssd;
-    dssd.SetDefaults();
-
-    dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
-
-    static const VertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( SHUDDrawVert, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( SHUDDrawVert, TexCoord )
-        },
-        {
-            "InColor",
-            2,              // location
-            0,              // buffer input slot
-            VAT_UBYTE4N,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            GHI_STRUCT_OFS( SHUDDrawVert, Color )
-        }
-    };
-
-
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    ShaderModule vertexShaderModule, fragmentShaderModule;
-
-    const char * vertexSourceCode = R"(
-            out gl_PerVertex
-            {
-                vec4 gl_Position;
-            };
-            layout( location = 0 ) out vec2 VS_TexCoord;
-            layout( location = 1 ) out vec4 VS_Color;
-            void main() {
-              gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
-              VS_TexCoord = InTexCoord;
-              VS_Color = InColor;
-            }
-    )";
-    const char * fragmentSourceCode = R"(
-            layout( binding = 0 ) uniform sampler2D tslot0;
-            layout( location = 0 ) in vec2 VS_TexCoord;
-            layout( location = 1 ) in vec4 VS_Color;
-            layout( location = 0 ) out vec4 FS_FragColor;
-            void main() {
-              FS_FragColor = VS_Color * vec4(texture( tslot0, VS_TexCoord ).r);
-            //  FS_FragColor = pow( FS_FragColor, vec4( vec3( 1.0/2.2 ), 1 ) );
-            }
-    )";
-
-    GShaderSources.Clear();
-    GShaderSources.Add( UniformStr );
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSourceCode );
-    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( UniformStr );
-    GShaderSources.Add( fragmentSourceCode );
-    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
-
-    PipelineCreateInfo pipelineCI = {};
-
-    PipelineInputAssemblyInfo inputAssembly = {};
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pInputAssembly = &inputAssembly;
-    pipelineCI.pRasterizer = &rsd;
-    pipelineCI.pDepthStencil = &dssd;
-
-    ShaderStageInfo vs = {};
-    vs.Stage = SHADER_STAGE_VERTEX_BIT;
-    vs.pModule = &vertexShaderModule;
-
-    ShaderStageInfo fs = {};
-    fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    fs.pModule = &fragmentShaderModule;
-
-    ShaderStageInfo stages[2] = { vs, fs };
-
-    pipelineCI.NumStages = 2;
-    pipelineCI.pStages = stages;
-
-    VertexBindingInfo vertexBinding[1] = {};
-
-    vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( SHUDDrawVert );
-    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
-    pipelineCI.pVertexBindings = vertexBinding;
-
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
-
-    pipelineCI.pRenderPass = &CanvasPass;
-    pipelineCI.Subpass = 0;
-
-    for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
-        if ( i == COLOR_BLENDING_DISABLED ) {
-            bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_NO_BLEND );
-        } else if ( i == COLOR_BLENDING_ALPHA ) {
-            bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
-        } else {
-            bsd.RenderTargetSlots[0].SetBlendingPreset( (BLENDING_PRESET)(BLENDING_NO_BLEND + i) );
-        }
-
-        pipelineCI.pBlending = &bsd;
-        AlphaPipeline[i].Initialize( pipelineCI );
-    }
-}
-
 void ACanvasPassRenderer::CreateSamplers() {
     SamplerCreateInfo samplerCI;
     samplerCI.SetDefaults();
-    samplerCI.Filter = FILTER_LINEAR;//FILTER_NEAREST;
+    samplerCI.Filter = FILTER_LINEAR;//FILTER_NEAREST; // linear is better for dynamic resolution
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
     PresentViewSampler = GDevice.GetOrCreateSampler( samplerCI );
 
     for ( int i = 0 ; i < HUD_SAMPLER_MAX ; i++ ) {
-        samplerCI.Filter = ( i & 1 ) ? FILTER_NEAREST : FILTER_LINEAR;
-        samplerCI.AddressU = samplerCI.AddressV = samplerCI.AddressW = (SAMPLER_ADDRESS_MODE)( i >> 1 );
+        samplerCI.Filter = (i & 1) ? FILTER_NEAREST : FILTER_LINEAR;
+        samplerCI.AddressU = samplerCI.AddressV = samplerCI.AddressW = (SAMPLER_ADDRESS_MODE)(i >> 1);
         Samplers[i] = GDevice.GetOrCreateSampler( samplerCI );
     }
 }
@@ -688,7 +467,7 @@ void ACanvasPassRenderer::RenderInstances() {
 
                 default:
                 {
-                    Pipeline * pPipeline = ( cmd->Type == HUD_DRAW_CMD_ALPHA ) ? &AlphaPipeline[cmd->Blending] : &Pipelines[cmd->Blending];
+                    Pipeline * pPipeline = &Pipelines[cmd->Blending];
 
                     Cmd.BindPipeline( pPipeline );
                     Cmd.BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );

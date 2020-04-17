@@ -186,7 +186,7 @@ void ARenderFrontend::RenderView( int _Index ) {
         camera->MakeClusterProjectionMatrix( view->ClusterProjectionMatrix );
     }
 
-    view->ModelviewProjection = view->ProjectionMatrix * view->ViewMatrix;
+    view->ViewProjection = view->ProjectionMatrix * view->ViewMatrix;
     view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed(); // TODO: Check with ViewInverseFast
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
     
@@ -652,7 +652,7 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
 
     Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
 
-    Float4x4 instanceMatrix = RenderDef.View->ModelviewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
+    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
 
     ALevel * level = InComponent->GetLevel();
 
@@ -748,7 +748,7 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
 
     Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
 
-    Float4x4 instanceMatrix = RenderDef.View->ModelviewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
+    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
 
     AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
 
@@ -836,7 +836,7 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
 
     Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
 
-    Float4x4 instanceMatrix = RenderDef.View->ModelviewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
+    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
 
     //ALevel * level = InComponent->GetLevel();
 
@@ -1359,7 +1359,7 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     instance->BaseVertexLocation = 0;
     instance->SkeletonOffset = 0;
     instance->SkeletonSize = 0;
-    instance->Matrix = RenderDef.View->ModelviewProjection;
+    instance->Matrix = RenderDef.View->ViewProjection;
 
     if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
         instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix;

@@ -503,10 +503,23 @@ enum EColorBlending {
     COLOR_BLENDING_MAX
 };
 
-struct SMaterialBuildData {
-    /** Size of allocated memory for this structure (in bytes) */
-    int SizeInBytes;
+struct SMaterialShader
+{
+    /** Pointer for next material source */
+    SMaterialShader * Next;
 
+    /** Pointer to source name (no memory allocation) */
+    const char * SourceName;
+
+    /** Source code */
+    char Code[1];
+};
+
+SMaterialShader * AddMaterialShader( SMaterialShader ** List, const char * SourceName, AString const & SourceCode );
+void FreeMaterialShaders( SMaterialShader ** List );
+
+struct SMaterialDef
+{
     /** Material type (Unlit,baselight,pbr,etc) */
     EMaterialType Type;
 
@@ -545,8 +558,28 @@ struct SMaterialBuildData {
     STextureSampler Samplers[MAX_MATERIAL_TEXTURES];
     int NumSamplers;
 
-    /** Shader source code */
-    char ShaderData[1];
+    /** Material shaders */
+    SMaterialShader * Shaders;
+
+    SMaterialDef()
+    {
+        Core::ZeroMem( this, sizeof( *this ) );
+    }
+
+    ~SMaterialDef()
+    {
+        FreeMaterialShaders( &Shaders );
+    }
+
+    void AddShader( const char * SourceName, AString const & SourceCode )
+    {
+        AddMaterialShader( &Shaders, SourceName, SourceCode );
+    }
+
+    void RemoveShaders()
+    {
+        FreeMaterialShaders( &Shaders );
+    }
 };
 
 //
@@ -944,7 +977,7 @@ struct SRenderView {
     Float3x3 NormalToViewMatrix;
     Float4x4 ProjectionMatrix;
     Float4x4 InverseProjectionMatrix;
-    Float4x4 ModelviewProjection;
+    Float4x4 ViewProjection;
     Float4x4 ViewSpaceToWorldSpace;
     Float4x4 ClipSpaceToWorldSpace;
     Float4x4 ClusterProjectionMatrix;
@@ -1087,7 +1120,7 @@ public:
 
     virtual AMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) = 0;
     virtual void DestroyMaterial( AMaterialGPU * _Material ) = 0;
-    virtual void InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) = 0;
+    virtual void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _BuildData ) = 0;
 
     const char * GetName() { return BackendName; }
 

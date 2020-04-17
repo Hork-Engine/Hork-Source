@@ -106,46 +106,18 @@ void ADebugDrawPassRenderer::Initialize() {
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
-    const char * vertesSourceCode = R"(
-
-            out gl_PerVertex
-            {
-                vec4 gl_Position;
-//                float gl_PointSize;
-//                float gl_ClipDistance[];
-            };
-
-            layout( location = 0 ) out vec4 VS_Color;
-
-            void main() {
-                gl_Position = ModelviewProjection * vec4( InPosition, 1.0 );
-                VS_Color = InColor;
-                //gl_PointSize = 10;
-            }
-
-            )";
-
-    const char * fragmentSourceCode = R"(
-
-            layout( location = 0 ) in vec4 VS_Color;
-            layout( location = 0 ) out vec4 FS_FragColor;
-
-            void main() {
-                FS_FragColor = VS_Color;
-            }
-
-            )";
+    AString vertesSourceCode = LoadShader( "debugdraw.vert" );
+    AString fragmentSourceCode = LoadShader( "debugdraw.frag" );
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
-    GShaderSources.Add( UniformStr );
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertesSourceCode );
+    GShaderSources.Add( vertesSourceCode.CStr() );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( fragmentSourceCode );
+    GShaderSources.Add( fragmentSourceCode.CStr() );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
     PipelineCreateInfo pipelineCI = {};

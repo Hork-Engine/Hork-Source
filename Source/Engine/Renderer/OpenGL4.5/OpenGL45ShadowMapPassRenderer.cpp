@@ -135,13 +135,9 @@ void AShadowMapPassRenderer::CreateShadowDepthSamplers() {
 #endif
 
 void AShadowMapPassRenderer::CreatePipeline() {
-    AString code;
-    // TODO: move load to other place
-    AFileStream f;
-    if ( !f.OpenRead( "ShadowCast.glsl" ) ) {
-        CriticalError( "Failed to load ShadowCast.glsl\n" );
-    }
-    code.FromFile( f );
+    AString codeVS = LoadShader( "shadowcast.vert" );
+    AString codeGS = LoadShader( "instance_shadowmap.geom" );
+    AString codeFS = LoadShader( "shadowcast.frag" );
 
     PipelineCreateInfo pipelineCI = {};
 
@@ -215,7 +211,7 @@ void AShadowMapPassRenderer::CreatePipeline() {
     GShaderSources.Clear();
     //GShaderSources.Add( "#define SKINNED_MESH\n" );
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( code.CStr() );
+    GShaderSources.Add( codeVS.CStr() );
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     ShaderStageInfo & vs = stages[pipelineCI.NumStages++];
@@ -224,7 +220,7 @@ void AShadowMapPassRenderer::CreatePipeline() {
 
     GShaderSources.Clear();
     //GShaderSources.Add( "#define SKINNED_MESH\n" );
-    GShaderSources.Add( code.CStr() );
+    GShaderSources.Add( codeGS.CStr() );
     GShaderSources.Build( GEOMETRY_SHADER, &geometryShaderModule );
 
     ShaderStageInfo & gs = stages[pipelineCI.NumStages++];
@@ -241,7 +237,7 @@ void AShadowMapPassRenderer::CreatePipeline() {
         GShaderSources.Clear();
         //GShaderSources.Add( "#define SHADOW_MASKING\n" );
         //GShaderSources.Add( "#define SKINNED_MESH\n" );
-        GShaderSources.Add( code.CStr() );
+        GShaderSources.Add( codeFS.CStr() );
         GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
         ShaderStageInfo & fs = stages[pipelineCI.NumStages++];

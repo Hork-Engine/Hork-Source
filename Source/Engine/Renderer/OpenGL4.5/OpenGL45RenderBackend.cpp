@@ -640,6 +640,34 @@ void ARenderBackend::DestroyTexture( ATextureGPU * _Texture ) {
     DestroyResource( _Texture );
 }
 
+static void SetTextureSwizzle( ETexturePixelFormat _PixelFormat, GHI::TextureSwizzle & _Swizzle ) {
+    switch ( STexturePixelFormat( _PixelFormat ).NumComponents() ) {
+    case 1:
+        // Apply texture swizzle for one channel textures
+        _Swizzle.R = GHI::SAMPLER_SWIZZLE_R;
+        _Swizzle.G = GHI::SAMPLER_SWIZZLE_R;
+        _Swizzle.B = GHI::SAMPLER_SWIZZLE_R;
+        _Swizzle.A = GHI::SAMPLER_SWIZZLE_R;
+        break;
+#if 0
+    case 2:
+        // Apply texture swizzle for two channel textures
+        _Swizzle.R = GHI::SAMPLER_SWIZZLE_R;
+        _Swizzle.G = GHI::SAMPLER_SWIZZLE_G;
+        _Swizzle.B = GHI::SAMPLER_SWIZZLE_R;
+        _Swizzle.A = GHI::SAMPLER_SWIZZLE_G;
+        break;
+    case 3:
+        // Apply texture swizzle for three channel textures
+        _Swizzle.R = GHI::SAMPLER_SWIZZLE_R;
+        _Swizzle.G = GHI::SAMPLER_SWIZZLE_G;
+        _Swizzle.B = GHI::SAMPLER_SWIZZLE_B;
+        _Swizzle.A = GHI::SAMPLER_SWIZZLE_ONE;
+        break;
+#endif
+    }
+}
+
 void ARenderBackend::InitializeTexture1D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
     GHI::Texture * texture = GPUTextureHandle( _Texture );
 
@@ -648,6 +676,8 @@ void ARenderBackend::InitializeTexture1D( ATextureGPU * _Texture, ETexturePixelF
     textureCI.Resolution.Tex1D.Width = _Width;
     textureCI.InternalFormat = InternalPixelFormatTable[_PixelFormat];
     textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
     texture->InitializeStorage( textureCI );
 }
@@ -662,6 +692,8 @@ void ARenderBackend::InitializeTexture1DArray( ATextureGPU * _Texture, ETextureP
     textureCI.InternalFormat = InternalPixelFormatTable[_PixelFormat];
     textureCI.NumLods = _NumLods;
 
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
     texture->InitializeStorage( textureCI );
 }
 
@@ -674,6 +706,8 @@ void ARenderBackend::InitializeTexture2D( ATextureGPU * _Texture, ETexturePixelF
     textureCI.Resolution.Tex2D.Height = _Height;
     textureCI.InternalFormat = InternalPixelFormatTable[_PixelFormat];
     textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
     texture->InitializeStorage( textureCI );
 }
@@ -689,6 +723,8 @@ void ARenderBackend::InitializeTexture2DArray( ATextureGPU * _Texture, ETextureP
     textureCI.InternalFormat = InternalPixelFormatTable[_PixelFormat];
     textureCI.NumLods = _NumLods;
 
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
     texture->InitializeStorage( textureCI );
 }
 
@@ -703,6 +739,8 @@ void ARenderBackend::InitializeTexture3D( ATextureGPU * _Texture, ETexturePixelF
     textureCI.InternalFormat = InternalPixelFormatTable[_PixelFormat];
     textureCI.NumLods = _NumLods;
 
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
     texture->InitializeStorage( textureCI );
 }
 
@@ -714,6 +752,8 @@ void ARenderBackend::InitializeTextureCubemap( ATextureGPU * _Texture, ETextureP
     textureCI.Resolution.TexCubemap.Width = _Width;
     textureCI.InternalFormat = InternalPixelFormatTable[_PixelFormat];
     textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
     texture->InitializeStorage( textureCI );
 }
@@ -728,6 +768,8 @@ void ARenderBackend::InitializeTextureCubemapArray( ATextureGPU * _Texture, ETex
     textureCI.InternalFormat = InternalPixelFormatTable[_PixelFormat];
     textureCI.NumLods = _NumLods;
 
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
     texture->InitializeStorage( textureCI );
 }
 
@@ -740,6 +782,8 @@ void ARenderBackend::InitializeTexture2DNPOT( ATextureGPU * _Texture, ETexturePi
     textureCI.Resolution.TexRect.Height = _Height;
     textureCI.InternalFormat = InternalPixelFormatTable[_PixelFormat];
     textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
     texture->InitializeStorage( textureCI );
 }
@@ -902,7 +946,7 @@ void ARenderBackend::DestroyMaterial( AMaterialGPU * _Material ) {
     DestroyResource( _Material );
 }
 
-void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) {
+void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _BuildData ) {
     using namespace GHI;
 
     _Material->MaterialType = _BuildData->Type;
@@ -946,6 +990,14 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
         _Material->ShadeModel.HUD = nullptr;
     }
 
+    AString code = LoadShader( "material.glsl", _BuildData->Shaders );
+
+    //{
+    //    AFileStream fs;
+    //    fs.OpenWrite( "test.txt" );
+    //    fs.WriteBuffer( code.CStr(), code.Length() + 1 );
+    //}
+
     switch ( _Material->MaterialType ) {
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT: {
@@ -953,20 +1005,20 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
         Lit = new (pMem) AShadeModelLit();
         _Material->ShadeModel.Lit = Lit;
 
-        Lit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
-        Lit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Lit->ColorPassSimple.Create( code.CStr(), cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Lit->ColorPassSkinned.Create( code.CStr(), cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
 
-        Lit->ColorPassLightmap.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
-        Lit->ColorPassVertexLight.Create( _BuildData->ShaderData, cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Lit->ColorPassLightmap.Create( code.CStr(), cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Lit->ColorPassVertexLight.Create( code.CStr(), cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
 
-        Lit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
-        Lit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
+        Lit->DepthPass.Create( code.CStr(), cullMode, false );
+        Lit->DepthPassSkinned.Create( code.CStr(), cullMode, true );
 
-        Lit->WireframePass.Create( _BuildData->ShaderData, cullMode, false );
-        Lit->WireframePassSkinned.Create( _BuildData->ShaderData, cullMode, true );
+        Lit->WireframePass.Create( code.CStr(), cullMode, false );
+        Lit->WireframePassSkinned.Create( code.CStr(), cullMode, true );
 
-        Lit->ShadowPass.Create( _BuildData->ShaderData, _BuildData->bShadowMapMasking, false );
-        Lit->ShadowPassSkinned.Create( _BuildData->ShaderData, _BuildData->bShadowMapMasking, true );
+        Lit->ShadowPass.Create( code.CStr(), _BuildData->bShadowMapMasking, false );
+        Lit->ShadowPassSkinned.Create( code.CStr(), _BuildData->bShadowMapMasking, true );
         break;
     }
 
@@ -975,17 +1027,17 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
         Unlit = new (pMem) AShadeModelUnlit();
         _Material->ShadeModel.Unlit = Unlit;
 
-        Unlit->ColorPassSimple.Create( _BuildData->ShaderData, cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
-        Unlit->ColorPassSkinned.Create( _BuildData->ShaderData, cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Unlit->ColorPassSimple.Create( code.CStr(), cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        Unlit->ColorPassSkinned.Create( code.CStr(), cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
 
-        Unlit->DepthPass.Create( _BuildData->ShaderData, cullMode, false );
-        Unlit->DepthPassSkinned.Create( _BuildData->ShaderData, cullMode, true );
+        Unlit->DepthPass.Create( code.CStr(), cullMode, false );
+        Unlit->DepthPassSkinned.Create( code.CStr(), cullMode, true );
 
-        Unlit->WireframePass.Create( _BuildData->ShaderData, cullMode, false );
-        Unlit->WireframePassSkinned.Create( _BuildData->ShaderData, cullMode, true );
+        Unlit->WireframePass.Create( code.CStr(), cullMode, false );
+        Unlit->WireframePassSkinned.Create( code.CStr(), cullMode, true );
 
-        Unlit->ShadowPass.Create( _BuildData->ShaderData, _BuildData->bShadowMapMasking, false );
-        Unlit->ShadowPassSkinned.Create( _BuildData->ShaderData, _BuildData->bShadowMapMasking, true );
+        Unlit->ShadowPass.Create( code.CStr(), _BuildData->bShadowMapMasking, false );
+        Unlit->ShadowPassSkinned.Create( code.CStr(), _BuildData->bShadowMapMasking, true );
         break;
     }
 
@@ -994,7 +1046,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialBuil
         void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelHUD ) );
         HUD = new (pMem) AShadeModelHUD();
         _Material->ShadeModel.HUD = HUD;
-        HUD->ColorPassHUD.Create( _BuildData->ShaderData );
+        HUD->ColorPassHUD.Create( code.CStr() );
         break;
     }
 

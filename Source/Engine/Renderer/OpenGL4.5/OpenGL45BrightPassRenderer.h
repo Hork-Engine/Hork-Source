@@ -34,29 +34,40 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class ACanvasPassRenderer : public APassRenderer {
+class ABrightPassRenderer : public APassRenderer {
 public:
     void Initialize();
     void Deinitialize();
 
-    void RenderInstances();
+    void Render( GHI::Texture & _SrcTexture );
 
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
+    GHI::RenderPass * GetRenderPass() { return &BrightPass; }
 
 private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
+    void CreateBrightPipeline();
+    void CreateBlurPipeline();
+    void CreateLuminancePipeline();
+    void CreateSampler();
 
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
+    GHI::RenderPass BrightPass;
+    GHI::Pipeline BrightPipeline;
+    GHI::Pipeline BlurPipeline0;
+    GHI::Pipeline BlurPipeline1;
+    GHI::Pipeline BlurFinalPipeline0;
+    GHI::Pipeline BlurFinalPipeline1;
+    GHI::RenderPass LuminancePass;
+    GHI::Pipeline MakeLuminanceMapPipe;
+    GHI::Pipeline SumLuminanceMapPipe;
+    GHI::Pipeline DynamicExposurePipe;
+    GHI::Sampler NearestSampler;
+    GHI::Sampler LinearSampler;
+    GHI::Sampler DitherSampler;
+    GHI::Sampler LuminanceSampler;
+    GHI::ShaderModule BlurFragmentShaderModule;
+    GHI::ShaderModule BlurFinalFragmentShaderModule;
 };
 
-extern ACanvasPassRenderer GCanvasPassRenderer;
+extern ABrightPassRenderer GBrightPassRenderer;
 
 }
+

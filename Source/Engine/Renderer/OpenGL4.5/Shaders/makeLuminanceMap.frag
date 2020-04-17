@@ -28,35 +28,21 @@ SOFTWARE.
 
 */
 
-#pragma once
+layout( location = 0 ) out vec2 FS_FragColor;
 
-#include "OpenGL45PassRenderer.h"
+layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
-namespace OpenGL45 {
+layout( binding = 0 ) uniform sampler2D Smp_Input;
 
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
+void main() {
+	const vec4 RGBA_TO_GRAYSCALE = vec4( 0.2125, 0.7154, 0.0721, 0.0 );
 
-    void RenderInstances();
+	// better for linear tonemapping
+    //FS_FragColor = vec2( dot( clamp( texture( Smp_Input, VS_TexCoord ), vec4(0.01), vec4(0.3) ), RGBA_TO_GRAYSCALE ) );
 
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
+    // better for ACES filmic tonemapping
+    FS_FragColor = vec2( dot( clamp( texture( Smp_Input, VS_TexCoord ), vec4(0.005), vec4(0.3) ), RGBA_TO_GRAYSCALE ) );
 
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
-
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
-};
-
-extern ACanvasPassRenderer GCanvasPassRenderer;
-
+    //  const float Sigma = 0.4;//0.5;
+    //  FS_FragColor.x = max( 0.0, log( Sigma + FS_FragColor.x ) );
 }

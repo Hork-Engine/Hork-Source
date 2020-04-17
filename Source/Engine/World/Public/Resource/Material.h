@@ -46,7 +46,7 @@ class ANGIE_API AMaterial : public AResource, public IGPUResourceOwner {
 
 public:
     /** Initialize from data */
-    void Initialize( SMaterialBuildData const * _Data );
+    void Initialize( SMaterialDef const * _Data );
 
     /** Get material type */
     EMaterialType GetType() const { return Type; }

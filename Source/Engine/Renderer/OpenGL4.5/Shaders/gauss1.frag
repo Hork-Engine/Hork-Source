@@ -28,35 +28,31 @@ SOFTWARE.
 
 */
 
-#pragma once
+layout( location = 0 ) out vec4 FS_FragColor;
 
-#include "OpenGL45PassRenderer.h"
+layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
-namespace OpenGL45 {
+layout( binding = 0 ) uniform sampler2D Smp_Source;
+layout( binding = 1 ) uniform sampler2D Smp_Dither;
 
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
+layout( location = 0 ) uniform vec2 InvSize;
 
-    void RenderInstances();
+void main() {
+    const float weight0 = 1.0 / 64.0;
+    const float weight1 = 5.0 / 64.0;
+    const float weight2 = 15.0 / 64.0;
+    const float weight3 = 22.0 / 64.0;
+    const float weight4 = 15.0 / 64.0;
+    const float weight5 = 5.0 / 64.0;
+    const float weight6 = 1.0 / 64.0;
 
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
+    vec4 final = texture( Smp_Source, VS_TexCoord - 3.0*InvSize ) * weight0
+        + texture( Smp_Source, VS_TexCoord - 2.0*InvSize ) * weight1
+        + texture( Smp_Source, VS_TexCoord - 1.0*InvSize ) * weight2
+        + texture( Smp_Source, VS_TexCoord ) * weight3
+        + texture( Smp_Source, VS_TexCoord + 1.0*InvSize ) * weight4
+        + texture( Smp_Source, VS_TexCoord + 2.0*InvSize ) * weight5
+        + texture( Smp_Source, VS_TexCoord + 3.0*InvSize ) * weight6;
 
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
-
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
-};
-
-extern ACanvasPassRenderer GCanvasPassRenderer;
-
+    FS_FragColor = final + (texture( Smp_Dither, VS_TexCoord * 3.141592 ).r - 0.5) / 192.0;
 }

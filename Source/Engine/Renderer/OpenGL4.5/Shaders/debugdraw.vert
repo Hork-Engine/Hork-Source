@@ -28,35 +28,16 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include "viewuniforms.glsl"
 
-#include "OpenGL45PassRenderer.h"
-
-namespace OpenGL45 {
-
-class ACanvasPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void RenderInstances();
-
-    GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
-
-private:
-    void CreatePresentViewPipeline();
-    void CreatePipelines();
-    void CreateSamplers();
-
-    void BeginCanvasPass();
-
-    GHI::RenderPass CanvasPass;
-    GHI::Pipeline PresentViewPipeline[COLOR_BLENDING_MAX];
-    GHI::Pipeline Pipelines[COLOR_BLENDING_MAX];
-    GHI::Sampler Samplers[HUD_SAMPLER_MAX];
-    GHI::Sampler PresentViewSampler;
+out gl_PerVertex
+{
+	vec4 gl_Position;
 };
 
-extern ACanvasPassRenderer GCanvasPassRenderer;
+layout( location = 0 ) out vec4 VS_Color;
 
+void main() {
+	gl_Position = ViewProjection * vec4( InPosition, 1.0 );
+	VS_Color = InColor;
 }

@@ -74,7 +74,7 @@ public:
 
     AMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) override;
     void DestroyMaterial( AMaterialGPU * _Material ) override;
-    void InitializeMaterial( AMaterialGPU * _Material, SMaterialBuildData const * _BuildData ) override;
+    void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _BuildData ) override;
 
     GHI::Texture & GetDitherTexture() { return DitherTexture; }
 

@@ -884,7 +884,7 @@ public:
     TRef< MGMaterialGraph > Graph;
 
     AMaterial * Build();
-    SMaterialBuildData * BuildData();
+    void BuildData( SMaterialDef & Def );
 
 protected:
     AMaterialBuilder();
