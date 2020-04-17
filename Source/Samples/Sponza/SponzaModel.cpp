@@ -109,12 +109,12 @@ void ASponzaModel::OnGameStart() {
         };
         AImage rt, lt, up, dn, bk, ft;
         AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
-        rt.LoadHDRI( Cubemap[0], false, false, 3 );
-        lt.LoadHDRI( Cubemap[1], false, false, 3 );
-        up.LoadHDRI( Cubemap[2], false, false, 3 );
-        dn.LoadHDRI( Cubemap[3], false, false, 3 );
-        bk.LoadHDRI( Cubemap[4], false, false, 3 );
-        ft.LoadHDRI( Cubemap[5], false, false, 3 );
+        rt.Load( Cubemap[0], nullptr, IMAGE_PF_BGR32F );
+        lt.Load( Cubemap[1], nullptr, IMAGE_PF_BGR32F );
+        up.Load( Cubemap[2], nullptr, IMAGE_PF_BGR32F );
+        dn.Load( Cubemap[3], nullptr, IMAGE_PF_BGR32F );
+        bk.Load( Cubemap[4], nullptr, IMAGE_PF_BGR32F );
+        ft.Load( Cubemap[5], nullptr, IMAGE_PF_BGR32F );
         const float HDRI_Scale = 4.0f;
         const float HDRI_Pow = 1.1f;
         for ( int i = 0 ; i < 6 ; i++ ) {
