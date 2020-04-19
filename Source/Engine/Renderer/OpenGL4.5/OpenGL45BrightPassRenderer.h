@@ -61,7 +61,6 @@ private:
     GHI::Pipeline DynamicExposurePipe;
     GHI::Sampler NearestSampler;
     GHI::Sampler LinearSampler;
-    GHI::Sampler DitherSampler;
     GHI::Sampler LuminanceSampler;
     GHI::ShaderModule BlurFragmentShaderModule;
     GHI::ShaderModule BlurFinalFragmentShaderModule;

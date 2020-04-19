@@ -38,4 +38,44 @@ SOFTWARE.
 #define saturate3( val ) clamp( val, vec3(0.0), vec3(1.0) )
 #define saturate4( val ) clamp( val, vec4(0.0), vec4(1.0) )
 
+float log10( in float x )
+{
+    const float base10 = 1.0 / log(10.0);
+    return log( x ) * base10;
+}
+
+vec2 log10( in vec2 x )
+{
+    const float base10 = 1.0 / log(10.0);
+    return log( x ) * base10;
+}
+
+vec3 log10( in vec3 x )
+{
+    const float base10 = 1.0 / log(10.0);
+    return log( x ) * base10;
+}
+
+vec4 log10( in vec4 x )
+{
+    const float base10 = 1.0 / log(10.0);
+    return log( x ) * base10;
+}
+
+float rand( vec2 co ) {
+    return fract( sin( dot( co, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
+}
+
+float rand( vec4 co ) {
+    return fract( sin( dot( co, vec4( 12.9898, 78.233, 45.164, 94.673 ) ) ) * 43758.5453 );
+}
+
+vec3 Sepia( in vec3 color ) {
+	return dot( color, vec3( 0.2126, 0.7152, 0.0722 ) ) * vec3(1.0,0.89,0.71);
+}
+
+vec3 Grayscale( vec3 color, float scale ) {
+	return mix( color, vec3( dot( color, vec3( 0.2126, 0.7152, 0.0722 ) ) ), scale );
+}
+
 #endif // CORE_H

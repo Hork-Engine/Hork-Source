@@ -451,12 +451,6 @@ void ABrightPassRenderer::CreateSampler() {
     samplerCI.Filter = FILTER_LINEAR;
     LinearSampler = GDevice.GetOrCreateSampler( samplerCI );
 
-    samplerCI.AddressU = SAMPLER_ADDRESS_WRAP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_WRAP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_WRAP;
-    samplerCI.Filter = FILTER_LINEAR;
-    DitherSampler = GDevice.GetOrCreateSampler( samplerCI );
-
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
@@ -500,10 +494,7 @@ void ABrightPassRenderer::Render( GHI::Texture & _SrcTexture ) {
     Cmd.BindShaderResources( &GFrameResources.Resources );
     Cmd.Draw( &drawCmd );
 
-    GFrameResources.TextureBindings[1].pTexture = &GOpenGL45RenderBackend.GetDitherTexture();
-
     GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-    GFrameResources.SamplerBindings[1].pSampler = DitherSampler;
 
     // X pass
     GFrameResources.TextureBindings[0].pTexture = &bloom.Texture[0];

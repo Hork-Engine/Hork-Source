@@ -31,6 +31,7 @@ SOFTWARE.
 #include "viewuniforms.glsl"
 #include "srgb.glsl"
 #include "tonemapping.glsl"
+#include "material_builtin.glsl"
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
@@ -38,7 +39,7 @@ layout( location = 0 ) noperspective in vec4 VS_TexCoord;
 layout( location = 1 ) flat in float VS_Exposure;
 
 layout( binding = 0 ) uniform sampler2D Smp_Source;
-layout( binding = 1 ) uniform sampler2D Smp_Dither;
+layout( binding = 1 ) uniform sampler2D Smp_Reserved; // Reserved for future
 layout( binding = 2 ) uniform sampler2D Smp_Bloom2;
 layout( binding = 3 ) uniform sampler2D Smp_Bloom8;
 layout( binding = 4 ) uniform sampler2D Smp_Bloom32;
@@ -46,27 +47,11 @@ layout( binding = 5 ) uniform sampler2D Smp_Bloom128;
 
 vec4 CalcBloom() {
 	vec2 tc = VS_TexCoord.zw;
-	vec4 dither = vec4( (texture( Smp_Dither, tc*3.141592 ).r-0.5)*2.0 );
-
-    vec4 bloom0[4];
-    vec4 bloom1[4];
-
-    bloom0[0] = texture( Smp_Bloom2, tc );
-    bloom0[1] = texture( Smp_Bloom8, tc );
-    bloom0[2] = texture( Smp_Bloom32, tc );
-    bloom0[3] = texture( Smp_Bloom128, tc );
-
-    bloom1[0] = texture( Smp_Bloom2, tc+dither.xz   / 512.0 );
-    bloom1[1] = texture( Smp_Bloom8, tc+dither.zx   / 128.0 );
-    bloom1[2] = texture( Smp_Bloom32, tc+dither.xy  /  32.0 );
-    bloom1[3] = texture( Smp_Bloom128, tc+dither.yz /   8.0 );
-
-    return mat4(
-		bloom0[0]+clamp( bloom1[0]-bloom0[0], -1.0/256.0, +1.0/256.0 ),
-		bloom0[1]+clamp( bloom1[1]-bloom0[1], -1.0/256.0, +1.0/256.0 ),
-		bloom0[2]+clamp( bloom1[2]-bloom0[2], -1.0/256.0, +1.0/256.0 ),
-		bloom0[3]+clamp( bloom1[3]-bloom0[3], -1.0/256.0, +1.0/256.0 )
-    ) * PostprocessBloomMix;
+	
+	return mat4( texture( Smp_Bloom2, tc ),
+	             texture( Smp_Bloom8, tc ),
+				 texture( Smp_Bloom32, tc ),
+				 texture( Smp_Bloom128, tc ) ) * PostprocessBloomMix;
 }
 
 void main() {
@@ -79,30 +64,41 @@ void main() {
 
     // Debug bloom
 	//FS_FragColor = CalcBloom();
+	
+	vec3 fragColor = FS_FragColor.rgb;
 
 	// Tonemapping
     if ( PostprocessAttrib.y > 0.0 ) {
-		if ( VS_TexCoord.x > 0.5 ) {
-			FS_FragColor.rgb = ToneLinear( FS_FragColor.rgb, VS_Exposure );
-		} else {
-			FS_FragColor.rgb = ACESFilm( FS_FragColor.rgb, VS_Exposure );
-		}
+		//if ( VS_TexCoord.x > 0.5 ) {
+			//fragColor = ToneLinear( fragColor, VS_Exposure );
+			fragColor = ToneReinhard3( fragColor, VS_Exposure, 1.9 );
+		//} else {
+		    //fragColor = ToneReinhard( fragColor, VS_Exposure );
+			//fragColor = ToneReinhard2( fragColor, VS_Exposure, 1.9 );
+			//fragColor = Uncharted2Tonemap( fragColor, VS_Exposure );
+			//fragColor = ACESFilm( fragColor, VS_Exposure );
+			//fragColor = ToneFilmicALU( fragColor, VS_Exposure );
+			//fragColor = ToneFilmicALU( fragColor, 1.0 );
+		//}
 	}
 
     // Vignette
-    //  if ( VignetteColorIntensity.a > 0.0 ) {
-    //    vec2 VignetteOffset = VS_TexCoord.zw - 0.5;
-    //    float LengthSqr = dot( VignetteOffset, VignetteOffset );
-    //    float VignetteShade = smoothstep( VignetteOuterInnerRadiusSqr.x, VignetteOuterInnerRadiusSqr.y, LengthSqr );
-    //    FS_FragColor.rgb = mix( VignetteColorIntensity.rgb, FS_FragColor.rgb, mix( 1.0, VignetteShade, VignetteColorIntensity.a ) );
-	//  }
+    if ( VignetteColorIntensity.a > 0.0 ) {
+        vec2 VignetteOffset = VS_TexCoord.zw - 0.5;
+        float LengthSqr = dot( VignetteOffset, VignetteOffset );
+        float VignetteShade = smoothstep( VignetteOuterInnerRadiusSqr.x, VignetteOuterInnerRadiusSqr.y, LengthSqr );
+        fragColor = mix( VignetteColorIntensity.rgb, fragColor, mix( 1.0, VignetteShade, VignetteColorIntensity.a ) );
+	}
 
 	// Apply brightness
-    FS_FragColor.rgb *= VignetteOuterInnerRadiusSqr.z;
+    fragColor *= GetFrameBrightness();
+	
+	FS_FragColor.rgb = fragColor;
 
     // Pack pixel luminance to alpha channel for FXAA algorithm
-    const vec3 RGB_TO_GRAYSCALE = vec3( 0.2125, 0.7154, 0.0721 );
-    FS_FragColor.a = PostprocessAttrib.w > 0.0 ? LinearToSRGB( clamp( dot( FS_FragColor.rgb, RGB_TO_GRAYSCALE ), 0.0, 1.0 ) ) : 1.0;
+    FS_FragColor.a = PostprocessAttrib.w > 0.0
+	                       ? LinearToSRGB( builtin_saturate( builtin_luminance( fragColor ) ) )
+						   : 1.0;
 
     // Debug output
     //if ( VS_TexCoord.x < 0.05 && VS_TexCoord.y < 0.05 ) {

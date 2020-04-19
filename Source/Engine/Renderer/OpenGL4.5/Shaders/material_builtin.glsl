@@ -779,6 +779,9 @@ vec2 builtin_spheremap_coord( in vec3 dir ) {
   vec2 uv = vec2( atan( dir.z, dir.x ), asin( dir.y ) );
   return uv * vec2(0.1591, 0.3183) + 0.5;
 }
+float builtin_luminance( in vec3 color ) {
+  return dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );
+}
 float builtin_luminance( in vec4 color ) {
   return dot( color, vec4( 0.2126, 0.7152, 0.0722, 0.0 ) );
 }

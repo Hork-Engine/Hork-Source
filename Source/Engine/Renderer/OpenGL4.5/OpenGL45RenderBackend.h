@@ -76,15 +76,11 @@ public:
     void DestroyMaterial( AMaterialGPU * _Material ) override;
     void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _BuildData ) override;
 
-    GHI::Texture & GetDitherTexture() { return DitherTexture; }
-
 private:
     void SetGPUEvent();
     void RenderView( SRenderView * _RenderView );
 
     friend void OpenGL45RenderView( SRenderView * _RenderView );
-
-    GHI::Texture DitherTexture;
 };
 
 extern ARenderBackend GOpenGL45RenderBackend;

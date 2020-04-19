@@ -28,33 +28,22 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include "OpenGL45PassRenderer.h"
-
-namespace OpenGL45 {
-
-class APostprocessPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void Render();
-
-    GHI::RenderPass * GetRenderPass() { return &PostprocessPass; }
-
-private:
-    void CreatePipeline();
-    void CreateSampler();
-
-    GHI::RenderPass PostprocessPass;
-    GHI::Pipeline PostprocessPipeline;
-    GHI::Sampler PostprocessSampler;
-    GHI::Sampler BloomSampler;
-    GHI::Sampler LuminanceSampler;
+out gl_PerVertex
+{
+    vec4 gl_Position;
 };
 
-extern APostprocessPassRenderer GPostprocessPassRenderer;
+layout( location = 0 ) out vec3 VS_Normal;
+layout( location = 1 ) out flat int VS_InstanceID;
 
+layout( binding = 0, std140 ) uniform UniformBlock
+{
+    mat4 uTransform[6];
+    vec4 uRoughness;
+};
+
+void main() {
+    gl_Position = uTransform[gl_InstanceID % 6] * vec4( InPosition, 1.0 );
+    VS_Normal = InPosition;
+    VS_InstanceID = gl_InstanceID + int(uRoughness.y);
 }
-

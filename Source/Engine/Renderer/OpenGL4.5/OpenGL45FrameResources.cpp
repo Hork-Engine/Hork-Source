@@ -343,7 +343,7 @@ void AFrameResources::SetViewUniforms() {
     uniformData->PostprocessAttrib.Y = RVPostprocessToneExposure.GetFloat();  // TODO: Get from GRenderView
     uniformData->PostprocessAttrib.Z = RVPostprocessColorGrading;  // TODO: Get from GRenderView
     uniformData->PostprocessAttrib.W = RVFxaa;
-    uniformData->VignetteColorIntensity = Float4( 0,0,0, 0.9f );        // rgb, intensity
+    uniformData->VignetteColorIntensity = Float4( 0,0,0, 0.4f );        // rgb, intensity
     uniformData->VignetteOuterRadiusSqr = 0.7f*0.7f;//GRenderView->VignetteOuterRadiusSqr;
     uniformData->VignetteInnerRadiusSqr = 0.6f*0.6f;//GRenderView->VignetteInnerRadiusSqr;
     uniformData->ViewBrightness = RVBrightness.GetFloat();//GRenderView->VignetteInnerBrightness;

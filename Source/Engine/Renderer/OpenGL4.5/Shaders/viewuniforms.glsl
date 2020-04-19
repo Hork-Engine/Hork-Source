@@ -129,4 +129,8 @@ float GetPostprocessExposure() {
 	return PostprocessAttrib.y;
 }
 
+float GetFrameBrightness() {
+	return VignetteOuterInnerRadiusSqr.z;
+}
+
 #endif // VIEWUNIFORMS_H

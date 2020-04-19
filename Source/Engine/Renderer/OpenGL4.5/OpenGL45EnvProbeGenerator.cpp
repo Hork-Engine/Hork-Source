@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "OpenGL45EnvProbeGenerator.h"
+#include "OpenGL45ShaderSource.h"
 
 #include <Core/Public/PodArray.h>
 
@@ -180,138 +181,25 @@ void AEnvProbeGenerator::Initialize() {
         }
     };
 
-    char * infoLog = nullptr;
+    ShaderModule vertexShader, geometryShader, fragmentShader;
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
-    AString vertexSource =
-        "#version 450\n"
-        +vertexAttribsShaderString+
-        "out gl_PerVertex\n"
-        "{\n"
-        "    vec4 gl_Position;\n"
-        "};\n"
-        "layout( location = 0 ) out vec3 VS_Normal;\n"
-        "layout( location = 1 ) out flat int VS_InstanceID;\n"
-        "layout( binding = 0, std140 ) uniform UniformBlock\n"
-        "{\n"
-        "    mat4 uTransform[6];\n"
-        "    vec4 uRoughness;\n"
-        "};\n"
-        "void main() {\n"
-        "    gl_Position = uTransform[gl_InstanceID % 6] * vec4( InPosition, 1.0 );\n"
-        "    VS_Normal = InPosition;\n"
-        "    VS_InstanceID = gl_InstanceID + int(uRoughness.y);\n"
-        "}\n";
+    AString vertexSource = LoadShader( "envprobegen.vert" );
+    GShaderSources.Clear();
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
+    GShaderSources.Add( vertexSource.CStr() );
+    GShaderSources.Build( VERTEX_SHADER, &vertexShader );
 
-    const char * geometrySource =
-        "#version 450\n"
-        "in gl_PerVertex {\n"
-        "    vec4 gl_Position;\n"
-        "} gl_in[];\n"
-        "out gl_PerVertex {\n"
-        "    vec4 gl_Position;\n"
-        "};\n"
-        "layout(triangles) in;\n"
-        "layout(triangle_strip, max_vertices = 3) out;\n"
-        "layout( location = 0 ) out vec3 GS_Normal;\n"
-        "layout( location = 0 ) in vec3 VS_Normal[];\n"
-        "layout( location = 1 ) in flat int VS_InstanceID[];\n"
-        "void main() {\n"
-        "    gl_Layer = VS_InstanceID[0];\n"  // FIXME: check gl_InvocationID
-        "    gl_Position = gl_in[ 0 ].gl_Position;\n"
-        "    GS_Normal = VS_Normal[ 0 ];\n"
-        "    EmitVertex();\n"
-        "    gl_Position = gl_in[ 1 ].gl_Position;\n"
-        "    GS_Normal = VS_Normal[ 1 ];\n"
-        "    EmitVertex();\n"
-        "    gl_Position = gl_in[ 2 ].gl_Position;\n"
-        "    GS_Normal = VS_Normal[ 2 ];\n"
-        "    EmitVertex();\n"
-        "    EndPrimitive();\n"
-        "}\n";
+    AString geometrySource = LoadShader( "envprobegen.geom" );
+    GShaderSources.Clear();
+    GShaderSources.Add( geometrySource.CStr() );
+    GShaderSources.Build( GEOMETRY_SHADER, &geometryShader );
 
-    const char * fragmentSource =
-        "#version 450\n"
-        "layout( location = 0 ) in vec3 GS_Normal;\n"
-        "layout( location = 0 ) out vec4 FS_FragColor; \n"
-        "layout( binding = 0 ) uniform samplerCube Envmap;\n" // Envmap must be HDRI in linear space
-        "layout( binding = 0, std140 ) uniform UniformBlock\n"
-        "{\n"
-        "    mat4 uTransform[6];\n"
-        "    vec4 uRoughness;\n"
-        "};\n"
-
-        "vec2 Hammersley( int k, int n ) {\n"
-        "    float u = 0;\n"
-        "    float p = 0.5;\n"
-        "    for ( int kk = k; bool( kk ); p *= 0.5f, kk /= 2 ) {\n"
-        "       if ( bool( kk & 1 ) ) {\n"
-        "           u += p;\n"
-        "       }\n"
-        "    }\n"
-        "    float x = u;\n"
-        "    float y = (k + 0.5f) / n;\n"
-        "    return vec2( x, y );\n"
-        "}\n"
-
-        "float radicalInverse_VdC( uint bits ) {\n"
-        "    bits = (bits << 16u) | (bits >> 16u);\n"
-        "    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);\n"
-        "    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);\n"
-        "    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);\n"
-        "    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);\n"
-        "    return float( bits ) * 2.3283064365386963e-10; // / 0x100000000\n"
-        "}\n"
-
-        "vec2 hammersley2d( uint i, uint N ) {\n"
-        "    return vec2( float( i )/float( N ), radicalInverse_VdC( i ) );\n"
-        "}\n"
-
-        "const float PI = 3.1415926;\n"
-
-        "vec3 ImportanceSampleGGX( vec2 Xi, float Roughness, vec3 N ) {\n"
-        "    float a = Roughness * Roughness;\n"
-        "    float Phi = 2 * PI * Xi.x;\n"
-        "    float CosTheta = sqrt( (1 - Xi.y) / (1 + (a*a - 1) * Xi.y) );\n"
-        "    float SinTheta = sqrt( 1 - CosTheta * CosTheta );\n"
-        "    vec3 H;\n"
-        "    H.x = SinTheta * cos( Phi );\n"
-        "    H.y = SinTheta * sin( Phi );\n"
-        "    H.z = CosTheta;\n"
-        "    vec3 UpVector = abs( N.z ) < 0.99 ? vec3( 0, 0, 1 ) : vec3( 1, 0, 0 );\n"
-        "    //vec3 UpVector = abs(N.z) < 0.999 ? vec3(0,0,1) : vec3(1,0,0);\n"
-        "    vec3 TangentX = normalize( cross( UpVector, N ) );\n"
-        "    vec3 TangentY = cross( N, TangentX );\n"
-        // Tangent to world space
-        "    return TangentX * H.x + TangentY * H.y + N * H.z;\n"
-        "}\n"
-
-        "vec3 PrefilterEnvMap( float Roughness, vec3 R ) {\n"
-        "    vec3 PrefilteredColor = vec3( 0.0 );\n"
-        "    float TotalWeight = 0.0;\n"
-        "    const int NumSamples = 1024;\n"
-        "    for ( int i = 0; i < NumSamples; i++ ) {\n"
-        "        vec2 Xi = Hammersley( i, NumSamples );\n"
-        "        vec3 H = ImportanceSampleGGX( Xi, Roughness, R );\n"
-        "        vec3 L = 2 * dot( R, H ) * H - R;\n"
-        "        float NoL = clamp( dot( R, L ), 0.0, 1.0 );\n"
-        "        if ( NoL > 0 ) {\n"
-        "            PrefilteredColor += textureLod( Envmap, L, 0 ).rgb * NoL;\n"
-        "            TotalWeight += NoL;\n"
-        "        }\n"
-        "    }\n"
-        "    return PrefilteredColor / TotalWeight;\n"
-        "}\n"
-
-        "void main() {\n"
-        "    FS_FragColor = vec4( PrefilterEnvMap( uRoughness.x, normalize( GS_Normal ) ), 1.0 );\n"
-        "}\n";
-
-    ShaderModule vertexShader, geometryShader, fragmentShader;
-    vertexShader.InitializeFromCode( VERTEX_SHADER, vertexSource.CStr(), &infoLog );
-    geometryShader.InitializeFromCode( GEOMETRY_SHADER, geometrySource, &infoLog );
-    fragmentShader.InitializeFromCode( FRAGMENT_SHADER, fragmentSource, &infoLog );
+    AString fragmentSource = LoadShader( "envprobegen.frag" );
+    GShaderSources.Clear();
+    GShaderSources.Add( fragmentSource.CStr() );
+    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShader );
 
     ShaderStageInfo stages[] =
     {

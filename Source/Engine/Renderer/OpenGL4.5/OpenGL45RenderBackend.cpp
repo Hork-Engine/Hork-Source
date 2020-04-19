@@ -536,26 +536,11 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     GFxaaPassRenderer.Initialize();
     GCanvasPassRenderer.Initialize();
     GFrameResources.Initialize();
-
-    // TODO: dither.png encode to Base85 and move to source code?
-    AImage image;
-    if ( !image.Load( "dither.png", nullptr, IMAGE_PF_R ) ) {
-        CriticalError( "Couldn't load dither.png\n" );
-    }
-    GHI::TextureStorageCreateInfo texStorageCI = {};
-    texStorageCI.Type = GHI::TEXTURE_2D;
-    texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_R8;
-    texStorageCI.Resolution.Tex2D.Width = image.Width;
-    texStorageCI.Resolution.Tex2D.Height = image.Height;
-    texStorageCI.NumLods = 1;
-    DitherTexture.InitializeStorage( texStorageCI );
-    DitherTexture.Write( 0, GHI::PIXEL_FORMAT_UBYTE_R, image.Width * image.Height * 1, 1, image.pRawData );
 }
 
 void ARenderBackend::Deinitialize() {
     GLogger.Printf( "Deinitializing OpenGL backend...\n" );
 
-    DitherTexture.Deinitialize();
     GRenderTarget.Deinitialize();
     GShadowMapRT.Deinitialize();
     GShadowMapPassRenderer.Deinitialize();

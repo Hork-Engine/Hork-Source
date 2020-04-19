@@ -33,7 +33,6 @@ layout( location = 0 ) out vec4 FS_FragColor;
 layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
 layout( binding = 0 ) uniform sampler2D Smp_Source;
-layout( binding = 1 ) uniform sampler2D Smp_Dither;
 
 layout( location = 0 ) uniform vec2 InvSize;
 
@@ -54,5 +53,5 @@ void main() {
         + texture( Smp_Source, VS_TexCoord + 2.0*InvSize ) * weight5
         + texture( Smp_Source, VS_TexCoord + 3.0*InvSize ) * weight6;
 
-    FS_FragColor = final + (texture( Smp_Dither, VS_TexCoord * 3.141592 ).r - 0.5) / 192.0;
+    FS_FragColor = final;// + (texture( Smp_Dither, VS_TexCoord * 3.141592 ).r - 0.5) / 192.0;
 }
