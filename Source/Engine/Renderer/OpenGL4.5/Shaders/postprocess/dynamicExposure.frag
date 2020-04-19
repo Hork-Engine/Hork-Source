@@ -38,8 +38,8 @@ layout( binding = 0 ) uniform sampler2D Smp_Current;
 layout( binding = 1 ) uniform sampler2D Smp_Desired;
 
 void main() {
-	vec2 Current = texelFetch( Smp_Current, ivec2( 0 ), 0 ).rg;
-	vec2 Desired;
+    vec2 Current = texelFetch( Smp_Current, ivec2( 0 ), 0 ).rg;
+    vec2 Desired;
 
     vec2 a = texelFetch( Smp_Desired, ivec2( 0, 0 ), 0 ).rg;
     vec2 b = texelFetch( Smp_Desired, ivec2( 1, 0 ), 0 ).rg;
@@ -74,5 +74,5 @@ void main() {
 //  }
 //  FS_FragColor.x = mix( Current.x, delta, min(eyeAdaptationSpeed * GameplayFrameDelta()*0.01,1.0) );
 
-	FS_FragColor.y = 0;
+    FS_FragColor.y = 0;
 }

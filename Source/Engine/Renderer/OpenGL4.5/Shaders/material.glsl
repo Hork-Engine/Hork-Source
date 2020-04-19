@@ -41,53 +41,53 @@ SOFTWARE.
 #include "base/viewuniforms.glsl"
 
 #if defined MATERIAL_PASS_SHADOWMAP
-#	include "shadowcastInstance.glsl"
+#   include "shadowcastInstance.glsl"
 #else
-#	include "instanceUniforms.glsl"
+#   include "instanceUniforms.glsl"
 #endif
 
 #if defined MATERIAL_PASS_DEPTH
 #   ifdef VERTEX_SHADER
-#		include "$DEPTH_PASS_SAMPLERS$"
-#		include "instance.vert"
+#       include "$DEPTH_PASS_SAMPLERS$"
+#       include "instance.vert"
 #   endif
 #endif // MATERIAL_PASS_DEPTH
 
 #if defined MATERIAL_PASS_WIREFRAME
 #   ifdef VERTEX_SHADER
-#		include "$WIREFRAME_PASS_SAMPLERS$"
-#		include "instance.vert"
+#       include "$WIREFRAME_PASS_SAMPLERS$"
+#       include "instance.vert"
 #   endif
-#	ifdef GEOMETRY_SHADER
-#		include "instance_wireframe.geom"
-#	endif
-#	ifdef FRAGMENT_SHADER
-#		include "instance_wireframe.frag"
-#	endif
+#   ifdef GEOMETRY_SHADER
+#       include "instance_wireframe.geom"
+#   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_wireframe.frag"
+#   endif
 #endif // MATERIAL_PASS_WIREFRAME
 
 #if defined MATERIAL_PASS_SHADOWMAP
 #   ifdef VERTEX_SHADER
-#		include "$SHADOWMAP_PASS_SAMPLERS$"
-#		include "instance.vert"
+#       include "$SHADOWMAP_PASS_SAMPLERS$"
+#       include "instance.vert"
 #   endif
-#	ifdef GEOMETRY_SHADER
-#		include "instance_shadowmap.geom"
-#	endif
-#	ifdef FRAGMENT_SHADER
-#		include "instance_shadowmap.frag"
-#	endif
+#   ifdef GEOMETRY_SHADER
+#       include "instance_shadowmap.geom"
+#   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_shadowmap.frag"
+#   endif
 #endif // MATERIAL_PASS_SHADOWMAP
 
 #if defined MATERIAL_PASS_COLOR
-#	if defined MATERIAL_TYPE_PBR || defined MATERIAL_TYPE_BASELIGHT
-#		define COMPUTE_TBN
-#	endif
-#   ifdef VERTEX_SHADER
-#		include "$DEPTH_PASS_SAMPLERS$"
-#		include "instance_color.vert"
+#   if defined MATERIAL_TYPE_PBR || defined MATERIAL_TYPE_BASELIGHT
+#       define COMPUTE_TBN
 #   endif
-#	ifdef FRAGMENT_SHADER
-#		include "instance_color.frag"
-#	endif
+#   ifdef VERTEX_SHADER
+#       include "$DEPTH_PASS_SAMPLERS$"
+#       include "instance_color.vert"
+#   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_color.frag"
+#   endif
 #endif // MATERIAL_PASS_DEPTH

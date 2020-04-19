@@ -100,11 +100,11 @@ float rand( vec4 co ) {
 }
 
 vec3 sepia( in vec3 color ) {
-	return dot( color, vec3( 0.2126, 0.7152, 0.0722 ) ) * vec3(1.0,0.89,0.71);
+    return dot( color, vec3( 0.2126, 0.7152, 0.0722 ) ) * vec3(1.0,0.89,0.71);
 }
 
 vec3 grayscale( vec3 color, float scale ) {
-	return mix( color, vec3( dot( color, vec3( 0.2126, 0.7152, 0.0722 ) ) ), scale );
+    return mix( color, vec3( dot( color, vec3( 0.2126, 0.7152, 0.0722 ) ) ), scale );
 }
 
 #endif // CORE_H

@@ -32,12 +32,12 @@ SOFTWARE.
 
 out gl_PerVertex
 {
-	vec4 gl_Position;
+    vec4 gl_Position;
 };
 
 layout( location = 0 ) out vec4 VS_Color;
 
 void main() {
-	gl_Position = ViewProjection * vec4( InPosition, 1.0 );
-	VS_Color = InColor;
+    gl_Position = ViewProjection * vec4( InPosition, 1.0 );
+    VS_Color = InColor;
 }

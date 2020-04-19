@@ -35,7 +35,7 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 layout( binding = 0 ) uniform sampler2D Smp_Input;
 
 void main() {
-	ivec2 Coord = ivec2( floor( gl_FragCoord.xy ) * 2.0 );
+    ivec2 Coord = ivec2( floor( gl_FragCoord.xy ) * 2.0 );
     vec2 a = texelFetch( Smp_Input, Coord, 0 ).rg;
     vec2 b = texelFetch( Smp_Input, Coord + ivec2( 1, 0 ), 0 ).rg;
     vec2 c = texelFetch( Smp_Input, Coord + ivec2( 1, 1 ), 0 ).rg;

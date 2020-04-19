@@ -33,7 +33,7 @@ SOFTWARE.
 //#define FXAA_QUALITY__PRESET 12
 #define FXAA_QUALITY__PRESET 39
 #define FXAA_GATHER4_ALPHA 1
-		
+        
 #include "postprocess/FXAA_3_11.h"
 #include "base/viewuniforms.glsl"
 
@@ -44,11 +44,11 @@ layout( location = 0 ) centroid noperspective in vec2 VS_TexCoord;
 layout( binding = 0 ) uniform sampler2D Smp_Source;
 
 void main() {
-	// Adjust texture coordinates for dynamic resoution
-	vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
-	tc.y = 1.0 - tc.y;
-	
-	FS_FragColor = FxaaPixelShader(
+    // Adjust texture coordinates for dynamic resoution
+    vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
+    tc.y = 1.0 - tc.y;
+    
+    FS_FragColor = FxaaPixelShader(
             // Use noperspective interpolation here (turn off perspective interpolation).
             // {xy} = center of pixel
             tc,
@@ -164,5 +164,5 @@ void main() {
             // Immedates will result in compiler un-optimizing.
             // {xyzw} = float4(1.0, -1.0, 0.25, -0.25)
             FxaaFloat4( 1.0, -1.0, 0.25, -0.25 )
-	);
+    );
 }

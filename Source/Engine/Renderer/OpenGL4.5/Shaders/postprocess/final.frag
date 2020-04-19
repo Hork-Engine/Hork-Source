@@ -46,38 +46,38 @@ layout( binding = 4 ) uniform sampler2D Smp_Bloom32;
 layout( binding = 5 ) uniform sampler2D Smp_Bloom128;
 
 vec4 CalcBloom() {
-	vec2 tc = VS_TexCoord.zw;
-	
-	return mat4( texture( Smp_Bloom2, tc ),
-	             texture( Smp_Bloom8, tc ),
-				 texture( Smp_Bloom32, tc ),
-				 texture( Smp_Bloom128, tc ) ) * PostprocessBloomMix;
+    vec2 tc = VS_TexCoord.zw;
+    
+    return mat4( texture( Smp_Bloom2, tc ),
+                 texture( Smp_Bloom8, tc ),
+                 texture( Smp_Bloom32, tc ),
+                 texture( Smp_Bloom128, tc ) ) * PostprocessBloomMix;
 }
 
 void main() {
-	FS_FragColor = texture( Smp_Source, VS_TexCoord.xy );
+    FS_FragColor = texture( Smp_Source, VS_TexCoord.xy );
 
-	// Bloom
+    // Bloom
     if ( PostprocessAttrib.x > 0.0 ) {
-		FS_FragColor += CalcBloom();
-	}
+        FS_FragColor += CalcBloom();
+    }
 
-	vec3 fragColor = FS_FragColor.rgb;
+    vec3 fragColor = FS_FragColor.rgb;
 
-	// Tonemapping
+    // Tonemapping
     if ( PostprocessAttrib.y > 0.0 ) {
-		//if ( VS_TexCoord.x > 0.5 ) {
-			//fragColor = ToneLinear( fragColor, VS_Exposure );
-			fragColor = ToneReinhard3( fragColor, VS_Exposure, 1.9 );
-		//} else {
-		    //fragColor = ToneReinhard( fragColor, VS_Exposure );
-			//fragColor = ToneReinhard2( fragColor, VS_Exposure, 1.9 );
-			//fragColor = Uncharted2Tonemap( fragColor, VS_Exposure );
-			//fragColor = ACESFilm( fragColor, VS_Exposure );
-			//fragColor = ToneFilmicALU( fragColor, VS_Exposure );
-			//fragColor = ToneFilmicALU( fragColor, 1.0 );
-		//}
-	}
+        //if ( VS_TexCoord.x > 0.5 ) {
+            //fragColor = ToneLinear( fragColor, VS_Exposure );
+            fragColor = ToneReinhard3( fragColor, VS_Exposure, 1.9 );
+        //} else {
+            //fragColor = ToneReinhard( fragColor, VS_Exposure );
+            //fragColor = ToneReinhard2( fragColor, VS_Exposure, 1.9 );
+            //fragColor = Uncharted2Tonemap( fragColor, VS_Exposure );
+            //fragColor = ACESFilm( fragColor, VS_Exposure );
+            //fragColor = ToneFilmicALU( fragColor, VS_Exposure );
+            //fragColor = ToneFilmicALU( fragColor, 1.0 );
+        //}
+    }
 
     // Vignette
     if ( VignetteColorIntensity.a > 0.0 ) {
@@ -85,23 +85,23 @@ void main() {
         float LengthSqr = dot( VignetteOffset, VignetteOffset );
         float VignetteShade = smoothstep( VignetteOuterInnerRadiusSqr.x, VignetteOuterInnerRadiusSqr.y, LengthSqr );
         fragColor = mix( VignetteColorIntensity.rgb, fragColor, mix( 1.0, VignetteShade, VignetteColorIntensity.a ) );
-	}
+    }
 
-	// Apply brightness
+    // Apply brightness
     fragColor *= GetFrameBrightness();
-	
-	FS_FragColor.rgb = fragColor;
+    
+    FS_FragColor.rgb = fragColor;
 
     // Pack pixel luminance to alpha channel for FXAA algorithm
     FS_FragColor.a = PostprocessAttrib.w > 0.0
-	                       ? LinearToSRGB( builtin_saturate( builtin_luminance( fragColor ) ) )
-						   : 1.0;
-						   
+                           ? LinearToSRGB( builtin_saturate( builtin_luminance( fragColor ) ) )
+                           : 1.0;
+                           
 #ifdef DEBUG_RENDER_MODE
     uint DebugMode = NumDirectionalLights.w;
     switch( DebugMode ) {
-	case 0:
-	    break;
+    case 0:
+        break;
     case DEBUG_BLOOM:
         FS_FragColor = CalcBloom();
         break;
@@ -110,9 +110,9 @@ void main() {
             FS_FragColor = vec4( VS_Exposure, VS_Exposure, VS_Exposure, 1.0 );
         }
         break;
-	default:
+    default:
         FS_FragColor = texture( Smp_Source, VS_TexCoord.xy );
-		break;
+        break;
     }
 #endif
 }

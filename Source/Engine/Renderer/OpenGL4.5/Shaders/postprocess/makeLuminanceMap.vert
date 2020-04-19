@@ -32,14 +32,14 @@ SOFTWARE.
 
 out gl_PerVertex
 {
-	vec4 gl_Position;
+    vec4 gl_Position;
 };
 
 layout( location = 0 ) noperspective out vec2 VS_TexCoord;
 
 void main() {
-	gl_Position = vec4( InPosition, 0.0, 1.0 );
-	VS_TexCoord = InPosition * 0.5 + 0.5;
-	VS_TexCoord *= GetDynamicResolutionRatio();
-	VS_TexCoord.y = 1.0 - VS_TexCoord.y;
+    gl_Position = vec4( InPosition, 0.0, 1.0 );
+    VS_TexCoord = InPosition * 0.5 + 0.5;
+    VS_TexCoord *= GetDynamicResolutionRatio();
+    VS_TexCoord.y = 1.0 - VS_TexCoord.y;
 }

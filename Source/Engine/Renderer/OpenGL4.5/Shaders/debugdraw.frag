@@ -33,5 +33,5 @@ layout( location = 0 ) out vec4 FS_FragColor;
 layout( location = 0 ) in vec4 VS_Color;
 
 void main() {
-	FS_FragColor = VS_Color;
+    FS_FragColor = VS_Color;
 }

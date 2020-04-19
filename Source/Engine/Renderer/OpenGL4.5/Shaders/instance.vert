@@ -35,25 +35,25 @@ out gl_PerVertex
 
 #if defined MATERIAL_PASS_SHADOWMAP
 
-	layout( location = 0 ) out flat int VS_InstanceID;
+    layout( location = 0 ) out flat int VS_InstanceID;
 
-#	ifdef SHADOW_MASKING
-		layout( location = 1 ) out vec2 VS_TexCoord;
-#	endif
+#   ifdef SHADOW_MASKING
+        layout( location = 1 ) out vec2 VS_TexCoord;
+#   endif
 
-	layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-		mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
-		mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
-	};
+    layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
+        mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+        mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+    };
 
 #endif
 
 #if defined SKINNED_MESH
 
-	layout( binding = 2, std140 ) uniform JointTransforms
-	{
-		vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
-	};
+    layout( binding = 2, std140 ) uniform JointTransforms
+    {
+        vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
+    };
 
 #endif // SKINNED_MESH
 
@@ -88,29 +88,29 @@ void main() {
 
     // Built-in material code (shadowmap)
 
-#	ifdef MATERIAL_PASS_SHADOWMAP
-#		include "$SHADOWMAP_PASS_VERTEX_CODE$"
-		gl_Position = CascadeViewProjection[ gl_InstanceID ] * gl_Position;
-		VS_InstanceID = gl_InstanceID;
-#		ifdef SHADOW_MASKING
-			VS_TexCoord = InTexCoord;
-#		endif
-#	endif
+#   ifdef MATERIAL_PASS_SHADOWMAP
+#       include "$SHADOWMAP_PASS_VERTEX_CODE$"
+        gl_Position = CascadeViewProjection[ gl_InstanceID ] * gl_Position;
+        VS_InstanceID = gl_InstanceID;
+#       ifdef SHADOW_MASKING
+            VS_TexCoord = InTexCoord;
+#       endif
+#   endif
 
     // Built-in material code (depth)
 
-#	ifdef MATERIAL_PASS_DEPTH
-#		include "$DEPTH_PASS_VERTEX_CODE$"
-#		if defined WEAPON_DEPTH_HACK
-			gl_Position.z += 0.1;
-#		elif defined SKYBOX_DEPTH_HACK
-			gl_Position.z = 0.0;
-#		endif
-#	endif
+#   ifdef MATERIAL_PASS_DEPTH
+#       include "$DEPTH_PASS_VERTEX_CODE$"
+#       if defined WEAPON_DEPTH_HACK
+            gl_Position.z += 0.1;
+#       elif defined SKYBOX_DEPTH_HACK
+            gl_Position.z = 0.0;
+#       endif
+#   endif
 
     // Built-in material code (wireframe)
 
-#	ifdef MATERIAL_PASS_WIREFRAME
-#		include "$WIREFRAME_PASS_VERTEX_CODE$"
-#	endif
+#   ifdef MATERIAL_PASS_WIREFRAME
+#       include "$WIREFRAME_PASS_VERTEX_CODE$"
+#   endif
 }

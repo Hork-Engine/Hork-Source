@@ -36,5 +36,5 @@ layout( location = 1 ) in vec4 VS_Color;
 layout( binding = 0 ) uniform sampler2D Smp_Source;
 
 void main() {
-	FS_FragColor = VS_Color * texture( Smp_Source, VS_TexCoord );
+    FS_FragColor = VS_Color * texture( Smp_Source, VS_TexCoord );
 }

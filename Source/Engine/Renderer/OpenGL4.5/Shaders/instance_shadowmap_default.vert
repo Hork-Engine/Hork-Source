@@ -32,31 +32,31 @@ SOFTWARE.
 
 out gl_PerVertex
 {
-	vec4 gl_Position;
+    vec4 gl_Position;
 };
 
 layout( location = 0 ) out flat int VS_InstanceID;
 
 #ifdef SHADOW_MASKING
-	layout( location = 1 ) out vec2 VS_TexCoord;
+    layout( location = 1 ) out vec2 VS_TexCoord;
 #endif
 
 #if defined SKINNED_MESH
-	layout( binding = 2, std140 ) uniform JointTransforms
-	{
-		vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
-	};
+    layout( binding = 2, std140 ) uniform JointTransforms
+    {
+        vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
+    };
 #endif
 
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-	mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
-	mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+    mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+    mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
 };
 
 void main() {
     #ifdef SKINNED_MESH
         const vec4 SrcPosition = vec4( InPosition, 1.0 );
-		
+        
         const vec4
         JointTransform0 = Transform[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
                         + Transform[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]

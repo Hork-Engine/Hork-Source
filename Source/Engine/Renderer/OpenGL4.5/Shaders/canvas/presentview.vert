@@ -32,16 +32,16 @@ SOFTWARE.
 
 out gl_PerVertex
 {
-	vec4 gl_Position;
+    vec4 gl_Position;
 };
 
 layout( location = 0 ) noperspective out vec2 VS_TexCoord;
 layout( location = 1 ) out vec4 VS_Color;
 
 void main() {
-	gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
-	VS_TexCoord = InTexCoord;
-	VS_Color = InColor;
+    gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
+    VS_TexCoord = InTexCoord;
+    VS_Color = InColor;
 #ifdef SHOW_DEBUG_IMAGE
     VS_TexCoord.x = InTexCoord.x;
     VS_TexCoord.y = 1.0-InTexCoord.y;

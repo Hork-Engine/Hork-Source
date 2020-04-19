@@ -35,36 +35,36 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
 {
     // Ortho projection for canvas rendering
     mat4 OrthoProjection;
-	
-	// View projection matrix: VewProjection = ProjectionMatrix * ViewMatrix
+    
+    // View projection matrix: VewProjection = ProjectionMatrix * ViewMatrix
     mat4 ViewProjection;
-	
-	// Inversed projection matrix
+    
+    // Inversed projection matrix
     mat4 InverseProjectionMatrix;
-	
-	// Conversion of normal from world to view space
+    
+    // Conversion of normal from world to view space
     vec4 WorldNormalToViewSpace0;
     vec4 WorldNormalToViewSpace1;
     vec4 WorldNormalToViewSpace2;
-	
-	// Viewport parameters:
-	// x = 1/width
-	// y = 1/height
-	// z = znear
-	// w = zfar
+    
+    // Viewport parameters:
+    // x = 1/width
+    // y = 1/height
+    // z = znear
+    // w = zfar
     vec4 ViewportParams;
-	
-	// Timers
-	// x = running time
-	// y = gampley timw
-	// zw = dynamic resolution ratio
+    
+    // Timers
+    // x = running time
+    // y = gampley timw
+    // zw = dynamic resolution ratio
     vec4 Timers;
-	
-	// View position and frametime delta
-	// xyz = ViewPosition
-	// w = frametime delta
+    
+    // View position and frametime delta
+    // xyz = ViewPosition
+    // w = frametime delta
     vec4 ViewPosition;
-	
+    
     vec4 PostprocessBloomMix;
     vec4 PostprocessAttrib;             // x - bloom enable / disable, y - tone mapping exposure, z - color grading. w - FXAA
     vec4 VignetteColorIntensity;        // rgb, intensity
@@ -86,27 +86,27 @@ Some helper functions
 */
 
 float GetViewportWidthInverted() {
-	return ViewportParams.x;
+    return ViewportParams.x;
 }
 
 float GetViewportHeightInverted() {
-	return ViewportParams.y;
+    return ViewportParams.y;
 }
 
 vec2 GetViewportSizeInverted() {
-	return ViewportParams.xy;
+    return ViewportParams.xy;
 }
 
 float GetViewportZNear() {
-	return ViewportParams.z;
+    return ViewportParams.z;
 }
 
 float GetViewportZFar() {
-	return ViewportParams.w;
+    return ViewportParams.w;
 }
 
 float RunningTime() {
-	return Timers.x;
+    return Timers.x;
 }
 
 float GameplayTime() {
@@ -126,11 +126,11 @@ vec2 GetDynamicResolutionRatio() {
 }
 
 float GetPostprocessExposure() {
-	return PostprocessAttrib.y;
+    return PostprocessAttrib.y;
 }
 
 float GetFrameBrightness() {
-	return VignetteOuterInnerRadiusSqr.z;
+    return VignetteOuterInnerRadiusSqr.z;
 }
 
 #endif // VIEWUNIFORMS_H

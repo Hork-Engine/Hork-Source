@@ -57,10 +57,10 @@ layout( location = POSITION_LOCATION ) out vec3 VS_Position;
 
 #if defined SKINNED_MESH
 
-	layout( binding = 2, std140 ) uniform JointTransforms
-	{
-		vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
-	};
+    layout( binding = 2, std140 ) uniform JointTransforms
+    {
+        vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
+    };
 
 #endif // SKINNED_MESH
 

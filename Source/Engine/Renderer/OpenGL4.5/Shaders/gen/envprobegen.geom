@@ -47,18 +47,18 @@ layout( location = 1 ) in flat int VS_InstanceID[];
 
 void main() {
     gl_Layer = VS_InstanceID[0];
-	
+    
     gl_Position = gl_in[ 0 ].gl_Position;
     GS_Normal = VS_Normal[ 0 ];
     EmitVertex();
-	
+    
     gl_Position = gl_in[ 1 ].gl_Position;
     GS_Normal = VS_Normal[ 1 ];
     EmitVertex();
-	
+    
     gl_Position = gl_in[ 2 ].gl_Position;
     GS_Normal = VS_Normal[ 2 ];
     EmitVertex();
-	
+    
     EndPrimitive();
 }

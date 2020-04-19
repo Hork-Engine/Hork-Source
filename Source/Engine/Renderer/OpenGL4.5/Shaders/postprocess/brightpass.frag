@@ -40,10 +40,10 @@ const vec4 BloomStart = vec4( 1.0 ); // TODO: input uniform
 
 void main()
 {
-	// Adjust texture coordinates for dynamic resoution
-	vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
-	tc.y = 1.0 - tc.y;
-	
-	// Bloom texture has RGB8 format, so there is no need to clamp value
+    // Adjust texture coordinates for dynamic resoution
+    vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
+    tc.y = 1.0 - tc.y;
+    
+    // Bloom texture has RGB8 format, so there is no need to clamp value
     FS_FragColor = texture( Smp_Source, tc ) - BloomStart;
 }

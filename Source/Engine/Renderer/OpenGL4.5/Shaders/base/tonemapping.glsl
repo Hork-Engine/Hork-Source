@@ -35,11 +35,11 @@ SOFTWARE.
 
 // Convert linear RGB into a CIE xyY (xy = chroma, Y = luminance).
 vec3 RGB2xyY( in vec3 rgb ) {
-	const mat3 RGB2XYZ = mat3
+    const mat3 RGB2XYZ = mat3
     (
-		0.4124, 0.3576, 0.1805,
-		0.2126, 0.7152, 0.0722,
-		0.0193, 0.1192, 0.9505
+        0.4124, 0.3576, 0.1805,
+        0.2126, 0.7152, 0.0722,
+        0.0193, 0.1192, 0.9505
     );
 
     vec3 XYZ = RGB2XYZ * rgb;
@@ -50,16 +50,16 @@ vec3 RGB2xyY( in vec3 rgb ) {
 
 // Convert a CIE xyY value into linear RGB.
 vec3 xyY2RGB( in vec3 xyY ) {
-	const mat3 XYZ2RGB = mat3
+    const mat3 XYZ2RGB = mat3
     (
-		3.2406, -1.5372, -0.4986,
-		-0.9689, 1.8758, 0.0415,
-		0.0557, -0.2040, 1.0570
-	);
+        3.2406, -1.5372, -0.4986,
+        -0.9689, 1.8758, 0.0415,
+        0.0557, -0.2040, 1.0570
+    );
 
-	// xyY to XYZ
-	float z_div_y = xyY.z / max( xyY.y, 1e-10 );
-	return XYZ2RGB * vec3( z_div_y * xyY.x, xyY.z, z_div_y * (1.0 - xyY.x - xyY.y) );
+    // xyY to XYZ
+    float z_div_y = xyY.z / max( xyY.y, 1e-10 );
+    return XYZ2RGB * vec3( z_div_y * xyY.x, xyY.z, z_div_y * (1.0 - xyY.x - xyY.y) );
 }
 
 vec3 ToneLinear( in vec3 Color, in float Exposure ) {
@@ -72,7 +72,7 @@ vec3 ToneReinhard( in vec3 Color, in float Exposure ) {
 }
 
 vec3 ToneReinhard2( in vec3 Color, in float Exposure, in float WhitePoint ) {
-	vec3 xyY = RGB2xyY( Color );
+    vec3 xyY = RGB2xyY( Color );
 
     float x = xyY.z * Exposure;
     xyY.z = x * ( 1.0 + x / (WhitePoint * WhitePoint) ) / ( 1.0 + x );
@@ -86,12 +86,12 @@ vec3 ToneReinhard3( in vec3 Color, in float Exposure, in float WhitePoint ) {
 }
 
 vec3 ACESFilm( in vec3 Color, in float Exposure ) {
-	const float a = 2.51f;
-	const float b = 0.03f;
-	const float c = 2.43f;
-	const float d = 0.59f;
-	const float e = 0.14f;
-	vec3 x = Color * Exposure;
+    const float a = 2.51f;
+    const float b = 0.03f;
+    const float c = 2.43f;
+    const float d = 0.59f;
+    const float e = 0.14f;
+    vec3 x = Color * Exposure;
     return saturate3( (x*(a*x+b))/(x*(c*x+d)+e) );
 }
 
@@ -104,10 +104,10 @@ vec3 Uncharted2Tonemap( in vec3 Color, in float Exposure )
     const float E = 0.02;
     const float F = 0.30;
     const float W = 11.2;
-	const float whiteScale = 1.0f / ( ((W*(A*W+C*B)+D*E)/(W*(A*W+B)+D*F))-E/F );
-	const float expBias = 2.0;
-	
-	vec3 x = Color * ( Exposure * expBias );
+    const float whiteScale = 1.0f / ( ((W*(A*W+C*B)+D*E)/(W*(A*W+B)+D*F))-E/F );
+    const float expBias = 2.0;
+    
+    vec3 x = Color * ( Exposure * expBias );
 
     x = ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
     
@@ -133,8 +133,8 @@ vec3 ToneHaarmPeterDuikerCurve( in vec3 Color, in float Exposure, in sampler1D L
     const float gamma = 0.45;
     const float FilmLutWidth = 256;
     const float Padding = 0.5/FilmLutWidth;
-	const float OneMinusPadding = 1.0 - Padding;
-	
+    const float OneMinusPadding = 1.0 - Padding;
+    
     vec3 LogColor = ( log10( 0.4 * x / linReference ) / ld * gamma + logReference ) / 1023.0;
     LogColor = saturate3( LogColor );
       
