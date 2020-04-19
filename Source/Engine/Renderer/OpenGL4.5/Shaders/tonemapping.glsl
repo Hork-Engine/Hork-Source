@@ -63,13 +63,6 @@ vec3 xyY2RGB( in vec3 xyY ) {
 }
 
 vec3 ToneLinear( in vec3 Color, in float Exposure ) {
-	/*
-	vec3 xyY = RGB2xyY( Color );
-
-	xyY.z *= Exposure;
-
-	return xyY2RGB( xyY );
-	*/
     return Color * Exposure;
 }
 
@@ -101,7 +94,6 @@ vec3 ACESFilm( in vec3 Color, in float Exposure ) {
 	vec3 x = Color * Exposure;
     return saturate3( (x*(a*x+b))/(x*(c*x+d)+e) );
 }
-
 
 vec3 Uncharted2Tonemap( in vec3 Color, in float Exposure )
 {

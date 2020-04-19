@@ -37,6 +37,7 @@ SOFTWARE.
 #include "$PREDEFINES$"
 
 #include "core.glsl"
+#include "texture.glsl"
 #include "viewuniforms.glsl"
 
 #if defined MATERIAL_PASS_SHADOWMAP
@@ -44,9 +45,6 @@ SOFTWARE.
 #else
 #	include "instanceUniforms.glsl"
 #endif
-
-// Built-in source code
-#include "material_builtin.glsl"
 
 #if defined MATERIAL_PASS_DEPTH
 #   ifdef VERTEX_SHADER

@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#ifndef MATERIAL_BUILTIN_H
-#define MATERIAL_BUILTIN_H
+#ifndef TEXTURE_H
+#define TEXTURE_H
 
 vec4 texture_srgb_alpha( in sampler1D sampler, in float texCoord )
 {
@@ -775,27 +775,5 @@ vec3 texture_nm_dxt5( in sampler2DRect sampler, in vec2 texCoord )
   decodedN = normalize( decodedN );
   return decodedN;
 }
-vec2 builtin_spheremap_coord( in vec3 dir ) {
-  vec2 uv = vec2( atan( dir.z, dir.x ), asin( dir.y ) );
-  return uv * vec2(0.1591, 0.3183) + 0.5;
-}
-float builtin_luminance( in vec3 color ) {
-  return dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );
-}
-float builtin_luminance( in vec4 color ) {
-  return dot( color, vec4( 0.2126, 0.7152, 0.0722, 0.0 ) );
-}
-float builtin_saturate( in float color ) {
-  return clamp( color, float(0.0), float(1.0) );
-}
-vec2 builtin_saturate( in vec2 color ) {
-  return clamp( color, vec2(0.0), vec2(1.0) );
-}
-vec3 builtin_saturate( in vec3 color ) {
-  return clamp( color, vec3(0.0), vec3(1.0) );
-}
-vec4 builtin_saturate( in vec4 color ) {
-  return clamp( color, vec4(0.0), vec4(1.0) );
-}
 
-#endif // MATERIAL_BUILTIN_H
+#endif // TEXTURE_h
