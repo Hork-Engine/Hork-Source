@@ -31,6 +31,7 @@ SOFTWARE.
 #include "base/viewuniforms.glsl"
 #include "base/srgb.glsl"
 #include "base/tonemapping.glsl"
+#include "base/debug.glsl"
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
@@ -61,9 +62,6 @@ void main() {
 		FS_FragColor += CalcBloom();
 	}
 
-    // Debug bloom
-	//FS_FragColor = CalcBloom();
-	
 	vec3 fragColor = FS_FragColor.rgb;
 
 	// Tonemapping
@@ -98,10 +96,23 @@ void main() {
     FS_FragColor.a = PostprocessAttrib.w > 0.0
 	                       ? LinearToSRGB( builtin_saturate( builtin_luminance( fragColor ) ) )
 						   : 1.0;
-
-    // Debug output
-    //if ( VS_TexCoord.x < 0.05 && VS_TexCoord.y < 0.05 ) {
-    //    FS_FragColor = vec4( VS_Exposure, VS_Exposure, VS_Exposure, 1.0 );
-    //}
-
+						   
+#ifdef DEBUG_RENDER_MODE
+    uint DebugMode = NumDirectionalLights.w;
+    switch( DebugMode ) {
+	case 0:
+	    break;
+    case DEBUG_BLOOM:
+        FS_FragColor = CalcBloom();
+        break;
+    case DEBUG_EXPOSURE:
+        if ( VS_TexCoord.x < 0.05 && VS_TexCoord.y < 0.05 ) {
+            FS_FragColor = vec4( VS_Exposure, VS_Exposure, VS_Exposure, 1.0 );
+        }
+        break;
+	default:
+        FS_FragColor = texture( Smp_Source, VS_TexCoord.xy );
+		break;
+    }
+#endif
 }

@@ -28,17 +28,28 @@ SOFTWARE.
 
 */
 
-layout( location = 0 ) out vec4 FS_FragColor;
-layout( location = 0 ) in vec3 GS_Barycentric;
+#ifndef DEBUG_H
+#define DEBUG_H
 
-void main() {
-#ifdef SKINNED_MESH
-    const vec4 Color = vec4(0.5,0.5,1.0,0.5);
-#else
-    const vec4 Color = vec4(0.5,1.0,0.5,0.5);
+#ifdef DEBUG_RENDER_MODE
+#define DEBUG_FULLBRIGHT   1
+#define DEBUG_NORMAL       2
+#define DEBUG_METALLIC     3
+#define DEBUG_ROUGHNESS    4
+#define DEBUG_AMBIENT      5
+#define DEBUG_EMISSION     6
+#define DEBUG_LIGHTMAP     7
+#define DEBUG_VERTEX_LIGHT 8
+#define DEBUG_DIRLIGHT     9
+#define DEBUG_POINTLIGHT   10
+#define DEBUG_TEXCOORDS    11
+#define DEBUG_TEXNORMAL    12
+#define DEBUG_TBN_NORMAL   13
+#define DEBUG_TBN_TANGENT  14
+#define DEBUG_TBN_BINORMAL 15
+#define DEBUG_SPECULAR     16
+#define DEBUG_BLOOM        17
+#define DEBUG_EXPOSURE     18
 #endif
-    const float LineWidth = 1.5;
-    vec3 SmoothStep = smoothstep( vec3( 0.0 ), fwidth( GS_Barycentric ) * LineWidth, GS_Barycentric );
-    FS_FragColor = Color;
-    FS_FragColor.a *= 1.0 - min( min( SmoothStep.x, SmoothStep.y ), SmoothStep.z );
-}
+
+#endif // DEBUG_H

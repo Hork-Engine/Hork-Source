@@ -30,24 +30,7 @@ SOFTWARE.
 
 #include "base/common.frag"
 #include "base/pbr.frag"
-
-#define DEBUG_RENDER_MODE // TODO: define from app!!!
-#define DEBUG_FULLBRIGHT   1
-#define DEBUG_NORMAL       2
-#define DEBUG_METALLIC     3
-#define DEBUG_ROUGHNESS    4
-#define DEBUG_AMBIENT      5
-#define DEBUG_EMISSION     6
-#define DEBUG_LIGHTMAP     7
-#define DEBUG_VERTEX_LIGHT 8
-#define DEBUG_DIRLIGHT     9
-#define DEBUG_POINTLIGHT   10
-#define DEBUG_TEXCOORDS    11
-#define DEBUG_TEXNORMAL    12
-#define DEBUG_TBN_NORMAL   13
-#define DEBUG_TBN_TANGENT  14
-#define DEBUG_TBN_BINORMAL 15
-#define DEBUG_SPECULAR     16
+#include "base/debug.glsl"
 
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
     mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];

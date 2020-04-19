@@ -82,6 +82,9 @@ struct AShaderSources {
         #ifdef SHADOWMAP_EVSM
         predefines += "#define SHADOWMAP_EVSM\n";
         #endif
+        #ifdef AN_DEBUG
+        predefines += "#define DEBUG_RENDER_MODE\n";
+        #endif
 
         Sources[0] = "#version 450\n"
                      "#extension GL_ARB_bindless_texture : enable\n";
@@ -90,9 +93,6 @@ struct AShaderSources {
         _Module->InitializeFromCode( _ShaderType, NumSources, Sources, &Log );
 
         if ( Log && *Log ) {
-            //for ( int i = 0 ; i < NumSources ; i++ ) {
-            //    GLogger.Print( Sources[i] );
-            //}
             switch ( _ShaderType ) {
             case VERTEX_SHADER:
                 GLogger.Printf( "VS: %s\n", Log );
