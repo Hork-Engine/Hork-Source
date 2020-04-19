@@ -185,18 +185,18 @@ void AEnvProbeGenerator::Initialize() {
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
-    AString vertexSource = LoadShader( "envprobegen.vert" );
+    AString vertexSource = LoadShader( "gen/envprobegen.vert" );
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( vertexSource.CStr() );
     GShaderSources.Build( VERTEX_SHADER, &vertexShader );
 
-    AString geometrySource = LoadShader( "envprobegen.geom" );
+    AString geometrySource = LoadShader( "gen/envprobegen.geom" );
     GShaderSources.Clear();
     GShaderSources.Add( geometrySource.CStr() );
     GShaderSources.Build( GEOMETRY_SHADER, &geometryShader );
 
-    AString fragmentSource = LoadShader( "envprobegen.frag" );
+    AString fragmentSource = LoadShader( "gen/envprobegen.frag" );
     GShaderSources.Clear();
     GShaderSources.Add( fragmentSource.CStr() );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShader );

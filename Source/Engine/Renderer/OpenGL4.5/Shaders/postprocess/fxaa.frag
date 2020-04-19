@@ -34,8 +34,8 @@ SOFTWARE.
 #define FXAA_QUALITY__PRESET 39
 #define FXAA_GATHER4_ALPHA 1
 		
-#include "FXAA_3_11.h"
-#include "viewuniforms.glsl"
+#include "postprocess/FXAA_3_11.h"
+#include "base/viewuniforms.glsl"
 
 layout( location = 0 ) out vec4 FS_FragColor;
 

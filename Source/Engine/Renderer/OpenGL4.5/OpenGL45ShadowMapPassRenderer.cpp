@@ -135,9 +135,9 @@ void AShadowMapPassRenderer::CreateShadowDepthSamplers() {
 #endif
 
 void AShadowMapPassRenderer::CreatePipeline() {
-    AString codeVS = LoadShader( "shadowcast.vert" );
+    AString codeVS = LoadShader( "instance_shadowmap_default.vert" );
     AString codeGS = LoadShader( "instance_shadowmap.geom" );
-    AString codeFS = LoadShader( "shadowcast.frag" );
+    AString codeFS = LoadShader( "instance_shadowmap_default.frag" );
 
     PipelineCreateInfo pipelineCI = {};
 

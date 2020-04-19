@@ -28,22 +28,19 @@ SOFTWARE.
 
 */
 
-#include "viewuniforms.glsl"
+#include "base/viewuniforms.glsl"
 
-out gl_PerVertex
-{
-	vec4 gl_Position;
-};
+layout( location = 0 ) out vec4 FS_FragColor;
 
-layout( location = 0 ) noperspective out vec2 VS_TexCoord;
-layout( location = 1 ) out vec4 VS_Color;
+layout( location = 0 ) centroid noperspective in vec2 VS_TexCoord;
+layout( location = 1 ) in vec4 VS_Color;
+
+layout( binding = 0 ) uniform sampler2D Smp_Source;
 
 void main() {
-	gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
-	VS_TexCoord = InTexCoord;
-	VS_Color = InColor;
-#ifdef SHOW_DEBUG_IMAGE
-    VS_TexCoord.x = InTexCoord.x;
-    VS_TexCoord.y = 1.0-InTexCoord.y;
-#endif
+	// Adjust texture coordinates for dynamic resoution
+	vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
+	tc.y = 1.0 - tc.y;
+	
+	FS_FragColor = VS_Color * texture( Smp_Source, tc );
 }

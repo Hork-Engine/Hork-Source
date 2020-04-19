@@ -141,8 +141,8 @@ void ACanvasPassRenderer::CreatePresentViewPipeline() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    AString vertexSourceCode = LoadShader( "presentview.vert" );
-    AString fragmentSourceCode = LoadShader( "presentview.frag" );
+    AString vertexSourceCode = LoadShader( "canvas/presentview.vert" );
+    AString fragmentSourceCode = LoadShader( "canvas/presentview.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
@@ -255,8 +255,8 @@ void ACanvasPassRenderer::CreatePipelines() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    AString vertexSourceCode = LoadShader( "canvas.vert" );
-    AString fragmentSourceCode = LoadShader( "canvas.frag" );
+    AString vertexSourceCode = LoadShader( "canvas/canvas.vert" );
+    AString fragmentSourceCode = LoadShader( "canvas/canvas.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );

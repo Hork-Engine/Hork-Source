@@ -105,8 +105,8 @@ void APostprocessPassRenderer::CreatePipeline() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    AString vertexSourceCode = LoadShader( "final.vert" );
-    AString fragmentSourceCode = LoadShader( "final.frag" );
+    AString vertexSourceCode = LoadShader( "postprocess/final.vert" );
+    AString fragmentSourceCode = LoadShader( "postprocess/final.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );

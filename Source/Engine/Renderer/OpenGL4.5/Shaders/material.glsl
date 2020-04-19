@@ -36,9 +36,9 @@ SOFTWARE.
 // Built-in predefines
 #include "$PREDEFINES$"
 
-#include "core.glsl"
-#include "texture.glsl"
-#include "viewuniforms.glsl"
+#include "base/core.glsl"
+#include "base/texture.glsl"
+#include "base/viewuniforms.glsl"
 
 #if defined MATERIAL_PASS_SHADOWMAP
 #	include "shadowcastInstance.glsl"

@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "viewuniforms.glsl"
+#include "base/viewuniforms.glsl"
 
 layout( location = 0 ) out vec2 FS_FragColor;
 

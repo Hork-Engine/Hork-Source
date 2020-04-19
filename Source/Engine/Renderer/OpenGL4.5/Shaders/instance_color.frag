@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include "common.frag"
-#include "pbr.frag"
+#include "base/common.frag"
+#include "base/pbr.frag"
 
 #define DEBUG_RENDER_MODE // TODO: define from app!!!
 #define DEBUG_FULLBRIGHT   1

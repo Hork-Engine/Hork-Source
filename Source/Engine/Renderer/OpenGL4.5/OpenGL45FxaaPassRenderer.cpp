@@ -104,8 +104,8 @@ void AFxaaPassRenderer::CreatePipeline() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    AString vertexSourceCode = LoadShader( "fxaa.vert" );
-    AString fragmentSourceCode = LoadShader( "fxaa.frag" );
+    AString vertexSourceCode = LoadShader( "postprocess/fxaa.vert" );
+    AString fragmentSourceCode = LoadShader( "postprocess/fxaa.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );

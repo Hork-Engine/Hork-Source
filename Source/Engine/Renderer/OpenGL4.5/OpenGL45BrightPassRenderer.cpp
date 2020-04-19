@@ -146,8 +146,8 @@ void ABrightPassRenderer::CreateBrightPipeline() {
 
     ShaderModule vertexShaderModule, fragmentShaderModule;
 
-    AString vertexSourceCode = LoadShader( "brightpass.vert" );
-    AString fragmentSourceCode = LoadShader( "brightpass.frag" );
+    AString vertexSourceCode = LoadShader( "postprocess/brightpass.vert" );
+    AString fragmentSourceCode = LoadShader( "postprocess/brightpass.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
@@ -231,9 +231,9 @@ void ABrightPassRenderer::CreateBlurPipeline() {
 
     ShaderModule vertexShaderModule;
 
-    AString vertexSourceCode = LoadShader( "gauss.vert" );
-    AString gaussFragmentShaderSource1 = LoadShader( "gauss1.frag" );
-    AString gaussFragmentShaderSource2 = LoadShader( "gauss2.frag" );
+    AString vertexSourceCode = LoadShader( "postprocess/gauss.vert" );
+    AString gaussFragmentShaderSource1 = LoadShader( "postprocess/gauss1.frag" );
+    AString gaussFragmentShaderSource2 = LoadShader( "postprocess/gauss2.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
@@ -342,11 +342,11 @@ void ABrightPassRenderer::CreateLuminancePipeline() {
 
     ShaderModule dynamicExposureFSModule;
 
-    AString makeLuminanceMapVS = LoadShader( "makeLuminanceMap.vert" );
-    AString makeLuminanceMapFS = LoadShader( "makeLuminanceMap.frag" );
-    AString sumLuminanceMapVS = LoadShader( "sumLuminanceMap.vert" );
-    AString sumLuminanceMapFS = LoadShader( "sumLuminanceMap.frag" );
-    AString dynamicExposureFS = LoadShader( "dynamicExposure.frag" );
+    AString makeLuminanceMapVS = LoadShader( "postprocess/makeLuminanceMap.vert" );
+    AString makeLuminanceMapFS = LoadShader( "postprocess/makeLuminanceMap.frag" );
+    AString sumLuminanceMapVS = LoadShader( "postprocess/sumLuminanceMap.vert" );
+    AString sumLuminanceMapFS = LoadShader( "postprocess/sumLuminanceMap.frag" );
+    AString dynamicExposureFS = LoadShader( "postprocess/dynamicExposure.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );

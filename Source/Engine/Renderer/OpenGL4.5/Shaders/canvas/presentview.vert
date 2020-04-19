@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "viewuniforms.glsl"
+#include "base/viewuniforms.glsl"
 
 out gl_PerVertex
 {
@@ -42,4 +42,8 @@ void main() {
 	gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
 	VS_TexCoord = InTexCoord;
 	VS_Color = InColor;
+#ifdef SHOW_DEBUG_IMAGE
+    VS_TexCoord.x = InTexCoord.x;
+    VS_TexCoord.y = 1.0-InTexCoord.y;
+#endif
 }

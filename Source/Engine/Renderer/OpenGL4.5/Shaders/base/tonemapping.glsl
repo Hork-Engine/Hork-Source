@@ -31,7 +31,7 @@ SOFTWARE.
 #ifndef TONEMAPPING_H
 #define TONEMAPPING_H
 
-#include "core.glsl"
+#include "base/core.glsl"
 
 // Convert linear RGB into a CIE xyY (xy = chroma, Y = luminance).
 vec3 RGB2xyY( in vec3 rgb ) {
@@ -86,11 +86,11 @@ vec3 ToneReinhard3( in vec3 Color, in float Exposure, in float WhitePoint ) {
 }
 
 vec3 ACESFilm( in vec3 Color, in float Exposure ) {
-	float a = 2.51f;
-	float b = 0.03f;
-	float c = 2.43f;
-	float d = 0.59f;
-	float e = 0.14f;
+	const float a = 2.51f;
+	const float b = 0.03f;
+	const float c = 2.43f;
+	const float d = 0.59f;
+	const float e = 0.14f;
 	vec3 x = Color * Exposure;
     return saturate3( (x*(a*x+b))/(x*(c*x+d)+e) );
 }
@@ -127,17 +127,16 @@ vec3 ToneHaarmPeterDuikerCurve( in vec3 Color, in float Exposure, in sampler1D L
 {
     vec3 x = Color * Exposure;
 
-    float ld = 0.002;
-    float linReference = 0.18;
-    float logReference = 444;
-    float gamma = 0.45;
-      
+    const float ld = 0.002;
+    const float linReference = 0.18;
+    const float logReference = 444;
+    const float gamma = 0.45;
+    const float FilmLutWidth = 256;
+    const float Padding = 0.5/FilmLutWidth;
+	const float OneMinusPadding = 1.0 - Padding;
+	
     vec3 LogColor = ( log10( 0.4 * x / linReference ) / ld * gamma + logReference ) / 1023.0;
     LogColor = saturate3( LogColor );
-      
-    float FilmLutWidth = 256;
-    float Padding = 0.5/FilmLutWidth;
-	float OneMinusPadding = 1.0 - Padding;
       
     x.r = texture( Lookup, mix( Padding, OneMinusPadding, LogColor.r ) ).r;
     x.g = texture( Lookup, mix( Padding, OneMinusPadding, LogColor.g ) ).r;

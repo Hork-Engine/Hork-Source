@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "viewuniforms.glsl"
+#include "base/viewuniforms.glsl"
 
 out gl_PerVertex
 {
@@ -36,10 +36,10 @@ out gl_PerVertex
 };
 
 layout( location = 0 ) noperspective out vec2 VS_TexCoord;
+layout( location = 1 ) out vec4 VS_Color;
 
 void main() {
-	gl_Position = vec4( InPosition, 0.0, 1.0 );
-	VS_TexCoord = InPosition * 0.5 + 0.5;
-	VS_TexCoord *= GetDynamicResolutionRatio();
-	VS_TexCoord.y = 1.0 - VS_TexCoord.y;
+	gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
+	VS_TexCoord = InTexCoord;
+	VS_Color = InColor;
 }

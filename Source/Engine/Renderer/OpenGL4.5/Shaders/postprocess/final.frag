@@ -28,9 +28,9 @@ SOFTWARE.
 
 */
 
-#include "viewuniforms.glsl"
-#include "srgb.glsl"
-#include "tonemapping.glsl"
+#include "base/viewuniforms.glsl"
+#include "base/srgb.glsl"
+#include "base/tonemapping.glsl"
 
 layout( location = 0 ) out vec4 FS_FragColor;
 

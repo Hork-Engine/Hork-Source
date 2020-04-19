@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "viewuniforms.glsl"
+#include "base/viewuniforms.glsl"
 
 out gl_PerVertex
 {
