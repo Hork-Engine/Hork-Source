@@ -138,7 +138,7 @@ PBR (physically based).
 * Code style C with classes.
 * Minimum use of third-party libraries.
 
-## Plannes features
+## Planned features
 * Particle System
 * More realistic renderer (SSR, light probes, reflection probes)
 * Toksvig
