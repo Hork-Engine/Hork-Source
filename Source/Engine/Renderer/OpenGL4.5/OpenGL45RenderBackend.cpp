@@ -41,6 +41,7 @@ SOFTWARE.
 #include "OpenGL45WireframePassRenderer.h"
 #include "OpenGL45DebugDrawPassRenderer.h"
 #include "OpenGL45BrightPassRenderer.h"
+#include "OpenGL45ColorGradingRenderer.h"
 #include "OpenGL45PostprocessPassRenderer.h"
 #include "OpenGL45FxaaPassRenderer.h"
 
@@ -532,6 +533,7 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     GWireframePassRenderer.Initialize();
     GDebugDrawPassRenderer.Initialize();
     GBrightPassRenderer.Initialize();
+    GColorGradingRenderer.Initialize();
     GPostprocessPassRenderer.Initialize();
     GFxaaPassRenderer.Initialize();
     GCanvasPassRenderer.Initialize();
@@ -549,6 +551,7 @@ void ARenderBackend::Deinitialize() {
     GWireframePassRenderer.Deinitialize();
     GDebugDrawPassRenderer.Deinitialize();
     GBrightPassRenderer.Deinitialize();
+    GColorGradingRenderer.Deinitialize();
     GPostprocessPassRenderer.Deinitialize();
     GFxaaPassRenderer.Deinitialize();
     GCanvasPassRenderer.Deinitialize();
@@ -612,7 +615,8 @@ void ARenderBackend::ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width
 
 ATextureGPU * ARenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
     ATextureGPU * texture = CreateResource< ATextureGPU >( _Owner );
-    texture->pHandleGPU = GZoneMemory.ClearedAlloc( sizeof( GHI::Texture ) );
+    texture->pHandleGPU = GZoneMemory.Alloc( sizeof( GHI::Texture ) );
+    texture->pFramebuffer = NULL; // no framebuffer by default
     new (texture->pHandleGPU) GHI::Texture;
     return texture;
 }
@@ -620,6 +624,12 @@ ATextureGPU * ARenderBackend::CreateTexture( IGPUResourceOwner * _Owner ) {
 void ARenderBackend::DestroyTexture( ATextureGPU * _Texture ) {
     using namespace GHI;
     GHI::Texture * texture = GPUTextureHandle( _Texture );
+    if ( _Texture->pFramebuffer ) {
+        // Destroy framebuffer
+        GHI::Framebuffer * fb = static_cast< GHI::Framebuffer * >(_Texture->pFramebuffer);
+        fb->~Framebuffer();
+        GZoneMemory.Free( _Texture->pFramebuffer );
+    }
     texture->~Texture();
     GZoneMemory.Free( _Texture->pHandleGPU );
     DestroyResource( _Texture );
@@ -805,7 +815,7 @@ void ARenderBackend::ReadTexture( ATextureGPU * _Texture, STextureRect const & _
 
 ABufferGPU * ARenderBackend::CreateBuffer( IGPUResourceOwner * _Owner ) {
     ABufferGPU * buffer = CreateResource< ABufferGPU >( _Owner );
-    buffer->pHandleGPU = GZoneMemory.ClearedAlloc( sizeof( GHI::Buffer ) );
+    buffer->pHandleGPU = GZoneMemory.Alloc( sizeof( GHI::Buffer ) );
     new (buffer->pHandleGPU) GHI::Buffer;
     return buffer;
 }
@@ -1130,6 +1140,8 @@ void ARenderBackend::RenderView( SRenderView * _RenderView ) {
     GColorPassRenderer.RenderInstances();
 
     GBrightPassRenderer.Render( GRenderTarget.GetFramebufferTexture() );
+
+    GColorGradingRenderer.Render();
 
     GPostprocessPassRenderer.Render();
 

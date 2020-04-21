@@ -34,28 +34,23 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class APostprocessPassRenderer : public APassRenderer {
+class AColorGradingRenderer : public APassRenderer {
 public:
     void Initialize();
     void Deinitialize();
 
     void Render();
 
-    GHI::RenderPass * GetRenderPass() { return &PostprocessPass; }
-
 private:
     void CreatePipeline();
-    void CreateSampler();
+    void CreateSamplers();
 
-    GHI::RenderPass PostprocessPass;
-    GHI::Pipeline PostprocessPipeline;
-    GHI::Sampler PostprocessSampler;
-    GHI::Sampler BloomSampler;
-    GHI::Sampler LuminanceSampler;
+    GHI::RenderPass Pass;
+    GHI::Pipeline Pipeline;
     GHI::Sampler ColorGradingSampler;
 };
 
-extern APostprocessPassRenderer GPostprocessPassRenderer;
+extern AColorGradingRenderer GColorGradingRenderer;
 
 }
 

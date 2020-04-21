@@ -113,6 +113,8 @@ private:
     SSurfaceStream SurfaceStream;
 
     SRenderFrontendDef RenderDef;
+
+    //TRef< ATexture > ColorGradingLUT;
 };
 
 extern ARenderFrontend & GRenderFrontend;

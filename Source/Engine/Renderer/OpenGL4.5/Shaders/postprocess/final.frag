@@ -39,7 +39,7 @@ layout( location = 0 ) noperspective in vec4 VS_TexCoord;
 layout( location = 1 ) flat in float VS_Exposure;
 
 layout( binding = 0 ) uniform sampler2D Smp_Source;
-layout( binding = 1 ) uniform sampler2D Smp_Reserved; // Reserved for future
+layout( binding = 1 ) uniform sampler3D Smp_ColorGradingLUT;
 layout( binding = 2 ) uniform sampler2D Smp_Bloom2;
 layout( binding = 3 ) uniform sampler2D Smp_Bloom8;
 layout( binding = 4 ) uniform sampler2D Smp_Bloom32;
@@ -58,14 +58,14 @@ void main() {
     FS_FragColor = texture( Smp_Source, VS_TexCoord.xy );
 
     // Bloom
-    if ( PostprocessAttrib.x > 0.0 ) {
+    if ( IsBloomEnabled() ) {
         FS_FragColor += CalcBloom();
     }
 
     vec3 fragColor = FS_FragColor.rgb;
 
     // Tonemapping
-    if ( PostprocessAttrib.y > 0.0 ) {
+    if ( IsTonemappingEnabled() ) {
         //if ( VS_TexCoord.x > 0.5 ) {
             //fragColor = ToneLinear( fragColor, VS_Exposure );
             fragColor = ToneReinhard3( fragColor, VS_Exposure, 1.9 );
@@ -78,9 +78,19 @@ void main() {
             //fragColor = ToneFilmicALU( fragColor, 1.0 );
         //}
     }
+    
+    // Saturate color
+    fragColor = builtin_saturate( fragColor );
+
+    // Color grading
+    if ( IsColorGradingEnabled() ) {
+        if ( VS_TexCoord.x > 0.5 ) {
+            fragColor = texture( Smp_ColorGradingLUT, LinearToSRGB( fragColor ) ).rgb;
+        }
+    }
 
     // Vignette
-    if ( VignetteColorIntensity.a > 0.0 ) {
+    if ( IsVignetteEnabled() ) {
         vec2 VignetteOffset = VS_TexCoord.zw - 0.5;
         float LengthSqr = dot( VignetteOffset, VignetteOffset );
         float VignetteShade = smoothstep( VignetteOuterInnerRadiusSqr.x, VignetteOuterInnerRadiusSqr.y, LengthSqr );
@@ -93,8 +103,8 @@ void main() {
     FS_FragColor.rgb = fragColor;
 
     // Pack pixel luminance to alpha channel for FXAA algorithm
-    FS_FragColor.a = PostprocessAttrib.w > 0.0
-                           ? LinearToSRGB( builtin_saturate( builtin_luminance( fragColor ) ) )
+    FS_FragColor.a = IsFXAAEnabled()
+                           ? LinearToSRGB( builtin_luminance( fragColor ) )
                            : 1.0;
                            
 #ifdef DEBUG_RENDER_MODE

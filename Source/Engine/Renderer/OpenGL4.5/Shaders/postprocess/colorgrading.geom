@@ -28,34 +28,34 @@ SOFTWARE.
 
 */
 
-#pragma once
+in gl_PerVertex
+{
+    vec4 gl_Position;
+} gl_in[];
 
-#include "OpenGL45PassRenderer.h"
-
-namespace OpenGL45 {
-
-class APostprocessPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void Render();
-
-    GHI::RenderPass * GetRenderPass() { return &PostprocessPass; }
-
-private:
-    void CreatePipeline();
-    void CreateSampler();
-
-    GHI::RenderPass PostprocessPass;
-    GHI::Pipeline PostprocessPipeline;
-    GHI::Sampler PostprocessSampler;
-    GHI::Sampler BloomSampler;
-    GHI::Sampler LuminanceSampler;
-    GHI::Sampler ColorGradingSampler;
+out gl_PerVertex
+{
+    vec4 gl_Position;
 };
 
-extern APostprocessPassRenderer GPostprocessPassRenderer;
+layout( triangles ) in;
+layout( triangle_strip, max_vertices = 3 ) out;
+            
+layout( invocations = 16 ) in;
 
+layout( location = 0 ) noperspective in vec2 VS_TexCoord[];
+
+layout( location = 0 ) out vec3 GS_Color;
+
+void main() {
+    gl_Layer = gl_InvocationID;
+
+    GS_Color.z = float( gl_Layer ) / 15.0f;
+
+    for ( int i = 0; i < gl_in.length(); i++ ) {
+        gl_Position = gl_in[ i ].gl_Position;
+        GS_Color.xy = VS_TexCoord[ i ];
+        EmitVertex();
+    }
+    EndPrimitive();
 }
-

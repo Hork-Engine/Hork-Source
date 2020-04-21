@@ -28,34 +28,21 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include "base/srgb.glsl"
+#include "base/viewuniforms.glsl"
 
-#include "OpenGL45PassRenderer.h"
+layout( location = 0 ) out vec4 FS_FragColor;
 
-namespace OpenGL45 {
+layout( location = 0 ) in vec3 GS_Color;
 
-class APostprocessPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
+layout( binding = 0 ) uniform sampler3D ColorGradingLUT;
+	
+void main()
+{
+    //FS_FragColor = vec4( LinearToSRGB( texture( ColorGradingLUT, GS_Color ).rgb ), GetColorGradingBlend() );
+    FS_FragColor = vec4( texture( ColorGradingLUT, GS_Color ).rgb, GetColorGradingBlend() );
 
-    void Render();
-
-    GHI::RenderPass * GetRenderPass() { return &PostprocessPass; }
-
-private:
-    void CreatePipeline();
-    void CreateSampler();
-
-    GHI::RenderPass PostprocessPass;
-    GHI::Pipeline PostprocessPipeline;
-    GHI::Sampler PostprocessSampler;
-    GHI::Sampler BloomSampler;
-    GHI::Sampler LuminanceSampler;
-    GHI::Sampler ColorGradingSampler;
-};
-
-extern APostprocessPassRenderer GPostprocessPassRenderer;
+    //FS_FragColor.rg = pow(GS_Color,vec3(2.2)).rg;
+    //FS_FragColor.a = GetColorGradingBlend();
 
 }
-

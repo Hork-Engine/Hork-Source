@@ -321,6 +321,9 @@ bool ATexture::LoadResource( AString const & _Path ) {
          || !Core::Stricmp( &_Path[i], ".ppm" )
          || !Core::Stricmp( &_Path[i], ".pgm" ) ) {
 
+
+        //AN_ASSERT( 0 ); 
+
         SImageMipmapConfig mipmapGen;
         mipmapGen.EdgeMode = MIPMAP_EDGE_WRAP;
         mipmapGen.Filter = MIPMAP_FILTER_MITCHELL;
@@ -625,9 +628,12 @@ void ATexture::InitializeColorGradingLUT( const char * _Path ) {
     if ( image.Load( _Path, nullptr, IMAGE_PF_BGR_GAMMA2 ) ) {
         byte data[ 16 ][ 16 ][ 16 ][ 3 ];
 
-        for ( int z = 0 ; z < 16 ; z++ ) {
-            for ( int y = 0 ; y < 16 ; y++ ) {
-                Core::Memcpy( &data[ z ][ y ][ 0 ][ 0 ], static_cast< byte * >(image.pRawData) + ( z * 16 * 16 * 3 + y * 16 * 3 ), 16 * 3 );
+        const byte * p = static_cast< const byte * >(image.pRawData);
+
+        for ( int y = 0 ; y < 16 ; y++ ) {
+           for ( int z = 0 ; z < 16 ; z++ ) {
+                Core::Memcpy( &data[ z ][ y ][ 0 ][ 0 ], p, 16 * 3 );
+                p += 16 * 3;
             }
         }
 

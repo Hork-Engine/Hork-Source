@@ -1371,6 +1371,8 @@ static void UnpressKeysAndButtons() {
     }
 }
 
+ARuntimeVariable RVResetVideo( _CTS( "ResetVideo" ), _CTS( "0" ) );
+
 void ARuntime::NewFrame() {
     int64_t prevTimeStamp = FrameTimeStamp;
     FrameTimeStamp = SysMicroseconds();
@@ -1394,6 +1396,15 @@ void ARuntime::NewFrame() {
         bResetVideoMode = false;
         SetVideoMode( DesiredMode );
     }
+
+#if 1
+    if ( RVResetVideo.IsModified() ) {
+        RVResetVideo = 0;
+        RVResetVideo.UnmarkModified();
+        DeinitializeRenderer();
+        InitializeRenderer( VideoMode );
+    }
+#endif
 }
 
 void ARuntime::PollEvents() {

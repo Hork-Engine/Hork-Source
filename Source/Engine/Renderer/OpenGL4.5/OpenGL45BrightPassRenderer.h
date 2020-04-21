@@ -41,7 +41,7 @@ public:
 
     void Render( GHI::Texture & _SrcTexture );
 
-    GHI::RenderPass * GetRenderPass() { return &BrightPass; }
+    //GHI::RenderPass * GetRenderPass() { return &BrightPass; }
 
 private:
     void CreateBrightPipeline();

@@ -180,6 +180,12 @@ void APostprocessPassRenderer::CreateSampler() {
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
     LuminanceSampler = GDevice.GetOrCreateSampler( samplerCI );
+
+    samplerCI.Filter = FILTER_LINEAR;
+    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
+    ColorGradingSampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 
 void APostprocessPassRenderer::Render() {
@@ -213,6 +219,11 @@ void APostprocessPassRenderer::Render() {
     
     GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.GetFramebufferTexture();
     GFrameResources.SamplerBindings[0].pSampler = PostprocessSampler;
+
+    if ( GRenderView->CurrentColorGradingLUT ) {
+        GFrameResources.TextureBindings[1].pTexture = GPUTextureHandle( GRenderView->CurrentColorGradingLUT );
+        GFrameResources.SamplerBindings[1].pSampler = ColorGradingSampler;
+    }
 
     GFrameResources.TextureBindings[2].pTexture = &GRenderTarget.GetBloomTexture().Texture[0];
     GFrameResources.SamplerBindings[2].pSampler = BloomSampler;

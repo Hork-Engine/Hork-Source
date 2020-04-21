@@ -28,34 +28,14 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include "OpenGL45PassRenderer.h"
-
-namespace OpenGL45 {
-
-class APostprocessPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void Render();
-
-    GHI::RenderPass * GetRenderPass() { return &PostprocessPass; }
-
-private:
-    void CreatePipeline();
-    void CreateSampler();
-
-    GHI::RenderPass PostprocessPass;
-    GHI::Pipeline PostprocessPipeline;
-    GHI::Sampler PostprocessSampler;
-    GHI::Sampler BloomSampler;
-    GHI::Sampler LuminanceSampler;
-    GHI::Sampler ColorGradingSampler;
+out gl_PerVertex
+{
+    vec4 gl_Position;
 };
 
-extern APostprocessPassRenderer GPostprocessPassRenderer;
+layout( location = 0 ) noperspective out vec2 VS_TexCoord;
 
+void main() {
+    gl_Position = vec4( InPosition, 0.0, 1.0 );
+    VS_TexCoord = InPosition * vec2(0.5,-0.5) + 0.5;
 }
-

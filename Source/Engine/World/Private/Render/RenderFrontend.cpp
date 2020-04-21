@@ -69,6 +69,26 @@ struct SShadowInstanceSortFunction {
 
 void ARenderFrontend::Initialize() {
     VSD_Initialize();
+
+    //ColorGradingLUT = CreateInstanceOf< ATexture >();
+    //ColorGradingLUT->InitializeColorGradingLUT( "Common/ColorGradingLUT.png" );
+
+#if 0
+    byte data[16][16][16][3];
+
+    for ( int z = 0 ; z < 16 ; z++ ) {
+        for ( int y = 0 ; y < 16 ; y++ ) {
+            for ( int x = 0 ; x < 16 ; x++ ) {
+                data[z][y][x][2] = (float)x / 15.0f * 255.0f;
+                data[z][y][x][1] = (float)y / 15.0f * 255.0f;
+                data[z][y][x][0] = (float)z / 15.0f * 255.0f;
+            }
+        }
+    }
+
+    ColorGradingLUT->Initialize3D( TEXTURE_PF_BGR8_SRGB, 1, 16, 16, 16 );
+    ColorGradingLUT->WriteArbitraryData( 0, 0, 0, 16, 16, 16, 0, data );
+#endif
 }
 
 void ARenderFrontend::Deinitialize() {
@@ -84,6 +104,8 @@ void ARenderFrontend::Deinitialize() {
     FrameData.TranslucentInstances.Free();
     FrameData.ShadowInstances.Free();
     FrameData.DirectionalLights.Free();
+
+    //ColorGradingLUT.Reset();
 }
 
 void ARenderFrontend::Render( ACanvas * InCanvas ) {
@@ -190,9 +212,43 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed(); // TODO: Check with ViewInverseFast
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
     
-    view->BackgroundColor = RP ? RP->BackgroundColor.GetRGB() : Float3(1.0f);
-    view->bClearBackground = RP ? RP->bClearBackground : true;
-    view->bWireframe = RP ? RP->bWireframe : false;
+    if ( RP )
+    {
+        view->BackgroundColor = RP->BackgroundColor.GetRGB();
+        view->bClearBackground = RP->bClearBackground;
+        view->bWireframe = RP->bWireframe;
+        if ( RP->bVignetteEnabled ) {
+            view->VignetteColorIntensity = RP->VignetteColorIntensity;
+            view->VignetteOuterRadiusSqr = RP->VignetteOuterRadiusSqr;
+            view->VignetteInnerRadiusSqr = RP->VignetteInnerRadiusSqr;
+        } else {
+            view->VignetteColorIntensity.W = 0;
+        }
+
+        if ( RP->IsColorGradingEnabled() ) {
+            view->ColorGradingLUT = RP->GetColorGradingLUT() ? RP->GetColorGradingLUT()->GetGPUResource() : NULL;
+            view->CurrentColorGradingLUT = RP->GetCurrentColorGradingLUT()->GetGPUResource();
+            view->ColorGradingBlend = RP->GetColorGradingBlend();
+
+            // FIXME: move this to Tick() ?
+            RP->SetColorGradingBlend( RP->GetColorGradingBlend() + view->GameplayTimeStep * RP->GetColorGradingBlendSpeed() );
+        } else {
+            view->ColorGradingLUT = NULL;
+            view->CurrentColorGradingLUT = NULL;
+            view->ColorGradingBlend = 0;
+        }
+    }
+    else
+    {
+        view->BackgroundColor = Float3( 1.0f );
+        view->bClearBackground = true;
+        view->bWireframe = false;
+        view->VignetteColorIntensity.W = 0;
+        view->ColorGradingLUT = NULL;
+        view->CurrentColorGradingLUT = NULL;
+        view->ColorGradingBlend = 0;
+    }
+
     view->NumShadowMapCascades = 0;
     view->NumCascadedShadowMaps = 0;
     view->FirstInstance = FrameData.Instances.Size();

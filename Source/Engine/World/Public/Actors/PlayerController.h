@@ -46,14 +46,78 @@ public:
     bool bClearBackground;
     bool bWireframe;
     bool bDrawDebug;
+    bool bVignetteEnabled = true;
+    Float4 VignetteColorIntensity = Float4( 0,0,0, 0.4f );        // rgb, intensity
+    float VignetteOuterRadiusSqr = 0.7f*0.7f;
+    float VignetteInnerRadiusSqr = 0.6f*0.6f;
     int VisibilityMask = ~0;
 
-    // TODO:
-    //TRef< ATexture > ColorGradingLUT;
+    void SetColorGradingEnabled( bool _ColorGradingEnabled );
+
+    bool IsColorGradingEnabled() const { return bColorGradingEnabled; }
+
+    void SetColorGradingLUT( ATexture * Texture );
+
+    ATexture * GetColorGradingLUT() { return ColorGradingLUT; }
+
+    ATexture * GetCurrentColorGradingLUT() { return CurrentColorGradingLUT; }
+
+    void SetColorGradingGrain( Float3 const & _ColorGradingGrain );
+
+    Float3 const & GetColorGradingGrain() const { return ColorGradingGrain; }
+
+    void SetColorGradingGamma( Float3 const & _ColorGradingGamma );
+
+    Float3 const & GetColorGradingGamma() const { return ColorGradingGamma; }
+
+    void SetColorGradingLift( Float3 const & _ColorGradingLift );
+
+    Float3 const & GetColorGradingLift() const { return ColorGradingLift; }
+
+    void SetColorGradingPresaturation( Float3 const & _ColorGradingPresaturation );
+
+    Float3 const & GetColorGradingPresaturation() const { return ColorGradingPresaturation; }
+
+    void SetColorGradingTemperature( float _ColorGradingTemperature );
+
+    float GetColorGradingTemperature() const { return ColorGradingTemperature; }
+
+    void SetColorGradingTemperatureStrength( Float3 const & _ColorGradingTemperatureStrength );
+
+    Float3 const & GetColorGradingTemperatureStrength() const { return ColorGradingTemperatureStrength; }
+
+    void SetColorGradingBrightnessNormalization( float _ColorGradingBrightnessNormalization );
+
+    float GetColorGradingBrightnessNormalization() const { return ColorGradingBrightnessNormalization; }
+
+    void SetColorGradingBlendSpeed( float _ColorGradingBlendSpeed );
+
+    float GetColorGradingBlendSpeed() const { return ColorGradingBlendSpeed; }
+
+    void SetColorGradingBlend( float _ColorGradingBlend );
+
+    float GetColorGradingBlend() const { return ColorGradingBlend; }
+
+    void SetColorGradingDefaults();
 
 private:
-    ARenderingParameters() {}
-    ~ARenderingParameters() {}
+    ARenderingParameters();
+
+    ~ARenderingParameters();
+
+    TRef< ATexture > ColorGradingLUT;
+    TRef< ATexture > CurrentColorGradingLUT;
+    Float3 ColorGradingGrain;
+    Float3 ColorGradingGamma;
+    Float3 ColorGradingLift;
+    Float3 ColorGradingPresaturation;
+    float ColorGradingTemperature;
+    Float3 ColorGradingTemperatureStrength;
+    float ColorGradingBrightnessNormalization;
+    float ColorGradingBlendSpeed;
+    float ColorGradingBlend = 0.1f;
+    bool bColorGradingEnabled;
+    //bool bColorGradingDirty;
 };
 
 class ANGIE_API AAudioParameters final : public ABaseObject {

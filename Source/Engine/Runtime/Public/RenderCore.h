@@ -667,6 +667,7 @@ private:
 class ATextureGPU : public AResourceGPU {
 public:
     void * pHandleGPU;
+    void * pFramebuffer;
 };
 
 class ABufferGPU : public AResourceGPU {
@@ -988,6 +989,17 @@ struct SRenderView {
     bool bPadding1;
 
     float MaxVisibleDistance;
+
+    Float4 VignetteColorIntensity;
+    float VignetteOuterRadiusSqr;
+    float VignetteInnerRadiusSqr;
+
+    // Source color grading texture
+    ATextureGPU * ColorGradingLUT;
+    // Current color grading texture
+    ATextureGPU * CurrentColorGradingLUT;
+    // Blending between current and source color grading textures
+    float ColorGradingBlend;
 
     int NumShadowMapCascades;
     int NumCascadedShadowMaps;

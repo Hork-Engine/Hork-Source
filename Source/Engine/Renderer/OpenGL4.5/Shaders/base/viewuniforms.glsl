@@ -66,13 +66,34 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     vec4 ViewPosition;
     
     vec4 PostprocessBloomMix;
-    vec4 PostprocessAttrib;             // x - bloom enable / disable, y - tone mapping exposure, z - color grading. w - FXAA
-    vec4 VignetteColorIntensity;        // rgb, intensity
-    vec4 VignetteOuterInnerRadiusSqr;   // x - outer radius^2, y - inner radius^2, z - brightness, w - unused
+    
+    // Postprocess attributes
+    // x - bloom enable / disable
+    // y - tone mapping exposure (disabled if zero)
+    // z - color grading enable / disable
+    // w - FXAA enable /disable
+    vec4 PostprocessAttrib;
+    
+    // Vignette
+    // xyz - color
+    // w - intensity
+    vec4 VignetteColorIntensity;
+    
+    // Vignette
+    // x - outer radius^2
+    // y - inner radius^2
+    // z - brightness
+    // w - colorgrading blend
+    vec4 VignetteOuterInnerRadiusSqr;
+    
     uvec2 EnvProbeSampler;
+    
     uvec4 NumDirectionalLights;  // W - DebugMode, YZ - unused
+    
     vec4 LightDirs[MAX_DIRECTIONAL_LIGHTS];            // Direction, W-channel is not used
+    
     vec4 LightColors[MAX_DIRECTIONAL_LIGHTS];          // RGB, alpha - ambient intensity
+    
     uvec4 LightParameters[MAX_DIRECTIONAL_LIGHTS];    // RenderMask, FirstCascade, NumCascades, W-channel is not used
 };
 
@@ -132,5 +153,15 @@ float GetPostprocessExposure() {
 float GetFrameBrightness() {
     return VignetteOuterInnerRadiusSqr.z;
 }
+
+float GetColorGradingBlend() {
+    return VignetteOuterInnerRadiusSqr.w;
+}
+
+#define IsBloomEnabled() ( PostprocessAttrib.x > 0.0 )
+#define IsTonemappingEnabled() ( PostprocessAttrib.y > 0.0 )
+#define IsColorGradingEnabled() ( PostprocessAttrib.z > 0.0 )
+#define IsFXAAEnabled() ( PostprocessAttrib.w > 0.0 )
+#define IsVignetteEnabled() ( VignetteColorIntensity.a > 0.0 )
 
 #endif // VIEWUNIFORMS_H

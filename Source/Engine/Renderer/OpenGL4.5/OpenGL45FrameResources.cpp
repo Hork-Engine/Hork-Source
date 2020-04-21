@@ -285,12 +285,6 @@ void AFrameResources::Deinitialize() {
 void AFrameResources::SetViewUniforms() {
     SViewUniformBuffer * uniformData = &ViewUniformBufferUniformData;
 
-//    ViewUniformBlock->Viewport.X = 0;
-//    ViewUniformBlock->Viewport.Y = 0;
-//    ViewUniformBlock->Viewport.Z = RenderFrame.TargetTex->CurrentWidth;
-//    ViewUniformBlock->Viewport.W = RenderFrame.TargetTex->CurrentHeight;
-    
-
     uniformData->ViewProjection = GRenderView->ViewProjection;
     uniformData->InverseProjectionMatrix = GRenderView->InverseProjectionMatrix;
 
@@ -341,12 +335,13 @@ void AFrameResources::SetViewUniforms() {
     uniformData->PostprocessBloomMix = Float4( 0.5f, 0.3f, 0.1f, 0.1f ) * RVPostprocessBloomScale.GetFloat(); // TODO: Get from GRenderView 
     uniformData->PostprocessAttrib.X = RVPostprocessBloom;  // TODO: Get from GRenderView
     uniformData->PostprocessAttrib.Y = RVPostprocessToneExposure.GetFloat();  // TODO: Get from GRenderView
-    uniformData->PostprocessAttrib.Z = RVPostprocessColorGrading;  // TODO: Get from GRenderView
+    uniformData->PostprocessAttrib.Z = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
     uniformData->PostprocessAttrib.W = RVFxaa;
-    uniformData->VignetteColorIntensity = Float4( 0,0,0, 0.4f );        // rgb, intensity
-    uniformData->VignetteOuterRadiusSqr = 0.7f*0.7f;//GRenderView->VignetteOuterRadiusSqr;
-    uniformData->VignetteInnerRadiusSqr = 0.6f*0.6f;//GRenderView->VignetteInnerRadiusSqr;
-    uniformData->ViewBrightness = RVBrightness.GetFloat();//GRenderView->VignetteInnerBrightness;
+    uniformData->VignetteColorIntensity = GRenderView->VignetteColorIntensity;
+    uniformData->VignetteOuterRadiusSqr = GRenderView->VignetteOuterRadiusSqr;
+    uniformData->VignetteInnerRadiusSqr = GRenderView->VignetteInnerRadiusSqr;
+    uniformData->ColorGradingBlend = GRenderView->ColorGradingBlend;
+    uniformData->ViewBrightness = Math::Saturate( RVBrightness.GetFloat() );//GRenderView->ViewBrightness;
 
     uniformData->EnvProbeSampler = GFrameResources.EnvProbeBindless.GetHandle();
 

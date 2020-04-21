@@ -60,7 +60,7 @@ struct SViewUniformBuffer {
     float VignetteOuterRadiusSqr;
     float VignetteInnerRadiusSqr;
     float ViewBrightness;
-    float Padding6;
+    float ColorGradingBlend;
 
     uint64_t EnvProbeSampler;
     uint64_t Padding3;
