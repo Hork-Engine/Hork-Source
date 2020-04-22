@@ -86,6 +86,8 @@ struct AShaderSources {
         predefines += "#define DEBUG_RENDER_MODE\n";
         #endif
 
+        predefines += "#define SRGB_GAMMA_APPROX\n";
+
         Sources[0] = "#version 450\n"
                      "#extension GL_ARB_bindless_texture : enable\n";
         Sources[1] = predefines.CStr();

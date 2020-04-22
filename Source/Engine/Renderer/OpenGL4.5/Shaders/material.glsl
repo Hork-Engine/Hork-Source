@@ -41,9 +41,9 @@ SOFTWARE.
 #include "base/viewuniforms.glsl"
 
 #if defined MATERIAL_PASS_SHADOWMAP
-#   include "shadowcastInstance.glsl"
+#   include "instance_shadowmap_uniforms.glsl"
 #else
-#   include "instanceUniforms.glsl"
+#   include "instance_uniforms.glsl"
 #endif
 
 #if defined MATERIAL_PASS_DEPTH

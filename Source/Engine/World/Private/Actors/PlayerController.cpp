@@ -284,19 +284,29 @@ void APlayerController::UpdatePawnCamera() {
 
 
 ARenderingParameters::ARenderingParameters() {
-    byte data[16][16][16][3];
-    for ( int z = 0 ; z < 16 ; z++ ) {
-        for ( int y = 0 ; y < 16 ; y++ ) {
-            for ( int x = 0 ; x < 16 ; x++ ) {
-                data[z][y][x][2] = (float)x / 15.0f * 255.0f;
-                data[z][y][x][1] = (float)y / 15.0f * 255.0f;
-                data[z][y][x][0] = (float)z / 15.0f * 255.0f;
+    static uint16_t data[16][16][16][3];
+    static bool dataInit = false;
+    if ( !dataInit ) {
+        for ( int z = 0 ; z < 16 ; z++ ) {
+            for ( int y = 0 ; y < 16 ; y++ ) {
+                for ( int x = 0 ; x < 16 ; x++ ) {
+                    data[z][y][x][2] = Math::FloatToHalf( (float)x / 15.0f * 255.0f );
+                    data[z][y][x][1] = Math::FloatToHalf( (float)y / 15.0f * 255.0f );
+                    data[z][y][x][0] = Math::FloatToHalf( (float)z / 15.0f * 255.0f );
+                }
             }
         }
+        dataInit = true;
     }
+
     CurrentColorGradingLUT = NewObject< ATexture >();
-    CurrentColorGradingLUT->Initialize3D( TEXTURE_PF_BGR8_SRGB, 1, 16, 16, 16 );
-    CurrentColorGradingLUT->WriteArbitraryData( 0, 0, 0, 16, 16, 16, 0, data );
+    CurrentColorGradingLUT->Initialize3D( TEXTURE_PF_BGR16F, 1, 16, 16, 16 );
+    CurrentColorGradingLUT->WriteTextureData3D( 0, 0, 0, 16, 16, 16, 0, data );
+
+    const float initialExposure[2] = { 0.1f, 0.1f };
+    CurrentExposure = NewObject< ATexture >();
+    CurrentExposure->Initialize2D( TEXTURE_PF_RG32F, 1, 1, 1 );
+    CurrentExposure->WriteTextureData2D( 0, 0, 1, 1, 0, initialExposure );
 
     SetColorGradingDefaults();
 }
@@ -309,74 +319,39 @@ void ARenderingParameters::SetColorGradingEnabled( bool _ColorGradingEnabled ) {
 }
 
 void ARenderingParameters::SetColorGradingLUT( ATexture * Texture ) {
-    if ( ColorGradingLUT != Texture ) {
-        ColorGradingLUT = Texture;
-        ColorGradingBlend = 0;
-    }
+    ColorGradingLUT = Texture;
 }
 
 void ARenderingParameters::SetColorGradingGrain( Float3 const & _ColorGradingGrain ) {
-    //if ( !ColorGradingGrain.CompareEps( _ColorGradingGrain, 0.0001f ) ) {
     ColorGradingGrain = _ColorGradingGrain;
-    //ColorGradingDirty = true;
-    ColorGradingBlend = 0.0f;
-    //}
 }
 
 void ARenderingParameters::SetColorGradingGamma( Float3 const & _ColorGradingGamma ) {
-    //if ( !ColorGradingGamma.CompareEps( _ColorGradingGamma, 0.0001f ) ) {
     ColorGradingGamma = _ColorGradingGamma;
-    //ColorGradingDirty = true;
-    ColorGradingBlend = 0.0f;
-    //}
 }
 
 void ARenderingParameters::SetColorGradingLift( Float3 const & _ColorGradingLift ) {
-    //if ( !ColorGradingLift.CompareEps( _ColorGradingLift, 0.0001f ) ) {
     ColorGradingLift = _ColorGradingLift;
-    //ColorGradingDirty = true;
-    ColorGradingBlend = 0.0f;
-    //}
 }
 
 void ARenderingParameters::SetColorGradingPresaturation( Float3 const & _ColorGradingPresaturation ) {
-    //if ( !ColorGradingPresaturation.CompareEps( _ColorGradingPresaturation, 0.0001f ) ) {
     ColorGradingPresaturation = _ColorGradingPresaturation;
-    //ColorGradingDirty = true;
-    ColorGradingBlend = 0.0f;
-    //}
 }
 
 void ARenderingParameters::SetColorGradingTemperature( float _ColorGradingTemperature ) {
-    //if ( !ColorGradingTemperature.CompareEps( _ColorGradingTemperature, 0.0001f ) ) {
     ColorGradingTemperature = _ColorGradingTemperature;
-    //ColorGradingDirty = true;
-    ColorGradingBlend = 0.0f;
-    //}
 }
 
 void ARenderingParameters::SetColorGradingTemperatureStrength( Float3 const & _ColorGradingTemperatureStrength ) {
-    //if ( !ColorGradingTemperatureStrength.CompareEps( _ColorGradingTemperatureStrength, 0.0001f ) ) {
     ColorGradingTemperatureStrength = _ColorGradingTemperatureStrength;
-    //ColorGradingDirty = true;
-    ColorGradingBlend = 0.0f;
-    //}
 }
 
 void ARenderingParameters::SetColorGradingBrightnessNormalization( float _ColorGradingBrightnessNormalization ) {
-    //if ( !ColorGradingBrightnessNormalization.CompareEps( _ColorGradingBrightnessNormalization, 0.0001f ) ) {
     ColorGradingBrightnessNormalization = _ColorGradingBrightnessNormalization;
-    //ColorGradingDirty = true;
-    ColorGradingBlend = 0.0f;
-    //}
 }
 
-void ARenderingParameters::SetColorGradingBlendSpeed( float _ColorGradingBlendSpeed ) {
-    ColorGradingBlendSpeed = _ColorGradingBlendSpeed;
-}
-
-void ARenderingParameters::SetColorGradingBlend( float _ColorGradingBlend ) {
-    ColorGradingBlend = Math::Clamp( _ColorGradingBlend, 0.0f, 1.0f );
+void ARenderingParameters::SetColorGradingAdaptationSpeed( float _ColorGradingAdaptationSpeed ) {
+    ColorGradingAdaptationSpeed = _ColorGradingAdaptationSpeed;
 }
 
 void ARenderingParameters::SetColorGradingDefaults() {
@@ -389,7 +364,5 @@ void ARenderingParameters::SetColorGradingDefaults() {
     ColorGradingTemperature = 6500.0f;
     ColorGradingTemperatureStrength = Float3( 0.0f );
     ColorGradingBrightnessNormalization = 0.0f;
-    ColorGradingBlendSpeed = 0.1f;
-    //ColorGradingDirty = true;
-    ColorGradingBlend = 0.0f;
+    ColorGradingAdaptationSpeed = 2;
 }

@@ -52,6 +52,8 @@ public:
     float VignetteInnerRadiusSqr = 0.6f*0.6f;
     int VisibilityMask = ~0;
 
+    ATexture * GetCurrentExposure() { return CurrentExposure; }
+
     void SetColorGradingEnabled( bool _ColorGradingEnabled );
 
     bool IsColorGradingEnabled() const { return bColorGradingEnabled; }
@@ -90,13 +92,9 @@ public:
 
     float GetColorGradingBrightnessNormalization() const { return ColorGradingBrightnessNormalization; }
 
-    void SetColorGradingBlendSpeed( float _ColorGradingBlendSpeed );
+    void SetColorGradingAdaptationSpeed( float _ColorGradingAdaptationSpeed );
 
-    float GetColorGradingBlendSpeed() const { return ColorGradingBlendSpeed; }
-
-    void SetColorGradingBlend( float _ColorGradingBlend );
-
-    float GetColorGradingBlend() const { return ColorGradingBlend; }
+    float GetColorGradingAdaptationSpeed() const { return ColorGradingAdaptationSpeed; }
 
     void SetColorGradingDefaults();
 
@@ -107,6 +105,7 @@ private:
 
     TRef< ATexture > ColorGradingLUT;
     TRef< ATexture > CurrentColorGradingLUT;
+    TRef< ATexture > CurrentExposure;
     Float3 ColorGradingGrain;
     Float3 ColorGradingGamma;
     Float3 ColorGradingLift;
@@ -114,10 +113,8 @@ private:
     float ColorGradingTemperature;
     Float3 ColorGradingTemperatureStrength;
     float ColorGradingBrightnessNormalization;
-    float ColorGradingBlendSpeed;
-    float ColorGradingBlend = 0.1f;
+    float ColorGradingAdaptationSpeed;
     bool bColorGradingEnabled;
-    //bool bColorGradingDirty;
 };
 
 class ANGIE_API AAudioParameters final : public ABaseObject {

@@ -41,12 +41,9 @@ public:
 
     void Render( GHI::Texture & _SrcTexture );
 
-    //GHI::RenderPass * GetRenderPass() { return &BrightPass; }
-
 private:
     void CreateBrightPipeline();
     void CreateBlurPipeline();
-    void CreateLuminancePipeline();
     void CreateSampler();
 
     GHI::RenderPass BrightPass;
@@ -55,13 +52,8 @@ private:
     GHI::Pipeline BlurPipeline1;
     GHI::Pipeline BlurFinalPipeline0;
     GHI::Pipeline BlurFinalPipeline1;
-    GHI::RenderPass LuminancePass;
-    GHI::Pipeline MakeLuminanceMapPipe;
-    GHI::Pipeline SumLuminanceMapPipe;
-    GHI::Pipeline DynamicExposurePipe;
     GHI::Sampler NearestSampler;
     GHI::Sampler LinearSampler;
-    GHI::Sampler LuminanceSampler;
     GHI::ShaderModule BlurFragmentShaderModule;
     GHI::ShaderModule BlurFinalFragmentShaderModule;
 };

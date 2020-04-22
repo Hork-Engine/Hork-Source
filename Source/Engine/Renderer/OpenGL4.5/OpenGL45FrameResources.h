@@ -55,12 +55,18 @@ struct SViewUniformBuffer {
     float TimeDelta;
 
     Float4 PostprocessBloomMix;
-    Float4 PostprocessAttrib;             // x - bloom enabled/disabled, y - tone mapping exposure, z - color grading. w - FXAA
+
+    // PostprocessAttrib
+    float BloomEnabled;
+    float ToneMappingExposure;
+    float ColorGrading;
+    float FXAA;
+
     Float4 VignetteColorIntensity;        // rgb, intensity
     float VignetteOuterRadiusSqr;
     float VignetteInnerRadiusSqr;
     float ViewBrightness;
-    float ColorGradingBlend;
+    float ColorGradingAdaptationSpeed;
 
     uint64_t EnvProbeSampler;
     uint64_t Padding3;
@@ -73,10 +79,6 @@ struct SViewUniformBuffer {
     Float4 LightDirs[MAX_DIRECTIONAL_LIGHTS];            // Direction, W-channel is not used
     Float4 LightColors[MAX_DIRECTIONAL_LIGHTS];          // RGB, alpha - ambient intensity
     uint32_t LightParameters[MAX_DIRECTIONAL_LIGHTS][4];      // RenderMask, FirstCascade, NumCascades, W-channel is not used
-    
-    //Float4 Viewport;                     // x,y,width,height
-    //Float3x4 PositionToViewSpace;
-    //Float3x4 FromObjectToWorldSpace;
 };
 
 struct SInstanceUniformBuffer {

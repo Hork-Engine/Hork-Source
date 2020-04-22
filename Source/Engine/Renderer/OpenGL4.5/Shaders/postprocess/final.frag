@@ -84,9 +84,9 @@ void main() {
 
     // Color grading
     if ( IsColorGradingEnabled() ) {
-        if ( VS_TexCoord.x > 0.5 ) {
+        //if ( VS_TexCoord.x > 0.5 ) {
             fragColor = texture( Smp_ColorGradingLUT, LinearToSRGB( fragColor ) ).rgb;
-        }
+        //}
     }
 
     // Vignette

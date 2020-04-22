@@ -79,8 +79,7 @@ public:
     GHI::Framebuffer FramebufferLum8;
     GHI::Framebuffer FramebufferLum4;
     GHI::Framebuffer FramebufferLum2;
-    GHI::Framebuffer FramebufferLum1;
-    GHI::Texture AdaptiveLuminance;
+
 private:
     void CreateFramebuffer();
     void CreateBloomTextures();

@@ -108,15 +108,6 @@ void ARenderTarget::Initialize() {
     framebufferCI.Height = 2;
     colorAttachment.pTexture = &Luminance2;
     FramebufferLum2.Initialize( framebufferCI );
-
-    texStorageCI.Resolution.Tex2D.Width = 1;
-    texStorageCI.Resolution.Tex2D.Height = 1;
-    AdaptiveLuminance.InitializeStorage( texStorageCI );
-
-    framebufferCI.Width = 1;
-    framebufferCI.Height = 1;
-    colorAttachment.pTexture = &AdaptiveLuminance;
-    FramebufferLum1.Initialize( framebufferCI );
 }
 
 void ARenderTarget::Deinitialize() {
@@ -132,8 +123,6 @@ void ARenderTarget::Deinitialize() {
     FramebufferLum8.Deinitialize();
     FramebufferLum4.Deinitialize();
     FramebufferLum2.Deinitialize();
-    FramebufferLum1.Deinitialize();
-    AdaptiveLuminance.Deinitialize();
 
     Framebuffer.Deinitialize();
     FramebufferTexture.Deinitialize();

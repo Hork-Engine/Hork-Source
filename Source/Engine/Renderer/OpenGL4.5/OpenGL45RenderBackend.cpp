@@ -41,6 +41,7 @@ SOFTWARE.
 #include "OpenGL45WireframePassRenderer.h"
 #include "OpenGL45DebugDrawPassRenderer.h"
 #include "OpenGL45BrightPassRenderer.h"
+#include "OpenGL45ExposureRenderer.h"
 #include "OpenGL45ColorGradingRenderer.h"
 #include "OpenGL45PostprocessPassRenderer.h"
 #include "OpenGL45FxaaPassRenderer.h"
@@ -533,6 +534,7 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     GWireframePassRenderer.Initialize();
     GDebugDrawPassRenderer.Initialize();
     GBrightPassRenderer.Initialize();
+    GExposureRenderer.Initialize();
     GColorGradingRenderer.Initialize();
     GPostprocessPassRenderer.Initialize();
     GFxaaPassRenderer.Initialize();
@@ -551,6 +553,7 @@ void ARenderBackend::Deinitialize() {
     GWireframePassRenderer.Deinitialize();
     GDebugDrawPassRenderer.Deinitialize();
     GBrightPassRenderer.Deinitialize();
+    GExposureRenderer.Deinitialize();
     GColorGradingRenderer.Deinitialize();
     GPostprocessPassRenderer.Deinitialize();
     GFxaaPassRenderer.Deinitialize();
@@ -1140,6 +1143,8 @@ void ARenderBackend::RenderView( SRenderView * _RenderView ) {
     GColorPassRenderer.RenderInstances();
 
     GBrightPassRenderer.Render( GRenderTarget.GetFramebufferTexture() );
+
+    GExposureRenderer.Render( GRenderTarget.GetFramebufferTexture() );
 
     GColorGradingRenderer.Render();
 

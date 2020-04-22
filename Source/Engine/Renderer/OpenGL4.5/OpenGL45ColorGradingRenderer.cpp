@@ -42,27 +42,25 @@ namespace OpenGL45 {
 AColorGradingRenderer GColorGradingRenderer;
 
 void AColorGradingRenderer::Initialize() {
-    {
-        RenderPassCreateInfo renderPassCI = {};
+    RenderPassCreateInfo renderPassCI = {};
 
-        renderPassCI.NumColorAttachments = 1;
+    renderPassCI.NumColorAttachments = 1;
 
-        AttachmentInfo colorAttachment = {};
-        colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_LOAD;
-        renderPassCI.pColorAttachments = &colorAttachment;
+    AttachmentInfo colorAttachment = {};
+    colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_LOAD;
+    renderPassCI.pColorAttachments = &colorAttachment;
 
-        AttachmentRef colorAttachmentRef0 = {};
-        colorAttachmentRef0.Attachment = 0;
+    AttachmentRef colorAttachmentRef0 = {};
+    colorAttachmentRef0.Attachment = 0;
 
-        SubpassInfo subpasses[1] = {};
-        subpasses[0].NumColorAttachments = 1;
-        subpasses[0].pColorAttachmentRefs = &colorAttachmentRef0;
+    SubpassInfo subpasses[1] = {};
+    subpasses[0].NumColorAttachments = 1;
+    subpasses[0].pColorAttachmentRefs = &colorAttachmentRef0;
 
-        renderPassCI.NumSubpasses = AN_ARRAY_SIZE( subpasses );
-        renderPassCI.pSubpasses = subpasses;
+    renderPassCI.NumSubpasses = AN_ARRAY_SIZE( subpasses );
+    renderPassCI.pSubpasses = subpasses;
 
-        Pass.Initialize( renderPassCI );
-    }
+    Pass.Initialize( renderPassCI );
 
     CreatePipeline();
     CreateSamplers();

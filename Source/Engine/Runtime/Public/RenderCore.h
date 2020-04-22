@@ -998,8 +998,11 @@ struct SRenderView {
     ATextureGPU * ColorGradingLUT;
     // Current color grading texture
     ATextureGPU * CurrentColorGradingLUT;
-    // Blending between current and source color grading textures
-    float ColorGradingBlend;
+    // Blending speed between current and source color grading textures
+    float ColorGradingAdaptationSpeed;
+
+    // Current exposure texture
+    ATextureGPU * CurrentExposure;
 
     int NumShadowMapCascades;
     int NumCascadedShadowMaps;

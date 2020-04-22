@@ -30,49 +30,43 @@ SOFTWARE.
 
 #include "base/viewuniforms.glsl"
 
-layout( location = 0 ) out vec2 FS_FragColor;
+layout( location = 0 ) out vec4 FS_FragColor;
 
 layout( location = 0 ) noperspective in vec2 VS_TexCoord;
         
-layout( binding = 0 ) uniform sampler2D Smp_Current;
-layout( binding = 1 ) uniform sampler2D Smp_Desired;
+layout( binding = 0 ) uniform sampler2D Smp_Desired;
 
 void main() {
-    vec2 Current = texelFetch( Smp_Current, ivec2( 0 ), 0 ).rg;
-    vec2 Desired;
-
     vec2 a = texelFetch( Smp_Desired, ivec2( 0, 0 ), 0 ).rg;
     vec2 b = texelFetch( Smp_Desired, ivec2( 1, 0 ), 0 ).rg;
     vec2 c = texelFetch( Smp_Desired, ivec2( 1, 1 ), 0 ).rg;
     vec2 d = texelFetch( Smp_Desired, ivec2( 0, 1 ), 0 ).rg;
 
     const float PixelsCountDenom = 1.0 / (64*64);
+    
 #if 0
-    Desired.x = exp( (a.x + b.x + c.x + d.x) * PixelsCountDenom );
-    Desired.y = max( Desired.x + 0.001, max( max( a.y, b.y ), max( c.y, d.y ) ) );
+    frameLuminanceAvg = exp( (a.x + b.x + c.x + d.x) * PixelsCountDenom );
+    frameLuminanceMax = max( frameLuminanceAvg + 0.001, max( max( a.y, b.y ), max( c.y, d.y ) ) );
 
-    //const float Speed = 0.2; // Eye adaptation speed
-    //fragColor = mix( Current, Desired, 1.0 - exp(-TimeStep.x*Speed) );
+    //const float eyeAdaptationSpeed = 0.2;
+    //FS_FragColor = vec4( frameLuminanceAvg, frameLuminanceMax, 0, 1.0 - exp(-eyeAdaptationSpeed * GameplayFrameDelta()) );
 
-    const float Speed = 20; // Eye adaptation speed
-    FS_FragColor = mix( Current, Desired, 1.0 - pow( 0.98, Speed * GameplayFrameDelta() ) );
-#endif
     const float eyeAdaptationSpeed = 20;
+    FS_FragColor = vec4( frameLuminanceAvg,
+                         frameLuminanceMax,
+                         0,
+                         1.0 - pow( 0.98, eyeAdaptationSpeed * GameplayFrameDelta() ) );
+#endif
+
+    //const float eyeAdaptationSpeed = 20;
+    const float eyeAdaptationSpeed = 0.2;
     float frameLuminanceAvg = (a.x + b.x + c.x + d.x) * PixelsCountDenom;
     float frameLuminanceMax = max( max( a.y, b.y ), max( c.y, d.y ) );
-    FS_FragColor.x = mix( Current.x, frameLuminanceAvg, 1.0 - pow( 0.98, eyeAdaptationSpeed * GameplayFrameDelta() ) );
-
-//  float delta=0;
-//  if ( abs( frameLuminanceAvg - Current.x ) > 0.4 ) {
-//      if ( frameLuminanceAvg - Current.x > 0 ) {
-//          delta = Current.x + 0.4;
-//      } else {
-//          delta = Current.x - 0.4;
-//      }
-//  } else {
-//      delta = frameLuminanceAvg;
-//  }
-//  FS_FragColor.x = mix( Current.x, delta, min(eyeAdaptationSpeed * GameplayFrameDelta()*0.01,1.0) );
-
-    FS_FragColor.y = 0;
+    
+    FS_FragColor = vec4( frameLuminanceAvg,
+                         frameLuminanceMax,
+                         0,
+                         clamp( eyeAdaptationSpeed * GameplayFrameDelta(), 0.0001, 1.0 )
+                         //1.0 - pow( 0.98, eyeAdaptationSpeed * GameplayFrameDelta() )
+                         );
 }

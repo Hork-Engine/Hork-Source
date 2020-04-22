@@ -237,8 +237,14 @@ void APostprocessPassRenderer::Render() {
     GFrameResources.TextureBindings[5].pTexture = &GRenderTarget.GetBloomTexture().Textures_6[0];
     GFrameResources.SamplerBindings[5].pSampler = BloomSampler;
 
-    GFrameResources.TextureBindings[6].pTexture = &GRenderTarget.AdaptiveLuminance;
-    GFrameResources.SamplerBindings[6].pSampler = LuminanceSampler; // whatever (used texelFetch)
+    if ( GRenderView->CurrentExposure ) {
+        GFrameResources.TextureBindings[6].pTexture = GPUTextureHandle( GRenderView->CurrentExposure );
+        GFrameResources.SamplerBindings[6].pSampler = LuminanceSampler; // whatever (used texelFetch)
+    } else {
+        // TODO: set default exposure?
+        //GFrameResources.TextureBindings[6].pTexture = GPUTextureHandle( GRenderView->CurrentExposure );
+        GFrameResources.SamplerBindings[6].pSampler = LuminanceSampler; // whatever (used texelFetch)
+    }
     
     Cmd.BindPipeline( &PostprocessPipeline );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );

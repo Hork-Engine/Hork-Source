@@ -39,10 +39,10 @@ layout( binding = 0 ) uniform sampler3D ColorGradingLUT;
 	
 void main()
 {
-    //FS_FragColor = vec4( LinearToSRGB( texture( ColorGradingLUT, GS_Color ).rgb ), GetColorGradingBlend() );
-    FS_FragColor = vec4( texture( ColorGradingLUT, GS_Color ).rgb, GetColorGradingBlend() );
-
-    //FS_FragColor.rg = pow(GS_Color,vec3(2.2)).rg;
-    //FS_FragColor.a = GetColorGradingBlend();
-
+    const float eyeAdaptationSpeed = GetColorGradingAdaptationSpeed();
+    
+    FS_FragColor = vec4( texture( ColorGradingLUT, GS_Color ).rgb,
+                         clamp( eyeAdaptationSpeed * GameplayFrameDelta(), 0.0001, 1.0 )
+                         //1.0 - pow( 0.98, eyeAdaptationSpeed * GameplayFrameDelta() )                         
+                         );
 }

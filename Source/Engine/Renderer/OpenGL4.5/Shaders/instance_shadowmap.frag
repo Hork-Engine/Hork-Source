@@ -33,7 +33,7 @@ SOFTWARE.
 
 layout( location = 1 ) in vec2 InTexCoord;
 
-$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$
+#include "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$"
 
 #endif
 
@@ -44,7 +44,7 @@ layout( location = 0 ) out vec4 FS_FragColor;
 void main() {
 
 #ifdef SHADOW_MASKING
-    $SHADOWMAP_PASS_FRAGMENT_CODE$
+    #include "$SHADOWMAP_PASS_FRAGMENT_CODE$"
 #endif
 
     const float EVSM_positiveExponent = 40.0;
@@ -62,7 +62,7 @@ void main() {
 void main() {
 
 #ifdef SHADOW_MASKING
-    $SHADOWMAP_PASS_FRAGMENT_CODE$
+    #include "$SHADOWMAP_PASS_FRAGMENT_CODE$"
 #endif
 
     float depth = gl_FragCoord.z;
@@ -79,7 +79,7 @@ void main() {
 
 void main() {
 #ifdef SHADOW_MASKING
-    $SHADOWMAP_PASS_FRAGMENT_CODE$
+    #include "$SHADOWMAP_PASS_FRAGMENT_CODE$"
 #endif
 }
 

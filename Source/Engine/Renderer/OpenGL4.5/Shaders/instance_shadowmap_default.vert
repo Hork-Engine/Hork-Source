@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "shadowcastInstance.glsl"
+#include "instance_shadowmap_uniforms.glsl"
 
 out gl_PerVertex
 {

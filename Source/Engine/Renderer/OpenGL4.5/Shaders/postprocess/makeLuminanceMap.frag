@@ -37,20 +37,13 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 layout( binding = 0 ) uniform sampler2D Smp_Input;
 
 void main() {
-    #if 0
-    // better for linear/reinhard tonemapping
     const vec4 minColorThreshold = vec4(0.01);
-    const vec4 maxColorThreshold = vec4(0.3);
-    #endif
-    
-    // better for ACES filmic tonemapping
-    const vec4 minColorThreshold = vec4(0.005);
     const vec4 maxColorThreshold = vec4(0.3);
     
     vec4 color = texture( Smp_Input, VS_TexCoord );
     
     color = clamp( color, minColorThreshold, maxColorThreshold );
-    
+
     FS_FragColor = vec2( builtin_luminance( color ) );
 
     //const float Sigma = 0.4;//0.5;

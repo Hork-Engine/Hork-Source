@@ -83,7 +83,7 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     // x - outer radius^2
     // y - inner radius^2
     // z - brightness
-    // w - colorgrading blend
+    // w - colorgrading adaptation speed
     vec4 VignetteOuterInnerRadiusSqr;
     
     uvec2 EnvProbeSampler;
@@ -154,7 +154,7 @@ float GetFrameBrightness() {
     return VignetteOuterInnerRadiusSqr.z;
 }
 
-float GetColorGradingBlend() {
+float GetColorGradingAdaptationSpeed() {
     return VignetteOuterInnerRadiusSqr.w;
 }
 

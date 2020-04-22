@@ -38,7 +38,6 @@ ARuntimeVariable RVDebugRenderMode( _CTS( "DebugRenderMode" ), _CTS( "0" ), VAR_
 ARuntimeVariable RVPostprocessBloomScale( _CTS( "PostprocessBloomScale" ), _CTS( "1" ) );
 ARuntimeVariable RVPostprocessBloom( _CTS( "PostprocessBloom" ), _CTS( "1" ) );
 ARuntimeVariable RVPostprocessToneExposure( _CTS( "PostprocessToneExposure" ), _CTS( "0.05" ) );
-ARuntimeVariable RVPostprocessColorGrading( _CTS( "PostprocessColorGrading" ), _CTS( "1" ) );
 ARuntimeVariable RVBrightness( _CTS( "Brightness" ), _CTS( "1" ) );
 extern ARuntimeVariable RVFxaa;
 
@@ -333,15 +332,15 @@ void AFrameResources::SetViewUniforms() {
     uniformData->TimeDelta = GRenderView->GameplayTimeStep;
 
     uniformData->PostprocessBloomMix = Float4( 0.5f, 0.3f, 0.1f, 0.1f ) * RVPostprocessBloomScale.GetFloat(); // TODO: Get from GRenderView 
-    uniformData->PostprocessAttrib.X = RVPostprocessBloom;  // TODO: Get from GRenderView
-    uniformData->PostprocessAttrib.Y = RVPostprocessToneExposure.GetFloat();  // TODO: Get from GRenderView
-    uniformData->PostprocessAttrib.Z = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
-    uniformData->PostprocessAttrib.W = RVFxaa;
+    uniformData->BloomEnabled = RVPostprocessBloom;  // TODO: Get from GRenderView
+    uniformData->ToneMappingExposure = RVPostprocessToneExposure.GetFloat();  // TODO: Get from GRenderView
+    uniformData->ColorGrading = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
+    uniformData->FXAA = RVFxaa;
     uniformData->VignetteColorIntensity = GRenderView->VignetteColorIntensity;
     uniformData->VignetteOuterRadiusSqr = GRenderView->VignetteOuterRadiusSqr;
     uniformData->VignetteInnerRadiusSqr = GRenderView->VignetteInnerRadiusSqr;
-    uniformData->ColorGradingBlend = GRenderView->ColorGradingBlend;
-    uniformData->ViewBrightness = Math::Saturate( RVBrightness.GetFloat() );//GRenderView->ViewBrightness;
+    uniformData->ColorGradingAdaptationSpeed = GRenderView->ColorGradingAdaptationSpeed;
+    uniformData->ViewBrightness = Math::Saturate( RVBrightness.GetFloat() );
 
     uniformData->EnvProbeSampler = GFrameResources.EnvProbeBindless.GetHandle();
 

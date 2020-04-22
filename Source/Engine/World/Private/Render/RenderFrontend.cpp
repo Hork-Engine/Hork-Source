@@ -228,15 +228,14 @@ void ARenderFrontend::RenderView( int _Index ) {
         if ( RP->IsColorGradingEnabled() ) {
             view->ColorGradingLUT = RP->GetColorGradingLUT() ? RP->GetColorGradingLUT()->GetGPUResource() : NULL;
             view->CurrentColorGradingLUT = RP->GetCurrentColorGradingLUT()->GetGPUResource();
-            view->ColorGradingBlend = RP->GetColorGradingBlend();
-
-            // FIXME: move this to Tick() ?
-            RP->SetColorGradingBlend( RP->GetColorGradingBlend() + view->GameplayTimeStep * RP->GetColorGradingBlendSpeed() );
+            view->ColorGradingAdaptationSpeed = RP->GetColorGradingAdaptationSpeed();
         } else {
             view->ColorGradingLUT = NULL;
             view->CurrentColorGradingLUT = NULL;
-            view->ColorGradingBlend = 0;
+            view->ColorGradingAdaptationSpeed = 0;
         }
+
+        view->CurrentExposure = RP->GetCurrentExposure()->GetGPUResource();
     }
     else
     {
@@ -246,7 +245,8 @@ void ARenderFrontend::RenderView( int _Index ) {
         view->VignetteColorIntensity.W = 0;
         view->ColorGradingLUT = NULL;
         view->CurrentColorGradingLUT = NULL;
-        view->ColorGradingBlend = 0;
+        view->ColorGradingAdaptationSpeed = 0;
+        view->CurrentExposure = NULL;
     }
 
     view->NumShadowMapCascades = 0;
