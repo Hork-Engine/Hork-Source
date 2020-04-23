@@ -30,10 +30,12 @@ SOFTWARE.
 
 #include "material_shadowmap.frag"
 
-vec3 CalcDirectionalLighting( in vec4 ClipspacePosition, in vec3 Normal, in vec3 ViewDir, in vec3 FaceNormal, in vec3 Specular ) {
+vec3 CalcDirectionalLighting( in vec3 Normal, in vec3 Specular ) {
     vec3 light = vec3(0.0);
 
-    for ( int i = 0 ; i < NumDirectionalLights.x ; ++i ) {
+    uint numLights = GetNumDirectionalLights();
+
+    for ( int i = 0 ; i < numLights ; ++i ) {
         uint renderMask = LightParameters[ i ][ 0 ];
 
         // TODO:
@@ -54,9 +56,9 @@ vec3 CalcDirectionalLighting( in vec4 ClipspacePosition, in vec3 Normal, in vec3
         // TODO:
         //if ( ( renderMask & Material.ShadowReceiveMask ) != 0 ) {
         
-            float bias = max( 1.0 - max( dot(FaceNormal, lightDir), 0.0 ), 0.1 ) * 0.05;
+            float bias = max( 1.0 - max( dot( VS_N, lightDir ), 0.0 ), 0.1 ) * 0.05;
 
-            shadow = NdL * SampleLightShadow( ClipspacePosition, LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], bias );
+            shadow = NdL * SampleLightShadow( InClipspacePosition, LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], bias );
 
             if ( shadow == 0.0 ) {
                 //DebugEarlyCutoff = true;
@@ -70,167 +72,121 @@ vec3 CalcDirectionalLighting( in vec4 ClipspacePosition, in vec3 Normal, in vec3
 
         // Directional light specular
         vec3 reflectDir = reflect(-lightDir, Normal);       
-    float specularPow = 32;
-        float specFactor = pow(max(dot(ViewDir, reflectDir), 0.0), specularPow) * 10;
-        light += Specular * specFactor;//*Attenuation;
+        float specularPow = 32;
+        float specFactor = pow( max( dot( InViewspaceToEyeVec, reflectDir ), 0.0 ), specularPow ) * 10;
+        light += Specular * specFactor;//*attenuation;
     }
+
     return light;
 }
 
-vec3 CalcPointLightLighting( in vec3 VertexPosition, in vec3 Normal, in vec3 ViewDir, in vec2 FragCoord, in vec3 Specular ) {
+void GetClusterData( in float linearDepth, out uint numProbes, out uint numDecals, out uint numLights, out uint firstIndex )
+{
+    // TODO: Move scale and bias to uniforms
+    #define NUM_CLUSTERS_Z 24
+    const float znear = 0.0125f;
+    const float zfar = 512;
+    const int nearOffset = 20;
+    const float scale = ( NUM_CLUSTERS_Z + nearOffset ) / log2( zfar / znear );
+    const float bias = -log2( znear ) * scale - nearOffset;
+
+    // Calc cluster index
+    const float slice = max( 0.0, floor( log2( linearDepth ) * scale + bias ) );
+    const ivec3 clusterIndex = ivec3( InNormalizedScreenCoord.x * 16, InNormalizedScreenCoord.y * 8, slice );
+
+    // Fetch packed data
+    const uvec2 cluster = texelFetch( ClusterLookup, clusterIndex, 0 ).xy;
+
+    // Unpack cluster data
+    numProbes = ( cluster.y & 0xff );
+    numDecals = ( ( cluster.y >> 8 ) & 0xff );
+    numLights = ( ( cluster.y >> 16 ) & 0xff );
+    //unused = ( ( cluster.y >> 24 ) & 0xff ); // can be used in future
+
+    firstIndex = cluster.x;
+}
+
+vec3 CalcPointLightLighting( in vec3 Normal, in vec3 Specular ) {
+    uint numProbes;
+    uint numDecals;
+    uint numLights;
+    uint firstIndex;
     vec3 light = vec3(0.0);
 
-    float InNearZ                 = ViewportParams.z;
-    float InFarZ                  = ViewportParams.w;
-    float InLinearScreenDepth     = ComputeLinearDepth( InScreenDepth, InNearZ, InFarZ );
+    float linearDepth = ComputeLinearDepth( InScreenDepth, GetViewportZNear(), GetViewportZFar() );
 
-    // Расчет Scale и Bias ////////////////////////////////////////////////////////
-    // TODO: вынести Scale и Bias в юниформы
-    #define NUM_CLUSTERS_Z 24
-    const float ZNear = 0.0125f;
-    const float ZFar = 512;
-    const int NearOffset = 20;
-    const float Scale = ( NUM_CLUSTERS_Z + NearOffset ) / log2( ZFar / ZNear );
-    const float Bias = -log2( ZNear ) * Scale - NearOffset;
-    ///////////////////////////////////////////////////////////////////////////////
+    GetClusterData( linearDepth, numProbes, numDecals, numLights, firstIndex );
 
-    // Получаем кластер ///////////////////////////////////////////////////////////
-    const float Slice = max( 0.0, floor( log2( InLinearScreenDepth ) * Scale + Bias ) );
-    const ivec3 P = ivec3( FragCoord.x * 16, FragCoord.y * 8, Slice );
-    
-    const uvec2 Cluster = texelFetch( ClusterLookup, P, 0 ).xy;
-    
+    #define POINT_LIGHT 0
+    #define SPOT_LIGHT  1
 
-                ///////////////////////////////////////////////////////////////////////////////
+    for ( uint i = 0 ; i < numLights ; i++ ) {
+        const uint indices = texelFetch( ClusterItemTBO, int( firstIndex + i ) ).x;
+        const uint lightIndex = indices & 0x3ff;
+        const uint lightType = uint( LightBuffer[ lightIndex ].Pack2.x );
+        //uint renderMask = LightBuffer[ lightIndex ].IPack.x;
 
-                // Распаковываем кластер //////////////////////////////////////////////////////
-                const int NumProbes = int( Cluster.y & 0xff );
-                const int NumDecals = int( ( Cluster.y >> 8 ) & 0xff );
-                const int NumLights = int( ( Cluster.y >> 16 ) & 0xff );
-                //const int Unused = int( ( Cluster.y >> 24 ) & 0xff ); // can be used in future
-                ///////////////////////////////////////////////////////////////////////////////
-                
-    //          if ( NumLights > 0 || NumDecals > 0 || NumProbes > 0 ) {
-    //              FS_FragColor.rgb = vec3(P.x/16.0, P.y/8.0, floor(Slice)/24);
-    //          }
-    
-    vec3 L;
-    
-    float Shadow = 1;
-    float Attenuation;
-    
-    #define POINT_LIGHT 1
-    #define SPOT_LIGHT 2
-
-    
-    for ( int i = 0 ; i < NumLights ; i++ ) {
-        const uint Indices = texelFetch( ClusterItemTBO, int(Cluster.x + i) ).x;
-        const uint LightIndex = Indices & 0x3ff;
-        
-        
-        
-        //uint RenderMask = LightBuffer[ LightIndex ].IPack.x;
-
-        //if ( ( RenderMask & Material.AffectedLightMask ) == 0 ) {
+        //if ( ( renderMask & Material.AffectedLightMask ) == 0 ) {
         //    continue;
         //}
-/*
-        switch ( int( LightBuffer[ LightIndex ].Pack2.x ) ) { // light type
-            case POINT_LIGHT:*/
-                float OuterRadius = LightBuffer[ LightIndex ].Pack.w;
 
-                L = LightBuffer[ LightIndex ].Pack.xyz - VertexPosition;
-                
-                float LightDist = length( L );
+        float outerRadius = LightBuffer[ lightIndex ].Pack.w;
+        vec3 lightVec = LightBuffer[ lightIndex ].Pack.xyz - VS_Position;
+        float lightDist = length( lightVec );
 
-                if ( LightDist > OuterRadius || LightDist == 0.0 ) {
-                    continue;
-                }
+        if ( lightDist > outerRadius || lightDist == 0.0 ) {
+            continue;
+        }
 
-                L /= LightDist; // normalize
+        lightVec /= lightDist; // normalize
 
-                float InnerRadius = LightBuffer[ LightIndex ].Pack2.y;
+        float innerRadius = LightBuffer[ lightIndex ].Pack2.y;
 
-                float d = max( InnerRadius, LightDist );
-                //Attenuation = saturate( 1.0 - pow( d / OuterRadius, 4.0 ) ) / ( d*d + 1.0 ); // from skyforge
-                //Attenuation = pow( saturate( 1.0 - pow( LightDist / OuterRadius, 4.0 ) ), 2.0 );// / (LightDist*LightDist + 1.0 );   // from Unreal
-                Attenuation = pow( 1.0 - min( LightDist / OuterRadius, 1.0 ), 2.2 );   // My attenuation
+        float d = max( innerRadius, lightDist );
 
-                //if ( ( RenderMask & Material.ShadowReceiveMask ) != 0 ) {
-                //    // TODO: // Sample point light shadows
-                //    Shadow = 1;
-                //} else {
-                //    Shadow = 1;
-                //}
+        float attenuation;
+        //attenuation = saturate( 1.0 - pow( d / outerRadius, 4.0 ) ) / ( d*d + 1.0 ); // from skyforge
+        //attenuation = pow( saturate( 1.0 - pow( lightDist / outerRadius, 4.0 ) ), 2.0 );// / (lightDist*lightDist + 1.0 );   // from Unreal
+        attenuation = pow( 1.0 - min( lightDist / outerRadius, 1.0 ), 2.2 );   // My attenuation
 
-/*                break;
-            case SPOT_LIGHT:
-                OuterRadius = LightBuffer[ LightIndex ].Pack.w;
+        float shadow = 1;
 
-                L = LightBuffer[ LightIndex ].Pack.xyz - VertexPosition;
+        switch ( lightType ) {
+        case POINT_LIGHT:
+            //if ( ( renderMask & Material.ShadowReceiveMask ) != 0 ) {
+            //    // TODO: // Sample point light shadows
+            //    shadow = 1;
+            //} else {
+            //    shadow = 1;
+            //}
+            break;
 
-                LightDist = length( L );
+        case SPOT_LIGHT:
+            float CosConeRay = dot( lightVec, LightBuffer[ lightIndex ].Pack3.xyz );
+            float ConeFalloff = pow( smoothstep( LightBuffer[ lightIndex ].Pack2.z, LightBuffer[ lightIndex ].Pack2.w, CosConeRay ), LightBuffer[ lightIndex ].Pack3.w );
 
-                if ( LightDist > OuterRadius || LightDist == 0.0 ) {
-                    continue;
-                }
+            attenuation *= ConeFalloff;
 
-                L /= LightDist; // normalize
+            //if ( ( renderMask & Material.ShadowReceiveMask ) != 0 ) {
+            //    // TODO: // Sample spot light shadows
+            //    shadow = 1;
+            //} else {
+            //    shadow = 1;
+            //}
+            break;
+        }
 
-                InnerRadius = LightBuffer[ LightIndex ].Pack2.y;
-                d = max( InnerRadius, LightDist );
-                Attenuation = saturate( 1.0 - pow( d / OuterRadius, 4.0 ) ) / ( d*d + 1.0 ); // from skyforge
-                //Attenuation = pow( saturate( 1.0 - pow( LightDist / OuterRadius, 4.0 ) ), 2.0 );// / (LightDist*LightDist + 1.0 );   // from Unreal
-                //Attenuation = pow( 1.0 - min( LightDist / OuterRadius, 1.0 ), 2.2 );   // My attenuation
+        float NdL = saturate( dot( Normal, lightVec ) );
 
-                float CosConeRay = dot( L, LightBuffer[ LightIndex ].Pack3.xyz );
-                float ConeFalloff = pow( smoothstep( LightBuffer[ LightIndex ].Pack2.z, LightBuffer[ LightIndex ].Pack2.w, CosConeRay ), LightBuffer[ LightIndex ].Pack3.w );
+        attenuation *= shadow;
 
-                Attenuation *= ConeFalloff;
-
-                //if ( ( RenderMask & Material.ShadowReceiveMask ) != 0 ) {
-                //    // TODO: // Sample spot light shadows
-                //    Shadow = 1;
-                //} else {
-                //    Shadow = 1;
-                //}
-
-                break;
-        }*/
-/*
-    const vec3 LIGHT_COLOR = vec3(20,10,4);
-    const vec3 LIGHT_POS = vec3(0);
-    const float LIGHT_OUTER_RADIUS = 10;
-    const float LIGHT_INNER_RADIUS = 2;
-    const float SHADOW = 1.0;
-
-    vec3 lightDir = LIGHT_POS - VertexPosition;
-    float LightDist = length( lightDir );
-    float OuterRadius = LIGHT_OUTER_RADIUS;
-
-    if ( LightDist > OuterRadius || LightDist == 0.0 ) {
-        //continue;
-    }
-    lightDir /= LightDist; // normalize
-    float InnerRadius = LIGHT_INNER_RADIUS;
-    float d = max( InnerRadius, LightDist );
-    float Attenuation = saturate( 1.0 - pow( d / OuterRadius, 4.0 ) ) / ( d*d + 1.0 ); // from skyforge
-*/
-        float NdL = saturate( dot( Normal, L ) );
-
-        Attenuation = Attenuation * Shadow;
-
-        light += LightBuffer[ LightIndex ].Color.rgb * (Attenuation*NdL);
+        light += LightBuffer[ lightIndex ].Color.rgb * ( attenuation * NdL );
         
-        vec3 reflectDir = reflect(-L, Normal);      
+        vec3 reflectDir = reflect(-lightVec, Normal);
         float specularPow = 32;
-        float specFactor = pow(max(dot(ViewDir, reflectDir), 0.0), specularPow) * 50;
-        light += Specular * specFactor*Attenuation;
+        float specFactor = pow(max(dot(InViewspaceToEyeVec, reflectDir), 0.0), specularPow) * 50;
+        light += Specular * specFactor * attenuation;
     }
-
-    //if ( NumLights > 0 )
-    //    light = vec3(P.x/16.0, P.y/8.0, floor(Slice)/24);
-
 
     return light;
 }
@@ -251,21 +207,20 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 MaterialNormal, vec3 Material
     // Compute macro normal
     const vec3 Normal = normalize( MaterialNormal.x * VS_T + MaterialNormal.y * VS_B + MaterialNormal.z * VS_N );
     
-    Light += CalcDirectionalLighting( InClipspacePosition, Normal, InViewspaceToEyeVec, VS_N, MaterialSpecular );
-    Light += CalcPointLightLighting( VS_Position, Normal, InViewspaceToEyeVec, InNormalizedScreenCoord, MaterialSpecular );
+    Light += CalcDirectionalLighting( Normal, MaterialSpecular );
+    Light += CalcPointLightLighting( Normal, MaterialSpecular );
     Light += MaterialAmbientLight;
     Light *= BaseColor;
     Light += MaterialEmissive;
 
     FS_FragColor = vec4( Light, Opacity );
     
-    
 #ifdef DEBUG_RENDER_MODE
-    uint DebugMode = NumDirectionalLights.w;
+    uint DebugMode = GetDebugMode();
 
     switch( DebugMode ) {
     case DEBUG_FULLBRIGHT:
-        FS_FragColor = vec4( BaseColor.xyz, 1.0 );
+        FS_FragColor = vec4( BaseColor, 1.0 );
         break;
     case DEBUG_NORMAL:
         FS_FragColor = vec4( Normal*0.5+0.5, 1.0 );
@@ -296,10 +251,10 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 MaterialNormal, vec3 Material
 #endif
         break;
     case DEBUG_DIRLIGHT:
-        FS_FragColor = vec4( CalcDirectionalLighting( InClipspacePosition, Normal, InViewspaceToEyeVec, VS_N, MaterialSpecular ), 1.0 );
+        FS_FragColor = vec4( CalcDirectionalLighting( Normal, MaterialSpecular ), 1.0 );
         break;
     case DEBUG_POINTLIGHT:
-        FS_FragColor = vec4( CalcPointLightLighting( VS_Position, Normal, InViewspaceToEyeVec, InNormalizedScreenCoord, MaterialSpecular ), 1.0 );
+        FS_FragColor = vec4( CalcPointLightLighting( Normal, MaterialSpecular ), 1.0 );
         break;
     //case DEBUG_TEXCOORDS:
     //    FS_FragColor = vec4( nsv_VS0_TexCoord.xy, 0.0, 1.0 );

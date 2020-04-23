@@ -119,6 +119,8 @@ static AN_FORCEINLINE bool IsAuto( EImagePixelFormat _PixelFormat ) {
     case IMAGE_PF_AUTO_16F:
     case IMAGE_PF_AUTO_32F:
         return true;
+    default:
+        break;
     }
     return false;
 }
@@ -173,6 +175,8 @@ static AN_FORCEINLINE bool IsHalfFloat( EImagePixelFormat _PixelFormat ) {
     case IMAGE_PF_BGR16F:
     case IMAGE_PF_BGRA16F:
         return true;
+    default:
+        break;
     }
     return false;
 }
@@ -187,6 +191,8 @@ static AN_FORCEINLINE bool IsFloat( EImagePixelFormat _PixelFormat ) {
     case IMAGE_PF_BGR32F:
     case IMAGE_PF_BGRA32F:
         return true;
+    default:
+        break;
     }
     return false;
 }
@@ -203,6 +209,8 @@ static AN_FORCEINLINE int IsGamma2( EImagePixelFormat _PixelFormat ) {
     case IMAGE_PF_BGR_GAMMA2:
     case IMAGE_PF_BGRA_GAMMA2:
         return true;
+    default:
+        break;
     }
     return false;
 }

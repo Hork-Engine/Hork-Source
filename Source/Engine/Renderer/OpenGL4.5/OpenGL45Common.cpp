@@ -271,7 +271,7 @@ static bool LoadShaderWithInclude( SIncludeCtx * Ctx, const char * FileName, ASt
     return LoadShaderFromString( Ctx, FileName, source, Out );
 }
 
-static bool LoadInclude( const char * FileName, AString & Source ) {
+static bool GetShaderSource( const char * FileName, AString & Source ) {
     AFileStream f;
     if ( !f.OpenRead( FileName ) ) {
         return false;
@@ -287,7 +287,7 @@ AString LoadShader( const char * FileName, SMaterialShader const * Predefined ) 
     path += "/Shaders/";
 
     SIncludeCtx ctx;
-    ctx.LoadFile = LoadInclude;
+    ctx.LoadFile = GetShaderSource;
     ctx.PathToIncludes = path.CStr();
     ctx.Predefined = Predefined;
 
@@ -308,7 +308,7 @@ AString LoadShaderFromString( const char * FileName, const char * Source, SMater
     path += "/Shaders/";
 
     SIncludeCtx ctx;
-    ctx.LoadFile = LoadInclude;
+    ctx.LoadFile = GetShaderSource;
     ctx.PathToIncludes = path.CStr();
     ctx.Predefined = Predefined;
 

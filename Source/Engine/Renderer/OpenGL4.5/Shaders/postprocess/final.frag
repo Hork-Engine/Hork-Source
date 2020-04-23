@@ -108,7 +108,7 @@ void main() {
                            : 1.0;
                            
 #ifdef DEBUG_RENDER_MODE
-    uint DebugMode = NumDirectionalLights.w;
+    uint DebugMode = GetDebugMode();
     switch( DebugMode ) {
     case 0:
         break;

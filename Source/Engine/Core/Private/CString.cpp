@@ -423,6 +423,11 @@ int FixPath( char * _Path, int _Length ) {
     int num;
     int ofs;
     TPodStack< int > offsets;
+#ifdef AN_OS_LINUX
+    bool root = *s == '/' || *s == '\\';
+#else
+    bool root = false;
+#endif
     while ( *s ) {
         // skip multiple series of '/'
         num = 0;
@@ -430,9 +435,16 @@ int FixPath( char * _Path, int _Length ) {
             num++;
         }
         if ( num > 0 ) {
+            if ( root ) {
+                // Keep '/' at start of the path
+                num--;
+                *s = '/'; // replace '\\' by '/' (if any)
+                s++;
+            }
             Memmove( s, s + num, _Length - ( s + num - _Path ) + 1 ); // + 1 for trailing zero
             _Length -= num;
         }
+        root = false;
         // get dir name
         t = s;
         while ( *t && *t != '/' && *t != '\\' ) {

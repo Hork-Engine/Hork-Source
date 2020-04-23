@@ -56,8 +56,8 @@ void ACanvasPassRenderer::Initialize() {
     renderPassCI.pColorAttachments = &colorAttachment;
     renderPassCI.pDepthStencilAttachment = NULL;
 
-    AttachmentRef colorAttachmentRef = {};
-    colorAttachmentRef.Attachment = 0;
+    //AttachmentRef colorAttachmentRef = {};
+    //colorAttachmentRef.Attachment = 0;
 
     //SubpassInfo subpass = {};
     //subpass.NumColorAttachments = 1;

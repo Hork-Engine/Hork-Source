@@ -1168,7 +1168,7 @@ bool AFont::Build( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo co
     stbtt_GetFontVMetrics( &fontInfo, &unscaled_ascent, &unscaled_descent, &unscaled_line_gap );
 
     const float ascent = Math::Floor( unscaled_ascent * font_scale + ((unscaled_ascent > 0.0f) ? +1 : -1) );
-    const float descent = Math::Floor( unscaled_descent * font_scale + ((unscaled_descent > 0.0f) ? +1 : -1) );
+    //const float descent = Math::Floor( unscaled_descent * font_scale + ((unscaled_descent > 0.0f) ? +1 : -1) );
 
     const float font_off_x = cfg.GlyphOffset.X;
     const float font_off_y = cfg.GlyphOffset.Y + Math::Round( ascent );

@@ -164,4 +164,13 @@ float GetColorGradingAdaptationSpeed() {
 #define IsFXAAEnabled() ( PostprocessAttrib.w > 0.0 )
 #define IsVignetteEnabled() ( VignetteColorIntensity.a > 0.0 )
 
+uint GetDebugMode() {
+    return NumDirectionalLights.w;
+}
+
+uint GetNumDirectionalLights() {
+    return NumDirectionalLights.x;
+}
+
 #endif // VIEWUNIFORMS_H
+
