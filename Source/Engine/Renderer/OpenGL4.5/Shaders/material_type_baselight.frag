@@ -296,10 +296,10 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 MaterialNormal, vec3 Material
 #endif
         break;
     case DEBUG_DIRLIGHT:
-        FS_FragColor = vec4( CalcDirectionalLighting( ClipspacePosition, Normal, InViewspaceToEyeVec, VS_N, MaterialSpecular ), 1.0 );
+        FS_FragColor = vec4( CalcDirectionalLighting( InClipspacePosition, Normal, InViewspaceToEyeVec, VS_N, MaterialSpecular ), 1.0 );
         break;
     case DEBUG_POINTLIGHT:
-        FS_FragColor = vec4( CalcPointLightLighting( VS_Position, Normal, InViewspaceToEyeVec, FragCoord, MaterialSpecular ), 1.0 );
+        FS_FragColor = vec4( CalcPointLightLighting( VS_Position, Normal, InViewspaceToEyeVec, InNormalizedScreenCoord, MaterialSpecular ), 1.0 );
         break;
     //case DEBUG_TEXCOORDS:
     //    FS_FragColor = vec4( nsv_VS0_TexCoord.xy, 0.0, 1.0 );

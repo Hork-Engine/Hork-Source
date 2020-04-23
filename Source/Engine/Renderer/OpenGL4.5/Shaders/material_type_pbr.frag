@@ -369,7 +369,7 @@ void MaterialPBRShader( vec3 BaseColor, vec3 MaterialNormal, float MaterialMetal
         FS_FragColor = vec4( MaterialEmissive, 1.0 );
         break;
     case DEBUG_LIGHTMAP:
-#ifdef defined USE_LIGHTMAP
+#ifdef USE_LIGHTMAP
         FS_FragColor = vec4( lm.rgb, 1.0 );
 #else
         FS_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
@@ -384,10 +384,10 @@ void MaterialPBRShader( vec3 BaseColor, vec3 MaterialNormal, float MaterialMetal
 #endif
         break;
     case DEBUG_DIRLIGHT:
-        FS_FragColor = vec4( CalcDirectionalLightingPBR( ClipspacePosition, Diff, RealSpecularColor, SqrRoughnessClamped, Normal, NdV, VS_N ), 1.0 );
+        FS_FragColor = vec4( CalcDirectionalLightingPBR( InClipspacePosition, Diff, RealSpecularColor, SqrRoughnessClamped, Normal, NdV, VS_N ), 1.0 );
         break;
     case DEBUG_POINTLIGHT:
-        FS_FragColor = vec4( CalcPointLightLightingPBR( VS_Position, Diff, RealSpecularColor, SqrRoughnessClamped, Normal, NdV, FragCoord ), 1.0 );
+        FS_FragColor = vec4( CalcPointLightLightingPBR( VS_Position, Diff, RealSpecularColor, SqrRoughnessClamped, Normal, NdV, InNormalizedScreenCoord ), 1.0 );
         break;
     //case DEBUG_TEXCOORDS:
     //    FS_FragColor = vec4( nsv_VS0_TexCoord.xy, 0.0, 1.0 );
