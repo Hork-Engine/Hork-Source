@@ -229,6 +229,16 @@ void ARenderFrontend::RenderView( int _Index ) {
             view->ColorGradingLUT = RP->GetColorGradingLUT() ? RP->GetColorGradingLUT()->GetGPUResource() : NULL;
             view->CurrentColorGradingLUT = RP->GetCurrentColorGradingLUT()->GetGPUResource();
             view->ColorGradingAdaptationSpeed = RP->GetColorGradingAdaptationSpeed();
+
+            // Procedural color grading
+            view->ColorGradingGrain = RP->GetColorGradingGrain();
+            view->ColorGradingGamma = RP->GetColorGradingGamma();
+            view->ColorGradingLift = RP->GetColorGradingLift();
+            view->ColorGradingPresaturation = RP->GetColorGradingPresaturation();
+            view->ColorGradingTemperatureScale = RP->GetColorGradingTemperatureScale();
+            view->ColorGradingTemperatureStrength = RP->GetColorGradingTemperatureStrength();
+            view->ColorGradingBrightnessNormalization = RP->GetColorGradingBrightnessNormalization();
+
         } else {
             view->ColorGradingLUT = NULL;
             view->CurrentColorGradingLUT = NULL;

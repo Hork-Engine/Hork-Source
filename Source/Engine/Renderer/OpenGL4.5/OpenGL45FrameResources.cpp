@@ -342,6 +342,44 @@ void AFrameResources::SetViewUniforms() {
     uniformData->ColorGradingAdaptationSpeed = GRenderView->ColorGradingAdaptationSpeed;
     uniformData->ViewBrightness = Math::Saturate( RVBrightness.GetFloat() );
 
+
+    uniformData->uTemperatureScale.X = GRenderView->ColorGradingTemperatureScale.X;
+    uniformData->uTemperatureScale.Y = GRenderView->ColorGradingTemperatureScale.Y;
+    uniformData->uTemperatureScale.Z = GRenderView->ColorGradingTemperatureScale.Z;
+    uniformData->uTemperatureScale.W = 0.0f;
+
+    uniformData->uTemperatureStrength.X = GRenderView->ColorGradingTemperatureStrength.X;
+    uniformData->uTemperatureStrength.Y = GRenderView->ColorGradingTemperatureStrength.Y;
+    uniformData->uTemperatureStrength.Z = GRenderView->ColorGradingTemperatureStrength.Z;
+    uniformData->uTemperatureStrength.W = 0.0f;
+
+    uniformData->uGrain.X = GRenderView->ColorGradingGrain.X * 2.0f;
+    uniformData->uGrain.Y = GRenderView->ColorGradingGrain.Y * 2.0f;
+    uniformData->uGrain.Z = GRenderView->ColorGradingGrain.Z * 2.0f;
+    uniformData->uGrain.W = 0.0f;
+
+    uniformData->uGamma.X = 0.5f / Math::Max( GRenderView->ColorGradingGamma.X, 0.0001f );
+    uniformData->uGamma.Y = 0.5f / Math::Max( GRenderView->ColorGradingGamma.Y, 0.0001f );
+    uniformData->uGamma.Z = 0.5f / Math::Max( GRenderView->ColorGradingGamma.Z, 0.0001f );
+    uniformData->uGamma.W = 0.0f;
+
+    uniformData->uLift.X = GRenderView->ColorGradingLift.X * 2.0f - 1.0f;
+    uniformData->uLift.Y = GRenderView->ColorGradingLift.Y * 2.0f - 1.0f;
+    uniformData->uLift.Z = GRenderView->ColorGradingLift.Z * 2.0f - 1.0f;
+    uniformData->uLift.W = 0.0f;
+
+    uniformData->uPresaturation.X = GRenderView->ColorGradingPresaturation.X;
+    uniformData->uPresaturation.Y = GRenderView->ColorGradingPresaturation.Y;
+    uniformData->uPresaturation.Z = GRenderView->ColorGradingPresaturation.Z;
+    uniformData->uPresaturation.W = 0.0f;
+
+    uniformData->uLuminanceNormalization.X = GRenderView->ColorGradingBrightnessNormalization;
+    uniformData->uLuminanceNormalization.Y = 0.0f;
+    uniformData->uLuminanceNormalization.Z = 0.0f;
+    uniformData->uLuminanceNormalization.W = 0.0f;
+
+
+
     uniformData->EnvProbeSampler = GFrameResources.EnvProbeBindless.GetHandle();
 
     uniformData->DebugMode = RVDebugRenderMode.GetInteger();

@@ -86,6 +86,15 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     // w - colorgrading adaptation speed
     vec4 VignetteOuterInnerRadiusSqr;
     
+    // Procedural color grading
+    vec4 uTemperatureScale;
+    vec4 uTemperatureStrength;
+    vec4 uGrain;
+    vec4 uGamma;
+    vec4 uLift;
+    vec4 uPresaturation;
+    vec4 uLuminanceNormalization;
+    
     uvec2 EnvProbeSampler;
     
     uvec4 NumDirectionalLights;  // W - DebugMode, YZ - unused

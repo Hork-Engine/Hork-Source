@@ -46,7 +46,8 @@ private:
     void CreateSamplers();
 
     GHI::RenderPass Pass;
-    GHI::Pipeline Pipeline;
+    GHI::Pipeline PipelineLUT;
+    GHI::Pipeline PipelineProcedural;
     GHI::Sampler ColorGradingSampler;
 };
 

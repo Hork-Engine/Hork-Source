@@ -68,6 +68,15 @@ struct SViewUniformBuffer {
     float ViewBrightness;
     float ColorGradingAdaptationSpeed;
 
+    // Procedural color grading
+    Float4 uTemperatureScale;
+    Float4 uTemperatureStrength;
+    Float4 uGrain;
+    Float4 uGamma;
+    Float4 uLift;
+    Float4 uPresaturation;
+    Float4 uLuminanceNormalization;
+
     uint64_t EnvProbeSampler;
     uint64_t Padding3;
 

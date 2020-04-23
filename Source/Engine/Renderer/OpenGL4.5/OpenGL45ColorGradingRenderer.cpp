@@ -68,7 +68,8 @@ void AColorGradingRenderer::Initialize() {
 
 void AColorGradingRenderer::Deinitialize() {
     Pass.Deinitialize();
-    Pipeline.Deinitialize();
+    PipelineLUT.Deinitialize();
+    PipelineProcedural.Deinitialize();
 }
 
 void AColorGradingRenderer::CreatePipeline() {
@@ -101,11 +102,12 @@ void AColorGradingRenderer::CreatePipeline() {
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
-    ShaderModule vertexShaderModule, geometryShaderModule, fragmentShaderModule;
+    ShaderModule vertexShaderModule, geometryShaderModule, fragmentShaderModule, fragmentShaderModuleProcedural;
 
     AString vertexSourceCode = LoadShader( "postprocess/colorgrading.vert" );
     AString geometrySourceCode = LoadShader( "postprocess/colorgrading.geom" );
     AString fragmentSourceCode = LoadShader( "postprocess/colorgrading.frag" );
+    AString fragmentSourceCodeProcedural = LoadShader( "postprocess/colorgrading_procedural.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
@@ -119,6 +121,10 @@ void AColorGradingRenderer::CreatePipeline() {
     GShaderSources.Clear();
     GShaderSources.Add( fragmentSourceCode.CStr() );
     GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( fragmentSourceCodeProcedural.CStr() );
+    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModuleProcedural );
 
     PipelineCreateInfo pipelineCI = {};
 
@@ -142,7 +148,12 @@ void AColorGradingRenderer::CreatePipeline() {
     fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
     fs.pModule = &fragmentShaderModule;
 
+    ShaderStageInfo fs_proc = {};
+    fs_proc.Stage = SHADER_STAGE_FRAGMENT_BIT;
+    fs_proc.pModule = &fragmentShaderModuleProcedural;
+
     ShaderStageInfo stages[] = { vs, gs, fs };
+    ShaderStageInfo stages_proc[] = { vs, gs, fs_proc };
 
     pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
@@ -163,7 +174,12 @@ void AColorGradingRenderer::CreatePipeline() {
     pipelineCI.Subpass = 0;
 
     pipelineCI.pBlending = &bs;
-    Pipeline.Initialize( pipelineCI );
+    PipelineLUT.Initialize( pipelineCI );
+
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages_proc );
+    pipelineCI.pStages = stages_proc;
+
+    PipelineProcedural.Initialize( pipelineCI );
 }
 
 void AColorGradingRenderer::CreateSamplers() {
@@ -182,10 +198,6 @@ void AColorGradingRenderer::Render() {
     ATextureGPU * source = GRenderView->ColorGradingLUT;
 
     if ( !texture ) {
-        return;
-    }
-
-    if ( !source ) {
         return;
     }
 
@@ -233,10 +245,14 @@ void AColorGradingRenderer::Render() {
     drawCmd.StartVertexLocation = 0;
     drawCmd.StartInstanceLocation = 0;
     
-    GFrameResources.TextureBindings[0].pTexture = GPUTextureHandle( source );
-    GFrameResources.SamplerBindings[0].pSampler = ColorGradingSampler;
+    if ( source ) {
+        GFrameResources.TextureBindings[0].pTexture = GPUTextureHandle( source );
+        GFrameResources.SamplerBindings[0].pSampler = ColorGradingSampler;
 
-    Cmd.BindPipeline( &Pipeline );
+        Cmd.BindPipeline( &PipelineLUT );
+    } else {
+        Cmd.BindPipeline( &PipelineProcedural );
+    }
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );

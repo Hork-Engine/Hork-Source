@@ -84,6 +84,8 @@ public:
 
     float GetColorGradingTemperature() const { return ColorGradingTemperature; }
 
+    Float3 const GetColorGradingTemperatureScale() const { return ColorGradingTemperatureScale; }
+
     void SetColorGradingTemperatureStrength( Float3 const & _ColorGradingTemperatureStrength );
 
     Float3 const & GetColorGradingTemperatureStrength() const { return ColorGradingTemperatureStrength; }
@@ -111,6 +113,7 @@ private:
     Float3 ColorGradingLift;
     Float3 ColorGradingPresaturation;
     float ColorGradingTemperature;
+    Float3 ColorGradingTemperatureScale = Float3(1.0f);
     Float3 ColorGradingTemperatureStrength;
     float ColorGradingBrightnessNormalization;
     float ColorGradingAdaptationSpeed;

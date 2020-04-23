@@ -1000,6 +1000,14 @@ struct SRenderView {
     ATextureGPU * CurrentColorGradingLUT;
     // Blending speed between current and source color grading textures
     float ColorGradingAdaptationSpeed;
+    // Procedural color grading
+    Float3 ColorGradingGrain;
+    Float3 ColorGradingGamma;
+    Float3 ColorGradingLift;
+    Float3 ColorGradingPresaturation;
+    Float3 ColorGradingTemperatureScale;
+    Float3 ColorGradingTemperatureStrength;
+    float ColorGradingBrightnessNormalization;
 
     // Current exposure texture
     ATextureGPU * CurrentExposure;
