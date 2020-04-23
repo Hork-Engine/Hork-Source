@@ -61,9 +61,16 @@ PBR (physically based).
 * Wireframe renderer
 * Debug renderer (points, lines, polygons)
 * Batching
-* SRGB featured
+* SRGB
 * Premultiplied alpha support
-* Postprocess effects (like bloom, dynamic exposure, tonemapping, FXAA, etc)
+
+## Postprocess effects
+* Bloom
+* Dynamic exposure
+* Tonemapping
+* LUT and procedural color grading
+* Vegnette
+* FXAA
 
 ## Advanced culling system:
 * Frustum Culling
@@ -155,7 +162,7 @@ PBR (physically based).
 * Imposters
 * Subsurface scattering
 * Postprocess materials
-* Postprocess techinques: DOF, SSAO/HBAO+, Air distortion, LUT color grading / Procedural color grading
+* Postprocess techinques: DOF, SSAO/HBAO+, Air distortion
 * More parallel computations
 * SDF fonts
 * Virtual texture
