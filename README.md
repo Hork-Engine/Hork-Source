@@ -15,7 +15,7 @@ The name Angie Engine was chosen by the name of heroine Angela "Angie" McAlister
 
 # Features
 
-## Technical information:
+## Technical information
 * C++  
 * Windows7+, Linux  
 * 64 bit only
