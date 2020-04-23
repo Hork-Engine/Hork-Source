@@ -21,23 +21,23 @@ The name Angie Engine was chosen by the name of heroine Angela "Angie" McAlister
 * 64 bit only
 * SSE2
 
-## Actor-Component based world architecture:
+## Actor-Component based world architecture
 * Reflection
 * Garbage collector
 * World consist of Actors, Actors consist of Components, Components share resources.
    
-## Different geometry types:
+## Different geometry types
 * Static Mesh
 * Procedural Mesh
 * Skinned Mesh
 * Surface
 
-## Animation:
+## Animation
 * Procedural via ProceduralMesh
 * Skinned via SkinnedMesh and animation controllers
 * Component
 
-## Dynamic and static lighting with shadows:
+## Dynamic and static lighting with shadows
 * Directional Light
 * Point Light
 * Spot Light
@@ -46,7 +46,7 @@ The name Angie Engine was chosen by the name of heroine Angela "Angie" McAlister
 * Dynamic per-pixel lighting
 * Cascaded shadow maps (PSSM+PCF)
 
-## Material system:
+## Material system
 * Material graph with automatic shader generation
 * Material instancing
 * Different material types:
@@ -55,7 +55,7 @@ Unlit;
 Base Light (non-physically based);
 PBR (physically based).
 
-## Forward+ clustered renderer based on OpenGL4.5 core:
+## Forward+ clustered renderer based on OpenGL4.5 core
 * Allowed to switch render backend at runtime
 * Depth pre-pass
 * Wireframe renderer
@@ -72,24 +72,24 @@ PBR (physically based).
 * Vegnette
 * FXAA
 
-## Advanced culling system:
+## Advanced culling system
 * Frustum Culling
 * Portal Culling
 * Potentially Visible Set
 * BSP
 
-## Asset importing and resource management:
+## Asset importing and resource management
 * 3D modelling formats (GLTF, LWO)
 * Different image formats (PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR)
 * Fonts (TTF)
 
-## Audio:
+## Audio
 * Decorers ogg, mp3, wav
 * Streaming support
 * 2D and 3D
 * Unlimited audio sources
 
-## Fast scene raycasting:
+## Fast scene raycasting
 * Used speedup structures such as BSP, BVH, Portals
 
 ## Physics
@@ -139,7 +139,7 @@ PBR (physically based).
 * stb, cgltw, lwo2, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui
 * Dynamic loaded: openal, libmpg123
 
-## Some architectural solutions:
+## Some architectural solutions
 * STL-less.
 * Not using exceptions.
 * Code style C with classes.
