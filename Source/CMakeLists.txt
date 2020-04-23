@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.7.2)
 project( AngieEngine )
 
 set( PROJECT_OUTPUT_DIR "E:/AngieBinary" )
-#set( PROJECT_OUTPUT_DIR "/home/sam/2-Мои Файлы/AngieBinary" )
+#set( PROJECT_OUTPUT_DIR "/home/sam/2-MyFiles/AngieBinary" )
 
 include(Engine/AngieConfig.cmake)
 
