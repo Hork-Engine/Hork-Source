@@ -44,7 +44,7 @@ layout( location = 0 ) centroid noperspective in vec2 VS_TexCoord;
 layout( binding = 0 ) uniform sampler2D Smp_Source;
 
 void main() {
-    // Adjust texture coordinates for dynamic resoution
+    // Adjust texture coordinates for dynamic resolution
     vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
     tc.y = 1.0 - tc.y;
     

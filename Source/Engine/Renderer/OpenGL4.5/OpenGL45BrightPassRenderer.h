@@ -44,18 +44,16 @@ public:
 private:
     void CreateBrightPipeline();
     void CreateBlurPipeline();
+    void CreateCopyPipeline();
     void CreateSampler();
 
     GHI::RenderPass BrightPass;
     GHI::Pipeline BrightPipeline;
     GHI::Pipeline BlurPipeline0;
     GHI::Pipeline BlurPipeline1;
-    GHI::Pipeline BlurFinalPipeline0;
-    GHI::Pipeline BlurFinalPipeline1;
-    GHI::Sampler NearestSampler;
+    GHI::Pipeline CopyPipeline;
     GHI::Sampler LinearSampler;
     GHI::ShaderModule BlurFragmentShaderModule;
-    GHI::ShaderModule BlurFinalFragmentShaderModule;
 };
 
 extern ABrightPassRenderer GBrightPassRenderer;

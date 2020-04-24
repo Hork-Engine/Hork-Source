@@ -38,7 +38,7 @@ layout( location = 1 ) in vec4 VS_Color;
 layout( binding = 0 ) uniform sampler2D Smp_Source;
 
 void main() {
-    // Adjust texture coordinates for dynamic resoution
+    // Adjust texture coordinates for dynamic resolution
     vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
     tc.y = 1.0 - tc.y;
     

@@ -255,7 +255,7 @@ void ARenderTarget::CreateBloomTextures() {
         TextureStorageCreateInfo texStorageCI = {};
         texStorageCI.Type = GHI::TEXTURE_2D;
         texStorageCI.NumLods = 1;
-        texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RGB8;
+        texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RGB16F;
 
         texStorageCI.Resolution.Tex2D.Width = Bloom.Width;
         texStorageCI.Resolution.Tex2D.Height = Bloom.Height;

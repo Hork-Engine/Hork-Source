@@ -35,8 +35,6 @@ SOFTWARE.
 #include "OpenGL45Material.h"
 #include "OpenGL45RenderBackend.h"
 
-ARuntimeVariable RVBrightPassLinear( _CTS( "BrightPassLinear" ), _CTS( "1" ) );
-
 using namespace GHI;
 
 namespace OpenGL45 {
@@ -72,6 +70,7 @@ void ABrightPassRenderer::Initialize() {
 
     CreateBrightPipeline();
     CreateBlurPipeline();
+    CreateCopyPipeline();
     CreateSampler();
 }
 
@@ -81,9 +80,7 @@ void ABrightPassRenderer::Deinitialize() {
     BlurPipeline0.Deinitialize();
     BlurPipeline1.Deinitialize();
     BlurFragmentShaderModule.Deinitialize();
-    BlurFinalPipeline0.Deinitialize();
-    BlurFinalPipeline1.Deinitialize();
-    BlurFinalFragmentShaderModule.Deinitialize();
+    CopyPipeline.Deinitialize();
 }
 
 void ABrightPassRenderer::CreateBrightPipeline() {
@@ -203,8 +200,7 @@ void ABrightPassRenderer::CreateBlurPipeline() {
     ShaderModule vertexShaderModule;
 
     AString vertexSourceCode = LoadShader( "postprocess/gauss.vert" );
-    AString gaussFragmentShaderSource1 = LoadShader( "postprocess/gauss1.frag" );
-    AString gaussFragmentShaderSource2 = LoadShader( "postprocess/gauss2.frag" );
+    AString gaussFragmentShaderSource = LoadShader( "postprocess/gauss.frag" );
 
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
@@ -212,12 +208,8 @@ void ABrightPassRenderer::CreateBlurPipeline() {
     GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
 
     GShaderSources.Clear();
-    GShaderSources.Add( gaussFragmentShaderSource1.CStr() );
+    GShaderSources.Add( gaussFragmentShaderSource.CStr() );
     GShaderSources.Build( FRAGMENT_SHADER, &BlurFragmentShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( gaussFragmentShaderSource2.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, &BlurFinalFragmentShaderModule );
 
     PipelineCreateInfo pipelineCI = {};
 
@@ -237,10 +229,6 @@ void ABrightPassRenderer::CreateBlurPipeline() {
     ShaderStageInfo fs = {};
     fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
     fs.pModule = &BlurFragmentShaderModule;
-
-    ShaderStageInfo fs2 = {};
-    fs2.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    fs2.pModule = &BlurFinalFragmentShaderModule;
 
     VertexBindingInfo vertexBinding[1] = {};
 
@@ -265,26 +253,96 @@ void ABrightPassRenderer::CreateBlurPipeline() {
 
     pipelineCI.Subpass = 0;
     BlurPipeline0.Initialize( pipelineCI );
+}
 
-    stages[1] = fs2;
+void ABrightPassRenderer::CreateCopyPipeline() {
+    RasterizerStateInfo rsd;
+    rsd.SetDefaults();
+    rsd.CullMode = POLYGON_CULL_FRONT;
+    rsd.bScissorEnable = false;
 
-    pipelineCI.Subpass = 1;
-    BlurFinalPipeline1.Initialize( pipelineCI );
+    BlendingStateInfo bsd;
+    bsd.SetDefaults();
+
+    DepthStencilStateInfo dssd;
+    dssd.SetDefaults();
+    dssd.bDepthEnable = false;
+    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+
+    static const VertexAttribInfo vertexAttribs[] = {
+        {
+            "InPosition",
+            0,              // location
+            0,              // buffer input slot
+            VAT_FLOAT2,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            0
+        }
+    };
+
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+
+    ShaderModule vertexShaderModule;
+    ShaderModule fragmentShaderModule;
+
+    AString vertexSourceCode = LoadShader( "postprocess/copy.vert" );
+    AString fragmentShaderSource = LoadShader( "postprocess/copy.frag" );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
+    GShaderSources.Add( vertexSourceCode.CStr() );
+    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( fragmentShaderSource.CStr() );
+    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
+
+    PipelineCreateInfo pipelineCI = {};
+
+    PipelineInputAssemblyInfo inputAssembly = {};
+    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
+    inputAssembly.bPrimitiveRestart = false;
+
+    pipelineCI.pInputAssembly = &inputAssembly;
+    pipelineCI.pBlending = &bsd;
+    pipelineCI.pRasterizer = &rsd;
+    pipelineCI.pDepthStencil = &dssd;
+
+    ShaderStageInfo vs = {};
+    vs.Stage = SHADER_STAGE_VERTEX_BIT;
+    vs.pModule = &vertexShaderModule;
+
+    ShaderStageInfo fs = {};
+    fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
+    fs.pModule = &fragmentShaderModule;
+
+    VertexBindingInfo vertexBinding[1] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( Float2 );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.pVertexAttribs = vertexAttribs;
+
+    pipelineCI.pRenderPass = &BrightPass;
+
+    ShaderStageInfo stages[2] = { vs, fs };
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
+    pipelineCI.pStages = stages;
 
     pipelineCI.Subpass = 0;
-    BlurFinalPipeline0.Initialize( pipelineCI );
+
+    CopyPipeline.Initialize( pipelineCI );
 }
 
 void ABrightPassRenderer::CreateSampler() {
     SamplerCreateInfo samplerCI;
     samplerCI.SetDefaults();
-
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.Filter = FILTER_NEAREST;
-    NearestSampler = GDevice.GetOrCreateSampler( samplerCI );
-
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
@@ -318,36 +376,37 @@ void ABrightPassRenderer::Render( GHI::Texture & _SrcTexture ) {
     drawCmd.InstanceCount = 1;
     drawCmd.StartVertexLocation = 0;
     drawCmd.StartInstanceLocation = 0;
-    
-    GFrameResources.TextureBindings[0].pTexture = &_SrcTexture;
-    GFrameResources.SamplerBindings[0].pSampler = RVBrightPassLinear ? LinearSampler : NearestSampler;
 
+    GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
+
+    // Make bright texture. Result in Texture[0]
+    GFrameResources.TextureBindings[0].pTexture = &_SrcTexture;
     Cmd.BindPipeline( &BrightPipeline );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
     Cmd.Draw( &drawCmd );
 
-    GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
+    //
+    // Perform gaussian blur
+    //
 
-    // X pass
+    // X pass. Result in Texture[1]
     GFrameResources.TextureBindings[0].pTexture = &bloom.Texture[0];
+    BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / vp.Width, 0.0f );
     Cmd.BindPipeline( &BlurPipeline1 );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
-
-    BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / vp.Width, 0.0f );
     Cmd.Draw( &drawCmd );
 
-    // Y pass
+    // Y pass. Result in Texture[0]
     GFrameResources.TextureBindings[0].pTexture = &bloom.Texture[1];
+    BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / vp.Height );
     Cmd.BindPipeline( &BlurPipeline0 );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
-
-    BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / vp.Height );
     Cmd.Draw( &drawCmd );
 
     Cmd.EndRenderPass();
@@ -363,24 +422,30 @@ void ABrightPassRenderer::Render( GHI::Texture & _SrcTexture ) {
     vp.Height = bloom.Height>>2;
     Cmd.SetViewport( vp );
 
-    // X pass
+    // Copy Texture[0] to Textures_2[0]
     GFrameResources.TextureBindings[0].pTexture = &bloom.Texture[0];
+    Cmd.BindPipeline( &CopyPipeline );
+    Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
+    Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
+    Cmd.BindShaderResources( &GFrameResources.Resources );
+    Cmd.Draw( &drawCmd );
+
+    // X pass. Result in Textures_2[1]
+    GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_2[0];
+    BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / vp.Width, 0.0f );
     Cmd.BindPipeline( &BlurPipeline1 );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
-
-    BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / vp.Width, 0.0f );
     Cmd.Draw( &drawCmd );
 
-    // Y pass
+    // Y pass. Result in Textures_2[0]
     GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_2[1];
+    BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / vp.Height );
     Cmd.BindPipeline( &BlurPipeline0 );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
-
-    BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / vp.Height );
     Cmd.Draw( &drawCmd );
 
     Cmd.EndRenderPass();
@@ -397,24 +462,30 @@ void ABrightPassRenderer::Render( GHI::Texture & _SrcTexture ) {
     vp.Height = bloom.Height>>4;
     Cmd.SetViewport( vp );
 
-    // X pass
+    // Copy Textures_2[0] to Textures_4[0]
     GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_2[0];
+    Cmd.BindPipeline( &CopyPipeline );
+    Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
+    Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
+    Cmd.BindShaderResources( &GFrameResources.Resources );
+    Cmd.Draw( &drawCmd );
+
+    // X pass. Result in bloom.Textures_4[1]
+    GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_4[0];
+    BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / vp.Width, 0.0f );
     Cmd.BindPipeline( &BlurPipeline1 );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
-
-    BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / vp.Width, 0.0f );
     Cmd.Draw( &drawCmd );
 
-    // Y pass
+    // Y pass. Result in bloom.Textures_4[0]
     GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_4[1];
+    BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / vp.Height );
     Cmd.BindPipeline( &BlurPipeline0 );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
-
-    BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / vp.Height );
     Cmd.Draw( &drawCmd );
 
     Cmd.EndRenderPass();
@@ -431,27 +502,40 @@ void ABrightPassRenderer::Render( GHI::Texture & _SrcTexture ) {
     vp.Height = bloom.Height>>6;
     Cmd.SetViewport( vp );
 
-    // X pass
+    // Copy Textures_4[0] to Textures_6[0]
     GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_4[0];
-    Cmd.BindPipeline( &BlurFinalPipeline1 );
+    Cmd.BindPipeline( &CopyPipeline );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
-
-    BlurFinalFragmentShaderModule.SetUniform2f( 0, 1.0f / vp.Width, 0.0f );
     Cmd.Draw( &drawCmd );
 
-    // Y pass
-    GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_6[1];
-    Cmd.BindPipeline( &BlurFinalPipeline0 );
+    // X pass. Result in bloom.Textures_6[1]
+    GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_6[0];
+    BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / vp.Width, 0.0f );
+    Cmd.BindPipeline( &BlurPipeline1 );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );
+    Cmd.Draw( &drawCmd );
 
-    BlurFinalFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / vp.Height );
+    // Y pass. Result in bloom.Textures_6[0]
+    GFrameResources.TextureBindings[0].pTexture = &bloom.Textures_6[1];
+    BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / vp.Height );
+    Cmd.BindPipeline( &BlurPipeline0 );
+    Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
+    Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
+    Cmd.BindShaderResources( &GFrameResources.Resources );
     Cmd.Draw( &drawCmd );
 
     Cmd.EndRenderPass();
+
+    //GLogger.Printf( "Bloom size %dx%d %dx%d %dx%d %dx%d\n",
+    //                bloom.Width,bloom.Height,
+    //                bloom.Width>>2,bloom.Height>>2,
+    //                bloom.Width>>4,bloom.Height>>4,
+    //                bloom.Width>>6,bloom.Height>>6
+    //                );
 }
 
 }

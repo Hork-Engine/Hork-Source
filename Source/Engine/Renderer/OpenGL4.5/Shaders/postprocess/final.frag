@@ -115,6 +115,18 @@ void main() {
     case DEBUG_BLOOM:
         FS_FragColor = CalcBloom();
         break;
+    case DEBUG_BLOOMTEX1:
+        FS_FragColor = texture( Smp_Bloom2, VS_TexCoord.zw );
+        break;
+    case DEBUG_BLOOMTEX2:
+        FS_FragColor = texture( Smp_Bloom8, VS_TexCoord.zw );
+        break;
+    case DEBUG_BLOOMTEX3:
+        FS_FragColor = texture( Smp_Bloom32, VS_TexCoord.zw );
+        break;
+    case DEBUG_BLOOMTEX4:
+        FS_FragColor = texture( Smp_Bloom128, VS_TexCoord.zw );
+        break;
     case DEBUG_EXPOSURE:
         if ( VS_TexCoord.x < 0.05 && VS_TexCoord.y < 0.05 ) {
             FS_FragColor = vec4( VS_Exposure, VS_Exposure, VS_Exposure, 1.0 );

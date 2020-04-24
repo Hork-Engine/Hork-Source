@@ -28,6 +28,8 @@ SOFTWARE.
 
 */
 
+#include "base/common.frag"
+
 layout( location = 0 ) out vec4 FS_FragColor;
 
 layout( location = 0 ) noperspective in vec2 VS_TexCoord;
@@ -37,21 +39,5 @@ layout( binding = 0 ) uniform sampler2D Smp_Source;
 layout( location = 0 ) uniform vec2 InvSize;
 
 void main() {
-    const float weight0 = 1.0 / 64.0;
-    const float weight1 = 5.0 / 64.0;
-    const float weight2 = 15.0 / 64.0;
-    const float weight3 = 22.0 / 64.0;
-    const float weight4 = 15.0 / 64.0;
-    const float weight5 = 5.0 / 64.0;
-    const float weight6 = 1.0 / 64.0;
-
-    vec4 final = texture( Smp_Source, VS_TexCoord - 3.0*InvSize ) * weight0
-        + texture( Smp_Source, VS_TexCoord - 2.0*InvSize ) * weight1
-        + texture( Smp_Source, VS_TexCoord - 1.0*InvSize ) * weight2
-        + texture( Smp_Source, VS_TexCoord ) * weight3
-        + texture( Smp_Source, VS_TexCoord + 1.0*InvSize ) * weight4
-        + texture( Smp_Source, VS_TexCoord + 2.0*InvSize ) * weight5
-        + texture( Smp_Source, VS_TexCoord + 3.0*InvSize ) * weight6;
-
-    FS_FragColor = final;// + (texture( Smp_Dither, VS_TexCoord * 3.141592 ).r - 0.5) / 192.0;
+    FS_FragColor = GaussianBlur13( Smp_Source, VS_TexCoord, InvSize );
 }

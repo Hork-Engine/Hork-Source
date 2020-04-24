@@ -49,7 +49,11 @@ SOFTWARE.
 #define DEBUG_TBN_BINORMAL 15
 #define DEBUG_SPECULAR     16
 #define DEBUG_BLOOM        17
-#define DEBUG_EXPOSURE     18
+#define DEBUG_BLOOMTEX1    18
+#define DEBUG_BLOOMTEX2    19
+#define DEBUG_BLOOMTEX3    20
+#define DEBUG_BLOOMTEX4    21
+#define DEBUG_EXPOSURE     22
 #endif
 
 #endif // DEBUG_H

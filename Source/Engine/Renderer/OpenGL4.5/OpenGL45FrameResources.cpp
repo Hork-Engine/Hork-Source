@@ -37,6 +37,10 @@ SOFTWARE.
 ARuntimeVariable RVDebugRenderMode( _CTS( "DebugRenderMode" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVPostprocessBloomScale( _CTS( "PostprocessBloomScale" ), _CTS( "1" ) );
 ARuntimeVariable RVPostprocessBloom( _CTS( "PostprocessBloom" ), _CTS( "1" ) );
+ARuntimeVariable RVPostprocessBloomParam0( _CTS( "PostprocessBloomParam0" ), _CTS( "0.5" ) );
+ARuntimeVariable RVPostprocessBloomParam1( _CTS( "PostprocessBloomParam1" ), _CTS( "0.3" ) );
+ARuntimeVariable RVPostprocessBloomParam2( _CTS( "PostprocessBloomParam2" ), _CTS( "0.04" ) );
+ARuntimeVariable RVPostprocessBloomParam3( _CTS( "PostprocessBloomParam3" ), _CTS( "0.01" ) );
 ARuntimeVariable RVPostprocessToneExposure( _CTS( "PostprocessToneExposure" ), _CTS( "0.05" ) );
 ARuntimeVariable RVBrightness( _CTS( "Brightness" ), _CTS( "1" ) );
 extern ARuntimeVariable RVFxaa;
@@ -331,7 +335,12 @@ void AFrameResources::SetViewUniforms() {
     uniformData->ViewPosition = GRenderView->ViewPosition;
     uniformData->TimeDelta = GRenderView->GameplayTimeStep;
 
-    uniformData->PostprocessBloomMix = Float4( 0.5f, 0.3f, 0.1f, 0.1f ) * RVPostprocessBloomScale.GetFloat(); // TODO: Get from GRenderView 
+    uniformData->PostprocessBloomMix = Float4( RVPostprocessBloomParam0.GetFloat(),
+                                               RVPostprocessBloomParam1.GetFloat(),
+                                               RVPostprocessBloomParam2.GetFloat(),
+                                               RVPostprocessBloomParam3.GetFloat() )
+                                                * RVPostprocessBloomScale.GetFloat();
+
     uniformData->BloomEnabled = RVPostprocessBloom;  // TODO: Get from GRenderView
     uniformData->ToneMappingExposure = RVPostprocessToneExposure.GetFloat();  // TODO: Get from GRenderView
     uniformData->ColorGrading = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;

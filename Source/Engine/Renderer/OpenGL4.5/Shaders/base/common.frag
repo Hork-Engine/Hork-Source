@@ -77,6 +77,7 @@ vec3 UnpackPositionFromDepth( in sampler2D _Depth, in vec2 _Coord ) {
 }
 #endif
 
+// Gaussian blur approximation with linear sampling. 9-tap filter using five texture fetches instead of nine.
 vec4 GaussianBlur9( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
     vec2 Offset1 = Direction * 1.3846153846;
     vec2 Offset2 = Direction * 3.2307692308;
@@ -85,12 +86,14 @@ vec4 GaussianBlur9( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
        + ( texture( Image, TexCoord + Offset2 ) + texture( Image, TexCoord - Offset2 ) ) * 0.0702702703;
 }
 
+// Gaussian blur approximation with linear sampling. 5-tap filter using three texture fetches instead of five.
 vec4 GaussianBlur5( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
     vec2 Offset1 = Direction * 1.3333333333333333;
     return texture( Image, TexCoord ) * 0.29411764705882354
        + ( texture( Image, TexCoord + Offset1 ) + texture( Image, TexCoord - Offset1 ) ) * 0.35294117647058826;
 }
 
+// Gaussian blur approximation with linear sampling. 13-tap filter using 7 vs 13 texture fetches.
 vec4 GaussianBlur13( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
     vec2 Offset1 = Direction * 1.411764705882353;
     vec2 Offset2 = Direction * 3.2941176470588234;

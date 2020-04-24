@@ -28,30 +28,14 @@ SOFTWARE.
 
 */
 
-layout( location = 0 ) out vec4 FS_FragColor;
+out gl_PerVertex
+{
+    vec4 gl_Position;
+};
 
-layout( location = 0 ) noperspective in vec2 VS_TexCoord;
-
-layout( binding = 0 ) uniform sampler2D Smp_Source;
-
-layout( location = 0 ) uniform vec2 InvSize;
+layout( location = 0 ) noperspective out vec2 VS_TexCoord;
 
 void main() {
-    const float weight0 = 1.0 / 18.0;
-    const float weight1 = 2.0 / 18.0;
-    const float weight2 = 4.0 / 18.0;
-    const float weight3 = 4.0 / 18.0;
-    const float weight4 = 4.0 / 18.0;
-    const float weight5 = 2.0 / 18.0;
-    const float weight6 = 1.0 / 18.0;
-
-    vec4 final = texture( Smp_Source, VS_TexCoord - 3.0*InvSize ) * weight0
-        + texture( Smp_Source, VS_TexCoord - 2.0*InvSize ) * weight1
-        + texture( Smp_Source, VS_TexCoord - 1.0*InvSize ) * weight2
-        + texture( Smp_Source, VS_TexCoord ) * weight3
-        + texture( Smp_Source, VS_TexCoord + 1.0*InvSize ) * weight4
-        + texture( Smp_Source, VS_TexCoord + 2.0*InvSize ) * weight5
-        + texture( Smp_Source, VS_TexCoord + 3.0*InvSize ) * weight6;
-
-    FS_FragColor = final;// + (texture( Smp_Dither, VS_TexCoord * 3.141592 ).r - 0.5) / 192.0;
+    gl_Position = vec4( InPosition, 0.0, 1.0 );
+    VS_TexCoord = InPosition * vec2(0.5,-0.5) + 0.5;
 }

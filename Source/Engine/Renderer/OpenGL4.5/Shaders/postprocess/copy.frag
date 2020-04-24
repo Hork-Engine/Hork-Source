@@ -28,23 +28,14 @@ SOFTWARE.
 
 */
 
-#include "base/viewuniforms.glsl"
-#include "base/core.glsl"
-
 layout( location = 0 ) out vec4 FS_FragColor;
 
 layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
 layout( binding = 0 ) uniform sampler2D Smp_Source;
 
-const vec4 BloomStart = vec4( 1 ); // TODO: input uniform
-
 void main()
 {
-    // Adjust texture coordinates for dynamic resolution
-    vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
-    tc.y = 1.0 - tc.y;
-    
-    FS_FragColor = max( vec4(0.0), texture( Smp_Source, tc ) - BloomStart );
+    FS_FragColor = texture( Smp_Source, VS_TexCoord );
 }
 
