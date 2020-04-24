@@ -360,6 +360,8 @@ void AssertFunction( const char * _File, int _Line, const char * _Function, cons
                     "============================\n",
                     _File, _Line, _Function, _Assertion, _Comment ? _Comment : "", _Comment ? "\n" : "" );
 
+    SDL_SetRelativeMouseMode( SDL_FALSE );
+
 #ifdef AN_OS_WIN32
     DebugBreak();
 #else

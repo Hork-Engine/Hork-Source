@@ -302,10 +302,12 @@ bool AResourceManager::UnregisterResource( AResource * _Resource ) {
 void AResourceManager::UnregisterResources( AClassMeta const & _ClassMeta ) {
     for ( int i = ResourceCache.Size() - 1 ; i >= 0 ; i-- ) {
         if ( ResourceCache[i]->FinalClassId() == _ClassMeta.GetId() ) {
-            ResourceCache[i]->RemoveRef();
+            AResource * resource = ResourceCache[i];
 
-            ResourceHash.RemoveIndex( ResourceCache[i]->GetResourceAlias().HashCase(), i );
+            ResourceHash.RemoveIndex( resource->GetResourceAlias().HashCase(), i );
             ResourceCache.Remove( i );
+
+            resource->RemoveRef();
         }
     }
 }

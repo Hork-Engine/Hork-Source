@@ -480,7 +480,11 @@ void ASkinnedComponent::OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {
     }
 
     SkeletonSize = joints.Size() * sizeof( Float3x4 );
-    SkeletonOffset = GStreamedMemoryGPU.AllocateJoint( SkeletonSize, JointsBufferData );
+    if ( SkeletonSize > 0 ) {
+        SkeletonOffset = GStreamedMemoryGPU.AllocateJoint( SkeletonSize, JointsBufferData );
+    } else {
+        SkeletonOffset = 0;
+    }
 }
 
 Float3x4 const & ASkinnedComponent::GetJointTransform( int _JointIndex ) {

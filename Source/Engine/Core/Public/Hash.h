@@ -183,6 +183,9 @@ public:
                 IndexChain[i]--;
             }
         }
+
+        AN_ASSERT( max < IndexChainLength );
+
         for ( int i = _Index ; i < max ; i++ ) {
             IndexChain[i] = IndexChain[i+1];
         }
