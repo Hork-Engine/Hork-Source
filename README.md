@@ -68,7 +68,7 @@ PBR (physically based).
 * Bloom
 * Dynamic exposure
 * Tonemapping
-* LUT and procedural color grading
+* Color grading (LUT, procedural)
 * Vegnette
 * FXAA
 
