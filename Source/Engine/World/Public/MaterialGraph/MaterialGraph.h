@@ -68,6 +68,7 @@ enum EMaterialPass {
     MATERIAL_PASS_COLOR,
     MATERIAL_PASS_DEPTH,
     MATERIAL_PASS_WIREFRAME,
+    MATERIAL_PASS_NORMALS,
     MATERIAL_PASS_SHADOWMAP,
     MATERIAL_PASS_MAX
 };
@@ -759,6 +760,18 @@ public:
 
 protected:
     MGInPosition();
+
+    void Compute( AMaterialBuildContext & _Context ) override;
+};
+
+class MGInNormal : public MGNode {
+    AN_CLASS( MGInNormal, MGNode )
+
+public:
+    MGNodeOutput * Value;
+
+protected:
+    MGInNormal();
 
     void Compute( AMaterialBuildContext & _Context ) override;
 };

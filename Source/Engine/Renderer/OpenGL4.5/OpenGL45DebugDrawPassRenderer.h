@@ -39,9 +39,7 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void RenderInstances( GHI::Framebuffer * _Framebuffer );
-
-    GHI::RenderPass * GetRenderPass() { return &DebugDrawPass; }
+    void Render( GHI::Framebuffer & TargetFB );
 
 private:
     GHI::RenderPass DebugDrawPass;

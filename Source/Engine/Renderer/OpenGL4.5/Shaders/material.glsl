@@ -66,6 +66,19 @@ SOFTWARE.
 #   endif
 #endif // MATERIAL_PASS_WIREFRAME
 
+#if defined MATERIAL_PASS_NORMALS
+#   ifdef VERTEX_SHADER
+#       include "$NORMALS_PASS_SAMPLERS$"
+#       include "instance.vert"
+#   endif
+#   ifdef GEOMETRY_SHADER
+#       include "instance_normals.geom"
+#   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_normals.frag"
+#   endif
+#endif // MATERIAL_PASS_NORMALS
+
 #if defined MATERIAL_PASS_SHADOWMAP
 #   ifdef VERTEX_SHADER
 #       include "$SHADOWMAP_PASS_SAMPLERS$"

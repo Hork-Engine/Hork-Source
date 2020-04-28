@@ -43,14 +43,23 @@ class ANGIE_API ARenderingParameters final : public ABaseObject {
 
 public:
     AColor4 BackgroundColor = AColor4( 0.3f, 0.3f, 0.8f );
-    bool bClearBackground;
-    bool bWireframe;
-    bool bDrawDebug;
+
+    bool bClearBackground = false;
+
+    bool bWireframe = false;
+
+    bool bDrawDebug = false;
+
     bool bVignetteEnabled = true;
     Float4 VignetteColorIntensity = Float4( 0,0,0, 0.4f );        // rgb, intensity
     float VignetteOuterRadiusSqr = 0.7f*0.7f;
     float VignetteInnerRadiusSqr = 0.6f*0.6f;
     int VisibilityMask = ~0;
+
+    // TODO: TonemappingExposure, bTonemappingAutoExposure, TonemappingMethod:Disabled,Reinhard,Uncharted,etc
+    // TODO: Wireframe color/line width
+    // TODO: bBloomEnabled, BloomParams[4]
+    // TODO: Render mode: Polygons,Triangles,Solid,Solid+Triangles,Solid+Polygons,etc (for editor)
 
     ATexture * GetCurrentExposure() { return CurrentExposure; }
 
@@ -100,6 +109,28 @@ public:
 
     void SetColorGradingDefaults();
 
+// TODO:
+//    void SetVignetteEnabled( bool _VignetteEnabled );
+//    bool IsVignetteEnabled() const { return VignetteEnabled; }
+
+//    void SetVignetteColor( const Float3 & _VignetteColor );
+//    const Float3 & GetVignetteColor() const { return VignetteColor; }
+
+//    void SetVignetteOuterRadius( const float & _VignetteOuterRadius );
+//    const Float & GetVignetteOuterRadius() const { return VignetteOuterRadius; }
+
+//    void SetVignetteInnerRadius( const float & _VignetteInnerRadius );
+//    const Float & GetVignetteInnerRadius() const { return VignetteInnerRadius; }
+
+//    void SetVignetteIntensity( const float & _VignetteIntensity );
+//    const Float & GetVignetteIntensity() const { return VignetteIntensity; }
+//    enum ECustomDepthStencilBuffer {
+//        RT_NoCustomDepth,
+//        RT_CustomDepth,
+//        RT_CustomDepthStencil
+//    };
+//   void SetCustomDepthStencil( ECustomDepthStencilBuffer _CustomDepthStencil );
+//   ECustomDepthStencilBuffer GetCustomDepthStencil() const { return CustomDepthStencil; }
 private:
     ARenderingParameters();
 

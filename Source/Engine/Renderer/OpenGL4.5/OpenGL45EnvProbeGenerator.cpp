@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "OpenGL45EnvProbeGenerator.h"
-#include "OpenGL45ShaderSource.h"
 
 #include <Core/Public/PodArray.h>
 
@@ -229,7 +228,6 @@ void AEnvProbeGenerator::Initialize() {
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
     pipelineCI.pRenderPass = &m_RP;
-    pipelineCI.Subpass = 0;
     m_Pipeline.Initialize( pipelineCI );
 
     SamplerCreateInfo samplerCI;

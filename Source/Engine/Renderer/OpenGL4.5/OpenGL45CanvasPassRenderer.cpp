@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "OpenGL45CanvasPassRenderer.h"
-#include "OpenGL45ShaderSource.h"
 #include "OpenGL45FrameResources.h"
 #include "OpenGL45RenderTarget.h"
 #include "OpenGL45Material.h"
@@ -189,7 +188,6 @@ void ACanvasPassRenderer::CreatePresentViewPipeline() {
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     pipelineCI.pRenderPass = &CanvasPass;
-    pipelineCI.Subpass = 0;
 
     for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
         if ( i == COLOR_BLENDING_DISABLED ) {
@@ -303,7 +301,6 @@ void ACanvasPassRenderer::CreatePipelines() {
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     pipelineCI.pRenderPass = &CanvasPass;
-    pipelineCI.Subpass = 0;
 
     for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
         if ( i == COLOR_BLENDING_DISABLED ) {
@@ -359,7 +356,7 @@ void ACanvasPassRenderer::BeginCanvasPass() {
     Cmd.SetViewport( vp );
 }
 
-void ACanvasPassRenderer::RenderInstances() {
+void ACanvasPassRenderer::Render() {
     if ( !GFrameData->DrawListHead ) {
         return;
     }

@@ -2,9 +2,6 @@
 #include "OpenGL45Material.h"
 #include "OpenGL45FrameResources.h"
 #include "OpenGL45ShadowMapRT.h"
-#include "OpenGL45ShaderSource.h"
-
-#include <Core/Public/CriticalError.h>
 
 using namespace GHI;
 
@@ -247,7 +244,6 @@ void AShadowMapPassRenderer::CreatePipeline() {
 
     pipelineCI.pStages = stages;
     pipelineCI.pRenderPass = GetRenderPass();
-    pipelineCI.Subpass = 0;
 
     StaticShadowCasterPipeline.Initialize( pipelineCI );
 }
@@ -310,7 +306,7 @@ void AShadowMapPassRenderer::BindTexturesShadowMapPass( SMaterialFrameData * _In
     BindTextures( _Instance );
 }
 
-void AShadowMapPassRenderer::RenderInstances() {
+void AShadowMapPassRenderer::Render() {
 
     if ( !GRenderView->NumShadowMapCascades ) {
         return;

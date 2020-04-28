@@ -48,6 +48,10 @@ out gl_PerVertex
 
 #endif
 
+#ifdef MATERIAL_PASS_NORMALS
+   layout( location = 0 ) out vec4 VS_Normal;
+#endif
+
 #if defined SKINNED_MESH
 
     layout( binding = 2, std140 ) uniform JointTransforms
@@ -112,5 +116,33 @@ void main() {
 
 #   ifdef MATERIAL_PASS_WIREFRAME
 #       include "$WIREFRAME_PASS_VERTEX_CODE$"
+#   endif
+
+    // Built-in material code (wireframe)
+
+#   ifdef MATERIAL_PASS_NORMALS
+#       include "$NORMALS_PASS_VERTEX_CODE$"
+
+        const float MAGNITUDE = 0.04;
+        
+        mat4 modelMatrix = InverseProjectionMatrix * TransformMatrix;
+        mat3 normalMatrix = mat3( transpose(inverse(modelMatrix)) );
+        mat4 projectionMatrix = inverse(InverseProjectionMatrix); // TODO: add to view uniforms!
+        
+        vec3 n, v;
+#ifdef SKINNED_MESH
+        n.x = dot( vec3(JointTransform0), InNormal );
+        n.y = dot( vec3(JointTransform1), InNormal );
+        n.z = dot( vec3(JointTransform2), InNormal );
+        n = normalMatrix * n;
+#else
+        n = normalMatrix * InNormal;
+#endif      
+        n = normalize( n ) * MAGNITUDE;
+        
+        v = vec3( modelMatrix * vec4( GetVertexPosition(), 1.0 ) );
+        
+        VS_Normal = projectionMatrix * vec4( v + n, 1.0 );
+
 #   endif
 }

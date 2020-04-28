@@ -30,6 +30,11 @@ SOFTWARE.
 
 #include "OpenGL45RenderTarget.h"
 
+#include <Core/Public/Logger.h>
+
+ARuntimeVariable RVFramebufferTextureFormat( _CTS( "FramebufferTextureFormat" ), _CTS( "0" ) );
+ARuntimeVariable RVBloomTextureFormat( _CTS( "BloomTextureFormat" ), _CTS( "0" ) );
+
 using namespace GHI;
 
 namespace OpenGL45 {
@@ -41,89 +46,9 @@ void ARenderTarget::Initialize() {
     FramebufferHeight = 0;
     Bloom.Width = 0;
     Bloom.Height = 0;
-
-    TextureStorageCreateInfo texStorageCI = {};
-    texStorageCI.Type = GHI::TEXTURE_2D;
-    texStorageCI.NumLods = 1;
-    texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RG16F;
-
-    texStorageCI.Resolution.Tex2D.Width = 64;
-    texStorageCI.Resolution.Tex2D.Height = 64;
-    Luminance64.InitializeStorage( texStorageCI );
-
-    texStorageCI.Resolution.Tex2D.Width = 32;
-    texStorageCI.Resolution.Tex2D.Height = 32;
-    Luminance32.InitializeStorage( texStorageCI );
-
-    texStorageCI.Resolution.Tex2D.Width = 16;
-    texStorageCI.Resolution.Tex2D.Height = 16;
-    Luminance16.InitializeStorage( texStorageCI );
-
-    texStorageCI.Resolution.Tex2D.Width = 8;
-    texStorageCI.Resolution.Tex2D.Height = 8;
-    Luminance8.InitializeStorage( texStorageCI );
-
-    texStorageCI.Resolution.Tex2D.Width = 4;
-    texStorageCI.Resolution.Tex2D.Height = 4;
-    Luminance4.InitializeStorage( texStorageCI );
-
-    texStorageCI.Resolution.Tex2D.Width = 2;
-    texStorageCI.Resolution.Tex2D.Height = 2;
-    Luminance2.InitializeStorage( texStorageCI );
-
-    FramebufferCreateInfo framebufferCI = {};    
-    framebufferCI.NumColorAttachments = 1;
-    FramebufferAttachmentInfo colorAttachment = {};
-    colorAttachment.bLayered = false;
-    colorAttachment.LayerNum = 0;
-    colorAttachment.LodNum = 0;
-    framebufferCI.pColorAttachments = &colorAttachment;
-
-    framebufferCI.Width = 64;
-    framebufferCI.Height = 64;
-    colorAttachment.pTexture = &Luminance64;
-    FramebufferLum64.Initialize( framebufferCI );
-
-    framebufferCI.Width = 32;
-    framebufferCI.Height = 32;
-    colorAttachment.pTexture = &Luminance32;
-    FramebufferLum32.Initialize( framebufferCI );
-
-    framebufferCI.Width = 16;
-    framebufferCI.Height = 16;
-    colorAttachment.pTexture = &Luminance16;
-    FramebufferLum16.Initialize( framebufferCI );
-
-    framebufferCI.Width = 8;
-    framebufferCI.Height = 8;
-    colorAttachment.pTexture = &Luminance8;
-    FramebufferLum8.Initialize( framebufferCI );
-
-    framebufferCI.Width = 4;
-    framebufferCI.Height = 4;
-    colorAttachment.pTexture = &Luminance4;
-    FramebufferLum4.Initialize( framebufferCI );
-
-    framebufferCI.Width = 2;
-    framebufferCI.Height = 2;
-    colorAttachment.pTexture = &Luminance2;
-    FramebufferLum2.Initialize( framebufferCI );
 }
 
 void ARenderTarget::Deinitialize() {
-    Luminance64.Deinitialize();
-    Luminance32.Deinitialize();
-    Luminance16.Deinitialize();
-    Luminance8.Deinitialize();
-    Luminance4.Deinitialize();
-    Luminance2.Deinitialize();
-    FramebufferLum64.Deinitialize();
-    FramebufferLum32.Deinitialize();
-    FramebufferLum16.Deinitialize();
-    FramebufferLum8.Deinitialize();
-    FramebufferLum4.Deinitialize();
-    FramebufferLum2.Deinitialize();
-
     Framebuffer.Deinitialize();
     FramebufferTexture.Deinitialize();
     FramebufferDepth.Deinitialize();
@@ -134,8 +59,11 @@ void ARenderTarget::Deinitialize() {
     FxaaFramebuffer.Deinitialize();
     FxaaTexture.Deinitialize();
 
+    SSAOFramebuffer.Deinitialize();
+    SSAOTexture.Deinitialize();
+
     for ( int i = 0 ; i < 2 ; i++ ) {
-        Bloom.Texture[i].Deinitialize();
+        Bloom.Textures[i].Deinitialize();
         Bloom.Textures_2[i].Deinitialize();
         Bloom.Textures_4[i].Deinitialize();
         Bloom.Textures_6[i].Deinitialize();
@@ -153,26 +81,47 @@ void ARenderTarget::CreateFramebuffer() {
     FxaaFramebuffer.Deinitialize();
     FxaaTexture.Deinitialize();
 
+    SSAOFramebuffer.Deinitialize();
+    SSAOTexture.Deinitialize();
+
     TextureStorageCreateInfo texStorageCI = {};
     texStorageCI.Type = GHI::TEXTURE_2D;
     texStorageCI.Resolution.Tex2D.Width = FramebufferWidth;
     texStorageCI.Resolution.Tex2D.Height = FramebufferHeight;
     texStorageCI.NumLods = 1;
 
-    texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA16F;
+    if ( RVFramebufferTextureFormat.IsModified() ) {
+        GLogger.Printf( "Changing framebuffer texture format\n" );
+        RVFramebufferTextureFormat.UnmarkModified();
+    }
+
+    GHI::INTERNAL_PIXEL_FORMAT pf;
+    switch ( RVFramebufferTextureFormat ) {
+    case 0:
+        // Pretty good. No significant visual difference between INTERNAL_PIXEL_FORMAT_RGB16F.
+        pf = INTERNAL_PIXEL_FORMAT_R11F_G11F_B10F;
+        break;
+    default:
+        pf = INTERNAL_PIXEL_FORMAT_RGB16F;
+        break;
+    }
+
+    texStorageCI.InternalFormat = pf;
     FramebufferTexture.InitializeStorage( texStorageCI );
 
+    // Post process texture must have alpha channel for FXAA
     texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA16F;
-    //texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA8;
     PostprocessTexture.InitializeStorage( texStorageCI );
 
-    texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA16F;
-    //texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_RGBA8;
+    texStorageCI.InternalFormat = pf;
     FxaaTexture.InitializeStorage( texStorageCI );
 
     texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_DEPTH24_STENCIL8;
     //texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_DEPTH32F_STENCIL8;
     FramebufferDepth.InitializeStorage( texStorageCI );
+
+    texStorageCI.InternalFormat = INTERNAL_PIXEL_FORMAT_R8;
+    SSAOTexture.InitializeStorage( texStorageCI );
 
     {
         FramebufferCreateInfo framebufferCI = {};
@@ -229,6 +178,22 @@ void ARenderTarget::CreateFramebuffer() {
         FxaaFramebuffer.Initialize( framebufferCI );
     }
 
+    {
+        FramebufferCreateInfo framebufferCI = {};
+        framebufferCI.Width = FramebufferWidth;
+        framebufferCI.Height = FramebufferHeight;
+        framebufferCI.NumColorAttachments = 1;
+
+        FramebufferAttachmentInfo colorAttachment = {};
+        colorAttachment.pTexture = &SSAOTexture;
+        colorAttachment.bLayered = false;
+        colorAttachment.LayerNum = 0;
+        colorAttachment.LodNum = 0;
+        framebufferCI.pColorAttachments = &colorAttachment;
+
+        SSAOFramebuffer.Initialize( framebufferCI );
+    }
+
     CreateBloomTextures();
 }
 
@@ -236,7 +201,7 @@ void ARenderTarget::CreateBloomTextures() {
     int NewWidth = FramebufferWidth >> 1;
     int NewHeight = FramebufferHeight >> 1;
 
-    if ( Bloom.Width != NewWidth || Bloom.Height != NewHeight ) {
+    if ( Bloom.Width != NewWidth || Bloom.Height != NewHeight || RVBloomTextureFormat.IsModified() ) {
         Bloom.Width = NewWidth;
         Bloom.Height = NewHeight;
 
@@ -246,7 +211,7 @@ void ARenderTarget::CreateBloomTextures() {
         Bloom.Framebuffer_6.Deinitialize();
 
         for ( int i = 0 ; i < 2 ; i++ ) {
-            Bloom.Texture[i].Deinitialize();
+            Bloom.Textures[i].Deinitialize();
             Bloom.Textures_2[i].Deinitialize();
             Bloom.Textures_4[i].Deinitialize();
             Bloom.Textures_6[i].Deinitialize();
@@ -255,12 +220,29 @@ void ARenderTarget::CreateBloomTextures() {
         TextureStorageCreateInfo texStorageCI = {};
         texStorageCI.Type = GHI::TEXTURE_2D;
         texStorageCI.NumLods = 1;
-        texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RGB16F;
+
+        if ( RVBloomTextureFormat.IsModified() ) {
+            GLogger.Printf( "Changing bloom texture format\n" );
+            RVBloomTextureFormat.UnmarkModified();
+        }
+
+        switch ( RVBloomTextureFormat.GetInteger() ) {
+        case 0:
+            texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_R11F_G11F_B10F;
+            break;
+        case 1:
+            texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RGB16F;
+            break;
+        case 2:
+            // TODO: We can use RGB8 format, but it need some way of bloom compression to not lose in quality.
+            texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RGB8;
+            break;
+        }
 
         texStorageCI.Resolution.Tex2D.Width = Bloom.Width;
         texStorageCI.Resolution.Tex2D.Height = Bloom.Height;
-        Bloom.Texture[0].InitializeStorage( texStorageCI );
-        Bloom.Texture[1].InitializeStorage( texStorageCI );
+        Bloom.Textures[0].InitializeStorage( texStorageCI );
+        Bloom.Textures[1].InitializeStorage( texStorageCI );
 
         texStorageCI.Resolution.Tex2D.Width = Bloom.Width>>2;
         texStorageCI.Resolution.Tex2D.Height = Bloom.Height>>2;
@@ -277,15 +259,6 @@ void ARenderTarget::CreateBloomTextures() {
         Bloom.Textures_6[0].InitializeStorage( texStorageCI );
         Bloom.Textures_6[1].InitializeStorage( texStorageCI );
 
-        Bloom.TexturePtrs[0] = &Bloom.Texture[0];
-        Bloom.TexturePtrs[1] = &Bloom.Texture[1];
-        Bloom.TexturePtrs[2] = &Bloom.Textures_2[0];
-        Bloom.TexturePtrs[3] = &Bloom.Textures_2[1];
-        Bloom.TexturePtrs[4] = &Bloom.Textures_4[0];
-        Bloom.TexturePtrs[5] = &Bloom.Textures_4[1];
-        Bloom.TexturePtrs[6] = &Bloom.Textures_6[0];
-        Bloom.TexturePtrs[7] = &Bloom.Textures_6[1];
-
         FramebufferAttachmentInfo colorAttachments[2] = {};
 
         FramebufferCreateInfo framebufferCI = {};
@@ -294,8 +267,8 @@ void ARenderTarget::CreateBloomTextures() {
 
         framebufferCI.Width = Bloom.Width;
         framebufferCI.Height = Bloom.Height;
-        colorAttachments[0].pTexture = &Bloom.Texture[0];
-        colorAttachments[1].pTexture = &Bloom.Texture[1];
+        colorAttachments[0].pTexture = &Bloom.Textures[0];
+        colorAttachments[1].pTexture = &Bloom.Textures[1];
         Bloom.Framebuffer.Initialize( framebufferCI );
 
         framebufferCI.Width = Bloom.Width>>2;
@@ -320,12 +293,17 @@ void ARenderTarget::CreateBloomTextures() {
 
 void ARenderTarget::ReallocSurface( int _AllocSurfaceWidth, int _AllocSurfaceHeight ) {
     if ( FramebufferWidth != _AllocSurfaceWidth
-        || FramebufferHeight != _AllocSurfaceHeight ) {
+        || FramebufferHeight != _AllocSurfaceHeight
+         || RVFramebufferTextureFormat.IsModified() ) {
 
         FramebufferWidth = _AllocSurfaceWidth;
         FramebufferHeight = _AllocSurfaceHeight;
 
         CreateFramebuffer();
+    }
+
+    if ( RVBloomTextureFormat.IsModified() ) {
+        CreateBloomTextures();
     }
 }
 

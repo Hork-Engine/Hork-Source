@@ -29,11 +29,7 @@ SOFTWARE.
 */
 
 #include "OpenGL45ExposureRenderer.h"
-#include "OpenGL45ShaderSource.h"
 #include "OpenGL45FrameResources.h"
-#include "OpenGL45RenderTarget.h"
-#include "OpenGL45Material.h"
-#include "OpenGL45RenderBackend.h"
 
 using namespace GHI;
 
@@ -42,27 +38,113 @@ namespace OpenGL45 {
 AExposureRenderer GExposureRenderer;
 
 void AExposureRenderer::Initialize() {
-    RenderPassCreateInfo renderPassCI = {};
+    // Create render pass
+    {
+        RenderPassCreateInfo renderPassCI = {};
 
-    renderPassCI.NumColorAttachments = 1;
+        renderPassCI.NumColorAttachments = 1;
 
-    AttachmentInfo colorAttachment = {};
-    colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_LOAD;
-    renderPassCI.pColorAttachments = &colorAttachment;
+        AttachmentInfo colorAttachment = {};
+        colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_LOAD;
+        renderPassCI.pColorAttachments = &colorAttachment;
 
-    AttachmentRef colorAttachmentRef0 = {};
-    colorAttachmentRef0.Attachment = 0;
+        AttachmentRef colorAttachmentRef0 = {};
+        colorAttachmentRef0.Attachment = 0;
 
-    SubpassInfo subpasses[1] = {};
-    subpasses[0].NumColorAttachments = 1;
-    subpasses[0].pColorAttachmentRefs = &colorAttachmentRef0;
+        SubpassInfo subpasses[1] = {};
+        subpasses[0].NumColorAttachments = 1;
+        subpasses[0].pColorAttachmentRefs = &colorAttachmentRef0;
 
-    renderPassCI.NumSubpasses = AN_ARRAY_SIZE( subpasses );
-    renderPassCI.pSubpasses = subpasses;
+        renderPassCI.NumSubpasses = AN_ARRAY_SIZE( subpasses );
+        renderPassCI.pSubpasses = subpasses;
 
-    LuminancePass.Initialize( renderPassCI );
+        LuminancePass.Initialize( renderPassCI );
+    }
 
-    CreatePipelines();
+    // Create textures
+    {
+        TextureStorageCreateInfo texStorageCI = {};
+        texStorageCI.Type = GHI::TEXTURE_2D;
+        texStorageCI.NumLods = 1;
+        texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RG16F;
+
+        texStorageCI.Resolution.Tex2D.Width = 64;
+        texStorageCI.Resolution.Tex2D.Height = 64;
+        Luminance64.InitializeStorage( texStorageCI );
+
+        texStorageCI.Resolution.Tex2D.Width = 32;
+        texStorageCI.Resolution.Tex2D.Height = 32;
+        Luminance32.InitializeStorage( texStorageCI );
+
+        texStorageCI.Resolution.Tex2D.Width = 16;
+        texStorageCI.Resolution.Tex2D.Height = 16;
+        Luminance16.InitializeStorage( texStorageCI );
+
+        texStorageCI.Resolution.Tex2D.Width = 8;
+        texStorageCI.Resolution.Tex2D.Height = 8;
+        Luminance8.InitializeStorage( texStorageCI );
+
+        texStorageCI.Resolution.Tex2D.Width = 4;
+        texStorageCI.Resolution.Tex2D.Height = 4;
+        Luminance4.InitializeStorage( texStorageCI );
+
+        texStorageCI.Resolution.Tex2D.Width = 2;
+        texStorageCI.Resolution.Tex2D.Height = 2;
+        Luminance2.InitializeStorage( texStorageCI );
+
+        byte defaultLum[2] = { 30, 30 }; // TODO: choose appropriate value
+        texStorageCI.Resolution.Tex2D.Width = 1;
+        texStorageCI.Resolution.Tex2D.Height = 1;
+        texStorageCI.InternalFormat = GHI::INTERNAL_PIXEL_FORMAT_RG8;
+        DefaultLuminance.InitializeStorage( texStorageCI );
+        DefaultLuminance.Write( 0, GHI::PIXEL_FORMAT_UBYTE_RG, sizeof( defaultLum ), 1, defaultLum );
+    }
+
+    // Create framebuffers
+    {
+        FramebufferCreateInfo framebufferCI = {};
+        framebufferCI.NumColorAttachments = 1;
+        FramebufferAttachmentInfo colorAttachment = {};
+        colorAttachment.bLayered = false;
+        colorAttachment.LayerNum = 0;
+        colorAttachment.LodNum = 0;
+        framebufferCI.pColorAttachments = &colorAttachment;
+
+        framebufferCI.Width = 64;
+        framebufferCI.Height = 64;
+        colorAttachment.pTexture = &Luminance64;
+        FramebufferLum64.Initialize( framebufferCI );
+
+        framebufferCI.Width = 32;
+        framebufferCI.Height = 32;
+        colorAttachment.pTexture = &Luminance32;
+        FramebufferLum32.Initialize( framebufferCI );
+
+        framebufferCI.Width = 16;
+        framebufferCI.Height = 16;
+        colorAttachment.pTexture = &Luminance16;
+        FramebufferLum16.Initialize( framebufferCI );
+
+        framebufferCI.Width = 8;
+        framebufferCI.Height = 8;
+        colorAttachment.pTexture = &Luminance8;
+        FramebufferLum8.Initialize( framebufferCI );
+
+        framebufferCI.Width = 4;
+        framebufferCI.Height = 4;
+        colorAttachment.pTexture = &Luminance4;
+        FramebufferLum4.Initialize( framebufferCI );
+
+        framebufferCI.Width = 2;
+        framebufferCI.Height = 2;
+        colorAttachment.pTexture = &Luminance2;
+        FramebufferLum2.Initialize( framebufferCI );
+    }
+
+    CreateFullscreenQuadPipeline( MakeLuminanceMapPipe, "postprocess/makeLuminanceMap.vert", "postprocess/makeLuminanceMap.frag", LuminancePass );
+    CreateFullscreenQuadPipeline( SumLuminanceMapPipe, "postprocess/sumLuminanceMap.vert", "postprocess/sumLuminanceMap.frag", LuminancePass );
+    CreateFullscreenQuadPipeline( DynamicExposurePipe, "postprocess/dynamicExposure.vert", "postprocess/dynamicExposure.frag", LuminancePass, GHI::BLENDING_ALPHA );
+
     CreateSampler();
 }
 
@@ -71,136 +153,20 @@ void AExposureRenderer::Deinitialize() {
     MakeLuminanceMapPipe.Deinitialize();
     SumLuminanceMapPipe.Deinitialize();
     DynamicExposurePipe.Deinitialize();
-}
 
-void AExposureRenderer::CreatePipelines() {
-    RasterizerStateInfo rs;
-    rs.SetDefaults();
-    rs.CullMode = POLYGON_CULL_FRONT;
-    rs.bScissorEnable = false;
-
-    BlendingStateInfo bs;
-    bs.SetDefaults();
-
-    DepthStencilStateInfo ds;
-    ds.SetDefaults();
-    ds.bDepthEnable = false;
-    ds.DepthWriteMask = DEPTH_WRITE_DISABLE;
-
-    static const VertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            0
-        }
-    };
-
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    ShaderModule makeLuminanceMapVSModule;
-    ShaderModule makeLuminanceMapFSModule;
-
-    ShaderModule sumLuminanceMapVSModule;
-    ShaderModule sumLuminanceMapFSModule;
-
-    ShaderModule dynamicExposureFSModule;
-
-    AString makeLuminanceMapVS = LoadShader( "postprocess/makeLuminanceMap.vert" );
-    AString makeLuminanceMapFS = LoadShader( "postprocess/makeLuminanceMap.frag" );
-    AString sumLuminanceMapVS = LoadShader( "postprocess/sumLuminanceMap.vert" );
-    AString sumLuminanceMapFS = LoadShader( "postprocess/sumLuminanceMap.frag" );
-    AString dynamicExposureFS = LoadShader( "postprocess/dynamicExposure.frag" );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( makeLuminanceMapVS.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, &makeLuminanceMapVSModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( makeLuminanceMapFS.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, &makeLuminanceMapFSModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( sumLuminanceMapVS.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, &sumLuminanceMapVSModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( sumLuminanceMapFS.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, &sumLuminanceMapFSModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( dynamicExposureFS.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, &dynamicExposureFSModule );
-
-    PipelineCreateInfo pipelineCI = {};
-
-    PipelineInputAssemblyInfo inputAssembly = {};
-    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pInputAssembly = &inputAssembly;
-    pipelineCI.pBlending = &bs;
-    pipelineCI.pRasterizer = &rs;
-    pipelineCI.pDepthStencil = &ds;
-
-    ShaderStageInfo makeLuminanceMapVSStage = {};
-    makeLuminanceMapVSStage.Stage = SHADER_STAGE_VERTEX_BIT;
-    makeLuminanceMapVSStage.pModule = &makeLuminanceMapVSModule;
-
-    ShaderStageInfo makeLuminanceMapFSStage = {};
-    makeLuminanceMapFSStage.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    makeLuminanceMapFSStage.pModule = &makeLuminanceMapFSModule;
-
-    ShaderStageInfo makeLuminanceMapStages[2] = { makeLuminanceMapVSStage, makeLuminanceMapFSStage };
-
-    ShaderStageInfo sumLuminanceMapVSStage = {};
-    sumLuminanceMapVSStage.Stage = SHADER_STAGE_VERTEX_BIT;
-    sumLuminanceMapVSStage.pModule = &sumLuminanceMapVSModule;
-
-    ShaderStageInfo sumLuminanceMapFSStage = {};
-    sumLuminanceMapFSStage.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    sumLuminanceMapFSStage.pModule = &sumLuminanceMapFSModule;
-
-    ShaderStageInfo sumLuminanceMapStages[2] = { sumLuminanceMapVSStage, sumLuminanceMapFSStage };
-
-    ShaderStageInfo dynamicExposureFSStage = {};
-    dynamicExposureFSStage.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    dynamicExposureFSStage.pModule = &dynamicExposureFSModule;
-
-    ShaderStageInfo dynamicExposureStages[2] = { sumLuminanceMapVSStage, dynamicExposureFSStage };
-
-    VertexBindingInfo vertexBinding[1] = {};
-
-    vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( Float2 );
-    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
-    pipelineCI.pVertexBindings = vertexBinding;
-
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
-
-    pipelineCI.pRenderPass = &LuminancePass;
-    pipelineCI.Subpass = 0;
-    
-    pipelineCI.NumStages = AN_ARRAY_SIZE( makeLuminanceMapStages );
-    pipelineCI.pStages = makeLuminanceMapStages;
-    MakeLuminanceMapPipe.Initialize( pipelineCI );
-
-    pipelineCI.NumStages = AN_ARRAY_SIZE( sumLuminanceMapStages );
-    pipelineCI.pStages = sumLuminanceMapStages;
-    SumLuminanceMapPipe.Initialize( pipelineCI );
-
-    bs.RenderTargetSlots[0].SetBlendingPreset( GHI::BLENDING_ALPHA );
-    pipelineCI.NumStages = AN_ARRAY_SIZE( dynamicExposureStages );
-    pipelineCI.pStages = dynamicExposureStages;
-    DynamicExposurePipe.Initialize( pipelineCI );
+    Luminance64.Deinitialize();
+    Luminance32.Deinitialize();
+    Luminance16.Deinitialize();
+    Luminance8.Deinitialize();
+    Luminance4.Deinitialize();
+    Luminance2.Deinitialize();
+    DefaultLuminance.Deinitialize();
+    FramebufferLum64.Deinitialize();
+    FramebufferLum32.Deinitialize();
+    FramebufferLum16.Deinitialize();
+    FramebufferLum8.Deinitialize();
+    FramebufferLum4.Deinitialize();
+    FramebufferLum2.Deinitialize();
 }
 
 void AExposureRenderer::CreateSampler() {
@@ -213,7 +179,7 @@ void AExposureRenderer::CreateSampler() {
     LuminanceSampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 
-void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
+void AExposureRenderer::Render( GHI::Texture & SourceTexture ) {
     ATextureGPU * exposureTexture = GRenderView->CurrentExposure;
 
     if ( !exposureTexture ) {
@@ -234,7 +200,7 @@ void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
     vp.MinDepth = 0;
     vp.MaxDepth = 1;
 
-    GFrameResources.TextureBindings[0].pTexture = &_SrcTexture;
+    GFrameResources.TextureBindings[0].pTexture = &SourceTexture;
     GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
 
     RenderPassBegin renderPassBegin = {};
@@ -242,7 +208,7 @@ void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
     renderPassBegin.pRenderPass = &LuminancePass;
 
     // Make luminance map 64x64
-    renderPassBegin.pFramebuffer = &GRenderTarget.FramebufferLum64;
+    renderPassBegin.pFramebuffer = &FramebufferLum64;
     renderPassBegin.RenderArea.Width = vp.Width = 64;
     renderPassBegin.RenderArea.Height = vp.Height = 64;
     Cmd.BeginRenderPass( renderPassBegin );
@@ -255,8 +221,8 @@ void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
     Cmd.EndRenderPass();
 
     // Downscale luminance to 32x32
-    GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.Luminance64;
-    renderPassBegin.pFramebuffer = &GRenderTarget.FramebufferLum32;
+    GFrameResources.TextureBindings[0].pTexture = &Luminance64;
+    renderPassBegin.pFramebuffer = &FramebufferLum32;
     renderPassBegin.RenderArea.Width = vp.Width = 32;
     renderPassBegin.RenderArea.Height = vp.Height = 32;
     Cmd.BeginRenderPass( renderPassBegin );
@@ -269,8 +235,8 @@ void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
     Cmd.EndRenderPass();
     
     // Downscale luminance to 16x16
-    GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.Luminance32;
-    renderPassBegin.pFramebuffer = &GRenderTarget.FramebufferLum16;
+    GFrameResources.TextureBindings[0].pTexture = &Luminance32;
+    renderPassBegin.pFramebuffer = &FramebufferLum16;
     renderPassBegin.RenderArea.Width = vp.Width = 16;
     renderPassBegin.RenderArea.Height = vp.Height = 16;
     Cmd.BeginRenderPass( renderPassBegin );
@@ -283,8 +249,8 @@ void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
     Cmd.EndRenderPass();
 
     // Downscale luminance to 8x8
-    GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.Luminance16;
-    renderPassBegin.pFramebuffer = &GRenderTarget.FramebufferLum8;
+    GFrameResources.TextureBindings[0].pTexture = &Luminance16;
+    renderPassBegin.pFramebuffer = &FramebufferLum8;
     renderPassBegin.RenderArea.Width = vp.Width = 8;
     renderPassBegin.RenderArea.Height = vp.Height = 8;
     Cmd.BeginRenderPass( renderPassBegin );
@@ -297,8 +263,8 @@ void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
     Cmd.EndRenderPass();
 
     // Downscale luminance to 4x4
-    GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.Luminance8;
-    renderPassBegin.pFramebuffer = &GRenderTarget.FramebufferLum4;
+    GFrameResources.TextureBindings[0].pTexture = &Luminance8;
+    renderPassBegin.pFramebuffer = &FramebufferLum4;
     renderPassBegin.RenderArea.Width = vp.Width = 4;
     renderPassBegin.RenderArea.Height = vp.Height = 4;
     Cmd.BeginRenderPass( renderPassBegin );
@@ -311,8 +277,8 @@ void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
     Cmd.EndRenderPass();
 
     // Downscale luminance to 2x2
-    GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.Luminance4;
-    renderPassBegin.pFramebuffer = &GRenderTarget.FramebufferLum2;
+    GFrameResources.TextureBindings[0].pTexture = &Luminance4;
+    renderPassBegin.pFramebuffer = &FramebufferLum2;
     renderPassBegin.RenderArea.Width = vp.Width = 2;
     renderPassBegin.RenderArea.Height = vp.Height = 2;
     Cmd.BeginRenderPass( renderPassBegin );
@@ -348,7 +314,7 @@ void AExposureRenderer::Render( GHI::Texture & _SrcTexture ) {
         framebuffer = static_cast< GHI::Framebuffer * >(exposureTexture->pFramebuffer);
     }
 
-    GFrameResources.TextureBindings[0].pTexture = &GRenderTarget.Luminance2;
+    GFrameResources.TextureBindings[0].pTexture = &Luminance2;
     GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
 
     renderPassBegin.pFramebuffer = framebuffer;

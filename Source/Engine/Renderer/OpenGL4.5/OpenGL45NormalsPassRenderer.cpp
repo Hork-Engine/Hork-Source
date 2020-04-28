@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "OpenGL45DepthPassRenderer.h"
+#include "OpenGL45NormalsPassRenderer.h"
 #include "OpenGL45FrameResources.h"
 #include "OpenGL45Material.h"
 
@@ -36,31 +36,37 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-ADepthPassRenderer GDepthPassRenderer;
+ANormalsPassRenderer GNormalsPassRenderer;
 
-void ADepthPassRenderer::Initialize() {
+void ANormalsPassRenderer::Initialize() {
     RenderPassCreateInfo renderPassCI = {};
 
-    renderPassCI.NumColorAttachments = 0;
+    renderPassCI.NumColorAttachments = 1;
 
-    AttachmentInfo depthAttachment = {};
-    depthAttachment.LoadOp = ATTACHMENT_LOAD_OP_CLEAR;
-    renderPassCI.pDepthStencilAttachment = &depthAttachment;
+    AttachmentInfo colorAttachment = {};
+    colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_LOAD;
+    renderPassCI.pColorAttachments = &colorAttachment;
+
+    renderPassCI.pDepthStencilAttachment = NULL;
+
+    AttachmentRef colorAttachmentRef = {};
+    colorAttachmentRef.Attachment = 0;
 
     SubpassInfo subpass = {};
-    subpass.NumColorAttachments = 0;
+    subpass.NumColorAttachments = 1;
+    subpass.pColorAttachmentRefs = &colorAttachmentRef;
 
     renderPassCI.NumSubpasses = 1;
     renderPassCI.pSubpasses = &subpass;
 
-    DepthPass.Initialize( renderPassCI );
+    NormalsPass.Initialize( renderPassCI );
 }
 
-void ADepthPassRenderer::Deinitialize() {
-    DepthPass.Deinitialize();
+void ANormalsPassRenderer::Deinitialize() {
+    NormalsPass.Deinitialize();
 }
 
-bool ADepthPassRenderer::BindMaterial( SRenderInstance const * instance ) {
+bool ANormalsPassRenderer::BindMaterial( SRenderInstance const * instance ) {
     AMaterialGPU * pMaterial = instance->Material;
     Pipeline * pPipeline;
 
@@ -72,16 +78,16 @@ bool ADepthPassRenderer::BindMaterial( SRenderInstance const * instance ) {
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
 
-        pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->DepthPassSkinned
-                             : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->DepthPass;
+        pPipeline = bSkinned ? &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->NormalsPassSkinned
+                             : &((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->NormalsPass;
 
         break;
 
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
 
-        pPipeline = bSkinned ? &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPassSkinned
-                             : &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPass;
+        pPipeline = bSkinned ? &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->NormalsPassSkinned
+                             : &((AShadeModelLit*)pMaterial->ShadeModel.Lit)->NormalsPass;
 
         break;
 
@@ -94,13 +100,14 @@ bool ADepthPassRenderer::BindMaterial( SRenderInstance const * instance ) {
 
     // Bind second vertex buffer
     if ( bSkinned ) {
-        Cmd.BindVertexBuffer( 1, GPUBufferHandle( instance->WeightsBuffer ), instance->WeightsBufferOffset );
+        Buffer * pSecondVertexBuffer = GPUBufferHandle( instance->WeightsBuffer );
+        Cmd.BindVertexBuffer( 1, pSecondVertexBuffer, instance->WeightsBufferOffset );
     } else {
         Cmd.BindVertexBuffer( 1, nullptr, 0 );
     }
 
     // Set samplers
-    if ( pMaterial->bDepthPassTextureFetch ) {
+    if ( pMaterial->bNormalsPassTextureFetch ) {
         for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
             GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
         }
@@ -112,28 +119,25 @@ bool ADepthPassRenderer::BindMaterial( SRenderInstance const * instance ) {
     return true;
 }
 
-void ADepthPassRenderer::BindTexturesDepthPass( SMaterialFrameData * _Instance ) {
-    if ( !_Instance->Material->bDepthPassTextureFetch ) {
+void ANormalsPassRenderer::BindTexturesNormalsPass( SMaterialFrameData * _Instance ) {
+    if ( !_Instance->Material->bNormalsPassTextureFetch ) {
         return;
     }
 
     BindTextures( _Instance );
 }
 
-void ADepthPassRenderer::Render( GHI::Framebuffer & TargetFB ) {
-    ClearDepthStencilValue depthStencilValue = {};
-    depthStencilValue.Depth = 0;
-    depthStencilValue.Stencil = 0;
-
+void ANormalsPassRenderer::Render( GHI::Framebuffer & TargetFB ) {
     RenderPassBegin renderPassBegin = {};
-    renderPassBegin.pRenderPass = &DepthPass;
+
+    renderPassBegin.pRenderPass = &NormalsPass;
     renderPassBegin.pFramebuffer = &TargetFB;
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
     renderPassBegin.RenderArea.Width = GRenderView->Width;
     renderPassBegin.RenderArea.Height = GRenderView->Height;
     renderPassBegin.pColorClearValues = NULL;
-    renderPassBegin.pDepthStencilClearValue = &depthStencilValue;
+    renderPassBegin.pDepthStencilClearValue = NULL;
 
     Cmd.BeginRenderPass( renderPassBegin );
 
@@ -158,7 +162,7 @@ void ADepthPassRenderer::Render( GHI::Framebuffer & TargetFB ) {
         }
 
         // Set material data (textures, uniforms)
-        BindTexturesDepthPass( instance->MaterialInstance );
+        BindTexturesNormalsPass( instance->MaterialInstance );
 
         // Bind skeleton
         BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );

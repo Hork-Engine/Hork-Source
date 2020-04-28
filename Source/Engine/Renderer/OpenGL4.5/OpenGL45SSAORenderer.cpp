@@ -28,16 +28,16 @@ SOFTWARE.
 
 */
 
-#include "OpenGL45FxaaPassRenderer.h"
+#include "OpenGL45SSAORenderer.h"
 #include "OpenGL45FrameResources.h"
 
 using namespace GHI;
 
 namespace OpenGL45 {
 
-AFxaaPassRenderer GFxaaPassRenderer;
+ASSAORenderer GSSAORenderer;
 
-void AFxaaPassRenderer::Initialize() {
+void ASSAORenderer::Initialize() {
     RenderPassCreateInfo renderPassCI = {};
 
     renderPassCI.NumColorAttachments = 1;
@@ -57,37 +57,44 @@ void AFxaaPassRenderer::Initialize() {
     renderPassCI.NumSubpasses = 1;
     renderPassCI.pSubpasses = &subpass;
 
-    FxaaPass.Initialize( renderPassCI );
+    Pass.Initialize( renderPassCI );
 
-    CreateFullscreenQuadPipeline( FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", FxaaPass );
+    CreateFullscreenQuadPipeline( Pipe, "postprocess/ssao.vert", "postprocess/ssao.frag", Pass );
 
-    CreateSampler();
+    CreateSamplers();
 }
 
-void AFxaaPassRenderer::Deinitialize() {
-    FxaaPass.Deinitialize();
-    FxaaPipeline.Deinitialize();
+void ASSAORenderer::Deinitialize() {
+    Pass.Deinitialize();
+    Pipe.Deinitialize();
 }
 
-void AFxaaPassRenderer::CreateSampler() {
+void ASSAORenderer::CreateSamplers() {
     SamplerCreateInfo samplerCI;
     samplerCI.SetDefaults();
+
     samplerCI.Filter = FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    FxaaSampler = GDevice.GetOrCreateSampler( samplerCI );
+    DepthSampler = GDevice.GetOrCreateSampler( samplerCI );
+
+    samplerCI.Filter = FILTER_LINEAR;
+    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
+    NormalSampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 
-void AFxaaPassRenderer::Render( GHI::Framebuffer & TargetFB, GHI::Texture & SourceTexture ) {
+void ASSAORenderer::Render( GHI::Framebuffer & TargetFB, GHI::Texture & DepthTexture, GHI::Texture & NormalTexture ) {
     RenderPassBegin renderPassBegin = {};
 
-    renderPassBegin.pRenderPass = &FxaaPass;
+    renderPassBegin.pRenderPass = &Pass;
     renderPassBegin.pFramebuffer = &TargetFB;
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
-    renderPassBegin.RenderArea.Width = GRenderView->Width;
-    renderPassBegin.RenderArea.Height = GRenderView->Height;
+    renderPassBegin.RenderArea.Width = GRenderView->Width;//TargetFB.GetWidth();
+    renderPassBegin.RenderArea.Height = GRenderView->Height;//TargetFB.GetHeight();
     renderPassBegin.pColorClearValues = NULL;
     renderPassBegin.pDepthStencilClearValue = NULL;
 
@@ -108,10 +115,13 @@ void AFxaaPassRenderer::Render( GHI::Framebuffer & TargetFB, GHI::Texture & Sour
     drawCmd.StartVertexLocation = 0;
     drawCmd.StartInstanceLocation = 0;
 
-    GFrameResources.TextureBindings[0].pTexture = &SourceTexture;
-    GFrameResources.SamplerBindings[0].pSampler = FxaaSampler;
+    GFrameResources.TextureBindings[0].pTexture = &DepthTexture;
+    GFrameResources.SamplerBindings[0].pSampler = DepthSampler;
 
-    Cmd.BindPipeline( &FxaaPipeline );
+    GFrameResources.TextureBindings[1].pTexture = &NormalTexture;
+    GFrameResources.SamplerBindings[1].pSampler = NormalSampler;
+
+    Cmd.BindPipeline( &Pipe );
     Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
     Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     Cmd.BindShaderResources( &GFrameResources.Resources );

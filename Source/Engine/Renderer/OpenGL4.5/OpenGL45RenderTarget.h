@@ -40,11 +40,10 @@ struct SBloomTexture
     GHI::Framebuffer Framebuffer_2;
     GHI::Framebuffer Framebuffer_4;
     GHI::Framebuffer Framebuffer_6;
-    GHI::Texture Texture[2];
+    GHI::Texture Textures[2];
     GHI::Texture Textures_2[2];
     GHI::Texture Textures_4[2];
     GHI::Texture Textures_6[2];
-    GHI::Texture * TexturePtrs[8];
     int Width;
     int Height;
 };
@@ -56,6 +55,8 @@ public:
 
     void ReallocSurface( int _AllocSurfaceWidth, int _AllocSurfaceHeight );
 
+    // TODO: Combine main framebuffer, postprocess framebuffer and fxaa framebuffer into one!
+
     GHI::Framebuffer & GetFramebuffer() { return Framebuffer; }
     GHI::Texture & GetFramebufferTexture() { return FramebufferTexture; }
 
@@ -65,20 +66,10 @@ public:
     GHI::Framebuffer & GetFxaaFramebuffer() { return FxaaFramebuffer; }
     GHI::Texture & GetFxaaTexture() { return FxaaTexture; }
 
-    SBloomTexture & GetBloomTexture() { return Bloom; }
+    GHI::Framebuffer & GetSSAOFramebuffer() { return SSAOFramebuffer; }
+    GHI::Texture & GetSSAOTexture() { return SSAOTexture; }
 
-    GHI::Texture Luminance64;
-    GHI::Texture Luminance32;
-    GHI::Texture Luminance16;
-    GHI::Texture Luminance8;
-    GHI::Texture Luminance4;
-    GHI::Texture Luminance2;
-    GHI::Framebuffer FramebufferLum64;
-    GHI::Framebuffer FramebufferLum32;
-    GHI::Framebuffer FramebufferLum16;
-    GHI::Framebuffer FramebufferLum8;
-    GHI::Framebuffer FramebufferLum4;
-    GHI::Framebuffer FramebufferLum2;
+    SBloomTexture & GetBloomTexture() { return Bloom; }
 
 private:
     void CreateFramebuffer();
@@ -87,12 +78,14 @@ private:
     GHI::Framebuffer Framebuffer;
     GHI::Framebuffer PostprocessFramebuffer;
     GHI::Framebuffer FxaaFramebuffer;
+    GHI::Framebuffer SSAOFramebuffer;
     int FramebufferWidth;
     int FramebufferHeight;
     GHI::Texture FramebufferTexture;
     GHI::Texture FramebufferDepth;
     GHI::Texture PostprocessTexture;
     GHI::Texture FxaaTexture;
+    GHI::Texture SSAOTexture;
     SBloomTexture Bloom;
 };
 

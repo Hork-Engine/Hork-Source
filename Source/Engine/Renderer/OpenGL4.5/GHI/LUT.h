@@ -735,7 +735,7 @@ constexpr GLenum TableConditionalRenderMode[] = {
 
 /*
 
-Conversion from SAMPLER_SWIZZLE
+Conversion from TEXTURE_SWIZZLE
 
 */
 

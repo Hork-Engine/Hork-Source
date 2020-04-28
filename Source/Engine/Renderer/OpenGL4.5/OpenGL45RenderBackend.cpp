@@ -39,6 +39,7 @@ SOFTWARE.
 #include "OpenGL45DepthPassRenderer.h"
 #include "OpenGL45ColorPassRenderer.h"
 #include "OpenGL45WireframePassRenderer.h"
+#include "OpenGL45NormalsPassRenderer.h"
 #include "OpenGL45DebugDrawPassRenderer.h"
 #include "OpenGL45BrightPassRenderer.h"
 #include "OpenGL45ExposureRenderer.h"
@@ -67,6 +68,8 @@ SOFTWARE.
 
 ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
 ARuntimeVariable RVRenderSnapshot( _CTS("RenderSnapshot"), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVDrawNormals( _CTS( "DrawNormals" ), _CTS( "0" ), VAR_CHEAT );
+extern ARuntimeVariable RVFxaa;
 
 extern thread_local char LogBuffer[16384]; // Use existing log buffer
 
@@ -294,10 +297,8 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
         CriticalError( "Failed to load OpenGL functions\n" );
     }
 
-    // One important thing left to mention is that GLEW has a long-existing bug
-    // where calling glewInit() always sets the GL_INVALID_ENUM error flag and
-    // thus the first glGetError will always return an error code which can throw
-    // you completely off guard.
+    // GLEW has a long-existing bug where calling glewInit() always sets the GL_INVALID_ENUM error flag and
+    // thus the first glGetError will always return an error code which can throw you completely off guard.
     // To fix this it's advised to simply call glGetError after glewInit to clear the flag.
     (void)glGetError();
 
@@ -532,6 +533,7 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     GDepthPassRenderer.Initialize();
     GColorPassRenderer.Initialize();
     GWireframePassRenderer.Initialize();
+    GNormalsPassRenderer.Initialize();
     GDebugDrawPassRenderer.Initialize();
     GBrightPassRenderer.Initialize();
     GExposureRenderer.Initialize();
@@ -551,6 +553,7 @@ void ARenderBackend::Deinitialize() {
     GDepthPassRenderer.Deinitialize();
     GColorPassRenderer.Deinitialize();
     GWireframePassRenderer.Deinitialize();
+    GNormalsPassRenderer.Deinitialize();
     GDebugDrawPassRenderer.Deinitialize();
     GBrightPassRenderer.Deinitialize();
     GExposureRenderer.Deinitialize();
@@ -952,6 +955,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
     _Material->bDepthPassTextureFetch     = _BuildData->bDepthPassTextureFetch;
     _Material->bColorPassTextureFetch     = _BuildData->bColorPassTextureFetch;
     _Material->bWireframePassTextureFetch = _BuildData->bWireframePassTextureFetch;
+    _Material->bNormalsPassTextureFetch   = _BuildData->bNormalsPassTextureFetch;
     _Material->bShadowMapPassTextureFetch = _BuildData->bShadowMapPassTextureFetch;
     _Material->bHasVertexDeform = _BuildData->bHasVertexDeform;
     _Material->bNoCastShadow    = _BuildData->bNoCastShadow;
@@ -1015,6 +1019,9 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
         Lit->WireframePass.Create( code.CStr(), cullMode, false );
         Lit->WireframePassSkinned.Create( code.CStr(), cullMode, true );
 
+        Lit->NormalsPass.Create( code.CStr(), cullMode, false );
+        Lit->NormalsPassSkinned.Create( code.CStr(), cullMode, true );
+
         Lit->ShadowPass.Create( code.CStr(), _BuildData->bShadowMapMasking, false );
         Lit->ShadowPassSkinned.Create( code.CStr(), _BuildData->bShadowMapMasking, true );
         break;
@@ -1033,6 +1040,9 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
 
         Unlit->WireframePass.Create( code.CStr(), cullMode, false );
         Unlit->WireframePassSkinned.Create( code.CStr(), cullMode, true );
+
+        Unlit->NormalsPass.Create( code.CStr(), cullMode, false );
+        Unlit->NormalsPassSkinned.Create( code.CStr(), cullMode, true );
 
         Unlit->ShadowPass.Create( code.CStr(), _BuildData->bShadowMapMasking, false );
         Unlit->ShadowPassSkinned.Create( code.CStr(), _BuildData->bShadowMapMasking, true );
@@ -1123,7 +1133,7 @@ void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
         sizeof( GFrameResources.ViewUniformBufferUniformData.OrthoProjection ),
         &GFrameResources.ViewUniformBufferUniformData.OrthoProjection );
 
-    GCanvasPassRenderer.RenderInstances();
+    GCanvasPassRenderer.Render();
 
     SetGPUEvent();
 
@@ -1135,12 +1145,12 @@ void ARenderBackend::RenderView( SRenderView * _RenderView ) {
 
     GFrameResources.UploadUniforms();
 
-    GShadowMapPassRenderer.RenderInstances();
+    GShadowMapPassRenderer.Render();
 
 #ifdef DEPTH_PREPASS
-    GDepthPassRenderer.RenderInstances();
+    GDepthPassRenderer.Render( GRenderTarget.GetFramebuffer() );
 #endif
-    GColorPassRenderer.RenderInstances();
+    GColorPassRenderer.Render( GRenderTarget.GetFramebuffer() );
 
     GBrightPassRenderer.Render( GRenderTarget.GetFramebufferTexture() );
 
@@ -1148,16 +1158,26 @@ void ARenderBackend::RenderView( SRenderView * _RenderView ) {
 
     GColorGradingRenderer.Render();
 
-    GPostprocessPassRenderer.Render();
+    GPostprocessPassRenderer.Render( GRenderTarget.GetPostprocessFramebuffer() );
 
-    GFxaaPassRenderer.Render();
+    GHI::Framebuffer * currentFB = &GRenderTarget.GetPostprocessFramebuffer();
+
+    if ( RVFxaa ) {
+        GFxaaPassRenderer.Render( GRenderTarget.GetFxaaFramebuffer(), GRenderTarget.GetPostprocessTexture() );
+
+        currentFB = &GRenderTarget.GetFxaaFramebuffer();
+    }
 
     if ( GRenderView->bWireframe ) {
-        GWireframePassRenderer.RenderInstances( &GRenderTarget.GetFxaaFramebuffer() );
+        GWireframePassRenderer.Render( *currentFB );
+    }
+
+    if ( RVDrawNormals ) {
+        GNormalsPassRenderer.Render( *currentFB );
     }
 
     if ( GRenderView->DebugDrawCommandCount > 0 ) {
-        GDebugDrawPassRenderer.RenderInstances( &GRenderTarget.GetFxaaFramebuffer() );
+        GDebugDrawPassRenderer.Render( *currentFB );
     }
 }
 

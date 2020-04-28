@@ -41,6 +41,196 @@ GHI::State           GState;
 GHI::CommandBuffer   Cmd;
 SRenderFrame *       GFrameData;
 SRenderView *        GRenderView;
+AShaderSources       GShaderSources;
+
+void CreateFullscreenQuadPipeline( GHI::Pipeline & Pipe, const char * VertexShader, const char * FragmentShader, GHI::RenderPass & Pass, GHI::BLENDING_PRESET BlendingPreset ) {
+    using namespace GHI;
+
+    RasterizerStateInfo rsd;
+    rsd.SetDefaults();
+    rsd.CullMode = POLYGON_CULL_FRONT;
+    rsd.bScissorEnable = false;
+
+    BlendingStateInfo bsd;
+    bsd.SetDefaults();
+
+    if ( BlendingPreset != BLENDING_NO_BLEND ) {
+        bsd.RenderTargetSlots[0].SetBlendingPreset( BlendingPreset );
+    }
+
+    DepthStencilStateInfo dssd;
+    dssd.SetDefaults();
+
+    dssd.bDepthEnable = false;
+    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+
+    static const VertexAttribInfo vertexAttribs[] = {
+        {
+            "InPosition",
+            0,              // location
+            0,              // buffer input slot
+            VAT_FLOAT2,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            0
+        }
+    };
+
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+
+    ShaderModule vertexShaderModule, fragmentShaderModule;
+
+    AString vertexSourceCode = LoadShader( VertexShader );
+    AString fragmentSourceCode = LoadShader( FragmentShader );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
+    GShaderSources.Add( vertexSourceCode.CStr() );
+    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( fragmentSourceCode.CStr() );
+    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
+
+    PipelineCreateInfo pipelineCI = {};
+
+    PipelineInputAssemblyInfo inputAssembly = {};
+    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
+    inputAssembly.bPrimitiveRestart = false;
+
+    pipelineCI.pInputAssembly = &inputAssembly;
+    pipelineCI.pRasterizer = &rsd;
+    pipelineCI.pDepthStencil = &dssd;
+
+    ShaderStageInfo vs = {};
+    vs.Stage = SHADER_STAGE_VERTEX_BIT;
+    vs.pModule = &vertexShaderModule;
+
+    ShaderStageInfo fs = {};
+    fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
+    fs.pModule = &fragmentShaderModule;
+
+    ShaderStageInfo stages[] = { vs, fs };
+
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
+    pipelineCI.pStages = stages;
+
+    VertexBindingInfo vertexBinding[1] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( Float2 );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.pVertexAttribs = vertexAttribs;
+
+    pipelineCI.pRenderPass = &Pass;
+
+    pipelineCI.pBlending = &bsd;
+    Pipe.Initialize( pipelineCI );
+}
+
+void CreateFullscreenQuadPipelineGS( GHI::Pipeline & Pipe, const char * VertexShader, const char * FragmentShader, const char * GeometryShader, GHI::RenderPass & Pass, GHI::BLENDING_PRESET BlendingPreset ) {
+    using namespace GHI;
+
+    RasterizerStateInfo rsd;
+    rsd.SetDefaults();
+    rsd.CullMode = POLYGON_CULL_FRONT;
+    rsd.bScissorEnable = false;
+
+    BlendingStateInfo bsd;
+    bsd.SetDefaults();
+
+    if ( BlendingPreset != BLENDING_NO_BLEND ) {
+        bsd.RenderTargetSlots[0].SetBlendingPreset( BlendingPreset );
+    }
+
+    DepthStencilStateInfo dssd;
+    dssd.SetDefaults();
+
+    dssd.bDepthEnable = false;
+    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+
+    static const VertexAttribInfo vertexAttribs[] = {
+        {
+            "InPosition",
+            0,              // location
+            0,              // buffer input slot
+            VAT_FLOAT2,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            0
+        }
+    };
+
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+
+    ShaderModule vertexShaderModule, fragmentShaderModule, geometryShaderModule;
+
+    AString vertexSourceCode = LoadShader( VertexShader );
+    AString fragmentSourceCode = LoadShader( FragmentShader );
+    AString geometrySourceCode = LoadShader( GeometryShader );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
+    GShaderSources.Add( vertexSourceCode.CStr() );
+    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( fragmentSourceCode.CStr() );
+    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( geometrySourceCode.CStr() );
+    GShaderSources.Build( GEOMETRY_SHADER, &geometryShaderModule );
+
+    PipelineCreateInfo pipelineCI = {};
+
+    PipelineInputAssemblyInfo inputAssembly = {};
+    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
+    inputAssembly.bPrimitiveRestart = false;
+
+    pipelineCI.pInputAssembly = &inputAssembly;
+    pipelineCI.pRasterizer = &rsd;
+    pipelineCI.pDepthStencil = &dssd;
+
+    ShaderStageInfo vs = {};
+    vs.Stage = SHADER_STAGE_VERTEX_BIT;
+    vs.pModule = &vertexShaderModule;
+
+    ShaderStageInfo gs = {};
+    gs.Stage = SHADER_STAGE_GEOMETRY_BIT;
+    gs.pModule = &geometryShaderModule;
+
+    ShaderStageInfo fs = {};
+    fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
+    fs.pModule = &fragmentShaderModule;
+
+    ShaderStageInfo stages[] = { vs, gs, fs };
+
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
+    pipelineCI.pStages = stages;
+
+    VertexBindingInfo vertexBinding[1] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( Float2 );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.pVertexAttribs = vertexAttribs;
+
+    pipelineCI.pRenderPass = &Pass;
+
+    pipelineCI.pBlending = &bsd;
+    Pipe.Initialize( pipelineCI );
+}
 
 void SaveSnapshot( GHI::Texture & _Texture ) {
 

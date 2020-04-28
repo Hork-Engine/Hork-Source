@@ -28,29 +28,14 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include "OpenGL45PassRenderer.h"
-
-namespace OpenGL45 {
-
-class AColorPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
-
-    void Render( GHI::Framebuffer & TargetFB );
-
-    GHI::RenderPass * GetRenderPass() { return &ColorPass; }
-
-private:
-    bool BindMaterial( SRenderInstance const * Instance );
-    void BindTexturesColorPass( SMaterialFrameData * _Instance );
-
-    GHI::RenderPass ColorPass;
-    GHI::Sampler LightmapSampler;
+out gl_PerVertex
+{
+    vec4 gl_Position;
 };
 
-extern AColorPassRenderer GColorPassRenderer;
+layout( location = 0 ) noperspective out vec2 VS_TexCoord;
 
+void main() {
+    gl_Position = vec4( InPosition, 0.0, 1.0 );
+    VS_TexCoord = InPosition * 0.5 + 0.5;
 }

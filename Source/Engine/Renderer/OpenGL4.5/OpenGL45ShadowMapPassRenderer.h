@@ -11,7 +11,7 @@ public:
 
     GHI::RenderPass * GetRenderPass() { return &DepthPass; }
 
-    void RenderInstances();
+    void Render();
 
     GHI::Sampler GetShadowBlockerSampler() { return ShadowDepthSampler0; }
     GHI::Sampler GetShadowDepthSampler() { return ShadowDepthSampler1; }

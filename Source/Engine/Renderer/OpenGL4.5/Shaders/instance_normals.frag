@@ -29,20 +29,11 @@ SOFTWARE.
 */
 
 layout( location = 0 ) out vec4 FS_FragColor;
-layout( location = 0 ) in vec3 GS_Barycentric;
 
 void main() {
 #ifdef SKINNED_MESH
-    const vec4 Color = vec4(0.5,0.5,1.0,0.5);
+    FS_FragColor = vec4(1.0,1.0,0.0,0.5);
 #else
-#ifdef HAS_VERTEX_DEFORM
-    const vec4 Color = vec4(1.0,1.0,0.0,0.5);
-#else
-    const vec4 Color = vec4(0.5,1.0,0.5,0.5);
+    FS_FragColor = vec4(1.0,1.0,0.0,0.5);
 #endif
-#endif
-    const float LineWidth = 1.5;
-    vec3 SmoothStep = smoothstep( vec3( 0.0 ), fwidth( GS_Barycentric ) * LineWidth, GS_Barycentric );
-    FS_FragColor = Color;
-    FS_FragColor.a *= 1.0 - min( min( SmoothStep.x, SmoothStep.y ), SmoothStep.z );
 }

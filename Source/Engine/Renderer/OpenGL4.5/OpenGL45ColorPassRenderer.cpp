@@ -183,7 +183,7 @@ void AColorPassRenderer::BindTexturesColorPass( SMaterialFrameData * _Instance )
     BindTextures( _Instance );
 }
 
-void AColorPassRenderer::RenderInstances() {
+void AColorPassRenderer::Render( GHI::Framebuffer & TargetFB ) {
     ClearColorValue clearValue = {};
 
     clearValue.Float32[0] = GRenderView->BackgroundColor.X;
@@ -199,7 +199,7 @@ void AColorPassRenderer::RenderInstances() {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &ColorPass;
-    renderPassBegin.pFramebuffer = &GRenderTarget.GetFramebuffer();
+    renderPassBegin.pFramebuffer = &TargetFB;
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
     renderPassBegin.RenderArea.Width = GRenderView->Width;

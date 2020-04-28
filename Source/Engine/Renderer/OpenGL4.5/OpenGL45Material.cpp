@@ -29,13 +29,12 @@ SOFTWARE.
 */
 
 #include "OpenGL45Material.h"
-#include "OpenGL45RenderTarget.h"
 #include "OpenGL45CanvasPassRenderer.h"
 #include "OpenGL45DepthPassRenderer.h"
 #include "OpenGL45ColorPassRenderer.h"
 #include "OpenGL45ShadowMapPassRenderer.h"
 #include "OpenGL45WireframePassRenderer.h"
-#include "OpenGL45ShaderSource.h"
+#include "OpenGL45NormalsPassRenderer.h"
 
 using namespace GHI;
 
@@ -206,7 +205,6 @@ void ADepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     pipelineCI.pStages = stages;
 
     pipelineCI.pRenderPass = GDepthPassRenderer.GetRenderPass();
-    pipelineCI.Subpass = 0;
 
     Initialize( pipelineCI );
 }
@@ -402,7 +400,201 @@ void AWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
     pipelineCI.pStages = stages;
 
     pipelineCI.pRenderPass = GWireframePassRenderer.GetRenderPass();
-    pipelineCI.Subpass = 0;
+
+    Initialize( pipelineCI );
+}
+
+void ANormalsPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned ) {
+    PipelineCreateInfo pipelineCI = {};
+
+    RasterizerStateInfo rsd;
+    rsd.SetDefaults();
+    rsd.CullMode = _CullMode;
+    rsd.bScissorEnable = SCISSOR_TEST;
+
+    BlendingStateInfo bsd;
+    bsd.SetDefaults();
+    bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
+
+    DepthStencilStateInfo dssd;
+    dssd.SetDefaults();
+
+    dssd.bDepthEnable = false;
+    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+
+    VertexBindingInfo vertexBinding[2] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( SMeshVertex );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    vertexBinding[1].InputSlot = 1;
+    vertexBinding[1].Stride = sizeof( SMeshVertexSkin );
+    vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
+
+    pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    if ( _Skinned ) {
+        static const VertexAttribInfo vertexAttribs[] = {
+            {
+                "InPosition",
+                0,              // location
+                0,              // buffer input slot
+                VAT_FLOAT3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertex, Position )
+            },
+            {
+                "InTexCoord",
+                1,              // location
+                0,              // buffer input slot
+                VAT_FLOAT2,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertex, TexCoord )
+            },
+            {
+                "InTangent",
+                2,              // location
+                0,              // buffer input slot
+                VAT_FLOAT4,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertex, Tangent )
+            },
+            {
+                "InNormal",
+                3,              // location
+                0,              // buffer input slot
+                VAT_FLOAT3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertex, Normal )
+            },
+            {
+                "InJointIndices",
+                4,              // location
+                1,              // buffer input slot
+                VAT_UBYTE4,
+                VAM_INTEGER,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertexSkin, JointIndices )
+            },
+            {
+                "InJointWeights",
+                5,              // location
+                1,              // buffer input slot
+                VAT_UBYTE4N,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertexSkin, JointWeights )
+            }
+        };
+
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+        pipelineCI.pVertexAttribs = vertexAttribs;
+    } else {
+        static const VertexAttribInfo vertexAttribs[] = {
+            {
+                "InPosition",
+                0,              // location
+                0,              // buffer input slot
+                VAT_FLOAT3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertex, Position )
+            },
+            {
+                "InTexCoord",
+                1,              // location
+                0,              // buffer input slot
+                VAT_FLOAT2,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertex, TexCoord )
+            },
+            {
+                "InTangent",
+                2,              // location
+                0,              // buffer input slot
+                VAT_FLOAT4,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertex, Tangent )
+            },
+            {
+                "InNormal",
+                3,              // location
+                0,              // buffer input slot
+                VAT_FLOAT3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                GHI_STRUCT_OFS( SMeshVertex, Normal )
+            }
+        };
+
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+        pipelineCI.pVertexAttribs = vertexAttribs;
+    }
+
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+
+    ShaderModule vertexShaderModule, geometryShaderModule, fragmentShaderModule;
+
+    GShaderSources.Clear();
+    GShaderSources.Add( "#define MATERIAL_PASS_NORMALS\n" );
+    if ( _Skinned ) {
+        GShaderSources.Add( "#define SKINNED_MESH\n" );
+    }
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
+    GShaderSources.Add( _SourceCode );
+    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( "#define MATERIAL_PASS_NORMALS\n" );
+    if ( _Skinned ) {
+        GShaderSources.Add( "#define SKINNED_MESH\n" );
+    }
+    GShaderSources.Add( _SourceCode );
+    GShaderSources.Build( GEOMETRY_SHADER, &geometryShaderModule );
+
+    GShaderSources.Clear();
+    GShaderSources.Add( "#define MATERIAL_PASS_NORMALS\n" );
+    if ( _Skinned ) {
+        GShaderSources.Add( "#define SKINNED_MESH\n" );
+    }
+    GShaderSources.Add( _SourceCode );
+    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
+
+    PipelineInputAssemblyInfo inputAssembly = {};
+    inputAssembly.Topology = PRIMITIVE_POINTS;
+    inputAssembly.bPrimitiveRestart = false;
+
+    pipelineCI.pInputAssembly = &inputAssembly;
+    pipelineCI.pBlending = &bsd;
+    pipelineCI.pRasterizer = &rsd;
+    pipelineCI.pDepthStencil = &dssd;
+
+    ShaderStageInfo vs = {};
+    vs.Stage = SHADER_STAGE_VERTEX_BIT;
+    vs.pModule = &vertexShaderModule;
+
+    ShaderStageInfo gs = {};
+    gs.Stage = SHADER_STAGE_GEOMETRY_BIT;
+    gs.pModule = &geometryShaderModule;
+
+    ShaderStageInfo fs = {};
+    fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
+    fs.pModule = &fragmentShaderModule;
+
+    ShaderStageInfo stages[] = { vs, gs, fs };
+
+    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
+    pipelineCI.pStages = stages;
+
+    pipelineCI.pRenderPass = GNormalsPassRenderer.GetRenderPass();
 
     Initialize( pipelineCI );
 }
@@ -505,7 +697,6 @@ void AColorPassHUD::Create( const char * _SourceCode ) {
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     pipelineCI.pRenderPass = GCanvasPassRenderer.GetRenderPass();
-    pipelineCI.Subpass = 0;
 
     Initialize( pipelineCI );
 }
@@ -735,7 +926,6 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
 
     pipelineCI.pVertexBindings = vertexBinding;
     pipelineCI.pRenderPass = GColorPassRenderer.GetRenderPass();
-    pipelineCI.Subpass = 0;
 
     Initialize( pipelineCI );
 }
@@ -873,7 +1063,6 @@ void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
     pipelineCI.pVertexBindings = vertexBinding;
 
     pipelineCI.pRenderPass = GColorPassRenderer.GetRenderPass();
-    pipelineCI.Subpass = 0;
 
     Initialize( pipelineCI );
 }
@@ -1011,7 +1200,6 @@ void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
     pipelineCI.pVertexBindings = vertexBinding;
 
     pipelineCI.pRenderPass = GColorPassRenderer.GetRenderPass();
-    pipelineCI.Subpass = 0;
 
     Initialize( pipelineCI );
 }
@@ -1229,7 +1417,6 @@ void AShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
 
     pipelineCI.pStages = stages;
     pipelineCI.pRenderPass = GShadowMapPassRenderer.GetRenderPass();
-    pipelineCI.Subpass = 0;
 
     Initialize( pipelineCI );
 }

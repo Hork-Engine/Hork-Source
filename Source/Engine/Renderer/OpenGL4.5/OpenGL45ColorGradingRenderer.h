@@ -42,7 +42,6 @@ public:
     void Render();
 
 private:
-    void CreatePipeline();
     void CreateSamplers();
 
     GHI::RenderPass Pass;
@@ -54,4 +53,3 @@ private:
 extern AColorGradingRenderer GColorGradingRenderer;
 
 }
-

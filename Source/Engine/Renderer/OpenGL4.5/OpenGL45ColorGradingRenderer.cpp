@@ -29,10 +29,7 @@ SOFTWARE.
 */
 
 #include "OpenGL45ColorGradingRenderer.h"
-#include "OpenGL45ShaderSource.h"
 #include "OpenGL45FrameResources.h"
-#include "OpenGL45RenderTarget.h"
-#include "OpenGL45Material.h"
 #include "OpenGL45RenderBackend.h"
 
 using namespace GHI;
@@ -62,7 +59,20 @@ void AColorGradingRenderer::Initialize() {
 
     Pass.Initialize( renderPassCI );
 
-    CreatePipeline();
+    CreateFullscreenQuadPipelineGS( PipelineLUT,
+                                    "postprocess/colorgrading.vert",
+                                    "postprocess/colorgrading.frag",
+                                    "postprocess/colorgrading.geom",
+                                    Pass,
+                                    GHI::BLENDING_ALPHA );
+
+    CreateFullscreenQuadPipelineGS( PipelineProcedural,
+                                    "postprocess/colorgrading.vert",
+                                    "postprocess/colorgrading_procedural.frag",
+                                    "postprocess/colorgrading.geom",
+                                    Pass,
+                                    GHI::BLENDING_ALPHA );
+
     CreateSamplers();
 }
 
@@ -70,116 +80,6 @@ void AColorGradingRenderer::Deinitialize() {
     Pass.Deinitialize();
     PipelineLUT.Deinitialize();
     PipelineProcedural.Deinitialize();
-}
-
-void AColorGradingRenderer::CreatePipeline() {
-    RasterizerStateInfo rs;
-    rs.SetDefaults();
-    rs.CullMode = POLYGON_CULL_FRONT;
-    rs.bScissorEnable = false;
-
-    BlendingStateInfo bs;
-    bs.SetDefaults();
-    bs.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
-
-    DepthStencilStateInfo ds;
-    ds.SetDefaults();
-
-    ds.bDepthEnable = false;
-    ds.DepthWriteMask = DEPTH_WRITE_DISABLE;
-
-    static const VertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            0
-        }
-    };
-
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    ShaderModule vertexShaderModule, geometryShaderModule, fragmentShaderModule, fragmentShaderModuleProcedural;
-
-    AString vertexSourceCode = LoadShader( "postprocess/colorgrading.vert" );
-    AString geometrySourceCode = LoadShader( "postprocess/colorgrading.geom" );
-    AString fragmentSourceCode = LoadShader( "postprocess/colorgrading.frag" );
-    AString fragmentSourceCodeProcedural = LoadShader( "postprocess/colorgrading_procedural.frag" );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSourceCode.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( geometrySourceCode.CStr() );
-    GShaderSources.Build( GEOMETRY_SHADER, &geometryShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSourceCode.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSourceCodeProcedural.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModuleProcedural );
-
-    PipelineCreateInfo pipelineCI = {};
-
-    PipelineInputAssemblyInfo inputAssembly = {};
-    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pInputAssembly = &inputAssembly;
-    pipelineCI.pRasterizer = &rs;
-    pipelineCI.pDepthStencil = &ds;
-
-    ShaderStageInfo vs = {};
-    vs.Stage = SHADER_STAGE_VERTEX_BIT;
-    vs.pModule = &vertexShaderModule;
-
-    ShaderStageInfo gs = {};
-    gs.Stage = SHADER_STAGE_GEOMETRY_BIT;
-    gs.pModule = &geometryShaderModule;
-
-    ShaderStageInfo fs = {};
-    fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    fs.pModule = &fragmentShaderModule;
-
-    ShaderStageInfo fs_proc = {};
-    fs_proc.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    fs_proc.pModule = &fragmentShaderModuleProcedural;
-
-    ShaderStageInfo stages[] = { vs, gs, fs };
-    ShaderStageInfo stages_proc[] = { vs, gs, fs_proc };
-
-    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
-    pipelineCI.pStages = stages;
-
-    VertexBindingInfo vertexBinding[1] = {};
-
-    vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( Float2 );
-    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
-    pipelineCI.pVertexBindings = vertexBinding;
-
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
-
-    pipelineCI.pRenderPass = &Pass;
-    pipelineCI.Subpass = 0;
-
-    pipelineCI.pBlending = &bs;
-    PipelineLUT.Initialize( pipelineCI );
-
-    pipelineCI.NumStages = AN_ARRAY_SIZE( stages_proc );
-    pipelineCI.pStages = stages_proc;
-
-    PipelineProcedural.Initialize( pipelineCI );
 }
 
 void AColorGradingRenderer::CreateSamplers() {

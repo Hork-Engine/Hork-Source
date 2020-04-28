@@ -57,8 +57,6 @@ public:
 
     void Render( ACanvas * InCanvas );
 
-    //int GetFrameNumber() const { return FrameNumber; }
-
     /** Get render frame data */
     SRenderFrame * GetFrameData() { return &FrameData; }
 
@@ -66,8 +64,6 @@ public:
 
 private:
     void RenderCanvas( ACanvas * InCanvas );
-    //void RenderImgui();
-    //void RenderImgui( struct ImDrawList const * _DrawList );
     void RenderView( int _Index );
 
     void QueryVisiblePrimitives( ARenderWorld * InWorld );
@@ -83,7 +79,6 @@ private:
 
     void AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCount );
     void AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder );
-    
 
     void CreateDirectionalLightCascades( SRenderView * View );
 
@@ -113,8 +108,6 @@ private:
     SSurfaceStream SurfaceStream;
 
     SRenderFrontendDef RenderDef;
-
-    //TRef< ATexture > ColorGradingLUT;
 };
 
 extern ARenderFrontend & GRenderFrontend;

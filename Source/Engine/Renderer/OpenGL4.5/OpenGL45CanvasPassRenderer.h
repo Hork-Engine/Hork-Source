@@ -39,7 +39,7 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void RenderInstances();
+    void Render();
 
     GHI::RenderPass * GetRenderPass() { return &CanvasPass; }
 

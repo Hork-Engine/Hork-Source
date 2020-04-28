@@ -39,12 +39,11 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void Render();
+    void Render( GHI::Framebuffer & TargetFB );
 
     GHI::RenderPass * GetRenderPass() { return &PostprocessPass; }
 
 private:
-    void CreatePipeline();
     void CreateSampler();
 
     GHI::RenderPass PostprocessPass;

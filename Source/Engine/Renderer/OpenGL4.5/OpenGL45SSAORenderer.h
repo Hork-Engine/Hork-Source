@@ -34,23 +34,22 @@ SOFTWARE.
 
 namespace OpenGL45 {
 
-class AColorPassRenderer : public APassRenderer {
+class ASSAORenderer : public APassRenderer {
 public:
     void Initialize();
     void Deinitialize();
 
-    void Render( GHI::Framebuffer & TargetFB );
-
-    GHI::RenderPass * GetRenderPass() { return &ColorPass; }
+    void Render( GHI::Framebuffer & TargetFB, GHI::Texture & DepthTexture, GHI::Texture & NormalTexture );
 
 private:
-    bool BindMaterial( SRenderInstance const * Instance );
-    void BindTexturesColorPass( SMaterialFrameData * _Instance );
+    void CreateSamplers();
 
-    GHI::RenderPass ColorPass;
-    GHI::Sampler LightmapSampler;
+    GHI::RenderPass Pass;
+    GHI::Pipeline Pipe;
+    GHI::Sampler DepthSampler;
+    GHI::Sampler NormalSampler;
 };
 
-extern AColorPassRenderer GColorPassRenderer;
+extern ASSAORenderer GSSAORenderer;
 
 }

@@ -39,12 +39,11 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void Render();
+    void Render( GHI::Framebuffer & TargetFB, GHI::Texture & SourceTexture );
 
     GHI::RenderPass * GetRenderPass() { return &FxaaPass; }
 
 private:
-    void CreatePipeline();
     void CreateSampler();
 
     GHI::RenderPass FxaaPass;

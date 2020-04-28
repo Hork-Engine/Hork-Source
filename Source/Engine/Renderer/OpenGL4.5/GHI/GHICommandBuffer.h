@@ -219,7 +219,7 @@ public:
     // Pipeline
     //
 
-    void BindPipeline( Pipeline * _Pipeline );
+    void BindPipeline( Pipeline * _Pipeline, int _Subpass = 0 );
 
     //
     // Vertex & Index buffers

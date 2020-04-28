@@ -534,6 +534,7 @@ struct SMaterialDef
     bool bDepthPassTextureFetch;
     bool bColorPassTextureFetch;
     bool bWireframePassTextureFetch;
+    bool bNormalsPassTextureFetch;
     bool bShadowMapPassTextureFetch;
 
     /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
@@ -687,6 +688,7 @@ public:
     bool    bDepthPassTextureFetch;
     bool    bColorPassTextureFetch;
     bool    bWireframePassTextureFetch;
+    bool    bNormalsPassTextureFetch;
     bool    bShadowMapPassTextureFetch;
 
     bool    bHasVertexDeform;

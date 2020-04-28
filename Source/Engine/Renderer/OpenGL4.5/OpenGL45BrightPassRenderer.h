@@ -39,18 +39,15 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void Render( GHI::Texture & _SrcTexture );
+    void Render( GHI::Texture & SourceTexture );
 
 private:
-    void CreateBrightPipeline();
     void CreateBlurPipeline();
-    void CreateCopyPipeline();
     void CreateSampler();
 
     GHI::RenderPass BrightPass;
     GHI::Pipeline BrightPipeline;
-    GHI::Pipeline BlurPipeline0;
-    GHI::Pipeline BlurPipeline1;
+    GHI::Pipeline BlurPipeline;
     GHI::Pipeline CopyPipeline;
     GHI::Sampler LinearSampler;
     GHI::ShaderModule BlurFragmentShaderModule;

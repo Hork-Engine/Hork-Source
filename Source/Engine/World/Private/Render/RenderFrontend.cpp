@@ -69,26 +69,6 @@ struct SShadowInstanceSortFunction {
 
 void ARenderFrontend::Initialize() {
     VSD_Initialize();
-
-    //ColorGradingLUT = CreateInstanceOf< ATexture >();
-    //ColorGradingLUT->InitializeColorGradingLUT( "Common/ColorGradingLUT.png" );
-
-#if 0
-    byte data[16][16][16][3];
-
-    for ( int z = 0 ; z < 16 ; z++ ) {
-        for ( int y = 0 ; y < 16 ; y++ ) {
-            for ( int x = 0 ; x < 16 ; x++ ) {
-                data[z][y][x][2] = (float)x / 15.0f * 255.0f;
-                data[z][y][x][1] = (float)y / 15.0f * 255.0f;
-                data[z][y][x][0] = (float)z / 15.0f * 255.0f;
-            }
-        }
-    }
-
-    ColorGradingLUT->Initialize3D( TEXTURE_PF_BGR8_SRGB, 1, 16, 16, 16 );
-    ColorGradingLUT->WriteArbitraryData( 0, 0, 0, 16, 16, 16, 0, data );
-#endif
 }
 
 void ARenderFrontend::Deinitialize() {

@@ -570,7 +570,6 @@ struct PipelineCreateInfo {
     uint32_t                          NumVertexAttribs;
     VertexAttribInfo const *          pVertexAttribs;
     RenderPass *                      pRenderPass;
-    int                               Subpass;
 };
 
 class Pipeline /*final*/ : public NonCopyable, IObjectInterface {

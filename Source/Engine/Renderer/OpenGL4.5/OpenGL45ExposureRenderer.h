@@ -39,7 +39,9 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void Render( GHI::Texture & _SrcTexture );
+    void Render( GHI::Texture & SourceTexture );
+
+    GHI::Texture * GetDefaultLuminance() { return &DefaultLuminance; }
 
 private:
     void CreatePipelines();
@@ -50,6 +52,19 @@ private:
     GHI::Pipeline SumLuminanceMapPipe;
     GHI::Pipeline DynamicExposurePipe;
     GHI::Sampler LuminanceSampler;
+    GHI::Texture Luminance64;
+    GHI::Texture Luminance32;
+    GHI::Texture Luminance16;
+    GHI::Texture Luminance8;
+    GHI::Texture Luminance4;
+    GHI::Texture Luminance2;
+    GHI::Texture DefaultLuminance;
+    GHI::Framebuffer FramebufferLum64;
+    GHI::Framebuffer FramebufferLum32;
+    GHI::Framebuffer FramebufferLum16;
+    GHI::Framebuffer FramebufferLum8;
+    GHI::Framebuffer FramebufferLum4;
+    GHI::Framebuffer FramebufferLum2;
 };
 
 extern AExposureRenderer GExposureRenderer;

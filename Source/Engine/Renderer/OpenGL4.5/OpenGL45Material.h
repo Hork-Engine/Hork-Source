@@ -44,6 +44,11 @@ public:
     void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned );
 };
 
+class ANormalsPass : public GHI::Pipeline {
+public:
+    void Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, bool _Skinned );
+};
+
 class AColorPassHUD : public GHI::Pipeline {
 public:
     void Create( const char * _SourceCode );
@@ -75,6 +80,8 @@ struct AShadeModelLit {
     ADepthPass DepthPassSkinned;
     AWireframePass WireframePass;
     AWireframePass WireframePassSkinned;
+    ANormalsPass NormalsPass;
+    ANormalsPass NormalsPassSkinned;
     AColorPass ColorPassSimple;
     AColorPass ColorPassSkinned;
     AColorPassLightmap ColorPassLightmap;
@@ -88,6 +95,8 @@ struct AShadeModelUnlit {
     ADepthPass DepthPassSkinned;
     AWireframePass WireframePass;
     AWireframePass WireframePassSkinned;
+    ANormalsPass NormalsPass;
+    ANormalsPass NormalsPassSkinned;
     AColorPass ColorPassSimple;
     AColorPass ColorPassSkinned;
     AShadowMapPass ShadowPass;

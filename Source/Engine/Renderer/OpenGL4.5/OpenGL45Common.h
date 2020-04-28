@@ -45,6 +45,8 @@ SOFTWARE.
 #include <Runtime/Public/RenderCore.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
+#include <Core/Public/Logger.h>
+
 #define SCISSOR_TEST false
 #define DEPTH_PREPASS
 
@@ -76,5 +78,101 @@ void SaveSnapshot( GHI::Texture & _Texture );
 
 AString LoadShader( const char * FileName, SMaterialShader const * Predefined = nullptr );
 AString LoadShaderFromString( const char * FileName, const char * Source, SMaterialShader const * Predefined = nullptr );
+
+void CreateFullscreenQuadPipeline( GHI::Pipeline & Pipe, const char * VertexShader, const char * FragmentShader, GHI::RenderPass & Pass, GHI::BLENDING_PRESET BlendingPreset = GHI::BLENDING_NO_BLEND );
+
+void CreateFullscreenQuadPipelineGS( GHI::Pipeline & Pipe, const char * VertexShader, const char * FragmentShader, const char * GeometryShader, GHI::RenderPass & Pass, GHI::BLENDING_PRESET BlendingPreset = GHI::BLENDING_NO_BLEND );
+
+struct AShaderSources {
+    enum { MAX_SOURCES = 10 };
+    const char * Sources[MAX_SOURCES];
+    int NumSources;
+
+    void Clear() {
+        NumSources = 2;
+    }
+
+    void Add( const char * _Source ) {
+        AN_ASSERT( NumSources < MAX_SOURCES );
+
+        if ( NumSources < MAX_SOURCES ) {
+            Sources[NumSources++] = _Source;
+        }
+    }
+
+    void Build( GHI::SHADER_TYPE _ShaderType, GHI::ShaderModule * _Module ) {
+        using namespace GHI;
+
+        char * Log = nullptr;
+
+        const char * predefine[] = {
+            "#define VERTEX_SHADER\n",
+            "#define FRAGMENT_SHADER\n",
+            "#define TESS_CONTROL_SHADER\n",
+            "#define TESS_EVALUATION_SHADER\n",
+            "#define GEOMETRY_SHADER\n",
+            "#define COMPUTE_SHADER\n"
+        };
+
+        AString predefines = predefine[_ShaderType];
+        predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Math::ToString( MAX_DIRECTIONAL_LIGHTS ) + "\n";
+        predefines += "#define MAX_SHADOW_CASCADES " + Math::ToString( MAX_SHADOW_CASCADES ) + "\n";
+
+#ifdef SHADOWMAP_PCF
+        predefines += "#define SHADOWMAP_PCF\n";
+#endif
+#ifdef SHADOWMAP_PCSS
+        predefines += "#define SHADOWMAP_PCSS\n";
+#endif
+#ifdef SHADOWMAP_VSM
+        predefines += "#define SHADOWMAP_VSM\n";
+#endif
+#ifdef SHADOWMAP_EVSM
+        predefines += "#define SHADOWMAP_EVSM\n";
+#endif
+#ifdef AN_DEBUG
+        predefines += "#define DEBUG_RENDER_MODE\n";
+#endif
+
+        predefines += "#define SRGB_GAMMA_APPROX\n";
+
+        Sources[0] = "#version 450\n"
+            "#extension GL_ARB_bindless_texture : enable\n";
+        Sources[1] = predefines.CStr();
+
+        _Module->InitializeFromCode( _ShaderType, NumSources, Sources, &Log );
+
+        if ( Log && *Log ) {
+            switch ( _ShaderType ) {
+            case VERTEX_SHADER:
+                GLogger.Printf( "VS: %s\n", Log );
+                break;
+            case FRAGMENT_SHADER:
+                GLogger.Printf( "FS: %s\n", Log );
+                break;
+            case TESS_CONTROL_SHADER:
+                GLogger.Printf( "TCS: %s\n", Log );
+                break;
+            case TESS_EVALUATION_SHADER:
+                GLogger.Printf( "TES: %s\n", Log );
+                break;
+            case GEOMETRY_SHADER:
+                GLogger.Printf( "GS: %s\n", Log );
+                break;
+            case COMPUTE_SHADER:
+                GLogger.Printf( "CS: %s\n", Log );
+                break;
+            }
+        }
+    }
+
+    void PrintSources() {
+        for ( int i = 0 ; i < NumSources ; i++ ) {
+            GLogger.Printf( "%s\n", i, Sources[i] );
+        }
+    }
+};
+
+extern AShaderSources GShaderSources;
 
 }

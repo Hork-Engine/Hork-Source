@@ -30,9 +30,6 @@ SOFTWARE.
 
 #include "OpenGL45DebugDrawPassRenderer.h"
 #include "OpenGL45FrameResources.h"
-#include "OpenGL45RenderTarget.h"
-#include "OpenGL45Material.h"
-#include "OpenGL45ShaderSource.h"
 
 using namespace GHI;
 
@@ -154,7 +151,6 @@ void ADebugDrawPassRenderer::Initialize() {
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     pipelineCI.pRenderPass = &DebugDrawPass;
-    pipelineCI.Subpass = 0;
 
     for ( int i = 0 ; i < DBG_DRAW_CMD_MAX ; i++ ) {
 
@@ -213,11 +209,11 @@ void ADebugDrawPassRenderer::Deinitialize() {
     }
 }
 
-void ADebugDrawPassRenderer::RenderInstances( GHI::Framebuffer * _Framebuffer ) {
+void ADebugDrawPassRenderer::Render( GHI::Framebuffer & TargetFB ) {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &DebugDrawPass;
-    renderPassBegin.pFramebuffer = _Framebuffer;
+    renderPassBegin.pFramebuffer = &TargetFB;
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
     renderPassBegin.RenderArea.Width =  GRenderView->Width;
@@ -256,10 +252,6 @@ void ADebugDrawPassRenderer::RenderInstances( GHI::Framebuffer * _Framebuffer ) 
         drawCmd.BaseVertexLocation = cmd->FirstVertex;
 
         Cmd.Draw( &drawCmd );
-
-        if ( RVRenderSnapshot ) {
-            SaveSnapshot(GRenderTarget.GetFramebufferTexture());
-        }
     }
 
     Cmd.EndRenderPass();

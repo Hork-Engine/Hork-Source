@@ -354,13 +354,13 @@ public:
 
 		btAssert(m_useQuantization);
 
-		btAssert(point.getX() <= m_bvhAabbMax.getX());
-		btAssert(point.getY() <= m_bvhAabbMax.getY());
-		btAssert(point.getZ() <= m_bvhAabbMax.getZ());
+		//btAssert(point.getX() <= m_bvhAabbMax.getX());
+		//btAssert(point.getY() <= m_bvhAabbMax.getY());
+		//btAssert(point.getZ() <= m_bvhAabbMax.getZ());
 
-		btAssert(point.getX() >= m_bvhAabbMin.getX());
-		btAssert(point.getY() >= m_bvhAabbMin.getY());
-		btAssert(point.getZ() >= m_bvhAabbMin.getZ());
+		//btAssert(point.getX() >= m_bvhAabbMin.getX());
+		//btAssert(point.getY() >= m_bvhAabbMin.getY());
+		//btAssert(point.getZ() >= m_bvhAabbMin.getZ());
 
 		btVector3 v = (point - m_bvhAabbMin) * m_bvhQuantization;
 		///Make sure rounding is done in a way that unQuantize(quantizeWithClamp(...)) is conservative

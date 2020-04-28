@@ -28,10 +28,28 @@ SOFTWARE.
 
 */
 
-#include "OpenGL45ShaderSource.h"
+#pragma once
+
+#include "OpenGL45PassRenderer.h"
 
 namespace OpenGL45 {
 
-AShaderSources GShaderSources;
+class ANormalsPassRenderer : public APassRenderer {
+public:    
+    void Initialize();
+    void Deinitialize();
+
+    void Render( GHI::Framebuffer & TargetFB );
+
+    GHI::RenderPass * GetRenderPass() { return &NormalsPass; }
+
+private:
+    bool BindMaterial( SRenderInstance const * instance );
+    void BindTexturesNormalsPass( SMaterialFrameData * _Instance );
+
+    GHI::RenderPass NormalsPass;
+};
+
+extern ANormalsPassRenderer GNormalsPassRenderer;
 
 }

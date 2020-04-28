@@ -206,14 +206,17 @@ void CommandBuffer::Deinitialize() {
 
 }
 
-void CommandBuffer::BindPipeline( Pipeline * _Pipeline ) {
+void CommandBuffer::BindPipeline( Pipeline * _Pipeline, int _Subpass ) {
     State * state = GetCurrentState();
 
     assert( _Pipeline != NULL );
 
     if ( state->CurrentPipeline == _Pipeline ) {
-        // TODO: cache subpass
-        BindRenderPassSubPass( state, _Pipeline->pRenderPass, _Pipeline->Subpass );
+        // TODO: cache drawbuffers
+        if ( _Pipeline->Subpass != _Subpass ) {
+            _Pipeline->Subpass = _Subpass;
+            BindRenderPassSubPass( state, _Pipeline->pRenderPass, _Subpass );
+        }
         return;
     }
 
@@ -235,7 +238,9 @@ void CommandBuffer::BindPipeline( Pipeline * _Pipeline ) {
     // Set render pass
     //
 
-    BindRenderPassSubPass( state, _Pipeline->pRenderPass, _Pipeline->Subpass );
+    _Pipeline->Subpass = _Subpass;
+
+    BindRenderPassSubPass( state, _Pipeline->pRenderPass, _Subpass );
 
     //
     // Set input assembly
@@ -1717,6 +1722,7 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
 
     state->CurrentRenderPass = renderPass;
     state->CurrentRenderPassRenderArea = _RenderPassBegin.RenderArea;
+    state->CurrentPipeline = nullptr;
 
     if ( !framebuffer->Handle ) {
         // default framebuffer

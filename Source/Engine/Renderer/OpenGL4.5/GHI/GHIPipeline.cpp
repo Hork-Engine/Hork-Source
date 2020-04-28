@@ -106,7 +106,7 @@ void Pipeline::Initialize( PipelineCreateInfo const & _CreateInfo ) {
     DepthStencilState = device->CachedDepthStencilState( *_CreateInfo.pDepthStencil );
 
     pRenderPass = _CreateInfo.pRenderPass;
-    Subpass = _CreateInfo.Subpass;
+    Subpass = -1;
 
     state->TotalPipelines++;
 

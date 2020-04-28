@@ -39,7 +39,7 @@ public:
     void Initialize();
     void Deinitialize();
 
-    void RenderInstances();
+    void Render( GHI::Framebuffer & TargetFB );
 
     GHI::RenderPass * GetRenderPass() { return &DepthPass; }
 

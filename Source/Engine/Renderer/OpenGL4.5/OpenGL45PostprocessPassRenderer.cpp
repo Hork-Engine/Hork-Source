@@ -29,13 +29,12 @@ SOFTWARE.
 */
 
 #include "OpenGL45PostprocessPassRenderer.h"
-#include "OpenGL45ShaderSource.h"
 #include "OpenGL45FrameResources.h"
 #include "OpenGL45RenderTarget.h"
-#include "OpenGL45Material.h"
 #include "OpenGL45RenderBackend.h"
+#include "OpenGL45ExposureRenderer.h"
 
-#include <Core/Public/CriticalError.h>
+ARuntimeVariable RVShowDefaultExposure( _CTS( "ShowDefaultExposure" ), _CTS( "0" ) );
 
 using namespace GHI;
 
@@ -65,98 +64,14 @@ void APostprocessPassRenderer::Initialize() {
 
     PostprocessPass.Initialize( renderPassCI );
 
-    CreatePipeline();
+    CreateFullscreenQuadPipeline( PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", PostprocessPass );
+
     CreateSampler();
 }
 
 void APostprocessPassRenderer::Deinitialize() {
     PostprocessPass.Deinitialize();
     PostprocessPipeline.Deinitialize();
-}
-
-void APostprocessPassRenderer::CreatePipeline() {
-    RasterizerStateInfo rsd;
-    rsd.SetDefaults();
-    rsd.CullMode = POLYGON_CULL_FRONT;
-    rsd.bScissorEnable = false;
-
-    BlendingStateInfo bsd;
-    bsd.SetDefaults();
-
-    DepthStencilStateInfo dssd;
-    dssd.SetDefaults();
-
-    dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
-
-    static const VertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            0
-        }
-    };
-
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    ShaderModule vertexShaderModule, fragmentShaderModule;
-
-    AString vertexSourceCode = LoadShader( "postprocess/final.vert" );
-    AString fragmentSourceCode = LoadShader( "postprocess/final.frag" );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSourceCode.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, &vertexShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSourceCode.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
-
-    PipelineCreateInfo pipelineCI = {};
-
-    PipelineInputAssemblyInfo inputAssembly = {};
-    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pInputAssembly = &inputAssembly;
-    pipelineCI.pBlending = &bsd;
-    pipelineCI.pRasterizer = &rsd;
-    pipelineCI.pDepthStencil = &dssd;
-
-    ShaderStageInfo vs = {};
-    vs.Stage = SHADER_STAGE_VERTEX_BIT;
-    vs.pModule = &vertexShaderModule;
-
-    ShaderStageInfo fs = {};
-    fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    fs.pModule = &fragmentShaderModule;
-
-    ShaderStageInfo stages[2] = { vs, fs };
-
-    pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
-    pipelineCI.pStages = stages;
-
-    VertexBindingInfo vertexBinding[1] = {};
-
-    vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( Float2 );
-    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
-    pipelineCI.pVertexBindings = vertexBinding;
-
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
-
-    pipelineCI.pRenderPass = &PostprocessPass;
-    pipelineCI.Subpass = 0;
-
-    PostprocessPipeline.Initialize( pipelineCI );
 }
 
 void APostprocessPassRenderer::CreateSampler() {
@@ -188,11 +103,11 @@ void APostprocessPassRenderer::CreateSampler() {
     ColorGradingSampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 
-void APostprocessPassRenderer::Render() {
+void APostprocessPassRenderer::Render( GHI::Framebuffer & TargetFB ) {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &PostprocessPass;
-    renderPassBegin.pFramebuffer = &GRenderTarget.GetPostprocessFramebuffer();
+    renderPassBegin.pFramebuffer = &TargetFB;
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
     renderPassBegin.RenderArea.Width = GRenderView->Width;
@@ -225,7 +140,7 @@ void APostprocessPassRenderer::Render() {
         GFrameResources.SamplerBindings[1].pSampler = ColorGradingSampler;
     }
 
-    GFrameResources.TextureBindings[2].pTexture = &GRenderTarget.GetBloomTexture().Texture[0];
+    GFrameResources.TextureBindings[2].pTexture = &GRenderTarget.GetBloomTexture().Textures[0];
     GFrameResources.SamplerBindings[2].pSampler = BloomSampler;
 
     GFrameResources.TextureBindings[3].pTexture = &GRenderTarget.GetBloomTexture().Textures_2[0];
@@ -237,12 +152,12 @@ void APostprocessPassRenderer::Render() {
     GFrameResources.TextureBindings[5].pTexture = &GRenderTarget.GetBloomTexture().Textures_6[0];
     GFrameResources.SamplerBindings[5].pSampler = BloomSampler;
 
-    if ( GRenderView->CurrentExposure ) {
+    if ( GRenderView->CurrentExposure && !RVShowDefaultExposure ) {
         GFrameResources.TextureBindings[6].pTexture = GPUTextureHandle( GRenderView->CurrentExposure );
         GFrameResources.SamplerBindings[6].pSampler = LuminanceSampler; // whatever (used texelFetch)
     } else {
         // TODO: set default exposure?
-        //GFrameResources.TextureBindings[6].pTexture = GPUTextureHandle( GRenderView->CurrentExposure );
+        GFrameResources.TextureBindings[6].pTexture = GExposureRenderer.GetDefaultLuminance();
         GFrameResources.SamplerBindings[6].pSampler = LuminanceSampler; // whatever (used texelFetch)
     }
     

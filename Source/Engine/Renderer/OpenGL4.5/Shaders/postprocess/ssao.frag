@@ -28,29 +28,14 @@ SOFTWARE.
 
 */
 
-#pragma once
+layout( location = 0 ) out vec4 FS_FragColor;
 
-#include "OpenGL45PassRenderer.h"
+layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
-namespace OpenGL45 {
+layout( binding = 0 ) uniform samplerDepth Smp_Depth;
 
-class AColorPassRenderer : public APassRenderer {
-public:
-    void Initialize();
-    void Deinitialize();
+layout( location = 0 ) uniform vec2 InvSize;
 
-    void Render( GHI::Framebuffer & TargetFB );
-
-    GHI::RenderPass * GetRenderPass() { return &ColorPass; }
-
-private:
-    bool BindMaterial( SRenderInstance const * Instance );
-    void BindTexturesColorPass( SMaterialFrameData * _Instance );
-
-    GHI::RenderPass ColorPass;
-    GHI::Sampler LightmapSampler;
-};
-
-extern AColorPassRenderer GColorPassRenderer;
-
+void main() {
+    FS_FragColor = vec4(1.0);
 }

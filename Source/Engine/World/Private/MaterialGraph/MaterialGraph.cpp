@@ -2243,6 +2243,30 @@ void MGInPosition::Compute( AMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+AN_CLASS_META( MGInNormal )
+
+MGInNormal::MGInNormal() : Super( "InNormal" ) {
+    Stages = VERTEX_STAGE_BIT;
+
+    Value = AddOutput( "Value", AT_Unknown );
+    //Value->Expression = "InNormal";
+    Value->Type = AT_Float3;
+}
+
+void MGInNormal::Compute( AMaterialBuildContext & _Context ) {
+
+    //if ( _Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
+    //    Value->Type = AT_Float2;
+    //} else {
+    //    Value->Type = AT_Float3;
+    //}
+
+    //_Context.GenerateSourceCode( Value, "GetVertexNormal()", false );
+    _Context.GenerateSourceCode( Value, "InNormal", false );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 AN_CLASS_META( MGInColor )
 
 MGInColor::MGInColor() : Super( "InColor" ) {
@@ -2642,11 +2666,22 @@ AMaterial * AMaterialBuilder::Build() {
     return material;
 }
 
+static void WriteDebugShaders( SMaterialShader const * Shaders ) {
+    AFileStream f;
+    if ( !f.OpenWrite( "debug.glsl" ) ) {
+        return;
+    }
+
+    for ( SMaterialShader const * s = Shaders ; s ; s = s->Next ) {
+        f.Printf( "//----------------------------------\n// %s\n//----------------------------------\n", s->SourceName );
+        f.Printf( "%s\n", s->Code );
+    }
+}
+
 void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
     AMaterialBuildContext context;
     bool bDepthPassTextureFetch = false;
     bool bColorPassTextureFetch = false;
-    bool bWireframePassTextureFetch = false;
     bool bShadowMapPassTextureFetch = false;
     bool bShadowMapMasking = false;
     bool bNoCastShadow = false;
@@ -2654,6 +2689,9 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
     int maxTextureSlot = -1;
     int maxUniformAddress = -1;
     bool bHasVertexDeform = false;
+
+    Def.bWireframePassTextureFetch = false;
+    Def.bNormalsPassTextureFetch = false;
 
     AString predefines;
 
@@ -2722,7 +2760,7 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         maxTextureSlot = Math::Max( maxTextureSlot, context.MaxTextureSlot );
         maxUniformAddress = Math::Max( maxUniformAddress, context.MaxUniformAddress );
 
-        // TODO: Для MATERIAL_PASS_DEPTH, MATERIAL_PASS_SHADOWMAP и MATERIAL_PASS_WIREFRAME проверить:
+        // TODO: Для MATERIAL_PASS_DEPTH, MATERIAL_PASS_SHADOWMAP, MATERIAL_PASS_WIREFRAME, MATERIAL_PASS_NORMALS проверить:
         // если нет никакой деформации вершины, то использовать шейдер/пайплайн по умолчанию
         // для данного прохода. Это необходимо для оптимизации количества переключения пайплайнов.
     }
@@ -2836,7 +2874,7 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         VertexStage->TouchConnections( context );
         VertexStage->Build( context );
 
-        bWireframePassTextureFetch = context.bHasTextures;
+        Def.bWireframePassTextureFetch = context.bHasTextures;
 
         maxTextureSlot = Math::Max( maxTextureSlot, context.MaxTextureSlot );
         maxUniformAddress = Math::Max( maxUniformAddress, context.MaxUniformAddress );
@@ -2845,7 +2883,29 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         Def.AddShader( "$WIREFRAME_PASS_VERTEX_CODE$", context.SourceCode );
     }
 
+    // Create normals debugging pass
+    context.Reset( Graph, MATERIAL_PASS_NORMALS );
+    {
+        // Wireframe pass. Vertex stage
+        context.SetStage( VERTEX_STAGE );
+        VertexStage->ResetConnections( context );
+        VertexStage->TouchConnections( context );
+        VertexStage->Build( context );
+
+        Def.bNormalsPassTextureFetch = context.bHasTextures;
+
+        maxTextureSlot = Math::Max( maxTextureSlot, context.MaxTextureSlot );
+        maxUniformAddress = Math::Max( maxUniformAddress, context.MaxUniformAddress );
+
+        Def.AddShader( "$NORMALS_PASS_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
+        Def.AddShader( "$NORMALS_PASS_VERTEX_CODE$", context.SourceCode );
+    }
+
     // TODO: Shadowmap pass?
+
+    if ( bHasVertexDeform ) {
+        predefines += "#define HAS_VERTEX_DEFORM\n";
+    }
 
     Def.AddShader( "$PREDEFINES$", predefines );
 
@@ -2854,7 +2914,6 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
     Def.LightmapSlot        = lightmapSlot;
     Def.bDepthPassTextureFetch     = bDepthPassTextureFetch;
     Def.bColorPassTextureFetch     = bColorPassTextureFetch;
-    Def.bWireframePassTextureFetch = bWireframePassTextureFetch;
     Def.bShadowMapPassTextureFetch = bShadowMapPassTextureFetch;
     Def.bHasVertexDeform    = bHasVertexDeform;
     Def.bDepthTest_EXPEREMENTAL = Graph->bDepthTest;
@@ -2867,6 +2926,10 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
     for ( int i = 0 ; i < Def.NumSamplers ; i++ ) {
         Def.Samplers[i] = Graph->GetTextureSlots()[i]->SamplerDesc;
     }
+
+#if 1
+    WriteDebugShaders( Def.Shaders );
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

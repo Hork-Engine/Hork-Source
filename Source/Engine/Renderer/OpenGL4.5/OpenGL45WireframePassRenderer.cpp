@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "OpenGL45WireframePassRenderer.h"
 #include "OpenGL45FrameResources.h"
-#include "OpenGL45RenderTarget.h"
 #include "OpenGL45Material.h"
 
 using namespace GHI;
@@ -128,11 +127,11 @@ void AWireframePassRenderer::BindTexturesWireframePass( SMaterialFrameData * _In
     BindTextures( _Instance );
 }
 
-void AWireframePassRenderer::RenderInstances( GHI::Framebuffer * _Framebuffer ) {
+void AWireframePassRenderer::Render( GHI::Framebuffer & TargetFB ) {
     RenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = &WireframePass;
-    renderPassBegin.pFramebuffer = _Framebuffer;
+    renderPassBegin.pFramebuffer = &TargetFB;
     renderPassBegin.RenderArea.X = 0;
     renderPassBegin.RenderArea.Y = 0;
     renderPassBegin.RenderArea.Width = GRenderView->Width;
@@ -178,10 +177,34 @@ void AWireframePassRenderer::RenderInstances( GHI::Framebuffer * _Framebuffer ) 
         drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
         Cmd.Draw( &drawCmd );
+    }
 
-        if ( RVRenderSnapshot ) {
-            SaveSnapshot(GRenderTarget.GetFramebufferTexture());
+    int translucentUniformOffset = GRenderView->InstanceCount;
+
+    for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
+        SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
+
+        // Choose pipeline and second vertex buffer
+        if ( !BindMaterial( instance ) ) {
+            continue;
         }
+
+        // Set material data (textures, uniforms)
+        BindTexturesWireframePass( instance->MaterialInstance );
+
+        // Bind skeleton
+        BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
+
+        // Set instance uniforms
+        SetInstanceUniforms( translucentUniformOffset + i );
+
+        Cmd.BindShaderResources( &GFrameResources.Resources );
+
+        drawCmd.IndexCountPerInstance = instance->IndexCount;
+        drawCmd.StartIndexLocation = instance->StartIndexLocation;
+        drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+
+        Cmd.Draw( &drawCmd );
     }
 
     Cmd.EndRenderPass();
