@@ -1409,6 +1409,9 @@ void ARuntime::NewFrame() {
 #endif
 }
 
+// NOTE: Workaround of SDL bug with false mouse motion when a window gain keyboard focus.
+static bool bIgnoreFalseMouseMotionHack = false;
+
 void ARuntime::PollEvents() {
     SDL_Event event;
     while ( SDL_PollEvent( &event ) ) {
@@ -1562,6 +1565,7 @@ void ARuntime::PollEvents() {
                 break;
             // Window has gained keyboard focus
             case SDL_WINDOWEVENT_FOCUS_GAINED:
+                bIgnoreFalseMouseMotionHack = true;
                 break;
             // Window has lost keyboard focus
             case SDL_WINDOWEVENT_FOCUS_LOST:
@@ -1634,10 +1638,13 @@ void ARuntime::PollEvents() {
 
         // Mouse moved
         case SDL_MOUSEMOTION: {
-            SMouseMoveEvent moveEvent;
-            moveEvent.X = event.motion.xrel;
-            moveEvent.Y = -event.motion.yrel;
-            Engine->OnMouseMoveEvent( moveEvent, FROM_SDL_TIMESTAMP(event.motion) );
+            if ( !bIgnoreFalseMouseMotionHack ) {
+                SMouseMoveEvent moveEvent;
+                moveEvent.X = event.motion.xrel;
+                moveEvent.Y = -event.motion.yrel;
+                Engine->OnMouseMoveEvent( moveEvent, FROM_SDL_TIMESTAMP(event.motion) );
+            }
+            bIgnoreFalseMouseMotionHack = false;
             break;
         }
 
