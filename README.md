@@ -80,7 +80,7 @@ PBR (physically based).
 
 ## Asset importing and resource management
 * 3D modelling formats (GLTF, LWO)
-* Different image formats (PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR)
+* Different image formats (PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR)
 * Fonts (TTF)
 
 ## Audio
@@ -136,7 +136,7 @@ PBR (physically based).
 * MIT license
    
 ## Used third-party libraries
-* stb, cgltw, lwo2, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui
+* stb, cgltw, lwo2, tinyexr, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui
 * Dynamic loaded: openal, libmpg123
 
 ## Some architectural solutions
@@ -147,7 +147,7 @@ PBR (physically based).
 
 ## Planned features
 * Particle System
-* More realistic renderer (SSR, light probes, reflection probes)
+* More realistic renderer (SSR, GI)
 * Toksvig
 * Parallax mapping (parallax material?)
 * Decals
