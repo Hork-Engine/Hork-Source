@@ -479,7 +479,7 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
                 cursorPosition.X += _Event.X;
                 cursorPosition.Y -= _Event.Y;
             }
-            cursorPosition = cursorPosition.Clamp( Float2(0.0f), Float2( videoMode.FramebufferWidth-1, videoMode.FramebufferHeight-1 ) );
+            cursorPosition = Math::Clamp( cursorPosition, Float2(0.0f), Float2( videoMode.FramebufferWidth-1, videoMode.FramebufferHeight-1 ) );
 
             Desktop->SetCursorPosition( cursorPosition );
         }
