@@ -613,15 +613,15 @@ AN_FORCEINLINE T Fract( T const & Value ) {
     return Value - std::floor( Value );
 }
 
-template< typename T >
-AN_FORCEINLINE T Clamp( T const & _Value, T const & _Min, T const & _Max ) {
-    return StdMin( StdMax( _Value, _Min ), _Max );
-}
+//template< typename T >
+//AN_FORCEINLINE T Clamp( T const & _Value, T const & _Min, T const & _Max ) {
+//    return StdMin( StdMax( _Value, _Min ), _Max );
+//}
 
-template< typename T >
-AN_FORCEINLINE T Saturate( T const & Value ) {
-    return Clamp( Value, T(0), T(1) );
-}
+//template< typename T >
+//AN_FORCEINLINE T Saturate( T const & Value ) {
+//    return Clamp( Value, T(0), T(1) );
+//}
 
 template< typename T >
 AN_FORCEINLINE T Step( T const & Value, T const & Edge ) {
@@ -683,24 +683,131 @@ constexpr float _RAD2DEG = static_cast< float >( _RAD2DEG_DBL );
 constexpr float _INFINITY = 1e30f;
 constexpr float _ZERO_TOLERANCE = 1.1754944e-038f;
 
-template< typename T > AN_FORCEINLINE T const & Min( T const & _A, T const & _B ) { return StdMin( _A, _B ); }
-template< typename T > AN_FORCEINLINE T const & Max( T const & _A, T const & _B ) { return StdMax( _A, _B ); }
-template< typename T > AN_FORCEINLINE T const & Min( T const & _A, T const & _B, T const & _C ) { return StdMin( StdMin( _A, _B ), _C ); }
-template< typename T > AN_FORCEINLINE T const & Max( T const & _A, T const & _B, T const & _C ) { return StdMax( StdMax( _A, _B ), _C ); }
-
-template< typename T >
-AN_FORCEINLINE void MinMax( T const & _A, T const & _B, T & _Min, T & _Max ) {
-    if ( _A > _B ) {
-        _Min = _B;
-        _Max = _A;
-    } else {
-        _Min = _A;
-        _Max = _B;
-    }
+template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
+AN_FORCEINLINE T Min( T a, T b ) {
+    return StdMin( a, b );
 }
 
-template< typename T >
-AN_FORCEINLINE void MinMax( T const & _A, T const & _B, T const & _C, T & _Min, T & _Max ) {
+template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
+AN_FORCEINLINE T Min3( T a, T b, T c ) {
+    return Min( Min( a, b ), c );
+}
+
+template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
+AN_FORCEINLINE T Max( T a, T b ) {
+    return StdMax( a, b );
+}
+
+template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
+AN_FORCEINLINE T Max3( T a, T b, T c ) {
+    return Max( Max( a, b ), c );
+}
+
+template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
+AN_FORCEINLINE T Clamp( T val, T a, T b ) {
+    return StdMin( StdMax( val, a ), b );
+}
+
+template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
+AN_FORCEINLINE T Saturate( T val ) {
+    return Clamp( val, T(0), T(1) );
+}
+
+/** Branchless min */
+AN_FORCEINLINE float Min( float a, float b ) {
+    _mm_store_ss( &a, _mm_min_ss( _mm_set_ss( a ), _mm_set_ss( b ) ) );
+    return a;
+}
+
+AN_FORCEINLINE float Min3( float a, float b, float c ) {
+    _mm_store_ss( &a, _mm_min_ss( _mm_min_ss( _mm_set_ss( a ), _mm_set_ss( b ) ), _mm_set_ss( c ) ) );
+    return a;
+}
+
+/** Branchless max */
+AN_FORCEINLINE float Max( float a, float b ) {
+    _mm_store_ss( &a, _mm_max_ss( _mm_set_ss( a ), _mm_set_ss( b ) ) );
+    return a;
+}
+
+AN_FORCEINLINE float Max3( float a, float b, float c ) {
+    _mm_store_ss( &a, _mm_max_ss( _mm_max_ss( _mm_set_ss( a ), _mm_set_ss( b ) ), _mm_set_ss( c ) ) );
+    return a;
+}
+
+/** Branchless clamp */
+AN_FORCEINLINE float Clamp( float val, float minval, float maxval ) {
+    _mm_store_ss( &val, _mm_min_ss( _mm_max_ss( _mm_set_ss( val ), _mm_set_ss( minval ) ), _mm_set_ss( maxval ) ) );
+    return val;
+}
+
+/** Branchless saturate */
+AN_FORCEINLINE float Saturate( float val ) {
+    _mm_store_ss( &val, _mm_min_ss( _mm_max_ss( _mm_set_ss( val ), _mm_setzero_ps() ), _mm_set_ss( 1.0f ) ) );
+    return val;
+}
+
+/** Branchless min */
+AN_FORCEINLINE double Min( double a, double b ) {
+    _mm_store_sd( &a, _mm_min_sd( _mm_set_sd( a ), _mm_set_sd( b ) ) );
+    return a;
+}
+
+AN_FORCEINLINE double Min3( double a, double b, double c ) {
+    _mm_store_sd( &a, _mm_min_sd( _mm_min_sd( _mm_set_sd( a ), _mm_set_sd( b ) ), _mm_set_sd( c ) ) );
+    return a;
+}
+
+/** Branchless max */
+AN_FORCEINLINE double Max( double a, double b ) {
+    _mm_store_sd( &a, _mm_max_sd( _mm_set_sd( a ), _mm_set_sd( b ) ) );
+    return a;
+}
+
+AN_FORCEINLINE double Max3( double a, double b, double c ) {
+    _mm_store_sd( &a, _mm_max_sd( _mm_max_sd( _mm_set_sd( a ), _mm_set_sd( b ) ), _mm_set_sd( c ) ) );
+    return a;
+}
+
+/** Branchless clamp */
+AN_FORCEINLINE double Clamp( double val, double minval, double maxval ) {
+    _mm_store_sd( &val, _mm_min_sd( _mm_max_sd( _mm_set_sd( val ), _mm_set_sd( minval ) ), _mm_set_sd( maxval ) ) );
+    return val;
+}
+
+/** Branchless saturate */
+AN_FORCEINLINE double Saturate( double val ) {
+    _mm_store_sd( &val, _mm_min_sd( _mm_max_sd( _mm_set_sd( val ), _mm_setzero_pd() ), _mm_set_sd( 1.0 ) ) );
+    return val;
+}
+
+AN_FORCEINLINE uint8_t Saturate8( int x ) {
+    if ( (unsigned int)x <= 255 )
+        return x;
+
+    if ( x < 0 )
+        return 0;
+
+    return 255;
+}
+
+AN_FORCEINLINE uint16_t Saturate16( int x ) {
+    if ( (unsigned int)x <= 65535 )
+        return x;
+
+    if ( x < 0 )
+        return 0;
+
+    return 65535;
+}
+
+AN_FORCEINLINE void MinMax( float _A, float _B, float & _Min, float & _Max ) {
+    __m128 v1 = _mm_set_ss( _A );
+    __m128 v2 = _mm_set_ss( _B );
+
+    _mm_store_ss( &_Min, _mm_min_ss( v1, v2 ) );
+    _mm_store_ss( &_Max, _mm_max_ss( v1, v2 ) );
+#if 0
     if ( _A > _B ) {
         _Min = _B;
         _Max = _A;
@@ -708,11 +815,49 @@ AN_FORCEINLINE void MinMax( T const & _A, T const & _B, T const & _C, T & _Min, 
         _Min = _A;
         _Max = _B;
     }
+#endif
+}
+
+AN_FORCEINLINE void MinMax( double _A, double _B, double & _Min, double & _Max ) {
+    __m128d v1 = _mm_set_sd( _A );
+    __m128d v2 = _mm_set_sd( _B );
+
+    _mm_store_sd( &_Min, _mm_min_sd( v1, v2 ) );
+    _mm_store_sd( &_Max, _mm_max_sd( v1, v2 ) );
+}
+
+AN_FORCEINLINE void MinMax( float _A, float _B, float _C, float & _Min, float & _Max ) {
+    __m128 v1 = _mm_set_ss( _A );
+    __m128 v2 = _mm_set_ss( _B );
+    __m128 v3 = _mm_set_ss( _C );
+
+    _mm_store_ss( &_Min, _mm_min_ss( _mm_min_ss( v1, v2 ), v3 ) );
+    _mm_store_ss( &_Max, _mm_max_ss( _mm_max_ss( v1, v2 ), v3 ) );
+
+#if 0
+    if ( _A > _B ) {
+        _Min = _B;
+        _Max = _A;
+    } else {
+        _Min = _A;
+        _Max = _B;
+    }
+
     if ( _C > _Max ) {
         _Max = _C;
     } else if ( _C < _Min ) {
         _Min = _C;
     }
+#endif
+}
+
+AN_FORCEINLINE void MinMax( double _A, double _B, double _C, double & _Min, double & _Max ) {
+    __m128d v1 = _mm_set_sd( _A );
+    __m128d v2 = _mm_set_sd( _B );
+    __m128d v3 = _mm_set_sd( _C );
+
+    _mm_store_sd( &_Min, _mm_min_sd( _mm_min_sd( v1, v2 ), v3 ) );
+    _mm_store_sd( &_Max, _mm_max_sd( _mm_max_sd( v1, v2 ), v3 ) );
 }
 
 template< typename T >

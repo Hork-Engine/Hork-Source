@@ -515,13 +515,13 @@ AN_INLINE bool BvBoxOverlapTriangle_FastApproximation( BvAxisAlignedBox const & 
 
     BvAxisAlignedBox triangleBounds;
 
-    triangleBounds.Mins.X = Math::Min( _P0.X, _P1.X, _P2.X );
-    triangleBounds.Mins.Y = Math::Min( _P0.Y, _P1.Y, _P2.Y );
-    triangleBounds.Mins.Z = Math::Min( _P0.Z, _P1.Z, _P2.Z );
+    triangleBounds.Mins.X = Math::Min3( _P0.X, _P1.X, _P2.X );
+    triangleBounds.Mins.Y = Math::Min3( _P0.Y, _P1.Y, _P2.Y );
+    triangleBounds.Mins.Z = Math::Min3( _P0.Z, _P1.Z, _P2.Z );
 
-    triangleBounds.Maxs.X = Math::Max( _P0.X, _P1.X, _P2.X );
-    triangleBounds.Maxs.Y = Math::Max( _P0.Y, _P1.Y, _P2.Y );
-    triangleBounds.Maxs.Z = Math::Max( _P0.Z, _P1.Z, _P2.Z );
+    triangleBounds.Maxs.X = Math::Max3( _P0.X, _P1.X, _P2.X );
+    triangleBounds.Maxs.Y = Math::Max3( _P0.Y, _P1.Y, _P2.Y );
+    triangleBounds.Maxs.Z = Math::Max3( _P0.Z, _P1.Z, _P2.Z );
 
     return BvBoxOverlapBox( _BoundingBox, triangleBounds );
 }
@@ -1072,13 +1072,13 @@ AN_INLINE bool BvOrientedBoxOverlapTriangle_FastApproximation( BvOrientedBox con
 
     BvAxisAlignedBox triangleBounds;
 
-    triangleBounds.Mins.X = Math::Min( _P0.X, _P1.X, _P2.X );
-    triangleBounds.Mins.Y = Math::Min( _P0.Y, _P1.Y, _P2.Y );
-    triangleBounds.Mins.Z = Math::Min( _P0.Z, _P1.Z, _P2.Z );
+    triangleBounds.Mins.X = Math::Min3( _P0.X, _P1.X, _P2.X );
+    triangleBounds.Mins.Y = Math::Min3( _P0.Y, _P1.Y, _P2.Y );
+    triangleBounds.Mins.Z = Math::Min3( _P0.Z, _P1.Z, _P2.Z );
 
-    triangleBounds.Maxs.X = Math::Max( _P0.X, _P1.X, _P2.X );
-    triangleBounds.Maxs.Y = Math::Max( _P0.Y, _P1.Y, _P2.Y );
-    triangleBounds.Maxs.Z = Math::Max( _P0.Z, _P1.Z, _P2.Z );
+    triangleBounds.Maxs.X = Math::Max3( _P0.X, _P1.X, _P2.X );
+    triangleBounds.Maxs.Y = Math::Max3( _P0.Y, _P1.Y, _P2.Y );
+    triangleBounds.Maxs.Z = Math::Max3( _P0.Z, _P1.Z, _P2.Z );
 
     return BvOrientedBoxOverlapBox( _OBB, triangleBounds );
 }

@@ -47,7 +47,8 @@ struct AColor4 : Float4 {
 
     bool IsTransparent() const { return W < 0.0001f; }
 
-    /** Assume temperature is range between 1000 and 40000. */
+    /** Convert temperature in Kelvins to RGB color.
+    Assume temperature is range between 1000 and 15000. */
     void SetTemperature( float _Temperature );
 
     void SetByte( byte _Red, byte _Green, byte _Blue );
@@ -114,26 +115,68 @@ struct AColor4 : Float4 {
 
 //#define SRGB_GAMMA_APPROX
 
-AN_FORCEINLINE float LinearFromSRGB( const float & _sRGB ) {
+AN_FORCEINLINE float LinearFromSRGB( float Color ) {
+    // TODO: Use conversion table?
 #ifdef SRGB_GAMMA_APPROX
-    return StdPow( _sRGB, 2.2f );
+    return StdPow( Color, 2.2f );
 #else
-    if ( _sRGB < 0.0f ) return 0.0f;
-    if ( _sRGB > 1.0f ) return 1.0f;
-    if ( _sRGB <= 0.04045 ) return _sRGB / 12.92f;
-    return StdPow( ( _sRGB + 0.055f ) / 1.055f, 2.4f );
+    if ( Color < 0.0f ) return 0.0f;
+    if ( Color > 1.0f ) return 1.0f;
+    return ( Color <= 0.04045f ) ? Color / 12.92f : StdPow( ( Color + 0.055f ) / 1.055f, 2.4f );
 #endif
 }
 
-AN_FORCEINLINE float LinearToSRGB( const float & _lRGB ) {
+AN_FORCEINLINE float LinearToSRGB( float LinearColor ) {
+    // TODO: Use conversion table?
 #ifdef SRGB_GAMMA_APPROX
-    return StdPow( _lRGB, 1.0f / 2.2f );
+    return StdPow( LinearColor, 1.0f / 2.2f );
 #else
-    if ( _lRGB < 0.0f ) return 0.0f;
-    if ( _lRGB > 1.0f ) return 1.0f;
-    if ( _lRGB <= 0.0031308 ) return _lRGB * 12.92f;
-    return 1.055f * StdPow( _lRGB, 1.0f / 2.4f ) - 0.055f;
+    if ( LinearColor < 0.0f ) return 0.0f;
+    if ( LinearColor > 1.0f ) return 1.0f;
+    return ( LinearColor <= 0.0031308f ) ? LinearColor * 12.92f : StdPow( LinearColor, 1.0f / 2.4f ) * 1.055f - 0.055f;
 #endif
+}
+
+AN_FORCEINLINE float LinearFromSRGB_UChar( byte in ) {
+    extern float stbir__srgb_uchar_to_linear_float[256];
+    return stbir__srgb_uchar_to_linear_float[in];
+}
+
+extern const uint32_t FP32ToSRGB8[104];
+
+AN_FORCEINLINE byte LinearToSRGB_UChar( float in )
+{
+    // From https://gist.github.com/rygorous/2203834
+    // Assume float is in IEEE format
+
+    typedef union
+    {
+        uint32_t u;
+        float f;
+    } FP32;
+
+    static const FP32 almostone = { 0x3f7fffff }; // 1-eps
+    static const FP32 minval = { (127-13) << 23 };
+    uint32_t tab, bias, scale, t;
+    FP32 f;
+
+    // Clamp to [2^(-13), 1-eps]; these two values map to 0 and 1, respectively.
+    // The tests are carefully written so that NaNs map to 0, same as in the reference
+    // implementation.
+    if ( !(in > minval.f) ) // written this way to catch NaNs
+        in = minval.f;
+    if ( in > almostone.f )
+        in = almostone.f;
+
+    // Do the table lookup and unpack bias, scale
+    f.f = in;
+    tab = FP32ToSRGB8[(f.u - minval.u) >> 20];
+    bias = (tab >> 16) << 9;
+    scale = tab & 0xffff;
+
+    // Grab next-highest mantissa bits and perform linear interpolation
+    t = (f.u >> 12) & 0xff;
+    return (unsigned char)((bias + scale*t) >> 16);
 }
 
 AN_FORCEINLINE AColor4 AColor4::ToLinear() const {
@@ -153,19 +196,83 @@ AN_FORCEINLINE void AColor4::SetAlpha( float _Alpha ) {
 }
 
 AN_FORCEINLINE void AColor4::SetTemperature( float _Temperature ) {
-     if ( _Temperature <= 6500.0f ) {
-         X = 1.0f;
-         Y = -2902.1955373783176f / ( 1669.5803561666639f + _Temperature ) + 1.3302673723350029f;
-         Z = -8257.7997278925690f / ( 2575.2827530017594f + _Temperature ) + 1.8993753891711275f;
-         Z = Math::Max( 0.0f, Z );
-     } else {
-         X = 1745.0425298314172f / ( -2666.3474220535695f + _Temperature ) + 0.55995389139931482f;
-         Y = 1216.6168361476490f / ( -2173.1012343082230f + _Temperature ) + 0.70381203140554553f;
-         Z = -8257.7997278925690f / ( 2575.2827530017594f + _Temperature ) + 1.8993753891711275f;
-         X = Math::Min( 1.0f, X );
-         Z = Math::Min( 1.0f, Z );
-     }
- }
+#if 1
+    // Approximate Planckian locus in CIE 1960 UCS
+    // Urho3D and UE4 uses same formulas
+
+    const float temperature = Math::Clamp( _Temperature, 1000.0f, 15000.0f );
+
+    const float u = (0.860117757f + 1.54118254e-4f * temperature + 1.28641212e-7f * temperature * temperature) /
+        (1.0f + 8.42420235e-4f * temperature + 7.08145163e-7f * temperature * temperature);
+    const float v = (0.317398726f + 4.22806245e-5f * temperature + 4.20481691e-8f * temperature * temperature) /
+        (1.0f - 2.89741816e-5f * temperature + 1.61456053e-7f * temperature * temperature);
+
+    const float x = 3.0f * u / (2.0f * u - 8.0f * v + 4.0f);
+    const float y = 2.0f * v / (2.0f * u - 8.0f * v + 4.0f);
+    const float z = 1.0f - x - y;
+
+    const float x_ = 1.0f / y * x;
+    const float z_ = 1.0f / y * z;
+
+    X = Math::Saturate( 3.2404542f * x_ + -1.5371385f + -0.4985314f * z_ );
+    Y = Math::Saturate( -0.9692660f * x_ + 1.8760108f + 0.0415560f * z_ );
+    Z = Math::Saturate( 0.0556434f * x_ + -0.2040259f + 1.0572252f * z_ );
+#endif
+
+#if 0
+    // Based on code by Benjamin 'BeRo' Rosseaux
+    _Temperature = Math::Clamp( _Temperature, 1000.0f, 15000.0f );
+
+    if ( _Temperature <= 6500.0f ) {
+        X = 1.0f;
+        Y = -2902.1955373783176f / (1669.5803561666639f + _Temperature) + 1.3302673723350029f;
+        Z = -8257.7997278925690f / (2575.2827530017594f + _Temperature) + 1.8993753891711275f;
+        Z = Math::Max( 0.0f, Z );
+    } else {
+        X = 1745.0425298314172f / (-2666.3474220535695f + _Temperature) + 0.55995389139931482f;
+        Y = 1216.6168361476490f / (-2173.1012343082230f + _Temperature) + 0.70381203140554553f;
+        Z = -8257.7997278925690f / (2575.2827530017594f + _Temperature) + 1.8993753891711275f;
+        X = Math::Min( 1.0f, X );
+        Z = Math::Min( 1.0f, Z );
+    }
+#endif
+
+#if 0
+    // Based on code from http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
+    _Temperature = Math::Clamp( _Temperature, 1000.0f, 15000.0f ) * 0.01f;
+
+    float Value;
+
+    // Calculate each color in turn
+
+    if ( _Temperature <= 66 ) {
+        X = 1.0f;
+
+        // Note: the R-squared value for this approximation is .996
+        Value = (99.4708025861/255.0) * log( _Temperature ) - (161.1195681661/255.0);
+        Y = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
+
+    } else {
+        // Note: the R-squared value for this approximation is .988
+        Value = (329.698727446 / 255.0) * StdPow( _Temperature - 60, -0.1332047592 );
+        X = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
+
+                                            // Note: the R-squared value for this approximation is .987
+        Value = (288.1221695283/255.0) * StdPow( _Temperature - 60, -0.0755148492 );
+        Y = Value;//Math::Clamp( Value, 0.0f, 1.0f );
+    }
+
+    if ( _Temperature >= 66 ) {
+        Z = 1.0f;
+    } else if ( _Temperature <= 19 ) {
+        Z = 0.0f;
+    } else {
+        // Note: the R-squared value for this approximation is .998
+        Value = (138.5177312231/255.0) * log( _Temperature - 10 ) - (305.0447927307/255.0);
+        Z = Math::Max( 0.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
+    }
+#endif
+}
 
 AN_FORCEINLINE void AColor4::SetByte( byte _Red, byte _Green, byte _Blue ) {
     constexpr float scale = 1.0f / 255.0f;
@@ -400,7 +507,7 @@ AN_FORCEINLINE void AColor4::GetCMYK( float & _Cyan, float & _Magenta, float & _
     const float r = Math::Saturate( X );
     const float g = Math::Saturate( Y );
     const float b = Math::Saturate( Z );
-    const float maxComponent = Math::Max( r, g, b );
+    const float maxComponent = Math::Max3( r, g, b );
     const float scale = maxComponent > 0.0f ? 1.0f / maxComponent : 0.0f;
 
     _Cyan    = ( maxComponent - r ) * scale;

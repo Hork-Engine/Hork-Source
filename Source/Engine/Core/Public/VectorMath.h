@@ -148,13 +148,13 @@ constexpr TVector2< T > Step( TVector2< T > const & _Vec, TVector2< T > const & 
 template< typename T >
 AN_FORCEINLINE TVector2< T > SmoothStep( TVector2< T > const & _Vec, T const & _Edge0, T const & _Edge1 ) {
     const T Denom = T( 1 ) / (_Edge1 - _Edge0);
-    const TVector2< T > t = ((_Vec - _Edge0) * Denom).Saturate();
+    const TVector2< T > t = Saturate((_Vec - _Edge0) * Denom);
     return t * t * (T(-2) * t + T(3));
 }
 
 template< typename T >
 AN_FORCEINLINE TVector2< T > SmoothStep( TVector2< T > const & _Vec, TVector2< T > const & _Edge0, TVector2< T > const & _Edge1 ) {
-    const TVector2< T > t = ((_Vec - _Edge0) / (_Edge1 - _Edge0)).Saturate();
+    const TVector2< T > t = Saturate((_Vec - _Edge0) / (_Edge1 - _Edge0));
     return t * t * (T(-2) * t + T(3));
 }
 
@@ -171,13 +171,13 @@ constexpr TVector3< T > Step( TVector3< T > const & _Vec, TVector2< T > const & 
 template< typename T >
 AN_FORCEINLINE TVector3< T > SmoothStep( TVector3< T > const & _Vec, T const & _Edge0, T const & _Edge1 ) {
     const T Denom = T( 1 ) / (_Edge1 - _Edge0);
-    const TVector3< T > t = ((_Vec - _Edge0) * Denom).Saturate();
+    const TVector3< T > t = Saturate((_Vec - _Edge0) * Denom);
     return t * t * (T(-2) * t + T(3));
 }
 
 template< typename T >
 AN_FORCEINLINE TVector3< T > SmoothStep( TVector3< T > const & _Vec, TVector2< T > const & _Edge0, TVector2< T > const & _Edge1 ) {
-    const TVector3< T > t = ((_Vec - _Edge0) / (_Edge1 - _Edge0)).Saturate();
+    const TVector3< T > t = Saturate((_Vec - _Edge0) / (_Edge1 - _Edge0));
     return t * t * (T(-2) * t + T(3));
 }
 
@@ -194,13 +194,13 @@ constexpr TVector4< T > Step( TVector4< T > const & _Vec, TVector4< T > const & 
 template< typename T >
 AN_FORCEINLINE TVector4< T > SmoothStep( TVector4< T > const & _Vec, T const & _Edge0, T const & _Edge1 ) {
     const T Denom = T( 1 ) / (_Edge1 - _Edge0);
-    const TVector4< T > t = ((_Vec - _Edge0) * Denom).Saturate();
+    const TVector4< T > t = Saturate((_Vec - _Edge0) * Denom);
     return t * t * (T(-2) * t + T(3));
 }
 
 template< typename T >
 AN_FORCEINLINE TVector4< T > SmoothStep( TVector4< T > const & _Vec, TVector4< T > const & _Edge0, TVector4< T > const & _Edge1 ) {
-    const TVector4< T > t = ((_Vec - _Edge0) / (_Edge1 - _Edge0)).Saturate();
+    const TVector4< T > t = Saturate((_Vec - _Edge0) / (_Edge1 - _Edge0));
     return t * t * (T(-2) * t + T(3));
 }
 
@@ -533,17 +533,17 @@ struct TVector2 {
         return Math::SignBits( X ) | (Math::SignBits( Y )<<1);
     }
 
-    TVector2 Clamp( T const & _Min, T const & _Max ) const {
-        return TVector2( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ) );
-    }
+    //TVector2 Clamp( T const & _Min, T const & _Max ) const {
+    //    return TVector2( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ) );
+    //}
 
-    TVector2 Clamp( TVector2 const & _Min, TVector2 const & _Max ) const {
-        return TVector2( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ) );
-    }
+    //TVector2 Clamp( TVector2 const & _Min, TVector2 const & _Max ) const {
+    //    return TVector2( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ) );
+    //}
 
-    TVector2 Saturate() const {
-        return Clamp( T( 0 ), T( 1 ) );
-    }
+    //TVector2 Saturate() const {
+    //    return Clamp( T( 0 ), T( 1 ) );
+    //}
 
     TVector2 Snap( T const &_SnapValue ) const {
         AN_ASSERT_( _SnapValue > 0, "Snap" );
@@ -1032,17 +1032,17 @@ struct TVector3 {
         return Math::SignBits( X ) | (Math::SignBits( Y )<<1) | (Math::SignBits( Z )<<2);
     }
 
-    TVector3 Clamp( T const & _Min, T const & _Max ) const {
-        return TVector3( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ), Math::Clamp( Z, _Min, _Max ) );
-    }
+    //TVector3 Clamp( T const & _Min, T const & _Max ) const {
+    //    return TVector3( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ), Math::Clamp( Z, _Min, _Max ) );
+    //}
 
-    TVector3 Clamp( TVector3 const & _Min, TVector3 const & _Max ) const {
-        return TVector3( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ), Math::Clamp( Z, _Min.Z, _Max.Z ) );
-    }
+    //TVector3 Clamp( TVector3 const & _Min, TVector3 const & _Max ) const {
+    //    return TVector3( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ), Math::Clamp( Z, _Min.Z, _Max.Z ) );
+    //}
 
-    TVector3 Saturate() const {
-        return Clamp( T( 0 ), T( 1 ) );
-    }
+    //TVector3 Saturate() const {
+    //    return Clamp( T( 0 ), T( 1 ) );
+    //}
 
     TVector3 Snap( T const &_SnapValue ) const {
         AN_ASSERT_( _SnapValue > 0, "Snap" );
@@ -1525,17 +1525,17 @@ struct TVector4 {
         return Math::SignBits( X ) | (Math::SignBits( Y )<<1) | (Math::SignBits( Z )<<2) | (Math::SignBits( W )<<3);
     }
 
-    TVector4 Clamp( T const & _Min, T const & _Max ) const {
-        return TVector4( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ), Math::Clamp( Z, _Min, _Max ), Math::Clamp( W, _Min, _Max ) );
-    }
+    //TVector4 Clamp( T const & _Min, T const & _Max ) const {
+    //    return TVector4( Math::Clamp( X, _Min, _Max ), Math::Clamp( Y, _Min, _Max ), Math::Clamp( Z, _Min, _Max ), Math::Clamp( W, _Min, _Max ) );
+    //}
 
-    TVector4 Clamp( TVector4 const & _Min, TVector4 const & _Max ) const {
-        return TVector4( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ), Math::Clamp( Z, _Min.Z, _Max.Z ), Math::Clamp( W, _Min.W, _Max.W ) );
-    }
+    //TVector4 Clamp( TVector4 const & _Min, TVector4 const & _Max ) const {
+    //    return TVector4( Math::Clamp( X, _Min.X, _Max.X ), Math::Clamp( Y, _Min.Y, _Max.Y ), Math::Clamp( Z, _Min.Z, _Max.Z ), Math::Clamp( W, _Min.W, _Max.W ) );
+    //}
 
-    TVector4 Saturate() const {
-        return Clamp( T( 0 ), T( 1 ) );
-    }
+    //TVector4 Saturate() const {
+    //    return Clamp( T( 0 ), T( 1 ) );
+    //}
 
     TVector4 Snap( T const &_SnapValue ) const {
         AN_ASSERT_( _SnapValue > 0, "Snap" );
@@ -1641,6 +1641,218 @@ struct TVector4 {
         return ZeroVec;
     }
 };
+
+namespace Math {
+
+AN_FORCEINLINE TVector2< float > Min( TVector2< float > const & a, TVector2< float > const & b ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_set_ps( a.X, a.Y, 0.0f, 0.0f ), _mm_set_ps( b.X, b.Y, 0.0f, 0.0f ) ) );
+
+    return TVector2< float >( result[0], result[1] );
+}
+
+AN_FORCEINLINE TVector3< float > Min( TVector3< float > const & a, TVector3< float > const & b ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_set_ps( a.X, a.Y, a.Z, 0.0f ), _mm_set_ps( b.X, b.Y, b.Z, 0.0f ) ) );
+
+    return TVector3< float >( result[0], result[1], result[2] );
+}
+
+AN_FORCEINLINE TVector4< float > Min( TVector4< float > const & a, TVector4< float > const & b ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_set_ps( a.X, a.Y, a.Z, a.W ), _mm_set_ps( b.X, b.Y, b.Z, b.W ) ) );
+
+    return TVector4< float >( result[0], result[1], result[2], result[3] );
+}
+
+AN_FORCEINLINE TVector2< float > Max( TVector2< float > const & a, TVector2< float > const & b ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_max_ps( _mm_set_ps( a.X, a.Y, 0.0f, 0.0f ), _mm_set_ps( b.X, b.Y, 0.0f, 0.0f ) ) );
+
+    return TVector2< float >( result[0], result[1] );
+}
+
+AN_FORCEINLINE TVector3< float > Max( TVector3< float > const & a, TVector3< float > const & b ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_max_ps( _mm_set_ps( a.X, a.Y, a.Z, 0.0f ), _mm_set_ps( b.X, b.Y, b.Z, 0.0f ) ) );
+
+    return TVector3< float >( result[0], result[1], result[2] );
+}
+
+AN_FORCEINLINE TVector4< float > Max( TVector4< float > const & a, TVector4< float > const & b ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_max_ps( _mm_set_ps( a.X, a.Y, a.Z, a.W ), _mm_set_ps( b.X, b.Y, b.Z, b.W ) ) );
+
+    return TVector4< float >( result[0], result[1], result[2], result[3] );
+}
+
+AN_FORCEINLINE TVector2< float > Clamp( TVector2< float > const & val, TVector2< float > const & minval, TVector2< float > const & maxval ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_max_ps( _mm_set_ps( val.X, val.Y, 0.0f, 0.0f ), _mm_set_ps( minval.X, minval.Y, 0.0f, 0.0f ) ), _mm_set_ps( maxval.X, maxval.Y, 0.0f, 0.0f ) ) );
+
+    return TVector2< float >( result[0], result[1] );
+}
+
+AN_FORCEINLINE TVector3< float > Clamp( TVector3< float > const & val, TVector3< float > const & minval, TVector3< float > const & maxval ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_max_ps( _mm_set_ps( val.X, val.Y, val.Z, 0.0f ), _mm_set_ps( minval.X, minval.Y, minval.Z, 0.0f ) ), _mm_set_ps( maxval.X, maxval.Y, maxval.Z, 0.0f ) ) );
+
+    return TVector3< float >( result[0], result[1], result[2] );
+}
+
+AN_FORCEINLINE TVector4< float > Clamp( TVector4< float > const & val, TVector4< float > const & minval, TVector4< float > const & maxval ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_max_ps( _mm_set_ps( val.X, val.Y, val.Z, val.W ), _mm_set_ps( minval.X, minval.Y, minval.Z, minval.W ) ), _mm_set_ps( maxval.X, maxval.Y, maxval.Z, maxval.W ) ) );
+
+    return TVector4< float >( result[0], result[1], result[2], result[3] );
+}
+
+AN_FORCEINLINE TVector2< float > Saturate( TVector2< float > const & val ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_max_ps( _mm_set_ps( val.X, val.Y, 0.0f, 0.0f ), _mm_setzero_ps() ), _mm_set_ps( 1.0f, 1.0f, 1.0f, 1.0f ) ) );
+
+    return TVector2< float >( result[0], result[1] );
+}
+
+AN_FORCEINLINE TVector3< float > Saturate( TVector3< float > const & val ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_max_ps( _mm_set_ps( val.X, val.Y, val.Z, 0.0f ), _mm_setzero_ps() ), _mm_set_ps( 1.0f, 1.0f, 1.0f, 1.0f ) ) );
+
+    return TVector3< float >( result[0], result[1], result[2] );
+}
+
+AN_FORCEINLINE TVector4< float > Saturate( TVector4< float > const & val ) {
+    alignas(16) float result[4];
+
+    _mm_storer_ps( result, _mm_min_ps( _mm_max_ps( _mm_set_ps( val.X, val.Y, val.Z, val.W ), _mm_setzero_ps() ), _mm_set_ps( 1.0f, 1.0f, 1.0f, 1.0f ) ) );
+
+    return TVector4< float >( result[0], result[1], result[2], result[3] );
+}
+
+AN_FORCEINLINE TVector2< double > Min( TVector2< double > const & a, TVector2< double > const & b ) {
+    alignas(16) double result[2];
+
+    _mm_storer_pd( result, _mm_min_pd( _mm_set_pd( a.X, a.Y ), _mm_set_pd( b.X, b.Y ) ) );
+
+    return TVector2< double >( result[0], result[1] );
+}
+
+AN_FORCEINLINE TVector3< double > Min( TVector3< double > const & a, TVector3< double > const & b ) {
+    alignas(16) double result[2];
+    double z;
+
+    _mm_storer_pd( result, _mm_min_pd( _mm_set_pd( a.X, a.Y ), _mm_set_pd( b.X, b.Y ) ) );
+    _mm_store_sd( &z, _mm_min_sd( _mm_set_sd( a.Z ), _mm_set_sd( b.Z ) ) );
+
+    return TVector3< double >( result[0], result[1], z );
+}
+
+AN_FORCEINLINE TVector4< double > Min( TVector4< double > const & a, TVector4< double > const & b ) {
+    alignas(16) double result1[2];
+    alignas(16) double result2[2];
+
+    _mm_storer_pd( result1, _mm_min_pd( _mm_set_pd( a.X, a.Y ), _mm_set_pd( b.X, b.Y ) ) );
+    _mm_storer_pd( result2, _mm_min_pd( _mm_set_pd( a.Z, a.W ), _mm_set_pd( b.Z, b.W ) ) );
+
+    return TVector4< double >( result1[0], result1[1], result2[0], result2[1] );
+}
+
+AN_FORCEINLINE TVector2< double > Max( TVector2< double > const & a, TVector2< double > const & b ) {
+    alignas(16) double result[2];
+
+    _mm_storer_pd( result, _mm_max_pd( _mm_set_pd( a.X, a.Y ), _mm_set_pd( b.X, b.Y ) ) );
+
+    return TVector2< double >( result[0], result[1] );
+}
+
+AN_FORCEINLINE TVector3< double > Max( TVector3< double > const & a, TVector3< double > const & b ) {
+    alignas(16) double result[2];
+    double z;
+
+    _mm_storer_pd( result, _mm_max_pd( _mm_set_pd( a.X, a.Y ), _mm_set_pd( b.X, b.Y ) ) );
+    _mm_store_sd( &z, _mm_max_sd( _mm_set_sd( a.Z ), _mm_set_sd( b.Z ) ) );
+
+    return TVector3< double >( result[0], result[1], z );
+}
+
+AN_FORCEINLINE TVector4< double > Max( TVector4< double > const & a, TVector4< double > const & b ) {
+    alignas(16) double result1[2];
+    alignas(16) double result2[2];
+
+    _mm_storer_pd( result1, _mm_max_pd( _mm_set_pd( a.X, a.Y ), _mm_set_pd( b.X, b.Y ) ) );
+    _mm_storer_pd( result2, _mm_max_pd( _mm_set_pd( a.Z, a.W ), _mm_set_pd( b.Z, b.W ) ) );
+
+    return TVector4< double >( result1[0], result1[1], result2[0], result2[1] );
+}
+
+AN_FORCEINLINE TVector2< double > Clamp( TVector2< double > const & val, TVector2< double > const & minval, TVector2< double > const & maxval ) {
+    alignas(16) double result[2];
+
+    _mm_storer_pd( result, _mm_min_pd( _mm_max_pd( _mm_set_pd( val.X, val.Y ), _mm_set_pd( minval.X, minval.Y ) ), _mm_set_pd( maxval.X, maxval.Y ) ) );
+
+    return TVector2< double >( result[0], result[1] );
+}
+
+AN_FORCEINLINE TVector3< double > Clamp( TVector3< double > const & val, TVector3< double > const & minval, TVector3< double > const & maxval ) {
+    alignas(16) double result[2];
+    double z;
+
+    _mm_storer_pd( result, _mm_min_pd( _mm_max_pd( _mm_set_pd( val.X, val.Y ), _mm_set_pd( minval.X, minval.Y ) ), _mm_set_pd( maxval.X, maxval.Y ) ) );
+    _mm_store_sd( &z, _mm_min_sd( _mm_max_sd( _mm_set_sd( val.Z ), _mm_set_sd( minval.Z ) ), _mm_set_sd( maxval.Z ) ) );
+
+    return TVector3< double >( result[0], result[1], z );
+}
+
+AN_FORCEINLINE TVector4< double > Clamp( TVector4< double > const & val, TVector4< double > const & minval, TVector4< double > const & maxval ) {
+    alignas(16) double result1[2];
+    alignas(16) double result2[2];
+
+    _mm_storer_pd( result1, _mm_min_pd( _mm_max_pd( _mm_set_pd( val.X, val.Y ), _mm_set_pd( minval.X, minval.Y ) ), _mm_set_pd( maxval.X, maxval.Y ) ) );
+    _mm_storer_pd( result2, _mm_min_pd( _mm_max_pd( _mm_set_pd( val.Z, val.W ), _mm_set_pd( minval.Z, minval.W ) ), _mm_set_pd( maxval.Z, maxval.W ) ) );
+
+    return TVector4< double >( result1[0], result1[1], result2[0], result2[1] );
+}
+
+AN_FORCEINLINE TVector2< double > Saturate( TVector2< double > const & val ) {
+    alignas(16) double result[2];
+
+    _mm_storer_pd( result, _mm_min_pd( _mm_max_pd( _mm_set_pd( val.X, val.Y ), _mm_setzero_pd() ), _mm_set_pd( 1.0, 1.0 ) ) );
+
+    return TVector2< double >( result[0], result[1] );
+}
+
+AN_FORCEINLINE TVector3< double > Saturate( TVector3< double > const & val ) {
+    alignas(16) double result[2];
+    double z;
+
+    _mm_storer_pd( result, _mm_min_pd( _mm_max_pd( _mm_set_pd( val.X, val.Y ), _mm_setzero_pd() ), _mm_set_pd( 1.0, 1.0 ) ) );
+    _mm_store_sd( &z, _mm_min_sd( _mm_max_sd( _mm_set_sd( val.Z ), _mm_setzero_pd() ), _mm_set_sd( 1.0 ) ) );
+
+    return TVector3< double >( result[0], result[1], z );
+}
+
+AN_FORCEINLINE TVector4< double > Saturate( TVector4< double > const & val ) {
+    alignas(16) double result1[2];
+    alignas(16) double result2[2];
+
+    _mm_storer_pd( result1, _mm_min_pd( _mm_max_pd( _mm_set_pd( val.X, val.Y ), _mm_setzero_pd() ), _mm_set_pd( 1.0, 1.0 ) ) );
+    _mm_storer_pd( result2, _mm_min_pd( _mm_max_pd( _mm_set_pd( val.Z, val.W ), _mm_setzero_pd() ), _mm_set_pd( 1.0, 1.0 ) ) );
+
+    return TVector4< double >( result1[0], result1[1], result2[0], result2[1] );
+}
+
+}
 
 using Float2 = TVector2< float >;
 using Float3 = TVector3< float >;

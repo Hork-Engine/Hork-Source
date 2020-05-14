@@ -51,22 +51,31 @@ SOFTWARE.
 #define STBI_WRITE_NO_STDIO
 #define STBIW_ZLIB_COMPRESS                 stbi_zlib_compress_override // Override compression method
 #define STBIW_CRC32(buffer,len)             Core::Crc32( Core::CRC32_INITIAL, buffer, len ) // Override crc32 method
+#define PNG_COMPRESSION_LEVEL               8
 
 // Miniz mz_compress2 provides better compression than default stb compression method
-static unsigned char * stbi_zlib_compress_override( unsigned char * data, int data_len, int * out_len, int quality )
+AN_FORCEINLINE unsigned char * stbi_zlib_compress_override( unsigned char * data, int data_len, int * out_len, int quality )
 {
+    //GLogger.Printf( "stbi_zlib_compress_override %d\n", quality );
+    //GLogger.Printf( "stbi_zlib_compress_override data_len %d quality %d\n", data_len, quality );
     size_t buflen = Core::ZMaxCompressedSize( data_len );
+    //GLogger.Printf( "stbi_zlib_compress_override buflen %d\n", buflen );
     unsigned char * buf = ( unsigned char * )STBIW_MALLOC( buflen );
     if ( buf == NULL )
     {
+        GLogger.Printf( "stbi_zlib_compress_override Malloc failed\n" );
         return NULL;
     }
-    if ( !Core::ZCompress( buf, &buflen, data, data_len, quality ) )
+    if ( !Core::ZCompress( buf, &buflen, data, data_len, PNG_COMPRESSION_LEVEL ) )
     {
+        GLogger.Printf( "stbi_zlib_compress_override ZCompress failed\n" );
         STBIW_FREE( buf );
         return NULL;
     }
     *out_len = buflen;
+    if ( buflen == 0 ) { // compiler bug workaround (MSVC, Release)
+        GLogger.Printf( "WritePNG: invalid compression\n" );
+    }
     return buf;
 }
 
@@ -78,6 +87,8 @@ static unsigned char * stbi_zlib_compress_override( unsigned char * data, int da
 #define STB_IMAGE_RESIZE_STATIC
 #define STBIR_MAX_CHANNELS                  4
 #include "stb/stb_image_resize.h"
+
+#define SUPPORT_EXR
 
 AImage::AImage() {
     pRawData = nullptr;
@@ -264,6 +275,134 @@ bool AImage::Load( const char * _Path, SImageMipmapConfig const * _MipmapGen, EI
     return Load( stream, _MipmapGen, _PixelFormat );
 }
 
+#ifdef SUPPORT_EXR
+
+#define TINYEXR_IMPLEMENTATION
+#define MINIZ_HEADER_FILE_ONLY
+#include "tinyexr/tinyexr.h"
+
+AN_FORCEINLINE static byte FloatToByte( const float & _Color ) {
+    return Math::Floor( Math::Saturate( _Color ) * 255.0f + 0.5f );
+}
+
+static void * LoadEXR( IBinaryStream & _Stream, int * w, int * h, int * channels, int desiredchannels, bool ldr ) {
+    AN_ASSERT( desiredchannels >= 0 && desiredchannels <= 4 );
+
+    long streamOffset = _Stream.Tell();
+    _Stream.SeekEnd( 0 );
+    long sizeInBytes = _Stream.Tell() - streamOffset;
+    void * memory = GHeapMemory.Alloc( sizeInBytes );
+    _Stream.SeekSet( streamOffset );
+    _Stream.ReadBuffer( memory, sizeInBytes );
+
+    float * data;
+    const char * err;
+
+    *channels = 0;
+
+    int r = LoadEXRFromMemory( &data, w, h, (unsigned char *)memory, sizeInBytes, &err );
+
+    GHeapMemory.Free( memory );
+
+    if ( r != TINYEXR_SUCCESS ) {
+        _Stream.SeekSet( streamOffset );
+        return nullptr;
+    }
+
+    int numChannels = 4;
+
+    *channels = numChannels;
+
+    void * result = nullptr;
+
+    int pixcount = (*w) * (*h) * numChannels;
+
+    if ( ldr ) {
+        if ( desiredchannels != 0 && desiredchannels != numChannels ) {
+            result = STBI_MALLOC( (*w) * (*h) * desiredchannels );
+            byte * pResult = (byte *)result;
+            if ( desiredchannels == 1 ) {
+                for ( int i = 0 ; i < pixcount ; i += numChannels ) {
+                    *pResult++ = LinearToSRGB_UChar( data[i] );
+                }
+            } else if ( desiredchannels == 2 ) {
+                for ( int i = 0 ; i < pixcount ; i += numChannels ) {
+                    *pResult++ = LinearToSRGB_UChar( data[i] );
+                    *pResult++ = numChannels > 1 ? LinearToSRGB_UChar( data[i+1] ) : 0;
+                }
+            } else if ( desiredchannels == 3 ) {
+                for ( int i = 0 ; i < pixcount ; i += numChannels ) {
+                    *pResult++ = LinearToSRGB_UChar( data[i] );
+                    *pResult++ = numChannels > 1 ? LinearToSRGB_UChar( data[i+1] ) : 0;
+                    *pResult++ = numChannels > 2 ? LinearToSRGB_UChar( data[i+2] ) : 0;
+                }
+            } else {
+                for ( int i = 0 ; i < pixcount ; i += numChannels ) {
+                    *pResult++ = LinearToSRGB_UChar( data[i] );
+                    *pResult++ = numChannels > 1 ? LinearToSRGB_UChar( data[i+1] ) : 0;
+                    *pResult++ = numChannels > 2 ? LinearToSRGB_UChar( data[i+2] ) : 0;
+                    *pResult++ = numChannels > 3 ? FloatToByte( data[i+3] ) * 255 : 255;
+                }
+            }
+        } else {
+            result = STBI_MALLOC( (*w) * (*h) * numChannels );
+
+            int numColorChannels = Math::Min( numChannels, 3 );
+
+            byte * pResult = (byte *)result;
+            for ( int i = 0 ; i < pixcount ; i += numChannels, pResult += numChannels ) {
+                for ( int c = 0 ; c < numColorChannels ; c++ ) {
+                    pResult[c] = LinearToSRGB_UChar( data[i+c] );
+                }
+            }
+
+            if ( numChannels == 4 ) {
+                pResult = (byte *)result;
+                for ( int i = 0 ; i < pixcount ; i += numChannels, pResult += numChannels ) {
+                    pResult[3] = FloatToByte( data[i+3] );
+                }
+            }
+        }
+    } else {
+        if ( desiredchannels != 0 && desiredchannels != numChannels ) {
+            result = STBI_MALLOC( (*w) * (*h) * desiredchannels * sizeof( float ) );
+            float * pResult = (float *)result;
+            if ( desiredchannels == 1 ) {
+                for ( int i = 0 ; i < pixcount ; i += numChannels ) {
+                    *pResult++ = data[i];
+                }
+            } else if ( desiredchannels == 2 ) {
+                for ( int i = 0 ; i < pixcount ; i += numChannels ) {
+                    *pResult++ = data[i];
+                    *pResult++ = numChannels > 1 ? data[i+1] : 0;
+                }
+            } else if ( desiredchannels == 3 ) {
+                for ( int i = 0 ; i < pixcount ; i += numChannels ) {
+                    *pResult++ = data[i];
+                    *pResult++ = numChannels > 1 ? data[i+1] : 0;
+                    *pResult++ = numChannels > 2 ? data[i+2] : 0;
+                }
+            } else {
+                for ( int i = 0 ; i < pixcount ; i += numChannels ) {
+                    *pResult++ = data[i];
+                    *pResult++ = numChannels > 1 ? data[i+1] : 0;
+                    *pResult++ = numChannels > 2 ? data[i+2] : 0;
+                    *pResult++ = numChannels > 3 ? data[i+3] : 1;
+                }
+            }
+        } else {
+            result = STBI_MALLOC( (*w) * (*h) * numChannels * sizeof( float ) );
+            memcpy( result, data, (*w) * (*h) * numChannels * sizeof( float ) );
+        }
+    }
+
+    free( data ); // tinyexr uses standard malloc/free
+
+    return result;
+}
+
+#endif
+
 bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat ) {
     const stbi_io_callbacks callbacks = { Stbi_Read, Stbi_Skip, Stbi_Eof };
     int w, h, numChannels, numRequiredChannels;
@@ -272,6 +411,8 @@ bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGe
 
     numRequiredChannels = GetNumChannels( _PixelFormat );
 
+    long streamOffset = _Stream.Tell();
+
     if ( bHDRI ) {
         source = stbi_loadf_from_callbacks( &callbacks, &_Stream, &w, &h, &numChannels, numRequiredChannels );
     } else {
@@ -279,8 +420,17 @@ bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGe
     }
 
     if ( !source ) {
-        GLogger.Printf( "AImage::Load: couldn't load %s\n", _Stream.GetFileName() );
-        return false;
+        _Stream.SeekSet( streamOffset );
+
+#ifdef SUPPORT_EXR
+        source = LoadEXR( _Stream, &w, &h, &numChannels, numRequiredChannels, !bHDRI );
+#endif
+        if ( !source ) {
+            _Stream.SeekSet( streamOffset );
+
+            GLogger.Printf( "AImage::Load: couldn't load %s\n", _Stream.GetFileName() );
+            return false;
+        }
     }
 
     numChannels = numRequiredChannels ? numRequiredChannels : numChannels;
@@ -442,13 +592,10 @@ void AImage::FromRawData( const void * _Source, int _Width, int _Height, SImageM
 
     if ( bHalf ) {
         int imageSize = 0;
-        for ( int i = 0 ; ; i++ ) {
+        for ( int i = 0 ; i < NumLods ; i++ ) {
             int w = Math::Max( 1, Width >> i );
             int h = Math::Max( 1, Height >> i );
             imageSize += w * h;
-            if ( w == 1 && h == 1 ) {
-                break;
-            }
         }
         imageSize *= numChannels;
 
@@ -466,23 +613,6 @@ void AImage::Free() {
     Height = 0;
     NumLods = 0;
     PixelFormat = IMAGE_PF_AUTO_GAMMA2;
-}
-
-AN_FORCEINLINE float ClampByte( const float & _Value ) {
-    return Math::Clamp( _Value, 0.0f, 255.0f );
-}
-
-AN_FORCEINLINE float ByteToFloat( const byte & _Color ) {
-    return _Color / 255.0f;
-}
-
-AN_FORCEINLINE byte FloatToByte( const float & _Color ) {
-    //return ClampByte( _Color * 255.0f );  // round to small
-    return ClampByte( Math::Floor( _Color * 255.0f + 0.5f ) ); // round to nearest
-}
-
-AN_FORCEINLINE byte LinearToSRGB_Byte( const float & _lRGB ) {
-    return FloatToByte( LinearToSRGB( _lRGB ) );
 }
 
 static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth, int _NewHeight, int _NumChannels, int _AlphaChannel, bool _LinearSpace, const byte * _SrcData, byte * _DstData ) {
@@ -534,14 +664,14 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
                         avg = ( a + b + c + d ) * 0.25f;
                     }
 
-                    _DstData[ idx * Bpp + ch ] = ClampByte( Math::Floor( avg + 0.5f ) );
+                    _DstData[ idx * Bpp + ch ] = Math::Floor( Math::Clamp( avg, 0.0f, 255.0f ) + 0.5f );
                 } else {
                     if ( _NewWidth == _CurWidth ) {
                         x = i;
                         y = j << 1;
 
-                        a = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
-                        c = LinearFromSRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x)*Bpp + ch ] ) );
+                        a = LinearFromSRGB_UChar( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] );
+                        c = LinearFromSRGB_UChar( _SrcData[ ((y + 1) * _CurWidth + x)*Bpp + ch ] );
 
                         avg = ( a + c ) * 0.5f;
 
@@ -549,8 +679,8 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
                         x = i << 1;
                         y = j;
 
-                        a = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
-                        b = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x + 1)*Bpp + ch ] ) );
+                        a = LinearFromSRGB_UChar( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] );
+                        b = LinearFromSRGB_UChar( _SrcData[ (y * _CurWidth + x + 1)*Bpp + ch ] );
 
                         avg = ( a + b ) * 0.5f;
 
@@ -558,15 +688,15 @@ static void DownscaleSimpleAverage( int _CurWidth, int _CurHeight, int _NewWidth
                         x = i << 1;
                         y = j << 1;
 
-                        a = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] ) );
-                        b = LinearFromSRGB( ByteToFloat( _SrcData[ (y * _CurWidth + x + 1)*Bpp + ch ] ) );
-                        c = LinearFromSRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x)*Bpp + ch ] ) );
-                        d = LinearFromSRGB( ByteToFloat( _SrcData[ ((y + 1) * _CurWidth + x + 1)*Bpp + ch ] ) );
+                        a = LinearFromSRGB_UChar( _SrcData[ (y * _CurWidth + x)*Bpp + ch ] );
+                        b = LinearFromSRGB_UChar( _SrcData[ (y * _CurWidth + x + 1)*Bpp + ch ] );
+                        c = LinearFromSRGB_UChar( _SrcData[ ((y + 1) * _CurWidth + x)*Bpp + ch ] );
+                        d = LinearFromSRGB_UChar( _SrcData[ ((y + 1) * _CurWidth + x + 1)*Bpp + ch ] );
 
                         avg = ( a + b + c + d ) * 0.25f;
                     }
 
-                    _DstData[ idx * Bpp + ch ] = LinearToSRGB_Byte( avg );
+                    _DstData[ idx * Bpp + ch ] = LinearToSRGB_UChar( avg );
                 }
             }
         }
@@ -827,7 +957,7 @@ void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
             g *= fOverbright;
             b *= fOverbright;
 #if 1
-            float m = Math::Max( r, g, b );
+            float m = Math::Max3( r, g, b );
             if ( m > 1.0f ) {
                 m = 1.0f / m;
                 r *= m;
@@ -841,9 +971,9 @@ void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
 #endif
         }
 
-        dst[0] = LinearToSRGB_Byte( r );
-        dst[1] = LinearToSRGB_Byte( g );
-        dst[2] = LinearToSRGB_Byte( b );
+        dst[0] = LinearToSRGB_UChar( r );
+        dst[1] = LinearToSRGB_UChar( g );
+        dst[2] = LinearToSRGB_UChar( b );
         dst[3] = bReplaceAlpha ? replaceAlpha : FloatToByte( src[3] );
     }
 }
