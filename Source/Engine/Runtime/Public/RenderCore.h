@@ -44,11 +44,8 @@ constexpr int MAX_RENDER_VIEWS                      = 16;
 /** Max skeleton joints */
 constexpr int MAX_SKINNED_MESH_JOINTS               = 256;
 
-/** Max skinned meshes per frame */
-//constexpr int MAX_SKINNED_MESH_INSTANCES_PER_FRAME  = 256;
-
 /** Max textures per material */
-constexpr int MAX_MATERIAL_TEXTURES                 = 12; // 3 textures reserved for lightmap, light clusterlookup, light cluster items, shadow map
+constexpr int MAX_MATERIAL_TEXTURES                 = 11; // Reserved texture slots for AOLookup, ClusterItemTBO, ClusterLookup, ShadowMapShadow, Lightmap
 
 /** Max cascades per light */
 constexpr int MAX_SHADOW_CASCADES = 4;

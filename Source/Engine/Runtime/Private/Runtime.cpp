@@ -100,6 +100,41 @@ ARuntime::ARuntime() {
     ProcessAttribute = 0;
 }
 
+void ARuntime::LoadConfigFile() {
+    AString configFile = GetRootPath() + "config.cfg";
+    AFileStream f;
+    if ( f.OpenRead( configFile ) ) {
+        AString data;
+
+        data.FromFile( f );
+
+        ARuntimeCommandProcessor cmdProcessor;
+
+        cmdProcessor.Add( data.CStr() );
+
+        class CommandContext : public IRuntimeCommandContext {
+        public:
+            void ExecuteCommand( ARuntimeCommandProcessor const & _Proc ) override {
+                AN_ASSERT( _Proc.GetArgsCount() > 0 );
+
+                const char * name = _Proc.GetArg( 0 );
+                ARuntimeVariable * var;
+                if ( nullptr != (var = ARuntimeVariable::FindVariable( name )) ) {
+                    if ( _Proc.GetArgsCount() < 2 ) {
+                        var->Print();
+                    } else {
+                        var->SetString( _Proc.GetArg( 1 ) );
+                    }
+                 }
+            }
+        };
+
+        CommandContext context;
+
+        cmdProcessor.Execute( context );
+    }
+}
+
 void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
 
     // Synchronize SDL ticks with our start time
@@ -227,40 +262,7 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
     Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
     Core::ZeroMem( JoystickAdded, sizeof( JoystickAdded ) );
 
-    {
-        AString configFile = GetRootPath() + "config.cfg";
-        AFileStream f;
-        if ( f.OpenRead( configFile ) ) {
-            AString data;
-
-            data.FromFile( f );
-
-            ARuntimeCommandProcessor cmdProcessor;
-
-            cmdProcessor.Add( data.CStr() );
-
-            class CommandContext : public IRuntimeCommandContext {
-            public:
-                void ExecuteCommand( ARuntimeCommandProcessor const & _Proc ) override {
-                    AN_ASSERT( _Proc.GetArgsCount() > 0 );
-
-                    const char * name = _Proc.GetArg( 0 );
-                    ARuntimeVariable * var;
-                    if ( nullptr != (var = ARuntimeVariable::FindVariable( name )) ) {
-                        if ( _Proc.GetArgsCount() < 2 ) {
-                            var->Print();
-                        } else {
-                            var->SetString( _Proc.GetArg( 1 ) );
-                        }
-                     }
-                }
-            };
-
-            CommandContext context;
-
-            cmdProcessor.Execute( context );
-        }
-    }
+    LoadConfigFile();
 
     SVideoMode desiredMode = {};
     desiredMode.Width = RVVidWidth.GetInteger();
@@ -360,7 +362,7 @@ void AssertFunction( const char * _File, int _Line, const char * _Function, cons
                     "============================\n",
                     _File, _Line, _Function, _Assertion, _Comment ? _Comment : "", _Comment ? "\n" : "" );
 
-    SDL_SetRelativeMouseMode( SDL_FALSE );
+    SDL_SetRelativeMouseMode( SDL_FALSE ); // FIXME: Is it threadsafe?
 
 #ifdef AN_OS_WIN32
     DebugBreak();
@@ -1409,10 +1411,10 @@ void ARuntime::NewFrame() {
 #endif
 }
 
-// NOTE: Workaround of SDL bug with false mouse motion when a window gain keyboard focus.
-static bool bIgnoreFalseMouseMotionHack = false;
-
 void ARuntime::PollEvents() {
+    // NOTE: Workaround of SDL bug with false mouse motion when a window gain keyboard focus.
+    static bool bIgnoreFalseMouseMotionHack = false;
+
     SDL_Event event;
     while ( SDL_PollEvent( &event ) ) {
 
@@ -2051,51 +2053,3 @@ bool ARuntime::IsCursorEnabled() {
 void ARuntime::GetCursorPosition( int * _X, int * _Y ) {
     (void)SDL_GetMouseState( _X, _Y );
 }
-
-#if 0
-void ARuntime::SetMonitorGammaCurve( int _Handle, float _Gamma ) {
-#if 0
-    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
-    if ( !physMonitor ) {
-        return;
-    }
-
-    if ( _Gamma <= 0.0f ) {
-        return;
-    }
-
-    const double scale = 1.0 / (physMonitor->GammaRampSize - 1);
-    const double InvGamma = 1.0 / _Gamma;
-
-    for( int i = 0 ; i < physMonitor->GammaRampSize ; i++ ) {
-        double val = StdPow( i * scale, InvGamma ) * 65535.0 + 0.5;
-        if ( val > 65535.0 ) val = 65535.0;
-        physMonitor->Internal.GammaRamp[i] =
-        physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize] =
-        physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize * 2] = (unsigned short)val;
-    }
-
-    GMonitorManager.UpdateMonitorGamma( physMonitor );
-#endif
-}
-
-void ARuntime::SetMonitorGamma( int _Handle, float _Gamma ) {
-#if 0
-    SPhysicalMonitor * physMonitor = const_cast< SPhysicalMonitor * >( GetMonitor( _Handle ) );
-    if ( !physMonitor ) {
-        return;
-    }
-
-    int brightness = _Gamma > 0.0f ? _Gamma * 255.0f : 0.0f;
-    for( int i = 0 ; i < physMonitor->GammaRampSize ; i++ ) {
-        int val = i * (brightness + 1);
-        if ( val > 0xffff ) val = 0xffff;
-        physMonitor->Internal.GammaRamp[i] = val;
-        physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize] = val;
-        physMonitor->Internal.GammaRamp[i + physMonitor->GammaRampSize * 2] = val;
-    }
-
-    GMonitorManager.UpdateMonitorGamma( physMonitor );
-#endif
-}
-#endif

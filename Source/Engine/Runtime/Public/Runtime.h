@@ -376,8 +376,6 @@ private:
 
     void DeinitializeRenderer();
 
-    void SetVideoMode( SVideoMode const & _DesiredMode );
-
     void EmergencyExit();
 
     void DisplayCriticalMessage( const char * _Message );
@@ -391,6 +389,10 @@ private:
     void DeinitializeMemory();
 
     void InitializeWorkingDirectory();
+
+    void LoadConfigFile();
+
+    void SetVideoMode( SVideoMode const & _DesiredMode );
 
     friend void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
     friend void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
