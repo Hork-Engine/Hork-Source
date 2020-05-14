@@ -231,6 +231,19 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         return;
     }
 
+#if 0
+    if ( !Core::Stricmp( _Path, "/Default/Textures/BlackCubemap" ) ) {
+        byte data[1] = {};
+
+        InitializeCubemap( TEXTURE_PF_R8, 1, 1 );
+
+        for ( int face = 0 ; face < 6 ; face++ ) {
+            WriteTextureDataCubemap( 0, 0, 1, 1, face, 0, data );
+        }
+        return;
+    }
+#endif
+
     if ( !Core::Stricmp( _Path, "/Default/Textures/LUT1" )
         || !Core::Stricmp( _Path, "/Default/Textures/Default3D" ) ) {
 

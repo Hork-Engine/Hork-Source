@@ -32,12 +32,15 @@ SOFTWARE.
 
 #include "BaseLightComponent.h"
 
-class ADirectionalLightComponent : public ABaseLightComponent {
-    AN_COMPONENT( ADirectionalLightComponent, ABaseLightComponent )
+class ADirectionalLightComponent : public ALightComponent {
+    AN_COMPONENT( ADirectionalLightComponent, ALightComponent )
 
     friend class ARenderWorld;
 
 public:
+    void SetIlluminance( float IlluminanceInLux );
+    float GetIlluminance() const;
+
     void SetDirection( Float3 const & _Direction );
     Float3 GetDirection() const;
 
@@ -46,6 +49,8 @@ public:
 
     void SetMaxShadowCascades( int _MaxShadowCascades );
     int GetMaxShadowCascades() const;
+
+    Float4 const & GetEffectiveColor() const;
 
     ADirectionalLightComponent * GetNext() { return Next; }
     ADirectionalLightComponent * GetPrev() { return Prev; }
@@ -59,10 +64,12 @@ protected:
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
 private:
-    int                     MaxShadowCascades;
-//    mutable Float4x4        LightViewMatrix;
-//    mutable Float4x4        ShadowMatrix;
-//    mutable bool            bShadowMatrixDirty;
+    mutable Float4 EffectiveColor;
+    float IlluminanceInLux;
+    int MaxShadowCascades;
+//    mutable Float4x4 LightViewMatrix;
+//    mutable Float4x4 ShadowMatrix;
+//    mutable bool bShadowMatrixDirty;
     ADirectionalLightComponent * Next;
     ADirectionalLightComponent * Prev;
 };

@@ -50,7 +50,7 @@ public:
 
     bool bDrawDebug = false;
 
-    bool bVignetteEnabled = true;
+    bool bVignetteEnabled = false;
     Float4 VignetteColorIntensity = Float4( 0,0,0, 0.4f );        // rgb, intensity
     float VignetteOuterRadiusSqr = 0.7f*0.7f;
     float VignetteInnerRadiusSqr = 0.6f*0.6f;

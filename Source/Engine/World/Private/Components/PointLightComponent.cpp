@@ -159,7 +159,7 @@ void APointLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLig
     Light.Position = Float3( InViewMatrix * GetWorldPosition() );
     Light.OuterRadius = OuterRadius;
     Light.InnerRadius = Math::Min( InnerRadius, OuterRadius );
-    Light.Color = GetEffectiveColor();
+    Light.Color = GetEffectiveColor( -1.0f );
     Light.RenderMask = ~0u;//RenderMask;
     Light.LightType = CLUSTER_LIGHT_POINT;
 }

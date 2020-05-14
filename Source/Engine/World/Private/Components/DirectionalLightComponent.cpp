@@ -32,7 +32,8 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 
-constexpr float DEFAULT_MAX_SHADOW_CASCADES = 4;
+static const float DEFAULT_MAX_SHADOW_CASCADES = 4;
+static const float DEFAULT_ILLUMINANCE_IN_LUX = 110000.0f;
 
 ARuntimeVariable RVDrawDirectionalLights( _CTS( "DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
 
@@ -40,6 +41,17 @@ AN_CLASS_META( ADirectionalLightComponent )
 
 ADirectionalLightComponent::ADirectionalLightComponent() {
     MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
+    IlluminanceInLux = DEFAULT_ILLUMINANCE_IN_LUX;
+    EffectiveColor = Float4(0.0f);
+}
+
+void ADirectionalLightComponent::SetIlluminance( float _IlluminanceInLux ) {
+    IlluminanceInLux = _IlluminanceInLux;
+    bEffectiveColorDirty = true;
+}
+
+float ADirectionalLightComponent::GetIlluminance() const {
+    return IlluminanceInLux;
 }
 
 void ADirectionalLightComponent::InitializeComponent() {
@@ -153,6 +165,22 @@ const Float4x4 & ADirectionalLightComponent::GetLightViewMatrix() const {
     return LightViewMatrix;
 }
 #endif
+
+Float4 const & ADirectionalLightComponent::GetEffectiveColor() const {
+    if ( bEffectiveColorDirty ) {
+        const float EnergyUnitScale = 1.0f / 100.0f / 100.0f;
+
+        float energy = IlluminanceInLux * EnergyUnitScale * GetAnimationBrightness();
+
+        AColor4 temperatureColor;
+        temperatureColor.SetTemperature( GetTemperature() );
+
+        *(Float3 *)&EffectiveColor = GetColor() * temperatureColor.GetRGB() * energy;
+
+        bEffectiveColorDirty = false;
+    }
+    return EffectiveColor;
+}
 
 void ADirectionalLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );

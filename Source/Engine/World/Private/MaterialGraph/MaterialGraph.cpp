@@ -1649,7 +1649,7 @@ void MGSaturate::Compute( AMaterialBuildContext & _Context ) {
     if ( connectionValue && Value->ConnectedBlock()->Build( _Context ) )
     {
         Result->Type = connectionValue->Type;
-        _Context.GenerateSourceCode( Result, "builtin_saturate( " + connectionValue->Expression + " )", true );
+        _Context.GenerateSourceCode( Result, "saturate( " + connectionValue->Expression + " )", true );
     }
     else
     {

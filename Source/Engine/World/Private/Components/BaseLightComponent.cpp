@@ -31,34 +31,27 @@ SOFTWARE.
 #include <World/Public/Components/PointLightComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
-#include "TemperatureToColor.h"
 
-constexpr float DEFAULT_AMBIENT_INTENSITY   = 1.0f;
-constexpr float DEFAULT_TEMPERATURE         = 6590.0f;
-constexpr float DEFAULT_LUMENS              = 3000.0f;
-constexpr Float3 DEFAULT_COLOR(1.0f);
+static const float DEFAULT_TEMPERATURE = 6590.0f;
+static const float DEFAULT_LUMENS = 3000.0f;
+static const Float3 DEFAULT_COLOR( 1.0f );
 
-AN_CLASS_META( ABaseLightComponent )
+AN_CLASS_META( ALightComponent )
 
-constexpr float STemperatureToColor::MIN_TEMPERATURE;
-constexpr float STemperatureToColor::MAX_TEMPERATURE;
-
-ABaseLightComponent::ABaseLightComponent() {
+ALightComponent::ALightComponent() {
     Color = DEFAULT_COLOR;
     Temperature = DEFAULT_TEMPERATURE;
-    Lumens = DEFAULT_LUMENS;
-    EffectiveColor = Float4(0.0f,0.0f,0.0f,DEFAULT_AMBIENT_INTENSITY);
     bEffectiveColorDirty = true;
     bCastShadow = false;
     bEnabled = true;
     AnimationBrightness = 1;
 }
 
-void ABaseLightComponent::SetEnabled( bool _Enabled ) {
+void ALightComponent::SetEnabled( bool _Enabled ) {
     bEnabled = _Enabled;
 }
 
-void ABaseLightComponent::SetAnimation( const char * _Pattern, float _Speed, float _Quantizer ) {
+void ALightComponent::SetAnimation( const char * _Pattern, float _Speed, float _Quantizer ) {
     AAnimationPattern * anim = NewObject< AAnimationPattern >();
     anim->Pattern = _Pattern;
     anim->Speed = _Speed;
@@ -66,7 +59,7 @@ void ABaseLightComponent::SetAnimation( const char * _Pattern, float _Speed, flo
     SetAnimation( anim );
 }
 
-void ABaseLightComponent::SetAnimation( AAnimationPattern * _Animation ) {
+void ALightComponent::SetAnimation( AAnimationPattern * _Animation ) {
     if ( IsSame( Animation, _Animation ) ) {
         return;
     }
@@ -84,59 +77,32 @@ void ABaseLightComponent::SetAnimation( AAnimationPattern * _Animation ) {
     bEffectiveColorDirty = true;
 }
 
-void ABaseLightComponent::SetColor( Float3 const & _Color ) {
+void ALightComponent::SetColor( Float3 const & _Color ) {
     Color = _Color;
     bEffectiveColorDirty = true;
 }
 
-void ABaseLightComponent::SetColor( float _R, float _G, float _B ) {
+void ALightComponent::SetColor( float _R, float _G, float _B ) {
     Color.X = _R;
     Color.Y = _G;
     Color.Z = _B;
     bEffectiveColorDirty = true;
 }
 
-Float3 const & ABaseLightComponent::GetColor() const {
+Float3 const & ALightComponent::GetColor() const {
     return Color;
 }
 
-Float4 const & ABaseLightComponent::GetEffectiveColor() const {
-    if ( bEffectiveColorDirty ) {
-        float energy = STemperatureToColor::GetLightEnergyFromLumens( Lumens );
-        energy *= AnimationBrightness;
-        *(Float3 *)&EffectiveColor = Color * STemperatureToColor::GetRGBFromTemperature( Temperature ) * energy;
-        bEffectiveColorDirty = false;
-    }
-    return EffectiveColor;
-}
-
-void ABaseLightComponent::SetTemperature( float _Temperature ) {
-    Temperature = Math::Clamp( _Temperature, STemperatureToColor::MIN_TEMPERATURE, STemperatureToColor::MAX_TEMPERATURE );
+void ALightComponent::SetTemperature( float _Temperature ) {
+    Temperature = _Temperature;
     bEffectiveColorDirty = true;
 }
 
-float ABaseLightComponent::GetTemperature() const {
+float ALightComponent::GetTemperature() const {
     return Temperature;
 }
 
-void ABaseLightComponent::SetLumens( float _Lumens ) {
-    Lumens = Math::Max( 0.0f, _Lumens );
-    bEffectiveColorDirty = true;
-}
-
-float ABaseLightComponent::GetLumens() const {
-    return Lumens;
-}
-
-void ABaseLightComponent::SetAmbientIntensity( float _Intensity ) {
-    EffectiveColor.W = Math::Max( 0.1f, _Intensity );
-}
-
-float ABaseLightComponent::GetAmbientIntensity() const {
-    return EffectiveColor.W;
-}
-
-void ABaseLightComponent::TickComponent( float _TimeStep ) {
+void ALightComponent::TickComponent( float _TimeStep ) {
     if ( !bEnabled ) {
         return;
     }
@@ -148,6 +114,42 @@ void ABaseLightComponent::TickComponent( float _TimeStep ) {
     bEffectiveColorDirty = true;
 }
 
-void ABaseLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) {
+AN_CLASS_META( APunctualLightComponent )
+
+APunctualLightComponent::APunctualLightComponent() {
+    Lumens = DEFAULT_LUMENS;
+    EffectiveColor = Float4( 0.0f );
+}
+
+Float4 const & APunctualLightComponent::GetEffectiveColor( float CosHalfConeAngle ) const {
+    if ( bEffectiveColorDirty ) {
+        //const float EnergyUnitScale = 100.0f * 100.0f / 16.0f;
+        const float EnergyUnitScale = 1.0f / 16.0f;
+        //const float CandelasToEnergy = EnergyUnitScale;
+        const float LumensToEnergy = EnergyUnitScale / Math::_2PI / (1.0f - CosHalfConeAngle);
+
+        float energy = Lumens * LumensToEnergy;
+        energy *= GetAnimationBrightness();
+
+        AColor4 temperatureColor;
+        temperatureColor.SetTemperature( GetTemperature() );
+
+        *(Float3 *)&EffectiveColor = GetColor() * temperatureColor.GetRGB() * energy;
+
+        bEffectiveColorDirty = false;
+    }
+    return EffectiveColor;
+}
+
+void APunctualLightComponent::SetLumens( float _Lumens ) {
+    Lumens = Math::Max( 0.0f, _Lumens );
+    bEffectiveColorDirty = true;
+}
+
+float APunctualLightComponent::GetLumens() const {
+    return Lumens;
+}
+
+void APunctualLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) {
 
 }

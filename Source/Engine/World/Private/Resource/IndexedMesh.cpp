@@ -2636,13 +2636,13 @@ void ATreeAABB::InitializeTriangleSoup( SMeshVertex const * _Vertices, unsigned 
         SPrimitiveBounds & primitive = build.Primitives[ 0 ][ primitiveIndex ];
         primitive.PrimitiveIndex = i;//primitiveIndex * 3; // FIXME *3
 
-        primitive.Bounds.Mins.X = Math::Min( v0.X, v1.X, v2.X );
-        primitive.Bounds.Mins.Y = Math::Min( v0.Y, v1.Y, v2.Y );
-        primitive.Bounds.Mins.Z = Math::Min( v0.Z, v1.Z, v2.Z );
+        primitive.Bounds.Mins.X = Math::Min3( v0.X, v1.X, v2.X );
+        primitive.Bounds.Mins.Y = Math::Min3( v0.Y, v1.Y, v2.Y );
+        primitive.Bounds.Mins.Z = Math::Min3( v0.Z, v1.Z, v2.Z );
 
-        primitive.Bounds.Maxs.X = Math::Max( v0.X, v1.X, v2.X );
-        primitive.Bounds.Maxs.Y = Math::Max( v0.Y, v1.Y, v2.Y );
-        primitive.Bounds.Maxs.Z = Math::Max( v0.Z, v1.Z, v2.Z );
+        primitive.Bounds.Maxs.X = Math::Max3( v0.X, v1.X, v2.X );
+        primitive.Bounds.Maxs.Y = Math::Max3( v0.Y, v1.Y, v2.Y );
+        primitive.Bounds.Maxs.Z = Math::Max3( v0.Z, v1.Z, v2.Z );
     }
 
     primitiveIndex = 0;

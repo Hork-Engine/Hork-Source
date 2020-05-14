@@ -33,8 +33,8 @@ SOFTWARE.
 #include "BaseLightComponent.h"
 #include <World/Public/Level.h>
 
-class ANGIE_API APointLightComponent : public ABaseLightComponent {
-    AN_COMPONENT( APointLightComponent, ABaseLightComponent )
+class ANGIE_API APointLightComponent : public APunctualLightComponent {
+    AN_COMPONENT( APointLightComponent, APunctualLightComponent )
 
 public:
     /** Rendering group to filter lights during rendering */

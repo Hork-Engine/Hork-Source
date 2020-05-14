@@ -34,8 +34,8 @@ SOFTWARE.
 #include <World/Public/Level.h>
 
 // TODO: Merge spot and point light to one class
-class ASpotLightComponent : public ABaseLightComponent {
-    AN_COMPONENT( ASpotLightComponent, ABaseLightComponent )
+class ASpotLightComponent : public APunctualLightComponent {
+    AN_COMPONENT( ASpotLightComponent, APunctualLightComponent )
 
 public:
     /** Rendering group to filter lights during rendering */
@@ -90,6 +90,8 @@ private:
     float OuterRadius;
     float InnerConeAngle;
     float OuterConeAngle;
+    float CosHalfInnerConeAngle;
+    float CosHalfOuterConeAngle;
     float SpotExponent;
 
     SPrimitiveDef Primitive;

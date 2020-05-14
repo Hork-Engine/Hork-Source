@@ -32,11 +32,12 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 
-constexpr float DEFAULT_INNER_RADIUS = 0.5f;
-constexpr float DEFAULT_OUTER_RADIUS = 1.0f;
-constexpr float DEFAULT_INNER_CONE_ANGLE = 30.0f;
-constexpr float DEFAULT_OUTER_CONE_ANGLE = 35.0f;
-constexpr float DEFAULT_SPOT_EXPONENT = 1.0f;
+static const float DEFAULT_INNER_RADIUS = 0.5f;
+static const float DEFAULT_OUTER_RADIUS = 1.0f;
+static const float DEFAULT_INNER_CONE_ANGLE = 30.0f;
+static const float DEFAULT_OUTER_CONE_ANGLE = 35.0f;
+static const float DEFAULT_SPOT_EXPONENT = 1.0f;
+static const float MIN_CONE_ANGLE = 1.0f;
 
 ARuntimeVariable RVDrawSpotLights( _CTS( "DrawSpotLights" ), _CTS( "0" ), VAR_CHEAT );
 
@@ -47,6 +48,8 @@ ASpotLightComponent::ASpotLightComponent() {
     OuterRadius = DEFAULT_OUTER_RADIUS;
     InnerConeAngle = DEFAULT_INNER_CONE_ANGLE;
     OuterConeAngle = DEFAULT_OUTER_CONE_ANGLE;
+    CosHalfInnerConeAngle = Math::Cos( Math::Radians( InnerConeAngle * 0.5f ) );
+    CosHalfOuterConeAngle = Math::Cos( Math::Radians( OuterConeAngle * 0.5f ) );
     SpotExponent = DEFAULT_SPOT_EXPONENT;
 
     Primitive.Owner = this;
@@ -107,7 +110,7 @@ bool ASpotLightComponent::IsMovable() const {
 }
 
 void ASpotLightComponent::SetInnerRadius( float _Radius ) {
-    InnerRadius = Math::Max( 0.001f, _Radius );
+    InnerRadius = Math::Max( MIN_CONE_ANGLE, _Radius );
 }
 
 float ASpotLightComponent::GetInnerRadius() const {
@@ -115,7 +118,7 @@ float ASpotLightComponent::GetInnerRadius() const {
 }
 
 void ASpotLightComponent::SetOuterRadius( float _Radius ) {
-    OuterRadius = Math::Max( 0.001f, _Radius );
+    OuterRadius = Math::Max( MIN_CONE_ANGLE, _Radius );
 
     UpdateWorldBounds();
 }
@@ -126,6 +129,7 @@ float ASpotLightComponent::GetOuterRadius() const {
 
 void ASpotLightComponent::SetInnerConeAngle( float _Angle ) {
     InnerConeAngle = Math::Clamp( _Angle, 0.0001f, 180.0f );
+    CosHalfInnerConeAngle = Math::Cos( Math::Radians( InnerConeAngle * 0.5f ) );
 }
 
 float ASpotLightComponent::GetInnerConeAngle() const {
@@ -134,6 +138,7 @@ float ASpotLightComponent::GetInnerConeAngle() const {
 
 void ASpotLightComponent::SetOuterConeAngle( float _Angle ) {
     OuterConeAngle = Math::Clamp( _Angle, 0.0001f, 180.0f );
+    CosHalfOuterConeAngle = Math::Cos( Math::Radians( OuterConeAngle * 0.5f ) );
 
     UpdateWorldBounds();
 }
@@ -189,6 +194,7 @@ void ASpotLightComponent::UpdateWorldBounds() {
     const float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
     const float HalfConeAngle = OuterConeAngle * ToHalfAngleRadians;
     const Float3 WorldPos = GetWorldPosition();
+    const float SinHalfConeAngle = Math::Sin( HalfConeAngle );
 
     // Compute cone OBB for voxelization
     OBBWorldBounds.Orient = GetWorldRotation().ToMatrix();
@@ -196,7 +202,7 @@ void ASpotLightComponent::UpdateWorldBounds() {
     const Float3 SpotDir = -OBBWorldBounds.Orient[ 2 ];
 
     //OBBWorldBounds.HalfSize.X = OBBWorldBounds.HalfSize.Y = tan( HalfConeAngle ) * OuterRadius;
-    OBBWorldBounds.HalfSize.X = OBBWorldBounds.HalfSize.Y = sin( HalfConeAngle ) * OuterRadius;
+    OBBWorldBounds.HalfSize.X = OBBWorldBounds.HalfSize.Y = SinHalfConeAngle * OuterRadius;
     OBBWorldBounds.HalfSize.Z = OuterRadius * 0.5f;
     OBBWorldBounds.Center = WorldPos + SpotDir * ( OBBWorldBounds.HalfSize.Z );
 
@@ -218,10 +224,10 @@ void ASpotLightComponent::UpdateWorldBounds() {
     // Посмотреть, как более эффективно распределяется площадь - у сферы или AABB
     // Compute cone Sphere bounds
     if ( HalfConeAngle > Math::_PI / 4 ) {
-        SphereWorldBounds.Radius = sin( HalfConeAngle ) * OuterRadius;
-        SphereWorldBounds.Center = WorldPos + SpotDir * ( cos( HalfConeAngle ) * OuterRadius );
+        SphereWorldBounds.Radius = SinHalfConeAngle * OuterRadius;
+        SphereWorldBounds.Center = WorldPos + SpotDir * ( CosHalfOuterConeAngle * OuterRadius );
     } else {
-        SphereWorldBounds.Radius = OuterRadius / ( 2.0 * cos( HalfConeAngle ) );
+        SphereWorldBounds.Radius = OuterRadius / ( 2.0 * CosHalfOuterConeAngle );
         SphereWorldBounds.Center = WorldPos + SpotDir * SphereWorldBounds.Radius;
     }
 
@@ -255,15 +261,11 @@ void ASpotLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLigh
     Light.Position = Float3( InViewMatrix * GetWorldPosition() );
     Light.OuterRadius = GetOuterRadius();
     Light.InnerRadius = Math::Min( InnerRadius, OuterRadius );
-    Light.Color = GetEffectiveColor();
+    Light.Color = GetEffectiveColor( Math::Min( CosHalfOuterConeAngle, 0.9999f ) );
     Light.RenderMask = ~0u;//RenderMask;
     Light.LightType = CLUSTER_LIGHT_SPOT;
-
-    constexpr float ToHalfAngleRadians = 0.5f / 180.0f * Math::_PI;
-
-    Light.OuterConeAngle = cos( OuterConeAngle * ToHalfAngleRadians );
-    Light.InnerConeAngle = cos( Math::Min( InnerConeAngle, OuterConeAngle ) * ToHalfAngleRadians );
-
+    Light.OuterConeAngle = CosHalfOuterConeAngle;
+    Light.InnerConeAngle = CosHalfInnerConeAngle;
     Light.SpotDirection = InViewMatrix.TransformAsFloat3x3( -GetWorldDirection() );
     Light.SpotExponent = SpotExponent;
 }

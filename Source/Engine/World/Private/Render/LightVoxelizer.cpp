@@ -147,7 +147,7 @@ struct SItemInfo {
     //alignas(16) __m128 AabbMaxsSSE;
     alignas(16) Float4x4SSE ClipToBoxMatSSE;
 
-    ABaseLightComponent * Light;
+    APunctualLightComponent * Light;
     //ADecalComponent * Decal;
     //AEnvProbeComponent * Probe;
 };
@@ -176,9 +176,9 @@ static void VoxelizeWork( void * _Data );
 ALightVoxelizer::ALightVoxelizer() {
 }
 
-static void PackLights( ABaseLightComponent * const * InLights, int InLightCount ) {
+static void PackLights( APunctualLightComponent * const * InLights, int InLightCount ) {
     for ( int i = 0; i < InLightCount ; i++ ) {
-        ABaseLightComponent * light = InLights[i];
+        APunctualLightComponent * light = InLights[i];
         light->ListIndex = i;
 
         SItemInfo & info = ItemInfos[ItemsCount++];
@@ -489,7 +489,7 @@ static void TransformItemsGeneric() {
     }
 }
 
-void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, ABaseLightComponent * const * InLights, int InLightCount ) {
+void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APunctualLightComponent * const * InLights, int InLightCount ) {
     RenderView = RV;
     ViewProj = RV->ClusterProjectionMatrix * RV->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
     ViewProjInv = ViewProj.Inversed();
@@ -808,7 +808,7 @@ static void VoxelizeWork( void * _Data ) {
             pBuffer->NumDecals = Math::Min< unsigned short >( pCluster->DecalsCount, MAX_CLUSTER_ITEMS );
             pBuffer->NumProbes = Math::Min< unsigned short >( pCluster->ProbesCount, MAX_CLUSTER_ITEMS );
 
-            NumClusterItems = Math::Max( pBuffer->NumLights, pBuffer->NumDecals, pBuffer->NumProbes );
+            NumClusterItems = Math::Max3( pBuffer->NumLights, pBuffer->NumDecals, pBuffer->NumProbes );
 
             int ItemOffset = ItemCounter.FetchAdd( NumClusterItems );
 

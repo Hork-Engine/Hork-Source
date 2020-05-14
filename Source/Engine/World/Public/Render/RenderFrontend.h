@@ -36,7 +36,7 @@ SOFTWARE.
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/World.h>
 
-class ABaseLightComponent;
+class APunctualLightComponent;
 class AMeshComponent;
 class ASkinnedComponent;
 class AProceduralMeshComponent;
@@ -95,7 +95,7 @@ private:
 
     TPodArray< SPrimitiveDef * > VisPrimitives;
     TPodArray< SSurfaceDef * > VisSurfaces;
-    TPodArray< ABaseLightComponent * > Lights;
+    TPodArray< APunctualLightComponent * > Lights;
     int VisPass = 0;
 
     struct SSurfaceStream {

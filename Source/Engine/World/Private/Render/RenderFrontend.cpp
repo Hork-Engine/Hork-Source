@@ -600,7 +600,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 
     SRenderView * view = RenderDef.View;
     ADrawable * drawable;
-    ABaseLightComponent * light;
+    APunctualLightComponent * light;
 
     Lights.Clear();
 
@@ -615,7 +615,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
             continue;
         }
 
-        if ( nullptr != (light = Upcast< ABaseLightComponent >( primitive->Owner )) ) {
+        if ( nullptr != (light = Upcast< APunctualLightComponent >( primitive->Owner )) ) {
             Lights.Append( light );
             continue;
         }

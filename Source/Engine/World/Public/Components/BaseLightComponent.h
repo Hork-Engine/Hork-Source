@@ -34,38 +34,63 @@ SOFTWARE.
 
 #include <World/Public/Resource/AnimationPattern.h>
 
-class ABaseLightComponent : public ASceneComponent {
-    AN_COMPONENT( ABaseLightComponent, ASceneComponent )
+class ALightComponent : public ASceneComponent{
+    AN_COMPONENT( ALightComponent, ASceneComponent )
 
 public:
     /** Only directional light supports shadow casting yet */
     bool bCastShadow;
 
-    /** Internal. Used by Light Voxelizer. */
-    int ListIndex;
-
     void SetColor( Float3 const & _Color );
+
     void SetColor( float _R, float _G, float _B );
+
     Float3 const & GetColor() const;
 
-    Float4 const & GetEffectiveColor() const;
-
-    // Set temperature of the light in Kelvin
+    /** Set temperature of the light in Kelvin */
     void SetTemperature( float _Temperature );
+
     float GetTemperature() const;
 
-    void SetLumens( float _Lumens );
-    float GetLumens() const;
-
-    void SetAmbientIntensity( float _Intensity );
-    float GetAmbientIntensity() const;
-
     virtual void SetEnabled( bool _Enabled );
+
     bool IsEnabled() const { return bEnabled; }
 
     void SetAnimation( const char * _Pattern, float _Speed = 1.0f, float _Quantizer = 0.0f );
+
     void SetAnimation( AAnimationPattern * _Animation );
+
     AAnimationPattern * GetAnimation() { return Animation; }
+
+protected:
+    ALightComponent();
+
+    void TickComponent( float _TimeStep ) override;
+
+    float GetAnimationBrightness() const { return AnimationBrightness; }
+
+    mutable bool   bEffectiveColorDirty;
+
+private:
+    bool           bEnabled;
+    Float3         Color;
+    float          Temperature;
+    TRef< AAnimationPattern >Animation;
+    float          AnimTime;
+    float          AnimationBrightness;
+};
+
+class APunctualLightComponent : public ALightComponent {
+    AN_COMPONENT( APunctualLightComponent, ALightComponent )
+
+public:
+    /** Internal. Used by Light Voxelizer. */
+    int ListIndex;
+
+    Float4 const & GetEffectiveColor( float CosHalfConeAngle ) const;
+
+    void SetLumens( float Lumens );
+    float GetLumens() const;
 
     BvAxisAlignedBox const & GetWorldBounds() const { return AABBWorldBounds; }
 
@@ -74,21 +99,12 @@ public:
     virtual void PackLight( Float4x4 const & InViewMatrix, struct SClusterLight & Light );
 
 protected:
-    ABaseLightComponent();
-
-    void TickComponent( float _TimeStep ) override;
+    APunctualLightComponent();
 
     BvAxisAlignedBox AABBWorldBounds;
-    Float4x4       OBBTransformInverse;
+    Float4x4 OBBTransformInverse;
 
-private:
-    Float3         Color;
-    mutable Float4 EffectiveColor;         // Composed from Temperature, Lumens, Color and AmbientIntensity
-    mutable bool   bEffectiveColorDirty;
-    bool           bEnabled;
-    float          Temperature;
-    float          Lumens;
-    TRef< AAnimationPattern >Animation;
-    float          AnimTime;
-    float          AnimationBrightness;
+private:    
+    mutable Float4 EffectiveColor;         // Composed from Temperature, Lumens, Color and AmbientIntensity   
+    float Lumens;
 };

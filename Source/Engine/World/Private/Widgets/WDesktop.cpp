@@ -533,7 +533,7 @@ bool WDesktop::HandleDraggingWidget() {
             DraggingWidget->SetNormal();
 
             const Float2 parentSize = maxs - mins;
-            const Float2 cursor = ( CursorPosition - mins ).Clamp( Float2(0.0f), parentSize );
+            const Float2 cursor = Math::Clamp( CursorPosition - mins, Float2(0.0f), parentSize );
             const float widgetWidth = DraggingWidget->GetCurrentSize().X;
             const float widgetHalfWidth = widgetWidth * 0.5f;
 
@@ -560,7 +560,7 @@ bool WDesktop::HandleDraggingWidget() {
     maxs-=1;
 
     // clamp cursor position
-    Float2 clampedCursorPos = CursorPosition.Clamp( mins, maxs );
+    Float2 clampedCursorPos = Math::Clamp( CursorPosition, mins, maxs );
 
     Float2 draggingVector = clampedCursorPos - DraggingCursor;
 
