@@ -666,8 +666,10 @@ void ADebugRenderer::DrawCircleFilled( Float3 const & _Position, Float3 const & 
 }
 
 void ADebugRenderer::DrawCone( Float3 const & _Position, Float3x3 const & _Orientation, const float & _Radius, const float & _HalfAngle ) {
-    const Float3 coneDirection = _Orientation[2];
-    const Float3 v = Float3x3::RotationAroundNormal( _HalfAngle,  _Orientation[0] ) * coneDirection * _Radius;
+    const Float3 coneDirection = -_Orientation[2];
+    const float halfAngle = Math::Clamp( _HalfAngle, 0.0f, Math::_HALF_PI );
+    const float R = _Radius / Math::Max( 0.001f, Math::Cos( halfAngle ) );
+    const Float3 v = Float3x3::RotationAroundNormal( halfAngle,  _Orientation[0] ) * coneDirection * R;
 
     const int NumCirclePoints = 32;
     Float3 points[NumCirclePoints];
