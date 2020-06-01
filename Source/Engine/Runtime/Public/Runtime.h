@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Core/Public/String.h>
 #include <Core/Public/PodQueue.h>
 #include <Core/Public/Utf8.h>
+#include <Core/Public/Random.h>
 #include "AsyncJobManager.h"
 #include "GameModuleCallback.h"
 
@@ -212,6 +213,9 @@ public:
 
     /** Is in game. This blocks changing runtime variables with flag VAR_NOINGAME */
     bool bInGameStatus = false;
+
+    /** Global random number generator */
+    AMersenneTwisterRand Rand;
 
     /** Application command line args count */
     int GetArgc();

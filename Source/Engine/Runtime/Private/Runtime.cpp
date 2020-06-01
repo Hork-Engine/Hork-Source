@@ -86,7 +86,9 @@ static bool JoystickAdded[ MAX_JOYSTICKS_COUNT ];
 static void InitKeyMappingsSDL();
 static void LoggerMessageCallback( int _Level, const char * _Message );
 
-ARuntime::ARuntime() {
+ARuntime::ARuntime()
+    : Rand( Core::RandomSeed() )
+{
     NumArguments = 0;
     Arguments = nullptr;
     Executable = nullptr;
@@ -876,8 +878,7 @@ struct SWaitableTimer {
     }
 };
 
-static SWaitableTimer WaitableTimer;
-static LARGE_INTEGER WaitTime;
+static thread_local SWaitableTimer WaitableTimer;
 
 //#include <thread>
 
@@ -885,6 +886,8 @@ static void WaitMicrosecondsWIN32( int _Microseconds ) {
 #if 0
     std::this_thread::sleep_for( StdChrono::microseconds( _Microseconds ) );
 #else
+    LARGE_INTEGER WaitTime;
+
     WaitTime.QuadPart = -10 * _Microseconds;
 
     if ( !WaitableTimer.Handle ) {
