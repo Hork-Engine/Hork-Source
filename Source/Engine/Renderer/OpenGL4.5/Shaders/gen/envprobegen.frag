@@ -74,16 +74,19 @@ vec3 ImportanceSampleGGX( vec2 Xi, float Roughness, vec3 N ) {
     float Phi = 2 * PI * Xi.x;
     float CosTheta = sqrt( (1 - Xi.y) / (1 + (a*a - 1) * Xi.y) );
     float SinTheta = sqrt( 1 - CosTheta * CosTheta );
+    
+    // Sphere to cart
     vec3 H;
     H.x = SinTheta * cos( Phi );
     H.y = SinTheta * sin( Phi );
     H.z = CosTheta;
+
+    // Tangent to world space    
     vec3 UpVector = abs( N.z ) < 0.99 ? vec3( 0, 0, 1 ) : vec3( 1, 0, 0 );
-    //vec3 UpVector = abs(N.z) < 0.999 ? vec3(0,0,1) : vec3(1,0,0);
-    vec3 TangentX = normalize( cross( UpVector, N ) );
-    vec3 TangentY = cross( N, TangentX );
-    // Tangent to world space
-    return TangentX * H.x + TangentY * H.y + N * H.z;
+    vec3 Tangent = normalize( cross( UpVector, N ) );
+    vec3 Bitangent = cross( N, Tangent );
+
+    return normalize( Tangent * H.x + Bitangent * H.y + N * H.z );
 }
 
 vec3 PrefilterEnvMap( float Roughness, vec3 R ) {
@@ -93,11 +96,11 @@ vec3 PrefilterEnvMap( float Roughness, vec3 R ) {
     for ( int i = 0; i < NumSamples; i++ ) {
         vec2 Xi = Hammersley( i, NumSamples );
         vec3 H = ImportanceSampleGGX( Xi, Roughness, R );
-        vec3 L = 2 * dot( R, H ) * H - R;
-        float NoL = clamp( dot( R, L ), 0.0, 1.0 );
-        if ( NoL > 0 ) {
-            PrefilteredColor += textureLod( Envmap, L, 0 ).rgb * NoL;
-            TotalWeight += NoL;
+        vec3 L = normalize( 2 * dot( R, H ) * H - R );
+        float NdL = clamp( dot( R, L ), 0.0, 1.0 );
+        if ( NdL > 0 ) {
+            PrefilteredColor += textureLod( Envmap, L, 0 ).rgb * NdL;
+            TotalWeight += NdL;
         }
     }
     return PrefilteredColor / TotalWeight;

@@ -108,12 +108,6 @@ enum EImagePixelFormat
 /** Image loader */
 class AImage {
 public:
-    void * pRawData;
-    int Width;
-    int Height;
-    int NumLods;
-    EImagePixelFormat PixelFormat;
-
     AImage();
     ~AImage();
 
@@ -125,8 +119,20 @@ public:
 
     void Free();
 
+    void * GetData() const { return pRawData; }
+    int GetWidth() const { return Width; }
+    int GetHeight() const { return Height; }
+    int GetNumLods() const { return NumLods; }
+    EImagePixelFormat GetPixelFormat() const { return PixelFormat; }
+
 private:
     void FromRawData( const void * _Source, int _Width, int _Height, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat, bool bReuseSourceBuffer );
+
+    void * pRawData;
+    int Width;
+    int Height;
+    int NumLods;
+    EImagePixelFormat PixelFormat;
 };
 
 /*

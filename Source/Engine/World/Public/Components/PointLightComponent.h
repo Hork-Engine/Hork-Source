@@ -30,29 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseLightComponent.h"
-#include <World/Public/Level.h>
+#include "AnalyticLightComponent.h"
 
-class ANGIE_API APointLightComponent : public APunctualLightComponent {
-    AN_COMPONENT( APointLightComponent, APunctualLightComponent )
+class ANGIE_API APointLightComponent : public AAnalyticLightComponent {
+    AN_COMPONENT( APointLightComponent, AAnalyticLightComponent )
 
 public:
-    /** Rendering group to filter lights during rendering */
-    void SetVisibilityGroup( int InVisibilityGroup );
-
-    int GetVisibilityGroup() const;
-
-    void SetEnabled( bool _Enabled ) override;
-
-    void SetMovable( bool _Movable );
-
-    bool IsMovable() const;
-
-    void SetInnerRadius( float _Radius );
-    float GetInnerRadius() const { return InnerRadius; }
-
-    void SetOuterRadius( float _Radius );
-    float GetOuterRadius() const { return OuterRadius; }
+    void SetRadius( float _Radius );
+    float GetRadius() const { return Radius; }
 
     BvSphere const & GetSphereWorldBounds() const { return SphereWorldBounds; }
 
@@ -61,8 +46,6 @@ public:
 protected:
     APointLightComponent();
 
-    void InitializeComponent() override;
-    void DeinitializeComponent() override;
     void OnTransformDirty() override;
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
@@ -72,8 +55,6 @@ private:
     BvSphere SphereWorldBounds;
     BvOrientedBox OBBWorldBounds;
 
-    float InnerRadius;
-    float OuterRadius;
-
-    SPrimitiveDef Primitive;
+    float Radius;
+    float InverseSquareRadius;
 };

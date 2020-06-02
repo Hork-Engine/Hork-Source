@@ -213,9 +213,9 @@ void CommandBuffer::BindPipeline( Pipeline * _Pipeline, int _Subpass ) {
 
     if ( state->CurrentPipeline == _Pipeline ) {
         // TODO: cache drawbuffers
-        if ( _Pipeline->Subpass != _Subpass ) {
-            _Pipeline->Subpass = _Subpass;
-            BindRenderPassSubPass( state, _Pipeline->pRenderPass, _Subpass );
+        if ( state->CurrentSubpass != _Subpass ) {
+            state->CurrentSubpass = _Subpass;
+            BindRenderPassSubPass( state, /*_Pipeline->pRenderPass*/state->CurrentRenderPass, _Subpass );
         }
         return;
     }
@@ -238,9 +238,10 @@ void CommandBuffer::BindPipeline( Pipeline * _Pipeline, int _Subpass ) {
     // Set render pass
     //
 
-    _Pipeline->Subpass = _Subpass;
-
-    BindRenderPassSubPass( state, _Pipeline->pRenderPass, _Subpass );
+    if ( state->CurrentSubpass != _Subpass ) {
+        state->CurrentSubpass = _Subpass;
+        BindRenderPassSubPass( state, /*_Pipeline->pRenderPass*/state->CurrentRenderPass, _Subpass );
+    }
 
     //
     // Set input assembly
@@ -566,7 +567,7 @@ void CommandBuffer::BindPipeline( Pipeline * _Pipeline, int _Subpass ) {
     }
 }
 
-void CommandBuffer::BindRenderPassSubPass( State * _State, RenderPass * _RenderPass, int _Subpass ) {
+void CommandBuffer::BindRenderPassSubPass( State * _State, RenderPass const * _RenderPass, int _Subpass ) {
 
     const GLuint framebufferId = _State->Binding.DrawFramebuffer;
 
@@ -1715,12 +1716,13 @@ void CommandBuffer::BeginRenderPassDefaultFramebuffer( RenderPassBegin const & _
 void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) {
     State * state = GetCurrentState();
 
-    RenderPass * renderPass = _RenderPassBegin.pRenderPass;
-    Framebuffer * framebuffer = _RenderPassBegin.pFramebuffer;
+    RenderPass const * renderPass = _RenderPassBegin.pRenderPass;
+    Framebuffer const * framebuffer = _RenderPassBegin.pFramebuffer;
 
     assert( state->CurrentRenderPass == nullptr );
 
     state->CurrentRenderPass = renderPass;
+    state->CurrentSubpass = -1;
     state->CurrentRenderPassRenderArea = _RenderPassBegin.RenderArea;
     state->CurrentPipeline = nullptr;
 
@@ -1746,11 +1748,13 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
 
     FramebufferAttachmentInfo const * framebufferColorAttachments = framebuffer->GetColorAttachments();
 
-    // We must set draw buffers to clear attachment :(
-    for ( uint32_t i = 0 ; i < renderPass->NumColorAttachments ; i++ ) {
-        Attachments[i] = GL_COLOR_ATTACHMENT0 + i;
-    }
-    glNamedFramebufferDrawBuffers( framebufferId, renderPass->NumColorAttachments, Attachments );
+    //// We must set draw buffers to clear attachment :(
+    //for ( uint32_t i = 0 ; i < renderPass->NumColorAttachments ; i++ ) {
+    //    Attachments[i] = GL_COLOR_ATTACHMENT0 + i;
+    //}
+    //glNamedFramebufferDrawBuffers( framebufferId, renderPass->NumColorAttachments, Attachments );
+
+    static ClearColorValue defaultClearValue = {};
 
     for ( unsigned int i = 0 ; i < renderPass->NumColorAttachments ; i++ ) {
 
@@ -1759,9 +1763,12 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
 
         if ( attachment->LoadOp == ATTACHMENT_LOAD_OP_CLEAR ) {
 
-            assert( _RenderPassBegin.pColorClearValues != nullptr );
+            // We must set draw buffers to clear attachment :(
+            glNamedFramebufferDrawBuffer( framebufferId, GL_COLOR_ATTACHMENT0 + i );
 
-            ClearColorValue const * clearValue = &_RenderPassBegin.pColorClearValues[ i ];
+            ClearColorValue const * clearValue = _RenderPassBegin.pColorClearValues
+                ? &_RenderPassBegin.pColorClearValues[ i ]
+                : &defaultClearValue;
 
             if ( !bScissorEnabled ) {
                 glEnable( GL_SCISSOR_TEST );
@@ -1776,9 +1783,11 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
                 bRasterizerDiscard = false;
             }
 
+            int drawbufferNum = 0;//i;  // FIXME: is this correct?
+
             RenderTargetBlendingInfo const & currentState = state->BlendState.RenderTargetSlots[ i ];
             if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
-                glColorMaski( i, 1, 1, 1, 1 );
+                glColorMaski( drawbufferNum, 1, 1, 1, 1 );
             }
 
             // Clear attachment
@@ -1786,19 +1795,19 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
             case CLEAR_TYPE_FLOAT32:
                 glClearNamedFramebufferfv( framebufferId,
                                            GL_COLOR,
-                                           i,
+                                           drawbufferNum,
                                            clearValue->Float32 );
                 break;
             case CLEAR_TYPE_INT32:
                 glClearNamedFramebufferiv( framebufferId,
                                            GL_COLOR,
-                                           i,
+                                           drawbufferNum,
                                            clearValue->Int32 );
                 break;
             case CLEAR_TYPE_UINT32:
                 glClearNamedFramebufferuiv( framebufferId,
                                             GL_COLOR,
-                                            i,
+                                            drawbufferNum,
                                             clearValue->UInt32 );
                 break;
             default:
@@ -1808,9 +1817,9 @@ void CommandBuffer::BeginRenderPass( RenderPassBegin const & _RenderPassBegin ) 
             // Restore color mask
             if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
                 if ( currentState.ColorWriteMask == COLOR_WRITE_DISABLED ) {
-                    glColorMaski( i, 0, 0, 0, 0 );
+                    glColorMaski( drawbufferNum, 0, 0, 0, 0 );
                 } else {
-                    glColorMaski( i,
+                    glColorMaski( drawbufferNum,
                                   !!(currentState.ColorWriteMask & COLOR_WRITE_R_BIT),
                                   !!(currentState.ColorWriteMask & COLOR_WRITE_G_BIT),
                                   !!(currentState.ColorWriteMask & COLOR_WRITE_B_BIT),
@@ -1934,7 +1943,9 @@ SyncObject CommandBuffer::FenceSync() {
 }
 
 void CommandBuffer::RemoveSync( SyncObject _Sync ) {
-    glDeleteSync( reinterpret_cast< GLsync >( _Sync ) );
+    if ( _Sync ) {
+        glDeleteSync( reinterpret_cast< GLsync >( _Sync ) );
+    }
 }
 
 CLIENT_WAIT_STATUS CommandBuffer::ClientWait( SyncObject _Sync, uint64_t _TimeOutNanoseconds ) {
@@ -2859,6 +2870,9 @@ void CommandBuffer::ClearFramebufferAttachments( Framebuffer & _Framebuffer,
             Attachments[i] = GL_COLOR_ATTACHMENT0 + attachmentIndex;
         }
         glNamedFramebufferDrawBuffers( framebufferId, _NumColorAttachments, Attachments );
+
+        // Mark subpass to reset draw buffers
+        state->CurrentSubpass = -1;
 
         for ( unsigned int i = 0 ; i < _NumColorAttachments ; i++ ) {
 

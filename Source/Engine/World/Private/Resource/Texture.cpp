@@ -62,26 +62,26 @@ void ATexture::Purge() {
 }
 
 bool ATexture::InitializeFromImage( AImage const & _Image ) {
-    if ( !_Image.pRawData ) {
+    if ( !_Image.GetData() ) {
         GLogger.Printf( "ATexture::InitializeFromImage: empty image data\n" );
         return false;
     }
 
     STexturePixelFormat pixelFormat;
 
-    if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Image.PixelFormat, pixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Image.GetPixelFormat(), pixelFormat ) ) {
         return false;
     }
 
-    Initialize2D( pixelFormat, _Image.NumLods, _Image.Width, _Image.Height );
+    Initialize2D( pixelFormat, _Image.GetNumLods(), _Image.GetWidth(), _Image.GetHeight() );
 
-    byte * pSrc = ( byte * )_Image.pRawData;
+    byte * pSrc = ( byte * )_Image.GetData();
     int w, h, stride;
     int pixelByteLength = pixelFormat.SizeInBytesUncompressed();
 
-    for ( int lod = 0 ; lod < _Image.NumLods ; lod++ ) {
-        w = Math::Max( 1, _Image.Width >> lod );
-        h = Math::Max( 1, _Image.Height >> lod );
+    for ( int lod = 0 ; lod < _Image.GetNumLods() ; lod++ ) {
+        w = Math::Max( 1, _Image.GetWidth() >> lod );
+        h = Math::Max( 1, _Image.GetHeight() >> lod );
 
         stride = w * h * pixelByteLength;
 
@@ -96,34 +96,34 @@ bool ATexture::InitializeFromImage( AImage const & _Image ) {
 bool ATexture::InitializeCubemapFromImages( AImage const * _Faces[6] ) {
     const void * faces[6];
 
-    int width = _Faces[0]->Width;
+    int width = _Faces[0]->GetWidth();
 
     for ( int i = 0 ; i < 6 ; i++ ) {
 
-        if ( !_Faces[i]->pRawData ) {
+        if ( !_Faces[i]->GetData() ) {
             GLogger.Printf( "ATexture::InitializeCubemapFromImages: empty image data\n" );
             return false;
         }
 
-        if ( _Faces[i]->Width != width
-             || _Faces[i]->Height != width ) {
+        if ( _Faces[i]->GetWidth() != width
+             || _Faces[i]->GetHeight() != width ) {
             GLogger.Printf( "ATexture::InitializeCubemapFromImages: faces with different sizes\n" );
             return false;
         }
 
-        faces[i] = _Faces[i]->pRawData;
+        faces[i] = _Faces[i]->GetData();
     }
 
     STexturePixelFormat pixelFormat;
 
-    if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Faces[0]->PixelFormat, pixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Faces[0]->GetPixelFormat(), pixelFormat ) ) {
         return false;
     }
 
     for ( int i = 1 ; i < 6 ; i++ ) {
         STexturePixelFormat facePF;
 
-        if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Faces[i]->PixelFormat, facePF ) ) {
+        if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Faces[i]->GetPixelFormat(), facePF ) ) {
             return false;
         }
 
@@ -329,6 +329,7 @@ bool ATexture::LoadResource( AString const & _Path ) {
          || !Core::Stricmp( &_Path[i], ".psd" )
          || !Core::Stricmp( &_Path[i], ".gif" )
          || !Core::Stricmp( &_Path[i], ".hdr" )
+         || !Core::Stricmp( &_Path[i], ".exr" )
          || !Core::Stricmp( &_Path[i], ".pic" )
          || !Core::Stricmp( &_Path[i], ".pnm" )
          || !Core::Stricmp( &_Path[i], ".ppm" )
@@ -342,7 +343,7 @@ bool ATexture::LoadResource( AString const & _Path ) {
         mipmapGen.Filter = MIPMAP_FILTER_MITCHELL;
         mipmapGen.bPremultipliedAlpha = false;
 
-        if ( !Core::Stricmp( &_Path[i], ".hdr" ) ) {
+        if ( !Core::Stricmp( &_Path[i], ".hdr" ) || !Core::Stricmp( &_Path[i], ".exr" ) ) {
             if ( !image.Load( _Path.CStr(), &mipmapGen, IMAGE_PF_AUTO_16F ) ) {
                 return false;
             }
@@ -641,7 +642,7 @@ void ATexture::InitializeColorGradingLUT( const char * _Path ) {
     if ( image.Load( _Path, nullptr, IMAGE_PF_BGR_GAMMA2 ) ) {
         byte data[ 16 ][ 16 ][ 16 ][ 3 ];
 
-        const byte * p = static_cast< const byte * >(image.pRawData);
+        const byte * p = static_cast< const byte * >(image.GetData());
 
         for ( int y = 0 ; y < 16 ; y++ ) {
            for ( int z = 0 ; z < 16 ; z++ ) {
@@ -676,9 +677,9 @@ static Float3 ApplyColorGrading( SColorGradingPreset const & p, AColor4 const & 
 
     Float3 t = ( p.Gain * 2.0f ) * ( c.GetRGB() + ( ( p.Lift * 2.0f - 1.0 ) * ( Float3( 1.0 ) - c.GetRGB() ) ) );
 
-    t.X = StdPow( t.X, 0.5f / p.Gamma.X );
-    t.Y = StdPow( t.Y, 0.5f / p.Gamma.Y );
-    t.Z = StdPow( t.Z, 0.5f / p.Gamma.Z );
+    t.X = Math::Pow( t.X, 0.5f / p.Gamma.X );
+    t.Y = Math::Pow( t.Y, 0.5f / p.Gamma.Y );
+    t.Z = Math::Pow( t.Z, 0.5f / p.Gamma.Z );
 
     return t;
 }

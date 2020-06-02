@@ -30,26 +30,23 @@ SOFTWARE.
 
 #pragma once
 
-#include "OpenGL45PassRenderer.h"
+#include "OpenGL45Common.h"
+#include "FrameGraph.h"
 
 namespace OpenGL45 {
 
-class AColorGradingRenderer : public APassRenderer {
+class AColorGradingRenderer {
 public:
-    void Initialize();
-    void Deinitialize();
+    AColorGradingRenderer();
 
-    void Render();
+    AFrameGraphTextureStorage * AddPass( AFrameGraph & FrameGraph );
 
 private:
     void CreateSamplers();
 
-    GHI::RenderPass Pass;
     GHI::Pipeline PipelineLUT;
     GHI::Pipeline PipelineProcedural;
     GHI::Sampler ColorGradingSampler;
 };
-
-extern AColorGradingRenderer GColorGradingRenderer;
 
 }

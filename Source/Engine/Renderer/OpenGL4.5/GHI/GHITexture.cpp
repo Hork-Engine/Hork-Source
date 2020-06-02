@@ -107,6 +107,7 @@ void Texture::Initialize( TextureCreateInfo const & _CreateInfo, TextureInitialD
     Handle = ( void * )( size_t )id;
     UID = pDevice->GenerateUID();
     CreateInfo = _CreateInfo;
+    StorageNumLods = 0;
     bImmutableStorage = false;
     bTextureBuffer = false;
     bTextureView = false;
@@ -124,6 +125,7 @@ void Texture::InitializeStorage( TextureStorageCreateInfo const & _CreateInfo ) 
     CreateInfo.Type = _CreateInfo.Type;
     CreateInfo.InternalFormat = _CreateInfo.InternalFormat;
     CreateInfo.Resolution = _CreateInfo.Resolution;
+    StorageNumLods = _CreateInfo.NumLods;
 
     glCreateTextures( target, 1, &id );
 
@@ -210,6 +212,7 @@ void Texture::InitializeTextureBuffer( BUFFER_DATA_TYPE _DataType, Buffer const 
 
     memset( &CreateInfo, 0, sizeof( CreateInfo ) );
     CreateInfo.InternalFormat = type->IPF;
+    StorageNumLods = 0;
 
     bImmutableStorage = false;
     bTextureBuffer = true;
@@ -253,6 +256,7 @@ void Texture::InitializeTextureBuffer( BUFFER_DATA_TYPE _DataType, Buffer const 
 
     memset( &CreateInfo, 0, sizeof( CreateInfo ) );
     CreateInfo.InternalFormat = type->IPF;
+    StorageNumLods = 0;
 
     bImmutableStorage = false;
     bTextureBuffer = true;
@@ -315,7 +319,7 @@ bool Texture::InitializeView( TextureViewCreateInfo const & _CreateInfo ) {
     // Avoid previous errors if any
     (void)glGetError();
 
-    glCreateTextures( target, 1, &id ); // 4.5
+    glGenTextures( 1, &id ); // 4.5
 
     //GLint currentBinding;
     //glGetIntegerv( TextureTargetLUT[ _CreateInfo.Type ].Binding, &currentBinding );
@@ -343,6 +347,7 @@ bool Texture::InitializeView( TextureViewCreateInfo const & _CreateInfo ) {
     CreateInfo = _CreateInfo.pOriginalTexture->CreateInfo;
     CreateInfo.Type = _CreateInfo.Type;
     CreateInfo.InternalFormat = _CreateInfo.InternalFormat;
+    StorageNumLods = 0;
 
     bImmutableStorage = true;
     bTextureBuffer = false;

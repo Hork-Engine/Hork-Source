@@ -101,7 +101,7 @@ void Framebuffer::Initialize( FramebufferCreateInfo const & _CreateInfo ) {
             continue;
         }
 
-        if ( attachment->bLayered ) {
+        if ( attachment->Type == ATTACH_LAYER ) {
             glNamedFramebufferTextureLayer( framebufferId, attachmentName, textureId, attachment->LodNum, attachment->LayerNum );
         } else {
             glNamedFramebufferTexture( framebufferId, attachmentName, textureId, attachment->LodNum );
@@ -151,7 +151,7 @@ void Framebuffer::Initialize( FramebufferCreateInfo const & _CreateInfo ) {
                 attachmentName = GL_DEPTH_STENCIL_ATTACHMENT;
             }
 
-            if ( attachment->bLayered ) {
+            if ( attachment->Type == ATTACH_LAYER ) {
                 glNamedFramebufferTextureLayer( framebufferId, attachmentName, textureId, 0, attachment->LayerNum );
             } else {
                 glNamedFramebufferTexture( framebufferId, attachmentName, textureId, 0 );

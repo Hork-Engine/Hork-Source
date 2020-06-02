@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include <World/Public/Components/SoftMeshComponent.h>
 #include <World/Public/World.h>
+#include <Runtime/Public/Runtime.h>
 
 #include <BulletSoftBody/btSoftBody.h>
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
@@ -353,7 +354,9 @@ void ASoftMeshComponent::TickComponent( float _TimeStep ) {
 
         btVector3 vel = btVectorToFloat3(WindVelocity*_TimeStep);
 
-        for(int i=0,ni=SoftBody->m_nodes.size();i<ni;++i) SoftBody->addVelocity(vel*(Math::Rand()*0.5f+0.5f),i);
+        AMersenneTwisterRand & rng = GRuntime.Rand;
+
+        for(int i=0,ni=SoftBody->m_nodes.size();i<ni;++i) SoftBody->addVelocity(vel*(rng.GetFloat()*0.5f+0.5f),i);
     }
 
     // TODO: This must be done in post physics tick!!!

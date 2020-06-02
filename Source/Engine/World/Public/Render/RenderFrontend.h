@@ -36,7 +36,8 @@ SOFTWARE.
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/World.h>
 
-class APunctualLightComponent;
+class AAnalyticLightComponent;
+class AIBLComponent;
 class AMeshComponent;
 class ASkinnedComponent;
 class AProceduralMeshComponent;
@@ -95,7 +96,8 @@ private:
 
     TPodArray< SPrimitiveDef * > VisPrimitives;
     TPodArray< SSurfaceDef * > VisSurfaces;
-    TPodArray< APunctualLightComponent * > Lights;
+    TPodArray< AAnalyticLightComponent * > Lights;
+    TPodArray< AIBLComponent * > IBLs;
     int VisPass = 0;
 
     struct SSurfaceStream {
@@ -108,6 +110,8 @@ private:
     SSurfaceStream SurfaceStream;
 
     SRenderFrontendDef RenderDef;
+
+    TRef< ATexture > PhotometricProfiles;
 };
 
 extern ARenderFrontend & GRenderFrontend;

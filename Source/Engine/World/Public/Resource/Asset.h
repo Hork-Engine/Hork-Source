@@ -36,6 +36,7 @@ constexpr uint32_t FMT_FILE_TYPE_ANIMATION          = 3;
 constexpr uint32_t FMT_FILE_TYPE_MATERIAL_INSTANCE  = 4;
 constexpr uint32_t FMT_FILE_TYPE_MATERIAL           = 5;
 constexpr uint32_t FMT_FILE_TYPE_TEXTURE            = 6;
+constexpr uint32_t FMT_FILE_TYPE_PHOTOMETRIC_PROFILE = 7;
 
 constexpr uint32_t FMT_VERSION_MESH                 = 1;
 constexpr uint32_t FMT_VERSION_SKELETON             = 1;
@@ -43,3 +44,4 @@ constexpr uint32_t FMT_VERSION_ANIMATION            = 1;
 constexpr uint32_t FMT_VERSION_MATERIAL_INSTANCE    = 1;
 constexpr uint32_t FMT_VERSION_MATERIAL             = 1;
 constexpr uint32_t FMT_VERSION_TEXTURE              = 1;
+constexpr uint32_t FMT_VERSION_PHOTOMETRIC_PROFILE  = 1;

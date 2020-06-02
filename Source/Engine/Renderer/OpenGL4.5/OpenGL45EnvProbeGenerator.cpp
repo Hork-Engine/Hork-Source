@@ -36,6 +36,7 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
+// TODO: Replace with Cube
 static void CreateSphere( int _HDiv, int _VDiv, TPodArray< Float3 > & _Vertices, TPodArray< unsigned short > & _Indices ) {
     const int numVerts = _VDiv * (_HDiv - 1) + 2;
     const int numIndices = (_HDiv - 1) * (_VDiv - 1) * 6;
@@ -97,7 +98,7 @@ struct SRoughnessMapVertex {
     Float3 Position;
 };
 
-static const INTERNAL_PIXEL_FORMAT ENVPROBE_IPF = INTERNAL_PIXEL_FORMAT_RGB32F; // FIXME: is RGB16F enough? // TODO: try RGB16F and compression!!
+static const INTERNAL_PIXEL_FORMAT ENVPROBE_IPF = INTERNAL_PIXEL_FORMAT_RGB16F; // TODO: try compression
 
 void AEnvProbeGenerator::Initialize() {
     TPodArray< Float3 > vertices;
@@ -227,7 +228,6 @@ void AEnvProbeGenerator::Initialize() {
     pipelineCI.pVertexBindings = vertexBindings;
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
-    pipelineCI.pRenderPass = &m_RP;
     m_Pipeline.Initialize( pipelineCI );
 
     SamplerCreateInfo samplerCI;
@@ -255,24 +255,6 @@ void AEnvProbeGenerator::GenerateArray( Texture & _CubemapArray, int _MaxLod, in
     textureCI.Resolution.TexCubemapArray.NumLayers = _CubemapsCount;
     textureCI.NumLods = _MaxLod + 1;
     _CubemapArray.InitializeStorage( textureCI );
-
-    //GHI::Framebuffer framebuffers[textureCI.NumLods];
-
-    //for ( int i = 0 ; i < textureCI.NumLods ; i++ ) {
-    //    int lodWidth = size >> i;
-
-    //    FramebufferAttachmentInfo attachment = {};
-    //    attachment.pTexture = &_CubemapArray;
-    //    attachment.LodNum = i;
-
-    //    FramebufferCreateInfo framebufferCI = {};
-    //    framebufferCI.Width = lodWidth;
-    //    framebufferCI.Height = lodWidth;
-    //    framebufferCI.NumColorAttachments = 1;
-    //    framebufferCI.pColorAttachments = &attachment;
-
-    //    framebuffers[i].Initialize( framebufferCI );
-    //}
 
     ShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
@@ -366,24 +348,6 @@ void AEnvProbeGenerator::Generate( Texture & _Cubemap, int _MaxLod, Texture * _S
     textureCI.Resolution.TexCubemap.Width = size;
     textureCI.NumLods = _MaxLod + 1;
     _Cubemap.InitializeStorage( textureCI );
-
-    //GHI::Framebuffer framebuffers[textureCI.NumLods];
-
-    //for ( int i = 0 ; i < textureCI.NumLods ; i++ ) {
-    //    int lodWidth = size >> i;
-
-    //    FramebufferAttachmentInfo attachment = {};
-    //    attachment.pTexture = &_Cubemap;
-    //    attachment.LodNum = i;
-
-    //    FramebufferCreateInfo framebufferCI = {};
-    //    framebufferCI.Width = lodWidth;
-    //    framebufferCI.Height = lodWidth;
-    //    framebufferCI.NumColorAttachments = 1;
-    //    framebufferCI.pColorAttachments = &attachment;
-
-    //    framebuffers[i].Initialize( framebufferCI );
-    //}
 
     ShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;

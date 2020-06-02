@@ -34,8 +34,6 @@ using namespace GHI;
 
 namespace OpenGL45 {
 
-AGPUSync GOpenGL45GPUSync;
-
 void AGPUSync::Wait() {
     if ( !bCreated ) {
         bCreated = true;
@@ -80,16 +78,10 @@ void AGPUSync::Wait() {
 
         byte data[4];
         Staging.Read( 0,  PIXEL_FORMAT_UBYTE_RGBA, 4, 1, data );
-
-        //GLogger.Printf("Data %d %d %d %d\n",data[0],data[1],data[2],data[3]);
     }
 }
 
 void AGPUSync::SetEvent() {
-    //if ( !GSyncGPU.Load() ) {
-    //    return;
-    //}
-
     if ( bCreated ) {
         Texture.GenerateLods();
     }

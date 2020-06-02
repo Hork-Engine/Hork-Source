@@ -31,6 +31,9 @@ SOFTWARE.
 #pragma once
 
 #include "OpenGL45Common.h"
+#include "OpenGL45CanvasRenderer.h"
+#include "OpenGL45FrameRenderer.h"
+#include "OpenGL45GPUSync.h"
 
 namespace OpenGL45 {
 
@@ -78,9 +81,17 @@ public:
 
 private:
     void SetGPUEvent();
-    void RenderView( SRenderView * _RenderView );
+    void RenderView( SRenderView * _RenderView, AFrameGraphTextureStorage ** _ViewTexture );
 
-    friend void OpenGL45RenderView( SRenderView * _RenderView );
+    friend void OpenGL45RenderView( SRenderView * _RenderView, AFrameGraphTextureStorage ** _ViewTexture );
+
+    std::unique_ptr< AFrameGraph > FrameGraph;
+    AFrameRenderer::SFrameGraphCaptured CapturedResources;
+
+    std::unique_ptr< ACanvasRenderer > CanvasRenderer;
+    std::unique_ptr< AFrameRenderer > FrameRenderer;
+
+    AGPUSync GPUSync;
 };
 
 extern ARenderBackend GOpenGL45RenderBackend;

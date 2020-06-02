@@ -32,80 +32,23 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 
-constexpr float DEFAULT_INNER_RADIUS = 0.5f;
-constexpr float DEFAULT_OUTER_RADIUS = 1.0f;
+static const float DEFAULT_RADIUS = 1.0f;
+static const float MIN_RADIUS = 0.01f;
 
 ARuntimeVariable RVDrawPointLights( _CTS( "DrawPointLights" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( APointLightComponent )
 
 APointLightComponent::APointLightComponent() {
-    InnerRadius = DEFAULT_INNER_RADIUS;
-    OuterRadius = DEFAULT_OUTER_RADIUS;
-
-    Primitive.Owner = this;
-    Primitive.Type = VSD_PRIMITIVE_SPHERE;
-    Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
-    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+    Radius = DEFAULT_RADIUS;
+    InverseSquareRadius = 1.0f / ( Radius * Radius );
 
     UpdateWorldBounds();
 }
 
-void APointLightComponent::InitializeComponent() {
-    Super::InitializeComponent();
-
-    GetLevel()->AddPrimitive( &Primitive );
-}
-
-void APointLightComponent::DeinitializeComponent() {
-    Super::DeinitializeComponent();
-
-    GetLevel()->RemovePrimitive( &Primitive );
-}
-
-void APointLightComponent::SetVisibilityGroup( int InVisibilityGroup ) {
-    Primitive.VisGroup = InVisibilityGroup;
-}
-
-int APointLightComponent::GetVisibilityGroup() const {
-    return Primitive.VisGroup;
-}
-
-void APointLightComponent::SetEnabled( bool _Enabled ) {
-    Super::SetEnabled( _Enabled );
-
-    if ( _Enabled ) {
-        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
-    } else {
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
-        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
-    }
-}
-
-void APointLightComponent::SetMovable( bool _Movable ) {
-    if ( Primitive.bMovable == _Movable ) {
-        return;
-    }
-
-    Primitive.bMovable = _Movable;
-
-    if ( IsInitialized() )
-    {
-        GetLevel()->MarkPrimitive( &Primitive );
-    }
-}
-
-bool APointLightComponent::IsMovable() const {
-    return Primitive.bMovable;
-}
-
-void APointLightComponent::SetInnerRadius( float _Radius ) {
-    InnerRadius = Math::Max( 0.001f, _Radius );
-}
-
-void APointLightComponent::SetOuterRadius( float _Radius ) {
-    OuterRadius = Math::Max( 0.001f, _Radius );
+void APointLightComponent::SetRadius( float _Radius ) {
+    Radius = Math::Max( MIN_RADIUS, _Radius );
+    InverseSquareRadius = 1.0f / ( Radius * Radius );
 
     UpdateWorldBounds();
 }
@@ -117,10 +60,10 @@ void APointLightComponent::OnTransformDirty() {
 }
 
 void APointLightComponent::UpdateWorldBounds() {
-    SphereWorldBounds.Radius = OuterRadius;
+    SphereWorldBounds.Radius = Radius;
     SphereWorldBounds.Center = GetWorldPosition();
-    AABBWorldBounds.Mins = SphereWorldBounds.Center - OuterRadius;
-    AABBWorldBounds.Maxs = SphereWorldBounds.Center + OuterRadius;
+    AABBWorldBounds.Mins = SphereWorldBounds.Center - Radius;
+    AABBWorldBounds.Maxs = SphereWorldBounds.Center + Radius;
     OBBWorldBounds.Center = SphereWorldBounds.Center;
     OBBWorldBounds.HalfSize = Float3( SphereWorldBounds.Radius );
     OBBWorldBounds.Orient.SetIdentity();
@@ -147,19 +90,23 @@ void APointLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
             Float3 pos = GetWorldPosition();
 
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
-            InRenderer->DrawSphere( pos, InnerRadius );
             InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
-            InRenderer->DrawSphere( pos, OuterRadius );
+            InRenderer->DrawSphere( pos, Radius );
         }
     }
 }
 
 void APointLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) {
     Light.Position = Float3( InViewMatrix * GetWorldPosition() );
-    Light.OuterRadius = OuterRadius;
-    Light.InnerRadius = Math::Min( InnerRadius, OuterRadius );
+    Light.Radius = GetRadius();
+    Light.CosHalfOuterConeAngle = 0;
+    Light.CosHalfInnerConeAngle = 0;
+    Light.InverseSquareRadius = InverseSquareRadius;
+    Light.Direction = InViewMatrix.TransformAsFloat3x3( -GetWorldDirection() ); // Only for photometric light
+    Light.SpotExponent = 0;
     Light.Color = GetEffectiveColor( -1.0f );
-    Light.RenderMask = ~0u;//RenderMask;
     Light.LightType = CLUSTER_LIGHT_POINT;
+    Light.RenderMask = ~0u;//RenderMask; // TODO
+    APhotometricProfile * profile = GetPhotometricProfile();
+    Light.PhotometricProfile = profile ? profile->GetPhotometricProfileIndex() : 0xffffffff;
 }

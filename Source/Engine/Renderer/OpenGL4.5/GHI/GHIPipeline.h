@@ -569,7 +569,7 @@ struct PipelineCreateInfo {
     VertexBindingInfo const *         pVertexBindings;
     uint32_t                          NumVertexAttribs;
     VertexAttribInfo const *          pVertexAttribs;
-    RenderPass *                      pRenderPass;
+    //RenderPass *                      pRenderPass;
 };
 
 class Pipeline /*final*/ : public NonCopyable, IObjectInterface {
@@ -599,8 +599,8 @@ private:
     unsigned int          PrimitiveTopology;
     int                   NumPatchVertices;
     bool                  bPrimitiveRestartEnabled;
-    RenderPass *          pRenderPass;
-    int                   Subpass;
+    //RenderPass *          pRenderPass;
+    //int                   Subpass;
 };
 
 }

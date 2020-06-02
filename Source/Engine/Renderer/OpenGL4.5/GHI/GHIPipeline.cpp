@@ -105,8 +105,8 @@ void Pipeline::Initialize( PipelineCreateInfo const & _CreateInfo ) {
     RasterizerState = device->CachedRasterizerState( *_CreateInfo.pRasterizer );
     DepthStencilState = device->CachedDepthStencilState( *_CreateInfo.pDepthStencil );
 
-    pRenderPass = _CreateInfo.pRenderPass;
-    Subpass = -1;
+    //pRenderPass = _CreateInfo.pRenderPass;
+    //Subpass = -1;
 
     state->TotalPipelines++;
 

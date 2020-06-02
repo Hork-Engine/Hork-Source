@@ -36,3 +36,11 @@ APointLight::APointLight() {
     LightComponent = CreateComponent< APointLightComponent >( "PointLight" );
     RootComponent = LightComponent;
 }
+
+
+AN_CLASS_META( AImageBasedLight )
+
+AImageBasedLight::AImageBasedLight() {
+    IBLComponent = CreateComponent< AIBLComponent >( "IBL" );
+    RootComponent = IBLComponent;
+}

@@ -29,10 +29,10 @@ SOFTWARE.
 */
 
 #include "base/common.frag"
-#include "base/pbr.frag"
 #include "base/debug.glsl"
 
 layout( location = 0 ) out vec4 FS_FragColor;
+/*layout( location = 1 ) out */vec3 FS_Normal;
 layout( origin_upper_left ) in vec4 gl_FragCoord;
 
 
@@ -49,19 +49,52 @@ layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
 
 struct SClusterLight
 {
-    vec4 Pack;        // For point and spot lights: position and radius
-    vec4 Pack2;       // Pack2.x - light type, Pack2.y - inner radius, z - cone outer angle, w - cone inner angle
-    vec4 Pack3;       // Pack3.xyz - direction of spot light, w - spot exponent
-    vec4 Color;       // RGB, alpha - ambient intensity
-    uvec4 IPack;       // IPack.x - RenderMask
+    vec4 PositionAndRadius;
+    vec4 CosHalfOuterConeAngle_CosHalfInnerConeAngle_InverseSquareRadius_Unused;
+    vec4 Direction_SpotExponent;
+    vec4 Color_IESLuminousIntensityScale;
+    uvec4 LightType_RenderMask_PhotometricProfile_Unused_Unused;
+};
+
+// Helpers to access light structure fields
+#define GetLightType( i ) LightBuffer[i].LightType_RenderMask_PhotometricProfile_Unused_Unused.x
+#define GetLightPosition( i ) LightBuffer[i].PositionAndRadius.xyz
+#define GetLightRadius( i ) LightBuffer[i].PositionAndRadius.w
+#define GetLightInverseSquareRadius( i ) LightBuffer[i].CosHalfOuterConeAngle_CosHalfInnerConeAngle_InverseSquareRadius_Unused.z
+#define GetLightDirection( i ) LightBuffer[i].Direction_SpotExponent.xyz
+#define GetLightCosHalfOuterConeAngle( i ) LightBuffer[i].CosHalfOuterConeAngle_CosHalfInnerConeAngle_InverseSquareRadius_Unused.x
+#define GetLightCosHalfInnerConeAngle( i ) LightBuffer[i].CosHalfOuterConeAngle_CosHalfInnerConeAngle_InverseSquareRadius_Unused.y
+#define GetLightSpotExponent( i ) LightBuffer[i].Direction_SpotExponent.w
+#define GetLightColor( i ) LightBuffer[i].Color_IESLuminousIntensityScale.xyz
+#define GetLightRenderMask( i ) LightBuffer[i].LightType_RenderMask_PhotometricProfile_Unused_Unused.y
+#define GetLightPhotometricProfile( i ) LightBuffer[i].LightType_RenderMask_PhotometricProfile_Unused_Unused.z
+//#define GetLightIESScale( i ) LightBuffer[i].Color_IESLuminousIntensityScale.w
+
+struct SClusterProbe
+{
+    vec4 PositionAndRadius;
+    uvec4 IrradianceAndReflectionMaps;  // x - Irradiance map index, y - Reflection map index, zw - unused
 };
 
 #define MAX_LIGHTS 768
+#define MAX_PROBES 256
 
 layout( binding = 4, std140 ) uniform UniformBuffer4 {
     SClusterLight LightBuffer[MAX_LIGHTS];
 };
 
+layout( binding = 5, std140 ) uniform UniformBuffer5 {
+    SClusterProbe Probes[MAX_PROBES];
+};
+
+#define SUPPORT_PHOTOMETRIC_LIGHT
+
+#ifdef SUPPORT_PHOTOMETRIC_LIGHT
+layout( binding = 10 ) uniform sampler1DArray IESMap;
+#endif
+
+layout( binding = 11 ) uniform sampler2D LookupBRDF;
+layout( binding = 12 ) uniform sampler2D AOLookup;
 layout( binding = 13 ) uniform usamplerBuffer ClusterItemTBO;
 layout( binding = 14 ) uniform usampler3D ClusterLookup; // TODO: Use bindless?
 layout( binding = 15 ) uniform sampler2DArrayShadow ShadowMapShadow; // TODO: Use bindless?
@@ -124,18 +157,22 @@ void main()
 #endif
 
 #ifdef MATERIAL_TYPE_BASELIGHT
-    MaterialBaseLightShader( BaseColor.xyz, MaterialNormal, MaterialSpecular, MaterialAmbientLight, MaterialEmissive, Opacity );
+    const float MaterialSpecularPower = 32; // TODO: Allow to set in the material
+    MaterialBaseLightShader( BaseColor.xyz, MaterialNormal, MaterialSpecular, MaterialSpecularPower, MaterialAmbientLight, MaterialEmissive, Opacity );
 #endif
 
 #ifdef MATERIAL_TYPE_UNLIT
     FS_FragColor = vec4( BaseColor.xyz, Opacity );
+    FS_Normal = vec3(0.0); // FIXME
 #endif
 
 #ifdef MATERIAL_TYPE_HUD
     FS_FragColor = BaseColor;
+    FS_Normal = vec3(0.0); // FIXME
 #endif
 
 #ifdef MATERIAL_TYPE_POSTPROCESS
     FS_FragColor = BaseColor;
+    FS_Normal = vec3(0.0); // FIXME
 #endif
 }

@@ -30,26 +30,57 @@ SOFTWARE.
 
 #pragma once
 
-#include "OpenGL45PassRenderer.h"
+#include "OpenGL45Common.h"
 
 namespace OpenGL45 {
 
-class ASSAORenderer : public APassRenderer {
+class ASSAORenderer {
 public:
-    void Initialize();
-    void Deinitialize();
+    ASSAORenderer();
 
-    void Render( GHI::Framebuffer & TargetFB, GHI::Texture & DepthTexture, GHI::Texture & NormalTexture );
+    AFrameGraphTextureStorage * AddPasses( AFrameGraph & FrameGraph, AFrameGraphTextureStorage * LinearDepth, AFrameGraphTextureStorage * NormalTexture );
 
 private:
+    AFrameGraphTextureStorage * AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGraphTextureStorage * LinearDepth );
+
+    AFrameGraphTextureStorage * AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTextureStorage * DeinterleaveDepthArray, AFrameGraphTextureStorage * NormalTexture );
+
+    AFrameGraphTextureStorage * AddReinterleavePass( AFrameGraph & FrameGraph, AFrameGraphTextureStorage * SSAOTextureArray );
+
+    AFrameGraphTextureStorage * AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTextureStorage * SSAOTexture, AFrameGraphTextureStorage * LinearDepth );
+
+    void ResizeAO( int Width, int Height );
+
     void CreateSamplers();
 
-    GHI::RenderPass Pass;
-    GHI::Pipeline Pipe;
-    GHI::Sampler DepthSampler;
-    GHI::Sampler NormalSampler;
-};
+    enum { HBAO_RANDOM_SIZE = 4 };
+    enum { HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE*HBAO_RANDOM_SIZE };
 
-extern ASSAORenderer GSSAORenderer;
+    int AOWidth = 0;
+    int AOHeight = 0;
+    int AOQuarterWidth = 0;
+    int AOQuarterHeight = 0;
+
+    GHI::Texture SSAODeinterleaveDepthArray;
+    GHI::Texture SSAODeinterleaveDepthView[HBAO_RANDOM_ELEMENTS];
+
+    GHI::Pipeline Pipe;
+    GHI::Pipeline Pipe_ORTHO;
+    GHI::Pipeline CacheAwarePipe;
+    GHI::Pipeline CacheAwarePipe_ORTHO;
+    GHI::Pipeline BlurPipe;
+    GHI::ShaderModule BlendFragmentShader;
+    GHI::Sampler DepthSampler;
+    GHI::Sampler LinearDepthSampler;
+    GHI::Sampler NormalSampler;
+    GHI::Sampler BlurSampler;
+    GHI::Sampler NearestSampler;
+    GHI::Sampler RandomMapSampler;
+    GHI::Texture RandomMap;
+    GHI::Pipeline DeinterleavePipe;
+    GHI::Pipeline ReinterleavePipe;
+    GHI::ShaderModule DeinterleaveFragmentShader;
+    Float3 hbaoRandom[HBAO_RANDOM_ELEMENTS];
+};
 
 }

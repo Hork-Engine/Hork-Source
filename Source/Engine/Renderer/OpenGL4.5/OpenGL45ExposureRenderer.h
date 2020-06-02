@@ -30,24 +30,21 @@ SOFTWARE.
 
 #pragma once
 
-#include "OpenGL45PassRenderer.h"
+#include "FrameGraph.h"
 
 namespace OpenGL45 {
 
-class AExposureRenderer : public APassRenderer {
+class AExposureRenderer {
 public:
-    void Initialize();
-    void Deinitialize();
+    AExposureRenderer();
 
-    void Render( GHI::Texture & SourceTexture );
+    AFrameGraphTextureStorage * AddPass( AFrameGraph & FrameGraph, AFrameGraphTextureStorage * SourceTexture_R );
 
-    GHI::Texture * GetDefaultLuminance() { return &DefaultLuminance; }
+    GHI::Texture & GetDefaultLuminance() { return DefaultLuminance; }
 
 private:
-    void CreatePipelines();
     void CreateSampler();
 
-    GHI::RenderPass LuminancePass;
     GHI::Pipeline MakeLuminanceMapPipe;
     GHI::Pipeline SumLuminanceMapPipe;
     GHI::Pipeline DynamicExposurePipe;
@@ -59,14 +56,6 @@ private:
     GHI::Texture Luminance4;
     GHI::Texture Luminance2;
     GHI::Texture DefaultLuminance;
-    GHI::Framebuffer FramebufferLum64;
-    GHI::Framebuffer FramebufferLum32;
-    GHI::Framebuffer FramebufferLum16;
-    GHI::Framebuffer FramebufferLum8;
-    GHI::Framebuffer FramebufferLum4;
-    GHI::Framebuffer FramebufferLum2;
 };
-
-extern AExposureRenderer GExposureRenderer;
 
 }

@@ -80,7 +80,7 @@ void main() {
     }
     
     // Saturate color
-    fragColor = builtin_saturate( fragColor );
+    fragColor = saturate( fragColor );
 
     // Color grading
     if ( IsColorGradingEnabled() ) {
@@ -106,7 +106,7 @@ void main() {
     FS_FragColor.a = IsFXAAEnabled()
                            ? LinearToSRGB( builtin_luminance( fragColor ) )
                            : 1.0;
-                           
+
 #ifdef DEBUG_RENDER_MODE
     uint DebugMode = GetDebugMode();
     switch( DebugMode ) {

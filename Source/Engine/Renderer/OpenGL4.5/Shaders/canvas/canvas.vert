@@ -28,7 +28,13 @@ SOFTWARE.
 
 */
 
-#include "base/viewuniforms.glsl"
+//#include "base/viewuniforms.glsl"
+
+layout( binding = 0, std140 ) uniform UniformBuffer0
+{
+    // Ortho projection for canvas rendering
+    mat4 OrthoProjection;
+};
 
 out gl_PerVertex
 {

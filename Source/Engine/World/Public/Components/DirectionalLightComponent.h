@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseLightComponent.h"
+#include "LightComponent.h"
 
 class ADirectionalLightComponent : public ALightComponent {
     AN_COMPONENT( ADirectionalLightComponent, ALightComponent )
@@ -38,8 +38,18 @@ class ADirectionalLightComponent : public ALightComponent {
     friend class ARenderWorld;
 
 public:
+    bool bCastShadow = true;
+
     void SetIlluminance( float IlluminanceInLux );
     float GetIlluminance() const;
+
+    /** Set temperature of the light in Kelvin */
+    void SetTemperature( float _Temperature );
+    float GetTemperature() const;
+
+    void SetColor( Float3 const & _Color );
+    void SetColor( float _R, float _G, float _B );
+    Float3 const & GetColor() const;
 
     void SetDirection( Float3 const & _Direction );
     Float3 GetDirection() const;
@@ -64,8 +74,10 @@ protected:
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
 private:
-    mutable Float4 EffectiveColor;
     float IlluminanceInLux;
+    float Temperature;
+    Float3 Color;
+    mutable Float4 EffectiveColor;
     int MaxShadowCascades;
 //    mutable Float4x4 LightViewMatrix;
 //    mutable Float4x4 ShadowMatrix;

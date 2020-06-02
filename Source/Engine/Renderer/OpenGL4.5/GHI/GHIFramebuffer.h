@@ -91,11 +91,17 @@ enum FRAMEBUFFER_OUTPUT : uint8_t
     FB_FLOAT
 };
 
+enum FRAMEBUFFER_ATTACHMENT_TYPE : uint8_t
+{
+    ATTACH_TEXTURE,
+    ATTACH_LAYER
+};
+
 struct FramebufferAttachmentInfo {
-    Texture *               pTexture;
-    bool                    bLayered;
-    uint16_t                LayerNum;
-    uint16_t                LodNum;
+    Texture * pTexture;
+    FRAMEBUFFER_ATTACHMENT_TYPE Type;
+    uint16_t LayerNum;
+    uint16_t LodNum;
 };
 
 struct FramebufferCreateInfo {
@@ -104,6 +110,23 @@ struct FramebufferCreateInfo {
     uint16_t                NumColorAttachments;
     FramebufferAttachmentInfo * pColorAttachments;
     FramebufferAttachmentInfo * pDepthStencilAttachment;
+
+    FramebufferCreateInfo() = default;
+    //{
+    //}
+
+    FramebufferCreateInfo( uint16_t InWidth,
+                           uint16_t InHeight,
+                           uint16_t InNumColorAttachments,
+                           FramebufferAttachmentInfo * InpColorAttachments,
+                           FramebufferAttachmentInfo * InpDepthStencilAttachment )
+        : Width( InWidth )
+        , Height( InHeight )
+        , NumColorAttachments( InNumColorAttachments )
+        , pColorAttachments( InpColorAttachments )
+        , pDepthStencilAttachment( InpDepthStencilAttachment )
+    {
+    }
 };
 
 class Framebuffer final : public NonCopyable, IObjectInterface {
@@ -128,7 +151,7 @@ public:
 
     bool HasDepthStencilAttachment() const { return bHasDepthStencilAttachment; }
 
-    FramebufferAttachmentInfo const GetDepthStencilAttachment() const { return DepthStencilAttachment; }
+    FramebufferAttachmentInfo const & GetDepthStencilAttachment() const { return DepthStencilAttachment; }
 
     /// Client-side call function
     bool Read( FRAMEBUFFER_ATTACHMENT _Attachment,

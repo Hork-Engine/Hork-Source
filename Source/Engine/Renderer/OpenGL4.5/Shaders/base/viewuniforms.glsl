@@ -95,7 +95,8 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     vec4 uPresaturation;
     vec4 uLuminanceNormalization;
     
-    uvec2 EnvProbeSampler;
+    uvec2 PrefilteredMapSampler;
+    uvec2 IrradianceMapSampler;
     
     uvec4 NumDirectionalLights;  // W - DebugMode, YZ - unused
     
@@ -133,6 +134,18 @@ float GetViewportZNear() {
 
 float GetViewportZFar() {
     return ViewportParams.w;
+}
+
+vec2 GetAOSizeInverted() {
+    return ViewportParams.xy;
+}
+
+vec2 GetAOQuarterSizeInverted() {
+    // TODO: Precalculate
+    const vec2 fullResolution = vec2(1.0)/GetAOSizeInverted();
+    const int quarterWidth  = (int(fullResolution.x)+3)/4;
+    const int quarterHeight = (int(fullResolution.y)+3)/4;
+    return vec2(1.0/float(quarterWidth),1.0/float(quarterHeight));
 }
 
 float RunningTime() {
@@ -179,6 +192,13 @@ uint GetDebugMode() {
 
 uint GetNumDirectionalLights() {
     return NumDirectionalLights.x;
+}
+
+// Adjust texture coordinates for dynamic resolution
+vec2 AdjustTexCoord( in vec2 TexCoord ) {
+    vec2 tc = min( TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
+    tc.y = 1.0 - tc.y;
+    return tc;
 }
 
 #endif // VIEWUNIFORMS_H

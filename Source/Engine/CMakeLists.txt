@@ -214,6 +214,7 @@ file( GLOB WorldPrivateBase World/Private/Base/*.h World/Private/Base/*.cpp )
 file( GLOB WorldPrivateResource World/Private/Resource/*.h World/Private/Resource/*.cpp )
 file( GLOB WorldPrivateResourceGLTF World/Private/Resource/gltf/*.h )
 file( GLOB WorldPrivateResourceLWO World/Private/Resource/lwo/*.h World/Private/Resource/lwo/*.c )
+file( GLOB WorldPrivateResourceIESNA World/Private/Resource/iesna/*.h World/Private/Resource/iesna/*.c )
 file( GLOB WorldPrivateMaterialGraph World/Private/MaterialGraph/*.h World/Private/MaterialGraph/*.cpp )
 file( GLOB WorldPrivateAudio World/Private/Audio/*.h World/Private/Audio/*.cpp World/Private/Audio/*.c )
 file( GLOB WorldPrivateAudioAudioCodec World/Private/Audio/AudioCodec/*.h World/Private/Audio/AudioCodec/*.cpp )
@@ -231,6 +232,7 @@ source_group( "World\\Private\\Base" FILES ${WorldPrivateBase} )
 source_group( "World\\Private\\Resource" FILES ${WorldPrivateResource} )
 source_group( "World\\Private\\Resource\\gltf" FILES ${WorldPrivateResourceGLTF} )
 source_group( "World\\Private\\Resource\\lwo" FILES ${WorldPrivateResourceLWO} )
+source_group( "World\\Private\\Resource\\iesna" FILES ${WorldPrivateResourceIESNA} )
 source_group( "World\\Private\\MaterialGraph" FILES ${WorldPrivateMaterialGraph} )
 source_group( "World\\Private\\Audio" FILES ${WorldPrivateAudio} )
 source_group( "World\\Private\\Audio\\AudioCodec" FILES ${WorldPrivateAudioAudioCodec} )
@@ -293,6 +295,7 @@ ${WorldPrivateBase}
 ${WorldPrivateResource}
 ${WorldPrivateResourceGLTF}
 ${WorldPrivateResourceLWO}
+${WorldPrivateResourceIESNA}
 ${WorldPrivateMaterialGraph}
 ${WorldPrivateAudio}
 ${WorldPrivateAudioAudioCodec}

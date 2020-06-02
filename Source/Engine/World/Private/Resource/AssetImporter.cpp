@@ -1503,14 +1503,14 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     }
 
     STexturePixelFormat texturePixelFormat;
-    if ( !STexturePixelFormat::GetAppropriatePixelFormat( image.PixelFormat, texturePixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( image.GetPixelFormat(), texturePixelFormat ) ) {
         return;
     }
 
     GResourceManager.SetResourceGUID( tex.GUID, ("/Root/" + fileName).CStr() );
 
     uint32_t textureType = TEXTURE_2D;
-    uint32_t w = image.Width, h = image.Height, d = 1, numLods = image.NumLods;
+    uint32_t w = image.GetWidth(), h = image.GetHeight(), d = 1, numLods = image.GetNumLods();
 
     f.WriteUInt32( FMT_FILE_TYPE_TEXTURE );
     f.WriteUInt32( FMT_VERSION_TEXTURE );
@@ -1524,10 +1524,10 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
 
     int pixelByteLength = texturePixelFormat.SizeInBytesUncompressed();
     int stride;
-    byte * pSrc = (byte *)image.pRawData;
+    byte * pSrc = (byte *)image.GetData();
     for ( int lod = 0 ; lod < numLods ; lod++ ) {
-        uint32_t lodWidth = Math::Max( 1, image.Width >> lod );
-        uint32_t lodHeight = Math::Max( 1, image.Height >> lod );
+        uint32_t lodWidth = Math::Max( 1, image.GetWidth() >> lod );
+        uint32_t lodHeight = Math::Max( 1, image.GetHeight() >> lod );
 
         f.WriteUInt32( lodWidth );
         f.WriteUInt32( lodHeight );
@@ -2081,12 +2081,12 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
         }
         if ( _Settings.SkyboxHDRIScale != 1.0f || _Settings.SkyboxHDRIPow != 1.0f ) {
             for ( int i = 0 ; i < 6 ; i++ ) {
-                float * HDRI = (float*)cubeFaces[i].pRawData;
-                int count = cubeFaces[i].Width*cubeFaces[i].Height*3;
+                float * HDRI = (float*)cubeFaces[i].GetData();
+                int count = cubeFaces[i].GetWidth()*cubeFaces[i].GetHeight()*3;
                 for ( int j = 0; j < count ; j += 3 ) {
-                    HDRI[j] = StdPow( HDRI[j + 0] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
-                    HDRI[j + 1] = StdPow( HDRI[j + 1] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
-                    HDRI[j + 2] = StdPow( HDRI[j + 2] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
+                    HDRI[j] = Math::Pow( HDRI[j + 0] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
+                    HDRI[j + 1] = Math::Pow( HDRI[j + 1] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
+                    HDRI[j + 2] = Math::Pow( HDRI[j + 2] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow );
                 }
             }
         }
@@ -2100,23 +2100,23 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
     }
 
     STexturePixelFormat texturePixelFormat;
-    if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[0].PixelFormat, texturePixelFormat ) ) {
+    if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[0].GetPixelFormat(), texturePixelFormat ) ) {
         return false;
     }
 
-    int width = cubeFaces[0].Width;
+    int width = cubeFaces[0].GetWidth();
     for ( int i = 1 ; i < 6 ; i++ ) {
 
         // Check width
-        if ( cubeFaces[i].Width != width
-            || cubeFaces[i].Height != width ) {
+        if ( cubeFaces[i].GetWidth() != width
+            || cubeFaces[i].GetHeight() != width ) {
             GLogger.Printf( "AAssetImporter::ImportSkybox: faces with different sizes\n" );
             return false;
         }
 
         // Check pixel format
         STexturePixelFormat facePF;
-        if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[i].PixelFormat, facePF ) ) {
+        if ( !STexturePixelFormat::GetAppropriatePixelFormat( cubeFaces[i].GetPixelFormat(), facePF ) ) {
             return false;
         }
         if ( texturePixelFormat != facePF ) {
@@ -2166,7 +2166,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
     size_t size = lodWidth * lodWidth * pixelByteLength;
 
     for ( int face = 0 ; face < 6 ; face++ ) {
-        f.WriteBuffer( cubeFaces[face].pRawData, size );
+        f.WriteBuffer( cubeFaces[face].GetData(), size );
     }
 
     f.WriteUInt32( 6 ); // num source files

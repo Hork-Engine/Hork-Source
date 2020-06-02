@@ -42,3 +42,15 @@ public:
 protected:
     APointLight();
 };
+
+
+#include <World/Public/Components/IBLComponent.h>
+class AImageBasedLight : public AActor {
+    AN_ACTOR( AImageBasedLight, AActor )
+
+public:
+    AIBLComponent * IBLComponent;
+
+protected:
+    AImageBasedLight();
+};

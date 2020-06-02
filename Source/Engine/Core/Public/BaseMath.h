@@ -879,6 +879,11 @@ AN_FORCEINLINE float RSqrt( const float & _Value ) {
     return Result;
 }
 
+template< typename T >
+AN_FORCEINLINE T Pow( T const Value, T const Power ) {
+    return std::pow( Value, Power );
+}
+
 AN_FORCEINLINE float FMod( float _X, float _Y ) {
     return std::fmod( _X, _Y );
 }
@@ -910,21 +915,6 @@ enum EAxialType {
     AxialW,
     NonAxial
 };
-
-// Возвращает значения от 0 включительно до 1 включительно
-AN_FORCEINLINE float Rand() { return (rand()&0x7FFF)/((float)0x7FFF); }
-
-// Возвращает значения от 0 включительно до 1 не включительно
-AN_FORCEINLINE float Rand1() { return (rand()&0x7FFF)/((float)0x8000); }
-
-// Возвращает значения от -1 включительно до 1 включительно
-AN_FORCEINLINE float Rand2() { return 2.0f*(Rand() - 0.5f); }
-
-// Возвращает значения в заданном диапазоне включительно
-AN_FORCEINLINE float Rand( float from, float to ) { return from + (to-from) * Rand(); }
-
-// Возвращает значения от from включительно до to не включительно
-AN_FORCEINLINE float Rand1( float from, float to ) { return from + (to-from) * Rand1(); }
 
 // Comparision
 template< typename T >

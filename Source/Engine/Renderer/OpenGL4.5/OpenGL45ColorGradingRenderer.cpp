@@ -29,60 +29,31 @@ SOFTWARE.
 */
 
 #include "OpenGL45ColorGradingRenderer.h"
-#include "OpenGL45FrameResources.h"
 #include "OpenGL45RenderBackend.h"
 
 using namespace GHI;
 
 namespace OpenGL45 {
 
-AColorGradingRenderer GColorGradingRenderer;
-
-void AColorGradingRenderer::Initialize() {
-    RenderPassCreateInfo renderPassCI = {};
-
-    renderPassCI.NumColorAttachments = 1;
-
-    AttachmentInfo colorAttachment = {};
-    colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_LOAD;
-    renderPassCI.pColorAttachments = &colorAttachment;
-
-    AttachmentRef colorAttachmentRef0 = {};
-    colorAttachmentRef0.Attachment = 0;
-
-    SubpassInfo subpasses[1] = {};
-    subpasses[0].NumColorAttachments = 1;
-    subpasses[0].pColorAttachmentRefs = &colorAttachmentRef0;
-
-    renderPassCI.NumSubpasses = AN_ARRAY_SIZE( subpasses );
-    renderPassCI.pSubpasses = subpasses;
-
-    Pass.Initialize( renderPassCI );
-
+AColorGradingRenderer::AColorGradingRenderer()
+{
     CreateFullscreenQuadPipelineGS( PipelineLUT,
                                     "postprocess/colorgrading.vert",
                                     "postprocess/colorgrading.frag",
                                     "postprocess/colorgrading.geom",
-                                    Pass,
                                     GHI::BLENDING_ALPHA );
 
     CreateFullscreenQuadPipelineGS( PipelineProcedural,
                                     "postprocess/colorgrading.vert",
                                     "postprocess/colorgrading_procedural.frag",
                                     "postprocess/colorgrading.geom",
-                                    Pass,
                                     GHI::BLENDING_ALPHA );
 
     CreateSamplers();
 }
 
-void AColorGradingRenderer::Deinitialize() {
-    Pass.Deinitialize();
-    PipelineLUT.Deinitialize();
-    PipelineProcedural.Deinitialize();
-}
-
-void AColorGradingRenderer::CreateSamplers() {
+void AColorGradingRenderer::CreateSamplers()
+{
     SamplerCreateInfo samplerCI;
     samplerCI.SetDefaults();
 
@@ -93,72 +64,66 @@ void AColorGradingRenderer::CreateSamplers() {
     ColorGradingSampler = GDevice.GetOrCreateSampler( samplerCI );
 }
 
-void AColorGradingRenderer::Render() {
-    ATextureGPU * texture = GRenderView->CurrentColorGradingLUT;
-    ATextureGPU * source = GRenderView->ColorGradingLUT;
-
-    if ( !texture ) {
-        return;
+AFrameGraphTextureStorage * AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph )
+{
+    if ( !GRenderView->CurrentColorGradingLUT ) {
+        return nullptr;
     }
 
-    GHI::Framebuffer * framebuffer;
-    if ( !texture->pFramebuffer ) {
-        texture->pFramebuffer = GZoneMemory.Alloc( sizeof( GHI::Framebuffer ) );
-        framebuffer = new ( texture->pFramebuffer ) GHI::Framebuffer;
+    auto dest = FrameGraph.AddExternalResource< GHI::TextureStorageCreateInfo, GHI::Texture >(
+        "CurrentColorGradingLUT",
+        MakeTextureStorage( GHI::INTERNAL_PIXEL_FORMAT_RGB16F, TextureResolution3D( 16,16,16 ) ),
+        GPUTextureHandle( GRenderView->CurrentColorGradingLUT ) );
 
-        FramebufferAttachmentInfo colorAttachment = {};
-        colorAttachment.bLayered = false;
-        colorAttachment.LayerNum = 0;
-        colorAttachment.LodNum = 0;
-        colorAttachment.pTexture = GPUTextureHandle( texture );
-        FramebufferCreateInfo framebufferCI = {};
-        framebufferCI.NumColorAttachments = 1;
-        framebufferCI.pColorAttachments = &colorAttachment;
-        framebufferCI.Width = 16;
-        framebufferCI.Height = 16;        
-        framebuffer->Initialize( framebufferCI );
-    } else {
-        framebuffer = static_cast< GHI::Framebuffer * >( texture->pFramebuffer );
+    if ( GRenderView->ColorGradingLUT )
+    {
+        auto source = FrameGraph.AddExternalResource< GHI::TextureStorageCreateInfo, GHI::Texture >(
+            "ColorGradingLUT",
+            MakeTextureStorage( GHI::INTERNAL_PIXEL_FORMAT_RGB16F, TextureResolution3D( 16,16,16 ) ),
+            GPUTextureHandle( GRenderView->ColorGradingLUT ) );
+
+        ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Color Grading Pass" );
+
+        renderPass.SetRenderArea( 16, 16 );
+        renderPass.SetColorAttachments(
+        {
+            { dest, GHI::AttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
+        }
+        );
+        renderPass.AddResource( source, RESOURCE_ACCESS_READ );
+        renderPass.AddSubpass( { 0 },
+                               [=]( ARenderPass const & RenderPass, int SubpassIndex )
+        {
+            GFrameResources.TextureBindings[0].pTexture = source->Actual();
+            GFrameResources.SamplerBindings[0].pSampler = ColorGradingSampler;
+
+            Cmd.BindShaderResources( &GFrameResources.Resources );
+
+            DrawSAQ( &PipelineLUT );
+        } );
+
+        return dest;
     }
+    else
+    {
+        ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Color Grading Procedural Pass" );
 
-    RenderPassBegin renderPassBegin = {};
+        renderPass.SetRenderArea( 16, 16 );
+        renderPass.SetColorAttachments(
+        {
+            { dest, GHI::AttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
+        }
+        );
+        renderPass.AddSubpass( { 0 },
+                               [=]( ARenderPass const & RenderPass, int SubpassIndex )
+        {
+            Cmd.BindShaderResources( &GFrameResources.Resources );
 
-    renderPassBegin.pRenderPass = &Pass;
-    renderPassBegin.pFramebuffer = framebuffer;
-    renderPassBegin.RenderArea.Width = 16;
-    renderPassBegin.RenderArea.Height = 16;
+            DrawSAQ( &PipelineProcedural );
+        } );
 
-    Cmd.BeginRenderPass( renderPassBegin );
-
-    Viewport vp;
-    vp.X = 0;
-    vp.Y = 0;
-    vp.Width = 16;
-    vp.Height = 16;
-    vp.MinDepth = 0;
-    vp.MaxDepth = 1;
-    Cmd.SetViewport( vp );
-
-    DrawCmd drawCmd;
-    drawCmd.VertexCountPerInstance = 4;
-    drawCmd.InstanceCount = 1;
-    drawCmd.StartVertexLocation = 0;
-    drawCmd.StartInstanceLocation = 0;
-    
-    if ( source ) {
-        GFrameResources.TextureBindings[0].pTexture = GPUTextureHandle( source );
-        GFrameResources.SamplerBindings[0].pSampler = ColorGradingSampler;
-
-        Cmd.BindPipeline( &PipelineLUT );
-    } else {
-        Cmd.BindPipeline( &PipelineProcedural );
+        return dest;
     }
-    Cmd.BindVertexBuffer( 0, &GFrameResources.Saq, 0 );
-    Cmd.BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
-    Cmd.BindShaderResources( &GFrameResources.Resources );
-    Cmd.Draw( &drawCmd );
-
-    Cmd.EndRenderPass();
 }
 
 }

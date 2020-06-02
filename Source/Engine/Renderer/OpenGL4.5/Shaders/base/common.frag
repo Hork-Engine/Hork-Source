@@ -31,54 +31,26 @@ SOFTWARE.
 #ifndef COMMON_H
 #define COMMON_H
 
-vec4 TextureSampleClampRegion( sampler2D tex, vec2 texCoord, vec2 region )
+#include "base/core.glsl"
+
+vec4 TextureSampleClampRegion( sampler2D Image, vec2 TexCoord, vec2 Region )
 {
-    vec2 texSize = vec2(textureSize( tex, 0 ));
-    vec2 tc = min( texCoord * region, region - 1.0 ) / texSize;
-    tc.y = 1.0 - tc.y;
-    return texture( tex, tc );
+    vec2 TexSize = vec2(textureSize( Image, 0 ));
+    vec2 ClampedTexCoord = min( TexCoord * Region, Region - 1.0 ) / TexSize;
+    ClampedTexCoord.y = 1.0 - ClampedTexCoord.y;
+    return texture( Image, ClampedTexCoord );
 }
 
-float ComputeLinearDepth( in float _Depth, in float _NearZ, in float _FarZ ) {
-    return _NearZ * _FarZ / ( _Depth * ( _FarZ - _NearZ ) + _NearZ );
+float CalcLinearDepth_Perpective( float Depth, float NearZ, float FarZ ) {
+    return NearZ * FarZ / ( Depth * ( FarZ - NearZ ) + NearZ );
 }
 
-vec3 UnpackPositionFromLinearDepth( in sampler2D _LinearDepth, in vec2 _Coord, in vec3 _Dir ) {
-    return _Dir * texture( _LinearDepth, _Coord ).x;
+float CalcLinearDepth_Ortho( float Depth, float NearZ, float FarZ ) {
+    return -( Depth * ( FarZ - NearZ ) + NearZ );
 }
-
-#if 0
-vec3 UnpackPositionFromDepth( in sampler2D _Depth, in vec2 _Coord, in vec3 _Dir ) {
-#if 1 // Оптимизированный вариант, работает только для перспективной матрицы проекции
-    float zNear = InvViewportSize.z;
-    float zFar = InvViewportSize.w;
-
-    //float LinearDepth = zFar * zNear / ( texture( _Depth, _Coord ).x * ( zFar - zNear ) - zFar );
-    float LinearDepth = zNear * zFar / ( texture( _Depth, _Coord ).x * ( zFar - zNear ) + zNear );
-
-    return _Dir * LinearDepth;
-#else // Универсальный вариант, подходит также для ортогональной матрицы проекции
-    vec2 tc = _Coord;
-    tc.y = 1.0 - tc.y;
-
-    //vec4 p = InverseProjectionMatrix * vec4( tc * 2.0 - 1.0, texture( _Depth, _Coord ).x * 2.0 - 1.0, 1.0 );
-    vec4 p = InverseProjectionMatrix * vec4( tc * 2.0 - 1.0, texture( _Depth, _Coord ).x, 1.0 );
-    return p.xyz / p.w;
-#endif
-}
-
-vec3 UnpackPositionFromDepth( in sampler2D _Depth, in vec2 _Coord ) {
-    vec2 tc = _Coord;
-    tc.y = 1.0 - tc.y;
-
-    //vec4 p = InverseProjectionMatrix * vec4( tc * 2.0 - 1.0, texture( _Depth, _Coord ).x * 2.0 - 1.0, 1.0 );
-    vec4 p = InverseProjectionMatrix * vec4( tc * 2.0 - 1.0, texture( _Depth, _Coord ).x, 1.0 );
-    return p.xyz / p.w;
-}
-#endif
 
 // Gaussian blur approximation with linear sampling. 9-tap filter using five texture fetches instead of nine.
-vec4 GaussianBlur9( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
+vec4 GaussianBlur9( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
     vec2 Offset1 = Direction * 1.3846153846;
     vec2 Offset2 = Direction * 3.2307692308;
     return texture( Image, TexCoord ) * 0.2270270270
@@ -87,14 +59,14 @@ vec4 GaussianBlur9( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
 }
 
 // Gaussian blur approximation with linear sampling. 5-tap filter using three texture fetches instead of five.
-vec4 GaussianBlur5( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
+vec4 GaussianBlur5( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
     vec2 Offset1 = Direction * 1.3333333333333333;
     return texture( Image, TexCoord ) * 0.29411764705882354
        + ( texture( Image, TexCoord + Offset1 ) + texture( Image, TexCoord - Offset1 ) ) * 0.35294117647058826;
 }
 
 // Gaussian blur approximation with linear sampling. 13-tap filter using 7 vs 13 texture fetches.
-vec4 GaussianBlur13( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
+vec4 GaussianBlur13( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
     vec2 Offset1 = Direction * 1.411764705882353;
     vec2 Offset2 = Direction * 3.2941176470588234;
     vec2 Offset3 = Direction * 5.176470588235294;
@@ -104,7 +76,7 @@ vec4 GaussianBlur13( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
        + ( texture( Image, TexCoord + Offset3 ) + texture( Image, TexCoord - Offset3 ) ) * 0.010381362401148057;
 }
 
-vec4 MyBlur( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
+vec4 MyBlur( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
     vec2 Offset0 = Direction * 0.5;
     vec2 Offset1 = Direction * 1.5;
     vec2 Offset2 = Direction * 2.5;
@@ -113,6 +85,39 @@ vec4 MyBlur( in sampler2D Image, in vec2 TexCoord, in vec2 Direction ) {
          + ( texture( Image, TexCoord + Offset1 ) + texture( Image, TexCoord - Offset1 ) ) * 0.035
          + ( texture( Image, TexCoord + Offset2 ) + texture( Image, TexCoord - Offset2 ) ) * 0.05
          + ( texture( Image, TexCoord + Offset3 ) + texture( Image, TexCoord - Offset3 ) ) * 0.4;
+}
+
+float CalcDistanceAttenuationFrostbite( float DistanceSqr, float InverseSquareRadius ) {
+    const float factor = DistanceSqr * InverseSquareRadius;
+    const float smoothFactor = saturate( 1.0 - factor * factor );
+    return smoothFactor * smoothFactor / max( DistanceSqr, 0.01*0.01 );
+}
+
+float CalcDistanceAttenuationSkyforge( float Distance, float InnerRadius, float OuterRadius ) {
+    const float d = max( InnerRadius, Distance );
+            
+    return saturate( 1.0 - pow( d / OuterRadius, 4.0 ) ) / ( d*d + 1.0 );
+}
+
+float CalcDistanceAttenuationUnreal( float Distance, float OuterRadius ) {
+    return pow( saturate( 1.0 - pow( Distance / OuterRadius, 4.0 ) ), 2.0 );// / (Distance*Distance + 1.0 );
+}
+
+float CalcDistanceAttenuation( float Distance, float OuterRadius ) {
+    return pow( 1.0 - min( Distance / OuterRadius, 1.0 ), 2.2 );
+}
+
+float CalcSpotAttenuation( float LdotDir, float CosHalfInnerAngle, float CosHalfOuterAngle, float SpotExponent ) {
+#if 0
+    // TODO: precalc scale and offset on CPU-side
+    const float Scale = 1.0 / max( CosHalfInnerAngle - CosHalfOuterAngle, 1e-4 );
+    const float Offset = -CosHalfOuterAngle * Scale;
+    
+    const float Attenuation = saturate( LdotDir * Scale + Offset );
+    return Attenuation * Attenuation;
+#else
+    return pow( smoothstep( CosHalfOuterAngle, CosHalfInnerAngle, LdotDir ), SpotExponent );
+#endif
 }
 
 #endif // COMMON_H

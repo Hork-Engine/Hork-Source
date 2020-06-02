@@ -907,23 +907,34 @@ enum EClusterLightType {
 };
 
 struct SClusterLight {
-    Float3 Position;     // For point and spot lights: position and radius
-    float  OuterRadius;
+    Float3 Position;
+    float  Radius;
 
-    float LightType;     // EClusterLightType
-    float InnerRadius;
-    float OuterConeAngle;
-    float InnerConeAngle;
+    float CosHalfOuterConeAngle;
+    float CosHalfInnerConeAngle;
+    float InverseSquareRadius;      // 1 / (Radius*Radius)
+    float Unused2;
 
-    Float3 SpotDirection;
-    float SpotExponent;
+    Float3 Direction;   // For spot and photometric lights
+    float SpotExponent; // For spot lights
 
-    Float4 Color;    // RGB, alpha - ambient intensity
+    Float3 Color;       // Light color
+    float Unused1;
 
+    unsigned int LightType;
     unsigned int RenderMask;
+    unsigned int PhotometricProfile;
+    unsigned int Padding1;
+};
+
+struct SClusterProbe {
+    Float3 Position;
+    float  Radius;
+
+    unsigned int IrradianceMap;
+    unsigned int ReflectionMap;
     unsigned int Padding0;
     unsigned int Padding1;
-    unsigned int Padding2;
 };
 
 struct SFrameLightData {
@@ -940,8 +951,8 @@ struct SFrameLightData {
     //SClusterDecal Decals[MAX_DECAL];
     //int TotalDecals;
 
-    //SClusterProbe Probes[MAX_PROBES];
-    //int TotalProbes;
+    SClusterProbe Probes[MAX_PROBES];
+    int TotalProbes;
 };
 
 //
@@ -1010,6 +1021,8 @@ struct SRenderView {
 
     // Current exposure texture
     ATextureGPU * CurrentExposure;
+
+    ATextureGPU * PhotometricProfiles;
 
     int NumShadowMapCascades;
     int NumCascadedShadowMaps;

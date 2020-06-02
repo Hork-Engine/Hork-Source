@@ -70,19 +70,19 @@ void main() {
 
     const vec4
     JointTransform0 = Transform[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
-                    + Transform[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
-                    + Transform[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]
-                    + Transform[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];
+                      + Transform[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
+                      + Transform[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]
+                      + Transform[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];
     const vec4
     JointTransform1 = Transform[ InJointIndices[0] * 3 + 1 ] * InJointWeights[0]
-                    + Transform[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]
-                    + Transform[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]
-                    + Transform[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];
+                      + Transform[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]
+                      + Transform[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]
+                      + Transform[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];
     const vec4
     JointTransform2 = Transform[ InJointIndices[0] * 3 + 2 ] * InJointWeights[0]
-                    + Transform[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
-                    + Transform[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
-                    + Transform[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];
+                      + Transform[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
+                      + Transform[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
+                      + Transform[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];
 
     vec3 Position;
     Position.x = dot( JointTransform0, SrcPosition );
@@ -118,7 +118,7 @@ void main() {
     VS_T = normalize( VS_T );
 
     // Compute binormal in viewspace
-    VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;// * ( handedness - 1.0 );
+    VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;
     #endif  // COMPUTE_TBN
 
 #else
@@ -130,15 +130,16 @@ void main() {
     VS_N.x = dot( ModelNormalToViewSpace0, vec4( InNormal, 0.0 ) );
     VS_N.y = dot( ModelNormalToViewSpace1, vec4( InNormal, 0.0 ) );
     VS_N.z = dot( ModelNormalToViewSpace2, vec4( InNormal, 0.0 ) );
+    VS_N = normalize( VS_N );
 
     // Transform tangent from model space to viewspace
     VS_T.x = dot( ModelNormalToViewSpace0, InTangent );
     VS_T.y = dot( ModelNormalToViewSpace1, InTangent );
     VS_T.z = dot( ModelNormalToViewSpace2, InTangent );
-//VS_N=normalize(VS_N);
-//VS_T=normalize(VS_T);
+    VS_T = normalize( VS_T );
+
     // Compute binormal in viewspace
-    VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;// * ( handedness - 1.0 );
+    VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;
     #endif // COMPUTE_TBN
 
 #endif

@@ -53,6 +53,4 @@ private:
     GHI::Texture Staging;
 };
 
-extern AGPUSync GOpenGL45GPUSync;
-
 }

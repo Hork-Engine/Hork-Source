@@ -83,6 +83,81 @@ struct SamplerCreateInfo {
     float                MaxLOD;
     bool                 bCubemapSeamless;
 
+    SamplerCreateInfo()
+    {
+        SetDefaults();
+    }
+
+    SamplerCreateInfo & SetFilter( SAMPLER_FILTER InFilter ) {
+        Filter = InFilter;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetAddress( SAMPLER_ADDRESS_MODE InAddress ) {
+        AddressU = InAddress;
+        AddressV = InAddress;
+        AddressW = InAddress;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetAddressU( SAMPLER_ADDRESS_MODE InAddressU ) {
+        AddressU = InAddressU;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetAddressV( SAMPLER_ADDRESS_MODE InAddressV ) {
+        AddressV = InAddressV;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetAddressW( SAMPLER_ADDRESS_MODE InAddressW ) {
+        AddressW = InAddressW;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetMipLODBias( float InMipLODBias ) {
+        MipLODBias = InMipLODBias;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetMaxAnisotropy( uint8_t InMaxAnisotropy ) {
+        MaxAnisotropy = InMaxAnisotropy;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetComparisonFunc( COMPARISON_FUNCTION InComparisonFunc ) {
+        ComparisonFunc = InComparisonFunc;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetCompareRefToTexture( bool InbCompareRefToTexture ) {
+        bCompareRefToTexture = InbCompareRefToTexture;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetBorderColor( float InR, float InG, float InB, float InA ) {
+        BorderColor[0] = InR;
+        BorderColor[1] = InG;
+        BorderColor[2] = InB;
+        BorderColor[3] = InA;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetMinLOD( float InMinLOD ) {
+        MinLOD = InMinLOD;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetMaxLOD( float InMaxLOD ) {
+        MaxLOD = InMaxLOD;
+        return *this;
+    }
+
+    SamplerCreateInfo & SetCubemapSeamless( bool InbCubemapSeamless ) {
+        bCubemapSeamless = InbCubemapSeamless;
+        return *this;
+    }
+
     void SetDefaults() {
         // Default values from OpenGL specification
         Filter = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR;
@@ -93,10 +168,10 @@ struct SamplerCreateInfo {
         MaxAnisotropy = 0;
         ComparisonFunc = CMPFUNC_LEQUAL;
         bCompareRefToTexture = false;
-        BorderColor[ 0 ] = 0;
-        BorderColor[ 1 ] = 0;
-        BorderColor[ 2 ] = 0;
-        BorderColor[ 3 ] = 0;
+        BorderColor[0] = 0;
+        BorderColor[1] = 0;
+        BorderColor[2] = 0;
+        BorderColor[3] = 0;
         MinLOD = -1000;
         MaxLOD = 1000;
         bCubemapSeamless = false;

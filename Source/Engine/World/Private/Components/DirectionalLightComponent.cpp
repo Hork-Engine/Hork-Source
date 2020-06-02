@@ -34,15 +34,20 @@ SOFTWARE.
 
 static const float DEFAULT_MAX_SHADOW_CASCADES = 4;
 static const float DEFAULT_ILLUMINANCE_IN_LUX = 110000.0f;
+static const float DEFAULT_TEMPERATURE = 6590.0f;
+static const Float3 DEFAULT_COLOR( 1.0f );
 
 ARuntimeVariable RVDrawDirectionalLights( _CTS( "DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ADirectionalLightComponent )
 
 ADirectionalLightComponent::ADirectionalLightComponent() {
-    MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
     IlluminanceInLux = DEFAULT_ILLUMINANCE_IN_LUX;
-    EffectiveColor = Float4(0.0f);
+    Temperature = DEFAULT_TEMPERATURE;
+    Color = DEFAULT_COLOR;    
+    EffectiveColor = Float4( 0.0f );
+    MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
+    Next = Prev = nullptr;
 }
 
 void ADirectionalLightComponent::SetIlluminance( float _IlluminanceInLux ) {
@@ -165,6 +170,32 @@ const Float4x4 & ADirectionalLightComponent::GetLightViewMatrix() const {
     return LightViewMatrix;
 }
 #endif
+
+
+void ADirectionalLightComponent::SetColor( Float3 const & _Color ) {
+    Color = _Color;
+    bEffectiveColorDirty = true;
+}
+
+void ADirectionalLightComponent::SetColor( float _R, float _G, float _B ) {
+    Color.X = _R;
+    Color.Y = _G;
+    Color.Z = _B;
+    bEffectiveColorDirty = true;
+}
+
+Float3 const & ADirectionalLightComponent::GetColor() const {
+    return Color;
+}
+
+void ADirectionalLightComponent::SetTemperature( float _Temperature ) {
+    Temperature = _Temperature;
+    bEffectiveColorDirty = true;
+}
+
+float ADirectionalLightComponent::GetTemperature() const {
+    return Temperature;
+}
 
 Float4 const & ADirectionalLightComponent::GetEffectiveColor() const {
     if ( bEffectiveColorDirty ) {

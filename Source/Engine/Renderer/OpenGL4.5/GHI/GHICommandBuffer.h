@@ -513,7 +513,7 @@ public:
                                       /* optional */ Rect2D const * _Rect );
 
 private:
-    void BindRenderPassSubPass( State * _State, RenderPass * _RenderPass, int _Subpass );
+    void BindRenderPassSubPass( State * _State, RenderPass const * _RenderPass, int _Subpass );
     void BeginRenderPassDefaultFramebuffer( RenderPassBegin const & _RenderPassBegin );
 
     bool CopyBufferToTexture1D( Buffer & _SrcBuffer,

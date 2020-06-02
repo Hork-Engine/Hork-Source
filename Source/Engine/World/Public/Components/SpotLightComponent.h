@@ -30,30 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseLightComponent.h"
-#include <World/Public/Level.h>
+#include "AnalyticLightComponent.h"
 
-// TODO: Merge spot and point light to one class
-class ASpotLightComponent : public APunctualLightComponent {
-    AN_COMPONENT( ASpotLightComponent, APunctualLightComponent )
+class ASpotLightComponent : public AAnalyticLightComponent {
+    AN_COMPONENT( ASpotLightComponent, AAnalyticLightComponent )
 
 public:
-    /** Rendering group to filter lights during rendering */
-    void SetVisibilityGroup( int InVisibilityGroup );
-
-    int GetVisibilityGroup() const;
-
-    void SetEnabled( bool _Enabled ) override;
-
-    void SetMovable( bool _Movable );
-
-    bool IsMovable() const;
-
-    void SetInnerRadius( float _Radius );
-    float GetInnerRadius() const;
-
-    void SetOuterRadius( float _Radius );
-    float GetOuterRadius() const;
+    void SetRadius( float _Radius );
+    float GetRadius() const;
 
     void SetInnerConeAngle( float _Angle );
     float GetInnerConeAngle() const;
@@ -64,19 +48,11 @@ public:
     void SetSpotExponent( float _Exponent );
     float GetSpotExponent() const;
 
-    void SetDirection( Float3 const & _Direction );
-    Float3 GetDirection() const;
-
-    void SetWorldDirection( Float3 const & _Direction );
-    Float3 GetWorldDirection() const;
-
     void PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) override;
 
 protected:
     ASpotLightComponent();
 
-    void InitializeComponent() override;
-    void DeinitializeComponent() override;
     void OnTransformDirty() override;
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
@@ -86,13 +62,11 @@ private:
     BvSphere SphereWorldBounds;
     BvOrientedBox OBBWorldBounds;
 
-    float InnerRadius;
-    float OuterRadius;
+    float Radius;
+    float InverseSquareRadius;
     float InnerConeAngle;
     float OuterConeAngle;
     float CosHalfInnerConeAngle;
     float CosHalfOuterConeAngle;
     float SpotExponent;
-
-    SPrimitiveDef Primitive;
 };

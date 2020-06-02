@@ -92,7 +92,7 @@ vec3 ACESFilm( in vec3 Color, in float Exposure ) {
     const float d = 0.59f;
     const float e = 0.14f;
     vec3 x = Color * Exposure;
-    return saturate3( (x*(a*x+b))/(x*(c*x+d)+e) );
+    return saturate( (x*(a*x+b))/(x*(c*x+d)+e) );
 }
 
 vec3 Uncharted2Tonemap( in vec3 Color, in float Exposure )
@@ -136,7 +136,7 @@ vec3 ToneHaarmPeterDuikerCurve( in vec3 Color, in float Exposure, in sampler1D L
     const float OneMinusPadding = 1.0 - Padding;
     
     vec3 LogColor = ( log10( 0.4 * x / linReference ) / ld * gamma + logReference ) / 1023.0;
-    LogColor = saturate3( LogColor );
+    LogColor = saturate( LogColor );
       
     x.r = texture( Lookup, mix( Padding, OneMinusPadding, LogColor.r ) ).r;
     x.g = texture( Lookup, mix( Padding, OneMinusPadding, LogColor.g ) ).r;

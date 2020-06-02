@@ -30,25 +30,12 @@ SOFTWARE.
 
 #include "OpenGL45RenderBackend.h"
 #include "OpenGL45GPUSync.h"
-#include "OpenGL45FrameResources.h"
-#include "OpenGL45RenderTarget.h"
-#include "OpenGL45ShadowMapRT.h"
 #include "OpenGL45Material.h"
-#include "OpenGL45CanvasPassRenderer.h"
-#include "OpenGL45ShadowMapPassRenderer.h"
-#include "OpenGL45DepthPassRenderer.h"
-#include "OpenGL45ColorPassRenderer.h"
-#include "OpenGL45WireframePassRenderer.h"
-#include "OpenGL45NormalsPassRenderer.h"
-#include "OpenGL45DebugDrawPassRenderer.h"
-#include "OpenGL45BrightPassRenderer.h"
-#include "OpenGL45ExposureRenderer.h"
-#include "OpenGL45ColorGradingRenderer.h"
-#include "OpenGL45PostprocessPassRenderer.h"
-#include "OpenGL45FxaaPassRenderer.h"
+#include "OpenGL45CanvasRenderer.h"
 
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/ScopedTimeCheck.h>
 #include <Core/Public/WindowsDefs.h>
 #include <Core/Public/CriticalError.h>
 #include <Core/Public/Logger.h>
@@ -68,8 +55,7 @@ SOFTWARE.
 
 ARuntimeVariable RVSwapInterval( _CTS("SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing") );
 ARuntimeVariable RVRenderSnapshot( _CTS("RenderSnapshot"), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawNormals( _CTS( "DrawNormals" ), _CTS( "0" ), VAR_CHEAT );
-extern ARuntimeVariable RVFxaa;
+ARuntimeVariable RVRebuildGraph( _CTS( "RebuildGraph" ), _CTS( "1" ) );
 
 extern thread_local char LogBuffer[16384]; // Use existing log buffer
 
@@ -82,10 +68,6 @@ void SetCurrentState( State * _State ) {
 
 State * GetCurrentState() {
     return CurrentState;
-}
-
-ghi_state_t * ghi_get_current_state() { // experemental
-    return nullptr;
 }
 
 void LogPrintf( const char * _Format, ... ) {
@@ -289,7 +271,6 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     }
 
     SDL_GL_MakeCurrent( WindowHandle, WindowCtx );
-    SDL_GL_SetSwapInterval( 0 );
 
     glewExperimental = true;
     GLenum result = glewInit();
@@ -360,9 +341,13 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
 
     SetCurrentState( &GState );
 
+    // Mark swap interval modified to set initial swap interval.
+    RVSwapInterval.MarkModified();
+
+    // Clear garbage on screen, set initial swap interval and swap the buffers.
     glClearColor( 0, 0, 0, 0 );
     glClear( GL_COLOR_BUFFER_BIT );
-    SDL_GL_SwapWindow( WindowHandle );
+    SwapBuffers();
 
     Core::ZeroMem( PixelFormatTable, sizeof( PixelFormatTable ) );
     Core::ZeroMem( InternalPixelFormatTable, sizeof( InternalPixelFormatTable ) );
@@ -526,43 +511,22 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     //    INTERNAL_PIXEL_FORMAT_R11F_G11F_B10F, // RGB   f11  f11  f10
     //    INTERNAL_PIXEL_FORMAT_RGB9_E5,        // RGB   9  9  9     5
 
+    FrameGraph = std::make_unique< AFrameGraph >();
+    FrameRenderer = std::make_unique< AFrameRenderer >();
+    CanvasRenderer = std::make_unique< ACanvasRenderer >();
 
-    GRenderTarget.Initialize();
-    GShadowMapRT.Initialize();
-    GShadowMapPassRenderer.Initialize();
-    GDepthPassRenderer.Initialize();
-    GColorPassRenderer.Initialize();
-    GWireframePassRenderer.Initialize();
-    GNormalsPassRenderer.Initialize();
-    GDebugDrawPassRenderer.Initialize();
-    GBrightPassRenderer.Initialize();
-    GExposureRenderer.Initialize();
-    GColorGradingRenderer.Initialize();
-    GPostprocessPassRenderer.Initialize();
-    GFxaaPassRenderer.Initialize();
-    GCanvasPassRenderer.Initialize();
     GFrameResources.Initialize();
 }
 
 void ARenderBackend::Deinitialize() {
     GLogger.Printf( "Deinitializing OpenGL backend...\n" );
 
-    GRenderTarget.Deinitialize();
-    GShadowMapRT.Deinitialize();
-    GShadowMapPassRenderer.Deinitialize();
-    GDepthPassRenderer.Deinitialize();
-    GColorPassRenderer.Deinitialize();
-    GWireframePassRenderer.Deinitialize();
-    GNormalsPassRenderer.Deinitialize();
-    GDebugDrawPassRenderer.Deinitialize();
-    GBrightPassRenderer.Deinitialize();
-    GExposureRenderer.Deinitialize();
-    GColorGradingRenderer.Deinitialize();
-    GPostprocessPassRenderer.Deinitialize();
-    GFxaaPassRenderer.Deinitialize();
-    GCanvasPassRenderer.Deinitialize();
+    CanvasRenderer.reset();
+    FrameRenderer.reset();
+    FrameGraph.reset();
+
     GFrameResources.Deinitialize();
-    GOpenGL45GPUSync.Release();
+    GPUSync.Release();
 
     GState.Deinitialize();
     GDevice.Deinitialize();
@@ -580,11 +544,11 @@ void * ARenderBackend::GetMainWindow() {
 }
 
 void ARenderBackend::WaitGPU() {
-    GOpenGL45GPUSync.Wait();
+    GPUSync.Wait();
 }
 
 void ARenderBackend::SetGPUEvent() {
-    GOpenGL45GPUSync.SetEvent();
+    GPUSync.SetEvent();
 }
 
 void * ARenderBackend::FenceSync() {
@@ -592,9 +556,7 @@ void * ARenderBackend::FenceSync() {
 }
 
 void ARenderBackend::RemoveSync( void * _Sync ) {
-    if ( _Sync ) {
-        Cmd.RemoveSync( (GHI::SyncObject)_Sync );
-    }
+    Cmd.RemoveSync( (GHI::SyncObject)_Sync );
 }
 
 void ARenderBackend::WaitSync( void * _Sync ) {
@@ -1116,83 +1078,60 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
 }
 
 void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
+
+    GFrameResources.FrameConstantBuffer->Begin();
+
     GFrameData = _FrameData;
 
     GState.SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 
     glEnable( GL_FRAMEBUFFER_SRGB );
 
-    GRenderTarget.ReallocSurface( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
-
-    // Calc canvas projection matrix
-    const Float2 orthoMins( 0.0f, (float)GFrameData->CanvasHeight );
-    const Float2 orthoMaxs( (float)GFrameData->CanvasWidth, 0.0f );
-    GFrameResources.ViewUniformBufferUniformData.OrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs );
-    GFrameResources.ViewUniformBuffer.WriteRange(
-        GHI_STRUCT_OFS( SViewUniformBuffer, OrthoProjection ),
-        sizeof( GFrameResources.ViewUniformBufferUniformData.OrthoProjection ),
-        &GFrameResources.ViewUniformBufferUniformData.OrthoProjection );
-
-    GCanvasPassRenderer.Render();
+    CanvasRenderer->Render();
 
     SetGPUEvent();
 
     RVRenderSnapshot = false;
+
+    GFrameResources.FrameConstantBuffer->End();
 }
 
-void ARenderBackend::RenderView( SRenderView * _RenderView ) {
+void ARenderBackend::RenderView( SRenderView * _RenderView, AFrameGraphTextureStorage ** _ViewTexture ) {
     GRenderView = _RenderView;
+    GRenderViewArea.X = 0;
+    GRenderViewArea.Y = 0;
+    GRenderViewArea.Width = GRenderView->Width;
+    GRenderViewArea.Height = GRenderView->Height;
 
     GFrameResources.UploadUniforms();
 
-    GShadowMapPassRenderer.Render();
-
-#ifdef DEPTH_PREPASS
-    GDepthPassRenderer.Render( GRenderTarget.GetFramebuffer() );
-#endif
-    GColorPassRenderer.Render( GRenderTarget.GetFramebuffer() );
-
-    GBrightPassRenderer.Render( GRenderTarget.GetFramebufferTexture() );
-
-    GExposureRenderer.Render( GRenderTarget.GetFramebufferTexture() );
-
-    GColorGradingRenderer.Render();
-
-    GPostprocessPassRenderer.Render( GRenderTarget.GetPostprocessFramebuffer() );
-
-    GHI::Framebuffer * currentFB = &GRenderTarget.GetPostprocessFramebuffer();
-
-    if ( RVFxaa ) {
-        GFxaaPassRenderer.Render( GRenderTarget.GetFxaaFramebuffer(), GRenderTarget.GetPostprocessTexture() );
-
-        currentFB = &GRenderTarget.GetFxaaFramebuffer();
+    if ( RVRebuildGraph ) {
+        FrameRenderer->Render( *FrameGraph, CapturedResources );
     }
 
-    if ( GRenderView->bWireframe ) {
-        GWireframePassRenderer.Render( *currentFB );
-    }
+    FrameGraph->Execute();
 
-    if ( RVDrawNormals ) {
-        GNormalsPassRenderer.Render( *currentFB );
-    }
-
-    if ( GRenderView->DebugDrawCommandCount > 0 ) {
-        GDebugDrawPassRenderer.Render( *currentFB );
-    }
+    *_ViewTexture = CapturedResources.FinalTexture;
 }
 
-void OpenGL45RenderView( SRenderView * _RenderView ) {
-    GOpenGL45RenderBackend.RenderView( _RenderView );
+void OpenGL45RenderView( SRenderView * _RenderView, AFrameGraphTextureStorage ** _ViewTexture ) {
+    GOpenGL45RenderBackend.RenderView( _RenderView, _ViewTexture );
 }
 
 void ARenderBackend::SwapBuffers() {
-    if ( bSwapControl ) {
+    if ( RVSwapInterval.IsModified() ) {
         int i = Math::Clamp( RVSwapInterval.GetInteger(), -1, 1 );
         if ( i == -1 && !bSwapControlTear ) {
             // Tearing not supported
             i = 0;
         }
+
+        GLogger.Printf( "Changing swap interval to %d\n", i );
+
         SDL_GL_SetSwapInterval( i );
+
+        RVSwapInterval.ForceInteger( i );
+        RVSwapInterval.UnmarkModified();
     }
 
     SDL_GL_SwapWindow( WindowHandle );

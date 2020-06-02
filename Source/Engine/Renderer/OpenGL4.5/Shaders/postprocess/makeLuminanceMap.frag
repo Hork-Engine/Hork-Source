@@ -37,8 +37,9 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 layout( binding = 0 ) uniform sampler2D Smp_Input;
 
 void main() {
-    const vec4 minColorThreshold = vec4(0.01);
-    const vec4 maxColorThreshold = vec4(0.3);
+    //const vec4 minColorThreshold = vec4(0.01);
+    const vec4 minColorThreshold = vec4(0.1);
+    const vec4 maxColorThreshold = vec4(10);
     
     vec4 color = texture( Smp_Input, VS_TexCoord );
     

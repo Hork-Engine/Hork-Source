@@ -65,7 +65,7 @@ static EGlyphRange GGlyphRange = GLYPH_RANGE_DEFAULT;
 #define STBTT_assert(x)     AN_ASSERT(x)
 #define STBTT_fmod(x,y)     Math::FMod(x,y)
 #define STBTT_sqrt(x)       StdSqrt(x)
-#define STBTT_pow(x,y)      StdPow(x,y)
+#define STBTT_pow(x,y)      Math::Pow(x,y)
 #define STBTT_fabs(x)       Math::Abs(x)
 #define STBTT_ifloor(x)     (int)Math::Floor(x)
 #define STBTT_iceil(x)      (int)Math::Ceil(x)

@@ -118,22 +118,22 @@ struct AColor4 : Float4 {
 AN_FORCEINLINE float LinearFromSRGB( float Color ) {
     // TODO: Use conversion table?
 #ifdef SRGB_GAMMA_APPROX
-    return StdPow( Color, 2.2f );
+    return Math::Pow( Color, 2.2f );
 #else
     if ( Color < 0.0f ) return 0.0f;
     if ( Color > 1.0f ) return 1.0f;
-    return ( Color <= 0.04045f ) ? Color / 12.92f : StdPow( ( Color + 0.055f ) / 1.055f, 2.4f );
+    return ( Color <= 0.04045f ) ? Color / 12.92f : Math::Pow( ( Color + 0.055f ) / 1.055f, 2.4f );
 #endif
 }
 
 AN_FORCEINLINE float LinearToSRGB( float LinearColor ) {
     // TODO: Use conversion table?
 #ifdef SRGB_GAMMA_APPROX
-    return StdPow( LinearColor, 1.0f / 2.2f );
+    return Math::Pow( LinearColor, 1.0f / 2.2f );
 #else
     if ( LinearColor < 0.0f ) return 0.0f;
     if ( LinearColor > 1.0f ) return 1.0f;
-    return ( LinearColor <= 0.0031308f ) ? LinearColor * 12.92f : StdPow( LinearColor, 1.0f / 2.4f ) * 1.055f - 0.055f;
+    return ( LinearColor <= 0.0031308f ) ? LinearColor * 12.92f : Math::Pow( LinearColor, 1.0f / 2.4f ) * 1.055f - 0.055f;
 #endif
 }
 
@@ -254,11 +254,11 @@ AN_FORCEINLINE void AColor4::SetTemperature( float _Temperature ) {
 
     } else {
         // Note: the R-squared value for this approximation is .988
-        Value = (329.698727446 / 255.0) * StdPow( _Temperature - 60, -0.1332047592 );
+        Value = (329.698727446 / 255.0) * Math::Pow( _Temperature - 60, -0.1332047592 );
         X = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
 
                                             // Note: the R-squared value for this approximation is .987
-        Value = (288.1221695283/255.0) * StdPow( _Temperature - 60, -0.0755148492 );
+        Value = (288.1221695283/255.0) * Math::Pow( _Temperature - 60, -0.0755148492 );
         Y = Value;//Math::Clamp( Value, 0.0f, 1.0f );
     }
 

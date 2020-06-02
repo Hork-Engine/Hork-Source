@@ -47,7 +47,7 @@ void main() {
     // Adjust texture coordinates for dynamic resolution
     vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
     tc.y = 1.0 - tc.y;
-    
+
     FS_FragColor = FxaaPixelShader(
             // Use noperspective interpolation here (turn off perspective interpolation).
             // {xy} = center of pixel

@@ -70,6 +70,7 @@ public:
 
     // Experemental
     void SetUniform2f( int location, float v0, float v1 );
+    void SetUniform3f( int location, float v0, float v1, float v2 );
 
     //
     // Utilites

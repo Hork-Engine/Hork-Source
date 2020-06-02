@@ -249,6 +249,10 @@ void ShaderModule::SetUniform2f( int location, float v0, float v1 ) {
     glProgramUniform2f( GL_HANDLE( Handle ), location, v0, v1 );
 }
 
+void ShaderModule::SetUniform3f( int location, float v0, float v1, float v2 ) {
+    glProgramUniform3f( GL_HANDLE( Handle ), location, v0, v1, v2 );
+}
+
 bool ShaderModule::CreateBinaryData( SHADER_TYPE _ShaderType,
                                      unsigned int _NumSources,
                                      const char * const * _Sources,

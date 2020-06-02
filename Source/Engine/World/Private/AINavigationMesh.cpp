@@ -32,6 +32,7 @@ SOFTWARE.
 #include <World/Public/AINavigationMesh.h>
 #include <World/Public/World.h>
 #include <World/Public/Components/MeshComponent.h>
+#include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/Compress.h>
 #include <Core/Public/BV/BvIntersect.h>
@@ -1502,6 +1503,12 @@ bool AAINavigationMesh::QueryNearestPoint( Float3 const & _Position, Float3 cons
     return QueryNearestPoint( _Position, _Extents, QueryFilter, _NearestPointRef );
 }
 
+// Function returning a random number [0..1).
+static float NavRandom() {
+    const float range = 1.0f - FLT_EPSILON;
+    return GRuntime.Rand.GetFloat() * range;
+}
+
 bool AAINavigationMesh::QueryRandomPoint( ANavQueryFilter const & _Filter, SNavPointRef * _RandomPointRef ) const {
     _RandomPointRef->PolyRef = 0;
     _RandomPointRef->Position.Clear();
@@ -1510,7 +1517,7 @@ bool AAINavigationMesh::QueryRandomPoint( ANavQueryFilter const & _Filter, SNavP
         return false;
     }
 
-    dtStatus Status = NavQuery->findRandomPoint( _Filter.Filter, Math::Rand1, &_RandomPointRef->PolyRef, ( float * )_RandomPointRef->Position.ToPtr() );
+    dtStatus Status = NavQuery->findRandomPoint( _Filter.Filter, NavRandom, &_RandomPointRef->PolyRef, ( float * )_RandomPointRef->Position.ToPtr() );
     if ( dtStatusFailed( Status ) ) {
         return false;
     }
@@ -1546,7 +1553,7 @@ bool AAINavigationMesh::QueryRandomPointAroundCircle( SNavPointRef const & _Star
         return false;
     }
 
-    dtStatus Status = NavQuery->findRandomPointAroundCircle( _StartRef.PolyRef, (const float *)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter, Math::Rand1, &_RandomPointRef->PolyRef, (float *)_RandomPointRef->Position.ToPtr() );
+    dtStatus Status = NavQuery->findRandomPointAroundCircle( _StartRef.PolyRef, (const float *)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter, NavRandom, &_RandomPointRef->PolyRef, (float *)_RandomPointRef->Position.ToPtr() );
     if ( dtStatusFailed( Status ) ) {
         return false;
     }

@@ -33,6 +33,8 @@ SOFTWARE.
 #include <World/Public/Components/CameraComponent.h>
 #include <World/Public/Components/SkinnedComponent.h>
 #include <World/Public/Components/DirectionalLightComponent.h>
+#include <World/Public/Components/AnalyticLightComponent.h>
+#include <World/Public/Components/IBLComponent.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
@@ -69,12 +71,16 @@ struct SShadowInstanceSortFunction {
 
 void ARenderFrontend::Initialize() {
     VSD_Initialize();
+
+    PhotometricProfiles = CreateInstanceOf< ATexture >();
+    PhotometricProfiles->Initialize1DArray( TEXTURE_PF_R8, 1, 256, 256 );
 }
 
 void ARenderFrontend::Deinitialize() {
     VSD_Deinitialize();
 
     Lights.Free();
+    IBLs.Free();
     VisPrimitives.Free();
     VisSurfaces.Free();
 
@@ -85,7 +91,7 @@ void ARenderFrontend::Deinitialize() {
     FrameData.ShadowInstances.Free();
     FrameData.DirectionalLights.Free();
 
-    //ColorGradingLUT.Reset();
+    PhotometricProfiles.Reset();
 }
 
 void ARenderFrontend::Render( ACanvas * InCanvas ) {
@@ -238,6 +244,8 @@ void ARenderFrontend::RenderView( int _Index ) {
         view->ColorGradingAdaptationSpeed = 0;
         view->CurrentExposure = NULL;
     }
+
+    view->PhotometricProfiles = PhotometricProfiles->GetGPUResource();
 
     view->NumShadowMapCascades = 0;
     view->NumCascadedShadowMaps = 0;
@@ -600,9 +608,11 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 
     SRenderView * view = RenderDef.View;
     ADrawable * drawable;
-    APunctualLightComponent * light;
+    AAnalyticLightComponent * light;
+    AIBLComponent * ibl;
 
     Lights.Clear();
+    IBLs.Clear();
 
     QueryVisiblePrimitives( InWorld  );
 
@@ -615,8 +625,18 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
             continue;
         }
 
-        if ( nullptr != (light = Upcast< APunctualLightComponent >( primitive->Owner )) ) {
+        if ( nullptr != (light = Upcast< AAnalyticLightComponent >( primitive->Owner )) ) {
             Lights.Append( light );
+
+            APhotometricProfile * profile = light->GetPhotometricProfile();
+            if ( profile ) {
+                profile->WritePhotometricData( PhotometricProfiles, FrameNumber );
+            }
+            continue;
+        }
+
+        if ( nullptr != (ibl = Upcast< AIBLComponent >( primitive->Owner )) ) {
+            IBLs.Append( ibl );
             continue;
         }
 
@@ -667,7 +687,12 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 
     //GLogger.Printf( "FrameLightData %f KB\n", sizeof( SFrameLightData ) / 1024.0f );
     if ( !RVFixFrustumClusters ) {
-        GLightVoxelizer.Voxelize( &FrameData, view, Lights.ToPtr(), Lights.Size() );
+        GLightVoxelizer.Voxelize( &FrameData,
+                                  view,
+                                  Lights.ToPtr(),
+                                  Lights.Size(),
+                                  IBLs.ToPtr(),
+                                  IBLs.Size() );
     }
 }
 

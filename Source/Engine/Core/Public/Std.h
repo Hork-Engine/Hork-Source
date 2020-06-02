@@ -104,4 +104,3 @@ using AStdThread = std::thread;
 #define StdSwap     std::swap
 #define StdMax      std::max
 #define StdMin      std::min
-#define StdPow      std::pow

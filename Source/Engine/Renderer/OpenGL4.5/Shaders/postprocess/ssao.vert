@@ -28,14 +28,28 @@ SOFTWARE.
 
 */
 
+#include "base/viewuniforms.glsl"
+
 out gl_PerVertex
 {
     vec4 gl_Position;
 };
 
 layout( location = 0 ) noperspective out vec2 VS_TexCoord;
+//layout( location = 1 ) out vec3 VS_Ray;
 
 void main() {
+/*
+    uint idx = gl_VertexID % 3; // allows rendering multiple fullscreen triangles
+    vec4 pos =  vec4(
+        (float( idx     &1U)) * 4.0 - 1.0,
+        (float((idx>>1U)&1U)) * 4.0 - 1.0,
+        0, 1.0);
+    gl_Position = pos;
+    VS_TexCoord = pos.xy * 0.5 + 0.5;*/
+  
     gl_Position = vec4( InPosition, 0.0, 1.0 );
-    VS_TexCoord = InPosition * vec2(0.5,-0.5) + 0.5;
+    VS_TexCoord = InPosition * 0.5 + 0.5;
+    
+    //VS_Ray = (InverseProjectionMatrix * vec4( pos, 1.0, 1.0 )).xyz;
 }

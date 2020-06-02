@@ -58,6 +58,9 @@ class RenderPass;
 struct AttachmentRef {
     uint32_t            Attachment;
     //IMAGE_LAYOUT   Layout; // TODO
+
+    AttachmentRef() {}
+    AttachmentRef( uint32_t _Attachment ) : Attachment( _Attachment ) {}
 };
 
 struct SubpassInfo {
@@ -94,6 +97,16 @@ struct AttachmentInfo {
 //    VkAttachmentStoreOp             stencilStoreOp;
 //    VkImageLayout                   initialLayout;
 //    VkImageLayout                   finalLayout;
+
+    AttachmentInfo()
+        : LoadOp( ATTACHMENT_LOAD_OP_LOAD )
+    {
+    }
+
+    AttachmentInfo & SetLoadOp( ATTACHMENT_LOAD_OP Op ) {
+        LoadOp = Op;
+        return *this;
+    }
 };
 
 struct RenderPassCreateInfo {
@@ -120,17 +133,51 @@ typedef union ClearColorValue {
     uint32_t    UInt32[4];
 } ClearColorValue;
 
+inline ClearColorValue MakeClearColorValue( float R, float G, float B, float A ) {
+    ClearColorValue v;
+    v.Float32[0] = R;
+    v.Float32[1] = G;
+    v.Float32[2] = B;
+    v.Float32[3] = A;
+    return v;
+}
+
+inline ClearColorValue MakeClearColorValue( int32_t R, int32_t G, int32_t B, int32_t A ) {
+    ClearColorValue v;
+    v.Int32[0] = R;
+    v.Int32[1] = G;
+    v.Int32[2] = B;
+    v.Int32[3] = A;
+    return v;
+}
+
+inline ClearColorValue MakeClearColorValue( uint32_t R, uint32_t G, uint32_t B, uint32_t A ) {
+    ClearColorValue v;
+    v.UInt32[0] = R;
+    v.UInt32[1] = G;
+    v.UInt32[2] = B;
+    v.UInt32[3] = A;
+    return v;
+}
+
 typedef struct ClearDepthStencilValue {
     float       Depth;
     uint32_t    Stencil;
 } ClearDepthStencilValue;
 
+inline ClearDepthStencilValue MakeClearDepthStencilValue( float Depth, uint32_t Stencil ) {
+    ClearDepthStencilValue v;
+    v.Depth = Depth;
+    v.Stencil = Stencil;
+    return v;
+}
+
 struct RenderPassBegin {
-    RenderPass *      pRenderPass;
-    Framebuffer *     pFramebuffer;
+    RenderPass const * pRenderPass;
+    Framebuffer const * pFramebuffer;
     Rect2D            RenderArea;
-    ClearColorValue * pColorClearValues;
-    ClearDepthStencilValue * pDepthStencilClearValue;
+    ClearColorValue const * pColorClearValues;
+    ClearDepthStencilValue const * pDepthStencilClearValue;
 };
 
 class RenderPass final : public NonCopyable, IObjectInterface {

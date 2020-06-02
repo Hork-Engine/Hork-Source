@@ -30,64 +30,246 @@ SOFTWARE.
 
 #include "material_shadowmap.frag"
 
-vec3 ComputeLight( in vec4 LightColor, in vec3 Diffuse, in vec3 RealSpecularColor, in float SqrRoughnessClamped, in vec3 Normal, in vec3 L, in float NdL, in float NdV, in float Shadow ) {
-    float AmbientLightIntensity = LightColor.w; // UNUSED!!!
+float DistributionGGX( float RoughnessSqr, float NdH ) {
+    const float a2 = RoughnessSqr * RoughnessSqr; // TODO: Precompute once per-fragment!
+    const float NdH2 = NdH * NdH;
 
-    vec3 H = normalize( L + InViewspaceToEyeVec );
-    float NdH = saturate( dot( Normal, H ) );
-    float VdH = saturate( dot( InViewspaceToEyeVec, H ) );
-    float LdV = saturate( dot( L, InViewspaceToEyeVec ) );
+    float denominator = mad( NdH2, a2 - 1.0, 1.0 );
+    denominator *= denominator;
+    denominator *= PI;  // TODO: мы можем вынести деление на PI и делить только один раз: ( L1 + L2 + .. + Ln ) / PI, вместо Diffuse использовать Albedo, т.к. Diffuse=Albedo/PI
 
-    vec3 Spec = Specular( RealSpecularColor, SqrRoughnessClamped, NdL, NdV, NdH, VdH, LdV );
-
-    return LightColor.xyz * Shadow * /* NdL * */( Diffuse * ( 1.0 - Spec ) + Spec ); // FIXME: Почему 1 - Spec а не (1.0 - Specular_F)
+    return a2 / denominator;
 }
 
-vec3 CalcDirectionalLightingPBR( in vec3 Diff, in vec3 RealSpecularColor, in float SqrRoughnessClamped, in vec3 Normal, in float NdV ) {
-    vec3 light = vec3(0.0);
+// float k = Sqr( Roughness ) * 0.5f; //  IBL
+// float k = Sqr( Roughness + 1 ) * 0.125; // Direct light
+float GeometrySmith( float NdV, float NdL, float k ) {
+    const float invK = 1.0 - k;
 
-    uint numLights = GetNumDirectionalLights();
+    // Geometry schlick GGX for V
+    const float ggxV = NdV / mad(NdV, invK, k); // TODO: Precompute once per-fragment!
 
-    for ( int i = 0 ; i < numLights ; ++i ) {
-        uint renderMask = LightParameters[ i ][ 0 ];
+    // Geometry schlick GGX for L
+    const float ggxL = NdL / mad(NdL, invK, k);
 
-        // TODO:
-        //if ( ( renderMask & Material.AffectedLightMask ) == 0 ) {
-        //    continue;
-        //}
+    return ggxV * ggxL;
+}
 
-        vec3 lightDir = LightDirs[ i ].xyz;
+vec3 FresnelSchlick( vec3 F0, float VdH ) {
+    return mad( pow( 1.0 - VdH, 5.0 ), 1.0 - F0, F0 );
+}
 
-        float NdL = saturate( dot( Normal, lightDir ) );
-
-        if ( NdL == 0.0 ) {
-            //DebugEarlyCutoff = true;
-            continue;
-        }
-
-        float shadow;
-        // TODO:
-        //if ( ( renderMask & Material.ShadowReceiveMask ) != 0 ) {
-
-            float bias = max( 1.0 - max( dot( VS_N, lightDir ), 0.0 ), 0.1 ) * 0.05;
+vec3 FresnelSchlick_Roughness( vec3 F0, float NdV, float Roughness ) {
+    vec3 a = max( vec3( 1.0 - Roughness ), F0 );
     
-            //shadow = NdL * SampleLightShadow( InClipspacePosition, LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ] );
-            shadow = NdL * SampleLightShadow( InClipspacePosition, LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], bias );
-
-            if ( shadow == 0.0 ) {
-                //DebugEarlyCutoff = true;
-                continue;
-            }
-        //} else {
-        //    shadow = NdL;
-        //}
-
-        light += ComputeLight( LightColors[ i ], Diff, RealSpecularColor, SqrRoughnessClamped, Normal, lightDir, NdL, NdV, shadow );
-    }
-    return light;
+    return mad( pow( 1.0 - NdV, 5.0 ), a - F0, F0 );
 }
 
-void GetClusterData( in float linearDepth, out uint numProbes, out uint numDecals, out uint numLights, out uint firstIndex )
+vec3 LightBRDF( vec3 Diffuse, vec3 F0, float RoughnessSqr, vec3 Normal, vec3 L, float NdL, float NdV, float k ) {
+    const vec3 H = normalize( L + InViewspaceToEyeVec );
+    const float NdH = saturate( dot( Normal, H ) );
+    const float VdH = saturate( dot( InViewspaceToEyeVec, H ) );
+    const float LdV = saturate( dot( L, InViewspaceToEyeVec ) );
+        
+    // Cook-Torrance BRDF
+    const float D = DistributionGGX( RoughnessSqr, NdH );
+    const vec3 F = FresnelSchlick( F0, VdH );
+    const float G = GeometrySmith( NdV, NdL, k );
+
+    const vec3 Specular = F * ( D * G / mad( NdL * NdV, 4.0, 0.0001 ) );
+    
+    const vec3 kD = vec3(1.0) - F;
+    
+    return mad( kD, Diffuse, Specular );
+}
+
+vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughness, float AO, uint FirstIndex, uint NumProbes ) {
+    // Sample ambient occlusion
+    const vec2 TexCoordAO = vec2( InNormalizedScreenCoord.x, 1.0 - InNormalizedScreenCoord.y ) / GetViewportSizeInverted();    
+    AO *= texelFetch( AOLookup, ivec2(TexCoordAO), 0 ).x;
+    
+    // Calc fresnel
+    const vec3 F = FresnelSchlick_Roughness( F0, NdV, Roughness );
+    //const vec3 F = InNormalizedScreenCoord.x > 0.5 ? FresnelSchlick_Roughness( F0, NdV, Roughness )
+    //                                         : FresnelSchlick_Roughness( F0, NdV, Roughness * Roughness );
+    
+    // Calc diffuse coef
+    const vec3 kD = vec3( 1.0 ) - F;
+    
+    // Sample BRDF
+    const vec2 EnvBRDF = texture( LookupBRDF, vec2( NdV, Roughness ) ).rg;
+
+    // Transform vector from view space to world space
+    const mat3 VectorTransformWS = mat3( vec3(WorldNormalToViewSpace0),
+                                            vec3(WorldNormalToViewSpace1),
+                                            vec3(WorldNormalToViewSpace2)
+                                           ); // TODO: Optimize this!
+
+    // Calc sample vectors
+    const vec3 ReflectionVector = VectorTransformWS * R;
+    const vec3 Normal = VectorTransformWS * N;
+    
+    // Calc sample lod
+    #define ENV_MAP_MAX_LOD 7
+    const float MipIndex = Roughness * ENV_MAP_MAX_LOD;
+    //const float MipIndex = InNormalizedScreenCoord.x > 0.5 ? Roughness * ENV_MAP_MAX_LOD
+    //                                                       : Roughness * Roughness * ENV_MAP_MAX_LOD;
+    
+    samplerCubeArray IrradianceMap = samplerCubeArray(IrradianceMapSampler); // TODO: Stop using bindless
+    samplerCubeArray PrefilteredMap = samplerCubeArray(PrefilteredMapSampler); // TODO: Stop using bindless
+    
+    vec3 Irradiance = vec3( 0.0 );
+    vec3 PrefilteredColor = vec3( 0.0 );
+    
+    float MinDist = 9999;
+    uint NearestProbe = 9999;
+    
+    for ( int i = 0 ; i < NumProbes ; i++ ) {
+        const uint Indices = texelFetch( ClusterItemTBO, int( FirstIndex + i ) ).x;
+        const uint ProbeIndex = Indices >> 24;
+        
+        const float Radius = Probes[ ProbeIndex ].PositionAndRadius.w;
+        const vec3 Vec = Probes[ ProbeIndex ].PositionAndRadius.xyz - VS_Position;
+        
+        const float DistSqr = dot( Vec, Vec );
+        
+        if ( DistSqr <= Radius * Radius ) {
+        
+            if ( MinDist > DistSqr ) {
+                MinDist = DistSqr;
+                NearestProbe = ProbeIndex;
+            }
+        }
+    }
+    
+    if ( NearestProbe < 9999 ) {
+        // Gather irradiance from cubemaps
+        Irradiance += texture( IrradianceMap, vec4( Normal, Probes[NearestProbe].IrradianceAndReflectionMaps.x ) ).rgb;
+        
+        // Gather prefiltered maps from cubemaps
+        PrefilteredColor += textureLod( PrefilteredMap, vec4( ReflectionVector, Probes[NearestProbe].IrradianceAndReflectionMaps.y ), MipIndex ).rgb;   
+    }
+    
+    Irradiance += vec3(0.01); // just for test
+
+    const vec3 Diffuse = Irradiance * Albedo;
+    const vec3 Specular = PrefilteredColor * ( F * EnvBRDF.x + EnvBRDF.y );
+    return mad( kD, Diffuse, Specular ) * AO; 
+}
+
+vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV ) {
+    vec3 Light = vec3(0.0);
+
+    const uint NumLights = GetNumDirectionalLights();
+
+    for ( int i = 0 ; i < NumLights ; ++i ) {
+        //const uint RenderMask = LightParameters[ i ][ 0 ];
+
+        vec3 L = LightDirs[ i ].xyz;
+
+        float NdL = saturate( dot( Normal, L ) );
+
+        if ( NdL > 0.0 ) {
+            //float Bias = max( 1.0 - saturate( dot( VS_N, L ) ), 0.1 ) * 0.05;
+            
+            #if 0
+            float Bias = tan( acos( saturate( dot( VS_N, L ) ) ) );
+            #else
+            // tan( acos( x ) ) = sqrt(1-x*x)/x
+            float NdL_Vertex = saturate( dot( VS_N, L ) );
+            float Bias = sqrt( 1.0 - NdL_Vertex*NdL_Vertex ) / max( NdL_Vertex, 0.001 );
+            #endif
+            
+            Bias = min( Bias * 0.005, 0.01 );
+            
+            float Shadow = SampleLightShadow( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
+            
+            if ( Shadow > 0.0 ) {            
+                Light += LightBRDF( Diffuse, F0, RoughnessSqr, Normal, L, NdL, NdV, k ) * LightColors[ i ].xyz * ( Shadow * NdL );
+            }
+        }
+    }
+    return Light;
+}
+
+#ifdef SUPPORT_PHOTOMETRIC_LIGHT
+float CalcPhotometricAttenuation( float LdotDir, uint Profile ) {
+//if ( InNormalizedScreenCoord.x < 0.5 ) {
+//    const float angle = acos( LdotDir ) * (1.0 / PI);
+//    return textureLod( IESMap, vec2(angle, Profile), 0.0 ).r;
+//} else {
+    return pow( textureLod( IESMap, vec2(LdotDir*0.5+0.5, Profile), 0.0 ).r, 2.2 );
+    //return textureLod( IESMap, vec2(LdotDir*0.5+0.5, Profile), 0.0 ).r;
+//}
+}
+#endif
+
+vec3 CalcPointLightLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV, uint FirstIndex, uint NumLights ) {
+    vec3 Light = vec3(0.0);
+
+    #define POINT_LIGHT 0
+    #define SPOT_LIGHT  1
+    
+    for ( int i = 0 ; i < NumLights ; i++ ) {
+        const uint indices = texelFetch( ClusterItemTBO, int( FirstIndex + i ) ).x;
+        const uint lightIndex = indices & 0x3ff;
+        const uint lightType = GetLightType( lightIndex );
+
+        const float OuterRadius = GetLightRadius( lightIndex );
+        const vec3 Vec = GetLightPosition( lightIndex ) - VS_Position;
+        const float Dist = length( Vec ); // NOTE: We can use dot(Vec,Vec) to compute DistSqr instead of Dist
+        
+        if ( Dist > 0.0 && Dist <= OuterRadius ) {
+            const vec3 L = Vec / Dist; // normalize( Vec )
+//            const float InnerRadius = GetLightInnerRadius( lightIndex );
+            
+            float Attenuation;
+//            if ( InNormalizedScreenCoord.x > 1.0f-1.0f/4.0f ) {
+//                Attenuation = CalcDistanceAttenuation( Dist, OuterRadius );
+//            } else if ( InNormalizedScreenCoord.x > 1.0f-2.0f/4.0f ) {
+                Attenuation = CalcDistanceAttenuationFrostbite( Dist*Dist, GetLightInverseSquareRadius( lightIndex ) );
+//            } else if ( InNormalizedScreenCoord.x > 1.0f-3.0f/4.0f ) {                
+//                Attenuation = CalcDistanceAttenuationUnreal( Dist, OuterRadius );
+//            } else {
+//                Attenuation = CalcDistanceAttenuationSkyforge( Dist, 0.0, OuterRadius );
+//            }
+            
+            float Shadow = 1;
+            
+            float LdotDir = dot( L, GetLightDirection( lightIndex ) );
+
+            if ( lightType == SPOT_LIGHT ) {
+                Attenuation *= CalcSpotAttenuation( LdotDir,
+                                                        GetLightCosHalfInnerConeAngle( lightIndex ),
+                                                        GetLightCosHalfOuterConeAngle( lightIndex ),
+                                                        GetLightSpotExponent( lightIndex )
+                                                      );
+            }
+
+            #ifdef SUPPORT_PHOTOMETRIC_LIGHT
+            
+            uint PhotometricProfile = GetLightPhotometricProfile( lightIndex );
+            
+            if ( PhotometricProfile < 0xffffffff ) {
+                Attenuation *= CalcPhotometricAttenuation( LdotDir, PhotometricProfile );// * GetLightIESScale( lightIndex );
+            }
+            
+            #endif
+
+            float NdL = saturate( dot( Normal, L ) );
+
+            Attenuation *= NdL * Shadow;
+
+            Light += LightBRDF( Diffuse, F0, RoughnessSqr, Normal, L, NdL, NdV, k ) * GetLightColor( lightIndex ) * Attenuation;
+            
+            //if (LdotDir<0.0) {Light=vec3(1,0,0);break;}
+        }
+    }
+
+    return Light;
+}
+
+void GetClusterData( out uint numProbes, out uint numDecals, out uint numLights, out uint firstIndex )
 {
     // TODO: Move scale and bias to uniforms
     #define NUM_CLUSTERS_Z 24
@@ -98,6 +280,7 @@ void GetClusterData( in float linearDepth, out uint numProbes, out uint numDecal
     const float bias = -log2( znear ) * scale - nearOffset;
 
     // Calc cluster index
+    const float linearDepth = -VS_Position.z;
     const float slice = max( 0.0, floor( log2( linearDepth ) * scale + bias ) );
     const ivec3 clusterIndex = ivec3( InNormalizedScreenCoord.x * 16, InNormalizedScreenCoord.y * 8, slice );
 
@@ -113,156 +296,68 @@ void GetClusterData( in float linearDepth, out uint numProbes, out uint numDecal
     firstIndex = cluster.x;
 }
 
-vec3 CalcPointLightLightingPBR( in vec3 Diff, in vec3 RealSpecularColor, in float SqrRoughnessClamped, in vec3 Normal, in float NdV/*, in vec3 ViewDir*/, in vec2 FragCoord/*, in vec3 Specular*/ ) {
-    uint numProbes;
-    uint numDecals;
-    uint numLights;
-    uint firstIndex;
-    vec3 light = vec3(0.0);
-
-    float linearDepth = ComputeLinearDepth( InScreenDepth, GetViewportZNear(), GetViewportZFar() );
-
-    GetClusterData( linearDepth, numProbes, numDecals, numLights, firstIndex );
-
-    #define POINT_LIGHT 0
-    #define SPOT_LIGHT  1
-    
-    for ( int i = 0 ; i < numLights ; i++ ) {
-        const uint indices = texelFetch( ClusterItemTBO, int( firstIndex + i ) ).x;
-        const uint lightIndex = indices & 0x3ff;
-        const uint lightType = uint( LightBuffer[ lightIndex ].Pack2.x );
-        
-        //uint renderMask = LightBuffer[ lightIndex ].IPack.x;
-
-        //if ( ( renderMask & Material.AffectedLightMask ) == 0 ) {
-        //    continue;
-        //}
-
-        float outerRadius = LightBuffer[ lightIndex ].Pack.w;
-        vec3 lightVec = LightBuffer[ lightIndex ].Pack.xyz - VS_Position;
-        float lightDist = length( lightVec );
-        
-        if ( lightDist > outerRadius || lightDist == 0.0 ) {
-            continue;
-        }
-        
-        lightVec /= lightDist; // normalize
-                
-        float innerRadius = LightBuffer[ lightIndex ].Pack2.y;
-
-        float d = max( innerRadius, lightDist );
-        
-        float attenuation = saturate( 1.0 - pow( d / outerRadius, 4.0 ) ) / ( d*d + 1.0 ); // from skyforge
-        //attenuation = pow( saturate( 1.0 - pow( lightDist / outerRadius, 4.0 ) ), 2.0 );// / (lightDist*lightDist + 1.0 );   // from Unreal
-        //attenuation = pow( 1.0 - min( lightDist / outerRadius, 1.0 ), 2.2 );   // My attenuation
-        
-        float shadow = 1;
-                
-        switch ( lightType ) {
-        case POINT_LIGHT:
-            //if ( ( renderMask & Material.ShadowReceiveMask ) != 0 ) {
-            //    // TODO: // Sample point light shadows
-            //    shadow = 1;
-            //} else {
-            //    shadow = 1;
-            //}
-            break;
-        case SPOT_LIGHT:
-            float CosConeRay = dot( lightVec, LightBuffer[ lightIndex ].Pack3.xyz );
-            float ConeFalloff = pow( smoothstep( LightBuffer[ lightIndex ].Pack2.z, LightBuffer[ lightIndex ].Pack2.w, CosConeRay ), LightBuffer[ lightIndex ].Pack3.w );
-
-            attenuation *= ConeFalloff;
-            attenuation=0;
-
-            //if ( ( renderMask & Material.ShadowReceiveMask ) != 0 ) {
-            //    // TODO: // Sample spot light shadows
-            //    shadow = 1;
-            //} else {
-            //    shadow = 1;
-            //}
-            break;
-        }
-
-        float NdL = saturate( dot( Normal, lightVec ) );
-
-        attenuation *= NdL * shadow;
-
-        light += ComputeLight( LightBuffer[ lightIndex ].Color, Diff, RealSpecularColor, SqrRoughnessClamped, Normal, lightVec, NdL, NdV, attenuation );
-    }
-
-    //if ( NumLights > 0 )
-    //    light = vec3(P.x/16.0, P.y/8.0, floor(Slice)/24);
-
-
-    return light;
-}
-
-void MaterialPBRShader( vec3 BaseColor, vec3 MaterialNormal, float MaterialMetallic, float MaterialRoughness, vec3 MaterialEmissive, float MaterialAmbientOcclusion, float Opacity )
+void MaterialPBRShader( vec3 BaseColor, vec3 N, float Metallic, float Roughness, vec3 Emissive, float AO, float Opacity )
 {
-    vec3 Light = vec3(0);
+    uint NumProbes;
+    uint NumDecals;
+    uint NumLights;
+    uint FirstIndex;
 
-    // Compute macro normal
-    const vec3 Normal = normalize( MaterialNormal.x * VS_T + MaterialNormal.y * VS_B + MaterialNormal.z * VS_N );
+    GetClusterData( NumProbes, NumDecals, NumLights, FirstIndex );
+    
+    // Calc macro normal
+    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N );
 
     // Lerp with metallic value to find the good diffuse and specular.
-    const vec3 RealAlbedo = BaseColor - BaseColor * MaterialMetallic;
+    const vec3 Albedo = BaseColor * ( 1.0 - Metallic );
 
-    // Compute diffuse
-    const vec3 Diff = Diffuse( RealAlbedo );
+    // Calc diffuse
+    const vec3 Diffuse = Albedo / PI;
 
     // 0.03 default specular value for dielectric.
-    const vec3 RealSpecularColor = mix( vec3( 0.03 ), BaseColor, vec3( MaterialMetallic ) );
+    // Для всех диэлектриков F0 не выше 0.17
+    // Для металлов - от 0.5 до 1.0
+    const vec3 F0 = mix( vec3( 0.03 ), BaseColor, vec3( Metallic ) ); // TODO: check 0.04
 
     // Reflected vector
     const vec3 R = normalize( reflect( -InViewspaceToEyeVec, Normal ) );
 
-    const float SqrRoughness = MaterialRoughness * MaterialRoughness;
-    const float SqrRoughnessClamped = max( 0.001, SqrRoughness );
-    const float NdV = saturate( dot( Normal, InViewspaceToEyeVec ) );
+    const float RoughnessSqr = Roughness * Roughness;
+    const float RoughnessSqrClamped = max( 0.001, RoughnessSqr );
+    const float NdV = clamp( dot( Normal, InViewspaceToEyeVec ), 0.001, 1.0 );
+
+    vec3 Light = Emissive;
 
     #ifdef USE_LIGHTMAP
     // TODO: lightmaps for PBR
-    vec4 lm = texture( tslot_lightmap, VS_LightmapTexCoord );
-    Light += BaseColor*lm.rgb;
+    const vec4 Lightmap = texture( tslot_lightmap, VS_LightmapTexCoord );
+    Light += BaseColor * Lightmap.rgb;
     #endif
 
     #ifdef USE_VERTEX_LIGHT
+    // Assume vertex has emission light
     Light += VS_VertexLight;
     #endif
+    
+    //const float k = RoughnessSqr * 0.5f; //  IBL
+    const float k = (Roughness + 1) * (Roughness + 1) * 0.125; // Direct light
+    
+    // Accumulate directional lights
+    Light += CalcDirectionalLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, NdV );
+    
+    // Accumulate point and spot lights
+    Light += CalcPointLightLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights );
 
-    Light += CalcDirectionalLightingPBR( Diff, RealSpecularColor, SqrRoughnessClamped, Normal, NdV );
-    Light += CalcPointLightLightingPBR( Diff, RealSpecularColor, SqrRoughnessClamped, Normal, NdV, InNormalizedScreenCoord );
-    //Light += MaterialAmbientLight;
-
-    const vec3 EnvFresnel = Specular_F_Roughness( RealSpecularColor, SqrRoughness, NdV );
-
-    samplerCubeArray EnvProbeArray = samplerCubeArray(EnvProbeSampler);
-    int ArrayIndex = 0;
-
-    vec3 EnvColor = vec3(0);
-    vec3 Irradiance = vec3(0);
-
-    #define ENV_MAP_MAX_LOD 7
-
-    const mat3 NormalToWorldSpace = (mat3(vec3(WorldNormalToViewSpace0),vec3(WorldNormalToViewSpace1),vec3(WorldNormalToViewSpace2))); // TODO: Optimize this!
-
-    vec3 ReflectionVector = NormalToWorldSpace*R;
-    float MipIndex = SqrRoughness * ENV_MAP_MAX_LOD;
-
-    vec3 EnvProbeColor = vec3(1.0);
-
-    EnvColor += textureLod( EnvProbeArray, vec4( ReflectionVector, ArrayIndex ), MipIndex ).xyz * EnvProbeColor;
-    Irradiance += textureLod( EnvProbeArray, vec4( NormalToWorldSpace*Normal, ArrayIndex ), (ENV_MAP_MAX_LOD * 0.6) ).xyz * EnvProbeColor;
-
-    // TODO: EnvFresnel записывать в одну текстуру, а EnvColor в другую. MaterialAmbientOcclusion тоже можно записать
-    // в отдельную текстуру. Отдельным проходом мешать EnvColor со Screen-Space reflections
-    vec3 ReflectedEnvLight = EnvFresnel * EnvColor * MaterialAmbientOcclusion;
-
-    Light = Light/*  * MaterialAmbientOcclusion*/ + MaterialEmissive + RealAlbedo*Irradiance*MaterialAmbientOcclusion + ReflectedEnvLight;
+    // Apply ambient
+    const vec3 Ambient = CalcAmbient( Albedo, R, Normal, NdV, F0, Roughness, AO, FirstIndex, NumProbes );
+    Light += Ambient;
 
     FS_FragColor = vec4( Light, Opacity );
     
+    //FS_Normal = Normal*0.5+0.5;
+    FS_Normal = normalize(VS_N)*0.5+0.5;
     
+    //FS_FragColor = vec4(texture( LookupBRDF, InNormalizedScreenCoord ).rg,0.0,1.0);
     
 #ifdef DEBUG_RENDER_MODE
     uint DebugMode = GetDebugMode();
@@ -275,20 +370,22 @@ void MaterialPBRShader( vec3 BaseColor, vec3 MaterialNormal, float MaterialMetal
         FS_FragColor = vec4( Normal*0.5+0.5, 1.0 );
         break;
     case DEBUG_METALLIC:
-        FS_FragColor = vec4( vec3( MaterialMetallic ), 1.0 );
+        FS_FragColor = vec4( vec3( Metallic ), 1.0 );
         break;
     case DEBUG_ROUGHNESS:
-        FS_FragColor = vec4( vec3( MaterialRoughness ), 1.0 );
+        FS_FragColor = vec4( vec3( Roughness ), 1.0 );
         break;
     case DEBUG_AMBIENT:
-        FS_FragColor = vec4( vec3( MaterialAmbientOcclusion ), 1.0 );
+        vec2 TexCoordAO = vec2( InNormalizedScreenCoord.x, 1.0 - InNormalizedScreenCoord.y ) / GetViewportSizeInverted();    
+        AO *= texelFetch( AOLookup, ivec2(TexCoordAO), 0 ).x;
+        FS_FragColor = vec4( vec3( AO ), 1.0 );
         break;
     case DEBUG_EMISSION:
-        FS_FragColor = vec4( MaterialEmissive, 1.0 );
+        FS_FragColor = vec4( Emissive, 1.0 );
         break;
     case DEBUG_LIGHTMAP:
 #ifdef USE_LIGHTMAP
-        FS_FragColor = vec4( lm.rgb, 1.0 );
+        FS_FragColor = vec4( Lightmap.rgb, 1.0 );
 #else
         FS_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
 #endif
@@ -302,16 +399,16 @@ void MaterialPBRShader( vec3 BaseColor, vec3 MaterialNormal, float MaterialMetal
 #endif
         break;
     case DEBUG_DIRLIGHT:
-        FS_FragColor = vec4( CalcDirectionalLightingPBR( Diff, RealSpecularColor, SqrRoughnessClamped, Normal, NdV ), 1.0 );
+        FS_FragColor = vec4( CalcDirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, NdV ), 1.0 );
         break;
     case DEBUG_POINTLIGHT:
-        FS_FragColor = vec4( CalcPointLightLightingPBR( Diff, RealSpecularColor, SqrRoughnessClamped, Normal, NdV, InNormalizedScreenCoord ), 1.0 );
+        FS_FragColor = vec4( CalcPointLightLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights ), 1.0 );
         break;
     //case DEBUG_TEXCOORDS:
     //    FS_FragColor = vec4( nsv_VS0_TexCoord.xy, 0.0, 1.0 );
     //    break;
     case DEBUG_TEXNORMAL:
-        FS_FragColor = vec4( MaterialNormal*0.5+0.5, 1.0 );
+        FS_FragColor = vec4( N*0.5+0.5, 1.0 );
         break;
     case DEBUG_TBN_NORMAL:
         FS_FragColor = vec4( VS_N*0.5+0.5, 1.0 );
@@ -323,7 +420,13 @@ void MaterialPBRShader( vec3 BaseColor, vec3 MaterialNormal, float MaterialMetal
         FS_FragColor = vec4( VS_B*0.5+0.5, 1.0 );
         break;
     case DEBUG_SPECULAR:
-        FS_FragColor = vec4( 0.0 );
+        FS_FragColor = vec4( F0, 1.0 );
+        break;
+    case DEBUG_AMBIENT_LIGHT:
+        FS_FragColor = vec4( Ambient, 1.0 );
+        break;
+    case DEBUG_LIGHT_CASCADES:
+        FS_FragColor = vec4( mix(FS_FragColor.rgb,DebugDirectionalLightCascades(),vec3(0.05)), 1.0 );
         break;
     }
 #endif // DEBUG_RENDER_MODE

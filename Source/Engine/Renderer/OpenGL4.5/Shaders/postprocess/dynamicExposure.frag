@@ -59,7 +59,7 @@ void main() {
 #endif
 
     //const float eyeAdaptationSpeed = 20;
-    const float eyeAdaptationSpeed = 0.2;
+    const float eyeAdaptationSpeed = 0.6;//0.2;
     float frameLuminanceAvg = (a.x + b.x + c.x + d.x) * PixelsCountDenom;
     float frameLuminanceMax = max( max( a.y, b.y ), max( c.y, d.y ) );
     

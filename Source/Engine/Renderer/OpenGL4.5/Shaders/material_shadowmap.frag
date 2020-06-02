@@ -59,13 +59,13 @@ const vec2 poissonDisk[ 16 ] = vec2[](
         vec2( 0.14383161, -0.14100790 )
 );
 
-float PCSS_PenumbraSize( in float zReceiver, in float zBlocker ) { //Parallel plane estimation
+float PCSS_PenumbraSize( float zReceiver, float zBlocker ) { //Parallel plane estimation
     return (zReceiver - zBlocker) / zBlocker;
 } 
 
 const float PCSS_bias =0;//0.0001;// 0.1;
 
-void PCSS_FindBlocker( in sampler2DArray _ShadowMap, in float _CascadeIndex, in vec2 uv, in float zReceiver, out float _AvgBlockerDepth, out float _NumBlockers ) {
+void PCSS_FindBlocker( sampler2DArray _ShadowMap, float _CascadeIndex, vec2 uv, float zReceiver, out float _AvgBlockerDepth, out float _NumBlockers ) {
     //This uses similar triangles to compute what
     //area of the shadow map we should search
     const float SearchWidth = LIGHT_SIZE_UV;// * ( zReceiver - NEAR_PLANE ) / zReceiver;
@@ -84,7 +84,7 @@ void PCSS_FindBlocker( in sampler2DArray _ShadowMap, in float _CascadeIndex, in 
     _AvgBlockerDepth = BlockerSum / _NumBlockers;
 }
 
-float PCF_Filter( in sampler2DArrayShadow _ShadowMapShadow, in vec4 _TexCoord, in float _FilterRadiusUV ) {
+float PCF_Filter( sampler2DArrayShadow _ShadowMapShadow, vec4 _TexCoord, float _FilterRadiusUV ) {
     float sum = 0.0f;
     vec4 SampleCoord = _TexCoord;
     for ( int i = 0; i < PCF_NUM_SAMPLES; ++i ) {
@@ -102,14 +102,7 @@ float PCF_Filter( in sampler2DArrayShadow _ShadowMapShadow, in vec4 _TexCoord, i
 #endif
 
 // Сглаживание границы тени (Percentage Closer Filtering)
-float PCF_3x3( in sampler2DArrayShadow _ShadowMap, in vec4 _TexCoord ) {
-//float sum=0;
-//for ( int i=-2;i<=2;i++)
-//for ( int j=-2;j<=2;j++)
-//sum += textureOffset( _ShadowMap, _TexCoord, ivec2( i, j) );
-//return sum / 25.0;
-//return 1;
-
+float PCF_3x3( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
     return ( textureOffset( _ShadowMap, _TexCoord, ivec2(-1,-1) )
            + textureOffset( _ShadowMap, _TexCoord, ivec2( 0,-1) )
            + textureOffset( _ShadowMap, _TexCoord, ivec2( 1,-1) )
@@ -119,12 +112,10 @@ float PCF_3x3( in sampler2DArrayShadow _ShadowMap, in vec4 _TexCoord ) {
            + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 1) )
            + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 1) )
            + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 1) ) ) / 9.0;
-
 }
 
-
 #if 0
-float PCSS_Shadow( in sampler2DArray _ShadowMap, in sampler2DArrayShadow _ShadowMapShadow, in vec4 _TexCoord ) {
+float PCSS_Shadow( sampler2DArray _ShadowMap, sampler2DArrayShadow _ShadowMapShadow, vec4 _TexCoord ) {
     float zReceiver = _TexCoord.w;
 
     float AvgBlockerDepth = 0;
@@ -142,19 +133,29 @@ float PCSS_Shadow( in sampler2DArray _ShadowMap, in sampler2DArrayShadow _Shadow
     return PCF_Filter( _ShadowMapShadow, _TexCoord, FilterRadiusUV );
 }
 #endif
-float SampleLightShadow( in vec4 ClipspacePosition, in uint _ShadowPoolPosition, in uint _NumCascades, in float Bias ) {
+
+float SampleLightShadow( uint ShadowPoolPosition, uint NumCascades, float Bias ) {
     float ShadowValue = 1.0;
     uint CascadeIndex;
 
-    for ( uint i = 0; i < _NumCascades ; i++ ) {
-        CascadeIndex = _ShadowPoolPosition + i;
-        vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * ClipspacePosition;
+    for ( uint i = 0; i < NumCascades ; i++ ) {
+        CascadeIndex = ShadowPoolPosition + i;
+        vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
         
         //SMTexCoord.z += -Bias*0.001*SMTexCoord.w;
 
         vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
         
-ShadowCoord.z += -Bias*0.0002*(i+1);
+        //ShadowCoord.z -= Bias*0.01;
+        
+        //ShadowCoord.z += -Bias*0.005*(i+1);
+        
+        //last
+        //ShadowCoord.z += -Bias*0.005;
+        
+        ShadowCoord.z += -0.00001;
+        
+        //ShadowCoord.z += Bias*0.0005;
 
 #ifdef SHADOWMAP_PCF
         bool SamplingOutside = any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) );
@@ -162,7 +163,7 @@ ShadowCoord.z += -Bias*0.0002*(i+1);
 
         // test:
         //if ( !SamplingOutside ) {
-        //    ShadowValue = float(i) / _NumCascades;
+        //    ShadowValue = float(i) / NumCascades;
         //}
 #endif
 #ifdef SHADOWMAP_PCSS
@@ -188,4 +189,40 @@ ShadowCoord.z += -Bias*0.0002*(i+1);
     return ShadowValue;
 }
 
+vec3 DebugShadowCascades( uint ShadowPoolPosition, uint NumCascades ) {
+    
+    const vec3 CascadeColor[MAX_SHADOW_CASCADES] = vec3[](
+        vec3( 1,0,0 ),
+        vec3( 0,1,0 ),
+        vec3( 0,0,1 ),
+        vec3( 1,1,0 )
+    );
+    
+    vec3 Color = vec3( 0.0 );
 
+    for ( uint i = 0; i < NumCascades ; i++ ) {
+        const uint CascadeIndex = ShadowPoolPosition + i;
+        const vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
+        
+        vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
+        
+        bool SamplingOutside = any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) );
+        Color = SamplingOutside ? vec3( 0.0 ) : CascadeColor[CascadeIndex];
+
+        if ( !SamplingOutside ) {
+            break;
+        }
+    }
+
+    return Color;
+}
+
+vec3 DebugDirectionalLightCascades() {
+    const uint NumLights = GetNumDirectionalLights();
+    vec3 Result = vec3(0.0);
+
+    for ( int i = 0 ; i < NumLights ; ++i ) {
+        Result += DebugShadowCascades( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ] );
+    }
+    return Result;
+}

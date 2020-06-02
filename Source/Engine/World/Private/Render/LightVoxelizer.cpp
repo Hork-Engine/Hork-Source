@@ -31,7 +31,8 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
-#include <World/Public/Components/BaseLightComponent.h>
+#include <World/Public/Components/AnalyticLightComponent.h>
+#include <World/Public/Components/IBLComponent.h>
 
 ARuntimeVariable RVClusterSSE( _CTS( "ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "1" ), VAR_CHEAT );
@@ -127,6 +128,12 @@ AN_FORCEINLINE Float4x4SSE operator*( Float4x4SSE const & m1, Float4x4SSE const 
 #define DECAL_ITEMS_OFFSET 256
 #define PROBE_ITEMS_OFFSET 512
 
+enum EItemType
+{
+    ITEM_TYPE_LIGHT,
+    ITEM_TYPE_PROBE
+};
+
 struct SItemInfo {
     int MinSlice;
     int MinClusterX;
@@ -147,9 +154,16 @@ struct SItemInfo {
     //alignas(16) __m128 AabbMaxsSSE;
     alignas(16) Float4x4SSE ClipToBoxMatSSE;
 
-    APunctualLightComponent * Light;
-    //ADecalComponent * Decal;
-    //AEnvProbeComponent * Probe;
+    int ListIndex;
+
+    uint8_t Type;
+
+    union
+    {
+        AAnalyticLightComponent * Light;
+        //ADecalComponent * Decal;
+        AIBLComponent * Probe;
+    };
 };
 
 static unsigned short Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
@@ -176,26 +190,24 @@ static void VoxelizeWork( void * _Data );
 ALightVoxelizer::ALightVoxelizer() {
 }
 
-static void PackLights( APunctualLightComponent * const * InLights, int InLightCount ) {
+AN_FORCEINLINE static SItemInfo * AllocItem() {
+    AN_ASSERT( ItemsCount < MAX_ITEMS );
+    return &ItemInfos[ ItemsCount++ ];
+}
+
+static void PackLights( AAnalyticLightComponent * const * InLights, int InLightCount ) {
     for ( int i = 0; i < InLightCount ; i++ ) {
-        APunctualLightComponent * light = InLights[i];
-        light->ListIndex = i;
+        AAnalyticLightComponent * light = InLights[i];
 
-        SItemInfo & info = ItemInfos[ItemsCount++];
-
-        info.Light = light;
-        info.Light->PackLight( RenderView->ViewMatrix, pLightData->LightBuffer[light->ListIndex] );
-
-        /*// Env Capture
-                  info.Probe = probe;
-                  probe->ListIndex = ListIndex++;// & ( MAX_PROBES - 1 );
-
-                  PackProbe( &Probes[ probe->ListIndex ], ItemInfo.Probe );
-                  */
+        SItemInfo * info = AllocItem();
+        info->Type = ITEM_TYPE_LIGHT;
+        info->Light = light;
+        info->Light->PackLight( RenderView->ViewMatrix, pLightData->LightBuffer[i] );
+        info->ListIndex = i;
 
         BvAxisAlignedBox const & AABB = light->GetWorldBounds();
-        info.Mins = AABB.Mins;
-        info.Maxs = AABB.Maxs;
+        info->Mins = AABB.Mins;
+        info->Maxs = AABB.Maxs;
 
         if ( bUseSSE )
         {
@@ -208,12 +220,46 @@ static void PackLights( APunctualLightComponent * const * InLights, int InLightC
             ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
             ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
 #else
-            info.ClipToBoxMatSSE = light->GetOBBTransformInverse() * ViewProjInv; // TODO: умножение сразу в SSE?
+            info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * ViewProjInv; // TODO: умножение сразу в SSE?
 #endif
         }
         else
         {
-            info.ClipToBoxMat = light->GetOBBTransformInverse() * ViewProjInv;
+            info->ClipToBoxMat = light->GetOBBTransformInverse() * ViewProjInv;
+        }
+    }
+}
+
+static void PackProbes( AIBLComponent * const * InLights, int InLightCount ) {
+    for ( int i = 0; i < InLightCount ; i++ ) {
+        AIBLComponent * light = InLights[i];
+
+        SItemInfo * info = AllocItem();
+        info->Type = ITEM_TYPE_PROBE;
+        info->Probe = light;
+        info->Probe->PackProbe( RenderView->ViewMatrix, pLightData->Probes[i] );
+        info->ListIndex = i;
+
+        BvAxisAlignedBox const & AABB = light->GetWorldBounds();
+        info->Mins = AABB.Mins;
+        info->Maxs = AABB.Maxs;
+
+        if ( bUseSSE )
+        {
+#if 0
+            ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
+            ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
+
+            ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
+            ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
+            ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
+            ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
+#else
+            info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * ViewProjInv; // TODO: умножение сразу в SSE?
+#endif
+        } else
+        {
+            info->ClipToBoxMat = light->GetOBBTransformInverse() * ViewProjInv;
         }
     }
 }
@@ -489,14 +535,16 @@ static void TransformItemsGeneric() {
     }
 }
 
-void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APunctualLightComponent * const * InLights, int InLightCount ) {
+void ALightVoxelizer::Voxelize( SRenderFrame * Frame,
+                                SRenderView * RV,
+                                AAnalyticLightComponent * const * InLights, int InLightCount,
+                                AIBLComponent * const * InProbes, int InProbeCount ) {
     RenderView = RV;
     ViewProj = RV->ClusterProjectionMatrix * RV->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
     ViewProjInv = ViewProj.Inversed();
 
     Core::ZeroMemSSE( ClusterData, sizeof( ClusterData ) );
 
-    int InProbesCount = 0; // TODO
     int InDecalsCount = 0; // TODO
 
     if ( InLightCount > MAX_LIGHTS ) {
@@ -505,8 +553,8 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APunctua
         GLogger.Printf( "MAX_LIGHTS hit\n" );
     }
 
-    if ( InProbesCount > MAX_PROBES ) {
-        InProbesCount = MAX_PROBES;
+    if ( InProbeCount > MAX_PROBES ) {
+        InProbeCount = MAX_PROBES;
 
         GLogger.Printf( "MAX_PROBES hit\n" );
     }
@@ -525,11 +573,11 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame, SRenderView * RV, APunctua
     ItemsCount = 0;
     PackLights( InLights, InLightCount );
     //PackDecals( InDecals, InDecalsCount );
-    //PackProbes( InProbes, InProbesCount );
+    PackProbes( InProbes, InProbeCount );
 
     pLightData->TotalLights = InLightCount;
     //pLightData->TotalDecals = InDecalsCount;
-    //pLightData->TotalProbes = InProbesCount;
+    pLightData->TotalProbes = InProbeCount;
 
     if ( bUseSSE ) {
         TransformItemsSSE();
@@ -612,12 +660,6 @@ static void VoxelizeWork( void * _Data ) {
                     ClusterMins.X = ClusterX * FRUSTUM_CLUSTER_WIDTH - 1.0f;
                     ClusterMaxs.X = ClusterMins.X + FRUSTUM_CLUSTER_WIDTH;
 
-                    // for debug
-                    //if ( Info.Probe ) {
-                    //    static int x;
-                    //    x = 2;
-                    //}
-
                     v_xxxx_min_mul_col0 = _mm_mul_ps( _mm_set_ps1( ClusterMins.X ), Info.ClipToBoxMatSSE.col0 );
                     v_xxxx_max_mul_col0 = _mm_mul_ps( _mm_set_ps1( ClusterMaxs.X ), Info.ClipToBoxMatSSE.col0 );
 
@@ -683,11 +725,14 @@ static void VoxelizeWork( void * _Data ) {
                     }
 #endif
 
-                    if ( Info.Light ) {
+                    switch ( Info.Type ) {
+                    case ITEM_TYPE_LIGHT:
                         pClusterItem[ClusterX * (MAX_CLUSTER_ITEMS * 3) + LIGHT_ITEMS_OFFSET + ((pCluster + ClusterX)->LightsCount++ & (MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
-                    }/* else if ( Info.Probe ) {
-                         pClusterItem[ ClusterX * (MAX_CLUSTER_ITEMS * 3) + PROBE_ITEMS_OFFSET + ( ( pCluster + ClusterX )->ProbesCount++ & ( MAX_CLUSTER_ITEMS - 1 ) ) ] = ItemIndex;
-                         }*/
+                        break;
+                    case ITEM_TYPE_PROBE:
+                        pClusterItem[ClusterX * (MAX_CLUSTER_ITEMS * 3) + PROBE_ITEMS_OFFSET + ((pCluster + ClusterX)->ProbesCount++ & (MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
+                        break;
+                    }
                 }
 
                 pCluster += MAX_FRUSTUM_CLUSTERS_X;
@@ -778,11 +823,14 @@ static void VoxelizeWork( void * _Data ) {
                         continue;
                     }
 #endif
-                    if ( Info.Light ) {
+                    switch ( Info.Type ) {
+                    case ITEM_TYPE_LIGHT:
                         pClusterItem[ClusterX * (MAX_CLUSTER_ITEMS * 3) + LIGHT_ITEMS_OFFSET + ((pCluster + ClusterX)->LightsCount++ & (MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
-                    }/* else if ( Info.Probe ) {
-                         pClusterItem[ ClusterX * (MAX_CLUSTER_ITEMS * 3) + PROBE_ITEMS_OFFSET + ( ( pCluster + ClusterX )->ProbesCount++ & ( MAX_CLUSTER_ITEMS - 1 ) ) ] = ItemIndex;
-                         }*/
+                        break;
+                    case ITEM_TYPE_PROBE:
+                        pClusterItem[ClusterX * (MAX_CLUSTER_ITEMS * 3) + PROBE_ITEMS_OFFSET + ((pCluster + ClusterX)->ProbesCount++ & (MAX_CLUSTER_ITEMS - 1))] = ItemIndex;
+                        break;
+                    }
                 }
 
                 pCluster += MAX_FRUSTUM_CLUSTERS_X;
@@ -821,14 +869,14 @@ static void VoxelizeWork( void * _Data ) {
             for ( int t = 0 ; t < pBuffer->NumLights ; t++ ) {
                 pItemInfo = ItemInfos + pClusterItem[LIGHT_ITEMS_OFFSET + t];
 
-                (pItem + t)->Indices |= pItemInfo->Light->ListIndex;
+                (pItem + t)->Indices |= pItemInfo->ListIndex;
             }
 
-            //                for ( int t = 0 ; t < pBuffer->NumProbes ; t++ ) {
-            //                    pItemInfo = ItemInfos + pClusterItem[ PROBE_ITEMS_OFFSET + t ];
+            for ( int t = 0 ; t < pBuffer->NumProbes ; t++ ) {
+                pItemInfo = ItemInfos + pClusterItem[PROBE_ITEMS_OFFSET + t];
 
-            //                    ( pItem + t )->Indices |= pItemInfo->Probe->ListIndex << 24;
-            //                }
+                (pItem + t)->Indices |= pItemInfo->ListIndex << 24;
+            }
 
             //for ( int t = 0 ; t < pBuffer->NumDecals ; t++ ) {
             //    i = DecalCounter.FetchIncrement() & 0x3ff;

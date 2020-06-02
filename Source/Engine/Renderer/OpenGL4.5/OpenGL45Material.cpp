@@ -29,12 +29,6 @@ SOFTWARE.
 */
 
 #include "OpenGL45Material.h"
-#include "OpenGL45CanvasPassRenderer.h"
-#include "OpenGL45DepthPassRenderer.h"
-#include "OpenGL45ColorPassRenderer.h"
-#include "OpenGL45ShadowMapPassRenderer.h"
-#include "OpenGL45WireframePassRenderer.h"
-#include "OpenGL45NormalsPassRenderer.h"
 
 using namespace GHI;
 
@@ -203,8 +197,6 @@ void ADepthPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
 
     pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
-
-    pipelineCI.pRenderPass = GDepthPassRenderer.GetRenderPass();
 
     Initialize( pipelineCI );
 }
@@ -399,8 +391,6 @@ void AWireframePass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMo
     pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
 
-    pipelineCI.pRenderPass = GWireframePassRenderer.GetRenderPass();
-
     Initialize( pipelineCI );
 }
 
@@ -594,8 +584,6 @@ void ANormalsPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode
     pipelineCI.NumStages = AN_ARRAY_SIZE( stages );
     pipelineCI.pStages = stages;
 
-    pipelineCI.pRenderPass = GNormalsPassRenderer.GetRenderPass();
-
     Initialize( pipelineCI );
 }
 
@@ -695,8 +683,6 @@ void AColorPassHUD::Create( const char * _SourceCode ) {
 
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
-
-    pipelineCI.pRenderPass = GCanvasPassRenderer.GetRenderPass();
 
     Initialize( pipelineCI );
 }
@@ -925,7 +911,6 @@ void AColorPass::Create( const char * _SourceCode, GHI::POLYGON_CULL _CullMode, 
     }
 
     pipelineCI.pVertexBindings = vertexBinding;
-    pipelineCI.pRenderPass = GColorPassRenderer.GetRenderPass();
 
     Initialize( pipelineCI );
 }
@@ -1062,8 +1047,6 @@ void AColorPassLightmap::Create( const char * _SourceCode, GHI::POLYGON_CULL _Cu
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.pRenderPass = GColorPassRenderer.GetRenderPass();
-
     Initialize( pipelineCI );
 }
 
@@ -1198,8 +1181,6 @@ void AColorPassVertexLight::Create( const char * _SourceCode, GHI::POLYGON_CULL 
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
-
-    pipelineCI.pRenderPass = GColorPassRenderer.GetRenderPass();
 
     Initialize( pipelineCI );
 }
@@ -1416,7 +1397,6 @@ void AShadowMapPass::Create( const char * _SourceCode, bool _ShadowMasking, bool
     }
 
     pipelineCI.pStages = stages;
-    pipelineCI.pRenderPass = GShadowMapPassRenderer.GetRenderPass();
 
     Initialize( pipelineCI );
 }

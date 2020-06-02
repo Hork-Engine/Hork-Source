@@ -54,6 +54,8 @@ SOFTWARE.
 #define DEBUG_BLOOMTEX3    20
 #define DEBUG_BLOOMTEX4    21
 #define DEBUG_EXPOSURE     22
+#define DEBUG_AMBIENT_LIGHT 23
+#define DEBUG_LIGHT_CASCADES 24
 #endif
 
 #endif // DEBUG_H

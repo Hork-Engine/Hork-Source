@@ -33,6 +33,8 @@ SOFTWARE.
 #include "GHIBasic.h"
 #include "GHIBuffer.h"
 
+#include <memory>
+
 namespace GHI {
 
 class Device;
@@ -266,42 +268,90 @@ enum TEXTURE_SWIZZLE : uint8_t {
 
 struct TextureResolution1D {
     uint32_t Width;
+
+    TextureResolution1D() = default;
+    TextureResolution1D( uint32_t InWidth )
+        : Width( InWidth )
+    {
+    }
 };
 
 struct TextureResolution1DArray {
     uint32_t Width;
     uint32_t NumLayers;
+
+    TextureResolution1DArray() = default;
+    TextureResolution1DArray( uint32_t InWidth, uint32_t InNumLayers )
+        : Width( InWidth ), NumLayers( InNumLayers )
+    {
+    }
 };
 
 struct TextureResolution2D {
     uint32_t Width;
     uint32_t Height;
+
+    TextureResolution2D() = default;
+    TextureResolution2D( uint32_t InWidth, uint32_t InHeight )
+        : Width( InWidth ), Height( InHeight )
+    {
+    }
 };
 
 struct TextureResolution2DArray {
     uint32_t Width;
     uint32_t Height;
     uint32_t NumLayers;
+
+    TextureResolution2DArray() = default;
+    TextureResolution2DArray( uint32_t InWidth, uint32_t InHeight, uint32_t InNumLayers )
+        : Width( InWidth ), Height( InHeight ), NumLayers( InNumLayers )
+    {
+    }
 };
 
 struct TextureResolution3D {
     uint32_t Width;
     uint32_t Height;
     uint32_t Depth;
+
+    TextureResolution3D() = default;
+    TextureResolution3D( uint32_t InWidth, uint32_t InHeight, uint32_t InDepth )
+        : Width( InWidth ), Height( InHeight ), Depth( InDepth )
+    {
+    }
 };
 
 struct TextureResolutionCubemap {
     uint32_t Width;
+
+    TextureResolutionCubemap() = default;
+    TextureResolutionCubemap( uint32_t InWidth )
+        : Width( InWidth )
+    {
+    }
 };
 
 struct TextureResolutionCubemapArray {
     uint32_t Width;
     uint32_t NumLayers;
+
+    TextureResolutionCubemapArray() = default;
+    TextureResolutionCubemapArray( uint32_t InWidth, uint32_t InNumLayers )
+        : Width( InWidth ), NumLayers( InNumLayers )
+    {
+    }
 };
 
 struct TextureResolutionRect {
     uint32_t Width;
     uint32_t Height;
+
+    TextureResolutionRect() = default;
+    TextureResolutionRect( uint32_t InWidth, uint32_t InHeight )
+        : Width( InWidth ), Height( InHeight )
+    {
+    }
 };
 
 struct TextureResolution {
@@ -322,6 +372,10 @@ struct TextureResolution {
 
         TextureResolutionRect       TexRect;
     };
+
+    bool operator==( TextureResolution const & Rhs ) const {
+        return std::memcmp( this, &Rhs, sizeof( *this ) ) == 0;
+    }
 };
 
 struct TextureOffset {
@@ -352,6 +406,21 @@ struct TextureMultisampleInfo {
     bool    bFixedSampleLocations;  /// Specifies whether the image will use identical sample locations
                                     /// and the same number of samples for all texels in the image,
                                     /// and the sample locations will not depend on the internal format or size of the image
+
+    TextureMultisampleInfo() {
+        NumSamples = 0;
+        bFixedSampleLocations = false;
+    }
+
+    TextureMultisampleInfo & SetSamples( int InNumSamples ) {
+        NumSamples = InNumSamples;
+        return *this;
+    }
+
+    TextureMultisampleInfo & SetFixedSampleLocations( bool InbFixedSampleLocations ) {
+        bFixedSampleLocations = InbFixedSampleLocations;
+        return *this;
+    }
 };
 
 struct TextureSwizzle {
@@ -359,6 +428,19 @@ struct TextureSwizzle {
     uint8_t G;
     uint8_t B;
     uint8_t A;
+
+    TextureSwizzle() = default;
+    TextureSwizzle( uint8_t InR,
+                    uint8_t InG,
+                    uint8_t InB,
+                    uint8_t InA )
+        : R(InR), G(InG), B(InB), A(InA)
+    {
+    }
+
+    bool operator==( TextureSwizzle const & Rhs ) const {
+        return std::memcmp( this, &Rhs, sizeof( *this ) ) == 0;
+    }
 };
 
 struct TextureCreateInfo {
@@ -369,6 +451,150 @@ struct TextureCreateInfo {
     TextureSwizzle         Swizzle;
 };
 
+inline TextureCreateInfo MakeTexture(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution1D const &     Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ) )
+{
+    TextureCreateInfo createInfo;
+    createInfo.Type = TEXTURE_1D;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex1D = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    return createInfo;
+}
+
+inline TextureCreateInfo MakeTexture(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution1DArray const &Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ) )
+{
+    TextureCreateInfo createInfo;
+    createInfo.Type = TEXTURE_1D_ARRAY;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex1DArray = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    return createInfo;
+}
+
+inline TextureCreateInfo MakeTexture(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution2D const &     Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ) )
+{
+    TextureCreateInfo createInfo;
+    createInfo.Type = TEXTURE_2D;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex2D = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    return createInfo;
+}
+
+inline TextureCreateInfo MakeTexture(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution2DArray const &Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ) )
+{
+    TextureCreateInfo createInfo;
+    createInfo.Type = TEXTURE_2D_ARRAY;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex2DArray = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    return createInfo;
+}
+
+inline TextureCreateInfo MakeTexture(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution3D const &     Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ) )
+{
+    TextureCreateInfo createInfo;
+    createInfo.Type = TEXTURE_3D;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex3D = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    return createInfo;
+}
+
+inline TextureCreateInfo MakeTexture(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolutionCubemap const &Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ) )
+{
+    TextureCreateInfo createInfo;
+    createInfo.Type = TEXTURE_CUBE_MAP;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.TexCubemap = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    return createInfo;
+}
+
+inline TextureCreateInfo MakeTexture(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolutionCubemapArray const &Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ) )
+{
+    TextureCreateInfo createInfo;
+    createInfo.Type = TEXTURE_CUBE_MAP_ARRAY;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.TexCubemapArray = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    return createInfo;
+}
+
+inline TextureCreateInfo MakeTexture(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolutionRect const &   Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ) )
+{
+    TextureCreateInfo createInfo;
+    createInfo.Type = TEXTURE_RECT;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.TexRect = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    return createInfo;
+}
+
 struct TextureStorageCreateInfo {
     TEXTURE_TYPE            Type;
     INTERNAL_PIXEL_FORMAT   InternalFormat;
@@ -377,6 +603,166 @@ struct TextureStorageCreateInfo {
     TextureSwizzle          Swizzle;
     uint16_t                NumLods;
 };
+
+inline TextureStorageCreateInfo MakeTextureStorage(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution1D const &     Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ),
+    uint16_t                        NumLods = 1 )
+{
+    TextureStorageCreateInfo createInfo;
+    createInfo.Type = TEXTURE_1D;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex1D = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    createInfo.NumLods = NumLods;
+    return createInfo;
+}
+
+inline TextureStorageCreateInfo MakeTextureStorage(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution1DArray const &Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ),
+    uint16_t                        NumLods = 1 )
+{
+    TextureStorageCreateInfo createInfo;
+    createInfo.Type = TEXTURE_1D_ARRAY;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex1DArray = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    createInfo.NumLods = NumLods;
+    return createInfo;
+}
+
+inline TextureStorageCreateInfo MakeTextureStorage(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution2D const &     Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ),
+    uint16_t                        NumLods = 1 )
+{
+    TextureStorageCreateInfo createInfo;
+    createInfo.Type = TEXTURE_2D;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex2D = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    createInfo.NumLods = NumLods;
+    return createInfo;
+}
+
+inline TextureStorageCreateInfo MakeTextureStorage(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution2DArray const &Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ),
+    uint16_t                        NumLods = 1 )
+{
+    TextureStorageCreateInfo createInfo;
+    createInfo.Type = TEXTURE_2D_ARRAY;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex2DArray = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    createInfo.NumLods = NumLods;
+    return createInfo;
+}
+
+inline TextureStorageCreateInfo MakeTextureStorage(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolution3D const &     Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ),
+    uint16_t                        NumLods = 1 )
+{
+    TextureStorageCreateInfo createInfo;
+    createInfo.Type = TEXTURE_3D;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.Tex3D = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    createInfo.NumLods = NumLods;
+    return createInfo;
+}
+
+inline TextureStorageCreateInfo MakeTextureStorage(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolutionCubemap const &Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ),
+    uint16_t                        NumLods = 1 )
+{
+    TextureStorageCreateInfo createInfo;
+    createInfo.Type = TEXTURE_CUBE_MAP;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.TexCubemap = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    createInfo.NumLods = NumLods;
+    return createInfo;
+}
+
+inline TextureStorageCreateInfo MakeTextureStorage(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolutionCubemapArray const &Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ),
+    uint16_t                        NumLods = 1 )
+{
+    TextureStorageCreateInfo createInfo;
+    createInfo.Type = TEXTURE_CUBE_MAP_ARRAY;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.TexCubemapArray = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    createInfo.NumLods = NumLods;
+    return createInfo;
+}
+
+inline TextureStorageCreateInfo MakeTextureStorage(
+    INTERNAL_PIXEL_FORMAT           InternalFormat,
+    TextureResolutionRect const &   Resolution,
+    TextureMultisampleInfo const &  Multisample = TextureMultisampleInfo(),
+    TextureSwizzle const &          Swizzle = TextureSwizzle( TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY,
+                                                              TEXTURE_SWIZZLE_IDENTITY ),
+    uint16_t                        NumLods = 1 )
+{
+    TextureStorageCreateInfo createInfo;
+    createInfo.Type = TEXTURE_RECT;
+    createInfo.InternalFormat = InternalFormat;
+    createInfo.Resolution.TexRect = Resolution;
+    createInfo.Multisample = Multisample;
+    createInfo.Swizzle = Swizzle;
+    createInfo.NumLods = NumLods;
+    return createInfo;
+}
 
 struct TextureLodInfo {
     TextureResolution  Resoultion;
@@ -430,9 +816,13 @@ public:
 
     uint32_t GetHeight() const;
 
+    uint32_t GetStorageNumLods() const { return StorageNumLods; }
+
     INTERNAL_PIXEL_FORMAT GetInternalPixelFormat() const { return CreateInfo.InternalFormat; }
 
     TextureResolution const & GetResoulution() const { return CreateInfo.Resolution; }
+
+    TextureSwizzle const & GetSwizzle() const { return CreateInfo.Swizzle; }
 
     uint8_t GetSamplesCount() const { return CreateInfo.Multisample.NumSamples; }
 
@@ -511,6 +901,7 @@ private:
     void * Handle;
     uint32_t UID;
     TextureCreateInfo CreateInfo;
+    uint32_t StorageNumLods;
     bool bImmutableStorage;
     bool bTextureBuffer;
     bool bTextureView;

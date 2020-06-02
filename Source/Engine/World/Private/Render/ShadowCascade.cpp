@@ -33,6 +33,9 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 
 ARuntimeVariable RVShadowCascadeBits( _CTS( "ShadowCascadeBits" ), _CTS( "24" ) );    // Allowed 16, 24 or 32 bits
+ARuntimeVariable RVCascadeSplitLambda( _CTS( "CascadeSplitLambda" ), _CTS( "1.0" ) );
+ARuntimeVariable RVMaxShadowDistance( _CTS( "MaxShadowDistance" ), _CTS( "128" ) );
+ARuntimeVariable RVShadowCalc( _CTS( "ShadowCalc" ), _CTS( "0" ) );
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -51,8 +54,9 @@ struct SCascadeSplit { // TODO: move to DirectionalLightComponent.h
     float Distance;     // Distance from view
 };
 static SCascadeSplit CascadeSplits[ MAX_CASCADE_SPLITS ];   // TODO: move inside ADirectionalLightComponent?
-static Float4 LightSpaceVerts[ MAX_CASCADE_SPLITS ][ 4 ];    // Split corners in light space
-static BvAxisAlignedBox CascadeBounds[ MAX_SHADOW_CASCADES ];     // Cascade bounding boxes
+alignas(16) static Float4 LightSpaceVerts[ MAX_CASCADE_SPLITS ][ 4 ];    // Split corners in light space
+alignas(16) static Float4 WorldSpaceVerts[MAX_CASCADE_SPLITS][4];    // Split corners in world space
+//static BvAxisAlignedBox CascadeBounds[ MAX_SHADOW_CASCADES ];     // Cascade bounding boxes
 static float PerspHalfWidth;
 static float PerspHalfHeight;
 static Float3 RV, UV;           // scaled right and up vectors in world space
@@ -63,57 +67,41 @@ void ARenderFrontend::CreateDirectionalLightCascades( SRenderView * View ) {
     View->NumShadowMapCascades = 0;
     View->NumCascadedShadowMaps = 0;
 
-    if ( View->bPerspective )
-    {
-        // for perspective camera
-
+    if ( View->bPerspective ) {
         PerspHalfWidth = std::tan( View->ViewFovX * 0.5f );
         PerspHalfHeight = std::tan( View->ViewFovY * 0.5f );
-    }
-    else
-    {
-        // for ortho camera
-
+    } else {
         float orthoWidth = View->ViewOrthoMaxs.X - View->ViewOrthoMins.X;
         float orthoHeight = View->ViewOrthoMaxs.Y - View->ViewOrthoMins.Y;
-
         RV = View->ViewRightVec * Math::Abs( orthoWidth * 0.5f );
         UV = View->ViewUpVec * Math::Abs( orthoHeight * 0.5f );
     }
 
-    for ( int i = 0 ; i < View->NumDirectionalLights ; i++ ) {
-        SDirectionalLightDef & lightDef = *FrameData.DirectionalLights[ View->FirstDirectionalLight + i ];
+    for ( int lightIndex = 0 ; lightIndex < View->NumDirectionalLights ; lightIndex++ ) {
+        SDirectionalLightDef & lightDef = *FrameData.DirectionalLights[ View->FirstDirectionalLight + lightIndex];
 
         if ( !lightDef.bCastShadow ) {
             continue;
         }
 
-        // Calc splits
-        CascadeSplits[0].Distance = View->ViewZNear;
-        CascadeSplits[lightDef.MaxShadowCascades].Distance = View->ViewZFar;
+        // NOTE: We can use View->ViewZFar/MaxVisibleDistance to improve quality (in case if ViewZFar/MaxVisibleDistance is small) or set it in light properties
+        const float MaxShadowDistance = RVMaxShadowDistance.GetInteger();
 
-    #if 0
-        // TODO: logarithmic subdivision!
-        float Range = _CascadeSplits[lightDef.MaxShadowCascades].Distance - _CascadeSplits[0].Distance;
-        int NumInnerSplits = lightDef.MaxShadowCascades - 1;
-        if ( NumInnerSplits > 0 ) {
-            float LinearDist = Range / lightDef.MaxShadowCascades;
-            for ( int i = 1 ; i < lightDef.MaxShadowCascades ; i++ ) {
-                CascadeSplits[i].Distance = CascadeSplits[i-1].Distance + LinearDist;
-            }
+        // Calc splits
+
+        const float a = MaxShadowDistance / View->ViewZNear;
+        const float b = MaxShadowDistance - View->ViewZNear;
+
+        CascadeSplits[0].Distance = View->ViewZNear;
+        CascadeSplits[MAX_CASCADE_SPLITS-1].Distance = MaxShadowDistance;
+
+        for ( int splitIndex = 1 ; splitIndex < MAX_CASCADE_SPLITS-1 ; splitIndex++ ) {
+            const float factor = (float)splitIndex / (MAX_CASCADE_SPLITS-1);
+            const float logarithmic = View->ViewZNear * Math::Pow( a, factor );
+            const float linear = View->ViewZNear + b * factor;
+            const float dist = Math::Lerp( linear, logarithmic, RVCascadeSplitLambda.GetFloat() );
+            CascadeSplits[splitIndex].Distance = dist;
         }
-    #else
-        // Fixed range
-        const float Range = 64;
-        //_CascadeSplits[1].Distance = 2;
-        //_CascadeSplits[2].Distance = 16;
-        //_CascadeSplits[3].Distance = 32;
-        //_CascadeSplits[4].Distance = 64;
-        CascadeSplits[1].Distance = Range * 0.05f;
-        CascadeSplits[2].Distance = Range * 0.2f;
-        CascadeSplits[3].Distance = Range * 0.5f;
-        CascadeSplits[4].Distance = 128;//Range * 1.0f;
-    #endif
 
         CalcCascades( View, lightDef, CascadeSplits );
 
@@ -131,7 +119,7 @@ static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, 
     int NumVisibleCascades;
     Float3 CenterWorldspace; // center of split in world space
     Float4x4 CascadeProjectionMatrix;
-    Float4x4 LightViewMatrix;
+    Float4x4 LightViewMatrix[MAX_SHADOW_CASCADES];
 
     AN_ASSERT( _LightDef.MaxShadowCascades > 0 );
     AN_ASSERT( _LightDef.MaxShadowCascades <= MAX_SHADOW_CASCADES );
@@ -142,17 +130,17 @@ static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, 
     Float3x3 Basis = _LightDef.Matrix.Transposed();
     Float3   Origin = Basis * (-LightPos);
 
-    LightViewMatrix[0] = Float4( Basis[0], 0.0f );
-    LightViewMatrix[1] = Float4( Basis[1], 0.0f );
-    LightViewMatrix[2] = Float4( Basis[2], 0.0f );
-    LightViewMatrix[3] = Float4( Origin, 1.0f );
+    LightViewMatrix[0][0] = Float4( Basis[0], 0.0f );
+    LightViewMatrix[0][1] = Float4( Basis[1], 0.0f );
+    LightViewMatrix[0][2] = Float4( Basis[2], 0.0f );
+    LightViewMatrix[0][3] = Float4( Origin, 1.0f );
 
     // FIXME: Возможно лучше для каждого каскада позиционировать источник освещения индивидуально?
 
-    const float MaxVisibleDistance = Math::Max( View->MaxVisibleDistance, _CascadeSplits[0].Distance );
+    const float MaxShadowcastDistance = View->MaxVisibleDistance; // TODO: Calc max shadow caster distance to camera
 
     for ( NumVisibleSplits = 0 ;
-          NumVisibleSplits < NumSplits && ( _CascadeSplits[ NumVisibleSplits - 1 ].Distance <= MaxVisibleDistance ) ;
+          NumVisibleSplits < NumSplits && ( _CascadeSplits[ NumVisibleSplits ].Distance <= MaxShadowcastDistance ) ;
           NumVisibleSplits++ )
     {
         const float & SplitDistance = CascadeSplits[ NumVisibleSplits ].Distance;
@@ -165,10 +153,18 @@ static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, 
 
         CenterWorldspace = View->ViewPosition + View->ViewDir * SplitDistance;
 
-        LightSpaceVerts[ NumVisibleSplits ][ 0 ] = LightViewMatrix * Float4( CenterWorldspace - RV - UV, 1.0f );
-        LightSpaceVerts[ NumVisibleSplits ][ 1 ] = LightViewMatrix * Float4( CenterWorldspace - RV + UV, 1.0f );
-        LightSpaceVerts[ NumVisibleSplits ][ 2 ] = LightViewMatrix * Float4( CenterWorldspace + RV + UV, 1.0f );
-        LightSpaceVerts[ NumVisibleSplits ][ 3 ] = LightViewMatrix * Float4( CenterWorldspace + RV - UV, 1.0f );
+        Float4 * pWorldSpaceVerts = WorldSpaceVerts[NumVisibleSplits];
+        Float4 * pLightSpaceVerts = LightSpaceVerts[NumVisibleSplits];
+
+        pWorldSpaceVerts[0] = Float4( CenterWorldspace - RV - UV, 1.0f );
+        pWorldSpaceVerts[1] = Float4( CenterWorldspace - RV + UV, 1.0f );
+        pWorldSpaceVerts[2] = Float4( CenterWorldspace + RV + UV, 1.0f );
+        pWorldSpaceVerts[3] = Float4( CenterWorldspace + RV - UV, 1.0f );
+
+        pLightSpaceVerts[0] = LightViewMatrix[0] * pWorldSpaceVerts[0];
+        pLightSpaceVerts[1] = LightViewMatrix[0] * pWorldSpaceVerts[1];
+        pLightSpaceVerts[2] = LightViewMatrix[0] * pWorldSpaceVerts[2];
+        pLightSpaceVerts[3] = LightViewMatrix[0] * pWorldSpaceVerts[3];
     }
 
     AN_ASSERT( NumVisibleSplits >= 2 );
@@ -178,130 +174,393 @@ static void CalcCascades( SRenderView * View, SDirectionalLightDef & _LightDef, 
     _LightDef.FirstCascade = View->NumShadowMapCascades;
     _LightDef.NumCascades = NumVisibleCascades;
 
-    //GLogger.Printf( "First cascade %d num %d\n", _LightDef.FirstCascade,_LightDef.NumCascades);
-
     const float Extrusion = 0.0f;
 
-    for ( int CascadeIndex = 0 ; CascadeIndex < NumVisibleCascades ; CascadeIndex++ ) {
-        Float3 & Mins = CascadeBounds[ CascadeIndex ].Mins;
-        Float3 & Maxs = CascadeBounds[ CascadeIndex ].Maxs;
+    alignas(16) float cascadeMins[4];
+    alignas(16) float cascadeMaxs[4];
+    alignas(16) Float4 lightSpaceVerts[8];
 
-        const Float4 * pVerts = &LightSpaceVerts[ CascadeIndex ][ 0 ];
+    if ( RVShadowCalc.GetInteger() == 0 ) {
+        for ( int CascadeIndex = 0 ; CascadeIndex < NumVisibleCascades ; CascadeIndex++ ) {
+            //Float3 & Mins = CascadeBounds[ CascadeIndex ].Mins;
+            //Float3 & Maxs = CascadeBounds[ CascadeIndex ].Maxs;
 
-        // TODO: Use SSE
+            const Float4 * pVerts = &LightSpaceVerts[CascadeIndex][0];
 
-        Mins = Maxs = Float3( *pVerts );
+#if 1
+            __m128 mins, maxs, vert;
 
-        ++pVerts;
+            mins = maxs = _mm_load_ps( &pVerts->X );
 
-        Mins.X = Math::Min( Mins.X, pVerts->X );
-        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
-        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+            ++pVerts;
 
-        Maxs.X = Math::Max( Maxs.X, pVerts->X );
-        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
 
-        ++pVerts;
+            ++pVerts;
 
-        Mins.X = Math::Min( Mins.X, pVerts->X );
-        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
-        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
 
-        Maxs.X = Math::Max( Maxs.X, pVerts->X );
-        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+            ++pVerts;
 
-        ++pVerts;
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
 
-        Mins.X = Math::Min( Mins.X, pVerts->X );
-        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
-        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+            ++pVerts;
 
-        Maxs.X = Math::Max( Maxs.X, pVerts->X );
-        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
 
-        ++pVerts;
+            ++pVerts;
 
-        Mins.X = Math::Min( Mins.X, pVerts->X );
-        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
-        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
 
-        Maxs.X = Math::Max( Maxs.X, pVerts->X );
-        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+            ++pVerts;
 
-        ++pVerts;
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
 
-        Mins.X = Math::Min( Mins.X, pVerts->X );
-        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
-        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+            ++pVerts;
 
-        Maxs.X = Math::Max( Maxs.X, pVerts->X );
-        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
 
-        ++pVerts;
+            _mm_store_ps( cascadeMins, mins );
+            _mm_store_ps( cascadeMaxs, maxs );
 
-        Mins.X = Math::Min( Mins.X, pVerts->X );
-        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
-        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+#else
+            Mins = Maxs = Float3( *pVerts );
 
-        Maxs.X = Math::Max( Maxs.X, pVerts->X );
-        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+            ++pVerts;
 
-        ++pVerts;
+            vert = _mm_set_ps( pVerts->X, pVerts->Y, pVerts->Z, 0.0f );
 
-        Mins.X = Math::Min( Mins.X, pVerts->X );
-        Mins.Y = Math::Min( Mins.Y, pVerts->Y );
-        Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
 
-        Maxs.X = Math::Max( Maxs.X, pVerts->X );
-        Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
-        Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+            Mins.X = Math::Min( Mins.X, pVerts->X );
+            Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+            Mins.Z = Math::Min( Mins.Z, pVerts->Z );
 
-        Mins -= Extrusion;
-        Maxs += Extrusion;
+            Maxs.X = Math::Max( Maxs.X, pVerts->X );
+            Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+            Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
 
-        // Snap to minimize jittering
-        Mins.X = floorf( Mins.X * 0.5f ) * 2.0f;
-        Mins.Y = floorf( Mins.Y * 0.5f ) * 2.0f;
-        Mins.Z = floorf( Mins.Z * 0.5f ) * 2.0f;
-        Maxs.X = ceilf( Maxs.X * 0.5f ) * 2.0f;
-        Maxs.Y = ceilf( Maxs.Y * 0.5f ) * 2.0f;
-        Maxs.Z = ceilf( Maxs.Z * 0.5f ) * 2.0f;
+            ++pVerts;
 
-        //CascadeProjectionMatrix = Math::OrthoCC( Mins, Maxs );
+            Mins.X = Math::Min( Mins.X, pVerts->X );
+            Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+            Mins.Z = Math::Min( Mins.Z, pVerts->Z );
 
-        if ( CascadeIndex == NumVisibleCascades - 1 ) {
-            // Last cascade have extended far plane
-            CascadeProjectionMatrix = Float4x4::OrthoCC( Mins.Shuffle2<sXY>(), Maxs.Shuffle2<sXY>(), 0.1f, 5000.0f );
-        } else {
+            Maxs.X = Math::Max( Maxs.X, pVerts->X );
+            Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+            Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
 
-            float Z = Maxs.Z - Mins.Z;
+            ++pVerts;
 
-            if ( 1 ) {
+            Mins.X = Math::Min( Mins.X, pVerts->X );
+            Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+            Mins.Z = Math::Min( Mins.Z, pVerts->Z );
 
-                float ExtendedZ;
+            Maxs.X = Math::Max( Maxs.X, pVerts->X );
+            Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+            Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
 
-                if ( RVShadowCascadeBits.GetInteger() <= 16 ) {
-                    ExtendedZ = Z + LightDist + Z * 2.0f;
-                } else {
-                    ExtendedZ = 5000.0f;
-                }
+            ++pVerts;
 
-                CascadeProjectionMatrix = Float4x4::OrthoCC( Mins.Shuffle2<sXY>(), Maxs.Shuffle2<sXY>(), 0.1f, ExtendedZ );
-                
+            Mins.X = Math::Min( Mins.X, pVerts->X );
+            Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+            Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+
+            Maxs.X = Math::Max( Maxs.X, pVerts->X );
+            Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+            Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+
+            ++pVerts;
+
+            Mins.X = Math::Min( Mins.X, pVerts->X );
+            Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+            Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+
+            Maxs.X = Math::Max( Maxs.X, pVerts->X );
+            Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+            Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+
+            ++pVerts;
+
+            Mins.X = Math::Min( Mins.X, pVerts->X );
+            Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+            Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+
+            Maxs.X = Math::Max( Maxs.X, pVerts->X );
+            Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+            Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+
+            ++pVerts;
+
+            Mins.X = Math::Min( Mins.X, pVerts->X );
+            Mins.Y = Math::Min( Mins.Y, pVerts->Y );
+            Mins.Z = Math::Min( Mins.Z, pVerts->Z );
+
+            Maxs.X = Math::Max( Maxs.X, pVerts->X );
+            Maxs.Y = Math::Max( Maxs.Y, pVerts->Y );
+            Maxs.Z = Math::Max( Maxs.Z, pVerts->Z );
+
+#endif
+
+            cascadeMins[0] -= Extrusion;
+            cascadeMins[1] -= Extrusion;
+            cascadeMins[2] -= Extrusion;
+            cascadeMaxs[0] += Extrusion;
+            cascadeMaxs[1] += Extrusion;
+            cascadeMaxs[2] += Extrusion;
+
+            // Snap to minimize jittering
+            //cascadeMins[0] = Math::Floor( cascadeMins[0] * 0.5f ) * 2.0f;
+            //cascadeMins[1] = Math::Floor( cascadeMins[1] * 0.5f ) * 2.0f;
+            //cascadeMins[2] = Math::Floor( cascadeMins[2] * 0.5f ) * 2.0f;
+            //cascadeMaxs[0] = Math::Ceil( cascadeMaxs[0] * 0.5f ) * 2.0f;
+            //cascadeMaxs[1] = Math::Ceil( cascadeMaxs[1] * 0.5f ) * 2.0f;
+            //cascadeMaxs[2] = Math::Ceil( cascadeMaxs[2] * 0.5f ) * 2.0f;
+
+            //Mins.X = floorf( Mins.X * 0.1f ) * 10.0f;
+            //Mins.Y = floorf( Mins.Y * 0.1f ) * 10.0f;
+            //Mins.Z = floorf( Mins.Z * 0.1f ) * 10.0f;
+            //Maxs.X = ceilf( Maxs.X * 0.1f ) * 10.0f;
+            //Maxs.Y = ceilf( Maxs.Y * 0.1f ) * 10.0f;
+            //Maxs.Z = ceilf( Maxs.Z * 0.1f ) * 10.0f;
+
+            //float x = Mins.X;
+            //float y = Mins.Y;
+            //float z = Mins.Z;
+            //Mins.X = floorf( Mins.X * 0.5f ) * 2.0f;
+            //Mins.Y = floorf( Mins.Y * 0.5f ) * 2.0f;
+            //Mins.Z = floorf( Mins.Z * 0.5f ) * 2.0f;
+            //Maxs.X -= x - Mins.X;
+            //Maxs.Y -= y - Mins.Y;
+            //Maxs.Z -= z - Mins.Z;
+
+            //CascadeProjectionMatrix = Math::OrthoCC( Mins, Maxs );
+
+            if ( CascadeIndex == NumVisibleCascades - 1 ) {
+                // Last cascade have extended far plane
+                CascadeProjectionMatrix = Float4x4::OrthoCC( Float2( cascadeMins[0], cascadeMins[1] ), Float2( cascadeMaxs[0], cascadeMaxs[1] ), 0.1f, 5000.0f );
             } else {
-                CascadeProjectionMatrix = Float4x4::OrthoCC( Mins.Shuffle2<sXY>(), Maxs.Shuffle2<sXY>(), 0.1f, Z + LightDist );
+
+                float Z = cascadeMaxs[2] - cascadeMins[2];
+
+                if ( 1 ) {
+
+                    float ExtendedZ;
+
+                    if ( RVShadowCascadeBits.GetInteger() <= 16 ) {
+                        ExtendedZ = Z + LightDist + Z * 2.0f;
+                    } else {
+                        ExtendedZ = 5000.0f;
+                    }
+
+                    CascadeProjectionMatrix = Float4x4::OrthoCC( Float2( cascadeMins[0], cascadeMins[1] ), Float2( cascadeMaxs[0], cascadeMaxs[1] ), 0.1f, ExtendedZ );
+
+                } else {
+                    CascadeProjectionMatrix = Float4x4::OrthoCC( Float2( cascadeMins[0], cascadeMins[1] ), Float2( cascadeMaxs[0], cascadeMaxs[1] ), 0.1f, Z + LightDist );
+                }
             }
-        }        
 
-        View->LightViewProjectionMatrices[ View->NumShadowMapCascades ] = CascadeProjectionMatrix * LightViewMatrix;
-        View->ShadowMapMatrices[ View->NumShadowMapCascades ] = ShadowMapBias * View->LightViewProjectionMatrices[ View->NumShadowMapCascades ] * View->ClipSpaceToWorldSpace;
+            View->LightViewProjectionMatrices[View->NumShadowMapCascades] = CascadeProjectionMatrix * LightViewMatrix[0];
+            View->ShadowMapMatrices[View->NumShadowMapCascades] = ShadowMapBias * View->LightViewProjectionMatrices[View->NumShadowMapCascades] * View->ClipSpaceToWorldSpace;
 
-        View->NumShadowMapCascades++;
+            View->NumShadowMapCascades++;
+        }
+    } else {
+        for ( int CascadeIndex = 0 ; CascadeIndex < NumVisibleCascades ; CascadeIndex++ ) {
+            //Float3 & Mins = CascadeBounds[ CascadeIndex ].Mins;
+            //Float3 & Maxs = CascadeBounds[ CascadeIndex ].Maxs;
+
+            const Float4 * pVerts = &WorldSpaceVerts[CascadeIndex][0];
+
+            __m128 mins, maxs, vert;
+
+            mins = maxs = _mm_load_ps( &pVerts->X );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            _mm_store_ps( cascadeMins, mins );
+            _mm_store_ps( cascadeMaxs, maxs );
+
+            cascadeMins[0] -= Extrusion;
+            cascadeMins[1] -= Extrusion;
+            cascadeMins[2] -= Extrusion;
+            cascadeMaxs[0] += Extrusion;
+            cascadeMaxs[1] += Extrusion;
+            cascadeMaxs[2] += Extrusion;
+
+            // Snap to minimize jittering
+            //cascadeMins[0] = Math::Floor( cascadeMins[0] * 0.5f ) * 2.0f;
+            //cascadeMins[1] = Math::Floor( cascadeMins[1] * 0.5f ) * 2.0f;
+            //cascadeMins[2] = Math::Floor( cascadeMins[2] * 0.5f ) * 2.0f;
+            //cascadeMaxs[0] = Math::Ceil( cascadeMaxs[0] * 0.5f ) * 2.0f;
+            //cascadeMaxs[1] = Math::Ceil( cascadeMaxs[1] * 0.5f ) * 2.0f;
+            //cascadeMaxs[2] = Math::Ceil( cascadeMaxs[2] * 0.5f ) * 2.0f;
+
+
+            //Float3 viewDir = m_camera.getOrientation().z_direction();
+            Float3 size( cascadeMaxs[0] - cascadeMins[0],
+                         cascadeMaxs[1] - cascadeMins[1],
+                         cascadeMaxs[2] - cascadeMins[2] );
+            Float3 boxCenter( ( cascadeMins[0] + cascadeMaxs[0] ) * 0.5f,
+                              ( cascadeMins[1] + cascadeMaxs[1] ) * 0.5f,
+                              ( cascadeMins[2] + cascadeMaxs[2] ) * 0.5f );
+
+            Float3 center = boxCenter;// - viewDir * m_splitShift;
+            center.Y = 0;
+
+            LightPos = center + _LightDef.Matrix[2] * LightDist;
+            Basis = _LightDef.Matrix.Transposed();
+            Origin = Basis * (-LightPos);
+
+            LightViewMatrix[CascadeIndex][0] = Float4( Basis[0], 0.0f );
+            LightViewMatrix[CascadeIndex][1] = Float4( Basis[1], 0.0f );
+            LightViewMatrix[CascadeIndex][2] = Float4( Basis[2], 0.0f );
+            LightViewMatrix[CascadeIndex][3] = Float4( Origin, 1.0f );
+
+            // Transform points to light space
+            pVerts = &WorldSpaceVerts[CascadeIndex][0];
+            for ( int i = 0 ; i < 8 ; i++ ) {
+                lightSpaceVerts[i] = LightViewMatrix[CascadeIndex] * pVerts[i];
+            }
+
+            pVerts = lightSpaceVerts;
+
+            // Calc min/max in light space
+            mins = maxs = _mm_load_ps( &pVerts->X );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            ++pVerts;
+
+            vert = _mm_load_ps( &pVerts->X );
+            mins = _mm_min_ps( mins, vert );
+            maxs = _mm_max_ps( maxs, vert );
+
+            _mm_store_ps( cascadeMins, mins );
+            _mm_store_ps( cascadeMaxs, maxs );
+
+            //float d = Math::Max( size.X, size.Z );
+            //CascadeProjectionMatrix.orthoRh( d, d, 0.1f, 2000.0f );
+            //CascadeProjectionMatrix = Float4x4::OrthoCC( Float2( -d, -d ) * 0.5f, Float2( d, d ) * 0.5f, 0.1f, 5000.0f );
+
+            if ( CascadeIndex == NumVisibleCascades - 1 ) {
+                // Last cascade have extended far plane
+                CascadeProjectionMatrix = Float4x4::OrthoCC( Float2( cascadeMins[0], cascadeMins[1] ), Float2( cascadeMaxs[0], cascadeMaxs[1] ), 0.1f, 5000.0f );
+            } else {
+
+                float Z = cascadeMaxs[2] - cascadeMins[2];
+
+                if ( 1 ) {
+
+                    float ExtendedZ;
+
+                    if ( RVShadowCascadeBits.GetInteger() <= 16 ) {
+                        ExtendedZ = Z + LightDist + Z * 2.0f;
+                    } else {
+                        ExtendedZ = 5000.0f;
+                    }
+
+                    CascadeProjectionMatrix = Float4x4::OrthoCC( Float2( cascadeMins[0], cascadeMins[1] ), Float2( cascadeMaxs[0], cascadeMaxs[1] ), 0.1f, ExtendedZ );
+
+                } else {
+                    CascadeProjectionMatrix = Float4x4::OrthoCC( Float2( cascadeMins[0], cascadeMins[1] ), Float2( cascadeMaxs[0], cascadeMaxs[1] ), 0.1f, Z + LightDist );
+                }
+            }
+
+            View->LightViewProjectionMatrices[View->NumShadowMapCascades] = CascadeProjectionMatrix * LightViewMatrix[CascadeIndex];
+            View->ShadowMapMatrices[View->NumShadowMapCascades] = ShadowMapBias * View->LightViewProjectionMatrices[View->NumShadowMapCascades] * View->ClipSpaceToWorldSpace;
+
+            View->NumShadowMapCascades++;
+           
+        }
     }
 }
