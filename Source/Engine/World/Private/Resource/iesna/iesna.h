@@ -83,6 +83,10 @@ Note that this is a slightly modified version of the original file.
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define FALSE   0
 #define TRUE    1
 
@@ -116,12 +120,12 @@ Note that this is a slightly modified version of the original file.
 
 typedef int IE_Bool;               /* Boolean flag                         */
 
-enum IE_Format
+typedef enum
 {
     IESNA_86,                 /* LM-63-1986                           */
     IESNA_91,                 /* LM-63-1991                           */
     IESNA_95                  /* LM-63-1995                           */
-};
+} IE_Format;
 
 typedef struct                  /* File information                     */
 {
@@ -265,5 +269,9 @@ IE_CALC;
 extern IE_Bool IE_ReadFile( const char *, IE_DATA * );
 extern IE_Bool IE_CalcData( IE_DATA *, IE_CALC * );
 extern void IE_Flush( IE_DATA * );
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
