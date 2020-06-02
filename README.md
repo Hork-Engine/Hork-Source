@@ -45,6 +45,7 @@ The name Angie Engine was chosen by the name of heroine Angela "Angie" McAlister
 * Diffuse per-vertex light
 * Dynamic per-pixel lighting
 * Cascaded shadow maps (PSSM+PCF)
+* Photometric profiles
 
 ## Material system
 * Material graph with automatic shader generation
@@ -57,12 +58,13 @@ PBR (physically based).
 
 ## Forward+ clustered renderer based on OpenGL4.5 core
 * Allowed to switch render backend at runtime
+* Modern Framegraph architecture
 * Depth pre-pass
-* Wireframe renderer
+* Wireframe and normals renderer
 * Debug renderer (points, lines, polygons)
 * Batching
 * SRGB
-* Premultiplied alpha support
+* Premultiplied alpha
 
 ## Postprocess effects
 * Bloom
@@ -71,6 +73,7 @@ PBR (physically based).
 * Color grading (LUT, procedural)
 * Vegnette
 * FXAA
+* SSAO, HBAO
 
 ## Advanced culling system
 * Frustum Culling
@@ -151,7 +154,6 @@ PBR (physically based).
 * Toksvig
 * Parallax mapping (parallax material?)
 * Decals
-* Spot light custom texture
 * Area lights
 * Directional lightmaps (radiocity?)
 * Built-in lightmapper
@@ -162,7 +164,7 @@ PBR (physically based).
 * Imposters
 * Subsurface scattering
 * Postprocess materials
-* Postprocess techinques: DOF, SSAO/HBAO+, Air distortion
+* Postprocess techinques: DOF, Air distortion
 * More parallel computations
 * SDF fonts
 * Virtual texture
@@ -176,6 +178,7 @@ PBR (physically based).
 * Audio: effects
 * Physics: soft body, constraints, ragdoll, character controller
 * Material graph editor
+* Improve shadow mapping
 
 
 ## Contributing
