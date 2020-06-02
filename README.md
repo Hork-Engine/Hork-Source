@@ -85,6 +85,7 @@ PBR (physically based).
 * 3D modelling formats (GLTF, LWO)
 * Different image formats (PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR)
 * Fonts (TTF)
+* Photometric profiles (IES)
 
 ## Audio
 * Decorers ogg, mp3, wav
