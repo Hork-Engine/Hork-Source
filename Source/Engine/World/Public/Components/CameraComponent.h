@@ -39,6 +39,7 @@ enum ECameraProjection : uint8_t {
     CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO,
     CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y,
     CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO,
+    CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
 };
 
 class ANGIE_API ACameraComponent : public ASceneComponent {
@@ -71,7 +72,11 @@ public:
 
     ECameraProjection GetProjection() const { return Projection; }
 
-    bool IsPerspective() const { return Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y; }
+    bool IsPerspective() const {
+        return Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO
+            || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
+            || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y;
+    }
 
     bool IsOrthographic() const { return Projection == CAMERA_PROJ_ORTHO_RECT || Projection == CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO; }
 

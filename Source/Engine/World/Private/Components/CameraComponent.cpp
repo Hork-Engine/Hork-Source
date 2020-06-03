@@ -36,7 +36,7 @@ SOFTWARE.
 
 #include <Runtime/Public/RuntimeVariable.h>
 
-#define DEFAULT_PROJECTION CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO
+#define DEFAULT_PROJECTION CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
 #define DEFAULT_ZNEAR 0.04f//0.1f
 #define DEFAULT_ZFAR 99999.0f
 #define DEFAULT_FOVX 100.0f
@@ -122,6 +122,10 @@ void ACameraComponent::GetEffectiveFov( float & _FovX, float & _FovY ) const {
         _FovX = Math::Radians( FovX );
         _FovY = atan2( 1.0f, AspectRatio / tan( _FovX * 0.5f ) ) * 2.0f;
         break;
+    case CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO:
+        _FovY = Math::Radians( FovY );
+        _FovX = atan( tan( _FovY * 0.5f ) * AspectRatio ) * 2.0f;
+        break;
     }
 }
 
@@ -179,6 +183,9 @@ void ACameraComponent::MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix
     case CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO:
         _ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
         break;
+    case CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO:
+        _ProjectionMatrix = Float4x4::PerspectiveRevCC_Y( Math::Radians( FovY ), AspectRatio, 1.0f, FRUSTUM_CLUSTER_ZNEAR, FRUSTUM_CLUSTER_ZFAR );
+        break;
     }
 }
 
@@ -199,6 +206,9 @@ Float4x4 const & ACameraComponent::GetProjectionMatrix() const {
             break;
         case CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO:
             ProjectionMatrix = Float4x4::PerspectiveRevCC( Math::Radians( FovX ), AspectRatio, 1.0f, ZNear, ZFar );
+            break;
+        case CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO:
+            ProjectionMatrix = Float4x4::PerspectiveRevCC_Y( Math::Radians( FovY ), AspectRatio, 1.0f, ZNear, ZFar );
             break;
         }
 
