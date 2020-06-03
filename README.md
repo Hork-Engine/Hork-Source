@@ -73,7 +73,7 @@ PBR (physically based).
 * Color grading (LUT, procedural)
 * Vegnette
 * FXAA
-* SSAO, HBAO
+* HBAO
 
 ## Advanced culling system
 * Frustum Culling
