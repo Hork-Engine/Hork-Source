@@ -1315,6 +1315,16 @@ struct Float4x4 {
                          0,               0,               _ZNear * _ZFar / ( _ZFar - _ZNear ),       0 );
     }
 
+    static AN_FORCEINLINE Float4x4 PerspectiveRevCC_Y( float const & _FovYRad, float const & _Width, float const & _Height, float const & _ZNear, float const & _ZFar ) {
+        const float TanHalfFovY = tan( _FovYRad * 0.5f );
+        const float HalfFovX = atan2( TanHalfFovY * _Width, _Height );
+        const float TanHalfFovX = tan( HalfFovX );
+        return Float4x4( 1 / TanHalfFovX, 0,               0,                                         0,
+                         0,              -1 / TanHalfFovY, 0,                                         0,
+                         0,               0,               _ZNear / ( _ZFar - _ZNear),               -1,
+                         0,               0,               _ZNear * _ZFar / ( _ZFar - _ZNear ),       0 );
+    }
+
     static AN_FORCEINLINE Float4x4 PerspectiveRevCC( float const & _FovXRad, float const & _FovYRad, float const & _ZNear, float const & _ZFar ) {
         const float TanHalfFovX = tan( _FovXRad * 0.5f );
         const float TanHalfFovY = tan( _FovYRad * 0.5f );
