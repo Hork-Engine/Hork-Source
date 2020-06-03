@@ -136,9 +136,8 @@ void SetInstanceUniforms( SRenderInstance const * Instance, int _Index ) {
     Core::Memcpy( &pUniformBuf->LightmapOffset, &Instance->LightmapOffset, sizeof( pUniformBuf->LightmapOffset ) );
     Core::Memcpy( &pUniformBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
 
-    GFrameResources.InstanceUniformBufferBinding->pBuffer = GFrameResources.ConstantBuffer->GetBuffer();
-    GFrameResources.InstanceUniformBufferBinding->BindingOffset = offset;
-    GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( SInstanceUniformBuffer );
+    GFrameResources.DrawCallUniformBufferBinding->BindingOffset = offset;
+    GFrameResources.DrawCallUniformBufferBinding->BindingSize = sizeof( SInstanceUniformBuffer );
 }
 
 void SetShadowInstanceUniforms( SShadowRenderInstance const * Instance, int _Index ) {
@@ -152,9 +151,17 @@ void SetShadowInstanceUniforms( SShadowRenderInstance const * Instance, int _Ind
         Core::Memcpy( &pUniformBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
     }
 
-    GFrameResources.InstanceUniformBufferBinding->pBuffer = GFrameResources.ConstantBuffer->GetBuffer();
-    GFrameResources.InstanceUniformBufferBinding->BindingOffset = offset;
-    GFrameResources.InstanceUniformBufferBinding->BindingSize = sizeof( SShadowInstanceUniformBuffer );
+    GFrameResources.DrawCallUniformBufferBinding->BindingOffset = offset;
+    GFrameResources.DrawCallUniformBufferBinding->BindingSize = sizeof( SShadowInstanceUniformBuffer );
+}
+
+void * SetDrawCallUniforms( size_t SizeInBytes ) {
+    size_t offset = GFrameResources.ConstantBuffer->Allocate( SizeInBytes );
+
+    GFrameResources.DrawCallUniformBufferBinding->BindingOffset = offset;
+    GFrameResources.DrawCallUniformBufferBinding->BindingSize = SizeInBytes;
+
+    return GFrameResources.ConstantBuffer->GetMappedMemory() + offset;
 }
 
 void CreateFullscreenQuadPipeline( GHI::Pipeline & Pipe, const char * VertexShader, const char * FragmentShader, GHI::BLENDING_PRESET BlendingPreset,
@@ -696,10 +703,10 @@ void AFrameResources::Initialize() {
     ViewUniformBufferBinding->SlotIndex = 0;
     ViewUniformBufferBinding->pBuffer = FrameConstantBuffer->GetBuffer();
 
-    InstanceUniformBufferBinding = &BufferBinding[1];
-    InstanceUniformBufferBinding->BufferType = GHI::UNIFORM_BUFFER;
-    InstanceUniformBufferBinding->SlotIndex = 1;
-    InstanceUniformBufferBinding->pBuffer = nullptr;
+    DrawCallUniformBufferBinding = &BufferBinding[1];
+    DrawCallUniformBufferBinding->BufferType = GHI::UNIFORM_BUFFER;
+    DrawCallUniformBufferBinding->SlotIndex = 1;
+    DrawCallUniformBufferBinding->pBuffer = ConstantBuffer->GetBuffer();
 
     SkeletonBufferBinding = &BufferBinding[2];
     SkeletonBufferBinding->BufferType = GHI::UNIFORM_BUFFER;
@@ -953,6 +960,18 @@ void AFrameResources::SetViewUniforms() {
     uniformData->ZNear = GRenderView->ViewZNear;
     uniformData->ZFar = GRenderView->ViewZFar;
 
+    if ( GRenderView->bPerspective ) {
+        uniformData->ProjectionInfo.X = 2.0f / GRenderView->ProjectionMatrix[0][0]; // (x) * (R - L)/N
+        uniformData->ProjectionInfo.Y = 2.0f / GRenderView->ProjectionMatrix[1][1]; // (y) * (T - B)/N
+        uniformData->ProjectionInfo.Z = -(1.0f - GRenderView->ProjectionMatrix[2][0]) / GRenderView->ProjectionMatrix[0][0]; // L/N
+        uniformData->ProjectionInfo.W = -(1.0f + GRenderView->ProjectionMatrix[2][1]) / GRenderView->ProjectionMatrix[1][1]; // B/N
+    } else {
+        uniformData->ProjectionInfo.X = 2.0f / GRenderView->ProjectionMatrix[0][0]; // (x) * R - L
+        uniformData->ProjectionInfo.Y = 2.0f / GRenderView->ProjectionMatrix[1][1]; // (y) * T - B
+        uniformData->ProjectionInfo.Z = -(1.0f + GRenderView->ProjectionMatrix[3][0]) / GRenderView->ProjectionMatrix[0][0]; // L
+        uniformData->ProjectionInfo.W = -(1.0f - GRenderView->ProjectionMatrix[3][1]) / GRenderView->ProjectionMatrix[1][1]; // B
+    }
+
     uniformData->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
     uniformData->GameplayTimeSeconds = GRenderView->GameplayTimeSeconds;
 
@@ -976,41 +995,6 @@ void AFrameResources::SetViewUniforms() {
     uniformData->VignetteInnerRadiusSqr = GRenderView->VignetteInnerRadiusSqr;
     uniformData->ColorGradingAdaptationSpeed = GRenderView->ColorGradingAdaptationSpeed;
     uniformData->ViewBrightness = Math::Saturate( RVBrightness.GetFloat() );
-
-    uniformData->uTemperatureScale.X = GRenderView->ColorGradingTemperatureScale.X;
-    uniformData->uTemperatureScale.Y = GRenderView->ColorGradingTemperatureScale.Y;
-    uniformData->uTemperatureScale.Z = GRenderView->ColorGradingTemperatureScale.Z;
-    uniformData->uTemperatureScale.W = 0.0f;
-
-    uniformData->uTemperatureStrength.X = GRenderView->ColorGradingTemperatureStrength.X;
-    uniformData->uTemperatureStrength.Y = GRenderView->ColorGradingTemperatureStrength.Y;
-    uniformData->uTemperatureStrength.Z = GRenderView->ColorGradingTemperatureStrength.Z;
-    uniformData->uTemperatureStrength.W = 0.0f;
-
-    uniformData->uGrain.X = GRenderView->ColorGradingGrain.X * 2.0f;
-    uniformData->uGrain.Y = GRenderView->ColorGradingGrain.Y * 2.0f;
-    uniformData->uGrain.Z = GRenderView->ColorGradingGrain.Z * 2.0f;
-    uniformData->uGrain.W = 0.0f;
-
-    uniformData->uGamma.X = 0.5f / Math::Max( GRenderView->ColorGradingGamma.X, 0.0001f );
-    uniformData->uGamma.Y = 0.5f / Math::Max( GRenderView->ColorGradingGamma.Y, 0.0001f );
-    uniformData->uGamma.Z = 0.5f / Math::Max( GRenderView->ColorGradingGamma.Z, 0.0001f );
-    uniformData->uGamma.W = 0.0f;
-
-    uniformData->uLift.X = GRenderView->ColorGradingLift.X * 2.0f - 1.0f;
-    uniformData->uLift.Y = GRenderView->ColorGradingLift.Y * 2.0f - 1.0f;
-    uniformData->uLift.Z = GRenderView->ColorGradingLift.Z * 2.0f - 1.0f;
-    uniformData->uLift.W = 0.0f;
-
-    uniformData->uPresaturation.X = GRenderView->ColorGradingPresaturation.X;
-    uniformData->uPresaturation.Y = GRenderView->ColorGradingPresaturation.Y;
-    uniformData->uPresaturation.Z = GRenderView->ColorGradingPresaturation.Z;
-    uniformData->uPresaturation.W = 0.0f;
-
-    uniformData->uLuminanceNormalization.X = GRenderView->ColorGradingBrightnessNormalization;
-    uniformData->uLuminanceNormalization.Y = 0.0f;
-    uniformData->uLuminanceNormalization.Z = 0.0f;
-    uniformData->uLuminanceNormalization.W = 0.0f;
 
     uniformData->PrefilteredMapSampler = PrefilteredMapBindless.GetHandle();
     uniformData->IrradianceMapSampler = IrradianceMapBindless.GetHandle();
@@ -1154,7 +1138,7 @@ ACircularBuffer::SChainBuffer * ACircularBuffer::Swap()
 
     Wait( pCurrent->Sync );
 
-    GLogger.Printf( "Swap at %d\n", GFrameData->FrameNumber );
+    //GLogger.Printf( "Swap at %d\n", GFrameData->FrameNumber );
 
     return pCurrent;
 }
@@ -1212,7 +1196,12 @@ AFrameConstantBuffer::~AFrameConstantBuffer()
 
 size_t AFrameConstantBuffer::Allocate( size_t InSize )
 {
-    AN_ASSERT( InSize > 0 && InSize <= BufferSize );
+    AN_ASSERT( InSize <= BufferSize );
+
+    if ( InSize == 0 ) {
+        // Don't allow to alloc empty chunks
+        InSize = 1;
+    }
 
     SChainBuffer * pChainBuffer = &ChainBuffer[BufferIndex];
 

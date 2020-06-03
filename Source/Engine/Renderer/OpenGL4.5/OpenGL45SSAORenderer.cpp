@@ -32,8 +32,12 @@ SOFTWARE.
 
 #include <Core/Public/Random.h>
 
-ARuntimeVariable RVSSAODeinterleaved( _CTS( "SSAODeinterleaved" ), _CTS( "1" ) );
-ARuntimeVariable RVSSAOBlur( _CTS( "SSAOBlur" ), _CTS( "1" ) );
+ARuntimeVariable RVAODeinterleaved( _CTS( "AODeinterleaved" ), _CTS( "1" ) );
+ARuntimeVariable RVAOBlur( _CTS( "AOBlur" ), _CTS( "1" ) );
+ARuntimeVariable RVAORadius( _CTS( "AORadius" ), _CTS( "2" ) );
+ARuntimeVariable RVAOBias( _CTS( "AOBias" ), _CTS( "0.1" ) );
+ARuntimeVariable RVAOPowExponent( _CTS( "AOPowExponent" ), _CTS( "1.5" ) );
+
 ARuntimeVariable RVCheckNearest( _CTS( "CheckNearest" ), _CTS( "1" ) );
 
 using namespace GHI;
@@ -42,13 +46,13 @@ namespace OpenGL45 {
 
 ASSAORenderer::ASSAORenderer()
 {
-    CreateFullscreenQuadPipeline( Pipe, "postprocess/ssao.vert", "postprocess/ssao_simple.frag" );
-    CreateFullscreenQuadPipeline( Pipe_ORTHO, "postprocess/ssao.vert", "postprocess/ssao_simple_ortho.frag" );
-    CreateFullscreenQuadPipelineGS( CacheAwarePipe, "postprocess/ssao.vert", "postprocess/ssao_deinterleaved.frag", "postprocess/ssao_deinterleaved.geom", GHI::BLENDING_NO_BLEND );
-    CreateFullscreenQuadPipelineGS( CacheAwarePipe_ORTHO, "postprocess/ssao.vert", "postprocess/ssao_deinterleaved_ortho.frag", "postprocess/ssao_deinterleaved.geom", GHI::BLENDING_NO_BLEND );
-    CreateFullscreenQuadPipeline( BlurPipe, "postprocess/ssao_blur.vert", "postprocess/ssao_blur.frag", GHI::BLENDING_NO_BLEND, NULL, &BlendFragmentShader );
-    CreateFullscreenQuadPipeline( DeinterleavePipe, "postprocess/hbao_deinterleave.vert", "postprocess/hbao_deinterleave.frag", GHI::BLENDING_NO_BLEND, NULL, &DeinterleaveFragmentShader );
-    CreateFullscreenQuadPipeline( ReinterleavePipe, "postprocess/hbao_reinterleave.vert", "postprocess/hbao_reinterleave.frag" );
+    CreateFullscreenQuadPipeline( Pipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple.frag" );
+    CreateFullscreenQuadPipeline( Pipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple_ortho.frag" );
+    CreateFullscreenQuadPipelineGS( CacheAwarePipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved.frag", "postprocess/ssao/deinterleaved.geom" );
+    CreateFullscreenQuadPipelineGS( CacheAwarePipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved_ortho.frag", "postprocess/ssao/deinterleaved.geom" );
+    CreateFullscreenQuadPipeline( BlurPipe, "postprocess/ssao/blur.vert", "postprocess/ssao/blur.frag" );
+    CreateFullscreenQuadPipeline( DeinterleavePipe, "postprocess/ssao/deinterleave.vert", "postprocess/ssao/deinterleave.frag" );
+    CreateFullscreenQuadPipeline( ReinterleavePipe, "postprocess/ssao/reinterleave.vert", "postprocess/ssao/reinterleave.frag" );
    
     CreateSamplers();
 
@@ -198,10 +202,19 @@ AFrameGraphTextureStorage * ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph
     {
         using namespace GHI;
 
+        struct SDrawCall {
+            Float2 UVOffset;
+            Float2 InvFullResolution;
+        };
+
+        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        drawCall->UVOffset.X = 0.5f;
+        drawCall->UVOffset.Y = 0.5f;
+        drawCall->InvFullResolution.X = 1.0f / AOWidth;
+        drawCall->InvFullResolution.Y = 1.0f / AOHeight;
+
         GFrameResources.TextureBindings[0].pTexture = LinearDepth->Actual();
         GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
-
-        DeinterleaveFragmentShader.SetUniform2f( 0, 0.5f, 0.5f );
 
         Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -227,10 +240,19 @@ AFrameGraphTextureStorage * ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph
     {
         using namespace GHI;
 
+        struct SDrawCall {
+            Float2 UVOffset;
+            Float2 InvFullResolution;
+        };
+
+        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        drawCall->UVOffset.X = float( 8 % 4 ) + 0.5f;
+        drawCall->UVOffset.Y = float( 8 / 4 ) + 0.5f;
+        drawCall->InvFullResolution.X = 1.0f / AOWidth;
+        drawCall->InvFullResolution.Y = 1.0f / AOHeight;
+
         GFrameResources.TextureBindings[0].pTexture = LinearDepth->Actual();
         GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
-
-        DeinterleaveFragmentShader.SetUniform2f( 0, float( 8 % 4 ) + 0.5f, float( 8 / 4 ) + 0.5f );
 
         Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -263,6 +285,39 @@ AFrameGraphTextureStorage * ASSAORenderer::AddCacheAwareAOPass( AFrameGraph & Fr
                              [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
         using namespace GHI;
+
+        struct SDrawCall
+        {
+            float Bias;
+            float FallofFactor;
+            float RadiusToScreen;
+            float PowExponent;
+            float Multiplier;
+            float Pad;
+            Float2 InvQuarterResolution;
+            Float2 InvFullResolution;
+        };
+
+        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+
+        drawCall->Bias = RVAOBias.GetFloat();
+
+        float projScale;
+
+        if ( GRenderView->bPerspective ) {
+            projScale = (float)AOHeight / std::tan( GRenderView->ViewFovY * 0.5f ) * 0.5f;
+        } else {
+            projScale = (float)AOHeight * GRenderView->ProjectionMatrix[1][1] * 0.5f;
+        }
+
+        drawCall->FallofFactor = -1.0f / (RVAORadius.GetFloat() * RVAORadius.GetFloat());
+        drawCall->RadiusToScreen = RVAORadius.GetFloat() * 0.5f * projScale;
+        drawCall->PowExponent = RVAOPowExponent.GetFloat();
+        drawCall->Multiplier = 1.0f / (1.0f - RVAOBias.GetFloat());
+        drawCall->InvQuarterResolution.X = 1.0f / AOQuarterWidth;
+        drawCall->InvQuarterResolution.Y = 1.0f / AOQuarterHeight;
+        drawCall->InvFullResolution.X = 1.0f / AOWidth;
+        drawCall->InvFullResolution.Y = 1.0f / AOHeight;
 
         GFrameResources.TextureBindings[0].pTexture = DeinterleaveDepthArray->Actual();
         GFrameResources.SamplerBindings[0].pSampler = RVCheckNearest ? NearestSampler : LinearDepthSampler;
@@ -330,14 +385,20 @@ AFrameGraphTextureStorage * ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGra
     {
         using namespace GHI;
 
+        struct SDrawCall {
+            Float2 InvSize;
+        };
+
+        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
+        drawCall->InvSize.Y = 0;
+
         // SSAO blur X
         GFrameResources.TextureBindings[0].pTexture = SSAOTexture->Actual();
         GFrameResources.SamplerBindings[0].pSampler = BlurSampler;
 
         GFrameResources.TextureBindings[1].pTexture = LinearDepth->Actual();
         GFrameResources.SamplerBindings[1].pSampler = NearestSampler;
-
-        BlendFragmentShader.SetUniform2f( 0, 1.0f / RenderPass.GetRenderArea().Width, 0.0f );
 
         Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -363,14 +424,20 @@ AFrameGraphTextureStorage * ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGra
     {
         using namespace GHI;
 
+        struct SDrawCall {
+            Float2 InvSize;
+        };
+
+        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        drawCall->InvSize.X = 0;
+        drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
+
         // SSAO blur Y
         GFrameResources.TextureBindings[0].pTexture = TempSSAOTextureBlurX->Actual();
         GFrameResources.SamplerBindings[0].pSampler = BlurSampler;
 
         GFrameResources.TextureBindings[1].pTexture = LinearDepth->Actual();
         GFrameResources.SamplerBindings[1].pSampler = NearestSampler;
-
-        BlendFragmentShader.SetUniform2f( 0, 0.0f, 1.0f / RenderPass.GetRenderArea().Height );
 
         Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -390,7 +457,7 @@ AFrameGraphTextureStorage * ASSAORenderer::AddPasses( AFrameGraph & FrameGraph, 
 
     AFrameGraphTextureStorage * SSAOTexture = AddReinterleavePass( FrameGraph, SSAOTextureArray );
 
-    if ( RVSSAOBlur ) {
+    if ( RVAOBlur ) {
         SSAOTexture = AddAOBlurPass( FrameGraph, SSAOTexture, LinearDepth );
     }
 

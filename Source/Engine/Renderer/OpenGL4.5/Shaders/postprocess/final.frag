@@ -93,7 +93,7 @@ void main() {
     if ( IsVignetteEnabled() ) {
         vec2 VignetteOffset = VS_TexCoord.zw - 0.5;
         float LengthSqr = dot( VignetteOffset, VignetteOffset );
-        float VignetteShade = smoothstep( VignetteOuterInnerRadiusSqr.x, VignetteOuterInnerRadiusSqr.y, LengthSqr );
+        float VignetteShade = smoothstep( VignetteOuterRadiusSqr, VignetteInnerRadiusSqr, LengthSqr );
         fragColor = mix( VignetteColorIntensity.rgb, fragColor, mix( 1.0, VignetteShade, VignetteColorIntensity.a ) );
     }
 

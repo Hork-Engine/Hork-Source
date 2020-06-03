@@ -87,6 +87,13 @@ void SetInstanceUniforms( SRenderInstance const * Instance, int _Index );
 
 void SetShadowInstanceUniforms( SShadowRenderInstance const * Instance, int _Index );
 
+template< typename T >
+T * SetDrawCallUniforms() {
+    return (T *)SetDrawCallUniforms( sizeof( T ) );
+}
+
+void * SetDrawCallUniforms( size_t SizeInBytes );
+
 void SaveSnapshot( GHI::Texture & _Texture );
 
 AString LoadShader( const char * FileName, SMaterialShader const * Predefined = nullptr );
@@ -262,6 +269,8 @@ struct SViewUniformBuffer {
     float ZNear;
     float ZFar;
 
+    Float4 ProjectionInfo;
+
     // Timers
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
@@ -273,7 +282,7 @@ struct SViewUniformBuffer {
 
     Float4 PostprocessBloomMix;
 
-    // PostprocessAttrib
+    // Postprocess attribs
     float BloomEnabled;
     float ToneMappingExposure;
     float ColorGrading;
@@ -284,15 +293,6 @@ struct SViewUniformBuffer {
     float VignetteInnerRadiusSqr;
     float ViewBrightness;
     float ColorGradingAdaptationSpeed;
-
-    // Procedural color grading
-    Float4 uTemperatureScale;
-    Float4 uTemperatureStrength;
-    Float4 uGrain;
-    Float4 uGamma;
-    Float4 uLift;
-    Float4 uPresaturation;
-    Float4 uLuminanceNormalization;
 
     uint64_t PrefilteredMapSampler;
     uint64_t IrradianceMapSampler;
@@ -357,7 +357,7 @@ public:
     GHI::ShaderResources        Resources;
     GHI::ShaderBufferBinding    BufferBinding[6];
     GHI::ShaderBufferBinding *  ViewUniformBufferBinding;
-    GHI::ShaderBufferBinding *  InstanceUniformBufferBinding;
+    GHI::ShaderBufferBinding *  DrawCallUniformBufferBinding;
     GHI::ShaderBufferBinding *  SkeletonBufferBinding;
     GHI::ShaderBufferBinding *  CascadeBufferBinding;
     GHI::ShaderBufferBinding *  LightBufferBinding;

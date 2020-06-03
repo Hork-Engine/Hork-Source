@@ -36,7 +36,10 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
 layout( binding = 0 ) uniform sampler2D Smp_Source;
 
-layout( location = 0 ) uniform vec2 InvSize;
+layout( binding = 1, std140 ) uniform DrawCall
+{
+    vec2 InvSize;
+};
 
 void main() {
     FS_FragColor = GaussianBlur13( Smp_Source, VS_TexCoord, InvSize );

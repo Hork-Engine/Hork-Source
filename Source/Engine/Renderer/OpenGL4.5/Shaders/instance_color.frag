@@ -42,32 +42,41 @@ layout( origin_upper_left ) in vec4 gl_FragCoord;
 // Built-in varyings
 #include "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$"
 
+#define TOTAL_SHADOW_CASCADES (MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES)
+
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
-    mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+    mat4 CascadeViewProjection[ TOTAL_SHADOW_CASCADES ];
+    mat4 ShadowMapMatrices[ TOTAL_SHADOW_CASCADES ];
 };
 
+// Keep paddings, don't use vec3, keep in sync with cpp struct
 struct SClusterLight
 {
     vec4 PositionAndRadius;
-    vec4 CosHalfOuterConeAngle_CosHalfInnerConeAngle_InverseSquareRadius_Unused;
+    float CosHalfOuterConeAngle;
+    float CosHalfInnerConeAngle;
+    float InverseSquareRadius;
+    float SClusterLight_Pad0;
     vec4 Direction_SpotExponent;
     vec4 Color_IESLuminousIntensityScale;
-    uvec4 LightType_RenderMask_PhotometricProfile_Unused_Unused;
+    uint LightType;
+    uint RenderMask;
+    uint PhotometricProfile;
+    uint SClusterLight_Pad1;
 };
 
 // Helpers to access light structure fields
-#define GetLightType( i ) LightBuffer[i].LightType_RenderMask_PhotometricProfile_Unused_Unused.x
+#define GetLightType( i ) LightBuffer[i].LightType
 #define GetLightPosition( i ) LightBuffer[i].PositionAndRadius.xyz
 #define GetLightRadius( i ) LightBuffer[i].PositionAndRadius.w
-#define GetLightInverseSquareRadius( i ) LightBuffer[i].CosHalfOuterConeAngle_CosHalfInnerConeAngle_InverseSquareRadius_Unused.z
+#define GetLightInverseSquareRadius( i ) LightBuffer[i].InverseSquareRadius
 #define GetLightDirection( i ) LightBuffer[i].Direction_SpotExponent.xyz
-#define GetLightCosHalfOuterConeAngle( i ) LightBuffer[i].CosHalfOuterConeAngle_CosHalfInnerConeAngle_InverseSquareRadius_Unused.x
-#define GetLightCosHalfInnerConeAngle( i ) LightBuffer[i].CosHalfOuterConeAngle_CosHalfInnerConeAngle_InverseSquareRadius_Unused.y
+#define GetLightCosHalfOuterConeAngle( i ) LightBuffer[i].CosHalfOuterConeAngle
+#define GetLightCosHalfInnerConeAngle( i ) LightBuffer[i].CosHalfInnerConeAngle
 #define GetLightSpotExponent( i ) LightBuffer[i].Direction_SpotExponent.w
 #define GetLightColor( i ) LightBuffer[i].Color_IESLuminousIntensityScale.xyz
-#define GetLightRenderMask( i ) LightBuffer[i].LightType_RenderMask_PhotometricProfile_Unused_Unused.y
-#define GetLightPhotometricProfile( i ) LightBuffer[i].LightType_RenderMask_PhotometricProfile_Unused_Unused.z
+#define GetLightRenderMask( i ) LightBuffer[i].RenderMask
+#define GetLightPhotometricProfile( i ) LightBuffer[i].PhotometricProfile
 //#define GetLightIESScale( i ) LightBuffer[i].Color_IESLuminousIntensityScale.w
 
 struct SClusterProbe

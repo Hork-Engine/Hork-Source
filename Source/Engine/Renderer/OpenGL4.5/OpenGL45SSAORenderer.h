@@ -69,7 +69,6 @@ private:
     GHI::Pipeline CacheAwarePipe;
     GHI::Pipeline CacheAwarePipe_ORTHO;
     GHI::Pipeline BlurPipe;
-    GHI::ShaderModule BlendFragmentShader;
     GHI::Sampler DepthSampler;
     GHI::Sampler LinearDepthSampler;
     GHI::Sampler NormalSampler;
@@ -79,7 +78,6 @@ private:
     GHI::Texture RandomMap;
     GHI::Pipeline DeinterleavePipe;
     GHI::Pipeline ReinterleavePipe;
-    GHI::ShaderModule DeinterleaveFragmentShader;
     Float3 hbaoRandom[HBAO_RANDOM_ELEMENTS];
 };
 

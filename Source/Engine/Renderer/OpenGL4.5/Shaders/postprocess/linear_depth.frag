@@ -37,8 +37,6 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 layout( binding = 0 ) uniform sampler2D Smp_Depth;
 
 void main() {
-
-#if 1
     const float znear = GetViewportZNear();
     const float zfar = GetViewportZFar();
     
@@ -49,14 +47,7 @@ void main() {
     #if 0
         vec2 d1 = textureGather( Smp_Depth, tc, 0 ).xy;
         vec2 d2 = textureGatherOffset( Smp_Depth, tc, ivec2(0,1) ).xy;
-        
-        //vec2 d1;
-        //d1.x = textureOffset( Smp_Depth, tc, ivec2(0,0) ).x;
-        //d1.y = textureOffset( Smp_Depth, tc, ivec2(0,1) ).x;
-        //vec2 d2;
-        //d2.x = textureOffset( Smp_Depth, tc, ivec2(1,0) ).x;
-        //d2.y = textureOffset( Smp_Depth, tc, ivec2(1,1) ).x;
-        
+
         // get farthest depth
         d = max( max( d1.x, d1.y ), max( d2.x, d2.y ) );
     #else
@@ -67,17 +58,4 @@ void main() {
     float z = d * ( zfar - znear ) + znear;
 
     FS_FragColor = znear * zfar / z;
-
-#else    // Universal but slow method
-    vec2 tc = AdjustTexCoord( VS_TexCoord );
-    vec2 ndc = VS_TexCoord;
-    //ndc.y=1.0-ndc.y;
-    ndc = ndc * 2 - 1.0;
-    vec4 p = InverseProjectionMatrix * vec4( ndc, texture( Smp_Depth, tc ).x, 1.0 );
-    FS_FragColor = p.z / p.w;
-    // viewspacePos = p.xyz / p.w
-#endif
-
-//FS_FragColor=-FS_FragColor;
 }
-

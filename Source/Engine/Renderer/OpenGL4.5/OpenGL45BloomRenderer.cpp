@@ -32,6 +32,8 @@ SOFTWARE.
 #include "OpenGL45RenderBackend.h"
 
 ARuntimeVariable RVBloomTextureFormat( _CTS( "BloomTextureFormat" ), _CTS( "0" ) );
+ARuntimeVariable RVBloomStart( _CTS( "BloomStart" ), _CTS( "1" ) );
+ARuntimeVariable RVBloomThreshold( _CTS( "BloomThreshold" ), _CTS( "1" ) );
 
 using namespace GHI;
 
@@ -75,7 +77,7 @@ void ABloomRenderer::CreateBlurPipeline()
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
-    ShaderModule vertexShaderModule;
+    ShaderModule vertexShaderModule, fragmentShaderModule;
 
     AString vertexSourceCode = LoadShader( "postprocess/gauss.vert" );
     AString gaussFragmentShaderSource = LoadShader( "postprocess/gauss.frag" );
@@ -87,7 +89,7 @@ void ABloomRenderer::CreateBlurPipeline()
 
     GShaderSources.Clear();
     GShaderSources.Add( gaussFragmentShaderSource.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, &BlurFragmentShaderModule );
+    GShaderSources.Build( FRAGMENT_SHADER, &fragmentShaderModule );
 
     PipelineCreateInfo pipelineCI = {};
 
@@ -106,7 +108,7 @@ void ABloomRenderer::CreateBlurPipeline()
 
     ShaderStageInfo fs = {};
     fs.Stage = SHADER_STAGE_FRAGMENT_BIT;
-    fs.pModule = &BlurFragmentShaderModule;
+    fs.pModule = &fragmentShaderModule;
 
     VertexBindingInfo vertexBinding[1] = {};
 
@@ -180,6 +182,16 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         pass.AddSubpass( { 0 }, // color attachment refs
                                 [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SBrightPassDrawCall
+            {
+                Float4 BloomStart;
+                Float4 BloomThreshold;
+            };
+
+            SBrightPassDrawCall * drawCall = SetDrawCallUniforms< SBrightPassDrawCall >();
+            drawCall->BloomStart = Float4( RVBloomStart.GetFloat() );
+            drawCall->BloomThreshold = Float4( RVBloomThreshold.GetFloat() );
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = SourceTexture->Actual();
 
@@ -212,10 +224,16 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         pass.AddSubpass( { 0 }, // color attachment refs
                             [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall {
+                Float2 InvSize;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
+            drawCall->InvSize.Y = 0;
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = BrightTexture->Actual();
-
-            BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / RenderPass.GetRenderArea().Width, 0.0f );
 
             Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -239,13 +257,19 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
             }
         } );
         pass.AddSubpass( { 0 }, // color attachment refs
-                           [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall {
+                Float2 InvSize;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            drawCall->InvSize.X = 0;
+            drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = BrightBlurXTexture->Actual();
 
-            BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / RenderPass.GetRenderArea().Height );
-            
             Cmd.BindShaderResources( &GFrameResources.Resources );
 
             DrawSAQ( &BlurPipeline );
@@ -300,10 +324,16 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall {
+                Float2 InvSize;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
+            drawCall->InvSize.Y = 0;
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = BrightTexture2->Actual();
-
-            BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / RenderPass.GetRenderArea().Width, 0.0f );
 
             Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -329,10 +359,16 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall {
+                Float2 InvSize;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            drawCall->InvSize.X = 0;
+            drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = BrightBlurXTexture2->Actual();
-
-            BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / RenderPass.GetRenderArea().Height );
 
             Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -388,10 +424,16 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall {
+                Float2 InvSize;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
+            drawCall->InvSize.Y = 0;
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = BrightTexture4->Actual();
-
-            BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / RenderPass.GetRenderArea().Width, 0.0f );
 
             Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -417,10 +459,16 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall {
+                Float2 InvSize;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            drawCall->InvSize.X = 0;
+            drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = BrightBlurXTexture4->Actual();
-
-            BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / RenderPass.GetRenderArea().Height );
 
             Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -476,10 +524,16 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall {
+                Float2 InvSize;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
+            drawCall->InvSize.Y = 0;
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = BrightTexture6->Actual();
-
-            BlurFragmentShaderModule.SetUniform2f( 0, 1.0f / RenderPass.GetRenderArea().Width, 0.0f );
 
             Cmd.BindShaderResources( &GFrameResources.Resources );
 
@@ -505,10 +559,16 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall {
+                Float2 InvSize;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            drawCall->InvSize.X = 0;
+            drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
+
             GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
             GFrameResources.TextureBindings[0].pTexture = BrightBlurXTexture6->Actual();
-
-            BlurFragmentShaderModule.SetUniform2f( 0, 0.0f, 1.0f / RenderPass.GetRenderArea().Height );
 
             Cmd.BindShaderResources( &GFrameResources.Resources );
 

@@ -36,36 +36,9 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
 layout( binding = 0 ) uniform sampler2D Smp_LinearDepth;
 
-// TODO: Move to uniforms!!!
-const mat4 ProjMat = inverse(InverseProjectionMatrix);
-const vec4 projInfo = vec4(  
-      2.0f / (ProjMat[0][0]),       // (x) * (R - L)/N
-      2.0f / (ProjMat[1][1]),       // (y) * (T - B)/N
-      -( 1.0f - ProjMat[3][0]) / ProjMat[0][0], // L/N
-      -( 1.0f + ProjMat[3][1]) / ProjMat[1][1] // B/N
-    );
-const vec4 projInfoOrtho = vec4(
-      2.0f / ( ProjMat[0][0]),      // ((x) * R - L)
-      2.0f / ( ProjMat[1][1]),      // ((y) * T - B)
-      -( 1.0f + ProjMat[3][0]) / ProjMat[0][0], // L
-      -( 1.0f - ProjMat[3][1]) / ProjMat[1][1] // B
-    );
-#ifdef AO_ORTHO_PROJECTION
-const float projScale = 1.0 / (GetAOSizeInverted().y * projInfoOrtho[1]);
-#else
-const float fov = radians(100.0);//radians(45); // fixme
-const float projScale = 1.0 / (GetAOSizeInverted().y * tan( fov * 0.5 ) * 2.0 );
-#endif  
-
-const vec2 AOInvFullResolution = GetAOSizeInverted();
-
 vec3 UVToView( vec2 UV, float ViewZ )
 {
-#ifdef AO_ORTHO_PROJECTION
-    return vec3( ( UV * projInfo.xy + projInfo.zw ), ViewZ );
-#else
-    return vec3( ( UV * projInfo.xy + projInfo.zw ) * ViewZ, ViewZ );
-#endif
+    return vec3( ( UV * ProjectionInfo.xy + ProjectionInfo.zw ) * ViewZ, ViewZ );
 }
 
 vec3 FetchPos( vec2 UV )
@@ -83,10 +56,11 @@ vec3 MinDiff( vec3 P, vec3 Pr, vec3 Pl )
 
 vec3 ReconstructNormal( vec2 UV, vec3 P )
 {
-    vec3 Pr = FetchPos(UV + vec2(AOInvFullResolution.x, 0));
-    vec3 Pl = FetchPos(UV + vec2(-AOInvFullResolution.x, 0));
-    vec3 Pt = FetchPos(UV + vec2(0, AOInvFullResolution.y));
-    vec3 Pb = FetchPos(UV + vec2(0, -AOInvFullResolution.y));
+    const vec2 InvViewportSize = GetViewportSizeInverted();
+    vec3 Pr = FetchPos(UV + vec2(InvViewportSize.x, 0));
+    vec3 Pl = FetchPos(UV + vec2(-InvViewportSize.x, 0));
+    vec3 Pt = FetchPos(UV + vec2(0, InvViewportSize.y));
+    vec3 Pb = FetchPos(UV + vec2(0, -InvViewportSize.y));
     return normalize(cross(MinDiff(P, Pr, Pl), MinDiff(P, Pt, Pb)));
 }
 

@@ -80,7 +80,6 @@ void main()
         gl_Position = gl_in[i].gl_Position;
         EmitVertex();
     }
-    //EndPrimitive();
 }
 
 #endif
@@ -111,7 +110,6 @@ layout( location = 0 ) noperspective out vec2 VS_TexCoord;
 
 void main()
 {
-    //for ( int i = 0; i < 3; i++ ){
     for ( int i = 0; i < gl_in.length(); i++ ) {
         VS_TexCoord = IN[i].TexCoord;
         gl_Layer = gl_InvocationID;
@@ -119,5 +117,4 @@ void main()
         gl_Position = gl_in[i].gl_Position;
         EmitVertex();
     }
-    //EndPrimitive();
 }

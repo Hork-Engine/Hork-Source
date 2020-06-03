@@ -37,8 +37,10 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 layout( binding = 0 ) uniform sampler2D Smp_Source;
 layout( binding = 1 ) uniform sampler2D Smp_LinearDepth;
 
-layout( location = 0 ) uniform vec2 InvSize;
-
+layout( binding = 1, std140 ) uniform DrawCall
+{
+    vec2 InvSize;
+};
 
 const float KERNEL_RADIUS = 3;
 const float BLUR_FALLOFF = 2.0 / ( KERNEL_RADIUS * KERNEL_RADIUS );
@@ -86,24 +88,5 @@ void BilateralBlur( vec2 tc ) {
 }
 
 void main() {
-    //FS_FragColor = GaussianBlur5( Smp_Source, VS_TexCoord, InvSize );
-    //FS_FragColor = GaussianBlur9( Smp_Source, VS_TexCoord, InvSize );
-
-    //if ( InvSize.y > 0 && VS_TexCoord.x > 0.5 ) // vertical pass
-    //FS_FragColor=pow(FS_FragColor,vec4(2.0));
-      
-    //if ( VS_TexCoord.x > 0.5 ) {
-
-        BilateralBlur( VS_TexCoord );
-        
-      
-        //float result = 0.0;
-        //for (int i = -2; i < 2; ++i) 
-        //{
-        //    vec2 offset = vec2(float(i)) * InvSize;
-        //    result += texture(Smp_Source, VS_TexCoord + offset).r;
-        //}
-        //FS_FragColor = vec4(result / 4.0);
-    //}
-    //FS_FragColor=pow(FS_FragColor,vec4(2.0));
+    BilateralBlur( VS_TexCoord );
 }

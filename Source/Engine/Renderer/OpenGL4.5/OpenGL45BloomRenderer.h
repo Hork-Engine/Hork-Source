@@ -57,7 +57,6 @@ private:
     GHI::Pipeline BlurPipeline;
     GHI::Pipeline CopyPipeline;
     GHI::Sampler LinearSampler;
-    GHI::ShaderModule BlurFragmentShaderModule;
 };
 
 }

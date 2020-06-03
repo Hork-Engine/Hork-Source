@@ -28,4 +28,6 @@ SOFTWARE.
 
 */
 
-#include "postprocess/ssao.frag"
+#define AO_DEINTERLEAVED
+
+#include "postprocess/ssao/ssao.frag"

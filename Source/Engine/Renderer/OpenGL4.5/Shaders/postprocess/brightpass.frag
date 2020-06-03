@@ -37,14 +37,13 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
 layout( binding = 0 ) uniform sampler2D Smp_Source;
 
-const vec4 BloomStart = vec4( 1.0 ); // TODO: input uniform
-const vec4 BloomThreshold = vec4( 1.0 );
+layout( binding = 1, std140 ) uniform DrawCall
+{
+    vec4 BloomStart;
+    vec4 BloomThreshold;
+};
 
 void main()
 {
-    // Adjust texture coordinates for dynamic resolution
-    vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
-    tc.y = 1.0 - tc.y;
-    
-    FS_FragColor = clamp( texture( Smp_Source, tc ) - BloomStart, vec4(0.0), BloomThreshold );
+    FS_FragColor = clamp( texture( Smp_Source, AdjustTexCoord( VS_TexCoord ) ) - BloomStart, vec4(0.0), BloomThreshold );
 }

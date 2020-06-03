@@ -28,7 +28,4 @@ SOFTWARE.
 
 */
 
-#define AO_DEINTERLEAVED
-#define AO_ORTHO_PROJECTION
-
-#include "postprocess/ssao.frag"
+#include "postprocess/ssao/ssao.frag"

@@ -117,6 +117,54 @@ AFrameGraphTextureStorage * AColorGradingRenderer::AddPass( AFrameGraph & FrameG
         renderPass.AddSubpass( { 0 },
                                [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
+            struct SDrawCall
+            {
+                Float4 uTemperatureScale;
+                Float4 uTemperatureStrength;
+                Float4 uGrain;
+                Float4 uGamma;
+                Float4 uLift;
+                Float4 uPresaturation;
+                Float4 uLuminanceNormalization;
+            };
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+
+            drawCall->uTemperatureScale.X = GRenderView->ColorGradingTemperatureScale.X;
+            drawCall->uTemperatureScale.Y = GRenderView->ColorGradingTemperatureScale.Y;
+            drawCall->uTemperatureScale.Z = GRenderView->ColorGradingTemperatureScale.Z;
+            drawCall->uTemperatureScale.W = 0.0f;
+
+            drawCall->uTemperatureStrength.X = GRenderView->ColorGradingTemperatureStrength.X;
+            drawCall->uTemperatureStrength.Y = GRenderView->ColorGradingTemperatureStrength.Y;
+            drawCall->uTemperatureStrength.Z = GRenderView->ColorGradingTemperatureStrength.Z;
+            drawCall->uTemperatureStrength.W = 0.0f;
+
+            drawCall->uGrain.X = GRenderView->ColorGradingGrain.X * 2.0f;
+            drawCall->uGrain.Y = GRenderView->ColorGradingGrain.Y * 2.0f;
+            drawCall->uGrain.Z = GRenderView->ColorGradingGrain.Z * 2.0f;
+            drawCall->uGrain.W = 0.0f;
+
+            drawCall->uGamma.X = 0.5f / Math::Max( GRenderView->ColorGradingGamma.X, 0.0001f );
+            drawCall->uGamma.Y = 0.5f / Math::Max( GRenderView->ColorGradingGamma.Y, 0.0001f );
+            drawCall->uGamma.Z = 0.5f / Math::Max( GRenderView->ColorGradingGamma.Z, 0.0001f );
+            drawCall->uGamma.W = 0.0f;
+
+            drawCall->uLift.X = GRenderView->ColorGradingLift.X * 2.0f - 1.0f;
+            drawCall->uLift.Y = GRenderView->ColorGradingLift.Y * 2.0f - 1.0f;
+            drawCall->uLift.Z = GRenderView->ColorGradingLift.Z * 2.0f - 1.0f;
+            drawCall->uLift.W = 0.0f;
+
+            drawCall->uPresaturation.X = GRenderView->ColorGradingPresaturation.X;
+            drawCall->uPresaturation.Y = GRenderView->ColorGradingPresaturation.Y;
+            drawCall->uPresaturation.Z = GRenderView->ColorGradingPresaturation.Z;
+            drawCall->uPresaturation.W = 0.0f;
+
+            drawCall->uLuminanceNormalization.X = GRenderView->ColorGradingBrightnessNormalization;
+            drawCall->uLuminanceNormalization.Y = 0.0f;
+            drawCall->uLuminanceNormalization.Z = 0.0f;
+            drawCall->uLuminanceNormalization.W = 0.0f;
+
             Cmd.BindShaderResources( &GFrameResources.Resources );
 
             DrawSAQ( &PipelineProcedural );

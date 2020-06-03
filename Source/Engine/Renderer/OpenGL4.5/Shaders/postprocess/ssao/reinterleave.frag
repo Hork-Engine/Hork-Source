@@ -32,8 +32,6 @@ SOFTWARE.
 
 layout( location = 0 ) out float FS_FragColor;
 
-//layout( location = 0 ) noperspective in vec2 VS_TexCoord;
-
 layout( binding = 0 ) uniform sampler2DArray Smp_Source;
 
 void main() {

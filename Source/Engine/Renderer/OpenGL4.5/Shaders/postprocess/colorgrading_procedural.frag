@@ -36,19 +36,17 @@ layout( location = 0 ) out vec4 FS_FragColor;
 
 layout( location = 0 ) in vec3 GS_Color;
 
-/*
-TODO:
-layout( binding = 1, std140 ) uniform UniformBuffer1
+
+layout( binding = 1, std140 ) uniform DrawCall
 {
-    vec3 uTemperatureScale;
-    vec3 uTemperatureStrength;
-    vec3 uGrain;
-    vec3 uGamma;
-    vec3 uLift;
-    vec3 uPresaturation;
-    float uLuminanceNormalization;
+    vec4 TemperatureScale;
+    vec4 TemperatureStrength;
+    vec4 Grain;
+    vec4 Gamma;
+    vec4 Lift;
+    vec4 Presaturation;
+    vec4 LuminanceNormalization;
 };
-*/
 
 void main()
 {
@@ -59,10 +57,10 @@ void main()
     float luminance = builtin_luminance( color );
     
     // Apply temperature
-    vec3 temperatureColor = color * uTemperatureScale.xyz;
+    vec3 temperatureColor = color * TemperatureScale.xyz;
     
     // Lerp between source and scaled color
-    color = mix( color, temperatureColor, uTemperatureStrength.xyz );
+    color = mix( color, temperatureColor, TemperatureStrength.xyz );
     
     // Calc new luminance
     float luminance2 = builtin_luminance( color );
@@ -70,17 +68,17 @@ void main()
     // Calc luminance scale
     float luminanceRatio = ( luminance2 > 1e-6 ) ? ( luminance / luminance2 ) : 1.0;
     
-    float brightness = mix( 1.0, luminanceRatio, uLuminanceNormalization.x );    
+    float brightness = mix( 1.0, luminanceRatio, LuminanceNormalization.x );    
     color *= brightness;
     
     // Calc grayscaled color
     vec3 grayscaled = vec3( builtin_luminance( color ) );
     
     // Lerp between rgb and grayscaled
-    color = mix( grayscaled, color, uPresaturation.xyz );
+    color = mix( grayscaled, color, Presaturation.xyz );
     
     // Apply gamma
-    color = pow( uGrain.xyz * ( color - uLift.xyz * ( color - 1.0 ) ), uGamma.xyz );
+    color = pow( Grain.xyz * ( color - Lift.xyz * ( color - 1.0 ) ), Gamma.xyz );
 
     const float eyeAdaptationSpeed = GetColorGradingAdaptationSpeed();
     

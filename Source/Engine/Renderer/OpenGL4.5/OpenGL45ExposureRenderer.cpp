@@ -78,9 +78,9 @@ AExposureRenderer::AExposureRenderer()
     DefaultLuminance.InitializeStorage( texStorageCI );
     DefaultLuminance.Write( 0, GHI::PIXEL_FORMAT_UBYTE_RG, sizeof( defaultLum ), 1, defaultLum );
 
-    CreateFullscreenQuadPipeline( MakeLuminanceMapPipe, "postprocess/makeLuminanceMap.vert", "postprocess/makeLuminanceMap.frag" );
-    CreateFullscreenQuadPipeline( SumLuminanceMapPipe, "postprocess/sumLuminanceMap.vert", "postprocess/sumLuminanceMap.frag" );
-    CreateFullscreenQuadPipeline( DynamicExposurePipe, "postprocess/dynamicExposure.vert", "postprocess/dynamicExposure.frag", GHI::BLENDING_ALPHA );
+    CreateFullscreenQuadPipeline( MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag" );
+    CreateFullscreenQuadPipeline( SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag" );
+    CreateFullscreenQuadPipeline( DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", GHI::BLENDING_ALPHA );
 
     CreateSampler();
 }

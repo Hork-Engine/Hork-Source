@@ -28,15 +28,32 @@ SOFTWARE.
 
 */
 
-out gl_PerVertex
+#include "base/viewuniforms.glsl"
+
+layout( location = 0 ) out float FS_FragColor[8];
+
+layout( binding = 0 ) uniform sampler2D Smp_LinearDepth;
+
+layout( binding = 1, std140 ) uniform DrawCall
 {
-    vec4 gl_Position;
+    vec2 UVOffset;
+    vec2 InvFullResolution;
 };
 
-//layout( location = 0 ) noperspective out vec2 VS_TexCoord;
-
 void main() {
-    gl_Position = vec4( InPosition, 0.0, 1.0 );
-    //VS_TexCoord = InPosition * 0.5 + 0.5;
-    //VS_TexCoord = InPosition * vec2(0.5,-0.5) + 0.5;
+    vec2 uv = floor( gl_FragCoord.xy ) * 4.0 + ( UVOffset + 0.5 );
+    uv *= InvFullResolution;
+
+    vec4 s0 = textureGather( Smp_LinearDepth, uv, 0 );
+    vec4 s1 = textureGatherOffset( Smp_LinearDepth, uv, ivec2( 2, 0 ), 0 );
+
+    FS_FragColor[0] = s0.w; // (0,0)
+    FS_FragColor[1] = s0.z; // (1,0)
+    FS_FragColor[2] = s1.w; // (2,0)
+    FS_FragColor[3] = s1.z; // (3,0)
+    FS_FragColor[4] = s0.x; // (0,1)
+    FS_FragColor[5] = s0.y; // (1,1)
+    FS_FragColor[6] = s1.x; // (2,1)
+    FS_FragColor[7] = s1.y; // (3,1)
 }
+

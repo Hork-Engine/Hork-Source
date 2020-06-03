@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-layout( binding = 1, std140 ) uniform UniformBuffer1
+layout( binding = 1, std140 ) uniform DrawCall
 {
     mat4 TransformMatrix; // Instance MVP
     vec4 ModelNormalToViewSpace0;

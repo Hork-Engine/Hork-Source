@@ -45,8 +45,9 @@ layout( binding = 0 ) uniform sampler2D Smp_Source;
 
 void main() {
     // Adjust texture coordinates for dynamic resolution
-    vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
-    tc.y = 1.0 - tc.y;
+    vec2 tc = AdjustTexCoord( VS_TexCoord );
+    
+    vec2 inverseSizeInPixels = InvViewportSize * DynamicResolutionRatio;
 
     FS_FragColor = FxaaPixelShader(
             // Use noperspective interpolation here (turn off perspective interpolation).
@@ -68,7 +69,7 @@ void main() {
                           // This must be from a constant/uniform.
                           // {x_} = 1.0/screenWidthInPixels
                           // {_y} = 1.0/screenHeightInPixels
-            ViewportParams.xy*Timers.zw,
+            inverseSizeInPixels,
             FxaaFloat4( 0 ), // Only used on FXAA Console.
                              // Only used on FXAA Console.
                              // Not used on 360, but used on PS3 and PC.
@@ -77,7 +78,7 @@ void main() {
                              // {_y__} = -2.0/screenHeightInPixels
                              // {__z_} =  2.0/screenWidthInPixels  
                              // {___w} =  2.0/screenHeightInPixels 
-            FxaaFloat4( -2, -2, 2, 2 ) * ViewportParams.xyxy*Timers.zwzw,
+            FxaaFloat4( -2, -2, 2, 2 ) * inverseSizeInPixels.xyxy,
             FxaaFloat4( 0 ), // Only used on FXAA Console.
                              // Only used on FXAA Quality.
                              // This used to be the FXAA_QUALITY__SUBPIX define.

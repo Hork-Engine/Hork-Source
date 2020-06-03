@@ -31,6 +31,7 @@ SOFTWARE.
 #ifndef VIEWUNIFORMS_H
 #define VIEWUNIFORMS_H
 
+// Keep paddings, don't use vec3, keep in sync with cpp struct
 layout( binding = 0, std140 ) uniform UniformBuffer0
 {
     // Ortho projection for canvas rendering
@@ -47,18 +48,19 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     vec4 WorldNormalToViewSpace1;
     vec4 WorldNormalToViewSpace2;
     
-    // Viewport parameters:
-    // x = 1/width
-    // y = 1/height
-    // z = znear
-    // w = zfar
-    vec4 ViewportParams;
+    // Viewport parameters
+    vec2 InvViewportSize;
+    float ViewportZNear;
+    float ViewportZFar;
+    
+    // Projection offset and scale
+    vec4 ProjectionInfo;
     
     // Timers
-    // x = running time
-    // y = gampley timw
-    // zw = dynamic resolution ratio
-    vec4 Timers;
+    float GameRunningTimeSeconds;
+    float GameplayTimeSeconds;
+    
+    vec2 DynamicResolutionRatio;
     
     // View position and frametime delta
     // xyz = ViewPosition
@@ -68,32 +70,30 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     vec4 PostprocessBloomMix;
     
     // Postprocess attributes
-    // x - bloom enable / disable
-    // y - tone mapping exposure (disabled if zero)
-    // z - color grading enable / disable
-    // w - FXAA enable /disable
-    vec4 PostprocessAttrib;
+    //  bloom enable / disable
+    float BloomEnabled;
+    // tone mapping exposure (disabled if zero)
+    float ToneMappingExposure;
+    // color grading enable / disable
+    float ColorGrading;
+    // FXAA enable /disable
+    float FXAA;
     
     // Vignette
     // xyz - color
     // w - intensity
     vec4 VignetteColorIntensity;
     
-    // Vignette
-    // x - outer radius^2
-    // y - inner radius^2
-    // z - brightness
-    // w - colorgrading adaptation speed
-    vec4 VignetteOuterInnerRadiusSqr;
+    // Vignette outer radius^2
+    float VignetteOuterRadiusSqr;
+    // Vignette inner radius^2
+    float VignetteInnerRadiusSqr;
     
-    // Procedural color grading
-    vec4 uTemperatureScale;
-    vec4 uTemperatureStrength;
-    vec4 uGrain;
-    vec4 uGamma;
-    vec4 uLift;
-    vec4 uPresaturation;
-    vec4 uLuminanceNormalization;
+    // Brightness
+    float ViewBrightness;
+    
+    // Colorgrading adaptation speed
+    float ColorGradingAdaptationSpeed;
     
     uvec2 PrefilteredMapSampler;
     uvec2 IrradianceMapSampler;
@@ -117,43 +117,31 @@ Some helper functions
 */
 
 float GetViewportWidthInverted() {
-    return ViewportParams.x;
+    return InvViewportSize.x;
 }
 
 float GetViewportHeightInverted() {
-    return ViewportParams.y;
+    return InvViewportSize.y;
 }
 
 vec2 GetViewportSizeInverted() {
-    return ViewportParams.xy;
+    return InvViewportSize;
 }
 
 float GetViewportZNear() {
-    return ViewportParams.z;
+    return ViewportZNear;
 }
 
 float GetViewportZFar() {
-    return ViewportParams.w;
-}
-
-vec2 GetAOSizeInverted() {
-    return ViewportParams.xy;
-}
-
-vec2 GetAOQuarterSizeInverted() {
-    // TODO: Precalculate
-    const vec2 fullResolution = vec2(1.0)/GetAOSizeInverted();
-    const int quarterWidth  = (int(fullResolution.x)+3)/4;
-    const int quarterHeight = (int(fullResolution.y)+3)/4;
-    return vec2(1.0/float(quarterWidth),1.0/float(quarterHeight));
+    return ViewportZFar;
 }
 
 float RunningTime() {
-    return Timers.x;
+    return GameRunningTimeSeconds;
 }
 
 float GameplayTime() {
-    return Timers.y;
+    return GameplayTimeSeconds;
 }
 
 float GameplayFrameDelta() {
@@ -165,25 +153,25 @@ vec3 GetViewPosition() {
 }
 
 vec2 GetDynamicResolutionRatio() {
-    return Timers.zw;
+    return DynamicResolutionRatio;
 }
 
 float GetPostprocessExposure() {
-    return PostprocessAttrib.y;
+    return ToneMappingExposure;
 }
 
 float GetFrameBrightness() {
-    return VignetteOuterInnerRadiusSqr.z;
+    return ViewBrightness;
 }
 
 float GetColorGradingAdaptationSpeed() {
-    return VignetteOuterInnerRadiusSqr.w;
+    return ColorGradingAdaptationSpeed;
 }
 
-#define IsBloomEnabled() ( PostprocessAttrib.x > 0.0 )
-#define IsTonemappingEnabled() ( PostprocessAttrib.y > 0.0 )
-#define IsColorGradingEnabled() ( PostprocessAttrib.z > 0.0 )
-#define IsFXAAEnabled() ( PostprocessAttrib.w > 0.0 )
+#define IsBloomEnabled() ( BloomEnabled > 0.0 )
+#define IsTonemappingEnabled() ( ToneMappingExposure > 0.0 )
+#define IsColorGradingEnabled() ( ColorGrading > 0.0 )
+#define IsFXAAEnabled() ( FXAA > 0.0 )
 #define IsVignetteEnabled() ( VignetteColorIntensity.a > 0.0 )
 
 uint GetDebugMode() {

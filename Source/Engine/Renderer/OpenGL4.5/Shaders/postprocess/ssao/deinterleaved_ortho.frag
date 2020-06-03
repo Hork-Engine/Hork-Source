@@ -28,30 +28,7 @@ SOFTWARE.
 
 */
 
-#include "base/viewuniforms.glsl"
+#define AO_DEINTERLEAVED
+#define AO_ORTHO_PROJECTION
 
-layout( location = 0 ) out float FS_FragColor[8];
-
-//layout( location = 0 ) noperspective in vec2 VS_TexCoord;
-
-layout( binding = 0 ) uniform sampler2D Smp_LinearDepth;
-
-layout( location = 0 ) uniform vec2 UVOffset;
-
-void main() {
-    vec2 uv = floor( gl_FragCoord.xy ) * 4.0 + ( UVOffset + 0.5 );
-    uv *= GetAOSizeInverted();
-
-    vec4 s0 = textureGather( Smp_LinearDepth, uv, 0 );
-    vec4 s1 = textureGatherOffset( Smp_LinearDepth, uv, ivec2( 2, 0 ), 0 );
-
-    FS_FragColor[0] = s0.w; // (0,0)
-    FS_FragColor[1] = s0.z; // (1,0)
-    FS_FragColor[2] = s1.w; // (2,0)
-    FS_FragColor[3] = s1.z; // (3,0)
-    FS_FragColor[4] = s0.x; // (0,1)
-    FS_FragColor[5] = s0.y; // (1,1)
-    FS_FragColor[6] = s1.x; // (2,1)
-    FS_FragColor[7] = s1.y; // (3,1)
-}
-
+#include "postprocess/ssao/ssao.frag"
