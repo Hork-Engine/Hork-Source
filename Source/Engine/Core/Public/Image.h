@@ -157,6 +157,50 @@ void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
                                      float fReplaceAlpha,
                                      byte * sRGB );
 
+enum EImageDataType
+{
+    IMAGE_DATA_TYPE_UINT8,
+    IMAGE_DATA_TYPE_UINT16,
+    IMAGE_DATA_TYPE_UINT32,
+    IMAGE_DATA_TYPE_FLOAT
+};
+
+struct SImageResizeDesc
+{
+    /** Source image */
+    const void * pImage;
+    /** Source image width */
+    int Width;
+    /** Source image height */
+    int Height;
+    /** Source image channels count*/
+    int NumChannels;
+    /** Source image alpha channel index. Use -1 if image has no alpha channel. */
+    int AlphaChannel;
+    /** Image data type */
+    EImageDataType DataType;
+    /** Set this flag if your image has premultiplied alpha. Otherwise, will be
+    used alpha-weighted resampling (effectively premultiplying, resampling, then unpremultiplying). */
+    bool bPremultipliedAlpha;
+    /** Is your image in linear color space or sRGB. */
+    bool bLinearSpace;
+    /** Scaling edge mode for horizontal axis */
+    EMipmapEdgeMode HorizontalEdgeMode;
+    /** Scaling edge mode for vertical axis */
+    EMipmapEdgeMode VerticalEdgeMode;
+    /** Scaling filter for horizontal axis */
+    EMipmapFilter HorizontalFilter;
+    /** Scaling filter for vertical axis */
+    EMipmapFilter VerticalFilter;
+    /** Scaled image width */
+    int ScaledWidth;
+    /** Scaled image height */
+    int ScaledHeight;
+};
+
+/** Scale image */
+void ResizeImage( SImageResizeDesc const & InDesc, void * pScaledImage );
+
 /** Calculate required size in bytes for mipmapped image */
 void ComputeRequiredMemorySize( SSoftwareMipmapGenerator const & _Config, int & _RequiredMemory, int & _NumLods );
 

@@ -43,7 +43,7 @@ public:
     }
 
     ~TLinearAllocator() {
-        GLogger.Printf( "TLinearAllocator: total allocs %d\n", TotalAllocs );
+        //GLogger.Printf( "TLinearAllocator: total allocs %d\n", TotalAllocs );
         Free();
     }
 

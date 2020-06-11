@@ -113,31 +113,20 @@ struct AColor4 : Float4 {
     }
 };
 
-//#define SRGB_GAMMA_APPROX
-
 AN_FORCEINLINE float LinearFromSRGB( float Color ) {
-    // TODO: Use conversion table?
-#ifdef SRGB_GAMMA_APPROX
-    return Math::Pow( Color, 2.2f );
-#else
     if ( Color < 0.0f ) return 0.0f;
     if ( Color > 1.0f ) return 1.0f;
     return ( Color <= 0.04045f ) ? Color / 12.92f : Math::Pow( ( Color + 0.055f ) / 1.055f, 2.4f );
-#endif
 }
 
 AN_FORCEINLINE float LinearToSRGB( float LinearColor ) {
-    // TODO: Use conversion table?
-#ifdef SRGB_GAMMA_APPROX
-    return Math::Pow( LinearColor, 1.0f / 2.2f );
-#else
     if ( LinearColor < 0.0f ) return 0.0f;
     if ( LinearColor > 1.0f ) return 1.0f;
     return ( LinearColor <= 0.0031308f ) ? LinearColor * 12.92f : Math::Pow( LinearColor, 1.0f / 2.4f ) * 1.055f - 0.055f;
-#endif
 }
 
 AN_FORCEINLINE float LinearFromSRGB_UChar( byte in ) {
+    // Uses true SRGB conversion
     extern float stbir__srgb_uchar_to_linear_float[256];
     return stbir__srgb_uchar_to_linear_float[in];
 }

@@ -34,6 +34,8 @@ SOFTWARE.
 #include "Std.h"
 #include "IO.h"
 
+#include <emmintrin.h>
+
 #ifndef FLT_DIG
 #define FLT_DIG 6
 #endif
