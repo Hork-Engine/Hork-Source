@@ -823,6 +823,8 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
         MemoryOffset += LodWidth * LodHeight * NumChannels;
 
 #if 1
+        // NOTE: We assume that this function is called from main thread,
+        // so we can use advantage of hunk memory allocator
         int hunkMark = GHunkMemory.SetHunkMark();
 
         stbir_resize( ImageData, CurWidth, CurHeight, NumChannels * CurWidth * sizeof( float ),
@@ -982,6 +984,10 @@ void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
 
 void ResizeImage( SImageResizeDesc const & InDesc, void * pScaledImage )
 {
+    // NOTE: We assume that this function is called from main thread,
+    // so we can use advantage of hunk memory allocator
+    int hunkMark = GHunkMemory.SetHunkMark();
+
     stbir_resize( InDesc.pImage, InDesc.Width, InDesc.Height, InDesc.NumChannels * InDesc.Width,
                   pScaledImage, InDesc.ScaledWidth, InDesc.ScaledHeight, InDesc.NumChannels * InDesc.ScaledWidth,
                   (stbir_datatype)InDesc.DataType,
@@ -992,6 +998,8 @@ void ResizeImage( SImageResizeDesc const & InDesc, void * pScaledImage )
                   (stbir_filter)InDesc.HorizontalFilter, (stbir_filter)InDesc.VerticalFilter,
                   InDesc.bLinearSpace ? STBIR_COLORSPACE_LINEAR : STBIR_COLORSPACE_SRGB,
                   NULL );
+
+    GHunkMemory.ClearToMark( hunkMark );
 }
 
 bool WritePNG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine ) {

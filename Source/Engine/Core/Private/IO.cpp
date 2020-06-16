@@ -147,29 +147,7 @@ int AFileStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
         GLogger.Printf( "Failed to read from %s (wrong mode)\n", Name.CStr() );
         return 0;
     }
-
-    int count;
-    int numTries = 0;
-    byte * data = ( byte * )_Buffer;
-
-    for ( int remainingBytes = _SizeInBytes ; remainingBytes > 0 ; remainingBytes -= count, data += count ) {
-        count = fread( data, 1, remainingBytes, ( FILE * )Handle );
-        if ( count == 0 ) {
-            if ( numTries > 0 ) {
-                if ( ferror( ( FILE * )Handle ) ) {
-                    GLogger.Printf( "Failed to read from %s\n", Name.CStr() );
-                }
-                //else if ( feof( ( FILE * )Handle ) ) {
-                //}
-                return _SizeInBytes - remainingBytes;
-            }
-            numTries++;
-        } else if ( count < 0 ) {
-            GLogger.Printf( "Failed to read from %s\n", Name.CStr() );
-            return 0;
-        }
-    }
-    return _SizeInBytes;
+    return fread( _Buffer, 1, _SizeInBytes, ( FILE * )Handle );
 }
 
 int AFileStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
@@ -178,26 +156,7 @@ int AFileStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
         return 0;
     }
 
-    int count;
-    int numTries = 0;
-    byte * data = ( byte * )_Buffer;
-
-    for ( int remainingBytes = _SizeInBytes ; remainingBytes > 0 ; remainingBytes -= count, data += count ) {
-        count = fwrite( data, 1, remainingBytes, ( FILE * )Handle );
-        if ( count == 0 ) {
-            if ( numTries > 0 ) {
-                GLogger.Printf( "Failed to write %s\n", Name.CStr() );
-                remainingBytes = _SizeInBytes - remainingBytes;
-                return remainingBytes;
-            }
-            numTries++;
-        } else if ( count < 0 ) {
-            GLogger.Printf( "Failed to write %s\n", Name.CStr() );
-            return 0;
-        }
-    }
-
-    return _SizeInBytes;
+    return fwrite( _Buffer, 1, _SizeInBytes, ( FILE * )Handle );
 }
 
 char * AFileStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
