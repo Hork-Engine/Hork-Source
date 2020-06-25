@@ -234,5 +234,3 @@ private:
 
 template< int HashBucketsCount, typename Allocator >
 constexpr const int THash< HashBucketsCount, Allocator >::InvalidHashIndex[1];
-
-ANGIE_TEMPLATE template class ANGIE_API THash<>;

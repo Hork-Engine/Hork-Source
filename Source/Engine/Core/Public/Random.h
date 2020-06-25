@@ -42,12 +42,12 @@ public:
     virtual ~ARandom() {}
 
     /** Get a random number on [0, max] interval. */
-    unsigned int Get( unsigned int Max ) {
+    uint32_t Get( uint32_t Max ) {
         if ( Max == 0 ) {
             return 0;
         }
-        unsigned int n;
-        unsigned int np2 = Math::ToGreaterPowerOfTwo( Max+1 );
+        uint32_t n;
+        uint32_t np2 = Math::ToGreaterPowerOfTwo( Max+1 );
         do {
             n = static_cast< Derived * >(this)->Get() & (np2-1);
         } while ( n > Max );
@@ -71,7 +71,7 @@ public:
     }
 
     /** Get the max value of the random number. */
-    unsigned int MaxRandomValue() const { return 4294967295U; }
+    uint32_t MaxRandomValue() const { return 4294967295U; }
 };
 
 
@@ -82,24 +82,24 @@ class ASimpleRand : public ARandom< ASimpleRand >
 {
 public:
     /** Constructor that uses the given seed. */
-    ASimpleRand( unsigned int InSeed = 0 )
+    ASimpleRand( uint32_t InSeed = 0 )
     {
         Seed( InSeed );
     }
 
-    void Seed( unsigned int InSeed )
+    void Seed( uint32_t InSeed )
     {
         Current = InSeed;
     }
 
     /** Get a random number */
-    unsigned int Get()
+    uint32_t Get()
     {
         return Current = Current * 1103515245 + 12345;
     }
 
 private:
-    unsigned int Current;
+    uint32_t Current;
 };
 
 
@@ -110,19 +110,19 @@ class AMersenneTwisterRand : public ARandom< AMersenneTwisterRand >
 {
 public:
     /** Constructor that uses the given seed. */
-    AMersenneTwisterRand( unsigned int InSeed = 0 )
+    AMersenneTwisterRand( uint32_t InSeed = 0 )
     {
         Seed( InSeed );
     }
 
-    void Seed( unsigned int InSeed )
+    void Seed( uint32_t InSeed )
     {
         Initialize( InSeed );
         Reload();
     }
 
     /** Get a random number between 0 - 65536. */
-    unsigned int Get()
+    uint32_t Get()
     {
         // Pull a 32-bit integer from the generator state
         // Every other access function simply transforms the numbers extracted here
@@ -131,7 +131,7 @@ public:
         }
         Left--;
 
-        unsigned int s1;
+        uint32_t s1;
         s1 = *Next++;
         s1 ^= (s1 >> 11);
         s1 ^= (s1 <<  7) & 0x9d2c5680U;
@@ -143,26 +143,26 @@ private:
     void Initialize( uint32_t seed );
     void Reload();
 
-    unsigned int hiBit( unsigned int u ) const { return u & 0x80000000U; }
-    unsigned int loBit( unsigned int u ) const { return u & 0x00000001U; }
-    unsigned int loBits( unsigned int u ) const { return u & 0x7fffffffU; }
-    unsigned int mixBits( unsigned int u, unsigned int v ) const { return hiBit( u ) | loBits( v ); }
-    unsigned int twist( unsigned int m, unsigned int s0, unsigned int s1 ) const { return m ^ (mixBits( s0, s1 )>>1) ^ ((~loBit( s1 )+1) & 0x9908b0dfU); }
+    uint32_t hiBit( uint32_t u ) const { return u & 0x80000000U; }
+    uint32_t loBit( uint32_t u ) const { return u & 0x00000001U; }
+    uint32_t loBits( uint32_t u ) const { return u & 0x7fffffffU; }
+    uint32_t mixBits( uint32_t u, uint32_t v ) const { return hiBit( u ) | loBits( v ); }
+    uint32_t twist( uint32_t m, uint32_t s0, uint32_t s1 ) const { return m ^ (mixBits( s0, s1 )>>1) ^ ((~loBit( s1 )+1) & 0x9908b0dfU); }
 
 private:
     enum { N = 624 };       // length of state vector
     enum { M = 397 };
 
-    unsigned int State[N];	// internal state
-    unsigned int * Next;	// next value to get from state
+    uint32_t State[N];	// internal state
+    uint32_t * Next;	// next value to get from state
     int Left;		        // number of values left before reload needed		
 };
 
 namespace Core {
 
 /** Get a random seed. */
-AN_FORCEINLINE unsigned int RandomSeed() {
-    return (unsigned int)time( NULL );
+AN_FORCEINLINE uint32_t RandomSeed() {
+    return (uint32_t)time( NULL );
 }
 
 }

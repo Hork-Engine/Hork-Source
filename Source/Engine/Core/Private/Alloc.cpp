@@ -349,7 +349,7 @@ void AHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     AN_SIZEOF_STATIC_CHECK( SHunk, 16 );
 
     if ( !IsAlignedPtr( MemoryBuffer->Hunk, 16 ) ) {
-        CriticalError( "AHunkMemory::Initialize: chunk mest be at 16 byte boundary\n" );
+        CriticalError( "AHunkMemory::Initialize: chunk must be at 16 byte boundary\n" );
     }
 }
 
@@ -645,7 +645,7 @@ void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     MemoryBuffer->Rover->pPrev = &MemoryBuffer->ChunkList;
 
     if ( !IsAlignedPtr( MemoryBuffer->Rover, 16 ) ) {
-        CriticalError( "AZoneMemory::Initialize: chunk mest be at 16 byte boundary\n" );
+        CriticalError( "AZoneMemory::Initialize: chunk must be at 16 byte boundary\n" );
     }
 
     TotalMemoryUsage.StoreRelaxed( 0 );

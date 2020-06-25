@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "BaseMath.h"
 #include "Logger.h"
 
 template< int MIN_BLOCK_SIZE = 64<<10 >

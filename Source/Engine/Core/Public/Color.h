@@ -508,3 +508,32 @@ AN_FORCEINLINE void AColor4::GetCMYK( float & _Cyan, float & _Magenta, float & _
 AN_FORCEINLINE float AColor4::GetLuminance() const {
     return X * 0.2126f + Y * 0.7152f + Z * 0.0722f;
 }
+
+AN_INLINE void EncodeRGBE( byte * RGBE, const float * LinearRGB )
+{
+    float maxcomp = Math::Max3( LinearRGB[0], LinearRGB[1], LinearRGB[2] );
+
+    if ( maxcomp < 1e-32f ) {
+        RGBE[0] = RGBE[1] = RGBE[2] = RGBE[3] = 0;
+    } else {
+        int exponent;
+        float normalize = frexp( maxcomp, &exponent ) * 256.0f/maxcomp;
+
+        RGBE[0] = (unsigned char)(LinearRGB[0] * normalize);
+        RGBE[1] = (unsigned char)(LinearRGB[1] * normalize);
+        RGBE[2] = (unsigned char)(LinearRGB[2] * normalize);
+        RGBE[3] = (unsigned char)(exponent + 128);
+    }
+}
+
+AN_INLINE void DecodeRGBE( float * LinearRGB, const byte * RGBE )
+{
+    if ( RGBE[3] != 0 ) {
+        float scale = ldexp( 1.0f, RGBE[3] - (int)(128 + 8) );
+        LinearRGB[0] = RGBE[0] * scale;
+        LinearRGB[1] = RGBE[1] * scale;
+        LinearRGB[2] = RGBE[2] * scale;
+    } else {
+        LinearRGB[0] = LinearRGB[1] = LinearRGB[2] = 0;
+    }
+}
