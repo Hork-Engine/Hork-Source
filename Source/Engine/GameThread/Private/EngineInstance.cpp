@@ -120,9 +120,6 @@ static IGameModule * CreateGameModule( AClassMeta const * _Meta ) {
 }
 
 void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
-    // Pump initial events
-    GRuntime.PollEvents();
-
     GConsole.ReadStoryLines();
 
     InitializeFactories();

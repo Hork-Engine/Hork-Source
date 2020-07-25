@@ -519,7 +519,7 @@ void AFont::InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, 
 
     // Create atlas texture
     AtlasTexture = NewObject< ATexture >();
-    AtlasTexture->Initialize2D( TEXTURE_PF_R8, 1, TexWidth, TexHeight );
+    AtlasTexture->Initialize2D( TEXTURE_PF_R8_UNORM, 1, TexWidth, TexHeight );
     AtlasTexture->WriteTextureData2D( 0, 0, TexWidth, TexHeight, 0, TexPixelsAlpha8 );
 }
 

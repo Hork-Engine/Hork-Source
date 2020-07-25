@@ -183,6 +183,8 @@ AMeshComponent::AMeshComponent() {
     static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Box" ) );
     Mesh = MeshResource.GetObject();
     Bounds = Mesh->GetBoundingBox();
+
+    RenderTransformMatrix.SetIdentity();
 }
 
 void AMeshComponent::InitializeComponent() {
@@ -565,6 +567,8 @@ AProceduralMeshComponent::AProceduralMeshComponent() {
     Primitive.RaycastClosestCallback = RaycastClosestCallback_Procedural;
 
     bAllowRaycast = true;
+
+    RenderTransformMatrix.SetIdentity();
 
     //LightmapOffset.Z = LightmapOffset.W = 1;
 

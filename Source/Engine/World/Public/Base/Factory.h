@@ -299,10 +299,6 @@ AN_FORCEINLINE AString AttrFromString< AString >( AString const & v ) {
     return v;
 }
 
-ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( ADummy *, AString const & ) >;
-ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( ADummy *, AString & ) >;
-ANGIE_TEMPLATE template class ANGIE_API TStdFunction< void( ADummy const *, ADummy * ) >;
-
 class ANGIE_API AAttributeMeta {
     AN_FORBID_COPY( AAttributeMeta )
 

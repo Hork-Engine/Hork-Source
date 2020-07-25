@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "WWidget.h"
 
+class APlayerController;
+
 class ANGIE_API WViewport : public WWidget {
     AN_CLASS( WViewport, WWidget )
 

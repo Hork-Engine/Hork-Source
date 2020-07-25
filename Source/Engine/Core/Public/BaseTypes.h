@@ -365,16 +365,22 @@ Alignment stuff
 
 */
 
+template< size_t Alignment >
+constexpr bool IsAligned( size_t N ) {
+    static_assert( IsPowerOfTwo( Alignment ), "Alignment must be power of two" );
+    return (N & (Alignment - 1)) == 0;
+}
+
 constexpr bool IsAligned( size_t N, size_t Alignment ) {
-    return (N & (Alignment - 1)) == 0 && N > 0;
+    return (N & (Alignment - 1)) == 0;
 }
 
 constexpr bool IsAlignedPtr( void * Ptr, size_t Alignment ) {
-    return ((size_t)Ptr & (Alignment - 1)) == 0 && (size_t)Ptr > 0;
+    return ((size_t)Ptr & (Alignment - 1)) == 0;
 }
 
 constexpr size_t IsSSEAligned( size_t N ) {
-    return IsAligned( N, 16 );
+    return IsAligned< 16 >( N );
 }
 
 constexpr size_t Align( size_t N, size_t Alignment ) {

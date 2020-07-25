@@ -105,6 +105,11 @@ void ADebugRenderer::SplitCommands() {
 }
 
 bool ADebugRenderer::PrimitiveReserve( EDebugDrawCmd _CmdName, int _NumVertices, int _NumIndices, SDebugDrawCmd ** _Cmd, SDebugVertex ** _Verts, unsigned short ** _Indices ) {
+    if ( _NumVertices <= 0 || _NumIndices <= 0 ) {
+        // Empty primitive
+        return false;
+    }
+
     if ( _NumVertices > MAX_PRIMITIVE_VERTS ) {
         // TODO: split to several primitives
         GLogger.Printf( "ADebugRenderer::PrimitiveReserve: primitive has too many vertices\n" );

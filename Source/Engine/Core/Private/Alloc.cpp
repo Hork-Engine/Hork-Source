@@ -764,6 +764,16 @@ void * AZoneMemory::Alloc( size_t _BytesCount ) {
 //#pragma warning(disable:4702)
 void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 #if 1
+
+#if 0
+    if ( _Data ) {
+        void * d = SysAlloc( _NewBytesCount, 16 );
+        Core::MemcpySSE(d,_Data,_NewBytesCount);
+        SysFree(_Data);
+        return d;
+    }
+    return nullptr;
+#else
     if ( !_Data ) {
         return Alloc( _NewBytesCount );
     }
@@ -802,6 +812,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
     GHunkMemory.ClearLastHunk();
 
     return pNewData;
+#endif
 
 #else
 

@@ -52,8 +52,7 @@ SOFTWARE.
 #include <RecastDebugDraw.h>
 #include <DetourDebugDraw.h>
 #include <DebugDraw.h>
-
-#include <cfloat> // FLT_MAX
+#include <float.h>
 
 ARuntimeVariable RVDrawNavMeshBVTree( _CTS( "DrawNavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable RVDrawNavMeshNodes( _CTS( "DrawNavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
@@ -1434,11 +1433,11 @@ bool AAINavigationMesh::Trace( SAINavigationTraceResult & _Result, Float3 const 
 
     int NumPolys;
 
-    _Result.HitFraction = FLT_MAX;
+    _Result.HitFraction = Math::MaxValue< float >();
 
     NavQuery->raycast( StartRef, (const float *)_RayStart.ToPtr(), (const float *)_RayEnd.ToPtr(), _Filter.Filter, &_Result.HitFraction, (float *)_Result.Normal.ToPtr(), TmpPolys, &NumPolys, MAX_POLYS );
 
-    bool bHasHit = _Result.HitFraction != FLT_MAX;
+    bool bHasHit = _Result.HitFraction != Math::MaxValue< float >();
     if ( !bHasHit ) {
         _Result.Clear();
         return false;

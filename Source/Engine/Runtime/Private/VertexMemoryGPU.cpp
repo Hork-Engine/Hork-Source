@@ -70,12 +70,12 @@ void AVertexMemoryGPU::Deinitialize() {
 }
 
 SVertexHandle * AVertexMemoryGPU::AllocateVertex( size_t _SizeInBytes, const void * _Data, SGetMemoryCallback _GetMemoryCB, void * _UserPointer ) {
-    //AN_ASSERT( IsAligned( _SizeInBytes, VERTEX_SIZE_ALIGN ) );
+    //AN_ASSERT( IsAligned< VERTEX_SIZE_ALIGN >( _SizeInBytes ) );
     return Allocate( _SizeInBytes, _Data, _GetMemoryCB, _UserPointer );
 }
 
 SVertexHandle * AVertexMemoryGPU::AllocateIndex( size_t _SizeInBytes, const void * _Data, SGetMemoryCallback _GetMemoryCB, void * _UserPointer ) {
-    //AN_ASSERT( IsAligned( _SizeInBytes, INDEX_SIZE_ALIGN ) );
+    //AN_ASSERT( IsAligned< INDEX_SIZE_ALIGN >( _SizeInBytes ) );
     return Allocate( _SizeInBytes, _Data, _GetMemoryCB, _UserPointer );
 }
 

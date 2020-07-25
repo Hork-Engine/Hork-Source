@@ -512,7 +512,8 @@ AMaterialInstance::AMaterialInstance() {
     static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
     //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
     //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
-    static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
+    //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
+    static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/grid8.png" ) );
 
     VisFrame = -1;
 
@@ -527,7 +528,8 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
-        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
+        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
+        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/grid8.png" ) );
 
         Material = MaterialResource.GetObject();
 
@@ -538,7 +540,8 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/BaseLight" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
-        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
+        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
+        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/grid8.png" ) );
 
         Material = MaterialResource.GetObject();
 
@@ -660,6 +663,10 @@ ATexture * AMaterialInstance::GetTexture( int _TextureSlot ) {
     return Textures[_TextureSlot];
 }
 
+void AMaterialInstance::SetVirtualTexture( AVirtualTextureResource * VirtualTex ) {
+    VirtualTexture = VirtualTex;
+}
+
 SMaterialFrameData * AMaterialInstance::PreRenderUpdate( int _FrameNumber ) {
     if ( VisFrame == _FrameNumber ) {
         return FrameData;
@@ -679,15 +686,8 @@ SMaterialFrameData * AMaterialInstance::PreRenderUpdate( int _FrameNumber ) {
 
     for ( int i = 0; i < MAX_MATERIAL_TEXTURES; i++ ) {
         if ( Textures[ i ] ) {
-
-            ATextureGPU * textureProxy = Textures[ i ]->GetGPUResource();
-
-            //if ( textureProxy->IsSubmittedToRenderThread() ) {
-                textures[ i ] = textureProxy;
-                FrameData->NumTextures = i + 1;
-            //} else {
-            //    textures[ i ] = 0;
-            //}
+            textures[ i ] = Textures[ i ]->GetGPUResource();
+            FrameData->NumTextures = i + 1;
         } else {
             textures[ i ] = 0;
         }
@@ -695,6 +695,8 @@ SMaterialFrameData * AMaterialInstance::PreRenderUpdate( int _FrameNumber ) {
 
     FrameData->NumUniformVectors = Material->GetNumUniformVectors();
     Core::Memcpy( FrameData->UniformVectors, UniformVectors, sizeof( Float4 )*FrameData->NumUniformVectors );
+
+    FrameData->VirtualTexture = VirtualTexture.GetObject();
 
     return FrameData;
 }

@@ -87,9 +87,6 @@ public:
     /** Create empty cubemap array texture */
     void InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
 
-    /** Create empty NPOT texture (aka texture rect) */
-    void Initialize2DNPOT( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
-
     /** Fill texture data for any texture type. */
     bool WriteArbitraryData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void * _SysMem );
 
@@ -147,7 +144,6 @@ public:
     static size_t TextureByteLength2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize );
     static size_t TextureByteLength3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
     static size_t TextureByteLengthCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
-    static size_t TextureByteLength2DNPOT( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
 
     ATextureGPU * GetGPUResource() { return TextureGPU; }
 

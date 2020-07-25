@@ -63,6 +63,13 @@ struct SCollisionTraceResult
     }
 };
 
+enum
+{
+    COLLISION_TRIANGLE_CULL_NONE = 0,
+    COLLISION_TRIANGLE_CULL_BACKFACE = 1,
+    COLLISION_TRIANGLE_CULL_FRONTFACE = 2,
+};
+
 /** Collision query filter */
 struct SCollisionQueryFilter
 {
@@ -77,6 +84,9 @@ struct SCollisionQueryFilter
     /** Physical body collision mask */
     int CollisionMask;
 
+    /** Ignore triangle frontface, backface and edges */
+    int TriangleFaceCulling;
+
     /** Sort result by the distance */
     bool bSortByDistance;
 
@@ -89,6 +99,8 @@ struct SCollisionQueryFilter
         BodiesCount = 0;
 
         CollisionMask = CM_ALL;
+
+        TriangleFaceCulling = COLLISION_TRIANGLE_CULL_BACKFACE;
 
         bSortByDistance = true;
     }
@@ -145,6 +157,26 @@ public:
     virtual void OnPostPhysics( float _TimeStep ) {}
 };
 
+struct SCollisionQueryResult
+{
+    /** Colliding body */
+    APhysicalBody * Body;
+    /** Contact position */
+    Float3 Position;
+    /** Contact normal */
+    Float3 Normal;
+    /** Contact distance */
+    float Distance;
+    /** Contact fraction */
+    float Fraction;
+
+    /** Clear trace result */
+    void Clear()
+    {
+        Core::ZeroMem( this, sizeof( *this ) );
+    }
+};
+
 class APhysicsWorld {
     AN_FORBID_COPY( APhysicsWorld )
 
@@ -186,6 +218,9 @@ public:
     /** Trace collision bodies */
     bool TraceBox( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
+    /** Experimental trace box with array of collisions */
+    bool TraceBox2( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+
     /** Trace collision bodies */
     bool TraceCylinder( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
@@ -196,19 +231,21 @@ public:
     bool TraceConvex( SCollisionTraceResult & _Result, SConvexSweepTest const & _SweepTest ) const;
 
     /** Query objects in sphere */
-    void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+    void QueryPhysicalBodies_Sphere( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Query objects in box */
-    void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+    void QueryPhysicalBodies_Box( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+
+    void QueryPhysicalBodies_Box2( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const;
 
     /** Query objects in AABB */
     void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Query objects in sphere */
-    void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+    void QueryActors_Sphere( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Query objects in box */
-    void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+    void QueryActors_Box( TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Query objects in AABB */
     void QueryActors( TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;

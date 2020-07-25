@@ -67,6 +67,16 @@ template< typename T > class TStdVector : public std::vector< T, TStdAllocator< 
 {
 public:
     using Super = std::vector< T, TStdAllocator< T > >;
+
+    TStdVector()
+    {
+    }
+
+    TStdVector( std::initializer_list< T > const & _InitializerList )
+    : Super( _InitializerList )
+    {
+    }
+
     int Size() const { return Super::size(); }
     T * ToPtr() { return Super::data(); }
     T const * ToPtr() const { return Super::data(); }

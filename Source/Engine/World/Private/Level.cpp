@@ -83,6 +83,9 @@ ALevel::ALevel() {
 
     ShadowCasterVB = GRenderBackend->CreateBuffer( this );
     ShadowCasterIB = GRenderBackend->CreateBuffer( this );
+
+    LightPortalsVB = GRenderBackend->CreateBuffer( this );
+    LightPortalsIB = GRenderBackend->CreateBuffer( this );
 }
 
 ALevel::~ALevel() {
@@ -90,6 +93,9 @@ ALevel::~ALevel() {
 
     GRenderBackend->DestroyBuffer( ShadowCasterVB );
     GRenderBackend->DestroyBuffer( ShadowCasterIB );
+
+    GRenderBackend->DestroyBuffer( LightPortalsVB );
+    GRenderBackend->DestroyBuffer( LightPortalsIB );
 }
 
 void ALevel::OnAddLevelToWorld() {
@@ -127,12 +133,18 @@ void ALevel::Initialize() {
     GRenderBackend->InitializeBuffer( ShadowCasterVB, ShadowCasterVerts.Size() * sizeof( Float3 ) );
     GRenderBackend->InitializeBuffer( ShadowCasterIB, ShadowCasterIndices.Size() * sizeof( unsigned int ) );
 
+    GRenderBackend->InitializeBuffer( LightPortalsVB, LightPortalVertexBuffer.Size() * sizeof( Float3 ) );
+    GRenderBackend->InitializeBuffer( LightPortalsIB, LightPortalIndexBuffer.Size() * sizeof( unsigned int ) );
+
     UploadResourcesGPU();
 }
 
 void ALevel::UploadResourcesGPU() {
     GRenderBackend->WriteBuffer( ShadowCasterVB, 0, ShadowCasterVerts.Size() * sizeof( Float3 ), ShadowCasterVerts.ToPtr() );
     GRenderBackend->WriteBuffer( ShadowCasterIB, 0, ShadowCasterIndices.Size() * sizeof( unsigned int ), ShadowCasterIndices.ToPtr() );
+
+    GRenderBackend->WriteBuffer( LightPortalsVB, 0, LightPortalVertexBuffer.Size() * sizeof( Float3 ), LightPortalVertexBuffer.ToPtr() );
+    GRenderBackend->WriteBuffer( LightPortalsIB, 0, LightPortalIndexBuffer.Size() * sizeof( unsigned int ), LightPortalIndexBuffer.ToPtr() );
 }
 
 void ALevel::Purge() {
@@ -177,6 +189,10 @@ void ALevel::Purge() {
 
     ShadowCasterVerts.Free();
     ShadowCasterIndices.Free();
+
+    LightPortalVertexBuffer.Free();
+    LightPortalIndexBuffer.Free();
+
     // FIXME: free GPU buffers?
 }
 
@@ -270,6 +286,17 @@ void ALevel::CreatePortals( SPortalDef const * InPortals, int InPortalsCount, Fl
 
         portal.bBlocked = false;
     }
+}
+
+void ALevel::CreateLightPortals( SLightPortalDef const * InPortals, int InPortalsCount, Float3 const * InMeshVertices, int InVertexCount, unsigned int const * InMeshIndices, int InIndexCount ) {
+    LightPortals.Resize( InPortalsCount );
+    Core::Memcpy( LightPortals.ToPtr(), InPortals, InPortalsCount * sizeof( LightPortals[0] ) );
+
+    LightPortalVertexBuffer.Resize( InVertexCount );
+    Core::Memcpy( LightPortalVertexBuffer.ToPtr(), InMeshVertices, InVertexCount * sizeof( LightPortalVertexBuffer[0] ) );
+
+    LightPortalIndexBuffer.Resize( InIndexCount );
+    Core::Memcpy( LightPortalIndexBuffer.ToPtr(), InMeshIndices, InIndexCount * sizeof( LightPortalIndexBuffer[0] ) );
 }
 
 int ALevel::FindLeaf( Float3 const & InPosition ) {
@@ -521,6 +548,12 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
         InRenderer->DrawAABB( box );
     }
     //GLogger.Printf( "leafs %d clusters %d\n", Leafs.Size(), clusters.Size() );
+#endif
+
+    // Draw light portals
+#if 0
+    InRenderer->DrawTriangleSoup( LightPortalVertexBuffer.ToPtr(), LightPortalVertexBuffer.Size(),
+                                  sizeof(Float3), LightPortalIndexBuffer.ToPtr(), LightPortalIndexBuffer.Size() );
 #endif
 
     if ( RVDrawLevelAreaBounds ) {

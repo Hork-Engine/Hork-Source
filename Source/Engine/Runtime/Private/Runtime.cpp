@@ -277,6 +277,9 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
 
     InitializeRenderer( desiredMode );
 
+    // Process initial events
+    GRuntime.PollEvents();
+
     Engine->Run( _EntryDecl );
 
     ARuntimeVariable::FreeVariables();
@@ -1965,7 +1968,7 @@ static void TestDisplays() {
 }
 
 void ARuntime::InitializeRenderer( SVideoMode const & _DesiredMode ) {
-    TestDisplays();
+    //TestDisplays();
 
     Core::Memcpy( &VideoMode, &_DesiredMode, sizeof( VideoMode ) );
 

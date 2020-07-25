@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Widgets/WViewport.h>
 #include <World/Public/Components/InputComponent.h>
+#include <World/Public/Actors/PlayerController.h>
 #include <Runtime/Public/Runtime.h>
 
 AN_CLASS_META( WViewport )

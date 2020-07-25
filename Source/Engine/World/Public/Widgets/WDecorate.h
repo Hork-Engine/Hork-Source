@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include <World/Public/Base/BaseObject.h>
 #include <World/Public/Canvas.h>
-#include <World/Public/Actors/PlayerController.h>
 
 #include "WCommon.h"
 

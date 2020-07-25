@@ -51,6 +51,7 @@ ARuntimeVariable RVRenderSurfaces( _CTS( "RenderSurfaces" ), _CTS( "1" ), VAR_CH
 ARuntimeVariable RVRenderMeshes( _CTS( "RenderMeshes" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVResolutionScaleX( _CTS( "ResolutionScaleX" ), _CTS( "1" ) );
 ARuntimeVariable RVResolutionScaleY( _CTS( "ResolutionScaleY" ), _CTS( "1" ) );
+ARuntimeVariable RVRenderLightPortals( _CTS( "RenderLightPortals" ), _CTS( "1" ) );
 
 ARenderFrontend & GRenderFrontend = ARenderFrontend::Inst();
 
@@ -73,7 +74,7 @@ void ARenderFrontend::Initialize() {
     VSD_Initialize();
 
     PhotometricProfiles = CreateInstanceOf< ATexture >();
-    PhotometricProfiles->Initialize1DArray( TEXTURE_PF_R8, 1, 256, 256 );
+    PhotometricProfiles->Initialize1DArray( TEXTURE_PF_R8_UNORM, 1, 256, 256 );
 }
 
 void ARenderFrontend::Deinitialize() {
@@ -164,6 +165,8 @@ void ARenderFrontend::RenderView( int _Index ) {
     AWorld * world = camera->GetWorld();
     SRenderView * view = &FrameData.RenderViews[_Index];
 
+    AN_ASSERT( RP ); // TODO: Don't allow <null> rendering parameters
+
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
     view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
     view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max( GRuntime.SysFrameDuration() * 0.000001f, 0.0001f );
@@ -179,6 +182,14 @@ void ARenderFrontend::RenderView( int _Index ) {
         view->ViewUpVec = camera->GetWorldUpVector();
         view->ViewDir = camera->GetWorldForwardVector();
         view->ViewMatrix = camera->GetViewMatrix();
+        view->ProjectionMatrix = camera->GetProjectionMatrix();
+
+        view->ViewMatrixP = RP->ViewMatrix;
+        view->ProjectionMatrixP = RP->ProjectionMatrix;
+
+        RP->ViewMatrix = view->ViewMatrix;
+        RP->ProjectionMatrix = view->ProjectionMatrix;
+
         view->ViewZNear = camera->GetZNear();
         view->ViewZFar = camera->GetZFar();
         view->ViewOrthoMins = camera->GetOrthoMins();
@@ -187,7 +198,7 @@ void ARenderFrontend::RenderView( int _Index ) {
         view->bPerspective = camera->IsPerspective();
         view->MaxVisibleDistance = camera->GetZFar(); // TODO: расчитать дальность до самой дальней точки на экране (по баундингам static&skinned mesh)
         view->NormalToViewMatrix = Float3x3( view->ViewMatrix );
-        view->ProjectionMatrix = camera->GetProjectionMatrix();
+
         view->InverseProjectionMatrix = camera->IsPerspective() ?
                     view->ProjectionMatrix.PerspectiveProjectionInverseFast()
                   : view->ProjectionMatrix.OrthoProjectionInverseFast();
@@ -195,55 +206,61 @@ void ARenderFrontend::RenderView( int _Index ) {
     }
 
     view->ViewProjection = view->ProjectionMatrix * view->ViewMatrix;
+    view->ViewProjectionP = view->ProjectionMatrixP * view->ViewMatrixP;
     view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed(); // TODO: Check with ViewInverseFast
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
-    
-    if ( RP )
-    {
-        view->BackgroundColor = RP->BackgroundColor.GetRGB();
-        view->bClearBackground = RP->bClearBackground;
-        view->bWireframe = RP->bWireframe;
-        if ( RP->bVignetteEnabled ) {
-            view->VignetteColorIntensity = RP->VignetteColorIntensity;
-            view->VignetteOuterRadiusSqr = RP->VignetteOuterRadiusSqr;
-            view->VignetteInnerRadiusSqr = RP->VignetteInnerRadiusSqr;
-        } else {
-            view->VignetteColorIntensity.W = 0;
-        }
-
-        if ( RP->IsColorGradingEnabled() ) {
-            view->ColorGradingLUT = RP->GetColorGradingLUT() ? RP->GetColorGradingLUT()->GetGPUResource() : NULL;
-            view->CurrentColorGradingLUT = RP->GetCurrentColorGradingLUT()->GetGPUResource();
-            view->ColorGradingAdaptationSpeed = RP->GetColorGradingAdaptationSpeed();
-
-            // Procedural color grading
-            view->ColorGradingGrain = RP->GetColorGradingGrain();
-            view->ColorGradingGamma = RP->GetColorGradingGamma();
-            view->ColorGradingLift = RP->GetColorGradingLift();
-            view->ColorGradingPresaturation = RP->GetColorGradingPresaturation();
-            view->ColorGradingTemperatureScale = RP->GetColorGradingTemperatureScale();
-            view->ColorGradingTemperatureStrength = RP->GetColorGradingTemperatureStrength();
-            view->ColorGradingBrightnessNormalization = RP->GetColorGradingBrightnessNormalization();
-
-        } else {
-            view->ColorGradingLUT = NULL;
-            view->CurrentColorGradingLUT = NULL;
-            view->ColorGradingAdaptationSpeed = 0;
-        }
-
-        view->CurrentExposure = RP->GetCurrentExposure()->GetGPUResource();
-    }
-    else
-    {
-        view->BackgroundColor = Float3( 1.0f );
-        view->bClearBackground = true;
-        view->bWireframe = false;
+    view->BackgroundColor = RP->BackgroundColor.GetRGB();
+    view->bClearBackground = RP->bClearBackground;
+    view->bWireframe = RP->bWireframe;
+    if ( RP->bVignetteEnabled ) {
+        view->VignetteColorIntensity = RP->VignetteColorIntensity;
+        view->VignetteOuterRadiusSqr = RP->VignetteOuterRadiusSqr;
+        view->VignetteInnerRadiusSqr = RP->VignetteInnerRadiusSqr;
+    } else {
         view->VignetteColorIntensity.W = 0;
+    }
+
+    if ( RP->IsColorGradingEnabled() ) {
+        view->ColorGradingLUT = RP->GetColorGradingLUT() ? RP->GetColorGradingLUT()->GetGPUResource() : NULL;
+        view->CurrentColorGradingLUT = RP->GetCurrentColorGradingLUT()->GetGPUResource();
+        view->ColorGradingAdaptationSpeed = RP->GetColorGradingAdaptationSpeed();
+
+        // Procedural color grading
+        view->ColorGradingGrain = RP->GetColorGradingGrain();
+        view->ColorGradingGamma = RP->GetColorGradingGamma();
+        view->ColorGradingLift = RP->GetColorGradingLift();
+        view->ColorGradingPresaturation = RP->GetColorGradingPresaturation();
+        view->ColorGradingTemperatureScale = RP->GetColorGradingTemperatureScale();
+        view->ColorGradingTemperatureStrength = RP->GetColorGradingTemperatureStrength();
+        view->ColorGradingBrightnessNormalization = RP->GetColorGradingBrightnessNormalization();
+
+    } else {
         view->ColorGradingLUT = NULL;
         view->CurrentColorGradingLUT = NULL;
         view->ColorGradingAdaptationSpeed = 0;
-        view->CurrentExposure = NULL;
     }
+
+    view->CurrentExposure = RP->GetCurrentExposure()->GetGPUResource();
+
+    // FIXME: Do not initialize light&depth textures if screen space reflections disabled
+    ATexture * lightTexture = RP->GetLightTexture();
+    if ( lightTexture->GetDimensionX() != FrameData.AllocSurfaceWidth
+         || lightTexture->GetDimensionY() != FrameData.AllocSurfaceHeight )
+    {
+        lightTexture->Initialize2D( TEXTURE_PF_R11F_G11F_B10F, 1, FrameData.AllocSurfaceWidth, FrameData.AllocSurfaceHeight );
+    }
+
+    ATexture * depthTexture = RP->GetDepthTexture();
+    if ( depthTexture->GetDimensionX() != FrameData.AllocSurfaceWidth
+         || depthTexture->GetDimensionY() != FrameData.AllocSurfaceHeight )
+    {
+        depthTexture->Initialize2D( TEXTURE_PF_R32F, 1, FrameData.AllocSurfaceWidth, FrameData.AllocSurfaceHeight );
+    }
+
+    view->LightTexture = lightTexture->GetGPUResource();
+    view->DepthTexture = depthTexture->GetGPUResource();
+
+    view->VTFeedback = &RP->VTFeedback;
 
     view->PhotometricProfiles = PhotometricProfiles->GetGPUResource();
 
@@ -253,6 +270,8 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->InstanceCount = 0;
     view->FirstTranslucentInstance = FrameData.TranslucentInstances.Size();
     view->TranslucentInstanceCount = 0;
+    view->FirstLightPortal = FrameData.LightPortals.Size();
+    view->LightPortalsCount = 0;
     view->FirstShadowInstance = FrameData.ShadowInstances.Size();
     view->ShadowInstanceCount = 0;
     view->FirstDirectionalLight = FrameData.DirectionalLights.Size();
@@ -723,7 +742,11 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
 
     Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
 
-    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
+    // TODO: optimize: parallel, sse, check if transformable
+    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform;
+    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
+
+    InComponent->RenderTransformMatrix = componentWorldTransform;
 
     ALevel * level = InComponent->GetLevel();
 
@@ -784,8 +807,10 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
         instance->StartIndexLocation = subpart->GetFirstIndex();
         instance->BaseVertexLocation = subpart->GetBaseVertex() + InComponent->SubpartBaseVertexOffset;
         instance->SkeletonOffset = 0;
+        instance->SkeletonOffsetMB = 0;
         instance->SkeletonSize = 0;
         instance->Matrix = instanceMatrix;
+        instance->MatrixP = instanceMatrixP;
 
         if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
             instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
@@ -813,13 +838,18 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
     InComponent->PreRenderUpdate( &RenderDef );
 
     size_t skeletonOffset = 0;
+    size_t skeletonOffsetMB = 0;
     size_t skeletonSize = 0;
 
-    InComponent->GetSkeletonHandle( skeletonOffset, skeletonSize );
+    InComponent->GetSkeletonHandle( skeletonOffset, skeletonOffsetMB, skeletonSize );
 
     Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
 
-    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
+    // TODO: optimize: parallel, sse, check if transformable
+    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform;
+    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
+
+    InComponent->RenderTransformMatrix = componentWorldTransform;
 
     AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
 
@@ -865,8 +895,10 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
         instance->StartIndexLocation = subpart->GetFirstIndex();
         instance->BaseVertexLocation = subpart->GetBaseVertex();
         instance->SkeletonOffset = skeletonOffset;
+        instance->SkeletonOffsetMB = skeletonOffsetMB;
         instance->SkeletonSize = skeletonSize;
         instance->Matrix = instanceMatrix;
+        instance->MatrixP = instanceMatrixP;
 
         if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
             instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
@@ -907,7 +939,11 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
 
     Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
 
-    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform; // TODO: optimize: parallel, sse, check if transformable
+    // TODO: optimize: parallel, sse, check if transformable
+    Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform;
+    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
+
+    InComponent->RenderTransformMatrix = componentWorldTransform;
 
     //ALevel * level = InComponent->GetLevel();
 
@@ -970,8 +1006,10 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
         instance->StartIndexLocation = 0;//subpart->GetFirstIndex();
         instance->BaseVertexLocation = 0;//subpart->GetBaseVertex() + InComponent->SubpartBaseVertexOffset;
         instance->SkeletonOffset = 0;
+        instance->SkeletonOffsetMB = 0;
         instance->SkeletonSize = 0;
         instance->Matrix = instanceMatrix;
+        instance->MatrixP = instanceMatrixP;
 
         if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
             instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
@@ -1067,9 +1105,10 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * I
     AIndexedMesh * mesh = InComponent->GetMesh();
 
     size_t skeletonOffset = 0;
+    size_t skeletonOffsetMB = 0;
     size_t skeletonSize = 0;
 
-    InComponent->GetSkeletonHandle( skeletonOffset, skeletonSize );
+    InComponent->GetSkeletonHandle( skeletonOffset, skeletonOffsetMB, skeletonSize );
 
     Float3x4 const & instanceMatrix = InComponent->GetWorldTransformMatrix();
 
@@ -1287,6 +1326,43 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
 
         RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
     }
+
+    if ( RVRenderLightPortals ) {
+        // Add light portals
+        for ( ALevel * level : world->GetArrayOfLevels() ) {
+
+            TPodArray< SLightPortalDef > const & lightPortals = level->GetLightPortals();
+
+            if ( lightPortals.IsEmpty() ) {
+                continue;
+            }
+
+            for ( SLightPortalDef const & lightPortal : lightPortals ) {
+
+                // TODO: Perform culling for each light portal
+                // NOTE: We can precompute visible geometry for static light and meshes from every light portal
+
+                SLightPortalRenderInstance * instance = (SLightPortalRenderInstance *)GRuntime.AllocFrameMem( sizeof( SLightPortalRenderInstance ) );
+                if ( !instance ) {
+                    break;
+                }
+
+                FrameData.LightPortals.Append( instance );
+
+                instance->VertexBuffer = level->GetLightPortalsVB();
+                instance->VertexBufferOffset = 0;
+                instance->IndexBuffer = level->GetLightPortalsIB();
+                instance->IndexBufferOffset = 0;
+                instance->IndexCount = lightPortal.NumIndices;
+                instance->StartIndexLocation = lightPortal.FirstIndex;
+                instance->BaseVertexLocation = 0;
+
+                RenderDef.View->LightPortalsCount++;
+
+                //RenderDef.LightPortalPolyCount += instance->IndexCount / 3;
+            }
+        }
+    }
 }
 
 AN_FORCEINLINE bool CanMergeSurfaces( SSurfaceDef const * InFirst, SSurfaceDef const * InSecond ) {
@@ -1429,8 +1505,10 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     instance->StartIndexLocation = _FirstIndex;
     instance->BaseVertexLocation = 0;
     instance->SkeletonOffset = 0;
+    instance->SkeletonOffsetMB = 0;
     instance->SkeletonSize = 0;
     instance->Matrix = RenderDef.View->ViewProjection;
+    instance->MatrixP = RenderDef.View->ViewProjectionP;
 
     if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
         instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix;

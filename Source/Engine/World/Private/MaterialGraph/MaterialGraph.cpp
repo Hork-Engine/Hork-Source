@@ -537,12 +537,12 @@ void MGVertexStage::Compute( AMaterialBuildContext & _Context ) {
 
     bHasVertexDeform = false;
 
-    AString TransformMatrix;
-    if ( _Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
-        TransformMatrix = "OrthoProjection";
-    } else {
-        TransformMatrix = "TransformMatrix";
-    }
+    //AString TransformMatrix;
+    //if ( _Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
+    //    TransformMatrix = "OrthoProjection";
+    //} else {
+    //    TransformMatrix = "TransformMatrix";
+    //}
 
     if ( positionCon && Position->ConnectedBlock()->Build( _Context ) ) {
 
@@ -552,16 +552,16 @@ void MGVertexStage::Compute( AMaterialBuildContext & _Context ) {
 
         switch( positionCon->Type ) {
         case AT_Float1:
-            _Context.SourceCode += "gl_Position = " + TransformMatrix + " * vec4(" + positionCon->Expression + ", 0.0, 0.0, 1.0 );\n";
+            _Context.SourceCode += "vec4 VertexPos = vec4(" + positionCon->Expression + ", 0.0, 0.0, 1.0 );\n";
             break;
         case AT_Float2:
-            _Context.SourceCode += "gl_Position = " + TransformMatrix + " * vec4(" + positionCon->Expression + ", 0.0, 1.0 );\n";
+            _Context.SourceCode += "vec4 VertexPos = vec4(" + positionCon->Expression + ", 0.0, 1.0 );\n";
             break;
         case AT_Float3:
-            _Context.SourceCode += "gl_Position = " + TransformMatrix + " * vec4(" + positionCon->Expression + ", 1.0 );\n";
+            _Context.SourceCode += "vec4 VertexPos = vec4(" + positionCon->Expression + ", 1.0 );\n";
             break;
         case AT_Float4:
-            _Context.SourceCode += "gl_Position = " + TransformMatrix + " * (" + positionCon->Expression + ");\n";
+            _Context.SourceCode += "vec4 VertexPos = " + positionCon->Expression + ";\n";
             break;
         default:
             bValid = false;
@@ -575,8 +575,10 @@ void MGVertexStage::Compute( AMaterialBuildContext & _Context ) {
     if ( !bValid ) {
         //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
 
-        _Context.SourceCode += "gl_Position = " + TransformMatrix + " * vec4( GetVertexPosition(), 1.0 );\n";
+        _Context.SourceCode += "vec4 VertexPos = vec4( GetVertexPosition(), 1.0 );\n";
     }
+
+    //_Context.SourceCode += "gl_Position = " + TransformMatrix + " * VertexPos;\n";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1882,13 +1884,10 @@ static constexpr const char * TextureTypeToShaderSampler[][2] = {
     { "sampler1D", "float" },
     { "sampler1DArray", "vec2" },
     { "sampler2D", "vec2" },
-    //"sampler2DMS", "vec2" },
     { "sampler2DArray", "vec3" },
-    //"sampler2DMSArray", "vec3" },
     { "sampler3D", "vec3" },
     { "samplerCube", "vec3" },
-    { "samplerCubeArray", "vec4" },
-    { "sampler2DRect", "vec2" }
+    { "samplerCubeArray", "vec4" }
 };
 
 static const char * GetShaderType( ETextureType _Type ) {
@@ -2034,9 +2033,6 @@ void MGSampler::Compute( AMaterialBuildContext & _Context ) {
             case TEXTURE_CUBEMAP_ARRAY:
                 sampleType = AT_Float3;
                 break;
-            case TEXTURE_2DNPOT:
-                sampleType = AT_Float2;
-                break;
             default:
                 AN_ASSERT(0);
             };
@@ -2152,9 +2148,6 @@ void MGNormalSampler::Compute( AMaterialBuildContext & _Context ) {
             case TEXTURE_CUBEMAP_ARRAY:
                 sampleType = AT_Float3;
                 break;
-            case TEXTURE_2DNPOT:
-                sampleType = AT_Float2;
-                break;
             default:
                 AN_ASSERT(0);
             };
@@ -2187,6 +2180,78 @@ void MGNormalSampler::Compute( AMaterialBuildContext & _Context ) {
         Y->Expression = "0.0";
         Z->Expression = "0.0";
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_BEGIN_CLASS_META( MGSamplerVT )
+AN_ATTRIBUTE_( bSwappedToBGR, AF_DEFAULT )
+AN_END_CLASS_META()
+
+MGSamplerVT::MGSamplerVT() : Super( "Virtual Texture Sampler" ) {
+    Stages = FRAGMENT_STAGE_BIT;
+
+    TextureLayer = 0;
+    R = AddOutput( "R", AT_Float1 );
+    G = AddOutput( "G", AT_Float1 );
+    B = AddOutput( "B", AT_Float1 );
+    A = AddOutput( "A", AT_Float1 );
+    RGBA = AddOutput( "RGBA", AT_Float4 );
+    RGB = AddOutput( "RGB", AT_Float3 );
+}
+
+void MGSamplerVT::Compute( AMaterialBuildContext & _Context ) {
+    const char * swizzleStr = bSwappedToBGR ? ".bgra" : "";
+    const char * sampleFunc = ChooseSampleFunction( ColorSpace );
+
+    RGBA->Expression = _Context.GenerateVariableName();
+
+    _Context.SourceCode +=
+        "const vec4 "
+        + RGBA->Expression
+        + " = "
+        + sampleFunc
+        + "( vt_PhysCache" + Math::ToString( TextureLayer ) + ", InPhysicalUV )"
+        + swizzleStr
+        + ";\n";
+
+    R->Expression = RGBA->Expression + ".r";
+    G->Expression = RGBA->Expression + ".g";
+    B->Expression = RGBA->Expression + ".b";
+    A->Expression = RGBA->Expression + ".a";
+    RGB->Expression = RGBA->Expression + ".rgb";
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_BEGIN_CLASS_META( MGNormalSamplerVT )
+AN_END_CLASS_META()
+
+MGNormalSamplerVT::MGNormalSamplerVT() : Super( "Virtual Texture Normal Sampler" ) {
+    Stages = FRAGMENT_STAGE_BIT;
+
+    TextureLayer = 0;
+    X = AddOutput( "X", AT_Float1 );
+    Y = AddOutput( "Y", AT_Float1 );
+    Z = AddOutput( "Z", AT_Float1 );
+    XYZ = AddOutput( "XYZ", AT_Float3 );
+}
+
+void MGNormalSamplerVT::Compute( AMaterialBuildContext & _Context ) {
+    const char * sampleFunc = ChooseSampleFunction( Compression );
+
+    XYZ->Expression = _Context.GenerateVariableName();
+
+    _Context.SourceCode +=
+        "const vec3 "
+        + XYZ->Expression
+        + " = "
+        + sampleFunc
+        + "( vt_PhysCache" + Math::ToString( TextureLayer ) + ", InPhysicalUV );\n";
+
+    X->Expression = XYZ->Expression + ".x";
+    Y->Expression = XYZ->Expression + ".y";
+    Z->Expression = XYZ->Expression + ".z";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2320,10 +2385,10 @@ MGInTimer::MGInTimer() : Super( "InTimer" ) {
     Stages = ANY_STAGE_BIT;
 
     MGNodeOutput * ValGameRunningTimeSeconds = AddOutput( "GameRunningTimeSeconds", AT_Float1 );
-    ValGameRunningTimeSeconds->Expression = "Timers.x";
+    ValGameRunningTimeSeconds->Expression = "GameRunningTimeSeconds";
 
     MGNodeOutput * ValGameplayTimeSeconds = AddOutput( "GameplayTimeSeconds", AT_Float1 );
-    ValGameplayTimeSeconds->Expression = "Timers.y";
+    ValGameplayTimeSeconds->Expression = "GameplayTimeSeconds";
 }
 
 void MGInTimer::Compute( AMaterialBuildContext & _Context ) {
@@ -2727,6 +2792,19 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         predefines += "#define TRANSLUCENT\n";
     }
 
+    if ( Graph->bNoLightmap ) {
+        predefines += "#define NO_LIGHTMAP\n";
+    }
+
+    if ( Graph->bAllowScreenSpaceReflections ) {
+        predefines += "#define ALLOW_SSLR\n";
+    }
+
+    if ( Graph->bUseVirtualTexture ) {
+        predefines += "#define USE_VIRTUAL_TEXTURE\n";
+        predefines += "#define VT_LAYERS 1\n"; // TODO: Add based on material
+    }
+
     if ( !Graph->bDepthTest /*|| Graph->bTranslucent */) {
         bNoCastShadow = true;
     }
@@ -2818,7 +2896,7 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         VertexStage->Build( context );
 
         bHasVertexDeform = VertexStage->HasVertexDeform();
-
+        
         bColorPassTextureFetch = context.bHasTextures;
 
         maxTextureSlot = Math::Max( maxTextureSlot, context.MaxTextureSlot );
@@ -2826,17 +2904,18 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
 
         int locationIndex = VertexStage->NumNextStageVariables();
 
-        uint32_t bakedLightLocation = locationIndex++;
-        uint32_t tangentLocation    = locationIndex++;
-        uint32_t binormalLocation   = locationIndex++;
-        uint32_t normalLocation     = locationIndex++;
-        uint32_t positionLocation   = locationIndex++;
+        predefines += "#define BAKED_LIGHT_LOCATION " + Math::ToString(locationIndex++) + "\n";
+        predefines += "#define TANGENT_LOCATION "     + Math::ToString(locationIndex++)    + "\n";
+        predefines += "#define BINORMAL_LOCATION "    + Math::ToString(locationIndex++)   + "\n";
+        predefines += "#define NORMAL_LOCATION "      + Math::ToString(locationIndex++)     + "\n";
+        predefines += "#define POSITION_LOCATION "    + Math::ToString(locationIndex++)   + "\n";
 
-        predefines += "#define BAKED_LIGHT_LOCATION " + Math::ToString(bakedLightLocation) + "\n";
-        predefines += "#define TANGENT_LOCATION "     + Math::ToString(tangentLocation)    + "\n";
-        predefines += "#define BINORMAL_LOCATION "    + Math::ToString(binormalLocation)   + "\n";
-        predefines += "#define NORMAL_LOCATION "      + Math::ToString(normalLocation)     + "\n";
-        predefines += "#define POSITION_LOCATION "    + Math::ToString(positionLocation)   + "\n";
+        predefines += "#define VERTEX_POSITION_CURRENT " + Math::ToString( locationIndex++ )   + "\n";
+        predefines += "#define VERTEX_POSITION_PREVIOUS " + Math::ToString( locationIndex++ )   + "\n";
+
+        if ( Graph->bUseVirtualTexture ) {
+            predefines += "#define VT_TEXCOORD_LOCATION "    + Math::ToString( locationIndex++ )   + "\n";
+        }
 
         Def.AddShader( "$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", VertexStage->NSV_OutputSection() );
         Def.AddShader( "$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
@@ -2951,7 +3030,7 @@ MGMaterialGraph::~MGMaterialGraph() {
 }
 
 void MGMaterialGraph::RegisterTextureSlot( MGTextureSlot * _Slot ) {
-    if ( TextureSlots.Size() >= MAX_MATERIAL_TEXTURES ) { // -1 for slot reserved for lightmap
+    if ( TextureSlots.Size() >= MAX_MATERIAL_TEXTURES ) {
         GLogger.Printf( "AMaterialBuilder::RegisterTextureSlot: MAX_MATERIAL_TEXTURES hit\n");
         return;
     }

@@ -177,6 +177,12 @@ struct TStaticResourceFinder {
         Object = GetOrCreateResource< T >( ResourceName );
     }
 
+    TStaticResourceFinder( const char * _Alias )
+        : ResourceName( _Alias )
+    {
+        Object = GetOrCreateResource< T >( ResourceName );
+    }
+
     T * GetObject() {
         if ( Object.IsExpired() ) {
             Object = GetOrCreateResource< T >( ResourceName );

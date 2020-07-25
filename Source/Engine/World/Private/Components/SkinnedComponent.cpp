@@ -461,8 +461,9 @@ void ASkinnedComponent::UpdateBounds() {
 
 static Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS]; // TODO: thread_local for multithreaded update
 
-void ASkinnedComponent::GetSkeletonHandle( size_t & _SkeletonOffset, size_t & _SkeletonSize ) {
+void ASkinnedComponent::GetSkeletonHandle( size_t & _SkeletonOffset, size_t & _SkeletonOffsetMB, size_t & _SkeletonSize ) {
     _SkeletonOffset = SkeletonOffset;
+    _SkeletonOffsetMB = SkeletonOffsetMB;
     _SkeletonSize = SkeletonSize;
 }
 
@@ -472,18 +473,21 @@ void ASkinnedComponent::OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {
     ASkin const & skin = GetMesh()->GetSkin();
     TPodArray< SJoint > const & joints = Skeleton->GetJoints();
 
-    if ( !joints.IsEmpty() ) {
-        for ( int j = 0 ; j < skin.JointIndices.Size() ; j++ ) {
-            int jointIndex = skin.JointIndices[j];
-            JointsBufferData[j] = AbsoluteTransforms[jointIndex + 1] * skin.OffsetMatrices[j];
-        }
-    }
-
     SkeletonSize = joints.Size() * sizeof( Float3x4 );
     if ( SkeletonSize > 0 ) {
-        SkeletonOffset = GStreamedMemoryGPU.AllocateJoint( SkeletonSize, JointsBufferData );
+        // Write joints from previous frame
+        SkeletonOffsetMB = GStreamedMemoryGPU.AllocateJoint( SkeletonSize, JointsBufferData );
+
+        // Write joints from current frame
+        SkeletonOffset = GStreamedMemoryGPU.AllocateJoint( SkeletonSize, nullptr );
+        Float3x4 * data = (Float3x4 * )GStreamedMemoryGPU.Map( SkeletonOffset );
+        for ( int j = 0 ; j < skin.JointIndices.Size() ; j++ ) {
+            int jointIndex = skin.JointIndices[j];
+            data[j] = JointsBufferData[j] = AbsoluteTransforms[jointIndex + 1] * skin.OffsetMatrices[j];
+        }
+
     } else {
-        SkeletonOffset = 0;
+        SkeletonOffset = SkeletonOffsetMB = 0;
     }
 }
 

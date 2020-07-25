@@ -34,9 +34,10 @@ SOFTWARE.
 #include "HUD.h"
 #include <World/Public/CommandContext.h>
 #include <World/Public/Audio/AudioSystem.h>
+#include <World/Public/Widgets/WViewport.h>
+#include <Renderer/VT/VirtualTextureFeedback.h> // TODO: Remove this!
 
 class AInputMappings;
-class WViewport;
 
 class ANGIE_API ARenderingParameters final : public ABaseObject {
     AN_CLASS( ARenderingParameters, ABaseObject )
@@ -131,6 +132,16 @@ public:
 //    };
 //   void SetCustomDepthStencil( ECustomDepthStencilBuffer _CustomDepthStencil );
 //   ECustomDepthStencilBuffer GetCustomDepthStencil() const { return CustomDepthStencil; }
+
+    // Internal (experemental)
+    Float4x4 ProjectionMatrix; // last rendered projection
+    Float4x4 ViewMatrix; // last rendered view
+
+    AVirtualTextureFeedback VTFeedback;
+
+    ATexture * GetLightTexture() { return LightTexture; }
+    ATexture * GetDepthTexture() { return DepthTexture; }
+
 private:
     ARenderingParameters();
 
@@ -139,6 +150,8 @@ private:
     TRef< ATexture > ColorGradingLUT;
     TRef< ATexture > CurrentColorGradingLUT;
     TRef< ATexture > CurrentExposure;
+    TRef< ATexture > LightTexture;
+    TRef< ATexture > DepthTexture;
     Float3 ColorGradingGrain;
     Float3 ColorGradingGamma;
     Float3 ColorGradingLift;

@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <World/Public/Base/ResourceManager.h>
 #include "Texture.h"
+#include "VirtualTextureResource.h"
 
 #define MAX_MATERIAL_UNIFORMS           16
 #define MAX_MATERIAL_UNIFORM_VECTORS    (16>>2)
@@ -123,6 +124,8 @@ public:
         SetTexture( _TextureSlot, Resource.GetObject() );
     }
 
+    void SetVirtualTexture( AVirtualTextureResource * VirtualTex );
+
     /** Internal. Used by render frontend */
     SMaterialFrameData * PreRenderUpdate( int _FrameNumber );
 
@@ -142,5 +145,6 @@ private:
     TRef< AMaterial > Material;
     SMaterialFrameData * FrameData;
     TRef< ATexture > Textures[ MAX_MATERIAL_TEXTURES ];
+    TRef< AVirtualTextureResource > VirtualTexture;
     int VisFrame;
 };

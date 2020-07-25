@@ -149,6 +149,24 @@ source_group( "Core\\Private\\fastlz" FILES ${CorePrivateFastLZ} )
 source_group( "Core\\Private\\miniz" FILES ${CorePrivateMiniZ} )
 
 #---------------------------------------------------------------------
+# Render core module
+file( GLOB RenderCore RenderCore/*.h RenderCore/*.cpp )
+file( GLOB RenderCoreOpenGL45 RenderCore/OpenGL45/*.h RenderCore/OpenGL45/*.cpp )
+file( GLOB RenderCoreOpenGL45GL RenderCore/OpenGL45/GL/*.h RenderCore/OpenGL45/GL/*.c )
+file( GLOB RenderCoreFrameGraph RenderCore/FrameGraph/*.h RenderCore/FrameGraph/*.cpp )
+
+#file( GLOB RenderCorePublic RenderCore/Public/*.h RenderCore/Public/*.cpp )
+#file( GLOB RenderCorePrivate RenderCore/Private/*.h RenderCore/Private/*.cpp )
+
+source_group( "RenderCore" FILES ${RenderCore} )
+source_group( "RenderCore\\OpenGL45" FILES ${RenderCoreOpenGL45} )
+source_group( "RenderCore\\OpenGL45\\GL" FILES ${RenderCoreOpenGL45GL} )
+source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
+
+#source_group( "RenderCore\\Public" FILES ${RenderCorePublic} )
+#source_group( "RenderCore\\Private" FILES ${RenderCorePrivate} )
+
+#---------------------------------------------------------------------
 # Runtime module
 file( GLOB RuntimePublic Runtime/Public/*.h Runtime/Public/*.cpp )
 file( GLOB RuntimePrivate Runtime/Private/*.h Runtime/Private/*.cpp )
@@ -157,26 +175,12 @@ source_group( "Runtime\\Public" FILES ${RuntimePublic} )
 source_group( "Runtime\\Private" FILES ${RuntimePrivate} )
 
 #---------------------------------------------------------------------
-# OpenGL45 backend module
-file( GLOB RendererOpenGL45 Renderer/OpenGL4.5/*.h Renderer/OpenGL4.5/*.cpp )
-file( GLOB RendererOpenGL45GHI Renderer/OpenGL4.5/GHI/*.h Renderer/OpenGL4.5/GHI/*.cpp )
-file( GLOB RendererOpenGL45GHIGL Renderer/OpenGL4.5/GHI/GL/*.h Renderer/OpenGL4.5/GHI/GL/*.c )
+# Renderer module
+file( GLOB Renderer Renderer/*.h Renderer/*.cpp )
+file( GLOB RendererVT Renderer/VT/*.h Renderer/VT/*.cpp )
 
-source_group( "Renderer\\OpenGL4.5" FILES ${RendererOpenGL45} )
-source_group( "Renderer\\OpenGL4.5\\GHI" FILES ${RendererOpenGL45GHI} )
-source_group( "Renderer\\OpenGL4.5\\GHI\\GL" FILES ${RendererOpenGL45GHIGL} )
-
-#---------------------------------------------------------------------
-# Vulkan backend module
-file( GLOB RendererVulkan Renderer/Vulkan/*.h Renderer/Vulkan/*.cpp )
-
-source_group( "Renderer\\Vulkan" FILES ${RendererVulkan} )
-
-#---------------------------------------------------------------------
-# Null-render backend module
-file( GLOB RendererNull Renderer/Null/*.h Renderer/Null/*.cpp )
-
-source_group( "Renderer\\Null" FILES ${RendererNull} )
+source_group( "Renderer" FILES ${Renderer} )
+source_group( "Renderer\\VT" FILES ${RendererVT} )
 
 #---------------------------------------------------------------------
 # Imgui third party library
@@ -270,14 +274,16 @@ ${CorePrivateSTB}
 ${CorePrivateFastLZ}
 ${CorePrivateMiniZ}
 
+${RenderCore}
+${RenderCoreOpenGL45}
+${RenderCoreOpenGL45GL}
+${RenderCoreFrameGraph}
+
 ${RuntimePublic}
 ${RuntimePrivate}
 
-${RendererOpenGL45}
-${RendererOpenGL45GHI}
-${RendererOpenGL45GHIGL}
-#${RendererVulkan}
-${RendererNull}
+${Renderer}
+${RendererVT}
 
 ${Imgui}
 

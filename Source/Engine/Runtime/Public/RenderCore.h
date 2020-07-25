@@ -33,6 +33,10 @@ SOFTWARE.
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/PodArray.h>
 #include <Core/Public/Image.h>
+#include <Core/Public/Ref.h>
+
+#include <RenderCore/Texture.h>
+#include <RenderCore/Buffer.h>
 
 //
 // Common constants
@@ -197,10 +201,25 @@ AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const &
     const byte * c1 = reinterpret_cast< const byte * >( &_Vertex2.VertexLight );
     byte * r = reinterpret_cast< byte * >( &Result.VertexLight );
 
+#if 0
     r[0] = ( c0[0] + c1[0] ) >> 1;
     r[1] = ( c0[1] + c1[1] ) >> 1;
     r[2] = ( c0[2] + c1[2] ) >> 1;
     r[3] = ( c0[3] + c1[3] ) >> 1;
+#else
+    float linearColor1[3];
+    float linearColor2[3];
+    float resultColor[3];
+
+    DecodeRGBE( linearColor1, c0 );
+    DecodeRGBE( linearColor2, c1 );
+
+    resultColor[0] = Math::Lerp( linearColor1[0], linearColor2[0], _Value );
+    resultColor[1] = Math::Lerp( linearColor1[1], linearColor2[1], _Value );
+    resultColor[2] = Math::Lerp( linearColor1[2], linearColor2[2], _Value );
+
+    EncodeRGBE( r, resultColor );
+#endif
 
     return Result;
 }
@@ -262,7 +281,6 @@ enum ETextureType {
     TEXTURE_3D,
     TEXTURE_CUBEMAP,
     TEXTURE_CUBEMAP_ARRAY,
-    TEXTURE_2DNPOT,
     TEXTURE_TYPE_MAX
 };
 
@@ -297,79 +315,106 @@ struct STextureSampler {
 
 /**
  Texture pixel format
- Bits: 7 - signed uncompressed, 6 - compressed
+ Bits:
+    1xxxxxxx - signed uncompressed,
+    00xxxxxx - unsigned uncompressed,
+    01xxxxxx - compressed,
+    11xxxxxx - non-trivial format
  For uncompressed formats:
-    5 - float point,
+    7 - signed
+    6 - always zero
+    5 - float point
     4 - srgb
     3+2 - num components (0 - 1, 1 - 2, 2 - 3, 3 - 4)
     1+0 - bytes per channel (0 - 1, 1 - 2, 2 - 4)
- For compressed formats
-    7,5 - unused
+ For compressed formats 
+    7 - always zero
+    6 - always one
+    5 - signed
     4 - srgb
     3+2 - num components (0 - 1, 1 - 2, 2 - 3, 3 - 4)
+ For non-trivial formats
+    Just enum 192 + 0..63
 */
 enum ETexturePixelFormat : uint8_t
 {
-    TEXTURE_PF_R8_SIGNED  = ( 1<<7 ) | ( 0 << 2 ) | ( 0 ),
-    TEXTURE_PF_RG8_SIGNED = ( 1<<7 ) | ( 1 << 2 ) | ( 0 ),
-    TEXTURE_PF_BGR8_SIGNED = ( 1<<7 ) | ( 2 << 2 ) | ( 0 ),
-    TEXTURE_PF_BGRA8_SIGNED = ( 1<<7 ) | ( 3 << 2 ) | ( 0 ),
+    TEXTURE_PF_R8_SNORM  = ( 1<<7 ) | ( 0<<2 ) | ( 0 ),
+    TEXTURE_PF_RG8_SNORM = ( 1<<7 ) | ( 1<<2 ) | ( 0 ),
+    TEXTURE_PF_BGR8_SNORM = ( 1<<7 ) | ( 2<<2 ) | ( 0 ),
+    TEXTURE_PF_BGRA8_SNORM = ( 1<<7 ) | ( 3<<2 ) | ( 0 ),
 
-    TEXTURE_PF_R8 = ( 0 << 2 ) | ( 0 ),
-    TEXTURE_PF_RG8 = ( 1 << 2 ) | ( 0 ),
-    TEXTURE_PF_BGR8 = ( 2 << 2 ) | ( 0 ),
-    TEXTURE_PF_BGRA8 = ( 3 << 2 ) | ( 0 ),
+    TEXTURE_PF_R8_UNORM = ( 0<<2 ) | ( 0 ),
+    TEXTURE_PF_RG8_UNORM = ( 1<<2 ) | ( 0 ),
+    TEXTURE_PF_BGR8_UNORM = ( 2<<2 ) | ( 0 ),
+    TEXTURE_PF_BGRA8_UNORM = ( 3<<2 ) | ( 0 ),
 
-    TEXTURE_PF_BGR8_SRGB = ( 1 << 4 ) | ( 2 << 2 ) | ( 0 ),
-    TEXTURE_PF_BGRA8_SRGB = ( 1 << 4 ) | ( 3 << 2 ) | ( 0 ),
+    TEXTURE_PF_BGR8_SRGB = ( 1<<4 ) | ( 2<<2 ) | ( 0 ),
+    TEXTURE_PF_BGRA8_SRGB = ( 1<<4 ) | ( 3<<2 ) | ( 0 ),
 
-    TEXTURE_PF_R16_SIGNED = ( 1<<7 ) | ( 0 << 2 ) | ( 1 ),
-    TEXTURE_PF_RG16_SIGNED = ( 1<<7 ) | ( 1 << 2 ) | ( 1 ),
-    TEXTURE_PF_BGR16_SIGNED = ( 1<<7 ) | ( 2 << 2 ) | ( 1 ),
-    TEXTURE_PF_BGRA16_SIGNED = ( 1<<7 ) | ( 3 << 2 ) | ( 1 ),
+    TEXTURE_PF_R16I = ( 1<<7 ) | ( 0<<2 ) | ( 1 ),
+    TEXTURE_PF_RG16I = ( 1<<7 ) | ( 1<<2 ) | ( 1 ),
+    TEXTURE_PF_BGR16I = ( 1<<7 ) | ( 2<<2 ) | ( 1 ),
+    TEXTURE_PF_BGRA16I = ( 1<<7 ) | ( 3<<2 ) | ( 1 ),
 
-    TEXTURE_PF_R16 = ( 0 << 2 ) | ( 1 ),
-    TEXTURE_PF_RG16 = ( 1 << 2 ) | ( 1 ),
-    TEXTURE_PF_BGR16 = ( 2 << 2 ) | ( 1 ),
-    TEXTURE_PF_BGRA16 = ( 3 << 2 ) | ( 1 ),
+    TEXTURE_PF_R16UI = ( 0<<2 ) | ( 1 ),
+    TEXTURE_PF_RG16UI = ( 1<<2 ) | ( 1 ),
+    TEXTURE_PF_BGR16UI = ( 2<<2 ) | ( 1 ),
+    TEXTURE_PF_BGRA16UI = ( 3<<2 ) | ( 1 ),
 
-    TEXTURE_PF_R32_SIGNED = ( 1<<7 ) | ( 0 << 2 ) | ( 2 ),
-    TEXTURE_PF_RG32_SIGNED = ( 1<<7 ) | ( 1 << 2 ) | ( 2 ),
-    TEXTURE_PF_BGR32_SIGNED = ( 1<<7 ) | ( 2 << 2 ) | ( 2 ),
-    TEXTURE_PF_BGRA32_SIGNED = ( 1<<7 ) | ( 3 << 2 ) | ( 2 ),
+    TEXTURE_PF_R32I = ( 1<<7 ) | ( 0<<2 ) | ( 2 ),
+    TEXTURE_PF_RG32I = ( 1<<7 ) | ( 1<<2 ) | ( 2 ),
+    TEXTURE_PF_BGR32I = ( 1<<7 ) | ( 2<<2 ) | ( 2 ),
+    TEXTURE_PF_BGRA32I = ( 1<<7 ) | ( 3<<2 ) | ( 2 ),
 
-    TEXTURE_PF_R32 = ( 0 << 2 ) | ( 2 ),
-    TEXTURE_PF_RG32 = ( 1 << 2 ) | ( 2 ),
-    TEXTURE_PF_BGR32 = ( 2 << 2 ) | ( 2 ),
-    TEXTURE_PF_BGRA32 = ( 3 << 2 ) | ( 2 ),
+    TEXTURE_PF_R32UI = ( 0<<2 ) | ( 2 ),
+    TEXTURE_PF_RG32UI = ( 1<<2 ) | ( 2 ),
+    TEXTURE_PF_BGR32UI = ( 2<<2 ) | ( 2 ),
+    TEXTURE_PF_BGRA32UI = ( 3<<2 ) | ( 2 ),
 
-    TEXTURE_PF_R16F = ( 1<<7 ) | ( 1<<5 ) | ( 0 << 2 ) | ( 1 ),
-    TEXTURE_PF_RG16F = ( 1<<7 ) | ( 1<<5 ) | ( 1 << 2 ) | ( 1 ),
-    TEXTURE_PF_BGR16F = ( 1<<7 ) | ( 1<<5 ) | ( 2 << 2 ) | ( 1 ),
-    TEXTURE_PF_BGRA16F = ( 1<<7 ) | ( 1<<5 ) | ( 3 << 2 ) | ( 1 ),
+    TEXTURE_PF_R16F = ( 1<<7 ) | ( 1<<5 ) | ( 0<<2 ) | ( 1 ),
+    TEXTURE_PF_RG16F = ( 1<<7 ) | ( 1<<5 ) | ( 1<<2 ) | ( 1 ),
+    TEXTURE_PF_BGR16F = ( 1<<7 ) | ( 1<<5 ) | ( 2<<2 ) | ( 1 ),
+    TEXTURE_PF_BGRA16F = ( 1<<7 ) | ( 1<<5 ) | ( 3<<2 ) | ( 1 ),
 
-    TEXTURE_PF_R32F = ( 1<<7 ) | ( 1<<5 ) | ( 0 << 2 ) | ( 2 ),
-    TEXTURE_PF_RG32F = ( 1<<7 ) | ( 1<<5 ) | ( 1 << 2 ) | ( 2 ),
-    TEXTURE_PF_BGR32F = ( 1<<7 ) | ( 1<<5 ) | ( 2 << 2 ) | ( 2 ),
-    TEXTURE_PF_BGRA32F = ( 1<<7 ) | ( 1<<5 ) | ( 3 << 2 ) | ( 2 ),
+    TEXTURE_PF_R32F = ( 1<<7 ) | ( 1<<5 ) | ( 0<<2 ) | ( 2 ),
+    TEXTURE_PF_RG32F = ( 1<<7 ) | ( 1<<5 ) | ( 1<<2 ) | ( 2 ),
+    TEXTURE_PF_BGR32F = ( 1<<7 ) | ( 1<<5 ) | ( 2<<2 ) | ( 2 ),
+    TEXTURE_PF_BGRA32F = ( 1<<7 ) | ( 1<<5 ) | ( 3<<2 ) | ( 2 ),
 
-    TEXTURE_PF_COMPRESSED_RGB_DXT1 = ( 1<<6 ) | ( 2 << 2 ),
-    TEXTURE_PF_COMPRESSED_RGBA_DXT1 = ( 1<<6 ) | ( 3 << 2 ),
-    TEXTURE_PF_COMPRESSED_RGBA_DXT3 = ( 1<<6 ) | ( 3 << 2 ),
-    TEXTURE_PF_COMPRESSED_RGBA_DXT5 = ( 1<<6 ) | ( 3 << 2 ),
+    // Compressed formats
 
-    TEXTURE_PF_COMPRESSED_SRGB_DXT1 = ( 1<<6 ) | ( 1 << 4 ) | ( 2 << 2 ),
-    TEXTURE_PF_COMPRESSED_SRGB_ALPHA_DXT1 = ( 1<<6 ) | ( 1 << 4 ) | ( 3 << 2 ),
-    TEXTURE_PF_COMPRESSED_SRGB_ALPHA_DXT3 = ( 1<<6 ) | ( 1 << 4 ) | ( 3 << 2 ),
-    TEXTURE_PF_COMPRESSED_SRGB_ALPHA_DXT5 = ( 1<<6 ) | ( 1 << 4 ) | ( 3 << 2 ),
+    // RGB
+    TEXTURE_PF_COMPRESSED_BC1_RGB = ( 1<<6 ) | ( 2<<2 ),
+    TEXTURE_PF_COMPRESSED_BC1_SRGB = ( 1<<6 ) | ( 1<<4 ) | ( 2<<2 ),
 
-    TEXTURE_PF_COMPRESSED_RED_RGTC1 = ( 1<<6 ) | ( 0 << 2 ),
-    TEXTURE_PF_COMPRESSED_RG_RGTC2 = ( 1<<6 ) | ( 1 << 2 ),
+    // RGB A-4bit / RGB (not the best quality, it is better to use BC3)
+    TEXTURE_PF_COMPRESSED_BC2_RGBA = ( 1<<6 ) | ( 3<<2 ),
+    TEXTURE_PF_COMPRESSED_BC2_SRGB_ALPHA = ( 1<<6 ) | ( 1<<4 ) | ( 3<<2 ),
 
-    TEXTURE_PF_COMPRESSED_RGBA_BPTC_UNORM = ( 1<<6 ) | ( 3 << 2 ),
-    TEXTURE_PF_COMPRESSED_SRGB_ALPHA_BPTC_UNORM = ( 1<<6 ) | ( 1 << 4 ) | ( 3 << 2 ),
-    TEXTURE_PF_COMPRESSED_RGB_BPTC_SIGNED_FLOAT = ( 1<<6 ) | ( 2 << 2 ),
-    TEXTURE_PF_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT = ( 1<<6 ) | ( 2 << 2 ),
+    // RGB A-8bit
+    TEXTURE_PF_COMPRESSED_BC3_RGBA = ( 1<<6 ) | ( 3<<2 ),
+    TEXTURE_PF_COMPRESSED_BC3_SRGB_ALPHA = ( 1<<6 ) | ( 1<<4 ) | ( 3<<2 ),
+
+    // R single channel texture (use for metalmap, glossmap, etc)
+    TEXTURE_PF_COMPRESSED_BC4_R = ( 1<<6 ) | ( 0<<2 ),
+    TEXTURE_PF_COMPRESSED_BC4_R_SIGNED = ( 1<<6 ) | ( 1<<5 ) | ( 0<<2 ),
+
+    // RG two channel texture (use for normal map or two grayscale maps)
+    TEXTURE_PF_COMPRESSED_BC5_RG = ( 1<<6 ) | ( 1<<2 ),
+    TEXTURE_PF_COMPRESSED_BC5_RG_SIGNED = ( 1<<6 ) | ( 1<<5 ) | ( 1<<2 ),
+
+    // RGB half float HDR
+    TEXTURE_PF_COMPRESSED_BC6H = ( 1<<6 ) | ( 2<<2 ),
+    TEXTURE_PF_COMPRESSED_BC6H_SIGNED = ( 1<<6 ) | ( 1<<5 ) | ( 2<<2 ),
+
+    // RGB[A], best quality, every block is compressed different
+    TEXTURE_PF_COMPRESSED_BC7_RGBA = ( 1<<6 ) | ( 3<<2 ),
+    TEXTURE_PF_COMPRESSED_BC7_SRGB_ALPHA = ( 1<<6 ) | ( 1<<4 ) | ( 3<<2 ),
+
+    // Non-trivial formats
+
+    TEXTURE_PF_R11F_G11F_B10F = ( 3<<6 ) | 0,
+    // TEXTURE_PF_<name> = ( 3<<6 ) | n,
 };
 
 struct STexturePixelFormat {
@@ -386,20 +431,22 @@ struct STexturePixelFormat {
     bool operator!=( STexturePixelFormat _PixelFormat ) const { return Data != _PixelFormat.Data; }
 
     bool IsCompressed() const {
-        return ( Data >> 6 ) & 1;
+        return ( ( Data >> 6 ) & 3 ) == 1;
     }
 
     bool IsSRGB() const {
-        return ( Data >> 4 ) & 1;
+        return ( ( Data >> 4 ) & 1 ) && !IsNonTrivial();
+    }
+
+    bool IsNonTrivial() const {
+        return ( Data >> 6 ) == 3;
     }
 
     int SizeInBytesUncompressed() const;
 
     int BlockSizeCompressed() const;
 
-    int NumComponents() const {
-        return ( ( Data >> 2 ) & 3 ) + 1;
-    }
+    int NumComponents() const;
 
     void Read( IBinaryStream & _Stream ) {
         Data = (ETexturePixelFormat)_Stream.ReadUInt8();
@@ -664,13 +711,12 @@ private:
 
 class ATextureGPU : public AResourceGPU {
 public:
-    void * pHandleGPU;
-    void * pFramebuffer;
+    TRef< RenderCore::ITexture > pTexture;
 };
 
 class ABufferGPU : public AResourceGPU {
 public:
-    void * pHandleGPU;
+    TRef< RenderCore::IBuffer > pBuffer;
 };
 
 class AMaterialGPU : public AResourceGPU {
@@ -708,6 +754,7 @@ struct SMaterialFrameData {
     int NumTextures;
     Float4 UniformVectors[4];
     int NumUniformVectors;
+    class AVirtualTextureResource * VirtualTexture;
 };
 
 
@@ -831,9 +878,12 @@ struct SRenderInstance {
     Float4              LightmapOffset;
 
     Float4x4            Matrix;
+    Float4x4            MatrixP;
+
     Float3x3            ModelNormalToViewSpace;
 
     size_t              SkeletonOffset;
+    size_t              SkeletonOffsetMB;
     size_t              SkeletonSize;
 
     unsigned int        IndexCount;
@@ -864,6 +914,20 @@ struct SShadowRenderInstance {
     int                 BaseVertexLocation;
     uint16_t            CascadeMask;
     uint64_t            SortKey;
+};
+
+//
+// Light Portal Render instance
+//
+
+struct SLightPortalRenderInstance {
+    ABufferGPU *        VertexBuffer;
+    size_t              VertexBufferOffset;
+    ABufferGPU *        IndexBuffer;
+    size_t              IndexBufferOffset;
+    unsigned int        IndexCount;
+    unsigned int        StartIndexLocation;
+    int                 BaseVertexLocation;
 };
 
 //
@@ -979,6 +1043,7 @@ struct SRenderView {
     Float3 ViewUpVec;
     Float3 ViewDir;
     Float4x4 ViewMatrix;
+    Float4x4 ViewMatrixP;
     float ViewZNear;
     float ViewZFar;
     float ViewFovX;
@@ -987,8 +1052,10 @@ struct SRenderView {
     Float2 ViewOrthoMaxs;
     Float3x3 NormalToViewMatrix;
     Float4x4 ProjectionMatrix;
+    Float4x4 ProjectionMatrixP;
     Float4x4 InverseProjectionMatrix;
     Float4x4 ViewProjection;
+    Float4x4 ViewProjectionP;
     Float4x4 ViewSpaceToWorldSpace;
     Float4x4 ClipSpaceToWorldSpace;
     Float4x4 ClusterProjectionMatrix;
@@ -1024,6 +1091,11 @@ struct SRenderView {
 
     ATextureGPU * PhotometricProfiles;
 
+    ATextureGPU * LightTexture;
+    ATextureGPU * DepthTexture;
+
+    class AVirtualTextureFeedback * VTFeedback;
+
     int NumShadowMapCascades;
     int NumCascadedShadowMaps;
 
@@ -1032,6 +1104,9 @@ struct SRenderView {
 
     int FirstTranslucentInstance;
     int TranslucentInstanceCount;
+
+    int FirstLightPortal;
+    int LightPortalsCount;
 
     int FirstShadowInstance;
     int ShadowInstanceCount;
@@ -1071,6 +1146,7 @@ struct SRenderFrame {
     TPodArray< SRenderInstance *, 1024 > Instances;
     TPodArray< SRenderInstance *, 1024 > TranslucentInstances;
     TPodArray< SShadowRenderInstance *, 1024 > ShadowInstances;
+    TPodArray< SLightPortalRenderInstance *, 1024 > LightPortals;
     TPodArray< SDirectionalLightDef * > DirectionalLights;
 
     SHUDDrawList * DrawListHead;
@@ -1090,6 +1166,7 @@ struct SRenderFrontendDef {
     int FrameNumber;
     int PolyCount;
     int ShadowMapPolyCount;
+    //int LightPortalPolyCount;
 };
 
 
@@ -1141,7 +1218,6 @@ public:
     virtual void InitializeTexture3D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) = 0;
     virtual void InitializeTextureCubemap( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
     virtual void InitializeTextureCubemapArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
-    virtual void InitializeTexture2DNPOT( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) = 0;
     virtual void WriteTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) = 0;
     virtual void ReadTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) = 0;
 

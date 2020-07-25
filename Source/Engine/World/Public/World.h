@@ -418,6 +418,11 @@ public:
     }
 
     /** Trace collision bodies */
+    bool TraceBox2( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+        return PhysicsWorld.TraceBox2( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
+    }
+
+    /** Trace collision bodies */
     bool TraceCylinder( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
         return PhysicsWorld.TraceCylinder( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
     }
@@ -434,12 +439,12 @@ public:
 
     /** Query objects in sphere */
     void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        PhysicsWorld.QueryPhysicalBodies( _Result, _Position, _Radius, _QueryFilter );
+        PhysicsWorld.QueryPhysicalBodies_Sphere( _Result, _Position, _Radius, _QueryFilter );
     }
 
     /** Query objects in box */
     void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        PhysicsWorld.QueryPhysicalBodies( _Result, _Position, _HalfExtents, _QueryFilter );
+        PhysicsWorld.QueryPhysicalBodies_Box( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
     /** Query objects in AABB */
@@ -449,12 +454,12 @@ public:
 
     /** Query objects in sphere */
     void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        PhysicsWorld.QueryActors( _Result, _Position, _Radius, _QueryFilter );
+        PhysicsWorld.QueryActors_Sphere( _Result, _Position, _Radius, _QueryFilter );
     }
 
     /** Query objects in box */
     void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        PhysicsWorld.QueryActors( _Result, _Position, _HalfExtents, _QueryFilter );
+        PhysicsWorld.QueryActors_Box( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
     /** Query objects in AABB */

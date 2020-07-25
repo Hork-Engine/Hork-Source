@@ -44,7 +44,6 @@ static const char * TextureTypeName[] =
     "TEXTURE_3D",
     "TEXTURE_CUBEMAP",
     "TEXTURE_CUBEMAP_ARRAY",
-    "TEXTURE_2DNPOT"
 };
 
 AN_CLASS_META( ATexture )
@@ -147,7 +146,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         byte data[ 1 * 1 * 3 ];
         Core::Memset( data, 0xff, sizeof( data ) );
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
@@ -157,7 +156,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         byte data[ 1 * 1 * 3 ];
         Core::ZeroMem( data, sizeof( data ) );
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
@@ -167,7 +166,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         byte data[ 1 * 1 * 3 ];
         Core::Memset( data, 127, sizeof( data ) );
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
@@ -178,7 +177,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         byte data[ 1 * 1 * 3 ];
         Core::Memset( data, 240, sizeof( data ) );
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
@@ -188,7 +187,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         byte data[ 1 * 1 * 3 ];
         Core::Memset( data, 30, sizeof( data ) );
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
@@ -200,7 +199,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         data[ 1 ] = 127; // y
         data[ 2 ] = 127; // x
 
-        Initialize2D( TEXTURE_PF_BGR8, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
@@ -223,7 +222,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
             data[i][2] = (dirs[i].X + 1.0f) * 127.5f;
         }
 
-        InitializeCubemap( TEXTURE_PF_BGR8, 1, 1 );
+        InitializeCubemap( TEXTURE_PF_BGR8_UNORM, 1, 1 );
 
         for ( int face = 0 ; face < 6 ; face++ ) {
             WriteTextureDataCubemap( 0, 0, 1, 1, face, 0, data[face] );
@@ -416,9 +415,6 @@ bool ATexture::LoadResource( AString const & _Path ) {
         case TEXTURE_CUBEMAP_ARRAY:
             InitializeCubemapArray( texturePixelFormat, numLods, w, d );
             break;
-        case TEXTURE_2DNPOT:
-            Initialize2DNPOT( texturePixelFormat, numLods, w, h );
-            break;
         default:
             GLogger.Printf( "ATexture::LoadResource: Unknown texture type %d\n", textureType );
             return false;
@@ -552,22 +548,6 @@ size_t ATexture::TextureByteLengthCubemap( STexturePixelFormat _PixelFormat, int
             _Width >>= 1;
         }
         return _PixelFormat.SizeInBytesUncompressed() * sum * 6 * Math::Max( _ArraySize, 1 );
-    }
-}
-
-size_t ATexture::TextureByteLength2DNPOT( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
-    if ( _PixelFormat.IsCompressed() ) {
-        // TODO
-        AN_ASSERT(0);
-        return 0;
-    } else {
-        size_t sum = 0;
-        for ( int i = 0 ; i < _NumLods ; i++ ) {
-            sum += Math::Max( 1, _Width ) * Math::Max( 1, _Height );
-            _Width >>= 1;
-            _Height >>= 1;
-        }
-        return _PixelFormat.SizeInBytesUncompressed() * sum;
     }
 }
 
@@ -740,19 +720,6 @@ void ATexture::InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _Nu
     GRenderBackend->InitializeTextureCubemapArray( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
 }
 
-void ATexture::Initialize2DNPOT( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
-    Purge();
-
-    TextureType = TEXTURE_2DNPOT;
-    PixelFormat = _PixelFormat;
-    Width = _Width;
-    Height = _Height;
-    Depth = 1;
-    NumLods = _NumLods;
-
-    GRenderBackend->InitializeTexture2DNPOT( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height );
-}
-
 size_t ATexture::GetSizeInBytes() const {
     switch ( TextureType ) {
     case TEXTURE_1D:
@@ -769,8 +736,6 @@ size_t ATexture::GetSizeInBytes() const {
         return ATexture::TextureByteLengthCubemap( PixelFormat, NumLods, Width, 1 );
     case TEXTURE_CUBEMAP_ARRAY:
         return ATexture::TextureByteLengthCubemap( PixelFormat, NumLods, Width, GetArraySize() );
-    case TEXTURE_2DNPOT:
-        return ATexture::TextureByteLength2DNPOT( PixelFormat, NumLods, Width, Height );
     }
     return 0;
 }
@@ -803,7 +768,7 @@ bool ATexture::WriteTextureData1DArray( int _LocationX, int _Width, int _ArrayLa
 }
 
 bool ATexture::WriteTextureData2D( int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void * _SysMem ) {
-    if ( TextureType != TEXTURE_2D && TextureType != TEXTURE_2D_ARRAY && TextureType != TEXTURE_2DNPOT ) {
+    if ( TextureType != TEXTURE_2D && TextureType != TEXTURE_2D_ARRAY ) {
         GLogger.Printf( "ATexture::WriteTextureData2D: called for %s\n", TextureTypeName[TextureType] );
         return false;
     }

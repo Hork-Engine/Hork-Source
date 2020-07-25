@@ -67,6 +67,9 @@ public:
 
     bool            bOverrideMeshMaterials = true;
 
+    /** Transform matrix used during last rendering */
+    Float3x4        RenderTransformMatrix;
+
     /** Allow raycasting */
     void SetAllowRaycast( bool _AllowRaycast ) override;
 
@@ -141,7 +144,10 @@ private:
 class AProceduralMeshComponent : public ADrawable {
     AN_COMPONENT( AProceduralMeshComponent, ADrawable )
 
-public:        
+public:
+    /** Transform matrix used during last rendering */
+    Float3x4        RenderTransformMatrix;
+
     /** Allow raycasting */
     void SetAllowRaycast( bool _AllowRaycast ) override;
 

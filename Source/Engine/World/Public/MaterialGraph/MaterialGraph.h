@@ -713,8 +713,8 @@ public:
     MGNodeOutput * RGB;
     MGNodeOutput * RGBA;
 
-    bool bSwappedToBGR;
-    ETextureColorSpace ColorSpace;
+    bool bSwappedToBGR = false;
+    ETextureColorSpace ColorSpace = TEXTURE_COLORSPACE_RGBA;
 
 protected:
     MGSampler();
@@ -733,10 +733,49 @@ public:
     MGNodeOutput * Z;
     MGNodeOutput * XYZ;
 
-    ENormalMapCompression Compression;
+    ENormalMapCompression Compression = NM_XYZ;
 
 protected:
     MGNormalSampler();
+
+    void Compute( AMaterialBuildContext & _Context ) override;
+};
+
+class MGSamplerVT : public MGNode {
+    AN_CLASS( MGSamplerVT, MGNode )
+
+public:
+    int TextureLayer;
+    MGNodeOutput * R;
+    MGNodeOutput * G;
+    MGNodeOutput * B;
+    MGNodeOutput * A;
+    MGNodeOutput * RGB;
+    MGNodeOutput * RGBA;
+
+    bool bSwappedToBGR = false;
+    ETextureColorSpace ColorSpace = TEXTURE_COLORSPACE_RGBA;
+
+protected:
+    MGSamplerVT();
+
+    void Compute( AMaterialBuildContext & _Context ) override;
+};
+
+class MGNormalSamplerVT : public MGNode {
+    AN_CLASS( MGNormalSamplerVT, MGNode )
+
+public:
+    int TextureLayer;
+    MGNodeOutput * X;
+    MGNodeOutput * Y;
+    MGNodeOutput * Z;
+    MGNodeOutput * XYZ;
+
+    ENormalMapCompression Compression = NM_XYZ;
+
+protected:
+    MGNormalSamplerVT();
 
     void Compute( AMaterialBuildContext & _Context ) override;
 };
@@ -875,6 +914,9 @@ public:
     EMaterialDepthHack  DepthHack = MATERIAL_DEPTH_HACK_NONE;
     bool                bDepthTest = true; // Experemental
     bool                bTranslucent = false;
+    bool                bNoLightmap = false;
+    bool                bAllowScreenSpaceReflections = true;
+    bool                bUseVirtualTexture = false;
 
     void RegisterTextureSlot( MGTextureSlot * _Slot );
 

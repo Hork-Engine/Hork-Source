@@ -432,6 +432,19 @@ struct SVisArea
     int VisMark;
 };
 
+struct SLightPortalDef
+{
+    /** First mesh vertex in array of vertices */
+    int FirstVert;
+
+    /** Mesh vertex count */
+    int NumVerts;
+
+    int FirstIndex;
+
+    int NumIndices;
+};
+
 class ABrushModel : public ABaseObject {
     AN_CLASS( ABrushModel, ABaseObject )
 
@@ -559,6 +572,9 @@ public:
     /** Create and link portals */
     void CreatePortals( SPortalDef const * InPortals, int InPortalsCount, Float3 const * InHullVertices );
 
+    /** Create light portals */
+    void CreateLightPortals( SLightPortalDef const * InPortals, int InPortalsCount, Float3 const * InMeshVertices, int InVertexCount, unsigned int const * InMeshIndices, int InIndexCount );
+
     /** Build level visibility */
     void Initialize();
 
@@ -635,6 +651,12 @@ public:
     ABufferGPU * GetShadowCasterVB() { return ShadowCasterVB; }
     ABufferGPU * GetShadowCasterIB() { return ShadowCasterIB; }
 
+    /** Get light portals GPU buffers */
+    ABufferGPU * GetLightPortalsVB() { return LightPortalsVB; }
+    ABufferGPU * GetLightPortalsIB() { return LightPortalsIB; }
+
+    TPodArray< SLightPortalDef > const & GetLightPortals() const { return LightPortals; }
+
 protected:
     ALevel();
     ~ALevel();
@@ -695,6 +717,11 @@ private:
     /** Links between the portals and areas */
     TPodArray< SPortalLink > AreaLinks;
 
+    /** Light portals */
+    TPodArray< SLightPortalDef > LightPortals;
+    TPodArrayHeap< Float3 > LightPortalVertexBuffer;
+    TPodArrayHeap< unsigned int > LightPortalIndexBuffer;
+
     /** Array of actors */
     TPodArray< AActor * > Actors;
 
@@ -715,6 +742,9 @@ private:
 
     ABufferGPU * ShadowCasterVB;
     ABufferGPU * ShadowCasterIB;
+
+    ABufferGPU * LightPortalsVB;
+    ABufferGPU * LightPortalsIB;
 
     SPrimitiveDef * PrimitiveList;
     SPrimitiveDef * PrimitiveListTail;

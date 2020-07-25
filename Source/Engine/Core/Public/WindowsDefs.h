@@ -37,4 +37,5 @@ SOFTWARE.
 #include <Windows.h>
 #undef CriticalError
 #undef FindResource
+#undef GetObject
 #endif

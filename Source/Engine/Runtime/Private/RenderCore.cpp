@@ -35,9 +35,9 @@ SOFTWARE.
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/Image.h>
 
-#include <Renderer/OpenGL4.5/OpenGL45RenderBackend.h>
+#include <Renderer/RenderBackend.h>
 
-IRenderBackend * GRenderBackend = &OpenGL45::GOpenGL45RenderBackend;
+IRenderBackend * GRenderBackend = &GOpenGL45RenderBackend;
 
 
 IGPUResourceOwner * IGPUResourceOwner::ResourceOwners = nullptr;
@@ -75,12 +75,28 @@ AResourceGPU::~AResourceGPU()
     INTRUSIVE_REMOVE( this, pNext, pPrev, GPUResources, GPUResourcesTail );
 }
 
+struct STextureFormatDetails
+{
+    byte NumComponents;
+    bool bFloat;
+    unsigned short BytesPerPixelUncompressed;
+    unsigned short BytesPerPixelGPU;
+};
+
+static const STextureFormatDetails FormatTableLookup[1] = {
+    { 3, true, 3*sizeof(float), 4 },      // TEXTURE_PF_R11F_G11F_B10F
+};
+
 
 int STexturePixelFormat::SizeInBytesUncompressed() const {
 
     if ( IsCompressed() ) {
         GLogger.Printf( "SizeInBytesUncompressed: called for compressed pixel format\n" );
         return 0;
+    }
+
+    if ( IsNonTrivial() ) {
+        return FormatTableLookup[ Data & ~(3<<6) ].BytesPerPixelUncompressed;
     }
 
     int bytesPerChannel = 1 << ( Data & 3 );
@@ -101,10 +117,18 @@ int STexturePixelFormat::BlockSizeCompressed() const {
     return 0;
 }
 
+int STexturePixelFormat::NumComponents() const {
+    if ( IsNonTrivial() ) {
+        return FormatTableLookup[ Data & ~(3<<6) ].NumComponents;
+    } else {
+        return ( ( Data >> 2 ) & 3 ) + 1;
+    }
+}
+
 bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _ImagePixelFormat, STexturePixelFormat & _PixelFormat ) {
     switch ( _ImagePixelFormat ) {
     case IMAGE_PF_R:
-        _PixelFormat = TEXTURE_PF_R8;
+        _PixelFormat = TEXTURE_PF_R8_UNORM;
         break;
     case IMAGE_PF_R16F:
         _PixelFormat = TEXTURE_PF_R16F;
@@ -113,7 +137,7 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _
         _PixelFormat = TEXTURE_PF_R32F;
         break;
     case IMAGE_PF_RG:
-        _PixelFormat = TEXTURE_PF_RG8;
+        _PixelFormat = TEXTURE_PF_RG8_UNORM;
         break;
     case IMAGE_PF_RG16F:
         _PixelFormat = TEXTURE_PF_RG16F;
@@ -122,7 +146,7 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _
         _PixelFormat = TEXTURE_PF_RG32F;
         break;
     case IMAGE_PF_RGB:
-        _PixelFormat = TEXTURE_PF_BGR8;
+        _PixelFormat = TEXTURE_PF_BGR8_UNORM;
         GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
         break;
     case IMAGE_PF_RGB_GAMMA2:
@@ -138,7 +162,7 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _
         GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
         break;
     case IMAGE_PF_RGBA:
-        _PixelFormat = TEXTURE_PF_BGRA8;
+        _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
         GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
         break;
     case IMAGE_PF_RGBA_GAMMA2:
@@ -154,7 +178,7 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _
         GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
         break;
     case IMAGE_PF_BGR:
-        _PixelFormat = TEXTURE_PF_BGR8;
+        _PixelFormat = TEXTURE_PF_BGR8_UNORM;
         break;
     case IMAGE_PF_BGR_GAMMA2:
         _PixelFormat = TEXTURE_PF_BGR8_SRGB;
@@ -166,7 +190,7 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _
         _PixelFormat = TEXTURE_PF_BGR32F;
         break;
     case IMAGE_PF_BGRA:
-        _PixelFormat = TEXTURE_PF_BGRA8;
+        _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
         break;
     case IMAGE_PF_BGRA_GAMMA2:
         _PixelFormat = TEXTURE_PF_BGRA8_SRGB;

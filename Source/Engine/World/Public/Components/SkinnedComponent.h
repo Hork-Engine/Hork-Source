@@ -83,7 +83,7 @@ public:
     ASkinnedComponent * GetNextSkinnedMesh() { return Next; }
     ASkinnedComponent * GetPrevSkinnedMesh() { return Prev; }
 
-    void GetSkeletonHandle( size_t & _SkeletonOffset, size_t & _SkeletonSize );
+    void GetSkeletonHandle( size_t & _SkeletonOffset, size_t & _SkeletonOffsetMB, size_t & _SkeletonSize );
 
 protected:
     ASkinnedComponent();
@@ -115,11 +115,14 @@ private:
     TPodArray< Float3x4 > AbsoluteTransforms;
     TPodArray< Float3x4 > RelativeTransforms;
 
+    alignas( 16 ) Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS];
+
     ASkinnedComponent * Next;
     ASkinnedComponent * Prev;
 
     // Memory offset/size for the skeleton animation snapshot
     size_t SkeletonOffset;
+    size_t SkeletonOffsetMB;
     size_t SkeletonSize;
 
     bool bUpdateBounds : 1;

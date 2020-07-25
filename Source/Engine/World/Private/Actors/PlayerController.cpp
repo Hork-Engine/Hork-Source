@@ -308,6 +308,9 @@ ARenderingParameters::ARenderingParameters() {
     CurrentExposure->Initialize2D( TEXTURE_PF_RG32F, 1, 1, 1 );
     CurrentExposure->WriteTextureData2D( 0, 0, 1, 1, 0, initialExposure );
 
+    LightTexture = NewObject< ATexture >();
+    DepthTexture = NewObject< ATexture >();
+
     SetColorGradingDefaults();
 }
 
