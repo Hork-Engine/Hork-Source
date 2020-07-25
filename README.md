@@ -75,7 +75,7 @@ PBR (physically based).
 * FXAA
 * HBAO
 * SSLR
-* Motion Blur
+* Motion Blur (per-object, per-bone)
 
 ## Advanced culling system
 * Frustum Culling
