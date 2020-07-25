@@ -1,21 +1,15 @@
 cmake_minimum_required(VERSION 3.7.2)
 
-# Project name.
-project( AngieEngine )
+OPTION( ANGIE_ENGINE_WITH_SAMPLES "Angie engine with samples" ON )
 
-set( PROJECT_OUTPUT_DIR "E:/AngieBinary" )
-#set( PROJECT_OUTPUT_DIR "/home/sam/2-MyFiles/AngieBinary" )
-
-include(Engine/AngieConfig.cmake)
-
-# Engine
-message( "========== ENGINE ==========" )
 include_directories( Engine )
 add_definitions( -DANGIE_STATIC_LIBRARY )
+
+# Engine
 add_subdirectory( Engine )
 
-# SAMPLES
-message( "========== SAMPLES ==========" )
+# Samples
+if (ANGIE_ENGINE_WITH_SAMPLES)
 add_subdirectory( Samples/Quake1 )
 set_target_properties( Quake1 PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/Portals )
@@ -32,7 +26,7 @@ add_subdirectory( Samples/Airplane )
 set_target_properties( Airplane PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/Blade )
 set_target_properties( Blade PROPERTIES FOLDER "Samples" )
-#########################################################################################
 
 # Set StartUp project
-set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT Sponza )
+#set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT Sponza )
+endif()
