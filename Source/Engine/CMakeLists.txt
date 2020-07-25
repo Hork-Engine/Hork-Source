@@ -1,4 +1,4 @@
-set( PROJECT Engine )
+set( PROJECT AngieEngine )
 
 project( ${PROJECT} )
 
