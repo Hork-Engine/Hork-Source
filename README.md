@@ -57,7 +57,6 @@ Base Light (non-physically based);
 PBR (physically based).
 
 ## Forward+ clustered renderer based on OpenGL4.5 core
-* Allowed to switch render backend at runtime
 * Modern Framegraph architecture
 * Depth pre-pass
 * Wireframe and normals renderer
@@ -65,6 +64,7 @@ PBR (physically based).
 * Batching
 * SRGB
 * Premultiplied alpha
+* Virtual texturing
 
 ## Postprocess effects
 * Bloom
@@ -74,6 +74,8 @@ PBR (physically based).
 * Vegnette
 * FXAA
 * HBAO
+* SSLR
+* Motion Blur
 
 ## Advanced culling system
 * Frustum Culling
@@ -88,7 +90,7 @@ PBR (physically based).
 * Photometric profiles (IES)
 
 ## Audio
-* Decorers ogg, mp3, wav
+* Decoders ogg, mp3, wav
 * Streaming support
 * 2D and 3D
 * Unlimited audio sources
@@ -140,7 +142,7 @@ PBR (physically based).
 * MIT license
    
 ## Used third-party libraries
-* stb, cgltw, lwo2, tinyexr, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui
+* stb, cgltw, lwo2, tinyexr, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui, iesna
 * Dynamic loaded: openal, libmpg123
 
 ## Some architectural solutions
@@ -151,9 +153,10 @@ PBR (physically based).
 
 ## Planned features
 * Particle System
-* More realistic renderer (SSR, GI)
+* Global Illumination
 * Toksvig
 * Parallax mapping (parallax material?)
+* Tessellation with displacement mapping
 * Decals
 * Area lights
 * Directional lightmaps (radiocity?)
@@ -168,7 +171,6 @@ PBR (physically based).
 * Postprocess techinques: DOF, Air distortion
 * More parallel computations
 * SDF fonts
-* Virtual texture
 * Lens flares, godrays
 * Network, steam integration
 * Antialiasing (MSAA, TXAA)
