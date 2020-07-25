@@ -21,7 +21,7 @@ else()
 add_executable( ${PROJECT} ${SRCS} )
 endif()
 
-target_link_libraries( ${PROJECT} Engine )
+target_link_libraries( ${PROJECT} AngieEngine )
 
 #set_property( TARGET ${PROJECT} PROPERTY POSITION_INDEPENDENT_CODE ON )
 

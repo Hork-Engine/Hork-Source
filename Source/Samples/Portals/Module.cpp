@@ -277,9 +277,9 @@ void AModule::CreateResources() {
         //    float * HDRI = (float*)cubeFaces[i]->pRawData;
         //    int count = cubeFaces[i]->Width*cubeFaces[i]->Height*3;
         //    for ( int j = 0; j < count ; j += 3 ) {
-        //        HDRI[j] = StdPow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
-        //        HDRI[j + 1] = StdPow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
-        //        HDRI[j + 2] = StdPow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
+        //        HDRI[j] = Math::Pow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
+        //        HDRI[j + 1] = Math::Pow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
+        //        HDRI[j + 2] = Math::Pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
         //    }
         //}
         ATexture * SkyboxTexture = NewObject< ATexture >();
