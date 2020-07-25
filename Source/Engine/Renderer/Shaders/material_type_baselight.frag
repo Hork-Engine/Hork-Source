@@ -190,21 +190,7 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 N, vec3 Specular, float Specu
     Light += VS_VertexLight;
     #endif
 #endif
-/*
-    const vec2 size = vec2(2.0,0.0);
-    const ivec3 off = ivec3(-1,0,1);
-    vec2 tc = nsv_VS0_TexCoord;
-    vec4 wave = texture(tslot_0, tc);
-    float s11 = wave.x;
-    float s01 = pow( textureOffset(tslot_0, tc, off.xy).x, 2.2 );
-    float s21 = pow( textureOffset(tslot_0, tc, off.zy).x, 2.2 );
-    float s10 = pow( textureOffset(tslot_0, tc, off.yx).x, 2.2 );
-    float s12 = pow( textureOffset(tslot_0, tc, off.yz).x, 2.2 );
-    vec3 va = normalize(vec3(size.xy,s21-s01));
-    vec3 vb = normalize(vec3(size.yx,s12-s10));
-    vec4 bump = vec4( cross(va,vb), s11 );
-    N=bump.xyz;
-*/
+
     // Compute macro normal
     const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N );
     

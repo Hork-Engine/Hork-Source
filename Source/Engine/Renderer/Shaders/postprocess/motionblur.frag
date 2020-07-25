@@ -50,6 +50,12 @@ void main() {
     float velocityScale = saturate( currentFPS / targetFPS ); // Move to uniform?
     velocity *= velocityScale;
     
+    float maxVelocity = 0.05;
+    float maxVelocitySqr = maxVelocity * maxVelocity;
+    if ( dot(velocity,velocity) > maxVelocitySqr ) {
+       velocity = normalize(velocity) * maxVelocity;
+    }
+    
     //velocity*=40;
     
     
@@ -98,7 +104,7 @@ void main() {
         } else {
             FS_FragColor = texture(Smp_Light, VS_TexCoord);
     
-            const float bias = -0.2; //-0.5 
+            const float bias = -0.5;
             float srcDepth = texture( Smp_Depth, VS_TexCoord ).x;
             int total = 1;
             for ( int i = 1 ; i < nSamples ; ++i ) {

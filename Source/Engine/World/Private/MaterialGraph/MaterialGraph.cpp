@@ -3006,7 +3006,7 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         Def.Samplers[i] = Graph->GetTextureSlots()[i]->SamplerDesc;
     }
 
-#if 1
+#if 0
     WriteDebugShaders( Def.Shaders );
 #endif
 }

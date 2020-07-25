@@ -688,11 +688,11 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
 
     AString code = LoadShader( "material.glsl", _BuildData->Shaders );
 
-    {
-        AFileStream fs;
-        fs.OpenWrite( "test.txt" );
-        fs.WriteBuffer( code.CStr(), code.Length() );
-    }
+    //{
+    //    AFileStream fs;
+    //    fs.OpenWrite( "test.txt" );
+    //    fs.WriteBuffer( code.CStr(), code.Length() );
+    //}
 
     switch ( _Material->MaterialType ) {
     case MATERIAL_TYPE_PBR:
