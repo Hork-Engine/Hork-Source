@@ -37,6 +37,7 @@ SOFTWARE.
 #include <World/Public/Canvas.h>
 #include <World/Public/Actors/DirectionalLight.h>
 #include <World/Public/Actors/PointLight.h>
+#include <World/Public/Actors/SpotLight.h>
 #include <World/Public/Resource/Asset.h>
 #include <World/Public/Resource/AssetImporter.h>
 #include <World/Public/Base/ResourceManager.h>
@@ -77,22 +78,71 @@ void ASponzaModel::OnGameStart() {
 
     // Skybox texture
     {
-#if 0
-        AAssetImporter importer;
-        SAssetImportSettings importSettings;
-        importSettings.OutputPath = "Skybox";
-        importSettings.ExplicitSkyboxFaces[0] = "ClearSky/rt.bmp";
-        importSettings.ExplicitSkyboxFaces[1] = "ClearSky/lt.bmp";
-        importSettings.ExplicitSkyboxFaces[2] = "ClearSky/up.bmp";
-        importSettings.ExplicitSkyboxFaces[3] = "ClearSky/dn.bmp";
-        importSettings.ExplicitSkyboxFaces[4] = "ClearSky/bk.bmp";
-        importSettings.ExplicitSkyboxFaces[5] = "ClearSky/ft.bmp";
-        importSettings.bImportSkyboxExplicit = true;
-        importSettings.bSkyboxHDRI = true;
-        importSettings.SkyboxHDRIScale = 4.0f;
-        importSettings.SkyboxHDRIPow = 1.1f;
-        importSettings.bCreateSkyboxMaterialInstance = true;
-        importer.ImportSkybox( importSettings );
+#if 1
+        //AAssetImporter importer;
+        //SAssetImportSettings importSettings;
+        //importSettings.OutputPath = "Skybox";
+        //importSettings.ExplicitSkyboxFaces[0] = "ClearSky/rt.bmp";
+        //importSettings.ExplicitSkyboxFaces[1] = "ClearSky/lt.bmp";
+        //importSettings.ExplicitSkyboxFaces[2] = "ClearSky/up.bmp";
+        //importSettings.ExplicitSkyboxFaces[3] = "ClearSky/dn.bmp";
+        //importSettings.ExplicitSkyboxFaces[4] = "ClearSky/bk.bmp";
+        //importSettings.ExplicitSkyboxFaces[5] = "ClearSky/ft.bmp";
+        //importSettings.bImportSkyboxExplicit = true;
+        //importSettings.bSkyboxHDRI = true;
+        //importSettings.SkyboxHDRIScale = 4.0f;
+        //importSettings.SkyboxHDRIPow = 1.1f;
+        //importSettings.bCreateSkyboxMaterialInstance = true;
+        //importer.ImportSkybox( importSettings );
+        //AAssetImporter importer;
+        //SAssetImportSettings importSettings;
+        //importSettings.OutputPath = "Skybox2";
+        //importSettings.ExplicitSkyboxFaces[0] = "DarkSky/rt.tga";
+        //importSettings.ExplicitSkyboxFaces[1] = "DarkSky/lt.tga";
+        //importSettings.ExplicitSkyboxFaces[2] = "DarkSky/up.tga";
+        //importSettings.ExplicitSkyboxFaces[3] = "DarkSky/dn.tga";
+        //importSettings.ExplicitSkyboxFaces[4] = "DarkSky/bk.tga";
+        //importSettings.ExplicitSkyboxFaces[5] = "DarkSky/ft.tga";
+        //importSettings.bImportSkyboxExplicit = true;
+        //importSettings.bSkyboxHDRI = true;
+        //importSettings.SkyboxHDRIScale = 4.0f;
+        //importSettings.SkyboxHDRIPow = 1.1f;
+        //importSettings.bCreateSkyboxMaterialInstance = true;
+        //importer.ImportSkybox( importSettings );
+
+        //AAssetImporter importer;
+        //SAssetImportSettings importSettings;
+        //importSettings.OutputPath = "Skybox3";
+        //importSettings.ExplicitSkyboxFaces[0] = "ClearSky/rt.bmp";
+        //importSettings.ExplicitSkyboxFaces[1] = "ClearSky/lt.bmp";
+        //importSettings.ExplicitSkyboxFaces[2] = "ClearSky/up.bmp";
+        //importSettings.ExplicitSkyboxFaces[3] = "ClearSky/dn.bmp";
+        //importSettings.ExplicitSkyboxFaces[4] = "ClearSky/bk.bmp";
+        //importSettings.ExplicitSkyboxFaces[5] = "ClearSky/ft.bmp";
+        //importSettings.bImportSkyboxExplicit = true;
+        //importSettings.bSkyboxHDRI = true;
+        //importSettings.SkyboxHDRIScale = 1.0f;
+        //importSettings.SkyboxHDRIPow = 1.0f;
+        //importSettings.bCreateSkyboxMaterialInstance = true;
+        //importer.ImportSkybox( importSettings );
+
+
+        //AAssetImporter importer;
+        //SAssetImportSettings importSettings;
+        //importSettings.OutputPath = "Skybox6";
+        //importSettings.ExplicitSkyboxFaces[0] = "cubemap_0.hdr";
+        //importSettings.ExplicitSkyboxFaces[1] = "cubemap_1.hdr";
+        //importSettings.ExplicitSkyboxFaces[2] = "cubemap_2.hdr";
+        //importSettings.ExplicitSkyboxFaces[3] = "cubemap_3.hdr";
+        //importSettings.ExplicitSkyboxFaces[4] = "cubemap_4.hdr";
+        //importSettings.ExplicitSkyboxFaces[5] = "cubemap_5.hdr";
+        //importSettings.bImportSkyboxExplicit = true;
+        //importSettings.bSkyboxHDRI = true;
+        //importSettings.SkyboxHDRIScale = 1.0f;
+        //importSettings.SkyboxHDRIPow = 1.0f;
+        //importSettings.bCreateSkyboxMaterialInstance = true;
+        //importer.ImportSkybox( importSettings );
+
 #endif
 
         //ATexture* SkyboxTexture = GetOrCreateResource< ATexture >( "/Root/Skybox/Skybox_Texture.asset" );
@@ -121,9 +171,9 @@ void ASponzaModel::OnGameStart() {
             float * HDRI = (float*)cubeFaces[i]->pRawData;
             int count = cubeFaces[i]->Width*cubeFaces[i]->Height*3;
             for ( int j = 0; j < count ; j += 3 ) {
-                HDRI[j] = StdPow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
-                HDRI[j + 1] = StdPow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
-                HDRI[j + 2] = StdPow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
+                HDRI[j] = Math::Pow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
+                HDRI[j + 1] = Math::Pow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
+                HDRI[j + 2] = Math::Pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
             }
         }
         ATexture* SkyboxTexture = NewObject< ATexture >();
@@ -142,9 +192,6 @@ void ASponzaModel::OnGameStart() {
     //    RegisterResource( SkyboxMaterialInstance, "SkyboxMaterialInstance" );
     //}
 
-    // create texture resource from file with alias
-    GetOrCreateResource< ATexture >( "MipmapChecker", "/Common/mipmapchecker.png" );
-
     Quat r;
     //r.FromAngles( 0, Math::_HALF_PI, 0 );
     r.SetIdentity();
@@ -152,15 +199,32 @@ void ASponzaModel::OnGameStart() {
 
     LoadStaticMeshes();
 
-    APointLight * pointLight = World->SpawnActor< APointLight >( Float3(0,2,0), Quat::Identity() );
-    pointLight->LightComponent->SetOuterRadius( 3.0f );
-    pointLight->LightComponent->SetInnerRadius( 2.5f );
-    pointLight->LightComponent->SetColor( 1, 0.5f, 0.5f );
     
+#if 1
     // Spawn directional light
     ADirectionalLight * dirlight = World->SpawnActor< ADirectionalLight >();
     dirlight->LightComponent->bCastShadow = true;
-    dirlight->LightComponent->SetDirection( Float3( -0.5f, -2, -0.5f ) );
+    //dirlight->LightComponent->SetDirection( Float3( -0.5f, -2, -0.5f ) );
+
+    dirlight->LightComponent->SetDirection( Float3( -0.75f, -2, -0.2f ) );
+
+    //dirlight->LightComponent->SetDirection( Float3( -0.2f, -2, 2.0f ) );
+
+    //dirlight->LightComponent->SetColor( 1,0.3f,0.2f );
+    dirlight->LightComponent->SetTemperature( 6500 );
+#endif
+
+    //AImageBasedLight * ibl = World->SpawnActor< AImageBasedLight >();
+    //ibl->IBLComponent->SetPosition( 4,0,0 );
+    //ibl->IBLComponent->SetRadius( 5.0f );
+    //ibl->IBLComponent->SetIrradianceMap( 0 );
+    //ibl->IBLComponent->SetReflectionMap( 0 );
+
+    //AImageBasedLight * ibl2 = World->SpawnActor< AImageBasedLight >();
+    //ibl2->IBLComponent->SetPosition( 0, 0, 0 );
+    //ibl2->IBLComponent->SetRadius( 5.0f );
+    //ibl2->IBLComponent->SetIrradianceMap( 0 );
+    //ibl2->IBLComponent->SetReflectionMap( 0 );
 
     // Spawn player controller
     PlayerController = World->SpawnActor< APlayerController >();
@@ -336,7 +400,59 @@ void AGargoyle::Tick( float _TimeStep ) {
 void ASponzaModel::LoadStaticMeshes() {
     AScopedTimeCheck ScopedTime( "LoadStaticMeshes" );
 
+    //{
+    //    AAssetImporter importer;
+    //    SAssetImportSettings importSettings;
+    //    importSettings.ImportFile = "Import/space_smugglers_club_house_-_dark_version/scene.gltf";
+    //    importSettings.OutputPath = "Indoor2";
+    //    importSettings.bImportMeshes = true;
+    //    importSettings.bImportMaterials = true;
+    //    importSettings.bImportSkinning = true;
+    //    importSettings.bImportSkeleton = true;
+    //    importSettings.bImportAnimations = true;
+    //    importSettings.bImportTextures = true;
+    //    importSettings.bSingleModel = true;
+    //    importSettings.bMergePrimitives = true;
+    //    importSettings.Scale = 1;//0.01f;
+    //    importer.ImportGLTF( importSettings );
+    //}
+    
+    //{
+    //    AAssetImporter importer;
+    //    SAssetImportSettings importSettings;
+    //    importSettings.ImportFile = "Import/xyz_-_bake/scene.gltf";
+    //    importSettings.OutputPath = "Indoor1";
+    //    importSettings.bImportMeshes = true;
+    //    importSettings.bImportMaterials = true;
+    //    importSettings.bImportSkinning = true;
+    //    importSettings.bImportSkeleton = true;
+    //    importSettings.bImportAnimations = true;
+    //    importSettings.bImportTextures = true;
+    //    importSettings.bSingleModel = true;
+    //    importSettings.bMergePrimitives = true;
+    //    importSettings.Scale = 0.01f;
+    //    importer.ImportGLTF( importSettings );
+    //}
+
 #if 0
+    {
+        AAssetImporter importer;
+        SAssetImportSettings importSettings;
+        importSettings.ImportFile = "Import/space_station_scene_hd/scene.gltf";
+        importSettings.OutputPath = "SpaceStation";
+        importSettings.bImportMeshes = true;
+        importSettings.bImportMaterials = true;
+        importSettings.bImportSkinning = true;
+        importSettings.bImportSkeleton = true;
+        importSettings.bImportAnimations = true;
+        importSettings.bImportTextures = true;
+        importSettings.bSingleModel = false;
+        importSettings.bMergePrimitives = true;
+        importSettings.Scale = 0.1f;
+        importer.ImportGLTF( importSettings );
+    }
+
+
     {
         AAssetImporter importer;
         SAssetImportSettings importSettings;
@@ -852,10 +968,14 @@ void ASponzaModel::LoadStaticMeshes() {
 
     Quat q;
     q.SetIdentity();
-    //q.FromAngles( -Math::_HALF_PI, 0, 0 );
-    AGargoyle * gargoyle = World->SpawnActor< AGargoyle >( Float3( 0, 0, 0 ), q );
+    q.FromAngles( 0, Math::_HALF_PI, 0 );
+    AGargoyle * gargoyle = World->SpawnActor< AGargoyle >( Float3( -8, 0, 0 ), q );
     //gargoyle->RootComponent->SetScale(0.01f);
-    AN_UNUSED(gargoyle);
+    AN_UNUSED( gargoyle );
+
+
+#if 1
+#if 0
 
 //    {
 //        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 0, 0 ), Quat::Identity() );
@@ -872,10 +992,10 @@ void ASponzaModel::LoadStaticMeshes() {
 //        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/doom_plasma_rifle/scene_Mesh.asset" ) );
 //    }
 
-    {
-        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( -2, 2, 0 ), Quat::Identity() );
-        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/cacodemon/scene_Mesh.asset" ) );
-    }
+    //{
+    //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( -2, 2, 0 ), Quat::Identity() );
+    //    actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/cacodemon/scene_Mesh.asset" ) );
+    //}
 
 
 
@@ -894,11 +1014,27 @@ void ASponzaModel::LoadStaticMeshes() {
     //    actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/gargoyle_illidan/scene_Mesh.asset" ) );
     //}
 
-//    {
-//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 0, 0 ), Quat::Identity() );
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/knight_artorias/scene_Mesh.asset" ) );
-//    }
+    {
+        STransform transform;
+        transform.Clear();
+        transform.SetScale( 0.15f );
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( transform );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/knight_artorias/scene_Mesh.asset" ) );
+    }
+    //{
+    //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 3, 0 ), Quat::Identity() );
+    //    actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/artorias/artorias_Mesh.asset" ) );
+    //}
 
+    {
+        STransform transform;
+        transform.Clear();
+        transform.Position.X = -1.5f;
+        transform.Position.Y = -0.1f;
+        transform.SetScale( 0.15f );
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( transform );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Lantern/Lantern_Mesh.asset" ) );
+    }
     
 
 //    {
@@ -906,10 +1042,10 @@ void ASponzaModel::LoadStaticMeshes() {
 //        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/cupid/scene_Mesh.asset" ) );
 //    }
 
-//    {
-//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 0, 0 ), Quat::Identity() );
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/fallen_titan/scene_Mesh.asset" ) );
-//    }
+    //{
+    //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 0, 0 ), Quat::Identity() );
+    //    actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/fallen_titan/scene_Mesh.asset" ) );
+    //}
     
     //{
     //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 3, 0 ), Quat::Identity() );
@@ -926,56 +1062,41 @@ void ASponzaModel::LoadStaticMeshes() {
 //        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/AirplaneProject/Level_Mesh.asset" ) );
 //    }
 
-    //{
-    //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 3, 0 ), Quat::Identity() );
-    //    actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/artorias/artorias_Mesh.asset" ) );
-    //}
 
-#if 0
     {
-        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3(0,3,0), Quat::Identity() );
+        STransform transform;
+        transform.Clear();
+        transform.Position.X = 13;
+        transform.Position.Y = 0;
+        transform.SetScale( 0.5f );
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( transform );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Corset/Corset_Mesh.asset" ) );
+    }
+    {
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 16, 0, 0 ), Quat::Identity() );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/DamagedHelmet/DamagedHelmet_mesh_helmet_LP_13930damagedHelmet.asset" ) );
+    }
+    {
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 19, 0, 0 ), Quat::Identity() );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SciFiHelmet/SciFiHelmet_SciFiHelmet.asset" ) );
+    }
+    {
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 22, 0, 0 ), Quat::Identity() );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/FlightHelmet/FlightHelmet_Mesh.asset" ) );
+    }    
+    {
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 26, 0, 0 ), Quat::Identity() );
         actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/BoomBox/BoomBox_Mesh.asset" ) );
     }
 
     {
-        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 3, 3, 0 ), Quat::Identity() );
-        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Corset/Corset_Mesh.asset" ) );
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 0, -5 ), Quat::Identity() );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/MetalRoughSpheres/MetalRoughSpheres_Mesh.asset" ) );
     }
-
-
-
-    {
-        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 9, 3, 0 ), Quat::Identity() );
-        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SciFiHelmet/SciFiHelmet_SciFiHelmet.asset" ) );
+        {
+        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 0, -15 ), Quat::Identity() );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/EnvironmentTest/EnvironmentTest_Mesh.asset" ) );
     }
-
-
-
-    {
-        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 15, 3, 0 ), Quat::Identity() );
-        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Lantern/Lantern_Mesh.asset" ) );
-    }
-#endif
-
-//    {
-//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 12, 3, 0 ), Quat::Identity() );
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/FlightHelmet/FlightHelmet_Mesh.asset" ) );
-//    }
-
-//    {
-//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 6, 3, 0 ), Quat::Identity() );
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/DamagedHelmet/DamagedHelmet_mesh_helmet_LP_13930damagedHelmet.asset" ) );
-//    }
-
-//    {
-//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 3, -5 ), Quat::Identity() );
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/MetalRoughSpheres/MetalRoughSpheres_Mesh.asset" ) );
-//    }
-
-//    {
-//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 3, -15 ), Quat::Identity() );
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/EnvironmentTest/EnvironmentTest_Mesh.asset" ) );
-//    }
 
     //{
     //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 3, -15 ), Quat::Identity() );
@@ -983,11 +1104,28 @@ void ASponzaModel::LoadStaticMeshes() {
     //    actor->GetComponent< AMeshComponent >()->SetCastShadow( false );
     //}
 
+    //{
+    //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 3, -15 ), Quat::Identity() );
+    //    actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/doom_2/scene_Mesh.asset" ) );
+    //    actor->GetComponent< AMeshComponent >()->SetCastShadow( false );
+    //}
+
+
+
 //    {
-//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0, 3, -15 ), Quat::Identity() );
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/doom_2/scene_Mesh.asset" ) );
-//        actor->GetComponent< AMeshComponent >()->SetCastShadow( false );
+//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >();
+//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SponzaSingleMesh/Sponza_Mesh.asset" ) );
 //    }
+
+    //{
+    //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3(2,1,-1.5f), Quat::Identity() );
+    //    actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Monster/Monster_Mesh.asset" ) );
+    //}
+#else
+    //World->SpawnActor< ABrainStem >( Float3( -11, 11.55f, -1.5f ), Quat::Identity() );
+    World->SpawnActor< ABrainStem >( Float3(3,0,-1.5f), Quat::Identity() );
+    World->SpawnActor< ABrainStem >( Float3(0,0,-1.5f), Quat::Identity() );
+    //World->SpawnActor< AMonster >( Float3(-2,1,-1.5f), Quat::Identity() );
 
     {
         AStaticMesh * actor;
@@ -999,26 +1137,254 @@ void ASponzaModel::LoadStaticMeshes() {
         }
     }
 
-//    {
-//        AStaticMesh * actor = World->SpawnActor< AStaticMesh >();
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SponzaSingleMesh/Sponza_Mesh.asset" ) );
-//    }
+    float lightTemperature = 5000;
 
+    //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/area-light.ies", &PhotoData );
+    //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/bollard.ies", &PhotoData );
+    //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/display.ies", &PhotoData );
+    //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/three-lobe-vee.ies", &PhotoData );
 
-//    {
-//        ASkinnedMesh * actor = World->SpawnActor< ASkinnedMesh >( Float3(0,0,0), Quat::Identity() );
-//        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SponzaSingleMesh/Sponza_Mesh.asset" ) );
-//    }
+    APhotometricProfile * profile = NewObject< APhotometricProfile >();
+    profile->InitializeFromFile( "/FS/E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/three-lobe-vee.ies" );
+
+    APhotometricProfile * profile2 = NewObject< APhotometricProfile >();
+    profile2->InitializeFromFile( "/FS/E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/bollard.ies" );
+
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( 3.9f, 1, 1.15f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 4.5f );
+        //pointLight->LightComponent->SetColor( 0.5f, 1.0f, 1.0f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+        pointLight->LightComponent->SetDirection( Float3( 0, 1, 0 ) );
+        pointLight->LightComponent->SetPhotometricProfile( profile );
+        pointLight->LightComponent->SetPhotometricAsMask( false );
+        pointLight->LightComponent->SetLuminousIntensityScale( 0.5f );
+    }
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( -5.0f+0.05f, 1, 1.15f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 4.5f );
+        //pointLight->LightComponent->SetColor( 0.5f, 1.0f, 1.0f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+        pointLight->LightComponent->SetDirection( Float3( 0, 1, 0 ) );
+        pointLight->LightComponent->SetPhotometricProfile( profile );
+        pointLight->LightComponent->SetPhotometricAsMask( false );
+        pointLight->LightComponent->SetLuminousIntensityScale( 0.5f );
+    }
+
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( 3.9f, 1, 1.15f-3 ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 4.5f );
+        //pointLight->LightComponent->SetColor( 0.5f, 1.0f, 1.0f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+        pointLight->LightComponent->SetDirection( Float3( 0, 1, 0 ) );
+        pointLight->LightComponent->SetPhotometricProfile( profile );
+        pointLight->LightComponent->SetPhotometricAsMask( false );
+        pointLight->LightComponent->SetLuminousIntensityScale( 0.5f );
+    }
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( -5.0f+0.05f, 1, 1.15f-3 ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 4.5f );
+        //pointLight->LightComponent->SetColor( 0.5f, 1.0f, 1.0f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+        pointLight->LightComponent->SetDirection( Float3( 0, 1, 0 ) );
+        pointLight->LightComponent->SetPhotometricProfile( profile );
+        pointLight->LightComponent->SetPhotometricAsMask( false );
+        pointLight->LightComponent->SetLuminousIntensityScale( 0.5f );
+    }
+
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( 0, 2.3f, 4.2f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 2.5f );
+        //pointLight->LightComponent->SetColor( 1.0f, 0.5f, 1.0f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+        pointLight->LightComponent->SetDirection( Float3(0,-1, 0 ) );
+        pointLight->LightComponent->SetPhotometricProfile( profile );
+        pointLight->LightComponent->SetPhotometricAsMask( false );
+        pointLight->LightComponent->SetLuminousIntensityScale( 0.5f );
+    }
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( 0, 2.3f, -4.8f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 2.5f );
+        //pointLight->LightComponent->SetColor( 1.0f, 0.5f, 1.0f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+        pointLight->LightComponent->SetDirection( Float3( 0, -1, 0 ) );
+        pointLight->LightComponent->SetPhotometricProfile( profile );
+        pointLight->LightComponent->SetPhotometricAsMask( false );
+    }
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( 4, 2.3f, 4.2f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 1.5f );
+        //pointLight->LightComponent->SetColor( 0.5f, 1.0f, 1.0f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+        pointLight->LightComponent->SetDirection( Float3( 0, -1, 0 ) );
+        pointLight->LightComponent->SetPhotometricProfile( profile2 );
+        pointLight->LightComponent->SetPhotometricAsMask( false );
+        pointLight->LightComponent->SetLuminousIntensityScale( 0.5f );
+    }
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( 4, 1.3f, -3.8f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 2.5f );
+        //pointLight->LightComponent->SetColor( 0.5f, 1.0f, 1.0f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+    }
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( -4, 1.3f, 3.2f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 2.5f );
+        //pointLight->LightComponent->SetColor( 1.0f, 1.0f, 0.5f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+    }
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( -4, 1.3f, -3.8f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 2.5f );
+        //pointLight->LightComponent->SetColor( 1.0f, 1.0f, 0.5f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+    }
+    {
+        APointLight * pointLight = World->SpawnActor< APointLight >( Float3( -10.0f, 1.3f, -0.5f ), Quat::Identity() );
+        pointLight->LightComponent->SetRadius( 2.5f );
+        //pointLight->LightComponent->SetColor( 0.5f, 1.0f, 0.5f );
+        pointLight->LightComponent->SetTemperature( lightTemperature );
+        pointLight->LightComponent->SetLumens( 1700 );
+    }
+#endif
+
+#else
+    {
+        for ( int i = 1 ; i <= 32 ; i++ ) {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Core::Fmt( "/Root/SpaceStation/scene_Circle.0%02d_0.asset", i ) ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Circle_0.asset" ) );
+        }
+        for ( int i = 0 ; i <= 41 ; i++ ) {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Core::Fmt( "/Root/SpaceStation/scene_Cube.0%02d_0.asset", i ) ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Cube_0.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Cube_1.asset" ) );
+        }
+        for ( int i = 1 ; i <= 10 ; i++ ) {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Core::Fmt( "/Root/SpaceStation/scene_SF.0%02d_0.asset", i ) ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_SF_0.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Sphere.001_0.asset" ) );
+        }
+
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Station_0.asset" ) );
+        }
+
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Text.003_0.asset" ) );
+        }
+
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.000_0.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.000_1.asset" ) );
+        }
+
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.001_0.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.001_1.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.002_0.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.002_1.asset" ) );
+        }
+
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.003_0.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.003_1.asset" ) );
+        }
+
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.004_0.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.004_1.asset" ) );
+        }
+
+        for ( int i = 5 ; i <= 21 ; i++ ) {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Core::Fmt( "/Root/SpaceStation/scene_Torus.0%02d_0.asset", i ) ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.021_1.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.022_0.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Torus.022_1.asset" ) );
+        }
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Under_Attack_0.asset" ) );
+        }
+
+        {
+            AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/SpaceStation/scene_Warning_0.asset" ) );
+        }
+    }
+#endif
 
     //{
-    //    AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3(2,1,-1.5f), Quat::Identity() );
-    //    actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Monster/Monster_Mesh.asset" ) );
-    //}
+    //AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+    //actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Indoor1/scene_Mesh.asset" ) );
+    //    }
 
-    //World->SpawnActor< ABrainStem >( Float3( -11, 11.55f, -1.5f ), Quat::Identity() );
-    World->SpawnActor< ABrainStem >( Float3(0,0,-1.5f), Quat::Identity() );
-    World->SpawnActor< ABrainStem >( Float3(0,0,1.5f), Quat::Identity() );
-    //World->SpawnActor< AMonster >( Float3(-2,1,-1.5f), Quat::Identity() );
+        //{
+        //AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
+        //actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Indoor2/scene_Mesh.asset" ) );
+        //}
+    
 }
 
 void ASponzaModel::SetInputMappings() {
@@ -1040,7 +1406,7 @@ void ASponzaModel::SetInputMappings() {
     InputMappings->MapAction( "Attack", ID_MOUSE, MOUSE_BUTTON_LEFT, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_P, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
-    InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F12, 0, CONTROLLER_PLAYER_1 );
+    InputMappings->MapAction( "TakeScreenshot", ID_KEYBOARD, KEY_F11, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleWireframe", ID_KEYBOARD, KEY_Y, 0, CONTROLLER_PLAYER_1 );
     InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
 }

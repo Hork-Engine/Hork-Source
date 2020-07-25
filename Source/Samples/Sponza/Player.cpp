@@ -42,13 +42,17 @@ APlayer::APlayer() {
     Camera = CreateComponent< ACameraComponent >( "Camera" );
     RootComponent = Camera;
 
+    Camera->SetFovY(70);
+
     PawnCamera = Camera;
 
     bCanEverTick = true;
 
     // Create skybox
     static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Skybox" ) );
-    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox/Skybox_MaterialInstance.asset" ) );
+    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox3/Skybox_MaterialInstance.asset" ) );
+    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox2/Skybox_MaterialInstance.asset" ) );
+    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox6/Skybox_MaterialInstance.asset" ) );
     SkyboxComponent = CreateComponent< AMeshComponent >( "Skybox" );
     SkyboxComponent->SetMesh( UnitBox.GetObject() );
     SkyboxComponent->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
@@ -245,11 +249,13 @@ ASphereActor::ASphereActor() {
     static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Sphere" ) );
     static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/mipmapchecker.png" ) );
 
+    AMersenneTwisterRand & rng = GRuntime.Rand;
+
     // Create material instance for mesh component
     AMaterialInstance * matInst = NewObject< AMaterialInstance >();
     matInst->SetMaterial( GetOrCreateSphereMaterial() );
     matInst->SetTexture( 0, TextureResource.GetObject() );
-    matInst->UniformVectors[0] = Float4( Math::Rand(), Math::Rand(), Math::Rand(), 1.0f );
+    matInst->UniformVectors[0] = Float4( rng.GetFloat(), rng.GetFloat(), rng.GetFloat(), 1.0f );
 
     // Create mesh component and set it as root component
     MeshComponent = CreateComponent< AMeshComponent >( "StaticMesh" );
@@ -269,7 +275,7 @@ ASphereActor::ASphereActor() {
     MeshComponent->SetMesh( MeshResource.GetObject() );
     MeshComponent->SetMaterialInstance( 0, matInst );
 
-    LifeSpan = 3;
+    //LifeSpan = 3;
 }
 
 void ASphereActor::BeginPlay() {
