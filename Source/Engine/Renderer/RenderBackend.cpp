@@ -302,8 +302,8 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
     createInfo.pLayers = &layer;
     VTWorkflow = MakeRef< SVirtualTextureWorkflow >( createInfo );
 
-    ::TestVT();
-    TestVT = VTWorkflow->PhysCache.CreateVirtualTexture( "Test.vt.vt3" );
+    //::TestVT();
+    TestVT = VTWorkflow->PhysCache.CreateVirtualTexture( "Test.vt3" );
 }
 
 void ARenderBackend::Deinitialize() {

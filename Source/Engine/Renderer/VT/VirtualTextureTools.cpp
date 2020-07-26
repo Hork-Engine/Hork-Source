@@ -1772,7 +1772,7 @@ void TestVT() {
     unsigned int BinWidth;
     unsigned int BinHeight;
 
-    VT_CreateVirtualTexture( Layers, AN_ARRAY_SIZE(Layers), "Test.vt", "TmpVT", 11, VT_PAGE_SIZE_LOG2, inputRects, outputRects, BinWidth, BinHeight );
+    VT_CreateVirtualTexture( Layers, AN_ARRAY_SIZE(Layers), "Test", "TmpVT", 11, VT_PAGE_SIZE_LOG2, inputRects, outputRects, BinWidth, BinHeight );
 
     for ( unsigned int i = 0 ; i < outputRects.size() ; i++ ) {
         STextureLayers * layers = (STextureLayers *)outputRects[i].userdata;

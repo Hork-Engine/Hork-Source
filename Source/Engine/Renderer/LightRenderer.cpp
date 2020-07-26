@@ -278,16 +278,16 @@ void ALightRenderer::CreateLookupBRDF() {
         }
 
         // Debug image
-        if ( f.OpenWrite( "brdf.png" ) ) {
-            byte * b = (byte *)GHunkMemory.Alloc( sizeX*sizeY*3 );
-            for ( int n = sizeX*sizeY, i = 0 ; i < n ; i++ ) {
-                b[i*3] = Math::Saturate( data[i].X ) * 255;
-                b[i*3+1] = Math::Saturate( data[i].Y ) * 255;
-                b[i*3+2] = 0;
-            }
-            WritePNG( f, sizeX, sizeY, 3, b, sizeX*3 );
-            GHunkMemory.ClearLastHunk();
-        }
+        //if ( f.OpenWrite( "brdf.png" ) ) {
+        //    byte * b = (byte *)GHunkMemory.Alloc( sizeX*sizeY*3 );
+        //    for ( int n = sizeX*sizeY, i = 0 ; i < n ; i++ ) {
+        //        b[i*3] = Math::Saturate( data[i].X ) * 255;
+        //        b[i*3+1] = Math::Saturate( data[i].Y ) * 255;
+        //        b[i*3+2] = 0;
+        //    }
+        //    WritePNG( f, sizeX, sizeY, 3, b, sizeX*3 );
+        //    GHunkMemory.ClearLastHunk();
+        //}
 
         if ( f.OpenWrite( "brdf.bin" ) ) {
             f.WriteBuffer( data, sizeInBytes );
