@@ -60,7 +60,10 @@ layout( location = VT_TEXCOORD_LOCATION ) out vec2 VS_TexCoordVT;
 #endif
 
 layout( location = VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
+
+#ifdef ALLOW_MOTION_BLUR
 layout( location = VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
+#endif
 
 #if defined SKINNED_MESH
 
@@ -69,10 +72,12 @@ layout( location = VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
         vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
     };
     
+    #ifdef PER_BONE_MOTION_BLUR
     layout( binding = 7, std140 ) uniform JointTransformsP
     {
         vec4 TransformP[ 256 * 3 ];   // MAX_JOINTS = 256
     };
+    #endif
 
 #endif // SKINNED_MESH
 
@@ -133,25 +138,30 @@ void main() {
     VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;
     #endif  // COMPUTE_TBN
 
-    ////// IF PER-BONE MOTION BLUR //////
-    JointTransform0 = TransformP[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
-                      + TransformP[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
-                      + TransformP[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]
-                      + TransformP[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];
-    JointTransform1 = TransformP[ InJointIndices[0] * 3 + 1 ] * InJointWeights[0]
-                      + TransformP[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]
-                      + TransformP[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]
-                      + TransformP[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];
-    JointTransform2 = TransformP[ InJointIndices[0] * 3 + 2 ] * InJointWeights[0]
-                      + TransformP[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
-                      + TransformP[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
-                      + TransformP[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];
+    #ifdef ALLOW_MOTION_BLUR
+        #ifdef PER_BONE_MOTION_BLUR
+        JointTransform0 = TransformP[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
+                          + TransformP[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
+                          + TransformP[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]
+                          + TransformP[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];
+        JointTransform1 = TransformP[ InJointIndices[0] * 3 + 1 ] * InJointWeights[0]
+                          + TransformP[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]
+                          + TransformP[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]
+                          + TransformP[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];
+        JointTransform2 = TransformP[ InJointIndices[0] * 3 + 2 ] * InJointWeights[0]
+                          + TransformP[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
+                          + TransformP[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
+                          + TransformP[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];
 
-    vec4 PositionP;
-    PositionP.x = dot( JointTransform0, SrcPosition );
-    PositionP.y = dot( JointTransform1, SrcPosition );
-    PositionP.z = dot( JointTransform2, SrcPosition );
-    PositionP.w = 1.0;
+        vec4 PositionP;
+        PositionP.x = dot( JointTransform0, SrcPosition );
+        PositionP.y = dot( JointTransform1, SrcPosition );
+        PositionP.z = dot( JointTransform2, SrcPosition );
+        PositionP.w = 1.0;
+        #else
+        vec4 PositionP = Position;
+        #endif
+    #endif
     /////////////////////////////////////
     
 #else
@@ -203,13 +213,13 @@ void main() {
     gl_Position = TransformMatrix * VertexPos;
 
     VS_VertexPos = gl_Position;
-    
-#ifdef SKINNED_MESH
-    ////// IF PER-BONE MOTION BLUR //////
-    VS_VertexPosP = TransformMatrixP * PositionP; // NOTE: We can't apply vertex deform to it!
-    /////////////////////////////////////
-#else
-    VS_VertexPosP = TransformMatrixP * VertexPos;
+
+#ifdef ALLOW_MOTION_BLUR
+    #ifdef SKINNED_MESH
+        VS_VertexPosP = TransformMatrixP * PositionP; // NOTE: We can't apply vertex deform to it!
+    #else
+        VS_VertexPosP = TransformMatrixP * VertexPos;
+    #endif
 #endif
 
 #ifdef COMPUTE_TBN

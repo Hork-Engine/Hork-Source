@@ -73,74 +73,369 @@ static constexpr const char * AssemblyTypeStr[] = {
     "float",    // AT_Float1
     "vec2",     // AT_Float2
     "vec3",     // AT_Float3
-    "vec4"      // AT_Float4
+    "vec4",     // AT_Float4
+    "bool",     // AT_Bool1
+    "bvec2",    // AT_Bool2
+    "bvec3",    // AT_Bool3
+    "bvec4",    // AT_Bool4
 };
 
-static AString MakeVectorCast( AString const & _Expression, EMGNodeType _TypeFrom, EMGNodeType _TypeTo, float _DefX, float _DefY, float _DefZ, float _DefW ) {
+enum EMGVectorType
+{
+    VEC_UNKNOWN,
+    VEC1,
+    VEC2,
+    VEC3,
+    VEC4
+};
 
+enum EMGComponentType
+{
+    COMP_UNKNOWN,
+    COMP_FLOAT,
+    COMP_BOOL
+};
+
+static bool IsTypeComponent( EMGNodeType InType )
+{
+    switch ( InType ) {
+    case AT_Float1:
+    case AT_Bool1:
+        return true;
+    }
+    return false;
+}
+
+static bool IsTypeVector( EMGNodeType InType )
+{
+    return !IsTypeComponent( InType );
+}
+
+static EMGComponentType GetTypeComponent( EMGNodeType InType )
+{
+    switch ( InType ) {
+    case AT_Float1:
+    case AT_Float2:
+    case AT_Float3:
+    case AT_Float4:
+        return COMP_FLOAT;
+    case AT_Bool1:
+    case AT_Bool2:
+    case AT_Bool3:
+    case AT_Bool4:
+        return COMP_BOOL;
+    }
+    return COMP_UNKNOWN;
+}
+
+static EMGVectorType GetTypeVector( EMGNodeType InType )
+{
+    switch ( InType ) {
+    case AT_Float1:
+    case AT_Bool1:
+        return VEC1;
+    case AT_Float2:
+    case AT_Bool2:
+        return VEC2;
+    case AT_Float3:
+    case AT_Bool3:
+        return VEC3;
+    case AT_Float4:
+    case AT_Bool4:
+        return VEC4;
+    }
+    return VEC_UNKNOWN;
+}
+
+static bool IsArithmeticType( EMGNodeType InType )
+{
+    switch ( GetTypeComponent( InType ) ) {
+    case COMP_FLOAT:
+        return true;
+    }
+
+    return false;
+}
+
+static EMGNodeType ToFloatType( EMGNodeType InType )
+{
+    switch ( InType ) {
+    case AT_Float1:
+    case AT_Float2:
+    case AT_Float3:
+    case AT_Float4:
+        return InType;
+    case AT_Bool1:
+        return AT_Float1;
+    case AT_Bool2:
+        return AT_Float2;
+    case AT_Bool3:
+        return AT_Float3;
+    case AT_Bool4:
+        return AT_Float4;
+    }
+    return AT_Float1;
+}
+
+enum EVectorCastFlags
+{
+    VECTOR_CAST_IDENTITY_X = AN_BIT( 0 ),
+    VECTOR_CAST_IDENTITY_Y = AN_BIT( 1 ),
+    VECTOR_CAST_IDENTITY_Z = AN_BIT( 2 ),
+    VECTOR_CAST_IDENTITY_W = AN_BIT( 3 ),
+    VECTOR_CAST_EXPAND_VEC1 = AN_BIT( 4 ),
+};
+
+static AString MakeVectorCast( AString const & _Expression, EMGNodeType _TypeFrom, EMGNodeType _TypeTo,
+                               int VectorCastFlags = 0 )
+{
     if ( _TypeFrom == _TypeTo || _TypeTo == AT_Unknown ) {
         return _Expression;
     }
 
-    switch( _TypeFrom ) {
-    case AT_Unknown:
+    EMGComponentType componentFrom = GetTypeComponent( _TypeFrom );
+    EMGComponentType componentTo = GetTypeComponent( _TypeTo );
+
+    bool bSameComponentType = componentFrom == componentTo;
+
+    const char * zero = "0";
+    const char * one = "1";
+    switch ( componentTo ) {
+    case COMP_FLOAT:
+        zero = "0.0";
+        one = "1.0";
+        break;
+    case COMP_BOOL:
+        zero = "false";
+        one = "true";
+        break;
+    default:
+        AN_ASSERT( 0 );
+    }
+
+    AString defX = VectorCastFlags & VECTOR_CAST_IDENTITY_X ? one : zero;
+    AString defY = VectorCastFlags & VECTOR_CAST_IDENTITY_Y ? one : zero;
+    AString defZ = VectorCastFlags & VECTOR_CAST_IDENTITY_Z ? one : zero;
+    AString defW = VectorCastFlags & VECTOR_CAST_IDENTITY_W ? one : zero;
+
+    EMGVectorType vecType = GetTypeVector( _TypeFrom );
+
+    switch( vecType ) {
+    case VEC_UNKNOWN:
         switch ( _TypeTo ) {
         case AT_Float1:
-            return Math::ToString( _DefX );
+            return defX;
         case AT_Float2:
-            return "vec2( " + Math::ToString( _DefX ) + ", " + Math::ToString( _DefY ) + " )";
+            return "vec2( " + defX + ", " + defY + " )";
         case AT_Float3:
-            return "vec3( " + Math::ToString( _DefX ) + ", " + Math::ToString( _DefY ) + ", " + Math::ToString( _DefZ ) + " )";
+            return "vec3( " + defX + ", " + defY + ", " + defZ + " )";
         case AT_Float4:
-            return "vec4( " + Math::ToString( _DefX ) + ", " + Math::ToString( _DefY ) + ", " + Math::ToString( _DefZ ) + ", " + Math::ToString( _DefW ) + " )";
+            return "vec4( " + defX + ", " + defY + ", " + defZ + ", " + defW + " )";
+        case AT_Bool1:
+            return defX;
+        case AT_Bool2:
+            return "bvec2( " + defX + ", " + defY + " )";
+        case AT_Bool3:
+            return "bvec3( " + defX + ", " + defY + ", " + defZ + " )";
+        case AT_Bool4:
+            return "bvec4( " + defX + ", " + defY + ", " + defZ + ", " + defW + " )";
         default:
             break;
         }
         break;
-    case AT_Float1:
+    case VEC1:
+        if ( VectorCastFlags & VECTOR_CAST_EXPAND_VEC1 )
+        {
+            // Conversion like: vecN( in, in, ... )
+            switch ( _TypeTo ) {
+            case AT_Float1:
+                return bSameComponentType
+                    ? _Expression
+                    : "float( " + _Expression + " )";
+            case AT_Float2:
+                return bSameComponentType
+                    ? "vec2( " + _Expression + " )"
+                    : "vec2( float(" + _Expression + ") )";
+            case AT_Float3:
+                return bSameComponentType
+                    ? "vec3( " + _Expression + " )"
+                    : "vec3( float(" + _Expression + ") )";
+            case AT_Float4:
+                return bSameComponentType
+                    ? "vec4( " + _Expression + " )"
+                    : "vec4( float(" + _Expression + ") )";
+            case AT_Bool1:
+                return bSameComponentType
+                    ? _Expression
+                    : "bool(" + _Expression + ")";
+            case AT_Bool2:
+                return bSameComponentType
+                    ? "bvec2( " + _Expression + " )"
+                    : "bvec2( bool(" + _Expression + ") )";
+            case AT_Bool3:
+                return bSameComponentType
+                    ? "bvec3( " + _Expression + " )"
+                    : "bvec3( bool(" + _Expression + ") )";
+            case AT_Bool4:
+                return bSameComponentType
+                    ? "bvec4( " + _Expression + " )"
+                    : "bvec4( bool(" + _Expression + ") )";
+            default:
+                break;
+            }
+            break;
+        }
+        else
+        {
+            // Conversion like: vecN( in, defY, defZ, defW )
+            switch ( _TypeTo ) {
+            case AT_Float1:
+                return bSameComponentType
+                    ? _Expression
+                    : "float( " + _Expression + " )";
+            case AT_Float2:
+                return bSameComponentType
+                    ? "vec2( " + _Expression + ", " + defY + " )"
+                    : "vec2( float(" + _Expression + "), " + defY + " )";
+            case AT_Float3:
+                return bSameComponentType
+                    ? "vec3( " + _Expression + ", " + defY +", " + defZ + " )"
+                    : "vec3( float(" + _Expression + "), " + defY +", " + defZ + " )";
+            case AT_Float4:
+                return bSameComponentType
+                    ? "vec4( " + _Expression + ", " + defY +", " + defZ + ", " + defW + " )"
+                    : "vec4( float(" + _Expression + "), " + defY +", " + defZ + ", " + defW + " )";
+            case AT_Bool1:
+                return bSameComponentType
+                    ? _Expression
+                    : "bool( " + _Expression + " )";
+            case AT_Bool2:
+                return bSameComponentType
+                    ? "bvec2( " + _Expression + ", " + defY + " )"
+                    : "bvec2( bool(" + _Expression + "), " + defY + " )";
+            case AT_Bool3:
+                return bSameComponentType
+                    ? "bvec3( " + _Expression + ", " + defY +", " + defZ + " )"
+                    : "bvec3( bool(" + _Expression + "), " + defY +", " + defZ + " )";
+            case AT_Bool4:
+                return bSameComponentType
+                    ? "bvec4( " + _Expression + ", " + defY +", " + defZ + ", " + defW + " )"
+                    : "bvec4( bool(" + _Expression + "), " + defY +", " + defZ + ", " + defW + " )";
+            default:
+                break;
+            }
+            break;
+        }
+    case VEC2:
         switch ( _TypeTo ) {
+        case AT_Float1:
+            return bSameComponentType
+                ? _Expression + ".x"
+                : "float( " + _Expression + ".x )";
         case AT_Float2:
-            return "vec2( " + _Expression + " )";
+            return bSameComponentType
+                ? _Expression
+                : "vec2( " + _Expression + " )";
         case AT_Float3:
-            return "vec3( " + _Expression + " )";
+            return bSameComponentType
+                ? "vec3( " + _Expression + ", " + defZ + " )"
+                : "vec3( vec2(" + _Expression + "), " + defZ + " )";
         case AT_Float4:
-            return "vec4( " + _Expression + " )";
+            return bSameComponentType
+                ? "vec4( " + _Expression + ", " + defZ + ", " + defW + " )"
+                : "vec4( vec2(" + _Expression + "), " + defZ + ", " + defW + " )";
+        case AT_Bool1:
+            return bSameComponentType
+                ? _Expression + ".x"
+                : "bool(" + _Expression + ".x )";
+        case AT_Bool2:
+            return bSameComponentType
+                ? _Expression
+                : "bvec2( " + _Expression + " )";
+        case AT_Bool3:
+            return bSameComponentType
+                ? "bvec3( " + _Expression + ", " + defZ + " )"
+                : "bvec3( bvec2(" + _Expression + "), " + defZ + " )";
+        case AT_Bool4:
+            return bSameComponentType
+                ? "bvec4( " + _Expression + ", " + defZ + ", " + defW + " )"
+                : "bvec4( bvec2(" + _Expression + "), " + defZ + ", " + defW + " )";
         default:
             break;
         }
         break;
-    case AT_Float2:
+    case VEC3:
         switch ( _TypeTo ) {
         case AT_Float1:
-            return _Expression + ".x";
+            return bSameComponentType
+                ? _Expression + ".x"
+                : "float( " + _Expression + ".x )";
+        case AT_Float2:
+            return bSameComponentType
+                ? _Expression + ".xy"
+                : "vec2( " + _Expression + ".xy )";
         case AT_Float3:
-            return "vec3( " + _Expression + ", " + Math::ToString( _DefZ ) + " )";
+            return bSameComponentType
+                ? _Expression
+                : "vec3( " + _Expression + " )";
         case AT_Float4:
-            return "vec4( " + _Expression + ", " + Math::ToString( _DefZ ) + ", " + Math::ToString( _DefW ) + " )";
+            return bSameComponentType
+                ? "vec4( " + _Expression + ", " + defW + " )"
+                : "vec4( vec3(" + _Expression + "), " + defW + " )";
+        case AT_Bool1:
+            return bSameComponentType
+                ? _Expression + ".x"
+                : "bool(" + _Expression + ".x)";
+        case AT_Bool2:
+            return bSameComponentType
+                ? _Expression + ".xy"
+                : "bvec2(" + _Expression + ".xy)";
+        case AT_Bool3:
+            return bSameComponentType
+                ? _Expression
+                : "bvec3( " + _Expression + " )";
+        case AT_Bool4:
+            return bSameComponentType
+                ? "bvec4( " + _Expression + ", " + defW + " )"
+                : "bvec4( bvec3(" + _Expression + "), " + defW + " )";
         default:
             break;
         }
         break;
-    case AT_Float3:
+    case VEC4:
         switch ( _TypeTo ) {
         case AT_Float1:
-            return _Expression + ".x";
+            return bSameComponentType
+                ? _Expression + ".x"
+                : "float( " + _Expression + ".x )";
         case AT_Float2:
-            return _Expression + ".xy";
-        case AT_Float4:
-            return "vec4( " + _Expression + ", " + Math::ToString( _DefW ) + " )";
-        default:
-            break;
-        }
-        break;
-    case AT_Float4:
-        switch ( _TypeTo ) {
-        case AT_Float1:
-            return _Expression + ".x";
-        case AT_Float2:
-            return _Expression + ".xy";
+            return bSameComponentType
+                ? _Expression + ".xy"
+                : "vec2( " + _Expression + ".xy )";
         case AT_Float3:
-            return _Expression + ".xyz";
+            return bSameComponentType
+                ? _Expression + ".xyz"
+                : "vec3( " + _Expression + ".xyz )";
+        case AT_Float4:
+            return bSameComponentType
+                ? _Expression
+                : "vec4( " + _Expression + " )";
+        case AT_Bool1:
+            return bSameComponentType
+                ? _Expression + ".x"
+                : "bool(" + _Expression + ".x )";
+        case AT_Bool2:
+            return bSameComponentType
+                ? _Expression + ".xy"
+                : "bvec2(" + _Expression + ".xy )";
+        case AT_Bool3:
+            return bSameComponentType
+                ? _Expression + ".xyz"
+                : "bvec3(" + _Expression + ".xyz )";
+        case AT_Bool4:
+            return bSameComponentType
+                ? _Expression
+                : "bvec4(" + _Expression + ")";
         default:
             break;
         }
@@ -150,6 +445,34 @@ static AString MakeVectorCast( AString const & _Expression, EMGNodeType _TypeFro
     AN_ASSERT(0);
 
     return _Expression;
+}
+
+static const char * MakeEmptyVector( EMGNodeType InType )
+{
+    switch ( InType ) {
+    case AT_Float1:
+        return "0.0";
+    case AT_Float2:
+        return "vec2( 0.0 )";
+    case AT_Float3:
+        return "vec3( 0.0 )";
+    case AT_Float4:
+        return "vec4( 0.0 )";
+    case AT_Bool1:
+        return "false";
+    case AT_Bool2:
+        return "bvec2( false )";
+    case AT_Bool3:
+        return "bvec3( false )";
+    case AT_Bool4:
+        return "bvec4( false )";
+    };
+
+    return "0.0";
+}
+
+static const char * MakeDefaultNormal() {
+    return "vec3( 0.0, 0.0, 1.0 )";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -464,46 +787,10 @@ void MGMaterialStage::Compute( AMaterialBuildContext & _Context ) {
 //        }
 
         if ( connection && nsv->ConnectedBlock()->Build( _Context ) ) {
-
-            if ( nsv->Type == connection->Type ) {
-                _Context.SourceCode += nsvName + " = " + connection->Expression + ";\n";
-            } else {
-                switch ( nsv->Type ) {
-                case AT_Float1:
-                    _Context.SourceCode += nsvName + " = " + connection->Expression + ".x;\n";
-                    break;
-                case AT_Float2:
-                    _Context.SourceCode += nsvName + " = vec2( " + connection->Expression + " );\n";
-                    break;
-                case AT_Float3:
-                    _Context.SourceCode += nsvName + " = vec3( " + connection->Expression + " );\n";
-                    break;
-                case AT_Float4:
-                    _Context.SourceCode += nsvName + " = vec4( " + connection->Expression + " );\n";
-                    break;
-                default:
-                    GLogger.Printf( "%s: Invalid input type\n", GetObjectNameCStr() );
-                    break;
-                }
-            }
+            AString expression = MakeVectorCast( connection->Expression, connection->Type, nsv->Type, VECTOR_CAST_EXPAND_VEC1 );
+            _Context.SourceCode += nsvName + " = " + expression + ";\n";
         } else {
-            switch ( nsv->Type ) {
-            case AT_Float1:
-                _Context.SourceCode += nsvName + " = 0.0;\n";
-                break;
-            case AT_Float2:
-                _Context.SourceCode += nsvName + " = vec2( 0.0 );\n";
-                break;
-            case AT_Float3:
-                _Context.SourceCode += nsvName + " = vec3( 0.0 );\n";
-                break;
-            case AT_Float4:
-                _Context.SourceCode += nsvName + " = vec4( 0.0 );\n";
-                break;
-            default:
-                GLogger.Printf( "%s: Invalid input type\n", GetObjectNameCStr() );
-                break;
-            }
+            _Context.SourceCode += nsvName + " = " + MakeEmptyVector( nsv->Type )  + ";\n";
         }
     }
 }
@@ -533,8 +820,6 @@ void MGVertexStage::Compute( AMaterialBuildContext & _Context ) {
 
     MGNodeOutput * positionCon = Position->GetConnection();
 
-    bool bValid = true;
-
     bHasVertexDeform = false;
 
     //AString TransformMatrix;
@@ -550,31 +835,11 @@ void MGVertexStage::Compute( AMaterialBuildContext & _Context ) {
             bHasVertexDeform = true;
         }
 
-        switch( positionCon->Type ) {
-        case AT_Float1:
-            _Context.SourceCode += "vec4 VertexPos = vec4(" + positionCon->Expression + ", 0.0, 0.0, 1.0 );\n";
-            break;
-        case AT_Float2:
-            _Context.SourceCode += "vec4 VertexPos = vec4(" + positionCon->Expression + ", 0.0, 1.0 );\n";
-            break;
-        case AT_Float3:
-            _Context.SourceCode += "vec4 VertexPos = vec4(" + positionCon->Expression + ", 1.0 );\n";
-            break;
-        case AT_Float4:
-            _Context.SourceCode += "vec4 VertexPos = " + positionCon->Expression + ";\n";
-            break;
-        default:
-            bValid = false;
-            break;
-        }
+        AString expression = MakeVectorCast( positionCon->Expression, positionCon->Type, AT_Float4, VECTOR_CAST_IDENTITY_W );
+
+        _Context.SourceCode += "vec4 VertexPos = " + expression + ";\n";
 
     } else {
-        bValid = false;
-    }
-
-    if ( !bValid ) {
-        //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
         _Context.SourceCode += "vec4 VertexPos = vec4( GetVertexPosition(), 1.0 );\n";
     }
 
@@ -604,327 +869,63 @@ MGFragmentStage::~MGFragmentStage() {
 
 }
 
-void MGFragmentStage::Compute( AMaterialBuildContext & _Context ) {
+static AString MakeExpression( AMaterialBuildContext & _Context, MGNodeInput * Input, EMGNodeType DesiredType, AString const & DefaultExpression, int VectorCastFlags = 0 )
+{
+    MGNodeOutput * connection = Input->GetConnection();
 
-    Super::Compute( _Context );
-
-    // Color
-    {
-        MGNodeOutput * colorCon = Color->GetConnection();
-
-        bool bValid = true;
-
-        if ( colorCon && Color->ConnectedBlock()->Build( _Context ) ) {
-
-            switch( colorCon->Type ) {
-            case AT_Float1:
-                _Context.SourceCode += "vec4 BaseColor = vec4(" + colorCon->Expression + ", 0.0, 0.0, 1.0 );\n";
-                break;
-            case AT_Float2:
-                _Context.SourceCode += "vec4 BaseColor = vec4(" + colorCon->Expression + ", 0.0, 1.0 );\n";
-                break;
-            case AT_Float3:
-                _Context.SourceCode += "vec4 BaseColor = vec4(" + colorCon->Expression + ", 1.0 );\n";
-                break;
-            case AT_Float4:
-                _Context.SourceCode += "vec4 BaseColor = " + colorCon->Expression + ";\n";
-                break;
-            default:
-                bValid = false;
-                break;
-            }
-
-        } else {
-            bValid = false;
-        }
-
-        if ( !bValid ) {
-            //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-            _Context.SourceCode += "vec4 BaseColor = vec4(1);\n";
-        }
+    if ( connection && Input->ConnectedBlock()->Build( _Context ) ) {
+        return MakeVectorCast( connection->Expression, connection->Type, DesiredType, VectorCastFlags );
     }
 
+    return DefaultExpression;//MakeEmptyVector( DesiredType );
+}
+
+void MGFragmentStage::Compute( AMaterialBuildContext & _Context )
+{
+    Super::Compute( _Context );
+
+    AString expression;
+
+    // Color
+    expression = MakeExpression( _Context, Color, AT_Float4, MakeEmptyVector( AT_Float4 ), VECTOR_CAST_EXPAND_VEC1 );
+    _Context.SourceCode += "vec4 BaseColor = " + expression + ";\n";
 
     if ( _Context.GetMaterialType() == MATERIAL_TYPE_PBR || _Context.GetMaterialType() == MATERIAL_TYPE_BASELIGHT ) {
         // Normal
-        {
-            MGNodeOutput * normalCon = Normal->GetConnection();
-
-            bool bValid = true;
-
-            if ( normalCon && Normal->ConnectedBlock()->Build( _Context ) ) {
-
-                switch ( normalCon->Type ) {
-                case AT_Float3:
-                    _Context.SourceCode += "vec3 MaterialNormal = " + normalCon->Expression + ";\n";
-                    break;
-                case AT_Float4:
-                    _Context.SourceCode += "vec3 MaterialNormal = vec3(" + normalCon->Expression + ");\n";
-                    break;
-                default:
-                    bValid = false;
-                    break;
-                }
-
-            } else {
-                bValid = false;
-            }
-
-            if ( !bValid ) {
-                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-                _Context.SourceCode += "vec3 MaterialNormal = vec3(0,0,1);\n";
-            }
-        }
+        expression = MakeExpression( _Context, Normal, AT_Float3, MakeDefaultNormal() );
+        _Context.SourceCode += "vec3 MaterialNormal = " + expression + ";\n";
 
         // Emissive
-        {
-            MGNodeOutput * emissiveCon = Emissive->GetConnection();
-
-            bool bValid = true;
-
-            if ( emissiveCon && Emissive->ConnectedBlock()->Build( _Context ) ) {
-
-                switch ( emissiveCon->Type ) {
-                case AT_Float1:
-                    _Context.SourceCode += "vec3 MaterialEmissive = vec3(" + emissiveCon->Expression + ", 0.0, 0.0 );\n";
-                    break;
-                case AT_Float2:
-                    _Context.SourceCode += "vec3 MaterialEmissive = vec3(" + emissiveCon->Expression + ", 0.0 );\n";
-                    break;
-                case AT_Float3:
-                    _Context.SourceCode += "vec3 MaterialEmissive = " + emissiveCon->Expression + ";\n";
-                    break;
-                case AT_Float4:
-                    _Context.SourceCode += "vec3 MaterialEmissive = " + emissiveCon->Expression + ".xyz;\n";
-                    break;
-                default:
-                    bValid = false;
-                    break;
-                }
-
-            } else {
-                bValid = false;
-            }
-
-            if ( !bValid ) {
-                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-                _Context.SourceCode += "vec3 MaterialEmissive = vec3(0);\n";
-            }
-        }
+        expression = MakeExpression( _Context, Emissive, AT_Float3, MakeEmptyVector( AT_Float3 ), VECTOR_CAST_EXPAND_VEC1 );
+        _Context.SourceCode += "vec3 MaterialEmissive = " + expression + ";\n";
 
         // Specular
-        {
-            MGNodeOutput * specCon = Specular->GetConnection();
-
-            bool bValid = true;
-
-            if ( specCon && Specular->ConnectedBlock()->Build( _Context ) ) {
-
-                switch ( specCon->Type ) {
-                case AT_Float1:
-                    _Context.SourceCode += "vec3 MaterialSpecular = vec3(" + specCon->Expression + ", 0.0, 0.0 );\n";
-                    break;
-                case AT_Float2:
-                    _Context.SourceCode += "vec3 MaterialSpecular = vec3(" + specCon->Expression + ", 0.0 );\n";
-                    break;
-                case AT_Float3:
-                    _Context.SourceCode += "vec3 MaterialSpecular = " + specCon->Expression + ";\n";
-                    break;
-                case AT_Float4:
-                    _Context.SourceCode += "vec3 MaterialSpecular = " + specCon->Expression + ".xyz;\n";
-                    break;
-                default:
-                    bValid = false;
-                    break;
-                }
-
-            } else {
-                bValid = false;
-            }
-
-            if ( !bValid ) {
-                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-                _Context.SourceCode += "vec3 MaterialSpecular = vec3(0);\n";
-            }
-        }
+        expression = MakeExpression( _Context, Specular, AT_Float3, MakeEmptyVector( AT_Float3 ), VECTOR_CAST_EXPAND_VEC1 );
+        _Context.SourceCode += "vec3 MaterialSpecular = " + expression + ";\n";
 
         // Ambient Light
-        {
-            MGNodeOutput * ambientCon = AmbientLight->GetConnection();
-
-            bool bValid = true;
-
-            if ( ambientCon && AmbientLight->ConnectedBlock()->Build( _Context ) ) {
-
-                switch ( ambientCon->Type ) {
-                case AT_Float1:
-                    _Context.SourceCode += "vec3 MaterialAmbientLight = vec3(" + ambientCon->Expression + ");\n";
-                    break;
-                case AT_Float2:
-                    _Context.SourceCode += "vec3 MaterialAmbientLight = vec3(" + ambientCon->Expression + ", 0.0 );\n";
-                    break;
-                case AT_Float3:
-                    _Context.SourceCode += "vec3 MaterialAmbientLight = " + ambientCon->Expression + ";\n";
-                    break;
-                case AT_Float4:
-                    _Context.SourceCode += "vec3 MaterialAmbientLight = " + ambientCon->Expression + ".xyz;\n";
-                    break;
-                default:
-                    bValid = false;
-                    break;
-                }
-
-            } else {
-                bValid = false;
-            }
-
-            if ( !bValid ) {
-                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-                _Context.SourceCode += "vec3 MaterialAmbientLight = vec3(0.0);\n";
-            }
-        }
+        expression = MakeExpression( _Context, AmbientLight, AT_Float3, MakeEmptyVector( AT_Float3 ), VECTOR_CAST_EXPAND_VEC1 );
+        _Context.SourceCode += "vec3 MaterialAmbientLight = " + expression + ";\n";
     }
 
-
     if ( _Context.GetMaterialType() == MATERIAL_TYPE_PBR ) {
-
         // Metallic
-        {
-            MGNodeOutput * metallicCon = Metallic->GetConnection();
-
-            bool bValid = true;
-
-            if ( metallicCon && Metallic->ConnectedBlock()->Build( _Context ) ) {
-
-                switch ( metallicCon->Type ) {
-                case AT_Float1:
-                    _Context.SourceCode += "float MaterialMetallic = " + metallicCon->Expression + ";\n";
-                    break;
-                case AT_Float2:
-                case AT_Float3:
-                case AT_Float4:
-                    _Context.SourceCode += "float MaterialMetallic = " + metallicCon->Expression + ".x;\n";
-                    break;
-                default:
-                    bValid = false;
-                    break;
-                }
-
-            } else {
-                bValid = false;
-            }
-
-            if ( !bValid ) {
-                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-                _Context.SourceCode += "float MaterialMetallic = 0;\n";
-            }
-        }
+        expression = MakeExpression( _Context, Metallic, AT_Float1, MakeEmptyVector( AT_Float1 ) );
+        _Context.SourceCode += "float MaterialMetallic = " + expression + ";\n";
 
         // Roughness
-        {
-            MGNodeOutput * roughnessCon = Roughness->GetConnection();
-
-            bool bValid = true;
-
-            if ( roughnessCon && Roughness->ConnectedBlock()->Build( _Context ) ) {
-
-                switch ( roughnessCon->Type ) {
-                case AT_Float1:
-                    _Context.SourceCode += "float MaterialRoughness = " + roughnessCon->Expression + ";\n";
-                    break;
-                case AT_Float2:
-                case AT_Float3:
-                case AT_Float4:
-                    _Context.SourceCode += "float MaterialRoughness = " + roughnessCon->Expression + ".x;\n";
-                    break;
-                default:
-                    bValid = false;
-                    break;
-                }
-
-            } else {
-                bValid = false;
-            }
-
-            if ( !bValid ) {
-                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-                _Context.SourceCode += "float MaterialRoughness = 1;\n";
-            }
-        }
+        expression = MakeExpression( _Context, Roughness, AT_Float1, "1.0" );
+        _Context.SourceCode += "float MaterialRoughness = " + expression + ";\n";
 
         // Ambient Occlusion
-        {
-            MGNodeOutput * ambientCon = AmbientOcclusion->GetConnection();
-
-            bool bValid = true;
-
-            if ( ambientCon && AmbientOcclusion->ConnectedBlock()->Build( _Context ) ) {
-
-                switch ( ambientCon->Type ) {
-                case AT_Float1:
-                    _Context.SourceCode += "float MaterialAmbientOcclusion = " + ambientCon->Expression + ";\n";
-                    break;
-                case AT_Float2:
-                case AT_Float3:
-                case AT_Float4:
-                    _Context.SourceCode += "float MaterialAmbientOcclusion = " + ambientCon->Expression + ".x;\n";
-                    break;
-                default:
-                    bValid = false;
-                    break;
-                }
-
-            } else {
-                bValid = false;
-            }
-
-            if ( !bValid ) {
-                //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-                _Context.SourceCode += "float MaterialAmbientOcclusion = 1;\n";
-            }
-        }
+        expression = MakeExpression( _Context, AmbientOcclusion, AT_Float1, "1.0" );
+        _Context.SourceCode += "float MaterialAmbientOcclusion = " + expression + ";\n";
     }
 
     // Opacity
-    if ( _Context.GetGraph()->bTranslucent )
-    {
-        MGNodeOutput * opacityCon = Opacity->GetConnection();
-
-        bool bValid = true;
-
-        if ( opacityCon && Opacity->ConnectedBlock()->Build( _Context ) ) {
-
-            switch ( opacityCon->Type ) {
-            case AT_Float1:
-                _Context.SourceCode += "float Opacity = " + opacityCon->Expression + ";\n";
-                break;
-            case AT_Float2:
-            case AT_Float3:
-            case AT_Float4:
-                _Context.SourceCode += "float Opacity = " + opacityCon->Expression + ".x;\n";
-                break;
-            default:
-                bValid = false;
-                break;
-            }
-
-        } else {
-            bValid = false;
-        }
-
-        if ( !bValid ) {
-            //GLogger.Printf( "%s: Invalid input type\n", Name.CStr() );
-
-            _Context.SourceCode += "float Opacity = 1;\n";
-        }
+    if ( _Context.GetGraph()->bTranslucent ) {
+        expression = MakeExpression( _Context, Opacity, AT_Float1, "1.0" );
+        _Context.SourceCode += "float Opacity = " + expression + ";\n";
     } else {
         _Context.SourceCode += "float Opacity = 1;\n";
     }
@@ -950,22 +951,30 @@ void MGShadowCastStage::Compute( AMaterialBuildContext & _Context ) {
     Super::Compute( _Context );
 
     // Shadow Mask
-    {
-        MGNodeOutput * con = ShadowMask->GetConnection();
 
-        if ( con && ShadowMask->ConnectedBlock()->Build( _Context ) ) {
-            switch( con->Type ) {
-            case AT_Float1:
-                _Context.SourceCode += "if ( " + con->Expression + " <= 0.0 ) discard;\n";
-                break;
-            case AT_Float2:
-            case AT_Float3:
-            case AT_Float4:
-                _Context.SourceCode += "if ( " + con->Expression + ".x <= 0.0 ) discard;\n";
-                break;
-            default:
-                break;
-            }
+    MGNodeOutput * con = ShadowMask->GetConnection();
+
+    if ( con && ShadowMask->ConnectedBlock()->Build( _Context ) ) {
+
+        switch ( con->Type ) {
+        case AT_Float1:
+            _Context.SourceCode += "if ( " + con->Expression + " <= 0.0 ) discard;\n";
+            break;
+        case AT_Float2:
+        case AT_Float3:
+        case AT_Float4:
+            _Context.SourceCode += "if ( " + con->Expression + ".x <= 0.0 ) discard;\n";
+            break;
+        case AT_Bool1:
+            _Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
+            break;
+        case AT_Bool2:
+        case AT_Bool3:
+        case AT_Bool4:
+            _Context.SourceCode += "if ( " + con->Expression + ".x == false ) discard;\n";
+            break;
+        default:
+            break;
         }
     }
 }
@@ -982,29 +991,9 @@ MGProjectionNode::MGProjectionNode() : Super( "Projection" ) {
 }
 
 void MGProjectionNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * vectorCon = Vector->GetConnection();
+    AString expression = "TransformMatrix * " + MakeExpression( _Context, Vector, AT_Float4, MakeEmptyVector( AT_Float4 ), VECTOR_CAST_IDENTITY_W );
 
-    if ( vectorCon && Vector->ConnectedBlock()->Build( _Context ) ) {
-        switch( vectorCon->Type ) {
-        case AT_Float1:
-            _Context.GenerateSourceCode( Result, "TransformMatrix * vec4( " + vectorCon->Expression + ", 0.0, 0.0, 1.0 )", true );
-            break;
-        case AT_Float2:
-            _Context.GenerateSourceCode( Result, "TransformMatrix * vec4( " + vectorCon->Expression + ", 0.0, 1.0 )", true );
-            break;
-        case AT_Float3:
-            _Context.GenerateSourceCode( Result, "TransformMatrix * vec4( " + vectorCon->Expression + ", 1.0 )", true );
-            break;
-        case AT_Float4:
-            _Context.GenerateSourceCode( Result, "TransformMatrix * " + vectorCon->Expression, true );
-            break;
-        default:
-            _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
-            break;
-        }
-    } else {
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
-    }    
+    _Context.GenerateSourceCode( Result, expression, true );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1012,7 +1001,6 @@ void MGProjectionNode::Compute( AMaterialBuildContext & _Context ) {
 AN_CLASS_META( MGLengthNode )
 
 MGLengthNode::MGLengthNode() : Super( "Length" ) {
-
     Stages = ANY_STAGE_BIT;
 
     Value = AddInput( "Value" );
@@ -1023,40 +1011,18 @@ void MGLengthNode::Compute( AMaterialBuildContext & _Context ) {
     MGNodeOutput * inputConnection = Value->GetConnection();
 
     if ( inputConnection && Value->ConnectedBlock()->Build( _Context ) ) {
-        if ( inputConnection->Type == AT_Float1 ) {
-            _Context.GenerateSourceCode( Result, inputConnection->Expression, false );
+
+        EMGNodeType type = ToFloatType( inputConnection->Type );
+
+        AString expression = MakeVectorCast( inputConnection->Expression, inputConnection->Type, type );
+
+        if ( type == AT_Float1 ) {
+            _Context.GenerateSourceCode( Result, expression, false );
         } else {
-            _Context.GenerateSourceCode( Result, "length( " + inputConnection->Expression + " )", false );
+            _Context.GenerateSourceCode( Result, "length( " + expression + " )", false );
         }
     } else {
         Result->Expression = "0.0";
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-AN_CLASS_META( MGNormalizeNode )
-
-MGNormalizeNode::MGNormalizeNode() : Super( "Normalize" ){
-    Stages = ANY_STAGE_BIT;
-
-    Value = AddInput( "Value" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGNormalizeNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * inputConnection = Value->GetConnection();
-
-    if ( inputConnection && Value->ConnectedBlock()->Build( _Context ) ) {
-        Result->Type = inputConnection->Type;
-        if ( inputConnection->Type == AT_Float1 ) {
-            Result->Expression = "1.0";
-        } else {
-            _Context.GenerateSourceCode( Result, "normalize( " + inputConnection->Expression + " )", false );
-        }
-    } else {
-        Result->Type = AT_Float4;
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
     }
 }
 
@@ -1068,10 +1034,10 @@ MGDecomposeVectorNode::MGDecomposeVectorNode() : Super( "Decompose Vector" ) {
     Stages = ANY_STAGE_BIT;
 
     Vector = AddInput( "Vector" );
-    X = AddOutput( "X", AT_Float1 );
-    Y = AddOutput( "Y", AT_Float1 );
-    Z = AddOutput( "Z", AT_Float1 );
-    W = AddOutput( "W", AT_Float1 );
+    X = AddOutput( "X", AT_Unknown );
+    Y = AddOutput( "Y", AT_Unknown );
+    Z = AddOutput( "Z", AT_Unknown );
+    W = AddOutput( "W", AT_Unknown );
 }
 
 void MGDecomposeVectorNode::Compute( AMaterialBuildContext & _Context ) {
@@ -1079,35 +1045,54 @@ void MGDecomposeVectorNode::Compute( AMaterialBuildContext & _Context ) {
 
     if ( inputConnection && Vector->ConnectedBlock()->Build( _Context ) ) {
 
-        switch ( inputConnection->Type ) {
-        case AT_Float1:
-            _Context.GenerateSourceCode( X, inputConnection->Expression, false );
-            //X->Expression = temp;
-            Y->Expression = "0.0";
-            Z->Expression = "0.0";
-            W->Expression = "0.0";
+        EMGComponentType componentType = GetTypeComponent( inputConnection->Type );
+
+        const char * zero = "0";
+
+        switch ( componentType ) {
+        case COMP_FLOAT:
+            X->Type = Y->Type = Z->Type = W->Type = AT_Float1;
+            zero = "0.0";
             break;
-        case AT_Float2:
+        case COMP_BOOL:
+            X->Type = Y->Type = Z->Type = W->Type = AT_Bool1;
+            zero = "false";
+            break;
+        default:
+            AN_ASSERT( 0 );
+            break;
+        }
+
+        switch ( GetTypeVector( inputConnection->Type ) ) {
+        case VEC1:
+            {
+            _Context.GenerateSourceCode( X, inputConnection->Expression, false );
+            Y->Expression = zero;
+            Z->Expression = zero;
+            W->Expression = zero;
+            break;
+            }
+        case VEC2:
             {
             AString temp = "temp_" + _Context.GenerateVariableName();
             _Context.SourceCode += "const " + AString(AssemblyTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
             X->Expression = temp + ".x";
             Y->Expression = temp + ".y";
-            Z->Expression = "0.0";
-            W->Expression = "0.0";
+            Z->Expression = zero;
+            W->Expression = zero;
             }
             break;
-        case AT_Float3:
+        case VEC3:
             {
             AString temp = "temp_" + _Context.GenerateVariableName();
             _Context.SourceCode += "const " + AString(AssemblyTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
             X->Expression = temp + ".x";
             Y->Expression = temp + ".y";
             Z->Expression = temp + ".z";
-            W->Expression = "0.0";
+            W->Expression = zero;
             }
             break;
-        case AT_Float4:
+        case VEC4:
             {
             AString temp = "temp_" + _Context.GenerateVariableName();
             _Context.SourceCode += "const " + AString(AssemblyTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
@@ -1118,14 +1103,12 @@ void MGDecomposeVectorNode::Compute( AMaterialBuildContext & _Context ) {
             }
             break;
         default:
-            X->Expression = "0.0";
-            Y->Expression = "0.0";
-            Z->Expression = "0.0";
-            W->Expression = "0.0";
+            AN_ASSERT( 0 );
             break;
         }
 
     } else {
+        X->Type = Y->Type = Z->Type = W->Type = AT_Float1;
         X->Expression = "0.0";
         Y->Expression = "0.0";
         Z->Expression = "0.0";
@@ -1153,10 +1136,10 @@ void MGMakeVectorNode::Compute( AMaterialBuildContext & _Context ) {
     MGNodeOutput * ZConnection = Z->GetConnection();
     MGNodeOutput * WConnection = W->GetConnection();
 
-    bool XValid = XConnection && X->ConnectedBlock()->Build( _Context ) && XConnection->Type == AT_Float1;
-    bool YValid = YConnection && Y->ConnectedBlock()->Build( _Context ) && YConnection->Type == AT_Float1;
-    bool ZValid = ZConnection && Z->ConnectedBlock()->Build( _Context ) && ZConnection->Type == AT_Float1;
-    bool WValid = WConnection && W->ConnectedBlock()->Build( _Context ) && WConnection->Type == AT_Float1;
+    bool XValid = XConnection && X->ConnectedBlock()->Build( _Context ) && IsTypeComponent( XConnection->Type );
+    bool YValid = YConnection && Y->ConnectedBlock()->Build( _Context ) && IsTypeComponent( YConnection->Type );
+    bool ZValid = ZConnection && Z->ConnectedBlock()->Build( _Context ) && IsTypeComponent( ZConnection->Type );
+    bool WValid = WConnection && W->ConnectedBlock()->Build( _Context ) && IsTypeComponent( WConnection->Type );
 
     int numComponents = 4;
     if ( !WValid ) {
@@ -1179,21 +1162,66 @@ void MGMakeVectorNode::Compute( AMaterialBuildContext & _Context ) {
     }
 
     if ( numComponents == 1 ) {
-        Result->Type = AT_Float1;
+        Result->Type = XConnection->Type;
         _Context.GenerateSourceCode( Result, XConnection->Expression, false );
         return;
     }
 
-    Result->Type = EMGNodeType( AT_Float1 + numComponents - 1 );
+    // Result type is depends on first valid component type
+    EMGNodeType resultType;
+    if ( XValid ) {
+        resultType = XConnection->Type;
+    } else if ( YValid ) {
+        resultType = YConnection->Type;
+    } else if ( ZValid ) {
+        resultType = ZConnection->Type;
+    } else if ( WValid ) {
+        resultType = WConnection->Type;
+    } else {
+        resultType = AT_Float1;
+        AN_ASSERT( 0 );
+    }
+    Result->Type = EMGNodeType( resultType + numComponents - 1 );
+
+    AString resultTypeStr;
+    const char * defaultVal = "0";
+    switch ( resultType ) {
+    case AT_Float1:
+        resultTypeStr = "float";
+        defaultVal = "0.0";
+        break;
+    case AT_Bool1:
+        resultTypeStr = "bool";
+        defaultVal = "false";
+        break;
+    default:
+        AN_ASSERT( 0 );
+    }
+
+    AString typeCastX = XValid ?
+        ( ( resultType == XConnection->Type ) ? XConnection->Expression : ( resultTypeStr + "(" + XConnection->Expression + ")" ) )
+        : defaultVal;
+
+    AString typeCastY = YValid ?
+        ( ( resultType == YConnection->Type ) ? YConnection->Expression : ( resultTypeStr + "(" + YConnection->Expression + ")" ) )
+        : defaultVal;
+
+    AString typeCastZ = ZValid ?
+        ( ( resultType == ZConnection->Type ) ? ZConnection->Expression : ( resultTypeStr + "(" + ZConnection->Expression + ")" ) )
+        : defaultVal;
+
+    AString typeCastW = WValid ?
+        ( ( resultType == WConnection->Type ) ? WConnection->Expression : ( resultTypeStr + "(" + WConnection->Expression + ")" ) )
+        : defaultVal;
 
     switch ( Result->Type ) {
     case AT_Float2:
 
         _Context.GenerateSourceCode( Result,
                   "vec2( "
-                + (XValid ? XConnection->Expression : AString("0.0"))
+                + typeCastX
                 + ", "
-                + (YValid ? YConnection->Expression : AString("0.0"))
+                + typeCastY
                 + " )",
                   false );
         break;
@@ -1201,11 +1229,11 @@ void MGMakeVectorNode::Compute( AMaterialBuildContext & _Context ) {
     case AT_Float3:
         _Context.GenerateSourceCode( Result,
                   "vec3( "
-                + (XValid ? XConnection->Expression : AString("0.0"))
+                + typeCastX
                 + ", "
-                + (YValid ? YConnection->Expression : AString("0.0"))
+                + typeCastY
                 + ", "
-                + (ZValid ? ZConnection->Expression : AString("0.0"))
+                + typeCastZ
                 + " )",
                   false );
         break;
@@ -1213,13 +1241,50 @@ void MGMakeVectorNode::Compute( AMaterialBuildContext & _Context ) {
     case AT_Float4:
         _Context.GenerateSourceCode( Result,
                   "vec4( "
-                + (XValid ? XConnection->Expression : AString("0.0"))
+                + typeCastX
                 + ", "
-                + (YValid ? YConnection->Expression : AString("0.0"))
+                + typeCastY
                 + ", "
-                + (ZValid ? ZConnection->Expression : AString("0.0"))
+                + typeCastZ
                 + ", "
-                + (WValid ? WConnection->Expression : AString("0.0"))
+                + typeCastW
+                + " )",
+                  false );
+        break;
+
+    case AT_Bool2:
+
+        _Context.GenerateSourceCode( Result,
+                  "bvec2( "
+                + typeCastX
+                + ", "
+                + typeCastY
+                + " )",
+                  false );
+        break;
+
+    case AT_Bool3:
+        _Context.GenerateSourceCode( Result,
+                  "bvec3( "
+                + typeCastX
+                + ", "
+                + typeCastY
+                + ", "
+                + typeCastZ
+                + " )",
+                  false );
+        break;
+
+    case AT_Bool4:
+        _Context.GenerateSourceCode( Result,
+                  "bvec4( "
+                + typeCastX
+                + ", "
+                + typeCastY
+                + ", "
+                + typeCastZ
+                + ", "
+                + typeCastW
                 + " )",
                   false );
         break;
@@ -1231,318 +1296,187 @@ void MGMakeVectorNode::Compute( AMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META( MGNegateNode )
-
-MGNegateNode::MGNegateNode() : Super( "Negate" ) {
-    Stages = ANY_STAGE_BIT;
-
-    Value = AddInput( "Value" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGNegateNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * inputConnection = Value->GetConnection();
-
-    if ( inputConnection && Value->ConnectedBlock()->Build( _Context ) ) {
-        Result->Type = inputConnection->Type;
-
-        _Context.GenerateSourceCode( Result, "-" + inputConnection->Expression, true );
-    } else {
-        Result->Type = AT_Float1;
-        Result->Expression = "0.0";
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-AN_CLASS_META( MGFractNode )
-
-MGFractNode::MGFractNode() : Super( "Fract" ) {
-    Stages = ANY_STAGE_BIT;
-
-    Value = AddInput( "Value" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGFractNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * inputConnection = Value->GetConnection();
-
-    AString expression;
-
-    if ( inputConnection && Value->ConnectedBlock()->Build( _Context ) ) {
-        Result->Type = inputConnection->Type;
-
-        expression = "fract( " + inputConnection->Expression + " )";
-    } else {
-        Result->Type = AT_Float4;
-
-        expression = "vec4( 0.0 )";
-    }
-
-    _Context.GenerateSourceCode( Result, expression, false );
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
+AN_CLASS_META( MGArithmeticFunction1 )
+AN_CLASS_META( MGSaturate )
 AN_CLASS_META( MGSinusNode )
-
-MGSinusNode::MGSinusNode() : Super( "Sin" ) {
-    Stages = ANY_STAGE_BIT;
-
-    Value = AddInput( "Value" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGSinusNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * inputConnection = Value->GetConnection();
-
-    if ( inputConnection && Value->ConnectedBlock()->Build( _Context ) ) {
-        Result->Type = inputConnection->Type;
-        _Context.GenerateSourceCode( Result, "sin( " + inputConnection->Expression + " )", false );
-    } else {
-        Result->Type = AT_Float4;
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
 AN_CLASS_META( MGCosinusNode )
+AN_CLASS_META( MGFractNode )
+AN_CLASS_META( MGNegateNode )
+AN_CLASS_META( MGNormalizeNode )
 
-MGCosinusNode::MGCosinusNode() : Super( "Cos" ) {
+MGArithmeticFunction1::MGArithmeticFunction1()
+{
+    AN_ASSERT( 0 );
+}
+
+MGArithmeticFunction1::MGArithmeticFunction1( EArithmeticFunction _Function, const char * _Name )
+    : Super( _Name ), Function( _Function )
+{
     Stages = ANY_STAGE_BIT;
 
     Value = AddInput( "Value" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGCosinusNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * inputConnection = Value->GetConnection();
-
-    if ( inputConnection && Value->ConnectedBlock()->Build( _Context ) ) {
-        Result->Type = inputConnection->Type;
-        _Context.GenerateSourceCode( Result, "cos( " + inputConnection->Expression + " )", false );
-    } else {
-        Result->Type = AT_Float4;
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-AN_CLASS_META( MGArithmeticNode )
-
-MGArithmeticNode::MGArithmeticNode( const char * _Name ) : Super( _Name ) {
-    Stages = ANY_STAGE_BIT;
-
-    ValueA = AddInput( "A" );
-    ValueB = AddInput( "B" );
 
     Result = AddOutput( "Result", AT_Unknown );
 }
 
-void MGArithmeticNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * connectionA = ValueA->GetConnection();
-    MGNodeOutput * connectionB = ValueB->GetConnection();
+void MGArithmeticFunction1::Compute( AMaterialBuildContext & _Context ) {
+    MGNodeOutput * connectionA = Value->GetConnection();
 
-    constexpr const char * table[] = { " + ", " - ", " * ", " / " };
+    if ( connectionA && Value->ConnectedBlock()->Build( _Context ) ) {
 
-    const char * op = table[ArithmeticOp];
-
-    if ( connectionA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionB && ValueB->ConnectedBlock()->Build( _Context ) ) {
-
-        Result->Type = connectionA->Type;
-
-        if ( connectionA->Type != connectionB->Type && connectionB->Type != AT_Float1 ) {
-            _Context.GenerateSourceCode( Result, connectionA->Expression + op + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ), true );
+        // Result type depends on input type
+        if ( !IsArithmeticType( connectionA->Type ) ) {
+            Result->Type = ToFloatType( connectionA->Type );
         } else {
-            _Context.GenerateSourceCode( Result, connectionA->Expression + op + connectionB->Expression, true );
+            Result->Type = connectionA->Type;
         }
 
+        AString expressionA = MakeVectorCast( connectionA->Expression, connectionA->Type, Result->Type );
+
+        AString expression;
+
+        switch ( Function ) {
+        case Saturate:
+            expression = "saturate( " + expressionA + " )";
+            break;
+        case Sin:
+            expression = "sin( " + expressionA + " )";
+            break;
+        case Cos:
+            expression = "cos( " + expressionA + " )";
+            break;
+        case Fract:
+            expression = "fract( " + expressionA + " )";
+            break;
+        case Negate:
+            expression = "(-" + expressionA + ")";
+            break;
+        case Normalize:
+            if ( Result->Type == AT_Float1 ) {
+                expression = "1.0";
+            //} else if ( Result->Type == AT_Integer1 ) { // If there will be integer types
+            //    expression = "1";
+            } else {
+                expression = "normalize( " + expressionA + " )";
+            }
+            break;
+        default:
+            AN_ASSERT( 0 );
+        }
+
+        _Context.GenerateSourceCode( Result, expression, false );
+
     } else {
         Result->Type = AT_Float4;
 
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
+        _Context.GenerateSourceCode( Result, MakeEmptyVector( Result->Type ), false );
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+AN_CLASS_META( MGArithmeticFunction2 )
 AN_CLASS_META( MGMulNode )
 AN_CLASS_META( MGDivNode )
 AN_CLASS_META( MGAddNode )
 AN_CLASS_META( MGSubNode )
+AN_CLASS_META( MGStepNode )
+AN_CLASS_META( MGPowNode )
+AN_CLASS_META( MGModNode )
+AN_CLASS_META( MGMin )
+AN_CLASS_META( MGMax )
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+MGArithmeticFunction2::MGArithmeticFunction2()
+{
+    AN_ASSERT( 0 );
+}
 
-AN_CLASS_META( MGMADNode )
-
-MGMADNode::MGMADNode() : Super( "MAD A * B + C" ) {
+MGArithmeticFunction2::MGArithmeticFunction2( EArithmeticFunction _Function, const char * _Name )
+    : Super( _Name ), Function( _Function )
+{
     Stages = ANY_STAGE_BIT;
 
     ValueA = AddInput( "A" );
     ValueB = AddInput( "B" );
-    ValueC = AddInput( "C" );
 
     Result = AddOutput( "Result", AT_Unknown );
 }
 
-void MGMADNode::Compute( AMaterialBuildContext & _Context ) {
+void MGArithmeticFunction2::Compute( AMaterialBuildContext & _Context ) {
     MGNodeOutput * connectionA = ValueA->GetConnection();
     MGNodeOutput * connectionB = ValueB->GetConnection();
-    MGNodeOutput * connectionC = ValueC->GetConnection();
 
     if ( connectionA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionB && ValueB->ConnectedBlock()->Build( _Context )
-         && connectionC && ValueC->ConnectedBlock()->Build( _Context ) ) {
+         && connectionB && ValueB->ConnectedBlock()->Build( _Context ) ) {
 
-        Result->Type = connectionA->Type;
+        // Result type depends on input type
+        if ( !IsArithmeticType( connectionA->Type ) ) {
+            Result->Type = ToFloatType( connectionA->Type );
+        } else {
+            Result->Type = connectionA->Type;
+        }
+
+        AString expressionA = MakeVectorCast( connectionA->Expression, connectionA->Type, Result->Type );
+        AString expressionB = MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, VECTOR_CAST_EXPAND_VEC1 );
 
         AString expression;
 
-        if ( connectionA->Type != connectionB->Type && connectionB->Type != AT_Float1 ) {
-            expression = connectionA->Expression + " * " + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " + ";
-        } else {
-            expression = connectionA->Expression + " * " + connectionB->Expression + " + ";
+        switch ( Function ) {
+        case Add:
+            expression = "(" + expressionA + " + " + expressionB + ")";
+            break;
+        case Sub:
+            expression = "(" + expressionA + " - " + expressionB + ")";
+            break;
+        case Mul:
+            expression = "(" + expressionA + " * " + expressionB + ")";
+            break;
+        case Div:
+            expression = "(" + expressionA + " / " + expressionB + ")";
+            break;
+        case Step:
+            expression = "step( " + expressionA + ", " + expressionB + " )";
+            break;
+        case Pow:
+            expression = "pow( " + expressionA + ", " + expressionB + " )";
+            break;
+        case Mod:
+            expression = "mod( " + expressionA + ", " + expressionB + " )";
+            break;
+        case Min:
+            expression = "min( " + expressionA + ", " + expressionB + " )";
+            break;
+        case Max:
+            expression = "max( " + expressionA + ", " + expressionB + " )";
+            break;
+        default:
+            AN_ASSERT( 0 );
         }
 
-        if ( connectionA->Type != connectionC->Type && connectionC->Type != AT_Float1 ) {
-            expression += MakeVectorCast( connectionC->Expression, connectionC->Type, Result->Type, 0,0,0,0 );
-        } else {
-            expression += connectionC->Expression;
-        }
-
-        _Context.GenerateSourceCode( Result, expression, true );
+        _Context.GenerateSourceCode( Result, expression, false );
 
     } else {
         Result->Type = AT_Float4;
 
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
+        _Context.GenerateSourceCode( Result, MakeEmptyVector( Result->Type ), false );
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META( MGStepNode )
-
-MGStepNode::MGStepNode() : Super( "Step( A, B )" ) {
-    Stages = ANY_STAGE_BIT;
-
-    ValueA = AddInput( "A" );
-    ValueB = AddInput( "B" );
-
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGStepNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * connectionA = ValueA->GetConnection();
-    MGNodeOutput * connectionB = ValueB->GetConnection();
-
-    AString expression;
-
-    if ( connectionA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionB && ValueB->ConnectedBlock()->Build( _Context ) ) {
-
-        Result->Type = connectionA->Type;
-
-        if ( connectionA->Type != connectionB->Type ) {
-            expression = "step( " + connectionA->Expression + ", " + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " )";
-        } else {
-            expression = "step( " + connectionA->Expression + ", " + connectionB->Expression + " )";
-        }
-
-    } else {
-        Result->Type = AT_Float4;
-        expression = "vec4(0.0)";
-    }
-
-    _Context.GenerateSourceCode( Result, expression, false );
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-AN_CLASS_META( MGPowNode )
-
-MGPowNode::MGPowNode() : Super( "Pow A^B" ) {
-    Stages = ANY_STAGE_BIT;
-
-    ValueA = AddInput( "A" );
-    ValueB = AddInput( "B" );
-
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGPowNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * connectionA = ValueA->GetConnection();
-    MGNodeOutput * connectionB = ValueB->GetConnection();
-
-    AString expression;
-
-    if ( connectionA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionB && ValueB->ConnectedBlock()->Build( _Context ) ) {
-
-        Result->Type = connectionA->Type;
-
-        if ( connectionA->Type != connectionB->Type ) {
-            expression = "pow( " + connectionA->Expression + ", " + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " )";
-        } else {
-            expression = "pow( " + connectionA->Expression + ", " + connectionB->Expression + " )";
-        }
-
-    } else {
-        Result->Type = AT_Float4;
-
-        expression = "vec4( 0.0 )";
-    }
-
-    _Context.GenerateSourceCode( Result, expression, false );
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-AN_CLASS_META( MGModNode )
-
-MGModNode::MGModNode() : Super( "Mod (A,B)" ) {
-    Stages = ANY_STAGE_BIT;
-
-    ValueA = AddInput( "A" );
-    ValueB = AddInput( "B" );
-
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGModNode::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * connectionA = ValueA->GetConnection();
-    MGNodeOutput * connectionB = ValueB->GetConnection();
-
-    AString expression;
-
-    if ( connectionA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionB && ValueB->ConnectedBlock()->Build( _Context ) ) {
-
-        Result->Type = connectionA->Type;
-
-        if ( connectionA->Type != connectionB->Type ) {
-            expression = "mod( " + connectionA->Expression + ", " + MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, 0,0,0,0 ) + " )";
-        } else {
-            expression = "mod( " + connectionA->Expression + ", " + connectionB->Expression + " )";
-        }
-
-    } else {
-        Result->Type = AT_Float4;
-
-        expression = "vec4( 0.0 )";
-    }
-
-    _Context.GenerateSourceCode( Result, expression, false );
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
+AN_CLASS_META( MGArithmeticFunction3 )
+AN_CLASS_META( MGMADNode )
 AN_CLASS_META( MGLerpNode )
+AN_CLASS_META( MGClamp )
 
-MGLerpNode::MGLerpNode() : Super( "Lerp( A, B, C )" ) {
+MGArithmeticFunction3::MGArithmeticFunction3()
+{
+    AN_ASSERT( 0 );
+}
+
+MGArithmeticFunction3::MGArithmeticFunction3( EArithmeticFunction _Function, const char * _Name )
+    : Super( _Name ), Function( _Function )
+{
     Stages = ANY_STAGE_BIT;
 
     ValueA = AddInput( "A" );
@@ -1552,7 +1486,7 @@ MGLerpNode::MGLerpNode() : Super( "Lerp( A, B, C )" ) {
     Result = AddOutput( "Result", AT_Unknown );
 }
 
-void MGLerpNode::Compute( AMaterialBuildContext & _Context ) {
+void MGArithmeticFunction3::Compute( AMaterialBuildContext & _Context ) {
     MGNodeOutput * connectionA = ValueA->GetConnection();
     MGNodeOutput * connectionB = ValueB->GetConnection();
     MGNodeOutput * connectionC = ValueC->GetConnection();
@@ -1561,18 +1495,38 @@ void MGLerpNode::Compute( AMaterialBuildContext & _Context ) {
          && connectionB && ValueB->ConnectedBlock()->Build( _Context )
          && connectionC && ValueC->ConnectedBlock()->Build( _Context ) ) {
 
-        Result->Type = connectionA->Type;
+        // Result type depends on input type
+        if ( !IsArithmeticType( connectionA->Type ) ) {
+            Result->Type = ToFloatType( connectionA->Type );
+        } else {
+            Result->Type = connectionA->Type;
+        }
 
-        AString expression =
-                "mix( " + connectionA->Expression + ", " + MakeVectorCast( connectionB->Expression, connectionB->Type, connectionA->Type, 0,0,0,0 ) + ", "
-                + MakeVectorCast( connectionC->Expression, connectionC->Type, connectionA->Type, 0,0,0,0 ) + " )";
+        AString expressionA = MakeVectorCast( connectionA->Expression, connectionA->Type, Result->Type );
+        AString expressionB = MakeVectorCast( connectionB->Expression, connectionB->Type, Result->Type, VECTOR_CAST_EXPAND_VEC1 );
+        AString expressionC = MakeVectorCast( connectionC->Expression, connectionC->Type, Result->Type, VECTOR_CAST_EXPAND_VEC1 );
 
-        _Context.GenerateSourceCode( Result, expression, true );
+        AString expression;
+
+        switch ( Function ) {
+        case Mad:
+            expression = "(" + expressionA + " * " + expressionB + " + " + expressionC + ")";
+            break;
+        case Lerp:
+            expression ="mix( " + expressionA + ", " + expressionB + ", " + expressionC + " )";
+            break;
+        case Clamp:
+            expression = "clamp( " + expressionA + ", " + expressionB + ", " + expressionC + " )";
+            break;
+        default:
+            AN_ASSERT( 0 );
+        }
+
+        _Context.GenerateSourceCode( Result, expression, false );
 
     } else {
         Result->Type = AT_Float4;
-
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
+        _Context.GenerateSourceCode( Result, MakeEmptyVector( Result->Type ), false );
     }
 }
 
@@ -1592,13 +1546,13 @@ void MGSpheremapCoord::Compute( AMaterialBuildContext & _Context ) {
 
     if ( connectionDir && Dir->ConnectedBlock()->Build( _Context ) )
     {
-        AString expression =
-                "builtin_spheremap_coord( " + MakeVectorCast( connectionDir->Expression, connectionDir->Type, AT_Float3, 0,0,0,0 ) + " )";
+        AString expressionDir = MakeVectorCast( connectionDir->Expression, connectionDir->Type, AT_Float3 );
 
-        _Context.GenerateSourceCode( TexCoord, expression, true );
-
-    } else {
-        _Context.GenerateSourceCode( TexCoord, "vec2( 0.0 )", false );
+        _Context.GenerateSourceCode( TexCoord, "builtin_spheremap_coord( " + expressionDir + " )", true );
+    }
+    else
+    {
+        _Context.GenerateSourceCode( TexCoord, MakeEmptyVector( AT_Float2 ), false );
     }
 }
 
@@ -1618,147 +1572,14 @@ void MGLuminance::Compute( AMaterialBuildContext & _Context ) {
 
     if ( connectionColor && LinearColor->ConnectedBlock()->Build( _Context ) )
     {
-        switch ( connectionColor->Type ) {
-        case AT_Float1:
-            // just copy source value
-            _Context.GenerateSourceCode( Luminance, connectionColor->Expression, false );
-            break;
-        default:
-            // calculate luminance
-            _Context.GenerateSourceCode( Luminance, "builtin_luminance( " + MakeVectorCast( connectionColor->Expression, connectionColor->Type, AT_Float4, 0,0,0,0 ) + " )", true );
-            break;
-        }
+        AString expressionColor = MakeVectorCast( connectionColor->Expression, connectionColor->Type, AT_Float4, VECTOR_CAST_EXPAND_VEC1 );
+
+        _Context.GenerateSourceCode( Luminance, "builtin_luminance( " + expressionColor + " )", false );
 
     } else {
-        _Context.GenerateSourceCode( Luminance, "0.0", false );
+        _Context.GenerateSourceCode( Luminance, MakeEmptyVector( AT_Float1 ), false );
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-AN_CLASS_META( MGSaturate )
-
-MGSaturate::MGSaturate() : Super( "Saturate" ) {
-    Stages = ANY_STAGE_BIT;
-
-    Value = AddInput( "Value" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGSaturate::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * connectionValue = Value->GetConnection();
-
-    if ( connectionValue && Value->ConnectedBlock()->Build( _Context ) )
-    {
-        Result->Type = connectionValue->Type;
-        _Context.GenerateSourceCode( Result, "saturate( " + connectionValue->Expression + " )", true );
-    }
-    else
-    {
-        Result->Type = AT_Float4;
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-AN_CLASS_META( MGClamp )
-AN_CLASS_META( MGMin )
-AN_CLASS_META( MGMax )
-
-MGClamp::MGClamp() : Super( "Clamp" ) {
-    Stages = ANY_STAGE_BIT;
-
-    Value = AddInput( "Value" );
-    RangeMin = AddInput( "RangeMin" );
-    RangeMax = AddInput( "RangeMax" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGClamp::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * connectionValue = Value->GetConnection();
-    MGNodeOutput * connectionMin = RangeMin->GetConnection();
-    MGNodeOutput * connectionMax = RangeMax->GetConnection();
-
-    if ( connectionValue && Value->ConnectedBlock()->Build( _Context )
-         && connectionMin && RangeMin->ConnectedBlock()->Build( _Context )
-         && connectionMax && RangeMax->ConnectedBlock()->Build( _Context ) ) {
-
-        Result->Type = connectionValue->Type;
-
-        AString expression =
-                "clamp( " + connectionValue->Expression + ", " + MakeVectorCast( connectionMin->Expression, connectionMin->Type, connectionValue->Type, 0,0,0,0 ) + ", "
-                + MakeVectorCast( connectionMax->Expression, connectionMax->Type, connectionValue->Type, 0,0,0,0 ) + " )";
-
-        _Context.GenerateSourceCode( Result, expression, true );
-
-    } else {
-        Result->Type = AT_Float4;
-
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-MGMin::MGMin() : Super( "Clamp" ) {
-    Stages = ANY_STAGE_BIT;
-
-    ValueA = AddInput( "ValueA" );
-    ValueB = AddInput( "ValueB" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGMin::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * connectionValueA = ValueA->GetConnection();
-    MGNodeOutput * connectionValueB = ValueB->GetConnection();
-
-    if ( connectionValueA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionValueB && ValueB->ConnectedBlock()->Build( _Context ) ) {
-
-        Result->Type = connectionValueA->Type;
-
-        AString expression =
-            "min( " + connectionValueA->Expression + ", " + MakeVectorCast( connectionValueB->Expression, connectionValueB->Type, connectionValueA->Type, 0, 0, 0, 0 ) + " )";
-
-        _Context.GenerateSourceCode( Result, expression, true );
-
-    } else {
-        Result->Type = AT_Float4;
-
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
-    }
-}
-
-MGMax::MGMax() : Super( "Clamp" ) {
-    Stages = ANY_STAGE_BIT;
-
-    ValueA = AddInput( "ValueA" );
-    ValueB = AddInput( "ValueB" );
-    Result = AddOutput( "Result", AT_Unknown );
-}
-
-void MGMax::Compute( AMaterialBuildContext & _Context ) {
-    MGNodeOutput * connectionValueA = ValueA->GetConnection();
-    MGNodeOutput * connectionValueB = ValueB->GetConnection();
-
-    if ( connectionValueA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionValueB && ValueB->ConnectedBlock()->Build( _Context ) ) {
-
-        Result->Type = connectionValueA->Type;
-
-        AString expression =
-            "max( " + connectionValueA->Expression + ", " + MakeVectorCast( connectionValueB->Expression, connectionValueB->Type, connectionValueA->Type, 0, 0, 0, 0 ) + " )";
-
-        _Context.GenerateSourceCode( Result, expression, true );
-
-    } else {
-        Result->Type = AT_Float4;
-
-        _Context.GenerateSourceCode( Result, "vec4( 0.0 )", false );
-    }
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1784,6 +1605,66 @@ MG2PINode::MG2PINode() : Super( "2PI" ) {
 
 void MG2PINode::Compute( AMaterialBuildContext & _Context ) {
     OutValue->Expression = "6.2831853";
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_BEGIN_CLASS_META( MGBooleanNode )
+//AN_ATTRIBUTE_( bValue, AF_DEFAULT )
+AN_END_CLASS_META()
+
+MGBooleanNode::MGBooleanNode() : Super( "Boolean" ) {
+    Stages = ANY_STAGE_BIT;
+    OutValue = AddOutput( "Value", AT_Bool1 );
+}
+
+void MGBooleanNode::Compute( AMaterialBuildContext & _Context ) {
+    OutValue->Expression = Math::ToString( bValue );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_BEGIN_CLASS_META( MGBoolean2Node )
+//AN_ATTRIBUTE_( bValue, AF_DEFAULT )
+AN_END_CLASS_META()
+
+MGBoolean2Node::MGBoolean2Node() : Super( "Boolean2" ) {
+    Stages = ANY_STAGE_BIT;
+    OutValue = AddOutput( "Value", AT_Bool2 );
+}
+
+void MGBoolean2Node::Compute( AMaterialBuildContext & _Context ) {
+    _Context.GenerateSourceCode( OutValue, "bvec2( " + Math::ToString( bValue.X ) + ", " + Math::ToString( bValue.Y ) + " )", false );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_BEGIN_CLASS_META( MGBoolean3Node )
+//AN_ATTRIBUTE_( bValue, AF_DEFAULT )
+AN_END_CLASS_META()
+
+MGBoolean3Node::MGBoolean3Node() : Super( "Boolean3" ) {
+    Stages = ANY_STAGE_BIT;
+    OutValue = AddOutput( "Value", AT_Bool3 );
+}
+
+void MGBoolean3Node::Compute( AMaterialBuildContext & _Context ) {
+    _Context.GenerateSourceCode( OutValue, "bvec3( " + Math::ToString( bValue.X ) + ", " + Math::ToString( bValue.Y ) + ", " + Math::ToString( bValue.Z ) + " )", false );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_BEGIN_CLASS_META( MGBoolean4Node )
+//AN_ATTRIBUTE_( bValue, AF_DEFAULT )
+AN_END_CLASS_META()
+
+MGBoolean4Node::MGBoolean4Node() : Super( "Boolean4" ) {
+    Stages = ANY_STAGE_BIT;
+    OutValue = AddOutput( "Value", AT_Bool4 );
+}
+
+void MGBoolean4Node::Compute( AMaterialBuildContext & _Context ) {
+    _Context.GenerateSourceCode( OutValue, "bvec4( " + Math::ToString( bValue.X ) + ", " + Math::ToString( bValue.Y ) + ", " + Math::ToString( bValue.Z ) + ", " + Math::ToString( bValue.W ) + " )", false );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2049,7 +1930,9 @@ void MGSampler::Compute( AMaterialBuildContext & _Context ) {
                     const char * sampleFunc = ChooseSampleFunction( ColorSpace );
 
                     RGBA->Expression = _Context.GenerateVariableName();
-                    _Context.SourceCode += "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( tslot_" + Math::ToString( slotIndex ) + ", " + MakeVectorCast( texCoordCon->Expression, texCoordCon->Type, sampleType, 0, 0, 0, 0 ) + " )" + swizzleStr + ";\n";
+                    _Context.SourceCode += "const vec4 " + RGBA->Expression + " = "
+                        + sampleFunc + "( tslot_" + Math::ToString( slotIndex ) + ", "
+                        + MakeVectorCast( texCoordCon->Expression, texCoordCon->Type, sampleType ) + " )" + swizzleStr + ";\n";
                     bValid = true;
                 }
             }
@@ -2063,7 +1946,7 @@ void MGSampler::Compute( AMaterialBuildContext & _Context ) {
         A->Expression = RGBA->Expression + ".a";
         RGB->Expression = RGBA->Expression + ".rgb";
     } else {
-        _Context.GenerateSourceCode( RGBA, "vec4( 0.0 )", false );
+        _Context.GenerateSourceCode( RGBA, MakeEmptyVector( AT_Float4 ), false );
 
         R->Expression = "0.0";
         G->Expression = "0.0";
@@ -2162,7 +2045,9 @@ void MGNormalSampler::Compute( AMaterialBuildContext & _Context ) {
                     const char * sampleFunc = ChooseSampleFunction( Compression );
 
                     XYZ->Expression = _Context.GenerateVariableName();
-                    _Context.SourceCode += "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( tslot_" + Math::ToString( slotIndex ) + ", " + MakeVectorCast( texCoordCon->Expression, texCoordCon->Type, sampleType, 0,0,0,0 ) + " );\n";
+                    _Context.SourceCode += "const vec3 " + XYZ->Expression + " = "
+                        + sampleFunc + "( tslot_" + Math::ToString( slotIndex ) + ", "
+                        + MakeVectorCast( texCoordCon->Expression, texCoordCon->Type, sampleType ) + " );\n";
                     bValid = true;
                 }
             }
@@ -2174,11 +2059,80 @@ void MGNormalSampler::Compute( AMaterialBuildContext & _Context ) {
         Y->Expression = XYZ->Expression + ".y";
         Z->Expression = XYZ->Expression + ".z";
     } else {
-        _Context.GenerateSourceCode( XYZ, "vec3( 0.0, 0.0, 1.0 )", false );
+        _Context.GenerateSourceCode( XYZ, MakeDefaultNormal(), false );
 
         X->Expression = "0.0";
         Y->Expression = "0.0";
         Z->Expression = "0.0";
+    }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+AN_BEGIN_CLASS_META( MGParallaxMapSampler )
+AN_END_CLASS_META()
+
+MGParallaxMapSampler::MGParallaxMapSampler() : Super( "Parallax Map Sampler" ) {
+    Stages = FRAGMENT_STAGE_BIT;
+
+    TextureSlot = AddInput( "TextureSlot" );
+    TexCoord = AddInput( "TexCoord" );
+    DisplacementScale = AddInput( "DisplacementScale" );
+    SelfShadowing = AddInput( "SelfShadowing" );
+    ParallaxCorrectedTexCoord = AddOutput( "Result", AT_Float2 );
+}
+
+void MGParallaxMapSampler::Compute( AMaterialBuildContext & _Context ) {
+    bool bValid = false;
+
+    MGNodeOutput * texSlotCon = TextureSlot->GetConnection();
+    if ( texSlotCon ) {
+
+        MGNode * block = TextureSlot->ConnectedBlock();
+        if ( block->FinalClassId() == MGTextureSlot::ClassId() && block->Build( _Context ) ) {
+
+            MGTextureSlot * texSlot = static_cast< MGTextureSlot * >(block);
+
+            if ( texSlot->SamplerDesc.TextureType == TEXTURE_2D ) {
+                int32_t slotIndex = texSlot->GetSlotIndex();
+                if ( slotIndex != -1 ) {
+
+                    MGNodeOutput * texCoordCon = TexCoord->GetConnection();
+
+                    if ( texCoordCon && TexCoord->ConnectedBlock()->Build( _Context ) ) {
+
+                        AString sampler = "tslot_" + Math::ToString( slotIndex );
+                        AString texCoord = MakeVectorCast( texCoordCon->Expression, texCoordCon->Type, AT_Float2 );
+
+                        AString displacementScale;
+                        MGNodeOutput * displacementScaleCon = DisplacementScale->GetConnection();
+                        if ( displacementScaleCon && DisplacementScale->ConnectedBlock()->Build( _Context ) ) {
+                            displacementScale = MakeVectorCast( displacementScaleCon->Expression, displacementScaleCon->Type, AT_Float1 );
+                        } else {
+                            displacementScale = "0.05";
+                        }
+
+                        AString selfShadowing;
+                        MGNodeOutput * selfShadowingCon = SelfShadowing->GetConnection();
+                        if ( selfShadowingCon && SelfShadowing->ConnectedBlock()->Build( _Context ) ) {
+                            selfShadowing = MakeVectorCast( selfShadowingCon->Expression, selfShadowingCon->Type, AT_Bool1 );
+                        } else {
+                            selfShadowing = MakeEmptyVector( AT_Bool1 );
+                        }
+
+                        ParallaxCorrectedTexCoord->Expression = _Context.GenerateVariableName();
+                        _Context.SourceCode += "const vec2 " + ParallaxCorrectedTexCoord->Expression +
+                            " = ParallaxMapping( " + sampler + ", " + texCoord + ", " + displacementScale + ", " + selfShadowing + " );\n";
+                        bValid = true;
+                    }
+                }
+            }
+        }
+    }
+
+    if ( !bValid ) {
+        _Context.GenerateSourceCode( ParallaxCorrectedTexCoord, MakeEmptyVector( AT_Float2 ), false );
     }
 }
 
@@ -2440,24 +2394,28 @@ void MGCondLess::Compute( AMaterialBuildContext & _Context ) {
          && ValueA->ConnectedBlock()->Build( _Context )
          && ValueB->ConnectedBlock()->Build( _Context )
          && True->ConnectedBlock()->Build( _Context )
-         && False->ConnectedBlock()->Build( _Context ) ) {
-
-        if ( connectionA->Type != connectionB->Type
-             || connectionTrue->Type != connectionFalse->Type ) {
+         && False->ConnectedBlock()->Build( _Context ) )
+    {
+        if ( connectionA->Type != connectionB->Type || connectionTrue->Type != connectionFalse->Type
+             || !IsArithmeticType( connectionA->Type ) )
+        {
             Result->Type = AT_Float4;
-
-            expression = "vec4( 0.0 )";
-        } else {
+            expression = MakeEmptyVector( AT_Float4 );
+        }
+        else
+        {
             Result->Type = connectionTrue->Type;
 
             AString cond;
 
-            if ( connectionA->Type == AT_Float1 ) {
+            if ( connectionA->Type == AT_Float1 )
+            {
                 cond = "step( " + connectionB->Expression + ", " + connectionA->Expression + " )";
 
                 expression = "mix( " + connectionTrue->Expression + ", " + connectionFalse->Expression + ", " + cond + " )";
-            } else {
-
+            }
+            else
+            {
                 if ( Result->Type == AT_Float1 ) {
                     cond = "float( all( lessThan( " + connectionA->Expression + ", " + connectionB->Expression + " ) ) )";
                 } else {
@@ -2470,8 +2428,7 @@ void MGCondLess::Compute( AMaterialBuildContext & _Context ) {
 
     } else {
         Result->Type = AT_Float4;
-
-        expression = "vec4( 0.0 )";
+        expression = MakeEmptyVector( AT_Float4 );
     }
 
     _Context.GenerateSourceCode( Result, expression, false );
@@ -2492,9 +2449,10 @@ void MGAtmosphereNode::Compute( AMaterialBuildContext & _Context ) {
     MGNodeOutput * dirConnection = Dir->GetConnection();
 
     if ( dirConnection && Dir->ConnectedBlock()->Build( _Context ) ) {
-        _Context.GenerateSourceCode( Result, "vec4( atmosphere( normalize(" + dirConnection->Expression + "), normalize(vec3(0.5,0.5,-1)) ), 1.0 )", false );
+        AString expression = MakeVectorCast( dirConnection->Expression, dirConnection->Type, AT_Float3 );
+        _Context.GenerateSourceCode( Result, "vec4( atmosphere( normalize(" + expression + "), normalize(vec3(0.5,0.5,-1)) ), 1.0 )", false );
     } else {
-        Result->Expression = "vec4( 0.0 )";
+        Result->Expression = MakeEmptyVector( AT_Float4 );
     }
 }
 
@@ -2800,9 +2758,35 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         predefines += "#define ALLOW_SSLR\n";
     }
 
+    if ( Graph->bPerBoneMotionBlur ) {
+        predefines += "#define PER_BONE_MOTION_BLUR\n";
+    }
+
+    if ( Graph->MotionBlurScale > 0.0f  ) {
+        predefines += "#define ALLOW_MOTION_BLUR\n";
+    }
+
+    predefines += "#define MOTION_BLUR_SCALE " + Math::ToString( Math::Saturate( Graph->MotionBlurScale ) ) + "\n";
+
     if ( Graph->bUseVirtualTexture ) {
         predefines += "#define USE_VIRTUAL_TEXTURE\n";
         predefines += "#define VT_LAYERS 1\n"; // TODO: Add based on material
+    }
+
+    switch ( Graph->ParallaxTechique ) {
+    case PARALLAX_TECHINQUE_POM:
+        predefines += "#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_POM\n";
+        break;
+    case PARALLAX_TECHINQUE_RPM:
+        predefines += "#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_RPM\n";
+        break;
+    case PARALLAX_TECHINQUE_DISABLED:
+        predefines += "#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_DISABLED\n";
+        break;
+    default:
+        predefines += "#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_DISABLED\n";
+        AN_ASSERT( 0 );
+        break;
     }
 
     if ( !Graph->bDepthTest /*|| Graph->bTranslucent */) {
@@ -2909,6 +2893,11 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         predefines += "#define BINORMAL_LOCATION "    + Math::ToString(locationIndex++)   + "\n";
         predefines += "#define NORMAL_LOCATION "      + Math::ToString(locationIndex++)     + "\n";
         predefines += "#define POSITION_LOCATION "    + Math::ToString(locationIndex++)   + "\n";
+
+        //if ( Graph->bAllowParallax ) {
+        //predefines += "#define POSITION_TANGENT_SPACE_LOCATION "    + Math::ToString( locationIndex++ )   + "\n";
+        //predefines += "#define VIEW_POSITION_TANGENT_SPACE_LOCATION "    + Math::ToString( locationIndex++ )   + "\n";
+        //}
 
         predefines += "#define VERTEX_POSITION_CURRENT " + Math::ToString( locationIndex++ )   + "\n";
         predefines += "#define VERTEX_POSITION_PREVIOUS " + Math::ToString( locationIndex++ )   + "\n";

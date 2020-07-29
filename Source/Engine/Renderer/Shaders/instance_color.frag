@@ -154,7 +154,10 @@ layout( location = VT_TEXCOORD_LOCATION ) in vec2 VS_TexCoordVT;
 #endif
 
 layout( location = VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos;
+
+#ifdef ALLOW_MOTION_BLUR
 layout( location = VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP;
+#endif
 
 /*
 
@@ -174,6 +177,8 @@ vec2  InScreenUV;
 vec2  InPhysicalUV;
 #endif
 
+#include "parallax_mapping.frag"
+
 #ifdef USE_VIRTUAL_TEXTURE
 #include "virtualtexture.frag"
 #endif
@@ -191,6 +196,7 @@ void main()
 #ifdef COMPUTE_TBN
     InViewspaceToEyeVec     = normalize( -VS_Position );
 #endif
+
     InScreenCoord           = gl_FragCoord.xy;
     InScreenDepth           = gl_FragCoord.z;
     InNormalizedScreenCoord = InScreenCoord * GetViewportSizeInverted();
@@ -200,6 +206,16 @@ void main()
 #ifdef USE_VIRTUAL_TEXTURE
     InPhysicalUV = VT_CalcPhysicalUV( vt_IndirectionTable, VS_TexCoordVT, VTUnit );
 #endif
+
+#ifdef ALLOW_MOTION_BLUR
+    vec2 p1 = VS_VertexPos.xy / VS_VertexPos.w;
+    vec2 p2 = VS_VertexPosP.xy / VS_VertexPosP.w;
+    FS_Velocity = ( p1 - p2 ) * (0.5 * MOTION_BLUR_SCALE);
+#else
+    FS_Velocity = vec2( 0.0 );
+#endif
+
+    InitParallaxTechique();
 
     // Built-in material code
 #   include "$COLOR_PASS_FRAGMENT_CODE$"
@@ -224,9 +240,4 @@ void main()
 #ifdef MATERIAL_TYPE_POSTPROCESS
     FS_FragColor = BaseColor;
 #endif
-
-    vec2 p1 = ( VS_VertexPos.xy / VS_VertexPos.w )* 0.5 + 0.5;
-    vec2 p2 = ( VS_VertexPosP.xy / VS_VertexPosP.w ) * 0.5 + 0.5;
-    FS_Velocity = p1 - p2;
 }
-

@@ -289,6 +289,22 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 N, vec3 Specular, float Specu
     case DEBUG_LIGHT_CASCADES:
         FS_FragColor = vec4( (FS_FragColor.rgb+DebugDirectionalLightCascades()) * 0.5, 1.0 );
         break;
+    case DEBUG_VT_BORDERS:
+        #ifdef USE_VIRTUAL_TEXTURE
+        const float PageResolutionB = 128;
+        vec2 v = mod( InPhysicalUV * VTPageCacheCapacity.xy * PageResolutionB, PageResolutionB ) / PageResolutionB;
+        
+        float x = 0;
+        vec2 s = abs(pow(smoothstep(vec2(x),vec2(1.0-x),fract(v+0.5)),vec2(1.0))-0.5);
+        s = 1.0 - min(vec2(1.0), s*10.0);
+        float t = max(s.x,s.y);
+
+        FS_FragColor.rgb = mix( FS_FragColor.rgb, vec3(1,0.8,0), t );
+        #endif
+        break;
+    case DEBUG_VELOCITY:
+        FS_FragColor = vec4( abs(FS_Velocity), 0.0, 1.0 );
+        break;
     }
 #endif // DEBUG_RENDER_MODE
 }

@@ -57,6 +57,7 @@ SOFTWARE.
 #define DEBUG_AMBIENT_LIGHT 23
 #define DEBUG_LIGHT_CASCADES 24
 #define DEBUG_VT_BORDERS   25
+#define DEBUG_VELOCITY     26
 #endif
 
 #endif // DEBUG_H

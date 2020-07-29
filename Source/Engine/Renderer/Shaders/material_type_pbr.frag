@@ -189,8 +189,13 @@ vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float Roughness
             
             float Shadow = SampleLightShadow( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
             
-            if ( Shadow > 0.0 ) {            
-                Light += LightBRDF( Diffuse, F0, RoughnessSqr, Normal, L, NdL, NdV, k ) * LightColors[ i ].xyz * ( Shadow * NdL );
+            if ( Shadow > 0.0 ) {
+            
+                const float ParallaxSelfShadow = GetParallaxSelfShadow( L );
+        
+                Light += LightBRDF( Diffuse, F0, RoughnessSqr, Normal, L, NdL, NdV, k ) * LightColors[ i ].xyz * ( Shadow * NdL ) * ParallaxSelfShadow;
+                
+                //Light = vec3(ParallaxSelfShadow,0.0,0.0);
             }
         }
     }
@@ -462,6 +467,9 @@ void MaterialPBRShader( vec3 BaseColor, vec3 N, float Metallic, float Roughness,
 
         FS_FragColor.rgb = mix( FS_FragColor.rgb, vec3(1,0.8,0), t );
         #endif
+        break;
+    case DEBUG_VELOCITY:
+        FS_FragColor = vec4( abs(FS_Velocity), 0.0, 1.0 );
         break;
     }
 #endif // DEBUG_RENDER_MODE
