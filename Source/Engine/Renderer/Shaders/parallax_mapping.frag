@@ -44,9 +44,9 @@ SOFTWARE.
 
 #if PARALLAX_TECHNIQUE == PARALLAX_TECHNIQUE_DISABLED
 
-#define InitParallaxTechique()
+#define InitParallaxTechnique()
 #define ParallaxMapping(displacementMap, texCoord, bSelfShadowing) (texCoord)
-#define GetParallaxSelfShadow 1.0
+#define GetParallaxSelfShadow(LightDir) 1.0
 
 #else
 
@@ -59,7 +59,7 @@ vec2  InParallaxTexCoordSource = vec2( 0.0 );
 bool  InParallaxSelfShadowing = false;
 float InParallaxDisplacementScale = 0.05;
 
-void InitParallaxTechique()
+void InitParallaxTechnique()
 {
     InTBN = transpose( mat3( VS_T, VS_B, VS_N ) );
     InParallaxViewDir = InTBN * normalize( InViewspaceToEyeVec - VS_Position );

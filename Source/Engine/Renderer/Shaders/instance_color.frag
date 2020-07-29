@@ -215,7 +215,7 @@ void main()
     FS_Velocity = vec2( 0.0 );
 #endif
 
-    InitParallaxTechique();
+    InitParallaxTechnique();
 
     // Built-in material code
 #   include "$COLOR_PASS_FRAGMENT_CODE$"
