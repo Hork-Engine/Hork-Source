@@ -30,19 +30,19 @@ SOFTWARE.
 
 // Based on tutorial https://habr.com/ru/post/416163/
 
-#define PARALLAX_TECHINQUE_DISABLED 0
-#define PARALLAX_TECHINQUE_POM      1   // Parallax occlusion mapping
-#define PARALLAX_TECHINQUE_RPM      2   // Relief Parallax Mapping
+#define PARALLAX_TECHNIQUE_DISABLED 0
+#define PARALLAX_TECHNIQUE_POM      1   // Parallax occlusion mapping
+#define PARALLAX_TECHNIQUE_RPM      2   // Relief Parallax Mapping
 
 #ifndef COMPUTE_TBN
-#undef PARALLAX_TECHINQUE
-#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_DISABLED
+#undef PARALLAX_TECHNIQUE
+#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED
 #endif
 
 #define PARALLAX_MIN_LAYERS 8.0
 #define PARALLAX_MAX_LAYERS 32.0
 
-#if PARALLAX_TECHINQUE == PARALLAX_TECHINQUE_DISABLED
+#if PARALLAX_TECHNIQUE == PARALLAX_TECHNIQUE_DISABLED
 
 #define InitParallaxTechique()
 #define ParallaxMapping(displacementMap, texCoord, bSelfShadowing) (texCoord)
@@ -54,88 +54,88 @@ mat3  InTBN;
 vec3  InParallaxViewDir;
 sampler2D InDisplacementMap;
 float InParallaxDepth = 0;
-vec2  InParallaxTexCoord = vec2(0.0);
-vec2  InParallaxTexCoordSource = vec2(0.0);
+vec2  InParallaxTexCoord = vec2( 0.0 );
+vec2  InParallaxTexCoordSource = vec2( 0.0 );
 bool  InParallaxSelfShadowing = false;
 float InParallaxDisplacementScale = 0.05;
 
 void InitParallaxTechique()
 {
-    InTBN                    = transpose( mat3( VS_T, VS_B, VS_N ) );
-    InParallaxViewDir       = InTBN * normalize(InViewspaceToEyeVec - VS_Position);
+    InTBN = transpose( mat3( VS_T, VS_B, VS_N ) );
+    InParallaxViewDir = InTBN * normalize( InViewspaceToEyeVec - VS_Position );
 }
 
 float GetParallaxSelfShadow( vec3 LightDir ) {
     if ( !InParallaxSelfShadowing ) {
         return 1.0;
     }
-    
+
     if ( InParallaxDisplacementScale < 0.001 ) {
         return 1.0;
     }
- 
+
     vec3 tangentLightDir = InTBN * LightDir;
-    
-	float shadowMultiplier = 0.0;
-    
+
+    float shadowMultiplier = 0.0;
+
     // расчет будем делать только для поверхностей, 
     // освещенных используемым источником
-	float alignFactor = dot(vec3(0.0, 0.0, 1.0), tangentLightDir);
-	if (alignFactor > 0.0) {
-    
+    float alignFactor = dot( vec3( 0.0, 0.0, 1.0 ), tangentLightDir );
+    if ( alignFactor > 0.0 ) {
+
         // слои глубины
-		const float minLayers = 16.0;
-		const float maxLayers = 32.0;
-		float numLayers = mix(maxLayers, minLayers, abs(alignFactor));
-        
+        const float minLayers = 16.0;
+        const float maxLayers = 32.0;
+        float numLayers = mix( maxLayers, minLayers, abs( alignFactor ) );
+
         // шаг слоя глубины
-		float depthStep = InParallaxDepth / numLayers;
+        float depthStep = InParallaxDepth / numLayers;
         if ( depthStep < 0.001 ) {
             return 1;
         }
-        
+
         // шаг смещения текстурных координат
-		//vec2 deltaTexCoords = InParallaxDisplacementScale * tangentLightDir.xy/(tangentLightDir.z * numLayers);
+        //vec2 deltaTexCoords = InParallaxDisplacementScale * tangentLightDir.xy/(tangentLightDir.z * numLayers);
         vec2 deltaTexCoords = max( 0.001, InParallaxDisplacementScale/(tangentLightDir.z * numLayers) ) * tangentLightDir.xy;
 
         // счетчик точек, оказавшихся под поверхностью
-		int numSamplesUnderSurface = 0;
+        int numSamplesUnderSurface = 0;
 
         // поднимаемся на глубину слоя и смещаем 
         // текстурные координаты вдоль вектора L
-		float currentLayerDepth = InParallaxDepth - depthStep;
-		vec2 currentTexCoords = InParallaxTexCoordSource + deltaTexCoords;
+        float currentLayerDepth = InParallaxDepth - depthStep;
+        vec2 currentTexCoords = InParallaxTexCoordSource + deltaTexCoords;
 
-		float currentDepthValue = 1.0-texture(InDisplacementMap, currentTexCoords).r;
+        float currentDepthValue = 1.0-texture( InDisplacementMap, currentTexCoords ).r;
 
         // номер текущего шага
-		float stepIndex = 1.0;
+        float stepIndex = 1.0;
         // повторяем, пока не выйдем за слой нулевой глубины…
-		while (currentLayerDepth > 0.0) {
+        while ( currentLayerDepth > 0.0 ) {
             // если нашли точку под поверхностью, то увеличим счетчик и 
             // рассчитаем очередной частичный и полный коэффициенты
-			if (currentDepthValue < currentLayerDepth) {
-				numSamplesUnderSurface++;
-				float currentShadowMultiplier = (currentLayerDepth - currentDepthValue)*(1.0 - stepIndex/numLayers);
+            if ( currentDepthValue < currentLayerDepth ) {
+                numSamplesUnderSurface++;
+                float currentShadowMultiplier = (currentLayerDepth - currentDepthValue)*(1.0 - stepIndex/numLayers);
 
-				shadowMultiplier = max(shadowMultiplier, currentShadowMultiplier);
-			}
-			stepIndex++;
-			currentLayerDepth -= depthStep;
-			currentTexCoords += deltaTexCoords;
-			currentDepthValue = 1.0-texture(InDisplacementMap, currentTexCoords).r;
-		}
+                shadowMultiplier = max( shadowMultiplier, currentShadowMultiplier );
+            }
+            stepIndex++;
+            currentLayerDepth -= depthStep;
+            currentTexCoords += deltaTexCoords;
+            currentDepthValue = 1.0-texture( InDisplacementMap, currentTexCoords ).r;
+        }
         // если точек под поверхностью не было, то точка 
         // считается освещенной и коэффициент оставим 1
-		if (numSamplesUnderSurface < 1)
-			shadowMultiplier = 1.0;
-		else
-			shadowMultiplier = 1.0 - shadowMultiplier;
-	} else {
+        if ( numSamplesUnderSurface < 1 )
+            shadowMultiplier = 1.0;
+        else
+            shadowMultiplier = 1.0 - shadowMultiplier;
+    } else {
         return 1;
     }
 
-	return pow( shadowMultiplier, 4.0 );
+    return pow( shadowMultiplier, 4.0 );
 }
 
 vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float DisplacementScale, bool bSelfShadowing )
@@ -146,104 +146,104 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
     InDisplacementMap = displacementMap;
     InParallaxDepth = 0;
     InParallaxTexCoord = texCoord;
-        
+
     if ( DisplacementScale < 0.001 ) {
         return texCoord;
     }
-    
+
     //
     // Steep Parallax Mapping
     //
-    
+
     // количество слоев глубины
     //const float numLayers = 10;
-    float numLayers = mix(PARALLAX_MAX_LAYERS, PARALLAX_MIN_LAYERS, abs(dot(vec3(0.0, 0.0, 1.0), InParallaxViewDir)));   
+    float numLayers = mix( PARALLAX_MAX_LAYERS, PARALLAX_MIN_LAYERS, abs( dot( vec3( 0.0, 0.0, 1.0 ), InParallaxViewDir ) ) );
     // размер каждого слоя
     float layerDepth = max( 1.0 / numLayers, 0.001 );
     // глубина текущего слоя
     float currentLayerDepth = 0.0;
     // величина шага смещения текстурных координат на каждом слое
     // расчитывается на основе вектора P
-    vec2 P = InParallaxViewDir.xy/* / InParallaxViewDir.z*/ * InParallaxDisplacementScale; 
+    vec2 P = InParallaxViewDir.xy/* / InParallaxViewDir.z*/ * InParallaxDisplacementScale;
     vec2 deltaTexCoords = P / numLayers;
-    
+
     // начальная инициализация
-    vec2  currentTexCoords     = texCoord;
-    float currentDepthMapValue = 1.0-texture(displacementMap, currentTexCoords).r;
-      
-    while(currentLayerDepth < currentDepthMapValue)
+    vec2  currentTexCoords = texCoord;
+    float currentDepthMapValue = 1.0-texture( displacementMap, currentTexCoords ).r;
+
+    while ( currentLayerDepth < currentDepthMapValue )
     {
         // смещаем текстурные координаты вдоль вектора P
         currentTexCoords -= deltaTexCoords;
         // делаем выборку из карты глубин в текущих текстурных координатах 
-        currentDepthMapValue = 1.0-texture(displacementMap, currentTexCoords).r;  
+        currentDepthMapValue = 1.0-texture( displacementMap, currentTexCoords ).r;
         // рассчитываем глубину следующего слоя
-        currentLayerDepth += layerDepth;  
+        currentLayerDepth += layerDepth;
     }
-    
-    #if ( PARALLAX_TECHINQUE == PARALLAX_TECHINQUE_POM )
-    
-        //
-        // Parallax occlusion mapping
-        //
-    
-        // находим текстурные координаты перед найденной точкой пересечения,
-        // т.е. делаем "шаг назад"
-        vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
 
-        // находим значения глубин до и после нахождения пересечения 
-        // для использования в линейной интерполяции
-        float afterDepth  = currentDepthMapValue - currentLayerDepth;
-        float beforeDepth = (1.0-texture(displacementMap, prevTexCoords).r) - currentLayerDepth + layerDepth;
-         
-        // интерполяция текстурных координат 
-        float weight = afterDepth / (afterDepth - beforeDepth);
-        vec2 finalTexCoords = mix( currentTexCoords, prevTexCoords, weight );
-        
-        InParallaxDepth = mix( afterDepth, beforeDepth, weight );
-        InParallaxTexCoord = finalTexCoords;
+#if ( PARALLAX_TECHNIQUE == PARALLAX_TECHNIQUE_POM )
 
-        return finalTexCoords;
+    //
+    // Parallax occlusion mapping
+    //
 
-    #else//#elif ( PARALLAX_TECHINQUE == PARALLAX_TECHINQUE_RPM )
-    
-        //
-        // Relief Parallax Mapping
-        //
-        
-        // уполовиниваем смещение текстурных координат и размер слоя глубины
+    // находим текстурные координаты перед найденной точкой пересечения,
+    // т.е. делаем "шаг назад"
+    vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+    // находим значения глубин до и после нахождения пересечения 
+    // для использования в линейной интерполяции
+    float afterDepth = currentDepthMapValue - currentLayerDepth;
+    float beforeDepth = (1.0-texture( displacementMap, prevTexCoords ).r) - currentLayerDepth + layerDepth;
+
+    // интерполяция текстурных координат 
+    float weight = afterDepth / (afterDepth - beforeDepth);
+    vec2 finalTexCoords = mix( currentTexCoords, prevTexCoords, weight );
+
+    InParallaxDepth = mix( afterDepth, beforeDepth, weight );
+    InParallaxTexCoord = finalTexCoords;
+
+    return finalTexCoords;
+
+#else//#elif ( PARALLAX_TECHNIQUE == PARALLAX_TECHNIQUE_RPM )
+
+    //
+    // Relief Parallax Mapping
+    //
+
+    // уполовиниваем смещение текстурных координат и размер слоя глубины
+    deltaTexCoords *= 0.5;
+    layerDepth *= 0.5;
+    // сместимся в обратном направлении от точки, найденной в Steep PM
+    currentTexCoords += deltaTexCoords;
+    currentLayerDepth -= layerDepth;
+
+    // установим максимум итераций поиска…
+    const int reliefSteps = 5;
+    int currentStep = reliefSteps;
+    while ( currentStep > 0 ) {
+        currentDepthMapValue = 1.0-texture( displacementMap, currentTexCoords ).r;
         deltaTexCoords *= 0.5;
         layerDepth *= 0.5;
-        // сместимся в обратном направлении от точки, найденной в Steep PM
-        currentTexCoords += deltaTexCoords;
-        currentLayerDepth -= layerDepth;
-
-        // установим максимум итераций поиска…
-        const int reliefSteps = 5;
-        int currentStep = reliefSteps;
-        while (currentStep > 0) {
-            currentDepthMapValue = 1.0-texture(displacementMap, currentTexCoords).r;
-            deltaTexCoords *= 0.5;
-            layerDepth *= 0.5;
-            // если выборка глубины больше текущей глубины слоя, 
-            // то уходим в левую половину интервала
-            if (currentDepthMapValue > currentLayerDepth) {
-                currentTexCoords -= deltaTexCoords;
-                currentLayerDepth += layerDepth;
-            }
-            // иначе уходим в правую половину интервала
-            else {
-                currentTexCoords += deltaTexCoords;
-                currentLayerDepth -= layerDepth;
-            }
-            currentStep--;
+        // если выборка глубины больше текущей глубины слоя, 
+        // то уходим в левую половину интервала
+        if ( currentDepthMapValue > currentLayerDepth ) {
+            currentTexCoords -= deltaTexCoords;
+            currentLayerDepth += layerDepth;
         }
-        
-        InParallaxDepth = currentDepthMapValue;
-        InParallaxTexCoord = currentTexCoords;
-        
-        return currentTexCoords;
-    #endif
+        // иначе уходим в правую половину интервала
+        else {
+            currentTexCoords += deltaTexCoords;
+            currentLayerDepth -= layerDepth;
+        }
+        currentStep--;
+    }
+
+    InParallaxDepth = currentDepthMapValue;
+    InParallaxTexCoord = currentTexCoords;
+
+    return currentTexCoords;
+#endif
 }
 
 #endif

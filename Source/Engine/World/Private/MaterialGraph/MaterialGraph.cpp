@@ -38,6 +38,7 @@ public:
     bool bHasTextures;
     int MaxTextureSlot;
     int MaxUniformAddress;
+    bool bParallaxSampler;
 
     void Reset( MGMaterialGraph const * _Graph, EMaterialPass _Pass ) {
         ++BuildSerial;
@@ -503,6 +504,7 @@ void AMaterialBuildContext::SetStage( EMaterialStage _Stage ) {
     bHasTextures = false;
     MaxTextureSlot = -1;
     MaxUniformAddress = -1;
+    bParallaxSampler = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2124,7 +2126,10 @@ void MGParallaxMapSampler::Compute( AMaterialBuildContext & _Context ) {
                         ParallaxCorrectedTexCoord->Expression = _Context.GenerateVariableName();
                         _Context.SourceCode += "const vec2 " + ParallaxCorrectedTexCoord->Expression +
                             " = ParallaxMapping( " + sampler + ", " + texCoord + ", " + displacementScale + ", " + selfShadowing + " );\n";
+
                         bValid = true;
+
+                        _Context.bParallaxSampler = true;
                     }
                 }
             }
@@ -2773,22 +2778,6 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         predefines += "#define VT_LAYERS 1\n"; // TODO: Add based on material
     }
 
-    switch ( Graph->ParallaxTechique ) {
-    case PARALLAX_TECHINQUE_POM:
-        predefines += "#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_POM\n";
-        break;
-    case PARALLAX_TECHINQUE_RPM:
-        predefines += "#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_RPM\n";
-        break;
-    case PARALLAX_TECHINQUE_DISABLED:
-        predefines += "#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_DISABLED\n";
-        break;
-    default:
-        predefines += "#define PARALLAX_TECHINQUE PARALLAX_TECHINQUE_DISABLED\n";
-        AN_ASSERT( 0 );
-        break;
-    }
-
     if ( !Graph->bDepthTest /*|| Graph->bTranslucent */) {
         bNoCastShadow = true;
     }
@@ -2931,6 +2920,26 @@ void AMaterialBuilder::BuildData( SMaterialDef & Def ) {
         Def.AddShader( "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", VertexStage->NSV_InputSection() );
         Def.AddShader( "$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString( context.MaxTextureSlot ) );
         Def.AddShader( "$COLOR_PASS_FRAGMENT_CODE$", context.SourceCode );
+
+        if ( context.bParallaxSampler ) {
+            switch ( Graph->ParallaxTechnique ) {
+            case PARALLAX_TECHNIQUE_POM:
+                predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_POM\n";
+                break;
+            case PARALLAX_TECHNIQUE_RPM:
+                predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_RPM\n";
+                break;
+            case PARALLAX_TECHNIQUE_DISABLED:
+                predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED\n";
+                break;
+            default:
+                predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED\n";
+                AN_ASSERT( 0 );
+                break;
+            }
+        } else {
+            predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED\n";
+        }
     }
 
     // Create wireframe pass

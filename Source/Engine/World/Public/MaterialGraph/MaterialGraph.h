@@ -920,9 +920,9 @@ protected:
 
 enum EParallaxTechnique
 {
-    PARALLAX_TECHINQUE_DISABLED = 0,
-    PARALLAX_TECHINQUE_POM      = 1,  // Parallax occlusion mapping
-    PARALLAX_TECHINQUE_RPM      = 2   // Relief Parallax Mapping
+    PARALLAX_TECHNIQUE_DISABLED = 0,
+    PARALLAX_TECHNIQUE_POM      = 1,  // Parallax occlusion mapping
+    PARALLAX_TECHNIQUE_RPM      = 2   // Relief Parallax Mapping
 };
 
 class MGMaterialGraph : public ABaseObject {
@@ -953,7 +953,7 @@ public:
     bool                bAllowScreenSpaceReflections = true;
     bool                bPerBoneMotionBlur = true;
     bool                bUseVirtualTexture = false;
-    EParallaxTechnique  ParallaxTechique = PARALLAX_TECHINQUE_RPM;
+    EParallaxTechnique  ParallaxTechnique = PARALLAX_TECHNIQUE_RPM;
 
     void RegisterTextureSlot( MGTextureSlot * _Slot );
 
