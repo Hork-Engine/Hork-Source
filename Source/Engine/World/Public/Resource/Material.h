@@ -49,6 +49,9 @@ public:
     /** Initialize from data */
     void Initialize( SMaterialDef const * _Data );
 
+    /** Initialize from graph */
+    void Initialize( class MGMaterialGraph * Graph );
+
     /** Get material type */
     EMaterialType GetType() const { return Type; }
 

@@ -66,6 +66,7 @@ void InitParallaxTechnique()
 }
 
 float GetParallaxSelfShadow( vec3 LightDir ) {
+//return 1.0;
     if ( !InParallaxSelfShadowing ) {
         return 1.0;
     }
@@ -104,14 +105,15 @@ float GetParallaxSelfShadow( vec3 LightDir ) {
         // поднимаемся на глубину слоя и смещаем 
         // текстурные координаты вдоль вектора L
         float currentLayerDepth = InParallaxDepth - depthStep;
-        vec2 currentTexCoords = InParallaxTexCoordSource + deltaTexCoords;
+        vec2 currentTexCoords = InParallaxTexCoord + deltaTexCoords;
 
         float currentDepthValue = 1.0-texture( InDisplacementMap, currentTexCoords ).r;
 
         // номер текущего шага
         float stepIndex = 1.0;
+        const float maxSteps = 16.0;
         // повторяем, пока не выйдем за слой нулевой глубины…
-        while ( currentLayerDepth > 0.0 ) {
+        while ( currentLayerDepth > 0.0 && stepIndex < maxSteps ) {
             // если нашли точку под поверхностью, то увеличим счетчик и 
             // рассчитаем очередной частичный и полный коэффициенты
             if ( currentDepthValue < currentLayerDepth ) {
@@ -135,19 +137,19 @@ float GetParallaxSelfShadow( vec3 LightDir ) {
         return 1;
     }
 
-    return pow( shadowMultiplier, 4.0 );
+    return pow( shadowMultiplier, 32.0 );
 }
 
 vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float DisplacementScale, bool bSelfShadowing )
 {
     InParallaxTexCoordSource = texCoord;
-    InParallaxDisplacementScale = DisplacementScale;
+    InParallaxDisplacementScale = DisplacementScale * 0.01;
     InParallaxSelfShadowing = bSelfShadowing;
     InDisplacementMap = displacementMap;
     InParallaxDepth = 0;
     InParallaxTexCoord = texCoord;
 
-    if ( DisplacementScale < 0.001 ) {
+    if ( DisplacementScale < 0.1 ) {
         return texCoord;
     }
 
@@ -159,20 +161,23 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
     //const float numLayers = 10;
     float numLayers = mix( PARALLAX_MAX_LAYERS, PARALLAX_MIN_LAYERS, abs( dot( vec3( 0.0, 0.0, 1.0 ), InParallaxViewDir ) ) );
     // размер каждого слоя
-    float layerDepth = max( 1.0 / numLayers, 0.001 );
+    float layerDepth = 1.0 / numLayers;
     // глубина текущего слоя
     float currentLayerDepth = 0.0;
     // величина шага смещения текстурных координат на каждом слое
     // расчитывается на основе вектора P
-    vec2 P = InParallaxViewDir.xy/* / InParallaxViewDir.z*/ * InParallaxDisplacementScale;
+    vec2 P = InParallaxViewDir.xy / InParallaxViewDir.z * InParallaxDisplacementScale;
     vec2 deltaTexCoords = P / numLayers;
 
     // начальная инициализация
     vec2  currentTexCoords = texCoord;
     float currentDepthMapValue = 1.0-texture( displacementMap, currentTexCoords ).r;
 
-    while ( currentLayerDepth < currentDepthMapValue )
-    {
+    for( int i = 0; i < numLayers; i++ ) {
+        if ( currentLayerDepth > currentDepthMapValue ) {
+            break;
+        }
+
         // смещаем текстурные координаты вдоль вектора P
         currentTexCoords -= deltaTexCoords;
         // делаем выборку из карты глубин в текущих текстурных координатах 
@@ -180,7 +185,8 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
         // рассчитываем глубину следующего слоя
         currentLayerDepth += layerDepth;
     }
-
+    
+//if (InNormalizedScreenCoord.x<0.5){
 #if ( PARALLAX_TECHNIQUE == PARALLAX_TECHNIQUE_POM )
 
     //
@@ -197,14 +203,14 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
     float beforeDepth = (1.0-texture( displacementMap, prevTexCoords ).r) - currentLayerDepth + layerDepth;
 
     // интерполяция текстурных координат 
-    float weight = afterDepth / (afterDepth - beforeDepth);
+    float weight = ( afterDepth / (afterDepth - beforeDepth) );
     vec2 finalTexCoords = mix( currentTexCoords, prevTexCoords, weight );
 
-    InParallaxDepth = mix( afterDepth, beforeDepth, weight );
+    InParallaxDepth = currentLayerDepth + mix( afterDepth, beforeDepth, weight );
     InParallaxTexCoord = finalTexCoords;
 
     return finalTexCoords;
-
+//}else{
 #else//#elif ( PARALLAX_TECHNIQUE == PARALLAX_TECHNIQUE_RPM )
 
     //
@@ -244,6 +250,7 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
 
     return currentTexCoords;
 #endif
+//}
 }
 
 #endif

@@ -40,19 +40,60 @@ SOFTWARE.
 #include "base/texture.glsl"
 #include "base/viewuniforms.glsl"
 
+#define TESSELLATION_SPACING fractional_odd_spacing
+
 #if defined MATERIAL_PASS_DEPTH
 #   include "instance_uniforms.glsl"
 #   ifdef VERTEX_SHADER
-#       include "$DEPTH_PASS_SAMPLERS$"
 #       include "instance.vert"
 #   endif
+#   ifdef TESS_CONTROL_SHADER
+#       include "instance_depth.tcs"
+#   endif
+#   ifdef TESS_EVALUATION_SHADER
+#       include "instance_depth.tes"
+#   endif
 #endif // MATERIAL_PASS_DEPTH
+
+#if defined MATERIAL_PASS_COLOR
+#   include "instance_uniforms.glsl"
+#   if defined MATERIAL_TYPE_PBR || defined MATERIAL_TYPE_BASELIGHT
+#       define COMPUTE_TBN
+#   endif
+#   ifdef VERTEX_SHADER
+#       include "instance_color.vert"
+#   endif
+#   ifdef TESS_CONTROL_SHADER
+#       include "instance_color.tcs"
+#   endif
+#   ifdef TESS_EVALUATION_SHADER
+#       include "instance_color.tes"
+#   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_color.frag"
+#   endif
+#endif // MATERIAL_PASS_COLOR
+
+#if defined MATERIAL_PASS_FEEDBACK
+#   include "instance_feedback_uniforms.glsl"
+#   ifdef VERTEX_SHADER
+#       include "instance.vert"
+#   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_feedback.frag"
+#   endif
+#endif // MATERIAL_PASS_FEEDBACK
 
 #if defined MATERIAL_PASS_WIREFRAME
 #   include "instance_uniforms.glsl"
 #   ifdef VERTEX_SHADER
-#       include "$WIREFRAME_PASS_SAMPLERS$"
 #       include "instance.vert"
+#   endif
+#   ifdef TESS_CONTROL_SHADER
+#       include "instance_wireframe.tcs"
+#   endif
+#   ifdef TESS_EVALUATION_SHADER
+#       include "instance_wireframe.tes"
 #   endif
 #   ifdef GEOMETRY_SHADER
 #       include "instance_wireframe.geom"
@@ -65,7 +106,6 @@ SOFTWARE.
 #if defined MATERIAL_PASS_NORMALS
 #   include "instance_uniforms.glsl"
 #   ifdef VERTEX_SHADER
-#       include "$NORMALS_PASS_SAMPLERS$"
 #       include "instance.vert"
 #   endif
 #   ifdef GEOMETRY_SHADER
@@ -79,8 +119,13 @@ SOFTWARE.
 #if defined MATERIAL_PASS_SHADOWMAP
 #   include "instance_shadowmap_uniforms.glsl"
 #   ifdef VERTEX_SHADER
-#       include "$SHADOWMAP_PASS_SAMPLERS$"
 #       include "instance.vert"
+#   endif
+#   ifdef TESS_CONTROL_SHADER
+#       include "instance_shadowmap.tcs"
+#   endif
+#   ifdef TESS_EVALUATION_SHADER
+#       include "instance_shadowmap.tes"
 #   endif
 #   ifdef GEOMETRY_SHADER
 #       include "instance_shadowmap.geom"
@@ -89,27 +134,3 @@ SOFTWARE.
 #       include "instance_shadowmap.frag"
 #   endif
 #endif // MATERIAL_PASS_SHADOWMAP
-
-#if defined MATERIAL_PASS_COLOR
-#   include "instance_uniforms.glsl"
-#   if defined MATERIAL_TYPE_PBR || defined MATERIAL_TYPE_BASELIGHT
-#       define COMPUTE_TBN
-#   endif
-#   ifdef VERTEX_SHADER
-#       include "$DEPTH_PASS_SAMPLERS$"
-#       include "instance_color.vert"
-#   endif
-#   ifdef FRAGMENT_SHADER
-#       include "instance_color.frag"
-#   endif
-#endif // MATERIAL_PASS_DEPTH
-
-#if defined MATERIAL_PASS_FEEDBACK
-#   include "instance_feedback_uniforms.glsl"
-#   ifdef VERTEX_SHADER
-#       include "instance.vert"
-#   endif
-#   ifdef FRAGMENT_SHADER
-#       include "instance_feedback.frag"
-#   endif
-#endif // MATERIAL_PASS_FEEDBACK

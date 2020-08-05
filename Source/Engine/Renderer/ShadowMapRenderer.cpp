@@ -21,7 +21,7 @@ AShadowMapRenderer::AShadowMapRenderer()
 
 void AShadowMapRenderer::CreatePipeline() {
     AString codeVS = LoadShader( "instance_shadowmap_default.vert" );
-    AString codeGS = LoadShader( "instance_shadowmap.geom" );
+    AString codeGS = LoadShader( "instance_shadowmap_default.geom" );
     AString codeFS = LoadShader( "instance_shadowmap_default.frag" );
 
     SPipelineCreateInfo pipelineCI;

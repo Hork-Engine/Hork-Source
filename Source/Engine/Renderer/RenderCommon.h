@@ -246,7 +246,7 @@ struct SViewUniformBuffer
     float SSLRSampleOffset;
     float SSLRMaxDist;
     float IsPerspective;
-    float Pad2;
+    float TessellationLevel;
 
     uint64_t PrefilteredMapSampler;
     uint64_t IrradianceMapSampler;
@@ -293,7 +293,9 @@ struct SFeedbackUniformBuffer
 struct SShadowInstanceUniformBuffer
 {
     Float4x4 TransformMatrix; // TODO: 3x4
-                              // For material with vertex deformations:
+    //Float4 ModelNormalToViewSpace0;
+    //Float4 ModelNormalToViewSpace1;
+    //Float4 ModelNormalToViewSpace2;
     Float4 uaddr_0;
     Float4 uaddr_1;
     Float4 uaddr_2;

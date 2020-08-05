@@ -32,7 +32,7 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned ) {
+void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -161,7 +161,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule;
+    TRef< IShaderModule > vertexShaderModule, tessControlShaderModule, tessEvalShaderModule;
 
     GShaderSources.Clear();
     GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
@@ -172,8 +172,30 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
 
+    if ( _Tessellation )
+    {
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
+
+        pipelineCI.pTCS = tessControlShaderModule;
+        pipelineCI.pTES = tessEvalShaderModule;
+    }
+
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
     pipelineCI.pVS = vertexShaderModule;
@@ -181,7 +203,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned ) {
+void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -314,7 +336,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule, geometryShaderModule, fragmentShaderModule;
+    TRef< IShaderModule > vertexShaderModule, tessControlShaderModule, tessEvalShaderModule, geometryShaderModule, fragmentShaderModule;
 
     GShaderSources.Clear();
     GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
@@ -341,8 +363,30 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
 
+    if ( _Tessellation )
+    {
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
+
+        pipelineCI.pTCS = tessControlShaderModule;
+        pipelineCI.pTES = tessEvalShaderModule;        
+    }
+
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
     pipelineCI.pVS = vertexShaderModule;
@@ -629,7 +673,7 @@ static RenderCore::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending )
     return RenderCore::BLENDING_NO_BLEND;
 }
 
-void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending ) {
+void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -656,7 +700,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     dssd.bDepthEnable = _DepthTest;
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
     TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
@@ -807,6 +851,30 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
         pipelineCI.NumVertexBindings = 1;
     }
 
+    if ( _Tessellation )
+    {
+        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
+
+        pipelineCI.pTCS = tessControlShaderModule;
+        pipelineCI.pTES = tessEvalShaderModule;
+    }
+
     pipelineCI.pVertexBindings = vertexBinding;
 
     pipelineCI.pVS = vertexShaderModule;
@@ -815,7 +883,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending ) {
+void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -909,8 +977,28 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
 
+    if ( _Tessellation )
+    {
+        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
+        GShaderSources.Add( "#define USE_LIGHTMAP\n" );
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
+        GShaderSources.Add( "#define USE_LIGHTMAP\n" );
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
+
+        pipelineCI.pTCS = tessControlShaderModule;
+        pipelineCI.pTES = tessEvalShaderModule;
+    }
+
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
     pipelineCI.pVS = vertexShaderModule;
@@ -932,7 +1020,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending ) {
+void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1026,8 +1114,28 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     GShaderSources.Add( _SourceCode );
     GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
 
+    if ( _Tessellation )
+    {
+        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
+        GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
+        GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
+
+        pipelineCI.pTCS = tessControlShaderModule;
+        pipelineCI.pTES = tessEvalShaderModule;
+    }
+
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
     pipelineCI.pVS = vertexShaderModule;
@@ -1049,7 +1157,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _Skinned ) {
+void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _Skinned, bool _Tessellation ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1191,7 +1299,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
@@ -1220,6 +1328,31 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     GShaderSources.Build( GEOMETRY_SHADER, geometryShaderModule );
 
     pipelineCI.pGS = geometryShaderModule;
+
+    if ( _Tessellation )
+    {
+        TRef< IShaderModule > tessControlShaderModule;
+        TRef< IShaderModule > tessEvalShaderModule;
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
+
+        pipelineCI.pTCS = tessControlShaderModule;
+        pipelineCI.pTES = tessEvalShaderModule;
+    }
 
     bool bVSM = false;
 

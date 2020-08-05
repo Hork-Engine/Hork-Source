@@ -694,6 +694,9 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
     //    fs.WriteBuffer( code.CStr(), code.Length() );
     //}
 
+    bool bTessellation = _BuildData->TessellationMethod == TESSELLATION_FLAT;
+    bool bTessellationShadowMap = bTessellation && _BuildData->bDisplacementAffectShadow;
+
     switch ( _Material->MaterialType ) {
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT: {
@@ -701,23 +704,23 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
         Lit = new (pMem) AShadeModelLit();
         _Material->ShadeModel.Lit = Lit;
 
-        CreateLightPassPipeline( &Lit->LightPassSimple, code.CStr(), cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
-        CreateLightPassPipeline( &Lit->LightPassSkinned, code.CStr(), cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        CreateLightPassPipeline( &Lit->LightPassSimple, code.CStr(), cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
+        CreateLightPassPipeline( &Lit->LightPassSkinned, code.CStr(), cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
 
-        CreateLightPassLightmapPipeline( &Lit->LightPassLightmap, code.CStr(), cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
-        CreateLightPassVertexLightPipeline( &Lit->LightPassVertexLight, code.CStr(), cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        CreateLightPassLightmapPipeline( &Lit->LightPassLightmap, code.CStr(), cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
+        CreateLightPassVertexLightPipeline( &Lit->LightPassVertexLight, code.CStr(), cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
 
-        CreateDepthPassPipeline( &Lit->DepthPass, code.CStr(), cullMode, false );
-        CreateDepthPassPipeline( &Lit->DepthPassSkinned, code.CStr(), cullMode, true );
+        CreateDepthPassPipeline( &Lit->DepthPass, code.CStr(), cullMode, false, bTessellation );
+        CreateDepthPassPipeline( &Lit->DepthPassSkinned, code.CStr(), cullMode, true, bTessellation );
 
-        CreateWireframePassPipeline( &Lit->WireframePass, code.CStr(), cullMode, false );
-        CreateWireframePassPipeline( &Lit->WireframePassSkinned, code.CStr(), cullMode, true );
+        CreateWireframePassPipeline( &Lit->WireframePass, code.CStr(), cullMode, false, bTessellation );
+        CreateWireframePassPipeline( &Lit->WireframePassSkinned, code.CStr(), cullMode, true, bTessellation );
 
         CreateNormalsPassPipeline( &Lit->NormalsPass, code.CStr(), cullMode, false );
         CreateNormalsPassPipeline( &Lit->NormalsPassSkinned, code.CStr(), cullMode, true );
 
-        CreateShadowMapPassPipeline( &Lit->ShadowPass, code.CStr(), _BuildData->bShadowMapMasking, false );
-        CreateShadowMapPassPipeline( &Lit->ShadowPassSkinned, code.CStr(), _BuildData->bShadowMapMasking, true );
+        CreateShadowMapPassPipeline( &Lit->ShadowPass, code.CStr(), _BuildData->bShadowMapMasking, false, bTessellationShadowMap );
+        CreateShadowMapPassPipeline( &Lit->ShadowPassSkinned, code.CStr(), _BuildData->bShadowMapMasking, true, bTessellationShadowMap );
 
         CreateFeedbackPassPipeline( &Lit->FeedbackPass, code.CStr(), false );
         CreateFeedbackPassPipeline( &Lit->FeedbackPassSkinned, code.CStr(), true );
@@ -729,20 +732,20 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
         Unlit = new (pMem) AShadeModelUnlit();
         _Material->ShadeModel.Unlit = Unlit;
 
-        CreateLightPassPipeline( &Unlit->LightPassSimple, code.CStr(), cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
-        CreateLightPassPipeline( &Unlit->LightPassSkinned, code.CStr(), cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending );
+        CreateLightPassPipeline( &Unlit->LightPassSimple, code.CStr(), cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
+        CreateLightPassPipeline( &Unlit->LightPassSkinned, code.CStr(), cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
 
-        CreateDepthPassPipeline( &Unlit->DepthPass, code.CStr(), cullMode, false );
-        CreateDepthPassPipeline( &Unlit->DepthPassSkinned, code.CStr(), cullMode, true );
+        CreateDepthPassPipeline( &Unlit->DepthPass, code.CStr(), cullMode, false, bTessellation );
+        CreateDepthPassPipeline( &Unlit->DepthPassSkinned, code.CStr(), cullMode, true, bTessellation );
 
-        CreateWireframePassPipeline( &Unlit->WireframePass, code.CStr(), cullMode, false );
-        CreateWireframePassPipeline( &Unlit->WireframePassSkinned, code.CStr(), cullMode, true );
+        CreateWireframePassPipeline( &Unlit->WireframePass, code.CStr(), cullMode, false, bTessellation );
+        CreateWireframePassPipeline( &Unlit->WireframePassSkinned, code.CStr(), cullMode, true, bTessellation );
 
         CreateNormalsPassPipeline( &Unlit->NormalsPass, code.CStr(), cullMode, false );
         CreateNormalsPassPipeline( &Unlit->NormalsPassSkinned, code.CStr(), cullMode, true );
 
-        CreateShadowMapPassPipeline( &Unlit->ShadowPass, code.CStr(), _BuildData->bShadowMapMasking, false );
-        CreateShadowMapPassPipeline( &Unlit->ShadowPassSkinned, code.CStr(), _BuildData->bShadowMapMasking, true );
+        CreateShadowMapPassPipeline( &Unlit->ShadowPass, code.CStr(), _BuildData->bShadowMapMasking, false, bTessellationShadowMap );
+        CreateShadowMapPassPipeline( &Unlit->ShadowPassSkinned, code.CStr(), _BuildData->bShadowMapMasking, true, bTessellationShadowMap );
 
         CreateFeedbackPassPipeline( &Unlit->FeedbackPass, code.CStr(), false );
         CreateFeedbackPassPipeline( &Unlit->FeedbackPassSkinned, code.CStr(), true );

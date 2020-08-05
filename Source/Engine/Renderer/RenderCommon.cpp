@@ -56,6 +56,7 @@ ARuntimeVariable RVPostprocessToneExposure( _CTS( "PostprocessToneExposure" ), _
 ARuntimeVariable RVBrightness( _CTS( "Brightness" ), _CTS( "1" ) );
 ARuntimeVariable RVSSLRSampleOffset( _CTS( "SSLRSampleOffset" ), _CTS( "0.1" ) );
 ARuntimeVariable RVSSLRMaxDist( _CTS( "SSLRMaxDist" ), _CTS( "10" ) );
+ARuntimeVariable RVTessellationLevel( _CTS( "TessellationLevel" ), _CTS( "0.05" ) );
 
 extern ARuntimeVariable RVFxaa;
 
@@ -999,6 +1000,7 @@ void AFrameResources::SetViewUniforms() {
     uniformData->SSLRSampleOffset = RVSSLRSampleOffset.GetFloat();
     uniformData->SSLRMaxDist = RVSSLRMaxDist.GetFloat();
     uniformData->IsPerspective = float( GRenderView->bPerspective );
+    uniformData->TessellationLevel = RVTessellationLevel.GetFloat() * GRenderView->Height;
 
     uniformData->PrefilteredMapSampler = PrefilteredMapBindless->GetHandle();
     uniformData->IrradianceMapSampler = IrradianceMapBindless->GetHandle();

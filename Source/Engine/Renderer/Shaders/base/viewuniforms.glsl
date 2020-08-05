@@ -43,6 +43,8 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     // Inversed projection matrix
     mat4 InverseProjectionMatrix;
     
+    // TODO: Add ViewMatrix
+    
     mat4 InverseViewMatrix;
 
     // Reprojection from viewspace to previous frame projected coordinates:
@@ -112,7 +114,7 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     float SSLRSampleOffset;
     float SSLRMaxDist;
     float IsPerspective;
-    float UniformBuffer0_Pad2;
+    float TessellationLevel;
     
     uvec2 PrefilteredMapSampler;
     uvec2 IrradianceMapSampler;

@@ -280,12 +280,12 @@ static void TestIES( IE_Data & PhotoData )
     w = 256;
     for ( int i = 0 ; i < w ; i++ )
     {
-        float LdotDir = Math::Clamp( (float)i / (w - 1) * 2.0f - 1.0f, -1.0f, 1.0f );
-        float angle2 = Math::Degrees( std::acos( LdotDir ) );
+        //float LdotDir = Math::Clamp( (float)i / (w - 1) * 2.0f - 1.0f, -1.0f, 1.0f );
+        //float angle2 = Math::Degrees( std::acos( LdotDir ) );
 
         float angle1 = (float)i/w * 180.0f;
 
-        GLogger.Printf( "Sample angle %f\n", angle2 );
+        //GLogger.Printf( "Sample angle %f\n", angle2 );
 
         float s = SampleIESAvgVertical( &PhotoData, angle1 );
 

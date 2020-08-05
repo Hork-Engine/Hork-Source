@@ -307,7 +307,13 @@ public:
 	SIMD_FORCE_INLINE btVector3& normalize() 
 	{
 		
-		btAssert(!fuzzyZero());
+		//btAssert(!fuzzyZero());
+#ifdef BT_DEBUG
+        if ( fuzzyZero() ) {
+            m_floats[0]= m_floats[1]=0; m_floats[2] =1;
+            return *this;
+        }
+#endif
 
 #if defined(BT_USE_SSE_IN_API) && defined (BT_USE_SSE)		
         // dot product first

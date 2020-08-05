@@ -46,12 +46,18 @@ vec3 CalcDirectionalLighting( vec3 Normal, vec3 Specular, float SpecularPower ) 
         float NdL = saturate( dot( Normal, L ) );
 
         if ( NdL > 0.0 ) {
+        
+#           ifdef ALLOW_SHADOW_RECEIVE
             float Bias = max( 1.0 - saturate( dot( VS_N, L ) ), 0.1 ) * 0.05;
-
             float Shadow = SampleLightShadow( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
+#           else
+            const float Shadow = 1.0;
+#           endif
 
             if ( Shadow > 0.0 ) {
-                Light += LightColors[ i ].xyz * ( Shadow * NdL );
+                const float ParallaxSelfShadow = GetParallaxSelfShadow( L );
+            
+                Light += LightColors[ i ].xyz * ( Shadow * NdL * ParallaxSelfShadow);
 
                 // Directional light specular
                 vec3 R = reflect(-L, Normal);       
@@ -198,7 +204,11 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 N, vec3 Specular, float Specu
     Light += CalcPointLightLighting( Normal, Specular, SpecularPower );
     Light += AmbientLight;
     
+#ifdef ALLOW_SSAO
     float AO = Opacity < 1.0 ? 1.0 : texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x;
+#else
+    float AO = 1.0;
+#endif
     
     Light *= AO;
     

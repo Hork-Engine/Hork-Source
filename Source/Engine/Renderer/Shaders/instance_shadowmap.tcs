@@ -1,0 +1,60 @@
+/*
+
+Angie Engine Source Code
+
+MIT License
+
+Copyright (C) 2017-2020 Alexander Samusev.
+
+This file is part of the Angie Engine Source Code.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
+layout( vertices = 3 ) out;
+
+#include "$SHADOWMAP_PASS_TCS_SAMPLERS$"
+#include "$SHADOWMAP_PASS_TCS_INPUT_VARYINGS$"
+#include "$SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$"
+
+layout( location = SHADOWMAP_PASS_VARYING_POSITION ) in vec3 VS_Position[];
+layout( location = SHADOWMAP_PASS_VARYING_NORMAL ) in vec3 VS_N[];
+layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
+
+layout( location = SHADOWMAP_PASS_VARYING_POSITION ) out vec3 TCS_Position[];
+layout( location = SHADOWMAP_PASS_VARYING_NORMAL ) out vec3 TCS_Normal[];
+layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int TCS_InstanceID[];
+
+#include "tessellation_level.glsl"
+
+void main()
+{
+    TCS_Position[gl_InvocationID] = VS_Position[gl_InvocationID];
+    TCS_Normal[gl_InvocationID] = VS_N[gl_InvocationID];
+    TCS_InstanceID[gl_InvocationID] = VS_InstanceID[gl_InvocationID];
+    
+#   include "$SHADOWMAP_PASS_TCS_COPY_VARYINGS$"
+
+    if ( gl_InvocationID == 0 ) {
+#       include "$SHADOWMAP_PASS_TCS_CODE$"
+        
+        SetTessLevelWorldSpace( TessellationFactor );
+    }
+}

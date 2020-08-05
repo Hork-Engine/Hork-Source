@@ -38,22 +38,18 @@ out gl_PerVertex
     vec4 gl_Position;
 };
 
-#ifdef SHADOW_MASKING
-    layout( location = 1 ) in vec2 VS_TexCoord[];
-    layout( location = 1 ) out vec2 InTexCoord[];
-#endif
+#include "$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$"
+#include "$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$"
 
 layout( triangles ) in;
 layout( triangle_strip, max_vertices = 3 ) out;
-layout( location = 0 ) in flat int VS_InstanceID[];
+layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
 
 void main() {
     gl_Layer = VS_InstanceID[ 0 ];
     for ( int i = 0; i < gl_in.length(); i++ ) {
         gl_Position = gl_in[ i ].gl_Position;
-        #ifdef SHADOW_MASKING
-            InTexCoord[i] = VS_TexCoord[i];
-        #endif
+#       include "$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$"
         EmitVertex();
     }
     EndPrimitive();

@@ -85,8 +85,10 @@ vec3 LightBRDF( vec3 Diffuse, vec3 F0, float RoughnessSqr, vec3 Normal, vec3 L, 
 }
 
 vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughness, float AO, uint FirstIndex, uint NumProbes ) {
+#ifdef ALLOW_SSAO
     // Sample ambient occlusion
     AO *= texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x;
+#endif
     
     // Calc fresnel
     const vec3 F = FresnelSchlick_Roughness( F0, NdV, Roughness );
@@ -186,14 +188,18 @@ vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float Roughness
             #endif
             
             Bias = min( Bias * 0.005, 0.01 );
-            
+
+#           ifdef ALLOW_SHADOW_RECEIVE            
             float Shadow = SampleLightShadow( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
+#           else
+            const float Shadow = 1.0;
+#           endif
             
             if ( Shadow > 0.0 ) {
             
                 const float ParallaxSelfShadow = GetParallaxSelfShadow( L );
         
-                Light += LightBRDF( Diffuse, F0, RoughnessSqr, Normal, L, NdL, NdV, k ) * LightColors[ i ].xyz * ( Shadow * NdL ) * ParallaxSelfShadow;
+                Light += LightBRDF( Diffuse, F0, RoughnessSqr, Normal, L, NdL, NdV, k ) * LightColors[ i ].xyz * ( Shadow * NdL * ParallaxSelfShadow );
                 
                 //Light = vec3(ParallaxSelfShadow,0.0,0.0);
             }
@@ -404,7 +410,12 @@ void MaterialPBRShader( vec3 BaseColor, vec3 N, float Metallic, float Roughness,
         FS_FragColor = vec4( vec3( Roughness ), 1.0 );
         break;
     case DEBUG_AMBIENT:
-        AO *= texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x;
+#ifdef ALLOW_SSAO
+        //if ( InNormalizedScreenCoord.x < 0.5 )
+            AO *= texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x;
+        //else
+        //    AO = min( AO, texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x );
+#endif
         FS_FragColor = vec4( vec3( AO ), 1.0 );
         break;
     case DEBUG_EMISSION:

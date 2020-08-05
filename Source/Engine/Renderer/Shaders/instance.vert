@@ -35,11 +35,15 @@ out gl_PerVertex
 
 #if defined MATERIAL_PASS_SHADOWMAP
 
-    layout( location = 0 ) out flat int VS_InstanceID;
+#   include "$SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$"
+#   include "$SHADOWMAP_PASS_VERTEX_SAMPLERS$"
 
-#   ifdef SHADOW_MASKING
-        layout( location = 1 ) out vec2 VS_TexCoord;
+#   if defined TESSELLATION_METHOD && defined DISPLACEMENT_AFFECT_SHADOW
+        layout( location = SHADOWMAP_PASS_VARYING_POSITION ) out vec3 VS_Position;
+        layout( location = SHADOWMAP_PASS_VARYING_NORMAL ) out vec3 VS_N;
 #   endif
+
+    layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
 
     layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
         mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
@@ -48,7 +52,26 @@ out gl_PerVertex
 
 #endif
 
+#ifdef MATERIAL_PASS_DEPTH
+#   include "$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$"
+#   include "$DEPTH_PASS_VERTEX_SAMPLERS$"
+#   ifdef TESSELLATION_METHOD
+        layout( location = DEPTH_PASS_VARYING_POSITION ) out vec3 VS_Position;
+        layout( location = DEPTH_PASS_VARYING_NORMAL ) out vec3 VS_N;
+#   endif
+#endif
+
+#ifdef MATERIAL_PASS_WIREFRAME
+#   include "$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$"
+#   include "$WIREFRAME_PASS_VERTEX_SAMPLERS$"
+#   ifdef TESSELLATION_METHOD
+        layout( location = WIREFRAME_PASS_VARYING_POSITION ) out vec3 VS_Position;
+        layout( location = WIREFRAME_PASS_VARYING_NORMAL ) out vec3 VS_N;
+#   endif
+#endif
+
 #ifdef MATERIAL_PASS_NORMALS
+#   include "$NORMALS_PASS_VERTEX_SAMPLERS$"
     layout( location = 0 ) out vec4 VS_Normal;
 #endif
 
@@ -66,6 +89,9 @@ out gl_PerVertex
 #endif // SKINNED_MESH
 
 void main() {
+    vec3 VertexPosition;
+    vec3 VertexNormal;
+    
 #ifdef SKINNED_MESH
     const vec4 SrcPosition = vec4( InPosition, 1.0 );
 
@@ -84,37 +110,61 @@ void main() {
                     + Transform[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
                     + Transform[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
                     + Transform[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];
-
-    vec3 Position;
-    Position.x = dot( JointTransform0, SrcPosition );
-    Position.y = dot( JointTransform1, SrcPosition );
-    Position.z = dot( JointTransform2, SrcPosition );
-    #define GetVertexPosition() Position
+                    
+    VertexPosition.x = dot( JointTransform0, SrcPosition );
+    VertexPosition.y = dot( JointTransform1, SrcPosition );
+    VertexPosition.z = dot( JointTransform2, SrcPosition );
+    
+    VertexNormal.x = dot( vec3(JointTransform0), InNormal );
+    VertexNormal.y = dot( vec3(JointTransform1), InNormal );
+    VertexNormal.z = dot( vec3(JointTransform2), InNormal );
 #else
-    #define GetVertexPosition() InPosition
+    VertexPosition = InPosition;
+    VertexNormal = InNormal;
 #endif
 
     // Built-in material code (shadowmap)
 
 #   ifdef MATERIAL_PASS_SHADOWMAP
 #       include "$SHADOWMAP_PASS_VERTEX_CODE$"
-        gl_Position = TransformMatrix * VertexPos;
-        gl_Position = CascadeViewProjection[ gl_InstanceID ] * gl_Position;
-        VS_InstanceID = gl_InstanceID;
-#       ifdef SHADOW_MASKING
-            VS_TexCoord = InTexCoord;
+#       if defined TESSELLATION_METHOD && defined DISPLACEMENT_AFFECT_SHADOW
+            // Position in world space
+            VS_Position = vec3( TransformMatrix * FinalVertexPos );
+            
+            mat3 NormalMatrix = mat3( transpose(inverse(TransformMatrix)) ); // TODO: Uniform?
+            
+            // Transform normal from model space to world space
+            VS_N = normalize( NormalMatrix * VertexNormal );
+#       else
+            gl_Position = TransformMatrix * FinalVertexPos;
+            gl_Position = CascadeViewProjection[ gl_InstanceID ] * gl_Position;
 #       endif
+        VS_InstanceID = gl_InstanceID;
 #   endif
 
     // Built-in material code (depth)
 
 #   ifdef MATERIAL_PASS_DEPTH
 #       include "$DEPTH_PASS_VERTEX_CODE$"
-        gl_Position = TransformMatrix * VertexPos;
-#       if defined WEAPON_DEPTH_HACK
-            gl_Position.z += 0.1;
-#       elif defined SKYBOX_DEPTH_HACK
-            gl_Position.z = 0.0;
+#       ifdef TESSELLATION_METHOD
+            // Position in view space
+            VS_Position = vec3( InverseProjectionMatrix * ( TransformMatrix * FinalVertexPos ) );
+            
+            // Transform normal from model space to viewspace
+            VS_N.x = dot( ModelNormalToViewSpace0, vec4( VertexNormal, 0.0 ) );
+            VS_N.y = dot( ModelNormalToViewSpace1, vec4( VertexNormal, 0.0 ) );
+            VS_N.z = dot( ModelNormalToViewSpace2, vec4( VertexNormal, 0.0 ) );
+            VS_N = normalize( VS_N );
+            
+            // Position in model space. Use this if subdivision in screen space
+            //VS_Position = FinalVertexPos.xyz;
+#       else
+            gl_Position = TransformMatrix * FinalVertexPos;
+#           if defined WEAPON_DEPTH_HACK
+                gl_Position.z += 0.1;
+#           elif defined SKYBOX_DEPTH_HACK
+                gl_Position.z = 0.0;
+#           endif
 #       endif
 #   endif
 
@@ -122,14 +172,28 @@ void main() {
 
 #   ifdef MATERIAL_PASS_WIREFRAME
 #       include "$WIREFRAME_PASS_VERTEX_CODE$"
-        gl_Position = TransformMatrix * VertexPos;
+#       ifdef TESSELLATION_METHOD
+            // Position in view space
+            VS_Position = vec3( InverseProjectionMatrix * ( TransformMatrix * FinalVertexPos ) );
+            
+            // Transform normal from model space to viewspace
+            VS_N.x = dot( ModelNormalToViewSpace0, vec4( VertexNormal, 0.0 ) );
+            VS_N.y = dot( ModelNormalToViewSpace1, vec4( VertexNormal, 0.0 ) );
+            VS_N.z = dot( ModelNormalToViewSpace2, vec4( VertexNormal, 0.0 ) );
+            VS_N = normalize( VS_N );
+            
+            // Position in model space. Use this if subdivision in screen space
+            //VS_Position = FinalVertexPos.xyz;
+#       else
+            gl_Position = TransformMatrix * FinalVertexPos;
+#       endif
 #   endif
 
     // Built-in material code (wireframe)
 
 #   ifdef MATERIAL_PASS_NORMALS
 #       include "$NORMALS_PASS_VERTEX_CODE$"
-        gl_Position = TransformMatrix * VertexPos;
+        gl_Position = TransformMatrix * FinalVertexPos;
 
         const float MAGNITUDE = 0.04;
         
@@ -137,18 +201,10 @@ void main() {
         mat3 normalMatrix = mat3( transpose(inverse(modelMatrix)) );
         mat4 projectionMatrix = inverse(InverseProjectionMatrix); // TODO: add to view uniforms!
         
-        vec3 n, v;
-#ifdef SKINNED_MESH
-        n.x = dot( vec3(JointTransform0), InNormal );
-        n.y = dot( vec3(JointTransform1), InNormal );
-        n.z = dot( vec3(JointTransform2), InNormal );
-        n = normalMatrix * n;
-#else
-        n = normalMatrix * InNormal;
-#endif      
+        vec3 n = normalMatrix * VertexNormal;
         n = normalize( n ) * MAGNITUDE;
         
-        v = vec3( modelMatrix * vec4( GetVertexPosition(), 1.0 ) ); // FIXME: this is not correct for materials with vertex deforms
+        vec3 v = vec3( modelMatrix * vec4( VertexPosition, 1.0 ) ); // FIXME: this is not correct for materials with vertex deforms
         
         VS_Normal = projectionMatrix * vec4( v + n, 1.0 );
 
@@ -157,7 +213,7 @@ void main() {
     // Built-in material code (feedback)
 
 #   ifdef MATERIAL_PASS_FEEDBACK
-        gl_Position = TransformMatrix * vec4( GetVertexPosition(), 1.0 ); // FIXME: this is not correct for materials with vertex deforms
+        gl_Position = TransformMatrix * vec4( VertexPosition, 1.0 ); // FIXME: this is not correct for materials with vertex deforms
         VS_TexCoordVT = saturate(InTexCoord * VTScale + VTOffset);
 #       if defined WEAPON_DEPTH_HACK
             gl_Position.z += 0.1;

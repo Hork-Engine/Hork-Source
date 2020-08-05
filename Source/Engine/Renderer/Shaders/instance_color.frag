@@ -134,29 +134,28 @@ layout( binding = 15 ) uniform sampler2DArrayShadow ShadowMapShadow; // TODO: Us
 
 
 #ifdef USE_LIGHTMAP
-layout( binding  = LIGHTMAP_SLOT ) uniform sampler2D tslot_lightmap;
-layout( location = BAKED_LIGHT_LOCATION ) in vec2 VS_LightmapTexCoord;
+layout( binding  = COLOR_PASS_TEXTURE_LIGHTMAP ) uniform sampler2D tslot_lightmap;
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) in vec2 VS_LightmapTexCoord;
 #endif
 
 #ifdef USE_VERTEX_LIGHT
-layout( location = BAKED_LIGHT_LOCATION ) in vec3 VS_VertexLight;
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) in vec3 VS_VertexLight;
 #endif
 
 #ifdef COMPUTE_TBN
-layout( location = TANGENT_LOCATION  ) in vec3 VS_T;
-layout( location = BINORMAL_LOCATION ) in vec3 VS_B;
-layout( location = NORMAL_LOCATION   ) in vec3 VS_N;
-layout( location = POSITION_LOCATION ) in vec3 VS_Position;
+layout( location = COLOR_PASS_VARYING_TANGENT  ) in vec3 VS_T;
+layout( location = COLOR_PASS_VARYING_BINORMAL ) in vec3 VS_B;
+layout( location = COLOR_PASS_VARYING_NORMAL   ) in vec3 VS_N;
+layout( location = COLOR_PASS_VARYING_POSITION ) in vec3 VS_Position;
 #endif
 
 #ifdef USE_VIRTUAL_TEXTURE
-layout( location = VT_TEXCOORD_LOCATION ) in vec2 VS_TexCoordVT;
+layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 VS_TexCoordVT;
 #endif
 
-layout( location = VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos;
-
 #ifdef ALLOW_MOTION_BLUR
-layout( location = VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP;
+layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos;
+layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP;
 #endif
 
 /*

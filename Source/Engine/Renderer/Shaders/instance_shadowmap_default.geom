@@ -28,48 +28,33 @@ SOFTWARE.
 
 */
 
+in gl_PerVertex
+{
+    vec4 gl_Position;
+} gl_in[];
 
-#include "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$"
-#include "$SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$"
+out gl_PerVertex
+{
+    vec4 gl_Position;
+};
 
-#if defined SHADOWMAP_EVSM
+layout( triangles ) in;
+layout( triangle_strip, max_vertices = 3 ) out;
+layout( location = 0 ) in flat int VS_InstanceID[];
 
-layout( location = 0 ) out vec4 FS_FragColor;
-
-void main() {
-
-    #include "$SHADOWMAP_PASS_FRAGMENT_CODE$"
-
-    const float EVSM_positiveExponent = 40.0;
-    const float EVSM_negativeExponent = 5.0;
-
-    float Depth = 2.0 * gl_FragCoord.z - 1.0;
-    vec2 WarpDepth = vec2( exp( EVSM_positiveExponent * Depth ), -exp( -EVSM_negativeExponent * Depth ) );
-    FS_FragColor = vec4( WarpDepth, WarpDepth * WarpDepth );
-}
-
-#elif defined SHADOWMAP_VSM
-
-//layout( location = 0 ) in vec4 GS_Position;
+#ifdef SHADOW_MASKING
+layout( location = 1 ) in vec2 VS_TexCoord[];
+layout( location = 1 ) out vec2 InTexCoord[];
+#endif
 
 void main() {
-
-    #include "$SHADOWMAP_PASS_FRAGMENT_CODE$"
-
-    float depth = gl_FragCoord.z;
-    //float depth = GS_Position.z / GS_Position.w;
-
-    // Adjusting moments (this is sort of bias per pixel) using partial derivative
-    float dx = dFdx( depth );
-    float dy = dFdy( depth );
-
-    FS_FragColor = vec4( depth, depth * depth + 0.25*( dx*dx + dy*dy ), 0.0, 0.0 );
+    gl_Layer = VS_InstanceID[ 0 ];
+    for ( int i = 0; i < gl_in.length(); i++ ) {
+        gl_Position = gl_in[ i ].gl_Position;
+        #ifdef SHADOW_MASKING
+        InTexCoord[i] = VS_TexCoord[i];
+        #endif
+        EmitVertex();
+    }
+    EndPrimitive();
 }
-
-#else
-
-void main() {
-    #include "$SHADOWMAP_PASS_FRAGMENT_CODE$"
-}
-
-#endif // SHADOWMAP_VSM/EVSM

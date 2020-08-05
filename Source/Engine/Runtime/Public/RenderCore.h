@@ -547,6 +547,12 @@ enum EColorBlending {
     COLOR_BLENDING_MAX
 };
 
+enum ETessellationMethod
+{
+    TESSELLATION_DISABLED,
+    TESSELLATION_FLAT
+};
+
 struct SMaterialShader
 {
     /** Pointer for next material source */
@@ -569,6 +575,8 @@ struct SMaterialDef
 
     /** Blending mode (FIXME: only for UNLIT materials?) */
     EColorBlending Blending;
+
+    ETessellationMethod TessellationMethod;
 
     /** Lightmap binding unit */
     int LightmapSlot;
@@ -593,6 +601,9 @@ struct SMaterialDef
 
     /** Enable shadow map masking */
     bool bShadowMapMasking;
+
+    /** Use tessellation for shadow maps */
+    bool bDisplacementAffectShadow;
 
     /** Translusent materials with alpha test */
     bool bTranslucent;
