@@ -55,6 +55,8 @@ HUD;
 Unlit;
 Base Light (non-physically based);
 PBR (physically based).
+* Parallax mapping
+* Tessellation with displacement mapping
 
 ## Forward+ clustered renderer based on OpenGL4.5 core
 * Modern Framegraph architecture
@@ -155,8 +157,6 @@ PBR (physically based).
 * Particle System
 * Global Illumination
 * Toksvig
-* Parallax mapping (parallax material?)
-* Tessellation with displacement mapping
 * Decals
 * Area lights
 * Directional lightmaps (radiocity?)
