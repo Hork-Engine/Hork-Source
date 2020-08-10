@@ -56,7 +56,7 @@ Unlit;
 Base Light (non-physically based);
 PBR (physically based).
 * Parallax mapping
-* Tessellation with displacement mapping
+* Tessellation Flat/PN with displacement mapping
 
 ## Forward+ clustered renderer based on OpenGL4.5 core
 * Modern Framegraph architecture
