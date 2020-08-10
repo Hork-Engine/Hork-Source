@@ -67,7 +67,7 @@ AFrameRenderer::AFrameRenderer()
     }
 }
 
-AFrameGraphTexture * AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture )
+void AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture, AFrameGraphTexture ** ppLinearDepth )
 {
     ARenderPass & linearizeDepthPass = FrameGraph.AddTask< ARenderPass >( "Linearize Depth Pass" );
     linearizeDepthPass.SetDynamicRenderArea( &GRenderViewArea );
@@ -96,10 +96,10 @@ AFrameGraphTexture * AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameG
             DrawSAQ( LinearDepthPipe_ORTHO );
         }
     } );
-    return linearizeDepthPass.GetColorAttachments()[0].Resource;
+    *ppLinearDepth = linearizeDepthPass.GetColorAttachments()[0].Resource;
 }
 
-AFrameGraphTexture * AFrameRenderer::AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth )
+void AFrameRenderer::AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppNormalTexture )
 {
     ARenderPass & reconstructNormalPass = FrameGraph.AddTask< ARenderPass >( "Reconstruct Normal Pass" );
     reconstructNormalPass.SetDynamicRenderArea( &GRenderViewArea );
@@ -128,7 +128,7 @@ AFrameGraphTexture * AFrameRenderer::AddReconstrutNormalsPass( AFrameGraph & Fra
             DrawSAQ( ReconstructNormalPipe_ORTHO );
         }
     } );
-    return reconstructNormalPass.GetColorAttachments()[0].Resource;
+    *ppNormalTexture = reconstructNormalPass.GetColorAttachments()[0].Resource;
 }
 
 void AFrameRenderer::AddMotionBlurPass( AFrameGraph & FrameGraph,
@@ -187,40 +187,63 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
         GRenderView->VTFeedback->AddPass( FrameGraph );
     }
 
-    AFrameGraphTexture * ShadowMapDepth = ShadowMapRenderer.AddPass( FrameGraph );
+    AFrameGraphTexture * ShadowMapDepth;
+    ShadowMapRenderer.AddPass( FrameGraph, &ShadowMapDepth );
 
-    AFrameGraphTexture * DepthTexture = DepthRenderer.AddPass( FrameGraph );
+    AFrameGraphTexture * DepthTexture;
+    AddDepthPass( FrameGraph, &DepthTexture );
 
-    AFrameGraphTexture * LinearDepth = AddLinearizeDepthPass( FrameGraph, DepthTexture );
+    AFrameGraphTexture * LinearDepth;
+    AddLinearizeDepthPass( FrameGraph, DepthTexture, &LinearDepth );
 
-    AFrameGraphTexture * NormalTexture = AddReconstrutNormalsPass( FrameGraph, LinearDepth );
+    AFrameGraphTexture * NormalTexture;
+    AddReconstrutNormalsPass( FrameGraph, LinearDepth, &NormalTexture );
 
-    AFrameGraphTexture * SSAOTexture = SSAORenderer.AddPasses( FrameGraph, LinearDepth, NormalTexture );
+    AFrameGraphTexture * SSAOTexture;
+    if ( RVSSAO ) {
+        SSAORenderer.AddPasses( FrameGraph, LinearDepth, NormalTexture, &SSAOTexture );
+    }
+    else {
+        SSAOTexture = FrameGraph.AddExternalResource(
+            "White Texture",
+            RenderCore::STextureCreateInfo(),
+            GFrameResources.WhiteTexture
+        );
+    }
 
-    AFrameGraphTexture * LightTexture;
-    AFrameGraphTexture * VelocityTexture;
-    
+    AFrameGraphTexture * LightTexture, * VelocityTexture;    
     LightRenderer.AddPass( FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth, LinearDepth, &LightTexture, &VelocityTexture );
 
-    AddMotionBlurPass( FrameGraph, LightTexture, VelocityTexture, LinearDepth, &LightTexture );
+    if ( RVMotionBlur ) {
+        AddMotionBlurPass( FrameGraph, LightTexture, VelocityTexture, LinearDepth, &LightTexture );
+    }
 
-    ABloomRenderer::STextures BloomTex = BloomRenderer.AddPasses( FrameGraph, LightTexture );
+    ABloomRenderer::STextures BloomTex;
+    BloomRenderer.AddPasses( FrameGraph, LightTexture, &BloomTex );
 
-    AFrameGraphTexture * Exposure = ExposureRenderer.AddPass( FrameGraph, LightTexture );
+    AFrameGraphTexture * Exposure;
+    ExposureRenderer.AddPass( FrameGraph, LightTexture, &Exposure );
 
-    AFrameGraphTexture * ColorGrading = ColorGradingRenderer.AddPass( FrameGraph );
+    AFrameGraphTexture * ColorGrading;
+    ColorGradingRenderer.AddPass( FrameGraph, &ColorGrading );
 
-    AFrameGraphTexture * PostprocessTexture = PostprocessRenderer.AddPass( FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex );
+    AFrameGraphTexture * PostprocessTexture;
+    PostprocessRenderer.AddPass( FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, &PostprocessTexture );
 
-    AFrameGraphTexture * FinalTexture = 
-        RVFxaa ? FxaaRenderer.AddPass( FrameGraph, PostprocessTexture ) : PostprocessTexture;
+    AFrameGraphTexture * FinalTexture;
+    if ( RVFxaa ) {
+        FxaaRenderer.AddPass( FrameGraph, PostprocessTexture, &FinalTexture );
+    }
+    else {
+        FinalTexture = PostprocessTexture;
+    }
 
     if ( GRenderView->bWireframe ) {
-        WireframeRenderer.AddPass( FrameGraph, FinalTexture );
+        AddWireframePass( FrameGraph, FinalTexture );
     }
 
     if ( RVDrawNormals ) {
-        NormalsRenderer.AddPass( FrameGraph, FinalTexture );
+        AddNormalsPass( FrameGraph, FinalTexture );
     }
 
     if ( GRenderView->DebugDrawCommandCount > 0 ) {

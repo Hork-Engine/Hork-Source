@@ -61,7 +61,7 @@ enum EResourceAcces
 class AFrameGraphResourceProxy
 {
 public:
-    explicit AFrameGraphResourceProxy( AFrameGraph & InFrameGraph, AString const & InName, ARenderTask * InRenderTask );
+    explicit AFrameGraphResourceProxy( AFrameGraph & InFrameGraph, const char * InName, ARenderTask * InRenderTask );
 
     AFrameGraphResourceProxy( AFrameGraphResourceProxy const & ) = delete;
     AFrameGraphResourceProxy( AFrameGraphResourceProxy && ) = default;
@@ -81,7 +81,7 @@ public:
         return Id;
     }
 
-    AString const & GetName() const
+    const char * GetName() const
     {
         return Name;
     }
@@ -104,7 +104,7 @@ protected:
     virtual void Derealize( AFrameGraph & InFrameGraph ) = 0;
 
     std::size_t Id;
-    AString Name;
+    const char * Name;
     ARenderTask const * Creator;
     TPodArray< ARenderTask const * > Readers;
     TPodArray< ARenderTask const * > Writers;
@@ -120,13 +120,13 @@ public:
     using ResourceType = TResource;
 
     // Construct internal (transient) resource
-    explicit TFrameGraphResourceProxy( AFrameGraph & InFrameGraph, AString const & Name, ARenderTask * InRenderTask, TResourceCreateInfo const & InCreateInfo )
+    explicit TFrameGraphResourceProxy( AFrameGraph & InFrameGraph, const char * Name, ARenderTask * InRenderTask, TResourceCreateInfo const & InCreateInfo )
         : AFrameGraphResourceProxy( InFrameGraph, Name, InRenderTask ), CreateInfo( InCreateInfo ), pResource( nullptr )
     {
     }
 
     // Construct external resource
-    explicit TFrameGraphResourceProxy( AFrameGraph & InFrameGraph, AString const & Name, TResourceCreateInfo const & InCreateInfo, TResource * InResource )
+    explicit TFrameGraphResourceProxy( AFrameGraph & InFrameGraph, const char * Name, TResourceCreateInfo const & InCreateInfo, TResource * InResource )
         : AFrameGraphResourceProxy( InFrameGraph, Name, nullptr ), CreateInfo( InCreateInfo ), pResource( InResource )
     {
         AN_ASSERT( InResource );
@@ -153,7 +153,7 @@ protected:
         {
             AN_ASSERT( !pResource );
 
-            //GLogger.Printf( "--- Realize %s ---\n", GetName().CStr() );
+            //GLogger.Printf( "--- Realize %s ---\n", GetName() );
             pResource = RealizeResource< CreateInfoType, ResourceType >( InFrameGraph, CreateInfo );
         }
     }
@@ -161,7 +161,7 @@ protected:
     void Derealize( AFrameGraph & InFrameGraph ) override
     {
         if ( IsTransient() && pResource ) {
-            //GLogger.Printf( "Derealize %s\n", GetName().CStr() );
+            //GLogger.Printf( "Derealize %s\n", GetName() );
             DerealizeResource< ResourceType >( InFrameGraph, pResource );
         }
     }
@@ -212,7 +212,7 @@ public:
 class ARenderTask
 {
 public:
-    explicit ARenderTask( AFrameGraph * InpFrameGraph, AString const & InName )
+    explicit ARenderTask( AFrameGraph * InpFrameGraph, const char * InName )
         : pFrameGraph( InpFrameGraph )
         , Name( InName )
         , ResourceRefs( 0 )
@@ -227,7 +227,7 @@ public:
     ARenderTask & operator=( ARenderTask const & ) = delete;
     ARenderTask & operator=( ARenderTask && ) = default;
 
-    AString const & GetName() const { return Name; }
+    const char * GetName() const { return Name; }
 
     TStdVector< std::unique_ptr< AFrameGraphResourceProxy > > const & GetProducedResources() const
     {
@@ -240,8 +240,8 @@ protected:
     virtual void Create( AFrameGraph & FrameGraph ) = 0;
     virtual void Execute( AFrameGraph & FrameGraph, RenderCore::IImmediateContext * Rcmd ) = 0;
 
-    template< typename TResourceDecl, typename TResourceCreateInfo >
-    void AddNewResource( AString const & Name, TResourceCreateInfo const & CreateInfo, TResourceDecl ** ppResource = nullptr )
+    template< char... NameChars, typename TResourceDecl, typename TResourceCreateInfo >
+    void AddNewResource( const char * Name, TResourceCreateInfo const & CreateInfo, TResourceDecl ** ppResource = nullptr )
     {
         static_assert(std::is_same< typename TResourceDecl::CreateInfoType, TResourceCreateInfo >::value, "Invalid TResourceCreateInfo");
 
@@ -274,7 +274,7 @@ protected:
     }
 
     AFrameGraph * pFrameGraph;
-    AString Name;
+    const char * Name;
     TStdVector< std::unique_ptr< AFrameGraphResourceProxy > > ProducedResources;
     TPodArray< AFrameGraphResourceProxy * > ReadResources;
     TPodArray< AFrameGraphResourceProxy * > WriteResources;
@@ -288,7 +288,7 @@ class ACustomTask : public ARenderTask
     using Super = ARenderTask;
 
 public:
-    ACustomTask( AFrameGraph * pFrameGraph, AString const & InName )
+    ACustomTask( AFrameGraph * pFrameGraph, const char * InName )
         : ARenderTask( pFrameGraph, InName )
     {
     }
@@ -300,8 +300,8 @@ public:
     ACustomTask & operator=( ACustomTask const & ) = delete;
     ACustomTask & operator=( ACustomTask && ) = default;
 
-    template< typename TResourceDecl, typename TResourceCreateInfo >
-    ACustomTask & AddNewResource( AString const & Name, TResourceCreateInfo const & CreateInfo, TResourceDecl ** ppResource = nullptr )
+    template< char... NameChars, typename TResourceDecl, typename TResourceCreateInfo >
+    ACustomTask & AddNewResource( const char * Name, TResourceCreateInfo const & CreateInfo, TResourceDecl ** ppResource = nullptr )
     {
         Super::AddNewResource( Name, CreateInfo, ppResource );
         return *this;
@@ -338,7 +338,7 @@ class ARenderPass : public ARenderTask
     using Super = ARenderTask;
 
 public:
-    ARenderPass( AFrameGraph * pFrameGraph, AString const & InName )
+    ARenderPass( AFrameGraph * pFrameGraph, const char * InName )
         : ARenderTask( pFrameGraph, InName )
         , pRenderArea( &RenderArea )
         , ClearDepthStencilValue( RenderCore::MakeClearDepthStencilValue( 0, 0 ) )
@@ -353,8 +353,8 @@ public:
     ARenderPass & operator=( ARenderPass const & ) = delete;
     ARenderPass & operator=( ARenderPass && ) = default;
 
-    template< typename TResourceDecl, typename TResourceCreateInfo >
-    ARenderPass & AddNewResource( AString const & Name, TResourceCreateInfo const & CreateInfo, TResourceDecl ** ppResource = nullptr )
+    template< char... NameChars, typename TResourceDecl, typename TResourceCreateInfo >
+    ARenderPass & AddNewResource( const char * Name, TResourceCreateInfo const & CreateInfo, TResourceDecl ** ppResource = nullptr )
     {
         Super::AddNewResource( Name, CreateInfo, ppResource );
         return *this;
@@ -369,7 +369,7 @@ public:
 
     struct STextureAttachment
     {
-        AString Name;
+        const char * Name;
         AFrameGraphTexture * Resource;
         RenderCore::STextureCreateInfo CreateInfo;
         RenderCore::SAttachmentInfo Info;
@@ -389,7 +389,7 @@ public:
 
         }
 
-        STextureAttachment( AString const & InName, RenderCore::STextureCreateInfo const & InCreateInfo, RenderCore::SAttachmentInfo const & InInfo )
+        STextureAttachment( const char * InName, RenderCore::STextureCreateInfo const & InCreateInfo, RenderCore::SAttachmentInfo const & InInfo )
             : Name( InName )
             , Resource( nullptr )
             , CreateInfo( InCreateInfo )
@@ -580,21 +580,21 @@ public:
     }
 
     template< typename TTask >
-    TTask & AddTask( AString const & InName )
+    TTask & AddTask( const char * InName )
     {
         RenderTasks.emplace_back( std::make_unique< TTask >( this, InName ) );
         return *static_cast< TTask * >( RenderTasks.back().get() );
     }
 
     template< typename TResourceCreateInfo, typename TResource >
-    TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * AddExternalResource( AString const & Name, TResourceCreateInfo const & CreateInfo, TResource * Resource = nullptr )
+    TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * AddExternalResource( const char * Name, TResourceCreateInfo const & CreateInfo, TResource * Resource = nullptr )
     {
         ExternalResources.emplace_back( std::make_unique< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > >( *this, Name, CreateInfo, Resource ) );
         return static_cast< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * >(ExternalResources.back().get());
     }
 
     template< typename TResourceCreateInfo, typename TResource >
-    TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * AddExternalResource( AString const & Name, TResourceCreateInfo const & CreateInfo, TRef< TResource > & Resource )
+    TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * AddExternalResource( const char * Name, TResourceCreateInfo const & CreateInfo, TRef< TResource > & Resource )
     {
         ExternalResources.emplace_back( std::make_unique< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > >( *this, Name, CreateInfo, Resource.GetObject() ) );
         return static_cast< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * >(ExternalResources.back().get());
@@ -608,7 +608,7 @@ public:
 
     void ExportGraphviz( const char * FileName );
 
-    RenderCore::IFramebuffer * GetFramebuffer( AString const & RenderPassName, TStdVector< ARenderPass::STextureAttachment > const & ColorAttachments, ARenderPass::STextureAttachment const * DepthStencilAttachment );
+    RenderCore::IFramebuffer * GetFramebuffer( const char * RenderPassName, TStdVector< ARenderPass::STextureAttachment > const & ColorAttachments, ARenderPass::STextureAttachment const * DepthStencilAttachment );
 
     std::size_t GenerateResourceId() const {
         return IdGenerator++;
@@ -670,7 +670,7 @@ private:
     mutable std::size_t IdGenerator = 0;
 };
 
-AN_FORCEINLINE AFrameGraphResourceProxy::AFrameGraphResourceProxy( AFrameGraph & InFrameGraph, AString const & InName, ARenderTask * InRenderTask )
+AN_FORCEINLINE AFrameGraphResourceProxy::AFrameGraphResourceProxy( AFrameGraph & InFrameGraph, const char * InName, ARenderTask * InRenderTask )
     : Id( InFrameGraph.GenerateResourceId() )
     , Name( InName )
     , Creator( InRenderTask )

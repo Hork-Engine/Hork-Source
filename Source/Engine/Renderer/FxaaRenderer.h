@@ -36,7 +36,7 @@ class AFxaaRenderer {
 public:
     AFxaaRenderer();
 
-    AFrameGraphTexture * AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture );
+    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppFxaaTexture );
 
 private:
     void CreateSampler();

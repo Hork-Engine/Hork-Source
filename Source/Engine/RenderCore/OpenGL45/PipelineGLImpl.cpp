@@ -61,23 +61,23 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
     glCreateProgramPipelines( 1, &pipelineId );
 
     pVS  = _CreateInfo.pVS;
-    pGS  = _CreateInfo.pGS;
     pTCS = _CreateInfo.pTCS;
     pTES = _CreateInfo.pTES;
+    pGS  = _CreateInfo.pGS;
     pFS  = _CreateInfo.pFS;
     pCS  = _CreateInfo.pCS;
 
     if ( pVS ) {
         glUseProgramStages( pipelineId, GL_VERTEX_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pVS.GetObject() )->GetHandle() ) );
     }
-    if ( pGS ) {
-        glUseProgramStages( pipelineId, GL_GEOMETRY_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pGS.GetObject() )->GetHandle() ) );
-    }
     if ( pTCS ) {
         glUseProgramStages( pipelineId, GL_TESS_CONTROL_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pTCS.GetObject() )->GetHandle() ) );
     }
     if ( pTES ) {
         glUseProgramStages( pipelineId, GL_TESS_EVALUATION_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pTES.GetObject() )->GetHandle() ) );
+    }
+    if ( pGS ) {
+        glUseProgramStages( pipelineId, GL_GEOMETRY_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pGS.GetObject() )->GetHandle() ) );
     }
     if ( pFS ) {
         glUseProgramStages( pipelineId, GL_FRAGMENT_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pFS.GetObject() )->GetHandle() ) );

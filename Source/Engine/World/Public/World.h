@@ -222,7 +222,7 @@ struct SWorldRaycastClosestResult
     /** Triangle texture coordinate for the hit */
     Float2 Texcoord;
 
-    Float3 LightmapSample_Experemental;
+    Float3 LightmapSample_Experimental;
 
     /** Clear raycast result */
     void Clear() {
@@ -588,8 +588,8 @@ TActorIterator
 Iterate world actors
 
 Example:
-for ( TActorIterator< FMyActor > it( GetWorld() ) ; it ; ++it ) {
-    FMyActor * actor = *it;
+for ( TActorIterator< AMyActor > it( GetWorld() ) ; it ; ++it ) {
+    AMyActor * actor = *it;
     ...
 }
 
@@ -654,8 +654,8 @@ Iterate world actors
 
 Example:
 
-TActorIterator2< FMyActor > it( GetWorld() );
-for ( FMyActor * actor = it.First() ; actor ; actor = it.Next() ) {
+TActorIterator2< AMyActor > it( GetWorld() );
+for ( AMyActor * actor = it.First() ; actor ; actor = it.Next() ) {
     ...
 }
 
@@ -698,8 +698,8 @@ TComponentIterator
 Iterate actor components
 
 Example:
-for ( TComponentIterator< FMyComponent > it( actor ) ; it ; ++it ) {
-    FMyComponent * component = *it;
+for ( TComponentIterator< AMyComponent > it( actor ) ; it ; ++it ) {
+    AMyComponent * component = *it;
     ...
 }
 
@@ -764,8 +764,8 @@ Iterate actor components
 
 Example:
 
-TComponentIterator2< FMyComponent > it( this );
-for ( FMyComponent * component = it.First() ; component ; component = it.Next() ) {
+TComponentIterator2< AMyComponent > it( this );
+for ( AMyComponent * component = it.First() ; component ; component = it.Next() ) {
     ...
 }
 

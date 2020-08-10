@@ -67,5 +67,7 @@ private:
     TRef< RenderCore::ITexture > LookupBRDF;
     RenderCore::Sampler LookupBRDFSampler;
 
+    RenderCore::Sampler SSAOSampler;
+
     RenderCore::Sampler ClusterLookupSampler;
 };

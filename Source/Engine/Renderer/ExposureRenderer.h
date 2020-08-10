@@ -36,7 +36,7 @@ class AExposureRenderer {
 public:
     AExposureRenderer();
 
-    AFrameGraphTexture * AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture_R );
+    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppExposure );
 
     RenderCore::ITexture * GetDefaultLuminance() { return DefaultLuminance; }
 

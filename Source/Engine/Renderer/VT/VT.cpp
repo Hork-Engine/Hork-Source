@@ -145,8 +145,6 @@ void SVirtualTextureFileHandle::Write( const void * Data, unsigned int Size, uin
 #else
 
 #include <unistd.h>
-#include <sys/stat.h>
-#include <dirent.h>
 
 bool SVirtualTextureFileHandle::OpenRead( const char * FileName ) {
     iHandle = open( FileName, O_LARGEFILE | /*O_BINARY |*/O_RDONLY );

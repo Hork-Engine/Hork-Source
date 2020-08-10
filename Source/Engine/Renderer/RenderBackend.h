@@ -59,7 +59,7 @@ public:
 
     void * GetMainWindow() override;
 
-    void RenderFrame( SRenderFrame * _FrameData ) override;
+    void RenderFrame( SRenderFrame * pFrameData ) override;
     void SwapBuffers() override;
     void WaitGPU() override;
     void * FenceSync() override;
@@ -89,13 +89,13 @@ public:
 
     AMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) override;
     void DestroyMaterial( AMaterialGPU * _Material ) override;
-    void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _BuildData ) override;
+    void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def ) override;
 
 //private:
     void SetGPUEvent();
-    void RenderView( SRenderView * _RenderView, AFrameGraphTexture ** _ViewTexture );
+    void RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
 
-    friend void OpenGL45RenderView( SRenderView * _RenderView, AFrameGraphTexture ** _ViewTexture );
+    friend void OpenGL45RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
 
     TRef< AFrameGraph > FrameGraph;
     AFrameRenderer::SFrameGraphCaptured CapturedResources;

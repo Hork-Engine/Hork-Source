@@ -41,6 +41,8 @@ SOFTWARE.
 #include "base/viewuniforms.glsl"
 
 #define TESSELLATION_SPACING fractional_odd_spacing
+#define TESSELLATION_FLAT 1
+#define TESSELLATION_PN 2
 
 #if defined MATERIAL_PASS_DEPTH
 #   include "instance_uniforms.glsl"
@@ -48,10 +50,18 @@ SOFTWARE.
 #       include "instance.vert"
 #   endif
 #   ifdef TESS_CONTROL_SHADER
-#       include "instance_depth.tcs"
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_depth.tcs"
+#       else
+#           include "instance_depth_pn.tcs"
+#       endif
 #   endif
 #   ifdef TESS_EVALUATION_SHADER
-#       include "instance_depth.tes"
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_depth.tes"
+#       else
+#           include "instance_depth_pn.tes"
+#       endif
 #   endif
 #endif // MATERIAL_PASS_DEPTH
 
@@ -64,10 +74,18 @@ SOFTWARE.
 #       include "instance_color.vert"
 #   endif
 #   ifdef TESS_CONTROL_SHADER
-#       include "instance_color.tcs"
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_color.tcs"
+#       else
+#           include "instance_color_pn.tcs"
+#       endif
 #   endif
 #   ifdef TESS_EVALUATION_SHADER
-#       include "instance_color.tes"
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_color.tes"
+#       else
+#           include "instance_color_pn.tes"
+#       endif
 #   endif
 #   ifdef FRAGMENT_SHADER
 #       include "instance_color.frag"
@@ -90,10 +108,18 @@ SOFTWARE.
 #       include "instance.vert"
 #   endif
 #   ifdef TESS_CONTROL_SHADER
-#       include "instance_wireframe.tcs"
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_wireframe.tcs"
+#       else
+#           include "instance_wireframe_pn.tcs"
+#       endif
 #   endif
 #   ifdef TESS_EVALUATION_SHADER
-#       include "instance_wireframe.tes"
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_wireframe.tes"
+#       else
+#           include "instance_wireframe_pn.tes"
+#       endif
 #   endif
 #   ifdef GEOMETRY_SHADER
 #       include "instance_wireframe.geom"
@@ -122,10 +148,18 @@ SOFTWARE.
 #       include "instance.vert"
 #   endif
 #   ifdef TESS_CONTROL_SHADER
-#       include "instance_shadowmap.tcs"
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_shadowmap.tcs"
+#       else
+#           include "instance_shadowmap_pn.tcs"
+#       endif
 #   endif
 #   ifdef TESS_EVALUATION_SHADER
-#       include "instance_shadowmap.tes"
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_shadowmap.tes"
+#       else
+#           include "instance_shadowmap_pn.tes"
+#       endif
 #   endif
 #   ifdef GEOMETRY_SHADER
 #       include "instance_shadowmap.geom"

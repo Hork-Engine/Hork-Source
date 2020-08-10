@@ -62,7 +62,7 @@ layout( location = COLOR_PASS_VARYING_POSITION ) out vec3 VS_Position;
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) out vec2 VS_TexCoordVT;
 #endif
 
-#ifdef ALLOW_MOTION_BLUR
+#if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
 #endif
@@ -141,7 +141,7 @@ void main() {
     VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;
     #endif  // COMPUTE_TBN
 
-    #ifdef ALLOW_MOTION_BLUR
+    #if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
         #ifdef PER_BONE_MOTION_BLUR
         JointTransform0 = TransformP[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
                           + TransformP[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
@@ -156,13 +156,13 @@ void main() {
                           + TransformP[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
                           + TransformP[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];
 
-        vec4 PositionP;
-        PositionP.x = dot( JointTransform0, SrcPosition );
-        PositionP.y = dot( JointTransform1, SrcPosition );
-        PositionP.z = dot( JointTransform2, SrcPosition );
-        PositionP.w = 1.0;
+        vec4 VertexPositionP;
+        VertexPositionP.x = dot( JointTransform0, SrcPosition );
+        VertexPositionP.y = dot( JointTransform1, SrcPosition );
+        VertexPositionP.z = dot( JointTransform2, SrcPosition );
+        VertexPositionP.w = 1.0;
         #else
-        vec4 PositionP = Position;
+        vec4 VertexPositionP = VertexPosition;
         #endif
     #endif
     /////////////////////////////////////
@@ -218,10 +218,10 @@ void main() {
     
     vec4 TransformedPosition = TransformMatrix * FinalVertexPos;
 
-#ifdef ALLOW_MOTION_BLUR
+#if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
     VS_VertexPos = TransformedPosition;
     #ifdef SKINNED_MESH
-        VS_VertexPosP = TransformMatrixP * PositionP; // NOTE: We can't apply vertex deform to it!
+        VS_VertexPosP = TransformMatrixP * VertexPositionP; // NOTE: We can't apply vertex deform to it!
     #else
         VS_VertexPosP = TransformMatrixP * FinalVertexPos;
     #endif

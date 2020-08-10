@@ -42,87 +42,53 @@ layout( binding = 2 ) uniform sampler2D Smp_Depth;
 #define MAX_SAMPLES 32
 
 void main() {
-    vec2 velocity = -texture( Smp_Velocity, VS_TexCoord ).xy;
-    velocity.y=-velocity.y;
-    
+    // Unpack velocity
+    vec2 v = texture( Smp_Velocity, VS_TexCoord ).xy;
+    v = v * 2.0 - 1.0;
+    v = v * v * sign( v );
+
+    // Change blur direction (y already flipped during texture sampling)
+    v.x = -v.x;
+
+    // Adjust velocity by current frame rate
     const float currentFPS = 1.0/GameplayFrameDelta();
     const float targetFPS = 60;
-    float velocityScale = saturate( currentFPS / targetFPS ); // Move to uniform?
-    velocity *= velocityScale;
-    
-    float maxVelocity = 0.05;
-    float maxVelocitySqr = maxVelocity * maxVelocity;
-    if ( dot(velocity,velocity) > maxVelocitySqr ) {
-       velocity = normalize(velocity) * maxVelocity;
+    const float velocityScale = saturate( currentFPS / targetFPS ); // Move to uniform?
+    v *= velocityScale;
+
+    // Clamp velocity to max threshold
+    const float maxVelocity = 0.05;
+    const float maxVelocitySqr = maxVelocity * maxVelocity;
+    if ( dot( v, v ) > maxVelocitySqr ) {
+       v = normalize( v ) * maxVelocity;
     }
     
-    //velocity*=40;
+    const vec2 texSize = 1.0 / InvViewportSize;//vec2(textureSize(Smp_Light, 0)); // TODO: Use from viewuniforms
+    const float speed = length( v * texSize );
+    const int nSamples = clamp( int(speed), 1, MAX_SAMPLES );
     
+    FS_FragColor = texture( Smp_Light, VS_TexCoord );
     
-    
-    
-    
-    //const float maxVelocity = 10.0f;
-    
-    //float len = min( length(velocity), maxVelocity );
-    //if ( len > 0.0 )
-    {
-        //velocity = normalize( velocity ) * len;
-    
-        vec2 texSize = vec2(textureSize(Smp_Light, 0)); // TODO: Use from viewuniforms
-        float speed = length(velocity * texSize);
-        int nSamples = clamp(int(speed), 1, MAX_SAMPLES);
-    
-        if(false/*VS_TexCoord.x > 0.5*/)
-        {  
-            float weight = exp2( float(nSamples) );
-            //float weight = float(nSamples);
-            float sum = weight;
-            FS_FragColor = texture(Smp_Light, VS_TexCoord) * weight;
+    const float bias = -0.5;
+    float srcDepth = texture( Smp_Depth, VS_TexCoord ).x;
+    float total = 1;
+    for ( int i = 1 ; i < nSamples ; ++i ) {
+        vec2 offset = v * (float(i) / float(nSamples - 1) + bias);
+        vec2 samplePos = VS_TexCoord + offset;
+
+        float depth = texture( Smp_Depth, samplePos ).x;
         
-    
-            const float bias =0;// -0.2; //-0.5 
-            float srcDepth = texture( Smp_Depth, VS_TexCoord ).x;
-            int total = 1;
-            for ( int i = 1 ; i < nSamples ; ++i ) {
-                vec2 offset = velocity * (float(i) / float(nSamples - 1) + bias);
-                vec2 samplePos = VS_TexCoord + offset;
-                
-                float depth = texture( Smp_Depth, samplePos ).x;
-                
-                //if ( srcDepth - depth < 0.1 )
-                {
-                    //weight -= 1.0f;
-                    weight *= 0.5f;
-                    FS_FragColor += texture(Smp_Light, samplePos) * weight;
-                    sum += weight;
-                    total++;
-                }
-                
-            }
-            FS_FragColor /= sum;//float(total);
-        } else {
-            FS_FragColor = texture(Smp_Light, VS_TexCoord);
-    
-            const float bias = -0.5;
-            float srcDepth = texture( Smp_Depth, VS_TexCoord ).x;
-            int total = 1;
-            for ( int i = 1 ; i < nSamples ; ++i ) {
-                vec2 offset = velocity * (float(i) / float(nSamples - 1) + bias);
-                vec2 samplePos = VS_TexCoord + offset;
-                
-                float depth = texture( Smp_Depth, samplePos ).x;
-                
-                if ( srcDepth - depth < 0.001 )
-                {
-                    FS_FragColor += texture(Smp_Light, samplePos);
-                    total++;
-                }
-                
-            }
-            FS_FragColor /= float(total);
+#if 0
+        if ( srcDepth - depth < 0.001 ) {
+            FS_FragColor += texture( Smp_Light, samplePos );
+            total++;
         }
-        //FS_FragColor=vec4(velocity*10,0,1);
-    
+#else
+        float weight = 1.0 - saturate( srcDepth - depth - 0.003 );
+
+        FS_FragColor += texture( Smp_Light, samplePos ) * weight;
+        total += weight;
+#endif
     }
+    FS_FragColor *= 1.0 / float(total);
 }

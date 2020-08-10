@@ -279,14 +279,14 @@ void AFrameGraph::Debug()
     for ( STimelineStep & step : Timeline ) {
         for ( int i = 0 ; i < step.NumRealizedResources ; i++ ) {
             AFrameGraphResourceProxy * resource = RealizedResources[ step.FirstRealizedResource + i ];
-            GLogger.Printf( "Realize %s\n", resource->GetName().CStr() );
+            GLogger.Printf( "Realize %s\n", resource->GetName() );
         }
 
-        GLogger.Printf( "Execute %s\n", step.RenderTask->GetName().CStr() );
+        GLogger.Printf( "Execute %s\n", step.RenderTask->GetName() );
 
         for ( int i = 0 ; i < step.NumDerealizedResources ; i++ ) {
             AFrameGraphResourceProxy * resource = DerealizedResources[ step.FirstDerealizedResource + i ];
-            GLogger.Printf( "Derealize %s\n", resource->GetName().CStr() );
+            GLogger.Printf( "Derealize %s\n", resource->GetName() );
         }
     }
     GLogger.Printf( "--------------------------------\n" );
@@ -315,29 +315,29 @@ void AFrameGraph::ExportGraphviz( const char * FileName )
             color = "steelblue";
         }
         f.Printf( "\"%s\" [label=\"%s\\nRefs: %d\\nID: %d\", style=filled, fillcolor=%s]\n",
-                  resource->GetName().CStr(), resource->GetName().CStr(), resource->ResourceRefs, resource->GetId(),
+                  resource->GetName(), resource->GetName(), resource->ResourceRefs, resource->GetId(),
                   color );
     }
     f.Printf( "\n" );
 
     for ( auto & render_task : RenderTasks ) {
         f.Printf( "\"%s\" [label=\"%s\\nRefs: %d\", style=filled, fillcolor=darkorange]\n",
-                  render_task->GetName().CStr(), render_task->GetName().CStr(), render_task->ResourceRefs );
+                  render_task->GetName(), render_task->GetName(), render_task->ResourceRefs );
 
         if ( !render_task->ProducedResources.IsEmpty() )
         {
-            f.Printf( "\"%s\" -> { ", render_task->GetName().CStr() );
+            f.Printf( "\"%s\" -> { ", render_task->GetName() );
             for ( auto & resource : render_task->ProducedResources ) {
-                f.Printf( "\"%s\" ", resource->GetName().CStr() );
+                f.Printf( "\"%s\" ", resource->GetName() );
             }
             f.Printf( "} [color=seagreen]\n" );
         }
 
         if ( !render_task->WriteResources.IsEmpty() )
         {
-            f.Printf( "\"%s\" -> { ", render_task->GetName().CStr() );
+            f.Printf( "\"%s\" -> { ", render_task->GetName() );
             for ( auto & resource : render_task->WriteResources ) {
-                f.Printf( "\"%s\" ", resource->GetName().CStr() );
+                f.Printf( "\"%s\" ", resource->GetName() );
             }
             f.Printf( "} [color=gold]\n" );
         }
@@ -345,9 +345,9 @@ void AFrameGraph::ExportGraphviz( const char * FileName )
     f.Printf( "\n" );
 
     for ( auto & resource : Resources ) {
-        f.Printf( "\"%s\" -> { ", resource->GetName().CStr() );
+        f.Printf( "\"%s\" -> { ", resource->GetName() );
         for ( auto& render_task : resource->Readers ) {
-            f.Printf( "\"%s\" ", render_task->GetName().CStr() );
+            f.Printf( "\"%s\" ", render_task->GetName() );
         }
         f.Printf( "} [color=skyblue]\n" );
     }
@@ -390,7 +390,7 @@ void ARenderPass::Create( AFrameGraph & FrameGraph )
                                               bHasDepthStencilAttachment ? &DepthStencilAttachment : nullptr );
 }
 
-RenderCore::IFramebuffer * AFrameGraph::GetFramebuffer( AString const & RenderPassName,
+RenderCore::IFramebuffer * AFrameGraph::GetFramebuffer( const char * RenderPassName,
                                                         TStdVector< ARenderPass::STextureAttachment > const & ColorAttachments,
                                                         ARenderPass::STextureAttachment const * DepthStencilAttachment ) {
 
@@ -467,7 +467,7 @@ RenderCore::IFramebuffer * AFrameGraph::GetFramebuffer( AString const & RenderPa
     FramebufferHash.Insert( hash, i );
     FramebufferCache.push_back( framebuffer );
     FramebufferHashes.Append( hash );
-GLogger.Printf( "Total framebuffers %d for %s hash %d\n",FramebufferCache.Size(),RenderPassName.CStr(), hash );
+GLogger.Printf( "Total framebuffers %d for %s hash %d\n",FramebufferCache.Size(),RenderPassName, hash );
     return framebuffer;
 }
 

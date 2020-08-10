@@ -36,11 +36,12 @@ class APostprocessRenderer {
 public:
     APostprocessRenderer();
 
-    AFrameGraphTexture * AddPass( AFrameGraph & FrameGraph,
-                                        AFrameGraphTexture * ColorTexture,
-                                        AFrameGraphTexture * Exposure,
-                                        AFrameGraphTexture * ColorGrading,
-                                        ABloomRenderer::STextures & BloomTex );
+    void AddPass( AFrameGraph & FrameGraph,
+                  AFrameGraphTexture * ColorTexture,
+                  AFrameGraphTexture * Exposure,
+                  AFrameGraphTexture * ColorGrading,
+                  ABloomRenderer::STextures & BloomTex,
+                  AFrameGraphTexture ** ppPostprocessTexture );
 
 private:
     void CreateSampler();

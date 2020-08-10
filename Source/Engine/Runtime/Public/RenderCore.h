@@ -37,6 +37,7 @@ SOFTWARE.
 
 #include <RenderCore/Texture.h>
 #include <RenderCore/Buffer.h>
+#include <RenderCore/Pipeline.h>
 
 //
 // Common constants
@@ -550,7 +551,8 @@ enum EColorBlending {
 enum ETessellationMethod
 {
     TESSELLATION_DISABLED,
-    TESSELLATION_FLAT
+    TESSELLATION_FLAT,
+    TESSELLATION_PN
 };
 
 struct SMaterialShader
@@ -564,9 +566,6 @@ struct SMaterialShader
     /** Source code */
     char Code[1];
 };
-
-SMaterialShader * AddMaterialShader( SMaterialShader ** List, const char * SourceName, AString const & SourceCode );
-void FreeMaterialShaders( SMaterialShader ** List );
 
 struct SMaterialDef
 {
@@ -583,30 +582,30 @@ struct SMaterialDef
 
     /** Have texture fetching in vertex stage. This flag allow renderer to optimize sampler/texture bindings
     during rendering. */
-    bool bDepthPassTextureFetch;
-    bool bColorPassTextureFetch;
-    bool bWireframePassTextureFetch;
-    bool bNormalsPassTextureFetch;
-    bool bShadowMapPassTextureFetch;
+    bool bDepthPassTextureFetch : 1;
+    bool bColorPassTextureFetch : 1;
+    bool bWireframePassTextureFetch : 1;
+    bool bNormalsPassTextureFetch : 1;
+    bool bShadowMapPassTextureFetch : 1;
 
     /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
     during rendering. */
-    bool bHasVertexDeform;
+    bool bHasVertexDeform : 1;
 
-    /** Experemental. Depth testing. */
-    bool bDepthTest_EXPEREMENTAL;
+    /** Experimental. Depth testing. */
+    bool bDepthTest_EXPERIMENTAL : 1;
 
     /** Disable shadow casting (for specific materials like skybox or first person shooter weapon) */
-    bool bNoCastShadow;
+    bool bNoCastShadow : 1;
 
     /** Enable shadow map masking */
-    bool bShadowMapMasking;
+    bool bShadowMapMasking : 1;
 
     /** Use tessellation for shadow maps */
-    bool bDisplacementAffectShadow;
+    bool bDisplacementAffectShadow : 1;
 
     /** Translusent materials with alpha test */
-    bool bTranslucent;
+    bool bTranslucent : 1;
 
     int NumUniformVectors;
 
@@ -624,18 +623,12 @@ struct SMaterialDef
 
     ~SMaterialDef()
     {
-        FreeMaterialShaders( &Shaders );
+        RemoveShaders();
     }
 
-    void AddShader( const char * SourceName, AString const & SourceCode )
-    {
-        AddMaterialShader( &Shaders, SourceName, SourceCode );
-    }
+    void AddShader( const char * SourceName, AString const & SourceCode );
 
-    void RemoveShaders()
-    {
-        FreeMaterialShaders( &Shaders );
-    }
+    void RemoveShaders();
 };
 
 //
@@ -752,11 +745,21 @@ public:
 
     bool    bShadowMapMasking;
 
-    struct {
-        void * Lit;
-        void * Unlit;
-        void * HUD;
-    } ShadeModel;
+    TRef< RenderCore::IPipeline > DepthPass;
+    TRef< RenderCore::IPipeline > DepthPassSkinned;
+    TRef< RenderCore::IPipeline > WireframePass;
+    TRef< RenderCore::IPipeline > WireframePassSkinned;
+    TRef< RenderCore::IPipeline > NormalsPass;
+    TRef< RenderCore::IPipeline > NormalsPassSkinned;
+    TRef< RenderCore::IPipeline > LightPassSimple;
+    TRef< RenderCore::IPipeline > LightPassSkinned;
+    TRef< RenderCore::IPipeline > LightPassLightmap;
+    TRef< RenderCore::IPipeline > LightPassVertexLight;
+    TRef< RenderCore::IPipeline > ShadowPass;
+    TRef< RenderCore::IPipeline > ShadowPassSkinned;
+    TRef< RenderCore::IPipeline > FeedbackPass;
+    TRef< RenderCore::IPipeline > FeedbackPassSkinned;
+    TRef< RenderCore::IPipeline > HUDPipeline;
 };
 
 struct SMaterialFrameData {

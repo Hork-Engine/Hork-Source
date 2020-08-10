@@ -33,7 +33,7 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-void OpenGL45RenderView( SRenderView * _RenderView, AFrameGraphTexture ** _ViewTexture );
+void OpenGL45RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
 
 ACanvasRenderer::ACanvasRenderer()
 {
@@ -384,7 +384,7 @@ void ACanvasRenderer::Render() {
 
                     AN_ASSERT( pMaterial->MaterialType == MATERIAL_TYPE_HUD );
 
-                    rcmd->BindPipeline( ((AShadeModelHUD *)pMaterial->ShadeModel.HUD)->HUDPipeline );
+                    rcmd->BindPipeline( pMaterial->HUDPipeline );
                     rcmd->BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
                     rcmd->BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 

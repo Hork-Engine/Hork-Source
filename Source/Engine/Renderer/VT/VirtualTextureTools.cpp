@@ -36,6 +36,11 @@ SOFTWARE.
 
 #define PAGE_EXTENSION ".page"
 
+#ifdef AN_OS_LINUX
+#include <sys/stat.h>
+#include <dirent.h>
+#endif
+
 SVirtualTextureImage::SVirtualTextureImage() {
     Data = NULL;
     NumChannels = 0;

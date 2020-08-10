@@ -85,9 +85,9 @@ vec3 LightBRDF( vec3 Diffuse, vec3 F0, float RoughnessSqr, vec3 Normal, vec3 L, 
 }
 
 vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughness, float AO, uint FirstIndex, uint NumProbes ) {
-#ifdef ALLOW_SSAO
+#if defined WITH_SSAO && defined ALLOW_SSAO
     // Sample ambient occlusion
-    AO *= texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x;
+    AO *= textureLod( AOLookup, InScreenUV, 0.0 ).x;
 #endif
     
     // Calc fresnel
@@ -154,7 +154,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     
     //Irradiance += vec3(0.01); // just for test
     
-#ifdef ALLOW_SSLR
+#if defined WITH_SSLR && defined ALLOW_SSLR
     PrefilteredColor += FetchLocalReflection( R, Roughness );
 #endif
 
@@ -410,11 +410,8 @@ void MaterialPBRShader( vec3 BaseColor, vec3 N, float Metallic, float Roughness,
         FS_FragColor = vec4( vec3( Roughness ), 1.0 );
         break;
     case DEBUG_AMBIENT:
-#ifdef ALLOW_SSAO
-        //if ( InNormalizedScreenCoord.x < 0.5 )
-            AO *= texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x;
-        //else
-        //    AO = min( AO, texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x );
+#if defined WITH_SSAO && defined ALLOW_SSAO
+        AO *= textureLod( AOLookup, InScreenUV, 0.0 ).x;
 #endif
         FS_FragColor = vec4( vec3( AO ), 1.0 );
         break;

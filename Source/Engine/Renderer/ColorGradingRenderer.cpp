@@ -60,13 +60,14 @@ void AColorGradingRenderer::CreateSamplers()
     GDevice->GetOrCreateSampler( samplerCI, &ColorGradingSampler );
 }
 
-AFrameGraphTexture * AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph )
+void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppColorGrading )
 {
     if ( !GRenderView->CurrentColorGradingLUT ) {
-        return nullptr;
+        *ppColorGrading = nullptr;
+        return;
     }
 
-    auto dest = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
+    auto ColorGrading_R = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
         "CurrentColorGradingLUT",
         MakeTexture( RenderCore::TEXTURE_FORMAT_RGB16F, STextureResolution3D( 16,16,16 ) ),
         GPUTextureHandle( GRenderView->CurrentColorGradingLUT ) );
@@ -83,7 +84,7 @@ AFrameGraphTexture * AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph )
         renderPass.SetRenderArea( 16, 16 );
         renderPass.SetColorAttachments(
         {
-            { dest, RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
+            { ColorGrading_R, RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
         }
         );
         renderPass.AddResource( source, RESOURCE_ACCESS_READ );
@@ -97,8 +98,6 @@ AFrameGraphTexture * AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph )
 
             DrawSAQ( PipelineLUT );
         } );
-
-        return dest;
     }
     else
     {
@@ -107,7 +106,7 @@ AFrameGraphTexture * AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph )
         renderPass.SetRenderArea( 16, 16 );
         renderPass.SetColorAttachments(
         {
-            { dest, RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
+            { ColorGrading_R, RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
         }
         );
         renderPass.AddSubpass( { 0 },
@@ -165,7 +164,7 @@ AFrameGraphTexture * AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph )
 
             DrawSAQ( PipelineProcedural );
         } );
-
-        return dest;
     }
+
+    *ppColorGrading = ColorGrading_R;
 }

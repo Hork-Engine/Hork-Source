@@ -199,14 +199,13 @@ void main() {
         
         mat4 modelMatrix = InverseProjectionMatrix * TransformMatrix;
         mat3 normalMatrix = mat3( transpose(inverse(modelMatrix)) );
-        mat4 projectionMatrix = inverse(InverseProjectionMatrix); // TODO: add to view uniforms!
         
         vec3 n = normalMatrix * VertexNormal;
         n = normalize( n ) * MAGNITUDE;
         
         vec3 v = vec3( modelMatrix * vec4( VertexPosition, 1.0 ) ); // FIXME: this is not correct for materials with vertex deforms
         
-        VS_Normal = projectionMatrix * vec4( v + n, 1.0 );
+        VS_Normal = ProjectionMatrix * vec4( v + n, 1.0 );
 
 #   endif
 

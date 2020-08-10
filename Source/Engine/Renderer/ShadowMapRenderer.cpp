@@ -196,12 +196,9 @@ bool AShadowMapRenderer::BindMaterialShadowMap( SShadowRenderInstance const * in
         switch ( pMaterial->MaterialType ) {
         case MATERIAL_TYPE_PBR:
         case MATERIAL_TYPE_BASELIGHT:
-            pPipeline = bSkinned ? ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPassSkinned
-                                 : ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->ShadowPass;
-            break;
         case MATERIAL_TYPE_UNLIT:
-            pPipeline = bSkinned ? ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPassSkinned
-                                 : ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->ShadowPass;
+            pPipeline = bSkinned ? pMaterial->ShadowPassSkinned
+                                 : pMaterial->ShadowPass;
             break;
         default:
             return false;
@@ -292,7 +289,7 @@ static void BlurDepthMoments() {
 }
 #endif
 
-AFrameGraphTexture * AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph )
+void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth )
 {
     int cascadeWidth = RVShadowCascadeResolution.GetInteger();
     int cascadeHeight = RVShadowCascadeResolution.GetInteger();
@@ -432,5 +429,5 @@ AFrameGraphTexture * AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph )
         }
     } );
 
-    return pass.GetDepthStencilAttachment().Resource;
+    *ppShadowMapDepth = pass.GetDepthStencilAttachment().Resource;
 }

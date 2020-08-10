@@ -204,8 +204,8 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 N, vec3 Specular, float Specu
     Light += CalcPointLightLighting( Normal, Specular, SpecularPower );
     Light += AmbientLight;
     
-#ifdef ALLOW_SSAO
-    float AO = Opacity < 1.0 ? 1.0 : texelFetch( AOLookup, ivec2(InScreenUV / GetViewportSizeInverted()), 0 ).x;
+#if defined WITH_SSAO && defined ALLOW_SSAO
+    float AO = Opacity < 1.0 ? 1.0 : textureLod( AOLookup, InScreenUV, 0.0 ).x;
 #else
     float AO = 1.0;
 #endif
@@ -219,7 +219,7 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 N, vec3 Specular, float Specu
     float Roughness = 1.0 - saturate(builtin_luminance(Specular));
     Roughness = Roughness*Roughness;
 
-#ifdef ALLOW_SSLR
+#if defined WITH_SSLR && defined ALLOW_SSLR
     Light += FetchLocalReflection( normalize( reflect( -InViewspaceToEyeVec, Normal ) ), Roughness );
 #endif
     

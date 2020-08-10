@@ -36,18 +36,18 @@ class ASSAORenderer {
 public:
     ASSAORenderer();
 
-    AFrameGraphTexture * AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture );
+    void AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppSSAOTexture );
 
 private:
-    AFrameGraphTexture * AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth );
+    void AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppSSAOTexture );
 
-    AFrameGraphTexture * AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DeinterleaveDepthArray, AFrameGraphTexture * NormalTexture );
+    void AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DeinterleaveDepthArray, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppDeinterleaveDepthArray );
 
-    AFrameGraphTexture * AddReinterleavePass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTextureArray );
+    void AddReinterleavePass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTextureArray, AFrameGraphTexture ** ppSSAOTexture );
 
-    AFrameGraphTexture * AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture );
+    void AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppSSAOTexture );
 
-    AFrameGraphTexture * AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTexture, AFrameGraphTexture * LinearDepth );
+    void AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTexture, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppBluredSSAO );
 
     void ResizeAO( int Width, int Height );
 

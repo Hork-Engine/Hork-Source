@@ -44,20 +44,12 @@ static bool BindMaterialWireframePass( SRenderInstance const * instance ) {
     // Choose pipeline
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
-
-        pPipeline = bSkinned ? ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->WireframePassSkinned
-                             : ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->WireframePass;
-
-        break;
-
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
-
-        pPipeline = bSkinned ? ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->WireframePassSkinned
-                             : ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->WireframePass;
+        pPipeline = bSkinned ? pMaterial->WireframePassSkinned
+                             : pMaterial->WireframePass;
 
         break;
-
     default:
         return false;
     }
@@ -94,7 +86,7 @@ static void BindTexturesWireframePass( SMaterialFrameData * _Instance ) {
     BindTextures( _Instance );
 }
 
-void AWireframeRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget ) {
+void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget ) {
 
     ARenderPass & wireframePass = FrameGraph.AddTask< ARenderPass >( "Wireframe Pass" );
 

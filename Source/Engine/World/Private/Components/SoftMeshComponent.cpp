@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-// EXPEREMENTAL!!!
+// EXPERIMENTAL!!!
 
 
 #include <World/Public/Components/SoftMeshComponent.h>

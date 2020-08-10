@@ -2627,9 +2627,9 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
 
         ALevel const * level = Raycast.LightingLevel;
 
-        Result.LightmapSample_Experemental = level->SampleLight( Raycast.LightmapBlock, lighmapTexcoord );
+        Result.LightmapSample_Experimental = level->SampleLight( Raycast.LightmapBlock, lighmapTexcoord );
     } else {
-        Result.LightmapSample_Experemental.Clear();
+        Result.LightmapSample_Experimental.Clear();
     }
 
     return true;

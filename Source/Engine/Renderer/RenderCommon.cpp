@@ -35,6 +35,7 @@ SOFTWARE.
 #include "IrradianceGenerator.h"
 #include "EnvProbeGenerator.h"
 #include "CubemapGenerator.h"
+#include "AtmosphereRenderer.h"
 
 #include "VT/VirtualTextureFeedback.h"
 #include "VT/VirtualTexture.h"
@@ -57,6 +58,9 @@ ARuntimeVariable RVBrightness( _CTS( "Brightness" ), _CTS( "1" ) );
 ARuntimeVariable RVSSLRSampleOffset( _CTS( "SSLRSampleOffset" ), _CTS( "0.1" ) );
 ARuntimeVariable RVSSLRMaxDist( _CTS( "SSLRMaxDist" ), _CTS( "10" ) );
 ARuntimeVariable RVTessellationLevel( _CTS( "TessellationLevel" ), _CTS( "0.05" ) );
+ARuntimeVariable RVMotionBlur( _CTS( "MotionBlur" ), _CTS( "1" ) ); // TODO: Need to rebuild all materials!!!
+ARuntimeVariable RVSSLR( _CTS( "SSLR" ), _CTS( "1" ) ); // TODO: Need to rebuild all materials!!
+ARuntimeVariable RVSSAO( _CTS( "SSAO" ), _CTS( "1" ) ); // TODO: Need to rebuild all materials!!
 
 extern ARuntimeVariable RVFxaa;
 
@@ -732,6 +736,43 @@ void AFrameResources::Initialize() {
     /////////////////////////////////////////////////////////////////////
     // test
     /////////////////////////////////////////////////////////////////////
+
+    TRef< RenderCore::ITexture > skybox;
+    {
+        AAtmosphereRenderer atmosphereRenderer;
+        atmosphereRenderer.Render( 512, Float3( -0.5f, -2, -10 ), &skybox );
+#if 0
+        RenderCore::STextureRect rect = {};
+        rect.Dimension.X = rect.Dimension.Y = skybox->GetWidth();
+        rect.Dimension.Z = 1;
+
+        int hunkMark = GHunkMemory.SetHunkMark();
+        float * data = (float *)GHunkMemory.Alloc( 512*512*3*sizeof( *data ) );
+        //byte * ucdata = (byte *)GHunkMemory.Alloc( 512*512*3 );
+        for ( int i = 0 ; i < 6 ; i++ ) {
+            rect.Offset.Z = i;
+            skybox->ReadRect( rect, RenderCore::FORMAT_FLOAT3, 512*512*3*sizeof( *data ), 1, data ); // TODO: check half float
+
+            //FlipImageY( data, 512, 512, 3*sizeof(*data), 512*3*sizeof( *data ) );
+
+            for ( int p = 0; p<512*512*3; p += 3 ) {
+                StdSwap( data[p], data[p+2] );
+                //ucdata[p] = Math::Clamp( data[p] * 255.0f, 0.0f, 255.0f );
+                //ucdata[p+1] = Math::Clamp( data[p+1] * 255.0f, 0.0f, 255.0f );
+                //ucdata[p+2] = Math::Clamp( data[p+2] * 255.0f, 0.0f, 255.0f );
+            }
+
+            AFileStream f;
+            //f.OpenWrite( Core::Fmt( "skyface%d.png", i ) );
+            //WritePNG( f, rect.Dimension.X, rect.Dimension.Y, 3, ucdata, rect.Dimension.X * 3 );
+
+            f.OpenWrite( Core::Fmt( "skyface%d.hdr", i ) );
+            WriteHDR( f, rect.Dimension.X, rect.Dimension.Y, 3, data );
+        }
+        GHunkMemory.ClearToMark( hunkMark );
+#endif
+    }
+
 #if 1
     TRef< RenderCore::ITexture > cubemap;
     TRef< RenderCore::ITexture > cubemap2;
@@ -817,7 +858,7 @@ void AFrameResources::Initialize() {
         }
     }
 
-    RenderCore::ITexture * cubemaps[2] = { cubemap, cubemap2 };
+    RenderCore::ITexture * cubemaps[2] = { /*cubemap*/skybox, cubemap2 };
 #else
 
     Texture cubemap;
@@ -867,9 +908,11 @@ void AFrameResources::Initialize() {
     Texture * cubemaps[] = { &cubemap };
 #endif
 
+    
+
     {
         AEnvProbeGenerator envProbeGenerator;
-        PrefilteredMap = envProbeGenerator.GenerateArray( 7, AN_ARRAY_SIZE( cubemaps ), cubemaps );
+        envProbeGenerator.GenerateArray( 7, AN_ARRAY_SIZE( cubemaps ), cubemaps, &PrefilteredMap );
         RenderCore::SSamplerCreateInfo samplerCI;
         samplerCI.Filter = RenderCore::FILTER_MIPMAP_BILINEAR;
         samplerCI.bCubemapSeamless = true;
@@ -884,8 +927,19 @@ void AFrameResources::Initialize() {
     }
 
     {
+        GDevice->CreateTexture( RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RGBA8, RenderCore::STextureResolution2D( 1, 1 ) ),
+                                &WhiteTexture );
+        RenderCore::STextureRect rect = {};
+        rect.Dimension.X = 1;
+        rect.Dimension.Y = 1;
+        rect.Dimension.Z = 1;
+        const byte data[4] = { 0xff, 0xff, 0xff, 0xff };
+        WhiteTexture->WriteRect( rect, RenderCore::FORMAT_UBYTE4, sizeof( data ), 4, data );
+    }
+
+    {
         AIrradianceGenerator irradianceGenerator;
-        IrradianceMap = irradianceGenerator.GenerateArray( AN_ARRAY_SIZE( cubemaps ), cubemaps );
+        irradianceGenerator.GenerateArray( AN_ARRAY_SIZE( cubemaps ), cubemaps, &IrradianceMap );
         RenderCore::SSamplerCreateInfo samplerCI;
         samplerCI.Filter = RenderCore::FILTER_LINEAR;
         samplerCI.bCubemapSeamless = true;
@@ -902,6 +956,7 @@ void AFrameResources::Initialize() {
 void AFrameResources::Deinitialize() {
     ConstantBuffer.Reset();
     FrameConstantBuffer.Reset();
+    WhiteTexture.Reset();
     Saq.Reset();
     ClusterLookup.Reset();
     ClusterItemTBO.Reset();
@@ -923,6 +978,7 @@ void AFrameResources::SetViewUniforms() {
     uniformData->OrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs ); // TODO: calc ortho projection in render frontend
 
     uniformData->ViewProjection = GRenderView->ViewProjection;
+    uniformData->ProjectionMatrix = GRenderView->ProjectionMatrix;
     uniformData->InverseProjectionMatrix = GRenderView->InverseProjectionMatrix;
 
     uniformData->InverseViewMatrix = GRenderView->ViewSpaceToWorldSpace;

@@ -161,7 +161,7 @@ void ASSAORenderer::ResizeAO( int Width, int Height ) {
     }
 }
 
-AFrameGraphTexture * ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth )
+void ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppDeinterleaveDepthArray )
 {
     AFrameGraphTexture * SSAODeinterleaveDepthView_R[16];
     for ( int i = 0 ; i < 16 ; i++ ) {
@@ -252,10 +252,10 @@ AFrameGraphTexture * ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & Fram
         RenderCore::STextureCreateInfo(),
         SSAODeinterleaveDepthArray );
 
-    return DeinterleaveDepthArray_R;
+    *ppDeinterleaveDepthArray = DeinterleaveDepthArray_R;
 }
 
-AFrameGraphTexture * ASSAORenderer::AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DeinterleaveDepthArray, AFrameGraphTexture * NormalTexture )
+void ASSAORenderer::AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DeinterleaveDepthArray, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppSSAOTextureArray )
 {
     ARenderPass & cacheAwareAO = FrameGraph.AddTask< ARenderPass >( "Cache Aware AO Pass" );
     cacheAwareAO.SetRenderArea( AOQuarterWidth, AOQuarterHeight );
@@ -321,10 +321,10 @@ AFrameGraphTexture * ASSAORenderer::AddCacheAwareAOPass( AFrameGraph & FrameGrap
         }
     } );
 
-    return cacheAwareAO.GetColorAttachments()[0].Resource;
+    *ppSSAOTextureArray = cacheAwareAO.GetColorAttachments()[0].Resource;
 }
 
-AFrameGraphTexture * ASSAORenderer::AddReinterleavePass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTextureArray )
+void ASSAORenderer::AddReinterleavePass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTextureArray, AFrameGraphTexture ** ppSSAOTexture )
 {
     ARenderPass & reinterleavePass = FrameGraph.AddTask< ARenderPass >( "Reinterleave Pass" );
     reinterleavePass.SetRenderArea( AOWidth, AOHeight );
@@ -350,10 +350,10 @@ AFrameGraphTexture * ASSAORenderer::AddReinterleavePass( AFrameGraph & FrameGrap
         DrawSAQ( ReinterleavePipe );
     } );
 
-    return reinterleavePass.GetColorAttachments()[0].Resource;
+    *ppSSAOTexture = reinterleavePass.GetColorAttachments()[0].Resource;
 }
 
-AFrameGraphTexture * ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture )
+void ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppSSAOTexture )
 {
     AFrameGraphTexture * RandomMapTexture_R = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
         "SSAO Random Map", RenderCore::STextureCreateInfo(), RandomMap );
@@ -426,10 +426,10 @@ AFrameGraphTexture * ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, A
         }
     } );
 
-    return pass.GetColorAttachments()[0].Resource;
+    *ppSSAOTexture = pass.GetColorAttachments()[0].Resource;
 }
 
-AFrameGraphTexture * ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTexture, AFrameGraphTexture * LinearDepth )
+void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTexture, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppBluredSSAO )
 {
     ARenderPass & aoBlurXPass = FrameGraph.AddTask< ARenderPass >( "AO Blur X Pass" );
     aoBlurXPass.SetRenderArea( AOWidth, AOHeight );
@@ -507,28 +507,25 @@ AFrameGraphTexture * ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFr
         DrawSAQ( BlurPipe );
     } );
 
-    return aoBlurYPass.GetColorAttachments()[0].Resource;
+    *ppBluredSSAO = aoBlurYPass.GetColorAttachments()[0].Resource;
 }
 
-AFrameGraphTexture * ASSAORenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture )
+void ASSAORenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppSSAOTexture )
 {
     ResizeAO( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
 
-    AFrameGraphTexture * SSAOTexture;
-
     if ( RVAODeinterleaved ) {
-        AFrameGraphTexture * DeinterleaveDepthArray = AddDeinterleaveDepthPass( FrameGraph, LinearDepth );
-
-        AFrameGraphTexture * SSAOTextureArray = AddCacheAwareAOPass( FrameGraph, DeinterleaveDepthArray, NormalTexture );
-
-        SSAOTexture = AddReinterleavePass( FrameGraph, SSAOTextureArray );
-    } else {
-        SSAOTexture = AddSimpleAOPass( FrameGraph, LinearDepth, NormalTexture );
+        AFrameGraphTexture * DeinterleaveDepthArray, * SSAOTextureArray;
+        
+        AddDeinterleaveDepthPass( FrameGraph, LinearDepth, &DeinterleaveDepthArray );
+        AddCacheAwareAOPass( FrameGraph, DeinterleaveDepthArray, NormalTexture, &SSAOTextureArray );
+        AddReinterleavePass( FrameGraph, SSAOTextureArray, ppSSAOTexture );
+    }
+    else {
+        AddSimpleAOPass( FrameGraph, LinearDepth, NormalTexture, ppSSAOTexture );
     }
 
     if ( RVAOBlur ) {
-        SSAOTexture = AddAOBlurPass( FrameGraph, SSAOTexture, LinearDepth );
+        AddAOBlurPass( FrameGraph, *ppSSAOTexture, LinearDepth, ppSSAOTexture );
     }
-
-    return SSAOTexture;
 }

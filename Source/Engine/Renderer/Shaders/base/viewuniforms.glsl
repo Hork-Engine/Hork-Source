@@ -39,6 +39,9 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     
     // View projection matrix: ViewProjection = ProjectionMatrix * ViewMatrix
     mat4 ViewProjection;
+
+    // Projection matrix
+    mat4 ProjectionMatrix;
     
     // Inversed projection matrix
     mat4 InverseProjectionMatrix;

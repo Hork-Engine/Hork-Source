@@ -37,6 +37,8 @@ SOFTWARE.
 #define MAX_MATERIAL_UNIFORMS           16
 #define MAX_MATERIAL_UNIFORM_VECTORS    (16>>2)
 
+class MGMaterialGraph;
+
 /**
 
 Material
@@ -50,7 +52,7 @@ public:
     void Initialize( SMaterialDef const * _Data );
 
     /** Initialize from graph */
-    void Initialize( class MGMaterialGraph * Graph );
+    void Initialize( MGMaterialGraph * Graph );
 
     /** Get material type */
     EMaterialType GetType() const { return Type; }
@@ -82,6 +84,13 @@ private:
     int NumUniformVectors;
     bool bTranslucent;
 };
+
+AN_FORCEINLINE AMaterial * CreateMaterial( MGMaterialGraph * InGraph )
+{
+    AMaterial * material = CreateInstanceOf< AMaterial >();
+    material->Initialize( InGraph );
+    return material;
+}
 
 
 /**

@@ -44,7 +44,7 @@ public:
         AFrameGraphTexture * BloomTexture3;
     };
 
-    STextures AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture );
+    void AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, ABloomRenderer::STextures * pResult );
 
 private:
     void CreateBlurPipeline();

@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "IrradianceGenerator.h"
+#include "AtmosphereRenderer.h"
 
 #include <Core/Public/PodArray.h>
 
@@ -92,9 +92,9 @@ static void CreateSphere( int _HDiv, int _VDiv, TPodArray< Float3 > & _Vertices,
     }
 }
 
-static const TEXTURE_FORMAT TEX_FORMAT_IRRADIANCE = TEXTURE_FORMAT_RGB16F; // TODO: try compression
+static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGB16F; // TODO: try compression
 
-AIrradianceGenerator::AIrradianceGenerator() {
+AAtmosphereRenderer::AAtmosphereRenderer() {
     TPodArray< Float3 > vertices;
     TPodArray< unsigned short > indices;
 
@@ -112,7 +112,7 @@ AIrradianceGenerator::AIrradianceGenerator() {
     GDevice->CreateBuffer( bufferCI, indices.ToPtr(), &m_IndexBuffer );
 
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SIrradianceGeneratorUniformBuffer );
+    bufferCI.SizeInBytes = sizeof( SUniformBufferData );
     GDevice->CreateBuffer( bufferCI, nullptr, &m_UniformBuffer );
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
@@ -174,18 +174,18 @@ AIrradianceGenerator::AIrradianceGenerator() {
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
 
-    AString vertexSource = LoadShader( "gen/irradiancegen.vert" );
+    AString vertexSource = LoadShader( "gen/atmosphere.vert" );
     GShaderSources.Clear();
     GShaderSources.Add( vertexAttribsShaderString.CStr() );
     GShaderSources.Add( vertexSource.CStr() );
     GShaderSources.Build( VERTEX_SHADER, vertexShader );
 
-    AString geometrySource = LoadShader( "gen/irradiancegen.geom" );
+    AString geometrySource = LoadShader( "gen/atmosphere.geom" );
     GShaderSources.Clear();
     GShaderSources.Add( geometrySource.CStr() );
     GShaderSources.Build( GEOMETRY_SHADER, geometryShader );
 
-    AString fragmentSource = LoadShader( "gen/irradiancegen.frag" );
+    AString fragmentSource = LoadShader( "gen/atmosphere.frag" );
     GShaderSources.Clear();
     GShaderSources.Add( fragmentSource.CStr() );
     GShaderSources.Build( FRAGMENT_SHADER, fragmentShader );
@@ -198,31 +198,15 @@ AIrradianceGenerator::AIrradianceGenerator() {
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
     GDevice->CreatePipeline( pipelineCI, &m_Pipeline );
-
-    SSamplerCreateInfo samplerCI;
-    samplerCI.Filter = FILTER_LINEAR;
-    samplerCI.bCubemapSeamless = true;
-    GDevice->GetOrCreateSampler( samplerCI, &m_Sampler );
 }
 
-void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray ) {
-    int size = 32;
+void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture )
+{
+    GDevice->CreateTexture( MakeTexture( TEX_FORMAT_SKY, STextureResolutionCubemap( CubemapWidth ) ), ppTexture );
 
-    STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_CUBE_MAP_ARRAY;
-    textureCI.Format = TEX_FORMAT_IRRADIANCE;
-    textureCI.Resolution.TexCubemapArray.Width = size;
-    textureCI.Resolution.TexCubemapArray.NumLayers = _CubemapsCount;
-    textureCI.NumLods = 1;
+    m_UniformBufferData.LightDir = Float4( LightDir.Normalized(), 0.0f );
 
-    GDevice->CreateTexture( textureCI, ppTextureArray );
-
-    SShaderSamplerBinding samplerBinding;
-    samplerBinding.SlotIndex = 0;
-    samplerBinding.pSampler = m_Sampler;
-
-    SShaderTextureBinding textureBinding;
-    textureBinding.SlotIndex = 0;
+    m_UniformBuffer->Write( &m_UniformBufferData );
 
     SShaderBufferBinding uniformBufferBinding = {};
     uniformBufferBinding.SlotIndex = 0;
@@ -233,99 +217,9 @@ void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubem
     resources.Buffers = &uniformBufferBinding;
     resources.NumBuffers = 1;
 
-    resources.Samplers = &samplerBinding;
-    resources.NumSamplers = 1;
-
-    resources.Textures = &textureBinding;
-    resources.NumTextures = 1;
-
     SViewport viewport = {};
-    viewport.MaxDepth = 1;
-
-    SDrawIndexedCmd drawCmd = {};
-    drawCmd.IndexCountPerInstance = m_IndexCount;
-    drawCmd.InstanceCount = 6;
-
-    SFramebufferAttachmentInfo attachment = {};
-    attachment.pTexture = *ppTextureArray;
-    attachment.LodNum = 0;
-
-    SFramebufferCreateInfo framebufferCI = {};
-    framebufferCI.Width = size;
-    framebufferCI.Height = size;
-    framebufferCI.NumColorAttachments = 1;
-    framebufferCI.pColorAttachments = &attachment;
-
-    TRef< RenderCore::IFramebuffer > framebuffer;
-    GDevice->CreateFramebuffer( framebufferCI, &framebuffer );
-
-    SRenderPassBegin renderPassBegin = {};
-    renderPassBegin.pFramebuffer = framebuffer;
-    renderPassBegin.pRenderPass = m_RP;
-    renderPassBegin.RenderArea.Width = size;
-    renderPassBegin.RenderArea.Height = size;
-
-    rcmd->BeginRenderPass( renderPassBegin );
-    rcmd->BindPipeline( m_Pipeline );
-    rcmd->BindVertexBuffer( 0, m_VertexBuffer );
-    rcmd->BindIndexBuffer( m_IndexBuffer, RenderCore::INDEX_TYPE_UINT16 );
-
-    viewport.Width = size;
-    viewport.Height = size;
-
-    rcmd->SetViewport( viewport );
-
-    for ( int cubemapIndex = 0 ; cubemapIndex < _CubemapsCount ; cubemapIndex++ ) {
-
-        m_UniformBufferData.Index.X = cubemapIndex * 6; // Offset for cubemap array layer
-
-        m_UniformBuffer->Write( &m_UniformBufferData );
-
-        textureBinding.pTexture = _Cubemaps[cubemapIndex];
-
-        rcmd->BindShaderResources( &resources );
-
-        // Draw six faces in one draw call
-        rcmd->Draw( &drawCmd );
-    }
-
-    rcmd->EndRenderPass();
-}
-
-void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture ) {
-    int size = 32;
-
-    STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_CUBE_MAP;
-    textureCI.Format = TEX_FORMAT_IRRADIANCE;
-    textureCI.Resolution.TexCubemap.Width = size;
-    textureCI.NumLods = 1;
-
-    GDevice->CreateTexture( textureCI, ppTexture );
-
-    SShaderSamplerBinding samplerBinding;
-    samplerBinding.SlotIndex = 0;
-    samplerBinding.pSampler = m_Sampler;
-
-    SShaderTextureBinding textureBinding;
-    textureBinding.SlotIndex = 0;
-
-    SShaderBufferBinding uniformBufferBinding = {};
-    uniformBufferBinding.SlotIndex = 0;
-    uniformBufferBinding.BufferType = UNIFORM_BUFFER;
-    uniformBufferBinding.pBuffer = m_UniformBuffer;
-
-    SShaderResources resources = {};
-    resources.Buffers = &uniformBufferBinding;
-    resources.NumBuffers = 1;
-
-    resources.Samplers = &samplerBinding;
-    resources.NumSamplers = 1;
-
-    resources.Textures = &textureBinding;
-    resources.NumTextures = 1;
-
-    SViewport viewport = {};
+    viewport.Width = CubemapWidth;
+    viewport.Height = CubemapWidth;
     viewport.MaxDepth = 1;
 
     SDrawIndexedCmd drawCmd = {};
@@ -337,8 +231,8 @@ void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore
     attachment.LodNum = 0;
 
     SFramebufferCreateInfo framebufferCI = {};
-    framebufferCI.Width = size;
-    framebufferCI.Height = size;
+    framebufferCI.Width = CubemapWidth;
+    framebufferCI.Height = CubemapWidth;
     framebufferCI.NumColorAttachments = 1;
     framebufferCI.pColorAttachments = &attachment;
 
@@ -348,27 +242,15 @@ void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore
     SRenderPassBegin renderPassBegin = {};
     renderPassBegin.pFramebuffer = framebuffer;
     renderPassBegin.pRenderPass = m_RP;
-    renderPassBegin.RenderArea.Width = size;
-    renderPassBegin.RenderArea.Height = size;
+    renderPassBegin.RenderArea.Width = CubemapWidth;
+    renderPassBegin.RenderArea.Height = CubemapWidth;
 
     rcmd->BeginRenderPass( renderPassBegin );
+    rcmd->SetViewport( viewport );
     rcmd->BindPipeline( m_Pipeline );
     rcmd->BindVertexBuffer( 0, m_VertexBuffer );
     rcmd->BindIndexBuffer( m_IndexBuffer, RenderCore::INDEX_TYPE_UINT16 );
-
-    viewport.Width = size;
-    viewport.Height = size;
-
-    rcmd->SetViewport( viewport );
-
-    m_UniformBufferData.Index.X = 0;
-
-    m_UniformBuffer->Write( &m_UniformBufferData );
-
-    textureBinding.pTexture = _SourceCubemap;
-
     rcmd->BindShaderResources( &resources );
-
     // Draw six faces in one draw call
     rcmd->Draw( &drawCmd );
 

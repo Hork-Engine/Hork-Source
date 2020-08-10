@@ -44,20 +44,12 @@ static bool BindMaterialDepthPass( SRenderInstance const * instance ) {
     // Choose pipeline
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
-
-        pPipeline = bSkinned ? ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->DepthPassSkinned
-                             : ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->DepthPass;
-
-        break;
-
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
-
-        pPipeline = bSkinned ? ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPassSkinned
-                             : ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->DepthPass;
+        pPipeline = bSkinned ? pMaterial->DepthPassSkinned
+            : pMaterial->DepthPass;
 
         break;
-
     default:
         return false;
     }
@@ -93,7 +85,7 @@ static void BindTexturesDepthPass( SMaterialFrameData * _Instance ) {
     BindTextures( _Instance );
 }
 
-AFrameGraphTexture * ADepthRenderer::AddPass( AFrameGraph & FrameGraph ) {
+void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTexture ) {
     ARenderPass & depthPass = FrameGraph.AddTask< ARenderPass >( "Depth Pre-Pass" );
 
     depthPass.SetDynamicRenderArea( &GRenderViewArea );
@@ -139,5 +131,5 @@ AFrameGraphTexture * ADepthRenderer::AddPass( AFrameGraph & FrameGraph ) {
 
     } );
 
-    return depthPass.GetDepthStencilAttachment().Resource;
+    *ppDepthTexture = depthPass.GetDepthStencilAttachment().Resource;
 }

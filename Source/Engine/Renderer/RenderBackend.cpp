@@ -619,42 +619,23 @@ AMaterialGPU * ARenderBackend::CreateMaterial( IGPUResourceOwner * _Owner ) {
 void ARenderBackend::DestroyMaterial( AMaterialGPU * _Material ) {
     using namespace RenderCore;
 
-    AShadeModelLit * Lit = (AShadeModelLit *)_Material->ShadeModel.Lit;
-    AShadeModelUnlit* Unlit = (AShadeModelUnlit *)_Material->ShadeModel.Unlit;
-    AShadeModelHUD * HUD = (AShadeModelHUD *)_Material->ShadeModel.HUD;
-
-    if ( Lit ) {
-        Lit->~AShadeModelLit();
-        GZoneMemory.Free( Lit );
-    }
-
-    if ( Unlit ) {
-        Unlit->~AShadeModelUnlit();
-        GZoneMemory.Free( Unlit );
-    }
-
-    if ( HUD ) {
-        HUD->~AShadeModelHUD();
-        GZoneMemory.Free( HUD );
-    }
-
     DestroyResource( _Material );
 }
 
-void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _BuildData ) {
+void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def ) {
     using namespace RenderCore;
 
-    _Material->MaterialType = _BuildData->Type;
-    _Material->LightmapSlot = _BuildData->LightmapSlot;
-    _Material->bDepthPassTextureFetch     = _BuildData->bDepthPassTextureFetch;
-    _Material->bColorPassTextureFetch     = _BuildData->bColorPassTextureFetch;
-    _Material->bWireframePassTextureFetch = _BuildData->bWireframePassTextureFetch;
-    _Material->bNormalsPassTextureFetch   = _BuildData->bNormalsPassTextureFetch;
-    _Material->bShadowMapPassTextureFetch = _BuildData->bShadowMapPassTextureFetch;
-    _Material->bHasVertexDeform = _BuildData->bHasVertexDeform;
-    _Material->bNoCastShadow    = _BuildData->bNoCastShadow;
-    _Material->bShadowMapMasking= _BuildData->bShadowMapMasking;
-    _Material->NumSamplers      = _BuildData->NumSamplers;
+    _Material->MaterialType = _Def->Type;
+    _Material->LightmapSlot = _Def->LightmapSlot;
+    _Material->bDepthPassTextureFetch     = _Def->bDepthPassTextureFetch;
+    _Material->bColorPassTextureFetch     = _Def->bColorPassTextureFetch;
+    _Material->bWireframePassTextureFetch = _Def->bWireframePassTextureFetch;
+    _Material->bNormalsPassTextureFetch   = _Def->bNormalsPassTextureFetch;
+    _Material->bShadowMapPassTextureFetch = _Def->bShadowMapPassTextureFetch;
+    _Material->bHasVertexDeform = _Def->bHasVertexDeform;
+    _Material->bNoCastShadow    = _Def->bNoCastShadow;
+    _Material->bShadowMapMasking= _Def->bShadowMapMasking;
+    _Material->NumSamplers      = _Def->NumSamplers;
 
 //    static constexpr POLYGON_CULL PolygonCullLUT[] = {
 //        POLYGON_CULL_FRONT,
@@ -662,31 +643,9 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
 //        POLYGON_CULL_DISABLED
 //    };
 
-    POLYGON_CULL cullMode = POLYGON_CULL_FRONT;//PolygonCullLUT[_BuildData->Facing];
+    POLYGON_CULL cullMode = POLYGON_CULL_FRONT;//PolygonCullLUT[_Def->Facing];
 
-    AShadeModelLit   * Lit   = (AShadeModelLit *)_Material->ShadeModel.Lit;
-    AShadeModelUnlit * Unlit = (AShadeModelUnlit *)_Material->ShadeModel.Unlit;
-    AShadeModelHUD   * HUD   = (AShadeModelHUD *)_Material->ShadeModel.HUD;
-
-    if ( Lit ) {
-        Lit->~AShadeModelLit();
-        GZoneMemory.Free( Lit );
-        _Material->ShadeModel.Lit = nullptr;
-    }
-
-    if ( Unlit ) {
-        Unlit->~AShadeModelUnlit();
-        GZoneMemory.Free( Unlit );
-        _Material->ShadeModel.Unlit = nullptr;
-    }
-
-    if ( HUD ) {
-        HUD->~AShadeModelHUD();
-        GZoneMemory.Free( HUD );
-        _Material->ShadeModel.HUD = nullptr;
-    }
-
-    AString code = LoadShader( "material.glsl", _BuildData->Shaders );
+    AString code = LoadShader( "material.glsl", _Def->Shaders );
 
     //{
     //    AFileStream fs;
@@ -694,70 +653,59 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
     //    fs.WriteBuffer( code.CStr(), code.Length() );
     //}
 
-    bool bTessellation = _BuildData->TessellationMethod == TESSELLATION_FLAT;
-    bool bTessellationShadowMap = bTessellation && _BuildData->bDisplacementAffectShadow;
+    bool bTessellation = _Def->TessellationMethod != TESSELLATION_DISABLED;
+    bool bTessellationShadowMap = bTessellation && _Def->bDisplacementAffectShadow;
 
     switch ( _Material->MaterialType ) {
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT: {
-        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelLit ) );
-        Lit = new (pMem) AShadeModelLit();
-        _Material->ShadeModel.Lit = Lit;
+        CreateLightPassPipeline( &_Material->LightPassSimple, code.CStr(), cullMode, false, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
+        CreateLightPassPipeline( &_Material->LightPassSkinned, code.CStr(), cullMode, true, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
 
-        CreateLightPassPipeline( &Lit->LightPassSimple, code.CStr(), cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
-        CreateLightPassPipeline( &Lit->LightPassSkinned, code.CStr(), cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
+        CreateLightPassLightmapPipeline( &_Material->LightPassLightmap, code.CStr(), cullMode, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
+        CreateLightPassVertexLightPipeline( &_Material->LightPassVertexLight, code.CStr(), cullMode, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
 
-        CreateLightPassLightmapPipeline( &Lit->LightPassLightmap, code.CStr(), cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
-        CreateLightPassVertexLightPipeline( &Lit->LightPassVertexLight, code.CStr(), cullMode, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
+        CreateDepthPassPipeline( &_Material->DepthPass, code.CStr(), cullMode, false, bTessellation );
+        CreateDepthPassPipeline( &_Material->DepthPassSkinned, code.CStr(), cullMode, true, bTessellation );
 
-        CreateDepthPassPipeline( &Lit->DepthPass, code.CStr(), cullMode, false, bTessellation );
-        CreateDepthPassPipeline( &Lit->DepthPassSkinned, code.CStr(), cullMode, true, bTessellation );
+        CreateWireframePassPipeline( &_Material->WireframePass, code.CStr(), cullMode, false, bTessellation );
+        CreateWireframePassPipeline( &_Material->WireframePassSkinned, code.CStr(), cullMode, true, bTessellation );
 
-        CreateWireframePassPipeline( &Lit->WireframePass, code.CStr(), cullMode, false, bTessellation );
-        CreateWireframePassPipeline( &Lit->WireframePassSkinned, code.CStr(), cullMode, true, bTessellation );
+        CreateNormalsPassPipeline( &_Material->NormalsPass, code.CStr(), cullMode, false );
+        CreateNormalsPassPipeline( &_Material->NormalsPassSkinned, code.CStr(), cullMode, true );
 
-        CreateNormalsPassPipeline( &Lit->NormalsPass, code.CStr(), cullMode, false );
-        CreateNormalsPassPipeline( &Lit->NormalsPassSkinned, code.CStr(), cullMode, true );
+        CreateShadowMapPassPipeline( &_Material->ShadowPass, code.CStr(), _Def->bShadowMapMasking, false, bTessellationShadowMap );
+        CreateShadowMapPassPipeline( &_Material->ShadowPassSkinned, code.CStr(), _Def->bShadowMapMasking, true, bTessellationShadowMap );
 
-        CreateShadowMapPassPipeline( &Lit->ShadowPass, code.CStr(), _BuildData->bShadowMapMasking, false, bTessellationShadowMap );
-        CreateShadowMapPassPipeline( &Lit->ShadowPassSkinned, code.CStr(), _BuildData->bShadowMapMasking, true, bTessellationShadowMap );
-
-        CreateFeedbackPassPipeline( &Lit->FeedbackPass, code.CStr(), false );
-        CreateFeedbackPassPipeline( &Lit->FeedbackPassSkinned, code.CStr(), true );
+        CreateFeedbackPassPipeline( &_Material->FeedbackPass, code.CStr(), false );
+        CreateFeedbackPassPipeline( &_Material->FeedbackPassSkinned, code.CStr(), true );
         break;
     }
 
     case MATERIAL_TYPE_UNLIT: {
-        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelUnlit ) );
-        Unlit = new (pMem) AShadeModelUnlit();
-        _Material->ShadeModel.Unlit = Unlit;
+        CreateLightPassPipeline( &_Material->LightPassSimple, code.CStr(), cullMode, false, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
+        CreateLightPassPipeline( &_Material->LightPassSkinned, code.CStr(), cullMode, true, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
 
-        CreateLightPassPipeline( &Unlit->LightPassSimple, code.CStr(), cullMode, false, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
-        CreateLightPassPipeline( &Unlit->LightPassSkinned, code.CStr(), cullMode, true, _BuildData->bDepthTest_EXPEREMENTAL, _BuildData->bTranslucent, _BuildData->Blending, bTessellation );
+        CreateDepthPassPipeline( &_Material->DepthPass, code.CStr(), cullMode, false, bTessellation );
+        CreateDepthPassPipeline( &_Material->DepthPassSkinned, code.CStr(), cullMode, true, bTessellation );
 
-        CreateDepthPassPipeline( &Unlit->DepthPass, code.CStr(), cullMode, false, bTessellation );
-        CreateDepthPassPipeline( &Unlit->DepthPassSkinned, code.CStr(), cullMode, true, bTessellation );
+        CreateWireframePassPipeline( &_Material->WireframePass, code.CStr(), cullMode, false, bTessellation );
+        CreateWireframePassPipeline( &_Material->WireframePassSkinned, code.CStr(), cullMode, true, bTessellation );
 
-        CreateWireframePassPipeline( &Unlit->WireframePass, code.CStr(), cullMode, false, bTessellation );
-        CreateWireframePassPipeline( &Unlit->WireframePassSkinned, code.CStr(), cullMode, true, bTessellation );
+        CreateNormalsPassPipeline( &_Material->NormalsPass, code.CStr(), cullMode, false );
+        CreateNormalsPassPipeline( &_Material->NormalsPassSkinned, code.CStr(), cullMode, true );
 
-        CreateNormalsPassPipeline( &Unlit->NormalsPass, code.CStr(), cullMode, false );
-        CreateNormalsPassPipeline( &Unlit->NormalsPassSkinned, code.CStr(), cullMode, true );
+        CreateShadowMapPassPipeline( &_Material->ShadowPass, code.CStr(), _Def->bShadowMapMasking, false, bTessellationShadowMap );
+        CreateShadowMapPassPipeline( &_Material->ShadowPassSkinned, code.CStr(), _Def->bShadowMapMasking, true, bTessellationShadowMap );
 
-        CreateShadowMapPassPipeline( &Unlit->ShadowPass, code.CStr(), _BuildData->bShadowMapMasking, false, bTessellationShadowMap );
-        CreateShadowMapPassPipeline( &Unlit->ShadowPassSkinned, code.CStr(), _BuildData->bShadowMapMasking, true, bTessellationShadowMap );
-
-        CreateFeedbackPassPipeline( &Unlit->FeedbackPass, code.CStr(), false );
-        CreateFeedbackPassPipeline( &Unlit->FeedbackPassSkinned, code.CStr(), true );
+        CreateFeedbackPassPipeline( &_Material->FeedbackPass, code.CStr(), false );
+        CreateFeedbackPassPipeline( &_Material->FeedbackPassSkinned, code.CStr(), true );
         break;
     }
 
     case MATERIAL_TYPE_HUD:
     case MATERIAL_TYPE_POSTPROCESS: {
-        void * pMem = GZoneMemory.Alloc( sizeof( AShadeModelHUD ) );
-        HUD = new (pMem) AShadeModelHUD();
-        _Material->ShadeModel.HUD = HUD;
-        CreateHUDPipeline( &HUD->HUDPipeline, code.CStr() );
+        CreateHUDPipeline( &_Material->HUDPipeline, code.CStr() );
         break;
     }
 
@@ -801,8 +749,8 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
         SAMPLER_ADDRESS_MIRROR_ONCE
     };
 
-    for ( int i = 0 ; i < _BuildData->NumSamplers ; i++ ) {
-        STextureSampler const * desc = &_BuildData->Samplers[i];
+    for ( int i = 0 ; i < _Def->NumSamplers ; i++ ) {
+        STextureSampler const * desc = &_Def->Samplers[i];
 
         samplerCI.Filter = SamplerFilterLUT[ desc->Filter ];
         samplerCI.AddressU = SamplerAddressLUT[ desc->AddressU ];
@@ -818,11 +766,31 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
     }
 }
 
-void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
+void ARenderBackend::RenderFrame( SRenderFrame * pFrameData ) {
+    bool bRebuildMaterials = false;
+
+    if ( RVMotionBlur.IsModified() ) {
+        RVMotionBlur.UnmarkModified();
+        bRebuildMaterials = true;
+    }
+
+    if ( RVSSLR.IsModified() ) {
+        RVSSLR.UnmarkModified();
+        bRebuildMaterials = true;
+    }
+
+    if ( RVSSAO.IsModified() ) {
+        RVSSAO.UnmarkModified();
+        bRebuildMaterials = true;
+    }
+
+    if ( bRebuildMaterials ) {
+        GLogger.Printf( "TODO:  Need to rebuild all materials!!!\n" );
+    }
 
     GFrameResources.FrameConstantBuffer->Begin();
 
-    GFrameData = _FrameData;
+    GFrameData = pFrameData;
 
     rcmd->SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 
@@ -845,8 +813,8 @@ void ARenderBackend::RenderFrame( SRenderFrame * _FrameData ) {
     GFrameResources.FrameConstantBuffer->End();
 }
 
-void ARenderBackend::RenderView( SRenderView * _RenderView, AFrameGraphTexture ** _ViewTexture ) {
-    GRenderView = _RenderView;
+void ARenderBackend::RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture ) {
+    GRenderView = pRenderView;
     GRenderViewArea.X = 0;
     GRenderViewArea.Y = 0;
     GRenderViewArea.Width = GRenderView->Width;
@@ -866,7 +834,7 @@ void ARenderBackend::RenderView( SRenderView * _RenderView, AFrameGraphTexture *
     
     FrameGraph->Execute( rcmd );
 
-    *_ViewTexture = CapturedResources.FinalTexture;
+    *ppViewTexture = CapturedResources.FinalTexture;
 
     if ( bVirtualTexturing ) {
         int FeedbackSize;
@@ -877,8 +845,8 @@ void ARenderBackend::RenderView( SRenderView * _RenderView, AFrameGraphTexture *
     }
 }
 
-void OpenGL45RenderView( SRenderView * _RenderView, AFrameGraphTexture ** _ViewTexture ) {
-    GOpenGL45RenderBackend.RenderView( _RenderView, _ViewTexture );
+void OpenGL45RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture ) {
+    GOpenGL45RenderBackend.RenderView( pRenderView, ppViewTexture );
 }
 
 void ARenderBackend::SwapBuffers() {

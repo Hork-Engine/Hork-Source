@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 vec3 FetchLocalReflection( vec3 ReflectionDir, float Roughness ) {
+#if defined WITH_SSLR && defined ALLOW_SSLR
     vec2 UV = InScreenUV;
     float L = SSLRSampleOffset;
     
@@ -72,4 +73,7 @@ vec3 FetchLocalReflection( vec3 ReflectionDir, float Roughness ) {
     float falloff = pow( 1 - Roughness, falloffExponent ) * screenFalloff *  saturate(-ReflectionDir.z) / float(error);// * (1.0-L);
     
     return clamp( reflectColor * falloff, 0.0, 20.0 );
+#else
+    return vec3( 0.0 );
+#endif
 }

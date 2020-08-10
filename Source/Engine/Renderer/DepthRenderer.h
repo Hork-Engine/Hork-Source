@@ -32,7 +32,4 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph/FrameGraph.h>
 
-class ADepthRenderer {
-public:
-    AFrameGraphTexture * AddPass( AFrameGraph & FrameGraph );
-};
+void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTexture );

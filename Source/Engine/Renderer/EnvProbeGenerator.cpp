@@ -92,10 +92,6 @@ static void CreateSphere( int _HDiv, int _VDiv, TPodArray< Float3 > & _Vertices,
     }
 }
 
-struct SRoughnessMapVertex {
-    Float3 Position;
-};
-
 static const TEXTURE_FORMAT TEX_FORMAT_ENVPROBE = TEXTURE_FORMAT_RGB16F; // TODO: try compression
 
 AEnvProbeGenerator::AEnvProbeGenerator() {
@@ -156,7 +152,7 @@ AEnvProbeGenerator::AEnvProbeGenerator() {
     {
         {
             0,                              // vertex buffer binding
-            sizeof( SRoughnessMapVertex ),  // vertex stride
+            sizeof( Float3 ),               // vertex stride
             INPUT_RATE_PER_VERTEX,          // per vertex / per instance
         }
     };
@@ -209,7 +205,7 @@ AEnvProbeGenerator::AEnvProbeGenerator() {
     GDevice->GetOrCreateSampler( samplerCI, &m_Sampler );
 }
 
-TRef< RenderCore::ITexture > AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITexture ** _Cubemaps ) {
+void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray ) {
     int size = 1 << _MaxLod;
 
     STextureCreateInfo textureCI = {};
@@ -219,8 +215,7 @@ TRef< RenderCore::ITexture > AEnvProbeGenerator::GenerateArray( int _MaxLod, int
     textureCI.Resolution.TexCubemapArray.NumLayers = _CubemapsCount;
     textureCI.NumLods = _MaxLod + 1;
 
-    TRef< RenderCore::ITexture > cubemapArray;
-    GDevice->CreateTexture( textureCI, &cubemapArray );
+    GDevice->CreateTexture( textureCI, ppTextureArray );
 
     SShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
@@ -256,7 +251,7 @@ TRef< RenderCore::ITexture > AEnvProbeGenerator::GenerateArray( int _MaxLod, int
     for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
 
         SFramebufferAttachmentInfo attachment = {};
-        attachment.pTexture = cubemapArray;
+        attachment.pTexture = *ppTextureArray;
         attachment.LodNum = Lod;
 
         SFramebufferCreateInfo framebufferCI = {};
@@ -302,11 +297,9 @@ TRef< RenderCore::ITexture > AEnvProbeGenerator::GenerateArray( int _MaxLod, int
 
         rcmd->EndRenderPass();
     }
-
-    return cubemapArray;
 }
 
-TRef< RenderCore::ITexture > AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap ) {
+void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture ) {
     int size = 1 << _MaxLod;
 
     STextureCreateInfo textureCI = {};
@@ -315,8 +308,7 @@ TRef< RenderCore::ITexture > AEnvProbeGenerator::Generate( int _MaxLod, ITexture
     textureCI.Resolution.TexCubemap.Width = size;
     textureCI.NumLods = _MaxLod + 1;
 
-    TRef< RenderCore::ITexture > cubemap;
-    GDevice->CreateTexture( textureCI, &cubemap );
+    GDevice->CreateTexture( textureCI, ppTexture );
 
     SShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
@@ -354,7 +346,7 @@ TRef< RenderCore::ITexture > AEnvProbeGenerator::Generate( int _MaxLod, ITexture
     for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
 
         SFramebufferAttachmentInfo attachment = {};
-        attachment.pTexture = cubemap;
+        attachment.pTexture = *ppTexture;
         attachment.LodNum = Lod;
 
         SFramebufferCreateInfo framebufferCI = {};
@@ -395,6 +387,4 @@ TRef< RenderCore::ITexture > AEnvProbeGenerator::Generate( int _MaxLod, ITexture
 
         rcmd->EndRenderPass();
     }
-
-    return cubemap;
 }

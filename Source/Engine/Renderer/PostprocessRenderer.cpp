@@ -69,11 +69,12 @@ void APostprocessRenderer::CreateSampler()
     GDevice->GetOrCreateSampler( samplerCI, &ColorGradingSampler );
 }
 
-AFrameGraphTexture * APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
-                                                          AFrameGraphTexture * ColorTexture,
-                                                          AFrameGraphTexture * Exposure,
-                                                          AFrameGraphTexture * ColorGrading,
-                                                          ABloomRenderer::STextures & BloomTex )
+void APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
+                                    AFrameGraphTexture * ColorTexture,
+                                    AFrameGraphTexture * Exposure,
+                                    AFrameGraphTexture * ColorGrading,
+                                    ABloomRenderer::STextures & BloomTex,
+                                    AFrameGraphTexture ** ppPostprocessTexture )
 {
     ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Postprocess Pass" );
 
@@ -135,5 +136,5 @@ AFrameGraphTexture * APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
 
     } );
 
-    return renderPass.GetColorAttachments()[0].Resource;
+    *ppPostprocessTexture = renderPass.GetColorAttachments()[0].Resource;
 }

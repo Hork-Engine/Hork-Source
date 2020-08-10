@@ -36,7 +36,7 @@ class AColorGradingRenderer {
 public:
     AColorGradingRenderer();
 
-    AFrameGraphTexture * AddPass( AFrameGraph & FrameGraph );
+    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppColorGrading );
 
 private:
     void CreateSamplers();

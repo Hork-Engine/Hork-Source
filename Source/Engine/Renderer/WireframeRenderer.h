@@ -32,7 +32,4 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph/FrameGraph.h>
 
-class AWireframeRenderer {
-public:    
-    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget );
-};
+void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget );

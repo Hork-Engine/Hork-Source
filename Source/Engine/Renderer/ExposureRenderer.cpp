@@ -92,14 +92,15 @@ void AExposureRenderer::CreateSampler() {
     GDevice->GetOrCreateSampler( samplerCI, &LuminanceSampler );
 }
 
-AFrameGraphTexture * AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture ) {
+void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppExposure ) {
     ATextureGPU * exposureTexture = GRenderView->CurrentExposure;
 
     if ( !exposureTexture || RVShowDefaultExposure ) {
-        return FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
+        *ppExposure = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
             "Fallback exposure texture",
             MakeTexture( RenderCore::TEXTURE_FORMAT_RG16F, RenderCore::STextureResolution2D( 1, 1 ) ),
             DefaultLuminance );
+        return;
     }
 
     auto Exposure_R = FrameGraph.AddExternalResource(
@@ -250,5 +251,5 @@ AFrameGraphTexture * AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFram
         DrawSAQ( DynamicExposurePipe );
     } );
 
-    return Exposure_R;
+    *ppExposure = Exposure_R;
 }

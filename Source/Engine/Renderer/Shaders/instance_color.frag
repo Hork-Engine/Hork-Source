@@ -32,7 +32,10 @@ SOFTWARE.
 #include "base/debug.glsl"
 
 layout( location = 0 ) out vec4 FS_FragColor;
+
+#ifdef WITH_MOTION_BLUR
 layout( location = 1 ) out vec2 FS_Velocity;
+#endif
 
 layout( origin_upper_left ) in vec4 gl_FragCoord;
 
@@ -119,15 +122,21 @@ layout( binding = 6 ) uniform sampler2D vt_PhysCache3;
 layout( binding = 7 ) uniform sampler2D vt_IndirectionTable;
 #endif
 
+#if defined WITH_SSLR && defined ALLOW_SSLR
 layout( binding = 8 ) uniform sampler2D ReflectionDepth;
 layout( binding = 9 ) uniform sampler2D ReflectionColor;
+#endif
 
 #ifdef SUPPORT_PHOTOMETRIC_LIGHT
 layout( binding = 10 ) uniform sampler1DArray IESMap;
 #endif
 
 layout( binding = 11 ) uniform sampler2D LookupBRDF;
+
+#if defined WITH_SSAO && defined ALLOW_SSAO
 layout( binding = 12 ) uniform sampler2D AOLookup;
+#endif
+
 layout( binding = 13 ) uniform usamplerBuffer ClusterItemTBO;
 layout( binding = 14 ) uniform usampler3D ClusterLookup; // TODO: Use bindless?
 layout( binding = 15 ) uniform sampler2DArrayShadow ShadowMapShadow; // TODO: Use bindless?
@@ -153,7 +162,7 @@ layout( location = COLOR_PASS_VARYING_POSITION ) in vec3 VS_Position;
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 VS_TexCoordVT;
 #endif
 
-#ifdef ALLOW_MOTION_BLUR
+#if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos;
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP;
 #endif
@@ -206,12 +215,15 @@ void main()
     InPhysicalUV = VT_CalcPhysicalUV( vt_IndirectionTable, VS_TexCoordVT, VTUnit );
 #endif
 
+#ifdef WITH_MOTION_BLUR
 #ifdef ALLOW_MOTION_BLUR
     vec2 p1 = VS_VertexPos.xy / VS_VertexPos.w;
     vec2 p2 = VS_VertexPosP.xy / VS_VertexPosP.w;
     FS_Velocity = ( p1 - p2 ) * (0.5 * MOTION_BLUR_SCALE);
+    FS_Velocity = saturate( sqrt( abs(FS_Velocity) ) * sign( FS_Velocity ) * 0.5 + 0.5 );
 #else
     FS_Velocity = vec2( 0.0 );
+#endif
 #endif
 
     InitParallaxTechnique();

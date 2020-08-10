@@ -70,7 +70,7 @@ enum VSD_QUERY_MASK
     VSD_QUERY_MASK_SHADOW_CAST              = 0x00000010,
     VSD_QUERY_MASK_NO_SHADOW_CAST           = 0x00000020,
 
-    VSD_QUERY_LIGHTMAP_EXPEREMENTAL         = 0x00000040,
+    VSD_QUERY_LIGHTMAP_EXPERIMENTAL         = 0x00000040,
 
     // Reserved for future
     VSD_QUERY_MASK_RESERVED1                = 0x00000080,
@@ -552,7 +552,7 @@ public:
     /** Baked surface data */
     TRef< ABrushModel > Model;
 
-    /** Static lightmaps (experemental). Indexed by lightmap block. */
+    /** Static lightmaps (experimental). Indexed by lightmap block. */
     TStdVector< TRef< ATexture > > Lightmaps;
 
     /** Vertex buffer for baked static shadow casters

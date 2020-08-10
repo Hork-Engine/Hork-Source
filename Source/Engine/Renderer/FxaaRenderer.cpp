@@ -49,7 +49,7 @@ void AFxaaRenderer::CreateSampler()
     GDevice->GetOrCreateSampler( samplerCI, &FxaaSampler );
 }
 
-AFrameGraphTexture * AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture )
+void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppFxaaTexture )
 {
     ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "FXAA Pass" );
 
@@ -79,5 +79,5 @@ AFrameGraphTexture * AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGra
         DrawSAQ( FxaaPipeline );
     } );
 
-    return renderPass.GetColorAttachments()[0].Resource;
+    *ppFxaaTexture = renderPass.GetColorAttachments()[0].Resource;
 }

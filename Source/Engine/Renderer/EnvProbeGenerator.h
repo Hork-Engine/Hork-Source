@@ -41,8 +41,8 @@ class AEnvProbeGenerator {
 public:
     AEnvProbeGenerator();
 
-    TRef< RenderCore::ITexture > GenerateArray( int _MaxLod, int _CubemapsCount, RenderCore::ITexture ** _Cubemaps );
-    TRef< RenderCore::ITexture > Generate( int _MaxLod, RenderCore::ITexture * _SourceCubemap );
+    void GenerateArray( int _MaxLod, int _CubemapsCount, RenderCore::ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray );
+    void Generate( int _MaxLod, RenderCore::ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture );
 
 private:
     TRef< RenderCore::IBuffer > m_VertexBuffer;

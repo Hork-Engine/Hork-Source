@@ -58,7 +58,7 @@ void AMaterial::Initialize( SMaterialDef const * _Data ) {
 void AMaterial::Initialize( MGMaterialGraph * Graph ) {
     SMaterialDef def;
 
-    CreateMaterialDef( Graph, &def );
+    CompileMaterialGraph( Graph, &def );
 
     Initialize( &def );
 }

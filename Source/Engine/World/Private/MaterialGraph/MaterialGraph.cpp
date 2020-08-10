@@ -136,6 +136,8 @@ static bool IsTypeComponent( EMGNodeType InType )
     case AT_Float1:
     case AT_Bool1:
         return true;
+    default:
+        break;
     }
     return false;
 }
@@ -158,6 +160,8 @@ static EMGComponentType GetTypeComponent( EMGNodeType InType )
     case AT_Bool3:
     case AT_Bool4:
         return COMP_BOOL;
+    default:
+        break;
     }
     return COMP_UNKNOWN;
 }
@@ -177,6 +181,8 @@ static EMGVectorType GetTypeVector( EMGNodeType InType )
     case AT_Float4:
     case AT_Bool4:
         return VEC4;
+    default:
+        break;
     }
     return VEC_UNKNOWN;
 }
@@ -186,6 +192,8 @@ static bool IsArithmeticType( EMGNodeType InType )
     switch ( GetTypeComponent( InType ) ) {
     case COMP_FLOAT:
         return true;
+    default:
+        break;
     }
 
     return false;
@@ -207,6 +215,8 @@ static EMGNodeType ToFloatType( EMGNodeType InType )
         return AT_Float3;
     case AT_Bool4:
         return AT_Float4;
+    default:
+        break;
     }
     return AT_Float1;
 }
@@ -500,6 +510,8 @@ static const char * MakeEmptyVector( EMGNodeType InType )
         return "bvec3( false )";
     case AT_Bool4:
         return "bvec4( false )";
+    default:
+        break;
     };
 
     return "0.0";
@@ -539,23 +551,24 @@ AN_CLASS_META( MGInput )
 MGInput::MGInput() {
 }
 
-void MGInput::Connect( MGNode * _Block, const char * _Slot ) {
-    Block = _Block;
-    Slot = _Slot;
+void MGInput::Connect( MGNode * pNode, const char * SlotName ) {
+    if ( pNode ) {
+        Slot = pNode->FindOutput( SlotName );
+    } else {
+        Slot.Reset();
+    }
+}
+
+void MGInput::Connect( MGOutput * pSlot ) {
+    Slot = pSlot;
 }
 
 void MGInput::Disconnect() {
-    Block = nullptr;
-    Slot.Clear();
+    Slot.Reset();
 }
 
 MGOutput * MGInput::GetConnection() {
-    if ( !Block ) {
-        return nullptr;
-    }
-
-    MGOutput * out = Block->FindOutput( Slot.CStr() );
-    return out;
+    return Slot;
 }
 
 int MGInput::Serialize( ADocument & _Doc ) {
@@ -563,10 +576,10 @@ int MGInput::Serialize( ADocument & _Doc ) {
 
     _Doc.AddStringField( object, "Name", _Doc.ProxyBuffer.NewString( GetObjectName() ).CStr() );
 
-    if ( Block ) {
-        _Doc.AddStringField( object, "Slot", _Doc.ProxyBuffer.NewString( Slot ).CStr() );
-        _Doc.AddStringField( object, "Block", _Doc.ProxyBuffer.NewString( Math::ToString( Block->GetId() ) ).CStr() );
-    }
+    //if ( GetOwner() ) {
+    //    _Doc.AddStringField( object, "Slot", _Doc.ProxyBuffer.NewString( Slot->GetObjectName() ).CStr() );
+    //    _Doc.AddStringField( object, "Node", _Doc.ProxyBuffer.NewString( Math::ToString( GetOwner()->GetId() ) ).CStr() );
+    //}
 
     return object;
 }
@@ -592,6 +605,7 @@ MGNode::~MGNode() {
     }
 
     for ( MGOutput * Out : Outputs ) {
+        Out->Owner = nullptr;
         Out->RemoveRef();
     }
 }
@@ -609,6 +623,7 @@ MGOutput * MGNode::AddOutput( const char * _Name, EMGNodeType _Type ) {
     Out->AddRef();
     Out->SetObjectName( _Name );
     Out->Type = _Type;
+    Out->Owner = this;
     Outputs.Append( Out );
     return Out;
 }
@@ -647,8 +662,8 @@ void MGNode::ResetConnections( AMaterialBuildContext const & _Context ) {
     for ( MGInput * in : Inputs ) {
         MGOutput * out = in->GetConnection();
         if ( out ) {
-            MGNode * block = in->ConnectedBlock();
-            block->ResetConnections( _Context );
+            MGNode * node = in->ConnectedNode();
+            node->ResetConnections( _Context );
             out->Usages = 0;
         }
     }
@@ -664,8 +679,8 @@ void MGNode::TouchConnections( AMaterialBuildContext const & _Context ) {
     for ( MGInput * in : Inputs ) {
         MGOutput * out = in->GetConnection();
         if ( out ) {
-            MGNode * block = in->ConnectedBlock();
-            block->TouchConnections( _Context );
+            MGNode * node = in->ConnectedNode();
+            node->TouchConnections( _Context );
             out->Usages++;
         }
     }
@@ -697,7 +712,7 @@ static AString MakeExpression( AMaterialBuildContext & _Context, MGInput * Input
 {
     MGOutput * connection = Input->GetConnection();
 
-    if ( connection && Input->ConnectedBlock()->Build( _Context ) ) {
+    if ( connection && Input->ConnectedNode()->Build( _Context ) ) {
         return MakeVectorCast( connection->Expression, connection->Type, DesiredType, VectorCastFlags );
     }
 
@@ -712,18 +727,21 @@ void MGMaterialGraph::Compute( AMaterialBuildContext & _Context )
     case VERTEX_STAGE:
         ComputeVertexStage( _Context );
         break;
-    case FRAGMENT_STAGE:
-        ComputeFragmentStage( _Context );
-        break;
-    case SHADOWCAST_STAGE:
-        ComputeShadowCastStage( _Context );
-        break;
     case TESSELLATION_CONTROL_STAGE:
         ComputeTessellationControlStage( _Context );
         break;
     case TESSELLATION_EVAL_STAGE:
         ComputeTessellationEvalStage( _Context );
         break;
+    case GEOMETRY_STAGE:
+        break;
+    case FRAGMENT_STAGE:
+        ComputeFragmentStage( _Context );
+        break;
+    case SHADOWCAST_STAGE:
+        ComputeShadowCastStage( _Context );
+        break;
+
     }        
 }
 
@@ -740,7 +758,7 @@ void MGMaterialGraph::ComputeVertexStage( AMaterialBuildContext & _Context )
     //    TransformMatrix = "TransformMatrix";
     //}
 
-    if ( positionCon && VertexDeform->ConnectedBlock()->Build( _Context ) ) {
+    if ( positionCon && VertexDeform->ConnectedNode()->Build( _Context ) ) {
 
         if ( positionCon->Expression != "VertexPosition" ) {
             _Context.bHasVertexDeform = true;
@@ -818,7 +836,7 @@ void MGMaterialGraph::ComputeShadowCastStage( AMaterialBuildContext & _Context )
     //    TransformMatrix = "TransformMatrix";
     //}
 
-    if ( positionCon && VertexDeform->ConnectedBlock()->Build( _Context ) ) {
+    if ( positionCon && VertexDeform->ConnectedNode()->Build( _Context ) ) {
 
         if ( positionCon->Expression != "VertexPosition" ) {
             _Context.bHasVertexDeform = true;
@@ -837,7 +855,7 @@ void MGMaterialGraph::ComputeShadowCastStage( AMaterialBuildContext & _Context )
 
     MGOutput * con = ShadowMask->GetConnection();
 
-    if ( con && ShadowMask->ConnectedBlock()->Build( _Context ) ) {
+    if ( con && ShadowMask->ConnectedNode()->Build( _Context ) ) {
 
         switch ( con->Type ) {
         case AT_Float1:
@@ -866,7 +884,7 @@ void MGMaterialGraph::ComputeTessellationControlStage( AMaterialBuildContext & _
 {
     MGOutput * tessFactorCon = TessellationFactor->GetConnection();
 
-    if ( tessFactorCon && TessellationFactor->ConnectedBlock()->Build( _Context ) ) {
+    if ( tessFactorCon && TessellationFactor->ConnectedNode()->Build( _Context ) ) {
         AString expression = MakeVectorCast( tessFactorCon->Expression, tessFactorCon->Type, AT_Float1 );
 
         _Context.SourceCode += "float TessellationFactor = " + expression + ";\n";
@@ -882,7 +900,7 @@ void MGMaterialGraph::ComputeTessellationEvalStage( AMaterialBuildContext & _Con
 
     _Context.bHasDisplacement = false;
 
-    if ( displacementCon && Displacement->ConnectedBlock()->Build( _Context ) ) {
+    if ( displacementCon && Displacement->ConnectedNode()->Build( _Context ) ) {
 
         _Context.bHasDisplacement = true;
 
@@ -923,7 +941,7 @@ MGLengthNode::MGLengthNode() : Super( "Length" ) {
 void MGLengthNode::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * inputConnection = Value->GetConnection();
 
-    if ( inputConnection && Value->ConnectedBlock()->Build( _Context ) ) {
+    if ( inputConnection && Value->ConnectedNode()->Build( _Context ) ) {
 
         EMGNodeType type = ToFloatType( inputConnection->Type );
 
@@ -954,7 +972,7 @@ MGDecomposeVectorNode::MGDecomposeVectorNode() : Super( "Decompose Vector" ) {
 void MGDecomposeVectorNode::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * inputConnection = Vector->GetConnection();
 
-    if ( inputConnection && Vector->ConnectedBlock()->Build( _Context ) ) {
+    if ( inputConnection && Vector->ConnectedNode()->Build( _Context ) ) {
 
         EMGComponentType componentType = GetTypeComponent( inputConnection->Type );
 
@@ -1045,10 +1063,10 @@ void MGMakeVectorNode::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * ZConnection = Z->GetConnection();
     MGOutput * WConnection = W->GetConnection();
 
-    bool XValid = XConnection && X->ConnectedBlock()->Build( _Context ) && IsTypeComponent( XConnection->Type );
-    bool YValid = YConnection && Y->ConnectedBlock()->Build( _Context ) && IsTypeComponent( YConnection->Type );
-    bool ZValid = ZConnection && Z->ConnectedBlock()->Build( _Context ) && IsTypeComponent( ZConnection->Type );
-    bool WValid = WConnection && W->ConnectedBlock()->Build( _Context ) && IsTypeComponent( WConnection->Type );
+    bool XValid = XConnection && X->ConnectedNode()->Build( _Context ) && IsTypeComponent( XConnection->Type );
+    bool YValid = YConnection && Y->ConnectedNode()->Build( _Context ) && IsTypeComponent( YConnection->Type );
+    bool ZValid = ZConnection && Z->ConnectedNode()->Build( _Context ) && IsTypeComponent( ZConnection->Type );
+    bool WValid = WConnection && W->ConnectedNode()->Build( _Context ) && IsTypeComponent( WConnection->Type );
 
     int numComponents = 4;
     if ( !WValid ) {
@@ -1229,7 +1247,7 @@ MGArithmeticFunction1::MGArithmeticFunction1( EArithmeticFunction _Function, con
 void MGArithmeticFunction1::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * connectionA = Value->GetConnection();
 
-    if ( connectionA && Value->ConnectedBlock()->Build( _Context ) ) {
+    if ( connectionA && Value->ConnectedNode()->Build( _Context ) ) {
 
         // Result type depends on input type
         if ( !IsArithmeticType( connectionA->Type ) ) {
@@ -1311,8 +1329,8 @@ void MGArithmeticFunction2::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * connectionA = ValueA->GetConnection();
     MGOutput * connectionB = ValueB->GetConnection();
 
-    if ( connectionA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionB && ValueB->ConnectedBlock()->Build( _Context ) ) {
+    if ( connectionA && ValueA->ConnectedNode()->Build( _Context )
+         && connectionB && ValueB->ConnectedNode()->Build( _Context ) ) {
 
         // Result type depends on input type
         if ( !IsArithmeticType( connectionA->Type ) ) {
@@ -1394,9 +1412,9 @@ void MGArithmeticFunction3::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * connectionB = ValueB->GetConnection();
     MGOutput * connectionC = ValueC->GetConnection();
 
-    if ( connectionA && ValueA->ConnectedBlock()->Build( _Context )
-         && connectionB && ValueB->ConnectedBlock()->Build( _Context )
-         && connectionC && ValueC->ConnectedBlock()->Build( _Context ) ) {
+    if ( connectionA && ValueA->ConnectedNode()->Build( _Context )
+         && connectionB && ValueB->ConnectedNode()->Build( _Context )
+         && connectionC && ValueC->ConnectedNode()->Build( _Context ) ) {
 
         // Result type depends on input type
         if ( !IsArithmeticType( connectionA->Type ) ) {
@@ -1445,7 +1463,7 @@ MGSpheremapCoord::MGSpheremapCoord() : Super( "Spheremap Coord" ) {
 void MGSpheremapCoord::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * connectionDir = Dir->GetConnection();
 
-    if ( connectionDir && Dir->ConnectedBlock()->Build( _Context ) )
+    if ( connectionDir && Dir->ConnectedNode()->Build( _Context ) )
     {
         AString expressionDir = MakeVectorCast( connectionDir->Expression, connectionDir->Type, AT_Float3 );
 
@@ -1469,7 +1487,7 @@ MGLuminance::MGLuminance() : Super( "Luminance" ) {
 void MGLuminance::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * connectionColor = LinearColor->GetConnection();
 
-    if ( connectionColor && LinearColor->ConnectedBlock()->Build( _Context ) )
+    if ( connectionColor && LinearColor->ConnectedNode()->Build( _Context ) )
     {
         AString expressionColor = MakeVectorCast( connectionColor->Expression, connectionColor->Type, AT_Float4, VECTOR_CAST_EXPAND_VEC1 );
 
@@ -1767,10 +1785,10 @@ void MGSampler::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * texSlotCon = TextureSlot->GetConnection();
     if ( texSlotCon ) {
 
-        MGNode * block = TextureSlot->ConnectedBlock();
-        if ( block->FinalClassId() == MGTextureSlot::ClassId() && block->Build( _Context ) ) {
+        MGNode * node = TextureSlot->ConnectedNode();
+        if ( node->FinalClassId() == MGTextureSlot::ClassId() && node->Build( _Context ) ) {
 
-            MGTextureSlot * texSlot = static_cast< MGTextureSlot * >( block );
+            MGTextureSlot * texSlot = static_cast< MGTextureSlot * >( node );
 
             EMGNodeType sampleType = AT_Float2;
 
@@ -1806,7 +1824,7 @@ void MGSampler::Compute( AMaterialBuildContext & _Context ) {
 
                 MGOutput * texCoordCon = TexCoord->GetConnection();
 
-                if ( texCoordCon && TexCoord->ConnectedBlock()->Build( _Context ) ) {
+                if ( texCoordCon && TexCoord->ConnectedNode()->Build( _Context ) ) {
 
                     const char * swizzleStr = bSwappedToBGR ? ".bgra" : "";
 
@@ -1882,10 +1900,10 @@ void MGNormalSampler::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * texSlotCon = TextureSlot->GetConnection();
     if ( texSlotCon ) {
 
-        MGNode * block = TextureSlot->ConnectedBlock();
-        if ( block->FinalClassId() == MGTextureSlot::ClassId() && block->Build( _Context ) ) {
+        MGNode * node = TextureSlot->ConnectedNode();
+        if ( node->FinalClassId() == MGTextureSlot::ClassId() && node->Build( _Context ) ) {
 
-            MGTextureSlot * texSlot = static_cast< MGTextureSlot * >( block );
+            MGTextureSlot * texSlot = static_cast< MGTextureSlot * >( node );
 
             EMGNodeType sampleType = AT_Float2;
 
@@ -1921,7 +1939,7 @@ void MGNormalSampler::Compute( AMaterialBuildContext & _Context ) {
 
                 MGOutput * texCoordCon = TexCoord->GetConnection();
 
-                if ( texCoordCon && TexCoord->ConnectedBlock()->Build( _Context ) ) {
+                if ( texCoordCon && TexCoord->ConnectedNode()->Build( _Context ) ) {
 
                     const char * sampleFunc = ChooseSampleFunction( Compression );
 
@@ -1959,7 +1977,7 @@ MGParallaxMapSampler::MGParallaxMapSampler() : Super( "Parallax Map Sampler" ) {
     TexCoord = AddInput( "TexCoord" );
     DisplacementScale = AddInput( "DisplacementScale" );
     SelfShadowing = AddInput( "SelfShadowing" );
-    ParallaxCorrectedTexCoord = AddOutput( "Result", AT_Float2 );
+    Result = AddOutput( "Result", AT_Float2 );
 }
 
 void MGParallaxMapSampler::Compute( AMaterialBuildContext & _Context ) {
@@ -1968,10 +1986,10 @@ void MGParallaxMapSampler::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * texSlotCon = TextureSlot->GetConnection();
     if ( texSlotCon ) {
 
-        MGNode * block = TextureSlot->ConnectedBlock();
-        if ( block->FinalClassId() == MGTextureSlot::ClassId() && block->Build( _Context ) ) {
+        MGNode * node = TextureSlot->ConnectedNode();
+        if ( node->FinalClassId() == MGTextureSlot::ClassId() && node->Build( _Context ) ) {
 
-            MGTextureSlot * texSlot = static_cast< MGTextureSlot * >(block);
+            MGTextureSlot * texSlot = static_cast< MGTextureSlot * >(node);
 
             if ( texSlot->SamplerDesc.TextureType == TEXTURE_2D ) {
                 int32_t slotIndex = texSlot->GetSlotIndex();
@@ -1979,14 +1997,14 @@ void MGParallaxMapSampler::Compute( AMaterialBuildContext & _Context ) {
 
                     MGOutput * texCoordCon = TexCoord->GetConnection();
 
-                    if ( texCoordCon && TexCoord->ConnectedBlock()->Build( _Context ) ) {
+                    if ( texCoordCon && TexCoord->ConnectedNode()->Build( _Context ) ) {
 
                         AString sampler = "tslot_" + Math::ToString( slotIndex );
                         AString texCoord = MakeVectorCast( texCoordCon->Expression, texCoordCon->Type, AT_Float2 );
 
                         AString displacementScale;
                         MGOutput * displacementScaleCon = DisplacementScale->GetConnection();
-                        if ( displacementScaleCon && DisplacementScale->ConnectedBlock()->Build( _Context ) ) {
+                        if ( displacementScaleCon && DisplacementScale->ConnectedNode()->Build( _Context ) ) {
                             displacementScale = MakeVectorCast( displacementScaleCon->Expression, displacementScaleCon->Type, AT_Float1 );
                         } else {
                             displacementScale = "0.05";
@@ -1994,14 +2012,14 @@ void MGParallaxMapSampler::Compute( AMaterialBuildContext & _Context ) {
 
                         AString selfShadowing;
                         MGOutput * selfShadowingCon = SelfShadowing->GetConnection();
-                        if ( selfShadowingCon && SelfShadowing->ConnectedBlock()->Build( _Context ) ) {
+                        if ( selfShadowingCon && SelfShadowing->ConnectedNode()->Build( _Context ) ) {
                             selfShadowing = MakeVectorCast( selfShadowingCon->Expression, selfShadowingCon->Type, AT_Bool1 );
                         } else {
                             selfShadowing = MakeEmptyVector( AT_Bool1 );
                         }
 
-                        ParallaxCorrectedTexCoord->Expression = _Context.GenerateVariableName();
-                        _Context.SourceCode += "const vec2 " + ParallaxCorrectedTexCoord->Expression +
+                        Result->Expression = _Context.GenerateVariableName();
+                        _Context.SourceCode += "const vec2 " + Result->Expression +
                             " = ParallaxMapping( " + sampler + ", " + texCoord + ", " + displacementScale + ", " + selfShadowing + " );\n";
 
                         bValid = true;
@@ -2014,7 +2032,7 @@ void MGParallaxMapSampler::Compute( AMaterialBuildContext & _Context ) {
     }
 
     if ( !bValid ) {
-        _Context.GenerateSourceCode( ParallaxCorrectedTexCoord, MakeEmptyVector( AT_Float2 ), false );
+        _Context.GenerateSourceCode( Result, MakeEmptyVector( AT_Float2 ), false );
     }
 }
 
@@ -2210,9 +2228,9 @@ void MGInTexCoord::Compute( AMaterialBuildContext & _Context ) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #if 0
-AN_CLASS_META( FMaterialInLightmapTexCoordBlock )
+AN_CLASS_META( MGMaterialInLightmapTexCoord )
 
-FMaterialInLightmapTexCoordBlock::FMaterialInLightmapTexCoordBlock() {
+MGMaterialInLightmapTexCoord::MGMaterialInLightmapTexCoord() {
     Name = "InLightmapTexCoord";
     Stages = VERTEX_STAGE_BIT;
 
@@ -2220,7 +2238,7 @@ FMaterialInLightmapTexCoordBlock::FMaterialInLightmapTexCoordBlock() {
     OutValue->Expression = "InLightmapTexCoord";
 }
 
-void FMaterialInLightmapTexCoordBlock::Compute( AMaterialBuildContext & _Context ) {
+void MGMaterialInLightmapTexCoord::Compute( AMaterialBuildContext & _Context ) {
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2228,11 +2246,11 @@ void FMaterialInLightmapTexCoordBlock::Compute( AMaterialBuildContext & _Context
 AN_CLASS_META( MGInTimer )
 
 MGInTimer::MGInTimer() : Super( "InTimer" ) {
-    MGOutput * ValGameRunningTimeSeconds = AddOutput( "GameRunningTimeSeconds", AT_Float1 );
-    ValGameRunningTimeSeconds->Expression = "GameRunningTimeSeconds";
+    GameRunningTimeSeconds = AddOutput( "GameRunningTimeSeconds", AT_Float1 );
+    GameRunningTimeSeconds->Expression = "GameRunningTimeSeconds";
 
-    MGOutput * ValGameplayTimeSeconds = AddOutput( "GameplayTimeSeconds", AT_Float1 );
-    ValGameplayTimeSeconds->Expression = "GameplayTimeSeconds";
+    GameplayTimeSeconds = AddOutput( "GameplayTimeSeconds", AT_Float1 );
+    GameplayTimeSeconds->Expression = "GameplayTimeSeconds";
 }
 
 void MGInTimer::Compute( AMaterialBuildContext & _Context ) {
@@ -2277,10 +2295,10 @@ void MGCondLess::Compute( AMaterialBuildContext & _Context ) {
          && connectionB
          && connectionTrue
          && connectionFalse
-         && ValueA->ConnectedBlock()->Build( _Context )
-         && ValueB->ConnectedBlock()->Build( _Context )
-         && True->ConnectedBlock()->Build( _Context )
-         && False->ConnectedBlock()->Build( _Context ) )
+         && ValueA->ConnectedNode()->Build( _Context )
+         && ValueB->ConnectedNode()->Build( _Context )
+         && True->ConnectedNode()->Build( _Context )
+         && False->ConnectedNode()->Build( _Context ) )
     {
         if ( connectionA->Type != connectionB->Type || connectionTrue->Type != connectionFalse->Type
              || !IsArithmeticType( connectionA->Type ) )
@@ -2332,7 +2350,7 @@ MGAtmosphereNode::MGAtmosphereNode() : Super( "Atmosphere Scattering" ) {
 void MGAtmosphereNode::Compute( AMaterialBuildContext & _Context ) {
     MGOutput * dirConnection = Dir->GetConnection();
 
-    if ( dirConnection && Dir->ConnectedBlock()->Build( _Context ) ) {
+    if ( dirConnection && Dir->ConnectedNode()->Build( _Context ) ) {
         AString expression = MakeVectorCast( dirConnection->Expression, dirConnection->Type, AT_Float3 );
         _Context.GenerateSourceCode( Result, "vec4( atmosphere( normalize(" + expression + "), normalize(vec3(0.5,0.5,-1)) ), 1.0 )", false );
     } else {
@@ -2565,15 +2583,6 @@ static void WriteDebugShaders( SMaterialShader const * Shaders ) {
     }
 }
 
-static AString GenerateVaryingsCode( TStdVector< SVarying > const & Varyings )
-{
-    AString s;
-    for ( SVarying const & v : Varyings ) {
-        s += v.VaryingName + " = " + v.VaryingSource + ";\n";
-    }
-    return s;
-}
-
 static AString GenerateOutputVaryingsCode( TStdVector< SVarying > const & Varyings, const char * Prefix, bool bArrays )
 {
     AString s;
@@ -2606,6 +2615,7 @@ static AString GenerateInputVaryingsCode( TStdVector< SVarying > const & Varying
     return s;
 }
 
+#if 0
 static void MergeVaryings( TStdVector< SVarying > const & A, TStdVector< SVarying > const & B, TStdVector< SVarying > & Result )
 {
     Result = A;
@@ -2622,6 +2632,17 @@ static void MergeVaryings( TStdVector< SVarying > const & A, TStdVector< SVaryin
         }
     }
 }
+
+static bool FindVarying( TStdVector< SVarying > const & Varyings, SVarying const & Var )
+{
+    for ( int i = 0 ; i < Varyings.Size() ; i++ ) {
+        if ( Var.VaryingName == Varyings[i].VaryingName ) {
+            return true;
+        }
+    }
+    return false;
+}
+#endif
 
 static void AddVaryings( TStdVector< SVarying > & InOutResult, TStdVector< SVarying > const & B )
 {
@@ -2660,18 +2681,6 @@ static void RemoveVaryings( TStdVector< SVarying > & InOutResult, TStdVector< SV
     }
 }
 
-static bool FindVarying( TStdVector< SVarying > const & Varyings, SVarying const & Var )
-{
-    for ( int i = 0 ; i < Varyings.Size() ; i++ ) {
-        if ( Var.VaryingName == Varyings[i].VaryingName ) {
-            return true;
-        }
-    }
-    return false;
-}
-
-#if 1
-
 struct SMaterialStageTransition
 {
     TStdVector< SVarying > Varyings;
@@ -2680,12 +2689,12 @@ struct SMaterialStageTransition
     int MaxUniformAddress;
 };
 
-static void CreateStageTransitions( SMaterialStageTransition & Transition,
-                                    AMaterialBuildContext * VertexStage,
-                                    AMaterialBuildContext * TessControlStage,
-                                    AMaterialBuildContext * TessEvalStage,
-                                    AMaterialBuildContext * GeometryStage,
-                                    AMaterialBuildContext * FragmentStage )
+void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transition,
+                                              AMaterialBuildContext * VertexStage,
+                                              AMaterialBuildContext * TessControlStage,
+                                              AMaterialBuildContext * TessEvalStage,
+                                              AMaterialBuildContext * GeometryStage,
+                                              AMaterialBuildContext * FragmentStage )
 {
     AN_ASSERT( VertexStage != nullptr );
 
@@ -2737,31 +2746,89 @@ static void CreateStageTransitions( SMaterialStageTransition & Transition,
     if ( TessEvalStage && TessControlStage ) {
         TessControlStage->InputVaryingsCode = GenerateInputVaryingsCode( varyings, "VS_", true );
         RemoveVaryings( varyings, TessControlStage->InputVaryings );
-        TessControlStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TCS_", true );
 
-        for ( SVarying const & v : varyings ) {
-            if ( v.RefCount == 0 ) {
-                TessControlStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
-                TessControlStage->CopyVaryingsCode += " " + v.VaryingName + " = VS_" + v.VaryingName + "[gl_InvocationID];\n";
-            } else {
-                TessControlStage->CopyVaryingsCode += "TCS_" + v.VaryingName + "[gl_InvocationID] = VS_" + v.VaryingName + "[gl_InvocationID];\n";
-                TessControlStage->CopyVaryingsCode += "#define " + v.VaryingName + " VS_" + v.VaryingName + "[gl_InvocationID]\n";
+        if ( TessellationMethod == TESSELLATION_FLAT ) {
+            TessControlStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TCS_", true );
+
+            for ( SVarying const & v : varyings ) {
+                if ( v.RefCount == 0 ) {
+                    TessControlStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
+                    TessControlStage->CopyVaryingsCode += " " + v.VaryingName + " = VS_" + v.VaryingName + "[gl_InvocationID];\n";
+                } else {
+                    TessControlStage->CopyVaryingsCode += "TCS_" + v.VaryingName + "[gl_InvocationID] = VS_" + v.VaryingName + "[gl_InvocationID];\n";
+                    TessControlStage->CopyVaryingsCode += "#define " + v.VaryingName + " VS_" + v.VaryingName + "[gl_InvocationID]\n";
+                }
             }
-        }
 
-        TessEvalStage->InputVaryingsCode = GenerateInputVaryingsCode( varyings, "TCS_", true );
-        RemoveVaryings( varyings, TessEvalStage->InputVaryings );
-        TessEvalStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TES_", false );
+            TessEvalStage->InputVaryingsCode = GenerateInputVaryingsCode( varyings, "TCS_", true );
+            RemoveVaryings( varyings, TessEvalStage->InputVaryings );
+            TessEvalStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TES_", false );
 
-        for ( SVarying const & v : varyings ) {
-            if ( v.RefCount == 0 ) {
-                TessEvalStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
-                TessEvalStage->CopyVaryingsCode += " ";
+            for ( SVarying const & v : varyings ) {
+                if ( v.RefCount == 0 ) {
+                    TessEvalStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
+                    TessEvalStage->CopyVaryingsCode += " ";
+                }
+                TessEvalStage->CopyVaryingsCode += "TES_" + v.VaryingName +
+                    " = gl_TessCoord.x * TCS_" + v.VaryingName + "[0]" +
+                    " + gl_TessCoord.y * TCS_" + v.VaryingName + "[1]" +
+                    " + gl_TessCoord.z * TCS_" + v.VaryingName + "[2];\n";
             }
-            TessEvalStage->CopyVaryingsCode += "TES_" + v.VaryingName +
-                " = gl_TessCoord.x * TCS_" + v.VaryingName + "[0]" +
-                " + gl_TessCoord.y * TCS_" + v.VaryingName + "[1]" +
-                " + gl_TessCoord.z * TCS_" + v.VaryingName + "[2];\n";
+        } else { // TESSELLATION_PN
+
+            AString patchLocationStr;
+
+            int patchLocation = 0;
+            TessControlStage->OutputVaryingsCode.Clear();
+            for ( SVarying const & v : varyings ) {
+                if ( v.RefCount > 0 ) {
+                    TessControlStage->OutputVaryingsCode += "layout( location = " + Math::ToString( patchLocation ) + " ) out patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
+                    patchLocation += 3;
+                }
+            }
+            patchLocationStr = "#define PATCH_LOCATION " + Math::ToString( patchLocation );
+            TessControlStage->OutputVaryingsCode += patchLocationStr;
+
+            for ( SVarying const & v : varyings ) {
+                if ( v.RefCount == 0 ) {
+                    TessControlStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
+                    TessControlStage->CopyVaryingsCode += " " + v.VaryingName + " = VS_" + v.VaryingName + "[0];\n";
+                }
+            }
+
+            TessControlStage->CopyVaryingsCode += "for ( int i = 0 ; i < 3 ; i++ ) {\n";
+            for ( SVarying const & v : varyings ) {
+                if ( v.RefCount > 0 ) {
+                    TessControlStage->CopyVaryingsCode += "TCS_" + v.VaryingName + "[i] = VS_" + v.VaryingName + "[i];\n";
+                    TessControlStage->CopyVaryingsCode += "#define " + v.VaryingName + " VS_" + v.VaryingName + "[0]\n";
+                }
+            }
+            TessControlStage->CopyVaryingsCode += "}\n";
+
+            patchLocation = 0;
+            TessEvalStage->InputVaryingsCode.Clear();
+            for ( SVarying const & v : varyings ) {
+                if ( v.RefCount > 0 ) {
+                    //TessEvalStage->InputVaryingsCode += AString( VariableTypeStr[v.VaryingType] ) + " " + v.VaryingName + "[3];\n";
+                    TessEvalStage->InputVaryingsCode += "layout( location = " + Math::ToString( patchLocation ) + " ) in patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
+                    patchLocation += 3;
+                }
+            }
+            TessEvalStage->InputVaryingsCode += patchLocationStr;
+
+            RemoveVaryings( varyings, TessEvalStage->InputVaryings );
+            TessEvalStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TES_", false );
+
+            for ( SVarying const & v : varyings ) {
+                if ( v.RefCount == 0 ) {
+                    TessEvalStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
+                    TessEvalStage->CopyVaryingsCode += " ";
+                }
+                TessEvalStage->CopyVaryingsCode += "TES_" + v.VaryingName +
+                    " = gl_TessCoord.x * TCS_" + v.VaryingName + "[0]" +
+                    " + gl_TessCoord.y * TCS_" + v.VaryingName + "[1]" +
+                    " + gl_TessCoord.z * TCS_" + v.VaryingName + "[2];\n";
+            }
         }
 
         for ( SVarying const & v : TessEvalStage->InputVaryings ) {
@@ -2830,8 +2897,6 @@ static void CreateStageTransitions( SMaterialStageTransition & Transition,
 #endif
 }
 
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AN_CLASS_META( MGMaterialGraph )
@@ -2891,29 +2956,18 @@ int MGMaterialGraph::Serialize( ADocument & _Doc ) {
     int object = _Doc.CreateObjectValue();
 
     if ( !Nodes.IsEmpty() ) {
-        int array = _Doc.AddArray( object, "Blocks" );
+        int array = _Doc.AddArray( object, "Nodes" );
 
         for ( MGNode * node : Nodes ) {
-            int blockObject = node->Serialize( _Doc );
-            _Doc.AddValueToField( array, blockObject );
+            int nodeObject = node->Serialize( _Doc );
+            _Doc.AddValueToField( array, nodeObject );
         }
     }
 
     return object;
 }
 
-AMaterial * CreateMaterial( MGMaterialGraph * InGraph )
-{
-    SMaterialDef def;
-    CreateMaterialDef( InGraph, &def );
-
-    AMaterial * material = CreateInstanceOf< AMaterial >();
-    material->Initialize( &def );
-
-    return material;
-}
-
-void CreateMaterialDef( MGMaterialGraph * InGraph, SMaterialDef * pDef )
+void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 {
     bool bDepthPassTextureFetch = false;
     bool bColorPassTextureFetch = false;
@@ -2950,11 +3004,14 @@ void CreateMaterialDef( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         AN_ASSERT( 0 );
     }
 
-    //predefines += "#define TESSELLATION_FLAT 1";
-
     switch ( InGraph->TessellationMethod ) {
     case TESSELLATION_FLAT:
         predefines += "#define TESSELLATION_METHOD TESSELLATION_FLAT\n";
+        break;
+    case TESSELLATION_PN:
+        predefines += "#define TESSELLATION_METHOD TESSELLATION_PN\n";
+        break;
+    default:
         break;
     }
 
@@ -3030,12 +3087,12 @@ void CreateMaterialDef( MGMaterialGraph * InGraph, SMaterialDef * pDef )
             InGraph->CompileStage( tessEvalCtx );
         }
 
-        CreateStageTransitions( trans,
-                                &vertexCtx,
-                                InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessControlCtx : nullptr,
-                                InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessEvalCtx : nullptr,
-                                nullptr,
-                                nullptr );
+        InGraph->CreateStageTransitions( trans,
+                                         &vertexCtx,
+                                         InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessControlCtx : nullptr,
+                                         InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessEvalCtx : nullptr,
+                                         nullptr,
+                                         nullptr );
 
         bDepthPassTextureFetch = trans.bHasTextures;
         maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
@@ -3082,12 +3139,12 @@ void CreateMaterialDef( MGMaterialGraph * InGraph, SMaterialDef * pDef )
             InGraph->CompileStage( tessEvalCtx );
         }
 
-        CreateStageTransitions( trans,
-                                &vertexCtx,
-                                bTess ? &tessControlCtx : nullptr,
-                                bTess ? &tessEvalCtx : nullptr,
-                                &geometryCtx,
-                                &shadowCtx );
+        InGraph->CreateStageTransitions( trans,
+                                         &vertexCtx,
+                                         bTess ? &tessControlCtx : nullptr,
+                                         bTess ? &tessEvalCtx : nullptr,
+                                         &geometryCtx,
+                                         &shadowCtx );
 
         bShadowMapPassTextureFetch = trans.bHasTextures;
         bShadowMapMasking = !shadowCtx.SourceCode.IsEmpty();
@@ -3143,12 +3200,12 @@ void CreateMaterialDef( MGMaterialGraph * InGraph, SMaterialDef * pDef )
             InGraph->CompileStage( tessEvalCtx );
         }
 
-        CreateStageTransitions( trans,
-                                &vertexCtx,
-                                bTess ? &tessControlCtx : nullptr,
-                                bTess ? &tessEvalCtx : nullptr,
-                                nullptr,
-                                &fragmentCtx );
+        InGraph->CreateStageTransitions( trans,
+                                         &vertexCtx,
+                                         bTess ? &tessControlCtx : nullptr,
+                                         bTess ? &tessEvalCtx : nullptr,
+                                         nullptr,
+                                         &fragmentCtx );
 
         bHasVertexDeform = vertexCtx.bHasVertexDeform;
         bColorPassTextureFetch = trans.bHasTextures;
@@ -3231,12 +3288,12 @@ void CreateMaterialDef( MGMaterialGraph * InGraph, SMaterialDef * pDef )
             InGraph->CompileStage( tessEvalCtx );
         }
 
-        CreateStageTransitions( trans,
-                                &vertexCtx,
-                                bTess ? &tessControlCtx : nullptr,
-                                bTess ? &tessEvalCtx : nullptr,
-                                &geometryCtx,
-                                nullptr );
+        InGraph->CreateStageTransitions( trans,
+                                         &vertexCtx,
+                                         bTess ? &tessControlCtx : nullptr,
+                                         bTess ? &tessEvalCtx : nullptr,
+                                         &geometryCtx,
+                                         nullptr );
 
         pDef->bWireframePassTextureFetch = trans.bHasTextures;
         maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
@@ -3297,7 +3354,7 @@ void CreateMaterialDef( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     pDef->bColorPassTextureFetch = bColorPassTextureFetch;
     pDef->bShadowMapPassTextureFetch = bShadowMapPassTextureFetch;
     pDef->bHasVertexDeform = bHasVertexDeform;
-    pDef->bDepthTest_EXPEREMENTAL = InGraph->bDepthTest;
+    pDef->bDepthTest_EXPERIMENTAL = InGraph->bDepthTest;
     pDef->bNoCastShadow = bNoCastShadow;
     pDef->bShadowMapMasking = bShadowMapMasking;
     pDef->bDisplacementAffectShadow = InGraph->bDisplacementAffectShadow;

@@ -174,30 +174,17 @@ static bool BindMaterialFeedbackPass( SRenderInstance const * Instance )
 
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
-
-        pPipeline = bSkinned ? ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->FeedbackPassSkinned
-            : ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->FeedbackPass;
-
-        if ( bSkinned ) {
-            pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
-            secondBufferOffset = Instance->WeightsBufferOffset;
-        }
-
-        break;
-
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
-
-        pPipeline = bSkinned ? ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->FeedbackPassSkinned
-            : ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->FeedbackPass;
+        pPipeline = bSkinned ? pMaterial->FeedbackPassSkinned
+            : pMaterial->FeedbackPass;
 
         if ( bSkinned ) {
             pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
             secondBufferOffset = Instance->WeightsBufferOffset;
         }
 
-        break;
-
+        break;    
     default:
         return false;
     }

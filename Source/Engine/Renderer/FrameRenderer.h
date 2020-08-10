@@ -58,9 +58,9 @@ public:
     void Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow * VTWorkflow, SFrameGraphCaptured & CapturedResources );
 
 private:
-    AFrameGraphTexture * AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture );
+    void AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture, AFrameGraphTexture ** ppLinearDepth );
 
-    AFrameGraphTexture * AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth );
+    void AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppNormalTexture );
 
     void AddMotionBlurPass( AFrameGraph & FrameGraph,
                             AFrameGraphTexture * LightTexture,
@@ -69,10 +69,7 @@ private:
                             AFrameGraphTexture ** ppResultTexture );
 
     AShadowMapRenderer ShadowMapRenderer;
-    ADepthRenderer DepthRenderer;
     ALightRenderer LightRenderer;
-    AWireframeRenderer WireframeRenderer;
-    ANormalsRenderer NormalsRenderer;
     ADebugDrawRenderer DebugDrawRenderer;
     ABloomRenderer BloomRenderer;
     AExposureRenderer ExposureRenderer;

@@ -133,7 +133,7 @@ public:
 //   void SetCustomDepthStencil( ECustomDepthStencilBuffer _CustomDepthStencil );
 //   ECustomDepthStencilBuffer GetCustomDepthStencil() const { return CustomDepthStencil; }
 
-    // Internal (experemental)
+    // Internal (experimental)
     Float4x4 ProjectionMatrix; // last rendered projection
     Float4x4 ViewMatrix; // last rendered view
 

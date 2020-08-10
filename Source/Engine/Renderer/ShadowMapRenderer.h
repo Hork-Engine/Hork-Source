@@ -6,7 +6,7 @@ class AShadowMapRenderer {
 public:
     AShadowMapRenderer();
 
-    AFrameGraphTexture * AddPass( AFrameGraph & FrameGraph );
+    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth );
 
 private:
     void CreatePipeline();

@@ -117,7 +117,7 @@ void ABloomRenderer::CreateSampler()
     GDevice->GetOrCreateSampler( samplerCI, &LinearSampler );
 }
 
-ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture )
+void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, ABloomRenderer::STextures * pResult )
 {
     RenderCore::TEXTURE_FORMAT pf;
 
@@ -555,11 +555,8 @@ ABloomRenderer::STextures ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, A
         BrightBlurTexture6 = pass.GetColorAttachments()[0].Resource;
     }
 
-    STextures result;
-    result.BloomTexture0 = BrightBlurTexture;
-    result.BloomTexture1 = BrightBlurTexture2;
-    result.BloomTexture2 = BrightBlurTexture4;
-    result.BloomTexture3 = BrightBlurTexture6;
-
-    return result;
+    pResult->BloomTexture0 = BrightBlurTexture;
+    pResult->BloomTexture1 = BrightBlurTexture2;
+    pResult->BloomTexture2 = BrightBlurTexture4;
+    pResult->BloomTexture3 = BrightBlurTexture6;
 }

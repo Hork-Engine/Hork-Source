@@ -562,9 +562,9 @@ struct SPipelineCreateInfo
     SRasterizerStateInfo RS;
     SDepthStencilStateInfo DSS;
     TRef< IShaderModule > pVS;
-    TRef< IShaderModule > pGS;
     TRef< IShaderModule > pTCS;
     TRef< IShaderModule > pTES;
+    TRef< IShaderModule > pGS;
     TRef< IShaderModule > pFS;
     TRef< IShaderModule > pCS;
     uint32_t NumVertexBindings;

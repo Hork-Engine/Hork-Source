@@ -32,7 +32,4 @@ SOFTWARE.
 
 #include <RenderCore/FrameGraph/FrameGraph.h>
 
-class ANormalsRenderer {
-public:    
-    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget );
-};
+void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget );

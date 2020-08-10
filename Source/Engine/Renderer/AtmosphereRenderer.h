@@ -32,25 +32,23 @@ SOFTWARE.
 
 #include "RenderCommon.h"
 
-struct SCubemapGeneratorUniformBuffer {
-    Float4x4 Transform[6];
-    Float4 Index;
-};
-
-class ACubemapGenerator {
+class AAtmosphereRenderer {
 public:
-    ACubemapGenerator();
+    AAtmosphereRenderer();
 
-    void GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RenderCore::ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray );
-    void Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture );
+    void Render( int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture );
 
 private:
+    struct SUniformBufferData
+    {
+        Float4x4 Transform[6];
+        Float4 LightDir;
+    };
     TRef< RenderCore::IBuffer > m_VertexBuffer;
     TRef< RenderCore::IBuffer > m_IndexBuffer;
     TRef< RenderCore::IBuffer > m_UniformBuffer;
-    SCubemapGeneratorUniformBuffer m_UniformBufferData;
+    SUniformBufferData m_UniformBufferData;
     TRef< RenderCore::IPipeline > m_Pipeline;
-    RenderCore::Sampler m_Sampler;
     TRef< RenderCore::IRenderPass > m_RP;
     int m_IndexCount;
 };

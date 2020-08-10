@@ -41,8 +41,8 @@ class AIrradianceGenerator {
 public:
     AIrradianceGenerator();
 
-    TRef< RenderCore::ITexture > GenerateArray( int _CubemapsCount, RenderCore::ITexture ** _Cubemaps );
-    TRef< RenderCore::ITexture > Generate( RenderCore::ITexture * _SourceCubemap );
+    void GenerateArray( int _CubemapsCount, RenderCore::ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray );
+    void Generate( RenderCore::ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture );
 
 private:
     TRef< RenderCore::IBuffer > m_VertexBuffer;

@@ -28,29 +28,22 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include "RenderCommon.h"
-
-struct SCubemapGeneratorUniformBuffer {
-    Float4x4 Transform[6];
-    Float4 Index;
+out gl_PerVertex
+{
+    vec4 gl_Position;
 };
 
-class ACubemapGenerator {
-public:
-    ACubemapGenerator();
+layout( location = 0 ) out vec3 VS_Normal;
+layout( location = 1 ) out flat int VS_InstanceID;
 
-    void GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RenderCore::ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray );
-    void Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture );
-
-private:
-    TRef< RenderCore::IBuffer > m_VertexBuffer;
-    TRef< RenderCore::IBuffer > m_IndexBuffer;
-    TRef< RenderCore::IBuffer > m_UniformBuffer;
-    SCubemapGeneratorUniformBuffer m_UniformBufferData;
-    TRef< RenderCore::IPipeline > m_Pipeline;
-    RenderCore::Sampler m_Sampler;
-    TRef< RenderCore::IRenderPass > m_RP;
-    int m_IndexCount;
+layout( binding = 0, std140 ) uniform UniformBlock
+{
+    mat4 uTransform[6];
+    vec4 uLightDir;
 };
+
+void main() {
+    gl_Position = uTransform[gl_InstanceID] * vec4( InPosition, 1.0 );
+    VS_Normal = InPosition;
+    VS_InstanceID = gl_InstanceID;
+}

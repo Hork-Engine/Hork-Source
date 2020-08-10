@@ -44,20 +44,12 @@ static bool BindMaterialNormalPass( SRenderInstance const * instance ) {
     // Choose pipeline
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
-
-        pPipeline = bSkinned ? ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->NormalsPassSkinned
-                             : ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->NormalsPass;
-
-        break;
-
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
-
-        pPipeline = bSkinned ? ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->NormalsPassSkinned
-                             : ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->NormalsPass;
+        pPipeline = bSkinned ? pMaterial->NormalsPassSkinned
+                             : pMaterial->NormalsPass;
 
         break;
-
     default:
         return false;
     }
@@ -94,7 +86,7 @@ static void BindTexturesNormalsPass( SMaterialFrameData * _Instance ) {
     BindTextures( _Instance );
 }
 
-void ANormalsRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget )
+void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget )
 {
     ARenderPass & normalPass = FrameGraph.AddTask< ARenderPass >( "Normal Pass" );
 

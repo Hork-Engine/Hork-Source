@@ -58,9 +58,9 @@ private:
     int          NumPatchVertices;
     bool         bPrimitiveRestartEnabled;
     TRef< IShaderModule > pVS;
-    TRef< IShaderModule > pGS;
     TRef< IShaderModule > pTCS;
     TRef< IShaderModule > pTES;
+    TRef< IShaderModule > pGS;
     TRef< IShaderModule > pFS;
     TRef< IShaderModule > pCS;
 };

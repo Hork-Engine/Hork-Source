@@ -163,6 +163,15 @@ ALightRenderer::ALightRenderer()
         GDevice->GetOrCreateSampler( samplerCI, &ClusterLookupSampler );
     }
 
+    {
+        RenderCore::SSamplerCreateInfo samplerCI = {};
+        samplerCI.Filter = FILTER_NEAREST;
+        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
+        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
+        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
+        GDevice->GetOrCreateSampler( samplerCI, &SSAOSampler );
+    }
+
     CreateLookupBRDF();
 }
 
@@ -331,8 +340,8 @@ bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
 
-        pPipeline = bSkinned ? ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->LightPassSkinned
-                             : ((AShadeModelUnlit*)pMaterial->ShadeModel.Unlit)->LightPassSimple;
+        pPipeline = bSkinned ? pMaterial->LightPassSkinned
+                             : pMaterial->LightPassSimple;
 
         if ( bSkinned ) {
             pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
@@ -346,14 +355,14 @@ bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
 
         if ( bSkinned ) {
 
-            pPipeline = ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->LightPassSkinned;
+            pPipeline = pMaterial->LightPassSkinned;
 
             pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
             secondBufferOffset = Instance->WeightsBufferOffset;
 
         } else if ( bLightmap ) {
 
-            pPipeline = ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->LightPassLightmap;
+            pPipeline = pMaterial->LightPassLightmap;
 
             pSecondVertexBuffer = GPUBufferHandle( Instance->LightmapUVChannel );
             secondBufferOffset = Instance->LightmapUVOffset;
@@ -364,14 +373,14 @@ bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
 
         } else if ( bVertexLight ) {
 
-            pPipeline = ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->LightPassVertexLight;
+            pPipeline = pMaterial->LightPassVertexLight;
 
             pSecondVertexBuffer = GPUBufferHandle( Instance->VertexLightChannel );
             secondBufferOffset = Instance->VertexLightOffset;
 
         } else {
 
-            pPipeline = ((AShadeModelLit*)pMaterial->ShadeModel.Lit)->LightPassSimple;
+            pPipeline = pMaterial->LightPassSimple;
 
             pSecondVertexBuffer = nullptr;
         }
@@ -499,23 +508,39 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
     colorPass.AddResource( ClusterItemTBO_R, RESOURCE_ACCESS_READ );
     colorPass.AddResource( ClusterLookup_R, RESOURCE_ACCESS_READ );
     colorPass.AddResource( ShadowMapDepth, RESOURCE_ACCESS_READ );
-    colorPass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
-    colorPass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
 
-    colorPass.SetColorAttachments(
-    {
-        {
-            "Light texture",
-            RenderCore::MakeTexture( pf, GetFrameResoultion() ),
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-        },
-        {
-            "Velocity texture",
-            RenderCore::MakeTexture( TEXTURE_FORMAT_RG16F, GetFrameResoultion() ),
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-        }
+    if ( RVSSLR ) {
+        colorPass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
+        colorPass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
     }
-    );
+
+    if ( RVMotionBlur ) {
+        colorPass.SetColorAttachments(
+        {
+            {
+                "Light texture",
+                RenderCore::MakeTexture( pf, GetFrameResoultion() ),
+                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
+            },
+            {
+                "Velocity texture",
+                RenderCore::MakeTexture( TEXTURE_FORMAT_RG8, GetFrameResoultion() ),
+                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
+            }
+        }
+        );
+    }
+    else {
+        colorPass.SetColorAttachments(
+        {
+            {
+                "Light texture",
+                RenderCore::MakeTexture( pf, GetFrameResoultion() ),
+                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
+            }
+        }
+        );
+    }
 
     colorPass.SetDepthStencilAttachment(
     {
@@ -538,11 +563,13 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;
 
-        GFrameResources.TextureBindings[8].pTexture = ReflectionDepth_R->Actual();
-        GFrameResources.SamplerBindings[8].pSampler = ReflectDepthSampler;
+        if ( RVSSLR ) {
+            GFrameResources.TextureBindings[8].pTexture = ReflectionDepth_R->Actual();
+            GFrameResources.SamplerBindings[8].pSampler = ReflectDepthSampler;
 
-        GFrameResources.TextureBindings[9].pTexture = ReflectionColor_R->Actual();
-        GFrameResources.SamplerBindings[9].pSampler = ReflectSampler;
+            GFrameResources.TextureBindings[9].pTexture = ReflectionColor_R->Actual();
+            GFrameResources.SamplerBindings[9].pSampler = ReflectSampler;
+        }
 
         GFrameResources.TextureBindings[10].pTexture = PhotometricProfiles_R->Actual();
         GFrameResources.SamplerBindings[10].pSampler = IESSampler;
@@ -552,7 +579,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
         // Bind ambient occlusion
         GFrameResources.TextureBindings[12].pTexture = SSAOTexture->Actual();
-        //GFrameResources.SamplerBindings[12].pSampler = AOSampler;
+        GFrameResources.SamplerBindings[12].pSampler = SSAOSampler;
 
         // Bind cluster index buffer
         GFrameResources.TextureBindings[13].pTexture = ClusterItemTBO_R->Actual();
@@ -630,57 +657,41 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
     } );
 
-    AFrameGraphTexture * LightTexture = colorPass.GetColorAttachments()[0].Resource;
+    if ( RVSSLR ) {
+        AFrameGraphTexture * LightTexture = colorPass.GetColorAttachments()[0].Resource;
 
-    ACustomTask & task = FrameGraph.AddTask< ACustomTask >( "Copy Light Pass" );
-    task.AddResource( LightTexture, RESOURCE_ACCESS_READ );
-    task.AddResource( LinearDepth, RESOURCE_ACCESS_READ );
-    task.AddResource( ReflectionColor_R, RESOURCE_ACCESS_WRITE );
-    task.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_WRITE );
-    task.SetFunction( [=]( ACustomTask const & RenderTask )
-    {
-        RenderCore::TextureCopy Copy = {};
-        Copy.SrcRect.Dimension.X = GRenderView->Width;
-        Copy.SrcRect.Dimension.Y = GRenderView->Height;
-        Copy.SrcRect.Dimension.Z = 1;
+        ACustomTask & task = FrameGraph.AddTask< ACustomTask >( "Copy Light Pass" );
+        task.AddResource( LightTexture, RESOURCE_ACCESS_READ );
+        task.AddResource( LinearDepth, RESOURCE_ACCESS_READ );
+        task.AddResource( ReflectionColor_R, RESOURCE_ACCESS_WRITE );
+        task.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_WRITE );
+        task.SetFunction( [=]( ACustomTask const & RenderTask )
+        {
+            RenderCore::TextureCopy Copy = {};
+            Copy.SrcRect.Dimension.X = GRenderView->Width;
+            Copy.SrcRect.Dimension.Y = GRenderView->Height;
+            Copy.SrcRect.Dimension.Z = 1;
 
-        {
-        RenderCore::ITexture * pSource = LightTexture->Actual();
-        RenderCore::ITexture * pDest = ReflectionColor_R->Actual();
-        rcmd->CopyTextureRect( pSource, pDest, 1, &Copy );
-        }
-
-        {
-        RenderCore::ITexture * pSource = LinearDepth->Actual();
-        RenderCore::ITexture * pDest = ReflectionDepth_R->Actual();
-        rcmd->CopyTextureRect( pSource, pDest, 1, &Copy );
-        }
-    } );
-#if 0
-    {
-        ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "Copy Light Pass" );
-        pass.SetDynamicRenderArea( &GRenderViewArea );
-        pass.AddResource( LightTexture, RESOURCE_ACCESS_READ );
-        pass.SetColorAttachments(
-        {
             {
-                ReflectionColor_R,
-                RenderCore::AttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
+            RenderCore::ITexture * pSource = LightTexture->Actual();
+            RenderCore::ITexture * pDest = ReflectionColor_R->Actual();
+            rcmd->CopyTextureRect( pSource, pDest, 1, &Copy );
+            }
+
+            {
+            RenderCore::ITexture * pSource = LinearDepth->Actual();
+            RenderCore::ITexture * pDest = ReflectionDepth_R->Actual();
+            rcmd->CopyTextureRect( pSource, pDest, 1, &Copy );
             }
         } );
-        pass.AddSubpass( { 0 }, // color attachment refs
-                              [=]( ARenderPass const & RenderPass, int SubpassIndex )
-        {
-            GFrameResources.TextureBindings[0].pTexture = LightTexture->Actual();
-            GFrameResources.SamplerBindings[0].pSampler = ReflectDepthSampler;
-
-            Cmd.BindShaderResources( &GFrameResources.Resources );
-
-            DrawSAQ( &CopyPipeline );
-        } );
     }
-#endif
 
     *ppLight = colorPass.GetColorAttachments()[0].Resource;
-    *ppVelocity = colorPass.GetColorAttachments()[1].Resource;
+
+    if ( RVMotionBlur ) {
+        *ppVelocity = colorPass.GetColorAttachments()[1].Resource;
+    }
+    else {
+        *ppVelocity = nullptr;
+    }
 }

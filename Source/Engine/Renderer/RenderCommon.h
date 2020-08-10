@@ -54,6 +54,10 @@ extern ARuntimeVariable RVRenderSnapshot;
 
 extern TRef< RenderCore::IDevice > GDevice;
 
+extern ARuntimeVariable RVMotionBlur;
+extern ARuntimeVariable RVSSLR;
+extern ARuntimeVariable RVSSAO;
+
 AN_FORCEINLINE RenderCore::IBuffer * GPUBufferHandle( ABufferGPU * _Buffer )
 { 
     return _Buffer->pBuffer;
@@ -154,6 +158,18 @@ struct AShaderSources {
 
         predefines += "#define SRGB_GAMMA_APPROX\n";
 
+        if ( RVMotionBlur ) {
+            predefines += "#define WITH_MOTION_BLUR\n";
+        }
+
+        if ( RVSSLR ) {
+            predefines += "#define WITH_SSLR\n";
+        }
+
+        if ( RVSSAO ) {
+            predefines += "#define WITH_SSAO\n";
+        }
+
         Sources[0] = "#version 450\n"
             "#extension GL_ARB_bindless_texture : enable\n";
         Sources[1] = predefines.CStr();
@@ -195,6 +211,7 @@ struct SViewUniformBuffer
 {
     Float4x4 OrthoProjection;
     Float4x4 ViewProjection;
+    Float4x4 ProjectionMatrix;
     Float4x4 InverseProjectionMatrix;
     Float4x4 InverseViewMatrix;
 
@@ -316,6 +333,8 @@ public:
     // Contains constant data for single frame.
     // Use to store data actual during one frame.
     TRef< AFrameConstantBuffer > FrameConstantBuffer;
+
+    TRef< RenderCore::ITexture > WhiteTexture;
 
     TRef< RenderCore::ITexture > IrradianceMap;
     RenderCore::Sampler IrradianceMapSampler;

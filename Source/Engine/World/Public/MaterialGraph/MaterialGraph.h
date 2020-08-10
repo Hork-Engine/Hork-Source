@@ -80,29 +80,35 @@ public:
     AString Expression;
     EMGNodeType Type = AT_Unknown;
     int Usages = 0;
+    MGNode * GetOwner() { return Owner; }
 
 protected:
     MGOutput() {}
     ~MGOutput() {}
+
+private:
+    MGNode * Owner;
+
+    friend class MGNode;
 };
 
 class MGInput : public ABaseObject {
     MG_CLASS( MGInput, ABaseObject )
 
 public:
-    void Connect( MGNode * _Block, const char * _Slot );
+    void Connect( MGNode * pNode, const char * SlotName ); // deprecated
+    void Connect( MGOutput * pSlot );
 
     void Disconnect();
 
     MGOutput * GetConnection();
 
-    MGNode * ConnectedBlock() { return Block; }
+    MGNode * ConnectedNode() { return Slot ? Slot->GetOwner() : nullptr; }
 
     int Serialize( ADocument & _Doc ) override;
 
 protected:
-    AString Slot;
-    TRef< MGNode > Block;
+    TRef< MGOutput > Slot;
 
     MGInput();
 };
@@ -112,7 +118,7 @@ class MGNode : public ABaseObject {
 
     friend class MGMaterialGraph;
 public:
-    Float2 Location;        // Block xy location for editing
+    Float2 Location;        // node xy location for editing
 
     //AGUID const & GetGUID() const { return GUID; }
     uint32_t GetId() const { return ID; }
@@ -652,7 +658,7 @@ public:
     MGInput * TexCoord;
     MGInput * DisplacementScale;
     MGInput * SelfShadowing;
-    MGOutput * ParallaxCorrectedTexCoord;
+    MGOutput * Result;
 
 protected:
     MGParallaxMapSampler();
@@ -763,6 +769,8 @@ class MGInTimer : public MGNode {
     MG_SINGLETON( MGInTimer, MGNode )
 
 public:
+    MGOutput * GameRunningTimeSeconds;
+    MGOutput * GameplayTimeSeconds;
 
 protected:
     MGInTimer();
@@ -828,7 +836,7 @@ public:
     MGInput * Metallic;
     MGInput * Roughness;
     MGInput * AmbientOcclusion;
-    MGInput * AmbientLight; // EXPEREMENTAL! Not tested with PBR
+    MGInput * AmbientLight; // EXPERIMENTAL! Not tested with PBR
     MGInput * Emissive;
     MGInput * Specular;
     MGInput * Opacity;
@@ -856,10 +864,12 @@ public:
     int Serialize( ADocument & _Doc ) override;
 
     EMaterialType       MaterialType;
+    ETessellationMethod TessellationMethod = TESSELLATION_DISABLED;
     EColorBlending      Blending = COLOR_BLENDING_DISABLED;
+    EParallaxTechnique  ParallaxTechnique = PARALLAX_TECHNIQUE_RPM;
     EMaterialDepthHack  DepthHack = MATERIAL_DEPTH_HACK_NONE;
     float               MotionBlurScale = 1.0f;
-    bool                bDepthTest = true; // Experemental
+    bool                bDepthTest = true; // Experimental
     bool                bTranslucent = false;
     bool                bNoLightmap = false;
     bool                bAllowScreenSpaceReflections = true;
@@ -868,14 +878,19 @@ public:
     bool                bDisplacementAffectShadow = true;
     bool                bPerBoneMotionBlur = true;
     bool                bUseVirtualTexture = false;
-    EParallaxTechnique  ParallaxTechnique = PARALLAX_TECHNIQUE_RPM;
-    ETessellationMethod TessellationMethod = TESSELLATION_DISABLED;
 
     void RegisterTextureSlot( MGTextureSlot * _Slot );
 
     TPodArray< MGTextureSlot * > const & GetTextureSlots() const { return TextureSlots; }
 
     void CompileStage( class AMaterialBuildContext & ctx );
+
+    void CreateStageTransitions( struct SMaterialStageTransition & Transition,
+                                 AMaterialBuildContext * VertexStage,
+                                 AMaterialBuildContext * TessControlStage,
+                                 AMaterialBuildContext * TessEvalStage,
+                                 AMaterialBuildContext * GeometryStage,
+                                 AMaterialBuildContext * FragmentStage );
 
 protected:
     TPodArray< MGNode * > Nodes;
@@ -894,5 +909,4 @@ protected:
     void ComputeTessellationEvalStage( AMaterialBuildContext & _Context );
 };
 
-AMaterial * CreateMaterial( MGMaterialGraph * InGraph );
-void CreateMaterialDef( MGMaterialGraph * InGraph, SMaterialDef * pDef );
+void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef );

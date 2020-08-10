@@ -205,7 +205,7 @@ ACubemapGenerator::ACubemapGenerator() {
     GDevice->GetOrCreateSampler( samplerCI, &m_Sampler );
 }
 
-TRef< RenderCore::ITexture > ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources ) {
+void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray ) {
     STextureCreateInfo textureCI = {};
     textureCI.Type = RenderCore::TEXTURE_CUBE_MAP_ARRAY;
     textureCI.Format = _Format;
@@ -213,8 +213,7 @@ TRef< RenderCore::ITexture > ACubemapGenerator::GenerateArray( RenderCore::TEXTU
     textureCI.Resolution.TexCubemapArray.NumLayers = _SourcesCount;
     textureCI.NumLods = 1;
 
-    TRef< RenderCore::ITexture > cubemapArray;
-    GDevice->CreateTexture( textureCI, &cubemapArray );
+    GDevice->CreateTexture( textureCI, ppTextureArray );
 
     SShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
@@ -246,7 +245,7 @@ TRef< RenderCore::ITexture > ACubemapGenerator::GenerateArray( RenderCore::TEXTU
     drawCmd.InstanceCount = 6;
 
     SFramebufferAttachmentInfo attachment = {};
-    attachment.pTexture = cubemapArray;
+    attachment.pTexture = *ppTextureArray;
     attachment.LodNum = 0;
 
     SFramebufferCreateInfo framebufferCI = {};
@@ -289,19 +288,16 @@ TRef< RenderCore::ITexture > ACubemapGenerator::GenerateArray( RenderCore::TEXTU
     }
 
     rcmd->EndRenderPass();
-
-    return cubemapArray;
 }
 
-TRef< RenderCore::ITexture > ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, ITexture * _Source ) {
+void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture ) {
     STextureCreateInfo textureCI = {};
     textureCI.Type = RenderCore::TEXTURE_CUBE_MAP;
     textureCI.Format = _Format;
     textureCI.Resolution.TexCubemap.Width = _Resolution;
     textureCI.NumLods = 1;
 
-    TRef< RenderCore::ITexture > cubemap;
-    GDevice->CreateTexture( textureCI, &cubemap );
+    GDevice->CreateTexture( textureCI, ppTexture );
 
     SShaderSamplerBinding samplerBinding;
     samplerBinding.SlotIndex = 0;
@@ -333,7 +329,7 @@ TRef< RenderCore::ITexture > ACubemapGenerator::Generate( RenderCore::TEXTURE_FO
     drawCmd.InstanceCount = 6;
 
     SFramebufferAttachmentInfo attachment = {};
-    attachment.pTexture = cubemap;
+    attachment.pTexture = *ppTexture;
     attachment.LodNum = 0;
 
     SFramebufferCreateInfo framebufferCI = {};
@@ -373,6 +369,4 @@ TRef< RenderCore::ITexture > ACubemapGenerator::Generate( RenderCore::TEXTURE_FO
     rcmd->Draw( &drawCmd );
 
     rcmd->EndRenderPass();
-
-    return cubemap;
 }

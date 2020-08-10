@@ -28,29 +28,37 @@ SOFTWARE.
 
 */
 
-#pragma once
+in gl_PerVertex
+{
+    vec4 gl_Position;
+} gl_in[];
 
-#include "RenderCommon.h"
-
-struct SCubemapGeneratorUniformBuffer {
-    Float4x4 Transform[6];
-    Float4 Index;
+out gl_PerVertex
+{
+    vec4 gl_Position;
 };
 
-class ACubemapGenerator {
-public:
-    ACubemapGenerator();
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
 
-    void GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, RenderCore::ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray );
-    void Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture );
+layout( location = 0 ) out vec3 GS_Normal;
+layout( location = 0 ) in vec3 VS_Normal[];
+layout( location = 1 ) in flat int VS_InstanceID[];
 
-private:
-    TRef< RenderCore::IBuffer > m_VertexBuffer;
-    TRef< RenderCore::IBuffer > m_IndexBuffer;
-    TRef< RenderCore::IBuffer > m_UniformBuffer;
-    SCubemapGeneratorUniformBuffer m_UniformBufferData;
-    TRef< RenderCore::IPipeline > m_Pipeline;
-    RenderCore::Sampler m_Sampler;
-    TRef< RenderCore::IRenderPass > m_RP;
-    int m_IndexCount;
-};
+void main() {
+    gl_Layer = VS_InstanceID[0];
+    
+    gl_Position = gl_in[ 0 ].gl_Position;
+    GS_Normal = VS_Normal[ 0 ];
+    EmitVertex();
+    
+    gl_Position = gl_in[ 1 ].gl_Position;
+    GS_Normal = VS_Normal[ 1 ];
+    EmitVertex();
+    
+    gl_Position = gl_in[ 2 ].gl_Position;
+    GS_Normal = VS_Normal[ 2 ];
+    EmitVertex();
+    
+    EndPrimitive();
+}
