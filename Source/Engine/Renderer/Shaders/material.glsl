@@ -63,6 +63,9 @@ SOFTWARE.
 #           include "instance_depth_pn.tes"
 #       endif
 #   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_depth.frag"
+#   endif
 #endif // MATERIAL_PASS_DEPTH
 
 #if defined MATERIAL_PASS_COLOR

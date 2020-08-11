@@ -64,15 +64,6 @@ enum EMGNodeType
     AT_Bool4
 };
 
-enum EMaterialPass {
-    MATERIAL_PASS_COLOR,
-    MATERIAL_PASS_DEPTH,
-    MATERIAL_PASS_WIREFRAME,
-    MATERIAL_PASS_NORMALS,
-    MATERIAL_PASS_SHADOWMAP,
-    MATERIAL_PASS_MAX
-};
-
 class MGOutput : public ABaseObject {
     MG_CLASS( MGOutput, ABaseObject )
 
@@ -111,6 +102,7 @@ protected:
     TRef< MGOutput > Slot;
 
     MGInput();
+    ~MGInput();
 };
 
 class MGNode : public ABaseObject {
@@ -831,6 +823,26 @@ class MGMaterialGraph : public MGNode {
     MG_CLASS( MGMaterialGraph, MGNode )
 
 public:
+    EMaterialType       MaterialType;
+    ETessellationMethod TessellationMethod = TESSELLATION_DISABLED;
+    EColorBlending      Blending = COLOR_BLENDING_DISABLED;
+    EParallaxTechnique  ParallaxTechnique = PARALLAX_TECHNIQUE_RPM;
+    EMaterialDepthHack  DepthHack = MATERIAL_DEPTH_HACK_NONE;
+    float               MotionBlurScale = 1.0f;
+    bool                bDepthTest = true; // Experimental
+    bool                bTranslucent = false;
+    bool                bTwoSided = false;
+    bool                bNoLightmap = false;
+    bool                bAllowScreenSpaceReflections = true;
+    bool                bAllowScreenAmbientOcclusion = true;
+    bool                bAllowShadowReceive = true;
+    bool                bDisplacementAffectShadow = true;
+    bool                bPerBoneMotionBlur = true;
+    bool                bUseVirtualTexture = false;
+
+    //
+    // Inputs
+    //
     MGInput * Color;
     MGInput * Normal;
     MGInput * Metallic;
@@ -841,7 +853,7 @@ public:
     MGInput * Specular;
     MGInput * Opacity;
     MGInput * VertexDeform;
-    MGInput * ShadowMask;
+    MGInput * AlphaMask;
     MGInput * Displacement;
     MGInput * TessellationFactor;
 
@@ -863,22 +875,6 @@ public:
 
     int Serialize( ADocument & _Doc ) override;
 
-    EMaterialType       MaterialType;
-    ETessellationMethod TessellationMethod = TESSELLATION_DISABLED;
-    EColorBlending      Blending = COLOR_BLENDING_DISABLED;
-    EParallaxTechnique  ParallaxTechnique = PARALLAX_TECHNIQUE_RPM;
-    EMaterialDepthHack  DepthHack = MATERIAL_DEPTH_HACK_NONE;
-    float               MotionBlurScale = 1.0f;
-    bool                bDepthTest = true; // Experimental
-    bool                bTranslucent = false;
-    bool                bNoLightmap = false;
-    bool                bAllowScreenSpaceReflections = true;
-    bool                bAllowScreenAmbientOcclusion = true;
-    bool                bAllowShadowReceive = true;
-    bool                bDisplacementAffectShadow = true;
-    bool                bPerBoneMotionBlur = true;
-    bool                bUseVirtualTexture = false;
-
     void RegisterTextureSlot( MGTextureSlot * _Slot );
 
     TPodArray< MGTextureSlot * > const & GetTextureSlots() const { return TextureSlots; }
@@ -886,11 +882,11 @@ public:
     void CompileStage( class AMaterialBuildContext & ctx );
 
     void CreateStageTransitions( struct SMaterialStageTransition & Transition,
-                                 AMaterialBuildContext * VertexStage,
-                                 AMaterialBuildContext * TessControlStage,
-                                 AMaterialBuildContext * TessEvalStage,
-                                 AMaterialBuildContext * GeometryStage,
-                                 AMaterialBuildContext * FragmentStage );
+                                 AMaterialBuildContext const * VertexStage,
+                                 AMaterialBuildContext const * TessControlStage,
+                                 AMaterialBuildContext const * TessEvalStage,
+                                 AMaterialBuildContext const * GeometryStage,
+                                 AMaterialBuildContext const * FragmentStage );
 
 protected:
     TPodArray< MGNode * > Nodes;
@@ -903,10 +899,12 @@ protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 
     void ComputeVertexStage( AMaterialBuildContext & _Context );
-    void ComputeFragmentStage( AMaterialBuildContext & _Context );
+    void ComputeDepthStage( AMaterialBuildContext & _Context );
+    void ComputeLightStage( AMaterialBuildContext & _Context );
     void ComputeShadowCastStage( AMaterialBuildContext & _Context );
     void ComputeTessellationControlStage( AMaterialBuildContext & _Context );
     void ComputeTessellationEvalStage( AMaterialBuildContext & _Context );
+    void ComputeAlphaMask( AMaterialBuildContext & _Context );
 };
 
 void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef );

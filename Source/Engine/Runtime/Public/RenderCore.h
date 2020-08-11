@@ -560,11 +560,11 @@ struct SMaterialShader
     /** Pointer for next material source */
     SMaterialShader * Next;
 
-    /** Pointer to source name (no memory allocation) */
-    const char * SourceName;
+    /** Pointer to source name */
+    char * SourceName;
 
     /** Source code */
-    char Code[1];
+    char * Code;
 };
 
 struct SMaterialDef
@@ -583,7 +583,7 @@ struct SMaterialDef
     /** Have texture fetching in vertex stage. This flag allow renderer to optimize sampler/texture bindings
     during rendering. */
     bool bDepthPassTextureFetch : 1;
-    bool bColorPassTextureFetch : 1;
+    bool bLightPassTextureFetch : 1;
     bool bWireframePassTextureFetch : 1;
     bool bNormalsPassTextureFetch : 1;
     bool bShadowMapPassTextureFetch : 1;
@@ -598,6 +598,9 @@ struct SMaterialDef
     /** Disable shadow casting (for specific materials like skybox or first person shooter weapon) */
     bool bNoCastShadow : 1;
 
+    /** Enable alpha masking */
+    bool bAlphaMasking : 1;
+
     /** Enable shadow map masking */
     bool bShadowMapMasking : 1;
 
@@ -606,6 +609,9 @@ struct SMaterialDef
 
     /** Translusent materials with alpha test */
     bool bTranslucent : 1;
+
+    /** Disable backface culling */
+    bool bTwoSided : 1;
 
     int NumUniformVectors;
 

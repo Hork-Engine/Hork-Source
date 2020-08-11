@@ -150,51 +150,51 @@ void AIndexedMesh::InvalidateChannels() {
 }
 
 static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IBinaryStream & f ) {
-    AString Name;
-    int32_t BaseVertex;
-    uint32_t FirstIndex;
-    uint32_t VertexCount;
-    uint32_t IndexCount;
-    AString MaterialInstance;
-    BvAxisAlignedBox BoundingBox;
+    AString name;
+    int32_t baseVertex;
+    uint32_t firstIndex;
+    uint32_t vertexCount;
+    uint32_t indexCount;
+    AString materialInstance;
+    BvAxisAlignedBox boundingBox;
 
-    f.ReadObject( Name );
-    BaseVertex = f.ReadInt32();
-    FirstIndex = f.ReadUInt32();
-    VertexCount = f.ReadUInt32();
-    IndexCount = f.ReadUInt32();
-    f.ReadObject( MaterialInstance );
-    f.ReadObject( BoundingBox );
+    f.ReadObject( name );
+    baseVertex = f.ReadInt32();
+    firstIndex = f.ReadUInt32();
+    vertexCount = f.ReadUInt32();
+    indexCount = f.ReadUInt32();
+    f.ReadObject( materialInstance );
+    f.ReadObject( boundingBox );
 
-    AIndexedMeshSubpart * Subpart = CreateInstanceOf< AIndexedMeshSubpart >();
-    Subpart->AddRef();
-    Subpart->SetObjectName( Name );
-    Subpart->SetBaseVertex( BaseVertex );
-    Subpart->SetFirstIndex( FirstIndex );
-    Subpart->SetVertexCount( VertexCount );
-    Subpart->SetIndexCount( IndexCount );
-    Subpart->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( MaterialInstance.CStr() ) );
-    Subpart->SetBoundingBox( BoundingBox );
-    return Subpart;
+    AIndexedMeshSubpart * subpart = CreateInstanceOf< AIndexedMeshSubpart >();
+    subpart->AddRef();
+    subpart->SetObjectName( name );
+    subpart->SetBaseVertex( baseVertex );
+    subpart->SetFirstIndex( firstIndex );
+    subpart->SetVertexCount( vertexCount );
+    subpart->SetIndexCount( indexCount );
+    subpart->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( materialInstance.CStr() ) );
+    subpart->SetBoundingBox( boundingBox );
+    return subpart;
 }
 
 static ASocketDef * ReadSocket( IBinaryStream & f ) {
-    AString Name;
-    uint32_t JointIndex;
+    AString name;
+    uint32_t jointIndex;
 
-    f.ReadObject( Name );
-    JointIndex = f.ReadUInt32();
+    f.ReadObject( name );
+    jointIndex = f.ReadUInt32();
 
-    ASocketDef * Socket = CreateInstanceOf< ASocketDef >();
-    Socket->AddRef();
-    Socket->SetObjectName( Name );
-    Socket->JointIndex = JointIndex;
+    ASocketDef * socket = CreateInstanceOf< ASocketDef >();
+    socket->AddRef();
+    socket->SetObjectName( name );
+    socket->JointIndex = jointIndex;
 
-    f.ReadObject( Socket->Position );
-    f.ReadObject( Socket->Scale );
-    f.ReadObject( Socket->Rotation );
+    f.ReadObject( socket->Position );
+    f.ReadObject( socket->Scale );
+    f.ReadObject( socket->Rotation );
 
-    return Socket;
+    return socket;
 }
 
 bool AIndexedMesh::LoadResource( AString const & _Path ) {
@@ -610,18 +610,32 @@ void AIndexedMesh::InitializeSphereMesh( float _Radius, float _TexCoordScale, in
     Subparts[ 0 ]->BoundingBox = bounds;
 }
 
-void AIndexedMesh::InitializePlaneMesh( float _Width, float _Height, float _TexCoordScale ) {
+void AIndexedMesh::InitializePlaneMeshXZ( float _Width, float _Height, float _TexCoordScale ) {
     TPodArray< SMeshVertex > vertices;
     TPodArray< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
-    CreatePlaneMesh( vertices, indices, bounds, _Width, _Height, _TexCoordScale );
+    CreatePlaneMeshXZ( vertices, indices, bounds, _Width, _Height, _TexCoordScale );
 
     Initialize( vertices.Size(), indices.Size(), 1 );
     WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
     WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
 
     Subparts[ 0 ]->BoundingBox = bounds;
+}
+
+void AIndexedMesh::InitializePlaneMeshXY( float _Width, float _Height, float _TexCoordScale ) {
+    TPodArray< SMeshVertex > vertices;
+    TPodArray< unsigned int > indices;
+    BvAxisAlignedBox bounds;
+
+    CreatePlaneMeshXY( vertices, indices, bounds, _Width, _Height, _TexCoordScale );
+
+    Initialize( vertices.Size(), indices.Size(), 1 );
+    WriteVertexData( vertices.ToPtr(), vertices.Size(), 0 );
+    WriteIndexData( indices.ToPtr(), indices.Size(), 0 );
+
+    Subparts[0]->BoundingBox = bounds;
 }
 
 void AIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
@@ -748,13 +762,23 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/Plane") ) {
-        InitializePlaneMesh( 256, 256, 256 );
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/PlaneXZ") ) {
+        InitializePlaneMeshXZ( 256, 256, 256 );
         ACollisionBox * box = BodyComposition.AddCollisionBody< ACollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 0.1f;
         box->HalfExtents.Z = 128;
         box->Position.Y -= box->HalfExtents.Y;
+        return;
+    }
+
+    if ( !Core::Stricmp( _Path, "/Default/Meshes/PlaneXY" ) ) {
+        InitializePlaneMeshXY( 256, 256, 256 );
+        ACollisionBox * box = BodyComposition.AddCollisionBody< ACollisionBox >();
+        box->HalfExtents.X = 128;
+        box->HalfExtents.Y = 128;
+        box->HalfExtents.Z = 0.1f;
+        box->Position.Z -= box->HalfExtents.Z;
         return;
     }
 
@@ -1859,7 +1883,7 @@ void CreateSphereMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreatePlaneMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
+void CreatePlaneMeshXZ( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
     _Vertices.ResizeInvalidate( 4 );
     _Indices.ResizeInvalidate( 6 );
 
@@ -1886,6 +1910,35 @@ void CreatePlaneMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned 
     _Bounds.Maxs.X = halfWidth;
     _Bounds.Maxs.Y = 0.0f;
     _Bounds.Maxs.Z = halfHeight;
+}
+
+void CreatePlaneMeshXY( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
+    _Vertices.ResizeInvalidate( 4 );
+    _Indices.ResizeInvalidate( 6 );
+
+    const float halfWidth = _Width * 0.5f;
+    const float halfHeight = _Height * 0.5f;
+
+    const SMeshVertex Verts[ 4 ] = {
+        { Float3( -halfWidth,-halfHeight,0 ), Float2( 0,_TexCoordScale ), Float3( 0,0,0 ), 1.0f, Float3( 0,0,1 ) },
+        { Float3( halfWidth,-halfHeight,0 ), Float2( _TexCoordScale,_TexCoordScale ), Float3( 0,0,0 ), 1.0f, Float3( 0,0,1 ) },
+        { Float3( halfWidth,halfHeight,0 ), Float2( _TexCoordScale,0 ), Float3( 0,0,0 ), 1.0f, Float3( 0,0,1 ) },
+        { Float3( -halfWidth,halfHeight,0 ), Float2( 0,0 ), Float3( 0,0,0 ), 1.0f, Float3( 0,0,1 ) }
+    };
+
+    Core::Memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( SMeshVertex ) );
+
+    constexpr unsigned int indices[ 6 ] = { 0,1,2,2,3,0 };
+    Core::Memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
+
+    CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
+
+    _Bounds.Mins.X = -halfWidth;
+    _Bounds.Mins.Y = -halfHeight;
+    _Bounds.Mins.Z = 0.0f;
+    _Bounds.Maxs.X = halfWidth;
+    _Bounds.Maxs.Y = halfHeight;
+    _Bounds.Maxs.Z = 0.0f;
 }
 
 void CreatePatchMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,

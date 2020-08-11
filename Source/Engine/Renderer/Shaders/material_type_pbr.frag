@@ -322,7 +322,11 @@ void MaterialPBRShader( vec3 BaseColor, vec3 N, float Metallic, float Roughness,
     GetClusterData( NumProbes, NumDecals, NumLights, FirstIndex );
     
     // Calc macro normal
+    #ifdef TWOSIDED
+    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N ) * ( gl_FrontFacing ? -1.0 : 1.0 );
+    #else
     const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N );
+    #endif
 
     // Lerp with metallic value to find the good diffuse and specular.
     const vec3 Albedo = BaseColor * ( 1.0 - Metallic );

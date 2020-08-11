@@ -38,7 +38,8 @@ enum EMaterialStage
     TESSELLATION_CONTROL_STAGE,
     TESSELLATION_EVAL_STAGE,
     GEOMETRY_STAGE,
-    FRAGMENT_STAGE,
+    DEPTH_STAGE,
+    LIGHT_STAGE,
     SHADOWCAST_STAGE    
 };
 
@@ -60,16 +61,14 @@ struct SVarying
 class AMaterialBuildContext
 {
 public:
-    mutable AString SourceCode;
-    AString OutputVaryingsCode;
-    AString InputVaryingsCode;
-    AString CopyVaryingsCode;
+    AString SourceCode;
     bool bHasTextures;
     int MaxTextureSlot;
     int MaxUniformAddress;
     bool bParallaxSampler;
     bool bHasVertexDeform;
     bool bHasDisplacement;
+    bool bHasAlphaMask;
     TStdVector< SVarying > InputVaryings;
     int Serial;
 
@@ -83,6 +82,7 @@ public:
         bParallaxSampler = false;
         bHasVertexDeform = false;
         bHasDisplacement = false;
+        bHasAlphaMask = false;
     }
 
     int GetBuildSerial() const { return Serial; }
@@ -543,28 +543,43 @@ void AMaterialBuildContext::GenerateSourceCode( MGOutput * _Slot, AString const 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AN_CLASS_META( MGOutput )
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
 AN_CLASS_META( MGInput )
 
 MGInput::MGInput() {
 }
 
+MGInput::~MGInput() {
+    Disconnect();
+}
+
 void MGInput::Connect( MGNode * pNode, const char * SlotName ) {
     if ( pNode ) {
-        Slot = pNode->FindOutput( SlotName );
+        Connect( pNode->FindOutput( SlotName ) );
     } else {
-        Slot.Reset();
+        Disconnect();
     }
 }
 
 void MGInput::Connect( MGOutput * pSlot ) {
+    if ( !pSlot ) {
+        Disconnect();
+        return;
+    }
+    MGNode * node = pSlot->GetOwner();
+    if ( !node ) {
+        GLogger.Printf( "Node output is incomplete\n" );
+        return;
+    }
+    node->AddRef();
     Slot = pSlot;
 }
 
 void MGInput::Disconnect() {
-    Slot.Reset();
+    if ( Slot ) {
+        MGNode * node = Slot->GetOwner();
+        node->RemoveRef();
+        Slot.Reset();
+    }
 }
 
 MGOutput * MGInput::GetConnection() {
@@ -735,13 +750,15 @@ void MGMaterialGraph::Compute( AMaterialBuildContext & _Context )
         break;
     case GEOMETRY_STAGE:
         break;
-    case FRAGMENT_STAGE:
-        ComputeFragmentStage( _Context );
+    case DEPTH_STAGE:
+        ComputeDepthStage( _Context );
+        break;
+    case LIGHT_STAGE:
+        ComputeLightStage( _Context );
         break;
     case SHADOWCAST_STAGE:
         ComputeShadowCastStage( _Context );
         break;
-
     }        
 }
 
@@ -773,7 +790,12 @@ void MGMaterialGraph::ComputeVertexStage( AMaterialBuildContext & _Context )
     }
 }
 
-void MGMaterialGraph::ComputeFragmentStage( AMaterialBuildContext & _Context )
+void MGMaterialGraph::ComputeDepthStage( AMaterialBuildContext & _Context )
+{
+    ComputeAlphaMask( _Context );
+}
+
+void MGMaterialGraph::ComputeLightStage( AMaterialBuildContext & _Context )
 {
     AString expression;
 
@@ -802,82 +824,31 @@ void MGMaterialGraph::ComputeFragmentStage( AMaterialBuildContext & _Context )
     if ( _Context.GetMaterialType() == MATERIAL_TYPE_PBR ) {
         // Metallic
         expression = MakeExpression( _Context, Metallic, AT_Float1, MakeEmptyVector( AT_Float1 ) );
-        _Context.SourceCode += "float MaterialMetallic = " + expression + ";\n";
+        _Context.SourceCode += "float MaterialMetallic = saturate( " + expression + " );\n";
 
         // Roughness
         expression = MakeExpression( _Context, Roughness, AT_Float1, "1.0" );
-        _Context.SourceCode += "float MaterialRoughness = " + expression + ";\n";
+        _Context.SourceCode += "float MaterialRoughness = saturate( " + expression + " );\n";
 
         // Ambient Occlusion
         expression = MakeExpression( _Context, AmbientOcclusion, AT_Float1, "1.0" );
-        _Context.SourceCode += "float MaterialAmbientOcclusion = " + expression + ";\n";
+        _Context.SourceCode += "float MaterialAmbientOcclusion = saturate( " + expression + " );\n";
     }
 
     // Opacity
     if ( _Context.GetGraph()->bTranslucent ) {
         expression = MakeExpression( _Context, Opacity, AT_Float1, "1.0" );
-        _Context.SourceCode += "float Opacity = " + expression + ";\n";
+        _Context.SourceCode += "float Opacity = saturate( " + expression + " );\n";
     } else {
         _Context.SourceCode += "const float Opacity = 1.0;\n";
     }
+
+    ComputeAlphaMask( _Context );
 }
 
 void MGMaterialGraph::ComputeShadowCastStage( AMaterialBuildContext & _Context )
 {
-#if 0
-    MGOutput * positionCon = VertexDeform->GetConnection();
-
-    _Context.bHasVertexDeform = false;
-
-    //AString TransformMatrix;
-    //if ( _Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
-    //    TransformMatrix = "OrthoProjection";
-    //} else {
-    //    TransformMatrix = "TransformMatrix";
-    //}
-
-    if ( positionCon && VertexDeform->ConnectedNode()->Build( _Context ) ) {
-
-        if ( positionCon->Expression != "VertexPosition" ) {
-            _Context.bHasVertexDeform = true;
-        }
-
-        AString expression = MakeVectorCast( positionCon->Expression, positionCon->Type, AT_Float4, VECTOR_CAST_IDENTITY_W );
-
-        _Context.SourceCode += "vec4 FinalVertexPos = " + expression + ";\n";
-
-    } else {
-        _Context.SourceCode += "vec4 FinalVertexPos = vec4( VertexPosition, 1.0 );\n";
-    }
-#endif
-
-    // Shadow Mask
-
-    MGOutput * con = ShadowMask->GetConnection();
-
-    if ( con && ShadowMask->ConnectedNode()->Build( _Context ) ) {
-
-        switch ( con->Type ) {
-        case AT_Float1:
-            _Context.SourceCode += "if ( " + con->Expression + " <= 0.0 ) discard;\n";
-            break;
-        case AT_Float2:
-        case AT_Float3:
-        case AT_Float4:
-            _Context.SourceCode += "if ( " + con->Expression + ".x <= 0.0 ) discard;\n";
-            break;
-        case AT_Bool1:
-            _Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
-            break;
-        case AT_Bool2:
-        case AT_Bool3:
-        case AT_Bool4:
-            _Context.SourceCode += "if ( " + con->Expression + ".x == false ) discard;\n";
-            break;
-        default:
-            break;
-        }
-    }
+    ComputeAlphaMask( _Context );
 }
 
 void MGMaterialGraph::ComputeTessellationControlStage( AMaterialBuildContext & _Context )
@@ -910,6 +881,37 @@ void MGMaterialGraph::ComputeTessellationEvalStage( AMaterialBuildContext & _Con
 
     } else {
         _Context.SourceCode += "const float Displacement = 0.0;\n";
+    }
+}
+
+void MGMaterialGraph::ComputeAlphaMask( AMaterialBuildContext & _Context )
+{
+    MGOutput * con = AlphaMask->GetConnection();
+
+    if ( con && AlphaMask->ConnectedNode()->Build( _Context ) ) {
+
+        _Context.bHasAlphaMask = true;
+
+        switch ( con->Type ) {
+        case AT_Float1:
+            _Context.SourceCode += "if ( " + con->Expression + " < 0.5 ) discard;\n";
+            break;
+        case AT_Float2:
+        case AT_Float3:
+        case AT_Float4:
+            _Context.SourceCode += "if ( " + con->Expression + ".x < 0.5 ) discard;\n";
+            break;
+        case AT_Bool1:
+            _Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
+            break;
+        case AT_Bool2:
+        case AT_Bool3:
+        case AT_Bool4:
+            _Context.SourceCode += "if ( " + con->Expression + ".x == false ) discard;\n";
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -1590,6 +1592,9 @@ MGFloatNode::MGFloatNode() : Super( "Float" ) {
 
 void MGFloatNode::Compute( AMaterialBuildContext & _Context ) {
     OutValue->Expression = Math::ToString( Value );
+    if ( OutValue->Expression.Contains( '.' ) == -1 ) {
+        OutValue->Expression += ".0";
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2687,14 +2692,32 @@ struct SMaterialStageTransition
     bool bHasTextures;
     int MaxTextureSlot;
     int MaxUniformAddress;
+
+    AString VS_OutputVaryingsCode;
+    AString VS_CopyVaryingsCode;
+
+    AString TCS_OutputVaryingsCode;
+    AString TCS_InputVaryingsCode;
+    AString TCS_CopyVaryingsCode;
+
+    AString TES_OutputVaryingsCode;
+    AString TES_InputVaryingsCode;
+    AString TES_CopyVaryingsCode;
+
+    AString GS_OutputVaryingsCode;
+    AString GS_InputVaryingsCode;
+    AString GS_CopyVaryingsCode;
+
+    AString FS_InputVaryingsCode;
+    AString FS_CopyVaryingsCode;
 };
 
 void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transition,
-                                              AMaterialBuildContext * VertexStage,
-                                              AMaterialBuildContext * TessControlStage,
-                                              AMaterialBuildContext * TessEvalStage,
-                                              AMaterialBuildContext * GeometryStage,
-                                              AMaterialBuildContext * FragmentStage )
+                                              AMaterialBuildContext const * VertexStage,
+                                              AMaterialBuildContext const * TessControlStage,
+                                              AMaterialBuildContext const * TessEvalStage,
+                                              AMaterialBuildContext const * GeometryStage,
+                                              AMaterialBuildContext const * FragmentStage )
 {
     AN_ASSERT( VertexStage != nullptr );
 
@@ -2736,40 +2759,40 @@ void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transit
     }
 
     for ( SVarying const & v : varyings ) {
-        VertexStage->SourceCode += "VS_" + v.VaryingName + " = " + v.VaryingSource + ";\n";
+        Transition.VS_CopyVaryingsCode += "VS_" + v.VaryingName + " = " + v.VaryingSource + ";\n";
     }
 
-    VertexStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "VS_", false );
+    Transition.VS_OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "VS_", false );
 
     const char * lastPrefix = "VS_";
 
     if ( TessEvalStage && TessControlStage ) {
-        TessControlStage->InputVaryingsCode = GenerateInputVaryingsCode( varyings, "VS_", true );
+        Transition.TCS_InputVaryingsCode = GenerateInputVaryingsCode( varyings, "VS_", true );
         RemoveVaryings( varyings, TessControlStage->InputVaryings );
 
         if ( TessellationMethod == TESSELLATION_FLAT ) {
-            TessControlStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TCS_", true );
+            Transition.TCS_OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TCS_", true );
 
             for ( SVarying const & v : varyings ) {
                 if ( v.RefCount == 0 ) {
-                    TessControlStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
-                    TessControlStage->CopyVaryingsCode += " " + v.VaryingName + " = VS_" + v.VaryingName + "[gl_InvocationID];\n";
+                    Transition.TCS_CopyVaryingsCode += VariableTypeStr[v.VaryingType];
+                    Transition.TCS_CopyVaryingsCode += " " + v.VaryingName + " = VS_" + v.VaryingName + "[gl_InvocationID];\n";
                 } else {
-                    TessControlStage->CopyVaryingsCode += "TCS_" + v.VaryingName + "[gl_InvocationID] = VS_" + v.VaryingName + "[gl_InvocationID];\n";
-                    TessControlStage->CopyVaryingsCode += "#define " + v.VaryingName + " VS_" + v.VaryingName + "[gl_InvocationID]\n";
+                    Transition.TCS_CopyVaryingsCode += "TCS_" + v.VaryingName + "[gl_InvocationID] = VS_" + v.VaryingName + "[gl_InvocationID];\n";
+                    Transition.TCS_CopyVaryingsCode += "#define " + v.VaryingName + " VS_" + v.VaryingName + "[gl_InvocationID]\n";
                 }
             }
 
-            TessEvalStage->InputVaryingsCode = GenerateInputVaryingsCode( varyings, "TCS_", true );
+            Transition.TES_InputVaryingsCode = GenerateInputVaryingsCode( varyings, "TCS_", true );
             RemoveVaryings( varyings, TessEvalStage->InputVaryings );
-            TessEvalStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TES_", false );
+            Transition.TES_OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TES_", false );
 
             for ( SVarying const & v : varyings ) {
                 if ( v.RefCount == 0 ) {
-                    TessEvalStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
-                    TessEvalStage->CopyVaryingsCode += " ";
+                    Transition.TES_CopyVaryingsCode += VariableTypeStr[v.VaryingType];
+                    Transition.TES_CopyVaryingsCode += " ";
                 }
-                TessEvalStage->CopyVaryingsCode += "TES_" + v.VaryingName +
+                Transition.TES_CopyVaryingsCode += "TES_" + v.VaryingName +
                     " = gl_TessCoord.x * TCS_" + v.VaryingName + "[0]" +
                     " + gl_TessCoord.y * TCS_" + v.VaryingName + "[1]" +
                     " + gl_TessCoord.z * TCS_" + v.VaryingName + "[2];\n";
@@ -2779,52 +2802,52 @@ void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transit
             AString patchLocationStr;
 
             int patchLocation = 0;
-            TessControlStage->OutputVaryingsCode.Clear();
+            Transition.TCS_OutputVaryingsCode.Clear();
             for ( SVarying const & v : varyings ) {
                 if ( v.RefCount > 0 ) {
-                    TessControlStage->OutputVaryingsCode += "layout( location = " + Math::ToString( patchLocation ) + " ) out patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
+                    Transition.TCS_OutputVaryingsCode += "layout( location = " + Math::ToString( patchLocation ) + " ) out patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
                     patchLocation += 3;
                 }
             }
             patchLocationStr = "#define PATCH_LOCATION " + Math::ToString( patchLocation );
-            TessControlStage->OutputVaryingsCode += patchLocationStr;
+            Transition.TCS_OutputVaryingsCode += patchLocationStr;
 
             for ( SVarying const & v : varyings ) {
                 if ( v.RefCount == 0 ) {
-                    TessControlStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
-                    TessControlStage->CopyVaryingsCode += " " + v.VaryingName + " = VS_" + v.VaryingName + "[0];\n";
+                    Transition.TCS_CopyVaryingsCode += VariableTypeStr[v.VaryingType];
+                    Transition.TCS_CopyVaryingsCode += " " + v.VaryingName + " = VS_" + v.VaryingName + "[0];\n";
                 }
             }
 
-            TessControlStage->CopyVaryingsCode += "for ( int i = 0 ; i < 3 ; i++ ) {\n";
+            Transition.TCS_CopyVaryingsCode += "for ( int i = 0 ; i < 3 ; i++ ) {\n";
             for ( SVarying const & v : varyings ) {
                 if ( v.RefCount > 0 ) {
-                    TessControlStage->CopyVaryingsCode += "TCS_" + v.VaryingName + "[i] = VS_" + v.VaryingName + "[i];\n";
-                    TessControlStage->CopyVaryingsCode += "#define " + v.VaryingName + " VS_" + v.VaryingName + "[0]\n";
+                    Transition.TCS_CopyVaryingsCode += "TCS_" + v.VaryingName + "[i] = VS_" + v.VaryingName + "[i];\n";
+                    Transition.TCS_CopyVaryingsCode += "#define " + v.VaryingName + " VS_" + v.VaryingName + "[0]\n";
                 }
             }
-            TessControlStage->CopyVaryingsCode += "}\n";
+            Transition.TCS_CopyVaryingsCode += "}\n";
 
             patchLocation = 0;
-            TessEvalStage->InputVaryingsCode.Clear();
+            Transition.TES_InputVaryingsCode.Clear();
             for ( SVarying const & v : varyings ) {
                 if ( v.RefCount > 0 ) {
-                    //TessEvalStage->InputVaryingsCode += AString( VariableTypeStr[v.VaryingType] ) + " " + v.VaryingName + "[3];\n";
-                    TessEvalStage->InputVaryingsCode += "layout( location = " + Math::ToString( patchLocation ) + " ) in patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
+                    //Transition.TES_InputVaryingsCode += AString( VariableTypeStr[v.VaryingType] ) + " " + v.VaryingName + "[3];\n";
+                    Transition.TES_InputVaryingsCode += "layout( location = " + Math::ToString( patchLocation ) + " ) in patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
                     patchLocation += 3;
                 }
             }
-            TessEvalStage->InputVaryingsCode += patchLocationStr;
+            Transition.TES_InputVaryingsCode += patchLocationStr;
 
             RemoveVaryings( varyings, TessEvalStage->InputVaryings );
-            TessEvalStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TES_", false );
+            Transition.TES_OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "TES_", false );
 
             for ( SVarying const & v : varyings ) {
                 if ( v.RefCount == 0 ) {
-                    TessEvalStage->CopyVaryingsCode += VariableTypeStr[v.VaryingType];
-                    TessEvalStage->CopyVaryingsCode += " ";
+                    Transition.TES_CopyVaryingsCode += VariableTypeStr[v.VaryingType];
+                    Transition.TES_CopyVaryingsCode += " ";
                 }
-                TessEvalStage->CopyVaryingsCode += "TES_" + v.VaryingName +
+                Transition.TES_CopyVaryingsCode += "TES_" + v.VaryingName +
                     " = gl_TessCoord.x * TCS_" + v.VaryingName + "[0]" +
                     " + gl_TessCoord.y * TCS_" + v.VaryingName + "[1]" +
                     " + gl_TessCoord.z * TCS_" + v.VaryingName + "[2];\n";
@@ -2832,20 +2855,20 @@ void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transit
         }
 
         for ( SVarying const & v : TessEvalStage->InputVaryings ) {
-            TessEvalStage->CopyVaryingsCode += "#define " + v.VaryingName + " TES_" + v.VaryingName + "\n";
+            Transition.TES_CopyVaryingsCode += "#define " + v.VaryingName + " TES_" + v.VaryingName + "\n";
         }
 
         lastPrefix = "TES_";
     }
 
     if ( GeometryStage ) {
-        GeometryStage->InputVaryingsCode = GenerateInputVaryingsCode( varyings, lastPrefix, true );
+        Transition.GS_InputVaryingsCode = GenerateInputVaryingsCode( varyings, lastPrefix, true );
         RemoveVaryings( varyings, GeometryStage->InputVaryings );
-        GeometryStage->OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "GS_", true );
+        Transition.GS_OutputVaryingsCode = GenerateOutputVaryingsCode( varyings, "GS_", false );
 
         for ( SVarying const & v : varyings ) {
             if ( v.RefCount > 0 ) {
-                GeometryStage->CopyVaryingsCode += "GS_" + v.VaryingName + "[i] = " + lastPrefix + v.VaryingName + "[i];\n";
+                Transition.GS_CopyVaryingsCode += "GS_" + v.VaryingName + " = " + lastPrefix + v.VaryingName + "[i];\n";
             }
         }
 
@@ -2853,12 +2876,12 @@ void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transit
     }
 
     if ( FragmentStage ) {
-        FragmentStage->InputVaryingsCode = GenerateInputVaryingsCode( varyings, lastPrefix, false );
+        Transition.FS_InputVaryingsCode = GenerateInputVaryingsCode( varyings, lastPrefix, false );
         RemoveVaryings( varyings, FragmentStage->InputVaryings );
 
         if ( *lastPrefix ) {
             for ( SVarying const & v : FragmentStage->InputVaryings ) {
-                FragmentStage->InputVaryingsCode += "#define " + v.VaryingName + " " + lastPrefix + v.VaryingName + "\n";
+                Transition.FS_InputVaryingsCode += "#define " + v.VaryingName + " " + lastPrefix + v.VaryingName + "\n";
             }
         }
     }
@@ -2914,7 +2937,7 @@ MGMaterialGraph::MGMaterialGraph()
     Specular = AddInput( "Specular" );
     Opacity = AddInput( "Opacity" );
     VertexDeform = AddInput( "VertexDeform" );
-    ShadowMask = AddInput( "ShadowMask" );
+    AlphaMask = AddInput( "AlphaMask" );
     Displacement = AddInput( "Displacement" );
     TessellationFactor = AddInput( "TessellationFactor" );
 
@@ -2969,18 +2992,26 @@ int MGMaterialGraph::Serialize( ADocument & _Doc ) {
 
 void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 {
-    bool bDepthPassTextureFetch = false;
-    bool bColorPassTextureFetch = false;
-    bool bShadowMapPassTextureFetch = false;
-    bool bShadowMapMasking = false;
-    bool bNoCastShadow = false;
-    uint32_t lightmapSlot = 0;
     int maxTextureSlot = -1;
     int maxUniformAddress = -1;
-    bool bHasVertexDeform = false;
 
+    pDef->Type = InGraph->MaterialType;
+    pDef->Blending = InGraph->Blending;
+    pDef->TessellationMethod = InGraph->TessellationMethod;
+    pDef->bDepthTest_EXPERIMENTAL = InGraph->bDepthTest;
+    pDef->bDisplacementAffectShadow = InGraph->bDisplacementAffectShadow;
+    pDef->bTranslucent = InGraph->bTranslucent;
+    pDef->bTwoSided = InGraph->bTwoSided;
+    pDef->bDepthPassTextureFetch = false;
+    pDef->bLightPassTextureFetch = false;
     pDef->bWireframePassTextureFetch = false;
     pDef->bNormalsPassTextureFetch = false;
+    pDef->bShadowMapPassTextureFetch = false;
+    pDef->bShadowMapMasking = false;
+    pDef->bAlphaMasking = false;
+    pDef->bHasVertexDeform = false;
+    pDef->bNoCastShadow = false;
+    pDef->LightmapSlot = 0;
 
     AString predefines;
 
@@ -3017,14 +3048,18 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 
     if ( InGraph->DepthHack == MATERIAL_DEPTH_HACK_WEAPON ) {
         predefines += "#define WEAPON_DEPTH_HACK\n";
-        bNoCastShadow = true;
+        pDef->bNoCastShadow = true;
     } else if ( InGraph->DepthHack == MATERIAL_DEPTH_HACK_SKYBOX ) {
         predefines += "#define SKYBOX_DEPTH_HACK\n";
-        bNoCastShadow = true;
+        pDef->bNoCastShadow = true;
     }
 
     if ( InGraph->bTranslucent ) {
         predefines += "#define TRANSLUCENT\n";
+    }
+
+    if ( InGraph->bTwoSided ) {
+        predefines += "#define TWOSIDED\n"; 
     }
 
     if ( InGraph->bNoLightmap ) {
@@ -3062,25 +3097,32 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     }
 
     if ( !InGraph->bDepthTest /*|| InGraph->bTranslucent */ ) {
-        bNoCastShadow = true;
+        pDef->bNoCastShadow = true;
     }
 
     if ( InGraph->Blending == COLOR_BLENDING_PREMULTIPLIED_ALPHA ) {
         predefines += "#define PREMULTIPLIED_ALPHA\n";
     }
 
-    // TODO: Для MATERIAL_PASS_DEPTH, MATERIAL_PASS_SHADOWMAP, MATERIAL_PASS_WIREFRAME, MATERIAL_PASS_NORMALS проверить:
-    // если нет никакой деформации вершины, то использовать шейдер/пайплайн по умолчанию
-    // для данного прохода. Это необходимо для оптимизации количества переключения пайплайнов.
+    // TODO:
+    // if there is no specific vertex deformation / tessellation / alpha masking or other non-trivial material feature,
+    // then use default shader/pipeline for corresponding material pass.
+    // This is optimization of switching between pipelines.
+    // pDef->bDepthPassDefaultPipeline
+    // pDef->bShadowMapPassDefaultPipeline
+    // pDef->bWireframePassDefaultPipeline
+    // pDef->bNormalsPassDefaultPipeline
 
     // Create depth pass
     {
         AMaterialBuildContext vertexCtx( InGraph, VERTEX_STAGE );
         AMaterialBuildContext tessControlCtx( InGraph, TESSELLATION_CONTROL_STAGE );
         AMaterialBuildContext tessEvalCtx( InGraph, TESSELLATION_EVAL_STAGE );
+        AMaterialBuildContext depthCtx( InGraph, DEPTH_STAGE );
         SMaterialStageTransition trans;
 
         InGraph->CompileStage( vertexCtx );
+        InGraph->CompileStage( depthCtx );
 
         if ( InGraph->TessellationMethod != TESSELLATION_DISABLED ) {
             InGraph->CompileStage( tessControlCtx );
@@ -3092,9 +3134,11 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
                                          InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessControlCtx : nullptr,
                                          InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessEvalCtx : nullptr,
                                          nullptr,
-                                         nullptr );
+                                         depthCtx.bHasAlphaMask ? &depthCtx : nullptr );
 
-        bDepthPassTextureFetch = trans.bHasTextures;
+        pDef->bHasVertexDeform = vertexCtx.bHasVertexDeform;
+        pDef->bAlphaMasking = depthCtx.bHasAlphaMask;
+        pDef->bDepthPassTextureFetch = trans.bHasTextures;
         maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
@@ -3103,21 +3147,25 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         predefines += "#define DEPTH_PASS_VARYING_POSITION "    + Math::ToString( locationIndex++ ) + "\n";
         predefines += "#define DEPTH_PASS_VARYING_NORMAL "      + Math::ToString( locationIndex++ ) + "\n";
 
-        pDef->AddShader( "$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$", vertexCtx.OutputVaryingsCode );
+        pDef->AddShader( "$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode );
         pDef->AddShader( "$DEPTH_PASS_VERTEX_SAMPLERS$", SamplersString( InGraph, vertexCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$DEPTH_PASS_VERTEX_CODE$", vertexCtx.SourceCode );
+        pDef->AddShader( "$DEPTH_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode );
 
-        pDef->AddShader( "$DEPTH_PASS_TCS_INPUT_VARYINGS$", tessControlCtx.InputVaryingsCode );
-        pDef->AddShader( "$DEPTH_PASS_TCS_OUTPUT_VARYINGS$", tessControlCtx.OutputVaryingsCode );
+        pDef->AddShader( "$DEPTH_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode );
+        pDef->AddShader( "$DEPTH_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode );
         pDef->AddShader( "$DEPTH_PASS_TCS_SAMPLERS$", SamplersString( InGraph, tessControlCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$DEPTH_PASS_TCS_COPY_VARYINGS$", tessControlCtx.CopyVaryingsCode );
+        pDef->AddShader( "$DEPTH_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode );
         pDef->AddShader( "$DEPTH_PASS_TCS_CODE$", tessControlCtx.SourceCode );
 
-        pDef->AddShader( "$DEPTH_PASS_TES_INPUT_VARYINGS$", tessEvalCtx.InputVaryingsCode );
-        pDef->AddShader( "$DEPTH_PASS_TES_OUTPUT_VARYINGS$", tessEvalCtx.OutputVaryingsCode );
+        pDef->AddShader( "$DEPTH_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode );
+        pDef->AddShader( "$DEPTH_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
         pDef->AddShader( "$DEPTH_PASS_TES_SAMPLERS$", SamplersString( InGraph, tessEvalCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$DEPTH_PASS_TES_INTERPOLATE$", tessEvalCtx.CopyVaryingsCode );
+        pDef->AddShader( "$DEPTH_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode );
         pDef->AddShader( "$DEPTH_PASS_TES_CODE$", tessEvalCtx.SourceCode );
+
+        pDef->AddShader( "$DEPTH_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode );
+        pDef->AddShader( "$DEPTH_PASS_FRAGMENT_SAMPLERS$", SamplersString( InGraph, depthCtx.MaxTextureSlot ) );
+        pDef->AddShader( "$DEPTH_PASS_FRAGMENT_CODE$", depthCtx.SourceCode );
     }
 
     // Create shadowmap pass
@@ -3144,10 +3192,10 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
                                          bTess ? &tessControlCtx : nullptr,
                                          bTess ? &tessEvalCtx : nullptr,
                                          &geometryCtx,
-                                         &shadowCtx );
+                                         shadowCtx.bHasAlphaMask ? &shadowCtx : nullptr );
 
-        bShadowMapPassTextureFetch = trans.bHasTextures;
-        bShadowMapMasking = !shadowCtx.SourceCode.IsEmpty();
+        pDef->bShadowMapPassTextureFetch = trans.bHasTextures;
+        pDef->bShadowMapMasking = shadowCtx.bHasAlphaMask;
         maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
@@ -3157,27 +3205,27 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         predefines += "#define SHADOWMAP_PASS_VARYING_POSITION "    + Math::ToString( locationIndex++ ) + "\n";
         predefines += "#define SHADOWMAP_PASS_VARYING_NORMAL "      + Math::ToString( locationIndex++ ) + "\n";
 
-        pDef->AddShader( "$SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", vertexCtx.OutputVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode );
         pDef->AddShader( "$SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString( InGraph, vertexCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode );
 
-        pDef->AddShader( "$SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", tessControlCtx.InputVaryingsCode );
-        pDef->AddShader( "$SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", tessControlCtx.OutputVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode );
         pDef->AddShader( "$SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString( InGraph, tessControlCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$SHADOWMAP_PASS_TCS_COPY_VARYINGS$", tessControlCtx.CopyVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode );
         pDef->AddShader( "$SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode );
 
-        pDef->AddShader( "$SHADOWMAP_PASS_TES_INPUT_VARYINGS$", tessEvalCtx.InputVaryingsCode );
-        pDef->AddShader( "$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", tessEvalCtx.OutputVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
         pDef->AddShader( "$SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString( InGraph, tessEvalCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$SHADOWMAP_PASS_TES_INTERPOLATE$", tessEvalCtx.CopyVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode );
         pDef->AddShader( "$SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode );
 
-        pDef->AddShader( "$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$", geometryCtx.InputVaryingsCode );
-        pDef->AddShader( "$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$", geometryCtx.OutputVaryingsCode );
-        pDef->AddShader( "$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$", geometryCtx.CopyVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$", trans.GS_InputVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$", trans.GS_OutputVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$", trans.GS_CopyVaryingsCode );
 
-        pDef->AddShader( "$SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", shadowCtx.InputVaryingsCode );
+        pDef->AddShader( "$SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode );
         pDef->AddShader( "$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString( InGraph, shadowCtx.MaxTextureSlot ) );
         pDef->AddShader( "$SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode );
     }
@@ -3187,11 +3235,11 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         AMaterialBuildContext vertexCtx( InGraph, VERTEX_STAGE );
         AMaterialBuildContext tessControlCtx( InGraph, TESSELLATION_CONTROL_STAGE );
         AMaterialBuildContext tessEvalCtx( InGraph, TESSELLATION_EVAL_STAGE );
-        AMaterialBuildContext fragmentCtx( InGraph, FRAGMENT_STAGE );
+        AMaterialBuildContext lightCtx( InGraph, LIGHT_STAGE );
         SMaterialStageTransition trans;
 
         InGraph->CompileStage( vertexCtx );
-        InGraph->CompileStage( fragmentCtx );
+        InGraph->CompileStage( lightCtx );
 
         bool bTess = InGraph->TessellationMethod != TESSELLATION_DISABLED;
 
@@ -3205,10 +3253,9 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
                                          bTess ? &tessControlCtx : nullptr,
                                          bTess ? &tessEvalCtx : nullptr,
                                          nullptr,
-                                         &fragmentCtx );
+                                         &lightCtx );
 
-        bHasVertexDeform = vertexCtx.bHasVertexDeform;
-        bColorPassTextureFetch = trans.bHasTextures;
+        pDef->bLightPassTextureFetch = trans.bHasTextures;
         maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
@@ -3226,11 +3273,11 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
             predefines += "#define COLOR_PASS_VARYING_VT_TEXCOORD "    + Math::ToString( locationIndex++ )   + "\n";
         }
 
-        lightmapSlot = fragmentCtx.MaxTextureSlot + 1;
+        pDef->LightmapSlot = lightCtx.MaxTextureSlot + 1;
 
-        predefines += "#define COLOR_PASS_TEXTURE_LIGHTMAP " + Math::ToString( lightmapSlot ) + "\n";
+        predefines += "#define COLOR_PASS_TEXTURE_LIGHTMAP " + Math::ToString( pDef->LightmapSlot ) + "\n";
 
-        if ( fragmentCtx.bParallaxSampler ) {
+        if ( lightCtx.bParallaxSampler ) {
             switch ( InGraph->ParallaxTechnique ) {
             case PARALLAX_TECHNIQUE_POM:
                 predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_POM\n";
@@ -3250,25 +3297,25 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
             predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED\n";
         }
 
-        pDef->AddShader( "$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", vertexCtx.OutputVaryingsCode );
+        pDef->AddShader( "$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode );
         pDef->AddShader( "$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString( InGraph, vertexCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$COLOR_PASS_VERTEX_CODE$", vertexCtx.SourceCode );
+        pDef->AddShader( "$COLOR_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode );
 
-        pDef->AddShader( "$COLOR_PASS_TCS_INPUT_VARYINGS$", tessControlCtx.InputVaryingsCode );
-        pDef->AddShader( "$COLOR_PASS_TCS_OUTPUT_VARYINGS$", tessControlCtx.OutputVaryingsCode );
+        pDef->AddShader( "$COLOR_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode );
+        pDef->AddShader( "$COLOR_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode );
         pDef->AddShader( "$COLOR_PASS_TCS_SAMPLERS$", SamplersString( InGraph, tessControlCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$COLOR_PASS_TCS_COPY_VARYINGS$", tessControlCtx.CopyVaryingsCode );
+        pDef->AddShader( "$COLOR_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode );
         pDef->AddShader( "$COLOR_PASS_TCS_CODE$", tessControlCtx.SourceCode );
 
-        pDef->AddShader( "$COLOR_PASS_TES_INPUT_VARYINGS$", tessEvalCtx.InputVaryingsCode );
-        pDef->AddShader( "$COLOR_PASS_TES_OUTPUT_VARYINGS$", tessEvalCtx.OutputVaryingsCode );
+        pDef->AddShader( "$COLOR_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode );
+        pDef->AddShader( "$COLOR_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
         pDef->AddShader( "$COLOR_PASS_TES_SAMPLERS$", SamplersString( InGraph, tessEvalCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$COLOR_PASS_TES_INTERPOLATE$", tessEvalCtx.CopyVaryingsCode );
+        pDef->AddShader( "$COLOR_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode );
         pDef->AddShader( "$COLOR_PASS_TES_CODE$", tessEvalCtx.SourceCode );
 
-        pDef->AddShader( "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", fragmentCtx.InputVaryingsCode );
-        pDef->AddShader( "$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString( InGraph, fragmentCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$COLOR_PASS_FRAGMENT_CODE$", fragmentCtx.SourceCode );
+        pDef->AddShader( "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode );
+        pDef->AddShader( "$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString( InGraph, lightCtx.MaxTextureSlot ) );
+        pDef->AddShader( "$COLOR_PASS_FRAGMENT_CODE$", lightCtx.SourceCode );
     }
 
     // Create wireframe pass
@@ -3304,20 +3351,20 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         predefines += "#define WIREFRAME_PASS_VARYING_POSITION "    + Math::ToString( locationIndex++ ) + "\n";
         predefines += "#define WIREFRAME_PASS_VARYING_NORMAL "      + Math::ToString( locationIndex++ ) + "\n";
 
-        pDef->AddShader( "$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$", vertexCtx.OutputVaryingsCode );
+        pDef->AddShader( "$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode );
         pDef->AddShader( "$WIREFRAME_PASS_VERTEX_SAMPLERS$", SamplersString( InGraph, vertexCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$WIREFRAME_PASS_VERTEX_CODE$", vertexCtx.SourceCode );
+        pDef->AddShader( "$WIREFRAME_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode );
 
-        pDef->AddShader( "$WIREFRAME_PASS_TCS_INPUT_VARYINGS$", tessControlCtx.InputVaryingsCode );
-        pDef->AddShader( "$WIREFRAME_PASS_TCS_OUTPUT_VARYINGS$", tessControlCtx.OutputVaryingsCode );
+        pDef->AddShader( "$WIREFRAME_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode );
+        pDef->AddShader( "$WIREFRAME_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode );
         pDef->AddShader( "$WIREFRAME_PASS_TCS_SAMPLERS$", SamplersString( InGraph, tessControlCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$WIREFRAME_PASS_TCS_COPY_VARYINGS$", tessControlCtx.CopyVaryingsCode );
+        pDef->AddShader( "$WIREFRAME_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode );
         pDef->AddShader( "$WIREFRAME_PASS_TCS_CODE$", tessControlCtx.SourceCode );
 
-        pDef->AddShader( "$WIREFRAME_PASS_TES_INPUT_VARYINGS$", tessEvalCtx.InputVaryingsCode );
-        //pDef->AddShader( "$WIREFRAME_PASS_TES_OUTPUT_VARYINGS$", tessEvalCtx.OutputVaryingsCode );
+        pDef->AddShader( "$WIREFRAME_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode );
+        //pDef->AddShader( "$WIREFRAME_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
         pDef->AddShader( "$WIREFRAME_PASS_TES_SAMPLERS$", SamplersString( InGraph, tessEvalCtx.MaxTextureSlot ) );
-        pDef->AddShader( "$WIREFRAME_PASS_TES_INTERPOLATE$", tessEvalCtx.CopyVaryingsCode );
+        pDef->AddShader( "$WIREFRAME_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode );
         pDef->AddShader( "$WIREFRAME_PASS_TES_CODE$", tessEvalCtx.SourceCode );
 
         //pDef->AddShader( "$WIREFRAME_PASS_GEOMETRY_INPUT_VARYINGS$", geometryCtx.InputVaryingsCode );
@@ -3340,25 +3387,12 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         pDef->AddShader( "$NORMALS_PASS_VERTEX_CODE$", vertexCtx.SourceCode );
     }
 
-    if ( bHasVertexDeform ) {
+    if ( pDef->bHasVertexDeform ) {
         predefines += "#define HAS_VERTEX_DEFORM\n";
     }
 
     pDef->AddShader( "$PREDEFINES$", predefines );
 
-    pDef->Type = InGraph->MaterialType;
-    pDef->Blending = InGraph->Blending;
-    pDef->TessellationMethod = InGraph->TessellationMethod;
-    pDef->LightmapSlot = lightmapSlot;
-    pDef->bDepthPassTextureFetch = bDepthPassTextureFetch;
-    pDef->bColorPassTextureFetch = bColorPassTextureFetch;
-    pDef->bShadowMapPassTextureFetch = bShadowMapPassTextureFetch;
-    pDef->bHasVertexDeform = bHasVertexDeform;
-    pDef->bDepthTest_EXPERIMENTAL = InGraph->bDepthTest;
-    pDef->bNoCastShadow = bNoCastShadow;
-    pDef->bShadowMapMasking = bShadowMapMasking;
-    pDef->bDisplacementAffectShadow = InGraph->bDisplacementAffectShadow;
-    pDef->bTranslucent = InGraph->bTranslucent;
     pDef->NumUniformVectors = maxUniformAddress + 1;
     pDef->NumSamplers = maxTextureSlot + 1;
 

@@ -341,7 +341,10 @@ public:
     void InitializeSphereMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32 );
 
     /** Helper. Create plane mesh */
-    void InitializePlaneMesh( float _Width, float _Height, float _TexCoordScale );
+    void InitializePlaneMeshXZ( float _Width, float _Height, float _TexCoordScale );
+
+    /** Helper. Create plane mesh */
+    void InitializePlaneMeshXY( float _Width, float _Height, float _TexCoordScale );
 
     /** Helper. Create patch mesh */
     void InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs );
@@ -578,7 +581,9 @@ void CreateBoxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned in
 
 void CreateSphereMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32 );
 
-void CreatePlaneMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale );
+void CreatePlaneMeshXZ( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale );
+
+void CreatePlaneMeshXY( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale );
 
 void CreatePatchMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
     Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs );

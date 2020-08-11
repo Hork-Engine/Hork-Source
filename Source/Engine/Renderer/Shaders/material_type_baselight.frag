@@ -198,7 +198,11 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 N, vec3 Specular, float Specu
 #endif
 
     // Compute macro normal
+    #ifdef TWOSIDED
+    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N ) * ( gl_FrontFacing ? -1.0 : 1.0 );
+    #else
     const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N );
+    #endif
     
     Light += CalcDirectionalLighting( Normal, Specular, SpecularPower );
     Light += CalcPointLightLighting( Normal, Specular, SpecularPower );

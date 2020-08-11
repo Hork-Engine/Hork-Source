@@ -47,38 +47,159 @@ AMaterial::~AMaterial() {
     GRenderBackend->DestroyMaterial( MaterialGPU );
 }
 
-void AMaterial::Initialize( SMaterialDef const * _Data ) {
-    NumUniformVectors = _Data->NumUniformVectors;
-    Type = _Data->Type;
-    bTranslucent = _Data->bTranslucent;
+void AMaterial::Initialize( MGMaterialGraph * Graph ) {
 
-    GRenderBackend->InitializeMaterial( MaterialGPU, _Data );
+    CompileMaterialGraph( Graph, &Def );
+
+    GRenderBackend->InitializeMaterial( MaterialGPU, &Def );
 }
 
-void AMaterial::Initialize( MGMaterialGraph * Graph ) {
-    SMaterialDef def;
-
-    CompileMaterialGraph( Graph, &def );
-
-    Initialize( &def );
+void AMaterial::Purge() {
+    Def.RemoveShaders();
 }
 
 bool AMaterial::LoadResource( AString const & _Path ) {
-    // TODO: load the material
-    return false;
+    AFileStream f;
+
+    if ( !f.OpenRead( _Path ) ) {
+        return false;
+    }
+
+    uint32_t fileFormat = f.ReadUInt32();
+
+    if ( fileFormat != FMT_VERSION_MATERIAL ) {
+        GLogger.Printf( "Expected file format %d\n", FMT_VERSION_MATERIAL );
+        return false;
+    }
+
+    uint32_t fileVersion = f.ReadUInt32();
+
+    if ( fileVersion != FMT_VERSION_MATERIAL ) {
+        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MATERIAL );
+        return false;
+    }
+
+    Purge();
+
+    AString guid;
+
+    f.ReadObject( guid );
+
+    Def.Type = (EMaterialType)f.ReadUInt8();
+    Def.Blending = (EColorBlending)f.ReadUInt8();
+    Def.TessellationMethod = (ETessellationMethod)f.ReadUInt8();
+    Def.LightmapSlot = (ETessellationMethod)f.ReadUInt16();
+    Def.bDepthPassTextureFetch = f.ReadBool();
+    Def.bLightPassTextureFetch = f.ReadBool();
+    Def.bWireframePassTextureFetch = f.ReadBool();
+    Def.bNormalsPassTextureFetch = f.ReadBool();
+    Def.bShadowMapPassTextureFetch = f.ReadBool();
+    Def.bHasVertexDeform = f.ReadBool();
+    Def.bDepthTest_EXPERIMENTAL = f.ReadBool();
+    Def.bNoCastShadow = f.ReadBool();
+    Def.bAlphaMasking = f.ReadBool();
+    Def.bShadowMapMasking = f.ReadBool();
+    Def.bDisplacementAffectShadow = f.ReadBool();
+    Def.bTranslucent = f.ReadBool();
+    Def.bTwoSided = f.ReadBool();
+    Def.NumUniformVectors = f.ReadUInt8();
+    Def.NumSamplers = f.ReadUInt8();
+    for ( int i = 0 ; i < Def.NumSamplers ; i++ ) {
+        Def.Samplers[i].TextureType = (ETextureType)f.ReadUInt8();
+        Def.Samplers[i].Filter = (ETextureFilter)f.ReadUInt8();
+        Def.Samplers[i].AddressU = (ETextureAddress)f.ReadUInt8();
+        Def.Samplers[i].AddressV = (ETextureAddress)f.ReadUInt8();
+        Def.Samplers[i].AddressW = (ETextureAddress)f.ReadUInt8();
+        Def.Samplers[i].MipLODBias = f.ReadFloat();
+        Def.Samplers[i].Anisotropy = f.ReadFloat();
+        Def.Samplers[i].MinLod = f.ReadFloat();
+        Def.Samplers[i].MaxLod = f.ReadFloat();
+    }
+
+    int numShaders = f.ReadUInt16();
+    AString sourceName, sourceCode;
+    for ( int i = 0 ; i < numShaders ; i++ ) {
+        f.ReadObject( sourceName );
+        f.ReadObject( sourceCode );
+        Def.AddShader( sourceName.CStr(), sourceCode );
+    }
+
+    GRenderBackend->InitializeMaterial( MaterialGPU, &Def );
+
+    return true;
+}
+
+bool WriteMaterial( AString const & _Path, SMaterialDef const * pDef ) {
+    AFileStream f;
+
+    if ( !f.OpenWrite( _Path ) ) {
+        return false;
+    }
+
+    //AString guid;
+    AGUID guid;
+    guid.Generate();
+
+    f.WriteUInt32( FMT_VERSION_MATERIAL );
+    f.WriteUInt32( FMT_VERSION_MATERIAL );
+    f.WriteObject( guid.ToString() );
+    f.WriteUInt8( pDef->Type );
+    f.WriteUInt8( pDef->Blending );
+    f.WriteUInt8( pDef->TessellationMethod );
+    f.WriteUInt16( pDef->LightmapSlot );
+    f.WriteBool( pDef->bDepthPassTextureFetch );
+    f.WriteBool( pDef->bLightPassTextureFetch );
+    f.WriteBool( pDef->bWireframePassTextureFetch );
+    f.WriteBool( pDef->bNormalsPassTextureFetch );
+    f.WriteBool( pDef->bShadowMapPassTextureFetch );
+    f.WriteBool( pDef->bHasVertexDeform );
+    f.WriteBool( pDef->bDepthTest_EXPERIMENTAL );
+    f.WriteBool( pDef->bNoCastShadow );
+    f.WriteBool( pDef->bAlphaMasking );
+    f.WriteBool( pDef->bShadowMapMasking );
+    f.WriteBool( pDef->bDisplacementAffectShadow );
+    f.WriteBool( pDef->bTranslucent );
+    f.WriteBool( pDef->bTwoSided );
+    f.WriteUInt8( pDef->NumUniformVectors );
+    f.WriteUInt8( pDef->NumSamplers );
+    for ( int i = 0 ; i < pDef->NumSamplers ; i++ ) {
+         f.WriteUInt8( pDef->Samplers[i].TextureType );
+         f.WriteUInt8( pDef->Samplers[i].Filter );
+         f.WriteUInt8( pDef->Samplers[i].AddressU );
+         f.WriteUInt8( pDef->Samplers[i].AddressV );
+         f.WriteUInt8( pDef->Samplers[i].AddressW );
+         f.WriteFloat( pDef->Samplers[i].MipLODBias );
+         f.WriteFloat( pDef->Samplers[i].Anisotropy );
+         f.WriteFloat( pDef->Samplers[i].MinLod );
+         f.WriteFloat( pDef->Samplers[i].MaxLod );
+    }
+
+    int numShaders = 0;
+    for ( SMaterialShader * s = pDef->Shaders ; s ; s = s->Next ) {
+        numShaders++;
+    }
+
+    f.WriteUInt16( numShaders );
+
+    for ( SMaterialShader * s = pDef->Shaders ; s ; s = s->Next ) {
+        f.WriteObject( AString( s->SourceName ) );
+        f.WriteObject( AString( s->Code ) );
+    }
+
+    return true;
 }
 
 void AMaterial::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Materials/Unlit" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
-        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
         MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
         diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
 
         MGSampler * textureSampler = graph->AddNode< MGSampler >();
-        textureSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
         textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
         graph->Color->Connect( textureSampler, "RGBA" );
@@ -90,16 +211,60 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/BaseLight" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Materials/UnlitMask" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
-        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
         MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
         diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
 
         MGSampler * textureSampler = graph->AddNode< MGSampler >();
-        textureSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        graph->Color->Connect( textureSampler->RGBA );
+        graph->AlphaMask->Connect( textureSampler->A );
+
+        graph->MaterialType = MATERIAL_TYPE_UNLIT;
+        graph->RegisterTextureSlot( diffuseTexture );
+
+        Initialize( graph );
+        return;
+    }
+
+    if ( !Core::Stricmp( _Path, "/Default/Materials/UnlitOpacity" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        graph->Color->Connect( textureSampler->RGBA );
+        graph->Opacity->Connect( textureSampler->A );
+
+        graph->MaterialType = MATERIAL_TYPE_UNLIT;
+        graph->RegisterTextureSlot( diffuseTexture );
+
+        Initialize( graph );
+        return;
+    }
+
+    if ( !Core::Stricmp( _Path, "/Default/Materials/BaseLight" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
         textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
         graph->Color->Connect( textureSampler, "RGBA" );
@@ -114,7 +279,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Materials/DefaultPBR" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
-        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
         MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
         diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
@@ -129,20 +294,20 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         roughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
 
         MGSampler * textureSampler = graph->AddNode< MGSampler >();
-        textureSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
         textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
         MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
-        normalSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        normalSampler->TexCoord->Connect( inTexCoord, "Value" );
         normalSampler->TextureSlot->Connect( normalTexture, "Value" );
         normalSampler->Compression = NM_XYZ;
 
         MGSampler * metallicSampler = graph->AddNode< MGSampler >();
-        metallicSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        metallicSampler->TexCoord->Connect( inTexCoord, "Value" );
         metallicSampler->TextureSlot->Connect( metallicTexture, "Value" );
 
         MGSampler * roughnessSampler = graph->AddNode< MGSampler >();
-        roughnessSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        roughnessSampler->TexCoord->Connect( inTexCoord, "Value" );
         roughnessSampler->TextureSlot->Connect( roughnessTexture, "Value" );
 
         graph->Color->Connect( textureSampler, "RGBA" );
@@ -163,7 +328,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughness" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
-        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
         MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
         diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
@@ -181,24 +346,24 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         emissiveTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
 
         MGSampler * textureSampler = graph->AddNode< MGSampler >();
-        textureSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
         textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
         MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
-        normalSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        normalSampler->TexCoord->Connect( inTexCoord, "Value" );
         normalSampler->TextureSlot->Connect( normalTexture, "Value" );
         normalSampler->Compression = NM_XYZ;
 
         MGSampler * metallicRoughnessSampler = graph->AddNode< MGSampler >();
-        metallicRoughnessSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        metallicRoughnessSampler->TexCoord->Connect( inTexCoord, "Value" );
         metallicRoughnessSampler->TextureSlot->Connect( metallicRoughnessTexture, "Value" );
 
         MGSampler * ambientSampler = graph->AddNode< MGSampler >();
-        ambientSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        ambientSampler->TexCoord->Connect( inTexCoord, "Value" );
         ambientSampler->TextureSlot->Connect( ambientTexture, "Value" );
 
         MGSampler * emissiveSampler = graph->AddNode< MGSampler >();
-        emissiveSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        emissiveSampler->TexCoord->Connect( inTexCoord, "Value" );
         emissiveSampler->TextureSlot->Connect( emissiveTexture, "Value" );
 
         graph->Color->Connect( textureSampler, "RGBA" );
@@ -219,10 +384,10 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactor" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessMask" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
-        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
         MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
         diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
@@ -240,24 +405,144 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         emissiveTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
 
         MGSampler * textureSampler = graph->AddNode< MGSampler >();
-        textureSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
         textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
 
         MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
-        normalSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        normalSampler->TexCoord->Connect( inTexCoord, "Value" );
         normalSampler->TextureSlot->Connect( normalTexture, "Value" );
         normalSampler->Compression = NM_XYZ;
 
         MGSampler * metallicRoughnessSampler = graph->AddNode< MGSampler >();
-        metallicRoughnessSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        metallicRoughnessSampler->TexCoord->Connect( inTexCoord, "Value" );
         metallicRoughnessSampler->TextureSlot->Connect( metallicRoughnessTexture, "Value" );
 
         MGSampler * ambientSampler = graph->AddNode< MGSampler >();
-        ambientSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        ambientSampler->TexCoord->Connect( inTexCoord, "Value" );
         ambientSampler->TextureSlot->Connect( ambientTexture, "Value" );
 
         MGSampler * emissiveSampler = graph->AddNode< MGSampler >();
-        emissiveSampler->TexCoord->Connect( inTexCoordBlock, "Value" );
+        emissiveSampler->TexCoord->Connect( inTexCoord, "Value" );
+        emissiveSampler->TextureSlot->Connect( emissiveTexture, "Value" );
+
+        graph->Color->Connect( textureSampler, "RGBA" );
+        graph->Normal->Connect( normalSampler, "XYZ" );
+        graph->Metallic->Connect( metallicRoughnessSampler, "B" );
+        graph->Roughness->Connect( metallicRoughnessSampler, "G" );
+        graph->AmbientOcclusion->Connect( ambientSampler, "R" );
+        graph->Emissive->Connect( emissiveSampler, "RGBA" );
+        graph->AlphaMask->Connect( textureSampler->A );
+
+        graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->RegisterTextureSlot( diffuseTexture );
+        graph->RegisterTextureSlot( metallicRoughnessTexture );
+        graph->RegisterTextureSlot( normalTexture );
+        graph->RegisterTextureSlot( ambientTexture );
+        graph->RegisterTextureSlot( emissiveTexture );
+
+        Initialize( graph );
+        return;
+    }
+
+    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessOpacity" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * metallicRoughnessTexture = graph->AddNode< MGTextureSlot >();
+        metallicRoughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * normalTexture = graph->AddNode< MGTextureSlot >();
+        normalTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * ambientTexture = graph->AddNode< MGTextureSlot >();
+        ambientTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * emissiveTexture = graph->AddNode< MGTextureSlot >();
+        emissiveTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
+        normalSampler->TexCoord->Connect( inTexCoord, "Value" );
+        normalSampler->TextureSlot->Connect( normalTexture, "Value" );
+        normalSampler->Compression = NM_XYZ;
+
+        MGSampler * metallicRoughnessSampler = graph->AddNode< MGSampler >();
+        metallicRoughnessSampler->TexCoord->Connect( inTexCoord, "Value" );
+        metallicRoughnessSampler->TextureSlot->Connect( metallicRoughnessTexture, "Value" );
+
+        MGSampler * ambientSampler = graph->AddNode< MGSampler >();
+        ambientSampler->TexCoord->Connect( inTexCoord, "Value" );
+        ambientSampler->TextureSlot->Connect( ambientTexture, "Value" );
+
+        MGSampler * emissiveSampler = graph->AddNode< MGSampler >();
+        emissiveSampler->TexCoord->Connect( inTexCoord, "Value" );
+        emissiveSampler->TextureSlot->Connect( emissiveTexture, "Value" );
+
+        graph->Color->Connect( textureSampler, "RGBA" );
+        graph->Normal->Connect( normalSampler, "XYZ" );
+        graph->Metallic->Connect( metallicRoughnessSampler, "B" );
+        graph->Roughness->Connect( metallicRoughnessSampler, "G" );
+        graph->AmbientOcclusion->Connect( ambientSampler, "R" );
+        graph->Emissive->Connect( emissiveSampler, "RGBA" );
+        graph->Opacity->Connect( textureSampler->A );
+
+        graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->RegisterTextureSlot( diffuseTexture );
+        graph->RegisterTextureSlot( metallicRoughnessTexture );
+        graph->RegisterTextureSlot( normalTexture );
+        graph->RegisterTextureSlot( ambientTexture );
+        graph->RegisterTextureSlot( emissiveTexture );
+
+        Initialize( graph );
+        return;
+    }
+
+    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactor" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * metallicRoughnessTexture = graph->AddNode< MGTextureSlot >();
+        metallicRoughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * normalTexture = graph->AddNode< MGTextureSlot >();
+        normalTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * ambientTexture = graph->AddNode< MGTextureSlot >();
+        ambientTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * emissiveTexture = graph->AddNode< MGTextureSlot >();
+        emissiveTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
+        normalSampler->TexCoord->Connect( inTexCoord, "Value" );
+        normalSampler->TextureSlot->Connect( normalTexture, "Value" );
+        normalSampler->Compression = NM_XYZ;
+
+        MGSampler * metallicRoughnessSampler = graph->AddNode< MGSampler >();
+        metallicRoughnessSampler->TexCoord->Connect( inTexCoord, "Value" );
+        metallicRoughnessSampler->TextureSlot->Connect( metallicRoughnessTexture, "Value" );
+
+        MGSampler * ambientSampler = graph->AddNode< MGSampler >();
+        ambientSampler->TexCoord->Connect( inTexCoord, "Value" );
+        ambientSampler->TextureSlot->Connect( ambientTexture, "Value" );
+
+        MGSampler * emissiveSampler = graph->AddNode< MGSampler >();
+        emissiveSampler->TexCoord->Connect( inTexCoord, "Value" );
         emissiveSampler->TextureSlot->Connect( emissiveTexture, "Value" );
 
         MGUniformAddress * baseColorFactor = graph->AddNode< MGUniformAddress >();
@@ -310,6 +595,190 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
+    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactorMask" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * metallicRoughnessTexture = graph->AddNode< MGTextureSlot >();
+        metallicRoughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * normalTexture = graph->AddNode< MGTextureSlot >();
+        normalTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * ambientTexture = graph->AddNode< MGTextureSlot >();
+        ambientTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * emissiveTexture = graph->AddNode< MGTextureSlot >();
+        emissiveTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
+        normalSampler->TexCoord->Connect( inTexCoord, "Value" );
+        normalSampler->TextureSlot->Connect( normalTexture, "Value" );
+        normalSampler->Compression = NM_XYZ;
+
+        MGSampler * metallicRoughnessSampler = graph->AddNode< MGSampler >();
+        metallicRoughnessSampler->TexCoord->Connect( inTexCoord, "Value" );
+        metallicRoughnessSampler->TextureSlot->Connect( metallicRoughnessTexture, "Value" );
+
+        MGSampler * ambientSampler = graph->AddNode< MGSampler >();
+        ambientSampler->TexCoord->Connect( inTexCoord, "Value" );
+        ambientSampler->TextureSlot->Connect( ambientTexture, "Value" );
+
+        MGSampler * emissiveSampler = graph->AddNode< MGSampler >();
+        emissiveSampler->TexCoord->Connect( inTexCoord, "Value" );
+        emissiveSampler->TextureSlot->Connect( emissiveTexture, "Value" );
+
+        MGUniformAddress * baseColorFactor = graph->AddNode< MGUniformAddress >();
+        baseColorFactor->Type = AT_Float4;
+        baseColorFactor->Address = 0;
+
+        MGUniformAddress * metallicFactor = graph->AddNode< MGUniformAddress >();
+        metallicFactor->Type = AT_Float1;
+        metallicFactor->Address = 4;
+
+        MGUniformAddress * roughnessFactor = graph->AddNode< MGUniformAddress >();
+        roughnessFactor->Type = AT_Float1;
+        roughnessFactor->Address = 5;
+
+        MGUniformAddress * emissiveFactor = graph->AddNode< MGUniformAddress >();
+        emissiveFactor->Type = AT_Float3;
+        emissiveFactor->Address = 8;
+
+        MGMulNode * colorMul = graph->AddNode< MGMulNode >();
+        colorMul->ValueA->Connect( textureSampler, "RGBA" );
+        colorMul->ValueB->Connect( baseColorFactor, "Value" );
+
+        MGMulNode * metallicMul = graph->AddNode< MGMulNode >();
+        metallicMul->ValueA->Connect( metallicRoughnessSampler, "B" );
+        metallicMul->ValueB->Connect( metallicFactor, "Value" );
+
+        MGMulNode * roughnessMul = graph->AddNode< MGMulNode >();
+        roughnessMul->ValueA->Connect( metallicRoughnessSampler, "G" );
+        roughnessMul->ValueB->Connect( roughnessFactor, "Value" );
+
+        MGMulNode * emissiveMul = graph->AddNode< MGMulNode >();
+        emissiveMul->ValueA->Connect( emissiveSampler, "RGB" );
+        emissiveMul->ValueB->Connect( emissiveFactor, "Value" );
+
+        graph->Color->Connect( colorMul, "Result" );
+        graph->Normal->Connect( normalSampler, "XYZ" );
+        graph->Metallic->Connect( metallicMul, "Result" );
+        graph->Roughness->Connect( roughnessMul, "Result" );
+        graph->AmbientOcclusion->Connect( ambientSampler, "R" );
+        graph->Emissive->Connect( emissiveMul, "Result" );
+        graph->AlphaMask->Connect( textureSampler->A );
+
+        graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->RegisterTextureSlot( diffuseTexture );
+        graph->RegisterTextureSlot( metallicRoughnessTexture );
+        graph->RegisterTextureSlot( normalTexture );
+        graph->RegisterTextureSlot( ambientTexture );
+        graph->RegisterTextureSlot( emissiveTexture );
+
+        Initialize( graph );
+        return;
+    }
+
+    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactorOpacity" ) ) {
+        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+
+        MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
+
+        MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+        diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * metallicRoughnessTexture = graph->AddNode< MGTextureSlot >();
+        metallicRoughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * normalTexture = graph->AddNode< MGTextureSlot >();
+        normalTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * ambientTexture = graph->AddNode< MGTextureSlot >();
+        ambientTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGTextureSlot * emissiveTexture = graph->AddNode< MGTextureSlot >();
+        emissiveTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+        MGSampler * textureSampler = graph->AddNode< MGSampler >();
+        textureSampler->TexCoord->Connect( inTexCoord, "Value" );
+        textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+
+        MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
+        normalSampler->TexCoord->Connect( inTexCoord, "Value" );
+        normalSampler->TextureSlot->Connect( normalTexture, "Value" );
+        normalSampler->Compression = NM_XYZ;
+
+        MGSampler * metallicRoughnessSampler = graph->AddNode< MGSampler >();
+        metallicRoughnessSampler->TexCoord->Connect( inTexCoord, "Value" );
+        metallicRoughnessSampler->TextureSlot->Connect( metallicRoughnessTexture, "Value" );
+
+        MGSampler * ambientSampler = graph->AddNode< MGSampler >();
+        ambientSampler->TexCoord->Connect( inTexCoord, "Value" );
+        ambientSampler->TextureSlot->Connect( ambientTexture, "Value" );
+
+        MGSampler * emissiveSampler = graph->AddNode< MGSampler >();
+        emissiveSampler->TexCoord->Connect( inTexCoord, "Value" );
+        emissiveSampler->TextureSlot->Connect( emissiveTexture, "Value" );
+
+        MGUniformAddress * baseColorFactor = graph->AddNode< MGUniformAddress >();
+        baseColorFactor->Type = AT_Float4;
+        baseColorFactor->Address = 0;
+
+        MGUniformAddress * metallicFactor = graph->AddNode< MGUniformAddress >();
+        metallicFactor->Type = AT_Float1;
+        metallicFactor->Address = 4;
+
+        MGUniformAddress * roughnessFactor = graph->AddNode< MGUniformAddress >();
+        roughnessFactor->Type = AT_Float1;
+        roughnessFactor->Address = 5;
+
+        MGUniformAddress * emissiveFactor = graph->AddNode< MGUniformAddress >();
+        emissiveFactor->Type = AT_Float3;
+        emissiveFactor->Address = 8;
+
+        MGMulNode * colorMul = graph->AddNode< MGMulNode >();
+        colorMul->ValueA->Connect( textureSampler, "RGBA" );
+        colorMul->ValueB->Connect( baseColorFactor, "Value" );
+
+        MGMulNode * metallicMul = graph->AddNode< MGMulNode >();
+        metallicMul->ValueA->Connect( metallicRoughnessSampler, "B" );
+        metallicMul->ValueB->Connect( metallicFactor, "Value" );
+
+        MGMulNode * roughnessMul = graph->AddNode< MGMulNode >();
+        roughnessMul->ValueA->Connect( metallicRoughnessSampler, "G" );
+        roughnessMul->ValueB->Connect( roughnessFactor, "Value" );
+
+        MGMulNode * emissiveMul = graph->AddNode< MGMulNode >();
+        emissiveMul->ValueA->Connect( emissiveSampler, "RGB" );
+        emissiveMul->ValueB->Connect( emissiveFactor, "Value" );
+
+        graph->Color->Connect( colorMul, "Result" );
+        graph->Normal->Connect( normalSampler, "XYZ" );
+        graph->Metallic->Connect( metallicMul, "Result" );
+        graph->Roughness->Connect( roughnessMul, "Result" );
+        graph->AmbientOcclusion->Connect( ambientSampler, "R" );
+        graph->Emissive->Connect( emissiveMul, "Result" );
+        graph->Opacity->Connect( textureSampler->A );
+
+        graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->RegisterTextureSlot( diffuseTexture );
+        graph->RegisterTextureSlot( metallicRoughnessTexture );
+        graph->RegisterTextureSlot( normalTexture );
+        graph->RegisterTextureSlot( ambientTexture );
+        graph->RegisterTextureSlot( emissiveTexture );
+
+        Initialize( graph );
+        return;
+    }
+
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessNoTex" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
@@ -343,7 +812,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Materials/Skybox" ) ) {
         MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
 
-        MGInPosition * inPositionBlock = graph->AddNode< MGInPosition >();
+        MGInPosition * inPosition = graph->AddNode< MGInPosition >();
 
         MGTextureSlot * cubemapTexture = graph->AddNode< MGTextureSlot >();
         cubemapTexture->SamplerDesc.TextureType = TEXTURE_CUBEMAP;
@@ -353,7 +822,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         cubemapTexture->SamplerDesc.AddressW = TEXTURE_ADDRESS_CLAMP;
 
         MGSampler * cubemapSampler = graph->AddNode< MGSampler >();
-        cubemapSampler->TexCoord->Connect( inPositionBlock, "Value" );
+        cubemapSampler->TexCoord->Connect( inPosition, "Value" );
         cubemapSampler->TextureSlot->Connect( cubemapTexture, "Value" );
 
         graph->Color->Connect( cubemapSampler, "RGBA" );
@@ -503,8 +972,6 @@ bool AMaterialInstance::LoadResource( AString const & _Path ) {
 
     return true;
 }
-
-
 
 void AMaterialInstance::SetMaterial( AMaterial * _Material ) {
     if ( !_Material ) {

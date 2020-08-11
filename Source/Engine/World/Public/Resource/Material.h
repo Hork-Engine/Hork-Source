@@ -48,20 +48,19 @@ class ANGIE_API AMaterial : public AResource, public IGPUResourceOwner {
     AN_CLASS( AMaterial, AResource )
 
 public:
-    /** Initialize from data */
-    void Initialize( SMaterialDef const * _Data );
-
     /** Initialize from graph */
     void Initialize( MGMaterialGraph * Graph );
 
-    /** Get material type */
-    EMaterialType GetType() const { return Type; }
+    void Purge();
 
-    bool IsTranslucent() const { return bTranslucent; }
+    /** Get material type */
+    EMaterialType GetType() const { return Def.Type; }
+
+    bool IsTranslucent() const { return Def.bTranslucent; }
 
     AMaterialGPU * GetGPUResource() { return MaterialGPU; }
 
-    int GetNumUniformVectors() const { return NumUniformVectors; }
+    int GetNumUniformVectors() const { return Def.NumUniformVectors; }
 
 protected:
     AMaterial();
@@ -79,10 +78,14 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 
 private:
+    /** Material GPU representation */
     AMaterialGPU * MaterialGPU;
-    EMaterialType Type;
-    int NumUniformVectors;
-    bool bTranslucent;
+
+    /** Source graph */
+    TWeakRef< MGMaterialGraph > MaterialGraph;
+
+    /** Material definition */
+    SMaterialDef Def;
 };
 
 AN_FORCEINLINE AMaterial * CreateMaterial( MGMaterialGraph * InGraph )

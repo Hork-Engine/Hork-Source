@@ -31,6 +31,7 @@ SOFTWARE.
 layout( triangles, TESSELLATION_SPACING, ccw ) in;
 
 #include "$DEPTH_PASS_TES_INPUT_VARYINGS$"
+#include "$DEPTH_PASS_TES_OUTPUT_VARYINGS$"
 
 layout( location = DEPTH_PASS_VARYING_POSITION ) in vec3 TCS_Position[];
 layout( location = DEPTH_PASS_VARYING_NORMAL ) in vec3 TCS_Normal[];

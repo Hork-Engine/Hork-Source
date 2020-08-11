@@ -31,7 +31,7 @@ SOFTWARE.
 layout( triangles, TESSELLATION_SPACING, ccw ) in;
 
 #include "$DEPTH_PASS_TES_INPUT_VARYINGS$"
-//#include "$DEPTH_PASS_TES_OUTPUT_VARYINGS$" // TODO: future for fragment shader
+#include "$DEPTH_PASS_TES_OUTPUT_VARYINGS$"
 
 struct SPatchVertices
 {

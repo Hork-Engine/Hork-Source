@@ -104,7 +104,6 @@ void AShadowMapRenderer::CreatePipeline() {
 
     if ( /*_ShadowMasking || */bVSM ) {
         GShaderSources.Clear();
-        //GShaderSources.Add( "#define SHADOW_MASKING\n" );
         //GShaderSources.Add( "#define SKINNED_MESH\n" );
         GShaderSources.Add( codeFS.CStr() );
         GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );

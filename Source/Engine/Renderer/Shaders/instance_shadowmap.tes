@@ -31,6 +31,7 @@ SOFTWARE.
 layout( triangles, TESSELLATION_SPACING, ccw ) in;
 
 #include "$SHADOWMAP_PASS_TES_INPUT_VARYINGS$"
+#include "$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$"
 
 layout( location = SHADOWMAP_PASS_VARYING_POSITION ) in vec3 TCS_Position[];
 layout( location = SHADOWMAP_PASS_VARYING_NORMAL ) in vec3 TCS_Normal[];
@@ -61,6 +62,5 @@ void main(){
     
     pos += normal * ( Displacement * 0.01 );
     
-    //gl_Position = ProjectionMatrix * vec4(pos, 1);
-    gl_Position = CascadeViewProjection[ VS_InstanceID ] * vec4( pos, 1.0 ); // TODO: We can bake ( CascadeViewProjection[ gl_InstanceID ] * projMat ) into one matrix
+    gl_Position = CascadeViewProjection[ VS_InstanceID ] * vec4( pos, 1.0 );
 }

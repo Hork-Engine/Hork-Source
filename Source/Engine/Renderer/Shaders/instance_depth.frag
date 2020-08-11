@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-layout( binding = 1, std140 ) uniform UniformBuffer1
-{
-    mat4 TransformMatrix; // From object space to world space // TODO float3x4
-    vec4 uaddr_0;
-    vec4 uaddr_1;
-    vec4 uaddr_2;
-    vec4 uaddr_3;
-};
+
+#include "$DEPTH_PASS_FRAGMENT_SAMPLERS$"
+#include "$DEPTH_PASS_FRAGMENT_INPUT_VARYINGS$"
+
+void main() {
+    #include "$DEPTH_PASS_FRAGMENT_CODE$"
+}
+

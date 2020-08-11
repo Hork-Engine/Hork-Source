@@ -32,7 +32,7 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
+void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -161,7 +161,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule, tessControlShaderModule, tessEvalShaderModule;
+    TRef< IShaderModule > vertexShaderModule;
 
     GShaderSources.Clear();
     GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
@@ -174,6 +174,8 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     if ( _Tessellation )
     {
+        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
+
         GShaderSources.Clear();
         GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
         if ( _Skinned ) {
@@ -192,6 +194,20 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
         pipelineCI.pTCS = tessControlShaderModule;
         pipelineCI.pTES = tessEvalShaderModule;
+    }
+
+    if ( _AlphaMasking ) {
+        TRef< IShaderModule > fragmentShaderModule;
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+
+        pipelineCI.pFS = fragmentShaderModule;
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -396,11 +412,10 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned ) {
+void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _Skinned ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
-    rsd.CullMode = _CullMode;
     rsd.bScissorEnable = SCISSOR_TEST;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
@@ -1157,7 +1172,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _Skinned, bool _Tessellation ) {
+void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1168,7 +1183,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 #else
     //rsd.CullMode = POLYGON_CULL_BACK;
     //rsd.CullMode = POLYGON_CULL_DISABLED; // Less light bleeding
-    rsd.CullMode = POLYGON_CULL_FRONT;
+    rsd.CullMode = _TwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
 #endif
     //rsd.CullMode = POLYGON_CULL_DISABLED;
 
@@ -1363,9 +1378,6 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     if ( _ShadowMasking || bVSM ) {
         GShaderSources.Clear();
         GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
-        if ( _ShadowMasking ) {
-            GShaderSources.Add( "#define SHADOW_MASKING\n" );
-        }
         if ( _Skinned ) {
             GShaderSources.Add( "#define SKINNED_MESH\n" );
         }
@@ -1378,11 +1390,11 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _Skinned ) {
+void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
-    rsd.CullMode = POLYGON_CULL_FRONT;
+    rsd.CullMode = _CullMode;
     rsd.bScissorEnable = SCISSOR_TEST;
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;

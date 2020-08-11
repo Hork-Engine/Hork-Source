@@ -753,7 +753,18 @@ void AAssetImporter::ReadMaterial( cgltf_material * Material, MaterialInfo & Inf
     Core::ZeroMem( Info.Uniforms, sizeof(Info.Uniforms) );
 
     if ( Material->unlit && m_Settings.bAllowUnlitMaterials ) {
-        Info.DefaultMaterial = "/Default/Materials/Unlit";
+
+        switch ( Material->alpha_mode ) {
+        case cgltf_alpha_mode_opaque:
+            Info.DefaultMaterial = "/Default/Materials/Unlit";
+            break;
+        case cgltf_alpha_mode_mask:
+            Info.DefaultMaterial = "/Default/Materials/UnlitMask";
+            break;
+        case cgltf_alpha_mode_blend:
+            Info.DefaultMaterial = "/Default/Materials/UnlitOpacity";
+            break;
+        }
 
         Info.NumTextures = 1;
         Info.DefaultTexture[0] = "/Default/Textures/BaseColorWhite";
@@ -843,7 +854,17 @@ void AAssetImporter::ReadMaterial( cgltf_material * Material, MaterialInfo & Inf
         }
 
         if ( factor ) {
-            Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactor";
+            switch ( Material->alpha_mode ) {
+            case cgltf_alpha_mode_opaque:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactor";
+                break;
+            case cgltf_alpha_mode_mask:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorMask";
+                break;
+            case cgltf_alpha_mode_blend:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorOpacity";
+                break;
+            }
 
             Info.Uniforms[0] = Material->pbr_metallic_roughness.base_color_factor[0];
             Info.Uniforms[1] = Material->pbr_metallic_roughness.base_color_factor[1];
@@ -860,7 +881,17 @@ void AAssetImporter::ReadMaterial( cgltf_material * Material, MaterialInfo & Inf
             Info.Uniforms[10] = Material->emissive_factor[2];
 
         } else {
-            Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughness";
+            switch ( Material->alpha_mode ) {
+            case cgltf_alpha_mode_opaque:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughness";
+                break;
+            case cgltf_alpha_mode_mask:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessMask";
+                break;
+            case cgltf_alpha_mode_blend:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessOpacity";
+                break;
+            }
         }
 
         Info.Textures[0] = FindTextureImage( Material->pbr_metallic_roughness.base_color_texture.texture );
@@ -909,7 +940,18 @@ void AAssetImporter::ReadMaterial( cgltf_material * Material, MaterialInfo & Inf
         }
 
         if ( factor ) {
-            Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactor";
+            switch ( Material->alpha_mode ) {
+            case cgltf_alpha_mode_opaque:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactor";
+                break;
+            case cgltf_alpha_mode_mask:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorMask";
+                break;
+            case cgltf_alpha_mode_blend:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorOpacity";
+                break;
+            }
+
             //Info.DefaultMaterial = "/Default/Materials/PBRSpecularGlossinessFactor";
 
             Info.Uniforms[0] = Material->pbr_specular_glossiness.diffuse_factor[0];
@@ -927,7 +969,18 @@ void AAssetImporter::ReadMaterial( cgltf_material * Material, MaterialInfo & Inf
             Info.Uniforms[10] = Material->emissive_factor[2];
 
         } else {
-            Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughness";
+            switch ( Material->alpha_mode ) {
+            case cgltf_alpha_mode_opaque:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughness";
+                break;
+            case cgltf_alpha_mode_mask:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessMask";
+                break;
+            case cgltf_alpha_mode_blend:
+                Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessOpacity";
+                break;
+            }
+
             //Info.DefaultMaterial = "/Default/Materials/PBRSpecularGlossiness";
         }
 
