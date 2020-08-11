@@ -363,7 +363,7 @@ public:
     }
 
     template< typename T >
-    void WriteObject( T & _Object ) {
+    void WriteObject( T const & _Object ) {
         _Object.Write( *this );
     }
 

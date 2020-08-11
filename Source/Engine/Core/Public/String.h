@@ -227,7 +227,7 @@ public:
 
     void FromFile( IBinaryStream & _Stream );
 
-    void Write( IBinaryStream & _Stream );
+    void Write( IBinaryStream & _Stream ) const;
 
     void Read( IBinaryStream & _Stream );
 
@@ -475,7 +475,7 @@ AN_FORCEINLINE void AString::FromFile( IBinaryStream & _Stream ) {
     Size = fileSz;
 }
 
-AN_FORCEINLINE void AString::Write( IBinaryStream & _Stream ) {
+AN_FORCEINLINE void AString::Write( IBinaryStream & _Stream ) const {
     _Stream.WriteUInt32( Size );
     _Stream.WriteBuffer( Data, Size );
 }
