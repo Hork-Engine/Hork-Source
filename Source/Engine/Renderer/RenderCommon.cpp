@@ -58,9 +58,9 @@ ARuntimeVariable RVBrightness( _CTS( "Brightness" ), _CTS( "1" ) );
 ARuntimeVariable RVSSLRSampleOffset( _CTS( "SSLRSampleOffset" ), _CTS( "0.1" ) );
 ARuntimeVariable RVSSLRMaxDist( _CTS( "SSLRMaxDist" ), _CTS( "10" ) );
 ARuntimeVariable RVTessellationLevel( _CTS( "TessellationLevel" ), _CTS( "0.05" ) );
-ARuntimeVariable RVMotionBlur( _CTS( "MotionBlur" ), _CTS( "1" ) ); // TODO: Need to rebuild all materials!!!
-ARuntimeVariable RVSSLR( _CTS( "SSLR" ), _CTS( "1" ) ); // TODO: Need to rebuild all materials!!
-ARuntimeVariable RVSSAO( _CTS( "SSAO" ), _CTS( "1" ) ); // TODO: Need to rebuild all materials!!
+ARuntimeVariable RVMotionBlur( _CTS( "MotionBlur" ), _CTS( "1" ) );
+ARuntimeVariable RVSSLR( _CTS( "SSLR" ), _CTS( "1" ) );
+ARuntimeVariable RVSSAO( _CTS( "SSAO" ), _CTS( "1" ) );
 
 extern ARuntimeVariable RVFxaa;
 

@@ -42,7 +42,6 @@ AN_CLASS_META( APlayerController )
 AN_CLASS_META( ARenderingParameters )
 
 APlayerController * APlayerController::CurrentAudioListener = nullptr;
-ACommandContext * APlayerController::CurrentCommandContext = nullptr;
 
 APlayerController::APlayerController() {
     InputComponent = CreateComponent< AInputComponent >( "PlayerControllerInput" );
@@ -53,11 +52,7 @@ APlayerController::APlayerController() {
         CurrentAudioListener = this;
     }
 
-    if ( !CurrentCommandContext ) {
-        CurrentCommandContext = &CommandContext;
-    }
-
-    CommandContext.AddCommand( "quit", { this, &APlayerController::Quit }, "Quit from application" );
+    GEngine.AddCommand( "quit", { this, &APlayerController::Quit }, "Quit from application" );
 }
 
 void APlayerController::Quit( ARuntimeCommandProcessor const & _Proc ) {
@@ -69,10 +64,6 @@ void APlayerController::EndPlay() {
 
     if ( CurrentAudioListener == this ) {
         CurrentAudioListener = nullptr;
-    }
-
-    if ( CurrentCommandContext == &CommandContext ) {
-        CurrentCommandContext = nullptr;
     }
 }
 
@@ -87,7 +78,7 @@ void APlayerController::OnPawnChanged()
 
     if ( Pawn ) {
         Pawn->SetupPlayerInputComponent( InputComponent );
-        Pawn->SetupRuntimeCommands( CommandContext );
+        Pawn->SetupRuntimeCommands();
     }
 
     if ( HUD ) {
@@ -206,14 +197,6 @@ void APlayerController::SetCurrentAudioListener() {
 
 APlayerController * APlayerController::GetCurrentAudioListener() {
     return CurrentAudioListener;
-}
-
-void APlayerController::SetCurrentCommandContext() {
-    CurrentCommandContext = &CommandContext;
-}
-
-ACommandContext * APlayerController::GetCurrentCommandContext() {
-    return CurrentCommandContext;
 }
 
 float APlayerController::GetViewportAspectRatio() const {

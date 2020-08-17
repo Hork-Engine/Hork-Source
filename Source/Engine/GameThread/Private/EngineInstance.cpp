@@ -63,7 +63,8 @@ SOFTWARE.
 
 static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "0" ) );
 static ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
-static ARuntimeVariable RVRebuildMaterials( _CTS( "RebuildMaterials" ), _CTS( "0" ) );
+
+AN_CLASS_META( AEngineCommands )
 
 AEngineInstance & GEngine = AEngineInstance::Inst();
 
@@ -120,6 +121,25 @@ static IGameModule * CreateGameModule( AClassMeta const * _Meta ) {
     return static_cast< IGameModule * >(_Meta->CreateInstance());
 }
 
+AEngineCommands::AEngineCommands()
+{
+    CommandContext.AddCommand( "RebuildMaterials", { this, &AEngineCommands::RebuildMaterials }, "Rebuild materials" );
+}
+
+void AEngineCommands::RebuildMaterials( ARuntimeCommandProcessor const & _Proc ) {
+    AMaterial::RebuildMaterials();
+}
+
+void AEngineInstance::AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment )
+{
+    EngineCmd->CommandContext.AddCommand( _Name, _Callback, _Comment );
+}
+
+void AEngineInstance::RemoveCommand( const char * _Name )
+{
+    EngineCmd->CommandContext.RemoveCommand( _Name );
+}
+
 void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
     GConsole.ReadStoryLines();
 
@@ -155,6 +175,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
     AFont::SetGlyphRanges( GLYPH_RANGE_CYRILLIC );
 
     Canvas.Initialize();
+
+    EngineCmd = CreateInstanceOf< AEngineCommands >();
 
     GameModule = CreateGameModule( _EntryDecl.ModuleClass );
     GameModule->AddRef();
@@ -195,15 +217,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
         AGarbageCollector::DeallocateObjects();
 
         // Execute console commands
-        ACommandContext * commandContext = APlayerController::GetCurrentCommandContext();
-        if ( commandContext ) {
-            CommandProcessor.Execute( *commandContext );
-        }
-
-        if ( RVRebuildMaterials ) {
-            RVRebuildMaterials = false;
-            AMaterial::RebuildMaterials();
-        }
+        CommandProcessor.Execute( EngineCmd->CommandContext );
 
         // Tick worlds
         AWorld::UpdateWorlds( GameModule, FrameDurationInSeconds );
@@ -260,6 +274,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
     ImguiContext->RemoveRef();
     ImguiContext = nullptr;
 #endif
+
+    EngineCmd.Reset();
 
     Canvas.Deinitialize();
 
@@ -411,10 +427,7 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) 
     DeveloperKeys( _Event );
 
     if ( GConsole.IsActive() || bAllowConsole ) {
-        ACommandContext * commandContext = APlayerController::GetCurrentCommandContext();
-        if ( commandContext ) {
-            GConsole.KeyEvent( _Event, *commandContext, CommandProcessor );
-        }
+        GConsole.KeyEvent( _Event, EngineCmd->CommandContext, CommandProcessor );
     }
 
     if ( GConsole.IsActive() && _Event.Action != IA_RELEASE ) {

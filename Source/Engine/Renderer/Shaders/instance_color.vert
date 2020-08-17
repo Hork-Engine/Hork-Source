@@ -127,9 +127,9 @@ void main() {
     
     #ifdef COMPUTE_TBN
     // Tangent in model space
-    Normal.x = dot( vec3(JointTransform0), InTangent.xyz );
-    Normal.y = dot( vec3(JointTransform1), InTangent.xyz );
-    Normal.z = dot( vec3(JointTransform2), InTangent.xyz );
+    Normal.x = dot( vec3(JointTransform0), InTangent );
+    Normal.y = dot( vec3(JointTransform1), InTangent );
+    Normal.z = dot( vec3(JointTransform2), InTangent );
 
     // Transform tangent from model space to viewspace
     VS_T.x = dot( ModelNormalToViewSpace0, Normal );
@@ -138,7 +138,7 @@ void main() {
     VS_T = normalize( VS_T );
 
     // Compute binormal in viewspace
-    VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;
+    VS_B = normalize( cross( VS_N, VS_T ) ) * InHandedness;
     #endif  // COMPUTE_TBN
 
     #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
@@ -182,13 +182,13 @@ void main() {
     
     #ifdef COMPUTE_TBN
     // Transform tangent from model space to viewspace
-    VS_T.x = dot( ModelNormalToViewSpace0, InTangent );
-    VS_T.y = dot( ModelNormalToViewSpace1, InTangent );
-    VS_T.z = dot( ModelNormalToViewSpace2, InTangent );
+    VS_T.x = dot( ModelNormalToViewSpace0, vec4( InTangent, 0.0 ) );
+    VS_T.y = dot( ModelNormalToViewSpace1, vec4( InTangent, 0.0 ) );
+    VS_T.z = dot( ModelNormalToViewSpace2, vec4( InTangent, 0.0 ) );
     VS_T = normalize( VS_T );
 
     // Compute binormal in viewspace
-    VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;
+    VS_B = normalize( cross( VS_N, VS_T ) ) * InHandedness;
     #endif // COMPUTE_TBN
 
 #endif

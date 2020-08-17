@@ -81,6 +81,41 @@ static void unpack_vec2_or_vec3( cgltf_accessor * acc, Float3 * output, size_t s
     }
 }
 
+static void unpack_vec2_or_vec3_to_half3( cgltf_accessor * acc, uint16_t * output, size_t stride, bool normalize ) {
+    int num_elements;
+    Float3 tmp;
+
+    if ( !acc ) {
+        return;
+    }
+
+    if ( acc->type == cgltf_type_vec2 ) {
+        num_elements = 2;
+    } else if ( acc->type == cgltf_type_vec3 ) {
+        num_elements = 3;
+    } else {
+        return;
+    }
+
+    tmp[2] = 0;
+
+    byte * ptr = (byte *)output;
+
+    for ( int i = 0; i < acc->count; i++ ) {
+        cgltf_accessor_read_float( acc, i, tmp.ToPtr(), num_elements );
+
+        if ( normalize ) {
+            tmp.NormalizeSelf();
+        }
+
+        ((uint16_t*)ptr)[0] = Math::FloatToHalf( tmp[0] );
+        ((uint16_t*)ptr)[1] = Math::FloatToHalf( tmp[1] );
+        ((uint16_t*)ptr)[2] = Math::FloatToHalf( tmp[2] );
+
+        ptr += stride;
+    }
+}
+
 static void unpack_vec2( cgltf_accessor * acc, Float2 * output, size_t stride ) {
     if ( !acc || acc->type != cgltf_type_vec2 ) {
         return;
@@ -90,6 +125,24 @@ static void unpack_vec2( cgltf_accessor * acc, Float2 * output, size_t stride ) 
 
     for ( int i = 0; i < acc->count; i++ ) {
         cgltf_accessor_read_float( acc, i, ( float * )ptr, 2 );
+
+        ptr += stride;
+    }
+}
+
+static void unpack_vec2_to_half2( cgltf_accessor * acc, uint16_t * output, size_t stride ) {
+    if ( !acc || acc->type != cgltf_type_vec2 ) {
+        return;
+    }
+
+    byte * ptr = (byte *)output;
+    float tmp[2];
+
+    for ( int i = 0; i < acc->count; i++ ) {
+        cgltf_accessor_read_float( acc, i, tmp, 2 );
+
+        ((uint16_t*)ptr)[0] = Math::FloatToHalf( tmp[0] );
+        ((uint16_t*)ptr)[1] = Math::FloatToHalf( tmp[1] );
 
         ptr += stride;
     }
@@ -120,6 +173,23 @@ static void unpack_vec4( cgltf_accessor * acc, Float4 * output, size_t stride ) 
         cgltf_accessor_read_float( acc, i, ( float * )ptr, 4 );
 
         ptr += stride;
+    }
+}
+
+static void unpack_tangents( cgltf_accessor * acc, SMeshVertex * output ) {
+    if ( !acc || acc->type != cgltf_type_vec4 ) {
+        return;
+    }
+
+    Float4 tmp;
+
+    for ( int i = 0; i < acc->count; i++ ) {
+        cgltf_accessor_read_float( acc, i, tmp.ToPtr(), 4 );
+
+        output->SetTangent( tmp.X, tmp.Y, tmp.Z );
+        output->Handedness = tmp.W > 0.0f ? 1 : -1;
+
+        output++;
     }
 }
 
@@ -1057,6 +1127,8 @@ void AAssetImporter::ReadMesh( cgltf_mesh * Mesh, Float3x4 const & GlobalTransfo
 
     MeshInfo * meshInfo = nullptr;
 
+    const uint16_t pos = Math::FloatToHalf( 1.0f );
+
     for ( int i = 0; i < Mesh->primitives_count; i++ ) {
         cgltf_primitive * prim = &Mesh->primitives[i];
 
@@ -1185,33 +1257,27 @@ void AAssetImporter::ReadMesh( cgltf_mesh * Mesh, Float3x4 const & GlobalTransfo
         unpack_vec2_or_vec3( position, &m_Vertices[firstVert].Position, sizeof( SMeshVertex ) );
 
         if ( texcoord ) {
-            unpack_vec2( texcoord, &m_Vertices[firstVert].TexCoord, sizeof( SMeshVertex ) );
+            unpack_vec2_to_half2( texcoord, &m_Vertices[firstVert].TexCoord[0], sizeof( SMeshVertex ) );
         } else {
             for ( int v = 0; v < vertexCount; v++ ) {
-                m_Vertices[firstVert + v].TexCoord.Clear();
+                m_Vertices[firstVert + v].SetTexCoordNative( 0, 0 );
             }
         }
 
         if ( normal && (normal->type == cgltf_type_vec2 || normal->type == cgltf_type_vec3) && normal->count == vertexCount ) {
-            unpack_vec2_or_vec3( normal, &m_Vertices[firstVert].Normal, sizeof( SMeshVertex ) );
-
-            SMeshVertex * pVert = m_Vertices.ToPtr() + firstVert;
-            for ( int v = 0; v < vertexCount; v++, pVert++ ) {
-                pVert->Normal.NormalizeSelf();
-            }
-
+            unpack_vec2_or_vec3_to_half3( normal, &m_Vertices[firstVert].Normal[0], sizeof( SMeshVertex ), true );
         } else {
             // TODO: compute normals
 
             GLogger.Printf( "Warning: no normals\n" );
 
             for ( int v = 0; v < vertexCount; v++ ) {
-                m_Vertices[firstVert + v].Normal = Float3( 0, 1, 0 );
+                m_Vertices[firstVert + v].SetNormalNative( 0, pos, 0 );
             }
         }
 
         if ( tangent && (tangent->type == cgltf_type_vec4) && tangent->count == vertexCount ) {
-            unpack_vec4( tangent, (Float4 *)&m_Vertices[firstVert].Tangent, sizeof( SMeshVertex ) );
+            unpack_tangents( tangent, &m_Vertices[firstVert] );
 
             //CalcTangentSpace( m_Vertices.ToPtr() + meshInfo->BaseVertex, m_Vertices.Size() - meshInfo->BaseVertex, m_Indices.ToPtr() + firstIndex, indexCount );
         } else {
@@ -1221,10 +1287,8 @@ void AAssetImporter::ReadMesh( cgltf_mesh * Mesh, Float3x4 const & GlobalTransfo
             } else {
                 SMeshVertex * pVert = m_Vertices.ToPtr() + firstVert;
                 for ( int v = 0; v < vertexCount; v++, pVert++ ) {
-                    pVert->Tangent.X = 1;
-                    pVert->Tangent.Y = 0;
-                    pVert->Tangent.Z = 0;
-                    pVert->Handedness = 0;
+                    pVert->SetTangentNative( pos, 0, 0 );
+                    pVert->Handedness = 1;
                 }
             }
 
@@ -1246,8 +1310,8 @@ void AAssetImporter::ReadMesh( cgltf_mesh * Mesh, Float3x4 const & GlobalTransfo
             for ( int v = 0; v < vertexCount; v++, pVert++ ) {
                 // Pretransform vertices
                 pVert->Position = Float3( GlobalTransform * pVert->Position );
-                pVert->Normal = NormalMatrix * pVert->Normal;
-                pVert->Tangent = NormalMatrix * pVert->Tangent;
+                pVert->SetNormal( NormalMatrix * pVert->GetNormal() );
+                pVert->SetTangent( NormalMatrix * pVert->GetTangent() );
 
                 // Calc bounding box
                 meshInfo->BoundingBox.AddPoint( pVert->Position );
@@ -1258,8 +1322,8 @@ void AAssetImporter::ReadMesh( cgltf_mesh * Mesh, Float3x4 const & GlobalTransfo
             Float3x3 rotation = m_Settings.Rotation.ToMatrix();
             for ( int v = 0; v < vertexCount; v++, pVert++ ) {
                 pVert->Position = m_Settings.Scale * Float3( rotation * pVert->Position );
-                pVert->Normal = rotation * pVert->Normal;
-                pVert->Tangent = rotation * pVert->Tangent;
+                pVert->SetNormal( rotation * pVert->GetNormal() );
+                pVert->SetTangent( rotation * pVert->GetTangent() );
 
                 // Calc bounding box
                 meshInfo->BoundingBox.AddPoint( pVert->Position );
@@ -2743,8 +2807,8 @@ static bool CreateLWOMesh( lwObject * lwo, float InScale, AMaterialInstance * (*
         for ( j = 0; j < numVertices; j++, pvert++ ) {
             mv = &tempVertices[j];
             pvert->Position = verts[mv->v];
-            pvert->TexCoord = texCoors[mv->uv];
-            pvert->Normal = mv->normal;
+            pvert->SetTexCoord( texCoors[mv->uv] );
+            pvert->SetNormal( mv->normal );
             pvert->Position *= InScale;
             //*(unsigned *)pvert->color = *(unsigned *)mv->color;
             face.Bounds.AddPoint( pvert->Position );

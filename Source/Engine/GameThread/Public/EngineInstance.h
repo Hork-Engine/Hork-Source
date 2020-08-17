@@ -32,10 +32,13 @@ SOFTWARE.
 
 #include <Runtime/Public/EngineInterface.h>
 #include <Runtime/Public/RuntimeCommandProcessor.h>
+#include <World/Public/CommandContext.h>
 #include <World/Public/Base/GameModuleInterface.h>
 #include <World/Public/Resource/FontAtlas.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <World/Public/World.h>
+
+class AEngineCommands;
 
 class ANGIE_API AEngineInstance : public IEngineInterface
 {
@@ -52,6 +55,12 @@ public:
     bool bAllowConsole = true;
 
     ACanvas Canvas;
+
+    /** Add global console command */
+    void AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment = "" );
+
+    /** Remove global console command */
+    void RemoveCommand( const char * _Name );
 
     /** Helper. Create a new world */
     AWorld * CreateWorld() { return AWorld::CreateWorld(); }
@@ -149,6 +158,21 @@ private:
     TRef< WDesktop > Desktop;
 
     ARuntimeCommandProcessor CommandProcessor;
+
+    TRef< AEngineCommands > EngineCmd;
+};
+
+class AEngineCommands : public ABaseObject
+{
+    AN_CLASS( AEngineCommands, ABaseObject )
+
+public:
+    ACommandContext CommandContext;
+
+    void RebuildMaterials( ARuntimeCommandProcessor const & _Proc );
+
+public:
+    AEngineCommands();
 };
 
 extern ANGIE_API AEngineInstance & GEngine;

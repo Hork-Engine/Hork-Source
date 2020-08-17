@@ -466,10 +466,10 @@ TString ShaderStringForVertexAttribs( SVertexAttribInfo const * _VertexAttribs, 
     char location[ 16 ];
 
     const char * Types[ 4 ][ 4 ] = {
-        { "vec1",  "vec2",  "vec3",  "vec4" },      // Float types
-        { "dvec1", "dvec2", "dvec3", "dvec4" },     // Double types
-        { "ivec1", "ivec2", "ivec3", "ivec4" },     // Integer types
-        { "uvec1", "uvec2", "uvec3", "uvec4" }      // Unsigned types
+        { "float",  "vec2",  "vec3",  "vec4" },      // Float types
+        { "double", "dvec2", "dvec3", "dvec4" },     // Double types
+        { "int",    "ivec2", "ivec3", "ivec4" },     // Integer types
+        { "uint",   "uvec2", "uvec3", "uvec4" }      // Unsigned types
     };
 
     for ( SVertexAttribInfo const * attrib = _VertexAttribs; attrib < &_VertexAttribs[ _NumVertexAttribs ]; attrib++, attribIndex++ ) {

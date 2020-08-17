@@ -192,9 +192,6 @@ class ANGIE_API APlayerController : public AController {
     AN_ACTOR( APlayerController, AController )
 
 public:
-    /** Player command context */
-    ACommandContext CommandContext;
-
     /** Player viewport. Don't change directly, use WViewport::SetPlayerController to attach controller to viewport. */
     TWeakRef< WViewport > Viewport;
 
@@ -218,9 +215,6 @@ public:
 
     /** Set player controller as primary audio listener */
     void SetCurrentAudioListener();
-
-    /** Set player controller command context current */
-    void SetCurrentCommandContext();
 
     float GetViewportAspectRatio() const;
 
@@ -257,9 +251,6 @@ public:
     /** Primary audio listener */
     static APlayerController * GetCurrentAudioListener();
 
-    /** Current command context */
-    static ACommandContext * GetCurrentCommandContext();
-
     virtual void OnViewportUpdate();
 
     virtual void UpdatePawnCamera();
@@ -290,5 +281,4 @@ private:
     int ViewportHeight;
 
     static APlayerController * CurrentAudioListener;
-    static ACommandContext * CurrentCommandContext;
 };

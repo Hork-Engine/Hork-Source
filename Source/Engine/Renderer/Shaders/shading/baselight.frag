@@ -170,7 +170,7 @@ void MaterialBaseLightShader( vec3 BaseColor,
 
     // Compute macro normal
     #ifdef TWOSIDED
-    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N ) * ( gl_FrontFacing ? -1.0 : 1.0 );
+    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N ) * ( 1.0 - float(gl_FrontFacing) * 2.0 );
     #else
     const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N );
     #endif

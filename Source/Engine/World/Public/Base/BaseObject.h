@@ -217,6 +217,13 @@ struct TCallback< TReturn( TArgs... ) > {
     }
 
     template< typename T >
+    TCallback( TRef< T > & _Object, TReturn ( T::*_Method )(TArgs...) )
+        : Object( _Object )
+        , Method( (void (ABaseObject::*)(TArgs...))_Method )
+    {
+    }
+
+    template< typename T >
     void Set( T * _Object, TReturn ( T::*_Method )(TArgs...) ) {
         Object = _Object;
         Method = (void (ABaseObject::*)(TArgs...))_Method;

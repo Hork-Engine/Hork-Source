@@ -65,7 +65,7 @@ protected:
     /** Override this function to setup input component */
     virtual void SetupPlayerInputComponent( AInputComponent * _Input ) {}
 
-    virtual void SetupRuntimeCommands( ACommandContext & _Ctx ) {}
+    virtual void SetupRuntimeCommands() {}
 
     AController * GetOwnerController() { return OwnerController; }
 

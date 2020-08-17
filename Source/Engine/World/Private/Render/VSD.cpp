@@ -2569,9 +2569,9 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
     const float hitW = 1.0f - Raycast.HitUV[0] - Raycast.HitUV[1];
 
     // calc texcoord
-    Float2 const & uv0 = vertices[Raycast.Indices[0]].TexCoord;
-    Float2 const & uv1 = vertices[Raycast.Indices[1]].TexCoord;
-    Float2 const & uv2 = vertices[Raycast.Indices[2]].TexCoord;
+    Float2 uv0 = vertices[Raycast.Indices[0]].GetTexCoord();
+    Float2 uv1 = vertices[Raycast.Indices[1]].GetTexCoord();
+    Float2 uv2 = vertices[Raycast.Indices[2]].GetTexCoord();
     Result.Texcoord = uv0 * hitW + uv1 * Raycast.HitUV[0] + uv2 * Raycast.HitUV[1];
 
     if ( Raycast.pLightmapVerts && Raycast.LightingLevel && Raycast.LightmapBlock >= 0 ) {

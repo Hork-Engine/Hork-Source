@@ -69,32 +69,41 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
             "InTexCoord",
             1,              // location
             0,              // buffer input slot
-            VAT_FLOAT2,
+            VAT_HALF2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, TexCoord )
         },
         {
-            "InTangent",
+            "InNormal",
             2,              // location
             0,              // buffer input slot
-            VAT_FLOAT4,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InNormal",
-            3,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
+            VAT_HALF3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, Normal )
         },
         {
-            "InJointIndices",
+            "InTangent",
+            3,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Tangent )
+        },
+        {
+            "InHandedness",
             4,              // location
+            0,              // buffer input slot
+            VAT_BYTE1,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Handedness )
+        },
+        {
+            "InJointIndices",
+            5,              // location
             1,              // buffer input slot
             VAT_UBYTE4,
             VAM_INTEGER,
@@ -103,7 +112,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
         },
         {
             "InJointWeights",
-            5,              // location
+            6,              // location
             1,              // buffer input slot
             VAT_UBYTE4N,
             VAM_FLOAT,
@@ -126,28 +135,37 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
             "InTexCoord",
             1,              // location
             0,              // buffer input slot
-            VAT_FLOAT2,
+            VAT_HALF2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, TexCoord )
         },
         {
-            "InTangent",
+            "InNormal",
             2,              // location
             0,              // buffer input slot
-            VAT_FLOAT4,
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Normal )
+        },
+        {
+            "InTangent",
+            3,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, Tangent )
         },
         {
-            "InNormal",
-            3,              // location
+            "InHandedness",
+            4,              // location
             0,              // buffer input slot
-            VAT_FLOAT3,
+            VAT_BYTE1,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
+            AN_OFS( SMeshVertex, Handedness )
         }
     };
 
@@ -261,32 +279,41 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
                 "InTexCoord",
                 1,              // location
                 0,              // buffer input slot
-                VAT_FLOAT2,
+                VAT_HALF2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, TexCoord )
             },
             {
-                "InTangent",
+                "InNormal",
                 2,              // location
                 0,              // buffer input slot
-                VAT_FLOAT4,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InNormal",
-                3,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
+                VAT_HALF3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, Normal )
             },
             {
-                "InJointIndices",
+                "InTangent",
+                3,              // location
+                0,              // buffer input slot
+                VAT_HALF3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Tangent )
+            },
+            {
+                "InHandedness",
                 4,              // location
+                0,              // buffer input slot
+                VAT_BYTE1,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Handedness )
+            },
+            {
+                "InJointIndices",
+                5,              // location
                 1,              // buffer input slot
                 VAT_UBYTE4,
                 VAM_INTEGER,
@@ -295,7 +322,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
             },
             {
                 "InJointWeights",
-                5,              // location
+                6,              // location
                 1,              // buffer input slot
                 VAT_UBYTE4N,
                 VAM_FLOAT,
@@ -321,28 +348,37 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
                 "InTexCoord",
                 1,              // location
                 0,              // buffer input slot
-                VAT_FLOAT2,
+                VAT_HALF2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, TexCoord )
             },
             {
-                "InTangent",
+                "InNormal",
                 2,              // location
                 0,              // buffer input slot
-                VAT_FLOAT4,
+                VAT_HALF3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Normal )
+            },
+            {
+                "InTangent",
+                3,              // location
+                0,              // buffer input slot
+                VAT_HALF3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, Tangent )
             },
             {
-                "InNormal",
-                3,              // location
+                "InHandedness",
+                4,              // location
                 0,              // buffer input slot
-                VAT_FLOAT3,
+                VAT_BYTE1,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
+                AN_OFS( SMeshVertex, Handedness )
             }
         };
 
@@ -453,32 +489,41 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
                 "InTexCoord",
                 1,              // location
                 0,              // buffer input slot
-                VAT_FLOAT2,
+                VAT_HALF2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, TexCoord )
             },
             {
-                "InTangent",
+                "InNormal",
                 2,              // location
                 0,              // buffer input slot
-                VAT_FLOAT4,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InNormal",
-                3,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
+                VAT_HALF3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, Normal )
             },
             {
-                "InJointIndices",
+                "InTangent",
+                3,              // location
+                0,              // buffer input slot
+                VAT_HALF3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Tangent )
+            },
+            {
+                "InHandedness",
                 4,              // location
+                0,              // buffer input slot
+                VAT_BYTE1,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Handedness )
+            },
+            {
+                "InJointIndices",
+                5,              // location
                 1,              // buffer input slot
                 VAT_UBYTE4,
                 VAM_INTEGER,
@@ -487,7 +532,7 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
             },
             {
                 "InJointWeights",
-                5,              // location
+                6,              // location
                 1,              // buffer input slot
                 VAT_UBYTE4N,
                 VAM_FLOAT,
@@ -513,28 +558,37 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
                 "InTexCoord",
                 1,              // location
                 0,              // buffer input slot
-                VAT_FLOAT2,
+                VAT_HALF2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, TexCoord )
             },
             {
-                "InTangent",
+                "InNormal",
                 2,              // location
                 0,              // buffer input slot
-                VAT_FLOAT4,
+                VAT_HALF3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Normal )
+            },
+            {
+                "InTangent",
+                3,              // location
+                0,              // buffer input slot
+                VAT_HALF3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, Tangent )
             },
             {
-                "InNormal",
-                3,              // location
+                "InHandedness",
+                4,              // location
                 0,              // buffer input slot
-                VAT_FLOAT3,
+                VAT_BYTE1,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
+                AN_OFS( SMeshVertex, Handedness )
             }
         };
 
@@ -745,32 +799,41 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
                 "InTexCoord",
                 1,              // location
                 0,              // buffer input slot
-                VAT_FLOAT2,
+                VAT_HALF2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, TexCoord )
             },
             {
-                "InTangent",
+                "InNormal",
                 2,              // location
                 0,              // buffer input slot
-                VAT_FLOAT4,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InNormal",
-                3,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
+                VAT_HALF3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, Normal )
             },
             {
-                "InJointIndices",
+                "InTangent",
+                3,              // location
+                0,              // buffer input slot
+                VAT_HALF3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Tangent )
+            },
+            {
+                "InHandedness",
                 4,              // location
+                0,              // buffer input slot
+                VAT_BYTE1,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Handedness )
+            },
+            {
+                "InJointIndices",
+                5,              // location
                 1,              // buffer input slot
                 VAT_UBYTE4,
                 VAM_INTEGER,
@@ -779,7 +842,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
             },
             {
                 "InJointWeights",
-                5,              // location
+                6,              // location
                 1,              // buffer input slot
                 VAT_UBYTE4N,
                 VAM_FLOAT,
@@ -822,28 +885,37 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
                 "InTexCoord",
                 1,              // location
                 0,              // buffer input slot
-                VAT_FLOAT2,
+                VAT_HALF2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, TexCoord )
             },
             {
-                "InTangent",
+                "InNormal",
                 2,              // location
                 0,              // buffer input slot
-                VAT_FLOAT4,
+                VAT_HALF3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Normal )
+            },
+            {
+                "InTangent",
+                3,              // location
+                0,              // buffer input slot
+                VAT_HALF3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, Tangent )
             },
             {
-                "InNormal",
-                3,              // location
+                "InHandedness",
+                4,              // location
                 0,              // buffer input slot
-                VAT_FLOAT3,
+                VAT_BYTE1,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
+                AN_OFS( SMeshVertex, Handedness )
             }
         };
 
@@ -938,32 +1010,41 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
             "InTexCoord",
             1,              // location
             0,              // buffer input slot
-            VAT_FLOAT2,
+            VAT_HALF2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, TexCoord )
         },
         {
-            "InTangent",
+            "InNormal",
             2,              // location
             0,              // buffer input slot
-            VAT_FLOAT4,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InNormal",
-            3,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
+            VAT_HALF3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, Normal )
         },
         {
-            "InLightmapTexCoord",
+            "InTangent",
+            3,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Tangent )
+        },
+        {
+            "InHandedness",
             4,              // location
+            0,              // buffer input slot
+            VAT_BYTE1,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Handedness )
+        },
+        {
+            "InLightmapTexCoord",
+            5,              // location
             1,              // buffer input slot
             VAT_FLOAT2,
             VAM_FLOAT,
@@ -1075,32 +1156,41 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
             "InTexCoord",
             1,              // location
             0,              // buffer input slot
-            VAT_FLOAT2,
+            VAT_HALF2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, TexCoord )
         },
         {
-            "InTangent",
+            "InNormal",
             2,              // location
             0,              // buffer input slot
-            VAT_FLOAT4,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InNormal",
-            3,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
+            VAT_HALF3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, Normal )
         },
         {
-            "InVertexLight",
+            "InTangent",
+            3,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Tangent )
+        },
+        {
+            "InHandedness",
             4,              // location
+            0,              // buffer input slot
+            VAT_BYTE1,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Handedness )
+        },
+        {
+            "InVertexLight",
+            5,              // location
             1,              // buffer input slot
             VAT_UBYTE4,//VAT_UBYTE4N,
             VAM_INTEGER,
@@ -1223,32 +1313,41 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
             "InTexCoord",
             1,              // location
             0,              // buffer input slot
-            VAT_FLOAT2,
+            VAT_HALF2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, TexCoord )
         },
         {
-            "InTangent",
+            "InNormal",
             2,              // location
             0,              // buffer input slot
-            VAT_FLOAT4,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InNormal",
-            3,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
+            VAT_HALF3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, Normal )
         },
         {
-            "InJointIndices",
+            "InTangent",
+            3,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Tangent )
+        },
+        {
+            "InHandedness",
             4,              // location
+            0,              // buffer input slot
+            VAT_BYTE1,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Handedness )
+        },
+        {
+            "InJointIndices",
+            5,              // location
             1,              // buffer input slot
             VAT_UBYTE4,
             VAM_INTEGER,
@@ -1257,7 +1356,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
         },
         {
             "InJointWeights",
-            5,              // location
+            6,              // location
             1,              // buffer input slot
             VAT_UBYTE4N,
             VAM_FLOAT,
@@ -1280,29 +1379,38 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
             "InTexCoord",
             1,              // location
             0,              // buffer input slot
-            VAT_FLOAT2,
+            VAT_HALF2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, TexCoord )
         },
         {
-            "InTangent",
+            "InNormal",
             2,              // location
             0,              // buffer input slot
-            VAT_FLOAT4,
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Normal )
+        },
+        {
+            "InTangent",
+            3,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
             AN_OFS( SMeshVertex, Tangent )
         },
         {
-            "InNormal",
-            3,              // location
+            "InHandedness",
+            4,              // location
             0,              // buffer input slot
-            VAT_FLOAT3,
+            VAT_BYTE1,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        }
+            AN_OFS( SMeshVertex, Handedness )
+        },
     };
 
     if ( _Skinned ) {
@@ -1433,32 +1541,41 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
                 "InTexCoord",
                 1,              // location
                 0,              // buffer input slot
-                VAT_FLOAT2,
+                VAT_HALF2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, TexCoord )
             },
             {
-                "InTangent",
+                "InNormal",
                 2,              // location
                 0,              // buffer input slot
-                VAT_FLOAT4,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InNormal",
-                3,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
+                VAT_HALF3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, Normal )
             },
             {
-                "InJointIndices",
+                "InTangent",
+                3,              // location
+                0,              // buffer input slot
+                VAT_HALF3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Tangent )
+            },
+            {
+                "InHandedness",
                 4,              // location
+                0,              // buffer input slot
+                VAT_BYTE1,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Handedness )
+            },
+            {
+                "InJointIndices",
+                5,              // location
                 1,              // buffer input slot
                 VAT_UBYTE4,
                 VAM_INTEGER,
@@ -1467,7 +1584,7 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
             },
             {
                 "InJointWeights",
-                5,              // location
+                6,              // location
                 1,              // buffer input slot
                 VAT_UBYTE4N,
                 VAM_FLOAT,
@@ -1510,28 +1627,37 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
                 "InTexCoord",
                 1,              // location
                 0,              // buffer input slot
-                VAT_FLOAT2,
+                VAT_HALF2,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, TexCoord )
             },
             {
-                "InTangent",
+                "InNormal",
                 2,              // location
                 0,              // buffer input slot
-                VAT_FLOAT4,
+                VAT_HALF3,
+                VAM_FLOAT,
+                0,              // InstanceDataStepRate
+                AN_OFS( SMeshVertex, Normal )
+            },
+            {
+                "InTangent",
+                3,              // location
+                0,              // buffer input slot
+                VAT_HALF3,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
                 AN_OFS( SMeshVertex, Tangent )
             },
             {
-                "InNormal",
-                3,              // location
+                "InHandedness",
+                4,              // location
                 0,              // buffer input slot
-                VAT_FLOAT3,
+                VAT_BYTE1,
                 VAM_FLOAT,
                 0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
+                AN_OFS( SMeshVertex, Handedness )
             }
         };
 

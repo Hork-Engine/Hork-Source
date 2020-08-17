@@ -275,7 +275,9 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
     Core::Strcpy( desiredMode.Backend, sizeof( desiredMode.Backend ), "OpenGL 4.5" );
     Core::Strcpy( desiredMode.Title, sizeof( desiredMode.Title ), _EntryDecl.GameTitle );
 
-    InitializeRenderer( desiredMode );
+    GRenderBackend->Initialize( desiredMode );
+
+    SetVideoMode( desiredMode );
 
     // Process initial events
     GRuntime.PollEvents();
@@ -290,7 +292,7 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
         EmergencyExit();
     }
 
-    DeinitializeRenderer();
+    GRenderBackend->Deinitialize();
 
     WorkingDir.Free();
     RootPath.Free();
@@ -1381,8 +1383,6 @@ static void UnpressKeysAndButtons() {
     }
 }
 
-ARuntimeVariable RVResetVideo( _CTS( "ResetVideo" ), _CTS( "0" ) );
-
 void ARuntime::NewFrame() {
     int64_t prevTimeStamp = FrameTimeStamp;
     FrameTimeStamp = SysMicroseconds();
@@ -1406,15 +1406,6 @@ void ARuntime::NewFrame() {
         bResetVideoMode = false;
         SetVideoMode( DesiredMode );
     }
-
-#if 1
-    if ( RVResetVideo.IsModified() ) {
-        RVResetVideo = 0;
-        RVResetVideo.UnmarkModified();
-        DeinitializeRenderer();
-        InitializeRenderer( VideoMode );
-    }
-#endif
 }
 
 void ARuntime::PollEvents() {
@@ -1967,81 +1958,54 @@ static void TestDisplays() {
     //SDL_GetClosestDisplayMode
 }
 
-void ARuntime::InitializeRenderer( SVideoMode const & _DesiredMode ) {
-    //TestDisplays();
-
+void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
     Core::Memcpy( &VideoMode, &_DesiredMode, sizeof( VideoMode ) );
 
-    GRenderBackend->Initialize( _DesiredMode );
+    SDL_Window * wnd = (SDL_Window *)GRenderBackend->GetMainWindow();
 
-    SetVideoMode( _DesiredMode );
-}
+    // Set refresh rate
+    //SDL_DisplayMode mode = {};
+    //mode.format = SDL_PIXELFORMAT_RGB888;
+    //mode.w = _DesiredMode.Width;
+    //mode.h = _DesiredMode.Height;
+    //mode.refresh_rate = _DesiredMode.RefreshRate;
+    //SDL_SetWindowDisplayMode( wnd, &mode );
 
-void ARuntime::DeinitializeRenderer() {
-    GRenderBackend->Deinitialize();
-
-    UnpressKeysAndButtons();
-}
-
-void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
-    if ( Core::Stricmp( VideoMode.Backend, _DesiredMode.Backend ) )
-    {
-        // Backend changed, so we need to restart renderer
-        DeinitializeRenderer();
-        InitializeRenderer( _DesiredMode );
+    SDL_SetWindowFullscreen( wnd, _DesiredMode.bFullscreen ? SDL_WINDOW_FULLSCREEN : 0 );
+    SDL_SetWindowSize( wnd, _DesiredMode.Width, _DesiredMode.Height );
+    if ( !_DesiredMode.bFullscreen ) {
+        if ( _DesiredMode.bCentrized ) {
+            SDL_SetWindowPosition( wnd, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED );
+        } else {
+            SDL_SetWindowPosition( wnd, _DesiredMode.WindowedX, _DesiredMode.WindowedY );
+        }
     }
-    else
-    {
-        // Backend does not changed, so we just change video mode
+    //SDL_SetWindowDisplayMode( wnd, &mode );
+    SDL_GL_GetDrawableSize( wnd, &VideoMode.FramebufferWidth, &VideoMode.FramebufferHeight );
 
-        Core::Memcpy( &VideoMode, &_DesiredMode, sizeof( VideoMode ) );
+    VideoMode.bFullscreen = !!(SDL_GetWindowFlags( wnd ) & SDL_WINDOW_FULLSCREEN);
 
-        SDL_Window * wnd = (SDL_Window *)GRenderBackend->GetMainWindow();
+    VideoMode.Opacity = Math::Clamp( VideoMode.Opacity, 0.0f, 1.0f );
 
-        // Set refresh rate
-        //SDL_DisplayMode mode = {};
-        //mode.format = SDL_PIXELFORMAT_RGB888;
-        //mode.w = _DesiredMode.Width;
-        //mode.h = _DesiredMode.Height;
-        //mode.refresh_rate = _DesiredMode.RefreshRate;
-        //SDL_SetWindowDisplayMode( wnd, &mode );
-
-        SDL_SetWindowFullscreen( wnd, _DesiredMode.bFullscreen ? SDL_WINDOW_FULLSCREEN : 0 );
-        SDL_SetWindowSize( wnd, _DesiredMode.Width, _DesiredMode.Height );
-        if ( !_DesiredMode.bFullscreen ) {
-            if ( _DesiredMode.bCentrized ) {
-                SDL_SetWindowPosition( wnd, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED );
-            } else {
-                SDL_SetWindowPosition( wnd, _DesiredMode.WindowedX, _DesiredMode.WindowedY );
-            }
-        }
-        //SDL_SetWindowDisplayMode( wnd, &mode );
-        SDL_GL_GetDrawableSize( wnd, &VideoMode.FramebufferWidth, &VideoMode.FramebufferHeight );
-
-        VideoMode.bFullscreen = !!(SDL_GetWindowFlags( wnd ) & SDL_WINDOW_FULLSCREEN);
-
-        VideoMode.Opacity = Math::Clamp( VideoMode.Opacity, 0.0f, 1.0f );
-
-        float opacity = 1.0f;
-        SDL_GetWindowOpacity( wnd, &opacity );
-        if ( Math::Abs( VideoMode.Opacity - opacity ) > 1.0f/255.0f ) {
-            SDL_SetWindowOpacity( wnd, VideoMode.Opacity );
-        }
-
-        VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( wnd );
-        /*if ( VideoMode.bFullscreen ) {
-            const float MM_To_Inch = 0.0393701f;
-            VideoMode.DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
-            VideoMode.DPI_Y = (float)VideoMode.Height / (monitor->PhysicalHeightMM*MM_To_Inch);
-
-        } else */{
-            SDL_GetDisplayDPI( VideoMode.DisplayIndex, NULL, &VideoMode.DPI_X, &VideoMode.DPI_Y );
-        }
-
-        SDL_DisplayMode mode;
-        SDL_GetWindowDisplayMode( wnd, &mode );
-        VideoMode.RefreshRate = mode.refresh_rate;
+    float opacity = 1.0f;
+    SDL_GetWindowOpacity( wnd, &opacity );
+    if ( Math::Abs( VideoMode.Opacity - opacity ) > 1.0f/255.0f ) {
+        SDL_SetWindowOpacity( wnd, VideoMode.Opacity );
     }
+
+    VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( wnd );
+    /*if ( VideoMode.bFullscreen ) {
+        const float MM_To_Inch = 0.0393701f;
+        VideoMode.DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
+        VideoMode.DPI_Y = (float)VideoMode.Height / (monitor->PhysicalHeightMM*MM_To_Inch);
+
+    } else */ {
+        SDL_GetDisplayDPI( VideoMode.DisplayIndex, NULL, &VideoMode.DPI_X, &VideoMode.DPI_Y );
+    }
+
+    SDL_DisplayMode mode;
+    SDL_GetWindowDisplayMode( wnd, &mode );
+    VideoMode.RefreshRate = mode.refresh_rate;
 
     // Swap buffers to prevent flickering
     GRenderBackend->SwapBuffers();

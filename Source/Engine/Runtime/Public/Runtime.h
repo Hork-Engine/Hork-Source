@@ -376,10 +376,6 @@ private:
 
     void Run( struct SEntryDecl const & _EntryDecl );
 
-    void InitializeRenderer( SVideoMode const & _DesiredMode );
-
-    void DeinitializeRenderer();
-
     void EmergencyExit();
 
     void DisplayCriticalMessage( const char * _Message );

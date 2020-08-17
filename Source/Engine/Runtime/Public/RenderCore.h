@@ -120,41 +120,122 @@ constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 //
 
 struct SMeshVertex {
-    // TODO: Pack to 32 byte length!
-
-    Float3 Position;
-    Float2 TexCoord;
-    Float3 Tangent;
-    float  Handedness;
-    Float3 Normal;
+    Float3      Position;         // 4 * 3 = 12 bytes
+    uint16_t    TexCoord[2];      // 4 * 2 = 8 bytes      half: 4 bytes
+    uint16_t    Normal[3];        // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
+    uint16_t    Tangent[3];       // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
+    int8_t      Handedness;       // 4 * 1 = 4 bytes      byte: 1 bytes
+    uint8_t     Pad[3];
 
     void Write( IBinaryStream & _Stream ) const {
         _Stream.WriteObject( Position );
-        _Stream.WriteObject( TexCoord );
-        _Stream.WriteObject( Tangent );
-        _Stream.WriteFloat( Handedness );
-        _Stream.WriteObject( Normal );
+        _Stream.WriteObject( GetTexCoord() );
+        _Stream.WriteObject( GetTangent() );
+        _Stream.WriteFloat( (float)Handedness );
+        _Stream.WriteObject( GetNormal() );
     }
 
     void Read( IBinaryStream & _Stream ) {
+        Float2 texCoord;
+        Float3 normal;
+        Float3 tangent;
         _Stream.ReadObject( Position );
-        _Stream.ReadObject( TexCoord );
-        _Stream.ReadObject( Tangent );
-        Handedness = _Stream.ReadFloat();
-        _Stream.ReadObject( Normal );
+        _Stream.ReadObject( texCoord );
+        _Stream.ReadObject( tangent );
+        Handedness = ( _Stream.ReadFloat() > 0.0f ) ? 1 : -1;
+        _Stream.ReadObject( normal );
+        SetTexCoord( texCoord );
+        SetNormal( normal );
+        SetTangent( tangent );
+    }
+
+    void SetTexCoordNative( uint16_t S, uint16_t T ) {
+        TexCoord[0] = S;
+        TexCoord[1] = T;
+    }
+
+    void SetTexCoord( float S, float T ) {
+        TexCoord[0] = Math::FloatToHalf( S );
+        TexCoord[1] = Math::FloatToHalf( T );
+    }
+
+    void SetTexCoord( Float2 const & _TexCoord ) {
+        TexCoord[0] = Math::FloatToHalf( _TexCoord.X );
+        TexCoord[1] = Math::FloatToHalf( _TexCoord.Y );
+    }
+
+    const Float2 GetTexCoord() const {
+        return Float2( Math::HalfToFloat( TexCoord[0] ), Math::HalfToFloat( TexCoord[1] ) );
+    }
+
+    void SetNormalNative( uint16_t X, uint16_t Y, uint16_t Z ) {
+        Normal[0] = X;
+        Normal[1] = Y;
+        Normal[2] = Z;
+    }
+
+    void SetNormal( float X, float Y, float Z ) {
+        Normal[0] = Math::FloatToHalf( X );
+        Normal[1] = Math::FloatToHalf( Y );
+        Normal[2] = Math::FloatToHalf( Z );
+    }
+
+    void SetNormal( Float3 const & _Normal ) {
+        Normal[0] = Math::FloatToHalf( _Normal.X );
+        Normal[1] = Math::FloatToHalf( _Normal.Y );
+        Normal[2] = Math::FloatToHalf( _Normal.Z );
+    }
+
+    const Float3 GetNormal() const {
+        return Float3( Math::HalfToFloat( Normal[0] ), Math::HalfToFloat( Normal[1] ), Math::HalfToFloat( Normal[2] ) );
+    }
+
+    void SetTangentNative( uint16_t X, uint16_t Y, uint16_t Z ) {
+        Tangent[0] = X;
+        Tangent[1] = Y;
+        Tangent[2] = Z;
+    }
+
+    void SetTangent( float X, float Y, float Z ) {
+        Tangent[0] = Math::FloatToHalf( X );
+        Tangent[1] = Math::FloatToHalf( Y );
+        Tangent[2] = Math::FloatToHalf( Z );
+    }
+
+    void SetTangent( Float3 const & _Tangent ) {
+        Tangent[0] = Math::FloatToHalf( _Tangent.X );
+        Tangent[1] = Math::FloatToHalf( _Tangent.Y );
+        Tangent[2] = Math::FloatToHalf( _Tangent.Z );
+    }
+
+    const Float3 GetTangent() const {
+        return Float3( Math::HalfToFloat( Tangent[0] ), Math::HalfToFloat( Tangent[1] ), Math::HalfToFloat( Tangent[2] ) );
     }
 
     static SMeshVertex Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value = 0.5f );
 };
 
+static_assert(sizeof( SMeshVertex ) == 32, "Keep 32b vertex size");
+
+AN_FORCEINLINE const SMeshVertex MakeMeshVertex( Float3 const & Position, Float2 const & TexCoord, Float3 const & Tangent, float Handedness, Float3 const & Normal )
+{
+    SMeshVertex v;
+    v.Position = Position;
+    v.SetTexCoord( TexCoord );
+    v.SetNormal( Normal );
+    v.SetTangent( Tangent );
+    v.Handedness = Handedness > 0.0f ? 1 : -1;
+    return v;
+}
+
 AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value ) {
     SMeshVertex Result;
 
     Result.Position   = Math::Lerp( _Vertex1.Position, _Vertex2.Position, _Value );
-    Result.TexCoord   = Math::Lerp( _Vertex1.TexCoord, _Vertex2.TexCoord, _Value );
-    Result.Tangent    = Math::Lerp( _Vertex1.Tangent, _Vertex2.Tangent, _Value ).Normalized();
+    Result.SetTexCoord( Math::Lerp( _Vertex1.GetTexCoord(), _Vertex2.GetTexCoord(), _Value ) );
+    Result.SetNormal( Math::Lerp( _Vertex1.GetNormal(), _Vertex2.GetNormal(), _Value ).Normalized() );
+    Result.SetTangent( Math::Lerp( _Vertex1.GetTangent(), _Vertex2.GetTangent(), _Value ).Normalized() );
     Result.Handedness = _Value >= 0.5f ? _Vertex2.Handedness : _Vertex1.Handedness;
-    Result.Normal     = Math::Lerp( _Vertex1.Normal, _Vertex2.Normal, _Value ).Normalized();
 
     return Result;
 }

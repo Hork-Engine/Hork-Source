@@ -748,7 +748,7 @@ void ARenderBackend::RenderFrame( SRenderFrame * pFrameData ) {
     }
 
     if ( bRebuildMaterials ) {
-        GLogger.Printf( "TODO:  Need to rebuild all materials!!!\n" );
+        GLogger.Printf( "Need to rebuild all materials\n" );
     }
 
     GFrameResources.FrameConstantBuffer->Begin();
