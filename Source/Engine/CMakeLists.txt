@@ -139,6 +139,8 @@ file( GLOB CorePrivateBV Core/Private/BV/*.h Core/Private/BV/*.cpp )
 file( GLOB CorePrivateSTB Core/Private/stb/*.h Core/Private/stb/*.c )
 file( GLOB CorePrivateFastLZ Core/Private/fastlz/*.h Core/Private/fastlz/*.c )
 file( GLOB CorePrivateMiniZ Core/Private/miniz/*.h Core/Private/miniz/*.c )
+file( GLOB CorePrivateClipper Core/Private/clipper/*.hpp Core/Private/clipper/*.cpp )
+file( GLOB CorePrivateGlutess Core/Private/glutess/*.h Core/Private/glutess/*.c )
 
 source_group( "Core\\Public" FILES ${CorePublic} )
 source_group( "Core\\Public\\BV" FILES ${CorePublicBV} )
@@ -147,6 +149,8 @@ source_group( "Core\\Private\\BV" FILES ${CorePrivateBV} )
 source_group( "Core\\Private\\stb" FILES ${CorePrivateSTB} )
 source_group( "Core\\Private\\fastlz" FILES ${CorePrivateFastLZ} )
 source_group( "Core\\Private\\miniz" FILES ${CorePrivateMiniZ} )
+source_group( "Core\\Private\\clipper" FILES ${CorePrivateClipper} )
+source_group( "Core\\Private\\glutess" FILES ${CorePrivateGlutess} )
 
 #---------------------------------------------------------------------
 # Render core module
@@ -273,6 +277,8 @@ ${CorePrivateBV}
 ${CorePrivateSTB}
 ${CorePrivateFastLZ}
 ${CorePrivateMiniZ}
+${CorePrivateClipper}
+${CorePrivateGlutess}
 
 ${RenderCore}
 ${RenderCoreOpenGL45}

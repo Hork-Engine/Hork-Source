@@ -42,6 +42,8 @@ Shared pointer
 template< typename T >
 class TRef final {
 public:
+    using ReferencedType = T;
+
     TRef() : Object( nullptr ) {}
 
     TRef( TRef< T > const & _Ref )
