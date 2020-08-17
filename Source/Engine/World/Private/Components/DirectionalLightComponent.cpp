@@ -39,7 +39,9 @@ static const Float3 DEFAULT_COLOR( 1.0f );
 
 ARuntimeVariable RVDrawDirectionalLights( _CTS( "DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_CLASS_META( ADirectionalLightComponent )
+AN_BEGIN_CLASS_META( ADirectionalLightComponent )
+AN_ATTRIBUTE_( bCastShadow, AF_DEFAULT )
+AN_END_CLASS_META()
 
 ADirectionalLightComponent::ADirectionalLightComponent() {
     IlluminanceInLux = DEFAULT_ILLUMINANCE_IN_LUX;

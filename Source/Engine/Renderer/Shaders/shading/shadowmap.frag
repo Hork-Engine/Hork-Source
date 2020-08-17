@@ -189,8 +189,8 @@ float SampleLightShadow( uint ShadowPoolPosition, uint NumCascades, float Bias )
     return ShadowValue;
 }
 
-vec3 DebugShadowCascades( uint ShadowPoolPosition, uint NumCascades ) {
-    
+vec3 DebugShadowCascades( uint ShadowPoolPosition, uint NumCascades )
+{    
     const vec3 CascadeColor[MAX_SHADOW_CASCADES] = vec3[](
         vec3( 1,0,0 ),
         vec3( 0,1,0 ),
@@ -217,7 +217,8 @@ vec3 DebugShadowCascades( uint ShadowPoolPosition, uint NumCascades ) {
     return Color;
 }
 
-vec3 DebugDirectionalLightCascades() {
+vec3 DebugDirectionalLightCascades()
+{
     const uint NumLights = GetNumDirectionalLights();
     vec3 Result = vec3(0.0);
 

@@ -746,6 +746,8 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
     Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform;
     Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
 
+    Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix();
+
     InComponent->RenderTransformMatrix = componentWorldTransform;
 
     ALevel * level = InComponent->GetLevel();
@@ -811,10 +813,7 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
         instance->SkeletonSize = 0;
         instance->Matrix = instanceMatrix;
         instance->MatrixP = instanceMatrixP;
-
-        if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
-            instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
-        }
+        instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * worldRotation;
 
         // Generate sort key.
         // NOTE: 8 bits are still unused. We can use it in future.
@@ -848,6 +847,8 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
     // TODO: optimize: parallel, sse, check if transformable
     Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform;
     Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
+
+    Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix();
 
     InComponent->RenderTransformMatrix = componentWorldTransform;
 
@@ -899,10 +900,7 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
         instance->SkeletonSize = skeletonSize;
         instance->Matrix = instanceMatrix;
         instance->MatrixP = instanceMatrixP;
-
-        if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
-            instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
-        }
+        instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * worldRotation;
 
         // Generate sort key.
         // NOTE: 8 bits are still unused. We can use it in future.
@@ -917,8 +915,6 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
 }
 
 void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent ) {
-    // TODO
-
     if ( !RVRenderMeshes ) {
         return;
     }
@@ -926,7 +922,6 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
     InComponent->PreRenderUpdate( &RenderDef );
 
     AProceduralMesh * mesh = InComponent->GetMesh();
-
     if ( !mesh ) {
         return;
     }
@@ -945,87 +940,57 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
 
     InComponent->RenderTransformMatrix = componentWorldTransform;
 
-    //ALevel * level = InComponent->GetLevel();
+    AMaterialInstance * materialInstance = InComponent->GetMaterialInstance();
+    AN_ASSERT( materialInstance );
 
-    //AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+    AMaterial * material = materialInstance->GetMaterial();
 
-    //bool bHasLightmap = InComponent->LightmapUVChannel
-    //        && InComponent->LightmapBlock >= 0
-    //        && InComponent->LightmapBlock < level->Lightmaps.Size();
+    SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
-//    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+    // Add render instance
+    SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
+    if ( !instance ) {
+        return;
+    }
 
-//        AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+    if ( material->IsTranslucent() ) {
+        FrameData.TranslucentInstances.Append( instance );
+        RenderDef.View->TranslucentInstanceCount++;
+    } else {
+        FrameData.Instances.Append( instance );
+        RenderDef.View->InstanceCount++;
+    }
 
-        AMaterialInstance * materialInstance = InComponent->GetMaterialInstance();
-        AN_ASSERT( materialInstance );
+    instance->Material = material->GetGPUResource();
+    instance->MaterialInstance = materialInstanceFrameData;
 
-        AMaterial * material = materialInstance->GetMaterial();
+    mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
+    mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
 
-        SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
+    instance->WeightsBuffer = nullptr;
+    instance->WeightsBufferOffset = 0;
+    instance->LightmapUVChannel = nullptr;
+    instance->Lightmap = nullptr;
+    instance->VertexLightChannel = nullptr;
+    instance->IndexCount = mesh->IndexCache.Size();
+    instance->StartIndexLocation = 0;
+    instance->BaseVertexLocation = 0;
+    instance->SkeletonOffset = 0;
+    instance->SkeletonOffsetMB = 0;
+    instance->SkeletonSize = 0;
+    instance->Matrix = instanceMatrix;
+    instance->MatrixP = instanceMatrixP;
+    instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
 
-        // Add render instance
-        SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
-        if ( !instance ) {
-            return;
-        }
-
-        if ( material->IsTranslucent() ) {
-            FrameData.TranslucentInstances.Append( instance );
-            RenderDef.View->TranslucentInstanceCount++;
-        } else {
-            FrameData.Instances.Append( instance );
-            RenderDef.View->InstanceCount++;
-        }
-
-        instance->Material = material->GetGPUResource();
-        instance->MaterialInstance = materialInstanceFrameData;
-
-        mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
-        mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
-
-        instance->WeightsBuffer = nullptr;
-        instance->WeightsBufferOffset = 0;
-
-        //if ( bHasLightmap ) {
-        //    InComponent->LightmapUVChannel->GetVertexBufferGPU( &instance->LightmapUVChannel, &instance->LightmapUVOffset );
-        //    instance->LightmapOffset = InComponent->LightmapOffset;
-        //    instance->Lightmap = level->Lightmaps[InComponent->LightmapBlock]->GetGPUResource();
-        //} else {
-            instance->LightmapUVChannel = nullptr;
-            instance->Lightmap = nullptr;
-        //}
-
-        //if ( InComponent->VertexLightChannel ) {
-        //    InComponent->VertexLightChannel->GetVertexBufferGPU( &instance->VertexLightChannel, &instance->VertexLightOffset );
-        //} else {
-            instance->VertexLightChannel = nullptr;
-        //}
-
-        instance->IndexCount = mesh->IndexCache.Size();//subpart->GetIndexCount();
-        instance->StartIndexLocation = 0;//subpart->GetFirstIndex();
-        instance->BaseVertexLocation = 0;//subpart->GetBaseVertex() + InComponent->SubpartBaseVertexOffset;
-        instance->SkeletonOffset = 0;
-        instance->SkeletonOffsetMB = 0;
-        instance->SkeletonSize = 0;
-        instance->Matrix = instanceMatrix;
-        instance->MatrixP = instanceMatrixP;
-
-        if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
-            instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
-        }
-
-        // Generate sort key.
-        // NOTE: 8 bits are still unused. We can use it in future.
-        instance->SortKey =
+    // Generate sort key.
+    // NOTE: 8 bits are still unused. We can use it in future.
+    instance->SortKey =
             ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
 
-        RenderDef.PolyCount += instance->IndexCount / 3;
-
-    //}
+    RenderDef.PolyCount += instance->IndexCount / 3;
 }
 
 void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( AMeshComponent * InComponent ) {
@@ -1053,7 +1018,7 @@ void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( AMeshComponent * InCom
         AMaterial * material = materialInstance->GetMaterial();
 
         // Prevent rendering of instances with disabled shadow casting
-        if ( material->GetGPUResource()->bNoCastShadow ) {
+        if ( !material->CanCastShadow() ) {
             continue;
         }
 
@@ -1126,7 +1091,7 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * I
         AMaterial * material = materialInstance->GetMaterial();
 
         // Prevent rendering of instances with disabled shadow casting
-        if ( material->GetGPUResource()->bNoCastShadow ) {
+        if ( !material->CanCastShadow() ) {
             continue;
         }
 
@@ -1170,16 +1135,23 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * I
 }
 
 void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshComponent * InComponent ) {
-    // TODO
-
     if ( !RVRenderMeshes ) {
         return;
     }
 
     InComponent->PreRenderUpdate( &RenderDef );
 
-    AProceduralMesh * mesh = InComponent->GetMesh();
+    AMaterialInstance * materialInstance = InComponent->GetMaterialInstance();
+    AN_ASSERT( materialInstance );
 
+    AMaterial * material = materialInstance->GetMaterial();
+
+    // Prevent rendering of instances with disabled shadow casting
+    if ( !material->CanCastShadow() ) {
+        return;
+    }
+
+    AProceduralMesh * mesh = InComponent->GetMesh();
     if ( !mesh ) {
         return;
     }
@@ -1190,65 +1162,44 @@ void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshCom
         return;
     }
 
-    Float3x4 const & componentWorldTransform = InComponent->GetWorldTransformMatrix();
+    SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
-    //ALevel * level = InComponent->GetLevel();
+    // Add render instance
+    SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+    if ( !instance ) {
+        return;
+    }
 
-    //AIndexedMeshSubpartArray const & subparts = mesh->GetSubparts();
+    FrameData.ShadowInstances.Append( instance );
 
-    //bool bHasLightmap = InComponent->LightmapUVChannel
-    //        && InComponent->LightmapBlock >= 0
-    //        && InComponent->LightmapBlock < level->Lightmaps.Size();
+    instance->Material = material->GetGPUResource();
+    instance->MaterialInstance = materialInstanceFrameData;
 
-//    for ( int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++ ) {
+    mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
+    mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
 
-//        AIndexedMeshSubpart * subpart = subparts[subpartIndex];
+    instance->WeightsBuffer = nullptr;
+    instance->WeightsBufferOffset = 0;
 
-        AMaterialInstance * materialInstance = InComponent->GetMaterialInstance();
-        AN_ASSERT( materialInstance );
+    instance->IndexCount = mesh->IndexCache.Size();
+    instance->StartIndexLocation = 0;
+    instance->BaseVertexLocation = 0;
+    instance->SkeletonOffset = 0;
+    instance->SkeletonSize = 0;
+    instance->WorldTransformMatrix = InComponent->GetWorldTransformMatrix();
+    instance->CascadeMask = 0xffff; // TODO: Calculate!!!
 
-        AMaterial * material = materialInstance->GetMaterial();
-
-        SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
-
-        // Add render instance
-        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
-        if ( !instance ) {
-            return;
-        }
-
-        FrameData.ShadowInstances.Append( instance );
-
-        instance->Material = material->GetGPUResource();
-        instance->MaterialInstance = materialInstanceFrameData;
-
-        mesh->GetVertexBufferGPU( &instance->VertexBuffer, &instance->VertexBufferOffset );
-        mesh->GetIndexBufferGPU( &instance->IndexBuffer, &instance->IndexBufferOffset );
-
-        instance->WeightsBuffer = nullptr;
-        instance->WeightsBufferOffset = 0;
-
-        instance->IndexCount = mesh->IndexCache.Size();//subpart->GetIndexCount();
-        instance->StartIndexLocation = 0;//subpart->GetFirstIndex();
-        instance->BaseVertexLocation = 0;//subpart->GetBaseVertex() + InComponent->SubpartBaseVertexOffset;
-        instance->SkeletonOffset = 0;
-        instance->SkeletonSize = 0;
-        instance->WorldTransformMatrix = componentWorldTransform;
-        instance->CascadeMask = 0xffff; // TODO: Calculate!!!
-
-        // Generate sort key.
-        // NOTE: 8 bits are still unused. We can use it in future.
-        instance->SortKey =
+    // Generate sort key.
+    // NOTE: 8 bits are still unused. We can use it in future.
+    instance->SortKey =
             ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
 
-        RenderDef.View->ShadowInstanceCount++;
+    RenderDef.View->ShadowInstanceCount++;
 
-        RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
-
-    //}
+    RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
 }
 
 void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld ) {
@@ -1509,10 +1460,7 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     instance->SkeletonSize = 0;
     instance->Matrix = RenderDef.View->ViewProjection;
     instance->MatrixP = RenderDef.View->ViewProjectionP;
-
-    if ( material->GetType() == MATERIAL_TYPE_PBR || material->GetType() == MATERIAL_TYPE_BASELIGHT ) {
-        instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix;
-    }
+    instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix;
 
     // Generate sort key.
     // NOTE: 8 bits are still unused. We can use it in future.

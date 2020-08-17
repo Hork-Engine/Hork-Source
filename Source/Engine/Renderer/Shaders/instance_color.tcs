@@ -61,7 +61,7 @@ layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 VS_TexCoordVT[];
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) out vec2 TCS_TexCoordVT[];
 #endif
 
-#if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos[];
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 TCS_VertexPos[];
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP[];
@@ -92,7 +92,7 @@ void main()
     TCS_TexCoordVT[gl_InvocationID] = VS_TexCoordVT[gl_InvocationID];
     #endif
 
-    #if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+    #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
     TCS_VertexPos[gl_InvocationID] = VS_VertexPos[gl_InvocationID];
     TCS_VertexPosP[gl_InvocationID] = VS_VertexPosP[gl_InvocationID];
     #endif

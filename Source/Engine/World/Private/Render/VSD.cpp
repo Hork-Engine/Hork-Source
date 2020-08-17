@@ -690,36 +690,12 @@ static void VSD_CalcPortalScissor( SPortalScissor & OutScissor, SPortalHull cons
     OutScissor.MaxY = Math::Min( InStack->Scissor.MaxY, OutScissor.MaxY );
 }
 
-AN_INLINE bool VSD_FaceCull( SPrimitiveDef const * InPrimitive ) {
-    enum { FRONT_SIDED, BACK_SIDED, TWO_SIDED };
-    const int sidedType = FRONT_SIDED; // TODO: must came from the primitive
-
-    switch ( sidedType ) {
-    case FRONT_SIDED:
-        return InPrimitive->Face.Dist( ViewPosition ) < 0.0f;
-    case BACK_SIDED:
-        return InPrimitive->Face.Dist( ViewPosition ) > 0.0f;
-    default:
-        break;
-    }
-
-    return false;
+AN_FORCEINLINE bool VSD_FaceCull( SPrimitiveDef const * InPrimitive ) {
+    return InPrimitive->Face.Dist( ViewPosition ) < 0.0f;
 }
 
-AN_INLINE bool VSD_FaceCull( SSurfaceDef const * InSurface ) {
-    enum { FRONT_SIDED, BACK_SIDED, TWO_SIDED };
-    const int sidedType = FRONT_SIDED; // TODO: must came from the surface
-
-    switch ( sidedType ) {
-    case FRONT_SIDED:
-        return InSurface->Face.Dist( ViewPosition ) < 0.0f;
-    case BACK_SIDED:
-        return InSurface->Face.Dist( ViewPosition ) > 0.0f;
-    default:
-        break;
-    }
-
-    return false;
+AN_FORCEINLINE bool VSD_FaceCull( SSurfaceDef const * InSurface ) {
+    return InSurface->Face.Dist( ViewPosition ) < 0.0f;
 }
 
 static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPlanes, const int InCullPlanesCount )
@@ -766,7 +742,7 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
             }
 
             // Perform face culling
-            if ( surf->GeometryType == SURF_PLANAR && VSD_FaceCull( surf ) )
+            if ( ( surf->Flags & SURF_PLANAR_TWOSIDED_MASK ) == SURF_PLANAR && VSD_FaceCull( surf ) )
             {
                 continue;
             }
@@ -815,7 +791,7 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
             continue;
         }
 
-        if ( primitive->bFaceCull )
+        if ( ( primitive->Flags & SURF_PLANAR_TWOSIDED_MASK ) == SURF_PLANAR )
         {
             // Perform face culling
             if ( VSD_FaceCull( primitive ) )
@@ -1394,18 +1370,20 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
     float d, u, v;
     float boxMin, boxMax;
 
-    switch ( Self->GeometryType ) {
-    case SURF_PLANAR: {
-#if 1
-        enum { FRONT_SIDED, BACK_SIDED, TWO_SIDED };
-        const int sidedType = FRONT_SIDED;//FRONT_SIDED; // TODO: must came from the surface
-
+    if ( Self->Flags & SURF_PLANAR ) {
         // Calculate distance from ray origin to plane
         const float d1 = Math::Dot( Raycast.RayStart, Self->Face.Normal ) + Self->Face.D;
         float d2;
 
-        switch ( sidedType ) {
-        case FRONT_SIDED:
+        if ( Self->Flags & SURF_TWOSIDED ) {
+            // Check ray direction
+            d2 = Math::Dot( Self->Face.Normal, Raycast.RayDir );
+            if ( Math::Abs( d2 ) < 0.0001f ) {
+                // ray is parallel
+                return;
+            }
+        } else {
+
             // Perform face culling
             if ( d1 <= 0.0f ) return;
 
@@ -1415,8 +1393,10 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                 // ray is parallel or has wrong direction
                 return;
             }
-            break;
-        case BACK_SIDED:
+
+#if 0
+            // Code for back face culling
+
             // Perform face culling
             if ( d1 >= 0.0f ) return;
 
@@ -1426,15 +1406,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                 // ray is parallel or has wrong direction
                 return;
             }
-            break;
-        default:
-            // Check ray direction
-            d2 = Math::Dot( Self->Face.Normal, Raycast.RayDir );
-            if ( Math::Abs( d2 ) < 0.0001f ) {
-                // ray is parallel
-                return;
-            }
-            break;
+#endif
         }
 
         // Calculate distance from ray origin to plane intersection
@@ -1448,17 +1420,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
             // distance is too far
             return;
         }
-#else
-        if ( VSD_FaceCull( Self ) )
-        {
-            return;
-        }
 
-        if ( !BvRayIntersectPlane( Raycast.RayStart, Raycast.RayDir, Self->Face, d ) || d <= 0.0f || d >= Raycast.HitDistanceMin )
-        {
-            return;
-        }
-#endif
         ABrushModel const * brushModel = Self->Model;
 
         SMeshVertex const * pVertices = brushModel->Vertices.ToPtr() + Self->FirstVertex;
@@ -1531,10 +1493,9 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                 }
             }
         }
-
-        break;
-        }
-    case SURF_TRISOUP: {
+    }
+    else {
+        bool cullBackFaces = !( Self->Flags & SURF_TWOSIDED );
 
         // Perform AABB raycast
         if ( !BvRayIntersectBox( Raycast.RayStart, Raycast.InvRayDir, Self->Bounds, boxMin, boxMax ) )
@@ -1562,7 +1523,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                 Float3 const & v1 = pVertices[triangleIndices[1]].Position;
                 Float3 const & v2 = pVertices[triangleIndices[2]].Position;
 
-                if ( BvRayIntersectTriangle( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, d, u, v ) ) {
+                if ( BvRayIntersectTriangle( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, d, u, v, cullBackFaces ) ) {
                     if ( Raycast.HitDistanceMin > d ) {
 
                         Raycast.HitPrimitive = nullptr;
@@ -1599,7 +1560,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                 Float3 const & v1 = pVertices[triangleIndices[1]].Position;
                 Float3 const & v2 = pVertices[triangleIndices[2]].Position;
 
-                if ( BvRayIntersectTriangle( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, d, u, v ) ) {
+                if ( BvRayIntersectTriangle( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, d, u, v, cullBackFaces ) ) {
                     if ( Raycast.RayLength > d ) {
                         STriangleHitResult & hitResult = pRaycastResult->Hits.Append();
                         hitResult.Location = Raycast.RayStart + Raycast.RayDir * d;
@@ -1632,14 +1593,13 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                 rcPrimitive.ClosestHit = closestHit;
             }
         }
-
-        break;
-        }
     }
 }
 
 static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
 {
+    // FIXME: What about two sided primitives? Use TwoSided flag directly from material or from primitive?
+
     if ( Raycast.bClosest )
     {
         TRef< AMaterialInstance > material;
@@ -1761,7 +1721,7 @@ static void VSD_RaycastArea( SVisArea * InArea )
             continue;
         }
 
-        if ( primitive->bFaceCull )
+        if ( ( primitive->Flags & SURF_PLANAR_TWOSIDED_MASK ) == SURF_PLANAR )
         {
             // Perform face culling
             if ( VSD_FaceCull( primitive ) )
@@ -1863,24 +1823,19 @@ static void VSD_RaycastPrimitiveBounds( SVisArea * InArea )
                 continue;
             }
 
-            switch ( surf->GeometryType ) {
-            case SURF_PLANAR:
-                  continue;
+            if ( surf->Flags & SURF_PLANAR ) {
+                // FIXME: planar surface has no bounds?
+                continue;
+            }
 
-            case SURF_TRISOUP:
-                // Perform AABB raycast
-                if ( !BvRayIntersectBox( Raycast.RayStart, Raycast.InvRayDir, surf->Bounds, boxMin, boxMax ) )
-                {
-                    continue;
-                }
-                if ( boxMin >= Raycast.HitDistanceMin )
-                {
-                    // Ray intersects the box, but box is too far
-                    continue;
-                }
-                break;
-
-            default:
+            // Perform AABB raycast
+            if ( !BvRayIntersectBox( Raycast.RayStart, Raycast.InvRayDir, surf->Bounds, boxMin, boxMax ) )
+            {
+                continue;
+            }
+            if ( boxMin >= Raycast.HitDistanceMin )
+            {
+                // Ray intersects the box, but box is too far
                 continue;
             }
 

@@ -739,32 +739,19 @@ public:
     int     LightmapSlot;
 
     bool    bDepthPassTextureFetch;
-    bool    bColorPassTextureFetch;
+    bool    bLightPassTextureFetch;
     bool    bWireframePassTextureFetch;
     bool    bNormalsPassTextureFetch;
     bool    bShadowMapPassTextureFetch;
 
-    bool    bHasVertexDeform;
-
-    // Just helper for render frontend to prevent rendering of materials with disabled shadow casting
-    bool    bNoCastShadow;
-
-    bool    bShadowMapMasking;
-
-    TRef< RenderCore::IPipeline > DepthPass;
-    TRef< RenderCore::IPipeline > DepthPassSkinned;
-    TRef< RenderCore::IPipeline > WireframePass;
-    TRef< RenderCore::IPipeline > WireframePassSkinned;
-    TRef< RenderCore::IPipeline > NormalsPass;
-    TRef< RenderCore::IPipeline > NormalsPassSkinned;
-    TRef< RenderCore::IPipeline > LightPassSimple;
-    TRef< RenderCore::IPipeline > LightPassSkinned;
+    TRef< RenderCore::IPipeline > DepthPass[2];
+    TRef< RenderCore::IPipeline > WireframePass[2];
+    TRef< RenderCore::IPipeline > NormalsPass[2];
+    TRef< RenderCore::IPipeline > LightPass[2];
     TRef< RenderCore::IPipeline > LightPassLightmap;
     TRef< RenderCore::IPipeline > LightPassVertexLight;
-    TRef< RenderCore::IPipeline > ShadowPass;
-    TRef< RenderCore::IPipeline > ShadowPassSkinned;
-    TRef< RenderCore::IPipeline > FeedbackPass;
-    TRef< RenderCore::IPipeline > FeedbackPassSkinned;
+    TRef< RenderCore::IPipeline > ShadowPass[2];
+    TRef< RenderCore::IPipeline > FeedbackPass[2];
     TRef< RenderCore::IPipeline > HUDPipeline;
 };
 
@@ -1022,7 +1009,7 @@ struct SClusterProbe {
 };
 
 struct SFrameLightData {
-    static constexpr int MAX_ITEM_BUFFER = 1024*128; // TODO: подобрать оптимальный размер
+    static constexpr int MAX_ITEM_BUFFER = 1024*512; // TODO: подобрать оптимальный размер
 
     SClusterData ClusterLookup[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
 

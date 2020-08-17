@@ -59,7 +59,9 @@ public:
     virtual int Serialize( ADocument & _Doc );
 
     /** Load attributes form document data */
-    void LoadAttributes( ADocument const & _Document, int _FieldsHead );
+    void LoadAttributes( ADocument const & Document, int ValuesHead );
+
+    void SetAttributes( THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes );
 
     /** Add reference */
     void AddRef();
@@ -87,12 +89,48 @@ public:
     /** Get weakref counter. Used by TWeakRef */
     SWeakRefCounter * GetWeakRefCounter() { return WeakRefCounter; }
 
+    static ABaseObject * FindObject( uint64_t _Id );
+
+    template< typename T >
+    static T * FindObject( uint64_t _Id )
+    {
+        ABaseObject * object = FindObject( _Id );
+        if ( !object ) {
+            return nullptr;
+        }
+        if ( object->FinalClassId() != T::ClassId() ) {
+            return nullptr;
+        }
+        return static_cast< T * >( object );
+    }
+
+    static ABaseObject * ConvertFromAttributeString( AClassMeta const & Meta, AString const & String )
+    {
+        uint64_t id = Math::ToInt< uint64_t >( String );
+
+        ABaseObject * object = FindObject( id );
+        if ( !object ) {
+            return nullptr;
+        }
+        if ( object->FinalClassId() != Meta.GetId() ) {
+            return nullptr;
+        }
+        return object;
+    }
+
+    void ConvertToAttributeString( AString & String ) const
+    {
+        String = Math::ToString( Id );
+    }
+
 protected:
     ABaseObject();
 
     virtual ~ABaseObject();
 
 private:
+    void LoadAttributes_r( AClassMeta const * Meta, ADocument const & Document, int FieldsHead );
+    void SetAttributes_r( AClassMeta const * Meta, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes );
 
     /** Total existing objects */
     static uint64_t TotalObjects;
@@ -105,7 +143,14 @@ private:
 
     SWeakRefCounter * WeakRefCounter = nullptr;
 
-    /** Used by garbage collector to add this object to remove list */
+    /** Object global list */
+    ABaseObject * NextObject = nullptr;
+    ABaseObject * PrevObject = nullptr;
+
+    static ABaseObject * Objects;
+    static ABaseObject * ObjectsTail;
+
+    /** Used by garbage collector to add this object to garbage list */
     ABaseObject * NextGarbageObject = nullptr;
     ABaseObject * PrevGarbageObject = nullptr;
 };
@@ -286,3 +331,54 @@ struct TEvent {
 private:
     TStdVector< Callback > Callbacks;
 };
+
+template< typename T >
+void SetAttributeFromString( TRef< T > & Attribute, AString const & String )
+{
+    Attribute = static_cast< T * >( ABaseObject::ConvertFromAttributeString( T::ClassMeta(), String ) );
+}
+
+template< typename T >
+void SetAttributeToString( TRef< T > const & Attribute, AString & String )
+{
+    ABaseObject const * r = Attribute.GetObject();
+    if ( r ) {
+        r->ConvertToAttributeString( String );
+    }
+    else {
+        String = "0";
+    }
+}
+
+template< typename T >
+void SetAttributeFromString( T * & Attribute, AString const & String )
+{
+    Attribute = static_cast< T * >( ABaseObject::ConvertFromAttributeString( T::ClassMeta(), String ) );
+}
+
+template< typename T >
+void SetAttributeToString( T * const & Attribute, AString & String )
+{
+    if ( Attribute ) {
+        Attribute->ConvertToAttributeString( String );
+    }
+    else {
+        String = "0";
+    }
+}
+
+//template< typename T >
+//void SetAttributeSubmember( TRef< T > & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{
+//    if ( Attribute ) {
+//        Attribute->SetAttributes( AttributeHash, Attributes );
+//    }
+//}
+//
+//template< typename T >
+//void SetAttributeSubmember( T * & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{
+//    if ( Attribute ) {
+//        Attribute->SetAttributes( AttributeHash, Attributes );
+//    }
+//}

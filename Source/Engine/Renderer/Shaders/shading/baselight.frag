@@ -28,12 +28,15 @@ SOFTWARE.
 
 */
 
-#include "material_shadowmap.frag"
-#include "sslr.frag"
+#include "shading/shadowmap.frag"
+#include "shading/sslr.frag"
+#include "shading/unpack_cluster.frag"
+#include "shading/photometric.frag"
 
 #define SPECULAR_BRIGHTNESS 50.0
 
-vec3 CalcDirectionalLighting( vec3 Normal, vec3 Specular, float SpecularPower ) {
+vec3 CalcDirectionalLighting( vec3 Normal, vec3 Specular, float SpecularPower )
+{
     vec3 Light = vec3(0.0);
 
     const uint NumLights = GetNumDirectionalLights();
@@ -70,53 +73,15 @@ vec3 CalcDirectionalLighting( vec3 Normal, vec3 Specular, float SpecularPower ) 
     return Light;
 }
 
-void GetClusterData( out uint numProbes, out uint numDecals, out uint numLights, out uint firstIndex )
+vec3 CalcPointLightLighting( vec3 Normal, vec3 Specular, float SpecularPower )
 {
-    // TODO: Move scale and bias to uniforms
-    #define NUM_CLUSTERS_Z 24
-    const float znear = 0.0125f;
-    const float zfar = 512;
-    const int nearOffset = 20;
-    const float scale = ( NUM_CLUSTERS_Z + nearOffset ) / log2( zfar / znear );
-    const float bias = -log2( znear ) * scale - nearOffset;
-
-    // Calc cluster index
-    const float linearDepth = -VS_Position.z;
-    const float slice = max( 0.0, floor( log2( linearDepth ) * scale + bias ) );
-    const ivec3 clusterIndex = ivec3( InNormalizedScreenCoord.x * 16, InNormalizedScreenCoord.y * 8, slice );
-
-    // Fetch packed data
-    const uvec2 cluster = texelFetch( ClusterLookup, clusterIndex, 0 ).xy;
-
-    // Unpack cluster data
-    numProbes = cluster.y & 0xff;
-    numDecals = ( cluster.y >> 8 ) & 0xff;
-    numLights = ( cluster.y >> 16 ) & 0xff;
-    //unused = ( cluster.y >> 24 ) & 0xff; // can be used in future
-
-    firstIndex = cluster.x;
-}
-
-#ifdef SUPPORT_PHOTOMETRIC_LIGHT
-float CalcPhotometricAttenuation( float LdotDir, uint Profile ) {
-//if ( InNormalizedScreenCoord.x < 0.5 ) {
-//    const float angle = acos( LdotDir ) * (1.0 / PI);
-//    return textureLod( IESMap, vec2(angle, Profile), 0.0 ).r;
-//} else {
-    return pow( textureLod( IESMap, vec2(LdotDir*0.5+0.5, Profile), 0.0 ).r, 2.2 );
-    //return textureLod( IESMap, vec2(LdotDir*0.5+0.5, Profile), 0.0 ).r;
-//}
-}
-#endif
-
-vec3 CalcPointLightLighting( vec3 Normal, vec3 Specular, float SpecularPower ) {
     uint NumProbes;
     uint NumDecals;
     uint NumLights;
     uint FirstIndex;
     vec3 Light = vec3(0.0);
 
-    GetClusterData( NumProbes, NumDecals, NumLights, FirstIndex );
+    UnpackCluster( NumProbes, NumDecals, NumLights, FirstIndex );
 
     #define POINT_LIGHT 0
     #define SPOT_LIGHT  1
@@ -182,7 +147,13 @@ vec3 CalcPointLightLighting( vec3 Normal, vec3 Specular, float SpecularPower ) {
     return Light;
 }
 
-void MaterialBaseLightShader( vec3 BaseColor, vec3 N, vec3 Specular, float SpecularPower, vec3 AmbientLight, vec3 Emissive, float Opacity )
+void MaterialBaseLightShader( vec3 BaseColor,
+                              vec3 N,
+                              vec3 Specular,
+                              float SpecularPower,
+                              vec3 AmbientLight,
+                              vec3 Emissive,
+                              float Opacity )
 {
     vec3 Light = vec3(0);
 
@@ -317,7 +288,9 @@ void MaterialBaseLightShader( vec3 BaseColor, vec3 N, vec3 Specular, float Specu
         #endif
         break;
     case DEBUG_VELOCITY:
+        #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
         FS_FragColor = vec4( abs(FS_Velocity), 0.0, 1.0 );
+        #endif
         break;
     }
 #endif // DEBUG_RENDER_MODE

@@ -62,7 +62,7 @@ layout( location = COLOR_PASS_VARYING_POSITION ) out vec3 VS_Position;
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) out vec2 VS_TexCoordVT;
 #endif
 
-#if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
 #endif
@@ -141,7 +141,7 @@ void main() {
     VS_B = normalize( cross( VS_N, VS_T ) ) * InTangent.w;
     #endif  // COMPUTE_TBN
 
-    #if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+    #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
         #ifdef PER_BONE_MOTION_BLUR
         JointTransform0 = TransformP[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
                           + TransformP[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
@@ -218,7 +218,7 @@ void main() {
     
     vec4 TransformedPosition = TransformMatrix * FinalVertexPos;
 
-#if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
     VS_VertexPos = TransformedPosition;
     #ifdef SKINNED_MESH
         VS_VertexPosP = TransformMatrixP * VertexPositionP; // NOTE: We can't apply vertex deform to it!

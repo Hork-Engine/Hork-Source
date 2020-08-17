@@ -260,7 +260,7 @@ void AActor::Clone( AActor const * _TemplateActor ) {
     // Clone attributes
     AClassMeta::CloneAttributes( _TemplateActor, this );
 
-    // TODO: Clone components
+    // FIXME: How about to clone components?
 
 //    for ( AActorComponent const * templateComponent : _TemplateActor->Components ) {
 //        if ( templateComponent->IsPendingKill() ) {

@@ -35,22 +35,13 @@ using namespace RenderCore;
 
 static bool BindMaterialDepthPass( SRenderInstance const * instance ) {
     AMaterialGPU * pMaterial = instance->Material;
-    IPipeline * pPipeline;
 
     AN_ASSERT( pMaterial );
 
-    bool bSkinned = instance->SkeletonSize > 0;
+    int bSkinned = instance->SkeletonSize > 0;
 
-    // Choose pipeline
-    switch ( pMaterial->MaterialType ) {
-    case MATERIAL_TYPE_UNLIT:
-    case MATERIAL_TYPE_PBR:
-    case MATERIAL_TYPE_BASELIGHT:
-        pPipeline = bSkinned ? pMaterial->DepthPassSkinned
-            : pMaterial->DepthPass;
-
-        break;
-    default:
+    IPipeline * pPipeline = pMaterial->DepthPass[bSkinned];
+    if ( !pPipeline ) {
         return false;
     }
 

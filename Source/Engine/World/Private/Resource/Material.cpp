@@ -39,16 +39,25 @@ SOFTWARE.
 AN_CLASS_META( AMaterial )
 AN_CLASS_META( AMaterialInstance )
 
+static AMaterial * GMaterials = nullptr, * GMaterialsTail = nullptr;
+
 AMaterial::AMaterial() {
+    INTRUSIVE_ADD( this, pNext, pPrev, GMaterials, GMaterialsTail );
     MaterialGPU = GRenderBackend->CreateMaterial( this );
 }
 
 AMaterial::~AMaterial() {
     GRenderBackend->DestroyMaterial( MaterialGPU );
+    INTRUSIVE_REMOVE( this, pNext, pPrev, GMaterials, GMaterialsTail );
+}
+
+void AMaterial::RebuildMaterials() {
+    for ( AMaterial * material = GMaterials ; material ; material = material->pNext ) {
+        GRenderBackend->InitializeMaterial( material->MaterialGPU, &material->Def );
+    }
 }
 
 void AMaterial::Initialize( MGMaterialGraph * Graph ) {
-
     CompileMaterialGraph( Graph, &Def );
 
     GRenderBackend->InitializeMaterial( MaterialGPU, &Def );
@@ -225,6 +234,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
         graph->Color->Connect( textureSampler->RGBA );
         graph->AlphaMask->Connect( textureSampler->A );
+        graph->bTwoSided = true;
 
         graph->MaterialType = MATERIAL_TYPE_UNLIT;
         graph->RegisterTextureSlot( diffuseTexture );
@@ -432,6 +442,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         graph->AmbientOcclusion->Connect( ambientSampler, "R" );
         graph->Emissive->Connect( emissiveSampler, "RGBA" );
         graph->AlphaMask->Connect( textureSampler->A );
+        graph->bTwoSided = true;
 
         graph->MaterialType = MATERIAL_TYPE_PBR;
         graph->RegisterTextureSlot( diffuseTexture );
@@ -675,6 +686,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         graph->AmbientOcclusion->Connect( ambientSampler, "R" );
         graph->Emissive->Connect( emissiveMul, "Result" );
         graph->AlphaMask->Connect( textureSampler->A );
+        graph->bTwoSided = true;
 
         graph->MaterialType = MATERIAL_TYPE_PBR;
         graph->RegisterTextureSlot( diffuseTexture );

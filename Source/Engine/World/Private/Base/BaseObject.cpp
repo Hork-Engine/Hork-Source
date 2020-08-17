@@ -37,15 +37,21 @@ AN_END_CLASS_META()
 
 uint64_t ABaseObject::TotalObjects = 0;
 
+ABaseObject * ABaseObject::Objects = nullptr;
+ABaseObject * ABaseObject::ObjectsTail = nullptr;
+
 static uint64_t GUniqueIdGenerator = 0;
 
 ABaseObject::ABaseObject() : Id(++GUniqueIdGenerator)
 {
+    INTRUSIVE_ADD( this, NextObject, PrevObject, Objects, ObjectsTail );
     TotalObjects++;
     AGarbageCollector::AddObject( this );
 }
 
 ABaseObject::~ABaseObject() {
+    INTRUSIVE_REMOVE( this, NextObject, PrevObject, Objects, ObjectsTail );
+
     TotalObjects--;
 
     if ( WeakRefCounter ) {
@@ -71,28 +77,27 @@ void ABaseObject::RemoveRef() {
     }
 }
 
+ABaseObject * ABaseObject::FindObject( uint64_t _Id ) {
+    if ( !_Id ) {
+        return nullptr;
+    }
+
+    // FIXME: use hash/map?
+    for ( ABaseObject * object = Objects ; object ; object = object->NextObject ) {
+        if ( object->Id == _Id ) {
+            return object;
+        }
+    }
+    return nullptr;
+}
+
 int ABaseObject::Serialize( ADocument & _Doc ) {
     int object = _Doc.CreateObjectValue();
 
     _Doc.AddStringField( object, "ClassName", FinalClassName() );
 
-//    int precacheArray = -1;
-
     for ( AClassMeta const * Meta = &FinalClassMeta()
           ; Meta ; Meta = Meta->SuperClass() ) {
-
-#if 0
-        APrecacheMeta const * precache = Meta->GetPrecacheList();
-        if ( precache ) {
-
-            for ( ; precache ; precache = precache->Next() ) {
-
-                precacheArray = ( precacheArray == -1 ) ? _Doc.AddArray( object, "Precache" ) : precacheArray;
-
-                _Doc.AddValueToField( precacheArray, _Doc.CreateStringValue( precache->GetResourcePath() ) );
-            }
-        }
-#endif
 
         AAttributeMeta const * attribs = Meta->GetAttribList();
         if ( attribs ) {
@@ -121,25 +126,50 @@ int ABaseObject::Serialize( ADocument & _Doc ) {
     return object;
 }
 
-void ABaseObject::LoadAttributes( ADocument const & _Document, int _FieldsHead ) {
-    for ( AClassMeta const * meta = &FinalClassMeta() ; meta ; meta = meta->SuperClass() ) {
-        SDocumentField const * field = _Document.FindField( _FieldsHead, meta->GetName() );
-        if ( field ) {
-            for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-                SDocumentValue * attributeObject = &_Document.Values[ i ];
-                if ( attributeObject->Type == SDocumentValue::TYPE_OBJECT ) {
-                    for ( int j = attributeObject->FieldsHead ; j != -1 ; j = _Document.Fields[ j ].Next ) {
-                        SDocumentField const * attributeName = &_Document.Fields[ j ];
-                        AAttributeMeta const * attrMeta = meta->FindAttribute( attributeName->Name.ToString().CStr(), false );
-                        if ( attrMeta ) {
-                            SDocumentValue const * attributeValue = &_Document.Values[ attributeName->ValuesHead ];
-                            attrMeta->SetValue( this, attributeValue->Token.ToString() );
-                        }
-                    }
+void ABaseObject::LoadAttributes_r( AClassMeta const * Meta, ADocument const & Document, int FieldsHead ) {
+    if ( Meta ) {
+        LoadAttributes_r( Meta->SuperClass(), Document, FieldsHead );
+
+        for ( AAttributeMeta const * attrib = Meta->GetAttribList() ; attrib ; attrib = attrib->Next() ) {
+            SDocumentField * attributeField = Document.FindField( FieldsHead, attrib->GetName() );
+            if ( attributeField ) {
+                SDocumentValue const * attributeValue = &Document.Values[ attributeField->ValuesHead ];
+                attrib->SetValue( this, attributeValue->Token.ToString() );
+            }
+        }
+    }
+}
+
+void ABaseObject::LoadAttributes( ADocument const & Document, int FieldsHead ) {
+    LoadAttributes_r( &FinalClassMeta(), Document, FieldsHead );
+}
+
+void ABaseObject::SetAttributes_r( AClassMeta const * Meta, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes ) {
+    if ( Meta ) {
+        SetAttributes_r( Meta->SuperClass(), AttributeHash, Attributes );
+
+        for ( AAttributeMeta const * attrib = Meta->GetAttribList() ; attrib ; attrib = attrib->Next() ) {
+
+            int hash = attrib->GetNameHash();
+
+            for ( int i = AttributeHash.First( hash ) ; i != -1 ; i = AttributeHash.Next( i ) ) {
+                if ( !Attributes[i].first.Icmp( attrib->GetName() ) ) {
+                    // Attribute found
+                    attrib->SetValue( this, Attributes[i].second );
+
+                    //attrib->SetSubmember( this, AttributeHash, Attributes );
+                    break;
                 }
             }
         }
     }
+}
+
+void ABaseObject::SetAttributes( THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes ) {
+    if ( Attributes.IsEmpty() ) {
+        return;
+    }
+    SetAttributes_r( &FinalClassMeta(), AttributeHash, Attributes );
 }
 
 ABaseObject * AGarbageCollector::GarbageObjects = nullptr;

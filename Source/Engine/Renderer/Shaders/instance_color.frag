@@ -33,7 +33,7 @@ SOFTWARE.
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
-#ifdef WITH_MOTION_BLUR
+#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT )
 layout( location = 1 ) out vec2 FS_Velocity;
 #endif
 
@@ -162,7 +162,7 @@ layout( location = COLOR_PASS_VARYING_POSITION ) in vec3 VS_Position;
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 VS_TexCoordVT;
 #endif
 
-#if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos;
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP;
 #endif
@@ -185,18 +185,18 @@ vec2  InScreenUV;
 vec2  InPhysicalUV;
 #endif
 
-#include "parallax_mapping.frag"
-
 #ifdef USE_VIRTUAL_TEXTURE
 #include "virtualtexture.frag"
 #endif
 
+#include "shading/parallax_mapping.frag"
+
 #ifdef MATERIAL_TYPE_PBR
-#include "material_type_pbr.frag"
+#include "shading/pbr.frag"
 #endif
 
 #ifdef MATERIAL_TYPE_BASELIGHT
-#include "material_type_baselight.frag"
+#include "shading/baselight.frag"
 #endif
 
 void main()
@@ -209,13 +209,14 @@ void main()
     InScreenDepth           = gl_FragCoord.z;
     InNormalizedScreenCoord = InScreenCoord * GetViewportSizeInverted();
     InClipspacePosition     = vec4( InNormalizedScreenCoord * 2.0 - 1.0, InScreenDepth, 1.0 );
-    InScreenUV               = vec2( InNormalizedScreenCoord.x, 1.0 - InNormalizedScreenCoord.y );
+    InScreenUV              = vec2( InNormalizedScreenCoord.x, 1.0 - InNormalizedScreenCoord.y );
     
 #ifdef USE_VIRTUAL_TEXTURE
+    // FIXME: Parallax mapping with VT?
     InPhysicalUV = VT_CalcPhysicalUV( vt_IndirectionTable, VS_TexCoordVT, VTUnit );
 #endif
 
-#ifdef WITH_MOTION_BLUR
+#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT )
 #ifdef ALLOW_MOTION_BLUR
     vec2 p1 = VS_VertexPos.xy / VS_VertexPos.w;
     vec2 p2 = VS_VertexPosP.xy / VS_VertexPosP.w;
@@ -232,12 +233,24 @@ void main()
 #   include "$COLOR_PASS_FRAGMENT_CODE$"
 
 #ifdef MATERIAL_TYPE_PBR
-    MaterialPBRShader( BaseColor.xyz, MaterialNormal, MaterialMetallic, MaterialRoughness, MaterialEmissive, MaterialAmbientOcclusion, Opacity );
+    MaterialPBRShader( BaseColor.xyz,
+                       MaterialNormal,
+                       MaterialMetallic,
+                       MaterialRoughness,
+                       MaterialEmissive,
+                       MaterialAmbientOcclusion,
+                       Opacity );
 #endif
 
 #ifdef MATERIAL_TYPE_BASELIGHT
     const float MaterialSpecularPower = 32; // TODO: Allow to set in the material
-    MaterialBaseLightShader( BaseColor.xyz, MaterialNormal, MaterialSpecular, MaterialSpecularPower, MaterialAmbientLight, MaterialEmissive, Opacity );
+    MaterialBaseLightShader( BaseColor.xyz,
+                             MaterialNormal,
+                             MaterialSpecular,
+                             MaterialSpecularPower,
+                             MaterialAmbientLight,
+                             MaterialEmissive,
+                             Opacity );
 #endif
 
 #ifdef MATERIAL_TYPE_UNLIT
@@ -252,3 +265,4 @@ void main()
     FS_FragColor = BaseColor;
 #endif
 }
+

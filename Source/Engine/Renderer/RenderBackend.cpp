@@ -628,13 +628,10 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
     _Material->MaterialType = _Def->Type;
     _Material->LightmapSlot = _Def->LightmapSlot;
     _Material->bDepthPassTextureFetch     = _Def->bDepthPassTextureFetch;
-    _Material->bColorPassTextureFetch     = _Def->bLightPassTextureFetch;
+    _Material->bLightPassTextureFetch     = _Def->bLightPassTextureFetch;
     _Material->bWireframePassTextureFetch = _Def->bWireframePassTextureFetch;
     _Material->bNormalsPassTextureFetch   = _Def->bNormalsPassTextureFetch;
     _Material->bShadowMapPassTextureFetch = _Def->bShadowMapPassTextureFetch;
-    _Material->bHasVertexDeform = _Def->bHasVertexDeform;
-    _Material->bNoCastShadow    = _Def->bNoCastShadow;
-    _Material->bShadowMapMasking= _Def->bShadowMapMasking;
     _Material->NumSamplers      = _Def->NumSamplers;
 
     POLYGON_CULL cullMode = _Def->bTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
@@ -652,57 +649,29 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
 
     switch ( _Material->MaterialType ) {
     case MATERIAL_TYPE_PBR:
-    case MATERIAL_TYPE_BASELIGHT: {
-        CreateLightPassPipeline( &_Material->LightPassSimple, code.CStr(), cullMode, false, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
-        CreateLightPassPipeline( &_Material->LightPassSkinned, code.CStr(), cullMode, true, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
-
-        CreateLightPassLightmapPipeline( &_Material->LightPassLightmap, code.CStr(), cullMode, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
-        CreateLightPassVertexLightPipeline( &_Material->LightPassVertexLight, code.CStr(), cullMode, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
-
-        CreateDepthPassPipeline( &_Material->DepthPass, code.CStr(), _Def->bAlphaMasking, cullMode, false, bTessellation );
-        CreateDepthPassPipeline( &_Material->DepthPassSkinned, code.CStr(), _Def->bAlphaMasking, cullMode, true, bTessellation );
-
-        CreateWireframePassPipeline( &_Material->WireframePass, code.CStr(), cullMode, false, bTessellation );
-        CreateWireframePassPipeline( &_Material->WireframePassSkinned, code.CStr(), cullMode, true, bTessellation );
-
-        CreateNormalsPassPipeline( &_Material->NormalsPass, code.CStr(), false );
-        CreateNormalsPassPipeline( &_Material->NormalsPassSkinned, code.CStr(), true );
-
-        CreateShadowMapPassPipeline( &_Material->ShadowPass, code.CStr(), _Def->bShadowMapMasking, _Def->bTwoSided, false, bTessellationShadowMap );
-        CreateShadowMapPassPipeline( &_Material->ShadowPassSkinned, code.CStr(), _Def->bShadowMapMasking, _Def->bTwoSided, true, bTessellationShadowMap );
-
-        CreateFeedbackPassPipeline( &_Material->FeedbackPass, code.CStr(), cullMode, false );
-        CreateFeedbackPassPipeline( &_Material->FeedbackPassSkinned, code.CStr(), cullMode, true );
-        break;
-    }
-
+    case MATERIAL_TYPE_BASELIGHT:
     case MATERIAL_TYPE_UNLIT: {
-        CreateLightPassPipeline( &_Material->LightPassSimple, code.CStr(), cullMode, false, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
-        CreateLightPassPipeline( &_Material->LightPassSkinned, code.CStr(), cullMode, true, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
+        for ( int i = 0 ; i < 2 ; i++ ) {
+            bool bSkinned = !!i;
+            CreateDepthPassPipeline( &_Material->DepthPass[i], code.CStr(), _Def->bAlphaMasking, cullMode, bSkinned, bTessellation );
+            CreateLightPassPipeline( &_Material->LightPass[i], code.CStr(), cullMode, bSkinned, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
+            CreateWireframePassPipeline( &_Material->WireframePass[i], code.CStr(), cullMode, bSkinned, bTessellation );
+            CreateNormalsPassPipeline( &_Material->NormalsPass[i], code.CStr(), bSkinned );
+            CreateShadowMapPassPipeline( &_Material->ShadowPass[i], code.CStr(), _Def->bShadowMapMasking, _Def->bTwoSided, bSkinned, bTessellationShadowMap );
+            CreateFeedbackPassPipeline( &_Material->FeedbackPass[i], code.CStr(), cullMode, bSkinned );
+        }
 
-        CreateDepthPassPipeline( &_Material->DepthPass, code.CStr(), _Def->bAlphaMasking, cullMode, false, bTessellation );
-        CreateDepthPassPipeline( &_Material->DepthPassSkinned, code.CStr(), _Def->bAlphaMasking, cullMode, true, bTessellation );
-
-        CreateWireframePassPipeline( &_Material->WireframePass, code.CStr(), cullMode, false, bTessellation );
-        CreateWireframePassPipeline( &_Material->WireframePassSkinned, code.CStr(), cullMode, true, bTessellation );
-
-        CreateNormalsPassPipeline( &_Material->NormalsPass, code.CStr(), false );
-        CreateNormalsPassPipeline( &_Material->NormalsPassSkinned, code.CStr(), true );
-
-        CreateShadowMapPassPipeline( &_Material->ShadowPass, code.CStr(), _Def->bShadowMapMasking, _Def->bTwoSided, false, bTessellationShadowMap );
-        CreateShadowMapPassPipeline( &_Material->ShadowPassSkinned, code.CStr(), _Def->bShadowMapMasking, _Def->bTwoSided, true, bTessellationShadowMap );
-
-        CreateFeedbackPassPipeline( &_Material->FeedbackPass, code.CStr(), cullMode, false );
-        CreateFeedbackPassPipeline( &_Material->FeedbackPassSkinned, code.CStr(), cullMode, true );
+        if ( _Material->MaterialType != MATERIAL_TYPE_UNLIT ) {
+            CreateLightPassLightmapPipeline( &_Material->LightPassLightmap, code.CStr(), cullMode, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
+            CreateLightPassVertexLightPipeline( &_Material->LightPassVertexLight, code.CStr(), cullMode, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
+        }
         break;
     }
-
     case MATERIAL_TYPE_HUD:
     case MATERIAL_TYPE_POSTPROCESS: {
         CreateHUDPipeline( &_Material->HUDPipeline, code.CStr() );
         break;
     }
-
     default:
         AN_ASSERT( 0 );
     }

@@ -44,8 +44,8 @@ class ADebugRenderer;
 class IGameModule;
 
 /** Actor spawn parameters */
-struct SActorSpawnInfo {
-
+struct SActorSpawnInfo
+{
     /** Initial actor transform */
     STransform SpawnTransform;
 
@@ -79,6 +79,22 @@ struct SActorSpawnInfo {
     /** Get actor meta class */
     AClassMeta const * ActorClassMeta() const { return ActorTypeClassMeta; }
 
+    template< typename AttributeType >
+    void SetAttribute( AString const & AttributeName, AttributeType const & AttributeValue )
+    {
+        AString s;
+
+        SetAttributeToString( AttributeValue, s );
+        _SetAttribute( AttributeName, s );
+    }
+
+    THash<> const & GetAttributeHash() const { return AttributeHash; }
+    TStdVector< std::pair< AString, AString > > const & GetAttributes() const { return Attributes; }
+
+private:
+
+    void _SetAttribute( AString const & AttributeName, AString const & AttributeValue );
+
 protected:
 
     /** NOTE: template type meta must match ActorTypeClassMeta */
@@ -86,6 +102,10 @@ protected:
 
     /** Actor type */
     AClassMeta const * ActorTypeClassMeta;
+
+    /** Spawn attributes (experimental) */
+    THash<> AttributeHash;
+    TStdVector< std::pair< AString, AString > > Attributes;
 };
 
 /** Template helper for actor spawn parameters */

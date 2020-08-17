@@ -150,9 +150,23 @@ SActorSpawnInfo::SActorSpawnInfo( const char * _ActorClassName )
 {
 }
 
-void SActorSpawnInfo::SetTemplate( AActor const * _Template ) {
+void SActorSpawnInfo::SetTemplate( AActor const * _Template )
+{
     AN_ASSERT( &_Template->FinalClassMeta() == ActorTypeClassMeta );
     Template = _Template;
+}
+
+void SActorSpawnInfo::_SetAttribute( AString const & AttributeName, AString const & AttributeValue )
+{
+    int hash = AttributeName.Hash();
+    for ( int i = AttributeHash.First( hash ) ; i != -1 ; i = AttributeHash.Next( i ) ) {
+        if ( Attributes[i].first == AttributeName ) {
+            Attributes[i].second = AttributeValue;
+            return;
+        }
+    }
+    AttributeHash.Insert( hash, Attributes.Size() );
+    Attributes.Append( std::make_pair( AttributeName, AttributeValue ) );
 }
 
 AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
@@ -197,12 +211,10 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
         actor->Clone( templateActor );
     } else {
         // TODO: Here create components added from the editor
-        // TODO: Copy actor/component properties from the actor spawn parameters (actor instance?)
-        //class AActorInstance {
-        //public:
-        //    AString ActorCppClassName;
-        //    map< AString, AString > PropertyMap;
-        //};
+        // TODO: Copy actor/component properties from the actor spawn parameters
+
+        actor->SetAttributes( _SpawnParameters.GetAttributeHash(), _SpawnParameters.GetAttributes() );
+        // FIXME: what about component attributes?
     }
 
     actor->Initialize( _SpawnParameters.SpawnTransform );

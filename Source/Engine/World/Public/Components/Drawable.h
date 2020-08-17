@@ -86,9 +86,9 @@ public:
 
     void SetQueryGroup( int _UserQueryGroup );
 
-    void SetFaceCull( bool bFaceCull );
+    void SetSurfaceFlags( uint8_t Flags );
 
-    bool GetFaceCull() const;
+    uint8_t GetSurfaceFlags() const;
 
     /** Used for face culling */
     void SetFacePlane( PlaneF const & _Plane );

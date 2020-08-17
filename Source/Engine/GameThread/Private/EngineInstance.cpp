@@ -63,6 +63,7 @@ SOFTWARE.
 
 static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "0" ) );
 static ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
+static ARuntimeVariable RVRebuildMaterials( _CTS( "RebuildMaterials" ), _CTS( "0" ) );
 
 AEngineInstance & GEngine = AEngineInstance::Inst();
 
@@ -197,6 +198,11 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
         ACommandContext * commandContext = APlayerController::GetCurrentCommandContext();
         if ( commandContext ) {
             CommandProcessor.Execute( *commandContext );
+        }
+
+        if ( RVRebuildMaterials ) {
+            RVRebuildMaterials = false;
+            AMaterial::RebuildMaterials();
         }
 
         // Tick worlds

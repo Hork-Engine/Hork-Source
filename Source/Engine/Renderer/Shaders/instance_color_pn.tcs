@@ -54,7 +54,7 @@ layout( location = COLOR_PASS_VARYING_POSITION ) in vec3 VS_Position[];
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 VS_TexCoordVT[];
 #endif
 
-#if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos[];
 layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP[];
 #endif
@@ -100,7 +100,7 @@ struct SPatchAdd
     #ifdef USE_VIRTUAL_TEXTURE
     vec2 TexCoordVT[3];
     #endif
-    #if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+    #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
     vec4 VertexPos[3];
     vec4 VertexPosP[3];
     #endif
@@ -135,7 +135,7 @@ void main()
         #ifdef USE_VIRTUAL_TEXTURE
         TCS_PatchAdd.TexCoordVT[i] = VS_TexCoordVT[i];
         #endif
-        #if defined WITH_MOTION_BLUR && defined ALLOW_MOTION_BLUR
+        #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
         TCS_PatchAdd.VertexPos[i] = VS_VertexPos[i];
         TCS_PatchAdd.VertexPosP[i] = VS_VertexPosP[i];
         #endif

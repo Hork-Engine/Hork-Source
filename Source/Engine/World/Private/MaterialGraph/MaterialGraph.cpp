@@ -3085,7 +3085,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         predefines += "#define PER_BONE_MOTION_BLUR\n";
     }
 
-    if ( InGraph->MotionBlurScale > 0.0f ) {
+    if ( InGraph->MotionBlurScale > 0.0f && !InGraph->bTranslucent ) {
         predefines += "#define ALLOW_MOTION_BLUR\n";
     }
 

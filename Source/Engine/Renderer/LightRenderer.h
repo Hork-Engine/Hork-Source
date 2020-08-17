@@ -47,8 +47,8 @@ public:
 private:
     void CreateLookupBRDF();
 
-    bool BindMaterialColorPass( SRenderInstance const * Instance );
-    void BindTexturesColorPass( SMaterialFrameData * _Instance );
+    bool BindMaterialLightPass( SRenderInstance const * Instance );
+    void BindTexturesLightPass( SMaterialFrameData * _Instance );
 
     RenderCore::Sampler LightmapSampler;
     RenderCore::Sampler ReflectDepthSampler;

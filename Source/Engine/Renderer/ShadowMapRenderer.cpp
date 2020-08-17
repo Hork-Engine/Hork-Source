@@ -188,18 +188,10 @@ bool AShadowMapRenderer::BindMaterialShadowMap( SShadowRenderInstance const * in
     AMaterialGPU * pMaterial = instance->Material;
 
     if ( pMaterial ) {
-        bool bSkinned = instance->SkeletonSize > 0;
-        IPipeline * pPipeline;
+        int bSkinned = instance->SkeletonSize > 0;
 
-        // Choose pipeline
-        switch ( pMaterial->MaterialType ) {
-        case MATERIAL_TYPE_PBR:
-        case MATERIAL_TYPE_BASELIGHT:
-        case MATERIAL_TYPE_UNLIT:
-            pPipeline = bSkinned ? pMaterial->ShadowPassSkinned
-                                 : pMaterial->ShadowPass;
-            break;
-        default:
+        IPipeline * pPipeline = pMaterial->ShadowPass[bSkinned];
+        if ( !pPipeline ) {
             return false;
         }
 

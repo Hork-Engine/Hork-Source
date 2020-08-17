@@ -164,29 +164,21 @@ static bool BindMaterialFeedbackPass( SRenderInstance const * Instance )
     using namespace RenderCore;
 
     AMaterialGPU * pMaterial = Instance->Material;
-    IPipeline * pPipeline;
     IBuffer * pSecondVertexBuffer = nullptr;
     size_t secondBufferOffset = 0;
 
     AN_ASSERT( pMaterial );
 
-    bool bSkinned = Instance->SkeletonSize > 0;
+    int bSkinned = Instance->SkeletonSize > 0;
 
-    switch ( pMaterial->MaterialType ) {
-    case MATERIAL_TYPE_UNLIT:
-    case MATERIAL_TYPE_PBR:
-    case MATERIAL_TYPE_BASELIGHT:
-        pPipeline = bSkinned ? pMaterial->FeedbackPassSkinned
-            : pMaterial->FeedbackPass;
-
-        if ( bSkinned ) {
-            pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
-            secondBufferOffset = Instance->WeightsBufferOffset;
-        }
-
-        break;    
-    default:
+    IPipeline * pPipeline = pMaterial->FeedbackPass[bSkinned];
+    if ( !pPipeline ) {
         return false;
+    }
+
+    if ( bSkinned ) {
+        pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
+        secondBufferOffset = Instance->WeightsBufferOffset;
     }
 
     // Bind pipeline

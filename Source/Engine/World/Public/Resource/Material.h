@@ -58,9 +58,15 @@ public:
 
     bool IsTranslucent() const { return Def.bTranslucent; }
 
+    bool IsTwoSided() const { return Def.bTwoSided; }
+
+    bool CanCastShadow() const { return !Def.bNoCastShadow; }
+
     AMaterialGPU * GetGPUResource() { return MaterialGPU; }
 
     int GetNumUniformVectors() const { return Def.NumUniformVectors; }
+
+    static void RebuildMaterials();
 
 protected:
     AMaterial();
@@ -86,6 +92,9 @@ private:
 
     /** Material definition */
     SMaterialDef Def;
+
+    AMaterial * pNext;
+    AMaterial * pPrev;
 };
 
 AN_FORCEINLINE AMaterial * CreateMaterial( MGMaterialGraph * InGraph )

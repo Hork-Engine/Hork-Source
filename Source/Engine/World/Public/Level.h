@@ -173,16 +173,18 @@ struct SBinarySpaceLeaf : SNodeBase
     SVisArea * Area;
 };
 
-enum ESurfaceGeometryType
+enum ESurfaceFlags : uint8_t
 {
-    /** Triangle soup mesh */
-    SURF_TRISOUP,
-
     /** Planar surface */
-    SURF_PLANAR,
+    SURF_PLANAR = AN_BIT(0),
 
-    /** Bezier patch */
-    //SURF_BEZIER_PATCH
+    /** Two sided surface
+    NOTE: This flags affects only CPU culling and raycasting.
+    You must also use a material with twosided property on to have visual effect. */
+    SURF_TWOSIDED = AN_BIT(1),
+
+    /** Planar tow sided surface */
+    SURF_PLANAR_TWOSIDED_MASK = SURF_PLANAR | SURF_TWOSIDED
 };
 
 enum ERenderOrder
@@ -222,8 +224,8 @@ struct SSurfaceDef
     /** Sort key. Used for surface batching. */
     uint32_t SortKey;
 
-    /** Surface geometry type */
-    ESurfaceGeometryType GeometryType;
+    /** Surface flags (ESurfaceFlags) */
+    uint8_t Flags;
 
     /** Plane for planar surface */
     PlaneF Face;
@@ -318,7 +320,7 @@ struct SPrimitiveDef
         BvSphere Sphere;
     };
 
-    /** Face plane. Used for face culling (when bFaceCull=true) */
+    /** Face plane. Used to perform face culling for planar surfaces */
     PlaneF Face;
 
     /** Visibility query group. See VSD_QUERY_MASK enum. */
@@ -335,8 +337,8 @@ struct SPrimitiveDef
 
     //int BakeIndex;
 
-    /** Use face culling */
-    bool bFaceCull : 1;
+    /** Surface flags (ESurfaceFlags) */
+    uint8_t Flags;
 
     /** Is primitive outdoor/indoor */
     bool bIsOutdoor : 1;

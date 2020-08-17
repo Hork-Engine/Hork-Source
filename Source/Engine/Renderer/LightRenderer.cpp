@@ -324,7 +324,7 @@ void ALightRenderer::CreateLookupBRDF() {
     GDevice->GetOrCreateSampler( samplerCI, &LookupBRDFSampler );
 }
 
-bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
+bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
 {
     AMaterialGPU * pMaterial = Instance->Material;
     IPipeline * pPipeline;
@@ -340,8 +340,7 @@ bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
 
-        pPipeline = bSkinned ? pMaterial->LightPassSkinned
-                             : pMaterial->LightPassSimple;
+        pPipeline = pMaterial->LightPass[bSkinned];
 
         if ( bSkinned ) {
             pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
@@ -355,7 +354,7 @@ bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
 
         if ( bSkinned ) {
 
-            pPipeline = pMaterial->LightPassSkinned;
+            pPipeline = pMaterial->LightPass[1];
 
             pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
             secondBufferOffset = Instance->WeightsBufferOffset;
@@ -380,7 +379,7 @@ bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
 
         } else {
 
-            pPipeline = pMaterial->LightPassSimple;
+            pPipeline = pMaterial->LightPass[0];
 
             pSecondVertexBuffer = nullptr;
         }
@@ -398,7 +397,7 @@ bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
     rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, secondBufferOffset );
 
     // Set samplers
-    if ( pMaterial->bColorPassTextureFetch ) {
+    if ( pMaterial->bLightPassTextureFetch ) {
         for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
             GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
         }
@@ -425,9 +424,9 @@ bool ALightRenderer::BindMaterialColorPass( SRenderInstance const * Instance )
     return true;
 }
 
-void ALightRenderer::BindTexturesColorPass( SMaterialFrameData * _Instance )
+void ALightRenderer::BindTexturesLightPass( SMaterialFrameData * _Instance )
 {
-    if ( !_Instance->Material->bColorPassTextureFetch ) {
+    if ( !_Instance->Material->bLightPassTextureFetch ) {
         return;
     }
 
@@ -489,33 +488,24 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         break;
     }
 
-//    RenderCore::TextureResolution2D frameResolution = GetFrameResoultion();
+    ARenderPass & opaquePass = FrameGraph.AddTask< ARenderPass >( "Opaque Pass" );
 
-//    if ( ReflectionColor.GetWidth() != frameResolution.Width
-//         || ReflectionColor.GetHeight() != frameResolution.Height )
-//    {
-//        ReflectionColor.InitializeStorage( MakeTextureStorage( TEXTURE_FORMAT_R11F_G11F_B10F, frameResolution ) );
-//        ReflectionDepth.InitializeStorage( MakeTextureStorage( TEXTURE_FORMAT_R32F, frameResolution ) );
-//    }
+    opaquePass.SetDynamicRenderArea( &GRenderViewArea );
 
-    ARenderPass & colorPass = FrameGraph.AddTask< ARenderPass >( "Light Pass" );
-
-    colorPass.SetDynamicRenderArea( &GRenderViewArea );
-
-    colorPass.AddResource( SSAOTexture, RESOURCE_ACCESS_READ );
-    colorPass.AddResource( PhotometricProfiles_R, RESOURCE_ACCESS_READ );
-    colorPass.AddResource( LookupBRDF_R, RESOURCE_ACCESS_READ );
-    colorPass.AddResource( ClusterItemTBO_R, RESOURCE_ACCESS_READ );
-    colorPass.AddResource( ClusterLookup_R, RESOURCE_ACCESS_READ );
-    colorPass.AddResource( ShadowMapDepth, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( SSAOTexture, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( PhotometricProfiles_R, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( LookupBRDF_R, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ClusterItemTBO_R, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ClusterLookup_R, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth, RESOURCE_ACCESS_READ );
 
     if ( RVSSLR ) {
-        colorPass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
-        colorPass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
+        opaquePass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
+        opaquePass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
     }
 
     if ( RVMotionBlur ) {
-        colorPass.SetColorAttachments(
+        opaquePass.SetColorAttachments(
         {
             {
                 "Light texture",
@@ -531,7 +521,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         );
     }
     else {
-        colorPass.SetColorAttachments(
+        opaquePass.SetColorAttachments(
         {
             {
                 "Light texture",
@@ -542,13 +532,13 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         );
     }
 
-    colorPass.SetDepthStencilAttachment(
+    opaquePass.SetDepthStencilAttachment(
     {
         DepthTarget,
         RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
     } );
 
-    colorPass.AddSubpass( { 0, 1 }, // color attachment refs
+    opaquePass.AddSubpass( { 0, 1 }, // color attachment refs
                           [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
         // Clearing don't work properly with dynamic resolution scale :(
@@ -597,12 +587,12 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
             // Choose pipeline and second vertex buffer
-            if ( !BindMaterialColorPass( instance ) ) {
+            if ( !BindMaterialLightPass( instance ) ) {
                 continue;
             }
 
             // Set material data (textures, uniforms)
-            BindTexturesColorPass( instance->MaterialInstance );
+            BindTexturesLightPass( instance->MaterialInstance );
 
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -623,43 +613,116 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             //    SaveSnapshot();
             //}
         }
-
-        for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
-            SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
-
-            // Choose pipeline and second vertex buffer
-            if ( !BindMaterialColorPass( instance ) ) {
-                continue;
-            }
-
-            // Set material data (textures, uniforms)
-            BindTexturesColorPass( instance->MaterialInstance );
-
-            // Bind skeleton
-            BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindSkeletonMotionBlur( instance->SkeletonOffsetMB, instance->SkeletonSize );
-
-            // Set instance uniforms
-            SetInstanceUniforms( instance );
-
-            rcmd->BindShaderResources( &GFrameResources.Resources );
-
-            drawCmd.IndexCountPerInstance = instance->IndexCount;
-            drawCmd.StartIndexLocation = instance->StartIndexLocation;
-            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
-
-            rcmd->Draw( &drawCmd );
-
-            //if ( RVRenderSnapshot ) {
-            //    SaveSnapshot();
-            //}
-        }
-
     } );
 
-    if ( RVSSLR ) {
-        AFrameGraphTexture * LightTexture = colorPass.GetColorAttachments()[0].Resource;
+    AFrameGraphTexture * LightTexture = opaquePass.GetColorAttachments()[0].Resource;
 
+    if ( GRenderView->TranslucentInstanceCount ) {
+        ARenderPass & translucentPass = FrameGraph.AddTask< ARenderPass >( "Translucent Pass" );
+
+        translucentPass.SetDynamicRenderArea( &GRenderViewArea );
+
+        translucentPass.AddResource( SSAOTexture, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( PhotometricProfiles_R, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( LookupBRDF_R, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ClusterItemTBO_R, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ClusterLookup_R, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth, RESOURCE_ACCESS_READ );
+
+        if ( RVSSLR ) {
+            translucentPass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
+            translucentPass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
+        }
+
+        translucentPass.SetColorAttachments(
+        {
+            {
+                LightTexture,
+                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+            }
+        } );
+
+        translucentPass.SetDepthStencilAttachment(
+        {
+            DepthTarget,
+            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+        } );
+
+        translucentPass.AddSubpass( { 0 }, // color attachment refs
+                                    [=]( ARenderPass const & RenderPass, int SubpassIndex )
+        {
+            SDrawIndexedCmd drawCmd;
+            drawCmd.InstanceCount = 1;
+            drawCmd.StartInstanceLocation = 0;
+
+            if ( RVSSLR ) {
+                GFrameResources.TextureBindings[8].pTexture = ReflectionDepth_R->Actual();
+                GFrameResources.SamplerBindings[8].pSampler = ReflectDepthSampler;
+
+                GFrameResources.TextureBindings[9].pTexture = ReflectionColor_R->Actual();
+                GFrameResources.SamplerBindings[9].pSampler = ReflectSampler;
+            }
+
+            GFrameResources.TextureBindings[10].pTexture = PhotometricProfiles_R->Actual();
+            GFrameResources.SamplerBindings[10].pSampler = IESSampler;
+
+            GFrameResources.TextureBindings[11].pTexture = LookupBRDF_R->Actual();
+            GFrameResources.SamplerBindings[11].pSampler = LookupBRDFSampler;
+
+            // Bind ambient occlusion
+            GFrameResources.TextureBindings[12].pTexture = SSAOTexture->Actual();
+            GFrameResources.SamplerBindings[12].pSampler = SSAOSampler;
+
+            // Bind cluster index buffer
+            GFrameResources.TextureBindings[13].pTexture = ClusterItemTBO_R->Actual();
+            GFrameResources.SamplerBindings[13].pSampler = ClusterLookupSampler;
+
+            // Bind cluster lookup
+            GFrameResources.TextureBindings[14].pTexture = ClusterLookup_R->Actual();
+            GFrameResources.SamplerBindings[14].pSampler = ClusterLookupSampler;
+
+            // Bind shadow map
+            GFrameResources.TextureBindings[15].pTexture = ShadowMapDepth->Actual();
+            GFrameResources.SamplerBindings[15].pSampler = ShadowDepthSamplerPCF;
+
+            for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
+                SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
+
+                // Choose pipeline and second vertex buffer
+                if ( !BindMaterialLightPass( instance ) ) {
+                    continue;
+                }
+
+                // Set material data (textures, uniforms)
+                BindTexturesLightPass( instance->MaterialInstance );
+
+                // Bind skeleton
+                BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
+                BindSkeletonMotionBlur( instance->SkeletonOffsetMB, instance->SkeletonSize );
+
+                // Set instance uniforms
+                SetInstanceUniforms( instance );
+
+                rcmd->BindShaderResources( &GFrameResources.Resources );
+
+                drawCmd.IndexCountPerInstance = instance->IndexCount;
+                drawCmd.StartIndexLocation = instance->StartIndexLocation;
+                drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+
+                rcmd->Draw( &drawCmd );
+
+                //if ( RVRenderSnapshot ) {
+                //    SaveSnapshot();
+                //}
+            }
+
+        } );
+
+        LightTexture = translucentPass.GetColorAttachments()[0].Resource;
+    }
+
+    if ( RVSSLR ) {
+        // TODO: We can store reflection color and depth in one texture
         ACustomTask & task = FrameGraph.AddTask< ACustomTask >( "Copy Light Pass" );
         task.AddResource( LightTexture, RESOURCE_ACCESS_READ );
         task.AddResource( LinearDepth, RESOURCE_ACCESS_READ );
@@ -686,10 +749,10 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         } );
     }
 
-    *ppLight = colorPass.GetColorAttachments()[0].Resource;
+    *ppLight = LightTexture;
 
     if ( RVMotionBlur ) {
-        *ppVelocity = colorPass.GetColorAttachments()[1].Resource;
+        *ppVelocity = opaquePass.GetColorAttachments()[1].Resource;
     }
     else {
         *ppVelocity = nullptr;

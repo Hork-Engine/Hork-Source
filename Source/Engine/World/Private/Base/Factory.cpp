@@ -35,10 +35,10 @@ SOFTWARE.
 
 AN_CLASS_META( ADummy )
 
-const char * AAttributeMeta::TypeNames[ (int)EAttributeType::T_Max ] =
-{
-    "Byte", "Bool", "Int", "Float", "Float2", "Float3", "Float4", "Quat", "String"
-};
+//const char * AAttributeMeta::TypeNames[ (int)EAttributeType::T_Max ] =
+//{
+//    "Byte", "Bool", "Int", "Float", "Float2", "Float3", "Float4", "Quat", "String", "Resource"
+//};
 
 AObjectFactory * AObjectFactory::FactoryList = nullptr;
 
@@ -69,14 +69,14 @@ AObjectFactory::~AObjectFactory() {
 
 const AClassMeta * AObjectFactory::FindClass( const char * _ClassName ) const {
     if ( !*_ClassName ) {
-        return NULL;
+        return nullptr;
     }
     for ( AClassMeta const * n = Classes ; n ; n = n->pNext ) {
         if ( !Core::Strcmp( n->GetName(), _ClassName ) ) {
             return n;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 const AClassMeta * AObjectFactory::LookupClass( const char * _ClassName ) const {
@@ -129,11 +129,21 @@ AAttributeMeta const * AClassMeta::FindAttribute( const char * _Name, bool _Recu
 }
 
 void AClassMeta::GetAttributes( TPodArray< AAttributeMeta const * > & _Attributes, bool _Recursive ) const {
+    if ( _Recursive && pSuperClass ) {
+        pSuperClass->GetAttributes( _Attributes, true );
+    }
     for ( AAttributeMeta const * attrib = AttributesHead ; attrib ; attrib = attrib->Next() ) {
         _Attributes.Append( attrib );
     }
-    if ( _Recursive && pSuperClass ) {
-        pSuperClass->GetAttributes( _Attributes, true );
+}
+
+void AClassMeta::CloneAttributes_r( AClassMeta const * Meta, ADummy const * _Template, ADummy * _Destination ) {
+    if ( Meta ) {
+        CloneAttributes_r( Meta->SuperClass(), _Template, _Destination );
+
+        for ( AAttributeMeta const * attr = Meta->GetAttribList() ; attr ; attr = attr->Next() ) {
+            attr->CopyValue( _Template, _Destination );
+        }
     }
 }
 
@@ -142,9 +152,6 @@ void AClassMeta::CloneAttributes( ADummy const * _Template, ADummy * _Destinatio
         GLogger.Printf( "AClassMeta::CloneAttributes: Template is not an %s class\n", _Destination->FinalClassName() );
         return;
     }
-    for ( AClassMeta const * Meta = &_Template->FinalClassMeta() ; Meta ; Meta = Meta->SuperClass() ) {
-        for ( AAttributeMeta const * attr = Meta->GetAttribList() ; attr ; attr = attr->Next() ) {
-            attr->CopyValue( _Template, _Destination );
-        }
-    }
+
+    CloneAttributes_r( &_Template->FinalClassMeta(), _Template, _Destination );
 }

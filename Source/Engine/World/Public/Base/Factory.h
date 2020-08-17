@@ -36,11 +36,14 @@ SOFTWARE.
 #include <Core/Public/String.h>
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/PodArray.h>
+#include <Core/Public/Ref.h>
 
 class AClassMeta;
 class AAttributeMeta;
-class APrecacheMeta;
+//class APrecacheMeta;
 class ADummy;
+//class AResource;
+//class ABaseObject;
 
 class ANGIE_API AObjectFactory {
     AN_FORBID_COPY( AObjectFactory )
@@ -88,7 +91,7 @@ class ANGIE_API AClassMeta {
 
     friend class AObjectFactory;
     friend class AAttributeMeta;
-    friend class APrecacheMeta;
+    //friend class APrecacheMeta;
 
 public:
     const uint64_t ClassId;
@@ -99,7 +102,7 @@ public:
     AClassMeta const * Next() const { return pNext; }
     AObjectFactory const * Factory() const { return pFactory; }
     AAttributeMeta const * GetAttribList() const { return AttributesHead; }
-    APrecacheMeta const * GetPrecacheList() const { return PrecacheHead; }
+    //APrecacheMeta const * GetPrecacheList() const { return PrecacheHead; }
 
     bool IsSubclassOf( AClassMeta const & _Superclass ) const {
         for ( AClassMeta const * meta = this ; meta ; meta = meta->SuperClass() ) {
@@ -137,22 +140,24 @@ protected:
         pSuperClass = _SuperClassMeta;
         AttributesHead = nullptr;
         AttributesTail = nullptr;
-        PrecacheHead = nullptr;
-        PrecacheTail = nullptr;
+        //PrecacheHead = nullptr;
+        //PrecacheTail = nullptr;
         _Factory.Classes = this;
         _Factory.NumClasses++;
         pFactory = &_Factory;
     }
 
 private:
+    static void CloneAttributes_r( AClassMeta const * Meta, ADummy const * _Template, ADummy * _Destination );
+
     const char * ClassName;
     AClassMeta * pNext;
     AClassMeta const * pSuperClass;
     AObjectFactory const * pFactory;
     AAttributeMeta const * AttributesHead;
     AAttributeMeta const * AttributesTail;
-    APrecacheMeta const * PrecacheHead;
-    APrecacheMeta const * PrecacheTail;
+    //APrecacheMeta const * PrecacheHead;
+    //APrecacheMeta const * PrecacheTail;
 };
 
 AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( const char * _ClassName ) const {
@@ -168,7 +173,7 @@ AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( uint64_t _ClassId ) cons
 AN_FORCEINLINE AClassMeta const * AObjectFactory::GetClassList() const {
     return Classes;
 }
-
+#if 0
 enum class EAttributeType {
     T_Byte,
     T_Bool,
@@ -179,6 +184,7 @@ enum class EAttributeType {
     T_Float4,
     T_Quat,
     T_String,
+    T_Resource,
 
     T_Max
 };
@@ -216,104 +222,61 @@ AN_FORCEINLINE EAttributeType GetAttributeType< AString const & >() { return EAt
 template<>
 AN_FORCEINLINE EAttributeType GetAttributeType< AString >() { return EAttributeType::T_String; }
 
-AN_FORCEINLINE AString AttrToString( byte const & v ) { return Math::ToString( v ); }
-AN_FORCEINLINE AString AttrToString( bool const & v ) { return Math::ToString( v ); }
-AN_FORCEINLINE AString AttrToString( int const & v ) { return Math::ToString( v ); }
-AN_FORCEINLINE AString AttrToString( float const & v ) { return Math::ToString( *( (int *)&v ) ); }
-AN_FORCEINLINE AString AttrToString( Float2 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ); }
-AN_FORCEINLINE AString AttrToString( Float3 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ); }
-AN_FORCEINLINE AString AttrToString( Float4 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ) + " " + Math::ToString( *( (int *)&v.W ) ); }
-AN_FORCEINLINE AString AttrToString( Quat const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ) + " " + Math::ToString( *( (int *)&v.W ) ); }
-AN_FORCEINLINE AString AttrToString( AString const & v ) { return v; }
-
-template< typename T >
-/*AN_FORCEINLINE*/ T AttrFromString( AString const & v );
-
 template<>
-AN_FORCEINLINE byte AttrFromString< byte >( AString const & v ) {
-    return Math::ToInt< uint8_t >( v );
-}
+AN_FORCEINLINE EAttributeType GetAttributeType< TRef< AResource > >() { return EAttributeType::T_Resource; }
+#endif
+//AN_FORCEINLINE AString AttrToString( byte const & v ) { return Math::ToString( v ); }
+//AN_FORCEINLINE AString AttrToString( bool const & v ) { return Math::ToString( v ); }
+//AN_FORCEINLINE AString AttrToString( int const & v ) { return Math::ToString( v ); }
+//AN_FORCEINLINE AString AttrToString( float const & v ) { return Math::ToString( *( (int *)&v ) ); }
+//AN_FORCEINLINE AString AttrToString( Float2 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ); }
+//AN_FORCEINLINE AString AttrToString( Float3 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ); }
+//AN_FORCEINLINE AString AttrToString( Float4 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ) + " " + Math::ToString( *( (int *)&v.W ) ); }
+//AN_FORCEINLINE AString AttrToString( Quat const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ) + " " + Math::ToString( *( (int *)&v.W ) ); }
+//AN_FORCEINLINE AString AttrToString( AString const & v ) { return v; }
+//
+//AString AttrToString( AResource const * v );
+//
+//template< typename T >
+//AString AttrToString( TRef< T > const & v ) {
+//    return AttrToString( v.GetObject() );
+//}
 
-template<>
-AN_FORCEINLINE bool AttrFromString< bool >( AString const & v ) {
-    return !!Math::ToInt< uint8_t >( v );
-}
 
-template<>
-AN_FORCEINLINE int AttrFromString< int >( AString const & v ) {
-    return Math::ToInt< int32_t >( v );
-}
 
-template<>
-AN_FORCEINLINE float AttrFromString< float >( AString const & v ) {
-    int i = Math::ToInt< int32_t >( v );
-    return *( float * )&i;
-}
 
-template<>
-AN_FORCEINLINE Float2 AttrFromString< Float2 >( AString const & v ) {
-    Float2 val;
-    int tmp[2];
-    sscanf( v.CStr(), "%d %d", &tmp[0], &tmp[1] );
-    for ( int i = 0 ; i < 2 ; i++ ) {
-        val[i] = *( float * )&tmp[i];
-    }
-    return val;
-}
+//template<>
+//AN_FORCEINLINE TRef< AResource > AttrFromString< TRef< AResource > >( AString const & v ) {
+//
+//}
 
-template<>
-AN_FORCEINLINE Float3 AttrFromString< Float3 >( AString const & v ) {
-    Float3 val;
-    int tmp[3];
-    sscanf( v.CStr(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2] );
-    for ( int i = 0 ; i < 3 ; i++ ) {
-        val[i] = *( float * )&tmp[i];
-    }
-    return val;
-}
+//template< typename T >
+//TRef< T > AttrFromString( AString const & v )
+//{
+//    return GetOrCreateResource< T::ReferencedType >( v.CStr() );
+//}
 
-template<>
-AN_FORCEINLINE Float4 AttrFromString< Float4 >( AString const & v ) {
-    Float4 val;
-    int tmp[4];
-    sscanf( v.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
-    for ( int i = 0 ; i < 4 ; i++ ) {
-        val[i] = *( float * )&tmp[i];
-    }
-    return val;
-}
-
-template<>
-AN_FORCEINLINE Quat AttrFromString< Quat >( AString const & v ) {
-    Quat val;
-    int tmp[4];
-    sscanf( v.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
-    for ( int i = 0 ; i < 4 ; i++ ) {
-        val[i] = *( float * )&tmp[i];
-    }
-    return val;
-}
-
-template<>
-AN_FORCEINLINE AString AttrFromString< AString >( AString const & v ) {
-    return v;
-}
+//AString AttrToString( AResource const * v );
+//
+//template< typename T >
+//AString AttrToString( TRef< T > const & v ) {
+//    return AttrFromString( v.GetObject() );
+//}
 
 class ANGIE_API AAttributeMeta {
     AN_FORBID_COPY( AAttributeMeta )
 
 public:
-    const char * GetName() const { return Name; }
-    EAttributeType GetType() const { return Type; }
-    const char * GetTypeName() const { return TypeNames[ (int)Type ]; }
+    const char * GetName() const { return Name.c_str(); }
+    int GetNameHash() const { return NameHash; }
     uint32_t GetFlags() const { return Flags; }
 
     AAttributeMeta const * Next() const { return pNext; }
     AAttributeMeta const * Prev() const { return pPrev; }
 
-    AAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name, EAttributeType _Type, uint32_t _Flags )
-        : Name( _Name )
-        , Type( _Type )
+    AAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name, /*EAttributeType _Type, */uint32_t _Flags )
+        : Name( std::string( _ClassMeta.GetName() ) + "." +  _Name )
+        , NameHash( Core::Hash( Name.c_str(), Name.length() ) )
         , Flags( _Flags )
     {
         AClassMeta & classMeta = const_cast< AClassMeta & >( _ClassMeta );
@@ -329,18 +292,6 @@ public:
 
     // TODO: Min/Max range for integer or float attributes, support for enums
 
-//    void CallSetter( ADummy * _Object, const void * _Value ) const {
-//        if ( Setter ) {
-//            Setter( _Object, _Value );
-//        }
-//    }
-
-//    void CallGetter( ADummy * _Object, void * _Value ) const {
-//        if ( Getter ) {
-//            Getter( _Object, _Value );
-//        }
-//    }
-
     void SetValue( ADummy * _Object, AString const & _Value ) const {
         FromString( _Object, _Value );
     }
@@ -353,71 +304,25 @@ public:
         Copy( _Src, _Dst );
     }
 
-    byte GetByteValue( ADummy * _Object ) const {
-        AString s;
-        ToString( _Object, s );
-        return AttrFromString< byte >( s );
-    }
-
-    bool GetBoolValue( ADummy * _Object ) const {
-        AString s;
-        ToString( _Object, s );
-        return AttrFromString< bool >( s );
-    }
-
-    int GetIntValue( ADummy * _Object ) const {
-        AString s;
-        ToString( _Object, s );
-        return AttrFromString< int >( s );
-    }
-
-    float GetFloatValue( ADummy * _Object ) const {
-        AString s;
-        ToString( _Object, s );
-        return AttrFromString< float >( s );
-    }
-
-    Float2 GetFloat2Value( ADummy * _Object ) const {
-        AString s;
-        ToString( _Object, s );
-        return AttrFromString< Float2 >( s );
-    }
-
-    Float3 GetFloat3Value( ADummy * _Object ) const {
-        AString s;
-        ToString( _Object, s );
-        return AttrFromString< Float3 >( s );
-    }
-
-    Float4 GetFloat4Value( ADummy * _Object ) const {
-        AString s;
-        ToString( _Object, s );
-        return AttrFromString< Float4 >( s );
-    }
-
-    Quat GetQuatValue( ADummy * _Object ) const {
-        AString s;
-        ToString( _Object, s );
-        return AttrFromString< Quat >( s );
-    }
+    //void SetSubmember( ADummy * _Object, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes ) const {
+    //    SetSubmemberCB( _Object, AttributeHash, Attributes );
+    //}
 
 private:
-    const char * Name;
-    EAttributeType Type;
+    std::string Name;
+    int NameHash;
     AAttributeMeta const * pNext;
     AAttributeMeta const * pPrev;
     uint32_t Flags;
 
 protected:
-//    TStdFunction< void( ADummy *, const void * ) > Setter;
-//    TStdFunction< void( ADummy *, void * ) > Getter;
     TStdFunction< void( ADummy *, AString const & ) > FromString;
     TStdFunction< void( ADummy *, AString & ) > ToString;
     TStdFunction< void( ADummy const *, ADummy * ) > Copy;
-
-    static const char * TypeNames[ (int)EAttributeType::T_Max ];
+    //TStdFunction< void( ADummy *, THash<> const &, TStdVector< std::pair< AString, AString > > const & ) > SetSubmemberCB;
 };
 
+#if 0
 class ANGIE_API APrecacheMeta {
     AN_FORBID_COPY( APrecacheMeta )
 
@@ -452,6 +357,142 @@ private:
     APrecacheMeta const * pNext;
     APrecacheMeta const * pPrev;
 };
+#endif
+
+template< typename AttributeType >
+void SetAttributeFromString( AttributeType & Attribute, AString const & String );
+
+//template< typename AttributeType >
+//void SetAttributeSubmember( AttributeType & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes );
+
+AN_FORCEINLINE void SetAttributeFromString( uint8_t & Attribute, AString const & String )
+{
+    Attribute = Math::ToInt< uint8_t >( String );
+}
+
+AN_FORCEINLINE void SetAttributeFromString( bool & Attribute, AString const & String )
+{
+    Attribute = !!Math::ToInt< uint8_t >( String );
+}
+
+AN_FORCEINLINE void SetAttributeFromString( int32_t & Attribute, AString const & String )
+{
+    Attribute = Math::ToInt< int32_t >( String );
+}
+
+AN_FORCEINLINE void SetAttributeFromString( float & Attribute, AString const & String )
+{
+    uint32_t i = Math::ToInt< uint32_t >( String );
+    Attribute = *(float *)&i;
+}
+
+AN_FORCEINLINE void SetAttributeFromString( Float2 & Attribute, AString const & String )
+{
+    uint32_t tmp[2];
+    sscanf( String.CStr(), "%d %d", &tmp[0], &tmp[1] );
+    for ( int i = 0 ; i < 2 ; i++ ) {
+        Attribute[i] = *(float *)&tmp[i];
+    }
+}
+
+AN_FORCEINLINE void SetAttributeFromString( Float3 & Attribute, AString const & String )
+{
+    uint32_t tmp[3];
+    sscanf( String.CStr(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2] );
+    for ( int i = 0 ; i < 3 ; i++ ) {
+        Attribute[i] = *(float *)&tmp[i];
+    }
+}
+
+AN_FORCEINLINE void SetAttributeFromString( Float4 & Attribute, AString const & String )
+{
+    uint32_t tmp[4];
+    sscanf( String.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
+    for ( int i = 0 ; i < 4 ; i++ ) {
+        Attribute[i] = *(float *)&tmp[i];
+    }
+}
+
+AN_FORCEINLINE void SetAttributeFromString( Quat & Attribute, AString const & String )
+{
+    uint32_t tmp[4];
+    sscanf( String.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3] );
+    for ( int i = 0 ; i < 4 ; i++ ) {
+        Attribute[i] = *(float *)&tmp[i];
+    }
+}
+
+AN_FORCEINLINE void SetAttributeFromString( AString & Attribute, AString const & String )
+{
+    Attribute = String;
+}
+
+//AN_FORCEINLINE void SetAttributeSubmember( uint8_t & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+//AN_FORCEINLINE void SetAttributeSubmember( bool & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+//AN_FORCEINLINE void SetAttributeSubmember( int32_t & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+//AN_FORCEINLINE void SetAttributeSubmember( float & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+//AN_FORCEINLINE void SetAttributeSubmember( Float2 & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+//AN_FORCEINLINE void SetAttributeSubmember( Float3 & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+//AN_FORCEINLINE void SetAttributeSubmember( Float4 & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+//AN_FORCEINLINE void SetAttributeSubmember( Quat & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+//AN_FORCEINLINE void SetAttributeSubmember( AString & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+//{}
+
+template< typename AttributeType >
+void SetAttributeToString( AttributeType const & Attribute, AString & String );
+
+AN_FORCEINLINE void SetAttributeToString( uint8_t const & Attribute, AString & String )
+{
+    String = Math::ToString( Attribute );
+}
+
+AN_FORCEINLINE void SetAttributeToString( bool const & Attribute, AString & String )
+{
+    String = Math::ToString( Attribute );
+}
+
+AN_FORCEINLINE void SetAttributeToString( int32_t const & Attribute, AString & String )
+{
+    String = Math::ToString( Attribute );
+}
+
+AN_FORCEINLINE void SetAttributeToString( float const & Attribute, AString & String )
+{
+    String = Math::ToString( *((uint32_t *)&Attribute) );
+}
+
+AN_FORCEINLINE void SetAttributeToString( Float2 const & Attribute, AString & String )
+{
+    String = Math::ToString( *((uint32_t *)&Attribute.X) ) + " " + Math::ToString( *((uint32_t *)&Attribute.Y) );;
+}
+
+AN_FORCEINLINE void SetAttributeToString( Float3 const & Attribute, AString & String )
+{
+    String = Math::ToString( *((uint32_t *)&Attribute.X) ) + " " + Math::ToString( *((uint32_t *)&Attribute.Y) ) + " " + Math::ToString( *((uint32_t *)&Attribute.Z) );
+}
+
+AN_FORCEINLINE void SetAttributeToString( Float4 const & Attribute, AString & String )
+{
+    String = Math::ToString( *((uint32_t *)&Attribute.X) ) + " " + Math::ToString( *((uint32_t *)&Attribute.Y) ) + " " + Math::ToString( *((uint32_t *)&Attribute.Z) ) + " " + Math::ToString( *((uint32_t *)&Attribute.W) );
+}
+
+AN_FORCEINLINE void SetAttributeToString( Quat const & Attribute, AString & String )
+{
+    String = Math::ToString( *((uint32_t *)&Attribute.X) ) + " " + Math::ToString( *((uint32_t *)&Attribute.Y) ) + " " + Math::ToString( *((uint32_t *)&Attribute.Z) ) + " " + Math::ToString( *((uint32_t *)&Attribute.W) );
+}
+
+AN_FORCEINLINE void SetAttributeToString( AString const & Attribute, AString & String )
+{
+    String = Attribute;
+}
 
 template< typename ObjectType >
 class TAttributeMeta : public AAttributeMeta {
@@ -464,7 +505,7 @@ public:
                     void(ObjectType::*_Setter)( AttributeType ),
                     AttributeType(ObjectType::*_Getter)() const,
                     int _Flags )
-        : AAttributeMeta( _ClassMeta, _Name, GetAttributeType< AttributeType >(), _Flags )
+        : AAttributeMeta( _ClassMeta, _Name, /*GetAttributeType< AttributeType >(),*/ _Flags )
     {
 //        Setter = [_Setter]( ADummy * _Object, const void * _DataPtr ) {
 //            ObjectType * object = static_cast< ObjectType * >( _Object );
@@ -476,30 +517,58 @@ public:
 //            Core::Memcpy( ( AttributeType * )_DataPtr, &Value, sizeof( Value ) );
 //        };
 
-        FromString = [_Setter]( ADummy * _Object, AString const & _Value ) {
-            (*static_cast< ObjectType * >( _Object ).*_Setter)( ::AttrFromString< AString >( _Value ) );
+        FromString = [_Setter]( ADummy * _Object, AString const & _Value )
+        {
+            AttributeType attribute;
+
+            SetAttributeFromString( attribute, _Value );
+
+            (*static_cast< ObjectType * >( _Object ).*_Setter)( attribute );
         };
-        ToString = [_Getter]( ADummy * _Object, AString & _Value ) {
-            _Value = ::AttrToString( (*static_cast< ObjectType * >( _Object ).*_Getter)() );
+
+        ToString = [_Getter]( ADummy * _Object, AString & _Value )
+        {
+            SetAttributeToString( (*static_cast< ObjectType * >(_Object).*_Getter)(), _Value );
         };
-        Copy = [_Setter,_Getter]( ADummy const * _Src, ADummy * _Dst ) {
+
+        Copy = [_Setter,_Getter]( ADummy const * _Src, ADummy * _Dst )
+        {
             (*static_cast< ObjectType * >( _Dst ).*_Setter)( (*static_cast< ObjectType const * >( _Src ).*_Getter)() );
         };
+
+//        SetSubmemberCB = [_Setter]( ADummy * _Object, AString const & _Value )
+//        {
+//            AttributeType attribute;
+
+//            SetAttributeFromString( attribute, _Value );
+
+//            (*static_cast< ObjectType * >( _Object ).*_Setter)( attribute );
+//        };
     }
 
     template< typename AttributeType >
     TAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name, AttributeType * _AttribPointer, int _Flags )
-        : AAttributeMeta( _ClassMeta, _Name, GetAttributeType< AttributeType >(), _Flags )
+        : AAttributeMeta( _ClassMeta, _Name, /*GetAttributeType< AttributeType >(),*/ _Flags )
     {
-        FromString = [_AttribPointer]( ADummy * _Object, AString const & _Value ) {
-            *( AttributeType * )( (byte *)static_cast< ObjectType * >( _Object ) + (size_t)_AttribPointer ) = ::AttrFromString< AttributeType >( _Value );
+        FromString = [_AttribPointer]( ADummy * _Object, AString const & _Value )
+        {
+            SetAttributeFromString( *(AttributeType *)((byte *)static_cast< ObjectType * >(_Object) + (size_t)_AttribPointer), _Value );
         };
-        ToString = [_AttribPointer]( ADummy * _Object, AString & _Value ) {
-            _Value = ::AttrToString( *( AttributeType * )( (byte *)static_cast< ObjectType * >( _Object ) + (size_t)_AttribPointer ) );
+
+        ToString = [_AttribPointer]( ADummy * _Object, AString & _Value )
+        {
+            SetAttributeToString( *(AttributeType *)((byte *)static_cast< ObjectType * >(_Object) + (size_t)_AttribPointer), _Value );
         };
-        Copy = [_AttribPointer]( ADummy const * _Src, ADummy * _Dst ) {
-            *( AttributeType * )( (byte *)static_cast< ObjectType * >( _Dst ) + (size_t)_AttribPointer ) = *( AttributeType const * )( (byte const *)static_cast< ObjectType const * >( _Src ) + (size_t)_AttribPointer );
+
+        Copy = [_AttribPointer]( ADummy const * _Src, ADummy * _Dst )
+        {
+            *(AttributeType *)((byte *)static_cast<ObjectType *>(_Dst) + (size_t)_AttribPointer) = *(AttributeType const *)((byte const *)static_cast<ObjectType const *>(_Src) + (size_t)_AttribPointer);
         };
+
+        //SetSubmemberCB = [_AttribPointer]( ADummy * _Object, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
+        //{
+        //    SetAttributeSubmember( *(AttributeType *)((byte *)static_cast< ObjectType * >(_Object) + (size_t)_AttribPointer), AttributeHash, Attributes );
+        //};
     }
 };
 
@@ -571,8 +640,7 @@ void _Class::ThisClassMeta::RegisterAttributes() {
 #define AN_ATTRIBUTE_( _Name, _Flags ) \
     static TAttributeMeta< ThisClass > const _Name##Meta( *this, AN_STRINGIFY( _Name ), (&(( ThisClass * )0)->_Name), _Flags );
 
-#define AN_PRECACHE( _ResourceClass, _ResourceName, _Path ) \
-    static APrecacheMeta const _ResourceName##Precache( *this, _ResourceClass::ClassMeta(), _Path );
+//#define AN_PRECACHE( _ResourceClass, _ResourceName, _Path ) static APrecacheMeta const _ResourceName##Precache( *this, _ResourceClass::ClassMeta(), _Path );
 
 /* Attribute flags */
 #define AF_DEFAULT              0

@@ -28,43 +28,11 @@ SOFTWARE.
 
 */
 
-#include "material_shadowmap.frag"
-#include "sslr.frag"
-
-float DistributionGGX( float RoughnessSqr, float NdH ) {
-    const float a2 = RoughnessSqr * RoughnessSqr; // TODO: Precompute once per-fragment!
-    const float NdH2 = NdH * NdH;
-
-    float denominator = mad( NdH2, a2 - 1.0, 1.0 );
-    denominator *= denominator;
-    denominator *= PI;  // TODO: мы можем вынести деление на PI и делить только один раз: ( L1 + L2 + .. + Ln ) / PI, вместо Diffuse использовать Albedo, т.к. Diffuse=Albedo/PI
-
-    return a2 / denominator;
-}
-
-// float k = Sqr( Roughness ) * 0.5f; //  IBL
-// float k = Sqr( Roughness + 1 ) * 0.125; // Direct light
-float GeometrySmith( float NdV, float NdL, float k ) {
-    const float invK = 1.0 - k;
-
-    // Geometry schlick GGX for V
-    const float ggxV = NdV / mad(NdV, invK, k); // TODO: Precompute once per-fragment!
-
-    // Geometry schlick GGX for L
-    const float ggxL = NdL / mad(NdL, invK, k);
-
-    return ggxV * ggxL;
-}
-
-vec3 FresnelSchlick( vec3 F0, float VdH ) {
-    return mad( pow( 1.0 - VdH, 5.0 ), 1.0 - F0, F0 );
-}
-
-vec3 FresnelSchlick_Roughness( vec3 F0, float NdV, float Roughness ) {
-    vec3 a = max( vec3( 1.0 - Roughness ), F0 );
-    
-    return mad( pow( 1.0 - NdV, 5.0 ), a - F0, F0 );
-}
+#include "shading/shadowmap.frag"
+#include "shading/sslr.frag"
+#include "shading/cook_torrance_brdf.frag"
+#include "shading/unpack_cluster.frag"
+#include "shading/photometric.frag"
 
 vec3 LightBRDF( vec3 Diffuse, vec3 F0, float RoughnessSqr, vec3 Normal, vec3 L, float NdL, float NdV, float k ) {
     const vec3 H = normalize( L + InViewspaceToEyeVec );
@@ -84,7 +52,8 @@ vec3 LightBRDF( vec3 Diffuse, vec3 F0, float RoughnessSqr, vec3 Normal, vec3 L, 
     return mad( kD, Diffuse, Specular );
 }
 
-vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughness, float AO, uint FirstIndex, uint NumProbes ) {
+vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughness, float AO, uint FirstIndex, uint NumProbes )
+{
 #if defined WITH_SSAO && defined ALLOW_SSAO
     // Sample ambient occlusion
     AO *= textureLod( AOLookup, InScreenUV, 0.0 ).x;
@@ -164,7 +133,8 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     return mad( kD, Diffuse, Specular ) * AO; 
 }
 
-vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV ) {
+vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV )
+{
     vec3 Light = vec3(0.0);
 
     const uint NumLights = GetNumDirectionalLights();
@@ -208,19 +178,8 @@ vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float Roughness
     return Light;
 }
 
-#ifdef SUPPORT_PHOTOMETRIC_LIGHT
-float CalcPhotometricAttenuation( float LdotDir, uint Profile ) {
-//if ( InNormalizedScreenCoord.x < 0.5 ) {
-//    const float angle = acos( LdotDir ) * (1.0 / PI);
-//    return textureLod( IESMap, vec2(angle, Profile), 0.0 ).r;
-//} else {
-    return pow( textureLod( IESMap, vec2(LdotDir*0.5+0.5, Profile), 0.0 ).r, 2.2 );
-    //return textureLod( IESMap, vec2(LdotDir*0.5+0.5, Profile), 0.0 ).r;
-//}
-}
-#endif
-
-vec3 CalcPointLightLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV, uint FirstIndex, uint NumLights ) {
+vec3 CalcPointLightLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV, uint FirstIndex, uint NumLights )
+{
     vec3 Light = vec3(0.0);
 
     #define POINT_LIGHT 0
@@ -285,41 +244,20 @@ vec3 CalcPointLightLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessS
     return Light;
 }
 
-void GetClusterData( out uint numProbes, out uint numDecals, out uint numLights, out uint firstIndex )
-{
-    // TODO: Move scale and bias to uniforms
-    #define NUM_CLUSTERS_Z 24
-    const float znear = 0.0125f;
-    const float zfar = 512;
-    const int nearOffset = 20;
-    const float scale = ( NUM_CLUSTERS_Z + nearOffset ) / log2( zfar / znear );
-    const float bias = -log2( znear ) * scale - nearOffset;
-
-    // Calc cluster index
-    const float linearDepth = -VS_Position.z;
-    const float slice = max( 0.0, floor( log2( linearDepth ) * scale + bias ) );
-    const ivec3 clusterIndex = ivec3( InNormalizedScreenCoord.x * 16, InNormalizedScreenCoord.y * 8, slice );
-
-    // Fetch packed data
-    const uvec2 cluster = texelFetch( ClusterLookup, clusterIndex, 0 ).xy;
-
-    // Unpack cluster data
-    numProbes = cluster.y & 0xff;
-    numDecals = ( cluster.y >> 8 ) & 0xff;
-    numLights = ( cluster.y >> 16 ) & 0xff;
-    //unused = ( cluster.y >> 24 ) & 0xff; // can be used in future
-
-    firstIndex = cluster.x;
-}
-
-void MaterialPBRShader( vec3 BaseColor, vec3 N, float Metallic, float Roughness, vec3 Emissive, float AO, float Opacity )
+void MaterialPBRShader( vec3 BaseColor,
+                        vec3 N,
+                        float Metallic,
+                        float Roughness,
+                        vec3 Emissive,
+                        float AO,
+                        float Opacity )
 {
     uint NumProbes;
     uint NumDecals;
     uint NumLights;
     uint FirstIndex;
 
-    GetClusterData( NumProbes, NumDecals, NumLights, FirstIndex );
+    UnpackCluster( NumProbes, NumDecals, NumLights, FirstIndex );
     
     // Calc macro normal
     #ifdef TWOSIDED
@@ -481,7 +419,9 @@ void MaterialPBRShader( vec3 BaseColor, vec3 N, float Metallic, float Roughness,
         #endif
         break;
     case DEBUG_VELOCITY:
+        #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
         FS_FragColor = vec4( abs(FS_Velocity), 0.0, 1.0 );
+        #endif
         break;
     }
 #endif // DEBUG_RENDER_MODE

@@ -92,12 +92,12 @@ void ADrawable::SetQueryGroup( int _UserQueryGroup ) {
     Primitive.QueryGroup |= _UserQueryGroup & 0xffff0000;
 }
 
-void ADrawable::SetFaceCull( bool bFaceCull ) {
-    Primitive.bFaceCull = bFaceCull;
+void ADrawable::SetSurfaceFlags( uint8_t Flags ) {
+    Primitive.Flags = Flags;
 }
 
-bool ADrawable::GetFaceCull() const {
-    return Primitive.bFaceCull;
+uint8_t ADrawable::GetSurfaceFlags() const {
+    return Primitive.Flags;
 }
 
 void ADrawable::SetFacePlane( PlaneF const & _Plane ) {
