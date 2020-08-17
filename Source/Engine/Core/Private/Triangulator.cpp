@@ -48,7 +48,7 @@ void ATriangulatorBase::SetBoundary( bool _Flag ) {
     gluTessProperty( static_cast< GLUtesselator * >(Tesselator), GLU_TESS_BOUNDARY_ONLY, _Flag );
 }
 
-void ATriangulatorBase::SetNormal( const Double3 & _Normal ) {
+void ATriangulatorBase::SetNormal( Double3 const & _Normal ) {
     gluTessNormal( static_cast< GLUtesselator * >(Tesselator), _Normal.X, _Normal.Y, _Normal.Z );
 }
 

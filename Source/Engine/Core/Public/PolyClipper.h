@@ -34,7 +34,7 @@ SOFTWARE.
 #include "PodArray.h"
 #include "Std.h"
 
-typedef TPodArray< Double2 > AClipperContour;
+using AClipperContour = TPodArray< Double2 >;
 
 struct SClipperPolygon
 {

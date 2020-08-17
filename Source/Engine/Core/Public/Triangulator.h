@@ -69,38 +69,38 @@ private:
 namespace TriangulatorTraits
 {
 
-template< typename TContourVertexType >
-void ContourVertexPosition( Double3 & _Dst, TContourVertexType const & _Src );
+template< typename ContourVertex >
+void ContourVertexPosition( Double3 & _Dst, ContourVertex const & _Src );
 
-template< typename TTriangleVertexType >
-void TriangleVertexPosition( Double3 & _Dst, TTriangleVertexType const & _Src );
+template< typename TriangleVertex >
+void TriangleVertexPosition( Double3 & _Dst, TriangleVertex const & _Src );
 
-template< typename TTriangleVertexType >
-void CombineVertex( TTriangleVertexType & _OutputVertex,
+template< typename TriangleVertex >
+void CombineVertex( TriangleVertex & _OutputVertex,
                     Double3 const & _Position,
                     float const * _Weights,
-                    TTriangleVertexType const & _V0,
-                    TTriangleVertexType const & _V1,
-                    TTriangleVertexType const & _V2,
-                    TTriangleVertexType const & _V3 );
+                    TriangleVertex const & _V0,
+                    TriangleVertex const & _V1,
+                    TriangleVertex const & _V2,
+                    TriangleVertex const & _V3 );
 
-template< typename TContourVertexType, typename TTriangleVertexType >
-void CopyVertex( TTriangleVertexType & _Dst, TContourVertexType const & _Src );
+template< typename ContourVertex, typename TriangleVertex >
+void CopyVertex( TriangleVertex & _Dst, ContourVertex const & _Src );
 
 }
 
-template< typename TContourVertexType, typename TTriangleVertexType >
+template< typename ContourVertex, typename TriangleVertex >
 class TTriangulator : ATriangulatorBase {
 public:
     struct SPolygon
     {
-        TContourVertexType * OuterContour;
+        ContourVertex * OuterContour;
         int OuterContourVertexCount;
-        TStdVector< std::pair< TContourVertexType *, int > > HoleContours;
+        TStdVector< std::pair< ContourVertex *, int > > HoleContours;
         Double3 Normal;
     };
 
-    TTriangulator( TStdVector< TTriangleVertexType > * pOutputStreamVertices, TPodArray< unsigned int > * pOutputStreamIndices );
+    TTriangulator( TStdVector< TriangleVertex > * pOutputStreamVertices, TPodArray< unsigned int > * pOutputStreamIndices );
 
     void Triangulate( SPolygon const * Polygon );
 
@@ -109,32 +109,33 @@ private:
     static void OnEndData( void * _PolygonData );
     static void OnVertexData( void * _Data, void * _PolygonData );
     static void OnCombineData( double _Position[3], void * _Data[4], float _Weight[4], void ** _OutData, void * _PolygonData );
+    static bool IsTriangleValid( Double3 const & _a, Double3 const & _b, Double3 const & _c );
 
-    unsigned int FindOrCreateVertex( TTriangleVertexType *  _Vertex );
+    unsigned int FindOrCreateVertex( TriangleVertex *  _Vertex );
 
     // Output indices pointer
     TPodArray< unsigned int > * pIndexStream;
 
     // Output vertices pointer
-    TStdVector< TTriangleVertexType > * pVertexStream;
+    TStdVector< TriangleVertex > * pVertexStream;
 
     // Offset to vertex stream
     int VertexOffset;
 
     // Current filling contour
-    TPodArray< TTriangleVertexType * > PrimitiveIndices;
+    TPodArray< TriangleVertex * > PrimitiveIndices;
     int CurrentTopology;
 
     // Vertex cache
-    TPodArray< TTriangleVertexType * > VertexCache;
+    TPodArray< TriangleVertex * > VertexCache;
 
     // Temporary allocated verts
-    TLinearAllocator< Align( sizeof( TTriangleVertexType ), 16 ) * 1024 > VertexAllocator;
-    TPodArray< TTriangleVertexType * > AllocatedVerts;
+    TLinearAllocator< Align( sizeof( TriangleVertex ), 16 ) * 1024 > VertexAllocator;
+    TPodArray< TriangleVertex * > AllocatedVerts;
 };
 
-template< typename TContourVertexType, typename TTriangleVertexType >
-TTriangulator< TContourVertexType, TTriangleVertexType >::TTriangulator( TStdVector< TTriangleVertexType > * pOutputStreamVertices, TPodArray< unsigned int > * pOutputStreamIndices )
+template< typename ContourVertex, typename TriangleVertex >
+TTriangulator< ContourVertex, TriangleVertex >::TTriangulator( TStdVector< TriangleVertex > * pOutputStreamVertices, TPodArray< unsigned int > * pOutputStreamIndices )
     : pIndexStream( pOutputStreamIndices )
     , pVertexStream( pOutputStreamVertices )
 {
@@ -144,16 +145,17 @@ TTriangulator< TContourVertexType, TTriangleVertexType >::TTriangulator( TStdVec
     SetCallback( CB_COMBINE_DATA, (SCallback)OnCombineData );
 }
 
-template< typename TContourVertexType, typename TTriangleVertexType >
-void TTriangulator< TContourVertexType, TTriangleVertexType >::OnBeginData( uint32_t _Topology, void * _PolygonData )
+template< typename ContourVertex, typename TriangleVertex >
+void TTriangulator< ContourVertex, TriangleVertex >::OnBeginData( uint32_t _Topology, void * _PolygonData )
 {
-    TTriangulator< TContourVertexType, TTriangleVertexType > * tr = static_cast< TTriangulator< TContourVertexType, TTriangleVertexType > * >(_PolygonData);
+    TTriangulator< ContourVertex, TriangleVertex > * tr = static_cast< TTriangulator< ContourVertex, TriangleVertex > * >(_PolygonData);
 
     tr->PrimitiveIndices.Clear();
     tr->CurrentTopology = _Topology;
 }
 
-AN_INLINE bool IsTriangleValid( Double3 const & _a, Double3 const & _b, Double3 const & _c )
+template< typename ContourVertex, typename TriangleVertex >
+bool TTriangulator< ContourVertex, TriangleVertex >::IsTriangleValid( Double3 const & _a, Double3 const & _b, Double3 const & _c )
 {
     double tmp1 = _c.X - _a.X;
     double tmp2 = _b.X - _a.X;
@@ -161,10 +163,10 @@ AN_INLINE bool IsTriangleValid( Double3 const & _a, Double3 const & _b, Double3 
         || Math::Abs( tmp1 * (_b.Z - _a.Z) - tmp2 * (_c.Z - _a.Z) ) > 0.0001;
 }
 
-template< typename TContourVertexType, typename TTriangleVertexType >
-void TTriangulator< TContourVertexType, TTriangleVertexType >::OnEndData( void * _PolygonData )
+template< typename ContourVertex, typename TriangleVertex >
+void TTriangulator< ContourVertex, TriangleVertex >::OnEndData( void * _PolygonData )
 {
-    TTriangulator< TContourVertexType, TTriangleVertexType > * tr = static_cast< TTriangulator< TContourVertexType, TTriangleVertexType > * >(_PolygonData);
+    TTriangulator< ContourVertex, TriangleVertex > * tr = static_cast< TTriangulator< ContourVertex, TriangleVertex > * >(_PolygonData);
 
     if ( tr->PrimitiveIndices.Size() > 2 ) {
         const int TRIANGLES = 0x0004;
@@ -211,7 +213,7 @@ void TTriangulator< TContourVertexType, TTriangleVertexType >::OnEndData( void *
                 v[1] = v[2];
             }
         } else if ( tr->CurrentTopology == TRIANGLE_STRIP ) {
-            TTriangleVertexType * Vertex[3];
+            TriangleVertex * Vertex[3];
             for ( int j = 0 ; j < numIndices-2 ; j++ ) {
                 Vertex[0] = tr->PrimitiveIndices[j + (j&1)];
                 Vertex[1] = tr->PrimitiveIndices[j - (j&1) + 1];
@@ -233,11 +235,12 @@ void TTriangulator< TContourVertexType, TTriangleVertexType >::OnEndData( void *
     }
 }
 
-template< typename TContourVertexType, typename TTriangleVertexType >
-unsigned int TTriangulator< TContourVertexType, TTriangleVertexType >::FindOrCreateVertex( TTriangleVertexType *  _Vertex )
+template< typename ContourVertex, typename TriangleVertex >
+unsigned int TTriangulator< ContourVertex, TriangleVertex >::FindOrCreateVertex( TriangleVertex *  _Vertex )
 {
-    int VerticesCount = VertexCache.Size();
-    for ( int i = 0 ; i < VerticesCount ; i++ ) {
+    int verticesCount = VertexCache.Size();
+    for ( int i = 0 ; i < verticesCount ; i++ ) {
+        // Compare pointers
         if ( VertexCache[i] == _Vertex ) {
             return i;
         }
@@ -246,30 +249,30 @@ unsigned int TTriangulator< TContourVertexType, TTriangleVertexType >::FindOrCre
     return VertexCache.Size() - 1;
 }
 
-template< typename TContourVertexType, typename TTriangleVertexType >
-void TTriangulator< TContourVertexType, TTriangleVertexType >::OnVertexData( void * _Data, void * _PolygonData )
+template< typename ContourVertex, typename TriangleVertex >
+void TTriangulator< ContourVertex, TriangleVertex >::OnVertexData( void * _Data, void * _PolygonData )
 {
-    TTriangulator< TContourVertexType, TTriangleVertexType > * tr = static_cast< TTriangulator< TContourVertexType, TTriangleVertexType > * >(_PolygonData);
+    TTriangulator< ContourVertex, TriangleVertex > * tr = static_cast< TTriangulator< ContourVertex, TriangleVertex > * >(_PolygonData);
 
-    tr->PrimitiveIndices.Append( static_cast< TTriangleVertexType * >(_Data)/*tr->VertexOffset + tr->FindOrCreateVertex( static_cast< TTriangleVertexType * >( _Data ) )*/ );
+    tr->PrimitiveIndices.Append( static_cast< TriangleVertex * >(_Data)/*tr->VertexOffset + tr->FindOrCreateVertex( static_cast< TriangleVertex * >( _Data ) )*/ );
 }
 
-template< typename TContourVertexType, typename TTriangleVertexType >
-void TTriangulator< TContourVertexType, TTriangleVertexType >::OnCombineData( double _Position[3], void * _Data[4], float _Weight[4], void ** _OutData, void * _PolygonData )
+template< typename ContourVertex, typename TriangleVertex >
+void TTriangulator< ContourVertex, TriangleVertex >::OnCombineData( double _Position[3], void * _Data[4], float _Weight[4], void ** _OutData, void * _PolygonData )
 {
-    TTriangulator< TContourVertexType, TTriangleVertexType > * tr = static_cast< TTriangulator< TContourVertexType, TTriangleVertexType > * >(_PolygonData);
+    TTriangulator< ContourVertex, TriangleVertex > * tr = static_cast< TTriangulator< ContourVertex, TriangleVertex > * >(_PolygonData);
 
-    void * data = tr->VertexAllocator.Allocate( sizeof( TTriangleVertexType ) );
-    TTriangleVertexType * v = new( data ) TTriangleVertexType;
+    void * data = tr->VertexAllocator.Allocate( sizeof( TriangleVertex ) );
+    TriangleVertex * v = new( data ) TriangleVertex;
 
-    TriangulatorTraits::CombineVertex< TTriangleVertexType >(
+    TriangulatorTraits::CombineVertex< TriangleVertex >(
         *v,
         *((const Double3 *)&_Position[0]),
         const_cast< const float * >(_Weight),
-        *static_cast< TTriangleVertexType * >(_Data[0]),
-        *static_cast< TTriangleVertexType * >(_Data[1]),
-        *static_cast< TTriangleVertexType * >(_Data[2]),
-        *static_cast< TTriangleVertexType * >(_Data[3]) );
+        *static_cast< TriangleVertex * >(_Data[0]),
+        *static_cast< TriangleVertex * >(_Data[1]),
+        *static_cast< TriangleVertex * >(_Data[2]),
+        *static_cast< TriangleVertex * >(_Data[3]) );
 
     *_OutData = v;
     tr->VertexCache.Append( v );
@@ -281,8 +284,8 @@ void TTriangulator< TContourVertexType, TTriangleVertexType >::OnCombineData( do
 #pragma warning(disable:4189)
 #endif
 
-template< typename TContourVertexType, typename TTriangleVertexType >
-void TTriangulator< TContourVertexType, TTriangleVertexType >::Triangulate( SPolygon const * Polygon )
+template< typename ContourVertex, typename TriangleVertex >
+void TTriangulator< ContourVertex, TriangleVertex >::Triangulate( SPolygon const * Polygon )
 {
     Double3 tmpPosition;
 
@@ -293,8 +296,8 @@ void TTriangulator< TContourVertexType, TTriangleVertexType >::Triangulate( SPol
     BeginPolygon( this );
 
     BeginContour();
-    TContourVertexType const * outerContour = Polygon->OuterContour;
-    TContourVertexType const * outerContourEnd = Polygon->OuterContour + Polygon->OuterContourVertexCount;
+    ContourVertex const * outerContour = Polygon->OuterContour;
+    ContourVertex const * outerContourEnd = Polygon->OuterContour + Polygon->OuterContourVertexCount;
     while ( outerContour < outerContourEnd ) {
         TriangulatorTraits::ContourVertexPosition( tmpPosition, *outerContour );
         ProcessVertex( tmpPosition, outerContour );
@@ -303,8 +306,8 @@ void TTriangulator< TContourVertexType, TTriangleVertexType >::Triangulate( SPol
     EndContour();
 
     for ( int i = 0 ; i < Polygon->HoleContours.Size() ; i++ ) {
-        TContourVertexType const * holeContour = Polygon->HoleContours[i].first;
-        TContourVertexType const * holeContourEnd = Polygon->HoleContours[i].first + Polygon->HoleContours[i].second;
+        ContourVertex const * holeContour = Polygon->HoleContours[i].first;
+        ContourVertex const * holeContourEnd = Polygon->HoleContours[i].first + Polygon->HoleContours[i].second;
 
         BeginContour();
         while ( holeContour < holeContourEnd ) {
@@ -319,15 +322,15 @@ void TTriangulator< TContourVertexType, TTriangleVertexType >::Triangulate( SPol
 
     // Fill vertices
     pVertexStream->Resize( VertexOffset + VertexCache.Size() );
-    TTriangleVertexType * pVertex = pVertexStream->ToPtr() + VertexOffset;
-    for ( TTriangleVertexType const * v : VertexCache ) {
+    TriangleVertex * pVertex = pVertexStream->ToPtr() + VertexOffset;
+    for ( TriangleVertex const * v : VertexCache ) {
         TriangulatorTraits::CopyVertex( *pVertex, *v );
         pVertex++;
     }
 
     // Call dtor for allocated vertices
-    for ( TTriangleVertexType * v : AllocatedVerts ) {
-        v->~TTriangleVertexType();
+    for ( TriangleVertex * v : AllocatedVerts ) {
+        v->~TriangleVertex();
     }
 
     VertexCache.Clear();

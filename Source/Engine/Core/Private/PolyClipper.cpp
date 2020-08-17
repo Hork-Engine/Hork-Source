@@ -129,7 +129,7 @@ static void ConstructContour( SClipperPath const & _Path, AClipperContour & _Con
 
     _Contour.Resize( numPoints );
     for ( int j = 0 ; j < numPoints ; j++ ) {
-        const SClipperPoint & point = _Path[j];
+        SClipperPoint const & point = _Path[j];
         _Contour[j].X = CLIPPER_LONG_TO_DOUBLE( point.X );
         _Contour[j].Y = CLIPPER_LONG_TO_DOUBLE( point.Y );
     }
@@ -210,7 +210,6 @@ bool APolyClipper::Execute( EClipType _ClipType, TStdVector< AClipperContour > &
 
     _Contours.Resize( resultPaths.size() );
     for ( int i = 0 ; i < _Contours.Size() ; i++ ) {
-        //EdgeShrink(  resultPaths[i] );
         ConstructContour( resultPaths[i], _Contours[i] );
     }
     return true;
