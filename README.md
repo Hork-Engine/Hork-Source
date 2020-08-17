@@ -144,7 +144,7 @@ PBR (physically based).
 * MIT license
    
 ## Used third-party libraries
-* stb, cgltw, lwo2, tinyexr, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui, iesna, clipper, glutess
+* stb, cgltf, lwo2, tinyexr, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui, iesna, clipper, glutess
 * Dynamic loaded: openal, libmpg123
 
 ## Some architectural solutions
