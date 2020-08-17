@@ -64,7 +64,7 @@ PBR (physically based).
 * Wireframe and normals renderer
 * Debug renderer (points, lines, polygons)
 * Batching
-* SRGB
+* sRGB
 * Premultiplied alpha
 * Virtual texturing
 
