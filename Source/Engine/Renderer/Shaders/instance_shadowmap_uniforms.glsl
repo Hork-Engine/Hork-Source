@@ -35,4 +35,5 @@ layout( binding = 1, std140 ) uniform UniformBuffer1
     vec4 uaddr_1;
     vec4 uaddr_2;
     vec4 uaddr_3;
+    uvec4 CascadeMask;
 };

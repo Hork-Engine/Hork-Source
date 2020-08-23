@@ -36,11 +36,11 @@ layout( vertices = 3 ) out;
 
 layout( location = SHADOWMAP_PASS_VARYING_POSITION ) in vec3 VS_Position[];
 layout( location = SHADOWMAP_PASS_VARYING_NORMAL ) in vec3 VS_N[];
-layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
+//layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
 
 layout( location = SHADOWMAP_PASS_VARYING_POSITION ) out vec3 TCS_Position[];
 layout( location = SHADOWMAP_PASS_VARYING_NORMAL ) out vec3 TCS_Normal[];
-layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int TCS_InstanceID[];
+//layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int TCS_InstanceID[];
 
 #include "tessellation_level.glsl"
 
@@ -48,7 +48,7 @@ void main()
 {
     TCS_Position[gl_InvocationID] = VS_Position[gl_InvocationID];
     TCS_Normal[gl_InvocationID] = VS_N[gl_InvocationID];
-    TCS_InstanceID[gl_InvocationID] = VS_InstanceID[gl_InvocationID];
+//    TCS_InstanceID[gl_InvocationID] = VS_InstanceID[gl_InvocationID];
     
 #   include "$SHADOWMAP_PASS_TCS_COPY_VARYINGS$"
 

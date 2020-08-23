@@ -99,22 +99,7 @@ float PCF_Filter( sampler2DArrayShadow _ShadowMapShadow, vec4 _TexCoord, float _
     }
     return sum / PCF_NUM_SAMPLES;
 }
-#endif
 
-// Сглаживание границы тени (Percentage Closer Filtering)
-float PCF_3x3( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
-    return ( textureOffset( _ShadowMap, _TexCoord, ivec2(-1,-1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0,-1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1,-1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 0) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 0) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 0) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 1) ) ) / 9.0;
-}
-
-#if 0
 float PCSS_Shadow( sampler2DArray _ShadowMap, sampler2DArrayShadow _ShadowMapShadow, vec4 _TexCoord ) {
     float zReceiver = _TexCoord.w;
 
@@ -134,59 +119,62 @@ float PCSS_Shadow( sampler2DArray _ShadowMap, sampler2DArrayShadow _ShadowMapSha
 }
 #endif
 
+float PCF_3x3( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
+    return ( textureOffset( _ShadowMap, _TexCoord, ivec2(-1,-1) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0,-1) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1,-1) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 0) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 0) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 0) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 1) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 1) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 1) ) ) / 9.0;
+}
+
+float PCF_5x5( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
+    float Shadow = 0;
+    for ( int i = -2 ; i <= 2 ; i++ )
+        for ( int j = -2 ; j <= 2 ; j++ )
+            Shadow += textureOffset( _ShadowMap, _TexCoord, ivec2(i,j) );
+    return Shadow * (1.0f/25.0f);
+}
+
 float SampleLightShadow( uint ShadowPoolPosition, uint NumCascades, float Bias ) {
-    float ShadowValue = 1.0;
-    uint CascadeIndex;
-
     for ( uint i = 0; i < NumCascades ; i++ ) {
-        CascadeIndex = ShadowPoolPosition + i;
+        uint CascadeIndex = ShadowPoolPosition + i;
         vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
-        
-        //SMTexCoord.z += -Bias*0.001*SMTexCoord.w;
-
         vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
         
-        //ShadowCoord.z -= Bias*0.01;
+        // TODO: Move this values to uniforms
+        ShadowCoord.z -= clamp( Bias * (1 << i)*1.5, 0.45, 5.0 ) * 0.0001;
         
-        //ShadowCoord.z += -Bias*0.005*(i+1);
-        
-        //last
-        //ShadowCoord.z += -Bias*0.005;
-        
-        ShadowCoord.z += -0.00001;
-        
-        //ShadowCoord.z += Bias*0.0005;
-
 #ifdef SHADOWMAP_PCF
-        bool SamplingOutside = any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) );
-        ShadowValue = SamplingOutside ? 1.0 : PCF_3x3( ShadowMapShadow, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
-
-        // test:
-        //if ( !SamplingOutside ) {
-        //    ShadowValue = float(i) / NumCascades;
-        //}
+        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) ) ) {
+            return PCF_5x5( ShadowMapShadow, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
+        }
 #endif
+
 #ifdef SHADOWMAP_PCSS
-        bool SamplingOutside = any( bvec2( any( lessThan( ShadowCoord, vec3( 0.05 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.05 ) ) ) ) );
-        ShadowValue = SamplingOutside ? 1.0 : PCSS_Shadow( ShadowMap, ShadowMapShadow, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
+        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.05 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.05 ) ) ) ) ) ) {
+            return PCSS_Shadow( ShadowMap, ShadowMapShadow, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
+        }
 #endif
 
 #ifdef SHADOWMAP_VSM
-        bool SamplingOutside = any( bvec2( any( lessThan( ShadowCoord, vec3( 0.01 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.01 ) ) ) ) );
-        ShadowValue = SamplingOutside ? 1.0 : VSM_Shadow( ShadowMap, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
-        //Shadow = VSM_Shadow_PCF_3x3( ShadowMap, SMTexCoord );
-#endif
-#ifdef SHADOWMAP_EVSM
-        bool SamplingOutside = any( bvec2( any( lessThan( ShadowCoord, vec3( 0.01 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.01 ) ) ) ) );
-        ShadowValue = SamplingOutside ? 1.0 : EVSM_Shadow( ShadowMap, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
+        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.01 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.01 ) ) ) ) ) ) {
+            return VSM_Shadow( ShadowMap, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
+            //Shadow = VSM_Shadow_PCF_3x3( ShadowMap, SMTexCoord );
+        }
 #endif
 
-        if ( !SamplingOutside ) {
-            break;
+#ifdef SHADOWMAP_EVSM
+        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.01 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.01 ) ) ) ) ) ) {
+            return EVSM_Shadow( ShadowMap, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
         }
+#endif
     }
 
-    return ShadowValue;
+    return 1.0;
 }
 
 vec3 DebugShadowCascades( uint ShadowPoolPosition, uint NumCascades )
@@ -198,23 +186,18 @@ vec3 DebugShadowCascades( uint ShadowPoolPosition, uint NumCascades )
         vec3( 1,1,0 )
     );
     
-    vec3 Color = vec3( 0.0 );
-
     for ( uint i = 0; i < NumCascades ; i++ ) {
         const uint CascadeIndex = ShadowPoolPosition + i;
         const vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
         
         vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
         
-        bool SamplingOutside = any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) );
-        Color = SamplingOutside ? vec3( 0.0 ) : CascadeColor[CascadeIndex];
-
-        if ( !SamplingOutside ) {
-            break;
+        if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) ) ) {
+            return CascadeColor[CascadeIndex];
         }
     }
 
-    return Color;
+    return vec3( 0.0 );
 }
 
 vec3 DebugDirectionalLightCascades()

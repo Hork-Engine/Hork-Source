@@ -36,7 +36,7 @@ layout( vertices = 1 ) out;
 
 layout( location = SHADOWMAP_PASS_VARYING_POSITION ) in vec3 VS_Position[];
 layout( location = SHADOWMAP_PASS_VARYING_NORMAL ) in vec3 VS_N[];
-layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
+//layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
 
 struct SPatchVertices
 {
@@ -51,7 +51,7 @@ struct SPatchVertices
     vec3 B120;
     vec3 B111;
     vec3 N[3];
-    int InstanceID;
+    //int InstanceID;
 };
 
 //#define SHADOWMAP_PASS_VARYING_PATCH 0
@@ -67,7 +67,7 @@ void main()
        TCS_Patch.N[i] = VS_N[i];
     }
     
-    TCS_Patch.InstanceID = VS_InstanceID[0];
+    //TCS_Patch.InstanceID = VS_InstanceID[0];
     
 #   include "$SHADOWMAP_PASS_TCS_COPY_VARYINGS$"
 

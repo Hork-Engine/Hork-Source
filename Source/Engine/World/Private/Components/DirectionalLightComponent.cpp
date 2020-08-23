@@ -31,13 +31,29 @@ SOFTWARE.
 #include <World/Public/Components/DirectionalLightComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
+#include <Core/Public/Logger.h>
+
+ARuntimeVariable RVDrawDirectionalLights( _CTS( "DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable RVShadowCascadeBits( _CTS( "ShadowCascadeBits" ), _CTS( "24" ) );    // Allowed 16, 24 or 32 bits
+ARuntimeVariable RVCascadeSplitLambda( _CTS( "CascadeSplitLambda" ), _CTS( "1.0" ) );
+//ARuntimeVariable RVShadowCascadeOffset( _CTS( "ShadowCascadeOffset" ), _CTS( "3.0" ) );
+//ARuntimeVariable RVShadowMaxDistance( _CTS( "ShadowMaxDistance" ), _CTS( "128" ) );
+//ARuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ), _CTS( "2048" ) );
+ARuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ), _CTS( "128" ) ); // TODO: move to directional light properties
+
+static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
+
+static constexpr Float4x4 ShadowMapBias = Float4x4(
+    0.5f, 0.0f, 0.0f, 0.0f,
+    0.0f,-0.5f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.5f, 0.5f, 0.0f, 1.0f
+);
 
 static const float DEFAULT_MAX_SHADOW_CASCADES = 4;
 static const float DEFAULT_ILLUMINANCE_IN_LUX = 110000.0f;
 static const float DEFAULT_TEMPERATURE = 6590.0f;
 static const Float3 DEFAULT_COLOR( 1.0f );
-
-ARuntimeVariable RVDrawDirectionalLights( _CTS( "DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_BEGIN_CLASS_META( ADirectionalLightComponent )
 AN_ATTRIBUTE_( bCastShadow, AF_DEFAULT )
@@ -49,6 +65,8 @@ ADirectionalLightComponent::ADirectionalLightComponent() {
     Color = DEFAULT_COLOR;    
     EffectiveColor = Float4( 0.0f );
     MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
+    ShadowMaxDistance = 128;
+    ShadowCascadeOffset = 3;
     Next = Prev = nullptr;
 }
 
@@ -73,17 +91,49 @@ void ADirectionalLightComponent::DeinitializeComponent() {
     GetWorld()->GetRenderWorld().RemoveDirectionalLight( this );
 }
 
+namespace Math
+{
+Float4x4 LookAt( Float3 const & eye, Float3 const & center, Float3 const & up )
+{
+    Float3 const f( ( center - eye ).Normalized() );
+    Float3 const s( Cross( up, f ).Normalized() );
+    Float3 const u( Cross( f, s ) );
+
+    Float4x4 result;
+    result[0][0] = s.X;
+    result[1][0] = s.Y;
+    result[2][0] = s.Z;
+    result[3][0] = -Dot( s, eye );
+
+    result[0][1] = u.X;
+    result[1][1] = u.Y;
+    result[2][1] = u.Z;
+    result[3][1] = -Dot( u, eye );
+
+    result[0][2] = f.X;
+    result[1][2] = f.Y;
+    result[2][2] = f.Z;
+    result[3][2] = -Dot( f, eye );
+
+    result[0][3] = 0;
+    result[1][3] = 0;
+    result[2][3] = 0;
+    result[3][3] = 1;
+
+    return result;
+}
+}
+
 void ADirectionalLightComponent::SetDirection( Float3 const & _Direction ) {
     Float3x3 orientation;
 
     orientation[2] = -_Direction.Normalized();
-    orientation[2].ComputeBasis( orientation[0], orientation[1] );
+    orientation[0] = Math::Cross( Float3(0.0f,1.0f,0.0f), orientation[2] ).Normalized();
+    orientation[1] = Math::Cross( orientation[2], orientation[0] );
 
     Quat rotation;
     rotation.FromMatrix( orientation );
     SetRotation( rotation );
-
-    //bShadowMatrixDirty = true;
 }
 
 Float3 ADirectionalLightComponent::GetDirection() const {
@@ -92,14 +142,14 @@ Float3 ADirectionalLightComponent::GetDirection() const {
 
 void ADirectionalLightComponent::SetWorldDirection( Float3 const & _Direction ) {
     Float3x3 orientation;
+
     orientation[2] = -_Direction.Normalized();
-    orientation[2].ComputeBasis( orientation[0], orientation[1] );
+    orientation[0] = Math::Cross( Float3( 0.0f, 1.0f, 0.0f ), orientation[2] ).Normalized();
+    orientation[1] = Math::Cross( orientation[2], orientation[0] );
 
     Quat rotation;
     rotation.FromMatrix( orientation );
     SetWorldRotation( rotation );
-
-    //bShadowMatrixDirty = true;
 }
 
 Float3 ADirectionalLightComponent::GetWorldDirection() const {
@@ -116,63 +166,7 @@ int ADirectionalLightComponent::GetMaxShadowCascades() const {
 
 void ADirectionalLightComponent::OnTransformDirty() {
     Super::OnTransformDirty();
-
-//    bShadowMatrixDirty = true;
 }
-
-#if 0
-Float4x4 const & ADirectionalLightComponent::GetShadowMatrix() const {
-    if ( bShadowMatrixDirty ) {
-        // Update shadow matrix
-
-        #define DEFAULT_ZNEAR 0.04f//0.1f
-        #define DEFAULT_ZFAR 10000.0f//800.0f//10000.0f//99999.0f
-
-        Float3x3 BillboardMatrix = GetWorldRotation().ToMatrix();
-        Float3x3 Basis = BillboardMatrix.Transposed();
-        //Float3 Origin = -Basis[2] * 1000.0f;//Basis * ( -GetWorldPosition() );
-        Float3 Origin = Basis * ( -GetWorldBackVector()*400.0f );
-
-        LightViewMatrix[ 0 ] = Float4( Basis[ 0 ], 0.0f );
-        LightViewMatrix[ 1 ] = Float4( Basis[ 1 ], 0.0f );
-        LightViewMatrix[ 2 ] = Float4( Basis[ 2 ], 0.0f );
-        LightViewMatrix[ 3 ] = Float4( Origin, 1.0f );
-
-        //const float SHADOWMAP_SIZE = 4096;
-        //Float4 OrthoRect = Float4( -1, 1, -1, 1 )*150.0f;//(SHADOWMAP_SIZE*0.5f/100.0f);
-        Float2 OrthoMins = Float2( -1,-1 )*150.0f;
-        Float2 OrthoMaxs = Float2(  1, 1 )*150.0f;
-        Float4x4 ProjectionMatrix = Float4x4::OrthoCC( OrthoMins, OrthoMaxs, DEFAULT_ZNEAR, DEFAULT_ZFAR );
-        //Float4x4 ProjectionMatrix = Math::PerspectiveProjectionMatrixCC( Math::_PI/1.1f,Math::_PI/1.1f,DEFAULT_ZNEAR, DEFAULT_ZFAR );
-
-
-        //Float4x4 Test = Math::PerspectiveProjectionMatrix( OrthoRect.X, OrthoRect.Y, OrthoRect.Z, OrthoRect.W, DEFAULT_ZNEAR, DEFAULT_ZFAR );
-        //Float4x4 Test = PerspectiveProjectionMatrixRevCC( Math::_PI/4,Math::_PI/4,DEFAULT_ZNEAR, DEFAULT_ZFAR );
-
-
-
-
-        //Float4 v1 = Test * Float4(0,0,-DEFAULT_ZFAR,1.0f);
-        //v1/=v1.W;
-        //Float4 v2 = Test * Float4(0,0,-DEFAULT_ZNEAR,1.0f);
-        //v2/=v2.W;
-
-        //Float4x4 ProjectionMatrix = PerspectiveProjectionMatrixRevCC( Math::_PI/4.0f, Math::_PI/4.0f, /*SHADOWMAP_SIZE, SHADOWMAP_SIZE, */DEFAULT_ZNEAR, DEFAULT_ZFAR );
-        ShadowMatrix = ProjectionMatrix * LightViewMatrix;
-
-        bShadowMatrixDirty = false;
-    }
-
-    return ShadowMatrix;
-}
-
-const Float4x4 & ADirectionalLightComponent::GetLightViewMatrix() const {
-    GetShadowMatrix(); // Update matrix
-
-    return LightViewMatrix;
-}
-#endif
-
 
 void ADirectionalLightComponent::SetColor( Float3 const & _Color ) {
     Color = _Color;
@@ -224,4 +218,137 @@ void ADirectionalLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
         InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
         InRenderer->DrawLine( pos, pos + GetWorldDirection() * 10.0f );
     }
+}
+
+void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int * pFirstCascade, int * pNumCascades ) {
+    float cascadeSplits[MAX_CASCADE_SPLITS];
+    int numSplits = MaxShadowCascades + 1;
+    int numVisibleSplits;
+    Float4x4 lightViewMatrix;
+    Float3 worldspaceVerts[MAX_CASCADE_SPLITS][4];
+    Float3 right, up;
+
+    AN_ASSERT( MaxShadowCascades > 0 && MaxShadowCascades <= MAX_SHADOW_CASCADES );
+
+    if ( !bCastShadow ) {
+        *pFirstCascade = 0;
+        *pNumCascades = 0;
+        return;
+    }
+
+    if ( View->bPerspective ) {
+        float tanFovX = std::tan( View->ViewFovX * 0.5f );
+        float tanFovY = std::tan( View->ViewFovY * 0.5f );
+        right = View->ViewRightVec * tanFovX;
+        up = View->ViewUpVec * tanFovY;
+    } else {
+        float orthoWidth = View->ViewOrthoMaxs.X - View->ViewOrthoMins.X;
+        float orthoHeight = View->ViewOrthoMaxs.Y - View->ViewOrthoMins.Y;
+        right = View->ViewRightVec * Math::Abs( orthoWidth * 0.5f );
+        up = View->ViewUpVec * Math::Abs( orthoHeight * 0.5f );
+    }
+
+    // TODO: move this parameters to DirectionalLightComponent
+    const float shadowMaxDistance = ShadowMaxDistance;//RVShadowMaxDistance.GetInteger();
+    const float offset = ShadowCascadeOffset;//RVShadowCascadeOffset.GetFloat();
+    const float a = (shadowMaxDistance - offset) / View->ViewZNear;
+    const float b = (shadowMaxDistance - offset) - View->ViewZNear;
+    const float lambda = RVCascadeSplitLambda.GetFloat();
+
+    // Calc splits
+    cascadeSplits[0] = View->ViewZNear;
+    cascadeSplits[MAX_CASCADE_SPLITS-1] = shadowMaxDistance;
+
+    for ( int splitIndex = 1 ; splitIndex < MAX_CASCADE_SPLITS-1 ; splitIndex++ ) {
+        const float factor = (float)splitIndex / (MAX_CASCADE_SPLITS-1);
+        const float logarithmic = View->ViewZNear * Math::Pow( a, factor );
+        const float linear = View->ViewZNear + b * factor;
+        const float dist = Math::Lerp( linear, logarithmic, lambda );
+        cascadeSplits[splitIndex] = offset + dist;
+    }
+
+    float maxVisibleDist = Math::Max( View->MaxVisibleDistance, cascadeSplits[0] );
+
+    // Calc worldspace verts
+    for ( numVisibleSplits = 0 ;
+          numVisibleSplits < numSplits && (cascadeSplits[numVisibleSplits] <= maxVisibleDist) ;
+          numVisibleSplits++ )
+    {
+        Float3 * pWorldSpaceVerts = worldspaceVerts[numVisibleSplits];
+
+        float d = cascadeSplits[numVisibleSplits];
+
+        Float3 centerWorldspace = View->ViewPosition + View->ViewDir * d;
+
+        Float3 c1 = right + up;
+        Float3 c2 = right - up;
+
+        if ( View->bPerspective ) {
+            c1 *= d;
+            c2 *= d;
+        }
+
+        pWorldSpaceVerts[0] = centerWorldspace - c1;
+        pWorldSpaceVerts[1] = centerWorldspace - c2;
+        pWorldSpaceVerts[2] = centerWorldspace + c1;
+        pWorldSpaceVerts[3] = centerWorldspace + c2;
+    }
+
+    int numVisibleCascades = numVisibleSplits - 1;
+
+    BvSphere cascadeSphere;
+
+    Float3x3 lightRotation = GetWorldRotation().ToMatrix();
+    Float3x3 basis = lightRotation.Transposed();
+    lightViewMatrix[0] = Float4( basis[0], 0.0f );
+    lightViewMatrix[1] = Float4( basis[1], 0.0f );
+    lightViewMatrix[2] = Float4( basis[2], 0.0f );
+
+    const float halfCascadeRes = RVShadowCascadeResolution.GetFloat() * 0.5f;
+
+    int firstCascade = View->NumShadowMapCascades;
+
+    // Distance from cascade bounds to light source (near clip plane)
+    // NOTE: We can calc actual light distance from scene geometry,
+    // but now it just a magic number big enough to enclose most scenes = 1km.
+    const float lightDistance = 1000.0f;
+
+    for ( int i = 0 ; i < numVisibleCascades ; i++ ) {
+        // Calc cascade bounding sphere
+        cascadeSphere.FromPointsAverage( worldspaceVerts[i], 8 );
+
+        // Set light position at cascade center
+        lightViewMatrix[3] = Float4( basis * -cascadeSphere.Center, 1.0f );
+
+        // Set ortho box
+        Float3 cascadeMins = Float3( -cascadeSphere.Radius );
+        Float3 cascadeMaxs = Float3( cascadeSphere.Radius );
+
+        // Offset near clip distance
+        cascadeMins[2] -= lightDistance;
+
+        // Calc light view projection matrix
+        Float4x4 cascadeMatrix = Float4x4::OrthoCC( Float2( cascadeMins ), Float2( cascadeMaxs ), cascadeMins[2], cascadeMaxs[2] )
+                * lightViewMatrix;
+
+        // Calc pixel fraction in texture space
+        Float2 error = Float2( cascadeMatrix[3] );  // same cascadeMatrix * Float4(0,0,0,1)
+        error.X = Math::Fract( error.X * halfCascadeRes ) / halfCascadeRes;
+        error.Y = Math::Fract( error.Y * halfCascadeRes ) / halfCascadeRes;
+
+        // Snap light projection to texel grid
+        // Same cascadeMatrix = Float4x4::Translation( -error ) * cascadeMatrix;
+        cascadeMatrix[3].X -= error.X;
+        cascadeMatrix[3].Y -= error.Y;
+
+        int cascadeIndex = firstCascade + i;
+
+        View->LightViewProjectionMatrices[cascadeIndex] = cascadeMatrix;
+        View->ShadowMapMatrices[cascadeIndex] = ShadowMapBias * cascadeMatrix * View->ClipSpaceToWorldSpace;
+    }
+
+    View->NumShadowMapCascades += numVisibleCascades;
+
+    *pFirstCascade = firstCascade;
+    *pNumCascades = numVisibleCascades;
 }

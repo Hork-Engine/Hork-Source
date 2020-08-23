@@ -52,11 +52,14 @@ constexpr int MAX_SKINNED_MESH_JOINTS               = 256;
 /** Max textures per material */
 constexpr int MAX_MATERIAL_TEXTURES                 = 11; // Reserved texture slots for AOLookup, ClusterItemTBO, ClusterLookup, ShadowMapShadow, Lightmap
 
+/** Max directional lights per frame */
+constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
+
 /** Max cascades per light */
 constexpr int MAX_SHADOW_CASCADES = 4;
 
-/** Max directional lights per frame */
-constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
+/** Max cascades per view */
+constexpr int MAX_TOTAL_SHADOW_CASCADES_PER_VIEW = MAX_SHADOW_CASCADES * MAX_DIRECTIONAL_LIGHTS;
 
 /** Frustum width */
 constexpr int MAX_FRUSTUM_CLUSTERS_X = 16;
@@ -1184,7 +1187,9 @@ struct SRenderView {
 
     class AVirtualTextureFeedback * VTFeedback;
 
+    // Total cascades for all shadow maps
     int NumShadowMapCascades;
+    // Total shadow maps
     int NumCascadedShadowMaps;
 
     int FirstInstance;
@@ -1208,8 +1213,11 @@ struct SRenderView {
     int FirstDebugDrawCommand;
     int DebugDrawCommandCount;
 
-    Float4x4 LightViewProjectionMatrices[MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES];
-    Float4x4 ShadowMapMatrices[MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES];
+    // Transform from world space to light view projection
+    Float4x4 LightViewProjectionMatrices[MAX_TOTAL_SHADOW_CASCADES_PER_VIEW];
+
+    // Transform from view clip space to texture space
+    Float4x4 ShadowMapMatrices[MAX_TOTAL_SHADOW_CASCADES_PER_VIEW];
 
     SFrameLightData LightData;
 };

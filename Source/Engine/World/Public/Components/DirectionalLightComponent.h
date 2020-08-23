@@ -45,22 +45,38 @@ public:
 
     /** Set temperature of the light in Kelvin */
     void SetTemperature( float _Temperature );
+
+    /** Get temperature of the light in Kelvin */
     float GetTemperature() const;
 
     void SetColor( Float3 const & _Color );
     void SetColor( float _R, float _G, float _B );
     Float3 const & GetColor() const;
 
+    /** Set light direction in local space */
     void SetDirection( Float3 const & _Direction );
+
+    /** Get light direction in local space */
     Float3 GetDirection() const;
 
+    /** Set light direction in world space */
     void SetWorldDirection( Float3 const & _Direction );
+
+    /** Get light direction in world space */
     Float3 GetWorldDirection() const;
+
+    void SetShadowMaxDistance( float MaxDistance ) { ShadowMaxDistance = MaxDistance; }
+    int GetShadowMaxDistance() const { return ShadowMaxDistance; }
+
+    void SetShadowCascadeOffset( float Offset ) { ShadowCascadeOffset = Offset; }
+    int GetShadowCascadeOffset() const { return ShadowCascadeOffset; }
 
     void SetMaxShadowCascades( int _MaxShadowCascades );
     int GetMaxShadowCascades() const;
 
     Float4 const & GetEffectiveColor() const;
+
+    void AddShadowmapCascades( struct SRenderView * View, int * pFirstCascade, int * pNumCascades );
 
     ADirectionalLightComponent * GetNext() { return Next; }
     ADirectionalLightComponent * GetPrev() { return Prev; }
@@ -78,10 +94,9 @@ private:
     float Temperature;
     Float3 Color;
     mutable Float4 EffectiveColor;
+    float ShadowMaxDistance;
+    float ShadowCascadeOffset;
     int MaxShadowCascades;
-//    mutable Float4x4 LightViewMatrix;
-//    mutable Float4x4 ShadowMatrix;
-//    mutable bool bShadowMatrixDirty;
     ADirectionalLightComponent * Next;
     ADirectionalLightComponent * Prev;
 };

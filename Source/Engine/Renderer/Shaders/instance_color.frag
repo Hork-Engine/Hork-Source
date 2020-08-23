@@ -46,11 +46,9 @@ layout( origin_upper_left ) in vec4 gl_FragCoord;
 // Built-in varyings
 #include "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$"
 
-#define TOTAL_SHADOW_CASCADES (MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES)
-
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ TOTAL_SHADOW_CASCADES ];
-    mat4 ShadowMapMatrices[ TOTAL_SHADOW_CASCADES ];
+    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
 };
 
 // Keep paddings, don't use vec3, keep in sync with cpp struct

@@ -3201,7 +3201,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 
         int locationIndex = trans.Varyings.Size();
 
-        predefines += "#define SHADOWMAP_PASS_VARYING_INSTANCE_ID " + Math::ToString( locationIndex++ ) + "\n";
+        //predefines += "#define SHADOWMAP_PASS_VARYING_INSTANCE_ID " + Math::ToString( locationIndex++ ) + "\n";
         predefines += "#define SHADOWMAP_PASS_VARYING_POSITION "    + Math::ToString( locationIndex++ ) + "\n";
         predefines += "#define SHADOWMAP_PASS_VARYING_NORMAL "      + Math::ToString( locationIndex++ ) + "\n";
 

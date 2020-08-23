@@ -160,6 +160,8 @@ private:
     ARuntimeCommandProcessor CommandProcessor;
 
     TRef< AEngineCommands > EngineCmd;
+
+    bool bAllowInputEvents = false;
 };
 
 class AEngineCommands : public ABaseObject

@@ -43,11 +43,11 @@ out gl_PerVertex
         layout( location = SHADOWMAP_PASS_VARYING_NORMAL ) out vec3 VS_N;
 #   endif
 
-    layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
+//    layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
 
     layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-        mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
-        mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+        mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+        mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
     };
 
 #endif
@@ -137,9 +137,9 @@ void main() {
             VS_N = normalize( NormalMatrix * VertexNormal );
 #       else
             gl_Position = TransformMatrix * FinalVertexPos;
-            gl_Position = CascadeViewProjection[ gl_InstanceID ] * gl_Position;
+//            gl_Position = CascadeViewProjection[ gl_InstanceID ] * gl_Position;
 #       endif
-        VS_InstanceID = gl_InstanceID;
+        //VS_InstanceID = gl_InstanceID;
 #   endif
 
     // Built-in material code (depth)

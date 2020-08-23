@@ -191,6 +191,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
     ImguiContext->AddRef();
 #endif
 
+    bAllowInputEvents = true;
+
     if ( SetCriticalMark() ) {
         return;
     }
@@ -259,6 +261,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
         GStreamedMemoryGPU.WaitBuffer();
 
     } while ( !GRuntime.IsPendingTerminate() );
+
+    bAllowInputEvents = false;
 
     GameModule->OnGameEnd();
 
@@ -407,6 +411,10 @@ void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event ) {
 }
 
 void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) {
+    if ( !bAllowInputEvents ) {
+        return;
+    }
+
     if ( bQuitOnEscape && _Event.Action == IA_PRESS && _Event.Key == KEY_ESCAPE ) {
         GameModule->OnGameClose();
     }
@@ -440,6 +448,10 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) 
 }
 
 void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
+    if ( !bAllowInputEvents ) {
+        return;
+    }
+
 #ifdef IMGUI_CONTEXT
     ImguiContext->OnMouseButtonEvent( _Event );
 #endif
@@ -454,6 +466,10 @@ void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, doub
 }
 
 void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double _TimeStamp ) {
+    if ( !bAllowInputEvents ) {
+        return;
+    }
+
 #ifdef IMGUI_CONTEXT
     ImguiContext->OnMouseWheelEvent( _Event );
 #endif
@@ -469,6 +485,10 @@ void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double
 }
 
 void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStamp ) {
+    if ( !bAllowInputEvents ) {
+        return;
+    }
+
     if ( Desktop ) {
         SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
@@ -507,6 +527,10 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
 }
 
 void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event, double _TimeStamp ) {
+    if ( !bAllowInputEvents ) {
+        return;
+    }
+
     if ( GConsole.IsActive() && _Event.Action != IA_RELEASE ) {
         return;
     }
@@ -517,12 +541,20 @@ void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event
 }
 
 void AEngineInstance::OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) {
+    if ( !bAllowInputEvents ) {
+        return;
+    }
+
     if ( Desktop ) {
         Desktop->GenerateJoystickAxisEvents( _Event, _TimeStamp );
     }
 }
 
 void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp ) {
+    if ( !bAllowInputEvents ) {
+        return;
+    }
+
 #ifdef IMGUI_CONTEXT
     ImguiContext->OnCharEvent( _Event );
 #endif

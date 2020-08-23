@@ -147,18 +147,12 @@ vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float Roughness
         float NdL = saturate( dot( Normal, L ) );
 
         if ( NdL > 0.0 ) {
-            //float Bias = max( 1.0 - saturate( dot( VS_N, L ) ), 0.1 ) * 0.05;
-            
-            #if 0
-            float Bias = tan( acos( saturate( dot( VS_N, L ) ) ) );
-            #else
-            // tan( acos( x ) ) = sqrt(1-x*x)/x
             float NdL_Vertex = saturate( dot( VS_N, L ) );
+            #if 0
+            // tan( acos( x ) ) = sqrt(1-x*x)/x
             float Bias = sqrt( 1.0 - NdL_Vertex*NdL_Vertex ) / max( NdL_Vertex, 0.001 );
             #endif
-            
-            Bias = min( Bias * 0.005, 0.01 );
-
+            float Bias = (1.0 - NdL_Vertex);
 #           ifdef ALLOW_SHADOW_RECEIVE            
             float Shadow = SampleLightShadow( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
 #           else
@@ -403,7 +397,7 @@ void MaterialPBRShader( vec3 BaseColor,
         FS_FragColor = vec4( Ambient, 1.0 );
         break;
     case DEBUG_LIGHT_CASCADES:
-        FS_FragColor = vec4( mix(FS_FragColor.rgb,DebugDirectionalLightCascades(),vec3(0.05)), 1.0 );
+        FS_FragColor = vec4( FS_FragColor.rgb*0.3 + DebugDirectionalLightCascades(), 1.0 );
         break;
     case DEBUG_VT_BORDERS:
         #ifdef USE_VIRTUAL_TEXTURE

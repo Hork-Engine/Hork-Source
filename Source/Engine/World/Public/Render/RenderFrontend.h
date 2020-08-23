@@ -68,6 +68,7 @@ private:
     void RenderView( int _Index );
 
     void QueryVisiblePrimitives( ARenderWorld * InWorld );
+    void QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis );
     void AddRenderInstances( ARenderWorld * InWorld );
     void AddDrawable( ADrawable * InComponent );
     void AddStaticMesh( AMeshComponent * InComponent );
@@ -80,8 +81,6 @@ private:
 
     void AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCount );
     void AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder );
-
-    void CreateDirectionalLightCascades( SRenderView * View );
 
     SRenderFrame   FrameData;
     ADebugRenderer DebugDraw;

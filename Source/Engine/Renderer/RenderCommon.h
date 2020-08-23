@@ -139,6 +139,8 @@ struct AShaderSources {
         AString predefines = predefine[_ShaderType];
         predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Math::ToString( MAX_DIRECTIONAL_LIGHTS ) + "\n";
         predefines += "#define MAX_SHADOW_CASCADES " + Math::ToString( MAX_SHADOW_CASCADES ) + "\n";
+        predefines += "#define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW " + Math::ToString( MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ) + "\n";
+
 
 #ifdef SHADOWMAP_PCF
         predefines += "#define SHADOWMAP_PCF\n";
@@ -317,6 +319,8 @@ struct SShadowInstanceUniformBuffer
     Float4 uaddr_1;
     Float4 uaddr_2;
     Float4 uaddr_3;
+    uint32_t CascadeMask;
+    uint32_t Pad[3];
 };
 
 class AFrameResources {

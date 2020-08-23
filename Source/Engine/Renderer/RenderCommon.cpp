@@ -194,6 +194,8 @@ void SetShadowInstanceUniforms( SShadowRenderInstance const * Instance ) {
         Core::Memcpy( &pUniformBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
     }
 
+    pUniformBuf->CascadeMask = Instance->CascadeMask;
+
     GFrameResources.DrawCallUniformBufferBinding->BindingOffset = offset;
     GFrameResources.DrawCallUniformBufferBinding->BindingSize = sizeof( SShadowInstanceUniformBuffer );
 }
@@ -1087,15 +1089,14 @@ void AFrameResources::UploadUniforms() {
     SetViewUniforms();
 
     // Cascade matrices
-    const int totalCascades = MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES;
-    CascadeBufferBinding->BindingSize = totalCascades * 2 * sizeof( Float4x4 );
+    CascadeBufferBinding->BindingSize = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * 2 * sizeof( Float4x4 );
     CascadeBufferBinding->BindingOffset = FrameConstantBuffer->Allocate( CascadeBufferBinding->BindingSize );
 
     byte * pMemory = FrameConstantBuffer->GetMappedMemory() + CascadeBufferBinding->BindingOffset;
 
     Core::Memcpy( pMemory, GRenderView->LightViewProjectionMatrices, GRenderView->NumShadowMapCascades * sizeof( Float4x4 ) );
 
-    pMemory += totalCascades * sizeof( Float4x4 );
+    pMemory += MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof( Float4x4 );
 
     Core::Memcpy( pMemory, GRenderView->ShadowMapMatrices, GRenderView->NumShadowMapCascades * sizeof( Float4x4 ) );
 

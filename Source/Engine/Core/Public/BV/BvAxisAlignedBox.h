@@ -136,6 +136,13 @@ struct alignas(16) BvAxisAlignedBoxSSE {
     Float4 Mins;
     Float4 Maxs;
 
+    BvAxisAlignedBoxSSE() = default;
+
+    BvAxisAlignedBoxSSE( BvAxisAlignedBox const & _BoundingBox ) {
+        *( Float3 * )&Mins.X = _BoundingBox.Mins;
+        *( Float3 * )&Maxs.X = _BoundingBox.Maxs;
+    }
+
     void operator=( BvAxisAlignedBox const & _BoundingBox ) {
         *( Float3 * )&Mins.X = _BoundingBox.Mins;
         *( Float3 * )&Maxs.X = _BoundingBox.Maxs;

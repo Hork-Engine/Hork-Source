@@ -41,16 +41,25 @@ out gl_PerVertex
 #include "$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$"
 #include "$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$"
 
+layout( invocations = 4/*MAX_TOTAL_SHADOW_CASCADES_PER_VIEW*/ )
 layout( triangles ) in;
 layout( triangle_strip, max_vertices = 3 ) out;
-layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
+//layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
+
+layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
+    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+};
 
 void main() {
-    gl_Layer = VS_InstanceID[ 0 ];
-    for ( int i = 0; i < gl_in.length(); i++ ) {
-        gl_Position = gl_in[ i ].gl_Position;
-#       include "$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$"
-        EmitVertex();
+    if ( ( CascadeMask.x & (1<<gl_InvocationID) ) != 0 ) {
+        gl_Layer = gl_InvocationID; //VS_InstanceID[ 0 ];
+        for ( int i = 0; i < gl_in.length(); i++ ) {
+            gl_Position = CascadeViewProjection[ gl_InvocationID ] * gl_in[ i ].gl_Position;
+
+#           include "$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$"
+            EmitVertex();
+        }
+        EndPrimitive();
     }
-    EndPrimitive();
 }

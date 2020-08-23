@@ -298,8 +298,6 @@ void ARenderFrontend::RenderView( int _Index ) {
 
         AddRenderInstances( &renderWorld );
 
-        CreateDirectionalLightCascades( view );
-
         AddDirectionalShadowmapInstances( &renderWorld );
 
         Stat.PolyCount += RenderDef.PolyCount;
@@ -621,6 +619,24 @@ void ARenderFrontend::QueryVisiblePrimitives( ARenderWorld * InWorld ) {
     VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
 }
 
+void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis ) {
+    SVisibilityQuery query;
+    BvFrustum frustum;
+
+    frustum.FromMatrix( LightViewProjection );
+
+    for ( int i = 0 ; i < 6 ; i++ ) {
+        query.FrustumPlanes[i] = &frustum[i];
+    }
+    query.ViewPosition = LightPosition;
+    query.ViewRightVec = LightBasis[0];
+    query.ViewUpVec = LightBasis[1];
+    query.VisibilityMask = RenderDef.VisibilityMask;
+    query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_SHADOW_CAST;
+
+    VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
+}
+
 void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 {
     AScopedTimeCheck TimeCheck( "AddRenderInstances" );
@@ -633,7 +649,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     Lights.Clear();
     IBLs.Clear();
 
-    QueryVisiblePrimitives( InWorld  );
+    QueryVisiblePrimitives( InWorld );
 
     for ( SPrimitiveDef * primitive : VisPrimitives ) {
 
@@ -659,7 +675,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
             continue;
         }
 
-        GLogger.Printf( "Unhandles primitive\n" );
+        GLogger.Printf( "Unhandled primitive\n" );
     }
 
     if ( RVRenderSurfaces && !VisSurfaces.IsEmpty() ) {
@@ -675,6 +691,8 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     }
 
     // Add directional lights
+    view->NumShadowMapCascades = 0;
+    view->NumCascadedShadowMaps = 0;
     for ( ADirectionalLightComponent * dirlight = InWorld->GetDirectionalLights() ; dirlight ; dirlight = dirlight->GetNext() ) {
 
         if ( view->NumDirectionalLights > MAX_DIRECTIONAL_LIGHTS ) {
@@ -693,16 +711,19 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 
         FrameData.DirectionalLights.Append( lightDef );
 
+        dirlight->AddShadowmapCascades( view, &lightDef->FirstCascade, &lightDef->NumCascades );
+
+        view->NumCascadedShadowMaps += lightDef->NumCascades > 0 ? 1 : 0;  // Just statistics
+
         lightDef->ColorAndAmbientIntensity = dirlight->GetEffectiveColor();
         lightDef->Matrix = dirlight->GetWorldRotation().ToMatrix();
         lightDef->MaxShadowCascades = dirlight->GetMaxShadowCascades();
         lightDef->RenderMask = ~0;//dirlight->RenderingGroup;
-        lightDef->NumCascades = 0;  // this will be calculated later
-        lightDef->FirstCascade = 0; // this will be calculated later
         lightDef->bCastShadow = dirlight->bCastShadow;
 
         view->NumDirectionalLights++;
     }
+    FrameData.ShadowCascadePoolSize = Math::Max( FrameData.ShadowCascadePoolSize, view->NumShadowMapCascades );
 
     //GLogger.Printf( "FrameLightData %f KB\n", sizeof( SFrameLightData ) / 1024.0f );
     if ( !RVFixFrustumClusters ) {
@@ -1045,7 +1066,7 @@ void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( AMeshComponent * InCom
         instance->SkeletonOffset = 0;
         instance->SkeletonSize = 0;
         instance->WorldTransformMatrix = instanceMatrix;
-        instance->CascadeMask = 0xffff; // TODO: Calculate!!!
+        instance->CascadeMask = InComponent->CascadeMask;
 
         // Generate sort key.
         // NOTE: 8 bits are still unused. We can use it in future.
@@ -1119,7 +1140,7 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * I
         instance->SkeletonOffset = skeletonOffset;
         instance->SkeletonSize = skeletonSize;
         instance->WorldTransformMatrix = instanceMatrix;
-        instance->CascadeMask = 0xffff; // TODO: Calculate!!!
+        instance->CascadeMask = InComponent->CascadeMask;
 
         // Generate sort key.
         // NOTE: 8 bits are still unused. We can use it in future.
@@ -1187,7 +1208,7 @@ void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshCom
     instance->SkeletonOffset = 0;
     instance->SkeletonSize = 0;
     instance->WorldTransformMatrix = InComponent->GetWorldTransformMatrix();
-    instance->CascadeMask = 0xffff; // TODO: Calculate!!!
+    instance->CascadeMask = InComponent->CascadeMask;
 
     // Generate sort key.
     // NOTE: 8 bits are still unused. We can use it in future.
@@ -1209,11 +1230,50 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
 
     // Create shadow instances
 
+    // TODO: We can keep ready shadowCasters[] and boxes[]
+    TPodArray< ADrawable * > shadowCasters;
+    TPodArray< BvAxisAlignedBoxSSE > boxes;
+
     for ( ADrawable * component = InWorld->GetShadowCasters() ; component ; component = component->GetNextShadowCaster() ) {
-
-        // TODO: Perform culling for each shadow cascade, set CascadeMask
-
         if ( (component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0 ) {
+            continue;
+        }
+        component->CascadeMask = 0;
+
+        shadowCasters.Append( component );
+        boxes.Append( component->GetWorldBounds() );
+    }
+
+    boxes.Resize( Align( boxes.Size(), 4 ) );
+
+    TPodArray< int > cullResult;
+    cullResult.ResizeInvalidate( boxes.Size() );
+
+    // Perform culling for each cascade
+    // TODO: Do it parallel (jobs)
+    BvFrustum frustum;
+    for ( int i = 0 ; i < RenderDef.View->NumShadowMapCascades ; i++ ) {
+
+        frustum.FromMatrix( RenderDef.View->LightViewProjectionMatrices[i] );
+
+        cullResult.ZeroMem();
+
+        frustum.CullBox_SSE( boxes.ToPtr(), shadowCasters.Size(), cullResult.ToPtr() );
+        //frustum.CullBox_Generic( boxes.ToPtr(), shadowCasters.Size(), cullResult.ToPtr() );
+
+        for ( int n = 0 ; n < shadowCasters.Size() ; n++ ) {
+            //GLogger.Printf( "Cull result %f\n", *(float*)&cullResult[n] );
+            //shadowCasters[n]->CascadeMask |= (1-cullResult[n]) << i;
+
+            shadowCasters[n]->CascadeMask |= (cullResult[n]==0) << i;
+        }
+    }
+
+    for ( int n = 0 ; n < shadowCasters.Size() ; n++ ) {
+
+        ADrawable * component = shadowCasters[n];
+
+        if ( component->CascadeMask == 0 ) {
             continue;
         }
 

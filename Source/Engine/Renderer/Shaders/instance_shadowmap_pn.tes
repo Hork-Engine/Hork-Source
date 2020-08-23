@@ -33,7 +33,7 @@ layout( triangles, TESSELLATION_SPACING, ccw ) in;
 #include "$SHADOWMAP_PASS_TES_INPUT_VARYINGS$"
 #include "$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$"
 
-layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
+//layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
 
 struct SPatchVertices
 {
@@ -48,7 +48,7 @@ struct SPatchVertices
     vec3 B120;
     vec3 B111;
     vec3 N[3];
-    int InstanceID;
+//    int InstanceID;
 };
 
 //#define SHADOWMAP_PASS_VARYING_PATCH 0
@@ -63,8 +63,8 @@ out gl_PerVertex
 #include "$SHADOWMAP_PASS_TES_SAMPLERS$"
 
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
-    mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
 };
 
 void main(){
@@ -90,13 +90,13 @@ void main(){
                 TCS_Patch.B012 * ( 3.0 * u * v2 ) +
                 TCS_Patch.B111 * ( 6.0 * w * u * v );
                 
-    VS_InstanceID = TCS_Patch.InstanceID;
+    //VS_InstanceID = TCS_Patch.InstanceID;
     
 #   include "$SHADOWMAP_PASS_TES_INTERPOLATE$"
 #   include "$SHADOWMAP_PASS_TES_CODE$"
     
     pos += normal * ( Displacement * 0.01 );
     
-    gl_Position = CascadeViewProjection[ VS_InstanceID ] * vec4( pos, 1.0 );
+    gl_Position = /*CascadeViewProjection[ VS_InstanceID ] * */vec4( pos, 1.0 );
 }
 

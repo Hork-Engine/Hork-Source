@@ -28,6 +28,8 @@ SOFTWARE.
 
 */
 
+#include "instance_shadowmap_uniforms.glsl"
+
 out gl_PerVertex
 {
     vec4 gl_Position;
@@ -47,8 +49,8 @@ layout( location = 0 ) out flat int VS_InstanceID;
 #endif
 
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
-    mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
 };
 
 void main() {
@@ -76,9 +78,9 @@ void main() {
         Position.y = dot( JointTransform1, SrcPosition );
         Position.z = dot( JointTransform2, SrcPosition );
         Position.w = 1;
-        gl_Position = CascadeViewProjection[ gl_InstanceID ] * Position;
+        gl_Position = /*CascadeViewProjection[ gl_InstanceID ] * */TransformMatrix * Position;
     #else
-        gl_Position = CascadeViewProjection[ gl_InstanceID ] * vec4( InPosition, 1.0 );
+        gl_Position = /*CascadeViewProjection[ gl_InstanceID ] * */TransformMatrix * vec4( InPosition, 1.0 );
     #endif
 
     VS_InstanceID = gl_InstanceID;

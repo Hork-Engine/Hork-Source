@@ -28,6 +28,8 @@ SOFTWARE.
 
 */
 
+#include "instance_shadowmap_uniforms.glsl"
+
 in gl_PerVertex
 {
     vec4 gl_Position;
@@ -38,23 +40,32 @@ out gl_PerVertex
     vec4 gl_Position;
 };
 
+layout( invocations = 4/*MAX_TOTAL_SHADOW_CASCADES_PER_VIEW*/ )
 layout( triangles ) in;
 layout( triangle_strip, max_vertices = 3 ) out;
-layout( location = 0 ) in flat int VS_InstanceID[];
+//layout( location = 0 ) in flat int VS_InstanceID[];
 
 #ifdef SHADOW_MASKING
 layout( location = 1 ) in vec2 VS_TexCoord[];
 layout( location = 1 ) out vec2 InTexCoord[];
 #endif
 
+layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
+    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+};
+
 void main() {
-    gl_Layer = VS_InstanceID[ 0 ];
-    for ( int i = 0; i < gl_in.length(); i++ ) {
-        gl_Position = gl_in[ i ].gl_Position;
-        #ifdef SHADOW_MASKING
-        InTexCoord[i] = VS_TexCoord[i];
-        #endif
-        EmitVertex();
+    if ( ( CascadeMask.x & (1<<gl_InvocationID) ) != 0 ) {
+        gl_Layer = gl_InvocationID; //VS_InstanceID[ 0 ];
+        for ( int i = 0; i < gl_in.length(); i++ ) {
+            gl_Position = CascadeViewProjection[ gl_InvocationID ] * gl_in[ i ].gl_Position;
+            #ifdef SHADOW_MASKING
+            InTexCoord[i] = VS_TexCoord[i];
+            #endif
+            EmitVertex();
+        }
+        EndPrimitive();
     }
-    EndPrimitive();
 }
+

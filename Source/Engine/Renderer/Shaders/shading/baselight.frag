@@ -51,7 +51,8 @@ vec3 CalcDirectionalLighting( vec3 Normal, vec3 Specular, float SpecularPower )
         if ( NdL > 0.0 ) {
         
 #           ifdef ALLOW_SHADOW_RECEIVE
-            float Bias = max( 1.0 - saturate( dot( VS_N, L ) ), 0.1 ) * 0.05;
+            float NdL_Vertex = saturate( dot( VS_N, L ) );
+            float Bias = (1.0 - NdL_Vertex);
             float Shadow = SampleLightShadow( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
 #           else
             const float Shadow = 1.0;
@@ -272,7 +273,7 @@ void MaterialBaseLightShader( vec3 BaseColor,
         FS_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
         break;
     case DEBUG_LIGHT_CASCADES:
-        FS_FragColor = vec4( (FS_FragColor.rgb+DebugDirectionalLightCascades()) * 0.5, 1.0 );
+        FS_FragColor = vec4( FS_FragColor.rgb*0.3 + DebugDirectionalLightCascades(), 1.0 );
         break;
     case DEBUG_VT_BORDERS:
         #ifdef USE_VIRTUAL_TEXTURE

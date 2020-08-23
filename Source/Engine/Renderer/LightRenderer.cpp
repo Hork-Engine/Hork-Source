@@ -89,9 +89,9 @@ ALightRenderer::ALightRenderer()
     {
         SSamplerCreateInfo samplerCI;
         samplerCI.Filter = FILTER_LINEAR;
-        samplerCI.AddressU = SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressV = SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressW = SAMPLER_ADDRESS_BORDER;
+        samplerCI.AddressU = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
+        samplerCI.AddressV = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
+        samplerCI.AddressW = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
         samplerCI.MipLODBias = 0;
         //samplerCI.ComparisonFunc = CMPFUNC_LEQUAL;
         samplerCI.ComparisonFunc = CMPFUNC_LESS;

@@ -3,8 +3,7 @@
 
 using namespace RenderCore;
 
-ARuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ), _CTS( "2048" ) );
-
+extern ARuntimeVariable RVShadowCascadeResolution;
 extern ARuntimeVariable RVShadowCascadeBits;
 
 static const float EVSM_positiveExponent = 40.0;
@@ -401,17 +400,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
 
             rcmd->BindShaderResources( &GFrameResources.Resources );
 
-            // TODO: должна быть предварительная проверка видимости (рассчитано закранее: instanceFirstCascade, instanceNumCascades)
-            // instanceFirstCascade нужно записать в uniformBuffer, принадлежащий инстансу,
-            // а drawCmd.InstanceCount = instanceNumCascades;
-            // Далее в геометрическом шейдере gl_Layer = gl_InstanceId + instanceFirstCascade;
-            // TODO: добавить к юниформам инстанса битовое поле uint16_t CascadeMask, для того чтобы в геометрическом шедере можно было сделать фильтр:
-            // if ( CascadeMask & gl_LayerId ) {
-            //      ... EmitPrimitive
-            // } else {
-            //      nothing
-            // }
-            drawCmd.InstanceCount = GRenderView->NumShadowMapCascades;
+            drawCmd.InstanceCount = 1;//GRenderView->NumShadowMapCascades;
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
             drawCmd.BaseVertexLocation = instance->BaseVertexLocation;

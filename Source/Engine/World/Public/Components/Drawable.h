@@ -143,6 +143,9 @@ public:
     ADrawable * GetNextShadowCaster() { return NextShadowCaster; }
     ADrawable * GetPrevShadowCaster() { return PrevShadowCaster; }
 
+    // Used during culling stage
+    uint32_t CascadeMask;
+
 protected:
     ADrawable();
 
