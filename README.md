@@ -137,7 +137,7 @@ PBR (physically based).
 * Powerful memory allocation system
 * Classic console with commands and variables
 * Multiple players
-* Multiple viewports (up to 16 viewports per frame) with blending
+* Multiple viewports with blending
 * Multiple worlds and levels
 * World pausing without additional user extra-code
 * Documentation in doxygen format
@@ -181,7 +181,6 @@ PBR (physically based).
 * Audio: effects
 * Physics: soft body, constraints, ragdoll, character controller
 * Material graph editor
-* Improve shadow mapping
 
 
 ## Contributing
