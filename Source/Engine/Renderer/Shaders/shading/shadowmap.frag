@@ -139,9 +139,9 @@ float PCF_5x5( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
     return Shadow * (1.0f/25.0f);
 }
 
-float SampleLightShadow( uint ShadowPoolPosition, uint NumCascades, float Bias ) {
+float SampleLightShadow( uint ShadowmapIndex, uint FirstCascade, uint NumCascades, float Bias ) {
     for ( uint i = 0; i < NumCascades ; i++ ) {
-        uint CascadeIndex = ShadowPoolPosition + i;
+        uint CascadeIndex = FirstCascade + i;
         vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
         vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
         
@@ -150,26 +150,26 @@ float SampleLightShadow( uint ShadowPoolPosition, uint NumCascades, float Bias )
         
 #ifdef SHADOWMAP_PCF
         if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) ) ) {
-            return PCF_5x5( ShadowMapShadow, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
+            return PCF_5x5( ShadowMap[ShadowmapIndex], vec4( ShadowCoord.xy, float(i), ShadowCoord.z ) );
         }
 #endif
 
 #ifdef SHADOWMAP_PCSS
         if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.05 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.05 ) ) ) ) ) ) {
-            return PCSS_Shadow( ShadowMap, ShadowMapShadow, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
+            return PCSS_Shadow( ShadowMap[ShadowmapIndex], vec4( ShadowCoord.xy, float(i), ShadowCoord.z ) );
         }
 #endif
 
 #ifdef SHADOWMAP_VSM
         if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.01 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.01 ) ) ) ) ) ) {
-            return VSM_Shadow( ShadowMap, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
-            //Shadow = VSM_Shadow_PCF_3x3( ShadowMap, SMTexCoord );
+            return VSM_Shadow( ShadowMap[ShadowmapIndex], vec4( ShadowCoord.xy, float(i), ShadowCoord.z ) );
+            //Shadow = VSM_Shadow_PCF_3x3( ShadowMap[ShadowmapIndex], SMTexCoord );
         }
 #endif
 
 #ifdef SHADOWMAP_EVSM
         if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.01 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0-0.01 ) ) ) ) ) ) {
-            return EVSM_Shadow( ShadowMap, vec4( ShadowCoord.xy, float(CascadeIndex), ShadowCoord.z ) );
+            return EVSM_Shadow( ShadowMap[ShadowmapIndex], vec4( ShadowCoord.xy, float(i), ShadowCoord.z ) );
         }
 #endif
     }
@@ -177,7 +177,7 @@ float SampleLightShadow( uint ShadowPoolPosition, uint NumCascades, float Bias )
     return 1.0;
 }
 
-vec3 DebugShadowCascades( uint ShadowPoolPosition, uint NumCascades )
+vec3 DebugShadowCascades( uint FirstCascade, uint NumCascades )
 {    
     const vec3 CascadeColor[MAX_SHADOW_CASCADES] = vec3[](
         vec3( 1,0,0 ),
@@ -187,13 +187,13 @@ vec3 DebugShadowCascades( uint ShadowPoolPosition, uint NumCascades )
     );
     
     for ( uint i = 0; i < NumCascades ; i++ ) {
-        const uint CascadeIndex = ShadowPoolPosition + i;
+        const uint CascadeIndex = FirstCascade + i;
         const vec4 SMTexCoord = ShadowMapMatrices[ CascadeIndex ] * InClipspacePosition;
         
         vec3 ShadowCoord = SMTexCoord.xyz / SMTexCoord.w;
         
         if ( !any( bvec2( any( lessThan( ShadowCoord, vec3( 0.0 ) ) ), any( greaterThan( ShadowCoord, vec3( 1.0 ) ) ) ) ) ) {
-            return CascadeColor[CascadeIndex];
+            return CascadeColor[i];
         }
     }
 
@@ -204,9 +204,13 @@ vec3 DebugDirectionalLightCascades()
 {
     const uint NumLights = GetNumDirectionalLights();
     vec3 Result = vec3(0.0);
-
+    
     for ( int i = 0 ; i < NumLights ; ++i ) {
-        Result += DebugShadowCascades( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ] );
+        float x = 1.0 / float(NumLights);
+        
+        if ( i * x <= InNormalizedScreenCoord.x && ( i + 1 ) * x > InNormalizedScreenCoord.x ) {
+            Result += DebugShadowCascades( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ] );
+        }
     }
     return Result;
 }

@@ -62,11 +62,6 @@ out gl_PerVertex
 
 #include "$SHADOWMAP_PASS_TES_SAMPLERS$"
 
-layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
-    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
-};
-
 void main(){
     const vec3 normal = normalize( gl_TessCoord.x * TCS_Patch.N[0] + gl_TessCoord.y * TCS_Patch.N[1] + gl_TessCoord.z * TCS_Patch.N[2] );
     
@@ -97,6 +92,6 @@ void main(){
     
     pos += normal * ( Displacement * 0.01 );
     
-    gl_Position = /*CascadeViewProjection[ VS_InstanceID ] * */vec4( pos, 1.0 );
+    gl_Position = vec4( pos, 1.0 );
 }
 

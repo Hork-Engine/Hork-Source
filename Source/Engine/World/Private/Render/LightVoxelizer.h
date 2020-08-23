@@ -36,16 +36,113 @@ SOFTWARE.
 class AAnalyticLightComponent;
 class AIBLComponent;
 
+enum EItemType
+{
+    ITEM_TYPE_LIGHT,
+    ITEM_TYPE_PROBE
+};
+
+struct Float4x4SSE {
+    __m128 col0;
+    __m128 col1;
+    __m128 col2;
+    __m128 col3;
+
+    Float4x4SSE() {
+    }
+
+    Float4x4SSE( __m128 _col0, __m128 _col1, __m128 _col2, __m128 _col3 )
+        : col0( _col0 ), col1( _col1 ), col2( _col2 ), col3( _col3 )
+    {
+    }
+
+    Float4x4SSE( Float4x4 const & m ) {
+        col0 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[0]) );
+        col1 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[1]) );
+        col2 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[2]) );
+        col3 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[3]) );
+    }
+
+    AN_FORCEINLINE void operator=( Float4x4 const & m ) {
+        col0 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[0]) );
+        col1 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[1]) );
+        col2 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[2]) );
+        col3 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[3]) );
+    }
+};
+
+struct SItemInfo
+{
+    int MinSlice;
+    int MinClusterX;
+    int MinClusterY;
+    int MaxSlice;
+    int MaxClusterX;
+    int MaxClusterY;
+
+    // OBB before transform (OBB transformed by OBBTransformInv)
+    //Float3 AabbMins;
+    //Float3 AabbMaxs;
+    alignas(16) Float3 Mins;
+    alignas(16) Float3 Maxs;
+    Float4x4 ClipToBoxMat;
+
+    // Same date for SSE
+    //alignas(16) __m128 AabbMinsSSE;
+    //alignas(16) __m128 AabbMaxsSSE;
+    alignas(16) Float4x4SSE ClipToBoxMatSSE;
+
+    int ListIndex;
+
+    uint8_t Type;
+};
+
 class ALightVoxelizer {
     AN_SINGLETON( ALightVoxelizer )
 
 public:
-    void Voxelize( SRenderFrame * Frame,
-                   SRenderView * RV,
-                   AAnalyticLightComponent * const * InLights, int InLightCount,
-                   AIBLComponent * const * InProbes, int InProbeCount );
+    void Reset();
+
+    bool IsSSE() const { return bUseSSE; };
+
+    SItemInfo * AllocItem() {
+        AN_ASSERT( ItemsCount < MAX_ITEMS );
+        return &ItemInfos[ItemsCount++];
+    }
+
+    void Voxelize( SRenderView * RV );
 
     void DrawVoxels( ADebugRenderer * InRenderer );
+
+private:
+    static void VoxelizeWork( void * _Data );
+
+    void VoxelizeWork( int SliceIndex );
+
+    void TransformItemsSSE();
+    void TransformItemsGeneric();
+
+    void GatherVoxelGeometry( TStdVectorDefault< Float3 > & LinePoints, Float4x4 const & ViewProjectionInversed );
+
+    SItemInfo ItemInfos[MAX_ITEMS];
+    int ItemsCount;
+
+    unsigned short Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
+    AAtomicInt ItemCounter;
+    Float4x4 ViewProj;
+    Float4x4 ViewProjInv;
+
+    struct SFrustumCluster {
+        unsigned short LightsCount;
+        unsigned short DecalsCount;
+        unsigned short ProbesCount;
+    };
+
+    alignas(16) SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
+
+    SFrameLightData * pLightData;
+
+    bool bUseSSE;
 };
 
 extern ALightVoxelizer & GLightVoxelizer;

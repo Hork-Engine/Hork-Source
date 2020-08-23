@@ -68,16 +68,17 @@ private:
     void RenderView( int _Index );
 
     void QueryVisiblePrimitives( ARenderWorld * InWorld );
-    void QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis );
+    void QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
+                             TPodArray< SPrimitiveDef * > & Primitives, TPodArray< SSurfaceDef * > & Surfaces );
     void AddRenderInstances( ARenderWorld * InWorld );
     void AddDrawable( ADrawable * InComponent );
     void AddStaticMesh( AMeshComponent * InComponent );
     void AddSkinnedMesh( ASkinnedComponent * InComponent );
     void AddProceduralMesh( AProceduralMeshComponent * InComponent );
     void AddDirectionalShadowmapInstances( ARenderWorld * InWorld );
-    void AddDirectionalShadowmap_StaticMesh( AMeshComponent * InComponent );
-    void AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * InComponent );
-    void AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshComponent * InComponent );
+    void AddDirectionalShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent );
+    void AddDirectionalShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent );
+    void AddDirectionalShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent );
 
     void AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCount );
     void AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder );
@@ -88,8 +89,7 @@ private:
 
     SRenderFrontendStat Stat;
 
-    SViewport const * Viewports[MAX_RENDER_VIEWS];
-    int NumViewports = 0;
+    TPodArray< SViewport const * > Viewports;
     int MaxViewportWidth = 0;
     int MaxViewportHeight = 0;
 
@@ -98,6 +98,11 @@ private:
     TPodArray< AAnalyticLightComponent * > Lights;
     TPodArray< AIBLComponent * > IBLs;
     int VisPass = 0;
+
+    // TODO: We can keep ready shadowCasters[] and boxes[]
+    TPodArray< ADrawable * > ShadowCasters;
+    TPodArray< BvAxisAlignedBoxSSE > ShadowBoxes;
+    TPodArray< int > ShadowCasterCullResult;
 
     struct SSurfaceStream {
         size_t VertexAddr;

@@ -43,9 +43,6 @@ SOFTWARE.
 // Common constants
 //
 
-/** Max render views per frame */
-constexpr int MAX_RENDER_VIEWS                      = 16;
-
 /** Max skeleton joints */
 constexpr int MAX_SKINNED_MESH_JOINTS               = 256;
 
@@ -936,9 +933,10 @@ struct SDirectionalLightDef {
     Float3x3 Matrix;            // Light rotation matrix
     int      RenderMask;
     int      MaxShadowCascades; // Max allowed cascades for light
+    int      ShadowmapIndex;
+    int      ShadowCascadeResolution;
     int      FirstCascade;      // First cascade offset
     int      NumCascades;       // Current visible cascades count for light
-    bool     bCastShadow;
 };
 
 
@@ -1003,7 +1001,7 @@ struct SShadowRenderInstance {
     unsigned int        IndexCount;
     unsigned int        StartIndexLocation;
     int                 BaseVertexLocation;
-    uint16_t            CascadeMask;
+    uint16_t            CascadeMask;            // Cascade mask for directional lights or face index for point/spot lights
     uint64_t            SortKey;
 };
 
@@ -1079,7 +1077,15 @@ struct SClusterLight {
     unsigned int LightType;
     unsigned int RenderMask;
     unsigned int PhotometricProfile;
-    unsigned int Padding1;
+    unsigned int ShadowmapNum;
+};
+
+struct SLightShadowmap {
+    int FirstShadowInstance;
+    int ShadowInstanceCount;
+
+    int FirstLightPortal;
+    int LightPortalsCount;
 };
 
 struct SClusterProbe {
@@ -1099,15 +1105,6 @@ struct SFrameLightData {
 
     SClusterItemBuffer ItemBuffer[MAX_ITEM_BUFFER + MAX_CLUSTER_ITEMS*3]; //  + MAX_CLUSTER_ITEMS*3 для возможного выхода за пределы массива на максимальное количество итемов в кластере
     int TotalItems;
-
-    SClusterLight LightBuffer[MAX_LIGHTS];
-    int TotalLights;
-
-    //SClusterDecal Decals[MAX_DECAL];
-    //int TotalDecals;
-
-    SClusterProbe Probes[MAX_PROBES];
-    int TotalProbes;
 };
 
 //
@@ -1150,6 +1147,8 @@ struct SRenderView {
     Float4x4 ViewSpaceToWorldSpace;
     Float4x4 ClipSpaceToWorldSpace;
     Float4x4 ClusterProjectionMatrix;
+    Float4x4 ClusteViewProjection;
+    Float4x4 ClusteViewProjectionInversed;
     Float3 BackgroundColor;
     bool bClearBackground;
     bool bWireframe;
@@ -1192,24 +1191,19 @@ struct SRenderView {
     // Total shadow maps
     int NumCascadedShadowMaps;
 
+    // Opaque geometry
     int FirstInstance;
     int InstanceCount;
 
+    // Translucent geometry
     int FirstTranslucentInstance;
     int TranslucentInstanceCount;
 
-    int FirstLightPortal;
-    int LightPortalsCount;
-
-    int FirstShadowInstance;
-    int ShadowInstanceCount;
-
+    // Directional lights
     int FirstDirectionalLight;
     int NumDirectionalLights;
 
-    //int FirstLight;
-    //int NumLights;
-
+    // Debug draw
     int FirstDebugDrawCommand;
     int DebugDrawCommandCount;
 
@@ -1218,6 +1212,13 @@ struct SRenderView {
 
     // Transform from view clip space to texture space
     Float4x4 ShadowMapMatrices[MAX_TOTAL_SHADOW_CASCADES_PER_VIEW];
+
+    // Point and sport lights for render view
+    SClusterLight * PointLights;
+    int NumPointLights;
+
+    SClusterProbe * Probes;
+    int NumProbes;
 
     SFrameLightData LightData;
 };
@@ -1234,16 +1235,15 @@ struct SRenderFrame {
     int CanvasWidth;
     int CanvasHeight;
 
-    SRenderView RenderViews[MAX_RENDER_VIEWS];
+    SRenderView * RenderViews;
     int NumViews;
-
-    int ShadowCascadePoolSize;
 
     TPodArray< SRenderInstance *, 1024 > Instances;
     TPodArray< SRenderInstance *, 1024 > TranslucentInstances;
     TPodArray< SShadowRenderInstance *, 1024 > ShadowInstances;
     TPodArray< SLightPortalRenderInstance *, 1024 > LightPortals;
     TPodArray< SDirectionalLightDef * > DirectionalLights;
+    TPodArray< SLightShadowmap > LightShadowmaps;
 
     SHUDDrawList * DrawListHead;
     SHUDDrawList * DrawListTail;

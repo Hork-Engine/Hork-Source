@@ -36,8 +36,7 @@ out gl_PerVertex
 layout( location = 0 ) out flat int VS_InstanceID;
 
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
-    mat4 ShadowMapMatrices[ MAX_DIRECTIONAL_LIGHTS * MAX_SHADOW_CASCADES ];
+    mat4 CascadeViewProjection[ MAX_SHADOW_CASCADES ];
 };
 
 void main() {

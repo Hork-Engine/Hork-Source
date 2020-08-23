@@ -1164,6 +1164,36 @@ struct Float4x4 {
         return IdentityMat;
     }
 
+    static AN_FORCEINLINE Float4x4 LookAt( Float3 const & eye, Float3 const & center, Float3 const & up )
+    {
+        Float3 const f( (center - eye).Normalized() );
+        Float3 const s( Math::Cross( up, f ).Normalized() );
+        Float3 const u( Math::Cross( f, s ) );
+
+        Float4x4 result;
+        result[0][0] = s.X;
+        result[1][0] = s.Y;
+        result[2][0] = s.Z;
+        result[3][0] = -Math::Dot( s, eye );
+
+        result[0][1] = u.X;
+        result[1][1] = u.Y;
+        result[2][1] = u.Z;
+        result[3][1] = -Math::Dot( u, eye );
+
+        result[0][2] = f.X;
+        result[1][2] = f.Y;
+        result[2][2] = f.Z;
+        result[3][2] = -Math::Dot( f, eye );
+
+        result[0][3] = 0;
+        result[1][3] = 0;
+        result[2][3] = 0;
+        result[3][3] = 1;
+
+        return result;
+    }
+
     // Conversion from standard projection matrix to clip control "upper-left & zero-to-one"
     static AN_FORCEINLINE Float4x4 const & ClipControl_UpperLeft_ZeroToOne() {
         static constexpr float ClipTransform[] = {

@@ -47,7 +47,6 @@ layout( origin_upper_left ) in vec4 gl_FragCoord;
 #include "$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$"
 
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
     mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
 };
 
@@ -137,7 +136,7 @@ layout( binding = 12 ) uniform sampler2D AOLookup;
 
 layout( binding = 13 ) uniform usamplerBuffer ClusterItemTBO;
 layout( binding = 14 ) uniform usampler3D ClusterLookup; // TODO: Use bindless?
-layout( binding = 15 ) uniform sampler2DArrayShadow ShadowMapShadow; // TODO: Use bindless?
+layout( binding = 15 ) uniform sampler2DArrayShadow ShadowMap[MAX_DIRECTIONAL_LIGHTS]; // TODO: Use bindless?
 
 
 #ifdef USE_LIGHTMAP

@@ -187,8 +187,19 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
         GRenderView->VTFeedback->AddPass( FrameGraph );
     }
 
-    AFrameGraphTexture * ShadowMapDepth;
-    ShadowMapRenderer.AddPass( FrameGraph, &ShadowMapDepth );
+    AFrameGraphTexture * ShadowMapDepth[MAX_DIRECTIONAL_LIGHTS] = {};
+
+    for ( int lightIndex = 0 ; lightIndex < GRenderView->NumDirectionalLights ; lightIndex++ ) {
+        int lightOffset = GRenderView->FirstDirectionalLight + lightIndex;
+
+        SDirectionalLightDef * dirLight = GFrameData->DirectionalLights[ lightOffset ];
+
+        ShadowMapRenderer.AddPass( FrameGraph, dirLight, &ShadowMapDepth[lightIndex] );
+    }
+    for ( int lightIndex = GRenderView->NumDirectionalLights ; lightIndex < MAX_DIRECTIONAL_LIGHTS ; lightIndex++ ) {
+        ShadowMapRenderer.AddDummyShadowMap( FrameGraph, &ShadowMapDepth[lightIndex] );
+    }
+
 
     AFrameGraphTexture * DepthTexture;
     AddDepthPass( FrameGraph, &DepthTexture );
@@ -212,7 +223,7 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
     }
 
     AFrameGraphTexture * LightTexture, * VelocityTexture;    
-    LightRenderer.AddPass( FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth, LinearDepth, &LightTexture, &VelocityTexture );
+    LightRenderer.AddPass( FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], LinearDepth, &LightTexture, &VelocityTexture );
 
     if ( RVMotionBlur ) {
         AddMotionBlurPass( FrameGraph, LightTexture, VelocityTexture, LinearDepth, &LightTexture );

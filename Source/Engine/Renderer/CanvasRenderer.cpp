@@ -343,7 +343,7 @@ void ACanvasRenderer::Render() {
                     rcmd->EndRenderPass();
 
                     // Render scene to viewport
-                    AN_ASSERT( cmd->ViewportIndex >= 0 && cmd->ViewportIndex < MAX_RENDER_VIEWS );
+                    AN_ASSERT( cmd->ViewportIndex >= 0 && cmd->ViewportIndex < GFrameData->NumViews );
 
                     SRenderView * renderView = &GFrameData->RenderViews[cmd->ViewportIndex];
                     AFrameGraphTexture * viewTexture;

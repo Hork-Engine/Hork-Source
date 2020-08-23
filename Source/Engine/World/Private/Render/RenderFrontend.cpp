@@ -84,13 +84,18 @@ void ARenderFrontend::Deinitialize() {
     IBLs.Free();
     VisPrimitives.Free();
     VisSurfaces.Free();
-
+    ShadowCasters.Free();
+    ShadowBoxes.Free();
+    ShadowCasterCullResult.Free();
     DebugDraw.Free();
+    Viewports.Free();
 
     FrameData.Instances.Free();
     FrameData.TranslucentInstances.Free();
     FrameData.ShadowInstances.Free();
+    FrameData.LightPortals.Free();
     FrameData.DirectionalLights.Free();
+    FrameData.LightShadowmaps.Free();
 
     PhotometricProfiles.Reset();
 }
@@ -106,7 +111,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
 
     MaxViewportWidth = 1;
     MaxViewportHeight = 1;
-    NumViewports = 0;
+    Viewports.Clear();
 
     RenderCanvas( InCanvas );
 
@@ -116,24 +121,27 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData.AllocSurfaceHeight = MaxViewportHeight;
     FrameData.CanvasWidth = InCanvas->Width;
     FrameData.CanvasHeight = InCanvas->Height;
-    FrameData.NumViews = NumViewports;
     FrameData.Instances.Clear();
     FrameData.TranslucentInstances.Clear();
     FrameData.ShadowInstances.Clear();
+    FrameData.LightPortals.Clear();
     FrameData.DirectionalLights.Clear();
-    FrameData.ShadowCascadePoolSize = 0;
+    FrameData.LightShadowmaps.Clear();
+    //FrameData.ShadowCascadePoolSize = 0;
     FrameData.StreamBuffer = GStreamedMemoryGPU.GetBufferGPU();
-
     DebugDraw.Reset();
 
-    for ( int i = 0 ; i < NumViewports ; i++ ) {
+    // Allocate views
+    FrameData.NumViews = Viewports.Size();
+    FrameData.RenderViews = (SRenderView *)GRuntime.AllocFrameMem( sizeof( SRenderView ) * FrameData.NumViews );
+
+    for ( int i = 0 ; i < FrameData.NumViews ; i++ ) {
         RenderView( i );
     }
 
     //int64_t t = GRuntime.SysMilliseconds();
-    for ( int i = 0 ; i < NumViewports ; i++ ) {
-        SRenderView * view = &FrameData.RenderViews[i];
 
+    for ( SRenderView * view = FrameData.RenderViews ; view < &FrameData.RenderViews[FrameData.NumViews] ; view++ ) {
         StdSort( FrameData.Instances.Begin() + view->FirstInstance,
                  FrameData.Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
                  InstanceSortFunction );
@@ -142,9 +150,9 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
                  FrameData.TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
                  InstanceSortFunction );
 
-        StdSort( FrameData.ShadowInstances.Begin() + view->FirstShadowInstance,
-                 FrameData.ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
-                 ShadowInstanceSortFunction );
+        //StdSort( FrameData.ShadowInstances.Begin() + view->FirstShadowInstance,
+        //         FrameData.ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
+        //         ShadowInstanceSortFunction );
 
     }
     //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
@@ -203,6 +211,9 @@ void ARenderFrontend::RenderView( int _Index ) {
                     view->ProjectionMatrix.PerspectiveProjectionInverseFast()
                   : view->ProjectionMatrix.OrthoProjectionInverseFast();
         camera->MakeClusterProjectionMatrix( view->ClusterProjectionMatrix );
+
+        view->ClusteViewProjection = view->ClusterProjectionMatrix * view->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
+        view->ClusteViewProjectionInversed = view->ClusteViewProjection.Inversed();
     }
 
     view->ViewProjection = view->ProjectionMatrix * view->ViewMatrix;
@@ -270,10 +281,10 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->InstanceCount = 0;
     view->FirstTranslucentInstance = FrameData.TranslucentInstances.Size();
     view->TranslucentInstanceCount = 0;
-    view->FirstLightPortal = FrameData.LightPortals.Size();
-    view->LightPortalsCount = 0;
-    view->FirstShadowInstance = FrameData.ShadowInstances.Size();
-    view->ShadowInstanceCount = 0;
+    //view->FirstLightPortal = FrameData.LightPortals.Size();
+    //view->LightPortalsCount = 0;
+    //view->FirstShadowInstance = FrameData.ShadowInstances.Size();
+    //view->ShadowInstanceCount = 0;
     view->FirstDirectionalLight = FrameData.DirectionalLights.Size();
     view->NumDirectionalLights = 0;
     view->FirstDebugDrawCommand = 0;
@@ -360,21 +371,14 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
 
         switch ( dstCmd->Type ) {
         case HUD_DRAW_CMD_VIEWPORT: {
-            // Check MAX_RENDER_VIEWS limit
-            if ( NumViewports >= MAX_RENDER_VIEWS )
-            {
-                GLogger.Printf( "ARenderFrontend::RenderCanvas: MAX_RENDER_VIEWS hit\n" );
-                continue;
-            }
-
             // Unpack viewport
             SViewport const * viewport = &InCanvas->GetViewports()[ (size_t)cmd.TextureId - 1 ];
 
-            // Compute viewport index in array of viewports
-            dstCmd->ViewportIndex = NumViewports++;
-
             // Save pointer to viewport to array of viewports
-            Viewports[ dstCmd->ViewportIndex ] = viewport;
+            Viewports.Append( viewport );
+
+            // Set viewport index in array of viewports
+            dstCmd->ViewportIndex = Viewports.Size() - 1;
 
             // Calc max viewport size
             MaxViewportWidth = Math::Max( MaxViewportWidth, viewport->Width );
@@ -619,7 +623,9 @@ void ARenderFrontend::QueryVisiblePrimitives( ARenderWorld * InWorld ) {
     VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
 }
 
-void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis ) {
+void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
+                                          TPodArray< SPrimitiveDef * > & Primitives, TPodArray< SSurfaceDef * > & Surfaces )
+{
     SVisibilityQuery query;
     BvFrustum frustum;
 
@@ -634,7 +640,7 @@ void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const
     query.VisibilityMask = RenderDef.VisibilityMask;
     query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_SHADOW_CAST;
 
-    VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
+    VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), Primitives, Surfaces, nullptr, query );
 }
 
 void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
@@ -661,17 +667,35 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         }
 
         if ( nullptr != (light = Upcast< AAnalyticLightComponent >( primitive->Owner )) ) {
-            Lights.Append( light );
+            if ( Lights.Size() < MAX_LIGHTS ) {
+                Lights.Append( light );
 
-            APhotometricProfile * profile = light->GetPhotometricProfile();
-            if ( profile ) {
-                profile->WritePhotometricData( PhotometricProfiles, FrameNumber );
+                if ( !light->IsEnabled() ) {
+                    continue;
+                }
+
+                if ( light->IsCastShadow() ) {
+                    //QueryShadowCasters( InWorld, lightViewProj, lightPos, lightBias, prim, surfs );
+
+                    //lightDef->ShadowmapIndex = FrameData.LightShadowmaps.Size();
+                }
+
+                APhotometricProfile * profile = light->GetPhotometricProfile();
+                if ( profile ) {
+                    profile->WritePhotometricData( PhotometricProfiles, FrameNumber );
+                }
+            } else {
+                GLogger.Printf( "MAX_LIGHTS hit\n" );
             }
             continue;
         }
 
         if ( nullptr != (ibl = Upcast< AIBLComponent >( primitive->Owner )) ) {
-            IBLs.Append( ibl );
+            if ( IBLs.Size() < MAX_PROBES ) {
+                IBLs.Append( ibl );
+            } else {
+                GLogger.Printf( "MAX_PROBES hit\n" );
+            }
             continue;
         }
 
@@ -719,20 +743,86 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         lightDef->Matrix = dirlight->GetWorldRotation().ToMatrix();
         lightDef->MaxShadowCascades = dirlight->GetMaxShadowCascades();
         lightDef->RenderMask = ~0;//dirlight->RenderingGroup;
-        lightDef->bCastShadow = dirlight->bCastShadow;
+        lightDef->ShadowmapIndex = -1;
+        lightDef->ShadowCascadeResolution = dirlight->GetShadowCascadeResolution();
 
         view->NumDirectionalLights++;
     }
-    FrameData.ShadowCascadePoolSize = Math::Max( FrameData.ShadowCascadePoolSize, view->NumShadowMapCascades );
 
-    //GLogger.Printf( "FrameLightData %f KB\n", sizeof( SFrameLightData ) / 1024.0f );
+    GLightVoxelizer.Reset();
+
+    // Allocate lights
+    view->NumPointLights = Lights.Size();
+    view->PointLights = (SClusterLight *)GRuntime.AllocFrameMem( sizeof( SClusterLight ) * view->NumPointLights );
+    for ( int i = 0 ; i < view->NumPointLights ; i++ ) {
+        light = Lights[i];
+
+        light->PackLight( view->ViewMatrix, view->PointLights[i] );
+
+        SItemInfo * info = GLightVoxelizer.AllocItem();
+        info->Type = ITEM_TYPE_LIGHT;
+        info->ListIndex = i;
+
+        BvAxisAlignedBox const & AABB = light->GetWorldBounds();
+        info->Mins = AABB.Mins;
+        info->Maxs = AABB.Maxs;
+
+        if ( GLightVoxelizer.IsSSE() )
+        {
+#if 0
+            ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
+            ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
+
+            ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
+            ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
+            ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
+            ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
+#else
+            info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * view->ClusteViewProjectionInversed; // TODO: умножение сразу в SSE?
+#endif
+        } else
+        {
+            info->ClipToBoxMat = light->GetOBBTransformInverse() * view->ClusteViewProjectionInversed;
+        }
+    }
+    
+    // Allocate probes
+    view->NumProbes = IBLs.Size();
+    view->Probes = (SClusterProbe *)GRuntime.AllocFrameMem( sizeof( SClusterProbe ) * view->NumProbes );
+    for ( int i = 0 ; i < view->NumProbes ; i++ ) {
+        ibl = IBLs[i];
+
+        ibl->PackProbe( view->ViewMatrix, view->Probes[i] );
+
+        SItemInfo * info = GLightVoxelizer.AllocItem();
+        info->Type = ITEM_TYPE_PROBE;
+        info->ListIndex = i;
+
+        BvAxisAlignedBox const & AABB = ibl->GetWorldBounds();
+        info->Mins = AABB.Mins;
+        info->Maxs = AABB.Maxs;
+
+        if ( GLightVoxelizer.IsSSE() )
+        {
+#if 0
+            ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
+            ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
+
+            ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
+            ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
+            ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
+            ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
+#else
+            info->ClipToBoxMatSSE = ibl->GetOBBTransformInverse() * view->ClusteViewProjectionInversed; // TODO: умножение сразу в SSE?
+#endif
+        } else
+        {
+            info->ClipToBoxMat = ibl->GetOBBTransformInverse() * view->ClusteViewProjectionInversed;
+        }
+    }
+
     if ( !RVFixFrustumClusters ) {
-        GLightVoxelizer.Voxelize( &FrameData,
-                                  view,
-                                  Lights.ToPtr(),
-                                  Lights.Size(),
-                                  IBLs.ToPtr(),
-                                  IBLs.Size() );
+        GLightVoxelizer.Voxelize( view );
     }
 }
 
@@ -1014,7 +1104,7 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
     RenderDef.PolyCount += instance->IndexCount / 3;
 }
 
-void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( AMeshComponent * InComponent ) {
+void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent ) {
     if ( !RVRenderMeshes ) {
         return;
     }
@@ -1075,13 +1165,13 @@ void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( AMeshComponent * InCom
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
 
-        RenderDef.View->ShadowInstanceCount++;
+        ShadowMap->ShadowInstanceCount++;
 
         RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
     }
 }
 
-void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * InComponent ) {
+void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent ) {
     if ( !RVRenderMeshes ) {
         return;
     }
@@ -1149,13 +1239,13 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( ASkinnedComponent * I
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
 
-        RenderDef.View->ShadowInstanceCount++;
+        ShadowMap->ShadowInstanceCount++;
 
         RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
     }
 }
 
-void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshComponent * InComponent ) {
+void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent ) {
     if ( !RVRenderMeshes ) {
         return;
     }
@@ -1218,7 +1308,7 @@ void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( AProceduralMeshCom
             | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
             | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
 
-    RenderDef.View->ShadowInstanceCount++;
+    ShadowMap->ShadowInstanceCount++;
 
     RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
 }
@@ -1230,9 +1320,8 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
 
     // Create shadow instances
 
-    // TODO: We can keep ready shadowCasters[] and boxes[]
-    TPodArray< ADrawable * > shadowCasters;
-    TPodArray< BvAxisAlignedBoxSSE > boxes;
+    ShadowCasters.Clear();
+    ShadowBoxes.Clear();
 
     for ( ADrawable * component = InWorld->GetShadowCasters() ; component ; component = component->GetNextShadowCaster() ) {
         if ( (component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0 ) {
@@ -1240,140 +1329,166 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
         }
         component->CascadeMask = 0;
 
-        shadowCasters.Append( component );
-        boxes.Append( component->GetWorldBounds() );
+        ShadowCasters.Append( component );
+        ShadowBoxes.Append( component->GetWorldBounds() );
     }
 
-    boxes.Resize( Align( boxes.Size(), 4 ) );
+    ShadowBoxes.Resize( Align( ShadowBoxes.Size(), 4 ) );
 
-    TPodArray< int > cullResult;
-    cullResult.ResizeInvalidate( boxes.Size() );
+    ShadowCasterCullResult.ResizeInvalidate( ShadowBoxes.Size() );
 
-    // Perform culling for each cascade
-    // TODO: Do it parallel (jobs)
     BvFrustum frustum;
-    for ( int i = 0 ; i < RenderDef.View->NumShadowMapCascades ; i++ ) {
 
-        frustum.FromMatrix( RenderDef.View->LightViewProjectionMatrices[i] );
+    for ( int lightIndex = 0 ; lightIndex < RenderDef.View->NumDirectionalLights ; lightIndex++ ) {
+        int lightOffset = RenderDef.View->FirstDirectionalLight + lightIndex;
 
-        cullResult.ZeroMem();
+        SDirectionalLightDef * lightDef = FrameData.DirectionalLights[ lightOffset ];
 
-        frustum.CullBox_SSE( boxes.ToPtr(), shadowCasters.Size(), cullResult.ToPtr() );
-        //frustum.CullBox_Generic( boxes.ToPtr(), shadowCasters.Size(), cullResult.ToPtr() );
-
-        for ( int n = 0 ; n < shadowCasters.Size() ; n++ ) {
-            //GLogger.Printf( "Cull result %f\n", *(float*)&cullResult[n] );
-            //shadowCasters[n]->CascadeMask |= (1-cullResult[n]) << i;
-
-            shadowCasters[n]->CascadeMask |= (cullResult[n]==0) << i;
-        }
-    }
-
-    for ( int n = 0 ; n < shadowCasters.Size() ; n++ ) {
-
-        ADrawable * component = shadowCasters[n];
-
-        if ( component->CascadeMask == 0 ) {
+        if ( lightDef->NumCascades == 0 ) {
             continue;
         }
 
-        switch ( component->GetDrawableType() ) {
-        case DRAWABLE_STATIC_MESH:
-            AddDirectionalShadowmap_StaticMesh( static_cast< AMeshComponent * >( component ) );
-            break;
-        case DRAWABLE_SKINNED_MESH:
-            AddDirectionalShadowmap_SkinnedMesh( static_cast< ASkinnedComponent * >(component) );
-            break;
-        case DRAWABLE_PROCEDURAL_MESH:
-            AddDirectionalShadowmap_ProceduralMesh( static_cast< AProceduralMeshComponent * >(component) );
-            break;
-        default:
-            break;
-        }
-    }
+        lightDef->ShadowmapIndex = FrameData.LightShadowmaps.Size();
 
-    // Add static shadow casters
-    AWorld * world = InWorld->GetOwnerWorld();
-    for ( ALevel * level : world->GetArrayOfLevels() ) {
+        SLightShadowmap * shadowMap = &FrameData.LightShadowmaps.Append();
 
-        // TODO: Perform culling for each shadow cascade, set CascadeMask
+        shadowMap->FirstShadowInstance = FrameData.ShadowInstances.Size();
+        shadowMap->ShadowInstanceCount = 0;
+        shadowMap->FirstLightPortal = FrameData.LightPortals.Size();
+        shadowMap->LightPortalsCount = 0;
 
-        if ( level->ShadowCasterVerts.IsEmpty() ) {
-            continue;
-        }
+        // Perform culling for each cascade
+        // TODO: Do it parallel (jobs)
+        for ( int cascadeIndex = 0 ; cascadeIndex < lightDef->NumCascades ; cascadeIndex++ ) {
+            int cascadeOffset = lightDef->FirstCascade + cascadeIndex;
 
-        // Add render instance
-        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
-        if ( !instance ) {
-            break;
+            frustum.FromMatrix( RenderDef.View->LightViewProjectionMatrices[cascadeOffset] );
+
+            ShadowCasterCullResult.ZeroMem();
+
+            frustum.CullBox_SSE( ShadowBoxes.ToPtr(), ShadowCasters.Size(), ShadowCasterCullResult.ToPtr() );
+            //frustum.CullBox_Generic( ShadowBoxes.ToPtr(), ShadowCasters.Size(), ShadowCasterCullResult.ToPtr() );
+
+            for ( int n = 0 ; n < ShadowCasters.Size() ; n++ ) {
+                //GLogger.Printf( "Cull result %f\n", *(float*)&ShadowCasterCullResult[n] );
+                //ShadowCasters[n]->CascadeMask |= (1-ShadowCasterCullResult[n]) << i;
+
+                ShadowCasters[n]->CascadeMask |= (ShadowCasterCullResult[n]==0) << cascadeIndex;
+            }
         }
 
-        FrameData.ShadowInstances.Append( instance );
+        for ( int n = 0 ; n < ShadowCasters.Size() ; n++ ) {
+            ADrawable * component = ShadowCasters[n];
 
-        instance->Material = nullptr;
-        instance->MaterialInstance = nullptr;
-        instance->VertexBuffer = level->GetShadowCasterVB();
-        instance->VertexBufferOffset = 0;
-        instance->IndexBuffer = level->GetShadowCasterIB();
-        instance->IndexBufferOffset = 0;
-        instance->WeightsBuffer = nullptr;
-        instance->WeightsBufferOffset = 0;
-        instance->IndexCount = level->ShadowCasterIndices.Size();
-        instance->StartIndexLocation = 0;
-        instance->BaseVertexLocation = 0;
-        instance->SkeletonOffset = 0;
-        instance->SkeletonSize = 0;
-        instance->WorldTransformMatrix.SetIdentity();
-        instance->CascadeMask = 0xffff; // TODO: Calculate!!!
-
-        // Generate sort key.
-        // NOTE: 8 bits are still unused. We can use it in future.
-        instance->SortKey = 0;/*  ((uint64_t)(component->RenderingOrder & 0xffu) << 56u)
-                            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-                            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-                            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->VertexBuffer ) & 0xffffu) << 8u);*/
-
-        RenderDef.View->ShadowInstanceCount++;
-
-        RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
-    }
-
-    if ( RVRenderLightPortals ) {
-        // Add light portals
-        for ( ALevel * level : world->GetArrayOfLevels() ) {
-
-            TPodArray< SLightPortalDef > const & lightPortals = level->GetLightPortals();
-
-            if ( lightPortals.IsEmpty() ) {
+            if ( component->CascadeMask == 0 ) {
                 continue;
             }
 
-            for ( SLightPortalDef const & lightPortal : lightPortals ) {
+            switch ( component->GetDrawableType() ) {
+            case DRAWABLE_STATIC_MESH:
+                AddDirectionalShadowmap_StaticMesh( shadowMap, static_cast< AMeshComponent * >(component) );
+                break;
+            case DRAWABLE_SKINNED_MESH:
+                AddDirectionalShadowmap_SkinnedMesh( shadowMap, static_cast< ASkinnedComponent * >(component) );
+                break;
+            case DRAWABLE_PROCEDURAL_MESH:
+                AddDirectionalShadowmap_ProceduralMesh( shadowMap, static_cast< AProceduralMeshComponent * >(component) );
+                break;
+            default:
+                break;
+            }
 
-                // TODO: Perform culling for each light portal
-                // NOTE: We can precompute visible geometry for static light and meshes from every light portal
+            // Clear cascade mask for next light source
+            component->CascadeMask = 0;
+        }
 
-                SLightPortalRenderInstance * instance = (SLightPortalRenderInstance *)GRuntime.AllocFrameMem( sizeof( SLightPortalRenderInstance ) );
-                if ( !instance ) {
-                    break;
+        // Add static shadow casters
+        AWorld * world = InWorld->GetOwnerWorld();
+        for ( ALevel * level : world->GetArrayOfLevels() ) {
+
+            // TODO: Perform culling for each shadow cascade, set CascadeMask
+
+            if ( level->ShadowCasterVerts.IsEmpty() ) {
+                continue;
+            }
+
+            // Add render instance
+            SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+            if ( !instance ) {
+                break;
+            }
+
+            FrameData.ShadowInstances.Append( instance );
+
+            instance->Material = nullptr;
+            instance->MaterialInstance = nullptr;
+            instance->VertexBuffer = level->GetShadowCasterVB();
+            instance->VertexBufferOffset = 0;
+            instance->IndexBuffer = level->GetShadowCasterIB();
+            instance->IndexBufferOffset = 0;
+            instance->WeightsBuffer = nullptr;
+            instance->WeightsBufferOffset = 0;
+            instance->IndexCount = level->ShadowCasterIndices.Size();
+            instance->StartIndexLocation = 0;
+            instance->BaseVertexLocation = 0;
+            instance->SkeletonOffset = 0;
+            instance->SkeletonSize = 0;
+            instance->WorldTransformMatrix.SetIdentity();
+            instance->CascadeMask = 0xffff; // TODO: Calculate!!!
+
+                                            // Generate sort key.
+                                            // NOTE: 8 bits are still unused. We can use it in future.
+            instance->SortKey = 0;/*  ((uint64_t)(component->RenderingOrder & 0xffu) << 56u)
+                                  | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
+                                  | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
+                                  | ((uint64_t)(Core::PHHash64( (uint64_t)instance->VertexBuffer ) & 0xffffu) << 8u);*/
+
+            shadowMap->ShadowInstanceCount++;
+
+            RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+        }
+
+        StdSort( FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
+                 FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
+                 ShadowInstanceSortFunction );
+
+        if ( RVRenderLightPortals ) {
+            // Add light portals
+            for ( ALevel * level : world->GetArrayOfLevels() ) {
+
+                TPodArray< SLightPortalDef > const & lightPortals = level->GetLightPortals();
+
+                if ( lightPortals.IsEmpty() ) {
+                    continue;
                 }
 
-                FrameData.LightPortals.Append( instance );
+                for ( SLightPortalDef const & lightPortal : lightPortals ) {
 
-                instance->VertexBuffer = level->GetLightPortalsVB();
-                instance->VertexBufferOffset = 0;
-                instance->IndexBuffer = level->GetLightPortalsIB();
-                instance->IndexBufferOffset = 0;
-                instance->IndexCount = lightPortal.NumIndices;
-                instance->StartIndexLocation = lightPortal.FirstIndex;
-                instance->BaseVertexLocation = 0;
+                    // TODO: Perform culling for each light portal
+                    // NOTE: We can precompute visible geometry for static light and meshes from every light portal
 
-                RenderDef.View->LightPortalsCount++;
+                    SLightPortalRenderInstance * instance = (SLightPortalRenderInstance *)GRuntime.AllocFrameMem( sizeof( SLightPortalRenderInstance ) );
+                    if ( !instance ) {
+                        break;
+                    }
 
-                //RenderDef.LightPortalPolyCount += instance->IndexCount / 3;
+                    FrameData.LightPortals.Append( instance );
+
+                    instance->VertexBuffer = level->GetLightPortalsVB();
+                    instance->VertexBufferOffset = 0;
+                    instance->IndexBuffer = level->GetLightPortalsIB();
+                    instance->IndexBufferOffset = 0;
+                    instance->IndexCount = lightPortal.NumIndices;
+                    instance->StartIndexLocation = lightPortal.FirstIndex;
+                    instance->BaseVertexLocation = 0;
+
+                    shadowMap->LightPortalsCount++;
+
+                    //RenderDef.LightPortalPolyCount += instance->IndexCount / 3;
+                }
             }
         }
-    }
+    }    
 }
 
 AN_FORCEINLINE bool CanMergeSurfaces( SSurfaceDef const * InFirst, SSurfaceDef const * InSecond ) {

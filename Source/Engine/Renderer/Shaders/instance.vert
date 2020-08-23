@@ -44,12 +44,6 @@ out gl_PerVertex
 #   endif
 
 //    layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
-
-    layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-        mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
-        mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
-    };
-
 #endif
 
 #ifdef MATERIAL_PASS_DEPTH

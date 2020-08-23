@@ -48,11 +48,6 @@ layout( location = 0 ) out flat int VS_InstanceID;
     };
 #endif
 
-layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
-    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
-};
-
 void main() {
     #ifdef SKINNED_MESH
         const vec4 SrcPosition = vec4( InPosition, 1.0 );
@@ -78,9 +73,9 @@ void main() {
         Position.y = dot( JointTransform1, SrcPosition );
         Position.z = dot( JointTransform2, SrcPosition );
         Position.w = 1;
-        gl_Position = /*CascadeViewProjection[ gl_InstanceID ] * */TransformMatrix * Position;
+        gl_Position = TransformMatrix * Position;
     #else
-        gl_Position = /*CascadeViewProjection[ gl_InstanceID ] * */TransformMatrix * vec4( InPosition, 1.0 );
+        gl_Position = TransformMatrix * vec4( InPosition, 1.0 );
     #endif
 
     VS_InstanceID = gl_InstanceID;

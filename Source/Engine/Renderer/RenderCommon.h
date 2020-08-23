@@ -330,6 +330,9 @@ public:
 
     void UploadUniforms();
 
+    void SetShadowMatrixBinding();
+    void SetShadowCascadeBinding( int FirstCascade, int NumCascades );
+
     // Contains constant data for single draw call.
     // Don't use to store long-live data.
     TRef< ACircularBuffer > ConstantBuffer;
@@ -358,7 +361,8 @@ public:
     RenderCore::SShaderBufferBinding *  ViewUniformBufferBinding;       // binding 0
     RenderCore::SShaderBufferBinding *  DrawCallUniformBufferBinding;   // binding 1
     RenderCore::SShaderBufferBinding *  SkeletonBufferBinding;          // binding 2
-    RenderCore::SShaderBufferBinding *  CascadeBufferBinding;           // binding 3
+    RenderCore::SShaderBufferBinding    ShadowCascadeBinding;           // binding 3
+    RenderCore::SShaderBufferBinding    ShadowMatrixBinding;            // binding 3
     RenderCore::SShaderBufferBinding *  LightBufferBinding;             // binding 4
     RenderCore::SShaderBufferBinding *  IBLBufferBinding;               // binding 5
     RenderCore::SShaderBufferBinding *  VTBufferBinding;                // binding 6

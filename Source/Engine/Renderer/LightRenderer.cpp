@@ -436,7 +436,10 @@ void ALightRenderer::BindTexturesLightPass( SMaterialFrameData * _Instance )
 void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                               AFrameGraphTexture * DepthTarget,
                               AFrameGraphTexture * SSAOTexture,
-                              AFrameGraphTexture * ShadowMapDepth,
+                              AFrameGraphTexture * ShadowMapDepth0,
+                              AFrameGraphTexture * ShadowMapDepth1,
+                              AFrameGraphTexture * ShadowMapDepth2,
+                              AFrameGraphTexture * ShadowMapDepth3,
                               AFrameGraphTexture * LinearDepth,
                               AFrameGraphTexture ** ppLight,
                               AFrameGraphTexture ** ppVelocity )
@@ -497,7 +500,10 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
     opaquePass.AddResource( LookupBRDF_R, RESOURCE_ACCESS_READ );
     opaquePass.AddResource( ClusterItemTBO_R, RESOURCE_ACCESS_READ );
     opaquePass.AddResource( ClusterLookup_R, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth0, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth1, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth2, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth3, RESOURCE_ACCESS_READ );
 
     if ( RVSSLR ) {
         opaquePass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
@@ -553,6 +559,8 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;
 
+        GFrameResources.SetShadowMatrixBinding();
+
         if ( RVSSLR ) {
             GFrameResources.TextureBindings[8].pTexture = ReflectionDepth_R->Actual();
             GFrameResources.SamplerBindings[8].pSampler = ReflectDepthSampler;
@@ -580,8 +588,14 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         GFrameResources.SamplerBindings[14].pSampler = ClusterLookupSampler;
 
         // Bind shadow map
-        GFrameResources.TextureBindings[15].pTexture = ShadowMapDepth->Actual();
+        GFrameResources.TextureBindings[15].pTexture = ShadowMapDepth0->Actual();
         GFrameResources.SamplerBindings[15].pSampler = ShadowDepthSamplerPCF;
+        GFrameResources.TextureBindings[16].pTexture = ShadowMapDepth1->Actual();
+        GFrameResources.SamplerBindings[16].pSampler = ShadowDepthSamplerPCF;
+        GFrameResources.TextureBindings[17].pTexture = ShadowMapDepth2->Actual();
+        GFrameResources.SamplerBindings[17].pSampler = ShadowDepthSamplerPCF;
+        GFrameResources.TextureBindings[18].pTexture = ShadowMapDepth3->Actual();
+        GFrameResources.SamplerBindings[18].pSampler = ShadowDepthSamplerPCF;
 
         for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
             SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
@@ -627,7 +641,10 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         translucentPass.AddResource( LookupBRDF_R, RESOURCE_ACCESS_READ );
         translucentPass.AddResource( ClusterItemTBO_R, RESOURCE_ACCESS_READ );
         translucentPass.AddResource( ClusterLookup_R, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth0, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth1, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth2, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth3, RESOURCE_ACCESS_READ );
 
         if ( RVSSLR ) {
             translucentPass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
@@ -654,6 +671,8 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             SDrawIndexedCmd drawCmd;
             drawCmd.InstanceCount = 1;
             drawCmd.StartInstanceLocation = 0;
+
+            GFrameResources.SetShadowMatrixBinding();
 
             if ( RVSSLR ) {
                 GFrameResources.TextureBindings[8].pTexture = ReflectionDepth_R->Actual();
@@ -682,8 +701,14 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             GFrameResources.SamplerBindings[14].pSampler = ClusterLookupSampler;
 
             // Bind shadow map
-            GFrameResources.TextureBindings[15].pTexture = ShadowMapDepth->Actual();
+            GFrameResources.TextureBindings[15].pTexture = ShadowMapDepth0->Actual();
             GFrameResources.SamplerBindings[15].pSampler = ShadowDepthSamplerPCF;
+            GFrameResources.TextureBindings[16].pTexture = ShadowMapDepth1->Actual();
+            GFrameResources.SamplerBindings[16].pSampler = ShadowDepthSamplerPCF;
+            GFrameResources.TextureBindings[17].pTexture = ShadowMapDepth2->Actual();
+            GFrameResources.SamplerBindings[17].pSampler = ShadowDepthSamplerPCF;
+            GFrameResources.TextureBindings[18].pTexture = ShadowMapDepth3->Actual();
+            GFrameResources.SamplerBindings[18].pSampler = ShadowDepthSamplerPCF;
 
             for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
                 SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];

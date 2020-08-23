@@ -40,7 +40,7 @@ out gl_PerVertex
     vec4 gl_Position;
 };
 
-layout( invocations = 4/*MAX_TOTAL_SHADOW_CASCADES_PER_VIEW*/ )
+layout( invocations = MAX_SHADOW_CASCADES )
 layout( triangles ) in;
 layout( triangle_strip, max_vertices = 3 ) out;
 //layout( location = 0 ) in flat int VS_InstanceID[];
@@ -51,8 +51,7 @@ layout( location = 1 ) out vec2 InTexCoord[];
 #endif
 
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
-    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+    mat4 CascadeViewProjection[ MAX_SHADOW_CASCADES ];
 };
 
 void main() {

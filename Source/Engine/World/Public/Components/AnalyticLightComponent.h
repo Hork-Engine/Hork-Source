@@ -37,7 +37,11 @@ class AAnalyticLightComponent : public APunctualLightComponent {
     AN_COMPONENT( AAnalyticLightComponent, APunctualLightComponent )
 
 public:
-    bool bCastShadow = false; // TODO
+    /** Allow mesh to cast shadows on the world */
+    void SetCastShadow( bool _CastShadow ) { bCastShadow = _CastShadow; }
+
+    /** Is cast shadows enabled */
+    bool IsCastShadow() const { return bCastShadow; }
 
     /** Set photometric profile for the light source */
     void SetPhotometricProfile( APhotometricProfile * Profile );
@@ -79,10 +83,11 @@ protected:
 
 private:
     TRef< APhotometricProfile > PhotometricProfile;
-    bool bPhotometricAsMask = false;
     float Lumens;
     float LuminousIntensityScale = 1.0f;
     float Temperature;
     Float3 Color;
     mutable Float3 EffectiveColor; // Composed from Temperature, Lumens, Color
+    bool bPhotometricAsMask = false;
+    bool bCastShadow = false;
 };

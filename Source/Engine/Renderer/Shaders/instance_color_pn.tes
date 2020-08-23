@@ -181,14 +181,14 @@ void main(){
     const float v3 = v2 * v;
     const float w3 = w2 * w;
 
-    VS_Position =  B300 * w3 + B030 * u3 + B003 * v3 +
-                B210 * ( 3.0 * w2 * u ) +
-                B120 * ( 3.0 * w * u2 ) +
-                B201 * ( 3.0 * w2 * v ) +
-                B021 * ( 3.0 * u2 * v ) +
-                B102 * ( 3.0 * w * v2 ) +
-                B012 * ( 3.0 * u * v2 ) +
-                B111 * ( 6.0 * w * u * v );
+    VS_Position = B300 * w3 + B030 * u3 + B003 * v3 +
+                  B210 * ( 3.0 * w2 * u ) +
+                  B120 * ( 3.0 * w * u2 ) +
+                  B201 * ( 3.0 * w2 * v ) +
+                  B021 * ( 3.0 * u2 * v ) +
+                  B102 * ( 3.0 * w * v2 ) +
+                  B012 * ( 3.0 * u * v2 ) +
+                  B111 * ( 6.0 * w * u * v );
 
 #   include "$COLOR_PASS_TES_INTERPOLATE$"
 #   include "$COLOR_PASS_TES_CODE$"

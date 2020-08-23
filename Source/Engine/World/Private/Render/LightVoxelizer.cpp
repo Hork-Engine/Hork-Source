@@ -31,8 +31,10 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
-#include <World/Public/Components/AnalyticLightComponent.h>
-#include <World/Public/Components/IBLComponent.h>
+
+#define LIGHT_ITEMS_OFFSET 0
+#define DECAL_ITEMS_OFFSET 256
+#define PROBE_ITEMS_OFFSET 512
 
 ARuntimeVariable RVClusterSSE( _CTS( "ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "1" ), VAR_CHEAT );
@@ -45,35 +47,6 @@ ALightVoxelizer & GLightVoxelizer = ALightVoxelizer::Inst();
 // SSE Math
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-struct Float4x4SSE {
-    __m128 col0;
-    __m128 col1;
-    __m128 col2;
-    __m128 col3;
-
-    Float4x4SSE() {
-    }
-
-    Float4x4SSE( __m128 _col0, __m128 _col1, __m128 _col2, __m128 _col3 )
-        : col0(_col0), col1(_col1), col2( _col2 ), col3( _col3 )
-    {
-    }
-
-    Float4x4SSE( Float4x4 const & m ) {
-        col0 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[0]) );
-        col1 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[1]) );
-        col2 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[2]) );
-        col3 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[3]) );
-    }
-
-    AN_FORCEINLINE void operator=( Float4x4 const & m ) {
-        col0 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[0]) );
-        col1 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[1]) );
-        col2 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[2]) );
-        col3 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[3]) );
-    }
-};
 
 AN_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat4( Float4x4SSE const & m, __m128 v ) {
     __m128 xxxx = _mm_shuffle_ps( v, v, _MM_SHUFFLE( 0, 0, 0, 0 ) );
@@ -124,147 +97,10 @@ AN_FORCEINLINE Float4x4SSE operator*( Float4x4SSE const & m1, Float4x4SSE const 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define LIGHT_ITEMS_OFFSET 0
-#define DECAL_ITEMS_OFFSET 256
-#define PROBE_ITEMS_OFFSET 512
-
-enum EItemType
-{
-    ITEM_TYPE_LIGHT,
-    ITEM_TYPE_PROBE
-};
-
-struct SItemInfo {
-    int MinSlice;
-    int MinClusterX;
-    int MinClusterY;
-    int MaxSlice;
-    int MaxClusterX;
-    int MaxClusterY;
-
-    // OBB before transform (повернутый OBB, который получается после умножения OBB на OBBTransformInv)
-    //Float3 AabbMins;
-    //Float3 AabbMaxs;
-    alignas(16) Float3 Mins;
-    alignas(16) Float3 Maxs;
-    Float4x4 ClipToBoxMat;
-
-    // Тоже самое, только для SSE
-    //alignas(16) __m128 AabbMinsSSE;
-    //alignas(16) __m128 AabbMaxsSSE;
-    alignas(16) Float4x4SSE ClipToBoxMatSSE;
-
-    int ListIndex;
-
-    uint8_t Type;
-
-    union
-    {
-        AAnalyticLightComponent * Light;
-        //ADecalComponent * Decal;
-        AIBLComponent * Probe;
-    };
-};
-
-static unsigned short Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
-static AAtomicInt ItemCounter;
-static SRenderView * RenderView;
-static Float4x4 ViewProj;
-static Float4x4 ViewProjInv;
-static SItemInfo ItemInfos[MAX_ITEMS];
-static int ItemsCount;
-
-struct SFrustumCluster {
-    unsigned short LightsCount;
-    unsigned short DecalsCount;
-    unsigned short ProbesCount;
-};
-
-alignas( 16 ) static SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
-
-static SFrameLightData * pLightData;
-static bool bUseSSE;
-
-static void VoxelizeWork( void * _Data );
-
 ALightVoxelizer::ALightVoxelizer() {
 }
 
-AN_FORCEINLINE static SItemInfo * AllocItem() {
-    AN_ASSERT( ItemsCount < MAX_ITEMS );
-    return &ItemInfos[ ItemsCount++ ];
-}
-
-static void PackLights( AAnalyticLightComponent * const * InLights, int InLightCount ) {
-    for ( int i = 0; i < InLightCount ; i++ ) {
-        AAnalyticLightComponent * light = InLights[i];
-
-        SItemInfo * info = AllocItem();
-        info->Type = ITEM_TYPE_LIGHT;
-        info->Light = light;
-        info->Light->PackLight( RenderView->ViewMatrix, pLightData->LightBuffer[i] );
-        info->ListIndex = i;
-
-        BvAxisAlignedBox const & AABB = light->GetWorldBounds();
-        info->Mins = AABB.Mins;
-        info->Maxs = AABB.Maxs;
-
-        if ( bUseSSE )
-        {
-#if 0
-            ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
-            ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
-
-            ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
-            ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
-            ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
-            ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
-#else
-            info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * ViewProjInv; // TODO: умножение сразу в SSE?
-#endif
-        }
-        else
-        {
-            info->ClipToBoxMat = light->GetOBBTransformInverse() * ViewProjInv;
-        }
-    }
-}
-
-static void PackProbes( AIBLComponent * const * InLights, int InLightCount ) {
-    for ( int i = 0; i < InLightCount ; i++ ) {
-        AIBLComponent * light = InLights[i];
-
-        SItemInfo * info = AllocItem();
-        info->Type = ITEM_TYPE_PROBE;
-        info->Probe = light;
-        info->Probe->PackProbe( RenderView->ViewMatrix, pLightData->Probes[i] );
-        info->ListIndex = i;
-
-        BvAxisAlignedBox const & AABB = light->GetWorldBounds();
-        info->Mins = AABB.Mins;
-        info->Maxs = AABB.Maxs;
-
-        if ( bUseSSE )
-        {
-#if 0
-            ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
-            ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
-
-            ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
-            ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
-            ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
-            ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
-#else
-            info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * ViewProjInv; // TODO: умножение сразу в SSE?
-#endif
-        } else
-        {
-            info->ClipToBoxMat = light->GetOBBTransformInverse() * ViewProjInv;
-        }
-    }
-}
-
-static void TransformItemsSSE() {
+void ALightVoxelizer::TransformItemsSSE() {
     Float4x4SSE ViewProjSSE;
     Float4x4SSE ViewProjInvSSE;
 
@@ -429,7 +265,7 @@ static void TransformItemsSSE() {
     }
 }
 
-static void TransformItemsGeneric() {
+void ALightVoxelizer::TransformItemsGeneric() {
     BvAxisAlignedBox bb;
     Float4 BoxPoints[8];
 
@@ -535,50 +371,26 @@ static void TransformItemsGeneric() {
     }
 }
 
-void ALightVoxelizer::Voxelize( SRenderFrame * Frame,
-                                SRenderView * RV,
-                                AAnalyticLightComponent * const * InLights, int InLightCount,
-                                AIBLComponent * const * InProbes, int InProbeCount ) {
-    RenderView = RV;
-    ViewProj = RV->ClusterProjectionMatrix * RV->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
-    ViewProjInv = ViewProj.Inversed();
+void ALightVoxelizer::Reset() {
+    ItemsCount = 0;
+    bUseSSE = RVClusterSSE;
+}
+
+struct SWork
+{
+    int SliceIndex;
+    ALightVoxelizer * Self;
+};
+
+void ALightVoxelizer::Voxelize( SRenderView * RV ) {
+    ViewProj = RV->ClusteViewProjection;
+    ViewProjInv = RV->ClusteViewProjectionInversed;
 
     Core::ZeroMemSSE( ClusterData, sizeof( ClusterData ) );
 
-    int InDecalsCount = 0; // TODO
-
-    if ( InLightCount > MAX_LIGHTS ) {
-        InLightCount = MAX_LIGHTS;
-
-        GLogger.Printf( "MAX_LIGHTS hit\n" );
-    }
-
-    if ( InProbeCount > MAX_PROBES ) {
-        InProbeCount = MAX_PROBES;
-
-        GLogger.Printf( "MAX_PROBES hit\n" );
-    }
-
-    if ( InDecalsCount > MAX_DECALS ) {
-        InDecalsCount = MAX_DECALS;
-
-        GLogger.Printf( "MAX_DECALS hit\n" );
-    }
-
-    bUseSSE = RVClusterSSE;
-
     pLightData = &RV->LightData;
 
-    // Pack items
-    ItemsCount = 0;
-    PackLights( InLights, InLightCount );
-    //PackDecals( InDecals, InDecalsCount );
-    PackProbes( InProbes, InProbeCount );
-
-    pLightData->TotalLights = InLightCount;
-    //pLightData->TotalDecals = InDecalsCount;
-    pLightData->TotalProbes = InProbeCount;
-
+    // Calc min/max slices
     if ( bUseSSE ) {
         TransformItemsSSE();
     } else {
@@ -587,8 +399,12 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame,
 
     ItemCounter.StoreRelaxed( 0 );
 
+    SWork works[MAX_FRUSTUM_CLUSTERS_Z];
+
     for ( int i = 0 ; i < MAX_FRUSTUM_CLUSTERS_Z ; i++ ) {
-        GRenderFrontendJobList->AddJob( VoxelizeWork, reinterpret_cast< void * >(static_cast< size_t >(i)) );
+        works[i].SliceIndex = i;
+        works[i].Self = this;
+        GRenderFrontendJobList->AddJob( VoxelizeWork, &works[i] );
     }
 
     GRenderFrontendJobList->SubmitAndWait();
@@ -602,11 +418,13 @@ void ALightVoxelizer::Voxelize( SRenderFrame * Frame,
     }
 }
 
-static void VoxelizeWork( void * _Data ) {
-    int SliceIndex = (size_t)_Data;
+void ALightVoxelizer::VoxelizeWork( void * _Data ) {
+    SWork * work = static_cast< SWork * >( _Data );
 
-    //GLogger.Printf( "Vox %d\n", SliceIndex );
+    work->Self->VoxelizeWork( work->SliceIndex );
+}
 
+void ALightVoxelizer::VoxelizeWork( int SliceIndex ) {
     alignas(16) Float3 ClusterMins;
     alignas(16) Float3 ClusterMaxs;
 
@@ -901,7 +719,7 @@ static void VoxelizeWork( void * _Data ) {
     }
 }
 
-static void GatherVoxelGeometry( TStdVectorDefault< Float3 > & LinePoints, Float4x4 const & ViewProjectionInversed )
+void ALightVoxelizer::GatherVoxelGeometry( TStdVectorDefault< Float3 > & LinePoints, Float4x4 const & ViewProjectionInversed )
 {
     Float3 clusterMins;
     Float3 clusterMaxs;
@@ -951,7 +769,8 @@ static void GatherVoxelGeometry( TStdVectorDefault< Float3 > & LinePoints, Float
     }
 }
 
-void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer ) {
+void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer )
+{
     static TStdVectorDefault< Float3 > LinePoints;
 
     if ( !RVFreezeFrustumClusters )

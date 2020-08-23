@@ -3,7 +3,6 @@
 
 using namespace RenderCore;
 
-extern ARuntimeVariable RVShadowCascadeResolution;
 extern ARuntimeVariable RVShadowCascadeBits;
 
 static const float EVSM_positiveExponent = 40.0;
@@ -16,6 +15,12 @@ AShadowMapRenderer::AShadowMapRenderer()
 {
     CreatePipeline();
     CreateLightPortalPipeline();
+
+    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_DEPTH16, STextureResolution2DArray( 1, 1, 1 ) ), &DummyShadowMap );
+
+    SClearValue clearValue;
+    clearValue.Float1.R = 1.0f;
+    rcmd->ClearTexture( DummyShadowMap, 0, FORMAT_FLOAT1, &clearValue );
 }
 
 void AShadowMapRenderer::CreatePipeline() {
@@ -279,11 +284,29 @@ static void BlurDepthMoments() {
 }
 #endif
 
-void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth )
+void AShadowMapRenderer::AddDummyShadowMap( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth ) {
+    *ppShadowMapDepth = FrameGraph.AddExternalResource(
+        "Dummy Shadow Map",
+        RenderCore::STextureCreateInfo(),
+        DummyShadowMap
+    );
+}
+
+void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef const * LightDef, AFrameGraphTexture ** ppShadowMapDepth )
 {
-    int cascadeWidth = RVShadowCascadeResolution.GetInteger();
-    int cascadeHeight = RVShadowCascadeResolution.GetInteger();
-    int totalCascades = GFrameData->ShadowCascadePoolSize;
+    if ( LightDef->ShadowmapIndex < 0 ) {
+        AddDummyShadowMap( FrameGraph, ppShadowMapDepth );
+        return;
+    }
+
+    SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ LightDef->ShadowmapIndex ];
+    if ( shadowMap->ShadowInstanceCount == 0 ) {
+        AddDummyShadowMap( FrameGraph, ppShadowMapDepth );
+        return;
+    }
+
+    int cascadeResolution = LightDef->ShadowCascadeResolution;
+    int totalCascades = LightDef->NumCascades;
 
     RenderCore::TEXTURE_FORMAT depthFormat;
     if ( RVShadowCascadeBits.GetInteger() <= 16 ) {
@@ -294,27 +317,18 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
         depthFormat = TEXTURE_FORMAT_DEPTH32;
     }
 
-    if ( GFrameData->ShadowCascadePoolSize == 0
-         || GRenderView->ShadowInstanceCount == 0 )
-    {
-        cascadeWidth = 1;
-        cascadeHeight = 1;
-        totalCascades = 1;
-        depthFormat = TEXTURE_FORMAT_DEPTH16;
-    }
-
     ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "ShadowMap Pass" );
 
-    pass.SetRenderArea( cascadeWidth, cascadeHeight );
+    pass.SetRenderArea( cascadeResolution, cascadeResolution );
 
     pass.SetDepthStencilAttachment(
     {
         "Shadow Cascade Depth texture",
-        MakeTexture( depthFormat, STextureResolution2DArray( cascadeWidth, cascadeHeight, totalCascades ) ),
+        MakeTexture( depthFormat, STextureResolution2DArray( cascadeResolution, cascadeResolution, totalCascades ) ),
         RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
     } );
 
-    if ( GRenderView->LightPortalsCount > 0 ) {
+    if ( shadowMap->LightPortalsCount > 0 ) {
         pass.SetDepthStencilClearValue( MakeClearDepthStencilValue( 0, 0 ) );
     } else {
         pass.SetDepthStencilClearValue( MakeClearDepthStencilValue( 1, 0 ) );
@@ -330,12 +344,12 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
     {
         {
             "Shadow Cascade Color texture",
-            MakeTextureStorage( TexFormat, TextureResolution2DArray( cascadeWidth, cascadeHeight, totalCascades ) ),
+            MakeTextureStorage( TexFormat, TextureResolution2DArray( cascadeResolution, cascadeResolution, totalCascades ) ),
             RenderCore::AttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
         },
         {
             "Shadow Cascade Color texture 2",
-            MakeTextureStorage( TexFormat, TextureResolution2DArray( cascadeWidth, cascadeHeight, totalCascades ) ),
+            MakeTextureStorage( TexFormat, TextureResolution2DArray( cascadeResolution, cascadeResolution, totalCascades ) ),
             RenderCore::AttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
         },
     } );
@@ -354,19 +368,13 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
     pass.AddSubpass( {}, // no color attachments
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        if ( !GRenderView->NumShadowMapCascades ) {
-            return;
-        }
-
-        if ( !GRenderView->ShadowInstanceCount ) {
-            return;
-        }
+        GFrameResources.SetShadowCascadeBinding( LightDef->FirstCascade, LightDef->NumCascades );
 
         SDrawIndexedCmd drawCmd;
         drawCmd.StartInstanceLocation = 0;
 
-        for ( int i = 0 ; i < GRenderView->LightPortalsCount ; i++ ) {
-            SLightPortalRenderInstance const * instance = GFrameData->LightPortals[GRenderView->FirstLightPortal + i];
+        for ( int i = 0 ; i < shadowMap->LightPortalsCount ; i++ ) {
+            SLightPortalRenderInstance const * instance = GFrameData->LightPortals[shadowMap->FirstLightPortal + i];
 
             rcmd->BindPipeline( LightPortalPipeline.GetObject() );
 
@@ -374,7 +382,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
 
             rcmd->BindShaderResources( &GFrameResources.Resources );
 
-            drawCmd.InstanceCount = GRenderView->NumShadowMapCascades;
+            drawCmd.InstanceCount = LightDef->NumCascades;
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
             drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
@@ -382,8 +390,10 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
             rcmd->Draw( &drawCmd );
         }
 
-        for ( int i = 0 ; i < GRenderView->ShadowInstanceCount ; i++ ) {
-            SShadowRenderInstance const * instance = GFrameData->ShadowInstances[GRenderView->FirstShadowInstance + i];
+        drawCmd.InstanceCount = 1;
+
+        for ( int i = 0 ; i < shadowMap->ShadowInstanceCount ; i++ ) {
+            SShadowRenderInstance const * instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
 
             if ( !BindMaterialShadowMap( instance ) ) {
                 continue;
@@ -400,7 +410,6 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
 
             rcmd->BindShaderResources( &GFrameResources.Resources );
 
-            drawCmd.InstanceCount = 1;//GRenderView->NumShadowMapCascades;
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
             drawCmd.BaseVertexLocation = instance->BaseVertexLocation;

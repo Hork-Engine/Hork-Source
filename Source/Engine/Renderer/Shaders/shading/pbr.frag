@@ -154,7 +154,7 @@ vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float Roughness
             #endif
             float Bias = (1.0 - NdL_Vertex);
 #           ifdef ALLOW_SHADOW_RECEIVE            
-            float Shadow = SampleLightShadow( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
+            float Shadow = SampleLightShadow( i, LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
 #           else
             const float Shadow = 1.0;
 #           endif

@@ -38,8 +38,6 @@ class ADirectionalLightComponent : public ALightComponent {
     friend class ARenderWorld;
 
 public:
-    bool bCastShadow = true;
-
     void SetIlluminance( float IlluminanceInLux );
     float GetIlluminance() const;
 
@@ -65,8 +63,17 @@ public:
     /** Get light direction in world space */
     Float3 GetWorldDirection() const;
 
+    /** Allow mesh to cast shadows on the world */
+    void SetCastShadow( bool _CastShadow ) { bCastShadow = _CastShadow; }
+
+    /** Is cast shadows enabled */
+    bool IsCastShadow() const { return bCastShadow; }
+
     void SetShadowMaxDistance( float MaxDistance ) { ShadowMaxDistance = MaxDistance; }
     int GetShadowMaxDistance() const { return ShadowMaxDistance; }
+
+    void SetShadowCascadeResolution( int Resolution ) { ShadowCascadeResolution = Math::ToClosestPowerOfTwo( Resolution ); }
+    int GetShadowCascadeResolution() const { return ShadowCascadeResolution; }
 
     void SetShadowCascadeOffset( float Offset ) { ShadowCascadeOffset = Offset; }
     int GetShadowCascadeOffset() const { return ShadowCascadeOffset; }
@@ -94,9 +101,11 @@ private:
     float Temperature;
     Float3 Color;
     mutable Float4 EffectiveColor;
+    bool bCastShadow;
     float ShadowMaxDistance;
     float ShadowCascadeOffset;
     int MaxShadowCascades;
+    int ShadowCascadeResolution;
     ADirectionalLightComponent * Next;
     ADirectionalLightComponent * Prev;
 };

@@ -6,7 +6,8 @@ class AShadowMapRenderer {
 public:
     AShadowMapRenderer();
 
-    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth );
+    void AddDummyShadowMap( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth );
+    void AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef const * LightDef, AFrameGraphTexture ** ppShadowMapDepth );
 
 private:
     void CreatePipeline();
@@ -16,6 +17,7 @@ private:
 
     TRef< RenderCore::IPipeline > StaticShadowCasterPipeline;
     TRef< RenderCore::IPipeline > LightPortalPipeline;
+    TRef< RenderCore::ITexture > DummyShadowMap;
 };
 
 extern const Float4 EVSM_ClearValue;

@@ -38,8 +38,7 @@ ARuntimeVariable RVShadowCascadeBits( _CTS( "ShadowCascadeBits" ), _CTS( "24" ) 
 ARuntimeVariable RVCascadeSplitLambda( _CTS( "CascadeSplitLambda" ), _CTS( "1.0" ) );
 //ARuntimeVariable RVShadowCascadeOffset( _CTS( "ShadowCascadeOffset" ), _CTS( "3.0" ) );
 //ARuntimeVariable RVShadowMaxDistance( _CTS( "ShadowMaxDistance" ), _CTS( "128" ) );
-//ARuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ), _CTS( "2048" ) );
-ARuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ), _CTS( "128" ) ); // TODO: move to directional light properties
+//ARuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ), _CTS( "2048" ) ); // TODO: move to directional light properties
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -64,9 +63,11 @@ ADirectionalLightComponent::ADirectionalLightComponent() {
     Temperature = DEFAULT_TEMPERATURE;
     Color = DEFAULT_COLOR;    
     EffectiveColor = Float4( 0.0f );
+    bCastShadow = true;
     MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
     ShadowMaxDistance = 128;
     ShadowCascadeOffset = 3;
+    ShadowCascadeResolution = 1024;
     Next = Prev = nullptr;
 }
 
@@ -89,39 +90,6 @@ void ADirectionalLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
     GetWorld()->GetRenderWorld().RemoveDirectionalLight( this );
-}
-
-namespace Math
-{
-Float4x4 LookAt( Float3 const & eye, Float3 const & center, Float3 const & up )
-{
-    Float3 const f( ( center - eye ).Normalized() );
-    Float3 const s( Cross( up, f ).Normalized() );
-    Float3 const u( Cross( f, s ) );
-
-    Float4x4 result;
-    result[0][0] = s.X;
-    result[1][0] = s.Y;
-    result[2][0] = s.Z;
-    result[3][0] = -Dot( s, eye );
-
-    result[0][1] = u.X;
-    result[1][1] = u.Y;
-    result[2][1] = u.Z;
-    result[3][1] = -Dot( u, eye );
-
-    result[0][2] = f.X;
-    result[1][2] = f.Y;
-    result[2][2] = f.Z;
-    result[3][2] = -Dot( f, eye );
-
-    result[0][3] = 0;
-    result[1][3] = 0;
-    result[2][3] = 0;
-    result[3][3] = 1;
-
-    return result;
-}
 }
 
 void ADirectionalLightComponent::SetDirection( Float3 const & _Direction ) {
@@ -248,9 +216,8 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int *
         up = View->ViewUpVec * Math::Abs( orthoHeight * 0.5f );
     }
 
-    // TODO: move this parameters to DirectionalLightComponent
-    const float shadowMaxDistance = ShadowMaxDistance;//RVShadowMaxDistance.GetInteger();
-    const float offset = ShadowCascadeOffset;//RVShadowCascadeOffset.GetFloat();
+    const float shadowMaxDistance = ShadowMaxDistance;
+    const float offset = ShadowCascadeOffset;
     const float a = (shadowMaxDistance - offset) / View->ViewZNear;
     const float b = (shadowMaxDistance - offset) - View->ViewZNear;
     const float lambda = RVCascadeSplitLambda.GetFloat();
@@ -304,7 +271,7 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int *
     lightViewMatrix[1] = Float4( basis[1], 0.0f );
     lightViewMatrix[2] = Float4( basis[2], 0.0f );
 
-    const float halfCascadeRes = RVShadowCascadeResolution.GetFloat() * 0.5f;
+    const float halfCascadeRes = ShadowCascadeResolution >> 1;
 
     int firstCascade = View->NumShadowMapCascades;
 

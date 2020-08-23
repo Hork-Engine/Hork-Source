@@ -836,6 +836,7 @@ const char * ARuntime::GetExecutableName() {
 
 void * ARuntime::AllocFrameMem( size_t _SizeInBytes ) {
     if ( FrameMemoryUsed + _SizeInBytes > FrameMemorySize ) {
+        // TODO: Allocate new block
         GLogger.Printf( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, FrameMemorySize - FrameMemoryUsed, FrameMemorySize );
         return nullptr;
     }

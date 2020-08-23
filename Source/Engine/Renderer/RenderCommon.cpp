@@ -692,11 +692,6 @@ void AFrameResources::Initialize() {
     SkeletonBufferBinding->SlotIndex = 2;
     SkeletonBufferBinding->pBuffer = nullptr;
 
-    CascadeBufferBinding = &BufferBinding[3];
-    CascadeBufferBinding->BufferType = RenderCore::UNIFORM_BUFFER;
-    CascadeBufferBinding->SlotIndex = 3;
-    CascadeBufferBinding->pBuffer = FrameConstantBuffer->GetBuffer();
-
     LightBufferBinding = &BufferBinding[4];
     LightBufferBinding->BufferType = RenderCore::UNIFORM_BUFFER;
     LightBufferBinding->SlotIndex = 4;
@@ -1082,6 +1077,25 @@ void AFrameResources::SetViewUniforms() {
     ViewUniformBufferBinding->BindingSize = sizeof( *uniformData );
 }
 
+void AFrameResources::SetShadowMatrixBinding() {
+    BufferBinding[3] = ShadowMatrixBinding;
+}
+
+void AFrameResources::SetShadowCascadeBinding( int FirstCascade, int NumCascades ) {
+    ShadowCascadeBinding.BindingSize = MAX_SHADOW_CASCADES * sizeof( Float4x4 );
+    ShadowCascadeBinding.BindingOffset = FrameConstantBuffer->Allocate( ShadowCascadeBinding.BindingSize );
+
+    byte * pMemory = FrameConstantBuffer->GetMappedMemory() + ShadowCascadeBinding.BindingOffset;
+
+    Core::Memcpy( pMemory, &GRenderView->LightViewProjectionMatrices[FirstCascade], NumCascades * sizeof( Float4x4 ) );
+
+    ShadowCascadeBinding.BufferType = RenderCore::UNIFORM_BUFFER;
+    ShadowCascadeBinding.SlotIndex = 3;
+    ShadowCascadeBinding.pBuffer = FrameConstantBuffer->GetBuffer();
+
+    BufferBinding[3] = ShadowCascadeBinding;
+}
+
 void AFrameResources::UploadUniforms() {
     SkeletonBufferBinding->pBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
     SkeletonBufferBindingMB->pBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
@@ -1089,32 +1103,32 @@ void AFrameResources::UploadUniforms() {
     SetViewUniforms();
 
     // Cascade matrices
-    CascadeBufferBinding->BindingSize = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * 2 * sizeof( Float4x4 );
-    CascadeBufferBinding->BindingOffset = FrameConstantBuffer->Allocate( CascadeBufferBinding->BindingSize );
+    ShadowMatrixBinding.BufferType = RenderCore::UNIFORM_BUFFER;
+    ShadowMatrixBinding.SlotIndex = 3;
+    ShadowMatrixBinding.pBuffer = FrameConstantBuffer->GetBuffer();
 
-    byte * pMemory = FrameConstantBuffer->GetMappedMemory() + CascadeBufferBinding->BindingOffset;
+    ShadowMatrixBinding.BindingSize = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof( Float4x4 );
+    ShadowMatrixBinding.BindingOffset = FrameConstantBuffer->Allocate( ShadowMatrixBinding.BindingSize );
 
-    Core::Memcpy( pMemory, GRenderView->LightViewProjectionMatrices, GRenderView->NumShadowMapCascades * sizeof( Float4x4 ) );
-
-    pMemory += MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof( Float4x4 );
+    byte * pMemory = FrameConstantBuffer->GetMappedMemory() + ShadowMatrixBinding.BindingOffset;
 
     Core::Memcpy( pMemory, GRenderView->ShadowMapMatrices, GRenderView->NumShadowMapCascades * sizeof( Float4x4 ) );
 
     // Light buffer
-    LightBufferBinding->BindingSize = GRenderView->LightData.TotalLights * sizeof( SClusterLight );
+    LightBufferBinding->BindingSize = GRenderView->NumPointLights * sizeof( SClusterLight );
     LightBufferBinding->BindingOffset = FrameConstantBuffer->Allocate( LightBufferBinding->BindingSize );
 
     pMemory = FrameConstantBuffer->GetMappedMemory() + LightBufferBinding->BindingOffset;
 
-    Core::Memcpy( pMemory, GRenderView->LightData.LightBuffer, LightBufferBinding->BindingSize );
+    Core::Memcpy( pMemory, GRenderView->PointLights, LightBufferBinding->BindingSize );
 
     // IBL buffer
-    IBLBufferBinding->BindingSize = GRenderView->LightData.TotalProbes * sizeof( SClusterProbe );
+    IBLBufferBinding->BindingSize = GRenderView->NumProbes * sizeof( SClusterProbe );
     IBLBufferBinding->BindingOffset = FrameConstantBuffer->Allocate( IBLBufferBinding->BindingSize );
 
     pMemory = FrameConstantBuffer->GetMappedMemory() + IBLBufferBinding->BindingOffset;
 
-    Core::Memcpy( pMemory, GRenderView->LightData.Probes, IBLBufferBinding->BindingSize );
+    Core::Memcpy( pMemory, GRenderView->Probes, IBLBufferBinding->BindingSize );
 
     // Write cluster data
     ClusterLookup->Write( 0,

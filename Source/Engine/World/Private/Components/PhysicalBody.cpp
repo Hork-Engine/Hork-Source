@@ -394,7 +394,7 @@ void APhysicalBody::OnTransformDirty() {
                     SetCenterOfMassPosition( position );
                 }
 
-                GLogger.Printf( "Set transform for STATIC or DYNAMIC phys body %s\n", GetObjectNameCStr() );
+                GLogger.Printf( "Set transform for non-KINEMATIC phys body %s\n", GetObjectNameCStr() );
             }
         }
 

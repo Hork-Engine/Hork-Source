@@ -41,14 +41,13 @@ out gl_PerVertex
 #include "$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$"
 #include "$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$"
 
-layout( invocations = 4/*MAX_TOTAL_SHADOW_CASCADES_PER_VIEW*/ )
+layout( invocations = MAX_SHADOW_CASCADES )
 layout( triangles ) in;
 layout( triangle_strip, max_vertices = 3 ) out;
 //layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) in flat int VS_InstanceID[];
 
 layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
-    mat4 CascadeViewProjection[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
-    mat4 ShadowMapMatrices[ MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ];
+    mat4 CascadeViewProjection[ MAX_SHADOW_CASCADES ];
 };
 
 void main() {

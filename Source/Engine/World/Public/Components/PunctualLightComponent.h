@@ -37,9 +37,6 @@ class APunctualLightComponent : public ALightComponent {
     AN_COMPONENT( APunctualLightComponent, ALightComponent )
 
 public:
-    /** Internal. Used by Light Voxelizer. */
-    //int ListIndex;
-
     /** Rendering group to filter lights during rendering */
     void SetVisibilityGroup( int InVisibilityGroup );
 

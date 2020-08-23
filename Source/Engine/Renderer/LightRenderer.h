@@ -39,7 +39,10 @@ public:
     void AddPass( AFrameGraph & FrameGraph,
                   AFrameGraphTexture * DepthTarget,
                   AFrameGraphTexture * SSAOTexture,
-                  AFrameGraphTexture * ShadowMapDepth,
+                  AFrameGraphTexture * ShadowMapDepth0,
+                  AFrameGraphTexture * ShadowMapDepth1,
+                  AFrameGraphTexture * ShadowMapDepth2,
+                  AFrameGraphTexture * ShadowMapDepth3,
                   AFrameGraphTexture * LinearDepth,
                   AFrameGraphTexture ** ppLight,
                   AFrameGraphTexture ** ppVelocity );

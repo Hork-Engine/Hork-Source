@@ -53,7 +53,7 @@ vec3 CalcDirectionalLighting( vec3 Normal, vec3 Specular, float SpecularPower )
 #           ifdef ALLOW_SHADOW_RECEIVE
             float NdL_Vertex = saturate( dot( VS_N, L ) );
             float Bias = (1.0 - NdL_Vertex);
-            float Shadow = SampleLightShadow( LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
+            float Shadow = SampleLightShadow( i, LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
 #           else
             const float Shadow = 1.0;
 #           endif
