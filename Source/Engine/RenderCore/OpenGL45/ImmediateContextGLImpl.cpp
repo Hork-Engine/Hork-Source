@@ -3224,9 +3224,32 @@ void AImmediateContextGLImpl::ClearTexture( ITexture * _Texture, uint16_t _Lod, 
         glDisable( GL_RASTERIZER_DISCARD );
     }
 
+    GLenum format;
+
+    switch ( _Texture->GetFormat() ) {
+    case TEXTURE_FORMAT_STENCIL1:
+    case TEXTURE_FORMAT_STENCIL4:
+    case TEXTURE_FORMAT_STENCIL8:
+    case TEXTURE_FORMAT_STENCIL16:
+        format = GL_STENCIL_INDEX;
+        break;
+    case TEXTURE_FORMAT_DEPTH16:
+    case TEXTURE_FORMAT_DEPTH24:
+    case TEXTURE_FORMAT_DEPTH32:
+        format = GL_DEPTH_COMPONENT;
+        break;
+    case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+    case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+        format = GL_DEPTH_STENCIL;
+        break;
+    default:
+        format = TypeLUT[_Format].FormatRGB;
+        break;
+    };
+
     glClearTexImage( GL_HANDLE( texture->GetHandle() ),
                      _Lod,
-                     TypeLUT[_Format].FormatRGB,
+                     format,
                      TypeLUT[_Format].Type,
                      _ClearValue );
 
@@ -3249,7 +3272,28 @@ void AImmediateContextGLImpl::ClearTextureRect( ITexture * _Texture,
         glDisable( GL_RASTERIZER_DISCARD );
     }
 
-    GLenum format = TypeLUT[_Format].FormatRGB;
+    GLenum format;
+
+    switch ( _Texture->GetFormat() ) {
+    case TEXTURE_FORMAT_STENCIL1:
+    case TEXTURE_FORMAT_STENCIL4:
+    case TEXTURE_FORMAT_STENCIL8:
+    case TEXTURE_FORMAT_STENCIL16:
+        format = GL_STENCIL_INDEX;
+        break;
+    case TEXTURE_FORMAT_DEPTH16:
+    case TEXTURE_FORMAT_DEPTH24:
+    case TEXTURE_FORMAT_DEPTH32:
+        format = GL_DEPTH_COMPONENT;
+        break;
+    case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+    case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+        format = GL_DEPTH_STENCIL;
+        break;
+    default:
+        format = TypeLUT[_Format].FormatRGB;
+        break;
+    };
 
     for ( STextureRect const * rect = _Rectangles ; rect < &_Rectangles[_NumRectangles] ; rect++ ) {
         glClearTexSubImage( GL_HANDLE( texture->GetHandle() ),
