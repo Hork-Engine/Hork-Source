@@ -794,7 +794,7 @@ void ADebugRenderer::DrawPlane( Float3 const & _Normal, float _D, float _Length 
 
     _Normal.ComputeBasis( xvec, yvec );
 
-    center = _Normal * _D;
+    center = _Normal * -_D;
 
     Float3 const points[4] = {
         center + ( xvec + yvec ) * _Length,
