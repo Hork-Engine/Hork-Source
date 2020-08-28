@@ -117,14 +117,14 @@ private:
     TPodArray< STransform > Transforms;
     TPodArray< unsigned short > ChannelsMap;
     TPodArray< BvAxisAlignedBox > Bounds;
-    int     MinNodeIndex;
-    int     MaxNodeIndex;
-    int     FrameCount;         // frames count
-    float   FrameDelta;         // fixed time delta between frames
-    float   FrameRate;          // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
-    float   DurationInSeconds;  // animation duration is FrameDelta * ( FrameCount - 1 )
-    float   DurationNormalizer; // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
-    bool    bIsAnimationValid;
+    int     MinNodeIndex = 0;
+    int     MaxNodeIndex = 0;
+    int     FrameCount = 0;     // frames count
+    float   FrameDelta = 0;     // fixed time delta between frames
+    float   FrameRate = 60;     // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
+    float   DurationInSeconds = 0;  // animation duration is FrameDelta * ( FrameCount - 1 )
+    float   DurationNormalizer = 1; // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
+    bool    bIsAnimationValid = false;
 };
 
 AN_FORCEINLINE unsigned short ASkeletalAnimation::GetChannelIndex( int _JointIndex ) const {

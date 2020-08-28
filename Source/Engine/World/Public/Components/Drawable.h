@@ -56,13 +56,11 @@ class ANGIE_API ADrawable : public APhysicalBody {
     friend class ARenderWorld;
 
 public:
-    int RenderingOrder = RENDER_ORDER_DEFAULT;
-
     /** Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled */
-    bool bCustomDepthStencilPass;
+    bool bCustomDepthStencilPass = false;
 
     /** Custom depth stencil value for the mesh */
-    uint8_t CustomDepthStencilValue;
+    uint8_t CustomDepthStencilValue = 0;
 
     /** Visibility group to filter drawables during rendering */
     void SetVisibilityGroup( int InVisibilityGroup );
@@ -108,10 +106,6 @@ public:
 
     bool IsOutdoor() const;
 
-    void SetMovable( bool _Movable );
-
-    bool IsMovable() const;
-
     /** Get overrided bounding box in local space */
     BvAxisAlignedBox const & GetBoundsOverride() const { return OverrideBoundingBox; }
 
@@ -144,7 +138,7 @@ public:
     ADrawable * GetPrevShadowCaster() { return PrevShadowCaster; }
 
     // Used during culling stage
-    uint32_t CascadeMask;
+    uint32_t CascadeMask = 0;
 
 protected:
     ADrawable();
@@ -158,14 +152,14 @@ protected:
     /** Override to dynamic update mesh data */
     virtual void OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {}
 
-    EDrawableType DrawableType;
+    EDrawableType DrawableType = DRAWABLE_UNKNOWN;
 
-    ADrawable * NextShadowCaster;
-    ADrawable * PrevShadowCaster;
+    ADrawable * NextShadowCaster = nullptr;
+    ADrawable * PrevShadowCaster = nullptr;
 
     SPrimitiveDef Primitive;
 
-    int VisFrame;
+    int VisFrame = -1;
 
     mutable BvAxisAlignedBox Bounds;
     mutable BvAxisAlignedBox WorldBounds;

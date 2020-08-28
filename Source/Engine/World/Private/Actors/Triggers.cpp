@@ -39,7 +39,7 @@ ATriggerBox::ATriggerBox() {
     TriggerBody->bUseDefaultBodyComposition = false;
     TriggerBody->bDispatchOverlapEvents = true;
     TriggerBody->SetTrigger( true );
-    TriggerBody->SetPhysicsBehavior( PB_STATIC );
+    TriggerBody->SetMotionBehavior( MB_STATIC );
     TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->BodyComposition.AddCollisionBody< ACollisionBox >();
@@ -54,7 +54,7 @@ ATriggerSphere::ATriggerSphere() {
     TriggerBody->bUseDefaultBodyComposition = false;
     TriggerBody->bDispatchOverlapEvents = true;
     TriggerBody->SetTrigger( true );
-    TriggerBody->SetPhysicsBehavior( PB_STATIC );
+    TriggerBody->SetMotionBehavior( MB_STATIC );
     TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->BodyComposition.AddCollisionBody< ACollisionSphere >();
@@ -69,7 +69,7 @@ ATriggerCylinder::ATriggerCylinder() {
     TriggerBody->bUseDefaultBodyComposition = false;
     TriggerBody->bDispatchOverlapEvents = true;
     TriggerBody->SetTrigger( true );
-    TriggerBody->SetPhysicsBehavior( PB_STATIC );
+    TriggerBody->SetMotionBehavior( MB_STATIC );
     TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->BodyComposition.AddCollisionBody< ACollisionCylinder >();
@@ -84,7 +84,7 @@ ATriggerCone::ATriggerCone() {
     TriggerBody->bUseDefaultBodyComposition = false;
     TriggerBody->bDispatchOverlapEvents = true;
     TriggerBody->SetTrigger( true );
-    TriggerBody->SetPhysicsBehavior( PB_STATIC );
+    TriggerBody->SetMotionBehavior( MB_STATIC );
     TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->BodyComposition.AddCollisionBody< ACollisionCone >();
@@ -99,7 +99,7 @@ ATriggerCapsule::ATriggerCapsule() {
     TriggerBody->bUseDefaultBodyComposition = false;
     TriggerBody->bDispatchOverlapEvents = true;
     TriggerBody->SetTrigger( true );
-    TriggerBody->SetPhysicsBehavior( PB_STATIC );
+    TriggerBody->SetMotionBehavior( MB_STATIC );
     TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->BodyComposition.AddCollisionBody< ACollisionCapsule >();

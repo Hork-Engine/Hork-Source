@@ -39,17 +39,18 @@ ADrawable::ADrawable() {
     WorldBounds.Clear();
     OverrideBoundingBox.Clear();
 
+    Core::ZeroMem( &Primitive, sizeof( Primitive ) );
     Primitive.Owner = this;
     Primitive.Type = VSD_PRIMITIVE_BOX;
     Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
     Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS | VSD_QUERY_MASK_SHADOW_CAST;
 
-    bAllowRaycast = false;
+    bOverrideBounds = false;
+    bSkinnedMesh = false;
     bCastShadow = true;
+    bAllowRaycast = false;
 
     //Primitive.bMovable = true;
-
-    VisFrame = -1;
 }
 
 void ADrawable::SetVisibilityGroup( int InVisibilityGroup ) {
@@ -176,7 +177,8 @@ void ADrawable::SetCastShadow( bool _CastShadow ) {
     {
         Primitive.QueryGroup |= VSD_QUERY_MASK_SHADOW_CAST;
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_NO_SHADOW_CAST;
-    } else
+    }
+    else
     {
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_SHADOW_CAST;
         Primitive.QueryGroup |= VSD_QUERY_MASK_NO_SHADOW_CAST;
@@ -224,23 +226,6 @@ void ADrawable::ForceOutdoor( bool _OutdoorSurface ) {
 
 bool ADrawable::IsOutdoor() const {
     return Primitive.bIsOutdoor;
-}
-
-void ADrawable::SetMovable( bool _Movable ) {
-    if ( Primitive.bMovable == _Movable ) {
-        return;
-    }
-
-    Primitive.bMovable = _Movable;
-
-    if ( IsInitialized() )
-    {
-        GetLevel()->MarkPrimitive( &Primitive );
-    }
-}
-
-bool ADrawable::IsMovable() const {
-    return Primitive.bMovable;
 }
 
 void ADrawable::PreRenderUpdate( SRenderFrontendDef const * _Def ) {

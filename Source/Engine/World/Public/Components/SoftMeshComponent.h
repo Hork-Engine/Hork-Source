@@ -48,25 +48,25 @@ public:
     float VelocitiesCorrection = 1;
 
     /** Damping coefficient [0,1] */
-    float DampingCoefficient;
+    float DampingCoefficient = 0;
 
     /** Drag coefficient [0,+inf] */
-    float DragCoefficient;
+    float DragCoefficient = 0;
 
     /** Lift coefficient [0,+inf] */
-    float LiftCoefficient;
+    float LiftCoefficient = 0;
 
     /** Pressure coefficient [-inf,+inf] */
-    float Pressure;
+    float Pressure = 0;
 
     /** Volume conversation coefficient [0,+inf] */
-    float VolumeConversation;
+    float VolumeConversation = 0;
 
     /** Dynamic friction coefficient [0,1] */
     float DynamicFriction = 0.2f;
 
     /** Pose matching coefficient [0,1] */
-    float PoseMatching;
+    float PoseMatching = 0;
 
     /** Linear stiffness coefficient [0,1] */
     float LinearStiffness = 1;
@@ -128,7 +128,7 @@ private:
     void UpdateSoftbodyTransform();
     void UpdateSoftbodyBoundingBox();
 
-    Float3 WindVelocity;
+    Float3 WindVelocity = Float3( 0.0f );
     
     //Float3x3 PrevTransformBasis;
     //Float3 PrevTransformOrigin;
@@ -139,5 +139,5 @@ private:
         int VertexIndex;
     };
     TPodArray< SAnchorBinding > Anchors;
-    bool bUpdateAnchors;
+    bool bUpdateAnchors = false;
 };

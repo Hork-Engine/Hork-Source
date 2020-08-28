@@ -35,6 +35,10 @@ SOFTWARE.
 AN_CLASS_META( APunctualLightComponent )
 
 APunctualLightComponent::APunctualLightComponent() {
+    AABBWorldBounds.Clear();
+    OBBTransformInverse.Clear();
+
+    Core::ZeroMem( &Primitive, sizeof( Primitive ) );
     Primitive.Owner = this;
     Primitive.Type = VSD_PRIMITIVE_SPHERE;
     Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
@@ -71,21 +75,4 @@ void APunctualLightComponent::SetEnabled( bool _Enabled ) {
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
         Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }
-}
-
-void APunctualLightComponent::SetMovable( bool _Movable ) {
-    if ( Primitive.bMovable == _Movable ) {
-        return;
-    }
-
-    Primitive.bMovable = _Movable;
-
-    if ( IsInitialized() )
-    {
-        GetLevel()->MarkPrimitive( &Primitive );
-    }
-}
-
-bool APunctualLightComponent::IsMovable() const {
-    return Primitive.bMovable;
 }

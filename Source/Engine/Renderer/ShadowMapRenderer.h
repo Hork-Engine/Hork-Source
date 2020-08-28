@@ -8,6 +8,7 @@ public:
 
     void AddDummyShadowMap( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth );
     void AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef const * LightDef, AFrameGraphTexture ** ppShadowMapDepth );
+    void AddPass( AFrameGraph & FrameGraph, SClusterLight const * LightDef, AFrameGraphTexture ** ppShadowMapDepth );
 
 private:
     void CreatePipeline();

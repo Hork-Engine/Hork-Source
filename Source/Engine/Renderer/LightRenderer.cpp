@@ -441,8 +441,8 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                               AFrameGraphTexture * ShadowMapDepth2,
                               AFrameGraphTexture * ShadowMapDepth3,
                               AFrameGraphTexture * LinearDepth,
-                              AFrameGraphTexture ** ppLight,
-                              AFrameGraphTexture ** ppVelocity )
+                              AFrameGraphTexture ** ppLight/*,
+                              AFrameGraphTexture ** ppVelocity*/ )
 {
     AFrameGraphTexture * PhotometricProfiles_R = FrameGraph.AddExternalResource(
         "Photometric Profiles",
@@ -510,41 +510,22 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         opaquePass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
     }
 
-    if ( RVMotionBlur ) {
-        opaquePass.SetColorAttachments(
+    opaquePass.SetColorAttachments(
+    {
         {
-            {
-                "Light texture",
-                RenderCore::MakeTexture( pf, GetFrameResoultion() ),
-                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-            },
-            {
-                "Velocity texture",
-                RenderCore::MakeTexture( TEXTURE_FORMAT_RG8, GetFrameResoultion() ),
-                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-            }
+            "Light texture",
+            RenderCore::MakeTexture( pf, GetFrameResoultion() ),
+            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
         }
-        );
-    }
-    else {
-        opaquePass.SetColorAttachments(
-        {
-            {
-                "Light texture",
-                RenderCore::MakeTexture( pf, GetFrameResoultion() ),
-                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-            }
-        }
-        );
-    }
-
+    } );
+ 
     opaquePass.SetDepthStencilAttachment(
     {
         DepthTarget,
         RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
     } );
 
-    opaquePass.AddSubpass( { 0, 1 }, // color attachment refs
+    opaquePass.AddSubpass( { 0 }, // color attachment refs
                           [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
         // Clearing don't work properly with dynamic resolution scale :(
@@ -610,7 +591,6 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindSkeletonMotionBlur( instance->SkeletonOffsetMB, instance->SkeletonSize );
 
             // Set instance uniforms
             SetInstanceUniforms( instance );
@@ -723,7 +703,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
                 // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-                BindSkeletonMotionBlur( instance->SkeletonOffsetMB, instance->SkeletonSize );
+                //BindSkeletonMotionBlur( instance->SkeletonOffsetMB, instance->SkeletonSize );
 
                 // Set instance uniforms
                 SetInstanceUniforms( instance );
@@ -775,11 +755,4 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
     }
 
     *ppLight = LightTexture;
-
-    if ( RVMotionBlur ) {
-        *ppVelocity = opaquePass.GetColorAttachments()[1].Resource;
-    }
-    else {
-        *ppVelocity = nullptr;
-    }
 }

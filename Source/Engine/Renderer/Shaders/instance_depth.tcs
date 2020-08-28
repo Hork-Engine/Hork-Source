@@ -40,13 +40,25 @@ layout( location = DEPTH_PASS_VARYING_NORMAL ) in vec3 VS_N[];
 layout( location = DEPTH_PASS_VARYING_POSITION ) out vec3 TCS_Position[];
 layout( location = DEPTH_PASS_VARYING_NORMAL ) out vec3 TCS_Normal[];
 
+#if defined( DEPTH_WITH_VELOCITY_MAP )
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos[];
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 TCS_VertexPos[];
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP[];
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 TCS_VertexPosP[];
+#endif
+
 #include "tessellation_level.glsl"
 
 void main()
 {
     TCS_Position[gl_InvocationID] = VS_Position[gl_InvocationID];
     TCS_Normal[gl_InvocationID] = VS_N[gl_InvocationID];
-    
+
+    #if defined( DEPTH_WITH_VELOCITY_MAP )
+    TCS_VertexPos[gl_InvocationID] = VS_VertexPos[gl_InvocationID];
+    TCS_VertexPosP[gl_InvocationID] = VS_VertexPosP[gl_InvocationID];
+    #endif
+
 #   include "$DEPTH_PASS_TCS_COPY_VARYINGS$"
 
     if ( gl_InvocationID == 0 ) {

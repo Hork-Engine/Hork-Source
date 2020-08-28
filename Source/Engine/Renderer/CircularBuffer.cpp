@@ -60,6 +60,8 @@ ACircularBuffer::ACircularBuffer( size_t InBufferSize )
     }
 
     BufferIndex = 0;
+
+    UniformBufferOffsetAlignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
 }
 
 ACircularBuffer::~ACircularBuffer()
@@ -78,9 +80,7 @@ size_t ACircularBuffer::Allocate( size_t InSize )
 
     SChainBuffer * pChainBuffer = &ChainBuffer[BufferIndex];
 
-    unsigned int alignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
-
-    size_t alignedOffset = Align( pChainBuffer->UsedMemory, alignment );
+    size_t alignedOffset = Align( pChainBuffer->UsedMemory, UniformBufferOffsetAlignment );
 
     if ( alignedOffset + InSize > BufferSize ) {
         pChainBuffer = Swap();

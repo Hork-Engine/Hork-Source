@@ -42,13 +42,29 @@ layout( binding = 2 ) uniform sampler2D Smp_Depth;
 #define MAX_SAMPLES 32
 
 void main() {
-    // Unpack velocity
-    vec2 v = texture( Smp_Velocity, VS_TexCoord ).xy;
-    v = v * 2.0 - 1.0;
-    v = v * v * sign( v );
+    // Fragment depth
+    float srcDepth = texture( Smp_Depth, VS_TexCoord ).x;
 
-    // Change blur direction (y already flipped during texture sampling)
-    v.x = -v.x;
+    // Unpack dynamic object velocity
+    vec2 v = texture( Smp_Velocity, VS_TexCoord ).xy;
+    if ( v.x < 1.0 ) {
+        v = v * ( 255.0 / 254.0 );
+        v = v * 2.0 - 1.0;
+        v = v * v * sign( v );
+    }
+    else {
+        // Calc fragment UV at previous frame
+        const vec3 fragmentPosViewspace = UVToView( VS_TexCoord, -srcDepth );
+        const vec2 texCoordPrev = ViewToUVReproj( fragmentPosViewspace );
+
+        // Calc camera velocity
+        v = VS_TexCoord - texCoordPrev;
+    }
+
+    //if ( VS_TexCoord.x > 0.5 ) {
+    //    FS_FragColor = vec4( (v), texture( Smp_Velocity, VS_TexCoord ).x < 1.0 ? 0.005 : 0.0, 1.0 );
+    //    return;
+    //}
 
     // Adjust velocity by current frame rate
     const float currentFPS = 1.0/GameplayFrameDelta();
@@ -70,7 +86,7 @@ void main() {
     FS_FragColor = texture( Smp_Light, VS_TexCoord );
     
     const float bias = -0.5;
-    float srcDepth = texture( Smp_Depth, VS_TexCoord ).x;
+
     float total = 1;
     for ( int i = 1 ; i < nSamples ; ++i ) {
         vec2 offset = v * (float(i) / float(nSamples - 1) + bias);

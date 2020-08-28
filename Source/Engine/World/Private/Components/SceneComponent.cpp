@@ -42,9 +42,15 @@ ARuntimeVariable RVDrawSockets( _CTS( "DrawSockets" ), _CTS( "0" ), VAR_CHEAT );
 AN_CLASS_META( ASceneComponent )
 
 ASceneComponent::ASceneComponent()
-    : Rotation( 1,0,0,0 )
+    : Position( 0 )
+    , Rotation( 1,0,0,0 )
     , Scale( 1 )
     , bTransformDirty( true )
+    , AttachParent( nullptr )
+    , SocketIndex( 0 )
+    , bAbsolutePosition( false )
+    , bAbsoluteRotation( false )
+    , bAbsoluteScale( false )
 {
 }
 

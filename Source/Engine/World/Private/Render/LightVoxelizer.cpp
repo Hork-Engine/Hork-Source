@@ -383,8 +383,8 @@ struct SWork
 };
 
 void ALightVoxelizer::Voxelize( SRenderView * RV ) {
-    ViewProj = RV->ClusteViewProjection;
-    ViewProjInv = RV->ClusteViewProjectionInversed;
+    ViewProj = RV->ClusterViewProjection;
+    ViewProjInv = RV->ClusterViewProjectionInversed;
 
     Core::ZeroMemSSE( ClusterData, sizeof( ClusterData ) );
 

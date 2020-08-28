@@ -322,7 +322,7 @@ struct SAINavigationConfig {
     /** Partition for non-tiled nav mesh */
     EAINavMeshPartition RecastPartitionMethod = AI_NAV_MESH_PARTITION_WATERSHED;
 
-    BvAxisAlignedBox BoundingBox;
+    BvAxisAlignedBox BoundingBox = BvAxisAlignedBox::Empty();
 };
 
 class AAINavigationMesh

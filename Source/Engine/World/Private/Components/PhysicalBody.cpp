@@ -85,16 +85,16 @@ void SPhysicalBodyMotionState::getWorldTransform( btTransform & _CenterOfMassTra
 }
 
 void SPhysicalBodyMotionState::setWorldTransform( btTransform const & _CenterOfMassTransform ) {
-    if ( Self->PhysicsBehavior == PB_DYNAMIC )
-    {
+    if ( Self->MotionBehavior == MB_SIMULATED ) {
         bDuringMotionStateUpdate = true;
         WorldRotation = btQuaternionToQuat( _CenterOfMassTransform.getRotation() );
         WorldPosition = btVectorToFloat3( _CenterOfMassTransform.getOrigin() - _CenterOfMassTransform.getBasis() * btVectorToFloat3( CenterOfMass ) );
         Self->SetWorldPosition( WorldPosition );
         Self->SetWorldRotation( WorldRotation );
         bDuringMotionStateUpdate = false;
-    } else {
-        GLogger.Printf( "SPhysicalBodyMotionState::setWorldTransform for non-dynamic %s\n", Self->GetObjectNameCStr() );
+    }
+    else {
+        GLogger.Printf( "SPhysicalBodyMotionState::setWorldTransform for non-simulated %s\n", Self->GetObjectNameCStr() );
     }
 }
 
@@ -103,7 +103,6 @@ AN_CLASS_META( APhysicalBody )
 #define HasCollisionBody() ( !bSoftBodySimulation && GetBodyComposition().NumCollisionBodies() > 0 && ( /*PhysicsSimulation == PS_DYNAMIC || bTrigger || bKinematicBody || */CollisionGroup ) )
 
 APhysicalBody::APhysicalBody() {
-    CachedScale = Float3( 1.0f );
 }
 
 void APhysicalBody::InitializeComponent() {
@@ -129,16 +128,14 @@ void APhysicalBody::DeinitializeComponent() {
     Super::DeinitializeComponent();
 }
 
-void APhysicalBody::SetPhysicsBehavior( EPhysicsBehavior _PhysicsBehavior ) {
-    if ( PhysicsBehavior == _PhysicsBehavior )
-    {
+void APhysicalBody::SetMotionBehavior( EMotionBehavior _MotionBehavior ) {
+    if ( MotionBehavior == _MotionBehavior ) {
         return;
     }
 
-    PhysicsBehavior = _PhysicsBehavior;
+    MotionBehavior = _MotionBehavior;
 
-    if ( IsInitialized() )
-    {
+    if ( IsInitialized() ) {
         UpdatePhysicsAttribs();
     }
 }
@@ -168,7 +165,7 @@ ACollisionBodyComposition const & APhysicalBody::GetBodyComposition() const {
     return bUseDefaultBodyComposition ? DefaultBodyComposition() : BodyComposition;
 }
 
-static void UpdateRigidBodyCollisionShape( btCollisionObject * RigidBody, btCompoundShape * CompoundShape, bool bTrigger, EPhysicsBehavior _PhysicsBehavior ) {
+static void UpdateRigidBodyCollisionShape( btCollisionObject * RigidBody, btCompoundShape * CompoundShape, bool bTrigger, EMotionBehavior _MotionBehavior ) {
     int numShapes = CompoundShape->getNumChildShapes();
     bool bUseCompound = !numShapes || numShapes > 1;
     if ( !bUseCompound ) {
@@ -188,12 +185,12 @@ static void UpdateRigidBodyCollisionShape( btCollisionObject * RigidBody, btComp
     } else {
         collisionFlags &= ~btCollisionObject::CF_NO_CONTACT_RESPONSE;
     }
-    if ( _PhysicsBehavior == PB_KINEMATIC ) {
+    if ( _MotionBehavior == MB_KINEMATIC ) {
         collisionFlags |= btCollisionObject::CF_KINEMATIC_OBJECT;
     } else {
         collisionFlags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
     }
-    if ( _PhysicsBehavior == PB_STATIC ) {
+    if ( _MotionBehavior == MB_STATIC ) {
         collisionFlags |= btCollisionObject::CF_STATIC_OBJECT;
     } else {
         collisionFlags &= ~btCollisionObject::CF_STATIC_OBJECT;
@@ -205,7 +202,7 @@ static void UpdateRigidBodyCollisionShape( btCollisionObject * RigidBody, btComp
     }
 
     RigidBody->setCollisionFlags( collisionFlags );
-    RigidBody->forceActivationState( _PhysicsBehavior == PB_KINEMATIC ? DISABLE_DEACTIVATION : ISLAND_SLEEPING );
+    RigidBody->forceActivationState( _MotionBehavior == MB_KINEMATIC ? DISABLE_DEACTIVATION : ISLAND_SLEEPING );
 }
 
 static void UpdateRigidBodyGravity( btRigidBody * RigidBody, bool bDisableGravity, bool bOverrideWorldGravity, Float3 const & SelfGravity, Float3 const & WorldGravity ) {
@@ -247,11 +244,11 @@ void APhysicalBody::CreateRigidBody() {
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 
     float mass = Math::Clamp( Mass, MIN_MASS, MAX_MASS );
-    if ( PhysicsBehavior == PB_DYNAMIC ) {
+    if ( MotionBehavior == MB_SIMULATED ) {
         CompoundShape->calculateLocalInertia( mass, localInertia );
     }
 
-    btRigidBody::btRigidBodyConstructionInfo constructInfo( PhysicsBehavior == PB_DYNAMIC ? mass : 0.0f, MotionState, CompoundShape, localInertia );
+    btRigidBody::btRigidBodyConstructionInfo constructInfo( MotionBehavior == MB_SIMULATED ? mass : 0.0f, MotionState, CompoundShape, localInertia );
 
     constructInfo.m_linearDamping = LinearDamping;
     constructInfo.m_angularDamping = AngularDamping;
@@ -265,7 +262,7 @@ void APhysicalBody::CreateRigidBody() {
     RigidBody = b3New( btRigidBody, constructInfo );
     RigidBody->setUserPointer( this );
 
-    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, PhysicsBehavior );
+    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, MotionBehavior );
 
     // transform already setup in motion state
 #if 0
@@ -346,13 +343,13 @@ void APhysicalBody::UpdatePhysicsAttribs() {
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 
     float mass = Math::Clamp( Mass, MIN_MASS, MAX_MASS );
-    if ( PhysicsBehavior == PB_DYNAMIC ) {
+    if ( MotionBehavior == MB_SIMULATED ) {
         CompoundShape->calculateLocalInertia( mass, localInertia );
     }
 
-    RigidBody->setMassProps( PhysicsBehavior == PB_DYNAMIC ? mass : 0.0f, localInertia );
+    RigidBody->setMassProps( MotionBehavior == MB_SIMULATED ? mass : 0.0f, localInertia );
 
-    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, PhysicsBehavior );
+    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, MotionBehavior );
 
     // Update position with new center of mass
     SetCenterOfMassPosition( position );
@@ -380,7 +377,7 @@ void APhysicalBody::OnTransformDirty() {
     if ( RigidBody ) {
         if ( !MotionState->bDuringMotionStateUpdate ) {
 
-            if ( PhysicsBehavior != PB_KINEMATIC )
+            if ( MotionBehavior != MB_KINEMATIC )
             {
                 Float3 position = GetWorldPosition();
                 Quat rotation = GetWorldRotation();
@@ -394,13 +391,18 @@ void APhysicalBody::OnTransformDirty() {
                     SetCenterOfMassPosition( position );
                 }
 
-                GLogger.Printf( "Set transform for non-KINEMATIC phys body %s\n", GetObjectNameCStr() );
+                GLogger.Printf( "WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr() );
             }
         }
 
         int numShapes = CompoundShape->getNumChildShapes();
         if ( numShapes > 0 && !CachedScale.CompareEps( GetWorldScale(), PHYS_COMPARE_EPSILON ) ) {
             UpdatePhysicsAttribs();
+        }
+    }
+    else {
+        if ( MotionBehavior != MB_KINEMATIC ) {
+            GLogger.Printf( "WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr() );
         }
     }
 
@@ -707,7 +709,7 @@ Float3 APhysicalBody::GetCenterOfMassWorldPosition() const {
 }
 
 void APhysicalBody::ActivatePhysics() {
-    if ( PhysicsBehavior == PB_DYNAMIC ) {
+    if ( MotionBehavior == MB_SIMULATED ) {
         if ( RigidBody ) {
             RigidBody->activate( true );
         }
@@ -1163,14 +1165,14 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
 
         InRenderer->SetDepthTest(true);
 
-        switch ( PhysicsBehavior ) {
-        case PB_STATIC:
+        switch ( MotionBehavior ) {
+        case MB_STATIC:
             InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
             break;
-        case PB_DYNAMIC:
+        case MB_SIMULATED:
             InRenderer->SetColor( AColor4( 1, 0.5f, 0.5f, 1 ) );
             break;
-        case PB_KINEMATIC:
+        case MB_KINEMATIC:
             InRenderer->SetColor( AColor4( 0.5f, 0.5f, 1, 1 ) );
             break;
         }
@@ -1190,7 +1192,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             InRenderer->DrawAABB( bb );
         }
     } else {
-        if ( PhysicsBehavior == PB_STATIC && RVDrawStaticCollisionBounds ) {
+        if ( MotionBehavior == MB_STATIC && RVDrawStaticCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1202,7 +1204,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             }
         }
 
-        if ( PhysicsBehavior == PB_DYNAMIC && RVDrawDynamicCollisionBounds ) {
+        if ( MotionBehavior == MB_SIMULATED && RVDrawDynamicCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1214,7 +1216,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             }
         }
 
-        if ( PhysicsBehavior == PB_KINEMATIC && RVDrawKinematicCollisionBounds ) {
+        if ( MotionBehavior == MB_KINEMATIC && RVDrawKinematicCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );

@@ -275,12 +275,25 @@ static Float2 CalcCursorOffset( AFont const * _Font, SWideChar * _Text, int _Cur
 AN_CLASS_META( WTextEdit )
 
 WTextEdit::WTextEdit() {
+    bSingleLine = false;
+
     Stb = ( STB_TexteditState * )GZoneMemory.Alloc( sizeof( STB_TexteditState ) );
     stb_textedit_initialize_state( Stb, bSingleLine );
 
-    bAllowUndo = true;
+    bReadOnly = false;
+    bPassword = false;
+    bCtrlEnterForNewLine = false;
     bAllowTabInput = true;
+    bAllowUndo = true;
+    bCustomCharFilter = false;
+    bStartDragging = false;
+
+    CurTextLength = 0;
+    MaxChars = 0;
+    CharacterFilter = 0;
     InsertSpacesOnTab = 4;
+    TempCursor = 0;
+
     SelectionColor = AColor4( 0.32f, 0.32f, 0.4f );
     TextColor = AColor4( 0.9f, 0.9f, 0.9f );
 

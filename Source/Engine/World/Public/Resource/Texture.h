@@ -165,10 +165,10 @@ protected:
     void UploadResourcesGPU() override;
 
     ATextureGPU * TextureGPU;
-    int TextureType;
-    STexturePixelFormat PixelFormat;
-    int Width;
-    int Height;
-    int Depth;
-    int NumLods;
+    int TextureType = 0;
+    STexturePixelFormat PixelFormat = TEXTURE_PF_BGRA8_SRGB;
+    int Width = 0;
+    int Height = 0;
+    int Depth = 0;
+    int NumLods = 0;
 };

@@ -44,8 +44,8 @@ public:
                   AFrameGraphTexture * ShadowMapDepth2,
                   AFrameGraphTexture * ShadowMapDepth3,
                   AFrameGraphTexture * LinearDepth,
-                  AFrameGraphTexture ** ppLight,
-                  AFrameGraphTexture ** ppVelocity );
+                  AFrameGraphTexture ** ppLight/*,
+                  AFrameGraphTexture ** ppVelocity*/ );
 
 private:
     void CreateLookupBRDF();

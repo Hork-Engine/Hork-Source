@@ -58,9 +58,11 @@ public:
     virtual void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {}
 
 protected:
-    ACollisionBody() {
-        Rotation = Quat::Identity();
-        Margin = 0.01f;
+    ACollisionBody()
+        : Position( 0.0f )
+        , Rotation( Quat::Identity() )
+        , Margin( 0.01f )
+    {
     }
 
     // Only APhysicsWorld and CreateCollisionShape can call Create()
@@ -210,7 +212,6 @@ class ACollisionConvexHullData : public ABaseObject {
     friend class ACollisionConvexHull;
 
 public:
-
     void Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount );
 
     Float3 const * GetVertices() const { return Vertices.ToPtr(); }
@@ -230,7 +231,7 @@ protected:
 
     TPodArray< Float3 > Vertices;
     TPodArray< unsigned int > Indices;
-    class btVector3 * Data;
+    class btVector3 * Data = nullptr;
 };
 
 class ACollisionConvexHull : public ACollisionBody {
@@ -276,7 +277,9 @@ public:
     void Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, BvAxisAlignedBox const & _BoundingBox );
 
 protected:
-    ACollisionTriangleSoupData() {}
+    ACollisionTriangleSoupData() {
+        BoundingBox.Clear();
+    }
 };
 
 class ACollisionTriangleSoupBVHData : public ABaseObject {
@@ -300,12 +303,12 @@ protected:
     ~ACollisionTriangleSoupBVHData();
 
 private:
-    btBvhTriangleMeshShape * Data; // TODO: Try btMultimaterialTriangleMeshShape
-    btTriangleInfoMap * TriangleInfoMap;
+    btBvhTriangleMeshShape * Data = nullptr; // TODO: Try btMultimaterialTriangleMeshShape
+    btTriangleInfoMap * TriangleInfoMap = nullptr;
  
     class AStridingMeshInterface * Interface;
 
-    bool bUsedQuantizedAabbCompression;
+    bool bUsedQuantizedAabbCompression = false;
 };
 
 // ACollisionTriangleSoupBVH can be used only for static or kinematic objects
@@ -347,7 +350,6 @@ class ACollisionBodyComposition {
     AN_FORBID_COPY( ACollisionBodyComposition )
 
 public:
-
     ACollisionBodyComposition() {
         CenterOfMass.Clear();
     }

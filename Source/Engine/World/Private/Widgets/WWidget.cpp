@@ -39,12 +39,40 @@ constexpr int WWidget::MAX_COLUMNS;
 constexpr int WWidget::MAX_ROWS;
 
 WWidget::WWidget() {
+    Desktop = nullptr;
+    Parent = nullptr;
+    Position = Float2( 0.0f );
     Size = Float2( 32, 32 );
-    Visibility = WIDGET_VISIBILITY_VISIBLE;
-    ColumnsCount = RowsCount = 1;
-    bTransformDirty = true;
-    bLayoutDirty = true;
+    MinSize = Float2( 0.0f );
+    MaxSize = Float2( 0.0f );
+    ImageSize = Float2( 0.0f );
+    ActualPosition = Float2( 0.0f );
+    ActualSize = Float2( 0.0f );
     Margin = Float4(2,2,2,2);
+    Style = WIDGET_STYLE_DEFAULT;
+    HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
+    VerticalAlignment = WIDGET_ALIGNMENT_NONE;
+    Layout = WIDGET_LAYOUT_EXPLICIT;
+    Visibility = WIDGET_VISIBILITY_VISIBLE;
+    Row = 0;
+    Column = 0;
+    LayoutOffset = Float2( 0.0f );
+    HorizontalPadding = 0.0f;
+    VerticalPadding = 0.0f;
+    ColumnsCount = 1;
+    RowsCount = 1;
+    bFitColumns = false;
+    bFitRows = false;
+    bAutoWidth = false;
+    bAutoHeight = false;
+    bClampWidth = false;
+    bClampHeight = false;
+    bMaximized = false;
+    bDisabled = false;
+    bLayoutDirty = true;
+    bTransformDirty = true;
+    bFocus = false;
+    bSetFocusOnAddToDesktop = false;
 }
 
 WWidget::~WWidget() {

@@ -45,7 +45,6 @@ AN_CLASS_META( AAudioClip )
 AAudioClip::AAudioClip() {
     BufferSize = DEFAULT_BUFFER_SIZE;
     SerialId = ++ResourceSerialIdGen;
-    CurStreamType = StreamType = SOUND_STREAM_DISABLED;
 }
 
 AAudioClip::~AAudioClip() {

@@ -420,3 +420,110 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef
 
     *ppShadowMapDepth = pass.GetDepthStencilAttachment().Resource;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ARuntimeVariable RVShadowmapResolution( _CTS( "ShadowmapResolution" ), _CTS( "512" ) );
+ARuntimeVariable RVShadowmapBits( _CTS( "ShadowmapBits" ), _CTS( "24" ) );
+
+
+void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SClusterLight const * LightDef, AFrameGraphTexture ** ppShadowMapDepth )
+{
+#if 0
+    if ( LightDef->ShadowmapIndex < 0 ) {
+        AddDummyCubeShadowMap( FrameGraph, ppShadowMapDepth );
+        return;
+    }
+
+    int totalInstanceCount = 0;
+    for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
+        SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ LightDef->ShadowmapIndex ];
+        totalInstanceCount += shadowMap->ShadowInstanceCount;
+    }
+
+    if ( totalInstanceCount == 0 ) {
+        AddDummyShadowMapCube( FrameGraph, ppShadowMapDepth );
+        return;
+    }
+
+    RenderCore::TEXTURE_FORMAT depthFormat;
+    if ( RVShadowmapBits.GetInteger() <= 16 ) {
+        depthFormat = TEXTURE_FORMAT_DEPTH16;
+    } else if ( RVShadowmapBits.GetInteger() <= 24 ) {
+        depthFormat = TEXTURE_FORMAT_DEPTH24;
+    } else {
+        depthFormat = TEXTURE_FORMAT_DEPTH32;
+    }
+
+    int faceResolution = Math::ToClosestPowerOfTwo( RVShadowmapResolution.GetInteger() );
+
+    for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
+        SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ LightDef->ShadowmapIndex + faceIndex ];
+
+        ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "Point Shadow Map Pass" );
+
+        pass.SetRenderArea( faceResolution, faceResolution );
+
+        pass.SetDepthStencilAttachment(
+        {
+            "Shadow Face Depth texture",
+            MakeTexture( depthFormat, STextureResolution2DArray( faceResolution, faceResolution, totalCascades ) ),
+            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
+        } );
+
+        pass.SetDepthStencilClearValue( MakeClearDepthStencilValue( 1, 0 ) );
+
+        pass.AddSubpass( {}, // no color attachments
+                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
+        {
+            GFrameResources.SetShadowFaceBinding( faceIndex );
+
+            SDrawIndexedCmd drawCmd;
+            drawCmd.StartInstanceLocation = 0;
+            drawCmd.InstanceCount = 1;
+
+            for ( int i = 0 ; i < shadowMap->ShadowInstanceCount ; i++ ) {
+                SShadowRenderInstance const * instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
+
+                if ( !BindMaterialShadowMap( instance ) ) {
+                    continue;
+                }
+
+                // Set material data (textures, uniforms)
+                BindTexturesShadowMap( instance->MaterialInstance );
+
+                // Bind skeleton
+                BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
+
+                // Set instance uniforms
+                SetShadowInstanceUniforms( instance );
+
+                rcmd->BindShaderResources( &GFrameResources.Resources );
+
+                drawCmd.IndexCountPerInstance = instance->IndexCount;
+                drawCmd.StartIndexLocation = instance->StartIndexLocation;
+                drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+
+                rcmd->Draw( &drawCmd );
+            }
+        } );
+
+        *ppShadowMapDepth = pass.GetDepthStencilAttachment().Resource;
+    }
+#endif
+}

@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <World/Public/Resource/AnimationPattern.h>
 
-class ALightComponent : public ASceneComponent{
+class ALightComponent : public ASceneComponent {
     AN_COMPONENT( ALightComponent, ASceneComponent )
 
 public:

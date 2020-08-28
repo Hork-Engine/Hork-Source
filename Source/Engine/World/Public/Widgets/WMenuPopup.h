@@ -69,6 +69,6 @@ protected:
 
 private:
     TRef< WWidget > Self;
-    float CurWidth;
-    float CurHeight;
+    //float CurWidth;
+    //float CurHeight;
 };

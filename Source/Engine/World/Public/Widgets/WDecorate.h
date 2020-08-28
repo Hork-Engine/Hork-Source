@@ -67,7 +67,7 @@ protected:
     virtual void OnDrawEvent( ACanvas & _Canvas );
 
 private:
-    WWidget * Owner;
+    WWidget * Owner = nullptr;
 };
 
 class WTextDecorate : public WDecorate {

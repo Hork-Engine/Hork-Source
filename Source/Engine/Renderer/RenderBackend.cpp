@@ -654,6 +654,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
         for ( int i = 0 ; i < 2 ; i++ ) {
             bool bSkinned = !!i;
             CreateDepthPassPipeline( &_Material->DepthPass[i], code.CStr(), _Def->bAlphaMasking, cullMode, bSkinned, bTessellation );
+            CreateDepthVelocityPassPipeline( &_Material->DepthVelocityPass[i], code.CStr(), _Def->bAlphaMasking, cullMode, bSkinned, bTessellation );
             CreateLightPassPipeline( &_Material->LightPass[i], code.CStr(), cullMode, bSkinned, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
             CreateWireframePassPipeline( &_Material->WireframePass[i], code.CStr(), cullMode, bSkinned, bTessellation );
             CreateNormalsPassPipeline( &_Material->NormalsPass[i], code.CStr(), bSkinned );
@@ -731,11 +732,6 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
 
 void ARenderBackend::RenderFrame( SRenderFrame * pFrameData ) {
     bool bRebuildMaterials = false;
-
-    if ( RVMotionBlur.IsModified() ) {
-        RVMotionBlur.UnmarkModified();
-        bRebuildMaterials = true;
-    }
 
     if ( RVSSLR.IsModified() ) {
         RVSSLR.UnmarkModified();

@@ -214,7 +214,7 @@ public:
 private:
     ~AAudioSystem();
 
-    bool bInitialized;
+    bool bInitialized = false;
 
     struct Entry {
         char Extension[16];

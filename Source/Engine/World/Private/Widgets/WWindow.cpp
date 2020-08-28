@@ -37,6 +37,7 @@ AN_CLASS_META( WWindow )
 WWindow::WWindow() {
     CaptionHeight = 24;
     TextColor = AColor4::White();
+    TextOffset = Float2( 0.0f );
     TextHorizontalAlignment = WIDGET_ALIGNMENT_CENTER;
     TextVerticalAlignment = WIDGET_ALIGNMENT_CENTER;
     CaptionColor = AColor4(0.1f,0.4f,0.8f);
@@ -47,6 +48,7 @@ WWindow::WWindow() {
     bWindowBorder = true;
     bCaptionBorder = true;
     BgColor = AColor4( 0 ); // transparent by default
+    bWordWrap = false;
     UpdateDragShape();
     UpdateMargin();
 }

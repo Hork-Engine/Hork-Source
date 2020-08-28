@@ -60,7 +60,7 @@ enum EFrustumCullingType {
 //
 
 #define MAX_PORTAL_STACK 128// 64
-#define MAX_CULL_PLANES 4
+#define MAX_CULL_PLANES 5//4
 
 struct SPortalScissor {
     float MinX;
@@ -101,7 +101,8 @@ static PlaneF ViewPlane;
 static float  ViewZNear;
 static Float3 ViewCenter;
 static PlaneF * ViewFrustum;
-static int CachedSignBits[4]; // sign bits of ViewFrustum planes
+static int ViewFrustumPlanes;
+static int CachedSignBits[MAX_CULL_PLANES]; // sign bits of ViewFrustum planes
 
 static int VisQueryMarker = 0;
 static int VisQueryMask = 0;
@@ -184,7 +185,7 @@ static void VSD_CalcPortalScissor( SPortalScissor & OutScissor, SPortalHull cons
 static void VSD_LevelTraverse_r( int InNodeIndex, int InCullBits );
 AN_INLINE bool VSD_FaceCull( SPrimitiveDef const * InPrimitive );
 AN_INLINE bool VSD_FaceCull( SSurfaceDef const * InSurface );
-static bool VSD_CullNode( PlaneF const InFrustum[4], int const InCachedSignBits[4], BvAxisAlignedBox const & InBounds, int & InCullBits );
+static bool VSD_CullNode( PlaneF const InFrustum[MAX_CULL_PLANES], int const InCachedSignBits[MAX_CULL_PLANES], BvAxisAlignedBox const & InBounds, int & InCullBits );
 static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPlanes, const int InCullPlanesCount );
 AN_INLINE bool VSD_CullBoxSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const & InBounds );
 AN_INLINE bool VSD_CullSphereSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvSphere const & InBounds );
@@ -216,41 +217,36 @@ static void VSD_ProcessLevelVisibility( ALevel * InLevel ) {
     CurLevel = InLevel;
 
     ViewFrustum = PortalStack[ 0 ].AreaFrustum;
+    ViewFrustumPlanes = PortalStack[ 0 ].PlanesCount; // Can be 4 or 5
 
-    for ( int i = 0 ; i < 4 ; i++ ) {
+    int cullBits = 0;
+
+    for ( int i = 0 ; i < ViewFrustumPlanes ; i++ ) {
         CachedSignBits[i] = ViewFrustum[i].SignBits();
-    }
 
-    int leaf = InLevel->FindLeaf( ViewPosition );
+        cullBits |= 1 << i;
+    }
 
     if ( InLevel->Visdata )
     {
-        // Level has precomputed visibility
+        // Level has PVS
+
+        int leaf = InLevel->FindLeaf( ViewPosition );
 
         NodeViewMark = InLevel->MarkLeafs( leaf );
 
-        VSD_LevelTraverse_r( 0, 0xf );
+        VSD_LevelTraverse_r( 0, cullBits );
     }
     else
     {
-        SVisArea * area;
-
-        if ( leaf < 0 ) {
-            // Inside of solid or level has no nodes
-
-            area = InLevel->FindArea( ViewPosition );
-        }
-        else
-        {
-            area = InLevel->Leafs[ leaf ].Area;
-        }
+        SVisArea * area = InLevel->FindArea( ViewPosition );
 
         VSD_FlowThroughPortals_r( area );
     }
 }
 
 void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
-    int QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds();
+    //int QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds();
 
     ++VisQueryMarker;
 
@@ -295,7 +291,7 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     ViewRightVec = InQuery.ViewRightVec;
     ViewUpVec = InQuery.ViewUpVec;
     ViewPlane = *InQuery.FrustumPlanes[ FPL_NEAR ];
-    ViewZNear = ViewPlane.Dist( ViewPosition );//Camera->GetZNear();
+    ViewZNear = -ViewPlane.Dist( ViewPosition );//Camera->GetZNear();
     ViewCenter = ViewPlane.Normal * ViewZNear;
 
     // Get corner at left-bottom of frustum
@@ -315,7 +311,8 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     PortalStack[ 0 ].AreaFrustum[ 1 ] = *InQuery.FrustumPlanes[ 1 ];
     PortalStack[ 0 ].AreaFrustum[ 2 ] = *InQuery.FrustumPlanes[ 2 ];
     PortalStack[ 0 ].AreaFrustum[ 3 ] = *InQuery.FrustumPlanes[ 3 ];
-    PortalStack[ 0 ].PlanesCount = 4;
+    PortalStack[ 0 ].AreaFrustum[ 4 ] = *InQuery.FrustumPlanes[ 4 ]; // far plane
+    PortalStack[ 0 ].PlanesCount = 5;
     PortalStack[ 0 ].Portal = NULL;
     PortalStack[ 0 ].Scissor.MinX = x;
     PortalStack[ 0 ].Scissor.MinY = y;
@@ -383,7 +380,7 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     GLogger.Printf( "VSD: CullMiss: %d\n", Dbg_CullMiss );
 #endif
 
-    QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds() - QueryVisiblePrimitivesTime;
+    //QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds() - QueryVisiblePrimitivesTime;
 
     //GLogger.Printf( "QueryVisiblePrimitivesTime: %d microsec\n", QueryVisiblePrimitivesTime );
 
@@ -492,6 +489,9 @@ static bool VSD_CalcPortalStack( SPortalStack * OutStack, SPortalStack const * I
                 // CCW
                 OutStack->AreaFrustum[ i ].FromPoints( ViewPosition, portalWinding->Points[ i ], portalWinding->Points[(i + 1) % portalWinding->NumPoints] );
             }
+
+            // Copy far plane
+            OutStack->AreaFrustum[ OutStack->PlanesCount++ ] = InPrevStack->AreaFrustum[ InPrevStack->PlanesCount - 1 ];
         } else {
             // Compute based on portal scissor
             const Float3 rightMin = ViewRightVec * OutStack->Scissor.MinX + ViewCenter;
@@ -528,7 +528,12 @@ static bool VSD_CalcPortalStack( SPortalStack * OutStack, SPortalStack const * I
             OutStack->AreaFrustum[ 3 ].Normal = p * Math::RSqrt( Math::Dot( p, p ) );
             OutStack->AreaFrustum[ 3 ].D = -Math::Dot( OutStack->AreaFrustum[ 3 ].Normal, ViewPosition );
 
-            OutStack->PlanesCount = 4;
+            //OutStack->PlanesCount = 4;
+
+            // Copy far plane
+            OutStack->AreaFrustum[ 4 ] = InPrevStack->AreaFrustum[ InPrevStack->PlanesCount - 1 ];
+
+            OutStack->PlanesCount = 5;
         }
     }
 
@@ -925,7 +930,7 @@ static constexpr int CullIndices[ 8 ][ 6 ] = {
         { 3, 1, 2, 0, 4, 5 }
 };
 
-static bool VSD_CullNode( PlaneF const InFrustum[4], int const InCachedSignBits[4], BvAxisAlignedBox const & InBounds, int & InCullBits ) {
+static bool VSD_CullNode( PlaneF const InFrustum[MAX_CULL_PLANES], int const InCachedSignBits[MAX_CULL_PLANES], BvAxisAlignedBox const & InBounds, int & InCullBits ) {
     Float3 p;
 
     float const * pBounds = InBounds.ToPtr();
@@ -951,7 +956,7 @@ static bool VSD_CullNode( PlaneF const InFrustum[4], int const InCachedSignBits[
     }
 
     if ( InCullBits & 2 ) {
-        pIndices = CullIndices[ CachedSignBits[1] ];
+        pIndices = CullIndices[ InCachedSignBits[1] ];
 
         p[ 0 ] = pBounds[ pIndices[ 0 ] ];
         p[ 1 ] = pBounds[ pIndices[ 1 ] ];
@@ -1010,6 +1015,26 @@ static bool VSD_CullNode( PlaneF const InFrustum[4], int const InCachedSignBits[
         }
     }
 
+    if ( InCullBits & 16 ) {
+        pIndices = CullIndices[ InCachedSignBits[4] ];
+
+        p[ 0 ] = pBounds[ pIndices[ 0 ] ];
+        p[ 1 ] = pBounds[ pIndices[ 1 ] ];
+        p[ 2 ] = pBounds[ pIndices[ 2 ] ];
+
+        if ( Math::Dot( p, InFrustum[ 4 ].Normal ) <= -InFrustum[ 4 ].D ) {
+            return true;
+        }
+
+        p[ 0 ] = pBounds[ pIndices[ 3 ] ];
+        p[ 1 ] = pBounds[ pIndices[ 4 ] ];
+        p[ 2 ] = pBounds[ pIndices[ 5 ] ];
+
+        if ( Math::Dot( p, InFrustum[ 4 ].Normal ) >= -InFrustum[ 4 ].D ) {
+            InCullBits &= ~16;
+        }
+    }
+
     return false;
 }
 
@@ -1032,7 +1057,7 @@ static void VSD_LevelTraverse_r( int InNodeIndex, int InCullBits ) {
         }
 
 #if 0
-        if ( VSD_CullBoxSingle( ViewFrustum, 4, node->Bounds ) ) {
+        if ( VSD_CullBoxSingle( ViewFrustum, ViewFrustumPlanes, node->Bounds ) ) {
             Dbg_CullMiss++;
         }
 #endif
@@ -1049,7 +1074,7 @@ static void VSD_LevelTraverse_r( int InNodeIndex, int InCullBits ) {
 
     SBinarySpaceLeaf const * pleaf = static_cast< SBinarySpaceLeaf const * >( node );
 
-    VSD_CullPrimitives( pleaf->Area, ViewFrustum, 4 );
+    VSD_CullPrimitives( pleaf->Area, ViewFrustum, ViewFrustumPlanes );
 }
 
 AN_INLINE bool VSD_CullBoxSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const & InBounds ) {

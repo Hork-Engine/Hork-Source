@@ -37,6 +37,11 @@ layout( vertices = 1 ) out;
 layout( location = DEPTH_PASS_VARYING_POSITION ) in vec3 VS_Position[];
 layout( location = DEPTH_PASS_VARYING_NORMAL ) in vec3 VS_N[];
 
+#if defined( DEPTH_WITH_VELOCITY_MAP )
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos[];
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP[];
+#endif
+
 struct SPatchVertices
 {
     vec3 B030;
@@ -50,6 +55,10 @@ struct SPatchVertices
     vec3 B120;
     vec3 B111;
     vec3 N[3];
+    #if defined( DEPTH_WITH_VELOCITY_MAP )
+    vec4 VertexPos[3];
+    vec4 VertexPosP[3];
+    #endif
 };
 
 //#define DEPTH_PASS_VARYING_PATCH 0
@@ -63,6 +72,10 @@ void main()
 {
     for ( int i = 0 ; i < 3 ; i++ ) {
        TCS_Patch.N[i] = VS_N[i];
+        #if defined( DEPTH_WITH_VELOCITY_MAP )
+        TCS_Patch.VertexPos[i] = VS_VertexPos[i];
+        TCS_Patch.VertexPosP[i] = VS_VertexPosP[i];
+        #endif
     }
     
 #   include "$DEPTH_PASS_TCS_COPY_VARYINGS$"

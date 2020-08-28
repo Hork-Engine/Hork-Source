@@ -46,9 +46,19 @@ struct SPatchVertices
     vec3 B120;
     vec3 B111;
     vec3 N[3];
+
+    #if defined( DEPTH_WITH_VELOCITY_MAP )
+    vec4 VertexPos[3];
+    vec4 VertexPosP[3];
+    #endif
 };
 
 layout( location = PATCH_LOCATION ) in patch SPatchVertices TCS_Patch;
+
+#if defined( DEPTH_WITH_VELOCITY_MAP )
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
+#endif
 
 out gl_PerVertex
 {
@@ -57,8 +67,16 @@ out gl_PerVertex
 
 #include "$DEPTH_PASS_TES_SAMPLERS$"
 
+#define Interpolate( X ) \
+    ( gl_TessCoord.x * X[0] + gl_TessCoord.y * X[1] + gl_TessCoord.z * X[2] )
+
 void main(){
-    const vec3 normal = normalize( gl_TessCoord.x * TCS_Patch.N[0] + gl_TessCoord.y * TCS_Patch.N[1] + gl_TessCoord.z * TCS_Patch.N[2] );
+    const vec3 normal = normalize( Interpolate( TCS_Patch.N ) );
+
+    #if defined( DEPTH_WITH_VELOCITY_MAP )
+    VS_VertexPos = Interpolate( TCS_Patch.VertexPos );
+    VS_VertexPosP = Interpolate( TCS_Patch.VertexPosP );
+    #endif
     
     const float u = gl_TessCoord.x;
     const float v = gl_TessCoord.y;

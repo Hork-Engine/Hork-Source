@@ -76,12 +76,17 @@ private:
     void AddSkinnedMesh( ASkinnedComponent * InComponent );
     void AddProceduralMesh( AProceduralMeshComponent * InComponent );
     void AddDirectionalShadowmapInstances( ARenderWorld * InWorld );
-    void AddDirectionalShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent );
-    void AddDirectionalShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent );
-    void AddDirectionalShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent );
+    void AddShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent );
+    void AddShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent );
+    void AddShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent );
 
     void AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCount );
-    void AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder );
+    void AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex/*, int _RenderingOrder*/ );
+
+    void AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfaceDef * const * Surfaces, int SurfaceCount );
+    void AddShadowmapSurface( SLightShadowmap * ShadowMap, AMaterialInstance * MaterialInstance, int _NumIndices, int _FirstIndex/*, int _RenderingOrder*/ );
+
+    void AddLightShadowmap( AAnalyticLightComponent * Light, float Radius, int * pShadowmapIndex );
 
     SRenderFrame   FrameData;
     ADebugRenderer DebugDraw;
@@ -95,8 +100,8 @@ private:
 
     TPodArray< SPrimitiveDef * > VisPrimitives;
     TPodArray< SSurfaceDef * > VisSurfaces;
-    TPodArray< AAnalyticLightComponent * > Lights;
-    TPodArray< AIBLComponent * > IBLs;
+    TPodArray< AAnalyticLightComponent * > VisLights;
+    TPodArray< AIBLComponent * > VisIBLs;
     int VisPass = 0;
 
     // TODO: We can keep ready shadowCasters[] and boxes[]

@@ -61,7 +61,7 @@ AFrameConstantBuffer::AFrameConstantBuffer( size_t InBufferSize )
 
     BufferIndex = 0;
 
-    Alignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
+    UniformBufferOffsetAlignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
 }
 
 AFrameConstantBuffer::~AFrameConstantBuffer()
@@ -85,7 +85,7 @@ size_t AFrameConstantBuffer::Allocate( size_t InSize )
 
     SChainBuffer * pChainBuffer = &ChainBuffer[BufferIndex];
 
-    size_t alignedOffset = Align( pChainBuffer->UsedMemory, Alignment );
+    size_t alignedOffset = Align( pChainBuffer->UsedMemory, UniformBufferOffsetAlignment );
 
     if ( alignedOffset + InSize > BufferSize ) {
         CriticalError( "AFrameConstantBuffer::Allocate: failed on allocation of %d bytes\nIncrease buffer size\n", InSize );

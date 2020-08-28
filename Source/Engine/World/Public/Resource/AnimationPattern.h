@@ -38,7 +38,7 @@ class AAnimationPattern : public ABaseObject {
 public:
     AString Pattern;
     float   Speed = 1.0f;
-    float   Quantizer;
+    float   Quantizer = 0.0f;
 
     float Calculate( float _Time );
 

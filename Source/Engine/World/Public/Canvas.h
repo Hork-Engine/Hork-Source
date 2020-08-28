@@ -68,8 +68,8 @@ class ACanvas {
     AN_FORBID_COPY( ACanvas )
 
 public:
-    int Width;
-    int Height;
+    int Width = 0;
+    int Height = 0;
 
     ACanvas();
 

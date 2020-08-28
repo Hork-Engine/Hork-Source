@@ -61,6 +61,6 @@ protected:
 
 private:
 
-    btRigidBody * Anchor;
-    int AttachCount;
+    btRigidBody * Anchor = nullptr;
+    int AttachCount = 0;
 };

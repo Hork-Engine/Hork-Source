@@ -2998,6 +2998,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     pDef->Type = InGraph->MaterialType;
     pDef->Blending = InGraph->Blending;
     pDef->TessellationMethod = InGraph->TessellationMethod;
+    pDef->RenderingPriority = RENDERING_PRIORITY_DEFAULT;
     pDef->bDepthTest_EXPERIMENTAL = InGraph->bDepthTest;
     pDef->bDisplacementAffectShadow = InGraph->bDisplacementAffectShadow;
     pDef->bTranslucent = InGraph->bTranslucent;
@@ -3049,9 +3050,11 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     if ( InGraph->DepthHack == MATERIAL_DEPTH_HACK_WEAPON ) {
         predefines += "#define WEAPON_DEPTH_HACK\n";
         pDef->bNoCastShadow = true;
+        pDef->RenderingPriority = RENDERING_PRIORITY_WEAPON;
     } else if ( InGraph->DepthHack == MATERIAL_DEPTH_HACK_SKYBOX ) {
         predefines += "#define SKYBOX_DEPTH_HACK\n";
         pDef->bNoCastShadow = true;
+        pDef->RenderingPriority = RENDERING_PRIORITY_SKYBOX;
     }
 
     if ( InGraph->bTranslucent ) {
@@ -3134,7 +3137,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
                                          InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessControlCtx : nullptr,
                                          InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessEvalCtx : nullptr,
                                          nullptr,
-                                         depthCtx.bHasAlphaMask ? &depthCtx : nullptr );
+                                         /*depthCtx.bHasAlphaMask ? */&depthCtx/* : nullptr*/ );
 
         pDef->bHasVertexDeform = vertexCtx.bHasVertexDeform;
         pDef->bAlphaMasking = depthCtx.bHasAlphaMask;
@@ -3146,6 +3149,9 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 
         predefines += "#define DEPTH_PASS_VARYING_POSITION "    + Math::ToString( locationIndex++ ) + "\n";
         predefines += "#define DEPTH_PASS_VARYING_NORMAL "      + Math::ToString( locationIndex++ ) + "\n";
+
+        predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT " + Math::ToString( locationIndex++ )   + "\n";
+        predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS " + Math::ToString( locationIndex++ )   + "\n";
 
         pDef->AddShader( "$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode );
         pDef->AddShader( "$DEPTH_PASS_VERTEX_SAMPLERS$", SamplersString( InGraph, vertexCtx.MaxTextureSlot ) );
@@ -3266,8 +3272,6 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         predefines += "#define COLOR_PASS_VARYING_BINORMAL "    + Math::ToString( locationIndex++ )   + "\n";
         predefines += "#define COLOR_PASS_VARYING_NORMAL "      + Math::ToString( locationIndex++ )     + "\n";
         predefines += "#define COLOR_PASS_VARYING_POSITION "    + Math::ToString( locationIndex++ )   + "\n";
-        predefines += "#define COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT " + Math::ToString( locationIndex++ )   + "\n";
-        predefines += "#define COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS " + Math::ToString( locationIndex++ )   + "\n";
 
         if ( InGraph->bUseVirtualTexture ) {
             predefines += "#define COLOR_PASS_VARYING_VT_TEXCOORD "    + Math::ToString( locationIndex++ )   + "\n";

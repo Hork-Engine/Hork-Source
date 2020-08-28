@@ -37,9 +37,14 @@ AN_CLASS_META( WScroll )
 WScroll::WScroll() {
     bAutoScrollH = true;
     bAutoScrollV = true;
+    bShowButtons = false;
     bUpdateGeometry = true;
     ScrollbarSize = 12;
+    ButtonWidth = 0.0f;
+    SliderRounding = 0.0f;
     BackgroundColor = AColor4( 0.05f, 0.05f, 0.05f );
+    Action = A_NONE;
+    DragCursor = 0.0f;
     UpdateMargin();
 }
 

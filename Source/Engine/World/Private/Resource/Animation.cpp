@@ -38,10 +38,6 @@ SOFTWARE.
 AN_CLASS_META( ASkeletalAnimation )
 
 ASkeletalAnimation::ASkeletalAnimation() {
-    FrameCount = 0;
-    FrameDelta = 0;
-    FrameRate = 60.0f;
-    DurationNormalizer = 1.0f;
 }
 
 ASkeletalAnimation::~ASkeletalAnimation() {

@@ -52,8 +52,6 @@ class ANGIE_API APawn : public AActor {
 
 public:
 
-    bool bGodMode;
-
     ACameraComponent * GetPawnCamera() { return PawnCamera; }
 
 protected:
@@ -70,5 +68,5 @@ protected:
     AController * GetOwnerController() { return OwnerController; }
 
 private:
-    AController * OwnerController;
+    AController * OwnerController = nullptr;
 };

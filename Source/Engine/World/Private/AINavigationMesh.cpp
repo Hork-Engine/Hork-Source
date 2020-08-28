@@ -271,7 +271,10 @@ AAINavigationMesh::AAINavigationMesh( AWorld * InOwnerWorld )
     MeshProcess = nullptr;
     NumTilesX = 0;
     NumTilesZ = 0;
+    TileWidth = 1.0f;
     BoundingBox.Clear();
+    NavigationGeometryList = nullptr;
+    NavigationGeometryListTail = nullptr;
 }
 
 AAINavigationMesh::~AAINavigationMesh() {

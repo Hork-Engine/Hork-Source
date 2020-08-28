@@ -29,10 +29,26 @@ SOFTWARE.
 */
 
 
+#if defined( DEPTH_WITH_VELOCITY_MAP )
+
+layout( location = 0 ) out vec2 FS_Velocity;
+
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos;
+layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP;
+
+#endif
+
 #include "$DEPTH_PASS_FRAGMENT_SAMPLERS$"
 #include "$DEPTH_PASS_FRAGMENT_INPUT_VARYINGS$"
 
 void main() {
     #include "$DEPTH_PASS_FRAGMENT_CODE$"
+
+    #if defined( DEPTH_WITH_VELOCITY_MAP )
+    vec2 p1 = VS_VertexPos.xy / VS_VertexPos.w;
+    vec2 p2 = VS_VertexPosP.xy / VS_VertexPosP.w;
+    FS_Velocity = ( p1 - p2 ) * (vec2(0.5,-0.5) * MOTION_BLUR_SCALE);
+    FS_Velocity = saturate( sqrt( abs(FS_Velocity) ) * sign( FS_Velocity ) * 0.5 + 0.5 ) * ( 254.0 / 255.0 );
+    #endif
 }
 

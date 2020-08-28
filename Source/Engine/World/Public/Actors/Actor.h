@@ -71,15 +71,15 @@ public:
     AOverlapDelegate E_OnUpdateOverlap;
 
     /** Root component keeps component hierarchy and transform for the actor */
-    ASceneComponent * RootComponent;
+    ASceneComponent * RootComponent = nullptr;
 
-    float LifeSpan;
+    float LifeSpan = 0.0f;
 
-    bool bTickEvenWhenPaused;
+    bool bTickEvenWhenPaused = false;
 
-    bool bTickPrePhysics;
+    bool bTickPrePhysics = false;
 
-    bool bTickPostPhysics;
+    bool bTickPostPhysics = false;
 
     /** Actors factory */
     static AObjectFactory & Factory() { static AObjectFactory ObjectFactory( "Actor factory" ); return ObjectFactory; }
@@ -143,7 +143,7 @@ public:
 
 protected:
 
-    bool bCanEverTick;
+    bool bCanEverTick = false;
 
     AActor();
 
@@ -203,19 +203,19 @@ private:
     /** Index in level array of actors */
     int IndexInLevelArrayOfActors = -1;
 
-    AActor * NextPendingKillActor;
+    AActor * NextPendingKillActor = nullptr;
 
-    AWorld * ParentWorld;
+    AWorld * ParentWorld = nullptr;
 
     //TRef< ALevel > Level;
     TWeakRef< ALevel > Level;
 
     //TWeakRef< AActor > Attach; // TODO: Attach actor to another actor
 
-    APawn * Instigator;
+    APawn * Instigator = nullptr;
 
-    float LifeTime;
+    float LifeTime = 0.0f;
 
-    bool bPendingKill;
+    bool bPendingKill = false;
     bool bDuringConstruction = true;
 };

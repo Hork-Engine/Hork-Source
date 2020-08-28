@@ -1035,7 +1035,7 @@ AWorldspawn::AWorldspawn() {
     AudioInstigator = CreateComponent< ASceneComponent >( "AudioInstigator" );
 
     WorldCollision = CreateComponent< APhysicalBody >( "WorldCollision" );
-    WorldCollision->SetPhysicsBehavior( PB_STATIC );
+    WorldCollision->SetMotionBehavior( MB_STATIC );
     WorldCollision->SetCollisionGroup( CM_WORLD_STATIC );
     WorldCollision->SetCollisionMask( CM_ALL );
     WorldCollision->SetAINavigationBehavior( AI_NAVIGATION_BEHAVIOR_STATIC );

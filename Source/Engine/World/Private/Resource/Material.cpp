@@ -97,6 +97,7 @@ bool AMaterial::LoadResource( AString const & _Path ) {
     Def.Type = (EMaterialType)f.ReadUInt8();
     Def.Blending = (EColorBlending)f.ReadUInt8();
     Def.TessellationMethod = (ETessellationMethod)f.ReadUInt8();
+    Def.RenderingPriority = (ERenderingPriority)f.ReadUInt8();
     Def.LightmapSlot = (ETessellationMethod)f.ReadUInt16();
     Def.bDepthPassTextureFetch = f.ReadBool();
     Def.bLightPassTextureFetch = f.ReadBool();
@@ -154,6 +155,7 @@ bool WriteMaterial( AString const & _Path, SMaterialDef const * pDef ) {
     f.WriteObject( guid.ToString() );
     f.WriteUInt8( pDef->Type );
     f.WriteUInt8( pDef->Blending );
+    f.WriteUInt8( pDef->RenderingPriority );
     f.WriteUInt8( pDef->TessellationMethod );
     f.WriteUInt16( pDef->LightmapSlot );
     f.WriteBool( pDef->bDepthPassTextureFetch );
@@ -863,8 +865,6 @@ AMaterialInstance::AMaterialInstance() {
     //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
     //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
     static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/grid8.png" ) );
-
-    VisFrame = -1;
 
     Material = MaterialResource.GetObject();
 

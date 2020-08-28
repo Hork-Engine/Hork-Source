@@ -413,9 +413,6 @@ void MaterialPBRShader( vec3 BaseColor,
         #endif
         break;
     case DEBUG_VELOCITY:
-        #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-        FS_FragColor = vec4( abs(FS_Velocity), 0.0, 1.0 );
-        #endif
         break;
     }
 #endif // DEBUG_RENDER_MODE

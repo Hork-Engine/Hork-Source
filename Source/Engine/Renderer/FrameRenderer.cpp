@@ -201,8 +201,8 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
     }
 
 
-    AFrameGraphTexture * DepthTexture;
-    AddDepthPass( FrameGraph, &DepthTexture );
+    AFrameGraphTexture * DepthTexture, * VelocityTexture;
+    AddDepthPass( FrameGraph, &DepthTexture, &VelocityTexture );
 
     AFrameGraphTexture * LinearDepth;
     AddLinearizeDepthPass( FrameGraph, DepthTexture, &LinearDepth );
@@ -222,8 +222,8 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
         );
     }
 
-    AFrameGraphTexture * LightTexture, * VelocityTexture;    
-    LightRenderer.AddPass( FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], LinearDepth, &LightTexture, &VelocityTexture );
+    AFrameGraphTexture * LightTexture;
+    LightRenderer.AddPass( FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], LinearDepth, &LightTexture );
 
     if ( RVMotionBlur ) {
         AddMotionBlurPass( FrameGraph, LightTexture, VelocityTexture, LinearDepth, &LightTexture );

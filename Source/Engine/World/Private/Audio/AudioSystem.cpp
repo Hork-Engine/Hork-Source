@@ -392,7 +392,6 @@ static void ALC_CheckError( const char * _Text ) {
 AAudioSystem & GAudioSystem = AAudioSystem::Inst();
 
 AAudioSystem::AAudioSystem() {
-    bInitialized = false;
     //bEAX = false;
     ALCDevice = NULL;
     ALCContext = NULL;

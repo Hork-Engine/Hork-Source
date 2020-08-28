@@ -89,10 +89,6 @@ struct SPatchAdd
     #ifdef USE_VIRTUAL_TEXTURE
     vec2 TexCoordVT[3];
     #endif
-    #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-    vec4 VertexPos[3];
-    vec4 VertexPosP[3];
-    #endif
 };
 
 #define COLOR_PASS_VARYING_PATCH 0
@@ -120,11 +116,6 @@ layout( location = COLOR_PASS_VARYING_POSITION ) out vec3 VS_Position;
 
 #ifdef USE_VIRTUAL_TEXTURE
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) out vec2 VS_TexCoordVT;
-#endif
-
-#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
 #endif
 
 out gl_PerVertex
@@ -165,11 +156,6 @@ void main(){
     VS_TexCoordVT = Interpolate( TCS_PatchAdd.TexCoordVT );
     #endif
 
-    #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-    VS_VertexPos = Interpolate( TCS_PatchAdd.VertexPos );
-    VS_VertexPosP = Interpolate( TCS_PatchAdd.VertexPosP );
-    #endif
-    
     const float u = gl_TessCoord.x;
     const float v = gl_TessCoord.y;
     const float w = gl_TessCoord.z;

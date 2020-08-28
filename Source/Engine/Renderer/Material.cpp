@@ -42,6 +42,9 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.DepthFunc = CMPFUNC_GEQUAL;//CMPFUNC_GREATER;
 
+    SBlendingStateInfo & bs = pipelineCI.BS;
+    bs.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;
+
     SVertexBindingInfo vertexBinding[2] = {};
 
     vertexBinding[0].InputSlot = 0;
@@ -233,6 +236,213 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     inputAssembly.bPrimitiveRestart = false;
 
     pipelineCI.pVS = vertexShaderModule;
+
+    GDevice->CreatePipeline( pipelineCI, ppPipeline );
+}
+
+void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
+    SPipelineCreateInfo pipelineCI;
+
+    SRasterizerStateInfo & rsd = pipelineCI.RS;
+    rsd.CullMode = _CullMode;
+    rsd.bScissorEnable = SCISSOR_TEST;
+
+    SDepthStencilStateInfo & dssd = pipelineCI.DSS;
+    dssd.DepthFunc = CMPFUNC_GEQUAL;//CMPFUNC_GREATER;
+
+    SVertexBindingInfo vertexBinding[2] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( SMeshVertex );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    vertexBinding[1].InputSlot = 1;
+    vertexBinding[1].Stride = sizeof( SMeshVertexSkin );
+    vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
+
+    pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    static const SVertexAttribInfo vertexAttribsSkinned[] = {
+        {
+            "InPosition",
+            0,              // location
+            0,              // buffer input slot
+            VAT_FLOAT3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Position )
+        },
+        {
+            "InTexCoord",
+            1,              // location
+            0,              // buffer input slot
+            VAT_HALF2,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, TexCoord )
+        },
+        {
+            "InNormal",
+            2,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Normal )
+        },
+        {
+            "InTangent",
+            3,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Tangent )
+        },
+        {
+            "InHandedness",
+            4,              // location
+            0,              // buffer input slot
+            VAT_BYTE1,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Handedness )
+        },
+        {
+            "InJointIndices",
+            5,              // location
+            1,              // buffer input slot
+            VAT_UBYTE4,
+            VAM_INTEGER,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertexSkin, JointIndices )
+        },
+        {
+            "InJointWeights",
+            6,              // location
+            1,              // buffer input slot
+            VAT_UBYTE4N,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertexSkin, JointWeights )
+        }
+    };
+
+    static const SVertexAttribInfo vertexAttribs[] = {
+        {
+            "InPosition",
+            0,              // location
+            0,              // buffer input slot
+            VAT_FLOAT3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Position )
+        },
+        {
+            "InTexCoord",
+            1,              // location
+            0,              // buffer input slot
+            VAT_HALF2,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, TexCoord )
+        },
+        {
+            "InNormal",
+            2,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Normal )
+        },
+        {
+            "InTangent",
+            3,              // location
+            0,              // buffer input slot
+            VAT_HALF3,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Tangent )
+        },
+        {
+            "InHandedness",
+            4,              // location
+            0,              // buffer input slot
+            VAT_BYTE1,
+            VAM_FLOAT,
+            0,              // InstanceDataStepRate
+            AN_OFS( SMeshVertex, Handedness )
+        }
+    };
+
+    if ( _Skinned ) {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = vertexAttribsSkinned;
+    } else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+        pipelineCI.pVertexAttribs = vertexAttribs;
+    }
+
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
+
+    TRef< IShaderModule > vertexShaderModule;
+
+    GShaderSources.Clear();
+    GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+    GShaderSources.Add( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+    if ( _Skinned ) {
+        GShaderSources.Add( "#define SKINNED_MESH\n" );
+    }
+    GShaderSources.Add( vertexAttribsShaderString.CStr() );
+    GShaderSources.Add( _SourceCode );
+    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+
+    pipelineCI.pVS = vertexShaderModule;
+
+    if ( _Tessellation )
+    {
+        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+        GShaderSources.Add( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+
+        GShaderSources.Clear();
+        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+        GShaderSources.Add( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+        if ( _Skinned ) {
+            GShaderSources.Add( "#define SKINNED_MESH\n" );
+        }
+        GShaderSources.Add( _SourceCode );
+        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
+
+        pipelineCI.pTCS = tessControlShaderModule;
+        pipelineCI.pTES = tessEvalShaderModule;
+    }
+
+    TRef< IShaderModule > fragmentShaderModule;
+
+    GShaderSources.Clear();
+    GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+    GShaderSources.Add( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+    if ( _Skinned ) {
+        GShaderSources.Add( "#define SKINNED_MESH\n" );
+    }
+    GShaderSources.Add( _SourceCode );
+    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+
+    pipelineCI.pFS = fragmentShaderModule;
+
+    SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
+    inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
+    inputAssembly.bPrimitiveRestart = false;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }

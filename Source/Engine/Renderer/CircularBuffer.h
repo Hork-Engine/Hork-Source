@@ -61,4 +61,6 @@ private:
 
     SChainBuffer ChainBuffer[SWAP_CHAIN_SIZE];
     size_t BufferSize;
+
+    unsigned int UniformBufferOffsetAlignment;
 };

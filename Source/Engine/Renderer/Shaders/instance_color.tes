@@ -62,13 +62,6 @@ layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 TCS_TexCoordVT[];
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) out vec2 VS_TexCoordVT;
 #endif
 
-#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 TCS_VertexPos[];
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 TCS_VertexPosP[];
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
-#endif
-
 out gl_PerVertex
 {
     vec4 gl_Position;
@@ -105,11 +98,6 @@ void main(){
 
     #ifdef USE_VIRTUAL_TEXTURE
     VS_TexCoordVT = Interpolate( TCS_TexCoordVT );
-    #endif
-
-    #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-    VS_VertexPos = Interpolate( TCS_VertexPos );
-    VS_VertexPosP = Interpolate( TCS_VertexPosP );
     #endif
 
 #   include "$COLOR_PASS_TES_INTERPOLATE$"

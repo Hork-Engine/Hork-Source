@@ -53,6 +53,10 @@ out gl_PerVertex
         layout( location = DEPTH_PASS_VARYING_POSITION ) out vec3 VS_Position;
         layout( location = DEPTH_PASS_VARYING_NORMAL ) out vec3 VS_N;
 #   endif
+#   if defined( DEPTH_WITH_VELOCITY_MAP )
+        layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
+        layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
+#   endif
 #endif
 
 #ifdef MATERIAL_PASS_WIREFRAME
@@ -80,6 +84,13 @@ out gl_PerVertex
         vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
     };
 
+#   if defined( DEPTH_WITH_VELOCITY_MAP ) && defined( PER_BONE_MOTION_BLUR )
+    layout( binding = 7, std140 ) uniform JointTransformsP
+    {
+        vec4 TransformP[ 256 * 3 ];   // MAX_JOINTS = 256
+    };
+#   endif
+
 #endif // SKINNED_MESH
 
 void main() {
@@ -89,17 +100,17 @@ void main() {
 #ifdef SKINNED_MESH
     const vec4 SrcPosition = vec4( InPosition, 1.0 );
 
-    const vec4
+    vec4
     JointTransform0 = Transform[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
                     + Transform[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
                     + Transform[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]
                     + Transform[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];
-    const vec4
+    vec4
     JointTransform1 = Transform[ InJointIndices[0] * 3 + 1 ] * InJointWeights[0]
                     + Transform[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]
                     + Transform[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]
                     + Transform[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];
-    const vec4
+    vec4
     JointTransform2 = Transform[ InJointIndices[0] * 3 + 2 ] * InJointWeights[0]
                     + Transform[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
                     + Transform[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
@@ -139,21 +150,58 @@ void main() {
     // Built-in material code (depth)
 
 #   ifdef MATERIAL_PASS_DEPTH
+
+#       if defined ( SKINNED_MESH )
+#           if defined( DEPTH_WITH_VELOCITY_MAP )
+#               if defined( PER_BONE_MOTION_BLUR )
+                    JointTransform0 = TransformP[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
+                            + TransformP[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
+                            + TransformP[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]
+                            + TransformP[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];
+                    JointTransform1 = TransformP[ InJointIndices[0] * 3 + 1 ] * InJointWeights[0]
+                            + TransformP[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]
+                            + TransformP[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]
+                            + TransformP[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];
+                    JointTransform2 = TransformP[ InJointIndices[0] * 3 + 2 ] * InJointWeights[0]
+                            + TransformP[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
+                            + TransformP[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
+                            + TransformP[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];
+
+                    vec4 VertexPositionP;
+                    VertexPositionP.x = dot( JointTransform0, SrcPosition );
+                    VertexPositionP.y = dot( JointTransform1, SrcPosition );
+                    VertexPositionP.z = dot( JointTransform2, SrcPosition );
+                    VertexPositionP.w = 1.0;
+#               else
+                    vec4 VertexPositionP = VertexPosition;
+#               endif
+#           endif
+#       endif
+
 #       include "$DEPTH_PASS_VERTEX_CODE$"
+
+        vec4 TransformedPosition = TransformMatrix * FinalVertexPos;
+
+#       if defined( DEPTH_WITH_VELOCITY_MAP )
+            VS_VertexPos = TransformedPosition;
+#           ifdef SKINNED_MESH
+                VS_VertexPosP = TransformMatrixP * VertexPositionP; // NOTE: We can't apply vertex deform to it!
+#           else
+                VS_VertexPosP = TransformMatrixP * FinalVertexPos;
+#           endif
+#       endif
+
 #       ifdef TESSELLATION_METHOD
             // Position in view space
-            VS_Position = vec3( InverseProjectionMatrix * ( TransformMatrix * FinalVertexPos ) );
+            VS_Position = vec3( InverseProjectionMatrix * TransformedPosition );
             
             // Transform normal from model space to viewspace
             VS_N.x = dot( ModelNormalToViewSpace0, vec4( VertexNormal, 0.0 ) );
             VS_N.y = dot( ModelNormalToViewSpace1, vec4( VertexNormal, 0.0 ) );
             VS_N.z = dot( ModelNormalToViewSpace2, vec4( VertexNormal, 0.0 ) );
             VS_N = normalize( VS_N );
-            
-            // Position in model space. Use this if subdivision in screen space
-            //VS_Position = FinalVertexPos.xyz;
 #       else
-            gl_Position = TransformMatrix * FinalVertexPos;
+            gl_Position = TransformedPosition;
 #           if defined WEAPON_DEPTH_HACK
                 gl_Position.z += 0.1;
 #           elif defined SKYBOX_DEPTH_HACK

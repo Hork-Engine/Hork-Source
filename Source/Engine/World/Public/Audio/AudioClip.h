@@ -48,7 +48,7 @@ class AAudioClip : public AResource {
     AN_CLASS( AAudioClip, AResource )
 
 public:
-    ESoundStreamType StreamType;
+    ESoundStreamType StreamType = SOUND_STREAM_DISABLED;
 
     /** Initialize object from data */
     bool InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength );
@@ -102,17 +102,17 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 
 private:
-    SAudioBufferHandle BufferHandle;
-    ESoundStreamType CurStreamType;
-    int    Frequency;
-    int    BitsPerSample;
-    int    Channels;
-    int    SamplesCount;
-    float  DurationInSeconds;
-    int    BufferSize;
-    byte * EncodedData;
-    size_t EncodedDataLength;
-    bool   bLoaded;
+    SAudioBufferHandle BufferHandle = 0;
+    ESoundStreamType CurStreamType = SOUND_STREAM_DISABLED;
+    int    Frequency = 0;
+    int    BitsPerSample = 0;
+    int    Channels = 0;
+    int    SamplesCount = 0;
+    float  DurationInSeconds = 0.0f;
+    int    BufferSize = 0;
+    byte * EncodedData = nullptr;
+    size_t EncodedDataLength = 0;
+    bool   bLoaded = false;
     TRef< IAudioDecoderInterface > Decoder;
     int    SerialId;
     AString FileName;

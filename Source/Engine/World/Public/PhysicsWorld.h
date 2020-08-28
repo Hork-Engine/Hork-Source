@@ -195,9 +195,9 @@ public:
 
     Float3 GravityVector;
 
-    bool bGravityDirty;
+    bool bGravityDirty = false;
 
-    bool bDuringPhysicsUpdate;
+    bool bDuringPhysicsUpdate = false;
 
     btSoftBodyWorldInfo * SoftBodyWorldInfo;
 
@@ -292,8 +292,8 @@ private:
     TPodArray< SCollisionContact > CollisionContacts[ 2 ];
     THash<> ContactHash[ 2 ];
     TPodArray< SContactPoint > ContactPoints;
-    APhysicalBody * PendingAddToWorldHead;
-    APhysicalBody * PendingAddToWorldTail;
-    float TimeAccumulation;
-    int FixedTickNumber;
+    APhysicalBody * PendingAddToWorldHead = nullptr;
+    APhysicalBody * PendingAddToWorldTail = nullptr;
+    float TimeAccumulation = 0.0f;
+    int FixedTickNumber = 0;
 };

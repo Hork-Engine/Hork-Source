@@ -78,7 +78,7 @@ protected:
     ~MGOutput() {}
 
 private:
-    MGNode * Owner;
+    MGNode * Owner = nullptr;
 
     friend class MGNode;
 };
@@ -347,21 +347,6 @@ class MGClamp : public MGArithmeticFunction3 {
 protected:
     MGClamp() : Super( Clamp, "Clamp" ) {}
 };
-
-#if 0
-class MGProjectionNode : public MGNode {
-    MG_CLASS( MGProjectionNode, MGNode )
-
-public:
-    MGInput * Vector;
-    MGOutput * Result;
-
-protected:
-    MGProjectionNode();
-
-    void Compute( AMaterialBuildContext & _Context ) override;
-};
-#endif
 
 class MGLengthNode : public MGNode {
     MG_CLASS( MGLengthNode, MGNode )

@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Core/Public/BV/BvFrustum.h>
+#include <Core/Public/Logger.h>
 
 BvFrustum::BvFrustum() {
     PlanesSSE = nullptr;
@@ -40,41 +41,49 @@ BvFrustum::~BvFrustum() {
 #endif
 }
 
-void BvFrustum::FromMatrix( Float4x4 const & _Matrix ) {
-    Planes[FPL_RIGHT].Normal.X = _Matrix[0][3] - _Matrix[0][0];
-    Planes[FPL_RIGHT].Normal.Y = _Matrix[1][3] - _Matrix[1][0];
-    Planes[FPL_RIGHT].Normal.Z = _Matrix[2][3] - _Matrix[2][0];
-    Planes[FPL_RIGHT].D =_Matrix[3][3] - _Matrix[3][0];
+void BvFrustum::FromMatrix( Float4x4 const & InMatrix, bool bReversedDepth ) {
+    Float4x4 flipZ;
+
+    flipZ.SetIdentity();
+    flipZ[2][2] = -1.0f;
+    flipZ[3][2] = 1.0f;
+
+    Float4x4 m = bReversedDepth ? flipZ * InMatrix : InMatrix;
+
+    Planes[FPL_RIGHT].Normal.X = m[0][3] - m[0][0];
+    Planes[FPL_RIGHT].Normal.Y = m[1][3] - m[1][0];
+    Planes[FPL_RIGHT].Normal.Z = m[2][3] - m[2][0];
+    Planes[FPL_RIGHT].D =m[3][3] - m[3][0];
     Planes[FPL_RIGHT].NormalizeSelf();
 
-    Planes[FPL_LEFT].Normal.X = _Matrix[0][3] + _Matrix[0][0];
-    Planes[FPL_LEFT].Normal.Y = _Matrix[1][3] + _Matrix[1][0];
-    Planes[FPL_LEFT].Normal.Z = _Matrix[2][3] + _Matrix[2][0];
-    Planes[FPL_LEFT].D = _Matrix[3][3] + _Matrix[3][0];
+    Planes[FPL_LEFT].Normal.X = m[0][3] + m[0][0];
+    Planes[FPL_LEFT].Normal.Y = m[1][3] + m[1][0];
+    Planes[FPL_LEFT].Normal.Z = m[2][3] + m[2][0];
+    Planes[FPL_LEFT].D = m[3][3] + m[3][0];
     Planes[FPL_LEFT].NormalizeSelf();
 
-    Planes[FPL_TOP].Normal.X = _Matrix[0][3] + _Matrix[0][1];
-    Planes[FPL_TOP].Normal.Y = _Matrix[1][3] + _Matrix[1][1];
-    Planes[FPL_TOP].Normal.Z = _Matrix[2][3] + _Matrix[2][1];
-    Planes[FPL_TOP].D = _Matrix[3][3] + _Matrix[3][1];
+    Planes[FPL_TOP].Normal.X = m[0][3] + m[0][1];
+    Planes[FPL_TOP].Normal.Y = m[1][3] + m[1][1];
+    Planes[FPL_TOP].Normal.Z = m[2][3] + m[2][1];
+    Planes[FPL_TOP].D = m[3][3] + m[3][1];
     Planes[FPL_TOP].NormalizeSelf();
 
-    Planes[FPL_BOTTOM].Normal.X = _Matrix[0][3] - _Matrix[0][1];
-    Planes[FPL_BOTTOM].Normal.Y = _Matrix[1][3] - _Matrix[1][1];
-    Planes[FPL_BOTTOM].Normal.Z = _Matrix[2][3] - _Matrix[2][1];
-    Planes[FPL_BOTTOM].D = _Matrix[3][3] - _Matrix[3][1];
+    Planes[FPL_BOTTOM].Normal.X = m[0][3] - m[0][1];
+    Planes[FPL_BOTTOM].Normal.Y = m[1][3] - m[1][1];
+    Planes[FPL_BOTTOM].Normal.Z = m[2][3] - m[2][1];
+    Planes[FPL_BOTTOM].D = m[3][3] - m[3][1];
     Planes[FPL_BOTTOM].NormalizeSelf();
 
-    Planes[FPL_FAR].Normal.X = _Matrix[0][3] - _Matrix[0][2];
-    Planes[FPL_FAR].Normal.Y = _Matrix[1][3] - _Matrix[1][2];
-    Planes[FPL_FAR].Normal.Z = _Matrix[2][3] - _Matrix[2][2];
-    Planes[FPL_FAR].D = _Matrix[3][3] - _Matrix[3][2];
+    Planes[FPL_FAR].Normal.X = m[0][3] - m[0][2];
+    Planes[FPL_FAR].Normal.Y = m[1][3] - m[1][2];
+    Planes[FPL_FAR].Normal.Z = m[2][3] - m[2][2];
+    Planes[FPL_FAR].D = m[3][3] - m[3][2];
     Planes[FPL_FAR].NormalizeSelf();
 
-    Planes[FPL_NEAR].Normal.X = _Matrix[0][3] + _Matrix[0][2];
-    Planes[FPL_NEAR].Normal.Y = _Matrix[1][3] + _Matrix[1][2];
-    Planes[FPL_NEAR].Normal.Z = _Matrix[2][3] + _Matrix[2][2];
-    Planes[FPL_NEAR].D = _Matrix[3][3] + _Matrix[3][2];
+    Planes[FPL_NEAR].Normal.X = m[0][3] + m[0][2];
+    Planes[FPL_NEAR].Normal.Y = m[1][3] + m[1][2];
+    Planes[FPL_NEAR].Normal.Z = m[2][3] + m[2][2];
+    Planes[FPL_NEAR].D = m[3][3] + m[3][2];
     Planes[FPL_NEAR].NormalizeSelf();
 
 #ifdef AN_FRUSTUM_USE_SSE

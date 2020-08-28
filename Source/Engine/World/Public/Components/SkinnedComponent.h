@@ -117,13 +117,13 @@ private:
 
     alignas( 16 ) Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS];
 
-    ASkinnedComponent * Next;
-    ASkinnedComponent * Prev;
+    ASkinnedComponent * Next = nullptr;
+    ASkinnedComponent * Prev = nullptr;
 
     // Memory offset/size for the skeleton animation snapshot
-    size_t SkeletonOffset;
-    size_t SkeletonOffsetMB;
-    size_t SkeletonSize;
+    size_t SkeletonOffset = 0;
+    size_t SkeletonOffsetMB = 0;
+    size_t SkeletonSize = 0;
 
     bool bUpdateBounds : 1;
     bool bUpdateControllers : 1;

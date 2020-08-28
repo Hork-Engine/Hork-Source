@@ -58,13 +58,13 @@ protected:
     virtual void DrawHUD();
 
     // Read only
-    ACanvas * Canvas;
-    int ViewportX;
-    int ViewportY;
-    int ViewportW;
-    int ViewportH;
+    ACanvas * Canvas = nullptr;
+    int ViewportX = 0;
+    int ViewportY = 0;
+    int ViewportW = 0;
+    int ViewportH = 0;
 
 private:
-    APlayerController * OwnerPlayer;
-    APawn * OwnerPawn;
+    APlayerController * OwnerPlayer = nullptr;
+    APawn * OwnerPawn = nullptr;
 };

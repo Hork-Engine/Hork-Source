@@ -69,6 +69,7 @@ AN_CLASS_META( AEngineCommands )
 AEngineInstance & GEngine = AEngineInstance::Inst();
 
 AEngineInstance::AEngineInstance() {
+    RetinaScale = Float2( 1.0f );
 }
 
 static void PhysModulePrintFunction( const char * _Message ) {

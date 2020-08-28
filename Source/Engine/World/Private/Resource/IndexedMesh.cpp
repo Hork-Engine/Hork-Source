@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/Resource/Asset.h>
-#include <World/Public/Resource/GLTF.h>
+#include <World/Public/Resource/Animation.h>
 #include <World/Public/Level.h>
 #include <World/Public/Base/ResourceManager.h>
 
@@ -55,7 +55,7 @@ AIndexedMesh::AIndexedMesh() {
     static TStaticResourceFinder< ASkeleton > SkeletonResource( _CTS( "/Default/Skeleton/Default" ) );
     Skeleton = SkeletonResource.GetObject();
 
-    RaycastPrimitivesPerLeaf = 16;
+    BoundingBox.Clear();
 }
 
 AIndexedMesh::~AIndexedMesh() {
@@ -1368,7 +1368,7 @@ void *AVertexLight::GetVertexMemory( void * _This ) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 AProceduralMesh::AProceduralMesh() {
-
+    BoundingBox.Clear();
 }
 
 AProceduralMesh::~AProceduralMesh() {

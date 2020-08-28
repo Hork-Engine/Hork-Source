@@ -51,6 +51,7 @@ AN_CLASS_META( WTextDecorate )
 
 WTextDecorate::WTextDecorate() {
     Color = AColor4::White();
+    Offset = Float2( 0.0f );
     bWordWrap = false;
     HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
     VerticalAlignment = WIDGET_ALIGNMENT_NONE;
@@ -205,6 +206,7 @@ WImageDecorate::WImageDecorate() {
     bUseOriginalSize = false;
     HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
     VerticalAlignment = WIDGET_ALIGNMENT_NONE;
+    Offset = Float2(0.0f);
     Size = Float2(32,32);
     UV0 = Float2(0,0);
     UV1 = Float2(1,1);

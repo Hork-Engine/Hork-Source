@@ -79,10 +79,10 @@ private:
 private:
     AWorld * pOwnerWorld;
 
-    ASkinnedComponent * SkinnedMeshList;
-    ASkinnedComponent * SkinnedMeshListTail;
-    ADrawable * ShadowCasters;
-    ADrawable * ShadowCastersTail;
-    ADirectionalLightComponent * DirectionalLightList;
-    ADirectionalLightComponent * DirectionalLightListTail;
+    ASkinnedComponent * SkinnedMeshList = nullptr;
+    ASkinnedComponent * SkinnedMeshListTail = nullptr;
+    ADrawable * ShadowCasters = nullptr;
+    ADrawable * ShadowCastersTail = nullptr;
+    ADirectionalLightComponent * DirectionalLightList = nullptr;
+    ADirectionalLightComponent * DirectionalLightListTail = nullptr;
 };

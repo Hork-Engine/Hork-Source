@@ -187,13 +187,6 @@ enum ESurfaceFlags : uint8_t
     SURF_PLANAR_TWOSIDED_MASK = SURF_PLANAR | SURF_TWOSIDED
 };
 
-enum ERenderOrder
-{
-    RENDER_ORDER_WEAPON = 0,
-    RENDER_ORDER_DEFAULT = 1,
-    RENDER_ORDER_SKYBOX = 255
-};
-
 struct SSurfaceDef
 {
     /** Parent brush model */
@@ -258,12 +251,13 @@ struct SSurfaceDef
     int VisPass;
 
     /** Drawable rendering order */
-    uint8_t RenderingOrder;
+    //uint8_t RenderingOrder;
 
     /** Generate sort key. Call this after RenderingOrder/Model/MaterialIndex/LightmapBlock have changed. */
     void RegenerateSortKey() {
         // NOTE: 8 bits are still unused. We can use it in future.
-        SortKey = ((uint64_t)(RenderingOrder & 0xffu) << 56u)
+        SortKey = 0
+                //| ((uint64_t)(RenderingOrder & 0xffu) << 56u)
                 | ((uint64_t)(Core::PHHash64( (uint64_t)Model ) & 0xffffu) << 40u)
                 | ((uint64_t)(Core::PHHash32( MaterialIndex ) & 0xffffu) << 24u)
                 | ((uint64_t)(Core::PHHash32( LightmapBlock ) & 0xffffu) << 8u);
@@ -345,9 +339,6 @@ struct SPrimitiveDef
 
     /** Is primitive pending to remove from level */
     bool bPendingRemove : 1;
-
-    /** Is primitive movable */
-    bool bMovable : 1; // FIXME: This is not used!
 };
 
 struct SPrimitiveLink
@@ -522,25 +513,25 @@ public:
     SVisArea OutdoorArea;
 
     /** Lightmap pixel format */
-    ELightmapFormat LightmapFormat;
+    ELightmapFormat LightmapFormat = LIGHTMAP_GRAYSCALED_HALF;
 
     /** Lightmap atlas resolution */
-    int LightmapBlockWidth;
+    int LightmapBlockWidth = 0;
 
     /** Lightmap atlas resolution */
-    int LightmapBlockHeight;
+    int LightmapBlockHeight = 0;
 
     /** Lightmap raw data */
-    void * LightData;
+    void * LightData = nullptr;
 
     /** PVS data */
-    byte * Visdata;
+    byte * Visdata = nullptr;
 
     /** Is PVS data compressed or not (ZRLE) */
-    bool bCompressedVisData;
+    bool bCompressedVisData = false;
 
     /** Count of a clusters in PVS data */
-    int PVSClustersCount;
+    int PVSClustersCount = 0;
 
     /** Surface to area attachments */
     TPodArray< int > AreaSurfaces;
@@ -707,11 +698,11 @@ private:
     void UpdatePrimitiveLinks();
 
     /** Parent world */
-    AWorld * OwnerWorld;
+    AWorld * OwnerWorld = nullptr;
 
     int IndexInArrayOfLevels = -1;
 
-    bool bIsPersistent;
+    bool bIsPersistent = false;
 
     /** Level portals */
     TPodArray< SVisPortal > Portals;
@@ -729,18 +720,18 @@ private:
 
     BvAxisAlignedBox IndoorBounds;
 
-    class AWorldspawn * Worldspawn;
+    class AWorldspawn * Worldspawn = nullptr;
 
     TPodArray< ALightmapUV * > LightmapUVs;
     TPodArray< AVertexLight * > VertexLightChannels;
 
-    byte * DecompressedVisData;
+    byte * DecompressedVisData = nullptr;
 
     /** Node visitor mark */
-    int ViewMark;
+    int ViewMark = 0;
 
     /** Cluster index for view origin */
-    int ViewCluster;
+    int ViewCluster = -1;
 
     ABufferGPU * ShadowCasterVB;
     ABufferGPU * ShadowCasterIB;
@@ -748,8 +739,8 @@ private:
     ABufferGPU * LightPortalsVB;
     ABufferGPU * LightPortalsIB;
 
-    SPrimitiveDef * PrimitiveList;
-    SPrimitiveDef * PrimitiveListTail;
-    SPrimitiveDef * PrimitiveUpdateList;
-    SPrimitiveDef * PrimitiveUpdateListTail;
+    SPrimitiveDef * PrimitiveList = nullptr;
+    SPrimitiveDef * PrimitiveListTail = nullptr;
+    SPrimitiveDef * PrimitiveUpdateList = nullptr;
+    SPrimitiveDef * PrimitiveUpdateListTail = nullptr;
 };

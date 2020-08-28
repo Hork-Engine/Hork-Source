@@ -55,7 +55,11 @@ AN_CLASS_META( ASkinnedComponent )
 ASkinnedComponent::ASkinnedComponent() {
     DrawableType = DRAWABLE_SKINNED_MESH;
 
+    bUpdateBounds = false;
     bUpdateControllers = true;
+    bUpdateRelativeTransforms = false;
+    bUpdateAbsoluteTransforms = false;
+    bJointsSimulatedByPhysics = false;
     bSkinnedMesh = true;
 
     // Raycasting of skinned meshes is not supported yet

@@ -64,9 +64,9 @@ ADirectionalLightComponent::ADirectionalLightComponent() {
     Color = DEFAULT_COLOR;    
     EffectiveColor = Float4( 0.0f );
     bCastShadow = true;
-    MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
     ShadowMaxDistance = 128;
     ShadowCascadeOffset = 3;
+    MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
     ShadowCascadeResolution = 1024;
     Next = Prev = nullptr;
 }
@@ -238,12 +238,15 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int *
 
     // Calc worldspace verts
     for ( numVisibleSplits = 0 ;
-          numVisibleSplits < numSplits && (cascadeSplits[numVisibleSplits] <= maxVisibleDist) ;
+          numVisibleSplits < numSplits && (cascadeSplits[Math::Max( 0, numVisibleSplits-1 )] <= maxVisibleDist) ;
           numVisibleSplits++ )
     {
         Float3 * pWorldSpaceVerts = worldspaceVerts[numVisibleSplits];
 
         float d = cascadeSplits[numVisibleSplits];
+
+        // FIXME: variable distance can cause edge shimmering
+        //d = d > maxVisibleDist ? maxVisibleDist : d;
 
         Float3 centerWorldspace = View->ViewPosition + View->ViewDir * d;
 
@@ -265,13 +268,13 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int *
 
     BvSphere cascadeSphere;
 
-    Float3x3 lightRotation = GetWorldRotation().ToMatrix();
-    Float3x3 basis = lightRotation.Transposed();
+    Float3x3 basis = GetWorldRotation().ToMatrix().Transposed();
     lightViewMatrix[0] = Float4( basis[0], 0.0f );
     lightViewMatrix[1] = Float4( basis[1], 0.0f );
     lightViewMatrix[2] = Float4( basis[2], 0.0f );
 
     const float halfCascadeRes = ShadowCascadeResolution >> 1;
+    const float oneOverHalfCascadeRes = 1.0f / halfCascadeRes;
 
     int firstCascade = View->NumShadowMapCascades;
 
@@ -298,15 +301,21 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int *
         Float4x4 cascadeMatrix = Float4x4::OrthoCC( Float2( cascadeMins ), Float2( cascadeMaxs ), cascadeMins[2], cascadeMaxs[2] )
                 * lightViewMatrix;
 
+#if 0
         // Calc pixel fraction in texture space
         Float2 error = Float2( cascadeMatrix[3] );  // same cascadeMatrix * Float4(0,0,0,1)
-        error.X = Math::Fract( error.X * halfCascadeRes ) / halfCascadeRes;
-        error.Y = Math::Fract( error.Y * halfCascadeRes ) / halfCascadeRes;
+        error.X = Math::Fract( error.X * halfCascadeRes ) * oneOverHalfCascadeRes;
+        error.Y = Math::Fract( error.Y * halfCascadeRes ) * oneOverHalfCascadeRes;
 
         // Snap light projection to texel grid
         // Same cascadeMatrix = Float4x4::Translation( -error ) * cascadeMatrix;
         cascadeMatrix[3].X -= error.X;
         cascadeMatrix[3].Y -= error.Y;
+#else
+        // Snap light projection to texel grid
+        cascadeMatrix[3].X -= Math::Fract( cascadeMatrix[3].X * halfCascadeRes ) * oneOverHalfCascadeRes;
+        cascadeMatrix[3].Y -= Math::Fract( cascadeMatrix[3].Y * halfCascadeRes ) * oneOverHalfCascadeRes;
+#endif
 
         int cascadeIndex = firstCascade + i;
 

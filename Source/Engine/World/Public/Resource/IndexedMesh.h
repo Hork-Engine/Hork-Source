@@ -178,15 +178,15 @@ protected:
     ~AIndexedMeshSubpart();
 
 private:
-    AIndexedMesh * OwnerMesh;
+    AIndexedMesh * OwnerMesh = nullptr;
     BvAxisAlignedBox BoundingBox;
-    int BaseVertex;
-    int FirstIndex;
-    int VertexCount;
-    int IndexCount;
+    int BaseVertex = 0;
+    int FirstIndex = 0;
+    int VertexCount = 0;
+    int IndexCount = 0;
     TRef< AMaterialInstance > MaterialInstance;
     TRef< ATreeAABB > AABBTree;
-    bool bAABBTreeDirty;
+    bool bAABBTreeDirty = false;
 };
 
 /**
@@ -227,12 +227,12 @@ protected:
 private:
     static void * GetVertexMemory( void * _This );
 
-    SVertexHandle * VertexBufferGPU;
+    SVertexHandle * VertexBufferGPU = nullptr;
     TRef< AIndexedMesh > SourceMesh;
     TWeakRef< ALevel > LightingLevel;
     int IndexInArrayOfUVs = -1;
     TPodArrayHeap< SMeshVertexUV > Vertices;
-    bool bInvalid;
+    bool bInvalid = false;
 };
 
 /**
@@ -273,12 +273,12 @@ protected:
 private:
     static void * GetVertexMemory( void * _This );
 
-    SVertexHandle * VertexBufferGPU;
+    SVertexHandle * VertexBufferGPU = nullptr;
     TRef< AIndexedMesh > SourceMesh;
     TWeakRef< ALevel > LightingLevel;
     int IndexInArrayOfChannels = -1;
     TPodArrayHeap< SMeshVertexLight > Vertices;
-    bool bInvalid;
+    bool bInvalid = false;
 };
 
 using ALightmapUVChannels = TPodArray< ALightmapUV *, 1 >;
@@ -501,9 +501,9 @@ private:
     static void * GetIndexMemory( void * _This );
     static void * GetWeightMemory( void * _This );
 
-    SVertexHandle * VertexHandle;
-    SVertexHandle * IndexHandle;
-    SVertexHandle * WeightsHandle;
+    SVertexHandle * VertexHandle = nullptr;
+    SVertexHandle * IndexHandle = nullptr;
+    SVertexHandle * WeightsHandle = nullptr;
     AIndexedMeshSubpartArray Subparts;
     ALightmapUVChannels LightmapUVs;
     AVertexLightChannels VertexLightChannels;
@@ -514,9 +514,9 @@ private:
     TRef< ASkeleton > Skeleton;
     ASkin Skin;
     BvAxisAlignedBox BoundingBox;
-    uint16_t RaycastPrimitivesPerLeaf;
-    bool bSkinnedMesh;
-    mutable bool bBoundingBoxDirty;
+    uint16_t RaycastPrimitivesPerLeaf = 16;
+    bool bSkinnedMesh = false;
+    mutable bool bBoundingBoxDirty = false;
 };
 
 
@@ -562,10 +562,10 @@ protected:
     ~AProceduralMesh();
 
 private:
-    size_t VertexStream;
-    size_t IndexSteam;
+    size_t VertexStream = 0;
+    size_t IndexSteam = 0;
 
-    int VisFrame;
+    int VisFrame = -1;
 };
 
 

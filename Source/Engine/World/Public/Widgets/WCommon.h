@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Core/Public/BaseTypes.h>
 
 enum EWidgetStyle {
+    WIDGET_STYLE_DEFAULT    = 0,
     WIDGET_STYLE_BACKGROUND = AN_BIT(0),      // widget is stays background
     WIDGET_STYLE_FOREGROUND = AN_BIT(1),      // widget is stays on top
     WIDGET_STYLE_EXCLUSIVE  = WIDGET_STYLE_FOREGROUND | AN_BIT(2), // widget is stays on top of other widgets and receives inputs

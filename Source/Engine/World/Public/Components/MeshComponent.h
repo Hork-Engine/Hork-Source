@@ -51,10 +51,10 @@ class ANGIE_API AMeshComponent : public ADrawable {
 
 public:
     /** Lightmap atlas index */
-    int             LightmapBlock;
+    int             LightmapBlock = 0;
 
     /** Lighmap channel UV offset and scale */
-    Float4          LightmapOffset;
+    Float4          LightmapOffset = Float4( 0,0,1,1 );
 
     /** Lightmap UV channel */
     TRef< ALightmapUV >   LightmapUVChannel;
@@ -63,7 +63,7 @@ public:
     TRef< AVertexLight >  VertexLightChannel;
 
     /** Flipbook animation page offset */
-    unsigned int    SubpartBaseVertexOffset;
+    unsigned int    SubpartBaseVertexOffset = 0;
 
     bool            bOverrideMeshMaterials = true;
 

@@ -178,8 +178,6 @@ AMeshComponent::AMeshComponent() {
 
     bAllowRaycast = true;
 
-    LightmapOffset.Z = LightmapOffset.W = 1;
-
     static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Box" ) );
     Mesh = MeshResource.GetObject();
     Bounds = Mesh->GetBoundingBox();

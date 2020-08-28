@@ -49,20 +49,20 @@ ARuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), 
 AN_CLASS_META( ACameraComponent )
 
 ACameraComponent::ACameraComponent() {
-    Projection = DEFAULT_PROJECTION;
-    ZNear = DEFAULT_ZNEAR;
-    ZFar = DEFAULT_ZFAR;
     FovX = DEFAULT_FOVX;
     FovY = DEFAULT_FOVY;
+    ZNear = DEFAULT_ZNEAR;
+    ZFar = DEFAULT_ZFAR;
     AspectRatio = DEFAULT_ASPECT_RATIO;
     OrthoMins.X = -1;
     OrthoMins.Y = -1;
     OrthoMaxs.X = 1;
     OrthoMaxs.Y = 1;
     OrthoZoom = DEFAULT_ORTHO_ZOOM;
+    Projection = DEFAULT_PROJECTION;
     bViewMatrixDirty = true;
-    bFrustumDirty = true;
     bProjectionDirty = true;
+    bFrustumDirty = true;
 }
 
 void ACameraComponent::SetProjection( ECameraProjection _Projection ) {
@@ -271,7 +271,7 @@ BvFrustum const & ACameraComponent::GetFrustum() const {
     GetViewMatrix();
 
     if ( bFrustumDirty ) {
-        Frustum.FromMatrix( ProjectionMatrix * ViewMatrix );
+        Frustum.FromMatrix( ProjectionMatrix * ViewMatrix, true );
 
         bFrustumDirty = false;
     }

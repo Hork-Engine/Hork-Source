@@ -61,15 +61,15 @@ enum ECollisionMask {
     CM_ALL           = 0xffff
 };
 
-enum EPhysicsBehavior {
-    /** No physics simulation, just collisions */
-    PB_STATIC,
+enum EMotionBehavior {
+    /** Static non-movable object */
+    MB_STATIC,
 
-    /** Physics simulated by engine */
-    PB_DYNAMIC,
+    /** Object motion is simulated by physics engine */
+    MB_SIMULATED,
 
-    /** Physics simulated by game logic */
-    PB_KINEMATIC
+    /** Movable object */
+    MB_KINEMATIC
 };
 
 enum EAINavigationBehavior {
@@ -107,26 +107,26 @@ public:
     AOverlapDelegate E_OnUpdateOverlap;
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
-    bool bDispatchContactEvents;
+    bool bDispatchContactEvents = false;
 
     /** Dispatch contact events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
-    bool bDispatchOverlapEvents;
+    bool bDispatchOverlapEvents = false;
 
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
-    bool bGenerateContactPoints;
+    bool bGenerateContactPoints = false;
 
     /** Collision body composition. Set it before component initialization or call UpdatePhysicsAttribs() to apply property. */
     ACollisionBodyComposition BodyComposition;
 
     /** Set to true if you want to use body composition from overrided method DefaultBodyComposition(). Set it before component initialization
     or call UpdatePhysicsAttribs() to apply property. */
-    bool bUseDefaultBodyComposition;
+    bool bUseDefaultBodyComposition = false;
 
-    /** Set physics simulation type: static, dynamic, kinematic */
-    void SetPhysicsBehavior( EPhysicsBehavior _PhysicsBehavior );
+    /** Set object motion behavior: static, simulated, kinematic */
+    void SetMotionBehavior( EMotionBehavior _MotionBehavior );
 
-    /** Get physics simulation type: static, dynamic, kinematic */
-    EPhysicsBehavior GetPhysicsBehavior() const { return PhysicsBehavior; }
+    /** Get object motion behavior: static, dynamic, kinematic */
+    EMotionBehavior GetMotionBehavior() const { return MotionBehavior; }
 
     /** Specifies how the body will be used by navigation mesh generator */
     void SetAINavigationBehavior( EAINavigationBehavior _AINavigationBehavior );
@@ -332,8 +332,8 @@ protected:
 
     virtual ACollisionBodyComposition const & DefaultBodyComposition() const { return BodyComposition; }
 
-    bool bSoftBodySimulation;
-    btSoftBody * SoftBody; // managed by ASoftMeshComponent
+    bool bSoftBodySimulation = false;
+    btSoftBody * SoftBody = nullptr; // managed by ASoftMeshComponent
     //Float3 PrevWorldPosition;
     //Quat PrevWorldRotation;
     //bool bUpdateSoftbodyTransform;
@@ -349,38 +349,38 @@ private:
     TPodArray< AActor *, 1 > CollisionIgnoreActors;
 
     float Mass = 1.0f;
-    Float3 SelfGravity;
+    Float3 SelfGravity = Float3( 0.0f );
     Float3 LinearFactor = Float3( 1 );
-    float LinearDamping;
+    float LinearDamping = 0.0f;
     Float3 AngularFactor = Float3( 1 );
-    float AngularDamping;
+    float AngularDamping = 0.0f;
     float Friction = 0.5f;
     Float3 AnisotropicFriction = Float3( 1 );
-    float RollingFriction;
-    //float SpinningFriction;   // Torsional friction around contact normal
-    float Restitution;
+    float RollingFriction = 0.0f;
+    //float SpinningFriction = 0.0f;   // Torsional friction around contact normal
+    float Restitution = 0.0f;
     float ContactProcessingThreshold = 1e18f;
     float LinearSleepingThreshold = 0.8f;
     float AngularSleepingThreshold = 1.0f;
-    float CcdRadius;
-    float CcdMotionThreshold;
+    float CcdRadius = 0.0f;
+    float CcdMotionThreshold = 0.0f;
     int CollisionGroup = CM_WORLD;
     int CollisionMask = CM_ALL;
-    EPhysicsBehavior PhysicsBehavior;
-    EAINavigationBehavior AINavigationBehavior;
-    bool bTrigger;
-    bool bDisableGravity;
-    bool bOverrideWorldGravity;
-    bool bInWorld;
+    EMotionBehavior MotionBehavior = MB_STATIC;
+    EAINavigationBehavior AINavigationBehavior = AI_NAVIGATION_BEHAVIOR_NONE;
+    bool bTrigger = false;
+    bool bDisableGravity = false;
+    bool bOverrideWorldGravity = false;
+    bool bInWorld = false;
 
-    btRigidBody * RigidBody;
-    btCompoundShape * CompoundShape;
-    SPhysicalBodyMotionState * MotionState;
-    Float3 CachedScale;
+    btRigidBody * RigidBody = nullptr;
+    btCompoundShape * CompoundShape = nullptr;
+    SPhysicalBodyMotionState * MotionState = nullptr;
+    Float3 CachedScale = Float3( 1.0f );
 
-    APhysicalBody * NextMarked;
-    APhysicalBody * PrevMarked;
+    APhysicalBody * NextMarked = nullptr;
+    APhysicalBody * PrevMarked = nullptr;
 
-    APhysicalBody * NextNavBody;
-    APhysicalBody * PrevNavBody;
+    APhysicalBody * NextNavBody = nullptr;
+    APhysicalBody * PrevNavBody = nullptr;
 };

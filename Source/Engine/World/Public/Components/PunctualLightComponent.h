@@ -44,10 +44,6 @@ public:
 
     void SetEnabled( bool _Enabled ) override;
 
-    void SetMovable( bool _Movable );
-
-    bool IsMovable() const;
-
     BvAxisAlignedBox const & GetWorldBounds() const { return AABBWorldBounds; }
 
     Float4x4 const & GetOBBTransformInverse() const { return OBBTransformInverse; }

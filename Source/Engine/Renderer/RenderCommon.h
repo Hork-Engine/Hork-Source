@@ -160,10 +160,6 @@ struct AShaderSources {
 
         predefines += "#define SRGB_GAMMA_APPROX\n";
 
-        if ( RVMotionBlur ) {
-            predefines += "#define WITH_MOTION_BLUR\n";
-        }
-
         if ( RVSSLR ) {
             predefines += "#define WITH_SSLR\n";
         }

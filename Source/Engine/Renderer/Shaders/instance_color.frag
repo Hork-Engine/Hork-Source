@@ -33,10 +33,6 @@ SOFTWARE.
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
-#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT )
-layout( location = 1 ) out vec2 FS_Velocity;
-#endif
-
 layout( origin_upper_left ) in vec4 gl_FragCoord;
 
 
@@ -159,11 +155,6 @@ layout( location = COLOR_PASS_VARYING_POSITION ) in vec3 VS_Position;
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 VS_TexCoordVT;
 #endif
 
-#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 VS_VertexPos;
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 VS_VertexPosP;
-#endif
-
 /*
 
 Public variables
@@ -211,17 +202,6 @@ void main()
 #ifdef USE_VIRTUAL_TEXTURE
     // FIXME: Parallax mapping with VT?
     InPhysicalUV = VT_CalcPhysicalUV( vt_IndirectionTable, VS_TexCoordVT, VTUnit );
-#endif
-
-#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT )
-#ifdef ALLOW_MOTION_BLUR
-    vec2 p1 = VS_VertexPos.xy / VS_VertexPos.w;
-    vec2 p2 = VS_VertexPosP.xy / VS_VertexPosP.w;
-    FS_Velocity = ( p1 - p2 ) * (0.5 * MOTION_BLUR_SCALE);
-    FS_Velocity = saturate( sqrt( abs(FS_Velocity) ) * sign( FS_Velocity ) * 0.5 + 0.5 );
-#else
-    FS_Velocity = vec2( 0.0 );
-#endif
 #endif
 
     InitParallaxTechnique();

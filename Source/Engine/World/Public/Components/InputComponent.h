@@ -101,20 +101,20 @@ public:
 private:
     AInputAxis();
 
-    int NameHash;
+    int NameHash = 0;
 
-    AInputMappings * Parent;
+    AInputMappings * Parent = nullptr;
 
     /** Keys mapped to this axis */
     TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
     /** Mouse axes mapped to this axis */
-    uint8_t MappedMouseAxes;
+    uint8_t MappedMouseAxes = 0;
 
     /** Joystick axes mapped to this axis */
     uint32_t MappedJoystickAxes[MAX_JOYSTICKS_COUNT];
 
-    int IndexInArrayOfAxes;
+    int IndexInArrayOfAxes = 0;
 };
 
 class ANGIE_API AInputAction final : public ABaseObject {
@@ -129,14 +129,14 @@ public:
 private:
     AInputAction() {}
 
-    int NameHash;
+    int NameHash = 0;
 
-    AInputMappings * Parent;
+    AInputMappings * Parent = nullptr;
 
     /** Keys mapped to this action */
     TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
-    int IndexInArrayOfActions;
+    int IndexInArrayOfActions = 0;
 };
 
 class ANGIE_API AInputMappings final : public ABaseObject {
@@ -203,21 +203,21 @@ class ANGIE_API AInputComponent final : public AActorComponent {
 
 public:
     /** Filter keyboard events */
-    bool bIgnoreKeyboardEvents;
+    bool bIgnoreKeyboardEvents = false;
 
     /** Filter mouse events */
-    bool bIgnoreMouseEvents;
+    bool bIgnoreMouseEvents = false;
 
     /** Filter joystick events */
-    bool bIgnoreJoystickEvents;
+    bool bIgnoreJoystickEvents = false;
 
     /** Filter character events */
-    bool bIgnoreCharEvents;
+    bool bIgnoreCharEvents = false;
 
     /** Mouse sensitivity factor */
     float MouseSensitivity = 1.0f;
 
-    int ControllerId;
+    int ControllerId = 0;
 
     /** Set input mappings config */
     void SetInputMappings( AInputMappings * _InputMappings );
@@ -368,7 +368,7 @@ protected:
 
     /** Array of pressed keys */
     SPressedKey PressedKeys[ MAX_PRESSED_KEYS ];
-    int NumPressedKeys;
+    int NumPressedKeys = 0;
 
     // Index to PressedKeys array or -1 if button is up
     char * DeviceButtonDown[ MAX_INPUT_DEVICES ];
@@ -376,14 +376,14 @@ protected:
     char MouseButtonDown[ MAX_MOUSE_BUTTONS ];
     char JoystickButtonDown[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
 
-    float MouseAxisStateX;
-    float MouseAxisStateY;
+    float MouseAxisStateX = 0;
+    float MouseAxisStateY = 0;
 
     TCallback< void( SWideChar, int, double ) > CharacterCallback;
-    bool bCharacterCallbackExecuteEvenWhenPaused;
+    bool bCharacterCallbackExecuteEvenWhenPaused = false;
 
-    AInputComponent * Next;
-    AInputComponent * Prev;
+    AInputComponent * Next = nullptr;
+    AInputComponent * Prev = nullptr;
 
     static AInputComponent * InputComponents;
     static AInputComponent * InputComponentsTail;

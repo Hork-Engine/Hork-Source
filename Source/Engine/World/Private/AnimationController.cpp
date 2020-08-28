@@ -36,8 +36,14 @@ SOFTWARE.
 AN_CLASS_META( AAnimationController )
 
 AAnimationController::AAnimationController() {
+    Owner = nullptr;
+    TimeLine = 0.0f;
+    Quantizer = 0.0f;
+    Weight = 1.0f;
+    Blend = 0.0f;
+    Frame = 0;
+    NextFrame = 0;
     PlayMode = ANIMATION_PLAY_CLAMP;
-    Weight = 1;
     bEnabled = true;
 }
 

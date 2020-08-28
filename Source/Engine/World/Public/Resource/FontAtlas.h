@@ -200,27 +200,27 @@ private:
     // Cache-friendly glyph advanceX
     TPodArray< float > WideCharAdvanceX;
     // AdvanceX for fallback character
-    float FallbackAdvanceX;
+    float FallbackAdvanceX = 0.0f;
     // Indexed by widechar, holds indices for corresponding glyphs
     TPodArray< unsigned short > WideCharToGlyph;
     // Font glyphs
     TPodArray< SFontGlyph > Glyphs;
     // Glyph for fallback character
-    SFontGlyph const * FallbackGlyph;
+    SFontGlyph const * FallbackGlyph = nullptr;
     // Font size in pixels
-    float FontSize;
+    float FontSize = 0.0f;
     // Offset for font rendering in pixels
-    Float2 DrawOffset;
+    Float2 DrawOffset = Float2( 0.0f );
     // Texture raw data
-    byte * TexPixelsAlpha8;
+    byte * TexPixelsAlpha8 = nullptr;
     // Texture width
-    int TexWidth;
+    int TexWidth = 0;
     // Texture height
-    int TexHeight;
+    int TexHeight = 0;
     // 1.0f/TexWidth, 1.0f/TexHeight
-    Float2 TexUvScale;
+    Float2 TexUvScale = Float2( 0.0f );
     // Texture coordinates to a white pixel
-    Float2 TexUvWhitePixel;
+    Float2 TexUvWhitePixel = Float2( 0.0f );
     // Texture object
     TRef< ATexture > AtlasTexture;
     // Rectangles for packing custom texture data into the atlas.

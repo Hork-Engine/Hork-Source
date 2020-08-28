@@ -80,8 +80,8 @@ void ARenderFrontend::Initialize() {
 void ARenderFrontend::Deinitialize() {
     VSD_Deinitialize();
 
-    Lights.Free();
-    IBLs.Free();
+    VisLights.Free();
+    VisIBLs.Free();
     VisPrimitives.Free();
     VisSurfaces.Free();
     ShadowCasters.Free();
@@ -149,11 +149,6 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
         StdSort( FrameData.TranslucentInstances.Begin() + view->FirstTranslucentInstance,
                  FrameData.TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
                  InstanceSortFunction );
-
-        //StdSort( FrameData.ShadowInstances.Begin() + view->FirstShadowInstance,
-        //         FrameData.ShadowInstances.Begin() + (view->FirstShadowInstance + view->ShadowInstanceCount),
-        //         ShadowInstanceSortFunction );
-
     }
     //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
 
@@ -212,8 +207,8 @@ void ARenderFrontend::RenderView( int _Index ) {
                   : view->ProjectionMatrix.OrthoProjectionInverseFast();
         camera->MakeClusterProjectionMatrix( view->ClusterProjectionMatrix );
 
-        view->ClusteViewProjection = view->ClusterProjectionMatrix * view->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
-        view->ClusteViewProjectionInversed = view->ClusteViewProjection.Inversed();
+        view->ClusterViewProjection = view->ClusterProjectionMatrix * view->ViewMatrix; // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
+        view->ClusterViewProjectionInversed = view->ClusterViewProjection.Inversed();
     }
 
     view->ViewProjection = view->ProjectionMatrix * view->ViewMatrix;
@@ -307,6 +302,14 @@ void ARenderFrontend::RenderView( int _Index ) {
 
         ARenderWorld & renderWorld = world->GetRenderWorld();
 
+        QueryVisiblePrimitives( &renderWorld );
+
+        // Generate debug draw commands
+        if ( RP && RP->bDrawDebug ) {
+            DebugDraw.BeginRenderView( view, VisPass );
+            world->DrawDebug( &DebugDraw );
+        }
+
         AddRenderInstances( &renderWorld );
 
         AddDirectionalShadowmapInstances( &renderWorld );
@@ -314,12 +317,7 @@ void ARenderFrontend::RenderView( int _Index ) {
         Stat.PolyCount += RenderDef.PolyCount;
         Stat.ShadowMapPolyCount += RenderDef.ShadowMapPolyCount;
 
-        // Generate debug draw commands
-        if ( RP && RP->bDrawDebug )
-        {
-            AScopedTimeCheck TimeCheck( "DebugDraw" );
-            DebugDraw.BeginRenderView( view, VisPass );
-            world->DrawDebug( &DebugDraw );
+        if ( RP && RP->bDrawDebug ) {
             DebugDraw.EndRenderView();
         }
     }
@@ -629,7 +627,7 @@ void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const
     SVisibilityQuery query;
     BvFrustum frustum;
 
-    frustum.FromMatrix( LightViewProjection );
+    frustum.FromMatrix( LightViewProjection, true );
 
     for ( int i = 0 ; i < 6 ; i++ ) {
         query.FrustumPlanes[i] = &frustum[i];
@@ -639,7 +637,83 @@ void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const
     query.ViewUpVec = LightBasis[1];
     query.VisibilityMask = RenderDef.VisibilityMask;
     query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_SHADOW_CAST;
+#if 1
+#if 0
+    Float3 clipBox[8] =
+    {
+        Float3(-1,-1, 0),
+        Float3(-1,-1, 1),
+        Float3(-1, 1, 0),
+        Float3(-1, 1, 1),
+        Float3( 1,-1, 0),
+        Float3( 1,-1, 1),
+        Float3( 1, 1, 0),
+        Float3( 1, 1, 1)
+    };
 
+    Float4x4 inversed = LightViewProjection.Inversed();
+    for ( int i = 0 ; i < 8 ; i++ ) {
+        clipBox[i] = Float3( inversed * Float4( clipBox[i], 1.0f ) );
+    }
+
+    DebugDraw.SetDepthTest( false );
+    DebugDraw.SetColor(AColor4(1,1,0,1));
+    DebugDraw.DrawLine( clipBox, 8 );
+#else
+    Float3 vectorTR;
+    Float3 vectorTL;
+    Float3 vectorBR;
+    Float3 vectorBL;
+    Float3 origin = LightPosition;
+    Float3 v[4];
+    Float3 faces[4][3];
+    float lightRadius = 4;
+    float rayLength = lightRadius / Math::Cos( Math::_PI/4.0f );
+
+    frustum.CornerVector_TR( vectorTR );
+    frustum.CornerVector_TL( vectorTL );
+    frustum.CornerVector_BR( vectorBR );
+    frustum.CornerVector_BL( vectorBL );
+
+    v[0] = origin + vectorTR * rayLength;
+    v[1] = origin + vectorBR * rayLength;
+    v[2] = origin + vectorBL * rayLength;
+    v[3] = origin + vectorTL * rayLength;
+
+    // top
+    faces[0][0] = origin;
+    faces[0][1] = v[0];
+    faces[0][2] = v[3];
+
+    // left
+    faces[1][0] = origin;
+    faces[1][1] = v[3];
+    faces[1][2] = v[2];
+
+    // bottom
+    faces[2][0] = origin;
+    faces[2][1] = v[2];
+    faces[2][2] = v[1];
+
+    // right
+    faces[3][0] = origin;
+    faces[3][1] = v[1];
+    faces[3][2] = v[0];
+
+    DebugDraw.SetDepthTest( true );
+
+    DebugDraw.SetColor( AColor4( 0, 1, 1, 1 ) );
+    DebugDraw.DrawLine( origin, v[0] );
+    DebugDraw.DrawLine( origin, v[3] );
+    DebugDraw.DrawLine( origin, v[1] );
+    DebugDraw.DrawLine( origin, v[2] );
+    DebugDraw.DrawLine( v, 4, true );
+
+    DebugDraw.SetColor( AColor4( 1, 1, 1, 0.3f ) );
+    DebugDraw.DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
+    DebugDraw.DrawConvexPoly( v, 4, false );
+#endif
+#endif
     VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), Primitives, Surfaces, nullptr, query );
 }
 
@@ -652,10 +726,8 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     AAnalyticLightComponent * light;
     AIBLComponent * ibl;
 
-    Lights.Clear();
-    IBLs.Clear();
-
-    QueryVisiblePrimitives( InWorld );
+    VisLights.Clear();
+    VisIBLs.Clear();
 
     for ( SPrimitiveDef * primitive : VisPrimitives ) {
 
@@ -667,23 +739,12 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         }
 
         if ( nullptr != (light = Upcast< AAnalyticLightComponent >( primitive->Owner )) ) {
-            if ( Lights.Size() < MAX_LIGHTS ) {
-                Lights.Append( light );
+            if ( !light->IsEnabled() ) {
+                continue;
+            }
 
-                if ( !light->IsEnabled() ) {
-                    continue;
-                }
-
-                if ( light->IsCastShadow() ) {
-                    //QueryShadowCasters( InWorld, lightViewProj, lightPos, lightBias, prim, surfs );
-
-                    //lightDef->ShadowmapIndex = FrameData.LightShadowmaps.Size();
-                }
-
-                APhotometricProfile * profile = light->GetPhotometricProfile();
-                if ( profile ) {
-                    profile->WritePhotometricData( PhotometricProfiles, FrameNumber );
-                }
+            if ( VisLights.Size() < MAX_LIGHTS ) {
+                VisLights.Append( light );
             } else {
                 GLogger.Printf( "MAX_LIGHTS hit\n" );
             }
@@ -691,8 +752,12 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         }
 
         if ( nullptr != (ibl = Upcast< AIBLComponent >( primitive->Owner )) ) {
-            if ( IBLs.Size() < MAX_PROBES ) {
-                IBLs.Append( ibl );
+            if ( !ibl->IsEnabled() ) {
+                continue;
+            }
+
+            if ( VisIBLs.Size() < MAX_PROBES ) {
+                VisIBLs.Append( ibl );
             } else {
                 GLogger.Printf( "MAX_PROBES hit\n" );
             }
@@ -752,12 +817,19 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     GLightVoxelizer.Reset();
 
     // Allocate lights
-    view->NumPointLights = Lights.Size();
+    view->NumPointLights = VisLights.Size();
     view->PointLights = (SClusterLight *)GRuntime.AllocFrameMem( sizeof( SClusterLight ) * view->NumPointLights );
     for ( int i = 0 ; i < view->NumPointLights ; i++ ) {
-        light = Lights[i];
+        light = VisLights[i];
 
         light->PackLight( view->ViewMatrix, view->PointLights[i] );
+
+        AddLightShadowmap( light, view->PointLights[i].Radius, &view->PointLights[i].ShadowmapIndex );
+
+        APhotometricProfile * profile = light->GetPhotometricProfile();
+        if ( profile ) {
+            profile->WritePhotometricData( PhotometricProfiles, FrameNumber );
+        }
 
         SItemInfo * info = GLightVoxelizer.AllocItem();
         info->Type = ITEM_TYPE_LIGHT;
@@ -767,30 +839,18 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         info->Mins = AABB.Mins;
         info->Maxs = AABB.Maxs;
 
-        if ( GLightVoxelizer.IsSSE() )
-        {
-#if 0
-            ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
-            ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
-
-            ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
-            ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
-            ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
-            ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
-#else
-            info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * view->ClusteViewProjectionInversed; // TODO: умножение сразу в SSE?
-#endif
-        } else
-        {
-            info->ClipToBoxMat = light->GetOBBTransformInverse() * view->ClusteViewProjectionInversed;
+        if ( GLightVoxelizer.IsSSE() ) {
+            info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
+        } else {
+            info->ClipToBoxMat = light->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         }
     }
     
     // Allocate probes
-    view->NumProbes = IBLs.Size();
+    view->NumProbes = VisIBLs.Size();
     view->Probes = (SClusterProbe *)GRuntime.AllocFrameMem( sizeof( SClusterProbe ) * view->NumProbes );
     for ( int i = 0 ; i < view->NumProbes ; i++ ) {
-        ibl = IBLs[i];
+        ibl = VisIBLs[i];
 
         ibl->PackProbe( view->ViewMatrix, view->Probes[i] );
 
@@ -802,22 +862,10 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         info->Mins = AABB.Mins;
         info->Maxs = AABB.Maxs;
 
-        if ( GLightVoxelizer.IsSSE() )
-        {
-#if 0
-            ItemInfo.AabbMinsSSE = _mm_set_ps( 0.0f, Mins.Z, Mins.Y, Mins.X );
-            ItemInfo.AabbMaxsSSE = _mm_set_ps( 0.0f, Maxs.Z, Maxs.Y, Maxs.X );
-
-            ItemInfo.ClipToBoxMatSSE.col0 = ViewProjInvSSE.col0;
-            ItemInfo.ClipToBoxMatSSE.col1 = ViewProjInvSSE.col1;
-            ItemInfo.ClipToBoxMatSSE.col2 = ViewProjInvSSE.col2;
-            ItemInfo.ClipToBoxMatSSE.col3 = ViewProjInvSSE.col3;
-#else
-            info->ClipToBoxMatSSE = ibl->GetOBBTransformInverse() * view->ClusteViewProjectionInversed; // TODO: умножение сразу в SSE?
-#endif
-        } else
-        {
-            info->ClipToBoxMat = ibl->GetOBBTransformInverse() * view->ClusteViewProjectionInversed;
+        if ( GLightVoxelizer.IsSSE() )  {
+            info->ClipToBoxMatSSE = ibl->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
+        } else  {
+            info->ClipToBoxMat = ibl->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         }
     }
 
@@ -889,7 +937,8 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
         if ( material->IsTranslucent() ) {
             FrameData.TranslucentInstances.Append( instance );
             RenderDef.View->TranslucentInstanceCount++;
-        } else {
+        }
+        else {
             FrameData.Instances.Append( instance );
             RenderDef.View->InstanceCount++;
         }
@@ -926,13 +975,12 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
         instance->MatrixP = instanceMatrixP;
         instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * worldRotation;
 
-        // Generate sort key.
-        // NOTE: 8 bits are still unused. We can use it in future.
-        instance->SortKey =
-            ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh/*instance->VertexBuffer*/ ) & 0xffffu) << 8u);
+        uint8_t priority = material->GetRenderingPriority();
+        if ( InComponent->GetMotionBehavior() != MB_STATIC ) {
+            priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+        }
+
+        instance->GenerateSortKey( priority, (uint64_t)mesh );
 
         RenderDef.PolyCount += instance->IndexCount / 3;
     }
@@ -1013,13 +1061,12 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
         instance->MatrixP = instanceMatrixP;
         instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * worldRotation;
 
-        // Generate sort key.
-        // NOTE: 8 bits are still unused. We can use it in future.
-        instance->SortKey =
-            ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh/*instance->VertexBuffer*/ ) & 0xffffu) << 8u);
+        uint8_t priority = material->GetRenderingPriority();
+
+        // Skinned meshes are always dynamic
+        priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+
+        instance->GenerateSortKey( priority, (uint64_t)mesh );
 
         RenderDef.PolyCount += instance->IndexCount / 3;
     }
@@ -1067,7 +1114,8 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
     if ( material->IsTranslucent() ) {
         FrameData.TranslucentInstances.Append( instance );
         RenderDef.View->TranslucentInstanceCount++;
-    } else {
+    }
+    else {
         FrameData.Instances.Append( instance );
         RenderDef.View->InstanceCount++;
     }
@@ -1093,18 +1141,17 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
     instance->MatrixP = instanceMatrixP;
     instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
 
-    // Generate sort key.
-    // NOTE: 8 bits are still unused. We can use it in future.
-    instance->SortKey =
-            ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
+    uint8_t priority = material->GetRenderingPriority();
+    if ( InComponent->GetMotionBehavior() != MB_STATIC ) {
+        priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+    }
+
+    instance->GenerateSortKey( priority, (uint64_t)mesh );
 
     RenderDef.PolyCount += instance->IndexCount / 3;
 }
 
-void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent ) {
+void ARenderFrontend::AddShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent ) {
     if ( !RVRenderMeshes ) {
         return;
     }
@@ -1158,12 +1205,14 @@ void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( SLightShadowmap * Shad
         instance->WorldTransformMatrix = instanceMatrix;
         instance->CascadeMask = InComponent->CascadeMask;
 
-        // Generate sort key.
-        // NOTE: 8 bits are still unused. We can use it in future.
-        instance->SortKey = ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
+        uint8_t priority = material->GetRenderingPriority();
+
+        // Dynamic/Static geometry priority is doesn't matter for shadowmap pass
+        //if ( InComponent->GetMotionBehavior() != MB_STATIC ) {
+        //    priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+        //}
+
+        instance->GenerateSortKey( priority, (uint64_t)mesh );
 
         ShadowMap->ShadowInstanceCount++;
 
@@ -1171,7 +1220,7 @@ void ARenderFrontend::AddDirectionalShadowmap_StaticMesh( SLightShadowmap * Shad
     }
 }
 
-void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent ) {
+void ARenderFrontend::AddShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent ) {
     if ( !RVRenderMeshes ) {
         return;
     }
@@ -1232,12 +1281,12 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( SLightShadowmap * Sha
         instance->WorldTransformMatrix = instanceMatrix;
         instance->CascadeMask = InComponent->CascadeMask;
 
-        // Generate sort key.
-        // NOTE: 8 bits are still unused. We can use it in future.
-        instance->SortKey = ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
+        uint8_t priority = material->GetRenderingPriority();
+
+        // Dynamic/Static geometry priority is doesn't matter for shadowmap pass
+        //priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+
+        instance->GenerateSortKey( priority, (uint64_t)mesh );
 
         ShadowMap->ShadowInstanceCount++;
 
@@ -1245,7 +1294,7 @@ void ARenderFrontend::AddDirectionalShadowmap_SkinnedMesh( SLightShadowmap * Sha
     }
 }
 
-void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent ) {
+void ARenderFrontend::AddShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent ) {
     if ( !RVRenderMeshes ) {
         return;
     }
@@ -1300,13 +1349,14 @@ void ARenderFrontend::AddDirectionalShadowmap_ProceduralMesh( SLightShadowmap * 
     instance->WorldTransformMatrix = InComponent->GetWorldTransformMatrix();
     instance->CascadeMask = InComponent->CascadeMask;
 
-    // Generate sort key.
-    // NOTE: 8 bits are still unused. We can use it in future.
-    instance->SortKey =
-            ((uint64_t)(InComponent->RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)mesh ) & 0xffffu) << 8u);
+    uint8_t priority = material->GetRenderingPriority();
+
+    // Dynamic/Static geometry priority is doesn't matter for shadowmap pass
+    //if ( InComponent->GetMotionBehavior() != MB_STATIC ) {
+    //    priority |= RENDERING_GEOMETRY_PRIORITY_DYNAMIC;
+    //}
+
+    instance->GenerateSortKey( priority, (uint64_t)mesh );
 
     ShadowMap->ShadowInstanceCount++;
 
@@ -1327,7 +1377,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
         if ( (component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0 ) {
             continue;
         }
-        component->CascadeMask = 0;
+        //component->CascadeMask = 0;
 
         ShadowCasters.Append( component );
         ShadowBoxes.Append( component->GetWorldBounds() );
@@ -1386,13 +1436,13 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
 
             switch ( component->GetDrawableType() ) {
             case DRAWABLE_STATIC_MESH:
-                AddDirectionalShadowmap_StaticMesh( shadowMap, static_cast< AMeshComponent * >(component) );
+                AddShadowmap_StaticMesh( shadowMap, static_cast< AMeshComponent * >(component) );
                 break;
             case DRAWABLE_SKINNED_MESH:
-                AddDirectionalShadowmap_SkinnedMesh( shadowMap, static_cast< ASkinnedComponent * >(component) );
+                AddShadowmap_SkinnedMesh( shadowMap, static_cast< ASkinnedComponent * >(component) );
                 break;
             case DRAWABLE_PROCEDURAL_MESH:
-                AddDirectionalShadowmap_ProceduralMesh( shadowMap, static_cast< AProceduralMeshComponent * >(component) );
+                AddShadowmap_ProceduralMesh( shadowMap, static_cast< AProceduralMeshComponent * >(component) );
                 break;
             default:
                 break;
@@ -1435,13 +1485,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
             instance->SkeletonSize = 0;
             instance->WorldTransformMatrix.SetIdentity();
             instance->CascadeMask = 0xffff; // TODO: Calculate!!!
-
-                                            // Generate sort key.
-                                            // NOTE: 8 bits are still unused. We can use it in future.
-            instance->SortKey = 0;/*  ((uint64_t)(component->RenderingOrder & 0xffu) << 56u)
-                                  | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-                                  | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-                                  | ((uint64_t)(Core::PHHash64( (uint64_t)instance->VertexBuffer ) & 0xffffu) << 8u);*/
+            instance->SortKey = 0;
 
             shadowMap->ShadowInstanceCount++;
 
@@ -1495,7 +1539,13 @@ AN_FORCEINLINE bool CanMergeSurfaces( SSurfaceDef const * InFirst, SSurfaceDef c
     return (    InFirst->Model->Id == InSecond->Model->Id
              && InFirst->LightmapBlock == InSecond->LightmapBlock
              && InFirst->MaterialIndex == InSecond->MaterialIndex
-             && InFirst->RenderingOrder == InSecond->RenderingOrder );
+             /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/ );
+}
+
+AN_FORCEINLINE bool CanMergeSurfacesShadowmap( SSurfaceDef const * InFirst, SSurfaceDef const * InSecond ) {
+    return (    InFirst->Model->Id == InSecond->Model->Id
+             && InFirst->MaterialIndex == InSecond->MaterialIndex
+             /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/ );
 }
 
 void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCount ) {
@@ -1505,8 +1555,8 @@ void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCo
 
     int totalVerts = 0;
     int totalIndices = 0;
-    for ( int i = 0 ; i < VisSurfaces.Size() ; i++ ) {
-        SSurfaceDef const * surfDef = VisSurfaces[i];
+    for ( int i = 0 ; i < SurfaceCount ; i++ ) {
+        SSurfaceDef const * surfDef = Surfaces[i];
 
         totalVerts += surfDef->NumVertices;
         totalIndices += surfDef->NumIndices;
@@ -1544,8 +1594,8 @@ void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCo
                         model->SurfaceMaterials[merge->MaterialIndex],
                         merge->LightmapBlock,
                         numIndices - firstIndex,
-                        firstIndex,
-                        merge->RenderingOrder );
+                        firstIndex/*,
+                        merge->RenderingOrder*/ );
 
             merge = surfDef;
             model = merge->Model;
@@ -1579,14 +1629,107 @@ void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCo
                 model->SurfaceMaterials[merge->MaterialIndex],
                 merge->LightmapBlock,
                 numIndices - firstIndex,
-                firstIndex,
-                merge->RenderingOrder );
+                firstIndex/*,
+                merge->RenderingOrder*/ );
 
     AN_ASSERT( numVerts == totalVerts );
     AN_ASSERT( numIndices == totalIndices );
 }
 
-void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex, int _RenderingOrder ) {
+void ARenderFrontend::AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfaceDef * const * Surfaces, int SurfaceCount ) {
+    if ( !SurfaceCount ) {
+        return;
+    }
+
+    int totalVerts = 0;
+    int totalIndices = 0;
+    for ( int i = 0 ; i < SurfaceCount ; i++ ) {
+        SSurfaceDef const * surfDef = Surfaces[i];
+
+        if ( !surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->CanCastShadow() ) {
+            continue;
+        }
+
+        totalVerts += surfDef->NumVertices;
+        totalIndices += surfDef->NumIndices;
+    }
+
+    if ( totalVerts == 0 || totalIndices < 3 ) {
+        // Degenerate surfaces
+        return;
+    }
+
+    SurfaceStream.VertexAddr = GStreamedMemoryGPU.AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
+    SurfaceStream.IndexAddr = GStreamedMemoryGPU.AllocateIndex( totalIndices * sizeof( unsigned int ), nullptr );
+
+    SMeshVertex * vertices = (SMeshVertex *)GStreamedMemoryGPU.Map( SurfaceStream.VertexAddr );
+    unsigned int * indices = (unsigned int *)GStreamedMemoryGPU.Map( SurfaceStream.IndexAddr );
+
+    int numVerts = 0;
+    int numIndices = 0;
+    int firstIndex = 0;
+
+    SSurfaceDef const * merge = Surfaces[0];
+    ABrushModel const * model = merge->Model;
+
+    for ( int i = 0 ; i < SurfaceCount ; i++ ) {
+        SSurfaceDef const * surfDef = Surfaces[i];
+
+        if ( !surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->CanCastShadow() ) {
+            continue;
+        }
+
+        if ( !CanMergeSurfacesShadowmap( merge, surfDef ) ) {
+
+            // Flush merged surfaces
+            AddShadowmapSurface( ShadowMap,
+                                 model->SurfaceMaterials[merge->MaterialIndex],
+                                 numIndices - firstIndex,
+                                 firstIndex/*,
+                                 merge->RenderingOrder*/ );
+
+            merge = surfDef;
+            model = merge->Model;
+            firstIndex = numIndices;
+        }
+
+        SMeshVertex const * srcVerts = model->Vertices.ToPtr() + surfDef->FirstVertex;
+        unsigned int const * srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
+
+        DebugDraw.SetDepthTest( false );
+        DebugDraw.SetColor( AColor4( 1, 1, 0, 1 ) );
+        DebugDraw.DrawTriangleSoupWireframe( &srcVerts->Position, sizeof( SMeshVertex ),
+                                             srcIndices, surfDef->NumIndices );
+        //DebugDraw.SetColor( AColor4( 0, 1, 0, 1 ) );
+        //DebugDraw.DrawAABB( surfDef->Bounds );
+
+        // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
+
+        AN_ASSERT( surfDef->FirstVertex + surfDef->NumVertices <= model->Vertices.Size() );
+        AN_ASSERT( surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size() );
+
+        Core::Memcpy( vertices    + numVerts, srcVerts, sizeof( SMeshVertex ) * surfDef->NumVertices );
+
+        for ( int ind = 0 ; ind < surfDef->NumIndices ; ind++ ) {
+            *indices++ = numVerts + srcIndices[ind];
+        }
+
+        numVerts += surfDef->NumVertices;
+        numIndices += surfDef->NumIndices;
+    }
+
+    // Flush merged surfaces
+    AddShadowmapSurface( ShadowMap,
+                         model->SurfaceMaterials[merge->MaterialIndex],
+                         numIndices - firstIndex,
+                         firstIndex/*,
+                         merge->RenderingOrder*/ );
+
+    AN_ASSERT( numVerts == totalVerts );
+    AN_ASSERT( numIndices == totalIndices );
+}
+
+void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex/*, int _RenderingOrder*/ ) {
     AMaterial * material = MaterialInstance->GetMaterial();
     SMaterialFrameData * materialInstanceFrameData = MaterialInstance->PreRenderUpdate( FrameNumber );
 
@@ -1637,13 +1780,143 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     instance->MatrixP = RenderDef.View->ViewProjectionP;
     instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix;
 
-    // Generate sort key.
-    // NOTE: 8 bits are still unused. We can use it in future.
-    instance->SortKey =
-            ((uint64_t)(_RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->Material ) & 0xffffu) << 40u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)instance->MaterialInstance ) & 0xffffu) << 24u)
-            | ((uint64_t)(Core::PHHash64( (uint64_t)SurfaceStream.VertexAddr/*instance->VertexBuffer*/ ) & 0xffffu) << 8u);
+    uint8_t priority = material->GetRenderingPriority();
+
+    instance->GenerateSortKey( priority, SurfaceStream.VertexAddr );
 
     RenderDef.PolyCount += instance->IndexCount / 3;
+}
+
+void ARenderFrontend::AddShadowmapSurface( SLightShadowmap * ShadowMap, AMaterialInstance * MaterialInstance, int _NumIndices, int _FirstIndex/*, int _RenderingOrder*/ ) {
+    AMaterial * material = MaterialInstance->GetMaterial();
+    SMaterialFrameData * materialInstanceFrameData = MaterialInstance->PreRenderUpdate( FrameNumber );
+
+    // Add render instance
+    SShadowRenderInstance * instance = ( SShadowRenderInstance * )GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+    if ( !instance ) {
+        return;
+    }
+
+    FrameData.ShadowInstances.Append( instance );
+
+    instance->Material = material->GetGPUResource();
+    instance->MaterialInstance = materialInstanceFrameData;
+
+    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
+    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );
+
+    instance->WeightsBuffer = nullptr;
+    instance->WeightsBufferOffset = 0;
+    instance->WorldTransformMatrix.SetIdentity();
+    instance->IndexCount = _NumIndices;
+    instance->StartIndexLocation = _FirstIndex;
+    instance->BaseVertexLocation = 0;
+    instance->SkeletonOffset = 0;
+    instance->SkeletonSize = 0;
+    instance->CascadeMask = 0xffff; // TODO?
+
+    uint8_t priority = material->GetRenderingPriority();
+
+    instance->GenerateSortKey( priority, SurfaceStream.VertexAddr );
+
+    ShadowMap->ShadowInstanceCount++;
+
+    RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
+}
+
+void ARenderFrontend::AddLightShadowmap( AAnalyticLightComponent * Light, float Radius, int * pShadowmapIndex )
+{
+    if ( !Light->IsCastShadow() ) {
+        *pShadowmapIndex = -1;
+        return;
+    }
+
+    ARenderWorld & world = Light->GetWorld()->GetRenderWorld();
+
+    Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
+    Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, Math::_HALF_PI, 0.1f, Radius );
+    //Float4x4 projMat = Float4x4::PerspectiveCC( Math::_HALF_PI, Math::_HALF_PI, 0.1f, Radius );
+
+    Float4x4 lightViewProjection;
+    Float4x4 lightViewMatrix;
+
+    Float3 lightPos = Light->GetWorldPosition();
+
+    ADrawable * drawable;
+
+    int shadowmapIndex = FrameData.LightShadowmaps.Size();
+
+    *pShadowmapIndex = shadowmapIndex;
+
+    int totalInstances = 0;
+    int totalSurfaces = 0;
+
+    for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
+        lightViewMatrix = cubeFaceMatrices[faceIndex];
+        lightViewMatrix[3] = Float4( Float3x3(lightViewMatrix) * -lightPos, 1.0f );
+
+        lightViewProjection = projMat * lightViewMatrix;
+
+        // TODO: VSD не учитывает FarPlane для кулинга - исправить это
+        QueryShadowCasters( &world, lightViewProjection, lightPos, Float3x3( cubeFaceMatrices[faceIndex] ), VisPrimitives, VisSurfaces );
+
+        SLightShadowmap * shadowMap = &FrameData.LightShadowmaps.Append();
+
+        shadowMap->FirstShadowInstance = FrameData.ShadowInstances.Size();
+        shadowMap->ShadowInstanceCount = 0;
+        shadowMap->FirstLightPortal = FrameData.LightPortals.Size();
+        shadowMap->LightPortalsCount = 0;
+
+        for ( SPrimitiveDef * primitive : VisPrimitives ) {
+
+            // TODO: Replace upcasting by something better (virtual function?)
+
+            if ( nullptr != (drawable = Upcast< ADrawable >( primitive->Owner )) ) {
+
+                drawable->CascadeMask = 1 << faceIndex;
+
+                switch ( drawable->GetDrawableType() ) {
+                case DRAWABLE_STATIC_MESH:
+                    AddShadowmap_StaticMesh( shadowMap, static_cast< AMeshComponent * >(drawable) );
+                    break;
+                case DRAWABLE_SKINNED_MESH:
+                    AddShadowmap_SkinnedMesh( shadowMap, static_cast< ASkinnedComponent * >(drawable) );
+                    break;
+                case DRAWABLE_PROCEDURAL_MESH:
+                    AddShadowmap_ProceduralMesh( shadowMap, static_cast< AProceduralMeshComponent * >(drawable) );
+                    break;
+                default:
+                    break;
+                }
+
+                DebugDraw.SetDepthTest( false );
+                DebugDraw.SetColor( AColor4( 0, 1, 0, 1 ) );
+                DebugDraw.DrawAABB( drawable->GetWorldBounds() );
+
+                drawable->CascadeMask = 0;
+            }
+        }
+
+        if ( RVRenderSurfaces && !VisSurfaces.IsEmpty() ) {
+            struct SSortFunction {
+                bool operator() ( SSurfaceDef const * _A, SSurfaceDef const * _B ) {
+                    return (_A->SortKey < _B->SortKey);
+                }
+            } SortFunction;
+
+            StdSort( VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction );
+
+            AddShadowmapSurfaces( shadowMap, VisSurfaces.ToPtr(), VisSurfaces.Size() );
+
+            totalSurfaces += VisSurfaces.Size();
+        }
+
+        StdSort( FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
+                 FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
+                 ShadowInstanceSortFunction );
+
+        totalInstances += shadowMap->ShadowInstanceCount;
+    }
+
+    GLogger.Printf( "Total Instances %d, surfaces %d\n", totalInstances, totalSurfaces );
 }

@@ -94,7 +94,7 @@ public:
 
 protected:
 
-    bool bCanEverTick;
+    bool bCanEverTick = false;
 
     AActorComponent();
 
@@ -119,9 +119,9 @@ private:
 
     //AGUID GUID;
 
-    AActor * ParentActor;
+    AActor * ParentActor = nullptr;
 
-    AActorComponent * NextPendingKillComponent;
+    AActorComponent * NextPendingKillComponent = nullptr;
 
     int ComponentIndex = -1;
 

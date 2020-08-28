@@ -49,7 +49,7 @@ constexpr int MAX_SKINNED_MESH_JOINTS               = 256;
 /** Max textures per material */
 constexpr int MAX_MATERIAL_TEXTURES                 = 11; // Reserved texture slots for AOLookup, ClusterItemTBO, ClusterLookup, ShadowMapShadow, Lightmap
 
-/** Max directional lights per frame */
+/** Max directional lights per view */
 constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
 
 /** Max cascades per light */
@@ -102,16 +102,16 @@ constexpr int MAX_CLUSTER_DECALS = MAX_CLUSTER_ITEMS;
 /** Max probes per cluster */
 constexpr int MAX_CLUSTER_PROBES = MAX_CLUSTER_ITEMS;
 
-/** Max lights per frame. Indexed by 12 bit integer, limited by shader max uniform buffer size. */
+/** Max lights per view. Indexed by 12 bit integer, limited by shader max uniform buffer size. */
 constexpr int MAX_LIGHTS = 768;//1024
 
-/** Max decals per frame. Indexed by 12 bit integer. */
+/** Max decals per view. Indexed by 12 bit integer. */
 constexpr int MAX_DECALS = 1024;
 
-/** Max probes per frame. Indexed by 8 bit integer */
+/** Max probes per view. Indexed by 8 bit integer */
 constexpr int MAX_PROBES = 256;
 
-/** Total max items per frame. */
+/** Total max items per view. */
 constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 
 
@@ -629,11 +629,60 @@ enum EColorBlending {
     COLOR_BLENDING_MAX
 };
 
-enum ETessellationMethod
+enum ETessellationMethod : uint8_t
 {
     TESSELLATION_DISABLED,
     TESSELLATION_FLAT,
     TESSELLATION_PN
+};
+
+/** Mixed material and geometry rendering priorities.
+Combine them in that way: material_priority | geometry_priority */
+enum ERenderingPriority : uint8_t
+{
+    /** Weapon rendered first */
+    RENDERING_PRIORITY_WEAPON  = 0 << 4,
+
+    /** Default priority */
+    RENDERING_PRIORITY_DEFAULT = 1 << 4,
+
+    RENDERING_PRIORITY_RESERVED2 = 2 << 4,
+    RENDERING_PRIORITY_RESERVED3 = 3 << 4,
+    RENDERING_PRIORITY_RESERVED4 = 4 << 4,
+    RENDERING_PRIORITY_RESERVED5 = 5 << 4,
+    RENDERING_PRIORITY_RESERVED6 = 6 << 4,
+    RENDERING_PRIORITY_RESERVED7 = 7 << 4,
+    RENDERING_PRIORITY_RESERVED8 = 8 << 4,
+    RENDERING_PRIORITY_RESERVED9 = 9 << 4,
+    RENDERING_PRIORITY_RESERVED10 = 10 << 4,
+    RENDERING_PRIORITY_RESERVED11 = 11 << 4,
+    RENDERING_PRIORITY_RESERVED12 = 12 << 4,
+    RENDERING_PRIORITY_RESERVED13 = 13 << 4,
+    RENDERING_PRIORITY_RESERVED14 = 14 << 4,
+
+    /** Skybox rendered last */
+    RENDERING_PRIORITY_SKYBOX  = 15 << 4,
+
+    /** Static geometry */
+    RENDERING_GEOMETRY_PRIORITY_STATIC  = 0,
+
+    /** Static geometry */
+    RENDERING_GEOMETRY_PRIORITY_DYNAMIC = 1,
+
+    RENDERING_GEOMETRY_PRIORITY_RESERVED2 = 2,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED3 = 3,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED4 = 4,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED5 = 5,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED6 = 6,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED7 = 7,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED8 = 8,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED9 = 9,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED10 = 10,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED11 = 11,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED12 = 12,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED13 = 13,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED14 = 14,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED15 = 15
 };
 
 struct SMaterialShader
@@ -657,6 +706,8 @@ struct SMaterialDef
     EColorBlending Blending;
 
     ETessellationMethod TessellationMethod;
+
+    ERenderingPriority RenderingPriority;
 
     /** Lightmap binding unit */
     int LightmapSlot;
@@ -826,6 +877,7 @@ public:
     bool    bShadowMapPassTextureFetch;
 
     TRef< RenderCore::IPipeline > DepthPass[2];
+    TRef< RenderCore::IPipeline > DepthVelocityPass[2];
     TRef< RenderCore::IPipeline > WireframePass[2];
     TRef< RenderCore::IPipeline > NormalsPass[2];
     TRef< RenderCore::IPipeline > LightPass[2];
@@ -980,6 +1032,22 @@ struct SRenderInstance {
     int                 BaseVertexLocation;
 
     uint64_t            SortKey;
+
+    uint8_t GetRenderingPriority() const {
+        return (SortKey >> 56) & 0xf0;
+    }
+
+    uint8_t GetGeometryPriority() const {
+        return (SortKey >> 56) & 0x0f;
+    }
+
+    void GenerateSortKey( uint8_t Priority, uint64_t Mesh ) {
+        // NOTE: 8 bits are still unused. We can use it in future.
+        SortKey = ( (uint64_t)(Priority) << 56u)
+                | ((uint64_t)(Core::PHHash64( (uint64_t)Material ) & 0xffffu) << 40u)
+                | ((uint64_t)(Core::PHHash64( (uint64_t)MaterialInstance ) & 0xffffu) << 24u)
+                | ((uint64_t)(Core::PHHash64( Mesh ) & 0xffffu) << 8u);
+    }
 };
 
 //
@@ -1003,6 +1071,14 @@ struct SShadowRenderInstance {
     int                 BaseVertexLocation;
     uint16_t            CascadeMask;            // Cascade mask for directional lights or face index for point/spot lights
     uint64_t            SortKey;
+
+    void GenerateSortKey( uint8_t Priority, uint64_t Mesh ) {
+        // NOTE: 8 bits are still unused. We can use it in future.
+        SortKey = ( (uint64_t)(Priority) << 56u)
+                | ((uint64_t)(Core::PHHash64( (uint64_t)Material ) & 0xffffu) << 40u)
+                | ((uint64_t)(Core::PHHash64( (uint64_t)MaterialInstance ) & 0xffffu) << 24u)
+                | ((uint64_t)(Core::PHHash64( Mesh ) & 0xffffu) << 8u);
+    }
 };
 
 //
@@ -1077,7 +1153,7 @@ struct SClusterLight {
     unsigned int LightType;
     unsigned int RenderMask;
     unsigned int PhotometricProfile;
-    unsigned int ShadowmapNum;
+    int ShadowmapIndex;
 };
 
 struct SLightShadowmap {
@@ -1147,8 +1223,8 @@ struct SRenderView {
     Float4x4 ViewSpaceToWorldSpace;
     Float4x4 ClipSpaceToWorldSpace;
     Float4x4 ClusterProjectionMatrix;
-    Float4x4 ClusteViewProjection;
-    Float4x4 ClusteViewProjectionInversed;
+    Float4x4 ClusterViewProjection;
+    Float4x4 ClusterViewProjectionInversed;
     Float3 BackgroundColor;
     bool bClearBackground;
     bool bWireframe;

@@ -40,19 +40,19 @@ class ATimer : public ABaseObject {
     friend class AWorld;
 
 public:
-    float FirstDelay;
+    float FirstDelay = 0.0f;
 
-    float SleepDelay;
+    float SleepDelay = 0.0f;
 
-    float PulseTime;
+    float PulseTime = 0.0f;
 
-    int MaxPulses;
+    int MaxPulses = 0;
 
     /** Pause the timer */
-    bool bPaused;
+    bool bPaused = false;
 
     /** Tick timer even when game is paused */
-    bool bTickEvenWhenPaused;
+    bool bTickEvenWhenPaused = false;
 
     TCallback< void() > Callback;
 
@@ -77,12 +77,12 @@ protected:
     ~ATimer();
 
 private:
-    AWorld * pOwnerWorld;
-    ATimer * Next;      // List inside a world
-    ATimer * Prev;      // List inside a world
-    int State;
-    int NumPulses;
-    float ElapsedTime;
+    AWorld * pOwnerWorld = nullptr;
+    ATimer * Next = nullptr;      // List inside a world
+    ATimer * Prev = nullptr;      // List inside a world
+    int State = 0;
+    int NumPulses = 0;
+    float ElapsedTime = 0.0f;
 
     /** The tick function is called by owner world */
     void Tick( float InTimeStep );

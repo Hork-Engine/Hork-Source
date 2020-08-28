@@ -35,11 +35,14 @@ SOFTWARE.
 AN_CLASS_META( WSlider )
 
 WSlider::WSlider() {
+    Action = A_NONE;
+    DragCursor = 0.0f;
     MinValue = 0;
     MaxValue = 1;
-    Value = 0;
     Step = 0;
+    Value = 0;
     SliderWidth = 12;
+    bVerticalOrientation = false;
     bUpdateGeometry = true;
 }
 

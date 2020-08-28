@@ -37,11 +37,20 @@ SOFTWARE.
 
 AN_CLASS_META( WDesktop )
 
-WDesktop::WDesktop() {
+WDesktop::WDesktop()
+    : FocusWidget( nullptr )
+    , MouseClickTime( 0 )
+    , MouseClickPos( 0.0f )
+    , DraggingCursor( 0.0f )
+    , DraggingWidgetPos( 0.0f )
+    , CursorPosition( 0.0f )
+    , Cursor( DRAW_CURSOR_ARROW )
+    , bCursorVisible( true )
+    , bDrawBackground( false )
+{
     Root = NewObject< WWidget >();
     Root->Desktop = this;
     Root->SetMargin(0,0,0,0);
-    bCursorVisible = true;
 }
 
 WDesktop::~WDesktop() {

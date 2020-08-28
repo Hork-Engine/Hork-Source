@@ -66,6 +66,8 @@ public:
 
     int GetNumUniformVectors() const { return Def.NumUniformVectors; }
 
+    uint8_t GetRenderingPriority() const { return Def.RenderingPriority; }
+
     static void RebuildMaterials();
 
 protected:
@@ -93,8 +95,8 @@ private:
     /** Material definition */
     SMaterialDef Def;
 
-    AMaterial * pNext;
-    AMaterial * pPrev;
+    AMaterial * pNext = nullptr;
+    AMaterial * pPrev = nullptr;
 };
 
 AN_FORCEINLINE AMaterial * CreateMaterial( MGMaterialGraph * InGraph )
@@ -167,8 +169,8 @@ protected:
 
 private:
     TRef< AMaterial > Material;
-    SMaterialFrameData * FrameData;
+    SMaterialFrameData * FrameData = nullptr;
     TRef< ATexture > Textures[ MAX_MATERIAL_TEXTURES ];
     TRef< AVirtualTextureResource > VirtualTexture;
-    int VisFrame;
+    int VisFrame = -1;
 };

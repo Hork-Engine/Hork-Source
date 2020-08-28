@@ -62,11 +62,6 @@ layout( location = COLOR_PASS_VARYING_POSITION ) out vec3 VS_Position;
 layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) out vec2 VS_TexCoordVT;
 #endif
 
-#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
-layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
-#endif
-
 #if defined SKINNED_MESH
 
     layout( binding = 2, std140 ) uniform JointTransforms
@@ -74,13 +69,6 @@ layout( location = COLOR_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_Ver
         vec4 Transform[ 256 * 3 ];   // MAX_JOINTS = 256
     };
     
-    #ifdef PER_BONE_MOTION_BLUR
-    layout( binding = 7, std140 ) uniform JointTransformsP
-    {
-        vec4 TransformP[ 256 * 3 ];   // MAX_JOINTS = 256
-    };
-    #endif
-
 #endif // SKINNED_MESH
 
 void main() {
@@ -90,17 +78,17 @@ void main() {
 #ifdef SKINNED_MESH
     const vec4 SrcPosition = vec4( InPosition, 1.0 );
 
-    vec4
+    const vec4
     JointTransform0 = Transform[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
                       + Transform[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
                       + Transform[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]
                       + Transform[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];
-    vec4
+    const vec4
     JointTransform1 = Transform[ InJointIndices[0] * 3 + 1 ] * InJointWeights[0]
                       + Transform[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]
                       + Transform[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]
                       + Transform[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];
-    vec4
+    const vec4
     JointTransform2 = Transform[ InJointIndices[0] * 3 + 2 ] * InJointWeights[0]
                       + Transform[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
                       + Transform[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
@@ -141,32 +129,6 @@ void main() {
     VS_B = normalize( cross( VS_N, VS_T ) ) * InHandedness;
     #endif  // COMPUTE_TBN
 
-    #if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-        #ifdef PER_BONE_MOTION_BLUR
-        JointTransform0 = TransformP[ InJointIndices[0] * 3 + 0 ] * InJointWeights[0]
-                          + TransformP[ InJointIndices[1] * 3 + 0 ] * InJointWeights[1]
-                          + TransformP[ InJointIndices[2] * 3 + 0 ] * InJointWeights[2]
-                          + TransformP[ InJointIndices[3] * 3 + 0 ] * InJointWeights[3];
-        JointTransform1 = TransformP[ InJointIndices[0] * 3 + 1 ] * InJointWeights[0]
-                          + TransformP[ InJointIndices[1] * 3 + 1 ] * InJointWeights[1]
-                          + TransformP[ InJointIndices[2] * 3 + 1 ] * InJointWeights[2]
-                          + TransformP[ InJointIndices[3] * 3 + 1 ] * InJointWeights[3];
-        JointTransform2 = TransformP[ InJointIndices[0] * 3 + 2 ] * InJointWeights[0]
-                          + TransformP[ InJointIndices[1] * 3 + 2 ] * InJointWeights[1]
-                          + TransformP[ InJointIndices[2] * 3 + 2 ] * InJointWeights[2]
-                          + TransformP[ InJointIndices[3] * 3 + 2 ] * InJointWeights[3];
-
-        vec4 VertexPositionP;
-        VertexPositionP.x = dot( JointTransform0, SrcPosition );
-        VertexPositionP.y = dot( JointTransform1, SrcPosition );
-        VertexPositionP.z = dot( JointTransform2, SrcPosition );
-        VertexPositionP.w = 1.0;
-        #else
-        vec4 VertexPositionP = VertexPosition;
-        #endif
-    #endif
-    /////////////////////////////////////
-    
 #else
 
     VertexPosition = InPosition;
@@ -217,15 +179,6 @@ void main() {
     #include "$COLOR_PASS_VERTEX_CODE$"
     
     vec4 TransformedPosition = TransformMatrix * FinalVertexPos;
-
-#if defined( WITH_MOTION_BLUR ) && !defined( TRANSLUCENT ) && defined( ALLOW_MOTION_BLUR )
-    VS_VertexPos = TransformedPosition;
-    #ifdef SKINNED_MESH
-        VS_VertexPosP = TransformMatrixP * VertexPositionP; // NOTE: We can't apply vertex deform to it!
-    #else
-        VS_VertexPosP = TransformMatrixP * FinalVertexPos;
-    #endif
-#endif
 
 #if defined COMPUTE_TBN || defined TESSELLATION_METHOD
     // Position in view space

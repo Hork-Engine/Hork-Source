@@ -528,12 +528,12 @@ private:
 private:
     // Allow actor to add self to pendingkill list
     friend class AActor;
-    AActor * PendingKillActors;
+    AActor * PendingKillActors = nullptr;
 
 private:
     // Allow actor component to add self to pendingkill list
     friend class AActorComponent;
-    AActorComponent * PendingKillComponents;
+    AActorComponent * PendingKillComponents = nullptr;
 
 private:
     void BroadcastActorSpawned( AActor * _SpawnedActor );
@@ -555,18 +555,18 @@ private:
 
     TPodArray< AActor * > Actors;
 
-    bool bPauseRequest;
-    bool bUnpauseRequest;
-    bool bPaused;
-    bool bResetGameplayTimer;
+    bool bPauseRequest = false;
+    bool bUnpauseRequest = false;
+    bool bPaused = false;
+    bool bResetGameplayTimer = false;
 
     // Game virtual time based on variable frame step
-    int64_t GameRunningTimeMicro;
-    int64_t GameRunningTimeMicroAfterTick;
+    int64_t GameRunningTimeMicro = 0;
+    int64_t GameRunningTimeMicroAfterTick = 0;
 
     // Gameplay virtual time based on fixed frame step, running when unpaused
-    int64_t GameplayTimeMicro;
-    int64_t GameplayTimeMicroAfterTick;
+    int64_t GameplayTimeMicro = 0;
+    int64_t GameplayTimeMicroAfterTick = 0;
 
     struct STimerCmd {
         enum { ADD, REMOVE } Command;
@@ -575,16 +575,16 @@ private:
 
     TPodArray< STimerCmd > TimerCmd;
 
-    ATimer * TimerList;
-    ATimer * TimerListTail;
+    ATimer * TimerList = nullptr;
+    ATimer * TimerListTail = nullptr;
 
-    bool bDuringTimerTick;
+    bool bDuringTimerTick = false;
 
     int IndexInGameArrayOfWorlds = -1;
 
-    bool bPendingKill;
+    bool bPendingKill = false;
 
-    AWorld * NextPendingKillWorld;
+    AWorld * NextPendingKillWorld = nullptr;
     static AWorld * PendingKillWorlds;
 
     // All existing worlds

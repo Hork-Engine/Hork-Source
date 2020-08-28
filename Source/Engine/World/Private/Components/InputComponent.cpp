@@ -489,8 +489,6 @@ AInputComponent::AInputComponent() {
     Core::Memset( MouseButtonDown, 0xff, sizeof( MouseButtonDown ) );
     Core::Memset( JoystickButtonDown, 0xff, sizeof( JoystickButtonDown ) );
 
-    MouseAxisStateX = MouseAxisStateY = 0;
-
     INTRUSIVE_ADD( this, Next, Prev, InputComponents, InputComponentsTail );
 }
 
