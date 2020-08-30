@@ -885,6 +885,7 @@ public:
     TRef< RenderCore::IPipeline > LightPassVertexLight;
     TRef< RenderCore::IPipeline > ShadowPass[2];
     TRef< RenderCore::IPipeline > FeedbackPass[2];
+    TRef< RenderCore::IPipeline > OutlinePass[2];
     TRef< RenderCore::IPipeline > HUDPipeline;
 };
 
@@ -1275,6 +1276,9 @@ struct SRenderView {
     int FirstTranslucentInstance;
     int TranslucentInstanceCount;
 
+    int FirstOutlineInstance;
+    int OutlineInstanceCount;
+
     // Directional lights
     int FirstDirectionalLight;
     int NumDirectionalLights;
@@ -1316,6 +1320,7 @@ struct SRenderFrame {
 
     TPodArray< SRenderInstance *, 1024 > Instances;
     TPodArray< SRenderInstance *, 1024 > TranslucentInstances;
+    TPodArray< SRenderInstance * > OutlineInstances;
     TPodArray< SShadowRenderInstance *, 1024 > ShadowInstances;
     TPodArray< SLightPortalRenderInstance *, 1024 > LightPortals;
     TPodArray< SDirectionalLightDef * > DirectionalLights;

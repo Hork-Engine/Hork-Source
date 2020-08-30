@@ -69,6 +69,7 @@ public:
     bool bHasVertexDeform;
     bool bHasDisplacement;
     bool bHasAlphaMask;
+    bool bHasShadowMask;
     TStdVector< SVarying > InputVaryings;
     int Serial;
 
@@ -83,6 +84,7 @@ public:
         bHasVertexDeform = false;
         bHasDisplacement = false;
         bHasAlphaMask = false;
+        bHasShadowMask = false;
     }
 
     int GetBuildSerial() const { return Serial; }
@@ -848,7 +850,35 @@ void MGMaterialGraph::ComputeLightStage( AMaterialBuildContext & _Context )
 
 void MGMaterialGraph::ComputeShadowCastStage( AMaterialBuildContext & _Context )
 {
-    ComputeAlphaMask( _Context );
+    //ComputeAlphaMask( _Context );
+
+    MGOutput * con = ShadowMask->GetConnection();
+
+    if ( con && ShadowMask->ConnectedNode()->Build( _Context ) ) {
+
+        _Context.bHasShadowMask = true;
+
+        switch ( con->Type ) {
+        case AT_Float1:
+            _Context.SourceCode += "if ( " + con->Expression + " < 0.5 ) discard;\n";
+            break;
+        case AT_Float2:
+        case AT_Float3:
+        case AT_Float4:
+            _Context.SourceCode += "if ( " + con->Expression + ".x < 0.5 ) discard;\n";
+            break;
+        case AT_Bool1:
+            _Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
+            break;
+        case AT_Bool2:
+        case AT_Bool3:
+        case AT_Bool4:
+            _Context.SourceCode += "if ( " + con->Expression + ".x == false ) discard;\n";
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 void MGMaterialGraph::ComputeTessellationControlStage( AMaterialBuildContext & _Context )
@@ -2938,6 +2968,7 @@ MGMaterialGraph::MGMaterialGraph()
     Opacity = AddInput( "Opacity" );
     VertexDeform = AddInput( "VertexDeform" );
     AlphaMask = AddInput( "AlphaMask" );
+    ShadowMask = AddInput( "ShadowMask" );
     Displacement = AddInput( "Displacement" );
     TessellationFactor = AddInput( "TessellationFactor" );
 
@@ -3008,8 +3039,8 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     pDef->bWireframePassTextureFetch = false;
     pDef->bNormalsPassTextureFetch = false;
     pDef->bShadowMapPassTextureFetch = false;
-    pDef->bShadowMapMasking = false;
     pDef->bAlphaMasking = false;
+    pDef->bShadowMapMasking = false;
     pDef->bHasVertexDeform = false;
     pDef->bNoCastShadow = false;
     pDef->LightmapSlot = 0;
@@ -3107,6 +3138,8 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         predefines += "#define PREMULTIPLIED_ALPHA\n";
     }
 
+    bool bTess = InGraph->TessellationMethod != TESSELLATION_DISABLED;
+
     // TODO:
     // if there is no specific vertex deformation / tessellation / alpha masking or other non-trivial material feature,
     // then use default shader/pipeline for corresponding material pass.
@@ -3127,15 +3160,15 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         InGraph->CompileStage( vertexCtx );
         InGraph->CompileStage( depthCtx );
 
-        if ( InGraph->TessellationMethod != TESSELLATION_DISABLED ) {
+        if ( bTess ) {
             InGraph->CompileStage( tessControlCtx );
             InGraph->CompileStage( tessEvalCtx );
         }
 
         InGraph->CreateStageTransitions( trans,
                                          &vertexCtx,
-                                         InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessControlCtx : nullptr,
-                                         InGraph->TessellationMethod != TESSELLATION_DISABLED ? &tessEvalCtx : nullptr,
+                                         bTess ? &tessControlCtx : nullptr,
+                                         bTess ? &tessEvalCtx : nullptr,
                                          nullptr,
                                          /*depthCtx.bHasAlphaMask ? */&depthCtx/* : nullptr*/ );
 
@@ -3186,22 +3219,23 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         InGraph->CompileStage( vertexCtx );
         InGraph->CompileStage( shadowCtx );
 
-        bool bTess = InGraph->TessellationMethod != TESSELLATION_DISABLED && InGraph->bDisplacementAffectShadow;
+        bool bTessShadowmap = ( InGraph->TessellationMethod == TESSELLATION_PN )
+            || ( InGraph->TessellationMethod == TESSELLATION_FLAT && InGraph->bDisplacementAffectShadow );
 
-        if ( bTess ) {
+        if ( bTessShadowmap ) {
             InGraph->CompileStage( tessControlCtx );
             InGraph->CompileStage( tessEvalCtx );
         }
 
         InGraph->CreateStageTransitions( trans,
                                          &vertexCtx,
-                                         bTess ? &tessControlCtx : nullptr,
-                                         bTess ? &tessEvalCtx : nullptr,
+                                         bTessShadowmap ? &tessControlCtx : nullptr,
+                                         bTessShadowmap ? &tessEvalCtx : nullptr,
                                          &geometryCtx,
-                                         shadowCtx.bHasAlphaMask ? &shadowCtx : nullptr );
+                                         shadowCtx.bHasShadowMask ? &shadowCtx : nullptr );
 
         pDef->bShadowMapPassTextureFetch = trans.bHasTextures;
-        pDef->bShadowMapMasking = shadowCtx.bHasAlphaMask;
+        pDef->bShadowMapMasking = shadowCtx.bHasShadowMask;
         maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
@@ -3246,8 +3280,6 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 
         InGraph->CompileStage( vertexCtx );
         InGraph->CompileStage( lightCtx );
-
-        bool bTess = InGraph->TessellationMethod != TESSELLATION_DISABLED;
 
         if ( bTess ) {
             InGraph->CompileStage( tessControlCtx );
@@ -3322,6 +3354,61 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         pDef->AddShader( "$COLOR_PASS_FRAGMENT_CODE$", lightCtx.SourceCode );
     }
 
+    // Create outline pass
+    {
+        AMaterialBuildContext vertexCtx( InGraph, VERTEX_STAGE );
+        AMaterialBuildContext tessControlCtx( InGraph, TESSELLATION_CONTROL_STAGE );
+        AMaterialBuildContext tessEvalCtx( InGraph, TESSELLATION_EVAL_STAGE );
+        AMaterialBuildContext depthCtx( InGraph, DEPTH_STAGE );
+        SMaterialStageTransition trans;
+
+        InGraph->CompileStage( vertexCtx );
+        InGraph->CompileStage( depthCtx );
+
+        if ( bTess ) {
+            InGraph->CompileStage( tessControlCtx );
+            InGraph->CompileStage( tessEvalCtx );
+        }
+
+        InGraph->CreateStageTransitions( trans,
+                                         &vertexCtx,
+                                         bTess ? &tessControlCtx : nullptr,
+                                         bTess ? &tessEvalCtx : nullptr,
+                                         nullptr,
+                                         &depthCtx );
+
+        //pDef->bHasVertexDeform = vertexCtx.bHasVertexDeform;
+        //pDef->bAlphaMasking = depthCtx.bHasAlphaMask;
+        //pDef->bDepthPassTextureFetch = trans.bHasTextures;
+        maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
+        maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
+
+        int locationIndex = trans.Varyings.Size();
+
+        predefines += "#define OUTLINE_PASS_VARYING_POSITION "    + Math::ToString( locationIndex++ ) + "\n";
+        predefines += "#define OUTLINE_PASS_VARYING_NORMAL "      + Math::ToString( locationIndex++ ) + "\n";
+
+        pDef->AddShader( "$OUTLINE_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode );
+        pDef->AddShader( "$OUTLINE_PASS_VERTEX_SAMPLERS$", SamplersString( InGraph, vertexCtx.MaxTextureSlot ) );
+        pDef->AddShader( "$OUTLINE_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode );
+
+        pDef->AddShader( "$OUTLINE_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode );
+        pDef->AddShader( "$OUTLINE_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode );
+        pDef->AddShader( "$OUTLINE_PASS_TCS_SAMPLERS$", SamplersString( InGraph, tessControlCtx.MaxTextureSlot ) );
+        pDef->AddShader( "$OUTLINE_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode );
+        pDef->AddShader( "$OUTLINE_PASS_TCS_CODE$", tessControlCtx.SourceCode );
+
+        pDef->AddShader( "$OUTLINE_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode );
+        pDef->AddShader( "$OUTLINE_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
+        pDef->AddShader( "$OUTLINE_PASS_TES_SAMPLERS$", SamplersString( InGraph, tessEvalCtx.MaxTextureSlot ) );
+        pDef->AddShader( "$OUTLINE_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode );
+        pDef->AddShader( "$OUTLINE_PASS_TES_CODE$", tessEvalCtx.SourceCode );
+
+        pDef->AddShader( "$OUTLINE_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode );
+        pDef->AddShader( "$OUTLINE_PASS_FRAGMENT_SAMPLERS$", SamplersString( InGraph, depthCtx.MaxTextureSlot ) );
+        pDef->AddShader( "$OUTLINE_PASS_FRAGMENT_CODE$", depthCtx.SourceCode );
+    }
+
     // Create wireframe pass
     {
         AMaterialBuildContext vertexCtx( InGraph, VERTEX_STAGE );
@@ -3331,8 +3418,6 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         SMaterialStageTransition trans;
 
         InGraph->CompileStage( vertexCtx );
-
-        bool bTess = InGraph->TessellationMethod != TESSELLATION_DISABLED;
 
         if ( bTess ) {
             InGraph->CompileStage( tessControlCtx );

@@ -48,6 +48,9 @@ AFrameRenderer::AFrameRenderer()
     CreateFullscreenQuadPipeline( &ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag" );
     CreateFullscreenQuadPipeline( &ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag" );
     CreateFullscreenQuadPipeline( &MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag" );
+    CreateFullscreenQuadPipeline( &OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag" );
+    //CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", RenderCore::BLENDING_COLOR_ADD );
+    CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", RenderCore::BLENDING_ALPHA );
 
     {
         SSamplerCreateInfo samplerCI;
@@ -177,6 +180,175 @@ void AFrameRenderer::AddMotionBlurPass( AFrameGraph & FrameGraph,
     *ppResultTexture = renderPass.GetColorAttachments()[0].Resource;
 }
 
+static bool BindMaterialOutlinePass( SRenderInstance const * instance ) {
+    AMaterialGPU * pMaterial = instance->Material;
+
+    AN_ASSERT( pMaterial );
+
+    int bSkinned = instance->SkeletonSize > 0;
+
+    IPipeline * pPipeline = pMaterial->OutlinePass[bSkinned];
+    if ( !pPipeline ) {
+        return false;
+    }
+
+    // Bind pipeline
+    rcmd->BindPipeline( pPipeline );
+
+    // Bind second vertex buffer
+    if ( bSkinned ) {
+        rcmd->BindVertexBuffer( 1, GPUBufferHandle( instance->WeightsBuffer ), instance->WeightsBufferOffset );
+    } else {
+        rcmd->BindVertexBuffer( 1, nullptr, 0 );
+    }
+
+    // Set samplers
+    if ( pMaterial->bDepthPassTextureFetch ) {
+        for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
+            GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
+        }
+    }
+
+    // Bind vertex and index buffers
+    BindVertexAndIndexBuffers( instance );
+
+    return true;
+}
+
+static void BindTexturesOutlinePass( SMaterialFrameData * _Instance ) {
+    if ( !_Instance->Material->bDepthPassTextureFetch ) {
+        return;
+    }
+
+    BindTextures( _Instance );
+}
+
+void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppOutlineTexture ) {
+    if ( GRenderView->OutlineInstanceCount == 0 ) {
+        *ppOutlineTexture = nullptr;
+        return;
+    }
+
+    RenderCore::TEXTURE_FORMAT pf = TEXTURE_FORMAT_RG8;
+
+    ARenderPass & maskPass = FrameGraph.AddTask< ARenderPass >( "Outline Pass" );
+
+    maskPass.SetDynamicRenderArea( &GRenderViewArea );
+
+    maskPass.SetClearColors( { RenderCore::MakeClearColorValue( 0.0f, 1.0f, 0.0f, 0.0f ) } );
+
+    maskPass.SetColorAttachments(
+    {
+        {
+            "Outline mask",
+            RenderCore::MakeTexture( pf, GetFrameResoultion() ),
+            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
+        }
+    } );
+
+    maskPass.AddSubpass( { 0 }, // color attachment refs
+                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
+    {
+        SDrawIndexedCmd drawCmd;
+        drawCmd.InstanceCount = 1;
+        drawCmd.StartInstanceLocation = 0;
+
+        for ( int i = 0 ; i < GRenderView->OutlineInstanceCount ; i++ ) {
+            SRenderInstance const * instance = GFrameData->OutlineInstances[GRenderView->FirstOutlineInstance + i];
+
+            // Choose pipeline and second vertex buffer
+            if ( !BindMaterialOutlinePass( instance ) ) {
+                continue;
+            }
+
+            // Bind textures
+            BindTexturesOutlinePass( instance->MaterialInstance );
+
+            // Bind skeleton
+            BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
+
+            // Set instance uniforms
+            SetInstanceUniforms( instance );
+
+            rcmd->BindShaderResources( &GFrameResources.Resources );
+
+            drawCmd.IndexCountPerInstance = instance->IndexCount;
+            drawCmd.StartIndexLocation = instance->StartIndexLocation;
+            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+
+            rcmd->Draw( &drawCmd );
+        }
+    } );
+
+    *ppOutlineTexture = maskPass.GetColorAttachments()[0].Resource;
+}
+
+void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * OutlineMaskTexture ) {
+    RenderCore::TEXTURE_FORMAT pf = TEXTURE_FORMAT_RG8;
+
+    ARenderPass & blurPass = FrameGraph.AddTask< ARenderPass >( "Outline Blur Pass" );
+
+    blurPass.SetDynamicRenderArea( &GRenderViewArea );
+
+    blurPass.AddResource( OutlineMaskTexture, RESOURCE_ACCESS_READ );
+
+    blurPass.SetColorAttachments(
+    {
+        {
+            "Outline blured mask",
+            RenderCore::MakeTexture( pf, GetFrameResoultion() ),
+            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
+        }
+    } );
+
+    blurPass.AddSubpass( { 0 }, // color attachment refs
+                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
+    {
+        using namespace RenderCore;
+
+        GFrameResources.TextureBindings[0].pTexture = OutlineMaskTexture->Actual();
+        GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
+
+        rcmd->BindShaderResources( &GFrameResources.Resources );
+
+        DrawSAQ( OutlineBlurPipe );
+    } );
+
+    AFrameGraphTexture * OutlineBlurTexture = blurPass.GetColorAttachments()[0].Resource;
+
+    ARenderPass & applyPass = FrameGraph.AddTask< ARenderPass >( "Outline Apply Pass" );
+
+    applyPass.SetDynamicRenderArea( &GRenderViewArea );
+
+    applyPass.AddResource( OutlineMaskTexture, RESOURCE_ACCESS_READ );
+    applyPass.AddResource( OutlineBlurTexture, RESOURCE_ACCESS_READ );
+
+    applyPass.SetColorAttachments(
+    {
+        {
+            RenderTarget,
+            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+        }
+    }
+    );
+
+    applyPass.AddSubpass( { 0 }, // color attachment refs
+                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
+    {
+        using namespace RenderCore;
+
+        GFrameResources.TextureBindings[0].pTexture = OutlineMaskTexture->Actual();
+        GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
+
+        GFrameResources.TextureBindings[1].pTexture = OutlineBlurTexture->Actual();
+        GFrameResources.SamplerBindings[1].pSampler = LinearSampler;
+
+        rcmd->BindShaderResources( &GFrameResources.Resources );
+
+        DrawSAQ( OutlineApplyPipe );
+    } );
+}
+
 void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow * VTWorkflow, SFrameGraphCaptured & CapturedResources )
 {
     AScopedTimeCheck TimeCheck( "Framegraph build&fill" );
@@ -240,6 +412,13 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
 
     AFrameGraphTexture * PostprocessTexture;
     PostprocessRenderer.AddPass( FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, &PostprocessTexture );
+
+    AFrameGraphTexture * OutlineTexture;
+    AddOutlinePass( FrameGraph, &OutlineTexture );
+
+    if ( OutlineTexture ) {
+        AddOutlineOverlayPass( FrameGraph, PostprocessTexture, OutlineTexture );
+    }
 
     AFrameGraphTexture * FinalTexture;
     if ( RVFxaa ) {

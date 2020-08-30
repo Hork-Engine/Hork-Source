@@ -129,7 +129,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                     continue;
                 }
 
-                // Set material data (textures, uniforms)
+                // Bind textures
                 BindTexturesDepthPass( instance->MaterialInstance );
 
                 // Bind skeleton
@@ -167,7 +167,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                     continue;
                 }
 
-                // Set material data (textures, uniforms)
+                // Bind textures
                 BindTexturesDepthPass( instance->MaterialInstance );
 
                 // Bind skeleton

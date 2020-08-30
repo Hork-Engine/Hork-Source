@@ -30,40 +30,25 @@ SOFTWARE.
 
 layout( triangles, TESSELLATION_SPACING, ccw ) in;
 
-#include "$DEPTH_PASS_TES_INPUT_VARYINGS$"
-#include "$DEPTH_PASS_TES_OUTPUT_VARYINGS$"
+#include "$OUTLINE_PASS_TES_INPUT_VARYINGS$"
+#include "$OUTLINE_PASS_TES_OUTPUT_VARYINGS$"
 
-layout( location = DEPTH_PASS_VARYING_POSITION ) in vec3 TCS_Position[];
-layout( location = DEPTH_PASS_VARYING_NORMAL ) in vec3 TCS_Normal[];
-
-#if defined( DEPTH_WITH_VELOCITY_MAP )
-layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT ) in vec4 TCS_VertexPos[];
-layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT ) out vec4 VS_VertexPos;
-layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) in vec4 TCS_VertexPosP[];
-layout( location = DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS ) out vec4 VS_VertexPosP;
-#endif
+layout( location = OUTLINE_PASS_VARYING_POSITION ) in vec3 TCS_Position[];
+layout( location = OUTLINE_PASS_VARYING_NORMAL ) in vec3 TCS_Normal[];
 
 out gl_PerVertex
 {
     vec4 gl_Position;
 };
 
-#include "$DEPTH_PASS_TES_SAMPLERS$"
+#include "$OUTLINE_PASS_TES_SAMPLERS$"
 
-#define Interpolate( X ) \
-    ( gl_TessCoord.x * X[0] + gl_TessCoord.y * X[1] + gl_TessCoord.z * X[2] )
-    
 void main(){
     vec3 pos = gl_TessCoord.x * TCS_Position[0] + gl_TessCoord.y * TCS_Position[1] + gl_TessCoord.z * TCS_Position[2];
     vec3 normal = normalize( gl_TessCoord.x * TCS_Normal[0] + gl_TessCoord.y * TCS_Normal[1] + gl_TessCoord.z * TCS_Normal[2] );
 
-    #if defined( DEPTH_WITH_VELOCITY_MAP )
-    VS_VertexPos = Interpolate( TCS_VertexPos );
-    VS_VertexPosP = Interpolate( TCS_VertexPosP );
-    #endif
-
-#   include "$DEPTH_PASS_TES_INTERPOLATE$"
-#   include "$DEPTH_PASS_TES_CODE$"
+#   include "$OUTLINE_PASS_TES_INTERPOLATE$"
+#   include "$OUTLINE_PASS_TES_CODE$"
     
     pos += normal * ( Displacement * 0.01 );
     

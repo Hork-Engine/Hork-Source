@@ -62,6 +62,9 @@ public:
     /** Custom depth stencil value for the mesh */
     uint8_t CustomDepthStencilValue = 0;
 
+    /** Experimental object outline */
+    bool bOutline = false;
+
     /** Visibility group to filter drawables during rendering */
     void SetVisibilityGroup( int InVisibilityGroup );
 

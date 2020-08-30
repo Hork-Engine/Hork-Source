@@ -171,3 +171,27 @@ SOFTWARE.
 #       include "instance_shadowmap.frag"
 #   endif
 #endif // MATERIAL_PASS_SHADOWMAP
+
+#if defined MATERIAL_PASS_OUTLINE
+#   include "instance_uniforms.glsl"
+#   ifdef VERTEX_SHADER
+#       include "instance.vert"
+#   endif
+#   ifdef TESS_CONTROL_SHADER
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_outline.tcs"
+#       else
+#           include "instance_outline_pn.tcs"
+#       endif
+#   endif
+#   ifdef TESS_EVALUATION_SHADER
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_outline.tes"
+#       else
+#           include "instance_outline_pn.tes"
+#       endif
+#   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_outline.frag"
+#   endif
+#endif // MATERIAL_PASS_OUTLINE

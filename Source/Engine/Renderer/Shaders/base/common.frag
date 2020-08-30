@@ -76,6 +76,26 @@ vec4 GaussianBlur13( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
        + ( texture( Image, TexCoord + Offset3 ) + texture( Image, TexCoord - Offset3 ) ) * 0.010381362401148057;
 }
 
+float GaussianBlur13R( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
+    vec2 Offset1 = Direction * 1.411764705882353;
+    vec2 Offset2 = Direction * 3.2941176470588234;
+    vec2 Offset3 = Direction * 5.176470588235294;
+    return texture( Image, TexCoord ).r * 0.1964825501511404
+       + ( texture( Image, TexCoord + Offset1 ).r + texture( Image, TexCoord - Offset1 ).r ) * 0.2969069646728344
+       + ( texture( Image, TexCoord + Offset2 ).r + texture( Image, TexCoord - Offset2 ).r ) * 0.09447039785044732
+       + ( texture( Image, TexCoord + Offset3 ).r + texture( Image, TexCoord - Offset3 ).r ) * 0.010381362401148057;
+}
+
+vec2 GaussianBlur13RG( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
+    vec2 Offset1 = Direction * 1.411764705882353;
+    vec2 Offset2 = Direction * 3.2941176470588234;
+    vec2 Offset3 = Direction * 5.176470588235294;
+    return texture( Image, TexCoord ).rg * 0.1964825501511404
+       + ( texture( Image, TexCoord + Offset1 ).rg + texture( Image, TexCoord - Offset1 ).rg ) * 0.2969069646728344
+       + ( texture( Image, TexCoord + Offset2 ).rg + texture( Image, TexCoord - Offset2 ).rg ) * 0.09447039785044732
+       + ( texture( Image, TexCoord + Offset3 ).rg + texture( Image, TexCoord - Offset3 ).rg ) * 0.010381362401148057;
+}
+
 vec4 MyBlur( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
     vec2 Offset0 = Direction * 0.5;
     vec2 Offset1 = Direction * 1.5;

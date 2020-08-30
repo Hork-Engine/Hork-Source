@@ -399,7 +399,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef
                 continue;
             }
 
-            // Set material data (textures, uniforms)
+            // Bind textures
             BindTexturesShadowMap( instance->MaterialInstance );
 
             // Bind skeleton
@@ -504,7 +504,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SClusterLight const 
                     continue;
                 }
 
-                // Set material data (textures, uniforms)
+                // Bind textures
                 BindTexturesShadowMap( instance->MaterialInstance );
 
                 // Bind skeleton

@@ -109,7 +109,7 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
                 continue;
             }
 
-            // Set material data (textures, uniforms)
+            // Bind textures
             BindTexturesWireframePass( instance->MaterialInstance );
 
             // Bind skeleton
@@ -135,7 +135,7 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
                 continue;
             }
 
-            // Set material data (textures, uniforms)
+            // Bind textures
             BindTexturesWireframePass( instance->MaterialInstance );
 
             // Bind skeleton

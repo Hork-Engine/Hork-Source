@@ -839,6 +839,7 @@ public:
     MGInput * Opacity;
     MGInput * VertexDeform;
     MGInput * AlphaMask;
+    MGInput * ShadowMask;
     MGInput * Displacement;
     MGInput * TessellationFactor;
 

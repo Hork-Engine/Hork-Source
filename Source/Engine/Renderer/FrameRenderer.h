@@ -68,6 +68,9 @@ private:
                             AFrameGraphTexture * LinearDepth,
                             AFrameGraphTexture ** ppResultTexture );
 
+    void AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppOutlineTexture );
+    void AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * OutlineMaskTexture );
+
     AShadowMapRenderer ShadowMapRenderer;
     ALightRenderer LightRenderer;
     ADebugDrawRenderer DebugDrawRenderer;
@@ -83,6 +86,8 @@ private:
     TRef< RenderCore::IPipeline > ReconstructNormalPipe;
     TRef< RenderCore::IPipeline > ReconstructNormalPipe_ORTHO;
     TRef< RenderCore::IPipeline > MotionBlurPipeline;
+    TRef< RenderCore::IPipeline > OutlineBlurPipe;
+    TRef< RenderCore::IPipeline > OutlineApplyPipe;
 
     RenderCore::Sampler NearestSampler;
     RenderCore::Sampler LinearSampler;

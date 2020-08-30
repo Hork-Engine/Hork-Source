@@ -59,6 +59,15 @@ out gl_PerVertex
 #   endif
 #endif
 
+#ifdef MATERIAL_PASS_OUTLINE
+#   include "$OUTLINE_PASS_VERTEX_OUTPUT_VARYINGS$"
+#   include "$OUTLINE_PASS_VERTEX_SAMPLERS$"
+#   ifdef TESSELLATION_METHOD
+        layout( location = DEPTH_PASS_VARYING_POSITION ) out vec3 VS_Position;
+        layout( location = DEPTH_PASS_VARYING_NORMAL ) out vec3 VS_N;
+#   endif
+#endif
+
 #ifdef MATERIAL_PASS_WIREFRAME
 #   include "$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$"
 #   include "$WIREFRAME_PASS_VERTEX_SAMPLERS$"
@@ -190,6 +199,33 @@ void main() {
                 VS_VertexPosP = TransformMatrixP * FinalVertexPos;
 #           endif
 #       endif
+
+#       ifdef TESSELLATION_METHOD
+            // Position in view space
+            VS_Position = vec3( InverseProjectionMatrix * TransformedPosition );
+            
+            // Transform normal from model space to viewspace
+            VS_N.x = dot( ModelNormalToViewSpace0, vec4( VertexNormal, 0.0 ) );
+            VS_N.y = dot( ModelNormalToViewSpace1, vec4( VertexNormal, 0.0 ) );
+            VS_N.z = dot( ModelNormalToViewSpace2, vec4( VertexNormal, 0.0 ) );
+            VS_N = normalize( VS_N );
+#       else
+            gl_Position = TransformedPosition;
+#           if defined WEAPON_DEPTH_HACK
+                gl_Position.z += 0.1;
+#           elif defined SKYBOX_DEPTH_HACK
+                gl_Position.z = 0.0;
+#           endif
+#       endif
+#   endif
+
+    // Built-in material code (outline)
+
+#   ifdef MATERIAL_PASS_OUTLINE
+
+#       include "$OUTLINE_PASS_VERTEX_CODE$"
+
+        vec4 TransformedPosition = TransformMatrix * FinalVertexPos;
 
 #       ifdef TESSELLATION_METHOD
             // Position in view space

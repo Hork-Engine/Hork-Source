@@ -660,6 +660,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
             CreateNormalsPassPipeline( &_Material->NormalsPass[i], code.CStr(), bSkinned );
             CreateShadowMapPassPipeline( &_Material->ShadowPass[i], code.CStr(), _Def->bShadowMapMasking, _Def->bTwoSided, bSkinned, bTessellationShadowMap );
             CreateFeedbackPassPipeline( &_Material->FeedbackPass[i], code.CStr(), cullMode, bSkinned );
+            CreateOutlinePassPipeline( &_Material->OutlinePass[i], code.CStr(), cullMode, bSkinned, bTessellation );
         }
 
         if ( _Material->MaterialType != MATERIAL_TYPE_UNLIT ) {

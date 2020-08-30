@@ -109,7 +109,7 @@ void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget
                 continue;
             }
 
-            // Set material data (textures, uniforms)
+            // Bind textures
             BindTexturesNormalsPass( instance->MaterialInstance );
 
             // Bind skeleton

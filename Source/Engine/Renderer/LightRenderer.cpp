@@ -586,7 +586,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                 continue;
             }
 
-            // Set material data (textures, uniforms)
+            // Bind textures
             BindTexturesLightPass( instance->MaterialInstance );
 
             // Bind skeleton
@@ -698,7 +698,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                     continue;
                 }
 
-                // Set material data (textures, uniforms)
+                // Bind textures
                 BindTexturesLightPass( instance->MaterialInstance );
 
                 // Bind skeleton

@@ -276,6 +276,8 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->InstanceCount = 0;
     view->FirstTranslucentInstance = FrameData.TranslucentInstances.Size();
     view->TranslucentInstanceCount = 0;
+    view->FirstOutlineInstance = FrameData.OutlineInstances.Size();
+    view->OutlineInstanceCount = 0;
     //view->FirstLightPortal = FrameData.LightPortals.Size();
     //view->LightPortalsCount = 0;
     //view->FirstShadowInstance = FrameData.ShadowInstances.Size();
@@ -943,6 +945,11 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
             RenderDef.View->InstanceCount++;
         }
 
+        if ( InComponent->bOutline ) {
+            FrameData.OutlineInstances.Append( instance );
+            RenderDef.View->OutlineInstanceCount++;
+        }
+
         instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
 
@@ -1038,6 +1045,11 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
             RenderDef.View->InstanceCount++;
         }
 
+        if ( InComponent->bOutline ) {
+            FrameData.OutlineInstances.Append( instance );
+            RenderDef.View->OutlineInstanceCount++;
+        }
+
         instance->Material = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
         //instance->VertexBuffer = mesh->GetVertexBufferGPU();
@@ -1118,6 +1130,11 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
     else {
         FrameData.Instances.Append( instance );
         RenderDef.View->InstanceCount++;
+    }
+
+    if ( InComponent->bOutline ) {
+        FrameData.OutlineInstances.Append( instance );
+        RenderDef.View->OutlineInstanceCount++;
     }
 
     instance->Material = material->GetGPUResource();
@@ -1746,6 +1763,11 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
         FrameData.Instances.Append( instance );
         RenderDef.View->InstanceCount++;
     }
+
+    //if ( bOutline ) {
+    //    FrameData.OutlineInstances.Append( instance );
+    //    RenderDef.View->OutlineInstanceCount++;
+    //}
 
     instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
