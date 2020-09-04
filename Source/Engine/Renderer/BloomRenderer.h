@@ -47,11 +47,7 @@ public:
     void AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, ABloomRenderer::STextures * pResult );
 
 private:
-    void CreateBlurPipeline();
-    void CreateSampler();
-
     TRef< RenderCore::IPipeline > BrightPipeline;
     TRef< RenderCore::IPipeline > BlurPipeline;
     TRef< RenderCore::IPipeline > CopyPipeline;
-    RenderCore::Sampler LinearSampler;
 };

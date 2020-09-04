@@ -94,13 +94,13 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
     PageTranslationOffsetAndScale.Z = (float)(PageResolutionB - VT_PAGE_BORDER_WIDTH*2) / PageResolutionB / PageCacheCapacityX;
     PageTranslationOffsetAndScale.W = (float)(PageResolutionB - VT_PAGE_BORDER_WIDTH*2) / PageResolutionB / PageCacheCapacityY;
 
-    SSamplerCreateInfo samplerCI;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.Filter = FILTER_NEAREST;
-    GDevice->GetOrCreateSampler( samplerCI, &NearestSampler );
-    CreateFullscreenQuadPipeline( &DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag" );
+    SSamplerInfo nearestSampler;
+    nearestSampler.Filter = FILTER_NEAREST;
+    nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    nearestSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    CreateFullscreenQuadPipeline( &DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag", &nearestSampler, 1 );
 
 #ifdef PAGE_STREAM_PBO
     RenderCore::SBufferCreateInfo bufferCI = {};
@@ -505,10 +505,9 @@ void AVirtualTextureCache::Draw( AFrameGraph & FrameGraph, AFrameGraphTexture * 
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
         using namespace RenderCore;
-        GFrameResources.TextureBindings[0].pTexture = CacheTexture_R->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
+        GFrameResources.TextureBindings[0]->pTexture = CacheTexture_R->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( DrawCachePipeline );
     } );

@@ -56,25 +56,10 @@ static bool BindMaterialWireframePass( SRenderInstance const * instance ) {
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
     }
 
-    // Set samplers
-    if ( pMaterial->bWireframePassTextureFetch ) {
-        for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-            GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
-        }
-    }
-
     // Bind vertex and index buffers
     BindVertexAndIndexBuffers( instance );
 
     return true;
-}
-
-static void BindTexturesWireframePass( SMaterialFrameData * _Instance ) {
-    if ( !_Instance->Material->bWireframePassTextureFetch ) {
-        return;
-    }
-
-    BindTextures( _Instance );
 }
 
 void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget ) {
@@ -110,7 +95,7 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
             }
 
             // Bind textures
-            BindTexturesWireframePass( instance->MaterialInstance );
+            BindTextures( instance->MaterialInstance, instance->Material->WireframePassTextureCount );
 
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -118,7 +103,7 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
             // Set instance uniforms
             SetInstanceUniforms( instance );
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -136,7 +121,7 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
             }
 
             // Bind textures
-            BindTexturesWireframePass( instance->MaterialInstance );
+            BindTextures( instance->MaterialInstance, instance->Material->WireframePassTextureCount );
 
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -144,7 +129,7 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
             // Set instance uniforms
             SetInstanceUniforms( instance );
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;

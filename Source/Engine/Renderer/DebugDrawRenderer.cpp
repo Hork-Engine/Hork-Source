@@ -177,7 +177,7 @@ void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         SDrawIndexedCmd drawCmd;
         drawCmd.InstanceCount = 1;

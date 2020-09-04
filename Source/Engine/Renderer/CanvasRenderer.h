@@ -41,13 +41,10 @@ public:
 private:
     void CreatePresentViewPipeline();
     void CreatePipelines();
-    void CreateSamplers();
 
     void BeginCanvasPass();
 
     TRef< RenderCore::IRenderPass > CanvasPass;
     TRef< RenderCore::IPipeline > PresentViewPipeline[COLOR_BLENDING_MAX];
-    TRef< RenderCore::IPipeline > Pipelines[COLOR_BLENDING_MAX];
-    RenderCore::Sampler Samplers[HUD_SAMPLER_MAX];
-    RenderCore::Sampler PresentViewSampler;
+    TRef< RenderCore::IPipeline > Pipelines[COLOR_BLENDING_MAX][HUD_SAMPLER_MAX];
 };

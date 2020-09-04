@@ -42,6 +42,4 @@ private:
     void CreateSampler();
 
     TRef< RenderCore::IPipeline > FxaaPipeline;
-    //RenderCore::IPipeline CopyPipeline;
-    RenderCore::Sampler FxaaSampler;
 };

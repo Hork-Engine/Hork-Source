@@ -47,7 +47,7 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
 
     GLuint pipelineId;
 
-    if ( !_Device->IsFeatureSupported( FEATURE_HALF_FLOAT_VERTEX ) ) {
+    if ( !pDevice->IsFeatureSupported( FEATURE_HALF_FLOAT_VERTEX ) ) {
         // Check half float vertex type
 
         for ( SVertexAttribInfo const * desc = _CreateInfo.pVertexAttribs ; desc < &_CreateInfo.pVertexAttribs[_CreateInfo.NumVertexAttribs] ; desc++ ) {
@@ -109,9 +109,21 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
     VAO = ctx->CachedVAO( _CreateInfo.pVertexBindings, _CreateInfo.NumVertexBindings,
                           _CreateInfo.pVertexAttribs, _CreateInfo.NumVertexAttribs );
 
-    BlendingState = _Device->CachedBlendingState( _CreateInfo.BS );
-    RasterizerState = _Device->CachedRasterizerState( _CreateInfo.RS );
-    DepthStencilState = _Device->CachedDepthStencilState( _CreateInfo.DSS );
+    BlendingState = pDevice->CachedBlendingState( _CreateInfo.BS );
+    RasterizerState = pDevice->CachedRasterizerState( _CreateInfo.RS );
+    DepthStencilState = pDevice->CachedDepthStencilState( _CreateInfo.DSS );
+
+    NumSamplerObjects = _CreateInfo.SS.NumSamplers;
+    if ( NumSamplerObjects > 0 ) {
+        SamplerObjects = (unsigned int *)pDevice->Allocator.Allocate( sizeof( SamplerObjects[0] ) * NumSamplerObjects );
+        for ( int i = 0 ; i < NumSamplerObjects ; i++ ) {
+            SamplerObjects[i] = pDevice->CachedSampler( _CreateInfo.SS.Samplers[i] );
+        }
+    }
+    else {
+        SamplerObjects = nullptr;
+    }
+
 
     pDevice->TotalPipelines++;
 }
@@ -120,6 +132,10 @@ APipelineGLImpl::~APipelineGLImpl() {
     if ( Handle ) {
         GLuint pipelineId = GL_HANDLE( Handle );
         glDeleteProgramPipelines( 1, &pipelineId );
+    }
+
+    if ( SamplerObjects ) {
+        pDevice->Allocator.Deallocate( SamplerObjects );
     }
 
     pDevice->TotalPipelines--;

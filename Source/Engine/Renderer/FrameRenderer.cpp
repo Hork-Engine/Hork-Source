@@ -43,31 +43,39 @@ using namespace RenderCore;
 
 AFrameRenderer::AFrameRenderer()
 {
-    CreateFullscreenQuadPipeline( &LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag" );
-    CreateFullscreenQuadPipeline( &LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag" );
-    CreateFullscreenQuadPipeline( &ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag" );
-    CreateFullscreenQuadPipeline( &ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag" );
-    CreateFullscreenQuadPipeline( &MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag" );
-    CreateFullscreenQuadPipeline( &OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag" );
-    //CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", RenderCore::BLENDING_COLOR_ADD );
-    CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", RenderCore::BLENDING_ALPHA );
+    SSamplerInfo nearestSampler;
+    nearestSampler.Filter = FILTER_NEAREST;
+    nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    nearestSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_NEAREST;
-        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-        GDevice->GetOrCreateSampler( samplerCI, &NearestSampler );
-    }
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_LINEAR;
-        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-        GDevice->GetOrCreateSampler( samplerCI, &LinearSampler );
-    }
+    SSamplerInfo linearSampler;
+    linearSampler.Filter = FILTER_LINEAR;
+    linearSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    linearSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    linearSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    CreateFullscreenQuadPipeline( &LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &nearestSampler, 1 );
+    CreateFullscreenQuadPipeline( &LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &nearestSampler, 1 );
+
+    CreateFullscreenQuadPipeline( &ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &nearestSampler, 1 );
+    CreateFullscreenQuadPipeline( &ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &nearestSampler, 1 );
+
+    SSamplerInfo motionBlurSamplers[3];
+    motionBlurSamplers[0] = linearSampler;
+    motionBlurSamplers[1] = nearestSampler;
+    motionBlurSamplers[2] = nearestSampler;
+
+    CreateFullscreenQuadPipeline( &MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", motionBlurSamplers, AN_ARRAY_SIZE( motionBlurSamplers ) );
+
+    CreateFullscreenQuadPipeline( &OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &linearSampler, 1 );
+
+    SSamplerInfo outlineApplySamplers[2];
+    outlineApplySamplers[0] = linearSampler;
+    outlineApplySamplers[1] = linearSampler;
+
+    //CreateFullscreenQuadPipelineEx( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", outlineApplySamplers, AN_ARRAY_SIZE( outlineApplySamplers ), RenderCore::BLENDING_COLOR_ADD );
+    CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", outlineApplySamplers, AN_ARRAY_SIZE( outlineApplySamplers ), RenderCore::BLENDING_ALPHA );
 }
 
 void AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture, AFrameGraphTexture ** ppLinearDepth )
@@ -88,10 +96,9 @@ void AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGrap
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0].pTexture = DepthTexture->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
+        GFrameResources.TextureBindings[0]->pTexture = DepthTexture->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         if ( GRenderView->bPerspective ) {
             DrawSAQ( LinearDepthPipe );
@@ -120,10 +127,9 @@ void AFrameRenderer::AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameG
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0].pTexture = LinearDepth->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
+        GFrameResources.TextureBindings[0]->pTexture = LinearDepth->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         if ( GRenderView->bPerspective ) {
             DrawSAQ( ReconstructNormalPipe );
@@ -162,16 +168,11 @@ void AFrameRenderer::AddMotionBlurPass( AFrameGraph & FrameGraph,
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
-        GFrameResources.TextureBindings[0].pTexture = LightTexture->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
+        GFrameResources.TextureBindings[0]->pTexture = LightTexture->Actual();
+        GFrameResources.TextureBindings[1]->pTexture = VelocityTexture->Actual();
+        GFrameResources.TextureBindings[2]->pTexture = LinearDepth->Actual();
 
-        GFrameResources.TextureBindings[1].pTexture = VelocityTexture->Actual();
-        GFrameResources.SamplerBindings[1].pSampler = NearestSampler;
-
-        GFrameResources.TextureBindings[2].pTexture = LinearDepth->Actual();
-        GFrameResources.SamplerBindings[2].pSampler = NearestSampler;
-
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( MotionBlurPipeline );
 
@@ -202,25 +203,10 @@ static bool BindMaterialOutlinePass( SRenderInstance const * instance ) {
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
     }
 
-    // Set samplers
-    if ( pMaterial->bDepthPassTextureFetch ) {
-        for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-            GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
-        }
-    }
-
     // Bind vertex and index buffers
     BindVertexAndIndexBuffers( instance );
 
     return true;
-}
-
-static void BindTexturesOutlinePass( SMaterialFrameData * _Instance ) {
-    if ( !_Instance->Material->bDepthPassTextureFetch ) {
-        return;
-    }
-
-    BindTextures( _Instance );
 }
 
 void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppOutlineTexture ) {
@@ -262,7 +248,7 @@ void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTextur
             }
 
             // Bind textures
-            BindTexturesOutlinePass( instance->MaterialInstance );
+            BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
 
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -270,7 +256,7 @@ void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTextur
             // Set instance uniforms
             SetInstanceUniforms( instance );
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -306,10 +292,9 @@ void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGrap
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0].pTexture = OutlineMaskTexture->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
+        GFrameResources.TextureBindings[0]->pTexture = OutlineMaskTexture->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( OutlineBlurPipe );
     } );
@@ -337,13 +322,10 @@ void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGrap
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0].pTexture = OutlineMaskTexture->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
+        GFrameResources.TextureBindings[0]->pTexture = OutlineMaskTexture->Actual();
+        GFrameResources.TextureBindings[1]->pTexture = OutlineBlurTexture->Actual();
 
-        GFrameResources.TextureBindings[1].pTexture = OutlineBlurTexture->Actual();
-        GFrameResources.SamplerBindings[1].pSampler = LinearSampler;
-
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( OutlineApplyPipe );
     } );

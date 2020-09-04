@@ -30,25 +30,17 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/Buffer.h>
 
-class AExposureRenderer {
+class ASphereMesh : public RenderCore::IObjectInterface
+{
 public:
-    AExposureRenderer();
+    ASphereMesh( int _HDiv = 128, int _VDiv = 128 );
 
-    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppExposure );
+    TRef< RenderCore::IBuffer > VertexBuffer;
 
-    RenderCore::ITexture * GetDefaultLuminance() { return DefaultLuminance; }
+    // Indices format unsigned short
+    TRef< RenderCore::IBuffer > IndexBuffer;
 
-private:
-    TRef< RenderCore::IPipeline > MakeLuminanceMapPipe;
-    TRef< RenderCore::IPipeline > SumLuminanceMapPipe;
-    TRef< RenderCore::IPipeline > DynamicExposurePipe;
-    TRef< RenderCore::ITexture > Luminance64;
-    TRef< RenderCore::ITexture > Luminance32;
-    TRef< RenderCore::ITexture > Luminance16;
-    TRef< RenderCore::ITexture > Luminance8;
-    TRef< RenderCore::ITexture > Luminance4;
-    TRef< RenderCore::ITexture > Luminance2;
-    TRef< RenderCore::ITexture > DefaultLuminance;
+    unsigned int IndexCount;
 };

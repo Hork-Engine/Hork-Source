@@ -166,7 +166,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
     GVertexMemoryGPU.Initialize();
     GStreamedMemoryGPU.Initialize();
 
-    GRenderFrontend.Initialize();
+    Renderer = CreateInstanceOf< ARenderFrontend >();
 
     GAudioSystem.Initialize();
     GAudioSystem.RegisterDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
@@ -247,10 +247,10 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
         DrawCanvas();
 
         // Build frame data for rendering
-        GRenderFrontend.Render( &Canvas );
+        Renderer->Render( &Canvas );
 
         // Generate GPU commands
-        GRenderBackend->RenderFrame( GRenderFrontend.GetFrameData() );
+        GRenderBackend->RenderFrame( Renderer->GetFrameData() );
 
         // Swap buffers for streamed memory
         GStreamedMemoryGPU.SwapFrames();
@@ -284,7 +284,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
 
     Canvas.Deinitialize();
 
-    GRenderFrontend.Deinitialize();
+    Renderer.Reset();
 
     GResourceManager.Deinitialize();
 
@@ -352,7 +352,7 @@ void AEngineInstance::ShowStats() {
 
     if ( RVShowStat )
     {
-        SRenderFrame * frameData = GRenderFrontend.GetFrameData();
+        SRenderFrame * frameData = Renderer->GetFrameData();
 
         Float2 pos( 8, 8 );
         const float y_step = 22;
@@ -364,7 +364,7 @@ void AEngineInstance::ShowStats() {
                                                 + (GHunkMemory.GetHunkMemorySizeInMegabytes()<<20)
                                                 + GRuntime.GetFrameMemorySize() );
 
-        SRenderFrontendStat const & stat = GRenderFrontend.GetStat();
+        SRenderFrontendStat const & stat = Renderer->GetStat();
 
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;

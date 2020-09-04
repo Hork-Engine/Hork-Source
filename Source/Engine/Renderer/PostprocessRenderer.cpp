@@ -36,37 +36,51 @@ using namespace RenderCore;
 
 APostprocessRenderer::APostprocessRenderer()
 {
-    CreateFullscreenQuadPipeline( &PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag" );
-    CreateSampler();
-}
+    SSamplerInfo samplers[7];
 
-void APostprocessRenderer::CreateSampler()
-{
-    SSamplerCreateInfo samplerCI;
+    // Color texture sampler
+    samplers[0].Filter = FILTER_NEAREST;
+    samplers[0].AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplers[0].AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplers[0].AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    samplerCI.Filter = FILTER_NEAREST;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &PostprocessSampler );
+    // Color grading LUT sampler
+    samplers[1].Filter = FILTER_LINEAR;
+    samplers[1].AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplers[1].AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplers[1].AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    samplerCI.Filter = FILTER_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &BloomSampler );
+    // Bloom texture sampler
+    samplers[2].Filter = FILTER_LINEAR;
+    samplers[2].AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplers[2].AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplers[2].AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    samplerCI.Filter = FILTER_NEAREST;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &LuminanceSampler );
+    // Bloom texture sampler
+    samplers[3].Filter = FILTER_LINEAR;
+    samplers[3].AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplers[3].AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplers[3].AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    samplerCI.Filter = FILTER_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &ColorGradingSampler );
+    // Bloom texture sampler
+    samplers[4].Filter = FILTER_LINEAR;
+    samplers[4].AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplers[4].AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplers[4].AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    // Bloom texture sampler
+    samplers[5].Filter = FILTER_LINEAR;
+    samplers[5].AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplers[5].AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplers[5].AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    // Exposure sampler: whatever (used texelFetch)
+    samplers[6].Filter = FILTER_NEAREST;
+    samplers[6].AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplers[6].AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplers[6].AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    CreateFullscreenQuadPipeline( &PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", samplers, AN_ARRAY_SIZE( samplers ) );
 }
 
 void APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
@@ -107,30 +121,17 @@ void APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
-        GFrameResources.TextureBindings[0].pTexture = ColorTexture->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = PostprocessSampler;
-
+        GFrameResources.TextureBindings[0]->pTexture = ColorTexture->Actual();
         if ( ColorGrading ) {
-            GFrameResources.TextureBindings[1].pTexture = ColorGrading->Actual();
-            GFrameResources.SamplerBindings[1].pSampler = ColorGradingSampler;
+            GFrameResources.TextureBindings[1]->pTexture = ColorGrading->Actual();
         }
+        GFrameResources.TextureBindings[2]->pTexture = BloomTex.BloomTexture0->Actual();
+        GFrameResources.TextureBindings[3]->pTexture = BloomTex.BloomTexture1->Actual();
+        GFrameResources.TextureBindings[4]->pTexture = BloomTex.BloomTexture2->Actual();
+        GFrameResources.TextureBindings[5]->pTexture = BloomTex.BloomTexture3->Actual();
+        GFrameResources.TextureBindings[6]->pTexture = Exposure->Actual();
 
-        GFrameResources.TextureBindings[2].pTexture = BloomTex.BloomTexture0->Actual();
-        GFrameResources.SamplerBindings[2].pSampler = BloomSampler;
-
-        GFrameResources.TextureBindings[3].pTexture = BloomTex.BloomTexture1->Actual();
-        GFrameResources.SamplerBindings[3].pSampler = BloomSampler;
-
-        GFrameResources.TextureBindings[4].pTexture = BloomTex.BloomTexture2->Actual();
-        GFrameResources.SamplerBindings[4].pSampler = BloomSampler;
-
-        GFrameResources.TextureBindings[5].pTexture = BloomTex.BloomTexture3->Actual();
-        GFrameResources.SamplerBindings[5].pSampler = BloomSampler;
-
-        GFrameResources.TextureBindings[6].pTexture = Exposure->Actual();
-        GFrameResources.SamplerBindings[6].pSampler = LuminanceSampler; // whatever (used texelFetch)
-
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( PostprocessPipeline );
 

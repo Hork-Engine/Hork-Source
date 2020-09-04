@@ -63,25 +63,10 @@ static bool BindMaterialDepthPass( SRenderInstance const * instance ) {
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
     }
 
-    // Set samplers
-    if ( pMaterial->bDepthPassTextureFetch ) {
-        for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-            GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
-        }
-    }
-
     // Bind vertex and index buffers
     BindVertexAndIndexBuffers( instance );
 
     return true;
-}
-
-static void BindTexturesDepthPass( SMaterialFrameData * _Instance ) {
-    if ( !_Instance->Material->bDepthPassTextureFetch ) {
-        return;
-    }
-
-    BindTextures( _Instance );
 }
 
 void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTexture, AFrameGraphTexture ** ppVelocity ) {
@@ -130,7 +115,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                 }
 
                 // Bind textures
-                BindTexturesDepthPass( instance->MaterialInstance );
+                BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
 
                 // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -139,7 +124,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                 // Set instance uniforms
                 SetInstanceUniforms( instance );
 
-                rcmd->BindShaderResources( &GFrameResources.Resources );
+                rcmd->BindResourceTable( &GFrameResources.Resources );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -168,7 +153,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                 }
 
                 // Bind textures
-                BindTexturesDepthPass( instance->MaterialInstance );
+                BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
 
                 // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -176,7 +161,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                 // Set instance uniforms
                 SetInstanceUniforms( instance );
 
-                rcmd->BindShaderResources( &GFrameResources.Resources );
+                rcmd->BindResourceTable( &GFrameResources.Resources );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;

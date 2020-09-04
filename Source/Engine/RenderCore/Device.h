@@ -106,9 +106,7 @@ public:
 
     virtual void CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, TRef< IQueryPool > * ppQueryPool ) = 0;
 
-    virtual void CreateBindlessSampler( ITexture * pTexture, Sampler Sampler, TRef< IBindlessSampler > * ppBindlessSampler ) = 0;
-
-    virtual void GetOrCreateSampler( SSamplerCreateInfo const & _CreateInfo, Sampler * ppSampler ) = 0;
+    virtual void CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) = 0;
 
     virtual bool CreateShaderBinaryData( SHADER_TYPE _ShaderType,
                                          unsigned int _NumSources,

@@ -61,7 +61,7 @@ RenderCore::ITexture * RealizeResource( AFrameGraph & InFrameGraph, RenderCore::
     }
 
     // Create new texture
-    //GLogger.Printf( "Create new texture\n" );
+    GLogger.Printf( "Create new texture ( in use %d, free %d )\n", InFrameGraph.Textures.Size()+1, InFrameGraph.FreeTextures.Size() );
     TRef< RenderCore::ITexture > texture;
     InFrameGraph.GetDevice()->CreateTexture( Info, &texture );
     InFrameGraph.Textures.Append( texture );
@@ -358,25 +358,27 @@ void ARenderPass::Create( AFrameGraph & FrameGraph )
 {
     RenderCore::SRenderPassCreateInfo renderPassCI = {};
 
-    TStdVector< RenderCore::SAttachmentInfo > attachmentInfos;
-    attachmentInfos.resize( ColorAttachments.Size() );
+    RenderCore::SAttachmentInfo attachmentInfos[MAX_COLOR_ATTACHMENTS];
+
+    AN_ASSERT( ColorAttachments.Size() <= MAX_COLOR_ATTACHMENTS );
+
     for ( int i = 0 ; i < ColorAttachments.Size() ; i++ ) {
         attachmentInfos[i] = ColorAttachments[i].Info;
     }
 
-    renderPassCI.NumColorAttachments = attachmentInfos.Size();
-    renderPassCI.pColorAttachments = attachmentInfos.data();
+    renderPassCI.NumColorAttachments = ColorAttachments.Size();
+    renderPassCI.pColorAttachments = attachmentInfos;
     renderPassCI.pDepthStencilAttachment = bHasDepthStencilAttachment ? &DepthStencilAttachment.Info : nullptr;
     renderPassCI.NumSubpasses = Subpasses.Size();
 
-    TStdVector< RenderCore::SSubpassInfo > subpassesTemp;
-    subpassesTemp.resize( renderPassCI.NumSubpasses );
+    TPodArray< RenderCore::SSubpassInfo > subpassesTemp;
+    subpassesTemp.Resize( renderPassCI.NumSubpasses );
 
     for ( int i = 0 ; i < renderPassCI.NumSubpasses ; i++ ) {
         subpassesTemp[i].NumColorAttachments = Subpasses[i].Refs.Size();
         subpassesTemp[i].pColorAttachmentRefs = Subpasses[i].Refs.data();
     }
-    renderPassCI.pSubpasses = subpassesTemp.data();
+    renderPassCI.pSubpasses = subpassesTemp.ToPtr();
 
     while ( ClearValues.Size() < renderPassCI.NumColorAttachments ) {
         ClearValues.Append( MakeClearColorValue( 0.0f, 0.0f, 0.0f, 0.0f ) );
@@ -390,23 +392,31 @@ void ARenderPass::Create( AFrameGraph & FrameGraph )
                                               bHasDepthStencilAttachment ? &DepthStencilAttachment : nullptr );
 }
 
+static AN_FORCEINLINE bool CompareAttachment( SFramebufferAttachmentInfo const & a, SFramebufferAttachmentInfo const & b )
+{
+    return a.pTexture->GetUID() == b.pTexture->GetUID()
+            && a.Type == b.Type
+            && a.LayerNum == b.LayerNum
+            && a.LodNum == b.LodNum;
+}
+
 RenderCore::IFramebuffer * AFrameGraph::GetFramebuffer( const char * RenderPassName,
                                                         TStdVector< ARenderPass::STextureAttachment > const & ColorAttachments,
                                                         ARenderPass::STextureAttachment const * DepthStencilAttachment ) {
 
     RenderCore::SFramebufferCreateInfo framebufferCI = {};
-    TStdVector< SFramebufferAttachmentInfo > colorAttachments;
+    SFramebufferAttachmentInfo colorAttachments[MAX_COLOR_ATTACHMENTS];
     SFramebufferAttachmentInfo depthStencilAttachment;
 
-    colorAttachments.resize( ColorAttachments.Size() );
+    AN_ASSERT( ColorAttachments.Size() <= MAX_COLOR_ATTACHMENTS );
 
-    framebufferCI.NumColorAttachments = colorAttachments.Size();
-    framebufferCI.pColorAttachments = colorAttachments.data();
+    framebufferCI.NumColorAttachments = ColorAttachments.Size();
+    framebufferCI.pColorAttachments = colorAttachments;
 
     // Make hash
     int hash = 0;
     int n = 0;
-    //GLogger.Printf("-------attachments--------\n");
+
     for ( ARenderPass::STextureAttachment const & attachment : ColorAttachments ) {
         hash = Core::PHHash32( attachment.Resource->Actual()->GetUID(), hash );
         RenderCore::ITexture * texture = attachment.Resource->Actual();
@@ -416,7 +426,6 @@ RenderCore::IFramebuffer * AFrameGraph::GetFramebuffer( const char * RenderPassN
         colorAttachments[n].LodNum = 0; // TODO
         framebufferCI.Width = texture->GetWidth();
         framebufferCI.Height = texture->GetHeight();
-        //GLogger.Printf("%d ----> %d\n", n, texture->GetUID() );
         n++;
     }
     if ( DepthStencilAttachment ) {
@@ -445,14 +454,19 @@ RenderCore::IFramebuffer * AFrameGraph::GetFramebuffer( const char * RenderPassN
             continue;
         }
 
-        if ( DepthStencilAttachment &&
-             memcmp( &depthStencilAttachment, &framebuffer->GetDepthStencilAttachment(), sizeof( depthStencilAttachment ) ) ) {
+        if ( DepthStencilAttachment && !CompareAttachment( depthStencilAttachment, framebuffer->GetDepthStencilAttachment() ) ) {
             continue;
         }
+
+        bool equal = true;
+        for ( int a = 0 ; a < framebufferCI.NumColorAttachments ; a++ ) {
+            if ( !CompareAttachment( framebufferCI.pColorAttachments[a], framebuffer->GetColorAttachments()[a] ) ) {
+                equal = false;
+                break;
+            }
+        }
         
-        if ( !memcmp( framebufferCI.pColorAttachments, framebuffer->GetColorAttachments(),
-                      framebufferCI.NumColorAttachments * sizeof( SFramebufferAttachmentInfo ) ) )
-        {
+        if ( equal ) {
             return framebuffer;
         }
     }
@@ -467,7 +481,9 @@ RenderCore::IFramebuffer * AFrameGraph::GetFramebuffer( const char * RenderPassN
     FramebufferHash.Insert( hash, i );
     FramebufferCache.push_back( framebuffer );
     FramebufferHashes.Append( hash );
-GLogger.Printf( "Total framebuffers %d for %s hash %d\n",FramebufferCache.Size(),RenderPassName, hash );
+
+    GLogger.Printf( "Total framebuffers %d for %s hash 0x%08x\n", FramebufferCache.Size(), RenderPassName, hash );
+
     return framebuffer;
 }
 

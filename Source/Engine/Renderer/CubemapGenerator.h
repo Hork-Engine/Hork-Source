@@ -45,12 +45,8 @@ public:
     void Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture );
 
 private:
-    TRef< RenderCore::IBuffer > m_VertexBuffer;
-    TRef< RenderCore::IBuffer > m_IndexBuffer;
     TRef< RenderCore::IBuffer > m_UniformBuffer;
     SCubemapGeneratorUniformBuffer m_UniformBufferData;
     TRef< RenderCore::IPipeline > m_Pipeline;
-    RenderCore::Sampler m_Sampler;
     TRef< RenderCore::IRenderPass > m_RP;
-    int m_IndexCount;
 };

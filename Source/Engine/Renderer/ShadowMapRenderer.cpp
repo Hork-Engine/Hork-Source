@@ -206,17 +206,14 @@ bool AShadowMapRenderer::BindMaterialShadowMap( SShadowRenderInstance const * in
         if ( bSkinned ) {
             IBuffer * pSecondVertexBuffer = GPUBufferHandle( instance->WeightsBuffer );
             rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, instance->WeightsBufferOffset );
-        } else {
+        }
+        else {
             rcmd->BindVertexBuffer( 1, nullptr, 0 );
         }
 
-        // Set samplers
-        if ( pMaterial->bShadowMapPassTextureFetch ) {
-            for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-                GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
-            }
-        }
-    } else {
+        BindTextures( instance->MaterialInstance, pMaterial->ShadowMapPassTextureCount );
+    }
+    else {
         rcmd->BindPipeline( StaticShadowCasterPipeline.GetObject() );
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
     }
@@ -225,15 +222,6 @@ bool AShadowMapRenderer::BindMaterialShadowMap( SShadowRenderInstance const * in
     BindVertexAndIndexBuffers( instance );
 
     return true;
-}
-
-void BindTexturesShadowMap( SMaterialFrameData * _Instance )
-{
-    if ( !_Instance || !_Instance->Material->bShadowMapPassTextureFetch ) {
-        return;
-    }
-
-    BindTextures( _Instance );
 }
 
 #if defined SHADOWMAP_VSM
@@ -380,7 +368,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef
 
             BindVertexAndIndexBuffers( instance );
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             drawCmd.InstanceCount = LightDef->NumCascades;
             drawCmd.IndexCountPerInstance = instance->IndexCount;
@@ -399,16 +387,13 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef
                 continue;
             }
 
-            // Bind textures
-            BindTexturesShadowMap( instance->MaterialInstance );
-
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
 
             // Set instance uniforms
             SetShadowInstanceUniforms( instance );
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -505,7 +490,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SClusterLight const 
                 }
 
                 // Bind textures
-                BindTexturesShadowMap( instance->MaterialInstance );
+                BindTextures( instance->MaterialInstance, instance->Material->ShadowMapPassTextureCount );
 
                 // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -513,7 +498,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SClusterLight const 
                 // Set instance uniforms
                 SetShadowInstanceUniforms( instance );
 
-                rcmd->BindShaderResources( &GFrameResources.Resources );
+                rcmd->BindResourceTable( &GFrameResources.Resources );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;

@@ -56,25 +56,10 @@ static bool BindMaterialNormalPass( SRenderInstance const * instance ) {
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
     }
 
-    // Set samplers
-    if ( pMaterial->bNormalsPassTextureFetch ) {
-        for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-            GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
-        }
-    }
-
     // Bind vertex and index buffers
     BindVertexAndIndexBuffers( instance );
 
     return true;
-}
-
-static void BindTexturesNormalsPass( SMaterialFrameData * _Instance ) {
-    if ( !_Instance->Material->bNormalsPassTextureFetch ) {
-        return;
-    }
-
-    BindTextures( _Instance );
 }
 
 void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget )
@@ -110,7 +95,7 @@ void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget
             }
 
             // Bind textures
-            BindTexturesNormalsPass( instance->MaterialInstance );
+            BindTextures( instance->MaterialInstance, instance->Material->NormalsPassTextureCount );
 
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -118,7 +103,7 @@ void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget
             // Set instance uniforms
             SetInstanceUniforms( instance );
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;

@@ -100,7 +100,7 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
     TmpPointers2 = TmpPointers + maxTemporaryHandles;
 
     memset( BufferBindings, 0, sizeof( BufferBinding ) );
-    memset( SampleBindings, 0, sizeof( SampleBindings ) );
+    //memset( SampleBindings, 0, sizeof( SampleBindings ) );
     memset( TextureBindings, 0, sizeof( TextureBindings ) );
 
     CurrentPipeline = NULL;
@@ -965,6 +965,16 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
 
         Binding.DepthStencilState = CurrentPipeline->DepthStencilState;
     }
+
+    //
+    // Set sampler state
+    //
+
+    glBindSamplers( 0, CurrentPipeline->NumSamplerObjects, CurrentPipeline->SamplerObjects ); // 4.4 or GL_ARB_multi_bind
+
+    //for ( int i = 0 ; i < CurrentPipeline->NumSamplerObjects ; i++ ) {
+    //    glBindSampler( i, CurrentPipeline->SamplerObjects[i] ); // 3.2 or GL_ARB_sampler_objects
+    //}
 }
 
 void AImmediateContextGLImpl::BindRenderPassSubPass( ARenderPassGLImpl const * _RenderPass, int _Subpass ) {
@@ -995,8 +1005,8 @@ void AImmediateContextGLImpl::BindRenderPassSubPass( ARenderPassGLImpl const * _
 }
 
 void AImmediateContextGLImpl::BindVertexBuffer( unsigned int _InputSlot,
-                                         IBuffer const * _VertexBuffer,
-                                         unsigned int _Offset ) {
+                                                IBuffer const * _VertexBuffer,
+                                                unsigned int _Offset ) {
     VerifyContext();
 
     AN_ASSERT( CurrentVAO != NULL );
@@ -1019,10 +1029,11 @@ void AImmediateContextGLImpl::BindVertexBuffer( unsigned int _InputSlot,
         //GLogger.Printf( "Caching BindVertexBuffer %d\n", vertexBufferId );
     }
 }
+
 void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
-                                          unsigned int _NumBuffers,
-                                          IBuffer * const * _VertexBuffers,
-                                          uint32_t const * _Offsets ) {
+                                                 unsigned int _NumBuffers,
+                                                 IBuffer * const * _VertexBuffers,
+                                                 uint32_t const * _Offsets ) {
     VerifyContext();
 
     AN_ASSERT( CurrentVAO != NULL );
@@ -1097,8 +1108,8 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
 }
 
 void AImmediateContextGLImpl::BindIndexBuffer( IBuffer const * _IndexBuffer,
-                                        INDEX_TYPE _Type,
-                                        unsigned int _Offset ) {
+                                               INDEX_TYPE _Type,
+                                               unsigned int _Offset ) {
     VerifyContext();
 
     AN_ASSERT( CurrentPipeline != NULL );
@@ -1122,93 +1133,74 @@ void AImmediateContextGLImpl::BindIndexBuffer( IBuffer const * _IndexBuffer,
     }
 }
 
-void AImmediateContextGLImpl::BindShaderResources( SShaderResources const * _Resources ) {
+void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _ResourceTable )
+{
+    // TODO: Cache resource tables
+
     VerifyContext();
 
-    for ( SShaderBufferBinding * slot = _Resources->Buffers ; slot < &_Resources->Buffers[_Resources->NumBuffers] ; slot++ ) {
+    SResourceBufferBinding const * buffers = _ResourceTable->GetBuffers();
+    SResourceTextureBinding const * textures = _ResourceTable->GetTextures();
+    SResourceImageBinding const * images = _ResourceTable->GetImages();
+    int numBuffers = _ResourceTable->GetNumBuffers();
+    int numTextures = _ResourceTable->GetNumTextures();
+    int numImages = _ResourceTable->GetNumImages();
+    int slot;
 
-        AN_ASSERT( slot->SlotIndex < MAX_BUFFER_SLOTS );
+    slot = 0;
+    for ( SResourceBufferBinding const * binding = buffers ; binding < &buffers[numBuffers] ; binding++, slot++ ) {
+        GLenum target = BufferTargetLUT[ binding->BufferType ].Target;
 
-        GLenum target = BufferTargetLUT[ slot->BufferType ].Target;
+        IDeviceObject const * native = binding->pBuffer;
 
-        unsigned int id;
-        uint32_t uid;
+        uint32_t bufferUid = native ? native->GetUID() : 0;
 
-        IDeviceObject const * native = slot->pBuffer;
+        if ( BufferBindings[ slot ] != bufferUid || binding->BindingSize > 0 ) {
+            BufferBindings[ slot ] = bufferUid;
 
-        if ( native ) {
-            id = GL_HANDLE( native->GetHandle() );
-            uid = native->GetUID();
-        } else {
-            id = 0;
-            uid = 0;
-        }
-
-        if ( BufferBindings[ slot->SlotIndex ] != uid || slot->BindingSize > 0 ) {
-            BufferBindings[ slot->SlotIndex ] = uid;
-
-            if ( id && slot->BindingSize > 0 ) {
-                glBindBufferRange( target, slot->SlotIndex, id, slot->BindingOffset, slot->BindingSize ); // 3.0 or GL_ARB_uniform_buffer_object
+            if ( bufferUid && binding->BindingSize > 0 ) {
+                glBindBufferRange( target, slot, GL_HANDLE( native->GetHandle() ), binding->BindingOffset, binding->BindingSize ); // 3.0 or GL_ARB_uniform_buffer_object
             } else {
-                glBindBufferBase( target, slot->SlotIndex, id ); // 3.0 or GL_ARB_uniform_buffer_object
+                glBindBufferBase( target, slot, GL_HANDLE( native->GetHandle() ) ); // 3.0 or GL_ARB_uniform_buffer_object
             }
         }
     }
 
-    for ( SShaderSamplerBinding * slot = _Resources->Samplers ; slot < &_Resources->Samplers[_Resources->NumSamplers] ; slot++ ) {
+    slot = 0;
+    for ( SResourceTextureBinding const * binding = textures ; binding < &textures[numTextures] ; binding++, slot++ ) {
+        GLuint textureId;
+        uint32_t textureUid;
 
-        AN_ASSERT( slot->SlotIndex < MAX_SAMPLER_SLOTS );
-
-        unsigned int id = GL_HANDLE( slot->pSampler );
-
-        if ( SampleBindings[ slot->SlotIndex ] != id ) {
-            SampleBindings[ slot->SlotIndex ] = id;
-
-            glBindSampler( slot->SlotIndex, id ); // 3.2 or GL_ARB_sampler_objects
-        }
-    }
-
-    for ( SShaderTextureBinding * slot = _Resources->Textures ; slot < &_Resources->Textures[_Resources->NumTextures] ; slot++ ) {
-
-        AN_ASSERT( slot->SlotIndex < MAX_SAMPLER_SLOTS );
-
-        unsigned int id;
-        uint32_t uid;
-
-        IDeviceObject const * native = slot->pTexture;
+        IDeviceObject const * native = binding->pTexture;
 
         if ( native ) {
-            id = GL_HANDLE( native->GetHandle() );
-            uid = native->GetUID();
+            textureId = GL_HANDLE( native->GetHandle() );
+            textureUid = native->GetUID();
         } else {
-            id = 0;
-            uid = 0;
+            textureId = 0;
+            textureUid = 0;
         }
 
-        if ( TextureBindings[ slot->SlotIndex ] != uid ) {
-            TextureBindings[ slot->SlotIndex ] = uid;
+        if ( TextureBindings[ slot ] != textureUid ) {
+            TextureBindings[ slot ] = textureUid;
 
-            glBindTextureUnit( slot->SlotIndex, id ); // 4.5
+            glBindTextureUnit( slot, textureId ); // 4.5
         }
     }
 
-    for ( SShaderImageBinding * slot = _Resources->Images ; slot < &_Resources->Images[_Resources->NumImages] ; slot++ ) {
+    slot = 0;
+    for ( SResourceImageBinding const * binding = images ; binding < &images[numImages] ; binding++, slot++ ) {
+        IDeviceObject const * native = binding->pTexture;
 
-        AN_ASSERT( slot->SlotIndex < MAX_SAMPLER_SLOTS );
+        GLuint id = native ? GL_HANDLE( native->GetHandle() ) : 0;
 
-        // FIXME: Slot must be < Device->MaxImageUnits?
-
-        IDeviceObject const * native = slot->pTexture;
-
-        unsigned int id = native ? GL_HANDLE( native->GetHandle() ) : 0;
-
-        glBindImageTexture( slot->SlotIndex,
+        glBindImageTexture( slot,
                             id,
-                            slot->Lod,
-                            slot->bLayered,
-                            slot->LayerIndex,
-                            ImageAccessModeLUT[ slot->AccessMode ],
-                            InternalFormatLUT[ slot->TextureFormat ].InternalFormat ); // 4.2
+                            binding->Lod,
+                            binding->bLayered,
+                            binding->LayerIndex,
+                            ImageAccessModeLUT[ binding->AccessMode ],
+                            InternalFormatLUT[ binding->TextureFormat ].InternalFormat ); // 4.2
     }
 }
 
@@ -1272,45 +1264,6 @@ void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
             //    }
             //}
         }
-    }
-}
-
-void ImmediateContext::SetSampler( unsigned int _Slot,
-                                /* optional */ Sampler * const _Sampler ) {
-    SetSamplers( _Slot, 1, &_Sampler );
-}
-
-void ImmediateContext::SetSamplers( unsigned int _StartSlot,
-                                 unsigned int _NumSamplers,
-                                 /* optional */ Sampler * const * _Samplers ) {
-
-    VerifyContext();
-
-    // _StartSlot + _NumSamples must be < MaxCombinedTextureImageUnits
-
-    if ( !_Samplers ) {
-        glBindSamplers( _StartSlot, _NumSamplers, NULL ); // 4.4 or GL_ARB_multi_bind
-        return;
-    }
-
-    if ( _NumSamplers == 1 ) {
-        glBindSampler( _StartSlot, ( size_t )_Samplers[0]->GetHandle() ); // 3.2 or GL_ARB_sampler_objects
-    } else {
-        for ( unsigned int i = 0 ; i < _NumSamplers ; i++ ) {
-            TmpHandles[ i ] = ( size_t )_Samplers[i]->GetHandle();
-        }
-        glBindSamplers( _StartSlot, _NumSamplers, TmpHandles ); // 4.4 or GL_ARB_multi_bind
-
-        // Or  Since 3.2 or GL_ARB_sampler_objects
-        //if ( _Samplers != NULL) {
-        //    for ( int i = 0 ; i < _NumSamplers ; i++ ) {
-        //        glBindSampler( _StartSlot + i, GL_HANDLER_FROM_RESOURCE( _Samplers[i] ) );
-        //    }
-        //} else {
-        //    for ( int i = 0 ; i < _NumSamplers ; i++ ) {
-        //        glBindSampler( _StartSlot + i, 0 );
-        //    }
-        //}
     }
 }
 

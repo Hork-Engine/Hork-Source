@@ -36,8 +36,6 @@ struct SDL_Window;
 
 namespace RenderCore {
 
-using Sampler = void*;
-
 /**
 
 Base interface
@@ -139,6 +137,7 @@ enum
     MAX_VERTEX_BUFFER_SLOTS = 32,
     MAX_BUFFER_SLOTS        = 32,
     MAX_SAMPLER_SLOTS       = 32, // MaxCombinedTextureImageUnits
+    MAX_IMAGE_SLOTS         = 32,
     MAX_COLOR_ATTACHMENTS   = 8,
     MAX_SUBPASS_COUNT       = 16,
     MAX_VERTEX_BINDINGS     = 16,

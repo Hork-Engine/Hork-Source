@@ -76,20 +76,15 @@ AExposureRenderer::AExposureRenderer()
     GDevice->CreateTexture( texCI, &DefaultLuminance );
     DefaultLuminance->Write( 0, RenderCore::FORMAT_UBYTE2, sizeof( defaultLum ), 1, defaultLum );
 
-    CreateFullscreenQuadPipeline( &MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag" );
-    CreateFullscreenQuadPipeline( &SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag" );
-    CreateFullscreenQuadPipeline( &DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", RenderCore::BLENDING_ALPHA );
-
-    CreateSampler();
-}
-
-void AExposureRenderer::CreateSampler() {
-    SSamplerCreateInfo samplerCI;
+    SSamplerInfo samplerCI;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
     samplerCI.Filter = FILTER_LINEAR;
-    GDevice->GetOrCreateSampler( samplerCI, &LuminanceSampler );
+
+    CreateFullscreenQuadPipeline( &MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &samplerCI, 1 );
+    CreateFullscreenQuadPipeline( &SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &samplerCI, 1 );
+    CreateFullscreenQuadPipeline( &DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &samplerCI, 1, RenderCore::BLENDING_ALPHA );
 }
 
 void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppExposure ) {
@@ -147,10 +142,9 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0].pTexture = SourceTexture->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
+        GFrameResources.TextureBindings[0]->pTexture = SourceTexture->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( MakeLuminanceMapPipe );
     });
@@ -163,10 +157,9 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0].pTexture = Luminance64_R->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
+        GFrameResources.TextureBindings[0]->pTexture = Luminance64_R->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -179,10 +172,9 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0].pTexture = Luminance32_R->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
+        GFrameResources.TextureBindings[0]->pTexture = Luminance32_R->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -195,10 +187,9 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0].pTexture = Luminance16_R->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
+        GFrameResources.TextureBindings[0]->pTexture = Luminance16_R->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -211,10 +202,9 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0].pTexture = Luminance8_R->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
+        GFrameResources.TextureBindings[0]->pTexture = Luminance8_R->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -227,10 +217,9 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0].pTexture = Luminance4_R->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
+        GFrameResources.TextureBindings[0]->pTexture = Luminance4_R->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -243,10 +232,9 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0].pTexture = Luminance2_R->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = LuminanceSampler;
+        GFrameResources.TextureBindings[0]->pTexture = Luminance2_R->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( DynamicExposurePipe );
     } );

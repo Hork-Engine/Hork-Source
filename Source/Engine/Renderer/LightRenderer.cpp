@@ -41,137 +41,6 @@ using namespace RenderCore;
 
 ALightRenderer::ALightRenderer()
 {
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_LINEAR;
-        samplerCI.AddressU = SAMPLER_ADDRESS_WRAP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_WRAP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_WRAP;
-        GDevice->GetOrCreateSampler( samplerCI, &LightmapSampler );
-    }
-
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_MIPMAP_BILINEAR;
-        samplerCI.AddressU = SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressV = SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressW = SAMPLER_ADDRESS_BORDER;
-        GDevice->GetOrCreateSampler( samplerCI, &ReflectSampler );
-    }
-
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_NEAREST;
-        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-        GDevice->GetOrCreateSampler( samplerCI, &ReflectDepthSampler );
-    }
-
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_LINEAR;
-        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-        GDevice->GetOrCreateSampler( samplerCI, &VirtualTextureSampler );
-    }
-
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_MIPMAP_NEAREST;
-        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-        GDevice->GetOrCreateSampler( samplerCI, &VirtualTextureIndirectionSampler );
-    }
-
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_LINEAR;
-        samplerCI.AddressU = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressV = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressW = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
-        samplerCI.MipLODBias = 0;
-        //samplerCI.ComparisonFunc = CMPFUNC_LEQUAL;
-        samplerCI.ComparisonFunc = CMPFUNC_LESS;
-        samplerCI.bCompareRefToTexture = true;
-        GDevice->GetOrCreateSampler( samplerCI, &ShadowDepthSamplerPCF );
-    }
-
-    {
-        SSamplerCreateInfo samplerCI;
-        samplerCI.Filter = FILTER_LINEAR;
-        samplerCI.AddressU = SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressV = SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressW = SAMPLER_ADDRESS_BORDER;
-        samplerCI.MipLODBias = 0;
-
-        samplerCI.BorderColor[0] = VSM_ClearValue.X;
-        samplerCI.BorderColor[1] = VSM_ClearValue.Y;
-        samplerCI.BorderColor[2] = VSM_ClearValue.Z;
-        samplerCI.BorderColor[3] = VSM_ClearValue.W;
-
-        GDevice->GetOrCreateSampler( samplerCI, &ShadowDepthSamplerVSM );
-
-        samplerCI.BorderColor[0] = EVSM_ClearValue.X;
-        samplerCI.BorderColor[1] = EVSM_ClearValue.Y;
-        samplerCI.BorderColor[2] = EVSM_ClearValue.Z;
-        samplerCI.BorderColor[3] = EVSM_ClearValue.W;
-
-        GDevice->GetOrCreateSampler( samplerCI, &ShadowDepthSamplerEVSM );
-    }
-
-    {
-        SSamplerCreateInfo samplerCI;
-
-        samplerCI.AddressU = SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressV = SAMPLER_ADDRESS_BORDER;
-        samplerCI.AddressW = SAMPLER_ADDRESS_BORDER;
-        samplerCI.MipLODBias = 0;
-        //samplerCI.BorderColor[0] = samplerCI.BorderColor[1] = samplerCI.BorderColor[2] = samplerCI.BorderColor[3] = 1.0f;
-
-        // Find blocker point sampler
-        samplerCI.Filter = FILTER_NEAREST;//FILTER_LINEAR;
-                                          //samplerCI.ComparisonFunc = CMPFUNC_GREATER;//CMPFUNC_GEQUAL;
-                                          //samplerCI.CompareRefToTexture = true;
-        GDevice->GetOrCreateSampler( samplerCI, &ShadowDepthSamplerPCSS0 );
-
-        // PCF_Sampler
-        samplerCI.Filter = FILTER_LINEAR; //GHI_Filter_Min_LinearMipmapLinear_Mag_Linear; // D3D10_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR  Is the same?
-        samplerCI.ComparisonFunc = CMPFUNC_LESS;
-        samplerCI.bCompareRefToTexture = true;
-        samplerCI.BorderColor[0] = samplerCI.BorderColor[1] = samplerCI.BorderColor[2] = samplerCI.BorderColor[3] = 1.0f; // FIXME?
-        GDevice->GetOrCreateSampler( samplerCI, &ShadowDepthSamplerPCSS1 );
-    }
-
-    {
-        RenderCore::SSamplerCreateInfo samplerCI = {};
-        samplerCI.Filter = FILTER_LINEAR;
-        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-        GDevice->GetOrCreateSampler( samplerCI, &IESSampler );
-    }
-
-    {
-        RenderCore::SSamplerCreateInfo samplerCI = {};
-        samplerCI.Filter = FILTER_NEAREST;
-        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-        GDevice->GetOrCreateSampler( samplerCI, &ClusterLookupSampler );
-    }
-
-    {
-        RenderCore::SSamplerCreateInfo samplerCI = {};
-        samplerCI.Filter = FILTER_NEAREST;
-        samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-        samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-        GDevice->GetOrCreateSampler( samplerCI, &SSAOSampler );
-    }
-
     CreateLookupBRDF();
 }
 
@@ -315,13 +184,6 @@ void ALightRenderer::CreateLookupBRDF() {
     LookupBRDF->Write( 0, RenderCore::FORMAT_FLOAT2, sizeInBytes, 1, data );
 
     GHunkMemory.ClearLastHunk();
-
-    RenderCore::SSamplerCreateInfo samplerCI = {};
-    samplerCI.Filter = FILTER_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &LookupBRDFSampler );
 }
 
 bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
@@ -339,51 +201,41 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
 
     switch ( pMaterial->MaterialType ) {
     case MATERIAL_TYPE_UNLIT:
-
         pPipeline = pMaterial->LightPass[bSkinned];
-
         if ( bSkinned ) {
             pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
             secondBufferOffset = Instance->WeightsBufferOffset;
         }
-
         break;
 
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
-
         if ( bSkinned ) {
-
             pPipeline = pMaterial->LightPass[1];
 
             pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
             secondBufferOffset = Instance->WeightsBufferOffset;
-
-        } else if ( bLightmap ) {
-
+        }
+        else if ( bLightmap ) {
             pPipeline = pMaterial->LightPassLightmap;
 
             pSecondVertexBuffer = GPUBufferHandle( Instance->LightmapUVChannel );
             secondBufferOffset = Instance->LightmapUVOffset;
 
             // lightmap is in last sample
-            GFrameResources.TextureBindings[pMaterial->LightmapSlot].pTexture = GPUTextureHandle( Instance->Lightmap );
-            GFrameResources.SamplerBindings[pMaterial->LightmapSlot].pSampler = LightmapSampler;
-
-        } else if ( bVertexLight ) {
-
+            GFrameResources.TextureBindings[pMaterial->LightmapSlot]->pTexture = GPUTextureHandle( Instance->Lightmap );
+        }
+        else if ( bVertexLight ) {
             pPipeline = pMaterial->LightPassVertexLight;
 
             pSecondVertexBuffer = GPUBufferHandle( Instance->VertexLightChannel );
             secondBufferOffset = Instance->VertexLightOffset;
-
-        } else {
-
+        }
+        else {
             pPipeline = pMaterial->LightPass[0];
 
             pSecondVertexBuffer = nullptr;
         }
-
         break;
 
     default:
@@ -396,13 +248,6 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
     // Bind second vertex buffer
     rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, secondBufferOffset );
 
-    // Set samplers
-    if ( pMaterial->bLightPassTextureFetch ) {
-        for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-            GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
-        }
-    }
-
     // Bind vertex and index buffers
     BindVertexAndIndexBuffers( Instance );
 
@@ -412,25 +257,14 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
         AVirtualTexture * pVirtualTex = GOpenGL45RenderBackend.VTWorkflow->FeedbackAnalyzer.GetTexture( textureUnit );
         //AN_ASSERT( pVirtualTex != nullptr );
 
-        GFrameResources.TextureBindings[6].pTexture = GOpenGL45RenderBackend.VTWorkflow->PhysCache.GetLayers()[0];
-        GFrameResources.SamplerBindings[6].pSampler = VirtualTextureSampler;
+        GFrameResources.TextureBindings[6]->pTexture = GOpenGL45RenderBackend.VTWorkflow->PhysCache.GetLayers()[0];
 
         if ( pVirtualTex ) {
-            GFrameResources.TextureBindings[7].pTexture = pVirtualTex->GetIndirectionTexture();
-            GFrameResources.SamplerBindings[7].pSampler = VirtualTextureIndirectionSampler;
+            GFrameResources.TextureBindings[7]->pTexture = pVirtualTex->GetIndirectionTexture();
         }
     }
 
     return true;
-}
-
-void ALightRenderer::BindTexturesLightPass( SMaterialFrameData * _Instance )
-{
-    if ( !_Instance->Material->bLightPassTextureFetch ) {
-        return;
-    }
-
-    BindTextures( _Instance );
 }
 
 void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
@@ -543,40 +377,27 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         GFrameResources.SetShadowMatrixBinding();
 
         if ( RVSSLR ) {
-            GFrameResources.TextureBindings[8].pTexture = ReflectionDepth_R->Actual();
-            GFrameResources.SamplerBindings[8].pSampler = ReflectDepthSampler;
-
-            GFrameResources.TextureBindings[9].pTexture = ReflectionColor_R->Actual();
-            GFrameResources.SamplerBindings[9].pSampler = ReflectSampler;
+            GFrameResources.TextureBindings[8]->pTexture = ReflectionDepth_R->Actual();
+            GFrameResources.TextureBindings[9]->pTexture = ReflectionColor_R->Actual();
         }
 
-        GFrameResources.TextureBindings[10].pTexture = PhotometricProfiles_R->Actual();
-        GFrameResources.SamplerBindings[10].pSampler = IESSampler;
-
-        GFrameResources.TextureBindings[11].pTexture = LookupBRDF_R->Actual();
-        GFrameResources.SamplerBindings[11].pSampler = LookupBRDFSampler;
+        GFrameResources.TextureBindings[10]->pTexture = PhotometricProfiles_R->Actual();
+        GFrameResources.TextureBindings[11]->pTexture = LookupBRDF_R->Actual();
 
         // Bind ambient occlusion
-        GFrameResources.TextureBindings[12].pTexture = SSAOTexture->Actual();
-        GFrameResources.SamplerBindings[12].pSampler = SSAOSampler;
+        GFrameResources.TextureBindings[12]->pTexture = SSAOTexture->Actual();
 
         // Bind cluster index buffer
-        GFrameResources.TextureBindings[13].pTexture = ClusterItemTBO_R->Actual();
-        GFrameResources.SamplerBindings[13].pSampler = ClusterLookupSampler;
+        GFrameResources.TextureBindings[13]->pTexture = ClusterItemTBO_R->Actual();
 
         // Bind cluster lookup
-        GFrameResources.TextureBindings[14].pTexture = ClusterLookup_R->Actual();
-        GFrameResources.SamplerBindings[14].pSampler = ClusterLookupSampler;
+        GFrameResources.TextureBindings[14]->pTexture = ClusterLookup_R->Actual();
 
         // Bind shadow map
-        GFrameResources.TextureBindings[15].pTexture = ShadowMapDepth0->Actual();
-        GFrameResources.SamplerBindings[15].pSampler = ShadowDepthSamplerPCF;
-        GFrameResources.TextureBindings[16].pTexture = ShadowMapDepth1->Actual();
-        GFrameResources.SamplerBindings[16].pSampler = ShadowDepthSamplerPCF;
-        GFrameResources.TextureBindings[17].pTexture = ShadowMapDepth2->Actual();
-        GFrameResources.SamplerBindings[17].pSampler = ShadowDepthSamplerPCF;
-        GFrameResources.TextureBindings[18].pTexture = ShadowMapDepth3->Actual();
-        GFrameResources.SamplerBindings[18].pSampler = ShadowDepthSamplerPCF;
+        GFrameResources.TextureBindings[15]->pTexture = ShadowMapDepth0->Actual();
+        GFrameResources.TextureBindings[16]->pTexture = ShadowMapDepth1->Actual();
+        GFrameResources.TextureBindings[17]->pTexture = ShadowMapDepth2->Actual();
+        GFrameResources.TextureBindings[18]->pTexture = ShadowMapDepth3->Actual();
 
         for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
             SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
@@ -587,7 +408,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             }
 
             // Bind textures
-            BindTexturesLightPass( instance->MaterialInstance );
+            BindTextures( instance->MaterialInstance, instance->Material->LightPassTextureCount );
 
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -595,7 +416,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             // Set instance uniforms
             SetInstanceUniforms( instance );
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -655,40 +476,27 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             GFrameResources.SetShadowMatrixBinding();
 
             if ( RVSSLR ) {
-                GFrameResources.TextureBindings[8].pTexture = ReflectionDepth_R->Actual();
-                GFrameResources.SamplerBindings[8].pSampler = ReflectDepthSampler;
-
-                GFrameResources.TextureBindings[9].pTexture = ReflectionColor_R->Actual();
-                GFrameResources.SamplerBindings[9].pSampler = ReflectSampler;
+                GFrameResources.TextureBindings[8]->pTexture = ReflectionDepth_R->Actual();
+                GFrameResources.TextureBindings[9]->pTexture = ReflectionColor_R->Actual();
             }
 
-            GFrameResources.TextureBindings[10].pTexture = PhotometricProfiles_R->Actual();
-            GFrameResources.SamplerBindings[10].pSampler = IESSampler;
-
-            GFrameResources.TextureBindings[11].pTexture = LookupBRDF_R->Actual();
-            GFrameResources.SamplerBindings[11].pSampler = LookupBRDFSampler;
+            GFrameResources.TextureBindings[10]->pTexture = PhotometricProfiles_R->Actual();
+            GFrameResources.TextureBindings[11]->pTexture = LookupBRDF_R->Actual();
 
             // Bind ambient occlusion
-            GFrameResources.TextureBindings[12].pTexture = SSAOTexture->Actual();
-            GFrameResources.SamplerBindings[12].pSampler = SSAOSampler;
+            GFrameResources.TextureBindings[12]->pTexture = SSAOTexture->Actual();
 
             // Bind cluster index buffer
-            GFrameResources.TextureBindings[13].pTexture = ClusterItemTBO_R->Actual();
-            GFrameResources.SamplerBindings[13].pSampler = ClusterLookupSampler;
+            GFrameResources.TextureBindings[13]->pTexture = ClusterItemTBO_R->Actual();
 
             // Bind cluster lookup
-            GFrameResources.TextureBindings[14].pTexture = ClusterLookup_R->Actual();
-            GFrameResources.SamplerBindings[14].pSampler = ClusterLookupSampler;
+            GFrameResources.TextureBindings[14]->pTexture = ClusterLookup_R->Actual();
 
             // Bind shadow map
-            GFrameResources.TextureBindings[15].pTexture = ShadowMapDepth0->Actual();
-            GFrameResources.SamplerBindings[15].pSampler = ShadowDepthSamplerPCF;
-            GFrameResources.TextureBindings[16].pTexture = ShadowMapDepth1->Actual();
-            GFrameResources.SamplerBindings[16].pSampler = ShadowDepthSamplerPCF;
-            GFrameResources.TextureBindings[17].pTexture = ShadowMapDepth2->Actual();
-            GFrameResources.SamplerBindings[17].pSampler = ShadowDepthSamplerPCF;
-            GFrameResources.TextureBindings[18].pTexture = ShadowMapDepth3->Actual();
-            GFrameResources.SamplerBindings[18].pSampler = ShadowDepthSamplerPCF;
+            GFrameResources.TextureBindings[15]->pTexture = ShadowMapDepth0->Actual();
+            GFrameResources.TextureBindings[16]->pTexture = ShadowMapDepth1->Actual();
+            GFrameResources.TextureBindings[17]->pTexture = ShadowMapDepth2->Actual();
+            GFrameResources.TextureBindings[18]->pTexture = ShadowMapDepth3->Actual();
 
             for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
                 SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
@@ -699,7 +507,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                 }
 
                 // Bind textures
-                BindTexturesLightPass( instance->MaterialInstance );
+                BindTextures( instance->MaterialInstance, instance->Material->LightPassTextureCount );
 
                 // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
@@ -708,7 +516,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                 // Set instance uniforms
                 SetInstanceUniforms( instance );
 
-                rcmd->BindShaderResources( &GFrameResources.Resources );
+                rcmd->BindResourceTable( &GFrameResources.Resources );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;

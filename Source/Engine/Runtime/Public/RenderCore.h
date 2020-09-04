@@ -119,7 +119,8 @@ constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 // Vertex formats
 //
 
-struct SMeshVertex {
+struct SMeshVertex
+{
     Float3      Position;         // 4 * 3 = 12 bytes
     uint16_t    TexCoord[2];      // 4 * 2 = 8 bytes      half: 4 bytes
     uint16_t    Normal[3];        // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
@@ -228,7 +229,8 @@ AN_FORCEINLINE const SMeshVertex MakeMeshVertex( Float3 const & Position, Float2
     return v;
 }
 
-AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value ) {
+AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value )
+{
     SMeshVertex Result;
 
     Result.Position   = Math::Lerp( _Vertex1.Position, _Vertex2.Position, _Value );
@@ -240,7 +242,8 @@ AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMes
     return Result;
 }
 
-struct SMeshVertexUV {
+struct SMeshVertexUV
+{
     Float2 TexCoord;
 
     void Write( IBinaryStream & _Stream ) const {
@@ -254,7 +257,8 @@ struct SMeshVertexUV {
     static SMeshVertexUV Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value = 0.5f );
 };
 
-AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value ) {
+AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value )
+{
     SMeshVertexUV Result;
 
     Result.TexCoord   = Math::Lerp( _Vertex1.TexCoord, _Vertex2.TexCoord, _Value );
@@ -262,7 +266,8 @@ AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1
     return Result;
 }
 
-struct SMeshVertexLight {
+struct SMeshVertexLight
+{
     uint32_t VertexLight;
 
     void Write( IBinaryStream & _Stream ) const {
@@ -276,7 +281,8 @@ struct SMeshVertexLight {
     static SMeshVertexLight Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value = 0.5f );
 };
 
-AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value ) {
+AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value )
+{
     SMeshVertexLight Result;
 
     const byte * c0 = reinterpret_cast< const byte * >( &_Vertex1.VertexLight );
@@ -306,7 +312,8 @@ AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const &
     return Result;
 }
 
-struct SMeshVertexSkin {
+struct SMeshVertexSkin
+{
     uint8_t JointIndices[4];
     uint8_t JointWeights[4];
 
@@ -319,13 +326,15 @@ struct SMeshVertexSkin {
     }
 };
 
-struct SHUDDrawVert {
+struct SHUDDrawVert
+{
     Float2   Position;
     Float2   TexCoord;
     uint32_t Color;
 };
 
-struct SDebugVertex {
+struct SDebugVertex
+{
     Float3 Position;
     uint32_t Color;
 };
@@ -334,7 +343,8 @@ struct SDebugVertex {
 // Texture formats
 //
 
-enum ENormalMapCompression {
+enum ENormalMapCompression
+{
     NM_XYZ              = 0,
     NM_XY               = 1,
     NM_SPHEREMAP        = 2,
@@ -345,7 +355,8 @@ enum ENormalMapCompression {
     NM_DXT5             = 7
 };
 
-enum ETextureColorSpace {
+enum ETextureColorSpace
+{
     TEXTURE_COLORSPACE_RGBA,
     TEXTURE_COLORSPACE_SRGB_ALPHA,
     TEXTURE_COLORSPACE_YCOCG,
@@ -355,7 +366,8 @@ enum ETextureColorSpace {
     //TEXTURE_COLORSPACE_RGBA_UINT
 };
 
-enum ETextureType {
+enum ETextureType
+{
     TEXTURE_1D,
     TEXTURE_1D_ARRAY,
     TEXTURE_2D,
@@ -366,7 +378,8 @@ enum ETextureType {
     TEXTURE_TYPE_MAX
 };
 
-enum ETextureFilter {
+enum ETextureFilter
+{
     TEXTURE_FILTER_LINEAR,
     TEXTURE_FILTER_NEAREST,
     TEXTURE_FILTER_MIPMAP_NEAREST,
@@ -375,7 +388,8 @@ enum ETextureFilter {
     TEXTURE_FILTER_MIPMAP_TRILINEAR
 };
 
-enum ETextureAddress {
+enum ETextureAddress
+{
     TEXTURE_ADDRESS_WRAP,
     TEXTURE_ADDRESS_MIRROR,
     TEXTURE_ADDRESS_CLAMP,
@@ -383,7 +397,8 @@ enum ETextureAddress {
     TEXTURE_ADDRESS_MIRROR_ONCE
 };
 
-struct STextureSampler {
+struct STextureSampler
+{
     ETextureType TextureType;
     ETextureFilter Filter;
     ETextureAddress AddressU;
@@ -499,7 +514,8 @@ enum ETexturePixelFormat : uint8_t
     // TEXTURE_PF_<name> = ( 3<<6 ) | n,
 };
 
-struct STexturePixelFormat {
+struct STexturePixelFormat
+{
     ETexturePixelFormat Data;
 
     STexturePixelFormat() : Data( TEXTURE_PF_BGRA8_SRGB ) {}
@@ -542,7 +558,8 @@ struct STexturePixelFormat {
 };
 
 #if 0
-enum ETextureGroup {
+enum ETextureGroup
+{
 
     //
     // Albedo color map
@@ -602,7 +619,8 @@ enum ETextureGroup {
 // Material
 //
 
-enum EMaterialType {
+enum EMaterialType
+{
     MATERIAL_TYPE_UNLIT,
     MATERIAL_TYPE_BASELIGHT,
     MATERIAL_TYPE_PBR,
@@ -610,13 +628,15 @@ enum EMaterialType {
     MATERIAL_TYPE_POSTPROCESS
 };
 
-enum EMaterialDepthHack {
+enum EMaterialDepthHack
+{
     MATERIAL_DEPTH_HACK_NONE,
     MATERIAL_DEPTH_HACK_WEAPON,
     MATERIAL_DEPTH_HACK_SKYBOX
 };
 
-enum EColorBlending {
+enum EColorBlending
+{
     COLOR_BLENDING_ALPHA,
     COLOR_BLENDING_DISABLED,
     COLOR_BLENDING_PREMULTIPLIED_ALPHA,
@@ -712,13 +732,13 @@ struct SMaterialDef
     /** Lightmap binding unit */
     int LightmapSlot;
 
-    /** Have texture fetching in vertex stage. This flag allow renderer to optimize sampler/texture bindings
+    /** Texture binding count for different passes. This allow renderer to optimize sampler/texture bindings
     during rendering. */
-    bool bDepthPassTextureFetch : 1;
-    bool bLightPassTextureFetch : 1;
-    bool bWireframePassTextureFetch : 1;
-    bool bNormalsPassTextureFetch : 1;
-    bool bShadowMapPassTextureFetch : 1;
+    int DepthPassTextureCount;
+    int LightPassTextureCount;
+    int WireframePassTextureCount;
+    int NormalsPassTextureCount;
+    int ShadowMapPassTextureCount;
 
     /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
     during rendering. */
@@ -773,7 +793,8 @@ struct SMaterialDef
 // GPU Resources
 //
 
-class IGPUResourceOwner {
+class IGPUResourceOwner
+{
 public:
     /** GPU resource owner must override this to upload resources to GPU */
     virtual void UploadResourcesGPU() = 0;
@@ -803,7 +824,8 @@ private:
     static IGPUResourceOwner * ResourceOwnersTail;
 };
 
-class AResourceGPU {
+class AResourceGPU
+{
 public:
     /** Get resource owner */
     IGPUResourceOwner * GetOwner() { return pOwner; }
@@ -851,30 +873,30 @@ private:
     static AResourceGPU * GPUResourcesTail;
 };
 
-class ATextureGPU : public AResourceGPU {
+class ATextureGPU : public AResourceGPU
+{
 public:
     TRef< RenderCore::ITexture > pTexture;
 };
 
-class ABufferGPU : public AResourceGPU {
+class ABufferGPU : public AResourceGPU
+{
 public:
     TRef< RenderCore::IBuffer > pBuffer;
 };
 
-class AMaterialGPU : public AResourceGPU {
+class AMaterialGPU : public AResourceGPU
+{
 public:
     EMaterialType MaterialType;
 
-    void *  pSampler[MAX_MATERIAL_TEXTURES];
-    int     NumSamplers;
-
     int     LightmapSlot;
 
-    bool    bDepthPassTextureFetch;
-    bool    bLightPassTextureFetch;
-    bool    bWireframePassTextureFetch;
-    bool    bNormalsPassTextureFetch;
-    bool    bShadowMapPassTextureFetch;
+    int DepthPassTextureCount;
+    int LightPassTextureCount;
+    int WireframePassTextureCount;
+    int NormalsPassTextureCount;
+    int ShadowMapPassTextureCount;
 
     TRef< RenderCore::IPipeline > DepthPass[2];
     TRef< RenderCore::IPipeline > DepthVelocityPass[2];
@@ -889,7 +911,8 @@ public:
     TRef< RenderCore::IPipeline > HUDPipeline;
 };
 
-struct SMaterialFrameData {
+struct SMaterialFrameData
+{
     AMaterialGPU * Material;
     ATextureGPU * Textures[MAX_MATERIAL_TEXTURES];
     int NumTextures;
@@ -903,7 +926,8 @@ struct SMaterialFrameData {
 // HUD
 //
 
-enum EHUDDrawCmd {
+enum EHUDDrawCmd
+{
     HUD_DRAW_CMD_ALPHA,     // fonts, primitves, textures with one alpha channel
     HUD_DRAW_CMD_TEXTURE,   // textures
     HUD_DRAW_CMD_MATERIAL,  // material instances (MATERIAL_TYPE_HUD)
@@ -912,7 +936,8 @@ enum EHUDDrawCmd {
     HUD_DRAW_CMD_MAX
 };
 
-enum EDebugDrawCmd {
+enum EDebugDrawCmd
+{
     DBG_DRAW_CMD_POINTS,
     DBG_DRAW_CMD_POINTS_DEPTH_TEST,
     DBG_DRAW_CMD_LINES,
@@ -925,7 +950,8 @@ enum EDebugDrawCmd {
     DBG_DRAW_CMD_NOP
 };
 
-struct SDebugDrawCmd {
+struct SDebugDrawCmd
+{
     EDebugDrawCmd Type;
     int FirstVertex;
     int NumVertices;
@@ -933,7 +959,8 @@ struct SDebugDrawCmd {
     int NumIndices;
 };
 
-enum EHUDSamplerType {
+enum EHUDSamplerType
+{
     HUD_SAMPLER_TILED_LINEAR,
     HUD_SAMPLER_TILED_NEAREST,
 
@@ -952,7 +979,8 @@ enum EHUDSamplerType {
     HUD_SAMPLER_MAX
 };
 
-struct SHUDDrawCmd {
+struct SHUDDrawCmd
+{
     unsigned int    IndexCount;
     unsigned int    StartIndexLocation;
     unsigned int    BaseVertexLocation;
@@ -969,7 +997,8 @@ struct SHUDDrawCmd {
     };
 };
 
-struct SHUDDrawList {
+struct SHUDDrawList
+{
     //int             VerticesCount;
     //int             IndicesCount;
     size_t          VertexStreamOffset;
@@ -981,7 +1010,8 @@ struct SHUDDrawList {
     SHUDDrawList *  pNext;
 };
 
-struct SDirectionalLightDef {
+struct SDirectionalLightDef
+{
     Float4   ColorAndAmbientIntensity;
     Float3x3 Matrix;            // Light rotation matrix
     int      RenderMask;
@@ -993,11 +1023,11 @@ struct SDirectionalLightDef {
 };
 
 
-//
-// Render instance
-//
-
-struct SRenderInstance {
+/**
+Render instance
+*/
+struct SRenderInstance
+{
     AMaterialGPU *      Material;
     SMaterialFrameData *MaterialInstance;
 
@@ -1055,7 +1085,8 @@ struct SRenderInstance {
 // ShadowMap Render instance
 //
 
-struct SShadowRenderInstance {
+struct SShadowRenderInstance
+{
     AMaterialGPU *      Material;
     SMaterialFrameData *MaterialInstance;
     ABufferGPU *        VertexBuffer;
@@ -1086,7 +1117,8 @@ struct SShadowRenderInstance {
 // Light Portal Render instance
 //
 
-struct SLightPortalRenderInstance {
+struct SLightPortalRenderInstance
+{
     ABufferGPU *        VertexBuffer;
     size_t              VertexBufferOffset;
     ABufferGPU *        IndexBuffer;
@@ -1107,7 +1139,8 @@ struct SLightPortalRenderInstance {
 // int NumDecals = ( Offest.Y >> 8 ) & 0xff;
 // int NumLights = ( Offest.Y >> 16 ) & 0xff;
 // int Unused = ( Offest.Y >> 24 ) & 0xff // can be used in future
-struct SClusterData {
+struct SClusterData
+{
     uint32_t ItemOffset;
     uint8_t NumProbes;
     uint8_t NumDecals;
@@ -1116,7 +1149,8 @@ struct SClusterData {
 };
 
 // texture1d R32UI
-struct SClusterItemBuffer {
+struct SClusterItemBuffer
+{
     /**
     Packed light, decal and probe index:
 
@@ -1131,12 +1165,14 @@ struct SClusterItemBuffer {
     uint32_t Indices;
 };
 
-enum EClusterLightType {
+enum EClusterLightType
+{
     CLUSTER_LIGHT_POINT,
     CLUSTER_LIGHT_SPOT,
 };
 
-struct SClusterLight {
+struct SClusterLight
+{
     Float3 Position;
     float  Radius;
 
@@ -1157,7 +1193,8 @@ struct SClusterLight {
     int ShadowmapIndex;
 };
 
-struct SLightShadowmap {
+struct SLightShadowmap
+{
     int FirstShadowInstance;
     int ShadowInstanceCount;
 
@@ -1165,7 +1202,8 @@ struct SLightShadowmap {
     int LightPortalsCount;
 };
 
-struct SClusterProbe {
+struct SClusterProbe
+{
     Float3 Position;
     float  Radius;
 
@@ -1175,7 +1213,8 @@ struct SClusterProbe {
     unsigned int Padding1;
 };
 
-struct SFrameLightData {
+struct SFrameLightData
+{
     static constexpr int MAX_ITEM_BUFFER = 1024*512; // TODO: подобрать оптимальный размер
 
     SClusterData ClusterLookup[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
@@ -1184,11 +1223,14 @@ struct SFrameLightData {
     int TotalItems;
 };
 
-//
-// Render frame
-//
 
-struct SRenderView {
+/**
+
+View data (POD)
+
+*/
+struct SRenderView
+{
     // Current view index
     int ViewIndex;
 
@@ -1303,7 +1345,13 @@ struct SRenderView {
     SFrameLightData LightData;
 };
 
-struct SRenderFrame {
+/**
+
+Frame data
+
+*/
+struct SRenderFrame
+{
     // Game tick
     int FrameNumber;
 
@@ -1314,6 +1362,9 @@ struct SRenderFrame {
     // Canvas size
     int CanvasWidth;
     int CanvasHeight;
+
+    // Canvas projection matrix
+    Float4x4 OrthoProjection;
 
     SRenderView * RenderViews;
     int NumViews;
@@ -1336,7 +1387,8 @@ struct SRenderFrame {
     ABufferGPU * StreamBuffer;
 };
 
-struct SRenderFrontendDef {
+struct SRenderFrontendDef
+{
     SRenderView * View;
     BvFrustum const * Frustum;
     int VisibilityMask;
@@ -1351,25 +1403,29 @@ struct SRenderFrontendDef {
 // Render backend interface
 //
 
-struct STextureOffset {
+struct STextureOffset
+{
     uint16_t Lod;
     uint16_t X;
     uint16_t Y;
     uint16_t Z;
 };
 
-struct STextureDimension {
+struct STextureDimension
+{
     uint16_t X;
     uint16_t Y;
     uint16_t Z;
 };
 
-struct STextureRect {
+struct STextureRect
+{
     STextureOffset Offset;
     STextureDimension Dimension;
 };
 
-class IRenderBackend {
+class IRenderBackend
+{
 public:
     IRenderBackend( const char * _BackendName ) : BackendName( _BackendName ) {}
 

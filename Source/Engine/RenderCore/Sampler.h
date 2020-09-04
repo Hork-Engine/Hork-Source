@@ -69,7 +69,7 @@ enum SAMPLER_ADDRESS_MODE : uint8_t
     SAMPLER_ADDRESS_MIRROR_ONCE  = 4
 };
 
-struct SSamplerCreateInfo
+struct SSamplerInfo
 {
     SAMPLER_FILTER       Filter;             // filtering method to use when sampling a texture
     SAMPLER_ADDRESS_MODE AddressU;
@@ -84,7 +84,7 @@ struct SSamplerCreateInfo
     float                MaxLOD;
     bool                 bCubemapSeamless;
 
-    SSamplerCreateInfo()
+    SSamplerInfo()
     {
         // Default values from OpenGL specification
         Filter = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR;
@@ -104,54 +104,54 @@ struct SSamplerCreateInfo
         bCubemapSeamless = false;
     }
 
-    SSamplerCreateInfo & SetFilter( SAMPLER_FILTER InFilter ) {
+    SSamplerInfo & SetFilter( SAMPLER_FILTER InFilter ) {
         Filter = InFilter;
         return *this;
     }
 
-    SSamplerCreateInfo & SetAddress( SAMPLER_ADDRESS_MODE InAddress ) {
+    SSamplerInfo & SetAddress( SAMPLER_ADDRESS_MODE InAddress ) {
         AddressU = InAddress;
         AddressV = InAddress;
         AddressW = InAddress;
         return *this;
     }
 
-    SSamplerCreateInfo & SetAddressU( SAMPLER_ADDRESS_MODE InAddressU ) {
+    SSamplerInfo & SetAddressU( SAMPLER_ADDRESS_MODE InAddressU ) {
         AddressU = InAddressU;
         return *this;
     }
 
-    SSamplerCreateInfo & SetAddressV( SAMPLER_ADDRESS_MODE InAddressV ) {
+    SSamplerInfo & SetAddressV( SAMPLER_ADDRESS_MODE InAddressV ) {
         AddressV = InAddressV;
         return *this;
     }
 
-    SSamplerCreateInfo & SetAddressW( SAMPLER_ADDRESS_MODE InAddressW ) {
+    SSamplerInfo & SetAddressW( SAMPLER_ADDRESS_MODE InAddressW ) {
         AddressW = InAddressW;
         return *this;
     }
 
-    SSamplerCreateInfo & SetMipLODBias( float InMipLODBias ) {
+    SSamplerInfo & SetMipLODBias( float InMipLODBias ) {
         MipLODBias = InMipLODBias;
         return *this;
     }
 
-    SSamplerCreateInfo & SetMaxAnisotropy( uint8_t InMaxAnisotropy ) {
+    SSamplerInfo & SetMaxAnisotropy( uint8_t InMaxAnisotropy ) {
         MaxAnisotropy = InMaxAnisotropy;
         return *this;
     }
 
-    SSamplerCreateInfo & SetComparisonFunc( COMPARISON_FUNCTION InComparisonFunc ) {
+    SSamplerInfo & SetComparisonFunc( COMPARISON_FUNCTION InComparisonFunc ) {
         ComparisonFunc = InComparisonFunc;
         return *this;
     }
 
-    SSamplerCreateInfo & SetCompareRefToTexture( bool InbCompareRefToTexture ) {
+    SSamplerInfo & SetCompareRefToTexture( bool InbCompareRefToTexture ) {
         bCompareRefToTexture = InbCompareRefToTexture;
         return *this;
     }
 
-    SSamplerCreateInfo & SetBorderColor( float InR, float InG, float InB, float InA ) {
+    SSamplerInfo & SetBorderColor( float InR, float InG, float InB, float InA ) {
         BorderColor[0] = InR;
         BorderColor[1] = InG;
         BorderColor[2] = InB;
@@ -159,17 +159,17 @@ struct SSamplerCreateInfo
         return *this;
     }
 
-    SSamplerCreateInfo & SetMinLOD( float InMinLOD ) {
+    SSamplerInfo & SetMinLOD( float InMinLOD ) {
         MinLOD = InMinLOD;
         return *this;
     }
 
-    SSamplerCreateInfo & SetMaxLOD( float InMaxLOD ) {
+    SSamplerInfo & SetMaxLOD( float InMaxLOD ) {
         MaxLOD = InMaxLOD;
         return *this;
     }
 
-    SSamplerCreateInfo & SetCubemapSeamless( bool InbCubemapSeamless ) {
+    SSamplerInfo & SetCubemapSeamless( bool InbCubemapSeamless ) {
         bCubemapSeamless = InbCubemapSeamless;
         return *this;
     }

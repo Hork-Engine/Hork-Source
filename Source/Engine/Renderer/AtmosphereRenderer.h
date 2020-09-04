@@ -44,11 +44,8 @@ private:
         Float4x4 Transform[6];
         Float4 LightDir;
     };
-    TRef< RenderCore::IBuffer > m_VertexBuffer;
-    TRef< RenderCore::IBuffer > m_IndexBuffer;
     TRef< RenderCore::IBuffer > m_UniformBuffer;
     SUniformBufferData m_UniformBufferData;
     TRef< RenderCore::IPipeline > m_Pipeline;
     TRef< RenderCore::IRenderPass > m_RP;
-    int m_IndexCount;
 };

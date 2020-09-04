@@ -59,18 +59,18 @@ AVirtualTextureFeedback::AVirtualTextureFeedback()
     : SwapIndex( 0 )
     , ResolutionRatio( 0.0f )
 {
+    using namespace RenderCore;
+
     FeedbackSize[0] = FeedbackSize[1] = 0;
     MappedData[0] = MappedData[1] = 0;
 
-    using namespace RenderCore;
-    SSamplerCreateInfo samplerCI;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.Filter = FILTER_NEAREST;
-    GDevice->GetOrCreateSampler( samplerCI, &NearestSampler );
+    SSamplerInfo nearestSampler;
+    nearestSampler.Filter = FILTER_NEAREST;
+    nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    nearestSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    CreateFullscreenQuadPipeline( &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag" );
+    CreateFullscreenQuadPipeline( &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &nearestSampler, 1 );
 }
 
 AVirtualTextureFeedback::~AVirtualTextureFeedback()
@@ -262,7 +262,7 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
             // Set instance uniforms
             SetInstanceUniformsFB( instance );
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -322,10 +322,9 @@ void AVirtualTextureFeedback::DrawFeedback( AFrameGraph & FrameGraph, AFrameGrap
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
         using namespace RenderCore;
-        GFrameResources.TextureBindings[0].pTexture = FeedbackTexture_R->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
+        GFrameResources.TextureBindings[0]->pTexture = FeedbackTexture_R->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( DrawFeedbackPipeline );
     } );

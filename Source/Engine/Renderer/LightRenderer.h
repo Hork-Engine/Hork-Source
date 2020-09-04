@@ -51,26 +51,6 @@ private:
     void CreateLookupBRDF();
 
     bool BindMaterialLightPass( SRenderInstance const * Instance );
-    void BindTexturesLightPass( SMaterialFrameData * _Instance );
-
-    RenderCore::Sampler LightmapSampler;
-    RenderCore::Sampler ReflectDepthSampler;
-    RenderCore::Sampler ReflectSampler;
-    RenderCore::Sampler VirtualTextureSampler;
-    RenderCore::Sampler VirtualTextureIndirectionSampler;
-
-    RenderCore::Sampler ShadowDepthSamplerPCF;
-    RenderCore::Sampler ShadowDepthSamplerVSM;
-    RenderCore::Sampler ShadowDepthSamplerEVSM;
-    RenderCore::Sampler ShadowDepthSamplerPCSS0;
-    RenderCore::Sampler ShadowDepthSamplerPCSS1;
-
-    RenderCore::Sampler IESSampler;
 
     TRef< RenderCore::ITexture > LookupBRDF;
-    RenderCore::Sampler LookupBRDFSampler;
-
-    RenderCore::Sampler SSAOSampler;
-
-    RenderCore::Sampler ClusterLookupSampler;
 };

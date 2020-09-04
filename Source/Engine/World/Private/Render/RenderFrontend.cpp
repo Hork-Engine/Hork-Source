@@ -53,9 +53,17 @@ ARuntimeVariable RVResolutionScaleX( _CTS( "ResolutionScaleX" ), _CTS( "1" ) );
 ARuntimeVariable RVResolutionScaleY( _CTS( "ResolutionScaleY" ), _CTS( "1" ) );
 ARuntimeVariable RVRenderLightPortals( _CTS( "RenderLightPortals" ), _CTS( "1" ) );
 
-ARenderFrontend & GRenderFrontend = ARenderFrontend::Inst();
+AN_CLASS_META( ARenderFrontend )
 
 ARenderFrontend::ARenderFrontend() {
+    VSD_Initialize();
+
+    PhotometricProfiles = NewObject< ATexture >();
+    PhotometricProfiles->Initialize1DArray( TEXTURE_PF_R8_UNORM, 1, 256, 256 );
+}
+
+ARenderFrontend::~ARenderFrontend() {
+    VSD_Deinitialize();
 }
 
 struct SInstanceSortFunction {
@@ -69,36 +77,6 @@ struct SShadowInstanceSortFunction {
         return _A->SortKey < _B->SortKey;
     }
 } ShadowInstanceSortFunction;
-
-void ARenderFrontend::Initialize() {
-    VSD_Initialize();
-
-    PhotometricProfiles = CreateInstanceOf< ATexture >();
-    PhotometricProfiles->Initialize1DArray( TEXTURE_PF_R8_UNORM, 1, 256, 256 );
-}
-
-void ARenderFrontend::Deinitialize() {
-    VSD_Deinitialize();
-
-    VisLights.Free();
-    VisIBLs.Free();
-    VisPrimitives.Free();
-    VisSurfaces.Free();
-    ShadowCasters.Free();
-    ShadowBoxes.Free();
-    ShadowCasterCullResult.Free();
-    DebugDraw.Free();
-    Viewports.Free();
-
-    FrameData.Instances.Free();
-    FrameData.TranslucentInstances.Free();
-    FrameData.ShadowInstances.Free();
-    FrameData.LightPortals.Free();
-    FrameData.DirectionalLights.Free();
-    FrameData.LightShadowmaps.Free();
-
-    PhotometricProfiles.Reset();
-}
 
 void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData.FrameNumber = FrameNumber = GRuntime.SysFrameNumber();
@@ -119,14 +97,22 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
 
     FrameData.AllocSurfaceWidth = MaxViewportWidth;
     FrameData.AllocSurfaceHeight = MaxViewportHeight;
+
     FrameData.CanvasWidth = InCanvas->Width;
     FrameData.CanvasHeight = InCanvas->Height;
+
+    const Float2 orthoMins( 0.0f, (float)FrameData.CanvasHeight );
+    const Float2 orthoMaxs( (float)FrameData.CanvasWidth, 0.0f );
+    FrameData.OrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs );
+
     FrameData.Instances.Clear();
     FrameData.TranslucentInstances.Clear();
+    FrameData.OutlineInstances.Clear();
     FrameData.ShadowInstances.Clear();
     FrameData.LightPortals.Clear();
     FrameData.DirectionalLights.Clear();
     FrameData.LightShadowmaps.Clear();
+
     //FrameData.ShadowCascadePoolSize = 0;
     FrameData.StreamBuffer = GStreamedMemoryGPU.GetBufferGPU();
     DebugDraw.Reset();

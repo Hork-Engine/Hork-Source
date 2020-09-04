@@ -57,12 +57,6 @@ ACanvasRenderer::ACanvasRenderer()
 
     CreatePresentViewPipeline();
     CreatePipelines();
-
-    //
-    // Create samplers
-    //
-
-    CreateSamplers();
 }
 
 void ACanvasRenderer::CreatePresentViewPipeline() {
@@ -141,6 +135,15 @@ void ACanvasRenderer::CreatePresentViewPipeline() {
 
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
+
+    SSamplerInfo samplerCI;
+    samplerCI.Filter = FILTER_LINEAR;//FILTER_NEAREST; // linear is better for dynamic resolution
+    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    pipelineCI.SS.NumSamplers = 1;
+    pipelineCI.SS.Samplers = &samplerCI;
 
     for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
         if ( i == COLOR_BLENDING_DISABLED ) {
@@ -232,6 +235,11 @@ void ACanvasRenderer::CreatePipelines() {
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
+    SSamplerInfo samplerCI;
+
+    pipelineCI.SS.NumSamplers = 1;
+    pipelineCI.SS.Samplers = &samplerCI;
+
     for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
         if ( i == COLOR_BLENDING_DISABLED ) {
             pipelineCI.BS.RenderTargetSlots[0].SetBlendingPreset( BLENDING_NO_BLEND );
@@ -241,22 +249,12 @@ void ACanvasRenderer::CreatePipelines() {
             pipelineCI.BS.RenderTargetSlots[0].SetBlendingPreset( (BLENDING_PRESET)(BLENDING_NO_BLEND + i) );
         }
 
-        GDevice->CreatePipeline( pipelineCI, &Pipelines[i] );
-    }
-}
+        for ( int j = 0 ; j < HUD_SAMPLER_MAX ; j++ ) {
+            samplerCI.Filter = (j & 1) ? FILTER_NEAREST : FILTER_LINEAR;
+            samplerCI.AddressU = samplerCI.AddressV = samplerCI.AddressW = (SAMPLER_ADDRESS_MODE)(j >> 1);
 
-void ACanvasRenderer::CreateSamplers() {
-    SSamplerCreateInfo samplerCI;
-    samplerCI.Filter = FILTER_LINEAR;//FILTER_NEAREST; // linear is better for dynamic resolution
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &PresentViewSampler );
-
-    for ( int i = 0 ; i < HUD_SAMPLER_MAX ; i++ ) {
-        samplerCI.Filter = (i & 1) ? FILTER_NEAREST : FILTER_LINEAR;
-        samplerCI.AddressU = samplerCI.AddressV = samplerCI.AddressW = (SAMPLER_ADDRESS_MODE)(i >> 1);
-        GDevice->GetOrCreateSampler( samplerCI, &Samplers[i] );
+            GDevice->CreatePipeline( pipelineCI, &Pipelines[i][j] );
+        }
     }
 }
 
@@ -282,11 +280,6 @@ void ACanvasRenderer::BeginCanvasPass() {
     vp.MinDepth = 0;
     vp.MaxDepth = 1;
     rcmd->SetViewport( vp );
-
-    //for ( int i = 0 ; i < GFrameResources.Resources.NumTextures ; i++ ) {
-    //    GFrameResources.Resources.Textures[i].pTexture=nullptr;
-    //    GFrameResources.Resources.Samplers[i].pSampler=nullptr;
-    //}
 }
 
 void ACanvasRenderer::Render() {
@@ -315,18 +308,21 @@ void ACanvasRenderer::Render() {
         size_t Size;
     };
 
-    SCanvasBinding CanvasBinding;
+    SCanvasBinding canvasBinding;
 
-    // Calc canvas projection matrix
-    const Float2 orthoMins( 0.0f, (float)GFrameData->CanvasHeight );
-    const Float2 orthoMaxs( (float)GFrameData->CanvasWidth, 0.0f );
-
-    CanvasBinding.Size = sizeof( SCanvasUniforms );
-    CanvasBinding.Offset = GFrameResources.FrameConstantBuffer->Allocate( CanvasBinding.Size );
-    void * pMemory = GFrameResources.FrameConstantBuffer->GetMappedMemory() + CanvasBinding.Offset;
+    canvasBinding.Size = sizeof( SCanvasUniforms );
+    canvasBinding.Offset = GFrameResources.FrameConstantBuffer->Allocate( canvasBinding.Size );
+    void * pMemory = GFrameResources.FrameConstantBuffer->GetMappedMemory() + canvasBinding.Offset;
     SCanvasUniforms * pCanvasUniforms = (SCanvasUniforms *)pMemory;
 
-    pCanvasUniforms->OrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs ); // TODO: calc ortho projection in render frontend
+    pCanvasUniforms->OrthoProjection = GFrameData->OrthoProjection;
+
+    SResourceTable canvasResources;
+
+    SResourceBufferBinding * canvasUniformBuffer = canvasResources.AddBuffer( UNIFORM_BUFFER );
+    SResourceTextureBinding * canvasTextureBinding = canvasResources.AddTexture();
+
+    canvasUniformBuffer->pBuffer = GFrameResources.FrameConstantBuffer->GetBuffer();
 
     IBuffer * streamBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
 
@@ -359,9 +355,13 @@ void ACanvasRenderer::Render() {
                     rcmd->BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
                     // Use view uniform buffer binding from rendered view
-                    GFrameResources.TextureBindings[0].pTexture = viewTexture->Actual();
-                    GFrameResources.SamplerBindings[0].pSampler = PresentViewSampler;
-                    rcmd->BindShaderResources( &GFrameResources.Resources );
+                    canvasUniformBuffer->BindingOffset = GFrameResources.ViewUniformBufferBinding->BindingOffset;
+                    canvasUniformBuffer->BindingSize = GFrameResources.ViewUniformBufferBinding->BindingSize;
+
+                    // Set texture
+                    canvasTextureBinding->pTexture = viewTexture->Actual();
+
+                    rcmd->BindResourceTable( &canvasResources );
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;
@@ -388,16 +388,12 @@ void ACanvasRenderer::Render() {
                     rcmd->BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
                     rcmd->BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    BindTextures( cmd->MaterialFrameData );
+                    BindTextures( cmd->MaterialFrameData, cmd->MaterialFrameData->NumTextures );
 
-                    GFrameResources.ViewUniformBufferBinding->BindingOffset = CanvasBinding.Offset;
-                    GFrameResources.ViewUniformBufferBinding->BindingSize = CanvasBinding.Size;
+                    GFrameResources.ViewUniformBufferBinding->BindingOffset = canvasBinding.Offset;
+                    GFrameResources.ViewUniformBufferBinding->BindingSize = canvasBinding.Size;
 
-                    for ( int i = 0 ; i < pMaterial->NumSamplers ; i++ ) {
-                        GFrameResources.SamplerBindings[i].pSampler = pMaterial->pSampler[i];
-                    }
-
-                    rcmd->BindShaderResources( &GFrameResources.Resources );
+                    rcmd->BindResourceTable( &GFrameResources.Resources );
 
                     // FIXME: What about material uniforms?
 
@@ -416,17 +412,20 @@ void ACanvasRenderer::Render() {
 
                 default:
                 {
-                    IPipeline * pPipeline = Pipelines[cmd->Blending].GetObject();
+                    IPipeline * pPipeline = Pipelines[cmd->Blending][cmd->SamplerType].GetObject();
 
                     rcmd->BindPipeline( pPipeline );
                     rcmd->BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
                     rcmd->BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    GFrameResources.ViewUniformBufferBinding->BindingOffset = CanvasBinding.Offset;
-                    GFrameResources.ViewUniformBufferBinding->BindingSize = CanvasBinding.Size;
-                    GFrameResources.TextureBindings[0].pTexture = GPUTextureHandle( cmd->Texture );
-                    GFrameResources.SamplerBindings[0].pSampler = Samplers[cmd->SamplerType];
-                    rcmd->BindShaderResources( &GFrameResources.Resources );
+                    // Use view uniform buffer binding from rendered view
+                    canvasUniformBuffer->BindingOffset = canvasBinding.Offset;
+                    canvasUniformBuffer->BindingSize = canvasBinding.Size;
+
+                    // Set texture
+                    canvasTextureBinding->pTexture = GPUTextureHandle( cmd->Texture );
+
+                    rcmd->BindResourceTable( &canvasResources );
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;

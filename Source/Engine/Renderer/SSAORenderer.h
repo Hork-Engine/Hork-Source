@@ -51,8 +51,6 @@ private:
 
     void ResizeAO( int Width, int Height );
 
-    void CreateSamplers();
-
     enum { HBAO_RANDOM_SIZE = 4 };
     enum { HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE*HBAO_RANDOM_SIZE };
 
@@ -69,12 +67,6 @@ private:
     TRef< RenderCore::IPipeline > CacheAwarePipe;
     TRef< RenderCore::IPipeline > CacheAwarePipe_ORTHO;
     TRef< RenderCore::IPipeline > BlurPipe;
-    RenderCore::Sampler DepthSampler;
-    RenderCore::Sampler LinearDepthSampler;
-    RenderCore::Sampler NormalSampler;
-    RenderCore::Sampler BlurSampler;
-    RenderCore::Sampler NearestSampler;
-    RenderCore::Sampler RandomMapSampler;
     TRef< RenderCore::ITexture > RandomMap;
     TRef< RenderCore::IPipeline > DeinterleavePipe;
     TRef< RenderCore::IPipeline > ReinterleavePipe;

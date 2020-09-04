@@ -283,6 +283,8 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode ) {
 
     InternalPixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = TEXTURE_FORMAT_R11F_G11F_B10F;
 
+    InitMaterialSamplers();
+
     FrameGraph = MakeRef< AFrameGraph >( GDevice );
     FrameRenderer = MakeRef< AFrameRenderer >();
     CanvasRenderer = MakeRef< ACanvasRenderer >();
@@ -622,21 +624,20 @@ void ARenderBackend::DestroyMaterial( AMaterialGPU * _Material ) {
     DestroyResource( _Material );
 }
 
-void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def ) {
+void ARenderBackend::InitializeMaterial( AMaterialGPU * Material, SMaterialDef const * Def ) {
     using namespace RenderCore;
 
-    _Material->MaterialType = _Def->Type;
-    _Material->LightmapSlot = _Def->LightmapSlot;
-    _Material->bDepthPassTextureFetch     = _Def->bDepthPassTextureFetch;
-    _Material->bLightPassTextureFetch     = _Def->bLightPassTextureFetch;
-    _Material->bWireframePassTextureFetch = _Def->bWireframePassTextureFetch;
-    _Material->bNormalsPassTextureFetch   = _Def->bNormalsPassTextureFetch;
-    _Material->bShadowMapPassTextureFetch = _Def->bShadowMapPassTextureFetch;
-    _Material->NumSamplers      = _Def->NumSamplers;
+    Material->MaterialType = Def->Type;
+    Material->LightmapSlot = Def->LightmapSlot;
+    Material->DepthPassTextureCount     = Def->DepthPassTextureCount;
+    Material->LightPassTextureCount     = Def->LightPassTextureCount;
+    Material->WireframePassTextureCount = Def->WireframePassTextureCount;
+    Material->NormalsPassTextureCount   = Def->NormalsPassTextureCount;
+    Material->ShadowMapPassTextureCount = Def->ShadowMapPassTextureCount;
 
-    POLYGON_CULL cullMode = _Def->bTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
+    POLYGON_CULL cullMode = Def->bTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
 
-    AString code = LoadShader( "material.glsl", _Def->Shaders );
+    AString code = LoadShader( "material.glsl", Def->Shaders );
 
     //{
     //    AFileStream fs;
@@ -644,90 +645,39 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * _Material, SMaterialDef 
     //    fs.WriteBuffer( code.CStr(), code.Length() );
     //}
 
-    bool bTessellation = _Def->TessellationMethod != TESSELLATION_DISABLED;
-    bool bTessellationShadowMap = bTessellation && _Def->bDisplacementAffectShadow;
+    bool bTessellation = Def->TessellationMethod != TESSELLATION_DISABLED;
+    bool bTessellationShadowMap = bTessellation && Def->bDisplacementAffectShadow;
 
-    switch ( _Material->MaterialType ) {
+    switch ( Material->MaterialType ) {
     case MATERIAL_TYPE_PBR:
     case MATERIAL_TYPE_BASELIGHT:
     case MATERIAL_TYPE_UNLIT: {
         for ( int i = 0 ; i < 2 ; i++ ) {
             bool bSkinned = !!i;
-            CreateDepthPassPipeline( &_Material->DepthPass[i], code.CStr(), _Def->bAlphaMasking, cullMode, bSkinned, bTessellation );
-            CreateDepthVelocityPassPipeline( &_Material->DepthVelocityPass[i], code.CStr(), _Def->bAlphaMasking, cullMode, bSkinned, bTessellation );
-            CreateLightPassPipeline( &_Material->LightPass[i], code.CStr(), cullMode, bSkinned, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
-            CreateWireframePassPipeline( &_Material->WireframePass[i], code.CStr(), cullMode, bSkinned, bTessellation );
-            CreateNormalsPassPipeline( &_Material->NormalsPass[i], code.CStr(), bSkinned );
-            CreateShadowMapPassPipeline( &_Material->ShadowPass[i], code.CStr(), _Def->bShadowMapMasking, _Def->bTwoSided, bSkinned, bTessellationShadowMap );
-            CreateFeedbackPassPipeline( &_Material->FeedbackPass[i], code.CStr(), cullMode, bSkinned );
-            CreateOutlinePassPipeline( &_Material->OutlinePass[i], code.CStr(), cullMode, bSkinned, bTessellation );
+
+            CreateDepthPassPipeline( &Material->DepthPass[i], code.CStr(), Def->bAlphaMasking, cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount );
+            CreateDepthVelocityPassPipeline( &Material->DepthVelocityPass[i], code.CStr(), Def->bAlphaMasking, cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount );
+            CreateLightPassPipeline( &Material->LightPass[i], code.CStr(), cullMode, bSkinned, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount );
+            CreateWireframePassPipeline( &Material->WireframePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->WireframePassTextureCount );
+            CreateNormalsPassPipeline( &Material->NormalsPass[i], code.CStr(), bSkinned, Def->Samplers, Def->NormalsPassTextureCount );
+            CreateShadowMapPassPipeline( &Material->ShadowPass[i], code.CStr(), Def->bShadowMapMasking, Def->bTwoSided, bSkinned, bTessellationShadowMap, Def->Samplers, Def->ShadowMapPassTextureCount );
+            CreateFeedbackPassPipeline( &Material->FeedbackPass[i], code.CStr(), cullMode, bSkinned, Def->Samplers, Def->LightPassTextureCount ); // FIXME: Add FeedbackPassTextureCount
+            CreateOutlinePassPipeline( &Material->OutlinePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount );
         }
 
-        if ( _Material->MaterialType != MATERIAL_TYPE_UNLIT ) {
-            CreateLightPassLightmapPipeline( &_Material->LightPassLightmap, code.CStr(), cullMode, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
-            CreateLightPassVertexLightPipeline( &_Material->LightPassVertexLight, code.CStr(), cullMode, _Def->bDepthTest_EXPERIMENTAL, _Def->bTranslucent, _Def->Blending, bTessellation );
+        if ( Material->MaterialType != MATERIAL_TYPE_UNLIT ) {
+            CreateLightPassLightmapPipeline( &Material->LightPassLightmap, code.CStr(), cullMode, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount );
+            CreateLightPassVertexLightPipeline( &Material->LightPassVertexLight, code.CStr(), cullMode, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount );
         }
         break;
     }
     case MATERIAL_TYPE_HUD:
     case MATERIAL_TYPE_POSTPROCESS: {
-        CreateHUDPipeline( &_Material->HUDPipeline, code.CStr() );
+        CreateHUDPipeline( &Material->HUDPipeline, code.CStr(), Def->Samplers, Def->NumSamplers );
         break;
     }
     default:
         AN_ASSERT( 0 );
-    }
-
-    SSamplerCreateInfo samplerCI;
-
-    samplerCI.Filter = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_WRAP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_WRAP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_WRAP;
-    samplerCI.MipLODBias = 0;
-    samplerCI.MaxAnisotropy = 0;
-    samplerCI.ComparisonFunc = CMPFUNC_LEQUAL;
-    samplerCI.bCompareRefToTexture = false;
-    samplerCI.BorderColor[0] = 0;
-    samplerCI.BorderColor[1] = 0;
-    samplerCI.BorderColor[2] = 0;
-    samplerCI.BorderColor[3] = 0;
-    samplerCI.MinLOD = -1000;
-    samplerCI.MaxLOD = 1000;
-
-    Core::ZeroMem( _Material->pSampler, sizeof( _Material->pSampler ) );
-
-    static constexpr SAMPLER_FILTER SamplerFilterLUT[] = {
-        FILTER_LINEAR,
-        FILTER_NEAREST,
-        FILTER_MIPMAP_NEAREST,
-        FILTER_MIPMAP_BILINEAR,
-        FILTER_MIPMAP_NLINEAR,
-        FILTER_MIPMAP_TRILINEAR
-    };
-
-    static constexpr SAMPLER_ADDRESS_MODE SamplerAddressLUT[] = {
-        SAMPLER_ADDRESS_WRAP,
-        SAMPLER_ADDRESS_MIRROR,
-        SAMPLER_ADDRESS_CLAMP,
-        SAMPLER_ADDRESS_BORDER,
-        SAMPLER_ADDRESS_MIRROR_ONCE
-    };
-
-    for ( int i = 0 ; i < _Def->NumSamplers ; i++ ) {
-        STextureSampler const * desc = &_Def->Samplers[i];
-
-        samplerCI.Filter = SamplerFilterLUT[ desc->Filter ];
-        samplerCI.AddressU = SamplerAddressLUT[ desc->AddressU ];
-        samplerCI.AddressV = SamplerAddressLUT[ desc->AddressV ];
-        samplerCI.AddressW = SamplerAddressLUT[ desc->AddressW ];
-        samplerCI.MipLODBias = desc->MipLODBias;
-        samplerCI.MaxAnisotropy = desc->Anisotropy;
-        samplerCI.MinLOD = desc->MinLod;
-        samplerCI.MaxLOD = desc->MaxLod;
-        samplerCI.bCubemapSeamless = true; // FIXME: use desc->bCubemapSeamless ?
-
-        GDevice->GetOrCreateSampler( samplerCI, &_Material->pSampler[i] );
     }
 }
 

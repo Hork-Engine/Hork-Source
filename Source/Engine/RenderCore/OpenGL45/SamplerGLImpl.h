@@ -34,10 +34,12 @@ SOFTWARE.
 
 namespace RenderCore {
 
+class ADeviceGLImpl;
+
 class ABindlessSamplerGLImpl : public IBindlessSampler
 {
 public:
-    ABindlessSamplerGLImpl( ITexture * _Texture, void * _Sampler );
+    ABindlessSamplerGLImpl( ADeviceGLImpl * _Device, ITexture * _Texture, SSamplerInfo const & _CreateInfo );
     ~ABindlessSamplerGLImpl();
 
     void MakeResident() override;

@@ -38,8 +38,7 @@ SOFTWARE.
 #include "TransformFeedback.h"
 #include "Query.h"
 
-#include <Core/Public/Hash.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/Logger.h>
 
 #include <stddef.h>
 
@@ -206,31 +205,22 @@ struct SRenderPassBegin
     SClearDepthStencilValue const * pDepthStencilClearValue;
 };
 
-struct SShaderBufferBinding
+struct SResourceBufferBinding
 {
-    uint16_t SlotIndex;
     BUFFER_TYPE BufferType;
     IBuffer const * pBuffer;
     size_t BindingOffset;
     size_t BindingSize;
 };
 
-struct SShaderSamplerBinding
+struct SResourceTextureBinding
 {
-    uint16_t SlotIndex;
-    Sampler pSampler;
+    ITextureBase const * pTexture;
 };
 
-struct SShaderTextureBinding
+struct SResourceImageBinding
 {
-    uint16_t SlotIndex;
-    ITextureBase * pTexture;
-};
-
-struct SShaderImageBinding
-{
-    uint16_t SlotIndex;
-    ITextureBase * pTexture;
+    ITextureBase const * pTexture;
     uint16_t Lod;
     bool bLayered;
     uint16_t LayerIndex; /// Array index for texture arrays, depth for 3D textures or cube face for cubemaps
@@ -239,86 +229,112 @@ struct SShaderImageBinding
     TEXTURE_FORMAT TextureFormat;  // FIXME: get texture format from texture?
 };
 
-struct SShaderResources
+class SResourceTable : public IObjectInterface
 {
-    SShaderBufferBinding * Buffers;
+public:
+    SResourceTable()
+        : NumBuffers( 0 )
+        , NumTextures( 0 )
+        , NumImages( 0 )
+    {
+    }
+
+    void Reset()
+    {
+        NumBuffers = 0;
+        NumTextures = 0;
+        NumImages = 0;
+    }
+
+    SResourceBufferBinding * AddBuffer( BUFFER_TYPE InBufferType )
+    {
+        if ( NumBuffers < MAX_BUFFER_SLOTS ) {
+            SResourceBufferBinding * binding = &Buffers[NumBuffers++];
+            binding->BufferType = InBufferType;
+            binding->pBuffer = nullptr;
+            binding->BindingOffset = 0;
+            binding->BindingSize = 0;
+            return binding;
+        }
+        else {
+            GLogger.Printf( "SResourceTable::AddBuffer: MAX_BUFFER_SLOTS hit\n" );
+            return nullptr;
+        }
+    }
+
+    void SetBuffer( int Slot, IBuffer const * Buffer, size_t Offset, size_t Size )
+    {
+        AN_ASSERT( Slot < NumBuffers );
+        SResourceBufferBinding * binding = &Buffers[Slot];
+        binding->pBuffer = Buffer;
+        binding->BindingOffset = Offset;
+        binding->BindingSize = Size;
+    }
+
+    SResourceTextureBinding * AddTexture()
+    {
+        if ( NumTextures < MAX_SAMPLER_SLOTS ) {
+            SResourceTextureBinding * binding = &Textures[NumTextures++];
+            binding->pTexture = nullptr;
+            return binding;
+        }
+        else {
+            GLogger.Printf( "SResourceTable::AddTexture: MAX_SAMPLER_SLOTS hit\n" );
+            return nullptr;
+        }
+    }
+
+    void SetTexture( int Slot, ITexture const * Texture )
+    {
+        AN_ASSERT( Slot < NumTextures );
+        SResourceTextureBinding * binding = &Textures[Slot];
+        binding->pTexture = Texture;
+    }
+
+    SResourceImageBinding * AddImage( IMAGE_ACCESS_MODE InAccessMode, TEXTURE_FORMAT InTextureFormat )
+    {
+        if ( NumTextures < MAX_IMAGE_SLOTS ) {
+            SResourceImageBinding * binding = &Images[NumImages++];
+            Core::ZeroMem( binding, sizeof( *binding ) );
+            binding->AccessMode = InAccessMode;
+            binding->TextureFormat = InTextureFormat;
+            return binding;
+        }
+        else {
+            GLogger.Printf( "SResourceTable::AddImage: MAX_IMAGE_SLOTS hit\n" );
+            return nullptr;
+        }
+    }
+
+    void SetImage( int Slot, ITexture const * Texture, uint16_t Lod, bool bLayered, uint16_t LayerIndex )
+    {
+        AN_ASSERT( Slot < NumImages );
+        SResourceImageBinding * binding = &Images[Slot];
+        binding->pTexture = Texture;
+        binding->Lod = Lod;
+        binding->bLayered = bLayered;
+        binding->LayerIndex = LayerIndex;
+    }
+
+    SResourceBufferBinding const * GetBuffers() const { return Buffers; }
+    int GetNumBuffers() const { return NumBuffers; }
+
+    SResourceTextureBinding const * GetTextures() const { return Textures; }
+    int GetNumTextures() const { return NumTextures; }
+
+    SResourceImageBinding const * GetImages() const { return Images; }
+    int GetNumImages() const { return NumImages; }
+
+private:
+    SResourceBufferBinding Buffers[MAX_BUFFER_SLOTS];
     int NumBuffers;
 
-    SShaderSamplerBinding * Samplers;
-    int NumSamplers;
-
-    SShaderTextureBinding * Textures;
+    SResourceTextureBinding Textures[MAX_SAMPLER_SLOTS];
     int NumTextures;
 
-    SShaderImageBinding * Images;
+    SResourceImageBinding Images[MAX_IMAGE_SLOTS];
     int NumImages;
 };
-#if 0
-struct SShaderResources2
-{
-    std::vector< ShaderBufferBinding > Buffers;
-    std::vector< ShaderSamplerBinding > Samplers;
-    std::vector< ShaderTextureBinding > Textures;
-    std::vector< ShaderImageBinding > Images;
-    State * pState;
-
-    void BindBuffer( ImmediateContext & Cmd, ShaderBufferBinding const & Binding )
-    {
-        if ( pState->ResourcesBinding == this ) {
-            Cmd->BindBuffer( Binding );
-        }
-        else {
-            Buffers.push_back( Binding );
-        }
-    }
-
-    void BindSampler( ImmediateContext & Cmd, ShaderSamplerBinding const & Binding )
-    {
-        if ( pState->ResourcesBinding == this ) {
-            Cmd->BindSampler( Binding );
-        }
-        else {
-            Samplers.push_back( Binding );
-        }
-    }
-
-    void BindTexture( ImmediateContext & Cmd, ShaderTextureBinding const & Binding )
-    {
-        if ( pState->ResourcesBinding == this ) {
-            Cmd->BindTexture( Binding );
-        }
-        else {
-            Textures.push_back( Binding );
-        }
-    }
-
-    void BindImage( ImmediateContext & Cmd, ShaderImageBinding const & Binding )
-    {
-        if ( pState->ResourcesBinding == this ) {
-            Cmd->BindImage( Binding );
-        }
-        else {
-            Images.push_back( Binding );
-        }
-    }
-
-    void Apply( ImmediateContext & Cmd )
-    {
-        for ( ShaderBufferBinding & binding : Buffers ) {
-            Cmd->BindBuffer( binding );
-        }
-        for ( ShaderSamplerBinding & binding : Samplers ) {
-            Cmd->BindSampler( binding );
-        }
-        for ( ShaderTextureBinding & binding : Textures ) {
-            Cmd->BindTexture( binding );
-        }
-        for ( ShaderImageBinding & binding : Images ) {
-            Cmd->BindImage( binding );
-        }
-    }
-};
-#endif
 
 struct SClearValue
 {
@@ -572,7 +588,7 @@ public:
     // Shader resources
     //
 
-    virtual void BindShaderResources( SShaderResources const * _Resources ) = 0;
+    virtual void BindResourceTable( SResourceTable const * _ResourceTable ) = 0;
 
     //
     // Viewport
@@ -859,7 +875,6 @@ Objects:
     ImmediateContext
     Buffer
     Texture
-    Sampler
     ShaderModule
     Framebuffer
     Pipeline
@@ -867,7 +882,7 @@ Objects:
 
 
 This objects can be shared:
-    Buffer, Texture, Sampler, ShaderModule
+    Buffer, Texture, ShaderModule
 
 
 */

@@ -38,22 +38,60 @@ ARuntimeVariable RVAORadius( _CTS( "AORadius" ), _CTS( "2" ) );
 ARuntimeVariable RVAOBias( _CTS( "AOBias" ), _CTS( "0.1" ) );
 ARuntimeVariable RVAOPowExponent( _CTS( "AOPowExponent" ), _CTS( "1.5" ) );
 
-ARuntimeVariable RVCheckNearest( _CTS( "CheckNearest" ), _CTS( "1" ) );
-
 using namespace RenderCore;
 
 ASSAORenderer::ASSAORenderer()
 {
-    CreateFullscreenQuadPipeline( &Pipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple.frag" );
-    CreateFullscreenQuadPipeline( &Pipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple_ortho.frag" );
-    CreateFullscreenQuadPipelineGS( &CacheAwarePipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved.frag", "postprocess/ssao/deinterleaved.geom" );
-    CreateFullscreenQuadPipelineGS( &CacheAwarePipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved_ortho.frag", "postprocess/ssao/deinterleaved.geom" );
-    CreateFullscreenQuadPipeline( &BlurPipe, "postprocess/ssao/blur.vert", "postprocess/ssao/blur.frag" );
-    CreateFullscreenQuadPipeline( &DeinterleavePipe, "postprocess/ssao/deinterleave.vert", "postprocess/ssao/deinterleave.frag" );
-    CreateFullscreenQuadPipeline( &ReinterleavePipe, "postprocess/ssao/reinterleave.vert", "postprocess/ssao/reinterleave.frag" );
-   
-    CreateSamplers();
+    SSamplerInfo nearestSampler;
 
+    nearestSampler.Filter = FILTER_NEAREST;
+    nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    nearestSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    SSamplerInfo pipeSamplers[3];
+
+    // Linear depth sampler
+    pipeSamplers[0] = nearestSampler;
+
+    // Normal texture sampler
+    pipeSamplers[1] = nearestSampler;
+
+    // Random map sampler
+    pipeSamplers[2].Filter = FILTER_NEAREST;
+    pipeSamplers[2].AddressU = SAMPLER_ADDRESS_WRAP;
+    pipeSamplers[2].AddressV = SAMPLER_ADDRESS_WRAP;
+    pipeSamplers[2].AddressW = SAMPLER_ADDRESS_WRAP;
+
+    CreateFullscreenQuadPipeline( &Pipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple.frag", pipeSamplers, AN_ARRAY_SIZE( pipeSamplers ) );
+    CreateFullscreenQuadPipeline( &Pipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple_ortho.frag", pipeSamplers, AN_ARRAY_SIZE( pipeSamplers ) );
+
+    SSamplerInfo cacheAwareSamplers[2];
+
+    // Deinterleave depth array sampler
+    cacheAwareSamplers[0] = nearestSampler;
+    // Normal texture sampler
+    cacheAwareSamplers[1] = nearestSampler;
+
+    CreateFullscreenQuadPipelineGS( &CacheAwarePipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved.frag", "postprocess/ssao/deinterleaved.geom", cacheAwareSamplers, AN_ARRAY_SIZE( cacheAwareSamplers ) );
+    CreateFullscreenQuadPipelineGS( &CacheAwarePipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved_ortho.frag", "postprocess/ssao/deinterleaved.geom", cacheAwareSamplers, AN_ARRAY_SIZE( cacheAwareSamplers ) );
+
+    SSamplerInfo blurSamplers[2];
+
+    // SSAO texture sampler
+    blurSamplers[0].Filter = FILTER_LINEAR;
+    blurSamplers[0].AddressU = SAMPLER_ADDRESS_CLAMP;
+    blurSamplers[0].AddressV = SAMPLER_ADDRESS_CLAMP;
+    blurSamplers[0].AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    // Linear depth sampler
+    blurSamplers[1] = nearestSampler;
+
+    CreateFullscreenQuadPipeline( &BlurPipe, "postprocess/ssao/blur.vert", "postprocess/ssao/blur.frag", blurSamplers, AN_ARRAY_SIZE( blurSamplers ) );
+
+    CreateFullscreenQuadPipeline( &DeinterleavePipe, "postprocess/ssao/deinterleave.vert", "postprocess/ssao/deinterleave.frag", &nearestSampler, 1 );
+    CreateFullscreenQuadPipeline( &ReinterleavePipe, "postprocess/ssao/reinterleave.vert", "postprocess/ssao/reinterleave.frag", &nearestSampler, 1 );
+   
     AMersenneTwisterRand rng( 0u );
 
     const float NUM_DIRECTIONS = 8;
@@ -88,47 +126,6 @@ ASSAORenderer::ASSAORenderer()
 
     GDevice->CreateTexture( RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RGB16F, STextureResolution2D( HBAO_RANDOM_SIZE, HBAO_RANDOM_SIZE ) ), &RandomMap );
     RandomMap->Write( 0, RenderCore::FORMAT_FLOAT3, sizeof( hbaoRandom ), 1, hbaoRandom );
-}
-
-void ASSAORenderer::CreateSamplers()
-{
-    SSamplerCreateInfo samplerCI;
-
-    samplerCI.Filter = FILTER_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &DepthSampler );
-
-    samplerCI.Filter = FILTER_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &LinearDepthSampler );
-
-    samplerCI.Filter = FILTER_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &NormalSampler );
-
-    samplerCI.Filter = FILTER_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &BlurSampler );
-
-    samplerCI.Filter = FILTER_NEAREST;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &NearestSampler );
-
-    samplerCI.Filter = FILTER_NEAREST;
-    samplerCI.AddressU = SAMPLER_ADDRESS_WRAP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_WRAP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_WRAP;
-    GDevice->GetOrCreateSampler( samplerCI, &RandomMapSampler );
 }
 
 void ASSAORenderer::ResizeAO( int Width, int Height ) {
@@ -201,10 +198,9 @@ void ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGr
         drawCall->InvFullResolution.X = 1.0f / AOWidth;
         drawCall->InvFullResolution.Y = 1.0f / AOHeight;
 
-        GFrameResources.TextureBindings[0].pTexture = LinearDepth->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
+        GFrameResources.TextureBindings[0]->pTexture = LinearDepth->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( DeinterleavePipe );
     } );
@@ -239,10 +235,9 @@ void ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGr
         drawCall->InvFullResolution.X = 1.0f / AOWidth;
         drawCall->InvFullResolution.Y = 1.0f / AOHeight;
 
-        GFrameResources.TextureBindings[0].pTexture = LinearDepth->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
+        GFrameResources.TextureBindings[0]->pTexture = LinearDepth->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( DeinterleavePipe );
     } );
@@ -306,13 +301,10 @@ void ASSAORenderer::AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTe
         drawCall->InvQuarterResolution.X = 1.0f / AOQuarterWidth;
         drawCall->InvQuarterResolution.Y = 1.0f / AOQuarterHeight;
 
-        GFrameResources.TextureBindings[0].pTexture = DeinterleaveDepthArray->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = RVCheckNearest ? NearestSampler : LinearDepthSampler;
+        GFrameResources.TextureBindings[0]->pTexture = DeinterleaveDepthArray->Actual();
+        GFrameResources.TextureBindings[1]->pTexture = NormalTexture->Actual();
 
-        GFrameResources.TextureBindings[1].pTexture = NormalTexture->Actual();
-        GFrameResources.SamplerBindings[1].pSampler = NearestSampler;
-
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         if ( GRenderView->bPerspective ) {
             DrawSAQ( CacheAwarePipe );
@@ -342,10 +334,9 @@ void ASSAORenderer::AddReinterleavePass( AFrameGraph & FrameGraph, AFrameGraphTe
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0].pTexture = SSAOTextureArray->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = NearestSampler;
+        GFrameResources.TextureBindings[0]->pTexture = SSAOTextureArray->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( ReinterleavePipe );
     } );
@@ -408,16 +399,11 @@ void ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTextur
         drawCall->InvQuarterResolution.X = 0; // don't care
         drawCall->InvQuarterResolution.Y = 0; // don't care
 
-        GFrameResources.TextureBindings[0].pTexture = LinearDepth->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = RVCheckNearest ? NearestSampler : LinearDepthSampler;
+        GFrameResources.TextureBindings[0]->pTexture = LinearDepth->Actual();
+        GFrameResources.TextureBindings[1]->pTexture = NormalTexture->Actual();
+        GFrameResources.TextureBindings[2]->pTexture = RandomMapTexture_R->Actual();
 
-        GFrameResources.TextureBindings[1].pTexture = NormalTexture->Actual();
-        GFrameResources.SamplerBindings[1].pSampler = NearestSampler;
-
-        GFrameResources.TextureBindings[2].pTexture = RandomMapTexture_R->Actual();
-        GFrameResources.SamplerBindings[2].pSampler = RandomMapSampler;
-
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         if ( GRenderView->bPerspective ) {
             DrawSAQ( Pipe );
@@ -457,13 +443,10 @@ void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture 
         drawCall->InvSize.Y = 0;
 
         // SSAO blur X
-        GFrameResources.TextureBindings[0].pTexture = SSAOTexture->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = BlurSampler;
+        GFrameResources.TextureBindings[0]->pTexture = SSAOTexture->Actual();
+        GFrameResources.TextureBindings[1]->pTexture = LinearDepth->Actual();
 
-        GFrameResources.TextureBindings[1].pTexture = LinearDepth->Actual();
-        GFrameResources.SamplerBindings[1].pSampler = NearestSampler;
-
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( BlurPipe );
     } );
@@ -496,13 +479,10 @@ void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture 
         drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
         // SSAO blur Y
-        GFrameResources.TextureBindings[0].pTexture = TempSSAOTextureBlurX->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = BlurSampler;
+        GFrameResources.TextureBindings[0]->pTexture = TempSSAOTextureBlurX->Actual();
+        GFrameResources.TextureBindings[1]->pTexture = LinearDepth->Actual();
 
-        GFrameResources.TextureBindings[1].pTexture = LinearDepth->Actual();
-        GFrameResources.SamplerBindings[1].pSampler = NearestSampler;
-
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( BlurPipe );
     } );

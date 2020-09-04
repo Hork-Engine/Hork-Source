@@ -44,11 +44,5 @@ public:
                   AFrameGraphTexture ** ppPostprocessTexture );
 
 private:
-    void CreateSampler();
-
     TRef< RenderCore::IPipeline > PostprocessPipeline;
-    RenderCore::Sampler PostprocessSampler;
-    RenderCore::Sampler BloomSampler;
-    RenderCore::Sampler LuminanceSampler;
-    RenderCore::Sampler ColorGradingSampler;
 };

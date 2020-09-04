@@ -62,7 +62,6 @@ class AMaterialBuildContext
 {
 public:
     AString SourceCode;
-    bool bHasTextures;
     int MaxTextureSlot;
     int MaxUniformAddress;
     bool bParallaxSampler;
@@ -77,7 +76,6 @@ public:
         Graph = _Graph;
         VariableName = 0;
         Stage = _Stage;
-        bHasTextures = false;
         MaxTextureSlot = -1;
         MaxUniformAddress = -1;
         bParallaxSampler = false;
@@ -1693,7 +1691,6 @@ void MGTextureSlot::Compute( AMaterialBuildContext & _Context ) {
     if ( GetSlotIndex() >= 0 ) {
         Value->Expression = "tslot_" + Math::ToString( GetSlotIndex() );
 
-        _Context.bHasTextures = true;
         _Context.MaxTextureSlot = Math::Max( _Context.MaxTextureSlot, GetSlotIndex() );
 
     } else {
@@ -2719,7 +2716,6 @@ static void RemoveVaryings( TStdVector< SVarying > & InOutResult, TStdVector< SV
 struct SMaterialStageTransition
 {
     TStdVector< SVarying > Varyings;
-    bool bHasTextures;
     int MaxTextureSlot;
     int MaxUniformAddress;
 
@@ -2755,14 +2751,12 @@ void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transit
 
     varyings.Clear();
 
-    Transition.bHasTextures = VertexStage->bHasTextures;
     Transition.MaxTextureSlot = VertexStage->MaxTextureSlot;
     Transition.MaxUniformAddress = VertexStage->MaxUniformAddress;
 
     if ( FragmentStage ) {
         AddVaryings( varyings, FragmentStage->InputVaryings );
 
-        Transition.bHasTextures |= FragmentStage->bHasTextures;
         Transition.MaxTextureSlot = Math::Max( Transition.MaxTextureSlot, FragmentStage->MaxTextureSlot );
         Transition.MaxUniformAddress = Math::Max( Transition.MaxUniformAddress, FragmentStage->MaxUniformAddress );
     }
@@ -2770,7 +2764,6 @@ void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transit
     if ( GeometryStage ) {
         AddVaryings( varyings, GeometryStage->InputVaryings );
 
-        Transition.bHasTextures |= GeometryStage->bHasTextures;
         Transition.MaxTextureSlot = Math::Max( Transition.MaxTextureSlot, GeometryStage->MaxTextureSlot );
         Transition.MaxUniformAddress = Math::Max( Transition.MaxUniformAddress, GeometryStage->MaxUniformAddress );
     }
@@ -2779,11 +2772,9 @@ void MGMaterialGraph::CreateStageTransitions( SMaterialStageTransition & Transit
         AddVaryings( varyings, TessEvalStage->InputVaryings );
         AddVaryings( varyings, TessControlStage->InputVaryings );
 
-        Transition.bHasTextures |= TessEvalStage->bHasTextures;
         Transition.MaxTextureSlot = Math::Max( Transition.MaxTextureSlot, TessEvalStage->MaxTextureSlot );
         Transition.MaxUniformAddress = Math::Max( Transition.MaxUniformAddress, TessEvalStage->MaxUniformAddress );
 
-        Transition.bHasTextures |= TessControlStage->bHasTextures;
         Transition.MaxTextureSlot = Math::Max( Transition.MaxTextureSlot, TessControlStage->MaxTextureSlot );
         Transition.MaxUniformAddress = Math::Max( Transition.MaxUniformAddress, TessControlStage->MaxUniformAddress );
     }
@@ -3023,7 +3014,6 @@ int MGMaterialGraph::Serialize( ADocument & _Doc ) {
 
 void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 {
-    int maxTextureSlot = -1;
     int maxUniformAddress = -1;
 
     pDef->Type = InGraph->MaterialType;
@@ -3034,11 +3024,6 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     pDef->bDisplacementAffectShadow = InGraph->bDisplacementAffectShadow;
     pDef->bTranslucent = InGraph->bTranslucent;
     pDef->bTwoSided = InGraph->bTwoSided;
-    pDef->bDepthPassTextureFetch = false;
-    pDef->bLightPassTextureFetch = false;
-    pDef->bWireframePassTextureFetch = false;
-    pDef->bNormalsPassTextureFetch = false;
-    pDef->bShadowMapPassTextureFetch = false;
     pDef->bAlphaMasking = false;
     pDef->bShadowMapMasking = false;
     pDef->bHasVertexDeform = false;
@@ -3174,8 +3159,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 
         pDef->bHasVertexDeform = vertexCtx.bHasVertexDeform;
         pDef->bAlphaMasking = depthCtx.bHasAlphaMask;
-        pDef->bDepthPassTextureFetch = trans.bHasTextures;
-        maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
+        pDef->DepthPassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
         int locationIndex = trans.Varyings.Size();
@@ -3234,9 +3218,8 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
                                          &geometryCtx,
                                          shadowCtx.bHasShadowMask ? &shadowCtx : nullptr );
 
-        pDef->bShadowMapPassTextureFetch = trans.bHasTextures;
         pDef->bShadowMapMasking = shadowCtx.bHasShadowMask;
-        maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
+        pDef->ShadowMapPassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
         int locationIndex = trans.Varyings.Size();
@@ -3270,7 +3253,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         pDef->AddShader( "$SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode );
     }
 
-    // Create color pass
+    // Create light pass
     {
         AMaterialBuildContext vertexCtx( InGraph, VERTEX_STAGE );
         AMaterialBuildContext tessControlCtx( InGraph, TESSELLATION_CONTROL_STAGE );
@@ -3293,8 +3276,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
                                          nullptr,
                                          &lightCtx );
 
-        pDef->bLightPassTextureFetch = trans.bHasTextures;
-        maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
+        pDef->LightPassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
         int locationIndex = trans.Varyings.Size();
@@ -3379,8 +3361,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 
         //pDef->bHasVertexDeform = vertexCtx.bHasVertexDeform;
         //pDef->bAlphaMasking = depthCtx.bHasAlphaMask;
-        //pDef->bDepthPassTextureFetch = trans.bHasTextures;
-        maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
+        //pDef->DepthPassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
         int locationIndex = trans.Varyings.Size();
@@ -3431,8 +3412,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
                                          &geometryCtx,
                                          nullptr );
 
-        pDef->bWireframePassTextureFetch = trans.bHasTextures;
-        maxTextureSlot = Math::Max( maxTextureSlot, trans.MaxTextureSlot );
+        pDef->WireframePassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress = Math::Max( maxUniformAddress, trans.MaxUniformAddress );
 
         int locationIndex = trans.Varyings.Size();
@@ -3467,9 +3447,8 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
         AMaterialBuildContext vertexCtx( InGraph, VERTEX_STAGE );
         InGraph->CompileStage( vertexCtx );
 
-        pDef->bNormalsPassTextureFetch = vertexCtx.bHasTextures;
+        pDef->NormalsPassTextureCount = vertexCtx.MaxTextureSlot + 1;
 
-        maxTextureSlot = Math::Max( maxTextureSlot, vertexCtx.MaxTextureSlot );
         maxUniformAddress = Math::Max( maxUniformAddress, vertexCtx.MaxUniformAddress );
 
         pDef->AddShader( "$NORMALS_PASS_VERTEX_SAMPLERS$", SamplersString( InGraph, vertexCtx.MaxTextureSlot ) );
@@ -3483,7 +3462,12 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     pDef->AddShader( "$PREDEFINES$", predefines );
 
     pDef->NumUniformVectors = maxUniformAddress + 1;
-    pDef->NumSamplers = maxTextureSlot + 1;
+    pDef->NumSamplers = 0;
+    pDef->NumSamplers = Math::Max( pDef->NumSamplers, pDef->DepthPassTextureCount );
+    pDef->NumSamplers = Math::Max( pDef->NumSamplers, pDef->LightPassTextureCount );
+    pDef->NumSamplers = Math::Max( pDef->NumSamplers, pDef->WireframePassTextureCount );
+    pDef->NumSamplers = Math::Max( pDef->NumSamplers, pDef->NormalsPassTextureCount );
+    pDef->NumSamplers = Math::Max( pDef->NumSamplers, pDef->ShadowMapPassTextureCount );
 
     for ( int i = 0 ; i < pDef->NumSamplers ; i++ ) {
         pDef->Samplers[i] = InGraph->GetTextureSlots()[i]->SamplerDesc;

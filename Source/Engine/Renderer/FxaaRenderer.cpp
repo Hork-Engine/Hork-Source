@@ -35,18 +35,13 @@ using namespace RenderCore;
 
 AFxaaRenderer::AFxaaRenderer()
 {
-    CreateFullscreenQuadPipeline( &FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag" );
-    CreateSampler();
-}
-
-void AFxaaRenderer::CreateSampler()
-{
-    SSamplerCreateInfo samplerCI;
+    SSamplerInfo samplerCI;
     samplerCI.Filter = FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &FxaaSampler );
+
+    CreateFullscreenQuadPipeline( &FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &samplerCI, 1 );
 }
 
 void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppFxaaTexture )
@@ -71,10 +66,9 @@ void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * Sour
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
-        GFrameResources.TextureBindings[0].pTexture = SourceTexture->Actual();
-        GFrameResources.SamplerBindings[0].pSampler = FxaaSampler;
+        GFrameResources.TextureBindings[0]->pTexture = SourceTexture->Actual();
 
-        rcmd->BindShaderResources( &GFrameResources.Resources );
+        rcmd->BindResourceTable( &GFrameResources.Resources );
 
         DrawSAQ( FxaaPipeline );
     } );

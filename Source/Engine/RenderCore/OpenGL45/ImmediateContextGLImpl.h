@@ -84,7 +84,7 @@ public:
     // Shader resources
     //
 
-    void BindShaderResources( SShaderResources const * _Resources ) override;
+    void BindResourceTable( SResourceTable const * _ResourceTable ) override;
 
     //
     // Viewport
@@ -387,7 +387,7 @@ private:
     ptrdiff_t *               TmpPointers2;
 
     unsigned int              BufferBindings[MAX_BUFFER_SLOTS];
-    unsigned int              SampleBindings[MAX_SAMPLER_SLOTS];
+    //unsigned int              SampleBindings[MAX_SAMPLER_SLOTS];
     unsigned int              TextureBindings[MAX_SAMPLER_SLOTS];
 
     APipelineGLImpl *         CurrentPipeline;

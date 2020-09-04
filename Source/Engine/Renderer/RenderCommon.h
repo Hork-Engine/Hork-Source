@@ -41,6 +41,7 @@ SOFTWARE.
 
 #include "CircularBuffer.h"
 #include "FrameConstantBuffer.h"
+#include "SphereMesh.h"
 
 #define SCISSOR_TEST false
 #define DEPTH_PREPASS
@@ -70,7 +71,9 @@ AN_FORCEINLINE RenderCore::ITexture * GPUTextureHandle( ATextureGPU * _Texture )
 
 RenderCore::STextureResolution2D GetFrameResoultion();
 
-void DrawSAQ( RenderCore::IPipeline * Pipeline );
+void DrawSAQ( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount = 1 );
+
+void DrawSphere( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount = 1 );
 
 void BindVertexAndIndexBuffers( SRenderInstance const * Instance );
 
@@ -81,7 +84,7 @@ void BindVertexAndIndexBuffers( SLightPortalRenderInstance const * Instance );
 void BindSkeleton( size_t _Offset, size_t _Size );
 void BindSkeletonMotionBlur( size_t _Offset, size_t _Size );
 
-void BindTextures( SMaterialFrameData * MaterialInstance );
+void BindTextures( SMaterialFrameData * Instance, int MaxTextures );
 
 void SetInstanceUniforms( SRenderInstance const * Instance );
 
@@ -101,9 +104,9 @@ void SaveSnapshot( RenderCore::ITexture & _Texture );
 AString LoadShader( const char * FileName, SMaterialShader const * Predefined = nullptr );
 AString LoadShaderFromString( const char * FileName, const char * Source, SMaterialShader const * Predefined = nullptr );
 
-void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
+void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, RenderCore::SSamplerInfo * Samplers = nullptr, int NumSamplers = 0, RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
 
-void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, const char * GeometryShader, RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
+void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, const char * GeometryShader, RenderCore::SSamplerInfo * Samplers = nullptr, int NumSamplers = 0, RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
 
 struct AShaderSources {
     enum { MAX_SOURCES = 10 };
@@ -337,34 +340,40 @@ public:
     // Use to store data actual during one frame.
     TRef< AFrameConstantBuffer > FrameConstantBuffer;
 
+    TRef< ASphereMesh > SphereMesh;
+
+    TRef< RenderCore::IBuffer > Saq;
+
     TRef< RenderCore::ITexture > WhiteTexture;
-
-    TRef< RenderCore::ITexture > IrradianceMap;
-    RenderCore::Sampler IrradianceMapSampler;
-    TRef< RenderCore::IBindlessSampler > IrradianceMapBindless;
-
-    TRef< RenderCore::ITexture > PrefilteredMap;
-    RenderCore::Sampler PrefilteredMapSampler;
-    TRef< RenderCore::IBindlessSampler > PrefilteredMapBindless;
 
     TRef< RenderCore::ITexture > ClusterLookup;
     TRef< RenderCore::IBufferView > ClusterItemTBO;
     TRef< RenderCore::IBuffer > ClusterItemBuffer;
-    TRef< RenderCore::IBuffer > Saq;
 
-    RenderCore::SShaderResources        Resources;
-    RenderCore::SShaderBufferBinding    BufferBinding[8];
-    RenderCore::SShaderBufferBinding *  ViewUniformBufferBinding;       // binding 0
-    RenderCore::SShaderBufferBinding *  DrawCallUniformBufferBinding;   // binding 1
-    RenderCore::SShaderBufferBinding *  SkeletonBufferBinding;          // binding 2
-    RenderCore::SShaderBufferBinding    ShadowCascadeBinding;           // binding 3
-    RenderCore::SShaderBufferBinding    ShadowMatrixBinding;            // binding 3
-    RenderCore::SShaderBufferBinding *  LightBufferBinding;             // binding 4
-    RenderCore::SShaderBufferBinding *  IBLBufferBinding;               // binding 5
-    RenderCore::SShaderBufferBinding *  VTBufferBinding;                // binding 6
-    RenderCore::SShaderBufferBinding *  SkeletonBufferBindingMB;        // binding 7
-    RenderCore::SShaderTextureBinding   TextureBindings[RenderCore::MAX_SAMPLER_SLOTS];
-    RenderCore::SShaderSamplerBinding   SamplerBindings[RenderCore::MAX_SAMPLER_SLOTS];
+    TRef< RenderCore::ITexture > IrradianceMap;
+    TRef< RenderCore::IBindlessSampler > IrradianceMapBindless;
+
+    TRef< RenderCore::ITexture > PrefilteredMap;
+    TRef< RenderCore::IBindlessSampler > PrefilteredMapBindless;
+
+//    RenderCore::SResourceTable PostProccessResources;
+//    RenderCore::SResourceBufferBinding *  ViewUniformBufferBindingPostProcess;       // binding 0
+//    RenderCore::SResourceBufferBinding *  DrawCallUniformBufferBindingPostProcess;   // binding 1
+//    RenderCore::SResourceSamplerBinding * SamplerBindingsPostProcess[RenderCore::MAX_SAMPLER_SLOTS];
+
+    RenderCore::SResourceTable          Resources;
+    RenderCore::SResourceBufferBinding *  ViewUniformBufferBinding;       // binding 0
+    RenderCore::SResourceBufferBinding *  DrawCallUniformBufferBinding;   // binding 1
+    RenderCore::SResourceBufferBinding *  SkeletonBufferBinding;          // binding 2
+    RenderCore::SResourceBufferBinding *  ShadowCascadeBinding;           // binding 3
+    RenderCore::SResourceBufferBinding *  LightBufferBinding;             // binding 4
+    RenderCore::SResourceBufferBinding *  IBLBufferBinding;               // binding 5
+    RenderCore::SResourceBufferBinding *  VTBufferBinding;                // binding 6
+    RenderCore::SResourceBufferBinding *  SkeletonBufferBindingMB;        // binding 7
+    RenderCore::SResourceTextureBinding * TextureBindings[RenderCore::MAX_SAMPLER_SLOTS];
+
+    size_t ShadowMatrixBindingSize;
+    size_t ShadowMatrixBindingOffset;
 
 private:
     void SetViewUniforms();

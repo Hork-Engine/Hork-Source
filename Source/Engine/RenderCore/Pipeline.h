@@ -308,6 +308,17 @@ struct SDepthStencilStateInfo
     }
 };
 
+struct SSamplerStateInfo
+{
+    int NumSamplers;
+    struct SSamplerInfo * Samplers;
+
+    SSamplerStateInfo() {
+        NumSamplers = 0;
+        Samplers = nullptr;
+    }
+};
+
 // Vertex bindings and attributes
 
 #define GHI_VertexAttribType_NormalizedBit          ( 1<<7 )
@@ -561,6 +572,7 @@ struct SPipelineCreateInfo
     SBlendingStateInfo BS;
     SRasterizerStateInfo RS;
     SDepthStencilStateInfo DSS;
+    SSamplerStateInfo SS;
     TRef< IShaderModule > pVS;
     TRef< IShaderModule > pTCS;
     TRef< IShaderModule > pTES;

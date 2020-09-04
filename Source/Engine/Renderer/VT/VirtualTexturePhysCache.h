@@ -179,5 +179,4 @@ private:
 
     // For debugging
     TRef< RenderCore::IPipeline > DrawCachePipeline;
-    RenderCore::Sampler NearestSampler;
 };

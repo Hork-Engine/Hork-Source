@@ -39,9 +39,6 @@ public:
     void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppColorGrading );
 
 private:
-    void CreateSamplers();
-
     TRef< RenderCore::IPipeline > PipelineLUT;
     TRef< RenderCore::IPipeline > PipelineProcedural;
-    RenderCore::Sampler ColorGradingSampler;
 };

@@ -88,7 +88,4 @@ private:
     TRef< RenderCore::IPipeline > MotionBlurPipeline;
     TRef< RenderCore::IPipeline > OutlineBlurPipe;
     TRef< RenderCore::IPipeline > OutlineApplyPipe;
-
-    RenderCore::Sampler NearestSampler;
-    RenderCore::Sampler LinearSampler;
 };

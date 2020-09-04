@@ -48,6 +48,7 @@ class ADeviceGLImpl final : public IDevice {
     friend class AQueryPoolGLImpl;
     friend class ATransformFeedbackGLImpl;
     friend class ARenderPassGLImpl;
+    friend class ABindlessSamplerGLImpl;
 
 public:
     ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
@@ -84,9 +85,7 @@ public:
 
     void CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, TRef< IQueryPool > * ppQueryPool ) override;
 
-    void CreateBindlessSampler( ITexture * pTexture, Sampler Sampler, TRef< IBindlessSampler > * ppBindlessSampler ) override;
-
-    void GetOrCreateSampler( struct SSamplerCreateInfo const & _CreateInfo, Sampler * ppSampler ) override;
+    void CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) override;
 
     bool CreateShaderBinaryData( SHADER_TYPE _ShaderType,
                                  unsigned int _NumSources,
@@ -128,6 +127,7 @@ private:
     SBlendingStateInfo const * CachedBlendingState( SBlendingStateInfo const & _BlendingState );
     SRasterizerStateInfo const * CachedRasterizerState( SRasterizerStateInfo const & _RasterizerState );
     SDepthStencilStateInfo const * CachedDepthStencilState( SDepthStencilStateInfo const & _DepthStencilState );
+    unsigned int CachedSampler( SSamplerInfo const & _CreateInfo );
 
     unsigned int DeviceCaps[DEVICE_CAPS_MAX];
 

@@ -37,6 +37,7 @@ SOFTWARE.
 #include <World/Public/Resource/FontAtlas.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <World/Public/World.h>
+#include <World/Public/Render/RenderFrontend.h>
 
 class AEngineCommands;
 
@@ -160,6 +161,8 @@ private:
     ARuntimeCommandProcessor CommandProcessor;
 
     TRef< AEngineCommands > EngineCmd;
+
+    TRef< ARenderFrontend > Renderer;
 
     bool bAllowInputEvents = false;
 };

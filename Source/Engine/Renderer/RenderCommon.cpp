@@ -77,31 +77,38 @@ RenderCore::STextureResolution2D GetFrameResoultion()
     return RenderCore::STextureResolution2D( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
 }
 
-void DrawSAQ( RenderCore::IPipeline * Pipeline ) {
-    const RenderCore::SDrawCmd drawCmd = { 4, 1, 0, 0 };
+void DrawSAQ( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount )
+{
+    const RenderCore::SDrawCmd drawCmd = { 4, InstanceCount, 0, 0 };
     rcmd->BindPipeline( Pipeline );
     rcmd->BindVertexBuffer( 0, GFrameResources.Saq, 0 );
     rcmd->BindIndexBuffer( NULL, RenderCore::INDEX_TYPE_UINT16, 0 );
     rcmd->Draw( &drawCmd );
 }
 
-void BindTextures( SMaterialFrameData * _MaterialInstance ) {
-    AN_ASSERT( _MaterialInstance );
+void DrawSphere( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount )
+{
+    RenderCore::SDrawIndexedCmd drawCmd = {};
+    drawCmd.IndexCountPerInstance = GFrameResources.SphereMesh->IndexCount;
+    drawCmd.InstanceCount = InstanceCount;
 
-    ATextureGPU ** texture = _MaterialInstance->Textures;
+    rcmd->BindPipeline( Pipeline );
+    rcmd->BindVertexBuffer( 0, GFrameResources.SphereMesh->VertexBuffer );
+    rcmd->BindIndexBuffer( GFrameResources.SphereMesh->IndexBuffer, RenderCore::INDEX_TYPE_UINT16 );
+    rcmd->Draw( &drawCmd );
+}
 
-    int n = _MaterialInstance->NumTextures;
-    if ( n > _MaterialInstance->Material->NumSamplers ) {
-        n = _MaterialInstance->Material->NumSamplers;
-    }
+void BindTextures( SMaterialFrameData * Instance, int MaxTextures )
+{
+    AN_ASSERT( Instance );
+
+    ATextureGPU ** texture = Instance->Textures;
+
+    int n = Math::Min( Instance->NumTextures, MaxTextures );
 
     for ( int t = 0 ; t < n ; t++, texture++ ) {
-        GFrameResources.TextureBindings[t].pTexture = *texture ? GPUTextureHandle( *texture ) : nullptr;
+        GFrameResources.TextureBindings[t]->pTexture = *texture ? GPUTextureHandle( *texture ) : nullptr;
     }
-
-    //for (int t = n ; t<MAX_MATERIAL_TEXTURES ; t++ ) {
-    //    TextureBindings[t].pTexture = nullptr;
-    //}
 }
 
 void BindVertexAndIndexBuffers( SRenderInstance const * _Instance ) {
@@ -203,13 +210,18 @@ void SetShadowInstanceUniforms( SShadowRenderInstance const * Instance ) {
 void * SetDrawCallUniforms( size_t SizeInBytes ) {
     size_t offset = GFrameResources.ConstantBuffer->Allocate( SizeInBytes );
 
+#if 0
+    GFrameResources.DrawCallUniformBufferBindingPostProcess->BindingOffset = offset;
+    GFrameResources.DrawCallUniformBufferBindingPostProcess->BindingSize = SizeInBytes;
+#else
     GFrameResources.DrawCallUniformBufferBinding->BindingOffset = offset;
     GFrameResources.DrawCallUniformBufferBinding->BindingSize = SizeInBytes;
+#endif
 
     return GFrameResources.ConstantBuffer->GetMappedMemory() + offset;
 }
 
-void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, RenderCore::BLENDING_PRESET BlendingPreset ) {
+void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, RenderCore::SSamplerInfo * Samplers, int NumSamplers, RenderCore::BLENDING_PRESET BlendingPreset ) {
     using namespace RenderCore;
 
     SPipelineCreateInfo pipelineCI;
@@ -275,10 +287,13 @@ void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, c
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = Samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, const char * GeometryShader, RenderCore::BLENDING_PRESET BlendingPreset ) {
+void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, const char * GeometryShader, RenderCore::SSamplerInfo * Samplers, int NumSamplers, RenderCore::BLENDING_PRESET BlendingPreset ) {
     using namespace RenderCore;
 
     SPipelineCreateInfo pipelineCI;
@@ -349,6 +364,9 @@ void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline,
 
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = Samplers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
@@ -641,24 +659,10 @@ void AFrameResources::Initialize() {
     ConstantBuffer = MakeRef< ACircularBuffer >( 2 * 1024 * 1024 ); // 2MB
     FrameConstantBuffer = MakeRef< AFrameConstantBuffer >( 2 * 1024 * 1024 ); // 2MB
 
-    GDevice->CreateTexture( RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RG32UI,
-                                                     RenderCore::STextureResolution3D( MAX_FRUSTUM_CLUSTERS_X,
-                                                                                       MAX_FRUSTUM_CLUSTERS_Y,
-                                                                                       MAX_FRUSTUM_CLUSTERS_Z ) ), &ClusterLookup );
+    // Create sphere mesh for cubemap rendering
+    SphereMesh = MakeRef< ASphereMesh >();
 
-    {
-        // FIXME: Use SSBO?
-        RenderCore::SBufferCreateInfo bufferCI = {};
-        bufferCI.bImmutableStorage = true;
-        bufferCI.ImmutableStorageFlags = RenderCore::IMMUTABLE_DYNAMIC_STORAGE;
-        bufferCI.SizeInBytes = sizeof( SFrameLightData::ItemBuffer );
-        GDevice->CreateBuffer( bufferCI, nullptr, &ClusterItemBuffer );
-
-        RenderCore::SBufferViewCreateInfo bufferViewCI = {};
-        bufferViewCI.Format = RenderCore::BUFFER_VIEW_PIXEL_FORMAT_R32UI;
-        GDevice->CreateBufferView( bufferViewCI, ClusterItemBuffer, &ClusterItemTBO );
-    }
-
+    // Create screen aligned quad
     {
         constexpr Float2 saqVertices[4] = {
             { Float2( -1.0f,  1.0f ) },
@@ -673,62 +677,73 @@ void AFrameResources::Initialize() {
         GDevice->CreateBuffer( bufferCI, saqVertices, &Saq );
     }
 
-    Core::ZeroMem( BufferBinding, sizeof( BufferBinding ) );
-    Core::ZeroMem( TextureBindings, sizeof( TextureBindings ) );
-    Core::ZeroMem( SamplerBindings, sizeof( SamplerBindings ) );
+    // Create white texture
+    {
+        GDevice->CreateTexture( RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RGBA8, RenderCore::STextureResolution2D( 1, 1 ) ),
+                                &WhiteTexture );
+        RenderCore::STextureRect rect = {};
+        rect.Dimension.X = 1;
+        rect.Dimension.Y = 1;
+        rect.Dimension.Z = 1;
+        const byte data[4] = { 0xff, 0xff, 0xff, 0xff };
+        WhiteTexture->WriteRect( rect, RenderCore::FORMAT_UBYTE4, sizeof( data ), 4, data );
+    }
 
-    ViewUniformBufferBinding = &BufferBinding[0];
-    ViewUniformBufferBinding->BufferType = RenderCore::UNIFORM_BUFFER;
-    ViewUniformBufferBinding->SlotIndex = 0;
+    // Create cluster lookup 3D texture
+    GDevice->CreateTexture( RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RG32UI,
+                                                     RenderCore::STextureResolution3D( MAX_FRUSTUM_CLUSTERS_X,
+                                                                                       MAX_FRUSTUM_CLUSTERS_Y,
+                                                                                       MAX_FRUSTUM_CLUSTERS_Z ) ), &ClusterLookup );
+    // Create item buffer
+    {
+        // FIXME: Use SSBO?
+        RenderCore::SBufferCreateInfo bufferCI = {};
+        bufferCI.bImmutableStorage = true;
+        bufferCI.ImmutableStorageFlags = RenderCore::IMMUTABLE_DYNAMIC_STORAGE;
+        bufferCI.SizeInBytes = sizeof( SFrameLightData::ItemBuffer );
+        GDevice->CreateBuffer( bufferCI, nullptr, &ClusterItemBuffer );
+
+        RenderCore::SBufferViewCreateInfo bufferViewCI = {};
+        bufferViewCI.Format = RenderCore::BUFFER_VIEW_PIXEL_FORMAT_R32UI;
+        GDevice->CreateBufferView( bufferViewCI, ClusterItemBuffer, &ClusterItemTBO );
+    }
+
+
+#if 0
+    ViewUniformBufferBindingPostProcess = PostProccessResources.AddBuffer( RenderCore::UNIFORM_BUFFER );
+    ViewUniformBufferBindingPostProcess->pBuffer = FrameConstantBuffer->GetBuffer();
+
+    DrawCallUniformBufferBindingPostProcess = PostProccessResources.AddBuffer( RenderCore::UNIFORM_BUFFER );
+    DrawCallUniformBufferBindingPostProcess->pBuffer = ConstantBuffer->GetBuffer();
+#endif
+
+    ViewUniformBufferBinding = Resources.AddBuffer( RenderCore::UNIFORM_BUFFER );
     ViewUniformBufferBinding->pBuffer = FrameConstantBuffer->GetBuffer();
 
-    DrawCallUniformBufferBinding = &BufferBinding[1];
-    DrawCallUniformBufferBinding->BufferType = RenderCore::UNIFORM_BUFFER;
-    DrawCallUniformBufferBinding->SlotIndex = 1;
+    DrawCallUniformBufferBinding = Resources.AddBuffer( RenderCore::UNIFORM_BUFFER );
     DrawCallUniformBufferBinding->pBuffer = ConstantBuffer->GetBuffer();
 
-    SkeletonBufferBinding = &BufferBinding[2];
-    SkeletonBufferBinding->BufferType = RenderCore::UNIFORM_BUFFER;
-    SkeletonBufferBinding->SlotIndex = 2;
+    SkeletonBufferBinding = Resources.AddBuffer( RenderCore::UNIFORM_BUFFER );
     SkeletonBufferBinding->pBuffer = nullptr;
 
-    LightBufferBinding = &BufferBinding[4];
-    LightBufferBinding->BufferType = RenderCore::UNIFORM_BUFFER;
-    LightBufferBinding->SlotIndex = 4;
+    ShadowCascadeBinding = Resources.AddBuffer( RenderCore::UNIFORM_BUFFER );
+    ShadowCascadeBinding->pBuffer = nullptr;
+
+    LightBufferBinding = Resources.AddBuffer( RenderCore::UNIFORM_BUFFER );
     LightBufferBinding->pBuffer = FrameConstantBuffer->GetBuffer();
 
-    IBLBufferBinding = &BufferBinding[5];
-    IBLBufferBinding->BufferType = RenderCore::UNIFORM_BUFFER;
-    IBLBufferBinding->SlotIndex = 5;
+    IBLBufferBinding = Resources.AddBuffer( RenderCore::UNIFORM_BUFFER );
     IBLBufferBinding->pBuffer = FrameConstantBuffer->GetBuffer();
 
-    VTBufferBinding = &BufferBinding[6];
-    VTBufferBinding->BufferType = RenderCore::UNIFORM_BUFFER;
-    VTBufferBinding->SlotIndex = 6;
+    VTBufferBinding = Resources.AddBuffer( RenderCore::UNIFORM_BUFFER );
     VTBufferBinding->pBuffer = FrameConstantBuffer->GetBuffer();
 
-    SkeletonBufferBindingMB = &BufferBinding[7];
-    SkeletonBufferBindingMB->BufferType = RenderCore::UNIFORM_BUFFER;
-    SkeletonBufferBindingMB->SlotIndex = 7;
+    SkeletonBufferBindingMB = Resources.AddBuffer( RenderCore::UNIFORM_BUFFER );
     SkeletonBufferBindingMB->pBuffer = nullptr;
 
     for ( int i = 0 ; i < RenderCore::MAX_SAMPLER_SLOTS ; i++ ) {
-        TextureBindings[i].SlotIndex = i;
-        SamplerBindings[i].SlotIndex = i;
+        TextureBindings[i] = Resources.AddTexture();
     }
-
-    Core::ZeroMem( &Resources, sizeof( Resources ) );
-    Resources.Buffers = BufferBinding;
-    Resources.NumBuffers = AN_ARRAY_SIZE( BufferBinding );
-
-    Resources.Textures = TextureBindings;
-    Resources.NumTextures = AN_ARRAY_SIZE( TextureBindings );
-
-    Resources.Samplers = SamplerBindings;
-    Resources.NumSamplers = AN_ARRAY_SIZE( SamplerBindings );
-
-
-
 
     /////////////////////////////////////////////////////////////////////
     // test
@@ -763,7 +778,7 @@ void AFrameResources::Initialize() {
             //f.OpenWrite( Core::Fmt( "skyface%d.png", i ) );
             //WritePNG( f, rect.Dimension.X, rect.Dimension.Y, 3, ucdata, rect.Dimension.X * 3 );
 
-            f.OpenWrite( Core::Fmt( "skyface%d.hdr", i ) );
+            f.OpenWrite( Core::Fmt( "xskyface%d.hdr", i ) );
             WriteHDR( f, rect.Dimension.X, rect.Dimension.Y, 3, data );
         }
         GHunkMemory.ClearToMark( hunkMark );
@@ -910,50 +925,38 @@ void AFrameResources::Initialize() {
     {
         AEnvProbeGenerator envProbeGenerator;
         envProbeGenerator.GenerateArray( 7, AN_ARRAY_SIZE( cubemaps ), cubemaps, &PrefilteredMap );
-        RenderCore::SSamplerCreateInfo samplerCI;
+        RenderCore::SSamplerInfo samplerCI;
         samplerCI.Filter = RenderCore::FILTER_MIPMAP_BILINEAR;
         samplerCI.bCubemapSeamless = true;
-        GDevice->GetOrCreateSampler( samplerCI, &PrefilteredMapSampler );
+
 //!!!!!!!!!!!!
-        GDevice->CreateBindlessSampler( PrefilteredMap, PrefilteredMapSampler, &PrefilteredMapBindless );
+        GDevice->CreateBindlessSampler( PrefilteredMap, samplerCI, &PrefilteredMapBindless );
 
         //TRef< RenderCore::IBindlessSampler > smp;
-        //GDevice->CreateBindlessSampler( PrefilteredMap, PrefilteredMapSampler, &smp );
+        //GDevice->CreateBindlessSampler( PrefilteredMap, samplerCI, &smp );
 
         PrefilteredMapBindless->MakeResident();
     }
 
     {
-        GDevice->CreateTexture( RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RGBA8, RenderCore::STextureResolution2D( 1, 1 ) ),
-                                &WhiteTexture );
-        RenderCore::STextureRect rect = {};
-        rect.Dimension.X = 1;
-        rect.Dimension.Y = 1;
-        rect.Dimension.Z = 1;
-        const byte data[4] = { 0xff, 0xff, 0xff, 0xff };
-        WhiteTexture->WriteRect( rect, RenderCore::FORMAT_UBYTE4, sizeof( data ), 4, data );
-    }
-
-    {
         AIrradianceGenerator irradianceGenerator;
         irradianceGenerator.GenerateArray( AN_ARRAY_SIZE( cubemaps ), cubemaps, &IrradianceMap );
-        RenderCore::SSamplerCreateInfo samplerCI;
+        RenderCore::SSamplerInfo samplerCI;
         samplerCI.Filter = RenderCore::FILTER_LINEAR;
         samplerCI.bCubemapSeamless = true;
-        GDevice->GetOrCreateSampler( samplerCI, &IrradianceMapSampler );
 
-        GDevice->CreateBindlessSampler( IrradianceMap, IrradianceMapSampler, &IrradianceMapBindless );
+        GDevice->CreateBindlessSampler( IrradianceMap, samplerCI, &IrradianceMapBindless );
         IrradianceMapBindless->MakeResident();
     }
 
 
-    /////////////////////////////////////////////////////////////////////
 }
 
 void AFrameResources::Deinitialize() {
     ConstantBuffer.Reset();
     FrameConstantBuffer.Reset();
     WhiteTexture.Reset();
+    SphereMesh.Reset();
     Saq.Reset();
     ClusterLookup.Reset();
     ClusterItemTBO.Reset();
@@ -969,11 +972,7 @@ void AFrameResources::SetViewUniforms() {
 
     SViewUniformBuffer * uniformData = (SViewUniformBuffer *)(FrameConstantBuffer->GetMappedMemory() + offset);
 
-    const Float2 orthoMins( 0.0f, (float)GFrameData->CanvasHeight );
-    const Float2 orthoMaxs( (float)GFrameData->CanvasWidth, 0.0f );
-
-    uniformData->OrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs ); // TODO: calc ortho projection in render frontend
-
+    uniformData->OrthoProjection = GFrameData->OrthoProjection;
     uniformData->ViewProjection = GRenderView->ViewProjection;
     uniformData->ProjectionMatrix = GRenderView->ProjectionMatrix;
     uniformData->InverseProjectionMatrix = GRenderView->InverseProjectionMatrix;
@@ -1075,25 +1074,27 @@ void AFrameResources::SetViewUniforms() {
 
     ViewUniformBufferBinding->BindingOffset = offset;
     ViewUniformBufferBinding->BindingSize = sizeof( *uniformData );
+
+#if 0
+    ViewUniformBufferBindingPostProcess->BindingOffset = offset;
+    ViewUniformBufferBindingPostProcess->BindingSize = sizeof( *uniformData );
+#endif
 }
 
 void AFrameResources::SetShadowMatrixBinding() {
-    BufferBinding[3] = ShadowMatrixBinding;
+    ShadowCascadeBinding->BindingOffset = ShadowMatrixBindingOffset;
+    ShadowCascadeBinding->BindingSize = ShadowMatrixBindingSize;
 }
 
 void AFrameResources::SetShadowCascadeBinding( int FirstCascade, int NumCascades ) {
-    ShadowCascadeBinding.BindingSize = MAX_SHADOW_CASCADES * sizeof( Float4x4 );
-    ShadowCascadeBinding.BindingOffset = FrameConstantBuffer->Allocate( ShadowCascadeBinding.BindingSize );
+    ShadowCascadeBinding->BindingSize = MAX_SHADOW_CASCADES * sizeof( Float4x4 );
+    ShadowCascadeBinding->BindingOffset = FrameConstantBuffer->Allocate( ShadowCascadeBinding->BindingSize );
 
-    byte * pMemory = FrameConstantBuffer->GetMappedMemory() + ShadowCascadeBinding.BindingOffset;
+    byte * pMemory = FrameConstantBuffer->GetMappedMemory() + ShadowCascadeBinding->BindingOffset;
 
     Core::Memcpy( pMemory, &GRenderView->LightViewProjectionMatrices[FirstCascade], NumCascades * sizeof( Float4x4 ) );
 
-    ShadowCascadeBinding.BufferType = RenderCore::UNIFORM_BUFFER;
-    ShadowCascadeBinding.SlotIndex = 3;
-    ShadowCascadeBinding.pBuffer = FrameConstantBuffer->GetBuffer();
-
-    BufferBinding[3] = ShadowCascadeBinding;
+    ShadowCascadeBinding->pBuffer = FrameConstantBuffer->GetBuffer();
 }
 
 void AFrameResources::UploadUniforms() {
@@ -1103,14 +1104,10 @@ void AFrameResources::UploadUniforms() {
     SetViewUniforms();
 
     // Cascade matrices
-    ShadowMatrixBinding.BufferType = RenderCore::UNIFORM_BUFFER;
-    ShadowMatrixBinding.SlotIndex = 3;
-    ShadowMatrixBinding.pBuffer = FrameConstantBuffer->GetBuffer();
+    ShadowMatrixBindingSize = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof( Float4x4 );
+    ShadowMatrixBindingOffset = FrameConstantBuffer->Allocate( ShadowMatrixBindingSize );
 
-    ShadowMatrixBinding.BindingSize = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof( Float4x4 );
-    ShadowMatrixBinding.BindingOffset = FrameConstantBuffer->Allocate( ShadowMatrixBinding.BindingSize );
-
-    byte * pMemory = FrameConstantBuffer->GetMappedMemory() + ShadowMatrixBinding.BindingOffset;
+    byte * pMemory = FrameConstantBuffer->GetMappedMemory() + ShadowMatrixBindingOffset;
 
     Core::Memcpy( pMemory, GRenderView->ShadowMapMatrices, GRenderView->NumShadowMapCascades * sizeof( Float4x4 ) );
 

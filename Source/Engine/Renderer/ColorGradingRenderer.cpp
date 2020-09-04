@@ -35,29 +35,25 @@ using namespace RenderCore;
 
 AColorGradingRenderer::AColorGradingRenderer()
 {
+    SSamplerInfo samplerCI;
+    samplerCI.Filter = FILTER_NEAREST;// FILTER_LINEAR;
+    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
+    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
+
     CreateFullscreenQuadPipelineGS( &PipelineLUT,
                                     "postprocess/colorgrading.vert",
                                     "postprocess/colorgrading.frag",
                                     "postprocess/colorgrading.geom",
+                                    &samplerCI, 1,
                                     RenderCore::BLENDING_ALPHA );
 
     CreateFullscreenQuadPipelineGS( &PipelineProcedural,
                                     "postprocess/colorgrading.vert",
                                     "postprocess/colorgrading_procedural.frag",
                                     "postprocess/colorgrading.geom",
+                                    nullptr, 0,
                                     RenderCore::BLENDING_ALPHA );
-
-    CreateSamplers();
-}
-
-void AColorGradingRenderer::CreateSamplers()
-{
-    SSamplerCreateInfo samplerCI;
-    samplerCI.Filter = FILTER_NEAREST;// FILTER_LINEAR;
-    samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    GDevice->GetOrCreateSampler( samplerCI, &ColorGradingSampler );
 }
 
 void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppColorGrading )
@@ -91,10 +87,9 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTextur
         renderPass.AddSubpass( { 0 },
                                [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
-            GFrameResources.TextureBindings[0].pTexture = source->Actual();
-            GFrameResources.SamplerBindings[0].pSampler = ColorGradingSampler;
+            GFrameResources.TextureBindings[0]->pTexture = source->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( PipelineLUT );
         } );
@@ -160,7 +155,7 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTextur
             drawCall->LuminanceNormalization.Z = 0.0f;
             drawCall->LuminanceNormalization.W = 0.0f;
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( PipelineProcedural );
         } );

@@ -34,83 +34,11 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-// TODO: Replace with Cube
-static void CreateSphere( int _HDiv, int _VDiv, TPodArray< Float3 > & _Vertices, TPodArray< unsigned short > & _Indices ) {
-    const int numVerts = _VDiv * (_HDiv - 1) + 2;
-    const int numIndices = (_HDiv - 1) * (_VDiv - 1) * 6;
-    int i, j;
-    float a1, a2;
-
-    AN_ASSERT_( numVerts < 65536, "Too many vertices" );
-
-    _Vertices.Clear();
-    _Indices.Clear();
-
-    _Vertices.Resize( numVerts );
-    _Indices.Resize( numIndices );
-
-    for ( i = 0, a1 = Math::_PI / _HDiv; i < (_HDiv - 1); i++ ) {
-        float y, r;
-        Math::SinCos( a1, r, y );
-        for ( j = 0, a2 = 0; j < _VDiv; j++ ) {
-            float s, c;
-            Math::SinCos( a2, s, c );
-            _Vertices[i*_VDiv + j] = Float3( r*c, -y, r*s );
-            a2 += Math::_2PI / (_VDiv - 1);
-        }
-        a1 += Math::_PI / _HDiv;
-    }
-    _Vertices[(_HDiv - 1)*_VDiv + 0] = Float3( 0, -1, 0 );
-    _Vertices[(_HDiv - 1)*_VDiv + 1] = Float3( 0, 1, 0 );
-
-    // generate indices
-    unsigned short *indices = _Indices.ToPtr();
-    for ( i = 0; i < _HDiv; i++ ) {
-        for ( j = 0; j < _VDiv - 1; j++ ) {
-            unsigned short i2 = i + 1;
-            unsigned short j2 = (j == _VDiv - 1) ? 0 : j + 1;
-            if ( i == (_HDiv - 2) ) {
-                *indices++ = (i*_VDiv + j2);
-                *indices++ = (i*_VDiv + j);
-                *indices++ = ((_HDiv - 1)*_VDiv + 1);
-
-            } else if ( i == (_HDiv - 1) ) {
-                *indices++ = (0 * _VDiv + j);
-                *indices++ = (0 * _VDiv + j2);
-                *indices++ = ((_HDiv - 1)*_VDiv + 0);
-
-            } else {
-                int quad[4] = { i*_VDiv + j, i*_VDiv + j2, i2*_VDiv + j2, i2*_VDiv + j };
-                *indices++ = quad[3];
-                *indices++ = quad[2];
-                *indices++ = quad[1];
-                *indices++ = quad[1];
-                *indices++ = quad[0];
-                *indices++ = quad[3];
-            }
-        }
-    }
-}
-
 static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGB16F; // TODO: try compression
 
 AAtmosphereRenderer::AAtmosphereRenderer() {
-    TPodArray< Float3 > vertices;
-    TPodArray< unsigned short > indices;
-
-    CreateSphere( 128, 128, vertices, indices );
-
-    m_IndexCount = indices.Size();
-
     SBufferCreateInfo bufferCI = {};
     bufferCI.bImmutableStorage = true;
-
-    bufferCI.SizeInBytes = sizeof( Float3 ) * vertices.Size();
-    GDevice->CreateBuffer( bufferCI, vertices.ToPtr(), &m_VertexBuffer );
-
-    bufferCI.SizeInBytes = sizeof( unsigned short ) * indices.Size();
-    GDevice->CreateBuffer( bufferCI, indices.ToPtr(), &m_IndexBuffer );
-
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
     bufferCI.SizeInBytes = sizeof( SUniformBufferData );
     GDevice->CreateBuffer( bufferCI, nullptr, &m_UniformBuffer );
@@ -208,23 +136,15 @@ void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRe
 
     m_UniformBuffer->Write( &m_UniformBufferData );
 
-    SShaderBufferBinding uniformBufferBinding = {};
-    uniformBufferBinding.SlotIndex = 0;
-    uniformBufferBinding.BufferType = UNIFORM_BUFFER;
-    uniformBufferBinding.pBuffer = m_UniformBuffer;
+    SResourceTable resourceTable;
 
-    SShaderResources resources = {};
-    resources.Buffers = &uniformBufferBinding;
-    resources.NumBuffers = 1;
+    SResourceBufferBinding * uniformBufferBinding = resourceTable.AddBuffer( UNIFORM_BUFFER );
+    uniformBufferBinding->pBuffer = m_UniformBuffer;
 
     SViewport viewport = {};
     viewport.Width = CubemapWidth;
     viewport.Height = CubemapWidth;
     viewport.MaxDepth = 1;
-
-    SDrawIndexedCmd drawCmd = {};
-    drawCmd.IndexCountPerInstance = m_IndexCount;
-    drawCmd.InstanceCount = 6;
 
     SFramebufferAttachmentInfo attachment = {};
     attachment.pTexture = *ppTexture;
@@ -247,12 +167,10 @@ void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRe
 
     rcmd->BeginRenderPass( renderPassBegin );
     rcmd->SetViewport( viewport );
-    rcmd->BindPipeline( m_Pipeline );
-    rcmd->BindVertexBuffer( 0, m_VertexBuffer );
-    rcmd->BindIndexBuffer( m_IndexBuffer, RenderCore::INDEX_TYPE_UINT16 );
-    rcmd->BindShaderResources( &resources );
+    rcmd->BindResourceTable( &resourceTable );
+
     // Draw six faces in one draw call
-    rcmd->Draw( &drawCmd );
+    DrawSphere( m_Pipeline, 6 );
 
     rcmd->EndRenderPass();
 }

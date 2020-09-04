@@ -32,7 +32,171 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
+static constexpr SAMPLER_FILTER SamplerFilterLUT[] = {
+    FILTER_LINEAR,
+    FILTER_NEAREST,
+    FILTER_MIPMAP_NEAREST,
+    FILTER_MIPMAP_BILINEAR,
+    FILTER_MIPMAP_NLINEAR,
+    FILTER_MIPMAP_TRILINEAR
+};
+
+static constexpr SAMPLER_ADDRESS_MODE SamplerAddressLUT[] = {
+    SAMPLER_ADDRESS_WRAP,
+    SAMPLER_ADDRESS_MIRROR,
+    SAMPLER_ADDRESS_CLAMP,
+    SAMPLER_ADDRESS_BORDER,
+    SAMPLER_ADDRESS_MIRROR_ONCE
+};
+
+extern const Float4 EVSM_ClearValue;
+extern const Float4 VSM_ClearValue;
+
+static SSamplerInfo LightmapSampler;
+static SSamplerInfo ReflectSampler;
+static SSamplerInfo ReflectDepthSampler;
+static SSamplerInfo VirtualTextureSampler;
+static SSamplerInfo VirtualTextureIndirectionSampler;
+static SSamplerInfo ShadowDepthSamplerPCF;
+static SSamplerInfo ShadowDepthSamplerVSM;
+static SSamplerInfo ShadowDepthSamplerEVSM;
+static SSamplerInfo ShadowDepthSamplerPCSS0;
+static SSamplerInfo ShadowDepthSamplerPCSS1;
+static SSamplerInfo IESSampler;
+static SSamplerInfo ClusterLookupSampler;
+static SSamplerInfo SSAOSampler;
+static SSamplerInfo LookupBRDFSampler;
+
+void InitMaterialSamplers()
+{
+    LightmapSampler.Filter = FILTER_LINEAR;
+    LightmapSampler.AddressU = SAMPLER_ADDRESS_WRAP;
+    LightmapSampler.AddressV = SAMPLER_ADDRESS_WRAP;
+    LightmapSampler.AddressW = SAMPLER_ADDRESS_WRAP;
+
+    ReflectSampler.Filter = FILTER_MIPMAP_BILINEAR;
+    ReflectSampler.AddressU = SAMPLER_ADDRESS_BORDER;
+    ReflectSampler.AddressV = SAMPLER_ADDRESS_BORDER;
+    ReflectSampler.AddressW = SAMPLER_ADDRESS_BORDER;
+
+    ReflectDepthSampler.Filter = FILTER_NEAREST;
+    ReflectDepthSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    ReflectDepthSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    ReflectDepthSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    VirtualTextureSampler.Filter = FILTER_LINEAR;
+    VirtualTextureSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    VirtualTextureSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    VirtualTextureSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    VirtualTextureIndirectionSampler.Filter = FILTER_MIPMAP_NEAREST;
+    VirtualTextureIndirectionSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    VirtualTextureIndirectionSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    VirtualTextureIndirectionSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    ShadowDepthSamplerPCF.Filter = FILTER_LINEAR;
+    ShadowDepthSamplerPCF.AddressU = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCF.AddressV = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCF.AddressW = SAMPLER_ADDRESS_MIRROR;//SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCF.MipLODBias = 0;
+    //ShadowDepthSamplerPCF.ComparisonFunc = CMPFUNC_LEQUAL;
+    ShadowDepthSamplerPCF.ComparisonFunc = CMPFUNC_LESS;
+    ShadowDepthSamplerPCF.bCompareRefToTexture = true;
+
+    ShadowDepthSamplerVSM.Filter = FILTER_LINEAR;
+    ShadowDepthSamplerVSM.AddressU = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerVSM.AddressV = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerVSM.AddressW = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerVSM.MipLODBias = 0;
+    ShadowDepthSamplerVSM.BorderColor[0] = VSM_ClearValue.X;
+    ShadowDepthSamplerVSM.BorderColor[1] = VSM_ClearValue.Y;
+    ShadowDepthSamplerVSM.BorderColor[2] = VSM_ClearValue.Z;
+    ShadowDepthSamplerVSM.BorderColor[3] = VSM_ClearValue.W;
+
+    ShadowDepthSamplerEVSM.Filter = FILTER_LINEAR;
+    ShadowDepthSamplerEVSM.AddressU = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerEVSM.AddressV = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerEVSM.AddressW = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerEVSM.MipLODBias = 0;
+    ShadowDepthSamplerEVSM.BorderColor[0] = EVSM_ClearValue.X;
+    ShadowDepthSamplerEVSM.BorderColor[1] = EVSM_ClearValue.Y;
+    ShadowDepthSamplerEVSM.BorderColor[2] = EVSM_ClearValue.Z;
+    ShadowDepthSamplerEVSM.BorderColor[3] = EVSM_ClearValue.W;
+
+    ShadowDepthSamplerPCSS0.AddressU = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCSS0.AddressV = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCSS0.AddressW = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCSS0.MipLODBias = 0;
+    //ShadowDepthSamplerPCSS0.BorderColor[0] = ShadowDepthSamplerPCSS0.BorderColor[1] = ShadowDepthSamplerPCSS0.BorderColor[2] = ShadowDepthSamplerPCSS0.BorderColor[3] = 1.0f;
+    // Find blocker point sampler
+    ShadowDepthSamplerPCSS0.Filter = FILTER_NEAREST;//FILTER_LINEAR;
+    //ShadowDepthSamplerPCSS0.ComparisonFunc = CMPFUNC_GREATER;//CMPFUNC_GEQUAL;
+    //ShadowDepthSamplerPCSS0.CompareRefToTexture = true;
+
+    // PCF_Sampler
+    ShadowDepthSamplerPCSS1.AddressU = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCSS1.AddressV = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCSS1.AddressW = SAMPLER_ADDRESS_BORDER;
+    ShadowDepthSamplerPCSS1.MipLODBias = 0;
+    ShadowDepthSamplerPCSS1.Filter = FILTER_LINEAR; //GHI_Filter_Min_LinearMipmapLinear_Mag_Linear; // D3D10_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR  Is the same?
+    ShadowDepthSamplerPCSS1.ComparisonFunc = CMPFUNC_LESS;
+    ShadowDepthSamplerPCSS1.bCompareRefToTexture = true;
+    ShadowDepthSamplerPCSS1.BorderColor[0] = ShadowDepthSamplerPCSS1.BorderColor[1] = ShadowDepthSamplerPCSS1.BorderColor[2] = ShadowDepthSamplerPCSS1.BorderColor[3] = 1.0f; // FIXME?
+
+    IESSampler.Filter = FILTER_LINEAR;
+    IESSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    IESSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    IESSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    ClusterLookupSampler.Filter = FILTER_NEAREST;
+    ClusterLookupSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    ClusterLookupSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    ClusterLookupSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    SSAOSampler.Filter = FILTER_NEAREST;
+    SSAOSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    SSAOSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    SSAOSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+
+    LookupBRDFSampler.Filter = FILTER_LINEAR;
+    LookupBRDFSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    LookupBRDFSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    LookupBRDFSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+}
+
+static void CopyMaterialSamplers( SSamplerInfo * Dest, STextureSampler const * Samplers, int NumSamplers )
+{
+    SSamplerInfo samplerCI;
+    samplerCI.Filter = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR;
+    samplerCI.AddressU = SAMPLER_ADDRESS_WRAP;
+    samplerCI.AddressV = SAMPLER_ADDRESS_WRAP;
+    samplerCI.AddressW = SAMPLER_ADDRESS_WRAP;
+    samplerCI.MipLODBias = 0;
+    samplerCI.MaxAnisotropy = 0;
+    samplerCI.ComparisonFunc = CMPFUNC_LEQUAL;
+    samplerCI.bCompareRefToTexture = false;
+    samplerCI.BorderColor[0] = 0;
+    samplerCI.BorderColor[1] = 0;
+    samplerCI.BorderColor[2] = 0;
+    samplerCI.BorderColor[3] = 0;
+    samplerCI.MinLOD = -1000;
+    samplerCI.MaxLOD = 1000;
+    for ( int i = 0 ; i < NumSamplers ; i++ ) {
+        STextureSampler const * desc = &Samplers[i];
+        samplerCI.Filter = SamplerFilterLUT[ desc->Filter ];
+        samplerCI.AddressU = SamplerAddressLUT[ desc->AddressU ];
+        samplerCI.AddressV = SamplerAddressLUT[ desc->AddressV ];
+        samplerCI.AddressW = SamplerAddressLUT[ desc->AddressW ];
+        samplerCI.MipLODBias = desc->MipLODBias;
+        samplerCI.MaxAnisotropy = desc->Anisotropy;
+        samplerCI.MinLOD = desc->MinLod;
+        samplerCI.MaxLOD = desc->MaxLod;
+        samplerCI.bCubemapSeamless = true; // FIXME: use desc->bCubemapSeamless ?
+        *Dest++ = samplerCI;
+    }
+}
+
+void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -237,10 +401,17 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     pipelineCI.pVS = vertexShaderModule;
 
+    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
+void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -444,10 +615,17 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
+    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
+void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -655,10 +833,17 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     pipelineCI.pGS = geometryShaderModule;
     pipelineCI.pFS = fragmentShaderModule;
 
+    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _Skinned ) {
+void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -843,10 +1028,17 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     pipelineCI.pGS = geometryShaderModule;
     pipelineCI.pFS = fragmentShaderModule;
 
+    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode ) {
+void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -925,6 +1117,13 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
+    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
@@ -952,7 +1151,7 @@ static RenderCore::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending )
     return RenderCore::BLENDING_NO_BLEND;
 }
 
-void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation ) {
+void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1177,10 +1376,38 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     pipelineCI.pVS = vertexShaderModule;
     pipelineCI.pFS = fragmentShaderModule;
 
+    SSamplerInfo samplers[19];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+    // lightmap is in last sample
+    samplers[NumSamplers] = LightmapSampler;
+
+    //if ( bUseVT ) { // TODO
+    //    samplers[6] = VirtualTextureSampler;
+    //    samplers[7] = VirtualTextureIndirectionSampler;
+    //}
+
+    //if ( AllowSSLR ) {
+        samplers[8] = ReflectDepthSampler;
+        samplers[9] = ReflectSampler;
+    //}
+    samplers[10] = IESSampler;
+    samplers[11] = LookupBRDFSampler;
+    samplers[12] = SSAOSampler;
+    samplers[13] = ClusterLookupSampler;
+    samplers[14] = ClusterLookupSampler;
+    samplers[15] =
+    samplers[16] =
+    samplers[17] =
+    samplers[18] = ShadowDepthSamplerPCF;
+
+    pipelineCI.SS.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation ) {
+void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1323,10 +1550,38 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
+    SSamplerInfo samplers[19];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+    // lightmap is in last sample
+    samplers[NumSamplers] = LightmapSampler;
+
+    //if ( bUseVT ) { // TODO
+    //    samplers[6] = VirtualTextureSampler;
+    //    samplers[7] = VirtualTextureIndirectionSampler;
+    //}
+
+    //if ( AllowSSLR ) {
+        samplers[8] = ReflectDepthSampler;
+        samplers[9] = ReflectSampler;
+    //}
+    samplers[10] = IESSampler;
+    samplers[11] = LookupBRDFSampler;
+    samplers[12] = SSAOSampler;
+    samplers[13] = ClusterLookupSampler;
+    samplers[14] = ClusterLookupSampler;
+    samplers[15] =
+    samplers[16] =
+    samplers[17] =
+    samplers[18] = ShadowDepthSamplerPCF;
+
+    pipelineCI.SS.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation ) {
+void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1469,10 +1724,38 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
+    SSamplerInfo samplers[19];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+    // lightmap is in last sample
+    samplers[NumSamplers] = LightmapSampler;
+
+    //if ( bUseVT ) { // TODO
+    //    samplers[6] = VirtualTextureSampler;
+    //    samplers[7] = VirtualTextureIndirectionSampler;
+    //}
+
+    //if ( AllowSSLR ) {
+        samplers[8] = ReflectDepthSampler;
+        samplers[9] = ReflectSampler;
+    //}
+    samplers[10] = IESSampler;
+    samplers[11] = LookupBRDFSampler;
+    samplers[12] = SSAOSampler;
+    samplers[13] = ClusterLookupSampler;
+    samplers[14] = ClusterLookupSampler;
+    samplers[15] =
+    samplers[16] =
+    samplers[17] =
+    samplers[18] = ShadowDepthSamplerPCF;
+
+    pipelineCI.SS.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation ) {
+void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1705,10 +1988,17 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
         pipelineCI.pFS = fragmentShaderModule;
     }
 
+    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned ) {
+void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1895,10 +2185,17 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
     pipelineCI.pVS = vertexShaderModule;
     pipelineCI.pFS = fragmentShaderModule;
 
+    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = samplers;
+
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation ) {
+void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -2105,6 +2402,13 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     inputAssembly.bPrimitiveRestart = false;
 
     pipelineCI.pVS = vertexShaderModule;
+
+    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
+
+    pipelineCI.SS.NumSamplers = NumSamplers;
+    pipelineCI.SS.Samplers = samplers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }

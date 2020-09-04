@@ -63,9 +63,10 @@ ARuntimeVariable RVSwapInterval( _CTS( "SwapInterval" ), _CTS( "0" ), 0, _CTS( "
 
 namespace RenderCore {
 
-struct SamplerInfo {
-    SSamplerCreateInfo CreateInfo;
-    void * Handle;
+struct SamplerInfo
+{
+    SSamplerInfo CreateInfo;
+    unsigned int Id;
 };
 
 template< typename T > T clamp( T const & _a, T const & _min, T const & _max ) {
@@ -378,9 +379,7 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
 ADeviceGLImpl::~ADeviceGLImpl()
 {
     for ( SamplerInfo * sampler : SamplerCache ) {
-
-        GLuint id = GL_HANDLE( sampler->Handle );
-        glDeleteSamplers( 1, &id );
+        glDeleteSamplers( 1, &sampler->Id );
 
         Allocator.Deallocate( sampler );
     }
@@ -514,70 +513,9 @@ void ADeviceGLImpl::CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, T
     *ppQueryPool = MakeRef< AQueryPoolGLImpl >( this, _CreateInfo );
 }
 
-void ADeviceGLImpl::CreateBindlessSampler( ITexture * pTexture, Sampler Sampler, TRef< IBindlessSampler > * ppBindlessSampler )
+void ADeviceGLImpl::CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler )
 {
-    *ppBindlessSampler = MakeRef< ABindlessSamplerGLImpl >( pTexture, Sampler );
-}
-
-void ADeviceGLImpl::GetOrCreateSampler( struct SSamplerCreateInfo const & _CreateInfo, Sampler * ppSampler )
-{
-    int hash = Hash( (unsigned char *)&_CreateInfo, sizeof( _CreateInfo ) );
-
-    int i = SamplerHash.First( hash );
-    for ( ; i != -1 ; i = SamplerHash.Next( i ) ) {
-
-        SamplerInfo const * sampler = SamplerCache[i];
-
-        if ( !memcmp( &sampler->CreateInfo, &_CreateInfo, sizeof( sampler->CreateInfo ) ) ) {
-            //GLogger.Printf( "Caching sampler\n" );
-            *ppSampler = sampler->Handle;
-            return;
-        }
-    }
-
-    SamplerInfo * sampler = static_cast< SamplerInfo * >( Allocator.Allocate( sizeof( SamplerInfo ) ) );
-    memcpy( &sampler->CreateInfo, &_CreateInfo, sizeof( sampler->CreateInfo ) );
-
-    i = SamplerCache.Size();
-
-    SamplerHash.Insert( hash, i );
-    SamplerCache.Append( sampler );
-
-    //GLogger.Printf( "Total samplers %d\n", i+1 );
-
-    // 3.3 or GL_ARB_sampler_objects
-
-    GLuint id;
-
-    glCreateSamplers( 1, &id ); // 4.5
-
-    glSamplerParameteri( id, GL_TEXTURE_MIN_FILTER, SamplerFilterModeLUT[_CreateInfo.Filter].Min );
-    glSamplerParameteri( id, GL_TEXTURE_MAG_FILTER, SamplerFilterModeLUT[_CreateInfo.Filter].Mag );
-    glSamplerParameteri( id, GL_TEXTURE_WRAP_S, SamplerAddressModeLUT[_CreateInfo.AddressU] );
-    glSamplerParameteri( id, GL_TEXTURE_WRAP_T, SamplerAddressModeLUT[_CreateInfo.AddressV] );
-    glSamplerParameteri( id, GL_TEXTURE_WRAP_R, SamplerAddressModeLUT[_CreateInfo.AddressW] );
-    glSamplerParameterf( id, GL_TEXTURE_LOD_BIAS, _CreateInfo.MipLODBias );
-    if ( FeatureSupport[FEATURE_TEXTURE_ANISOTROPY] && _CreateInfo.MaxAnisotropy > 0 ) {
-        glSamplerParameteri( id, GL_TEXTURE_MAX_ANISOTROPY_EXT, clamp< unsigned int >( _CreateInfo.MaxAnisotropy, 1u, MaxTextureAnisotropy ) );
-    }
-    if ( _CreateInfo.bCompareRefToTexture ) {
-        glSamplerParameteri( id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
-    }
-    glSamplerParameteri( id, GL_TEXTURE_COMPARE_FUNC, ComparisonFuncLUT[_CreateInfo.ComparisonFunc] );
-    glSamplerParameterfv( id, GL_TEXTURE_BORDER_COLOR, _CreateInfo.BorderColor );
-    glSamplerParameterf( id, GL_TEXTURE_MIN_LOD, _CreateInfo.MinLOD );
-    glSamplerParameterf( id, GL_TEXTURE_MAX_LOD, _CreateInfo.MaxLOD );
-    glSamplerParameteri( id, GL_TEXTURE_CUBE_MAP_SEAMLESS, _CreateInfo.bCubemapSeamless );
-
-    // We can use also these functions to retrieve sampler parameters:
-    //glGetSamplerParameterfv
-    //glGetSamplerParameterIiv
-    //glGetSamplerParameterIuiv
-    //glGetSamplerParameteriv
-
-    sampler->Handle = (void *)(size_t)id;
-
-    *ppSampler = sampler->Handle;
+    *ppBindlessSampler = MakeRef< ABindlessSamplerGLImpl >( this, pTexture, _CreateInfo );
 }
 
 unsigned int ADeviceGLImpl::CreateShaderProgram( unsigned int _Type,
@@ -811,6 +749,65 @@ SDepthStencilStateInfo const * ADeviceGLImpl::CachedDepthStencilState( SDepthSte
     //GLogger.Printf( "Total depth stencil states %d\n", i+1 );
 
     return state;
+}
+
+unsigned int ADeviceGLImpl::CachedSampler( SSamplerInfo const & _CreateInfo ) {
+    int hash = Hash( (unsigned char *)&_CreateInfo, sizeof( _CreateInfo ) );
+
+    int i = SamplerHash.First( hash );
+    for ( ; i != -1 ; i = SamplerHash.Next( i ) ) {
+
+        SamplerInfo const * sampler = SamplerCache[i];
+
+        if ( !memcmp( &sampler->CreateInfo, &_CreateInfo, sizeof( sampler->CreateInfo ) ) ) {
+            //GLogger.Printf( "Caching sampler\n" );
+            return sampler->Id;
+        }
+    }
+
+    SamplerInfo * sampler = static_cast< SamplerInfo * >( Allocator.Allocate( sizeof( SamplerInfo ) ) );
+    memcpy( &sampler->CreateInfo, &_CreateInfo, sizeof( sampler->CreateInfo ) );
+
+    i = SamplerCache.Size();
+
+    SamplerHash.Insert( hash, i );
+    SamplerCache.Append( sampler );
+
+    //GLogger.Printf( "Total samplers %d\n", i+1 );
+
+    // 3.3 or GL_ARB_sampler_objects
+
+    GLuint id;
+
+    glCreateSamplers( 1, &id ); // 4.5
+
+    glSamplerParameteri( id, GL_TEXTURE_MIN_FILTER, SamplerFilterModeLUT[_CreateInfo.Filter].Min );
+    glSamplerParameteri( id, GL_TEXTURE_MAG_FILTER, SamplerFilterModeLUT[_CreateInfo.Filter].Mag );
+    glSamplerParameteri( id, GL_TEXTURE_WRAP_S, SamplerAddressModeLUT[_CreateInfo.AddressU] );
+    glSamplerParameteri( id, GL_TEXTURE_WRAP_T, SamplerAddressModeLUT[_CreateInfo.AddressV] );
+    glSamplerParameteri( id, GL_TEXTURE_WRAP_R, SamplerAddressModeLUT[_CreateInfo.AddressW] );
+    glSamplerParameterf( id, GL_TEXTURE_LOD_BIAS, _CreateInfo.MipLODBias );
+    if ( FeatureSupport[FEATURE_TEXTURE_ANISOTROPY] && _CreateInfo.MaxAnisotropy > 0 ) {
+        glSamplerParameteri( id, GL_TEXTURE_MAX_ANISOTROPY_EXT, clamp< unsigned int >( _CreateInfo.MaxAnisotropy, 1u, MaxTextureAnisotropy ) );
+    }
+    if ( _CreateInfo.bCompareRefToTexture ) {
+        glSamplerParameteri( id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
+    }
+    glSamplerParameteri( id, GL_TEXTURE_COMPARE_FUNC, ComparisonFuncLUT[_CreateInfo.ComparisonFunc] );
+    glSamplerParameterfv( id, GL_TEXTURE_BORDER_COLOR, _CreateInfo.BorderColor );
+    glSamplerParameterf( id, GL_TEXTURE_MIN_LOD, _CreateInfo.MinLOD );
+    glSamplerParameterf( id, GL_TEXTURE_MAX_LOD, _CreateInfo.MaxLOD );
+    glSamplerParameteri( id, GL_TEXTURE_CUBE_MAP_SEAMLESS, _CreateInfo.bCubemapSeamless );
+
+    // We can use also these functions to retrieve sampler parameters:
+    //glGetSamplerParameterfv
+    //glGetSamplerParameterIiv
+    //glGetSamplerParameterIuiv
+    //glGetSamplerParameteriv
+
+    sampler->Id = id;
+
+    return id;
 }
 
 }

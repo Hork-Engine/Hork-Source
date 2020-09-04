@@ -39,78 +39,11 @@ SOFTWARE.
 
 namespace RenderCore {
 
-#if 0
-template< typename T > T clamp( T const & _a, T const & _min, T const & _max ) {
-    return std::max( std::min( _a, _max ), _min );
-}
-
-Sampler::Sampler() {
-    pDevice = nullptr;
-    Handle = nullptr;
-}
-
-Sampler::~Sampler() {
-    Deinitialize();
-}
-
-void Sampler::Initialize( SamplerCreateInfo const & _CreateInfo ) {
-    State * state = State::GetCurrent();
-
-    GLuint id;
-
-    Deinitialize();
-
-    pDevice = state->GetDevice();
-
-    // 3.3 or GL_ARB_sampler_objects
-
-    glCreateSamplers( 1, &id ); // 4.5
-
-    glSamplerParameteri( id, GL_TEXTURE_MIN_FILTER, SamplerFilterModeLUT[ _CreateInfo.Filter ].Min );
-    glSamplerParameteri( id, GL_TEXTURE_MAG_FILTER, SamplerFilterModeLUT[ _CreateInfo.Filter ].Mag );
-    glSamplerParameteri( id, GL_TEXTURE_WRAP_S, SamplerAddressModeLUT[ _CreateInfo.AddressU ] );
-    glSamplerParameteri( id, GL_TEXTURE_WRAP_T, SamplerAddressModeLUT[ _CreateInfo.AddressV ] );
-    glSamplerParameteri( id, GL_TEXTURE_WRAP_R, SamplerAddressModeLUT[ _CreateInfo.AddressW ] );
-    glSamplerParameterf( id, GL_TEXTURE_LOD_BIAS, _CreateInfo.MipLODBias );
-    if ( pDevice->IsTextureAnisotropySupported() ) {
-        glSamplerParameteri( id, GL_TEXTURE_MAX_ANISOTROPY_EXT, clamp< unsigned int >( _CreateInfo.MaxAnisotropy, 0u, pDevice->MaxTextureAnisotropy ) );
-    }
-    if ( _CreateInfo.bCompareRefToTexture ) {
-        glSamplerParameteri( id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
-    }
-    glSamplerParameteri( id, GL_TEXTURE_COMPARE_FUNC, ComparisonFuncLUT[ _CreateInfo.ComparisonFunc ] );
-    glSamplerParameterfv( id, GL_TEXTURE_BORDER_COLOR, _CreateInfo.BorderColor );
-    glSamplerParameterf( id, GL_TEXTURE_MIN_LOD, _CreateInfo.MinLOD );
-    glSamplerParameterf( id, GL_TEXTURE_MAX_LOD, _CreateInfo.MaxLOD );
-
-    // We can use also these functions to retrieve sampler parameters:
-    //glGetSamplerParameterfv
-    //glGetSamplerParameterIiv
-    //glGetSamplerParameterIuiv
-    //glGetSamplerParameteriv
-
-    Handle = ( void * )( size_t )id;
-
-    pDevice->TotalSamplers++;
-}
-
-void Sampler::Deinitialize() {
-    if ( !Handle ) {
-        return;
-    }
-
-    GLuint id = GL_HANDLE( Handle );
-    glDeleteSamplers( 1, &id );
-    pDevice->TotalSamplers--;
-
-    Handle = nullptr;
-    pDevice = nullptr;
-}
-#endif
-
-ABindlessSamplerGLImpl::ABindlessSamplerGLImpl( ITexture * _Texture, void * _Sampler )
+ABindlessSamplerGLImpl::ABindlessSamplerGLImpl( ADeviceGLImpl * _Device, ITexture * _Texture, SSamplerInfo const & _CreateInfo )
 {
-    Handle = glGetTextureSamplerHandleARB( GL_HANDLE( static_cast< ATextureGLImpl const * >( _Texture )->GetHandle() ), GL_HANDLE( _Sampler ) );
+    unsigned int samplerId = _Device->CachedSampler( _CreateInfo );
+
+    Handle = glGetTextureSamplerHandleARB( GL_HANDLE( static_cast< ATextureGLImpl const * >( _Texture )->GetHandle() ), samplerId );
 }
 
 ABindlessSamplerGLImpl::~ABindlessSamplerGLImpl()

@@ -212,8 +212,8 @@ public:
 class ARenderTask
 {
 public:
-    explicit ARenderTask( AFrameGraph * InpFrameGraph, const char * InName )
-        : pFrameGraph( InpFrameGraph )
+    explicit ARenderTask( AFrameGraph * InFrameGraph, const char * InName )
+        : pFrameGraph( InFrameGraph )
         , Name( InName )
         , ResourceRefs( 0 )
         , bCulled( false )

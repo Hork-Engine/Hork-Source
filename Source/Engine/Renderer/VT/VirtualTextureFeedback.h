@@ -60,5 +60,4 @@ private:
     Float2 ResolutionRatio;
     int FeedbackSize[2];
     TRef< RenderCore::IPipeline > DrawFeedbackPipeline;
-    RenderCore::Sampler NearestSampler;
 };

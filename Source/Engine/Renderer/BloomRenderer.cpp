@@ -39,82 +39,15 @@ using namespace RenderCore;
 
 ABloomRenderer::ABloomRenderer()
 {
-    CreateFullscreenQuadPipeline( &BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag" );
-    CreateFullscreenQuadPipeline( &CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag" );
-    CreateBlurPipeline();
-    CreateSampler();
-}
-
-void ABloomRenderer::CreateBlurPipeline()
-{
-    SPipelineCreateInfo pipelineCI;
-
-    SRasterizerStateInfo & rsd = pipelineCI.RS;
-    rsd.CullMode = POLYGON_CULL_FRONT;
-    rsd.bScissorEnable = false;
-
-    SDepthStencilStateInfo & dssd = pipelineCI.DSS;
-    dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
-
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            0
-        }
-    };
-
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
-
-    AString vertexSourceCode = LoadShader( "postprocess/gauss.vert" );
-    AString gaussFragmentShaderSource = LoadShader( "postprocess/gauss.frag" );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSourceCode.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( gaussFragmentShaderSource.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
-
-    SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
-
-    SVertexBindingInfo vertexBinding[1] = {};
-
-    vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( Float2 );
-    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
-    pipelineCI.pVertexBindings = vertexBinding;
-
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
-
-    GDevice->CreatePipeline( pipelineCI, &BlurPipeline );
-}
-
-void ABloomRenderer::CreateSampler()
-{
-    SSamplerCreateInfo samplerCI;
+    SSamplerInfo samplerCI;
+    samplerCI.Filter = FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.Filter = FILTER_LINEAR;
-    GDevice->GetOrCreateSampler( samplerCI, &LinearSampler );
+
+    CreateFullscreenQuadPipeline( &BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag", &samplerCI, 1 );
+    CreateFullscreenQuadPipeline( &CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &samplerCI, 1 );
+    CreateFullscreenQuadPipeline( &BlurPipeline, "postprocess/gauss.vert", "postprocess/gauss.frag", &samplerCI, 1 );
 }
 
 void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, ABloomRenderer::STextures * pResult )
@@ -157,7 +90,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             }
         } );
         pass.AddSubpass( { 0 }, // color attachment refs
-                                [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
             struct SBrightPassDrawCall
             {
@@ -169,10 +102,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             drawCall->BloomStart = Float4( RVBloomStart.GetFloat() );
             drawCall->BloomThreshold = Float4( RVBloomThreshold.GetFloat() );
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = SourceTexture->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = SourceTexture->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( BrightPipeline );
         } );
@@ -199,20 +131,33 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             }
         } );
         pass.AddSubpass( { 0 }, // color attachment refs
-                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
             struct SDrawCall {
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            RenderCore::SResourceTable const & resourceTable = GFrameResources.Resources;//.PostProccessResources;
+
+            //resourceTable.Reset();
+
+            //SResourceBufferBinding * viewUniformBuffer = resourceTable.AddBuffer( UNIFORM_BUFFER );
+            //viewUniformBuffer->BindingOffset = GFrameResources.ViewUniformBufferBinding->BindingOffset;
+            //viewUniformBuffer->BindingSize = GFrameResources.ViewUniformBufferBinding->BindingSize;
+            //viewUniformBuffer->pBuffer = GFrameResources.ViewUniformBufferBinding->pBuffer;
+
+            //SResourceBufferBinding * uniformBuffer = resourceTable.AddBuffer( UNIFORM_BUFFER );
+
+            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >( /*uniformBuffer*/ );
             drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
             drawCall->InvSize.Y = 0;
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightTexture->Actual();
+            //SResourceSamplerBinding * sampler = resourceTable.AddSampler();
+            //sampler->pTexture = BrightTexture->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            GFrameResources.TextureBindings[0]->pTexture = BrightTexture->Actual();
+
+            rcmd->BindResourceTable( &resourceTable );
 
             DrawSAQ( BlurPipeline );
         } );
@@ -244,10 +189,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             drawCall->InvSize.X = 0;
             drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightBlurXTexture->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightBlurXTexture->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( BlurPipeline );
         } );
@@ -274,10 +218,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightBlurTexture->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightBlurTexture->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( CopyPipeline );
         } );
@@ -309,10 +252,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
             drawCall->InvSize.Y = 0;
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightTexture2->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightTexture2->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( BlurPipeline );
         } );
@@ -344,10 +286,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             drawCall->InvSize.X = 0;
             drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightBlurXTexture2->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightBlurXTexture2->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( BlurPipeline );
         } );
@@ -374,10 +315,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightBlurTexture2->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightBlurTexture2->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( CopyPipeline );
         } );
@@ -409,10 +349,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
             drawCall->InvSize.Y = 0;
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightTexture4->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightTexture4->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( BlurPipeline );
         } );
@@ -444,10 +383,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             drawCall->InvSize.X = 0;
             drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightBlurXTexture4->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightBlurXTexture4->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( BlurPipeline );
         } );
@@ -474,10 +412,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
         pass.AddSubpass( { 0 }, // color attachment refs
                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightBlurTexture4->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightBlurTexture4->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( CopyPipeline );
         } );
@@ -509,10 +446,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
             drawCall->InvSize.Y = 0;
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightTexture6->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightTexture6->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( BlurPipeline );
         } );
@@ -544,10 +480,9 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
             drawCall->InvSize.X = 0;
             drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
-            GFrameResources.SamplerBindings[0].pSampler = LinearSampler;
-            GFrameResources.TextureBindings[0].pTexture = BrightBlurXTexture6->Actual();
+            GFrameResources.TextureBindings[0]->pTexture = BrightBlurXTexture6->Actual();
 
-            rcmd->BindShaderResources( &GFrameResources.Resources );
+            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( BlurPipeline );
         } );
