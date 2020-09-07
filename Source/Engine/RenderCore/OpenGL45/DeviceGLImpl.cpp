@@ -215,7 +215,8 @@ void CreateLogicalDevice( SImmediateContextCreateInfo const & _CreateInfo,
 
 ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
                 SAllocatorCallback const * _Allocator,
-                HashCallback _Hash ) {
+                HashCallback _Hash )
+{
     TotalContexts = 0;
     TotalBuffers = 0;
     TotalTextures = 0;
@@ -415,7 +416,8 @@ ADeviceGLImpl::~ADeviceGLImpl()
     AN_ASSERT( TotalShaderModules == 0 );
 }
 
-void ADeviceGLImpl::SwapBuffers( SDL_Window * WindowHandle ) {
+void ADeviceGLImpl::SwapBuffers( SDL_Window * WindowHandle )
+{
     if ( RVSwapInterval.IsModified() ) {
         int i = Math::Clamp( RVSwapInterval.GetInteger(), -1, 1 );
         if ( i == -1 && !FeatureSupport[FEATURE_SWAP_CONTROL_TEAR] ) {
@@ -521,7 +523,8 @@ void ADeviceGLImpl::CreateBindlessSampler( ITexture * pTexture, SSamplerInfo con
 unsigned int ADeviceGLImpl::CreateShaderProgram( unsigned int _Type,
                                           int _NumStrings,
                                           const char * const * _Strings,
-                                          char ** _InfoLog ) {
+                                          char ** _InfoLog )
+{
     static char ErrorLog[ MAX_ERROR_LOG_LENGTH ];
     GLuint program;
 
@@ -595,7 +598,8 @@ unsigned int ADeviceGLImpl::CreateShaderProgram( unsigned int _Type,
     return program;
 }
 
-void ADeviceGLImpl::DeleteShaderProgram( unsigned int _Program ) {
+void ADeviceGLImpl::DeleteShaderProgram( unsigned int _Program )
+{
     glDeleteProgram( _Program );
 }
 
@@ -669,8 +673,8 @@ unsigned int ADeviceGLImpl::GetDeviceCaps( DEVICE_CAPS InDeviceCaps )
     return DeviceCaps[InDeviceCaps];
 }
 
-
-SBlendingStateInfo const * ADeviceGLImpl::CachedBlendingState( SBlendingStateInfo const & _BlendingState ) {
+SBlendingStateInfo const * ADeviceGLImpl::CachedBlendingState( SBlendingStateInfo const & _BlendingState )
+{
     int hash = Hash( ( unsigned char * )&_BlendingState, sizeof( _BlendingState ) );
 
     int i = BlendingHash.First( hash );
@@ -697,7 +701,8 @@ SBlendingStateInfo const * ADeviceGLImpl::CachedBlendingState( SBlendingStateInf
     return state;
 }
 
-SRasterizerStateInfo const * ADeviceGLImpl::CachedRasterizerState( SRasterizerStateInfo const & _RasterizerState ) {
+SRasterizerStateInfo const * ADeviceGLImpl::CachedRasterizerState( SRasterizerStateInfo const & _RasterizerState )
+{
     int hash = Hash( ( unsigned char * )&_RasterizerState, sizeof( _RasterizerState ) );
 
     int i = RasterizerHash.First( hash );
@@ -724,7 +729,8 @@ SRasterizerStateInfo const * ADeviceGLImpl::CachedRasterizerState( SRasterizerSt
     return state;
 }
 
-SDepthStencilStateInfo const * ADeviceGLImpl::CachedDepthStencilState( SDepthStencilStateInfo const & _DepthStencilState ) {
+SDepthStencilStateInfo const * ADeviceGLImpl::CachedDepthStencilState( SDepthStencilStateInfo const & _DepthStencilState )
+{
     int hash = Hash( ( unsigned char * )&_DepthStencilState, sizeof( _DepthStencilState ) );
 
     int i = DepthStencilHash.First( hash );
@@ -751,7 +757,8 @@ SDepthStencilStateInfo const * ADeviceGLImpl::CachedDepthStencilState( SDepthSte
     return state;
 }
 
-unsigned int ADeviceGLImpl::CachedSampler( SSamplerInfo const & _CreateInfo ) {
+unsigned int ADeviceGLImpl::CachedSampler( SSamplerInfo const & _CreateInfo )
+{
     int hash = Hash( (unsigned char *)&_CreateInfo, sizeof( _CreateInfo ) );
 
     int i = SamplerHash.First( hash );
