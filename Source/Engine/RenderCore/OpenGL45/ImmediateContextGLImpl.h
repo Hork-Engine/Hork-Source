@@ -373,6 +373,9 @@ private:
                                 size_t _SourceByteOffset,
                                 unsigned int _Alignment );
 
+    void UpdateVertexBuffers();
+    void UpdateVertexAndIndexBuffers();
+
     ADeviceGLImpl *           pDevice;
     struct SDL_Window *       pWindow;
     void *                    pContextGL;
@@ -393,6 +396,14 @@ private:
     APipelineGLImpl *         CurrentPipeline;
     struct SVertexArrayObject*CurrentVAO;
     uint8_t                   NumPatchVertices;       // count of patch vertices to set by glPatchParameteri
+    unsigned int              IndexBufferType;        // type of current binded index buffer (uin16 or uint32_t)
+    size_t                    IndexBufferTypeSizeOf;  // size of one index
+    unsigned int              IndexBufferOffset;      // offset in current binded index buffer
+    uint32_t                  IndexBufferUID;
+    unsigned int              IndexBufferHandle;
+    uint32_t                  VertexBufferUIDs[MAX_VERTEX_BUFFER_SLOTS];
+    unsigned int              VertexBufferHandles[MAX_VERTEX_BUFFER_SLOTS];
+    ptrdiff_t                 VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS];
 
     struct {
         unsigned int          PackAlignment;

@@ -53,9 +53,6 @@ private:
     SDepthStencilStateInfo const * DepthStencilState;
     unsigned int * SamplerObjects;
     int          NumSamplerObjects;
-    unsigned int IndexBufferType;        // type of current binded index buffer (uin16 or uint32_t)
-    size_t       IndexBufferTypeSizeOf;  // size of one index
-    unsigned int IndexBufferOffset;      // offset in current binded index buffer
     unsigned int PrimitiveTopology;
     int          NumPatchVertices;
     bool         bPrimitiveRestartEnabled;

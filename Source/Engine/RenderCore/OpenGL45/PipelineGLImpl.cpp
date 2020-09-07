@@ -90,10 +90,6 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
 
     Handle = ( void * )( size_t )pipelineId;
 
-    IndexBufferType = 0;
-    IndexBufferTypeSizeOf = 0;
-    IndexBufferOffset = 0;
-
     PrimitiveTopology = GL_TRIANGLES; // Use triangles by default
 
     if ( _CreateInfo.IA.Topology <= PRIMITIVE_TRIANGLE_STRIP_ADJ ) {

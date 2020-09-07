@@ -106,6 +106,14 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
     CurrentPipeline = NULL;
     CurrentVAO = NULL;
     NumPatchVertices = 0;
+    IndexBufferType = 0;
+    IndexBufferTypeSizeOf = 0;
+    IndexBufferOffset = 0;
+    IndexBufferUID = 0;
+    IndexBufferHandle = 0;
+    memset( VertexBufferUIDs, 0, sizeof( VertexBufferUIDs ) );
+    memset( VertexBufferHandles, 0, sizeof( VertexBufferHandles ) );    
+    memset( VertexBufferOffsets, 0, sizeof( VertexBufferOffsets ) );
 
     // GL_NICEST, GL_FASTEST and GL_DONT_CARE
 
@@ -355,14 +363,18 @@ SVertexArrayObject * AImmediateContextGLImpl::CachedVAO( SVertexBindingInfo cons
     }
     memcpy( hashed.VertexAttribs, pVertexAttribs, sizeof( hashed.VertexAttribs[0] ) * hashed.NumVertexAttribs );
 
+    // Clear semantic name to have proper hash key
+    for ( int i = 0 ; i < hashed.NumVertexAttribs ; i++ ) {
+        hashed.VertexAttribs[i].SemanticName = nullptr;
+    }
+
     int hash = pDevice->Hash( ( unsigned char * )&hashed, sizeof( hashed ) );
 
     int i = VAOHash.First( hash );
     for ( ; i != -1 ; i = VAOHash.Next( i ) ) {
-
         SVertexArrayObject * vao = VAOCache[ i ];
 
-        if ( !memcmp( &vao->Hashed, &hashed, sizeof( vao->Hashed ) ) ) {
+        if ( memcmp( &vao->Hashed, &hashed, sizeof( vao->Hashed ) ) == 0 ) {
             //GLogger.Printf( "Caching VAO\n" );
             return vao;
         }
@@ -624,11 +636,12 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
     glBindProgramPipeline( pipelineId );
 
     if ( CurrentVAO != CurrentPipeline->VAO ) {
-        glBindVertexArray( CurrentPipeline->VAO->Handle );
-        //GLogger.Printf( "Binding vao %d\n", CurrentPipeline->VAO->Handle );
         CurrentVAO = CurrentPipeline->VAO;
+        glBindVertexArray( CurrentVAO->Handle );
+        //GLogger.Printf( "Binding vao %d\n", CurrentVAO->Handle );
+        
     } else {
-        //GLogger.Printf( "caching vao binding %d\n", CurrentPipeline->VAO->Handle );
+        //GLogger.Printf( "caching vao binding %d\n", CurrentVAO->Handle );
     }
 
     //
@@ -1007,28 +1020,47 @@ void AImmediateContextGLImpl::BindRenderPassSubPass( ARenderPassGLImpl const * _
 void AImmediateContextGLImpl::BindVertexBuffer( unsigned int _InputSlot,
                                                 IBuffer const * _VertexBuffer,
                                                 unsigned int _Offset ) {
-    VerifyContext();
-
-    AN_ASSERT( CurrentVAO != NULL );
     AN_ASSERT( _InputSlot < MAX_VERTEX_BUFFER_SLOTS );
 
     ABufferGLImpl const * nativeVB = static_cast< ABufferGLImpl const * >(_VertexBuffer);
 
-    GLuint vertexBufferId = nativeVB ? GL_HANDLE( nativeVB->GetHandle() ) : 0;
-    uint32_t uid = nativeVB ? nativeVB->GetUID() : 0;
+    VertexBufferUIDs[_InputSlot] = nativeVB ? nativeVB->GetUID() : 0;
+    VertexBufferHandles[_InputSlot] = nativeVB ? GL_HANDLE( nativeVB->GetHandle() ) : 0;
+    VertexBufferOffsets[_InputSlot] = _Offset;
+}
 
-    if ( CurrentVAO->VertexBufferUIDs[ _InputSlot ] != uid || CurrentVAO->VertexBufferOffsets[ _InputSlot ] != _Offset ) {
+void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
+                                                 unsigned int _NumBuffers,
+                                                 IBuffer * const * _VertexBuffers,
+                                                 uint32_t const * _Offsets ) {
+    AN_ASSERT( _StartSlot + _NumBuffers <= MAX_VERTEX_BUFFER_SLOTS );
 
-        glVertexArrayVertexBuffer( CurrentVAO->Handle, _InputSlot, vertexBufferId, _Offset, CurrentVAO->VertexBindingsStrides[ _InputSlot ] );
+    if ( _VertexBuffers ) {
+        for ( int i = 0 ; i < _NumBuffers ; i++ ) {
+            ABufferGLImpl const * nativeVB = static_cast< ABufferGLImpl const * >(_VertexBuffers[i]);
 
-        CurrentVAO->VertexBufferUIDs[ _InputSlot ] = uid;
-        CurrentVAO->VertexBufferOffsets[ _InputSlot ] = _Offset;
+            int slot = _StartSlot + i;
 
-        //GLogger.Printf( "BindVertexBuffer %d\n", vertexBufferId );
-    } else {
-        //GLogger.Printf( "Caching BindVertexBuffer %d\n", vertexBufferId );
+            VertexBufferUIDs[slot] = nativeVB ? nativeVB->GetUID() : 0;
+            VertexBufferHandles[slot] = nativeVB ? GL_HANDLE( nativeVB->GetHandle() ) : 0;
+            VertexBufferOffsets[slot] = _Offsets ? _Offsets[i] : 0;
+        }
+    }
+    else {
+        for ( int i = 0 ; i < _NumBuffers ; i++ ) {
+            int slot = _StartSlot + i;
+
+            VertexBufferUIDs[slot] = 0;
+            VertexBufferHandles[slot] = 0;
+            VertexBufferOffsets[slot] = 0;
+        }
     }
 }
+
+#if 0
+
+
+
 
 void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
                                                  unsigned int _NumBuffers,
@@ -1106,31 +1138,18 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
         }
     }
 }
+#endif
 
 void AImmediateContextGLImpl::BindIndexBuffer( IBuffer const * _IndexBuffer,
                                                INDEX_TYPE _Type,
                                                unsigned int _Offset ) {
-    VerifyContext();
-
-    AN_ASSERT( CurrentPipeline != NULL );
-
-    CurrentPipeline->IndexBufferType = IndexTypeLUT[ _Type ];
-    CurrentPipeline->IndexBufferOffset = _Offset;
-    CurrentPipeline->IndexBufferTypeSizeOf = IndexTypeSizeOfLUT[ _Type ];
-
     ABufferGLImpl const * nativeIB = static_cast< ABufferGLImpl const * >(_IndexBuffer);
 
-    GLuint indexBufferId = nativeIB ? GL_HANDLE( nativeIB->GetHandle() ) : 0;
-    uint32_t uid = nativeIB ? nativeIB->GetUID() : 0;
-
-    if ( CurrentPipeline->VAO->IndexBufferUID != uid ) {
-        glVertexArrayElementBuffer( CurrentPipeline->VAO->Handle, indexBufferId );
-        CurrentPipeline->VAO->IndexBufferUID = uid;
-
-        //GLogger.Printf( "BindIndexBuffer %d\n", indexBufferId );
-    } else {
-        //GLogger.Printf( "Caching BindIndexBuffer %d\n", indexBufferId );
-    }
+    IndexBufferType = IndexTypeLUT[ _Type ];
+    IndexBufferOffset = _Offset;
+    IndexBufferTypeSizeOf = IndexTypeSizeOfLUT[ _Type ];
+    IndexBufferUID = nativeIB ? nativeIB->GetUID() : 0;
+    IndexBufferHandle = nativeIB ? GL_HANDLE( nativeIB->GetHandle() ) : 0;
 }
 
 void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _ResourceTable )
@@ -1509,6 +1528,35 @@ void AImmediateContextGLImpl::SetScissorIndexed( uint32_t _Index, SRect2D const 
     glScissorIndexedv( _Index, scissorData );
 }
 
+void AImmediateContextGLImpl::UpdateVertexBuffers() {
+    for ( SVertexBindingInfo const * binding = CurrentVAO->Hashed.VertexBindings ; binding < &CurrentVAO->Hashed.VertexBindings[CurrentVAO->Hashed.NumVertexBindings] ; binding++ ) {
+        int slot = binding->InputSlot;
+
+        if ( CurrentVAO->VertexBufferUIDs[slot] != VertexBufferUIDs[slot] || CurrentVAO->VertexBufferOffsets[slot] != VertexBufferOffsets[slot] ) {
+
+            glVertexArrayVertexBuffer( CurrentVAO->Handle, slot, VertexBufferHandles[slot], VertexBufferOffsets[slot], CurrentVAO->VertexBindingsStrides[slot] );
+
+            CurrentVAO->VertexBufferUIDs[slot] = VertexBufferUIDs[slot];
+            CurrentVAO->VertexBufferOffsets[slot] = VertexBufferOffsets[slot];
+        } else {
+            //GLogger.Printf( "Caching BindVertexBuffer %d\n", vertexBufferId );
+        }
+    }
+}
+
+void AImmediateContextGLImpl::UpdateVertexAndIndexBuffers() {
+    UpdateVertexBuffers();
+
+    if ( CurrentVAO->IndexBufferUID != IndexBufferUID ) {
+        glVertexArrayElementBuffer( CurrentVAO->Handle, IndexBufferHandle );
+        CurrentVAO->IndexBufferUID = IndexBufferUID;
+
+        //GLogger.Printf( "BindIndexBuffer %d\n", indexBufferId );
+    } else {
+        //GLogger.Printf( "Caching BindIndexBuffer %d\n", indexBufferId );
+    }
+}
+
 void AImmediateContextGLImpl::Draw( SDrawCmd const * _Cmd ) {
     VerifyContext();
 
@@ -1517,6 +1565,8 @@ void AImmediateContextGLImpl::Draw( SDrawCmd const * _Cmd ) {
     if ( _Cmd->InstanceCount == 0 || _Cmd->VertexCountPerInstance == 0 ) {
         return;
     }
+
+    UpdateVertexBuffers();
 
     if ( _Cmd->InstanceCount == 1 && _Cmd->StartInstanceLocation == 0 ) {
         glDrawArrays( CurrentPipeline->PrimitiveTopology, _Cmd->StartVertexLocation, _Cmd->VertexCountPerInstance ); // Since 2.0
@@ -1543,19 +1593,21 @@ void AImmediateContextGLImpl::Draw( SDrawIndexedCmd const * _Cmd ) {
         return;
     }
 
-    const GLubyte * offset = reinterpret_cast<const GLubyte *>( 0 ) + _Cmd->StartIndexLocation * CurrentPipeline->IndexBufferTypeSizeOf
-        + CurrentPipeline->IndexBufferOffset;
+    UpdateVertexAndIndexBuffers();
+
+    const GLubyte * offset = reinterpret_cast<const GLubyte *>( 0 ) + _Cmd->StartIndexLocation * IndexBufferTypeSizeOf
+        + IndexBufferOffset;
 
     if ( _Cmd->InstanceCount == 1 && _Cmd->StartInstanceLocation == 0 ) {
         if ( _Cmd->BaseVertexLocation == 0 ) {
             glDrawElements( CurrentPipeline->PrimitiveTopology,
                             _Cmd->IndexCountPerInstance,
-                            CurrentPipeline->IndexBufferType,
+                            IndexBufferType,
                             offset ); // 2.0
         } else {
             glDrawElementsBaseVertex( CurrentPipeline->PrimitiveTopology,
                                       _Cmd->IndexCountPerInstance,
-                                      CurrentPipeline->IndexBufferType,
+                                      IndexBufferType,
                                       offset,
                                       _Cmd->BaseVertexLocation
                                       ); // 3.2 or GL_ARB_draw_elements_base_vertex
@@ -1565,13 +1617,13 @@ void AImmediateContextGLImpl::Draw( SDrawIndexedCmd const * _Cmd ) {
             if ( _Cmd->BaseVertexLocation == 0 ) {
                 glDrawElementsInstanced( CurrentPipeline->PrimitiveTopology,
                                          _Cmd->IndexCountPerInstance,
-                                         CurrentPipeline->IndexBufferType,
+                                         IndexBufferType,
                                          offset,
                                          _Cmd->InstanceCount ); // 3.1
             } else {
                 glDrawElementsInstancedBaseVertex( CurrentPipeline->PrimitiveTopology,
                                                    _Cmd->IndexCountPerInstance,
-                                                   CurrentPipeline->IndexBufferType,
+                                                   IndexBufferType,
                                                    offset,
                                                    _Cmd->InstanceCount,
                                                    _Cmd->BaseVertexLocation ); // 3.2 or GL_ARB_draw_elements_base_vertex
@@ -1580,14 +1632,14 @@ void AImmediateContextGLImpl::Draw( SDrawIndexedCmd const * _Cmd ) {
             if ( _Cmd->BaseVertexLocation == 0 ) {
                 glDrawElementsInstancedBaseInstance( CurrentPipeline->PrimitiveTopology,
                                                      _Cmd->IndexCountPerInstance,
-                                                     CurrentPipeline->IndexBufferType,
+                                                     IndexBufferType,
                                                      offset,
                                                      _Cmd->InstanceCount,
                                                      _Cmd->StartInstanceLocation ); // 4.2 or GL_ARB_base_instance
             } else {
                 glDrawElementsInstancedBaseVertexBaseInstance( CurrentPipeline->PrimitiveTopology,
                                                                _Cmd->IndexCountPerInstance,
-                                                               CurrentPipeline->IndexBufferType,
+                                                               IndexBufferType,
                                                                offset,
                                                                _Cmd->InstanceCount,
                                                                _Cmd->BaseVertexLocation,
@@ -1601,6 +1653,8 @@ void AImmediateContextGLImpl::Draw( ITransformFeedback * _TransformFeedback, uns
     VerifyContext();
 
     AN_ASSERT( CurrentPipeline != NULL );
+
+    // FIXME: UpdateVertexBuffers() ?
 
     ATransformFeedbackGLImpl * transformFeedback = static_cast< ATransformFeedbackGLImpl * >( _TransformFeedback );
 
@@ -1628,6 +1682,8 @@ void AImmediateContextGLImpl::DrawIndirect( SDrawIndirectCmd const * _Cmd ) {
 
     AN_ASSERT( CurrentPipeline != NULL );
 
+    UpdateVertexBuffers();
+
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
         Binding.DrawInderectBuffer = 0;
@@ -1642,13 +1698,15 @@ void AImmediateContextGLImpl::DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd
 
     AN_ASSERT( CurrentPipeline != NULL );
 
+    UpdateVertexAndIndexBuffers();
+
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
         Binding.DrawInderectBuffer = 0;
     }
 
     // This is similar glDrawElementsInstancedBaseVertexBaseInstance
-    glDrawElementsIndirect( CurrentPipeline->PrimitiveTopology, CurrentPipeline->IndexBufferType, _Cmd ); // Since 4.0 or GL_ARB_draw_indirect
+    glDrawElementsIndirect( CurrentPipeline->PrimitiveTopology, IndexBufferType, _Cmd ); // Since 4.0 or GL_ARB_draw_indirect
 }
 
 void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, bool _Indexed ) {
@@ -1663,11 +1721,15 @@ void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsig
     }
 
     if ( _Indexed ) {
+        UpdateVertexAndIndexBuffers();
+
         // This is similar glDrawElementsInstancedBaseVertexBaseInstance, but with binded INDIRECT buffer
         glDrawElementsIndirect( CurrentPipeline->PrimitiveTopology,
-                                CurrentPipeline->IndexBufferType,
+                                IndexBufferType,
                                 reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset ); // Since 4.0 or GL_ARB_draw_indirect
     } else {
+        UpdateVertexBuffers();
+
         // This is similar glDrawArraysInstancedBaseInstance, but with binded INDIRECT buffer
         glDrawArraysIndirect( CurrentPipeline->PrimitiveTopology,
                               reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset ); // Since 4.0 or GL_ARB_draw_indirect
@@ -1681,6 +1743,8 @@ void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned
 
     static_assert( sizeof( _VertexCount[0] ) == sizeof( GLsizei ), "!" );
     static_assert( sizeof( _StartVertexLocations[0] ) == sizeof( GLint ), "!" );
+
+    UpdateVertexBuffers();
 
     glMultiDrawArrays( CurrentPipeline->PrimitiveTopology, ( const GLint * )_StartVertexLocations, ( const GLsizei * )_VertexCount, _DrawCount ); // Since 2.0
 
@@ -1697,12 +1761,14 @@ void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned
 
     static_assert( sizeof( unsigned int ) == sizeof( GLsizei ), "!" );
 
-    // IndexBufferOffset; // FIXME: how to apply IndexBufferOffset?
+    // FIXME: how to apply IndexBufferOffset?
+
+    UpdateVertexAndIndexBuffers();
 
     if ( _BaseVertexLocations ) {
         glMultiDrawElementsBaseVertex( CurrentPipeline->PrimitiveTopology,
                                        ( const GLsizei * )_IndexCount,
-                                       CurrentPipeline->IndexBufferType,
+                                       IndexBufferType,
                                        _IndexByteOffsets,
                                        _DrawCount,
                                        _BaseVertexLocations ); // 3.2
@@ -1717,7 +1783,7 @@ void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned
     } else {
         glMultiDrawElements( CurrentPipeline->PrimitiveTopology,
                              ( const GLsizei * )_IndexCount,
-                             CurrentPipeline->IndexBufferType,
+                             IndexBufferType,
                              _IndexByteOffsets,
                              _DrawCount ); // 2.0
     }
@@ -1727,6 +1793,8 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
     VerifyContext();
 
     AN_ASSERT( CurrentPipeline != NULL );
+
+    UpdateVertexBuffers();
 
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
@@ -1754,13 +1822,15 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
 
     AN_ASSERT( CurrentPipeline != NULL );
 
+    UpdateVertexAndIndexBuffers();
+
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
         Binding.DrawInderectBuffer = 0;
     }
 
     glMultiDrawElementsIndirect( CurrentPipeline->PrimitiveTopology,
-                                 CurrentPipeline->IndexBufferType,
+                                 IndexBufferType,
                                  _Cmds,
                                  _DrawCount,
                                  _Stride ); // 4.3
