@@ -44,7 +44,7 @@ AQueryPoolGLImpl::AQueryPoolGLImpl( ADeviceGLImpl * _Device, SQueryPoolCreateInf
     AN_ASSERT( _CreateInfo.PoolSize > 0 );
 
     IdPool = nullptr;
-    Target = _CreateInfo.Target;
+    QueryType = _CreateInfo.QueryType;
     PoolSize = _CreateInfo.PoolSize;
 
     SAllocatorCallback const & allocator = _Device->GetAllocator();
@@ -57,12 +57,13 @@ AQueryPoolGLImpl::AQueryPoolGLImpl( ADeviceGLImpl * _Device, SQueryPoolCreateInf
     }
 
     // TODO: create queries for each context
-    glCreateQueries( TableQueryTarget[ Target ], PoolSize, IdPool ); // 4.5
+    glCreateQueries( TableQueryTarget[QueryType], PoolSize, IdPool ); // 4.5
 
     pDevice->TotalQueryPools++;
 }
 
-AQueryPoolGLImpl::~AQueryPoolGLImpl() {
+AQueryPoolGLImpl::~AQueryPoolGLImpl()
+{
     if ( !IdPool ) {
         return;
     }
@@ -73,11 +74,12 @@ AQueryPoolGLImpl::~AQueryPoolGLImpl() {
 }
 
 void AQueryPoolGLImpl::GetResults( uint32_t _FirstQuery,
-                            uint32_t _QueryCount,
-                            size_t _DataSize,
-                            void * _SysMem,
-                            size_t _DstStride,
-                            QUERY_RESULT_FLAGS _Flags ) {
+                                   uint32_t _QueryCount,
+                                   size_t _DataSize,
+                                   void * _SysMem,
+                                   size_t _DstStride,
+                                   QUERY_RESULT_FLAGS _Flags )
+{
     AN_ASSERT( _FirstQuery + _QueryCount <= PoolSize );
 
     glBindBuffer( GL_QUERY_BUFFER, 0 );

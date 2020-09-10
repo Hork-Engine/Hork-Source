@@ -583,6 +583,8 @@ public:
 
     virtual void EndQuery( IQueryPool * _QueryPool, uint32_t _StreamIndex = 0 ) = 0;
 
+    virtual void RecordTimeStamp( IQueryPool * _QueryPool, uint32_t _QueryID ) = 0;
+
     virtual void CopyQueryPoolResultsAvailable( IQueryPool * _QueryPool,
                                                 uint32_t _FirstQuery,
                                                 uint32_t _QueryCount,

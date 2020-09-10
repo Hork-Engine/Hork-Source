@@ -210,6 +210,8 @@ public:
 
     void EndQuery( IQueryPool * _QueryPool, uint32_t _StreamIndex = 0 ) override;
 
+    void RecordTimeStamp( IQueryPool * _QueryPool, uint32_t _QueryID ) override;
+
     void CopyQueryPoolResultsAvailable( IQueryPool * _QueryPool,
                                         uint32_t _FirstQuery,
                                         uint32_t _QueryCount,
@@ -443,6 +445,10 @@ private:
     uint32_t                  VertexBufferUIDs[MAX_VERTEX_BUFFER_SLOTS];
     unsigned int              VertexBufferHandles[MAX_VERTEX_BUFFER_SLOTS];
     ptrdiff_t                 VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS];
+
+    //unsigned int              CurrentQueryTarget;
+    //unsigned int              CurrentQueryObject;
+    uint32_t                  CurrentQueryUID[QUERY_TYPE_MAX];
 
     struct {
         unsigned int          PackAlignment;

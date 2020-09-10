@@ -42,7 +42,9 @@ enum QUERY_TYPE : uint8_t
     QUERY_TYPE_TIME_ELAPSED,
     QUERY_TYPE_TIMESTAMP,
     QUERY_TYPE_PRIMITIVES_GENERATED,
-    QUERY_TYPE_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN
+    QUERY_TYPE_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN,
+
+    QUERY_TYPE_MAX
 };
 
 enum QUERY_RESULT_FLAGS : uint32_t
@@ -55,7 +57,7 @@ enum QUERY_RESULT_FLAGS : uint32_t
 
 struct SQueryPoolCreateInfo
 {
-    QUERY_TYPE Target;
+    QUERY_TYPE QueryType;
     uint32_t PoolSize;
 };
 
@@ -68,6 +70,30 @@ public:
                              void * _SysMem,
                              size_t _DstStride,
                              QUERY_RESULT_FLAGS _Flags ) = 0;
+
+    void GetResult32( uint32_t _QueryId,
+                      uint32_t * pResult,
+                      QUERY_RESULT_FLAGS _Flags )
+    {
+        auto flags = _Flags & ~QUERY_RESULT_64_BIT;
+        GetResults( _QueryId, 1, sizeof( *pResult ), pResult, sizeof( *pResult ), (QUERY_RESULT_FLAGS)flags );
+    }
+
+    void GetResult64( uint32_t _QueryId,
+                      uint64_t * pResult,
+                      QUERY_RESULT_FLAGS _Flags )
+    {
+        auto flags = _Flags | QUERY_RESULT_64_BIT;
+        GetResults( _QueryId, 1, sizeof( *pResult ), pResult, sizeof( *pResult ), (QUERY_RESULT_FLAGS)flags );
+    }
+
+    QUERY_TYPE GetQueryType() const { return QueryType; }
+
+    uint32_t GetPoolSize() const { return PoolSize; }
+
+protected:
+    QUERY_TYPE QueryType;
+    uint32_t PoolSize;
 };
 
 }

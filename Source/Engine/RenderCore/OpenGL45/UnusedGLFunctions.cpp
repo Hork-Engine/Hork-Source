@@ -192,7 +192,6 @@ glGetVertexAttribLdv
 glGetVertexAttribPointerv
 
 // Query
-glQueryCounter
 glGetQueryIndexediv
 glGetQueryiv
 glGetQueryObjecti64v

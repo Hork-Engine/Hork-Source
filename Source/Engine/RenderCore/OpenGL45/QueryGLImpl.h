@@ -54,10 +54,7 @@ public:
 
 private:
     ADeviceGLImpl * pDevice;
-    SQueryPoolCreateInfo CreateInfo;
     unsigned int * IdPool;
-    QUERY_TYPE Target;
-    uint32_t PoolSize;
 };
 
 }
