@@ -33,12 +33,8 @@ SOFTWARE.
 #include <World/Public/Base/DebugRenderer.h>
 #include <Core/Public/Logger.h>
 
-ARuntimeVariable RVDrawDirectionalLights( _CTS( "DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVShadowCascadeBits( _CTS( "ShadowCascadeBits" ), _CTS( "24" ) );    // Allowed 16, 24 or 32 bits
-ARuntimeVariable RVCascadeSplitLambda( _CTS( "CascadeSplitLambda" ), _CTS( "1.0" ) );
-//ARuntimeVariable RVShadowCascadeOffset( _CTS( "ShadowCascadeOffset" ), _CTS( "3.0" ) );
-//ARuntimeVariable RVShadowMaxDistance( _CTS( "ShadowMaxDistance" ), _CTS( "128" ) );
-//ARuntimeVariable RVShadowCascadeResolution( _CTS( "ShadowCascadeResolution" ), _CTS( "2048" ) ); // TODO: move to directional light properties
+ARuntimeVariable dd_DirectionalLights( _CTS( "dd_DirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_ShadowCascadeSplitLambda( _CTS( "com_ShadowCascadeSplitLambda" ), _CTS( "1.0" ) );
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -180,7 +176,7 @@ Float4 const & ADirectionalLightComponent::GetEffectiveColor() const {
 void ADirectionalLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( RVDrawDirectionalLights ) {
+    if ( dd_DirectionalLights ) {
         Float3 pos = GetWorldPosition();
         InRenderer->SetDepthTest( false );
         InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
@@ -220,7 +216,7 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int *
     const float offset = ShadowCascadeOffset;
     const float a = (shadowMaxDistance - offset) / View->ViewZNear;
     const float b = (shadowMaxDistance - offset) - View->ViewZNear;
-    const float lambda = RVCascadeSplitLambda.GetFloat();
+    const float lambda = com_ShadowCascadeSplitLambda.GetFloat();
 
     // Calc splits
     cascadeSplits[0] = View->ViewZNear;

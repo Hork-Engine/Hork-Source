@@ -34,7 +34,7 @@ SOFTWARE.
 
 constexpr float DEFAULT_RADIUS = 1.0f;
 
-ARuntimeVariable RVDrawIBL( _CTS( "DrawIBL" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_IBL( _CTS( "dd_IBL" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( AIBLComponent )
 
@@ -88,7 +88,7 @@ void AIBLComponent::UpdateWorldBounds() {
 void AIBLComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( RVDrawIBL )
+    if ( dd_IBL )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {

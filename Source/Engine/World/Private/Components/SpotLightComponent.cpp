@@ -39,7 +39,7 @@ static const float DEFAULT_SPOT_EXPONENT = 1.0f;
 static const float MIN_CONE_ANGLE = 1.0f;
 static const float MIN_RADIUS = 0.01f;
 
-ARuntimeVariable RVDrawSpotLights( _CTS( "DrawSpotLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_SpotLights( _CTS( "dd_SpotLights" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ASpotLightComponent )
 
@@ -152,7 +152,7 @@ void ASpotLightComponent::UpdateWorldBounds() {
 void ASpotLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( RVDrawSpotLights )
+    if ( dd_SpotLights )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {

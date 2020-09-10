@@ -42,9 +42,9 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include "PrimitiveLinkPool.h"
 
-ARuntimeVariable RVDrawLevelAreaBounds( _CTS( "DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawLevelIndoorBounds( _CTS( "DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawLevelPortals( _CTS( "DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_LevelAreaBounds( _CTS( "dd_LevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_LevelIndoorBounds( _CTS( "dd_LevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_LevelPortals( _CTS( "dd_LevelPortals" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ALevel )
 
@@ -80,22 +80,10 @@ ALevel::ALevel() {
     OutdoorArea.Bounds.Maxs = extents * 0.5f;
 
     IndoorBounds.Clear();
-
-    ShadowCasterVB = GRenderBackend->CreateBuffer( this );
-    ShadowCasterIB = GRenderBackend->CreateBuffer( this );
-
-    LightPortalsVB = GRenderBackend->CreateBuffer( this );
-    LightPortalsIB = GRenderBackend->CreateBuffer( this );
 }
 
 ALevel::~ALevel() {
     Purge();
-
-    GRenderBackend->DestroyBuffer( ShadowCasterVB );
-    GRenderBackend->DestroyBuffer( ShadowCasterIB );
-
-    GRenderBackend->DestroyBuffer( LightPortalsVB );
-    GRenderBackend->DestroyBuffer( LightPortalsIB );
 }
 
 void ALevel::OnAddLevelToWorld() {
@@ -130,16 +118,12 @@ void ALevel::Initialize() {
     }
 
     // FIXME: Use AVertexMemoryGPU?
-    GRenderBackend->InitializeBuffer( ShadowCasterVB, ShadowCasterVerts.Size() * sizeof( Float3 ) );
-    GRenderBackend->InitializeBuffer( ShadowCasterIB, ShadowCasterIndices.Size() * sizeof( unsigned int ) );
+    GRenderBackend->InitializeBuffer( &ShadowCasterVB, ShadowCasterVerts.Size() * sizeof( Float3 ) );
+    GRenderBackend->InitializeBuffer( &ShadowCasterIB, ShadowCasterIndices.Size() * sizeof( unsigned int ) );
 
-    GRenderBackend->InitializeBuffer( LightPortalsVB, LightPortalVertexBuffer.Size() * sizeof( Float3 ) );
-    GRenderBackend->InitializeBuffer( LightPortalsIB, LightPortalIndexBuffer.Size() * sizeof( unsigned int ) );
+    GRenderBackend->InitializeBuffer( &LightPortalsVB, LightPortalVertexBuffer.Size() * sizeof( Float3 ) );
+    GRenderBackend->InitializeBuffer( &LightPortalsIB, LightPortalIndexBuffer.Size() * sizeof( unsigned int ) );
 
-    UploadResourcesGPU();
-}
-
-void ALevel::UploadResourcesGPU() {
     GRenderBackend->WriteBuffer( ShadowCasterVB, 0, ShadowCasterVerts.Size() * sizeof( Float3 ), ShadowCasterVerts.ToPtr() );
     GRenderBackend->WriteBuffer( ShadowCasterIB, 0, ShadowCasterIndices.Size() * sizeof( unsigned int ), ShadowCasterIndices.ToPtr() );
 
@@ -556,7 +540,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
                                   sizeof(Float3), LightPortalIndexBuffer.ToPtr(), LightPortalIndexBuffer.Size() );
 #endif
 
-    if ( RVDrawLevelAreaBounds ) {
+    if ( dd_LevelAreaBounds ) {
         InRenderer->SetDepthTest( false );
         InRenderer->SetColor( AColor4( 0,1,0,0.5f) );
         for ( SVisArea & area : Areas ) {
@@ -564,7 +548,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
         }
     }
 
-    if ( RVDrawLevelPortals ) {
+    if ( dd_LevelPortals ) {
 //        InRenderer->SetDepthTest( false );
 //        InRenderer->SetColor(1,0,0,1);
 //        for ( ALevelPortal & portal : Portals ) {
@@ -625,7 +609,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
         }
     }
 
-    if ( RVDrawLevelIndoorBounds ) {
+    if ( dd_LevelIndoorBounds ) {
         InRenderer->SetDepthTest( false );
         InRenderer->DrawAABB( IndoorBounds );
     }

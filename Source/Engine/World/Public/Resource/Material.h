@@ -44,7 +44,7 @@ class MGMaterialGraph;
 Material
 
 */
-class ANGIE_API AMaterial : public AResource, public IGPUResourceOwner {
+class ANGIE_API AMaterial : public AResource {
     AN_CLASS( AMaterial, AResource )
 
 public:
@@ -62,7 +62,7 @@ public:
 
     bool CanCastShadow() const { return !Def.bNoCastShadow; }
 
-    AMaterialGPU * GetGPUResource() { return MaterialGPU; }
+    AMaterialGPU * GetGPUResource() { return &MaterialGPU; }
 
     int GetNumUniformVectors() const { return Def.NumUniformVectors; }
 
@@ -80,14 +80,11 @@ protected:
     /** Create internal resource */
     void LoadInternalResource( const char * _Path ) override;
 
-    // IGPUResourceOwner interface
-    void UploadResourcesGPU() override;
-
     const char * GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 
 private:
     /** Material GPU representation */
-    AMaterialGPU * MaterialGPU;
+    AMaterialGPU MaterialGPU;
 
     /** Source graph */
     TWeakRef< MGMaterialGraph > MaterialGraph;

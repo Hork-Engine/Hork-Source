@@ -33,8 +33,6 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-void OpenGL45RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
-
 ACanvasRenderer::ACanvasRenderer()
 {
     SRenderPassCreateInfo renderPassCI = {};
@@ -51,6 +49,8 @@ ACanvasRenderer::ACanvasRenderer()
 
     GDevice->CreateRenderPass( renderPassCI, &CanvasPass );
 
+    GDevice->CreateResourceTable( &ResourceTable );
+
     //
     // Create pipelines
     //
@@ -59,7 +59,8 @@ ACanvasRenderer::ACanvasRenderer()
     CreatePipelines();
 }
 
-void ACanvasRenderer::CreatePresentViewPipeline() {
+void ACanvasRenderer::CreatePresentViewPipeline()
+{
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -100,29 +101,12 @@ void ACanvasRenderer::CreatePresentViewPipeline() {
         }
     };
 
-
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
-
-    AString vertexSourceCode = LoadShader( "canvas/presentview.vert" );
-    AString fragmentSourceCode = LoadShader( "canvas/presentview.frag" );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSourceCode.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSourceCode.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+    CreateVertexShader( "canvas/presentview.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateFragmentShader( "canvas/presentview.frag", pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
 
     SVertexBindingInfo vertexBinding[1] = {};
 
@@ -142,15 +126,23 @@ void ACanvasRenderer::CreatePresentViewPipeline() {
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    pipelineCI.SS.NumSamplers = 1;
-    pipelineCI.SS.Samplers = &samplerCI;
+    pipelineCI.ResourceLayout.NumSamplers = 1;
+    pipelineCI.ResourceLayout.Samplers = &samplerCI;
+
+    SBufferInfo bufferInfo;
+    bufferInfo.BufferType = UNIFORM_BUFFER;
+
+    pipelineCI.ResourceLayout.NumBuffers = 1;
+    pipelineCI.ResourceLayout.Buffers = &bufferInfo;
 
     for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
         if ( i == COLOR_BLENDING_DISABLED ) {
             pipelineCI.BS.RenderTargetSlots[0].SetBlendingPreset( BLENDING_NO_BLEND );
-        } else if ( i == COLOR_BLENDING_ALPHA ) {
+        }
+        else if ( i == COLOR_BLENDING_ALPHA ) {
             pipelineCI.BS.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
-        } else {
+        }
+        else {
             pipelineCI.BS.RenderTargetSlots[0].SetBlendingPreset( (BLENDING_PRESET)(BLENDING_NO_BLEND + i) );
         }
 
@@ -158,7 +150,8 @@ void ACanvasRenderer::CreatePresentViewPipeline() {
     }
 }
 
-void ACanvasRenderer::CreatePipelines() {
+void ACanvasRenderer::CreatePipelines()
+{
     SPipelineCreateInfo pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -200,21 +193,10 @@ void ACanvasRenderer::CreatePipelines() {
     };
 
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
     TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
 
-    AString vertexSourceCode = LoadShader( "canvas/canvas.vert" );
-    AString fragmentSourceCode = LoadShader( "canvas/canvas.frag" );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSourceCode.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSourceCode.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+    CreateVertexShader( "canvas/canvas.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), vertexShaderModule );
+    CreateFragmentShader( "canvas/canvas.frag", fragmentShaderModule );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
@@ -237,15 +219,23 @@ void ACanvasRenderer::CreatePipelines() {
 
     SSamplerInfo samplerCI;
 
-    pipelineCI.SS.NumSamplers = 1;
-    pipelineCI.SS.Samplers = &samplerCI;
+    pipelineCI.ResourceLayout.NumSamplers = 1;
+    pipelineCI.ResourceLayout.Samplers = &samplerCI;
+
+    SBufferInfo bufferInfo;
+    bufferInfo.BufferType = UNIFORM_BUFFER;
+
+    pipelineCI.ResourceLayout.NumBuffers = 1;
+    pipelineCI.ResourceLayout.Buffers = &bufferInfo;
 
     for ( int i = 0 ; i < COLOR_BLENDING_MAX ; i++ ) {
         if ( i == COLOR_BLENDING_DISABLED ) {
             pipelineCI.BS.RenderTargetSlots[0].SetBlendingPreset( BLENDING_NO_BLEND );
-        } else if ( i == COLOR_BLENDING_ALPHA ) {
+        }
+        else if ( i == COLOR_BLENDING_ALPHA ) {
             pipelineCI.BS.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
-        } else {
+        }
+        else {
             pipelineCI.BS.RenderTargetSlots[0].SetBlendingPreset( (BLENDING_PRESET)(BLENDING_NO_BLEND + i) );
         }
 
@@ -258,7 +248,8 @@ void ACanvasRenderer::CreatePipelines() {
     }
 }
 
-void ACanvasRenderer::BeginCanvasPass() {
+void ACanvasRenderer::BeginCanvasPass()
+{
     SRenderPassBegin renderPassBegin = {};
 
     renderPassBegin.pRenderPass = CanvasPass;
@@ -282,7 +273,8 @@ void ACanvasRenderer::BeginCanvasPass() {
     rcmd->SetViewport( vp );
 }
 
-void ACanvasRenderer::Render() {
+void ACanvasRenderer::Render( std::function<void(SRenderView *, AFrameGraphTexture**)> RenderViewCB )
+{
     if ( !GFrameData->DrawListHead ) {
         return;
     }
@@ -311,20 +303,13 @@ void ACanvasRenderer::Render() {
     SCanvasBinding canvasBinding;
 
     canvasBinding.Size = sizeof( SCanvasUniforms );
-    canvasBinding.Offset = GFrameResources.FrameConstantBuffer->Allocate( canvasBinding.Size );
-    void * pMemory = GFrameResources.FrameConstantBuffer->GetMappedMemory() + canvasBinding.Offset;
+    canvasBinding.Offset = GFrameConstantBuffer->Allocate( canvasBinding.Size );
+    void * pMemory = GFrameConstantBuffer->GetMappedMemory() + canvasBinding.Offset;
     SCanvasUniforms * pCanvasUniforms = (SCanvasUniforms *)pMemory;
 
     pCanvasUniforms->OrthoProjection = GFrameData->OrthoProjection;
 
-    SResourceTable canvasResources;
-
-    SResourceBufferBinding * canvasUniformBuffer = canvasResources.AddBuffer( UNIFORM_BUFFER );
-    SResourceTextureBinding * canvasTextureBinding = canvasResources.AddTexture();
-
-    canvasUniformBuffer->pBuffer = GFrameResources.FrameConstantBuffer->GetBuffer();
-
-    IBuffer * streamBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
+    rcmd->BindResourceTable( ResourceTable );
 
     for ( SHUDDrawList * drawList = GFrameData->DrawListHead ; drawList ; drawList = drawList->pNext ) {
 
@@ -344,24 +329,27 @@ void ACanvasRenderer::Render() {
                     SRenderView * renderView = &GFrameData->RenderViews[cmd->ViewportIndex];
                     AFrameGraphTexture * viewTexture;
 
-                    OpenGL45RenderView( renderView, &viewTexture );
+                    RenderViewCB( renderView, &viewTexture );
 
                     // Restore canvas pass
                     BeginCanvasPass();
 
+                    // Restore resource table
+                    rcmd->BindResourceTable( ResourceTable );
+
                     // Draw just rendered scene on the canvas
                     rcmd->BindPipeline( PresentViewPipeline[cmd->Blending].GetObject() );
-                    rcmd->BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
-                    rcmd->BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
+                    rcmd->BindVertexBuffer( 0, GStreamBuffer, drawList->VertexStreamOffset );
+                    rcmd->BindIndexBuffer( GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    // Use view uniform buffer binding from rendered view
-                    canvasUniformBuffer->BindingOffset = GFrameResources.ViewUniformBufferBinding->BindingOffset;
-                    canvasUniformBuffer->BindingSize = GFrameResources.ViewUniformBufferBinding->BindingSize;
+                    // Use uniform buffer from rendered view
+                    ResourceTable->BindBuffer( 0,
+                                               GFrameConstantBuffer->GetBuffer(),
+                                               GViewUniformBufferBindingBindingOffset,
+                                               GViewUniformBufferBindingBindingSize );
 
                     // Set texture
-                    canvasTextureBinding->pTexture = viewTexture->Actual();
-
-                    rcmd->BindResourceTable( &canvasResources );
+                    ResourceTable->BindTexture( 0, viewTexture->Actual() );
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;
@@ -385,15 +373,16 @@ void ACanvasRenderer::Render() {
                     AN_ASSERT( pMaterial->MaterialType == MATERIAL_TYPE_HUD );
 
                     rcmd->BindPipeline( pMaterial->HUDPipeline );
-                    rcmd->BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
-                    rcmd->BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
+                    rcmd->BindVertexBuffer( 0, GStreamBuffer, drawList->VertexStreamOffset );
+                    rcmd->BindIndexBuffer( GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    BindTextures( cmd->MaterialFrameData, cmd->MaterialFrameData->NumTextures );
+                    // Set uniform buffer
+                    ResourceTable->BindBuffer( 0,
+                                               GFrameConstantBuffer->GetBuffer(),
+                                               canvasBinding.Offset,
+                                               canvasBinding.Size );
 
-                    GFrameResources.ViewUniformBufferBinding->BindingOffset = canvasBinding.Offset;
-                    GFrameResources.ViewUniformBufferBinding->BindingSize = canvasBinding.Size;
-
-                    rcmd->BindResourceTable( &GFrameResources.Resources );
+                    BindTextures( ResourceTable, cmd->MaterialFrameData, cmd->MaterialFrameData->NumTextures );
 
                     // FIXME: What about material uniforms?
 
@@ -415,17 +404,17 @@ void ACanvasRenderer::Render() {
                     IPipeline * pPipeline = Pipelines[cmd->Blending][cmd->SamplerType].GetObject();
 
                     rcmd->BindPipeline( pPipeline );
-                    rcmd->BindVertexBuffer( 0, streamBuffer, drawList->VertexStreamOffset );
-                    rcmd->BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
+                    rcmd->BindVertexBuffer( 0, GStreamBuffer, drawList->VertexStreamOffset );
+                    rcmd->BindIndexBuffer( GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    // Use view uniform buffer binding from rendered view
-                    canvasUniformBuffer->BindingOffset = canvasBinding.Offset;
-                    canvasUniformBuffer->BindingSize = canvasBinding.Size;
+                    // Set uniform buffer
+                    ResourceTable->BindBuffer( 0,
+                                               GFrameConstantBuffer->GetBuffer(),
+                                               canvasBinding.Offset,
+                                               canvasBinding.Size );
 
                     // Set texture
-                    canvasTextureBinding->pTexture = GPUTextureHandle( cmd->Texture );
-
-                    rcmd->BindResourceTable( &canvasResources );
+                    ResourceTable->BindTexture( 0, cmd->Texture );
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;

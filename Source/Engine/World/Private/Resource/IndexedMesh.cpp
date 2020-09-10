@@ -363,19 +363,19 @@ void *AIndexedMesh::GetWeightMemory( void * _This ) {
     return static_cast< AIndexedMesh * >(_This)->GetWeights();
 }
 
-void AIndexedMesh::GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+void AIndexedMesh::GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( VertexHandle ) {
         GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexHandle, _Buffer, _Offset );
     }
 }
 
-void AIndexedMesh::GetIndexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+void AIndexedMesh::GetIndexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( IndexHandle ) {
         GVertexMemoryGPU.GetPhysicalBufferAndOffset( IndexHandle, _Buffer, _Offset );
     }
 }
 
-void AIndexedMesh::GetWeightsBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+void AIndexedMesh::GetWeightsBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( WeightsHandle ) {
         GVertexMemoryGPU.GetPhysicalBufferAndOffset( WeightsHandle, _Buffer, _Offset );
     }
@@ -1274,7 +1274,7 @@ bool ALightmapUV::WriteVertexData( SMeshVertexUV const * _Vertices, int _Vertice
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
 
-void ALightmapUV::GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+void ALightmapUV::GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( VertexBufferGPU ) {
         GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexBufferGPU, _Buffer, _Offset );
     }
@@ -1355,7 +1355,7 @@ bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _Ver
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
 
-void AVertexLight::GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+void AVertexLight::GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( VertexBufferGPU ) {
         GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexBufferGPU, _Buffer, _Offset );
     }
@@ -1375,11 +1375,11 @@ AProceduralMesh::~AProceduralMesh() {
 
 }
 
-void AProceduralMesh::GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+void AProceduralMesh::GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     GStreamedMemoryGPU.GetPhysicalBufferAndOffset( VertexStream, _Buffer, _Offset );
 }
 
-void AProceduralMesh::GetIndexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset ) {
+void AProceduralMesh::GetIndexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     GStreamedMemoryGPU.GetPhysicalBufferAndOffset( IndexSteam, _Buffer, _Offset );
 }
 

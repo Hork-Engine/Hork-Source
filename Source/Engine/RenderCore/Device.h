@@ -77,7 +77,7 @@ enum DEVICE_CAPS
 class IDevice : public IObjectInterface
 {
 public:
-    virtual void SwapBuffers( SDL_Window * WindowHandle ) = 0;
+    virtual void SwapBuffers( SDL_Window * WindowHandle, int SwapInterval ) = 0;
 
     virtual void GetImmediateContext( IImmediateContext ** ppImmediateContext ) = 0;
 
@@ -107,6 +107,8 @@ public:
     virtual void CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, TRef< IQueryPool > * ppQueryPool ) = 0;
 
     virtual void CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) = 0;
+
+    virtual void CreateResourceTable( TRef< IResourceTable > * ppResourceTable ) = 0;
 
     virtual bool CreateShaderBinaryData( SHADER_TYPE _ShaderType,
                                          unsigned int _NumSources,

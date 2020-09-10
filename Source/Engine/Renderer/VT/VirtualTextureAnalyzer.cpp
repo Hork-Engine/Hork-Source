@@ -181,16 +181,13 @@ void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodArray< SPageDesc > const 
 
 void AVirtualTextureFeedbackAnalyzer::Begin()
 {
-    AFrameConstantBuffer * frameConstantBuffer = GFrameResources.FrameConstantBuffer;
-
     // NOTE: this must fit to Max uniform buffer size
     size_t size = VT_MAX_TEXTURE_UNITS * sizeof( SVirtualTextureUnit );
-    size_t offset = frameConstantBuffer->Allocate( size );
+    size_t offset = GFrameConstantBuffer->Allocate( size );
 
-    GFrameResources.VTBufferBinding->BindingSize = size;
-    GFrameResources.VTBufferBinding->BindingOffset = offset;
+    rtbl->BindBuffer( 6, GFrameConstantBuffer->GetBuffer(), offset, size );
 
-    Bindings = (SVirtualTextureUnit *)(frameConstantBuffer->GetMappedMemory() + offset);
+    Bindings = (SVirtualTextureUnit *)(GFrameConstantBuffer->GetMappedMemory() + offset);
     NumBindings = 0;
 
     for ( int i = 0 ; i < VT_MAX_TEXTURE_UNITS ; i++ ) {

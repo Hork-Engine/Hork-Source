@@ -191,7 +191,6 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
 
     AActor * actor = static_cast< AActor * >( classMeta->CreateInstance() );
     actor->AddRef();
-    actor->bDuringConstruction = false;
 
     if ( _SpawnParameters.Instigator ) {
         actor->Instigator = _SpawnParameters.Instigator;
@@ -218,6 +217,8 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
     }
 
     actor->Initialize( _SpawnParameters.SpawnTransform );
+
+    actor->bDuringConstruction = false;
 
     BroadcastActorSpawned( actor );
 
@@ -267,7 +268,6 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
 
     AActor * actor = static_cast< AActor * >( classMeta->CreateInstance() );
     actor->AddRef();
-    actor->bDuringConstruction = false;
 
     // Add actor to world array of actors
     Actors.Append( actor );
@@ -310,6 +310,8 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
     spawnTransform.Scale    = ReadFloat3( _Document, _FieldsHead, "SpawnScale", Float3(1.0f) );
 
     actor->Initialize( spawnTransform );
+
+    actor->bDuringConstruction = false;
 
     BroadcastActorSpawned( actor );
 

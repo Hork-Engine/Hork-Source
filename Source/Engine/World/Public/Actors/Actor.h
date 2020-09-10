@@ -141,6 +141,8 @@ public:
     /** Apply damage to the actor */
     virtual void ApplyDamage( float _DamageAmount, Float3 const & _Position, AActor * _DamageCauser );
 
+    bool IsDuringConstruction() const { return bDuringConstruction; }
+
 protected:
 
     bool bCanEverTick = false;

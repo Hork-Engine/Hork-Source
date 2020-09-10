@@ -33,7 +33,8 @@ SOFTWARE.
 #include <Core/Public/String.h>
 #include <Core/Public/CompileTimeString.h>
 
-enum ERuntimeVariableFlags {
+enum ERuntimeVariableFlags
+{
     VAR_LATCHED     = AN_BIT(0),
     VAR_READONLY    = AN_BIT(1),
     VAR_NOSAVE      = AN_BIT(2),

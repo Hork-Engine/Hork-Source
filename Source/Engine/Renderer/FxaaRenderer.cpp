@@ -41,7 +41,17 @@ AFxaaRenderer::AFxaaRenderer()
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    CreateFullscreenQuadPipeline( &FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &samplerCI, 1 );
+    SBufferInfo bufferInfo;
+    bufferInfo.BufferType = UNIFORM_BUFFER;
+
+    SPipelineResourceLayout resourceLayout;
+
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers = &samplerCI;
+    resourceLayout.NumBuffers = 1;
+    resourceLayout.Buffers = &bufferInfo;
+
+    CreateFullscreenQuadPipeline( &FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &resourceLayout );
 }
 
 void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppFxaaTexture )
@@ -66,9 +76,7 @@ void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * Sour
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
-        GFrameResources.TextureBindings[0]->pTexture = SourceTexture->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, SourceTexture->Actual() );
 
         DrawSAQ( FxaaPipeline );
     } );

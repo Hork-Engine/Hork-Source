@@ -33,7 +33,8 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static bool BindMaterialDepthPass( SRenderInstance const * instance ) {
+static bool BindMaterialDepthPass( SRenderInstance const * instance )
+{
     AMaterialGPU * pMaterial = instance->Material;
 
     AN_ASSERT( pMaterial );
@@ -41,7 +42,7 @@ static bool BindMaterialDepthPass( SRenderInstance const * instance ) {
     int bSkinned = instance->SkeletonSize > 0;
 
     IPipeline * pPipeline;
-    if ( RVMotionBlur && instance->GetGeometryPriority() == RENDERING_GEOMETRY_PRIORITY_DYNAMIC ) {
+    if ( r_MotionBlur && instance->GetGeometryPriority() == RENDERING_GEOMETRY_PRIORITY_DYNAMIC ) {
         pPipeline = pMaterial->DepthVelocityPass[bSkinned];
     }
     else {
@@ -57,7 +58,7 @@ static bool BindMaterialDepthPass( SRenderInstance const * instance ) {
 
     // Bind second vertex buffer
     if ( bSkinned ) {
-        rcmd->BindVertexBuffer( 1, GPUBufferHandle( instance->WeightsBuffer ), instance->WeightsBufferOffset );
+        rcmd->BindVertexBuffer( 1, instance->WeightsBuffer, instance->WeightsBufferOffset );
     }
     else {
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
@@ -69,7 +70,8 @@ static bool BindMaterialDepthPass( SRenderInstance const * instance ) {
     return true;
 }
 
-void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTexture, AFrameGraphTexture ** ppVelocity ) {
+void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTexture, AFrameGraphTexture ** ppVelocity )
+{
     ARenderPass & depthPass = FrameGraph.AddTask< ARenderPass >( "Depth Pre-Pass" );
 
     depthPass.SetDynamicRenderArea( &GRenderViewArea );
@@ -81,7 +83,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
         RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
     } );
 
-    if ( RVMotionBlur ) {
+    if ( r_MotionBlur ) {
         Float2 velocity( 1, 1 );
 
         depthPass.SetClearColors(
@@ -114,17 +116,10 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                     continue;
                 }
 
-                // Bind textures
                 BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
-
-                // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
                 BindSkeletonMotionBlur( instance->SkeletonOffsetMB, instance->SkeletonSize );
-
-                // Set instance uniforms
-                SetInstanceUniforms( instance );
-
-                rcmd->BindResourceTable( &GFrameResources.Resources );
+                BindInstanceUniforms( instance );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -152,16 +147,9 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                     continue;
                 }
 
-                // Bind textures
                 BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
-
-                // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-
-                // Set instance uniforms
-                SetInstanceUniforms( instance );
-
-                rcmd->BindResourceTable( &GFrameResources.Resources );
+                BindInstanceUniforms( instance );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;

@@ -36,7 +36,7 @@ class ACanvasRenderer : public RenderCore::IObjectInterface {
 public:
     ACanvasRenderer();
 
-    void Render();
+    void Render( std::function<void(SRenderView *, AFrameGraphTexture**)> RenderViewCB );
 
 private:
     void CreatePresentViewPipeline();
@@ -47,4 +47,5 @@ private:
     TRef< RenderCore::IRenderPass > CanvasPass;
     TRef< RenderCore::IPipeline > PresentViewPipeline[COLOR_BLENDING_MAX];
     TRef< RenderCore::IPipeline > Pipelines[COLOR_BLENDING_MAX][HUD_SAMPLER_MAX];
+    TRef< RenderCore::IResourceTable > ResourceTable;
 };

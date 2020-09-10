@@ -34,7 +34,8 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-ACubemapGenerator::ACubemapGenerator() {
+ACubemapGenerator::ACubemapGenerator()
+{
     SBufferCreateInfo bufferCI = {};
     bufferCI.bImmutableStorage = true;
 
@@ -97,29 +98,9 @@ ACubemapGenerator::ACubemapGenerator() {
         }
     };
 
-    TRef< IShaderModule > vertexShader, geometryShader, fragmentShader;
-
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    AString vertexSource = LoadShader( "gen/cubemapgen.vert" );
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSource.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, vertexShader );
-
-    AString geometrySource = LoadShader( "gen/cubemapgen.geom" );
-    GShaderSources.Clear();
-    GShaderSources.Add( geometrySource.CStr() );
-    GShaderSources.Build( GEOMETRY_SHADER, geometryShader );
-
-    AString fragmentSource = LoadShader( "gen/cubemapgen.frag" );
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSource.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShader );
-
-    pipelineCI.pVS = vertexShader;
-    pipelineCI.pGS = geometryShader;
-    pipelineCI.pFS = fragmentShader;
+    CreateVertexShader( "gen/cubemapgen.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateGeometryShader( "gen/cubemapgen.geom", pipelineCI.pGS );
+    CreateFragmentShader( "gen/cubemapgen.frag", pipelineCI.pFS );
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
@@ -130,28 +111,31 @@ ACubemapGenerator::ACubemapGenerator() {
     samplerCI.Filter = FILTER_LINEAR;
     //samplerCI.bCubemapSeamless = true;
 
-    pipelineCI.SS.Samplers = &samplerCI;
-    pipelineCI.SS.NumSamplers = 1;
+    SBufferInfo buffers[1];
+    buffers[0].BufferType = UNIFORM_BUFFER;
+
+    pipelineCI.ResourceLayout.Samplers = &samplerCI;
+    pipelineCI.ResourceLayout.NumSamplers = 1;
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, &m_Pipeline );
 }
 
-void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray ) {
+void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray )
+{
     STextureCreateInfo textureCI = {};
     textureCI.Type = RenderCore::TEXTURE_CUBE_MAP_ARRAY;
     textureCI.Format = _Format;
     textureCI.Resolution.TexCubemapArray.Width = _Resolution;
     textureCI.Resolution.TexCubemapArray.NumLayers = _SourcesCount;
     textureCI.NumLods = 1;
-
     GDevice->CreateTexture( textureCI, ppTextureArray );
 
-    SResourceTable resourceTable;
+    TRef< IResourceTable > resourceTbl;
+    GDevice->CreateResourceTable( &resourceTbl );
 
-    SResourceBufferBinding * uniformBufferBinding = resourceTable.AddBuffer( UNIFORM_BUFFER );
-    uniformBufferBinding->pBuffer = m_UniformBuffer;
-
-    SResourceTextureBinding * textureBinding = resourceTable.AddTexture();
+    resourceTbl->BindBuffer( 0, m_UniformBuffer );
 
     SViewport viewport = {};
     viewport.MaxDepth = 1;
@@ -181,16 +165,14 @@ void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _
     viewport.Height = _Resolution;
 
     rcmd->SetViewport( viewport );
+    rcmd->BindResourceTable( resourceTbl );
 
     for ( int sourceIndex = 0 ; sourceIndex < _SourcesCount ; sourceIndex++ ) {
-
         m_UniformBufferData.Index.X = sourceIndex * 6; // Offset for cubemap array layer
 
         m_UniformBuffer->Write( &m_UniformBufferData );
 
-        textureBinding->pTexture = _Sources[sourceIndex];
-
-        rcmd->BindResourceTable( &resourceTable );
+        resourceTbl->BindTexture( 0, _Sources[sourceIndex] );
 
         // Draw six faces in one draw call
         DrawSphere( m_Pipeline, 6 );
@@ -199,21 +181,19 @@ void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _
     rcmd->EndRenderPass();
 }
 
-void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture ) {
+void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture )
+{
     STextureCreateInfo textureCI = {};
     textureCI.Type = RenderCore::TEXTURE_CUBE_MAP;
     textureCI.Format = _Format;
     textureCI.Resolution.TexCubemap.Width = _Resolution;
     textureCI.NumLods = 1;
-
     GDevice->CreateTexture( textureCI, ppTexture );
 
-    SResourceTable resourceTable;
+    TRef< IResourceTable > resourceTbl;
+    GDevice->CreateResourceTable( &resourceTbl );
 
-    SResourceBufferBinding * uniformBufferBinding = resourceTable.AddBuffer( UNIFORM_BUFFER );
-    uniformBufferBinding->pBuffer = m_UniformBuffer;
-
-    SResourceTextureBinding * textureBinding = resourceTable.AddTexture();
+    resourceTbl->BindBuffer( 0, m_UniformBuffer );
 
     SViewport viewport = {};
     viewport.MaxDepth = 1;
@@ -248,9 +228,9 @@ void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resol
 
     m_UniformBuffer->Write( &m_UniformBufferData );
 
-    textureBinding->pTexture = _Source;
+    resourceTbl->BindTexture( 0, _Source );
 
-    rcmd->BindResourceTable( &resourceTable );
+    rcmd->BindResourceTable( resourceTbl );
 
     // Draw six faces in one draw call
     DrawSphere( m_Pipeline, 6 );

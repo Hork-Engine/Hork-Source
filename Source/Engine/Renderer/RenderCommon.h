@@ -36,177 +36,14 @@ SOFTWARE.
 #include <Runtime/Public/RenderCore.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
-#include <Core/Public/Logger.h>
-
-
 #include "CircularBuffer.h"
 #include "FrameConstantBuffer.h"
 #include "SphereMesh.h"
-
-#define SCISSOR_TEST false
-#define DEPTH_PREPASS
 
 #define SHADOWMAP_PCF
 //#define SHADOWMAP_PCSS
 //#define SHADOWMAP_VSM
 //#define SHADOWMAP_EVSM
-
-extern ARuntimeVariable RVRenderSnapshot;
-
-extern TRef< RenderCore::IDevice > GDevice;
-
-extern ARuntimeVariable RVMotionBlur;
-extern ARuntimeVariable RVSSLR;
-extern ARuntimeVariable RVSSAO;
-
-AN_FORCEINLINE RenderCore::IBuffer * GPUBufferHandle( ABufferGPU * _Buffer )
-{ 
-    return _Buffer->pBuffer;
-}
-
-AN_FORCEINLINE RenderCore::ITexture * GPUTextureHandle( ATextureGPU * _Texture )
-{
-    return _Texture->pTexture;
-}
-
-RenderCore::STextureResolution2D GetFrameResoultion();
-
-void DrawSAQ( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount = 1 );
-
-void DrawSphere( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount = 1 );
-
-void BindVertexAndIndexBuffers( SRenderInstance const * Instance );
-
-void BindVertexAndIndexBuffers( SShadowRenderInstance const * Instance );
-
-void BindVertexAndIndexBuffers( SLightPortalRenderInstance const * Instance );
-
-void BindSkeleton( size_t _Offset, size_t _Size );
-void BindSkeletonMotionBlur( size_t _Offset, size_t _Size );
-
-void BindTextures( SMaterialFrameData * Instance, int MaxTextures );
-
-void SetInstanceUniforms( SRenderInstance const * Instance );
-
-void SetInstanceUniformsFB( SRenderInstance const * Instance );
-
-void SetShadowInstanceUniforms( SShadowRenderInstance const * Instance );
-
-void * SetDrawCallUniforms( size_t SizeInBytes );
-
-template< typename T >
-T * SetDrawCallUniforms() {
-    return (T *)SetDrawCallUniforms( sizeof( T ) );
-}
-
-void SaveSnapshot( RenderCore::ITexture & _Texture );
-
-AString LoadShader( const char * FileName, SMaterialShader const * Predefined = nullptr );
-AString LoadShaderFromString( const char * FileName, const char * Source, SMaterialShader const * Predefined = nullptr );
-
-void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, RenderCore::SSamplerInfo * Samplers = nullptr, int NumSamplers = 0, RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
-
-void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, const char * GeometryShader, RenderCore::SSamplerInfo * Samplers = nullptr, int NumSamplers = 0, RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
-
-struct AShaderSources {
-    enum { MAX_SOURCES = 10 };
-    const char * Sources[MAX_SOURCES];
-    int NumSources;
-
-    void Clear() {
-        NumSources = 2;
-    }
-
-    void Add( const char * _Source ) {
-        AN_ASSERT( NumSources < MAX_SOURCES );
-
-        if ( NumSources < MAX_SOURCES ) {
-            Sources[NumSources++] = _Source;
-        }
-    }
-
-    void Build( RenderCore::SHADER_TYPE _ShaderType, TRef< RenderCore::IShaderModule > & _Module ) {
-        using namespace RenderCore;
-
-        char * Log = nullptr;
-
-        const char * predefine[] = {
-            "#define VERTEX_SHADER\n",
-            "#define FRAGMENT_SHADER\n",
-            "#define TESS_CONTROL_SHADER\n",
-            "#define TESS_EVALUATION_SHADER\n",
-            "#define GEOMETRY_SHADER\n",
-            "#define COMPUTE_SHADER\n"
-        };
-
-        AString predefines = predefine[_ShaderType];
-        predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Math::ToString( MAX_DIRECTIONAL_LIGHTS ) + "\n";
-        predefines += "#define MAX_SHADOW_CASCADES " + Math::ToString( MAX_SHADOW_CASCADES ) + "\n";
-        predefines += "#define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW " + Math::ToString( MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ) + "\n";
-
-
-#ifdef SHADOWMAP_PCF
-        predefines += "#define SHADOWMAP_PCF\n";
-#endif
-#ifdef SHADOWMAP_PCSS
-        predefines += "#define SHADOWMAP_PCSS\n";
-#endif
-#ifdef SHADOWMAP_VSM
-        predefines += "#define SHADOWMAP_VSM\n";
-#endif
-#ifdef SHADOWMAP_EVSM
-        predefines += "#define SHADOWMAP_EVSM\n";
-#endif
-#ifdef AN_DEBUG
-        predefines += "#define DEBUG_RENDER_MODE\n";
-#endif
-
-        predefines += "#define SRGB_GAMMA_APPROX\n";
-
-        if ( RVSSLR ) {
-            predefines += "#define WITH_SSLR\n";
-        }
-
-        if ( RVSSAO ) {
-            predefines += "#define WITH_SSAO\n";
-        }
-
-        Sources[0] = "#version 450\n"
-            "#extension GL_ARB_bindless_texture : enable\n";
-        Sources[1] = predefines.CStr();
-
-        GDevice->CreateShaderFromCode( _ShaderType, NumSources, Sources, &Log, &_Module );
-
-        if ( Log && *Log ) {
-            switch ( _ShaderType ) {
-            case VERTEX_SHADER:
-                GLogger.Printf( "VS: %s\n", Log );
-                break;
-            case FRAGMENT_SHADER:
-                GLogger.Printf( "FS: %s\n", Log );
-                break;
-            case TESS_CONTROL_SHADER:
-                GLogger.Printf( "TCS: %s\n", Log );
-                break;
-            case TESS_EVALUATION_SHADER:
-                GLogger.Printf( "TES: %s\n", Log );
-                break;
-            case GEOMETRY_SHADER:
-                GLogger.Printf( "GS: %s\n", Log );
-                break;
-            case COMPUTE_SHADER:
-                GLogger.Printf( "CS: %s\n", Log );
-                break;
-            }
-        }
-    }
-
-    void PrintSources() {
-        for ( int i = 0 ; i < NumSources ; i++ ) {
-            GLogger.Printf( "%s\n", i, Sources[i] );
-        }
-    }
-};
 
 struct SViewUniformBuffer
 {
@@ -322,64 +159,120 @@ struct SShadowInstanceUniformBuffer
     uint32_t Pad[3];
 };
 
-class AFrameResources {
-public:
-    void Initialize();
-    void Deinitialize();
+extern ARuntimeVariable r_RenderSnapshot;
+extern ARuntimeVariable r_MotionBlur;
+extern ARuntimeVariable r_SSLR;
+extern ARuntimeVariable r_HBAO;
 
-    void UploadUniforms();
+//
+// Globals
+//
 
-    void SetShadowMatrixBinding();
-    void SetShadowCascadeBinding( int FirstCascade, int NumCascades );
+extern TRef< RenderCore::IDevice > GDevice;
 
-    // Contains constant data for single draw call.
-    // Don't use to store long-live data.
-    TRef< ACircularBuffer > ConstantBuffer;
+extern RenderCore::IImmediateContext * rcmd;
+extern RenderCore::IResourceTable * rtbl;
 
-    // Contains constant data for single frame.
-    // Use to store data actual during one frame.
-    TRef< AFrameConstantBuffer > FrameConstantBuffer;
+extern SRenderFrame *       GFrameData;
+extern SRenderView *        GRenderView;
+extern ARenderArea          GRenderViewArea;
 
-    TRef< ASphereMesh > SphereMesh;
+extern RenderCore::IBuffer * GStreamBuffer;
 
-    TRef< RenderCore::IBuffer > Saq;
+// Contains constant data for single draw call.
+// Don't use to store long-live data.
+extern TRef< ACircularBuffer > GConstantBuffer;
 
-    TRef< RenderCore::ITexture > WhiteTexture;
+// Contains constant data for single frame.
+// Use to store data actual during one frame.
+extern TRef< AFrameConstantBuffer > GFrameConstantBuffer;
 
-    TRef< RenderCore::ITexture > ClusterLookup;
-    TRef< RenderCore::IBufferView > ClusterItemTBO;
-    TRef< RenderCore::IBuffer > ClusterItemBuffer;
+extern TRef< ASphereMesh > GSphereMesh;
 
-    TRef< RenderCore::ITexture > IrradianceMap;
-    TRef< RenderCore::IBindlessSampler > IrradianceMapBindless;
+extern TRef< RenderCore::IBuffer > GSaq;
 
-    TRef< RenderCore::ITexture > PrefilteredMap;
-    TRef< RenderCore::IBindlessSampler > PrefilteredMapBindless;
+extern TRef< RenderCore::ITexture > GWhiteTexture;
 
-//    RenderCore::SResourceTable PostProccessResources;
-//    RenderCore::SResourceBufferBinding *  ViewUniformBufferBindingPostProcess;       // binding 0
-//    RenderCore::SResourceBufferBinding *  DrawCallUniformBufferBindingPostProcess;   // binding 1
-//    RenderCore::SResourceSamplerBinding * SamplerBindingsPostProcess[RenderCore::MAX_SAMPLER_SLOTS];
+extern TRef< RenderCore::ITexture > GClusterLookup;
+extern TRef< RenderCore::IBufferView > GClusterItemTBO;
+extern TRef< RenderCore::IBuffer > GClusterItemBuffer;
 
-    RenderCore::SResourceTable          Resources;
-    RenderCore::SResourceBufferBinding *  ViewUniformBufferBinding;       // binding 0
-    RenderCore::SResourceBufferBinding *  DrawCallUniformBufferBinding;   // binding 1
-    RenderCore::SResourceBufferBinding *  SkeletonBufferBinding;          // binding 2
-    RenderCore::SResourceBufferBinding *  ShadowCascadeBinding;           // binding 3
-    RenderCore::SResourceBufferBinding *  LightBufferBinding;             // binding 4
-    RenderCore::SResourceBufferBinding *  IBLBufferBinding;               // binding 5
-    RenderCore::SResourceBufferBinding *  VTBufferBinding;                // binding 6
-    RenderCore::SResourceBufferBinding *  SkeletonBufferBindingMB;        // binding 7
-    RenderCore::SResourceTextureBinding * TextureBindings[RenderCore::MAX_SAMPLER_SLOTS];
+extern TRef< RenderCore::ITexture > GIrradianceMap;
+extern TRef< RenderCore::IBindlessSampler > GIrradianceMapBindless;
 
-    size_t ShadowMatrixBindingSize;
-    size_t ShadowMatrixBindingOffset;
+extern TRef< RenderCore::ITexture > GPrefilteredMap;
+extern TRef< RenderCore::IBindlessSampler > GPrefilteredMapBindless;
 
-private:
-    void SetViewUniforms();
-};
+extern size_t GViewUniformBufferBindingBindingOffset;
+extern size_t GViewUniformBufferBindingBindingSize;
 
-AN_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed( Float3x3 const & _In, Float3x4 & _Out ) {
+extern size_t GShadowMatrixBindingSize;
+extern size_t GShadowMatrixBindingOffset;
+
+RenderCore::STextureResolution2D GetFrameResoultion();
+
+void DrawSAQ( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount = 1 );
+
+void DrawSphere( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount = 1 );
+
+void BindVertexAndIndexBuffers( SRenderInstance const * Instance );
+
+void BindVertexAndIndexBuffers( SShadowRenderInstance const * Instance );
+
+void BindVertexAndIndexBuffers( SLightPortalRenderInstance const * Instance );
+
+void BindSkeleton( size_t _Offset, size_t _Size );
+void BindSkeletonMotionBlur( size_t _Offset, size_t _Size );
+
+void BindTextures( RenderCore::IResourceTable * Rtbl, SMaterialFrameData * Instance, int MaxTextures );
+void BindTextures( SMaterialFrameData * Instance, int MaxTextures );
+
+void BindInstanceUniforms( SRenderInstance const * Instance );
+
+void BindInstanceUniformsFB( SRenderInstance const * Instance );
+
+void BindShadowInstanceUniforms( SShadowRenderInstance const * Instance );
+
+void * MapDrawCallUniforms( size_t SizeInBytes );
+
+template< typename T >
+T * MapDrawCallUniforms() {
+    return (T *)MapDrawCallUniforms( sizeof( T ) );
+}
+
+void BindShadowMatrix();
+void BindShadowCascades( int FirstCascade, int NumCascades );
+
+void SaveSnapshot( RenderCore::ITexture & _Texture );
+
+AString LoadShader( const char * FileName, SMaterialShader const * Predefined = nullptr );
+AString LoadShaderFromString( const char * FileName, const char * Source, SMaterialShader const * Predefined = nullptr );
+
+void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodArray< const char * > _SourcePtrs, TRef< RenderCore::IShaderModule > & _Module );
+void CreateShader( RenderCore::SHADER_TYPE _ShaderType, const char * _SourcePtr, TRef< RenderCore::IShaderModule > & _Module );
+void CreateShader( RenderCore::SHADER_TYPE _ShaderType, AString const & _SourcePtr, TRef< RenderCore::IShaderModule > & _Module );
+
+void CreateVertexShader( const char * FileName, RenderCore::SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< RenderCore::IShaderModule > & _Module );
+void CreateTessControlShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module );
+void CreateTessEvalShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module );
+void CreateGeometryShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module );
+void CreateFragmentShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module );
+
+void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline,
+                                   const char * VertexShader,
+                                   const char * FragmentShader,
+                                   RenderCore::SPipelineResourceLayout const * pResourceLayout = nullptr,
+                                   RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
+
+void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline,
+                                     const char * VertexShader,
+                                     const char * FragmentShader,
+                                     const char * GeometryShader,
+                                     RenderCore::SPipelineResourceLayout const * pResourceLayout = nullptr,
+                                     RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
+
+AN_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed( Float3x3 const & _In, Float3x4 & _Out )
+{
     _Out[0][0] = _In[0][0];
     _Out[0][1] = _In[1][0];
     _Out[0][2] = _In[2][0];
@@ -396,7 +289,8 @@ AN_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed( Float3x3 const & _In, Flo
     _Out[2][3] = 0;
 }
 
-AN_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed( Float3x4 const & _In, Float4x4 & _Out ) {
+AN_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed( Float3x4 const & _In, Float4x4 & _Out )
+{
     _Out[0][0] = _In[0][0];
     _Out[0][1] = _In[1][0];
     _Out[0][2] = _In[2][0];
@@ -417,11 +311,3 @@ AN_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed( Float3x4 const & _In, Flo
     _Out[3][2] = _In[2][3];
     _Out[3][3] = 1;
 }
-
-// Globals
-extern RenderCore::IImmediateContext * rcmd;
-extern SRenderFrame *       GFrameData;
-extern SRenderView *        GRenderView;
-extern ARenderArea          GRenderViewArea;
-extern AShaderSources       GShaderSources;
-extern AFrameResources      GFrameResources;

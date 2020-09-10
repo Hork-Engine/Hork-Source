@@ -38,7 +38,7 @@ SOFTWARE.
 
 #define PAGE_STREAM_PBO
 
-ARuntimeVariable RVResetCacheVT( _CTS("ResetCacheVT"), _CTS("0") );
+ARuntimeVariable r_ResetCacheVT( _CTS("r_ResetCacheVT"), _CTS("0") );
 
 AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const & CreateInfo )
 {
@@ -94,13 +94,18 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
     PageTranslationOffsetAndScale.Z = (float)(PageResolutionB - VT_PAGE_BORDER_WIDTH*2) / PageResolutionB / PageCacheCapacityX;
     PageTranslationOffsetAndScale.W = (float)(PageResolutionB - VT_PAGE_BORDER_WIDTH*2) / PageResolutionB / PageCacheCapacityY;
 
+    SPipelineResourceLayout resourceLayout;
+
     SSamplerInfo nearestSampler;
     nearestSampler.Filter = FILTER_NEAREST;
     nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    CreateFullscreenQuadPipeline( &DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag", &nearestSampler, 1 );
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers = &nearestSampler;
+
+    CreateFullscreenQuadPipeline( &DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag", &resourceLayout );
 
 #ifdef PAGE_STREAM_PBO
     RenderCore::SBufferCreateInfo bufferCI = {};
@@ -251,9 +256,9 @@ void AVirtualTextureCache::ResetCache() {
 void AVirtualTextureCache::Update() {
     static int maxPendingLRUs = 0;
 
-    if ( RVResetCacheVT ) {
+    if ( r_ResetCacheVT ) {
         ResetCache();
-        RVResetCacheVT = false;
+        r_ResetCacheVT = false;
     }
 
     WaitForFences();
@@ -505,9 +510,7 @@ void AVirtualTextureCache::Draw( AFrameGraph & FrameGraph, AFrameGraphTexture * 
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
         using namespace RenderCore;
-        GFrameResources.TextureBindings[0]->pTexture = CacheTexture_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, CacheTexture_R->Actual() );
 
         DrawSAQ( DrawCachePipeline );
     } );

@@ -50,7 +50,7 @@ struct SColorGradingPreset {
 ATexture
 
 */
-class ANGIE_API ATexture : public AResource, public IGPUResourceOwner {
+class ANGIE_API ATexture : public AResource {
     AN_CLASS( ATexture, AResource )
 
 public:
@@ -145,7 +145,7 @@ public:
     static size_t TextureByteLength3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
     static size_t TextureByteLengthCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
 
-    ATextureGPU * GetGPUResource() { return TextureGPU; }
+    RenderCore::ITexture * GetGPUResource() { return TextureGPU; }
 
     void Purge();
 
@@ -161,10 +161,7 @@ protected:
 
     const char * GetDefaultResourcePath() const override { return "/Default/Textures/Default2D"; }
 
-    // IGPUResourceOwner interface
-    void UploadResourcesGPU() override;
-
-    ATextureGPU * TextureGPU;
+    TRef< RenderCore::ITexture > TextureGPU;
     int TextureType = 0;
     STexturePixelFormat PixelFormat = TEXTURE_PF_BGRA8_SRGB;
     int Width = 0;

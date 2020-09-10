@@ -33,11 +33,7 @@ SOFTWARE.
 #include <Core/Public/IO.h>
 #include <Core/Public/Logger.h>
 
-#include <Runtime/Public/RuntimeVariable.h>
-
 using namespace RenderCore;
-
-ARuntimeVariable RVFrameGraphDebug( _CTS( "FrameGraphDebug" ), _CTS( "0" ) );
 
 template<>
 RenderCore::ITexture * RealizeResource( AFrameGraph & InFrameGraph, RenderCore::STextureCreateInfo const & Info )
@@ -266,10 +262,6 @@ void AFrameGraph::Execute( RenderCore::IImmediateContext * Rcmd )
         //for ( AFrameGraphResourceBase * resource : step.DerealizedResources ) {
         //    resource->Derealize( *this );
         //}
-    }
-
-    if ( RVFrameGraphDebug ) {
-        Debug();
     }
 }
 

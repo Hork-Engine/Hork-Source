@@ -80,7 +80,17 @@ APostprocessRenderer::APostprocessRenderer()
     samplers[6].AddressV = SAMPLER_ADDRESS_CLAMP;
     samplers[6].AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    CreateFullscreenQuadPipeline( &PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", samplers, AN_ARRAY_SIZE( samplers ) );
+    SBufferInfo bufferInfo;
+    bufferInfo.BufferType = UNIFORM_BUFFER;
+
+    SPipelineResourceLayout resourceLayout;
+
+    resourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    resourceLayout.Samplers = samplers;
+    resourceLayout.NumBuffers = 1;
+    resourceLayout.Buffers = &bufferInfo;
+
+    CreateFullscreenQuadPipeline( &PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", &resourceLayout );
 }
 
 void APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
@@ -121,17 +131,15 @@ void APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
-        GFrameResources.TextureBindings[0]->pTexture = ColorTexture->Actual();
+        rtbl->BindTexture( 0, ColorTexture->Actual() );
         if ( ColorGrading ) {
-            GFrameResources.TextureBindings[1]->pTexture = ColorGrading->Actual();
+            rtbl->BindTexture( 1, ColorGrading->Actual() );
         }
-        GFrameResources.TextureBindings[2]->pTexture = BloomTex.BloomTexture0->Actual();
-        GFrameResources.TextureBindings[3]->pTexture = BloomTex.BloomTexture1->Actual();
-        GFrameResources.TextureBindings[4]->pTexture = BloomTex.BloomTexture2->Actual();
-        GFrameResources.TextureBindings[5]->pTexture = BloomTex.BloomTexture3->Actual();
-        GFrameResources.TextureBindings[6]->pTexture = Exposure->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 2, BloomTex.BloomTexture0->Actual() );
+        rtbl->BindTexture( 3, BloomTex.BloomTexture1->Actual() );
+        rtbl->BindTexture( 4, BloomTex.BloomTexture2->Actual() );
+        rtbl->BindTexture( 5, BloomTex.BloomTexture3->Actual() );
+        rtbl->BindTexture( 6, Exposure->Actual() );
 
         DrawSAQ( PostprocessPipeline );
 

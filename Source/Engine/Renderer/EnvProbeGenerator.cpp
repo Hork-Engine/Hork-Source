@@ -36,7 +36,8 @@ using namespace RenderCore;
 
 static const TEXTURE_FORMAT TEX_FORMAT_ENVPROBE = TEXTURE_FORMAT_RGB16F; // TODO: try compression
 
-AEnvProbeGenerator::AEnvProbeGenerator() {
+AEnvProbeGenerator::AEnvProbeGenerator()
+{
     SBufferCreateInfo bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
@@ -98,29 +99,10 @@ AEnvProbeGenerator::AEnvProbeGenerator() {
         }
     };
 
-    TRef< IShaderModule > vertexShader, geometryShader, fragmentShader;
+    CreateVertexShader( "gen/envprobegen.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateGeometryShader( "gen/envprobegen.geom", pipelineCI.pGS );
+    CreateFragmentShader( "gen/envprobegen.frag", pipelineCI.pFS );
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    AString vertexSource = LoadShader( "gen/envprobegen.vert" );
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSource.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, vertexShader );
-
-    AString geometrySource = LoadShader( "gen/envprobegen.geom" );
-    GShaderSources.Clear();
-    GShaderSources.Add( geometrySource.CStr() );
-    GShaderSources.Build( GEOMETRY_SHADER, geometryShader );
-
-    AString fragmentSource = LoadShader( "gen/envprobegen.frag" );
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSource.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShader );
-
-    pipelineCI.pVS = vertexShader;
-    pipelineCI.pGS = geometryShader;
-    pipelineCI.pFS = fragmentShader;
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
@@ -130,13 +112,19 @@ AEnvProbeGenerator::AEnvProbeGenerator() {
     samplerCI.Filter = FILTER_LINEAR;
     samplerCI.bCubemapSeamless = true;
 
-    pipelineCI.SS.Samplers = &samplerCI;
-    pipelineCI.SS.NumSamplers = 1;
+    SBufferInfo buffers[1];
+    buffers[0].BufferType = UNIFORM_BUFFER;
+
+    pipelineCI.ResourceLayout.Samplers = &samplerCI;
+    pipelineCI.ResourceLayout.NumSamplers = 1;
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, &m_Pipeline );    
 }
 
-void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray ) {
+void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray )
+{
     int size = 1 << _MaxLod;
 
     STextureCreateInfo textureCI = {};
@@ -145,15 +133,12 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
     textureCI.Resolution.TexCubemapArray.Width = size;
     textureCI.Resolution.TexCubemapArray.NumLayers = _CubemapsCount;
     textureCI.NumLods = _MaxLod + 1;
-
     GDevice->CreateTexture( textureCI, ppTextureArray );
 
-    SResourceTable resourceTable;
+    TRef< IResourceTable > resourceTbl;
+    GDevice->CreateResourceTable( &resourceTbl );
 
-    SResourceBufferBinding * uniformBufferBinding = resourceTable.AddBuffer( UNIFORM_BUFFER );
-    uniformBufferBinding->pBuffer = m_UniformBuffer;
-
-    SResourceTextureBinding * textureBinding = resourceTable.AddTexture();
+    resourceTbl->BindBuffer( 0, m_UniformBuffer );
 
     SViewport viewport = {};
     viewport.MaxDepth = 1;
@@ -161,7 +146,6 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
     int lodWidth = size;
 
     for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
-
         SFramebufferAttachmentInfo attachment = {};
         attachment.pTexture = *ppTextureArray;
         attachment.LodNum = Lod;
@@ -187,18 +171,16 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
         viewport.Height = lodWidth;
 
         rcmd->SetViewport( viewport );
+        rcmd->BindResourceTable( resourceTbl );
 
         m_UniformBufferData.Roughness.X = static_cast<float>(Lod) / _MaxLod;
 
         for ( int cubemapIndex = 0 ; cubemapIndex < _CubemapsCount ; cubemapIndex++ ) {
-
             m_UniformBufferData.Roughness.Y = cubemapIndex * 6; // Offset for cubemap array layer
 
             m_UniformBuffer->Write( &m_UniformBufferData );
 
-            textureBinding->pTexture = _Cubemaps[cubemapIndex];
-
-            rcmd->BindResourceTable( &resourceTable );
+            resourceTbl->BindTexture( 0, _Cubemaps[cubemapIndex] );
 
             // Draw six faces in one draw call
             DrawSphere( m_Pipeline, 6 );
@@ -208,7 +190,8 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
     }
 }
 
-void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture ) {
+void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture )
+{
     int size = 1 << _MaxLod;
 
     STextureCreateInfo textureCI = {};
@@ -216,15 +199,12 @@ void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef<
     textureCI.Format = TEX_FORMAT_ENVPROBE;
     textureCI.Resolution.TexCubemap.Width = size;
     textureCI.NumLods = _MaxLod + 1;
-
     GDevice->CreateTexture( textureCI, ppTexture );
 
-    SResourceTable resourceTable;
+    TRef< IResourceTable > resourceTbl;
+    GDevice->CreateResourceTable( &resourceTbl );
 
-    SResourceBufferBinding * uniformBufferBinding = resourceTable.AddBuffer( UNIFORM_BUFFER );
-    uniformBufferBinding->pBuffer = m_UniformBuffer;
-
-    SResourceTextureBinding * textureBinding = resourceTable.AddTexture();
+    resourceTbl->BindBuffer( 0, m_UniformBuffer );
 
     SViewport viewport = {};
     viewport.MaxDepth = 1;
@@ -233,8 +213,9 @@ void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef<
 
     m_UniformBufferData.Roughness.Y = 0; // Offset for cubemap array layer
 
-    for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
+    rcmd->BindResourceTable( resourceTbl );
 
+    for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
         SFramebufferAttachmentInfo attachment = {};
         attachment.pTexture = *ppTexture;
         attachment.LodNum = Lod;
@@ -265,9 +246,7 @@ void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef<
 
         m_UniformBuffer->Write( &m_UniformBufferData );
 
-        textureBinding->pTexture = _SourceCubemap;
-
-        rcmd->BindResourceTable( &resourceTable );
+        resourceTbl->BindTexture( 0, _SourceCubemap );
 
         // Draw six faces in one draw call
         DrawSphere( m_Pipeline, 6 );

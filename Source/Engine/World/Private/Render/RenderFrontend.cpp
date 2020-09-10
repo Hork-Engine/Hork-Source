@@ -45,13 +45,13 @@ SOFTWARE.
 #include "VSD.h"
 #include "LightVoxelizer.h"
 
-ARuntimeVariable RVFixFrustumClusters( _CTS( "FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVRenderView( _CTS( "RenderView" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable RVRenderSurfaces( _CTS( "RenderSurfaces" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable RVRenderMeshes( _CTS( "RenderMeshes" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable RVResolutionScaleX( _CTS( "ResolutionScaleX" ), _CTS( "1" ) );
-ARuntimeVariable RVResolutionScaleY( _CTS( "ResolutionScaleY" ), _CTS( "1" ) );
-ARuntimeVariable RVRenderLightPortals( _CTS( "RenderLightPortals" ), _CTS( "1" ) );
+ARuntimeVariable r_FixFrustumClusters( _CTS( "r_FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable r_RenderView( _CTS( "r_RenderView" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable r_RenderSurfaces( _CTS( "r_RenderSurfaces" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable r_RenderMeshes( _CTS( "r_RenderMeshes" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable r_ResolutionScaleX( _CTS( "r_ResolutionScaleX" ), _CTS( "1" ) );
+ARuntimeVariable r_ResolutionScaleY( _CTS( "r_ResolutionScaleY" ), _CTS( "1" ) );
+ARuntimeVariable r_RenderLightPortals( _CTS( "r_RenderLightPortals" ), _CTS( "1" ) );
 
 AN_CLASS_META( ARenderFrontend )
 
@@ -160,8 +160,8 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
     view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max( GRuntime.SysFrameDuration() * 0.000001f, 0.0001f );
     view->ViewIndex = _Index;
-    view->Width = Align( (size_t)(viewport->Width * RVResolutionScaleX.GetFloat()), 2 );
-    view->Height = Align( (size_t)(viewport->Height * RVResolutionScaleY.GetFloat()), 2 );
+    view->Width = Align( (size_t)(viewport->Width * r_ResolutionScaleX.GetFloat()), 2 );
+    view->Height = Align( (size_t)(viewport->Height * r_ResolutionScaleY.GetFloat()), 2 );
 
     if ( camera )
     {
@@ -273,7 +273,7 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
 
-    if ( !RVRenderView ) {
+    if ( !r_RenderView ) {
         return;
     }
 
@@ -408,7 +408,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
         case HUD_DRAW_CMD_TEXTURE:
         case HUD_DRAW_CMD_ALPHA: {
             // Unpack texture
-            dstCmd->Texture = (ATextureGPU *)cmd.TextureId;
+            dstCmd->Texture = (RenderCore::ITexture *)cmd.TextureId;
             break;
         }
 
@@ -572,7 +572,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         case HUD_DRAW_CMD_TEXTURE:
         case HUD_DRAW_CMD_ALPHA:
         {
-            dstCmd->Texture = (ATextureGPU *)pCmd->TextureId;
+            dstCmd->Texture = (RenderCore::ITexture *)pCmd->TextureId;
             dstCmd++;
             break;
         }
@@ -755,7 +755,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         GLogger.Printf( "Unhandled primitive\n" );
     }
 
-    if ( RVRenderSurfaces && !VisSurfaces.IsEmpty() ) {
+    if ( r_RenderSurfaces && !VisSurfaces.IsEmpty() ) {
         struct SSortFunction {
             bool operator() ( SSurfaceDef const * _A, SSurfaceDef const * _B ) {
                 return (_A->SortKey < _B->SortKey);
@@ -857,7 +857,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         }
     }
 
-    if ( !RVFixFrustumClusters ) {
+    if ( !r_FixFrustumClusters ) {
         GLightVoxelizer.Voxelize( view );
     }
 }
@@ -881,7 +881,7 @@ void ARenderFrontend::AddDrawable( ADrawable * InComponent ) {
 void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
     AIndexedMesh * mesh = InComponent->GetMesh();
 
-    if ( !RVRenderMeshes ) {
+    if ( !r_RenderMeshes ) {
         return;
     }
 
@@ -982,7 +982,7 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
 void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
     AIndexedMesh * mesh = InComponent->GetMesh();
 
-    if ( !RVRenderMeshes ) {
+    if ( !r_RenderMeshes ) {
         return;
     }
 
@@ -1071,7 +1071,7 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
 }
 
 void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent ) {
-    if ( !RVRenderMeshes ) {
+    if ( !r_RenderMeshes ) {
         return;
     }
 
@@ -1155,7 +1155,7 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
 }
 
 void ARenderFrontend::AddShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent ) {
-    if ( !RVRenderMeshes ) {
+    if ( !r_RenderMeshes ) {
         return;
     }
 
@@ -1224,7 +1224,7 @@ void ARenderFrontend::AddShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMes
 }
 
 void ARenderFrontend::AddShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent ) {
-    if ( !RVRenderMeshes ) {
+    if ( !r_RenderMeshes ) {
         return;
     }
 
@@ -1298,7 +1298,7 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASk
 }
 
 void ARenderFrontend::AddShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent ) {
-    if ( !RVRenderMeshes ) {
+    if ( !r_RenderMeshes ) {
         return;
     }
 
@@ -1499,7 +1499,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
                  FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
                  ShadowInstanceSortFunction );
 
-        if ( RVRenderLightPortals ) {
+        if ( r_RenderLightPortals ) {
             // Add light portals
             for ( ALevel * level : world->GetArrayOfLevels() ) {
 
@@ -1905,7 +1905,7 @@ void ARenderFrontend::AddLightShadowmap( AAnalyticLightComponent * Light, float 
             }
         }
 
-        if ( RVRenderSurfaces && !VisSurfaces.IsEmpty() ) {
+        if ( r_RenderSurfaces && !VisSurfaces.IsEmpty() ) {
             struct SSortFunction {
                 bool operator() ( SSurfaceDef const * _A, SSurfaceDef const * _B ) {
                     return (_A->SortKey < _B->SortKey);

@@ -42,7 +42,6 @@ ADebugDrawRenderer::ADebugDrawRenderer()
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_FRONT;
-    rsd.bScissorEnable = SCISSOR_TEST;
     //rsd.FillMode = POLYGON_FILL_WIRE;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
@@ -72,26 +71,10 @@ ADebugDrawRenderer::ADebugDrawRenderer()
         }
     };
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    AString vertesSourceCode = LoadShader( "debugdraw.vert" );
-    AString fragmentSourceCode = LoadShader( "debugdraw.frag" );
-
-    TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertesSourceCode.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSourceCode.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+    CreateVertexShader( "debugdraw.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateFragmentShader( "debugdraw.frag", pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
 
     SVertexBindingInfo vertexBinding = {};
     vertexBinding.InputSlot = 0;
@@ -103,6 +86,12 @@ ADebugDrawRenderer::ADebugDrawRenderer()
 
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
+
+    SBufferInfo bufferInfo;
+    bufferInfo.BufferType = UNIFORM_BUFFER; // view uniforms
+
+    pipelineCI.ResourceLayout.NumBuffers = 1;
+    pipelineCI.ResourceLayout.Buffers = &bufferInfo;
 
     for ( int i = 0 ; i < DBG_DRAW_CMD_MAX ; i++ ) {
 
@@ -153,7 +142,8 @@ ADebugDrawRenderer::ADebugDrawRenderer()
     }
 }
 
-void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * DepthTexture ) {
+void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * DepthTexture )
+{
     ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Debug Draw Pass" );
 
     renderPass.SetDynamicRenderArea( &GRenderViewArea );
@@ -177,20 +167,16 @@ void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture *
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
-        rcmd->BindResourceTable( &GFrameResources.Resources );
-
         SDrawIndexedCmd drawCmd;
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;
-
-        IBuffer * streamBuffer = GPUBufferHandle( GFrameData->StreamBuffer );
 
         for ( int i = 0 ; i < GRenderView->DebugDrawCommandCount ; i++ ) {
             SDebugDrawCmd const * cmd = &GFrameData->DbgCmds[GRenderView->FirstDebugDrawCommand + i];
 
             rcmd->BindPipeline( Pipelines[cmd->Type] );
-            rcmd->BindVertexBuffer( 0, streamBuffer, GFrameData->DbgVertexStreamOffset );
-            rcmd->BindIndexBuffer( streamBuffer, INDEX_TYPE_UINT16, GFrameData->DbgIndexStreamOffset );
+            rcmd->BindVertexBuffer( 0, GStreamBuffer, GFrameData->DbgVertexStreamOffset );
+            rcmd->BindIndexBuffer( GStreamBuffer, INDEX_TYPE_UINT16, GFrameData->DbgIndexStreamOffset );
 
             drawCmd.IndexCountPerInstance = cmd->NumIndices;
             drawCmd.StartIndexLocation = cmd->FirstIndex;

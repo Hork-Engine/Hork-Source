@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "GraphicsDefs.h"
 #include "ShaderModule.h"
+#include "Texture.h"
 
 #include <Core/Public/Ref.h>
 
@@ -308,36 +309,68 @@ struct SDepthStencilStateInfo
     }
 };
 
-struct SSamplerStateInfo
+enum IMAGE_ACCESS_MODE : uint8_t
+{
+    IMAGE_ACCESS_READ,
+    IMAGE_ACCESS_WRITE,
+    IMAGE_ACCESS_RW
+};
+
+struct SImageInfo
+{
+    IMAGE_ACCESS_MODE AccessMode;
+    TEXTURE_FORMAT TextureFormat;  // FIXME: get texture format from texture?
+};
+
+struct SBufferInfo
+{
+    BUFFER_TYPE BufferType;
+};
+
+struct SPipelineResourceLayout
 {
     int NumSamplers;
     struct SSamplerInfo * Samplers;
 
-    SSamplerStateInfo() {
+    int NumImages;
+    SImageInfo * Images;
+
+    int NumBuffers;
+    SBufferInfo * Buffers;
+
+    SPipelineResourceLayout() {
         NumSamplers = 0;
         Samplers = nullptr;
+
+        NumImages = 0;
+        Images = nullptr;
+
+        NumBuffers = 0;
+        Buffers = nullptr;
     }
 };
 
 // Vertex bindings and attributes
 
-#define GHI_VertexAttribType_NormalizedBit          ( 1<<7 )
-#define GHI_VertexAttribType_CountBit( Count )      ( (((Count)-1) & 3 )<<5 )
-#define GHI_5BitNumber( Number )                    ( (Number) & 31 )
+constexpr int VertexAttribType_NormalizedBit() { return 1<<7; }
+
+constexpr int VertexAttribType_CountBit( int Count ) { return ( (((Count)-1) & 3 )<<5 ); }
+
+constexpr int _5BitNumber( int Number ) { return ( (Number) & 31 ); }
 
 enum VERTEX_ATTRIB_COMPONENT : uint8_t
 {
-    COMPONENT_BYTE        = GHI_5BitNumber(0),
-    COMPONENT_UBYTE       = GHI_5BitNumber(1),
-    COMPONENT_SHORT       = GHI_5BitNumber(2),
-    COMPONENT_USHORT      = GHI_5BitNumber(3),
-    COMPONENT_INT         = GHI_5BitNumber(4),
-    COMPONENT_UINT        = GHI_5BitNumber(5),
-    COMPONENT_HALF        = GHI_5BitNumber(6),
-    COMPONENT_FLOAT       = GHI_5BitNumber(7),
-    COMPONENT_DOUBLE      = GHI_5BitNumber(8)
+    COMPONENT_BYTE        = _5BitNumber(0),
+    COMPONENT_UBYTE       = _5BitNumber(1),
+    COMPONENT_SHORT       = _5BitNumber(2),
+    COMPONENT_USHORT      = _5BitNumber(3),
+    COMPONENT_INT         = _5BitNumber(4),
+    COMPONENT_UINT        = _5BitNumber(5),
+    COMPONENT_HALF        = _5BitNumber(6),
+    COMPONENT_FLOAT       = _5BitNumber(7),
+    COMPONENT_DOUBLE      = _5BitNumber(8)
 
-    // TODO: add here other types
+    // Add here other types
 
     // MAX = 31
 };
@@ -345,82 +378,82 @@ enum VERTEX_ATTRIB_COMPONENT : uint8_t
 enum VERTEX_ATTRIB_TYPE : uint8_t
 {
     /// Signed byte
-    VAT_BYTE1             = COMPONENT_BYTE | GHI_VertexAttribType_CountBit(1),
-    VAT_BYTE2             = COMPONENT_BYTE | GHI_VertexAttribType_CountBit(2),
-    VAT_BYTE3             = COMPONENT_BYTE | GHI_VertexAttribType_CountBit(3),
-    VAT_BYTE4             = COMPONENT_BYTE | GHI_VertexAttribType_CountBit(4),
-    VAT_BYTE1N            = VAT_BYTE1 | GHI_VertexAttribType_NormalizedBit,
-    VAT_BYTE2N            = VAT_BYTE2 | GHI_VertexAttribType_NormalizedBit,
-    VAT_BYTE3N            = VAT_BYTE3 | GHI_VertexAttribType_NormalizedBit,
-    VAT_BYTE4N            = VAT_BYTE4 | GHI_VertexAttribType_NormalizedBit,
+    VAT_BYTE1             = COMPONENT_BYTE | VertexAttribType_CountBit(1),
+    VAT_BYTE2             = COMPONENT_BYTE | VertexAttribType_CountBit(2),
+    VAT_BYTE3             = COMPONENT_BYTE | VertexAttribType_CountBit(3),
+    VAT_BYTE4             = COMPONENT_BYTE | VertexAttribType_CountBit(4),
+    VAT_BYTE1N            = VAT_BYTE1 | VertexAttribType_NormalizedBit(),
+    VAT_BYTE2N            = VAT_BYTE2 | VertexAttribType_NormalizedBit(),
+    VAT_BYTE3N            = VAT_BYTE3 | VertexAttribType_NormalizedBit(),
+    VAT_BYTE4N            = VAT_BYTE4 | VertexAttribType_NormalizedBit(),
 
     /// Unsigned byte
-    VAT_UBYTE1            = COMPONENT_UBYTE | GHI_VertexAttribType_CountBit(1),
-    VAT_UBYTE2            = COMPONENT_UBYTE | GHI_VertexAttribType_CountBit(2),
-    VAT_UBYTE3            = COMPONENT_UBYTE | GHI_VertexAttribType_CountBit(3),
-    VAT_UBYTE4            = COMPONENT_UBYTE | GHI_VertexAttribType_CountBit(4),
-    VAT_UBYTE1N           = VAT_UBYTE1 | GHI_VertexAttribType_NormalizedBit,
-    VAT_UBYTE2N           = VAT_UBYTE2 | GHI_VertexAttribType_NormalizedBit,
-    VAT_UBYTE3N           = VAT_UBYTE3 | GHI_VertexAttribType_NormalizedBit,
-    VAT_UBYTE4N           = VAT_UBYTE4 | GHI_VertexAttribType_NormalizedBit,
+    VAT_UBYTE1            = COMPONENT_UBYTE | VertexAttribType_CountBit(1),
+    VAT_UBYTE2            = COMPONENT_UBYTE | VertexAttribType_CountBit(2),
+    VAT_UBYTE3            = COMPONENT_UBYTE | VertexAttribType_CountBit(3),
+    VAT_UBYTE4            = COMPONENT_UBYTE | VertexAttribType_CountBit(4),
+    VAT_UBYTE1N           = VAT_UBYTE1 | VertexAttribType_NormalizedBit(),
+    VAT_UBYTE2N           = VAT_UBYTE2 | VertexAttribType_NormalizedBit(),
+    VAT_UBYTE3N           = VAT_UBYTE3 | VertexAttribType_NormalizedBit(),
+    VAT_UBYTE4N           = VAT_UBYTE4 | VertexAttribType_NormalizedBit(),
 
     /// Signed short (16 bit integer)
-    VAT_SHORT1            = COMPONENT_SHORT | GHI_VertexAttribType_CountBit(1),
-    VAT_SHORT2            = COMPONENT_SHORT | GHI_VertexAttribType_CountBit(2),
-    VAT_SHORT3            = COMPONENT_SHORT | GHI_VertexAttribType_CountBit(3),
-    VAT_SHORT4            = COMPONENT_SHORT | GHI_VertexAttribType_CountBit(4),
-    VAT_SHORT1N           = VAT_SHORT1 | GHI_VertexAttribType_NormalizedBit,
-    VAT_SHORT2N           = VAT_SHORT2 | GHI_VertexAttribType_NormalizedBit,
-    VAT_SHORT3N           = VAT_SHORT3 | GHI_VertexAttribType_NormalizedBit,
-    VAT_SHORT4N           = VAT_SHORT4 | GHI_VertexAttribType_NormalizedBit,
+    VAT_SHORT1            = COMPONENT_SHORT | VertexAttribType_CountBit(1),
+    VAT_SHORT2            = COMPONENT_SHORT | VertexAttribType_CountBit(2),
+    VAT_SHORT3            = COMPONENT_SHORT | VertexAttribType_CountBit(3),
+    VAT_SHORT4            = COMPONENT_SHORT | VertexAttribType_CountBit(4),
+    VAT_SHORT1N           = VAT_SHORT1 | VertexAttribType_NormalizedBit(),
+    VAT_SHORT2N           = VAT_SHORT2 | VertexAttribType_NormalizedBit(),
+    VAT_SHORT3N           = VAT_SHORT3 | VertexAttribType_NormalizedBit(),
+    VAT_SHORT4N           = VAT_SHORT4 | VertexAttribType_NormalizedBit(),
 
     /// Unsigned short (16 bit integer)
-    VAT_USHORT1           = COMPONENT_USHORT | GHI_VertexAttribType_CountBit(1),
-    VAT_USHORT2           = COMPONENT_USHORT | GHI_VertexAttribType_CountBit(2),
-    VAT_USHORT3           = COMPONENT_USHORT | GHI_VertexAttribType_CountBit(3),
-    VAT_USHORT4           = COMPONENT_USHORT | GHI_VertexAttribType_CountBit(4),
-    VAT_USHORT1N          = VAT_USHORT1 | GHI_VertexAttribType_NormalizedBit,
-    VAT_USHORT2N          = VAT_USHORT2 | GHI_VertexAttribType_NormalizedBit,
-    VAT_USHORT3N          = VAT_USHORT3 | GHI_VertexAttribType_NormalizedBit,
-    VAT_USHORT4N          = VAT_USHORT4 | GHI_VertexAttribType_NormalizedBit,
+    VAT_USHORT1           = COMPONENT_USHORT | VertexAttribType_CountBit(1),
+    VAT_USHORT2           = COMPONENT_USHORT | VertexAttribType_CountBit(2),
+    VAT_USHORT3           = COMPONENT_USHORT | VertexAttribType_CountBit(3),
+    VAT_USHORT4           = COMPONENT_USHORT | VertexAttribType_CountBit(4),
+    VAT_USHORT1N          = VAT_USHORT1 | VertexAttribType_NormalizedBit(),
+    VAT_USHORT2N          = VAT_USHORT2 | VertexAttribType_NormalizedBit(),
+    VAT_USHORT3N          = VAT_USHORT3 | VertexAttribType_NormalizedBit(),
+    VAT_USHORT4N          = VAT_USHORT4 | VertexAttribType_NormalizedBit(),
 
     /// 32-bit signed integer
-    VAT_INT1              = COMPONENT_INT | GHI_VertexAttribType_CountBit(1),
-    VAT_INT2              = COMPONENT_INT | GHI_VertexAttribType_CountBit(2),
-    VAT_INT3              = COMPONENT_INT | GHI_VertexAttribType_CountBit(3),
-    VAT_INT4              = COMPONENT_INT | GHI_VertexAttribType_CountBit(4),
-    VAT_INT1N             = VAT_INT1 | GHI_VertexAttribType_NormalizedBit,
-    VAT_INT2N             = VAT_INT2 | GHI_VertexAttribType_NormalizedBit,
-    VAT_INT3N             = VAT_INT3 | GHI_VertexAttribType_NormalizedBit,
-    VAT_INT4N             = VAT_INT4 | GHI_VertexAttribType_NormalizedBit,
+    VAT_INT1              = COMPONENT_INT | VertexAttribType_CountBit(1),
+    VAT_INT2              = COMPONENT_INT | VertexAttribType_CountBit(2),
+    VAT_INT3              = COMPONENT_INT | VertexAttribType_CountBit(3),
+    VAT_INT4              = COMPONENT_INT | VertexAttribType_CountBit(4),
+    VAT_INT1N             = VAT_INT1 | VertexAttribType_NormalizedBit(),
+    VAT_INT2N             = VAT_INT2 | VertexAttribType_NormalizedBit(),
+    VAT_INT3N             = VAT_INT3 | VertexAttribType_NormalizedBit(),
+    VAT_INT4N             = VAT_INT4 | VertexAttribType_NormalizedBit(),
 
     /// 32-bit unsigned integer
-    VAT_UINT1             = COMPONENT_UINT | GHI_VertexAttribType_CountBit(1),
-    VAT_UINT2             = COMPONENT_UINT | GHI_VertexAttribType_CountBit(2),
-    VAT_UINT3             = COMPONENT_UINT | GHI_VertexAttribType_CountBit(3),
-    VAT_UINT4             = COMPONENT_UINT | GHI_VertexAttribType_CountBit(4),
-    VAT_UINT1N            = VAT_UINT1 | GHI_VertexAttribType_NormalizedBit,
-    VAT_UINT2N            = VAT_UINT2 | GHI_VertexAttribType_NormalizedBit,
-    VAT_UINT3N            = VAT_UINT3 | GHI_VertexAttribType_NormalizedBit,
-    VAT_UINT4N            = VAT_UINT4 | GHI_VertexAttribType_NormalizedBit,
+    VAT_UINT1             = COMPONENT_UINT | VertexAttribType_CountBit(1),
+    VAT_UINT2             = COMPONENT_UINT | VertexAttribType_CountBit(2),
+    VAT_UINT3             = COMPONENT_UINT | VertexAttribType_CountBit(3),
+    VAT_UINT4             = COMPONENT_UINT | VertexAttribType_CountBit(4),
+    VAT_UINT1N            = VAT_UINT1 | VertexAttribType_NormalizedBit(),
+    VAT_UINT2N            = VAT_UINT2 | VertexAttribType_NormalizedBit(),
+    VAT_UINT3N            = VAT_UINT3 | VertexAttribType_NormalizedBit(),
+    VAT_UINT4N            = VAT_UINT4 | VertexAttribType_NormalizedBit(),
 
     /// 16-bit floating point
-    VAT_HALF1             = COMPONENT_HALF | GHI_VertexAttribType_CountBit(1),       // only with IsHalfFloatVertexSupported
-    VAT_HALF2             = COMPONENT_HALF | GHI_VertexAttribType_CountBit(2),       // only with IsHalfFloatVertexSupported
-    VAT_HALF3             = COMPONENT_HALF | GHI_VertexAttribType_CountBit(3),       // only with IsHalfFloatVertexSupported
-    VAT_HALF4             = COMPONENT_HALF | GHI_VertexAttribType_CountBit(4),       // only with IsHalfFloatVertexSupported
+    VAT_HALF1             = COMPONENT_HALF | VertexAttribType_CountBit(1),       // only with IsHalfFloatVertexSupported
+    VAT_HALF2             = COMPONENT_HALF | VertexAttribType_CountBit(2),       // only with IsHalfFloatVertexSupported
+    VAT_HALF3             = COMPONENT_HALF | VertexAttribType_CountBit(3),       // only with IsHalfFloatVertexSupported
+    VAT_HALF4             = COMPONENT_HALF | VertexAttribType_CountBit(4),       // only with IsHalfFloatVertexSupported
 
     /// 32-bit floating point
-    VAT_FLOAT1            = COMPONENT_FLOAT | GHI_VertexAttribType_CountBit(1),
-    VAT_FLOAT2            = COMPONENT_FLOAT | GHI_VertexAttribType_CountBit(2),
-    VAT_FLOAT3            = COMPONENT_FLOAT | GHI_VertexAttribType_CountBit(3),
-    VAT_FLOAT4            = COMPONENT_FLOAT | GHI_VertexAttribType_CountBit(4),
+    VAT_FLOAT1            = COMPONENT_FLOAT | VertexAttribType_CountBit(1),
+    VAT_FLOAT2            = COMPONENT_FLOAT | VertexAttribType_CountBit(2),
+    VAT_FLOAT3            = COMPONENT_FLOAT | VertexAttribType_CountBit(3),
+    VAT_FLOAT4            = COMPONENT_FLOAT | VertexAttribType_CountBit(4),
 
     /// 64-bit floating point
-    VAT_DOUBLE1           = COMPONENT_DOUBLE | GHI_VertexAttribType_CountBit(1),
-    VAT_DOUBLE2           = COMPONENT_DOUBLE | GHI_VertexAttribType_CountBit(2),
-    VAT_DOUBLE3           = COMPONENT_DOUBLE | GHI_VertexAttribType_CountBit(3),
-    VAT_DOUBLE4           = COMPONENT_DOUBLE | GHI_VertexAttribType_CountBit(4)
+    VAT_DOUBLE1           = COMPONENT_DOUBLE | VertexAttribType_CountBit(1),
+    VAT_DOUBLE2           = COMPONENT_DOUBLE | VertexAttribType_CountBit(2),
+    VAT_DOUBLE3           = COMPONENT_DOUBLE | VertexAttribType_CountBit(3),
+    VAT_DOUBLE4           = COMPONENT_DOUBLE | VertexAttribType_CountBit(4)
 };
 
 enum VERTEX_ATTRIB_MODE : uint8_t
@@ -461,10 +494,10 @@ struct SVertexAttribInfo
     int NumComponents() const { return ( ( Type >> 5 ) & 3 ) + 1; }
 
     /// Type of vector components COMPONENT_BYTE, COMPONENT_SHORT, COMPONENT_HALF, COMPONENT_FLOAT, etc.
-    VERTEX_ATTRIB_COMPONENT TypeOfComponent() const { return (VERTEX_ATTRIB_COMPONENT)GHI_5BitNumber( Type ); }
+    VERTEX_ATTRIB_COMPONENT TypeOfComponent() const { return (VERTEX_ATTRIB_COMPONENT)_5BitNumber( Type ); }
 
     /// Components are normalized
-    bool IsNormalized() const { return !!(Type & GHI_VertexAttribType_NormalizedBit); }
+    bool IsNormalized() const { return !!(Type & VertexAttribType_NormalizedBit()); }
 };
 
 template< typename TString >
@@ -572,7 +605,7 @@ struct SPipelineCreateInfo
     SBlendingStateInfo BS;
     SRasterizerStateInfo RS;
     SDepthStencilStateInfo DSS;
-    SSamplerStateInfo SS;
+    SPipelineResourceLayout ResourceLayout;
     TRef< IShaderModule > pVS;
     TRef< IShaderModule > pTCS;
     TRef< IShaderModule > pTES;

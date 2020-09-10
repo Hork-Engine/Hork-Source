@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "base/viewuniforms.glsl"
+//#include "base/viewuniforms.glsl"
 
 layout( location = 0 ) out float FS_FragColor;
 

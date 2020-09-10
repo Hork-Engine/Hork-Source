@@ -56,6 +56,82 @@ namespace RenderCore {
 
 AImmediateContextGLImpl * AImmediateContextGLImpl::StateHead = nullptr, *AImmediateContextGLImpl::StateTail = nullptr;
 
+AResourceTableGLImpl::AResourceTableGLImpl( ADeviceGLImpl * _Device )
+    : pDevice( _Device )
+{
+    memset( TextureBindings, 0, sizeof( TextureBindings ) );
+    memset( TextureBindingUIDs, 0, sizeof( TextureBindingUIDs ) );
+    memset( ImageBindings, 0, sizeof( ImageBindings ) );
+    memset( ImageBindingUIDs, 0, sizeof( ImageBindingUIDs ) );
+    memset( ImageLod, 0, sizeof( ImageLod ) );
+    memset( ImageLayerIndex, 0, sizeof( ImageLayerIndex ) );
+    memset( ImageLayered, 0, sizeof( ImageLayered ) );
+    memset( BufferBindings, 0, sizeof( BufferBindings ) );
+    memset( BufferBindingUIDs, 0, sizeof( BufferBindingUIDs ) );
+    memset( BufferBindingOffsets, 0, sizeof( BufferBindingOffsets ) );
+    memset( BufferBindingSizes, 0, sizeof( BufferBindingSizes ) );
+}
+
+AResourceTableGLImpl::~AResourceTableGLImpl()
+{
+}
+
+void AResourceTableGLImpl::BindTexture( unsigned int Slot, ITextureBase const * Texture )
+{
+    AN_ASSERT( Slot < MAX_SAMPLER_SLOTS );
+
+    // Slot must be < pDevice->MaxCombinedTextureImageUnits
+
+    if ( Texture ) {
+        TextureBindings[Slot] = GL_HANDLE( Texture->GetHandle() );
+        TextureBindingUIDs[Slot] = Texture->GetUID();
+    }
+    else {
+        TextureBindings[Slot] = 0;
+        TextureBindingUIDs[Slot] = 0;
+    }
+}
+
+void AResourceTableGLImpl::BindImage( unsigned int Slot, ITextureBase const * Texture, uint16_t Lod, bool bLayered, uint16_t LayerIndex )
+{
+    AN_ASSERT( Slot < MAX_IMAGE_SLOTS );
+
+    // _Slot must be < pDevice->MaxCombinedTextureImageUnits
+
+    if ( Texture ) {
+        ImageBindings[Slot] = GL_HANDLE( Texture->GetHandle() );
+        ImageBindingUIDs[Slot] = Texture->GetUID();
+        ImageLod[Slot] = Lod;
+        ImageLayerIndex[Slot] = LayerIndex;
+        ImageLayered[Slot] = bLayered;
+    }
+    else {
+        ImageBindings[Slot] = 0;
+        ImageBindingUIDs[Slot] = 0;
+        ImageLod[Slot] = 0;
+        ImageLayerIndex[Slot] = 0;
+        ImageLayered[Slot] = false;
+    }
+}
+
+void AResourceTableGLImpl::BindBuffer( int Slot, IBuffer const * Buffer, size_t Offset, size_t Size )
+{
+    AN_ASSERT( Slot < MAX_BUFFER_SLOTS );
+
+    if ( Buffer ) {
+        BufferBindings[Slot] = GL_HANDLE( Buffer->GetHandle() );
+        BufferBindingUIDs[Slot] = Buffer->GetUID();
+        BufferBindingOffsets[Slot] = Offset;
+        BufferBindingSizes[Slot] = Size;
+    }
+    else {
+        BufferBindings[Slot] = 0;
+        BufferBindingUIDs[Slot] = 0;
+        BufferBindingOffsets[Slot] = 0;
+        BufferBindingSizes[Slot] = 0;
+    }
+}
+
 AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImmediateContextCreateInfo const & _CreateInfo, void * _Context )
     : pDevice( _Device )
 {
@@ -99,12 +175,14 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
     TmpPointers = ( GLintptr * )_Device->Allocator.Allocate( sizeof( GLintptr ) * maxTemporaryHandles*2 );
     TmpPointers2 = TmpPointers + maxTemporaryHandles;
 
-    memset( BufferBindings, 0, sizeof( BufferBinding ) );
+    memset( BufferBindingUIDs, 0, sizeof( BufferBindingUIDs ) );
+    memset( BufferBindingOffsets, 0, sizeof( BufferBindingOffsets ) );
+    memset( BufferBindingSizes, 0, sizeof( BufferBindingSizes ) );
     //memset( SampleBindings, 0, sizeof( SampleBindings ) );
-    memset( TextureBindings, 0, sizeof( TextureBindings ) );
+    //memset( TextureBindings, 0, sizeof( TextureBindings ) );
 
-    CurrentPipeline = NULL;
-    CurrentVAO = NULL;
+    CurrentPipeline = nullptr;
+    CurrentVAO = nullptr;
     NumPatchVertices = 0;
     IndexBufferType = 0;
     IndexBufferTypeSizeOf = 0;
@@ -239,6 +317,10 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
 
     SFramebufferCreateInfo framebufferCI = {};
     DefaultFramebuffer = new AFramebufferGLImpl( pDevice, framebufferCI, true );
+
+    pDevice->CreateResourceTable( &RootResourceTable );
+
+    CurrentResourceTable = static_cast< AResourceTableGLImpl *>( RootResourceTable.GetObject() );
 }
 
 void AImmediateContextGLImpl::MakeCurrent()
@@ -249,6 +331,9 @@ void AImmediateContextGLImpl::MakeCurrent()
 
 AImmediateContextGLImpl::~AImmediateContextGLImpl() {
     VerifyContext();
+
+    CurrentResourceTable.Reset();
+    RootResourceTable.Reset();
 
     DefaultFramebuffer.Reset();
 
@@ -400,7 +485,7 @@ SVertexArrayObject * AImmediateContextGLImpl::CachedVAO( SVertexBindingInfo cons
     glCreateVertexArrays( 1, &vao->Handle );
     if ( !vao->Handle ) {
         GLogger.Printf( "Pipeline::Initialize: couldn't create vertex array object\n" );
-        //return NULL;
+        //return nullptr;
     }
 
     memset( vao->VertexBindingsStrides, 0, sizeof( vao->VertexBindingsStrides ) );
@@ -618,7 +703,7 @@ static void SetRenderTargetSlotsBlending( SRenderTargetBlendingInfo const & _Cur
 void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass ) {
     VerifyContext();
 
-    AN_ASSERT( _Pipeline != NULL );
+    AN_ASSERT( _Pipeline != nullptr );
 
     if ( CurrentPipeline == _Pipeline ) {
         // TODO: cache drawbuffers
@@ -1068,7 +1153,7 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
                                                  uint32_t const * _Offsets ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentVAO != NULL );
+    AN_ASSERT( CurrentVAO != nullptr );
 
     GLuint id = CurrentVAO->Handle;
 
@@ -1134,7 +1219,7 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
         if ( _NumBuffers == 1 ) {
             glVertexArrayVertexBuffer( id, _StartSlot, 0, 0, 16 ); // From OpenGL specification
         } else {
-            glVertexArrayVertexBuffers( id, _StartSlot, _NumBuffers, NULL, NULL, NULL );
+            glVertexArrayVertexBuffers( id, _StartSlot, _NumBuffers, nullptr, nullptr, nullptr );
         }
     }
 }
@@ -1152,6 +1237,19 @@ void AImmediateContextGLImpl::BindIndexBuffer( IBuffer const * _IndexBuffer,
     IndexBufferHandle = nativeIB ? GL_HANDLE( nativeIB->GetHandle() ) : 0;
 }
 
+IResourceTable * AImmediateContextGLImpl::GetRootResourceTable()
+{
+    return RootResourceTable;
+}
+
+void AImmediateContextGLImpl::BindResourceTable( IResourceTable * _ResourceTable )
+{
+    IResourceTable * tbl = _ResourceTable ? _ResourceTable : RootResourceTable.GetObject();
+
+    CurrentResourceTable = static_cast< AResourceTableGLImpl * >( tbl );
+}
+
+#if 0
 void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _ResourceTable )
 {
     // TODO: Cache resource tables
@@ -1159,11 +1257,11 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
     VerifyContext();
 
     SResourceBufferBinding const * buffers = _ResourceTable->GetBuffers();
-    SResourceTextureBinding const * textures = _ResourceTable->GetTextures();
-    SResourceImageBinding const * images = _ResourceTable->GetImages();
+    //SResourceTextureBinding const * textures = _ResourceTable->GetTextures();
+    //SResourceImageBinding const * images = _ResourceTable->GetImages();
     int numBuffers = _ResourceTable->GetNumBuffers();
-    int numTextures = _ResourceTable->GetNumTextures();
-    int numImages = _ResourceTable->GetNumImages();
+    //int numTextures = _ResourceTable->GetNumTextures();
+    //int numImages = _ResourceTable->GetNumImages();
     int slot;
 
     slot = 0;
@@ -1174,8 +1272,8 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
 
         uint32_t bufferUid = native ? native->GetUID() : 0;
 
-        if ( BufferBindings[ slot ] != bufferUid || binding->BindingSize > 0 ) {
-            BufferBindings[ slot ] = bufferUid;
+        if ( BufferBindingUIDs[ slot ] != bufferUid || binding->BindingSize > 0 ) {
+            BufferBindingUIDs[ slot ] = bufferUid;
 
             if ( bufferUid && binding->BindingSize > 0 ) {
                 glBindBufferRange( target, slot, GL_HANDLE( native->GetHandle() ), binding->BindingOffset, binding->BindingSize ); // 3.0 or GL_ARB_uniform_buffer_object
@@ -1184,7 +1282,7 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
             }
         }
     }
-
+#if 0
     slot = 0;
     for ( SResourceTextureBinding const * binding = textures ; binding < &textures[numTextures] ; binding++, slot++ ) {
         GLuint textureId;
@@ -1221,7 +1319,9 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
                             ImageAccessModeLUT[ binding->AccessMode ],
                             InternalFormatLUT[ binding->TextureFormat ].InternalFormat ); // 4.2
     }
+#endif
 }
+#endif
 
 #if 0
 void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
@@ -1237,7 +1337,7 @@ void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
     GLenum target = BufferTargetLUT[ _BufferType ].Target;
 
     if ( !_Buffers ) {
-        glBindBuffersBase( target, _StartSlot, _NumBuffers, NULL ); // 4.4 or GL_ARB_multi_bind
+        glBindBuffersBase( target, _StartSlot, _NumBuffers, nullptr ); // 4.4 or GL_ARB_multi_bind
         return;
     }
 
@@ -1253,7 +1353,7 @@ void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
             glBindBuffersRange( target, _StartSlot, _NumBuffers, TmpHandles, TmpPointers, TmpPointers2 ); // 4.4 or GL_ARB_multi_bind
 
             // Or  Since 3.0 or GL_ARB_uniform_buffer_object
-            //if ( _Buffers != NULL) {
+            //if ( _Buffers != nullptr) {
             //    for ( int i = 0 ; i < _NumBuffers ; i++ ) {
             //        glBindBufferRange( target, _StartSlot + i, GL_HANDLER_FROM_RESOURCE( _Buffers[i] ), _RangeOffsets​[i], _RangeSizes[i] );
             //    }
@@ -1273,7 +1373,7 @@ void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
             glBindBuffersBase( target, _StartSlot, _NumBuffers, TmpHandles ); // 4.4 or GL_ARB_multi_bind
 
             // Or  Since 3.0 or GL_ARB_uniform_buffer_object
-            //if ( _Buffers != NULL) {
+            //if ( _Buffers != nullptr) {
             //    for ( int i = 0 ; i < _NumBuffers ; i++ ) {
             //        glBindBufferBase( target, _StartSlot + i, GL_HANDLER_FROM_RESOURCE( _Buffers[i] ) );
             //    }
@@ -1327,7 +1427,7 @@ void ImmediateContext::SetTextureUnits( unsigned int _FirstUnit,
 
         glBindTextures(	_FirstUnit, _NumUnits, TmpHandles ); // 4.4
     } else {
-        glBindTextures(	_FirstUnit, _NumUnits, NULL ); // 4.4
+        glBindTextures(	_FirstUnit, _NumUnits, nullptr ); // 4.4
     }
 
 
@@ -1335,7 +1435,7 @@ void ImmediateContext::SetTextureUnits( unsigned int _FirstUnit,
     // Other path
     for (i = 0; i < _NumUnits; i++) {
         GLuint texture;
-        if (textures == NULL) {
+        if (textures == nullptr) {
             texture = 0;
         } else {
             texture = textures[i];
@@ -1395,13 +1495,13 @@ void ImmediateContext::SetImageUnits( unsigned int _FirstUnit,
 
         glBindImageTextures( _FirstUnit, _NumUnits, TmpHandles ); // 4.4
     } else {
-        glBindImageTextures( _FirstUnit, _NumUnits, NULL ); // 4.4
+        glBindImageTextures( _FirstUnit, _NumUnits, nullptr ); // 4.4
     }
 
     /*
     // Other path:
     for (i = 0; i < _NumUnits; i++) {
-        if (textures == NULL || textures[i] = 0) {
+        if (textures == nullptr || textures[i] = 0) {
             glBindImageTexture(_FirstUnit + i, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8); // 4.2
         } else {
             glBindImageTexture(_FirstUnit + i, textures[i], 0, GL_TRUE, 0, GL_READ_WRITE, lookupInternalFormat(textures[i])); // 4.2
@@ -1528,7 +1628,8 @@ void AImmediateContextGLImpl::SetScissorIndexed( uint32_t _Index, SRect2D const 
     glScissorIndexedv( _Index, scissorData );
 }
 
-void AImmediateContextGLImpl::UpdateVertexBuffers() {
+void AImmediateContextGLImpl::UpdateVertexBuffers()
+{
     for ( SVertexBindingInfo const * binding = CurrentVAO->Hashed.VertexBindings ; binding < &CurrentVAO->Hashed.VertexBindings[CurrentVAO->Hashed.NumVertexBindings] ; binding++ ) {
         int slot = binding->InputSlot;
 
@@ -1544,7 +1645,8 @@ void AImmediateContextGLImpl::UpdateVertexBuffers() {
     }
 }
 
-void AImmediateContextGLImpl::UpdateVertexAndIndexBuffers() {
+void AImmediateContextGLImpl::UpdateVertexAndIndexBuffers()
+{
     UpdateVertexBuffers();
 
     if ( CurrentVAO->IndexBufferUID != IndexBufferUID ) {
@@ -1557,16 +1659,56 @@ void AImmediateContextGLImpl::UpdateVertexAndIndexBuffers() {
     }
 }
 
+void AImmediateContextGLImpl::UpdateShaderBindings()
+{
+    // TODO: memcmp CurrentPipeline->TextureBindings, CurrentResourceTable->TextureBindings2
+
+    glBindTextures(	0, CurrentPipeline->NumSamplerObjects, CurrentResourceTable->TextureBindings ); // 4.4
+
+#if 1
+    for ( int i = 0 ; i < CurrentPipeline->NumImages ; i++ ) {
+        // TODO: cache image bindings (memcmp?)
+        glBindImageTexture( i,
+                            CurrentResourceTable->ImageBindings[i],
+                            CurrentResourceTable->ImageLod[i],
+                            CurrentResourceTable->ImageLayered[i],
+                            CurrentResourceTable->ImageLayerIndex[i],
+                            CurrentPipeline->Images[i].AccessMode,
+                            CurrentPipeline->Images[i].InternalFormat ); // 4.2
+    }
+#else
+    glBindImageTextures( 0, CurrentPipeline->NumImages, CurrentResourceTable->ImageBindings ); // 4.4
+#endif
+
+    for ( int i = 0 ; i < CurrentPipeline->NumBuffers ; i++ ) {
+        if ( BufferBindingUIDs[ i ] != CurrentResourceTable->BufferBindingUIDs[i]
+             || BufferBindingOffsets[ i ] != CurrentResourceTable->BufferBindingOffsets[i]
+             || BufferBindingSizes[ i ] != CurrentResourceTable->BufferBindingSizes[i] ) {
+
+            BufferBindingUIDs[ i ] = CurrentResourceTable->BufferBindingUIDs[i];
+            BufferBindingOffsets[ i ] = CurrentResourceTable->BufferBindingOffsets[i];
+            BufferBindingSizes[ i ] = CurrentResourceTable->BufferBindingSizes[i];
+
+            if ( BufferBindingUIDs[ i ] && BufferBindingSizes[ i ] > 0 ) {
+                glBindBufferRange( CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->BufferBindings[i], BufferBindingOffsets[ i ], BufferBindingSizes[ i ] ); // 3.0 or GL_ARB_uniform_buffer_object
+            } else {
+                glBindBufferBase( CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->BufferBindings[i] ); // 3.0 or GL_ARB_uniform_buffer_object
+            }
+        }
+    }
+}
+
 void AImmediateContextGLImpl::Draw( SDrawCmd const * _Cmd ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     if ( _Cmd->InstanceCount == 0 || _Cmd->VertexCountPerInstance == 0 ) {
         return;
     }
 
     UpdateVertexBuffers();
+    UpdateShaderBindings();
 
     if ( _Cmd->InstanceCount == 1 && _Cmd->StartInstanceLocation == 0 ) {
         glDrawArrays( CurrentPipeline->PrimitiveTopology, _Cmd->StartVertexLocation, _Cmd->VertexCountPerInstance ); // Since 2.0
@@ -1587,13 +1729,14 @@ void AImmediateContextGLImpl::Draw( SDrawCmd const * _Cmd ) {
 void AImmediateContextGLImpl::Draw( SDrawIndexedCmd const * _Cmd ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     if ( _Cmd->InstanceCount == 0 || _Cmd->IndexCountPerInstance == 0 ) {
         return;
     }
 
     UpdateVertexAndIndexBuffers();
+    UpdateShaderBindings();
 
     const GLubyte * offset = reinterpret_cast<const GLubyte *>( 0 ) + _Cmd->StartIndexLocation * IndexBufferTypeSizeOf
         + IndexBufferOffset;
@@ -1652,15 +1795,15 @@ void AImmediateContextGLImpl::Draw( SDrawIndexedCmd const * _Cmd ) {
 void AImmediateContextGLImpl::Draw( ITransformFeedback * _TransformFeedback, unsigned int _InstanceCount, unsigned int _StreamIndex ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
-
-    // FIXME: UpdateVertexBuffers() ?
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     ATransformFeedbackGLImpl * transformFeedback = static_cast< ATransformFeedbackGLImpl * >( _TransformFeedback );
 
     if ( _InstanceCount == 0 ) {
         return;
     }
+
+    UpdateShaderBindings();
 
     if ( _InstanceCount > 1 ) {
         if ( _StreamIndex == 0 ) {
@@ -1680,9 +1823,10 @@ void AImmediateContextGLImpl::Draw( ITransformFeedback * _TransformFeedback, uns
 void AImmediateContextGLImpl::DrawIndirect( SDrawIndirectCmd const * _Cmd ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     UpdateVertexBuffers();
+    UpdateShaderBindings();
 
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
@@ -1696,9 +1840,10 @@ void AImmediateContextGLImpl::DrawIndirect( SDrawIndirectCmd const * _Cmd ) {
 void AImmediateContextGLImpl::DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     UpdateVertexAndIndexBuffers();
+    UpdateShaderBindings();
 
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
@@ -1712,13 +1857,15 @@ void AImmediateContextGLImpl::DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd
 void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, bool _Indexed ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     GLuint handle = GL_HANDLE( static_cast< ABufferGLImpl const * >(_DrawIndirectBuffer)->GetHandle() );
     if ( Binding.DrawInderectBuffer != handle ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
         Binding.DrawInderectBuffer = handle;
     }
+
+    UpdateShaderBindings();
 
     if ( _Indexed ) {
         UpdateVertexAndIndexBuffers();
@@ -1739,12 +1886,13 @@ void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsig
 void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned int * _VertexCount, const unsigned int * _StartVertexLocations ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     static_assert( sizeof( _VertexCount[0] ) == sizeof( GLsizei ), "!" );
     static_assert( sizeof( _StartVertexLocations[0] ) == sizeof( GLint ), "!" );
 
     UpdateVertexBuffers();
+    UpdateShaderBindings();
 
     glMultiDrawArrays( CurrentPipeline->PrimitiveTopology, ( const GLint * )_StartVertexLocations, ( const GLsizei * )_VertexCount, _DrawCount ); // Since 2.0
 
@@ -1757,13 +1905,14 @@ void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned
 void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned int * _IndexCount, const void * const * _IndexByteOffsets, const int * _BaseVertexLocations ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     static_assert( sizeof( unsigned int ) == sizeof( GLsizei ), "!" );
 
     // FIXME: how to apply IndexBufferOffset?
 
     UpdateVertexAndIndexBuffers();
+    UpdateShaderBindings();
 
     if ( _BaseVertexLocations ) {
         glMultiDrawElementsBaseVertex( CurrentPipeline->PrimitiveTopology,
@@ -1792,9 +1941,10 @@ void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned
 void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawIndirectCmd const * _Cmds, unsigned int _Stride ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     UpdateVertexBuffers();
+    UpdateShaderBindings();
 
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
@@ -1811,8 +1961,8 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
 // Эквивалентный код:
 //    GLsizei n;
 //    for ( i = 0 ; i < _DrawCount ; i++ ) {
-//        DrawIndirectCmd const *cmd = ( _Stride != 0 ) ?
-//              (DrawIndirectCmd const *)((uintptr)indirect + i * _Stride) : ((GHI_DrawIndirectCmd_t const *)indirect + i);
+//        SDrawIndirectCmd const *cmd = ( _Stride != 0 ) ?
+//              (SDrawIndirectCmd const *)((uintptr)indirect + i * _Stride) : ((SDrawIndirectCmd const *)indirect + i);
 //        glDrawArraysInstancedBaseInstance(mode, cmd->first, cmd->count, cmd->instanceCount, cmd->baseInstance);
 //    }
 }
@@ -1820,9 +1970,10 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
 void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     UpdateVertexAndIndexBuffers();
+    UpdateShaderBindings();
 
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
@@ -1838,8 +1989,8 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
 // Эквивалентный код:
 //    GLsizei n;
 //    for ( i = 0 ; n < _DrawCount ; i++ ) {
-//        GHI_DrawIndexedIndirectCmd_t const *cmd = ( stride != 0 ) ?
-//            (GHI_DrawIndexedIndirectCmd_t const *)((uintptr)indirect + n * stride) : ( (GHI_DrawIndexedIndirectCmd_t const *)indirect + n );
+//        SDrawIndexedIndirectCmd const *cmd = ( stride != 0 ) ?
+//            (SDrawIndexedIndirectCmd const *)((uintptr)indirect + n * stride) : ( (SDrawIndexedIndirectCmd const *)indirect + n );
 //        glDrawElementsInstancedBaseVertexBaseInstance(CurrentPipeline->PrimitiveTopology,
 //                                                      cmd->count,
 //                                                      IndexBufferType,
@@ -2439,7 +2590,7 @@ bool AImmediateContextGLImpl::IsSignaled( SyncObject _Sync ) {
     glGetSynciv( reinterpret_cast< GLsync >( _Sync ),
                  GL_SYNC_STATUS,
                  sizeof( GLint ),
-                 NULL,
+                 nullptr,
                  &value );
     return value == GL_SIGNALED;
 }
@@ -2510,7 +2661,7 @@ void AImmediateContextGLImpl::DynamicState_SampleMask( /* optional */ const uint
 void AImmediateContextGLImpl::DynamicState_StencilRef( uint32_t _StencilRef ) {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != NULL );
+    AN_ASSERT( CurrentPipeline != nullptr );
 
     if ( Binding.DepthStencilState == CurrentPipeline->DepthStencilState ) {
 

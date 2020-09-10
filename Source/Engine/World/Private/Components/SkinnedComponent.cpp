@@ -48,7 +48,7 @@ SOFTWARE.
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 
-ARuntimeVariable RVDrawSkeleton( _CTS( "DrawSkeleton" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_Skeleton( _CTS( "dd_Skeleton" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ASkinnedComponent )
 
@@ -509,7 +509,7 @@ void ASkinnedComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
     // Draw skeleton
-    if ( RVDrawSkeleton ) {
+    if ( dd_Skeleton ) {
         InRenderer->SetColor( AColor4( 1,0,0,1 ) );
         InRenderer->SetDepthTest( false );
         TPodArray< SJoint > const & joints = Skeleton->GetJoints();

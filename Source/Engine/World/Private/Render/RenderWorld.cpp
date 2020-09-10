@@ -38,7 +38,7 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include "LightVoxelizer.h"
 
-ARuntimeVariable RVDrawFrustumClusters( _CTS( "DrawFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_FrustumClusters( _CTS( "dd_FrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 
 ARenderWorld::ARenderWorld( AWorld * InOwnerWorld )
     : pOwnerWorld( InOwnerWorld )
@@ -71,7 +71,7 @@ void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * _Light )
 
 void ARenderWorld::DrawDebug( ADebugRenderer * InRenderer )
 {
-    if ( RVDrawFrustumClusters ) {
+    if ( dd_FrustumClusters ) {
         GLightVoxelizer.DrawVoxels( InRenderer );
     }
 }

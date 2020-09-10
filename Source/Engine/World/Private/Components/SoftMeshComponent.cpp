@@ -43,7 +43,7 @@ SOFTWARE.
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 
-ARuntimeVariable RVDrawSoftmeshFaces( _CTS( "DrawSoftmeshFaces" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_SoftmeshFaces( _CTS( "dd_SoftmeshFaces" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ASoftMeshComponent )
 
@@ -381,7 +381,7 @@ void ASoftMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     //InRenderer->DrawAABB( BvAxisAlignedBox( btVectorToFloat3( mins ), btVectorToFloat3( maxs ) ) );
 
     // Draw faces
-    if ( RVDrawSoftmeshFaces ) {
+    if ( dd_SoftmeshFaces ) {
         InRenderer->SetDepthTest( true );
         InRenderer->SetColor( AColor4( 1, 0, 0, 1 ) );
         for ( int i = 0; i < SoftBody->m_faces.size(); i++ ) {

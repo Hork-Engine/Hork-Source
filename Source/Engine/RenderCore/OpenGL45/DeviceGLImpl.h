@@ -56,7 +56,7 @@ public:
                    HashCallback _Hash );
     ~ADeviceGLImpl();
 
-    void SwapBuffers( SDL_Window * WindowHandle ) override;
+    void SwapBuffers( SDL_Window * WindowHandle, int SwapInterval ) override;
 
     void GetImmediateContext( IImmediateContext ** ppImmediateContext ) override;
 
@@ -86,6 +86,8 @@ public:
     void CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, TRef< IQueryPool > * ppQueryPool ) override;
 
     void CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) override;
+
+    void CreateResourceTable( TRef< IResourceTable > * ppResourceTable ) override;
 
     bool CreateShaderBinaryData( SHADER_TYPE _ShaderType,
                                  unsigned int _NumSources,
@@ -155,6 +157,8 @@ private:
     size_t TextureMemoryAllocated;
 
     AImmediateContextGLImpl * pMainContext;
+
+    int SwapInterval;
 
     SAllocatorCallback Allocator;
     HashCallback Hash;

@@ -50,7 +50,8 @@ struct SVirtualTextureWorkflow : public RenderCore::IObjectInterface
     }
 };
 
-class ARenderBackend : public IRenderBackend {
+class ARenderBackend : public IRenderBackend
+{
 public:
     ARenderBackend() : IRenderBackend( "OpenGL 4.5" ) {}
 
@@ -67,35 +68,29 @@ public:
     void WaitSync( void * _Sync ) override;
     void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) override;
 
-    ATextureGPU * CreateTexture( IGPUResourceOwner * _Owner ) override;
-    void DestroyTexture( ATextureGPU * _Texture ) override;
-    void InitializeTexture1D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) override;
-    void InitializeTexture1DArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) override;
-    void InitializeTexture2D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) override;
-    void InitializeTexture2DArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) override;
-    void InitializeTexture3D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) override;
-    void InitializeTextureCubemap( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) override;
-    void InitializeTextureCubemapArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) override;
-    void WriteTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) override;
-    void ReadTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) override;
+    void InitializeTexture1D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) override;
+    void InitializeTexture1DArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) override;
+    void InitializeTexture2D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) override;
+    void InitializeTexture2DArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) override;
+    void InitializeTexture3D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) override;
+    void InitializeTextureCubemap( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) override;
+    void InitializeTextureCubemapArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) override;
+    void WriteTexture( RenderCore::ITexture * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) override;
+    void ReadTexture( RenderCore::ITexture * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) override;
 
-    ABufferGPU * CreateBuffer( IGPUResourceOwner * _Owner ) override;
-    void DestroyBuffer( ABufferGPU * _Buffer ) override;
-    void InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) override;
-    void * InitializePersistentMappedBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) override;
-    void WriteBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) override;
-    void ReadBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) override;
-    void OrphanBuffer( ABufferGPU * _Buffer ) override;
+    void InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes ) override;
+    void * InitializePersistentMappedBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes ) override;
+    void WriteBuffer( RenderCore::IBuffer * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) override;
+    void ReadBuffer( RenderCore::IBuffer * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) override;
+    void OrphanBuffer( RenderCore::IBuffer * _Buffer ) override;
 
-    AMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) override;
-    void DestroyMaterial( AMaterialGPU * _Material ) override;
     void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def ) override;
 
-//private:
+private:
     void SetGPUEvent();
     void RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
-
-    friend void OpenGL45RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
+    void SetViewUniforms();
+    void UploadShaderResources();
 
     TRef< AFrameGraph > FrameGraph;
     AFrameRenderer::SFrameGraphCaptured CapturedResources;
@@ -103,10 +98,12 @@ public:
     TRef< ACanvasRenderer > CanvasRenderer;
     TRef< AFrameRenderer > FrameRenderer;
 
+    AGPUSync GPUSync;
+
+public:
+    // Just for test
     TRef< SVirtualTextureWorkflow > VTWorkflow;
     AVirtualTexture * TestVT;
-
-    AGPUSync GPUSync;
 };
 
-extern ARenderBackend GOpenGL45RenderBackend;
+extern ARenderBackend GRenderBackendLocal;

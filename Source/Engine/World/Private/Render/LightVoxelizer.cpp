@@ -36,9 +36,9 @@ SOFTWARE.
 #define DECAL_ITEMS_OFFSET 256
 #define PROBE_ITEMS_OFFSET 512
 
-ARuntimeVariable RVClusterSSE( _CTS( "ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable RVReverseNegativeZ( _CTS( "ReverseNegativeZ" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable RVFreezeFrustumClusters( _CTS( "FreezeFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_ClusterSSE( _CTS( "com_ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable com_ReverseNegativeZ( _CTS( "com_ReverseNegativeZ" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable com_FreezeFrustumClusters( _CTS( "com_FreezeFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 
 ALightVoxelizer & GLightVoxelizer = ALightVoxelizer::Inst();
 
@@ -204,7 +204,7 @@ void ALightVoxelizer::TransformItemsSSE() {
             if ( Point.Z < 0.0 ) {
                 //Point.Z = 200;
 
-                if ( RVReverseNegativeZ ) {
+                if ( com_ReverseNegativeZ ) {
 
                     PointSSE = _mm_set_ps( 0.0f, 200.0f, -Point.Y, -Point.X );
 
@@ -315,7 +315,7 @@ void ALightVoxelizer::TransformItemsGeneric() {
 
             if ( Point.Z < 0.0 ) {
                 Point.Z = 200;
-                if ( RVReverseNegativeZ ) {
+                if ( com_ReverseNegativeZ ) {
                     Point.X = -Point.X;
                     Point.Y = -Point.Y;
 
@@ -373,7 +373,7 @@ void ALightVoxelizer::TransformItemsGeneric() {
 
 void ALightVoxelizer::Reset() {
     ItemsCount = 0;
-    bUseSSE = RVClusterSSE;
+    bUseSSE = com_ClusterSSE;
 }
 
 struct SWork
@@ -773,7 +773,7 @@ void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer )
 {
     static TStdVectorDefault< Float3 > LinePoints;
 
-    if ( !RVFreezeFrustumClusters )
+    if ( !com_FreezeFrustumClusters )
     {
         SRenderView const * view = InRenderer->GetRenderView();
 

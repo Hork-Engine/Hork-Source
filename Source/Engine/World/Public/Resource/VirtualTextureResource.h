@@ -39,12 +39,10 @@ SOFTWARE.
 AVirtualTextureResource
 
 */
-class ANGIE_API AVirtualTextureResource : public AResource/*, public IGPUResourceOwner*/ {
+class ANGIE_API AVirtualTextureResource : public AResource {
     AN_CLASS( AVirtualTextureResource, AResource )
 
 public:
-
-    //ATextureGPU * GetGPUResource() { return TextureGPU; }
 
 protected:
     AVirtualTextureResource();
@@ -57,7 +55,4 @@ protected:
     void LoadInternalResource( const char * _Path ) override;
 
     const char * GetDefaultResourcePath() const override { return "/Default/Textures/DefaultVT"; }
-
-    // IGPUResourceOwner interface
-    //void UploadResourcesGPU() override;
 };

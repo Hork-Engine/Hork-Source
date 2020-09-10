@@ -37,7 +37,7 @@ SOFTWARE.
 
 #include <algorithm>    // find
 
-ARuntimeVariable RVDrawSockets( _CTS( "DrawSockets" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_Sockets( _CTS( "dd_Sockets" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ASceneComponent )
 
@@ -900,7 +900,7 @@ void ASceneComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
     // Draw sockets
-    if ( RVDrawSockets ) {
+    if ( dd_Sockets ) {
         Float3x4 transform;
         Float3 worldScale;
         Quat worldRotation;

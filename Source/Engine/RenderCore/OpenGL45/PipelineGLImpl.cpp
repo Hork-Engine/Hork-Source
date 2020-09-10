@@ -109,17 +109,39 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
     RasterizerState = pDevice->CachedRasterizerState( _CreateInfo.RS );
     DepthStencilState = pDevice->CachedDepthStencilState( _CreateInfo.DSS );
 
-    NumSamplerObjects = _CreateInfo.SS.NumSamplers;
+    NumSamplerObjects = _CreateInfo.ResourceLayout.NumSamplers;
     if ( NumSamplerObjects > 0 ) {
         SamplerObjects = (unsigned int *)pDevice->Allocator.Allocate( sizeof( SamplerObjects[0] ) * NumSamplerObjects );
         for ( int i = 0 ; i < NumSamplerObjects ; i++ ) {
-            SamplerObjects[i] = pDevice->CachedSampler( _CreateInfo.SS.Samplers[i] );
+            SamplerObjects[i] = pDevice->CachedSampler( _CreateInfo.ResourceLayout.Samplers[i] );
         }
     }
     else {
         SamplerObjects = nullptr;
     }
 
+    NumImages = _CreateInfo.ResourceLayout.NumImages;
+    if ( NumImages > 0 ) {
+        Images = (SImageInfoGL *)pDevice->Allocator.Allocate( sizeof( SImageInfoGL ) * NumImages );
+        for ( int i = 0 ; i < NumImages ; i++ ) {
+            Images[i].AccessMode = ImageAccessModeLUT[ _CreateInfo.ResourceLayout.Images[i].AccessMode ];
+            Images[i].InternalFormat = InternalFormatLUT[ _CreateInfo.ResourceLayout.Images[i].TextureFormat ].InternalFormat;
+        }
+    }
+    else {
+        Images = nullptr;
+    }
+
+    NumBuffers = _CreateInfo.ResourceLayout.NumBuffers;
+    if ( NumBuffers > 0 ) {
+        Buffers = (SBufferInfoGL *)pDevice->Allocator.Allocate( sizeof( SBufferInfoGL ) * NumBuffers );
+        for ( int i = 0 ; i < NumBuffers ; i++ ) {
+            Buffers[i].BufferType = BufferTargetLUT[ _CreateInfo.ResourceLayout.Buffers[i].BufferType ].Target;
+        }
+    }
+    else {
+        Buffers = nullptr;
+    }
 
     pDevice->TotalPipelines++;
 }
@@ -132,6 +154,14 @@ APipelineGLImpl::~APipelineGLImpl() {
 
     if ( SamplerObjects ) {
         pDevice->Allocator.Deallocate( SamplerObjects );
+    }
+
+    if ( Images ) {
+        pDevice->Allocator.Deallocate( Images );
+    }
+
+    if ( Buffers ) {
+        pDevice->Allocator.Deallocate( Buffers );
     }
 
     pDevice->TotalPipelines--;

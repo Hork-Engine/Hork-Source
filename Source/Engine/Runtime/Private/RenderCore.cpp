@@ -37,43 +37,7 @@ SOFTWARE.
 
 #include <Renderer/RenderBackend.h>
 
-IRenderBackend * GRenderBackend = &GOpenGL45RenderBackend;
-
-
-IGPUResourceOwner * IGPUResourceOwner::ResourceOwners = nullptr;
-IGPUResourceOwner * IGPUResourceOwner::ResourceOwnersTail = nullptr;
-
-IGPUResourceOwner::IGPUResourceOwner()
-{
-    INTRUSIVE_ADD( this, pNext, pPrev, ResourceOwners, ResourceOwnersTail );
-}
-
-IGPUResourceOwner::~IGPUResourceOwner()
-{
-    INTRUSIVE_REMOVE( this, pNext, pPrev, ResourceOwners, ResourceOwnersTail );
-}
-
-void IGPUResourceOwner::UploadResources()
-{
-    for ( IGPUResourceOwner * resource = ResourceOwners ; resource ; resource = resource->pNext )
-    {
-        resource->UploadResourcesGPU();
-    }
-}
-
-
-AResourceGPU * AResourceGPU::GPUResources;
-AResourceGPU * AResourceGPU::GPUResourcesTail;
-
-AResourceGPU::AResourceGPU()
-{
-    INTRUSIVE_ADD( this, pNext, pPrev, GPUResources, GPUResourcesTail );
-}
-
-AResourceGPU::~AResourceGPU()
-{
-    INTRUSIVE_REMOVE( this, pNext, pPrev, GPUResources, GPUResourcesTail );
-}
+IRenderBackend * GRenderBackend = &GRenderBackendLocal;
 
 struct STextureFormatDetails
 {

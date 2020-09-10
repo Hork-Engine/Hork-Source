@@ -44,7 +44,7 @@ SOFTWARE.
 #define DEFAULT_ASPECT_RATIO (4.0f / 3.0f)
 #define DEFAULT_ORTHO_ZOOM 30.0f
 
-ARuntimeVariable RVDrawCameraFrustum( _CTS( "DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_CameraFrustum( _CTS( "dd_CameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ACameraComponent )
 
@@ -308,7 +308,7 @@ Float3x3 const & ACameraComponent::GetBillboardMatrix() const {
 void ACameraComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( RVDrawCameraFrustum ) {
+    if ( dd_CameraFrustum ) {
         Float3 vectorTR;
         Float3 vectorTL;
         Float3 vectorBR;

@@ -56,12 +56,13 @@ SOFTWARE.
 
 #define REF_AWARE
 
-ARuntimeVariable RVDrawCollisionShapeWireframe( _CTS( "DrawCollisionShapeWireframe" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawContactPoints( _CTS( "DrawContactPoints" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawConstraints( _CTS( "DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawConstraintLimits( _CTS( "DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
-//ARuntimeVariable RVDrawCollisionShapeNormals( _CTS( "DrawCollisionShapeNormals" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVNoPhysicsSimulation( _CTS( "NoPhysicsSimulation" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_CollisionShapeWireframe( _CTS( "dd_CollisionShapeWireframe" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_ContactPoints( _CTS( "dd_ContactPoints" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_Constraints( _CTS( "dd_Constraints" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_ConstraintLimits( _CTS( "dd_ConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
+//ARuntimeVariable dd_CollisionShapeNormals( _CTS( "dd_CollisionShapeNormals" ), _CTS( "0" ), VAR_CHEAT );
+
+ARuntimeVariable com_NoPhysicsSimulation( _CTS( "com_NoPhysicsSimulation" ), _CTS( "0" ), VAR_CHEAT );
 
 static SCollisionQueryFilter DefaultCollisionQueryFilter;
 
@@ -910,7 +911,7 @@ void APhysicsWorld::OnPostPhysics( btDynamicsWorld * _World, float _TimeStep ) {
 
 void APhysicsWorld::Simulate( float _TimeStep )
 {
-    if ( !RVNoPhysicsSimulation )
+    if ( !com_NoPhysicsSimulation )
     {
         const float FixedTimeStep = 1.0f / PhysicsHertz;
 
@@ -948,22 +949,22 @@ void APhysicsWorld::Simulate( float _TimeStep )
 
 void APhysicsWorld::DrawDebug( ADebugRenderer * InRenderer ) {
     int Mode = 0;
-    if ( RVDrawCollisionShapeWireframe ) {
+    if ( dd_CollisionShapeWireframe ) {
         Mode |= APhysicsDebugDraw::DBG_DrawWireframe;
     }
     //if ( RVDrawCollisionShapeAABBs ) {
     //    Mode |= APhysicsDebugDraw::DBG_DrawAabb;
     //}
-    if ( RVDrawContactPoints ) {
+    if ( dd_ContactPoints ) {
         Mode |= APhysicsDebugDraw::DBG_DrawContactPoints;
     }
-    if ( RVDrawConstraints ) {
+    if ( dd_Constraints ) {
         Mode |= APhysicsDebugDraw::DBG_DrawConstraints;
     }
-    if ( RVDrawConstraintLimits ) {
+    if ( dd_ConstraintLimits ) {
         Mode |= APhysicsDebugDraw::DBG_DrawConstraintLimits;
     }
-    //if ( RVDrawCollisionShapeNormals ) {
+    //if ( dd_CollisionShapeNormals ) {
     //    Mode |= APhysicsDebugDraw::DBG_DrawNormals;
     //}
 

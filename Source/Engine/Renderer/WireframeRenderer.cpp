@@ -33,7 +33,8 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static bool BindMaterialWireframePass( SRenderInstance const * instance ) {
+static bool BindMaterialWireframePass( SRenderInstance const * instance )
+{
     AMaterialGPU * pMaterial = instance->Material;
 
     AN_ASSERT( pMaterial );
@@ -45,25 +46,22 @@ static bool BindMaterialWireframePass( SRenderInstance const * instance ) {
         return false;
     }
 
-    // Bind pipeline
     rcmd->BindPipeline( pPipeline );
 
-    // Bind second vertex buffer
     if ( bSkinned ) {
-        IBuffer * pSecondVertexBuffer = GPUBufferHandle( instance->WeightsBuffer );
-        rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, instance->WeightsBufferOffset );
-    } else {
+        rcmd->BindVertexBuffer( 1, instance->WeightsBuffer, instance->WeightsBufferOffset );
+    }
+    else {
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
     }
 
-    // Bind vertex and index buffers
     BindVertexAndIndexBuffers( instance );
 
     return true;
 }
 
-void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget ) {
-
+void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget )
+{
     ARenderPass & wireframePass = FrameGraph.AddTask< ARenderPass >( "Wireframe Pass" );
 
     wireframePass.SetDynamicRenderArea( &GRenderViewArea );
@@ -94,16 +92,9 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
                 continue;
             }
 
-            // Bind textures
             BindTextures( instance->MaterialInstance, instance->Material->WireframePassTextureCount );
-
-            // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-
-            // Set instance uniforms
-            SetInstanceUniforms( instance );
-
-            rcmd->BindResourceTable( &GFrameResources.Resources );
+            BindInstanceUniforms( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -115,21 +106,13 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
         for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
             SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
 
-            // Choose pipeline and second vertex buffer
             if ( !BindMaterialWireframePass( instance ) ) {
                 continue;
             }
 
-            // Bind textures
             BindTextures( instance->MaterialInstance, instance->Material->WireframePassTextureCount );
-
-            // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-
-            // Set instance uniforms
-            SetInstanceUniforms( instance );
-
-            rcmd->BindResourceTable( &GFrameResources.Resources );
+            BindInstanceUniforms( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;

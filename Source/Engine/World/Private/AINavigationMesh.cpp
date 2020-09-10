@@ -54,10 +54,10 @@ SOFTWARE.
 #include <DebugDraw.h>
 #include <float.h>
 
-ARuntimeVariable RVDrawNavMeshBVTree( _CTS( "DrawNavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawNavMeshNodes( _CTS( "DrawNavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawNavMesh( _CTS( "DrawNavMesh" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawNavMeshTileBounds( _CTS( "DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_NavMeshBVTree( _CTS( "dd_NavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_NavMeshNodes( _CTS( "dd_NavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_NavMesh( _CTS( "dd_NavMesh" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_NavMeshTileBounds( _CTS( "dd_NavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_SIZEOF_STATIC_CHECK( SNavPolyRef, sizeof( dtPolyRef ) );
 
@@ -1326,15 +1326,15 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
     SDebugDrawCallback callback;
     callback.DD = InRenderer;
 
-    if ( RVDrawNavMeshBVTree ) {
+    if ( dd_NavMeshBVTree ) {
         duDebugDrawNavMeshBVTree( &callback, *NavMesh );
     }
 
-    if ( RVDrawNavMeshNodes ) {
+    if ( dd_NavMeshNodes ) {
         duDebugDrawNavMeshNodes( &callback, *NavQuery );
     }
 
-    if ( RVDrawNavMesh ) {
+    if ( dd_NavMesh ) {
         duDebugDrawNavMeshWithClosedList( &callback, *NavMesh, *NavQuery, DU_DRAWNAVMESH_OFFMESHCONS|DU_DRAWNAVMESH_CLOSEDLIST|DU_DRAWNAVMESH_COLOR_TILES );
     }
     //duDebugDrawNavMeshPolysWithFlags( &callback, *NavMesh, AI_NAV_MESH_FLAGS_DISABLED/*AI_NAV_MESH_FLAGS_DISABLED*/, duRGBA(0,0,0,128));
@@ -1363,7 +1363,7 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 #endif
 
-    if ( RVDrawNavMeshTileBounds ) {
+    if ( dd_NavMeshTileBounds ) {
         BvAxisAlignedBox boundingBox;
         InRenderer->SetDepthTest(false);
         InRenderer->SetColor( AColor4( 1,1,1,1 ) );

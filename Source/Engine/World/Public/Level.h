@@ -487,7 +487,7 @@ ALevel
 Subpart of a world. Contains actors, level visibility, baked data like lightmaps, surfaces, collision, audio, etc.
 
 */
-class ALevel : public ABaseObject, public IGPUResourceOwner {
+class ALevel : public ABaseObject {
     AN_CLASS( ALevel, ABaseObject )
 
     friend class AWorld;
@@ -641,12 +641,12 @@ public:
     void MarkPrimitive( SPrimitiveDef * InPrimitive );
 
     /** Get shadow caster GPU buffers */
-    ABufferGPU * GetShadowCasterVB() { return ShadowCasterVB; }
-    ABufferGPU * GetShadowCasterIB() { return ShadowCasterIB; }
+    RenderCore::IBuffer * GetShadowCasterVB() { return ShadowCasterVB; }
+    RenderCore::IBuffer * GetShadowCasterIB() { return ShadowCasterIB; }
 
     /** Get light portals GPU buffers */
-    ABufferGPU * GetLightPortalsVB() { return LightPortalsVB; }
-    ABufferGPU * GetLightPortalsIB() { return LightPortalsIB; }
+    RenderCore::IBuffer * GetLightPortalsVB() { return LightPortalsVB; }
+    RenderCore::IBuffer * GetLightPortalsIB() { return LightPortalsIB; }
 
     TPodArray< SLightPortalDef > const & GetLightPortals() const { return LightPortals; }
 
@@ -659,8 +659,6 @@ protected:
 
     /** Draw debug. Called by owner world. */
     virtual void DrawDebug( ADebugRenderer * InRenderer );
-
-    void UploadResourcesGPU() override;
 
 private:
     /** Callback on add level to world. Called by owner world. */
@@ -733,11 +731,11 @@ private:
     /** Cluster index for view origin */
     int ViewCluster = -1;
 
-    ABufferGPU * ShadowCasterVB;
-    ABufferGPU * ShadowCasterIB;
+    TRef< RenderCore::IBuffer > ShadowCasterVB;
+    TRef< RenderCore::IBuffer > ShadowCasterIB;
 
-    ABufferGPU * LightPortalsVB;
-    ABufferGPU * LightPortalsIB;
+    TRef< RenderCore::IBuffer > LightPortalsVB;
+    TRef< RenderCore::IBuffer > LightPortalsIB;
 
     SPrimitiveDef * PrimitiveList = nullptr;
     SPrimitiveDef * PrimitiveListTail = nullptr;

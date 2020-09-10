@@ -36,7 +36,7 @@ static const float DEFAULT_LUMENS = 3000.0f;
 static const float DEFAULT_TEMPERATURE = 6590.0f;
 static const Float3 DEFAULT_COLOR( 1.0f );
 
-ARuntimeVariable RVLightEnergyScale( _CTS( "LightEnergyScale" ), _CTS( "16" ) );
+ARuntimeVariable com_LightEnergyScale( _CTS( "com_LightEnergyScale" ), _CTS( "16" ) );
 
 AN_CLASS_META( AAnalyticLightComponent )
 
@@ -97,8 +97,8 @@ Float3 const & AAnalyticLightComponent::GetColor() const {
 }
 
 Float3 const & AAnalyticLightComponent::GetEffectiveColor( float CosHalfConeAngle ) const {
-    if ( bEffectiveColorDirty || RVLightEnergyScale.IsModified() ) {
-        const float EnergyUnitScale = 1.0f / RVLightEnergyScale.GetFloat();
+    if ( bEffectiveColorDirty || com_LightEnergyScale.IsModified() ) {
+        const float EnergyUnitScale = 1.0f / com_LightEnergyScale.GetFloat();
 
         float candela;
 

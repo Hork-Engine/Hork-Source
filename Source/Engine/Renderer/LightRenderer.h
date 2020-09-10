@@ -32,7 +32,8 @@ SOFTWARE.
 
 #include "RenderCommon.h"
 
-class ALightRenderer {
+class ALightRenderer
+{
 public:
     ALightRenderer();
 

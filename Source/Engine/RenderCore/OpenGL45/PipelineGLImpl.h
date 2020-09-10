@@ -36,6 +36,17 @@ namespace RenderCore {
 
 class ADeviceGLImpl;
 
+struct SImageInfoGL
+{
+    unsigned int AccessMode;
+    unsigned int InternalFormat;
+};
+
+struct SBufferInfoGL
+{
+    unsigned int BufferType;
+};
+
 class APipelineGLImpl final : public IPipeline
 {
     friend class ADeviceGLImpl;
@@ -53,6 +64,10 @@ private:
     SDepthStencilStateInfo const * DepthStencilState;
     unsigned int * SamplerObjects;
     int          NumSamplerObjects;
+    SImageInfoGL * Images;
+    int          NumImages;
+    SBufferInfoGL * Buffers;
+    int          NumBuffers;
     unsigned int PrimitiveTopology;
     int          NumPatchVertices;
     bool         bPrimitiveRestartEnabled;

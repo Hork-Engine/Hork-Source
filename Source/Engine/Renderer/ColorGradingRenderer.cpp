@@ -41,18 +41,30 @@ AColorGradingRenderer::AColorGradingRenderer()
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
+    SPipelineResourceLayout resourceLayout;
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers = &samplerCI;
+
+    SBufferInfo bufferInfo[2];
+    bufferInfo[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    bufferInfo[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+
+    resourceLayout.Buffers = bufferInfo;
+
+    resourceLayout.NumBuffers = 1;
     CreateFullscreenQuadPipelineGS( &PipelineLUT,
                                     "postprocess/colorgrading.vert",
                                     "postprocess/colorgrading.frag",
                                     "postprocess/colorgrading.geom",
-                                    &samplerCI, 1,
+                                    &resourceLayout,
                                     RenderCore::BLENDING_ALPHA );
 
+    resourceLayout.NumBuffers = 2;
     CreateFullscreenQuadPipelineGS( &PipelineProcedural,
                                     "postprocess/colorgrading.vert",
                                     "postprocess/colorgrading_procedural.frag",
                                     "postprocess/colorgrading.geom",
-                                    nullptr, 0,
+                                    nullptr,
                                     RenderCore::BLENDING_ALPHA );
 }
 
@@ -66,14 +78,14 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTextur
     auto ColorGrading_R = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
         "CurrentColorGradingLUT",
         MakeTexture( RenderCore::TEXTURE_FORMAT_RGB16F, STextureResolution3D( 16,16,16 ) ),
-        GPUTextureHandle( GRenderView->CurrentColorGradingLUT ) );
+        GRenderView->CurrentColorGradingLUT );
 
     if ( GRenderView->ColorGradingLUT )
     {
         auto source = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
             "ColorGradingLUT",
             MakeTexture( RenderCore::TEXTURE_FORMAT_RGB16F, STextureResolution3D( 16,16,16 ) ),
-            GPUTextureHandle( GRenderView->ColorGradingLUT ) );
+            GRenderView->ColorGradingLUT );
 
         ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Color Grading Pass" );
 
@@ -87,9 +99,7 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTextur
         renderPass.AddSubpass( { 0 },
                                [=]( ARenderPass const & RenderPass, int SubpassIndex )
         {
-            GFrameResources.TextureBindings[0]->pTexture = source->Actual();
-
-            rcmd->BindResourceTable( &GFrameResources.Resources );
+            rtbl->BindTexture( 0, source->Actual() );
 
             DrawSAQ( PipelineLUT );
         } );
@@ -118,7 +128,7 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTextur
                 Float4 LuminanceNormalization;
             };
 
-            SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
 
             drawCall->TemperatureScale.X = GRenderView->ColorGradingTemperatureScale.X;
             drawCall->TemperatureScale.Y = GRenderView->ColorGradingTemperatureScale.Y;
@@ -154,8 +164,6 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTextur
             drawCall->LuminanceNormalization.Y = 0.0f;
             drawCall->LuminanceNormalization.Z = 0.0f;
             drawCall->LuminanceNormalization.W = 0.0f;
-
-            rcmd->BindResourceTable( &GFrameResources.Resources );
 
             DrawSAQ( PipelineProcedural );
         } );

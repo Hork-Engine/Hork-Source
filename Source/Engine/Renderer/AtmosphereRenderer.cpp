@@ -98,33 +98,21 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
         }
     };
 
-    TRef< IShaderModule > vertexShader, geometryShader, fragmentShader;
+    CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
+    CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
+    SBufferInfo buffers[1];
+    buffers[0].BufferType = UNIFORM_BUFFER;
 
-    AString vertexSource = LoadShader( "gen/atmosphere.vert" );
-    GShaderSources.Clear();
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( vertexSource.CStr() );
-    GShaderSources.Build( VERTEX_SHADER, vertexShader );
-
-    AString geometrySource = LoadShader( "gen/atmosphere.geom" );
-    GShaderSources.Clear();
-    GShaderSources.Add( geometrySource.CStr() );
-    GShaderSources.Build( GEOMETRY_SHADER, geometryShader );
-
-    AString fragmentSource = LoadShader( "gen/atmosphere.frag" );
-    GShaderSources.Clear();
-    GShaderSources.Add( fragmentSource.CStr() );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShader );
-
-    pipelineCI.pVS = vertexShader;
-    pipelineCI.pGS = geometryShader;
-    pipelineCI.pFS = fragmentShader;
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
+
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
+
     GDevice->CreatePipeline( pipelineCI, &m_Pipeline );
 }
 
@@ -136,10 +124,10 @@ void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRe
 
     m_UniformBuffer->Write( &m_UniformBufferData );
 
-    SResourceTable resourceTable;
+    TRef< IResourceTable > resourceTbl;
+    GDevice->CreateResourceTable( &resourceTbl );
 
-    SResourceBufferBinding * uniformBufferBinding = resourceTable.AddBuffer( UNIFORM_BUFFER );
-    uniformBufferBinding->pBuffer = m_UniformBuffer;
+    resourceTbl->BindBuffer( 0, m_UniformBuffer );
 
     SViewport viewport = {};
     viewport.Width = CubemapWidth;
@@ -167,7 +155,7 @@ void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRe
 
     rcmd->BeginRenderPass( renderPassBegin );
     rcmd->SetViewport( viewport );
-    rcmd->BindResourceTable( &resourceTable );
+    rcmd->BindResourceTable( resourceTbl );
 
     // Draw six faces in one draw call
     DrawSphere( m_Pipeline, 6 );

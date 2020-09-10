@@ -33,7 +33,8 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static bool BindMaterialNormalPass( SRenderInstance const * instance ) {
+static bool BindMaterialNormalPass( SRenderInstance const * instance )
+{
     AMaterialGPU * pMaterial = instance->Material;
 
     AN_ASSERT( pMaterial );
@@ -45,18 +46,16 @@ static bool BindMaterialNormalPass( SRenderInstance const * instance ) {
         return false;
     }
 
-    // Bind pipeline
     rcmd->BindPipeline( pPipeline );
 
-    // Bind second vertex buffer
     if ( bSkinned ) {
-        IBuffer * pSecondVertexBuffer = GPUBufferHandle( instance->WeightsBuffer );
+        IBuffer * pSecondVertexBuffer = instance->WeightsBuffer;
         rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, instance->WeightsBufferOffset );
-    } else {
+    }
+    else {
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
     }
 
-    // Bind vertex and index buffers
     BindVertexAndIndexBuffers( instance );
 
     return true;
@@ -77,8 +76,6 @@ void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget
     }
     );
 
-    //normalPass.SetCondition( []() { return RVDrawNormals.GetBool(); } );
-
     normalPass.AddSubpass( { 0 }, // color attachment refs
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
@@ -94,16 +91,9 @@ void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget
                 continue;
             }
 
-            // Bind textures
             BindTextures( instance->MaterialInstance, instance->Material->NormalsPassTextureCount );
-
-            // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-
-            // Set instance uniforms
-            SetInstanceUniforms( instance );
-
-            rcmd->BindResourceTable( &GFrameResources.Resources );
+            BindInstanceUniforms( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;

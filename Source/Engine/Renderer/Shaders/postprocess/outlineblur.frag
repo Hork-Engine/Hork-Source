@@ -37,6 +37,28 @@ layout( location = 0 ) noperspective in vec2 VS_TexCoord;
 
 layout( binding = 0 ) uniform sampler2D Smp_OutlineMask;
 
+vec4 textureRegion( sampler2D s, vec2 texCoord )
+{
+    vec2 tc = min( texCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
+    
+    tc.y = 1.0 - tc.y;
+    
+    return texture( s, tc );
+}
+
+vec2 GaussianBlur13RGEx( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
+    vec2 Offset1 = Direction * 1.411764705882353;
+    vec2 Offset2 = Direction * 3.2941176470588234;
+    vec2 Offset3 = Direction * 5.176470588235294;
+    return textureRegion( Image, TexCoord ).rg * 0.1964825501511404
+       + ( textureRegion( Image, TexCoord + Offset1 ).rg + textureRegion( Image, TexCoord - Offset1 ).rg ) * 0.2969069646728344
+       + ( textureRegion( Image, TexCoord + Offset2 ).rg + textureRegion( Image, TexCoord - Offset2 ).rg ) * 0.09447039785044732
+       + ( textureRegion( Image, TexCoord + Offset3 ).rg + textureRegion( Image, TexCoord - Offset3 ).rg ) * 0.010381362401148057;
+}
+
 void main() {
-    FS_FragColor = GaussianBlur13RG( Smp_OutlineMask, VS_TexCoord, vec2( InvViewportSize.x, 0.0 ) );
+    // Adjust texture coordinates for dynamic resolution
+    //vec2 tc = AdjustTexCoord( VS_TexCoord );
+    
+    FS_FragColor = GaussianBlur13RGEx( Smp_OutlineMask, VS_TexCoord, vec2( InvViewportSize.x * DynamicResolutionRatio.x, 0.0 ) );
 }

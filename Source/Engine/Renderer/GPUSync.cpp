@@ -32,7 +32,8 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-void AGPUSync::Wait() {
+void AGPUSync::Wait()
+{
     if ( !bCreated ) {
         bCreated = true;
 
@@ -55,7 +56,8 @@ void AGPUSync::Wait() {
                                              STextureSwizzle(),
                                              1 ),
                                 &Staging );
-    } else {
+    }
+    else {
         TextureCopy copy = {};
 
         copy.SrcRect.Offset.Lod = 1;
@@ -77,13 +79,15 @@ void AGPUSync::Wait() {
     }
 }
 
-void AGPUSync::SetEvent() {
+void AGPUSync::SetEvent()
+{
     if ( bCreated ) {
         Texture->GenerateLods();
     }
 }
 
-void AGPUSync::Release() {
+void AGPUSync::Release()
+{
     if ( bCreated ) {
         bCreated = false;
 

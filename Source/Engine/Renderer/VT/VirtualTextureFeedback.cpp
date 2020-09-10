@@ -48,7 +48,8 @@ feedbackBuffer->End( Allocator, &FeedbackSize, &FeedbackData );
 
 */
 
-ARuntimeVariable RVFeedbackResolutionFactor( _CTS( "FeedbackResolutionFactor" ), _CTS( "16" ) );
+ARuntimeVariable r_FeedbackResolutionFactorVT( _CTS( "r_FeedbackResolutionFactorVT" ), _CTS( "16" ) );
+ARuntimeVariable r_RenderFeedback( _CTS( "r_RenderFeedback" ), _CTS( "1" ) );
 
 // TODO: Move to project settings?
 //static const RenderCore::INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = RenderCore::TEXTURE_FORMAT_DEPTH16;
@@ -64,13 +65,18 @@ AVirtualTextureFeedback::AVirtualTextureFeedback()
     FeedbackSize[0] = FeedbackSize[1] = 0;
     MappedData[0] = MappedData[1] = 0;
 
+    SPipelineResourceLayout resourceLayout;
+
     SSamplerInfo nearestSampler;
     nearestSampler.Filter = FILTER_NEAREST;
     nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    CreateFullscreenQuadPipeline( &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &nearestSampler, 1 );
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers = &nearestSampler;
+
+    CreateFullscreenQuadPipeline( &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout );
 }
 
 AVirtualTextureFeedback::~AVirtualTextureFeedback()
@@ -84,7 +90,7 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
 {
     using namespace RenderCore;
 
-    float resolutionScale = Math::Max( RVFeedbackResolutionFactor.GetFloat(), 1.0f );
+    float resolutionScale = Math::Max( r_FeedbackResolutionFactorVT.GetFloat(), 1.0f );
     resolutionScale = 1.0f / resolutionScale;
 
     uint32_t feedbackWidth = Width * resolutionScale;
@@ -177,7 +183,7 @@ static bool BindMaterialFeedbackPass( SRenderInstance const * Instance )
     }
 
     if ( bSkinned ) {
-        pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
+        pSecondVertexBuffer = Instance->WeightsBuffer;
         secondBufferOffset = Instance->WeightsBufferOffset;
     }
 
@@ -193,11 +199,9 @@ static bool BindMaterialFeedbackPass( SRenderInstance const * Instance )
     return true;
 }
 
-ARuntimeVariable RVRenderFeedback( _CTS("RenderFeedback"), _CTS("1") );
-
 void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
 {
-    if ( !RVRenderFeedback )return;
+    if ( !r_RenderFeedback )return;
     AFrameGraphTexture * FeedbackDepth_R = FrameGraph.AddExternalResource(
         "VT Feedback depth",
         RenderCore::STextureCreateInfo(),
@@ -260,9 +264,7 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
 
             // Set instance uniforms
-            SetInstanceUniformsFB( instance );
-
-            rcmd->BindResourceTable( &GFrameResources.Resources );
+            BindInstanceUniformsFB( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -322,9 +324,7 @@ void AVirtualTextureFeedback::DrawFeedback( AFrameGraph & FrameGraph, AFrameGrap
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
         using namespace RenderCore;
-        GFrameResources.TextureBindings[0]->pTexture = FeedbackTexture_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, FeedbackTexture_R->Actual() );
 
         DrawSAQ( DrawFeedbackPipeline );
     } );

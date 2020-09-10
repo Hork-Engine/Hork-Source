@@ -737,7 +737,7 @@ void ACanvas::DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, AColor4
 
     if ( font->GetMouseCursorTexData( _Cursor, &offset, &size, &uv[ 0 ], &uv[ 2 ] ) ) {
         Float2 pos = _Position.Floor() - offset;
-        ATextureGPU * textureId = font->GetTexture()->GetGPUResource();
+        RenderCore::ITexture * textureId = font->GetTexture()->GetGPUResource();
         const uint32_t shadow = _ShadowColor.GetDWord();
         DrawList.PushClipRectFullScreen();
         DrawList.AddImage( textureId, pos + Float2( 1, 0 )*_Scale, pos + Float2( 1, 0 )*_Scale + size*_Scale, uv[ 2 ], uv[ 3 ], shadow );

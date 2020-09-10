@@ -55,14 +55,36 @@ float Sobel( vec2 UV ) {
 }
 #endif
  
+vec4 textureRegion( sampler2D s, vec2 texCoord )
+{
+    vec2 tc = min( texCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
+    
+    tc.y = 1.0 - tc.y;
+    
+    return texture( s, tc );
+}
+
+vec2 GaussianBlur13RGEx( sampler2D Image, vec2 TexCoord, vec2 Direction ) {
+    vec2 Offset1 = Direction * 1.411764705882353;
+    vec2 Offset2 = Direction * 3.2941176470588234;
+    vec2 Offset3 = Direction * 5.176470588235294;
+    return textureRegion( Image, TexCoord ).rg * 0.1964825501511404
+       + ( textureRegion( Image, TexCoord + Offset1 ).rg + textureRegion( Image, TexCoord - Offset1 ).rg ) * 0.2969069646728344
+       + ( textureRegion( Image, TexCoord + Offset2 ).rg + textureRegion( Image, TexCoord - Offset2 ).rg ) * 0.09447039785044732
+       + ( textureRegion( Image, TexCoord + Offset3 ).rg + textureRegion( Image, TexCoord - Offset3 ).rg ) * 0.010381362401148057;
+}
+
 void main() {
     // TODO: Move to uniforms?
     const vec3 OutlineColor = vec3( 1.0, 0.456, 0.1 );
     const float Hardness = 4.0;
     
-    vec2 FinalBlur = GaussianBlur13RG( Smp_OutlineBlur, VS_TexCoord, vec2( 0.0, InvViewportSize.y ) );
+    // Adjust texture coordinates for dynamic resolution
+    //vec2 tc = AdjustTexCoord( VS_TexCoord );
+   
+    vec2 FinalBlur = GaussianBlur13RGEx( Smp_OutlineBlur, VS_TexCoord, vec2( 0.0, InvViewportSize.y * DynamicResolutionRatio.y ) );
     
-    vec2 outline = saturate( FinalBlur - texture( Smp_OutlineMask, VS_TexCoord ).rg );
+    vec2 outline = saturate( FinalBlur - textureRegion( Smp_OutlineMask, VS_TexCoord ).rg );
     
     // Additive blending
     //FS_FragColor = vec4( OutlineColor * saturate( (outline.x + outline.y) * Hardness ), 1.0 );
@@ -71,6 +93,6 @@ void main() {
     FS_FragColor = vec4( OutlineColor, saturate( (outline.x + outline.y) * Hardness ) );
     
 #if 0
-    FS_FragColor = vec4( OutlineColor, saturate( Sobel(VS_TexCoord) ) );
+    FS_FragColor = vec4( OutlineColor, saturate( Sobel(tc) ) );
 #endif
 }

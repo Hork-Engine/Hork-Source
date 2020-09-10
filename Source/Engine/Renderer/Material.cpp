@@ -196,12 +196,271 @@ static void CopyMaterialSamplers( SSamplerInfo * Dest, STextureSampler const * S
     }
 }
 
-void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
+static const SVertexAttribInfo VertexAttribsSkinned[] = {
+    {
+        "InPosition",
+        0,              // location
+        0,              // buffer input slot
+        VAT_FLOAT3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Position )
+    },
+    {
+        "InTexCoord",
+        1,              // location
+        0,              // buffer input slot
+        VAT_HALF2,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, TexCoord )
+    },
+    {
+        "InNormal",
+        2,              // location
+        0,              // buffer input slot
+        VAT_HALF3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Normal )
+    },
+    {
+        "InTangent",
+        3,              // location
+        0,              // buffer input slot
+        VAT_HALF3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Tangent )
+    },
+    {
+        "InHandedness",
+        4,              // location
+        0,              // buffer input slot
+        VAT_BYTE1,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Handedness )
+    },
+    {
+        "InJointIndices",
+        5,              // location
+        1,              // buffer input slot
+        VAT_UBYTE4,
+        VAM_INTEGER,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertexSkin, JointIndices )
+    },
+    {
+        "InJointWeights",
+        6,              // location
+        1,              // buffer input slot
+        VAT_UBYTE4N,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertexSkin, JointWeights )
+    }
+};
+
+static const SVertexAttribInfo VertexAttribsStatic[] = {
+    {
+        "InPosition",
+        0,              // location
+        0,              // buffer input slot
+        VAT_FLOAT3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Position )
+    },
+    {
+        "InTexCoord",
+        1,              // location
+        0,              // buffer input slot
+        VAT_HALF2,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, TexCoord )
+    },
+    {
+        "InNormal",
+        2,              // location
+        0,              // buffer input slot
+        VAT_HALF3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Normal )
+    },
+    {
+        "InTangent",
+        3,              // location
+        0,              // buffer input slot
+        VAT_HALF3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Tangent )
+    },
+    {
+        "InHandedness",
+        4,              // location
+        0,              // buffer input slot
+        VAT_BYTE1,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Handedness )
+    }
+};
+
+static const SVertexAttribInfo VertexAttribsStaticLightmap[] = {
+    {
+        "InPosition",
+        0,              // location
+        0,              // buffer input slot
+        VAT_FLOAT3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Position )
+    },
+    {
+        "InTexCoord",
+        1,              // location
+        0,              // buffer input slot
+        VAT_HALF2,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, TexCoord )
+    },
+    {
+        "InNormal",
+        2,              // location
+        0,              // buffer input slot
+        VAT_HALF3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Normal )
+    },
+    {
+        "InTangent",
+        3,              // location
+        0,              // buffer input slot
+        VAT_HALF3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Tangent )
+    },
+    {
+        "InHandedness",
+        4,              // location
+        0,              // buffer input slot
+        VAT_BYTE1,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Handedness )
+    },
+    {
+        "InLightmapTexCoord",
+        5,              // location
+        1,              // buffer input slot
+        VAT_FLOAT2,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertexUV, TexCoord )
+    }
+};
+
+static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
+    {
+        "InPosition",
+        0,              // location
+        0,              // buffer input slot
+        VAT_FLOAT3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Position )
+    },
+    {
+        "InTexCoord",
+        1,              // location
+        0,              // buffer input slot
+        VAT_HALF2,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, TexCoord )
+    },
+    {
+        "InNormal",
+        2,              // location
+        0,              // buffer input slot
+        VAT_HALF3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Normal )
+    },
+    {
+        "InTangent",
+        3,              // location
+        0,              // buffer input slot
+        VAT_HALF3,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Tangent )
+    },
+    {
+        "InHandedness",
+        4,              // location
+        0,              // buffer input slot
+        VAT_BYTE1,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertex, Handedness )
+    },
+    {
+        "InVertexLight",
+        5,              // location
+        1,              // buffer input slot
+        VAT_UBYTE4,//VAT_UBYTE4N,
+        VAM_INTEGER,
+        0,              // InstanceDataStepRate
+        AN_OFS( SMeshVertexLight, VertexLight )
+    }
+};
+
+static const SVertexAttribInfo VertexAttribsHUD[] = {
+    {
+        "InPosition",
+        0,              // location
+        0,              // buffer input slot
+        VAT_FLOAT2,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SHUDDrawVert, Position )
+    },
+    {
+        "InTexCoord",
+        1,              // location
+        0,              // buffer input slot
+        VAT_FLOAT2,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SHUDDrawVert, TexCoord )
+    },
+    {
+        "InColor",
+        2,              // location
+        0,              // buffer input slot
+        VAT_UBYTE4N,
+        VAM_FLOAT,
+        0,              // InstanceDataStepRate
+        AN_OFS( SHUDDrawVert, Color )
+    }
+};
+
+void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
-    rsd.bScissorEnable = SCISSOR_TEST;
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.DepthFunc = CMPFUNC_GEQUAL;//CMPFUNC_GREATER;
@@ -222,201 +481,84 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
     pipelineCI.pVertexBindings = vertexBinding;
 
-    static const SVertexAttribInfo vertexAttribsSkinned[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        },
-        {
-            "InJointIndices",
-            5,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4,
-            VAM_INTEGER,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexSkin, JointIndices )
-        },
-        {
-            "InJointWeights",
-            6,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4N,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexSkin, JointWeights )
-        }
-    };
-
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        }
-    };
-
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribsSkinned );
-        pipelineCI.pVertexAttribs = vertexAttribsSkinned;
-    } else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = VertexAttribsSkinned;
+    }
+    else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    if ( _Tessellation )
-    {
-        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+    if ( _Tessellation ) {
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
-
-        pipelineCI.pTCS = tessControlShaderModule;
-        pipelineCI.pTES = tessEvalShaderModule;
+        sources.Append( _SourceCode );
+        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     if ( _AlphaMasking ) {
-        TRef< IShaderModule > fragmentShaderModule;
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
-
-        pipelineCI.pFS = fragmentShaderModule;
+        sources.Append( _SourceCode );
+        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
-    pipelineCI.pVS = vertexShaderModule;
-
     SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
-    pipelineCI.SS.NumSamplers = NumSamplers;
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[3];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+
+    pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
-    rsd.bScissorEnable = SCISSOR_TEST;
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.DepthFunc = CMPFUNC_GEQUAL;//CMPFUNC_GREATER;
@@ -434,182 +576,55 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
     pipelineCI.pVertexBindings = vertexBinding;
 
-    static const SVertexAttribInfo vertexAttribsSkinned[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        },
-        {
-            "InJointIndices",
-            5,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4,
-            VAM_INTEGER,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexSkin, JointIndices )
-        },
-        {
-            "InJointWeights",
-            6,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4N,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexSkin, JointWeights )
-        }
-    };
-
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        }
-    };
-
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribsSkinned );
-        pipelineCI.pVertexAttribs = vertexAttribsSkinned;
-    } else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = VertexAttribsSkinned;
+    }
+    else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
-    GShaderSources.Add( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
+    sources.Append( "#define DEPTH_WITH_VELOCITY_MAP\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    pipelineCI.pVS = vertexShaderModule;
-
-    if ( _Tessellation )
-    {
-        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
-        GShaderSources.Add( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+    if ( _Tessellation ) {
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
+        sources.Append( "#define DEPTH_WITH_VELOCITY_MAP\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
-        GShaderSources.Add( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
+        sources.Append( "#define DEPTH_WITH_VELOCITY_MAP\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
-
-        pipelineCI.pTCS = tessControlShaderModule;
-        pipelineCI.pTES = tessEvalShaderModule;
+        sources.Append( _SourceCode );
+        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
-    TRef< IShaderModule > fragmentShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_DEPTH\n" );
-    GShaderSources.Add( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
+    sources.Append( "#define DEPTH_WITH_VELOCITY_MAP\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
-
-    pipelineCI.pFS = fragmentShaderModule;
+    sources.Append( _SourceCode );
+    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
@@ -619,18 +634,33 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
-    pipelineCI.SS.NumSamplers = NumSamplers;
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[8];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+    buffers[3].BufferType = UNIFORM_BUFFER; // shadow cascade
+    buffers[4].BufferType = UNIFORM_BUFFER; // light buffer
+    buffers[5].BufferType = UNIFORM_BUFFER; // IBL buffer
+    buffers[6].BufferType = UNIFORM_BUFFER; // VT buffer
+    buffers[7].BufferType = UNIFORM_BUFFER; // skeleton for motion blur
+
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
-    rsd.bScissorEnable = SCISSOR_TEST;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
     bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
@@ -653,201 +683,85 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     pipelineCI.pVertexBindings = vertexBinding;
 
     if ( _Skinned ) {
-        static const SVertexAttribInfo vertexAttribs[] = {
-            {
-                "InPosition",
-                0,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Position )
-            },
-            {
-                "InTexCoord",
-                1,              // location
-                0,              // buffer input slot
-                VAT_HALF2,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, TexCoord )
-            },
-            {
-                "InNormal",
-                2,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
-            },
-            {
-                "InTangent",
-                3,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InHandedness",
-                4,              // location
-                0,              // buffer input slot
-                VAT_BYTE1,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Handedness )
-            },
-            {
-                "InJointIndices",
-                5,              // location
-                1,              // buffer input slot
-                VAT_UBYTE4,
-                VAM_INTEGER,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertexSkin, JointIndices )
-            },
-            {
-                "InJointWeights",
-                6,              // location
-                1,              // buffer input slot
-                VAT_UBYTE4N,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertexSkin, JointWeights )
-            }
-        };
-
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
-    } else {
-        static const SVertexAttribInfo vertexAttribs[] = {
-            {
-                "InPosition",
-                0,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Position )
-            },
-            {
-                "InTexCoord",
-                1,              // location
-                0,              // buffer input slot
-                VAT_HALF2,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, TexCoord )
-            },
-            {
-                "InNormal",
-                2,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
-            },
-            {
-                "InTangent",
-                3,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InHandedness",
-                4,              // location
-                0,              // buffer input slot
-                VAT_BYTE1,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Handedness )
-            }
-        };
-
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = VertexAttribsSkinned;
+    }
+    else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule, tessControlShaderModule, tessEvalShaderModule, geometryShaderModule, fragmentShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( GEOMETRY_SHADER, geometryShaderModule );
+    sources.Append( _SourceCode );
+    CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+    sources.Append( _SourceCode );
+    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
-    if ( _Tessellation )
-    {
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
+    if ( _Tessellation ) {
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_WIREFRAME\n" );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
-
-        pipelineCI.pTCS = tessControlShaderModule;
-        pipelineCI.pTES = tessEvalShaderModule;        
+        sources.Append( _SourceCode );
+        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pGS = geometryShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
-
     SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
-    pipelineCI.SS.NumSamplers = NumSamplers;
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    SBufferInfo buffers[3];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+
+    pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
-
-    SRasterizerStateInfo & rsd = pipelineCI.RS;
-    rsd.bScissorEnable = SCISSOR_TEST;
+    TPodArray< const char * > sources;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
     bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
@@ -870,176 +784,67 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     pipelineCI.pVertexBindings = vertexBinding;
 
     if ( _Skinned ) {
-        static const SVertexAttribInfo vertexAttribs[] = {
-            {
-                "InPosition",
-                0,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Position )
-            },
-            {
-                "InTexCoord",
-                1,              // location
-                0,              // buffer input slot
-                VAT_HALF2,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, TexCoord )
-            },
-            {
-                "InNormal",
-                2,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
-            },
-            {
-                "InTangent",
-                3,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InHandedness",
-                4,              // location
-                0,              // buffer input slot
-                VAT_BYTE1,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Handedness )
-            },
-            {
-                "InJointIndices",
-                5,              // location
-                1,              // buffer input slot
-                VAT_UBYTE4,
-                VAM_INTEGER,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertexSkin, JointIndices )
-            },
-            {
-                "InJointWeights",
-                6,              // location
-                1,              // buffer input slot
-                VAT_UBYTE4N,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertexSkin, JointWeights )
-            }
-        };
-
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
-    } else {
-        static const SVertexAttribInfo vertexAttribs[] = {
-            {
-                "InPosition",
-                0,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Position )
-            },
-            {
-                "InTexCoord",
-                1,              // location
-                0,              // buffer input slot
-                VAT_HALF2,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, TexCoord )
-            },
-            {
-                "InNormal",
-                2,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
-            },
-            {
-                "InTangent",
-                3,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InHandedness",
-                4,              // location
-                0,              // buffer input slot
-                VAT_BYTE1,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Handedness )
-            }
-        };
-
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = VertexAttribsSkinned;
+    }
+    else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule, geometryShaderModule, fragmentShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_NORMALS\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_NORMALS\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_NORMALS\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_NORMALS\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( GEOMETRY_SHADER, geometryShaderModule );
+    sources.Append( _SourceCode );
+    CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_NORMALS\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_NORMALS\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+    sources.Append( _SourceCode );
+    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_POINTS;
     inputAssembly.bPrimitiveRestart = false;
 
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pGS = geometryShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
-
     SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
-    pipelineCI.SS.NumSamplers = NumSamplers;
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    SBufferInfo buffers[3];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+
+    pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_DISABLED;
@@ -1052,58 +857,22 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     dssd.bDepthEnable = false;
     dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
 
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, TexCoord )
-        },
-        {
-            "InColor",
-            2,              // location
-            0,              // buffer input slot
-            VAT_UBYTE4N,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, Color )
-        }
-    };
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( VertexAttribsHUD, AN_ARRAY_SIZE( VertexAttribsHUD ) );
 
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ) );
-
-    TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+    sources.Append( _SourceCode );
+    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
 
     SVertexBindingInfo vertexBinding[1] = {};
 
@@ -1114,20 +883,27 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsHUD );
+    pipelineCI.pVertexAttribs = VertexAttribsHUD;
 
     SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
-    pipelineCI.SS.NumSamplers = NumSamplers;
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    SBufferInfo buffers[2];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    pipelineCI.ResourceLayout.NumBuffers = 2;
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-static RenderCore::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending ) {
+static RenderCore::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending )
+{
     switch ( _Blending ) {
     case COLOR_BLENDING_ALPHA:
         return RenderCore::BLENDING_ALPHA;
@@ -1151,12 +927,13 @@ static RenderCore::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending )
     return RenderCore::BLENDING_NO_BLEND;
 }
 
-void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
-    rsd.bScissorEnable = SCISSOR_TEST;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
     if ( _Translucent ) {        
@@ -1165,23 +942,20 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
 
-#ifdef DEPTH_PREPASS
+    // Depth pre-pass
     dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
     if ( _Translucent ) {
         dssd.DepthFunc = CMPFUNC_GREATER;
-    } else {
+    }
+    else {
         dssd.DepthFunc = CMPFUNC_EQUAL;
     }
-#else
-    dssd.DepthFunc = CMPFUNC_GREATER;
-#endif
+
     dssd.bDepthEnable = _DepthTest;
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
-
-    TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -1194,187 +968,65 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if ( _Skinned ) {
-        static const SVertexAttribInfo vertexAttribs[] = {
-            {
-                "InPosition",
-                0,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Position )
-            },
-            {
-                "InTexCoord",
-                1,              // location
-                0,              // buffer input slot
-                VAT_HALF2,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, TexCoord )
-            },
-            {
-                "InNormal",
-                2,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
-            },
-            {
-                "InTangent",
-                3,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InHandedness",
-                4,              // location
-                0,              // buffer input slot
-                VAT_BYTE1,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Handedness )
-            },
-            {
-                "InJointIndices",
-                5,              // location
-                1,              // buffer input slot
-                VAT_UBYTE4,
-                VAM_INTEGER,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertexSkin, JointIndices )
-            },
-            {
-                "InJointWeights",
-                6,              // location
-                1,              // buffer input slot
-                VAT_UBYTE4N,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertexSkin, JointWeights )
-            }
-        };
-
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = VertexAttribsSkinned;
 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
-        GShaderSources.Add( vertexAttribsShaderString.CStr() );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Append( vertexAttribsShaderString.CStr() );
+        sources.Append( _SourceCode );
+        CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Append( _SourceCode );
+        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 2;
-    } else {
-        static const SVertexAttribInfo vertexAttribs[] = {
-            {
-                "InPosition",
-                0,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Position )
-            },
-            {
-                "InTexCoord",
-                1,              // location
-                0,              // buffer input slot
-                VAT_HALF2,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, TexCoord )
-            },
-            {
-                "InNormal",
-                2,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
-            },
-            {
-                "InTangent",
-                3,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InHandedness",
-                4,              // location
-                0,              // buffer input slot
-                VAT_BYTE1,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Handedness )
-            }
-        };
-
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+    }
+    else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.pVertexAttribs = VertexAttribsStatic;
 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( vertexAttribsShaderString.CStr() );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Append( vertexAttribsShaderString.CStr() );
+        sources.Append( _SourceCode );
+        CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Append( _SourceCode );
+        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 1;
     }
 
-    if ( _Tessellation )
-    {
-        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
+    if ( _Tessellation ) {
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
-
-        pipelineCI.pTCS = tessControlShaderModule;
-        pipelineCI.pTES = tessEvalShaderModule;
+        sources.Append( _SourceCode );
+        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     pipelineCI.pVertexBindings = vertexBinding;
-
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
 
     SSamplerInfo samplers[19];
 
@@ -1401,18 +1053,32 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
 
-    pipelineCI.SS.NumSamplers = AN_ARRAY_SIZE( samplers );
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[7];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+    buffers[3].BufferType = UNIFORM_BUFFER; // shadow cascade
+    buffers[4].BufferType = UNIFORM_BUFFER; // light buffer
+    buffers[5].BufferType = UNIFORM_BUFFER; // IBL buffer
+    buffers[6].BufferType = UNIFORM_BUFFER; // VT buffer
+
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
-    rsd.bScissorEnable = SCISSOR_TEST;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
     if ( _Translucent ) {
@@ -1421,121 +1087,52 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
 
-#ifdef DEPTH_PREPASS
+    // Depth pre-pass
     dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
     if ( _Translucent ) {
         dssd.DepthFunc = CMPFUNC_GREATER;
-    } else {
+    }
+    else {
         dssd.DepthFunc = CMPFUNC_EQUAL;
     }
-#else
-    dssd.DepthFunc = CMPFUNC_GREATER;
-#endif
+
     dssd.bDepthEnable = _DepthTest;
 
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        },
-        {
-            "InLightmapTexCoord",
-            5,              // location
-            1,              // buffer input slot
-            VAT_FLOAT2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexUV, TexCoord )
-        }
-    };
-
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStaticLightmap );
+    pipelineCI.pVertexAttribs = VertexAttribsStaticLightmap;
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+    sources.Append( "#define USE_LIGHTMAP\n" );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-    GShaderSources.Add( "#define USE_LIGHTMAP\n" );
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+    sources.Append( "#define USE_LIGHTMAP\n" );
+    sources.Append( _SourceCode );
+    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-    GShaderSources.Add( "#define USE_LIGHTMAP\n" );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+    if ( _Tessellation ) {
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Append( "#define USE_LIGHTMAP\n" );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
-    if ( _Tessellation )
-    {
-        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( "#define USE_LIGHTMAP\n" );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( "#define USE_LIGHTMAP\n" );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
-
-        pipelineCI.pTCS = tessControlShaderModule;
-        pipelineCI.pTES = tessEvalShaderModule;
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Append( "#define USE_LIGHTMAP\n" );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -1575,18 +1172,32 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
 
-    pipelineCI.SS.NumSamplers = AN_ARRAY_SIZE( samplers );
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[7];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+    buffers[3].BufferType = UNIFORM_BUFFER; // shadow cascade
+    buffers[4].BufferType = UNIFORM_BUFFER; // light buffer
+    buffers[5].BufferType = UNIFORM_BUFFER; // IBL buffer
+    buffers[6].BufferType = UNIFORM_BUFFER; // VT buffer
+
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
-    rsd.bScissorEnable = SCISSOR_TEST;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
     if ( _Translucent ) {
@@ -1595,121 +1206,52 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
 
-#ifdef DEPTH_PREPASS
+    // Depth pre-pass
     dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
     if ( _Translucent ) {
         dssd.DepthFunc = CMPFUNC_GREATER;
-    } else {
+    }
+    else {
         dssd.DepthFunc = CMPFUNC_EQUAL;
     }
-#else
-    dssd.DepthFunc = CMPFUNC_GREATER;
-#endif
+
     dssd.bDepthEnable = _DepthTest;
 
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        },
-        {
-            "InVertexLight",
-            5,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4,//VAT_UBYTE4N,
-            VAM_INTEGER,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexLight, VertexLight )
-        }
-    };
-
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStaticVertexLight );
+    pipelineCI.pVertexAttribs = VertexAttribsStaticVertexLight;
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+    sources.Append( "#define USE_VERTEX_LIGHT\n" );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-    GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+    sources.Append( "#define USE_VERTEX_LIGHT\n" );
+    sources.Append( _SourceCode );
+    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-    GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+    if ( _Tessellation ) {
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Append( "#define USE_VERTEX_LIGHT\n" );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
-    if ( _Tessellation )
-    {
-        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_COLOR\n" );
-        GShaderSources.Add( "#define USE_VERTEX_LIGHT\n" );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
-
-        pipelineCI.pTCS = tessControlShaderModule;
-        pipelineCI.pTES = tessEvalShaderModule;
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Append( "#define USE_VERTEX_LIGHT\n" );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
-
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -1749,17 +1291,31 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
 
-    pipelineCI.SS.NumSamplers = AN_ARRAY_SIZE( samplers );
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[7];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+    buffers[3].BufferType = UNIFORM_BUFFER; // shadow cascade
+    buffers[4].BufferType = UNIFORM_BUFFER; // light buffer
+    buffers[5].BufferType = UNIFORM_BUFFER; // IBL buffer
+    buffers[6].BufferType = UNIFORM_BUFFER; // VT buffer
+
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
-    rsd.bScissorEnable = SCISSOR_TEST;
 #if defined SHADOWMAP_VSM
     //Desc.CullMode = POLYGON_CULL_FRONT; // Less light bleeding
     Desc.CullMode = POLYGON_CULL_DISABLED;
@@ -1792,126 +1348,13 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
     pipelineCI.pVertexBindings = vertexBinding;
 
-    static const SVertexAttribInfo vertexAttribsSkinned[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        },
-        {
-            "InJointIndices",
-            5,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4,
-            VAM_INTEGER,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexSkin, JointIndices )
-        },
-        {
-            "InJointWeights",
-            6,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4N,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexSkin, JointWeights )
-        }
-    };
-
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        },
-    };
-
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribsSkinned );
-        pipelineCI.pVertexAttribs = vertexAttribsSkinned;
-    } else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = VertexAttribsSkinned;
+    }
+    else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -1920,54 +1363,39 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule;
-    TRef< IShaderModule > geometryShaderModule;
-    TRef< IShaderModule > fragmentShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    pipelineCI.pVS = vertexShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( GEOMETRY_SHADER, geometryShaderModule );
+    sources.Append( _SourceCode );
+    CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
-    pipelineCI.pGS = geometryShaderModule;
-
-    if ( _Tessellation )
-    {
-        TRef< IShaderModule > tessControlShaderModule;
-        TRef< IShaderModule > tessEvalShaderModule;
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+    if ( _Tessellation ) {
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
-
-        pipelineCI.pTCS = tessControlShaderModule;
-        pipelineCI.pTES = tessEvalShaderModule;
+        sources.Append( _SourceCode );
+        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     bool bVSM = false;
@@ -1977,33 +1405,42 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 #endif
 
     if ( _ShadowMasking || bVSM ) {
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_SHADOWMAP\n" );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
-
-        pipelineCI.pFS = fragmentShaderModule;
+        sources.Append( _SourceCode );
+        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
     }
 
     SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
-    pipelineCI.SS.NumSamplers = NumSamplers;
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[4];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+    buffers[3].BufferType = UNIFORM_BUFFER; // shadow cascade
+
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
-    rsd.bScissorEnable = SCISSOR_TEST;
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.DepthWriteMask = DEPTH_WRITE_ENABLE;
@@ -2013,8 +1450,6 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
-
-    TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -2027,180 +1462,78 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if ( _Skinned ) {
-        static const SVertexAttribInfo vertexAttribs[] = {
-            {
-                "InPosition",
-                0,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Position )
-            },
-            {
-                "InTexCoord",
-                1,              // location
-                0,              // buffer input slot
-                VAT_HALF2,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, TexCoord )
-            },
-            {
-                "InNormal",
-                2,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
-            },
-            {
-                "InTangent",
-                3,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InHandedness",
-                4,              // location
-                0,              // buffer input slot
-                VAT_BYTE1,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Handedness )
-            },
-            {
-                "InJointIndices",
-                5,              // location
-                1,              // buffer input slot
-                VAT_UBYTE4,
-                VAM_INTEGER,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertexSkin, JointIndices )
-            },
-            {
-                "InJointWeights",
-                6,              // location
-                1,              // buffer input slot
-                VAT_UBYTE4N,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertexSkin, JointWeights )
-            }
-        };
-
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = VertexAttribsSkinned;
 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_FEEDBACK\n" );
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
-        GShaderSources.Add( vertexAttribsShaderString.CStr() );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Append( vertexAttribsShaderString.CStr() );
+        sources.Append( _SourceCode );
+        CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_FEEDBACK\n" );
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Append( _SourceCode );
+        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 2;
-    } else {
-        static const SVertexAttribInfo vertexAttribs[] = {
-            {
-                "InPosition",
-                0,              // location
-                0,              // buffer input slot
-                VAT_FLOAT3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Position )
-            },
-            {
-                "InTexCoord",
-                1,              // location
-                0,              // buffer input slot
-                VAT_HALF2,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, TexCoord )
-            },
-            {
-                "InNormal",
-                2,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Normal )
-            },
-            {
-                "InTangent",
-                3,              // location
-                0,              // buffer input slot
-                VAT_HALF3,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Tangent )
-            },
-            {
-                "InHandedness",
-                4,              // location
-                0,              // buffer input slot
-                VAT_BYTE1,
-                VAM_FLOAT,
-                0,              // InstanceDataStepRate
-                AN_OFS( SMeshVertex, Handedness )
-            }
-        };
-
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+    }
+    else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.pVertexAttribs = VertexAttribsStatic;
 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_FEEDBACK\n" );
-        GShaderSources.Add( vertexAttribsShaderString.CStr() );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
+        sources.Append( vertexAttribsShaderString.CStr() );
+        sources.Append( _SourceCode );
+        CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_FEEDBACK\n" );
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
+        sources.Append( _SourceCode );
+        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 1;
     }
 
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.pVS = vertexShaderModule;
-    pipelineCI.pFS = fragmentShaderModule;
-
     SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
-    pipelineCI.SS.NumSamplers = NumSamplers;
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[7];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+    buffers[3].BufferType = UNIFORM_BUFFER; // shadow cascade
+    buffers[4].BufferType = UNIFORM_BUFFER; // light buffer
+    buffers[5].BufferType = UNIFORM_BUFFER; // IBL buffer
+    buffers[6].BufferType = UNIFORM_BUFFER; // VT buffer
+
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers ) {
+void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
+{
     SPipelineCreateInfo pipelineCI;
+    TPodArray< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
-    rsd.bScissorEnable = SCISSOR_TEST;
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
 #if 0
@@ -2226,189 +1559,71 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
     pipelineCI.pVertexBindings = vertexBinding;
 
-    static const SVertexAttribInfo vertexAttribsSkinned[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        },
-        {
-            "InJointIndices",
-            5,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4,
-            VAM_INTEGER,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexSkin, JointIndices )
-        },
-        {
-            "InJointWeights",
-            6,              // location
-            1,              // buffer input slot
-            VAT_UBYTE4N,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertexSkin, JointWeights )
-        }
-    };
-
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Position )
-        },
-        {
-            "InTexCoord",
-            1,              // location
-            0,              // buffer input slot
-            VAT_HALF2,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, TexCoord )
-        },
-        {
-            "InNormal",
-            2,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Normal )
-        },
-        {
-            "InTangent",
-            3,              // location
-            0,              // buffer input slot
-            VAT_HALF3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Tangent )
-        },
-        {
-            "InHandedness",
-            4,              // location
-            0,              // buffer input slot
-            VAT_BYTE1,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            AN_OFS( SMeshVertex, Handedness )
-        }
-    };
-
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribsSkinned );
-        pipelineCI.pVertexAttribs = vertexAttribsSkinned;
-    } else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-        pipelineCI.pVertexAttribs = vertexAttribs;
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.pVertexAttribs = VertexAttribsSkinned;
+    }
+    else {
+        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
-    TRef< IShaderModule > vertexShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_OUTLINE\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( vertexAttribsShaderString.CStr() );
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( VERTEX_SHADER, vertexShaderModule );
+    sources.Append( vertexAttribsShaderString.CStr() );
+    sources.Append( _SourceCode );
+    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
-    if ( _Tessellation )
-    {
-        TRef< IShaderModule > tessControlShaderModule, tessEvalShaderModule;
-
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_OUTLINE\n" );
+    if ( _Tessellation ) {
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_CONTROL_SHADER, tessControlShaderModule );
+        sources.Append( _SourceCode );
+        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
-        GShaderSources.Clear();
-        GShaderSources.Add( "#define MATERIAL_PASS_OUTLINE\n" );
+        sources.Clear();
+        sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
         if ( _Skinned ) {
-            GShaderSources.Add( "#define SKINNED_MESH\n" );
+            sources.Append( "#define SKINNED_MESH\n" );
         }
-        GShaderSources.Add( _SourceCode );
-        GShaderSources.Build( TESS_EVALUATION_SHADER, tessEvalShaderModule );
-
-        pipelineCI.pTCS = tessControlShaderModule;
-        pipelineCI.pTES = tessEvalShaderModule;
+        sources.Append( _SourceCode );
+        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
-    TRef< IShaderModule > fragmentShaderModule;
-
-    GShaderSources.Clear();
-    GShaderSources.Add( "#define MATERIAL_PASS_OUTLINE\n" );
+    sources.Clear();
+    sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
     if ( _Skinned ) {
-        GShaderSources.Add( "#define SKINNED_MESH\n" );
+        sources.Append( "#define SKINNED_MESH\n" );
     }
-    GShaderSources.Add( _SourceCode );
-    GShaderSources.Build( FRAGMENT_SHADER, fragmentShaderModule );
-
-    pipelineCI.pFS = fragmentShaderModule;
+    sources.Append( _SourceCode );
+    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
-    pipelineCI.pVS = vertexShaderModule;
-
     SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
-    pipelineCI.SS.NumSamplers = NumSamplers;
-    pipelineCI.SS.Samplers = samplers;
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[3];
+    buffers[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    buffers[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    buffers[2].BufferType = UNIFORM_BUFFER; // skeleton
+
+    pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
+    pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }

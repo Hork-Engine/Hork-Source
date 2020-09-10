@@ -212,7 +212,7 @@ public:
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( SMeshVertexUV const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
-    void GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     AIndexedMesh * GetSourceMesh() { return SourceMesh; }
 
@@ -258,7 +258,7 @@ public:
     bool SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation );
     bool WriteVertexData( SMeshVertexLight const * _Vertices, int _VerticesCount, int _StartVertexLocation );
 
-    void GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     AIndexedMesh * GetSourceMesh() { return SourceMesh; }
 
@@ -460,9 +460,9 @@ public:
     BvAxisAlignedBox const & GetBoundingBox() const;
 
     /** Get mesh GPU buffers */
-    void GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
-    void GetIndexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
-    void GetWeightsBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
+    void GetIndexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
+    void GetWeightsBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     /** Check ray intersection. Result is unordered by distance to save performance */
     bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;
@@ -541,10 +541,10 @@ public:
     BvAxisAlignedBox BoundingBox;
 
     /** Get mesh GPU buffers */
-    void GetVertexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     /** Get mesh GPU buffers */
-    void GetIndexBufferGPU( ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetIndexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     /** Check ray intersection. Result is unordered by distance to save performance */
     bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;

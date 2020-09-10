@@ -40,8 +40,40 @@ class ATextureGLImpl;
 class ARenderPassGLImpl;
 class APipelineGLImpl;
 
-class AImmediateContextGLImpl final : public IImmediateContext {
+class AResourceTableGLImpl final : public IResourceTable
+{
+    friend class AImmediateContextGLImpl;
 
+public:
+    AResourceTableGLImpl( ADeviceGLImpl * _Device );
+    ~AResourceTableGLImpl();
+
+    void BindTexture( unsigned int Slot, ITextureBase const * Texture ) override;
+
+    void BindImage( unsigned int Slot, ITextureBase const * Texture, uint16_t Lod = 0, bool bLayered = false, uint16_t LayerIndex = 0 ) override;
+
+    void BindBuffer( int Slot, IBuffer const * Buffer, size_t Offset = 0, size_t Size = 0 ) override;
+
+private:
+    ADeviceGLImpl * pDevice;
+
+    unsigned int TextureBindings[MAX_SAMPLER_SLOTS];
+    uint32_t     TextureBindingUIDs[MAX_SAMPLER_SLOTS];
+
+    unsigned int ImageBindings[MAX_IMAGE_SLOTS];
+    uint32_t     ImageBindingUIDs[MAX_IMAGE_SLOTS];
+    uint16_t     ImageLod[MAX_IMAGE_SLOTS];
+    uint16_t     ImageLayerIndex[MAX_IMAGE_SLOTS];
+    bool         ImageLayered[MAX_IMAGE_SLOTS];
+
+    unsigned int BufferBindings[MAX_BUFFER_SLOTS];
+    uint32_t     BufferBindingUIDs[MAX_BUFFER_SLOTS];
+    ptrdiff_t    BufferBindingOffsets[MAX_BUFFER_SLOTS];
+    ptrdiff_t    BufferBindingSizes[MAX_BUFFER_SLOTS];
+};
+
+class AImmediateContextGLImpl final : public IImmediateContext
+{
     friend class ADeviceGLImpl;
     friend class AFramebufferGLImpl;
     friend class APipelineGLImpl;
@@ -84,7 +116,9 @@ public:
     // Shader resources
     //
 
-    void BindResourceTable( SResourceTable const * _ResourceTable ) override;
+    IResourceTable * GetRootResourceTable() override;
+
+    void BindResourceTable( IResourceTable * _ResourceTable ) override;
 
     //
     // Viewport
@@ -375,6 +409,7 @@ private:
 
     void UpdateVertexBuffers();
     void UpdateVertexAndIndexBuffers();
+    void UpdateShaderBindings();
 
     ADeviceGLImpl *           pDevice;
     struct SDL_Window *       pWindow;
@@ -389,10 +424,14 @@ private:
     ptrdiff_t *               TmpPointers;
     ptrdiff_t *               TmpPointers2;
 
-    unsigned int              BufferBindings[MAX_BUFFER_SLOTS];
+    uint32_t                  BufferBindingUIDs[MAX_BUFFER_SLOTS];
+    ptrdiff_t                 BufferBindingOffsets[MAX_BUFFER_SLOTS];
+    ptrdiff_t                 BufferBindingSizes[MAX_BUFFER_SLOTS];
     //unsigned int              SampleBindings[MAX_SAMPLER_SLOTS];
-    unsigned int              TextureBindings[MAX_SAMPLER_SLOTS];
+    //unsigned int              TextureBindings[MAX_SAMPLER_SLOTS];
 
+    TRef< IResourceTable >    RootResourceTable;
+    TRef< AResourceTableGLImpl > CurrentResourceTable;
     APipelineGLImpl *         CurrentPipeline;
     struct SVertexArrayObject*CurrentVAO;
     uint8_t                   NumPatchVertices;       // count of patch vertices to set by glPatchParameteri
@@ -422,8 +461,6 @@ private:
         SRasterizerStateInfo const *   RasterizerState;        // current rasterizer state binding
         SDepthStencilStateInfo const * DepthStencilState;      // current depth-stencil state binding
     } Binding;
-
-    unsigned int              BufferBinding[ 2 ];
 
     COLOR_CLAMP               ColorClamp;
 

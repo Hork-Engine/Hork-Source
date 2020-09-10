@@ -35,7 +35,7 @@ SOFTWARE.
 
 #include <Core/Public/Logger.h>
 
-ARuntimeVariable RVFramebufferTextureFormat( _CTS( "FramebufferTextureFormat" ), _CTS( "0" ) );
+ARuntimeVariable r_LightTextureFormat( _CTS( "r_LightTextureFormat" ), _CTS( "0" ), 0, _CTS( "0 - R11F_G11F_B10F, 1 - RGB16F" ) );
 
 using namespace RenderCore;
 
@@ -44,7 +44,8 @@ ALightRenderer::ALightRenderer()
     CreateLookupBRDF();
 }
 
-static Float2 Hammersley( int k, int n ) {
+static Float2 Hammersley( int k, int n )
+{
     float u = 0;
     float p = 0.5;
     for ( int kk = k; kk; p *= 0.5f, kk /= 2 ) {
@@ -57,7 +58,8 @@ static Float2 Hammersley( int k, int n ) {
     return Float2( x, y );
 }
 
-static Float3 ImportanceSampleGGX( Float2 const & Xi, float Roughness, Float3 const & N ) {
+static Float3 ImportanceSampleGGX( Float2 const & Xi, float Roughness, Float3 const & N )
+{
     float a = Roughness * Roughness;
     float Phi = 2 * Math::_PI * Xi.X;
     float CosTheta = sqrt( (1 - Xi.Y) / (1 + (a*a - 1) * Xi.Y) );
@@ -136,7 +138,8 @@ static Float2 IntegrateBRDF( float NdotV, float roughness )
     return Float2( A, B );
 }
 
-void ALightRenderer::CreateLookupBRDF() {
+void ALightRenderer::CreateLookupBRDF()
+{
     AFileStream f;
 
     int sizeX = 512;
@@ -170,7 +173,8 @@ void ALightRenderer::CreateLookupBRDF() {
         if ( f.OpenWrite( "brdf.bin" ) ) {
             f.WriteBuffer( data, sizeInBytes );
         }
-    } else {
+    }
+    else {
         f.ReadBuffer( data, sizeInBytes );
     }
 
@@ -203,7 +207,7 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
     case MATERIAL_TYPE_UNLIT:
         pPipeline = pMaterial->LightPass[bSkinned];
         if ( bSkinned ) {
-            pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
+            pSecondVertexBuffer = Instance->WeightsBuffer;
             secondBufferOffset = Instance->WeightsBufferOffset;
         }
         break;
@@ -213,22 +217,22 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
         if ( bSkinned ) {
             pPipeline = pMaterial->LightPass[1];
 
-            pSecondVertexBuffer = GPUBufferHandle( Instance->WeightsBuffer );
+            pSecondVertexBuffer = Instance->WeightsBuffer;
             secondBufferOffset = Instance->WeightsBufferOffset;
         }
         else if ( bLightmap ) {
             pPipeline = pMaterial->LightPassLightmap;
 
-            pSecondVertexBuffer = GPUBufferHandle( Instance->LightmapUVChannel );
+            pSecondVertexBuffer = Instance->LightmapUVChannel;
             secondBufferOffset = Instance->LightmapUVOffset;
 
             // lightmap is in last sample
-            GFrameResources.TextureBindings[pMaterial->LightmapSlot]->pTexture = GPUTextureHandle( Instance->Lightmap );
+            rtbl->BindTexture( pMaterial->LightmapSlot, Instance->Lightmap );
         }
         else if ( bVertexLight ) {
             pPipeline = pMaterial->LightPassVertexLight;
 
-            pSecondVertexBuffer = GPUBufferHandle( Instance->VertexLightChannel );
+            pSecondVertexBuffer = Instance->VertexLightChannel;
             secondBufferOffset = Instance->VertexLightOffset;
         }
         else {
@@ -242,25 +246,21 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
         return false;
     }
 
-    // Bind pipeline
     rcmd->BindPipeline( pPipeline );
-
-    // Bind second vertex buffer
     rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, secondBufferOffset );
 
-    // Bind vertex and index buffers
     BindVertexAndIndexBuffers( Instance );
 
     //if ( Instance->bUseVT ) // TODO
     {
         int textureUnit = 0; // TODO: Instance->VTUnit;
-        AVirtualTexture * pVirtualTex = GOpenGL45RenderBackend.VTWorkflow->FeedbackAnalyzer.GetTexture( textureUnit );
+        AVirtualTexture * pVirtualTex = GRenderBackendLocal.VTWorkflow->FeedbackAnalyzer.GetTexture( textureUnit );
         //AN_ASSERT( pVirtualTex != nullptr );
 
-        GFrameResources.TextureBindings[6]->pTexture = GOpenGL45RenderBackend.VTWorkflow->PhysCache.GetLayers()[0];
+        rtbl->BindTexture( 6, GRenderBackendLocal.VTWorkflow->PhysCache.GetLayers()[0] );
 
         if ( pVirtualTex ) {
-            GFrameResources.TextureBindings[7]->pTexture = pVirtualTex->GetIndirectionTexture();
+            rtbl->BindTexture( 7, pVirtualTex->GetIndirectionTexture() );
         }
     }
 
@@ -281,7 +281,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
     AFrameGraphTexture * PhotometricProfiles_R = FrameGraph.AddExternalResource(
         "Photometric Profiles",
         RenderCore::STextureCreateInfo(),
-        GPUTextureHandle( GRenderView->PhotometricProfiles )
+        GRenderView->PhotometricProfiles
     );
 
     AFrameGraphTexture * LookupBRDF_R = FrameGraph.AddExternalResource(
@@ -293,29 +293,29 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
     AFrameGraphBufferView * ClusterItemTBO_R = FrameGraph.AddExternalResource(
         "Cluster Item Buffer View",
         RenderCore::SBufferViewCreateInfo(),
-        GFrameResources.ClusterItemTBO
+        GClusterItemTBO
     );
 
     AFrameGraphTexture * ClusterLookup_R = FrameGraph.AddExternalResource(
         "Cluster lookup texture",
         RenderCore::STextureCreateInfo(),
-        GFrameResources.ClusterLookup
+        GClusterLookup
     );
 
     AFrameGraphTexture * ReflectionColor_R = FrameGraph.AddExternalResource(
         "Reflection color texture",
         RenderCore::STextureCreateInfo(),
-        GPUTextureHandle( GRenderView->LightTexture )
+        GRenderView->LightTexture
     );
 
     AFrameGraphTexture * ReflectionDepth_R = FrameGraph.AddExternalResource(
         "Reflection depth texture",
         RenderCore::STextureCreateInfo(),
-        GPUTextureHandle( GRenderView->DepthTexture )
+        GRenderView->DepthTexture
     );
 
     RenderCore::TEXTURE_FORMAT pf;
-    switch ( RVFramebufferTextureFormat ) {
+    switch ( r_LightTextureFormat ) {
     case 0:
         // Pretty good. No significant visual difference between TEXTURE_FORMAT_RGB16F.
         pf = TEXTURE_FORMAT_R11F_G11F_B10F;
@@ -339,7 +339,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
     opaquePass.AddResource( ShadowMapDepth2, RESOURCE_ACCESS_READ );
     opaquePass.AddResource( ShadowMapDepth3, RESOURCE_ACCESS_READ );
 
-    if ( RVSSLR ) {
+    if ( r_SSLR ) {
         opaquePass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
         opaquePass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
     }
@@ -374,49 +374,41 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;
 
-        GFrameResources.SetShadowMatrixBinding();
+        BindShadowMatrix();
 
-        if ( RVSSLR ) {
-            GFrameResources.TextureBindings[8]->pTexture = ReflectionDepth_R->Actual();
-            GFrameResources.TextureBindings[9]->pTexture = ReflectionColor_R->Actual();
+        if ( r_SSLR ) {
+            rtbl->BindTexture( 8, ReflectionDepth_R->Actual() );
+            rtbl->BindTexture( 9, ReflectionColor_R->Actual() );
         }
 
-        GFrameResources.TextureBindings[10]->pTexture = PhotometricProfiles_R->Actual();
-        GFrameResources.TextureBindings[11]->pTexture = LookupBRDF_R->Actual();
+        rtbl->BindTexture( 10, PhotometricProfiles_R->Actual() );
+        rtbl->BindTexture( 11, LookupBRDF_R->Actual() );
 
         // Bind ambient occlusion
-        GFrameResources.TextureBindings[12]->pTexture = SSAOTexture->Actual();
+        rtbl->BindTexture( 12, SSAOTexture->Actual() );
 
         // Bind cluster index buffer
-        GFrameResources.TextureBindings[13]->pTexture = ClusterItemTBO_R->Actual();
+        rtbl->BindTexture( 13, ClusterItemTBO_R->Actual() );
 
         // Bind cluster lookup
-        GFrameResources.TextureBindings[14]->pTexture = ClusterLookup_R->Actual();
+        rtbl->BindTexture( 14, ClusterLookup_R->Actual() );
 
         // Bind shadow map
-        GFrameResources.TextureBindings[15]->pTexture = ShadowMapDepth0->Actual();
-        GFrameResources.TextureBindings[16]->pTexture = ShadowMapDepth1->Actual();
-        GFrameResources.TextureBindings[17]->pTexture = ShadowMapDepth2->Actual();
-        GFrameResources.TextureBindings[18]->pTexture = ShadowMapDepth3->Actual();
+        rtbl->BindTexture( 15, ShadowMapDepth0->Actual() );
+        rtbl->BindTexture( 16, ShadowMapDepth1->Actual() );
+        rtbl->BindTexture( 17, ShadowMapDepth2->Actual() );
+        rtbl->BindTexture( 18, ShadowMapDepth3->Actual() );
 
         for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
             SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
-            // Choose pipeline and second vertex buffer
             if ( !BindMaterialLightPass( instance ) ) {
                 continue;
             }
 
-            // Bind textures
             BindTextures( instance->MaterialInstance, instance->Material->LightPassTextureCount );
-
-            // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-
-            // Set instance uniforms
-            SetInstanceUniforms( instance );
-
-            rcmd->BindResourceTable( &GFrameResources.Resources );
+            BindInstanceUniforms( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -447,7 +439,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         translucentPass.AddResource( ShadowMapDepth2, RESOURCE_ACCESS_READ );
         translucentPass.AddResource( ShadowMapDepth3, RESOURCE_ACCESS_READ );
 
-        if ( RVSSLR ) {
+        if ( r_SSLR ) {
             translucentPass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
             translucentPass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
         }
@@ -473,50 +465,41 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             drawCmd.InstanceCount = 1;
             drawCmd.StartInstanceLocation = 0;
 
-            GFrameResources.SetShadowMatrixBinding();
+            BindShadowMatrix();
 
-            if ( RVSSLR ) {
-                GFrameResources.TextureBindings[8]->pTexture = ReflectionDepth_R->Actual();
-                GFrameResources.TextureBindings[9]->pTexture = ReflectionColor_R->Actual();
+            if ( r_SSLR ) {
+                rtbl->BindTexture( 8, ReflectionDepth_R->Actual() );
+                rtbl->BindTexture( 9, ReflectionColor_R->Actual() );
             }
 
-            GFrameResources.TextureBindings[10]->pTexture = PhotometricProfiles_R->Actual();
-            GFrameResources.TextureBindings[11]->pTexture = LookupBRDF_R->Actual();
+            rtbl->BindTexture( 10, PhotometricProfiles_R->Actual() );
+            rtbl->BindTexture( 11, LookupBRDF_R->Actual() );
 
             // Bind ambient occlusion
-            GFrameResources.TextureBindings[12]->pTexture = SSAOTexture->Actual();
+            rtbl->BindTexture( 12, SSAOTexture->Actual() );
 
             // Bind cluster index buffer
-            GFrameResources.TextureBindings[13]->pTexture = ClusterItemTBO_R->Actual();
+            rtbl->BindTexture( 13, ClusterItemTBO_R->Actual() );
 
             // Bind cluster lookup
-            GFrameResources.TextureBindings[14]->pTexture = ClusterLookup_R->Actual();
+            rtbl->BindTexture( 14, ClusterLookup_R->Actual() );
 
             // Bind shadow map
-            GFrameResources.TextureBindings[15]->pTexture = ShadowMapDepth0->Actual();
-            GFrameResources.TextureBindings[16]->pTexture = ShadowMapDepth1->Actual();
-            GFrameResources.TextureBindings[17]->pTexture = ShadowMapDepth2->Actual();
-            GFrameResources.TextureBindings[18]->pTexture = ShadowMapDepth3->Actual();
+            rtbl->BindTexture( 15, ShadowMapDepth0->Actual() );
+            rtbl->BindTexture( 16, ShadowMapDepth1->Actual() );
+            rtbl->BindTexture( 17, ShadowMapDepth2->Actual() );
+            rtbl->BindTexture( 18, ShadowMapDepth3->Actual() );
 
             for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
                 SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
 
-                // Choose pipeline and second vertex buffer
                 if ( !BindMaterialLightPass( instance ) ) {
                     continue;
                 }
 
-                // Bind textures
                 BindTextures( instance->MaterialInstance, instance->Material->LightPassTextureCount );
-
-                // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-                //BindSkeletonMotionBlur( instance->SkeletonOffsetMB, instance->SkeletonSize );
-
-                // Set instance uniforms
-                SetInstanceUniforms( instance );
-
-                rcmd->BindResourceTable( &GFrameResources.Resources );
+                BindInstanceUniforms( instance );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -534,7 +517,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         LightTexture = translucentPass.GetColorAttachments()[0].Resource;
     }
 
-    if ( RVSSLR ) {
+    if ( r_SSLR ) {
         // TODO: We can store reflection color and depth in one texture
         ACustomTask & task = FrameGraph.AddTask< ACustomTask >( "Copy Light Pass" );
         task.AddResource( LightTexture, RESOURCE_ACCESS_READ );

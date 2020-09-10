@@ -42,12 +42,12 @@ SOFTWARE.
 #define MIN_MASS 0.001f
 #define MAX_MASS 1000.0f
 
-ARuntimeVariable RVDrawCollisionModel( _CTS( "DrawCollisionModel" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawStaticCollisionBounds( _CTS( "DrawStaticCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawDynamicCollisionBounds( _CTS( "DrawDynamicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawKinematicCollisionBounds( _CTS( "DrawKinematicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawTriggerBounds( _CTS( "DrawTriggerBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVDrawCenterOfMass( _CTS( "DrawCenterOfMass" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_CollisionModel( _CTS( "dd_CollisionModel" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_StaticCollisionBounds( _CTS( "dd_StaticCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_DynamicCollisionBounds( _CTS( "dd_DynamicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_KinematicCollisionBounds( _CTS( "dd_KinematicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_TriggerBounds( _CTS( "dd_TriggerBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_CenterOfMass( _CTS( "dd_CenterOfMass" ), _CTS( "0" ), VAR_CHEAT );
 
 static constexpr bool bUseInternalEdgeUtility = true;
 
@@ -376,9 +376,7 @@ void APhysicalBody::OnTransformDirty() {
 
     if ( RigidBody ) {
         if ( !MotionState->bDuringMotionStateUpdate ) {
-
-            if ( MotionBehavior != MB_KINEMATIC )
-            {
+            if ( MotionBehavior != MB_KINEMATIC ) {
                 Float3 position = GetWorldPosition();
                 Quat rotation = GetWorldRotation();
 
@@ -401,13 +399,13 @@ void APhysicalBody::OnTransformDirty() {
         }
     }
     else {
-        if ( MotionBehavior != MB_KINEMATIC ) {
+        if ( MotionBehavior != MB_KINEMATIC && !GetParentActor()->IsDuringConstruction() ) {
             GLogger.Printf( "WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr() );
         }
     }
 
     //if ( SoftBody && !bUpdateSoftbodyTransform ) {
-    //    if ( !PrevWorldPosition.CompareEps( GetWorldPosition(), PHYS_COMPARE_EPSILON )
+    //    if ( !PrevWorldPosition.CompareEps( GetWorldPosition(), PHYS_COMPARE_EbPSILON )
     //        || !PrevWorldRotation.CompareEps( GetWorldRotation(), PHYS_COMPARE_EPSILON ) ) {
     //        bUpdateSoftbodyTransform = true;
 
@@ -1157,7 +1155,7 @@ void APhysicalBody::RemoveCollisionIgnoreActor( AActor * _Actor ) {
 void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( RVDrawCollisionModel ) {
+    if ( dd_CollisionModel ) {
         TPodArray< Float3 > collisionVertices;
         TPodArray< unsigned int > collisionIndices;
 
@@ -1181,7 +1179,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
         InRenderer->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
     }
 
-    if ( bTrigger && RVDrawTriggerBounds ) {
+    if ( bTrigger && dd_TriggerBounds ) {
         TPodArray< BvAxisAlignedBox > boundingBoxes;
 
         GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1192,7 +1190,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             InRenderer->DrawAABB( bb );
         }
     } else {
-        if ( MotionBehavior == MB_STATIC && RVDrawStaticCollisionBounds ) {
+        if ( MotionBehavior == MB_STATIC && dd_StaticCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1204,7 +1202,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             }
         }
 
-        if ( MotionBehavior == MB_SIMULATED && RVDrawDynamicCollisionBounds ) {
+        if ( MotionBehavior == MB_SIMULATED && dd_DynamicCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1216,7 +1214,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             }
         }
 
-        if ( MotionBehavior == MB_KINEMATIC && RVDrawKinematicCollisionBounds ) {
+        if ( MotionBehavior == MB_KINEMATIC && dd_KinematicCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1229,7 +1227,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
         }
     }
 
-    if ( RVDrawCenterOfMass ) {
+    if ( dd_CenterOfMass ) {
         if ( RigidBody ) {
             Float3 centerOfMass = GetCenterOfMassWorldPosition();
 

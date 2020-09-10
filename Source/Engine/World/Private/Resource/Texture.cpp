@@ -49,11 +49,9 @@ static const char * TextureTypeName[] =
 AN_CLASS_META( ATexture )
 
 ATexture::ATexture() {
-    TextureGPU = GRenderBackend->CreateTexture( this );
 }
 
 ATexture::~ATexture() {
-    GRenderBackend->DestroyTexture( TextureGPU );
 }
 
 void ATexture::Purge() {
@@ -561,7 +559,7 @@ void ATexture::Initialize1D( STexturePixelFormat _PixelFormat, int _NumLods, int
     Depth = 1;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture1D( TextureGPU, _PixelFormat.Data, _NumLods, _Width );
+    GRenderBackend->InitializeTexture1D( &TextureGPU, _PixelFormat.Data, _NumLods, _Width );
 }
 
 void ATexture::Initialize1DArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
@@ -574,7 +572,7 @@ void ATexture::Initialize1DArray( STexturePixelFormat _PixelFormat, int _NumLods
     Depth = 1;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture1DArray( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
+    GRenderBackend->InitializeTexture1DArray( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
 }
 
 void ATexture::Initialize2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
@@ -587,7 +585,7 @@ void ATexture::Initialize2D( STexturePixelFormat _PixelFormat, int _NumLods, int
     Depth = 1;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture2D( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height );
+    GRenderBackend->InitializeTexture2D( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height );
 }
 
 void ATexture::Initialize2DArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
@@ -600,7 +598,7 @@ void ATexture::Initialize2DArray( STexturePixelFormat _PixelFormat, int _NumLods
     Depth = _ArraySize;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture2DArray( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height, _ArraySize );
+    GRenderBackend->InitializeTexture2DArray( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height, _ArraySize );
 }
 
 void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
@@ -613,7 +611,7 @@ void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int
     Depth = _Depth;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture3D( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height, _Depth );
+    GRenderBackend->InitializeTexture3D( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height, _Depth );
 }
 
 void ATexture::InitializeColorGradingLUT( const char * _Path ) {
@@ -704,7 +702,7 @@ void ATexture::InitializeCubemap( STexturePixelFormat _PixelFormat, int _NumLods
     Depth = 1;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTextureCubemap( TextureGPU, _PixelFormat.Data, _NumLods, _Width );
+    GRenderBackend->InitializeTextureCubemap( &TextureGPU, _PixelFormat.Data, _NumLods, _Width );
 }
 
 void ATexture::InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
@@ -717,7 +715,7 @@ void ATexture::InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _Nu
     Depth = _ArraySize;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTextureCubemapArray( TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
+    GRenderBackend->InitializeTextureCubemapArray( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
 }
 
 size_t ATexture::GetSizeInBytes() const {
@@ -838,8 +836,4 @@ bool ATexture::WriteArbitraryData( int _LocationX, int _LocationY, int _Location
     GRenderBackend->WriteTexture( TextureGPU, rect, PixelFormat.Data, sizeInBytes, 1, _SysMem );
 
     return true;
-}
-
-void ATexture::UploadResourcesGPU() {
-    GLogger.Printf( "ATexture::UploadResourcesGPU\n" );
 }

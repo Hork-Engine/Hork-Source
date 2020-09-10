@@ -63,6 +63,8 @@ struct SImmediateContextCreateInfo
     /** Viewport and Scissor origin */
     VIEWPORT_ORIGIN ViewportOrigin;
 
+    int SwapInterval;
+
     SDL_Window * Window;
 };
 
@@ -97,13 +99,6 @@ enum INDEX_TYPE : uint8_t
 {
     INDEX_TYPE_UINT16 = 0,
     INDEX_TYPE_UINT32 = 1
-};
-
-enum IMAGE_ACCESS_MODE : uint8_t
-{
-    IMAGE_ACCESS_READ,
-    IMAGE_ACCESS_WRITE,
-    IMAGE_ACCESS_RW
 };
 
 enum CONDITIONAL_RENDER_MODE : uint8_t
@@ -203,137 +198,6 @@ struct SRenderPassBegin
     SRect2D RenderArea;
     SClearColorValue const * pColorClearValues;
     SClearDepthStencilValue const * pDepthStencilClearValue;
-};
-
-struct SResourceBufferBinding
-{
-    BUFFER_TYPE BufferType;
-    IBuffer const * pBuffer;
-    size_t BindingOffset;
-    size_t BindingSize;
-};
-
-struct SResourceTextureBinding
-{
-    ITextureBase const * pTexture;
-};
-
-struct SResourceImageBinding
-{
-    ITextureBase const * pTexture;
-    uint16_t Lod;
-    bool bLayered;
-    uint16_t LayerIndex; /// Array index for texture arrays, depth for 3D textures or cube face for cubemaps
-                         /// For cubemap arrays: arrayLength = floor( _LayerIndex / 6 ), face = _LayerIndex % 6
-    IMAGE_ACCESS_MODE AccessMode;
-    TEXTURE_FORMAT TextureFormat;  // FIXME: get texture format from texture?
-};
-
-class SResourceTable : public IObjectInterface
-{
-public:
-    SResourceTable()
-        : NumBuffers( 0 )
-        , NumTextures( 0 )
-        , NumImages( 0 )
-    {
-    }
-
-    void Reset()
-    {
-        NumBuffers = 0;
-        NumTextures = 0;
-        NumImages = 0;
-    }
-
-    SResourceBufferBinding * AddBuffer( BUFFER_TYPE InBufferType )
-    {
-        if ( NumBuffers < MAX_BUFFER_SLOTS ) {
-            SResourceBufferBinding * binding = &Buffers[NumBuffers++];
-            binding->BufferType = InBufferType;
-            binding->pBuffer = nullptr;
-            binding->BindingOffset = 0;
-            binding->BindingSize = 0;
-            return binding;
-        }
-        else {
-            GLogger.Printf( "SResourceTable::AddBuffer: MAX_BUFFER_SLOTS hit\n" );
-            return nullptr;
-        }
-    }
-
-    void SetBuffer( int Slot, IBuffer const * Buffer, size_t Offset, size_t Size )
-    {
-        AN_ASSERT( Slot < NumBuffers );
-        SResourceBufferBinding * binding = &Buffers[Slot];
-        binding->pBuffer = Buffer;
-        binding->BindingOffset = Offset;
-        binding->BindingSize = Size;
-    }
-
-    SResourceTextureBinding * AddTexture()
-    {
-        if ( NumTextures < MAX_SAMPLER_SLOTS ) {
-            SResourceTextureBinding * binding = &Textures[NumTextures++];
-            binding->pTexture = nullptr;
-            return binding;
-        }
-        else {
-            GLogger.Printf( "SResourceTable::AddTexture: MAX_SAMPLER_SLOTS hit\n" );
-            return nullptr;
-        }
-    }
-
-    void SetTexture( int Slot, ITexture const * Texture )
-    {
-        AN_ASSERT( Slot < NumTextures );
-        SResourceTextureBinding * binding = &Textures[Slot];
-        binding->pTexture = Texture;
-    }
-
-    SResourceImageBinding * AddImage( IMAGE_ACCESS_MODE InAccessMode, TEXTURE_FORMAT InTextureFormat )
-    {
-        if ( NumTextures < MAX_IMAGE_SLOTS ) {
-            SResourceImageBinding * binding = &Images[NumImages++];
-            Core::ZeroMem( binding, sizeof( *binding ) );
-            binding->AccessMode = InAccessMode;
-            binding->TextureFormat = InTextureFormat;
-            return binding;
-        }
-        else {
-            GLogger.Printf( "SResourceTable::AddImage: MAX_IMAGE_SLOTS hit\n" );
-            return nullptr;
-        }
-    }
-
-    void SetImage( int Slot, ITexture const * Texture, uint16_t Lod, bool bLayered, uint16_t LayerIndex )
-    {
-        AN_ASSERT( Slot < NumImages );
-        SResourceImageBinding * binding = &Images[Slot];
-        binding->pTexture = Texture;
-        binding->Lod = Lod;
-        binding->bLayered = bLayered;
-        binding->LayerIndex = LayerIndex;
-    }
-
-    SResourceBufferBinding const * GetBuffers() const { return Buffers; }
-    int GetNumBuffers() const { return NumBuffers; }
-
-    SResourceTextureBinding const * GetTextures() const { return Textures; }
-    int GetNumTextures() const { return NumTextures; }
-
-    SResourceImageBinding const * GetImages() const { return Images; }
-    int GetNumImages() const { return NumImages; }
-
-private:
-    SResourceBufferBinding Buffers[MAX_BUFFER_SLOTS];
-    int NumBuffers;
-
-    SResourceTextureBinding Textures[MAX_SAMPLER_SLOTS];
-    int NumTextures;
-
-    SResourceImageBinding Images[MAX_IMAGE_SLOTS];
-    int NumImages;
 };
 
 struct SClearValue
@@ -550,8 +414,19 @@ struct SClearValue
     };// Data;
 };
 
+class IResourceTable : public IDeviceObject
+{
+public:
+    virtual void BindTexture( unsigned int Slot, ITextureBase const * Texture ) = 0;
+
+    virtual void BindImage( unsigned int Slot, ITextureBase const * Texture, uint16_t Lod = 0, bool bLayered = false, uint16_t LayerIndex = 0 ) = 0;
+
+    virtual void BindBuffer( int Slot, IBuffer const * Buffer, size_t Offset = 0, size_t Size = 0 ) = 0;
+};
+
 /// Immediate render context
-class IImmediateContext : public IObjectInterface {
+class IImmediateContext : public IObjectInterface
+{
 public:
     virtual void MakeCurrent() = 0;
 
@@ -588,7 +463,9 @@ public:
     // Shader resources
     //
 
-    virtual void BindResourceTable( SResourceTable const * _ResourceTable ) = 0;
+    virtual IResourceTable * GetRootResourceTable() = 0;
+
+    virtual void BindResourceTable( IResourceTable * _ResourceTable ) = 0;
 
     //
     // Viewport

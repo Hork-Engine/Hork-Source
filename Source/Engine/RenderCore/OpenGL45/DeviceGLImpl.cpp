@@ -33,8 +33,6 @@ SOFTWARE.
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/Logger.h>
 
-#include <Runtime/Public/RuntimeVariable.h>
-
 #include "DeviceGLImpl.h"
 #include "ImmediateContextGLImpl.h"
 #include "BufferGLImpl.h"
@@ -58,8 +56,6 @@ SOFTWARE.
 #endif
 
 #include <SDL.h>
-
-ARuntimeVariable RVSwapInterval( _CTS( "SwapInterval" ), _CTS( "0" ), 0, _CTS( "1 - enable vsync, 0 - disable vsync, -1 - tearing" ) );
 
 namespace RenderCore {
 
@@ -214,8 +210,8 @@ void CreateLogicalDevice( SImmediateContextCreateInfo const & _CreateInfo,
 }
 
 ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
-                SAllocatorCallback const * _Allocator,
-                HashCallback _Hash )
+                              SAllocatorCallback const * _Allocator,
+                              HashCallback _Hash )
 {
     TotalContexts = 0;
     TotalBuffers = 0;
@@ -369,12 +365,12 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
     pMainContext = new AImmediateContextGLImpl( this, _CreateInfo, windowCtx );
 
     // Mark swap interval modified to set initial swap interval.
-    RVSwapInterval.MarkModified();
+    SwapInterval = -9999;
 
     // Clear garbage on screen, set initial swap interval and swap the buffers.
     glClearColor( 0, 0, 0, 0 );
     glClear( GL_COLOR_BUFFER_BIT );
-    SwapBuffers( _CreateInfo.Window );
+    SwapBuffers( _CreateInfo.Window, _CreateInfo.SwapInterval );
 }
 
 ADeviceGLImpl::~ADeviceGLImpl()
@@ -416,21 +412,20 @@ ADeviceGLImpl::~ADeviceGLImpl()
     AN_ASSERT( TotalShaderModules == 0 );
 }
 
-void ADeviceGLImpl::SwapBuffers( SDL_Window * WindowHandle )
+void ADeviceGLImpl::SwapBuffers( SDL_Window * WindowHandle, int InSwapInterval )
 {
-    if ( RVSwapInterval.IsModified() ) {
-        int i = Math::Clamp( RVSwapInterval.GetInteger(), -1, 1 );
-        if ( i == -1 && !FeatureSupport[FEATURE_SWAP_CONTROL_TEAR] ) {
-            // Tearing not supported
-            i = 0;
-        }
+    InSwapInterval = Math::Clamp( InSwapInterval, -1, 1 );
+    if ( InSwapInterval == -1 && !FeatureSupport[FEATURE_SWAP_CONTROL_TEAR] ) {
+        // Tearing not supported
+        InSwapInterval = 0;
+    }
 
-        GLogger.Printf( "Changing swap interval to %d\n", i );
+    if ( SwapInterval != InSwapInterval ) {
+        GLogger.Printf( "Changing swap interval to %d\n", InSwapInterval );
 
-        SDL_GL_SetSwapInterval( i );
+        SDL_GL_SetSwapInterval( InSwapInterval );
 
-        RVSwapInterval.ForceInteger( i );
-        RVSwapInterval.UnmarkModified();
+        SwapInterval = InSwapInterval;
     }
 
     SDL_GL_SwapWindow( WindowHandle );
@@ -518,6 +513,11 @@ void ADeviceGLImpl::CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, T
 void ADeviceGLImpl::CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler )
 {
     *ppBindlessSampler = MakeRef< ABindlessSamplerGLImpl >( this, pTexture, _CreateInfo );
+}
+
+void ADeviceGLImpl::CreateResourceTable( TRef< IResourceTable > * ppResourceTable )
+{
+    *ppResourceTable = MakeRef< AResourceTableGLImpl >( this );
 }
 
 unsigned int ADeviceGLImpl::CreateShaderProgram( unsigned int _Type,

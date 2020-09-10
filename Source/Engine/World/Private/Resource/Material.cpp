@@ -43,24 +43,22 @@ static AMaterial * GMaterials = nullptr, * GMaterialsTail = nullptr;
 
 AMaterial::AMaterial() {
     INTRUSIVE_ADD( this, pNext, pPrev, GMaterials, GMaterialsTail );
-    MaterialGPU = GRenderBackend->CreateMaterial( this );
 }
 
 AMaterial::~AMaterial() {
-    GRenderBackend->DestroyMaterial( MaterialGPU );
     INTRUSIVE_REMOVE( this, pNext, pPrev, GMaterials, GMaterialsTail );
 }
 
 void AMaterial::RebuildMaterials() {
     for ( AMaterial * material = GMaterials ; material ; material = material->pNext ) {
-        GRenderBackend->InitializeMaterial( material->MaterialGPU, &material->Def );
+        GRenderBackend->InitializeMaterial( &material->MaterialGPU, &material->Def );
     }
 }
 
 void AMaterial::Initialize( MGMaterialGraph * Graph ) {
     CompileMaterialGraph( Graph, &Def );
 
-    GRenderBackend->InitializeMaterial( MaterialGPU, &Def );
+    GRenderBackend->InitializeMaterial( &MaterialGPU, &Def );
 }
 
 void AMaterial::Purge() {
@@ -134,7 +132,7 @@ bool AMaterial::LoadResource( AString const & _Path ) {
         Def.AddShader( sourceName.CStr(), sourceCode );
     }
 
-    GRenderBackend->InitializeMaterial( MaterialGPU, &Def );
+    GRenderBackend->InitializeMaterial( &MaterialGPU, &Def );
 
     return true;
 }
@@ -854,11 +852,6 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     LoadInternalResource( "/Default/Materials/Unlit" );
 }
 
-void AMaterial::UploadResourcesGPU() {
-    GLogger.Printf( "AMaterial::UploadResourcesGPU\n" );
-}
-
-
 AMaterialInstance::AMaterialInstance() {
     static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
     //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
@@ -1028,7 +1021,7 @@ SMaterialFrameData * AMaterialInstance::PreRenderUpdate( int _FrameNumber ) {
 
     FrameData->Material = Material->GetGPUResource();
 
-    ATextureGPU ** textures = FrameData->Textures;
+    RenderCore::ITexture ** textures = FrameData->Textures;
     FrameData->NumTextures = 0;
 
     for ( int i = 0; i < MAX_MATERIAL_TEXTURES; i++ ) {

@@ -45,9 +45,9 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
 
-ARuntimeVariable RVFrustumCullingMT( _CTS( "FrustumCullingMT" ), _CTS( "1" ) );
-ARuntimeVariable RVFrustumCullingSSE( _CTS( "FrustumCullingSSE" ), _CTS( "1" ) );
-ARuntimeVariable RVFrustumCullingType( _CTS( "FrustumCullingType" ), _CTS( "0" ), 0, _CTS( "0 - combined, 1 - separate, 2 - simple" ) );
+ARuntimeVariable vsd_FrustumCullingMT( _CTS( "vsd_FrustumCullingMT" ), _CTS( "1" ) );
+ARuntimeVariable vsd_FrustumCullingSSE( _CTS( "vsd_FrustumCullingSSE" ), _CTS( "1" ) );
+ARuntimeVariable vsd_FrustumCullingType( _CTS( "vsd_FrustumCullingType" ), _CTS( "0" ), 0, _CTS( "0 - combined, 1 - separate, 2 - simple" ) );
 
 enum EFrustumCullingType {
     CULLING_TYPE_COMBINED,
@@ -323,7 +323,7 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
         VSD_ProcessLevelVisibility( level );
     }
 
-    if ( RVFrustumCullingType.GetInteger() == CULLING_TYPE_COMBINED ) {
+    if ( vsd_FrustumCullingType.GetInteger() == CULLING_TYPE_COMBINED ) {
         CullingResult.ResizeInvalidate( Align( BoundingBoxesSSE.Size(), 4 ) );
 
         for ( SCullJobSubmit & submit : CullSubmits ) {
@@ -705,7 +705,7 @@ AN_FORCEINLINE bool VSD_FaceCull( SSurfaceDef const * InSurface ) {
 
 static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPlanes, const int InCullPlanesCount )
 {
-    if ( RVFrustumCullingType.GetInteger() != CULLING_TYPE_COMBINED )
+    if ( vsd_FrustumCullingType.GetInteger() != CULLING_TYPE_COMBINED )
     {
         BoxPrimitives.Clear();
         BoundingBoxesSSE.Clear();
@@ -816,7 +816,7 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
         switch ( primitive->Type ) {
             case VSD_PRIMITIVE_BOX:
             {
-                if ( RVFrustumCullingType.GetInteger() == CULLING_TYPE_SIMPLE )
+                if ( vsd_FrustumCullingType.GetInteger() == CULLING_TYPE_SIMPLE )
                 {
                     if ( VSD_CullBoxSingle( InCullPlanes, InCullPlanesCount, primitive->Box ) ) {
 
@@ -880,7 +880,7 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
             BoundingBoxesSSE.Resize( count );
         }
 
-        if ( RVFrustumCullingType.GetInteger() == CULLING_TYPE_SEPARATE )
+        if ( vsd_FrustumCullingType.GetInteger() == CULLING_TYPE_SEPARATE )
         {
             VSD_SubmitCullingJobs( submit );
 
@@ -1222,7 +1222,7 @@ static void VSD_CullBoxAsync( void * InData ) {
     BvAxisAlignedBoxSSE const * boundingBoxes = BoundingBoxesSSE.ToPtr() + threadData.FirstObject;
     int * cullResult = CullingResult.ToPtr() + threadData.FirstObject;
 
-    if ( RVFrustumCullingSSE ) {
+    if ( vsd_FrustumCullingSSE ) {
         VSD_CullBoxSSE( threadData.JobCullPlanes, threadData.JobCullPlanesCount, boundingBoxes, threadData.NumObjects, cullResult );
     } else {
         VSD_CullBoxGeneric( threadData.JobCullPlanes, threadData.JobCullPlanesCount, boundingBoxes, threadData.NumObjects, cullResult );
@@ -1232,7 +1232,7 @@ static void VSD_CullBoxAsync( void * InData ) {
 static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
     int i, firstObject;
 
-    const int threasCount = RVFrustumCullingMT ? GAsyncJobManager.GetNumWorkerThreads() : 1;
+    const int threasCount = vsd_FrustumCullingMT ? GAsyncJobManager.GetNumWorkerThreads() : 1;
 
     const int MIN_OBJECTS_PER_THREAD = 4; // TODO: choose appropriate value
 
@@ -1249,7 +1249,7 @@ static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
     if ( threasCount <= 1 || cullObjectsPerThread < MIN_OBJECTS_PER_THREAD ) {
         // Multithreading is disabled or too few objects
 
-        if ( RVFrustumCullingSSE ) {
+        if ( vsd_FrustumCullingSSE ) {
             VSD_CullBoxSSE( InSubmit.JobCullPlanes,
                             InSubmit.JobCullPlanesCount,
                             BoundingBoxesSSE.ToPtr() + InSubmit.First,
@@ -1282,7 +1282,7 @@ static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
     // Process residual objects
     const int Residual = InSubmit.NumObjects - firstObject;
     if ( Residual > 0 ) {
-        if ( RVFrustumCullingSSE ) {
+        if ( vsd_FrustumCullingSSE ) {
             VSD_CullBoxSSE( InSubmit.JobCullPlanes,
                             InSubmit.JobCullPlanesCount,
                             BoundingBoxesSSE.ToPtr() + InSubmit.First + firstObject,

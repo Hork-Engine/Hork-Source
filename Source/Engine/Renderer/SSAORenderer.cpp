@@ -32,16 +32,18 @@ SOFTWARE.
 
 #include <Core/Public/Random.h>
 
-ARuntimeVariable RVAODeinterleaved( _CTS( "AODeinterleaved" ), _CTS( "1" ) );
-ARuntimeVariable RVAOBlur( _CTS( "AOBlur" ), _CTS( "1" ) );
-ARuntimeVariable RVAORadius( _CTS( "AORadius" ), _CTS( "2" ) );
-ARuntimeVariable RVAOBias( _CTS( "AOBias" ), _CTS( "0.1" ) );
-ARuntimeVariable RVAOPowExponent( _CTS( "AOPowExponent" ), _CTS( "1.5" ) );
+ARuntimeVariable r_HBAODeinterleaved( _CTS( "r_HBAODeinterleaved" ), _CTS( "1" ) );
+ARuntimeVariable r_HBAOBlur( _CTS( "r_HBAOBlur" ), _CTS( "1" ) );
+ARuntimeVariable r_HBAORadius( _CTS( "r_HBAORadius" ), _CTS( "2" ) );
+ARuntimeVariable r_HBAOBias( _CTS( "r_HBAOBias" ), _CTS( "0.1" ) );
+ARuntimeVariable r_HBAOPowExponent( _CTS( "r_HBAOPowExponent" ), _CTS( "1.5" ) );
 
 using namespace RenderCore;
 
 ASSAORenderer::ASSAORenderer()
 {
+    SPipelineResourceLayout resourceLayout;
+
     SSamplerInfo nearestSampler;
 
     nearestSampler.Filter = FILTER_NEAREST;
@@ -63,8 +65,18 @@ ASSAORenderer::ASSAORenderer()
     pipeSamplers[2].AddressV = SAMPLER_ADDRESS_WRAP;
     pipeSamplers[2].AddressW = SAMPLER_ADDRESS_WRAP;
 
-    CreateFullscreenQuadPipeline( &Pipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple.frag", pipeSamplers, AN_ARRAY_SIZE( pipeSamplers ) );
-    CreateFullscreenQuadPipeline( &Pipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple_ortho.frag", pipeSamplers, AN_ARRAY_SIZE( pipeSamplers ) );
+    SBufferInfo bufferInfo[2];
+    bufferInfo[0].BufferType = UNIFORM_BUFFER; // view uniforms
+    bufferInfo[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+
+    resourceLayout.NumBuffers = 2;
+    resourceLayout.Buffers = bufferInfo;
+
+    resourceLayout.NumSamplers = AN_ARRAY_SIZE( pipeSamplers );
+    resourceLayout.Samplers = pipeSamplers;
+
+    CreateFullscreenQuadPipeline( &Pipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple.frag", &resourceLayout );
+    CreateFullscreenQuadPipeline( &Pipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple_ortho.frag", &resourceLayout );
 
     SSamplerInfo cacheAwareSamplers[2];
 
@@ -73,8 +85,11 @@ ASSAORenderer::ASSAORenderer()
     // Normal texture sampler
     cacheAwareSamplers[1] = nearestSampler;
 
-    CreateFullscreenQuadPipelineGS( &CacheAwarePipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved.frag", "postprocess/ssao/deinterleaved.geom", cacheAwareSamplers, AN_ARRAY_SIZE( cacheAwareSamplers ) );
-    CreateFullscreenQuadPipelineGS( &CacheAwarePipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved_ortho.frag", "postprocess/ssao/deinterleaved.geom", cacheAwareSamplers, AN_ARRAY_SIZE( cacheAwareSamplers ) );
+    resourceLayout.NumSamplers = AN_ARRAY_SIZE( cacheAwareSamplers );
+    resourceLayout.Samplers = cacheAwareSamplers;
+
+    CreateFullscreenQuadPipelineGS( &CacheAwarePipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved.frag", "postprocess/ssao/deinterleaved.geom", &resourceLayout );
+    CreateFullscreenQuadPipelineGS( &CacheAwarePipe_ORTHO, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved_ortho.frag", "postprocess/ssao/deinterleaved.geom", &resourceLayout );
 
     SSamplerInfo blurSamplers[2];
 
@@ -87,10 +102,18 @@ ASSAORenderer::ASSAORenderer()
     // Linear depth sampler
     blurSamplers[1] = nearestSampler;
 
-    CreateFullscreenQuadPipeline( &BlurPipe, "postprocess/ssao/blur.vert", "postprocess/ssao/blur.frag", blurSamplers, AN_ARRAY_SIZE( blurSamplers ) );
+    resourceLayout.NumSamplers = AN_ARRAY_SIZE( blurSamplers );
+    resourceLayout.Samplers = blurSamplers;
 
-    CreateFullscreenQuadPipeline( &DeinterleavePipe, "postprocess/ssao/deinterleave.vert", "postprocess/ssao/deinterleave.frag", &nearestSampler, 1 );
-    CreateFullscreenQuadPipeline( &ReinterleavePipe, "postprocess/ssao/reinterleave.vert", "postprocess/ssao/reinterleave.frag", &nearestSampler, 1 );
+    CreateFullscreenQuadPipeline( &BlurPipe, "postprocess/ssao/blur.vert", "postprocess/ssao/blur.frag", &resourceLayout );
+
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers = &nearestSampler;
+
+    CreateFullscreenQuadPipeline( &DeinterleavePipe, "postprocess/ssao/deinterleave.vert", "postprocess/ssao/deinterleave.frag", &resourceLayout );
+
+    resourceLayout.NumBuffers = 0;
+    CreateFullscreenQuadPipeline( &ReinterleavePipe, "postprocess/ssao/reinterleave.vert", "postprocess/ssao/reinterleave.frag", &resourceLayout );
    
     AMersenneTwisterRand rng( 0u );
 
@@ -128,7 +151,8 @@ ASSAORenderer::ASSAORenderer()
     RandomMap->Write( 0, RenderCore::FORMAT_FLOAT3, sizeof( hbaoRandom ), 1, hbaoRandom );
 }
 
-void ASSAORenderer::ResizeAO( int Width, int Height ) {
+void ASSAORenderer::ResizeAO( int Width, int Height )
+{
     if ( AOWidth != Width
          || AOHeight != Height ) {
 
@@ -187,20 +211,19 @@ void ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGr
     {
         using namespace RenderCore;
 
-        struct SDrawCall {
+        struct SDrawCall
+        {
             Float2 UVOffset;
             Float2 InvFullResolution;
         };
 
-        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
         drawCall->UVOffset.X = 0.5f;
         drawCall->UVOffset.Y = 0.5f;
         drawCall->InvFullResolution.X = 1.0f / AOWidth;
         drawCall->InvFullResolution.Y = 1.0f / AOHeight;
 
-        GFrameResources.TextureBindings[0]->pTexture = LinearDepth->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, LinearDepth->Actual() );
 
         DrawSAQ( DeinterleavePipe );
     } );
@@ -224,20 +247,19 @@ void ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGr
     {
         using namespace RenderCore;
 
-        struct SDrawCall {
+        struct SDrawCall
+        {
             Float2 UVOffset;
             Float2 InvFullResolution;
         };
 
-        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
         drawCall->UVOffset.X = float( 8 % 4 ) + 0.5f;
         drawCall->UVOffset.Y = float( 8 / 4 ) + 0.5f;
         drawCall->InvFullResolution.X = 1.0f / AOWidth;
         drawCall->InvFullResolution.Y = 1.0f / AOHeight;
 
-        GFrameResources.TextureBindings[0]->pTexture = LinearDepth->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, LinearDepth->Actual() );
 
         DrawSAQ( DeinterleavePipe );
     } );
@@ -281,34 +303,34 @@ void ASSAORenderer::AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTe
             Float2 InvQuarterResolution;
         };
 
-        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
 
         float projScale;
 
         if ( GRenderView->bPerspective ) {
             projScale = (float)AOHeight / std::tan( GRenderView->ViewFovY * 0.5f ) * 0.5f;
-        } else {
+        }
+        else {
             projScale = (float)AOHeight * GRenderView->ProjectionMatrix[1][1] * 0.5f;
         }
 
-        drawCall->Bias = RVAOBias.GetFloat();
-        drawCall->FallofFactor = -1.0f / (RVAORadius.GetFloat() * RVAORadius.GetFloat());
-        drawCall->RadiusToScreen = RVAORadius.GetFloat() * 0.5f * projScale;
-        drawCall->PowExponent = RVAOPowExponent.GetFloat();
-        drawCall->Multiplier = 1.0f / (1.0f - RVAOBias.GetFloat());
+        drawCall->Bias = r_HBAOBias.GetFloat();
+        drawCall->FallofFactor = -1.0f / (r_HBAORadius.GetFloat() * r_HBAORadius.GetFloat());
+        drawCall->RadiusToScreen = r_HBAORadius.GetFloat() * 0.5f * projScale;
+        drawCall->PowExponent = r_HBAOPowExponent.GetFloat();
+        drawCall->Multiplier = 1.0f / (1.0f - r_HBAOBias.GetFloat());
         drawCall->InvFullResolution.X = 1.0f / AOWidth;
         drawCall->InvFullResolution.Y = 1.0f / AOHeight;
         drawCall->InvQuarterResolution.X = 1.0f / AOQuarterWidth;
         drawCall->InvQuarterResolution.Y = 1.0f / AOQuarterHeight;
 
-        GFrameResources.TextureBindings[0]->pTexture = DeinterleaveDepthArray->Actual();
-        GFrameResources.TextureBindings[1]->pTexture = NormalTexture->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, DeinterleaveDepthArray->Actual() );
+        rtbl->BindTexture( 1, NormalTexture->Actual() );
 
         if ( GRenderView->bPerspective ) {
             DrawSAQ( CacheAwarePipe );
-        } else {
+        }
+        else {
             DrawSAQ( CacheAwarePipe_ORTHO );
         }
     } );
@@ -334,9 +356,7 @@ void ASSAORenderer::AddReinterleavePass( AFrameGraph & FrameGraph, AFrameGraphTe
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0]->pTexture = SSAOTextureArray->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, SSAOTextureArray->Actual() );
 
         DrawSAQ( ReinterleavePipe );
     } );
@@ -379,35 +399,35 @@ void ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTextur
             Float2 InvQuarterResolution;
         };
 
-        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
 
         float projScale;
 
         if ( GRenderView->bPerspective ) {
             projScale = (float)AOHeight / std::tan( GRenderView->ViewFovY * 0.5f ) * 0.5f;
-        } else {
+        }
+        else {
             projScale = (float)AOHeight * GRenderView->ProjectionMatrix[1][1] * 0.5f;
         }
 
-        drawCall->Bias = RVAOBias.GetFloat();
-        drawCall->FallofFactor = -1.0f / (RVAORadius.GetFloat() * RVAORadius.GetFloat());
-        drawCall->RadiusToScreen = RVAORadius.GetFloat() * 0.5f * projScale;
-        drawCall->PowExponent = RVAOPowExponent.GetFloat();
-        drawCall->Multiplier = 1.0f / (1.0f - RVAOBias.GetFloat());
+        drawCall->Bias = r_HBAOBias.GetFloat();
+        drawCall->FallofFactor = -1.0f / (r_HBAORadius.GetFloat() * r_HBAORadius.GetFloat());
+        drawCall->RadiusToScreen = r_HBAORadius.GetFloat() * 0.5f * projScale;
+        drawCall->PowExponent = r_HBAOPowExponent.GetFloat();
+        drawCall->Multiplier = 1.0f / (1.0f - r_HBAOBias.GetFloat());
         drawCall->InvFullResolution.X = 1.0f / AOWidth;
         drawCall->InvFullResolution.Y = 1.0f / AOHeight;
         drawCall->InvQuarterResolution.X = 0; // don't care
         drawCall->InvQuarterResolution.Y = 0; // don't care
 
-        GFrameResources.TextureBindings[0]->pTexture = LinearDepth->Actual();
-        GFrameResources.TextureBindings[1]->pTexture = NormalTexture->Actual();
-        GFrameResources.TextureBindings[2]->pTexture = RandomMapTexture_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, LinearDepth->Actual() );
+        rtbl->BindTexture( 1, NormalTexture->Actual() );
+        rtbl->BindTexture( 2, RandomMapTexture_R->Actual() );
 
         if ( GRenderView->bPerspective ) {
             DrawSAQ( Pipe );
-        } else {
+        }
+        else {
             DrawSAQ( Pipe_ORTHO );
         }
     } );
@@ -434,19 +454,18 @@ void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture 
     {
         using namespace RenderCore;
 
-        struct SDrawCall {
+        struct SDrawCall
+        {
             Float2 InvSize;
         };
 
-        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
         drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
         drawCall->InvSize.Y = 0;
 
         // SSAO blur X
-        GFrameResources.TextureBindings[0]->pTexture = SSAOTexture->Actual();
-        GFrameResources.TextureBindings[1]->pTexture = LinearDepth->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, SSAOTexture->Actual() );
+        rtbl->BindTexture( 1, LinearDepth->Actual() );
 
         DrawSAQ( BlurPipe );
     } );
@@ -470,19 +489,18 @@ void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture 
     {
         using namespace RenderCore;
 
-        struct SDrawCall {
+        struct SDrawCall
+        {
             Float2 InvSize;
         };
 
-        SDrawCall * drawCall = SetDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
         drawCall->InvSize.X = 0;
         drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
         // SSAO blur Y
-        GFrameResources.TextureBindings[0]->pTexture = TempSSAOTextureBlurX->Actual();
-        GFrameResources.TextureBindings[1]->pTexture = LinearDepth->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, TempSSAOTextureBlurX->Actual() );
+        rtbl->BindTexture( 1, LinearDepth->Actual() );
 
         DrawSAQ( BlurPipe );
     } );
@@ -494,7 +512,7 @@ void ASSAORenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * Li
 {
     ResizeAO( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
 
-    if ( RVAODeinterleaved ) {
+    if ( r_HBAODeinterleaved ) {
         AFrameGraphTexture * DeinterleaveDepthArray, * SSAOTextureArray;
         
         AddDeinterleaveDepthPass( FrameGraph, LinearDepth, &DeinterleaveDepthArray );
@@ -505,7 +523,7 @@ void ASSAORenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * Li
         AddSimpleAOPass( FrameGraph, LinearDepth, NormalTexture, ppSSAOTexture );
     }
 
-    if ( RVAOBlur ) {
+    if ( r_HBAOBlur ) {
         AddAOBlurPass( FrameGraph, *ppSSAOTexture, LinearDepth, ppSSAOTexture );
     }
 }

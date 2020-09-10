@@ -76,12 +76,14 @@ ASphereMesh::ASphereMesh( int _HDiv, int _VDiv )
                 *pIndices++ = (i*_VDiv + j);
                 *pIndices++ = ((_HDiv - 1)*_VDiv + 1);
 
-            } else if ( i == (_HDiv - 1) ) {
+            }
+            else if ( i == (_HDiv - 1) ) {
                 *pIndices++ = (0 * _VDiv + j);
                 *pIndices++ = (0 * _VDiv + j2);
                 *pIndices++ = ((_HDiv - 1)*_VDiv + 0);
 
-            } else {
+            }
+            else {
                 int quad[4] = { i*_VDiv + j, i*_VDiv + j2, i2*_VDiv + j2, i2*_VDiv + j };
                 *pIndices++ = quad[3];
                 *pIndices++ = quad[2];

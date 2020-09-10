@@ -69,12 +69,12 @@ AAsyncJobManager GAsyncJobManager;
 AAsyncJobList * GRenderFrontendJobList;
 AAsyncJobList * GRenderBackendJobList;
 
-ARuntimeVariable RVVidWidth( _CTS( "VidWidth" ), _CTS( "1600" ) );
-ARuntimeVariable RVVidHeight( _CTS( "VidHeight" ), _CTS( "900" ) );
+ARuntimeVariable rt_VidWidth( _CTS( "rt_VidWidth" ), _CTS( "1600" ) );
+ARuntimeVariable rt_VidHeight( _CTS( "rt_VidHeight" ), _CTS( "900" ) );
 #ifdef AN_DEBUG
-ARuntimeVariable RVVidFullscreen( _CTS( "VidFullscreen" ), _CTS( "0" ) );
+ARuntimeVariable rt_VidFullscreen( _CTS( "rt_VidFullscreen" ), _CTS( "0" ) );
 #else
-ARuntimeVariable RVVidFullscreen( _CTS( "VidFullscreen" ), _CTS( "1" ) );
+ARuntimeVariable rt_VidFullscreen( _CTS( "rt_VidFullscreen" ), _CTS( "1" ) );
 #endif
 
 static int PressedKeys[KEY_LAST+1];
@@ -267,10 +267,10 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
     LoadConfigFile();
 
     SVideoMode desiredMode = {};
-    desiredMode.Width = RVVidWidth.GetInteger();
-    desiredMode.Height = RVVidHeight.GetInteger();
+    desiredMode.Width = rt_VidWidth.GetInteger();
+    desiredMode.Height = rt_VidHeight.GetInteger();
     desiredMode.Opacity = 1;
-    desiredMode.bFullscreen = RVVidFullscreen;
+    desiredMode.bFullscreen = rt_VidFullscreen;
     desiredMode.bCentrized = true;
     Core::Strcpy( desiredMode.Backend, sizeof( desiredMode.Backend ), "OpenGL 4.5" );
     Core::Strcpy( desiredMode.Title, sizeof( desiredMode.Title ), _EntryDecl.GameTitle );

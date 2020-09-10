@@ -34,15 +34,24 @@ SOFTWARE.
 
 #include <Runtime/Public/ScopedTimeCheck.h>
 
-ARuntimeVariable RVFxaa( _CTS( "FXAA" ), _CTS( "1" ) );
-ARuntimeVariable RVDrawNormals( _CTS( "DrawNormals" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable RVVTDrawFeedback( _CTS( "VTDrawFeedback" ), _CTS( "0" ) );
-ARuntimeVariable RVVTDrawCache( _CTS( "VTDrawCache" ), _CTS( "-1" ) );
+extern ARuntimeVariable r_FXAA;
+
+ARuntimeVariable r_ShowNormals( _CTS( "r_ShowNormals" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable r_ShowFeedbackVT( _CTS( "r_ShowFeedbackVT" ), _CTS( "0" ) );
+ARuntimeVariable r_ShowCacheVT( _CTS( "r_ShowCacheVT" ), _CTS( "-1" ) );
 
 using namespace RenderCore;
 
 AFrameRenderer::AFrameRenderer()
 {
+    SPipelineResourceLayout resourceLayout;
+
+    SBufferInfo bufferInfo;
+    bufferInfo.BufferType = UNIFORM_BUFFER;
+
+    resourceLayout.NumBuffers = 1;
+    resourceLayout.Buffers = &bufferInfo;
+
     SSamplerInfo nearestSampler;
     nearestSampler.Filter = FILTER_NEAREST;
     nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
@@ -55,27 +64,39 @@ AFrameRenderer::AFrameRenderer()
     linearSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
     linearSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    CreateFullscreenQuadPipeline( &LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &nearestSampler, 1 );
-    CreateFullscreenQuadPipeline( &LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &nearestSampler, 1 );
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers = &nearestSampler;
 
-    CreateFullscreenQuadPipeline( &ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &nearestSampler, 1 );
-    CreateFullscreenQuadPipeline( &ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &nearestSampler, 1 );
+    CreateFullscreenQuadPipeline( &LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &resourceLayout );
+    CreateFullscreenQuadPipeline( &LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &resourceLayout );
+
+    CreateFullscreenQuadPipeline( &ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &resourceLayout );
+    CreateFullscreenQuadPipeline( &ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &resourceLayout );
 
     SSamplerInfo motionBlurSamplers[3];
     motionBlurSamplers[0] = linearSampler;
     motionBlurSamplers[1] = nearestSampler;
     motionBlurSamplers[2] = nearestSampler;
 
-    CreateFullscreenQuadPipeline( &MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", motionBlurSamplers, AN_ARRAY_SIZE( motionBlurSamplers ) );
+    resourceLayout.NumSamplers = AN_ARRAY_SIZE( motionBlurSamplers );
+    resourceLayout.Samplers = motionBlurSamplers;
 
-    CreateFullscreenQuadPipeline( &OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &linearSampler, 1 );
+    CreateFullscreenQuadPipeline( &MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", &resourceLayout );
+
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers = &linearSampler;
+
+    CreateFullscreenQuadPipeline( &OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &resourceLayout );
 
     SSamplerInfo outlineApplySamplers[2];
     outlineApplySamplers[0] = linearSampler;
     outlineApplySamplers[1] = linearSampler;
 
-    //CreateFullscreenQuadPipelineEx( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", outlineApplySamplers, AN_ARRAY_SIZE( outlineApplySamplers ), RenderCore::BLENDING_COLOR_ADD );
-    CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", outlineApplySamplers, AN_ARRAY_SIZE( outlineApplySamplers ), RenderCore::BLENDING_ALPHA );
+    resourceLayout.NumSamplers = AN_ARRAY_SIZE( outlineApplySamplers );
+    resourceLayout.Samplers = outlineApplySamplers;
+
+    //CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_COLOR_ADD );
+    CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA );
 }
 
 void AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture, AFrameGraphTexture ** ppLinearDepth )
@@ -96,13 +117,12 @@ void AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGrap
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0]->pTexture = DepthTexture->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, DepthTexture->Actual() );
 
         if ( GRenderView->bPerspective ) {
             DrawSAQ( LinearDepthPipe );
-        } else {
+        }
+        else {
             DrawSAQ( LinearDepthPipe_ORTHO );
         }
     } );
@@ -127,13 +147,12 @@ void AFrameRenderer::AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameG
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0]->pTexture = LinearDepth->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, LinearDepth->Actual() );
 
         if ( GRenderView->bPerspective ) {
             DrawSAQ( ReconstructNormalPipe );
-        } else {
+        }
+        else {
             DrawSAQ( ReconstructNormalPipe_ORTHO );
         }
     } );
@@ -168,11 +187,9 @@ void AFrameRenderer::AddMotionBlurPass( AFrameGraph & FrameGraph,
                            [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
-        GFrameResources.TextureBindings[0]->pTexture = LightTexture->Actual();
-        GFrameResources.TextureBindings[1]->pTexture = VelocityTexture->Actual();
-        GFrameResources.TextureBindings[2]->pTexture = LinearDepth->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, LightTexture->Actual() );
+        rtbl->BindTexture( 1, VelocityTexture->Actual() );
+        rtbl->BindTexture( 2, LinearDepth->Actual() );
 
         DrawSAQ( MotionBlurPipeline );
 
@@ -181,7 +198,8 @@ void AFrameRenderer::AddMotionBlurPass( AFrameGraph & FrameGraph,
     *ppResultTexture = renderPass.GetColorAttachments()[0].Resource;
 }
 
-static bool BindMaterialOutlinePass( SRenderInstance const * instance ) {
+static bool BindMaterialOutlinePass( SRenderInstance const * instance )
+{
     AMaterialGPU * pMaterial = instance->Material;
 
     AN_ASSERT( pMaterial );
@@ -193,23 +211,22 @@ static bool BindMaterialOutlinePass( SRenderInstance const * instance ) {
         return false;
     }
 
-    // Bind pipeline
     rcmd->BindPipeline( pPipeline );
 
-    // Bind second vertex buffer
     if ( bSkinned ) {
-        rcmd->BindVertexBuffer( 1, GPUBufferHandle( instance->WeightsBuffer ), instance->WeightsBufferOffset );
-    } else {
+        rcmd->BindVertexBuffer( 1, instance->WeightsBuffer, instance->WeightsBufferOffset );
+    }
+    else {
         rcmd->BindVertexBuffer( 1, nullptr, 0 );
     }
 
-    // Bind vertex and index buffers
     BindVertexAndIndexBuffers( instance );
 
     return true;
 }
 
-void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppOutlineTexture ) {
+void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppOutlineTexture )
+{
     if ( GRenderView->OutlineInstanceCount == 0 ) {
         *ppOutlineTexture = nullptr;
         return;
@@ -242,21 +259,13 @@ void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTextur
         for ( int i = 0 ; i < GRenderView->OutlineInstanceCount ; i++ ) {
             SRenderInstance const * instance = GFrameData->OutlineInstances[GRenderView->FirstOutlineInstance + i];
 
-            // Choose pipeline and second vertex buffer
             if ( !BindMaterialOutlinePass( instance ) ) {
                 continue;
             }
 
-            // Bind textures
             BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
-
-            // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-
-            // Set instance uniforms
-            SetInstanceUniforms( instance );
-
-            rcmd->BindResourceTable( &GFrameResources.Resources );
+            BindInstanceUniforms( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -269,7 +278,8 @@ void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTextur
     *ppOutlineTexture = maskPass.GetColorAttachments()[0].Resource;
 }
 
-void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * OutlineMaskTexture ) {
+void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * OutlineMaskTexture )
+{
     RenderCore::TEXTURE_FORMAT pf = TEXTURE_FORMAT_RG8;
 
     ARenderPass & blurPass = FrameGraph.AddTask< ARenderPass >( "Outline Blur Pass" );
@@ -292,9 +302,7 @@ void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGrap
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0]->pTexture = OutlineMaskTexture->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, OutlineMaskTexture->Actual() );
 
         DrawSAQ( OutlineBlurPipe );
     } );
@@ -322,10 +330,8 @@ void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGrap
     {
         using namespace RenderCore;
 
-        GFrameResources.TextureBindings[0]->pTexture = OutlineMaskTexture->Actual();
-        GFrameResources.TextureBindings[1]->pTexture = OutlineBlurTexture->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, OutlineMaskTexture->Actual() );
+        rtbl->BindTexture( 1, OutlineBlurTexture->Actual() );
 
         DrawSAQ( OutlineApplyPipe );
     } );
@@ -365,21 +371,21 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
     AddReconstrutNormalsPass( FrameGraph, LinearDepth, &NormalTexture );
 
     AFrameGraphTexture * SSAOTexture;
-    if ( RVSSAO ) {
+    if ( r_HBAO ) {
         SSAORenderer.AddPasses( FrameGraph, LinearDepth, NormalTexture, &SSAOTexture );
     }
     else {
         SSAOTexture = FrameGraph.AddExternalResource(
             "White Texture",
             RenderCore::STextureCreateInfo(),
-            GFrameResources.WhiteTexture
+            GWhiteTexture
         );
     }
 
     AFrameGraphTexture * LightTexture;
     LightRenderer.AddPass( FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], LinearDepth, &LightTexture );
 
-    if ( RVMotionBlur ) {
+    if ( r_MotionBlur ) {
         AddMotionBlurPass( FrameGraph, LightTexture, VelocityTexture, LinearDepth, &LightTexture );
     }
 
@@ -403,7 +409,7 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
     }
 
     AFrameGraphTexture * FinalTexture;
-    if ( RVFxaa ) {
+    if ( r_FXAA ) {
         FxaaRenderer.AddPass( FrameGraph, PostprocessTexture, &FinalTexture );
     }
     else {
@@ -414,7 +420,7 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
         AddWireframePass( FrameGraph, FinalTexture );
     }
 
-    if ( RVDrawNormals ) {
+    if ( r_ShowNormals ) {
         AddNormalsPass( FrameGraph, FinalTexture );
     }
 
@@ -423,12 +429,12 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
     }
 
     if ( VTWorkflow ) {
-        if ( RVVTDrawFeedback ) {
+        if ( r_ShowFeedbackVT ) {
             GRenderView->VTFeedback->DrawFeedback( FrameGraph, FinalTexture );
         }
 
-        if ( RVVTDrawCache.GetInteger() >= 0 ) {
-            VTWorkflow->PhysCache.Draw( FrameGraph, FinalTexture, RVVTDrawCache.GetInteger() );
+        if ( r_ShowCacheVT.GetInteger() >= 0 ) {
+            VTWorkflow->PhysCache.Draw( FrameGraph, FinalTexture, r_ShowCacheVT.GetInteger() );
         }
     }
 

@@ -33,7 +33,7 @@ SOFTWARE.
 
 #include <Runtime/Public/RuntimeVariable.h>
 
-ARuntimeVariable RVShowDefaultExposure( _CTS( "ShowDefaultExposure" ), _CTS( "0" ) );
+ARuntimeVariable r_ShowDefaultExposure( _CTS( "r_ShowDefaultExposure" ), _CTS( "0" ) );
 
 using namespace RenderCore;
 
@@ -82,15 +82,30 @@ AExposureRenderer::AExposureRenderer()
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
     samplerCI.Filter = FILTER_LINEAR;
 
-    CreateFullscreenQuadPipeline( &MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &samplerCI, 1 );
-    CreateFullscreenQuadPipeline( &SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &samplerCI, 1 );
-    CreateFullscreenQuadPipeline( &DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &samplerCI, 1, RenderCore::BLENDING_ALPHA );
+    SBufferInfo bufferInfo[1];
+    bufferInfo[0].BufferType = UNIFORM_BUFFER;
+    //bufferInfo[1].BufferType = UNIFORM_BUFFER;
+
+    SPipelineResourceLayout resourceLayout;
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers = &samplerCI;
+
+    resourceLayout.NumBuffers = AN_ARRAY_SIZE( bufferInfo );
+    resourceLayout.Buffers = bufferInfo;
+
+    CreateFullscreenQuadPipeline( &MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &resourceLayout );
+    CreateFullscreenQuadPipeline( &DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &resourceLayout, RenderCore::BLENDING_ALPHA );
+
+    resourceLayout.NumBuffers = 0;
+
+    CreateFullscreenQuadPipeline( &SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &resourceLayout );
 }
 
-void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppExposure ) {
-    ATextureGPU * exposureTexture = GRenderView->CurrentExposure;
+void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppExposure )
+{
+    RenderCore::ITexture * exposureTexture = GRenderView->CurrentExposure;
 
-    if ( !exposureTexture || RVShowDefaultExposure ) {
+    if ( !exposureTexture || r_ShowDefaultExposure ) {
         *ppExposure = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
             "Fallback exposure texture",
             MakeTexture( RenderCore::TEXTURE_FORMAT_RG16F, RenderCore::STextureResolution2D( 1, 1 ) ),
@@ -101,7 +116,7 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
     auto Exposure_R = FrameGraph.AddExternalResource(
         "Exposure texture",
         RenderCore::STextureCreateInfo(),
-        GPUTextureHandle( exposureTexture )
+        exposureTexture
     );
     auto Luminance64_R = FrameGraph.AddExternalResource(
         "Luminance64",
@@ -142,9 +157,7 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0]->pTexture = SourceTexture->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, SourceTexture->Actual() );
 
         DrawSAQ( MakeLuminanceMapPipe );
     });
@@ -157,9 +170,7 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0]->pTexture = Luminance64_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, Luminance64_R->Actual() );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -172,9 +183,7 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0]->pTexture = Luminance32_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, Luminance32_R->Actual() );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -187,9 +196,7 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0]->pTexture = Luminance16_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, Luminance16_R->Actual() );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -202,9 +209,7 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0]->pTexture = Luminance8_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, Luminance8_R->Actual() );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -217,9 +222,7 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0]->pTexture = Luminance4_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, Luminance4_R->Actual() );
 
         DrawSAQ( SumLuminanceMapPipe );
     } );
@@ -232,9 +235,7 @@ void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * 
         .AddSubpass( { 0 },
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        GFrameResources.TextureBindings[0]->pTexture = Luminance2_R->Actual();
-
-        rcmd->BindResourceTable( &GFrameResources.Resources );
+        rtbl->BindTexture( 0, Luminance2_R->Actual() );
 
         DrawSAQ( DynamicExposurePipe );
     } );

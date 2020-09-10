@@ -32,8 +32,6 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/CriticalError.h>
 
-ARuntimeVariable RVWriteDynamicData( _CTS( "WriteDynamicData" ), _CTS( "1" ) );
-
 AVertexMemoryGPU GVertexMemoryGPU;
 AStreamedMemoryGPU GStreamedMemoryGPU;
 
@@ -53,12 +51,9 @@ void AVertexMemoryGPU::Initialize() {
 
 void AVertexMemoryGPU::Deinitialize() {
     CheckMemoryLeaks();
-    for ( ABufferGPU * buffer : BufferHandles ) {
-        GRenderBackend->DestroyBuffer( buffer );
-    }
     for ( SVertexHandle * handle : HugeHandles ) {
-        ABufferGPU * buffer = (ABufferGPU *)handle->Address;
-        GRenderBackend->DestroyBuffer( buffer );
+        RenderCore::IBuffer * buffer = (RenderCore::IBuffer *)handle->Address;
+        buffer->RemoveRef();
     }
     Handles.Free();
     HugeHandles.Free();
@@ -186,9 +181,9 @@ void AVertexMemoryGPU::Defragment( bool bDeallocateEmptyBlocks, bool bForceUploa
     if ( freeBuffers > 0 ) {
         if ( bDeallocateEmptyBlocks ) {
             // Destroy and deallocate unused GPU buffers
-            for ( int i = 0 ; i < freeBuffers ; i++ ) {
-                GRenderBackend->DestroyBuffer( BufferHandles[ Blocks.Size() + i ] );
-            }
+            //for ( int i = 0 ; i < freeBuffers ; i++ ) {
+            //    GRenderBackend->DestroyBuffer( BufferHandles[ Blocks.Size() + i ] );
+            //}
             BufferHandles.Resize( Blocks.Size() );
         } else {
             // Emit empty blocks
@@ -202,20 +197,15 @@ void AVertexMemoryGPU::Defragment( bool bDeallocateEmptyBlocks, bool bForceUploa
     }
 }
 
-void AVertexMemoryGPU::GetPhysicalBufferAndOffset( SVertexHandle * _Handle, ABufferGPU ** _Buffer, size_t * _Offset ) {
+void AVertexMemoryGPU::GetPhysicalBufferAndOffset( SVertexHandle * _Handle, RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( _Handle->IsHuge() ) {
-        *_Buffer = (ABufferGPU *)_Handle->Address;
+        *_Buffer = (RenderCore::IBuffer *)_Handle->Address;
         *_Offset = 0;
         return;
     }
 
     *_Buffer = BufferHandles[_Handle->GetBlockIndex()];
     *_Offset = _Handle->GetBlockOffset();
-}
-
-void AVertexMemoryGPU::UploadResourcesGPU() {
-    UploadBuffers();
-    UploadBuffersHuge();
 }
 
 int AVertexMemoryGPU::FindBlock( size_t _RequiredSize ) {
@@ -306,14 +296,17 @@ SVertexHandle * AVertexMemoryGPU::AllocateHuge( size_t _SizeInBytes, const void 
     handle->GetMemoryCB = _GetMemoryCB;
     handle->UserPointer = _UserPointer;
 
-    ABufferGPU * buffer = GRenderBackend->CreateBuffer( this );
-    GRenderBackend->InitializeBuffer( buffer, _SizeInBytes );
+    TRef< RenderCore::IBuffer > buffer;
+    GRenderBackend->InitializeBuffer( &buffer, _SizeInBytes );
 
     if ( _Data ) {
         GRenderBackend->WriteBuffer( buffer, 0, _SizeInBytes, _Data );
     }
 
-    handle->Address = (size_t)buffer;
+    RenderCore::IBuffer * pBuffer = buffer.GetObject();
+    pBuffer->AddRef();
+
+    handle->Address = (size_t)pBuffer;
 
     UsedMemoryHuge += _SizeInBytes;
 
@@ -325,8 +318,8 @@ SVertexHandle * AVertexMemoryGPU::AllocateHuge( size_t _SizeInBytes, const void 
 void AVertexMemoryGPU::DeallocateHuge( SVertexHandle * _Handle ) {
     UsedMemoryHuge -= _Handle->Size;
 
-    ABufferGPU * buffer = (ABufferGPU *)_Handle->Address;
-    GRenderBackend->DestroyBuffer( buffer );
+    RenderCore::IBuffer * buffer = (RenderCore::IBuffer *)_Handle->Address;
+    buffer->RemoveRef();
 
     HugeHandles.RemoveSwap( HugeHandles.IndexOf( _Handle ) );
 
@@ -334,7 +327,7 @@ void AVertexMemoryGPU::DeallocateHuge( SVertexHandle * _Handle ) {
 }
 
 void AVertexMemoryGPU::UpdateHuge( SVertexHandle * _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void * _Data ) {
-    GRenderBackend->WriteBuffer( (ABufferGPU *)_Handle->Address, _ByteOffset, _SizeInBytes, _Data );
+    GRenderBackend->WriteBuffer( (RenderCore::IBuffer *)_Handle->Address, _ByteOffset, _SizeInBytes, _Data );
 }
 
 void AVertexMemoryGPU::UploadBuffers() {
@@ -349,14 +342,14 @@ void AVertexMemoryGPU::UploadBuffers() {
 void AVertexMemoryGPU::UploadBuffersHuge() {
     for ( int i = 0 ; i < HugeHandles.Size() ; i++ ) {
         SVertexHandle * handle = HugeHandles[i];
-        GRenderBackend->WriteBuffer( (ABufferGPU *)handle->Address, 0, handle->Size, handle->GetMemoryCB( handle->UserPointer ) );
+        GRenderBackend->WriteBuffer( (RenderCore::IBuffer *)handle->Address, 0, handle->Size, handle->GetMemoryCB( handle->UserPointer ) );
     }
 }
 
 void AVertexMemoryGPU::AddGPUBuffer() {
     // Create GPU buffer
-    ABufferGPU * buffer = GRenderBackend->CreateBuffer( this );
-    GRenderBackend->InitializeBuffer( buffer, VERTEX_MEMORY_GPU_BLOCK_SIZE );
+    TRef< RenderCore::IBuffer > buffer;
+    GRenderBackend->InitializeBuffer( &buffer, VERTEX_MEMORY_GPU_BLOCK_SIZE );
     BufferHandles.Append( buffer );
 
     GLogger.Printf( "Allocated a new block (total blocks %d)\n", BufferHandles.Size() );
@@ -391,8 +384,7 @@ AStreamedMemoryGPU::~AStreamedMemoryGPU() {
 void AStreamedMemoryGPU::Initialize() {
     Deinitialize();
 
-    Buffer = GRenderBackend->CreateBuffer( this );
-    pMappedMemory = GRenderBackend->InitializePersistentMappedBuffer( Buffer, STREAMED_MEMORY_GPU_BLOCK_SIZE * STREAMED_MEMORY_GPU_BUFFERS_COUNT );
+    pMappedMemory = GRenderBackend->InitializePersistentMappedBuffer( &Buffer, STREAMED_MEMORY_GPU_BLOCK_SIZE * STREAMED_MEMORY_GPU_BUFFERS_COUNT );
 
     for ( int i = 0 ; i < STREAMED_MEMORY_GPU_BUFFERS_COUNT ; i++ ) {
         SFrameData * frameData = &FrameData[i];
@@ -412,11 +404,8 @@ void AStreamedMemoryGPU::Deinitialize() {
         GRenderBackend->RemoveSync( frameData->Sync );
     }
 
-    if ( Buffer ) {
-        // TODO: Unmap
-        GRenderBackend->DestroyBuffer( Buffer );
-        Buffer = nullptr;
-    }
+    // TODO: Unmap
+    Buffer.Reset();
 
     pMappedMemory = nullptr;
 }
@@ -439,12 +428,12 @@ void * AStreamedMemoryGPU::Map( size_t _StreamHandle ) {
     return (byte *)pMappedMemory + _StreamHandle;
 }
 
-void AStreamedMemoryGPU::GetPhysicalBufferAndOffset( size_t _StreamHandle, ABufferGPU ** _Buffer, size_t * _Offset ) {
+void AStreamedMemoryGPU::GetPhysicalBufferAndOffset( size_t _StreamHandle, RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     *_Buffer = Buffer;
     *_Offset = _StreamHandle;
 }
 
-ABufferGPU * AStreamedMemoryGPU::GetBufferGPU() {
+RenderCore::IBuffer * AStreamedMemoryGPU::GetBufferGPU() {
     return Buffer;
 }
 
@@ -460,9 +449,6 @@ void AStreamedMemoryGPU::SwapFrames() {
     FrameWrite = ( FrameWrite + 1 ) % STREAMED_MEMORY_GPU_BUFFERS_COUNT;
     FrameData[FrameWrite].HandlesCount = 0;
     FrameData[FrameWrite].UsedMemory = 0;
-}
-
-void AStreamedMemoryGPU::UploadResourcesGPU() {
 }
 
 size_t AStreamedMemoryGPU::Allocate( size_t _SizeInBytes, int _Alignment, const void * _Data ) {
@@ -482,9 +468,7 @@ size_t AStreamedMemoryGPU::Allocate( size_t _SizeInBytes, int _Alignment, const 
     alignedOffset += FrameWrite * STREAMED_MEMORY_GPU_BLOCK_SIZE;
 
     if ( _Data ) {
-        if ( RVWriteDynamicData ) {
-            Core::MemcpySSE( (byte *)pMappedMemory + alignedOffset, _Data, _SizeInBytes );
-        }
+        Core::MemcpySSE( (byte *)pMappedMemory + alignedOffset, _Data, _SizeInBytes );
     }
 
     return alignedOffset;

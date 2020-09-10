@@ -35,7 +35,7 @@ SOFTWARE.
 static const float DEFAULT_RADIUS = 1.0f;
 static const float MIN_RADIUS = 0.01f;
 
-ARuntimeVariable RVDrawPointLights( _CTS( "DrawPointLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_PointLights( _CTS( "dd_PointLights" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( APointLightComponent )
 
@@ -83,7 +83,7 @@ void APointLightComponent::UpdateWorldBounds() {
 void APointLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( RVDrawPointLights )
+    if ( dd_PointLights )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {

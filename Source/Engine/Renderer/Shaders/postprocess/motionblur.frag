@@ -42,11 +42,16 @@ layout( binding = 2 ) uniform sampler2D Smp_Depth;
 #define MAX_SAMPLES 32
 
 void main() {
+    vec2 uv = vec2( VS_TexCoord.x, 1.0-VS_TexCoord.y );
+    
+    // Adjust texture coordinates for dynamic resolution
+    vec2 tc = AdjustTexCoord( VS_TexCoord );
+    
     // Fragment depth
-    float srcDepth = texture( Smp_Depth, VS_TexCoord ).x;
+    float srcDepth = texture( Smp_Depth, tc ).x;
 
     // Unpack dynamic object velocity
-    vec2 v = texture( Smp_Velocity, VS_TexCoord ).xy;
+    vec2 v = texture( Smp_Velocity, tc ).xy;
     if ( v.x < 1.0 ) {
         v = v * ( 255.0 / 254.0 );
         v = v * 2.0 - 1.0;
@@ -54,15 +59,15 @@ void main() {
     }
     else {
         // Calc fragment UV at previous frame
-        const vec3 fragmentPosViewspace = UVToView( VS_TexCoord, -srcDepth );
-        const vec2 texCoordPrev = ViewToUVReproj( fragmentPosViewspace );
+        const vec3 fragmentPosViewspace = UVToView( uv, -srcDepth );
+        const vec2 prevUV = ViewToUVReproj( fragmentPosViewspace );
 
         // Calc camera velocity
-        v = VS_TexCoord - texCoordPrev;
+        v = uv - prevUV;
     }
 
-    //if ( VS_TexCoord.x > 0.5 ) {
-    //    FS_FragColor = vec4( (v), texture( Smp_Velocity, VS_TexCoord ).x < 1.0 ? 0.005 : 0.0, 1.0 );
+    //if ( tc.x > 0.5 ) {
+    //    FS_FragColor = vec4( (v), texture( Smp_Velocity, tc ).x < 1.0 ? 0.005 : 0.0, 1.0 );
     //    return;
     //}
 
@@ -79,21 +84,23 @@ void main() {
        v = normalize( v ) * maxVelocity;
     }
     
-    const vec2 texSize = 1.0 / InvViewportSize;//vec2(textureSize(Smp_Light, 0)); // TODO: Use from viewuniforms
+    const vec2 texSize = 1.0 / (InvViewportSize * DynamicResolutionRatio);
     const float speed = length( v * texSize );
     const int nSamples = clamp( int(speed), 1, MAX_SAMPLES );
     
-    FS_FragColor = texture( Smp_Light, VS_TexCoord );
+    FS_FragColor = texture( Smp_Light, tc );
     
     const float bias = -0.5;
 
     float total = 1;
     for ( int i = 1 ; i < nSamples ; ++i ) {
         vec2 offset = v * (float(i) / float(nSamples - 1) + bias);
-        vec2 samplePos = VS_TexCoord + offset;
-
-        float depth = texture( Smp_Depth, samplePos ).x;
+        vec2 samplePos = uv + offset;
         
+        samplePos = min( vec2(samplePos.x,1.0-samplePos.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
+        samplePos.y = 1.0 - samplePos.y;
+        
+        float depth = texture( Smp_Depth, samplePos ).x;
 #if 0
         if ( srcDepth - depth < 0.001 ) {
             FS_FragColor += texture( Smp_Light, samplePos );

@@ -61,8 +61,8 @@ SOFTWARE.
 
 //#define IMGUI_CONTEXT
 
-static ARuntimeVariable RVSyncGPU( _CTS( "SyncGPU" ), _CTS( "0" ) );
-static ARuntimeVariable RVShowStat( _CTS( "ShowStat" ), _CTS( "0" ) );
+static ARuntimeVariable com_SyncGPU( _CTS( "com_SyncGPU" ), _CTS( "0" ) );
+static ARuntimeVariable com_ShowStat( _CTS( "com_ShowStat" ), _CTS( "0" ) );
 
 AN_CLASS_META( AEngineCommands )
 
@@ -229,7 +229,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
         GAudioSystem.Update( APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
 
         // Sync with GPU to prevent "input lag"
-        if ( RVSyncGPU ) {
+        if ( com_SyncGPU ) {
             GRenderBackend->WaitGPU();
         }
 
@@ -350,7 +350,7 @@ void AEngineInstance::ShowStats() {
     fps /= FPS_BUF;
     fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
 
-    if ( RVShowStat )
+    if ( com_ShowStat )
     {
         SRenderFrame * frameData = Renderer->GetFrameData();
 

@@ -37,7 +37,7 @@ SOFTWARE.
 
 AN_CLASS_META( AActor )
 
-ARuntimeVariable RVDrawRootComponentAxis( _CTS( "DrawRootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable dd_RootComponentAxis( _CTS( "dd_RootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
 
 static uint32_t UniqueName = 0;
 
@@ -343,7 +343,7 @@ void AActor::DrawDebug( ADebugRenderer * InRenderer ) {
         component->DrawDebug( InRenderer );
     }
 
-    if ( RVDrawRootComponentAxis ) {
+    if ( dd_RootComponentAxis ) {
         if ( RootComponent ) {
             InRenderer->SetDepthTest( false );
             InRenderer->DrawAxis( RootComponent->GetWorldTransformMatrix(), false );

@@ -74,7 +74,7 @@ struct SVertexHandle
     bool IsHuge() const { return Size > VERTEX_MEMORY_GPU_BLOCK_SIZE; }
 };
 
-class AVertexMemoryGPU : public IGPUResourceOwner {
+class AVertexMemoryGPU {
     AN_FORBID_COPY( AVertexMemoryGPU )
 
 public:
@@ -111,7 +111,7 @@ public:
     void Defragment( bool bDeallocateEmptyBlocks, bool bForceUpload );
 
     /** GPU buffer and offset from handle */
-    void GetPhysicalBufferAndOffset( SVertexHandle * _Handle, ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetPhysicalBufferAndOffset( SVertexHandle * _Handle, RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     /** Total allocated GPU memory for blocks */
     size_t GetAllocatedMemory() const { return Blocks.Size() * VERTEX_MEMORY_GPU_BLOCK_SIZE; }
@@ -138,8 +138,6 @@ public:
     int GetBlocksCount() const { return Blocks.Size(); }
 
 protected:
-    /** IGPUResourceOwner interface */
-    void UploadResourcesGPU() override;
 
 private:
 
@@ -178,14 +176,14 @@ private:
     TPodArray< SVertexHandle * > Handles;
     TPodArray< SVertexHandle * > HugeHandles;
     TPodArray< SBlock > Blocks;
-    TPodArray< ABufferGPU * > BufferHandles;
+    TStdVector< TRef< RenderCore::IBuffer > > BufferHandles;
     TPoolAllocator< SVertexHandle > HandlePool;
 
     size_t UsedMemory;
     size_t UsedMemoryHuge;
 };
 
-class AStreamedMemoryGPU : public IGPUResourceOwner {
+class AStreamedMemoryGPU {
     AN_FORBID_COPY( AStreamedMemoryGPU )
 
 public:
@@ -210,10 +208,10 @@ public:
     void * Map( size_t _StreamHandle );
 
     /** Get physical buffer and offset */
-    void GetPhysicalBufferAndOffset( size_t _StreamHandle, ABufferGPU ** _Buffer, size_t * _Offset );
+    void GetPhysicalBufferAndOffset( size_t _StreamHandle, RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     /** Get physical buffer */
-    ABufferGPU * GetBufferGPU();
+    RenderCore::IBuffer * GetBufferGPU();
 
     /** Internal. Wait buffer before filling. */
     void WaitBuffer();
@@ -240,8 +238,6 @@ public:
     int GetHandlesCount() const { return FrameData[FrameWrite].HandlesCount; }
 
 protected:
-    /** IGPUResourceOwner interface */
-    void UploadResourcesGPU() override;
 
 private:
     size_t Allocate( size_t _SizeInBytes, int _Alignment, const void * _Data );
@@ -253,7 +249,7 @@ private:
     };
 
     SFrameData FrameData[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
-    ABufferGPU * Buffer;
+    TRef< RenderCore::IBuffer > Buffer;
     void * pMappedMemory;
     int FrameWrite;
     size_t MaxMemoryUsage;

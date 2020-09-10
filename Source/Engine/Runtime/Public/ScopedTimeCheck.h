@@ -45,9 +45,9 @@ struct AScopedTimeCheck
 
     AScopedTimeCheck( const char * _Name ) : Name( _Name )
     {
-        extern ARuntimeVariable RVScopedTimeCheck;
+        extern ARuntimeVariable rt_ScopedTimeCheck;
 
-        if ( RVScopedTimeCheck )
+        if ( rt_ScopedTimeCheck )
         {
             Milliseconds = GRuntime.SysMilliseconds();
         }
@@ -55,9 +55,9 @@ struct AScopedTimeCheck
 
     ~AScopedTimeCheck()
     {
-        extern ARuntimeVariable RVScopedTimeCheck;
+        extern ARuntimeVariable rt_ScopedTimeCheck;
 
-        if ( RVScopedTimeCheck )
+        if ( rt_ScopedTimeCheck )
         {
             GLogger.Printf( "SCOPED_TIME_CHECK: %s : %d ms\n", Name, GRuntime.SysMilliseconds() - Milliseconds );
         }

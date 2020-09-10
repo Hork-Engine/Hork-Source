@@ -793,104 +793,12 @@ struct SMaterialDef
 // GPU Resources
 //
 
-class IGPUResourceOwner
-{
-public:
-    /** GPU resource owner must override this to upload resources to GPU */
-    virtual void UploadResourcesGPU() = 0;
-
-    /** Upload all GPU resources */
-    static void UploadResources();
-
-    /** Get list of GPU resource owners */
-    static IGPUResourceOwner * GetResourceOwners() { return ResourceOwners; }
-
-    /** Intrusive iterator */
-    IGPUResourceOwner * GetNext() { return pNext; }
-
-    /** Intrusive iterator */
-    IGPUResourceOwner * GetPrev() { return pPrev; }
-
-protected:
-    IGPUResourceOwner();
-
-    ~IGPUResourceOwner();
-
-private:
-    IGPUResourceOwner * pNext;
-    IGPUResourceOwner * pPrev;
-
-    static IGPUResourceOwner * ResourceOwners;
-    static IGPUResourceOwner * ResourceOwnersTail;
-};
-
-class AResourceGPU
-{
-public:
-    /** Get resource owner */
-    IGPUResourceOwner * GetOwner() { return pOwner; }
-
-    /** Get list of all GPU resources */
-    static AResourceGPU * GetResources() { return GPUResources; }
-
-    /** Intrusive iterator */
-    AResourceGPU * GetNext() { return pNext; }
-
-    /** Intrusive iterator */
-    AResourceGPU * GetPrev() { return pPrev; }
-
-private:
-    // Allow render backend to create and destroy GPU resources
-    friend class IRenderBackend;
-
-    template< typename T >
-    static T * CreateResource( IGPUResourceOwner * InOwner )
-    {
-        void * pData = GZoneMemory.ClearedAlloc( sizeof( T ) );
-        AResourceGPU * resource = new (pData) T;  // compile time check: T must be derived from AResourceGPU
-        resource->pOwner = InOwner;
-        return static_cast< T * >( resource );
-    }
-
-    static void DestroyResource( AResourceGPU * InResource )
-    {
-        InResource->~AResourceGPU();
-        GZoneMemory.Free( InResource );
-    }
-
-protected:
-    AResourceGPU();
-    virtual ~AResourceGPU();
-
-private:
-    IGPUResourceOwner * pOwner;
-
-    AResourceGPU * pNext;
-    AResourceGPU * pPrev;
-
-    // All GPU resources in one place
-    static AResourceGPU * GPUResources;
-    static AResourceGPU * GPUResourcesTail;
-};
-
-class ATextureGPU : public AResourceGPU
-{
-public:
-    TRef< RenderCore::ITexture > pTexture;
-};
-
-class ABufferGPU : public AResourceGPU
-{
-public:
-    TRef< RenderCore::IBuffer > pBuffer;
-};
-
-class AMaterialGPU : public AResourceGPU
+class AMaterialGPU
 {
 public:
     EMaterialType MaterialType;
 
-    int     LightmapSlot;
+    int LightmapSlot;
 
     int DepthPassTextureCount;
     int LightPassTextureCount;
@@ -914,7 +822,7 @@ public:
 struct SMaterialFrameData
 {
     AMaterialGPU * Material;
-    ATextureGPU * Textures[MAX_MATERIAL_TEXTURES];
+    RenderCore::ITexture * Textures[MAX_MATERIAL_TEXTURES];
     int NumTextures;
     Float4 UniformVectors[4];
     int NumUniformVectors;
@@ -991,7 +899,7 @@ struct SHUDDrawCmd
     EHUDSamplerType SamplerType;        // only for type DRAW_CMD_TEXTURE
 
     union {
-        ATextureGPU *        Texture;               // HUD_DRAW_CMD_TEXTURE, HUD_DRAW_CMD_ALPHA
+        RenderCore::ITexture * Texture;               // HUD_DRAW_CMD_TEXTURE, HUD_DRAW_CMD_ALPHA
         SMaterialFrameData * MaterialFrameData;     // HUD_DRAW_CMD_MATERIAL
         int                  ViewportIndex;         // HUD_DRAW_CMD_VIEWPORT
     };
@@ -1028,41 +936,41 @@ Render instance
 */
 struct SRenderInstance
 {
-    AMaterialGPU *      Material;
-    SMaterialFrameData *MaterialInstance;
+    AMaterialGPU * Material;
+    SMaterialFrameData * MaterialInstance;
 
-    ABufferGPU *        VertexBuffer;
-    size_t              VertexBufferOffset;
+    RenderCore::IBuffer * VertexBuffer;
+    size_t VertexBufferOffset;
 
-    ABufferGPU *        IndexBuffer;
-    size_t              IndexBufferOffset;
+    RenderCore::IBuffer * IndexBuffer;
+    size_t IndexBufferOffset;
 
-    ABufferGPU *        WeightsBuffer;
-    size_t              WeightsBufferOffset;
+    RenderCore::IBuffer * WeightsBuffer;
+    size_t WeightsBufferOffset;
 
-    ABufferGPU *        VertexLightChannel;
-    size_t              VertexLightOffset;
+    RenderCore::IBuffer * VertexLightChannel;
+    size_t VertexLightOffset;
 
-    ABufferGPU *        LightmapUVChannel;
-    size_t              LightmapUVOffset;
+    RenderCore::IBuffer * LightmapUVChannel;
+    size_t LightmapUVOffset;
 
-    ATextureGPU *       Lightmap;
-    Float4              LightmapOffset;
+    RenderCore::ITexture * Lightmap;
+    Float4 LightmapOffset;
 
-    Float4x4            Matrix;
-    Float4x4            MatrixP;
+    Float4x4 Matrix;
+    Float4x4 MatrixP;
 
-    Float3x3            ModelNormalToViewSpace;
+    Float3x3 ModelNormalToViewSpace;
 
-    size_t              SkeletonOffset;
-    size_t              SkeletonOffsetMB;
-    size_t              SkeletonSize;
+    size_t SkeletonOffset;
+    size_t SkeletonOffsetMB;
+    size_t SkeletonSize;
 
-    unsigned int        IndexCount;
-    unsigned int        StartIndexLocation;
-    int                 BaseVertexLocation;
+    unsigned int IndexCount;
+    unsigned int StartIndexLocation;
+    int          BaseVertexLocation;
 
-    uint64_t            SortKey;
+    uint64_t SortKey;
 
     uint8_t GetRenderingPriority() const {
         return (SortKey >> 56) & 0xf0;
@@ -1087,22 +995,22 @@ struct SRenderInstance
 
 struct SShadowRenderInstance
 {
-    AMaterialGPU *      Material;
-    SMaterialFrameData *MaterialInstance;
-    ABufferGPU *        VertexBuffer;
-    size_t              VertexBufferOffset;
-    ABufferGPU *        IndexBuffer;
-    size_t              IndexBufferOffset;
-    ABufferGPU *        WeightsBuffer;
-    size_t              WeightsBufferOffset;
-    Float3x4            WorldTransformMatrix;
-    size_t              SkeletonOffset;
-    size_t              SkeletonSize;
-    unsigned int        IndexCount;
-    unsigned int        StartIndexLocation;
-    int                 BaseVertexLocation;
-    uint16_t            CascadeMask;            // Cascade mask for directional lights or face index for point/spot lights
-    uint64_t            SortKey;
+    AMaterialGPU * Material;
+    SMaterialFrameData * MaterialInstance;
+    RenderCore::IBuffer * VertexBuffer;
+    size_t VertexBufferOffset;
+    RenderCore::IBuffer * IndexBuffer;
+    size_t IndexBufferOffset;
+    RenderCore::IBuffer * WeightsBuffer;
+    size_t WeightsBufferOffset;
+    Float3x4 WorldTransformMatrix;
+    size_t SkeletonOffset;
+    size_t SkeletonSize;
+    unsigned int IndexCount;
+    unsigned int StartIndexLocation;
+    int          BaseVertexLocation;
+    uint16_t CascadeMask;            // Cascade mask for directional lights or face index for point/spot lights
+    uint64_t SortKey;
 
     void GenerateSortKey( uint8_t Priority, uint64_t Mesh ) {
         // NOTE: 8 bits are still unused. We can use it in future.
@@ -1119,13 +1027,13 @@ struct SShadowRenderInstance
 
 struct SLightPortalRenderInstance
 {
-    ABufferGPU *        VertexBuffer;
-    size_t              VertexBufferOffset;
-    ABufferGPU *        IndexBuffer;
-    size_t              IndexBufferOffset;
-    unsigned int        IndexCount;
-    unsigned int        StartIndexLocation;
-    int                 BaseVertexLocation;
+    RenderCore::IBuffer * VertexBuffer;
+    size_t VertexBufferOffset;
+    RenderCore::IBuffer * IndexBuffer;
+    size_t IndexBufferOffset;
+    unsigned int IndexCount;
+    unsigned int StartIndexLocation;
+    int          BaseVertexLocation;
 };
 
 //
@@ -1281,9 +1189,9 @@ struct SRenderView
     float VignetteInnerRadiusSqr;
 
     // Source color grading texture
-    ATextureGPU * ColorGradingLUT;
+    RenderCore::ITexture * ColorGradingLUT;
     // Current color grading texture
-    ATextureGPU * CurrentColorGradingLUT;
+    RenderCore::ITexture * CurrentColorGradingLUT;
     // Blending speed between current and source color grading textures
     float ColorGradingAdaptationSpeed;
     // Procedural color grading
@@ -1296,12 +1204,12 @@ struct SRenderView
     float ColorGradingBrightnessNormalization;
 
     // Current exposure texture
-    ATextureGPU * CurrentExposure;
+    RenderCore::ITexture * CurrentExposure;
 
-    ATextureGPU * PhotometricProfiles;
+    RenderCore::ITexture * PhotometricProfiles;
 
-    ATextureGPU * LightTexture;
-    ATextureGPU * DepthTexture;
+    RenderCore::ITexture * LightTexture;
+    RenderCore::ITexture * DepthTexture;
 
     class AVirtualTextureFeedback * VTFeedback;
 
@@ -1384,7 +1292,7 @@ struct SRenderFrame
     size_t DbgVertexStreamOffset;
     size_t DbgIndexStreamOffset;
 
-    ABufferGPU * StreamBuffer;
+    RenderCore::IBuffer * StreamBuffer;
 };
 
 struct SRenderFrontendDef
@@ -1442,28 +1350,22 @@ public:
     virtual void WaitSync( void * _Sync ) = 0;
     virtual void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) = 0;
 
-    virtual ATextureGPU * CreateTexture( IGPUResourceOwner * _Owner ) = 0;
-    virtual void DestroyTexture( ATextureGPU * _Texture ) = 0;
-    virtual void InitializeTexture1D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
-    virtual void InitializeTexture1DArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
-    virtual void InitializeTexture2D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) = 0;
-    virtual void InitializeTexture2DArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) = 0;
-    virtual void InitializeTexture3D( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) = 0;
-    virtual void InitializeTextureCubemap( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
-    virtual void InitializeTextureCubemapArray( ATextureGPU * _Texture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
-    virtual void WriteTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) = 0;
-    virtual void ReadTexture( ATextureGPU * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) = 0;
+    virtual void InitializeTexture1D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
+    virtual void InitializeTexture1DArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
+    virtual void InitializeTexture2D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) = 0;
+    virtual void InitializeTexture2DArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) = 0;
+    virtual void InitializeTexture3D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) = 0;
+    virtual void InitializeTextureCubemap( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) = 0;
+    virtual void InitializeTextureCubemapArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) = 0;
+    virtual void WriteTexture( RenderCore::ITexture * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) = 0;
+    virtual void ReadTexture( RenderCore::ITexture * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) = 0;
 
-    virtual ABufferGPU * CreateBuffer( IGPUResourceOwner * _Owner ) = 0;
-    virtual void DestroyBuffer( ABufferGPU * _Buffer ) = 0;
-    virtual void InitializeBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) = 0;
-    virtual void * InitializePersistentMappedBuffer( ABufferGPU * _Buffer, size_t _SizeInBytes ) = 0;
-    virtual void WriteBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) = 0;
-    virtual void ReadBuffer( ABufferGPU * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) = 0;
-    virtual void OrphanBuffer( ABufferGPU * _Buffer ) = 0;
+    virtual void InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes ) = 0;
+    virtual void * InitializePersistentMappedBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes ) = 0;
+    virtual void WriteBuffer( RenderCore::IBuffer * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) = 0;
+    virtual void ReadBuffer( RenderCore::IBuffer * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) = 0;
+    virtual void OrphanBuffer( RenderCore::IBuffer * _Buffer ) = 0;
 
-    virtual AMaterialGPU * CreateMaterial( IGPUResourceOwner * _Owner ) = 0;
-    virtual void DestroyMaterial( AMaterialGPU * _Material ) = 0;
     virtual void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _BuildData ) = 0;
 
     const char * GetName() { return BackendName; }
@@ -1471,17 +1373,6 @@ public:
     int GetUniformBufferOffsetAlignment() const { return UniformBufferOffsetAlignment; }
 
 protected:
-    template< typename T >
-    static T * CreateResource( IGPUResourceOwner * InOwner )
-    {
-        return AResourceGPU::CreateResource< T >( InOwner );
-    }
-
-    static void DestroyResource( AResourceGPU * InResource )
-    {
-        return AResourceGPU::DestroyResource( InResource );
-    }
-
     int UniformBufferOffsetAlignment;
 
 private:
