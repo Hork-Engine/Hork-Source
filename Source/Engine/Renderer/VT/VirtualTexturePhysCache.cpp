@@ -54,8 +54,10 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
     PageCacheCapacityY = Math::Clamp( CreateInfo.PageCacheCapacityY, MIN_PAGE_CACHE_CAPACITY, maxPageCacheCapacity );
 
     PageCacheCapacity = PageCacheCapacityX * PageCacheCapacityY;
-
-    AN_ASSERT( PageCacheCapacity <= 4096 );
+    if ( PageCacheCapacity > 4096 ) {
+        PageCacheCapacityX = PageCacheCapacityY = 64;
+        PageCacheCapacity = 4096;
+    }
 
     PageCacheInfo.Resize( PageCacheCapacity );
     SortedCacheInfo.Resize( PageCacheCapacity );
