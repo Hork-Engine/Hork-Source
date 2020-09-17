@@ -37,7 +37,7 @@ namespace  Core {
 #define __utf8_is_3b(s)   (( *(s) & 0xF0 ) == 0xE0)
 #define __utf8_is_4b(s)   (( *(s) & 0xF8 ) == 0xF0)
 
-int UTF8CharByteLength( const char * _Unicode ) {
+int UTF8CharSizeInBytes( const char * _Unicode ) {
     if ( __utf8_is_1b(_Unicode) ) {
         return 1;
     }
@@ -65,7 +65,7 @@ int UTF8CharByteLength( const char * _Unicode ) {
 int UTF8StrLength( const char * _Unicode ) {
     int strLength = 0;
     while ( *_Unicode ) {
-        const int byteLen = UTF8CharByteLength( _Unicode );
+        const int byteLen = UTF8CharSizeInBytes( _Unicode );
         if ( byteLen > 0 ) {
             _Unicode += byteLen;
             strLength++;

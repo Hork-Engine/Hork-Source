@@ -58,7 +58,7 @@ int Stricmp( const char * _S1, const char * _S2 ) {
                 c2 -= ('a' - 'A');
             }
             if ( c1 != c2 ) {
-                return c1 < c2 ? -1 : 1;
+                return (int)((uint8_t)c1 - (uint8_t)c2);
             }
         }
     } while ( c1 );
@@ -87,7 +87,7 @@ int StricmpN( const char * _S1, const char * _S2, int _Num ) {
                 c2 -= ('a' - 'A');
             }
             if ( c1 != c2 ) {
-                return c1 < c2 ? -1 : 1;
+                return (int)((uint8_t)c1 - (uint8_t)c2);
             }
         }
     } while ( c1 );
@@ -105,7 +105,7 @@ int Strcmp( const char * _S1, const char * _S2 ) {
         _S1++;
         _S2++;
     }
-    return *_S1 < *_S2 ? -1 : 1;
+    return (int)((uint8_t)*_S1 - (uint8_t)*_S2);
 }
 
 int StrcmpN( const char * _S1, const char * _S2, int _Num ) {
@@ -122,7 +122,7 @@ int StrcmpN( const char * _S1, const char * _S2, int _Num ) {
         }
 
         if ( c1 != c2 ) {
-            return c1 < c2 ? -1 : 1;
+            return (int)((uint8_t)c1 - (uint8_t)c2);
         }
 
     } while ( c1 );
@@ -360,7 +360,7 @@ int CmpPath( const char * _Path1, const char * _Path2 ) {
                 c2 = '/';
             }
             if ( c1 != c2 ) {
-                return c1 < c2 ? -1 : 1;
+                return (int)((uint8_t)c1 - (uint8_t)c2);
             }
         }
     } while ( c1 );
@@ -393,7 +393,7 @@ int CmpPathN( const char * _Path1, const char * _Path2, int _Num ) {
                 c2 = '/';
             }
             if ( c1 != c2 ) {
-                return c1 < c2 ? -1 : 1;
+                return (int)((uint8_t)c1 - (uint8_t)c2);
             }
         }
     } while ( c1 );

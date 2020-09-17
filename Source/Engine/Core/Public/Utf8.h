@@ -37,7 +37,7 @@ typedef unsigned short SWideChar;
 namespace Core {
 
 /** Length of utf8 character in bytes */
-int UTF8CharByteLength( const char * _Unicode );
+int UTF8CharSizeInBytes( const char * _Unicode );
 
 /** Length of utf8 string */
 int UTF8StrLength( const char * _Unicode );
