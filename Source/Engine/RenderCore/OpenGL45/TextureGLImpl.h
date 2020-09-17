@@ -35,13 +35,9 @@ SOFTWARE.
 namespace RenderCore {
 
 class ADeviceGLImpl;
-class ABufferGLImpl;
 
 class ATextureGLImpl final : public ITexture
 {
-    friend class ADeviceGLImpl;
-    friend class AImmediateContextGLImpl;
-
 public:
     ATextureGLImpl( ADeviceGLImpl * _Device, STextureCreateInfo const & _CreateInfo );
     ATextureGLImpl( ADeviceGLImpl * _Device, STextureViewCreateInfo const & _CreateInfo );
@@ -79,18 +75,9 @@ public:
 
     void InvalidateRect( uint32_t _NumRectangles, STextureRect const * _Rectangles ) override;
 
-    size_t GetTextureBufferOffset( uint16_t _Lod ) override;
-    size_t GetTextureBufferByteLength( uint16_t _Lod ) override;
-
-    static bool LookupImageFormat( const char * _FormatQualifier, TEXTURE_FORMAT * _InternalPixelFormat );
-
-    static const char * LookupImageFormatQualifier( TEXTURE_FORMAT _InternalPixelFormat );
-
-    //static size_t GetPixelFormatSize( int _Width, int _Height, TEXTURE_PIXEL_FORMAT _PixelFormat );
-
 private:
     ADeviceGLImpl * pDevice;
-    TRef< ATextureGLImpl > pOriginalTex;
+    TRef< ITexture > pOriginalTex;
 };
 
 }

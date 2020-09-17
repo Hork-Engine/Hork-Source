@@ -44,14 +44,14 @@ ATransformFeedbackGLImpl::ATransformFeedbackGLImpl( ADeviceGLImpl * _Device, STr
     GLuint id;
     glCreateTransformFeedbacks( 1, &id ); // 4.5
 
-    Handle = (void *)(size_t)id;
+    SetHandleNativeGL( id );
 
     pDevice->TotalTransformFeedbacks++;
 }
 
 ATransformFeedbackGLImpl::~ATransformFeedbackGLImpl() {
-    if ( Handle ) {
-        GLuint id = GL_HANDLE( Handle );
+    GLuint id = GetHandleNativeGL();
+    if ( id ) {
         glDeleteTransformFeedbacks( 1, &id );
     }
     pDevice->TotalTransformFeedbacks--;

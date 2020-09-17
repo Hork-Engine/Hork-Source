@@ -35,15 +35,25 @@ SOFTWARE.
 
 namespace RenderCore {
 
-class ABufferGLImpl;
-class ATextureGLImpl;
 class ARenderPassGLImpl;
 class APipelineGLImpl;
 
+struct SBindingStateGL
+{
+    uint64_t              ReadFramebufferUID;
+    uint64_t              DrawFramebufferUID;
+    unsigned int          DrawFramebuffer;
+    unsigned short        DrawFramebufferWidth;
+    unsigned short        DrawFramebufferHeight;
+    unsigned int          DrawInderectBuffer;
+    unsigned int          DispatchIndirectBuffer;
+    SBlendingStateInfo const *     BlendState;             // current blend state binding
+    SRasterizerStateInfo const *   RasterizerState;        // current rasterizer state binding
+    SDepthStencilStateInfo const * DepthStencilState;      // current depth-stencil state binding
+};
+
 class AResourceTableGLImpl final : public IResourceTable
 {
-    friend class AImmediateContextGLImpl;
-
 public:
     AResourceTableGLImpl( ADeviceGLImpl * _Device );
     ~AResourceTableGLImpl();
@@ -53,6 +63,20 @@ public:
     void BindImage( unsigned int Slot, ITextureBase const * Texture, uint16_t Lod = 0, bool bLayered = false, uint16_t LayerIndex = 0 ) override;
 
     void BindBuffer( int Slot, IBuffer const * Buffer, size_t Offset = 0, size_t Size = 0 ) override;
+
+    const unsigned int * GetTextureBindings() const { return TextureBindings; }
+    const uint32_t     * GetTextureBindingUIDs() const { return TextureBindingUIDs; }
+
+    const unsigned int * GetImageBindings() const { return ImageBindings; }
+    const uint32_t     * GetImageBindingUIDs() const { return ImageBindingUIDs; }
+    const uint16_t     * GetImageLod() const { return ImageLod; }
+    const uint16_t     * GetImageLayerIndex() const { return ImageLayerIndex; }
+    const bool         * GetImageLayered() const { return ImageLayered; }
+
+    const unsigned int * GetBufferBindings() const { return BufferBindings; }
+    const uint32_t     * GetBufferBindingUIDs() const { return BufferBindingUIDs; }
+    const ptrdiff_t    * GetBufferBindingOffsets() const { return BufferBindingOffsets; }
+    const ptrdiff_t    * GetBufferBindingSizes() const { return BufferBindingSizes; }
 
 private:
     ADeviceGLImpl * pDevice;
@@ -74,13 +98,10 @@ private:
 
 class AImmediateContextGLImpl final : public IImmediateContext
 {
-    friend class ADeviceGLImpl;
-    friend class AFramebufferGLImpl;
-    friend class APipelineGLImpl;
-    friend class ARenderPassGLImpl;
-    friend class ATextureGLImpl;
-
 public:
+    AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImmediateContextCreateInfo const & _CreateInfo, void * _Context );
+    ~AImmediateContextGLImpl();
+
     void MakeCurrent() override;
 
     static AImmediateContextGLImpl * GetCurrent() { return static_cast< AImmediateContextGLImpl * >( Current ); }
@@ -282,7 +303,7 @@ public:
                               ITexture * _DstTexture,
                               STextureRect const & _Rectangle,
                               DATA_FORMAT _Format,
-                              size_t _CompressedDataByteLength,
+                              size_t _CompressedDataSizeInBytes,
                               size_t _SourceByteOffset,
                               unsigned int _Alignment
                               ) override;
@@ -350,39 +371,44 @@ public:
                                       /* optional */ SClearDepthStencilValue const * _DepthStencilClearValue,
                                       /* optional */ SRect2D const * _Rect ) override;
 
-private:
-    AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImmediateContextCreateInfo const & _CreateInfo, void * _Context );
-    ~AImmediateContextGLImpl();
-
-    void PolygonOffsetClampSafe( float _Slope, int _Bias, float _Clamp );
-
     void PackAlignment( unsigned int _Alignment );
 
     void UnpackAlignment( unsigned int _Alignment );
 
     void ClampReadColor( COLOR_CLAMP _ColorClamp );
 
+    void BindReadFramebuffer( IFramebuffer const * Framebuffer );
+
+    void UnbindFramebuffer( IFramebuffer const * Framebuffer );
+
+    void NotifyRenderPassDestroyed( ARenderPassGLImpl const * RenderPass );
+
     struct SVertexArrayObject * CachedVAO( SVertexBindingInfo const * pVertexBindings,
                                            uint32_t NumVertexBindings,
                                            SVertexAttribInfo const * pVertexAttribs,
                                            uint32_t NumVertexAttribs );
 
+    SBindingStateGL const & GetBindingState() { return Binding; }
+
+private:
+    void PolygonOffsetClampSafe( float _Slope, int _Bias, float _Clamp );
+
     void BindRenderPassSubPass( ARenderPassGLImpl const * _RenderPass, int _Subpass );
 
     void BeginRenderPassDefaultFramebuffer( SRenderPassBegin const & _RenderPassBegin );
 
-    bool CopyBufferToTexture1D( ABufferGLImpl const * _SrcBuffer,
-                                ATextureGLImpl * _DstTexture,
+    bool CopyBufferToTexture1D( IBuffer const * _SrcBuffer,
+                                ITexture * _DstTexture,
                                 uint16_t _Lod,
                                 uint16_t _OffsetX,
                                 uint16_t _DimensionX,
-                                size_t _CompressedDataByteLength, // Only for compressed images
+                                size_t _CompressedDataSizeInBytes, // Only for compressed images
                                 DATA_FORMAT _Format,
                                 size_t _SourceByteOffset,
                                 unsigned int _Alignment );
 
-    bool CopyBufferToTexture2D( ABufferGLImpl const * _SrcBuffer,
-                                ATextureGLImpl * _DstTexture,
+    bool CopyBufferToTexture2D( IBuffer const * _SrcBuffer,
+                                ITexture * _DstTexture,
                                 uint16_t _Lod,
                                 uint16_t _OffsetX,
                                 uint16_t _OffsetY,
@@ -390,13 +416,13 @@ private:
                                 uint16_t _DimensionY,
                                 uint16_t _CubeFaceIndex, // only for TEXTURE_CUBE_MAP
                                 uint16_t _NumCubeFaces, // only for TEXTURE_CUBE_MAP
-                                size_t _CompressedDataByteLength, // Only for compressed images
+                                size_t _CompressedDataSizeInBytes, // Only for compressed images
                                 DATA_FORMAT _Format,
                                 size_t _SourceByteOffset,
                                 unsigned int _Alignment );
 
-    bool CopyBufferToTexture3D( ABufferGLImpl const * _SrcBuffer,
-                                ATextureGLImpl * _DstTexture,
+    bool CopyBufferToTexture3D( IBuffer const * _SrcBuffer,
+                                ITexture * _DstTexture,
                                 uint16_t _Lod,
                                 uint16_t _OffsetX,
                                 uint16_t _OffsetY,
@@ -404,7 +430,7 @@ private:
                                 uint16_t _DimensionX,
                                 uint16_t _DimensionY,
                                 uint16_t _DimensionZ,
-                                size_t _CompressedDataByteLength, // Only for compressed images
+                                size_t _CompressedDataSizeInBytes, // Only for compressed images
                                 DATA_FORMAT _Format,
                                 size_t _SourceByteOffset,
                                 unsigned int _Alignment );
@@ -422,15 +448,11 @@ private:
     CLIP_CONTROL              ClipControl;
     VIEWPORT_ORIGIN           ViewportOrigin;
 
-    unsigned int *            TmpHandles;
-    ptrdiff_t *               TmpPointers;
-    ptrdiff_t *               TmpPointers2;
+    SBindingStateGL           Binding;
 
     uint32_t                  BufferBindingUIDs[MAX_BUFFER_SLOTS];
     ptrdiff_t                 BufferBindingOffsets[MAX_BUFFER_SLOTS];
     ptrdiff_t                 BufferBindingSizes[MAX_BUFFER_SLOTS];
-    //unsigned int              SampleBindings[MAX_SAMPLER_SLOTS];
-    //unsigned int              TextureBindings[MAX_SAMPLER_SLOTS];
 
     TRef< IResourceTable >    RootResourceTable;
     TRef< AResourceTableGLImpl > CurrentResourceTable;
@@ -454,19 +476,6 @@ private:
         unsigned int          PackAlignment;
         unsigned int          UnpackAlignment;
     } PixelStore;
-
-    // current binding state
-    struct {
-        unsigned int          ReadFramebuffer;
-        unsigned int          DrawFramebuffer;
-        unsigned short        DrawFramebufferWidth;
-        unsigned short        DrawFramebufferHeight;
-        unsigned int          DrawInderectBuffer;
-        unsigned int          DispatchIndirectBuffer;
-        SBlendingStateInfo const *     BlendState;             // current blend state binding
-        SRasterizerStateInfo const *   RasterizerState;        // current rasterizer state binding
-        SDepthStencilStateInfo const * DepthStencilState;      // current depth-stencil state binding
-    } Binding;
 
     COLOR_CLAMP               ColorClamp;
 

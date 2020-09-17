@@ -38,8 +38,6 @@ class ADeviceGLImpl;
 
 class ATransformFeedbackGLImpl final : public ITransformFeedback
 {
-    friend class ADeviceGLImpl;
-
 public:
     ATransformFeedbackGLImpl( ADeviceGLImpl * _Device, STransformFeedbackCreateInfo const & _CreateInfo );
     ~ATransformFeedbackGLImpl();

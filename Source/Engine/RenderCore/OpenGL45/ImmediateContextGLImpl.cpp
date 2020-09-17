@@ -83,7 +83,7 @@ void AResourceTableGLImpl::BindTexture( unsigned int Slot, ITextureBase const * 
     // Slot must be < pDevice->MaxCombinedTextureImageUnits
 
     if ( Texture ) {
-        TextureBindings[Slot] = GL_HANDLE( Texture->GetHandle() );
+        TextureBindings[Slot] = Texture->GetHandleNativeGL();
         TextureBindingUIDs[Slot] = Texture->GetUID();
     }
     else {
@@ -99,7 +99,7 @@ void AResourceTableGLImpl::BindImage( unsigned int Slot, ITextureBase const * Te
     // _Slot must be < pDevice->MaxCombinedTextureImageUnits
 
     if ( Texture ) {
-        ImageBindings[Slot] = GL_HANDLE( Texture->GetHandle() );
+        ImageBindings[Slot] = Texture->GetHandleNativeGL();
         ImageBindingUIDs[Slot] = Texture->GetUID();
         ImageLod[Slot] = Lod;
         ImageLayerIndex[Slot] = LayerIndex;
@@ -119,7 +119,7 @@ void AResourceTableGLImpl::BindBuffer( int Slot, IBuffer const * Buffer, size_t 
     AN_ASSERT( Slot < MAX_BUFFER_SLOTS );
 
     if ( Buffer ) {
-        BufferBindings[Slot] = GL_HANDLE( Buffer->GetHandle() );
+        BufferBindings[Slot] = Buffer->GetHandleNativeGL();
         BufferBindingUIDs[Slot] = Buffer->GetUID();
         BufferBindingOffsets[Slot] = Offset;
         BufferBindingSizes[Slot] = Size;
@@ -160,26 +160,9 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
 
     Current = this;
 
-    //ScreenWidth = ScreenHeight = 512;
-
-    unsigned int maxTemporaryHandles = _Device->MaxVertexBufferSlots; // TODO: check if 0 ???
-
-    maxTemporaryHandles = std::max( maxTemporaryHandles, _Device->MaxCombinedTextureImageUnits );
-    maxTemporaryHandles = std::max( maxTemporaryHandles, _Device->MaxImageUnits );
-    maxTemporaryHandles = std::max( maxTemporaryHandles, _Device->MaxBufferBindings[ UNIFORM_BUFFER ] );
-
-    static_assert( sizeof( GLuint ) == sizeof( *TmpHandles ), "Sizeof check" );
-    static_assert( sizeof( GLintptr ) == sizeof( *TmpPointers ), "Sizeof check" );
-
-    TmpHandles = ( GLuint * )_Device->Allocator.Allocate( sizeof( GLuint ) * maxTemporaryHandles );
-    TmpPointers = ( GLintptr * )_Device->Allocator.Allocate( sizeof( GLintptr ) * maxTemporaryHandles*2 );
-    TmpPointers2 = TmpPointers + maxTemporaryHandles;
-
     memset( BufferBindingUIDs, 0, sizeof( BufferBindingUIDs ) );
     memset( BufferBindingOffsets, 0, sizeof( BufferBindingOffsets ) );
     memset( BufferBindingSizes, 0, sizeof( BufferBindingSizes ) );
-    //memset( SampleBindings, 0, sizeof( SampleBindings ) );
-    //memset( TextureBindings, 0, sizeof( TextureBindings ) );
 
     CurrentPipeline = nullptr;
     CurrentVAO = nullptr;
@@ -287,8 +270,7 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
     bPrimitiveRestartEnabled = false;
 
     CurrentRenderPass = nullptr;
-    Binding.ReadFramebuffer = (unsigned int)~0;
-    Binding.DrawFramebuffer = (unsigned int)~0;
+
     SwapChainWidth = 512;
     SwapChainHeight = 512;
 
@@ -322,6 +304,9 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
     SFramebufferCreateInfo framebufferCI = {};
     DefaultFramebuffer = new AFramebufferGLImpl( pDevice, framebufferCI, true );
 
+    Binding.ReadFramebufferUID = DefaultFramebuffer->GetUID();
+    Binding.DrawFramebufferUID = DefaultFramebuffer->GetUID();
+
     pDevice->CreateResourceTable( &RootResourceTable );
 
     CurrentResourceTable = static_cast< AResourceTableGLImpl *>( RootResourceTable.GetObject() );
@@ -342,16 +327,15 @@ AImmediateContextGLImpl::~AImmediateContextGLImpl()
 
     DefaultFramebuffer.Reset();
 
+    SAllocatorCallback const & allocator = pDevice->GetAllocator();
+
     glBindVertexArray( 0 );
     for ( SVertexArrayObject * vao : VAOCache ) {
         glDeleteVertexArrays( 1, &vao->Handle );
-        pDevice->Allocator.Deallocate( vao );
+        allocator.Deallocate( vao );
     }
     VAOCache.Free();
     VAOHash.Free();
-
-    pDevice->Allocator.Deallocate( TmpHandles );
-    pDevice->Allocator.Deallocate( TmpPointers );
 
     INTRUSIVE_REMOVE( this, Next, Prev, StateHead, StateTail );
 
@@ -366,7 +350,7 @@ void AImmediateContextGLImpl::SetSwapChainResolution( int _Width, int _Height )
     SwapChainWidth = _Width;
     SwapChainHeight = _Height;
 
-    if ( Binding.DrawFramebuffer == 0 ) {
+    if ( Binding.DrawFramebufferUID == DefaultFramebuffer->GetUID() ) {
         Binding.DrawFramebufferWidth = ( unsigned short )SwapChainWidth;
         Binding.DrawFramebufferHeight = ( unsigned short )SwapChainHeight;
     }
@@ -476,7 +460,9 @@ SVertexArrayObject * AImmediateContextGLImpl::CachedVAO( SVertexBindingInfo cons
         }
     }
 
-    SVertexArrayObject * vao = static_cast< SVertexArrayObject * >( pDevice->Allocator.Allocate( sizeof( SVertexArrayObject ) ) );
+    SAllocatorCallback const & allocator = pDevice->GetAllocator();
+
+    SVertexArrayObject * vao = static_cast< SVertexArrayObject * >( allocator.Allocate( sizeof( SVertexArrayObject ) ) );
 
     memcpy( &vao->Hashed, &hashed, sizeof( vao->Hashed ) );
 
@@ -503,11 +489,11 @@ SVertexArrayObject * AImmediateContextGLImpl::CachedVAO( SVertexBindingInfo cons
     for ( SVertexBindingInfo const * binding = hashed.VertexBindings ; binding < &hashed.VertexBindings[hashed.NumVertexBindings] ; binding++ ) {
         AN_ASSERT( binding->InputSlot < MAX_VERTEX_BUFFER_SLOTS );
 
-        if ( binding->InputSlot >= pDevice->MaxVertexBufferSlots ) {
+        if ( binding->InputSlot >= pDevice->GetDeviceCaps( DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS ) ) {
             GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: binding->InputSlot >= MaxVertexBufferSlots\n" );
         }
 
-        if ( binding->Stride > pDevice->MaxVertexAttribStride ) {
+        if ( binding->Stride > pDevice->GetDeviceCaps( DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE ) ) {
             GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: binding->Stride > MaxVertexAttribStride\n" );
         }
 
@@ -517,6 +503,10 @@ SVertexArrayObject * AImmediateContextGLImpl::CachedVAO( SVertexBindingInfo cons
     for ( SVertexAttribInfo const * attrib = hashed.VertexAttribs ; attrib < &hashed.VertexAttribs[hashed.NumVertexAttribs] ; attrib++ ) {
 
         // glVertexAttribFormat, glVertexAttribBinding, glVertexBindingDivisor - v4.3 or GL_ARB_vertex_attrib_binding
+
+        if ( attrib->Offset > pDevice->GetDeviceCaps( DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET ) ) {
+            GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: attrib offset > MaxVertexAttribRelativeOffset\n" );
+        }
 
         switch ( attrib->Mode ) {
         case VAM_FLOAT:
@@ -732,7 +722,7 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
 
     CurrentPipeline = static_cast< APipelineGLImpl * >( _Pipeline );
 
-    GLuint pipelineId = GL_HANDLE( CurrentPipeline->GetHandle() );
+    GLuint pipelineId = CurrentPipeline->GetHandleNativeGL();
 
     glBindProgramPipeline( pipelineId );
 
@@ -1095,13 +1085,13 @@ void AImmediateContextGLImpl::BindRenderPassSubPass( ARenderPassGLImpl const * _
 {
     VerifyContext();
 
-    const GLuint framebufferId = Binding.DrawFramebuffer;
-
-    if ( framebufferId == 0 ) {
+    if ( Binding.DrawFramebufferUID == DefaultFramebuffer->GetUID() ) {
         //glDrawBuffer(GL_BACK);
         //glNamedFramebufferDrawBuffer( 0, GL_BACK );
         return;
     }
+
+    const GLuint framebufferId = Binding.DrawFramebuffer;
 
     AN_ASSERT( _RenderPass != nullptr );
     AN_ASSERT( _Subpass < _RenderPass->NumSubpasses );
@@ -1125,10 +1115,8 @@ void AImmediateContextGLImpl::BindVertexBuffer( unsigned int _InputSlot,
 {
     AN_ASSERT( _InputSlot < MAX_VERTEX_BUFFER_SLOTS );
 
-    ABufferGLImpl const * nativeVB = static_cast< ABufferGLImpl const * >(_VertexBuffer);
-
-    VertexBufferUIDs[_InputSlot] = nativeVB ? nativeVB->GetUID() : 0;
-    VertexBufferHandles[_InputSlot] = nativeVB ? GL_HANDLE( nativeVB->GetHandle() ) : 0;
+    VertexBufferUIDs[_InputSlot] = _VertexBuffer ? _VertexBuffer->GetUID() : 0;
+    VertexBufferHandles[_InputSlot] = _VertexBuffer ? _VertexBuffer->GetHandleNativeGL() : 0;
     VertexBufferOffsets[_InputSlot] = _Offset;
 }
 
@@ -1141,12 +1129,10 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
 
     if ( _VertexBuffers ) {
         for ( int i = 0 ; i < _NumBuffers ; i++ ) {
-            ABufferGLImpl const * nativeVB = static_cast< ABufferGLImpl const * >(_VertexBuffers[i]);
-
             int slot = _StartSlot + i;
 
-            VertexBufferUIDs[slot] = nativeVB ? nativeVB->GetUID() : 0;
-            VertexBufferHandles[slot] = nativeVB ? GL_HANDLE( nativeVB->GetHandle() ) : 0;
+            VertexBufferUIDs[slot] = _VertexBuffers[i] ? _VertexBuffers[i]->GetUID() : 0;
+            VertexBufferHandles[slot] = _VertexBuffers[i] ? _VertexBuffers[i]->GetHandleNativeGL() : 0;
             VertexBufferOffsets[slot] = _Offsets ? _Offsets[i] : 0;
         }
     }
@@ -1191,7 +1177,7 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
         for ( unsigned int i = 0 ; i < _NumBuffers ; i++ ) {
             unsigned int slot = _StartSlot + i;
 
-            uint32_t uid = _VertexBuffers[i] ? static_cast< ABufferGLImpl const * >( _VertexBuffers[i] )->GetUID() : 0;
+            uint32_t uid = _VertexBuffers[i] ? _VertexBuffers[i]->GetUID() : 0;
             uint32_t offset = _Offsets ? _Offsets[i] : 0;
 
             bModified = CurrentVAO->VertexBufferUIDs[ slot ] != uid || CurrentVAO->VertexBufferOffsets[ slot ] != offset;
@@ -1206,14 +1192,14 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
 
         if ( _NumBuffers == 1 )
         {
-            GLuint vertexBufferId = _VertexBuffers[0] ? GL_HANDLE( static_cast< ABufferGLImpl const * >(_VertexBuffers[0])->GetHandle() ) : 0;
+            GLuint vertexBufferId = _VertexBuffers[0] ? _VertexBuffers[0]->GetHandleNativeGL() : 0;
             glVertexArrayVertexBuffer( id, _StartSlot, vertexBufferId, CurrentVAO->VertexBufferOffsets[ _StartSlot ], CurrentVAO->VertexBindingsStrides[ _StartSlot ] );
         }
         else
         {
             // Convert input parameters to OpenGL format
             for ( unsigned int i = 0 ; i < _NumBuffers ; i++ ) {
-                TmpHandles[ i ] = _VertexBuffers[i] ? GL_HANDLE( static_cast< ABufferGLImpl const * >(_VertexBuffers[i])->GetHandle() ) : 0;
+                TmpHandles[ i ] = _VertexBuffers[i] ? _VertexBuffers[i]->GetHandleNativeGL : 0;
                 TmpPointers[ i ] = CurrentVAO->VertexBufferOffsets[ _StartSlot + i ];
             }
             glVertexArrayVertexBuffers( id, _StartSlot, _NumBuffers, TmpHandles, TmpPointers, reinterpret_cast< const GLsizei * >( &CurrentVAO->VertexBindingsStrides[ _StartSlot ] ) );
@@ -1249,13 +1235,11 @@ void AImmediateContextGLImpl::BindIndexBuffer( IBuffer const * _IndexBuffer,
                                                INDEX_TYPE _Type,
                                                unsigned int _Offset )
 {
-    ABufferGLImpl const * nativeIB = static_cast< ABufferGLImpl const * >(_IndexBuffer);
-
     IndexBufferType = IndexTypeLUT[ _Type ];
     IndexBufferOffset = _Offset;
     IndexBufferTypeSizeOf = IndexTypeSizeOfLUT[ _Type ];
-    IndexBufferUID = nativeIB ? nativeIB->GetUID() : 0;
-    IndexBufferHandle = nativeIB ? GL_HANDLE( nativeIB->GetHandle() ) : 0;
+    IndexBufferUID = _IndexBuffer ? _IndexBuffer->GetUID() : 0;
+    IndexBufferHandle = _IndexBuffer ? _IndexBuffer->GetHandleNativeGL() : 0;
 }
 
 IResourceTable * AImmediateContextGLImpl::GetRootResourceTable()
@@ -1297,9 +1281,9 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
             BufferBindingUIDs[ slot ] = bufferUid;
 
             if ( bufferUid && binding->BindingSize > 0 ) {
-                glBindBufferRange( target, slot, GL_HANDLE( native->GetHandle() ), binding->BindingOffset, binding->BindingSize ); // 3.0 or GL_ARB_uniform_buffer_object
+                glBindBufferRange( target, slot, native->GetHandleNativeGL(), binding->BindingOffset, binding->BindingSize ); // 3.0 or GL_ARB_uniform_buffer_object
             } else {
-                glBindBufferBase( target, slot, GL_HANDLE( native->GetHandle() ) ); // 3.0 or GL_ARB_uniform_buffer_object
+                glBindBufferBase( target, slot, native->GetHandleNativeGL() ); // 3.0 or GL_ARB_uniform_buffer_object
             }
         }
     }
@@ -1312,7 +1296,7 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
         IDeviceObject const * native = binding->pTexture;
 
         if ( native ) {
-            textureId = GL_HANDLE( native->GetHandle() );
+            textureId = native->GetHandleNativeGL();
             textureUid = native->GetUID();
         } else {
             textureId = 0;
@@ -1330,7 +1314,7 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
     for ( SResourceImageBinding const * binding = images ; binding < &images[numImages] ; binding++, slot++ ) {
         IDeviceObject const * native = binding->pTexture;
 
-        GLuint id = native ? GL_HANDLE( native->GetHandle() ) : 0;
+        GLuint id = native ? native->GetHandleNativeGL() : 0;
 
         glBindImageTexture( slot,
                             id,
@@ -1377,7 +1361,7 @@ void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
             // Or  Since 3.0 or GL_ARB_uniform_buffer_object
             //if ( _Buffers != nullptr) {
             //    for ( int i = 0 ; i < _NumBuffers ; i++ ) {
-            //        glBindBufferRange( target, _StartSlot + i, GL_HANDLER_FROM_RESOURCE( _Buffers[i] ), _RangeOffsets​[i], _RangeSizes[i] );
+            //        glBindBufferRange( target, _StartSlot + i, _Buffers[i]->GetHandleNativeGL(), _RangeOffsets​[i], _RangeSizes[i] );
             //    }
             //} else {
             //    for ( int i = 0 ; i < _NumBuffers ; i++ ) {
@@ -1397,7 +1381,7 @@ void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
             // Or  Since 3.0 or GL_ARB_uniform_buffer_object
             //if ( _Buffers != nullptr) {
             //    for ( int i = 0 ; i < _NumBuffers ; i++ ) {
-            //        glBindBufferBase( target, _StartSlot + i, GL_HANDLER_FROM_RESOURCE( _Buffers[i] ) );
+            //        glBindBufferBase( target, _StartSlot + i, _Buffers[i]->GetHandleNativeGL() );
             //    }
             //} else {
             //    for ( int i = 0 ; i < _NumBuffers ; i++ ) {
@@ -1694,16 +1678,16 @@ void AImmediateContextGLImpl::UpdateShaderBindings()
 {
     // TODO: memcmp CurrentPipeline->TextureBindings, CurrentResourceTable->TextureBindings2
 
-    glBindTextures(	0, CurrentPipeline->NumSamplerObjects, CurrentResourceTable->TextureBindings ); // 4.4
+    glBindTextures(	0, CurrentPipeline->NumSamplerObjects, CurrentResourceTable->GetTextureBindings() ); // 4.4
 
 #if 1
     for ( int i = 0 ; i < CurrentPipeline->NumImages ; i++ ) {
         // TODO: cache image bindings (memcmp?)
         glBindImageTexture( i,
-                            CurrentResourceTable->ImageBindings[i],
-                            CurrentResourceTable->ImageLod[i],
-                            CurrentResourceTable->ImageLayered[i],
-                            CurrentResourceTable->ImageLayerIndex[i],
+                            CurrentResourceTable->GetImageBindings()[i],
+                            CurrentResourceTable->GetImageLod()[i],
+                            CurrentResourceTable->GetImageLayered()[i],
+                            CurrentResourceTable->GetImageLayerIndex()[i],
                             CurrentPipeline->Images[i].AccessMode,
                             CurrentPipeline->Images[i].InternalFormat ); // 4.2
     }
@@ -1712,18 +1696,18 @@ void AImmediateContextGLImpl::UpdateShaderBindings()
 #endif
 
     for ( int i = 0 ; i < CurrentPipeline->NumBuffers ; i++ ) {
-        if ( BufferBindingUIDs[ i ] != CurrentResourceTable->BufferBindingUIDs[i]
-             || BufferBindingOffsets[ i ] != CurrentResourceTable->BufferBindingOffsets[i]
-             || BufferBindingSizes[ i ] != CurrentResourceTable->BufferBindingSizes[i] ) {
+        if ( BufferBindingUIDs[ i ] != CurrentResourceTable->GetBufferBindingUIDs()[i]
+             || BufferBindingOffsets[ i ] != CurrentResourceTable->GetBufferBindingOffsets()[i]
+             || BufferBindingSizes[ i ] != CurrentResourceTable->GetBufferBindingSizes()[i] ) {
 
-            BufferBindingUIDs[ i ] = CurrentResourceTable->BufferBindingUIDs[i];
-            BufferBindingOffsets[ i ] = CurrentResourceTable->BufferBindingOffsets[i];
-            BufferBindingSizes[ i ] = CurrentResourceTable->BufferBindingSizes[i];
+            BufferBindingUIDs[ i ] = CurrentResourceTable->GetBufferBindingUIDs()[i];
+            BufferBindingOffsets[ i ] = CurrentResourceTable->GetBufferBindingOffsets()[i];
+            BufferBindingSizes[ i ] = CurrentResourceTable->GetBufferBindingSizes()[i];
 
             if ( BufferBindingUIDs[ i ] && BufferBindingSizes[ i ] > 0 ) {
-                glBindBufferRange( CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->BufferBindings[i], BufferBindingOffsets[ i ], BufferBindingSizes[ i ] ); // 3.0 or GL_ARB_uniform_buffer_object
+                glBindBufferRange( CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->GetBufferBindings()[i], BufferBindingOffsets[ i ], BufferBindingSizes[ i ] ); // 3.0 or GL_ARB_uniform_buffer_object
             } else {
-                glBindBufferBase( CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->BufferBindings[i] ); // 3.0 or GL_ARB_uniform_buffer_object
+                glBindBufferBase( CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->GetBufferBindings()[i] ); // 3.0 or GL_ARB_uniform_buffer_object
             }
         }
     }
@@ -1831,8 +1815,6 @@ void AImmediateContextGLImpl::Draw( ITransformFeedback * _TransformFeedback, uns
 
     AN_ASSERT( CurrentPipeline != nullptr );
 
-    ATransformFeedbackGLImpl * transformFeedback = static_cast< ATransformFeedbackGLImpl * >( _TransformFeedback );
-
     if ( _InstanceCount == 0 ) {
         return;
     }
@@ -1841,15 +1823,15 @@ void AImmediateContextGLImpl::Draw( ITransformFeedback * _TransformFeedback, uns
 
     if ( _InstanceCount > 1 ) {
         if ( _StreamIndex == 0 ) {
-            glDrawTransformFeedbackInstanced( CurrentPipeline->PrimitiveTopology, GL_HANDLE( transformFeedback->GetHandle() ), _InstanceCount ); // 4.2
+            glDrawTransformFeedbackInstanced( CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _InstanceCount ); // 4.2
         } else {
-            glDrawTransformFeedbackStreamInstanced( CurrentPipeline->PrimitiveTopology, GL_HANDLE( transformFeedback->GetHandle() ), _StreamIndex, _InstanceCount ); // 4.2
+            glDrawTransformFeedbackStreamInstanced( CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _StreamIndex, _InstanceCount ); // 4.2
         }
     } else {
         if ( _StreamIndex == 0 ) {
-            glDrawTransformFeedback( CurrentPipeline->PrimitiveTopology, GL_HANDLE( transformFeedback->GetHandle() ) ); // 4.0
+            glDrawTransformFeedback( CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL() ); // 4.0
         } else {
-            glDrawTransformFeedbackStream( CurrentPipeline->PrimitiveTopology, GL_HANDLE( transformFeedback->GetHandle() ), _StreamIndex );  // 4.0
+            glDrawTransformFeedbackStream( CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _StreamIndex );  // 4.0
         }
     }
 }
@@ -1896,7 +1878,7 @@ void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsig
 
     AN_ASSERT( CurrentPipeline != nullptr );
 
-    GLuint handle = GL_HANDLE( static_cast< ABufferGLImpl const * >(_DrawIndirectBuffer)->GetHandle() );
+    GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
     if ( Binding.DrawInderectBuffer != handle ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
         Binding.DrawInderectBuffer = handle;
@@ -2074,7 +2056,7 @@ void AImmediateContextGLImpl::DispatchComputeIndirect( IBuffer * _DispatchIndire
 {
     VerifyContext();
 
-    GLuint handle = GL_HANDLE( static_cast< ABufferGLImpl const * >(_DispatchIndirectBuffer)->GetHandle() );
+    GLuint handle = _DispatchIndirectBuffer->GetHandleNativeGL();
     if ( Binding.DispatchIndirectBuffer != handle ) {
         glBindBuffer( GL_DISPATCH_INDIRECT_BUFFER, handle );
         Binding.DispatchIndirectBuffer = handle;
@@ -2176,7 +2158,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable( IQueryPool * _Query
 
     AN_ASSERT( _FirstQuery + _QueryCount <= queryPool->PoolSize );
 
-    const GLuint bufferId = GL_HANDLE( static_cast< ABufferGLImpl const * >(_DstBuffer)->GetHandle() );
+    const GLuint bufferId = _DstBuffer->GetHandleNativeGL();
     const size_t bufferSize = _DstBuffer->GetSizeInBytes();
 
     if ( _QueryResult64Bit ) {
@@ -2226,7 +2208,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResults( IQueryPool * _QueryPool,
 
     AN_ASSERT( _FirstQuery + _QueryCount <= queryPool->PoolSize );
 
-    const GLuint bufferId = GL_HANDLE( static_cast< ABufferGLImpl const * >(_DstBuffer)->GetHandle() );
+    const GLuint bufferId = _DstBuffer->GetHandleNativeGL();
     const size_t bufferSize = _DstBuffer->GetSizeInBytes();
 
     GLenum pname = ( _Flags & QUERY_RESULT_WAIT_BIT ) ? GL_QUERY_RESULT : GL_QUERY_RESULT_NO_WAIT;
@@ -2272,16 +2254,16 @@ void AImmediateContextGLImpl::BeginRenderPassDefaultFramebuffer( SRenderPassBegi
 {
     VerifyContext();
 
-    const int framebufferId = 0;
+    if ( Binding.DrawFramebufferUID != DefaultFramebuffer->GetUID() ) {
+        glBindFramebuffer( GL_DRAW_FRAMEBUFFER, DefaultFramebuffer->GetHandleNativeGL() );
 
-    if ( Binding.DrawFramebuffer != framebufferId ) {
-
-        glBindFramebuffer( GL_DRAW_FRAMEBUFFER, framebufferId );
-
-        Binding.DrawFramebuffer = framebufferId;
+        Binding.DrawFramebuffer = DefaultFramebuffer->GetHandleNativeGL();
+        Binding.DrawFramebufferUID = DefaultFramebuffer->GetUID();
         Binding.DrawFramebufferWidth = (unsigned short)SwapChainWidth;
         Binding.DrawFramebufferHeight = ( unsigned short )SwapChainHeight;
     }
+
+    const int framebufferId = 0;
 
     bool bScissorEnabled = RasterizerState.bScissorEnable;
     bool bRasterizerDiscard = RasterizerState.bRasterizerDiscard;
@@ -2408,7 +2390,7 @@ void AImmediateContextGLImpl::BeginRenderPass( SRenderPassBegin const & _RenderP
     VerifyContext();
 
     ARenderPassGLImpl const * renderPass = static_cast< ARenderPassGLImpl const * >( _RenderPassBegin.pRenderPass );
-    AFramebufferGLImpl const * framebuffer = static_cast< AFramebufferGLImpl const * >( _RenderPassBegin.pFramebuffer );
+    IFramebuffer const * framebuffer = _RenderPassBegin.pFramebuffer;
 
     AN_ASSERT( CurrentRenderPass == nullptr );
 
@@ -2417,19 +2399,19 @@ void AImmediateContextGLImpl::BeginRenderPass( SRenderPassBegin const & _RenderP
     CurrentRenderPassRenderArea = _RenderPassBegin.RenderArea;
     CurrentPipeline = nullptr;
 
-    if ( !framebuffer->Handle ) {
+    GLuint framebufferId = framebuffer->GetHandleNativeGL();
+
+    if ( !framebufferId ) {
         // default framebuffer
         BeginRenderPassDefaultFramebuffer( _RenderPassBegin );
         return;
     }
 
-    GLuint framebufferId = GL_HANDLE( framebuffer->GetHandle() );
-
-    if ( Binding.DrawFramebuffer != framebufferId ) {
-
+    if ( Binding.DrawFramebufferUID != framebuffer->GetUID() ) {
         glBindFramebuffer( GL_DRAW_FRAMEBUFFER, framebufferId );
 
         Binding.DrawFramebuffer = framebufferId;
+        Binding.DrawFramebufferUID = framebuffer->GetUID();
         Binding.DrawFramebufferWidth = framebuffer->GetWidth();
         Binding.DrawFramebufferHeight = framebuffer->GetHeight();
     }
@@ -2450,7 +2432,7 @@ void AImmediateContextGLImpl::BeginRenderPass( SRenderPassBegin const & _RenderP
     for ( unsigned int i = 0 ; i < renderPass->NumColorAttachments ; i++ ) {
 
         SAttachmentInfo const * attachment = &renderPass->ColorAttachments[ i ];
-        SFramebufferAttachmentInfo const * framebufferAttachment = &framebufferColorAttachments[ i ];
+        SFramebufferAttachmentInfo const & framebufferAttachment = framebufferColorAttachments[ i ];
 
         if ( attachment->LoadOp == ATTACHMENT_LOAD_OP_CLEAR ) {
 
@@ -2482,7 +2464,7 @@ void AImmediateContextGLImpl::BeginRenderPass( SRenderPassBegin const & _RenderP
             }
 
             // Clear attachment
-            switch ( InternalFormatLUT[ framebufferAttachment->pTexture->GetFormat() ].ClearType ) {
+            switch ( InternalFormatLUT[ framebufferAttachment.pTexture->GetFormat() ].ClearType ) {
             case CLEAR_TYPE_FLOAT32:
                 glClearNamedFramebufferfv( framebufferId,
                                            GL_COLOR,
@@ -2606,10 +2588,8 @@ void AImmediateContextGLImpl::BindTransformFeedback( ITransformFeedback * _Trans
 {
     VerifyContext();
 
-    ATransformFeedbackGLImpl * transformFeedback = static_cast< ATransformFeedbackGLImpl * >( _TransformFeedback );
-
     // FIXME: Move transform feedback to Pipeline? Call glBindTransformFeedback in BindPipeline()?
-    glBindTransformFeedback( GL_TRANSFORM_FEEDBACK, GL_HANDLE( transformFeedback->GetHandle() ) );
+    glBindTransformFeedback( GL_TRANSFORM_FEEDBACK, _TransformFeedback->GetHandleNativeGL() );
 }
 
 void AImmediateContextGLImpl::BeginTransformFeedback( PRIMITIVE_TOPOLOGY _OutputPrimitive )
@@ -2817,14 +2797,14 @@ void AImmediateContextGLImpl::CopyBuffer( IBuffer * _SrcBuffer, IBuffer * _DstBu
 {
     VerifyContext();
 
-    size_t byteLength = _SrcBuffer->GetSizeInBytes();
-    AN_ASSERT( byteLength == _DstBuffer->GetSizeInBytes() );
+    size_t size = _SrcBuffer->GetSizeInBytes();
+    AN_ASSERT( size == _DstBuffer->GetSizeInBytes() );
 
-    glCopyNamedBufferSubData( GL_HANDLE( static_cast< ABufferGLImpl const * >( _SrcBuffer )->GetHandle() ),
-                              GL_HANDLE( static_cast< ABufferGLImpl const * >( _DstBuffer )->GetHandle() ),
+    glCopyNamedBufferSubData( _SrcBuffer->GetHandleNativeGL(),
+                              _DstBuffer->GetHandleNativeGL(),
                               0,
                               0,
-                              byteLength ); // 4.5 or GL_ARB_direct_state_access
+                              size ); // 4.5 or GL_ARB_direct_state_access
 }
 
 void AImmediateContextGLImpl::CopyBufferRange( IBuffer * _SrcBuffer, IBuffer * _DstBuffer, uint32_t _NumRanges, SBufferCopy const * _Ranges )
@@ -2832,8 +2812,8 @@ void AImmediateContextGLImpl::CopyBufferRange( IBuffer * _SrcBuffer, IBuffer * _
     VerifyContext();
 
     for ( SBufferCopy const * range = _Ranges ; range < &_Ranges[_NumRanges] ; range++ ) {
-        glCopyNamedBufferSubData( GL_HANDLE( static_cast< ABufferGLImpl const * >(_SrcBuffer)->GetHandle() ),
-                                  GL_HANDLE( static_cast< ABufferGLImpl const * >(_DstBuffer)->GetHandle() ),
+        glCopyNamedBufferSubData( _SrcBuffer->GetHandleNativeGL(),
+                                  _DstBuffer->GetHandleNativeGL(),
                                   range->SrcOffset,
                                   range->DstOffset,
                                   range->SizeInBytes ); // 4.5 or GL_ARB_direct_state_access
@@ -2855,12 +2835,12 @@ void AImmediateContextGLImpl::CopyBufferRange( IBuffer * _SrcBuffer, IBuffer * _
 }
 
 // Only for TEXTURE_1D
-bool AImmediateContextGLImpl::CopyBufferToTexture1D( ABufferGLImpl const * _SrcBuffer,
-                                                     ATextureGLImpl * _DstTexture,
+bool AImmediateContextGLImpl::CopyBufferToTexture1D( IBuffer const * _SrcBuffer,
+                                                     ITexture * _DstTexture,
                                                      uint16_t _Lod,
                                                      uint16_t _OffsetX,
                                                      uint16_t _DimensionX,
-                                                     size_t _CompressedDataByteLength, // Only for compressed images
+                                                     size_t _CompressedDataSizeInBytes, // Only for compressed images
                                                      DATA_FORMAT _Format,
                                                      size_t _SourceByteOffset,
                                                      unsigned int _Alignment )
@@ -2871,11 +2851,11 @@ bool AImmediateContextGLImpl::CopyBufferToTexture1D( ABufferGLImpl const * _SrcB
         return false;
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, GL_HANDLE( _SrcBuffer->GetHandle() ) );
+    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL() );
 
     // TODO: check this
 
-    GLuint textureId = GL_HANDLE( _DstTexture->GetHandle() );
+    GLuint textureId = _DstTexture->GetHandleNativeGL();
 
     UnpackAlignment( _Alignment );
 
@@ -2885,7 +2865,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture1D( ABufferGLImpl const * _SrcB
                                        _OffsetX,
                                        _DimensionX,
                                        InternalFormatLUT[ _DstTexture->GetFormat() ].InternalFormat,
-                                       (GLsizei)_CompressedDataByteLength,
+                                       (GLsizei)_CompressedDataSizeInBytes,
                                        ((uint8_t *)0) + _SourceByteOffset );
     } else {
         glTextureSubImage1D( textureId,
@@ -2903,8 +2883,8 @@ bool AImmediateContextGLImpl::CopyBufferToTexture1D( ABufferGLImpl const * _SrcB
 }
 
 // Only for TEXTURE_2D, TEXTURE_1D_ARRAY, TEXTURE_CUBE_MAP
-bool AImmediateContextGLImpl::CopyBufferToTexture2D( ABufferGLImpl const * _SrcBuffer,
-                                                     ATextureGLImpl * _DstTexture,
+bool AImmediateContextGLImpl::CopyBufferToTexture2D( IBuffer const * _SrcBuffer,
+                                                     ITexture * _DstTexture,
                                                      uint16_t _Lod,
                                                      uint16_t _OffsetX,
                                                      uint16_t _OffsetY,
@@ -2912,7 +2892,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture2D( ABufferGLImpl const * _SrcB
                                                      uint16_t _DimensionY,
                                                      uint16_t _CubeFaceIndex, // only for TEXTURE_CUBE_MAP
                                                      uint16_t _NumCubeFaces, // only for TEXTURE_CUBE_MAP
-                                                     size_t _CompressedDataByteLength, // Only for compressed images
+                                                     size_t _CompressedDataSizeInBytes, // Only for compressed images
                                                      DATA_FORMAT _Format,
                                                      size_t _SourceByteOffset,
                                                      unsigned int _Alignment )
@@ -2923,11 +2903,11 @@ bool AImmediateContextGLImpl::CopyBufferToTexture2D( ABufferGLImpl const * _SrcB
         return false;
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, GL_HANDLE( _SrcBuffer->GetHandle() ) );
+    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL() );
 
     // TODO: check this
 
-    GLuint textureId = GL_HANDLE( _DstTexture->GetHandle() );
+    GLuint textureId = _DstTexture->GetHandleNativeGL();
 
     UnpackAlignment( _Alignment );
 
@@ -2954,7 +2934,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture2D( ABufferGLImpl const * _SrcB
                                        _DimensionX,
                                        _DimensionY,
                                        InternalFormatLUT[ _DstTexture->GetFormat() ].InternalFormat,
-                                       (GLsizei)_CompressedDataByteLength,
+                                       (GLsizei)_CompressedDataSizeInBytes,
                                        ((uint8_t *)0) + _SourceByteOffset );
         } else {
             glTexSubImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + _CubeFaceIndex,
@@ -2980,7 +2960,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture2D( ABufferGLImpl const * _SrcB
                                            _DimensionX,
                                            _DimensionY,
                                            InternalFormatLUT[ _DstTexture->GetFormat() ].InternalFormat,
-                                           (GLsizei)_CompressedDataByteLength,
+                                           (GLsizei)_CompressedDataSizeInBytes,
                                            ((uint8_t *)0) + _SourceByteOffset );
         } else {
             glTextureSubImage2D( textureId,
@@ -3001,8 +2981,8 @@ bool AImmediateContextGLImpl::CopyBufferToTexture2D( ABufferGLImpl const * _SrcB
 }
 
 // Only for TEXTURE_3D, TEXTURE_2D_ARRAY
-bool AImmediateContextGLImpl::CopyBufferToTexture3D( ABufferGLImpl const * _SrcBuffer,
-                                                     ATextureGLImpl * _DstTexture,
+bool AImmediateContextGLImpl::CopyBufferToTexture3D( IBuffer const * _SrcBuffer,
+                                                     ITexture * _DstTexture,
                                                      uint16_t _Lod,
                                                      uint16_t _OffsetX,
                                                      uint16_t _OffsetY,
@@ -3010,7 +2990,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture3D( ABufferGLImpl const * _SrcB
                                                      uint16_t _DimensionX,
                                                      uint16_t _DimensionY,
                                                      uint16_t _DimensionZ,
-                                                     size_t _CompressedDataByteLength, // Only for compressed images
+                                                     size_t _CompressedDataSizeInBytes, // Only for compressed images
                                                      DATA_FORMAT _Format,
                                                      size_t _SourceByteOffset,
                                                      unsigned int _Alignment )
@@ -3021,11 +3001,11 @@ bool AImmediateContextGLImpl::CopyBufferToTexture3D( ABufferGLImpl const * _SrcB
         return false;
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, GL_HANDLE( _SrcBuffer->GetHandle() ) );
+    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL() );
 
     // TODO: check this
 
-    GLuint textureId = GL_HANDLE( _DstTexture->GetHandle() );
+    GLuint textureId = _DstTexture->GetHandleNativeGL();
 
     UnpackAlignment( _Alignment );
 
@@ -3039,7 +3019,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture3D( ABufferGLImpl const * _SrcB
                                        _DimensionY,
                                        _DimensionZ,
                                        InternalFormatLUT[ _DstTexture->GetFormat() ].InternalFormat,
-                                       (GLsizei)_CompressedDataByteLength,
+                                       (GLsizei)_CompressedDataSizeInBytes,
                                        ((uint8_t *)0) + _SourceByteOffset );
     } else {
         glTextureSubImage3D( textureId,
@@ -3065,7 +3045,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture( IBuffer const * _SrcBuffer,
                                                    ITexture * _DstTexture,
                                                    STextureRect const & _Rectangle,
                                                    DATA_FORMAT _Format,
-                                                   size_t _CompressedDataByteLength,       // for compressed images
+                                                   size_t _CompressedDataSizeInBytes,       // for compressed images
                                                    size_t _SourceByteOffset,
                                                    unsigned int _Alignment )
 {
@@ -3075,19 +3055,19 @@ bool AImmediateContextGLImpl::CopyBufferToTexture( IBuffer const * _SrcBuffer,
 
     switch ( _DstTexture->GetType() ) {
     case TEXTURE_1D:
-        return CopyBufferToTexture1D( static_cast< ABufferGLImpl const * >( _SrcBuffer ),
-                                      static_cast< ATextureGLImpl * >( _DstTexture ),
+        return CopyBufferToTexture1D( _SrcBuffer,
+                                      _DstTexture,
                                       _Rectangle.Offset.Lod,
                                       _Rectangle.Offset.X,
                                       _Rectangle.Dimension.X,
-                                      _CompressedDataByteLength,
+                                      _CompressedDataSizeInBytes,
                                       _Format,
                                       _SourceByteOffset,
                                       _Alignment );
     case TEXTURE_1D_ARRAY:
     case TEXTURE_2D:
-        return CopyBufferToTexture2D( static_cast< ABufferGLImpl const * >( _SrcBuffer ),
-                                      static_cast< ATextureGLImpl * >( _DstTexture ),
+        return CopyBufferToTexture2D( _SrcBuffer,
+                                      _DstTexture,
                                       _Rectangle.Offset.Lod,
                                       _Rectangle.Offset.X,
                                       _Rectangle.Offset.Y,
@@ -3095,14 +3075,14 @@ bool AImmediateContextGLImpl::CopyBufferToTexture( IBuffer const * _SrcBuffer,
                                       _Rectangle.Dimension.Y,
                                       0,
                                       0,
-                                      _CompressedDataByteLength,
+                                      _CompressedDataSizeInBytes,
                                       _Format,
                                       _SourceByteOffset,
                                       _Alignment );
     case TEXTURE_2D_ARRAY:
     case TEXTURE_3D:
-        return CopyBufferToTexture3D( static_cast< ABufferGLImpl const * >( _SrcBuffer ),
-                                      static_cast< ATextureGLImpl * >( _DstTexture ),
+        return CopyBufferToTexture3D( _SrcBuffer,
+                                      _DstTexture,
                                       _Rectangle.Offset.Lod,
                                       _Rectangle.Offset.X,
                                       _Rectangle.Offset.Y,
@@ -3110,13 +3090,13 @@ bool AImmediateContextGLImpl::CopyBufferToTexture( IBuffer const * _SrcBuffer,
                                       _Rectangle.Dimension.X,
                                       _Rectangle.Dimension.Y,
                                       _Rectangle.Dimension.Z,
-                                      _CompressedDataByteLength,
+                                      _CompressedDataSizeInBytes,
                                       _Format,
                                       _SourceByteOffset,
                                       _Alignment );
     case TEXTURE_CUBE_MAP:
-        return CopyBufferToTexture2D( static_cast< ABufferGLImpl const * >( _SrcBuffer ),
-                                      static_cast< ATextureGLImpl * >( _DstTexture ),
+        return CopyBufferToTexture2D( _SrcBuffer,
+                                      _DstTexture,
                                       _Rectangle.Offset.Lod,
                                       _Rectangle.Offset.X,
                                       _Rectangle.Offset.Y,
@@ -3124,7 +3104,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture( IBuffer const * _SrcBuffer,
                                       _Rectangle.Dimension.Y,
                                       _Rectangle.Offset.Z,
                                       _Rectangle.Dimension.Z,
-                                      _CompressedDataByteLength,
+                                      _CompressedDataSizeInBytes,
                                       _Format,
                                       _SourceByteOffset,
                                       _Alignment );
@@ -3139,7 +3119,7 @@ bool AImmediateContextGLImpl::CopyBufferToTexture( IBuffer const * _SrcBuffer,
         //                              _Rectangle.Dimension.X,
         //                              _Rectangle.Dimension.Y,
         //                              _Rectangle.Dimension.Z,
-        //                              _CompressedDataByteLength,
+        //                              _CompressedDataSizeInBytes,
         //                              _Format,
         //                              _SourceByteOffset );
         return false;
@@ -3163,11 +3143,11 @@ void AImmediateContextGLImpl::CopyTextureToBuffer( ITexture const * _SrcTexture,
 {
     VerifyContext();
 
-    glBindBuffer( GL_PIXEL_PACK_BUFFER, GL_HANDLE( static_cast< ABufferGLImpl const * >(_DstBuffer)->GetHandle() ) );
+    glBindBuffer( GL_PIXEL_PACK_BUFFER, _DstBuffer->GetHandleNativeGL() );
 
     // TODO: check this
 
-    GLuint textureId = GL_HANDLE( static_cast< ATextureGLImpl const * >(_SrcTexture)->GetHandle() );
+    GLuint textureId = _SrcTexture->GetHandleNativeGL();
 
     PackAlignment( _Alignment );
 
@@ -3212,8 +3192,8 @@ void AImmediateContextGLImpl::CopyTextureRect( ITexture const * _SrcTexture,
 
     GLenum srcTarget = TextureTargetLUT[ _SrcTexture->GetType() ].Target;
     GLenum dstTarget = TextureTargetLUT[ _DstTexture->GetType() ].Target;
-    GLuint srcId = GL_HANDLE( static_cast< ATextureGLImpl const * >(_SrcTexture)->GetHandle() );
-    GLuint dstId = GL_HANDLE( static_cast< ATextureGLImpl * >(_DstTexture)->GetHandle() );
+    GLuint srcId = _SrcTexture->GetHandleNativeGL();
+    GLuint dstId = _DstTexture->GetHandleNativeGL();
 
     if ( _SrcTexture->IsMultisample() ) {
         if ( srcTarget == GL_TEXTURE_2D ) srcTarget = GL_TEXTURE_2D_MULTISAMPLE;
@@ -3253,7 +3233,6 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture( IFramebuffer const * _Sr
     VerifyContext();
 
     AFramebufferGLImpl const * framebuffer = static_cast< AFramebufferGLImpl const * >( _SrcFramebuffer );
-    ATextureGLImpl * texture = static_cast< ATextureGLImpl * >( _DstTexture );
 
     if ( !framebuffer->ChooseReadBuffer( _Attachment ) ) {
         GLogger.Printf( "AImmediateContextGLImpl::CopyFramebufferToTexture: invalid framebuffer attachment\n" );
@@ -3262,12 +3241,12 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture( IFramebuffer const * _Sr
 
     PackAlignment( _Alignment );
 
-    framebuffer->BindReadFramebuffer();
+    BindReadFramebuffer( framebuffer );
 
     // TODO: check this function
 
-    if ( texture->IsMultisample() ) {
-        switch ( texture->GetType() ) {
+    if ( _DstTexture->IsMultisample() ) {
+        switch ( _DstTexture->GetType() ) {
         case TEXTURE_2D:
         case TEXTURE_2D_ARRAY:
             // FIXME: в спецификации про multisample-типы ничего не сказано
@@ -3276,10 +3255,10 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture( IFramebuffer const * _Sr
         }
     }
 
-    switch ( texture->GetType() ) {
+    switch ( _DstTexture->GetType() ) {
     case TEXTURE_1D:
     {
-        glCopyTextureSubImage1D( GL_HANDLE( texture->GetHandle() ),
+        glCopyTextureSubImage1D( _DstTexture->GetHandleNativeGL(),
                                  _Offset.Lod,
                                  _Offset.X,
                                  _SrcRect.X,
@@ -3290,7 +3269,7 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture( IFramebuffer const * _Sr
     case TEXTURE_1D_ARRAY:
     case TEXTURE_2D:
     {
-        glCopyTextureSubImage2D( GL_HANDLE( texture->GetHandle() ),
+        glCopyTextureSubImage2D( _DstTexture->GetHandleNativeGL(),
                                  _Offset.Lod,
                                  _Offset.X,
                                  _Offset.Y,
@@ -3303,7 +3282,7 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture( IFramebuffer const * _Sr
     case TEXTURE_2D_ARRAY:
     case TEXTURE_3D:
     {
-        glCopyTextureSubImage3D( GL_HANDLE( texture->GetHandle() ),
+        glCopyTextureSubImage3D( _DstTexture->GetHandleNativeGL(),
                                  _Offset.Lod,
                                  _Offset.X,
                                  _Offset.Y,
@@ -3321,7 +3300,7 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture( IFramebuffer const * _Sr
         // через glCopyTexSubImage2D
 
         GLint currentBinding;
-        GLint id = GL_HANDLE( texture->GetHandle() );
+        GLint id = _DstTexture->GetHandleNativeGL();
 
         glGetIntegerv( GL_TEXTURE_BINDING_CUBE_MAP, &currentBinding );
         if ( currentBinding != id ) {
@@ -3345,7 +3324,7 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture( IFramebuffer const * _Sr
     }
     case TEXTURE_RECT_GL:
     {
-        glCopyTextureSubImage2D( GL_HANDLE( texture->GetHandle() ),
+        glCopyTextureSubImage2D( _DstTexture->GetHandleNativeGL(),
                                  0,
                                  _Offset.X,
                                  _Offset.Y,
@@ -3385,11 +3364,11 @@ void AImmediateContextGLImpl::CopyFramebufferToBuffer( IFramebuffer const * _Src
         return;
     }
 
-    framebuffer->BindReadFramebuffer();
+    BindReadFramebuffer( framebuffer );
 
     PackAlignment( _Alignment );
 
-    glBindBuffer( GL_PIXEL_PACK_BUFFER, GL_HANDLE( static_cast< ABufferGLImpl * >( _DstBuffer )->GetHandle() ) );
+    glBindBuffer( GL_PIXEL_PACK_BUFFER, _DstBuffer->GetHandleNativeGL() );
 
     ClampReadColor( _ColorClamp );
 
@@ -3434,7 +3413,7 @@ bool AImmediateContextGLImpl::BlitFramebuffer( IFramebuffer const * _SrcFramebuf
         mask |= GL_STENCIL_BUFFER_BIT;
     }
 
-    framebuffer->BindReadFramebuffer();
+    BindReadFramebuffer( framebuffer );
 
     GLenum filter = _LinearFilter ? GL_LINEAR : GL_NEAREST;
 
@@ -3465,7 +3444,7 @@ void AImmediateContextGLImpl::ClearBuffer( IBuffer * _Buffer, BUFFER_VIEW_PIXEL_
 
     TableInternalPixelFormat const * format = &InternalFormatLUT[ _InternalFormat ];
 
-    glClearNamedBufferData( GL_HANDLE( static_cast< ABufferGLImpl const * >(_Buffer)->GetHandle() ),
+    glClearNamedBufferData( _Buffer->GetHandleNativeGL(),
                             format->InternalFormat,
                             TypeLUT[_Format].FormatRGB,
                             TypeLUT[_Format].Type,
@@ -3490,7 +3469,7 @@ void AImmediateContextGLImpl::ClearBufferRange( IBuffer * _Buffer, BUFFER_VIEW_P
     TableInternalPixelFormat const * format = &InternalFormatLUT[ _InternalFormat ];
 
     for ( SBufferClear const * range = _Ranges ; range < &_Ranges[_NumRanges] ; range++ ) {
-        glClearNamedBufferSubData( GL_HANDLE( static_cast< ABufferGLImpl const * >(_Buffer)->GetHandle() ),
+        glClearNamedBufferSubData( _Buffer->GetHandleNativeGL(),
                                    format->InternalFormat,
                                    range->Offset,
                                    range->SizeInBytes,
@@ -3509,8 +3488,6 @@ void AImmediateContextGLImpl::ClearBufferRange( IBuffer * _Buffer, BUFFER_VIEW_P
 void AImmediateContextGLImpl::ClearTexture( ITexture * _Texture, uint16_t _Lod, DATA_FORMAT _Format, SClearValue const * _ClearValue )
 {
     VerifyContext();
-
-    ATextureGLImpl * texture = static_cast< ATextureGLImpl * >( _Texture );
 
     // If GL_RASTERIZER_DISCARD enabled glClear## ignored FIX
     if ( RasterizerState.bRasterizerDiscard ) {
@@ -3540,7 +3517,7 @@ void AImmediateContextGLImpl::ClearTexture( ITexture * _Texture, uint16_t _Lod, 
         break;
     };
 
-    glClearTexImage( GL_HANDLE( texture->GetHandle() ),
+    glClearTexImage( _Texture->GetHandleNativeGL(),
                      _Lod,
                      format,
                      TypeLUT[_Format].Type,
@@ -3558,8 +3535,6 @@ void AImmediateContextGLImpl::ClearTextureRect( ITexture * _Texture,
                                                 /* optional */ SClearValue const * _ClearValue )
 {
     VerifyContext();
-
-    ATextureGLImpl * texture = static_cast< ATextureGLImpl * >( _Texture );
 
     // If GL_RASTERIZER_DISCARD enabled glClear## ignored FIX
     if ( RasterizerState.bRasterizerDiscard ) {
@@ -3590,7 +3565,7 @@ void AImmediateContextGLImpl::ClearTextureRect( ITexture * _Texture,
     };
 
     for ( STextureRect const * rect = _Rectangles ; rect < &_Rectangles[_NumRectangles] ; rect++ ) {
-        glClearTexSubImage( GL_HANDLE( texture->GetHandle() ),
+        glClearTexSubImage( _Texture->GetHandleNativeGL(),
                             rect->Offset.Lod,
                             rect->Offset.X,
                             rect->Offset.Y,
@@ -3619,9 +3594,9 @@ void AImmediateContextGLImpl::ClearFramebufferAttachments( IFramebuffer * _Frame
 
     AFramebufferGLImpl const * framebuffer = static_cast< AFramebufferGLImpl const * >( _Framebuffer );
 
-    AN_ASSERT( _NumColorAttachments <= framebuffer->NumColorAttachments );
+    AN_ASSERT( _NumColorAttachments <= framebuffer->GetNumColorAttachments() );
 
-    GLuint framebufferId = GL_HANDLE( framebuffer->GetHandle() );
+    GLuint framebufferId = framebuffer->GetHandleNativeGL();
 
     AN_ASSERT( framebufferId );
 
@@ -3673,10 +3648,10 @@ void AImmediateContextGLImpl::ClearFramebufferAttachments( IFramebuffer * _Frame
 
             unsigned int attachmentIndex = _ColorAttachments[ i ];
 
-            AN_ASSERT( attachmentIndex < framebuffer->NumColorAttachments );
+            AN_ASSERT( attachmentIndex < framebuffer->GetNumColorAttachments() );
             AN_ASSERT( _ColorClearValues );
 
-            SFramebufferAttachmentInfo const * framebufferAttachment = &framebuffer->ColorAttachments[ attachmentIndex ];
+            SFramebufferAttachmentInfo const & framebufferAttachment = framebuffer->GetColorAttachments()[ attachmentIndex ];
 
             SClearColorValue const * clearValue = &_ColorClearValues[ i ];
 
@@ -3686,7 +3661,7 @@ void AImmediateContextGLImpl::ClearFramebufferAttachments( IFramebuffer * _Frame
             }
 
             // Clear attchment
-            switch ( InternalFormatLUT[ framebufferAttachment->pTexture->GetFormat() ].ClearType ) {
+            switch ( InternalFormatLUT[ framebufferAttachment.pTexture->GetFormat() ].ClearType ) {
             case CLEAR_TYPE_FLOAT32:
                 glClearNamedFramebufferfv( framebufferId,
                                            GL_COLOR,
@@ -3726,12 +3701,12 @@ void AImmediateContextGLImpl::ClearFramebufferAttachments( IFramebuffer * _Frame
 
     if ( _DepthStencilClearValue ) {
 
-        AN_ASSERT( framebuffer->bHasDepthStencilAttachment );
+        AN_ASSERT( framebuffer->HasDepthStencilAttachment() );
 
-        SFramebufferAttachmentInfo const * framebufferAttachment = &framebuffer->DepthStencilAttachment;
+        SFramebufferAttachmentInfo const & framebufferAttachment = framebuffer->GetDepthStencilAttachment();
 
         // TODO: table
-        switch ( InternalFormatLUT[ framebufferAttachment->pTexture->GetFormat() ].ClearType ) {
+        switch ( InternalFormatLUT[ framebufferAttachment.pTexture->GetFormat() ].ClearType ) {
         case CLEAR_TYPE_STENCIL_ONLY:
             glClearNamedFramebufferuiv( framebufferId,
                                         GL_STENCIL,
@@ -3777,6 +3752,41 @@ void AImmediateContextGLImpl::ClearFramebufferAttachments( IFramebuffer * _Frame
         } else {
             glDisable( GL_RASTERIZER_DISCARD );
         }
+    }
+}
+
+void AImmediateContextGLImpl::BindReadFramebuffer( IFramebuffer const * Framebuffer )
+{
+    if ( Binding.ReadFramebufferUID == Framebuffer->GetUID() ) {
+        return;
+    }
+
+    GLuint framebufferId = Framebuffer->GetHandleNativeGL();
+    glBindFramebuffer( GL_READ_FRAMEBUFFER, framebufferId );
+
+    Binding.ReadFramebufferUID = Framebuffer->GetUID();
+}
+
+void AImmediateContextGLImpl::UnbindFramebuffer( IFramebuffer const * Framebuffer )
+{
+    if ( Binding.DrawFramebufferUID == Framebuffer->GetUID() ) {
+        Binding.DrawFramebufferUID = DefaultFramebuffer->GetUID();
+        Binding.DrawFramebuffer = DefaultFramebuffer->GetHandleNativeGL();
+
+        glBindFramebuffer( GL_DRAW_FRAMEBUFFER, DefaultFramebuffer->GetHandleNativeGL() );
+    }
+    if ( Binding.ReadFramebufferUID == Framebuffer->GetUID() ) {
+        Binding.ReadFramebufferUID = DefaultFramebuffer->GetUID();
+
+        glBindFramebuffer( GL_READ_FRAMEBUFFER, DefaultFramebuffer->GetHandleNativeGL() );
+    }
+}
+
+void AImmediateContextGLImpl::NotifyRenderPassDestroyed( ARenderPassGLImpl const * RenderPass )
+{
+    if ( CurrentRenderPass == RenderPass ) {
+        GLogger.Printf( "AImmediateContextGLImpl::NotifyRenderPassDestroyed: destroying render pass without EndRenderPass()\n" );
+        CurrentRenderPass = nullptr;
     }
 }
 

@@ -34,14 +34,16 @@ SOFTWARE.
 
 namespace RenderCore {
 
-struct SVertexArrayObjectHashedData {
+struct SVertexArrayObjectHashedData
+{
     uint32_t          NumVertexBindings;
     SVertexBindingInfo VertexBindings[MAX_VERTEX_BINDINGS];
     uint32_t          NumVertexAttribs;
     SVertexAttribInfo  VertexAttribs[MAX_VERTEX_ATTRIBS];
 };
 
-struct SVertexArrayObject {
+struct SVertexArrayObject
+{
     unsigned int      Handle;
     uint32_t          VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS];
     SVertexArrayObjectHashedData Hashed;

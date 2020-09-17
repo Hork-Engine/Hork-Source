@@ -38,7 +38,6 @@ class ADeviceGLImpl;
 
 class ARenderPassGLImpl final : public IRenderPass
 {
-    friend class ADeviceGLImpl;
     friend class AImmediateContextGLImpl;
 
 public:

@@ -112,10 +112,31 @@ public:
     {
     }
 
+    bool IsValid() const { return Handle != nullptr; }
+
     void * GetHandle() const { return Handle; }
 
-protected:
-    void * Handle;
+    uint64_t GetHandleNativeGL() const { return HandleUI64; }
+
+protected:    
+    void SetHandle( void * InHandle )
+    {
+        Handle = InHandle;
+    }
+
+    void SetHandleNativeGL( uint64_t NativeHandle )
+    {
+        HandleUI64 = NativeHandle;
+    }
+
+private:
+    union
+    {
+        void * Handle;
+
+        /** Use 64-bit integer for bindless handle compatibility */
+        uint64_t HandleUI64;
+    };
 };
 
 struct SAllocatorCallback

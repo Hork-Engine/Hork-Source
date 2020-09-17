@@ -38,6 +38,7 @@ SOFTWARE.
 #include "BufferGLImpl.h"
 #include "BufferViewGLImpl.h"
 #include "TextureGLImpl.h"
+#include "SparseTextureGLImpl.h"
 #include "SamplerGLImpl.h"
 #include "TransformFeedbackGLImpl.h"
 #include "QueryGLImpl.h"
@@ -65,41 +66,88 @@ struct SamplerInfo
     unsigned int Id;
 };
 
-template< typename T > T clamp( T const & _a, T const & _min, T const & _max ) {
-    return std::max( std::min( _a, _max ), _min );
-}
+static const char * FeatureName[] =
+{
+    "FEATURE_HALF_FLOAT_VERTEX",
+    "FEATURE_HALF_FLOAT_PIXEL",
+    "FEATURE_TEXTURE_ANISOTROPY",
+    "FEATURE_SPARSE_TEXTURES",
+    "FEATURE_BINDLESS_TEXTURE",
+    "FEATURE_SWAP_CONTROL",
+    "FEATURE_SWAP_CONTROL_TEAR",
+    "FEATURE_GPU_MEMORY_INFO"
+};
 
-static int GL_GetInteger( GLenum pname ) {
-    GLint i;
+static const char * DeviceCapName[] =
+{
+    "DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE",
+    "DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT",
+
+    "DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT",
+    "DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT",
+
+    "DEVICE_CAPS_MAX_TEXTURE_SIZE",
+    "DEVICE_CAPS_MAX_TEXTURE_LAYERS",
+    "DEVICE_CAPS_MAX_SPARSE_TEXTURE_LAYERS",
+    "DEVICE_CAPS_MAX_TEXTURE_ANISOTROPY",
+    "DEVICE_CAPS_MAX_PATCH_VERTICES",
+    "DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS",
+    "DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE",
+    "DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET",
+    "DEVICE_CAPS_MAX_UNIFORM_BUFFER_BINDINGS",
+    "DEVICE_CAPS_MAX_SHADER_STORAGE_BUFFER_BINDINGS",
+    "DEVICE_CAPS_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS",
+    "DEVICE_CAPS_MAX_TRANSFORM_FEEDBACK_BUFFERS",
+};
+
+static int GL_GetInteger( GLenum pname )
+{
+    GLint i = 0;
     glGetIntegerv( pname, &i );
     return i;
 }
 
-static float GL_GetFloat( GLenum pname ) {
+static int64_t GL_GetInteger64( GLenum pname )
+{
+    if ( glGetInteger64v ) {
+        int64_t i = 0;
+        glGetInteger64v( pname, &i );
+        return i;
+    }
+
+    return GL_GetInteger( pname );
+}
+
+
+static float GL_GetFloat( GLenum pname )
+{
     float f;
     glGetFloatv( pname, &f );
     return f;
 }
 
-static bool FindExtension( const char * _Extension ) {
-    GLint NumExtensions = 0;
+static bool FindExtension( const char * _Extension )
+{
+    GLint numExtensions = 0;
 
-    glGetIntegerv( GL_NUM_EXTENSIONS, &NumExtensions );
-    for ( int i = 0 ; i < NumExtensions ; i++ ) {
+    glGetIntegerv( GL_NUM_EXTENSIONS, &numExtensions );
+    for ( int i = 0 ; i < numExtensions ; i++ ) {
         const char * ExtI = ( const char * )glGetStringi( GL_EXTENSIONS, i );
-        if ( ExtI && strcmp( ExtI, _Extension ) == 0 ) {
+        if ( ExtI && Core::Strcmp( ExtI, _Extension ) == 0 ) {
             return true;
         }
     }
     return false;
 }
 
-static void * Allocate( size_t _BytesCount ) {
-    return malloc( _BytesCount );
+static void * Allocate( size_t _BytesCount )
+{
+    return GZoneMemory.Alloc(_BytesCount );
 }
 
-static void Deallocate( void * _Bytes ) {
-    free( _Bytes );
+static void Deallocate( void * _Bytes )
+{
+    GZoneMemory.Free( _Bytes );
 }
 
 static constexpr SAllocatorCallback DefaultAllocator =
@@ -107,7 +155,8 @@ static constexpr SAllocatorCallback DefaultAllocator =
     Allocate, Deallocate
 };
 
-static int SDBM_Hash( const unsigned char * _Data, int _Size ) {
+static int SDBM_Hash( const unsigned char * _Data, int _Size )
+{
     int hash = 0;
     while ( _Size-- > 0 ) {
         hash = *_Data++ + ( hash << 6 ) + ( hash << 16 ) - hash;
@@ -115,7 +164,8 @@ static int SDBM_Hash( const unsigned char * _Data, int _Size ) {
     return hash;
 }
 
-static void DebugMessageCallback( GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void * userParam ) {
+static void DebugMessageCallback( GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar * message, const void * userParam )
+{
     const char * sourceStr;
     switch ( source ) {
     case GL_DEBUG_SOURCE_API:
@@ -232,7 +282,10 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
 
     SDL_GL_MakeCurrent( _CreateInfo.Window, windowCtx );
 
+    // Set glewExperimental=true to allow extension entry points to be loaded even if extension isn't present
+    // in the driver's extensions string
     glewExperimental = true;
+
     GLenum result = glewInit();
     if ( result != GLEW_OK ) {
         CriticalError( "Failed to load OpenGL functions\n" );
@@ -266,6 +319,12 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
     GLogger.Printf( "Graphics adapter: %s\n", adapterString );
     GLogger.Printf( "Driver version: %s\n", driverVersion );
 
+    int numExtensions = 0;
+    glGetIntegerv( GL_NUM_EXTENSIONS, &numExtensions );
+    for ( int i = 0 ; i < numExtensions ; i++ ) {
+        GLogger.Printf( "\t%s\n", (const char *)glGetStringi( GL_EXTENSIONS, i ) );        
+    }
+
 #if 0
     SMemoryInfo gpuMemoryInfo = GetGPUMemoryInfo();
     if ( gpuMemoryInfo.TotalAvailableMegabytes > 0 && gpuMemoryInfo.CurrentAvailableMegabytes > 0 ) {
@@ -273,6 +332,12 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
         GLogger.Printf( "Current available GPU memory: %d Megs\n", gpuMemoryInfo.CurrentAvailableMegabytes );
     }
 #endif
+
+    FeatureSupport[FEATURE_HALF_FLOAT_VERTEX] = FindExtension( "GL_ARB_half_float_vertex" );
+    FeatureSupport[FEATURE_HALF_FLOAT_PIXEL] = FindExtension( "GL_ARB_half_float_pixel" );
+    FeatureSupport[FEATURE_TEXTURE_ANISOTROPY] = FindExtension( "GL_ARB_texture_filter_anisotropic" ) || FindExtension( "GL_EXT_texture_filter_anisotropic" );
+    FeatureSupport[FEATURE_SPARSE_TEXTURES] = FindExtension( "GL_ARB_sparse_texture" );// && FindExtension( "GL_ARB_sparse_texture2" );
+    FeatureSupport[FEATURE_BINDLESS_TEXTURE] = FindExtension( "GL_ARB_bindless_texture" );
 
 #if defined( AN_OS_WIN32 )
     FeatureSupport[FEATURE_SWAP_CONTROL] = !!WGLEW_EXT_swap_control;
@@ -283,28 +348,32 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
 #else
 #error "Swap control tear checking not implemented on current platform"
 #endif
+    FeatureSupport[FEATURE_GPU_MEMORY_INFO] = FindExtension( "GL_NVX_gpu_memory_info" );
 
-    bool NV_half_float = FindExtension( "GL_NV_half_float" );
+    if ( !FindExtension( "GL_EXT_texture_compression_s3tc" ) ) {
+        GLogger.Printf( "Warning: required extension GL_EXT_texture_compression_s3tc isn't supported\n" );
+    }
 
-    FeatureSupport[FEATURE_HALF_FLOAT_VERTEX] = FindExtension( "GL_ARB_half_float_vertex" ) || NV_half_float;
-    FeatureSupport[FEATURE_HALF_FLOAT_PIXEL] = FindExtension( "GL_ARB_half_float_pixel" ) || NV_half_float;
-    FeatureSupport[FEATURE_TEXTURE_COMPRESSION_S3TC] = FindExtension( "GL_EXT_texture_compression_s3tc" );
-    FeatureSupport[FEATURE_TEXTURE_ANISOTROPY] = FindExtension( "GL_EXT_texture_filter_anisotropic" );
+    if ( !FindExtension( "GL_ARB_texture_compression_rgtc" ) && !FindExtension( "GL_EXT_texture_compression_rgtc" ) ) {
+        GLogger.Printf( "Warning: required extension GL_ARB_texture_compression_rgtc/GL_EXT_texture_compression_rgtc isn't supported\n" );
+    }
 
-    MaxVertexBufferSlots = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_BINDINGS ); // TODO: check if 0 ???
+    if ( !FindExtension( "GL_EXT_texture_compression_rgtc" ) ) {
+        GLogger.Printf( "Warning: required extension GL_EXT_texture_compression_rgtc isn't supported\n" );
+    }
 
-    // GL_MAX_VERTEX_ATTRIB_STRIDE sinse GL v4.4
-    MaxVertexAttribStride = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_STRIDE );
-    //if ( GL vertsion < 4.4 ) {
-    //    storage->MaxVertexAttribStride = 2048;
-    //}
-    MaxVertexAttribRelativeOffset = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET );
-
-    MaxCombinedTextureImageUnits = GL_GetInteger( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS );
-
+#if 0
+    unsigned int MaxCombinedTextureImageUnits = GL_GetInteger( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS );
     //MaxVertexTextureImageUnits = GL_GetInteger( GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS );
+    unsigned int MaxImageUnits = GL_GetInteger( GL_MAX_IMAGE_UNITS );
+#endif
 
-    MaxImageUnits = GL_GetInteger( GL_MAX_IMAGE_UNITS );
+    DeviceCaps[DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS] = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_BINDINGS ); // TODO: check if 0 ???
+    DeviceCaps[DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE] = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_STRIDE ); // GL_MAX_VERTEX_ATTRIB_STRIDE sinse GL v4.4
+    if ( DeviceCaps[DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE] == 0 ) {
+        DeviceCaps[DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE] = std::numeric_limits< unsigned int >::max(); // Set some undefined value
+    }
+    DeviceCaps[DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET] = GL_GetInteger( GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET );
 
     DeviceCaps[DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE] = GL_GetInteger( GL_MAX_TEXTURE_BUFFER_SIZE );
 
@@ -326,25 +395,27 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
         DeviceCaps[DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT] = 256;
     }
 
-    MaxBufferBindings[UNIFORM_BUFFER] = GL_GetInteger( GL_MAX_UNIFORM_BUFFER_BINDINGS );
-    MaxBufferBindings[SHADER_STORAGE_BUFFER] = GL_GetInteger( GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS );
-    MaxBufferBindings[TRANSFORM_FEEDBACK_BUFFER] = GL_GetInteger( GL_MAX_TRANSFORM_FEEDBACK_BUFFERS );
-    MaxBufferBindings[ATOMIC_COUNTER_BUFFER] = GL_GetInteger( GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS );
+    DeviceCaps[DEVICE_CAPS_MAX_UNIFORM_BUFFER_BINDINGS] = GL_GetInteger( GL_MAX_UNIFORM_BUFFER_BINDINGS );
+    DeviceCaps[DEVICE_CAPS_MAX_SHADER_STORAGE_BUFFER_BINDINGS] = GL_GetInteger( GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS );
+    DeviceCaps[DEVICE_CAPS_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS] = GL_GetInteger( GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS );
+    DeviceCaps[DEVICE_CAPS_MAX_TRANSFORM_FEEDBACK_BUFFERS] = GL_GetInteger( GL_MAX_TRANSFORM_FEEDBACK_BUFFERS );
 
     if ( FeatureSupport[FEATURE_TEXTURE_ANISOTROPY] ) {
-        MaxTextureAnisotropy = (unsigned int)GL_GetFloat( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT );
+        DeviceCaps[DEVICE_CAPS_MAX_TEXTURE_ANISOTROPY] = (unsigned int)GL_GetFloat( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT );
     } else {
-        MaxTextureAnisotropy = 0;
+        DeviceCaps[DEVICE_CAPS_MAX_TEXTURE_ANISOTROPY] = 0;
     }
 
-    DeviceCaps[DEVICE_CAPS_MAX_TEXTURE_SIZE] = GL_GetInteger( GL_MAX_TEXTURE_SIZE );
+    DeviceCaps[DEVICE_CAPS_MAX_TEXTURE_SIZE] = GL_GetInteger( GL_MAX_TEXTURE_SIZE );    
+    DeviceCaps[DEVICE_CAPS_MAX_TEXTURE_LAYERS] = GL_GetInteger( GL_MAX_ARRAY_TEXTURE_LAYERS );
+    DeviceCaps[DEVICE_CAPS_MAX_SPARSE_TEXTURE_LAYERS] = GL_GetInteger( GL_MAX_SPARSE_ARRAY_TEXTURE_LAYERS );
+    DeviceCaps[DEVICE_CAPS_MAX_PATCH_VERTICES] = GL_GetInteger( GL_MAX_PATCH_VERTICES );
 
-#if 1
+#if 0
     GLogger.Printf( "GL_MAX_TESS_CONTROL_INPUT_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_INPUT_COMPONENTS ) );
     GLogger.Printf( "GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS ) );
     GLogger.Printf( "GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS %d\n", GL_GetInteger( GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS ) );
     GLogger.Printf( "GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS %d\n", GL_GetInteger( GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_PATCH_VERTICES %d\n", GL_GetInteger( GL_MAX_PATCH_VERTICES ) );
     GLogger.Printf( "GL_MAX_TESS_GEN_LEVEL %d\n", GL_GetInteger( GL_MAX_TESS_GEN_LEVEL ) );
     GLogger.Printf( "GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS ) );
     GLogger.Printf( "GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS ) );
@@ -357,9 +428,33 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
     GLogger.Printf( "GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS ) );
     GLogger.Printf( "GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS %d\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS ) );
 #endif
+    GLogger.Printf( "Features:\n" );
+    for ( int i = 0 ; i < FEATURE_MAX ; i++ ) {
+        GLogger.Printf( "\t%s: %s\n", FeatureName[i], FeatureSupport[i] ? "Yes" : "No" );
+    }
+
+    GLogger.Printf( "Device caps:\n" );
+    for ( int i = 0 ; i < DEVICE_CAPS_MAX ; i++ ) {
+        GLogger.Printf( "\t%s: %u\n", DeviceCapName[i], DeviceCaps[i] );
+    }
+
+    if ( FeatureSupport[FEATURE_GPU_MEMORY_INFO] ) {
+        int32_t dedicated = GL_GetInteger( GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX );
+        int32_t totalAvail = GL_GetInteger( GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX );
+        int32_t currentAvail = GL_GetInteger( GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX );
+        int32_t evictionCount = GL_GetInteger( GL_GPU_MEMORY_INFO_EVICTION_COUNT_NVX );
+        int32_t evictedMemory = GL_GetInteger( GL_GPU_MEMORY_INFO_EVICTED_MEMORY_NVX );
+
+        GLogger.Printf( "Video memory info:\n" );
+        GLogger.Printf( "\tDedicated: %d Megs\n", dedicated >> 10 );
+        GLogger.Printf( "\tTotal available: %d Megs\n", totalAvail >> 10 );
+        GLogger.Printf( "\tCurrent available: %d Megs\n", currentAvail >> 10 );
+        GLogger.Printf( "\tEviction count: %d\n", evictionCount );
+        GLogger.Printf( "\tEvicted memory: %d Megs\n", evictedMemory >> 10 );
+    }
 
     Allocator = _Allocator ? *_Allocator : DefaultAllocator;
-    Hash = _Hash ? _Hash : SDBM_Hash;
+    HashCB = _Hash ? _Hash : SDBM_Hash;
 
     TotalContexts++;
     pMainContext = new AImmediateContextGLImpl( this, _CreateInfo, windowCtx );
@@ -367,9 +462,11 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
     // Mark swap interval modified to set initial swap interval.
     SwapInterval = -9999;
 
-    // Clear garbage on screen, set initial swap interval and swap the buffers.
+    // Clear garbage on screen
     glClearColor( 0, 0, 0, 0 );
     glClear( GL_COLOR_BUFFER_BIT );
+
+    // Set initial swap interval and swap the buffers
     SwapBuffers( _CreateInfo.Window, _CreateInfo.SwapInterval );
 }
 
@@ -500,6 +597,11 @@ void ADeviceGLImpl::CreateTextureView( STextureViewCreateInfo const & _CreateInf
     *ppTexture = MakeRef< ATextureGLImpl >( this, _CreateInfo );
 }
 
+void ADeviceGLImpl::CreateSparseTexture( SSparseTextureCreateInfo const & _CreateInfo, TRef< ISparseTexture > * ppTexture )
+{
+    *ppTexture = MakeRef< ASparseTextureGLImpl >( this, _CreateInfo );
+}
+
 void ADeviceGLImpl::CreateTransformFeedback( STransformFeedbackCreateInfo const & _CreateInfo, TRef< ITransformFeedback > * ppTransformFeedback )
 {
     *ppTransformFeedback = MakeRef< ATransformFeedbackGLImpl >( this, _CreateInfo );
@@ -510,7 +612,7 @@ void ADeviceGLImpl::CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, T
     *ppQueryPool = MakeRef< AQueryPoolGLImpl >( this, _CreateInfo );
 }
 
-void ADeviceGLImpl::CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler )
+void ADeviceGLImpl::GetBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler )
 {
     *ppBindlessSampler = MakeRef< ABindlessSamplerGLImpl >( this, pTexture, _CreateInfo );
 }
@@ -604,10 +706,10 @@ void ADeviceGLImpl::DeleteShaderProgram( unsigned int _Program )
 }
 
 bool ADeviceGLImpl::CreateShaderBinaryData( SHADER_TYPE _ShaderType,
-                                     unsigned int _NumSources,
-                                     const char * const * _Sources,
-                                     /* optional */ char ** _InfoLog,
-                                     SShaderBinaryData * _BinaryData )
+                                            unsigned int _NumSources,
+                                            const char * const * _Sources,
+                                            /* optional */ char ** _InfoLog,
+                                            SShaderBinaryData * _BinaryData )
 {
     GLuint id;
     GLsizei binaryLength;
@@ -671,6 +773,28 @@ bool ADeviceGLImpl::IsFeatureSupported( FEATURE_TYPE InFeatureType )
 unsigned int ADeviceGLImpl::GetDeviceCaps( DEVICE_CAPS InDeviceCaps )
 {
     return DeviceCaps[InDeviceCaps];
+}
+
+int32_t ADeviceGLImpl::GetGPUMemoryTotalAvailable()
+{
+    if ( FeatureSupport[FEATURE_GPU_MEMORY_INFO] ) {
+        return GL_GetInteger( GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX );
+    }
+    else {
+        GLogger.Printf( "ADeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n" );
+    }
+    return 0;
+}
+
+int32_t ADeviceGLImpl::GetGPUMemoryCurrentAvailable()
+{
+    if ( FeatureSupport[FEATURE_GPU_MEMORY_INFO] ) {
+        return GL_GetInteger( GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX );
+    }
+    else {
+        GLogger.Printf( "ADeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n" );
+    }
+    return 0;
 }
 
 SBlendingStateInfo const * ADeviceGLImpl::CachedBlendingState( SBlendingStateInfo const & _BlendingState )
@@ -795,7 +919,7 @@ unsigned int ADeviceGLImpl::CachedSampler( SSamplerInfo const & _CreateInfo )
     glSamplerParameteri( id, GL_TEXTURE_WRAP_R, SamplerAddressModeLUT[_CreateInfo.AddressW] );
     glSamplerParameterf( id, GL_TEXTURE_LOD_BIAS, _CreateInfo.MipLODBias );
     if ( FeatureSupport[FEATURE_TEXTURE_ANISOTROPY] && _CreateInfo.MaxAnisotropy > 0 ) {
-        glSamplerParameteri( id, GL_TEXTURE_MAX_ANISOTROPY_EXT, clamp< unsigned int >( _CreateInfo.MaxAnisotropy, 1u, MaxTextureAnisotropy ) );
+        glSamplerParameteri( id, GL_TEXTURE_MAX_ANISOTROPY_EXT, Math::Clamp< unsigned int >( _CreateInfo.MaxAnisotropy, 1u, DeviceCaps[DEVICE_CAPS_MAX_TEXTURE_ANISOTROPY] ) );
     }
     if ( _CreateInfo.bCompareRefToTexture ) {
         glSamplerParameteri( id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE );
@@ -815,6 +939,141 @@ unsigned int ADeviceGLImpl::CachedSampler( SSamplerInfo const & _CreateInfo )
     sampler->Id = id;
 
     return id;
+}
+
+bool ADeviceGLImpl::EnumerateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int * NumPageSizes, int * PageSizesX, int * PageSizesY, int * PageSizesZ )
+{
+    GLenum target = SparseTextureTargetLUT[Type].Target;
+    GLenum internalFormat = InternalFormatLUT[Format].InternalFormat;
+
+    AN_ASSERT( NumPageSizes != nullptr );
+
+    *NumPageSizes = 0;
+
+    if ( !FeatureSupport[ FEATURE_SPARSE_TEXTURES ] ) {
+        GLogger.Printf( "ADeviceGLImpl::EnumerateSparseTexturePageSize: sparse textures are not supported by video driver\n" );
+        return false;
+    }
+
+    glGetInternalformativ( target, internalFormat, GL_NUM_VIRTUAL_PAGE_SIZES_ARB, 1, NumPageSizes );
+
+    if ( PageSizesX ) {
+        glGetInternalformativ( target, internalFormat, GL_VIRTUAL_PAGE_SIZE_X_ARB, *NumPageSizes, PageSizesX );
+    }
+
+    if ( PageSizesY ) {
+        glGetInternalformativ( target, internalFormat, GL_VIRTUAL_PAGE_SIZE_Y_ARB, *NumPageSizes, PageSizesY );
+    }
+
+    if ( PageSizesZ ) {
+        glGetInternalformativ( target, internalFormat, GL_VIRTUAL_PAGE_SIZE_Z_ARB, *NumPageSizes, PageSizesZ );
+    }
+
+    return *NumPageSizes > 0;
+}
+
+bool ADeviceGLImpl::ChooseAppropriateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int * PageSizeIndex, int * PageSizeX, int * PageSizeY, int * PageSizeZ )
+{
+    AN_ASSERT( PageSizeIndex != nullptr );
+
+    *PageSizeIndex = -1;
+
+    if ( PageSizeX ) {
+        *PageSizeX = 0;
+    }
+
+    if ( PageSizeY ) {
+        *PageSizeY = 0;
+    }
+
+    if ( PageSizeZ ) {
+        *PageSizeZ = 0;
+    }
+
+    int pageSizes;
+    EnumerateSparseTexturePageSize( Type, Format, &pageSizes, nullptr, nullptr, nullptr );
+
+    if ( pageSizes <= 0 ) {
+        return false;
+    }
+
+    switch ( Type ) {
+    case SPARSE_TEXTURE_2D:
+    case SPARSE_TEXTURE_2D_ARRAY:
+    case SPARSE_TEXTURE_CUBE_MAP:
+    case SPARSE_TEXTURE_CUBE_MAP_ARRAY:
+    case SPARSE_TEXTURE_RECT_GL:
+    {
+        int * pageSizeX = (int *)StackAlloc( pageSizes * sizeof( int ) );
+        int * pageSizeY = (int *)StackAlloc( pageSizes * sizeof( int ) );
+        EnumerateSparseTexturePageSize( Type, Format, &pageSizes, pageSizeX, pageSizeY, nullptr );
+
+        for ( int i = 0 ; i < pageSizes ; i++ ) {
+            if ( ( Width % pageSizeX[i] ) == 0
+                 && ( Height % pageSizeY[i] ) == 0 ) {
+                *PageSizeIndex = i;
+                if ( PageSizeX ) {
+                    *PageSizeX = pageSizeX[i];
+                }
+                if ( PageSizeY ) {
+                    *PageSizeY = pageSizeY[i];
+                }
+                if ( PageSizeZ ) {
+                    *PageSizeZ = 1;
+                }
+                break;
+            }
+        }
+        break;
+    }
+    case SPARSE_TEXTURE_3D:
+    {
+        int * pageSizeX = (int *)StackAlloc( pageSizes * sizeof( int ) );
+        int * pageSizeY = (int *)StackAlloc( pageSizes * sizeof( int ) );
+        int * pageSizeZ = (int *)StackAlloc( pageSizes * sizeof( int ) );
+        EnumerateSparseTexturePageSize( Type, Format, &pageSizes, pageSizeX, pageSizeY, pageSizeZ );
+
+        for ( int i = 0 ; i < pageSizes ; i++ ) {
+            if ( ( Width % pageSizeX[i] ) == 0
+                 && ( Height % pageSizeY[i] ) == 0
+                 && ( Depth % pageSizeZ[i] ) == 0 ) {
+                *PageSizeIndex = i;
+                if ( PageSizeX ) {
+                    *PageSizeX = pageSizeX[i];
+                }
+                if ( PageSizeY ) {
+                    *PageSizeY = pageSizeY[i];
+                }
+                if ( PageSizeZ ) {
+                    *PageSizeZ = pageSizeZ[i];
+                }
+                break;
+            }
+        }
+        break;
+    }
+    default:
+        AN_ASSERT( 0 );
+    }
+
+    return *PageSizeIndex != -1;
+}
+
+bool ADeviceGLImpl::LookupImageFormat( const char * _FormatQualifier, TEXTURE_FORMAT * _Format )
+{
+    int numFormats = sizeof( InternalFormatLUT ) / sizeof( InternalFormatLUT[0] );
+    for ( int i = 0 ; i < numFormats ; i++ ) {
+        if ( !strcmp( InternalFormatLUT[ i ].ShaderImageFormatQualifier, _FormatQualifier ) ) {
+            *_Format = (TEXTURE_FORMAT)i;
+            return true;
+        }
+    }
+    return false;
+}
+
+const char * ADeviceGLImpl::LookupImageFormatQualifier( TEXTURE_FORMAT _Format )
+{
+    return InternalFormatLUT[ _Format ].ShaderImageFormatQualifier;
 }
 
 }

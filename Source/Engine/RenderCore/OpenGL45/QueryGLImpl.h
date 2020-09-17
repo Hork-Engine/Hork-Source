@@ -38,7 +38,6 @@ class ADeviceGLImpl;
 
 class AQueryPoolGLImpl final : public IQueryPool
 {
-    friend class ADeviceGLImpl;
     friend class AImmediateContextGLImpl;
 
 public:

@@ -68,35 +68,40 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
     pCS  = _CreateInfo.pCS;
 
     if ( pVS ) {
-        glUseProgramStages( pipelineId, GL_VERTEX_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pVS.GetObject() )->GetHandle() ) );
+        glUseProgramStages( pipelineId, GL_VERTEX_SHADER_BIT, pVS->GetHandleNativeGL() );
     }
     if ( pTCS ) {
-        glUseProgramStages( pipelineId, GL_TESS_CONTROL_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pTCS.GetObject() )->GetHandle() ) );
+        glUseProgramStages( pipelineId, GL_TESS_CONTROL_SHADER_BIT, pTCS->GetHandleNativeGL() );
     }
     if ( pTES ) {
-        glUseProgramStages( pipelineId, GL_TESS_EVALUATION_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pTES.GetObject() )->GetHandle() ) );
+        glUseProgramStages( pipelineId, GL_TESS_EVALUATION_SHADER_BIT, pTES->GetHandleNativeGL() );
     }
     if ( pGS ) {
-        glUseProgramStages( pipelineId, GL_GEOMETRY_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pGS.GetObject() )->GetHandle() ) );
+        glUseProgramStages( pipelineId, GL_GEOMETRY_SHADER_BIT, pGS->GetHandleNativeGL() );
     }
     if ( pFS ) {
-        glUseProgramStages( pipelineId, GL_FRAGMENT_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pFS.GetObject() )->GetHandle() ) );
+        glUseProgramStages( pipelineId, GL_FRAGMENT_SHADER_BIT, pFS->GetHandleNativeGL() );
     }
     if ( pCS ) {
-        glUseProgramStages( pipelineId, GL_COMPUTE_SHADER_BIT, GL_HANDLE( static_cast< AShaderModuleGLImpl * >( pCS.GetObject() )->GetHandle() ) );
+        glUseProgramStages( pipelineId, GL_COMPUTE_SHADER_BIT, pCS->GetHandleNativeGL() );
     }
 
     glValidateProgramPipeline( pipelineId ); // 4.1
 
-    Handle = ( void * )( size_t )pipelineId;
+    SetHandleNativeGL( pipelineId );
 
     PrimitiveTopology = GL_TRIANGLES; // Use triangles by default
 
     if ( _CreateInfo.IA.Topology <= PRIMITIVE_TRIANGLE_STRIP_ADJ ) {
         PrimitiveTopology = PrimitiveTopologyLUT[ _CreateInfo.IA.Topology ];
+        NumPatchVertices = 0;
     } else if (  _CreateInfo.IA.Topology >= PRIMITIVE_PATCHES_1 ) {
         PrimitiveTopology = GL_PATCHES;
         NumPatchVertices = _CreateInfo.IA.Topology - PRIMITIVE_PATCHES_1 + 1;  // Must be < GL_MAX_PATCH_VERTICES
+
+        if ( NumPatchVertices > pDevice->GetDeviceCaps( DEVICE_CAPS_MAX_PATCH_VERTICES ) ) {
+            GLogger.Printf( "APipelineGLImpl::ctor: num patch vertices > DEVICE_CAPS_MAX_PATCH_VERTICES\n" );
+        }
     }
 
     bPrimitiveRestartEnabled = _CreateInfo.IA.bPrimitiveRestart;
@@ -109,9 +114,11 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
     RasterizerState = pDevice->CachedRasterizerState( _CreateInfo.RS );
     DepthStencilState = pDevice->CachedDepthStencilState( _CreateInfo.DSS );
 
+    SAllocatorCallback const & allocator = pDevice->GetAllocator();
+
     NumSamplerObjects = _CreateInfo.ResourceLayout.NumSamplers;
     if ( NumSamplerObjects > 0 ) {
-        SamplerObjects = (unsigned int *)pDevice->Allocator.Allocate( sizeof( SamplerObjects[0] ) * NumSamplerObjects );
+        SamplerObjects = (unsigned int *)allocator.Allocate( sizeof( SamplerObjects[0] ) * NumSamplerObjects );
         for ( int i = 0 ; i < NumSamplerObjects ; i++ ) {
             SamplerObjects[i] = pDevice->CachedSampler( _CreateInfo.ResourceLayout.Samplers[i] );
         }
@@ -122,7 +129,7 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
 
     NumImages = _CreateInfo.ResourceLayout.NumImages;
     if ( NumImages > 0 ) {
-        Images = (SImageInfoGL *)pDevice->Allocator.Allocate( sizeof( SImageInfoGL ) * NumImages );
+        Images = (SImageInfoGL *)allocator.Allocate( sizeof( SImageInfoGL ) * NumImages );
         for ( int i = 0 ; i < NumImages ; i++ ) {
             Images[i].AccessMode = ImageAccessModeLUT[ _CreateInfo.ResourceLayout.Images[i].AccessMode ];
             Images[i].InternalFormat = InternalFormatLUT[ _CreateInfo.ResourceLayout.Images[i].TextureFormat ].InternalFormat;
@@ -134,9 +141,9 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
 
     NumBuffers = _CreateInfo.ResourceLayout.NumBuffers;
     if ( NumBuffers > 0 ) {
-        Buffers = (SBufferInfoGL *)pDevice->Allocator.Allocate( sizeof( SBufferInfoGL ) * NumBuffers );
+        Buffers = (SBufferInfoGL *)allocator.Allocate( sizeof( SBufferInfoGL ) * NumBuffers );
         for ( int i = 0 ; i < NumBuffers ; i++ ) {
-            Buffers[i].BufferType = BufferTargetLUT[ _CreateInfo.ResourceLayout.Buffers[i].BufferType ].Target;
+            Buffers[i].BufferType = BufferTargetLUT[ _CreateInfo.ResourceLayout.Buffers[i].BufferBinding ].Target;
         }
     }
     else {
@@ -147,21 +154,23 @@ APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo c
 }
 
 APipelineGLImpl::~APipelineGLImpl() {
-    if ( Handle ) {
-        GLuint pipelineId = GL_HANDLE( Handle );
+    GLuint pipelineId = GetHandleNativeGL();
+    if ( pipelineId ) {
         glDeleteProgramPipelines( 1, &pipelineId );
     }
 
+    SAllocatorCallback const & allocator = pDevice->GetAllocator();
+
     if ( SamplerObjects ) {
-        pDevice->Allocator.Deallocate( SamplerObjects );
+        allocator.Deallocate( SamplerObjects );
     }
 
     if ( Images ) {
-        pDevice->Allocator.Deallocate( Images );
+        allocator.Deallocate( Images );
     }
 
     if ( Buffers ) {
-        pDevice->Allocator.Deallocate( Buffers );
+        allocator.Deallocate( Buffers );
     }
 
     pDevice->TotalPipelines--;

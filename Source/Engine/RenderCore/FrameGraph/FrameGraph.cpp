@@ -44,7 +44,7 @@ RenderCore::ITexture * RealizeResource( AFrameGraph & InFrameGraph, RenderCore::
 
         if ( tex->GetType() == Info.Type
              && tex->GetFormat() == Info.Format
-             && tex->GetResoulution() == Info.Resolution
+             && tex->GetResolution() == Info.Resolution
              && tex->GetNumSamples() == Info.Multisample.NumSamples
              && tex->FixedSampleLocations() == Info.Multisample.bFixedSampleLocations
              && tex->GetSwizzle() == Info.Swizzle

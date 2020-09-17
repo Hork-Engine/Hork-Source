@@ -42,7 +42,7 @@ ABufferViewGLImpl::ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateI
 {
     pSrcBuffer->AddRef();
 
-    GLuint bufferId = GL_HANDLE( pSrcBuffer->GetHandle() );
+    GLuint bufferId = pSrcBuffer->GetHandleNativeGL();
     if ( !bufferId ) {
         GLogger.Printf( "ABufferViewGLImpl::ctor: invalid buffer handle\n" );
         return;
@@ -53,7 +53,7 @@ ABufferViewGLImpl::ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateI
     size_t sizeInBytes = bViewRange ? CreateInfo.SizeInBytes : pSrcBuffer->GetSizeInBytes();
     size_t offset = bViewRange ? CreateInfo.Offset : 0;
 
-    if ( !IsAligned( offset, pDevice->DeviceCaps[DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT] ) ) {
+    if ( !IsAligned( offset, pDevice->GetDeviceCaps( DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT ) ) ) {
         GLogger.Printf( "ABufferViewGLImpl::ctor: buffer offset is not aligned\n" );
         return;
     }
@@ -63,7 +63,7 @@ ABufferViewGLImpl::ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateI
         return;
     }
 
-    if ( sizeInBytes > pDevice->DeviceCaps[DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE] ) {
+    if ( sizeInBytes > pDevice->GetDeviceCaps( DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE ) ) {
         GLogger.Printf( "ABufferViewGLImpl::ctor: buffer view size > BUFFER_VIEW_MAX_SIZE\n" );
         return;
     }
@@ -79,7 +79,7 @@ ABufferViewGLImpl::ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateI
         glTextureBuffer( textureId, format->InternalFormat, bufferId );
     }
 
-    Handle = ( void * )( size_t )textureId;
+    SetHandleNativeGL( textureId );
 
     // TODO:
     //pDevice->TotalBufferViews++;
@@ -87,8 +87,9 @@ ABufferViewGLImpl::ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateI
 
 ABufferViewGLImpl::~ABufferViewGLImpl()
 {
-    if ( Handle ) {
-        GLuint id = GL_HANDLE( Handle );
+    GLuint id = GetHandleNativeGL();
+
+    if ( id ) {
         glDeleteTextures( 1, &id );
         //pDevice->TotalBufferViews--;
     }
@@ -96,5 +97,16 @@ ABufferViewGLImpl::~ABufferViewGLImpl()
     pSrcBuffer->RemoveRef();
 }
 
+size_t ABufferViewGLImpl::GetBufferOffset( uint16_t _Lod ) const {
+    int offset;
+    glGetTextureLevelParameteriv( GetHandleNativeGL(), _Lod, GL_TEXTURE_BUFFER_OFFSET, &offset );
+    return offset;
+}
+
+size_t ABufferViewGLImpl::GetBufferSizeInBytes( uint16_t _Lod ) const {
+    int sizeInBytes;
+    glGetTextureLevelParameteriv( GetHandleNativeGL(), _Lod, GL_TEXTURE_BUFFER_SIZE, &sizeInBytes );
+    return sizeInBytes;
+}
 
 }

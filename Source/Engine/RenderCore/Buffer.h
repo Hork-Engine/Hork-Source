@@ -34,13 +34,13 @@ SOFTWARE.
 
 namespace RenderCore {
 
-/// Buffer types
-enum BUFFER_TYPE : uint8_t
+/// Buffer bindings
+enum BUFFER_BINDING : uint8_t
 {
-    UNIFORM_BUFFER,
-    SHADER_STORAGE_BUFFER,
-    TRANSFORM_FEEDBACK_BUFFER,
-    ATOMIC_COUNTER_BUFFER
+    BUFFER_BIND_UNIFORM,
+    BUFFER_BIND_STORAGE,
+    BUFFER_BIND_FEEDBACK,
+    BUFFER_BIND_ATOMIC_COUNTER
 };
 
 /// There are three hints that the user can specify the data for mutable storage buffer
@@ -146,7 +146,7 @@ public:
     size_t GetSizeInBytes() const { return SizeInBytes; }
 
     /// Only for mutable buffers
-    virtual bool Realloc( size_t _NewByteLength, const void * _SysMem = nullptr ) = 0;
+    virtual bool Realloc( size_t _SizeInBytes, const void * _SysMem = nullptr ) = 0;
 
     /// Allocate new storage for the buffer
     virtual bool Orphan() = 0;
@@ -166,7 +166,7 @@ public:
     /// Returns pointer to the buffer range data.
     /// _RangeOffset
     ///     Specifies the start within the buffer of the range to be mapped.
-    /// _RangeLength
+    /// _RangeSize
     ///     Specifies the byte length of the range to be mapped.
     /// _ClientServerTransfer
     ///     Indicates how user will communicate with mapped data. See EMapTransfer for details.
@@ -190,7 +190,7 @@ public:
     ///     or modify the buffer overlap the mapped region, but the result of such previous and any subsequent
     ///     operations is undefined.
     virtual void * MapRange( size_t _RangeOffset,
-                             size_t _RangeLength,
+                             size_t _RangeSize,
                              MAP_TRANSFER _ClientServerTransfer,
                              MAP_INVALIDATE _Invalidate = MAP_NO_INVALIDATE,
                              MAP_PERSISTENCE _Persistence = MAP_NON_PERSISTENT,
@@ -213,9 +213,9 @@ public:
 
     virtual void Invalidate() = 0;
 
-    virtual void InvalidateRange( size_t _RangeOffset, size_t _RangeLength ) = 0;
+    virtual void InvalidateRange( size_t _RangeOffset, size_t _RangeSize ) = 0;
 
-    virtual void FlushMappedRange( size_t _RangeOffset, size_t _RangeLength ) = 0;
+    virtual void FlushMappedRange( size_t _RangeOffset, size_t _RangeSize ) = 0;
 
 protected:
     bool                          bImmutableStorage;

@@ -175,7 +175,7 @@ struct SSamplerInfo
     }
 };
 
-class IBindlessSampler : public IObjectInterface
+class IBindlessSampler : public IDeviceObject
 {
 public:
     virtual void MakeResident() = 0;
@@ -184,10 +184,10 @@ public:
 
     virtual bool IsResident() const = 0;
 
-    uint64_t GetHandle() const { return Handle; }
+    ITexture * GetTexture() { return Texture; }
 
 protected:
-    uint64_t Handle;
+    ITexture * Texture;
 };
 
 }

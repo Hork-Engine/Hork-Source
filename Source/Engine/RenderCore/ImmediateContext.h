@@ -656,7 +656,7 @@ public:
                                       ITexture * _DstTexture,
                                       STextureRect const & _Rectangle,
                                       DATA_FORMAT _Format,
-                                      size_t _CompressedDataByteLength,       /// only for compressed images
+                                      size_t _CompressedDataSizeInBytes,      /// only for compressed images
                                       size_t _SourceByteOffset,               /// offset in source buffer
                                       unsigned int _Alignment ) = 0;              /// Specifies alignment of source data
 

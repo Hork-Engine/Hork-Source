@@ -36,25 +36,17 @@ namespace RenderCore {
 
 class AImmediateContextGLImpl;
 
-class ADeviceGLImpl final : public IDevice {
-
-    friend class AImmediateContextGLImpl;
-    friend class ABufferGLImpl;
-    friend class ABufferViewGLImpl;
-    friend class ATextureGLImpl;
-    friend class AShaderModuleGLImpl;
-    friend class APipelineGLImpl;
-    friend class AFramebufferGLImpl;
-    friend class AQueryPoolGLImpl;
-    friend class ATransformFeedbackGLImpl;
-    friend class ARenderPassGLImpl;
-    friend class ABindlessSamplerGLImpl;
-
+class ADeviceGLImpl final : public IDevice
+{
 public:
     ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
                    SAllocatorCallback const * _Allocator,
                    HashCallback _Hash );
     ~ADeviceGLImpl();
+
+    //
+    // IDevice interface
+    //
 
     void SwapBuffers( SDL_Window * WindowHandle, int SwapInterval ) override;
 
@@ -81,11 +73,13 @@ public:
 
     void CreateTextureView( STextureViewCreateInfo const & _CreateInfo, TRef< ITexture > * ppTexture ) override;
 
+    void CreateSparseTexture( SSparseTextureCreateInfo const & _CreateInfo, TRef< ISparseTexture > * ppTexture ) override;
+
     void CreateTransformFeedback( STransformFeedbackCreateInfo const & _CreateInfo, TRef< ITransformFeedback > * ppTransformFeedback ) override;
 
     void CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, TRef< IQueryPool > * ppQueryPool ) override;
 
-    void CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) override;
+    void GetBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) override;
 
     void CreateResourceTable( TRef< IResourceTable > * ppResourceTable ) override;
 
@@ -101,48 +95,41 @@ public:
 
     unsigned int GetDeviceCaps( DEVICE_CAPS InDeviceCaps ) override;
 
+    int32_t GetGPUMemoryTotalAvailable() override;
+    int32_t GetGPUMemoryCurrentAvailable() override;
+
+    bool EnumerateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int * NumPageSizes, int * PageSizesX, int * PageSizesY, int * PageSizesZ ) override;
+
+    bool ChooseAppropriateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int * PageSizeIndex, int * PageSizeX = nullptr, int * PageSizeY = nullptr, int * PageSizeZ = nullptr ) override;
+
+    bool LookupImageFormat( const char * _FormatQualifier, TEXTURE_FORMAT * _Format ) override;
+
+    const char * LookupImageFormatQualifier( TEXTURE_FORMAT _Format ) override;
+
+    //
+    // Local
+    //
 
     SAllocatorCallback const & GetAllocator() const;
 
-    unsigned int GetTotalImmediateContexts() const { return TotalContexts; }
-    unsigned int GetTotalBuffers() const { return TotalBuffers; }
-    unsigned int GetTotalTextures() const { return TotalTextures; }
-    unsigned int GetTotalSamplers() const { return SamplerCache.Size(); }
-    unsigned int GetTotalBlendingStates() const { return BlendingStateCache.Size(); }
-    unsigned int GetTotalRasterizerStates() const { return RasterizerStateCache.Size(); }
-    unsigned int GetTotalDepthStencilStates() const { return DepthStencilStateCache.Size(); }
-    unsigned int GetTotalShaderModules() const { return TotalShaderModules; }
-    unsigned int GetTotalPipelines() const { return TotalPipelines; }
-    unsigned int GetTotalRenderPasses() const { return TotalRenderPasses; }
-    unsigned int GetTotalFramebuffers() const { return TotalFramebuffers; }
-    unsigned int GetTotalTransformFeedbacks() const { return TotalTransformFeedbacks; }
-    unsigned int GetTotalQueryPools() const { return TotalQueryPools; }
+    int Hash( const unsigned char * _Data, int _Size ) const
+    {
+        return HashCB( _Data, _Size );
+    }
 
     unsigned int CreateShaderProgram( unsigned int _Type,
-                                int _NumStrings,
-                                const char * const * _Strings,
-                                char ** _InfoLog = nullptr );
+                                      int _NumStrings,
+                                      const char * const * _Strings,
+                                      char ** _InfoLog = nullptr );
 
     void DeleteShaderProgram( unsigned int _Program );
 
-private:
     SBlendingStateInfo const * CachedBlendingState( SBlendingStateInfo const & _BlendingState );
     SRasterizerStateInfo const * CachedRasterizerState( SRasterizerStateInfo const & _RasterizerState );
     SDepthStencilStateInfo const * CachedDepthStencilState( SDepthStencilStateInfo const & _DepthStencilState );
     unsigned int CachedSampler( SSamplerInfo const & _CreateInfo );
 
-    unsigned int DeviceCaps[DEVICE_CAPS_MAX];
-
-    bool FeatureSupport[FEATURE_MAX];
-
-    unsigned int MaxVertexBufferSlots;
-    unsigned int MaxVertexAttribStride;
-    unsigned int MaxVertexAttribRelativeOffset;
-    unsigned int MaxCombinedTextureImageUnits;
-    unsigned int MaxImageUnits;
-    unsigned int MaxBufferBindings[4]; // uniform buffer, shader storage buffer, transform feedback buffer, atomic counter buffer
-    unsigned int MaxTextureAnisotropy;
-
+    // Statistic
     unsigned int TotalContexts;
     unsigned int TotalBuffers;
     unsigned int TotalTextures;
@@ -156,12 +143,11 @@ private:
     size_t BufferMemoryAllocated;
     size_t TextureMemoryAllocated;
 
+private:
     AImmediateContextGLImpl * pMainContext;
 
-    int SwapInterval;
-
     SAllocatorCallback Allocator;
-    HashCallback Hash;
+    HashCallback HashCB;
 
     THash<> SamplerHash;
     TPodArray< struct SamplerInfo * > SamplerCache;
@@ -174,6 +160,12 @@ private:
 
     THash<> DepthStencilHash;
     TPodArray< SDepthStencilStateInfo * > DepthStencilStateCache;
+
+    unsigned int DeviceCaps[DEVICE_CAPS_MAX];
+
+    bool FeatureSupport[FEATURE_MAX];
+
+    int SwapInterval;
 };
 
 }

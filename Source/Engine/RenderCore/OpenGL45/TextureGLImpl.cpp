@@ -29,8 +29,6 @@ SOFTWARE.
 */
 
 #include "TextureGLImpl.h"
-#include "BufferGLImpl.h"
-#include "DeviceGLImpl.h"
 #include "ImmediateContextGLImpl.h"
 #include "LUT.h"
 #include "GL/glew.h"
@@ -43,20 +41,6 @@ namespace RenderCore {
 static size_t CalcTextureRequiredMemory() {
     // TODO: calculate!
     return 0;
-}
-
-ATextureGLImpl::~ATextureGLImpl() {
-    if ( !Handle ) {
-        return;
-    }
-
-    GLuint id = GL_HANDLE( Handle );
-    glDeleteTextures( 1, &id );
-    pDevice->TotalTextures--;
-
-    if ( !bTextureView ) {
-        pDevice->TextureMemoryAllocated -= CalcTextureRequiredMemory();
-    }
 }
 
 static void SetSwizzleParams( GLuint _Id, STextureSwizzle const & _Swizzle ) {
@@ -241,7 +225,7 @@ ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureCreateInfo cons
     bTextureView = false;
     bCompressed = IsCompressedFormat( Format );
 
-    Handle = ( void * )( size_t )id;
+    SetHandleNativeGL( id );
 }
 
 ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureViewCreateInfo const & _CreateInfo )
@@ -251,7 +235,7 @@ ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureViewCreateInfo 
     GLenum target = TextureTargetLUT[ _CreateInfo.Type ].Target;
     GLint internalFormat = InternalFormatLUT[ _CreateInfo.Format ].InternalFormat;
 
-    ATextureGLImpl * originalTex = static_cast< ATextureGLImpl * >( _CreateInfo.pOriginalTexture );
+    ITexture * originalTex = _CreateInfo.pOriginalTexture;
 
     // From OpenGL specification:
     bool bCompatible = false;
@@ -299,7 +283,7 @@ ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureViewCreateInfo 
     glGenTextures( 1, &id ); // 4.5
 
     // 4.3
-    glTextureView( id, target, GL_HANDLE( originalTex->GetHandle() ),
+    glTextureView( id, target, originalTex->GetHandleNativeGL(),
                    internalFormat, _CreateInfo.MinLod, _CreateInfo.NumLods, _CreateInfo.MinLayer, _CreateInfo.NumLayers );
 
     if ( glGetError() != GL_NO_ERROR ) {
@@ -313,18 +297,33 @@ ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureViewCreateInfo 
 
     pDevice->TotalTextures++;
 
-    Handle = ( void * )( size_t )id;
+    SetHandleNativeGL( id );
 
     Type = _CreateInfo.Type;
     Format = _CreateInfo.Format;
-    Resolution = originalTex->Resolution;
-    Swizzle = originalTex->Swizzle;
-    NumSamples = originalTex->NumSamples;
-    bFixedSampleLocations = originalTex->bFixedSampleLocations;
+    Resolution = originalTex->GetResolution();
+    Swizzle = originalTex->GetSwizzle();
+    NumSamples = originalTex->GetNumSamples();
+    bFixedSampleLocations = originalTex->FixedSampleLocations();
     NumLods = _CreateInfo.NumLods;
     bTextureView = true;
     bCompressed = IsCompressedFormat( _CreateInfo.Format );
     pOriginalTex = originalTex;
+}
+
+ATextureGLImpl::~ATextureGLImpl() {
+    GLuint id = GetHandleNativeGL();
+
+    if ( !id ) {
+        return;
+    }
+
+    glDeleteTextures( 1, &id );
+    pDevice->TotalTextures--;
+
+    if ( !bTextureView ) {
+        pDevice->TextureMemoryAllocated -= CalcTextureRequiredMemory();
+    }
 }
 
 #if 0
@@ -354,7 +353,7 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
     bool bCompressedData;
     unsigned int alignment;
     const void * sysMem;
-    GLsizei compressedDataByteLength;
+    GLsizei compressedDataSizeInBytes;
     uint16_t arrayLength;
     uint32_t lodWidth, lodHeight, lodDepth;
 
@@ -371,7 +370,7 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
     GetTextureTypeGL( Type, NumSamples, target, binding );
 
     glGetIntegerv( binding, &bindTex );
-    glBindTexture( target, GL_HANDLE( Handle ) );
+    glBindTexture( target, GetHandleNativeGL() );
 
     // TODO: must be: arrayLength < GL_MAX_ARRAY_TEXTURE_LAYERS for texture arrays
     if ( Type == TEXTURE_1D_ARRAY ) {
@@ -403,7 +402,7 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
         bCompressedData = ( pixelType == 0 ); // Pixel type is 0 for compressed input data
         alignment = std::max( 1u, InInitialData->Alignment );
         sysMem = InInitialData->SysMem;
-        compressedDataByteLength = (GLsizei)InInitialData->SizeInBytes;
+        compressedDataSizeInBytes = (GLsizei)InInitialData->SizeInBytes;
     } else {
         format = InternalFormatLUT[ InternalFormat ].Format;
         int i = InternalFormat - INTERNAL_PIXEL_FORMAT_STENCIL1;
@@ -415,7 +414,7 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
         bCompressedData = false;
         alignment = 1;
         sysMem = NULL;
-        compressedDataByteLength = 0;
+        compressedDataSizeInBytes = 0;
     }
 
     if ( sysMem ) {
@@ -427,14 +426,14 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
     switch ( Type ) {
     case TEXTURE_1D:
         if ( bCompressedData ) {
-            glCompressedTexImage1D( target, 0, format, lodWidth, 0, compressedDataByteLength, sysMem );
+            glCompressedTexImage1D( target, 0, format, lodWidth, 0, compressedDataSizeInBytes, sysMem );
         } else {
             glTexImage1D( target, 0, internalFormat, lodWidth, 0, format, pixelType, sysMem );
         }
         break;
     case TEXTURE_1D_ARRAY:
         if ( bCompressedData ) {
-            glCompressedTexImage2D( target, 0, format, lodWidth, arrayLength, 0, compressedDataByteLength, sysMem );
+            glCompressedTexImage2D( target, 0, format, lodWidth, arrayLength, 0, compressedDataSizeInBytes, sysMem );
         } else {
             glTexImage2D( target, 0, internalFormat, lodWidth, arrayLength, 0, format, pixelType, sysMem );
         }
@@ -446,7 +445,7 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
             }
         } else {
             if ( bCompressedData ) {
-                glCompressedTexImage2D( target, 0, format, lodWidth, lodHeight, 0, compressedDataByteLength, sysMem );
+                glCompressedTexImage2D( target, 0, format, lodWidth, lodHeight, 0, compressedDataSizeInBytes, sysMem );
             } else {
                 glTexImage2D( target, 0, internalFormat, lodWidth, lodHeight, 0, format, pixelType, sysMem );
             }
@@ -456,7 +455,7 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
         // Avoid previous errors if any
         (void)glGetError();
         if ( bCompressedData ) {
-            glCompressedTexImage3D( target, 0, format, lodWidth, lodHeight, lodDepth, 0, compressedDataByteLength, sysMem );
+            glCompressedTexImage3D( target, 0, format, lodWidth, lodHeight, lodDepth, 0, compressedDataSizeInBytes, sysMem );
         } else {
             glTexImage3D( target, 0, internalFormat, lodWidth, lodHeight, lodDepth, 0, format, pixelType, sysMem );
         }
@@ -473,7 +472,7 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
             }
         } else {
             if ( bCompressedData ) {
-                glCompressedTexImage3D( target, 0, format, lodWidth, lodHeight, arrayLength, 0, compressedDataByteLength, sysMem );
+                glCompressedTexImage3D( target, 0, format, lodWidth, lodHeight, arrayLength, 0, compressedDataSizeInBytes, sysMem );
             } else {
                 glTexImage3D( target, 0, internalFormat, lodWidth, lodHeight, arrayLength, 0, format, pixelType, sysMem );
             }
@@ -485,11 +484,11 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
             for ( int face = 0; face < 6; face++ ) {
                 if ( sysMem ) {
                     glCompressedTexImage3D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, format,
-                        lodWidth, lodWidth, 1, 0, compressedDataByteLength, ( const uint8_t * )( sysMem ) + face * InInitialData->SizeInBytes );
+                        lodWidth, lodWidth, 1, 0, compressedDataSizeInBytes, ( const uint8_t * )( sysMem ) + face * InInitialData->SizeInBytes );
 
                 } else {
                     glCompressedTexImage3D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, format,
-                        lodWidth, lodWidth, 1, 0, compressedDataByteLength, NULL );
+                        lodWidth, lodWidth, 1, 0, compressedDataSizeInBytes, NULL );
                 }
             }
         } else {
@@ -511,7 +510,7 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
         // TODO: check this:
         // FIXME: mul 6
         if ( bCompressedData ) {
-            glCompressedTexImage3D( target, 0, format, lodWidth, lodWidth, arrayLength * 6, 0, compressedDataByteLength, sysMem );
+            glCompressedTexImage3D( target, 0, format, lodWidth, lodWidth, arrayLength * 6, 0, compressedDataSizeInBytes, sysMem );
         } else {
             glTexImage3D( target, 0, internalFormat, lodWidth, lodWidth, arrayLength * 6, 0, format, pixelType, sysMem );
         }
@@ -528,15 +527,17 @@ bool ATextureGLImpl::CreateLod( uint16_t InLod, STextureInitialData const * InIn
 #endif
 
 void ATextureGLImpl::GenerateLods() {
-    if ( !Handle ) {
+    GLuint id = GetHandleNativeGL();
+
+    if ( !id ) {
         return;
     }
 
-    glGenerateTextureMipmap( GL_HANDLE( Handle ) );
+    glGenerateTextureMipmap( id );
 }
 
 void ATextureGLImpl::GetLodInfo( uint16_t _Lod, STextureLodInfo * _Info ) const {
-    GLuint id = GL_HANDLE( Handle );
+    GLuint id = GetHandleNativeGL();
     int width, height, depth, tmp;
 
     memset( _Info, 0, sizeof( STextureLodInfo ) );
@@ -583,7 +584,7 @@ void ATextureGLImpl::GetLodInfo( uint16_t _Lod, STextureLodInfo * _Info ) const 
     _Info->bCompressed = bCompressed;
 
     glGetTextureLevelParameteriv( id, _Lod, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &tmp );
-    _Info->CompressedDataByteLength = tmp;
+    _Info->CompressedDataSizeInBytes = tmp;
 
     //GL_TEXTURE_INTERNAL_FORMAT
     //params returns a single value, the internal format of the texture image.
@@ -602,7 +603,7 @@ void ATextureGLImpl::Read( uint16_t _Lod,
                            void * _SysMem ) {
     AImmediateContextGLImpl * ctx = AImmediateContextGLImpl::GetCurrent();
 
-    GLuint id = GL_HANDLE( Handle );
+    GLuint id = GetHandleNativeGL();
 
     ctx->PackAlignment( _Alignment );
 
@@ -625,7 +626,7 @@ void ATextureGLImpl::ReadRect( STextureRect const & _Rectangle,
                                void * _SysMem ) {
     AImmediateContextGLImpl * ctx = AImmediateContextGLImpl::GetCurrent();
 
-    GLuint id = GL_HANDLE( Handle );
+    GLuint id = GetHandleNativeGL();
 
     ctx->PackAlignment( _Alignment );
 
@@ -661,7 +662,7 @@ bool ATextureGLImpl::Write( uint16_t _Lod,
                             size_t _SizeInBytes,
                             unsigned int _Alignment,               // Specifies alignment of source data
                             const void * _SysMem ) {
-    GLuint id = GL_HANDLE( Handle );
+    GLuint id = GetHandleNativeGL();
 
     int dimensionX, dimensionY, dimensionZ;
 
@@ -692,7 +693,7 @@ bool ATextureGLImpl::WriteRect( STextureRect const & _Rectangle,
                                 const void * _SysMem ) {
     AImmediateContextGLImpl * ctx = AImmediateContextGLImpl::GetCurrent();
 
-    GLuint id = GL_HANDLE( Handle );
+    GLuint id = GetHandleNativeGL();
     GLenum compressedFormat = InternalFormatLUT[Format].InternalFormat;
     GLenum format = TypeLUT[_Format].FormatBGR;
     GLenum type = TypeLUT[_Format].Type;
@@ -920,11 +921,11 @@ bool ATextureGLImpl::WriteRect( STextureRect const & _Rectangle,
 }
 
 void ATextureGLImpl::Invalidate( uint16_t _Lod ) {
-    glInvalidateTexImage( GL_HANDLE( Handle ), _Lod );
+    glInvalidateTexImage( GetHandleNativeGL(), _Lod );
 }
 
 void ATextureGLImpl::InvalidateRect( uint32_t _NumRectangles, STextureRect const * _Rectangles ) {
-    GLuint id = GL_HANDLE( Handle );
+    GLuint id = GetHandleNativeGL();
 
     for ( STextureRect const * rect = _Rectangles ; rect < &_Rectangles[_NumRectangles] ; rect++ ) {
         glInvalidateTexSubImage( id,
@@ -936,18 +937,6 @@ void ATextureGLImpl::InvalidateRect( uint32_t _NumRectangles, STextureRect const
                                  rect->Dimension.Y,
                                  rect->Dimension.Z );
     }
-}
-
-size_t ATextureGLImpl::GetTextureBufferOffset( uint16_t _Lod ) {
-    int offset;
-    glGetTextureLevelParameteriv( GL_HANDLE( Handle ), _Lod, GL_TEXTURE_BUFFER_OFFSET, &offset );
-    return offset;
-}
-
-size_t ATextureGLImpl::GetTextureBufferByteLength( uint16_t _Lod ) {
-    int byteLength;
-    glGetTextureLevelParameteriv( GL_HANDLE( Handle ), _Lod, GL_TEXTURE_BUFFER_SIZE, &byteLength );
-    return byteLength;
 }
 
 int ITexture::CalcMaxLods( TEXTURE_TYPE _Type, STextureResolution const & _Resolution ) {
@@ -991,21 +980,6 @@ int ITexture::CalcMaxLods( TEXTURE_TYPE _Type, STextureResolution const & _Resol
     }
 
     return maxLods;
-}
-
-bool ATextureGLImpl::LookupImageFormat( const char * _FormatQualifier, TEXTURE_FORMAT * _InternalPixelFormat ) {
-    int numFormats = sizeof( InternalFormatLUT ) / sizeof( InternalFormatLUT[0] );
-    for ( int i = 0 ; i < numFormats ; i++ ) {
-        if ( !strcmp( InternalFormatLUT[ i ].ShaderImageFormatQualifier, _FormatQualifier ) ) {
-            *_InternalPixelFormat = (TEXTURE_FORMAT)i;
-            return true;
-        }
-    }
-    return false;
-}
-
-const char * ATextureGLImpl::LookupImageFormatQualifier( TEXTURE_FORMAT _InternalPixelFormat ) {
-    return InternalFormatLUT[ _InternalPixelFormat ].ShaderImageFormatQualifier;
 }
 
 #if 0

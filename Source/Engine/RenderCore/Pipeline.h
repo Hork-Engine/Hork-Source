@@ -324,7 +324,7 @@ struct SImageInfo
 
 struct SBufferInfo
 {
-    BUFFER_TYPE BufferType;
+    BUFFER_BINDING BufferBinding;
 };
 
 struct SPipelineResourceLayout

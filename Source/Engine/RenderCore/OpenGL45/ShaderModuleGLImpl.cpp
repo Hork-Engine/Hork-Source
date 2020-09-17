@@ -96,7 +96,7 @@ AShaderModuleGLImpl::AShaderModuleGLImpl( ADeviceGLImpl * _Device, SShaderBinary
         return;
     }
 
-    Handle = ( void * )( size_t )id;
+    SetHandleNativeGL( id );
     Type = _BinaryData->ShaderType;
 
     pDevice->TotalShaderModules++;
@@ -106,7 +106,7 @@ AShaderModuleGLImpl::AShaderModuleGLImpl( ADeviceGLImpl * _Device, SHADER_TYPE _
     : pDevice( _Device )
 {
 #if 0
-    AllocatorCallback const & allocator = _Device->GetAllocator();
+    AllocatorCallback const & allocator = pDevice->GetAllocator();
     ShaderBinaryData binaryData;
 
     if ( !CreateBinaryData( _ShaderType, _NumSources, _Sources, _InfoLog, allocator, &binaryData ) ) {
@@ -119,13 +119,13 @@ AShaderModuleGLImpl::AShaderModuleGLImpl( ADeviceGLImpl * _Device, SHADER_TYPE _
     return result;
 #else
 
-    GLuint id = _Device->CreateShaderProgram( ShaderTypeLUT[_ShaderType], _NumSources, _Sources, _InfoLog );
+    GLuint id = pDevice->CreateShaderProgram( ShaderTypeLUT[_ShaderType], _NumSources, _Sources, _InfoLog );
     if ( !id ) {
         GLogger.Printf( "AShaderModuleGLImpl::ctor: couldn't create shader program\n" );
         return;
     }
 
-    Handle = (void *)(size_t)id;
+    SetHandleNativeGL( id );
     Type = _ShaderType;
 
     pDevice->TotalShaderModules++;
@@ -138,22 +138,14 @@ AShaderModuleGLImpl::AShaderModuleGLImpl( ADeviceGLImpl * _Device, SHADER_TYPE _
 }
 
 AShaderModuleGLImpl::~AShaderModuleGLImpl() {
-    if ( !Handle ) {
+    GLuint id = GetHandleNativeGL();
+
+    if ( !id ) {
         return;
     }
 
-    pDevice->DeleteShaderProgram( GL_HANDLE( Handle ) );
+    pDevice->DeleteShaderProgram( id );
     pDevice->TotalShaderModules--;
 }
-
-//void ShaderModule::SetUniform2f( int location, float v0, float v1 ) {
-//    glProgramUniform2f( GL_HANDLE( Handle ), location, v0, v1 );
-//}
-
-//void ShaderModule::SetUniform3f( int location, float v0, float v1, float v2 ) {
-//    glProgramUniform3f( GL_HANDLE( Handle ), location, v0, v1, v2 );
-//}
-
-
 
 }

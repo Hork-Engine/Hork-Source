@@ -565,7 +565,7 @@ struct STextureLodInfo
 {
     STextureResolution Resoultion;
     bool               bCompressed;
-    size_t             CompressedDataByteLength;
+    size_t             CompressedDataSizeInBytes;
 };
 
 struct STextureViewCreateInfo
@@ -599,7 +599,7 @@ public:
 
     bool IsCompressed() const { return bCompressed; }
 
-    STextureResolution const & GetResoulution() const { return Resolution; }
+    STextureResolution const & GetResolution() const { return Resolution; }
 
     STextureSwizzle const & GetSwizzle() const { return Swizzle; }
 
@@ -648,9 +648,6 @@ public:
     virtual void Invalidate( uint16_t _Lod ) = 0;
 
     virtual void InvalidateRect( uint32_t _NumRectangles, STextureRect const * _Rectangles ) = 0;
-
-    virtual size_t GetTextureBufferOffset( uint16_t _Lod ) = 0;
-    virtual size_t GetTextureBufferByteLength( uint16_t _Lod ) = 0;
 
     //
     // Utilites

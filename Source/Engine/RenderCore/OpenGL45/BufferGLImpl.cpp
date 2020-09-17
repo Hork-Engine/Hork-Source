@@ -38,8 +38,8 @@ SOFTWARE.
 namespace RenderCore {
 
 static GLenum ChooseBufferUsageHint( MUTABLE_STORAGE_CLIENT_ACCESS _ClientAccess,
-                                     MUTABLE_STORAGE_USAGE _StorageUsage ) {
-
+                                     MUTABLE_STORAGE_USAGE _StorageUsage )
+{
     switch ( _StorageUsage ) {
     case MUTABLE_STORAGE_STATIC:
         switch ( _ClientAccess ) {
@@ -101,7 +101,7 @@ ABufferGLImpl::ABufferGLImpl( ADeviceGLImpl * _Device, SBufferCreateInfo const &
         return;
     }
 
-    Handle = ( void * )( size_t )id;
+    SetHandleNativeGL( id );
 
     pDevice->TotalBuffers++;
     pDevice->BufferMemoryAllocated += SizeInBytes;
@@ -111,9 +111,11 @@ ABufferGLImpl::ABufferGLImpl( ADeviceGLImpl * _Device, SBufferCreateInfo const &
     // glGetBufferParameteriv          glGetNamedBufferParameteriv
 }
 
-ABufferGLImpl::~ABufferGLImpl() {
-    if ( Handle ) {
-        GLuint id = GL_HANDLE( Handle );
+ABufferGLImpl::~ABufferGLImpl()
+{
+    GLuint id = GetHandleNativeGL();
+
+    if ( id ) {
         glDeleteBuffers( 1, &id );
     }
 
@@ -121,43 +123,47 @@ ABufferGLImpl::~ABufferGLImpl() {
     pDevice->BufferMemoryAllocated -= SizeInBytes;
 }
 
-bool ABufferGLImpl::Realloc( size_t _NewByteLength, const void * _SysMem ) {
+bool ABufferGLImpl::Realloc( size_t _SizeInBytes, const void * _SysMem )
+{
     if ( bImmutableStorage ) {
         GLogger.Printf( "Buffer::Realloc: immutable buffer cannot be reallocated\n" );
         return false;
     }
 
-    SizeInBytes = _NewByteLength;
+    SizeInBytes = _SizeInBytes;
 
-    glNamedBufferData( GL_HANDLE( Handle ), _NewByteLength, _SysMem, ChooseBufferUsageHint( MutableClientAccess, MutableUsage ) ); // 4.5
+    glNamedBufferData( GetHandleNativeGL(), _SizeInBytes, _SysMem, ChooseBufferUsageHint( MutableClientAccess, MutableUsage ) ); // 4.5
 
     return true;
 }
 
-bool ABufferGLImpl::Orphan() {
+bool ABufferGLImpl::Orphan()
+{
     if ( bImmutableStorage ) {
         GLogger.Printf( "Buffer::Orphan: expected mutable buffer\n" );
         return false;
     }
 
-    glNamedBufferData( GL_HANDLE( Handle ), SizeInBytes, nullptr, ChooseBufferUsageHint( MutableClientAccess, MutableUsage ) ); // 4.5
+    glNamedBufferData( GetHandleNativeGL(), SizeInBytes, nullptr, ChooseBufferUsageHint( MutableClientAccess, MutableUsage ) ); // 4.5
 
     return true;
 }
 
-void ABufferGLImpl::Read( void * _SysMem ) {
+void ABufferGLImpl::Read( void * _SysMem )
+{
     ReadRange( 0, SizeInBytes, _SysMem );
 }
 
-void ABufferGLImpl::ReadRange( size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) {
-    glGetNamedBufferSubData( GL_HANDLE( Handle ), _ByteOffset, _SizeInBytes, _SysMem ); // 4.5 or GL_ARB_direct_state_access
+void ABufferGLImpl::ReadRange( size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem )
+{
+    glGetNamedBufferSubData( GetHandleNativeGL(), _ByteOffset, _SizeInBytes, _SysMem ); // 4.5 or GL_ARB_direct_state_access
 
     /*
     // Other path:
-    GLint id = GL_HANDLE( Handle );
-    GLenum target = __BufferEnum[ Type ].Target;
+    GLint id = GetHandleNativeGL();
+    GLenum target = BufferTargetLUT[ Type ].Target;
     GLint currentBinding;
-    glGetIntegerv( __BufferEnum[ Type ].Binding, &currentBinding );
+    glGetIntegerv( BufferTargetLUT[ Type ].Binding, &currentBinding );
     if ( currentBinding == id ) {
         glBufferSubData( target, _ByteOffset, _SizeInBytes, _SysMem );
     } else {
@@ -167,19 +173,21 @@ void ABufferGLImpl::ReadRange( size_t _ByteOffset, size_t _SizeInBytes, void * _
     */
 }
 
-void ABufferGLImpl::Write( const void * _SysMem ) {
+void ABufferGLImpl::Write( const void * _SysMem )
+{
     WriteRange( 0, SizeInBytes, _SysMem );
 }
 
-void ABufferGLImpl::WriteRange( size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) {
-    glNamedBufferSubData( GL_HANDLE( Handle ), _ByteOffset, _SizeInBytes, _SysMem ); // 4.5 or GL_ARB_direct_state_access
+void ABufferGLImpl::WriteRange( size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem )
+{
+    glNamedBufferSubData( GetHandleNativeGL(), _ByteOffset, _SizeInBytes, _SysMem ); // 4.5 or GL_ARB_direct_state_access
 
     /*
     // Other path:
-    GLint id = GL_HANDLE( Handle );
+    GLint id = GetHandleNativeGL();
     GLint currentBinding;
-    GLenum target = __BufferEnum[ Type ].Target;
-    glGetIntegerv( __BufferEnum[ Type ].Binding, &currentBinding );
+    GLenum target = BufferTargetLUT[ Type ].Target;
+    glGetIntegerv( BufferTargetLUT[ Type ].Binding, &currentBinding );
     if ( currentBinding == id ) {
         glBufferSubData( target, _ByteOffset, _SizeInBytes, _SysMem );
     } else {
@@ -190,10 +198,10 @@ void ABufferGLImpl::WriteRange( size_t _ByteOffset, size_t _SizeInBytes, const v
     */
     /*
     // Other path:
-    GLint id = GL_HANDLE( Handle );
-    GLenum target = __BufferEnum[ Type ].Target;
+    GLint id = GetHandleNativeGL();
+    GLenum target = BufferTargetLUT[ Type ].Target;
     GLint currentBinding;
-    glGetIntegerv( __BufferEnum[ Type ].Binding, &currentBinding );
+    glGetIntegerv( BufferTargetLUT[ Type ].Binding, &currentBinding );
     if ( currentBinding == id ) {
         glBufferSubData( target, _ByteOffset, _SizeInBytes, _SysMem );
     } else {
@@ -207,7 +215,8 @@ void * ABufferGLImpl::Map( MAP_TRANSFER _ClientServerTransfer,
                            MAP_INVALIDATE _Invalidate,
                            MAP_PERSISTENCE _Persistence,
                            bool _FlushExplicit,
-                           bool _Unsynchronized ) {
+                           bool _Unsynchronized )
+{
     return MapRange( 0, SizeInBytes,
                      _ClientServerTransfer,
                      _Invalidate,
@@ -217,13 +226,13 @@ void * ABufferGLImpl::Map( MAP_TRANSFER _ClientServerTransfer,
 }
 
 void * ABufferGLImpl::MapRange( size_t _RangeOffset,
-                                size_t _RangeLength,
+                                size_t _RangeSize,
                                 MAP_TRANSFER _ClientServerTransfer,
                                 MAP_INVALIDATE _Invalidate,
                                 MAP_PERSISTENCE _Persistence,
                                 bool _FlushExplicit,
-                                bool _Unsynchronized ) {
-
+                                bool _Unsynchronized )
+{
     int flags = 0;
 
     switch ( _ClientServerTransfer ) {
@@ -278,29 +287,34 @@ void * ABufferGLImpl::MapRange( size_t _RangeOffset,
         flags |= GL_MAP_UNSYNCHRONIZED_BIT;
     }
 
-    return glMapNamedBufferRange( GL_HANDLE( Handle ), _RangeOffset, _RangeLength, flags );
+    return glMapNamedBufferRange( GetHandleNativeGL(), _RangeOffset, _RangeSize, flags );
 }
 
-void ABufferGLImpl::Unmap() {
-    glUnmapNamedBuffer( GL_HANDLE( Handle ) );
+void ABufferGLImpl::Unmap()
+{
+    glUnmapNamedBuffer( GetHandleNativeGL() );
 }
 
-void * ABufferGLImpl::GetMapPointer() {
+void * ABufferGLImpl::GetMapPointer()
+{
     void * pointer = nullptr;
-    glGetNamedBufferPointerv( GL_HANDLE( Handle ), GL_BUFFER_MAP_POINTER, &pointer );
+    glGetNamedBufferPointerv( GetHandleNativeGL(), GL_BUFFER_MAP_POINTER, &pointer );
     return pointer;
 }
 
-void ABufferGLImpl::Invalidate() {
-    glInvalidateBufferData( GL_HANDLE( Handle ) );
+void ABufferGLImpl::Invalidate()
+{
+    glInvalidateBufferData( GetHandleNativeGL() );
 }
 
-void ABufferGLImpl::InvalidateRange( size_t _RangeOffset, size_t _RangeLength ) {
-    glInvalidateBufferSubData( GL_HANDLE( Handle ), _RangeOffset, _RangeLength );
+void ABufferGLImpl::InvalidateRange( size_t _RangeOffset, size_t _RangeSize )
+{
+    glInvalidateBufferSubData( GetHandleNativeGL(), _RangeOffset, _RangeSize );
 }
 
-void ABufferGLImpl::FlushMappedRange( size_t _RangeOffset, size_t _RangeLength ) {
-    glFlushMappedNamedBufferRange( GL_HANDLE( Handle ), _RangeOffset, _RangeLength );
+void ABufferGLImpl::FlushMappedRange( size_t _RangeOffset, size_t _RangeSize )
+{
+    glFlushMappedNamedBufferRange( GetHandleNativeGL(), _RangeOffset, _RangeSize );
 }
 
 }

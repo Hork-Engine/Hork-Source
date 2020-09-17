@@ -38,9 +38,6 @@ class ADeviceGLImpl;
 
 class AFramebufferGLImpl final : public IFramebuffer
 {
-    friend class ADeviceGLImpl;
-    friend class AImmediateContextGLImpl;
-
 public:
     AFramebufferGLImpl( ADeviceGLImpl * _Device, SFramebufferCreateInfo const & _CreateInfo, bool _Default );
     ~AFramebufferGLImpl();
@@ -60,10 +57,9 @@ public:
                          FRAMEBUFFER_ATTACHMENT const * _Attachments,
                          SRect2D const & _Rect ) override;
 
-private:    
     bool ChooseReadBuffer( FRAMEBUFFER_ATTACHMENT _Attachment ) const;
-    void BindReadFramebuffer() const;
 
+private:    
     ADeviceGLImpl * pDevice;
     bool bDefault;
 };

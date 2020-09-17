@@ -47,7 +47,7 @@ AQueryPoolGLImpl::AQueryPoolGLImpl( ADeviceGLImpl * _Device, SQueryPoolCreateInf
     QueryType = _CreateInfo.QueryType;
     PoolSize = _CreateInfo.PoolSize;
 
-    SAllocatorCallback const & allocator = _Device->GetAllocator();
+    SAllocatorCallback const & allocator = pDevice->GetAllocator();
 
     IdPool = ( unsigned int * )allocator.Allocate( sizeof( *IdPool ) * PoolSize );
 

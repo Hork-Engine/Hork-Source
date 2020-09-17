@@ -33,6 +33,7 @@ SOFTWARE.
 #include "ImmediateContext.h"
 #include "BufferView.h"
 #include "Texture.h"
+#include "SparseTexture.h"
 #include "Sampler.h"
 #include "Query.h"
 #include "Pipeline.h"
@@ -51,10 +52,12 @@ enum FEATURE_TYPE
 {
     FEATURE_HALF_FLOAT_VERTEX,
     FEATURE_HALF_FLOAT_PIXEL,
-    FEATURE_TEXTURE_COMPRESSION_S3TC,
     FEATURE_TEXTURE_ANISOTROPY,
+    FEATURE_SPARSE_TEXTURES,
+    FEATURE_BINDLESS_TEXTURE,
     FEATURE_SWAP_CONTROL,
     FEATURE_SWAP_CONTROL_TEAR,
+    FEATURE_GPU_MEMORY_INFO,
 
     FEATURE_MAX
 };
@@ -67,7 +70,18 @@ enum DEVICE_CAPS
     DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
     DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT,
 
-    DEVICE_CAPS_MAX_TEXTURE_SIZE,    
+    DEVICE_CAPS_MAX_TEXTURE_SIZE,
+    DEVICE_CAPS_MAX_TEXTURE_LAYERS,
+    DEVICE_CAPS_MAX_SPARSE_TEXTURE_LAYERS,
+    DEVICE_CAPS_MAX_TEXTURE_ANISOTROPY,
+    DEVICE_CAPS_MAX_PATCH_VERTICES,
+    DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS,
+    DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE,
+    DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET,
+    DEVICE_CAPS_MAX_UNIFORM_BUFFER_BINDINGS,
+    DEVICE_CAPS_MAX_SHADER_STORAGE_BUFFER_BINDINGS,
+    DEVICE_CAPS_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS,
+    DEVICE_CAPS_MAX_TRANSFORM_FEEDBACK_BUFFERS,
 
     DEVICE_CAPS_MAX
 };
@@ -102,11 +116,15 @@ public:
 
     virtual void CreateTextureView( STextureViewCreateInfo const & _CreateInfo, TRef< ITexture > * ppTexture ) = 0;
 
+    /** FEATURE_SPARSE_TEXTURES must be supported */
+    virtual void CreateSparseTexture( SSparseTextureCreateInfo const & _CreateInfo, TRef< ISparseTexture > * ppTexture ) = 0;
+
     virtual void CreateTransformFeedback( STransformFeedbackCreateInfo const & _CreateInfo, TRef< ITransformFeedback > * ppTransformFeedback ) = 0;
 
     virtual void CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, TRef< IQueryPool > * ppQueryPool ) = 0;
 
-    virtual void CreateBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) = 0;
+    /** FEATURE_BINDLESS_TEXTURE must be supported */
+    virtual void GetBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) = 0;
 
     virtual void CreateResourceTable( TRef< IResourceTable > * ppResourceTable ) = 0;
 
@@ -121,6 +139,20 @@ public:
     virtual bool IsFeatureSupported( FEATURE_TYPE InFeatureType ) = 0;
 
     virtual unsigned int GetDeviceCaps( DEVICE_CAPS InDeviceCaps ) = 0;
+
+    /** Get total available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported */
+    virtual int32_t GetGPUMemoryTotalAvailable() = 0;
+
+    /** Get current available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported */
+    virtual int32_t GetGPUMemoryCurrentAvailable() = 0;
+
+    virtual bool EnumerateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int * NumPageSizes, int * PageSizesX, int * PageSizesY, int * PageSizesZ ) = 0;
+
+    virtual bool ChooseAppropriateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int * PageSizeIndex, int * PageSizeX = nullptr, int * PageSizeY = nullptr, int * PageSizeZ = nullptr ) = 0;
+
+    virtual bool LookupImageFormat( const char * _FormatQualifier, TEXTURE_FORMAT * _Format ) = 0;
+
+    virtual const char * LookupImageFormatQualifier( TEXTURE_FORMAT _Format ) = 0;
 
     //unsigned int GetTotalImmediateContexts() const { return TotalContexts; }
     //unsigned int GetTotalBuffers() const { return TotalBuffers; }

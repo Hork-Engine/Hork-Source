@@ -40,15 +40,13 @@ SOFTWARE.
 
 namespace RenderCore {
 
-static int RenderPassIdGenerator = 0;
-
 ARenderPassGLImpl::ARenderPassGLImpl( ADeviceGLImpl * _Device, SRenderPassCreateInfo const & _CreateInfo )
     : pDevice( _Device )
 {
     AN_ASSERT( _CreateInfo.NumColorAttachments <= MAX_COLOR_ATTACHMENTS );
     AN_ASSERT( _CreateInfo.NumSubpasses <= MAX_SUBPASS_COUNT );
 
-    Handle = ( void * )( size_t )++RenderPassIdGenerator;
+    SetHandleNativeGL( GetUID() );
 
     NumColorAttachments = _CreateInfo.NumColorAttachments;
     memcpy( ColorAttachments, _CreateInfo.pColorAttachments, sizeof( ColorAttachments[0] ) * NumColorAttachments );
@@ -77,10 +75,7 @@ ARenderPassGLImpl::ARenderPassGLImpl( ADeviceGLImpl * _Device, SRenderPassCreate
 ARenderPassGLImpl::~ARenderPassGLImpl() {
     AImmediateContextGLImpl * ctx = AImmediateContextGLImpl::GetCurrent();
 
-    if ( ctx->CurrentRenderPass == this ) {
-        GLogger.Printf( "ARenderPassGLImpl::dtor: destroying render pass without EndRenderPass()\n" );
-        ctx->CurrentRenderPass = nullptr;
-    }
+    ctx->NotifyRenderPassDestroyed( this );
 
     pDevice->TotalRenderPasses--;
 }

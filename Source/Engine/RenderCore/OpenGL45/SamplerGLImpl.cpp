@@ -30,40 +30,72 @@ SOFTWARE.
 
 #include "SamplerGLImpl.h"
 #include "DeviceGLImpl.h"
-#include "ImmediateContextGLImpl.h"
-#include "TextureGLImpl.h"
-#include "LUT.h"
 
-#include <algorithm>
+#include <unordered_map>
+
 #include "GL/glew.h"
 
 namespace RenderCore {
 
+static std::unordered_map< uint64_t, int > BindlessHandleRefCount;
+
 ABindlessSamplerGLImpl::ABindlessSamplerGLImpl( ADeviceGLImpl * _Device, ITexture * _Texture, SSamplerInfo const & _CreateInfo )
 {
+    Texture = _Texture;
+    Texture->AddRef();
+
+    if ( !_Device->IsFeatureSupported( FEATURE_BINDLESS_TEXTURE ) ) {
+        GLogger.Printf( "ABindlessSamplerGLImpl::ctor: bindless textures not supported by current hardware\n" );
+        return;
+    }
+
     unsigned int samplerId = _Device->CachedSampler( _CreateInfo );
 
-    Handle = glGetTextureSamplerHandleARB( GL_HANDLE( static_cast< ATextureGLImpl const * >( _Texture )->GetHandle() ), samplerId );
+    uint64_t id = glGetTextureSamplerHandleARB( _Texture->GetHandleNativeGL(), samplerId );
+
+    SetHandleNativeGL( id );
+
+    if ( id ) {
+        ++BindlessHandleRefCount[id];
+    }
 }
 
 ABindlessSamplerGLImpl::~ABindlessSamplerGLImpl()
 {
-    glMakeTextureHandleNonResidentARB( Handle );
+    Texture->RemoveRef();
+
+    uint64_t id = GetHandleNativeGL();
+
+    if ( id ) {
+        if ( 0 == --BindlessHandleRefCount[id] ) {
+            glMakeTextureHandleNonResidentARB( id );
+        }
+    }
 }
 
 void ABindlessSamplerGLImpl::MakeResident()
 {
-    glMakeTextureHandleResidentARB( Handle );
+    uint64_t id = GetHandleNativeGL();
+    if ( id ) {
+        glMakeTextureHandleResidentARB( id );
+    }
 }
 
 void ABindlessSamplerGLImpl::MakeNonResident()
 {
-    glMakeTextureHandleNonResidentARB( Handle );
+    uint64_t id = GetHandleNativeGL();
+    if ( id ) {
+        glMakeTextureHandleNonResidentARB( id );
+    }
 }
 
 bool ABindlessSamplerGLImpl::IsResident() const
 {
-    return !!glIsTextureHandleResidentARB( Handle );
+    uint64_t id = GetHandleNativeGL();
+    if ( id ) {
+        return !!glIsTextureHandleResidentARB( id );
+    }
+    return false;
 }
 
 }

@@ -30,52 +30,36 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/Pipeline.h>
+#include <RenderCore/SparseTexture.h>
 
 namespace RenderCore {
 
 class ADeviceGLImpl;
 
-struct SImageInfoGL
+class ASparseTextureGLImpl final : public ISparseTexture
 {
-    unsigned int AccessMode;
-    unsigned int InternalFormat;
-};
-
-struct SBufferInfoGL
-{
-    unsigned int BufferType;
-};
-
-class APipelineGLImpl final : public IPipeline
-{
-    friend class AImmediateContextGLImpl;
-
 public:
-    APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo const & _CreateInfo );
-    ~APipelineGLImpl();
+    ASparseTextureGLImpl( ADeviceGLImpl * _Device, SSparseTextureCreateInfo const & _CreateInfo );
+    ~ASparseTextureGLImpl();
+
+    void CommitPage( int InLod, int InPageX, int InPageY, int InPageZ,
+                     DATA_FORMAT _Format, // Specifies a pixel format for the input data
+                     size_t _SizeInBytes,
+                     unsigned int _Alignment,               // Specifies alignment of source data
+                     const void * _SysMem ) override;
+
+    void CommitRect( STextureRect const & _Rectangle,
+                     DATA_FORMAT _Format, // Specifies a pixel format for the input data
+                     size_t _SizeInBytes,
+                     unsigned int _Alignment,               // Specifies alignment of source data
+                     const void * _SysMem ) override;
+
+    void UncommitPage( int InLod, int InPageX, int InPageY, int InPageZ ) override;
+
+    void UncommitRect( STextureRect const & _Rectangle ) override;
 
 private:
     ADeviceGLImpl * pDevice;
-    struct SVertexArrayObject * VAO;
-    SBlendingStateInfo const * BlendingState;
-    SRasterizerStateInfo const * RasterizerState;
-    SDepthStencilStateInfo const * DepthStencilState;
-    unsigned int * SamplerObjects;
-    int          NumSamplerObjects;
-    SImageInfoGL * Images;
-    int          NumImages;
-    SBufferInfoGL * Buffers;
-    int          NumBuffers;
-    unsigned int PrimitiveTopology;
-    int          NumPatchVertices;
-    bool         bPrimitiveRestartEnabled;
-    TRef< IShaderModule > pVS;
-    TRef< IShaderModule > pTCS;
-    TRef< IShaderModule > pTES;
-    TRef< IShaderModule > pGS;
-    TRef< IShaderModule > pFS;
-    TRef< IShaderModule > pCS;
 };
 
 }

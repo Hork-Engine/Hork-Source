@@ -36,7 +36,7 @@ namespace RenderCore {
 
 class ADeviceGLImpl;
 
-class ABindlessSamplerGLImpl : public IBindlessSampler
+class ABindlessSamplerGLImpl final : public IBindlessSampler
 {
 public:
     ABindlessSamplerGLImpl( ADeviceGLImpl * _Device, ITexture * _Texture, SSamplerInfo const & _CreateInfo );

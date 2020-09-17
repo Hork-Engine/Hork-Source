@@ -38,8 +38,6 @@ class ADeviceGLImpl;
 
 class AShaderModuleGLImpl final : public IShaderModule
 {
-    friend class ADeviceGLImpl;
-
 public:
     AShaderModuleGLImpl( ADeviceGLImpl * _Device, SShaderBinaryData const * _BinaryData, char ** _InfoLog );
     AShaderModuleGLImpl( ADeviceGLImpl * _Device, SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, char ** _InfoLog );
