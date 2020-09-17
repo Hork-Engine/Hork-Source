@@ -47,7 +47,7 @@ AFrameRenderer::AFrameRenderer()
     SPipelineResourceLayout resourceLayout;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferType = UNIFORM_BUFFER;
+    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
 
     resourceLayout.NumBuffers = 1;
     resourceLayout.Buffers = &bufferInfo;

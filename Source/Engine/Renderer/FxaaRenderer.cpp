@@ -42,7 +42,7 @@ AFxaaRenderer::AFxaaRenderer()
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferType = UNIFORM_BUFFER;
+    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
 
     SPipelineResourceLayout resourceLayout;
 

@@ -88,7 +88,7 @@ ADebugDrawRenderer::ADebugDrawRenderer()
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferType = UNIFORM_BUFFER; // view uniforms
+    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
 
     pipelineCI.ResourceLayout.NumBuffers = 1;
     pipelineCI.ResourceLayout.Buffers = &bufferInfo;

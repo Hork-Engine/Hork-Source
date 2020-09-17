@@ -95,6 +95,8 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
 
     //RenderImgui();
 
+    FrameData.AllocSurfaceWidthP = FrameData.AllocSurfaceWidth;
+    FrameData.AllocSurfaceHeightP = FrameData.AllocSurfaceHeight;
     FrameData.AllocSurfaceWidth = MaxViewportWidth;
     FrameData.AllocSurfaceHeight = MaxViewportHeight;
 
@@ -148,7 +150,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
 }
 
 void ARenderFrontend::RenderView( int _Index ) {
-    SViewport const * viewport = Viewports[ _Index ];
+    SViewport * viewport = const_cast< SViewport * >( Viewports[ _Index ] );
     ARenderingParameters * RP = viewport->RenderingParams;
     ACameraComponent * camera = viewport->Camera;
     AWorld * world = camera->GetWorld();
@@ -160,8 +162,14 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
     view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max( GRuntime.SysFrameDuration() * 0.000001f, 0.0001f );
     view->ViewIndex = _Index;
-    view->Width = Align( (size_t)(viewport->Width * r_ResolutionScaleX.GetFloat()), 2 );
-    view->Height = Align( (size_t)(viewport->Height * r_ResolutionScaleY.GetFloat()), 2 );
+    //view->Width = Align( (size_t)(viewport->Width * r_ResolutionScaleX.GetFloat()), 2 );
+    //view->Height = Align( (size_t)(viewport->Height * r_ResolutionScaleY.GetFloat()), 2 );
+    view->WidthP = viewport->ScaledWidth;
+    view->HeightP = viewport->ScaledHeight;
+    view->Width = viewport->ScaledWidth = viewport->Width * r_ResolutionScaleX.GetFloat();
+    view->Height = viewport->ScaledHeight = viewport->Height * r_ResolutionScaleY.GetFloat();
+    view->WidthR = viewport->Width;
+    view->HeightR = viewport->Height;
 
     if ( camera )
     {

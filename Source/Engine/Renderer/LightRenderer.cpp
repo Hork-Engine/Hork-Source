@@ -530,6 +530,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             Copy.SrcRect.Dimension.X = GRenderView->Width;
             Copy.SrcRect.Dimension.Y = GRenderView->Height;
             Copy.SrcRect.Dimension.Z = 1;
+            Copy.SrcRect.Offset.Y = Copy.DstOffset.Y = GetFrameResoultion().Height - GRenderView->Height;
 
             {
             RenderCore::ITexture * pSource = LightTexture->Actual();

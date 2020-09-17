@@ -100,6 +100,11 @@ private:
 
     AGPUSync GPUSync;
 
+    TRef< RenderCore::IQueryPool > TimeQuery;
+
+    TRef< RenderCore::IQueryPool > TimeStamp1;
+    TRef< RenderCore::IQueryPool > TimeStamp2;
+
 public:
     // Just for test
     TRef< SVirtualTextureWorkflow > VTWorkflow;

@@ -103,7 +103,7 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
     CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
     SBufferInfo buffers[1];
-    buffers[0].BufferType = UNIFORM_BUFFER;
+    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;

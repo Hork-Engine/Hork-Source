@@ -113,7 +113,7 @@ AIrradianceGenerator::AIrradianceGenerator()
     samplerCI.bCubemapSeamless = true;
 
     SBufferInfo buffers[1];
-    buffers[0].BufferType = UNIFORM_BUFFER;
+    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM;
 
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
     pipelineCI.ResourceLayout.NumSamplers = 1;

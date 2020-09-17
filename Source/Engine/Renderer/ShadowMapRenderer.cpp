@@ -89,10 +89,10 @@ void AShadowMapRenderer::CreatePipeline()
     }
 
     SBufferInfo bufferInfo[4];
-    bufferInfo[0].BufferType = UNIFORM_BUFFER; // view uniforms
-    bufferInfo[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
-    bufferInfo[2].BufferType = UNIFORM_BUFFER; // skeleton
-    bufferInfo[3].BufferType = UNIFORM_BUFFER; // cascade matrix
+    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
+    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
+    bufferInfo[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
+    bufferInfo[3].BufferBinding = BUFFER_BIND_UNIFORM; // cascade matrix
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( bufferInfo );
     pipelineCI.ResourceLayout.Buffers = bufferInfo;
@@ -148,10 +148,10 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
 #endif
 
     SBufferInfo bufferInfo[4];
-    bufferInfo[0].BufferType = UNIFORM_BUFFER; // view uniforms (unused)
-    bufferInfo[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms (unused)
-    bufferInfo[2].BufferType = UNIFORM_BUFFER; // skeleton (unused)
-    bufferInfo[3].BufferType = UNIFORM_BUFFER; // cascade matrix
+    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms (unused)
+    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms (unused)
+    bufferInfo[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton (unused)
+    bufferInfo[3].BufferBinding = BUFFER_BIND_UNIFORM; // cascade matrix
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( bufferInfo );
     pipelineCI.ResourceLayout.Buffers = bufferInfo;

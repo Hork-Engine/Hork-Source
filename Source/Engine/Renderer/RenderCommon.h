@@ -74,8 +74,14 @@ struct SViewUniformBuffer
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
 
+    float Pad0;
+    float Pad1;
+
     float DynamicResolutionRatioX;
     float DynamicResolutionRatioY;
+
+    float DynamicResolutionRatioPX;
+    float DynamicResolutionRatioPY;
 
     Float2 FeedbackBufferResolutionRatio;
     Float2 VTPageCacheCapacity;

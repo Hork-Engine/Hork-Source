@@ -38,7 +38,8 @@ layout( binding = 0 ) uniform sampler2D Smp_LinearDepth;
 
 vec3 FetchPos( vec2 UV )
 {
-    float ViewDepth = textureLod( Smp_LinearDepth, UV, 0 ).x;
+    vec2 adjUV = AdjustTexCoord(vec2(UV.x,1.0-UV.y));
+    float ViewDepth = textureLod( Smp_LinearDepth, adjUV, 0 ).x;
     return UVToView_PERSPECTIVE(UV, -ViewDepth);
 }
 

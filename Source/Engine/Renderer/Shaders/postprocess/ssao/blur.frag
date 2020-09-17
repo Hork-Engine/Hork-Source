@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "base/common.frag"
+#include "base/viewuniforms.glsl"
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
@@ -63,24 +64,27 @@ float Blur( vec2 uv, float r, float depth, inout float weight )
 }
 
 void BilateralBlur( vec2 tc ) {
+    vec2 adjTC = AdjustTexCoord(vec2(tc.x,1.0-tc.y));
 #ifdef INTERLEAVED_DEPTH
-    vec2 aoz = texture( Smp_Source, tc ).xy;
+    vec2 aoz = texture( Smp_Source, adjTC ).xy;
     float color = aoz.x;
     float depth = aoz.y;
 #else
-    float color = texture( Smp_Source, tc ).x;
-    float depth = texture( Smp_LinearDepth, tc ).x;
+    float color = texture( Smp_Source, adjTC ).x;
+    float depth = texture( Smp_LinearDepth, adjTC ).x;
 #endif
 
     float weight = 1.0;
 
     for ( float r = 1 ; r <= KERNEL_RADIUS ; ++r ) {
         vec2 uv = tc + InvSize * r;
+        uv = AdjustTexCoord(vec2(uv.x,1.0-uv.y));
         color += Blur( uv, r, depth, weight );
     }
 
     for ( float r = 1 ; r <= KERNEL_RADIUS ; ++r ) {
         vec2 uv = tc - InvSize * r;
+        uv = AdjustTexCoord(vec2(uv.x,1.0-uv.y));
         color += Blur( uv, r, depth, weight );
     }
 

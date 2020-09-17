@@ -140,10 +140,10 @@ public:
     size_t GetSizeInBytes() const;
 
     // Utilites
-    static size_t TextureByteLength1D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
-    static size_t TextureByteLength2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize );
-    static size_t TextureByteLength3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
-    static size_t TextureByteLengthCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
+    static size_t TextureSizeInBytes1D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
+    static size_t TextureSizeInBytes2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize );
+    static size_t TextureSizeInBytes3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
+    static size_t TextureSizeInBytesCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
 
     RenderCore::ITexture * GetGPUResource() { return TextureGPU; }
 

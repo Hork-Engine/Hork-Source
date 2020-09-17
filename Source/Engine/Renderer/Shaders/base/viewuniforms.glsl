@@ -75,7 +75,10 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
     
+    vec2 UniformBuffer0_Padding;
+    
     vec2 DynamicResolutionRatio;
+    vec2 DynamicResolutionRatioP;
     
     vec2 FeedbackBufferResolutionRatio;
     vec2 VTPageCacheCapacity;
@@ -209,6 +212,7 @@ uint GetNumDirectionalLights() {
 // Adjust texture coordinates for dynamic resolution
 vec2 AdjustTexCoord( in vec2 TexCoord ) {
     vec2 tc = min( TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
+    //vec2 tc = min( TexCoord, vec2(1.0) ) * GetDynamicResolutionRatio();
     tc.y = 1.0 - tc.y;
     return tc;
 }

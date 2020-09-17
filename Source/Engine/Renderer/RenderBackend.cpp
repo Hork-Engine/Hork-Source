@@ -69,6 +69,7 @@ ARuntimeVariable r_SSLRMaxDist( _CTS( "r_SSLRMaxDist" ), _CTS( "10" ) );
 ARuntimeVariable r_SSLRSampleOffset( _CTS( "r_SSLRSampleOffset" ), _CTS( "0.1" ) );
 ARuntimeVariable r_HBAO( _CTS( "r_HBAO" ), _CTS( "1" ) );
 ARuntimeVariable r_FXAA( _CTS( "r_FXAA" ), _CTS( "1" ) );
+ARuntimeVariable r_ShowGPUTime( _CTS( "r_ShowGPUTime" ), _CTS( "0" ) );
 
 void TestVT();
 
@@ -320,6 +321,20 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
     GConstantBuffer = MakeRef< ACircularBuffer >( 2 * 1024 * 1024 ); // 2MB
     GFrameConstantBuffer = MakeRef< AFrameConstantBuffer >( 2 * 1024 * 1024 ); // 2MB
 
+//#define QUERY_TIMESTAMP
+
+    SQueryPoolCreateInfo timeQueryCI;
+#ifdef QUERY_TIMESTAMP
+    timeQueryCI.QueryType = QUERY_TYPE_TIMESTAMP;
+    timeQueryCI.PoolSize = 3;
+    GDevice->CreateQueryPool( timeQueryCI, &TimeStamp1 );
+    GDevice->CreateQueryPool( timeQueryCI, &TimeStamp2 );
+#else
+    timeQueryCI.QueryType = QUERY_TYPE_TIME_ELAPSED;
+    timeQueryCI.PoolSize = 3;
+    GDevice->CreateQueryPool( timeQueryCI, &TimeQuery );
+#endif
+
     // Create sphere mesh for cubemap rendering
     GSphereMesh = MakeRef< ASphereMesh >();
 
@@ -554,10 +569,10 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
         samplerCI.bCubemapSeamless = true;
 
 //!!!!!!!!!!!!
-        GDevice->CreateBindlessSampler( GPrefilteredMap, samplerCI, &GPrefilteredMapBindless );
+        GDevice->GetBindlessSampler( GPrefilteredMap, samplerCI, &GPrefilteredMapBindless );
 
         //TRef< RenderCore::IBindlessSampler > smp;
-        //GDevice->CreateBindlessSampler( PrefilteredMap, samplerCI, &smp );
+        //GDevice->GetBindlessSampler( PrefilteredMap, samplerCI, &smp );
 
         GPrefilteredMapBindless->MakeResident();
     }
@@ -569,7 +584,7 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
         samplerCI.Filter = RenderCore::FILTER_LINEAR;
         samplerCI.bCubemapSeamless = true;
 
-        GDevice->CreateBindlessSampler( GIrradianceMap, samplerCI, &GIrradianceMapBindless );
+        GDevice->GetBindlessSampler( GIrradianceMap, samplerCI, &GIrradianceMapBindless );
         GIrradianceMapBindless->MakeResident();
     }
 
@@ -588,12 +603,92 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
 
     //::TestVT();
     TestVT = VTWorkflow->PhysCache.CreateVirtualTexture( "Test.vt3" );
+
+//#define SPARSE_TEXTURE_TEST
+#ifdef SPARSE_TEXTURE_TEST
+#if 0
+    {
+    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8, STextureResolution2D( 2048, 2048 ) );
+    TRef< ISparseTexture > sparseTexture;
+    GDevice->CreateSparseTexture( sparseTextureCI, &sparseTexture );
+
+    int pageSizeX = sparseTexture->GetPageSizeX();
+    int pageSizeY = sparseTexture->GetPageSizeY();
+    int sz = pageSizeX*pageSizeY*4;
+
+    byte * mem = (byte*)StackAlloc( sz );
+    Core::ZeroMem( mem, sz );
+
+    sparseTexture->CommitPage( 0,0,0,0, FORMAT_UBYTE4, sz, 1, mem );
+    }
+
+    {
+    int numPageSizes = 0;
+    GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8, &numPageSizes, nullptr, nullptr, nullptr );
+    TPodArray<int> pageSizeX; pageSizeX.Resize( numPageSizes );
+    TPodArray<int> pageSizeY; pageSizeY.Resize( numPageSizes );
+    TPodArray<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
+    GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8, &numPageSizes, pageSizeX.ToPtr(), pageSizeY.ToPtr(), pageSizeZ.ToPtr() );
+    for ( int i = 0 ; i < numPageSizes ; i++ ) {
+        GLogger.Printf( "Sparse page size %d %d %d\n", pageSizeX[i], pageSizeY[i], pageSizeZ[i] );
+    }
+    }
+#endif
+    int maxLayers = GDevice->GetDeviceCaps( DEVICE_CAPS_MAX_TEXTURE_LAYERS );
+    int texSize = 1024;
+    int n = texSize;
+    int numLods = 1;
+    while ( n >>= 1 ) {
+        numLods++;
+    }
+    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8, STextureResolution2DArray( texSize, texSize, maxLayers ), STextureSwizzle(), numLods );
+
+    TRef< ISparseTexture > sparseTexture;
+    GDevice->CreateSparseTexture( sparseTextureCI, &sparseTexture );
+
+#if 0
+    int pageSizeX = sparseTexture->GetPageSizeX();
+    int pageSizeY = sparseTexture->GetPageSizeY();
+    int sz = pageSizeX*pageSizeY*4;
+
+    byte * mem = (byte*)StackAlloc( sz );
+    Core::ZeroMem( mem, sz );
+
+    sparseTexture->CommitPage( 0, 0, 0, 0, FORMAT_UBYTE4, sz, 1, mem );
+#else
+    int sz = texSize*texSize*4;
+
+    byte * mem = (byte*)malloc( sz );
+    Core::ZeroMem( mem, sz );
+
+    GLogger.Printf( "\tTotal available after create: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10 );
+
+    for ( int i = 0 ; i < 10 ; i++ ) {
+        RenderCore::STextureRect rect;
+        rect.Offset.Lod = 0;
+        rect.Offset.X = 0;
+        rect.Offset.Y = 0;
+        rect.Offset.Z = 0;
+        rect.Dimension.X = texSize;
+        rect.Dimension.Y = texSize;
+        rect.Dimension.Z = 1;
+        sparseTexture->CommitRect( rect, FORMAT_UBYTE4, sz, 1, mem );
+        GLogger.Printf( "\tTotal available after commit: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10 );
+        sparseTexture->UncommitRect( rect );
+        GLogger.Printf( "\tTotal available after uncommit: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10 );
+    }
+    free(mem);
+#endif
+#endif
 }
 
 void ARenderBackend::Deinitialize()
 {
     GLogger.Printf( "Deinitializing render backend...\n" );
 
+    TimeQuery.Reset();
+    TimeStamp1.Reset();
+    TimeStamp2.Reset();
     CanvasRenderer.Reset();
     FrameRenderer.Reset();
     FrameGraph.Reset();
@@ -865,7 +960,6 @@ void ARenderBackend::InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, s
 
 void * ARenderBackend::InitializePersistentMappedBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes )
 {
-
     RenderCore::SBufferCreateInfo bufferCI = {};
 
     bufferCI.SizeInBytes = _SizeInBytes;
@@ -981,6 +1075,18 @@ void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
 
     GFrameConstantBuffer->Begin();
 
+    static int timeQueryFrame = 0;
+
+    if ( r_ShowGPUTime ) {
+#ifdef QUERY_TIMESTAMP
+        rcmd->RecordTimeStamp( TimeStamp1, timeQueryFrame );
+#else
+        rcmd->BeginQuery( TimeQuery, timeQueryFrame );
+
+        timeQueryFrame = ( timeQueryFrame + 1 ) % TimeQuery->GetPoolSize();
+#endif
+    }
+
     GFrameData = pFrameData;
     GStreamBuffer = GFrameData->StreamBuffer;
 
@@ -1000,6 +1106,28 @@ void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
 
     // FIXME: Move it at beggining of the frame to give more time for stream thread?
     VTWorkflow->PhysCache.Update();
+
+    if ( r_ShowGPUTime ) {
+#ifdef QUERY_TIMESTAMP
+        rcmd->RecordTimeStamp( TimeStamp2, timeQueryFrame );
+
+        timeQueryFrame = ( timeQueryFrame + 1 ) % TimeStamp1->GetPoolSize();
+
+        uint64_t timeStamp1 = 0;
+        uint64_t timeStamp2 = 0;
+        TimeStamp2->GetResult64( timeQueryFrame, &timeStamp2, RenderCore::QUERY_RESULT_WAIT_BIT );
+        TimeStamp1->GetResult64( timeQueryFrame, &timeStamp1, RenderCore::QUERY_RESULT_WAIT_BIT );
+
+        GLogger.Printf( "GPU time %f ms\n", (double)(timeStamp2-timeStamp1) / 1000000.0 );
+#else
+        rcmd->EndQuery( TimeQuery );
+
+        uint64_t timeQueryResult = 0;
+        TimeQuery->GetResult64( timeQueryFrame, &timeQueryResult, RenderCore::QUERY_RESULT_WAIT_BIT );
+
+        GLogger.Printf( "GPU time %f ms\n", (double)timeQueryResult / 1000000.0 );
+#endif
+    }
 
     SetGPUEvent();
 
@@ -1067,6 +1195,8 @@ void ARenderBackend::SetViewUniforms()
 
     uniformData->DynamicResolutionRatioX = (float)GRenderView->Width / GFrameData->AllocSurfaceWidth;
     uniformData->DynamicResolutionRatioY = (float)GRenderView->Height / GFrameData->AllocSurfaceHeight;
+    uniformData->DynamicResolutionRatioPX = (float)GRenderView->WidthP / GFrameData->AllocSurfaceWidthP;
+    uniformData->DynamicResolutionRatioPY = (float)GRenderView->HeightP / GFrameData->AllocSurfaceHeightP;
 
     uniformData->FeedbackBufferResolutionRatio = GRenderView->VTFeedback->GetResolutionRatio();
     uniformData->VTPageCacheCapacity.X = (float)GRenderBackendLocal.VTWorkflow->PhysCache.GetPageCacheCapacityX();
@@ -1095,10 +1225,10 @@ void ARenderBackend::SetViewUniforms()
     uniformData->SSLRSampleOffset = r_SSLRSampleOffset.GetFloat();
     uniformData->SSLRMaxDist = r_SSLRMaxDist.GetFloat();
     uniformData->IsPerspective = float( GRenderView->bPerspective );
-    uniformData->TessellationLevel = r_TessellationLevel.GetFloat() * GRenderView->Height;
+    uniformData->TessellationLevel = r_TessellationLevel.GetFloat() * Math::Lerp( (float)GRenderView->Width, (float)GRenderView->Height, 0.5f );
 
-    uniformData->PrefilteredMapSampler = GPrefilteredMapBindless->GetHandle();
-    uniformData->IrradianceMapSampler = GIrradianceMapBindless->GetHandle();
+    uniformData->PrefilteredMapSampler = (uint64_t)GPrefilteredMapBindless->GetHandle();
+    uniformData->IrradianceMapSampler = (uint64_t)GIrradianceMapBindless->GetHandle();
 
     uniformData->DebugMode = r_DebugRenderMode.GetInteger();
 

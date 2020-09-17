@@ -121,7 +121,7 @@ void ACanvasRenderer::CreatePresentViewPipeline()
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     SSamplerInfo samplerCI;
-    samplerCI.Filter = FILTER_LINEAR;//FILTER_NEAREST; // linear is better for dynamic resolution
+    samplerCI.Filter = FILTER_NEAREST;//FILTER_LINEAR;//FILTER_NEAREST; // linear is better for dynamic resolution
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
@@ -130,7 +130,7 @@ void ACanvasRenderer::CreatePresentViewPipeline()
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferType = UNIFORM_BUFFER;
+    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
 
     pipelineCI.ResourceLayout.NumBuffers = 1;
     pipelineCI.ResourceLayout.Buffers = &bufferInfo;
@@ -223,7 +223,7 @@ void ACanvasRenderer::CreatePipelines()
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferType = UNIFORM_BUFFER;
+    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
 
     pipelineCI.ResourceLayout.NumBuffers = 1;
     pipelineCI.ResourceLayout.Buffers = &bufferInfo;

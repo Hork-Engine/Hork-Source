@@ -1639,7 +1639,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
     f.WriteUInt32( d );
     f.WriteUInt32( numLods );
 
-    int pixelByteLength = texturePixelFormat.SizeInBytesUncompressed();
+    int pixelSizeInBytes = texturePixelFormat.SizeInBytesUncompressed();
     int stride;
     byte * pSrc = (byte *)image.GetData();
     for ( int lod = 0 ; lod < numLods ; lod++ ) {
@@ -1650,7 +1650,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
         f.WriteUInt32( lodHeight );
         f.WriteUInt32( 1 ); // lodDepth
 
-        stride = lodWidth * lodHeight * pixelByteLength;
+        stride = lodWidth * lodHeight * pixelSizeInBytes;
 
         f.WriteBuffer( pSrc, stride );
 
@@ -2269,7 +2269,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
     f.WriteUInt32( d );
     f.WriteUInt32( numLods );
 
-    int pixelByteLength = texturePixelFormat.SizeInBytesUncompressed();
+    int pixelSizeInBytes = texturePixelFormat.SizeInBytesUncompressed();
     uint32_t lodWidth;
 
     int lod = 0;
@@ -2280,7 +2280,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
     f.WriteUInt32( lodWidth );
     f.WriteUInt32( 6 ); // lodDepth
 
-    size_t size = lodWidth * lodWidth * pixelByteLength;
+    size_t size = lodWidth * lodWidth * pixelSizeInBytes;
 
     for ( int face = 0 ; face < 6 ; face++ ) {
         f.WriteBuffer( cubeFaces[face].GetData(), size );

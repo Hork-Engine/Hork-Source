@@ -66,8 +66,8 @@ ASSAORenderer::ASSAORenderer()
     pipeSamplers[2].AddressW = SAMPLER_ADDRESS_WRAP;
 
     SBufferInfo bufferInfo[2];
-    bufferInfo[0].BufferType = UNIFORM_BUFFER; // view uniforms
-    bufferInfo[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
+    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
 
     resourceLayout.NumBuffers = 2;
     resourceLayout.Buffers = bufferInfo;
@@ -370,7 +370,7 @@ void ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTextur
         "SSAO Random Map", RenderCore::STextureCreateInfo(), RandomMap );
 
     ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "Simple AO Pass" );
-    pass.SetRenderArea( AOWidth, AOHeight );
+    pass.SetRenderArea( GRenderView->Width, GRenderView->Height );
     pass.AddResource( LinearDepth, RESOURCE_ACCESS_READ );
     pass.AddResource( NormalTexture, RESOURCE_ACCESS_READ );
     pass.AddResource( RandomMapTexture_R, RESOURCE_ACCESS_READ );
@@ -404,10 +404,10 @@ void ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTextur
         float projScale;
 
         if ( GRenderView->bPerspective ) {
-            projScale = (float)AOHeight / std::tan( GRenderView->ViewFovY * 0.5f ) * 0.5f;
+            projScale = (float)/*AOHeight*/GRenderView->Height / std::tan( GRenderView->ViewFovY * 0.5f ) * 0.5f;
         }
         else {
-            projScale = (float)AOHeight * GRenderView->ProjectionMatrix[1][1] * 0.5f;
+            projScale = (float)/*AOHeight*/GRenderView->Height * GRenderView->ProjectionMatrix[1][1] * 0.5f;
         }
 
         drawCall->Bias = r_HBAOBias.GetFloat();
@@ -415,8 +415,8 @@ void ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTextur
         drawCall->RadiusToScreen = r_HBAORadius.GetFloat() * 0.5f * projScale;
         drawCall->PowExponent = r_HBAOPowExponent.GetFloat();
         drawCall->Multiplier = 1.0f / (1.0f - r_HBAOBias.GetFloat());
-        drawCall->InvFullResolution.X = 1.0f / AOWidth;
-        drawCall->InvFullResolution.Y = 1.0f / AOHeight;
+        drawCall->InvFullResolution.X = 1.0f / GRenderView->Width;//AOWidth;
+        drawCall->InvFullResolution.Y = 1.0f / GRenderView->Height;//AOHeight;
         drawCall->InvQuarterResolution.X = 0; // don't care
         drawCall->InvQuarterResolution.Y = 0; // don't care
 
@@ -438,7 +438,7 @@ void ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTextur
 void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTexture, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppBluredSSAO )
 {
     ARenderPass & aoBlurXPass = FrameGraph.AddTask< ARenderPass >( "AO Blur X Pass" );
-    aoBlurXPass.SetRenderArea( AOWidth, AOHeight );
+    aoBlurXPass.SetRenderArea( GRenderView->Width, GRenderView->Height );
     aoBlurXPass.SetColorAttachments(
     {
         {
@@ -473,7 +473,7 @@ void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture 
     AFrameGraphTexture * TempSSAOTextureBlurX = aoBlurXPass.GetColorAttachments()[0].Resource;
 
     ARenderPass & aoBlurYPass = FrameGraph.AddTask< ARenderPass >( "AO Blur Y Pass" );
-    aoBlurYPass.SetRenderArea( AOWidth, AOHeight );
+    aoBlurYPass.SetRenderArea( GRenderView->Width, GRenderView->Height );
     aoBlurYPass.SetColorAttachments(
     {
         {
@@ -512,7 +512,7 @@ void ASSAORenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * Li
 {
     ResizeAO( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
 
-    if ( r_HBAODeinterleaved ) {
+    if ( r_HBAODeinterleaved && GRenderView->Width == GFrameData->AllocSurfaceWidth && GRenderView->Height == GFrameData->AllocSurfaceHeight ) {
         AFrameGraphTexture * DeinterleaveDepthArray, * SSAOTextureArray;
         
         AddDeinterleaveDepthPass( FrameGraph, LinearDepth, &DeinterleaveDepthArray );

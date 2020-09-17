@@ -83,7 +83,7 @@ AExposureRenderer::AExposureRenderer()
     samplerCI.Filter = FILTER_LINEAR;
 
     SBufferInfo bufferInfo[1];
-    bufferInfo[0].BufferType = UNIFORM_BUFFER;
+    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM;
     //bufferInfo[1].BufferType = UNIFORM_BUFFER;
 
     SPipelineResourceLayout resourceLayout;

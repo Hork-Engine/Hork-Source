@@ -45,7 +45,10 @@ void main() {
     vec2 uv = vec2( VS_TexCoord.x, 1.0-VS_TexCoord.y );
     
     // Adjust texture coordinates for dynamic resolution
-    vec2 tc = AdjustTexCoord( VS_TexCoord );
+    //vec2 tc = AdjustTexCoord( VS_TexCoord );
+    
+    vec2 tc = min( VS_TexCoord, vec2(1.0) ) * GetDynamicResolutionRatio();
+    tc.y = 1.0 - tc.y;
     
     // Fragment depth
     float srcDepth = texture( Smp_Depth, tc ).x;
@@ -87,8 +90,9 @@ void main() {
     const vec2 texSize = 1.0 / (InvViewportSize * DynamicResolutionRatio);
     const float speed = length( v * texSize );
     const int nSamples = clamp( int(speed), 1, MAX_SAMPLES );
-    
-    FS_FragColor = texture( Smp_Light, tc );
+
+    // Smp_Light has linear sampler, but we need nearest sampler here
+    FS_FragColor = texelFetch( Smp_Light, ivec2( tc * textureSize( Smp_Light, 0 ) ), 0 );
     
     const float bias = -0.5;
 

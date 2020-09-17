@@ -74,13 +74,13 @@ bool ATexture::InitializeFromImage( AImage const & _Image ) {
 
     byte * pSrc = ( byte * )_Image.GetData();
     int w, h, stride;
-    int pixelByteLength = pixelFormat.SizeInBytesUncompressed();
+    int pixelSizeInBytes = pixelFormat.SizeInBytesUncompressed();
 
     for ( int lod = 0 ; lod < _Image.GetNumLods() ; lod++ ) {
         w = Math::Max( 1, _Image.GetWidth() >> lod );
         h = Math::Max( 1, _Image.GetHeight() >> lod );
 
-        stride = w * h * pixelByteLength;
+        stride = w * h * pixelSizeInBytes;
 
         WriteTextureData2D( 0, 0, w, h, lod, pSrc );
 
@@ -486,7 +486,7 @@ bool ATexture::IsCubemap() const {
     return TextureType == TEXTURE_CUBEMAP || TextureType == TEXTURE_CUBEMAP_ARRAY;
 }
 
-size_t ATexture::TextureByteLength1D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+size_t ATexture::TextureSizeInBytes1D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
     if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_ASSERT(0);
@@ -501,7 +501,7 @@ size_t ATexture::TextureByteLength1D( STexturePixelFormat _PixelFormat, int _Num
     }
 }
 
-size_t ATexture::TextureByteLength2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
+size_t ATexture::TextureSizeInBytes2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
     if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_ASSERT(0);
@@ -517,7 +517,7 @@ size_t ATexture::TextureByteLength2D( STexturePixelFormat _PixelFormat, int _Num
     }
 }
 
-size_t ATexture::TextureByteLength3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
+size_t ATexture::TextureSizeInBytes3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
     if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_ASSERT(0);
@@ -534,7 +534,7 @@ size_t ATexture::TextureByteLength3D( STexturePixelFormat _PixelFormat, int _Num
     }
 }
 
-size_t ATexture::TextureByteLengthCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
+size_t ATexture::TextureSizeInBytesCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
     if ( _PixelFormat.IsCompressed() ) {
         // TODO
         AN_ASSERT(0);
@@ -721,19 +721,19 @@ void ATexture::InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _Nu
 size_t ATexture::GetSizeInBytes() const {
     switch ( TextureType ) {
     case TEXTURE_1D:
-        return ATexture::TextureByteLength1D( PixelFormat, NumLods, Width, 1 );
+        return ATexture::TextureSizeInBytes1D( PixelFormat, NumLods, Width, 1 );
     case TEXTURE_1D_ARRAY:
-        return ATexture::TextureByteLength1D( PixelFormat, NumLods, Width, GetArraySize() );
+        return ATexture::TextureSizeInBytes1D( PixelFormat, NumLods, Width, GetArraySize() );
     case TEXTURE_2D:
-        return ATexture::TextureByteLength2D( PixelFormat, NumLods, Width, Height, 1 );
+        return ATexture::TextureSizeInBytes2D( PixelFormat, NumLods, Width, Height, 1 );
     case TEXTURE_2D_ARRAY:
-        return ATexture::TextureByteLength2D( PixelFormat, NumLods, Width, Height, GetArraySize() );
+        return ATexture::TextureSizeInBytes2D( PixelFormat, NumLods, Width, Height, GetArraySize() );
     case TEXTURE_3D:
-        return ATexture::TextureByteLength3D( PixelFormat, NumLods, Width, Height, Depth );
+        return ATexture::TextureSizeInBytes3D( PixelFormat, NumLods, Width, Height, Depth );
     case TEXTURE_CUBEMAP:
-        return ATexture::TextureByteLengthCubemap( PixelFormat, NumLods, Width, 1 );
+        return ATexture::TextureSizeInBytesCubemap( PixelFormat, NumLods, Width, 1 );
     case TEXTURE_CUBEMAP_ARRAY:
-        return ATexture::TextureByteLengthCubemap( PixelFormat, NumLods, Width, GetArraySize() );
+        return ATexture::TextureSizeInBytesCubemap( PixelFormat, NumLods, Width, GetArraySize() );
     }
     return 0;
 }

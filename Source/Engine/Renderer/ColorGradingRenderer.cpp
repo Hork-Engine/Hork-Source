@@ -46,8 +46,8 @@ AColorGradingRenderer::AColorGradingRenderer()
     resourceLayout.Samplers = &samplerCI;
 
     SBufferInfo bufferInfo[2];
-    bufferInfo[0].BufferType = UNIFORM_BUFFER; // view uniforms
-    bufferInfo[1].BufferType = UNIFORM_BUFFER; // drawcall uniforms
+    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
+    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
 
     resourceLayout.Buffers = bufferInfo;
 
@@ -64,7 +64,7 @@ AColorGradingRenderer::AColorGradingRenderer()
                                     "postprocess/colorgrading.vert",
                                     "postprocess/colorgrading_procedural.frag",
                                     "postprocess/colorgrading.geom",
-                                    nullptr,
+                                    &resourceLayout,
                                     RenderCore::BLENDING_ALPHA );
 }
 

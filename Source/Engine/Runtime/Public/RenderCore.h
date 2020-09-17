@@ -1142,9 +1142,17 @@ struct SRenderView
     // Current view index
     int ViewIndex;
 
-    // Viewport size
+    // Viewport size (scaled by dynamic resolution)
     int Width;
     int Height;
+
+    // Viewport size on previous frame (scaled by dynamic resolution)
+    int WidthP;
+    int HeightP;
+
+    // Real viewport size
+    int WidthR;
+    int HeightR;
 
     // Time parameters
     float GameRunningTimeSeconds;
@@ -1266,6 +1274,8 @@ struct SRenderFrame
     // Max surface resolution
     int AllocSurfaceWidth;
     int AllocSurfaceHeight;
+    int AllocSurfaceWidthP;
+    int AllocSurfaceHeightP;
 
     // Canvas size
     int CanvasWidth;

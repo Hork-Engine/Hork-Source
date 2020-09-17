@@ -28,6 +28,13 @@ SOFTWARE.
 
 */
 
+vec2 SampleCoord( vec2 tc ) {
+    //vec2 new_tc = min( vec2(tc.x,1.0-tc.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
+    vec2 new_tc = min( vec2(tc.x,1.0-tc.y), vec2(1.0) ) * DynamicResolutionRatioP;    
+    new_tc.y = 1.0 - new_tc.y;
+    return new_tc;
+}
+        
 vec3 FetchLocalReflection( vec3 ReflectionDir, float Roughness ) {
 #if defined WITH_SSLR && defined ALLOW_SSLR
     vec2 UV = InScreenUV;
@@ -46,7 +53,7 @@ vec3 FetchLocalReflection( vec3 ReflectionDir, float Roughness ) {
         vec2 tempUV = ViewToUVReproj( dir );
 
         // read reflection depth
-        z = -textureLod( ReflectionDepth, tempUV, 0 ).x;
+        z = -textureLod( ReflectionDepth, SampleCoord(tempUV), 0 ).x;
         
         if ( z > VS_Position.z ) {
             L += SSLRMaxDist;
@@ -65,7 +72,7 @@ vec3 FetchLocalReflection( vec3 ReflectionDir, float Roughness ) {
     
     //L = saturate(L * SSLRMaxDist);
     
-    vec3 reflectColor = textureLod( ReflectionColor, UV, 0 ).rgb;
+    vec3 reflectColor = textureLod( ReflectionColor, SampleCoord(UV), 0 ).rgb;
 
     vec2 coords = smoothstep( 0.2, 0.6, abs( vec2(0.5) - UV.xy ) );
     float screenFalloff = saturate( 1.0 - (coords.x + coords.y) );

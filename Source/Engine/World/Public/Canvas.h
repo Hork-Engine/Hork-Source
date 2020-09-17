@@ -48,6 +48,8 @@ struct SViewport
     int Y;
     int Width;
     int Height;
+    int ScaledWidth;
+    int ScaledHeight;
 };
 
 enum EDrawCornerFlags

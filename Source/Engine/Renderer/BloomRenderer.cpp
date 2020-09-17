@@ -48,8 +48,8 @@ ABloomRenderer::ABloomRenderer()
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
     SBufferInfo bufferInfo[2];
-    bufferInfo[0].BufferType = UNIFORM_BUFFER;
-    bufferInfo[1].BufferType = UNIFORM_BUFFER;
+    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM;
+    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM;
 
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers = &samplerCI;

@@ -181,7 +181,11 @@ void MaterialBaseLightShader( vec3 BaseColor,
     Light += AmbientLight;
     
 #if defined WITH_SSAO && defined ALLOW_SSAO
-    float AO = Opacity < 1.0 ? 1.0 : textureLod( AOLookup, InScreenUV, 0.0 ).x;
+    vec2 aotc = min( vec2(InScreenUV.x,1.0-InScreenUV.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
+    aotc.y = 1.0 - aotc.y;
+    //vec2 aotc = InScreenUV;
+    
+    float AO = Opacity < 1.0 ? 1.0 : textureLod( AOLookup, aotc, 0.0 ).x;
 #else
     float AO = 1.0;
 #endif

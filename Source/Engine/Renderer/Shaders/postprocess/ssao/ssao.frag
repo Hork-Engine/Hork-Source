@@ -148,7 +148,16 @@ vec3 FetchQuarterResViewPos(vec2 UV)
 
 vec3 FetchPos( vec2 UV )
 {
-    float ViewDepth = textureLod( Smp_LinearDepth, UV, 0 ).x;
+    //vec2 tc = min( vec2(UV.x,1.0-UV.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
+    //tc.y = 1.0 - tc.y;
+    
+    vec2 tc = AdjustTexCoord(vec2(UV.x,1.0-UV.y));
+    float ViewDepth = textureLod( Smp_LinearDepth, tc, 0 ).x;
+    //ivec2 tc = ivec2( vec2(UV.x,UV.y) * (1.0/GetViewportSizeInverted()) );
+    //float ViewDepth = texelFetch( Smp_LinearDepth, tc, 0 ).x;
+    
+    //UV = UV / GetDynamicResolutionRatio();
+    
     return SSAO_UVToView( UV, -ViewDepth );
 }
 
@@ -231,7 +240,8 @@ void main() {
     vec3 ViewPosition = FetchQuarterResViewPos( uv );
     vec3 ViewNormal = texelFetch( Smp_Normals, ivec2( base ), 0 ).xyz;
 #else
-    const vec2 uv = AdjustTexCoord( VS_TexCoord );
+    vec2 uv = VS_TexCoord;//AdjustTexCoord( VS_TexCoord );
+    uv.y = 1.0-uv.y;
   
     vec3 ViewPosition = FetchPos( uv );
     vec3 ViewNormal = texelFetch( Smp_Normals, ivec2( gl_FragCoord.xy ), 0 ).xyz;
