@@ -56,7 +56,9 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
 {
 #if defined WITH_SSAO && defined ALLOW_SSAO
     // Sample ambient occlusion
-    AO *= textureLod( AOLookup, InScreenUV, 0.0 ).x;
+    vec2 aotc = min( vec2(InScreenUV.x,1.0-InScreenUV.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
+    aotc.y = 1.0 - aotc.y;
+    AO *= textureLod( AOLookup, aotc, 0.0 ).x;
 #endif
     
     // Calc fresnel
@@ -347,7 +349,10 @@ void MaterialPBRShader( vec3 BaseColor,
         break;
     case DEBUG_AMBIENT:
 #if defined WITH_SSAO && defined ALLOW_SSAO
-        AO *= textureLod( AOLookup, InScreenUV, 0.0 ).x;
+        vec2 aotc = min( vec2(InScreenUV.x,1.0-InScreenUV.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
+        aotc.y = 1.0 - aotc.y;
+
+        AO *= textureLod( AOLookup, aotc, 0.0 ).x;
 #endif
         FS_FragColor = vec4( vec3( AO ), 1.0 );
         break;
