@@ -481,7 +481,20 @@ void AAudioSystem::Initialize() {
     AL_SAFE( pRenderer = alGetString( AL_RENDERER ) );
     AL_SAFE( pExtensions = alGetString( AL_EXTENSIONS ) );
     GLogger.Printf( "Audio vendor: %s/%s (version %s)\n", pVendor, pRenderer, pVersion );
-    GLogger.Printf( "%s\n", pExtensions );
+    AString tmp = pExtensions;
+    char * s = tmp.ToPtr();
+    char * word = tmp.ToPtr();
+    while ( *s ) {
+        if ( *s++ == ' ' ) {
+            *(s - 1) = 0;
+            GLogger.Printf( "\t%s\n", word );
+            word = s;
+            continue;
+        }
+    }
+    if ( *word ) {
+        GLogger.Printf( "\t%s\n", word );
+    }
 
     //ALCint MaxMonoSources = 0;
     //ALCint MaxStereoSources = 0;
